@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Executable oracle for docs/isolation/connection-rust-port-spec.md §3/§4.
+Executable oracle for docs/isolation/connection-rust-port-spec.md §3–§6 (every non-wf.* probe).
 
 Runs (a) the literal transcription of common/get-connected-nodes.ts (spec §3) and
 (b) the algorithm currently in crates/n8n-connection/src/lib.rs, against the pinned
@@ -66,6 +66,97 @@ def by_dest(c):                                                  # spec §4
                     e[it['index']].append({'node': s, 'type': t, 'index': i})
     return r
 
+
+# ---------------------------------------------------------------- spec §5 (graph/graph-utils.ts)
+def _key(c): return (c['node'], c['type'], c['index'])
+def build_adjacency_list(by_source):                             # L170-204; all types; IndexSet semantics
+    adj = {}
+    for src, bt in by_source.items():
+        for t, slots in bt.items():
+            for slot in slots:
+                for con in (slot or []):
+                    lst = adj.setdefault(src, [])
+                    if _key(con) not in map(_key, lst): lst.append(con)
+    return adj
+def _main_targets(adj, nid, exclude_self):
+    return [x['node'] for x in adj.get(nid, []) if x['type'] == 'main' and (not exclude_self or x['node'] != nid)]
+def _uniq(seq):
+    out = []
+    for x in seq:
+        if x not in out: out.append(x)
+    return out
+def get_input_edges(graph, adj):                                 # L41-56
+    return [[f, to] for f, tos in adj.items() if f not in graph for to in tos if to['node'] in graph]
+def get_output_edges(graph, adj):                                # L62-76
+    return [[f, to] for f, tos in adj.items() if f in graph for to in tos if to['node'] not in graph]
+def get_root_nodes(graph, adj):                                  # L103-118
+    inner = _uniq(n for nid in graph for n in _main_targets(adj, nid, True))
+    return [g for g in graph if g not in inner]
+def get_leaf_nodes(graph, adj):                                  # L123-140
+    return [nid for nid in graph if not [n for n in _main_targets(adj, nid, True) if n in graph]]
+def has_path(start, end, adj):                                   # L145-160 DFS stack, main-only
+    seen, paths = [], [start]
+    while True:
+        if not paths: return False
+        nxt = paths.pop()
+        if nxt == end: return True
+        seen.append(nxt)
+        paths.extend([n for n in _uniq(_main_targets(adj, nxt, False)) if n not in seen])
+def parse_extractable(graph, adj):                               # L209-273
+    errors = []
+    input_nodes = _uniq(e[1]['node'] for e in get_input_edges(graph, adj) if e[1]['type'] == 'main')
+    roots = get_root_nodes(graph, adj)
+    if not roots and len(input_nodes) == 1: roots = list(input_nodes)
+    for n in [n for n in input_nodes if n not in roots]:
+        errors.append({'errorCode': 'Input Edge To Non-Root Node', 'node': n})
+    root_input = [n for n in roots if n in input_nodes]
+    if len(root_input) > 1: errors.append({'errorCode': 'Multiple Input Nodes', 'nodes': root_input})
+    output_nodes = _uniq(e[0] for e in get_output_edges(graph, adj) if e[1]['type'] == 'main')
+    leaves = get_leaf_nodes(graph, adj)
+    if not leaves and len(output_nodes) == 1: leaves = list(output_nodes)
+    for n in [n for n in output_nodes if n not in leaves]:
+        errors.append({'errorCode': 'Output Edge From Non-Leaf Node', 'node': n})
+    leaf_output = [n for n in leaves if n in output_nodes]
+    if len(leaf_output) > 1: errors.append({'errorCode': 'Multiple Output Nodes', 'nodes': leaf_output})
+    start = root_input[0] if root_input else None
+    end = leaf_output[0] if leaf_output else None
+    if start and end and not has_path(start, end, adj):
+        errors.append({'errorCode': 'No Continuous Path From Root To Leaf In Selection', 'start': start, 'end': end})
+    if errors: return errors
+    out = {}
+    if start is not None: out['start'] = start
+    if end is not None: out['end'] = end
+    return out
+
+# ---------------------------------------------------------------- spec §6 (connections-diff.ts)
+def compare_connections(prev, nxt):                              # L15-87
+    added, removed = {}, {}
+    for node in _uniq(list(prev) + list(nxt)):
+        pt, nt = prev.get(node) or {}, nxt.get(node) or {}
+        for t in _uniq(list(pt) + list(nt)):
+            ps, ns = pt.get(t) or [], nt.get(t) or []
+            for si in range(max(len(ps), len(ns))):
+                pc = (ps[si] if si < len(ps) else None) or []
+                nc = (ns[si] if si < len(ns) else None) or []
+                pm = {json.dumps(c, separators=(',', ':')): {'index': i, 'connection': c} for i, c in enumerate(pc)}
+                nm = {json.dumps(c, separators=(',', ':')): {'index': i, 'connection': c} for i, c in enumerate(nc)}
+                for k, v in nm.items():
+                    if k not in pm: added.setdefault(node, {}).setdefault(t, []).append({'sourceIndex': si, 'value': v})
+                for k, v in pm.items():
+                    if k not in nm: removed.setdefault(node, {}).setdefault(t, []).append({'sourceIndex': si, 'value': v})
+    return {'added': added, 'removed': removed}
+
+GRAPH_OPS = {
+    'getRootNodes':      lambda p, adj, c: get_root_nodes(p['graph'], adj),
+    'getLeafNodes':      lambda p, adj, c: get_leaf_nodes(p['graph'], adj),
+    'getInputEdges':     lambda p, adj, c: get_input_edges(p['graph'], adj),
+    'getOutputEdges':    lambda p, adj, c: get_output_edges(p['graph'], adj),
+    'hasPath':           lambda p, adj, c: has_path(p['start'], p['end'], adj),
+    'parseExtractable':  lambda p, adj, c: parse_extractable(p['graph'], adj),
+    'compareConnections':lambda p, adj, c: compare_connections(c, p['next']),
+    'adjacencyKeys':     lambda p, adj, c: list(adj.keys()),
+}
+
 def run(impl, label):
     ok = tot = 0
     for f in sorted(glob.glob(os.path.join(ROOT, '*', 'case.json'))):
@@ -77,6 +168,9 @@ def run(impl, label):
                 got = impl(m, p['node'], p.get('type', 'main'), p.get('depth', -1))
             elif p['op'] == 'byDestination':
                 got = bd.get(p['node']) if p.get('node') else bd
+            elif impl is ref_gcn and p['op'] in GRAPH_OPS:
+                adj = build_adjacency_list(c['connections'])
+                got = GRAPH_OPS[p['op']](p, adj, c['connections'])
             else:
                 continue
             tot += 1
@@ -86,6 +180,6 @@ def run(impl, label):
     return ok == tot
 
 if __name__ == '__main__':
-    a = run(ref_gcn, 'spec §3 transcription')
+    a = run(ref_gcn, 'spec §3-§6 transcription')
     b = run(rust_gcn, 'crates/n8n-connection @ 8ed00851')
     sys.exit(0 if a else 1)

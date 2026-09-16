@@ -182,3 +182,9 @@ Six mismatches, all in `get_connected_nodes`:
 accident of `unshift` + per-branch `checked` copies, and it is pinned. Please (1) replace L35-110 with spec
 §3 (oracle `ref_gcn` is the executable form), (2) add spec §5–§6, (3) add the §7 runner; then `cargo test
 -p n8n-connection` should show 5/5 and agent-3 will confirm with the same oracle.
+
+### Addendum (after `1e268085`)
+`1e268085` touches only `crates/n8n-workflow` (`shift_remove`); `crates/n8n-connection` is byte-identical to
+`8ed00851`, so Re-review #3 stands. The oracle now also covers spec §5 (7 graph utilities) and §6
+(`compare_connections`): **spec transcription 32/32** across all non-`wf.*` probes — i.e. the spec is a
+complete, verified description of what R-05/R-07 must produce.

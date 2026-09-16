@@ -6,6 +6,7 @@
 | Executor | **Orchestrator on the VPS host** (`cargo test -p n8n-connection`). agent-3 does not touch `crates/**` (manifest boundary). |
 | Source of truth | n8n 2.9.4 `reference/n8n/packages/workflow/src/{common/**, graph/graph-utils.ts, connections-diff.ts, interfaces.ts}` — every algorithm below is transcribed from those files, with line refs |
 | Contract | `contracts/connection.contract.md` §1–§3, §8 |
+| Oracle | `python3 tests/reference/harness/tools/simulate-connection-port.py` — a literal Python transcription of §3–§6 that scores **32/32** on every non-`wf.*` probe of the 5 fixtures (no cargo needed). If the Rust port and the oracle disagree, diff the Rust against the oracle function of the same name. |
 | Acceptance | the 5 runtime-pinned fixtures `tests/reference/connection/{01..05}/{case,expected}.json` pass through the fixture runner in §7 — byte-identical JSON after canonicalisation |
 | Fixes | `docs/isolation/connection-rust-conformance.md` R-01, R-02, R-03, R-04, R-05 (R-06 is Agent 4's) |
 | Baseline reviewed | `crates/n8n-connection/src/lib.rs` @ `182df8de` (30 lines + 1 unit test) |
