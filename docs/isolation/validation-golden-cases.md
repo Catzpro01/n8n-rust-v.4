@@ -44,7 +44,9 @@ No side effects exist in this LEGO (pure functions) unless stated.
 | B4 | `tryToParseDateTime('1994-11-05T08:15:30-05:00', 'UTC')` | `DateTime` keeping `-05:00` (explicit zone wins) | — |
 | B5 | `tryToParseArray('{"a":1}')` | — | `Value is not a valid array` |
 | B6 | `tryToParseObject('[1]')` | — | `Value is not a valid object` |
-| B7 | `tryToParseUrl('not a url')` | — | `The value "not a url" is not a valid url.` |
+| B7 | `tryToParseUrl('not a url')` | — | `The value "https://not a url" is not a valid url.` (input without `://` is prefixed with `https://` **before** parsing and in the message) |
+| B7b | `tryToParseUrl('example.com/x')` | `'https://example.com/x'` (prefixed value is returned) | — |
+| B7c | `tryToParseUrl('javascript://x')` | — | `The value "javascript://x" is not a valid url.` (`ALLOWED_URL_PROTOCOLS` = `http:`, `https:`, `ftp:`, `file:`) |
 | B8 | `tryToParseJwt('')` | — | `The value "" is not a valid JWT token.` |
 | B9 | `tryToParseJsonToFormFields('not json')` | — | `Value is not valid JSON` |
 | B10 | `getValueDescription('s')` / `[1]` / `{a:1}` / `1` / `null` | `'s'` / `array` / `object` / `'1'` / `'null'` | — |
@@ -60,7 +62,7 @@ No side effects exist in this LEGO (pure functions) unless stated.
 | C5 | `INodeParametersSchema.safeParse('nope')` | `success: false` |
 | C6 | `NodeConnectionTypeSchema.safeParse('bogus')` | `success:false`, `issues[0].code === 'invalid_enum_value'` |
 
-## D. Rule enforcement (NEW CAPABILITY — spec, not yet implemented)
+## D. Rule enforcement (NEW CAPABILITY — implemented in `tests/reference/agent-4/validation/workflow-rules.ts`, all D cases pass)
 
 These are the target goldens for `validateWorkflow(workflow, { allowCycles })`. They are **not** reference
 behaviour (see `docs/isolation/validation.md` §2); the reference silently accepts all of D1–D4.
