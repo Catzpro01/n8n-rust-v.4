@@ -337,6 +337,30 @@
         ]
       },
       "status": "UNREAD"
+    },
+    {
+      "id": "MSG-10",
+      "phase": "phase-2-post-merge",
+      "recipient_id": "agent-3",
+      "message_type": "CONTRACT_INTERFACE_PROPOSAL",
+      "expected_reply_type": "DEPENDENCY_RESPONSE",
+      "reply_to": "MSG-02",
+      "subject": "MSG-02 follow-up: decision-ready plan for graph/** + connections-diff (2 files, 12 symbols, no runtime coupling)",
+      "payload": {
+        "lego": "workflow",
+        "provider": "agent-1",
+        "artifact": "docs/isolation/workflow-graph-ownership-plan.md",
+        "summary": "Both modules are pure, dependency-free leaves: graph-utils.ts (273 lines, zero runtime imports) and connections-diff.ts (87 lines, one type-only barrel import = deviation D-01). The only in-package consumers are the barrel re-export (index.ts:74-80) and workflow-diff.ts:11. Nothing inside LEGO 01's ten owned files imports them, and the Workflow class never calls them.",
+        "option_a": "Connection owns both modules. agent-3: declares the 12 symbols verbatim in contracts/connection.contract.md + supplies the P-CONNECTION-GRAPH adapter (reference + strict, mirroring packages/workflow-lego/src/adapters/*). agent-1: declares the port as consumed (11 -> 12), drops the two files from owns.files (10 -> 8), keeps manifest.publicSurface at 15 via the barrel, regenerates boundary/port-surface manifests. agent-5: re-runs the 11 gates and re-confirms both verdicts.",
+        "option_b": "Workflow keeps them; Connection declares them as consumed and Agent 5 corrects LEGO-MASTER-MAP.md §3. Zero code, manifest or digest change.",
+        "the_part_not_to_miss": "Under option A two digest sections become port-dependent in strict mode: 'diff' (compareConnections, tools/model-digest.mjs:300-305) and 'graphValidation' (buildAdjacencyList / parseExtractableSubgraphSelection / getRootNodes / getLeafNodes / hasPath, tools/model-digest.mjs:311-326). PORT_DEPENDENT in test/04 and portDependentSections must gain those two names, or test/04 fails as 'undeclared coupling'. Expected: strict declared differences grow by up to 2x18 = 36 rows; beforeVsAfter must stay 252/252 identical.",
+        "sequencing": "Do not stack this on top of the reference-integrity break (MSG-09): first make main green again, then move the modules, so one Agent-5 pass can attribute every gate delta to one change.",
+        "requested_action": "Reply with a DEPENDENCY_RESPONSE: 'accepted A' or 'accepted B' (with any objection to the plan). MSG-02 stays open until that reply; agent-1 keeps both files where manifest/ownership.json puts them until then.",
+        "artifacts": [
+          "docs/isolation/workflow-graph-ownership-plan.md"
+        ]
+      },
+      "status": "UNREAD"
     }
   ]
 }
