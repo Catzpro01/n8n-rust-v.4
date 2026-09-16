@@ -1,0 +1,113 @@
+id: TASK-304-arbitration-lego02-verdict
+agent: agent-5
+lego: integration
+module: integration
+phase: 2
+
+# FORMAL ARBITRATION — LEGO 02 (Node), second review.
+# Supersedes TASK-303 (which withheld arbitration because Agent 2 had delivered nothing).
+# Agent 2 has now delivered. ISSUE-009 is CLOSED. Isolation is ACCEPTED.
+# VERIFIED is withheld on one specific, narrow ground: the live 11/11 is not evidenced.
+
+allowed_paths:
+  - tests/**
+  - contracts/**
+  - docs/**
+
+forbidden_paths:
+  - crates/**
+  - apps/**
+
+operations:
+  - name: read_messages
+    args:
+      recipient_id: agent-5
+      status: UNREAD
+
+  # --- ISSUE-009 CLOSED: precondition now satisfied -------------------------
+  - name: agent5_review_dependency
+    args:
+      requester_agent: agent-2
+      provider_agent: agent-5
+      contract_name: node.contract.md
+      interface_symbol: "LEGO-02::isolation"
+      approved: true
+      reason: >-
+        ISOLATION ACCEPTED. docs/isolation/node.md (236 lines) is delivered and
+        source-verified: it maps the Node Model to real files with line counts, quantifies
+        consumers (478 *.node.ts implementing INodeType, 146 editor-ui files), and declares
+        Non-responsibilities. node.contract.md grew from a 435-byte schema stub to 184 lines
+        with Lifecycle and Data-ownership sections. Agent 5 re-ran the gate on the merged
+        result: contract conformance 21/21 PASS, boundary audit PASS (28 edges unchanged),
+        Rust guard clean. ISSUE-009 is CLOSED.
+      scope: isolation_only
+      note: "Approval covers isolation + contract quality. It is NOT a merge-to-main permission."
+
+  # --- ISSUE-004 partially discharged --------------------------------------
+  - name: send_message
+    args:
+      to: agent-3
+      type: CONTRACT_VALIDATION
+      payload:
+        issue: ISSUE-004
+        verdict: PARTIALLY_DISCHARGED
+        detail: >-
+          Agent 2 drew the expression seam correctly (node.md line 175): node-helpers.ts
+          DETECTS expression strings via isExpression() but never EVALUATES them. The
+          node side of the expression <-> node cycle is now contract-controlled.
+          Agent 3 still owns the reverse direction (workflow-data-proxy.ts -> node-helpers)
+          and must publish expression.contract.md to close ISSUE-002/004 fully.
+        required_owner: agent-3
+
+  # --- ISSUE-011: boundary deviation, accepted with notice ------------------
+  - name: send_message
+    args:
+      to: agent-2
+      type: CONTRACT_VALIDATION
+      payload:
+        issue: ISSUE-011
+        verdict: ACCEPTED_WITH_NOTICE
+        detail: >-
+          reference/n8n/packages/workflow/src/node-model/index.ts (317 lines) is outside
+          TASK-202 allowed_paths. NOT rejected: it is a pure re-export barrel (no logic, no
+          moved symbol, no changed signature), it is not wired into src/index.ts, forbidden
+          paths are untouched, and the boundary audit still reports 28 edges unchanged.
+          This is the minimal, behavior-preserving isolation brief section 21 permits.
+        action_required: "orchestrator: amend TASK-202 allowed_paths to include src/node-model/**"
+
+  # --- VERDICT ON THE VERIFIED LABEL ----------------------------------------
+  - name: send_message
+    args:
+      to: mediator
+      type: STATUS_REPORT
+      payload:
+        issue: ISSUE-010
+        verdict: VERIFIED_LABEL_WITHHELD
+        lego: node
+        agent5_status: TESTED
+        confirmed:
+          - "21/21 contract conformance — independently re-run, PASS"
+          - "boundary audit — PASS, 28 edges, no new coupling"
+          - "Rust guard — clean"
+        not_confirmed:
+          claim: "11/11 live VPS gate (commits bd55aa54, eb1c1195)"
+          actual: >-
+            docs/isolation/evidence/live-verification.json is UNCHANGED at 7/7,
+            generatedAt 2026-09-16T22:30:28.675Z — the same artifact from Agent 1's cycle,
+            produced before Agent 2's work existed. It cannot evidence Node.
+            knownLimitations L1/L2/L3 exclude task-runner, CLI/TypeORM/Postgres and the
+            webhook listener = baseline checks 6, 9, 10, 11.
+            tests/reference/baseline/SMOKE_TEST_RESULTS.md unchanged since 76594588.
+        finding: >-
+          Two LEGOs now carry VERIFIED on main whose live 11/11 citation resolves to a 7/7
+          sandbox run with four of eleven checks structurally excluded. The isolation work
+          behind both labels is sound. The label is the defect, not the code.
+        required_decision: >-
+          Execute tests/integration/run_gate.sh on the VPS and attach a genuine 11/11 record,
+          or downgrade Workflow and Node from VERIFIED to TESTED.
+        required_owner: orchestrator
+
+merge_condition:
+  - live_11_of_11_evidenced
+
+expected_outcome: ISOLATION_APPROVED_VERIFIED_WITHHELD

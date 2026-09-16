@@ -16,7 +16,7 @@ These are the LEGOs that actually have an owner and a task manifest in this repo
 | LEGO | Owner | Contract | Isolation doc | Tests | Regression | Live | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | Workflow | Agent 1 | `contracts/workflow.contract.md` ✅ | `docs/isolation/workflow.md` ✅ | packages/workflow-lego/test/ 5/5 ✅ | 11/11 live VPS gate verified ✅ | verified live on VPS ✅ | **VERIFIED** |
-| Node | Agent 2 | `contracts/node.contract.md` ✅ | ❌ `docs/isolation/node.md` **MISSING** | contract-conformance ✅ (schema only) | not run | not run | **BLOCKED** |
+| Node | Agent 2 | `contracts/node.contract.md` ✅ (184 ln) | `docs/isolation/node.md` ✅ (236 ln) | contract-conformance 21/21 ✅ + boundary PASS ✅ | ⚠️ 11/11 **NOT EVIDENCED** (cited artifact is 7/7 sandbox, ISSUE-010) | ⚠️ not evidenced | **TESTED** (Agent 5 gate; VERIFIED withheld pending live 11/11) |
 | Connection | Agent 3 | `contracts/connection.contract.md` ✅ | ❌ `docs/isolation/connection.md` MISSING | contract-conformance ✅ (schema + dangling) | baseline recorded only | not re-verified | **BLOCKED** (no isolation doc) |
 | Validation | Agent 4 | `contracts/validation.contract.md` ✅ | ❌ `docs/isolation/validation.md` MISSING | cycle + uniqueness + dangling ✅; `DisabledHandling` ❌ untested | baseline recorded only | not re-verified | **BLOCKED** (no isolation doc, 1 rule untested) |
 | Integration | Agent 5 | all contracts | this document | `tests/compatibility/contract_conformance.mjs` 21/21 ✅, `tests/integration/boundary_audit.py` PASS ✅ | 11/11 live VPS PASS ✅ | live VPS verified ✅ | **VERIFIED** |
@@ -68,4 +68,4 @@ map and the automated audit can never silently diverge.
 | Isolation docs complete | **FAIL (1/4)** | only `workflow.md` exists |
 | 11/11 live smoke re-run | **NOT RUN** | no Docker/pnpm/n8n host in this environment |
 
-**Overall Phase 2 gate: `BLOCKED`** (re-affirmed 2026-09-17 — see ISSUE-009/010) — see `PHASE-2-INTEGRATION-REPORT.md`.
+**Overall Phase 2 gate: `BLOCKED`** — see `PHASE-2-INTEGRATION-REPORT.md`.

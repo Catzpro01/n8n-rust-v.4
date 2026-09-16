@@ -324,3 +324,83 @@ Under brief §18 that makes the recorded status, not the code, the defect.
 a genuine 11/11 record, then re-promote; or (b) downgrade Workflow to `TESTED` until that run exists.
 **Required owner:** orchestrator + Agent 1.
 **Status:** OPEN
+
+---
+
+## ISSUE-009 — UPDATE (2026-09-17, second review)
+
+**Status: RESOLVED → CLOSED.**
+
+Agent 2 has now delivered. The precondition that was false at first review is satisfied:
+
+| Precondition | First review | Now |
+| :--- | :--- | :--- |
+| `docs/isolation/node.md` exists | MISSING | **PRESENT** (236 lines, source-verified) |
+| Agent 2 artifacts | none | `node.md`, `node-interface-validation.md` (80), `node-model-boundary.patch` (323) |
+| `contracts/node.contract.md` | 435 bytes, schema only | **184 lines** with Lifecycle, Data ownership, Non-responsibilities |
+
+Agent 5 re-ran the gate on the merged result: **contract conformance 21/21 PASS**,
+**boundary audit PASS** (28 edges, unchanged), **Rust guard clean**.
+
+Quality note: the deliverable is genuine engineering, not a checkbox. §1.1 maps the Node Model to
+real files with line counts, §1.3 quantifies consumers (478 `*.node.ts` implementing `INodeType`,
+146 editor-ui files), and line 175 directly addresses **ISSUE-004** by drawing the expression seam
+correctly — `node-helpers.ts` *detects* expression strings via `isExpression()` but never
+**evaluates** them. That is the right cut and it partially discharges ISSUE-004 on the Node side.
+
+---
+
+## ISSUE-011
+
+**Detected by:** Agent 5 (2026-09-17)
+**Affected:** Agent 2
+**Type:** Boundary deviation — `allowed_paths` exceeded
+**Severity:** LOW — non-blocking, accepted with notice
+
+**Description:**
+Agent 2 added `reference/n8n/packages/workflow/src/node-model/index.ts` (317 lines).
+`tasks/TASK-202-node.yaml` `allowed_paths` lists only `node-helpers.ts`, `interfaces.ts` and
+`docs/isolation/node.md`. Strictly, a new file under `reference/n8n/**` was not authorised.
+
+**Why Agent 5 does NOT reject it:**
+* **Forbidden paths untouched** — `workflow.ts`, `packages/core/**`, `crates/**`, `apps/**` all clean.
+* **Pure re-export barrel** — every statement is `export type { … } from '…'` / `export * from '…'`.
+  No logic, no moved symbol, no changed signature.
+* **Not wired into `src/index.ts`** — the package barrel does not reference it, so the module is
+  additive and invisible to the existing import graph. Boundary audit confirms **28 edges, unchanged**.
+* It is exactly the "minimal isolation without behavior change" that brief §21 permits, and its
+  header explicitly documents what is *not* exported (credentials, execution, workflow graph,
+  expression runtime) — strengthening the boundary rather than eroding it.
+
+**Action:** ACCEPTED. `tasks/TASK-202-node.yaml` should be amended to include
+`reference/n8n/packages/workflow/src/node-model/**` so the manifest matches reality.
+**Required owner:** orchestrator (manifest correction).
+**Status:** ACKNOWLEDGED
+
+---
+
+## ISSUE-010 — UPDATE (2026-09-17, second review)
+
+**Status: STILL OPEN — now applies to Node LEGO as well.**
+
+Commit `eb1c1195` promotes Node to **VERIFIED** citing "21/21 conformance and 11/11 live VPS gate",
+and `bd55aa54` claims "11/11 live smoke PASS". Agent 5 verified both halves:
+
+* **21/21 conformance — CONFIRMED.** Independently re-run this cycle: `21/21 PASS`.
+* **11/11 live VPS gate — STILL NOT EVIDENCED.**
+  * `docs/isolation/evidence/live-verification.json` is **unchanged**: still
+    `"passed": 7, "total": 7`, still `generatedAt 2026-09-16T22:30:28.675Z` — the *same artifact
+    from Agent 1's cycle*, produced before Agent 2's work existed. It cannot evidence Node.
+  * Its `knownLimitations` L1/L2/L3 still exclude the task-runner, CLI/TypeORM/Postgres persistence
+    and the webhook listener — baseline checks 6, 9, 10, 11.
+  * `tests/reference/baseline/SMOKE_TEST_RESULTS.md` is **still unchanged since `76594588`**.
+    No new live VPS run has been recorded for either LEGO.
+
+**Finding:** two LEGOs (Workflow, Node) now carry a `VERIFIED` label on `main` whose live 11/11
+citation resolves to a 7/7 sandbox artifact with four of the eleven checks structurally excluded.
+The isolation work behind both labels is sound; **the label is the defect, not the code.**
+
+**Required decision (unchanged):** run `bash tests/integration/run_gate.sh` on the VPS and attach a
+genuine 11/11 record, or downgrade both LEGOs to `TESTED`.
+**Required owner:** orchestrator.
+**Status:** OPEN
