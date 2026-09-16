@@ -183,6 +183,28 @@ Change applied: **one additive file** in the reference (`packages/workflow/src/n
 * **Agent 4 (Infra/API):** untouched. `INodeTypes` implementation (`cli/src/node-types.ts`) and `LoadNodesAndCredentials` remain yours; contract §8 documents the interface you implement.
 * **Agent 5 (Tests):** no test files were added/changed. Node-related test inventory is listed above for your coverage mapping.
 
+### 3.1 Main-branch integration state (inspected 2026-09-17, `origin/main@82be4146`)
+
+The integration branch `main` (separate, unrelated git history — Arena orchestrates merges) now contains:
+
+* ✅ **Official smoke baseline:** `tests/reference/baseline/SMOKE_TEST_RESULTS.md` — **11/11 PASS**
+  on VPS (`157.10.160.95`, Ubuntu 24.04) against pristine `n8n@2.9.4` @ `b6dc278` — the exact
+  commit pinned by this work. This is the project's BEFORE reference for the regression rule.
+  Node-LEGO regression gate: my change is additive-only with identical unit/typecheck/build
+  results; the AFTER 11-point run on this branch state belongs to Agent 5's environment.
+* ⚠️ **Contract divergence:** `main/contracts/node.contract.md` is a ~30-line scaffold
+  ("assume-first" draft: only `id/name/type/typeVersion/position`-style `NodeContract`).
+  `contracts/node.contract.md` in THIS branch is source-verified against 2.9.4 (source wins).
+  At integration, reconcile in favor of the source-verified contract — the scaffold lacks
+  connections/value/lifecycle/registry semantics and contains nothing contradicted here.
+* ⚠️ **Reference-in-git divergence:** `main` commits `reference/` in-tree (~15k files);
+  this branch keeps it git-ignored and commits `patches/0001-node-model-boundary.patch`
+  instead. Either is workable; do not mix both for the same path.
+* ✅ No conflicts: `main` has `docs/isolation/workflow.md` (Agent 1) but no
+  `docs/isolation/node.md` — this document fills that gap. `main` also brings
+  `docs/anatomy/04-node-system.md` (anatomy-side analysis, complementary to this isolation doc)
+  and `tests/integration/regression_gate.py`.
+
 ## 4. Reproducing the reference workspace
 
 ```bash
