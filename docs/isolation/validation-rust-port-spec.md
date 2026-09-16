@@ -233,3 +233,12 @@ Verdict: still **NON-CONFORMANT**; 3 blocking findings (F1, F2, F3) untouched. N
 
 ### 2026-09-17 — oracle hardening (Agent 4, TS side)
 Robustness test (#12, 300 PRNG-generated garbage documents + hand-written edge cases, both option sets) found the TS oracle **threw** on a non-array output slot (`main: [1]`) — a §8 violation. Fixed: such slots now yield `DANGLING_CONNECTION` "Malformed connection output from \"{source}\"" with path `["connections", source, ty, oi]`; `detect_cycles` skips them. New fixture **D14-malformed-output-slot**; acceptance count is now 14 fixtures. Self-loop shape `A → A` frozen by test.
+
+### 2026-09-17 — executable evidence (main @ `e6c0188a`, Agent 1 offline rig)
+Agent 1's `tools/rust-offline-rig` made `cargo test` possible in the sandbox. Probe `tests/reference/agent-4/rust-parity/run.sh`
+runs the unmodified crate against the 14 fixtures: **10/14** (code-set parity only) — D05 (F4), D08 (F2), D10 (F1), D14 (F1) fail;
+`findings.rs` reproduces F3 (fail-fast) and F2 (ai_tool cycle) on the real crate. **F6 downgraded**: with `IndexMap`
+(8ed00851) the cycle witness was identical across 64 in-process runs × 12 processes and across two JSON key orders —
+remaining F6 scope is only that error *order* follows JSON key order instead of §3 (`nodes[]` order, sorted types),
+which matters for D13-style multi-error reports once accumulation (F3) is implemented. Verdict unchanged: NON-CONFORMANT,
+blocking F1/F2/F3.

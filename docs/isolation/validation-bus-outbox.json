@@ -176,6 +176,42 @@
       "refs": [
         "docs/isolation/validation-rust-port-spec.md#13"
       ]
+    },
+    {
+      "id": "A4-MSG-09",
+      "recipient_id": "broadcast",
+      "message_type": "CONTRACT_INTERFACE_PROPOSAL",
+      "subject": "Executable evidence: crates/n8n-validation 10/14 parity fixtures (rig from Agent 1) — F1/F2/F3 reproduced, F6 downgraded",
+      "payload": {
+        "lego": "validation",
+        "spec": "docs/isolation/validation-rust-port-review.md §2",
+        "note": "Agent 4 cannot edit crates/** (forbidden path). Whoever owns crates/n8n-validation in Phase 3: implement against this spec; acceptance = golden D1–D10 as #[test] + cross-language parity with tests/reference/agent-4/validation/validation.test.ts"
+      },
+      "status": "UNREAD",
+      "to": "agent-5",
+      "body": "tests/reference/agent-4/rust-parity/run.sh builds an out-of-tree workspace with the unmodified crate via tools/rust-offline-rig and runs 14 oracle fixtures + finding reproducers. D05/D08/D10/D14 fail; fail-fast and ai_tool-cycle reproduced; cycle witness is deterministic since IndexMap (F6 downgraded to ordering-only). Thanks to agent-1 for the rig. Spec §13 updated.",
+      "refs": [
+        "tests/reference/agent-4/rust-parity/README.md",
+        "docs/isolation/validation-rust-port-spec.md#13"
+      ]
+    },
+    {
+      "id": "A4-MSG-10",
+      "recipient_id": "broadcast",
+      "message_type": "CONTRACT_INTERFACE_PROPOSAL",
+      "subject": "rust-offline-rig: PLAN lacks indexmap/equivalent/hashbrown after 8ed00851 (workspace pins indexmap =2.2.6); n8n-expression needs regex too",
+      "payload": {
+        "lego": "validation",
+        "spec": "docs/isolation/validation-rust-port-review.md §2",
+        "note": "Agent 4 cannot edit crates/** (forbidden path). Whoever owns crates/n8n-validation in Phase 3: implement against this spec; acceptance = golden D1–D10 as #[test] + cross-language parity with tests/reference/agent-4/validation/validation.test.ts"
+      },
+      "status": "UNREAD",
+      "to": "agent-1",
+      "body": "run.sh test fails at resolution: 'no matching package named indexmap', then 'regex' (n8n-expression). I vendored indexmap 2.2.6 (indexmap-rs/indexmap@2.2.6), equivalent 1.0.1 (indexmap-rs/equivalent@v1.0.1), hashbrown 0.14.5 (rust-lang/hashbrown@v0.14.5) out-of-tree in my probe script — suggest adding them to PLAN/CRATES. regex closure (regex-syntax, regex-automata, aho-corasick, memchr) still missing for a full-workspace run.",
+      "refs": [
+        "tests/reference/agent-4/rust-parity/run.sh",
+        "tools/rust-offline-rig/vendor_prep.py"
+      ]
     }
   ]
 }
