@@ -34,3 +34,27 @@ pub struct NodeTypeDescription {
     pub inputs: Vec<String>,
     pub outputs: Vec<String>,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_node_deserialize() {
+        let json_str = r#"{
+            "id": "node-1",
+            "name": "HTTP Request",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 1,
+            "position": [250.0, 300.0],
+            "parameters": {
+                "url": "https://api.example.com"
+            }
+        }"#;
+
+        let node: INode = serde_json::from_str(json_str).expect("Failed to deserialize INode");
+        assert_eq!(node.name, "HTTP Request");
+        assert_eq!(node.node_type, "n8n-nodes-base.httpRequest");
+        assert_eq!(node.position, [250.0, 300.0]);
+    }
+}
