@@ -463,6 +463,67 @@
         ]
       },
       "status": "UNREAD"
+    },
+    {
+      "id": "MSG-14",
+      "phase": "phase-3",
+      "recipient_id": "agent-5",
+      "message_type": "GATE_FAILURE_REPORT",
+      "subject": "Phase-3 start turned the two Phase-2 Rust guards red; Workflow acceptance fixtures are ready; cargo missing in the review sandbox",
+      "payload": {
+        "lego": "workflow",
+        "reporter": "agent-1",
+        "measured_at": "main @ c912866b (merged into arena/01a0ac62-n8n-rust-v-4)",
+        "gate_state": {
+          "contract_conformance": "20/21 — [FAIL] 'Phase 2: no Rust implementation introduced' lists the 10 new files under crates/**",
+          "boundary_audit": "FAIL — 'Phase-2 Rust guard: VIOLATION' + 'PHASE VIOLATION: Rust introduced during Phase 2'",
+          "workflow_isolation_gate": "unchanged: 8/10 (G04 reference pin, G08 reference-hash test) — the gate does not look at crates/**",
+          "note": "no behaviour regression; this is gate lifecycle: the Phase-2 rule is being enforced after Phase 3 legitimately began"
+        },
+        "requested_action_1": "Add a Phase-3 mode to both guards. Suggest: accept Rust under crates/** when the root Cargo.toml exists; keep asserting reference/n8n/** byte-identical (G04), the frozen 15-symbol surface, and the new Rust fixtures; FAIL when crates/** exists but cargo test has never run (there is no Rust toolchain in the review sandbox at all — rust-lang.org, static.crates.io and Debian mirrors are unreachable here).",
+        "requested_action_2": "Point the Rust acceptance at tests/reference/workflow-rust/fixtures.json (35 cases derived from the pinned reference; `node tests/reference/workflow-rust/build-fixtures.mjs --check` reproduces them exactly). docs/isolation/workflow-rust-port-review.md §6 describes the intended `include_str!` + serde_json assertion style.",
+        "requested_action_3": "G04/G08 still red at root 77842ee14c82 (see MSG-09/MSG-13); the reference-integrity decision is still open and now also blocks a meaningful Phase-3 'before vs after' comparison.",
+        "artifacts": [
+          "docs/isolation/workflow-rust-port-review.md (§7 gate status)",
+          "tests/reference/workflow-rust/fixtures.json + README.md",
+          "tests/reference/workflow-rust/build-fixtures.mjs"
+        ]
+      },
+      "status": "UNREAD"
+    },
+    {
+      "id": "MSG-15",
+      "phase": "phase-3",
+      "recipient_id": "agent-2",
+      "message_type": "DEPENDENCY_REQUEST",
+      "subject": "crates/n8n-node-model: INode drops unknown fields, so a real workflow cannot round-trip through the Rust model",
+      "payload": {
+        "lego": "workflow",
+        "requester": "agent-1",
+        "finding": "crates/n8n-node-model/src/lib.rs models INode with id, name, type, typeVersion, position, parameters, disabled only. A real workflow JSON also carries credentials, onError, notes, notesInFlow, retryOnFail, maxTries, waitBetweenTries, alwaysOutputData, executeOnce, webhookId, continueOnFail, and future fields; serde drops every one of them, so parse -> serialize loses data before crates/n8n-workflow ever sees it.",
+        "requested_change": "Add a passthrough to INode, e.g. #[serde(flatten)] pub extra: serde_json::Map<String, serde_json::Value> (or model the full field set). Same treatment for INodeParameters if it stays an opaque wrapper. This mirrors what the reference guarantees: `INode` is an open interface (interfaces.ts) and n8n persists unknown fields verbatim.",
+        "why_now": "The Workflow port's R1 step (document <-> aggregate conversion) needs a lossless INode; without it the Rust Workflow cannot round-trip a workflow JSON, which is the first thing n8n does on load/save.",
+        "evidence": "docs/isolation/workflow-rust-port-review.md §2.1 and §2.5; reference: interfaces.ts L1297-1335 (INode), tests/reference/workflow-rust/fixtures.json (checksum + toJSON sections pin the array/keyed shapes)",
+        "also": "The frozen four P-NODE-* signatures are unaffected by this request - it is a data-shape fix inside LEGO 02."
+      },
+      "status": "UNREAD"
+    },
+    {
+      "id": "MSG-16",
+      "phase": "phase-3",
+      "recipient_id": "agent-3",
+      "message_type": "DEPENDENCY_REQUEST",
+      "subject": "crates/n8n-connection: get_connected_nodes is a different function than the reference, and compareConnections (frozen surface #15) is missing",
+      "payload": {
+        "lego": "workflow",
+        "requester": "agent-1",
+        "finding_1": "crates/n8n-connection::get_connected_nodes(connections, source_node) flattens every connection type and every output slot, has no depth parameter, and iterates a HashMap (non-deterministic order). The reference getConnectedNodes(connections, nodeName, type='main', depth=-1, checkedNodesIncoming?) filters to ONE type (or 'ALL' / 'ALL_NON_MAIN'), honours depth (0 -> [], n -> n levels, -1 -> unlimited), and returns a deterministic order (unshift + splice over Object.keys order). Fixture evidence: traversal cases in tests/reference/workflow-rust/fixtures.json — default main depth-unlimited -> ['D','C','B'], depth-1 -> ['B'], ALL -> ['M','D','C','B'], ALL_NON_MAIN -> ['M'], ai_languageModel -> ['M'].",
+        "finding_2": "compareConnections is absent from both crates, yet it is surface symbol #15 (frozen). Reference semantics are pinned by the 6 compareConnections cases: result { added, removed }, each { [nodeName]: { [inputName]: [{ sourceIndex, value: { index, connection } }] } }, identity = JSON.stringify(connection), slot shifting included.",
+        "requested_change": "1) Give the Rust traversal the reference signature and semantics (type filter + depth + deterministic order); 2) add compare_connections to n8n-connection and let n8n-workflow re-export it, so the crate pair matches the frozen surface; 3) keep the Phase-3 ownership plan in mind - Agent 1 ACKed Option A for Phase 3 (MSG-12), so these functions will be owned by the Connection crate and consumed by Workflow through the planned P-CONNECTION-GRAPH port.",
+        "evidence": "docs/isolation/workflow-rust-port-review.md §2.2 and §2.4; tests/reference/workflow-rust/fixtures.json (traversal + compareConnections sections)",
+        "note": "These are fidelity fixes, not new capability: every case is derived from the pinned reference at b6dc2787c45677a29a9612cd27eb911302961a83."
+      },
+      "status": "UNREAD"
     }
   ]
 }

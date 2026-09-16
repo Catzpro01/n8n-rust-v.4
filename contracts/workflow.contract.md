@@ -172,7 +172,9 @@ to expect the stale-index answer to keep the reference behavior verifiable).
 * **Import/edit** — setters replace whole maps (`setNodes`, `setConnections`) or individual fields; `setConnections` always re-derives the destination index. (`workflow.ts:145-158`)
 * **Query** — traversal methods are pure reads over the two indexes; `getStartNode` is the entry point used by execution (out of this LEGO).
 * **Rename** — node object is copied to the new key, `name` is updated, the old key is deleted, then parameter references are rewritten via ports. (`workflow.ts:413-490`)
-* **Serialize** — `toJSON()` produces the persisted shape (`nodes` as an array, `connections`, `settings`, `staticData`, `pinData`); checksum is computed from this content. (`workflow.ts:136-137`, `workflow-checksum.ts`)
+* **Serialize** — **there is no serializer in this LEGO.** The reference `Workflow` class has **no `toJSON()`** (`grep -n toJSON workflow.ts` → no hits; measured 2026-09-17 and pinned by `tests/reference/workflow-rust/fixtures.json`). The persisted/API shape (`nodes` as an **array**, `connections`, `settings`, `staticData`, `pinData`) belongs to the entity/API layer outside this package; this LEGO owns only the **in-memory** shape (`nodes` keyed by name, both connection maps). One thing the LEGO does own content-wise is `calculateWorkflowChecksum`, which consumes a `WorkflowSnapshot` — a plain object whose `nodes` **is** an array (`workflow-checksum.ts:18-28`); the checksum's 9 whitelisted fields and the recursive key sorting are covered by `tests/reference/workflow-rust/fixtures.json` (`checksum` section).
+
+> **Self-audit correction (2026-09-17):** an earlier revision of this section claimed `toJSON()` existed here and cited `workflow.ts:136-137`. That was wrong — those lines are the constructor's `expression`/staticData setup. Corrected above; the Phase-3 Rust port must not model a serializer this LEGO never had.
 
 ## 9. Data ownership
 
