@@ -1,0 +1,41 @@
+{
+  "note": "Pinned boundary expectations. tools/workflow-boundary-map.mjs --check fails on any drift: a new or removed crossing/inbound edge means the LEGO boundary changed and must be re-declared in ownership.json.",
+  "capturedFrom": "reference/n8n/packages/workflow",
+  "capturedAt": "n8n 2.9.4 / commit b6dc2787c45677a29a9612cd27eb911302961a83",
+  "ownedFileCount": 10,
+  "crossings": [
+    "common/get-child-nodes -> interfaces",
+    "common/get-connected-nodes -> interfaces",
+    "common/get-node-by-name -> interfaces",
+    "common/get-parent-nodes -> interfaces",
+    "common/map-connections-by-destination -> interfaces",
+    "connections-diff -> index",
+    "graph/graph-utils -> interfaces",
+    "workflow -> constants",
+    "workflow -> errors/index",
+    "workflow -> expression",
+    "workflow -> global-state",
+    "workflow -> interfaces",
+    "workflow -> node-helpers",
+    "workflow -> node-parameters/rename-node-utils",
+    "workflow -> node-reference-parser-utils",
+    "workflow -> observable-object",
+    "workflow -> utils",
+    "workflow-checksum -> interfaces",
+    "workflow-checksum -> utils",
+    "workflow -> @n8n/errors",
+    "workflow-checksum -> jssha"
+  ],
+  "inbound": [
+    "expression -> workflow",
+    "index -> common/index",
+    "index -> graph/graph-utils",
+    "index -> workflow",
+    "index -> workflow-checksum",
+    "interfaces -> workflow",
+    "node-helpers -> workflow",
+    "workflow-data-proxy -> workflow",
+    "workflow-diff -> connections-diff"
+  ],
+  "undeclaredAllowed": 0
+}

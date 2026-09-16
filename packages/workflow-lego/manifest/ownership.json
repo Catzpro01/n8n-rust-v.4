@@ -1,0 +1,309 @@
+{
+  "$schema": "./ownership.schema.json",
+  "lego": "workflow",
+  "phase": "phase-2-isolation",
+  "reference": {
+    "pinnedVersion": "2.9.4",
+    "pinnedCommit": "b6dc2787c45677a29a9612cd27eb911302961a83",
+    "sourceRoot": "reference/n8n/packages/workflow",
+    "artifact": "n8n-workflow@2.9.1",
+    "rules": [
+      "reference/n8n/** is read-only. The isolation layer must never modify or duplicate-and-diverge it.",
+      "Ownership is declared here and enforced by tools/workflow-boundary-map.mjs (drift gate)."
+    ]
+  },
+  "owns": {
+    "description": "Workflow structure, node collection, connections, adjacency indexes and graph validation. Nothing else.",
+    "files": [
+      "workflow",
+      "common/index",
+      "common/get-child-nodes",
+      "common/get-connected-nodes",
+      "common/get-node-by-name",
+      "common/get-parent-nodes",
+      "common/map-connections-by-destination",
+      "graph/graph-utils",
+      "connections-diff",
+      "workflow-checksum"
+    ],
+    "responsibilities": [
+      "workflow aggregate (Workflow class: nodes, connections, settings, staticData, pinData, active)",
+      "node collection modelled as an object keyed by node name",
+      "connections by source node and by destination node (adjacency indexes)",
+      "graph traversal (child/parent/connected nodes, depth, BFS, highest node, start node)",
+      "connection diffing and workflow content checksum",
+      "extractable-subgraph / adjacency validation helpers"
+    ]
+  },
+  "doesNotOwn": {
+    "description": "Explicitly outside the Workflow LEGO. Consumed through declared ports only.",
+    "items": [
+      {
+        "artifact": "node-helpers",
+        "owner": "LEGO 02 \u2014 Node Model",
+        "reason": "node parameter defaults, output/input resolution"
+      },
+      {
+        "artifact": "node-parameters/rename-node-utils",
+        "owner": "LEGO 02 \u2014 Node Model",
+        "reason": "node parameter rewrite helpers"
+      },
+      {
+        "artifact": "node-reference-parser-utils",
+        "owner": "LEGO 02 \u2014 Node Model",
+        "reason": "node reference / access pattern rewriting"
+      },
+      {
+        "artifact": "node-validation",
+        "owner": "LEGO 04 \u2014 Validation",
+        "reason": "node parameter validation"
+      },
+      {
+        "artifact": "workflow-validation",
+        "owner": "LEGO 04 \u2014 Validation",
+        "reason": "workflow level validation rules"
+      },
+      {
+        "artifact": "expression, expressions/**, workflow-data-proxy*",
+        "owner": "runtime \u2014 out of scope for Phase 2",
+        "reason": "expression evaluation runtime"
+      },
+      {
+        "artifact": "execution-context*, run-execution-data*",
+        "owner": "execution \u2014 out of scope for Phase 2",
+        "reason": "execution data model"
+      },
+      {
+        "artifact": "persistence, webhook runtime, scheduler, queue",
+        "owner": "other packages (n8n-core, packages/cli)",
+        "reason": "not present in this package; must not leak into the model"
+      }
+    ]
+  },
+  "sharedKernel": {
+    "description": "Cross-LEGO vocabulary and utilities. Not owned by this LEGO; consumed through kernel ports and frozen by contract.",
+    "files": [
+      "interfaces",
+      "constants",
+      "utils",
+      "observable-object",
+      "global-state",
+      "errors/index",
+      "errors/**",
+      "data-table.types",
+      "deferred-promise"
+    ]
+  },
+  "deviations": [
+    {
+      "id": "D-01",
+      "file": "connections-diff",
+      "edge": "connections-diff -> index",
+      "kind": "type-only import from the package barrel ('.') instead of './interfaces'",
+      "impact": "creates a type-level cycle with the barrel; no runtime edge (import type only)",
+      "handling": "normalized to port P-KERNEL-TYPES by tools/workflow-isolation-extract.mjs",
+      "upstreamFix": "NOT applied \u2014 reference/n8n/** is read-only in this phase"
+    }
+  ],
+  "ports": [
+    {
+      "id": "P-KERNEL-TYPES",
+      "role": "shared-kernel",
+      "provides": "type vocabulary (INode, INodes, IConnections, IConnection, IPinData, IWorkflowSettings, NodeConnectionType) + NodeConnectionTypes value",
+      "referenceTargets": [
+        "interfaces"
+      ],
+      "adapter": "src/ports/vocabulary.ts",
+      "replaces": [
+        "interfaces"
+      ]
+    },
+    {
+      "id": "P-KERNEL-CONSTANTS",
+      "role": "shared-kernel",
+      "provides": "STARTING_NODE_TYPES, MANUAL_CHAT_TRIGGER_LANGCHAIN_NODE_TYPE, NODES_WITH_RENAMABLE_*",
+      "referenceTargets": [
+        "constants"
+      ],
+      "adapter": "src/ports/constants.ts",
+      "replaces": [
+        "constants"
+      ]
+    },
+    {
+      "id": "P-KERNEL-ERRORS",
+      "role": "shared-kernel",
+      "provides": "ApplicationError, UserError",
+      "referenceTargets": [
+        "errors/index",
+        "@n8n/errors"
+      ],
+      "adapter": "src/ports/errors.ts",
+      "replaces": [
+        "errors/index",
+        "@n8n/errors"
+      ]
+    },
+    {
+      "id": "P-KERNEL-UTILS",
+      "role": "shared-kernel",
+      "provides": "dedupe, isObject",
+      "referenceTargets": [
+        "utils"
+      ],
+      "adapter": "src/ports/utils.ts",
+      "replaces": [
+        "utils"
+      ]
+    },
+    {
+      "id": "P-KERNEL-OBSERVABLE",
+      "role": "shared-kernel",
+      "provides": "ObservableObject.create (static data change tracking)",
+      "referenceTargets": [
+        "observable-object"
+      ],
+      "adapter": "src/ports/observable-object.ts",
+      "replaces": [
+        "observable-object"
+      ]
+    },
+    {
+      "id": "P-KERNEL-CONFIG",
+      "role": "shared-kernel",
+      "provides": "default timezone (global state)",
+      "referenceTargets": [
+        "global-state"
+      ],
+      "adapter": "src/ports/config.ts",
+      "replaces": [
+        "global-state"
+      ]
+    },
+    {
+      "id": "P-NODE-MODEL",
+      "role": "peer-lego",
+      "owner": "LEGO 02 \u2014 Node Model",
+      "provides": "getNodeParameters, getNodeOutputs",
+      "referenceTargets": [
+        "node-helpers"
+      ],
+      "adapter": "src/ports/node-model.ts",
+      "replaces": [
+        "node-helpers"
+      ]
+    },
+    {
+      "id": "P-NODE-RENAME",
+      "role": "peer-lego",
+      "owner": "LEGO 02 \u2014 Node Model",
+      "provides": "renameFormFields",
+      "referenceTargets": [
+        "node-parameters/rename-node-utils"
+      ],
+      "adapter": "src/ports/node-rename.ts",
+      "replaces": [
+        "node-parameters/rename-node-utils"
+      ]
+    },
+    {
+      "id": "P-NODE-REFERENCE",
+      "role": "peer-lego",
+      "owner": "LEGO 02 \u2014 Node Model",
+      "provides": "applyAccessPatterns",
+      "referenceTargets": [
+        "node-reference-parser-utils"
+      ],
+      "adapter": "src/ports/node-reference.ts",
+      "replaces": [
+        "node-reference-parser-utils"
+      ]
+    },
+    {
+      "id": "P-EXPRESSION-RUNTIME",
+      "role": "runtime",
+      "owner": "runtime \u2014 out of scope for Phase 2",
+      "provides": "Expression instance attached to a workflow",
+      "referenceTargets": [
+        "expression"
+      ],
+      "adapter": "src/ports/expression-runtime.ts",
+      "replaces": [
+        "expression"
+      ]
+    },
+    {
+      "id": "P-EXTERNAL-JSSHA",
+      "role": "third-party",
+      "provides": "SHA-256 fallback used by workflow-checksum when WebCrypto is unavailable",
+      "referenceTargets": [
+        "jssha"
+      ],
+      "adapter": "src/ports/checksum-digest.ts",
+      "replaces": [
+        "jssha"
+      ]
+    }
+  ],
+  "publicSurface": {
+    "description": "The only symbols downstream LEGOs may consume from this LEGO. Everything else is internal.",
+    "aggregate": [
+      "Workflow"
+    ],
+    "graph": [
+      "getChildNodes",
+      "getParentNodes",
+      "getConnectedNodes",
+      "getNodeByName",
+      "mapConnectionsByDestination",
+      "buildAdjacencyList",
+      "parseExtractableSubgraphSelection",
+      "getRootNodes",
+      "getLeafNodes",
+      "hasPath",
+      "getInputEdges",
+      "getOutputEdges"
+    ],
+    "content": [
+      "calculateWorkflowChecksum",
+      "compareConnections"
+    ],
+    "types": [
+      "INode",
+      "INodes",
+      "IConnections",
+      "IConnection",
+      "IConnectedNode",
+      "INodeConnection",
+      "IPinData",
+      "IWorkflowSettings",
+      "NodeConnectionType",
+      "NodeConnectionTypes",
+      "IConnectionAdjacencyList",
+      "ExtractableSubgraphData",
+      "ExtractableErrorResult",
+      "ConnectionsDiff",
+      "INodeConnectionsDiff",
+      "WorkflowSnapshot",
+      "WorkflowParameters"
+    ]
+  },
+  "extraction": {
+    "note": "Canonical module id (relative to reference/n8n/packages/workflow/src, extension-less, directory imports resolve to <dir>/index) or external package name -> port module. Keys of the form '<file>|<moduleId>' are file-scoped and must be backed by a declared deviation.",
+    "portSpecifiers": {
+      "interfaces": "@lego/ports/vocabulary",
+      "constants": "@lego/ports/constants",
+      "errors/index": "@lego/ports/errors",
+      "@n8n/errors": "@lego/ports/errors",
+      "utils": "@lego/ports/utils",
+      "observable-object": "@lego/ports/observable-object",
+      "global-state": "@lego/ports/config",
+      "node-helpers": "@lego/ports/node-model",
+      "node-parameters/rename-node-utils": "@lego/ports/node-rename",
+      "node-reference-parser-utils": "@lego/ports/node-reference",
+      "expression": "@lego/ports/expression-runtime",
+      "jssha": "@lego/ports/checksum-digest",
+      "connections-diff|index": "@lego/ports/vocabulary"
+    }
+  }
+}

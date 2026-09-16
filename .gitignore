@@ -1,0 +1,11 @@
+# generated / local-only artifacts
+
+# isolated unit produced by tools/workflow-isolation-extract.mjs (reproducible)
+packages/workflow-lego/.extract/
+
+# verification runtime (scripts/setup-reference-runtime.sh)
+.runtime/
+
+node_modules/
+*.log
+.DS_Store

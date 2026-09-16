@@ -1,0 +1,1381 @@
+{
+  "generatedAt": "2026-09-16T21:37:25.037Z",
+  "corpus": {
+    "workflows": [
+      "tests/reference/01-empty-workflow/workflow",
+      "tests/reference/02-one-node/workflow",
+      "tests/reference/03-linear/workflow",
+      "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/ai-news-digest",
+      "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/daily-weather-report",
+      "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/email-summary",
+      "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/extract-from-file",
+      "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/google-sheets-processing",
+      "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/invoice-pipeline",
+      "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/lead-qualification",
+      "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/multi-agent-research",
+      "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/rag-assistant",
+      "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/youtube-auto-chapters",
+      "workflow-sdk/test-fixtures/committed-workflows/0",
+      "workflow-sdk/test-fixtures/committed-workflows/1",
+      "workflow-sdk/test-fixtures/committed-workflows/2",
+      "workflow-sdk/test-fixtures/committed-workflows/3",
+      "workflow-sdk/test-fixtures/committed-workflows/4"
+    ],
+    "workflowCount": 18,
+    "sectionCount": 14,
+    "hashAlgorithm": "sha256/32",
+    "rawDigestsLocation": "temporary — recompute with: node tools/model-digest-runner.cjs --source reference|isolated [--mode reference|strict]"
+  },
+  "portDependentSections": [
+    "nodeParameters",
+    "rename"
+  ],
+  "comparisons": {
+    "beforeVsAfter": {
+      "identical": 252,
+      "differing": []
+    },
+    "strictVsBefore": {
+      "identical": 218,
+      "differingPortDependent": [
+        "tests/reference/01-empty-workflow/workflow::rename",
+        "tests/reference/02-one-node/workflow::nodeParameters",
+        "tests/reference/02-one-node/workflow::rename",
+        "tests/reference/03-linear/workflow::nodeParameters",
+        "tests/reference/03-linear/workflow::rename",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/ai-news-digest::nodeParameters",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/ai-news-digest::rename",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/daily-weather-report::nodeParameters",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/daily-weather-report::rename",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/email-summary::nodeParameters",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/email-summary::rename",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/extract-from-file::nodeParameters",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/extract-from-file::rename",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/google-sheets-processing::nodeParameters",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/google-sheets-processing::rename",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/invoice-pipeline::nodeParameters",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/invoice-pipeline::rename",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/lead-qualification::nodeParameters",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/lead-qualification::rename",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/multi-agent-research::nodeParameters",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/multi-agent-research::rename",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/rag-assistant::nodeParameters",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/rag-assistant::rename",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/youtube-auto-chapters::nodeParameters",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/youtube-auto-chapters::rename",
+        "workflow-sdk/test-fixtures/committed-workflows/0::nodeParameters",
+        "workflow-sdk/test-fixtures/committed-workflows/0::rename",
+        "workflow-sdk/test-fixtures/committed-workflows/1::nodeParameters",
+        "workflow-sdk/test-fixtures/committed-workflows/1::rename",
+        "workflow-sdk/test-fixtures/committed-workflows/2::nodeParameters",
+        "workflow-sdk/test-fixtures/committed-workflows/2::rename",
+        "workflow-sdk/test-fixtures/committed-workflows/3::nodeParameters",
+        "workflow-sdk/test-fixtures/committed-workflows/3::rename",
+        "workflow-sdk/test-fixtures/committed-workflows/4::rename"
+      ],
+      "differingUndeclared": []
+    },
+    "sections": {
+      "tests/reference/01-empty-workflow/workflow": {
+        "construction": {
+          "before": "4062edaf750fb8074e7e83e0c9028c94",
+          "after": "4062edaf750fb8074e7e83e0c9028c94",
+          "strict": "4062edaf750fb8074e7e83e0c9028c94"
+        },
+        "structure": {
+          "before": "05de673e45d06d35a2cd923e2a00c451",
+          "after": "05de673e45d06d35a2cd923e2a00c451",
+          "strict": "05de673e45d06d35a2cd923e2a00c451"
+        },
+        "nodeParameters": {
+          "before": "4f53cda18c2baa0c0354bb5f9a3ecbe5",
+          "after": "4f53cda18c2baa0c0354bb5f9a3ecbe5",
+          "strict": "4f53cda18c2baa0c0354bb5f9a3ecbe5"
+        },
+        "connections": {
+          "before": "9d386d7409c820a73a95ee6e72d465f8",
+          "after": "9d386d7409c820a73a95ee6e72d465f8",
+          "strict": "9d386d7409c820a73a95ee6e72d465f8"
+        },
+        "pinData": {
+          "before": "4f53cda18c2baa0c0354bb5f9a3ecbe5",
+          "after": "4f53cda18c2baa0c0354bb5f9a3ecbe5",
+          "strict": "4f53cda18c2baa0c0354bb5f9a3ecbe5"
+        },
+        "staticData": {
+          "before": "341c921dd87eaaa98e550d584d7486a7",
+          "after": "341c921dd87eaaa98e550d584d7486a7",
+          "strict": "341c921dd87eaaa98e550d584d7486a7"
+        },
+        "traversal": {
+          "before": "44136fa355b3678a1146ad16f7e8649e",
+          "after": "44136fa355b3678a1146ad16f7e8649e",
+          "strict": "44136fa355b3678a1146ad16f7e8649e"
+        },
+        "triggers": {
+          "before": "df557534804944fdda55132a9a646ff5",
+          "after": "df557534804944fdda55132a9a646ff5",
+          "strict": "df557534804944fdda55132a9a646ff5"
+        },
+        "indexes": {
+          "before": "44136fa355b3678a1146ad16f7e8649e",
+          "after": "44136fa355b3678a1146ad16f7e8649e",
+          "strict": "44136fa355b3678a1146ad16f7e8649e"
+        },
+        "rename": {
+          "before": "09483f37c5962a98e22cc23477ac74fb",
+          "after": "09483f37c5962a98e22cc23477ac74fb",
+          "strict": "676669fdfaa1a6b09142f5d0a4aada0a"
+        },
+        "setters": {
+          "before": "fdfc3b096ff31db3bf5fe4738e8396cc",
+          "after": "fdfc3b096ff31db3bf5fe4738e8396cc",
+          "strict": "fdfc3b096ff31db3bf5fe4738e8396cc"
+        },
+        "checksum": {
+          "before": "f2203c034688d6c885ab77b39df35a4b",
+          "after": "f2203c034688d6c885ab77b39df35a4b",
+          "strict": "f2203c034688d6c885ab77b39df35a4b"
+        },
+        "diff": {
+          "before": "b7ed72a4c3de113edec739b81e05ed87",
+          "after": "b7ed72a4c3de113edec739b81e05ed87",
+          "strict": "b7ed72a4c3de113edec739b81e05ed87"
+        },
+        "graphValidation": {
+          "before": "f0ccd30a89868cda38ccb32ffbe17b77",
+          "after": "f0ccd30a89868cda38ccb32ffbe17b77",
+          "strict": "f0ccd30a89868cda38ccb32ffbe17b77"
+        }
+      },
+      "tests/reference/02-one-node/workflow": {
+        "construction": {
+          "before": "4062edaf750fb8074e7e83e0c9028c94",
+          "after": "4062edaf750fb8074e7e83e0c9028c94",
+          "strict": "4062edaf750fb8074e7e83e0c9028c94"
+        },
+        "structure": {
+          "before": "2c9b87affc5a3baca0ad395f44a41792",
+          "after": "2c9b87affc5a3baca0ad395f44a41792",
+          "strict": "2c9b87affc5a3baca0ad395f44a41792"
+        },
+        "nodeParameters": {
+          "before": "4435021acaad1d5606f8020cfc9d25da",
+          "after": "4435021acaad1d5606f8020cfc9d25da",
+          "strict": "a396f1f445020b1907eefb422c8e3d7c"
+        },
+        "connections": {
+          "before": "9d386d7409c820a73a95ee6e72d465f8",
+          "after": "9d386d7409c820a73a95ee6e72d465f8",
+          "strict": "9d386d7409c820a73a95ee6e72d465f8"
+        },
+        "pinData": {
+          "before": "1aa9e5e41b813afba5ea059945521226",
+          "after": "1aa9e5e41b813afba5ea059945521226",
+          "strict": "1aa9e5e41b813afba5ea059945521226"
+        },
+        "staticData": {
+          "before": "8d7a2236961ddfe6be0b8aeadecc28e2",
+          "after": "8d7a2236961ddfe6be0b8aeadecc28e2",
+          "strict": "8d7a2236961ddfe6be0b8aeadecc28e2"
+        },
+        "traversal": {
+          "before": "3e299552cc0add253d44442b696d1518",
+          "after": "3e299552cc0add253d44442b696d1518",
+          "strict": "3e299552cc0add253d44442b696d1518"
+        },
+        "triggers": {
+          "before": "634216f881d30890a0c04683afebd7cf",
+          "after": "634216f881d30890a0c04683afebd7cf",
+          "strict": "634216f881d30890a0c04683afebd7cf"
+        },
+        "indexes": {
+          "before": "44136fa355b3678a1146ad16f7e8649e",
+          "after": "44136fa355b3678a1146ad16f7e8649e",
+          "strict": "44136fa355b3678a1146ad16f7e8649e"
+        },
+        "rename": {
+          "before": "dc1592378d346486cc728aab463d9900",
+          "after": "dc1592378d346486cc728aab463d9900",
+          "strict": "7aa7b73546dbf7380f46e402ef826cb0"
+        },
+        "setters": {
+          "before": "d547666289585719d68bb64e1586b0be",
+          "after": "d547666289585719d68bb64e1586b0be",
+          "strict": "d547666289585719d68bb64e1586b0be"
+        },
+        "checksum": {
+          "before": "d7e76938e345082cb279ed7f9555f17a",
+          "after": "d7e76938e345082cb279ed7f9555f17a",
+          "strict": "d7e76938e345082cb279ed7f9555f17a"
+        },
+        "diff": {
+          "before": "b7ed72a4c3de113edec739b81e05ed87",
+          "after": "b7ed72a4c3de113edec739b81e05ed87",
+          "strict": "b7ed72a4c3de113edec739b81e05ed87"
+        },
+        "graphValidation": {
+          "before": "390138ef25b68835b7e856de3d526c53",
+          "after": "390138ef25b68835b7e856de3d526c53",
+          "strict": "390138ef25b68835b7e856de3d526c53"
+        }
+      },
+      "tests/reference/03-linear/workflow": {
+        "construction": {
+          "before": "4062edaf750fb8074e7e83e0c9028c94",
+          "after": "4062edaf750fb8074e7e83e0c9028c94",
+          "strict": "4062edaf750fb8074e7e83e0c9028c94"
+        },
+        "structure": {
+          "before": "c476b518998b6a6e30678d5028deb3aa",
+          "after": "c476b518998b6a6e30678d5028deb3aa",
+          "strict": "c476b518998b6a6e30678d5028deb3aa"
+        },
+        "nodeParameters": {
+          "before": "e8656c04add09e9960526b652d79c3de",
+          "after": "e8656c04add09e9960526b652d79c3de",
+          "strict": "a9f8b28e1e98118c46793d94aae6239b"
+        },
+        "connections": {
+          "before": "2c9fe1baabd7ab1dd0cb5eab855c8046",
+          "after": "2c9fe1baabd7ab1dd0cb5eab855c8046",
+          "strict": "2c9fe1baabd7ab1dd0cb5eab855c8046"
+        },
+        "pinData": {
+          "before": "e940d4c6c64f40a5918ce7a7fb740140",
+          "after": "e940d4c6c64f40a5918ce7a7fb740140",
+          "strict": "e940d4c6c64f40a5918ce7a7fb740140"
+        },
+        "staticData": {
+          "before": "96d83fd3556a302c7c5e2cc041a10432",
+          "after": "96d83fd3556a302c7c5e2cc041a10432",
+          "strict": "96d83fd3556a302c7c5e2cc041a10432"
+        },
+        "traversal": {
+          "before": "535a9eb93d029f518a4036708a4e113f",
+          "after": "535a9eb93d029f518a4036708a4e113f",
+          "strict": "535a9eb93d029f518a4036708a4e113f"
+        },
+        "triggers": {
+          "before": "842e0695b41f2a1482334edbe47f2996",
+          "after": "842e0695b41f2a1482334edbe47f2996",
+          "strict": "842e0695b41f2a1482334edbe47f2996"
+        },
+        "indexes": {
+          "before": "c151aa6511f568f4d85e827fdd1b63d3",
+          "after": "c151aa6511f568f4d85e827fdd1b63d3",
+          "strict": "c151aa6511f568f4d85e827fdd1b63d3"
+        },
+        "rename": {
+          "before": "37be8ca4f52d276c5b490872961ff0f4",
+          "after": "37be8ca4f52d276c5b490872961ff0f4",
+          "strict": "da88df54436816edf5b36d07c1c7d922"
+        },
+        "setters": {
+          "before": "68adb8731d2fc11805e1f492737b4710",
+          "after": "68adb8731d2fc11805e1f492737b4710",
+          "strict": "68adb8731d2fc11805e1f492737b4710"
+        },
+        "checksum": {
+          "before": "4bdc5d445c74f5b9863e7832cb59d9fd",
+          "after": "4bdc5d445c74f5b9863e7832cb59d9fd",
+          "strict": "4bdc5d445c74f5b9863e7832cb59d9fd"
+        },
+        "diff": {
+          "before": "b7ed72a4c3de113edec739b81e05ed87",
+          "after": "b7ed72a4c3de113edec739b81e05ed87",
+          "strict": "b7ed72a4c3de113edec739b81e05ed87"
+        },
+        "graphValidation": {
+          "before": "ea243e8ff912189f2238dab759138144",
+          "after": "ea243e8ff912189f2238dab759138144",
+          "strict": "ea243e8ff912189f2238dab759138144"
+        }
+      },
+      "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/ai-news-digest": {
+        "construction": {
+          "before": "4062edaf750fb8074e7e83e0c9028c94",
+          "after": "4062edaf750fb8074e7e83e0c9028c94",
+          "strict": "4062edaf750fb8074e7e83e0c9028c94"
+        },
+        "structure": {
+          "before": "4bf728dea2811915de4fead2c3cc1854",
+          "after": "4bf728dea2811915de4fead2c3cc1854",
+          "strict": "4bf728dea2811915de4fead2c3cc1854"
+        },
+        "nodeParameters": {
+          "before": "c5ce7ee5dc57a9d11de9d4b2252f6855",
+          "after": "c5ce7ee5dc57a9d11de9d4b2252f6855",
+          "strict": "deaea38c35e97faddb21b7042709d574"
+        },
+        "connections": {
+          "before": "0c9fc8a8b67c90929caea38a1079994c",
+          "after": "0c9fc8a8b67c90929caea38a1079994c",
+          "strict": "0c9fc8a8b67c90929caea38a1079994c"
+        },
+        "pinData": {
+          "before": "d8c1282ea0d3cb60918cf19677cb4ac4",
+          "after": "d8c1282ea0d3cb60918cf19677cb4ac4",
+          "strict": "d8c1282ea0d3cb60918cf19677cb4ac4"
+        },
+        "staticData": {
+          "before": "ab0233d5591dfd0237181b35a51ab9e2",
+          "after": "ab0233d5591dfd0237181b35a51ab9e2",
+          "strict": "ab0233d5591dfd0237181b35a51ab9e2"
+        },
+        "traversal": {
+          "before": "f94191b91353749aef23ef2decb2a621",
+          "after": "f94191b91353749aef23ef2decb2a621",
+          "strict": "f94191b91353749aef23ef2decb2a621"
+        },
+        "triggers": {
+          "before": "afbe7b674f9354821474f286de5d45f1",
+          "after": "afbe7b674f9354821474f286de5d45f1",
+          "strict": "afbe7b674f9354821474f286de5d45f1"
+        },
+        "indexes": {
+          "before": "90a5e353112ee76d57e51cfa3398349d",
+          "after": "90a5e353112ee76d57e51cfa3398349d",
+          "strict": "90a5e353112ee76d57e51cfa3398349d"
+        },
+        "rename": {
+          "before": "43bde54a54fac56a7f8f6adf95be3b21",
+          "after": "43bde54a54fac56a7f8f6adf95be3b21",
+          "strict": "3be3231ce406202b48f94ad8f8f1d246"
+        },
+        "setters": {
+          "before": "6327232df49aba1b1d2f8175de957fcc",
+          "after": "6327232df49aba1b1d2f8175de957fcc",
+          "strict": "6327232df49aba1b1d2f8175de957fcc"
+        },
+        "checksum": {
+          "before": "2c468268621034f72933788ede60bf71",
+          "after": "2c468268621034f72933788ede60bf71",
+          "strict": "2c468268621034f72933788ede60bf71"
+        },
+        "diff": {
+          "before": "b7ed72a4c3de113edec739b81e05ed87",
+          "after": "b7ed72a4c3de113edec739b81e05ed87",
+          "strict": "b7ed72a4c3de113edec739b81e05ed87"
+        },
+        "graphValidation": {
+          "before": "3cc6e3b8aefed09f221e1e3b06dee48a",
+          "after": "3cc6e3b8aefed09f221e1e3b06dee48a",
+          "strict": "3cc6e3b8aefed09f221e1e3b06dee48a"
+        }
+      },
+      "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/daily-weather-report": {
+        "construction": {
+          "before": "4062edaf750fb8074e7e83e0c9028c94",
+          "after": "4062edaf750fb8074e7e83e0c9028c94",
+          "strict": "4062edaf750fb8074e7e83e0c9028c94"
+        },
+        "structure": {
+          "before": "8d9ce1da0972ce04bf9d873beddbcc78",
+          "after": "8d9ce1da0972ce04bf9d873beddbcc78",
+          "strict": "8d9ce1da0972ce04bf9d873beddbcc78"
+        },
+        "nodeParameters": {
+          "before": "43fb69f028a1dab699e20c2f0df6abd5",
+          "after": "43fb69f028a1dab699e20c2f0df6abd5",
+          "strict": "50f774841f856065c4b9407968745915"
+        },
+        "connections": {
+          "before": "7b5bb40aa9d15174c65c5e2b4b13d781",
+          "after": "7b5bb40aa9d15174c65c5e2b4b13d781",
+          "strict": "7b5bb40aa9d15174c65c5e2b4b13d781"
+        },
+        "pinData": {
+          "before": "af3e276da141bc740ee8162c2c67f371",
+          "after": "af3e276da141bc740ee8162c2c67f371",
+          "strict": "af3e276da141bc740ee8162c2c67f371"
+        },
+        "staticData": {
+          "before": "cabbcae93966050d24dfd5fa0480b5af",
+          "after": "cabbcae93966050d24dfd5fa0480b5af",
+          "strict": "cabbcae93966050d24dfd5fa0480b5af"
+        },
+        "traversal": {
+          "before": "7e8b1958acab703899b278ccc22d0b14",
+          "after": "7e8b1958acab703899b278ccc22d0b14",
+          "strict": "7e8b1958acab703899b278ccc22d0b14"
+        },
+        "triggers": {
+          "before": "4cc7079b49e8a63ae8d47053ea99e555",
+          "after": "4cc7079b49e8a63ae8d47053ea99e555",
+          "strict": "4cc7079b49e8a63ae8d47053ea99e555"
+        },
+        "indexes": {
+          "before": "87aefb2d1bfeed175c5ed588d6e19513",
+          "after": "87aefb2d1bfeed175c5ed588d6e19513",
+          "strict": "87aefb2d1bfeed175c5ed588d6e19513"
+        },
+        "rename": {
+          "before": "60ee48b4b5d1facd954d554666ab4e9c",
+          "after": "60ee48b4b5d1facd954d554666ab4e9c",
+          "strict": "dde990c9b079a1a6d66426fa978eea1f"
+        },
+        "setters": {
+          "before": "92bd2c2fd3c189dfa24531176c5dda94",
+          "after": "92bd2c2fd3c189dfa24531176c5dda94",
+          "strict": "92bd2c2fd3c189dfa24531176c5dda94"
+        },
+        "checksum": {
+          "before": "f3af46630c3273c2c10e364bbdbd9c41",
+          "after": "f3af46630c3273c2c10e364bbdbd9c41",
+          "strict": "f3af46630c3273c2c10e364bbdbd9c41"
+        },
+        "diff": {
+          "before": "b7ed72a4c3de113edec739b81e05ed87",
+          "after": "b7ed72a4c3de113edec739b81e05ed87",
+          "strict": "b7ed72a4c3de113edec739b81e05ed87"
+        },
+        "graphValidation": {
+          "before": "f79ed5c40f82a1ee7cd1807bce66290a",
+          "after": "f79ed5c40f82a1ee7cd1807bce66290a",
+          "strict": "f79ed5c40f82a1ee7cd1807bce66290a"
+        }
+      },
+      "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/email-summary": {
+        "construction": {
+          "before": "4062edaf750fb8074e7e83e0c9028c94",
+          "after": "4062edaf750fb8074e7e83e0c9028c94",
+          "strict": "4062edaf750fb8074e7e83e0c9028c94"
+        },
+        "structure": {
+          "before": "ea29e4397c92c4c1b6adc44b26a9dfcd",
+          "after": "ea29e4397c92c4c1b6adc44b26a9dfcd",
+          "strict": "ea29e4397c92c4c1b6adc44b26a9dfcd"
+        },
+        "nodeParameters": {
+          "before": "6192766970f7e2deb38b4bca833bc3cb",
+          "after": "6192766970f7e2deb38b4bca833bc3cb",
+          "strict": "7573671880dc79b3d69928859d2703ee"
+        },
+        "connections": {
+          "before": "c6c32d68026bcd1067406460f0aa5ce8",
+          "after": "c6c32d68026bcd1067406460f0aa5ce8",
+          "strict": "c6c32d68026bcd1067406460f0aa5ce8"
+        },
+        "pinData": {
+          "before": "39071ce1601463847e43c1de7efb630f",
+          "after": "39071ce1601463847e43c1de7efb630f",
+          "strict": "39071ce1601463847e43c1de7efb630f"
+        },
+        "staticData": {
+          "before": "c43a923cc1ae81cbeb7b3e4a171f6869",
+          "after": "c43a923cc1ae81cbeb7b3e4a171f6869",
+          "strict": "c43a923cc1ae81cbeb7b3e4a171f6869"
+        },
+        "traversal": {
+          "before": "2570e4ddd913271012c0ac8d0f3d6faa",
+          "after": "2570e4ddd913271012c0ac8d0f3d6faa",
+          "strict": "2570e4ddd913271012c0ac8d0f3d6faa"
+        },
+        "triggers": {
+          "before": "ba1b54093b7f0ed714a1755230307d42",
+          "after": "ba1b54093b7f0ed714a1755230307d42",
+          "strict": "ba1b54093b7f0ed714a1755230307d42"
+        },
+        "indexes": {
+          "before": "699a6b4bd8b24f603c8a19ba20ca0c21",
+          "after": "699a6b4bd8b24f603c8a19ba20ca0c21",
+          "strict": "699a6b4bd8b24f603c8a19ba20ca0c21"
+        },
+        "rename": {
+          "before": "21e1404f78526d7d59469871d9e8b6b0",
+          "after": "21e1404f78526d7d59469871d9e8b6b0",
+          "strict": "11094bf0d3e53c1160a10f3813a3d389"
+        },
+        "setters": {
+          "before": "a489248dbc552a1d1ec052e5576fecd1",
+          "after": "a489248dbc552a1d1ec052e5576fecd1",
+          "strict": "a489248dbc552a1d1ec052e5576fecd1"
+        },
+        "checksum": {
+          "before": "4af938297a497b1f02725c63595cec76",
+          "after": "4af938297a497b1f02725c63595cec76",
+          "strict": "4af938297a497b1f02725c63595cec76"
+        },
+        "diff": {
+          "before": "b7ed72a4c3de113edec739b81e05ed87",
+          "after": "b7ed72a4c3de113edec739b81e05ed87",
+          "strict": "b7ed72a4c3de113edec739b81e05ed87"
+        },
+        "graphValidation": {
+          "before": "777609ee5692371a9d6b8e30e95d9f76",
+          "after": "777609ee5692371a9d6b8e30e95d9f76",
+          "strict": "777609ee5692371a9d6b8e30e95d9f76"
+        }
+      },
+      "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/extract-from-file": {
+        "construction": {
+          "before": "4062edaf750fb8074e7e83e0c9028c94",
+          "after": "4062edaf750fb8074e7e83e0c9028c94",
+          "strict": "4062edaf750fb8074e7e83e0c9028c94"
+        },
+        "structure": {
+          "before": "a6ebc79cd052093f76618630a22d6982",
+          "after": "a6ebc79cd052093f76618630a22d6982",
+          "strict": "a6ebc79cd052093f76618630a22d6982"
+        },
+        "nodeParameters": {
+          "before": "78e5dcd3e76760605409be2268ce3def",
+          "after": "78e5dcd3e76760605409be2268ce3def",
+          "strict": "ce1e06d6c182193a1028cac4ab63e9b5"
+        },
+        "connections": {
+          "before": "dc337bb807cd9bc077d6b894b7eea5c0",
+          "after": "dc337bb807cd9bc077d6b894b7eea5c0",
+          "strict": "dc337bb807cd9bc077d6b894b7eea5c0"
+        },
+        "pinData": {
+          "before": "a5d589d9fefc2a283bd96cd053b78775",
+          "after": "a5d589d9fefc2a283bd96cd053b78775",
+          "strict": "a5d589d9fefc2a283bd96cd053b78775"
+        },
+        "staticData": {
+          "before": "5936fde2832b38863bab4ad4942a258c",
+          "after": "5936fde2832b38863bab4ad4942a258c",
+          "strict": "5936fde2832b38863bab4ad4942a258c"
+        },
+        "traversal": {
+          "before": "bbcf0cf5c2ba0d5b46173fdf60a10240",
+          "after": "bbcf0cf5c2ba0d5b46173fdf60a10240",
+          "strict": "bbcf0cf5c2ba0d5b46173fdf60a10240"
+        },
+        "triggers": {
+          "before": "59ba139a0a022e5512c16292c99e0f19",
+          "after": "59ba139a0a022e5512c16292c99e0f19",
+          "strict": "59ba139a0a022e5512c16292c99e0f19"
+        },
+        "indexes": {
+          "before": "d70676241b36289f87a88ad6a9e13916",
+          "after": "d70676241b36289f87a88ad6a9e13916",
+          "strict": "d70676241b36289f87a88ad6a9e13916"
+        },
+        "rename": {
+          "before": "0e0c95712cce316297e3f8c1ea4804f7",
+          "after": "0e0c95712cce316297e3f8c1ea4804f7",
+          "strict": "141cfafa015428360ebc5d7d86487ce6"
+        },
+        "setters": {
+          "before": "0ec65aa45b8f31b833971cc7afbb545e",
+          "after": "0ec65aa45b8f31b833971cc7afbb545e",
+          "strict": "0ec65aa45b8f31b833971cc7afbb545e"
+        },
+        "checksum": {
+          "before": "c9bb81e0d08f19ff8f75ff9ab03ed185",
+          "after": "c9bb81e0d08f19ff8f75ff9ab03ed185",
+          "strict": "c9bb81e0d08f19ff8f75ff9ab03ed185"
+        },
+        "diff": {
+          "before": "b7ed72a4c3de113edec739b81e05ed87",
+          "after": "b7ed72a4c3de113edec739b81e05ed87",
+          "strict": "b7ed72a4c3de113edec739b81e05ed87"
+        },
+        "graphValidation": {
+          "before": "51730ff96f0b841d9bd1d29c797a1c15",
+          "after": "51730ff96f0b841d9bd1d29c797a1c15",
+          "strict": "51730ff96f0b841d9bd1d29c797a1c15"
+        }
+      },
+      "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/google-sheets-processing": {
+        "construction": {
+          "before": "4062edaf750fb8074e7e83e0c9028c94",
+          "after": "4062edaf750fb8074e7e83e0c9028c94",
+          "strict": "4062edaf750fb8074e7e83e0c9028c94"
+        },
+        "structure": {
+          "before": "d1b7ac47f6767819a8478eb798e88d59",
+          "after": "d1b7ac47f6767819a8478eb798e88d59",
+          "strict": "d1b7ac47f6767819a8478eb798e88d59"
+        },
+        "nodeParameters": {
+          "before": "2bf0917d5cf11b8317cf2c2765222c82",
+          "after": "2bf0917d5cf11b8317cf2c2765222c82",
+          "strict": "cc35f88e2841346721e7d25fb01a2ec1"
+        },
+        "connections": {
+          "before": "5fab14d888854f60a554fb00167b8024",
+          "after": "5fab14d888854f60a554fb00167b8024",
+          "strict": "5fab14d888854f60a554fb00167b8024"
+        },
+        "pinData": {
+          "before": "1532bbbc8ad117e6ae34b6b513a5758a",
+          "after": "1532bbbc8ad117e6ae34b6b513a5758a",
+          "strict": "1532bbbc8ad117e6ae34b6b513a5758a"
+        },
+        "staticData": {
+          "before": "4587281baa6c6310fd3afe484f587205",
+          "after": "4587281baa6c6310fd3afe484f587205",
+          "strict": "4587281baa6c6310fd3afe484f587205"
+        },
+        "traversal": {
+          "before": "f5fc1a23f1d45ba372d57a84ce88a23c",
+          "after": "f5fc1a23f1d45ba372d57a84ce88a23c",
+          "strict": "f5fc1a23f1d45ba372d57a84ce88a23c"
+        },
+        "triggers": {
+          "before": "24929add764a8bf0a5c9ba7060b7a301",
+          "after": "24929add764a8bf0a5c9ba7060b7a301",
+          "strict": "24929add764a8bf0a5c9ba7060b7a301"
+        },
+        "indexes": {
+          "before": "add8c7c8a4643698e321e884b3e77ce3",
+          "after": "add8c7c8a4643698e321e884b3e77ce3",
+          "strict": "add8c7c8a4643698e321e884b3e77ce3"
+        },
+        "rename": {
+          "before": "5d3d2fbf579508704b81f753fc3c7a92",
+          "after": "5d3d2fbf579508704b81f753fc3c7a92",
+          "strict": "c224f15d82a392ca7d33046ebe81fb1f"
+        },
+        "setters": {
+          "before": "c0e8d4730fd9846f746be6eaa24270b9",
+          "after": "c0e8d4730fd9846f746be6eaa24270b9",
+          "strict": "c0e8d4730fd9846f746be6eaa24270b9"
+        },
+        "checksum": {
+          "before": "61e3959dbf49ed463bf7b19135a912ed",
+          "after": "61e3959dbf49ed463bf7b19135a912ed",
+          "strict": "61e3959dbf49ed463bf7b19135a912ed"
+        },
+        "diff": {
+          "before": "b7ed72a4c3de113edec739b81e05ed87",
+          "after": "b7ed72a4c3de113edec739b81e05ed87",
+          "strict": "b7ed72a4c3de113edec739b81e05ed87"
+        },
+        "graphValidation": {
+          "before": "7b59ad52ffd02dd01c91ea70102ea60d",
+          "after": "7b59ad52ffd02dd01c91ea70102ea60d",
+          "strict": "7b59ad52ffd02dd01c91ea70102ea60d"
+        }
+      },
+      "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/invoice-pipeline": {
+        "construction": {
+          "before": "4062edaf750fb8074e7e83e0c9028c94",
+          "after": "4062edaf750fb8074e7e83e0c9028c94",
+          "strict": "4062edaf750fb8074e7e83e0c9028c94"
+        },
+        "structure": {
+          "before": "6e83f081b88ac3c2fdcee2044d209434",
+          "after": "6e83f081b88ac3c2fdcee2044d209434",
+          "strict": "6e83f081b88ac3c2fdcee2044d209434"
+        },
+        "nodeParameters": {
+          "before": "0bd38330f741afdd7c60770cc32a2d6d",
+          "after": "0bd38330f741afdd7c60770cc32a2d6d",
+          "strict": "e675115e3fb25d15fe75f9d2618af95e"
+        },
+        "connections": {
+          "before": "debcbe19d9945922f81a11aee7a91308",
+          "after": "debcbe19d9945922f81a11aee7a91308",
+          "strict": "debcbe19d9945922f81a11aee7a91308"
+        },
+        "pinData": {
+          "before": "879ff8a9cbe5cc59e00fe4cb173d0079",
+          "after": "879ff8a9cbe5cc59e00fe4cb173d0079",
+          "strict": "879ff8a9cbe5cc59e00fe4cb173d0079"
+        },
+        "staticData": {
+          "before": "39da9489ee6c8fbabdbb95ee12abfb21",
+          "after": "39da9489ee6c8fbabdbb95ee12abfb21",
+          "strict": "39da9489ee6c8fbabdbb95ee12abfb21"
+        },
+        "traversal": {
+          "before": "b0320cb2fc23bb6a895aeb887bb88bbb",
+          "after": "b0320cb2fc23bb6a895aeb887bb88bbb",
+          "strict": "b0320cb2fc23bb6a895aeb887bb88bbb"
+        },
+        "triggers": {
+          "before": "5d6fbf9e88d87ec26184e6a81d8ea36c",
+          "after": "5d6fbf9e88d87ec26184e6a81d8ea36c",
+          "strict": "5d6fbf9e88d87ec26184e6a81d8ea36c"
+        },
+        "indexes": {
+          "before": "b1501033ba83ca28663fb7b626b6d490",
+          "after": "b1501033ba83ca28663fb7b626b6d490",
+          "strict": "b1501033ba83ca28663fb7b626b6d490"
+        },
+        "rename": {
+          "before": "a91ed7c0d583483c5c04a3980205159d",
+          "after": "a91ed7c0d583483c5c04a3980205159d",
+          "strict": "cdab978bcffcacc5d7dc2931e447c9c5"
+        },
+        "setters": {
+          "before": "34f80f7407f5425f6753c6c69a2430e1",
+          "after": "34f80f7407f5425f6753c6c69a2430e1",
+          "strict": "34f80f7407f5425f6753c6c69a2430e1"
+        },
+        "checksum": {
+          "before": "de235ffe698de2bbc7c5cb87e7a3007e",
+          "after": "de235ffe698de2bbc7c5cb87e7a3007e",
+          "strict": "de235ffe698de2bbc7c5cb87e7a3007e"
+        },
+        "diff": {
+          "before": "b7ed72a4c3de113edec739b81e05ed87",
+          "after": "b7ed72a4c3de113edec739b81e05ed87",
+          "strict": "b7ed72a4c3de113edec739b81e05ed87"
+        },
+        "graphValidation": {
+          "before": "57abdea091621eecafd9b3f4eb190f8c",
+          "after": "57abdea091621eecafd9b3f4eb190f8c",
+          "strict": "57abdea091621eecafd9b3f4eb190f8c"
+        }
+      },
+      "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/lead-qualification": {
+        "construction": {
+          "before": "4062edaf750fb8074e7e83e0c9028c94",
+          "after": "4062edaf750fb8074e7e83e0c9028c94",
+          "strict": "4062edaf750fb8074e7e83e0c9028c94"
+        },
+        "structure": {
+          "before": "2e7db625835659b4d5ab38ec2301686b",
+          "after": "2e7db625835659b4d5ab38ec2301686b",
+          "strict": "2e7db625835659b4d5ab38ec2301686b"
+        },
+        "nodeParameters": {
+          "before": "a28a35abe41c992c0ae844cd4919f4a3",
+          "after": "a28a35abe41c992c0ae844cd4919f4a3",
+          "strict": "5d2852ed5872f7a16cc73713e4cb79b7"
+        },
+        "connections": {
+          "before": "68b167a275cb06e380ab0fe6b0632f26",
+          "after": "68b167a275cb06e380ab0fe6b0632f26",
+          "strict": "68b167a275cb06e380ab0fe6b0632f26"
+        },
+        "pinData": {
+          "before": "f16d72d4d0a6488289ff861c2c77f910",
+          "after": "f16d72d4d0a6488289ff861c2c77f910",
+          "strict": "f16d72d4d0a6488289ff861c2c77f910"
+        },
+        "staticData": {
+          "before": "f032f694194ac5ed175f15728dffc34b",
+          "after": "f032f694194ac5ed175f15728dffc34b",
+          "strict": "f032f694194ac5ed175f15728dffc34b"
+        },
+        "traversal": {
+          "before": "3c2a79416f1e7bc98a32440dbaf1c8d9",
+          "after": "3c2a79416f1e7bc98a32440dbaf1c8d9",
+          "strict": "3c2a79416f1e7bc98a32440dbaf1c8d9"
+        },
+        "triggers": {
+          "before": "0ed25e109a1b27a04b600e5cb05ff73f",
+          "after": "0ed25e109a1b27a04b600e5cb05ff73f",
+          "strict": "0ed25e109a1b27a04b600e5cb05ff73f"
+        },
+        "indexes": {
+          "before": "37caa6fdc31781037a07f42885d19625",
+          "after": "37caa6fdc31781037a07f42885d19625",
+          "strict": "37caa6fdc31781037a07f42885d19625"
+        },
+        "rename": {
+          "before": "513e7110e86621605a95e4d3b062d897",
+          "after": "513e7110e86621605a95e4d3b062d897",
+          "strict": "d06e02836a85b6f721d4d6eb09d163aa"
+        },
+        "setters": {
+          "before": "0fd2d7ecba8859d1119de6269906d66e",
+          "after": "0fd2d7ecba8859d1119de6269906d66e",
+          "strict": "0fd2d7ecba8859d1119de6269906d66e"
+        },
+        "checksum": {
+          "before": "086fccbde4489227141eb7633e40662a",
+          "after": "086fccbde4489227141eb7633e40662a",
+          "strict": "086fccbde4489227141eb7633e40662a"
+        },
+        "diff": {
+          "before": "b7ed72a4c3de113edec739b81e05ed87",
+          "after": "b7ed72a4c3de113edec739b81e05ed87",
+          "strict": "b7ed72a4c3de113edec739b81e05ed87"
+        },
+        "graphValidation": {
+          "before": "d7b1dc9482694a973ced22512ca7c53b",
+          "after": "d7b1dc9482694a973ced22512ca7c53b",
+          "strict": "d7b1dc9482694a973ced22512ca7c53b"
+        }
+      },
+      "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/multi-agent-research": {
+        "construction": {
+          "before": "4062edaf750fb8074e7e83e0c9028c94",
+          "after": "4062edaf750fb8074e7e83e0c9028c94",
+          "strict": "4062edaf750fb8074e7e83e0c9028c94"
+        },
+        "structure": {
+          "before": "7bbc995debd66bf0f60b7ec30660d550",
+          "after": "7bbc995debd66bf0f60b7ec30660d550",
+          "strict": "7bbc995debd66bf0f60b7ec30660d550"
+        },
+        "nodeParameters": {
+          "before": "a661d1f67472e18353deeca4be129580",
+          "after": "a661d1f67472e18353deeca4be129580",
+          "strict": "ea8a973b152a4c89d1d28a7ca4cea806"
+        },
+        "connections": {
+          "before": "4df4957b19aac82fae0f46b27599eba1",
+          "after": "4df4957b19aac82fae0f46b27599eba1",
+          "strict": "4df4957b19aac82fae0f46b27599eba1"
+        },
+        "pinData": {
+          "before": "bdde4d3a0adc16a06d33d263f5655e62",
+          "after": "bdde4d3a0adc16a06d33d263f5655e62",
+          "strict": "bdde4d3a0adc16a06d33d263f5655e62"
+        },
+        "staticData": {
+          "before": "c28019ad2cb274228c72cd7e53aa7075",
+          "after": "c28019ad2cb274228c72cd7e53aa7075",
+          "strict": "c28019ad2cb274228c72cd7e53aa7075"
+        },
+        "traversal": {
+          "before": "008c718cec9283f50422d3a223b5d1ad",
+          "after": "008c718cec9283f50422d3a223b5d1ad",
+          "strict": "008c718cec9283f50422d3a223b5d1ad"
+        },
+        "triggers": {
+          "before": "703ae5b038f9eff3f050678c1a036448",
+          "after": "703ae5b038f9eff3f050678c1a036448",
+          "strict": "703ae5b038f9eff3f050678c1a036448"
+        },
+        "indexes": {
+          "before": "a41906df04e853c31cc6003ed82055b5",
+          "after": "a41906df04e853c31cc6003ed82055b5",
+          "strict": "a41906df04e853c31cc6003ed82055b5"
+        },
+        "rename": {
+          "before": "4f3ecbfb21e0efad100bff789bb9fa3d",
+          "after": "4f3ecbfb21e0efad100bff789bb9fa3d",
+          "strict": "85565b5f33d8e6884019abd48feb142e"
+        },
+        "setters": {
+          "before": "3d5e239c6aedca9663c14bc9ba22bdae",
+          "after": "3d5e239c6aedca9663c14bc9ba22bdae",
+          "strict": "3d5e239c6aedca9663c14bc9ba22bdae"
+        },
+        "checksum": {
+          "before": "af314c3ebc37dd940772a9a088043d51",
+          "after": "af314c3ebc37dd940772a9a088043d51",
+          "strict": "af314c3ebc37dd940772a9a088043d51"
+        },
+        "diff": {
+          "before": "b7ed72a4c3de113edec739b81e05ed87",
+          "after": "b7ed72a4c3de113edec739b81e05ed87",
+          "strict": "b7ed72a4c3de113edec739b81e05ed87"
+        },
+        "graphValidation": {
+          "before": "c96e66665f5204ae564e68a4a5f902cc",
+          "after": "c96e66665f5204ae564e68a4a5f902cc",
+          "strict": "c96e66665f5204ae564e68a4a5f902cc"
+        }
+      },
+      "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/rag-assistant": {
+        "construction": {
+          "before": "4062edaf750fb8074e7e83e0c9028c94",
+          "after": "4062edaf750fb8074e7e83e0c9028c94",
+          "strict": "4062edaf750fb8074e7e83e0c9028c94"
+        },
+        "structure": {
+          "before": "de0d14a95206fabc08950740c0b0a90b",
+          "after": "de0d14a95206fabc08950740c0b0a90b",
+          "strict": "de0d14a95206fabc08950740c0b0a90b"
+        },
+        "nodeParameters": {
+          "before": "a91bfd88ff51fcfe4676dc69468c9882",
+          "after": "a91bfd88ff51fcfe4676dc69468c9882",
+          "strict": "52b23c7d0f376fa3b5e02c9142769192"
+        },
+        "connections": {
+          "before": "2d7ad3b3fcba06f436abbf19cbec45fd",
+          "after": "2d7ad3b3fcba06f436abbf19cbec45fd",
+          "strict": "2d7ad3b3fcba06f436abbf19cbec45fd"
+        },
+        "pinData": {
+          "before": "6b1f6d19ea115d78824fc2abe083c031",
+          "after": "6b1f6d19ea115d78824fc2abe083c031",
+          "strict": "6b1f6d19ea115d78824fc2abe083c031"
+        },
+        "staticData": {
+          "before": "0a7e59e9fc479cf857d8a5868e1fad1f",
+          "after": "0a7e59e9fc479cf857d8a5868e1fad1f",
+          "strict": "0a7e59e9fc479cf857d8a5868e1fad1f"
+        },
+        "traversal": {
+          "before": "64aac622655eb144dd9aec76d34c314c",
+          "after": "64aac622655eb144dd9aec76d34c314c",
+          "strict": "64aac622655eb144dd9aec76d34c314c"
+        },
+        "triggers": {
+          "before": "efb1422e2c7dc5268ecbd6b158acc361",
+          "after": "efb1422e2c7dc5268ecbd6b158acc361",
+          "strict": "efb1422e2c7dc5268ecbd6b158acc361"
+        },
+        "indexes": {
+          "before": "3eefacf6a935b173d8d0ba567fbebc79",
+          "after": "3eefacf6a935b173d8d0ba567fbebc79",
+          "strict": "3eefacf6a935b173d8d0ba567fbebc79"
+        },
+        "rename": {
+          "before": "2dd427aabe3d8a3e4c3b2a9e89e221a9",
+          "after": "2dd427aabe3d8a3e4c3b2a9e89e221a9",
+          "strict": "3c1d2515a20b6ef894ca553d912f17a5"
+        },
+        "setters": {
+          "before": "28280f01ae362a28597682b8d65041bd",
+          "after": "28280f01ae362a28597682b8d65041bd",
+          "strict": "28280f01ae362a28597682b8d65041bd"
+        },
+        "checksum": {
+          "before": "d4baefdc89b223ba3ba40a338382297f",
+          "after": "d4baefdc89b223ba3ba40a338382297f",
+          "strict": "d4baefdc89b223ba3ba40a338382297f"
+        },
+        "diff": {
+          "before": "b7ed72a4c3de113edec739b81e05ed87",
+          "after": "b7ed72a4c3de113edec739b81e05ed87",
+          "strict": "b7ed72a4c3de113edec739b81e05ed87"
+        },
+        "graphValidation": {
+          "before": "a9cc1c935a451b589b7308f4641170a6",
+          "after": "a9cc1c935a451b589b7308f4641170a6",
+          "strict": "a9cc1c935a451b589b7308f4641170a6"
+        }
+      },
+      "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/youtube-auto-chapters": {
+        "construction": {
+          "before": "4062edaf750fb8074e7e83e0c9028c94",
+          "after": "4062edaf750fb8074e7e83e0c9028c94",
+          "strict": "4062edaf750fb8074e7e83e0c9028c94"
+        },
+        "structure": {
+          "before": "a777fb7e95250679249488c95934ced8",
+          "after": "a777fb7e95250679249488c95934ced8",
+          "strict": "a777fb7e95250679249488c95934ced8"
+        },
+        "nodeParameters": {
+          "before": "16c6f2eba76ecac8e44e599a0f58f482",
+          "after": "16c6f2eba76ecac8e44e599a0f58f482",
+          "strict": "3f8e17833fe6f25e4ed5360af00ece42"
+        },
+        "connections": {
+          "before": "78e0b1983d049940320bb856e30bf9a1",
+          "after": "78e0b1983d049940320bb856e30bf9a1",
+          "strict": "78e0b1983d049940320bb856e30bf9a1"
+        },
+        "pinData": {
+          "before": "fc639a942a21c351d8e741501aa37be4",
+          "after": "fc639a942a21c351d8e741501aa37be4",
+          "strict": "fc639a942a21c351d8e741501aa37be4"
+        },
+        "staticData": {
+          "before": "8748675aca5bad574486fd4b880f0f8d",
+          "after": "8748675aca5bad574486fd4b880f0f8d",
+          "strict": "8748675aca5bad574486fd4b880f0f8d"
+        },
+        "traversal": {
+          "before": "043b4e00118ede2798b8f0c2093e59b3",
+          "after": "043b4e00118ede2798b8f0c2093e59b3",
+          "strict": "043b4e00118ede2798b8f0c2093e59b3"
+        },
+        "triggers": {
+          "before": "9aeabd9a8c11a8e3c31164969bb8e4ba",
+          "after": "9aeabd9a8c11a8e3c31164969bb8e4ba",
+          "strict": "9aeabd9a8c11a8e3c31164969bb8e4ba"
+        },
+        "indexes": {
+          "before": "c5432b24f51b5ae5c7b81fd10b1c45d5",
+          "after": "c5432b24f51b5ae5c7b81fd10b1c45d5",
+          "strict": "c5432b24f51b5ae5c7b81fd10b1c45d5"
+        },
+        "rename": {
+          "before": "0c8aad3a6e19af95a88985f833d50742",
+          "after": "0c8aad3a6e19af95a88985f833d50742",
+          "strict": "6d0febeb51cdda329eaf189c5009d98e"
+        },
+        "setters": {
+          "before": "c13f1597891eb0a0668b5d5d35b84cb6",
+          "after": "c13f1597891eb0a0668b5d5d35b84cb6",
+          "strict": "c13f1597891eb0a0668b5d5d35b84cb6"
+        },
+        "checksum": {
+          "before": "80ac282251ddf012ed0d8632e039ab10",
+          "after": "80ac282251ddf012ed0d8632e039ab10",
+          "strict": "80ac282251ddf012ed0d8632e039ab10"
+        },
+        "diff": {
+          "before": "b7ed72a4c3de113edec739b81e05ed87",
+          "after": "b7ed72a4c3de113edec739b81e05ed87",
+          "strict": "b7ed72a4c3de113edec739b81e05ed87"
+        },
+        "graphValidation": {
+          "before": "fdb619dbda79f90b7551bca54e9a4371",
+          "after": "fdb619dbda79f90b7551bca54e9a4371",
+          "strict": "fdb619dbda79f90b7551bca54e9a4371"
+        }
+      },
+      "workflow-sdk/test-fixtures/committed-workflows/0": {
+        "construction": {
+          "before": "4062edaf750fb8074e7e83e0c9028c94",
+          "after": "4062edaf750fb8074e7e83e0c9028c94",
+          "strict": "4062edaf750fb8074e7e83e0c9028c94"
+        },
+        "structure": {
+          "before": "c0d3f050163e5104a288e14a4841b26a",
+          "after": "c0d3f050163e5104a288e14a4841b26a",
+          "strict": "c0d3f050163e5104a288e14a4841b26a"
+        },
+        "nodeParameters": {
+          "before": "55588b7bd7abe23b253bd21ab334b816",
+          "after": "55588b7bd7abe23b253bd21ab334b816",
+          "strict": "381252467308b74320e9807719dfc5b2"
+        },
+        "connections": {
+          "before": "8b0bda4f9af8ba4041917b7ce7e52bfd",
+          "after": "8b0bda4f9af8ba4041917b7ce7e52bfd",
+          "strict": "8b0bda4f9af8ba4041917b7ce7e52bfd"
+        },
+        "pinData": {
+          "before": "c5e10d10be0ef7c5247a0b3636ed4300",
+          "after": "c5e10d10be0ef7c5247a0b3636ed4300",
+          "strict": "c5e10d10be0ef7c5247a0b3636ed4300"
+        },
+        "staticData": {
+          "before": "59694fde589150c639a09f3d85782c52",
+          "after": "59694fde589150c639a09f3d85782c52",
+          "strict": "59694fde589150c639a09f3d85782c52"
+        },
+        "traversal": {
+          "before": "02d5ec27b986d6a55564fbfd6735df6f",
+          "after": "02d5ec27b986d6a55564fbfd6735df6f",
+          "strict": "02d5ec27b986d6a55564fbfd6735df6f"
+        },
+        "triggers": {
+          "before": "be953ae0a62aa1ba50cf96205a64b02f",
+          "after": "be953ae0a62aa1ba50cf96205a64b02f",
+          "strict": "be953ae0a62aa1ba50cf96205a64b02f"
+        },
+        "indexes": {
+          "before": "fbd116b6d2ecb4063fb2197ea60fca58",
+          "after": "fbd116b6d2ecb4063fb2197ea60fca58",
+          "strict": "fbd116b6d2ecb4063fb2197ea60fca58"
+        },
+        "rename": {
+          "before": "8fe4c529c9aa578d92b36e49648fe721",
+          "after": "8fe4c529c9aa578d92b36e49648fe721",
+          "strict": "6e76b4e7247811b146ec7eb30a69a4e3"
+        },
+        "setters": {
+          "before": "44f99bba4a473fc36511fefb683ed473",
+          "after": "44f99bba4a473fc36511fefb683ed473",
+          "strict": "44f99bba4a473fc36511fefb683ed473"
+        },
+        "checksum": {
+          "before": "f43fd1db64677c785927cfdfe54eb112",
+          "after": "f43fd1db64677c785927cfdfe54eb112",
+          "strict": "f43fd1db64677c785927cfdfe54eb112"
+        },
+        "diff": {
+          "before": "b7ed72a4c3de113edec739b81e05ed87",
+          "after": "b7ed72a4c3de113edec739b81e05ed87",
+          "strict": "b7ed72a4c3de113edec739b81e05ed87"
+        },
+        "graphValidation": {
+          "before": "7ab394c4a7eec6675da19074fdabf23a",
+          "after": "7ab394c4a7eec6675da19074fdabf23a",
+          "strict": "7ab394c4a7eec6675da19074fdabf23a"
+        }
+      },
+      "workflow-sdk/test-fixtures/committed-workflows/1": {
+        "construction": {
+          "before": "4062edaf750fb8074e7e83e0c9028c94",
+          "after": "4062edaf750fb8074e7e83e0c9028c94",
+          "strict": "4062edaf750fb8074e7e83e0c9028c94"
+        },
+        "structure": {
+          "before": "51019d7cdf6a8d6b55b23de97c25826c",
+          "after": "51019d7cdf6a8d6b55b23de97c25826c",
+          "strict": "51019d7cdf6a8d6b55b23de97c25826c"
+        },
+        "nodeParameters": {
+          "before": "34c64a9e881110b0adff961a3f2fe272",
+          "after": "34c64a9e881110b0adff961a3f2fe272",
+          "strict": "c198b073c3bb0e33d37cb84f8b96a0af"
+        },
+        "connections": {
+          "before": "2b578a7ee5920a0eccad67a8fab43c59",
+          "after": "2b578a7ee5920a0eccad67a8fab43c59",
+          "strict": "2b578a7ee5920a0eccad67a8fab43c59"
+        },
+        "pinData": {
+          "before": "9e4ffec53333c0064c9bd1f577435d63",
+          "after": "9e4ffec53333c0064c9bd1f577435d63",
+          "strict": "9e4ffec53333c0064c9bd1f577435d63"
+        },
+        "staticData": {
+          "before": "ae0db90087aab1d923f66f5032505ac8",
+          "after": "ae0db90087aab1d923f66f5032505ac8",
+          "strict": "ae0db90087aab1d923f66f5032505ac8"
+        },
+        "traversal": {
+          "before": "6bc366bafc02e773f3f53649d52b4c65",
+          "after": "6bc366bafc02e773f3f53649d52b4c65",
+          "strict": "6bc366bafc02e773f3f53649d52b4c65"
+        },
+        "triggers": {
+          "before": "768fcd16fd7991aec0fa0c9c6a57e845",
+          "after": "768fcd16fd7991aec0fa0c9c6a57e845",
+          "strict": "768fcd16fd7991aec0fa0c9c6a57e845"
+        },
+        "indexes": {
+          "before": "3655d52c963c80a551128b0e36123f7c",
+          "after": "3655d52c963c80a551128b0e36123f7c",
+          "strict": "3655d52c963c80a551128b0e36123f7c"
+        },
+        "rename": {
+          "before": "1ff6701104d939948fe0cb9d34c6317c",
+          "after": "1ff6701104d939948fe0cb9d34c6317c",
+          "strict": "933ca04c6f9e34b4e1075931f4c81502"
+        },
+        "setters": {
+          "before": "408d8f7579613abb5aea9dbed4ab6249",
+          "after": "408d8f7579613abb5aea9dbed4ab6249",
+          "strict": "408d8f7579613abb5aea9dbed4ab6249"
+        },
+        "checksum": {
+          "before": "2c849c603b7bb900a1bdbe067e266569",
+          "after": "2c849c603b7bb900a1bdbe067e266569",
+          "strict": "2c849c603b7bb900a1bdbe067e266569"
+        },
+        "diff": {
+          "before": "b7ed72a4c3de113edec739b81e05ed87",
+          "after": "b7ed72a4c3de113edec739b81e05ed87",
+          "strict": "b7ed72a4c3de113edec739b81e05ed87"
+        },
+        "graphValidation": {
+          "before": "0b16801fb00f7f6a7627f5812a795cb7",
+          "after": "0b16801fb00f7f6a7627f5812a795cb7",
+          "strict": "0b16801fb00f7f6a7627f5812a795cb7"
+        }
+      },
+      "workflow-sdk/test-fixtures/committed-workflows/2": {
+        "construction": {
+          "before": "4062edaf750fb8074e7e83e0c9028c94",
+          "after": "4062edaf750fb8074e7e83e0c9028c94",
+          "strict": "4062edaf750fb8074e7e83e0c9028c94"
+        },
+        "structure": {
+          "before": "e1bd58f452608591ed9245af3878e850",
+          "after": "e1bd58f452608591ed9245af3878e850",
+          "strict": "e1bd58f452608591ed9245af3878e850"
+        },
+        "nodeParameters": {
+          "before": "9707c1a44e697a1a7597e92257052b29",
+          "after": "9707c1a44e697a1a7597e92257052b29",
+          "strict": "f0d79926b56fe353b49e753e8ac8c41d"
+        },
+        "connections": {
+          "before": "747c5d040f4e248609ca2767b2f0fb0e",
+          "after": "747c5d040f4e248609ca2767b2f0fb0e",
+          "strict": "747c5d040f4e248609ca2767b2f0fb0e"
+        },
+        "pinData": {
+          "before": "a690acad16ab30f13ea23a6e89000f2a",
+          "after": "a690acad16ab30f13ea23a6e89000f2a",
+          "strict": "a690acad16ab30f13ea23a6e89000f2a"
+        },
+        "staticData": {
+          "before": "eee41e7d6f92e2f1147bad3406cd4dd9",
+          "after": "eee41e7d6f92e2f1147bad3406cd4dd9",
+          "strict": "eee41e7d6f92e2f1147bad3406cd4dd9"
+        },
+        "traversal": {
+          "before": "c1bf380151c27e0eec83e525d1ead820",
+          "after": "c1bf380151c27e0eec83e525d1ead820",
+          "strict": "c1bf380151c27e0eec83e525d1ead820"
+        },
+        "triggers": {
+          "before": "e8f4755aedd60ec32b7484930bebe15f",
+          "after": "e8f4755aedd60ec32b7484930bebe15f",
+          "strict": "e8f4755aedd60ec32b7484930bebe15f"
+        },
+        "indexes": {
+          "before": "50a6fe74533396c7a36b08939d2c9865",
+          "after": "50a6fe74533396c7a36b08939d2c9865",
+          "strict": "50a6fe74533396c7a36b08939d2c9865"
+        },
+        "rename": {
+          "before": "426d220b10de554647f6b06bcf9cce0c",
+          "after": "426d220b10de554647f6b06bcf9cce0c",
+          "strict": "3c3ded7616e781b6604943c21655a113"
+        },
+        "setters": {
+          "before": "2cad02217bf511b6e291c04eaee9f6ad",
+          "after": "2cad02217bf511b6e291c04eaee9f6ad",
+          "strict": "2cad02217bf511b6e291c04eaee9f6ad"
+        },
+        "checksum": {
+          "before": "813e503712abb40387558fa45c3b7b42",
+          "after": "813e503712abb40387558fa45c3b7b42",
+          "strict": "813e503712abb40387558fa45c3b7b42"
+        },
+        "diff": {
+          "before": "b7ed72a4c3de113edec739b81e05ed87",
+          "after": "b7ed72a4c3de113edec739b81e05ed87",
+          "strict": "b7ed72a4c3de113edec739b81e05ed87"
+        },
+        "graphValidation": {
+          "before": "06b8fef35d32be3ec9e705063b337f21",
+          "after": "06b8fef35d32be3ec9e705063b337f21",
+          "strict": "06b8fef35d32be3ec9e705063b337f21"
+        }
+      },
+      "workflow-sdk/test-fixtures/committed-workflows/3": {
+        "construction": {
+          "before": "4062edaf750fb8074e7e83e0c9028c94",
+          "after": "4062edaf750fb8074e7e83e0c9028c94",
+          "strict": "4062edaf750fb8074e7e83e0c9028c94"
+        },
+        "structure": {
+          "before": "2bcf50fa2a48773f3502bd489e5b9213",
+          "after": "2bcf50fa2a48773f3502bd489e5b9213",
+          "strict": "2bcf50fa2a48773f3502bd489e5b9213"
+        },
+        "nodeParameters": {
+          "before": "9776d0a46b7320aa6e1c2c777321c629",
+          "after": "9776d0a46b7320aa6e1c2c777321c629",
+          "strict": "a91d7ae52448702f73c2c1dea5dbbe78"
+        },
+        "connections": {
+          "before": "53eb1b2bf89dc0715f165b2319080350",
+          "after": "53eb1b2bf89dc0715f165b2319080350",
+          "strict": "53eb1b2bf89dc0715f165b2319080350"
+        },
+        "pinData": {
+          "before": "abfb370d5f9f5cb553162bfde4485bf9",
+          "after": "abfb370d5f9f5cb553162bfde4485bf9",
+          "strict": "abfb370d5f9f5cb553162bfde4485bf9"
+        },
+        "staticData": {
+          "before": "5f40526c8bddbcad757d01d0c5a8b2ad",
+          "after": "5f40526c8bddbcad757d01d0c5a8b2ad",
+          "strict": "5f40526c8bddbcad757d01d0c5a8b2ad"
+        },
+        "traversal": {
+          "before": "fc689ff38188b6a4de06e8743d139fbd",
+          "after": "fc689ff38188b6a4de06e8743d139fbd",
+          "strict": "fc689ff38188b6a4de06e8743d139fbd"
+        },
+        "triggers": {
+          "before": "23cef6d1eb8873ba780b54c1e8443164",
+          "after": "23cef6d1eb8873ba780b54c1e8443164",
+          "strict": "23cef6d1eb8873ba780b54c1e8443164"
+        },
+        "indexes": {
+          "before": "6df221eb90f6ac69d027d222d78c50b3",
+          "after": "6df221eb90f6ac69d027d222d78c50b3",
+          "strict": "6df221eb90f6ac69d027d222d78c50b3"
+        },
+        "rename": {
+          "before": "cb5a3de1beb85bcde146b0112212fb10",
+          "after": "cb5a3de1beb85bcde146b0112212fb10",
+          "strict": "f3a27d3c7650217b19157c88a85896bc"
+        },
+        "setters": {
+          "before": "d6fb47f53731fdd19f5e7e37f6607418",
+          "after": "d6fb47f53731fdd19f5e7e37f6607418",
+          "strict": "d6fb47f53731fdd19f5e7e37f6607418"
+        },
+        "checksum": {
+          "before": "8421248507cc816cb00e4a5f871bb410",
+          "after": "8421248507cc816cb00e4a5f871bb410",
+          "strict": "8421248507cc816cb00e4a5f871bb410"
+        },
+        "diff": {
+          "before": "b7ed72a4c3de113edec739b81e05ed87",
+          "after": "b7ed72a4c3de113edec739b81e05ed87",
+          "strict": "b7ed72a4c3de113edec739b81e05ed87"
+        },
+        "graphValidation": {
+          "before": "fc1c12c956c36eadff67e25c3aeecf8c",
+          "after": "fc1c12c956c36eadff67e25c3aeecf8c",
+          "strict": "fc1c12c956c36eadff67e25c3aeecf8c"
+        }
+      },
+      "workflow-sdk/test-fixtures/committed-workflows/4": {
+        "construction": {
+          "before": "4062edaf750fb8074e7e83e0c9028c94",
+          "after": "4062edaf750fb8074e7e83e0c9028c94",
+          "strict": "4062edaf750fb8074e7e83e0c9028c94"
+        },
+        "structure": {
+          "before": "5deadc1ace1546322f0e093add6cd4a9",
+          "after": "5deadc1ace1546322f0e093add6cd4a9",
+          "strict": "5deadc1ace1546322f0e093add6cd4a9"
+        },
+        "nodeParameters": {
+          "before": "f8a460ab79da2b7000b843380d5e07a4",
+          "after": "f8a460ab79da2b7000b843380d5e07a4",
+          "strict": "f8a460ab79da2b7000b843380d5e07a4"
+        },
+        "connections": {
+          "before": "35cdeae1e4ce5d25c9098c3ee136983c",
+          "after": "35cdeae1e4ce5d25c9098c3ee136983c",
+          "strict": "35cdeae1e4ce5d25c9098c3ee136983c"
+        },
+        "pinData": {
+          "before": "e3f7e16e1f698f303ae4ed06f52502bd",
+          "after": "e3f7e16e1f698f303ae4ed06f52502bd",
+          "strict": "e3f7e16e1f698f303ae4ed06f52502bd"
+        },
+        "staticData": {
+          "before": "c61a7077cd525c02493a9a13b1d3eb2c",
+          "after": "c61a7077cd525c02493a9a13b1d3eb2c",
+          "strict": "c61a7077cd525c02493a9a13b1d3eb2c"
+        },
+        "traversal": {
+          "before": "8018dc9b064151f3b96c6e987d13f9b4",
+          "after": "8018dc9b064151f3b96c6e987d13f9b4",
+          "strict": "8018dc9b064151f3b96c6e987d13f9b4"
+        },
+        "triggers": {
+          "before": "c5cc5b15c348695202e56ce39140abef",
+          "after": "c5cc5b15c348695202e56ce39140abef",
+          "strict": "c5cc5b15c348695202e56ce39140abef"
+        },
+        "indexes": {
+          "before": "7e4e874c9c4977e3e8d170ec47186f82",
+          "after": "7e4e874c9c4977e3e8d170ec47186f82",
+          "strict": "7e4e874c9c4977e3e8d170ec47186f82"
+        },
+        "rename": {
+          "before": "e276a90ce139eb8a0fc0332ea06e9565",
+          "after": "e276a90ce139eb8a0fc0332ea06e9565",
+          "strict": "3556b2729a063ebdd2ff54d501d58f77"
+        },
+        "setters": {
+          "before": "9f3e7fded75a84f1d064e14f4aa4537e",
+          "after": "9f3e7fded75a84f1d064e14f4aa4537e",
+          "strict": "9f3e7fded75a84f1d064e14f4aa4537e"
+        },
+        "checksum": {
+          "before": "9d6cdbf8b641b6aad99afd9207f370a4",
+          "after": "9d6cdbf8b641b6aad99afd9207f370a4",
+          "strict": "9d6cdbf8b641b6aad99afd9207f370a4"
+        },
+        "diff": {
+          "before": "b7ed72a4c3de113edec739b81e05ed87",
+          "after": "b7ed72a4c3de113edec739b81e05ed87",
+          "strict": "b7ed72a4c3de113edec739b81e05ed87"
+        },
+        "graphValidation": {
+          "before": "e2ceb2c64fd9688ea07c62099db3d1b1",
+          "after": "e2ceb2c64fd9688ea07c62099db3d1b1",
+          "strict": "e2ceb2c64fd9688ea07c62099db3d1b1"
+        }
+      }
+    }
+  },
+  "verdict": {
+    "beforeVsAfter": "NONE DETECTED",
+    "strictPortIndependence": "NO HIDDEN COUPLING"
+  }
+}
