@@ -99,6 +99,12 @@ operations:
   - name: send_message
     args:
       to: "agent-1"
+      type: HANDOFF
+      subject: "docs/isolation/connection-workflow-members-spec.md — port notes for the 5 Workflow traversal members the Connection fixtures pin (14 wf.* probes currently skipped)"
+      body: "getNodeConnectionIndexes (BFS, destinationIndex = slot position), getHighestNode (disabled === false quirk, shared checkedNodes), getStartNode/__getStartNode (STARTING_NODE_TYPES + trigger/poll registry), getParentNodesByDepth/searchNodesBFS (indicies merge into emitted object), getParentMainInputNode (needs CD-05; fixture pins early-return only). Your simplified get_start_node / get_highest_nodes differ from L492-575 / L817-891 in the noted spots."
+  - name: send_message
+    args:
+      to: "agent-1"
       cc: ["orchestrator"]
       type: DEFECT_REPORT
       subject: "D-11: crates/n8n-workflow connections.rs:56 pads destination map with None; reference pads with [] (fixture 02 byDest End). traversal.rs 14/14 correct."
