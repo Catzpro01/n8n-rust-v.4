@@ -18,3 +18,8 @@ packages/workflow-lego/.extract/
 # misc
 *.log
 .DS_Store
+
+# agent-2: n8n reference build noise (local sandbox builds; reference/ itself is tracked per main convention)
+reference/**/dist/
+reference/**/.turbo/
+reference/**/coverage/
