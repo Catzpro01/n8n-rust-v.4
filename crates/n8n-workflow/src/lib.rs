@@ -63,23 +63,22 @@ impl Workflow {
     }
 
     pub fn get_child_nodes(&self, node_name: &str) -> Vec<String> {
-        get_connected_nodes(&self.connections_by_source_node, node_name)
+        get_connected_nodes(
+            &self.connections_by_source_node,
+            node_name,
+            &n8n_connection::ConnectionTypeFilter::default(),
+            -1,
+        )
     }
 
     pub fn get_parent_nodes(&self, node_name: &str) -> Vec<String> {
-        let mut parents = Vec::new();
-        for (src, outputs) in &self.connections_by_source_node {
-            for list in outputs.values() {
-                for sublist in list {
-                    for item in sublist {
-                        if item.node == node_name && !parents.contains(src) {
-                            parents.push(src.clone());
-                        }
-                    }
-                }
-            }
-        }
-        parents
+        let by_dest = n8n_connection::map_connections_by_destination(&self.connections_by_source_node);
+        get_connected_nodes(
+            &by_dest,
+            node_name,
+            &n8n_connection::ConnectionTypeFilter::default(),
+            -1,
+        )
     }
 
     pub fn rename_node(&mut self, old_name: &str, new_name: &str) -> bool {
@@ -98,10 +97,12 @@ impl Workflow {
 
         for outputs in self.connections_by_source_node.values_mut() {
             for list in outputs.values_mut() {
-                for sublist in list.iter_mut() {
-                    for item in sublist.iter_mut() {
-                        if item.node == old_name {
-                            item.node = new_name.to_string();
+                for slot in list.iter_mut() {
+                    if let Some(items) = slot {
+                        for item in items.iter_mut() {
+                            if item.node == old_name {
+                                item.node = new_name.to_string();
+                            }
                         }
                     }
                 }
@@ -115,6 +116,7 @@ impl Workflow {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use indexmap::IndexMap;
 
     #[test]
     fn test_workflow_node_rename_and_graph() {
@@ -139,14 +141,14 @@ mod tests {
         };
 
         let mut conns = WorkflowConnections::new();
-        let mut outputs = HashMap::new();
+        let mut outputs = IndexMap::new();
         outputs.insert(
             "main".into(),
-            vec![vec![n8n_connection::ConnectionItem {
+            vec![Some(vec![n8n_connection::ConnectionItem {
                 node: "Code".into(),
                 connection_type: "main".into(),
                 index: 0,
-            }]],
+            }])],
         );
         conns.insert("Start".into(), outputs);
 
