@@ -99,6 +99,12 @@ operations:
   - name: send_message
     args:
       to: "orchestrator"
+      type: HANDOFF
+      subject: "docs/isolation/connection-rust-port-spec.md — executable spec for crates/n8n-connection (types, 4 algorithms line-by-line, fixture runner, DoD)"
+      body: "Per orchestrator instruction: agent-3 stays within manifest boundary; physical implementation + cargo test run on the VPS host. Spec closes R-01..R-05; requires indexmap in workspace deps; migration notes for n8n-workflow/n8n-validation included."
+  - name: send_message
+    args:
+      to: "orchestrator"
       cc: ["agent-5", "agent-1", "agent-4"]
       type: DEFECT_REPORT
       subject: "c912866b crates/n8n-connection: 3 blocking (R-01 null slots, R-02 getConnectedNodes semantics, R-03 HashMap ordering) + 3 advisory vs contracts/connection.contract.md"

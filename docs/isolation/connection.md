@@ -67,7 +67,15 @@ fixtures: `docs/isolation/connection-rust-conformance.md` — 3 blocking (`null`
 `get_connected_nodes` is one-hop/all-types instead of transitive/type-filtered/farthest-first, `HashMap`
 ordering), 3 advisory. `crates/**` remains untouched by agent-3 pending a manifest.
 
-### 0.5 Phase-3 follow-up manifest
+### 0.5 Rust port specification (hand-off)
+
+Per orchestrator decision, agent-3 does not edit `crates/**`. The executable specification for
+`crates/n8n-connection` — types (`Slot = Option<Vec<Connection>>`, `IndexMap`), `get_connected_nodes`,
+`map_connections_by_destination`, the 7 graph utilities, `compare_connections`, the fixture runner over
+`tests/reference/connection/*`, and a definition of done — is `docs/isolation/connection-rust-port-spec.md`.
+Implementation + `cargo test` are run by the Orchestrator on the VPS host.
+
+### 0.6 Phase-3 follow-up manifest
 
 Option A is drafted (not executed) as `tasks/TASK-303-connection.yaml`, status `PROPOSED`. It lists the
 exact 12 graph + 1 content symbols for port `P-CONNECTION-GRAPH`, the types that stay in the shared kernel,
