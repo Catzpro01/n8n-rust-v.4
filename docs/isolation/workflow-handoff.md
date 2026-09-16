@@ -185,6 +185,10 @@ Supabase migration (`docs/supabase_migration.sql`), no client, and no `service_r
 RLS grants `anon` SELECT only, so the publishable key cannot insert. Delivery requires either the
 secret key or an orchestrator-side flush.
 
+**Owner decision (2026-09-17): keep the file-based outbox as the transport for now** — no Supabase
+client is to be added by Agent 1; the orchestrator flushes these envelopes when a service-role key
+is available.
+
 ---
 
 ## 7. Reconciliation with `main`'s TASK-301 spec (`docs/isolation/workflow_spec.md`)
@@ -219,8 +223,8 @@ Recommendation: the merge condition should name the gate *and* its check count, 
 
 | Option | Consequence | Status |
 | :--- | :--- | :--- |
-| **A. Keep the model faithful** (current) — Workflow declares the acyclic invariant, does not enforce it; Validation owns enforcement as a **new capability** | Public surface stays at 15 symbols; digest baseline 252/252 remains meaningful; no reference-behavior drift | **implemented** (`contracts/workflow.contract.md` §4/§5, §3.2 above) |
-| **B. Add `detectCycles` to the Workflow LEGO** as an explicitly **new** capability | Surface 15 → 16; requires updating `manifest/ownership.json → publicSurface`, `MODEL_SURFACE_NAMES`, the `.extract` facade, the 19/19 surface-parity test, and re-running the 11/11 gate. The function would also have to be listed as *not* reference-derived | **not done** — needs an owner decision; adding an unrequested algorithm to a frozen boundary is exactly what the boundary gate exists to prevent |
+| **A. Keep the model faithful** (current) — Workflow declares the acyclic invariant, does not enforce it; Validation owns enforcement as a **new capability** | Public surface stays at 15 symbols; digest baseline 252/252 remains meaningful; no reference-behavior drift | **DECIDED by repo owner 2026-09-17** — implemented in `contracts/workflow.contract.md` §4/§5 (see also §3.2 above) |
+| **B. Add `detectCycles` to the Workflow LEGO** as an explicitly **new** capability | Surface 15 → 16; requires updating `manifest/ownership.json → publicSurface`, `MODEL_SURFACE_NAMES`, the `.extract` facade, the 19/19 surface-parity test, and re-running the 11/11 gate. The function would also have to be listed as *not* reference-derived | **REJECTED by repo owner 2026-09-17** — do not implement without a new decision |
 
 ### 7.3 Task-ID collision resolved
 

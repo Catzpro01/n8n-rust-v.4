@@ -71,6 +71,12 @@ for behavior:
 | graph is acyclic | **NO** | no cycle detection exists in the package: `grep -rIn cycle packages/workflow/src` → **2 hits, both the word "lifecycle"** (`execution-context.ts:96,118`). The only `detectCycles` in the whole reference tree is `packages/@n8n/workflow-sdk/src/codegen/graph-annotator.ts:16` — DFS over a `SemanticGraph`, in the SDK **codegen** package, not a workflow-model guard | see `ISSUE-003` response in `docs/isolation/workflow-handoff.md` §3.2 |
 | `timezone` defaults from ambient global state when unset | **YES** (default applied) | `this.settings.timezone ?? getGlobalState().defaultTimezone` — reached only through the injectable port `P-KERNEL-CONFIG` | `workflow.ts:132` |
 
+> **Owner decision (2026-09-17):** the Workflow LEGO stays faithful to the reference at 15 symbols —
+> it declares the acyclic invariant and does not enforce it; cycle detection belongs to the Validation
+> LEGO as a NEW CAPABILITY. Option B (adding `detectCycles` here) was considered and rejected:
+> adding an algorithm the reference does not have would break the boundary/digest baseline for no
+> Phase-2 benefit.
+>
 > Any LEGO that *does* implement uniqueness, dangling-connection or cycle checks must document them as
 > new behavior. `contracts/validation.contract.md` §2 check 3 (`CycleDetection`) is subject to this rule
 > and is tracked as `ISSUE-003`.
