@@ -1,0 +1,71 @@
+id: TASK-301-workflow
+agent: agent-1
+lego: workflow
+module: workflow
+phase: 2
+objective: >
+  Specification & handoff unit for the Workflow LEGO: publish the interface package that the peer
+  LEGOs (Node = LEGO 02, Connection = LEGO 03, Validation = LEGO 04) must implement or consume,
+  answer the open Agent-5 issues where Agent 1 is the required owner, and request guardian
+  verification of the isolation branch. No new isolation code, no reference modification, no Rust.
+
+# Boundary amendment (explicit, for Agent-5 review — see docs/isolation/workflow-handoff.md §5.2):
+# the Phase-2 isolation deliverable cannot physically live inside docs/isolation/** alone.
+# Paths marked ADDITIVE are agent-1-scoped additions relative to tasks/TASK-201-workflow.yaml.
+allowed_paths:
+  - reference/n8n/packages/workflow/**        # read-only golden source (hash-pinned)
+  - docs/isolation/workflow*                  # Agent-1 documentation surface
+  - docs/isolation/evidence/**                # generated gate evidence for this LEGO
+  - contracts/workflow.contract.md            # Agent-1 owned contract
+  - packages/workflow-lego/**                 # ADDITIVE: the isolation unit (manifest, src, test)
+  - tools/**                                  # ADDITIVE: boundary / digest / gate / live harness
+  - scripts/**                                # ADDITIVE: runtime discovery + test wrappers
+  - tests/**                                  # ADDITIVE: local isolation tests (reference fixtures untracked here)
+  - tasks/TASK-30*-workflow.yaml
+  - results/TASK-30*-workflow.md
+forbidden_paths:
+  - reference/n8n/packages/core/**
+  - reference/n8n/packages/cli/**
+  - crates/**
+  - apps/**
+  - reference/n8n/**                          # MODIFICATION forbidden — reference is read-only
+  - contracts/node.contract.md
+  - contracts/connection.contract.md
+  - contracts/validation.contract.md
+  - contracts/expression.contract.md
+  - contracts/execution-data.contract.md
+  - packages/workflow-lego/test/**            # tests may only be read/executed, not weakened
+requires:
+  - contracts/workflow.contract.md
+  - docs/isolation/workflow-port-contract.md
+operations:
+  - name: read_file
+    args: { path: "reference/n8n/packages/workflow/src/workflow.ts" }
+  - name: read_file
+    args: { path: "reference/n8n/packages/workflow/src/graph/graph-utils.ts" }
+  - name: write_file
+    args: { path: "contracts/workflow.contract.md" }
+  - name: write_file
+    args: { path: "docs/isolation/workflow-handoff.md" }
+  - name: write_file
+    args: { path: "docs/isolation/workflow-bus-outbox.json" }
+  - name: run_gate
+    args: { command: "npm run verify", expect: "11/11 PASS" }
+  - name: send_message
+    args: { to: "agent-2", type: "DEPENDENCY_REQUEST", payload_ref: "docs/isolation/workflow-bus-outbox.json#MSG-01" }
+  - name: send_message
+    args: { to: "agent-3", type: "CONTRACT_INTERFACE_PROPOSAL", payload_ref: "docs/isolation/workflow-bus-outbox.json#MSG-02" }
+  - name: send_message
+    args: { to: "agent-4", type: "CONTRACT_INTERFACE_PROPOSAL", payload_ref: "docs/isolation/workflow-bus-outbox.json#MSG-03" }
+  - name: send_message
+    args: { to: "agent-5", type: "SPECIFICATION_READY", payload_ref: "docs/isolation/workflow-bus-outbox.json#MSG-04" }
+  - name: send_message
+    args: { to: "broadcast", type: "STATUS_REPORT", payload_ref: "docs/isolation/workflow-bus-outbox.json#MSG-05" }
+merge_condition:
+  - regression_gate_pass
+  - no_contract_violation
+  - agent_5_verification
+release_lock: false
+notes:
+  - "Supabase bus has no client implementation and no service_role key in this environment; envelopes are persisted in docs/isolation/workflow-bus-outbox.json instead of being inserted (see §6 of the handoff doc)."
+  - "PR #1 must not be merged on the strength of self-verification alone (rule 7)."

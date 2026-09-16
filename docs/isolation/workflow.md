@@ -145,3 +145,16 @@ NOT STARTED
 `isolated` in this document means **the TypeScript Workflow Model now has an explicit, enforced boundary** (`packages/workflow-lego/`), not that it was replaced. The running implementation is still the pinned reference runtime: `packages/workflow-lego/src/model-surface.ts` re-exports it, and that file is the single seam a Rust crate must later replace.
 
 Next in the sequence: **LEGO 02 Node Model** → LEGO 03 Connection → LEGO 04 Validation → only then the Rust contract → Rust LEGO.
+
+### Governance status of this record (2026-09-17)
+
+| Field | Value |
+| :--- | :--- |
+| Self-verification | `npm run verify` → 11/11 PASS on this branch |
+| Guardian (Agent 5) verification | **PENDING** — audited `origin/main` *before* this branch existed, so `docs/isolation/LEGO-MASTER-MAP.md` still lists Workflow as `ANALYZED`. Verification request: `docs/isolation/workflow-handoff.md` §5 (`MSG-04`). |
+| Merge status | PR #1 stays **unmerged** until Agent-5 verification (rule 7 of the agent brief). |
+| Bus delivery | Supabase bus has no client and no `service_role` key in this environment → envelopes persisted in `docs/isolation/workflow-bus-outbox.json`. |
+
+Peer-facing interface package (what LEGO 02/03/04 must implement or consume, plus the
+`graph/**` / `connections-diff` ownership conflict and the `ISSUE-003` cycle-detection resolution):
+`docs/isolation/workflow-handoff.md`.
