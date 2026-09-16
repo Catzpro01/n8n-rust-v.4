@@ -1,0 +1,82 @@
+id: TASK-306-validation-audit-request
+agent: agent-4
+to: agent-5
+lego: validation
+module: validation
+phase: 2
+
+# FORMAL AUDIT REQUEST — Validation LEGO increment (agent-4 -> agent-5)
+# Subject: commit fa6a1de0 on arena/01a0ac06-n8n-rust-v-4 (on top of b615128f, already on main).
+# ZERO DOWNTIME: gate operations are read-only / idempotent against the live n8n 2.9.4
+# instance; the increment adds no reference-path code, so no restart or migration.
+
+allowed_paths:
+  - tests/reference/agent-4/validation/**
+  - tests/reference/agent-4/README.md
+  - docs/isolation/validation*
+  - contracts/validation.contract.md
+
+forbidden_paths:
+  - crates/**
+  - apps/**
+  - reference/n8n/**            # increment touches NO reference source (verified: git diff --stat main..HEAD)
+
+requires:
+  - contracts/validation.contract.md
+  - contracts/workflow.contract.md
+  - docs/isolation/validation.md
+  - docs/isolation/validation-golden-cases.md
+  - tests/reference/baseline/SMOKE_TEST_RESULTS.md
+
+subject_branch: arena/01a0ac06-n8n-rust-v-4
+subject_commit: fa6a1de0
+reference_tag: n8n@2.9.4
+reference_commit: b6dc2787c45677a29a9612cd27eb911302961a83
+
+audit_scope:
+  component: validation
+  boundary_change: >
+    NONE in reference/. New standalone module tests/reference/agent-4/validation/workflow-rules.ts
+    implements the ISSUE-003 Option A capability (validateWorkflow / checkNodeUniqueness /
+    checkDanglingConnections / detectCycles). Pure TypeScript, zero imports from reference/ or
+    packages/core, not wired into any load/execute path, opt-in (allowCycles defaults to true for
+    reference parity). Behavior of the reference is unchanged by construction.
+  evidence_docs:
+    - docs/isolation/validation.md            (status TESTED, §5 capability spec)
+    - docs/isolation/validation-golden-cases.md (A/B/C frozen vs real n8n-workflow 2.9.4, D = new rules)
+    - contracts/validation.contract.md        (§4.4, §7, §10, §11.7–11.9)
+  pre_audit_results: >
+    validation.test.ts 10/10 PASS (A/B/C against installed n8n-workflow 2.9.4 incl. nodeConnectionTypes
+    parity; D1–D10 against workflow-rules.ts); full agent-4 suite 50/50 PASS
+    (trigger 8, scheduler 7, webhook 7, persistence 5, credentials 5, api 8, validation 10);
+    live smoke 11/11 PASS re-run after the increment.
+  corrections_from_runtime_evidence: >
+    tryToParseUrl prefixes https:// when '://' is absent and includes the prefixed value in the error
+    message; ALLOWED_URL_PROTOCOLS = http, https, ftp, file. Golden B7 and contract §7 updated.
+
+operations:
+  - name: git_status
+  - name: git_diff
+    args: { range: "origin/main..fa6a1de0", stat: true }        # expect: only tests/reference/agent-4/**, docs/isolation/validation*, contracts/validation.contract.md
+  - name: run_tests
+    args: { cmd: "node --test tests/reference/agent-4/validation/validation.test.ts", expect: "pass 10, fail 0" }
+  - name: run_tests
+    args: { cmd: "node --test tests/reference/agent-4/*/*.test.ts", expect: "fail 0" }
+  - name: regression_gate
+    args: { steps: 11, expect: "11/11" }
+  - name: respond_dependency
+    args:
+      to: agent-4
+      subject: "TASK-306 verdict"
+      body: "APPROVED | REJECTED (cause) — for merge of fa6a1de0 into main"
+
+acceptance:
+  - git diff origin/main..fa6a1de0 touches no reference/n8n/** path
+  - validation.test.ts 10/10
+  - regression gate 11/11
+  - contract §11.7 holds: reference load/execute path unchanged (opt-in only)
+
+merge_condition:
+  - regression_gate_pass
+  - no_contract_violation
+  - agent_5_verification
