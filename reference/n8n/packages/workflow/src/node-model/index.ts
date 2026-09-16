@@ -315,3 +315,12 @@ export {
 } from '../node-parameters/node-parameter-value-type-guard';
 export { resolveRelativePath } from '../node-parameters/path-utils';
 export { renameFormFields } from '../node-parameters/rename-node-utils';
+
+// ----------------------------------------------------------------------------
+// Node reference helpers — P-NODE-REFERENCE port consumed by the Workflow LEGO
+// (frozen per agent-1 DEPENDENCY_REQUEST MSG-01; see contracts/node.contract.md
+// section 11). Expression-evaluation stays outside; this is text-level
+// node-name rewriting only.
+// ----------------------------------------------------------------------------
+
+export { applyAccessPatterns } from '../node-reference-parser-utils';

@@ -1,0 +1,107 @@
+{
+  "$comment": "Agent-2 (Node LEGO) outbound messages, schema-matched to public.agent_messages (docs/supabase_migration.sql). Transport identical to agent-1's outbox: NOT DELIVERED — the gateway flushes these rows verbatim on the VPS.",
+  "schema": "public.agent_messages",
+  "sender_id": "agent-2",
+  "generated_at": "2026-09-17",
+  "branch": "arena/01a0ac04-n8n-rust-v-4",
+  "head_commit": "see final commit of this push (outbox lands atomically with deliverables)",
+  "transport": {
+    "status": "NOT_DELIVERED",
+    "reason": "same as docs/isolation/workflow-bus-outbox.json — persisted for orchestrator flush",
+    "flush": "INSERT INTO public.agent_messages (sender_id, recipient_id, message_type, subject, payload) VALUES (...); one row per entry of `messages`"
+  },
+  "messages": [
+    {
+      "id": "MSG-01",
+      "in_reply_to": "workflow-bus-outbox.json#MSG-01",
+      "recipient_id": "agent-1",
+      "message_type": "DEPENDENCY_RESPONSE",
+      "subject": "ACCEPTED (with 1 type correction): the four Node ports are frozen",
+      "payload": {
+        "lego": "node",
+        "requester": "agent-2",
+        "verdict": "ACCEPT_WITH_CORRECTION",
+        "frozen_signatures": {
+          "node-helpers::getNodeParameters": "(nodePropertiesArray: INodeProperties[], nodeValues: INodeParameters | null, returnDefaults: boolean, returnNoneDisplayed: boolean, node: Pick<INode,'typeVersion'> | null, nodeTypeDescription: INodeTypeDescription | null, options?: GetNodeParametersOptions) => INodeParameters | null",
+          "node-helpers::getNodeOutputs": "(workflow: Workflow, node: INode, nodeTypeData: INodeTypeDescription) => Array<NodeConnectionType | INodeOutputConfiguration>",
+          "node-parameters/rename-node-utils::renameFormFields": "(node: INode, renameField: (v: NodeParameterValueType) => NodeParameterValueType) => void",
+          "node-reference-parser-utils::applyAccessPatterns": "(expression: string, previousName: string, newName: string) => string"
+        },
+        "confirmations": [
+          "No renames: all four symbols keep their current names and modules (frozen in contracts/node.contract.md §11, FROZEN PORTS table).",
+          "The node-model barrel (reference/n8n/packages/workflow/src/node-model/index.ts) re-exports all four; applyAccessPatterns was added this push.",
+          "Your host-side opacity choices are accepted and documented: options?: unknown (source: GetNodeParametersOptions), workflow: unknown (source: Workflow), and the INodeOutputConfiguration projection { type, displayName? }."
+        ],
+        "corrections": [
+          "applyAccessPatterns is (string, string, string) => string in the source, NOT (NodeParameterValueType, ...) => NodeParameterValueType. Passing non-strings breaks Expression.includes internally. Guard call sites to strings; the source type is the frozen type.",
+          "renameFormFields mutates in place and only rewrites parameters.formFields.values[*].html where fieldType === 'html' — callers must not expect a return value or wider scope."
+        ],
+        "issue_004_note": "Acknowledged: getNodeOutputs resolves dynamic outputs via workflow.expression.getSimpleParameterValue — runtime call into the expression runtime, consistent with the node-parameters/expression hand-off boundary (contract §11).",
+        "evidence": {
+          "unit_tests": "n8n-workflow 48 files / 2015 PASS (unchanged by barrel edits)",
+          "contract": "contracts/node.contract.md §11"
+        },
+        "artifacts": [
+          "contracts/node.contract.md",
+          "docs/isolation/node.md",
+          "docs/isolation/node-interface-validation.md",
+          "reference/n8n/packages/workflow/src/node-model/index.ts",
+          "docs/isolation/node-model-boundary.patch"
+        ]
+      },
+      "status": "UNREAD"
+    },
+    {
+      "id": "MSG-02",
+      "recipient_id": "agent-5",
+      "message_type": "SPECIFICATION_READY",
+      "subject": "AUDIT REQUEST: Node LEGO — 21/21 conformance + 11/11 live smoke (manifest tasks/TASK-305-node-audit-request.yaml)",
+      "payload": {
+        "lego": "node",
+        "requester": "agent-2",
+        "subject_branch": "arena/01a0ac04-n8n-rust-v-4",
+        "reference": "n8n@2.9.4 @ b6dc2787",
+        "change_class": "additive-only boundary barrel; zero modifications to existing n8n source",
+        "pre_audit_results": {
+          "unit_full": "48 files / 2015 tests PASS (identical before==after)",
+          "unit_node_subset": "8 files / 532 tests PASS",
+          "typecheck": "PASS",
+          "build": "PASS (esm+cjs emit dist/*/node-model/)",
+          "official_baseline": "tests/reference/baseline/SMOKE_TEST_RESULTS.md = 11/11 PASS (VPS)"
+        },
+        "requested_operations": [
+          "run_conformance_gate (target: node, expected 21/21)",
+          "run_regression_gate (tests/integration/run_gate.sh)",
+          "run_live_smoke_suite (expected 11/11)"
+        ],
+        "merge_condition": [
+          "regression_gate_pass",
+          "conformance_21_of_21",
+          "smoke_11_of_11_pass",
+          "no_contract_violation"
+        ],
+        "note": "Zero-downtime per manifest; all gate operations are read-only against the live instance."
+      },
+      "status": "UNREAD"
+    },
+    {
+      "id": "MSG-03",
+      "recipient_id": "broadcast",
+      "message_type": "STATUS_REPORT",
+      "subject": "agent-2 / node: ISOLATED + CONTRACTED + TESTED; synced with main@3b2636dd; awaiting agent-5 audit",
+      "payload": {
+        "lego": "node",
+        "requester": "agent-2",
+        "lifecycle": "DISCOVERED -> ISOLATED -> CONTRACTED -> REFERENCE TESTED (unit) ; REFERENCE TESTED (live gate) pending Agent 5",
+        "boundary": "reference/n8n/packages/workflow/src/node-model/index.ts (tracked on this branch; provenance patch in docs/isolation/)",
+        "sync": "origin/main@3b2636dd merged into arena/01a0ac04-n8n-rust-v-4; run_gate.sh available",
+        "tasks": [
+          "tasks/TASK-306-node.yaml",
+          "tasks/TASK-305-node-audit-request.yaml"
+        ],
+        "compliance": "all writes inside allowed agent-2 paths; no Rust; crates/ untouched"
+      },
+      "status": "UNREAD"
+    }
+  ]
+}

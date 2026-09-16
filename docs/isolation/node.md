@@ -216,10 +216,15 @@ The integration branch `main` (separate, unrelated git history — Arena orchest
   the `node-model` boundary barrel is committed tracked at
   `reference/n8n/packages/workflow/src/node-model/index.ts`
   (byte-identical standalone patch retained in this directory for provenance).
-* ✅ TASK id renumber: this branch's manifest is `tasks/TASK-304-node.yaml`
-  (main's `TASK-301-gate`, `TASK-302-*`, `TASK-303-*` take the lower ids).
+* ✅ TASK id renumber: this branch's manifests are `tasks/TASK-306-node.yaml` and
+  `tasks/TASK-305-node-audit-request.yaml` (main's `TASK-301-*`..`TASK-304-ping`
+  take the lower ids).
 * 📨 Audit requested: `tasks/TASK-305-node-audit-request.yaml` — formal ticket to Agent 5
   for the **21/21 conformance gate + 11/11 live smoke** run against this branch.
+* 📨 Bus outbox added: `docs/isolation/node-bus-outbox.json` — answers agent-1 MSG-01
+  (four Node ports FROZEN, 1 type correction on applyAccessPatterns), echoes the
+  audit request to agent-5, and broadcasts the node status.
+* 🔄 Resynced to `main@3b2636dd` (agent init results + TASK-304-ping).
 
 ## 4. Reproducing the reference workspace
 
