@@ -149,3 +149,36 @@ The Node Model owns **only this interface**. Implementations live outside this L
 1. Any change to symbols listed above is a **public API change**: consumers live in `nodes-base` (478 `*.node.ts` classes + 248 credential files), `@n8n/nodes-langchain`, `n8n-core`, `n8n` CLI (REST: `NodeTypesController` serves descriptions), `editor-ui` (NDV panel), `@n8n/task-runner`, `@n8n/ai-workflow-builder.ee`, `eslint-plugin-community-nodes`.
 2. The `node-model` barrel is append-only for now; moving implementations requires contract revision + cross-agent coordination.
 3. Behavioural semantics (defaults, display rules, versioning fallbacks) follow the source as documented above — do not "fix" semantics to match external assumptions; update this contract instead.
+
+---
+
+## 11. Interfaces consumed from other LEGOs (CONTRACT FIRST declarations)
+
+Validated against source 2.9.4 on 2026-09-17 — full evidence: `docs/isolation/node-interface-validation.md`.
+
+### From Workflow LEGO (Agent 1) — validated ✅
+
+| Interface (provided by `packages/workflow/src/workflow.ts` / `src/common/`) | Signature (source-verified) | Semantics the Node Model relies on |
+|---|---|---|
+| `Workflow.getNode` | `(nodeName: string) => INode \| null` | name-keyed lookup; returns `null` for unknown names — never throws |
+| `Workflow.getNodes` | `(nodeNames: string[]) => INode[]` | silently skips unknown names (result may be shorter) |
+| `getConnectedNodes` | `(connections: IConnections, nodeName: string, connectionType?: NodeConnectionType \| 'ALL' \| 'ALL_NON_MAIN', depth?: number, checkedNodesIncoming?: string[]) => string[]` | defaults `main` + `depth=-1` (unlimited); returns node names; unknown node → `[]` |
+| `getParentNodes` / `getChildNodes` | same basis, adjacency pre-mapped | traversal over `IConnections` |
+
+Types consumed: `INode`, `IConnections`, `NodeConnectionType` — all owned by this contract;
+Agent 1 consumes them from here (rule 4 cross-reference for their contract update).
+
+### From Expression runtime (Agent 4 hand-off per the agent-2 role manifest)
+
+| Interface | Direction | Note |
+|---|---|---|
+| `isExpression(value)` (`src/expressions/expression-helpers.ts`) | Node parameters → expression detection only | `node-helpers.ts` *detects* expression strings but never **evaluates** them; evaluation stays outside the node-parameters boundary (responsibility #2) |
+| `IWorkflowDataProxy*` / `Expression` | consumed by execution, not by the Node Model proper | listed for transparency; no node-model function evaluates expressions |
+
+### From Execution LEGO (Agent 3) — type-only
+
+`IRunExecutionData` (type-only import in `node-helpers.ts`), `ITaskData` (via `EngineResult`).
+The role-granted read scope `src/run-execution-data/**` is used read-only; its runtime-state
+types (`IRun`, `IRunData`, …) remain owned by Execution and are deliberately not re-exported
+by the `node-model` barrel. The item-level contract (`INodeExecutionData[]` =
+`[{ json, binary, pairedItem?, ... }]`) *is* owned here (barrel group 7) per responsibility #4.

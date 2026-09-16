@@ -1,0 +1,80 @@
+id: TASK-301-node
+agent: agent-2
+lego: node
+module: node
+phase: 2
+
+# Executed state: Node Model isolation + contract + interface validation
+# (Agent 2 Arena session, branch arena/01a0ac04-n8n-rust-v-4)
+# This manifest records operations for gateway replay/bus logging.
+
+allowed_paths:
+  - reference/n8n/packages/workflow/src/node*
+  - reference/n8n/packages/workflow/src/run-execution-data/**
+  - docs/isolation/node*
+  - contracts/node.contract.md
+
+forbidden_paths:
+  - reference/n8n/packages/core/**
+  - reference/n8n/packages/cli/**
+  - crates/**
+  - apps/**
+
+requires:
+  - contracts/node.contract.md
+
+operations:
+  - name: git_status
+  - name: list_files
+    args:
+      path: reference/n8n/packages/workflow/src
+  # Deliverables produced (all within allowed_paths):
+  # - docs/isolation/node.md                    (X-Ray + isolation boundary)
+  # - docs/isolation/node-model-boundary.patch  (additive boundary barrel)
+  # - docs/isolation/node-interface-validation.md
+  # - contracts/node.contract.md                (source-verified contract)
+  # - reference/n8n/packages/workflow/src/node-model/index.ts (barrel, additive)
+  - name: read_file
+    args:
+      path: reference/n8n/packages/workflow/src/node-helpers.ts
+  - name: read_messages
+
+coordination:
+  - name: request_dependency
+    args:
+      from: agent-5
+      what: >
+        Run the 11-point reference smoke suite (Regression Gate) against
+        arena/01a0ac04-n8n-rust-v-4 state (n8n@2.9.4 + node-model barrel).
+        BEFORE baseline already verified 11/11 PASS on the VPS
+        (tests/reference/baseline/SMOKE_TEST_RESULTS.md). Change is
+        additive-only; unit/typecheck/build identical. Node LEGO status
+        flips to VERIFIED only on AFTER 11/11 PASS.
+  - name: send_message
+    args:
+      to: agent-1
+      what: >
+        getNode/getConnectedNodes/getParentNodes/getChildNodes VALIDATED
+        against source (docs/isolation/node-interface-validation.md).
+        Please declare consumed types {INode, IConnections, NodeConnectionType}
+        and the provided method signatures (+null/empty semantics) in
+        contracts/workflow.contract.md per CONTRACT FIRST rule.
+  - name: send_message
+    args:
+      to: agent-5
+      what: >
+        contracts/node.contract.md on this branch is source-verified against
+        n8n@2.9.4. The scaffold version reachable on main only covers
+        identity fields; reconcile in favor of the source-verified contract.
+
+verification:
+  unit_tests: n8n-workflow 48 files / 2015 tests PASS (before == after)
+  node_subset: 8 files / 532 tests PASS
+  typecheck: pnpm --filter n8n-workflow typecheck PASS
+  build: pnpm --filter n8n-workflow build PASS (esm+cjs emit node-model/)
+  reference_diff: additive-only (packages/workflow/src/node-model/)
+
+merge_condition:
+  - regression_gate_pass
+  - no_contract_violation
+  - smoke_11_of_11_pass_by_agent_5

@@ -4,7 +4,7 @@
 **Reference:** `reference/n8n` @ `n8n@2.9.4` (commit `b6dc2787c45677a29a9612cd27eb911302961a83`, 2026-02-25)
 **Package under isolation:** `n8n-workflow@2.9.1` (`reference/n8n/packages/workflow`)
 **Companion contract:** [`contracts/node.contract.md`](../../contracts/node.contract.md)
-**Boundary patch:** [`patches/0001-node-model-boundary.patch`](../../patches/0001-node-model-boundary.patch)
+**Boundary patch:** [`node-model-boundary.patch`](node-model-boundary.patch)
 
 ---
 
@@ -144,7 +144,7 @@ Registry implementation, node loading/scanning, execution engine, execution cont
    only            + RoutingNode     loads, serves     from REST
 ```
 
-Change applied: **one additive file** in the reference (`packages/workflow/src/node-model/index.ts`, 317 LoC, re-exports only). Verified by `git status`: `?? packages/workflow/src/node-model/` — zero modifications to existing files. The same change is committed as a standalone patch: `patches/0001-node-model-boundary.patch`.
+Change applied: **one additive file** in the reference (`packages/workflow/src/node-model/index.ts`, 317 LoC, re-exports only). Verified by `git status`: `?? packages/workflow/src/node-model/` — zero modifications to existing files. The same change is committed as a standalone patch: `docs/isolation/node-model-boundary.patch` (relocated into the authorized `docs/isolation/node*` boundary after the agent-2 role manifest landed).
 
 ### Tests
 
@@ -178,7 +178,7 @@ Change applied: **one additive file** in the reference (`packages/workflow/src/n
 
 ## 3. Coordination notes for other agents
 
-* **Agent 1 (Workflow):** untouched. Two type-only edges exist into `Workflow` (`NodeHelpers.isExecutable`, `getNodeInputs/Outputs`). If `Workflow`'s public shape changes, these signatures need review.
+* **Agent 1 (Workflow):** untouched. Two type-only edges exist into `Workflow` (`NodeHelpers.isExecutable`, `getNodeInputs/Outputs`). If `Workflow`'s public shape changes, these signatures need review. Agent 1's traversal interfaces were validated per the agent-2 role manifest — see [`node-interface-validation.md`](node-interface-validation.md) (verdict: VALID, no change requested; declared in contract §11).
 * **Agent 3 (Execution):** untouched. `I*Functions` boundary types documented in contract §4; execution owns their implementations.
 * **Agent 4 (Infra/API):** untouched. `INodeTypes` implementation (`cli/src/node-types.ts`) and `LoadNodesAndCredentials` remain yours; contract §8 documents the interface you implement.
 * **Agent 5 (Tests):** no test files were added/changed. Node-related test inventory is listed above for your coverage mapping.
@@ -198,7 +198,7 @@ The integration branch `main` (separate, unrelated git history — Arena orchest
   At integration, reconcile in favor of the source-verified contract — the scaffold lacks
   connections/value/lifecycle/registry semantics and contains nothing contradicted here.
 * ⚠️ **Reference-in-git divergence:** `main` commits `reference/` in-tree (~15k files);
-  this branch keeps it git-ignored and commits `patches/0001-node-model-boundary.patch`
+  this branch keeps it git-ignored and commits `docs/isolation/node-model-boundary.patch`
   instead. Either is workable; do not mix both for the same path.
 * ✅ No conflicts: `main` has `docs/isolation/workflow.md` (Agent 1) but no
   `docs/isolation/node.md` — this document fills that gap. `main` also brings
@@ -213,7 +213,7 @@ cd reference/n8n
 corepack enable   # pnpm 10.22.0
 pnpm install --frozen-lockfile          # needs unrestricted egress
 pnpm --filter n8n-workflow^... build && pnpm --filter n8n-workflow test
-git apply ../../patches/0001-node-model-boundary.patch
+git apply ../../docs/isolation/node-model-boundary.patch
 pnpm --filter n8n-workflow typecheck && pnpm --filter n8n-workflow build
 ```
 
