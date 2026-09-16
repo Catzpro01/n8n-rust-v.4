@@ -181,6 +181,27 @@
         "suggested_action": "Phase-3 gate variant: replace the Phase-2 Rust guard with crate-graph boundary rules (no node-model -> expression/workflow/core edge) and per-crate digest conformance."
       },
       "status": "UNREAD"
+    },
+    {
+      "id": "MSG-08",
+      "recipient_id": "broadcast",
+      "message_type": "STATUS_REPORT",
+      "subject": "agent-2 / node: verified golden cases GC-1..GC-7 published for the 6 frozen ports + VersionedNodeType",
+      "payload": {
+        "lego": "node",
+        "requester": "agent-2",
+        "artifact": "docs/isolation/node-golden-cases.md",
+        "method": "produced by executing the built reference n8n-workflow@2.9.1 (n8n@2.9.4) — verified-by-execution, not hand-derived",
+        "covers": [
+          "applyAccessPatterns", "getConnectionTypes", "renameFormFields (in-place, html-only)",
+          "getNodeOutputs (incl. continueErrorOutput trailing Error + Success rename + deep-copy guard)",
+          "getNodeInputs (static passthrough + dynamic failure => [])",
+          "getNodeParameters (defaults fill, display-gated drop, returnNoneDisplayed, expression passthrough)",
+          "VersionedNodeType (currentVersion=max, no-fallback on absent version)"
+        ],
+        "acceptance_rule": "n8n-node-model Rust tests must reproduce GC-1..GC-7 byte-identically; deviations are conformance defects, to be registered back — never 'fixed' against the reference semantics."
+      },
+      "status": "UNREAD"
     }
   ]
 }
