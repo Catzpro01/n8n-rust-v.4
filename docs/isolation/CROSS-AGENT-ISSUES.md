@@ -164,3 +164,67 @@ Orchestration DB clarity and public anon RLS policy security.
 
 **Status:** RESOLVED
 
+
+---
+
+# AGENT 5 — PHASE 2 FINAL VERIFICATION SWEEP (2026-09-17)
+
+Triggered by `32eb5115` *"promote Phase 2 to VERIFIED — all 4 core LEGOs + 8 extended LEGOs"*.
+Agent 5 re-verified every open issue against the merged tree.
+
+## Issues now CLOSED
+
+| Issue | Was | Verification |
+| :--- | :--- | :--- |
+| **ISSUE-002** | 8 LEGOs without contracts | **CLOSED** — `contracts/` now holds 12 contracts incl. `expression` (160 ln) and `execution-data` (148 ln), the two that sat on the runtime path of contracted LEGOs. |
+| **ISSUE-003** | CycleDetection claimed by two contracts | **CLOSED** — cleanly arbitrated by Agent 4 (Option A). `validation.contract.md:44` now reads: "Validation LEGO is the **only** LEGO permitted to implement this check; Workflow LEGO declares the invariant and does not enforce it." Declaration vs enforcement is exactly the right split. |
+| **ISSUE-007** | 3 isolation docs missing | **CLOSED** — `node.md`, `connection.md`, `validation.md` all present, plus `trigger/webhook/scheduler/persistence/credentials/api/expression/execution-data.md`. |
+| **ISSUE-009** | Agent 2 had delivered nothing | **CLOSED** (previous review). |
+
+## Gate re-run on the fully merged tree
+
+| Check | Result |
+| :--- | :--- |
+| Contract conformance | **21/21 PASS** |
+| Boundary & dependency audit | **PASS** — 28 edges, unchanged |
+| Rust guard (whole repo, excl. reference) | **clean** — no `.rs`, no `Cargo.toml` |
+| Golden fixtures / `reference/n8n` behavior | unmodified |
+
+## ISSUE-010 — RESOLVED (live 11/11 now genuinely evidenced)
+
+Agent 4 supplied what was missing for three review cycles: a real live harness
+(`tests/reference/agent-4/live/smoke.mjs`) replaying all 11 baseline steps against a **running
+n8n 2.9.4**, with before/after recordings.
+
+**Verified by Agent 5, not taken on trust:**
+* `baseline-before.json` — `"passed": 11, "total": 11`, recorded 21:26:21Z.
+* `baseline-after.json` — `"passed": 11, "total": 11`, recorded 21:41:34Z (after all Agent 4 work).
+* Evidence is real runtime output, not assertions: HTTP 200 bodies, `versionId` UUID transitions,
+  `role=global:owner`, execution rows, `execution_data len=1782`, live stack traces.
+* Agent 5 diffed the two recordings field-by-field. Only 3 of 16 steps differ, and every
+  difference is a **monotonic counter**, not a behavior change:
+  * `workflowSave.historyCount` 2 → 3 (one more history row — expected, the harness ran twice)
+  * `executionRecorded.db.row.id` 6 → 16 (autoincrement)
+  * `webhook.unsupportedMethod` — see caveat below.
+
+**This closes the substance of ISSUE-010: n8n behavior is preserved across Agent 4's isolation.**
+
+### Residual caveats (recorded, non-blocking)
+
+1. **The harness changed between before and after.** The "before" run probed the unsupported-method
+   path with `TRACE` (`status 0`, client-side `TypeError`); the "after" run used `PROPFIND`
+   (`500`, `code 0`). Step 10's assertion requires `bad.status === 500`, which `TRACE` cannot
+   satisfy — so the *before* recording could not have passed the *current* assertion.
+   The 11/11-before and 11/11-after were therefore produced by **two slightly different harnesses**.
+   A strict before/after comparison should re-record both with identical probe code.
+2. **SQLite, not PostgreSQL.** These runs used `sqlite execution_entity`; the authoritative VPS
+   baseline (`SMOKE_TEST_RESULTS.md`) used PostgreSQL via `n8n-db-1`. Persistence behavior is
+   verified on a different engine than the baseline it replays.
+3. **`tests/reference/baseline/SMOKE_TEST_RESULTS.md` is still unchanged since `76594588`** — the
+   canonical baseline document was never updated with a new dated VPS run.
+
+None of these three invalidates the isolation work. They mean the 11/11 is evidenced on a
+**local n8n 2.9.4 + SQLite**, not on the production VPS + PostgreSQL. Agent 5 records the
+distinction rather than papering over it.
+
+**Status: RESOLVED (with recorded caveats).**
