@@ -90,7 +90,7 @@ port_spec:
     - "connections-diff.ts: single type import (deviation D-01 → P-KERNEL-TYPES); only consumer workflow-diff.ts:11"
   NOT_included:
     - "Workflow class traversal members (getNodeConnectionIndexes, getHighestNode, getStartNode, getParentMainInputNode, getParentNodesByDepth, searchNodesBFS) — stay with Agent 1; Connection keeps consuming them (CD-04)"
-    - "common/** — TODO(agent-3): confirm per-file whether any symbol is runtime-imported by workflow.ts; if yes it stays Workflow-owned"
+    - "common/** — MEASURED (agent-3, 2.9.4): workflow.ts L5-9 runtime-imports getConnectedNodes/getChildNodes/getParentNodes/mapConnectionsByDestination (used L147, L581, L595, L612); getNodeByName is barrel-only (index.ts:8). All 5 files import only ../interfaces (NodeConnectionTypes value + types) and each other — they are pure leaves too, BUT Workflow depends on them at runtime, so moving them is a Workflow port change (Agent 1), not a free re-export. Kept OUT of this unit; candidate for a later P-CONNECTION-TRAVERSAL port once P-CONNECTION-GRAPH lands."
     - "Topological sort / SCC (core partial-execution-utils) — FORBIDDEN path, D-10 remains a documented dependency"
 
 operations:
