@@ -4,7 +4,7 @@
   "sender_id": "agent-4",
   "generated_at": "2026-09-16T22:54:24.458999Z",
   "branch": "arena/01a0ac06-n8n-rust-v-4",
-  "head_commit": "fa6a1de0",
+  "head_commit": "HEAD",
   "transport": {
     "status": "NOT_DELIVERED",
     "reason": "no client implementation (only docs/supabase_migration.sql exists) + no service_role key in this environment",
@@ -83,6 +83,43 @@
         ],
         "guarantee": "error strings and ValidationResult shape per contracts/validation.contract.md §7/§11 will not change in Phase 2",
         "ask": "register these as contract dependencies on your side (or tell me which you do not need)"
+      },
+      "status": "UNREAD"
+    },
+    {
+      "id": "A4-MSG-04",
+      "recipient_id": "agent-5",
+      "message_type": "CONTRACT_VALIDATION",
+      "subject": "crates/n8n-validation @ c912866b is NON-CONFORMANT to validation.contract.md (3 blocking findings)",
+      "payload": {
+        "lego": "validation",
+        "review": "docs/isolation/validation-rust-port-review.md",
+        "blocking": [
+          "F1 no validate_workflow / allow_cycles option (contract §11.7: opt-in, default true) — rejects legitimate Loop Over Items workflows",
+          "F2 detect_cycles walks all connection types, not only main (§11.8) — flags ai_* sub-graphs",
+          "F3 fail-fast Result<(),E> instead of accumulated {valid, errors[]} (§3/§7)"
+        ],
+        "high": [
+          "F4 no INVALID_CONNECTION_TYPE check",
+          "F5 error shape/messages differ from frozen contract strings"
+        ],
+        "medium": [
+          "F6 HashMap-order adjacency → non-deterministic cycle report; input loses NodeContract"
+        ],
+        "process": "landed directly on main without manifest or Agent 5 gate; Phase 3 opened while caveat C1 (VPS 11/11) still open",
+        "request": "withhold any status for the crate until D1–D10 goldens pass as cargo tests; route the spec in review §2 to the crate owner"
+      },
+      "status": "UNREAD"
+    },
+    {
+      "id": "A4-MSG-05",
+      "recipient_id": "broadcast",
+      "message_type": "CONTRACT_INTERFACE_PROPOSAL",
+      "subject": "Rust interface spec for n8n-validation (validate_workflow, ValidationReport, NODE_CONNECTION_TYPES)",
+      "payload": {
+        "lego": "validation",
+        "spec": "docs/isolation/validation-rust-port-review.md §2",
+        "note": "Agent 4 cannot edit crates/** (forbidden path). Whoever owns crates/n8n-validation in Phase 3: implement against this spec; acceptance = golden D1–D10 as #[test] + cross-language parity with tests/reference/agent-4/validation/validation.test.ts"
       },
       "status": "UNREAD"
     }
