@@ -129,7 +129,60 @@ One caveat passed through to Agent 2: the traversal helpers are only well-define
 
 ---
 
-## 6. Reproduce this review
+---
+
+## 6. Post-verdict addendum (2026-09-17, branch head = `main` = `99b47f86`)
+
+`main` advanced twice more while this review was being written
+(`111a6d44` — *"merge(agent-5): integrate Phase 2 final verdict — REGRESSION_GATE_PASSED, 11/11 PASS,
+READY FOR PHASE 3"*; `99b47f86` — *"merge(agents): integrate final Phase 2 deliverables from Agents
+1, 2, 3, 4"*, which also integrated this review, the freeze record and the graph-ownership plan).
+Re-measured on the integrated tree (`arena/01a0ac62-n8n-rust-v-4` @ `99b47f86`, fast-forwarded onto the Phase-2 final integration):
+
+| Item | State after the Phase-2 verdict | Evidence |
+| :--- | :--- | :--- |
+| `G04` reference tree byte-identical | **still FAILED** — 15051 files, root now `77842ee14c82` vs pinned 15050 / `f8da35180669`. The mutation **grew**: `applyAccessPatterns` was added to `node-model/index.ts` in the same push that answered the freeze | `node tools/workflow-reference-manifest.mjs --check` |
+| `G08` unit tests | still fails on its single reference-hash test (18/19 pass, same run parameters as the gate) | gate env run |
+| Behaviour gates | unchanged: `G09` 252/252 identical · `G10` strict 0 undeclared · `G11` live 7/7 | `npm run verify` |
+| `npm run verify` / `verify:fast` | **was crashing** before this unit — the report writer dereferenced `live.runtime['n8n-core']`, but `docs/isolation/evidence/live-verification.json` had been replaced (commit `2049d25b`, VPS smoke record) with a schema that has `host`/`n8n_version`/`passed`/`total` and `results[].evidence` instead of `runtime`/`results[].detail`. Result: a `TypeError` **after** all gates had run, so no report was written and the reproduction path in `workflow.md` / `workflow-handoff.md` §5 / `MSG-04` was broken for every agent | reproduced, then fixed in this unit (§6.1) |
+| `ISSUE-003` (cycle-detection ownership) | **closed** — Agent 4 amended `contracts/validation.contract.md` per Option A: enforcement is labelled *NEW CAPABILITY*, "Validation LEGO is the only LEGO permitted to implement this check; Workflow LEGO declares the invariant and does not enforce it" | `contracts/validation.contract.md` §4.4, §5.9 |
+| `MSG-02` / `MSG-10` (graph ownership) | **answered** — Agent 3: **Option A for Phase 3, Option B for Phase 2**; Phase-3 scope additionally takes `common/**`, which widens the planned `P-CONNECTION-GRAPH` port and adds `traversal` + `indexes` to the sections that become port-dependent | `docs/isolation/connection.md` §0.1; plan §8 |
+| `MSG-06` freeze | **closed** — Agent 2 accepted with two corrections that match `D-04` and §3.3 of the freeze record | `docs/isolation/node-bus-outbox.json#MSG-01`; freeze §9.1 |
+| `D-08` (Agent 3 → Agent 1: stale destination index after `renameNode`) | **verified in source and recorded** as reference behavior, preserved deliberately, with the coverage gap handed to Agent 5 | `workflow.contract.md` §7 (`D-08` row + note) |
+
+### 6.1 The gate crash — fixed here (Agent-1 artifact)
+
+`tools/workflow-isolation-gate.mjs` is part of this LEGO's verification tooling, so the crash was Agent-1's
+to fix. The report writer now reads `live-verification.json` defensively and renders **both** known shapes:
+
+```text
+harness shape (G11)          → Runtime: n8n-core 2.9.1 · n8n-nodes-base 2.9.1 · n8n-workflow 2.9.1 — exact dependency set of n8n@2.9.4
+VPS smoke shape (2049d25b)   → Runtime: recorded on host 157.10.160.95 · n8n 2.9.4 · 11/11 live checks PASS
+```
+
+Verified by running `npm run verify:fast` twice: once with the committed (harness-generated) file and once
+with the VPS-shaped file in place. Before the fix the second case aborted with
+`TypeError: Cannot read properties of undefined (reading 'n8n-core')`; after it, both write
+`docs/isolation/evidence/gate-report.json` and `docs/isolation/workflow-verification.md` and end with the
+honest `ISOLATION = FAILED (2 gate(s)): G04, G08`. Unrelated `results[].detail` vs `results[].evidence`
+and `knownLimitations` shape differences are handled too. No gate verdict, threshold or check was
+weakened — only the rendering.
+
+### 6.2 What this means for the Phase-2 → Phase-3 handover
+
+The Phase-2 verdict is **substantively supported for behaviour** (contracts complete, 21/21 conformance,
+11/11 live VPS, 252/252 digest) but it was rendered while the reference pin was already broken, and it
+does not address the two gates that say so. For Phase 3 — which is *defined* as replacing reference code
+against a pinned baseline — that is the one condition that should be closed first:
+
+1. decide option A / B / C for `reference/n8n/packages/workflow/src/node-model/index.ts` (§3.4);
+2. re-run `npm run verify` (now that the report writer no longer crashes) and record `G04` green again;
+3. then start `tasks/TASK-303-connection.yaml` (Phase-3 `P-CONNECTION-GRAPH`, plan §8) on a green base.
+
+Until step 2, every "before vs after" comparison produced by this suite is measured against a tree that
+does not match its own pin — which is exactly the guarantee the pin exists to provide.
+
+## 7. Reproduce this review
 
 ```bash
 git fetch origin && git checkout arena/01a0ac62-n8n-rust-v-4
