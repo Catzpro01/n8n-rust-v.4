@@ -1,0 +1,22 @@
+﻿id: TASK-205-integration
+agent: agent-5
+lego: integration
+module: integration
+
+allowed_paths:
+  - tests/integration/**
+  - tests/reference/**
+
+forbidden_paths:
+  - reference/n8n/**
+
+requires:
+  - contracts/*.contract.md
+
+operations:
+  - git_status
+  - list_files
+
+merge_condition:
+  - all_agents_isolated
+  - regression_gate_pass

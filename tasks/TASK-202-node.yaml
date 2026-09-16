@@ -1,0 +1,26 @@
+﻿id: TASK-202-node
+agent: agent-2
+lego: node
+module: node
+
+allowed_paths:
+  - reference/n8n/packages/workflow/src/node-helpers.ts
+  - reference/n8n/packages/workflow/src/interfaces.ts
+  - docs/isolation/node.md
+
+forbidden_paths:
+  - reference/n8n/packages/workflow/src/workflow.ts
+  - reference/n8n/packages/core/**
+  - crates/**
+  - apps/**
+
+requires:
+  - contracts/node.contract.md
+
+operations:
+  - git_status
+  - list_files
+
+merge_condition:
+  - regression_gate_pass
+  - no_contract_violation
