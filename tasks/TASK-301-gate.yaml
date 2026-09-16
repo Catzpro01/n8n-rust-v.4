@@ -1,0 +1,74 @@
+id: TASK-301-gate
+agent: agent-5
+lego: integration
+module: integration
+phase: 2
+
+# Agent 5 has no shell/network egress in the authoring sandbox.
+# This manifest is executed by the Arena Gateway ON THE VPS, where n8n 2.9.4 +
+# PostgreSQL are live. ZERO DOWNTIME: every operation below is read-only against
+# the running instance (HTTP GET, one idempotent webhook POST, one SELECT).
+# No container restart, no migration, no write to n8n state.
+
+allowed_paths:
+  - tests/**
+  - contracts/**
+  - docs/**
+
+forbidden_paths:
+  - crates/**
+  - apps/**
+  - reference/n8n/**
+
+requires:
+  - contracts/workflow.contract.md
+  - contracts/node.contract.md
+  - contracts/connection.contract.md
+  - contracts/validation.contract.md
+
+operations:
+  - name: read_messages
+    args:
+      recipient_id: agent-5
+      status: UNREAD
+
+  # Offline stages — runnable anywhere, no live dependency.
+  - name: run_shell
+    args:
+      cmd: "node tests/compatibility/contract_conformance.mjs"
+      expect_exit: 0
+  - name: run_shell
+    args:
+      cmd: "python3 tests/integration/boundary_audit.py"
+      expect_exit: 0
+
+  # Live stage — the real 11/11 Regression Gate.
+  - name: run_regression_gate
+    args:
+      checks:
+        - n8n_healthz_http_200
+        - n8n_editor_ui_accessible
+        - live_webhook_execution
+        - postgres_execution_entity_success
+        - lego_contract_integrity
+      baseline: tests/reference/baseline/SMOKE_TEST_RESULTS.md
+      require_score: "11/11"
+
+  - name: send_message
+    args:
+      to: broadcast
+      type: STATUS_REPORT
+      payload:
+        from: agent-5
+        verdict: "{{ regression_gate.verdict }}"
+        score: "{{ regression_gate.score }}"
+        note: "Gate result is authoritative only when executed on the VPS."
+
+merge_condition:
+  - regression_gate_pass
+  - no_contract_violation
+
+# Merge permission is NOT granted by this manifest.
+# Agent 5 issues REGRESSION_GATE_PASSED only on a strict 11/11, and only after
+# ISSUE-002..007 are closed. Current standing verdict: BLOCKED.
+expected_outcome: EVIDENCE_COLLECTION_ONLY
