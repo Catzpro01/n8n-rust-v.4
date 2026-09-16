@@ -1,0 +1,95 @@
+id: TASK-301-workflow-isolation
+agent: agent-1
+lego: workflow
+module: workflow
+phase: 2
+
+allowed_paths:
+  - reference/n8n/packages/workflow/**
+  - docs/isolation/**
+
+forbidden_paths:
+  - reference/n8n/packages/core/**
+  - reference/n8n/packages/cli/**
+  - crates/**
+  - apps/**
+
+requires:
+  - contracts/workflow.contract.md
+
+operations:
+  - name: read_file
+    args:
+      path: reference/n8n/packages/workflow/src/workflow.ts
+
+  - name: write_file
+    args:
+      path: docs/isolation/workflow_spec.md
+      content: |
+        # LEGO Specification: Workflow Pure Domain Model
+
+        ## 1. Component Identity
+        - **LEGO ID**: workflow
+        - **Owner**: agent-1
+        - **Upstream Source**: reference/n8n/packages/workflow/src/workflow.ts
+        - **Interface Contract**: contracts/workflow.contract.md
+
+        ## 2. Pure Data Structures (Decoupled from Node Runtime)
+        - WorkflowParameters: id, name, nodes, connections, active, settings, staticData, pinData.
+        - NodeConnectionMapping: bySource (Record<string, Record<string, IConnection[][]>>), byDestination.
+
+        ## 3. Pure Functions (Mathematical and Deterministic)
+        1. buildConnectionMaps(connections: IConnections): NodeConnectionMapping
+        2. getNode(nodes: Record<string, INode>, name: string): INode | undefined
+        3. getParentNodes(connections: NodeConnectionMapping, nodeName: string): string[]
+        4. getChildNodes(connections: NodeConnectionMapping, nodeName: string): string[]
+        5. detectCycles(nodes: INode[], connections: NodeConnectionMapping): boolean
+        6. getStartNodes(nodes: INode[], connections: NodeConnectionMapping): INode[]
+
+        ## 4. Decoupling Boundaries
+        - Expression Engine: Evaluasi ekspresi dipisahkan sepenuhnya ke LEGO expression via interface ExpressionEvaluator.
+        - Node Execution: Eksekusi node dipisahkan ke LEGO node via interface NodeExecutor.
+        - Database / Static Data: Serialisasi staticData dipisahkan ke LEGO persistence.
+
+        ## 5. Golden Invariants
+        - Determinisme: Input graf yang sama SELALU menghasilkan adjacency list yang sama.
+        - Zero Side-Effects: Instansiasi Workflow tidak boleh memicu HTTP request, DB call, atau file IO.
+        - Non-Destructive: Validasi siklus tidak boleh mengubah urutan node asli.
+
+        ## 6. Verification Plan
+        - Reference Smoke Test: 11/11 PASS
+        - Interface Contract Verification by Agent 5: VERIFIED
+
+  - name: send_message
+    args:
+      to: agent-2
+      type: CONTRACT_INTERFACE_PROPOSAL
+      priority: high
+      payload:
+        lego: workflow
+        proposed_interfaces:
+          - "getNode(node_name: string) -> NodeReference"
+          - "getParentNodes(node_name: string) -> Vec<String>"
+          - "getChildNodes(node_name: string) -> Vec<String>"
+        contract_ref: contracts/workflow.contract.md
+
+  - name: send_message
+    args:
+      to: agent-5
+      type: SPECIFICATION_READY
+      priority: high
+      payload:
+        lego: workflow
+        spec_path: docs/isolation/workflow_spec.md
+        phase: 2
+        ready_for_review: true
+
+  - name: git_commit
+    args:
+      message: "feat(agent-1): complete pure workflow domain model isolation spec"
+
+  - name: git_push
+
+merge_condition:
+  - regression_gate_pass
+  - no_contract_violation

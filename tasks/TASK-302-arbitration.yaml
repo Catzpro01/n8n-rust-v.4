@@ -1,0 +1,121 @@
+id: TASK-302-arbitration
+agent: agent-5
+lego: integration
+module: integration
+phase: 2
+
+# Contract arbitration. Agent 5 adjudicates the disputes recorded in
+# docs/isolation/CROSS-AGENT-ISSUES.md. Agent 5 does NOT implement the fixes —
+# each verdict routes work back to the owning LEGO agent.
+
+allowed_paths:
+  - tests/**
+  - contracts/**
+  - docs/**
+
+forbidden_paths:
+  - crates/**
+  - apps/**
+  - reference/n8n/**
+
+operations:
+  - name: read_messages
+    args:
+      recipient_id: agent-5
+      status: UNREAD
+
+  # --- ISSUE-003: duplicate ownership of CycleDetection -------------------
+  # workflow.contract.md §2 invariant 3 : "Graph must be acyclic"
+  # validation.contract.md §2 check 3   : "CycleDetection"
+  # Source evidence: reference/n8n/packages/workflow/src/workflow-validation.ts
+  # exports ONLY validateWorkflowHasTriggerLikeNode() — it implements neither.
+  # Cycle logic in n8n 2.9.4 lives in workflow.ts / graph helpers = Agent 1 territory.
+  - name: agent5_review_dependency
+    args:
+      requester_agent: agent-4
+      provider_agent: agent-1
+      contract_name: validation.contract.md
+      interface_symbol: Validation::CycleDetection
+      approved: false
+      reason: >-
+        CONTRACT-CONFLICT. CycleDetection is claimed by both workflow.contract.md
+        and validation.contract.md. Source verification shows workflow-validation.ts
+        implements neither check declared in validation.contract.md; acyclicity is
+        enforced inside workflow.ts (Agent 1). Agent 4 must either (a) drop
+        CycleDetection and list it under Non-responsibilities, or (b) obtain an
+        explicit hand-off from Agent 1. Agent 5 does not choose the winner.
+      required_owner: agent-4
+      co_owner: agent-1
+      blocking: true
+
+  # --- ISSUE-002: uncontracted LEGOs on the runtime path ------------------
+  - name: agent5_review_dependency
+    args:
+      requester_agent: agent-1
+      provider_agent: agent-3
+      contract_name: expression.contract.md
+      interface_symbol: Expression::evaluate
+      approved: false
+      reason: >-
+        MISSING CONTRACT. workflow.ts:20 imports Expression at RUNTIME, and
+        node-helpers.ts:10 imports expression-helpers at RUNTIME, but no
+        contracts/expression.contract.md exists. Contracted LEGOs (workflow, node)
+        therefore depend on an uncontracted surface, violating CONTRACT-FIRST.
+        Agent 3 must publish expression.contract.md and execution-data.contract.md
+        before Workflow or Node can be declared VERIFIED.
+      required_owner: agent-3
+      blocking: true
+
+  # --- ISSUE-004: undocumented runtime cycles -----------------------------
+  - name: send_message
+    args:
+      to: agent-2
+      type: CONTRACT_VALIDATION
+      payload:
+        issue: ISSUE-004
+        verdict: ARCHITECTURE_WARNING
+        cycles:
+          - "expression <-> node (DIRECT RUNTIME both directions)"
+          - "node <-> shared-util (DIRECT RUNTIME both directions)"
+        evidence: "tests/integration/boundary_audit.py; node-helpers.ts:10, workflow-data-proxy.ts"
+        note: >-
+          Inherited from upstream n8n 2.9.4 — NOT agent-introduced. No reference
+          refactor is authorised in Phase 2. Joint decision required with agent-3
+          on how to cut the cycle before Phase 3 extraction.
+        required_owner: agent-2
+        co_owner: agent-3
+
+  # --- ISSUE-007: missing isolation docs ----------------------------------
+  - name: send_message
+    args:
+      to: broadcast
+      type: STATUS_REPORT
+      payload:
+        issue: ISSUE-007
+        verdict: BLOCKED
+        detail:
+          agent-2: "docs/isolation/node.md MISSING"
+          agent-3: "docs/isolation/connection.md MISSING"
+          agent-4: "docs/isolation/validation.md MISSING"
+        note: "Named as deliverables in TASK-202/203/204. LEGOs held at BLOCKED until published."
+
+  # --- ISSUE-008: governance -----------------------------------------------
+  - name: send_message
+    args:
+      to: mediator
+      type: STATUS_REPORT
+      payload:
+        issue: ISSUE-008
+        verdict: PROCESS_VIOLATION
+        detail: >-
+          Commit 82be4146 landed directly on main, bypassing the Agent 5 gate
+          (recurrence of ISSUE-001). Content is non-blocking for Phase 2 but the
+          seeded RLS policies anon_read_* grant anon SELECT on tasks,
+          agent_messages, agent_dependencies, locks and agent_status — the full
+          orchestration history is world-readable. Recommend restricting to
+          authenticated or dropping the anon_read_* policies.
+
+merge_condition:
+  - all_disputes_adjudicated
+
+expected_outcome: ARBITRATION_RECORDED
