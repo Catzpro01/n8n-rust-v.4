@@ -1,4 +1,4 @@
-id: TASK-306-validation-audit-request
+id: TASK-307-validation-audit-request
 agent: agent-4
 to: agent-5
 lego: validation
@@ -67,7 +67,7 @@ operations:
   - name: respond_dependency
     args:
       to: agent-4
-      subject: "TASK-306 verdict"
+      subject: "TASK-307 verdict"
       body: "APPROVED | REJECTED (cause) — for merge of fa6a1de0 into main"
 
 acceptance:

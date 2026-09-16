@@ -1,7 +1,7 @@
 {
   "reference": "n8n 2.9.4",
   "baseUrl": "http://127.0.0.1:5678",
-  "recordedAt": "2026-09-16T21:41:34.953Z",
+  "recordedAt": "2026-09-16T22:59:00.978Z",
   "steps": {
     "healthz": {
       "status": 200,
@@ -65,7 +65,7 @@
         "status": 200,
         "versionChanged": true
       },
-      "historyCount": 3
+      "historyCount": 6
     },
     "workflowLoad": {
       "status": 200,
@@ -228,14 +228,14 @@
       ],
       "db": {
         "row": {
-          "id": 16,
+          "id": 29,
           "status": "success",
           "mode": "webhook",
           "finished": 1,
           "workflowId": "S5g0DwfezB0xRO0Q"
         },
         "data": {
-          "executionId": 16,
+          "executionId": 29,
           "len": 1782,
           "workflowVersionId": "0388d60a-594e-466c-a7ae-6b20c0b8e1de"
         }
@@ -274,7 +274,7 @@
         "no": 5,
         "name": "workflow save",
         "pass": true,
-        "evidence": "PATCH(settings) 200 versionId kept ; PATCH(nodes) 200 versionId 8008bcc9-f1fc-4721-b2ba-df0a1fcff3c4 → ace4df73-d526-4158-9755-6eab408b14f0 ; history rows=3"
+        "evidence": "PATCH(settings) 200 versionId kept ; PATCH(nodes) 200 versionId 76a4f124-0d6c-43b8-bdf8-d6fb3765986e → 9d3833ff-7153-4778-97dc-227e550baf9a ; history rows=6"
       },
       {
         "no": 6,
@@ -286,7 +286,7 @@
         "no": 7,
         "name": "manual execution",
         "pass": true,
-        "evidence": "POST /run 200 executionId=14 status=success mode=manual"
+        "evidence": "POST /run 200 executionId=27 status=success mode=manual"
       },
       {
         "no": 8,
@@ -310,7 +310,7 @@
         "no": 11,
         "name": "execution recorded",
         "pass": true,
-        "evidence": "GET /rest/executions/16 status=success mode=webhook finished=true ; sqlite execution_entity id=16 status=success mode=webhook ; execution_data len=1782"
+        "evidence": "GET /rest/executions/29 status=success mode=webhook finished=true ; sqlite execution_entity id=29 status=success mode=webhook ; execution_data len=1782"
       }
     ]
   }

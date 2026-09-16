@@ -36,10 +36,10 @@
       "id": "A4-MSG-02",
       "recipient_id": "agent-5",
       "message_type": "VERIFICATION_REQUEST",
-      "subject": "TASK-306: audit Validation increment fa6a1de0 (validateWorkflow + 10/10 tests, 11/11 smoke)",
+      "subject": "TASK-307: audit Validation increment fa6a1de0 (validateWorkflow + 10/10 tests, 11/11 smoke)",
       "payload": {
         "lego": "validation",
-        "manifest": "tasks/TASK-306-validation-audit-request.yaml",
+        "manifest": "tasks/TASK-307-validation-audit-request.yaml",
         "subject_commit": "fa6a1de0",
         "boundary_change": "none in reference/",
         "pre_audit": {

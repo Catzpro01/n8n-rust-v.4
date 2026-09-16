@@ -1,7 +1,7 @@
 {
   "reference": "n8n 2.9.4",
   "baseUrl": "http://127.0.0.1:5678",
-  "recordedAt": "2026-09-16T21:26:21.249Z",
+  "recordedAt": "2026-09-16T22:58:59.627Z",
   "steps": {
     "healthz": {
       "status": 200,
@@ -65,7 +65,7 @@
         "status": 200,
         "versionChanged": true
       },
-      "historyCount": 2
+      "historyCount": 5
     },
     "workflowLoad": {
       "status": 200,
@@ -177,8 +177,12 @@
         }
       },
       "unsupportedMethod": {
-        "status": 0,
-        "text": "TypeError: 'TRACE' HTTP method is unsupported."
+        "status": 500,
+        "body": {
+          "code": 0,
+          "message": "The method PROPFIND is not supported.",
+          "stacktrace": "Error: The method PROPFIND is not supported.\n    at WebhookRequestHandler.handleRequest (/home/user/n8n-runtime/node_modules/n8n/src/webhooks/webhook-request-handler.ts:44:5)\n    at /home/user/n8n-runtime/node_modules/n8n/src/webhooks/webhook-request-handler.ts:242:17\n    at Layer.handleRequest (/home/user/n8n-runtime/node_modules/router/lib/layer.js:152:17)\n    at next (/home/user/n8n-runtime/node_modules/router/lib/route.js:157:13)\n    at Route.dispatch (/home/user/n8n-runtime/node_modules/router/lib/route.js:117:3)\n    at handle (/home/user/n8n-runtime/node_modules/router/index.js:435:11)\n    at Layer.handleRequest (/home/user/n8n-runtime/node_modules/router/lib/layer.js:152:17)\n    at /home/user/n8n-runtime/node_modules/router/index.js:295:15\n    at param (/home/user/n8n-runtime/node_modules/router/index.js:600:14)\n    at param (/home/user/n8n-runtime/node_modules/router/index.js:610:14)"
+        }
       }
     },
     "executionRecorded": {
@@ -224,14 +228,14 @@
       ],
       "db": {
         "row": {
-          "id": 6,
+          "id": 26,
           "status": "success",
           "mode": "webhook",
           "finished": 1,
           "workflowId": "S5g0DwfezB0xRO0Q"
         },
         "data": {
-          "executionId": 6,
+          "executionId": 26,
           "len": 1782,
           "workflowVersionId": "0388d60a-594e-466c-a7ae-6b20c0b8e1de"
         }
@@ -270,7 +274,7 @@
         "no": 5,
         "name": "workflow save",
         "pass": true,
-        "evidence": "PATCH(settings) 200 versionId kept ; PATCH(nodes) 200 versionId ee4806b0-a710-4c35-954b-86dfb0834524 → 8008bcc9-f1fc-4721-b2ba-df0a1fcff3c4 ; history rows=2"
+        "evidence": "PATCH(settings) 200 versionId kept ; PATCH(nodes) 200 versionId 61b0df60-3c5e-4be0-befb-62d6b5c355d7 → 76a4f124-0d6c-43b8-bdf8-d6fb3765986e ; history rows=5"
       },
       {
         "no": 6,
@@ -282,7 +286,7 @@
         "no": 7,
         "name": "manual execution",
         "pass": true,
-        "evidence": "POST /run 200 executionId=4 status=success mode=manual"
+        "evidence": "POST /run 200 executionId=24 status=success mode=manual"
       },
       {
         "no": 8,
@@ -300,13 +304,13 @@
         "no": 10,
         "name": "webhook execution",
         "pass": true,
-        "evidence": "POST /webhook/smoke-test 200 {\"smoke_test\":\"PASS\",\"verified\":true} ; GET → 404 ; unknown → 404"
+        "evidence": "POST /webhook/smoke-test 200 {\"smoke_test\":\"PASS\",\"verified\":true} ; GET → 404 ; unknown → 404 ; PROPFIND → 500"
       },
       {
         "no": 11,
         "name": "execution recorded",
         "pass": true,
-        "evidence": "GET /rest/executions/6 status=success mode=webhook finished=true ; sqlite execution_entity id=6 status=success mode=webhook ; execution_data len=1782"
+        "evidence": "GET /rest/executions/26 status=success mode=webhook finished=true ; sqlite execution_entity id=26 status=success mode=webhook ; execution_data len=1782"
       }
     ]
   }
