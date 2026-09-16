@@ -20,7 +20,7 @@ requires:
 operations:
   - name: read_file
     args:
-      path: reference/n8n/packages/workflow/src/Workflow.ts
+      path: reference/n8n/packages/workflow/src/workflow.ts
 
   - name: write_file
     args:
@@ -31,7 +31,7 @@ operations:
         ## 1. Component Identity
         - **LEGO ID**: workflow
         - **Owner**: agent-1
-        - **Upstream Source**: reference/n8n/packages/workflow/src/Workflow.ts
+        - **Upstream Source**: reference/n8n/packages/workflow/src/workflow.ts
         - **Interface Contract**: contracts/workflow.contract.md
 
         ## 2. Pure Data Structures (Decoupled from Node Runtime)
