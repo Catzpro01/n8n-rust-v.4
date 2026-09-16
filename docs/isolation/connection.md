@@ -60,7 +60,14 @@ Agent 1 published `docs/isolation/workflow-graph-ownership-plan.md` (`39fece80`)
 **accepted A**, no objection. Step A1 delivered in `contracts/connection.contract.md` §8 (13 exports,
 verbatim signatures). A5 adapter deferred until A2–A4 (Agent 1) land and `main` is green again (MSG-09).
 
-### 0.4 Phase-3 follow-up manifest
+### 0.4 Phase-3 Rust skeleton review
+
+`c912866b` created `crates/n8n-connection`. Static review against this contract and the 5 pinned
+fixtures: `docs/isolation/connection-rust-conformance.md` — 3 blocking (`null` slots not representable,
+`get_connected_nodes` is one-hop/all-types instead of transitive/type-filtered/farthest-first, `HashMap`
+ordering), 3 advisory. `crates/**` remains untouched by agent-3 pending a manifest.
+
+### 0.5 Phase-3 follow-up manifest
 
 Option A is drafted (not executed) as `tasks/TASK-303-connection.yaml`, status `PROPOSED`. It lists the
 exact 12 graph + 1 content symbols for port `P-CONNECTION-GRAPH`, the types that stay in the shared kernel,

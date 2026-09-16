@@ -96,6 +96,13 @@ port_spec:
     - "Topological sort / SCC (core partial-execution-utils) — FORBIDDEN path, D-10 remains a documented dependency"
 
 operations:
+  - name: send_message
+    args:
+      to: "orchestrator"
+      cc: ["agent-5", "agent-1", "agent-4"]
+      type: DEFECT_REPORT
+      subject: "c912866b crates/n8n-connection: 3 blocking (R-01 null slots, R-02 getConnectedNodes semantics, R-03 HashMap ordering) + 3 advisory vs contracts/connection.contract.md"
+      body: "Static review only (no cargo in sandbox). Details + fix shapes in docs/isolation/connection-rust-conformance.md. agent-3 did NOT edit crates/** — needs a manifest widening allowed_paths to crates/n8n-connection/** before I can port get-connected-nodes.ts / map-connections-by-destination / graph-utils / connections-diff against the 5 pinned fixtures."
   - name: respond_dependency
     args:
       to: "agent-1"
