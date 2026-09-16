@@ -76,15 +76,29 @@ export function checkNodeUniqueness(workflow: WorkflowLike): ValidationError[] {
 	return errors;
 }
 
+/**
+ * Deterministic iteration order over `connections`, independent of object key order:
+ * known sources in `nodes[]` order first, then unknown sources sorted lexically.
+ */
+function orderedSources(workflow: WorkflowLike): string[] {
+	const conns = workflow.connections ?? {};
+	const known = workflow.nodes.map((n) => n.name).filter((n, i, a) => a.indexOf(n) === i && Object.prototype.hasOwnProperty.call(conns, n));
+	const knownSet = new Set(known);
+	const unknown = Object.keys(conns).filter((k) => !knownSet.has(k)).sort();
+	return [...known, ...unknown];
+}
+
 export function checkDanglingConnections(workflow: WorkflowLike): ValidationError[] {
 	const names = new Set(workflow.nodes.map((n) => n.name));
 	const errors: ValidationError[] = [];
-	for (const [source, byType] of Object.entries(workflow.connections ?? {})) {
+	for (const source of orderedSources(workflow)) {
+		const byType = (workflow.connections ?? {})[source];
 		if (!names.has(source)) {
 			errors.push({ code: 'DANGLING_CONNECTION', node: source, path: ['connections', source], message: `Connection from unknown node "${source}"` });
 		}
 		if (!isObject(byType)) continue;
-		for (const [type, outputs] of Object.entries(byType)) {
+		for (const type of Object.keys(byType).sort()) {
+			const outputs = byType[type];
 			if (!CONNECTION_TYPE_SET.has(type)) {
 				errors.push({ code: 'INVALID_CONNECTION_TYPE', node: source, path: ['connections', source, type], message: `Unknown connection type "${type}" on node "${source}"` });
 			}
@@ -117,7 +131,8 @@ export function checkDanglingConnections(workflow: WorkflowLike): ValidationErro
 export function detectCycles(workflow: WorkflowLike): ValidationError[] {
 	const adj = new Map<string, string[]>();
 	for (const n of workflow.nodes) adj.set(n.name, []);
-	for (const [source, byType] of Object.entries(workflow.connections ?? {})) {
+	for (const source of orderedSources(workflow)) {
+		const byType = (workflow.connections ?? {})[source];
 		const outputs = isObject(byType) ? byType.main : undefined;
 		if (!Array.isArray(outputs) || !adj.has(source)) continue;
 		for (const output of outputs) for (const t of output ?? []) if (t && adj.has(t.node)) adj.get(source)!.push(t.node);

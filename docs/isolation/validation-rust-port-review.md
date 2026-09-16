@@ -51,7 +51,7 @@ pub fn validate_workflow(wf: &WorkflowContract, opts: ValidateOptions) -> Valida
 
 Determinism: build adjacency by iterating `nodes` in slice order and, for each source, `connections[source]["main"]` outputs in `Vec` order — do **not** iterate the `HashMap` to build edges. Use an explicit stack (iterative DFS) with white/grey/black colouring to reproduce the TS path reporting exactly.
 
-Acceptance: port the D1–D10 table (`docs/isolation/validation-golden-cases.md` §D) as `#[test]`s, feeding the same JSON fixtures (`tests/reference/01-empty-workflow`, `03-linear`). A cross-language parity harness can run `node --test tests/reference/agent-4/validation/validation.test.ts` and `cargo test -p n8n-validation` on identical fixtures and diff the serialized `ValidationReport`.
+Acceptance (machine-checkable): load every `tests/reference/agent-4/validation/fixtures/D*.json`, run `validate_workflow(input.workflow, input.options)`, serialise with sorted keys and compare to `expected` — 13 fixtures, zero diffs. Additionally port the D1–D10 table (`docs/isolation/validation-golden-cases.md` §D) as `#[test]`s, feeding the same JSON fixtures (`tests/reference/01-empty-workflow`, `03-linear`). A cross-language parity harness can run `node --test tests/reference/agent-4/validation/validation.test.ts` and `cargo test -p n8n-validation` on identical fixtures and diff the serialized `ValidationReport`.
 
 ---
 

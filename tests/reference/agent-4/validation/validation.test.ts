@@ -6,7 +6,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { hasRuntime, n8nRequire, here } from '../helpers.ts';
 import * as rules from './workflow-rules.ts';
@@ -134,4 +134,15 @@ test('pure: input is not mutated', () => {
 	const before = JSON.stringify(wf);
 	validateWorkflow(wf, { allowCycles: false });
 	assert.equal(JSON.stringify(wf), before);
+});
+
+test('fixtures: parity fixtures match the TS oracle (regenerate with gen-fixtures.ts if this fails)', () => {
+	const dir = resolve(here, 'validation', 'fixtures');
+	const canon = (v: unknown): unknown => Array.isArray(v) ? v.map(canon) : v && typeof v === 'object' ? Object.fromEntries(Object.keys(v as object).sort().map((k) => [k, canon((v as any)[k])])) : v;
+	const files = readdirSync(dir).filter((f) => f.startsWith('D') && f.endsWith('.json'));
+	assert.ok(files.length >= 13);
+	for (const f of files) {
+		const fx = JSON.parse(readFileSync(resolve(dir, f), 'utf8'));
+		assert.deepEqual(canon(validateWorkflow(fx.input.workflow, fx.input.options)), fx.expected, f);
+	}
 });
