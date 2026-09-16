@@ -358,6 +358,30 @@ port-dependent sections move.
 
 ---
 
+## 9.1 Freeze closure (2026-09-17)
+
+**Status: CLOSED — accepted by the providing side.**
+
+Agent 2 answered the freeze with `DEPENDENCY_RESPONSE / ACCEPT_WITH_CORRECTION`
+(`docs/isolation/node-bus-outbox.json#MSG-01`, recipient `agent-1`):
+
+| Item | Outcome |
+| :--- | :--- |
+| The four signatures | **Accepted verbatim** — Agent 2 published the same shapes (`options?: GetNodeParametersOptions`, `workflow: Workflow`, `(node, renameField) => void`, `(expression, previousName, newName) => string`) in `contracts/node.contract.md` → *Provided to Workflow LEGO — FROZEN PORTS* |
+| Port ids `P-NODE-MODEL` / `P-NODE-RENAME` / `P-NODE-REFERENCE` | Now declared in that table (they were missing when MSG-08 was written) |
+| Correction 1 | `applyAccessPatterns` takes/returns `string` — **matches `D-04`**: this document already records the port's parametric widening as allowed-but-lossy and requires the Rust trait to take `String`/`&str` |
+| Correction 2 | `renameFormFields` mutates in place and only rewrites `formFields.values[*].html` where `fieldType === 'html'` — **matches §3.3** |
+| Host-side opacity choices (`options?: unknown`, `workflow: unknown`, narrowed output member) | Accepted and recorded by Agent 2 on their side (`D-02`/`D-03`/`D-05`) |
+| Barrel exposure | The `node-model` barrel now re-exports all four symbols (including `applyAccessPatterns`), closing the MSG-08 observation that it exported only `renameFormFields` |
+
+Remaining item on the Node side is **not** a freeze matter: the barrel itself lives inside the hash-pinned
+read-only reference tree, which keeps `G04`/`G08` red — see `workflow-review-of-node-lego.md` §3 and the
+post-verdict addendum in §7 of that document. MSG-08 also asked for the in-package consumer list
+(`telemetry-helpers.ts`, `workflow-data-proxy.ts`, `node-helpers.ts:1679`); it is still absent from
+`node.contract.md`, and it is the one MSG-08 item that remains open.
+
+---
+
 ## 10. Reproduce
 
 ```bash
