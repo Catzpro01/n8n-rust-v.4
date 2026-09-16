@@ -27,24 +27,28 @@ pub fn evaluate_simple_json_path<'a>(json: &'a Value, path: &str) -> Option<&'a 
 }
 
 pub fn resolve_template(template: &str, current_json: &Value) -> String {
-    let re = Regex::new(r"\{\{\s*(\\.[a-zA-Z0-9_\.]+)\s*\}\}").unwrap();
+    let re = Regex::new(r"\{\{\s*(\$json\.[a-zA-Z0-9_\.]+)\s*\}\}").unwrap();
     let mut result = template.to_string();
     if result.starts_with('=') {
         result = result[1..].to_string();
     }
 
-    re.replace_all(&result, |caps: &regex::Captures| {
-        let path = &caps[1];
+    let mut output = String::new();
+    let mut last_match = 0;
+    for cap in re.captures_iter(&result) {
+        let m = cap.get(0).unwrap();
+        output.push_str(&result[last_match..m.start()]);
+        let path = &cap[1];
         if let Some(val) = evaluate_simple_json_path(current_json, path) {
             match val {
-                Value::String(s) => s.clone(),
-                other => other.to_string(),
+                Value::String(s) => output.push_str(s),
+                other => output.push_str(&other.to_string()),
             }
-        } else {
-            "".to_string()
         }
-    })
-    .to_string()
+        last_match = m.end();
+    }
+    output.push_str(&result[last_match..]);
+    output
 }
 
 #[cfg(test)]
@@ -54,8 +58,8 @@ mod tests {
 
     #[test]
     fn test_is_expression() {
-        assert!(is_expression("={{ .myVar }}"));
-        assert!(is_expression("Hello {{ .name }}!"));
+        assert!(is_expression("={{ $json.myVar }}"));
+        assert!(is_expression("Hello {{ $json.name }}!"));
         assert!(!is_expression("Plain string without tags"));
     }
 
@@ -68,7 +72,7 @@ mod tests {
             }
         });
 
-        let rendered = resolve_template("Hello {{ .user.name }} (ID: {{ .user.id }})", &data);
+        let rendered = resolve_template("Hello {{ $json.user.name }} (ID: {{ $json.user.id }})", &data);
         assert_eq!(rendered, "Hello Alice (ID: 42)");
     }
 }
