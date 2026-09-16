@@ -48,6 +48,12 @@ offered Option A (Connection owns, Workflow re-exports via port `P-CONNECTION-GR
 
 ---
 
+### 0.2 Phase-3 follow-up manifest
+
+Option A is drafted (not executed) as `tasks/TASK-303-connection.yaml`, status `PROPOSED`. It lists the
+exact 12 graph + 1 content symbols for port `P-CONNECTION-GRAPH`, the types that stay in the shared kernel,
+and the gates that must be green first (Connection row TESTED, Agent 5 + Agent 1 ACK, live 11/11 re-runnable).
+
 ## 1. Purpose
 
 Own the **edge model** of a workflow and the **pure functions** over it:

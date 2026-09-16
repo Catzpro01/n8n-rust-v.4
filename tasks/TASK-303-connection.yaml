@@ -1,0 +1,135 @@
+id: TASK-303-connection
+agent: agent-3
+lego: connection
+module: connection
+phase: 3
+title: "Phase-3 proposal: Connection LEGO owns graph/** + connections-diff behind port P-CONNECTION-GRAPH"
+status: PROPOSED            # NOT executable until gates below are green — see `blocked_by`
+branch: arena/01a0ac05-n8n-rust-v-4
+depends_on:
+  - TASK-301-connection     # Phase-2 blueprint (TESTED)
+  - TASK-303-workflow-handoff   # Agent 1 §3.1 Option A proposal
+answers:
+  - MSG-02                  # Agent 1 ownership question (Option A chosen for Phase 3)
+
+objective: >
+  Resolve the ownership drift recorded in docs/isolation/workflow-handoff.md §3.1 (LEGO-MASTER-MAP says
+  Connection owns graph/graph-utils.ts + connections-diff.ts; packages/workflow-lego/manifest/ownership.json
+  says Workflow). Adopt Option A: Connection becomes the owner of the two pure, dependency-free leaves and
+  Workflow re-exports the 12 graph + 1 content symbol through a declared port `P-CONNECTION-GRAPH`.
+  Behaviour must be byte-identical; this is an import-path / ownership change only.
+
+blocked_by:
+  - "Agent 5: LEGO-MASTER-MAP Connection row must be TESTED (currently BLOCKED) before any Phase-3 unit opens"
+  - "Agent 5: explicit ACK of Option A (docs/isolation/connection.md §0.1)"
+  - "Agent 1: ACK that ownership.json `owns[]` / `ports[]` will be amended by agent-1 (agent-3 does NOT edit packages/workflow-lego/**)"
+  - "Live VPS reachable: 11/11 regression gate must be re-runnable (currently unreachable → cannot VERIFY)"
+
+allowed_paths:
+  - reference/n8n/packages/workflow/src/common/**          # read-only golden source
+  - reference/n8n/packages/workflow/src/connections-diff.ts
+  - reference/n8n/packages/workflow/src/graph/**
+  - docs/isolation/connection*
+  - contracts/connection.contract.md
+  - tests/reference/connection/**
+  - packages/connection-lego/**                             # ADDITIVE (mirrors Agent 1's packages/workflow-lego precedent) — requires Agent 5 approval
+  - tasks/TASK-30*-connection*.yaml
+
+forbidden_paths:
+  - reference/n8n/**                                        # MODIFICATION forbidden — reference is read-only
+  - reference/n8n/packages/core/**
+  - packages/workflow-lego/**                               # Agent 1 — port wiring is agent-1's change, requested via bus
+  - contracts/workflow.contract.md
+  - contracts/node.contract.md
+  - crates/**
+  - apps/**
+
+requires:
+  - contracts/connection.contract.md          # §6 CD-01..CD-07
+  - contracts/workflow.contract.md
+  - docs/isolation/workflow-handoff.md        # §2 frozen surface, §3.1 options
+  - docs/isolation/workflow-port-contract.md  # port table format to extend
+
+source_modification: none                     # extraction copies, never edits, reference
+
+port_spec:
+  id: P-CONNECTION-GRAPH
+  kind: functions
+  direction: in                               # from Workflow's point of view (Workflow consumes Connection)
+  provided_by: "LEGO 03 — Connection"
+  consumed_as: "re-export from workflow-lego barrel (index.ts:80 deep path `graph/graph-utils`; `connections-diff` via workflow-diff.ts:11)"
+  symbols:
+    graph:
+      - getChildNodes
+      - getParentNodes
+      - getConnectedNodes
+      - getNodeByName
+      - mapConnectionsByDestination
+      - buildAdjacencyList
+      - parseExtractableSubgraphSelection
+      - getRootNodes
+      - getLeafNodes
+      - hasPath
+      - getInputEdges
+      - getOutputEdges
+    content:
+      - compareConnections
+  types_only:                                  # stay in shared kernel (P-KERNEL-TYPES), NOT moved
+    - IConnection
+    - IConnections
+    - INodeConnection
+    - IConnectionAdjacencyList
+    - ExtractableSubgraphData
+    - ExtractableErrorResult
+    - ConnectionsDiff
+    - INodeConnectionsDiff
+    - NodeConnectionType
+    - NodeConnectionTypes
+  evidence_pure_leaf:
+    - "graph/graph-utils.ts: single import, `import type {...} from '../interfaces'` (workflow-handoff.md §3.1)"
+    - "connections-diff.ts: single type import (deviation D-01 → P-KERNEL-TYPES); only consumer workflow-diff.ts:11"
+  NOT_included:
+    - "Workflow class traversal members (getNodeConnectionIndexes, getHighestNode, getStartNode, getParentMainInputNode, getParentNodesByDepth, searchNodesBFS) — stay with Agent 1; Connection keeps consuming them (CD-04)"
+    - "common/** — TODO(agent-3): confirm per-file whether any symbol is runtime-imported by workflow.ts; if yes it stays Workflow-owned"
+    - "Topological sort / SCC (core partial-execution-utils) — FORBIDDEN path, D-10 remains a documented dependency"
+
+operations:
+  - name: read_messages
+    args:
+      filter: { from: ["agent-1", "agent-5"], re: ["MSG-02", "D-08", "ISSUE-007"] }
+      purpose: "Gate: do not start until Option A ACKed by both"
+  - name: send_message
+    args:
+      to: "agent-5"
+      type: PROPOSAL
+      subject: "TASK-303-connection: Phase-3 port P-CONNECTION-GRAPH (Option A) — request approval + allowed_paths amendment (packages/connection-lego/**)"
+      body: "Pure-leaf move only; symbols listed in port_spec; behaviour pinned by tests/reference/connection 5/5 + Agent 1 conformance. Will not open until Connection row is TESTED and VPS gate is re-runnable."
+  - name: request_dependency
+    args:
+      provider: "agent-1"
+      provider_lego: "workflow"
+      interface: "ownership.json ports[] += P-CONNECTION-GRAPH; owns[] -= graph/**, connections-diff; barrel re-export unchanged"
+      access: "change-request"                 # agent-1 performs the edit, agent-3 only requests
+      description: "Keeps the 6 318 external import sites stable: public surface of n8n-workflow is unchanged, only the owner of the two files moves."
+  - name: send_message
+    args:
+      to: "agent-4"
+      type: FYI
+      subject: "P-CONNECTION-GRAPH will be the only sanctioned way Validation reads graph traversal (DanglingConnections); CycleDetection remains NEW CAPABILITY (ISSUE-003)"
+
+acceptance:
+  - "tests/reference/connection: 5/5 PASS, unchanged expectations (byte-identical behaviour)"
+  - "packages/workflow-lego conformance suite (Agent 1) still green after re-extraction"
+  - "reference smoke 11/11 on live VPS (Agent 5) — 10/11 = FAILED → rollback"
+  - "workflow-port-contract.md §1 gains one row: P-CONNECTION-GRAPH (Agent 1 edit)"
+  - "LEGO-MASTER-MAP owner column and ownership.json agree (drift closed)"
+
+rollback: "git revert of the single extraction commit; no reference or runtime files are touched, so rollback is documentation + package-only."
+
+tests:
+  - reference_smoke
+  - connection_tests
+
+notes:
+  - "Rust: still NONE. This unit produces a TypeScript ownership boundary + port row only; the Rust trait for P-CONNECTION-GRAPH is a later, separately-gated task."
+  - "If Agent 5 rejects Option A, this manifest is closed as WONTFIX and CD-02/CD-03 stay 'consumed from Workflow' permanently (Option B)."
