@@ -135,3 +135,50 @@ grep -n null tests/reference/connection/*/case.json
 ## Requested next step (Orchestrator / VPS host)
 Apply `docs/isolation/connection-rust-port-spec.md` §1–§7 in order; the DoD in §9 is unchanged. agent-3
 will re-review on the next `main` drop that touches `crates/n8n-connection`.
+
+---
+
+# Re-review #3 — `crates/n8n-connection` @ `8ed00851` + `9e87c8cb` (main, merged as `293f430c`)
+
+| Field | Value |
+| :--- | :--- |
+| Claim under review | commit message "resolve R-01..R-05" |
+| Method | static read **plus an executable oracle**: `tests/reference/harness/tools/simulate-connection-port.py` re-implements (a) spec §3 literally and (b) the algorithm now in `lib.rs`, in Python, and runs both against the 5 pinned fixtures. No cargo needed; anyone can re-run it. |
+| Verdict | **R-01 ✅ R-03 ✅ R-04 ✅ closed. R-02 ❌ still open (13/19 probes). R-05 ❌ not started. R-07 ❌ still open. R-08 ❌ still open.** |
+
+## Oracle output
+
+```
+spec §3 transcription:              19/19   (proves the spec itself reproduces 2.9.4 on every traversal/byDest probe)
+crates/n8n-connection @ 8ed00851:   13/19
+```
+
+Six mismatches, all in `get_connected_nodes`:
+
+| Fixture :: probe | crate | reference |
+| :--- | :--- | :--- |
+| 02 :: children of IF depth 1 | `[A, B, Merge]` | `[Merge, B, A]` |
+| 03 :: parents Agent main | `[Trigger, A, IF, Merge, Loop, Sparse, End]` | `[Sparse, Trigger, IF, A, Merge, Loop, End]` |
+| 03 :: parents Agent ALL_NON_MAIN | `[Model, Tool]` | `[Tool, Model]` |
+| 03 :: parents Agent ALL | `[Trigger, …, End, Model, Tool]` | `[Tool, Model, Sparse, Trigger, IF, A, Merge, Loop, End]` |
+| 04 :: parents of End through cycle | `[Trigger, A, IF, Merge, Loop, Sparse]` | `[Sparse, Trigger, IF, A, Merge, Loop]` |
+| 04 :: children of Merge through cycle | `[Agent, Merge, End, Loop]` | `[Agent, End, Loop]` |
+
+## Per-finding status
+
+| ID | Status | Evidence |
+| :--- | :--- | :--- |
+| R-01 `null` slots | **CLOSED** | `ConnectionOutput = Option<Vec<ConnectionItem>>` (L13); fixtures 02–05 now deserialise |
+| R-02 traversal semantics | **OPEN** | L35-110 is a *re-design* ("collect direct, recurse, prepend"), not the transcription in spec §3. Three concrete deviations: (1) `direct_nodes` are appended in slot order and emitted **last in insertion order**, whereas the reference `unshift`s each one → direct neighbours must come out **reversed** (probe 02, 03 ALL_NON_MAIN); (2) `checked_nodes` is a single shared `HashSet` for the whole call, whereas the reference copies `checkedNodes` **per type and per recursion branch** (L52) — so a node reachable via two branches is visited twice upstream and its final position is decided by the *last* branch (probes 03/04 "parents", `Sparse` first); (3) because of (2) the start node itself can be re-emitted when a cycle returns to it — upstream skips it only via the branch-local `checked` list, and the crate's global set makes `Merge` appear in its own children list (probe 04 "children of Merge"). Fix = transcribe §3 steps 1–5 literally (`Vec<String>` for `checked`, cloned per type; `insert(0, …)`; reverse loop with remove-then-prepend). The oracle's `ref_gcn` is a 25-line executable version of exactly that. |
+| R-03 ordering | **CLOSED** | `IndexMap` at both levels (L14-15); `indexmap = 2.2.6` pinned in workspace (`9e87c8cb`) |
+| R-04 destination index | **CLOSED** | `map_connections_by_destination` (L113-146) — padding `Some(vec![])`, `index: out_idx`; oracle byDest probes 5/5. `crates/n8n-workflow` still computes parents by full scan instead of caching this map — advisory, Agent 1 |
+| R-05 `P-CONNECTION-GRAPH` | **OPEN** | none of `build_adjacency_list`, `get_input_edges`, `get_output_edges`, `get_root_nodes`, `get_leaf_nodes`, `parse_extractable_subgraph_selection`, `compare_connections`, nor the 5 types exist. Fixtures 02 (roots/leaves), 04 (edges/extractable/hasPath), 05 (diff) cannot be exercised |
+| R-07 `has_path` | **OPEN** | L149-172 still `(connections, from, to)` with `ConnectionTypeFilter::All` — reference is `main`-only over an `AdjacencyList` (`graph-utils.ts:145`, spec §5). Probe 03 `hasPath` via `ai_tool` edges would return `true` instead of `false` |
+| R-08 fixture runner | **OPEN** | no `crates/n8n-connection/tests/`; only 2 unit tests in `lib.rs`. Spec §7 unchanged |
+
+## Bottom line for the Orchestrator
+3 of 5 claimed findings are genuinely closed — good progress, and the type layer is now right. But
+`get_connected_nodes` must be a **transcription**, not a re-design: the reference's ordering is an
+accident of `unshift` + per-branch `checked` copies, and it is pinned. Please (1) replace L35-110 with spec
+§3 (oracle `ref_gcn` is the executable form), (2) add spec §5–§6, (3) add the §7 runner; then `cargo test
+-p n8n-connection` should show 5/5 and agent-3 will confirm with the same oracle.
