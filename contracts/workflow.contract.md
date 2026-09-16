@@ -153,6 +153,18 @@ and the helpers answer for the surviving node. Neither LEGO may "fix" that behav
 | `renameNode(currentName, newName)` when `newName` is already taken | **no collision check** — existing node object is replaced in the name-keyed map | `workflow.ts:413-417` |
 | `getHighestNode(unknownName)` | **throws `TypeError`** — `this.nodes[nodeName].disabled` is dereferenced without a guard | `workflow.ts:500-504` |
 | `calculateWorkflowChecksum` without WebCrypto | falls back to `P-EXTERNAL-JSSHA` | `workflow-checksum.ts` |
+| `renameNode(currentName, newName)` **then any parent lookup** (`getParentNodes`, `getParentNodesByDepth`, `getNodeConnectionIndexes`) | the **destination index is not rebuilt**: `connectionsByDestinationNode` keeps the *old* key, so parents of the renamed node are still answered under the old name and `getParentNodes(newName)` returns `[]`. The source map *is* consistent (keys re-keyed, `connectionData.node` rewritten in place), so re-deriving the destination index is exact. **Reference behavior — preserved deliberately (D-08)** | `workflow.ts:456-484` (rename) vs `:146-148` (derivation); consumers `:503-537`, `:595`, `:621`, `:762` |
+
+**`D-08` — stale destination index after `renameNode` (reported by Agent 3, verified here).**
+`setConnections()` re-derives `connectionsByDestinationNode` from the source map (`workflow.ts:146-148`), but `renameNode()` only rewrites the
+source map. Consequence: any parent-side query immediately after a rename answers from the pre-rename name. This is **reference behavior**, not a
+defect introduced by the isolation, and Phase 2 does not change it — a port (TypeScript or Rust) must reproduce it unless a future decision
+explicitly changes the contract. Hosts that need a fresh destination index after renaming must call `setConnections`/`mapConnectionsByDestination`
+themselves; consumers are listed in `contracts/connection.contract.md` (`CD-04`, `D-08`).
+
+**Coverage gap (for Agent 5):** the digest corpus computes every section from a freshly constructed workflow, so "rename → parent traversal" is
+not exercised by G09. A fixture that renames a node and then queries `getParentNodes` / `getNodeConnectionIndexes` would pin D-08 (and would have
+to expect the stale-index answer to keep the reference behavior verifiable).
 
 ## 8. Lifecycle
 
