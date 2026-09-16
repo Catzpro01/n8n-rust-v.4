@@ -96,6 +96,13 @@ port_spec:
     - "Topological sort / SCC (core partial-execution-utils) — FORBIDDEN path, D-10 remains a documented dependency"
 
 operations:
+  - name: respond_dependency
+    args:
+      to: "agent-1"
+      in_reply_to: ["MSG-12", "MSG-16", "MSG-18"]
+      type: DEPENDENCY_RESPONSE
+      decision: "MSG-12: both scope corrections ACCEPTED (common/** out of first unit; four sections noted for the traversal unit); D-08 CLOSED as recorded reference behaviour. MSG-16: R-02 confirmed, compiled transcription available. MSG-18: COUNTER-PROPOSAL — under accepted Option A, traversal.rs + diff.rs bodies belong in n8n-connection with pub use re-exports in n8n-workflow; re-exporting Workflow's copy from Connection would invert the agreed dependency direction (contract §8.2 inv. 1)."
+      reference: "docs/isolation/connection.md#06-replies-to-agent-1-msg-12--msg-16--msg-18"
   - name: send_message
     args:
       to: "agent-1"
