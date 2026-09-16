@@ -1,0 +1,92 @@
+id: TASK-303-validation
+agent: agent-4
+lego: validation
+module: validation
+phase: 2
+title: "Isolate schema & type-validation boundary (schemas.ts, type-validation.ts, type-guards.ts)"
+branch: branch/agent-4
+worktree: workspaces/agent-4
+
+allowed_paths:
+  - reference/n8n/packages/workflow/src/schemas.ts
+  - reference/n8n/packages/workflow/src/type-validation.ts
+  - reference/n8n/packages/workflow/src/type-guards.ts
+  - docs/isolation/validation*
+  - contracts/validation.contract.md
+
+forbidden_paths:
+  - reference/n8n/packages/core/**
+  - crates/**
+  - apps/**
+
+requires:
+  - contracts/workflow.contract.md      # WorkflowContract input type (read-only)
+  - contracts/node.contract.md          # NodeContract (read-only)
+  - contracts/connection.contract.md    # ConnectionContract (read-only)
+
+mode: DOCUMENT -> ANALYZE -> CONTRACT   # no source edits in this task
+
+operations:
+  - name: git_status
+  - name: read_file
+    args: { path: "contracts/validation.contract.md" }
+  - name: read_file
+    args: { path: "reference/n8n/packages/workflow/src/schemas.ts" }
+  - name: read_file
+    args: { path: "reference/n8n/packages/workflow/src/type-validation.ts" }
+  - name: read_file
+    args: { path: "reference/n8n/packages/workflow/src/type-guards.ts" }
+
+  # 1. Analysis doc: inventory of every exported schema / parser / guard,
+  #    import graph (must stay free of packages/core), and INTERNAL/EXTERNAL/SHARED classification.
+  - name: write_file
+    args: { path: "docs/isolation/validation.md" }
+
+  # 2. Contract rewrite in the standard 11-section format:
+  #    Purpose, Inputs, Outputs, Responsibilities, Non-responsibilities, Dependencies,
+  #    Error behavior, Lifecycle, Data ownership, External interfaces, Compatibility requirements.
+  #    Covers: validateFieldType(value, type, {strict, valueOptions, parseStrings}) -> {valid, newValue} | {valid:false, errorMessage}
+  #            tryToParse{Number,String,AlphanumericString,Boolean,DateTime,Time,Array,Object,Binary,Url,Jwt,JsonToFormFields}
+  #            zod schemas: INodeParametersSchema, NodeParameterValueTypeSchema, NodeConnectionTypeSchema, IDisplayOptionsSchema, FilterValueSchema, ...
+  #            type guards: isResourceLocatorValue, isFilterValue, isAssignmentCollectionValue, isNodeConnectionType, isBinaryValue, ...
+  #    Existing graph rules (NodeUniqueness, DanglingConnections, CycleDetection, DisabledHandling) are KEPT
+  #    but marked as provided by workflow-validation.ts / node-validation.ts (see request_dependency below).
+  - name: write_file
+    args: { path: "contracts/validation.contract.md" }
+
+  # 3. Golden cases (INPUT / EXPECTED OUTPUT / ERROR / SIDE EFFECT) derived from n8n 2.9.4 source
+  #    and its existing unit tests (packages/workflow/test/type-validation.test.ts) — read-only reference.
+  - name: write_file
+    args: { path: "docs/isolation/validation-golden-cases.md" }
+
+  # 4. Boundary gap: validateWorkflow / validateConnections live outside my allowed paths.
+  - name: request_dependency
+    args:
+      to: agent-5
+      subject: "Boundary extension request for validation LEGO"
+      body: >
+        contracts/validation.contract.md requires validateWorkflow, validateNode, validateConnections.
+        Their implementations are reference/n8n/packages/workflow/src/workflow-validation.ts and
+        node-validation.ts, which are NOT in agent-4 allowed_paths. Request: add both files (read-only
+        first) to the validation LEGO boundary, or confirm they belong to the workflow LEGO (agent-1)
+        so the contract can declare them as CROSS-BOUNDARY provided interfaces instead.
+
+  - name: send_message
+    args:
+      to: all
+      subject: "TASK-303-validation started"
+      body: "Validation LEGO: analysis + contract rewrite only, no source edits, no core/crates access."
+
+  - name: git_status
+  - name: git_diff
+
+acceptance:
+  - no file outside allowed_paths modified
+  - contracts/validation.contract.md has all 11 sections
+  - docs/isolation/validation.md lists every export of the 3 files with dependency class
+  - zero edits to reference/n8n/packages/core/** and crates/**
+
+merge_condition:
+  - regression_gate_pass      # 11/11
+  - no_contract_violation
+  - agent_5_verification

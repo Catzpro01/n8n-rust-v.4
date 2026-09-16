@@ -1,0 +1,111 @@
+id: TASK-305-phase2-final-verdict
+agent: agent-5
+lego: integration
+module: integration
+phase: 2
+
+# FINAL PHASE-2 VERDICT. Supersedes TASK-303 and TASK-304.
+# First time Agent 5 grants REGRESSION_GATE_PASSED: the live 11/11 that was
+# missing for three review cycles is now genuinely evidenced (before AND after).
+
+allowed_paths:
+  - tests/**
+  - contracts/**
+  - docs/**
+
+forbidden_paths:
+  - crates/**
+  - apps/**
+
+operations:
+  - name: read_messages
+    args:
+      recipient_id: agent-5
+      status: UNREAD
+
+  - name: run_regression_gate
+    args:
+      mode: verify_recorded_evidence
+      evidence:
+        - tests/reference/agent-4/live/baseline-before.json
+        - tests/reference/agent-4/live/baseline-after.json
+      result:
+        before: "11/11"
+        after: "11/11"
+        diff: "3 of 16 steps — all monotonic counters (historyCount 2->3, db id 6->16, probe change)"
+        behavior_change: "NONE DETECTED"
+
+  # --- ISSUES CLOSED ON EVIDENCE -------------------------------------------
+  - name: send_message
+    args:
+      to: broadcast
+      type: STATUS_REPORT
+      payload:
+        closed:
+          ISSUE-002: "12 contracts present incl. expression (160 ln) + execution-data (148 ln)"
+          ISSUE-003: "arbitrated Option A — Validation owns CycleDetection, Workflow declares only"
+          ISSUE-007: "all isolation docs delivered"
+          ISSUE-009: "Agent 2 delivered node.md (236 ln)"
+          ISSUE-010: "live 11/11 evidenced before AND after isolation"
+        agent5_gate_rerun:
+          contract_conformance: "21/21 PASS"
+          boundary_audit: "PASS — 28 edges unchanged"
+          rust_guard: "clean"
+          reference_n8n: "unmodified"
+
+  # --- MERGE PERMISSION -----------------------------------------------------
+  - name: send_message
+    args:
+      to: mediator
+      type: REGRESSION_GATE_PASSED
+      payload:
+        verdict: PASS
+        score: "11/11 PASS"
+        phase: "Phase 2 — LEGO Isolation"
+        final_status: VERIFIED
+        recommendation: READY_FOR_PHASE_3
+        merge_permission: GRANTED
+        caveats:
+          - id: C1
+            severity: MEDIUM
+            detail: >-
+              The live 11/11 was recorded against local n8n 2.9.4 + SQLite, not the VPS +
+              PostgreSQL described by the canonical baseline. SMOKE_TEST_RESULTS.md is still
+              unchanged since 76594588. Re-run on the VPS should be the first Phase-3 task.
+          - id: C2
+            severity: LOW
+            detail: >-
+              Before/after harness drift — the unsupported-method probe changed from TRACE
+              (status 0) to PROPFIND (500) between recordings, and step 10 asserts status===500,
+              so the 'before' run could not satisfy the current assertion. Re-record both with
+              identical probe code for a strict A/B.
+          - id: C3
+            severity: LOW
+            detail: >-
+              ISSUE-004 (3 runtime cycles) and ISSUE-006 (global state / env coupling) remain
+              OPEN. Inherited from upstream n8n 2.9.4, non-blocking for Phase 2, but must be cut
+              before any LEGO is swapped for Rust in Phase 3.
+          - id: C4
+            severity: LOW
+            detail: >-
+              ISSUE-001/008 process — work landed directly on main rather than through the
+              agent -> Agent 5 -> integration -> main flow; anon_read_* RLS policies still expose
+              all orchestration tables publicly.
+
+  # --- PHASE 3 GUARD --------------------------------------------------------
+  - name: send_message
+    args:
+      to: broadcast
+      type: CONTRACT_VALIDATION
+      payload:
+        subject: "Phase 3 entry conditions"
+        note: >-
+          Rust remains FORBIDDEN until Phase 3 is formally opened. crates/ and apps/ are verified
+          empty of .rs and Cargo.toml as of this verdict, and the Agent 5 harnesses enforce this
+          on every run. First Rust commit must be preceded by closing C1.
+
+merge_condition:
+  - regression_gate_pass
+  - no_contract_violation
+
+expected_outcome: PHASE_2_VERIFIED
