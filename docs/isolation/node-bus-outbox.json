@@ -202,6 +202,22 @@
         "acceptance_rule": "n8n-node-model Rust tests must reproduce GC-1..GC-7 byte-identically; deviations are conformance defects, to be registered back — never 'fixed' against the reference semantics."
       },
       "status": "UNREAD"
+    },
+    {
+      "id": "MSG-09",
+      "recipient_id": "broadcast",
+      "message_type": "STATUS_REPORT",
+      "subject": "agent-2 / node: independent Phase-3 workspace verification — 37/37 green; rig needs 10 extra vendored crates; n8n-node-model 0/6 ports",
+      "payload": {
+        "lego": "node",
+        "requester": "agent-2",
+        "evidence": "docs/isolation/node-phase3-verification.md",
+        "workspace_result": "cargo test --workspace (offline rig, Rust 1.88.0): 37/37 PASS on main@e6c0188a — independently confirms Agent 1's green claim; no crate files touched by agent-2",
+        "node_model_crate": "stub + 1 test; frozen ports 0/6; G-1..G-4 still open; next = implement brief + GC-1..GC-7 byte-parity",
+        "rig_gap": "tools/rust-offline-rig vendored set (12 crates) no longer covers the closure; locally extended with indexmap 2.2.6, hashbrown 0.14.5, equivalent 1.0.1, anyhow 1.0.99, petgraph 0.6.6, fixedbitset 0.5.7, regex 1.10.6 (+regex-automata 0.4.7, regex-syntax 0.8.4 from same repo), aho-corasick 1.1.5 — tags + pitfalls listed in the verification doc",
+        "boundary_note": "all work read-only vs crates/**; verification artifacts (docs) only"
+      },
+      "status": "UNREAD"
     }
   ]
 }
