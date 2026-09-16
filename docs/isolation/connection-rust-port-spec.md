@@ -146,6 +146,59 @@ depth 1 = direct neighbours only (`02 "children of IF depth 1"`); cycle terminat
 (`04 "parents of End through cycle terminate"`); unknown node → `[]` (`01 "unknown node"`); `ALL`
 unions all types, `ALL_NON_MAIN` excludes `main` (`03`).
 
+### 3.1 Reference Rust transcription (paste-ready; not compiler-checked in the agent-3 sandbox)
+
+Line-for-line with `get-connected-nodes.ts` and with the oracle's `ref_gcn` (32/32). Deliberately
+un-optimised: the `Vec<String>` `checked` copy per type and the `insert(0, …)` calls *are* the semantics.
+
+```rust
+pub fn get_connected_nodes(
+    connections: &Connections,
+    node_name: &str,
+    connection_type: &TypeFilter,
+    depth: i64,
+    checked_nodes_incoming: Option<&[String]>,
+) -> Vec<String> {
+    let new_depth = if depth == -1 { -1 } else { depth - 1 };          // L18
+    if depth == 0 { return Vec::new(); }                                // L19-22
+    let Some(by_type) = connections.get(node_name) else { return Vec::new(); }; // L24-27
+
+    let types: Vec<String> = match connection_type {                    // L29-37
+        TypeFilter::All => by_type.keys().cloned().collect(),
+        TypeFilter::AllNonMain => by_type.keys().filter(|t| t.as_str() != "main").cloned().collect(),
+        TypeFilter::Type(t) => vec![t.clone()],
+    };
+
+    let mut return_nodes: Vec<String> = Vec::new();                     // L43
+    for type_name in &types {                                           // L45
+        let Some(slots) = by_type.get(type_name) else { continue; };    // L46-49
+        let mut checked: Vec<String> = checked_nodes_incoming.map(|c| c.to_vec()).unwrap_or_default(); // L52
+        if checked.iter().any(|c| c == node_name) { continue; }         // L54-57
+        checked.push(node_name.to_string());                            // L59
+        for slot in slots {                                             // L61
+            for connection in slot.iter().flatten() {                   // L62 (`?.forEach` skips null)
+                if checked.iter().any(|c| c == &connection.node) { continue; } // L63-66
+                return_nodes.insert(0, connection.node.clone());        // L67 unshift
+                let add_nodes = get_connected_nodes(                    // L69-75
+                    connections, &connection.node, connection_type, new_depth, Some(&checked),
+                );
+                for i in (0..add_nodes.len()).rev() {                   // L77 `for (i = len; i--; )`
+                    let parent = &add_nodes[i];
+                    if let Some(pos) = return_nodes.iter().position(|n| n == parent) {
+                        return_nodes.remove(pos);                       // L86 splice
+                    }
+                    return_nodes.insert(0, parent.clone());             // L89 unshift
+                }
+            }
+        }
+    }
+    return_nodes
+}
+```
+
+Self-check the port with two fixture facts before running the full runner: `01 children of Trigger` must
+be farthest-first, and `04 children of Merge through cycle` must **not** contain `Merge` itself.
+
 Convenience wrappers (`common/get-child-nodes.ts`, `get-parent-nodes.ts` — both are one-liners):
 
 ```rust
