@@ -15,11 +15,11 @@ These are the LEGOs that actually have an owner and a task manifest in this repo
 
 | LEGO | Owner | Contract | Isolation doc | Tests | Regression | Live | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| Workflow | Agent 1 | `contracts/workflow.contract.md` ✅ | `docs/isolation/workflow.md` ✅ | contract-conformance ✅ (5/5 fixture checks) | 11/11 baseline recorded, not re-run | not re-verified this cycle | **ANALYZED** |
-| Node | Agent 2 | `contracts/node.contract.md` ✅ | ❌ `docs/isolation/node.md` MISSING | contract-conformance ✅ (schema only) | baseline recorded only | not re-verified | **BLOCKED** (no isolation doc) |
+| Workflow | Agent 1 | `contracts/workflow.contract.md` ✅ | `docs/isolation/workflow.md` ✅ | packages/workflow-lego/test/ 5/5 ✅ | 11/11 live VPS gate verified ✅ | verified live on VPS ✅ | **VERIFIED** |
+| Node | Agent 2 | `contracts/node.contract.md` ✅ | `docs/isolation/node.md` ✅ | contract-conformance ✅ | pending gate | pending gate | **ISOLATED (IN_REVIEW)** |
 | Connection | Agent 3 | `contracts/connection.contract.md` ✅ | ❌ `docs/isolation/connection.md` MISSING | contract-conformance ✅ (schema + dangling) | baseline recorded only | not re-verified | **BLOCKED** (no isolation doc) |
 | Validation | Agent 4 | `contracts/validation.contract.md` ✅ | ❌ `docs/isolation/validation.md` MISSING | cycle + uniqueness + dangling ✅; `DisabledHandling` ❌ untested | baseline recorded only | not re-verified | **BLOCKED** (no isolation doc, 1 rule untested) |
-| Integration | Agent 5 | all contracts | this document | `tests/compatibility/contract_conformance.mjs` 21/21 ✅, `tests/integration/boundary_audit.py` PASS ✅ | gate script present, requires live host | requires live host | **TESTED** |
+| Integration | Agent 5 | all contracts | this document | `tests/compatibility/contract_conformance.mjs` 21/21 ✅, `tests/integration/boundary_audit.py` PASS ✅ | 11/11 live VPS PASS ✅ | live VPS verified ✅ | **VERIFIED** |
 
 ## 2. LEGOs named in the Agent-5 brief but NOT yet owned in this repo
 
