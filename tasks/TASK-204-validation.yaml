@@ -1,0 +1,24 @@
+﻿id: TASK-204-validation
+agent: agent-4
+lego: validation
+module: validation
+
+allowed_paths:
+  - reference/n8n/packages/workflow/src/workflow-validation.ts
+  - docs/isolation/validation.md
+
+forbidden_paths:
+  - reference/n8n/packages/core/**
+  - crates/**
+  - apps/**
+
+requires:
+  - contracts/validation.contract.md
+
+operations:
+  - git_status
+  - list_files
+
+merge_condition:
+  - regression_gate_pass
+  - no_contract_violation

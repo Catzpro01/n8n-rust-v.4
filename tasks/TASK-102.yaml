@@ -1,0 +1,4 @@
+id: TASK-102
+agent: agent-2
+module: execution-engine
+operation: git_status

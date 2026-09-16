@@ -1,0 +1,6 @@
+id: TASK-002
+agent: agent-2
+module: root
+operations:
+  - git_status
+  - list_files

@@ -1,0 +1,25 @@
+﻿id: TASK-201-workflow
+agent: agent-1
+lego: workflow
+module: workflow
+
+allowed_paths:
+  - reference/n8n/packages/workflow/**
+  - docs/isolation/workflow.md
+
+forbidden_paths:
+  - reference/n8n/packages/core/**
+  - reference/n8n/packages/cli/**
+  - crates/**
+  - apps/**
+
+requires:
+  - contracts/workflow.contract.md
+
+operations:
+  - git_status
+  - list_files
+
+merge_condition:
+  - regression_gate_pass
+  - no_contract_violation

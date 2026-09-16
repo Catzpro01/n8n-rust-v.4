@@ -1,0 +1,1350 @@
+{
+  "generatedAt": "2026-09-16T21:35:27.229Z",
+  "lego": "workflow",
+  "reference": {
+    "package": "reference/n8n/packages/workflow",
+    "srcFileCount": 104
+  },
+  "owned": {
+    "files": [
+      "workflow",
+      "common/index",
+      "common/get-child-nodes",
+      "common/get-connected-nodes",
+      "common/get-node-by-name",
+      "common/get-parent-nodes",
+      "common/map-connections-by-destination",
+      "graph/graph-utils",
+      "connections-diff",
+      "workflow-checksum"
+    ],
+    "missing": [],
+    "count": 10
+  },
+  "closure": [
+    "augment-object",
+    "common/get-child-nodes",
+    "common/get-connected-nodes",
+    "common/get-node-by-name",
+    "common/get-parent-nodes",
+    "common/index",
+    "common/map-connections-by-destination",
+    "connections-diff",
+    "constants",
+    "cron",
+    "data-table.types",
+    "deferred-promise",
+    "errors/abstract/execution-base.error",
+    "errors/abstract/node.error",
+    "errors/base/base.error",
+    "errors/base/operational.error",
+    "errors/base/unexpected.error",
+    "errors/base/user.error",
+    "errors/cli-subworkflow-operation.error",
+    "errors/db-connection-timeout-error",
+    "errors/ensure-error",
+    "errors/execution-cancelled.error",
+    "errors/expression-class-extension.error",
+    "errors/expression-computed-destructuring.error",
+    "errors/expression-destructuring.error",
+    "errors/expression-extension.error",
+    "errors/expression-reserved-variable.error",
+    "errors/expression-with-statement.error",
+    "errors/expression.error",
+    "errors/index",
+    "errors/node-api.error",
+    "errors/node-operation.error",
+    "errors/node-ssl.error",
+    "errors/subworkflow-operation.error",
+    "errors/trigger-close.error",
+    "errors/webhook-taken.error",
+    "errors/workflow-activation.error",
+    "errors/workflow-configuration.error",
+    "errors/workflow-deactivation.error",
+    "errors/workflow-operation.error",
+    "evaluation-helpers",
+    "execution-context",
+    "execution-context-establishment-hooks",
+    "execution-status",
+    "expression",
+    "expression-evaluator-proxy",
+    "expression-sandboxing",
+    "expressions/expression-helpers",
+    "extensions/array-extensions",
+    "extensions/boolean-extensions",
+    "extensions/date-extensions",
+    "extensions/expression-extension",
+    "extensions/expression-parser",
+    "extensions/extended-functions",
+    "extensions/extensions",
+    "extensions/index",
+    "extensions/number-extensions",
+    "extensions/object-extensions",
+    "extensions/string-extensions",
+    "extensions/utils",
+    "from-ai-parse-utils",
+    "global-state",
+    "graph/graph-utils",
+    "index",
+    "interfaces",
+    "logger-proxy",
+    "message-event-bus",
+    "metadata-utils",
+    "native-methods/array.methods",
+    "native-methods/boolean.methods",
+    "native-methods/index",
+    "native-methods/number.methods",
+    "native-methods/object.methods",
+    "native-methods/string.methods",
+    "node-helpers",
+    "node-parameters/filter-parameter",
+    "node-parameters/node-parameter-value-type-guard",
+    "node-parameters/parameter-type-validation",
+    "node-parameters/path-utils",
+    "node-parameters/rename-node-utils",
+    "node-reference-parser-utils",
+    "node-validation",
+    "observable-object",
+    "result",
+    "run-execution-data-factory",
+    "run-execution-data/run-execution-data",
+    "run-execution-data/run-execution-data.v0",
+    "run-execution-data/run-execution-data.v1",
+    "schemas",
+    "telemetry-helpers",
+    "tool-helpers",
+    "type-guards",
+    "type-validation",
+    "utils",
+    "versioned-node-type",
+    "workflow",
+    "workflow-checksum",
+    "workflow-data-proxy",
+    "workflow-data-proxy-env-provider",
+    "workflow-data-proxy-helpers",
+    "workflow-diff",
+    "workflow-environments-helper",
+    "workflow-validation"
+  ],
+  "crossings": [
+    {
+      "from": "common/get-child-nodes",
+      "to": "interfaces",
+      "spec": "./interfaces",
+      "port": "P-KERNEL-TYPES",
+      "deviation": null
+    },
+    {
+      "from": "common/get-connected-nodes",
+      "to": "interfaces",
+      "spec": "./interfaces",
+      "port": "P-KERNEL-TYPES",
+      "deviation": null
+    },
+    {
+      "from": "common/get-node-by-name",
+      "to": "interfaces",
+      "spec": "./interfaces",
+      "port": "P-KERNEL-TYPES",
+      "deviation": null
+    },
+    {
+      "from": "common/get-parent-nodes",
+      "to": "interfaces",
+      "spec": "./interfaces",
+      "port": "P-KERNEL-TYPES",
+      "deviation": null
+    },
+    {
+      "from": "common/map-connections-by-destination",
+      "to": "interfaces",
+      "spec": "./interfaces",
+      "port": "P-KERNEL-TYPES",
+      "deviation": null
+    },
+    {
+      "from": "connections-diff",
+      "to": "index",
+      "spec": "./index",
+      "port": "@lego/ports/vocabulary",
+      "deviation": "D-01"
+    },
+    {
+      "from": "graph/graph-utils",
+      "to": "interfaces",
+      "spec": "./interfaces",
+      "port": "P-KERNEL-TYPES",
+      "deviation": null
+    },
+    {
+      "from": "workflow",
+      "to": "constants",
+      "spec": "./constants",
+      "port": "P-KERNEL-CONSTANTS",
+      "deviation": null
+    },
+    {
+      "from": "workflow",
+      "to": "errors/index",
+      "spec": "./errors/index",
+      "port": "P-KERNEL-ERRORS",
+      "deviation": null
+    },
+    {
+      "from": "workflow",
+      "to": "expression",
+      "spec": "./expression",
+      "port": "P-EXPRESSION-RUNTIME",
+      "deviation": null
+    },
+    {
+      "from": "workflow",
+      "to": "global-state",
+      "spec": "./global-state",
+      "port": "P-KERNEL-CONFIG",
+      "deviation": null
+    },
+    {
+      "from": "workflow",
+      "to": "interfaces",
+      "spec": "./interfaces",
+      "port": "P-KERNEL-TYPES",
+      "deviation": null
+    },
+    {
+      "from": "workflow",
+      "to": "node-helpers",
+      "spec": "./node-helpers",
+      "port": "P-NODE-MODEL",
+      "deviation": null
+    },
+    {
+      "from": "workflow",
+      "to": "node-parameters/rename-node-utils",
+      "spec": "./node-parameters/rename-node-utils",
+      "port": "P-NODE-RENAME",
+      "deviation": null
+    },
+    {
+      "from": "workflow",
+      "to": "node-reference-parser-utils",
+      "spec": "./node-reference-parser-utils",
+      "port": "P-NODE-REFERENCE",
+      "deviation": null
+    },
+    {
+      "from": "workflow",
+      "to": "observable-object",
+      "spec": "./observable-object",
+      "port": "P-KERNEL-OBSERVABLE",
+      "deviation": null
+    },
+    {
+      "from": "workflow",
+      "to": "utils",
+      "spec": "./utils",
+      "port": "P-KERNEL-UTILS",
+      "deviation": null
+    },
+    {
+      "from": "workflow-checksum",
+      "to": "interfaces",
+      "spec": "./interfaces",
+      "port": "P-KERNEL-TYPES",
+      "deviation": null
+    },
+    {
+      "from": "workflow-checksum",
+      "to": "utils",
+      "spec": "./utils",
+      "port": "P-KERNEL-UTILS",
+      "deviation": null
+    }
+  ],
+  "externalCrossings": [
+    {
+      "from": "workflow",
+      "to": "@n8n/errors",
+      "spec": "@n8n/errors",
+      "port": "P-KERNEL-ERRORS"
+    },
+    {
+      "from": "workflow-checksum",
+      "to": "jssha",
+      "spec": "jssha",
+      "port": "P-EXTERNAL-JSSHA"
+    }
+  ],
+  "undeclared": [],
+  "inbound": [
+    {
+      "from": "expression",
+      "to": "workflow"
+    },
+    {
+      "from": "index",
+      "to": "common/index"
+    },
+    {
+      "from": "index",
+      "to": "graph/graph-utils"
+    },
+    {
+      "from": "index",
+      "to": "workflow"
+    },
+    {
+      "from": "index",
+      "to": "workflow-checksum"
+    },
+    {
+      "from": "interfaces",
+      "to": "workflow"
+    },
+    {
+      "from": "node-helpers",
+      "to": "workflow"
+    },
+    {
+      "from": "workflow-data-proxy",
+      "to": "workflow"
+    },
+    {
+      "from": "workflow-diff",
+      "to": "connections-diff"
+    }
+  ],
+  "consumers": {
+    "root": 6318,
+    "rootByPackage": {
+      "@n8n": 1090,
+      "cli": 652,
+      "core": 212,
+      "frontend": 415,
+      "node-dev": 5,
+      "nodes-base": 3936,
+      "testing": 8
+    },
+    "subpath": 5,
+    "subpathBySpec": {
+      "n8n-workflow/src": 1,
+      "n8n-workflow/common": 4
+    }
+  },
+  "graph": {
+    "augment-object": {
+      "internal": [
+        "interfaces"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "common/get-child-nodes": {
+      "internal": [
+        "common/get-connected-nodes",
+        "interfaces"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "common/get-connected-nodes": {
+      "internal": [
+        "interfaces"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "common/get-node-by-name": {
+      "internal": [
+        "interfaces"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "common/get-parent-nodes": {
+      "internal": [
+        "common/get-connected-nodes",
+        "interfaces"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "common/index": {
+      "internal": [
+        "common/get-child-nodes",
+        "common/get-connected-nodes",
+        "common/get-node-by-name",
+        "common/get-parent-nodes",
+        "common/map-connections-by-destination"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "common/map-connections-by-destination": {
+      "internal": [
+        "interfaces"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "connections-diff": {
+      "internal": [
+        "index"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "constants": {
+      "internal": [],
+      "external": [],
+      "unresolved": []
+    },
+    "cron": {
+      "internal": [
+        "interfaces",
+        "utils"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "data-table.types": {
+      "internal": [],
+      "external": [],
+      "unresolved": []
+    },
+    "deferred-promise": {
+      "internal": [],
+      "external": [],
+      "unresolved": []
+    },
+    "errors/abstract/execution-base.error": {
+      "internal": [
+        "interfaces"
+      ],
+      "external": [
+        "@n8n/errors"
+      ],
+      "unresolved": []
+    },
+    "errors/abstract/node.error": {
+      "internal": [
+        "errors/abstract/execution-base.error",
+        "interfaces",
+        "utils"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "errors/base/base.error": {
+      "internal": [],
+      "external": [
+        "@n8n/errors",
+        "@sentry/node",
+        "callsites"
+      ],
+      "unresolved": []
+    },
+    "errors/base/operational.error": {
+      "internal": [
+        "errors/base/base.error"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "errors/base/unexpected.error": {
+      "internal": [
+        "errors/base/base.error"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "errors/base/user.error": {
+      "internal": [
+        "errors/base/base.error"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "errors/cli-subworkflow-operation.error": {
+      "internal": [
+        "errors/subworkflow-operation.error"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "errors/db-connection-timeout-error": {
+      "internal": [],
+      "external": [
+        "@n8n/errors"
+      ],
+      "unresolved": []
+    },
+    "errors/ensure-error": {
+      "internal": [],
+      "external": [],
+      "unresolved": []
+    },
+    "errors/execution-cancelled.error": {
+      "internal": [
+        "errors/abstract/execution-base.error"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "errors/expression-class-extension.error": {
+      "internal": [
+        "errors/expression.error"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "errors/expression-computed-destructuring.error": {
+      "internal": [
+        "errors/expression.error"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "errors/expression-destructuring.error": {
+      "internal": [
+        "errors/expression.error"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "errors/expression-extension.error": {
+      "internal": [
+        "errors/expression.error"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "errors/expression-reserved-variable.error": {
+      "internal": [
+        "errors/expression.error"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "errors/expression-with-statement.error": {
+      "internal": [
+        "errors/expression.error"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "errors/expression.error": {
+      "internal": [
+        "errors/abstract/execution-base.error",
+        "interfaces"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "errors/index": {
+      "internal": [
+        "errors/abstract/execution-base.error",
+        "errors/abstract/node.error",
+        "errors/base/base.error",
+        "errors/base/operational.error",
+        "errors/base/unexpected.error",
+        "errors/base/user.error",
+        "errors/cli-subworkflow-operation.error",
+        "errors/db-connection-timeout-error",
+        "errors/ensure-error",
+        "errors/execution-cancelled.error",
+        "errors/expression-class-extension.error",
+        "errors/expression-computed-destructuring.error",
+        "errors/expression-destructuring.error",
+        "errors/expression-extension.error",
+        "errors/expression-reserved-variable.error",
+        "errors/expression-with-statement.error",
+        "errors/expression.error",
+        "errors/node-api.error",
+        "errors/node-operation.error",
+        "errors/node-ssl.error",
+        "errors/subworkflow-operation.error",
+        "errors/trigger-close.error",
+        "errors/webhook-taken.error",
+        "errors/workflow-activation.error",
+        "errors/workflow-configuration.error",
+        "errors/workflow-deactivation.error",
+        "errors/workflow-operation.error"
+      ],
+      "external": [
+        "@n8n/errors"
+      ],
+      "unresolved": []
+    },
+    "errors/node-api.error": {
+      "internal": [
+        "constants",
+        "errors/abstract/node.error",
+        "interfaces",
+        "utils"
+      ],
+      "external": [
+        "@n8n/errors",
+        "axios",
+        "xml2js"
+      ],
+      "unresolved": []
+    },
+    "errors/node-operation.error": {
+      "internal": [
+        "errors/abstract/node.error",
+        "errors/node-api.error",
+        "interfaces"
+      ],
+      "external": [
+        "@n8n/errors"
+      ],
+      "unresolved": []
+    },
+    "errors/node-ssl.error": {
+      "internal": [
+        "errors/abstract/execution-base.error"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "errors/subworkflow-operation.error": {
+      "internal": [
+        "errors/workflow-operation.error"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "errors/trigger-close.error": {
+      "internal": [
+        "interfaces"
+      ],
+      "external": [
+        "@n8n/errors"
+      ],
+      "unresolved": []
+    },
+    "errors/webhook-taken.error": {
+      "internal": [
+        "errors/workflow-activation.error"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "errors/workflow-activation.error": {
+      "internal": [
+        "errors/abstract/execution-base.error",
+        "interfaces"
+      ],
+      "external": [
+        "@n8n/errors"
+      ],
+      "unresolved": []
+    },
+    "errors/workflow-configuration.error": {
+      "internal": [
+        "errors/node-operation.error"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "errors/workflow-deactivation.error": {
+      "internal": [
+        "errors/workflow-activation.error"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "errors/workflow-operation.error": {
+      "internal": [
+        "errors/abstract/execution-base.error",
+        "interfaces"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "evaluation-helpers": {
+      "internal": [],
+      "external": [],
+      "unresolved": []
+    },
+    "execution-context-establishment-hooks": {
+      "internal": [],
+      "external": [
+        "zod/v4"
+      ],
+      "unresolved": []
+    },
+    "execution-context": {
+      "internal": [
+        "utils"
+      ],
+      "external": [
+        "zod/v4"
+      ],
+      "unresolved": []
+    },
+    "execution-status": {
+      "internal": [],
+      "external": [],
+      "unresolved": []
+    },
+    "expression-evaluator-proxy": {
+      "internal": [
+        "expression-sandboxing"
+      ],
+      "external": [
+        "@n8n/tournament"
+      ],
+      "unresolved": []
+    },
+    "expression-sandboxing": {
+      "internal": [
+        "errors/index",
+        "utils"
+      ],
+      "external": [
+        "@n8n/tournament"
+      ],
+      "unresolved": []
+    },
+    "expression": {
+      "internal": [
+        "errors/expression-extension.error",
+        "errors/expression.error",
+        "expression-evaluator-proxy",
+        "expression-sandboxing",
+        "expressions/expression-helpers",
+        "extensions/expression-extension",
+        "extensions/extended-functions",
+        "extensions/index",
+        "global-state",
+        "interfaces",
+        "run-execution-data-factory",
+        "run-execution-data/run-execution-data",
+        "workflow",
+        "workflow-data-proxy"
+      ],
+      "external": [
+        "@n8n/errors",
+        "luxon"
+      ],
+      "unresolved": []
+    },
+    "expressions/expression-helpers": {
+      "internal": [],
+      "external": [],
+      "unresolved": []
+    },
+    "extensions/array-extensions": {
+      "internal": [
+        "errors/expression-extension.error",
+        "errors/expression.error",
+        "extensions/extensions",
+        "extensions/object-extensions",
+        "utils"
+      ],
+      "external": [
+        "lodash/isEqual",
+        "lodash/uniqWith"
+      ],
+      "unresolved": []
+    },
+    "extensions/boolean-extensions": {
+      "internal": [
+        "extensions/extensions"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "extensions/date-extensions": {
+      "internal": [
+        "errors/expression-extension.error",
+        "extensions/extensions",
+        "extensions/string-extensions",
+        "extensions/utils"
+      ],
+      "external": [
+        "luxon"
+      ],
+      "unresolved": []
+    },
+    "extensions/expression-extension": {
+      "internal": [
+        "errors/expression-extension.error",
+        "extensions/array-extensions",
+        "extensions/boolean-extensions",
+        "extensions/date-extensions",
+        "extensions/expression-parser",
+        "extensions/extensions",
+        "extensions/number-extensions",
+        "extensions/object-extensions",
+        "extensions/string-extensions",
+        "extensions/utils",
+        "utils"
+      ],
+      "external": [
+        "ast-types/lib/gen/kinds",
+        "esprima-next",
+        "luxon",
+        "recast",
+        "recast/lib/util"
+      ],
+      "unresolved": []
+    },
+    "extensions/expression-parser": {
+      "internal": [],
+      "external": [],
+      "unresolved": []
+    },
+    "extensions/extended-functions": {
+      "internal": [
+        "errors/expression-extension.error",
+        "errors/expression.error",
+        "extensions/array-extensions"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "extensions/extensions": {
+      "internal": [],
+      "external": [
+        "@codemirror/autocomplete"
+      ],
+      "unresolved": []
+    },
+    "extensions/index": {
+      "internal": [
+        "extensions/expression-extension",
+        "extensions/extensions"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "extensions/number-extensions": {
+      "internal": [
+        "errors/expression-extension.error",
+        "extensions/extensions"
+      ],
+      "external": [
+        "luxon"
+      ],
+      "unresolved": []
+    },
+    "extensions/object-extensions": {
+      "internal": [
+        "errors/expression-extension.error",
+        "extensions/extensions"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "extensions/string-extensions": {
+      "internal": [
+        "errors/expression-extension.error",
+        "extensions/extensions",
+        "extensions/number-extensions",
+        "type-validation"
+      ],
+      "external": [
+        "js-base64",
+        "jssha",
+        "luxon",
+        "md5",
+        "title-case",
+        "transliteration"
+      ],
+      "unresolved": []
+    },
+    "extensions/utils": {
+      "internal": [
+        "errors/expression-extension.error"
+      ],
+      "external": [
+        "luxon"
+      ],
+      "unresolved": []
+    },
+    "from-ai-parse-utils": {
+      "internal": [
+        "constants",
+        "expressions/expression-helpers",
+        "utils"
+      ],
+      "external": [
+        "zod"
+      ],
+      "unresolved": []
+    },
+    "global-state": {
+      "internal": [
+        "utils"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "graph/graph-utils": {
+      "internal": [
+        "interfaces"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "index": {
+      "internal": [
+        "common/index",
+        "constants",
+        "cron",
+        "data-table.types",
+        "deferred-promise",
+        "errors/index",
+        "evaluation-helpers",
+        "execution-context",
+        "execution-context-establishment-hooks",
+        "execution-status",
+        "expression",
+        "expressions/expression-helpers",
+        "extensions/expression-parser",
+        "extensions/index",
+        "from-ai-parse-utils",
+        "global-state",
+        "graph/graph-utils",
+        "interfaces",
+        "logger-proxy",
+        "message-event-bus",
+        "metadata-utils",
+        "native-methods/index",
+        "node-helpers",
+        "node-parameters/filter-parameter",
+        "node-parameters/node-parameter-value-type-guard",
+        "node-parameters/parameter-type-validation",
+        "node-parameters/path-utils",
+        "node-reference-parser-utils",
+        "node-validation",
+        "observable-object",
+        "result",
+        "run-execution-data-factory",
+        "run-execution-data/run-execution-data",
+        "schemas",
+        "telemetry-helpers",
+        "tool-helpers",
+        "type-guards",
+        "type-validation",
+        "utils",
+        "versioned-node-type",
+        "workflow",
+        "workflow-checksum",
+        "workflow-data-proxy",
+        "workflow-data-proxy-env-provider",
+        "workflow-diff",
+        "workflow-environments-helper",
+        "workflow-validation"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "interfaces": {
+      "internal": [
+        "constants",
+        "data-table.types",
+        "deferred-promise",
+        "errors/expression.error",
+        "errors/index",
+        "errors/node-api.error",
+        "errors/node-operation.error",
+        "errors/workflow-activation.error",
+        "errors/workflow-operation.error",
+        "execution-context",
+        "execution-status",
+        "result",
+        "run-execution-data/run-execution-data",
+        "workflow",
+        "workflow-data-proxy-env-provider"
+      ],
+      "external": [
+        "@langchain/core/callbacks/manager",
+        "@n8n/config",
+        "axios",
+        "express",
+        "form-data",
+        "fs",
+        "http",
+        "nock",
+        "ssh2",
+        "stream",
+        "tls",
+        "url"
+      ],
+      "unresolved": []
+    },
+    "logger-proxy": {
+      "internal": [
+        "interfaces"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "message-event-bus": {
+      "internal": [
+        "interfaces"
+      ],
+      "external": [
+        "luxon",
+        "zod"
+      ],
+      "unresolved": []
+    },
+    "metadata-utils": {
+      "internal": [
+        "index",
+        "utils"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "native-methods/array.methods": {
+      "internal": [
+        "extensions/extensions"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "native-methods/boolean.methods": {
+      "internal": [
+        "extensions/extensions"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "native-methods/index": {
+      "internal": [
+        "extensions/extensions",
+        "native-methods/array.methods",
+        "native-methods/boolean.methods",
+        "native-methods/number.methods",
+        "native-methods/object.methods",
+        "native-methods/string.methods"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "native-methods/number.methods": {
+      "internal": [
+        "extensions/extensions"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "native-methods/object.methods": {
+      "internal": [
+        "extensions/extensions"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "native-methods/string.methods": {
+      "internal": [
+        "extensions/extensions"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "node-helpers": {
+      "internal": [
+        "constants",
+        "expressions/expression-helpers",
+        "interfaces",
+        "node-parameters/filter-parameter",
+        "run-execution-data/run-execution-data",
+        "type-guards",
+        "type-validation",
+        "utils",
+        "workflow"
+      ],
+      "external": [
+        "@n8n/errors",
+        "lodash/get",
+        "lodash/isEqual"
+      ],
+      "unresolved": []
+    },
+    "node-parameters/filter-parameter": {
+      "internal": [
+        "interfaces",
+        "logger-proxy",
+        "result",
+        "type-validation"
+      ],
+      "external": [
+        "@n8n/errors",
+        "luxon"
+      ],
+      "unresolved": []
+    },
+    "node-parameters/node-parameter-value-type-guard": {
+      "internal": [
+        "interfaces",
+        "type-guards"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "node-parameters/parameter-type-validation": {
+      "internal": [
+        "errors/index",
+        "interfaces",
+        "utils"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "node-parameters/path-utils": {
+      "internal": [],
+      "external": [],
+      "unresolved": []
+    },
+    "node-parameters/rename-node-utils": {
+      "internal": [
+        "interfaces"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "node-reference-parser-utils": {
+      "internal": [
+        "errors/index",
+        "interfaces"
+      ],
+      "external": [
+        "lodash/cloneDeep",
+        "lodash/escapeRegExp",
+        "lodash/isEqual",
+        "lodash/mapValues"
+      ],
+      "unresolved": []
+    },
+    "node-validation": {
+      "internal": [
+        "interfaces",
+        "node-helpers"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "observable-object": {
+      "internal": [
+        "interfaces"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "result": {
+      "internal": [
+        "errors/index"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "run-execution-data-factory": {
+      "internal": [
+        "execution-context",
+        "interfaces",
+        "run-execution-data/run-execution-data",
+        "run-execution-data/run-execution-data.v1"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "run-execution-data/run-execution-data": {
+      "internal": [
+        "run-execution-data/run-execution-data.v0",
+        "run-execution-data/run-execution-data.v1"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "run-execution-data/run-execution-data.v0": {
+      "internal": [
+        "index"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "run-execution-data/run-execution-data.v1": {
+      "internal": [
+        "index",
+        "run-execution-data/run-execution-data.v0"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "schemas": {
+      "internal": [
+        "interfaces"
+      ],
+      "external": [
+        "zod"
+      ],
+      "unresolved": []
+    },
+    "telemetry-helpers": {
+      "internal": [
+        "constants",
+        "errors/node-api.error",
+        "evaluation-helpers",
+        "interfaces",
+        "node-helpers",
+        "utils"
+      ],
+      "external": [
+        "@n8n/errors"
+      ],
+      "unresolved": []
+    },
+    "tool-helpers": {
+      "internal": [
+        "interfaces"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "type-guards": {
+      "internal": [
+        "interfaces"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "type-validation": {
+      "internal": [
+        "errors/index",
+        "interfaces",
+        "type-guards",
+        "utils"
+      ],
+      "external": [
+        "lodash/isObject",
+        "luxon"
+      ],
+      "unresolved": []
+    },
+    "types.d": {
+      "internal": [],
+      "external": [],
+      "unresolved": []
+    },
+    "utils": {
+      "internal": [
+        "constants",
+        "errors/execution-cancelled.error",
+        "interfaces",
+        "logger-proxy"
+      ],
+      "external": [
+        "@n8n/errors",
+        "esprima-next",
+        "form-data",
+        "jsonrepair",
+        "lodash/merge",
+        "path"
+      ],
+      "unresolved": []
+    },
+    "versioned-node-type": {
+      "internal": [
+        "interfaces"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "workflow-checksum": {
+      "internal": [
+        "interfaces",
+        "utils"
+      ],
+      "external": [
+        "jssha"
+      ],
+      "unresolved": []
+    },
+    "workflow-data-proxy-env-provider": {
+      "internal": [
+        "errors/expression.error"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "workflow-data-proxy-helpers": {
+      "internal": [
+        "index"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "workflow-data-proxy": {
+      "internal": [
+        "augment-object",
+        "constants",
+        "errors/expression.error",
+        "global-state",
+        "interfaces",
+        "node-helpers",
+        "result",
+        "run-execution-data/run-execution-data",
+        "type-guards",
+        "utils",
+        "workflow",
+        "workflow-data-proxy-env-provider",
+        "workflow-data-proxy-helpers"
+      ],
+      "external": [
+        "@n8n/errors",
+        "jmespath",
+        "luxon"
+      ],
+      "unresolved": []
+    },
+    "workflow-diff": {
+      "internal": [
+        "connections-diff",
+        "index"
+      ],
+      "external": [
+        "lodash/isEqual",
+        "lodash/pick"
+      ],
+      "unresolved": []
+    },
+    "workflow-environments-helper": {
+      "internal": [],
+      "external": [],
+      "unresolved": []
+    },
+    "workflow-validation": {
+      "internal": [
+        "interfaces"
+      ],
+      "external": [],
+      "unresolved": []
+    },
+    "workflow": {
+      "internal": [
+        "common/index",
+        "constants",
+        "errors/index",
+        "expression",
+        "global-state",
+        "interfaces",
+        "node-helpers",
+        "node-parameters/rename-node-utils",
+        "node-reference-parser-utils",
+        "observable-object",
+        "utils"
+      ],
+      "external": [
+        "@n8n/errors"
+      ],
+      "unresolved": []
+    }
+  }
+}
