@@ -212,3 +212,10 @@ Consequences:
   already dispatches on `probe.op`, so each new function turns skips into checks.
 * Note for Agent 1: `vendor_prep.py` `PLAN` needs the three indexmap crates (and `regex` closure if
   `n8n-expression` is to build) — otherwise `run.sh check` fails on `main` today.
+
+### Addendum to Re-review #4 — full spec compiled: **32 ok / 0 mismatch**
+`tests/reference/harness/rust/run-connection-rig-with-spec.sh` appends `spec_get_connected_nodes.rs` +
+`spec_graph_and_diff.rs` (spec §3.1, §5, §6 in Rust) to a copy of the crate and runs the full §7 runner:
+**32/32 non-`wf.*` probes identical to n8n 2.9.4**, rustc 1.88.0. R-02, R-05, R-07 therefore have a
+compiled, fixture-verified reference implementation; only the physical move into `crates/n8n-connection`
+(and the §7 runner into `crates/n8n-connection/tests/`) remains — Orchestrator / crate owner.

@@ -16,3 +16,18 @@ include (`indexmap 2.2.6`, `equivalent 1.0.1`, `hashbrown 0.14.5` — cloned fro
 Result @ `8ed00851` (rustc 1.88.0): `15 ok / 8 mismatch / 23 skipped`.
 Same runner with spec §3.1 `get_connected_nodes` appended out-of-tree: `22 ok / 1 mismatch` — the one
 left is R-07 (`has_path` traverses all types; reference is `main`-only).
+
+## Reference implementation of spec §3–§6 (compiled, 32/32)
+
+| File | Purpose |
+| :--- | :--- |
+| `spec_get_connected_nodes.rs` | spec §3.1 transcription (`get_connected_nodes_spec`) |
+| `spec_graph_and_diff.rs` | spec §5 + §6: `AdjacencyList`, `build_adjacency_list`, `get_input_edges`, `get_output_edges`, `get_root_nodes`, `get_leaf_nodes`, `has_path_adj`, `parse_extractable_subgraph_selection`, `compare_connections`, and the 5 types (`ExtractableError`, `ExtractableSubgraphData`, `ExtractableSelection`, `ConnectionEntry`/`DiffValue`, `ConnectionsDiff`) |
+| `connection_reference_fixtures_full.rs` | the runner extended to every non-`wf.*` probe |
+| `run-connection-rig-with-spec.sh` | appends the two spec files to a *copy* of `lib.rs` and runs the full runner |
+
+Result (rustc 1.88.0, crate @ `8ed00851` + spec files): **32 ok / 0 mismatch / 14 skipped** — the 14 are
+`wf.*` probes (Workflow members, Agent 1). These files are written against the crate's *current* type
+names (`ConnectionItem`, `WorkflowConnections`, `ConnectionTypeFilter`) so the crate owner can move them
+into `src/lib.rs` verbatim; renaming to the spec §2 names is optional. `has_path_adj` is named to avoid
+clashing with the crate's existing all-types `has_path` (R-07); upstream's name is `hasPath`.

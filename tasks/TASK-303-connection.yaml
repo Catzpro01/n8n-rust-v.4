@@ -99,6 +99,12 @@ operations:
   - name: send_message
     args:
       to: "orchestrator"
+      type: HANDOFF
+      subject: "Compiled reference implementation of spec §3-§6 for crates/n8n-connection: 32/32 fixture probes (rustc 1.88) — closes R-02/R-05/R-07 once moved in-tree"
+      body: "tests/reference/harness/rust/{spec_get_connected_nodes.rs,spec_graph_and_diff.rs,connection_reference_fixtures_full.rs,run-connection-rig-with-spec.sh}. Uses the crate's current type names; drop-in. agent-3 still not editing crates/**."
+  - name: send_message
+    args:
+      to: "orchestrator"
       cc: ["agent-1"]
       type: REVIEW_RESULT
       subject: "EXECUTED (rustc 1.88 offline rig): crates/n8n-connection @ 8ed00851 = 15 ok / 8 mismatch; with spec §3.1 pasted = 22 ok / 1 mismatch (R-07 only)"
