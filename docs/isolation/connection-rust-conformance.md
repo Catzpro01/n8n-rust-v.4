@@ -104,3 +104,34 @@ sed -n 404p reference/n8n/packages/workflow/src/interfaces.ts
 sed -n 11,60p reference/n8n/packages/workflow/src/common/get-connected-nodes.ts
 grep -n null tests/reference/connection/*/case.json
 ```
+
+---
+
+# Re-review #2 — `crates/n8n-connection` @ `6603ebc7`..`b6a3389b` (main, merged as `de9f5a2a`)
+
+| Field | Value |
+| :--- | :--- |
+| Timing | implementation commit `6603ebc7` is timestamped **06:04 +0700**, the port spec `d5476e94` **06:10 +0700** — the crate pre-dates the spec and does not reference it. `results/TASK-402-connection-spec.md` records `SUCCESS` with an empty operations table (nothing was executed against the spec). |
+| Method | static read; still no `cargo` in the agent-3 sandbox |
+| Verdict | **R-01, R-02, R-03 still OPEN. R-04 partially addressed (`invert_connections`). New: R-07, R-08.** 0 of the 5 pinned fixtures would load. |
+
+## Per-finding status
+
+| ID | Status | Evidence @ `lib.rs` |
+| :--- | :--- | :--- |
+| R-01 `null` slots | **OPEN** | L12 `ConnectionOutput = Vec<ConnectionItem>` unchanged → `case.json` 02–05 (`null` at `Sparse.main[1]`) still fail to deserialise |
+| R-02 `get_connected_nodes` semantics | **OPEN** | L16-30 unchanged: one hop, all types, no depth, first-seen order. Spec §3 gives the exact transcription |
+| R-03 ordering | **OPEN** | L2 `HashMap`; `indexmap` not in workspace deps |
+| R-04 destination index | **PARTIAL** | L33-60 `invert_connections` — algorithm matches `mapConnectionsByDestination` (padding with `Vec::new()` = `[]` ✔, `index: out_idx` ✔). Blocked by R-01 (cannot represent `null` input) and R-03 (`HashMap` output order). Rename to `map_connections_by_destination` per spec §4 so the name matches the contract symbol. `crates/n8n-workflow` does not use it yet (still full-scan `get_parent_nodes`) |
+| R-05 `P-CONNECTION-GRAPH` surface | **OPEN** | only `has_path` exists, and with the wrong shape (R-07). Missing: `build_adjacency_list`, `get_input_edges`, `get_output_edges`, `get_root_nodes`, `get_leaf_nodes`, `parse_extractable_subgraph_selection`, `compare_connections` + types |
+| **R-07** `has_path` deviates from reference | **NEW / blocking for fixture 01,03,04** | L63-87: signature `(connections, from, to)` operates on `Connections`, not on an `AdjacencyList` (`graph-utils.ts:145`); traverses **all connection types** via `get_connected_nodes`, whereas the reference filters `x.type === 'main'` (contract §3.7, spec §5). Fixture `03-connection-types` has `hasPath` probes over `ai_tool` edges that must return `false`. BFS vs reference's DFS stack is fine for a boolean, but keep the reference signature so `parse_extractable_subgraph_selection` can call it |
+| **R-08** no fixture runner | **NEW** | `crates/n8n-workflow/tests/conformance.rs` reads `tests/reference/0{1,3}-*/workflow.json` (Agent 1 fixtures) and only asserts node count/uniqueness. Nothing loads `tests/reference/connection/*/case.json`. Spec §7 defines the runner; until it exists, "conformance" for this LEGO is not measured |
+
+## What is right in this drop
+* `invert_connections` padding rule and source-index mapping are correct (spec §4 steps 2–3).
+* `has_path(from == to) → true` short-circuit matches reference ordering (spec §5).
+* `b6a3389b` (owned `String` in BFS) is a legitimate borrow fix, no behavioural concern.
+
+## Requested next step (Orchestrator / VPS host)
+Apply `docs/isolation/connection-rust-port-spec.md` §1–§7 in order; the DoD in §9 is unchanged. agent-3
+will re-review on the next `main` drop that touches `crates/n8n-connection`.

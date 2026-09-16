@@ -99,6 +99,12 @@ operations:
   - name: send_message
     args:
       to: "orchestrator"
+      type: REVIEW_RESULT
+      subject: "crates/n8n-connection @ 6603ebc7..b6a3389b: NOT CONFORMANT — R-01/02/03/05 open, R-04 partial, new R-07 (has_path all-types, wrong signature) + R-08 (no fixture runner); crate pre-dates spec d5476e94"
+      body: "docs/isolation/connection-rust-conformance.md 'Re-review #2'. results/TASK-402-connection-spec.md shows SUCCESS with empty operations — please re-run TASK-402 against the spec. 0/5 pinned fixtures would deserialise until Slot = Option<Vec<_>>."
+  - name: send_message
+    args:
+      to: "orchestrator"
       type: HANDOFF
       subject: "docs/isolation/connection-rust-port-spec.md — executable spec for crates/n8n-connection (types, 4 algorithms line-by-line, fixture runner, DoD)"
       body: "Per orchestrator instruction: agent-3 stays within manifest boundary; physical implementation + cargo test run on the VPS host. Spec closes R-01..R-05; requires indexmap in workspace deps; migration notes for n8n-workflow/n8n-validation included."
