@@ -173,3 +173,76 @@ Agent 4
 Action:
 Informational. No change.
 ```
+
+---
+
+# Connection LEGO (TASK-301-connection)
+
+## D-08
+
+```text
+Dependency:
+Connection → Workflow
+
+Reason:
+Workflow builds and owns connectionsBySourceNode / connectionsByDestinationNode
+(workflow.ts L146-147) and wraps the pure traversal functions; it also implements
+getNodeConnectionIndexes, getHighestNode, getStartNode, getParentMainInputNode over
+those maps. Observed defect: renameNode mutates connectionsBySourceNode in place but
+does NOT rebuild connectionsByDestinationNode (old name remains in byDest).
+
+Required API:
+Read-only access to both maps + Workflow::getNode; decision on whether renameNode
+should call mapConnectionsByDestination again.
+
+Owner:
+Agent 1
+
+Action:
+Coordination required (request_dependency sent in tasks/TASK-301-connection.yaml).
+```
+
+## D-09
+
+```text
+Dependency:
+Connection → Node Model
+
+Reason:
+Validating connection indexes (contract §3.2) requires the declared input/output
+count of each node, including the extra trailing "Error" main output when
+node.onError === 'continueErrorOutput' (NodeHelpers.getNodeOutputs L1170-1191).
+
+Required API:
+NodeHelpers.getNodeOutputs(workflow, node, description), getNodeInputs(...),
+getConnectionTypes(...) — read-only.
+
+Owner:
+Agent 2
+
+Action:
+Coordination required.
+```
+
+## D-10
+
+```text
+Dependency:
+Connection → Execution Engine (analysis only)
+
+Reason:
+Topological ordering and cycle handling do not exist in n8n-workflow. They live in
+packages/core/src/execution-engine/partial-execution-utils (DirectedGraph,
+getStronglyConnectedComponents, handleCycles, findSubgraph, findStartNodes) and in
+WorkflowExecute's stack-based ordering (executionOrder v0/v1).
+
+Required API:
+None. Out of boundary (forbidden path). Documented so the Rust phase does not
+invent an acyclicity rule n8n does not have.
+
+Owner:
+Engine (unassigned)
+
+Action:
+No modification.
+```

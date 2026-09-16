@@ -51,3 +51,15 @@ A case whose behaviour cannot be proven from the runtime must have `{"UNKNOWN": 
 
 Contracts: `contracts/execution-data.contract.md`, `contracts/expression.contract.md`.
 Isolation docs: `docs/isolation/execution-data.md`, `docs/isolation/expression.md`, `docs/isolation/dependencies.md`.
+
+## Connection reference cases (Agent 3, LEGO `connection`)
+
+```text
+tests/reference/connection/
+├── 01-linear
+├── 02-multi-output
+├── 03-connection-types
+├── 04-cycle
+└── 05-connections-diff
+```
+Run `node run.js connection` from `tests/reference/harness` (5 cases). Contract: `contracts/connection.contract.md`; isolation: `docs/isolation/connection.md`.

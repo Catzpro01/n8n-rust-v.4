@@ -1,0 +1,70 @@
+id: TASK-301-connection
+agent: agent-3
+lego: connection
+module: connection
+phase: 2
+title: "Isolate connection routing & graph traversal (n8n 2.9.4)"
+status: ANALYZED
+branch: arena/01a0ac05-n8n-rust-v-4   # session-locked branch (stands in for branch/agent-3)
+
+allowed_paths:
+  - reference/n8n/packages/workflow/src/common/**
+  - reference/n8n/packages/workflow/src/connections-diff.ts
+  - reference/n8n/packages/workflow/src/graph/**
+  - docs/isolation/connection*
+  - contracts/connection.contract.md
+  - tests/reference/connection/**
+  - tasks/TASK-301-connection.yaml
+
+forbidden_paths:
+  - reference/n8n/packages/core/**
+  - reference/n8n/packages/workflow/src/workflow.ts     # Agent 1
+  - reference/n8n/packages/workflow/src/interfaces.ts   # shared, read-only
+  - crates/**
+  - apps/**
+
+requires:
+  - contracts/connection.contract.md
+  - contracts/workflow.contract.md
+  - contracts/node.contract.md
+
+source_modification: none   # analysis + boundary + contract + reference tests only
+
+operations:
+  - name: git_status
+  - name: list_files
+    args: { path: reference/n8n/packages/workflow/src/common }
+  - name: request_dependency
+    args:
+      provider: "agent-1"
+      provider_lego: "workflow"
+      interface: "Workflow::getNode"
+      access: "read-only"
+      description: "Connection routing (getNodeConnectionIndexes, getStartNode, getParentMainInputNode) lives in workflow.ts and needs node existence lookup by name."
+  - name: request_dependency
+    args:
+      provider: "agent-1"
+      provider_lego: "workflow"
+      interface: "Workflow::connectionsBySourceNode / connectionsByDestinationNode"
+      access: "read-only"
+      description: "Both adjacency maps are built and owned by Workflow; connection LEGO defines their shape and the pure functions over them. Note: renameNode does not rebuild connectionsByDestinationNode (observed) — Agent 1 to confirm/track."
+  - name: request_dependency
+    args:
+      provider: "agent-2"
+      provider_lego: "node"
+      interface: "NodeHelpers::getNodeOutputs / getNodeInputs / getConnectionTypes"
+      access: "read-only"
+      description: "Declared input/output count per node (incl. onError='continueErrorOutput' extra 'Error' main output) is required to validate connection indexes."
+  - name: send_message
+    args:
+      to: "agent-5"
+      subject: "TASK-301-connection ready for gate"
+      body: "No source modified. See docs/isolation/connection.md, contracts/connection.contract.md, tests/reference/connection (node tests/reference/harness/run.js connection)."
+
+tests:
+  - reference_smoke        # 11/11 baseline must stay
+  - connection_tests       # tests/reference/connection/*
+
+notes:
+  - "Topological sort and cycle detection (DirectedGraph.getStronglyConnectedComponents, handleCycles) live in packages/core/src/execution-engine/partial-execution-utils — FORBIDDEN path. Documented as dependency, not isolated."
+  - "n8n 2.9.4 does NOT reject cyclic graphs; cycles are legal (Loop nodes). contracts/connection.contract.md updated accordingly."

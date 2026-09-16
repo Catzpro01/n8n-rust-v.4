@@ -5,6 +5,7 @@
  *   node run.js                 -> run all cases
  *   node run.js execution-data  -> only tests/reference/execution-data/*
  *   node run.js expression      -> only tests/reference/expression/*
+ *   node run.js connection      -> only tests/reference/connection/*
  *   UPDATE=1 node run.js        -> (re)write expected.json from the real runtime
  *
  * Every case dir contains:
@@ -15,6 +16,7 @@ const fs = require('fs');
 const path = require('path');
 const { createRunExecutionData } = require('n8n-workflow');
 const { runWorkflow, buildWorkflow, evaluate, errorToJson } = require('./harness');
+const { runConnectionCase } = require('./connection');
 
 const ROOT = path.resolve(__dirname, '..');
 const UPDATE = process.env.UPDATE === '1';
@@ -96,7 +98,7 @@ function diff(a, b, p = '') {
 
 async function main() {
 	const filter = process.argv[2];
-	const suites = ['execution-data', 'expression'].filter((s) => !filter || s === filter);
+	const suites = ['execution-data', 'expression', 'connection'].filter((s) => !filter || s === filter);
 	let pass = 0, fail = 0, unknown = 0; const failures = [];
 	for (const suite of suites) {
 		const dir = path.join(ROOT, suite);
@@ -108,7 +110,7 @@ async function main() {
 			const expectedFile = path.join(dir, name, 'expected.json');
 			let observed;
 			try {
-				observed = suite === 'execution-data' ? await runExecutionDataCase(c) : runExpressionCase(c);
+				observed = suite === 'execution-data' ? await runExecutionDataCase(c) : suite === 'connection' ? runConnectionCase(c) : runExpressionCase(c);
 			} catch (e) {
 				observed = { harnessError: errorToJson(e) };
 			}
