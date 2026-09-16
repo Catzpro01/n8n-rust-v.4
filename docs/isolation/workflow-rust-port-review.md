@@ -184,29 +184,43 @@ Step **R4** belongs to Agent 3 (connection crate) but blocks `Workflow::get_chil
 
 ---
 
-## 5. Toolchain caveat (read before trusting anything above)
+## 5. Toolchain — solved for this sandbox by `tools/rust-offline-rig/`
 
-No `cargo`/`rustc` exists in the review sandbox, and the toolchain cannot be assembled from the usual
-sources: `sh.rustup.rs`, `static.rust-lang.org`, `index.crates.io`, `static.crates.io` and the Debian
-mirrors are all unreachable (only npm, GitHub and PyPI egress works). What *is* available, for whoever
-picks this up next:
+`sh.rustup.rs`, `static.rust-lang.org`, `index.crates.io`, `static.crates.io` and the Debian mirrors are
+all unreachable here (only npm, GitHub and PyPI egress works), so the toolchain is assembled from what is
+reachable — and it now works end-to-end:
 
-| Route | Status |
-| :--- | :--- |
-| `@rustbin/rustc-1.88.0-x86_64-unknown-linux-gnu` on **npm** | reachable (377 MB unpacked, tarball on `registry.npmjs.org`) — would give `rustc` + std, **but** |
-| crate dependencies (`serde`, `serde_json`, `thiserror`, `petgraph`) | **not fetchable** — no crates.io index or crate downloads; a build would need vendoring from GitHub (`github.com/serde-rs/serde` etc. are cloneable) with a scratch `.cargo/config` outside this repo |
-| pure-std harness | possible with rustc alone, but every fixture is JSON-shaped, so it would mean re-implementing a JSON reader in the harness — rejected as unverifiable bespoke code |
+| Piece | Source | Note |
+| :--- | :--- | :--- |
+| `rustc` 1.88.0 + driver | npm `@rustbin/rustc-1.88.0-x86_64-unknown-linux-gnu` | official binary; **ships without libstd** |
+| `libstd` 1.88.0 | npm `@rustbin/rust-std-1.88.0-x86_64-unknown-linux-gnu` | merged into the rustc sysroot |
+| `cargo` 1.88.0 | npm `@rustbin/cargo-1.88.0-x86_64-unknown-linux-gnu` | |
+| 12 crates of the workspace closure | `github.com` tags (`serde` 1.0.219, `serde_json` 1.0.140, `thiserror` 1.0.69, `syn` 2.0.100, `proc-macro2` 1.0.92, `quote` 1.0.37, `itoa`/`ryu`/`memchr`/`unicode-ident`) | rewritten into cargo `directory` source format (clones carry `path`/`workspace = true`, which a directory source rejects) |
 
-Therefore:
+`tools/rust-offline-rig/setup.sh` builds that (~13 s, ≈175 MB, everything under `/tmp/rust-rig`, outside
+the repository) and `tools/rust-offline-rig/run.sh check|test` runs cargo on a copy of the tree so no
+`Cargo.lock`, `target/` or generated file lands in the repository.
 
-* **nothing in this review was compiled** — findings are from reading the Rust sources and from the
-  reference fixtures;
-* the fixtures themselves **are** verified here (they come from the pinned reference runtime and
-  `build-fixtures.mjs --check` reproduces them exactly);
-* `cargo check`/`cargo test` must run on the VPS before any Phase-3 merge, and the gate should fail when
-  `crates/**` exists but has never been compiled.
+**Result — the Phase-3 workspace compiles** (this was "nothing has been compiled anywhere" before):
 
----
+```text
+$ tools/rust-offline-rig/run.sh check          # on crates/** @ 014471e6
+   Compiling proc-macro2 v1.0.92 … thiserror-impl v1.0.69
+    Checking n8n-common, n8n-connection, n8n-node-model, n8n-validation, n8n-workflow
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 6.26s
+$ tools/rust-offline-rig/run.sh test           # 0 tests exist yet — the port is not tested
+```
+
+Caveats that keep this honest (also in the rig README):
+
+* the npm packages are third-party repacks of the official binaries, and the crate tags are pinned to a
+  hand-picked consistent set — a green run here is **evidence about the code, not about the exact
+  dependency versions** the VPS will resolve;
+* vendored manifests are rewritten, so a crate add/upgrade means extending `PLAN` in `vendor_prep.py`;
+* the fixtures in §6 are the real acceptance test — they were derived from the pinned reference runtime
+  and `build-fixtures.mjs --check` reproduces them byte-exactly here;
+* run `cargo check`/`cargo test` on the VPS (real registry) before any Phase-3 merge, and keep the gate
+  failing when `crates/**` exists but was never compiled.
 
 ## 6. Acceptance criteria — `tests/reference/workflow-rust/fixtures.json`
 
