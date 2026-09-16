@@ -91,7 +91,7 @@ impl Workflow {
             self.nodes.insert(new_name.to_string(), node);
         }
 
-        if let Some(conns) = self.connections_by_source_node.remove(old_name) {
+        if let Some(conns) = self.connections_by_source_node.shift_remove(old_name) {
             self.connections_by_source_node.insert(new_name.to_string(), conns);
         }
 
