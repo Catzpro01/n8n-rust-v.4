@@ -66,19 +66,19 @@ pub fn has_path(connections: &WorkflowConnections, from: &str, to: &str) -> bool
         return true;
     }
 
-    let mut visited = HashSet::new();
-    let mut queue = VecDeque::new();
-    queue.push_back(from);
-    visited.insert(from);
+    let mut visited: HashSet<String> = HashSet::new();
+    let mut queue: VecDeque<String> = VecDeque::new();
+    queue.push_back(from.to_string());
+    visited.insert(from.to_string());
 
     while let Some(current) = queue.pop_front() {
-        for next in get_connected_nodes(connections, current) {
+        for next in get_connected_nodes(connections, &current) {
             if next == to {
                 return true;
             }
-            if !visited.contains(next.as_str()) {
-                visited.insert(next.as_str());
-                queue.push_back(next.as_str());
+            if !visited.contains(&next) {
+                visited.insert(next.clone());
+                queue.push_back(next);
             }
         }
     }
