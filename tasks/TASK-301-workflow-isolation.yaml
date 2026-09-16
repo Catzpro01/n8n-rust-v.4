@@ -1,0 +1,111 @@
+id: TASK-301-workflow-isolation
+agent: agent-1
+lego: workflow
+module: workflow
+phase: 2
+
+allowed_paths:
+  - reference/n8n/packages/workflow/**
+  - docs/isolation/**
+
+forbidden_paths:
+  - reference/n8n/packages/core/**
+  - reference/n8n/packages/cli/**
+  - crates/**
+  - apps/**
+
+requires:
+  - contracts/workflow.contract.md
+
+operations:
+  - name: read_file
+    args:
+      path: reference/n8n/packages/workflow/src/Workflow.ts
+
+  - name: write_file
+    args:
+      path: docs/isolation/workflow_spec.md
+      content: |
+        # LEGO Specification: Workflow Pure Domain Model
+        
+        ## 1. Component Identity
+        - **LEGO ID**: workflow
+        - **Owner**: gent-1
+        - **Upstream Source**: eference/n8n/packages/workflow/src/Workflow.ts
+        - **Interface Contract**: contracts/workflow.contract.md
+        
+        ## 2. Pure Data Structures (Decoupled from Node Runtime)
+        `	ypescript
+        export interface WorkflowParameters {
+          id: string;
+          name?: string;
+          nodes: INode[];
+          connections: IConnections;
+          active: boolean;
+          settings?: IWorkflowSettings;
+          staticData?: IDataObject;
+          pinData?: IPinData;
+        }
+        
+        export interface NodeConnectionMapping {
+          bySource: Record<string, Record<string, IConnection[][]>>;
+          byDestination: Record<string, Record<string, IConnection[][]>>;
+        }
+        `
+        
+        ## 3. Pure Functions (Mathematical & Deterministic)
+        1. uildConnectionMaps(connections: IConnections): NodeConnectionMapping
+        2. getNode(nodes: Record<string, INode>, name: string): INode | undefined
+        3. getParentNodes(connections: NodeConnectionMapping, nodeName: string): string[]
+        4. getChildNodes(connections: NodeConnectionMapping, nodeName: string): string[]
+        5. detectCycles(nodes: INode[], connections: NodeConnectionMapping): boolean
+        6. getStartNodes(nodes: INode[], connections: NodeConnectionMapping): INode[]
+        
+        ## 4. Decoupling Boundaries
+        - **Expression Engine**: Evaluasi ekspresi (seperti ={{ .foo }}) dipisahkan sepenuhnya ke LEGO expression via interface ExpressionEvaluator.
+        - **Node Execution**: Eksekusi node sesungguhnya dipisahkan ke LEGO 
+ode via interface NodeExecutor.
+        - **Database / Static Data**: Serialisasi data statis dipisahkan ke LEGO persistence.
+        
+        ## 5. Golden Invariants
+        - Determinisme: Input graf yang sama SELALU menghasilkan struktur adjacency list yang sama.
+        - Zero Side-Effects: Instansiasi Workflow tidak boleh memicu HTTP request, database call, atau file IO.
+        - Non-Destructive: Validasi siklus tidak boleh mengubah urutan node asli.
+        
+        ## 6. Verification Plan
+        - Reference Unit Test: 	ests/reference/workflow_pure_test.ts
+        - Compatibility Check: Input JSON workflow production n8n wajib lolos parsing 100%.
+
+  - name: send_message
+    args:
+      to: agent-2
+      type: CONTRACT_INTERFACE_PROPOSAL
+      priority: high
+      payload:
+        lego: workflow
+        proposed_interfaces:
+          - "getNode(node_name: string) -> NodeReference"
+          - "getParentNodes(node_name: string) -> Vec<String>"
+          - "getChildNodes(node_name: string) -> Vec<String>"
+        contract_ref: contracts/workflow.contract.md
+
+  - name: send_message
+    args:
+      to: agent-5
+      type: SPECIFICATION_READY
+      priority: high
+      payload:
+        lego: workflow
+        spec_path: docs/isolation/workflow_spec.md
+        phase: 2
+        ready_for_review: true
+
+  - name: git_commit
+    args:
+      message: "feat(agent-1): complete pure workflow domain model isolation spec"
+
+  - name: git_push
+
+merge_condition:
+  - regression_gate_pass
+  - no_contract_violation
