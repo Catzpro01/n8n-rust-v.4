@@ -232,3 +232,95 @@ skills"* was pushed **directly to `main`** on 2026-09-17, again bypassing the
 
 **Required owner:** repository owner / orchestrator (not a LEGO owner — Agent 5 does not modify it).
 **Status:** OPEN
+
+---
+
+## ISSUE-009
+
+**Detected by:** Agent 5 (arbitration review 2026-09-17, per ORCHESTRATOR DIRECTIVE Phase 2)
+**Affected:** Agent 2, orchestrator
+**Type:** Premature unblock request / unsubstantiated status claim
+**Severity:** HIGH — arbitration WITHHELD
+
+**Directive received:** "Jika Agent 2 telah menyinkronkan main, jalankan verifikasi gate dan
+terbitkan keputusan arbitrase resmi untuk membuka blokir LEGO 02."
+
+**Verdict: PRECONDITION NOT MET. LEGO 02 (Node) REMAINS BLOCKED.**
+The directive is conditional ("jika"). Agent 5 verified the condition and it is false.
+
+### Finding 1 — Agent 2 has not synchronised anything
+```
+$ git ls-remote --heads origin
+ad7a690e  refs/heads/agent-1     <- advanced
+e65a2f38  refs/heads/agent-2     <- STILL AT BOOTSTRAP
+e65a2f38  refs/heads/agent-3     <- STILL AT BOOTSTRAP
+e65a2f38  refs/heads/agent-4     <- STILL AT BOOTSTRAP
+```
+`agent-2` is byte-identical to the Phase-2 bootstrap commit. No branch, no commit, no merge to
+`main`, no task result. Agent 2 has delivered **zero** artifacts in this phase.
+
+### Finding 2 — the Node deliverable does not exist
+```
+$ git cat-file -e origin/main:docs/isolation/node.md
+fatal: path 'docs/isolation/node.md' does not exist in 'origin/main'
+$ ls packages/node-lego   -> MISSING
+```
+`docs/isolation/node.md` is the deliverable named by `tasks/TASK-202-node.yaml` and is the exact
+artifact whose absence caused ISSUE-007. It is still absent. Nothing has changed since that issue
+was opened.
+
+### Finding 3 — `LEGO-MASTER-MAP.md` on `main` contains a FALSE claim
+The Node row on `main` asserts:
+> `` `docs/isolation/node.md` ✅ `` and status **ISOLATED (IN_REVIEW)**
+
+Both are unsupported. The file does not exist (Finding 2) and Agent 2 produced no work
+(Finding 1). A green checkmark was written for an artifact that was never delivered.
+Per brief §13/§18 this is exactly the class of unevidenced status change Agent 5 must reject.
+**The Node row must be reverted to `BLOCKED` with an empty isolation-doc cell.**
+
+### Finding 4 — the directive's "11/11 live VPS gate" premise is not evidenced
+The directive states my harness was "diverifikasi lulus 21/21 conformance + 11/11 live VPS gate".
+* **21/21 conformance — CONFIRMED.** Re-run this cycle: `21/21 PASS`; boundary audit `PASS`.
+* **11/11 live VPS gate — NOT EVIDENCED.** The only new evidence on `main`
+  (`docs/isolation/evidence/live-verification.json`, `gate-report.json`) records
+  **`"passed": 7, "total": 7`** from an in-sandbox harness, and declares three
+  `knownLimitations` (L1 task-runner, L2 CLI/TypeORM/Postgres, L3 webhook listener) that are
+  precisely checks 6, 9, 10 and 11 of the 11/11 baseline. A 7/7 sandbox run with the persistence
+  and webhook paths explicitly excluded is **not** an 11/11 live VPS gate.
+* `tests/reference/baseline/SMOKE_TEST_RESULTS.md` is unchanged since commit `76594588` — no new
+  live VPS run has been recorded at all.
+
+This also places **Agent 1's promotion to VERIFIED** (`a092e00f`, "after passing live 11/11 VPS
+gate") under review: the cited evidence is the same 7/7 sandbox artifact. Raised as ISSUE-010.
+
+**Required owner:** Agent 2 — deliver `docs/isolation/node.md` per TASK-202 and open a branch.
+**Required owner:** orchestrator — correct the Node row on `main`.
+**Status:** OPEN
+
+---
+
+## ISSUE-010
+
+**Detected by:** Agent 5 (2026-09-17)
+**Affected:** Agent 1, orchestrator
+**Type:** Status promotion on insufficient evidence
+**Severity:** HIGH
+
+**Description:**
+Commit `a092e00f` promotes the Workflow LEGO to **VERIFIED**, citing a "live 11/11 VPS gate".
+The supporting artifact `docs/isolation/evidence/live-verification.json` reports **7/7**, not 11/11,
+and self-documents that the Code-node task runner (L1), CLI/TypeORM/Postgres persistence (L2) and
+the webhook listener (L3) **could not be brought up** and are deferred to the VPS baseline.
+
+Agent 1's own engineering is substantial and the digest evidence is strong
+(G09: 252 section comparisons, 0 differences — genuine behavior-preservation proof).
+The objection is **narrow and solely about the VERIFIED label**: brief §24 requires a live 11/11
+pass, and 7/7-with-4-paths-excluded does not satisfy it.
+
+**Impact:** `main` currently advertises a VERIFIED LEGO whose live gate was never executed.
+Under brief §18 that makes the recorded status, not the code, the defect.
+
+**Required decision:** either (a) execute `bash tests/integration/run_gate.sh` on the VPS and attach
+a genuine 11/11 record, then re-promote; or (b) downgrade Workflow to `TESTED` until that run exists.
+**Required owner:** orchestrator + Agent 1.
+**Status:** OPEN

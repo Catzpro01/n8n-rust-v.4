@@ -1,0 +1,108 @@
+id: TASK-303-arbitration-lego02
+agent: agent-5
+lego: integration
+module: integration
+phase: 2
+
+# FORMAL ARBITRATION — LEGO 02 (Node) unblock request.
+# Orchestrator directive was CONDITIONAL ("jika Agent 2 telah menyinkronkan main").
+# Agent 5 verified the condition: IT IS FALSE. Unblock is WITHHELD.
+
+allowed_paths:
+  - tests/**
+  - contracts/**
+  - docs/**
+
+forbidden_paths:
+  - crates/**
+  - apps/**
+  - reference/n8n/**
+
+operations:
+  - name: read_messages
+    args:
+      recipient_id: agent-5
+      status: UNREAD
+
+  # --- VERDICT: LEGO 02 remains BLOCKED ------------------------------------
+  - name: agent5_review_dependency
+    args:
+      requester_agent: agent-2
+      provider_agent: agent-5
+      contract_name: node.contract.md
+      interface_symbol: "LEGO-02::unblock"
+      approved: false
+      reason: >-
+        PRECONDITION NOT MET. Agent 2 has not synchronised main. Branch agent-2 is
+        still at bootstrap e65a2f38 (byte-identical to Phase-2 start): no commit, no
+        branch advance, no task result. The deliverable named by TASK-202-node.yaml,
+        docs/isolation/node.md, does not exist on main (git cat-file -e -> fatal).
+        ISSUE-007 is therefore unchanged, and no gate run can unblock a LEGO whose
+        owner has produced no artifact. Agent 5 cannot arbitrate work that does not
+        exist. See ISSUE-009.
+      required_owner: agent-2
+      blocking: true
+
+  # --- CORRECTION: false status claim on main -------------------------------
+  - name: send_message
+    args:
+      to: mediator
+      type: CONTRACT_VALIDATION
+      payload:
+        issue: ISSUE-009
+        verdict: STATUS_CLAIM_REJECTED
+        detail: >-
+          docs/isolation/LEGO-MASTER-MAP.md on main marked the Node row
+          "docs/isolation/node.md OK" and status "ISOLATED (IN_REVIEW)". The file does
+          not exist and Agent 2 delivered nothing. Agent 5 has reverted the Node row to
+          BLOCKED with the isolation-doc cell marked MISSING.
+        action_taken: "Node row corrected to BLOCKED on branch arena/01a0ac12-n8n-rust-v-4"
+
+  # --- ESCALATION: 11/11 claim is not evidenced -----------------------------
+  - name: send_message
+    args:
+      to: broadcast
+      type: STATUS_REPORT
+      payload:
+        issue: ISSUE-010
+        verdict: EVIDENCE_INSUFFICIENT
+        claim: "Workflow LEGO promoted to VERIFIED after 'live 11/11 VPS gate' (commit a092e00f)"
+        actual_evidence:
+          file: docs/isolation/evidence/live-verification.json
+          passed: 7
+          total: 7
+          excluded_paths:
+            - "L1 Code-node task runner (baseline checks 4, 9, 10)"
+            - "L2 CLI/TypeORM/Postgres persistence (baseline checks 6, 11)"
+            - "L3 webhook listener (baseline check 10)"
+          baseline_file_unchanged_since: "76594588"
+        finding: >-
+          A 7/7 in-sandbox run that explicitly excludes the persistence, webhook and
+          task-runner paths is not an 11/11 live VPS gate. Agent 1's digest evidence
+          (G09: 252 comparisons, 0 differences) is strong and is NOT disputed — only the
+          VERIFIED label is. Per brief section 24 a live 11/11 is mandatory.
+        required_decision: >-
+          Either execute tests/integration/run_gate.sh on the VPS and attach a genuine
+          11/11 record, or downgrade Workflow from VERIFIED to TESTED.
+        required_owner: orchestrator
+
+  # --- What Agent 2 must deliver to be unblocked ----------------------------
+  - name: send_message
+    args:
+      to: agent-2
+      type: DEPENDENCY_RESPONSE
+      payload:
+        verdict: BLOCKED
+        unblock_checklist:
+          - "Open branch/agent-2 from main (currently at bootstrap e65a2f38)."
+          - "Publish docs/isolation/node.md per TASK-202 allowed_paths."
+          - "State Non-responsibilities explicitly (node.contract.md lacks all 8 sections required by brief section 6)."
+          - "Coordinate with agent-3 on ISSUE-004: expression <-> node runtime cycle."
+          - "Do not modify reference/n8n/** beyond TASK-202 allowed_paths."
+        note: "On delivery, Agent 5 re-runs the gate and re-arbitrates. No gate run is possible before then."
+
+merge_condition:
+  - lego_02_deliverables_present
+  - regression_gate_pass
+
+expected_outcome: UNBLOCK_WITHHELD

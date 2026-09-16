@@ -1,0 +1,24 @@
+id: TASK-201
+agent: agent-1
+phase: phase-2
+module: workflow-isolation
+lego: workflow
+objective: >
+  Isolate the Workflow Model (reference/n8n/packages/workflow) into a LEGO with an
+  explicit, machine-checked boundary, without changing n8n behavior and without
+  writing any Rust code.
+operations:
+  - map_imports_and_dependencies
+  - declare_ports
+  - build_boundary_isolation
+  - extract_isolated_unit
+  - update_caller_adapters
+  - run_package_tests
+  - run_reference_smoke_test
+  - run_workflow_webhook_live
+  - compare_before_after
+constraints:
+  - reference/n8n must not be modified
+  - no Rust implementation in this task
+  - rollback on any failed gate
+release_lock: false

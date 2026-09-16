@@ -1,6 +1,20 @@
+# dependencies
 node_modules/
+target/
+
+# environment
 .env
 .env.*
 !.env.example
-target/
+
+# generated / local-only artifacts
+
+# isolated unit produced by tools/workflow-isolation-extract.mjs (reproducible)
+packages/workflow-lego/.extract/
+
+# verification runtime (scripts/setup-reference-runtime.sh)
+.runtime/
+
+# misc
 *.log
+.DS_Store

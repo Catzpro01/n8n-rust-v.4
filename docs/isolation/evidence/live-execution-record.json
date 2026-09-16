@@ -1,0 +1,19 @@
+{
+  "executionId": "1",
+  "workflowId": "wf-linear",
+  "mode": "manual",
+  "status": "success",
+  "finished": true,
+  "output": [
+    {
+      "json": {
+        "status": "ok",
+        "count": 42
+      },
+      "pairedItem": {
+        "item": 0
+      }
+    }
+  ],
+  "note": "Harness-level execution record. Database persistence (Postgres `execution_entity`) is verified in the VPS baseline (tests/reference/baseline/SMOKE_TEST_RESULTS.md, checks 6 and 11); the n8n CLI/TypeORM stack is not installable in this sandbox."
+}
