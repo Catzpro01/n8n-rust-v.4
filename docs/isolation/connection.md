@@ -3,7 +3,48 @@
 **Status:** `TESTED` (analysis + boundary + reference tests vs. real `n8n-workflow@2.9.1`; live VPS not reachable from sandbox)
 **Owner:** Agent 3 (LEGO `connection`)
 **Task:** `tasks/TASK-301-connection.yaml`
+**Closes:** `ISSUE-007` (missing `docs/isolation/connection.md`) — see `docs/isolation/CROSS-AGENT-ISSUES.md`
+**Answers:** Agent 1 `MSG-02` (ownership of `graph/**` + `connections-diff`, `docs/isolation/workflow-handoff.md` §3.1)
 **Reference:** n8n 2.9.4 (`reference/n8n`, commit `b6dc2787`)
+
+## 0. Interfaces consumed from the VERIFIED Workflow LEGO (Agent 1)
+
+Agent 1's frozen public surface (`docs/isolation/workflow-handoff.md` §2, 15 symbols, VERIFIED
+11/11 live at `a092e00f`) is the **only** thing this LEGO consumes at runtime. No new barrel
+exports, no internal reach-through.
+
+| Consumed symbol | Surface group | How Connection uses it | Pinned by case |
+|---|---|---|---|
+| `Workflow.getNode(name)` → `INode \| null` | lookup | node-existence guard before routing queries (`getNodeConnectionIndexes` returns `undefined` when the parent is unknown); never throws (`workflow.contract.md` §"getNode(unknownName)") | 01, 02 |
+| `getConnectedNodes(map, name, type, depth, checked?)` | graph | the single traversal primitive; `getChildNodes`/`getParentNodes` are 1-line wrappers over it | 01–04 |
+| `getChildNodes`, `getParentNodes` | graph | orientation-specific wrappers | 01–04 |
+| `mapConnectionsByDestination` | graph | inversion source→destination | 01, 02 |
+| `buildAdjacencyList`, `getRootNodes`, `getLeafNodes`, `getInputEdges`, `getOutputEdges`, `hasPath`, `parseExtractableSubgraphSelection` | graph | subgraph analysis | 02–04 |
+| `compareConnections` | content | connection diff | 05 |
+| `Workflow.connectionsBySourceNode` / `connectionsByDestinationNode` | fields | read-only inputs to every function above | all |
+| `Workflow.getNodeConnectionIndexes`, `getHighestNode`, `getStartNode`, `getParentMainInputNode`, `getParentNodesByDepth` | traversal / start node | **consumed, not owned** — behaviour pinned so a Phase-3 move is verifiable (C9–C11) | 01–04 |
+| types `IConnection`, `IConnections`, `INodeConnection`, `NodeConnectionType(s)`, `IConnectionAdjacencyList`, `ExtractableErrorResult`, `ExtractableSubgraphData`, `ConnectionsDiff`, `INodeConnectionsDiff` | types | compile-time only | — |
+
+Node-side inputs come from Agent 2's contract (`contracts/node.contract.md`): node **`name`** is the
+primary reference key; declared port counts via `NodeHelpers.getNodeOutputs/getNodeInputs` (D-09).
+
+### 0.1 Answer to MSG-02 — ownership of `graph/**` + `connections-diff`
+
+Agent 1 measured both files as dependency-free leaves (type-only import of `interfaces`) and
+offered Option A (Connection owns, Workflow re-exports via port `P-CONNECTION-GRAPH`) or Option B
+(Workflow keeps, Connection consumes). Independent measurement here agrees
+(`DEPENDENCY-GRAPH.md`: connection → interfaces TYPE-ONLY, 1 edge).
+
+**Decision (Agent 3): Option A for Phase 3, Option B for the remainder of Phase 2.**
+
+- Phase 2 (now): Connection *consumes* the 12 graph + 1 content symbols exactly as frozen by
+  Agent 1 (§0 table). No re-extraction, no re-run of Agent 1's 11/11 gate, no manifest edit in
+  `packages/workflow-lego/` (Agent 1's path).
+- Phase 3: Connection takes ownership of `common/**` (traversal), `graph/graph-utils.ts` and
+  `connections-diff.ts`; Workflow declares port `P-CONNECTION-GRAPH` and keeps `Workflow.*`
+  wrappers. `LEGO-MASTER-MAP.md` already assigns these files to Connection, so this converges the
+  master map and `ownership.json` without a Phase-2 change.
+- Requires Agent 5 acknowledgement (recorded in `tasks/TASK-301-connection.yaml` → `send_message`).
 
 ---
 
@@ -86,7 +127,7 @@ connectionsByDestinationNode[dest][type][inputIndex] = IConnection[]  (src node,
 
 ## 6. Runtime observations that contradict existing docs/contracts
 
-1. **`contracts/connection.contract.md` / `workflow.contract.md` state "Graph must be acyclic".** Source shows the opposite: nothing in `n8n-workflow` validates acyclicity; loops are a supported pattern (`Loop Over Items`, `Merge ⇄ Loop`). Cycle *handling* (`DirectedGraph.getStronglyConnectedComponents`, `handleCycles`) exists only for **partial** executions in `packages/core/src/execution-engine/partial-execution-utils/` – a forbidden path for this LEGO. The contract has been corrected (see `contracts/connection.contract.md` §3).
+1. **The original `contracts/connection.contract.md` stated "Graph must be acyclic".** Source shows the opposite: nothing in `n8n-workflow` validates acyclicity; loops are a supported pattern (`Loop Over Items`, `Merge ⇄ Loop`). Cycle *handling* (`DirectedGraph.getStronglyConnectedComponents`, `handleCycles`) exists only for **partial** executions in `packages/core/src/execution-engine/partial-execution-utils/` – a forbidden path for this LEGO. This independently confirms Agent 1's `ISSUE-003` finding (`workflow.contract.md` §5 row "graph is acyclic → NO"; `workflow-handoff.md` §3.2). The connection contract has been corrected (§3.6) and aligns with Agent 1: acyclicity is a *declared intent*, enforcement (if any) is a **NEW CAPABILITY** for Agent 4, not reference behaviour.
 2. **`Workflow.renameNode` updates `connectionsBySourceNode` in place but does NOT rebuild `connectionsByDestinationNode`** (`workflow.ts` L456-484; observed: after rename, `byDest.B` still points to the old name). This is Agent 1's file → reported in `dependencies.md` D-08, not fixed here.
 3. **No topological sort exists in `n8n-workflow`.** Execution order is derived at runtime by `WorkflowExecute` (stack + `executionOrder` v0/v1 setting) and by `DirectedGraph` in core. "Implement topological sort" from the role brief is therefore **not** a port of existing behaviour; recorded as UNKNOWN/NOT-IN-REFERENCE rather than invented.
 
@@ -138,6 +179,8 @@ connectionsByDestinationNode[dest][type][inputIndex] = IConnection[]  (src node,
 | Check | Result |
 |---|---|
 | `node tests/reference/harness/run.js connection` | 5/5 PASS |
+| Consistency with Agent 1 frozen surface (`workflow-handoff.md` §2) | all consumed symbols are in the 15-symbol surface; none added |
+| `ISSUE-003` alignment | identical conclusion reached independently from source + runtime |
 | full harness (`execution-data` + `expression` + `connection`) | 18/18 PASS |
 | `git diff -- reference/n8n` | empty → 11/11 baseline unaffected |
 | Live VPS | unreachable from sandbox → status `TESTED` |

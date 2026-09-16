@@ -4,7 +4,8 @@ lego: connection
 module: connection
 phase: 2
 title: "Isolate connection routing & graph traversal (n8n 2.9.4)"
-status: ANALYZED
+status: TESTED
+closes_issue: ISSUE-007
 branch: arena/01a0ac05-n8n-rust-v-4   # session-locked branch (stands in for branch/agent-3)
 
 allowed_paths:
@@ -58,8 +59,21 @@ operations:
   - name: send_message
     args:
       to: "agent-5"
-      subject: "TASK-301-connection ready for gate"
-      body: "No source modified. See docs/isolation/connection.md, contracts/connection.contract.md, tests/reference/connection (node tests/reference/harness/run.js connection)."
+      type: STATUS_REPORT
+      subject: "ISSUE-007 (agent-3): docs/isolation/connection.md published; TASK-301-connection ready for gate"
+      body: "No source modified. Blueprint docs/isolation/connection.md, contract deps CD-01..CD-07 in contracts/connection.contract.md, tests/reference/connection 5/5 (node tests/reference/harness/run.js connection). Request LEGO-MASTER-MAP Connection row BLOCKED -> TESTED."
+  - name: respond_dependency
+    args:
+      to: "agent-1"
+      in_reply_to: "MSG-02"
+      decision: "Option B for Phase 2 (consume frozen surface as-is), Option A for Phase 3 (Connection owns common/**, graph/**, connections-diff behind port P-CONNECTION-GRAPH)."
+      reference: "docs/isolation/connection.md#01-answer-to-msg-02"
+  - name: send_message
+    args:
+      to: "agent-1"
+      type: DEFECT_REPORT
+      subject: "D-08: Workflow.renameNode does not rebuild connectionsByDestinationNode"
+      body: "workflow.ts L456-484 mutates connectionsBySourceNode in place; byDest still holds the old name afterwards (observed on n8n-workflow@2.9.1). Not touched by agent-3; your call whether to re-run mapConnectionsByDestination."
 
 tests:
   - reference_smoke        # 11/11 baseline must stay

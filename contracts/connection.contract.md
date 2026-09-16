@@ -67,10 +67,19 @@ interface NodeConnectionIndexes { sourceIndex: number; destinationIndex: number;
 
 None of the pure functions throw. Invalid indexes/unknown names are *not* detected here; that is the Validation LEGO's responsibility (`contracts/validation.contract.md` `DanglingConnections`). `parseExtractableSubgraphSelection` reports problems as data (§4), not exceptions.
 
-## 6. Dependencies
+## 6. Dependencies (registered)
 
-- **Node Model (Agent 2):** node `name` as key; `NodeHelpers.getNodeOutputs/getNodeInputs/getConnectionTypes` for port counts (D-09).
-- **Workflow (Agent 1):** owns the two map instances, wrappers, `getNodeConnectionIndexes`, `getHighestNode`, `getStartNode`, `getParentMainInputNode`, `renameNode` (D-08).
+| ID | Provider | Contract | Interface consumed | Access | Status |
+|---|---|---|---|---|---|
+| CD-01 | Agent 1 / `workflow` | `contracts/workflow.contract.md` §3.1, `workflow-handoff.md` §2 | `Workflow::getNode(name) → INode \| null` (never throws) | read-only | provider VERIFIED (`a092e00f`) |
+| CD-02 | Agent 1 / `workflow` | `workflow-handoff.md` §2 "graph" group | `getConnectedNodes`, `getChildNodes`, `getParentNodes`, `mapConnectionsByDestination`, `buildAdjacencyList`, `getRootNodes`, `getLeafNodes`, `getInputEdges`, `getOutputEdges`, `hasPath`, `parseExtractableSubgraphSelection`, `getNodeByName` | read-only, frozen 15-symbol surface | provider VERIFIED |
+| CD-03 | Agent 1 / `workflow` | `workflow-handoff.md` §2 "content" | `compareConnections` | read-only | provider VERIFIED |
+| CD-04 | Agent 1 / `workflow` | `workflow.contract.md` §3.3 | `Workflow.connectionsBySourceNode`, `connectionsByDestinationNode`, `getNodeConnectionIndexes`, `getHighestNode`, `getStartNode`, `getParentMainInputNode`, `getParentNodesByDepth` | read-only (consumed, not owned) | provider VERIFIED; defect D-08 (`renameNode` stale destination map) open with Agent 1 |
+| CD-05 | Agent 2 / `node` | `contracts/node.contract.md` §2 (`name` is the primary reference key) + `NodeHelpers.getNodeOutputs/getNodeInputs/getConnectionTypes` | declared port counts incl. trailing "Error" main output | read-only | D-09 requested |
+| CD-06 | Agent 4 / `validation` | `contracts/validation.contract.md` | consumer of §3.1–3.2 (`DanglingConnections`); `CycleDetection` must be labelled NEW CAPABILITY (§3.6, `ISSUE-003`) | — | informational |
+| CD-07 | shared | `packages/workflow/src/interfaces.ts` | `IConnection`, `IConnections`, `INodeConnection`, `NodeConnectionType(s)` | type-only | — |
+
+Ownership of `common/**`, `graph/graph-utils.ts`, `connections-diff.ts`: Phase 2 = consumed from Workflow (Option B); Phase 3 = transferred to Connection behind port `P-CONNECTION-GRAPH` (Option A) — decision recorded in `docs/isolation/connection.md` §0.1, pending Agent 5 acknowledgement.
 - **Validation (Agent 4):** consumes §3.1–3.2 to implement `DanglingConnections`; note §3.6 — `CycleDetection` must not reject cyclic graphs as invalid for execution.
 - shared `interfaces.ts` for types.
 
