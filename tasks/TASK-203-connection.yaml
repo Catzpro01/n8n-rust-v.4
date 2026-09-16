@@ -1,0 +1,24 @@
+﻿id: TASK-203-connection
+agent: agent-3
+lego: connection
+module: connection
+
+allowed_paths:
+  - reference/n8n/packages/workflow/src/graph/**
+  - docs/isolation/connection.md
+
+forbidden_paths:
+  - reference/n8n/packages/core/**
+  - crates/**
+  - apps/**
+
+requires:
+  - contracts/connection.contract.md
+
+operations:
+  - git_status
+  - list_files
+
+merge_condition:
+  - regression_gate_pass
+  - no_contract_violation
