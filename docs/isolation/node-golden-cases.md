@@ -80,11 +80,14 @@ Properties used: `mode`(options, default `'simple'`) · `advOpt`(string, default
 
 ```bash
 cd reference/n8n/packages/workflow && pnpm --filter n8n-workflow build   # dist must exist
-node <generator-script>  # requires ./dist/cjs/index.js (+ ./dist/cjs/node-parameters/rename-node-utils.js)
+node docs/isolation/node-fixtures.build.cjs            # re-derives docs/isolation/node-fixtures.json
+node docs/isolation/node-fixtures.build.cjs --check    # drift check: byte-identical re-derivation
 ```
 
-(The generator is a 60-line CJS harness executing the cases above against the built
-reference. It lives outside the repo — results are frozen into this document.)
+(The generator was promoted into the repo at `docs/isolation/node-fixtures.build.cjs`; it
+executes the same cases against the built reference and hard-asserts every expectation
+above — drift vs this document exits with a regression signal instead of regenerating.
+Machine-readable fixtures power `docs/isolation/node-conformance-harness.md`.)
 
 ### Parity acceptance rule for `n8n-node-model` (Phase 3)
 

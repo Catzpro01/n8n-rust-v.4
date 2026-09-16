@@ -218,6 +218,26 @@
         "boundary_note": "all work read-only vs crates/**; verification artifacts (docs) only"
       },
       "status": "UNREAD"
+    },
+    {
+      "id": "MSG-10",
+      "recipient_id": "broadcast",
+      "message_type": "STATUS_REPORT",
+      "subject": "agent-2 / node: machine-executable acceptance pack for n8n-node-model (fixtures + generator + harness spec) — GC-1..GC-7 now cargo-testable",
+      "payload": {
+        "lego": "node",
+        "requester": "agent-2",
+        "artifacts": [
+          "docs/isolation/node-fixtures.json (19 golden cases + 7 serde probes, byte-stable)",
+          "docs/isolation/node-fixtures.build.cjs (--check drift gate; exit 3 = regression tripwire vs frozen goldens)",
+          "docs/isolation/node-conformance-harness.md (required crate-side tests/reference_fixtures.rs layout, case-count constants, port shapes, acceptance wiring)"
+        ],
+        "purpose": "parity for crates/n8n-node-model becomes machine-checkable before implementation — mirrors workflow's build-fixtures.mjs + reference_fixtures.rs architecture; candidate tasks/TASK-*.yaml for the crate owner's Phase-3 assignment",
+        "boundary_note": "all artifacts inside agent-2 write set (docs/isolation/node*); crates/** untouched; optional integration move to tests/reference/node-rust/ is an orchestrator step",
+        "new_verified_semantics": "continueErrorOutput overwrites displayName to 'Success' even on existing config objects; pinned in harness spec §4.1 and fixtures case single-main-config-continue-error-output",
+        "status_of_crate": "still stub (65 LoC, 1 test, 0/6 frozen ports) — brief G-1..G-4 + this pack define acceptance"
+      },
+      "status": "UNREAD"
     }
   ]
 }

@@ -1,0 +1,512 @@
+{
+  "meta": {
+    "source": "n8n-workflow@2.9.1 dist/cjs (repo tag n8n@2.9.4)",
+    "goldenDocument": "docs/isolation/node-golden-cases.md (GC-1..GC-7, VERIFIED-BY-EXECUTION)",
+    "generator": "node docs/isolation/node-fixtures.build.cjs  (drift check: --check)",
+    "comparisonRule": "deep JSON equality after per-key sort; byte-stable file by construction"
+  },
+  "applyAccessPatterns": {
+    "cases": [
+      {
+        "expression": "$('Old Node').item.json.a + \"x\"",
+        "previousName": "Old Node",
+        "newName": "New Node",
+        "expect": "$('New Node').item.json.a + \"x\""
+      },
+      {
+        "expression": "const x = $node[\"Old Node\"].json.b",
+        "previousName": "Old Node",
+        "newName": "New Node",
+        "expect": "const x = $node[\"New Node\"].json.b"
+      },
+      {
+        "expression": "no reference here",
+        "previousName": "Old Node",
+        "newName": "New Node",
+        "expect": "no reference here"
+      }
+    ]
+  },
+  "getConnectionTypes": {
+    "cases": [
+      {
+        "input": [
+          "main",
+          {
+            "type": "main",
+            "category": "error",
+            "displayName": "Error"
+          },
+          {
+            "type": "ai_tool"
+          }
+        ],
+        "expect": [
+          "main",
+          "main",
+          "ai_tool"
+        ]
+      }
+    ]
+  },
+  "renameFormFields": {
+    "cases": [
+      {
+        "before": {
+          "parameters": {
+            "formFields": {
+              "values": [
+                {
+                  "fieldType": "html",
+                  "html": "Hello $('Old Node').item"
+                },
+                {
+                  "fieldType": "text",
+                  "label": "Name"
+                },
+                {
+                  "fieldType": "html"
+                }
+              ]
+            }
+          }
+        },
+        "rename": {
+          "pattern": "Old Node",
+          "replacement": "New Node"
+        },
+        "after": {
+          "parameters": {
+            "formFields": {
+              "values": [
+                {
+                  "fieldType": "html",
+                  "html": "Hello $('New Node').item"
+                },
+                {
+                  "fieldType": "text",
+                  "label": "Name"
+                },
+                {
+                  "fieldType": "html"
+                }
+              ]
+            }
+          }
+        },
+        "returned": null
+      }
+    ]
+  },
+  "getNodeOutputs": {
+    "cases": [
+      {
+        "name": "static-main-no-onerror",
+        "node": {
+          "name": "Outputs Static"
+        },
+        "outputs": [
+          "main"
+        ],
+        "expect": [
+          "main"
+        ],
+        "descriptionUnchangedAfterCall": true,
+        "warned": false
+      },
+      {
+        "name": "single-main-continue-error-output",
+        "node": {
+          "name": "Outputs Single Err",
+          "onError": "continueErrorOutput"
+        },
+        "outputs": [
+          "main"
+        ],
+        "expect": [
+          {
+            "type": "main",
+            "displayName": "Success"
+          },
+          {
+            "category": "error",
+            "type": "main",
+            "displayName": "Error"
+          }
+        ],
+        "descriptionUnchangedAfterCall": true,
+        "warned": false
+      },
+      {
+        "name": "multi-main-continue-error-output",
+        "node": {
+          "name": "Outputs Multi Err",
+          "onError": "continueErrorOutput"
+        },
+        "outputs": [
+          "main",
+          "main"
+        ],
+        "expect": [
+          "main",
+          "main",
+          {
+            "category": "error",
+            "type": "main",
+            "displayName": "Error"
+          }
+        ],
+        "descriptionUnchangedAfterCall": true,
+        "warned": false
+      },
+      {
+        "name": "single-main-config-continue-error-output",
+        "node": {
+          "name": "Outputs Config Err",
+          "onError": "continueErrorOutput"
+        },
+        "outputs": [
+          {
+            "type": "main",
+            "displayName": "Out"
+          }
+        ],
+        "expect": [
+          {
+            "type": "main",
+            "displayName": "Success"
+          },
+          {
+            "category": "error",
+            "type": "main",
+            "displayName": "Error"
+          }
+        ],
+        "descriptionUnchangedAfterCall": true,
+        "warned": false
+      }
+    ]
+  },
+  "getNodeInputs": {
+    "cases": [
+      {
+        "name": "static-with-config-object",
+        "inputs": [
+          "main",
+          {
+            "type": "ai_tool",
+            "required": true
+          }
+        ],
+        "expect": [
+          "main",
+          {
+            "type": "ai_tool",
+            "required": true
+          }
+        ],
+        "warned": false
+      },
+      {
+        "name": "dynamic-expression-evaluator-throws",
+        "inputs": "={{ ['main'] }}",
+        "expect": [],
+        "warned": true
+      }
+    ]
+  },
+  "getNodeParameters": {
+    "cases": [
+      {
+        "name": "defaults-only",
+        "values": {},
+        "returnDefaults": true,
+        "returnNoneDisplayed": false,
+        "expect": {
+          "mode": "simple",
+          "always": ""
+        }
+      },
+      {
+        "name": "hidden-value-dropped-expression-preserved",
+        "values": {
+          "mode": "simple",
+          "advOpt": "typed-but-hidden",
+          "always": "={{ 1+1 }}"
+        },
+        "returnDefaults": true,
+        "returnNoneDisplayed": false,
+        "expect": {
+          "mode": "simple",
+          "always": "={{ 1+1 }}"
+        }
+      },
+      {
+        "name": "return-none-displayed-keeps-hidden",
+        "values": {
+          "mode": "simple",
+          "advOpt": "typed-but-hidden",
+          "always": "={{ 1+1 }}"
+        },
+        "returnDefaults": true,
+        "returnNoneDisplayed": true,
+        "expect": {
+          "mode": "simple",
+          "advOpt": "typed-but-hidden",
+          "always": "={{ 1+1 }}"
+        }
+      }
+    ],
+    "properties": [
+      {
+        "displayName": "Mode",
+        "name": "mode",
+        "type": "options",
+        "options": [
+          {
+            "name": "Simple",
+            "value": "simple"
+          },
+          {
+            "name": "Advanced",
+            "value": "advanced"
+          }
+        ],
+        "default": "simple",
+        "description": ""
+      },
+      {
+        "displayName": "Advanced Option",
+        "name": "advOpt",
+        "type": "string",
+        "default": "fallback",
+        "description": "",
+        "displayOptions": {
+          "show": {
+            "mode": [
+              "advanced"
+            ]
+          }
+        }
+      },
+      {
+        "displayName": "Always Shown",
+        "name": "always",
+        "type": "string",
+        "default": "",
+        "description": ""
+      }
+    ]
+  },
+  "versionedNodeType": {
+    "cases": [
+      {
+        "op": "currentVersion",
+        "descriptionHasDefaultVersion": false,
+        "expect": 2
+      },
+      {
+        "op": "getNodeType",
+        "version": null,
+        "expect": {
+          "descriptionVersion": 2
+        }
+      },
+      {
+        "op": "getNodeType",
+        "version": 1,
+        "expect": {
+          "descriptionVersion": 1
+        }
+      },
+      {
+        "op": "getNodeType",
+        "version": 9,
+        "expect": null
+      },
+      {
+        "op": "getVersionedNodeTypePassthrough",
+        "expectIdentity": true
+      }
+    ]
+  },
+  "serdeConformance": {
+    "note": "Synthetic conformance samples for crates/n8n-node-model serde shapes (node-rust-brief.md §1 G-1..G-4). Equality rule: deserialize -> serialize must be an exact JSON round-trip. Real node instances are read by the harness from tests/reference/0*/workflow.json, not embedded here.",
+    "descriptions": {
+      "G1_version_scalar": {
+        "displayName": "Version Scalar",
+        "name": "versionScalar",
+        "group": [
+          "transform"
+        ],
+        "version": 1.2,
+        "defaults": {
+          "name": "Version Scalar"
+        },
+        "description": "scalar version arm",
+        "properties": [],
+        "inputs": [
+          "main"
+        ],
+        "outputs": [
+          "main"
+        ]
+      },
+      "G1_version_array": {
+        "displayName": "Version Array",
+        "name": "versionArray",
+        "group": [
+          "input"
+        ],
+        "version": [
+          3,
+          3.4,
+          4
+        ],
+        "defaults": {
+          "name": "Version Array"
+        },
+        "description": "array version arm (multi-version node serialization)",
+        "properties": [],
+        "inputs": [
+          "main"
+        ],
+        "outputs": [
+          "main"
+        ]
+      },
+      "G2_io_expression": {
+        "displayName": "IO Expression",
+        "name": "ioExpression",
+        "group": [
+          "transform"
+        ],
+        "version": 1,
+        "defaults": {
+          "name": "IO Expression"
+        },
+        "description": "expression-string IO arm",
+        "properties": [],
+        "inputs": "={{ [\"main\"] }}",
+        "outputs": "={{ [\"main\", { \"type\": \"ai_tool\" }] }}"
+      },
+      "G2_io_error_config": {
+        "displayName": "IO Error Config",
+        "name": "ioErrorConfig",
+        "group": [
+          "transform"
+        ],
+        "version": 1,
+        "defaults": {
+          "name": "IO Error Config"
+        },
+        "description": "config-object IO arm incl. error category",
+        "properties": [],
+        "inputs": [
+          {
+            "type": "main"
+          },
+          {
+            "type": "ai_memory",
+            "required": true
+          }
+        ],
+        "outputs": [
+          {
+            "type": "main",
+            "displayName": "Success"
+          },
+          {
+            "category": "error",
+            "type": "main",
+            "displayName": "Error",
+            "filter": {
+              "excludedNodes": [
+                "NoOp"
+              ]
+            },
+            "maxConnections": 1
+          }
+        ]
+      },
+      "G3_required_fields": {
+        "displayName": "Required Fields",
+        "name": "requiredFields",
+        "group": [
+          "input",
+          "transform"
+        ],
+        "version": 1,
+        "defaults": {
+          "name": "Required Fields",
+          "color": "#772244"
+        },
+        "description": "group/defaults/properties required by INodeTypeDescription",
+        "properties": [
+          {
+            "displayName": "P",
+            "name": "p",
+            "type": "string",
+            "default": ""
+          }
+        ],
+        "inputs": [
+          "main"
+        ],
+        "outputs": [
+          "main"
+        ]
+      }
+    },
+    "nodes": {
+      "G4_rich_optionals": {
+        "id": "g4-rich",
+        "name": "Rich Node",
+        "type": "n8n-nodes-base.noOp",
+        "typeVersion": 1.2,
+        "position": [
+          0,
+          0
+        ],
+        "parameters": {
+          "plain": "value",
+          "expr": "={{ 1+1 }}"
+        },
+        "disabled": false,
+        "notes": "n1",
+        "notesInFlow": true,
+        "credentials": {
+          "httpBasicAuth": {
+            "id": "1",
+            "name": "cred"
+          }
+        },
+        "onError": "continueRegularOutput",
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 1000,
+        "alwaysOutputData": true,
+        "executeOnce": true,
+        "continueOnFail": false,
+        "webhookId": "w1",
+        "extendsCredential": "x",
+        "rewireOutputLogTo": "main",
+        "forceCustomOperation": {
+          "resource": "r",
+          "operation": "o"
+        }
+      },
+      "G4_minimal": {
+        "id": "g4-min",
+        "name": "Minimal Node",
+        "type": "n8n-nodes-base.noOp",
+        "typeVersion": 1,
+        "position": [
+          64,
+          256
+        ],
+        "parameters": {}
+      }
+    }
+  }
+}
