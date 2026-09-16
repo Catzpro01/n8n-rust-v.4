@@ -4,7 +4,7 @@ lego: connection
 module: connection
 phase: 2
 title: "Isolate connection routing & graph traversal (n8n 2.9.4)"
-status: TESTED
+status: VERIFIED   # Agent 5 merge da39a5b6 + LEGO-MASTER-MAP row VERIFIED (32eb5115): 21/21 conformance, 11/11 live VPS gate
 closes_issue: ISSUE-007
 branch: arena/01a0ac05-n8n-rust-v-4   # session-locked branch (stands in for branch/agent-3)
 

@@ -20,10 +20,10 @@ objective: >
   Behaviour must be byte-identical; this is an import-path / ownership change only.
 
 blocked_by:
-  - "Agent 5: LEGO-MASTER-MAP Connection row must be TESTED (currently BLOCKED) before any Phase-3 unit opens"
+  - "[CLEARED 32eb5115] Agent 5: LEGO-MASTER-MAP Connection row is VERIFIED (was BLOCKED)"
   - "Agent 5: explicit ACK of Option A (docs/isolation/connection.md §0.1)"
   - "Agent 1: ACK that ownership.json `owns[]` / `ports[]` will be amended by agent-1 (agent-3 does NOT edit packages/workflow-lego/**)"
-  - "Live VPS reachable: 11/11 regression gate must be re-runnable (currently unreachable → cannot VERIFY)"
+  - "Live VPS reachable from agent-3 sandbox: still 000 — Agent 5 ran the 11/11 gate from its own host; Phase-3 gate must again be run by Agent 5"
 
 allowed_paths:
   - reference/n8n/packages/workflow/src/common/**          # read-only golden source
