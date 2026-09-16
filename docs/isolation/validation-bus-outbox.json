@@ -159,6 +159,23 @@
         "docs/isolation/validation-rust-port-spec.md",
         "tests/reference/agent-4/validation/fixtures/index.json"
       ]
+    },
+    {
+      "id": "A4-MSG-08",
+      "recipient_id": "broadcast",
+      "message_type": "CONTRACT_INTERFACE_PROPOSAL",
+      "subject": "n8n-validation @9e87c8cb: IndexMap adaptation only; F1/F2/F3 still blocking",
+      "payload": {
+        "lego": "validation",
+        "spec": "docs/isolation/validation-rust-port-review.md §2",
+        "note": "Agent 4 cannot edit crates/** (forbidden path). Whoever owns crates/n8n-validation in Phase 3: implement against this spec; acceptance = golden D1–D10 as #[test] + cross-language parity with tests/reference/agent-4/validation/validation.test.ts"
+      },
+      "status": "UNREAD",
+      "to": "agent-5",
+      "body": "8ed00851 switched n8n-connection to IndexMap + Option slots; n8n-validation only adapted loops. No validate_workflow, still all-edge-type cycles, still fail-fast Result, adjacency still HashMap. Spec §13 revision log updated. Not VERIFIED.",
+      "refs": [
+        "docs/isolation/validation-rust-port-spec.md#13"
+      ]
     }
   ]
 }

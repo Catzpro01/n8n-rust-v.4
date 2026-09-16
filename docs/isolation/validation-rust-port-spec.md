@@ -206,3 +206,24 @@ Must never panic or return `Err` for any `serde_json::Value`. Recommended: `#[de
 ## 12. Message log
 
 - A4-MSG-04/05/06 (→ agent-5, broadcast): review verdict + spec pointers — `docs/isolation/validation-bus-outbox.json`.
+
+---
+
+## 13. Revision log
+
+### 2026-09-17 — main @ `9e87c8cb` (8ed00851 "resolve R-01..R-05", 9e87c8cb indexmap pin)
+
+Changes observed in `crates/n8n-validation/src/lib.rs` (45 lines, adaptation only):
+- `n8n_connection::WorkflowConnections` is now `IndexMap<String, IndexMap<String, Vec<Option<Vec<ConnectionItem>>>>>` (insertion-ordered; sparse `null` slots representable). Validation loops gained `if let Some(items) = slot`.
+- Public API, error enum, messages, fail-fast `Result` semantics: **unchanged**.
+
+Effect on the gap table (§9):
+
+| Req | Before | Now |
+|---|---|---|
+| §3 determinism — source/type iteration | `HashMap` (random) | `IndexMap` → **insertion order = JSON key order**. Better than random, but still **not** §3 (nodes[]-order for known sources, sorted unknown sources, sorted types). Fixture D13 would still order errors differently. F6 → *partially mitigated, open*. |
+| §3 — `detect_cycles` adjacency | `HashMap<&str, Vec<&str>>` + recursive DFS | unchanged → root iteration order still random. F6 open. |
+| §6 null output slots | not representable (F1 sub-item) | representable now; skipped correctly. ✔ |
+| §2/§4/§5–§8 (F1, F2, F3, F4, F5, F7) | open | **open** — no change |
+
+Verdict: still **NON-CONFORMANT**; 3 blocking findings (F1, F2, F3) untouched. Note for implementer: `indexmap` now being a workspace dependency makes the §7 recommendation (`IndexMap<&str, Vec<&str>>` for adjacency) zero-cost to adopt.
