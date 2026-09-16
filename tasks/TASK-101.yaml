@@ -1,0 +1,5 @@
+id: TASK-101
+agent: agent-1
+module: execution-engine
+operation: git_status
+release_lock: false
