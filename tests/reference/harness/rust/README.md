@@ -31,3 +31,9 @@ Result (rustc 1.88.0, crate @ `8ed00851` + spec files): **32 ok / 0 mismatch / 1
 names (`ConnectionItem`, `WorkflowConnections`, `ConnectionTypeFilter`) so the crate owner can move them
 into `src/lib.rs` verbatim; renaming to the spec §2 names is optional. `has_path_adj` is named to avoid
 clashing with the crate's existing all-types `has_path` (R-07); upstream's name is `hasPath`.
+
+## Cross-check: `crates/n8n-workflow` vs the Connection fixtures
+
+`workflow_crate_connection_fixtures.rs` + `run-workflow-crate-vs-connection-fixtures.sh` run the same
+fixtures against Agent 1's Workflow crate (which carries its own traversal/destination-map/diff port).
+Result @ `3fc3156c`: **19 ok / 1 mismatch / 26 skipped** — mismatch = D-11 (`None` vs `[]` padding).

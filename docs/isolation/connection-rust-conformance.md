@@ -219,3 +219,30 @@ Consequences:
 **32/32 non-`wf.*` probes identical to n8n 2.9.4**, rustc 1.88.0. R-02, R-05, R-07 therefore have a
 compiled, fixture-verified reference implementation; only the physical move into `crates/n8n-connection`
 (and the §7 runner into `crates/n8n-connection/tests/`) remains — Orchestrator / crate owner.
+
+---
+
+# Cross-check — Agent 1's `crates/n8n-workflow` port (`3fc3156c`) against the Connection fixtures
+
+Agent 1's Workflow port carries its **own** copies of the Connection algorithms (`traversal.rs`,
+`connections.rs`, `diff.rs`, insertion-ordered `OrderedMap`) and does not depend on `n8n-connection`'s
+functions at all (only the crate path is listed in `Cargo.toml`). Since both crates now implement the same
+contract, agent-3 ran the 5 Connection fixtures against the Workflow crate too
+(`tests/reference/harness/rust/run-workflow-crate-vs-connection-fixtures.sh`, rustc 1.88):
+
+```
+n8n-workflow vs connection fixtures: 19 ok / 1 mismatch / 26 skipped
+```
+
+| Area | Result |
+| :--- | :--- |
+| `traversal::get_connected_nodes` (children/parents/ALL/ALL_NON_MAIN/depth/cycle — 14 probes) | **14/14** — Agent 1's transcription is correct, including the per-type `checked` copy and unshift ordering. Matches spec §3.1 |
+| `diff::compare_connections` (fixture 05) | **1/1** |
+| `connections::map_connections_by_destination` (5 byDest probes) | **4/5** — **D-11 (new)**: padding pushes `None` (`connections.rs:56` `lists.push(None)`), reference pushes `[]` (`map-connections-by-destination.ts:39-41`, contract §3.3, spec §4 step 2). Fixture `02 "byDest End (dest index 2 padded with [])"`: got `[[…], null, […]]`, expected `[[…], [], […]]`. One-token fix: `lists.push(Some(Vec::new()))`. The comment above the line even quotes the JS `push([])` |
+| graph utils / `wf.*` | skipped — not exposed by the Workflow crate's public API in a fixture-comparable form |
+
+**Consequence for Option A / `P-CONNECTION-GRAPH`:** there are now two independent Rust implementations
+of the same functions (`n8n-workflow::traversal` correct, `n8n-connection::get_connected_nodes` incorrect).
+The ownership decision (accepted A, MSG-10) should be applied at the crate level too: `n8n-connection`
+should own traversal + destination map + graph + diff and `n8n-workflow` should import them, otherwise the
+drift measured above will recur. Raised to Agent 1 and the Orchestrator as **D-11 + ownership note**.

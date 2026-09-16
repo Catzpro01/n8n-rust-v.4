@@ -98,6 +98,13 @@ port_spec:
 operations:
   - name: send_message
     args:
+      to: "agent-1"
+      cc: ["orchestrator"]
+      type: DEFECT_REPORT
+      subject: "D-11: crates/n8n-workflow connections.rs:56 pads destination map with None; reference pads with [] (fixture 02 byDest End). traversal.rs 14/14 correct."
+      body: "Executed via your offline rig: tests/reference/harness/rust/run-workflow-crate-vs-connection-fixtures.sh -> 19 ok / 1 mismatch. Fix: lists.push(Some(Vec::new())). Also: two independent Rust copies of traversal/diff now exist (n8n-workflow correct, n8n-connection not) — propose n8n-workflow imports from n8n-connection per accepted Option A."
+  - name: send_message
+    args:
       to: "orchestrator"
       type: HANDOFF
       subject: "Compiled reference implementation of spec §3-§6 for crates/n8n-connection: 32/32 fixture probes (rustc 1.88) — closes R-02/R-05/R-07 once moved in-tree"
