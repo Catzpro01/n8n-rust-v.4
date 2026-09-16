@@ -186,8 +186,18 @@ Step **R4** belongs to Agent 3 (connection crate) but blocks `Workflow::get_chil
 
 ## 5. Toolchain caveat (read before trusting anything above)
 
-No `cargo`/`rustc` exists in the review sandbox and no Rust toolchain can be fetched (rust-lang.org,
-static.crates.io and Debian mirrors are unreachable; only npm/GitHub/PyPI egress works). Therefore:
+No `cargo`/`rustc` exists in the review sandbox, and the toolchain cannot be assembled from the usual
+sources: `sh.rustup.rs`, `static.rust-lang.org`, `index.crates.io`, `static.crates.io` and the Debian
+mirrors are all unreachable (only npm, GitHub and PyPI egress works). What *is* available, for whoever
+picks this up next:
+
+| Route | Status |
+| :--- | :--- |
+| `@rustbin/rustc-1.88.0-x86_64-unknown-linux-gnu` on **npm** | reachable (377 MB unpacked, tarball on `registry.npmjs.org`) — would give `rustc` + std, **but** |
+| crate dependencies (`serde`, `serde_json`, `thiserror`, `petgraph`) | **not fetchable** — no crates.io index or crate downloads; a build would need vendoring from GitHub (`github.com/serde-rs/serde` etc. are cloneable) with a scratch `.cargo/config` outside this repo |
+| pure-std harness | possible with rustc alone, but every fixture is JSON-shaped, so it would mean re-implementing a JSON reader in the harness — rejected as unverifiable bespoke code |
+
+Therefore:
 
 * **nothing in this review was compiled** — findings are from reading the Rust sources and from the
   reference fixtures;
