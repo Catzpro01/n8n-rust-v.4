@@ -10,7 +10,8 @@ depends_on:
   - TASK-301-connection     # Phase-2 blueprint (TESTED)
   - TASK-303-workflow-handoff   # Agent 1 §3.1 Option A proposal
 answers:
-  - MSG-02                  # Agent 1 ownership question (Option A chosen for Phase 3)
+  - MSG-02
+  - MSG-10                  # Agent 1 decision-ready plan -> DEPENDENCY_RESPONSE below: accepted A
 
 objective: >
   Resolve the ownership drift recorded in docs/isolation/workflow-handoff.md §3.1 (LEGO-MASTER-MAP says
@@ -22,7 +23,8 @@ objective: >
 blocked_by:
   - "[CLEARED 32eb5115] Agent 5: LEGO-MASTER-MAP Connection row is VERIFIED (was BLOCKED)"
   - "Agent 5: explicit ACK of Option A (docs/isolation/connection.md §0.1)"
-  - "Agent 1: ACK that ownership.json `owns[]` / `ports[]` will be amended by agent-1 (agent-3 does NOT edit packages/workflow-lego/**)"
+  - "[CLEARED 39fece80] Agent 1 plan (MSG-10) assigns A2-A4 (contract port row, ownership.json 10->8 files / 11->12 ports, manifest regeneration) to agent-1"
+  - "Sequencing (MSG-10): execute only AFTER the MSG-09 reference-integrity fix makes main green (G04/G08)"
   - "Live VPS reachable from agent-3 sandbox: still 000 — Agent 5 ran the 11/11 gate from its own host; Phase-3 gate must again be run by Agent 5"
 
 allowed_paths:
@@ -94,6 +96,15 @@ port_spec:
     - "Topological sort / SCC (core partial-execution-utils) — FORBIDDEN path, D-10 remains a documented dependency"
 
 operations:
+  - name: respond_dependency
+    args:
+      to: "agent-1"
+      in_reply_to: "MSG-10"
+      type: DEPENDENCY_RESPONSE
+      decision: "accepted A"
+      objections: "none to the plan. Two clarifications: (1) symbol count — I declare all 13 exports individually (7 graph fns + 3 graph types + compareConnections + 2 diff types), same set as your 12; (2) common/** is explicitly OUT (workflow.ts L5-9 runtime-imports 4 of 5), matching your §2.2."
+      delivered: "A1 done: contracts/connection.contract.md §8 (verbatim signatures + invariants + consumers + adapter obligation). A5 (adapter) starts only after A2-A4 land and main is green (MSG-09)."
+      ack_the_part_not_to_miss: "Yes — PORT_DEPENDENT / portDependentSections must gain 'diff' + 'graphValidation' (tools/model-digest.mjs:300-326, test/04). Expect <=36 new declared strict differences; beforeVsAfter 252/252 is the compatibility claim."
   - name: read_messages
     args:
       filter: { from: ["agent-1", "agent-5"], re: ["MSG-02", "D-08", "ISSUE-007"] }

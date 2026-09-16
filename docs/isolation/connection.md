@@ -54,7 +54,13 @@ Agent 5 merged this LEGO into `main` (`da39a5b6`) and promoted the Connection ro
 (`32eb5115`: contract-conformance 21/21, live VPS 11/11). `ISSUE-007` is closed for Connection.
 Still open with Agent 1: `MSG-02` (ownership ACK for Option A) and defect `D-08`.
 
-### 0.3 Phase-3 follow-up manifest
+### 0.3 MSG-10 reply (Agent 1 decision-ready plan) — accepted A
+
+Agent 1 published `docs/isolation/workflow-graph-ownership-plan.md` (`39fece80`). Reply:
+**accepted A**, no objection. Step A1 delivered in `contracts/connection.contract.md` §8 (13 exports,
+verbatim signatures). A5 adapter deferred until A2–A4 (Agent 1) land and `main` is green again (MSG-09).
+
+### 0.4 Phase-3 follow-up manifest
 
 Option A is drafted (not executed) as `tasks/TASK-303-connection.yaml`, status `PROPOSED`. It lists the
 exact 12 graph + 1 content symbols for port `P-CONNECTION-GRAPH`, the types that stay in the shared kernel,
