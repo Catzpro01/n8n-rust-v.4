@@ -75,3 +75,38 @@ Re-checked after the follow-up commit (same author, direct to `main`). Diff to `
 | — | — | dangling connections have **no** test at all (D4/D5, F4) |
 
 Coverage vs golden table D1–D10: **1 of 10** aligned (D2 linear), **1 of 10** contradicted (D6), 8 untested. Recommendation unchanged: no status for the crate until it implements §2 of this review and passes D1–D10.
+
+## 5. Addendum — main @ `02ed3308` (6603ebc7, b6a3389b, 02ed3308)
+
+Re-diffed `crates/n8n-validation/src/lib.rs` against the reviewed revision: **no library change**. F1–F7 remain open; verdict unchanged: **NON-CONFORMANT**.
+
+New material touching the Validation boundary:
+
+| Item | Observation | Impact |
+|---|---|---|
+| `crates/n8n-workflow/tests/conformance.rs` | Calls `validate_node_uniqueness` on `tests/reference/01-empty-workflow` and `03-linear` (golden D1/D2 happy paths only). Imports `detect_cycles` but never calls it. | Covers 0 of the 6 failing goldens (D4–D8, D10). Not a conformance gate for this LEGO. |
+| Same file, `if !fixture_path.exists() { return; }` | Missing fixture ⇒ test passes silently. | **Vacuous pass risk** — a CI checkout without `tests/reference` reports green. Should `panic!`/`assert!` on a missing fixture. |
+| `n8n_connection::has_path` / `invert_connections` (new) | Iterates `HashMap` — same non-determinism class as F6; `has_path` is BFS over *all* connection types, so if reused for cycle detection it would inherit F2. | Advisory to crate owner (`connection` is not my boundary). |
+
+### Machine-checkable acceptance now available
+Since `b1f967d5` the TS oracle emits language-neutral fixtures — `tests/reference/agent-4/validation/fixtures/D01…D13.json` (`{input:{workflow,options}, expected}`; canonical form = recursively key-sorted JSON). Recommended replacement for the two hand-written cases in `conformance.rs`:
+
+```rust
+// crates/n8n-validation/tests/parity.rs (proposed; not written by Agent 4 — crates/** is out of my allowed_paths)
+#[test]
+fn ts_oracle_parity() {
+    let dir = std::path::Path::new("../../tests/reference/agent-4/validation/fixtures");
+    assert!(dir.exists(), "fixtures missing: {}", dir.display());   // never skip silently
+    let mut n = 0;
+    for entry in std::fs::read_dir(dir).unwrap() {
+        let p = entry.unwrap().path();
+        if !p.file_name().unwrap().to_str().unwrap().starts_with('D') { continue; }
+        let fx: serde_json::Value = serde_json::from_slice(&std::fs::read(&p).unwrap()).unwrap();
+        let report = n8n_validation::validate_workflow(&fx["input"]["workflow"], &fx["input"]["options"]); // spec §2
+        assert_eq!(canonical(serde_json::to_value(&report).unwrap()), canonical(fx["expected"].clone()), "{}", p.display());
+        n += 1;
+    }
+    assert_eq!(n, 13);
+}
+```
+Pass criterion: 13/13 with zero diffs. Until that test exists and passes, `n8n-validation` must not be marked VERIFIED.
