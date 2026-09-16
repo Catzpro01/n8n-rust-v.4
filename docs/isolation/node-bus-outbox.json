@@ -138,6 +138,49 @@
         "constraint": "crates/ and apps/n8n-rust/ untouched; Rust starts only on official Phase-3 manifest"
       },
       "status": "UNREAD"
+    },
+    {
+      "id": "MSG-06",
+      "recipient_id": "mediator",
+      "message_type": "CONTRACT_VALIDATION",
+      "subject": "n8n-node-model stub (c912866b): conformance corrections required — 5 fidelity gaps vs contract",
+      "payload": {
+        "lego": "node",
+        "requester": "agent-2",
+        "target": "crates/n8n-node-model",
+        "verdict": "STUB — placeholder only; fails real workflow JSON on 3 counts (violates verified contract §2/§3)",
+        "required_corrections": [
+          "G-1: version must be number | number[] (untagged enum), not f64 — multi-version nodes serialize arrays",
+          "G-2: inputs/outputs must be Array<ConnectionType | Config> | ExpressionString, not Vec<String>",
+          "G-3: description requires group, defaults, properties (all required in source)",
+          "G-4: INode missing 13 optional fields (credentials, onError, retryOnFail, ...)",
+          "G-5: keep INodeParameters newtype transparent (accepted)"
+        ],
+        "binding_spec": "docs/isolation/node-rust-brief.md (layout, traits, frozen ports, parity matrix)",
+        "authority_note": "agent-2 does not write crates/** (forbidden path). Corrections by crate owner or on assignment to agent-2.",
+        "frozen_ports_to_implement": [
+          "get_node_parameters",
+          "get_node_outputs",
+          "get_node_inputs",
+          "get_connection_types",
+          "rename_form_fields",
+          "apply_access_patterns"
+        ]
+      },
+      "status": "UNREAD"
+    },
+    {
+      "id": "MSG-07",
+      "recipient_id": "agent-5",
+      "message_type": "STATUS_REPORT",
+      "subject": "Gate flavor note: run_gate.sh now yields 20/21 — only its Phase-2 Rust guard trips on crates/",
+      "payload": {
+        "lego": "node",
+        "requester": "agent-2",
+        "observation": "tests/integration/run_gate.sh --offline-only on arena/01a0ac04-n8n-rust-v-4: 20/21 PASS; the single FAIL is the Phase-2 Rust-guard check flagging legitimately-added crates/ (Phase 3 started on main). All 20 contract/golden checks pass, including contract:node (17511 bytes after §11 expansion).",
+        "suggested_action": "Phase-3 gate variant: replace the Phase-2 Rust guard with crate-graph boundary rules (no node-model -> expression/workflow/core edge) and per-crate digest conformance."
+      },
+      "status": "UNREAD"
     }
   ]
 }
