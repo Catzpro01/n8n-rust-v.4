@@ -140,9 +140,36 @@ test('fixtures: parity fixtures match the TS oracle (regenerate with gen-fixture
 	const dir = resolve(here, 'validation', 'fixtures');
 	const canon = (v: unknown): unknown => Array.isArray(v) ? v.map(canon) : v && typeof v === 'object' ? Object.fromEntries(Object.keys(v as object).sort().map((k) => [k, canon((v as any)[k])])) : v;
 	const files = readdirSync(dir).filter((f) => f.startsWith('D') && f.endsWith('.json'));
-	assert.ok(files.length >= 13);
+	assert.ok(files.length >= 14);
 	for (const f of files) {
 		const fx = JSON.parse(readFileSync(resolve(dir, f), 'utf8'));
 		assert.deepEqual(canon(validateWorkflow(fx.input.workflow, fx.input.options)), fx.expected, f);
 	}
+});
+
+test('robustness: validateWorkflow never throws and always returns a well-formed report (spec §8)', () => {
+	const CODES = new Set(['INVALID_INPUT', 'DUPLICATE_NODE_NAME', 'DANGLING_CONNECTION', 'INVALID_CONNECTION_TYPE', 'CYCLE_DETECTED']);
+	const junk: unknown[] = [undefined, null, 0, 1, 'x', true, [], {}, { nodes: null }, { nodes: {} }, { nodes: [null] }, { nodes: [{}] }, { nodes: [{ name: 1 }] },
+		{ nodes: [], connections: [] }, { nodes: [], connections: 'x' }, { nodes: [], connections: null },
+		{ nodes: [{ name: 'A' }], connections: { A: null } }, { nodes: [{ name: 'A' }], connections: { A: [] } }, { nodes: [{ name: 'A' }], connections: { A: { main: null } } },
+		{ nodes: [{ name: 'A' }], connections: { A: { main: {} } } }, { nodes: [{ name: 'A' }], connections: { A: { main: [null, [null], [{}], [{ node: 1 }], [{ node: 'A', type: 7 }], [{ node: 'A', type: 'zzz' }]] } } },
+		{ nodes: [{ name: 'A' }], connections: { A: { main: [[{ node: 'A', type: 'main', index: 0 }]] } } }, // self-loop
+		{ nodes: [{ name: '' }, { name: '' }], connections: { '': { '': [[{ node: '' }]] } } }, // empty-string names/types
+		{ nodes: [{ name: '__proto__' }, { name: 'constructor' }], connections: { __proto__: { main: [[{ node: 'constructor', type: 'main', index: 0 }]] }, constructor: { main: [[{ node: '__proto__', type: 'main', index: 0 }]] } } },
+	];
+	// deterministic PRNG-generated deep garbage
+	let seed = 42; const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+	const gen = (d: number): unknown => { const r = rnd(); if (d > 3 || r < 0.2) return [null, 1, 'A', 'B', true][Math.floor(rnd() * 5)]; if (r < 0.5) return Array.from({ length: Math.floor(rnd() * 3) }, () => gen(d + 1)); const o: any = {}; for (const k of ['nodes', 'connections', 'name', 'node', 'type', 'main', 'A', 'B', 'index']) if (rnd() < 0.4) o[k] = gen(d + 1); return o; };
+	for (let i = 0; i < 300; i++) junk.push(gen(0));
+
+	for (const w of junk) for (const opts of [{}, { allowCycles: false }]) {
+		let r: any; assert.doesNotThrow(() => { r = validateWorkflow(w, opts); }, `threw on ${JSON.stringify(w)}`);
+		assert.equal(typeof r.valid, 'boolean'); assert.ok(Array.isArray(r.errors)); assert.equal(r.valid, r.errors.length === 0);
+		for (const e of r.errors) { assert.ok(CODES.has(e.code), e.code); assert.equal(typeof e.message, 'string'); if (e.path) assert.ok(e.path.every((p: unknown) => typeof p === 'string')); }
+		// determinism: same input twice → identical report
+		assert.deepEqual(validateWorkflow(w, opts), r);
+	}
+	// self-loop shape is frozen (spec §7)
+	const self = validateWorkflow({ nodes: [{ name: 'A' }], connections: { A: { main: [[{ node: 'A', type: 'main', index: 0 }]] } } }, { allowCycles: false });
+	assert.deepEqual(self.errors, [{ code: 'CYCLE_DETECTED', node: 'A', path: ['connections', 'A', 'main'], message: 'Cycle detected: A → A' }]);
 });

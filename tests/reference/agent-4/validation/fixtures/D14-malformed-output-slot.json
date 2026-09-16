@@ -1,0 +1,65 @@
+{
+  "description": "output slot that is neither null nor array (number / object) → DANGLING_CONNECTION \"Malformed connection output\", never throws",
+  "expected": {
+    "errors": [
+      {
+        "code": "DANGLING_CONNECTION",
+        "message": "Malformed connection output from \"A\"",
+        "node": "A",
+        "path": [
+          "connections",
+          "A",
+          "main",
+          "0"
+        ]
+      },
+      {
+        "code": "DANGLING_CONNECTION",
+        "message": "Malformed connection output from \"A\"",
+        "node": "A",
+        "path": [
+          "connections",
+          "A",
+          "main",
+          "2"
+        ]
+      }
+    ],
+    "valid": false
+  },
+  "id": "D14-malformed-output-slot",
+  "input": {
+    "options": {},
+    "workflow": {
+      "connections": {
+        "A": {
+          "main": [
+            1,
+            null,
+            {},
+            [
+              {
+                "index": 0,
+                "node": "A",
+                "type": "main"
+              }
+            ]
+          ]
+        }
+      },
+      "nodes": [
+        {
+          "id": "A",
+          "name": "A",
+          "parameters": {},
+          "position": [
+            0,
+            0
+          ],
+          "type": "n8n-nodes-base.noOp",
+          "typeVersion": 1
+        }
+      ]
+    }
+  }
+}

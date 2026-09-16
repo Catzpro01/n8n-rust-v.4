@@ -122,6 +122,9 @@ for source in ordered_sources():
                    message: "Unknown connection type \"{ty}\" on node \"{source}\"" }
         if outputs is not array: continue
         for (oi, output) in outputs.enumerate():           // output may be null → treat as []
+            if output is not null and not array:
+                push { DANGLING_CONNECTION, node: source, path: ["connections", source, ty, oi], message: "Malformed connection output from \"{source}\"" }
+                continue
             for (ti, target) in (output or []).enumerate():
                 path = ["connections", source, ty, oi, ti]
                 if target is not object or target.node is not string:
@@ -146,7 +149,7 @@ for name in node_names: adj.entry(name).or_default()      // first occurrence wi
 for source in ordered_sources():
     if source ∉ adj: continue
     outputs = connections[source]["main"]; if not array: continue
-    for output in outputs: for t in (output or []):
+    for output in outputs: if not array: continue; for t in output:
         if t is object and t.node is string and t.node ∈ adj: adj[source].push(t.node)
 
 colour = WHITE for all
@@ -192,7 +195,7 @@ Must never panic or return `Err` for any `serde_json::Value`. Recommended: `#[de
 
 ## 10. Acceptance — must all hold on VPS before `n8n-validation` may be marked VERIFIED
 
-1. **Parity fixtures**: `crates/n8n-validation/tests/parity.rs` loads every `tests/reference/agent-4/validation/fixtures/D*.json`, runs `validate_workflow(&fx["input"]["workflow"], serde_json::from_value(fx["input"]["options"]))`, canonicalises both sides (recursively key-sorted `serde_json::Value`; `serde_json` with `preserve_order` **off** already sorts map keys), asserts equality. **13/13, zero diffs.** Test must `panic!` if the fixture dir is missing (no silent skip). Reference implementation of the test body: review §5.
+1. **Parity fixtures**: `crates/n8n-validation/tests/parity.rs` loads every `tests/reference/agent-4/validation/fixtures/D*.json`, runs `validate_workflow(&fx["input"]["workflow"], serde_json::from_value(fx["input"]["options"]))`, canonicalises both sides (recursively key-sorted `serde_json::Value`; `serde_json` with `preserve_order` **off** already sorts map keys), asserts equality. **14/14, zero diffs.** Test must `panic!` if the fixture dir is missing (no silent skip). Reference implementation of the test body: review §5.
 2. **Goldens D1–D10** from `docs/isolation/validation-golden-cases.md` as named `#[test]`s (the fixtures cover them; named tests keep the audit trail readable).
 3. `cargo test -p n8n-validation` green; `cargo clippy -p n8n-validation -- -D warnings` clean.
 4. Cross-language check on the same checkout: `node --test tests/reference/agent-4/validation/validation.test.ts` (11/11) and `cargo test -p n8n-validation` both pass — the fixtures are the shared oracle; if the TS oracle changes, `gen-fixtures.ts` regenerates them and the Rust side must be re-run.
@@ -227,3 +230,6 @@ Effect on the gap table (§9):
 | §2/§4/§5–§8 (F1, F2, F3, F4, F5, F7) | open | **open** — no change |
 
 Verdict: still **NON-CONFORMANT**; 3 blocking findings (F1, F2, F3) untouched. Note for implementer: `indexmap` now being a workspace dependency makes the §7 recommendation (`IndexMap<&str, Vec<&str>>` for adjacency) zero-cost to adopt.
+
+### 2026-09-17 — oracle hardening (Agent 4, TS side)
+Robustness test (#12, 300 PRNG-generated garbage documents + hand-written edge cases, both option sets) found the TS oracle **threw** on a non-array output slot (`main: [1]`) — a §8 violation. Fixed: such slots now yield `DANGLING_CONNECTION` "Malformed connection output from \"{source}\"" with path `["connections", source, ty, oi]`; `detect_cycles` skips them. New fixture **D14-malformed-output-slot**; acceptance count is now 14 fixtures. Self-loop shape `A → A` frozen by test.

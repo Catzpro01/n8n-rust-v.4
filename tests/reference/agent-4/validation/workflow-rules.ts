@@ -104,6 +104,10 @@ export function checkDanglingConnections(workflow: WorkflowLike): ValidationErro
 			}
 			if (!Array.isArray(outputs)) continue;
 			outputs.forEach((output, oi) => {
+				if (output !== null && output !== undefined && !Array.isArray(output)) {
+					errors.push({ code: 'DANGLING_CONNECTION', node: source, path: ['connections', source, type, String(oi)], message: `Malformed connection output from "${source}"` });
+					return;
+				}
 				(output ?? []).forEach((target, ti) => {
 					const path = ['connections', source, type, String(oi), String(ti)];
 					if (!target || typeof target.node !== 'string') {
@@ -135,7 +139,7 @@ export function detectCycles(workflow: WorkflowLike): ValidationError[] {
 		const byType = (workflow.connections ?? {})[source];
 		const outputs = isObject(byType) ? byType.main : undefined;
 		if (!Array.isArray(outputs) || !adj.has(source)) continue;
-		for (const output of outputs) for (const t of output ?? []) if (t && adj.has(t.node)) adj.get(source)!.push(t.node);
+		for (const output of outputs) { if (!Array.isArray(output)) continue; for (const t of output) if (isObject(t) && typeof t.node === 'string' && adj.has(t.node)) adj.get(source)!.push(t.node); }
 	}
 
 	const WHITE = 0, GREY = 1, BLACK = 2;

@@ -108,7 +108,7 @@ fn ts_oracle_parity() {
         assert_eq!(canonical(serde_json::to_value(&report).unwrap()), canonical(fx["expected"].clone()), "{}", p.display());
         n += 1;
     }
-    assert_eq!(n, 13);
+    assert_eq!(n, 14);
 }
 ```
 Pass criterion: 13/13 with zero diffs. Until that test exists and passes, `n8n-validation` must not be marked VERIFIED.

@@ -34,6 +34,7 @@ const cases: Array<{ id: string; description: string; workflow: unknown; options
 	{ id: 'D11-diamond-dag', description: 'A→{B,C}→D diamond, allowCycles=false → valid (no false positive on shared descendant)', workflow: { nodes: [node('A'), node('B'), node('C'), node('D')], connections: { A: { main: [[{ node: 'B', type: 'main', index: 0 }, { node: 'C', type: 'main', index: 0 }]] }, B: { main: edge('D') }, C: { main: edge('D') } } }, options: { allowCycles: false } },
 	{ id: 'D12-self-loop-and-3-cycle', description: 'C→A back-edge in A→B→C, allowCycles=false → path A → B → C → A', workflow: { nodes: [node('A'), node('B'), node('C')], connections: { A: { main: edge('B') }, B: { main: edge('C') }, C: { main: edge('A') } } }, options: { allowCycles: false } },
 	{ id: 'D13-unknown-source-and-multiple-errors', description: 'errors accumulate: duplicate + unknown source + dangling target in one report', workflow: { nodes: [node('A'), node('A')], connections: { Nope: { main: edge('A') }, A: { main: edge('Ghost') } } } },
+	{ id: 'D14-malformed-output-slot', description: 'output slot that is neither null nor array (number / object) → DANGLING_CONNECTION "Malformed connection output", never throws', workflow: { nodes: [node('A')], connections: { A: { main: [1, null, {}, [{ node: 'A', type: 'main', index: 0 }]] } } } },
 ];
 
 const canon = (v: unknown): unknown => Array.isArray(v) ? v.map(canon) : v && typeof v === 'object' ? Object.fromEntries(Object.keys(v as object).sort().map((k) => [k, canon((v as any)[k])])) : v;
