@@ -22,6 +22,11 @@ pub struct INode {
     pub parameters: INodeParameters,
     #[serde(default)]
     pub disabled: Option<bool>,
+    /// Unknown fields (`credentials`, `webhookId`, `notesInFlow`, `alwaysOutputData`, …) are kept
+    /// verbatim: a workflow must survive a load/save round-trip untouched. Without this,
+    /// deserialising a real n8n workflow silently drops data (see the Phase-3 review, R2).
+    #[serde(flatten)]
+    pub extra: serde_json::Map<String, serde_json::Value>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

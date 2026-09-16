@@ -23,6 +23,11 @@ rm -rf "$BUILD"
 mkdir -p "$BUILD/.cargo"
 cp -a "$REPO/Cargo.toml" "$BUILD/"
 cp -a "$REPO/crates" "$BUILD/"
+# integration tests read the reference fixtures/goldens relative to the manifest dir
+if [ -d "$REPO/tests/reference" ]; then
+  mkdir -p "$BUILD/tests"
+  cp -a "$REPO/tests/reference" "$BUILD/tests/"
+fi
 [ -f "$REPO/Cargo.lock" ] && cp -a "$REPO/Cargo.lock" "$BUILD/"
 
 cat > "$BUILD/.cargo/config.toml" <<EOF

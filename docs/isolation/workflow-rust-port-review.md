@@ -179,6 +179,18 @@ Fixture evidence: `traversal/default-main-depth-unlimited` → `['D','C','B']`, 
 | **R5** | Config port for `timezone` (frozen `P-KERNEL-CONFIG`) + typed `pinData` | `toJSON` fixtures incl. `timezone` |
 | **R6** | `sha2` dependency pinned in the workspace; `cargo test` wired into the gate (`npm run verify` or a `cargo` step on the VPS) | fixtures pass under `cargo test` |
 
+**Status 2026-09-17 — implemented and green in this sandbox** (`tools/rust-offline-rig/run.sh test`), with the
+deviations from the plan called out:
+
+| Step | Status | Where / deviation |
+| :--- | :--- | :--- |
+| **R1** wire model | done | `Workflow::from_wire` / `to_wire` + `INode` `#[serde(flatten)] extra` (no separate `WorkflowDocument` type); `nodes`-as-a-map now fails to parse, `nodes`-as-an-array round-trips |
+| **R2** checksum + diff | done, **both in `n8n-workflow`** | `checksum.rs`, `diff.rs`; `compare_connections` was not put in `n8n-connection` — the frozen surface belongs to the Workflow LEGO, so the peer crate change is Agent 3's (`MSG-18`) |
+| **R3** rename + D-08 | done, **without the port traits** | `rename.rs`; parameter rewriting is a direct port with a documented `applyAccessPatterns` subset, so no `NodeRenamePort`/`NodeReferencePort` pair was introduced yet |
+| **R4** traversal | done | `traversal.rs` — reference signature `(connections, node, filter, depth, checked)`, `ALL` / `ALL_NON_MAIN`, nearest-first ordering |
+| **R5** config/timezone | partial | `DEFAULT_TIMEZONE` is a constant (`America/New_York`, what the pinned runtime resolves) instead of a config port; `pinData` stays an open `Value` |
+| **R6** `sha2` + gate wiring | done differently | no `sha2` dependency: SHA-256 is implemented in-crate and tested against known vectors, so the vendored dependency closure stays at 12 crates; `cargo test` is wired into the offline rig, the VPS run is still required |
+
 Step **R4** belongs to Agent 3 (connection crate) but blocks `Workflow::get_child_nodes`; steps **R1**’s
 `INode` extension belongs to Agent 2. Both are requests to peers, filed in `MSG-14`.
 
@@ -239,9 +251,34 @@ scripts/setup-reference-runtime.sh                 # n8n-workflow 2.9.1 etc.
 node tests/reference/workflow-rust/build-fixtures.mjs --check
 ```
 
-The Rust acceptance test should `include_str!("../../../tests/reference/workflow-rust/fixtures.json")`,
-deserialize it with `serde_json` and assert against every case — that keeps the port honest without a Node
-host in the loop.
+### 6.1 Status — ported and green (2026-09-17)
+
+`crates/n8n-workflow/tests/reference_fixtures.rs` asserts every case (and asserts the case counts, so a
+growing fixture file cannot be silently skipped). It reads the file via `CARGO_MANIFEST_DIR`, which is why
+`tools/rust-offline-rig/run.sh` copies `tests/reference` into its build copy.
+
+```text
+$ tools/rust-offline-rig/run.sh test
+running 19 tests  … test result: ok. 19 passed; 0 failed; 0 ignored        (unit tests)
+running  5 tests  … test result: ok.  5 passed; 0 failed; 0 ignored        (all 35 reference cases:
+                                                                   checksum 8, diff 6, shape 6, rename 6, traversal 9)
+```
+
+Behaviours reproduced **on purpose** (each pinned by a fixture, each documented at the point of code):
+`setNodes` swallowing a literal `__proto__` node and overwriting duplicates in place; `renameNode` having
+no collision guard; **D-08** (the destination index stays stale, `setConnections` is the only recovery);
+`renameNodeInParameterValue` resetting the renamable flag through arrays and turning `null` into `{}`;
+connection-type *document order* (the reason `OrderedMap` exists — and why the harness parses that graph
+from JSON text, since `serde_json::Value` would sort it).
+
+Known coverage gaps, still open on purpose:
+
+| Gap | Where |
+| :--- | :--- |
+| `applyAccessPatterns` is a documented **subset** (`$('…')`, `$items(…)`, `$node[…]`); dot-notation `$node.Name`, the item accessors and the `splitOut` special cases are not ported | `crates/n8n-workflow/src/rename.rs` |
+| `getStartNode`'s structural walk is ported, its node-type heuristics are not | `crates/n8n-workflow/src/lib.rs` |
+| `DEFAULT_TIMEZONE` is a constant rather than `Intl`/config detection | same |
+| `n8n-connection::get_connected_nodes` and `n8n-validation` are untouched by this port (Agent 3 / `MSG-16`, `MSG-18`) | `crates/n8n-connection` |
 
 ---
 
