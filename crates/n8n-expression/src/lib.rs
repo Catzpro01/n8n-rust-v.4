@@ -9,7 +9,7 @@ pub fn evaluate_simple_json_path<'a>(json: &'a Value, path: &str) -> Option<&'a 
     let parts: Vec<&str> = path.split('.').collect();
     let mut current = json;
     for part in parts {
-        if part == "" {
+        if part == "$json" || part.is_empty() {
             continue;
         }
         match current {
