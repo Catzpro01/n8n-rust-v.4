@@ -1,14 +1,26 @@
 {
-  "$comment": "Agent-1 outbound messages, schema-matched to public.agent_messages (docs/supabase_migration.sql). NOT DELIVERED: the repository ships the migration only — no Supabase client implementation exists, and no service_role/secret key is available in this environment (SUPABASE_SECRET_KEY=your_secret_key_here). RLS grants anon/authenticated SELECT only, so the publishable key cannot INSERT. Envelopes are persisted here so the orchestrator can flush them verbatim.",
+  "$comment": "Agent-1 outbound messages, schema-matched to public.agent_messages (docs/supabase_migration.sql). NOT DELIVERED: the repository ships the migration only — no Supabase client implementation exists, and no service_role/secret key is available in this environment (SUPABASE_SECRET_KEY=your_secret_key_here). RLS grants anon/authenticated SELECT only, so the publishable key cannot INSERT. Envelopes are persisted here so the orchestrator can flush them verbatim. Phase-1 envelopes MSG-01..MSG-05 are preserved verbatim; the Phase-2 post-merge handoff continues the sequence at MSG-06 (alias: MSG-01 Phase 2) so ids stay unique.",
   "schema": "public.agent_messages",
   "sender_id": "agent-1",
-  "generated_at": "2026-09-17",
-  "branch": "arena/01a0abf6-n8n-rust-v-4",
-  "head_commit": "6105e6f5",
+  "generated_at": "2026-09-16T22:50:00Z",
+  "branch": "arena/01a0ac62-n8n-rust-v-4",
+  "head_commit": "3b2636dd",
+  "base_branch": "main",
+  "history": [
+    {
+      "generated_at": "2026-09-17",
+      "branch": "arena/01a0abf6-n8n-rust-v-4",
+      "head_commit": "6105e6f5",
+      "messages": ["MSG-01", "MSG-02", "MSG-03", "MSG-04", "MSG-05"],
+      "context": "Phase-2 isolation unit + PR #1 verification request; superseded as a request by MSG-06 once Workflow became VERIFIED on main."
+    }
+  ],
+  "id_policy": "MSG-01..MSG-05 are Phase-1/PR#1 envelopes and keep their ids. New messages continue the sequence. The orchestrator's Phase-2 'MSG-01' (freeze of the 4 P-NODE-* signatures) is envelope MSG-06 with aliases ['MSG-01 (Phase 2)'] - one envelope, two names, so no id is reused.",
   "transport": {
     "status": "NOT_DELIVERED",
     "reason": "no client implementation (only docs/supabase_migration.sql exists) + no service_role key in this environment",
-    "flush": "INSERT INTO public.agent_messages (sender_id, recipient_id, message_type, subject, payload) VALUES (...); one row per entry of `messages`, using `sender_id` + the entry's own fields"
+    "flush": "INSERT INTO public.agent_messages (sender_id, recipient_id, message_type, subject, payload) VALUES (...); one row per entry of `messages`, using `sender_id` + the entry's own fields",
+    "flush_priority": ["MSG-06", "MSG-07"]
   },
   "messages": [
     {
@@ -136,6 +148,134 @@
         "live": "7/7 PASS (real WorkflowExecute + 436 node types)",
         "blocked_on": "Agent-5 verification of branch 6105e6f5 before any merge to main",
         "open_for_peers": ["MSG-01 (agent-2)", "MSG-02 (agent-3)", "MSG-03 (agent-4)"]
+      },
+      "status": "UNREAD"
+    },
+    {
+      "id": "MSG-06",
+      "aliases": [
+        "MSG-01 (Phase 2)",
+        "orchestrator directive: MSG-01"
+      ],
+      "phase": "phase-2-post-merge",
+      "recipient_id": "agent-2",
+      "message_type": "CONTRACT_FREEZE",
+      "expected_reply_type": "DEPENDENCY_RESPONSE",
+      "subject": "Freeze: the 4 P-NODE-* signatures the Workflow Model consumes (LEGO 01 VERIFIED on main)",
+      "payload": {
+        "lego": "workflow",
+        "requester": "agent-1",
+        "freeze_basis": {
+          "main_head": "3b2636dd",
+          "workflow_status": "VERIFIED (live 11/11 VPS gate) - 15-symbol public surface locked",
+          "reference": "n8n 2.9.4, upstream b6dc2787c45677a29a9612cd27eb911302961a83",
+          "digest_baseline": "252/252 sections identical before vs after; strict mode 218 identical / 34 declared port-dependent / 0 undeclared",
+          "gate_reproduction": "npm run verify -> 11/11 PASS on 3b2636dd (evidence/gate-report.reproduction-3b2636dd.json)"
+        },
+        "ports": [
+          {
+            "id": "P-NODE-MODEL",
+            "symbols": [
+              "getNodeParameters",
+              "getNodeOutputs"
+            ],
+            "reference_target": "node-helpers",
+            "adapter": "packages/workflow-lego/src/ports/node-model.ts",
+            "call_sites": [
+              "workflow.ts:110",
+              "workflow.ts:694"
+            ]
+          },
+          {
+            "id": "P-NODE-RENAME",
+            "symbols": [
+              "renameFormFields"
+            ],
+            "reference_target": "node-parameters/rename-node-utils",
+            "adapter": "packages/workflow-lego/src/ports/node-rename.ts",
+            "call_sites": [
+              "workflow.ts:448"
+            ]
+          },
+          {
+            "id": "P-NODE-REFERENCE",
+            "symbols": [
+              "applyAccessPatterns"
+            ],
+            "reference_target": "node-reference-parser-utils",
+            "adapter": "packages/workflow-lego/src/ports/node-reference.ts",
+            "call_sites": [
+              "workflow.ts:347"
+            ]
+          }
+        ],
+        "frozen_signatures": [
+          {
+            "symbol": "P-NODE-MODEL::getNodeParameters",
+            "reference": "node-helpers.ts:658-666",
+            "signature": "getNodeParameters(nodePropertiesArray: INodeProperties[], nodeValues: INodeParameters | null, returnDefaults: boolean, returnNoneDisplayed: boolean, node: Pick<INode, 'typeVersion'> | null, nodeTypeDescription: INodeTypeDescription | null, options?: GetNodeParametersOptions): INodeParameters | null",
+            "must_preserve": "defaults injection for nested properties/collections; null vs object is observable (workflow.ts:118 maps null -> {}); values are deep copies"
+          },
+          {
+            "symbol": "P-NODE-MODEL::getNodeOutputs",
+            "reference": "node-helpers.ts:1140-1144",
+            "signature": "getNodeOutputs(workflow: Workflow, node: INode, nodeTypeData: INodeTypeDescription): Array<NodeConnectionType | INodeOutputConfiguration>",
+            "must_preserve": "array outputs returned as-is; ExpressionString resolved via workflow.expression.getSimpleParameterValue(node, outputs, 'internal', {}) with non-array -> [] and throw -> console.warn + []; onError === 'continueErrorOutput' deep-copies, renames a lone output to 'Success' and appends {category:'error', type:'main', displayName:'Error'}"
+          },
+          {
+            "symbol": "P-NODE-RENAME::renameFormFields",
+            "reference": "node-parameters/rename-node-utils.ts:3-6",
+            "signature": "renameFormFields(node: INode, renameField: (v: NodeParameterValueType) => NodeParameterValueType): void",
+            "must_preserve": "in-place mutation of node.parameters.formFields.values[] where fieldType === 'html'; call order preserved (the callback re-enters Workflow.renameNodeInParameterValue)"
+          },
+          {
+            "symbol": "P-NODE-REFERENCE::applyAccessPatterns",
+            "reference": "node-reference-parser-utils.ts:104-125",
+            "signature": "applyAccessPatterns(expression: string, previousName: string, newName: string): string",
+            "must_preserve": "early return when !expression.includes(previousName); ACCESS_PATTERNS loop with backslashEscape(match) + dollarEscape(replacement); private helpers travel with the module; OperationalError is NOT used by this function"
+          }
+        ],
+        "declared_deviations": [
+          "D-02 options?: unknown",
+          "D-03 output union member narrowed",
+          "D-04 applyAccessPatterns parametric widening",
+          "D-05 getNodeOutputs workflow: unknown",
+          "see docs/isolation/workflow-node-port-freeze.md §4 / docs/isolation/workflow-port-contract.md §4.1"
+        ],
+        "other_consumers_not_in_lego_01": "getNodeParameters: telemetry-helpers.ts:295,548,867 + workflow-data-proxy.ts:200; getNodeOutputs: node-helpers.ts:1679 (exported isExecutable); renameFormFields/applyAccessPatterns: workflow.ts only",
+        "requested_action": "Declare the four signatures verbatim in contracts/node.contract.md using the reference types (not the narrower port types), add the three port ids as LEGO-02 outward obligations, list the consumers above, and complete the §6 section set (Purpose, Responsibilities, Non-responsibilities, Dependencies, Error behavior, Lifecycle, Data ownership, Compatibility requirements). Reply with a DEPENDENCY_RESPONSE envelope: accepted-as-frozen, or change-requested with source evidence.",
+        "change_control": "Any change to name, arity/types, return shape or observable semantics is a contract change: amended node.contract.md + workflow.contract.md §6, re-extraction, re-run of npm run verify, Agent-5 re-verification of the new digest baseline.",
+        "machine_check": "node tools/workflow-port-surface.mjs --check -> PASS (manifest ports == consumed ports)",
+        "artifacts": [
+          "docs/isolation/workflow-node-port-freeze.md",
+          "docs/isolation/workflow-port-contract.md §4.1",
+          "contracts/workflow.contract.md §6",
+          "packages/workflow-lego/manifest/port-surface.json",
+          "docs/isolation/evidence/gate-report.reproduction-3b2636dd.json"
+        ]
+      },
+      "status": "UNREAD"
+    },
+    {
+      "id": "MSG-07",
+      "phase": "phase-2-post-merge",
+      "recipient_id": "broadcast",
+      "message_type": "STATUS_REPORT",
+      "subject": "agent-1 / workflow: VERIFIED on main (3b2636dd), 4 P-NODE-* signatures frozen, standby for graph-structure support",
+      "payload": {
+        "lego": "workflow",
+        "state": "VERIFIED",
+        "base": "main @ 3b2636dd (pulled into arena/01a0ac62-n8n-rust-v-4)",
+        "gate": "npm run verify -> 11/11 PASS re-run on the merged base (incl. G11 live engine 7/7); evidence/gate-report.reproduction-3b2636dd.json",
+        "surface": "15 symbols locked; not changing. graph/** + connections-diff stay on the Workflow side until MSG-02 is answered",
+        "handoff": "MSG-06 (alias MSG-01 Phase 2) freezes the 4 P-NODE-* signatures for agent-2; docs/isolation/workflow-node-port-freeze.md is the authoritative record",
+        "standby": "agent-1 answers any Agent-2/Agent-3 question about Workflow structure, adjacency indexes, graph helpers, rename paths or digest baselines",
+        "open_for_peers": [
+          "MSG-02 (agent-3) graph/** ownership",
+          "MSG-03 (agent-4) ISSUE-003 cycle-detection ownership",
+          "MSG-06 (agent-2) signature freeze"
+        ],
+        "process_note": "LEGO-MASTER-MAP.md marks Node as ISOLATED (IN_REVIEW) with docs/isolation/node.md present; at 3b2636dd that file does not exist and contracts/node.contract.md is still the thin version - flagged for Agent 5, not edited by agent-1."
       },
       "status": "UNREAD"
     }

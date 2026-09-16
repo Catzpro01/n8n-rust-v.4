@@ -11,6 +11,12 @@ This document is the input for two later decisions:
 
 Machine-readable form: `packages/workflow-lego/manifest/ownership.json` (`ports[]`, `deviations[]`, `extraction.portSpecifiers`).
 
+> **Peer signatures are frozen.** The four functions behind `P-NODE-MODEL`, `P-NODE-RENAME` and
+> `P-NODE-REFERENCE` — what LEGO 02 must provide — are frozen with their verbatim reference shapes, call
+> sites and semantics in [`workflow-node-port-freeze.md`](./workflow-node-port-freeze.md) (bus envelope
+> `MSG-06` in [`workflow-bus-outbox.json`](./workflow-bus-outbox.json)). Port-level type deviations
+> `D-02`–`D-05` are listed in §4.1 below.
+
 ---
 
 ## 1. Port table
@@ -77,6 +83,22 @@ itself, with no engine present.
 
 Recorded rather than silently fixed: the phase forbids editing `reference/n8n/**`.
 It disappears when the Rust implementation replaces both files.
+
+### 4.1 Declared signature deviations (`P-NODE-*`)
+
+The three peer ports carry four functions whose port-level types are *deliberately narrower* than the
+reference signatures. Frozen — with the reference truth each deviation restores — in
+[`workflow-node-port-freeze.md`](./workflow-node-port-freeze.md) §4; they must not be carried into the
+Rust traits.
+
+| id | signature | reference | port | why it is allowed |
+| :--- | :--- | :--- | :--- | :--- |
+| `D-02` | `getNodeParameters` | `options?: GetNodeParametersOptions` (5 named fields) | `options?: unknown` | the Workflow LEGO never passes the 7th argument (`workflow.ts:110-117`) |
+| `D-03` | `getNodeOutputs` | `Array<NodeConnectionType \| INodeOutputConfiguration>` | `Array<NodeConnectionType \| { type; displayName? }>` | the LEGO reads only `output.type` (`workflow.ts:698`); other consumers (`NodeHelpers.isExecutable`) need the full member |
+| `D-04` | `applyAccessPatterns` | `(expression: string, …) => string` | `(value: NodeParameterValueType, …) => NodeParameterValueType` | parametric widening only; the single call site is guarded by `typeof === 'string'` |
+
+(`getNodeOutputs`'s `workflow: Workflow` → `workflow: unknown` is recorded as `D-05` in the freeze
+document: it breaks a type cycle in the isolated unit without changing the runtime call.)
 
 ---
 

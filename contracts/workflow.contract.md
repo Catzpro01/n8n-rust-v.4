@@ -91,6 +91,20 @@ Eleven declared ports, machine-checked by `node tools/workflow-port-surface.mjs 
 Cross-LEGO runtime edge of note: `workflow.ts:20 → expression` is **construction only**
 (`new Expression(this)` at `workflow.ts:134`); no method call crosses that seam.
 
+**Frozen peer signatures (`P-NODE-*`).** The four functions consumed from LEGO 02 —
+`P-NODE-MODEL::getNodeParameters`, `P-NODE-MODEL::getNodeOutputs`, `P-NODE-RENAME::renameFormFields`,
+`P-NODE-REFERENCE::applyAccessPatterns` — are frozen, with their verbatim reference shapes, the four call
+sites (`workflow.ts:110`, `:694`, `:448`, `:347`) and their observable semantics, in
+[`workflow-node-port-freeze.md`](../docs/isolation/workflow-node-port-freeze.md) (request:
+`docs/isolation/workflow-bus-outbox.json#MSG-06`; declared deviations `D-02`–`D-05` in
+[`workflow-port-contract.md`](../docs/isolation/workflow-port-contract.md) §4.1).
+
+Changing any of them — name, arity/parameter types, return shape, or observable semantics — invalidates
+the digest baseline recorded in `docs/isolation/evidence/model-digest.comparison.json` (**252/252
+identical** before vs after; strict mode **218 identical / 34 declared port-dependent / 0 undeclared**)
+and is valid only together with an amended `contracts/node.contract.md`, a re-extraction, a re-run of
+`npm run verify` and Agent-5 re-verification.
+
 ## 7. Error behavior
 
 | Input | Behavior | Evidence |
