@@ -10,7 +10,7 @@ n8n `2.9.4` — `reference/n8n`, upstream commit `b6dc2787c45677a29a9612cd27eb91
 | Field | Value |
 | :--- | :--- |
 | Guardian | Agent 5 — Integration & Verification |
-| Audit date | 2026-09-16 |
+| Audit date | 2026-09-16 (re-audited 2026-09-17 after `main` moved to `82be4146`) |
 | Branch audited | `arena/01a0ac12-n8n-rust-v-4` (content of `origin/main`, merged in for audit) |
 | Rust implementation | none — correct for Phase 2 |
 | Reference source modified this cycle | **no** |
@@ -122,6 +122,7 @@ this cycle. Per brief §12 an unexecuted gate is never counted as a pass.
 | ISSUE-005 | `DisabledHandling` / `typeVersion` untested | MEDIUM | Agent 4 | OPEN |
 | ISSUE-006 | Global-state + env hidden coupling | LOW | Agent 1 + Agent 3 | OPEN |
 | ISSUE-007 | 3 missing isolation docs | MEDIUM | Agents 2, 3, 4 | OPEN |
+| ISSUE-008 | Unreviewed supabase commit direct to `main`; anon-readable orchestration tables | MEDIUM | orchestrator | OPEN |
 
 ## Final Integration Checklist (brief §22)
 ```
@@ -154,6 +155,30 @@ Ordered path to VERIFIED:
 6. Re-run `bash tests/integration/run_gate.sh` on the VPS with n8n 2.9.4 + PostgreSQL live → require
    offline stages PASS **and** 11/11 PASS.
 7. Re-route future work through agent branches → `integration` → `main` (ISSUE-001).
+
+## Re-audit — 2026-09-17
+
+`main` advanced `0b87375f → 82be4146` (supabase migration schema, `.env.example`, `.gitignore`,
+`skills-lock.json`, `.agents/skills/**` — 45 files, +2820). Merged into this branch and the full
+offline gate was re-executed.
+
+| Check | Result (re-run) | Delta vs 2026-09-16 |
+| :--- | :--- | :--- |
+| Contract conformance | **21/21 PASS** | unchanged |
+| Boundary & dependency audit | **PASS**, 28 edges | unchanged |
+| Circular dependencies | 16 (3 flagged) | unchanged |
+| Hidden coupling signals | 8 | unchanged |
+| Phase-2 Rust guard | clean | unchanged |
+| `reference/n8n/**` modified | **no** | unchanged |
+| Golden fixtures / 11/11 baseline modified | **no** | unchanged |
+| Live 11/11 | **NOT RUN** (no docker / no n8n host) | unchanged |
+| Agent branches `agent-1..4` | still at bootstrap `e65a2f38` | unchanged |
+
+**Verdict:** the new commit is **non-blocking** for Phase 2 — it adds orchestration tooling only and
+violates no LEGO boundary. It is logged as `ISSUE-008` for process (direct-to-main, recurrence of
+ISSUE-001) and for the `anon_read_*` RLS policies that make all orchestration tables world-readable.
+
+No previously reported issue has been resolved since the first audit. **Status is unchanged.**
 
 ## Final Status
 **BLOCKED**

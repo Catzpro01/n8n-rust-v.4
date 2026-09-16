@@ -189,3 +189,46 @@ Brief §22 requires "all boundaries documented".
 **Impact:** Node, Connection and Validation are held at status `BLOCKED` in `LEGO-MASTER-MAP.md`.
 **Required owner:** Agent 2, Agent 3, Agent 4 respectively.
 **Status:** OPEN
+
+---
+
+## ISSUE-008
+
+**Detected by:** Agent 5 (re-audit 2026-09-17)
+**Affected:** repository owner / orchestrator
+**Type:** Phase-scope + governance (out-of-band commit to `main`)
+**Severity:** MEDIUM
+
+**Description:**
+Commit `82be4146` *"feat(supabase): add supabase migration schema, environment template and agent
+skills"* was pushed **directly to `main`** on 2026-09-17, again bypassing the
+`agent branch → Agent 5 review → integration → main` flow required by brief §17 and
+`LEGO_PARALLEL_RULES.md` §4. This is a recurrence of ISSUE-001, now with an unreviewed commit.
+
+**Content (45 files, +2820):** `docs/supabase_migration.sql`, `.env.example`, `.gitignore`,
+`skills-lock.json`, `.agents/skills/**` (supabase / supabase-server / postgres-best-practices).
+
+**Gate verdict on the content itself: NON-BLOCKING for Phase 2.** Re-audit evidence:
+* Touches **none** of `reference/n8n/**`, `crates/**`, `apps/**`, `contracts/**`, `tests/reference/**`.
+* Introduces **no Rust** — Phase-2 Rust guard still clean.
+* Golden reference and 11/11 baseline untouched.
+* Contract conformance re-run: **21/21 PASS**. Boundary audit re-run: **PASS**, 28 edges unchanged.
+
+**Two observations requiring an owner decision:**
+
+1. **Orchestration DB is not a Phase-2 LEGO.** `docs/supabase_migration.sql` defines
+   `tasks`, `agent_messages`, `agent_dependencies`, `locks`, `agent_status`. This is *Arena
+   orchestration infrastructure*, not an n8n LEGO — it must **not** be confused with the
+   `persistence` LEGO (n8n execution storage) which still has no contract (ISSUE-002).
+   Recommend it be documented as out-of-LEGO tooling so no agent treats it as a LEGO boundary.
+2. **`.env.example` contains a real project URL and a real publishable key**
+   (`https://gqctxugkxekdqxsaqrum.supabase.co`, `sb_publishable_IcoOhu2j_...`).
+   The Supabase *publishable* key is designed to be public and `SUPABASE_SECRET_KEY` is correctly
+   left as `your_secret_key_here`, so **this is not a credential leak**. However the seeded RLS
+   policies grant `anon, authenticated` **SELECT on every orchestration table**
+   (`anon_read_tasks`, `anon_read_messages`, …). Combined with a public URL + publishable key, the
+   full task/message/dependency history of all five agents is world-readable.
+   Recommend dropping the `anon_read_*` policies or restricting them to `authenticated`.
+
+**Required owner:** repository owner / orchestrator (not a LEGO owner — Agent 5 does not modify it).
+**Status:** OPEN
