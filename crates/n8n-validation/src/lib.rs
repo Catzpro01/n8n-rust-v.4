@@ -31,10 +31,12 @@ pub fn validate_dangling_connections(
             return Err(ValidationError::DanglingConnection(source.clone()));
         }
         for list in outputs.values() {
-            for sublist in list {
-                for item in sublist {
-                    if !node_set.contains(item.node.as_str()) {
-                        return Err(ValidationError::DanglingConnection(item.node.clone()));
+            for slot in list {
+                if let Some(items) = slot {
+                    for item in items {
+                        if !node_set.contains(item.node.as_str()) {
+                            return Err(ValidationError::DanglingConnection(item.node.clone()));
+                        }
                     }
                 }
             }
@@ -54,9 +56,11 @@ pub fn detect_cycles(
 
     for (src, outputs) in connections {
         for list in outputs.values() {
-            for sublist in list {
-                for item in sublist {
-                    adj.entry(src.as_str()).or_default().push(item.node.as_str());
+            for slot in list {
+                if let Some(items) = slot {
+                    for item in items {
+                        adj.entry(src.as_str()).or_default().push(item.node.as_str());
+                    }
                 }
             }
         }
@@ -105,6 +109,7 @@ pub fn detect_cycles(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use indexmap::IndexMap;
 
     #[test]
     fn test_node_uniqueness_pass() {
@@ -125,20 +130,20 @@ mod tests {
     fn test_cycle_detection_pass() {
         let nodes = vec!["A".to_string(), "B".to_string(), "C".to_string()];
         let mut conns = WorkflowConnections::new();
-        let mut a_outs = HashMap::new();
-        a_outs.insert("main".into(), vec![vec![n8n_connection::ConnectionItem {
+        let mut a_outs = IndexMap::new();
+        a_outs.insert("main".into(), vec![Some(vec![n8n_connection::ConnectionItem {
             node: "B".into(),
             connection_type: "main".into(),
             index: 0,
-        }]]);
+        }])]);
         conns.insert("A".into(), a_outs);
 
-        let mut b_outs = HashMap::new();
-        b_outs.insert("main".into(), vec![vec![n8n_connection::ConnectionItem {
+        let mut b_outs = IndexMap::new();
+        b_outs.insert("main".into(), vec![Some(vec![n8n_connection::ConnectionItem {
             node: "C".into(),
             connection_type: "main".into(),
             index: 0,
-        }]]);
+        }])]);
         conns.insert("B".into(), b_outs);
 
         assert!(detect_cycles(&nodes, &conns).is_ok());
@@ -149,20 +154,20 @@ mod tests {
         let nodes = vec!["A".to_string(), "B".to_string()];
         let mut conns = WorkflowConnections::new();
         
-        let mut a_outs = HashMap::new();
-        a_outs.insert("main".into(), vec![vec![n8n_connection::ConnectionItem {
+        let mut a_outs = IndexMap::new();
+        a_outs.insert("main".into(), vec![Some(vec![n8n_connection::ConnectionItem {
             node: "B".into(),
             connection_type: "main".into(),
             index: 0,
-        }]]);
+        }])]);
         conns.insert("A".into(), a_outs);
 
-        let mut b_outs = HashMap::new();
-        b_outs.insert("main".into(), vec![vec![n8n_connection::ConnectionItem {
+        let mut b_outs = IndexMap::new();
+        b_outs.insert("main".into(), vec![Some(vec![n8n_connection::ConnectionItem {
             node: "A".into(),
             connection_type: "main".into(),
             index: 0,
-        }]]);
+        }])]);
         conns.insert("B".into(), b_outs);
 
         assert!(detect_cycles(&nodes, &conns).is_err());

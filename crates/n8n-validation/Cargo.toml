@@ -10,3 +10,4 @@ n8n-connection = { path = "../n8n-connection" }
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
+indexmap.workspace = true
