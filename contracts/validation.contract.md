@@ -6,7 +6,7 @@
 | LEGO | `validation` — parameter type validation, runtime schemas, structural graph rules |
 | Reference | n8n 2.9.4, `packages/workflow/src/{schemas,type-validation,type-guards}.ts` |
 | Blueprint | `docs/isolation/validation.md` |
-| Status | ANALYZED → CONTRACT |
+| Status | TESTED (implementation: `tests/reference/agent-4/validation/workflow-rules.ts`, 10/10; reference untouched) |
 | Supersedes | previous 4-rule contract (see `ISSUE-003` — arbitration verdict **Option A**) |
 
 ## 1. Purpose
@@ -80,7 +80,7 @@ No circular dependency: nothing this LEGO imports depends on it.
 | `tryToParseTime` | not shaped `hh:mm(:ss)` | `Value is not a valid time` (shape only — `25:99` passes; frozen quirk) |
 | `tryToParseArray` / `Object` | wrong shape / bad JSON | `Value is not a valid array` / `Value is not a valid object` |
 | `tryToParseBinary` | missing `mimeType` or `data`/`id` | `Value is not a valid binary data object` |
-| `tryToParseUrl` / `Jwt` | invalid | `The value "<v>" is not a valid url.` / `The value "<v>" is not a valid JWT token.` |
+| `tryToParseUrl` / `Jwt` | invalid | `The value "<v>" is not a valid url.` (where `<v>` is already `https://`-prefixed if the input had no `://`; only `ALLOWED_URL_PROTOCOLS` accepted; the prefixed string is the return value) / `The value "<v>" is not a valid JWT token.` |
 | `tryToParseJsonToFormFields` | bad key/type | `Key '<k>' in field <i> is not valid for form fields` etc.; non-JSON → `Value is not valid JSON` |
 | zod `.parse` | shape mismatch | `ZodError` with `issues[]` (first issue is what the API layer returns as 400 — see `contracts/api.contract.md` §3) |
 | `validateWorkflow` (new) | rule violation | never throws; accumulates **all** errors; `valid:false` if `errors.length > 0`; malformed input (not an object, `nodes` not array) → single `INVALID_INPUT` error |
@@ -107,7 +107,7 @@ Public via `n8n-workflow` (`index.ts` re-exports):
 - `validateFieldType`, `getValueDescription`, all `tryToParse*`.
 - `is*` guards listed in `docs/isolation/validation.md` §3.2.
 - All `*Schema` exports of `schemas.ts`.
-- **New (to be added under this boundary, TypeScript only):** `validateWorkflow(workflow: WorkflowContract, options?: { allowCycles?: boolean }): { valid: boolean; errors: ValidationError[] }`, with composable parts `checkNodeUniqueness`, `checkDanglingConnections`, `detectCycles`.
+- **New (implemented standalone in `tests/reference/agent-4/validation/workflow-rules.ts`; promotion into `packages/workflow/src` requires a boundary extension via manifest):** `validateWorkflow(workflow: WorkflowContract, options?: { allowCycles?: boolean }): { valid: boolean; errors: ValidationError[] }`, with composable parts `checkNodeUniqueness`, `checkDanglingConnections`, `detectCycles`.
 
 ## 11. Compatibility requirements
 1. Every message string in §7 is frozen — editor UI and node tests match on them.

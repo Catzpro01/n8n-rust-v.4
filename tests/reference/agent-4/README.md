@@ -17,6 +17,8 @@ tests/reference/agent-4/
 ├── persistence/persistence.test.ts
 ├── credentials/credentials.test.ts
 ├── api/api-envelope.test.ts
+├── validation/workflow-rules.ts        NEW CAPABILITY (ISSUE-003 Option A): validateWorkflow / NodeUniqueness / DanglingConnections / CycleDetection
+├── validation/validation.test.ts       golden A/B/C vs real n8n-workflow 2.9.4 + D vs workflow-rules
 └── live/                            11-step smoke harness + baselines (see live/README.md)
 ```
 
@@ -59,5 +61,6 @@ Note: `node --test <dir>` only auto-discovers `*.test.js`; pass the `.ts` files 
 | Persistence workflow save/load; execution save/load/status | `persistence.test.ts` #3–#4 golden, #5 live (+SQLite rows), #1 flatted |
 | Credentials lookup / encrypt-decrypt / missing / invalid (no real secrets) | `credentials.test.ts` #1–#3 (real `Cipher`/`Credentials`, dummy key), #4 golden, #5 live |
 | API valid / invalid / not found / validation error / success | `api-envelope.test.ts` #1–#7 golden, #8 live |
+| Validation: validateFieldType / tryToParse* / guards / schemas (frozen) + workflow rules (new) | `validation/validation.test.ts` 10 cases |
 
 Last run (2026-09-16, live n8n 2.9.4 in sandbox): trigger 8/8, scheduler 7/7, webhook 7/7, persistence 5/5, credentials 5/5, api 8/8; smoke 11/11 before and after.

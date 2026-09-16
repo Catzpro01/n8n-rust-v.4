@@ -4,7 +4,7 @@
 **Reference:** n8n 2.9.4 (`reference/n8n`, upstream `b6dc2787`)
 **Contract:** `contracts/validation.contract.md`
 **Resolves:** `ISSUE-007` (missing isolation doc) · records the Agent-4 half of `ISSUE-003` (arbitration verdict: **Option A** — Validation holds sole enforcement rights for CycleDetection at workflow-validation level)
-**Status:** ANALYZED → CONTRACT (source-verified; no source change in this unit)
+**Status:** TESTED (ANALYZED → CONTRACT → TESTED; reference files untouched; enforcement capability implemented standalone in `tests/reference/agent-4/validation/workflow-rules.ts`, 10/10 tests, smoke gate 11/11 unaffected)
 
 ---
 
@@ -64,7 +64,7 @@ Non-responsibilities.
 | `tryToParseObject` | `(unknown) → object` | `Value is not a valid object` — JSON-parses strings, rejects arrays |
 | `tryToParseBinary` | `(unknown) → IBinaryData` | `Value is not a valid binary data object` — needs `mimeType` + (`data` \| `id`) |
 | `tryToParseJsonToFormFields` | `(unknown) → FormFieldsParameter` | per-key/per-field messages, `Value is not valid JSON` |
-| `tryToParseUrl` | `(unknown) → string` | `The value "x" is not a valid url.` |
+| `tryToParseUrl` | `(unknown) → string` | `The value "x" is not a valid url.` — prefixes `https://` when `://` is absent (returned value is prefixed), rejects protocols outside `ALLOWED_URL_PROTOCOLS` |
 | `tryToParseJwt` | `(unknown) → string` | `The value "x" is not a valid JWT token.` |
 | `getValueDescription` | `(T) → string` | never; arrays → `array`, objects → `object`, everything else → `'<String(value)>'` quoted (verified live) |
 | `validateFieldType` | `(fieldName, value, type: FieldType, {strict?, valueOptions?, parseStrings?}) → ValidationResult` | **never throws** — returns `{valid:false, errorMessage}` |
@@ -126,8 +126,9 @@ No runtime cycle: nothing this LEGO imports imports it back.
 ## 5. The enforcement capabilities (NEW, per ISSUE-003 Option A)
 
 The contract now declares three rule-enforcement capabilities the reference lacks. They are specified
-here as **interfaces + algorithms**, to be implemented in a later task (Phase 2 stays TypeScript,
-no Rust). Input is the `WorkflowContract` (`contracts/workflow.contract.md`); output is
+here as **interfaces + algorithms** and implemented — TypeScript only, no Rust — as a standalone module
+`tests/reference/agent-4/validation/workflow-rules.ts` (not wired into any reference path; the three
+reference files in the boundary are untouched). Tests: `tests/reference/agent-4/validation/validation.test.ts`. Input is the `WorkflowContract` (`contracts/workflow.contract.md`); output is
 `{ valid: boolean; errors: ValidationError[] }`.
 
 | Capability | Algorithm | Error code | Message shape |
