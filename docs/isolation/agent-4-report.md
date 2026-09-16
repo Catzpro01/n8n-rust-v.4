@@ -1,10 +1,10 @@
 # Agent 4 — Phase 2 LEGO Isolation Report
 
-**LEGOs:** Trigger · Webhook · Scheduler · Persistence · Credentials · API
+**LEGOs:** Trigger · Webhook · Scheduler · Persistence · Credentials · API · **Validation** (added via TASK-303-validation / ISSUE-003 Option A)
 **Reference:** n8n **2.9.4** (`reference/n8n`, upstream `b6dc2787c45677a29a9612cd27eb911302961a83`)
 **Branch:** `arena/01a0ac06-n8n-rust-v-4` (Agent 4 worktree, branched from `agent-4` @ `e65a2f38`)
-**Date:** 2026-09-16
-**Overall status:** **VERIFIED** (all six LEGOs)
+**Date:** 2026-09-16 (rev. 2026-09-17)
+**Overall status:** **VERIFIED** (all seven LEGOs; Agent 5 verdict TASK-305 7f60fbd6, merged 99b47f86)
 
 ---
 
@@ -109,11 +109,17 @@ offline golden tests, and optional live replays.
 | Persistence | `persistence/persistence.test.ts` | flatted wire format; status transitions golden; execution save/load golden; workflow save/load golden; live save→load→run→status + SQLite rows + `workflow_history` | 5/5 |
 | Credentials | `credentials/credentials.test.ts` | encrypt/decrypt + independent EVP_BytesToKey cross-check; wrong key/short input; `Credentials` NO_DATA/DECRYPTION_FAILED/INVALID_JSON; golden redaction; live lookup/missing/invalid | 5/5 |
 | API | `api/api-envelope.test.ts` | health/401; `{data}` envelope; `{code,message,hint,meta}`; zod raw issue 400; not-found variants; public API; baseline; live valid/invalid/404/validation/success | 8/8 |
+| Validation | `validation/validation.test.ts` | goldens A/B/C against real `n8n-workflow` 2.9.4 (`Workflow` accepts duplicates/dangling/cycles — parity); goldens D1–D10 against `workflow-rules.ts` (new opt-in rules); fixture anti-drift; robustness fuzz (300 docs, no-throw, determinism, self-loop shape) | 12/12 |
 
 Golden fixtures (INPUT / EXPECTED OUTPUT / ERROR / SIDE EFFECT): `golden/api.golden.json`,
 `credentials.golden.json` (dummy credential; plaintext never stored), `execution-status.golden.json`,
 `trigger-scheduler.golden.json`, `webhook.golden.json`; recorder: `live/record-golden.mjs`.
 No credentials or secrets are in the repo; the credential tests use a throw-away key and dummy values.
+
+**Language-neutral parity oracle (Phase 3 bridge):** `validation/gen-fixtures.ts` emits
+`validation/fixtures/D01…D14.json` (`{input:{workflow,options}, expected}`, key-sorted canonical JSON) from the TS
+oracle. Any port of the Validation rules — in particular `crates/n8n-validation` — is accepted only if it
+reproduces all 14 with zero diffs (`docs/isolation/validation-rust-port-spec.md` §10).
 
 ## 7. Reference Regression (11/11)
 
@@ -161,6 +167,9 @@ installed, so `regression_gate.py` could not run. Instead n8n **2.9.4** was inst
 5. **Stack traces in error bodies** — present because the sandbox instance runs with `NODE_ENV` unset; tests strip `stacktrace` and must never assert on it.
 6. **Scheduler `onTick` exceptions** are not caught by `ScheduledTaskManager`; relies on node/Trigger wrappers.
 7. **Multi-main** semantics (triggers leader-only, webhooks on all mains) documented from source but not exercised live (single instance).
+8. **Phase 3 `crates/n8n-validation` is NON-CONFORMANT** to `contracts/validation.contract.md` (review `validation-rust-port-review.md` F1–F7; 3 blocking: no `validate_workflow`/`allow_cycles`, cycles over all edge types instead of `main` only, fail-fast `Result` instead of an accumulated report). It landed on main directly, outside any Agent 5 gate. Full port specification: `validation-rust-port-spec.md`; implementation/`cargo test` is Orchestrator-on-VPS per instruction. Agent 4 has not modified `crates/**`.
+9. **Self-inflicted regression found and fixed (2026-09-17):** re-recording the baselines for caveat C2 (41d066ba) bumped `historyCount` 2→5 in `baseline-before.json`, and the offline persistence golden pinned the literal value → 4/5. The assertion now checks the invariant (`≥ 2`, integer) instead of a monotonic per-instance counter. Lesson recorded: goldens must not pin instance counters (ids, history, execution numbers).
+10. **Agent 5 caveat C1** (re-run of the 11/11 gate on VPS + PostgreSQL) remains open — cannot be closed from this sandbox. C2 closed (`live/README.md`).
 
 ## 11. Status
 
@@ -172,6 +181,8 @@ installed, so `regression_gate.py` could not run. Instead n8n **2.9.4** was inst
 | Persistence | **VERIFIED** |
 | Credentials | **VERIFIED** |
 | API | **VERIFIED** |
+| Validation (TypeScript, Phase 2) | **VERIFIED** |
+| Validation Rust port (`crates/n8n-validation`, Phase 3, not Agent 4-owned) | **ANALYZED** — spec delivered, crate NON-CONFORMANT, awaiting VPS implementation |
 
-Criteria met: source-verified docs + contracts, 40/40 reference tests, 11/11 smoke before and
-after, live verification on n8n 2.9.4, zero modification of Agent 1/2/3 files, no Rust, no secrets.
+Criteria met: source-verified docs + contracts, 52/52 reference tests, 11/11 smoke before and
+after (re-recorded back-to-back 2026-09-17), live verification on n8n 2.9.4, zero modification of Agent 1/2/3 files, no Rust, no secrets.
