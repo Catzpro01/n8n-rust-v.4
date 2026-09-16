@@ -7,7 +7,7 @@
 | Phase | 2 — LEGO Isolation |
 | Rust | **NOT STARTED** (Phase 2 forbids it — this document is TypeScript-only) |
 | Branch | `arena/01a0abf6-n8n-rust-v-4` @ `6105e6f5` |
-| Delivered unit | `tasks/TASK-201.yaml` → `results/TASK-201.md` (isolation), this unit `tasks/TASK-301-workflow.yaml` (specification & handoff) |
+| Delivered unit | `tasks/TASK-201.yaml` → `results/TASK-201.md` (isolation), this unit `tasks/TASK-303-workflow-handoff.yaml` (specification & handoff) |
 | Self-verification | `npm run verify` → **11/11 PASS** (~27 s) |
 | Guardian verification | **NOT YET** — Agent 5 has not audited this branch; request in §5 |
 
@@ -172,8 +172,8 @@ No new isolation code, no changes under `reference/n8n/**`, no Rust, no merge of
 `reference/n8n/packages/workflow/**` + `docs/isolation/workflow.md`. The delivered isolation cannot
 physically live there — it needs `packages/`, `tools/`, `scripts/`, `tests/`, `tasks/`, `results/`.
 This branch therefore treats those as **additive, agent-1-scoped** paths and declares them explicitly in
-`tasks/TASK-301-workflow.yaml`. Requested: either accept the superset as the Agent-1 boundary, or return
-a corrected `allowed_paths` list — in which case the isolation unit must be relocated before merge.
+`tasks/TASK-303-workflow-handoff.yaml`. Requested: either accept the superset as the Agent-1 boundary, or
+return a corrected `allowed_paths` list — in which case the isolation unit must be relocated before merge.
 
 ---
 
@@ -184,3 +184,47 @@ Envelopes are in `docs/isolation/workflow-bus-outbox.json` (schema-matched to
 Supabase migration (`docs/supabase_migration.sql`), no client, and no `service_role` key is available;
 RLS grants `anon` SELECT only, so the publishable key cannot insert. Delivery requires either the
 secret key or an orchestrator-side flush.
+
+---
+
+## 7. Reconciliation with `main`'s TASK-301 spec (`docs/isolation/workflow_spec.md`)
+
+While this unit was being written, `main` advanced to `f71f66b8` (`merge(agent-1): Phase 2 pure workflow
+domain model isolation spec verified by Agent 5`) and now carries a **second Agent-1 artifact** produced
+by the orchestrator's pipeline: `docs/isolation/workflow_spec.md` (TASK-301, gated by TASK-302).
+It is a specification document only — it changes no code, no `reference/**` and no boundary — but three
+of its statements sit next to this LEGO's measured reality:
+
+| # | `workflow_spec.md` says | Measured reality | Action needed |
+| :--- | :--- | :--- | :--- |
+| 1 | §3.5 lists `detectCycles(nodes, connections): boolean` as a pure function **of the Workflow LEGO** | No such function exists in `packages/workflow/src` (§3.2), and it is not part of the frozen 15-symbol surface | **Decision required** — see §7.2 |
+| 2 | §3.2/§3.3 give Rust-shaped signatures (`getNode(...) -> NodeReference`, `Vec<String>`) | Phase 2 forbids Rust; the frozen surface is TypeScript with the signatures in §2.1 | Read those lines as Phase-3 sketches, not Phase-2 deliverables |
+| 3 | §6 pre-writes "Reference Smoke Test: 11/11 PASS" and "Interface Contract Verification by Agent 5: VERIFIED" | This branch's *measured* results are 11/11 gates + 7/7 live engine; guardian verification of this branch is still **pending** (§5) | Guardian should verify the branch, not the merge message |
+
+### 7.1 The "11/11" label is ambiguous — three different gates wear it
+
+| Named "11/11" | Where | What it actually counts | Runnable in this sandbox? |
+| :--- | :--- | :--- | :--- |
+| VPS smoke test | `tests/reference/baseline/SMOKE_TEST_RESULTS.md` | 11 end-to-end n8n lifecycle checks (start, editor, login, create, save, load, manual exec, 1-node, linear, webhook, execution recorded) | **No** — needs the VPS |
+| Isolation gate | `tools/workflow-isolation-gate.mjs` (`npm run verify`) | **11 gates** G01–G11 (boundary, kernel, ports, reference hash, extraction, 2× tsc, tests, digest, strict, live) | **Yes** (≈27 s) |
+| Agent-5 regression gate | `tests/integration/regression_gate.py` | **5 checks** (healthz, editor UI, webhook, DB execution, contracts) — `total_checks = 5` | **No** — needs live n8n on `127.0.0.1:5678` |
+
+Discrepancy worth recording: `tasks/TASK-302-agent5-gate.yaml` sends
+`gate_score: "11/11 PASS"`, while the gate actually executed in `results/TASK-302-agent5-gate.md` logged
+`GATE RESULT: 5/5 CHECKS PASSED`. Both results are legitimate; only the label is unsupported.
+Recommendation: the merge condition should name the gate *and* its check count, e.g.
+`vps_smoke_11/11` vs `isolation_gate_11/11` vs `agent5_gate_5/5`.
+
+### 7.2 Open decision — does the Workflow LEGO gain `detectCycles`?
+
+| Option | Consequence | Status |
+| :--- | :--- | :--- |
+| **A. Keep the model faithful** (current) — Workflow declares the acyclic invariant, does not enforce it; Validation owns enforcement as a **new capability** | Public surface stays at 15 symbols; digest baseline 252/252 remains meaningful; no reference-behavior drift | **implemented** (`contracts/workflow.contract.md` §4/§5, §3.2 above) |
+| **B. Add `detectCycles` to the Workflow LEGO** as an explicitly **new** capability | Surface 15 → 16; requires updating `manifest/ownership.json → publicSurface`, `MODEL_SURFACE_NAMES`, the `.extract` facade, the 19/19 surface-parity test, and re-running the 11/11 gate. The function would also have to be listed as *not* reference-derived | **not done** — needs an owner decision; adding an unrequested algorithm to a frozen boundary is exactly what the boundary gate exists to prevent |
+
+### 7.3 Task-ID collision resolved
+
+`main` added `tasks/TASK-301-workflow-isolation.yaml` (id `TASK-301-workflow-isolation`, orchestrator
+pipeline). This branch's handoff unit was renamed
+`tasks/TASK-301-workflow.yaml` → **`tasks/TASK-303-workflow-handoff.yaml`** (id
+`TASK-303-workflow-handoff`) so the two units cannot be mistaken for each other.

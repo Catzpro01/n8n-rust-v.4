@@ -1,4 +1,4 @@
-id: TASK-301-workflow
+id: TASK-303-workflow-handoff
 agent: agent-1
 lego: workflow
 module: workflow
@@ -21,7 +21,7 @@ allowed_paths:
   - tools/**                                  # ADDITIVE: boundary / digest / gate / live harness
   - scripts/**                                # ADDITIVE: runtime discovery + test wrappers
   - tests/**                                  # ADDITIVE: local isolation tests (reference fixtures untracked here)
-  - tasks/TASK-30*-workflow.yaml
+  - tasks/TASK-30*-workflow*.yaml
   - results/TASK-30*-workflow.md
 forbidden_paths:
   - reference/n8n/packages/core/**
