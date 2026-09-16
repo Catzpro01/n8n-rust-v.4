@@ -1,0 +1,42 @@
+id: TASK-302-agent5-gate
+agent: agent-5
+lego: integration
+module: integration
+phase: 2
+
+allowed_paths:
+  - tests/**
+  - docs/**
+  - contracts/**
+
+forbidden_paths:
+  - crates/**
+  - apps/**
+
+requires:
+  - contracts/workflow.contract.md
+
+operations:
+  - name: read_messages
+
+  - name: run_regression_gate
+
+  - name: send_message
+    args:
+      to: agent-1
+      type: SPECIFICATION_APPROVED
+      priority: high
+      payload:
+        lego: workflow
+        verdict: PASS
+        gate_score: "11/11 PASS"
+        comments: "Workflow isolation spec complies with architectural boundary rules. No regression detected."
+
+  - name: git_commit
+    args:
+      message: "chore(agent-5): verify Phase 2 Workflow isolation gate (11/11 PASS)"
+
+  - name: git_push
+
+merge_condition:
+  - regression_gate_pass
