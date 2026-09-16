@@ -180,6 +180,17 @@ Agent 5 verification invalidates the Workflow-LEGO digest baseline. Source-verif
 | P-NODE-MODEL | `node-helpers::getNodeOutputs` | `(workflow: Workflow, node: INode, nodeTypeData: INodeTypeDescription) => Array<NodeConnectionType \| INodeOutputConfiguration>` | ✅ name & shape |
 | P-NODE-RENAME | `node-parameters/rename-node-utils::renameFormFields` | `(node: INode, renameField: (v: NodeParameterValueType) => NodeParameterValueType) => void` — **mutates in place**; only rewrites `parameters.formFields.values[*].html` where `fieldType === 'html'` | ✅ name & shape |
 | P-NODE-REFERENCE | `node-reference-parser-utils::applyAccessPatterns` | `(expression: string, previousName: string, newName: string) => string` — early-returns the input unchanged when `previousName` is absent | ✅ name & shape |
+| P-NODE-MODEL | `node-helpers::getNodeInputs` | `(workflow: Workflow, node: INode, nodeTypeData: INodeTypeDescription) => Array<NodeConnectionType \| INodeInputConfiguration>` — dynamic branch evaluates `nodeTypeData.inputs` expression via the expression runtime; on failure logs a warning and returns `[]` | ✅ name & shape (frozen during Connection CD-05 validation) |
+| P-NODE-MODEL | `node-helpers::getConnectionTypes` | `(connections: Array<NodeConnectionType \| INodeInputConfiguration \| INodeOutputConfiguration>) => NodeConnectionType[]` — string entries pass through, object entries project `.type`, `undefined` filtered out | ✅ name & shape (frozen during Connection CD-05 validation) |
+
+**`onError: 'continueErrorOutput'` output semantics** (runtime-confirmed by Agent 2 at
+`node-helpers.ts:1140-1200`, answering Connection LEGO's open question in CD-05):
+
+1. The resolved outputs array is **deep-copied** first — the shared `INodeTypeDescription.outputs` is never mutated.
+2. If there is exactly **one** pre-existing output, its `displayName` is set to `'Success'` (string entries are first wrapped to `{ type }` objects); type is unchanged.
+3. A trailing `{ category: 'error', type: 'main' (NodeConnectionTypes.Main), displayName: 'Error' }` entry is **appended last** — for connection bookkeeping it is an ordinary output occupying the final index.
+4. This applies equally to dynamically-computed outputs (after their resolution/empty-fallback).
+
 
 Host-side opacity notes (accepted, documented, not source behavior):
 

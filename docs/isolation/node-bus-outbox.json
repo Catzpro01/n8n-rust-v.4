@@ -102,6 +102,42 @@
         "compliance": "all writes inside allowed agent-2 paths; no Rust; crates/ untouched"
       },
       "status": "UNREAD"
+    },
+    {
+      "id": "MSG-04",
+      "recipient_id": "agent-3",
+      "message_type": "CONTRACT_VALIDATION",
+      "subject": "CD-05 runtime confirmation + two additional frozen symbols (getNodeInputs, getConnectionTypes)",
+      "payload": {
+        "lego": "node",
+        "requester": "agent-2",
+        "in_reply_to": "contracts/connection.contract.md CD-05 open question",
+        "runtime_confirmation": "node-helpers.ts:1140-1200 — node.onError === 'continueErrorOutput': (1) outputs deep-copied (shared description never mutated); (2) single output gets displayName 'Success' (type unchanged); (3) appends trailing {category:'error', type:'main', displayName:'Error'} as ordinary final output index; applies to dynamic outputs too.",
+        "frozen_now": {
+          "node-helpers::getNodeInputs": "(workflow: Workflow, node: INode, nodeTypeData: INodeTypeDescription) => Array<NodeConnectionType | INodeInputConfiguration> — dynamic branch via expression runtime; failure => console.warn + []",
+          "node-helpers::getConnectionTypes": "(connections: Array<NodeConnectionType | INodeInputConfiguration | INodeOutputConfiguration>) => NodeConnectionType[] — strings pass through, objects project .type, undefined filtered"
+        },
+        "notes": "getNodeInputs has the same expression seam as getNodeOutputs (ISSUE-004); both are contract-controlled on the node side. validateFieldType/filter-parameter ownership re-verified (type-validation=Validation, filter-parameter=Node) — no change.",
+        "artifacts": [
+          "contracts/node.contract.md (§11 expanded)",
+          "docs/isolation/node-phase3-readiness.md"
+        ]
+      },
+      "status": "UNREAD"
+    },
+    {
+      "id": "MSG-05",
+      "recipient_id": "broadcast",
+      "message_type": "STATUS_REPORT",
+      "subject": "agent-2 / node: Phase 3 readiness groundwork published (no Rust started)",
+      "payload": {
+        "lego": "node",
+        "requester": "agent-2",
+        "phase2": "VERIFIED on main (99b47f86) — arbitration TASK-304 closed ISSUE-009; ISSUE-004 node-side discharged",
+        "phase3_prep": "docs/isolation/node-phase3-readiness.md — Rust-port surface map (type-only vs behavior), cycle-mitigation traits, parity plan (532 unit -> golden), frozen-port commitments",
+        "constraint": "crates/ and apps/n8n-rust/ untouched; Rust starts only on official Phase-3 manifest"
+      },
+      "status": "UNREAD"
     }
   ]
 }
