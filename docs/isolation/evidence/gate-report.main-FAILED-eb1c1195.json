@@ -1,0 +1,150 @@
+{
+  "generatedAt": "2026-09-16T22:51:46.333Z",
+  "lego": "workflow",
+  "phase": "phase-2-isolation",
+  "reference": {
+    "pinnedVersion": "2.9.4",
+    "pinnedCommit": "b6dc2787c45677a29a9612cd27eb911302961a83",
+    "sourceRoot": "reference/n8n/packages/workflow",
+    "artifact": "n8n-workflow@2.9.1",
+    "rules": [
+      "reference/n8n/** is read-only. The isolation layer must never modify or duplicate-and-diverge it.",
+      "Ownership is declared here and enforced by tools/workflow-boundary-map.mjs (drift gate)."
+    ]
+  },
+  "runtime": "/home/user/n8n-rust-v.4/.runtime/node_modules",
+  "behaviorChange": "ISOLATION FAILED",
+  "digestEvidence": {
+    "corpus": {
+      "workflows": [
+        "tests/reference/01-empty-workflow/workflow",
+        "tests/reference/02-one-node/workflow",
+        "tests/reference/03-linear/workflow",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/ai-news-digest",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/daily-weather-report",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/email-summary",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/extract-from-file",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/google-sheets-processing",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/invoice-pipeline",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/lead-qualification",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/multi-agent-research",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/rag-assistant",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/youtube-auto-chapters",
+        "workflow-sdk/test-fixtures/committed-workflows/0",
+        "workflow-sdk/test-fixtures/committed-workflows/1",
+        "workflow-sdk/test-fixtures/committed-workflows/2",
+        "workflow-sdk/test-fixtures/committed-workflows/3",
+        "workflow-sdk/test-fixtures/committed-workflows/4"
+      ],
+      "workflowCount": 18,
+      "sectionCount": 14,
+      "hashAlgorithm": "sha256/32",
+      "rawDigestsLocation": "temporary \u2014 recompute with: node tools/model-digest-runner.cjs --source reference|isolated [--mode reference|strict]"
+    },
+    "verdict": {
+      "beforeVsAfter": "NONE DETECTED",
+      "strictPortIndependence": "NO HIDDEN COUPLING"
+    },
+    "beforeVsAfter": {
+      "identical": 252,
+      "differing": 0
+    },
+    "strictVsBefore": {
+      "identical": 218,
+      "differingPortDependent": 34,
+      "differingUndeclared": 0
+    }
+  },
+  "rustImplementation": "NOT STARTED",
+  "totals": {
+    "gates": 10,
+    "passed": 8,
+    "failed": 2
+  },
+  "gates": [
+    {
+      "id": "G01",
+      "title": "boundary drift gate (owned files, crossings, inbound edges)",
+      "status": "PASS",
+      "detail": "src files scanned         : 105\nLEGO owned files          : 10\ncompile closure           : 103\noutbound crossings        : 21\nundeclared crossings      : 0\ninbound edges             : 9\nmonorepo import sites     : 6318 root + 5 subpath\n\nBoundary check: PASS (no drift vs packages/workflow-lego/manifest/boundary.expectations.json)",
+      "ms": 307
+    },
+    {
+      "id": "G02",
+      "title": "kernel snapshot conformance (constants/vocabulary vs reference)",
+      "status": "PASS",
+      "detail": "Kernel snapshot check: PASS (snapshots match the pinned reference source)",
+      "ms": 39
+    },
+    {
+      "id": "G03",
+      "title": "port surface matches the imports of the owned sources",
+      "status": "PASS",
+      "detail": "Required port surface (from actual imports in owned files):\n\n@lego/ports/checksum-digest  [value]\n   symbols : jsSHA\n   used by : workflow-checksum (jssha)\n@lego/ports/config  [value]\n   symbols : getGlobalState\n   used by : workflow (./global-state)\n@lego/ports/constants  [value]\n   symbols : MANUAL_CHAT_TRIGGER_LANGCHAIN_NODE_TYPE, NODES_WITH_RENAMABLE_CONTENT, NODES_WITH_RENAMABLE_FORM_HTML_CONTENT, NODES_WITH_RENAMEABLE_TOPLEVEL_HTML_CONTENT, STARTING_NODE_TYPES\n   used by : workflow (./constants)\n@lego/ports/errors  [value]\n   symbols : ApplicationError, UserError\n   used by : workflow (./errors), workflow (@n8n/errors)\n@lego/ports/expression-runtime  [value]\n   symbols : Expression\n   used by : workflow (./expression)\n@lego/ports/node-model  [value]\n   symbols : * as NodeHelpers\n   u",
+      "ms": 269
+    },
+    {
+      "id": "G04",
+      "title": "reference tree byte-identical to the pinned hashes",
+      "status": "FAIL",
+      "detail": "/usr/local/bin/node /home/user/n8n-rust-v.4/tools/workflow-reference-manifest.mjs --check exited 1\n\nREFERENCE MUTATION DETECTED:\n  - reference tree changed: 15051 files (root 0b7176f13ae3) vs pinned 15050 files (root f8da35180669)\n  -   new file      : packages/workflow/src/node-model/index.ts",
+      "ms": 426
+    },
+    {
+      "id": "G05",
+      "title": "isolation extraction (pure import rewrites only)",
+      "status": "PASS",
+      "detail": "isolated unit written to packages/workflow-lego/.extract\n  owned files copied : 10\n  port rewrites      : 25 across 10 files\n    @lego/ports/checksum-digest : 1\n    @lego/ports/config : 1\n    @lego/ports/constants : 1\n    @lego/ports/errors : 2\n    @lego/ports/expression-runtime : 1\n    @lego/ports/node-model : 1\n    @lego/ports/node-reference : 1\n    @lego/ports/node-rename : 1\n    @lego/ports/observable-object : 1\n    @lego/ports/utils : 2\n    @lego/ports/vocabulary : 13",
+      "ms": 276
+    },
+    {
+      "id": "G06",
+      "title": "TypeScript build PASS (isolated unit, ports only)",
+      "status": "PASS",
+      "detail": "tsc -p .extract/tsconfig.json \u2192 0 errors",
+      "ms": 1608
+    },
+    {
+      "id": "G07",
+      "title": "TypeScript build PASS (versioned boundary/ports/facade)",
+      "status": "PASS",
+      "detail": "tsc --noEmit \u2192 0 errors",
+      "ms": 1095
+    },
+    {
+      "id": "G08",
+      "title": "unit tests PASS (boundary, extraction, equivalence, strict isolation, surface)",
+      "status": "FAIL",
+      "detail": "/usr/local/bin/node --test test/*.test.mjs exited 1\ntype: 'test'\n  ...\n# Subtest: reference tree is byte-identical to the pinned hashes\nnot ok 18 - reference tree is byte-identical to the pinned hashes\n  ---\n  duration_ms: 449.446396\n  type: 'test'\n  location: '/home/user/n8n-rust-v.4/packages/workflow-lego/test/05-surface-parity.test.mjs:48:1'\n  failureType: 'testCodeFailure'\n  error: |-\n    \n    REFERENCE MUTATION DETECTED:\n      - reference tree changed: 15051 files (root 0b7176f13ae3) vs pinned 15050 files (root f8da35180669)\n      -   new file      : packages/workflow/src/node-model/index.ts\n    \n    \n    1 !== 0\n    \n  code: 'ERR_ASSERTION'\n  name: 'AssertionError'\n  expected: 0\n  actual: 1\n  operator: 'strictEqual'\n  stack: |-\n    TestContext.<anonymous> (file:///home/user/n8n-rust-",
+      "ms": 13482
+    },
+    {
+      "id": "G09",
+      "title": "BEFORE vs AFTER digest: BEHAVIOR CHANGE NONE",
+      "status": "PASS",
+      "detail": "252 section comparisons across 18 workflows \u2014 0 differences \u00b7 strict: 218 identical, 34 in declared port sections",
+      "ms": 2675
+    },
+    {
+      "id": "G10",
+      "title": "strict port mode: no hidden coupling to the reference runtime",
+      "status": "PASS",
+      "detail": "# cancelled 0 \u00b7 # skipped 0 \u00b7 # todo 0 \u00b7 # duration_ms 1729.37145",
+      "ms": 1769
+    }
+  ],
+  "note": "RED RECORD, not a baseline. Captured by agent-1 on merged main (eb1c1195, branch arena/01a0ac62-n8n-rust-v-4) while cross-reviewing the Node LEGO handoff. G04 + G08 fail because reference/n8n/packages/workflow/src/node-model/index.ts was added inside the hash-pinned read-only reference tree (15051 files vs 15050 pinned). All behaviour gates (G09 digest 252/252, G10 strict, G11 live) still pass, so this is a provenance/integrity break, not a behaviour change. See docs/isolation/workflow-review-of-node-lego.md.",
+  "captured": {
+    "by": "agent-1",
+    "command": "npm run verify:fast",
+    "base_commit": "eb1c1195",
+    "branch": "arena/01a0ac62-n8n-rust-v-4",
+    "failed": [
+      "G04",
+      "G08"
+    ],
+    "failing_test": "test/18 reference tree is byte-identical to the pinned hashes (18/19 pass, exact env from the gate)",
+    "isolated_failure": "node tools/workflow-reference-manifest.mjs --check -> exit 1: 15051 files (root 0b7176f13ae3) vs pinned 15050 (root f8da35180669), new file packages/workflow/src/node-model/index.ts",
+    "restored": "docs/isolation/evidence/gate-report.json was restored to the committed verified baseline after capture"
+  }
+}

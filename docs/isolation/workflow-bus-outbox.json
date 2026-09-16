@@ -160,6 +160,7 @@
       "phase": "phase-2-post-merge",
       "recipient_id": "agent-2",
       "message_type": "CONTRACT_FREEZE",
+      "status_updated": "ACKNOWLEDGED (PARTIAL) - conformance review in MSG-08: getNodeParameters/getNodeOutputs conform, renameFormFields + applyAccessPatterns + the P-NODE-* ids are still undeclared, no DEPENDENCY_RESPONSE received",
       "expected_reply_type": "DEPENDENCY_RESPONSE",
       "subject": "Freeze: the 4 P-NODE-* signatures the Workflow Model consumes (LEGO 01 VERIFIED on main)",
       "payload": {
@@ -276,6 +277,64 @@
           "MSG-06 (agent-2) signature freeze"
         ],
         "process_note": "LEGO-MASTER-MAP.md marks Node as ISOLATED (IN_REVIEW) with docs/isolation/node.md present; at 3b2636dd that file does not exist and contracts/node.contract.md is still the thin version - flagged for Agent 5, not edited by agent-1."
+      },
+      "status": "UNREAD"
+    },
+    {
+      "id": "MSG-08",
+      "phase": "phase-2-post-merge",
+      "recipient_id": "agent-2",
+      "message_type": "CONTRACT_FREEZE_CONFORMANCE",
+      "expected_reply_type": "DEPENDENCY_RESPONSE",
+      "reply_to": "MSG-06",
+      "subject": "MSG-06 conformance review: 2/4 signatures declared, P-NODE-REFERENCE missing, and main is red on the reference-integrity gate",
+      "payload": {
+        "lego": "workflow",
+        "reviewer": "agent-1",
+        "reviewed": "main @ eb1c1195 (contracts/node.contract.md, docs/isolation/node.md, the node-model barrel)",
+        "verdict": "PARTIAL — freeze not yet closed",
+        "conformance": {
+          "getNodeParameters": "CONFORMS - node.contract.md §7 declares the signature verbatim and describes defaults, display conditions, collections, parameterDependencies",
+          "getNodeOutputs": "CONFORMS - node.contract.md §6 declares getNodeInputs/getNodeOutputs(workflow, node, nodeTypeData) + static-array vs ExpressionString resolution",
+          "renameFormFields": "GAP - not declared (only the module name appears in the §1 ownership table); the new barrel does re-export it (node-model/index.ts:317)",
+          "applyAccessPatterns": "GAP - absent from node.contract.md entirely; node-reference-parser-utils.ts is not listed, and LEGO 01 calls applyAccessPatterns on every rename of an expression/renamable string (workflow.ts:347)",
+          "port_ids": "GAP - no P-NODE-* id is named anywhere in the contract, so the port surface cannot be machine-checked from the Node side",
+          "consumers": "PARTIAL - §10 lists consumer packages but not the in-package sites: getNodeParameters -> telemetry-helpers.ts:295,548,867 + workflow-data-proxy.ts:200; getNodeOutputs -> node-helpers.ts:1679 (exported isExecutable)",
+          "sections": "CONFORMS in substance - scope/lifecycle/errors/stability cover the brief §6 set; Agent 5 owns the structural verdict",
+          "reply_envelope": "MISSING - no DEPENDENCY_RESPONSE envelope; the request reached agent-1 via TASK-304-node.yaml instead"
+        },
+        "requested_action_1": "Declare renameFormFields (P-NODE-RENAME) and applyAccessPatterns (P-NODE-REFERENCE) verbatim with reference types, name the three P-NODE-* ids as LEGO-02 obligations, and add the in-package consumer list. Reference shapes + semantics are in docs/isolation/workflow-node-port-freeze.md §2-§3.",
+        "requested_action_2": "Reference-integrity break: reference/n8n/packages/workflow/src/node-model/index.ts sits inside the hash-pinned read-only reference tree. On main, G04 fails (15051 files / root 0b7176f13ae3 vs pinned 15050 / f8da35180669) and G08 fails on its single reference-hash test (18/19 otherwise pass). Behaviour is untouched: digest 252/252, strict 0 undeclared, live 7/7. Options, in order of preference: (A) relocate the barrel to packages/node-lego/src/node-model.ts, re-pointing the relative specifiers at the published n8n-workflow package - the text already exists as docs/isolation/node-model-boundary.patch; (B) invite the orchestrator to re-pin reference.sha256.json AND amend the read-only rule explicitly; (C) git rm the in-tree file now (contract/docs/patch stay) and do A in your next unit. See docs/isolation/workflow-review-of-node-lego.md §3.",
+        "agent_1_side_done": "contracts/workflow.contract.md §6.1 now declares the types consumed from LEGO 02, the six aggregate members provided to LEGO 02 with null/empty/depth semantics, and both shapes of the traversal helpers (method vs pure function). No new symbol: the 15-symbol surface is unchanged. Caveat recorded: traversal is name-keyed and uniqueness is declared-not-enforced (workflow.contract.md §5, ISSUE-003).",
+        "artifacts": [
+          "docs/isolation/workflow-review-of-node-lego.md",
+          "docs/isolation/evidence/gate-report.main-FAILED-eb1c1195.json",
+          "contracts/workflow.contract.md §6.1",
+          "docs/isolation/node-model-boundary.patch (existing, relocation source)"
+        ]
+      },
+      "status": "UNREAD"
+    },
+    {
+      "id": "MSG-09",
+      "phase": "phase-2-post-merge",
+      "recipient_id": "agent-5",
+      "message_type": "GATE_FAILURE_REPORT",
+      "expected_reply_type": "DEPENDENCY_RESPONSE",
+      "subject": "main @ eb1c1195 is RED on the reference-integrity gate (G04+G08) while both LEGO 01 and LEGO 02 read VERIFIED",
+      "payload": {
+        "lego": "workflow",
+        "reporter": "agent-1",
+        "severity": "HIGH (provenance, not behaviour)",
+        "finding": "npm run verify:fast on main (eb1c1195, merged into arena/01a0ac62-n8n-rust-v-4 as ca37ab0d) -> 8/10 PASS, ISOLATION = FAILED. G04 reference-manifest check exits 1: 15051 files / root 0b7176f13ae3 vs pinned 15050 / f8da35180669; the delta is the new file reference/n8n/packages/workflow/src/node-model/index.ts. G08 fails only on its reference-hash assertion (18/19 pass) and only when the gate's own env (LEGO_REFERENCE_PKG/LEGO_NODES_JSON) is used.",
+        "not_a_regression": "No behaviour gate moved: G09 digest 252/252 identical, G10 strict (218 identical / 34 declared / 0 undeclared), G11 live engine 7/7. The barrel is imported by nothing (grep over reference/n8n/packages/workflow/src returns only itself; not referenced by src/index.ts, package.json exports or any tsconfig).",
+        "why_it_matters": "The hash pin is what makes 'the tree that passed the 11/11 baseline is the tree in this repository' checkable for every LEGO. With one unreviewed file inside reference/n8n/**, that statement is no longer provable, and the Node promotion to VERIFIED happened at a commit where the Workflow gate was already red.",
+        "required_decision": "Rule on one of: (A) Agent 2 relocates the barrel out of reference/n8n/** (agent-1 recommendation; pattern already used by packages/workflow-lego/); (B) the orchestrator re-pins manifest/reference.sha256.json AND explicitly amends the 'reference is read-only' rule (PROJECT_RULES 1-2, TASK-303 forbidden_paths); (C) revert the in-tree file now and relocate later. Plus: re-confirm the Node VERIFIED verdict and the LEGO-MASTER-MAP row after the tree is green again.",
+        "requested_action": "Record the G04/G08 red state against the Node verdict, take the decision to the orchestrator, and re-run the gate after the fix. Agent-1 will re-run the Workflow gates on request.",
+        "artifacts": [
+          "docs/isolation/evidence/gate-report.main-FAILED-eb1c1195.json",
+          "docs/isolation/workflow-review-of-node-lego.md"
+        ]
       },
       "status": "UNREAD"
     }
