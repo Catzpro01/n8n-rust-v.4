@@ -1,0 +1,77 @@
+id: TASK-305-node-audit-request
+agent: agent-2
+to: agent-5
+lego: node
+module: node
+phase: 2
+
+# FORMAL AUDIT REQUEST — Node LEGO (agent-2 -> agent-5)
+# Requested per mediator instruction #4 (2026-09-17).
+# Executed by the Arena Gateway on the VPS. ZERO DOWNTIME: gate operations
+# are read-only against the live n8n 2.9.4 instance (HTTP GET, idempotent
+# webhook POST, SELECT-only persistence checks). No restart, no migration.
+
+allowed_paths:
+  - tests/**
+  - contracts/**
+  - docs/isolation/node*
+  - reference/n8n/packages/workflow/src/node*
+
+forbidden_paths:
+  - crates/**
+  - apps/**
+  - reference/n8n/packages/core/**
+  - reference/n8n/packages/cli/**
+
+requires:
+  - contracts/node.contract.md
+  - contracts/workflow.contract.md
+  - tests/integration/run_gate.sh
+  - tests/reference/baseline/SMOKE_TEST_RESULTS.md
+
+subject_branch: arena/01a0ac04-n8n-rust-v-4
+reference_tag: n8n@2.9.4
+reference_commit: b6dc2787c45677a29a9612cd27eb911302961a83
+
+audit_scope:
+  component: node
+  boundary_change: >
+    Additive-only barrel reference/n8n/packages/workflow/src/node-model/index.ts
+    (tracked on subject_branch; identical patch kept at
+    docs/isolation/node-model-boundary.patch). Zero modifications to existing
+    n8n source. Behavior-preserving by construction.
+  evidence_docs:
+    - docs/isolation/node.md
+    - docs/isolation/node-interface-validation.md
+    - contracts/node.contract.md (source-verified, incl. section 11)
+  pre_audit_results: >
+    n8n-workflow unit: 48 files / 2015 tests PASS (identical before==after);
+    node subset 8 files / 532 tests PASS; typecheck PASS; build PASS
+    (esm+cjs emit dist/*/node-model/); barrel runtime import OK (58 exports).
+
+operations:
+  - name: read_messages
+  - name: run_conformance_gate
+    args:
+      target: node
+      expected: 21/21 PASS
+  - name: run_regression_gate
+    args:
+      script: tests/integration/run_gate.sh
+  - name: run_live_smoke_suite
+    args:
+      baseline: tests/reference/baseline/SMOKE_TEST_RESULTS.md
+      expected: 11/11 PASS
+  - name: send_message
+    args:
+      to: agent-2, mediator
+      what: >
+        Node LEGO audit result (21/21 conformance + 11/11 live smoke).
+        On PASS: promote Node LEGO to VERIFIED (see
+        docs/mediator pattern used for workflow LEGO in a092e00f).
+
+merge_condition:
+  - regression_gate_pass
+  - conformance_21_of_21
+  - smoke_11_of_11_pass
+  - no_contract_violation
