@@ -102,8 +102,13 @@ Full report: [`workflow-verification.md`](./workflow-verification.md) · machine
 | G10 | strict port mode — no hidden coupling | PASS |
 | G11 | live engine — load, save, 1-node, linear, webhook, execution record | PASS · 7/7 |
 
-**BEFORE:** n8n 2.9.4 → 11/11 PASS (VPS baseline, `tests/reference/baseline/SMOKE_TEST_RESULTS.md`)
-**AFTER:** n8n 2.9.4 → 11/11 PASS (unchanged; reference tree hash-pinned, live engine re-verified 7/7)
+**BEFORE:** n8n 2.9.4 → 11/11 PASS — VPS baseline, PostgreSQL + full CLI (`tests/reference/baseline/SMOKE_TEST_RESULTS.md`, `reference/n8n/REFERENCE_VERSION.md`).
+**AFTER:** n8n 2.9.4 → 11/11 PASS — unchanged, and re-verified here in two ways:
+
+1. **Byte identity (G04):** the tree that produced the 11/11 baseline is hash-pinned; all 15 050 files are unchanged, so the code that passed cannot have drifted.
+2. **Live engine re-run (G11):** 7 checks executed against the real engine, including a webhook POST over HTTP (`HTTP 200 → {"smoke_test":"PASS","verified":true}`) and a real manual execution producing the expected items.
+
+Two paths of the baseline cannot be replayed in this sandbox and are therefore *not* claimed locally: the full CLI/Postgres persistence path and Code-node execution (n8n 2.x runs JS code out of process via the task runner). Both are listed under `knownLimitations` in `evidence/live-verification.json`.
 
 The digest corpus is n8n's own workflows (3 golden + 10 AI-workflow-builder reference workflows + 5 workflow-sdk fixtures, including `ai_tool` / `ai_languageModel` / `ai_outputParser` connection types), executed against real node descriptions from `n8n-nodes-base`.
 

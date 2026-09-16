@@ -244,7 +244,7 @@ const checklist = [
 	['linear workflow PASS', ['G11']],
 	['webhook PASS', ['G11']],
 	['execution persistence PASS', ['G11']],
-	['reference smoke test 11/11 PASS', ['G04']],
+	['reference smoke test 11/11 PASS (VPS baseline; here: hash-pinned + live engine re-verified)', ['G04', 'G11']],
 ];
 
 const md = [];

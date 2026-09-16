@@ -52,7 +52,7 @@ Full record: `docs/isolation/workflow.md` · contract: `docs/isolation/workflow-
 | linear workflow PASS | ✓ |
 | webhook PASS | ✓ |
 | execution persistence PASS (harness-level; DB-level in VPS baseline) | ✓ |
-| reference smoke test 11/11 PASS | ✓ |
+| reference smoke test 11/11 PASS | ✓ VPS baseline; unchanged by hash-identity + live engine 7/7 re-verified |
 
 ### Live verification (reference execution engine)
 
