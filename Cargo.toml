@@ -6,6 +6,8 @@ members = [
     "crates/n8n-connection",
     "crates/n8n-validation",
     "crates/n8n-node-model",
+    "crates/n8n-execution-data",
+    "crates/n8n-expression",
 ]
 
 [workspace.package]
