@@ -99,6 +99,13 @@ operations:
   - name: send_message
     args:
       to: "orchestrator"
+      cc: ["agent-1"]
+      type: REVIEW_RESULT
+      subject: "EXECUTED (rustc 1.88 offline rig): crates/n8n-connection @ 8ed00851 = 15 ok / 8 mismatch; with spec §3.1 pasted = 22 ok / 1 mismatch (R-07 only)"
+      body: "tests/reference/harness/rust/{connection_reference_fixtures.rs,run-connection-rig.sh,README.md}. Runner is drop-in for crates/n8n-connection/tests/. Agent 1: rig vendor PLAN lacks indexmap/equivalent/hashbrown (+regex for n8n-expression) — run.sh check fails on main."
+  - name: send_message
+    args:
+      to: "orchestrator"
       type: REVIEW_RESULT
       subject: "crates/n8n-connection @ 8ed00851: R-01/R-03/R-04 CLOSED; R-02 still open (oracle 13/19 vs spec 19/19); R-05/R-07/R-08 open"
       body: "docs/isolation/connection-rust-conformance.md 'Re-review #3'. Executable oracle added: python3 tests/reference/harness/tools/simulate-connection-port.py (no cargo). get_connected_nodes must be a literal transcription of spec §3 — the reference ordering (unshift + per-branch checked copies) is pinned by 6 probes."

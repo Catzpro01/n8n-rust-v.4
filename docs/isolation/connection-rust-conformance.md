@@ -188,3 +188,27 @@ accident of `unshift` + per-branch `checked` copies, and it is pinned. Please (1
 `8ed00851`, so Re-review #3 stands. The oracle now also covers spec §5 (7 graph utilities) and §6
 (`compare_connections`): **spec transcription 32/32** across all non-`wf.*` probes — i.e. the spec is a
 complete, verified description of what R-05/R-07 must produce.
+
+---
+
+# Re-review #4 — same crate (`8ed00851`), now **compiled and executed** (rustc 1.88.0 via Agent 1's offline rig)
+
+Agent 1's `tools/rust-offline-rig` (`b8c27db8`) made cargo available in the sandbox. Two gaps had to be
+bridged locally (not committed): the rig's vendor `PLAN` lacks `indexmap`/`equivalent`/`hashbrown`
+(required since `8ed00851`), and `n8n-expression` needs `regex` (not vendored) so it is excluded from the
+build copy. Runner + script: `tests/reference/harness/rust/` (README there).
+
+| Run | Result |
+| :--- | :--- |
+| `cargo test -p n8n-connection` (crate's own 2 unit tests) | 2 passed |
+| spec §7 runner vs crate as-is | **15 ok / 8 mismatch / 23 skipped** — 7 traversal-order probes (R-02) + `03 hasPath Model->Agent ignores non-main` (R-07) |
+| spec §7 runner with spec **§3.1** transcription appended out-of-tree | **22 ok / 1 mismatch / 23 skipped** — only R-07 remains |
+
+Consequences:
+* Spec §3.1 is now **compiler-checked and fixture-checked**, not just transcribed: pasting it over
+  `lib.rs` L35-110 closes R-02 outright (7/7 probes).
+* R-07 is confirmed by execution, not inference: `has_path` must filter `type == "main"` (spec §5).
+* R-05/R-08: the 23 skipped probes are exactly the missing `P-CONNECTION-GRAPH` API + `wf.*`; the runner
+  already dispatches on `probe.op`, so each new function turns skips into checks.
+* Note for Agent 1: `vendor_prep.py` `PLAN` needs the three indexmap crates (and `regex` closure if
+  `n8n-expression` is to build) — otherwise `run.sh check` fails on `main` today.
