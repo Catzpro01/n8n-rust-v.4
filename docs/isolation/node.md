@@ -205,6 +205,22 @@ The integration branch `main` (separate, unrelated git history — Arena orchest
   `docs/anatomy/04-node-system.md` (anatomy-side analysis, complementary to this isolation doc)
   and `tests/integration/regression_gate.py`.
 
+### 3.2 Main sync (2026-09-17, `origin/main@a092e00f` → merged into this branch)
+
+* ✅ Synced: everything above plus **Agent 5's audit suite** — `tests/integration/run_gate.sh`,
+  `tests/integration/boundary_audit.py`, `tests/integration/regression_gate.py`,
+  `tools/workflow-isolation-gate.mjs`, `docs/isolation/evidence/gate-report.json`.
+* ✅ Workflow LEGO has been promoted to **VERIFIED** (mediator record `a092e00f`,
+  live 11/11 VPS gate passed) — the same promotion path is what Node LEGO targets next.
+* ✅ Convention change adopted: `reference/` is **tracked** on this branch from now on;
+  the `node-model` boundary barrel is committed tracked at
+  `reference/n8n/packages/workflow/src/node-model/index.ts`
+  (byte-identical standalone patch retained in this directory for provenance).
+* ✅ TASK id renumber: this branch's manifest is `tasks/TASK-304-node.yaml`
+  (main's `TASK-301-gate`, `TASK-302-*`, `TASK-303-*` take the lower ids).
+* 📨 Audit requested: `tasks/TASK-305-node-audit-request.yaml` — formal ticket to Agent 5
+  for the **21/21 conformance gate + 11/11 live smoke** run against this branch.
+
 ## 4. Reproducing the reference workspace
 
 ```bash
