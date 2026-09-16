@@ -154,6 +154,11 @@ Expected evidence, already committed:
 | `docs/isolation/evidence/live-verification.json` | live engine 7/7 PASS + known limitations L1–L3 |
 | `docs/isolation/workflow-verification.md` | generated human-readable report |
 
+**Guardian harnesses (integrated into `main` by `42a08301`), run against this branch:**
+`node tests/compatibility/contract_conformance.mjs` → **21/21 PASS**;
+`python3 tests/integration/boundary_audit.py` → **PASS** (28 edges documented, Rust guard clean).
+Only `tests/integration/regression_gate.py` remains unrunnable here (needs live n8n on `127.0.0.1:5678`).
+
 Honest limits (do not accept these gate rows at face value elsewhere):
 
 * **L1** — Code-node task runner cannot run in this sandbox (`additionalData.startRunnerTask` absent);
