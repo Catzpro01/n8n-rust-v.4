@@ -101,3 +101,70 @@ pub fn detect_cycles(
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_node_uniqueness_pass() {
+        let nodes = vec!["A".to_string(), "B".to_string(), "C".to_string()];
+        assert!(validate_node_uniqueness(&nodes).is_ok());
+    }
+
+    #[test]
+    fn test_node_uniqueness_fail() {
+        let nodes = vec!["A".to_string(), "B".to_string(), "A".to_string()];
+        assert_eq!(
+            validate_node_uniqueness(&nodes),
+            Err(ValidationError::DuplicateNodeName("A".to_string()))
+        );
+    }
+
+    #[test]
+    fn test_cycle_detection_pass() {
+        let nodes = vec!["A".to_string(), "B".to_string(), "C".to_string()];
+        let mut conns = WorkflowConnections::new();
+        let mut a_outs = HashMap::new();
+        a_outs.insert("main".into(), vec![vec![n8n_connection::ConnectionItem {
+            node: "B".into(),
+            connection_type: "main".into(),
+            index: 0,
+        }]]);
+        conns.insert("A".into(), a_outs);
+
+        let mut b_outs = HashMap::new();
+        b_outs.insert("main".into(), vec![vec![n8n_connection::ConnectionItem {
+            node: "C".into(),
+            connection_type: "main".into(),
+            index: 0,
+        }]]);
+        conns.insert("B".into(), b_outs);
+
+        assert!(detect_cycles(&nodes, &conns).is_ok());
+    }
+
+    #[test]
+    fn test_cycle_detection_fail() {
+        let nodes = vec!["A".to_string(), "B".to_string()];
+        let mut conns = WorkflowConnections::new();
+        
+        let mut a_outs = HashMap::new();
+        a_outs.insert("main".into(), vec![vec![n8n_connection::ConnectionItem {
+            node: "B".into(),
+            connection_type: "main".into(),
+            index: 0,
+        }]]);
+        conns.insert("A".into(), a_outs);
+
+        let mut b_outs = HashMap::new();
+        b_outs.insert("main".into(), vec![vec![n8n_connection::ConnectionItem {
+            node: "A".into(),
+            connection_type: "main".into(),
+            index: 0,
+        }]]);
+        conns.insert("B".into(), b_outs);
+
+        assert!(detect_cycles(&nodes, &conns).is_err());
+    }
+}

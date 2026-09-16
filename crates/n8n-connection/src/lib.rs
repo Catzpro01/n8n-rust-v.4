@@ -28,3 +28,33 @@ pub fn get_connected_nodes(connections: &WorkflowConnections, source_node: &str)
     }
     targets
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_connected_nodes() {
+        let mut conns = WorkflowConnections::new();
+        let mut outputs = HashMap::new();
+        outputs.insert(
+            "main".into(),
+            vec![
+                vec![ConnectionItem {
+                    node: "NodeB".into(),
+                    connection_type: "main".into(),
+                    index: 0,
+                }],
+                vec![ConnectionItem {
+                    node: "NodeC".into(),
+                    connection_type: "main".into(),
+                    index: 0,
+                }],
+            ],
+        );
+        conns.insert("NodeA".into(), outputs);
+
+        let connected = get_connected_nodes(&conns, "NodeA");
+        assert_eq!(connected, vec!["NodeB", "NodeC"]);
+    }
+}
