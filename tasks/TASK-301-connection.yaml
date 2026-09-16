@@ -56,6 +56,10 @@ operations:
       interface: "NodeHelpers::getNodeOutputs / getNodeInputs / getConnectionTypes"
       access: "read-only"
       description: "Declared input/output count per node (incl. onError='continueErrorOutput' extra 'Error' main output) is required to validate connection indexes."
+  - name: read_messages
+    args:
+      since: "eb1c1195"   # origin/main sync: Agent 2 Node LEGO promoted to VERIFIED (21/21 + 11/11 live)
+      result: "node.contract.md §6 now specifies getNodeInputs/getNodeOutputs/getConnectionTypes and category:'error' outputs -> D-09 dependency contract-satisfied; CD-05 updated. No reply yet on MSG-02 / D-08 from agent-1."
   - name: send_message
     args:
       to: "agent-5"
