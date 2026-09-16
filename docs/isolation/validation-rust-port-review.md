@@ -60,3 +60,18 @@ Acceptance: port the D1–D10 table (`docs/isolation/validation-golden-cases.md`
 `c912866b` landed on `main` directly (author Catzpro01) without an agent → Agent 5 → integration flow and without a `tasks/TASK-*.yaml` manifest — same pattern as ISSUE-001/008 (Agent 5 caveat C4). It also opens Phase 3 while caveat **C1** (11/11 re-run on the VPS + PostgreSQL) is still open, which Agent 5's verdict named as the precondition for the first Rust commit. Not Agent 4's call to make; recorded for the orchestrator.
 
 This review does not change any status: Validation LEGO (TypeScript) remains **VERIFIED**; the Rust crate has **no** status until it passes the goldens and an Agent 5 gate.
+
+---
+
+## 4. Addendum — `182df8de` "test(phase-3): add unit test suites"
+
+Re-checked after the follow-up commit (same author, direct to `main`). Diff to `crates/n8n-validation/src/lib.rs` is **test-only**: 4 `#[test]`s (`uniqueness pass/fail`, `cycle pass/fail`). Library code is byte-identical to `c912866b`, so **all findings F1–F7 remain open**. Observations on the tests themselves:
+
+| Test | Covers | Contract gap it does *not* cover |
+|---|---|---|
+| `test_node_uniqueness_fail` | first duplicate reported | multiple duplicates (F3), frozen message (F5), `path` (F5) |
+| `test_cycle_detection_fail` | `A→B→A` on `main` is an error | this is golden **D6**, whose contract-expected result under default options is `valid:true` (F1) — the test asserts the **opposite** of the contract |
+| `test_cycle_detection_pass` | linear A→B→C | diamond DAG (no false positive), self-loop path, `ai_*`-only cycle → valid (F2, D8) |
+| — | — | dangling connections have **no** test at all (D4/D5, F4) |
+
+Coverage vs golden table D1–D10: **1 of 10** aligned (D2 linear), **1 of 10** contradicted (D6), 8 untested. Recommendation unchanged: no status for the crate until it implements §2 of this review and passes D1–D10.
