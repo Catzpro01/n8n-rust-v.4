@@ -29,6 +29,8 @@ Additional scope note: the crate covers only the **new capability** (§4.4). The
 
 ## 2. Required changes for conformance (spec for the crate owner)
 
+> Superseded by the full specification `docs/isolation/validation-rust-port-spec.md`; kept for history.
+
 ```rust
 pub struct ValidateOptions { pub allow_cycles: bool }          // Default: allow_cycles = true
 impl Default for ValidateOptions { fn default() -> Self { Self { allow_cycles: true } } }

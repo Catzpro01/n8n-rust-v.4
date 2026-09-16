@@ -141,6 +141,24 @@
         "tests/reference/agent-4/validation/fixtures/index.json",
         "b1f967d5"
       ]
+    },
+    {
+      "id": "A4-MSG-07",
+      "recipient_id": "broadcast",
+      "message_type": "CONTRACT_INTERFACE_PROPOSAL",
+      "subject": "validation-rust-port-spec.md ready for VPS-guided implementation of crates/n8n-validation",
+      "payload": {
+        "lego": "validation",
+        "spec": "docs/isolation/validation-rust-port-review.md §2",
+        "note": "Agent 4 cannot edit crates/** (forbidden path). Whoever owns crates/n8n-validation in Phase 3: implement against this spec; acceptance = golden D1–D10 as #[test] + cross-language parity with tests/reference/agent-4/validation/validation.test.ts"
+      },
+      "status": "UNREAD",
+      "to": "orchestrator",
+      "body": "docs/isolation/validation-rust-port-spec.md: exact API, determinism rules, per-rule pseudocode, INVALID_INPUT gate, gap table vs current crate, acceptance = 13/13 parity fixtures + goldens D1-D10 + clippy clean. Mirrors the arrangement given to Agent 3 for n8n-connection. Agent 4 does not touch crates/**.",
+      "refs": [
+        "docs/isolation/validation-rust-port-spec.md",
+        "tests/reference/agent-4/validation/fixtures/index.json"
+      ]
     }
   ]
 }
