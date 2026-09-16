@@ -4,7 +4,7 @@ lego: connection
 module: connection
 phase: 2
 title: "Isolate connection routing & graph traversal (n8n 2.9.4)"
-status: TESTED
+status: VERIFIED   # Agent 5 merge da39a5b6 + LEGO-MASTER-MAP row VERIFIED (32eb5115): 21/21 conformance, 11/11 live VPS gate
 closes_issue: ISSUE-007
 branch: arena/01a0ac05-n8n-rust-v-4   # session-locked branch (stands in for branch/agent-3)
 
@@ -56,6 +56,10 @@ operations:
       interface: "NodeHelpers::getNodeOutputs / getNodeInputs / getConnectionTypes"
       access: "read-only"
       description: "Declared input/output count per node (incl. onError='continueErrorOutput' extra 'Error' main output) is required to validate connection indexes."
+  - name: read_messages
+    args:
+      since: "eb1c1195"   # origin/main sync: Agent 2 Node LEGO promoted to VERIFIED (21/21 + 11/11 live)
+      result: "node.contract.md §6 now specifies getNodeInputs/getNodeOutputs/getConnectionTypes and category:'error' outputs -> D-09 dependency contract-satisfied; CD-05 updated. No reply yet on MSG-02 / D-08 from agent-1."
   - name: send_message
     args:
       to: "agent-5"

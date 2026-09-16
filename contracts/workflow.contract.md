@@ -91,6 +91,56 @@ Eleven declared ports, machine-checked by `node tools/workflow-port-surface.mjs 
 Cross-LEGO runtime edge of note: `workflow.ts:20 → expression` is **construction only**
 (`new Expression(this)` at `workflow.ts:134`); no method call crosses that seam.
 
+**Frozen peer signatures (`P-NODE-*`).** The four functions consumed from LEGO 02 —
+`P-NODE-MODEL::getNodeParameters`, `P-NODE-MODEL::getNodeOutputs`, `P-NODE-RENAME::renameFormFields`,
+`P-NODE-REFERENCE::applyAccessPatterns` — are frozen, with their verbatim reference shapes, the four call
+sites (`workflow.ts:110`, `:694`, `:448`, `:347`) and their observable semantics, in
+[`workflow-node-port-freeze.md`](../docs/isolation/workflow-node-port-freeze.md) (request:
+`docs/isolation/workflow-bus-outbox.json#MSG-06`; declared deviations `D-02`–`D-05` in
+[`workflow-port-contract.md`](../docs/isolation/workflow-port-contract.md) §4.1).
+
+Changing any of them — name, arity/parameter types, return shape, or observable semantics — invalidates
+the digest baseline recorded in `docs/isolation/evidence/model-digest.comparison.json` (**252/252
+identical** before vs after; strict mode **218 identical / 34 declared port-dependent / 0 undeclared**)
+and is valid only together with an amended `contracts/node.contract.md`, a re-extraction, a re-run of
+`npm run verify` and Agent-5 re-verification.
+
+### 6.1 Peer declarations — consumed from LEGO 02, provided to LEGO 02
+
+Declared at the request of Agent 2 (`tasks/TASK-304-node.yaml` → `send_message → agent-1`), validated by
+Agent 2 against source in `docs/isolation/node-interface-validation.md` (2026-09-17) and re-verified here
+at `main @ eb1c1195`. Cross-reference: `contracts/node.contract.md` §11.
+
+**Consumed from LEGO 02 — types** (existing `P-KERNEL-TYPES`, no change): `INode`, `INodes`, `IConnections`,
+`IConnection`, `IPinData`, `IWorkflowSettings`, `NodeConnectionType`, and the `NodeConnectionTypes` **value**.
+**Consumed from LEGO 02 — functions** (frozen, §6 above): `P-NODE-MODEL::getNodeParameters`,
+`P-NODE-MODEL::getNodeOutputs`, `P-NODE-RENAME::renameFormFields`, `P-NODE-REFERENCE::applyAccessPatterns`.
+
+**Provided to LEGO 02 — aggregate members.** All six are members of the already-frozen `Workflow` symbol
+(`workflow-handoff.md` §2.1); **this declaration adds no symbol**, so the 15-symbol surface, the manifest
+and the digest baseline are unaffected.
+
+| Member | Signature (source-verified) | Semantics |
+| :--- | :--- | :--- |
+| `Workflow.getNode` | `(nodeName: string) => INode \| null` (`workflow.ts:301`) | name-keyed; unknown name → `null`, never throws |
+| `Workflow.getNodes` | `(nodeNames: string[]) => INode[]` (`workflow.ts:309`) | silently skips unknown names **and emits `console.warn`** — observable behavior, see §7 |
+| `Workflow.getChildNodes` | `(nodeName: string, type?: NodeConnectionType \| 'ALL' \| 'ALL_NON_MAIN' = 'main', depth?: number = -1) => string[]` (`workflow.ts:576`) | forwards `connectionsBySourceNode` to the pure helper |
+| `Workflow.getParentNodes` | `(nodeName: string, type? = 'main', depth? = -1) => string[]` (`workflow.ts:590`) | forwards `connectionsByDestinationNode` to the pure helper |
+| `Workflow.getConnectedNodes` | `(connections: IConnections, nodeName: string, connectionType? = 'main', depth? = -1, checkedNodesIncoming?: string[]) => string[]` (`workflow.ts:605`) | takes the index explicitly; signature matches the pure helper 1:1 |
+| `Workflow.getStartNode` | `(destinationNode?: string) => INode \| undefined` (`workflow.ts:867`) | first trigger/poll node, skipping `disabled`; `undefined` when nothing qualifies |
+
+| Pure helper (re-exported by the barrel) | Signature | Note |
+| :--- | :--- | :--- |
+| `getChildNodes` / `getParentNodes` | `(connections: IConnections, nodeName: string, type? = 'main', depth? = -1) => string[]` (`common/get-child-nodes.ts`, `common/get-parent-nodes.ts`) | the index is the **first** parameter here, unlike the aggregate methods |
+| `getConnectedNodes` | same shape as the method (`common/get-connected-nodes.ts`) | shared traversal implementation |
+| `getNodeByName` | pure lookup (`common/get-node-by-name.ts`) | distinct from `Workflow.getNode`; both belong to the frozen surface |
+
+Shared traversal semantics: keys are node **names**; `depth = -1` means unlimited and `depth = 0` returns
+`[]`; `'ALL'` / `'ALL_NON_MAIN'` select connection types; a node absent from the supplied index returns
+`[]` (never throws). These helpers are only well-defined because node names are unique — an invariant this
+LEGO **declares and does not enforce** (§5): with duplicate names the reference overwrites on `setNodes`
+and the helpers answer for the surviving node. Neither LEGO may "fix" that behavior unilaterally.
+
 ## 7. Error behavior
 
 | Input | Behavior | Evidence |

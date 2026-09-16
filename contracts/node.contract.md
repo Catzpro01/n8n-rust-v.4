@@ -168,6 +168,33 @@ Validated against source 2.9.4 on 2026-09-17 — full evidence: `docs/isolation/
 Types consumed: `INode`, `IConnections`, `NodeConnectionType` — all owned by this contract;
 Agent 1 consumes them from here (rule 4 cross-reference for their contract update).
 
+### Provided to Workflow LEGO — FROZEN PORTS (agent-1 DEPENDENCY_REQUEST MSG-01, answered 2026-09-17)
+
+These four signatures are **frozen** (no renames, no type changes). Changing them after
+Agent 5 verification invalidates the Workflow-LEGO digest baseline. Source-verified against
+`n8n@2.9.4`; the `node-model` barrel re-exports all four.
+
+| Port | Symbol | Exact source signature (n8n@2.9.4) | Freeze |
+|---|---|---|---|
+| P-NODE-MODEL | `node-helpers::getNodeParameters` | `(nodePropertiesArray: INodeProperties[], nodeValues: INodeParameters \| null, returnDefaults: boolean, returnNoneDisplayed: boolean, node: Pick<INode,'typeVersion'> \| null, nodeTypeDescription: INodeTypeDescription \| null, options?: GetNodeParametersOptions) => INodeParameters \| null` | ✅ name & shape |
+| P-NODE-MODEL | `node-helpers::getNodeOutputs` | `(workflow: Workflow, node: INode, nodeTypeData: INodeTypeDescription) => Array<NodeConnectionType \| INodeOutputConfiguration>` | ✅ name & shape |
+| P-NODE-RENAME | `node-parameters/rename-node-utils::renameFormFields` | `(node: INode, renameField: (v: NodeParameterValueType) => NodeParameterValueType) => void` — **mutates in place**; only rewrites `parameters.formFields.values[*].html` where `fieldType === 'html'` | ✅ name & shape |
+| P-NODE-REFERENCE | `node-reference-parser-utils::applyAccessPatterns` | `(expression: string, previousName: string, newName: string) => string` — early-returns the input unchanged when `previousName` is absent | ✅ name & shape |
+
+Host-side opacity notes (accepted, documented, not source behavior):
+
+1. `packages/workflow-lego` declares `getNodeParameters`' 7th param as `options?: unknown`
+   — a deliberate widening of `GetNodeParametersOptions`; source shape is the authority above.
+2. `getNodeOutputs`' first param is declared `unknown` host-side (source: `Workflow`).
+   Per agent-1 ISSUE-004: output resolution at runtime calls into the **expression runtime**
+   (`workflow.expression.getSimpleParameterValue`), not Workflow internals — consistent with
+   this contract's "no expression evaluation" boundary.
+3. ⚠️ **Type correction against agent-1's draft port:** `applyAccessPatterns` takes/returns
+   **`string`**, not `NodeParameterValueType`. Passing values keyed from parameters must be
+   guarded to strings (numbers/booleans would break `Expression.includes` inside). Port
+   semantics unchanged; the source type is the frozen one.
+
+
 ### From Expression runtime (Agent 4 hand-off per the agent-2 role manifest)
 
 | Interface | Direction | Note |

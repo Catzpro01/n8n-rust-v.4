@@ -1,9 +1,9 @@
 diff --git a/packages/workflow/src/node-model/index.ts b/packages/workflow/src/node-model/index.ts
 new file mode 100644
-index 00000000..085a2c04
+index 00000000..77226767
 --- /dev/null
 +++ b/packages/workflow/src/node-model/index.ts
-@@ -0,0 +1,317 @@
+@@ -0,0 +1,326 @@
 +/**
 + * NODE MODEL — explicit internal boundary (barrel)
 + *
@@ -321,3 +321,12 @@ index 00000000..085a2c04
 +} from '../node-parameters/node-parameter-value-type-guard';
 +export { resolveRelativePath } from '../node-parameters/path-utils';
 +export { renameFormFields } from '../node-parameters/rename-node-utils';
++
++// ----------------------------------------------------------------------------
++// Node reference helpers — P-NODE-REFERENCE port consumed by the Workflow LEGO
++// (frozen per agent-1 DEPENDENCY_REQUEST MSG-01; see contracts/node.contract.md
++// section 11). Expression-evaluation stays outside; this is text-level
++// node-name rewriting only.
++// ----------------------------------------------------------------------------
++
++export { applyAccessPatterns } from '../node-reference-parser-utils';
