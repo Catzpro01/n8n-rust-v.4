@@ -264,13 +264,30 @@ md.push('', '## All gates', '');
 md.push('| # | gate | status | detail |', '| :--- | :--- | :--- | :--- |');
 for (const r of results) md.push(`| ${r.id} | ${r.title} | ${r.status} | ${r.detail.replace(/\n/g, ' ').slice(0, 220)} |`);
 if (existsSync(join(EVIDENCE, 'live-verification.json'))) {
+	/*
+	 * Two producers write this file with different shapes, so read it defensively:
+	 *   - the live engine harness (this gate, G11): { runtime: { 'n8n-core', … , note }, results: [{ detail }] }
+	 *   - the VPS smoke record (orchestrator):      { host, n8n_version, passed, total, results: [{ evidence }] }
+	 * A shape change here must never crash the report writer — an unreadable
+	 * report is worse than a terse one (see docs/isolation/workflow-review-of-node-lego.md, post-verdict note).
+	 */
 	const live = JSON.parse(readFileSync(join(EVIDENCE, 'live-verification.json'), 'utf8'));
+	const runtime = live.runtime ?? {};
+	const provenance = runtime['n8n-core']
+		? `Runtime: n8n-core ${runtime['n8n-core']} · n8n-nodes-base ${runtime['n8n-nodes-base']} · n8n-workflow ${runtime['n8n-workflow']} — ${runtime.note ?? ''}`
+		: `Runtime: recorded on host ${live.host ?? 'unknown'} · n8n ${live.n8n_version ?? MANIFEST.reference.pinnedVersion}${live.passed != null ? ` · ${live.passed}/${live.total} live checks PASS` : ''}`;
 	md.push('', '## Live verification (reference execution engine)', '');
-	md.push(`Runtime: n8n-core ${live.runtime['n8n-core']} · n8n-nodes-base ${live.runtime['n8n-nodes-base']} · n8n-workflow ${live.runtime['n8n-workflow']} — ${live.runtime.note}`, '');
+	md.push(provenance, '');
 	md.push('| # | check | status | detail |', '| :--- | :--- | :--- | :--- |');
-	for (const r of live.results) md.push(`| ${r.id} | ${r.title} | ${r.status} | ${r.detail.replace(/\n/g, ' ').slice(0, 200)} |`);
+	for (const r of live.results ?? []) {
+		const detail = String(r.detail ?? r.evidence ?? '').replace(/\n/g, ' ').slice(0, 200);
+		md.push(`| ${r.id} | ${r.title} | ${r.status} | ${detail} |`);
+	}
 	md.push('', '### Known limitations of the sandbox (not of the isolation)', '');
-	for (const l of live.knownLimitations) md.push(`- **${l.id} — ${l.topic}**: ${l.detail}`);
+	for (const l of live.knownLimitations ?? []) {
+		md.push(typeof l === 'string' ? `- ${l}` : `- **${l.id} — ${l.topic}**: ${l.detail}`);
+	}
+	if ((live.knownLimitations ?? []).length === 0) md.push('- none recorded in this run');
 }
 md.push(
 	'',

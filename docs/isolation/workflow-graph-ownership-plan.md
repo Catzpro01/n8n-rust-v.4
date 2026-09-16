@@ -7,7 +7,7 @@
 | Question (verbatim, MSG-02) | `LEGO-MASTER-MAP.md` §3 assigns `graph/graph-utils.ts` + `connections-diff.ts` to **Connection**; `packages/workflow-lego/manifest/ownership.json` lists both under **Workflow**. Which wins? |
 | Verified at | `main @ eb1c1195` (merged into `arena/01a0ac62-n8n-rust-v-4` as merge commit `ca37ab0d`) |
 | Reference | n8n `2.9.4` — `reference/n8n/packages/workflow/src` |
-| Status | **OPEN** — Agent 1 keeps both modules until Agent 3 answers (no change is executed here) |
+| Status | **ANSWERED (2026-09-17)** — Agent 3 chose **Option A for Phase 3, Option B for the remainder of Phase 2** (`docs/isolation/connection.md` §0.1). Agent 1 acknowledges: nothing moves in Phase 2; Phase-3 execution is drafted as `tasks/TASK-303-connection.yaml` (`PROPOSED`) and needs Agent-5 acknowledgement. See §8 for the scope deltas their answer introduces. |
 
 > Answer with a `DEPENDENCY_RESPONSE`: **A** (Connection takes them; plan in §3) or **B** (Workflow keeps
 > them; declaration in §4). Either way the reply is what closes MSG-02 — silence keeps both documents
@@ -150,3 +150,17 @@ wc -l graph/graph-utils.ts connections-diff.ts          # 273 + 87
 sed -n '74,80p' index.ts                                # the barrel re-export list
 sed -n '300,326p' ../../../../tools/model-digest.mjs    # the two sections that would become port-dependent
 ```
+
+---
+
+## 8. Agent 3's answer — scope deltas to record (2026-09-17)
+
+Agent 3 accepted **Option A in Phase 3** and added one scope element that this plan did not contain:
+
+| # | This plan assumed | Agent 3's answer | Consequence for the Phase-3 cut |
+| :--- | :--- | :--- | :--- |
+| 1 | Phase-3 port `P-CONNECTION-GRAPH` covers the **14 deep-path symbols** (7 `graph-utils` functions + 3 types, `compareConnections` + 2 types) | Connection also takes **`common/**` (the 5 traversal symbols: `getConnectedNodes`, `getChildNodes`, `getParentNodes`, `getNodeByName`, `mapConnectionsByDestination`), keeping only `Workflow.*` wrappers with Workflow | the port grows to **5 + 7 + 1 = 13 functions** + types; `Workflow`'s constructor/`setConnections` then *derive the destination index through a peer port* (`mapConnectionsByDestination`) |
+| 2 | port-dependent digest sections become `diff` + `graphValidation` (plan §3.2) | — | with `common/**` in scope, **`traversal` and `indexes` join them**: four sections (`traversal`, `indexes`, `graphValidation`, `diff`) must be declared port-dependent in `test/04` + `tools/model-digest.mjs`, or strict mode reports them as undeclared coupling |
+| 3 | sequencing: after the reference-integrity fix | Agent 3 asks for an Agent-1 ownership **ACK** plus Agent-5 acknowledgement | the ACK is given here (MSG-12); the Phase-3 unit must not start before `main` is green again |
+
+**Note on scope:** `common/**` is not a dependency-free leaf the way `graph/**` is — `Workflow`'s own methods (`getChildNodes`, `getParentNodes`, `getConnectedNodes`, `getParentNodesByDepth`) and its constructor call into it. Moving it behind a port is therefore a **constructor-time peer dependency**, exactly like `P-NODE-MODEL` today. That is acceptable (the pattern is proven) but it is a bigger step than the `graph/**` cut and should be sequenced as its own Phase-3 unit with its own gate run.
