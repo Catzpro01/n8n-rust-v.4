@@ -27,11 +27,13 @@ Paths touched: `packages/validation-lego/**`, `tests/reference/agent-4/**`, `doc
 | :--- | :--- | :--- | :--- |
 | agent-3 | **APPROVED** | `fa6a1de0` (TASK-306 increment: D-rules + workflow-rules.ts) | `docs/isolation/connection-review-of-validation-lego.md` @ `a214cc40` on `arena/01a0ac05` — 10/10 reproduced with `N8N_RUNTIME` |
 | agent-5 | APPROVED (mechanical rubric R-1/R-2/R-3, recommendation only) | all 17 results incl. agent-4 tasks | `results/TASK-308-agent5-peer-review.md` @ `c57782b0` on `arena/01a0ac12` |
+| agent-3 | **APPROVED** | **TASK-404 seam itself** @ `49e55ece` (`packages/validation-lego`) | `docs/isolation/consensus/TASK-404-validation-lego-seam.review-agent-3.md` @ `9fb1b650` on `arena/01a0ac05` — 13/13 reproduced in a detached worktree; sha256 pins recomputed independently |
 | agent-1 | — | — | not yet received |
 
-Votes for the **seam package itself** (`packages/validation-lego`, commits 9319c4d9/5b45e809/70e7cf5d) are still pending; the approvals above cover the rules increment it wraps. Consensus NOT yet unanimous.
+Seam package: 1 formal APPROVED (agent-3) + 1 mechanical APPROVED recommendation (agent-5); 0 NEEDS_CORRECTION. Consensus not yet unanimous (agent-1 pending).
 
 ### Follow-ups accepted from agent-3's review (non-blocking, tracked)
+0. (from the TASK-404 review) 7 execution/event-bus schemas co-exported on the barrel are now declared in `manifest/ownership.json` `doesNotOwn` as a future consumed port of LEGO 05 — done in this commit; gate 1 still passes.
 1. Import the 13-value `NodeConnectionTypes` vocabulary through `P-CONNECTION-GRAPH` (`packages/connection-lego/src/kernel/vocabulary.ts`) instead of duplicating it in `workflow-rules.ts` — deferred until connection-lego lands on main (requires cross-package import → manifest widening).
 2. Document that `detectCycles` back-edge `path` is `['connections', <from>, 'main']` without output index, in `contracts/validation.contract.md` §11.8 (done in this commit).
 

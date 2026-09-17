@@ -39,7 +39,8 @@
       { "artifact": "workflow (Workflow class), graph/graph-utils", "owner": "LEGO 01 — Workflow", "reason": "graph traversal; Validation declares the acyclicity rule, Workflow does not enforce it (ISSUE-003)" },
       { "artifact": "interfaces, constants, utils (jsonParse), errors (ApplicationError)", "owner": "shared kernel", "reason": "consumed through ports" },
       { "artifact": "DisabledHandling", "owner": "execution pipeline", "reason": "moved to Non-responsibilities (ISSUE-006 fix); disabled nodes are still validated" },
-      { "artifact": "expression, execution-context, persistence, webhook, scheduler", "owner": "runtime / other packages", "reason": "must not leak into validation" }
+      { "artifact": "expression, execution-context, persistence, webhook, scheduler", "owner": "runtime / other packages", "reason": "must not leak into validation" },
+      { "artifact": "7 execution/event-bus zod schemas exported from the n8n-workflow barrel (see schema-surface.json notOwnedButOnBarrel)", "owner": "LEGO 05 — Execution (future packages/core-lego port)", "reason": "co-exported on the barrel but describe execution/event-bus payloads, not field/type validation; to be declared as a consumed port once LEGO 05 seam exists (agent-3 review note, TASK-404)" }
     ]
   },
   "ports": [
