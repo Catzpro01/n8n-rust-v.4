@@ -14,6 +14,7 @@ packages/workflow-lego/.extract/
 
 # compiled output of the TypeScript LEGOs (reproducible via `npm run build`)
 packages/connection-lego/dist/
+packages/workflow-model-lego/dist/
 
 # verification runtime (scripts/setup-reference-runtime.sh)
 .runtime/

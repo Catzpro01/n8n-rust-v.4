@@ -90,6 +90,7 @@ asserts that confinement.
 | `TASK-ENGINE-ACTIVATION-01` | execution (activation lifecycle) | `contracts/execution.contract.md` ✅ | `docs/isolation/execution.md` ✅ | `packages/execution-engine/test/05-activation.test.mjs` 20/20 ✅ (ported from the two reference oracle suites) | `E10` ✅ | **IMPLEMENTED** |
 | `TASK-407-phase3-webhook-lego` | webhook | `contracts/webhook.contract.md` ✅ | `docs/isolation/webhook.md` ✅ | `packages/webhook-lego/test/routing.test.mjs` 10/10 ✅ | `tools/webhook-lego-gate.mjs` 5/5 ✅ | **IMPLEMENTED** |
 | `TASK-408-phase3-scheduler-lego` | scheduler | `contracts/scheduler.contract.md` ✅ | `docs/isolation/scheduler.md` ✅ | `packages/scheduler-lego/test/scheduler.test.mjs` 9/9 ✅ · Trigger regression 9/9 ✅ | `tools/scheduler-lego-gate.mjs` 6/6 ✅ | **IMPLEMENTED** |
+| `TASK-WORKFLOW-MODEL-01` | workflow (LEGO 01) | `contracts/workflow.contract.md` ✅ (§6 frozen surface) | `docs/isolation/workflow.md` ✅ | `packages/workflow-model-lego/test/conformance.test.mjs` 26/26 ✅ (fixtures `checksum` 8 + `toJSON` 6 + `rename` 6 + 3 negative controls) | `contract_conformance` 42/42 ✅ · `boundary_audit` PASS ✅ | **VERIFIED** |
 | `TASK-409-phase3-node-lego` | node (Node Model helpers) | `contracts/node.contract.md` §12 ✅ | `docs/isolation/node.md` §5 ✅ | `packages/node-lego/test/node-model.test.mjs` 45/45 ✅ | `tools/node-lego-gate.mjs` 7/7 ✅ (`N05` differential 234 agree / 0 diverge) | **SUBMITTED_FOR_REVIEW** |
 
 | Phase 3 gate | Result |
@@ -98,5 +99,12 @@ asserts that confinement.
 | Reference tree | unmodified (15050 files, root digest `f8da3518…`) |
 | Evidence | `docs/isolation/evidence/execution-engine-gate.json` |
 
-**Next Phase 3 work:** caveat C1 (11/11 live smoke on the VPS + PostgreSQL) and the runtime around the
-activation LEGO (cron timer adapter, webhook HTTP servers) — see `docs/isolation/execution.md` §7.
+**Reference-fixture coverage on the JS/TS track: 35/35.** `tests/reference/workflow-rust/fixtures.json`
+holds 35 cases in 5 groups; `checksum` (8) + `toJSON` (6) + `rename` (6) are covered by
+`packages/workflow-model-lego`, `traversal` (9) + `compareConnections` (6) by
+`packages/connection-lego`. The same file is the acceptance set for the Rust port track.
+
+**Next Phase 3 work:** caveat C1 (11/11 live smoke on the VPS + PostgreSQL), the remaining frozen
+Workflow surface (`getStartNode`, `getHighestNode`, `getNodeConnectionIndexes`,
+`getParentMainInputNode`, `getParentNodesByDepth`), and the runtime around the activation LEGO
+(cron timer adapter, webhook HTTP servers) — see `docs/isolation/execution.md` §7.

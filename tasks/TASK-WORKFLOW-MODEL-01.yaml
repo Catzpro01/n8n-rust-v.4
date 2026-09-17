@@ -1,0 +1,91 @@
+id: TASK-WORKFLOW-MODEL-01
+agent: arena-worker
+lego: workflow
+module: workflow
+phase: 3
+track: "JavaScript/TypeScript reconstruction (docs/isolation/PHASE-3-OPENING-RECORD.md §2)"
+title: "Reconstruct the Workflow Model aggregate in TypeScript and close the last 20 reference fixture cases"
+status: SUBMITTED_FOR_REVIEW
+authority: PROJECT_RULES.md §1, §3, §6 · contracts/workflow.contract.md §6 · docs/isolation/PHASE-3-OPENING-RECORD.md
+
+objective: >
+  TASK-405 delivered the Connection LEGO (fixtures `traversal` 9 + `compareConnections` 6). The
+  remaining 20 cases in tests/reference/workflow-rust/fixtures.json — `checksum` (8), `toJSON` (6)
+  and `rename` (6) — belong to the Workflow Model. Reconstruct the aggregate 1:1 against n8n 2.9.4
+  in TypeScript, consume the Connection LEGO through a port instead of copying its traversal, and
+  close all 35 fixture cases on the JS/TS track.
+
+allowed_paths:
+  - packages/workflow-model-lego/**
+  - docs/isolation/LEGO-MASTER-MAP.md
+  - README.md
+  - package.json
+  - .gitignore
+  - results/TASK-WORKFLOW-MODEL-01.md
+  - tasks/TASK-WORKFLOW-MODEL-01.yaml
+
+forbidden_paths:
+  - reference/n8n/**
+  - crates/**                                  # Rust port track — not this task's track
+  - apps/**
+  - packages/workflow-lego/**                  # Phase-2 isolation unit
+  - packages/connection-lego/src/**            # consumed via port CD-02, never edited
+  - tests/reference/**/expected.json           # oracles are read-only
+  - tests/reference/workflow-rust/fixtures.json
+
+requires:
+  - contracts/workflow.contract.md
+  - contracts/connection.contract.md
+  - docs/isolation/workflow.md
+  - packages/connection-lego/dist/index.js     # port CD-02 target
+  - tests/reference/workflow-rust/fixtures.json
+
+reconstruction:
+  - { from: "reference/n8n/packages/workflow/src/workflow.ts (frozen-surface subset)", to: "packages/workflow-model-lego/src/workflow.ts" }
+  - { from: "reference/n8n/packages/workflow/src/workflow-checksum.ts", to: "packages/workflow-model-lego/src/workflow-checksum.ts", lines: 100 }
+  - { from: "reference/n8n/packages/workflow/src/observable-object.ts", to: "packages/workflow-model-lego/src/observable-object.ts", lines: 75 }
+  - { from: "reference/n8n/packages/workflow/src/global-state.ts", to: "packages/workflow-model-lego/src/global-state.ts", lines: 13 }
+  - { from: "reference/n8n/packages/workflow/src/node-reference-parser-utils.ts (rewrite half)", to: "packages/workflow-model-lego/src/node-reference-utils.ts", lines: 643 }
+  - { from: "reference/n8n/packages/workflow/src/constants.ts + node-parameters/rename-node-utils.ts", to: "packages/workflow-model-lego/src/rename-constants.ts", lines: 29 }
+  - { from: "@n8n/errors UserError (structural)", to: "packages/workflow-model-lego/src/errors.ts" }
+
+ports:
+  - { id: CD-02, what: "getConnectedNodes / getChildNodes / getParentNodes / mapConnectionsByDestination", provider: "packages/connection-lego", resolution: "runtime require of ../../connection-lego/dist/index.js; a test asserts identity with the sibling package's exports" }
+  - { id: CD-05, what: "NodeHelpers.getNodeParameters", provider: "Node LEGO", resolution: "WorkflowParameters.nodeParametersPort; the constructor throws rather than silently skipping default-parameter application" }
+  - { id: expression, what: "Expression", provider: "packages/expression-lego", resolution: "not instantiated — no fixture observes it" }
+
+acceptance:
+  - "tsc --strict builds with 0 errors"
+  - "8/8 checksum cases reproduce the recorded SHA-256 digests"
+  - "6/6 toJSON cases reproduce the aggregate's in-memory shape field for field"
+  - "6/6 rename cases reproduce restricted-name UserError, collision overwrite and defect D-08"
+  - "the graph port is proven to be the Connection LEGO, not a third copy of the traversal"
+  - "3 negative controls prove the oracle rejects plausible-but-wrong implementations"
+  - "no regression anywhere on the branch"
+
+verification:
+  workflow_model_lego: "26 tests / 26 pass / 0 fail"
+  phase3_conformance: "42/42 CHECKS PASSED"
+  boundary_audit: "AUDIT RESULT: PASS (all edges documented)"
+  connection_lego: "52/52 PASS (unchanged)"
+  expression_lego: "46/46 PASS"
+  reconstructed_engine: "28/28 PASS"
+  isolation_gate: "11/11 PASS · BEHAVIOR CHANGE: NONE DETECTED"
+  execution_gate: "9/9 PASS"
+  reference_harness: "18 PASS / 0 FAIL / 0 UNKNOWN"
+  fixtures_drift: "fixtures match the pinned reference: 8 checksum, 6 diff, 6 shape, 6 rename, 9 traversal cases"
+  verify_all: "npm run verify:all exit 0"
+
+notes:
+  - "All 35 cases in tests/reference/workflow-rust/fixtures.json are now covered on the JS/TS track: 20 here + 15 in packages/connection-lego."
+  - "Reference quirks reproduced, not fixed: name-keyed nodes map, duplicate-name overwrite, the __proto__ node that never becomes an own key, open-bag settings, timezone fallback, restricted-name UserError with an observable constructor name, no collision guard, defect D-08, the stateful `g`-flag regex in hasDotNotationBannedChar, and `null` parameters becoming `{}`."
+  - "One documented dependency substitution: the reference's `jssha` fallback in calculateWorkflowChecksum is replaced by node:crypto. The WebCrypto branch (the one that runs on Node >= 18) is byte-identical."
+  - "Environment note: this sandbox started without .runtime/ or any node_modules (both gitignored), so the first sweep reported G06-G11 FAIL. Dependencies were reinstalled (scripts/setup-reference-runtime.sh + npm install in 4 packages) and the sweep re-run before any verdict was recorded."
+  - "Remaining frozen Workflow surface not yet reconstructed: getStartNode, getHighestNode, getNodeConnectionIndexes, getParentMainInputNode, getParentNodesByDepth."
+
+id_note: >
+  Lane-scoped ID rather than a number: while this task was in flight, concurrent peers pushed
+  TASK-406-phase3-trigger-lego, TASK-407-phase3-webhook-lego, TASK-408-phase3-scheduler-lego and
+  TASK-409 (Node LEGO) to the same branch, so sequential numbers kept colliding. This follows the
+  existing lane-scoped convention (TASK-ENGINE-ACTIVATION-01, TASK-EXPRESSION-SANDBOX-01,
+  TASK-TRIGGER-DIFF-01).
