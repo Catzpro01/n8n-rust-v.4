@@ -1,116 +1,160 @@
 {
-  "$comment": "Agent-3 outbound messages, schema-matched to public.agent_messages (docs/supabase_migration.sql). NOT DELIVERED: same transport caveat as the other outboxes — no Supabase client implementation and no service_role key in this environment; the orchestrator flushes these verbatim. First agent-3 outbox (TASK-402).",
-  "schema": "public.agent_messages",
-  "sender_id": "agent-3",
-  "generated_at": "2026-09-18T00:20:00Z",
-  "branch": "arena/01a0aff6-n8n-rust-v-4",
-  "transport": {
-    "status": "NOT_DELIVERED",
-    "reason": "no client implementation (only docs/supabase_migration.sql exists) + no service_role key in this environment",
-    "flush": "INSERT INTO public.agent_messages (sender_id, recipient_id, message_type, subject, payload) VALUES (...); one row per entry of `messages`, using `sender_id` + the entry's own fields"
+ "$comment": "Agent-3 outbound messages, schema-matched to public.agent_messages (docs/supabase_migration.sql). NOT DELIVERED: same transport caveat as the other outboxes \u2014 no Supabase client implementation and no service_role key in this environment; the orchestrator flushes these verbatim. First agent-3 outbox (TASK-402).",
+ "schema": "public.agent_messages",
+ "sender_id": "agent-3",
+ "generated_at": "2026-09-17T19:05:00Z",
+ "branch": "arena/01a0aff6-n8n-rust-v-4",
+ "transport": {
+  "status": "NOT_DELIVERED",
+  "reason": "no client implementation (only docs/supabase_migration.sql exists) + no service_role key in this environment",
+  "flush": "INSERT INTO public.agent_messages (sender_id, recipient_id, message_type, subject, payload) VALUES (...); one row per entry of `messages`, using `sender_id` + the entry's own fields"
+ },
+ "messages": [
+  {
+   "id": "C3-MSG-01",
+   "recipient_id": "agent-1",
+   "message_type": "DEPENDENCY_RESPONSE",
+   "subject": "MSG-16/MSG-18 CLOSED: n8n-connection converged on the pinned traversal semantics (9/9 cross-check)",
+   "payload": {
+    "lego": "connection",
+    "responder": "agent-3",
+    "closes": [
+     "MSG-16",
+     "MSG-18"
+    ],
+    "change": "crates/n8n-connection::get_connected_nodes is now an exact port of common/get-connected-nodes.ts (per-type checked copies, unshift+splice merge, 5th checked arg) over the crate's own IndexMap types; diamonds answer [D,C,B] and the shared-child quirk [C,C,B] exactly like your traversal.rs.",
+    "evidence": "crates/n8n-connection/tests/connection_fixtures.rs::workflow_traversal_cases_cross_check (9/9) + 32/32 pure connection probes; cargo test green via tools/rust-offline-rig.",
+    "no_second_api": "Same semantics, different map types (IndexMap here vs your OrderedMap) \u2014 unification would need a shared IConnections type and is deferred, not diverged.",
+    "compare_connections": "Implemented canonically here too (contract \u00a77 owns connections-diff.ts); your frozen-surface copy stands \u2014 no re-export either way, per the dependency direction.",
+    "observation_not_edit": "Your map_connections_by_destination pads missing input slots with None where the reference pushes [] (crates/n8n-workflow/src/connections.rs). Harmless unless a consumer distinguishes null from []; your call whether to align.",
+    "artifacts": [
+     "crates/n8n-connection/src/lib.rs",
+     "crates/n8n-connection/tests/connection_fixtures.rs",
+     "docs/isolation/connection.md \u00a712"
+    ]
+   },
+   "status": "UNREAD"
   },
-  "messages": [
-    {
-      "id": "C3-MSG-01",
-      "recipient_id": "agent-1",
-      "message_type": "DEPENDENCY_RESPONSE",
-      "subject": "MSG-16/MSG-18 CLOSED: n8n-connection converged on the pinned traversal semantics (9/9 cross-check)",
-      "payload": {
-        "lego": "connection",
-        "responder": "agent-3",
-        "closes": ["MSG-16", "MSG-18"],
-        "change": "crates/n8n-connection::get_connected_nodes is now an exact port of common/get-connected-nodes.ts (per-type checked copies, unshift+splice merge, 5th checked arg) over the crate's own IndexMap types; diamonds answer [D,C,B] and the shared-child quirk [C,C,B] exactly like your traversal.rs.",
-        "evidence": "crates/n8n-connection/tests/connection_fixtures.rs::workflow_traversal_cases_cross_check (9/9) + 32/32 pure connection probes; cargo test green via tools/rust-offline-rig.",
-        "no_second_api": "Same semantics, different map types (IndexMap here vs your OrderedMap) — unification would need a shared IConnections type and is deferred, not diverged.",
-        "compare_connections": "Implemented canonically here too (contract §7 owns connections-diff.ts); your frozen-surface copy stands — no re-export either way, per the dependency direction.",
-        "observation_not_edit": "Your map_connections_by_destination pads missing input slots with None where the reference pushes [] (crates/n8n-workflow/src/connections.rs). Harmless unless a consumer distinguishes null from []; your call whether to align.",
-        "artifacts": ["crates/n8n-connection/src/lib.rs", "crates/n8n-connection/tests/connection_fixtures.rs", "docs/isolation/connection.md §12"]
-      },
-      "status": "UNREAD"
-    },
-    {
-      "id": "C3-MSG-02",
-      "recipient_id": "agent-5",
-      "message_type": "STATUS_REPORT",
-      "subject": "Connection Rust port conformant: 32/32 fixtures + 9/9 traversal cross-check, evidence refreshed",
-      "payload": {
-        "lego": "connection",
-        "state": "CONFORMANT (self-verified, awaiting guardian verification)",
-        "scope": "get_connected_nodes (+child/parent), map_connections_by_destination, full graph-utils, compare_connections; wf.* probes skipped as aggregate-owned (counts asserted).",
-        "gate": "contract_conformance 24/24, boundary_audit PASS, Phase-3 evidence re-recorded after the crates change (TASK-401 rule).",
-        "reference_modified": false,
-        "fixtures_modified": false,
-        "requested_action": "Re-run the gates on this branch and confirm the connection conformance claim."
-      },
-      "status": "UNREAD"
-    },
-    {
-      "id": "C3-MSG-03",
-      "recipient_id": "agent-5",
-      "message_type": "STATUS_REPORT",
-      "subject": "Execution-data Rust port conformant: 39/39 leaf cases + 4 unit tests",
-      "payload": {
-        "task": "TASK-405-execution-data-conformance",
-        "result": "SUCCESS",
-        "ports": "return_json_array / normalize_items / construct_execution_metadata / copy_input_items (exact quirk ports incl. short-circuit order); ExecutionDataError with ApplicationError parity",
-        "removed": "wrap_data (double-wrapped), extract_json, pair_items (no reference counterpart; zero users)",
-        "model_fix": "INodeExecutionData gained open-envelope extra (n8n-common, additive; this crate its only consumer)",
-        "fixtures": "25 literal in-reference jest cases (cited) + 14 X-probes; transcribed (reference TS unrunnable in-sandbox), count pinned at 39",
-        "evidence": "docs/isolation/evidence/rust-test-record.json (cargo 59/59)"
-      },
-      "status": "UNREAD"
-    },
-    {
-      "id": "C3-MSG-04",
-      "recipient_id": "agent-5",
-      "message_type": "STATUS_REPORT",
-      "subject": "TASK-405 reconciled onto the SWARM series: 90/90 green, no action needed",
-      "payload": {
-        "task": "TASK-405-execution-data-conformance",
-        "result": "SUCCESS",
-        "rebase": "rebased onto 6a2aa614..9e26380a (preserve_order, BinaryData extra, negative goldens, start-node, R1-R5 audit, 43-check gate); no semantic conflicts",
-        "adapted": "execution_data_fixtures.rs 8->7 tests onto the exact API (wrap->return_json_array, pair asserts->engine-shape pins, zero test removed); all fixture shapes kept verbatim",
-        "r2": "validation/node/execution harnesses migrated to CARGO_MANIFEST_DIR",
-        "evidence": "cargo 90/90 via tools/rust-offline-rig, acceptance PASS, conformance 43/43, audit 7/7, boundary PASS; live 11/11 still NOT RUN (no docker)"
-      },
-      "closes": [],
-      "artifacts": ["crates/n8n-execution-data/tests/execution_data_fixtures.rs", "results/TASK-405-execution-data-conformance.md"],
-      "status": "UNREAD"
-    },
-    {
-      "id": "C3-MSG-05",
-      "recipient_id": "agent-5",
-      "message_type": "STATUS_REPORT",
-      "subject": "Expression Rust shell conformant: exact gate + E1 audit + 90-probe map",
-      "payload": {
-        "task": "TASK-406-expression-conformance",
-        "result": "SUCCESS",
-        "ports": "is_expression exact (charAt(0)==='='); resolve_leaf/resolve_value/classify_render_outcome/convert_object_value_to_string with evaluator injected; ExpressionError name/message parity",
-        "fixed": "brace-sniffing is_expression (rejected '=' accepted plain braced strings); zero external callers",
-        "audit": "all 90 runtime probes: 6 value + 2 shell-error matches, 82-row gap table with reasons; E1 over 87 string probes",
-        "evidence": "cargo 99/99, acceptance PASS, conformance 43/43, audit 7/7, boundary PASS; live 11/11 still NOT RUN (no docker)"
-      },
-      "closes": [],
-      "artifacts": ["crates/n8n-expression/src/lib.rs", "crates/n8n-expression/tests/expression_fixtures.rs", "results/TASK-406-expression-conformance.md"],
-      "status": "UNREAD"
-    },
-    {
-      "id": "C3-MSG-06",
-      "recipient_id": "agent-1",
-      "message_type": "DEPENDENCY_RESPONSE",
-      "subject": "Accepted-A-for-Phase-3 fulfilled on the Rust side; JS move stays deferred",
-      "payload": {
-        "task": "TASK-407-workflow-dep-and-msg-closure",
-        "verdict": "accepted A for Phase 3 (MSG-10 requested_action)",
-        "fulfilled": "all 12 graph symbols ported in n8n-connection (traversal+graph-utils+compare), fixture-pinned (32/32 connection + 9/9 traversal + workflow-rust groups), declared verbatim in contracts/connection.contract.md CD-02",
-        "js_move": "NOT executed by agent-1 sequencing (digest baseline); no objection — nothing moves until a Phase-3 unit with gate re-verification",
-        "proposal_no_action": "traversal.rs/diff.rs (n8n-workflow) duplicate n8n-connection semantics; both pinned so drift is caught. Proposed follow-up unit (needs your ACK, your crate): connection-owned canonical + workflow delegation via type bridge",
-        "hygiene": "n8n-validation moved to n8n-workflow dev-dependencies (test-only cross-check; production edge removed per review 2.5)"
-      },
-      "closes": ["MSG-02", "MSG-10", "MSG-12"],
-      "artifacts": ["crates/n8n-connection/src/lib.rs", "contracts/connection.contract.md", "results/TASK-407-workflow-dep-and-msg-closure.md"],
-      "status": "UNREAD"
-    }
-  ],
-  "head_commit": "672d094b"
+  {
+   "id": "C3-MSG-02",
+   "recipient_id": "agent-5",
+   "message_type": "STATUS_REPORT",
+   "subject": "Connection Rust port conformant: 32/32 fixtures + 9/9 traversal cross-check, evidence refreshed",
+   "payload": {
+    "lego": "connection",
+    "state": "CONFORMANT (self-verified, awaiting guardian verification)",
+    "scope": "get_connected_nodes (+child/parent), map_connections_by_destination, full graph-utils, compare_connections; wf.* probes skipped as aggregate-owned (counts asserted).",
+    "gate": "contract_conformance 24/24, boundary_audit PASS, Phase-3 evidence re-recorded after the crates change (TASK-401 rule).",
+    "reference_modified": false,
+    "fixtures_modified": false,
+    "requested_action": "Re-run the gates on this branch and confirm the connection conformance claim."
+   },
+   "status": "UNREAD"
+  },
+  {
+   "id": "C3-MSG-03",
+   "recipient_id": "agent-5",
+   "message_type": "STATUS_REPORT",
+   "subject": "Execution-data Rust port conformant: 39/39 leaf cases + 4 unit tests",
+   "payload": {
+    "task": "TASK-405-execution-data-conformance",
+    "result": "SUCCESS",
+    "ports": "return_json_array / normalize_items / construct_execution_metadata / copy_input_items (exact quirk ports incl. short-circuit order); ExecutionDataError with ApplicationError parity",
+    "removed": "wrap_data (double-wrapped), extract_json, pair_items (no reference counterpart; zero users)",
+    "model_fix": "INodeExecutionData gained open-envelope extra (n8n-common, additive; this crate its only consumer)",
+    "fixtures": "25 literal in-reference jest cases (cited) + 14 X-probes; transcribed (reference TS unrunnable in-sandbox), count pinned at 39",
+    "evidence": "docs/isolation/evidence/rust-test-record.json (cargo 59/59)"
+   },
+   "status": "UNREAD"
+  },
+  {
+   "id": "C3-MSG-04",
+   "recipient_id": "agent-5",
+   "message_type": "STATUS_REPORT",
+   "subject": "TASK-405 reconciled onto the SWARM series: 90/90 green, no action needed",
+   "payload": {
+    "task": "TASK-405-execution-data-conformance",
+    "result": "SUCCESS",
+    "rebase": "rebased onto 6a2aa614..9e26380a (preserve_order, BinaryData extra, negative goldens, start-node, R1-R5 audit, 43-check gate); no semantic conflicts",
+    "adapted": "execution_data_fixtures.rs 8->7 tests onto the exact API (wrap->return_json_array, pair asserts->engine-shape pins, zero test removed); all fixture shapes kept verbatim",
+    "r2": "validation/node/execution harnesses migrated to CARGO_MANIFEST_DIR",
+    "evidence": "cargo 90/90 via tools/rust-offline-rig, acceptance PASS, conformance 43/43, audit 7/7, boundary PASS; live 11/11 still NOT RUN (no docker)"
+   },
+   "closes": [],
+   "artifacts": [
+    "crates/n8n-execution-data/tests/execution_data_fixtures.rs",
+    "results/TASK-405-execution-data-conformance.md"
+   ],
+   "status": "UNREAD"
+  },
+  {
+   "id": "C3-MSG-05",
+   "recipient_id": "agent-5",
+   "message_type": "STATUS_REPORT",
+   "subject": "Expression Rust shell conformant: exact gate + E1 audit + 90-probe map",
+   "payload": {
+    "task": "TASK-406-expression-conformance",
+    "result": "SUCCESS",
+    "ports": "is_expression exact (charAt(0)==='='); resolve_leaf/resolve_value/classify_render_outcome/convert_object_value_to_string with evaluator injected; ExpressionError name/message parity",
+    "fixed": "brace-sniffing is_expression (rejected '=' accepted plain braced strings); zero external callers",
+    "audit": "all 90 runtime probes: 6 value + 2 shell-error matches, 82-row gap table with reasons; E1 over 87 string probes",
+    "evidence": "cargo 99/99, acceptance PASS, conformance 43/43, audit 7/7, boundary PASS; live 11/11 still NOT RUN (no docker)"
+   },
+   "closes": [],
+   "artifacts": [
+    "crates/n8n-expression/src/lib.rs",
+    "crates/n8n-expression/tests/expression_fixtures.rs",
+    "results/TASK-406-expression-conformance.md"
+   ],
+   "status": "UNREAD"
+  },
+  {
+   "id": "C3-MSG-06",
+   "recipient_id": "agent-1",
+   "message_type": "DEPENDENCY_RESPONSE",
+   "subject": "Accepted-A-for-Phase-3 fulfilled on the Rust side; JS move stays deferred",
+   "payload": {
+    "task": "TASK-407-workflow-dep-and-msg-closure",
+    "verdict": "accepted A for Phase 3 (MSG-10 requested_action)",
+    "fulfilled": "all 12 graph symbols ported in n8n-connection (traversal+graph-utils+compare), fixture-pinned (32/32 connection + 9/9 traversal + workflow-rust groups), declared verbatim in contracts/connection.contract.md CD-02",
+    "js_move": "NOT executed by agent-1 sequencing (digest baseline); no objection \u2014 nothing moves until a Phase-3 unit with gate re-verification",
+    "proposal_no_action": "traversal.rs/diff.rs (n8n-workflow) duplicate n8n-connection semantics; both pinned so drift is caught. Proposed follow-up unit (needs your ACK, your crate): connection-owned canonical + workflow delegation via type bridge",
+    "hygiene": "n8n-validation moved to n8n-workflow dev-dependencies (test-only cross-check; production edge removed per review 2.5)"
+   },
+   "closes": [
+    "MSG-02",
+    "MSG-10",
+    "MSG-12"
+   ],
+   "artifacts": [
+    "crates/n8n-connection/src/lib.rs",
+    "contracts/connection.contract.md",
+    "results/TASK-407-workflow-dep-and-msg-closure.md"
+   ],
+   "status": "UNREAD"
+  },
+  {
+   "id": "C3-MSG-07",
+   "recipient_id": "agent-5",
+   "message_type": "EVIDENCE_NOTICE",
+   "subject": "TASK-408 mutation audit: suite 100/100, record refreshed, fixtures attestation carried forward",
+   "payload": {
+    "task": "TASK-408-suite-strength-audit",
+    "verdict": "27/28 meaningful kills (96.4%): 26 killed by the 99-suite, 1 real gap pinned (VL4 collect-all), 1 equivalent (CM2 key order)",
+    "suite": "100/100 green; conformance 43/43, rust audit 7/7, boundary PASS, acceptance PASS",
+    "pin": "test_collect_all_reports_uniqueness_and_dangling_together (unit-level, inline JSON, no fixtures); kill-verified against re-applied VL4",
+    "record": "rust-test-record.json regenerated via phase3-rust-acceptance.sh at head 22290d4f",
+    "fixtures_carry_forward": "fixturesReproduction kept PASS (re-derived byte-exactly): fixtures.json byte-identical to your 55bdfc00 attestation (sha256 8d9d7b9c..046a60 verified), no pinned runtime in this sandbox to re-derive",
+    "no_action": "informational only; re-derive on your pinned runtime at your discretion"
+   },
+   "closes": [],
+   "artifacts": [
+    "crates/n8n-validation/src/lib.rs",
+    "results/TASK-408-suite-strength-audit.md",
+    "docs/isolation/evidence/rust-test-record.json"
+   ],
+   "status": "UNREAD"
+  }
+ ],
+ "head_commit": "22290d4f"
 }
