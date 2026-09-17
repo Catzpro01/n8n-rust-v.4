@@ -1,0 +1,17 @@
+{
+  "name": "01-empty",
+  "nodes": [],
+  "connections": {},
+  "queries": [
+    "mapByDestination",
+    "getAllNodes",
+    "getStartNodes",
+    "detectCycles:main",
+    "findCycle:main",
+    "detectCycles:all",
+    "findCycle:all",
+    "getChild:Ghost",
+    "getParent:Ghost",
+    "getNode:Ghost"
+  ]
+}

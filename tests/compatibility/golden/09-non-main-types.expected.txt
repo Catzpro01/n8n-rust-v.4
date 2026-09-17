@@ -1,0 +1,13 @@
+mapByDestination	{"B":{"main":[[{"index":0,"node":"A","type":"main"}]]},"C":{"ai_tool":[[{"index":0,"node":"A","type":"ai_tool"}]]},"D":{"main":[[{"index":0,"node":"B","type":"main"}]]}}
+getChild:A	["D","B"]
+getChild:A:ALL	["D","B","C"]
+getChild:A:ALL_NON_MAIN	["C"]
+getChild:A:ai_tool	["C"]
+getChild:A:main:1	["B"]
+getParent:C:ALL	["A"]
+getParent:C:main	[]
+getParent:D:ALL	["A","B"]
+getNode:C	{"disabled":false,"name":"C","position":[440,0],"type":"@n8n/n8n-nodes-langchain.agent","typeVersion":1.7}
+getStartNodes	["A","C","E"]
+detectCycles:all	false
+findCycle:all	null

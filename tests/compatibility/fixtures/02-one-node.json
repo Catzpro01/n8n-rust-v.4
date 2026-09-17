@@ -1,0 +1,24 @@
+{
+  "name": "02-one-node",
+  "nodes": [
+    {
+      "name": "Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "disabled": false
+    }
+  ],
+  "connections": {},
+  "queries": [
+    "mapByDestination",
+    "getAllNodes",
+    "getStartNodes",
+    "getChild:Start",
+    "getParent:Start",
+    "getConnected:Start",
+    "getNode:Start",
+    "detectCycles:main",
+    "findCycle:main"
+  ]
+}

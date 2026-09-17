@@ -1,0 +1,32 @@
+{
+  "name": "09-non-main-types",
+  "nodes": [
+    { "name": "A", "type": "n8n-nodes-base.manualTrigger", "typeVersion": 1, "position": [0, 0], "disabled": false },
+    { "name": "B", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [220, 0], "disabled": false },
+    { "name": "C", "type": "@n8n/n8n-nodes-langchain.agent", "typeVersion": 1.7, "position": [440, 0], "disabled": false },
+    { "name": "D", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [660, 0], "disabled": false },
+    { "name": "E", "type": "n8n-nodes-base.manualTrigger", "typeVersion": 1, "position": [880, 0], "disabled": true }
+  ],
+  "connections": {
+    "A": {
+      "ai_tool": [[{ "node": "C", "type": "ai_tool", "index": 0 }]],
+      "main": [[{ "node": "B", "type": "main", "index": 0 }]]
+    },
+    "B": { "main": [[{ "node": "D", "type": "main", "index": 0 }]] }
+  },
+  "queries": [
+    "mapByDestination",
+    "getChild:A",
+    "getChild:A:ALL",
+    "getChild:A:ALL_NON_MAIN",
+    "getChild:A:ai_tool",
+    "getChild:A:main:1",
+    "getParent:C:ALL",
+    "getParent:C:main",
+    "getParent:D:ALL",
+    "getNode:C",
+    "getStartNodes",
+    "detectCycles:all",
+    "findCycle:all"
+  ]
+}

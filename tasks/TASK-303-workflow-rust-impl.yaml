@@ -1,0 +1,74 @@
+id: TASK-303-workflow-rust-impl
+agent: agent-1
+lego: workflow
+module: workflow
+phase: 3
+
+allowed_paths:
+  - crates/**
+  - tests/compatibility/**
+  - docs/isolation/**
+
+forbidden_paths:
+  - reference/n8n/packages/core/**
+  - reference/n8n/packages/cli/**
+  - apps/**
+
+requires:
+  - contracts/workflow.contract.md
+  - docs/isolation/workflow_spec.md
+
+operations:
+  - name: read_file
+    args:
+      path: reference/n8n/packages/workflow/src/workflow.ts
+
+  - name: read_file
+    args:
+      path: reference/n8n/packages/workflow/src/common/get-connected-nodes.ts
+
+  - name: write_file
+    args:
+      path: crates/n8n-workflow/src/lib.rs
+      note: "Pure workflow domain model crate (std only): model, maps, graph, cycles, start, json, compat_engine + bin + tests"
+
+  - name: run_reference_harness
+    args:
+      command: "node tests/compatibility/reference/harness.mjs <fixture>  # x10 fixtures"
+      note: "Verbatim original n8n functions (token-level proven) capture golden outputs"
+
+  - name: verify_harness_verbatim
+    args:
+      note: "Token-stream diff harness vs reference/n8n/.../common/*.ts: 4/4 IDENTICAL"
+
+  - name: run_rust_suite
+    args:
+      where: vps
+      command: "cargo test -p n8n-workflow && bash tests/compatibility/run.sh"
+      status: DEFERRED
+      reason: "Sandbox network policy blocks static.rust-lang.org and crates.io (no toolchain installable). Zero-dependency crate; any stable Rust >= 1.70."
+
+  - name: send_message
+    args:
+      to: agent-5
+      type: RUST_IMPLEMENTATION_READY
+      priority: high
+      payload:
+        lego: workflow
+        crate: crates/n8n-workflow
+        spec_path: docs/isolation/workflow_spec.md
+        phase: 3
+        reference_harness: VERIFIED (golden captured locally, node v22)
+        rust_execution: PENDING_VPS (cargo test + differential run.sh)
+        regression_gate_impact: none (no changes under reference/n8n; live 11/11 baseline untouched)
+
+  - name: git_commit
+    args:
+      message: "feat(agent-1): implement pure workflow domain model in Rust (crates/n8n-workflow) + differential compat suite"
+
+  - name: git_push
+
+merge_condition:
+  - regression_gate_pass
+  - rust_suite_pass_on_vps
+  - no_contract_violation

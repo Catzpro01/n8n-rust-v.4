@@ -1,0 +1,10 @@
+mapByDestination	{}
+getAllNodes	[]
+getStartNodes	[]
+detectCycles:main	false
+findCycle:main	null
+detectCycles:all	false
+findCycle:all	null
+getChild:Ghost	[]
+getParent:Ghost	[]
+getNode:Ghost	null

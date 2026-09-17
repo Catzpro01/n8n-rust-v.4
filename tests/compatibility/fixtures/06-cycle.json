@@ -1,0 +1,25 @@
+{
+  "name": "06-cycle",
+  "nodes": [
+    { "name": "A", "type": "n8n-nodes-base.manualTrigger", "typeVersion": 1, "position": [0, 0], "disabled": false },
+    { "name": "B", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [220, 0], "disabled": false },
+    { "name": "C", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [440, 0], "disabled": false }
+  ],
+  "connections": {
+    "A": { "main": [[{ "node": "B", "type": "main", "index": 0 }]] },
+    "B": { "main": [[{ "node": "C", "type": "main", "index": 0 }]] },
+    "C": { "main": [[{ "node": "A", "type": "main", "index": 0 }]] }
+  },
+  "queries": [
+    "mapByDestination",
+    "getChild:A",
+    "getChild:B",
+    "getChild:C",
+    "getParent:A",
+    "getParent:B",
+    "getParent:C",
+    "detectCycles:main",
+    "findCycle:main",
+    "getStartNodes"
+  ]
+}

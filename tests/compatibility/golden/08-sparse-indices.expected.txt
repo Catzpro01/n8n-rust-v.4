@@ -1,0 +1,5 @@
+mapByDestination	{"B":{"main":[[],[],[{"index":1,"node":"A","type":"main"}]]}}
+getChild:A	["B"]
+getParent:B	["A"]
+getConnected:A	["B"]
+getStartNodes	["A"]

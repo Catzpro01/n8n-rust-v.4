@@ -1,0 +1,6 @@
+mapByDestination	{"B":{"main":[[{"index":0,"node":"A","type":"main"},{"index":0,"node":"A","type":"main"}]]}}
+getChild:A	["B","B"]
+getParent:B	["A","A"]
+getConnected:A	["B","B"]
+detectCycles:main	false
+findCycle:main	null

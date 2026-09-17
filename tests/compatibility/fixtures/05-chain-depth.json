@@ -1,0 +1,29 @@
+{
+  "name": "05-chain-depth",
+  "nodes": [
+    { "name": "A", "type": "n8n-nodes-base.manualTrigger", "typeVersion": 1, "position": [0, 0], "disabled": false },
+    { "name": "B", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [220, 0], "disabled": false },
+    { "name": "C", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [440, 0], "disabled": false },
+    { "name": "D", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [660, 0], "disabled": false },
+    { "name": "E", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [880, 0], "disabled": false }
+  ],
+  "connections": {
+    "A": { "main": [[{ "node": "B", "type": "main", "index": 0 }]] },
+    "B": { "main": [[{ "node": "C", "type": "main", "index": 0 }]] },
+    "C": { "main": [[{ "node": "D", "type": "main", "index": 0 }]] },
+    "D": { "main": [[{ "node": "E", "type": "main", "index": 0 }]] }
+  },
+  "queries": [
+    "getChild:A",
+    "getChild:A:main:1",
+    "getChild:A:main:2",
+    "getChild:A:main:3",
+    "getChild:A:main:4",
+    "getChild:A:main:5",
+    "getChild:A:main:6",
+    "getParent:E",
+    "getParent:E:main:1",
+    "getParent:E:main:2",
+    "getParent:E:main:10"
+  ]
+}

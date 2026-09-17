@@ -1,0 +1,18 @@
+{
+  "name": "10-duplicate-edges",
+  "nodes": [
+    { "name": "A", "type": "n8n-nodes-base.manualTrigger", "typeVersion": 1, "position": [0, 0], "disabled": false },
+    { "name": "B", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [220, 0], "disabled": false }
+  ],
+  "connections": {
+    "A": { "main": [[{ "node": "B", "type": "main", "index": 0 }, { "node": "B", "type": "main", "index": 0 }]] }
+  },
+  "queries": [
+    "mapByDestination",
+    "getChild:A",
+    "getParent:B",
+    "getConnected:A",
+    "detectCycles:main",
+    "findCycle:main"
+  ]
+}
