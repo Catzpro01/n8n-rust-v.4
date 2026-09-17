@@ -135,8 +135,8 @@ repository-root `Cargo.toml` comes back — a decision that belongs to the orche
 
 ## 5. Known limitations
 
-* `L1`/`L2`: ergonomic locates only tags the catalog knows — an unknown tag is *reported*, never
-  guessed; adding a language therefore requires touching the catalog (contract §11.1) by design.
+* `normalizeLocale` resolves only tags the catalog knows: an unknown tag is *reported*, never
+  guessed, so adding a language requires touching the catalog by design (contract §11.1).
 * The engine overlay ships three statuses (`running`, `waiting`, `cancelled`) that Phase 4B does not
   carry; product labels and engine messages are deliberately kept in separate owners (contract §4.6).
 * `tsc --noEmit` could not be executed in this sandbox (no registry access, `node_modules` absent for
