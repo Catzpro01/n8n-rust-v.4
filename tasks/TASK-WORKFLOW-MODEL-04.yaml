@@ -1,0 +1,87 @@
+id: TASK-WORKFLOW-MODEL-04
+agent: unassigned
+lego: workflow
+module: workflow
+phase: 3
+track: "JavaScript/TypeScript reconstruction (docs/isolation/PHASE-3-OPENING-RECORD.md §2)"
+title: "Wire the last Workflow instance property: `expression` (port to the Expression LEGO)"
+status: PLANNED
+authority: PROJECT_RULES.md §1, §3, §6 · contracts/workflow.contract.md · contracts/expression.contract.md
+follows: TASK-WORKFLOW-MODEL-03
+
+objective: >
+  After TASK-WORKFLOW-MODEL-03 the reconstructed aggregate has all 27 reference methods
+  (`comm` over both method lists: 27 vs 27, empty difference set in both directions) but still one
+  property short: the reference declares 13 instance properties, the reconstruction has 12. The
+  missing one is `expression`. Wire it through a port to `packages/expression-lego` instead of
+  copying `expression.ts`.
+
+gap:
+  reference_properties: 13
+  reconstructed_properties: 12
+  missing: [expression]
+  method_parity: "already complete — 27/27, verified in TASK-WORKFLOW-MODEL-03"
+
+verified_facts:
+  # Each of these was checked on the tree, not assumed. Re-verify if the tree has moved.
+  - "reference declares the property at `reference/n8n/packages/workflow/src/workflow.ts:72` — `expression: Expression;`"
+  - "reference imports it at `workflow.ts:20` — `import { Expression } from './expression';`"
+  - "reference assigns it at `workflow.ts:134` — `this.expression = new Expression(this);` — and that is the **last** statement of the constructor, immediately after `this.timezone = …` (L132). Nothing else in `workflow.ts` reads `this.expression`; the only other `expression` hit (L422) is a comment in `renameNode`."
+  - "reference `Expression` constructor: `reference/n8n/packages/workflow/src/expression.ts:181` — `constructor(private readonly workflow: Workflow) {}`. It takes the aggregate itself."
+  - "the Expression LEGO already exports it: `packages/expression-lego/src/expression.mjs:186` — `export class Expression`. That package has **no `index.mjs`**; `expression.mjs` is the entry to require."
+  - "CJS `require('../../expression-lego/src/expression.mjs')` succeeds on this Node (v22.22.3) and yields `{ Expression, createEmptyRunExecutionData, evaluateExpression, getGlobalState, hasExpressionExtension, isExpression, … }` — same ESM-from-CJS mechanism `src/node-port.ts` already uses for `packages/node-lego`."
+
+design_decision_required: >
+  `packages/expression-lego/src/expression.mjs` imports `luxon` at top level (line 28), and the
+  package declares `jmespath` + `luxon` as **runtime dependencies** — unlike `packages/node-lego`,
+  which is dependency-free. `node_modules` is gitignored, so on a freshly cloned sandbox the
+  require will fail. Eager assignment (what the reference does) would then make **every** Workflow
+  construction throw, which would turn the currently green 61-test suite red on a bare clone and
+  break `verify:all`. Pick one and document it:
+
+  option_a: >
+    Eager, reference-faithful: `this.expression = new Expression(this)` at the same position.
+    Most faithful; requires `npm install --prefix packages/expression-lego` to become a documented
+    prerequisite of `workflow-model-lego:test` (the way `packages/workflow-lego`'s `n8n-workflow`
+    devDependency already is for the N05 differential). Risk: red `verify:all` on a bare clone
+    unless the prerequisite is enforced in the gate.
+  option_b: >
+    Lazy getter: resolve on first access. Construction never fails, but `expression` stops being
+    an own data property — observable through `Object.keys`, `hasOwnProperty` and
+    `JSON.stringify`/`toJSON`, so this **changes** an already-verified surface (the 6 `toJSON`
+    fixtures). Would need those fixtures re-checked.
+  option_c: >
+    Eager with an explicit, loud failure: construct when the port resolves, throw a clear error
+    naming the missing prerequisite when it does not. Faithful where it matters, and never
+    silently diverges. Recommended unless the prerequisite cannot be enforced.
+
+  Whichever is chosen: do **not** let a missing port silently produce `expression === undefined`.
+  That is the exact failure mode ISSUE-027 was about.
+
+acceptance:
+  - "tsc --strict builds with 0 errors"
+  - "13/13 instance properties match the reference list"
+  - "`workflow.expression` is an instance of the Expression LEGO's class — asserted by identity with `packages/expression-lego`'s export, not by duck-typing (the same test shape CD-05 uses)"
+  - "the 6 toJSON fixtures and all 61 existing tests stay green"
+  - "the chosen option's failure mode is demonstrated by a test, not just described"
+  - "no regression anywhere on the branch"
+
+allowed_paths:
+  - packages/workflow-model-lego/**
+  - docs/isolation/LEGO-MASTER-MAP.md
+  - README.md
+  - results/TASK-WORKFLOW-MODEL-04.md
+  - tasks/TASK-WORKFLOW-MODEL-04.yaml
+
+forbidden_paths:
+  - reference/n8n/**
+  - crates/**
+  - apps/**
+  - packages/workflow-lego/**
+  - packages/expression-lego/src/**    # consumed via port, never edited
+  - tests/reference/**/expected.json
+
+id_note: >
+  Lane-scoped ID, continuing TASK-WORKFLOW-MODEL-01/02/03. Filed by arena-worker at the end of
+  TASK-WORKFLOW-MODEL-03 so the next worker inherits verified line numbers instead of re-deriving
+  them; deliberately left `unassigned` and `PLANNED` rather than half-started.
