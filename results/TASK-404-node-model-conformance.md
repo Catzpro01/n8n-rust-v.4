@@ -44,6 +44,9 @@ Agent-2 / LEGO node. `n8n-node-model` pinned against 42 real reference nodes;
   `getNodeParameters`/`getNodeOutputs` (1966-line engine-coupled context, no
   fixtures), `applyAccessPatterns` completion (agent-1's `rename.rs`, review
   §6 documents the subset).
+- Post-task rebase: peer `53c8bf1a` (evidence timestamp refresh, no file
+  overlap, reviewed PASS) landed first; rebased conflict-free and re-ran
+  acceptance `--force` (PASS at `04a1a097`, 56/56).
 - 6 §2 keys have zero occurrences in 2000 surveyed reference nodes
   (`maxTries`, `waitBetweenTries`, `executeOnce`, `extendsCredential`,
   `rewireOutputLogTo`, `forceCustomOperation`) — retention is generic
