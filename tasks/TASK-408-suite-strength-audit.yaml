@@ -1,0 +1,66 @@
+id: TASK-408-suite-strength-audit
+agent: agent-3
+lego: integration
+module: integration
+phase: 3
+title: "Mutation-test the 99-test Rust suite: break each crate, prove the suite notices"
+
+# A green suite is not evidence until someone has tried to break it (the
+# repo's own meta-testing rule). This task injects one hand-designed
+# mutant at a time into each crate's src/ (comparison flip, boundary
+# shift, branch removal, error-variant swap, order change), runs the
+# full workspace suite, and records KILLED (suite red, with the killing
+# test named) vs SURVIVED (suite green). Every mutant is reverted
+# immediately after its run — the tree must be byte-identical to base
+# when done, except task artifacts below.
+# SURVIVED mutants are judged: behaviorally equivalent (dead/defensive
+# code no test could catch) -> documented as such; REAL gap -> a new
+# pin is added (unit-level or against EXISTING fixtures only).
+# No reference, fixture, or cross-crate changes. Evidence refresh ONLY
+# if new pins land (else Rust inputs are untouched).
+
+allowed_paths:
+  - crates/*/src/*.rs
+  - crates/*/tests/*.rs
+  - docs/isolation/connection-bus-outbox.json
+  - docs/isolation/evidence/rust-test-record.json
+  - tasks/TASK-408-suite-strength-audit.yaml
+  - results/TASK-408-suite-strength-audit.md
+
+forbidden_paths:
+  - reference/n8n/**
+  - tests/reference/**
+  - crates/*/Cargo.toml
+  - Cargo.toml
+  - Cargo.lock
+  - apps/**
+  - packages/**
+  - contracts/**
+
+requires:
+  - tools/rust-offline-rig/run.sh
+
+operations:
+  - name: mutate_all_crates
+    args:
+      method: "one mutant live at a time; full workspace run per mutant; immediate revert + git-diff verify"
+      classes: "comparison flip, boundary shift, branch/early-return removal, error-variant swap, order change, defensive-code removal"
+      target: "3-5 mutants per crate x 7 crates, each with a predicted killing test"
+  - name: pin_real_gaps
+    args:
+      rule: "SURVIVED + behaviorally distinct -> new pin (unit or existing-fixture); SURVIVED + equivalent -> documented only"
+  - name: refresh_evidence
+    args:
+      cmd: bash tools/phase3-rust-acceptance.sh --force
+      reason: "ONLY if new pins changed crates tests; else skip (Rust inputs untouched)"
+
+acceptance:
+  - mutant table complete: every mutant KILLED (with killer named) or SURVIVED (judged equivalent/gap)
+  - final tree byte-identical to base except tasks/results/outbox (+ new pins if any)
+  - cargo test --workspace green at the end (99/99 + any new pins)
+  - no reference/fixture modification
+
+merge_condition:
+  - regression_gate_pass
+  - no_contract_violation
+  - agent_5_verification

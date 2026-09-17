@@ -599,6 +599,30 @@ mod tests {
     }
 
     #[test]
+    fn test_collect_all_reports_uniqueness_and_dangling_together() {
+        // TASK-408/VL4 pin: the normative source spreads both check parts
+        // unconditionally (`workflow-rules.ts`: `[...checkNodeUniqueness(wf),
+        // ...checkDanglingConnections(wf)]`), so a uniqueness error must not
+        // suppress the dangling check. The mutation audit found no test
+        // covering the co-occurrence (early-return mutant survived).
+        let report = validate_workflow_json(
+            r#"{"nodes": [{"name": "A"}, {"name": "A"}],
+                "connections": {
+                    "A": {"main": [[{"node": "Ghost", "type": "main", "index": 0}]]}}}"#,
+            &ValidateOptions::default(),
+        );
+        assert!(!report.valid);
+        let codes: Vec<ValidationErrorCode> = report.errors.iter().map(|e| e.code).collect();
+        assert_eq!(
+            codes,
+            vec![
+                ValidationErrorCode::DuplicateNodeName,
+                ValidationErrorCode::DanglingConnection
+            ]
+        );
+    }
+
+    #[test]
     fn test_cycles_are_main_only() {
         let strict = ValidateOptions { allow_cycles: false };
         let report = validate_workflow_json(
