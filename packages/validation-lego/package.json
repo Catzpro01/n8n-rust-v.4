@@ -1,0 +1,25 @@
+{
+  "name": "@lego/validation",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Validation LEGO (Phase 2) — type coercion, zod schemas, type guards, workflow structural validation (NEW CAPABILITY). Rust: NOT STARTED.",
+  "license": "SEE LICENSE IN reference/n8n/LICENSE.md",
+  "main": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "@types/lodash": "^4.17.25",
+    "@types/luxon": "^3.7.5",
+    "lodash": "^4.18.1",
+    "luxon": "^3.7.2",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "~5.9.2"
+  }
+}

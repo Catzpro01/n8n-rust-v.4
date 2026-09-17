@@ -1,0 +1,38 @@
+{
+  "name": "@lego/expression",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Expression LEGO (Phase 2) — Expression evaluator {{ }}, WorkflowDataProxy, sandbox, extensions. Rust: NOT STARTED.",
+  "license": "SEE LICENSE IN reference/n8n/LICENSE.md",
+  "main": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "@codemirror/autocomplete": "^6.20.3",
+    "@n8n/errors": "^0.13.0",
+    "@n8n/tournament": "^1.11.1",
+    "@types/jmespath": "^0.15.2",
+    "@types/lodash": "^4.17.25",
+    "@types/luxon": "^3.7.5",
+    "@types/md5": "^2.3.6",
+    "ast-types": "^0.16.3",
+    "esprima-next": "^6.0.3",
+    "jmespath": "^0.16.0",
+    "js-base64": "^3.9.3",
+    "jssha": "^3.3.2",
+    "lodash": "^4.18.1",
+    "luxon": "^3.7.2",
+    "md5": "^2.3.0",
+    "recast": "^0.24.0",
+    "title-case": "^4.3.2",
+    "transliteration": "^2.6.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "~5.9.2"
+  }
+}

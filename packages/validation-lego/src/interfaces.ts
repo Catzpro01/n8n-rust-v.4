@@ -1,0 +1,23 @@
+
+export type FieldType = any;
+export type FormFieldsParameter = any;
+export type IBinaryData = any;
+export type INodePropertyOptions = any;
+export type ValidationResult = any;
+export type INode = any;
+export type INodes = any;
+export type INodeType = any;
+export type IConnections = any;
+export type IConnection = any;
+export type IDataObject = any;
+export type INodeExecutionData = any;
+export type JsonObject = any;
+export type INodeProperties = any;
+export type INodePropertyCollection = any;
+export type INodePropertyMode = any;
+export type INodeTypeDescription = any;
+export type INodeTypeBaseDescription = any;
+export type IVersionedNodeType = any;
+export type IRunExecutionData = any;
+export type Workflow = any;
+export type WorkflowExecuteMode = any;
