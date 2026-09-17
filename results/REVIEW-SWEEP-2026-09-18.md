@@ -365,3 +365,15 @@ lane `node_modules` wiped). Recovered via `fetch + checkout -B + reset --hard` o
 | Result (owner) | Claim | Fresh re-run on merged tree | Verdict |
 | :--- | :--- | :--- | :--- |
 | `TASK-428-phase3-wait-tracker.md` | WaitTracker + execution resumption runtime; suite 67 → 85; gate 10/10 → 11/11 (new E11) | execution-engine **85/85** fresh, **Execution gate 11/11** (E11 green), live gate 10/10 + `verify:all` real exit 0 on the same merged tip | **APPROVE** |
+
+## Sweep 21 (2026-09-18, on `d53f90c4`) — TASK-429
+
+| Result (owner) | Claim | Fresh re-run | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-429-phase3-webhook-response-headers.md` | `WebhookResponseHeaders` + request-handler normalisation, 8 new tests, webhook suite 67/67, gate 5/5, `verify:all` exit 0 | at its own commit `a1ce0723` (extracted with `git archive`) webhook **67/67** — 59 → 67 as claimed; on the merged tip **67/67** and Webhook gate **5/5**; `verify:all` real exit 0 on this tip (Execution 11/11 · Trigger 5/5 · Webhook 5/5 · Scheduler 6/6 · Node 7/7 · Persistence 6/6 · Credentials 6/6 · Execution Data 6/6 · API 6/6) | **APPROVE** |
+
+Commit boundary: `packages/webhook-lego/**` + its contract/gate/README + the task/result files only
+— no `reference/`, `crates/`, `apps/` or frontend path. **The queue is drained again** (the other
+`SUBMITTED_FOR_REVIEW` rows are `TASK-428`, independently approved twice by peers in sweeps 15/20,
+and `TASK-AGENT4-RUNTIME-01`, approved in sweep 19).
+
