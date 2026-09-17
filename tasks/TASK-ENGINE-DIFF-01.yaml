@@ -1,0 +1,68 @@
+id: TASK-ENGINE-DIFF-01
+agent: arena-worker
+lego: integration
+module: engine-differential
+phase: 3
+title: "Differential evidence for ISSUE-021: run both JS engines over identical scenarios"
+status: AVAILABLE
+
+# Context: ISSUE-021 records two engine tracks (packages/reconstructed-engine vs
+# packages/execution-engine) and asks the orchestrator to pick one. Its divergence
+# list predates dc0f1dd5 (pairedItem) and 937ca1d6 (retry/onError). This task adds
+# an informational differential harness (NOT a gate: exit 0 with findings, exit 1
+# only if the harness itself breaks) plus a dated ISSUE-021 addendum. Both engine
+# packages are READ-ONLY for this task — evidence only, no consolidation.
+
+allowed_paths:
+  - tasks/TASK-ENGINE-DIFF-01.yaml
+  - tools/engine-differential.mjs
+  - results/TASK-ENGINE-DIFF-01.md
+  - docs/isolation/CROSS-AGENT-ISSUES.md
+
+forbidden_paths:
+  - reference/n8n/**
+  - crates/**
+  - apps/**
+  - packages/frontend/**
+  - packages/reconstructed-engine/**
+  - packages/execution-engine/**
+  - contracts/**
+
+requires:
+  - packages/reconstructed-engine/runner.mjs
+  - packages/execution-engine/src/index.mjs
+  - docs/isolation/CROSS-AGENT-ISSUES.md
+
+source_modification: none   # harness + docs only; engines untouched
+
+operations:
+  - name: git_status
+  - name: write_file
+    args: { path: tools/engine-differential.mjs }
+  - name: run_shell
+    args: { cmd: "node tools/engine-differential.mjs", expect_exit: 0 }
+  - name: edit_file
+    args: { path: docs/isolation/CROSS-AGENT-ISSUES.md }
+  - name: run_shell
+    args: { cmd: "npm run verify:all", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "node tests/compatibility/contract_conformance.mjs", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "python3 tests/integration/boundary_audit.py", expect_exit: 0 }
+  - name: write_file
+    args: { path: results/TASK-ENGINE-DIFF-01.md }
+
+acceptance:
+  - harness runs 8 scenarios on both engines without harness errors
+  - every AGREE/DIVERGE verdict carries the compared values
+  - reference-backed expectations cite verified source lines only
+    (finished-flag L2438, R5 routing L1843-1860+L1985-2017, R1-R7 rules)
+  - ISSUE-021 addendum is append-only, dated, and signed
+  - verify:all + 42/42 + boundary stay green; engines' own suites untouched
+  - results file has a non-empty operations table (Stage 2c T1 clean)
+  - no file under reference/, crates/, apps/, frontend, contracts/,
+    or either engine package touched
+
+merge_condition:
+  - regression_gate_pass
+  - no_contract_violation

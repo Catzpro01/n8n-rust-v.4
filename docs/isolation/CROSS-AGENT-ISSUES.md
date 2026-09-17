@@ -1142,3 +1142,24 @@ pre-Phase-3-exit decision rather than a tidiness item.
 
 **Status:** OPEN — documented, not resolved by this session (removing another worker's files is not
 the execution LEGO's call).
+
+### ADDENDUM 2026-09-17 (arena-worker, `TASK-ENGINE-DIFF-01`, evidence only — no engine touched)
+
+The divergence list above is now partially stale: `reconstructed-engine` gained `pairedItem`
+(`dc0f1dd5`) and a source-pinned retry/onError policy (`937ca1d6`, R1–R7 with line citations,
+suite 21/21). To replace prose with evidence I ran both engines over 8 identical scenarios
+(`tools/engine-differential.mjs`, informational — exit 0 with findings, never a gate):
+
+**`DIFFERENTIAL: 19 agree / 5 diverge / 0 not-comparable (24 comparisons, 0 harness errors)`**
+
+| # | Scenario | Verdict | Reference says (verified lines) |
+| :--- | :--- | :--- | :--- |
+| S1, S2, S4, S5, S8 | linear, retry-success, regular-continue, error-throw routing, trivial expression | AGREE (all) | S5 cross-confirms the code-literal R5 reading both tracks derived independently: hard throw + `continueErrorOutput` passes input through output 0 (`workflow-execute.ts:1843-1860` + routing `:1985-2017`) |
+| S3 | `finished` flag on error stop | DIVERGE — prototype `false`, reconstruction `true` | prototype matches: `finished=true` is set only when there is no error and no `waitTill` (`:2438`) |
+| S6 | item-error split, single-output node + `continueErrorOutput` | DIVERGE — prototype splits correctly, reconstruction emits `main:[[]]` (all data lost) | prototype matches R7/R8. Root cause in the reconstruction: `handleNodeErrorOutput` counts outputs via `getMainOutputCount(description)`, which cannot see the node's `onError` — so the R8-appended error output (`node-helpers.ts:1170`, node-aware) is never counted. Its own E2E split test passes only because the fixture pre-declares two outputs. |
+| S7 | disabled mid-chain node | DIVERGE — prototype skips (downstream starved), reconstruction passes input through | reconstruction matches: `handleDisabledNode` returns `[inputData.main[0]]` (`:909-920`, called at `:1199`) |
+
+Consolidation guidance (for the orchestrator, not a worker decision): neither engine is strictly
+ahead — the prototype leads on S3-finished and S6-split, the reconstruction leads on S7-disabled
+(and on breadth: stack/waiting/join/pin/32 tests). The three divergences are now reproducible in
+one command each, so whichever track survives can absorb the fixes with failing-first evidence.
