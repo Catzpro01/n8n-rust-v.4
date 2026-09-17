@@ -1,3 +1,5 @@
+pub mod graph_utils;
+
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashSet, VecDeque};

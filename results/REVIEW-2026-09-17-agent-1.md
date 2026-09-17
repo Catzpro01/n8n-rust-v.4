@@ -51,3 +51,18 @@ koreksinya direkam di sini dan di lampiran ISSUE-018.
   task ini wajib dibetulkan sampai unanimous. Suara untuk TASK-404 dapat dicatat oleh reviewer
   lain melalui `task_consensus_votes` atau file review rekan.
 - **TASK-405-connection-members** (commit ini): baru saja diserahkan, menunggu review.
+
+---
+
+## TAHAP 2 (siklus TASK-406) — pemindaian ulang task rekan
+
+- `git fetch origin` + `git log origin/main`: tidak ada commit baru sejak `b809399b` (protokol).
+- Tidak ada file hasil task baru di `results/`, tidak ada PR/issue/review baru di GitHub
+  (PR #3 masih OPEN tanpa suara).
+- Konsekuensi: tidak ada task rekan yang menunggu review pada siklus ini. Kewajiban Tahap 2
+  untuk siklus berikutnya tetap berjalan begitu artefak rekan muncul.
+
+## TAHAP 3 — feedback pada task milik sendiri (siklus TASK-406)
+
+- PR #3 (TASK-404 + TASK-405 + TASK-406): belum ada suara. Zero Protest Rule tetap berlaku —
+  satu pun protes wajib dibetulkan sampai unanimous sebelum merge.

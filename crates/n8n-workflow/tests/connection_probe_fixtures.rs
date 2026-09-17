@@ -1,10 +1,12 @@
 //! Probe runner for `tests/reference/connection/01..05` (Agent-3 golden cases, pinned against
 //! the n8n 2.9.4 runtime). Implements the `wf.*` / traversal / map ops the Workflow LEGO owns
-//! (per `docs/isolation/connection-workflow-members-spec.md` — the five members hand-off).
+//! (per `docs/isolation/connection-workflow-members-spec.md` — the five members hand-off) and
+//! the graph-utils ops the Connection LEGO owns (`n8n_connection::graph_utils`).
 //!
-//! No silent skips: every probe must be either EXECUTED or on the explicit SKIP list (with
-//! owner + reason). An unknown op FAILS the run.
+//! No silent skips: every probe is EXECUTED, and an unknown op FAILS the run. All 46 probes
+//! across the five cases are expected to execute — shrinkage or op-drift fails loudly.
 
+use n8n_connection::graph_utils;
 use n8n_workflow::{compare_connections, ConnectionTypeFilter, Workflow};
 use serde_json::{json, Value};
 use std::fs;
@@ -18,16 +20,9 @@ const CASES: [&str; 5] = [
     "05-connections-diff",
 ];
 
-/// Ops owned by the Connection graph-utils LEGO (Agent 3, `n8n-connection` / graph-utils.ts) —
-/// not the Workflow port's to implement. Tracked so their absence is visible, not silent.
-const SKIPPED_OPS: [(&str, &str); 6] = [
-    ("hasPath", "Connection LEGO (graph-utils.ts) — Agent 3"),
-    ("parseExtractable", "Connection LEGO (graph-utils.ts) — Agent 3"),
-    ("getInputEdges", "Connection LEGO (graph-utils.ts) — Agent 3"),
-    ("getOutputEdges", "Connection LEGO (graph-utils.ts) — Agent 3"),
-    ("getRootNodes", "Connection LEGO (graph-utils.ts) — Agent 3"),
-    ("getLeafNodes", "Connection LEGO (graph-utils.ts) — Agent 3"),
-];
+/// Expected probe totals: 46 total, all executable (no tracked skips remain since
+/// TASK-406 ported the graph-utils ops).
+const PROBE_TOTAL: usize = 46;
 
 fn repo_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
@@ -47,6 +42,15 @@ fn depth_of(probe: &Value) -> i32 {
     probe.get("depth").and_then(Value::as_i64).unwrap_or(-1) as i32
 }
 
+fn graph_ids_of(probe: &Value) -> indexmap::IndexSet<String> {
+    probe["graph"]
+        .as_array()
+        .expect("probe graph array")
+        .iter()
+        .map(|id| id.as_str().expect("graph id").to_string())
+        .collect()
+}
+
 /// `{"undefined": true}` is how the TS harness renders an `undefined` result.
 fn undefined_marker() -> Value {
     json!({ "undefined": true })
@@ -55,7 +59,6 @@ fn undefined_marker() -> Value {
 #[test]
 fn connection_golden_probes_match_the_pinned_runtime() {
     let mut executed: Vec<String> = Vec::new();
-    let mut skipped: Vec<String> = Vec::new();
     let mut failures: Vec<String> = Vec::new();
 
     for case in CASES {
@@ -64,6 +67,11 @@ fn connection_golden_probes_match_the_pinned_runtime() {
         let expected = load(&dir.join("expected.json"));
         let workflow =
             Workflow::from_wire(&case_json).unwrap_or_else(|e| panic!("{case}: {e}"));
+        let adjacency_list: n8n_connection::WorkflowConnections = serde_json::from_value(
+            case_json.get("connections").cloned().expect("case connections"),
+        )
+        .expect("case connections parse as WorkflowConnections");
+        let adjacency_list = graph_utils::build_adjacency_list(&adjacency_list);
 
         let probes = case_json["probes"].as_array().expect("probes array").clone();
         assert!(!probes.is_empty(), "{case}: no probes");
@@ -76,11 +84,6 @@ fn connection_golden_probes_match_the_pinned_runtime() {
                 failures.push(format!("{case}/{name}: missing expected value"));
                 continue;
             };
-
-            if let Some((_, owner)) = SKIPPED_OPS.iter().find(|(op_known, _)| *op_known == op) {
-                skipped.push(format!("{case}/{name} [{op}] — owner: {owner}"));
-                continue;
-            }
 
             let actual: Value = match op.as_str() {
                 "byDestination" => match probe.get("node").and_then(Value::as_str) {
@@ -131,9 +134,7 @@ fn connection_golden_probes_match_the_pinned_runtime() {
                     let connection_type = probe.get("type").and_then(Value::as_str).unwrap_or("main");
                     workflow
                         .get_node_connection_indexes(node, parent, connection_type)
-                        .map(|indexes| {
-                            serde_json::to_value(indexes).expect("serialise indexes")
-                        })
+                        .map(|indexes| serde_json::to_value(indexes).expect("serialise indexes"))
                         .unwrap_or_else(undefined_marker)
                 }
                 "wf.getParentNodesByDepth" => {
@@ -160,9 +161,35 @@ fn connection_golden_probes_match_the_pinned_runtime() {
                     .expect("prev connections");
                     serde_json::to_value(compare_connections(&prev, &next)).unwrap()
                 }
+                "hasPath" => serde_json::to_value(graph_utils::has_path(
+                    probe["start"].as_str().expect("start"),
+                    probe["end"].as_str().expect("end"),
+                    &adjacency_list,
+                ))
+                .unwrap(),
+                "getRootNodes" => {
+                    serde_json::to_value(graph_utils::get_root_nodes(&graph_ids_of(&probe), &adjacency_list))
+                        .unwrap()
+                }
+                "getLeafNodes" => {
+                    serde_json::to_value(graph_utils::get_leaf_nodes(&graph_ids_of(&probe), &adjacency_list))
+                        .unwrap()
+                }
+                "getInputEdges" => {
+                    serde_json::to_value(graph_utils::get_input_edges(&graph_ids_of(&probe), &adjacency_list))
+                        .unwrap()
+                }
+                "getOutputEdges" => {
+                    serde_json::to_value(graph_utils::get_output_edges(&graph_ids_of(&probe), &adjacency_list))
+                        .unwrap()
+                }
+                "parseExtractable" => serde_json::to_value(
+                    graph_utils::parse_extractable_subgraph_selection(&graph_ids_of(&probe), &adjacency_list),
+                )
+                .unwrap(),
                 other => {
                     failures.push(format!(
-                        "{case}/{name}: op `{other}` is neither implemented nor on the SKIP list"
+                        "{case}/{name}: op `{other}` is not implemented — add it or justify a SKIP with an owner"
                     ));
                     continue;
                 }
@@ -179,13 +206,9 @@ fn connection_golden_probes_match_the_pinned_runtime() {
     }
 
     println!(
-        "\n=== connection probes: {} executed, {} skipped (tracked, owned by Connection LEGO) ===",
-        executed.len(),
-        skipped.len()
+        "\n=== connection probes: {} executed / {PROBE_TOTAL} expected (all executable since TASK-406) ===",
+        executed.len()
     );
-    for entry in &skipped {
-        println!("  SKIP {entry}");
-    }
 
     // Failures first — a count mismatch must never hide the actual diffs.
     assert!(
@@ -195,16 +218,11 @@ fn connection_golden_probes_match_the_pinned_runtime() {
         failures.join("\n  ")
     );
 
-    // The counts are asserted so shrinkage cannot pass silently. 14 = the `wf.*` members
-    // hand-off (docs/isolation/connection-workflow-members-spec.md); 34 = 46 total - 12 skips.
+    // Every probe must have been executed: no silent skips.
     assert_eq!(
-        executed.len() + skipped.len(),
-        46,
-        "probe total drifted: expected 46 (34 executed + 12 tracked skips)"
-    );
-    assert!(
-        executed.len() >= 34,
-        "executed probes regressed: {} < 34",
-        executed.len()
+        executed.len(),
+        PROBE_TOTAL,
+        "executed probe count drifted: {executed_count} != {PROBE_TOTAL} — a probe is missing, added, or skipped",
+        executed_count = executed.len()
     );
 }
