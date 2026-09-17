@@ -160,8 +160,12 @@ export class WorkflowExecutionEngine {
           };
           (runData[node.name] ??= []).push(task);
           executionLog.push({ node: node.name, type: node.type, durationMs: task.executionTime, status: 'error', error: executionError });
+          // `finished` is NOT part of the reference run object: getFullRunData()
+          // (L2452-2461) returns no such field and the caller only sets
+          // `fullRunData.finished = true` when there is neither an error nor a
+          // waitTill (L2429-2440). On an error stop the property stays absent.
           return {
-            status: 'ERROR', finished: false, lastNodeExecuted: node.name,
+            status: 'ERROR', lastNodeExecuted: node.name,
             error: executionError, executionLog, runData, data: Object.fromEntries(executionData),
           };
         }
@@ -187,6 +191,7 @@ export class WorkflowExecutionEngine {
         executionIndex,
         executionTime: Date.now() - startedAt,
         source: queued.source,
+        hints: [], // taskStartedData (workflow-execute.ts L1506-1511)
         executionStatus: executionError !== undefined ? 'error' : 'success',
         ...(executionError !== undefined ? { error: executionError } : {}),
         data: { main: outputs },

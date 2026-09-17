@@ -90,3 +90,24 @@ test('stops cyclic workflows at a configurable execution limit', async () => {
   const engine = new WorkflowExecutionEngine(workflow);
   await assert.rejects(() => engine.runWorkflow('A', [{}], { maxExecutions: 3 }), /Execution limit of 3 reached/);
 });
+
+test('passes input through a disabled node instead of starving its children', async () => {
+  // handleDisabledNode (workflow-execute.ts L909-920, called from runNode L1199):
+  // a disabled node returns its first main input as-is, so it still produces a
+  // successful task and its children keep running.
+  const workflow = structuredClone(linearWorkflow);
+  workflow.nodes[1].disabled = true;
+  const engine = new WorkflowExecutionEngine(workflow);
+  let setCalls = 0;
+  engine.registerNodeType('trigger', async () => [{ json: { value: 4 } }]);
+  engine.registerNodeType('set', async () => { setCalls++; return [{ json: { value: -1 } }]; });
+
+  const result = await engine.runWorkflow();
+  assert.equal(result.status, 'COMPLETED');
+  assert.equal(setCalls, 0); // the handler never runs
+  assert.equal(result.runData.Set[0].executionStatus, 'success');
+  assert.equal(result.runData.Set[0].source[0].previousNode, 'Start');
+  assert.deepEqual(result.data.Set[0].json, { value: 4 }); // input passed through untouched
+  assert.deepEqual(result.data.End[0].json, { value: 4 }); // downstream still ran
+  assert.equal(result.data.Set[0].pairedItem.item, 0);
+});

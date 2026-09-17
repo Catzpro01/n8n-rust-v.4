@@ -12,6 +12,8 @@ import {
 	NodeApiError,
 	NodeOperationError,
 	errorPassThrough,
+	getMainOutputCount,
+	getNodeOutputs,
 	isSoftFailure,
 	mergeErrorInformation,
 	resolveErrorStrategy,
@@ -137,6 +139,11 @@ test('exhausted retries with the default strategy stop the workflow at that node
 	assert.equal(run.data.resultData.lastNodeExecuted, 'Flaky');
 	assert.equal(run.data.executionData.nodeExecutionStack.length, 1, 'the failed entry stays for a restart');
 	assert.equal(run.data.executionData.nodeExecutionStack[0].node.name, 'Flaky');
+	// getFullRunData() (workflow-execute.ts L2452-2461) has no `finished` field;
+	// `fullRunData.finished = true` is assigned only on a clean finish (L2429-2440),
+	// so an error stop leaves the property absent instead of setting it to false.
+	assert.equal(Object.hasOwn(run, 'finished'), false);
+	assert.ok(!run.finished);
 });
 
 test("onError 'continueRegularOutput' passes the input data through and keeps running", async () => {
@@ -170,7 +177,7 @@ test('legacy continueOnFail behaves like continueRegularOutput', async () => {
 	assert.equal(itemsOf(run, 'After').length, 1);
 });
 
-test("onError 'continueErrorOutput' moves error items to the last output", async () => {
+test("onError 'continueErrorOutput' moves error items to the appended error output (R8)", async () => {
 	const workflow = createWorkflow({
 		nodes: [
 			node('Manual Trigger', MANUAL_TRIGGER),
@@ -189,6 +196,7 @@ test("onError 'continueErrorOutput' moves error items to the last output", async
 		},
 		nodeTypes: {
 			[MANUAL_TRIGGER]: triggerType([{ source: 'trigger' }]),
+			// ONE declared output: n8n appends the error output, so the split lands on index 1
 			[FLAKY]: flakyType(async function () {
 				const [item] = this.getInputData();
 				return [
@@ -197,7 +205,7 @@ test("onError 'continueErrorOutput' moves error items to the last output", async
 						{ ...item, json: { error: 'item-level-failure' } },
 					],
 				];
-			}, ['main', 'main']),
+			}, ['main']),
 			[AFTER]: typeDefinition(AFTER, { execute: async function () { return [this.getInputData()]; } }),
 		},
 	});
@@ -209,8 +217,26 @@ test("onError 'continueErrorOutput' moves error items to the last output", async
 	assert.equal(itemsOf(run, 'ErrorBranch').length, 1);
 	// The error item's json is merged onto the resolved paired item's json
 	assert.deepEqual(itemsOf(run, 'ErrorBranch')[0].json, { source: 'trigger', error: 'item-level-failure' });
+	// success output + appended error output
+	assert.equal(taskOf(run, 'Splitter').data.main.length, 2);
 	assert.equal(itemsOf(run, 'Splitter', 0, 0).length, 1);
 	assert.equal(itemsOf(run, 'Splitter', 0, 1).length, 1);
+	assert.equal(run.status, 'success');
+});
+
+test('getMainOutputCount appends the error output only for continueErrorOutput (R8)', () => {
+	assert.equal(getMainOutputCount({ outputs: ['main'] }), 1);
+	assert.equal(getMainOutputCount({ outputs: ['main'] }, { onError: 'stopWorkflow' }), 1);
+	assert.equal(getMainOutputCount({ outputs: ['main'] }, { onError: 'continueErrorOutput' }), 2);
+	assert.equal(getMainOutputCount({ outputs: ['main', 'main'] }, { onError: 'continueErrorOutput' }), 3);
+	assert.equal(getMainOutputCount({ outputs: [{ type: 'main' }, { type: 'ai_tool' }] }), 1);
+	assert.equal(getMainOutputCount({ outputs: 'main' }), 1);
+
+	assert.deepEqual(getNodeOutputs({ outputs: ['main'] }, { onError: 'continueErrorOutput' }), [
+		{ type: 'main', displayName: 'Success' },
+		{ category: 'error', type: 'main', displayName: 'Error' },
+	]);
+	assert.deepEqual(getNodeOutputs({ outputs: ['main'] }, {}), [{ type: 'main' }]);
 });
 
 test('items carrying an error object are normalised to { json: { error } }', async () => {

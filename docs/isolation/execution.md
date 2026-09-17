@@ -1,6 +1,6 @@
 # Execution LEGO — Phase 3 reconstruction record
 
-**Status:** `IMPLEMENTED` · `TESTED` (39/39) · `GATE 9/9`
+**Status:** `IMPLEMENTED` · `TESTED` (40/40) · `GATE 9/9`
 **Language:** JavaScript (Node.js ESM) — `PROJECT_RULES.md` v2.9.4 rule 1 (ZERO RUST, the JavaScript reconstruction track).
 The Phase-3 opening record (`docs/isolation/PHASE-3-OPENING-RECORD.md`, 2026-09-17) permits Rust **only** under
 `crates/**` + `apps/**` for the separate port track; this LEGO contributes no Rust and stays JavaScript either way.
@@ -106,7 +106,7 @@ The branch carries two engines and they are deliberately kept apart:
 | :--- | :--- | :--- |
 | Origin | earlier prototype (`runner.mjs`, naive BFS queue) + `execution-context.mjs` added by the `reconstructed-engine:test` track | Phase-3 reconstruction of `workflow-execute.ts` |
 | Fidelity | queue drains children as soon as one parent produced data; no waiting/join, no retry policy, no run-data shape, no pairing rules | line-mapped to the reference (see §2), run-data shape per `contracts/execution-data.contract.md` |
-| Tests | `runner.test.mjs` 5/5 (smoke) | `test/*.test.mjs` 32/32 |
+| Tests | `runner.test.mjs` 5/5 (smoke) | `test/*.test.mjs` 40/40 |
 | Role | smoke harness only | the reference implementation of the JavaScript track |
 
 They are **not** merged: the prototype's API (`WorkflowExecutionEngine#runWorkflow`) is used by no other
@@ -117,5 +117,8 @@ translation layer. Removing or rewiring the prototype is a separate task (see `C
 
 * Close caveat C1 of the Phase-2 verdict (re-run the 11/11 live smoke on the VPS + PostgreSQL baseline).
 * Decide the fate of `packages/reconstructed-engine/` (ISSUE-021) so Phase 3 has a single engine track per language.
+  Behaviour is no longer a tie-breaker: the differential harness reports `24 agree / 0 diverge` after
+  `TASK-ENGINE-DIFF-02` closed S3/S6/S7 on both sides, so the choice is now about coverage
+  (join/waiting/pin, 40 tests) versus keeping the prototype as a smoke harness.
 * Add process/worker isolation before accepting untrusted expressions; extend syntax rewriting and proxy variables.
 * Trigger/webhook/poll service LEGO (`triggers-and-pollers.ts`) so `run()` can be driven by real activations.

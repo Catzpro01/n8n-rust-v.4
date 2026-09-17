@@ -157,7 +157,10 @@ test('engine stops with ERROR (no data on the task) when retries are exhausted',
   engine.registerNodeType('flaky', async () => { calls++; throw new Error('always'); });
   const result = await engine.runWorkflow(null, [{}], { sleep: async () => {} });
   assert.equal(result.status, 'ERROR');
-  assert.equal(result.finished, false);
+  // The reference getFullRunData() (workflow-execute.ts L2452-2461) has no
+  // `finished` field; the caller sets `finished = true` only when there is no
+  // error and no waitTill (L2429-2440) — so an error stop leaves it absent.
+  assert.equal(result.finished, undefined);
   assert.equal(result.lastNodeExecuted, 'Middle');
   assert.equal(calls, 2);
   assert.equal(result.runData.Middle[0].executionStatus, 'error');

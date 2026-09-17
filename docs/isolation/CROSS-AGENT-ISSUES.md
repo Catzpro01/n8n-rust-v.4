@@ -1187,3 +1187,25 @@ the semantic projection and pass under this implementation). Merged-tree verific
 `verify:all` exit 0, `42/42`, boundary PASS, pin `15050/f8da35180669`. No verdict changed by the
 merge other than the three intended DIVERGE→AGREE flips. ISSUE-021's three divergences are now
 closed on all sides; envelope-metadata shape (hints/timing) remains the only recorded known delta.
+
+### ADDENDUM 2026-09-17 (arena-worker, `TASK-ENGINE-DIFF-02` — S3/S6 closed, S7 confirmed)
+
+A third worker landed on the same divergence set (`TASK-ENGINE-DIFF-02`, rebased onto `c0fc18f9`
+after `f79dc9bc`/`DISABLED-01`; the merge kept one implementation per behaviour instead of stacking
+three). `node tools/engine-differential.mjs` on the merged tree:
+
+**`DIFFERENTIAL: 24 agree / 0 diverge / 0 not-comparable (24 comparisons, 0 harness errors)`**
+
+| # | Landed as | Reference lines |
+| :--- | :--- | :--- |
+| S6 | `getMainOutputCount(description, node)` returns **declared + 1** whenever `onError === 'continueErrorOutput'` (not "at least two": a node that already declares two main outputs routes its error items to output index 2), `NodeHelpers.getNodeOutputs` is exported from `packages/execution-engine` and the split E2E test now uses a **single-output** fixture — the two-output fixture is what masked the lost data | `node-helpers.ts:1146-1181`; consumer `workflow-execute.ts:2463-2475` |
+| S3 | both engines leave the `finished` key **absent** on an error stop rather than inventing `false`: `getFullRunData()` returns no such field and `workflow-execute.ts` assigns it only when there is neither error nor `waitTill`; `waitTill` likewise appears only while waiting | `:2452-2461` + `:2429-2440` |
+| S7 | confirmed by two independent implementations (this task's early-continue variant and `DISABLED-01`'s shared-tail `invoke`); the merge kept the shared-tail one, and the prototype's tasks now carry `hints: []` like the reference `taskStartedData` | `:909-920`, `:1199`, `:1506-1511` |
+
+Harness: the interim `taskShape` projection proposed here was dropped in favour of the semantic
+projection the `DISABLED-01` lane added to the same rows (present/status/data json + downstream
+json) — one instrument, maintained by one lane, robust to missing tasks and to wall-clock
+bookkeeping. `contracts/execution.contract.md` gained the 49th documented symbol (`getNodeOutputs`)
+and an accurate §7 delta 1 for the new bounded `node:vm` evaluator (`expression-sandbox.mjs`, gate
+`E09`), which the previous wording still described as "JEXL sandbox not reconstructed yet".
+Evidence: `results/TASK-ENGINE-DIFF-02.md`.

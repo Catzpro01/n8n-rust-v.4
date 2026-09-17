@@ -10,7 +10,7 @@
  * The package has no runtime dependencies and runs on plain Node.js ESM.
  */
 
-export { WorkflowExecute, getMainOutputCount, LOOP_ERRORS } from './workflow-execute.mjs';
+export { WorkflowExecute, getMainOutputCount, getNodeOutputs, LOOP_ERRORS } from './workflow-execute.mjs';
 export {
 	ExecuteContext,
 	NO_OP_LOGGER,

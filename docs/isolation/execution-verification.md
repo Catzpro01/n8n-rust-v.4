@@ -1,6 +1,6 @@
 # Execution LEGO — verification (Phase 3 reconstruction)
 
-Generated: 2026-09-17T15:44:24.440Z  ·  Package: `packages/execution-engine`  ·  Language: JavaScript (Node.js ESM)
+Generated: 2026-09-17T15:49:14.828Z  ·  Package: `packages/execution-engine`  ·  Language: JavaScript (Node.js ESM)
 
 **Gates: 9/9 PASS** · RUST: NONE via this LEGO (JavaScript track); Phase-3 port track confined to crates/** + apps/** · **Reference: n8n 2.9.4 (read-only)**
 
@@ -12,8 +12,8 @@ Generated: 2026-09-17T15:44:24.440Z  ·  Package: `packages/execution-engine`  �
 | E04 | reference/n8n tree still matches the pinned hashes | ✅ PASS | Reference integrity check: PASS (15050 files, root f8da35180669d798…) |
 | E05 | POOL-001 suite: core workflow execute loop | ✅ PASS | 14 pass / 0 fail |
 | E06 | POOL-002 suite: node execution context + data proxy | ✅ PASS | 7 pass / 0 fail |
-| E07 | POOL-003 suite: error & retry handling | ✅ PASS | 11 pass / 0 fail |
-| E08 | public surface is documented in contracts/execution.contract.md | ✅ PASS | 48 exported symbols documented |
+| E07 | POOL-003 suite: error & retry handling | ✅ PASS | 12 pass / 0 fail |
+| E08 | public surface is documented in contracts/execution.contract.md | ✅ PASS | 49 exported symbols documented |
 | E09 | sandboxed expression evaluator security + compatibility | ✅ PASS | 7 pass / 0 fail |
 
 Machine-readable evidence: `docs/isolation/evidence/execution-engine-gate.json`

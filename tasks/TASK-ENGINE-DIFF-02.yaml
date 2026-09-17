@@ -1,0 +1,100 @@
+id: TASK-ENGINE-DIFF-02
+agent: arena-worker
+lego: integration
+module: engine-differential
+phase: 3
+title: "Close the differential divergences: reconstruction S6/S3 + prototype S7 now agree with the reference (24/24)"
+status: AVAILABLE
+
+# Context: results/TASK-ENGINE-DIFF-01.md ran 8 identical scenarios over both JS
+# engines and reported 19 agree / 5 diverge with line-cited root causes:
+#  - S3 `finished` flag: prototype `false` vs reconstruction `true` (ref: the flag is
+#    only set on a clean finish, workflow-execute.ts L2429-2440 + getFullRunData L2452-2461).
+#  - S6 item-error split: reconstruction lost all data — getMainOutputCount(description)
+#    could not see the error output that node-helpers.ts:1146-1181 appends for
+#    onError 'continueErrorOutput' (the fixture masked it by declaring two outputs).
+#  - S7 disabled node: prototype skipped the node and starved its children, while
+#    handleDisabledNode (workflow-execute.ts L909-920, called at L1199) passes the
+#    first main input through.
+# A reproducible divergence is a bug to fix, not a note (acceptance clarification on
+# DIFF-01): this task closes it in both engine packages, failing-first.
+
+allowed_paths:
+  - tasks/TASK-ENGINE-DIFF-02.yaml
+  - results/TASK-ENGINE-DIFF-02.md
+  - tools/engine-differential.mjs
+  - docs/isolation/CROSS-AGENT-ISSUES.md
+  - docs/isolation/execution.md
+  - contracts/execution.contract.md
+  - README.md
+  - packages/execution-engine/**
+  - packages/reconstructed-engine/**
+
+forbidden_paths:
+  - reference/n8n/**
+  - crates/**
+  - apps/**
+  - packages/frontend/**
+
+requires:
+  - reference/n8n/packages/core/src/execution-engine/workflow-execute.ts
+  - reference/n8n/packages/workflow/src/node-helpers.ts
+  - packages/execution-engine/src/workflow-execute.mjs
+  - packages/reconstructed-engine/runner.mjs
+  - tools/engine-differential.mjs
+
+source_modification: engine-only   # reference/n8n is read-only
+
+operations:
+  - name: read_reference
+    args: { path: reference/n8n/packages/workflow/src/node-helpers.ts, lines: "1146-1181" }
+  - name: read_reference
+    args: { path: reference/n8n/packages/core/src/execution-engine/workflow-execute.ts, lines: "909-920,1199,1429-1440,1506-1511,2452-2461" }
+  - name: edit_file
+    args: { path: packages/execution-engine/src/workflow-execute.mjs }
+  - name: edit_file
+    args: { path: packages/execution-engine/src/index.mjs }
+  - name: edit_file
+    args: { path: packages/execution-engine/test/03-error-retry.test.mjs }
+  - name: edit_file
+    args: { path: packages/reconstructed-engine/runner.mjs }
+  - name: edit_file
+    args: { path: packages/reconstructed-engine/runner.test.mjs }
+  - name: edit_file
+    args: { path: packages/reconstructed-engine/error-policy.test.mjs }
+  - name: edit_file
+    args: { path: tools/engine-differential.mjs }
+  - name: edit_file
+    args: { path: contracts/execution.contract.md }
+  - name: run_shell
+    args: { cmd: "node --test packages/execution-engine/test/*.test.mjs", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "node --test packages/reconstructed-engine/*.test.mjs", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "node tools/engine-differential.mjs", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "npm run verify:all", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "node tests/compatibility/contract_conformance.mjs", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "python3 tests/integration/boundary_audit.py", expect_exit: 0 }
+  - name: edit_file
+    args: { path: docs/isolation/CROSS-AGENT-ISSUES.md }
+  - name: write_file
+    args: { path: results/TASK-ENGINE-DIFF-02.md }
+
+acceptance:
+  - S6 no longer loses data — the engine's own split test uses a single-output fixture
+    and getNodeOutputs/getMainOutputCount are pinned against node-helpers.ts:1146-1181
+  - S3 `finished` is absent on an error stop in BOTH engines (ref L2429-2440 + L2452-2461)
+  - S7 disabled nodes pass their first main input through in BOTH engines (ref L909-920)
+  - differential harness reports 0 diverge / 0 not-comparable / 0 harness errors (24 comparisons)
+  - whole-task comparisons in the harness ignore wall-clock bookkeeping (startTime/executionTime)
+  - execution suite 40/40, reconstructed-engine suite 28/28, gate 9/9, 42/42, boundary PASS
+  - ISSUE-021 addendum is append-only, dated, signed
+  - results file has a non-empty operations table
+  - reference/, crates/**, apps/** and the frontend stay untouched
+
+merge_condition:
+  - regression_gate_pass
+  - no_contract_violation

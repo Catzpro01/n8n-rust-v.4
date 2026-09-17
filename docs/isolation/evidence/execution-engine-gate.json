@@ -1,5 +1,5 @@
 {
-	"generatedAt": "2026-09-17T15:44:24.440Z",
+	"generatedAt": "2026-09-17T15:49:14.828Z",
 	"lego": "execution",
 	"phase": "phase-3-reconstruction",
 	"language": "JavaScript (Node.js ESM)",
@@ -21,28 +21,28 @@
 			"title": "execution-engine has no runtime dependencies",
 			"status": "PASS",
 			"detail": "no dependencies, no devDependencies, no install step (node:test only)",
-			"ms": 0
+			"ms": 1
 		},
 		{
 			"id": "E02",
 			"title": "sources are import-closed (no reference/ or n8n package imports)",
 			"status": "PASS",
 			"detail": "12 source files, all imports relative or node: builtins",
-			"ms": 2
+			"ms": 3
 		},
 		{
 			"id": "E03",
 			"title": "Rust confinement: Rust only under crates/** + apps/**, this package contributes none",
 			"status": "PASS",
 			"detail": "23 Rust files repo-wide, all inside crates/**+apps/**; workspace digest a8dbef89767c8157040f61c4477bd1b6 (24 files); package contributes 0",
-			"ms": 77
+			"ms": 78
 		},
 		{
 			"id": "E04",
 			"title": "reference/n8n tree still matches the pinned hashes",
 			"status": "PASS",
 			"detail": "Reference integrity check: PASS (15050 files, root f8da35180669d798…)",
-			"ms": 453
+			"ms": 516
 		},
 		{
 			"id": "E05",
@@ -50,7 +50,7 @@
 			"requirement": "packages/execution-engine/test/01-execution-loop.test.mjs",
 			"status": "PASS",
 			"detail": "14 pass / 0 fail",
-			"ms": 123
+			"ms": 134
 		},
 		{
 			"id": "E06",
@@ -58,22 +58,22 @@
 			"requirement": "packages/execution-engine/test/02-node-context-data-proxy.test.mjs",
 			"status": "PASS",
 			"detail": "7 pass / 0 fail",
-			"ms": 216
+			"ms": 203
 		},
 		{
 			"id": "E07",
 			"title": "POOL-003 suite: error & retry handling",
 			"requirement": "packages/execution-engine/test/03-error-retry.test.mjs",
 			"status": "PASS",
-			"detail": "11 pass / 0 fail",
-			"ms": 157
+			"detail": "12 pass / 0 fail",
+			"ms": 137
 		},
 		{
 			"id": "E08",
 			"title": "public surface is documented in contracts/execution.contract.md",
 			"status": "PASS",
-			"detail": "48 exported symbols documented",
-			"ms": 1
+			"detail": "49 exported symbols documented",
+			"ms": 0
 		},
 		{
 			"id": "E09",
@@ -81,7 +81,7 @@
 			"requirement": "packages/execution-engine/test/04-expression-sandbox.test.mjs",
 			"status": "PASS",
 			"detail": "7 pass / 0 fail",
-			"ms": 136
+			"ms": 125
 		}
 	],
 	"totals": {
