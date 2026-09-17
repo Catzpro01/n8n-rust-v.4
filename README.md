@@ -16,7 +16,7 @@ is a Rust replacement attempted.
 | REFERENCE RUNTIME (baseline 11/11 smoke test) | ✅ |
 | **WORKFLOW ISOLATION (LEGO 01)** | **✅ VERIFIED — see [`docs/isolation/workflow.md`](docs/isolation/workflow.md)** |
 | NODE MODEL (LEGO 02) · CONNECTION (03) · VALIDATION (04) | ⏸ next |
-| **NATIVE LOCALIZATION (4A–4G)** | **✅ TESTED — 79/79 tests, 16/16 gate, merge-tested vs the parallel 4B hub, see [`docs/isolation/localization.md`](docs/isolation/localization.md)** |
+| **NATIVE LOCALIZATION (4A–4H)** | **✅ TESTED — 79/79 tests, 16/16 gate, `npm run verify` 11/11 (ISSUE-027 closed), merge-tested vs the parallel 4B hub, see [`docs/isolation/localization.md`](docs/isolation/localization.md)** |
 | RUST IMPLEMENTATION | ⏸ not started (Phase-3 track archived — see `legacy/rust-port/`) |
 
 “Isolated” means the TypeScript component now has an enforced boundary and a
@@ -49,6 +49,10 @@ npm run isolation:check                   # boundary + kernel + port + reference
 npm run localization:test                 # Phase 4C/4E/4F, 79 tests, runs with no build step
 npm run localization:gate                 # 16 checks; writes docs/isolation/evidence/localization-gate.json
 npm run localization:hub-diff -- --their-ref <rev>   # cross-branch localization hub diff (Phase 4G)
+npm run issuez027:falsify                 # tsc green/red control for the isolated-unit fix (Phase 4H)
+npm run setup:reference                   # reference engine stack for G11 (git-ignored .runtime/)
+npm run rust:check-offline                # offline Rust rig: cargo check on legacy/rust-port (Phase 4H)
+npm run rust:test-offline                 # offline Rust rig: 37 Rust tests, 0 failed
 npm run localization:inspect -- --lang jv # runnable view of the promoted surface
 npm run localization:record -- --lang id  # persisted execution record (Phase 4F)
 npm run localization:api -- --lang ru --api-error unauthorized   # localized HTTP payload (Phase 4F)

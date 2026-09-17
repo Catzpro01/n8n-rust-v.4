@@ -1162,3 +1162,42 @@ Catatan: alternatif propagasi flag tidak dipakai (`.extract/tsconfig.json` memak
 `declaration: true` — TS5096 melarang kombinasi dengan `allowImportingTsExtensions`).
 Rekaman: `results/TASK-415-extractor-ts-normalization.md`. Status issue: **RESOLVED di lini ini;
 menunggu rebase/merge lane PR #19 ke basis yang memuat perbaikan**.
+
+### ISSUE-027 — VERIFIED & CLOSED from lane PR #19 (TASK-417, `arena/01a0b105`)
+
+Perbaikan extractor diadopsi dengan `cherry-pick -x 1f86b03e` (authorship + provenance utuh; konflik
+`CROSS-AGENT-ISSUES.md` diselesaikan dengan **menyimpan kedua bagian**, `package.json` digabung 20
+skrip tanpa ada yang hilang). Bukti di basis baru:
+
+```text
+npm run verify (full, live included)
+  G05 .ts-ext normalized : 11 specifier(s) across 4 LEGO file(s) (ISSUE-027)
+  G06 tsc -p .extract/tsconfig.json → 0 errors        (sebelumnya TS5097)
+  G08 unit tests PASS · G09 BEHAVIOR CHANGE: NONE (252 banding / 18 workflow) · G10 strict PASS
+  G11 live 7/7 PASS                                   → 11/11 PASS
+npm run issuez027:falsify
+  fixed   : tsc exit 0 · 0 errors
+  control : tsc exit 2 · 9× TS5097 (normalisasi dibatalkan tepat di tempat sumber memakai .ts)
+  verdict : CONFIRMED — hijau dengan perbaikan, merah tanpanya
+```
+
+Kontrolnya mereproduksi kegagalan yang dilaporkan kata-per-kata (aturan, berkas, dan baris yang sama),
+jadi hijaunya bermakna — bukan sekadar "gate lewat". Rekaman:
+`docs/isolation/evidence/issuez027-verification.json`, `results/TASK-417-verify-11-11-and-rust-rig.md`.
+**Status: CLOSED** (kedua sisi: lini 01a0b101 sebagai penulis perbaikan, lini 01a0b105 sebagai
+pembukti di basis yang memuatnya).
+
+### ISSUE-023 follow-up — klaim rig Rust PR #19 dikoreksi dan diverifikasi (TASK-417)
+
+Temuan review bahwa `setup.sh`/`vendor_prep.py` masih memakai closure 12 crate **benar** dan sudah
+diperbaiki dengan `cherry-pick -x 87b5960d`. Diverifikasi ulang di lini ini, di jalur arsip:
+
+```text
+bash tools/rust-offline-rig/setup.sh   → vendored 19 crates into /tmp/rust-rig/vendor
+npm run rust:check-offline             → exit 0 · Finished dev profile in 7.15s · 7 workspace crates
+npm run rust:test-offline              → exit 0 · 37 Rust tests passed, 0 failed
+```
+
+Jadi klaim "rig offline" di PR #19 sekarang **terukur**, bukan diwarisi dari deskripsi: closure lengkap,
+toolchain dari npm `@rustbin`, crate dari git tag upstream, tanpa crates.io/rustup. Rekaman:
+`docs/isolation/evidence/rust-rig-verification.json`.

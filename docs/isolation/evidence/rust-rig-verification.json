@@ -1,0 +1,101 @@
+{
+	"tool": "rust-offline-rig",
+	"generatedAt": "2026-09-17T22:04:09.465170Z",
+	"workspace": "legacy/rust-port/crates (Phase-3 Rust track, archived per PROJECT_RULES #1 ZERO RUST)",
+	"rig": "/tmp/rust-rig (outside the repository; nothing committed)",
+	"toolchain": "rustc 1.88.0 + cargo (from npm @rustbin packages) \u2014 crates.io and rustup were never used",
+	"vendor": {
+		"crates": 19,
+		"list": [
+			"serde",
+			"serde_derive",
+			"serde_json",
+			"thiserror",
+			"thiserror-impl",
+			"syn",
+			"proc-macro2",
+			"quote",
+			"itoa",
+			"ryu",
+			"memchr",
+			"unicode-ident",
+			"indexmap",
+			"equivalent",
+			"hashbrown",
+			"regex",
+			"regex-automata",
+			"regex-syntax",
+			"aho-corasick"
+		],
+		"note": "setup.sh + vendor_prep.py rebuuild the directory source deterministically and strip workspace/path pointers (fix cherry-picked from arena/01a0b103 @ 87b5960d)"
+	},
+	"commands": [
+		{
+			"cmd": "bash tools/rust-offline-rig/setup.sh",
+			"exitCode": 0,
+			"detail": "vendored 19 crates into /tmp/rust-rig/vendor"
+		},
+		{
+			"cmd": "npm run rust:check-offline",
+			"exitCode": 0,
+			"detail": "Finished `dev` profile in 7.15s \u00b7 7 workspace crates checked"
+		},
+		{
+			"cmd": "npm run rust:test-offline",
+			"exitCode": 0,
+			"detail": "37 Rust tests passed, 0 failed"
+		}
+	],
+	"tests": {
+		"passed": 37,
+		"failed": 0,
+		"suites": [
+			{
+				"suite": "unittests",
+				"passed": 0,
+				"failed": 0
+			},
+			{
+				"suite": "unittests",
+				"passed": 2,
+				"failed": 0
+			},
+			{
+				"suite": "unittests",
+				"passed": 2,
+				"failed": 0
+			},
+			{
+				"suite": "unittests",
+				"passed": 2,
+				"failed": 0
+			},
+			{
+				"suite": "unittests",
+				"passed": 1,
+				"failed": 0
+			},
+			{
+				"suite": "unittests",
+				"passed": 4,
+				"failed": 0
+			},
+			{
+				"suite": "unittests",
+				"passed": 19,
+				"failed": 0
+			},
+			{
+				"suite": "conformance.rs",
+				"passed": 2,
+				"failed": 0
+			},
+			{
+				"suite": "reference_fixtures.rs",
+				"passed": 5,
+				"failed": 0
+			}
+		]
+	},
+	"verdict": "PASS"
+}

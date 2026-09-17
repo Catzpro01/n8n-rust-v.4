@@ -3,10 +3,12 @@
 **Scope:** native multi-language runtime for the reconstructed backend.
 **Reference:** n8n `2.9.4` (`reference/n8n`, upstream `b6dc2787c45677a29a9612cd27eb911302961a83`) — **unmodified**.
 **Contract:** [`contracts/localization.contract.md`](../../contracts/localization.contract.md)
-**Status:** `TESTED` — 79/79 module tests, 16/16 gate checks, mutations M1–M14 detected, surface
-promoted (Phase 4D), run-data/API envelope (Phase 4E), consumed by the run path (Phase 4F:
-execution-log record + localized HTTP payloads) and **merge-tested against the parallel 4B hub**
-(Phase 4G: catalogue ownership, cross-branch diff, simulation with proven promotion recipe).
+**Status:** `TESTED` — 79/79 module tests, 16/16 gate checks, **`npm run verify` 11/11** (G01–G11,
+ISSUE-027 closed on this branch), mutations M1–M14 detected, surface promoted (Phase 4D), run-data/API
+envelope (Phase 4E), consumed by the run path (Phase 4F: execution-log record + localized HTTP
+payloads), **merge-tested against the parallel 4B hub** (Phase 4G: catalogue ownership, cross-branch
+diff, simulation with proven promotion recipe) and **review-closed** (Phase 4H: ISSUE-027 falsified
+green/red with a real `tsc`, offline Rust rig re-verified end to end).
 **Rust:** none (PROJECT_RULES #1).
 
 ---
@@ -21,7 +23,8 @@ execution-log record + localized HTTP payloads) and **merge-tested against the p
 | 4D | surface promotion — `src/index.ts` re-exports the line; `tools/localization-inspect.mjs` makes it runnable | this session | TESTED |
 | 4E | consumer seam — `localization-envelope.ts`: run envelope, node status lines, API errors, engine/API vocabulary | this session | TESTED |
 | 4F | run path — `localization-vocabulary.ts` (product vocabulary + composed runtime), `execution-log-record.ts` (persisted record), `api-error-response.ts` (reference-exact localized payloads) | this session | TESTED |
-| **4G** | **merge intel** — catalogue ownership rule, `tools/localization-hub-diff.mjs`, simulation against PR #21's 27-key hub, provenance in `docs/isolation/CROSS-AGENT-ISSUES.md` ISSUE-023 | **this session** | **TESTED** |
+| 4G | merge intel — catalogue ownership rule, `tools/localization-hub-diff.mjs`, simulation against PR #21's 27-key hub, provenance in `docs/isolation/CROSS-AGENT-ISSUES.md` ISSUE-023 | this session | TESTED |
+| **4H** | **review closure** — adopt the extractor ISSUE-027 fix + the complete Rust-rig closure, `npm run verify` **11/11**, `tools/issuez027-falsify.mjs` | **this session** | **TESTED** |
 
 Phase 4A gave the project a two-language settings toggle, Phase 4B gave it six dictionaries and a
 lookup function. Neither could answer the questions an executing backend actually asks: *which*
@@ -95,6 +98,9 @@ manifest update — see contract §11.6.
 | Reference golden (4F) | test 08 F11 + gate G13 | PASS — `tests/reference/agent-4/golden/api.golden.json`: health `status` verbatim, unauthenticated text/status agree, `loginWrongPassword` body reproduced byte-for-byte (`{code:401, message}`) |
 | Run-path boundary (4F) | gate check G14 | PASS — 12 product keys × 6 locales, no 4B/4E collision, 3 modules in-package only |
 | Catalogue ownership (4G) | gate check G15 | PASS — 0 overlaps with the current 4B; the rule (catalogue wins, divergence reported) is proven against a grown stub |
+| Full isolation gate (4H) | `npm run verify` | **11/11 PASS** — G06 `tsc -p .extract/tsconfig.json → 0 errors` (was TS5097), G11 live 7/7, BEHAVIOR CHANGE: NONE (252 comparisons / 18 workflows) |
+| ISSUE-027 falsification (4H) | `npm run issuez027:falsify` | **CONFIRMED** — `tsc` exit 0 with the fix, exit 2 with **9× TS5097** in the control (normalization undone exactly where the sources carry `.ts`) → `docs/isolation/evidence/issuez027-verification.json` |
+| Offline Rust rig (4H) | `setup.sh` + `npm run rust:check-offline` + `npm run rust:test-offline` | **PASS** — 19 vendored crates, `cargo check` clean, **37 Rust tests passed / 0 failed** on `legacy/rust-port` → `docs/isolation/evidence/rust-rig-verification.json` |
 | Cross-branch hub diff (4G) | `npm run localization:hub-diff -- --their-ref 7fba8a6d --base d357e6e5` | **COMPATIBLE** — 6/6 locales, 35 vs 27 keys, **66 identical value pairs / 0 divergent**, 6 file collisions, 0 script collisions |
 | Merge simulation (4G) | clean worktree + PR #21's 4B hub | **79/79 + 16/16 PASS** after the 18-symbol promotion recipe → `docs/isolation/evidence/merge-simulation-pr21.json` |
 | Catalog ↔ 4B drift | gate check G2/G3 | PASS — 6 locales, 9 keys each, field-identical |
@@ -234,6 +240,29 @@ against a deliberately grown stub (so the check can go red). Simulation in a cle
 end state: with PR #21's hub adopted, adding the 8+6 symbols to the promotion block yields
 **79/79 + 16/16 PASS** — no translation value had to be reconciled.
 
+### 4.6 Review closure (Phase 4H) — the gate that says 11/11
+
+The PR #19 review found the one thing this lane could not see about itself: its sources import with
+explicit `.ts` specifiers, which the *localization* gate accepts (Node strips types) but the *isolated
+unit* cannot compile (`.extract/tsconfig.json` is CommonJS + `declaration: true`, so TS5096 forbids
+`allowImportingTsExtensions`). `npm run verify` was therefore 9/11 — G06 TS5097 plus a G08 cascade.
+
+Phase 4H adopted the shared extractor fix (normalizing those specifiers in the copied LEGO sources)
+and, more importantly, **proved both directions with a real `tsc`** instead of trusting the green:
+
+```text
+fixed unit   → tsc exit 0 · 0 errors                    (11 specifiers normalized in 4 files)
+control unit → tsc exit 2 · 9× TS5097                   (normalization undone where sources carry .ts)
+```
+
+The same task re-ran the offline Rust rig end to end: `run.sh` had been pointed at the archive while
+`setup.sh`/`vendor_prep.py` still vendored the old 12-crate closure, so a fresh sandbox would have
+failed on `indexmap`. With the completed 19-crate closure the rig produced `cargo check` clean and
+**37 Rust tests, 0 failed** against `legacy/rust-port`.
+
+Both adopted fixes came from other lanes as `cherry-pick -x`; no source of this line changed, and the
+localization suite stayed 79/79 throughout.
+
 ## 5. Known limitations
 
 * `normalizeLocale` resolves only tags the catalog knows: an unknown tag is *reported*, never
@@ -253,8 +282,10 @@ end state: with PR #21's hub adopted, adding the 8+6 symbols to the promotion bl
   issue to the validator). The remaining route-specific payloads of n8n 2.9.4 are covered by
   `contracts/api.contract.md` §3 shapes, not by captured fixtures — a route-by-route golden sweep is
   the natural next step, not something this LEGO can prove offline.
-* No live n8n instance was involved (offline sandbox, `docker` unavailable), so the live 11/11 stage
-  of `tests/integration/run_gate.sh` is reported `NOT RUN` here, exactly as the gate itself states.
+* `npm run verify` (11/11, Phase 4H) includes G11 — the **reference-engine live harness** running the
+  real `n8n-workflow`/`n8n-core`/`n8n-nodes-base` 2.9.1 stack from `.runtime/` (npm install, 885
+  packages, git-ignored, recreate with `npm run setup:reference`). That is *not* the same thing as the
+  VPS/docker `run_gate.sh` live 11/11 stage, which remains **NOT RUN** here — no docker, no VPS.
 * The counterpart gate of the parallel branch (`tools/localization-hub-check.mjs`, `i18n:check`)
   could not be executed here: its loader compiles TypeScript with the pinned `typescript` from
   `packages/workflow-lego/node_modules`, which this sandbox cannot install. This line's gate needs no
@@ -271,6 +302,11 @@ Phase 4F closed the loop this document asked for: the envelope is now consumed b
 (persisted record + HTTP payloads), and the vocabulary grew beyond Phase 4B's 9 keys (14 engine/API +
 12 product keys, three owners, no key collisions — contract §4.10).
 
+0. **Phase 4I (proposed, from the review's LOW note): CLDR plurals.** The envelope renders one
+   template per key, so `ar` shows the *one* form for `3` (CLDR wants `few` → `عناصر`) and `ru`
+   few/many are unhandled; the plural engine (`selectPluralCategory` + `tp()` with `key#one/few/many/`
+   `…` suffixes) already exists on the PR #20 lane. Wiring it into `ENVELOPE_DICTIONARY_EXTENSION`
+   without touching frozen keys is the natural next increment.
 1. **Phase 4G (proposed): route-level wiring.** A localized router/controller layer that *calls*
    `buildApiErrorResponse()` / `buildApiSuccessResponse()` from actual endpoints (including auth and
    validation failures), plus a golden sweep that captures every reference payload shape into
