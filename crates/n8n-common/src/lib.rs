@@ -45,6 +45,12 @@ pub struct INodeExecutionData {
     pub binary: Option<BinaryDataMap>,
     #[serde(rename = "pairedItem", skip_serializing_if = "Option::is_none")]
     pub paired_item: Option<serde_json::Value>,
+    /// Open envelope: the TS `INodeExecutionData` has an index signature, and
+    /// helpers like `returnJsonArray` spread unknown props through (`{...data,
+    /// json}`). Without this, deserialising a real envelope silently drops
+    /// data (same lesson as `INode.extra`).
+    #[serde(flatten)]
+    pub extra: serde_json::Map<String, serde_json::Value>,
 }
 
 #[derive(Debug, thiserror::Error)]

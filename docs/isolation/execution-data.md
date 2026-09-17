@@ -222,3 +222,41 @@ n8n-core exports      : normalizeItems, returnJsonArray, constructExecutionMetaD
 | filesystem binary mode probe (`id` reference) | observed manually, documented in §6.8 (not snapshotted – needs DI-initialised `BinaryDataService`) |
 | Reference baseline 11/11 | **Unchanged** – `reference/n8n` sources untouched (`git diff --stat reference/` empty) |
 | Live VPS (`157.10.160.95`) | **NOT REACHABLE from this sandbox** (connection refused/timeout). Live checklist left for the VPS pipeline; status therefore capped at `TESTED`, not `VERIFIED`. |
+
+---
+
+## 13. Rust conformance (Phase 3, TASK-405)
+
+`crates/n8n-execution-data` ports the four pure item-helper leaves in
+`reference/n8n/packages/core/src/execution-engine/node-execution-context/utils/`
+(`return-json-array`, `normalize-items`, `construct-execution-metadata`,
+`copy-input-items`), replacing the three invented/wrong helpers
+(`wrap_data` double-wrapped, `extract_json`/`pair_items` had no reference
+counterpart; all had zero users):
+
+| Reference leaf | Rust port |
+|---|---|
+| `returnJsonArray` (wrap; truthy-`json` spread, no double wrap) | `return_json_array(&Value)` |
+| `normalizeItems` (wrap / reshape / `Inconsistent item format`) | `normalize_items(&Value)` |
+| `constructExecutionMetaData` (rest-spread lets prior `pairedItem` win) | `construct_execution_metadata(&[INodeExecutionData], &Value)` |
+| `copyInputItems` (pick + `undefined → null` + deep clone) | `copy_input_items(&[INodeExecutionData], &[String])` |
+
+Quirks ported, not fixed: falsy-`json` wrapping, the binary-only reshape,
+and the `.every`/`.some` short-circuit order that decides between
+`Inconsistent item format` and `TypeError` when `null` elements are present.
+`ExecutionDataError` carries `ApplicationError` name/message parity
+(`TypeError`-mapped cases pin the name only — V8 texts are engine-specific).
+
+- **Fixtures** (`tests/reference/agent-3/execution-data/fixtures.json`): the
+  25 in-reference jest cases transcribed literally (cited per case) + 14
+  code-derived X-probes for branches the suites never cover. Transcription,
+  not generation: the reference TS is unrunnable in-sandbox (runtime
+  imports, no `node_modules`) — documented deviation, count pinned at 39.
+- **Model fix** (`n8n-common`, additive, this crate its only consumer):
+  `INodeExecutionData` gained the open-envelope `extra` field (TS index
+  signature parity — the `additionalProp` spread cases require it).
+- **Known limitation**: malformed `binary` (not a `BinaryDataMap`) maps to
+  `InvalidInput`, where the unchecked reference spreads it through (pinned
+  X11/X12); the full `IBinaryData` shape stays a follow-up.
+
+Evidence: `docs/isolation/evidence/rust-test-record.json`.

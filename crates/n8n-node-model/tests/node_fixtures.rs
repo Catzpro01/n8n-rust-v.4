@@ -8,7 +8,7 @@
 use n8n_node_model::{rename_form_fields, INode};
 use serde_json::Value;
 use std::fs;
-use std::path::Path;
+use std::path::PathBuf;
 
 const KNOWN_FIELDS: [&str; 7] = [
     "id",
@@ -21,7 +21,14 @@ const KNOWN_FIELDS: [&str; 7] = [
 ];
 
 fn load_fixtures() -> Value {
-    let path = Path::new("../../tests/reference/agent-2/node-model/fixtures.json");
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("..")
+        .join("tests")
+        .join("reference")
+        .join("agent-2")
+        .join("node-model")
+        .join("fixtures.json");
     let content = fs::read_to_string(path).expect("fixtures.json readable");
     serde_json::from_str(&content).expect("fixtures.json parses")
 }

@@ -1,0 +1,79 @@
+id: TASK-405-execution-data-conformance
+agent: agent-3
+lego: execution-data
+module: execution-data
+phase: 3
+title: "Port item-helper leaves (returnJsonArray/normalizeItems/construct/copy) + fixture pins"
+
+# n8n-execution-data ships 3 invented/wrong helpers (wrap_data double-wraps,
+# extract_json/pair_items have no reference counterpart, zero users). This
+# task replaces them with exact ports of the 4 pure reference leaves in
+# core/.../node-execution-context/utils/ (return-json-array, normalize-items,
+# construct-execution-metadata, copy-input-items), pinned by the 25 literal
+# in-reference jest cases + 10 code-derived X-probes. Transcription (not
+# generation): the reference TS is unrunnable in-sandbox (runtime imports,
+# no node_modules); cases are literal copies cited per-case.
+# INodeExecutionData gains the open-envelope `extra` field (TS index
+# signature parity; only consumer is this crate).
+
+allowed_paths:
+  - crates/n8n-execution-data/**
+  - tests/reference/agent-3/**
+  - docs/isolation/execution-data.md
+  - docs/isolation/connection-bus-outbox.json
+  - docs/isolation/evidence/rust-test-record.json
+  - tasks/TASK-405-execution-data-conformance.yaml
+  - results/TASK-405-execution-data-conformance.md
+
+# Surgical exception (additive, only consumer is this crate, bus notice):
+# INodeExecutionData `extra` flatten field + doc in n8n-common. Nothing else.
+forbidden_paths:
+  - reference/n8n/**
+  - crates/n8n-common/Cargo.toml
+  - crates/n8n-workflow/**
+  - crates/n8n-connection/**
+  - crates/n8n-validation/**
+  - crates/n8n-node-model/**
+  - crates/n8n-expression/**
+  - apps/**
+  - packages/**
+  - contracts/**
+
+requires:
+  - contracts/execution-data.contract.md
+  - reference/n8n/packages/core/src/execution-engine/node-execution-context/utils/return-json-array.ts
+  - reference/n8n/packages/core/src/execution-engine/node-execution-context/utils/normalize-items.ts
+  - reference/n8n/packages/core/src/execution-engine/node-execution-context/utils/construct-execution-metadata.ts
+  - reference/n8n/packages/core/src/execution-engine/node-execution-context/utils/copy-input-items.ts
+
+operations:
+  - name: port_leaves
+    args:
+      api: [return_json_array, normalize_items, construct_execution_metadata, copy_input_items, ExecutionDataError]
+      notes: "exact quirk ports (falsy-json wrap, rest-wins spread, reshape, undefined->null); ApplicationError name/message parity; deepCopy=Value::clone on JSON; remove wrap_data/extract_json/pair_items"
+  - name: model_fix
+    args:
+      file: crates/n8n-common/src/lib.rs
+      change: "INodeExecutionData gains #[serde(flatten)] extra (TS index-signature parity)"
+  - name: fixture_pins
+    args:
+      path: tests/reference/agent-3/execution-data/fixtures.json
+      cases: "25 transcribed in-reference cases (cited) + 10 X-probes"
+  - name: fixture_harness
+    args:
+      path: crates/n8n-execution-data/tests/execution_fixtures.rs
+      asserts: "every case incl. error name/message + pinned count"
+  - name: refresh_evidence
+    args:
+      cmd: bash tools/phase3-rust-acceptance.sh --force
+      reason: "crates changed -> re-record AFTER the code commit (TASK-403 lesson)"
+
+acceptance:
+  - cargo test --workspace green incl. new execution-data fixture tests
+  - contract_conformance 24/24, boundary_audit PASS
+  - no reference modification; no downstream crate touched
+
+merge_condition:
+  - regression_gate_pass
+  - no_contract_violation
+  - agent_5_verification

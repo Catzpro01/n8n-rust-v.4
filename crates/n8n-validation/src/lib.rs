@@ -17,14 +17,12 @@
 //!
 //! Collect-all error order follows `Object.entries` insertion order (pinned
 //! by fixture `X15-collect-all-insertion-order`). `serde_json::Value` objects
-//! are `BTreeMap`s without the `preserve_order` feature, so parsing into
-//! `Value` first would already have lost the order — and enabling
-//! `preserve_order` is not an option: it unifies workspace-wide and would
-//! silently break `n8n-workflow`'s checksum, whose canonicalisation relies on
-//! the `BTreeMap` backend (see `crates/n8n-workflow/src/checksum.rs` and
-//! `ordered.rs` reason #2). Following the `IndexMap` / `OrderedMap`
-//! precedent, this crate therefore parses JSON text directly into the
-//! insertion-ordered [`OrderedValue`].
+//! keep insertion order only with the `preserve_order` cargo feature, which
+//! unifies workspace-wide — parsing into `Value` first would silently depend
+//! on that flag. Following the `IndexMap` / `OrderedMap` precedent, this
+//! crate therefore parses JSON text directly into the insertion-ordered
+//! [`OrderedValue`], whose order guarantee holds however `serde_json` itself
+//! is configured.
 //!
 //! Conformance is pinned by `tests/reference/agent-4/validation/fixtures.json`
 //! (generated from `workflow-rules.ts` by `build-fixtures.mjs`, asserted by
