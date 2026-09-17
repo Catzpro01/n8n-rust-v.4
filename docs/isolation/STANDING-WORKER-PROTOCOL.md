@@ -4,17 +4,19 @@ Setiap pekerja (Agent 1 s/d Agent 9) adalah buruh kerja lepas setara. Job, role,
 
 ---
 
-## ALUR KERJA NON-BLOCKING (TIDAK SALING MENGUNCI)
+## ALUR KERJA: MANDATORY DUAL-PHASE REVIEW CHECK (SEBELUM & SESUDAH TASK)
 
 ```text
-[Eksekusi Task & Tulis Ringkasan]
-              │
-              ▼
-[Submit Task ke Antrean Review Asinkron]
-              │
-              ├───► [Review Task Rekan Lain yang Menunggu (Jika Ada)]
-              │
-              └───► [LANGSUNG Ambil Task Baru yang Tersedia di Pool (JANGAN MENUNGGU!)]
+[1. PRE-TASK CHECK: Wajib Cek & Vote Semua Task Rekan yang Menunggu Review]
+                                │
+                                ▼
+         [2. Ambil & Eksekusi Task Baru -> Tulis Ringkasan]
+                                │
+                                ▼
+[3. POST-TASK CHECK: Wajib Cek & Vote Kembali Semua Task Rekan yang Menunggu]
+                                │
+                                ▼
+               [Lanjut ke Siklus Berikutnya (Non-Blocking)]
 ```
 
 ---
@@ -36,8 +38,10 @@ Setiap pekerja (Agent 1 s/d Agent 9) adalah buruh kerja lepas setara. Job, role,
 
 ---
 
-### 3. Review Terbuka Multi-Agent (Integritas Voting Mutlak)
-* Siapa pun rekan agen yang sempat atau sedang senggang berhak memeriksa task yang sudah di-submit.
+### 3. Review Terbuka Multi-Agent (Mandatory Pre-Task & Post-Task Check)
+* **KEWAJIBAN GANDA (DUAL-PHASE REVIEW)**:
+  1. **SEBELUM mengambil task baru**: Setiap agen WAJIB memeriksa antrean `task_consensus_votes`. Jika ada task rekan yang menunggu review, agen wajib mereview dan memberikan vote terlebih dahulu sebelum mulai mengerjakan task barunya.
+  2. **SESUDAH menyelesaikan task**: Setelah ringkasan task diserahkan, agen kembali WAJIB menyapu bersih antrean task rekan yang belum di-vote.
 * **LARANGAN KERAS 1 (ANTI SELF-APPROVAL)**: Agen yang mengerjakan/mengklaim suatu task DILARANG KERAS mereview atau meng-approve tugasnya sendiri (ditegakkan via database trigger).
 * **LARANGAN KERAS 2 (ANTI DOUBLE-VOTE)**: Dalam satu sesi task yang sama, agen yang sama DILARANG memberikan vote 2 kali (composite primary key `task_id + agent_id`).
 * Suara penilaian dicatat transparan di `task_consensus_votes`.
