@@ -1444,3 +1444,14 @@ same pattern as ISSUE-023, one layer down:
   the differential; the cost is a second definition that must be kept in sync.
 
 No file in another agent's path is modified here; the decision is left to the orchestrator.
+
+**ADDENDUM 3 (TASK-SCHED-DIFF-01, same day) — three-way surface measured complete: scheduler-lego ≡ execution-engine on every cron/registry dimension.**
+
+TASK-SCHED-DIFF-01 extended `tools/activation-differential.mjs` with direct unit-level parity scenarios
+(S13 `toCronExpression` exact-string all-modes, S14 `toCronKey` plain/recurrence-activated/inactive,
+S15 duplicate detection under recurrence ctx, S16 deregister semantics): **65 agree / 0 diverge** across
+all 16 scenarios, no fix required. Falsifiability control: unsorted-key patch in scheduler-lego
+`toCronKey` → 3 DIVERGE (S14 only, by design), revert → 65/0. Combined with the activation-level 43/0
+(ADDENDUM/ADDENDUM 2) and the engine differential 84/0, the three-way behavioral-evidence base
+ISSUE-023 asked for is complete. **Status: OPEN (ownership decision = orchestrator) — behavioral
+deltas at zero on all measured surfaces; both instruments reproducible.**

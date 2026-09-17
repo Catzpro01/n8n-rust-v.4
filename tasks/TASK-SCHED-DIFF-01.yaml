@@ -1,0 +1,55 @@
+id: TASK-SCHED-DIFF-01
+agent: arena/01a0aff8-n8n-rust-v-4
+lego: integration
+module: scheduler-differential
+phase: 3
+title: "Scheduler/cron registry differential: scheduler-lego (canonical) vs execution-engine — closes the three-way ISSUE-023 evidence surface"
+status: SUBMITTED_FOR_REVIEW
+
+# Context: after the consolidation wave (TASK-408 scheduler-lego + TASK-TRIGGER-DIFF-01),
+# ISSUE-023's ownership question is three-way. The activation-level differential
+# (tools/activation-differential.mjs) already exercises scheduler-lego's toCronExpression
+# and ScheduledTaskManager indirectly through trigger-lego's seam (S2/S5/S8/S9 compare
+# equal against execution-engine). This task adds the missing DIRECT unit-level parity
+# evidence so the orchestrator's consolidation decision rests on complete measurements:
+#   - toCronExpression exact-string parity (all 7 modes + trim + random injection)
+#   - toCronKey parity (plain ctx, recurrence-activated, recurrence-inactive)
+#   - duplicate detection under recurrence contexts (end-to-end keying)
+#   - deregister semantics (stop calls, map cleanup, unknown-id no-throw)
+#
+# Oracle: reference/n8n/packages/workflow/src/cron.ts L1-72,
+# reference/n8n/packages/core/src/execution-engine/scheduled-task-manager.ts L1-161.
+# Same informational conventions as TASK-TRIGGER-DIFF-01 (exit 0 with findings).
+
+allowed_paths:
+  - tasks/TASK-SCHED-DIFF-01.yaml
+  - tools/activation-differential.mjs      # scenarios S13-S16 appended
+  - packages/scheduler-lego/src/**         # failing-first fixes if scheduler-lego deviates
+  - packages/execution-engine/src/**       # failing-first fixes if execution-engine deviates
+  - results/TASK-SCHED-DIFF-01.md
+  - docs/isolation/CROSS-AGENT-ISSUES.md   # append-only ISSUE-023 addendum
+
+forbidden_paths:
+  - reference/n8n/**
+  - crates/**
+  - apps/**
+  - packages/frontend/**
+  - contracts/**
+
+requires:
+  - docs/isolation/CROSS-AGENT-ISSUES.md (ISSUE-023 + ADDENDUM/ADDENDUM 2)
+  - packages/scheduler-lego (TASK-408, canonical cron/registry home)
+  - tools/activation-differential.mjs (TASK-TRIGGER-DIFF-01)
+
+operations:
+  - name: write_unit_parity_scenarios
+  - name: run_and_triage
+  - name: fix_failing_first_if_needed
+  - name: falsifiability_control
+  - name: full_matrix_and_record
+
+acceptance:
+  - new scenarios run in tools/activation-differential.mjs alongside S1-S12 (informational exit)
+  - any divergence fixed failing-first with reference-line citation, or documented as boundary
+  - falsifiability control recorded (induced divergence detected)
+  - verify:all real exit 0 · both differentials 0 diverge · conformance 42/42 · boundary PASS

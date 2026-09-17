@@ -18,10 +18,16 @@
  * which both dependency-free packages abstract (see ISSUE-023 addendum).
  * Error taxonomy is exercised per-package: each rig throws and catches its OWN
  * error classes (the classes are reconstructed per package by design).
+ *
+ * TASK-SCHED-DIFF-01 (ISSUE-023 three-way evidence): scenarios S13-S16 compare the
+ * canonical scheduler-lego cron/registry surface DIRECTLY (unit-level) against the
+ * execution-engine equivalents — toCronExpression exact-string parity, toCronKey
+ * parity, duplicate detection under recurrence contexts, deregister semantics.
  */
 import assert from 'node:assert/strict';
 import * as A from '../packages/trigger-lego/src/index.mjs';
 import * as B from '../packages/execution-engine/src/index.mjs';
+import { toCronExpression as SToCronExpression, toCronKey as SToCronKey, ScheduledTaskManager as SSTM } from '../packages/scheduler-lego/src/index.mjs';
 
 const findings = [];
 let harnessErrors = 0;
@@ -318,6 +324,100 @@ await runScenario('S12 multi-node multi-expression', 'active-workflows.ts L150-1
   s.compare('three crons registered', cronCtxOf(rig, 'wf12'), cronCtxOf(rigB, 'wf12'));
   s.compare('three crons (count 3)', cronCtxOf(rig, 'wf12').length, 3);
   s.compare('remove deregisters all', await rig.activeWorkflows.remove('wf12'), await rigB.activeWorkflows.remove('wf12'));
+});
+
+// --- S13: toCronExpression exact-string parity (scheduler-lego vs execution-engine) ----
+await runScenario('S13 toCronExpression exact parity (all modes)', 'cron.ts L52-72; scheduled-task-manager.ts consumes these expressions', async (s) => {
+  const modes = [
+    { mode: 'everyMinute' },
+    { mode: 'everyHour', minute: 5 },
+    { mode: 'everyX', unit: 'minutes', value: 7 },
+    { mode: 'everyX', unit: 'hours', value: 3 },
+    { mode: 'everyDay', minute: 30, hour: 9 },
+    { mode: 'everyWeek', minute: 0, hour: 12, weekday: 1 },
+    { mode: 'everyMonth', minute: 15, hour: 6, dayOfMonth: 3 },
+    { mode: 'custom', cronExpression: '  0 5 * * * *  ' },
+  ];
+  const fixed = () => 42;
+  for (const item of modes) {
+    s.compare(`exact expression (${item.mode}${item.unit ? ` ${item.unit}` : ''})`,
+      SToCronExpression(item, fixed),
+      B.toCronExpression(item, fixed));
+  }
+  // default random source: both produce an integer 0..59 in the second field
+  const secondOf = (expr) => Number(expr.split(' ')[0]);
+  for (const item of [{ mode: 'everyMinute' }, { mode: 'everyX', unit: 'hours', value: 2 }]) {
+    const a = SToCronExpression(item); const b = B.toCronExpression(item);
+    s.compare(`default-random second in range (${item.mode})`,
+      Number.isInteger(secondOf(a)) && secondOf(a) >= 0 && secondOf(a) <= 59,
+      Number.isInteger(secondOf(b)) && secondOf(b) >= 0 && secondOf(b) <= 59);
+  }
+});
+
+// --- S14: toCronKey parity ----------------------------------------------------------------
+await runScenario('S14 toCronKey parity (plain / recurrence-activated / recurrence-inactive)', 'scheduled-task-manager.ts L139-161 toCronKey', async (s) => {
+  const engine = new B.ScheduledTaskManager();
+  const ctxs = [
+    { workflowId: 'wf', nodeId: 'n1', expression: '0 * * * * *', timezone: 'UTC' },
+    { workflowId: 'wf', nodeId: 'n1', expression: '0 */5 * * * *', timezone: 'UTC',
+      recurrence: { activated: true, index: 0, intervalSize: 5, typeInterval: 'minutes' } },
+    { workflowId: 'wf', nodeId: 'n1', expression: '0 */5 * * * *', timezone: 'UTC',
+      recurrence: { activated: false } },
+  ];
+  for (const [i, ctx] of ctxs.entries()) {
+    s.compare(`key (${ctx.recurrence ? (ctx.recurrence.activated ? 'recurrence-activated' : 'recurrence-inactive') : 'plain'}, case ${i})`,
+      SToCronKey(ctx),
+      engine.toCronKey(ctx));
+  }
+  // key-sensitivity: activation toggle and recurrence fields must change the key
+  s.compare('keys differ for plain vs recurrence-activated',
+    SToCronKey(ctxs[0]) !== SToCronKey(ctxs[1]),
+    engine.toCronKey(ctxs[0]) !== engine.toCronKey(ctxs[1]));
+});
+
+// --- S15: duplicate detection under recurrence contexts (end-to-end keying) ---------------
+await runScenario('S15 duplicate detection with recurrence ctx', 'scheduled-task-manager.ts L60-79 (key + duplicate guard)', async (s) => {
+  const mk = (which) => {
+    const stops = [];
+    const reported = [];
+    let duplicates = 0;
+    const mgr = which === 'S'
+      ? new SSTM({ createJob: (ctx) => ({ stop: () => stops.push(ctx.expression) }), onDuplicate: () => duplicates += 1, errorReporter: { error: (m) => reported.push(m) } })
+      : new B.ScheduledTaskManager({ timer: (ctx) => ({ stop: () => stops.push(ctx.expression) }), errorReporter: { error: (m) => reported.push(m) } });
+    return { mgr, stops, reported, get duplicates() { return duplicates; } };
+  };
+  const ctx = { workflowId: 'wfR', nodeId: 'n1', expression: '0 */5 * * * *', timezone: 'UTC',
+    recurrence: { activated: true, index: 0, intervalSize: 5, typeInterval: 'minutes' } };
+  const rigS = mk('S'); const rigB = mk('B');
+  for (const rig of [rigS, rigB]) {
+    rig.mgr.registerCron(ctx, () => {});
+    rig.mgr.registerCron(ctx, () => {});
+  }
+  s.compare('registry size after duplicate (1)', rigS.mgr.cronsByWorkflow.get('wfR')?.size, rigB.mgr.cronsByWorkflow.get('wfR')?.size);
+  s.compare('duplicate signaled via some transport', rigS.duplicates > 0 || rigS.reported.length > 0, rigB.duplicates > 0 || rigB.reported.length > 0);
+  s.compare('deregister stops the job', (rigS.mgr.deregisterCrons('wfR'), rigS.stops.length), (rigB.mgr.deregisterCrons('wfR'), rigB.stops.length));
+});
+
+// --- S16: deregister semantics --------------------------------------------------------------
+await runScenario('S16 deregister semantics', 'scheduled-task-manager.ts L107-126 deregisterCrons', async (s) => {
+  const mk = (which) => {
+    const stops = [];
+    const mgr = which === 'S'
+      ? new SSTM({ createJob: (ctx) => ({ stop: () => stops.push(ctx.workflowId + ':' + ctx.expression) }) })
+      : new B.ScheduledTaskManager({ timer: (ctx) => ({ stop: () => stops.push(ctx.workflowId + ':' + ctx.expression) }) });
+    return { mgr, stops };
+  };
+  const rigS = mk('S'); const rigB = mk('B');
+  const exprs = ['0 1 * * * *', '0 2 * * * *'];
+  for (const rig of [rigS, rigB]) {
+    for (const expression of exprs) rig.mgr.registerCron({ workflowId: 'wfD', nodeId: 'n1', expression, timezone: 'UTC' }, () => {});
+  }
+  s.compare('two crons registered', rigS.mgr.cronsByWorkflow.get('wfD')?.size, rigB.mgr.cronsByWorkflow.get('wfD')?.size);
+  for (const rig of [rigS, rigB]) rig.mgr.deregisterCrons('wfD');
+  s.compare('all jobs stopped', rigS.stops.length, rigB.stops.length);
+  s.compare('all jobs stopped (2)', rigS.stops.length, 2);
+  s.compare('registry cleaned', rigS.mgr.cronsByWorkflow.get('wfD')?.size ?? 0, rigB.mgr.cronsByWorkflow.get('wfD')?.size ?? 0);
+  s.compare('unknown-id deregister no-throw', (rigS.mgr.deregisterCrons('nope'), 'ok'), (rigB.mgr.deregisterCrons('nope'), 'ok'));
 });
 
 // --- summary ---------------------------------------------------------------------------
