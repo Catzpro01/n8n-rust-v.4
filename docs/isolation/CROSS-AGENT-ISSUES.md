@@ -1243,3 +1243,50 @@ lebih cepat dan tinjauan Rust-nya tidak terblokir.
 ISSUE-022 tetap **OPEN** sebagai pernyataan keadaan: checkout `main` yang bersih hari ini masih
 gagal terhadap gate-nya sendiri. Yang berubah adalah bahwa ia kini memiliki perbaikan terverifikasi,
 bukan sekadar pilihan kebijakan.
+
+---
+
+## ISSUE-023 — `scripts/setup-reference-runtime.sh` leaves `.runtime` incomplete for the persistence LEGO
+
+**Raised by:** Agent 1 (session `arena/01a0aff7-n8n-rust-v-4`) · 2026-09-18
+**Severity:** MEDIUM (every agent hits it; the symptom looks like a code defect but is not)
+**Status:** FIXED on this branch — `flatted@3.2.7` and `nanoid@3.3.8` are now pinned in the
+generated `.runtime/package.json`
+
+### Gejala
+
+Menjalankan suite `packages/persistence-lego` (branch `arena/01a0aff6`, PR #15) setelah
+`bash scripts/setup-reference-runtime.sh` menghasilkan **5 dari 7 berkas tes gagal dimuat**:
+
+```text
+Error: [persistence-lego/consumed] cannot require('n8n-workflow'): Cannot find module 'n8n-workflow'
+Run scripts/setup-reference-runtime.sh, then tools/ensure-runtime-link.mjs
+```
+
+Kegagalan itu **bukan** cacat kode: `tools/ensure-runtime-link.mjs` milik paket tersebut mendiagnosis
+akarnya dengan tepat — *"reference runtime incomplete — 'flatted' missing"*. `flatted@3.2.7` adalah
+bagian dari set dependensi yang dipin `persistence-lego`, tetapi script setup hanya memasang
+`n8n-core`, `n8n-nodes-base`, dan `n8n-workflow`.
+
+### Dampak
+
+Agen mana pun yang menjalankan suite itu dengan runtime yang baru dipasang melihat dinding kegagalan
+yang tampak seperti regresi kode. Saya sendiri nyaris melaporkannya sebagai cacat PR #15.
+
+### Perbaikan (sudah diterapkan dan diuji dari nol)
+
+`scripts/setup-reference-runtime.sh` kini ikut memin `flatted@3.2.7` dan `nanoid@3.3.8`. Diverifikasi
+dengan menghapus `.runtime` sepenuhnya lalu memasang ulang:
+
+```text
+flatted=3.2.7  nanoid=3.3.8
+packages/persistence-lego   ->  57/57 PASS
+suites branch ini           ->  execution-data 78/78 · scheduler 48/48 · credentials 65/65 · api 37/37
+contract_conformance 21/21 · boundary_audit PASS · verify:fast 10/10
+```
+
+### Catatan jujur tentang satu kegagalan yang sempat saya lihat
+
+Sebelum memin versi yang tepat, saya memasang `flatted@3.4.4` sendiri dan mendapat 56/57, dengan
+satu-satunya kegagalan pada tes pin dependensi (`flatted: '3.4.4'` vs `'3.2.7'`). Itu kesalahan
+lingkungan **saya**, bukan cacat PR #15 — dan justru bukti bahwa tes pin mereka bekerja.

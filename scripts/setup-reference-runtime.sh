@@ -31,7 +31,9 @@ cat > "$TARGET/package.json" <<'JSON'
   "dependencies": {
     "n8n-core": "2.9.1",
     "n8n-nodes-base": "2.9.1",
-    "n8n-workflow": "2.9.1"
+    "n8n-workflow": "2.9.1",
+    "flatted": "3.2.7",
+    "nanoid": "3.3.8"
   }
 }
 JSON
