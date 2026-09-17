@@ -94,6 +94,7 @@ asserts that confinement.
 | `TASK-409-phase3-node-lego` | node (Node Model helpers) | `contracts/node.contract.md` §12 ✅ | `docs/isolation/node.md` §5 ✅ | `packages/node-lego/test/node-model.test.mjs` 58/58 ✅ | `tools/node-lego-gate.mjs` 7/7 ✅ (`N05` differential 315 agree / 0 diverge) | **SUBMITTED_FOR_REVIEW** |
 | `TASK-410-phase3-persistence-lego` | persistence | `contracts/persistence.contract.md` ✅ | `docs/isolation/persistence.md` ✅ | `packages/persistence-lego/test/persistence.test.mjs` 13/13 ✅ | `tools/persistence-lego-gate.mjs` 6/6 ✅ | **IMPLEMENTED** |
 | `TASK-411-phase3-node-parameter-resolution` | node (parameter resolution) | `contracts/node.contract.md` §12 ✅ | `docs/isolation/node.md` §5 ✅ | `packages/node-lego/test/node-model.test.mjs` 58/58 ✅ (N16/N17/N18 = 76 new differential comparisons) | `tools/node-lego-gate.mjs` 7/7 ✅ (`N05` differential 315 agree / 0 diverge) | **SUBMITTED_FOR_REVIEW** |
+| `TASK-412-phase3-node-parameter-issues` | node (parameter issues) | `contracts/node.contract.md` §12 ✅ | `docs/isolation/node.md` §5 ✅ | `packages/node-lego/test/*.test.mjs` 66/66 ✅ (8 issue-engine cases) | `tools/node-lego-gate.mjs` 7/7 ✅ (`N05` differential 337 agree / 0 diverge) | **SUBMITTED_FOR_REVIEW** |
 
 | Phase 3 gate | Result |
 | :--- | :--- |

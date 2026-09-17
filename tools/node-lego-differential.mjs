@@ -63,6 +63,7 @@ const REF = {
 	assertParamIsOfAnyTypes: reference.assertParamIsOfAnyTypes,
 	assertParamIsArray: reference.assertParamIsArray,
 	validateNodeParameters: reference.validateNodeParameters,
+	validateFieldType: reference.validateFieldType,
 };
 
 /* `renameFormFields` is not part of the published surface (internal to workflow.ts);
@@ -80,7 +81,8 @@ const EXAMINED_SURFACE = [
 	'isNodeParameterValue', 'isNodeParameters', 'isValidNodeParameterValueType',
 	'assertIsValidNodeParameterValueType', 'assertParamIsNumber', 'assertParamIsString', 'assertParamIsBoolean',
 	'assertParamIsOfAnyTypes', 'assertParamIsArray', 'validateNodeParameters',
-	'getNodeParameters', 'deepCopy', 'isExpression', 'ApplicationError', 'NodeOperationError',
+	'getNodeParameters', 'getNodeParametersIssues', 'getParameterIssues', 'mergeIssues', 'validateFieldType',
+	'deepCopy', 'isExpression', 'ApplicationError', 'NodeOperationError',
 ];
 
 /* --- comparison ------------------------------------------------------------ */
@@ -690,6 +692,34 @@ scenario('N18', 'deepCopy / isExpression / error surface', (api, capture) => {
 	capture('isExpression matrix', ['=', '=1+1', 'x', '', 1, null, undefined].map((value) => api.isExpression(value)));
 	capture('ApplicationError surface', (() => { const error = new api.ApplicationError('boom', { extra: { k: 1 } }); return { name: error.name, level: error.level, extra: error.extra, tags: error.tags }; })());
 	capture('NodeOperationError surface', (() => { const error = new api.NodeOperationError({ name: 'N', type: 't' }, 'x', { level: 'info' }); return { name: error.name, level: error.level, messages: error.messages, context: error.context }; })());
+});
+
+/* --- N19-N20: parameter issues engine ------------------------------------ */
+scenario('N19', 'getParameterIssues / getNodeParametersIssues', (api, capture) => {
+	const issueNode = { id: '1', name: 'Test', type: 'test', typeVersion: 1, position: [0, 0], parameters: {} };
+	const check = (label, property, values) => capture(label, api.getParameterIssues(property, values, '', { ...issueNode, parameters: values }, null));
+	check('required string', { name: 'x', displayName: 'X', type: 'string', required: true }, { x: '' });
+	check('hidden required', { name: 'x', displayName: 'X', type: 'string', required: true, displayOptions: { show: { mode: ['yes'] } } }, { mode: 'no', x: '' });
+	check('locator regex', { name: 'id', displayName: 'ID', type: 'resourceLocator', modes: [{ name: 'id', validation: [{ type: 'regex', properties: { regex: '[0-9]+', errorMessage: 'digits only' } }] }] }, { id: { mode: 'id', value: 'bad' } });
+	check('validate number', { name: 'n', displayName: 'N', type: 'string', validateType: 'number' }, { n: 'bad' });
+	check('fixed count + child', { name: 'fields', displayName: 'Fields', type: 'fixedCollection', typeOptions: { multipleValues: true, minRequiredFields: 2 }, options: [{ name: 'values', displayName: 'Values', values: [{ name: 'name', displayName: 'Name', type: 'string', required: true }] }] }, { fields: { values: [{ name: '' }] } });
+	const top = [{ name: 'x', displayName: 'X', type: 'string', required: true }];
+	capture('node clean null', api.getNodeParametersIssues(top, { ...issueNode, parameters: { x: 'ok' } }, null));
+	capture('node issue', api.getNodeParametersIssues(top, { ...issueNode, parameters: { x: '' } }, null));
+	capture('node disabled', api.getNodeParametersIssues(top, { ...issueNode, disabled: true, parameters: { x: '' } }, null));
+	const merged = { parameters: { a: ['one'] } };
+	api.mergeIssues(merged, { execution: true, parameters: { a: ['two'], b: ['three'] }, typeUnknown: true });
+	capture('mergeIssues', merged);
+});
+
+scenario('N20', 'validateFieldType issue-facing types', (api, capture) => {
+	for (const [name, value, type, options] of [
+		['number valid', '42', 'number'], ['number invalid', 'x', 'number'],
+		['boolean valid', 'false', 'boolean'], ['alpha invalid', 'has space', 'string-alphanumeric'],
+		['array valid', '[1,2]', 'array'], ['object invalid', '[]', 'object'],
+		['option invalid', 'x', 'options', { valueOptions: [{ value: 'a' }] }],
+		['url invalid', 'javascript:alert(1)', 'url'], ['jwt invalid', 'nope', 'jwt'],
+	]) capture(name, api.validateFieldType(name, value, type, options));
 });
 
 /* --- report -------------------------------------------------------------- */

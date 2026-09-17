@@ -231,17 +231,17 @@ The integration branch `main` (separate, unrelated git history — Arena orchest
 Phase 2 above isolated the Node Model and proved the boundary; Phase 3 makes the
 **runtime surface of the model executable** as a dependency-free JavaScript LEGO.
 
-* **Package:** `packages/node-lego` (13 source modules, 58 tests) — implemented from the pinned
+* **Package:** `packages/node-lego` (15 source modules, 66 tests) — implemented from the pinned
   `reference/n8n/packages/workflow/src` sources (line anchors in
   [`contracts/node.contract.md`](../../contracts/node.contract.md) §12.1).
-* **Contract:** `contracts/node.contract.md` §12 (module map, deltas, 54-symbol list, acceptance evidence).
+* **Contract:** `contracts/node.contract.md` §12 (module map, deltas, 61-symbol list, acceptance evidence).
 * **Evidence:** [`evidence/node-lego-gate.json`](evidence/node-lego-gate.json) — gates
-  `N01` zero-dependency, `N02` import-closed boundary, `N03` 58-test suite,
+  `N01` zero-dependency, `N02` import-closed boundary, `N03` 66-test suite,
   `N04` pinned reference tree, `N05` differential, `N06` contract/doc presence,
   `N07` every exported symbol documented.
-* **Differential:** `tools/node-lego-differential.mjs` runs 18 scenario groups against the
+* **Differential:** `tools/node-lego-differential.mjs` runs 20 scenario groups against the
   **published `n8n-workflow@2.9.1` build** (the version the pinned commit ships) resolved
-  from `packages/workflow-lego/node_modules`: **315 agree / 0 diverge / 0 harness errors**,
+  from `packages/workflow-lego/node_modules`: **337 agree / 0 diverge / 0 harness errors**,
   2 NOT-DIFFABLE surfaces (`renameFormFields` not re-exported upstream; `getPropertyValues`
   private). Falsifiability checked by injecting two behavioral mutations — each produced a
   `DIVERGE`, then was reverted (same for the parameter-resolution slice).
@@ -252,9 +252,11 @@ Phase 2 above isolated the Node Model and proved the boundary; Phase 3 makes the
   validation-boundary reconstruction of `NodeOperationError` (DELTA-02); its consolidation
   with the execution LEGO's error model is tracked as **ISSUE-024** in
   [`CROSS-AGENT-ISSUES.md`](CROSS-AGENT-ISSUES.md).
-* **Not reconstructed** (explicitly out of scope here): the parameter-issues engine
-  (`getNodeParametersIssues`/`getParameterIssues`/`mergeIssues`), `getContext`,
-  webhook path helpers, and `filter-parameter.ts` — see §12.2 of the contract.
+* **Parameter issues:** `getNodeParametersIssues`, `getParameterIssues`, and `mergeIssues`
+  now cover required/display rules, nested collections, locator regexes, resource-mapper
+  schemas, and issue-facing field types. Differential groups N19/N20 add 18 comparisons.
+* **Not reconstructed** (explicitly out of scope here): `getContext`, webhook path helpers,
+  filter execution, binary/form-field coercion, and workflow validation — see §12.2.
 
 ---
 

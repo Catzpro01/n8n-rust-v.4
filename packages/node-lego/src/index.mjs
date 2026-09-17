@@ -17,6 +17,8 @@ export { checkConditions, getNodeFeatures } from './conditions.mjs';
 export { displayParameter, displayParameterPath, getPropertyValues } from './display.mjs';
 export { isNodeConnected, isTriggerLikeNode, validateNodeCredentials } from './node-validation.mjs';
 export { getNodeParameters } from './parameter-resolution.mjs';
+export { getNodeParametersIssues, getParameterIssues, mergeIssues } from './parameter-issues.mjs';
+export { validateFieldType } from './field-validation.mjs';
 export {
 	assertIsValidNodeParameterValueType,
 	getParameterValueByPath,

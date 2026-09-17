@@ -230,6 +230,8 @@ model — the part the Workflow Model and the Execution LEGO import at runtime.
 | `parameter-type-validation.mjs` | `node-parameters/parameter-type-validation.ts` (272 ln) incl. `validateNodeParameters` | `test/node-parameters/parameter-type-validation.test.ts` (806 ln) |
 | `properties.mjs` | `node-helpers.ts` `mergeNodeProperties` L1641, `getVersionedNodeType` L1661, `isNodeWithWorkflowSelector` L1688, `resolveResourceAndOperation` L1692, `makeDescription` L1741, `isToolType`/`isHitlToolType`/`isTool` L1761-1814, `makeNodeName` L1816, `isDefaultNodeName` L1849, `getUpdatedToolDescription` L1864, `getToolDescriptionForNode` L1890, `getSubworkflowId` L1908; `type-guards.ts` L21-39 property guards | `test/node-helpers.test.ts` |
 | `parameter-resolution.mjs` | `node-helpers.ts` `getParameterDependencies` L542, `getParameterResolveOrder` L577, `getNodeParameters` L658-1056 | `test/node-helpers.test.ts` `describe('getNodeParameters')` L34-3466, `noDataExpression` L6321-6524 |
+| `parameter-issues.mjs` | `node-helpers.ts` `getNodeParametersIssues` L1202, resource-locator/resource-mapper validators, `getParameterIssues` L1389, `mergeIssues` L1600 | `test/node-helpers.test.ts` L3683-4335; differential N19 |
+| `field-validation.mjs` | dependency-free `validateFieldType` subset consumed by parameter issues (`number`, `boolean`, string/alphanumeric, date/time, object/array, options, URL, JWT) | `type-validation.ts` L326-468; differential N20 |
 | `deep-copy.mjs` | `utils.ts` `deepCopy` L53-87 (the copy the Node Model uses — **not** lodash `cloneDeep`) | differential N18 |
 | `expression-helpers.mjs` | `expressions/expression-helpers.ts` `isExpression` (the only expressions surface the Node Model owns) | differential N18 |
 | `errors.mjs` | `errors/node-operation.error.ts` + `errors/abstract/{node,execution-base}.error.ts` + `@n8n/errors` `application.error.ts` — **validation/resolution boundary only** | differential N09/N10/N17/N18 |
@@ -260,25 +262,29 @@ model — the part the Workflow Model and the Execution LEGO import at runtime.
    dependency loop, so cycles terminate with both parameters resolved; and a non-array
    `fixedCollection` element is iterated with `for…of` (a string yields one empty object per
    character). All are covered by `N16/N17` comparisons.
-5. **Not reconstructed (out of Node Model scope, listed so absence is explicit):**
-   `getNodeParametersIssues`/`getParameterIssues`/`mergeIssues` (parameter ISSUES engine —
-   needs the field-type validation and `filter-parameter.ts` ports), `getContext`,
-   `getNodeWebhookPath`/`Url`, `cronNodeOptions`, `getUpdatedToolDescription` callers,
-   `node-reference-parser-utils.ts`, workflow validation. `renameFormFields` is
-   reconstructed though not re-exported by the published build (internal call site only).
+5. **Issue-facing field validation subset.** DELTA-04. The parameter-issues engine uses a
+   dependency-free `validateFieldType` reconstruction for its schema and `validateType`
+   paths. The issue-facing types are differential-tested; binary/form-field parsing and
+   Luxon object construction remain outside this slice. The pinned filter issue path is
+   preserved as observed (unresolved filter expressions yield no issue object).
+6. **Not reconstructed (out of Node Model scope, listed so absence is explicit):**
+   `getContext`, `getNodeWebhookPath`/`Url`, `cronNodeOptions`,
+   `getUpdatedToolDescription` callers, `node-reference-parser-utils.ts`, workflow
+   validation, and filter execution. `renameFormFields` is reconstructed though not
+   re-exported by the published build (internal call site only).
 
 ### 12.3 Acceptance evidence
 
 * `tools/node-lego-gate.mjs` — gates `N01`…`N06` (`docs/isolation/evidence/node-lego-gate.json`).
-* `tools/node-lego-differential.mjs` — 18 scenario groups / 315 comparisons against the
+* `tools/node-lego-differential.mjs` — 20 scenario groups / 337 comparisons against the
   published `n8n-workflow@2.9.1` build (the version the pinned reference commit ships):
-  **315 agree / 0 diverge**, 2 NOT-DIFFABLE (`renameFormFields`, private `getPropertyValues`).
+  **337 agree / 0 diverge**, 2 NOT-DIFFABLE (`renameFormFields`, private `getPropertyValues`).
   Falsifiability: injected behavioral mutations (empty-array rule, expression short-circuit,
   the fixedCollection "value would get lost" early return, `deepCopy`'s `toJSON` handling)
   each produced a `DIVERGE`, so the harness is not vacuous.
-* `packages/node-lego/test/node-model.test.mjs` — 58 cases, oracle-cited.
+* `packages/node-lego/test/*.test.mjs` — 66 cases, oracle-cited (8 issue-engine cases).
 
-### 12.4 Exported symbol list (57 — gate `N07` asserts every one is named here)
+### 12.4 Exported symbol list (61 — gate `N07` asserts every one is named here)
 
 | | | | | | |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -291,4 +297,5 @@ model — the part the Workflow Model and the Execution LEGO import at runtime.
 | `isNodeParameterValue` | `isNodeParameters` | `isNodeWithWorkflowSelector` | `isResourceLocatorValue` | `isResourceMapperValue` | `isSubNodeType` |
 | `isTool` | `isToolType` | `isTriggerLikeNode` | `isTriggerNode` | `isValidNodeParameterValueType` | `makeDescription` |
 | `makeNodeName` | `mergeNodeProperties` | `nodeAcceptsInputType` | `nodeHasOutputType` | `renameFormFields` | `resolveRelativePath` |
-| `toPath` | `validateNodeCredentials` | `validateNodeParameters` |
+| `toPath` | `validateNodeCredentials` | `validateNodeParameters` | `getNodeParametersIssues` | `getParameterIssues` | `mergeIssues` |
+| `validateFieldType` | | | | | |
