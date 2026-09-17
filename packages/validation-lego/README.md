@@ -17,7 +17,7 @@ the opt-in enforcement capability arbitrated in ISSUE-003 Option A. **Rust: not 
 | `src/adapters/reference/` | binds the surface to the pinned runtime |
 | `src/rules/workflow-rules.ts` | NEW capability: `validateWorkflow` → `{valid, errors[]}` (zero imports) |
 | `src/validation-surface.ts` | **the seam** downstream LEGOs consume |
-| `test/` | 11 gates: boundary (sha256 pin, import closure, schema surface, rules standalone), surface parity (identity), equivalence (229 + 352 + 1125 recorded fixtures + D01–D14 oracle) |
+| `test/` | 13 gates: boundary (sha256 pin, import closure, schema surface, rules standalone), surface parity (identity), equivalence (229 + 352 + 1125 recorded fixtures + D01–D14 oracle), strict isolation (rules pass D01–D14 with the runtime blocked; reference part fails loudly without it) |
 
 ```bash
 node --test packages/validation-lego/test/*.test.mjs      # needs the n8n 2.9.4 runtime (N8N_RUNTIME or LEGO_REFERENCE_PKG)

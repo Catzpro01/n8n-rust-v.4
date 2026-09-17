@@ -100,8 +100,10 @@ were documented instead of forced apart:
 `packages/validation-lego/` — module 04 in the decoupled-directory layout, sibling of `packages/workflow-lego`.
 Reference sources are bound **1:1 by identity** to the pinned runtime (no algorithm rewritten); `src/rules/` holds
 the ISSUE-003 Option A capability (moved from `tests/reference/agent-4/validation/workflow-rules.ts`, which is now a
-re-export shim). Seam: `src/validation-surface.ts`. 11 package gates pass (boundary sha256 pin + import closure,
-surface parity by identity, equivalence over 229+352+1125 recorded fixtures + D01–D14).
+re-export shim). Seam: `src/validation-surface.ts`. 13 package gates pass (boundary sha256 pin + import closure,
+surface parity by identity, equivalence over 229+352+1125 recorded fixtures + D01–D14, strict isolation: the rule
+engine passes its oracle with `n8n-workflow`/luxon/zod blocked from the module graph; the reference-bound seam fails
+loudly — never silently — without the pinned runtime).
 
 ## 6. Tests
 
