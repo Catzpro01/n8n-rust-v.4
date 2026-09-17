@@ -9,7 +9,9 @@ const G = require('n8n-workflow/dist/cjs/graph/graph-utils.js');
 const { compareConnections } = require('n8n-workflow/dist/cjs/connections-diff.js');
 // generic node type stub: every fixture node is a plain 1-in/1-out transform node,
 // except names starting with 'Trigger' which have no inputs (so getStartNode can pick them).
-const generic = (name) => ({ description: { displayName: name, name, group: ['transform'], version: 1, description: '', defaults: {}, inputs: name.startsWith('Trigger') ? [] : ['main'], outputs: ['main'], properties: [] } });
+const generic = (name) => ({ description: { displayName: name, name, group: ['transform'], version: 1, description: '', defaults: {},
+	inputs: name.startsWith('Trigger') ? [] : name === 'Agent' ? ['main', 'ai_tool'] : ['main'],
+	outputs: name.startsWith('SubTool') ? ['ai_tool'] : ['main'], properties: [] } });
 const nodeTypes = { getByName: (n) => generic(n), getByNameAndVersion: (n) => generic(n), getKnownTypes: () => ({}) };
 
 const setToArr = (v) => (v instanceof Set ? [...v] : v);
@@ -22,6 +24,7 @@ function runConnectionCase(c) {
 	const wf = c.nodes
 		? new Workflow({ id: 'conn', name: 'conn', nodes: c.nodes.map((n) => ({ ...n, type: n.name })), connections: conn, active: false, nodeTypes, settings: {} })
 		: null;
+	if (wf && c.rename) wf.renameNode(c.rename.from, c.rename.to);
 	const out = {};
 	for (const p of c.probes) {
 		let v;
@@ -44,6 +47,11 @@ function runConnectionCase(c) {
 				case 'wf.getStartNode': v = wf.getStartNode(p.node)?.name ?? null; break;
 				case 'wf.getParentMainInputNode': v = wf.getParentMainInputNode(wf.getNode(p.node)).name; break;
 				case 'wf.getParentNodesByDepth': v = wf.getParentNodesByDepth(p.node, p.depth); break;
+				case 'wf.getChildNodes': v = wf.getChildNodes(p.node, p.type, p.depth); break;
+				case 'wf.getParentNodes': v = wf.getParentNodes(p.node, p.type, p.depth); break;
+				case 'wf.sourceKeys': v = Object.keys(wf.connectionsBySourceNode); break;
+				case 'wf.destKeys': v = Object.keys(wf.connectionsByDestinationNode); break;
+				case 'wf.rebuildThenGetParentNodes': wf.setConnections(wf.connectionsBySourceNode); v = wf.getParentNodes(p.node, p.type, p.depth); break;
 				default: v = { harnessError: 'unknown op ' + p.op };
 			}
 			v = v === undefined ? { undefined: true } : plain(setToArr(v));

@@ -127,7 +127,7 @@ Pinned: 03 `parent main-input node of Tool (sub-node -> itself)` → **`"Tool"`*
 (`tests/reference/harness/connection.js` `generic()`) declares `outputs: ['main']` for every node, so
 `nonMain` is empty and the reference returns the node itself. The fixture therefore pins the **early-return
 path only**; the `ai_tool → Agent` climb is *not* pinned yet because it needs a node type whose declared
-outputs are `['ai_tool']` (Agent 2's registry). A future fixture with such a stub should expect `"Agent"`.
+outputs are `['ai_tool']` (Agent 2's registry). **Now pinned:** case `07-parent-main-input-ai-tool` — `SubTool → Agent`, `SubToolDeep → SubTool → Agent` (two hops), `Agent → Agent`, `End → End`.
 
 ## 6. Where these belong
 

@@ -88,7 +88,18 @@ Implementation + `cargo test` are run by the Orchestrator on the VPS host.
 | MSG-18 "converge or re-export the workflow one" | Converge — but in the direction above. Re-exporting Workflow's copy from Connection would make the peer LEGO depend on the aggregate, which contract §8.2 invariant 1 forbids. | see above |
 | MSG-18 evidence (9/9 + 6/6) | cross-checked with my 5 fixtures: traversal 14/14, diff 1/1, **destination map 4/5 → D-11** (`connections.rs:56` pads `None`, reference pads `[]`). | D-11 sent |
 
-### 0.7 Phase-3 follow-up manifest
+### 0.7 New pinned cases 06–07
+
+* `tests/reference/connection/06-rename-stale-destination` — D-08 observed end-to-end on n8n-workflow 2.9.x
+  (rename → source fresh / destination stale / `setConnections` rebuilds). This is the fixture Agent 1 asked
+  Agent 5 for in MSG-12; any Rust `rename_node` must reproduce it (`crates/n8n-workflow` `3fc3156c` does;
+  `c912866b` did not).
+* `tests/reference/connection/07-parent-main-input-ai-tool` — `getParentMainInputNode` climbs `ai_tool`
+  outputs one and two hops to `Agent`; removes the UNKNOWN left in `connection-workflow-members-spec.md` §5.
+
+Harness total: 20 cases (connection 7/7).
+
+### 0.8 Phase-3 follow-up manifest
 
 Option A is drafted (not executed) as `tasks/TASK-303-connection.yaml`, status `PROPOSED`. It lists the
 exact 12 graph + 1 content symbols for port `P-CONNECTION-GRAPH`, the types that stay in the shared kernel,

@@ -80,3 +80,10 @@ tests/reference/connection/
 └── 05-connections-diff
 ```
 Run `node run.js connection` from `tests/reference/harness` (5 cases). Contract: `contracts/connection.contract.md`; isolation: `docs/isolation/connection.md`.
+
+### connection cases 06–07 (added after Phase 2 gate)
+
+| Case | Pins |
+| :--- | :--- |
+| `06-rename-stale-destination` | D-08 end-to-end: after `renameNode(A→A2)` the source map is fresh (`children of Trigger` = `[B, A2]`), the destination map is stale (`parents of B` = `[Trigger, A]`, `parents of A2` = `[]`), `getNodeConnectionIndexes(B, A2)` = `undefined`; `setConnections(sameMap)` rebuilds it. Closes the coverage gap Agent 1 handed to Agent 5 in MSG-12. |
+| `07-parent-main-input-ai-tool` | `getParentMainInputNode` climbing `ai_tool` outputs (one and two hops) — the path case 03 could not pin because its stub declared `main` outputs only. Harness stub now: `SubTool*` → `outputs: ['ai_tool']`, `Agent` → `inputs: ['main','ai_tool']`. |

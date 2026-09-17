@@ -1,0 +1,32 @@
+{
+  "after rename: source map keys": [
+    "Trigger",
+    "A2"
+  ],
+  "after rename: destination map keys (stale, still 'A')": [
+    "A",
+    "B"
+  ],
+  "after rename: children of Trigger (source map, fresh)": [
+    "B",
+    "A2"
+  ],
+  "after rename: parents of B (destination map, stale -> old name)": [
+    "Trigger",
+    "A"
+  ],
+  "after rename: parents of A2 (stale -> [])": [],
+  "after rename: parents of A (stale -> still answers)": [
+    "Trigger"
+  ],
+  "after rename: getNodeConnectionIndexes B <- A2 (stale -> undefined)": {
+    "undefined": true
+  },
+  "after rename: getNodeConnectionIndexes B <- A (old name: getNode(A) is null -> undefined before the stale map is even consulted)": {
+    "undefined": true
+  },
+  "after setConnections(same map): parents of B (rebuilt)": [
+    "Trigger",
+    "A2"
+  ]
+}
