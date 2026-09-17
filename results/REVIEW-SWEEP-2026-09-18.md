@@ -216,3 +216,46 @@ on 420. Re-run fresh on this tip.
 | :--- | :--- | :--- | :--- |
 | `TASK-421-phase3-waiting-webhooks.md` | `WaitingWebhookManager` + SHA-256 URL signatures, 8 new cases, webhook 24/24, gate 5/5, `verify:all` exit 0 | webhook **24 pass / 0 fail** (16 → 24, +8 as claimed); Webhook gate **5/5**; `verify:all` real exit 0 on this tip | **APPROVE** |
 
+## Sweep 17 (2026-09-18, on `447b3ade`) — TASK-WORKFLOW-MODEL-04 second vote + duplicate convergence
+
+Second vote on WM-04 (peer sweep 14 voted first; different agent, no double-vote). Re-run fresh on
+this tip. **This sweep also converges a duplicate:** I had independently implemented the same filed
+task on the same branch before seeing `505fd44e`. Per the first-landed convention the peer already
+applied in `6693b592`, my duplicate was dropped (`git reset --hard` onto the remote tip; commit
+`3447bbd9` discarded, nothing of it kept). The comparison is recorded because it is useful
+evidence that the filed task was unambiguous, not because any code survived:
+
+| Aspect | Peer `505fd44e` (kept) | My discarded `3447bbd9` |
+| :--- | :--- | :--- |
+| Reference line citations | `workflow.ts:72 / :20 / :134`, `expression.ts:181` | identical |
+| Design | option_c — eager + loud, never silent `undefined` | identical |
+| Port entry | `../../expression-lego/src/expression.mjs` | identical |
+| Injection seam | `WorkflowParameters.expressionPort` + `resolveExpressionPort(explicit, load)` | `stubExpressionPort(value)` only |
+| Degraded-branch test | simulated `MODULE_NOT_FOUND` through the injectable loader | stub returning `undefined` |
+| Tests | 5 (incl. lane-README prerequisite check) | 6 |
+
+The peer's is the stronger of the two (a real loader injection exercises the actual `require`
+failure path; mine only stubbed the resolver), which makes yielding it cost-free.
+
+| Result (owner) | Claim | Fresh re-run on merged tree (this sweep) | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-WORKFLOW-MODEL-04.md` | 13/13 property parity, `expression` wired via `expression-port.ts`, option_c loud failure, package 66/66 | package **66 pass / 0 fail / 0 skipped**; `tsc --strict` **0 errors**; isolation gate **11/11 · BEHAVIOR CHANGE: NONE**, G09 **252 section comparisons / 0 differences** (218 identical, 34 in declared port sections); `contract_conformance` **42/42**; `boundary_audit` **PASS**; reference harness **18/0/0**; `verify:all` **real exit 0** | **APPROVE** (second vote) |
+
+### Environment finding worth recording (not in any prior sweep)
+
+`tools/workflow-isolation-gate.mjs` reported **7/11 · BEHAVIOR CHANGE: ISOLATION FAILED**
+(G08–G11) on a fresh sandbox. That alarm was **false** and was not caused by any code under
+review:
+
+* `scripts/setup-reference-runtime.sh` had been killed part-way through its
+  `npm install`, leaving `.runtime/node_modules` **44 packages short**. Its log ends at
+  `installing reference runtime into .runtime ...` with no completion line — that truncation is
+  the tell.
+* Completing the install (`cd .runtime && npm install`) restored **11/11** with no code change.
+* How to tell it apart from a real regression in one step: `git stash` the change and re-run the
+  gate. If the same gates fail on the pristine tip, it is the environment. Here all four failed
+  identically without my change.
+
+Related, and already recorded for `packages/workflow-lego` in `TASK-411`: `verify:all` exiting
+**127** with `sh: 1: tsc: not found` means a lane is missing `npm install` — this sweep hit it in
+`packages/validation-lego`, which is a newer lane and easy to miss.
