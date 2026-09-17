@@ -1,48 +1,104 @@
 /**
- * Error type used by `Workflow.renameNode` for restricted node names.
+ * Error types thrown by the Workflow aggregate.
  *
- * The reference imports `UserError` from `@n8n/errors`
- * (`reference/n8n/packages/workflow/src/workflow.ts:18` → `./errors` → `@n8n/errors`).
- * `error.constructor.name` is observable — the `rename/restricted-*` fixtures record
- * `errorName: "UserError"` — so the class **name** is part of the contract, not just the message.
+ * Two distinct reference sources, reconstructed structurally because this LEGO is dependency-free
+ * (pulling `@n8n/errors` in would add a runtime dependency; `tools/execution-engine-gate.mjs`
+ * gate `E01` asserts that posture for the execution LEGO and this package follows it):
  *
- * This is a structural reconstruction (message + `description` option), not a re-export, because
- * pulling `@n8n/errors` in would give this LEGO a runtime dependency; the Phase-3 JavaScript
- * track is dependency-free (`tools/execution-engine-gate.mjs` gate `E01` asserts that posture for
- * the execution LEGO, and this package follows it).
+ * | type | reference source |
+ * | :--- | :--- |
+ * | `UserError` | `reference/n8n/packages/workflow/src/errors/base/user.error.ts` → `base.error.ts` |
+ * | `ApplicationError` | `reference/n8n/packages/@n8n/errors/src/application.error.ts` |
+ *
+ * **Neither reference class assigns `this.name`.** Both therefore report the inherited
+ * `name === 'Error'`, while `constructor.name` stays the class name. That split is observable and
+ * pinned: `tests/reference/workflow-rust/fixtures.json` records
+ * `errorName: error.constructor?.name` (`build-fixtures.mjs:255`), and the differential in
+ * `test/static-data-queries.test.mjs` compares `error.name` against the published build — which is
+ * exactly what caught an earlier version of this file setting `name` to the class name.
+ *
+ * One documented substitution: both reference constructors derive `tags.packageName` from
+ * `callsites()[2].getFileName()`. That needs the `callsites` package and reads the *caller's*
+ * path, so it is not reproduced; no fixture or differential observes it.
  */
-export interface UserErrorOptions {
-	description?: string;
-	level?: string;
+
+export interface BaseErrorOptions {
+	description?: string | null;
+	level?: 'fatal' | 'error' | 'warning' | 'info' | 'debug';
+	shouldReport?: boolean;
+	tags?: Record<string, string | undefined>;
+	extra?: Record<string, unknown>;
 	cause?: unknown;
-	[key: string]: unknown;
 }
 
-export class UserError extends Error {
-	readonly description: string | undefined;
+/** `reference/n8n/packages/workflow/src/errors/base/base.error.ts:34-60`. */
+abstract class BaseError extends Error {
+	level: 'fatal' | 'error' | 'warning' | 'info' | 'debug';
 
-	readonly level: string | undefined;
+	readonly shouldReport: boolean;
 
-	constructor(message: string, options: UserErrorOptions = {}) {
-		super(message);
-		this.name = 'UserError';
-		this.description = options.description;
-		this.level = options.level;
-		// Keep `instanceof` and stack traces correct on every supported runtime.
+	readonly description: string | null | undefined;
+
+	readonly tags: Record<string, string | undefined>;
+
+	readonly extra?: Record<string, unknown>;
+
+	constructor(
+		message: string,
+		{
+			level = 'error',
+			description,
+			shouldReport,
+			tags = {},
+			extra,
+			...rest
+		}: BaseErrorOptions = {},
+	) {
+		super(message, rest as { cause?: unknown });
+
+		this.level = level;
+		this.shouldReport = shouldReport ?? (level === 'error' || level === 'fatal');
+		this.description = description;
+		this.tags = tags;
+		this.extra = extra;
+	}
+}
+
+/**
+ * Thrown by `Workflow.renameNode` for the 13 restricted names.
+ *
+ * `reference/.../user.error.ts:16-25`: `UserError` forces `level` to `'info'` when the caller did
+ * not set one, which — through `BaseError` — makes `shouldReport` default to `false`. Both are
+ * observable fields, so both are reproduced.
+ */
+export class UserError extends BaseError {
+	declare readonly description: string | null | undefined;
+
+	constructor(message: string, opts: BaseErrorOptions = {}) {
+		super(message, { ...opts, level: opts.level ?? 'info' });
 		Object.setPrototypeOf(this, UserError.prototype);
 	}
 }
 
 /**
- * `ApplicationError` — thrown by `getParentMainInputNode` when a connected node it resolved by
- * name is missing from the map. Reference: `@n8n/errors` via `workflow.ts:19`. Structural, for the
- * same reason as `UserError`: `error.constructor.name` is observable and must stay
- * `ApplicationError`.
+ * Thrown by `getParentMainInputNode` (a connected node it resolved by name is missing) and by
+ * `getStaticData` (unknown context type, or `'node'` without a node).
+ *
+ * `reference/n8n/packages/@n8n/errors/src/application.error.ts:9-32`: `level` defaults to
+ * `'error'`, `tags` defaults to `{}`, `extra` is carried through, and `this.name` is never set.
  */
 export class ApplicationError extends Error {
-	constructor(message: string) {
-		super(message);
-		this.name = 'ApplicationError';
+	level: 'fatal' | 'error' | 'warning' | 'info' | 'debug';
+
+	readonly tags: Record<string, string | undefined>;
+
+	readonly extra?: Record<string, unknown>;
+
+	constructor(message: string, { level, tags = {}, extra, ...rest }: BaseErrorOptions = {}) {
+		super(message, rest as { cause?: unknown });
+		this.level = level ?? 'error';
+		this.tags = tags;
+		this.extra = extra;
 		Object.setPrototypeOf(this, ApplicationError.prototype);
 	}
 }

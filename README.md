@@ -19,6 +19,7 @@ is a Rust replacement attempted.
 | **EXECUTION ENGINE (Phase 3, JS reconstruction)** | **✅ IMPLEMENTED · TESTED 60/60 · GATE 10/10 — see [`docs/isolation/execution.md`](docs/isolation/execution.md)** |
 | **WORKFLOW MODEL LEGO 01 (Phase 3, TS reconstruction)** | **✅ IMPLEMENTED · VERIFIED 26/26 — see [`packages/workflow-model-lego/`](packages/workflow-model-lego/README.md)** |
 | **WORKFLOW MODEL LEGO 02 (frozen surface closed)** | **✅ IMPLEMENTED · VERIFIED 54/54 — all 15 frozen §6 symbols + the 14 `wf.*` connection-golden probes (traversal delegated to `start-node-navigation`, single source of truth)** |
+| **WORKFLOW MODEL LEGO 03 (aggregate complete)** | **✅ IMPLEMENTED · VERIFIED 61/61 — all 27 reference `Workflow` members + 51-comparison differential vs `n8n-workflow@2.9.1` (0 divergences)** |
 | **NODE LEGO 02 (Phase 3, JS reconstruction)** | **✅ IMPLEMENTED · TESTED 45/45 · GATE 7/7 · DIFFERENTIAL 234 agree / 0 diverge — see [`docs/isolation/node.md`](docs/isolation/node.md) §5** |
 | **NODE LEGO 02 (Phase 3, JS reconstruction)** | **✅ IMPLEMENTED · TESTED 82/82 · GATE 7/7 · DIFFERENTIAL 1422 agree / 0 diverge — see [`docs/isolation/node.md`](docs/isolation/node.md) §5** |
 | **NODE LEGO 02 (Phase 3, JS reconstruction)** | **✅ IMPLEMENTED · TESTED 93/93 · GATE 7/7 · DIFFERENTIAL 1609 agree / 0 diverge — see [`docs/isolation/node.md`](docs/isolation/node.md) §5** |

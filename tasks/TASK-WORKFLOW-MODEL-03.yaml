@@ -1,0 +1,98 @@
+id: TASK-WORKFLOW-MODEL-03
+agent: arena-worker
+lego: workflow
+module: workflow
+phase: 3
+track: "JavaScript/TypeScript reconstruction (docs/isolation/PHASE-3-OPENING-RECORD.md §2)"
+title: "Complete the Workflow aggregate: static data, node queries and connection lookup + fix the error field set"
+status: SUBMITTED_FOR_REVIEW
+authority: PROJECT_RULES.md §1, §3, §6 · contracts/workflow.contract.md · docs/isolation/PHASE-3-OPENING-RECORD.md
+follows: TASK-WORKFLOW-MODEL-02
+
+objective: >
+  TASK-WORKFLOW-MODEL-02 closed the *frozen* §6 surface, but the aggregate itself was still
+  incomplete: six members of the reference `Workflow` class had never been reconstructed. Add them
+  1:1 and verify them differentially against the published reference build instead of hand-written
+  expectations. While doing so, the differential exposed a fidelity defect in the error types that
+  TASK-01/02 delivered — fix that too.
+
+allowed_paths:
+  - packages/workflow-model-lego/**
+  - docs/isolation/LEGO-MASTER-MAP.md
+  - README.md
+  - results/TASK-WORKFLOW-MODEL-03.md
+  - tasks/TASK-WORKFLOW-MODEL-03.yaml
+
+forbidden_paths:
+  - reference/n8n/**                           # hash-pinned golden source
+  - crates/**                                  # Rust port track — not this task's track
+  - apps/**
+  - packages/workflow-lego/**                  # Phase-2 isolation unit
+  - packages/connection-lego/src/**            # consumed via port CD-02, never edited
+  - packages/node-lego/src/**                  # consumed via port CD-05, never edited
+  - tests/reference/**/expected.json           # oracles are read-only
+
+reconstruction:
+  - { from: "reference/n8n/packages/workflow/src/workflow.ts:210-243 (getStaticData)", to: "packages/workflow-model-lego/src/workflow.ts" }
+  - { from: "reference/n8n/packages/workflow/src/workflow.ts:246-248 (setTestStaticData)", to: "packages/workflow-model-lego/src/workflow.ts" }
+  - { from: "reference/n8n/packages/workflow/src/workflow.ts:250-256 (getTriggerNodes)", to: "packages/workflow-model-lego/src/workflow.ts" }
+  - { from: "reference/n8n/packages/workflow/src/workflow.ts:258-264 (getPollNodes)", to: "packages/workflow-model-lego/src/workflow.ts" }
+  - { from: "reference/n8n/packages/workflow/src/workflow.ts:266-296 (queryNodes)", to: "packages/workflow-model-lego/src/workflow.ts" }
+  - { from: "reference/n8n/packages/workflow/src/workflow.ts:892-925 (getConnectionsBetweenNodes)", to: "packages/workflow-model-lego/src/workflow.ts" }
+  - { from: "reference/n8n/packages/workflow/src/errors/base/{user,base}.error.ts", to: "packages/workflow-model-lego/src/errors.ts", note: "fidelity fix, see defect_1" }
+  - { from: "reference/n8n/packages/@n8n/errors/src/application.error.ts:9-32", to: "packages/workflow-model-lego/src/errors.ts", note: "fidelity fix, see defect_1" }
+
+defects_found_and_fixed:
+  - id: defect_1
+    what: "UserError and ApplicationError both set `this.name` to the class name"
+    reference: >
+      Neither `errors/base/base.error.ts` nor `@n8n/errors/src/application.error.ts` assigns
+      `this.name`. Both therefore report the inherited `name === 'Error'`; only `constructor.name`
+      carries the class name.
+    how_found: >
+      The new differential compares `error.name` against the published build. Six comparisons
+      diverged — `mine: "ApplicationError"` vs `theirs: "Error"` — across the three fixture cases.
+      Hand-written expectations would not have caught this: `tests/reference/workflow-rust/
+      fixtures.json` records `errorName: error.constructor?.name` (build-fixtures.mjs:255), which
+      is unaffected, so all 61 tests were green before the fix.
+    also_fixed: >
+      `UserError` was missing `shouldReport`, `tags` and `extra`, and defaulted `level` to
+      `undefined` instead of `'info'` (which is what makes `shouldReport` false).
+    verified: >
+      Field-for-field equality with the published build:
+      `name="Error" ctor=UserError level="info" shouldReport=false` on both sides.
+
+acceptance:
+  - "tsc --strict builds with 0 errors"
+  - "every one of the 27 reference Workflow members is now present on the reconstructed aggregate"
+  - "the six new members agree with the published n8n-workflow build on every probe of a 3-case matrix"
+  - "the differential skips loudly, and is counted as skipped, when the reference build is absent"
+  - "negative controls prove the oracle rejects plausible-but-wrong implementations"
+  - "no regression anywhere on the branch"
+
+verification:
+  workflow_model_lego: "61 tests / 61 pass / 0 fail / 0 skipped (conformance 46 + disabled-graph 8 + static-data-queries 7)"
+  differential: "51/51 comparisons agree vs n8n-workflow@2.9.1 (3 fixture cases x 17 probes), 0 divergences"
+  tsc_strict: "tsc -p tsconfig.json -> exit 0"
+  phase3_conformance: "42/42 CHECKS PASSED"
+  boundary_audit: "AUDIT RESULT: PASS (all edges documented)"
+  isolation_gate: "11/11 PASS · BEHAVIOR CHANGE: NONE DETECTED"
+  reference_harness: "18 PASS / 0 FAIL / 0 UNKNOWN"
+  fixtures_drift: "fixtures match the pinned reference: 8 checksum, 6 diff, 6 shape, 6 rename, 9 traversal cases"
+  lanes: "connection 58 · expression 46 · node 93 · validation 20 · persistence 13 · trigger 11 · webhook 10 · scheduler 9"
+  verify_all: "npm run verify:all exit 0"
+
+notes:
+  - "The aggregate is now complete: `comm` over the reference's 27 method declarations and the reconstruction's reports an empty difference set. Before this task six were missing: getStaticData, setTestStaticData, getTriggerNodes, getPollNodes, queryNodes, getConnectionsBetweenNodes."
+  - "Reference quirks reproduced, not fixed: getStaticData's test-data short-circuit is truthiness not presence, and its lazily created bucket is an ObservableObject parented to staticData so writes mark the workflow dirty; queryNodes skips `disabled === true` BEFORE the type lookup, so a disabled trigger is never offered to checkFunction; getConnectionsBetweenNodes walks Object.keys of both the type map and each branch array (so order is key-insertion order, keys are re-parsed with parseInt), returns the stored destination object BY IDENTITY not a copy, and skips null sparse slots."
+  - "One documented substitution: the reference error constructors derive `tags.packageName` from `callsites()[2].getFileName()`. That needs the `callsites` package and reads the caller's path, so it is not reproduced; no fixture or differential observes it."
+  - "Hygiene: docs/isolation/LEGO-MASTER-MAP.md had three copies of the TASK-WORKFLOW-MODEL-01 row and two of TASK-409, plus one line with two table rows glued together — an artefact of the keep-both merge resolver used while pushing TASK-02. The glued row was split and superseded duplicates dropped; the pool table now has 18 rows with every task id exactly once."
+
+runtime_note: >
+  The differential's oracle is the published `n8n-workflow@2.9.1` (declared as a devDependency of
+  `packages/workflow-lego`) while the pinned source tree is 2.9.4. The six members under test are
+  identical between them. The version delta is reported rather than hidden, matching the existing
+  N05 differential in `tools/node-lego-differential.mjs`.
+
+id_note: >
+  Lane-scoped ID, continuing TASK-WORKFLOW-MODEL-01/02.

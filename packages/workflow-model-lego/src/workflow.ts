@@ -21,6 +21,8 @@ import { NodeConnectionTypes } from './interfaces';
 import type {
 	GraphPort,
 	IConnection,
+	IObservableObject,
+	INodeType,
 	IConnections,
 	IConnectedNode,
 	IDataObject,
@@ -230,6 +232,91 @@ export class Workflow {
 			ignoreEmptyOnFirstChild: true,
 		});
 		(this.staticData as { __dataChanged: boolean }).__dataChanged = true;
+	}
+
+	/**
+	 * Returns the static data of the workflow. 1:1 from `workflow.ts:210-243`.
+	 *
+	 * Reference quirks reproduced, not fixed:
+	 * - the test-data short-circuit is **truthiness**, not presence;
+	 * - the lazily created bucket is an `ObservableObject` whose parent is `this.staticData`, so
+	 *   writing into it marks the workflow dirty;
+	 * - `type` is an untyped `string`; anything but `'global'`/`'node'` throws `ApplicationError`
+	 *   carrying `extra: { contextType }`.
+	 */
+	getStaticData(type: string, node?: INode): IDataObject {
+		let key: string;
+		if (type === 'global') {
+			key = 'global';
+		} else if (type === 'node') {
+			if (node === undefined) {
+				throw new ApplicationError(
+					'The request data of context type "node" the node parameter has to be set!',
+				);
+			}
+			key = `node:${node.name}`;
+		} else {
+			throw new ApplicationError('Unknown context type. Only `global` and `node` are supported.', {
+				extra: { contextType: type },
+			});
+		}
+
+		if (this.testStaticData?.[key]) return this.testStaticData[key] as IDataObject;
+
+		if (this.staticData[key] === undefined) {
+			// Create it as ObservableObject that we can easily check if the data changed
+			// to know if the workflow with its data has to be saved afterwards or not.
+			this.staticData[key] = ObservableObject.create(
+				{},
+				this.staticData as IObservableObject,
+			);
+		}
+
+		return this.staticData[key] as IDataObject;
+	}
+
+	/** 1:1 from `workflow.ts:246-248`. */
+	setTestStaticData(testStaticData: IDataObject): void {
+		this.testStaticData = testStaticData;
+	}
+
+	/** 1:1 from `workflow.ts:250-256`. */
+	getTriggerNodes(): INode[] {
+		return this.queryNodes((nodeType: INodeType) => !!(nodeType as { trigger?: unknown }).trigger);
+	}
+
+	/** 1:1 from `workflow.ts:258-264`. */
+	getPollNodes(): INode[] {
+		return this.queryNodes((nodeType: INodeType) => !!(nodeType as { poll?: unknown }).poll);
+	}
+
+	/**
+	 * 1:1 from `workflow.ts:266-296`. Iterates `Object.keys(this.nodes)` — insertion order — and
+	 * skips `disabled === true` **before** the type lookup, so a disabled trigger is never offered
+	 * to `checkFunction` at all.
+	 */
+	queryNodes(checkFunction: (nodeType: INodeType) => boolean): INode[] {
+		const returnNodes: INode[] = [];
+
+		// Check if it has any of them
+		let node: INode;
+		let nodeType: INodeType | undefined;
+
+		for (const nodeName of Object.keys(this.nodes)) {
+			node = this.nodes[nodeName];
+
+			if (node.disabled === true) {
+				continue;
+			}
+
+			nodeType = this.nodeTypes.getByNameAndVersion(node.type, node.typeVersion);
+
+			if (nodeType !== undefined && checkFunction(nodeType)) {
+				returnNodes.push(node);
+			}
+		}
+
+		return returnNodes;
 	}
 
 	/**
@@ -727,5 +814,50 @@ export class Workflow {
 			this.nodeTypes as unknown as NodeTypesLike,
 			destinationNode,
 		);
+	}
+
+	/**
+	 * 1:1 from `workflow.ts:892-925`.
+	 *
+	 * Reference quirks reproduced, not fixed:
+	 * - the walk is over `Object.keys()` of both the type map and each branch array, so result
+	 *   order follows **key insertion order** and string keys are re-parsed with `parseInt`;
+	 * - the first tuple element is rebuilt from the *source* (`node: source, index: sourceIndex`),
+	 *   while the second is the **stored** destination object by reference — not a copy;
+	 * - a missing source contributes nothing (`?? {}` / `?? []`), and a `null` branch entry (the
+	 *   sparse-connection encoding) is skipped by the `if (targetConnectionData …)` guard.
+	 */
+	getConnectionsBetweenNodes(
+		sources: string[],
+		targets: string[],
+	): Array<[IConnection, IConnection]> {
+		const result: Array<[IConnection, IConnection]> = [];
+
+		for (const source of sources) {
+			for (const type of Object.keys(this.connectionsBySourceNode[source] ?? {})) {
+				for (const sourceIndex of Object.keys(this.connectionsBySourceNode[source][type])) {
+					for (const connectionIndex of Object.keys(
+						this.connectionsBySourceNode[source][type][parseInt(sourceIndex, 10)] ?? [],
+					)) {
+						const targetConnectionData =
+							this.connectionsBySourceNode[source][type][parseInt(sourceIndex, 10)]?.[
+								parseInt(connectionIndex, 10)
+							];
+						if (targetConnectionData && targets.includes(targetConnectionData?.node)) {
+							result.push([
+								{
+									node: source,
+									index: parseInt(sourceIndex, 10),
+									type: type as NodeConnectionType,
+								},
+								targetConnectionData,
+							]);
+						}
+					}
+				}
+			}
+		}
+
+		return result;
 	}
 }
