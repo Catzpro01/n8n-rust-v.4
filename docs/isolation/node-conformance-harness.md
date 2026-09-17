@@ -47,8 +47,14 @@ const DEFAULT_NAME_CASES: usize = 4;    // isDefaultNodeName
 const TRIGGER_CASES: usize = 3;         // isTriggerNode
 const DISPLAY_CASES: usize = 6;         // displayParameter
 const ASSERT_CASES: usize = 3;          // assertParamIsString/Number
+// Wave 3 parameter-issues + filter-parameter suite (WG-10..WG-13)
+const ISSUES_CASES: usize = 6;          // getNodeParametersIssues
+const FILTER_COND_CASES: usize = 9;     // executeFilterCondition (verdicts)
+const FILTER_COND_THROW_CASES: usize = 2; // …conversion-error FilterErrors (byte-exact messages)
+const FILTER_VALIDATE_CASES: usize = 4; // validateFilterParameter (leniency pins, all {})
+const FILTER_COMBINE_CASES: usize = 3;  // executeFilter (and/or combinators)
 // + serdeConformance round-trips: 5 descriptions, 2 INode samples
-// TOTAL asserted entries = 19 + 38 + 7 = 64
+// TOTAL asserted entries = 19 + 38 + 24 + 7 = 88
 ```
 
 - Fixture load via `env!("CARGO_MANIFEST_DIR")/./../../` (same `repo_root()` convention as
@@ -82,6 +88,10 @@ const ASSERT_CASES: usize = 3;          // assertParamIsString/Number
 | `isTriggerNode.cases` | `pub fn is_trigger_node(description) -> bool` | `group.contains("trigger")` |
 | `displayParameter.cases` | `pub fn display_parameter(values, property, type_version, description) -> bool` | no displayOptions ⇒ true; show ⇒ AND across keys; hide-match ⇒ false |
 | `assertParamIsType.cases` | `pub fn assert_param_is_string/number(name, value) -> Result<(), ValidationError>` | error message byte-exact: `Parameter "{name}" is not {type}` |
+| `getNodeParametersIssues.cases` | `pub fn get_node_parameters_issues(props, node, description, pinned_names) -> Option<INodeIssues>` | `None` when: all good, node disabled, node pinned, required param display-hidden; issue map keyed by parameter name, message byte-exact `Parameter "{displayName}" is required.` |
+| `executeFilterCondition.cases` | `pub struct FilterCondition/FilterOptions` + `pub fn execute_filter_condition(...) -> Result<bool, FilterError>` | `ignoreCase = !caseSensitive`; **unknown operator ⇒ `false` (not error)**; conversion failures ⇒ `FilterError` with template `Conversion error: the string '{v}' can't be converted to a {type} [condition {i}, item {j}]` |
+| `validateFilterParameter.cases` | `pub fn validate_filter_parameter(prop, filter) -> HashMap<String, Vec<String>>` | **validation is lenient**: only `parseFilterConditionValues` errors become issues (keys `{name}.{index}`); malformed type/unknown-op conditions STILL validate to `{}` |
+| `executeFilter.cases` | `pub fn execute_filter(filter, item_index) -> bool` | `and` = all, `or` = any, per-condition metadata `{index, itemIndex}` |
 | `serdeConformance` | `INodeTypeDescription`, `INode` | deserialize → serialize round-trip equality |
 
 ## 4. Reference-observed semantics the harness pins (do not "improve")
@@ -118,13 +128,24 @@ const ASSERT_CASES: usize = 3;          // assertParamIsString/Number
 8. **`mergeNodeProperties` is destructive-in-place** on the main array: new names append,
    same names replace AT THEIR ORIGINAL INDEX (order of merged properties observable),
    `doNotInherit:true` entries are skipped.
+9. **Two-tier filter behavior**: validation (`validateFilterParameter`) is LENIENT — only
+   `parseFilterConditionValues` errors under `unresolvedExpressions:true` become issues
+   (type-mismatched/unknown-op conditions validate to `{}`); the failure floor is at
+   RUNTIME where `executeFilterCondition` throws `FilterError` on conversion problems.
+   Exception: an **unknown operator at runtime yields `false`**, never throws. Preserve
+   both tiers exactly; do not unify them.
+10. **Issue-early exits**: `getNodeParametersIssues` returns `null` for disabled nodes,
+    nodes present in `pinDataNodeNames`, and required-but-display-hidden parameters —
+    display gating beats `required:true`. The exact issue message currency is
+    `Parameter "{displayName}" is required.`
 
 ## 5. Acceptance wiring (brief §4, gate 1)
 
 `n8n-node-model` is **RUST IMPLEMENTED-verified for the Node LEGO when**:
 
-1. This harness reproduces all 64 entries (19 frozen-port golden cases + 38 wave-2 pure
-   helper cases + 7 serde samples) green under `tools/rust-offline-rig/run.sh test` (offline).
+1. This harness reproduces all 88 entries (19 frozen-port golden cases + 38 wave-2 pure
+   helper cases + 24 wave-3 parameter-issues/filter cases + 7 serde samples) green under
+   `tools/rust-offline-rig/run.sh test` (offline).
 2. The 6 frozen ports exist with the exact snake_cased names listed in brief §3
    (`get_node_parameters`, `get_node_inputs`, `get_node_outputs`, `get_connection_types`,
    `rename_form_fields`, `apply_access_patterns`) and crate exports match contract §11.
@@ -143,7 +164,8 @@ report via bus to agent-2/mediator; never "fix" the semantics to match the port.
   GC dynamic cases only pin the failure fallthrough).
 - No timing/perf assertions (perf gates live with Agent 5's Phase-3 gate variant — MSG-07).
 - Full 532-reference-test coverage remains the Phase-3 stretch goal (brief §4.1); this
-  pack is the **frozen-port minimum plus the pure-helper wave** that gates acceptance.
-  Larger sweeps (getNodeParametersIssues, validateFilterParameter,
-  rename-node-utils variants…) follow the same add-category/add-constant protocol:
-  extend the generator, hard-assert verified values, bump the fixture file in one commit.
+  pack is the **frozen-port minimum plus the pure-helper and issues/filter waves** that
+  gates acceptance. Larger sweeps (filter operator-matrix beyond the 9 pinned core ops,
+  `rename-node-utils` variants, custom-ops/RLC fixtures…) follow the same
+  add-category/add-constant protocol: extend the generator, hard-assert the verified
+  values, bump the fixture file in one commit.

@@ -6,7 +6,8 @@
     "comparisonRule": "deep JSON equality after per-key sort; byte-stable file by construction",
     "coverage": {
       "frozenPorts": "GC-1..GC-7 (19 cases)",
-      "wave2PureHelpers": "resolveRelativePath:4, hasDotNotationBannedChar:7, mergeNodeProperties:3, makeNodeName:5, makeDescription:3, isDefaultNodeName:4, isTriggerNode:3, displayParameter:6, assertParamIsType:3"
+      "wave2PureHelpers": "resolveRelativePath:4, hasDotNotationBannedChar:7, mergeNodeProperties:3, makeNodeName:5, makeDescription:3, isDefaultNodeName:4, isTriggerNode:3, displayParameter:6, assertParamIsType:3",
+      "wave3IssuesAndFilters": "getNodeParametersIssues:6, executeFilterCondition:9+2t, validateFilterParameter:4, executeFilter:3"
     }
   },
   "applyAccessPatterns": {
@@ -959,6 +960,629 @@
         "value": "nope",
         "ok": false,
         "message": "Parameter \"pX\" is not number"
+      }
+    ]
+  },
+  "getNodeParametersIssues": {
+    "cases": [
+      {
+        "name": "required-empty",
+        "properties": [
+          {
+            "displayName": "Required Field",
+            "name": "req",
+            "type": "string",
+            "default": "",
+            "required": true
+          }
+        ],
+        "node": {
+          "id": "w10",
+          "name": "W10 Node",
+          "type": "noop",
+          "typeVersion": 1,
+          "position": [
+            0,
+            0
+          ],
+          "parameters": {
+            "req": ""
+          }
+        },
+        "pinDataNodeNames": null,
+        "expect": {
+          "parameters": {
+            "req": [
+              "Parameter \"Required Field\" is required."
+            ]
+          }
+        }
+      },
+      {
+        "name": "required-filled",
+        "properties": [
+          {
+            "displayName": "Required Field",
+            "name": "req",
+            "type": "string",
+            "default": "",
+            "required": true
+          }
+        ],
+        "node": {
+          "id": "w10",
+          "name": "W10 Node",
+          "type": "noop",
+          "typeVersion": 1,
+          "position": [
+            0,
+            0
+          ],
+          "parameters": {
+            "req": "filled"
+          }
+        },
+        "pinDataNodeNames": null,
+        "expect": null
+      },
+      {
+        "name": "disabled-node-skipped",
+        "properties": [
+          {
+            "displayName": "Required Field",
+            "name": "req",
+            "type": "string",
+            "default": "",
+            "required": true
+          }
+        ],
+        "node": {
+          "id": "w10",
+          "name": "W10 Node",
+          "type": "noop",
+          "typeVersion": 1,
+          "position": [
+            0,
+            0
+          ],
+          "parameters": {
+            "req": ""
+          },
+          "disabled": true
+        },
+        "pinDataNodeNames": null,
+        "expect": null
+      },
+      {
+        "name": "pinned-node-skipped",
+        "properties": [
+          {
+            "displayName": "Required Field",
+            "name": "req",
+            "type": "string",
+            "default": "",
+            "required": true
+          }
+        ],
+        "node": {
+          "id": "w10",
+          "name": "W10 Node",
+          "type": "noop",
+          "typeVersion": 1,
+          "position": [
+            0,
+            0
+          ],
+          "parameters": {
+            "req": ""
+          }
+        },
+        "pinDataNodeNames": [
+          "W10 Node"
+        ],
+        "expect": null
+      },
+      {
+        "name": "hidden-required-skipped",
+        "properties": [
+          {
+            "displayName": "Mode",
+            "name": "mode",
+            "type": "options",
+            "options": [
+              {
+                "name": "A",
+                "value": "a"
+              },
+              {
+                "name": "B",
+                "value": "b"
+              }
+            ],
+            "default": "a"
+          },
+          {
+            "displayName": "Required Field",
+            "name": "req",
+            "type": "string",
+            "default": "",
+            "required": true,
+            "displayOptions": {
+              "show": {
+                "mode": [
+                  "b"
+                ]
+              }
+            }
+          }
+        ],
+        "node": {
+          "id": "w10",
+          "name": "W10 Node",
+          "type": "noop",
+          "typeVersion": 1,
+          "position": [
+            0,
+            0
+          ],
+          "parameters": {
+            "mode": "a"
+          }
+        },
+        "pinDataNodeNames": null,
+        "expect": null
+      },
+      {
+        "name": "shown-required-flagged",
+        "properties": [
+          {
+            "displayName": "Mode",
+            "name": "mode",
+            "type": "options",
+            "options": [
+              {
+                "name": "A",
+                "value": "a"
+              },
+              {
+                "name": "B",
+                "value": "b"
+              }
+            ],
+            "default": "a"
+          },
+          {
+            "displayName": "Required Field",
+            "name": "req",
+            "type": "string",
+            "default": "",
+            "required": true,
+            "displayOptions": {
+              "show": {
+                "mode": [
+                  "b"
+                ]
+              }
+            }
+          }
+        ],
+        "node": {
+          "id": "w10",
+          "name": "W10 Node",
+          "type": "noop",
+          "typeVersion": 1,
+          "position": [
+            0,
+            0
+          ],
+          "parameters": {
+            "mode": "b"
+          }
+        },
+        "pinDataNodeNames": null,
+        "expect": {
+          "parameters": {
+            "req": [
+              "Parameter \"Required Field\" is required."
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "executeFilterCondition": {
+    "optionsDefault": {
+      "caseSensitive": false
+    },
+    "cases": [
+      {
+        "name": "string-equals-ci-default",
+        "condition": {
+          "id": "string-equals-ci-default",
+          "leftValue": "Hello",
+          "operator": {
+            "type": "string",
+            "operation": "equals"
+          },
+          "rightValue": "hello"
+        },
+        "options": {
+          "caseSensitive": false
+        },
+        "expect": true
+      },
+      {
+        "name": "string-equals-case-sensitive",
+        "condition": {
+          "id": "string-equals-case-sensitive",
+          "leftValue": "Hello",
+          "operator": {
+            "type": "string",
+            "operation": "equals"
+          },
+          "rightValue": "hello"
+        },
+        "options": {
+          "caseSensitive": true
+        },
+        "expect": false
+      },
+      {
+        "name": "string-contains-ci",
+        "condition": {
+          "id": "string-contains-ci",
+          "leftValue": "the quick brown fox",
+          "operator": {
+            "type": "string",
+            "operation": "contains"
+          },
+          "rightValue": "QUICK"
+        },
+        "options": {
+          "caseSensitive": false
+        },
+        "expect": true
+      },
+      {
+        "name": "number-gt",
+        "condition": {
+          "id": "number-gt",
+          "leftValue": 42,
+          "operator": {
+            "type": "number",
+            "operation": "gt"
+          },
+          "rightValue": 10
+        },
+        "options": {
+          "caseSensitive": false
+        },
+        "expect": true
+      },
+      {
+        "name": "number-equals-mismatch",
+        "condition": {
+          "id": "number-equals-mismatch",
+          "leftValue": 42,
+          "operator": {
+            "type": "number",
+            "operation": "equals"
+          },
+          "rightValue": 41
+        },
+        "options": {
+          "caseSensitive": false
+        },
+        "expect": false
+      },
+      {
+        "name": "boolean-true",
+        "condition": {
+          "id": "boolean-true",
+          "leftValue": true,
+          "operator": {
+            "type": "boolean",
+            "operation": "true"
+          },
+          "rightValue": null
+        },
+        "options": {
+          "caseSensitive": false
+        },
+        "expect": true
+      },
+      {
+        "name": "string-not-empty-single-value",
+        "condition": {
+          "id": "string-not-empty-single-value",
+          "leftValue": "x",
+          "operator": {
+            "type": "string",
+            "operation": "notEmpty",
+            "singleValue": true
+          },
+          "rightValue": ""
+        },
+        "options": {
+          "caseSensitive": false
+        },
+        "expect": true
+      },
+      {
+        "name": "dateTime-equals",
+        "condition": {
+          "id": "dateTime-equals",
+          "leftValue": "2026-09-17T12:00:00Z",
+          "operator": {
+            "type": "dateTime",
+            "operation": "equals"
+          },
+          "rightValue": "2026-09-17T12:00:00Z"
+        },
+        "options": {
+          "caseSensitive": false
+        },
+        "expect": true
+      },
+      {
+        "name": "unknown-operator-returns-false",
+        "condition": {
+          "id": "unknown-operator-returns-false",
+          "leftValue": "x",
+          "operator": {
+            "type": "string",
+            "operation": "not-an-op"
+          },
+          "rightValue": "y"
+        },
+        "options": {
+          "caseSensitive": false
+        },
+        "expect": false
+      }
+    ],
+    "throwCases": [
+      {
+        "name": "bad-date-conversion",
+        "condition": {
+          "id": "bad-date-conversion",
+          "leftValue": "not-a-date",
+          "operator": {
+            "type": "dateTime",
+            "operation": "equals"
+          },
+          "rightValue": "2026-09-17"
+        },
+        "thrown": {
+          "errorClass": "FilterError",
+          "message": "Conversion error: the string 'not-a-date' can't be converted to a dateTime [condition 0, item 0]"
+        }
+      },
+      {
+        "name": "bad-number-conversion",
+        "condition": {
+          "id": "bad-number-conversion",
+          "leftValue": "XYZ",
+          "operator": {
+            "type": "number",
+            "operation": "equals"
+          },
+          "rightValue": "5"
+        },
+        "thrown": {
+          "errorClass": "FilterError",
+          "message": "Conversion error: the string 'XYZ' can't be converted to a number [condition 0, item 0]"
+        }
+      }
+    ]
+  },
+  "validateFilterParameter": {
+    "cases": [
+      {
+        "name": "well-formed-filter",
+        "property": {
+          "displayName": "Filter",
+          "name": "filter",
+          "type": "filter",
+          "default": {},
+          "required": false
+        },
+        "filter": {
+          "options": {
+            "caseSensitive": false
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "v1",
+              "leftValue": "Hello",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "hello"
+            }
+          ]
+        },
+        "expect": {}
+      },
+      {
+        "name": "null-left-lenient",
+        "property": {
+          "displayName": "Filter",
+          "name": "filter",
+          "type": "filter",
+          "default": {},
+          "required": false
+        },
+        "filter": {
+          "options": {
+            "caseSensitive": false
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "v2",
+              "leftValue": null,
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "x"
+            }
+          ]
+        },
+        "expect": {}
+      },
+      {
+        "name": "string-right-on-number-op-lenient",
+        "property": {
+          "displayName": "Filter",
+          "name": "filter",
+          "type": "filter",
+          "default": {},
+          "required": false
+        },
+        "filter": {
+          "options": {
+            "caseSensitive": false
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "v3",
+              "leftValue": 5,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              },
+              "rightValue": "abc"
+            }
+          ]
+        },
+        "expect": {}
+      },
+      {
+        "name": "unknown-operator-lenient",
+        "property": {
+          "displayName": "Filter",
+          "name": "filter",
+          "type": "filter",
+          "default": {},
+          "required": false
+        },
+        "filter": {
+          "options": {
+            "caseSensitive": false
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "v4",
+              "leftValue": "x",
+              "operator": {
+                "type": "string",
+                "operation": "not-an-op"
+              },
+              "rightValue": "y"
+            }
+          ]
+        },
+        "expect": {}
+      }
+    ]
+  },
+  "executeFilter": {
+    "cases": [
+      {
+        "name": "and-both-pass",
+        "filter": {
+          "options": {
+            "caseSensitive": false
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "e1",
+              "leftValue": "A",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "a"
+            },
+            {
+              "id": "e2",
+              "leftValue": 5,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              },
+              "rightValue": 3
+            }
+          ]
+        },
+        "expect": true
+      },
+      {
+        "name": "and-one-fails",
+        "filter": {
+          "options": {
+            "caseSensitive": false
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "e3",
+              "leftValue": "A",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "zzz"
+            },
+            {
+              "id": "e4",
+              "leftValue": 5,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              },
+              "rightValue": 3
+            }
+          ]
+        },
+        "expect": false
+      },
+      {
+        "name": "or-one-passes",
+        "filter": {
+          "options": {
+            "caseSensitive": false
+          },
+          "combinator": "or",
+          "conditions": [
+            {
+              "id": "e5",
+              "leftValue": "A",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "zzz"
+            },
+            {
+              "id": "e6",
+              "leftValue": 5,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              },
+              "rightValue": 3
+            }
+          ]
+        },
+        "expect": true
       }
     ]
   },

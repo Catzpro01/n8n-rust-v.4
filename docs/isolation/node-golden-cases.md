@@ -157,6 +157,55 @@ GC-1..GC-7); the in-repo generator hard-asserts them (exit 3 = regression).
 Options missing `name` are rejected by the guard → `makeNodeName`'s action branch is
 silently skipped (WG-4 last row).
 
+## Wave 3 — parameter issues deep dive + filter-parameter suite (readiness §3.1)
+
+### WG-10 `getNodeParametersIssues(properties, node, nodeTypeDescription, pinDataNodeNames?)`
+
+Node `{id, name:'W10 Node', type:'noop', typeVersion:1, position, parameters}`; required
+string param `req` (displayName "Required Field"). **Exact issue value:**
+`{ parameters: { req: ['Parameter "Required Field" is required.'] } }`.
+
+| Case | Expected |
+|---|---|
+| `req:''` | issues object (above) |
+| `req:'filled'` | `null` |
+| `disabled:true` | `null` (disabled nodes are never flagged) |
+| pinned (`pinDataNodeNames` contains name) | `null` |
+| required param **display-hidden** | `null` (display gating wins over required) |
+| same param **display-shown** | issues object |
+
+### WG-11 `executeFilterCondition(condition, options, metadata?)`
+
+| Case (options `{caseSensitive:false}` unless noted) | Expected |
+|---|---|
+| `string/equals` `'Hello'` vs `'hello'` | `true` (CI default: `ignoreCase = !caseSensitive`) |
+| same with `{caseSensitive:true}` | `false` |
+| `string/contains` `'the quick brown fox'` vs `'QUICK'` | `true` |
+| `number/gt` `42` vs `10` | `true` |
+| `number/equals` `42` vs `41` | `false` |
+| `boolean/true` `true` | `true` |
+| `string/notEmpty` `singleValue:true`, left `'x'` | `true` |
+| `dateTime/equals` ISO vs ISO | `true` |
+| **unknown operator** `'not-an-op'` | **`false` — registry miss is NOT an error** |
+
+Runtime conversion failures throw `FilterError` with byte-exact messages
+(`[condition 0, item 0]` suffix):
+`Conversion error: the string 'not-a-date' can't be converted to a dateTime [condition 0, item 0]` ·
+`Conversion error: the string 'XYZ' can't be converted to a number [condition 0, item 0]`.
+
+### WG-12 `validateFilterParameter(property, filterValue)` — LENIENT-BY-DESIGN
+
+Returns `Record<string,string[]>` of issue keys `${properties.name}.${index}`; **four**
+well/ill-shaped filters returned `{}`:
+valid CI filter · `null` left on string op · string right on number op · unknown operator.
+Validation-time leniency vs runtime `FilterError` (WG-11) is a deliberate two-tier
+behavior the Rust port MUST preserve (issues are raised only from
+`parseFilterConditionValues` with `unresolvedExpressions:true, errorFormat:'inline'`).
+
+### WG-13 `executeFilter(filterValue)`
+
+`and` both-pass → `true` · `and` one-fails → `false` · `or` one-passes → `true`.
+
 ### Reproduction
 
 ```bash
@@ -177,8 +226,8 @@ fixtures power `docs/isolation/node-conformance-harness.md`. Dist resolution ord
 
 ### Parity acceptance rule for `n8n-node-model` (Phase 3)
 
-The crate's unit tests MUST reproduce GC-1..GC-7 and WG-1..WG-9 byte-identically (JSON
-equality after serialization) — 57 golden cases in `docs/isolation/node-fixtures.json`,
-plus the 7 `serdeConformance` round-trip probes (see `node-conformance-harness.md` §5
-for the binding acceptance gate). Any deviation is a conformance defect (register it as
-MSG back to agent-2/mediator, do not "fix" semantics).
+The crate's unit tests MUST reproduce GC-1..GC-7, WG-1..WG-9, and WG-10..WG-13
+byte-identically (JSON equality after serialization) — 81 golden cases in
+`docs/isolation/node-fixtures.json`, plus the 7 `serdeConformance` round-trip probes
+(see `node-conformance-harness.md` §5 for the binding acceptance gate). Any deviation is
+a conformance defect (register it as MSG back to agent-2/mediator, do not "fix" semantics).

@@ -277,6 +277,24 @@
         "for_agent3": "connection-workflow-members-spec.md §5 — the future ai_tool-outputs fixture needs a node-type registry; mapped to crate-side NodeTypeRegistry + DynamicIoEvaluator traits in node-rust-brief.md (crate still stub, 0/6 ports, owner assignment pending)"
       },
       "status": "UNREAD"
+    },
+    {
+      "id": "MSG-13",
+      "recipient_id": "broadcast",
+      "message_type": "STATUS_REPORT",
+      "subject": "agent-2 / node: acceptance pack wave 3 — parameter-issues deep dive + filter-parameter suite (64 -> 88 entries); two-tier filter behavior pinned",
+      "payload": {
+        "lego": "node",
+        "requester": "agent-2",
+        "change": "WG-10..WG-13 added (24 cases): getNodeParametersIssues(6), executeFilterCondition(9 verdicts + 2 conversion-error FilterErrors), validateFilterParameter(4 leniency pins), executeFilter(3); node-fixtures.json now 81 golden + 7 serde; --check byte-stable; harness spec constants/ports/semantics updated",
+        "new_pinned_semantics": [
+          "Issue-early exits: getNodeParametersIssues returns null for disabled nodes, pinned nodes, and required-but-display-hidden params; message currency byte-exact 'Parameter \"{displayName}\" is required.'",
+          "Two-tier filter behavior: validation lenient ({} for type-mismatch/unknown-op) vs runtime FilterError 'Conversion error: the string ... [condition 0, item 0]' — unknown operator at runtime yields false, never throws"
+        ],
+        "boundary_note": "pure spec/golden-evidence growth; crates/** untouched; all under docs/isolation/node*",
+        "state": "crate still stub 0/6 ports; main@a445a9ab absorbed; ISSUE-011 closed and ACKed (MSG-12)"
+      },
+      "status": "UNREAD"
     }
   ]
 }

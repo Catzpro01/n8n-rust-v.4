@@ -47,6 +47,7 @@ function ref(name) {
 }
 
 const helpers = ref("node-helpers.js");
+const filterParameter = ref("node-parameters/filter-parameter.js");
 const { renameFormFields } = ref("node-parameters/rename-node-utils.js");
 const { applyAccessPatterns, hasDotNotationBannedChar } = ref("node-reference-parser-utils.js");
 const { resolveRelativePath } = ref("node-parameters/path-utils.js");
@@ -65,6 +66,11 @@ for (const [label, fn] of Object.entries({
   makeDescription: helpers.makeDescription,
   isDefaultNodeName: helpers.isDefaultNodeName,
   isTriggerNode: helpers.isTriggerNode,
+  getNodeParametersIssues: helpers.getNodeParametersIssues,
+  executeFilterCondition: filterParameter.executeFilterCondition,
+  executeFilter: filterParameter.executeFilter,
+  validateFilterParameter: filterParameter.validateFilterParameter,
+  FilterError: filterParameter.FilterError,
   renameFormFields,
   applyAccessPatterns,
   hasDotNotationBannedChar,
@@ -352,6 +358,137 @@ const assertParamIsTypeCases = [
   assertCase(assertParamIsNumber, "value-is-not-number", "pX", "nope"),
 ];
 
+/* ---------------- Wave 3: parameter-issues deep dive + filter-parameter suite ------- */
+
+/** getNodeParametersIssues (WG-10): verbatim INode matters (disabled/pinned early-exit). */
+const issuesProps = [
+  { displayName: "Required Field", name: "req", type: "string", default: "", required: true },
+];
+const issuesPropsHidden = [
+  { displayName: "Mode", name: "mode", type: "options",
+    options: [{ name: "A", value: "a" }, { name: "B", value: "b" }], default: "a" },
+  { displayName: "Required Field", name: "req", type: "string", default: "", required: true,
+    displayOptions: { show: { mode: ["b"] } } },
+];
+const nodeBase = { id: "w10", name: "W10 Node", type: "noop", typeVersion: 1, position: [0, 0] };
+function issuesCase(name, properties, parameters, extra = {}) {
+  const { _pins = null, ...nodeExtra } = extra;
+  const node = { ...nodeBase, parameters, ...nodeExtra };
+  return {
+    name,
+    properties,
+    node,
+    pinDataNodeNames: _pins,
+    expect: helpers.getNodeParametersIssues(properties, node, null, _pins ?? undefined),
+  };
+}
+const getNodeParametersIssuesCases = [
+  issuesCase("required-empty", issuesProps, { req: "" }),
+  issuesCase("required-filled", issuesProps, { req: "filled" }),
+  issuesCase("disabled-node-skipped", issuesProps, { req: "" }, { disabled: true }),
+  issuesCase("pinned-node-skipped", issuesProps, { req: "" }, { _pins: ["W10 Node"] }),
+  issuesCase("hidden-required-skipped", issuesPropsHidden, { mode: "a" }),
+  issuesCase("shown-required-flagged", issuesPropsHidden, { mode: "b" }),
+];
+
+/** filter-parameter suite (WG-11..WG-13). Condition/options shapes per interfaces.ts:3298-3323. */
+const filterOptionsDefault = { caseSensitive: false };
+const fCond = (id, leftValue, operator, rightValue) => ({ id, leftValue, operator, rightValue });
+function fCondCase(name, leftValue, operator, rightValue, options = null) {
+  const resolved = options ?? filterOptionsDefault;
+  const condition = fCond(name, leftValue, operator, rightValue);
+  return {
+    name, condition, options: resolved,
+    expect: filterParameter.executeFilterCondition(condition, resolved),
+  };
+}
+const executeFilterConditionCases = [
+  fCondCase("string-equals-ci-default", "Hello", { type: "string", operation: "equals" }, "hello"),
+  fCondCase("string-equals-case-sensitive", "Hello", { type: "string", operation: "equals" }, "hello",
+    { caseSensitive: true }),
+  fCondCase("string-contains-ci", "the quick brown fox", { type: "string", operation: "contains" }, "QUICK"),
+  fCondCase("number-gt", 42, { type: "number", operation: "gt" }, 10),
+  fCondCase("number-equals-mismatch", 42, { type: "number", operation: "equals" }, 41),
+  fCondCase("boolean-true", true, { type: "boolean", operation: "true" }, null),
+  fCondCase("string-not-empty-single-value", "x", { type: "string", operation: "notEmpty", singleValue: true }, ""),
+  fCondCase("dateTime-equals", "2026-09-17T12:00:00Z", { type: "dateTime", operation: "equals" }, "2026-09-17T12:00:00Z"),
+  fCondCase("unknown-operator-returns-false", "x", { type: "string", operation: "not-an-op" }, "y"),
+];
+
+function fThrowCase(name, leftValue, operator, rightValue) {
+  const condition = fCond(name, leftValue, operator, rightValue);
+  let thrown = null;
+  try {
+    filterParameter.executeFilterCondition(condition, filterOptionsDefault);
+  } catch (error) {
+    thrown = { errorClass: error.constructor.name, message: error.message };
+  }
+  return { name, condition, thrown };
+}
+const executeFilterConditionThrowCases = [
+  fThrowCase("bad-date-conversion", "not-a-date", { type: "dateTime", operation: "equals" }, "2026-09-17"),
+  fThrowCase("bad-number-conversion", "XYZ", { type: "number", operation: "equals" }, "5"),
+];
+
+const filterProperty = { displayName: "Filter", name: "filter", type: "filter", default: {}, required: false };
+const validateFilterParameterCases = [
+  {
+    name: "well-formed-filter", property: filterProperty,
+    filter: { options: filterOptionsDefault, combinator: "and",
+      conditions: [fCond("v1", "Hello", { type: "string", operation: "equals" }, "hello")] },
+    expect: filterParameter.validateFilterParameter(filterProperty, { options: filterOptionsDefault, combinator: "and",
+      conditions: [fCond("v1", "Hello", { type: "string", operation: "equals" }, "hello")] }),
+  },
+  {
+    name: "null-left-lenient", property: filterProperty,
+    filter: { options: filterOptionsDefault, combinator: "and",
+      conditions: [fCond("v2", null, { type: "string", operation: "equals" }, "x")] },
+    expect: filterParameter.validateFilterParameter(filterProperty, { options: filterOptionsDefault, combinator: "and",
+      conditions: [fCond("v2", null, { type: "string", operation: "equals" }, "x")] }),
+  },
+  {
+    name: "string-right-on-number-op-lenient", property: filterProperty,
+    filter: { options: filterOptionsDefault, combinator: "and",
+      conditions: [fCond("v3", 5, { type: "number", operation: "gt" }, "abc")] },
+    expect: filterParameter.validateFilterParameter(filterProperty, { options: filterOptionsDefault, combinator: "and",
+      conditions: [fCond("v3", 5, { type: "number", operation: "gt" }, "abc")] }),
+  },
+  {
+    name: "unknown-operator-lenient", property: filterProperty,
+    filter: { options: filterOptionsDefault, combinator: "and",
+      conditions: [fCond("v4", "x", { type: "string", operation: "not-an-op" }, "y")] },
+    expect: filterParameter.validateFilterParameter(filterProperty, { options: filterOptionsDefault, combinator: "and",
+      conditions: [fCond("v4", "x", { type: "string", operation: "not-an-op" }, "y")] }),
+  },
+];
+
+function fFilter(combinator, conditions) {
+  return { options: filterOptionsDefault, combinator, conditions };
+}
+const executeFilterCases = [
+  {
+    name: "and-both-pass",
+    filter: fFilter("and", [fCond("e1", "A", { type: "string", operation: "equals" }, "a"),
+      fCond("e2", 5, { type: "number", operation: "gt" }, 3)]),
+    expect: filterParameter.executeFilter(fFilter("and", [fCond("e1", "A", { type: "string", operation: "equals" }, "a"),
+      fCond("e2", 5, { type: "number", operation: "gt" }, 3)])),
+  },
+  {
+    name: "and-one-fails",
+    filter: fFilter("and", [fCond("e3", "A", { type: "string", operation: "equals" }, "zzz"),
+      fCond("e4", 5, { type: "number", operation: "gt" }, 3)]),
+    expect: filterParameter.executeFilter(fFilter("and", [fCond("e3", "A", { type: "string", operation: "equals" }, "zzz"),
+      fCond("e4", 5, { type: "number", operation: "gt" }, 3)])),
+  },
+  {
+    name: "or-one-passes",
+    filter: fFilter("or", [fCond("e5", "A", { type: "string", operation: "equals" }, "zzz"),
+      fCond("e6", 5, { type: "number", operation: "gt" }, 3)]),
+    expect: filterParameter.executeFilter(fFilter("or", [fCond("e5", "A", { type: "string", operation: "equals" }, "zzz"),
+      fCond("e6", 5, { type: "number", operation: "gt" }, 3)])),
+  },
+];
+
 /* ---------------- Regression tripwire: results must equal the VERIFIED goldens ------ */
 /* (docs/isolation/node-golden-cases.md — values frozen by VERIFIED-BY-EXECUTION)      */
 
@@ -396,6 +533,23 @@ assertGolden("W2 dp", displayParameterCases.map((c) => c.expect), [true, true, f
 assertGolden("W2 assert-ok", assertParamIsTypeCases[0].ok, true);
 assertGolden("W2 assert-str-msg", assertParamIsTypeCases[1].message, 'Parameter "pAnum" is not string');
 assertGolden("W2 assert-num-msg", assertParamIsTypeCases[2].message, 'Parameter "pX" is not number');
+assertGolden("W10 flags", getNodeParametersIssuesCases.map((c) => c.expect !== null),
+  [true, false, false, false, false, true]);
+assertGolden("W10 exact-message", getNodeParametersIssuesCases[0].expect.parameters.req,
+  ['Parameter "Required Field" is required.']);
+assertGolden("W10 shown-exact-message", getNodeParametersIssuesCases[5].expect.parameters.req,
+  ['Parameter "Required Field" is required.']);
+assertGolden("W11 verdicts", executeFilterConditionCases.map((c) => c.expect),
+  [true, false, true, true, false, true, true, true, false]);
+assertGolden("W11 throw-class", executeFilterConditionThrowCases.map((c) => c.thrown?.errorClass),
+  ["FilterError", "FilterError"]);
+assertGolden("W11 throw-messages", executeFilterConditionThrowCases.map((c) => c.thrown?.message), [
+  "Conversion error: the string 'not-a-date' can't be converted to a dateTime [condition 0, item 0]",
+  "Conversion error: the string 'XYZ' can't be converted to a number [condition 0, item 0]",
+]);
+assertGolden("W12 all-lenient", validateFilterParameterCases.map((c) => Object.keys(c.expect).length),
+  [0, 0, 0, 0]);
+assertGolden("W13 verdicts", executeFilterCases.map((c) => c.expect), [true, false, true]);
 
 if (trip.length) {
   console.error("REFERENCE DRIFT vs docs/isolation/node-golden-cases.md:");
@@ -476,6 +630,12 @@ const fixtures = {
         `displayParameter:${displayParameterCases.length}`,
         `assertParamIsType:${assertParamIsTypeCases.length}`,
       ].join(", "),
+      wave3IssuesAndFilters: [
+        `getNodeParametersIssues:${getNodeParametersIssuesCases.length}`,
+        `executeFilterCondition:${executeFilterConditionCases.length}+${executeFilterConditionThrowCases.length}t`,
+        `validateFilterParameter:${validateFilterParameterCases.length}`,
+        `executeFilter:${executeFilterCases.length}`,
+      ].join(", "),
     },
   },
   applyAccessPatterns: { cases: applyAccessPatternsCases },
@@ -494,6 +654,14 @@ const fixtures = {
   isTriggerNode: { cases: isTriggerNodeCases },
   displayParameter: { cases: displayParameterCases },
   assertParamIsType: { cases: assertParamIsTypeCases },
+  getNodeParametersIssues: { cases: getNodeParametersIssuesCases },
+  executeFilterCondition: {
+    optionsDefault: filterOptionsDefault,
+    cases: executeFilterConditionCases,
+    throwCases: executeFilterConditionThrowCases,
+  },
+  validateFilterParameter: { cases: validateFilterParameterCases },
+  executeFilter: { cases: executeFilterCases },
   serdeConformance,
 };
 
