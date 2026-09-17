@@ -1,0 +1,99 @@
+id: TASK-415-localization-run-path
+agent: agent-5
+lego: localization
+module: localization
+phase: 4f
+
+# Phase 4F — the run path consumes the 4E envelope: product vocabulary + composed runtime, the
+# persisted execution-log record, and the reference-exact localized HTTP payloads. Additive only:
+# the frozen Phase 4B catalogue and the 4E overlay are NOT edited (new keys live in
+# PRODUCT_DICTIONARY_EXTENSION), no reference path, no Rust, no UI, no transport.
+
+allowed_paths:
+  - packages/workflow-lego/src/localization-vocabulary.ts
+  - packages/workflow-lego/src/execution-log-record.ts
+  - packages/workflow-lego/src/api-error-response.ts
+  - packages/workflow-lego/src/localization-runtime.ts       # additive export: PLACEHOLDER_SOURCE + firstPlaceholderIndex
+  - packages/workflow-lego/src/index.ts                      # additive export block
+  - packages/workflow-lego/test/08-localization-run-path.test.ts
+  - tools/localization-gate.mjs                              # G1 suite list, G8 module list, new G12/G13/G14
+  - tools/localization-inspect.mjs                           # --record / --api-error modes
+  - contracts/localization.contract.md                       # §2/§3/§4.10/§4.11/§5.7/§10/§11.8–11.10
+  - docs/isolation/localization.md
+  - docs/isolation/evidence/localization-gate.json
+  - tests/integration/run_gate.sh                         # stage 2d label: Phase 4C–4F
+  - README.md
+  - package.json
+  - tasks/TASK-415-localization-run-path.yaml
+  - results/TASK-415-localization-run-path.md
+
+forbidden_paths:
+  - crates/**
+  - apps/**
+  - reference/n8n/**
+  - tests/reference/**                                     # read-only: the golden is an input, never edited
+  - packages/workflow-lego/src/backend-localization-service.ts   # frozen 4B catalogue: no key edits
+  - packages/workflow-lego/src/settings-localization-adapter.ts  # UI-owned, not promoted
+  - packages/workflow-lego/src/localization-envelope.ts          # 4E overlay: read-only for 4F
+
+requires:
+  - contracts/localization.contract.md
+  - contracts/api.contract.md                              # §3 = the wire shapes reproduced here
+  - contracts/execution-data.contract.md                   # §ITaskData/IRunData field names
+  - tests/reference/agent-4/golden/api.golden.json         # five recorded reference payloads
+  - docs/isolation/localization.md
+
+subject_branch: arena/01a0b105-n8n-rust-v-4
+base: 3e6e3fc5                     # Phase 4E tip
+
+operations:
+  - name: write_file
+    args: { path: packages/workflow-lego/src/localization-vocabulary.ts, kind: implementation }
+  - name: write_file
+    args: { path: packages/workflow-lego/src/execution-log-record.ts, kind: implementation }
+  - name: write_file
+    args: { path: packages/workflow-lego/src/api-error-response.ts, kind: implementation }
+  - name: write_file
+    args: { path: packages/workflow-lego/test/08-localization-run-path.test.ts, kind: test }
+  - name: edit_file
+    args: { path: packages/workflow-lego/src/index.ts, change: "re-export the three 4F modules + the two additive runtime helpers" }
+  - name: edit_file
+    args: { path: tools/localization-gate.mjs, change: "G1 runs three suites, G8 covers 4F, new G12/G13/G14 (+ golden case)" }
+  - name: edit_file
+    args: { path: tools/localization-inspect.mjs, change: "--record and --api-error modes" }
+  - name: edit_file
+    args: { path: packages/workflow-lego/src/localization-runtime.ts, change: "export PLACEHOLDER_SOURCE + firstPlaceholderIndex (single placeholder definition)" }
+  - name: run_tests
+    args: { cmd: "node --test packages/workflow-lego/test/{06,07,08}-*.test.ts", expect: "77/77 PASS" }
+  - name: run_gate
+    args: { cmd: "node tools/localization-gate.mjs", expect: "15/15 PASS" }
+  - name: run_cli
+    args: { cmd: "node tools/localization-inspect.mjs --lang ar --record --status error --mode schedule", expect: "rtl record, Arabic summary/trigger, 0 missing keys" }
+  - name: run_cli
+    args: { cmd: "node tools/localization-inspect.mjs --lang ru --api-error unauthorized", expect: "401 {code:'unauthorized', message:'Не авторизовано', hint} + success/health" }
+  - name: mutation_test
+    args:
+      mutations: 4
+      expect: "M9 status map -> G13 red; M10 empty value -> G14 red; M11 node:fs import -> G14 red; M12 trigger label -> G12 red; restore -> green"
+
+verification:
+  module_tests: 77/77 PASS (L1–L13 runtime, E1–E10 envelope, F1–F11 run path)
+  localization_gate: 15/15 PASS (G1–G14)
+  promoted_symbols: 57 runtime + 26 type (UI module still excluded)
+  vocabulary: 14 engine/API keys + 12 product keys x 6 locales, no key collision with 4B/4E
+  golden_parity: F11 + G13 — health machine field verbatim, loginWrongPassword body byte-for-byte
+  reference_minimum: derived from ISO timestamps, unusable/negative span -> null (never 0, never clamped)
+  contract_conformance: 22/22 PASS
+  boundary_audit: PASS
+  isolation_checks: boundary PASS · kernel PASS · port-surface PASS · reference 15050 / f8da35180669
+  rust_added: none
+  reference_modified: none
+  catalogue_4b_modified: none
+  envelope_4e_modified: none
+
+merge_condition:
+  - localization_gate_pass
+  - no_contract_violation
+  - no_reference_modification
+  - frozen_4b_catalogue_untouched
+  - golden_payload_parity_holds

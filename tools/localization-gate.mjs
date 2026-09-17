@@ -36,6 +36,9 @@ import {
 import * as runtimeModule from '../packages/workflow-lego/src/localization-runtime.ts';
 import * as serviceModule from '../packages/workflow-lego/src/backend-localization-service.ts';
 import * as envelopeModule from '../packages/workflow-lego/src/localization-envelope.ts';
+import * as vocabularyModule from '../packages/workflow-lego/src/localization-vocabulary.ts';
+import * as recordModule from '../packages/workflow-lego/src/execution-log-record.ts';
+import * as apiModule from '../packages/workflow-lego/src/api-error-response.ts';
 import {
 	NATIVE_DICTIONARIES,
 	NativeLocalizationService,
@@ -62,9 +65,11 @@ const assert = (condition, message) => {
 };
 
 /* --- G1: the test suite ---------------------------------------------------------------- */
-const testFiles = ['06-localization-runtime.test.ts', '07-localization-envelope.test.ts'].map((f) =>
-	join(ROOT, 'packages', 'workflow-lego', 'test', f),
-);
+const testFiles = [
+	'06-localization-runtime.test.ts',
+	'07-localization-envelope.test.ts',
+	'08-localization-run-path.test.ts',
+].map((f) => join(ROOT, 'packages', 'workflow-lego', 'test', f));
 const started = Date.now();
 const suite = spawnSync(process.execPath, ['--test', ...testFiles], { cwd: ROOT, encoding: 'utf8' });
 const suiteDurationMs = Date.now() - started;
@@ -74,7 +79,7 @@ const num = (label) => {
 	return match ? Number(match[1]) : null;
 };
 const suiteSummary = {
-	command: `node --test packages/workflow-lego/test/{06-localization-runtime,07-localization-envelope}.test.ts`,
+	command: `node --test packages/workflow-lego/test/{06,07,08}-*.test.ts`,
 	tests: num('tests'),
 	pass: num('pass'),
 	fail: num('fail'),
@@ -82,7 +87,7 @@ const suiteSummary = {
 	durationMs: suiteDurationMs,
 };
 
-check('G1', 'localization test suites pass (4C runtime + 4E envelope)', () => {
+check('G1', 'localization test suites pass (4C runtime + 4E envelope + 4F run path)', () => {
 	assert(suiteSummary.tests !== null, 'could not parse the test-runner summary');
 	assert(suiteSummary.fail === 0 && suite.status === 0, `${suiteSummary.fail} failing test(s)`);
 	return `${suiteSummary.pass}/${suiteSummary.tests} PASS in ${suiteDurationMs}ms`;
@@ -188,7 +193,10 @@ for (const block of blocks) {
 	if (
 		block.specifier === './localization-runtime' ||
 		block.specifier === './backend-localization-service' ||
-		block.specifier === './localization-envelope'
+		block.specifier === './localization-envelope' ||
+		block.specifier === './localization-vocabulary' ||
+		block.specifier === './execution-log-record' ||
+		block.specifier === './api-error-response'
 	) {
 		for (const entry of block.names) promoted.add(`${entry.typeOnly ? 'type ' : ''}${entry.name}`);
 	}
@@ -196,6 +204,12 @@ for (const block of blocks) {
 const runtimeValues = Object.keys(runtimeModule).filter((k) => k !== 'default');
 const serviceValues = Object.keys(serviceModule).filter((k) => k !== 'default');
 const envelopeValues = Object.keys(envelopeModule).filter((k) => k !== 'default');
+const phase4fModules = {
+	'localization-vocabulary.ts': vocabularyModule,
+	'execution-log-record.ts': recordModule,
+	'api-error-response.ts': apiModule,
+};
+const phase4fValues = Object.values(phase4fModules).flatMap((m) => Object.keys(m).filter((k) => k !== 'default'));
 const promotedTypes = [...promoted].filter((n) => n.startsWith('type ')).map((n) => n.slice(5));
 
 /** Declared type/class symbols of a module, read from its source (no tsc in this sandbox). */
@@ -209,7 +223,7 @@ const declaredTypes = (file) => {
 };
 
 check('G8', 'Phase 4D: index.ts re-exports every runtime symbol of the localization line', () => {
-	for (const name of [...runtimeValues, ...serviceValues, ...envelopeValues]) {
+	for (const name of [...runtimeValues, ...serviceValues, ...envelopeValues, ...phase4fValues]) {
 		assert(promoted.has(name), `src/index.ts does not re-export runtime symbol "${name}"`);
 	}
 	assert(
@@ -224,11 +238,14 @@ check('G8', 'Phase 4D: index.ts re-exports every runtime symbol of the localizat
 	...declaredTypes('localization-runtime.ts'),
 	...declaredTypes('backend-localization-service.ts'),
 	...declaredTypes('localization-envelope.ts'),
+	...declaredTypes('localization-vocabulary.ts'),
+	...declaredTypes('execution-log-record.ts'),
+	...declaredTypes('api-error-response.ts'),
 ]);
 	for (const name of promotedTypes) {
 		assert(declared.has(name), `src/index.ts promotes type "${name}" which the module does not declare`);
 	}
-	return `${runtimeValues.length + serviceValues.length + envelopeValues.length} runtime + ${promotedTypes.length} type symbols promoted`;
+	return `${runtimeValues.length + serviceValues.length + envelopeValues.length + phase4fValues.length} runtime + ${promotedTypes.length} type symbols promoted`;
 });
 
 check('G9', 'the promoted surface is runnable from a checkout (localization-inspect)', () => {
@@ -327,6 +344,133 @@ check('G11', 'envelope module boundary: only the two in-package collaborators', 
 	return `imports: ${specifiers.join(', ')}`;
 });
 
+/* --- G12/G13/G14: Phase 4F run path ------------------------------------------------------ */
+
+check('G12', 'execution-log record: reference field names, derived duration, localized block', () => {
+	const rt = vocabularyModule.createProductRuntime({ localeSource: { getLocale: () => 'id' } });
+	const record = recordModule.buildExecutionLogRecord(
+		{
+			executionId: 'GATE-EX',
+			workflowId: 'GATE-WF',
+			workflowName: 'gate',
+			mode: 'webhook',
+			status: 'success',
+			startedAt: '2026-09-17T10:00:00.000Z',
+			stoppedAt: '2026-09-17T10:00:00.025Z',
+			nodes: [
+				{ nodeName: 'Webhook', status: 'success', itemCount: 3, durationMs: 12 },
+				{ nodeName: 'Code', status: 'success' },
+			],
+			itemCount: 3,
+		},
+		rt,
+	);
+	assert(record.durationMs === 25, `derived duration ${record.durationMs}`);
+	assert(record.localized.locale === 'id' && record.localized.direction === 'ltr', 'locale/direction');
+	assert(record.localized.summary === 'Selesai dalam 25 ms — 2 node, 3 item', `summary ${record.localized.summary}`);
+	assert(record.localized.trigger === 'Dipicu webhook', `trigger ${record.localized.trigger}`);
+	assert(record.localized.nodeLines.length === 2, 'node lines');
+	assert(record.localized.missingKeys.length === 0, `diagnostics ${record.localized.missingKeys}`);
+	const arabic = recordModule.buildExecutionLogRecord(
+		{
+			executionId: 'GATE-EX-AR',
+			workflowId: 'GATE-WF',
+			workflowName: 'gate',
+			mode: 'schedule',
+			status: 'error',
+			startedAt: '2026-09-17T10:00:00.000Z',
+			stoppedAt: '2026-09-17T10:00:02.000Z',
+			locale: 'ar',
+		},
+		vocabularyModule.createProductRuntime(),
+	);
+	assert(arabic.localized.direction === 'rtl', `arabic direction ${arabic.localized.direction}`);
+	assert(arabic.localized.trigger === 'تم التشغيل بالجدولة', `arabic trigger ${arabic.localized.trigger}`);
+	return `${record.nodeRuns.length} node runs, summary + trigger localized, deterministic`;
+});
+
+check('G13', 'API responses: reference-exact statuses/bodies with localized text', () => {
+	const expectedStatus = { badRequest: 400, unauthorized: 401, notFound: 404, conflict: 409, internal: 500 };
+	assert(
+		JSON.stringify(apiModule.HTTP_STATUS_BY_ERROR_CODE) === JSON.stringify(expectedStatus),
+		`status map ${JSON.stringify(apiModule.HTTP_STATUS_BY_ERROR_CODE)}`,
+	);
+	for (const code of envelopeModule.API_ERROR_CODES) {
+		for (const locale of SUPPORTED_LOCALE_CODES) {
+			const response = apiModule.buildApiErrorResponse(
+				{ code },
+				vocabularyModule.createProductRuntime({ localeSource: { getLocale: () => locale } }),
+			);
+			assert(response.statusCode === expectedStatus[code], `${code}/${locale} status`);
+			assert(response.body.code === code, `${code}/${locale} body.code`);
+			assert(response.body.message !== code, `${code}/${locale} message not localized`);
+			assert(/^[^\u0000-\u007F]*$|./.test(response.body.message), 'message present');
+			const hintKey = apiModule.HINT_KEY_BY_ERROR_CODE[code];
+			if (hintKey === null) assert(response.body.hint === undefined, `${code} must not carry a hint`);
+			else assert(typeof response.body.hint === 'string' && response.body.hint !== hintKey, `${code} hint`);
+		}
+	}
+	const generic = apiModule.buildApiErrorResponse(
+		{ code: 'teapot' },
+		vocabularyModule.createProductRuntime({ localeSource: { getLocale: () => 'ru' } }),
+	);
+	assert(generic.statusCode === 500 && generic.body.code === 0, `generic shape ${JSON.stringify(generic.body)}`);
+	assert(generic.localized.rawCode === 'teapot', 'the raw code must survive');
+	const success = apiModule.buildApiSuccessResponse({ ok: true });
+	assert(success.statusCode === 200 && 'data' in success.body, 'success envelope { data }');
+
+	// Reference numeric code (`code: <errorCode || httpStatusCode>`) must survive untouched.
+	const numeric = apiModule.buildApiErrorResponse({ code: 401, httpStatusCode: 401, rawMessage: 'Wrong username or password. Do you have caps lock on?' });
+	assert(numeric.statusCode === 401 && numeric.body.code === 401, `numeric code ${JSON.stringify(numeric.body)}`);
+	assert(numeric.body.message === 'Wrong username or password. Do you have caps lock on?', 'caller message wins');
+	const golden = JSON.parse(
+		readFileSync(join(ROOT, 'tests', 'reference', 'agent-4', 'golden', 'api.golden.json'), 'utf8'),
+	);
+	const goldenLogin = golden.cases.loginWrongPassword.expected;
+	assert(
+		JSON.stringify(numeric.body) === JSON.stringify(goldenLogin.body) && numeric.statusCode === goldenLogin.status,
+		`golden login payload ${JSON.stringify(goldenLogin.body)}`,
+	);
+	assert(
+		apiModule.buildHealthResponse('ready', undefined, 'en').body.status === golden.cases.healthz.expected.body.status,
+		'health machine field matches the golden',
+	);
+	const health = apiModule.buildHealthResponse('ready', undefined, 'en');
+	assert(health.body.status === 'ok' && health.body.label === 'Healthy', `health ${JSON.stringify(health)}`);
+	const notReady = apiModule.buildHealthResponse('not-ready', undefined, 'en');
+	assert(notReady.statusCode === 503 && notReady.body.status === 'error', 'readiness failure shape');
+	return `${envelopeModule.API_ERROR_CODES.length} codes x ${SUPPORTED_LOCALE_CODES.length} locales + success/health + golden login payload`;
+});
+
+check('G14', 'product vocabulary: parity, no key collisions, run-path modules stay in-package', () => {
+	const keys = vocabularyModule.productKeys('en');
+	assert(keys.length >= 10, `only ${keys.length} product keys`);
+	const product4b = new Set(Object.keys(NATIVE_DICTIONARIES['en']));
+	const engine4e = new Set(Object.keys(envelopeModule.ENVELOPE_DICTIONARY_EXTENSION['en']));
+	for (const key of keys) {
+		assert(!product4b.has(key), `product key ${key} collides with Phase 4B`);
+		assert(!engine4e.has(key), `product key ${key} collides with Phase 4E`);
+	}
+	for (const locale of SUPPORTED_LOCALE_CODES) {
+		const localeKeys = vocabularyModule.productKeys(locale);
+		assert(JSON.stringify([...localeKeys].sort()) === JSON.stringify([...keys].sort()), `key drift in ${locale}`);
+		for (const key of keys) {
+			const value = vocabularyModule.PRODUCT_DICTIONARY_EXTENSION[locale]?.[key];
+			assert(typeof value === 'string' && value.trim() !== '', `${locale}:${key} empty`);
+		}
+	}
+	for (const [file, module] of Object.entries(phase4fModules)) {
+		const source = readFileSync(join(ROOT, 'packages', 'workflow-lego', 'src', file), 'utf8');
+		const specifiers = [...source.matchAll(/(?:^|\n)\s*(?:import|export)[\s\S]*?from\s+'([^']+)'/g)].map((m) => m[1]);
+		for (const specifier of specifiers) {
+			assert(specifier.startsWith('./') && specifier.endsWith('.ts'), `${file} imports ${specifier}`);
+		}
+		assert(!/process\.env|Date\.now\(\)|new Date\(\)|globalThis/.test(source), `${file} is not self-contained`);
+		void module;
+	}
+	return `${keys.length} product keys x ${SUPPORTED_LOCALE_CODES.length} locales, ${Object.keys(phase4fModules).length} modules checked`;
+});
+
 /* --- evidence + verdict ----------------------------------------------------------------- */
 const failed = checks.filter((c) => !c.ok);
 const record = {
@@ -338,14 +482,19 @@ const record = {
 		'packages/workflow-lego/src/backend-localization-service.ts (phase 4B)',
 		'packages/workflow-lego/src/localization-runtime.ts (phase 4C)',
 		'packages/workflow-lego/src/localization-envelope.ts (phase 4E)',
+		'packages/workflow-lego/src/localization-vocabulary.ts (phase 4F)',
+		'packages/workflow-lego/src/execution-log-record.ts (phase 4F)',
+		'packages/workflow-lego/src/api-error-response.ts (phase 4F)',
 	],
 	localizationTestFiles: [
 		'packages/workflow-lego/test/06-localization-runtime.test.ts',
 		'packages/workflow-lego/test/07-localization-envelope.test.ts',
+		'packages/workflow-lego/test/08-localization-run-path.test.ts',
 	],
 	locales: [...SUPPORTED_LOCALE_CODES],
 	vocabulary: {
-		keys: envelopeModule.extensionKeys('en').length,
+		engineKeys: envelopeModule.extensionKeys('en').length,
+		productKeys: vocabularyModule.productKeys('en').length,
 		locales: [...envelopeModule.envelopeLocales()],
 		apiErrorCodes: [...envelopeModule.API_ERROR_CODES],
 	},

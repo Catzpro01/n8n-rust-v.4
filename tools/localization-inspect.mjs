@@ -14,6 +14,8 @@
  *   node tools/localization-inspect.mjs --lang jv --key settings.title    # one string
  *   node tools/localization-inspect.mjs --text "Node {name} selesai" --param name=Webhook
  *   node tools/localization-inspect.mjs --lang ar --envelope              # run-data block (Phase 4E)
+ *   node tools/localization-inspect.mjs --lang id --record                # persisted run record (Phase 4F)
+ *   node tools/localization-inspect.mjs --lang ru --api-error unauthorized # localized API error (Phase 4F)
  *
  * exit: 0 ok · 2 unusable arguments/locale
  */
@@ -36,6 +38,16 @@ import {
 	extensionKeys,
 	localizeApiError,
 } from '../packages/workflow-lego/src/localization-envelope.ts';
+import {
+	buildExecutionLogRecord,
+	formatExecutionLogLine,
+} from '../packages/workflow-lego/src/execution-log-record.ts';
+import {
+	buildApiErrorResponse,
+	buildApiSuccessResponse,
+	buildHealthResponse,
+} from '../packages/workflow-lego/src/api-error-response.ts';
+import { createProductRuntime } from '../packages/workflow-lego/src/localization-vocabulary.ts';
 
 const argv = process.argv.slice(2);
 const flag = (name) => {
@@ -108,6 +120,60 @@ if (has('envelope')) {
 		for (const line of envelope.nodeLines) console.log(`  node        : ${line}`);
 		for (const error of apiErrors) console.log(`  api error   : ${error.code} -> ${error.message}`);
 		console.log(`  diagnostics : ${envelope.diagnostics.missingKeys.length} missing key(s)`);
+	}
+	process.exit(0);
+}
+
+/* --- persisted run record (Phase 4F) ---------------------------------------------------- */
+if (has('record')) {
+	const runtime = createProductRuntime({ localeSource: { getLocale: () => locale } });
+	const record = buildExecutionLogRecord(
+		{
+			executionId: flag('execution') ?? 'EX-DEMO-01',
+			workflowId: flag('workflow-id') ?? 'WF-DEMO-01',
+			workflowName: flag('workflow') ?? 'SMOKETEST001TEST',
+			mode: flag('mode') ?? 'webhook',
+			status: flag('status') ?? 'success',
+			startedAt: '2026-09-17T10:00:00.000Z',
+			stoppedAt: '2026-09-17T10:00:00.025Z',
+			itemCount: Number(flag('items') ?? 3),
+			nodes: [
+				{ nodeName: 'Webhook', status: 'success', itemCount: 3, durationMs: 12 },
+				{ nodeName: 'Code', status: 'success' },
+			],
+		},
+		runtime,
+	);
+	if (json) {
+		console.log(JSON.stringify(record, null, 2));
+	} else {
+		console.log(`execution record — ${record.localized.locale} (${record.localized.direction})`);
+		console.log(`  line        : ${formatExecutionLogLine(record)}`);
+		console.log(`  trigger     : ${record.localized.trigger}`);
+		console.log(`  message     : ${record.localized.message}`);
+		console.log(`  duration    : ${record.durationMs} ms (from timestamps)`);
+		for (const line of record.localized.nodeLines) console.log(`  node        : ${line}`);
+		console.log(`  diagnostics : ${record.localized.missingKeys.length} missing key(s)`);
+	}
+	process.exit(0);
+}
+
+/* --- API response (Phase 4F) ------------------------------------------------------------ */
+const apiErrorCode = flag('api-error');
+if (apiErrorCode !== undefined) {
+	const runtime = createProductRuntime({ localeSource: { getLocale: () => locale } });
+	const error = buildApiErrorResponse({ code: apiErrorCode }, runtime);
+	const health = buildHealthResponse('ready', runtime, locale);
+	const success = buildApiSuccessResponse({ executionId: flag('execution') ?? 'EX-DEMO-01' });
+	if (json) {
+		console.log(JSON.stringify({ error, success, health }, null, 2));
+	} else {
+		console.log(`api error   — ${error.localized.locale}  HTTP ${error.statusCode}`);
+		console.log(`  body        : ${JSON.stringify(error.body)}`);
+		console.log(`  messageKey  : ${error.localized.messageKey} (hint: ${error.localized.hintKey ?? 'none'})`);
+		console.log(`  rawCode     : ${error.localized.rawCode}${error.localized.vocabularyHit ? '' : ' (not in vocabulary -> generic shape)'}`);
+		console.log(`  success     : ${success.statusCode} ${JSON.stringify(success.body)}`);
+		console.log(`  health      : ${health.statusCode} ${JSON.stringify(health.body)}`);
 	}
 	process.exit(0);
 }

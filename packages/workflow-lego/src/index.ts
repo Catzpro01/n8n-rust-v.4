@@ -49,6 +49,9 @@ export { NODE_CONNECTION_TYPES, STARTING_NODE_TYPES, DEFAULT_TIMEZONE } from './
  *   backend-localization-service   — the canonical catalog and the six dictionaries (Phase 4B)
  *   localization-runtime           — resolution chain, direction, interpolation, engine messages (Phase 4C)
  *   localization-envelope          — run data / node status lines / API errors (Phase 4E, consumer seam)
+ *   localization-vocabulary        — product/run/API-hint strings, composed runtime (Phase 4F)
+ *   execution-log-record           — the persisted execution record + its localized block (Phase 4F)
+ *   api-error-response             — localized success/error/health bodies, reference-exact (Phase 4F)
  *
  * BOUNDARY: the runtime has no imports and consumes the service through a port, so promoting the
  * line adds symbols to the package surface without adding a single dependency edge. The UI module
@@ -60,6 +63,7 @@ export {
 	ENGINE_STATUS_OVERLAY,
 	FALLBACK_LOCALE,
 	LOCALE_CATALOG,
+	PLACEHOLDER_SOURCE,
 	LocalizationRuntime,
 	STATUS_MESSAGE_KEYS,
 	SUPPORTED_LOCALE_CODES,
@@ -68,6 +72,7 @@ export {
 	describeLocale,
 	dictionaryParity,
 	directionOf,
+	firstPlaceholderIndex,
 	firstResolvingSource,
 	fromConstant,
 	fromEnvironment,
@@ -114,6 +119,41 @@ export {
 	type RunEnvelope,
 	type RunEnvelopeInput,
 } from './localization-envelope';
+export {
+	PRODUCT_DICTIONARY_EXTENSION,
+	RUN_MODES,
+	SUMMARY_MESSAGE_KEYS,
+	TRIGGER_MESSAGE_KEYS,
+	createProductRuntime,
+	nodeStateLabel,
+	productKeys,
+	runSummary,
+	triggerLabel,
+	type RunMode,
+	type RunSummaryParts,
+} from './localization-vocabulary';
+export {
+	buildExecutionLogRecord,
+	durationBetween,
+	formatExecutionLogLine,
+	isKnownRunMode,
+	nodeLinesOf,
+	relocalizeNodeLine,
+	type ExecutionLogInput,
+	type ExecutionLogRecord,
+} from './execution-log-record';
+export {
+	GENERIC_ERROR_CODE,
+	HINT_KEY_BY_ERROR_CODE,
+	HTTP_STATUS_BY_ERROR_CODE,
+	buildApiErrorResponse,
+	buildApiSuccessResponse,
+	buildHealthResponse,
+	type ApiErrorResponse,
+	type ApiErrorResponseInput,
+	type ApiHealthResponse,
+	type ApiSuccessResponse,
+} from './api-error-response';
 
 /** Provenance of the isolation layer itself. */
 export const LEGO_PROVENANCE = {

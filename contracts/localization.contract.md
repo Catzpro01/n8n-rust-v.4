@@ -5,12 +5,12 @@
 | Owner | Agent 5 (integration), Phase 4C continuation of the Phase 4A/4B line |
 | LEGO | `localization` — locale resolution, direction, interpolation, engine status messages |
 | Reference | n8n 2.9.4 (`reference/n8n`) for **boundary discipline only**: no runtime behavior of the reference is replaced or re-interpreted here |
-| Implementation | `packages/workflow-lego/src/localization-runtime.ts` (Phase 4C) + `localization-envelope.ts` (Phase 4E), with `settings-localization-adapter.ts` (4A) and `backend-localization-service.ts` (4B) as injected collaborators |
+| Implementation | `packages/workflow-lego/src/localization-runtime.ts` (4C) + `localization-envelope.ts` (4E) + `localization-vocabulary.ts` / `execution-log-record.ts` / `api-error-response.ts` (4F), with `settings-localization-adapter.ts` (4A) and `backend-localization-service.ts` (4B) as injected collaborators |
 | Blueprint | `docs/isolation/localization.md` |
-| Tests | gate 6 `06-localization-runtime.test.ts` (33) + gate 7 `07-localization-envelope.test.ts` (17) — **50/50 PASS** |
-| Gate / evidence | `tools/localization-gate.mjs` → `docs/isolation/evidence/localization-gate.json` — **12/12 PASS** |
-| Surface | promoted in Phase 4D/4E: `src/index.ts` re-exports 34 runtime + 18 type symbols (`LocalizationRuntime`, `LOCALE_CATALOG`, `NativeLocalizationService`, `buildRunEnvelope`, …) |
-| Runnable view | `node tools/localization-inspect.mjs [--lang … --key …] [--envelope]` |
+| Tests | `06-localization-runtime.test.ts` (33) + `07-localization-envelope.test.ts` (17) + `08-localization-run-path.test.ts` (27) — **77/77 PASS** |
+| Gate / evidence | `tools/localization-gate.mjs` → `docs/isolation/evidence/localization-gate.json` — **15/15 PASS** |
+| Surface | promoted in Phase 4D/4E/4F: `src/index.ts` re-exports 57 runtime + 26 type symbols (`LocalizationRuntime`, `LOCALE_CATALOG`, `buildRunEnvelope`, `buildExecutionLogRecord`, `buildApiErrorResponse`, …) |
+| Runnable view | `node tools/localization-inspect.mjs [--lang … --key …] [--envelope] [--record] [--api-error <code>]` |
 | Status | **TESTED** (no reference path touched, UI untouched) |
 
 ## 1. Purpose
@@ -31,10 +31,13 @@ execution fail because of a translation**.
 | Locale source | `{ getLocale(): string \| null \| undefined }` (port) | Phase 4A settings adapter, request context, `fromEnvironment()` |
 | Dictionaries | `{ translate(key, locale?): string }` (port) | Phase 4B `NativeLocalizationService` |
 | Node run result | `{ nodeName, status, itemCount?, durationMs? }` (plain data) | execution engine / run data |
-| API error code | `'badRequest' \| 'unauthorized' \| 'notFound' \| 'conflict' \| 'internal'` | API layer |
+| API error code | `'badRequest' \| 'unauthorized' \| 'notFound' \| 'conflict' \| 'internal'`, any other string, or a numeric code (reference `errorCode \|\| httpStatusCode`) | API layer |
 | Run identity | `{ executionId, workflowName, status, nodes?, itemCount?, durationMs?, locale? }` | execution logger |
 | Overlay | `Record<locale, Record<key, string>>` | product/engine additions, tests |
 | Execution status | `'success' \| 'error' \| 'running' \| 'waiting' \| 'cancelled'` | engine per-node run |
+| Run record input | `{ executionId, workflowId, workflowName, mode, status, startedAt, stoppedAt?, durationMs?, itemCount?, nodes?, locale? }` (plain data) | execution logger |
+| Run mode | `'manual' \| 'webhook' \| 'schedule'` (`RUN_MODES`) | trigger layer |
+| Error payload extras | `{ params?, meta?, stacktrace?, rawMessage?, httpStatusCode? }` | API layer (route-specific detail) |
 
 ## 3. Outputs
 
@@ -50,6 +53,17 @@ execution fail because of a translation**.
 | `buildRunEnvelope(input, runtime)` | `RunEnvelope` — locale, direction, `message`, 5 `messages`, `labels`, `nodeStatusLines`/`nodeLines`, `diagnostics.missingKeys`; deterministic and JSON-safe |
 | `localizeNodeStatus(result, runtime, locale?)` | `{ statusText, itemsText?, durationText?, line }` — `line` renders `[Node] Status (n item, m ms)` |
 | `localizeApiError(code, runtime, params?, locale?)` | `{ code, messageKey, message, fallbackUsed }` — unknown codes echo the raw code and record diagnostics |
+| `createProductRuntime(options?)` | `LocalizationRuntime` composed of the frozen 4B catalogue, the engine/API overlay (4E) and `PRODUCT_DICTIONARY_EXTENSION` (4F) — the runtime the backend run path actually uses |
+| `productKeys(locale?)` | the 12 product keys of that locale, or `[]` for an unknown locale (never throws) |
+| `runSummary(status, parts, runtime, locale?)` | `{ text, isSummary, messageKey, droppedParts }` — localized sentence only when duration **and** node count **and** item count are present; otherwise the lifecycle text with `isSummary: false` |
+| `triggerLabel(mode, runtime, locale?)` | localized trigger label for `RUN_MODES`; an unknown mode is echoed and diagnosed |
+| `nodeStateLabel(state, runtime, locale?)` | localized `skipped`/`disabled`; anything else falls back to the engine status text (diagnosed) |
+| `buildExecutionLogRecord(input, runtime?)` | `ExecutionLogRecord` — `id`, `workflowId`, `workflowName`, `mode`, `status`, `startedAt`, `stoppedAt`, `durationMs`, `totalItems`, `nodeRuns[]`, `localized` block, `redacted` — JSON-safe and deterministic |
+| `durationBetween(startedAt, stoppedAt?)` | non-negative `number` or `null` (unparseable, missing, or negative input is refused — never clamped) |
+| `formatExecutionLogLine(record)` | one console/log line: `ID NAME [mode] summary-or-message` |
+| `buildApiErrorResponse(input, runtime?)` | `{ statusCode, body, localized }` with `body = { code, message, hint?, meta?, stacktrace? }` per `contracts/api.contract.md` §3 — known code → localized envelope, unknown string → `{ code: 0 }`, numeric code → passed through (`{ code: 401, message: rawMessage }` reproduces the reference login payload byte-for-byte) |
+| `buildApiSuccessResponse(data, statusCode?)` | `{ statusCode, body: { data } }` — the reference success wrapper, nothing added |
+| `buildHealthResponse(state, runtime?, locale?)` | `{ statusCode: 200 \| 503, body: { status: 'ok' \| 'error', label } }` — the machine field stays untranslated |
 
 ## 4. Responsibilities
 
@@ -79,6 +93,35 @@ execution fail because of a translation**.
    mapping** (`localizeApiError()` over `API_ERROR_CODES`). It also owns the engine/API **vocabulary
    extension** (`ENVELOPE_DICTIONARY_EXTENSION`, 14 keys × 6 locales) instead of editing the frozen
    Phase 4B catalogue — the parity rules of §11.2 apply to it unchanged.
+10. **Product vocabulary (Phase 4F, `localization-vocabulary.ts`).** Own the product-side
+   vocabulary that neither 4B (user-visible shell strings) nor 4E (engine/API vocabulary) claims:
+   **run summaries**, **trigger labels**, the two extra **node states** and the **API hint** keys —
+   `PRODUCT_DICTIONARY_EXTENSION`, 12 keys × 6 locales. `createProductRuntime()` is the single
+   composition point (frozen 4B catalogue + 4E overlay + this overlay); nobody else may stack
+   overlays, so "which runtime does the backend use?" has exactly one answer. `runSummary()` is the
+   only summary formatter and refuses to emit half a sentence: without duration, node count **and**
+   item count it returns the localized lifecycle text with `isSummary: false` and names what was
+   missing in `droppedParts`. `triggerLabel()` covers exactly `RUN_MODES`; an unknown mode is echoed
+   and diagnosed (`execution.trigger.<mode>`), never guessed.
+11. **Run-path seam (Phase 4F, `execution-log-record.ts` + `api-error-response.ts`).** Turn the
+   envelope into the two things the run path actually hands out:
+   * the **persisted execution record** (`buildExecutionLogRecord()`) carrying the execution-row field
+     names (`id`, `workflowId`, `workflowName`, `mode`, `status`, `startedAt`, `stoppedAt`,
+     `durationMs`, `totalItems`, `nodeRuns`) plus a **localized block resolved at write time**
+     (`locale`, `direction`, `message`, `summary`, `trigger`, `labels`, `nodeLines`, `missingKeys`).
+     Labels and node lines come from `buildRunEnvelope()`, never re-formatted here, so the log and the
+     envelope cannot disagree. Timestamps arrive as ISO strings and the duration is *derived*
+     (`durationBetween()`); an unusable or negative span becomes `null` — never `0`, never clamped.
+     The clock is not read: the record is reproducible from its input alone.
+   * the **localized HTTP payloads** (`buildApiErrorResponse()`, `buildApiSuccessResponse()`,
+     `buildHealthResponse()`) that reproduce `contracts/api.contract.md` §3 1:1: known error codes map
+     through `HTTP_STATUS_BY_ERROR_CODE` to `{ code, message, hint? }` (+`meta`/`stacktrace` when the
+     route supplied them), an **unknown** code degrades to the reference generic shape
+     `500 { code: 0, message }` while the raw code survives in `localized.rawCode`, success is exactly
+     `{ data }`, and health is `{ status, label }` with the machine field (`ok`/`error`, 200/503)
+     never translated. These are **shapers, not transports**: no status code is chosen for a route
+     here, no body is serialized to a socket, and `rawMessage` always wins because the caller owns
+     that text.
 
 ## 5. Non-responsibilities
 
@@ -98,6 +141,10 @@ execution fail because of a translation**.
    invariants (`boundary audit`, `reference integrity 15050 / f8da35180669`) are untouched.
 6. **No execution semantics.** This module never decides whether a node succeeds, retries or fails;
    it only phrases what already happened.
+7. **Not a database, a router or a serializer.** The run-path seam (Phase 4F) shapes records and
+   payloads; writing rows, choosing routes, registering middleware, serializing to a socket and
+   redacting secrets stay with the persistence/API LEGOs. The `redacted` field of a record is a
+   placeholder the owner of that data fills — this module never inspects payloads.
 
 ## 6. Dependencies
 
@@ -161,6 +208,13 @@ No filesystem, database or network access at any point; the object is a plain in
 | Health endpoint | `runtime.t('api.health.ok')` |
 | CLI / worker bootstrap | `fromEnvironment(env)` / `fromConstant(code)` / `firstResolvingSource(...)` |
 | Evidence tooling | `tools/localization-gate.mjs` (imports the module directly; `--json` for CI) |
+| Execution logger (records) | `buildExecutionLogRecord(input, runtime)` / `formatExecutionLogLine(record)` |
+| Run-path re-render | `relocalizeNodeLine(nodeRun, runtime, locale)` — view a stored run in another locale |
+| API router (error) | `buildApiErrorResponse(input, runtime)` / `HTTP_STATUS_BY_ERROR_CODE` |
+| API router (success) | `buildApiSuccessResponse(data, statusCode?)` |
+| Health/readiness probe | `buildHealthResponse('ready' \| 'not-ready', runtime?, locale?)` |
+| Backend bootstrap | `createProductRuntime(options)` — the composed runtime used by the run path |
+| Manual inspection | `tools/localization-inspect.mjs --record` / `--api-error <code>` |
 
 ## 11. Compatibility requirements
 
@@ -184,3 +238,22 @@ No filesystem, database or network access at any point; the object is a plain in
    (`settings-localization-adapter.ts`) is deliberately **not** promoted (PROJECT_RULES #2).
    Gate checks G8 (symbol/type parity, UI module excluded) and G9 (the surface is runnable from a
    checkout via `tools/localization-inspect.mjs`) enforce this on every run.
+8. **Reference-exact API payloads.** The wire shapes are fixed by `contracts/api.contract.md` §3 and
+   must not drift: success is exactly `{ data }` (no `status`, no `message` added), a known error code
+   keeps its HTTP status (`400/401/404/409/500` for `badRequest/unauthorized/notFound/conflict/internal`)
+   and its `{ code, message, hint? }` body, an unknown code degrades to `500 { code: 0, … }` with the
+   raw code preserved in `localized.rawCode`, and health keeps `status` untranslated while adding
+   `label`. The localized text lives in `message`/`hint`/`label` only — a client that ignores
+   localization sees the same payload a reference client does. Asserted by test 08 (F8/F9) and gate
+   check G13 (`5 codes × 6 locales` + success + health).
+9. **Run-path module boundary.** `localization-vocabulary.ts`, `execution-log-record.ts` and
+   `api-error-response.ts` import **only** in-package `.ts` specifiers, read no environment variable,
+   read no clock (`Date.now()`/`new Date()` are forbidden — every timestamp is passed in) and use no
+   global mutable state, so a record is reproducible from its input and the run path stays unit-
+   testable. The 4B catalogue and the 4E overlay are never mutated, and product keys may not collide
+   with keys of either earlier phase. Asserted by test 08 (F10) and gate check G14; the vocabulary
+   parity rules of §11.2 apply to `PRODUCT_DICTIONARY_EXTENSION` unchanged (test 08 F1/F2, gate G14).
+10. **One summary, one truth.** Run summaries are produced by `runSummary()` only — no caller
+   concatenates its own "finished in …" string — and the record's `localized` block is the 4E
+   envelope verbatim, so a re-rendered line (`relocalizeNodeLine()`) and the stored line cannot
+   disagree. Asserted by test 08 (F5/F6).

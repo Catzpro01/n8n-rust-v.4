@@ -222,7 +222,12 @@ export function describeLocale(input: string | null | undefined): LocaleDescript
 	return LOCALE_CATALOG.find((l) => l.code === code) ?? null;
 }
 
-const PLACEHOLDER = /\{\{\s*([A-Za-z0-9_.]+)\s*\}\}|\{\s*([A-Za-z0-9_.]+)\s*\}/g;
+/**
+ * Placeholder syntax of the whole line: `{key}` and `{{ key }}`.
+ * Exported so downstream phases reuse one definition instead of re-deriving the regex.
+ */
+export const PLACEHOLDER_SOURCE = '\\{\\{\\s*([A-Za-z0-9_.]+)\\s*\\}\\}|\\{\\s*([A-Za-z0-9_.]+)\\s*\\}';
+const PLACEHOLDER = new RegExp(PLACEHOLDER_SOURCE, 'g');
 
 /**
  * Interpolate `{name}` / `{{ name }}` placeholders.
@@ -245,6 +250,16 @@ export function interpolate(template: string, params?: InterpolationParams): str
 export function hasUnfilledPlaceholder(value: string): boolean {
 	PLACEHOLDER.lastIndex = 0;
 	return PLACEHOLDER.test(value);
+}
+
+/**
+ * Index of the first unfilled placeholder, or `-1` when the value is complete.
+ * Used by callers that must drop an optional trailing segment instead of shipping `{items}` to a user.
+ */
+export function firstPlaceholderIndex(value: string): number {
+	PLACEHOLDER.lastIndex = 0;
+	const match = PLACEHOLDER.exec(value);
+	return match === null ? -1 : match.index;
 }
 
 export interface DictionaryParityReport {
