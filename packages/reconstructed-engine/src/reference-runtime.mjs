@@ -74,6 +74,9 @@ export function referenceRuntime() {
 		dir: resolvedDir,
 		core: load('n8n-core'),
 		luxon: load('luxon'),
+		// jmespath backs $jmesPath/$jmespath; the reference imports it as a bare specifier,
+		// which this package forbids in src/, so it arrives through the seam instead.
+		jmespath: load('jmespath'),
 		lodashGet: load('lodash/get'),
 		version: (() => {
 			try {

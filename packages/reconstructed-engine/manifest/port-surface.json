@@ -3,7 +3,7 @@
   "$source": "GENERATED from the pinned reference runtime — DO NOT EDIT. Re-record after touching src/. Test 05 re-derives these lists live and fails on drift; test 05 also works offline against this file.",
   "$runtimeVersion": "2.9.1",
   "$referenceRootHash": "f8da35180669d79801601bfeb025bbe418c8f00346b1358c3ba3dc68b42da732",
-  "$recordedAt": "2026-09-17T17:35:24.458Z",
+  "$recordedAt": "2026-09-17T19:24:24.710Z",
   "legend": {
     "ported": "exported by my module with the reference name",
     "deferred": "NOT implemented: must raise NotPortedError, never a value (anti-ISSUE-016)",
@@ -458,7 +458,6 @@
         "$($x).pairedItem": "paired-item resolution — paired-item LEGO (see docs)",
         "getPairedItem": "paired-item LEGO",
         "$tool": "tool/agent runtime (agent LEGO)",
-        "$jmesPath": "jmespath dependency not vendored by this LEGO",
         "$agentInfo": "agent-runtime metadata",
         "DateTime": "luxon-dependent; available through the injected luxon seam",
         "agentInfo": "workflow-data-proxy.ts:1061 agentInfo getter — needs the agent-runtime LEGO",

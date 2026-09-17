@@ -3,7 +3,7 @@
   "$source": "pinned reference runtime — values were NOT produced by the reconstruction",
   "$runtimeVersion": "2.9.1",
   "$referenceRootHash": "f8da35180669d79801601bfeb025bbe418c8f00346b1358c3ba3dc68b42da732",
-  "$recordedAt": "2026-09-17T17:59:47.972Z",
+  "$recordedAt": "2026-09-17T19:21:00.694Z",
   "dataProxy": {
     "linear-3-run": {
       "_why": "fully executed linear graph: the happy path of every accessor",
@@ -637,7 +637,7 @@
             "$now"
           ],
           "ok": true,
-          "serialized": "luxon:2026-09-17T13:59:47.896-04:00"
+          "serialized": "luxon:2026-09-17T15:21:00.613-04:00"
         },
         "$today": {
           "_path": [
@@ -2522,6 +2522,210 @@
           }
         }
       }
+    },
+    "jmespath-accessor": {
+      "_why": "$jmesPath / $jmespath (workflow-data-proxy.ts:763-775). The reference imports jmespath as a bare specifier at module scope; this package forbids bare specifiers in src/ (gate 01), so the module is injected and every probe here is graded only where the host can supply it. The arity guard is checked BEFORE the module is touched — that is why the two bad-argument probes below carry expected values even without a runtime. null is accepted by the guard (typeof null === 'object') and the reference spreads it to {}, and arrays are passed to jmespath without the copy — both are pinned here rather than reasoned about.",
+      "probes": {
+        "$jmesPath.({\"a\":[1,2,3]},\"a[1]\")": {
+          "_path": [
+            "$jmesPath",
+            {
+              "()": [
+                {
+                  "a": [
+                    1,
+                    2,
+                    3
+                  ]
+                },
+                "a[1]"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "number:2",
+          "_oracleDependent": true
+        },
+        "$jmesPath.([{\"n\":1},{\"n\":2}],\"[*].n\")": {
+          "_path": [
+            "$jmesPath",
+            {
+              "()": [
+                [
+                  {
+                    "n": 1
+                  },
+                  {
+                    "n": 2
+                  }
+                ],
+                "[*].n"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "[number:1,number:2]",
+          "_oracleDependent": true
+        },
+        "$jmesPath.({\"foo\":\"bar\"},\"nope\")": {
+          "_path": [
+            "$jmesPath",
+            {
+              "()": [
+                {
+                  "foo": "bar"
+                },
+                "nope"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "null",
+          "_oracleDependent": true
+        },
+        "$jmespath.({\"a\":[1,2]},\"a[5]\")": {
+          "_path": [
+            "$jmespath",
+            {
+              "()": [
+                {
+                  "a": [
+                    1,
+                    2
+                  ]
+                },
+                "a[5]"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "null",
+          "_oracleDependent": true
+        },
+        "$jmesPath.({\"a\":[{\"b\":1},{\"b\":2}]},\"a[?b>`1`].b\")": {
+          "_path": [
+            "$jmesPath",
+            {
+              "()": [
+                {
+                  "a": [
+                    {
+                      "b": 1
+                    },
+                    {
+                      "b": 2
+                    }
+                  ]
+                },
+                "a[?b>`1`].b"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "[number:2]",
+          "_oracleDependent": true
+        },
+        "$jmesPath.(\"not-an-object\",\"a\")": {
+          "_path": [
+            "$jmesPath",
+            {
+              "()": [
+                "not-an-object",
+                "a"
+              ]
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "expected two arguments (Object, string) for this function",
+            "level": "warning",
+            "functionality": "regular",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0
+            }
+          }
+        },
+        "$jmesPath.({\"a\":1},5)": {
+          "_path": [
+            "$jmesPath",
+            {
+              "()": [
+                {
+                  "a": 1
+                },
+                5
+              ]
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "expected two arguments (Object, string) for this function",
+            "level": "warning",
+            "functionality": "regular",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0
+            }
+          }
+        },
+        "$jmesPath.({\"a\":1})": {
+          "_path": [
+            "$jmesPath",
+            {
+              "()": [
+                {
+                  "a": 1
+                }
+              ]
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "expected two arguments (Object, string) for this function",
+            "level": "warning",
+            "functionality": "regular",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0
+            }
+          }
+        },
+        "$jmesPath.(null,\"a\")": {
+          "_path": [
+            "$jmesPath",
+            {
+              "()": [
+                null,
+                "a"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "null",
+          "_oracleDependent": true
+        },
+        "$jmesPath.([1,2],\"[0]\")": {
+          "_path": [
+            "$jmesPath",
+            {
+              "()": [
+                [
+                  1,
+                  2
+                ],
+                "[0]"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "number:1",
+          "_oracleDependent": true
+        }
+      }
     }
   },
   "contextMethods": {
@@ -2985,7 +3189,7 @@
             }
           ],
           "ok": true,
-          "serialized": "\"f80acf7801fd2c1ee639250c782970efb21590d32f33883df11b7513bed55b51\"",
+          "serialized": "\"b9da8a0cd2cca61fcfa351d1205518652963ec14fe8bfb4b0d9e9d6651129870\"",
           "_deviation": true
         },
         "getSignedResumeUrl()": {
@@ -2996,7 +3200,7 @@
             }
           ],
           "ok": true,
-          "serialized": "\"http://localhost:5678/webhook-waiting/exec-oracle-1/22222222-2222-4222-8222-222222222222?signature=2c0fb965ca130fefda0a68be7d66d31581e91a7c0fcde450b7328dcdbc43e12a\"",
+          "serialized": "\"http://localhost:5678/webhook-waiting/exec-oracle-1/22222222-2222-4222-8222-222222222222?signature=d61aa2bd92b87f3d1be9973e6df846f98b4a02075cbc5bf397a0aa1eab2841ef\"",
           "_deviation": true
         },
         "sendChunk(\"text\",0,\"hi\")": {
@@ -3598,7 +3802,7 @@
             }
           ],
           "ok": true,
-          "serialized": "\"f80acf7801fd2c1ee639250c782970efb21590d32f33883df11b7513bed55b51\"",
+          "serialized": "\"b9da8a0cd2cca61fcfa351d1205518652963ec14fe8bfb4b0d9e9d6651129870\"",
           "_deviation": true
         },
         "getSignedResumeUrl()": {
@@ -3609,7 +3813,7 @@
             }
           ],
           "ok": true,
-          "serialized": "\"http://localhost:5678/webhook-waiting/exec-oracle-1/22222222-2222-4222-8222-222222222222?signature=2c0fb965ca130fefda0a68be7d66d31581e91a7c0fcde450b7328dcdbc43e12a\"",
+          "serialized": "\"http://localhost:5678/webhook-waiting/exec-oracle-1/22222222-2222-4222-8222-222222222222?signature=d61aa2bd92b87f3d1be9973e6df846f98b4a02075cbc5bf397a0aa1eab2841ef\"",
           "_deviation": true
         },
         "sendChunk(\"text\",0,\"hi\")": {
@@ -4206,7 +4410,7 @@
             }
           ],
           "ok": true,
-          "serialized": "\"f80acf7801fd2c1ee639250c782970efb21590d32f33883df11b7513bed55b51\"",
+          "serialized": "\"b9da8a0cd2cca61fcfa351d1205518652963ec14fe8bfb4b0d9e9d6651129870\"",
           "_deviation": true
         },
         "getSignedResumeUrl()": {
@@ -4217,7 +4421,7 @@
             }
           ],
           "ok": true,
-          "serialized": "\"http://localhost:5678/webhook-waiting/exec-oracle-1/22222222-2222-4222-8222-222222222222?signature=2c0fb965ca130fefda0a68be7d66d31581e91a7c0fcde450b7328dcdbc43e12a\"",
+          "serialized": "\"http://localhost:5678/webhook-waiting/exec-oracle-1/22222222-2222-4222-8222-222222222222?signature=d61aa2bd92b87f3d1be9973e6df846f98b4a02075cbc5bf397a0aa1eab2841ef\"",
           "_deviation": true
         },
         "sendChunk(\"text\",0,\"hi\")": {

@@ -148,6 +148,11 @@ const MODULES = [
 	{
 		my: 'workflow-data-proxy.mjs',
 		scope: 'complete',
+		// $jmesPath/$jmespath are ported but only answer when the host injects the
+		// jmespath module (see the ctor's 15th argument); moved out of `deferred` when
+		// the seam started resolving it, because "inert without an injected capability"
+		// is not the same claim as "not ported".
+		injected: { jmespath: 'reference-runtime.mjs seam → ctor; without it the accessors raise' },
 		reference: [
 			{ pkg: 'n8n-workflow', path: `${WF}/workflow-data-proxy.js` },
 			{ pkg: 'n8n-workflow', path: `${WF}/workflow-data-proxy-helpers.js` },
@@ -156,7 +161,6 @@ const MODULES = [
 			'$($x).pairedItem': 'paired-item resolution — paired-item LEGO (see docs)',
 			getPairedItem: 'paired-item LEGO',
 			$tool: 'tool/agent runtime (agent LEGO)',
-			$jmesPath: 'jmespath dependency not vendored by this LEGO',
 			$agentInfo: 'agent-runtime metadata',
 			DateTime: 'luxon-dependent; available through the injected luxon seam',
 			agentInfo: 'workflow-data-proxy.ts:1061 agentInfo getter — needs the agent-runtime LEGO',

@@ -70,10 +70,12 @@ Anything not ported raises `NotPortedError` naming the reference `file:line`. Th
 generated, not remembered: `test/05` fails if `src/` grows an undeclared export, if a
 deferred symbol starts returning a value, or if the manifest stops matching the runtime.
 See `manifest/port-surface.json` and `docs/isolation/node-execution-context.md` §2 for
-the table (paired-item accessors, `$fromAI*`, `$tool`, `$jmesPath`, `$agentInfo`,
+the table (paired-item accessors, `$fromAI*`, `$tool`, `$agentInfo`,
 `DateTime/Duration/Interval`, `getInputConnectionData`, `getSignedResumeUrl`, `startJob`,
 `augmentObject/augmentArray`, the `getNodeParameter` strategy options, and the
-host-supplied `NodeHelpers` decisions).
+host-supplied `NodeHelpers` decisions). `$jmesPath` / `$jmespath` used to be in that table; they
+are now ported and take the `jmespath` module through the same injected-options seam as `luxon` —
+without an injected module a valid call still raises `NotPortedError`, it never answers `undefined`.
 
 ## Provenance
 

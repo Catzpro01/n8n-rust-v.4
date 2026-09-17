@@ -1,6 +1,6 @@
-captured: 2026-09-17T18:59:16.183Z
+captured: 2026-09-17T19:29:11.859Z
 command: bash scripts/run-engine-tests.sh
-head: f0475874c68a7c54675122c5739e66480cf88874
+head: 0f30e449558452569da810fb6f562b4d53c973a4
 branch: arena/01a0aff7-n8n-rust-v-4
 node: v22.22.3
 reference runtime: /home/user/n8n-rust-v.4/.runtime/node_modules
@@ -122,88 +122,98 @@ ok 56 - data-proxy :: input-placeholder-from-input-override
 ok 57 - data-proxy :: input-placeholder-missing-json
 # Subtest: data-proxy :: input-override-ai-tool-placeholder
 ok 58 - data-proxy :: input-override-ai-tool-placeholder
+# Subtest: data-proxy :: jmespath-accessor
+ok 59 - data-proxy :: jmespath-accessor
 # Subtest: node-context :: ctx-basic
-ok 59 - node-context :: ctx-basic
+ok 60 - node-context :: ctx-basic
 # Subtest: node-context :: ctx-single-run-data
-ok 60 - node-context :: ctx-single-run-data
+ok 61 - node-context :: ctx-single-run-data
 # Subtest: node-context :: ctx-on-error-routing
-ok 61 - node-context :: ctx-on-error-routing
+ok 62 - node-context :: ctx-on-error-routing
 # Subtest: deferred symbols fail loudly instead of returning a value
-ok 62 - deferred symbols fail loudly instead of returning a value
+ok 63 - deferred symbols fail loudly instead of returning a value
 # Subtest: getContext mirrors the reference mutation-on-read
-ok 63 - getContext mirrors the reference mutation-on-read
+ok 64 - getContext mirrors the reference mutation-on-read
+# Subtest: $jmesPath hands jmespath a copy of the object, and the array case verbatim
+ok 65 - $jmesPath hands jmespath a copy of the object, and the array case verbatim
+# Subtest: $jmesPath validates its arguments before touching the injected module
+ok 66 - $jmesPath validates its arguments before touching the injected module
 # Subtest: manifest: every bucket is disjoint and complete per module
-ok 64 - manifest: every bucket is disjoint and complete per module
+ok 67 - manifest: every bucket is disjoint and complete per module
 # Subtest: manifest: class surfaces match the reference method-for-method
-ok 65 - manifest: class surfaces match the reference method-for-method
+ok 68 - manifest: class surfaces match the reference method-for-method
 # Subtest: expression sandbox: my key set equals the reference key set
-ok 66 - expression sandbox: my key set equals the reference key set
+ok 69 - expression sandbox: my key set equals the reference key set
 # Subtest: context surface: every method the reference context exposes is reachable here
-ok 67 - context surface: every method the reference context exposes is reachable here
+ok 70 - context surface: every method the reference context exposes is reachable here
 # Subtest: additional keys: $execution/$vars/$secrets key set equals the reference
-ok 68 - additional keys: $execution/$vars/$secrets key set equals the reference
+ok 71 - additional keys: $execution/$vars/$secrets key set equals the reference
 # Subtest: $secrets: disabled yields undefined, enabled yields the reference proxy behaviour
-ok 69 - $secrets: disabled yields undefined, enabled yields the reference proxy behaviour
+ok 72 - $secrets: disabled yields undefined, enabled yields the reference proxy behaviour
 # Subtest: live: the manifest is not stale against the installed runtime
-ok 70 - live: the manifest is not stale against the installed runtime
+ok 73 - live: the manifest is not stale against the installed runtime
 # Subtest: POOL-001 files still hash to what the lock recorded
-ok 71 - POOL-001 files still hash to what the lock recorded
+ok 74 - POOL-001 files still hash to what the lock recorded
 # Subtest: the lock is traceable to a commit, not to a vibe
-ok 72 - the lock is traceable to a commit, not to a vibe
+ok 75 - the lock is traceable to a commit, not to a vibe
 # Subtest: the pin covers every POOL-001 file at the package root
-ok 73 - the pin covers every POOL-001 file at the package root
+ok 76 - the pin covers every POOL-001 file at the package root
 # Subtest: port → prototype: the dependency does not exist in either direction
-ok 74 - port → prototype: the dependency does not exist in either direction
+ok 77 - port → prototype: the dependency does not exist in either direction
 # Subtest: prototype → port: the dependency does not exist in either direction
-ok 75 - prototype → port: the dependency does not exist in either direction
+ok 78 - prototype → port: the dependency does not exist in either direction
 # Subtest: control: an untouched copy of the package passes the whole suite
-ok 76 - control: an untouched copy of the package passes the whole suite
+ok 79 - control: an untouched copy of the package passes the whole suite
 # Subtest: mutation "binaryMode unwrap inverted" is caught by the suite
-ok 77 - mutation "binaryMode unwrap inverted" is caught by the suite
+ok 80 - mutation "binaryMode unwrap inverted" is caught by the suite
 # Subtest: mutation "context errors normalised instead of raised" is caught by the suite
-ok 78 - mutation "context errors normalised instead of raised" is caught by the suite
+ok 81 - mutation "context errors normalised instead of raised" is caught by the suite
 # Subtest: mutation "inert-pinData (ISSUE-016 pattern)" is caught by the suite
-ok 79 - mutation "inert-pinData (ISSUE-016 pattern)" is caught by the suite
+ok 82 - mutation "inert-pinData (ISSUE-016 pattern)" is caught by the suite
 # Subtest: mutation "default branchIndex shifted" is caught by the suite
-ok 80 - mutation "default branchIndex shifted" is caught by the suite
+ok 83 - mutation "default branchIndex shifted" is caught by the suite
 # Subtest: mutation "metadata limit "fixed" to 20" is caught by the suite
-ok 81 - mutation "metadata limit "fixed" to 20" is caught by the suite
+ok 84 - mutation "metadata limit "fixed" to 20" is caught by the suite
 # Subtest: mutation "unsupported-version error swallowed" is caught by the suite
-ok 82 - mutation "unsupported-version error swallowed" is caught by the suite
+ok 85 - mutation "unsupported-version error swallowed" is caught by the suite
 # Subtest: mutation "default error level downgraded to warning" is caught by the suite
-ok 83 - mutation "default error level downgraded to warning" is caught by the suite
+ok 86 - mutation "default error level downgraded to warning" is caught by the suite
 # Subtest: mutation "BINARY_MODE_COMBINED literal typo" is caught by the suite
-ok 84 - mutation "BINARY_MODE_COMBINED literal typo" is caught by the suite
+ok 87 - mutation "BINARY_MODE_COMBINED literal typo" is caught by the suite
 # Subtest: mutation "$secrets proxy accepts writes" is caught by the suite
-ok 85 - mutation "$secrets proxy accepts writes" is caught by the suite
+ok 88 - mutation "$secrets proxy accepts writes" is caught by the suite
 # Subtest: mutation "$execution.mode mapping swapped" is caught by the suite
-ok 86 - mutation "$execution.mode mapping swapped" is caught by the suite
+ok 89 - mutation "$execution.mode mapping swapped" is caught by the suite
 # Subtest: mutation "pin data over-corrected to honour disabled" is caught by the suite
-ok 87 - mutation "pin data over-corrected to honour disabled" is caught by the suite
+ok 90 - mutation "pin data over-corrected to honour disabled" is caught by the suite
 # Subtest: mutation "pinned node counted as executed" is caught by the suite
-ok 88 - mutation "pinned node counted as executed" is caught by the suite
+ok 91 - mutation "pinned node counted as executed" is caught by the suite
 # Subtest: mutation "constructExecutionMetaData pairing precedence "fixed"" is caught by the suite
-ok 89 - mutation "constructExecutionMetaData pairing precedence "fixed"" is caught by the suite
+ok 92 - mutation "constructExecutionMetaData pairing precedence "fixed"" is caught by the suite
 # Subtest: mutation "$input empty-data guard removed" is caught by the suite
-ok 90 - mutation "$input empty-data guard removed" is caught by the suite
+ok 93 - mutation "$input empty-data guard removed" is caught by the suite
 # Subtest: mutation "$input guard copied from the placeholder expression" is caught by the suite
-ok 91 - mutation "$input guard copied from the placeholder expression" is caught by the suite
+ok 94 - mutation "$input guard copied from the placeholder expression" is caught by the suite
+# Subtest: mutation "$jmesPath spread removed as an optimisation" is caught by the suite
+ok 95 - mutation "$jmesPath spread removed as an optimisation" is caught by the suite
+# Subtest: mutation "$jmesPath capability check moved before the argument guard" is caught by the suite
+ok 96 - mutation "$jmesPath capability check moved before the argument guard" is caught by the suite
 # Subtest: the evidence directory exists and is complete
-ok 92 - the evidence directory exists and is complete
+ok 97 - the evidence directory exists and is complete
 # Subtest: the transcripts describe the artifacts currently in the tree
-ok 93 - the transcripts describe the artifacts currently in the tree
+ok 98 - the transcripts describe the artifacts currently in the tree
 # recorder run (ENGINE_EVIDENCE_RECORDER=1): existing evidence is about to be rewritten, not graded
 # Subtest: both recorded runs are green and internally consistent
-ok 94 - both recorded runs are green and internally consistent
+ok 99 - both recorded runs are green and internally consistent
 # recorder run (ENGINE_EVIDENCE_RECORDER=1): existing evidence is about to be rewritten, not graded
 # Subtest: the live run really used the pinned reference, the offline run really did not
-ok 95 - the live run really used the pinned reference, the offline run really did not
+ok 100 - the live run really used the pinned reference, the offline run really did not
 # recorder run (ENGINE_EVIDENCE_RECORDER=1): existing evidence is about to be rewritten, not graded
 # Subtest: the recorded head is a real commit, not an invented sha
-ok 96 - the recorded head is a real commit, not an invented sha
+ok 101 - the recorded head is a real commit, not an invented sha
 # recorder run (ENGINE_EVIDENCE_RECORDER=1): existing evidence is about to be rewritten, not graded
 # Subtest: evidence is committed, not scratch output
-ok 97 - evidence is committed, not scratch output
+ok 102 - evidence is committed, not scratch output
 # Subtest: the oracle artifact is the pinned one
 ok 1 - the oracle artifact is the pinned one
 # Subtest: goldens carry reference provenance, not self-grading
@@ -225,9 +235,9 @@ ok 4 - every probe is equivalent to the reference, or declared
 ok 5 - declared deviations are covered and still deviations
 # Subtest: manifest/port-surface.json is reproducible from this runtime
 ok 6 - manifest/port-surface.json is reproducible from this runtime
-# tests 103
+# tests 108
 # suites 0
-# pass 103
+# pass 108
 # fail 0
 # cancelled 0
 # skipped 0

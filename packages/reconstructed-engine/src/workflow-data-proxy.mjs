@@ -26,10 +26,15 @@
  * is machine-readable in `manifest/port-surface.json` and is asserted by
  * `test/05-surface-coverage.test.mjs`.
  *
- *   deferred: $fromAI / $fromai / $fromAi, $tool, $jmesPath / $jmespath,
+ *   deferred: $fromAI / $fromai / $fromAi, $tool,
  *             $agentInfo, DateTime / Duration / Interval, $now / $today,
  *             $('n').pairedItem / .itemMatching / .item, $getPairedItem,
  *             augmentObject / augmentArray (scripting-node copy-on-write)
+ *
+ * `$jmesPath` / `$jmespath` are ported but need the `jmespath` module, which the reference
+ * imports as a bare specifier (workflow-data-proxy.ts:6). This package keeps `src/` free of
+ * bare specifiers (gate 01), so it is injected the same way luxon is: no injection, no answer —
+ * the accessor raises `NotPortedError` rather than returning `undefined`.
  *
  * `luxon` is optional and injected: when supplied (the equivalence harness
  * injects the copy installed with the reference runtime) `$now`, `$today` and
@@ -98,8 +103,11 @@ export class WorkflowDataProxy {
 		contextNodeName = activeNodeName,
 		// reference :77 declares this as a TS parameter property (`private`).
 		envProviderState = undefined,
-		// DECLARED DEVIATION (additive, 15th): the only way to inject luxon.
-		{ luxon } = {},
+		// DECLARED DEVIATION (additive, 15th): the only way to inject luxon — and jmespath,
+		// which the reference imports as a bare specifier (workflow-data-proxy.ts:6) while
+		// this package keeps src/ free of bare specifiers (gate 01). Absent either one, the
+		// dependent accessors raise instead of answering.
+		{ luxon, jmespath } = {},
 	) {
 		this.envProviderState = envProviderState;
 		this.workflow = workflow;
@@ -114,6 +122,7 @@ export class WorkflowDataProxy {
 		this.selfData = selfData;
 		this.contextNodeName = contextNodeName;
 		this.luxon = luxon;
+		this.jmespath = jmespath;
 
 		// Reference: scripting nodes get an augmentObject/augmentArray wrapper
 		// (copy-on-write proxies, workflow-data-proxy.ts:84-90). Declared
@@ -1077,9 +1086,7 @@ export class WorkflowDataProxy {
 			$mode: this.mode,
 			$workflow: this.workflowGetter(),
 			$itemIndex: this.itemIndex,
-			$jmesPath: () => {
-				throw new NotPortedError('$jmesPath', 'workflow-data-proxy.ts:772');
-			},
+			$jmesPath: (data, query) => jmespathWrapper(that, data, query),
 
 			DateTime: this.luxon?.DateTime,
 			Interval: this.luxon?.Interval,
@@ -1090,9 +1097,7 @@ export class WorkflowDataProxy {
 			},
 
 			// deprecated
-			$jmespath: () => {
-				throw new NotPortedError('$jmespath', 'workflow-data-proxy.ts:772');
-			},
+			$jmespath: (data, query) => jmespathWrapper(that, data, query),
 			$position: this.itemIndex,
 			$thisItem: that.connectionInputData[that.itemIndex],
 			$thisItemIndex: this.itemIndex,
@@ -1152,6 +1157,41 @@ export class WorkflowDataProxy {
 			},
 		});
 	}
+}
+
+/**
+ * packages/workflow/src/workflow-data-proxy.ts:763-775 — `$jmesPath` / `$jmespath`.
+ *
+ * Module scope, not a class method: the reference defines `jmespathWrapper` next to the other
+ * sandbox helpers and the class surface is compared method-for-method with it (gate 05), so
+ * this port keeps the same shape and passes the instance in.
+ *
+ * Two details are the whole point and both are load-bearing:
+ *  - the arity/type guard is checked BEFORE the module is touched, so a bad call raises
+ *    the reference's ExpressionError even on a host that never supplied jmespath;
+ *  - objects are spread into a copy because `jmespath.search` mutates what it walks
+ *    (it stamps `__ident__` keys onto the nodes), and doing that to run data would leak
+ *    engine bookkeeping into the user's `$json`. Arrays are passed through untouched,
+ *    exactly as the reference does.
+ */
+function jmespathWrapper(proxy, data, query) {
+	const that = proxy;
+	if (typeof data !== 'object' || typeof query !== 'string') {
+		throw new ExpressionError('expected two arguments (Object, string) for this function', {
+			runIndex: that.runIndex,
+			itemIndex: that.itemIndex,
+		});
+	}
+	if (!that.jmespath) {
+		throw new NotPortedError(
+			'$jmesPath',
+			'workflow-data-proxy.ts:763-775 — needs the jmespath module; this package injects it as `jmespath` (see reference-runtime.mjs)',
+		);
+	}
+	if (!Array.isArray(data) && typeof data === 'object') {
+		return that.jmespath.search({ ...data }, query);
+	}
+	return that.jmespath.search(data, query);
 }
 
 /** Re-exported so downstream LEGOs never import lodash directly (frozen port, node contract §11). */

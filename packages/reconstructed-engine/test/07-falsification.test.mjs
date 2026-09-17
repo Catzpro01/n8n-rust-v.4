@@ -147,6 +147,44 @@ const MUTATIONS = [
 		to: ['if (!that.connectionInputData[that.runIndex]?.json) {'],
 		note: 'the trap this whole mutation list exists for: the reference DOES compute `!placeholdersDataInputData` (workflow-data-proxy.ts:1061-1079) but only for the fromAI placeholder lookup, not for $input.all()/first()/item — copying the expression without its context makes a binary-only item throw where n8n answers',
 	},
+	{
+		name: '$jmesPath spread removed as an optimisation',
+		file: 'src/workflow-data-proxy.mjs',
+		from: [
+			"if (!Array.isArray(data) && typeof data === 'object') {",
+			'\t\treturn that.jmespath.search({ ...data }, query);',
+			'\t}',
+		],
+		to: [
+			"if (!Array.isArray(data) && typeof data === 'object') {",
+			'\t\treturn that.jmespath.search(data, query);',
+			'\t}',
+		],
+		note: 'looks like a pointless copy — until you know jmespath.search stamps `__ident__` onto every object it walks, so without the copy the mutation lands in the caller\'s run data. The array branch is deliberately NOT copied, and the fake-jmespath test pins both halves',
+	},
+	{
+		name: '$jmesPath capability check moved before the argument guard',
+		file: 'src/workflow-data-proxy.mjs',
+		from: [
+			"if (typeof data !== 'object' || typeof query !== 'string') {",
+			"\t\tthrow new ExpressionError('expected two arguments (Object, string) for this function', {",
+			'\t\t\trunIndex: that.runIndex,',
+			'\t\t\titemIndex: that.itemIndex,',
+			'\t\t});',
+			'\t}',
+			'\tif (!that.jmespath) {',
+		],
+		to: [
+			'\tif (!that.jmespath) {',
+			'\t\tthrow new NotPortedError(',
+			'\t\t\t\'$jmesPath\',',
+			'\t\t\t\'mutant: capability checked first\',',
+			'\t\t);',
+			'\t}',
+			"if (typeof data !== 'object' || typeof query !== 'string') {",
+		],
+		note: 'the natural "fail fast on the missing dependency" refactor. It changes WHICH error a malformed call raises on a host without jmespath, and the reference — and therefore this port — answers with the argument error regardless of the module. That is what lets the golden compare the bad-argument probes even in offline mode',
+	},
 ];
 
 /** Files the mutants are judged by. Gate 07 itself is excluded (it would recurse). */

@@ -188,7 +188,7 @@ export function buildDataProxy(fixture, runtime, side) {
 	if (side === 'reference') {
 		return new runtime.workflow.WorkflowDataProxy(...args).getDataProxy();
 	}
-	return new ReconstructedDataProxy(...args, undefined, { luxon: runtime.luxon }).getDataProxy();
+	return new ReconstructedDataProxy(...args, undefined, { luxon: runtime.luxon, jmespath: runtime.jmespath }).getDataProxy();
 }
 
 export function buildExecuteContext(fixture, runtime, side) {
@@ -212,6 +212,7 @@ export function buildExecuteContext(fixture, runtime, side) {
 	return new ReconstructedExecuteContext(...ctxArgs, undefined, {
 		nodeHelpers: runtime.workflow.NodeHelpers,
 		luxon: runtime.luxon,
+		jmespath: runtime.jmespath,
 	});
 }
 

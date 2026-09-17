@@ -2461,6 +2461,202 @@
           "$json"
         ]
       ]
+    },
+    {
+      "name": "jmespath-accessor",
+      "_why": "$jmesPath / $jmespath (workflow-data-proxy.ts:763-775). The reference imports jmespath as a bare specifier at module scope; this package forbids bare specifiers in src/ (gate 01), so the module is injected and every probe here is graded only where the host can supply it. The arity guard is checked BEFORE the module is touched \u2014 that is why the two bad-argument probes below carry expected values even without a runtime. null is accepted by the guard (typeof null === 'object') and the reference spreads it to {}, and arrays are passed to jmespath without the copy \u2014 both are pinned here rather than reasoned about.",
+      "mode": "manual",
+      "activeNodeName": "Code",
+      "itemIndex": 0,
+      "connections": {
+        "Manual Trigger": {
+          "main": [
+            [
+              {
+                "node": "Set",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "Set": {
+          "main": [
+            [
+              {
+                "node": "Code",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        }
+      },
+      "runData": {
+        "Code": [
+          {
+            "startTime": 1,
+            "executionIndex": 0,
+            "executionTime": 1,
+            "source": [],
+            "data": {
+              "main": [
+                [
+                  {
+                    "json": {
+                      "items": [
+                        {
+                          "sku": "a",
+                          "qty": 2
+                        },
+                        {
+                          "sku": "b",
+                          "qty": 5
+                        }
+                      ]
+                    }
+                  }
+                ]
+              ]
+            }
+          }
+        ]
+      },
+      "connectionInputData": [
+        {
+          "json": {
+            "sku": "a",
+            "qty": 2
+          }
+        }
+      ],
+      "probes": [
+        [
+          "$jmesPath",
+          {
+            "()": [
+              {
+                "a": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "a[1]"
+            ]
+          }
+        ],
+        [
+          "$jmesPath",
+          {
+            "()": [
+              [
+                {
+                  "n": 1
+                },
+                {
+                  "n": 2
+                }
+              ],
+              "[*].n"
+            ]
+          }
+        ],
+        [
+          "$jmesPath",
+          {
+            "()": [
+              {
+                "foo": "bar"
+              },
+              "nope"
+            ]
+          }
+        ],
+        [
+          "$jmespath",
+          {
+            "()": [
+              {
+                "a": [
+                  1,
+                  2
+                ]
+              },
+              "a[5]"
+            ]
+          }
+        ],
+        [
+          "$jmesPath",
+          {
+            "()": [
+              {
+                "a": [
+                  {
+                    "b": 1
+                  },
+                  {
+                    "b": 2
+                  }
+                ]
+              },
+              "a[?b>`1`].b"
+            ]
+          }
+        ],
+        [
+          "$jmesPath",
+          {
+            "()": [
+              "not-an-object",
+              "a"
+            ]
+          }
+        ],
+        [
+          "$jmesPath",
+          {
+            "()": [
+              {
+                "a": 1
+              },
+              5
+            ]
+          }
+        ],
+        [
+          "$jmesPath",
+          {
+            "()": [
+              {
+                "a": 1
+              }
+            ]
+          }
+        ],
+        [
+          "$jmesPath",
+          {
+            "()": [
+              null,
+              "a"
+            ]
+          }
+        ],
+        [
+          "$jmesPath",
+          {
+            "()": [
+              [
+                1,
+                2
+              ],
+              "[0]"
+            ]
+          }
+        ]
+      ]
     }
   ],
   "deferredProbes": {

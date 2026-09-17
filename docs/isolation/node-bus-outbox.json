@@ -225,6 +225,26 @@
         "evidence": "packages/reconstructed-engine/evidence/ (transcripts + summary.json, audited by test/08-evidence-consistency.test.mjs)"
       },
       "status": "UNREAD"
+    },
+    {
+      "id": "MSG-09",
+      "recipient_id": "agent-3",
+      "message_type": "ADVISORY",
+      "subject": "$jmesPath/$jmespath are now ported in reconstructed-engine \u2014 your Expression tables have a row to fill in",
+      "payload": {
+        "from": "agent-2 (POOL-002-R1)",
+        "what_changed": "manifest/port-surface.json \u2192 modules[workflow-data-proxy.mjs].deferred lost its $jmesPath entry. The accessor is ported 1:1 with packages/workflow/src/workflow-data-proxy.ts:763-775 and takes the jmespath module through the injected-options seam (same object as luxon, the ctor's 15th argument), because this package forbids bare specifiers in src/ (gate 01). docs/isolation/node-execution-context.md \u00a73 item 2 is the write-up.",
+        "facts_for_your_tables": [
+          "contracts/expression.contract.md:102 and docs/isolation/expression.md:103 both list the accessor with an empty note column; the implementation-level contract is: guard first (typeof data !== 'object' || typeof query !== 'string' \u2192 ExpressionError 'expected two arguments (Object, string) for this function' with {runIndex, itemIndex} as extraData, which the error base class consumes without re-exposing), then jmespath.search.",
+          "non-array objects are spread into a copy before search, because jmespath stamps __ident__ onto every object it walks; arrays are passed by identity. So a caller who does $jmesPath($json, 'a') cannot corrupt $json, but $jmesPath($input.all(), 'x') hands the run-data arrays over directly.",
+          "typeof null === 'object', so $jmesPath(null, 'a') is accepted and answers null ({} spread), not an error. Pinned as a golden probe, not reasoned about.",
+          "$jmesPath (workflow-data-proxy.ts:1537) and $jmespath (:1548, deprecated) resolve to the same wrapper; both keys exist in this port.",
+          "If the Expression layer ever rewrites the wrapper to check the dependency first (a plausible 'fail fast' cleanup), malformed calls change error type on hosts without jmespath \u2014 that exact swap is mutant '\u2026capability check moved before the argument guard' in reconstructed-engine gate 07 and is caught offline."
+        ],
+        "verification": "reconstructed-engine suite: 108/108 live and 108/108 with the oracle suppressed; gate 04 grew to 29 tests (10 jmespath probes + 2 oracle-free fake-jmespath tests), gate 07 to 17/17 mutants. The Rust port can read the golden file for the recorded reference values.",
+        "no_action_required": "your files are outside my allowlist so I did not edit them; the empty columns are yours to fill or leave."
+      },
+      "status": "UNREAD"
     }
   ]
 }

@@ -100,7 +100,10 @@ function build(scenario) {
 	};
 }
 
-const proxyUnderTest = (fixture) =>
+/** jmespath arrives through the same seam the reference runtime is loaded from (null offline). */
+const injectedJmespath = () => referenceRuntime()?.jmespath;
+
+const proxyUnderTest = (fixture, deps = { jmespath: injectedJmespath() }) =>
 	new WorkflowDataProxy(
 		fixture.workflow,
 		fixture.runExecutionData,
@@ -115,6 +118,13 @@ const proxyUnderTest = (fixture) =>
 		-1,
 		{},
 		fixture.activeNodeName,
+		// The 15th argument is this port's injection seam. jmespath is passed when the
+		// host has it (the reference imports it directly, so the golden's side always did);
+		// with no runtime installed the probes above fall back to "must raise" instead.
+		// luxon is deliberately NOT injected here: gate 04 grades the data proxy without a
+		// date provider, and gate 10 is where luxon-backed probes are compared.
+		undefined,
+		deps,
 	).getDataProxy();
 
 const contextUnderTest = (fixture) =>
@@ -164,13 +174,28 @@ const probeKeyOf = (path) =>
 		.join('.');
 
 for (const scenario of corpus.scenarios) {
-	test(`data-proxy :: ${scenario.name}`, async () => {
+	test(`data-proxy :: ${scenario.name}`, async (t) => {
 		const fixture = build(scenario);
 		const proxy = proxyUnderTest(fixture);
 		const expected = golden.dataProxy[scenario.name].probes;
 
 		const diffs = [];
+		let injectedOnly = 0;
 		for (const [name, want] of Object.entries(expected)) {
+			if (want._oracleDependent && !oracleAvailable) {
+				// The golden's value for this probe needs a capability the HOST injects
+				// (jmespath for $jmesPath/$jmespath, the credential registry for others).
+				// Offline the port has nothing to delegate to, so the assertion that remains
+				// true — and is enforced — is that it raises instead of answering.
+				const actual = await comparable(proxy, want._path);
+				if (actual.ok) {
+					diffs.push(
+						`  ${name} (needs an injected capability)\n    returned ${actual.serialized} with no host to delegate to — it must raise`,
+					);
+				}
+				injectedOnly++;
+				continue;
+			}
 			const actual = await comparable(proxy, want._path);
 			if (JSON.stringify(strip(want)) !== JSON.stringify(actual)) {
 				diffs.push(
@@ -179,6 +204,11 @@ for (const scenario of corpus.scenarios) {
 			}
 		}
 		assert.deepEqual(diffs, [], `\n${diffs.join('\n')}`);
+		if (injectedOnly) {
+			t.diagnostic(
+				`${injectedOnly} probe(s) graded as must-raise only (needs a host-injected capability, and no reference runtime is installed)`,
+			);
+		}
 	});
 }
 
@@ -280,4 +310,90 @@ test('getContext mirrors the reference mutation-on-read', () => {
 	assert.throws(() => getContext(runExecutionData, 'bogus', { name: 'Set' }), /Unknown context type/);
 	assert.throws(() => getContext(runExecutionData, 'node'), /the node parameter has to be set/);
 	assert.deepEqual(Object.keys(getContext(runExecutionData, 'flow')), []);
+});
+
+test('$jmesPath hands jmespath a copy of the object, and the array case verbatim', () => {
+	// Offline by design: a fake `jmespath` stands in for the host module, so this pins the
+	// wrapper's two quirks even where no reference runtime exists to compare against.
+	const scenario = corpus.scenarios.find((entry) => entry.name === 'jmespath-accessor');
+	assert.ok(scenario, 'the corpus lost the jmespath scenario');
+	const fixture = build(scenario);
+	const seen = [];
+	const fake = {
+		// A stand-in that behaves like the real thing in the one way that matters: jmespath
+		// stamps `__ident__` onto the objects it walks, i.e. it mutates its input.
+		search(data, query) {
+			// Snapshot BEFORE mutating: the assertions below are about what the wrapper
+			// handed over, and a live reference would show this function's own mutation.
+			seen.push({
+				isArray: Array.isArray(data),
+				keys: Object.keys(data),
+				identity: data === stampSource,
+				query,
+			});
+			if (Array.isArray(data)) data.push('mutated');
+			else data.__ident__ = 'stamped';
+			return null;
+		},
+	};
+	const proxy = proxyUnderTest(fixture, { jmespath: fake });
+	let stampSource = { foo: 'bar' };
+
+	proxy.$jmesPath(stampSource, 'foo');
+	assert.deepEqual(
+		seen[0],
+		{ isArray: false, keys: ['foo'], identity: false, query: 'foo' },
+		'jmespath must receive a fresh copy, never the caller object',
+	);
+	assert.deepEqual(stampSource, { foo: 'bar' }, 'the caller object must not be the one jmespath walks');
+	assert.ok(!('__ident__' in stampSource), 'engine bookkeeping leaked into user data');
+
+	// Arrays are NOT copied by the reference (workflow-data-proxy.ts:770-774) — asserting
+	// that asymmetry is the point: it is what makes this a real port and not a re-invention.
+	const arr = [{ json: { a: 1 } }];
+	stampSource = arr;
+	proxy.$jmesPath(arr, '[*].json.a');
+	assert.equal(seen[1].isArray, true);
+	assert.equal(seen[1].identity, true, 'the array must reach jmespath by identity');
+	assert.deepEqual(arr, [{ json: { a: 1 } }, 'mutated'], 'a copy here would hide the mutation');
+
+	// $jmespath (lowercase alias) reaches the same wrapper — reference registers both.
+	stampSource = { foo: 'bar' };
+	proxy.$jmespath(stampSource, 'foo');
+	assert.equal(seen.length, 3);
+});
+
+test('$jmesPath validates its arguments before touching the injected module', () => {
+	const scenario = corpus.scenarios.find((entry) => entry.name === 'jmespath-accessor');
+	const fixture = build(scenario);
+	// No jmespath at all: the arity/type guard must still fire first, with the reference's
+	// message and its runIndex/itemIndex details, exactly as workflow-data-proxy.ts:764-769.
+	const proxy = proxyUnderTest(fixture, {});
+	for (const bad of [
+		['not-an-object', 'a'],
+		[{ a: 1 }, 5],
+		[{ a: 1 }],
+		// NOT in this list on purpose: `typeof null === 'object'`, so null passes the guard and
+		// the reference spreads it to `{}` and answers — pinned by the golden probe
+		// `$jmesPath.(null,"a")` instead, because it is a value, not a raise.
+	]) {
+		let thrown;
+		try {
+			proxy.$jmesPath(...bad);
+		} catch (error) {
+			thrown = error;
+		}
+		assert.ok(thrown, `$jmesPath(${bad.map((b) => JSON.stringify(b)).join(', ')}) must raise`);
+		assert.equal(thrown.name, 'ExpressionError');
+		assert.equal(thrown.message, 'expected two arguments (Object, string) for this function');
+		// The reference passes { runIndex, itemIndex } into WorkflowErrorOptions, and the
+		// base class consumes them without re-exposing them: both sides own `details` and
+		// `extra` as undefined. Probing that here is what stops a well-meant "improvement"
+		// (surfacing the indices) from silently becoming a deviation.
+		for (const key of ['details', 'extra', 'runIndex', 'itemIndex']) {
+			assert.equal(thrown[key], undefined, `ExpressionError.${key} must stay unset, as in n8n 2.9.4`);
+		}
+	}
+	// A *valid* call with no module is the one case that says "not ported" — loudly, never undefined.
+	assert.throws(() => proxy.$jmesPath({ a: 1 }, 'a'), /NotPortedError/);
 });

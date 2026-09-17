@@ -29,6 +29,9 @@
  *                     Default: the pinned reference runtime's NodeHelpers.
  *   deps.luxon        used by cleanupParameterData + sendMessageToUI date handling.
  *                     Default: the reference runtime's luxon.
+ *   deps.jmespath     handed to the WorkflowDataProxy this context builds, so
+ *                     $jmesPath/$jmespath work inside node parameters.
+ *                     Default: the reference runtime's jmespath.
  *   deps.instanceId   replaces the reference's `Container.get(InstanceSettings)`;
  *                     the DI lookup is NOT ported (declared deviation, see
  *                     manifest/port-surface.json → deviations).
@@ -113,6 +116,9 @@ export class NodeExecutionContext {
 		const runtime = referenceRuntime();
 		this.nodeHelpers = deps.nodeHelpers ?? runtime?.workflow?.NodeHelpers ?? null;
 		this.luxon = deps.luxon ?? runtime?.luxon ?? null;
+		// Backs $jmesPath/$jmespath in the proxy this context builds for expression
+		// evaluation. Same rule as luxon: injected, or the accessor raises.
+		this.jmespath = deps.jmespath ?? runtime?.jmespath ?? null;
 		this.instanceId = deps.instanceId;
 		this.runtime = runtime;
 
@@ -743,7 +749,7 @@ export class BaseExecuteContext extends NodeExecutionContext {
 			{},
 			this.node.name,
 			undefined,
-			{ luxon: this.luxon },
+			{ luxon: this.luxon, jmespath: this.jmespath },
 		).getDataProxy();
 	}
 

@@ -32,6 +32,18 @@ import {
 } from '../helpers/harness.mjs';
 import { resolvePath } from '../helpers/serialize.mjs';
 
+/**
+ * Probes whose answer depends on a capability the HOST provides rather than on the port
+ * being correct: jmespath (and luxon, if it is ever probed this way) can only be graded
+ * where the runtime is installed. Offline these must raise — which is asserted; they are
+ * never downgraded to "no check".
+ */
+const INJECTED_CAPABILITY_ROOTS = new Set(['$jmesPath', '$jmespath', '$now', '$today', 'DateTime']);
+function needsInjectedCapability(path) {
+	return Array.isArray(path) && typeof path[0] === 'string' && INJECTED_CAPABILITY_ROOTS.has(path[0]);
+}
+
+
 const encodeArgsPath = (path) =>
 	path.map((step) => (typeof step === 'string' ? step : { '()': encodeArgs(step['()']) }));
 
@@ -61,7 +73,13 @@ for (const scenario of corpus.scenarios) {
 	const proxy = buildDataProxy(fixture, runtime, 'reference');
 	const probes = {};
 	for (const path of scenario.probes) {
-		probes[probeKey(path)] = { _path: path, ...(await comparable(proxy, path)) };
+		const key = probeKey(path);
+		probes[key] = { _path: path, ...(await comparable(proxy, path)) };
+		// A probe that needs a host-injected capability (jmespath, the credential
+		// registry, luxon) can only be graded where that capability exists. Its
+		// REFERENCE ERROR is still comparable offline — the arity guard fires before
+		// anything touches the module — so only successful answers are flagged.
+		if (needsInjectedCapability(path) && probes[key].ok) probes[key]._oracleDependent = true;
 	}
 	const deferred = {};
 	if (scenario.name === corpus.scenarios[0].name) {
@@ -155,7 +173,7 @@ for (const scenario of corpus.contextScenarios) {
 	// raise, never return a value" when it is not — so the gate degrades honestly
 	// instead of either going red on an environment detail or going quiet on a real bug.
 	for (const key of Object.keys(results)) {
-		if (HOST_DEPENDENT_PROBES.has(key)) results[key]._oracleDependent = true;
+		if (HOST_DEPENDENT_PROBES.has(key) || needsInjectedCapability(results[key]._path)) results[key]._oracleDependent = true;
 		if (isDeclaredDeviation(key)) results[key]._deviation = true;
 	}
 
