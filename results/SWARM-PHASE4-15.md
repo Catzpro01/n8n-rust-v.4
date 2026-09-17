@@ -44,8 +44,9 @@ lalu satu celah integrasi yang tersisa ditutup:
 | `write_file` (7 file diubah) | ✓ SUCCESS | `0` |
 | `typecheck` (tsc src) | ✓ SUCCESS | `0` |
 | `i18n:check` | ✓ SUCCESS | `0` |
-| `connection:check` | ✓ SUCCESS | `0` |
-| `verify` (full 11 gates, incl. live engine) | ✓ SUCCESS | `0` |
+| `connection:check` (8/8 on hardening head) | ✓ SUCCESS | `0` |
+| `engine` unit + integration suite | ✓ SUCCESS | `0` |
+| `verify` (full 12 gates, incl. G12 + live engine) | ✓ SUCCESS | `0` |
 | `git_commit` | ✓ SUCCESS | `0` |
 | `git_push` | ✓ SUCCESS | `0` |
 
@@ -75,10 +76,12 @@ $ git merge FETCH_HEAD
 localization hub: PASS (5/5 checks)
 ```
 
-#### Operation: `connection:check` (tidak terdampak)
+#### Operation: `connection:check` + engine suites (merged hardening head)
 
 ```text
-connection lego: PASS (7/7 checks · 1246 differential calls)
+connection lego: PASS (8/8 checks · 1258 differential calls)
+packages/reconstructed-engine: npm test → VERIFIKASI BERHASIL (unit)
+npm run test:integration → 12/12 PASS, 0 FAIL
 ```
 
 #### Operation: `verify` (full regression, final state)
@@ -86,10 +89,12 @@ connection lego: PASS (7/7 checks · 1246 differential calls)
 ```text
 [PASS] G01..G10 (boundary · kernel · port · reference integrity 15050 · extract · tsc x2 ·
        unit tests · digest 252/252 identical · strict port mode)
+[PASS] G12 TypeScript strict typecheck PASS (reconstructed engine, 12 LEGO facade) — 0 errors (strict)
 [PASS] G11 live verification: workflow load / save / 1-node / linear / webhook / execution record
        — 7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS
 
-gates: 11/11 PASS · BEHAVIOR CHANGE: NONE DETECTED
+gates: 12/12 PASS · BEHAVIOR CHANGE: NONE DETECTED
+(run ulang pada head gabungan 2fc449a4 + Phase 4C, setelah merge hardening Phase 5)
 ```
 
 ### Behavior guarantees
