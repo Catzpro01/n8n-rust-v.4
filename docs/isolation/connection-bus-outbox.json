@@ -1,0 +1,48 @@
+{
+  "$comment": "Agent-3 outbound messages, schema-matched to public.agent_messages (docs/supabase_migration.sql). NOT DELIVERED: same transport caveat as the other outboxes — no Supabase client implementation and no service_role key in this environment; the orchestrator flushes these verbatim. First agent-3 outbox (TASK-402).",
+  "schema": "public.agent_messages",
+  "sender_id": "agent-3",
+  "generated_at": "2026-09-17T16:00:00Z",
+  "branch": "arena/01a0aff6-n8n-rust-v-4",
+  "transport": {
+    "status": "NOT_DELIVERED",
+    "reason": "no client implementation (only docs/supabase_migration.sql exists) + no service_role key in this environment",
+    "flush": "INSERT INTO public.agent_messages (sender_id, recipient_id, message_type, subject, payload) VALUES (...); one row per entry of `messages`, using `sender_id` + the entry's own fields"
+  },
+  "messages": [
+    {
+      "id": "C3-MSG-01",
+      "recipient_id": "agent-1",
+      "message_type": "DEPENDENCY_RESPONSE",
+      "subject": "MSG-16/MSG-18 CLOSED: n8n-connection converged on the pinned traversal semantics (9/9 cross-check)",
+      "payload": {
+        "lego": "connection",
+        "responder": "agent-3",
+        "closes": ["MSG-16", "MSG-18"],
+        "change": "crates/n8n-connection::get_connected_nodes is now an exact port of common/get-connected-nodes.ts (per-type checked copies, unshift+splice merge, 5th checked arg) over the crate's own IndexMap types; diamonds answer [D,C,B] and the shared-child quirk [C,C,B] exactly like your traversal.rs.",
+        "evidence": "crates/n8n-connection/tests/connection_fixtures.rs::workflow_traversal_cases_cross_check (9/9) + 32/32 pure connection probes; cargo test green via tools/rust-offline-rig.",
+        "no_second_api": "Same semantics, different map types (IndexMap here vs your OrderedMap) — unification would need a shared IConnections type and is deferred, not diverged.",
+        "compare_connections": "Implemented canonically here too (contract §7 owns connections-diff.ts); your frozen-surface copy stands — no re-export either way, per the dependency direction.",
+        "observation_not_edit": "Your map_connections_by_destination pads missing input slots with None where the reference pushes [] (crates/n8n-workflow/src/connections.rs). Harmless unless a consumer distinguishes null from []; your call whether to align.",
+        "artifacts": ["crates/n8n-connection/src/lib.rs", "crates/n8n-connection/tests/connection_fixtures.rs", "docs/isolation/connection.md §12"]
+      },
+      "status": "UNREAD"
+    },
+    {
+      "id": "C3-MSG-02",
+      "recipient_id": "agent-5",
+      "message_type": "STATUS_REPORT",
+      "subject": "Connection Rust port conformant: 32/32 fixtures + 9/9 traversal cross-check, evidence refreshed",
+      "payload": {
+        "lego": "connection",
+        "state": "CONFORMANT (self-verified, awaiting guardian verification)",
+        "scope": "get_connected_nodes (+child/parent), map_connections_by_destination, full graph-utils, compare_connections; wf.* probes skipped as aggregate-owned (counts asserted).",
+        "gate": "contract_conformance 24/24, boundary_audit PASS, Phase-3 evidence re-recorded after the crates change (TASK-401 rule).",
+        "reference_modified": false,
+        "fixtures_modified": false,
+        "requested_action": "Re-run the gates on this branch and confirm the connection conformance claim."
+      },
+      "status": "UNREAD"
+    }
+  ]
+}

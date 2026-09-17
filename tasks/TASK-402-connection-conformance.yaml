@@ -1,0 +1,89 @@
+id: TASK-402-connection-conformance
+agent: agent-3
+lego: connection
+module: connection
+phase: 3
+title: "Converge n8n-connection on the pinned reference semantics + fixture harness"
+
+# Closes MSG-16/MSG-18 (agent-1 -> agent-3): crates/n8n-connection predates the
+# pinned semantics. Measured divergences vs reference (n8n 2.9.4) + fixtures:
+#  1. get_connected_nodes uses one shared visited set and a prepend-direct
+#     merge; reference copies checkedNodes per type and merges via
+#     unshift+splice -> order/membership diverge on shared subtrees (diamonds).
+#     Also missing the 5th `checked` arg (contract §2 lists `checked?`).
+#  2. map_connections_by_destination keys the destination map by the SOURCE
+#     output key; reference keys by the edge item's own `type`.
+#  3. has_path searches ALL types over IConnections; reference hasPath is DFS
+#     over an adjacency list, main edges only (fixture 03 expects false).
+#  4. graph-utils (buildAdjacencyList, getRootNodes, getLeafNodes,
+#     getInputEdges, getOutputEdges, parseExtractableSubgraphSelection) and
+#     compareConnections are absent; fixtures 02/04/05 probe them.
+# No downstream users of these functions exist yet (n8n-workflow keeps its own
+# frozen-surface copies), so signature corrections are safe.
+
+allowed_paths:
+  - crates/n8n-connection/**
+  - docs/isolation/connection.md
+  - docs/isolation/connection-bus-outbox.json
+  - docs/isolation/evidence/rust-test-record.json
+  - tasks/TASK-402-connection-conformance.yaml
+  - results/TASK-402-connection-conformance.md
+
+forbidden_paths:
+  - reference/n8n/**
+  - crates/n8n-workflow/**
+  - crates/n8n-node-model/**
+  - crates/n8n-validation/**
+  - crates/n8n-common/**
+  - crates/n8n-execution-data/**
+  - crates/n8n-expression/**
+  - apps/**
+  - packages/**
+  - tests/**
+  - contracts/**
+
+requires:
+  - contracts/connection.contract.md
+  - tests/reference/connection/01-linear
+  - tests/reference/connection/02-multi-output
+  - tests/reference/connection/03-connection-types
+  - tests/reference/connection/04-cycle
+  - tests/reference/connection/05-connections-diff
+  - tests/reference/workflow-rust/fixtures.json
+
+operations:
+  - name: converge_traversal
+    args:
+      fn: get_connected_nodes
+      spec: reference/n8n/packages/workflow/src/common/get-connected-nodes.ts
+      acceptance: tests/reference/workflow-rust/fixtures.json (traversal 9 cases, cross-checked)
+  - name: converge_inversion
+    args:
+      fn: map_connections_by_destination
+      spec: reference/n8n/packages/workflow/src/common/map-connections-by-destination.ts
+  - name: port_graph_utils
+    args:
+      fns: [build_adjacency_list, get_root_nodes, get_leaf_nodes, get_input_edges, get_output_edges, has_path, parse_extractable_subgraph_selection]
+      spec: reference/n8n/packages/workflow/src/graph/graph-utils.ts
+  - name: port_diff
+    args:
+      fn: compare_connections
+      spec: reference/n8n/packages/workflow/src/connections-diff.ts
+  - name: fixture_harness
+    args:
+      path: crates/n8n-connection/tests/connection_fixtures.rs
+      probes: "all pure probes in tests/reference/connection/* (wf.* skipped: aggregate-owned, agent-1)"
+  - name: refresh_evidence
+    args:
+      cmd: bash tools/phase3-rust-acceptance.sh --force
+      reason: "crates changed -> Phase-3 evidence must be re-recorded (TASK-401 rule)"
+
+acceptance:
+  - cargo test --workspace green incl. new connection fixture tests
+  - contract_conformance 24/24, boundary_audit PASS
+  - no fixture file modified (fixtures are the acceptance, not the variable)
+
+merge_condition:
+  - regression_gate_pass
+  - no_contract_violation
+  - agent_5_verification

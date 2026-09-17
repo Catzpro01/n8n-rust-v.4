@@ -196,3 +196,36 @@ connectionsByDestinationNode[dest][type][inputIndex] = IConnection[]  (src node,
 | full harness (`execution-data` + `expression` + `connection`) | 18/18 PASS |
 | `git diff -- reference/n8n` | empty → 11/11 baseline unaffected |
 | Live VPS | unreachable from sandbox → status `TESTED` |
+
+## 12. Rust conformance (Phase 3, TASK-402 — closes MSG-16/MSG-18)
+
+`crates/n8n-connection` is converged on the pinned reference semantics. Before
+writing the port, every pure probe of `tests/reference/connection/*` was
+replayed against the pinned runtime (`.runtime`, n8n-workflow 2.9.1): **32/32
+match**, and the committed harness agrees (`run.js connection` 5/5, full
+18/18). The fixtures therefore pin the reference — not the implementation.
+
+| Item | Before (pre-TASK-402) | After |
+| :--- | :--- | :--- |
+| `get_connected_nodes` | one shared visited set, prepend-direct merge; no `checked` arg | exact port of `common/get-connected-nodes.ts`: per-type `checked` copies, unshift+splice merge, 5th `checked` param |
+| diamond `A→B,A→C,B→D,C→D` | `[D,B,C]` ❌ | `[D,C,B]` ✅ (ground-truthed via node) |
+| shared child `A→B,B→C,A→C` | `[B,C]` ❌ (silently deduped) | `[C,C,B]` ✅ (reference has no dedup pass) |
+| `map_connections_by_destination` | destination keyed by source output key | keyed by the edge item's own `type` (reference) |
+| `has_path` | BFS over `IConnections`, all types | `hasPath(start, end, adjacency)`: DFS, `main` only (reference) |
+| `hasPath Model→Agent` (ai edge) | `true` ❌ | `false` ✅ (fixture 03) |
+| graph-utils | absent | `build_adjacency_list`, `get_root_nodes`, `get_leaf_nodes`, `get_input_edges`, `get_output_edges`, `parse_extractable_subgraph_selection` ported from `graph/graph-utils.ts` |
+| `compare_connections` | absent | ported from `connections-diff.ts` (JSON-keyed edge identity, union key order) |
+
+Acceptance: `crates/n8n-connection/tests/connection_fixtures.rs` — 32/32 pure
+probes green (the 14 `wf.*` probes need the Workflow aggregate and stay Agent
+1's per contract CD-04; counts asserted so nothing skips silently) plus the 9
+workflow-rust `traversal` cases as a cross-check that both crates answer
+identically. 7 unit tests pin the quirks (order, duplication, edge-type
+keying, main-only paths).
+
+Out of scope on purpose: `getNodeByName` (needs node rows, unprobed — stays a
+request to Agent 2's data, not a second copy), and the `wf.*` aggregate
+methods. Observation for Agent 1 (not edited — LEGO 01's file): the Workflow
+crate's inversion pads missing input slots with `None` where the reference
+pushes `[]` (`connections.rs::map_connections_by_destination`); harmless
+unless a consumer distinguishes null from `[]` — see bus `C3-MSG-01`.
