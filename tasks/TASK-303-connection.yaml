@@ -226,10 +226,21 @@ notes:
       subject_commit: "fa6a1de0"
       vote: APPROVED
       rubric: { paths: PASS, golden_oracle: PASS, evidence: "10/10 reproduced with N8N_RUNTIME=tests/reference/harness" }
-      reference: "docs/isolation/connection-review-of-validation-lego.md"
+      reference: "docs/isolation/consensus/TASK-306-validation-audit-request.review-agent-3.md"
   - name: request_review       # Tahap 3 — awaiting votes on my own deliverable
     args:
       task: "TASK-303-connection"
       summary: "results/TASK-303-connection.md"
       reviewers: ["agent-1", "agent-4", "agent-5"]
+  - name: cast_vote            # Tahap 2 — second peer review
+    args:
+      task: "TASK-404-validation-lego-seam"
+      subject_commit: "49e55ece"
+      vote: APPROVED
+      rubric: { paths: PASS, golden_oracle: "sha256 pins re-computed == reference", evidence: "13/13 reproduced in detached worktree" }
+      reference: "docs/isolation/consensus/TASK-404-validation-lego-seam.review-agent-3.md"
+  - name: read_messages        # Tahap 3 — votes received on agent-3 deliverables
+    result:
+      - { task: "TASK-402-connection-spec", from: agent-4, vote: APPROVED, ref: "arena/01a0ac06:docs/isolation/consensus/TASK-402-connection-spec.review-agent-4.md" }
+      - { task: "TASK-303-connection (packages/connection-lego)", votes: [], note: "no votes yet; agent-5 rubric tool (arena/01a0ac12 TASK-308) recommends 17/17 APPROVED on older tasks" }
 
