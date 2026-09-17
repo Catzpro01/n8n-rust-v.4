@@ -59,28 +59,48 @@ had **no contract, no blueprint, no package and no engine on any branch**:
 
 | LEGO | Owner | Contract | Isolation doc | Package | Tests | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| Queue | Agent 3 | `contracts/queue.contract.md` ✅ | `docs/isolation/queue.md` ✅ | `packages/queue-lego` | `node --test` 17/17 ✅ | **VERIFIED** (POOL-009) |
-| Events | Agent 3 | `contracts/events.contract.md` ✅ | `docs/isolation/events.md` ✅ | `packages/events-lego` | `node --test` 14/14 ✅ | **VERIFIED** (POOL-010) |
-| Realtime | Agent 3 | `contracts/realtime.contract.md` ✅ | `docs/isolation/realtime.md` ✅ | `packages/realtime-lego` | `node --test` 14/14 ✅ | **VERIFIED** (POOL-011) |
+| Queue | Agent 3 | `contracts/queue.contract.md` ✅ | `docs/isolation/queue.md` ✅ | `packages/queue-lego` | `node --test` 17/17 ✅ | **INTEGRATED** (POOL-009) |
+| Events | Agent 3 | `contracts/events.contract.md` ✅ | `docs/isolation/events.md` ✅ | `packages/events-lego` | `node --test` 14/14 ✅ | **INTEGRATED** (POOL-010) |
+| Realtime | Agent 3 | `contracts/realtime.contract.md` ✅ | `docs/isolation/realtime.md` ✅ | `packages/realtime-lego` | `node --test` 14/14 ✅ | **INTEGRATED** (POOL-011) |
 
 Engines: `packages/reconstructed-engine/src/{queue,events,realtime}-engine.ts` (+ shared
 `emitter.ts`). Invariants: `Q1..Q14`, `E1..E12`, `R1..R13` — each one machine-checked against
 the pinned reference (`b6dc2787…`, n8n 2.9.4) by the package tests and by
 `tools/phase6-isolation-gate.mjs` (G01..G08); per-LEGO subsets via `tools/{queue,events,realtime}-isolation-gate.mjs --lego …`.
 
+## 4b. Phase 7 LEGO — EXECUTION (runtime) (Agent 3, branch `arena/01a0b16c-n8n-rust-v-4`)
+
+`anatomy/05-execution.md` was the last subsystem without a contract on any branch. What the
+anatomy describes is the run loop (`workflow-execute.ts`, owned by `workflow`/`node`/
+`execution-data`); Phase 7 froze the **runtime around it**:
+
+| LEGO | Owner | Contract | Isolation doc | Package | Tests | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| Execution | Agent 3 | `contracts/execution.contract.md` ✅ | `docs/isolation/execution.md` ✅ | `packages/execution-lego` | `node --test` 32/32 ✅ | **VERIFIED** (POOL-012) |
+
+Engine: `packages/reconstructed-engine/src/execution-engine.ts`. Invariants `X1..X17`
+(`ActiveExecutions`, `ActiveWorkflows`, execution-context hooks, `ExecutionRecoveryService`),
+checked by `tools/phase7-isolation-gate.mjs` (`H01..H08`, evidence `docs/isolation/evidence/phase7-gate.json`).
+`H08` is a **drift back-fill**: Phase 6 had pinned `QUEUE_RECOVERY_DEFAULTS` to the reference *test
+fixture* (`interval: 10`, `batchSize: 5`); the engine, the queue test and the gate now all read the
+`@n8n/config` defaults (`interval: 180`, `batchSize: 100`).
+
 ## 5. Gate summary
 
 | Gate | Result | Evidence |
 | :--- | :--- | :--- |
-| Contracts present | PASS (15/15) | `contract_conformance.mjs` + extended contracts + queue/events/realtime |
+| Contracts present | PASS (16/16) | `contract_conformance.mjs` + extended contracts + queue/events/realtime |
 | Golden fixtures conform to contracts | PASS (21/21) | `contract_conformance.mjs` |
 | Cross-LEGO edges all documented | PASS | `boundary_audit.py` |
 | No premature Rust | PASS | `crates/` + `apps/` clean; Phase-3 Rust archived read-only under `docs/archive/phase3-rust/` |
-| Isolation docs complete | PASS (15/15) | all LEGOs have complete isolation blueprints |
+| Isolation docs complete | PASS (16/16) | all LEGOs have complete isolation blueprints |
 | Live smoke re-run | PASS (11/11) | `npm run verify` G11 live verification on this checkout |
 | Phase 6 LEGOs (queue/events/realtime) | PASS (8/8) | `tools/phase6-isolation-gate.mjs` → `docs/isolation/evidence/phase6-gate.json` |
 | Phase 6 integration (queue × events × realtime) | PASS (4/4) | `tests/integration/phase6-integration.test.mjs` (gate `G08`) |
+| Phase 7 LEGO (execution) | PASS (8/8) | `tools/phase7-isolation-gate.mjs` → `docs/isolation/evidence/phase7-gate.json` |
+| Queue recovery defaults vs `@n8n/config` | PASS | gate `H08` (drift back-fill of the POOL-009 pin) |
 
-**Overall gate: `VERIFIED`** — the 18 anatomy subsystems now have 15 contracted LEGOs; queue,
-events and realtime moved `DISCOVERED → VERIFIED` in phase 6 without touching the Vue bundle
-and without introducing Rust (rule §1).
+**Overall gate: `VERIFIED`** — the 18 anatomy subsystems now have 16 contracted LEGOs (only
+`17-editor`, frozen by rules §2, is intentionally out of scope); queue, events and realtime moved
+`DISCOVERED → INTEGRATED` in phase 6 and the execution runtime moved `DISCOVERED → VERIFIED` in
+phase 7 — without touching the Vue bundle and without introducing Rust (rule §1).

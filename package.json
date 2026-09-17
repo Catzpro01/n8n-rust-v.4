@@ -20,6 +20,8 @@
     "engine:test": "node --experimental-strip-types --test packages/reconstructed-engine/test/locale-enforcer.test.ts",
     "engine:smoke": "node packages/reconstructed-engine/test-run.mjs",
     "locale:audit": "node --experimental-strip-types packages/reconstructed-engine/audit-locales.mjs",
-    "locale:check": "node --experimental-strip-types packages/reconstructed-engine/audit-locales.mjs --check"
+    "locale:check": "node --experimental-strip-types packages/reconstructed-engine/audit-locales.mjs --check",
+    "execution:test": "node --test packages/execution-lego/test/*.test.mjs",
+    "phase7:verify": "node tools/phase7-isolation-gate.mjs"
   }
 }

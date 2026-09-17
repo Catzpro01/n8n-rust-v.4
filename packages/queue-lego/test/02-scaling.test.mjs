@@ -1,5 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 
 import {
 	IMMEDIATE_COMMANDS,
@@ -210,7 +215,18 @@ test('Q12 — queue recovery marks dangling executions crashed and halves the wa
 
 	// an empty queue after recovery returns the regular interval again
 	assert.equal(await runtime.recoverFromQueue(), recovery.interval * 60 * 1000);
-	assert.deepEqual(QUEUE_RECOVERY_DEFAULTS, { batchSize: 5, intervalMinutes: 10 });
+
+	// Q13b — the module defaults are the `@n8n/config` defaults, re-read from the reference
+	assert.deepEqual(QUEUE_RECOVERY_DEFAULTS, { interval: 180, batchSize: 100 });
+	const configSource = fs.readFileSync(
+		path.join(REPO, 'reference/n8n/packages/@n8n/config/src/configs/executions.config.ts'),
+		'utf8',
+	);
+	const recoveryBlock = configSource.slice(configSource.indexOf('class QueueRecoveryConfig'));
+	assert.ok(recoveryBlock.includes("@Env('N8N_EXECUTIONS_QUEUE_RECOVERY_INTERVAL')"));
+	assert.ok(recoveryBlock.includes('interval: number = 180;'), 'reference interval drifted');
+	assert.ok(recoveryBlock.includes("@Env('N8N_EXECUTIONS_QUEUE_RECOVERY_BATCH')"));
+	assert.ok(recoveryBlock.includes('batchSize: number = 100;'), 'reference batch size drifted');
 	assert.ok(scaling);
 });
 

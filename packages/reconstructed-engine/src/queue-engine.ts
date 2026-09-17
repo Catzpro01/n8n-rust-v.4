@@ -172,8 +172,13 @@ export type PubSubWorkerResponse = {
 	payload?: unknown;
 };
 
-/** Q13 — hard-coded recovery defaults mirroring `executions.queueRecovery`. */
-export const QUEUE_RECOVERY_DEFAULTS = { batchSize: 5, intervalMinutes: 10 } as const;
+/**
+ * Q13 — `executions.queueRecovery` defaults of `@n8n/config` (n8n 2.9.4): an interval of
+ * 180 minutes and a batch of 100 executions. The reference *test* fixture in
+ * `scaling/__tests__/scaling.service.test.ts` uses `{ interval: 10, batchSize: 5 }` to keep the
+ * suite fast — that fixture is not a default and must never be pinned as one (POOL-012 drift fix).
+ */
+export const QUEUE_RECOVERY_DEFAULTS = { interval: 180, batchSize: 100 } as const;
 
 export type QueueRecoveryConfig = { batchSize: number; interval: number };
 
