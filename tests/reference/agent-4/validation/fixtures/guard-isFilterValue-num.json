@@ -1,0 +1,8 @@
+{
+  "id": "guard-isFilterValue-num",
+  "fn": "isFilterValue",
+  "input": {
+    "value": 1
+  },
+  "expected": false
+}

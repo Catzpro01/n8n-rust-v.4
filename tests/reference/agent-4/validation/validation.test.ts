@@ -208,3 +208,18 @@ test('reference fixtures: 229 recorded validateFieldType/tryToParse* results sti
 		assert.deepEqual(actual, fx.expected, f);
 	}
 });
+
+test('guard fixtures: 352 recorded type-guard results (incl. 21 TypeErrors) still match the live runtime', { skip: hasRuntime ? false : 'N8N_RUNTIME not found' }, () => {
+	const w = n8nRequire('n8n-workflow');
+	const dir = resolve(here, 'validation', 'fixtures');
+	const files = readdirSync(dir).filter((f) => f.startsWith('guard-'));
+	assert.equal(files.length, 352);
+	let throws = 0;
+	for (const f of files) {
+		const fx = JSON.parse(readFileSync(resolve(dir, f), 'utf8'));
+		const v = fx.input.value && typeof fx.input.value === 'object' && fx.input.value.$undefined ? undefined : fx.input.value;
+		let actual: any; try { actual = w[fx.fn](v); } catch (e: any) { actual = { throws: { name: e.constructor.name, message: e.message } }; throws++; }
+		assert.deepEqual(actual, fx.expected, f);
+	}
+	assert.equal(throws, 21, 'three item-guards × seven non-object inputs');
+});

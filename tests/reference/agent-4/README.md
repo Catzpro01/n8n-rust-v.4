@@ -21,6 +21,7 @@ tests/reference/agent-4/
 ├── validation/validation.test.ts       golden A/B/C vs real n8n-workflow 2.9.4 + D vs workflow-rules + fixture anti-drift
 ├── validation/gen-fixtures.ts          writes validation/fixtures/D*.json — language-neutral parity oracle for any port (Rust)
 ├── validation/gen-reference-fixtures.mjs records validation/fixtures/ref-*.json (229) from the real n8n-workflow runtime — type-validation parity corpus
+├── validation/gen-guard-fixtures.mjs     records validation/fixtures/guard-*.json (352) — type-guards parity corpus (21 TypeErrors are real behaviour)
 └── live/                            11-step smoke harness + baselines (see live/README.md)
 ```
 

@@ -1,0 +1,14 @@
+{
+  "id": "guard-isFilterValue-mapper",
+  "fn": "isFilterValue",
+  "input": {
+    "value": {
+      "mappingMode": "defineBelow",
+      "value": {
+        "a": 1
+      },
+      "schema": []
+    }
+  },
+  "expected": false
+}

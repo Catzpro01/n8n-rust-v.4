@@ -1,0 +1,15 @@
+{
+  "id": "guard-isINodePropertyCollection-undef",
+  "fn": "isINodePropertyCollection",
+  "input": {
+    "value": {
+      "$undefined": true
+    }
+  },
+  "expected": {
+    "throws": {
+      "name": "TypeError",
+      "message": "Cannot use 'in' operator to search for 'values' in undefined"
+    }
+  }
+}

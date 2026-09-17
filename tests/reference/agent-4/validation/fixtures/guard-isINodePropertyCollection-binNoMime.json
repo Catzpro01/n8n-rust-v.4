@@ -1,0 +1,10 @@
+{
+  "id": "guard-isINodePropertyCollection-binNoMime",
+  "fn": "isINodePropertyCollection",
+  "input": {
+    "value": {
+      "id": "1"
+    }
+  },
+  "expected": false
+}

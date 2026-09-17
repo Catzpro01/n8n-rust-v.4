@@ -55,6 +55,8 @@ No side effects exist in this LEGO (pure functions) unless stated.
 
 ## C. Type guards & schemas
 
+> **Recorded corpus:** `fixtures/guard-*.json` — 11 public guards × 32-value input matrix = **352 cases** from the live runtime (`gen-guard-fixtures.mjs`; re-executed by `validation.test.ts` #15). Notable: **21 cases throw** (`isINodeProperties` / `isINodePropertyOptions` / `isINodePropertyCollection` on the 7 non-object inputs) — see `validation.md` §3.2 correction. `isResourceLocatorValue` checks key *presence* only (`'__rl' in value && 'mode' in value && 'value' in value`, type-guards.ts:17): `{__rl:false, mode, value}` → **true**, `{mode, value}` → false, `{__rl:true}` alone → false; `isFilterValue` accepts any string combinator (`xor` → true, structural only); `isBinaryValue` needs `mimeType` **and** (`data` or `id`).
+
 | # | INPUT | EXPECTED OUTPUT |
 |---|---|---|
 | C1 | `isNodeConnectionType('main')`, `('ai_tool')`, `('nope')` | `true`, `true`, `false` |

@@ -1,0 +1,12 @@
+{
+  "id": "guard-isFilterValue-filter",
+  "fn": "isFilterValue",
+  "input": {
+    "value": {
+      "conditions": [],
+      "combinator": "and",
+      "options": {}
+    }
+  },
+  "expected": true
+}

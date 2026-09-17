@@ -1,0 +1,8 @@
+{
+  "id": "guard-isINodePropertyOptionsList-strBogus",
+  "fn": "isINodePropertyOptionsList",
+  "input": {
+    "value": "nope"
+  },
+  "expected": false
+}

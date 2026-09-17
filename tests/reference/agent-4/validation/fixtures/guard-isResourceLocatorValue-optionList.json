@@ -1,0 +1,13 @@
+{
+  "id": "guard-isResourceLocatorValue-optionList",
+  "fn": "isResourceLocatorValue",
+  "input": {
+    "value": [
+      {
+        "name": "a",
+        "value": "a"
+      }
+    ]
+  },
+  "expected": false
+}

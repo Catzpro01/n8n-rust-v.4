@@ -1,0 +1,8 @@
+{
+  "id": "guard-isResourceLocatorValue-strAi",
+  "fn": "isResourceLocatorValue",
+  "input": {
+    "value": "ai_tool"
+  },
+  "expected": false
+}

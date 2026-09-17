@@ -1,0 +1,12 @@
+{
+  "id": "guard-isResourceMapperValue-filterBadCombinator",
+  "fn": "isResourceMapperValue",
+  "input": {
+    "value": {
+      "conditions": [],
+      "combinator": "xor",
+      "options": {}
+    }
+  },
+  "expected": false
+}

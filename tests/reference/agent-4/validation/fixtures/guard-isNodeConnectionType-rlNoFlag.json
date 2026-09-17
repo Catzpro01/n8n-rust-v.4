@@ -1,0 +1,11 @@
+{
+  "id": "guard-isNodeConnectionType-rlNoFlag",
+  "fn": "isNodeConnectionType",
+  "input": {
+    "value": {
+      "mode": "id",
+      "value": "1"
+    }
+  },
+  "expected": false
+}

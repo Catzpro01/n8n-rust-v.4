@@ -76,14 +76,26 @@ Non-responsibilities.
 - Default error: `'<field>' expects a <type> but we got <description>`; `datetime` appends Luxon docs hint; `time`, `binary`, `options`, `string-alphanumeric`, `jwt`, `form-fields` have their own messages.
 - `options` compares `option.value === value` (strict equality, no coercion).
 
-### 3.2 `type-guards.ts` — structural guards (14 exports)
+### 3.2 `type-guards.ts` — structural guards (14 exports, 11 public)
 
 `isResourceLocatorValue`, `isINodeProperties`, `isINodePropertyOptions`, `isINodePropertyCollection`,
 `isINodePropertiesList`, `isINodePropertyOptionsList`, `isINodePropertyCollectionList`,
 `isValidResourceLocatorParameterValue`, `isResourceMapperValue`, `isAssignmentValue`,
 `isAssignmentCollectionValue`, `isFilterValue`, `isNodeConnectionType` (checks against
-`nodeConnectionTypes` const), `isBinaryValue` (`mimeType` + `data`|`id`). All are pure, total functions
-(`unknown → boolean`), no throws.
+`nodeConnectionTypes` const), `isBinaryValue` (`mimeType` + `data`|`id`).
+
+**Correction 2026-09-17 (runtime-verified, `gen-guard-fixtures.mjs`, 352 recorded cases):** the earlier
+claim "all pure, total functions (`unknown → boolean`), no throws" was **wrong** for three of them.
+`isINodeProperties`, `isINodePropertyOptions`, `isINodePropertyCollection` are typed over the object union
+`INodePropertyOptions | INodeProperties | INodePropertyCollection` and use the bare `in` operator, so a
+primitive / `null` / `undefined` argument **throws `TypeError: Cannot use 'in' operator to search for
+'name' in null`**. The three `*List` wrappers are safe (they gate on `Array.isArray` first) and the other
+eight are `unknown → boolean` totals. A port must reproduce this: the three item-guards are *partial*
+(precondition: object), not total — or the port documents an intentional hardening.
+
+Barrel exposure (`index.ts:60-72`): 11 of the 14 are re-exported from `n8n-workflow`.
+`isValidResourceLocatorParameterValue` (consumed only by `node-helpers.ts:1346`) and `isAssignmentValue`
+(used only by `isAssignmentCollectionValue`) are **internal** to the package.
 
 ### 3.3 `schemas.ts` — zod runtime schemas (45 exports)
 

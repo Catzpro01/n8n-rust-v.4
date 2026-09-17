@@ -1,0 +1,19 @@
+{
+  "id": "guard-isFilterValue-mixedList",
+  "fn": "isFilterValue",
+  "input": {
+    "value": [
+      {
+        "name": "a",
+        "value": "a"
+      },
+      {
+        "displayName": "D",
+        "name": "n",
+        "type": "string",
+        "default": ""
+      }
+    ]
+  },
+  "expected": false
+}

@@ -1,0 +1,15 @@
+{
+  "id": "guard-isResourceMapperValue-propList",
+  "fn": "isResourceMapperValue",
+  "input": {
+    "value": [
+      {
+        "displayName": "D",
+        "name": "n",
+        "type": "string",
+        "default": ""
+      }
+    ]
+  },
+  "expected": false
+}

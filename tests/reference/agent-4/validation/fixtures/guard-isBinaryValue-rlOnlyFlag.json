@@ -1,0 +1,10 @@
+{
+  "id": "guard-isBinaryValue-rlOnlyFlag",
+  "fn": "isBinaryValue",
+  "input": {
+    "value": {
+      "__rl": true
+    }
+  },
+  "expected": false
+}

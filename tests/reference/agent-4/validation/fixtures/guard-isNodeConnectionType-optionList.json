@@ -1,0 +1,13 @@
+{
+  "id": "guard-isNodeConnectionType-optionList",
+  "fn": "isNodeConnectionType",
+  "input": {
+    "value": [
+      {
+        "name": "a",
+        "value": "a"
+      }
+    ]
+  },
+  "expected": false
+}

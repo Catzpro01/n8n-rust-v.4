@@ -1,0 +1,13 @@
+{
+  "id": "guard-isINodePropertyOptions-strAi",
+  "fn": "isINodePropertyOptions",
+  "input": {
+    "value": "ai_tool"
+  },
+  "expected": {
+    "throws": {
+      "name": "TypeError",
+      "message": "Cannot use 'in' operator to search for 'value' in ai_tool"
+    }
+  }
+}

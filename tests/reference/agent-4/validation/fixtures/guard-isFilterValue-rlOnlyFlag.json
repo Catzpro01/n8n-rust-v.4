@@ -1,0 +1,10 @@
+{
+  "id": "guard-isFilterValue-rlOnlyFlag",
+  "fn": "isFilterValue",
+  "input": {
+    "value": {
+      "__rl": true
+    }
+  },
+  "expected": false
+}

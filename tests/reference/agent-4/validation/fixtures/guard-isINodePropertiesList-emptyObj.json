@@ -1,0 +1,8 @@
+{
+  "id": "guard-isINodePropertiesList-emptyObj",
+  "fn": "isINodePropertiesList",
+  "input": {
+    "value": {}
+  },
+  "expected": false
+}

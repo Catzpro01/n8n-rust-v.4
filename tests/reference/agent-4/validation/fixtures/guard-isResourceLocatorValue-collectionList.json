@@ -1,0 +1,14 @@
+{
+  "id": "guard-isResourceLocatorValue-collectionList",
+  "fn": "isResourceLocatorValue",
+  "input": {
+    "value": [
+      {
+        "displayName": "D",
+        "name": "n",
+        "values": []
+      }
+    ]
+  },
+  "expected": false
+}

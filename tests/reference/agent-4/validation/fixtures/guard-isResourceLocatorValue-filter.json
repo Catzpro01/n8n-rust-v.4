@@ -1,0 +1,12 @@
+{
+  "id": "guard-isResourceLocatorValue-filter",
+  "fn": "isResourceLocatorValue",
+  "input": {
+    "value": {
+      "conditions": [],
+      "combinator": "and",
+      "options": {}
+    }
+  },
+  "expected": false
+}

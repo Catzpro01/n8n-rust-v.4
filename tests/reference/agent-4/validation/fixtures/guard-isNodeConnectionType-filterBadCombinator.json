@@ -1,0 +1,12 @@
+{
+  "id": "guard-isNodeConnectionType-filterBadCombinator",
+  "fn": "isNodeConnectionType",
+  "input": {
+    "value": {
+      "conditions": [],
+      "combinator": "xor",
+      "options": {}
+    }
+  },
+  "expected": false
+}

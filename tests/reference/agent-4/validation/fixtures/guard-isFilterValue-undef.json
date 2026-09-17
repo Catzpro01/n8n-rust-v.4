@@ -1,0 +1,10 @@
+{
+  "id": "guard-isFilterValue-undef",
+  "fn": "isFilterValue",
+  "input": {
+    "value": {
+      "$undefined": true
+    }
+  },
+  "expected": false
+}
