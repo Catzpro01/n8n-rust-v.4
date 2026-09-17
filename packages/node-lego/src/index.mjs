@@ -57,8 +57,13 @@ export {
 } from './properties.mjs';
 export {
 	FilterError,
+	arrayContainsValue,
+	executeFilter,
+	executeFilterCondition,
 	validateFilterParameter,
 } from './filter-parameter.mjs';
+export { cronNodeOptions } from './cron-node-options.mjs';
+export { getNodeWebhookPath, getNodeWebhookUrl } from './webhook-path.mjs';
 export {
 	getContext,
 	getNodeParametersIssues,

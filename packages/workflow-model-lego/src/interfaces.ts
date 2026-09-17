@@ -170,6 +170,38 @@ export interface GraphPort {
 	mapConnectionsByDestination(connections: IConnections): IConnections;
 }
 
+/** Reference: `interfaces.ts:406-409` — one entry of a `compareConnections`/index lookup result. */
+export interface INodeConnection {
+	sourceIndex: number;
+	destinationIndex: number;
+}
+
+/** Reference: `interfaces.ts:3136-3140` — what `searchNodesBFS` returns per visited node. */
+export interface IConnectedNode {
+	name: string;
+	indicies: number[];
+	depth: number;
+}
+
+/**
+ * Port to the Node LEGO (`contracts/node.contract.md` §2, dependency CD-05) for the two
+ * `NodeHelpers` calls the Workflow aggregate makes:
+ *
+ * - `getNodeParameters` — the constructor fills in default parameter values;
+ * - `getNodeOutputs`    — `getParentMainInputNode` needs the declared outputs to find the
+ *   non-main connection types.
+ *
+ * Implemented by `packages/node-lego` (see `node-port.ts`).
+ */
+export interface NodeHelpersPort {
+	getNodeParameters?(node: INode, nodeType: INodeType): INodeParameters | null;
+	getNodeOutputs(
+		workflow: unknown,
+		node: INode,
+		nodeTypeData: { outputs?: unknown; [key: string]: unknown },
+	): Array<string | { type: NodeConnectionType; [key: string]: unknown }>;
+}
+
 /** Reference: `utils.ts:29-35`. Copied verbatim — the checksum's key sort depends on it. */
 export function isObject(value: unknown): value is Record<string, unknown> {
 	if (value === null || typeof value !== 'object') return false;

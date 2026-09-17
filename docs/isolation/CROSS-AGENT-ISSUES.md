@@ -1562,6 +1562,48 @@ Full pre-task battery in `results/TASK-AUDIT-ISSUES-01.md`.
 
 ---
 
+## ISSUE-027 — `NodeHelpers.getNodeParameters` is not reconstructed on this branch (OPEN)
+
+**Detected by:** arena-worker, 2026-09-18 (`TASK-WORKFLOW-MODEL-02`)
+**Affected:** `packages/workflow-model-lego` (Workflow constructor), any consumer that builds a
+`Workflow` with a `nodeTypes` registry that resolves types
+**Type:** Scope gap in the Node LEGO / port contract — no behaviour change, no divergence recorded
+**Severity:** MEDIUM
+
+**Description:**
+The n8n 2.9.4 `Workflow` constructor applies default node parameters whenever a node type
+resolves: `node.parameters = NodeHelpers.getNodeParameters(...) ?? {}`. `getNodeParameters` is
+~1 000 lines of `reference/n8n/packages/workflow/src/node-helpers.ts` and is **not reconstructed
+anywhere on this branch**:
+
+```text
+$ grep -rn "export function getNodeParameters" packages/node-lego/src/*.mjs
+(no match)
+```
+
+`packages/node-lego` exports `getNodeOutputs` (`src/connection-io.mjs:67`) but not
+`getNodeParameters`. `packages/workflow-model-lego` therefore keeps it as a **required injected
+port** (CD-05b) and throws rather than silently skipping default-parameter application:
+
+```text
+Error: Node type "Trigger" resolved, but no nodeParametersPort (CD-05:
+NodeHelpers.getNodeParameters) was injected. Inject it, or pass a nodeTypes registry that
+returns undefined for this type.
+```
+
+**Why it does not invalidate TASK-WORKFLOW-MODEL-02:**
+the 14 `wf.*` connection-golden probes read `nodes` keys, `disabled`, `connections` and node
+outputs — never `node.parameters`. That is demonstrated, not asserted: the conformance suite
+re-derives all 14 results under a deliberately mangling `getNodeParameters`
+(`() => ({ __mangled: true, nested: { a: [1,2,3] } })`) and asserts byte-identical output for
+every probe.
+
+**Requested action (Node LEGO lane):**
+land `getNodeParameters` in `packages/node-lego` (or a dedicated port package) so the Workflow
+constructor can consume it through CD-05 like `getNodeOutputs`, and retire the injected-port
+requirement. Until then, every caller must supply its own.
+
+**Status:** OPEN
 **ADDENDUM (TASK-RIG-REPAIR-01, `arena/01a0aff8-n8n-rust-v-4`, 2026-09-18) — ISSUE-025 REPAIRED; ISSUE-017 probe re-run, divergence stands.**
 
 Vendoring repair landed rig-only (`crates/` untouched): `setup.sh` CRATES 10 → 15 repos

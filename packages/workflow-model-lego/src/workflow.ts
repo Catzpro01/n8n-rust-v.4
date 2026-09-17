@@ -7,22 +7,32 @@ import {
 	renameFormFields,
 } from './rename-constants';
 import { applyAccessPatterns } from './node-reference-utils';
-import { UserError } from './errors';
+import { ApplicationError, UserError } from './errors';
+import { resolveNodeHelpersPort } from './node-port';
+import { dedupe } from './utils';
 import * as ObservableObject from './observable-object';
+import {
+	getHighestNode as highestNode,
+	__getStartNode as resolveStartNodeOf,
+	getStartNode as resolveStartNode,
+	type NodeTypesLike,
+} from './start-node-navigation';
 import { NodeConnectionTypes } from './interfaces';
 import type {
 	GraphPort,
 	IConnection,
 	IConnections,
+	IConnectedNode,
 	IDataObject,
 	INode,
+	INodeConnection,
 	INodeParameters,
 	INodeTypes,
 	IPinData,
 	IWorkflowSettings,
 	NodeConnectionType,
 	NodeParameterValueType,
-	NodeParametersPort,
+	NodeHelpersPort,
 } from './interfaces';
 
 /**
@@ -78,8 +88,10 @@ export interface WorkflowParameters {
 	pinData?: IPinData;
 	/** CD-02 — defaults to `packages/connection-lego`. */
 	graphPort?: GraphPort;
-	/** CD-05 — `NodeHelpers.getNodeParameters`. Required only when a node type resolves. */
-	nodeParametersPort?: NodeParametersPort;
+	/** CD-05 — `NodeHelpers.getNodeParameters` / `getNodeOutputs`. Defaults to `packages/node-lego`. */
+	nodeHelpersPort?: NodeHelpersPort;
+	/** @deprecated kept as an alias of `nodeHelpersPort.getNodeParameters`. */
+	nodeParametersPort?: NodeHelpersPort['getNodeParameters'];
 }
 
 /** The 13 names `renameNode` refuses, verbatim from `workflow.ts:394-408`. */
@@ -128,14 +140,16 @@ export class Workflow {
 
 	private readonly graph: GraphPort;
 
-	private readonly nodeParametersPort: NodeParametersPort | undefined;
+	private readonly nodeHelpers: NodeHelpersPort | undefined;
 
 	constructor(parameters: WorkflowParameters) {
 		this.id = parameters.id as string; // @tech_debt Ensure this is not optional
 		this.name = parameters.name;
 		this.nodeTypes = parameters.nodeTypes;
 		this.graph = resolveGraphPort(parameters.graphPort);
-		this.nodeParametersPort = parameters.nodeParametersPort;
+		this.nodeHelpers =
+			resolveNodeHelpersPort(parameters.nodeHelpersPort) ??
+			(parameters.nodeParametersPort ? { getNodeOutputs: () => [], getNodeParameters: parameters.nodeParametersPort } : undefined);
 
 		let nodeType;
 		for (const node of parameters.nodes) {
@@ -149,7 +163,7 @@ export class Workflow {
 				continue;
 			}
 
-			if (this.nodeParametersPort === undefined) {
+			if (this.nodeHelpers?.getNodeParameters === undefined) {
 				throw new Error(
 					`Node type "${node.type}" resolved, but no nodeParametersPort (CD-05: ` +
 						'NodeHelpers.getNodeParameters) was injected. Inject it, or pass a nodeTypes ' +
@@ -158,7 +172,7 @@ export class Workflow {
 			}
 
 			// Add default values
-			const nodeParameters = this.nodeParametersPort(node, nodeType);
+			const nodeParameters = this.nodeHelpers.getNodeParameters(node, nodeType);
 			node.parameters = nodeParameters !== null ? nodeParameters : {};
 		}
 
@@ -417,6 +431,289 @@ export class Workflow {
 			connectionType,
 			depth,
 			checkedNodesIncoming,
+		);
+	}
+	/**
+	 * Finds the highest parent nodes of the node with the given name.
+	 *
+	 * 1:1 from `workflow.ts:491-570`. Reference quirks that the `getHighestNode` golden probes pin:
+	 *
+	 * - a node whose `disabled === false` **exactly** (not merely "not disabled") is pushed onto
+	 *   `currentHighest` before the incoming-connection checks, and that partial result is what is
+	 *   returned when the node has no incoming `main` connections;
+	 * - edges pointing at nodes that are not in `this.nodes` are skipped
+	 *   (`if (!(connection.node in this.nodes)) return;`);
+	 * - when the recursion finds nothing above a parent, that parent is used **unless** it is
+	 *   `disabled === true` — so `disabled: undefined` counts as enabled;
+	 * - results are de-duplicated with `indexOf` while preserving first-seen order.
+	 */
+	getHighestNode(
+		nodeName: string,
+		nodeConnectionIndex?: number,
+		checkedNodes?: string[],
+	): string[] {
+		// Single source of truth: the pure port in `./start-node-navigation` (landed by
+		// TASK-DGRAPH-01). The class method is the reference's aggregate entry point; the
+		// traversal itself exists exactly once on this branch.
+		return highestNode(
+			this.nodes,
+			this.connectionsByDestinationNode,
+			nodeName,
+			nodeConnectionIndex,
+			checkedNodes,
+		);
+	}
+
+	/**
+	 * Returns all the nodes before the given one.
+	 *
+	 * @param maxDepth `-1` for unlimited
+	 */
+	getParentNodesByDepth(nodeName: string, maxDepth = -1): IConnectedNode[] {
+		return this.searchNodesBFS(this.connectionsByDestinationNode, nodeName, maxDepth);
+	}
+
+	/**
+	 * Gets all the nodes which are connected nodes starting from the given one.
+	 * Uses BFS traversal.
+	 *
+	 * 1:1 from `workflow.ts:630-686`. The BFS is level-synchronous (`toAdd = [...queue]`, then the
+	 * queue is drained), `depth` is incremented **before** the level is expanded, the source node
+	 * itself is recorded in `visited` but excluded from the result, and a node reached twice has
+	 * its `indicies` merged through `dedupe`. All four behaviours are pinned by the
+	 * `getParentNodesByDepth` golden probe (`[{A,[0],1},{Loop,[0],1},{IF,[1,0],1},{Trigger,[0],2}]`).
+	 */
+	searchNodesBFS(connections: IConnections, sourceNode: string, maxDepth = -1): IConnectedNode[] {
+		const returnConns: IConnectedNode[] = [];
+
+		const type: NodeConnectionType = NodeConnectionTypes.Main;
+		let queue: IConnectedNode[] = [];
+		queue.push({
+			name: sourceNode,
+			depth: 0,
+			indicies: [],
+		});
+
+		const visited: { [key: string]: IConnectedNode } = {};
+
+		let depth = 0;
+		while (queue.length > 0) {
+			if (maxDepth !== -1 && depth > maxDepth) {
+				break;
+			}
+			depth++;
+
+			const toAdd = [...queue];
+			queue = [];
+
+			toAdd.forEach((curr) => {
+				if (visited[curr.name]) {
+					visited[curr.name].indicies = dedupe(visited[curr.name].indicies.concat(curr.indicies));
+					return;
+				}
+
+				visited[curr.name] = curr;
+				if (curr.name !== sourceNode) {
+					returnConns.push(curr);
+				}
+
+				if (
+					!connections.hasOwnProperty(curr.name) ||
+					!connections[curr.name].hasOwnProperty(type)
+				) {
+					return;
+				}
+
+				connections[curr.name][type].forEach((connectionsByIndex) => {
+					connectionsByIndex?.forEach((connection) => {
+						queue.push({
+							name: connection.node,
+							indicies: [connection.index],
+							depth,
+						});
+					});
+				});
+			});
+		}
+
+		return returnConns;
+	}
+
+	/**
+	 * Walks a non-main output chain (e.g. an AI agent's tool sub-nodes) down to the node that owns
+	 * the `main` input.
+	 *
+	 * 1:1 from `workflow.ts:687-738`. Both `sort()` calls are in the reference specifically to make
+	 * the choice deterministic when several non-main outputs exist; they are kept. The recursion
+	 * terminates because a node with no non-main connections returns itself.
+	 */
+	getParentMainInputNode(node: INode): INode {
+		if (node) {
+			const nodeType = this.nodeTypes.getByNameAndVersion(node.type, node.typeVersion);
+			if (!nodeType?.description) {
+				return node;
+			}
+			if (!(nodeType.description as { outputs?: unknown }).outputs) {
+				return node;
+			}
+
+			if (this.nodeHelpers?.getNodeOutputs === undefined) {
+				throw new Error(
+					'getParentMainInputNode needs NodeHelpers.getNodeOutputs (CD-05), but no Node LEGO ' +
+						'port was resolved. Install packages/node-lego or inject nodeHelpersPort.',
+				);
+			}
+
+			// The reference passes `nodeType.description`, not the node type itself
+			// (`workflow.ts:695`): `getNodeOutputs` reads `nodeTypeData.outputs`.
+			const outputs = this.nodeHelpers.getNodeOutputs(
+				this,
+				node,
+				nodeType.description as { outputs?: unknown; [key: string]: unknown },
+			);
+			const nonMainConnectionTypes: NodeConnectionType[] = [];
+
+			for (const output of outputs) {
+				// The reference types both branches as NodeConnectionType; a bare string output is
+				// the short form of `{ type, displayName }`.
+				const type = (typeof output === 'string' ? output : output.type) as NodeConnectionType;
+				if (type !== NodeConnectionTypes.Main) {
+					nonMainConnectionTypes.push(type);
+				}
+			}
+
+			// Sort for deterministic behavior: prevents non-deterministic selection when multiple
+			// non-main outputs exist (AI agents with multiple tools). Object.keys() ordering
+			// can vary across runs, causing inconsistent first-choice selection.
+			nonMainConnectionTypes.sort();
+
+			if (nonMainConnectionTypes.length > 0) {
+				const nonMainNodesConnected: string[] = [];
+				const nodeConnections = this.connectionsBySourceNode[node.name];
+
+				for (const type of nonMainConnectionTypes) {
+					// Only include connection types that exist in actual execution data
+					if (nodeConnections?.[type]) {
+						const childNodes = this.getChildNodes(node.name, type);
+						if (childNodes.length > 0) {
+							nonMainNodesConnected.push(...childNodes);
+						}
+					}
+				}
+
+				if (nonMainNodesConnected.length) {
+					// Sort for deterministic behavior, then get first node
+					nonMainNodesConnected.sort();
+					const returnNode = this.getNode(nonMainNodesConnected[0]);
+					if (!returnNode) {
+						throw new ApplicationError(`Node "${nonMainNodesConnected[0]}" not found`);
+					}
+					return this.getParentMainInputNode(returnNode);
+				}
+			}
+		}
+
+		return node;
+	}
+
+	/**
+	 * Returns via which output of the parent-node and index the current node
+	 * they are connected.
+	 *
+	 * 1:1 from `workflow.ts:746-810`, including the BFS-over-destination-index walk and its
+	 * "optimized for performance — do not degrade" comment. Returning `undefined` for an
+	 * unconnected pair is part of the contract (pinned by the
+	 * `Merge <- Sparse (not connected)` and `Agent<-Tool default main` golden probes).
+	 */
+	getNodeConnectionIndexes(
+		nodeName: string,
+		parentNodeName: string,
+		type: NodeConnectionType = NodeConnectionTypes.Main,
+	): INodeConnection | undefined {
+		// This method has been optimized for performance. If you make any changes to it,
+		// make sure the performance is not degraded.
+		const parentNode = this.getNode(parentNodeName);
+		if (parentNode === null) {
+			return undefined;
+		}
+
+		const visitedNodes = new Set<string>();
+		const queue: string[] = [nodeName];
+
+		// Cache the connections by destination node to avoid reference lookups
+		const connectionsByDest = this.connectionsByDestinationNode;
+
+		while (queue.length > 0) {
+			const currentNodeName = queue.shift()!;
+
+			if (visitedNodes.has(currentNodeName)) {
+				continue;
+			}
+
+			visitedNodes.add(currentNodeName);
+
+			const typeConnections = connectionsByDest[currentNodeName]?.[type];
+			if (!typeConnections) {
+				continue;
+			}
+
+			for (
+				let typedConnectionIdx = 0;
+				typedConnectionIdx < typeConnections.length;
+				typedConnectionIdx++
+			) {
+				const connectionsByIndex = typeConnections[typedConnectionIdx];
+				if (!connectionsByIndex) {
+					continue;
+				}
+
+				for (
+					let destinationIndex = 0;
+					destinationIndex < connectionsByIndex.length;
+					destinationIndex++
+				) {
+					const connection = connectionsByIndex[destinationIndex];
+
+					if (parentNodeName === connection.node) {
+						return {
+							sourceIndex: connection.index,
+							destinationIndex,
+						};
+					}
+
+					if (!visitedNodes.has(connection.node)) {
+						queue.push(connection.node);
+					}
+				}
+			}
+		}
+
+		return undefined;
+	}
+
+	/**
+	 * Returns from which of the given nodes the workflow should get started from.
+	 *
+	 * 1:1 from `workflow.ts:817-864`. Three-stage search: single-candidate shortcut, then the first
+	 * trigger/poll node type, then `STARTING_NODE_TYPES` order. `MANUAL_CHAT_TRIGGER_LANGCHAIN_NODE_TYPE`
+	 * is skipped in stage 2. Note the final sort compares `STARTING_NODE_TYPES.indexOf(type)`,
+	 * which is `-1` for every unrelated type — so unknown types sort *first* and the subsequent
+	 * `includes` filter is what actually decides. Reproduced as written.
+	 */
+	__getStartNode(nodeNames: string[]): INode | undefined {
+		return resolveStartNodeOf(this.nodes, this.nodeTypes as unknown as NodeTypesLike, nodeNames);
+	}
+
+	/**
+	 * Returns the start node to start the workflow from.
+	 * 1:1 from `workflow.ts:866-890`.
+	 */
+	getStartNode(destinationNode?: string): INode | undefined {
+		return resolveStartNode(
+			this.nodes,
+			this.connectionsByDestinationNode,
+			this.nodeTypes as unknown as NodeTypesLike,
+			destinationNode,
 		);
 	}
 }

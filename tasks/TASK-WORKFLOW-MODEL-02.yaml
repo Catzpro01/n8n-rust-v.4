@@ -1,0 +1,123 @@
+id: TASK-WORKFLOW-MODEL-02
+agent: arena-worker
+lego: workflow
+module: workflow
+phase: 3
+track: "JavaScript/TypeScript reconstruction (docs/isolation/PHASE-3-OPENING-RECORD.md §2)"
+title: "Close the remaining frozen Workflow surface: traversal, start-node resolution and connection-index lookup"
+status: SUBMITTED_FOR_REVIEW
+authority: PROJECT_RULES.md §1, §3, §6 · contracts/workflow.contract.md §6 · docs/isolation/PHASE-3-OPENING-RECORD.md
+follows: TASK-WORKFLOW-MODEL-01
+
+objective: >
+  TASK-WORKFLOW-MODEL-01 reconstructed the Workflow aggregate's data surface (nodes map, checksum,
+  toJSON, rename) and recorded five frozen symbols as still missing. Reconstruct those remaining
+  seven members 1:1 against n8n 2.9.4 — getHighestNode, searchNodesBFS, getParentNodesByDepth,
+  getParentMainInputNode, getNodeConnectionIndexes, __getStartNode, getStartNode — and assert the
+  14 `wf.*` probes of the connection goldens that contracts/connection.contract.md §7 had assigned
+  to this LEGO but that packages/connection-lego never claimed.
+
+allowed_paths:
+  - packages/workflow-model-lego/**
+  - docs/isolation/LEGO-MASTER-MAP.md
+  - docs/isolation/CROSS-AGENT-ISSUES.md
+  - README.md
+  - results/TASK-WORKFLOW-MODEL-02.md
+  - tasks/TASK-WORKFLOW-MODEL-02.yaml
+
+forbidden_paths:
+  - reference/n8n/**                           # hash-pinned golden source
+  - crates/**                                  # Rust port track — not this task's track
+  - apps/**
+  - packages/workflow-lego/**                  # Phase-2 isolation unit
+  - packages/connection-lego/src/**            # consumed via port CD-02, never edited
+  - packages/node-lego/src/**                  # consumed via port CD-05, never edited
+  - tests/reference/**/expected.json           # oracles are read-only
+  - tests/reference/connection/**/case.json
+
+requires:
+  - contracts/workflow.contract.md
+  - contracts/connection.contract.md
+  - packages/connection-lego/dist/index.js     # port CD-02 target
+  - packages/node-lego/src/index.mjs           # port CD-05 target (getNodeOutputs)
+  - tests/reference/connection/0{1,2,3,4}-*/   # the 14 wf.* probes and their recorded expectations
+
+reconstruction:
+  - { from: "reference/n8n/packages/workflow/src/workflow.ts:491-570 (getHighestNode)", to: "packages/workflow-model-lego/src/workflow.ts:445" }
+  - { from: "reference/n8n/packages/workflow/src/workflow.ts:630-686 (searchNodesBFS)", to: "packages/workflow-model-lego/src/workflow.ts:542" }
+  - { from: "reference/n8n/packages/workflow/src/workflow.ts:620-622 (getParentNodesByDepth)", to: "packages/workflow-model-lego/src/workflow.ts:528" }
+  - { from: "reference/n8n/packages/workflow/src/workflow.ts:687-738 (getParentMainInputNode)", to: "packages/workflow-model-lego/src/workflow.ts:606" }
+  - { from: "reference/n8n/packages/workflow/src/workflow.ts:746-810 (getNodeConnectionIndexes)", to: "packages/workflow-model-lego/src/workflow.ts:684" }
+  - { from: "reference/n8n/packages/workflow/src/workflow.ts:817-864 (__getStartNode)", to: "packages/workflow-model-lego/src/workflow.ts:759" }
+  - { from: "reference/n8n/packages/workflow/src/workflow.ts:866-890 (getStartNode)", to: "packages/workflow-model-lego/src/workflow.ts:809" }
+  - { from: "reference/n8n/packages/workflow/src/utils.ts:477-479 (dedupe)", to: "packages/workflow-model-lego/src/utils.ts", lines: 9 }
+  - { from: "reference/n8n/packages/workflow/src/constants.ts:29-59 (STARTING_NODE_TYPES + 5 node-type constants)", to: "packages/workflow-model-lego/src/node-type-constants.ts", lines: 23 }
+  - { from: "reference/n8n/packages/workflow/src/interfaces.ts:3136 (IConnectedNode)", to: "packages/workflow-model-lego/src/interfaces.ts" }
+  - { from: "@n8n/errors ApplicationError (structural)", to: "packages/workflow-model-lego/src/errors.ts" }
+
+ports:
+  - id: CD-02
+    what: "getConnectedNodes / getChildNodes / getParentNodes / mapConnectionsByDestination"
+    provider: "packages/connection-lego"
+    resolution: "unchanged from TASK-WORKFLOW-MODEL-01 — runtime require of ../../connection-lego/dist/index.js, identity asserted by test"
+  - id: CD-05
+    what: "NodeHelpers.getNodeOutputs"
+    provider: "packages/node-lego (dependency-free ESM, main: src/index.mjs)"
+    resolution: >
+      packages/workflow-model-lego/src/node-port.ts resolves it by require('../../node-lego/src/index.mjs')
+      and caches it; resetNodeHelpersPort() is the test seam. The constructor parameter was renamed
+      nodeParametersPort -> nodeHelpersPort (the old name is kept as a deprecated alias) because the
+      port now carries more than getNodeParameters.
+    fidelity_note: >
+      The reference passes `nodeType.description`, NOT the node type: getNodeOutputs reads
+      `nodeTypeData.outputs` (packages/node-lego/src/connection-io.mjs:67, reference workflow.ts:702).
+      Passing the node type instead fails silently — the callee's dynamic-output branch throws, the
+      reference's try/catch swallows it, console.warn fires and outputs collapses to [].
+  - id: CD-05b
+    what: "NodeHelpers.getNodeParameters"
+    provider: "none on this branch"
+    resolution: >
+      Still a required injected port. It is not reconstructed in packages/node-lego (which exports
+      getNodeOutputs but not getNodeParameters) nor anywhere else. Recorded as ISSUE-027; the
+      conformance suite injects an identity stand-in and then PROVES by falsification that none of
+      the 14 probe expectations depend on it.
+
+acceptance:
+  - "tsc --strict builds with 0 errors"
+  - "14/14 wf.* golden probes reproduce the values recorded against the real n8n 2.9.4 runtime"
+  - "getNodeOutputs receives the node type's description, verified by an observed call, not by assumption"
+  - "the 14/14 claim is shown to be insensitive to the un-reconstructed getNodeParameters"
+  - "negative controls prove the oracle rejects plausible-but-wrong implementations"
+  - "no regression anywhere on the branch"
+
+verification:
+  workflow_model_lego: "package 52/52 (conformance.test.mjs 44/44 — was 26, +14 wf.* probes, +1 coverage assertion, +3 controls; disabled-graph.test.mjs 8/8 from TASK-DGRAPH-01)"
+  tsc_strict: "tsc -p tsconfig.json -> exit 0"
+  phase3_conformance: "42/42 CHECKS PASSED"
+  boundary_audit: "AUDIT RESULT: PASS (all edges documented)"
+  isolation_gate: "11/11 PASS · BEHAVIOR CHANGE: NONE DETECTED (G11 live subset 7/7)"
+  connection_lego: "52/52 PASS (unchanged)"
+  node_lego: "gate 7/7 PASS, conformance 45/45, differential 234 agree / 0 diverge"
+  persistence_lego: "6/6 PASS"
+  scheduler_lego: "6/6 PASS"
+  reference_harness: "18 PASS / 0 FAIL / 0 UNKNOWN (node tests/reference/harness/run.js — all three suites)"
+  fixtures_drift: "fixtures match the pinned reference: 8 checksum, 6 diff, 6 shape, 6 rename, 9 traversal cases"
+  verify_all: "npm run verify:all exit 0"
+
+notes:
+  - "The frozen Workflow surface of contracts/workflow.contract.md §6 is now fully reconstructed on the JS/TS track: no member remains unimplemented."
+  - "Reference quirks reproduced, not fixed: getHighestNode pushes self only when disabled === false and early-returns currentHighest when there is no incoming main edge; searchNodesBFS is level-synchronous and excludes the source from its own result while still marking it visited; getParentMainInputNode sorts twice for determinism and throws ApplicationError on a missing resolved child; getNodeConnectionIndexes reports the loop index, not the recorded index; __getStartNode stages 2 and 3 can never match under the golden harness's stub (node types are node names, never in STARTING_NODE_TYPES), so getStartNode(dest) reduces to nodes[getHighestNode(dest)[0]] — reproduced rather than repaired."
+  - "One invocation error of mine is corrected here for the record: tests/reference/harness/run.js filters on suite names (execution-data | expression | connection), not on a JSON path. Passing the fixtures path selects zero suites and prints 0 PASS / 0 FAIL / 0 UNKNOWN, which is not a failure signal."
+  - "packages/reconstructed-engine has no package.json by design; it is driven by the root script `npm run reconstructed-engine:test`. `npm --prefix packages/reconstructed-engine test` exits 254 with ENOENT and is not a valid check."
+
+merge_note: >
+  Concurrent peer TASK-DGRAPH-01 (`dbe9a75f`) landed `src/start-node-navigation.ts` covering
+  getHighestNode / __getStartNode / getStartNode as pure functions. Reconciled by delegation, not
+  duplication: the three class methods here now call those functions, and
+  `src/node-type-constants.ts` re-exports their two constants instead of redefining them. The
+  traversal exists once on the branch. Both suites are green together (52/52).
+
+id_note: >
+  Lane-scoped ID, continuing TASK-WORKFLOW-MODEL-01. Sequential numbers remain unusable on this
+  branch: peers took TASK-406..TASK-409 while task 01 was in flight. ISSUE-026 was likewise taken
+  by a peer while this task was in flight, so the getNodeParameters gap is recorded as ISSUE-027.

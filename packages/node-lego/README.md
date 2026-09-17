@@ -15,7 +15,7 @@ package makes that surface runnable.
 | `src/node-validation.mjs` | `validateNodeCredentials`, `isNodeConnected`, `isTriggerLikeNode` (`node-validation.ts`, whole file) |
 | `src/parameter-resolution.mjs` | `getNodeParameters` + the private dependency order (`getParameterDependencies`, `getParameterResolveOrder`) |
 | `src/type-validation.mjs` | `validateFieldType`, the `tryToParse*` parsers, `getValueDescription`, `jsonParse`, `isBinaryValue` (DELTA-04 injected date-time factory, DELTA-05 injected JS-object parser) |
-| `src/filter-parameter.mjs` | `validateFilterParameter` + `FilterError` (validation half of `filter-parameter.ts` only) |
+| `src/filter-parameter.mjs` | `validateFilterParameter` + `FilterError` (validation half) and `executeFilter`/`executeFilterCondition`/`arrayContainsValue` (execution half) |
 | `src/parameter-issues.mjs` | `getNodeParametersIssues`, `getParameterIssues`, `mergeIssues`, `getContext` — the parameter-issues engine |
 | `src/deep-copy.mjs` | `utils.ts` `deepCopy` (verbatim: `toJSON`-first, cycle-safe, plain-object clones) |
 | `src/expression-helpers.mjs` | `isExpression` (detection only — no evaluation) |
@@ -33,7 +33,7 @@ workflow validation.
 ## Verify
 
 ```bash
-npm test                 # 82 tests (node:test), no install step
+npm test                 # 93 tests (node:test), no install step
 node ../../tools/node-lego-differential.mjs   # needs: npm install in packages/workflow-lego
 node ../../tools/node-lego-gate.mjs           # gates N01…N07
 ```
