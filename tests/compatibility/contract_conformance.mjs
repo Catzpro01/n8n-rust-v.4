@@ -33,16 +33,29 @@ for (const c of CONTRACTS) {
 
 // --- golden fixtures -------------------------------------------------------
 const refDir = join(ROOT, 'tests', 'reference');
+// A directory whose name contains `-invalid` is a NEGATIVE fixture: it must be rejected by at
+// least one rule. Every other fixture is positive. A suite built only from positive cases cannot
+// fail, so it cannot be evidence — the negative cases are what make the rules falsifiable.
 const fixtures = readdirSync(refDir, { withFileTypes: true })
   .filter((d) => d.isDirectory() && existsSync(join(refDir, d.name, 'workflow.json')))
-  .map((d) => ({ name: d.name, wf: JSON.parse(readFileSync(join(refDir, d.name, 'workflow.json'), 'utf8')) }));
+  .map((d) => ({
+    name: d.name,
+    negative: d.name.includes('-invalid'),
+    wf: JSON.parse(readFileSync(join(refDir, d.name, 'workflow.json'), 'utf8')),
+  }));
 
 check('golden fixtures discovered', () => {
   assert(fixtures.length > 0, 'no golden fixtures found under tests/reference');
   return fixtures.map((f) => f.name).join(', ');
 });
 
-for (const { name, wf } of fixtures) {
+check('negative fixtures present', () => {
+  const negative = fixtures.filter((f) => f.negative);
+  assert(negative.length > 0, 'no `-invalid` fixture under tests/reference — the suite cannot fail');
+  return negative.map((f) => f.name).join(', ');
+});
+
+for (const { name, wf, negative } of fixtures) {
   // WorkflowContract schema
   check(`${name}: workflow schema`, () => {
     assert(typeof wf.id === 'string' && wf.id, 'id must be a non-empty string');
@@ -75,20 +88,25 @@ for (const { name, wf } of fixtures) {
     return `${seen.size} unique name(s)`;
   });
 
-  // ConnectionContract schema + DanglingConnections
+  // ConnectionContract schema + DanglingConnections + INVALID_CONNECTION_TYPE.
+  // Shape is always required — even a negative fixture must be well-formed JSON. The *rules*
+  // (dangling target, unknown connection type) are what a `-invalid` fixture may be built to
+  // violate, so they are collected here and reported; the blanket falsifiability check below is
+  // what insists every negative fixture violates at least one rule somewhere.
   check(`${name}: connection schema + DanglingConnections`, () => {
     const names = new Set(wf.nodes.map((n) => n.name));
+    const violations = [];
     let count = 0;
     for (const [src, byType] of Object.entries(wf.connections)) {
       assert(names.has(src), `connection source '${src}' is not a declared node`);
       for (const [type, outputs] of Object.entries(byType)) {
-        assert(CONN_TYPES.includes(type), `unknown connection type '${type}'`);
+        if (!CONN_TYPES.includes(type)) violations.push(`unknown connection type '${type}'`);
         assert(Array.isArray(outputs), `${src}.${type} must be an array of output slots`);
         outputs.forEach((slot, outIdx) => {
           assert(slot === null || Array.isArray(slot), `${src}.${type}[${outIdx}] must be array|null`);
           for (const c of slot ?? []) {
-            assert(names.has(c.node), `dangling connection ${src} -> '${c.node}'`);
-            assert(CONN_TYPES.includes(c.type), `unknown target connection type '${c.type}'`);
+            if (!names.has(c.node)) violations.push(`dangling connection ${src} -> '${c.node}'`);
+            if (!CONN_TYPES.includes(c.type)) violations.push(`unknown target connection type '${c.type}'`);
             assert(Number.isInteger(c.index) && c.index >= 0, `input index must be integer >= 0`);
             assert(outIdx >= 0, 'output index must be >= 0');
             count++;
@@ -96,28 +114,87 @@ for (const { name, wf } of fixtures) {
         });
       }
     }
+    if (negative) {
+      return violations.length
+        ? `rejected here too (${count} edge(s)): ${violations.join('; ')}`
+        : `no connection-rule violation (${count} edge(s)) — rejected by another rule`;
+    }
+    assert(violations.length === 0, violations.join('; '));
     return `${count} edge(s)`;
   });
 
-  // ValidationContract: CycleDetection
-  check(`${name}: CycleDetection (acyclic)`, () => {
+  // ValidationContract: CycleDetection — positive fixtures must be acyclic. A `-invalid` fixture
+  // violates *some* rule, not necessarily this one (`06-invalid-connection-type` is acyclic by
+  // design), so the blanket check below carries the falsifiability assertion.
+  check(`${name}: CycleDetection${negative ? ' (negative)' : ' (acyclic)'}`, () => {
     const adj = new Map(wf.nodes.map((n) => [n.name, []]));
     for (const [src, byType] of Object.entries(wf.connections))
       for (const outputs of Object.values(byType))
-        for (const slot of outputs) for (const c of slot ?? []) adj.get(src).push(c.node);
+        for (const slot of outputs) for (const c of slot ?? []) adj.get(src)?.push(c.node);
     const WHITE = 0, GREY = 1, BLACK = 2;
     const color = new Map(wf.nodes.map((n) => [n.name, WHITE]));
     const stack = [];
+    let cycle = null;
     const visit = (n) => {
       color.set(n, GREY); stack.push(n);
       for (const m of adj.get(n) ?? []) {
-        if (color.get(m) === GREY) throw new Error(`cycle detected: ${[...stack, m].join(' -> ')}`);
-        if (color.get(m) === WHITE) visit(m);
+        if (color.get(m) === GREY) { cycle = [...stack, m].join(' -> '); return; }
+        if (color.get(m) === WHITE) { visit(m); if (cycle) return; }
       }
       stack.pop(); color.set(n, BLACK);
     };
-    for (const n of color.keys()) if (color.get(n) === WHITE) visit(n);
+    for (const n of color.keys()) if (color.get(n) === WHITE && !cycle) visit(n);
+    if (negative) return cycle ? `correctly rejected: ${cycle}` : 'acyclic — rejected by another rule';
+    assert(!cycle, `cycle detected: ${cycle}`);
     return 'acyclic';
+  });
+}
+
+// --- negative fixtures must actually be rejected ---------------------------
+// Each `-invalid` fixture has to fail at least one rule. Without this, renaming a fixture to
+// `-invalid` would exempt it from every assertion and the suite would get weaker while reporting
+// more checks.
+for (const { name, wf } of fixtures.filter((f) => f.negative)) {
+  check(`${name}: negative fixture is falsifiable`, () => {
+    const names = new Set(wf.nodes.map((n) => n.name));
+    const reasons = [];
+
+    for (const [src, byType] of Object.entries(wf.connections)) {
+      if (!names.has(src)) reasons.push(`unknown source '${src}'`);
+      for (const [type, outputs] of Object.entries(byType)) {
+        if (!CONN_TYPES.includes(type)) reasons.push(`unknown connection type '${type}'`);
+        for (const slot of outputs)
+          for (const c of slot ?? []) {
+            if (!names.has(c.node)) reasons.push(`dangling ${src} -> '${c.node}'`);
+            if (!CONN_TYPES.includes(c.type)) reasons.push(`unknown target type '${c.type}'`);
+          }
+      }
+    }
+
+    const seen = new Set();
+    for (const n of wf.nodes)
+      if (seen.has(n.name)) reasons.push(`duplicate name '${n.name}'`);
+      else seen.add(n.name);
+
+    const adj = new Map(wf.nodes.map((n) => [n.name, []]));
+    for (const [src, byType] of Object.entries(wf.connections))
+      for (const outputs of Object.values(byType))
+        for (const slot of outputs) for (const c of slot ?? []) adj.get(src)?.push(c.node);
+    const color = new Map(wf.nodes.map((n) => [n.name, 0]));
+    const stack = [];
+    const visit = (n) => {
+      color.set(n, 1); stack.push(n);
+      for (const m of adj.get(n) ?? []) {
+        if (color.get(m) === 1) { reasons.push(`cycle ${[...stack, m].join(' -> ')}`); return; }
+        if (color.get(m) === 0) { visit(m); if (reasons.some((r) => r.startsWith('cycle'))) return; }
+      }
+      stack.pop(); color.set(n, 2);
+    };
+    for (const n of color.keys())
+      if (color.get(n) === 0 && !reasons.some((r) => r.startsWith('cycle'))) visit(n);
+
+    assert(reasons.length > 0, `NEGATIVE fixture satisfies every rule — it proves nothing`);
+    return `rejected by: ${reasons.join('; ')}`;
   });
 }
 
@@ -259,6 +336,22 @@ if (!PHASE3) {
     return `PASS at ${String(record.headCommit).slice(0, 8)} via ${record.runner} (${record.generatedAt})`;
   });
 }
+
+// The frontend constraint is absolute and is NOT relaxed by Phase 3.
+check('editor-ui remains untouched by the Rust port', () => {
+  const offenders = [];
+  const walk = (dir) => {
+    if (!existsSync(dir)) return;
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      const p = join(dir, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (e.name.endsWith('.rs') || e.name === 'Cargo.toml') offenders.push(p.slice(ROOT.length + 1));
+    }
+  };
+  walk(join(ROOT, 'packages', 'editor-ui'));
+  assert(offenders.length === 0, `Rust artifacts in the UI tree: ${offenders.join(', ')}`);
+  return 'no Rust sources under packages/editor-ui';
+});
 
 const passed = results.filter((r) => r.ok).length;
 console.log('=== [AGENT 5] CONTRACT CONFORMANCE (offline) ===');

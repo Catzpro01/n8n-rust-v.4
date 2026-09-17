@@ -41,6 +41,11 @@ pub enum WorkflowError {
     /// Reference `UserError` for restricted names.
     #[error("Node name \"{name}\" is a restricted name.")]
     RestrictedNodeName { name: String },
+    /// The reference dereferences `this.nodes[nodeName]` unguarded, so an unknown name raises a
+    /// `TypeError` rather than returning a value (`workflow.ts:498`, `getHighestNode`).
+    /// Fixture `tests/reference/start-node/fixtures.json` case D-14 pins this.
+    #[error("Cannot read properties of undefined (reading 'disabled') — no node named \"{name}\"")]
+    UnknownNode { name: String },
 }
 
 impl WorkflowError {
@@ -48,6 +53,7 @@ impl WorkflowError {
     pub fn error_name(&self) -> &'static str {
         match self {
             WorkflowError::RestrictedNodeName { .. } => "UserError",
+            WorkflowError::UnknownNode { .. } => "TypeError",
         }
     }
 }

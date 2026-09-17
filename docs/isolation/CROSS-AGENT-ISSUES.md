@@ -1039,3 +1039,102 @@ destroy their work. Agent 5 documents and reassigns; it does not fix other agent
    `f8da35180669`.
 
 **Status:** CLOSED (2026-09-17 by Orchestrator) — Relocated `node-model/index.ts` to `docs/isolation/node-barrel.ts` and removed from `reference/`. Reference integrity returned to 15,050 files.
+
+---
+
+## ISSUE-019 — `serde_json` was silently sorting every JSON key in the port (HIGH, found and fixed)
+
+**Found by:** Agent 5, while writing the `INVALID_CONNECTION_TYPE` fixture test.
+**Status:** **FIXED** (2026-09-17) — `Cargo.toml:29`.
+
+### What was wrong
+
+The workspace declared `serde_json = "1.0"`. Without the `preserve_order` feature, `serde_json::Map`
+is a `BTreeMap`, so **every** `serde_json::from_str::<Value>()` in the port re-sorted the JSON keys
+alphabetically before the value ever reached our `IndexMap`s. Measured, not inferred — deserialising
+
+```json
+{"main": …, "ai_magic": …, "zzz_last": …, "aaa_first": …}
+```
+
+yielded `["aaa_first", "ai_magic", "main", "zzz_last"]` instead of document order, deterministically
+across 5 runs in 3 separate processes.
+
+That matters because the reference builds these maps with plain JS objects and reads them back with
+`Object.entries(...)` — insertion order, always. Anything order-observable was therefore wrong:
+`getOrderedConnectedNodes`, `getHighestNode`'s parent walk, `toJSON`, and the error order the
+validation contract specifies.
+
+### Proof it was real, and proof the fix works
+
+| | before | after |
+| :-- | :-- | :-- |
+| iteration over the probe map | `[aaa_first, ai_magic, main, zzz_last]` | `[main, ai_magic, zzz_last, aaa_first]` |
+| `invalid_connection_type_sites` on `06-invalid-connection-type` | `[Output(ai_magic), Target(ai_magic/ai_magic), Target(main/bogus)]` | `[Target(main/bogus), Output(ai_magic)]` — matches `workflow-rules.ts:78-107` |
+
+Note the feature is **`serde_json`'s**, not `indexmap`'s. `indexmap` 2.2.6 has no `preserve_order`
+feature at all — I first added it there, which was wrong, and reverted it.
+
+### Two latent bugs the fix exposed
+
+Enabling `preserve_order` turned two tests red. Both were real defects that the sorted map had been
+hiding, not regressions:
+
+1. **`checksum.rs` never implemented `sortObjectKeys`.** Its own doc comment said sorting "comes for
+   free" because `Value::Object` was a `BTreeMap`. The reference sorts explicitly
+   (`workflow-checksum.ts:38-57`, called at `:76`). With insertion order restored, every checksum
+   changed. `sort_object_keys` is now an explicit port, so the checksum no longer depends on a
+   cargo feature.
+2. **`BinaryData` was dropping fields.** It modelled only `data`/`mimeType`/`fileName`/
+   `fileExtension`; the reference emits `mimeType, fileType, fileExtension, data, fileName,
+   fileSize, bytes` (`tests/reference/execution-data/06-binary-reference/expected.json`) and, in
+   filesystem mode, an `id` that `getBinaryDataBuffer` needs. A `#[serde(flatten)] extra` plus the
+   three missing fields now keep the round trip lossless.
+
+`INode` had the same class of bug and was fixed alongside: `disabled: Option<bool>` was emitting
+`"disabled": null` for nodes that never had the key (`interfaces.ts:1303` makes it optional), and
+`typeVersion`/`position` rendered as `1.0`/`[240.0, 300.0]` where the reference writes `1`/`[240, 300]`.
+
+### Golden-fixture justification (4-part, as the gate requires)
+
+New fixture directories `tests/reference/04-disabled-node/`, `05-cyclic-invalid/`,
+`06-invalid-connection-type/`, and `tests/reference/start-node/`:
+
+1. **Evidence** — `node tests/reference/start-node/build-fixtures.mjs --check` → *"start-node
+   fixtures match the pinned reference: 14 cases"*; `workflow-rust/build-fixtures.mjs --check` →
+   *"fixtures match the pinned reference: 8 checksum, 6 diff, 6 shape, 6 rename, 9 traversal cases"*.
+   Both re-derived against the runtime installed by `scripts/setup-reference-runtime.sh`
+   (n8n-workflow 2.9.1 in `.runtime/`).
+2. **Reason** — no Rust test exercised `get_start_node`/`get_highest_node` at all, and there was no
+   negative fixture anywhere, so a rule hardcoded to accept everything would have passed.
+3. **Reference** — `reference/n8n/packages/workflow/src/workflow.ts:487-568` (`getHighestNode`),
+   `:817-891` (`__getStartNode`/`getStartNode`), `constants.ts:53-59` (`STARTING_NODE_TYPES`),
+   `interfaces.ts:2249-2269` (`NodeConnectionTypes`), `workflow-checksum.ts:38-77`.
+4. **Behaviour** — the fixtures pin the three `disabled` states (`=== false` for the seed,
+   `!== true` for a parent, `!disabled` on the single-node path), the `STARTING_NODE_TYPES` fallback
+   order, and the two `INVALID_CONNECTION_TYPE` sites in `Object.entries` order.
+
+### Gate movement
+
+| Check | Before | After |
+| :-- | :-- | :-- |
+| `contract_conformance.mjs` | 20/21, exit 1 | **40/40, exit 0** |
+| `boundary_audit.py` | FAIL (phase violation) | **PASS** |
+| `rust_conformance_audit.py` (new, Stage 2b) | did not exist | **PASS — 7/7 crates** |
+| `run_gate.sh --offline-only` | **BLOCKED** (exit 1) | **INCONCLUSIVE** (exit 2, live not run) |
+| `cargo test` via the offline rig | 39 passed | **74 passed / 0 failed** |
+
+Exit 2 is the designed outcome when the live 11/11 stage cannot run here (no docker); it is not a
+pass, and it is no longer a false red.
+
+### Also in this change
+
+* **ISSUE-014 defect 2 — CLOSED.** `conformance.rs` no longer does `if !path.exists() { return; }`;
+  a missing fixture is a hard panic. The audit enforces it statically (rule R4).
+* **ISSUE-012 P3 — CLOSED.** `INVALID_CONNECTION_TYPE` implemented and pinned by
+  `tests/reference/06-invalid-connection-type/`.
+* **ISSUE-017 — CLOSED.** `get_start_node`/`get_highest_node` rewritten against the reference and
+  pinned by 14 fixture cases; falsifiability shown by mutation (collapsing the D-04 asymmetry fails
+  at `D-04`; dropping the registry `disabled` check fails at `D-01`).
+* **Phase-3 record written** (`docs/isolation/PHASE-3-OPENING.md`); both Rust guards now key off it,
+  and a new check asserts `packages/editor-ui` still contains no Rust.

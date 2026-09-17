@@ -1,0 +1,617 @@
+{
+	"generatedAt": "2026-09-17T16:05:49.596Z",
+	"source": "reference runtime (n8n-workflow 2.9.1 — the 2.9.4 dependency set)",
+	"runtimeDir": "/home/user/n8n-rust-v.4/.runtime/node_modules",
+	"provenance": {
+		"package": "n8n-workflow",
+		"version": "2.9.1",
+		"referenceSource": "reference/n8n/packages/workflow/src @ b6dc2787c45677a29a9612cd27eb911302961a83",
+		"citedLines": [
+			"workflow.ts:498",
+			"workflow.ts:553",
+			"workflow.ts:824",
+			"workflow.ts:839",
+			"workflow.ts:853",
+			"constants.ts:53-59"
+		]
+	},
+	"startingNodeTypes": [
+		"n8n-nodes-base.manualTrigger",
+		"n8n-nodes-base.executeWorkflowTrigger",
+		"n8n-nodes-base.errorTrigger",
+		"n8n-nodes-base.evaluationTrigger",
+		"n8n-nodes-base.formTrigger"
+	],
+	"cases": [
+		{
+			"id": "D-01",
+			"note": "a DISABLED trigger is skipped by __getStartNode (workflow.ts:839 `if (node.disabled === true) continue`) — nothing else qualifies, so the result is undefined",
+			"triggerTypes": [
+				"n8n-nodes-base.manualTrigger"
+			],
+			"nodes": [
+				{
+					"id": "id-Manual Trigger",
+					"name": "Manual Trigger",
+					"type": "n8n-nodes-base.manualTrigger",
+					"typeVersion": 1,
+					"position": [
+						0,
+						0
+					],
+					"parameters": {},
+					"disabled": true
+				},
+				{
+					"id": "id-Code",
+					"name": "Code",
+					"type": "n8n-nodes-base.code",
+					"typeVersion": 1,
+					"position": [
+						0,
+						0
+					],
+					"parameters": {}
+				}
+			],
+			"connections": {
+				"Manual Trigger": {
+					"main": [
+						[
+							{
+								"node": "Code",
+								"type": "main",
+								"index": 0
+							}
+						]
+					]
+				}
+			},
+			"startNode": null
+		},
+		{
+			"id": "D-02",
+			"note": "the same workflow with the trigger ENABLED returns the trigger",
+			"triggerTypes": [
+				"n8n-nodes-base.manualTrigger"
+			],
+			"nodes": [
+				{
+					"id": "id-Manual Trigger",
+					"name": "Manual Trigger",
+					"type": "n8n-nodes-base.manualTrigger",
+					"typeVersion": 1,
+					"position": [
+						0,
+						0
+					],
+					"parameters": {}
+				},
+				{
+					"id": "id-Code",
+					"name": "Code",
+					"type": "n8n-nodes-base.code",
+					"typeVersion": 1,
+					"position": [
+						0,
+						0
+					],
+					"parameters": {}
+				}
+			],
+			"connections": {
+				"Manual Trigger": {
+					"main": [
+						[
+							{
+								"node": "Code",
+								"type": "main",
+								"index": 0
+							}
+						]
+					]
+				}
+			},
+			"startNode": "Manual Trigger"
+		},
+		{
+			"id": "D-03",
+			"note": "getHighestNode: a parent with `disabled: false` IS the highest (workflow.ts:553 `disabled !== true`)",
+			"triggerTypes": [],
+			"nodes": [
+				{
+					"id": "id-A",
+					"name": "A",
+					"type": "n8n-nodes-base.noOp",
+					"typeVersion": 1,
+					"position": [
+						0,
+						0
+					],
+					"parameters": {},
+					"disabled": false
+				},
+				{
+					"id": "id-End",
+					"name": "End",
+					"type": "n8n-nodes-base.noOp",
+					"typeVersion": 1,
+					"position": [
+						0,
+						0
+					],
+					"parameters": {}
+				}
+			],
+			"connections": {
+				"A": {
+					"main": [
+						[
+							{
+								"node": "End",
+								"type": "main",
+								"index": 0
+							}
+						]
+					]
+				}
+			},
+			"startNode": null,
+			"highestOf": "End",
+			"highestNodes": [
+				"A"
+			]
+		},
+		{
+			"id": "D-04",
+			"note": "ASYMMETRY: a parent that OMITS `disabled` is still the highest (`undefined !== true`), while as a starting node it is NOT its own highest (`undefined === false` is false, workflow.ts:498)",
+			"triggerTypes": [],
+			"nodes": [
+				{
+					"id": "id-A",
+					"name": "A",
+					"type": "n8n-nodes-base.noOp",
+					"typeVersion": 1,
+					"position": [
+						0,
+						0
+					],
+					"parameters": {}
+				},
+				{
+					"id": "id-End",
+					"name": "End",
+					"type": "n8n-nodes-base.noOp",
+					"typeVersion": 1,
+					"position": [
+						0,
+						0
+					],
+					"parameters": {}
+				}
+			],
+			"connections": {
+				"A": {
+					"main": [
+						[
+							{
+								"node": "End",
+								"type": "main",
+								"index": 0
+							}
+						]
+					]
+				}
+			},
+			"startNode": null,
+			"highestOf": "End",
+			"highestNodes": [
+				"A"
+			],
+			"highestOfSelf": "A",
+			"highestNodesOfSelf": []
+		},
+		{
+			"id": "D-05",
+			"note": "getHighestNode: `disabled: false` on a node with NO incoming connections makes it its own highest (workflow.ts:498-503 early return)",
+			"triggerTypes": [],
+			"nodes": [
+				{
+					"id": "id-Only",
+					"name": "Only",
+					"type": "n8n-nodes-base.noOp",
+					"typeVersion": 1,
+					"position": [
+						0,
+						0
+					],
+					"parameters": {},
+					"disabled": false
+				}
+			],
+			"connections": {},
+			"startNode": "Only",
+			"highestOf": "Only",
+			"highestNodes": [
+				"Only"
+			]
+		},
+		{
+			"id": "D-06",
+			"note": "getHighestNode: a node that OMITS `disabled` and has no incoming connections is NOT its own highest — the early return yields []",
+			"triggerTypes": [],
+			"nodes": [
+				{
+					"id": "id-Only",
+					"name": "Only",
+					"type": "n8n-nodes-base.noOp",
+					"typeVersion": 1,
+					"position": [
+						0,
+						0
+					],
+					"parameters": {}
+				}
+			],
+			"connections": {},
+			"startNode": "Only",
+			"highestOf": "Only",
+			"highestNodes": []
+		},
+		{
+			"id": "D-07",
+			"note": "a disabled node mid-chain is transparent: the walk continues past it to the enabled root",
+			"triggerTypes": [],
+			"nodes": [
+				{
+					"id": "id-A",
+					"name": "A",
+					"type": "n8n-nodes-base.noOp",
+					"typeVersion": 1,
+					"position": [
+						0,
+						0
+					],
+					"parameters": {}
+				},
+				{
+					"id": "id-B",
+					"name": "B",
+					"type": "n8n-nodes-base.noOp",
+					"typeVersion": 1,
+					"position": [
+						0,
+						0
+					],
+					"parameters": {},
+					"disabled": true
+				},
+				{
+					"id": "id-End",
+					"name": "End",
+					"type": "n8n-nodes-base.noOp",
+					"typeVersion": 1,
+					"position": [
+						0,
+						0
+					],
+					"parameters": {}
+				}
+			],
+			"connections": {
+				"A": {
+					"main": [
+						[
+							{
+								"node": "B",
+								"type": "main",
+								"index": 0
+							}
+						]
+					]
+				},
+				"B": {
+					"main": [
+						[
+							{
+								"node": "End",
+								"type": "main",
+								"index": 0
+							}
+						]
+					]
+				}
+			},
+			"startNode": null,
+			"highestOf": "End",
+			"highestNodes": [
+				"A"
+			]
+		},
+		{
+			"id": "D-08",
+			"note": "two parents, one disabled: only the enabled parent is reported",
+			"triggerTypes": [],
+			"nodes": [
+				{
+					"id": "id-P1",
+					"name": "P1",
+					"type": "n8n-nodes-base.noOp",
+					"typeVersion": 1,
+					"position": [
+						0,
+						0
+					],
+					"parameters": {},
+					"disabled": true
+				},
+				{
+					"id": "id-P2",
+					"name": "P2",
+					"type": "n8n-nodes-base.noOp",
+					"typeVersion": 1,
+					"position": [
+						0,
+						0
+					],
+					"parameters": {}
+				},
+				{
+					"id": "id-End",
+					"name": "End",
+					"type": "n8n-nodes-base.noOp",
+					"typeVersion": 1,
+					"position": [
+						0,
+						0
+					],
+					"parameters": {}
+				}
+			],
+			"connections": {
+				"P1": {
+					"main": [
+						[
+							{
+								"node": "End",
+								"type": "main",
+								"index": 0
+							}
+						]
+					]
+				},
+				"P2": {
+					"main": [
+						[
+							{
+								"node": "End",
+								"type": "main",
+								"index": 0
+							}
+						]
+					]
+				}
+			},
+			"startNode": null,
+			"highestOf": "End",
+			"highestNodes": [
+				"P2"
+			]
+		},
+		{
+			"id": "D-09",
+			"note": "single disabled node: the `nodeNames.length === 1` shortcut requires `!node.disabled` (workflow.ts:824), and no fallback qualifies → undefined",
+			"triggerTypes": [],
+			"nodes": [
+				{
+					"id": "id-Only",
+					"name": "Only",
+					"type": "n8n-nodes-base.noOp",
+					"typeVersion": 1,
+					"position": [
+						0,
+						0
+					],
+					"parameters": {},
+					"disabled": true
+				}
+			],
+			"connections": {},
+			"startNode": null
+		},
+		{
+			"id": "D-10",
+			"note": "STARTING_NODE_TYPES fallback skips disabled entries (workflow.ts:853) and picks the next one",
+			"triggerTypes": [],
+			"nodes": [
+				{
+					"id": "id-F",
+					"name": "F",
+					"type": "n8n-nodes-base.formTrigger",
+					"typeVersion": 1,
+					"position": [
+						0,
+						0
+					],
+					"parameters": {},
+					"disabled": true
+				},
+				{
+					"id": "id-E",
+					"name": "E",
+					"type": "n8n-nodes-base.evaluationTrigger",
+					"typeVersion": 1,
+					"position": [
+						0,
+						0
+					],
+					"parameters": {}
+				}
+			],
+			"connections": {},
+			"startNode": "E"
+		},
+		{
+			"id": "D-11",
+			"note": "STARTING_NODE_TYPES order decides (constants.ts:53-59): evaluationTrigger precedes formTrigger; scheduleTrigger/cron are NOT in the list",
+			"triggerTypes": [],
+			"nodes": [
+				{
+					"id": "id-S",
+					"name": "S",
+					"type": "n8n-nodes-base.scheduleTrigger",
+					"typeVersion": 1,
+					"position": [
+						0,
+						0
+					],
+					"parameters": {}
+				},
+				{
+					"id": "id-F",
+					"name": "F",
+					"type": "n8n-nodes-base.formTrigger",
+					"typeVersion": 1,
+					"position": [
+						0,
+						0
+					],
+					"parameters": {}
+				},
+				{
+					"id": "id-E",
+					"name": "E",
+					"type": "n8n-nodes-base.evaluationTrigger",
+					"typeVersion": 1,
+					"position": [
+						0,
+						0
+					],
+					"parameters": {}
+				}
+			],
+			"connections": {},
+			"startNode": "E"
+		},
+		{
+			"id": "D-12",
+			"note": "getStartNode(destination): highest nodes empty → the destination itself is the only candidate, and the length-1 shortcut returns it even though its trigger parent is disabled",
+			"triggerTypes": [
+				"n8n-nodes-base.manualTrigger"
+			],
+			"nodes": [
+				{
+					"id": "id-Manual Trigger",
+					"name": "Manual Trigger",
+					"type": "n8n-nodes-base.manualTrigger",
+					"typeVersion": 1,
+					"position": [
+						0,
+						0
+					],
+					"parameters": {},
+					"disabled": true
+				},
+				{
+					"id": "id-Code",
+					"name": "Code",
+					"type": "n8n-nodes-base.code",
+					"typeVersion": 1,
+					"position": [
+						0,
+						0
+					],
+					"parameters": {}
+				}
+			],
+			"connections": {
+				"Manual Trigger": {
+					"main": [
+						[
+							{
+								"node": "Code",
+								"type": "main",
+								"index": 0
+							}
+						]
+					]
+				}
+			},
+			"startNode": null,
+			"destination": "Code",
+			"startNodeOfDestination": "Code",
+			"highestOf": "Code",
+			"highestNodes": []
+		},
+		{
+			"id": "D-13",
+			"note": "a node WITH incoming connections is never its own highest, even with `disabled: false` — currentHighest is only returned on the early exits",
+			"triggerTypes": [],
+			"nodes": [
+				{
+					"id": "id-A",
+					"name": "A",
+					"type": "n8n-nodes-base.noOp",
+					"typeVersion": 1,
+					"position": [
+						0,
+						0
+					],
+					"parameters": {}
+				},
+				{
+					"id": "id-B",
+					"name": "B",
+					"type": "n8n-nodes-base.noOp",
+					"typeVersion": 1,
+					"position": [
+						0,
+						0
+					],
+					"parameters": {},
+					"disabled": false
+				}
+			],
+			"connections": {
+				"A": {
+					"main": [
+						[
+							{
+								"node": "B",
+								"type": "main",
+								"index": 0
+							}
+						]
+					]
+				}
+			},
+			"startNode": null,
+			"highestOf": "B",
+			"highestNodes": [
+				"A"
+			]
+		},
+		{
+			"id": "D-14",
+			"note": "getHighestNode dereferences `this.nodes[nodeName].disabled` unguarded → TypeError for an unknown node (workflow.ts:498)",
+			"triggerTypes": [],
+			"nodes": [
+				{
+					"id": "id-A",
+					"name": "A",
+					"type": "n8n-nodes-base.noOp",
+					"typeVersion": 1,
+					"position": [
+						0,
+						0
+					],
+					"parameters": {}
+				}
+			],
+			"connections": {},
+			"startNode": "A",
+			"highestOfUnknown": "ZZZ",
+			"highestUnknownThrows": "TypeError"
+		}
+	]
+}

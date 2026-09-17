@@ -58,14 +58,44 @@ pub type WorkflowSettings = Value;
 /// depending on the host's `TZ`/`Intl` data.
 pub const DEFAULT_TIMEZONE: &str = "America/New_York";
 
-/// `n8n-nodes-base.start`-style triggers the reference treats as start nodes.
-pub const START_NODE_TYPES: [&str; 5] = [
-    "n8n-nodes-base.start",
+/// `STARTING_NODE_TYPES` — `reference/n8n/packages/workflow/src/constants.ts:53-59`, references
+/// resolved. The fallback loop of `__getStartNode` (`workflow.ts:846-858`) only accepts these five
+/// types; `scheduleTrigger` / `cron` / `start` are **not** members, and the list order is
+/// observable (it is the sort key). The previous port constant listed three types that are not in
+/// the reference list and omitted three that are — pinned by `tests/reference/start-node` case D-11.
+pub const STARTING_NODE_TYPES: [&str; 5] = [
     "n8n-nodes-base.manualTrigger",
     "n8n-nodes-base.executeWorkflowTrigger",
-    "n8n-nodes-base.scheduleTrigger",
-    "n8n-nodes-base.cron",
+    "n8n-nodes-base.errorTrigger",
+    "n8n-nodes-base.evaluationTrigger",
+    "n8n-nodes-base.formTrigger",
 ];
+
+/// `MANUAL_CHAT_TRIGGER_LANGCHAIN_NODE_TYPE` — `constants.ts:87`. `__getStartNode` skips it
+/// (`workflow.ts:834`).
+pub const MANUAL_CHAT_TRIGGER_LANGCHAIN_NODE_TYPE: &str = "@n8n/n8n-nodes-langchain.manualChatTrigger";
+
+/// The slice of the node-type registry `__getStartNode` consults (`workflow.ts:830-843`).
+///
+/// The registry itself is **host input**, not part of this LEGO (`contracts/workflow.contract.md`
+/// §4: "Node-type registry — host input (`HostContext.nodeTypes`), not a LEGO seam"), so the port
+/// takes it as an argument instead of owning it. Without a registry the trigger/poll loop of
+/// `__getStartNode` cannot run and only the `STARTING_NODE_TYPES` fallback applies.
+pub trait NodeTypes {
+    /// `(description.name, is_trigger, is_poll)` for a node type, mirroring
+    /// `nodeTypes.getByNameAndVersion(type, typeVersion)`.
+    fn describe(&self, node_type: &str, type_version: f64) -> Option<(String, bool, bool)>;
+}
+
+/// Registry that knows nothing — `getByNameAndVersion` returns `undefined` for every type.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct NoNodeTypes;
+
+impl NodeTypes for NoNodeTypes {
+    fn describe(&self, _node_type: &str, _type_version: f64) -> Option<(String, bool, bool)> {
+        None
+    }
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Workflow {
@@ -197,17 +227,20 @@ impl Workflow {
         get_connected_nodes(connections, node_name, &filter, depth, None)
     }
 
-    /// Reference `getStartNode(destinationNode?)`.
+    /// Reference `getStartNode(destinationNode?)` — `workflow.ts:865-891`.
     ///
-    /// Without a destination: the first start-type node in node order, else the first node.
-    /// With a destination: the reference walks up through non-disabled parents (`getHighestNode`)
-    /// and falls back to the destination itself; the port does the same walk and then applies the
-    /// same "first start-type node" rule. The reference's additional node-type heuristics
-    /// (polling/webhook triggers, `disabled` handling) are **not** ported yet.
-    pub fn get_start_node(&self, destination_node: Option<&str>) -> Option<&INode> {
+    /// With a destination the reference walks up through `getHighestNode`, falls back to the
+    /// destination itself when that yields nothing, and — if `__getStartNode` finds no trigger —
+    /// returns the **first** candidate even when it is disabled (`workflow.ts:884`). Without a
+    /// destination there is no such fallback: `__getStartNode` returning nothing means `undefined`.
+    pub fn get_start_node(
+        &self,
+        destination_node: Option<&str>,
+        node_types: Option<&dyn NodeTypes>,
+    ) -> Result<Option<&INode>, WorkflowError> {
         let candidates: Vec<String> = match destination_node {
             Some(destination) => {
-                let mut names = self.get_highest_nodes(destination);
+                let mut names = self.get_highest_nodes(destination)?;
                 if names.is_empty() {
                     names.push(destination.to_string());
                 }
@@ -216,44 +249,148 @@ impl Workflow {
             None => self.node_keys(),
         };
 
-        let first_start = candidates
-            .iter()
-            .filter_map(|name| self.nodes.get(name))
-            .find(|node| START_NODE_TYPES.contains(&node.node_type.as_str()));
-        first_start.or_else(|| candidates.first().and_then(|name| self.nodes.get(name)))
-    }
-
-    /// Simplified `getHighestNode`: parents of `node_name` that are not disabled, recursively.
-    fn get_highest_nodes(&self, node_name: &str) -> Vec<String> {
-        let parents: Vec<String> = self
-            .get_parent_nodes(node_name, ConnectionTypeFilter::main(), -1)
-            .into_iter()
-            .filter(|name| {
-                self.nodes
-                    .get(name)
-                    .map(|node| node.disabled != Some(true))
-                    .unwrap_or(false)
-            })
-            .collect();
-
-        if parents.is_empty() {
-            return Vec::new();
+        if let Some(node) = self.select_start_node(&candidates, node_types)? {
+            return Ok(Some(node));
         }
 
-        let mut highest: Vec<String> = Vec::new();
-        for parent in parents {
-            let from_parent = self.get_highest_nodes(&parent);
-            if from_parent.is_empty() {
-                highest.push(parent);
-            } else {
-                for name in from_parent {
-                    if !highest.contains(&name) {
-                        highest.push(name);
+        // `workflow.ts:884` — only the destination branch falls back to the first candidate.
+        Ok(match destination_node {
+            Some(_) => candidates.first().and_then(|name| self.nodes.get(name)),
+            None => None,
+        })
+    }
+
+    /// Reference `__getStartNode(nodeNames)` — `workflow.ts:821-861`.
+    fn select_start_node(
+        &self,
+        node_names: &[String],
+        node_types: Option<&dyn NodeTypes>,
+    ) -> Result<Option<&INode>, WorkflowError> {
+        // `workflow.ts:825-829` — a single candidate is returned unless it is disabled.
+        // Note the loose test here (`!node.disabled`): an *omitted* key still qualifies,
+        // unlike the `=== true` / `=== false` tests below.
+        if node_names.len() == 1 {
+            if let Some(node) = self.nodes.get(&node_names[0]) {
+                if node.disabled != Some(true) {
+                    return Ok(Some(node));
+                }
+            }
+        }
+
+        // `workflow.ts:831-844` — first trigger/poll node in candidate order, skipping disabled.
+        if let Some(registry) = node_types {
+            for name in node_names {
+                let Some(node) = self.nodes.get(name) else {
+                    continue;
+                };
+                let Some((description_name, is_trigger, is_poll)) =
+                    registry.describe(&node.node_type, node.type_version)
+                else {
+                    continue;
+                };
+                if description_name == MANUAL_CHAT_TRIGGER_LANGCHAIN_NODE_TYPE {
+                    continue;
+                }
+                if (is_trigger || is_poll) && node.disabled != Some(true) {
+                    return Ok(Some(node));
+                }
+            }
+        }
+
+        // `workflow.ts:846-858` — every node sorted by its index in STARTING_NODE_TYPES
+        // (unknown types sort first with index -1, which is harmless because the loop below
+        // filters by membership), then the first enabled member of the list wins.
+        let mut sorted: Vec<&INode> = self.nodes.values().collect();
+        sorted.sort_by_key(|node| starting_node_type_rank(&node.node_type));
+        for node in sorted {
+            if STARTING_NODE_TYPES.contains(&node.node_type.as_str()) && node.disabled != Some(true)
+            {
+                return Ok(Some(node));
+            }
+        }
+
+        Ok(None)
+    }
+
+    /// Reference `getHighestNode(nodeName, nodeConnectionIndex?, checkedNodes?)` —
+    /// `workflow.ts:491-568`.
+    ///
+    /// Two asymmetries are reproduced on purpose (fixture cases D-04/D-05/D-06):
+    ///
+    /// * the **starting** node counts as its own highest only when `disabled === false`
+    ///   (`workflow.ts:498`), so a node that *omits* the key does not;
+    /// * a **parent** counts when `disabled !== true` (`workflow.ts:553`), so a node that omits
+    ///   the key does.
+    ///
+    /// `currentHighest` is only ever returned from the early exits — a node with incoming `main`
+    /// connections never reports itself.
+    pub fn get_highest_node(&self, node_name: &str) -> Result<Vec<String>, WorkflowError> {
+        self.get_highest_node_at(node_name, None, &mut Vec::new())
+    }
+
+    fn get_highest_nodes(&self, node_name: &str) -> Result<Vec<String>, WorkflowError> {
+        self.get_highest_node(node_name)
+    }
+
+    fn get_highest_node_at(
+        &self,
+        node_name: &str,
+        node_connection_index: Option<usize>,
+        checked_nodes: &mut Vec<String>,
+    ) -> Result<Vec<String>, WorkflowError> {
+        // `workflow.ts:498` dereferences `this.nodes[nodeName].disabled` unguarded → TypeError.
+        let node = self.nodes.get(node_name).ok_or_else(|| WorkflowError::UnknownNode {
+            name: node_name.to_string(),
+        })?;
+
+        let mut current_highest: Vec<String> = Vec::new();
+        if node.disabled == Some(false) {
+            current_highest.push(node_name.to_string());
+        }
+
+        let Some(by_type) = self.connections_by_destination_node.get(node_name) else {
+            return Ok(current_highest);
+        };
+        let Some(slots) = by_type.get("main") else {
+            return Ok(current_highest);
+        };
+        if checked_nodes.contains(&node_name.to_string()) {
+            return Ok(current_highest);
+        }
+        checked_nodes.push(node_name.to_string());
+
+        let mut return_nodes: Vec<String> = Vec::new();
+        for (connection_index, slot) in slots.iter().enumerate() {
+            if let Some(wanted) = node_connection_index {
+                if wanted != connection_index {
+                    continue;
+                }
+            }
+            let Some(connections_in_slot) = slot else {
+                continue;
+            };
+            for connection in connections_in_slot {
+                if checked_nodes.contains(&connection.node) {
+                    continue;
+                }
+                // `workflow.ts:544` — dangling references are ignored.
+                let Some(parent) = self.nodes.get(&connection.node) else {
+                    continue;
+                };
+                let mut add_nodes =
+                    self.get_highest_node_at(&connection.node, None, checked_nodes)?;
+                if add_nodes.is_empty() && parent.disabled != Some(true) {
+                    add_nodes.push(connection.node.clone());
+                }
+                for name in add_nodes {
+                    if !return_nodes.contains(&name) {
+                        return_nodes.push(name);
                     }
                 }
             }
         }
-        highest
+
+        Ok(return_nodes)
     }
 
     pub fn get_timezone(&self) -> &str {
@@ -369,6 +506,15 @@ impl Workflow {
         }
         Value::Object(out)
     }
+}
+
+/// `STARTING_NODE_TYPES.indexOf(type)` — `-1` for non-members, exactly like JS.
+fn starting_node_type_rank(node_type: &str) -> i32 {
+    STARTING_NODE_TYPES
+        .iter()
+        .position(|candidate| *candidate == node_type)
+        .map(|index| index as i32)
+        .unwrap_or(-1)
 }
 
 fn timezone_for(settings: &WorkflowSettings) -> String {

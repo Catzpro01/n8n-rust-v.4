@@ -6,10 +6,16 @@
 //! recursively (`sortObjectKeys`; arrays keep their order), serialises with `JSON.stringify`
 //! and hashes the UTF-8 bytes as lowercase hex.
 //!
-//! In Rust the sorting comes for free: `serde_json::Value` objects are `BTreeMap`s, so
-//! serialising the payload sorts keys at every nesting level. Divergence to be aware of:
-//! JavaScript sorts keys by UTF-16 code units, Rust by UTF-8 bytes — identical for ASCII
-//! (all fixture data), different only for astral-plane keys.
+//! `sort_object_keys` is an explicit port of `sortObjectKeys`, **not** a shortcut that leans on
+//! `serde_json`'s map type. It used to be one: with the default `serde_json` features
+//! `Value::Object` is a `BTreeMap`, so serialising happened to emit sorted keys and the function
+//! could be omitted. That is a latent bug, not a feature — enabling `preserve_order` (which the
+//! port needs, because `Value::Object` must keep document order everywhere else:
+//! `getOrderedConnectedNodes`, `getHighestNode`, `toJSON`) switches the map to `IndexMap` and
+//! silently changed every checksum. Sorting is part of the algorithm, so it is written out.
+//!
+//! Divergence to be aware of: JavaScript sorts keys by UTF-16 code units, Rust by UTF-8 bytes —
+//! identical for ASCII (all fixture data), different only for astral-plane keys.
 
 use serde_json::{Map, Value};
 
@@ -41,9 +47,28 @@ pub fn checksum_payload(snapshot: &Value) -> Value {
 }
 
 pub fn calculate_workflow_checksum(snapshot: &Value) -> String {
-    let serialized = serde_json::to_string(&checksum_payload(snapshot))
+    let normalized = sort_object_keys(&checksum_payload(snapshot));
+    let serialized = serde_json::to_string(&normalized)
         .expect("a serde_json::Value always serialises");
     sha256_hex(serialized.as_bytes())
+}
+
+/// `sortObjectKeys` — `reference/n8n/packages/workflow/src/workflow-checksum.ts:38-57`.
+/// Recursively rebuilds every object with its keys sorted; arrays keep their order.
+pub fn sort_object_keys(value: &Value) -> Value {
+    match value {
+        Value::Array(items) => Value::Array(items.iter().map(sort_object_keys).collect()),
+        Value::Object(map) => {
+            let mut keys: Vec<&String> = map.keys().collect();
+            keys.sort();
+            let mut sorted = Map::new();
+            for key in keys {
+                sorted.insert(key.clone(), sort_object_keys(&map[key]));
+            }
+            Value::Object(sorted)
+        }
+        scalar => scalar.clone(),
+    }
 }
 
 pub fn sha256_hex(input: &[u8]) -> String {

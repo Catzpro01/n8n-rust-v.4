@@ -18,6 +18,16 @@ python3 tests/integration/boundary_audit.py || fail=1
 echo; echo "######## STAGE 2b: PHASE-3 RUST ACCEPTANCE (evidence-gated) ########"
 bash tools/phase3-rust-acceptance.sh || fail=1
 
+echo; echo "######## STAGE 2c: RUST CONFORMANCE AUDIT (offline, static) ########"
+# Static complement to 2b: 2b proves the recorded evidence is fresh, this proves the port is
+# structurally tied to the reference (every crate reads tests/reference, no silent skips, and at
+# least one negative fixture is exercised). See docs/isolation/PHASE-3-OPENING.md.
+if [ -d crates ] && [ -f docs/isolation/PHASE-3-OPENING.md ]; then
+  python3 tests/integration/rust_conformance_audit.py || fail=1
+else
+  echo "SKIPPED: no crates/ or no Phase-3 record — nothing to audit."
+fi
+
 echo; echo "######## STAGE 3: 11/11 LIVE REGRESSION GATE ########"
 if [ "$OFFLINE" = "1" ]; then
   echo "SKIPPED (--offline-only): live regression NOT RUN — gate cannot be declared VERIFIED."

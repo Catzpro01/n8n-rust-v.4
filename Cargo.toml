@@ -18,7 +18,15 @@ license = "Apache-2.0"
 
 [workspace.dependencies]
 serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
+# `preserve_order` is load-bearing. Without it `serde_json::Map` is a `BTreeMap`, so every
+# `serde_json::from_str::<Value>()` in the port silently re-sorts the JSON keys alphabetically
+# *before* the value ever reaches our `IndexMap`s. Proven: deserialising
+# `{"main":…,"ai_magic":…,"zzz_last":…,"aaa_first":…}` yielded
+# `[aaa_first, ai_magic, main, zzz_last]`, not the document order.
+# The reference builds these maps with plain JS objects and reads them back with
+# `Object.entries(...)` — insertion order, deterministically
+# (`reference/n8n/packages/workflow/src/workflow.ts:487-568`, `:1118-1146`).
+serde_json = { version = "1.0", features = ["preserve_order"] }
 thiserror = "1.0"
 anyhow = "1.0"
 petgraph = "0.6"
