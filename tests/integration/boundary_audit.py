@@ -127,14 +127,23 @@ def hidden_coupling():
                         hits.setdefault(kind, []).append(f"{rel}:{i}")
     return hits
 
-def rust_guard():
-    offenders = []
-    for base in ("crates", "apps"):
-        for dp, _dn, fn in os.walk(os.path.join(ROOT, base)):
-            for f in fn:
-                if f.endswith(".rs") or f == "Cargo.toml":
-                    offenders.append(os.path.relpath(os.path.join(dp, f), ROOT))
-    return offenders
+def cargo_workspace_guard():
+    """Return dangling root Cargo workspace members, if any.
+
+    Phase-3+ branches may carry the genesis Rust workspace, while Zero-Rust
+    archive branches may remove/archive it. The invariant for both modes is that
+    a root Cargo.toml must not point at missing crates.
+    """
+    manifest = os.path.join(ROOT, "Cargo.toml")
+    if not os.path.exists(manifest):
+        return [], "no root Cargo.toml (Zero-Rust archive mode)"
+    text = open(manifest, encoding="utf-8").read()
+    m = re.search(r"members\s*=\s*\[([\s\S]*?)\]", text)
+    if not m:
+        return [], "root Cargo.toml has no workspace members"
+    members = re.findall(r'"([^"]+)"', m.group(1))
+    missing = [member for member in members if not os.path.exists(os.path.join(ROOT, member, "Cargo.toml"))]
+    return missing, f"{len(members)} Cargo workspace member(s) valid"
 
 def main():
     if not os.path.isdir(SRC):
@@ -167,15 +176,15 @@ def main():
     for kind, locs in sorted(hits.items()):
         print(f"  {kind}: {len(locs)} hit(s) e.g. {locs[:3]}")
 
-    offenders = rust_guard()
-    print(f"\n-- Phase-2 Rust guard: {'VIOLATION ' + str(offenders) if offenders else 'clean (no .rs / Cargo.toml)'}")
+    dangling, rust_detail = cargo_workspace_guard()
+    print(f"\n-- Cargo workspace integrity: {'FAIL ' + str(dangling) if dangling else 'PASS — ' + rust_detail}")
 
     print("\n-------------------------------------------------------")
-    failed = bool(undocumented) or bool(offenders)
+    failed = bool(undocumented) or bool(dangling)
     if undocumented:
         print(f"BOUNDARY VIOLATION: {len(undocumented)} undocumented edge(s): {undocumented}")
-    if offenders:
-        print("PHASE VIOLATION: Rust introduced during Phase 2")
+    if dangling:
+        print(f"CARGO WORKSPACE VIOLATION: dangling member(s): {dangling}")
     print("AUDIT RESULT:", "FAIL" if failed else "PASS (all edges documented)")
     return 1 if failed else 0
 
