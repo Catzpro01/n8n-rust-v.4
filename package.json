@@ -12,6 +12,7 @@
     "isolation:extract": "node tools/workflow-isolation-extract.mjs",
     "localization:test": "node --test packages/workflow-lego/test/06-localization-runtime.test.ts",
     "localization:gate": "node tools/localization-gate.mjs",
+    "localization:inspect": "node tools/localization-inspect.mjs",
     "workflow-lego:build": "npm --prefix packages/workflow-lego run build",
     "workflow-lego:test": "bash scripts/run-lego-tests.sh"
   }

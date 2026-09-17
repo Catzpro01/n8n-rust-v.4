@@ -1,0 +1,70 @@
+id: TASK-412-localization-surface
+agent: agent-5
+lego: localization
+module: localization
+phase: 4d
+
+# Phase 4D — promote the native localization line (4A/4B/4C) onto the package surface and make it
+# runnable from a checkout. Purely additive: no dictionary content changes, no reference path, no Rust.
+
+allowed_paths:
+  - packages/workflow-lego/src/index.ts
+  - packages/workflow-lego/test/06-localization-runtime.test.ts   # additive tests L13
+  - tools/localization-gate.mjs                                   # additive checks G8/G9
+  - tools/localization-inspect.mjs
+  - contracts/localization.contract.md                            # §11.6 rewrite
+  - docs/isolation/localization.md
+  - docs/isolation/evidence/localization-gate.json
+  - package.json
+  - tasks/TASK-412-localization-surface.yaml
+  - results/TASK-412-localization-surface.md
+
+forbidden_paths:
+  - crates/**
+  - apps/**
+  - reference/n8n/**
+  - packages/workflow-lego/src/settings-localization-adapter.ts   # UI-owned phase 4A: must NOT be promoted
+  - packages/workflow-lego/src/backend-localization-service.ts    # content unchanged (dictionaries frozen)
+
+requires:
+  - contracts/localization.contract.md
+  - docs/isolation/localization.md
+
+subject_branch: arena/01a0b105-n8n-rust-v-4
+base: d876cdd4                     # Phase 4C tip
+
+operations:
+  - name: read_file
+    args: { path: packages/workflow-lego/src/index.ts }
+  - name: write_file
+    args: { path: packages/workflow-lego/src/index.ts, change: "additive export block for localization-runtime + backend-localization-service" }
+  - name: write_file
+    args: { path: tools/localization-inspect.mjs, kind: cli }
+  - name: edit_file
+    args: { path: tools/localization-gate.mjs, change: "G8 surface parity, G9 runnable surface" }
+  - name: edit_file
+    args: { path: packages/workflow-lego/test/06-localization-runtime.test.ts, change: "L13 surface promotion" }
+  - name: run_tests
+    args: { cmd: "node --test packages/workflow-lego/test/06-localization-runtime.test.ts", expect: "33/33 PASS" }
+  - name: run_gate
+    args: { cmd: "node tools/localization-gate.mjs", expect: "9/9 PASS" }
+  - name: run_cli
+    args: { cmd: "node tools/localization-inspect.mjs --lang jv --key node.error", expect: "jv (ltr)  node.error = Gagal dilakokake" }
+  - name: run_cli
+    args: { cmd: "node tools/localization-inspect.mjs --lang de --key settings.title", expect: "exit 2 + unsupported locale message" }
+  - name: run_gate
+    args: { cmd: "npm run isolation:check", expect: "4/4 PASS (surface promotion adds no dependency edge)" }
+
+verification:
+  module_tests: 33/33 PASS (L1–L13)
+  localization_gate: 9/9 PASS (G1–G9)
+  promoted_symbols: 23 runtime + 12 type (UI module excluded)
+  isolation_checks: boundary PASS · kernel PASS · port-surface PASS · reference 15050 / f8da35180669
+  rust_added: none
+  reference_modified: none
+
+merge_condition:
+  - localization_gate_pass
+  - no_contract_violation
+  - no_reference_modification
+  - ui_module_not_promoted

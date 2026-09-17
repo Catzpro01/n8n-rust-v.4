@@ -20,7 +20,7 @@
  * exit:  0 = PASS, 1 = FAIL
  */
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -33,6 +33,8 @@ import {
 	dictionaryParity,
 	directionOf,
 } from '../packages/workflow-lego/src/localization-runtime.ts';
+import * as runtimeModule from '../packages/workflow-lego/src/localization-runtime.ts';
+import * as serviceModule from '../packages/workflow-lego/src/backend-localization-service.ts';
 import {
 	NATIVE_DICTIONARIES,
 	NativeLocalizationService,
@@ -158,6 +160,85 @@ check('G7', 'engine status overlay covers every locale and status', () => {
 	return `${Object.keys(STATUS_MESSAGE_KEYS).length} statuses x ${localeKeys.length} locales`;
 });
 
+/* --- G8/G9: Phase 4D surface promotion + runnable CLI ----------------------------------- */
+
+/** Parse the `export { … } from '<specifier>'` blocks of a TS file (text-level, like gate 5). */
+const exportBlocks = (source) => {
+	const blocks = [];
+	const re = /export\s*\{([\s\S]*?)\}\s*from\s*'([^']+)'/g;
+	let match;
+	while ((match = re.exec(source)) !== null) {
+		const names = match[1]
+			.split(',')
+			.map((n) => n.trim())
+			.filter((n) => n !== '')
+			.map((n) => ({ text: n, typeOnly: n.startsWith('type '), name: n.replace(/^type\s+/, '') }));
+		blocks.push({ names, specifier: match[2] });
+	}
+	return blocks;
+};
+
+const indexSource = readFileSync(join(ROOT, 'packages', 'workflow-lego', 'src', 'index.ts'), 'utf8');
+const blocks = exportBlocks(indexSource);
+const promoted = new Set();
+for (const block of blocks) {
+	if (block.specifier === './localization-runtime' || block.specifier === './backend-localization-service') {
+		for (const entry of block.names) promoted.add(`${entry.typeOnly ? 'type ' : ''}${entry.name}`);
+	}
+}
+const runtimeValues = Object.keys(runtimeModule).filter((k) => k !== 'default');
+const serviceValues = Object.keys(serviceModule).filter((k) => k !== 'default');
+const promotedTypes = [...promoted].filter((n) => n.startsWith('type ')).map((n) => n.slice(5));
+
+/** Declared type/class symbols of a module, read from its source (no tsc in this sandbox). */
+const declaredTypes = (file) => {
+	const source = readFileSync(join(ROOT, 'packages', 'workflow-lego', 'src', file), 'utf8');
+	return new Set(
+		[...source.matchAll(/export\s+(?:declare\s+)?(?:abstract\s+)?(?:interface|type|class|enum)\s+([A-Za-z0-9_]+)/g)].map(
+			(m) => m[1],
+		),
+	);
+};
+
+check('G8', 'Phase 4D: index.ts re-exports every runtime symbol of the localization line', () => {
+	for (const name of [...runtimeValues, ...serviceValues]) {
+		assert(promoted.has(name), `src/index.ts does not re-export runtime symbol "${name}"`);
+	}
+	assert(
+		promoted.has('Direction') || promoted.has('type Direction'),
+		'src/index.ts does not re-export the Direction type',
+	);
+	assert(
+		![...blocks].some((b) => b.specifier.includes('settings-localization-adapter')),
+		'the UI-phase module (settings-localization-adapter) must not enter the package surface',
+	);
+	const declared = new Set([...declaredTypes('localization-runtime.ts'), ...declaredTypes('backend-localization-service.ts')]);
+	for (const name of promotedTypes) {
+		assert(declared.has(name), `src/index.ts promotes type "${name}" which the module does not declare`);
+	}
+	return `${runtimeValues.length + serviceValues.length} runtime + ${promotedTypes.length} type symbols promoted`;
+});
+
+check('G9', 'the promoted surface is runnable from a checkout (localization-inspect)', () => {
+	const cli = join(ROOT, 'tools', 'localization-inspect.mjs');
+	const run = spawnSync(process.execPath, [cli, '--json', '--lang', 'jv', '--key', 'node.error'], {
+		cwd: ROOT,
+		encoding: 'utf8',
+	});
+	assert(run.status === 0, `inspect exited ${run.status}: ${run.stderr}`);
+	const payload = JSON.parse(run.stdout);
+	assert(payload.locale === 'jv', `locale ${payload.locale}`);
+	assert(payload.value === NATIVE_DICTIONARIES['jv']['node.error'], `value ${payload.value}`);
+	assert(payload.direction === 'ltr', `direction ${payload.direction}`);
+	const bad = spawnSync(process.execPath, [cli, '--lang', 'de', '--key', 'settings.title'], {
+		cwd: ROOT,
+		encoding: 'utf8',
+	});
+	assert(bad.status === 2, `an unsupported locale must exit 2, got ${bad.status}`);
+	assert(/unsupported locale "de"/.test(bad.stderr), `stderr: ${bad.stderr}`);
+	return `${runtimeValues.length} symbols loadable, unknown locale rejected with exit 2`;
+});
+
 /* --- evidence + verdict ----------------------------------------------------------------- */
 const failed = checks.filter((c) => !c.ok);
 const record = {
@@ -171,6 +252,7 @@ const record = {
 	],
 	localizationTestFile: 'packages/workflow-lego/test/06-localization-runtime.test.ts',
 	locales: [...SUPPORTED_LOCALE_CODES],
+	promotedSymbols: [...promoted].sort(),
 	suite: suiteSummary,
 	checks,
 	verdict: failed.length === 0 ? 'PASS' : 'FAIL',

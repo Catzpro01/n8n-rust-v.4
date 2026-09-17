@@ -3,7 +3,8 @@
 **Scope:** native multi-language runtime for the reconstructed backend.
 **Reference:** n8n `2.9.4` (`reference/n8n`, upstream `b6dc2787c45677a29a9612cd27eb911302961a83`) — **unmodified**.
 **Contract:** [`contracts/localization.contract.md`](../../contracts/localization.contract.md)
-**Status:** `TESTED` — 31/31 module tests, 7/7 gate checks, mutations M1–M4 detected.
+**Status:** `TESTED` — 33/33 module tests, 9/9 gate checks, mutations M1–M4 detected, surface promoted
+(Phase 4D).
 **Rust:** none (PROJECT_RULES #1).
 
 ---
@@ -14,7 +15,8 @@
 | :--- | :--- | :--- | :--- |
 | 4A | `settings-localization-adapter.ts` — which language the operator picked | agent-1 session | landed on `main` |
 | 4B | `backend-localization-service.ts` — catalog + 6 dictionaries + `translate()` | orchestrator commit `8f3f1af4` | landed on `main` |
-| **4C** | **`localization-runtime.ts`** — resolution → direction → interpolation → engine messages → diagnostics | **this session** | **TESTED** |
+| 4C | `localization-runtime.ts` — resolution → direction → interpolation → engine messages → diagnostics | this session | TESTED |
+| **4D** | **surface promotion** — `src/index.ts` re-exports the line; `tools/localization-inspect.mjs` makes it runnable | **this session** | **TESTED** |
 
 Phase 4A gave the project a two-language settings toggle, Phase 4B gave it six dictionaries and a
 lookup function. Neither could answer the questions an executing backend actually asks: *which*
@@ -27,6 +29,9 @@ that seam — and it is the first piece of the i18n line with machine-checked in
 `packages/workflow-lego/src/localization-runtime.ts` (no imports, pure TypeScript):
 
 ```text
+public surface (src/index.ts, Phase 4D)
+   │  re-exports 23 runtime + 12 type symbols (no new import edges)
+   ▼
 LOCALE_CATALOG ──► RESOLUTION_TABLE ──► normalizeLocale() ──► resolveLocale(explicit→source→fallback)
    (6 locales,        (codes+aliases)        (null, never        │
     aliases,                                  a guess)           ▼
@@ -51,7 +56,8 @@ Consumed through **ports only** (no imports, therefore no hidden LEGO edge):
 
 **Owns:** catalog table, alias resolution, resolution chain, direction, interpolation, engine status
 messages, diagnostics.
-**Does not own:** dictionaries (4B), settings persistence (4A), UI bundles (`editor-ui`,
+**Does not own:** dictionaries (4B), settings persistence (4A — see the surface note: the UI module
+is deliberately *not* promoted), UI bundles (`editor-ui`,
 `@n8n/i18n` — untouched), reference behavior (no n8n module is replaced or wrapped), execution
 semantics (this module phrases outcomes, it never decides them).
 
@@ -72,8 +78,10 @@ manifest update — see contract §11.6.
 
 | Check | Command | Result |
 | :--- | :--- | :--- |
-| Module tests | `node --test packages/workflow-lego/test/06-localization-runtime.test.ts` | **31/31 PASS** (L1–L12) |
-| Localization gate | `node tools/localization-gate.mjs` | **7/7 PASS** → `docs/isolation/evidence/localization-gate.json` |
+| Module tests | `node --test packages/workflow-lego/test/06-localization-runtime.test.ts` | **33/33 PASS** (L1–L13) |
+| Localization gate | `node tools/localization-gate.mjs` | **9/9 PASS** → `docs/isolation/evidence/localization-gate.json` |
+| Surface parity (4D) | gate check G8 | PASS — 23 runtime + 12 type symbols promoted, UI module excluded |
+| Runnable surface (4D) | gate check G9 / `npm run localization:inspect` | PASS — `--lang jv --key node.error` → `Gagal dilakokake`; unknown locale exits 2 |
 | Catalog ↔ 4B drift | gate check G2/G3 | PASS — 6 locales, 9 keys each, field-identical |
 | Dictionary parity | gate check G4 | PASS — 0 missing, 0 extra, 0 empty |
 | RTL | gate check G6 | `ar:rtl`, the other five `ltr` |
@@ -129,8 +137,9 @@ Reversible: the inverse `git mv` restores the Rust track untouched.
 
 ## 6. Next
 
-1. **Phase 4D (proposed):** expose the line through `src/index.ts` + port-surface manifest, and
-   switch the API envelope / execution logger to `runtime.snapshot()`.
+1. **Phase 4E (proposed):** consume the promoted surface from the API envelope and the execution
+   logger — `runtime.snapshot()` into run data, `runtime.tStatus()` into per-node status lines —
+   then extend the dictionaries beyond the 9 product keys.
 2. Extend the dictionaries: `packages/workflow-lego/src/backend-localization-service.ts` ships 9
    product keys; engine strings live in this module's overlay, so a dictionary refresh cannot silently
    un-translate a status (contract §4.6).

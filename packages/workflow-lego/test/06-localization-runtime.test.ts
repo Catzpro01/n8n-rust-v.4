@@ -381,6 +381,41 @@ test('L11 an unmapped status is diagnosed instead of inventing text', () => {
 	assert.deepEqual([...rt.getMissingKeys()], ['status.skipped']);
 });
 
+/* --- L13 surface promotion (Phase 4D) --------------------------------------------------- */
+
+test('L13 index.ts re-exports the localization line and keeps the UI module out', async () => {
+	const { readFileSync } = await import('node:fs');
+	const { join } = await import('node:path');
+	const { fileURLToPath } = await import('node:url');
+	// test/ -> package root
+	const pkg = join(fileURLToPath(import.meta.url), '..', '..');
+	const indexSource = readFileSync(join(pkg, 'src', 'index.ts'), 'utf8');
+	for (const name of Object.keys(await import('../src/localization-runtime.ts'))) {
+		assert.match(
+			indexSource,
+			new RegExp(`\\b${name}\\b`),
+			`src/index.ts does not re-export runtime symbol "${name}"`,
+		);
+	}
+	for (const name of Object.keys(await import('../src/backend-localization-service.ts'))) {
+		assert.match(indexSource, new RegExp(`\\b${name}\\b`), `src/index.ts does not re-export "${name}"`);
+	}
+	assert.doesNotMatch(
+		indexSource,
+		/from\s*'\.\/settings-localization-adapter'/,
+		'the UI-phase module must stay out of the package surface (PROJECT_RULES #2)',
+	);
+});
+
+test('L13 the modules are loadable directly, with no build step', async () => {
+	const runtime = await import('../src/localization-runtime.ts');
+	const service = await import('../src/backend-localization-service.ts');
+	assert.equal(typeof runtime.createLocalizationRuntime, 'function');
+	assert.equal(typeof service.NativeLocalizationService.translate, 'function');
+	const rt = runtime.createLocalizationRuntime({ dictionaries: service.NativeLocalizationService });
+	assert.equal(rt.t('settings.title', undefined, 'zh'), '设置');
+});
+
 /* --- L12 determinism -------------------------------------------------------------------- */
 
 test('L12 runtimes are instance-scoped: no cross-talk, no static locale leak', () => {

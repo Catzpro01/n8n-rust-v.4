@@ -7,9 +7,11 @@
 | Reference | n8n 2.9.4 (`reference/n8n`) for **boundary discipline only**: no runtime behavior of the reference is replaced or re-interpreted here |
 | Implementation | `packages/workflow-lego/src/localization-runtime.ts` (Phase 4C), with `settings-localization-adapter.ts` (4A) and `backend-localization-service.ts` (4B) as injected collaborators |
 | Blueprint | `docs/isolation/localization.md` |
-| Tests | `packages/workflow-lego/test/06-localization-runtime.test.ts` — **31/31 PASS** |
-| Gate / evidence | `tools/localization-gate.mjs` → `docs/isolation/evidence/localization-gate.json` — **7/7 PASS** |
-| Status | **TESTED** (no reference path touched, UI untouched, opt-in module) |
+| Tests | `packages/workflow-lego/test/06-localization-runtime.test.ts` — **33/33 PASS** |
+| Gate / evidence | `tools/localization-gate.mjs` → `docs/isolation/evidence/localization-gate.json` — **9/9 PASS** |
+| Surface | promoted in Phase 4D: `src/index.ts` re-exports 23 runtime + 12 type symbols (`LocalizationRuntime`, `LOCALE_CATALOG`, `NativeLocalizationService`, …) |
+| Runnable view | `node tools/localization-inspect.mjs [--lang … --key …]` |
+| Status | **TESTED** (no reference path touched, UI untouched) |
 
 ## 1. Purpose
 
@@ -148,6 +150,10 @@ No filesystem, database or network access at any point; the object is a plain in
    names and dictionary contents must not change. This module never edits them at runtime.
 5. **Erasable-syntax TypeScript:** no enums, namespaces or parameter properties, so the module runs
    unchanged under `node --test` (Node ≥ 22) and under `tsc`.
-6. **LEGO surface untouched:** `src/index.ts` and the port-surface manifest are intentionally
-   unchanged in Phase 4C (the 4A/4B modules are equally unexported); promoting the line into the
-   public surface is a separate phase with its own manifest update.
+6. **Surface promotion (Phase 4D).** `src/index.ts` re-exports every runtime symbol of
+   `localization-runtime.ts` and `backend-localization-service.ts`, and those two modules import
+   nothing — so the promotion adds surface without adding a dependency edge (the port-surface
+   manifest is unchanged because the *consumed* port set is unchanged). The UI-owned Phase 4A module
+   (`settings-localization-adapter.ts`) is deliberately **not** promoted (PROJECT_RULES #2).
+   Gate checks G8 (symbol/type parity, UI module excluded) and G9 (the surface is runnable from a
+   checkout via `tools/localization-inspect.mjs`) enforce this on every run.

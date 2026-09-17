@@ -10,6 +10,9 @@
  * ENTRY POINTS
  *   ./model-surface  the public surface downstream LEGOs may consume
  *   ./ports          the declared outer boundary (contract + adapters)
+ *   ./localization-runtime + ./backend-localization-service
+ *                    the native multi-language line (Phase 4C), promoted to the
+ *                    package surface in Phase 4D — see contracts/localization.contract.md
  *
  * RUST: NOT STARTED. This package currently binds to the pinned reference
  * runtime; it does not replace it.
@@ -38,6 +41,59 @@ export type {
 	WorkflowLegoPorts,
 } from './ports/contracts';
 export { NODE_CONNECTION_TYPES, STARTING_NODE_TYPES, DEFAULT_TIMEZONE } from './kernel/snapshots';
+
+/**
+ * NATIVE LOCALIZATION LINE (Phase 4A/4B/4C, promoted to the surface in Phase 4D).
+ *
+ *   settings-localization-adapter  — where the operator's choice lives (Phase 4A)
+ *   backend-localization-service   — the canonical catalog and the six dictionaries (Phase 4B)
+ *   localization-runtime           — resolution chain, direction, interpolation, engine messages (Phase 4C)
+ *
+ * BOUNDARY: the runtime has no imports and consumes the service through a port, so promoting the
+ * line adds symbols to the package surface without adding a single dependency edge. The UI module
+ * (Phase 4A) is intentionally NOT re-exported: `settings-localization-adapter` presents editor-facing
+ * labels, and PROJECT_RULES #2 keeps every UI concern in the untouched upstream bundle.
+ * Contract: contracts/localization.contract.md (§11.6).
+ */
+export {
+	ENGINE_STATUS_OVERLAY,
+	FALLBACK_LOCALE,
+	LOCALE_CATALOG,
+	LocalizationRuntime,
+	STATUS_MESSAGE_KEYS,
+	SUPPORTED_LOCALE_CODES,
+	UnsupportedLocaleError,
+	createLocalizationRuntime,
+	describeLocale,
+	dictionaryParity,
+	directionOf,
+	firstResolvingSource,
+	fromConstant,
+	fromEnvironment,
+	fromSettingsState,
+	hasUnfilledPlaceholder,
+	interpolate,
+	isSupportedLocale,
+	mergeOverlays,
+	normalizeLocale,
+	type DictionaryParityReport,
+	type DictionaryPort,
+	type Direction,
+	type ExecutionStatus,
+	type InterpolationParams,
+	type LocaleDescriptor,
+	type LocaleSourcePort,
+	type LocalizationOptions,
+	type LocalizationSnapshot,
+	type SettingsStatePort,
+} from './localization-runtime';
+export {
+	NATIVE_DICTIONARIES,
+	NativeLocalizationService,
+	SUPPORTED_LOCALES,
+	type LocaleMetadata,
+	type SupportedLocale,
+} from './backend-localization-service';
 
 /** Provenance of the isolation layer itself. */
 export const LEGO_PROVENANCE = {

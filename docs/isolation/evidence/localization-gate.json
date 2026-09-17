@@ -1,6 +1,6 @@
 {
   "gate": "phase-4c-native-localization",
-  "generatedAt": "2026-09-17T20:26:01.052Z",
+  "generatedAt": "2026-09-17T20:29:13.027Z",
   "node": "v22.22.3",
   "modules": [
     "packages/workflow-lego/src/settings-localization-adapter.ts (phase 4A)",
@@ -16,20 +16,57 @@
     "zh",
     "ru"
   ],
+  "promotedSymbols": [
+    "ENGINE_STATUS_OVERLAY",
+    "FALLBACK_LOCALE",
+    "LOCALE_CATALOG",
+    "LocalizationRuntime",
+    "NATIVE_DICTIONARIES",
+    "NativeLocalizationService",
+    "STATUS_MESSAGE_KEYS",
+    "SUPPORTED_LOCALES",
+    "SUPPORTED_LOCALE_CODES",
+    "UnsupportedLocaleError",
+    "createLocalizationRuntime",
+    "describeLocale",
+    "dictionaryParity",
+    "directionOf",
+    "firstResolvingSource",
+    "fromConstant",
+    "fromEnvironment",
+    "fromSettingsState",
+    "hasUnfilledPlaceholder",
+    "interpolate",
+    "isSupportedLocale",
+    "mergeOverlays",
+    "normalizeLocale",
+    "type DictionaryParityReport",
+    "type DictionaryPort",
+    "type Direction",
+    "type ExecutionStatus",
+    "type InterpolationParams",
+    "type LocaleDescriptor",
+    "type LocaleMetadata",
+    "type LocaleSourcePort",
+    "type LocalizationOptions",
+    "type LocalizationSnapshot",
+    "type SettingsStatePort",
+    "type SupportedLocale"
+  ],
   "suite": {
     "command": "node --test packages/workflow-lego/test/06-localization-runtime.test.ts",
-    "tests": 31,
-    "pass": 31,
+    "tests": 33,
+    "pass": 33,
     "fail": 0,
     "exitCode": 0,
-    "durationMs": 246
+    "durationMs": 522
   },
   "checks": [
     {
       "id": "G1",
       "name": "localization test suite passes",
       "ok": true,
-      "detail": "31/31 PASS in 246ms"
+      "detail": "33/33 PASS in 522ms"
     },
     {
       "id": "G2",
@@ -66,6 +103,18 @@
       "name": "engine status overlay covers every locale and status",
       "ok": true,
       "detail": "5 statuses x 6 locales"
+    },
+    {
+      "id": "G8",
+      "name": "Phase 4D: index.ts re-exports every runtime symbol of the localization line",
+      "ok": true,
+      "detail": "23 runtime + 12 type symbols promoted"
+    },
+    {
+      "id": "G9",
+      "name": "the promoted surface is runnable from a checkout (localization-inspect)",
+      "ok": true,
+      "detail": "20 symbols loadable, unknown locale rejected with exit 2"
     }
   ],
   "verdict": "PASS",
