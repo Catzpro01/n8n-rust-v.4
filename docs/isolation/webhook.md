@@ -286,3 +286,74 @@ Agent 4 golden tests: `tests/reference/agent-4/webhook/`
 * The response for an unsupported HTTP method is a **500**, not 405. Preserve it.
 * `findAccessControlOptions` reads `workflow.nodes` (draft), not
   `activeVersion.nodes` — pre-existing upstream quirk, documented not fixed.
+
+---
+
+## 8. Phase 5 — the webhook layer as a verified port
+
+The Phase 4 engine (`packages/reconstructed-engine/src/webhook-engine.ts`, 105 lines) plus an inline
+`InternalWebhookEngine` in the facade guessed the webhook behaviour: it keyed rows by
+`${method}:${webhookPath}`, threw a made-up `'There is a conflict with one of the webhooks.'`, matched
+dynamic paths by `path.includes(webhookId)`, and never composed a path the way the CLI does. Nothing
+compared any of it against n8n.
+
+### 8.1 The port
+
+| Reference source | Ported symbols |
+|---|---|
+| `n8n-workflow` `node-helpers.ts` | `getNodeWebhookPath`, `getNodeWebhookUrl` |
+| `n8n-workflow` `errors/webhook-path-taken.error.ts` | `WebhookPathTakenError` (level `warning`) |
+| `cli/src/webhooks/webhook.service.ts` | `WebhookRegistry` (`findStaticWebhook`, `findDynamicWebhook`, `findWebhook` = `findCached`, `getWebhookMethods`, `storeWebhook`, `deleteWorkflowWebhooks`), `isDynamicPath`, `getWebhookPath`, `collectNodeWebhooks` (= `getNodeWebhooks`) |
+| `@n8n/db` `webhook-entity.ts` | `staticSegmentsOf`, `isDynamicWebhookPath`, cache keys `webhook:${method}-${uniquePath}` |
+| `cli/src/webhooks/webhook-request-sanitizer.ts` | `sanitizeWebhookRequest` |
+| `cli/src/webhooks/webhook-on-received-response-extractor.ts` | `extractWebhookOnReceivedResponse` |
+| `cli/src/webhooks/webhook-response-headers.ts` | `WebhookResponseHeaders` |
+| `cli/src/errors/response-errors/webhook-not-found.error.ts` | `webhookNotFoundErrorMessage`, `webhookNotFoundPayload` |
+
+The facade now uses `WebhookRegistry` (the inline copy is gone) and composes webhook paths with
+`getNodeWebhookPath`, so an activated webhook node registers under exactly the path the CLI would
+compute.
+
+### 8.2 Two evidence classes (and why)
+
+`n8n-workflow@2.9.1` ships `getNodeWebhookPath` / `getNodeWebhookUrl` / `WebhookPathTakenError`, so
+those are compared against the **executing** build (W02/W03/W04 — 1,728 path and URL calls plus the
+error shape). The registry, sanitizer and response helpers live in the CLI module, which needs DI,
+TypeORM and Redis and cannot be imported offline; for those the gate carries a **transcription of the
+reference source** and requires both implementations to agree over the corpus (W05/W06). The evidence
+file records which check belongs to which class — no check claims an executed oracle it does not have.
+
+### 8.3 Surprising reference semantics now pinned
+
+- `WebhookService.storeWebhook` **upserts** on (method, webhookPath) — it never throws. The "path
+  taken" error belongs to the activation conflict check (`WebhookPathTakenError`, level `warning`).
+- Dynamic matching requires the request segment count to equal the stored `pathLength`
+  (`otherSegments.length`), then compares the stored **static segments as a set** (not positionally),
+  preferring the row with the most static segments; a `:var`-only row matches anything as a fallback.
+- `findCached` caches **static hits only**, under `webhook:${method}-${requestPath}`.
+- `getNodeWebhookUrl` overrides a requested `isFullPath` for `:param` paths when the node has a
+  `webhookId`; a leading `/` is trimmed first.
+- `webhookNotFoundErrorMessage` **mutates the caller's method array** (`pop()`), and the
+  "did you mean" message only appears when an http method was supplied.
+- `getNodeWebhooks` skips a webhook only when the *description* field is the literal `true`
+  (`ignoreRestartWebhooks`), and a disabled node registers nothing; `httpMethod` defaults to `GET`
+  and an unsaved workflow uses `__UNSAVED__`.
+- `WebhookResponseHeaders` lower-cases keys, silently drops `content-security-policy` and any value
+  `node:http` rejects — `set()` stores values untouched while `addFromObject` stringifies.
+
+### 8.4 Verification
+
+```bash
+npm run webhook:check      # W01..W07 → docs/isolation/evidence/webhook-lego-gate.json
+node --test packages/webhook-lego/test/*.test.mjs
+```
+
+Negative controls (injected, caught, reverted):
+
+| Injected defect | Caught by |
+|---|---|
+| `getNodeWebhookUrl` loses the `:var` → `isFullPath = false` rule | `W03` — 54/864 URL calls |
+| `getNodeWebhookPath` stops lower-casing + URL-encoding the node name | `W02` — 288/864 path calls |
+| `WebhookPathTakenError` level becomes `error` | `W04` — `level ("warning" vs "error")` |
+| dynamic matching becomes positional instead of set-based | `W05` — `findWebhook(GET, uuid-c/user/123/posts)` |
+| sanitizer keeps the `n8n-auth` cookie | `W06` — `sanitizeWebhookRequest #0` |

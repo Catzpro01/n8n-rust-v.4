@@ -9,6 +9,7 @@
 // `npm run connection:check`) and exposes it as `facade.connection`.
 import * as connectionPort from './connection-routing-engine.ts';
 import { STARTING_NODES, TriggerEngine, validateWorkflowHasTriggerLikeNode } from './trigger-engine.ts';
+import { WebhookRegistry, getNodeWebhookPath } from './webhook-engine.ts';
 
 export interface N8nReconstructedConfig {
   mode: 'production' | 'development' | 'test';
@@ -56,32 +57,6 @@ class InternalExecutionDataEngine {
       resultData: { runData: {}, lastNodeExecuted: undefined },
       startData: {},
     };
-  }
-}
-
-class InternalWebhookEngine {
-  webhooks = new Map<string, any>();
-
-  storeWebhook(data: any) {
-    const key = `${data.method}:${data.webhookPath}`;
-    if (this.webhooks.has(key)) throw new Error('There is a conflict with one of the webhooks.');
-    this.webhooks.set(key, data);
-    return data;
-  }
-
-  findWebhook(method: string, path: string) {
-    const exact = this.webhooks.get(`${method}:${path}`);
-    if (exact) return exact;
-    const candidates = [...this.webhooks.values()]
-      .filter((w: any) => w.method === method && path.includes(w.webhookId || ''))
-      .sort((a: any, b: any) => (b.pathLength || 0) - (a.pathLength || 0));
-    return candidates[0] || null;
-  }
-
-  deleteWebhooksByWorkflow(workflowId: string) {
-    for (const [key, wh] of this.webhooks.entries()) {
-      if (wh.workflowId === workflowId) this.webhooks.delete(key);
-    }
   }
 }
 
@@ -181,7 +156,8 @@ export class N8nReconstructedFacade {
 
   /** LEGO 07 · trigger — the reference-exact registry (no inline copy any more). */
   public readonly trigger: TriggerEngine;
-  public readonly webhook: InternalWebhookEngine;
+  /** LEGO 08 · webhook — the reference-exact registry (no inline copy any more). */
+  public readonly webhook: WebhookRegistry;
   public readonly scheduler: InternalSchedulerEngine;
   public readonly persistence: InternalPersistenceEngine;
   public readonly credentials: InternalCredentialsEngine;
@@ -189,7 +165,7 @@ export class N8nReconstructedFacade {
   private constructor(config: N8nReconstructedConfig) {
     this.config = config;
     this.trigger = new TriggerEngine();
-    this.webhook = new InternalWebhookEngine();
+    this.webhook = new WebhookRegistry();
     this.scheduler = new InternalSchedulerEngine();
     this.persistence = new InternalPersistenceEngine();
     this.credentials = new InternalCredentialsEngine();
@@ -335,10 +311,11 @@ export class N8nReconstructedFacade {
     const triggerResult = await this.trigger.addWorkflow(workflowId, workflow, 'activate');
     const webhooks = workflow.nodes?.filter((n: any) => n.type?.toLowerCase().includes('webhook')) || [];
     for (const whNode of webhooks) {
-      const path = whNode.parameters?.path || whNode.name.toLowerCase();
-      try {
-        this.webhook.storeWebhook({ webhookPath: path, method: whNode.parameters?.httpMethod || 'GET', node: whNode.name, workflowId });
-      } catch {}
+      // Path composition follows `NodeHelpers.getNodeWebhookPath` (workflow id + node name when the
+      // node has no `webhookId`, the webhook id when it has one).
+      const rawPath = String(whNode.parameters?.path ?? '').replace(/^\/+|\/+$/g, '');
+      const path = whNode.webhookId ? getNodeWebhookPath(workflowId, whNode, rawPath) : rawPath || whNode.name.toLowerCase();
+      this.webhook.storeWebhook({ webhookPath: path, method: whNode.parameters?.httpMethod || 'GET', node: whNode.name, workflowId, webhookId: whNode.webhookId });
     }
     const cronNodes = workflow.nodes?.filter((n: any) => n.type?.toLowerCase().includes('schedule') || n.type?.toLowerCase().includes('cron')) || [];
     for (const cronNode of cronNodes) {

@@ -1,6 +1,6 @@
 {
   "lego": "webhook",
-  "phase": "phase-4-verified",
+  "phase": "phase-5-integrated",
   "reference": {
     "pinnedVersion": "2.9.4",
     "pinnedCommit": "b6dc2787c45677a29a9612cd27eb911302961a83",
@@ -34,11 +34,31 @@
   },
   "doesNotOwn": {
     "items": [
-      { "artifact": "running the workflow", "owner": "execution", "reason": "WorkflowRunner.run" },
-      { "artifact": "webhook_entity storage engine", "owner": "persistence", "reason": "DB infra (table shape owned here)" },
-      { "artifact": "trigger/poll activation", "owner": "trigger", "reason": "ActiveWorkflows path" },
-      { "artifact": "node webhook() impl + node-level auth eval", "owner": "node", "reason": "INodeType.webhook in nodes-base" },
-      { "artifact": "/rest/* + editor SPA", "owner": "api", "reason": "API LEGO" }
+      {
+        "artifact": "running the workflow",
+        "owner": "execution",
+        "reason": "WorkflowRunner.run"
+      },
+      {
+        "artifact": "webhook_entity storage engine",
+        "owner": "persistence",
+        "reason": "DB infra (table shape owned here)"
+      },
+      {
+        "artifact": "trigger/poll activation",
+        "owner": "trigger",
+        "reason": "ActiveWorkflows path"
+      },
+      {
+        "artifact": "node webhook() impl + node-level auth eval",
+        "owner": "node",
+        "reason": "INodeType.webhook in nodes-base"
+      },
+      {
+        "artifact": "/rest/* + editor SPA",
+        "owner": "api",
+        "reason": "API LEGO"
+      }
     ]
   },
   "publicSurface": [
@@ -54,5 +74,24 @@
     "matchWebhook",
     "shouldSanitizeCookies",
     "TEST_WEBHOOK_TIMEOUT_MS"
-  ]
+  ],
+  "deviations": [
+    {
+      "id": "D-12",
+      "file": "packages/reconstructed-engine/src/webhook-engine.ts",
+      "owner": "Agent 4 (webhook LEGO); port + gate by Agent 3",
+      "description": "The reference CLI modules are DI + TypeORM + Redis bound and cannot be imported in the offline sandbox, so `webhook.service.ts` (registry matching), `webhook-request-sanitizer.ts`, `webhook-on-received-response-extractor.ts` and `webhook-response-headers.ts` are reconstructed as pure code and verified against a transcription of the reference source (tools/webhook-isolation-gate.mjs, W05/W06). The parts that DO exist in the pinned runtime \u2014 NodeHelpers.getNodeWebhookPath, NodeHelpers.getNodeWebhookUrl, WebhookPathTakenError, the node type constants \u2014 are compared against the executing n8n-workflow@2.9.1 build (W02/W03/W04). Both evidence classes are recorded in docs/isolation/evidence/webhook-lego-gate.json."
+    },
+    {
+      "id": "D-13",
+      "file": "packages/reconstructed-engine/src/webhook-engine.ts",
+      "owner": "Agent 4",
+      "description": "The registry keeps rows in memory instead of reading a TypeORM table through a Redis cache; WebhookResponseHeaders takes an injectable logger instead of Container.get(Logger); express Request/Response are duck-typed. WebhookService.storeWebhook upserts on (method, webhookPath) exactly like the reference \u2014 the 'path taken' error is raised by the activation conflict check (WebhookPathTakenError), not by the store."
+    }
+  ],
+  "evidence": {
+    "gate": "W01..W07 (tools/webhook-isolation-gate.mjs) \u2014 7/7 checks, 1,869 differential calls",
+    "suite": "packages/webhook-lego/test/*.test.mjs \u2014 18/18",
+    "runtime": ".runtime/node_modules/n8n-workflow@2.9.1 (executed oracle for the path/URL helpers + WebhookPathTakenError)"
+  }
 }

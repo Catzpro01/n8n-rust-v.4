@@ -1,0 +1,87 @@
+{
+  "generatedAt": "2026-09-17T22:04:21.181Z",
+  "phase": "phase-5-webhook",
+  "lego": "webhook",
+  "ports": [
+    "P-WEBHOOK-REGISTRY",
+    "P-WEBHOOK-PATH",
+    "P-WEBHOOK-RESPONSE"
+  ],
+  "evidenceClasses": {
+    "executedOracle": {
+      "package": "/home/user/n8n-rust-v.4/.runtime/node_modules/n8n-workflow",
+      "version": "2.9.1",
+      "checks": [
+        "W02",
+        "W03",
+        "W04",
+        "W05 (header validation)",
+        "W01 (constants)"
+      ]
+    },
+    "referenceTranscription": {
+      "source": "reference/n8n/packages/cli/src/webhooks/webhook.service.ts + webhook-request-sanitizer.ts + webhook-on-received-response-extractor.ts + errors/response-errors/webhook-not-found.error.ts",
+      "reason": "the CLI module needs DI/TypeORM/Redis and cannot be imported in the offline sandbox",
+      "checks": [
+        "W05 (registry matching)",
+        "W06"
+      ]
+    }
+  },
+  "checks": [
+    {
+      "id": "W01",
+      "title": "the port exports the reference surface",
+      "status": "PASS",
+      "detail": "16 exports (constants compared against the executed oracle)"
+    },
+    {
+      "id": "W02",
+      "title": "getNodeWebhookPath differential over node x path x mode matrix",
+      "status": "PASS",
+      "detail": "864 path calls identical (3 workflow ids x 4 nodes x 8 paths x 3^2 modes)"
+    },
+    {
+      "id": "W03",
+      "title": "getNodeWebhookUrl differential (base URL, slash trimming, `:var` rule)",
+      "status": "PASS",
+      "detail": "864 URL calls identical (3 base URLs x 3 workflow ids x 4 nodes x 8 paths x 3 modes)"
+    },
+    {
+      "id": "W04",
+      "title": "WebhookPathTakenError matches the executed reference class",
+      "status": "PASS",
+      "detail": "message, name, level (warning), hidden cause and prototype chain identical — \"The URL path that the \"Node X\" node uses is already taken. Please change it to something else.\""
+    },
+    {
+      "id": "W05",
+      "title": "registry matching differential vs the transcribed WebhookService",
+      "status": "PASS",
+      "detail": "92 registry calls identical (transcribed findStatic/findDynamic/findCached/getWebhookMethods over 9 rows x 14 requests)"
+    },
+    {
+      "id": "W06",
+      "title": "request/response helpers + getNodeWebhooks vs the transcription",
+      "status": "PASS",
+      "detail": "43 helper calls identical (sanitizer 6, on-received 5, not-found 5, getNodeWebhooks 9x2, response headers)"
+    },
+    {
+      "id": "W07",
+      "title": "Webhook LEGO unit suite PASS (packages/webhook-lego/test)",
+      "status": "PASS",
+      "detail": "node --test test/*.test.mjs → 18/18 PASS"
+    }
+  ],
+  "comparisons": {
+    "total": 1869,
+    "byCheck": {
+      "W02": 864,
+      "W03": 864,
+      "W04": 6,
+      "W05": 92,
+      "W06": 43
+    }
+  },
+  "differences": [],
+  "verdict": "PASS"
+}
