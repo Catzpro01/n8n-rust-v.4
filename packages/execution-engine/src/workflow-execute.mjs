@@ -784,15 +784,23 @@ export class WorkflowExecute {
 			this.status = 'success';
 		}
 
+		// workflow-execute.ts L2452-2461 getFullRunData() returns no `finished` field; the
+		// caller sets it only when the run neither errored nor is waiting (L2429-2440).
 		const run = {
 			status: this.status,
 			mode: this.mode,
 			startedAt,
 			stoppedAt: new Date(),
-			finished: this.status === 'success' && !this.runExecutionData.waitTill,
 			data: this.runExecutionData,
-			waitTill: this.runExecutionData.waitTill,
 		};
+
+		if (executionError !== undefined) {
+			run.data.resultData.error = executionError;
+		} else if (this.runExecutionData.waitTill) {
+			run.waitTill = this.runExecutionData.waitTill;
+		} else {
+			run.finished = true;
+		}
 
 		try {
 			await this.hooks.runHook('workflowExecuteAfter', [run]);
@@ -815,15 +823,28 @@ export class WorkflowExecute {
 /** Counts `main` outputs in a node description (`outputs` may be strings or objects). */
 export function getMainOutputCount(description = {}, node = null) {
 	const outputs = description?.outputs ?? ['main'];
-	let count = typeof outputs === 'string'
+	const declared = typeof outputs === 'string'
 		? (outputs === 'main' ? 1 : 0)
 		: outputs.filter((output) => (typeof output === 'string' ? output === 'main' : output?.type === 'main')).length;
 
-	if (node?.onError === 'continueErrorOutput' && count === 1) {
-		count = 2;
-	}
+	// NodeHelpers.getNodeOutputs (node-helpers.ts:1146-1181) appends the error output
+	// whenever onError === 'continueErrorOutput', so the routed output count is
+	// declared + 1 — not just "at least two" (a two-output node gets three).
+	return node?.onError === 'continueErrorOutput' ? declared + 1 : declared;
+}
 
-	return count;
+/** `NodeHelpers.getNodeOutputs` shape, used for assertions and debugging. */
+export function getNodeOutputs(description = {}, node = {}) {
+	const outputs = description.outputs ?? ['main'];
+	const list = (typeof outputs === 'string' ? [outputs] : outputs).map((output) =>
+		typeof output === 'string' ? { type: output } : { ...output },
+	);
+
+	if (node?.onError !== 'continueErrorOutput') return list;
+
+	if (list.length === 1) list[0].displayName = 'Success';
+
+	return [...list, { category: 'error', type: 'main', displayName: 'Error' }];
 }
 
 export { incomingConnectionIsEmpty };

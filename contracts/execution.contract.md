@@ -2,7 +2,7 @@
 
 **Derived from:** n8n 2.9.4 source — `packages/core/src/execution-engine/workflow-execute.ts`, `.../node-execution-context/*`, `packages/workflow/src/{workflow.ts,workflow-data-proxy.ts,errors/*,run-execution-data-factory.ts}`
 **Owner:** execution LEGO (Agent-1 scope, Phase 3 reconstruction)
-**Status:** IMPLEMENTED · TESTED (32/32)
+**Status:** IMPLEMENTED · TESTED (40/40)
 **Implementation:** `packages/execution-engine/src/*.mjs` (JavaScript / Node.js ESM, zero dependencies)
 **Rust:** none — this LEGO is JavaScript (`PROJECT_RULES.md` v2.9.4 §1). Since `docs/isolation/PHASE-3-OPENING-RECORD.md`,
 Rust is permitted for the port track only under `crates/**` + `apps/**`; gate `E03` enforces that confinement.
@@ -30,7 +30,9 @@ retry/error policy. Everything the loop consumes from other LEGOs is injected
 
 ## 3. Output
 
-* `IRun`-shaped result: `{ status: 'success' | 'error' | 'waiting', mode, startedAt, stoppedAt, finished, data: IRunExecutionData, waitTill? }`.
+* `IRun`-shaped result: `{ status: 'success' | 'error' | 'waiting', mode, startedAt, stoppedAt, data: IRunExecutionData }`,
+  plus `finished: true` **only** on a clean finish and `waitTill` **only** while waiting
+  (`getFullRunData` L2452-2461 returns neither; `workflow-execute.ts` L2429-2440 assigns one of them).
 * `data.resultData.runData[nodeName][runIndex]` — one `ITaskData` per run with
   `startTime`, `executionIndex`, `executionTime`, `source[]`, `executionStatus`, `data.main`, optional `error`.
 * `data.resultData.lastNodeExecuted`, `data.resultData.error`.
@@ -41,7 +43,7 @@ retry/error policy. Everything the loop consumes from other LEGOs is injected
 | Symbol | Module | Role |
 |---|---|---|
 | `WorkflowExecute` | workflow-execute.mjs | the execute loop (`run`, `processRunExecutionData`, `runNode`, `executeNode`, `ensureInputData`, `assignPairedItems`, `handleNodeErrorOutput`, `routeOutputData`) |
-| `LOOP_ERRORS`, `getMainOutputCount` | workflow-execute.mjs | pinned messages + main-output counting |
+| `LOOP_ERRORS`, `getMainOutputCount`, `getNodeOutputs` | workflow-execute.mjs | pinned messages + main-output counting (`getMainOutputCount(description, node)` counts the `continueErrorOutput` error output; `getNodeOutputs` returns the node-aware output list) |
 | `ExecuteContext` | node-execution-context.mjs | node execution context (`getInputData`, `getNodeParameter`, `getWorkflowDataProxy`, `helpers`) |
 | `returnJsonArray`, `normalizeItems`, `constructExecutionMetaData`, `copyInputItems`, `getParameterValue`, `NO_OP_LOGGER` | node-execution-context.mjs | helper surface visible to node code |
 | `WorkflowDataProxy`, `DataProxyDateTime`, `resolvePairedItemJson` | data-proxy.mjs | `$json/$node/$items/$input/…` |
@@ -88,10 +90,16 @@ retry/error policy. Everything the loop consumes from other LEGOs is injected
 
 ## 7. Known deltas vs. n8n 2.9.4 (explicit, not accidental)
 
-1. **Expression evaluation is a JavaScript subset.** `=`-prefixed values are evaluated with a
-   `new Function` scope carrying the data-proxy variables; the upstream JEXL sandbox
-   (`expression-sandboxing.ts`, prototype allow-lists) is **not** reconstructed yet. Do not point
-   this at untrusted workflows.
+1. **Expression evaluation is a bounded JavaScript subset, not the upstream sandbox.**
+   `=`-prefixed values are evaluated inside a fresh `node:vm` context (`src/expression-sandbox.mjs`,
+   covered by gate `E09`): a source scan rejects prototype/`constructor`/`__proto__` access,
+   restricted globals (`process`, `require`, `eval`, `Function`, `this`, …) and `import`/`class`/`with`;
+   host values cross a read-only membrane (prototype properties denied, mutating array/date methods
+   and every `set`/`delete`/`defineProperty` blocked) and each evaluation is bounded by
+   `timeoutMs` (default 100 ms) with code generation disabled. The upstream **JEXL / `@n8n/tournament`
+   AST sandbox** (`expression-sandboxing.ts`, `__sanitize`, `___n8n_data`, `DOLLAR_SIGN_ERROR`) is
+   still **not** reconstructed, so semantics are not upstream-equivalent — do not point this at
+   untrusted workflows expecting n8n parity.
 2. **No cancellation / `AbortController`**, no `executionTimeoutTimestamp` checks.
 3. **No engine requests** (AI agent pause/resume, `requests-response.ts`), no `subNodeExecutionResults`.
 4. **No partial execution** (`runPartialWorkflow2`, `partial-execution-utils/*`).
@@ -119,4 +127,5 @@ retry/error policy. Everything the loop consumes from other LEGOs is injected
 | routing to child nodes, multi-input waiting/join, destination filtering | node catalogue / node type registry contents |
 | retry policy, error strategy, error-output splitting, soft-failure detection | error message text of individual nodes |
 | node execution context surface + data proxy variables | expression sandboxing / JEXL semantics |
+| the bounded `node:vm` evaluator guard (`expression-sandbox.mjs`) | upstream AST rewriting (`@n8n/tournament`), JEXL semantics |
 | run-data factories used by the loop | persistence, pruning, queueing, webhooks, credentials, binary storage |
