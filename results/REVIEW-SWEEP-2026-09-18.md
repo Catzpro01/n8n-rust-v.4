@@ -117,3 +117,22 @@ connection 58/58 · workflow-model 52/52 · node 93/93 + differential 1609/0.
 | Result (owner) | Claim | Fresh re-run on merged tree | Verdict |
 | :--- | :--- | :--- | :--- |
 | `TASK-416-phase3-credentials-lego.md` | Credentials LEGO (cipher EVP_BytesToKey + AES-256-CBC wire format, Credentials model with frozen error strings, 22/22, gate 6/6, parity vs `tests/reference/agent-4/golden/credentials.golden.json`) | **22/22** fresh, **Credentials gate 6/6** (also green inside `verify:all` 13-lane run on this tip), lane touches `packages/credentials-lego` + contract + gate tool only | **APPROVE** |
+
+## Infra restore (2026-09-18, on `ef823058`) — live-verification lane G08–G10 red → green
+
+The sandbox re-provisions had left the pinned reference runtime (`.runtime/`, gitignored) absent, so
+`node tools/workflow-isolation-gate.mjs --skip-live` reported **ISOLATION FAILED (3 gates): G08, G09, G10**
+while the `verify:all` chain (which uses `isolation:check`, not the live gate) stayed green — a red lane
+hidden behind a different entry point. Restored via `scripts/setup-reference-runtime.sh`
+(n8n-workflow@2.9.1 + n8n-core@2.9.1 + n8n-nodes-base@2.9.1, ~75 s from the npm registry), then:
+
+- `npm run verify` (FULL live gate) → **exit 0, 10/10 PASS** — G06/G07 tsc builds, G08 unit suite,
+  **G09 BEFORE vs AFTER digest: BEHAVIOR CHANGE NONE — 252 section comparisons across 18 workflows,
+  0 differences (218 identical + 34 in declared port sections)**, G10 strict port mode.
+- Full matrix re-confirmed on the same tip: `verify:all` real exit 0 (13-lane chain) · activation
+  differential 65/0 · error-surface differential 4/14Δ/0 · engine differential 84/0 · conformance 42/42 ·
+  boundary PASS.
+
+The branch is now, for the first time since the re-provisions, verified end-to-end against the **real
+pinned runtime** (not only the offline/vendored lanes). Evidence refreshed:
+`docs/isolation/evidence/{gate-report,live-verification,model-digest.comparison}.json`.
