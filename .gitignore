@@ -23,3 +23,6 @@ packages/workflow-lego/.extract/
 reference/**/dist/
 reference/**/.turbo/
 reference/**/coverage/
+
+# runtime symlink created by packages/*/tools/ensure-runtime-link.mjs (symlink type escapes the dir-only rule above)
+packages/*/node_modules
