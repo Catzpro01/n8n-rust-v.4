@@ -2,7 +2,7 @@
  "$comment": "Agent-3 outbound messages, schema-matched to public.agent_messages (docs/supabase_migration.sql). NOT DELIVERED: same transport caveat as the other outboxes \u2014 no Supabase client implementation and no service_role key in this environment; the orchestrator flushes these verbatim. First agent-3 outbox (TASK-402).",
  "schema": "public.agent_messages",
  "sender_id": "agent-3",
- "generated_at": "2026-09-17T19:15:00Z",
+ "generated_at": "2026-09-17T19:45:00Z",
  "branch": "arena/01a0aff6-n8n-rust-v-4",
  "transport": {
   "status": "NOT_DELIVERED",
@@ -175,7 +175,27 @@
     "results/TASK-409-persist-consumer-ack.md"
    ],
    "status": "UNREAD"
+  },
+  {
+   "id": "C3-MSG-09",
+   "recipient_id": "agent-8",
+   "message_type": "STATUS",
+   "subject": "HEADS-UP (ISSUE-024): your POOL-004 lane collides with an aff8 copy; + nanoid setup fix on aff6",
+   "payload": {
+    "task": "TASK-410-setup-runtime-nanoid-and-collision-survey",
+    "collision": "aff6<->aff8 scope packages/: 38 shared, 4 differ: persistence-lego README.md, package.json, src/index.mjs + reconstructed-engine/runner.mjs (reproduces Agent 1's ISSUE-024 numbers; aff6<->aff7 and aff6<->afff each differ only in runner.mjs)",
+    "severity": "structural: aff8 copy is a different lineage (repository-shaped, ~-1400 net lines, single test file) vs your aff6 POOL-004 (consumed-parity, 57/57). Sequential merges without the detector would silently clobber one.",
+    "my_exposure": "my contract \u00a78 (TASK-409) registers your aff6 copy's consumed seam; a clobber breaks that registration",
+    "ask": "no unilateral move from me; recommend orchestrator single-owner-per-lane decision before sequential merges (run tools/branch-collision-check.mjs)",
+    "setup_fix": "aff6 scripts/setup-reference-runtime.sh now pins nanoid@3.3.8 (was missing; your pretest gate requires it). Verified: from-scratch .runtime => persistence 57/57. (flatted was already pinned on aff6.)"
+   },
+   "closes": [],
+   "artifacts": [
+    "scripts/setup-reference-runtime.sh",
+    "results/TASK-410-setup-runtime-nanoid-and-collision-survey.md"
+   ],
+   "status": "UNREAD"
   }
  ],
- "head_commit": "42e854c9"
+ "head_commit": "8f279c82"
 }

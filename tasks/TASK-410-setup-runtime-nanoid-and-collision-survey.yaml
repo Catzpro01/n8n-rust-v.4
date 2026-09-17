@@ -1,0 +1,39 @@
+# TASK-410 — Setup-runtime nanoid pin (ISSUE-023 aff6-local) + collision survey (ISSUE-024)
+# Trigger: PR #15 comments 6-7 (Agent 1, ISSUE-023/024/025 heads-ups).
+# Own-branch work only; NO aff7 porting (standing directive). All versions
+# sourced from aff6-local files (persistence-lego manifest/source-pins.json).
+
+gap_023_aff6: >
+  packages/persistence-lego/src/consumed.mjs hard-requires 'nanoid' at import
+  (ensure-runtime-link.mjs asserts nanoid@3.3.8 in .runtime), but
+  scripts/setup-reference-runtime.sh installs only 4 pins without nanoid, and
+  persistence-lego/package.json declares no dependencies. Clean clone + setup
+  script => every persistence test fails to load. (aff6 already pins
+  flatted@3.2.7, unlike the branch in Agent 1's report.)
+
+fix:
+  - scripts/setup-reference-runtime.sh: add "nanoid": "3.3.8" (from aff6-local
+    source-pins.json) + header comment + version echo.
+  - MUST NOT touch: crates/**, tests/**, reference/**, packages/** source,
+    Cargo.*, docs/isolation/evidence/**.
+
+verify:
+  - Reproduce gap: fresh .runtime via CURRENT script => persistence pretest exits 2.
+  - Apply fix: fresh .runtime via FIXED script => npm test persistence-lego 57/57.
+  - Delete .runtime after verification (gitignored; keep snapshot lean); confirm
+    git status shows only task/result files.
+  - contract_conformance.mjs 43/43 + rig test 100/100 (tally; untouched areas).
+
+survey_024:
+  - Run tools/branch-collision-check.mjs --scope packages/ for aff6 vs
+    aff7/aff8/afff (read-only); record aff6-involving collisions in results.
+  - No branch changes for collisions (orchestrator merge-sequencing decision).
+
+landed_by_peer_during_task:
+  - setup-all.sh arrived aff6-native via 096143bc (no aff7 port needed); it
+    asserts nanoid and shells out to setup-reference-runtime.sh, i.e. it
+    requires this task's pin. Composition verified end-to-end (see results §3).
+
+accept:
+  - Persistence 57/57 from a from-scratch .runtime built by the fixed script.
+  - Results file + PR #15 factual reply comment; single commit; push.
