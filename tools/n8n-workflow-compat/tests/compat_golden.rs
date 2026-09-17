@@ -13,7 +13,7 @@
 //! DO NOT EDIT BY HAND — regenerate with `tests/compatibility/gen_rust_golden.py`.
 
 fn check(name: &str, fixture: &str, expected: &str) {
-    let actual = n8n_workflow::compat_engine::run_fixture(fixture)
+    let actual = n8n_workflow_compat::compat_engine::run_fixture(fixture)
         .unwrap_or_else(|e| panic!("fixture `{name}` failed to run: {e}"));
     assert_eq!(
         actual, expected,

@@ -20,7 +20,7 @@ fn main() {
             std::process::exit(1);
         }
     };
-    match n8n_workflow::compat_engine::run_fixture(&text) {
+    match n8n_workflow_compat::compat_engine::run_fixture(&text) {
         Ok(out) => print!("{out}"),
         Err(e) => {
             eprintln!("error: {e}");

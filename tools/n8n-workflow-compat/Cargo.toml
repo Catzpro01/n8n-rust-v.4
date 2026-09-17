@@ -1,0 +1,20 @@
+[package]
+name = "n8n-workflow-compat"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.70"
+license = "Apache-2.0"
+description = "Differential compatibility oracle for the workflow LEGO: a std-only, self-contained reference implementation of the pure workflow graph semantics (verbatim original n8n behavior) plus the canonical-JSON query engine used to diff the Rust port against the original n8n. Verification tooling — NOT a LEGO crate; the canonical Rust port lives in crates/n8n-workflow."
+
+[dependencies]
+# Intentionally ZERO external dependencies (std only):
+# - the oracle must build anywhere (offline pipelines, no crates.io);
+# - it is test tooling and must never enter the LEGO dependency graph.
+
+[lib]
+name = "n8n_workflow_compat"
+path = "src/lib.rs"
+
+[[bin]]
+name = "n8n-workflow-compat"
+path = "src/bin/compat.rs"

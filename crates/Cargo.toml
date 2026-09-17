@@ -1,9 +1,0 @@
-[workspace]
-resolver = "2"
-members = ["n8n-workflow"]
-
-[workspace.package]
-version = "0.1.0"
-edition = "2021"
-rust-version = "1.70"
-license = "MIT"

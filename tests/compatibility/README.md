@@ -12,18 +12,18 @@ inputs.
 | `fixtures/*.json` | Golden reference workflows + query lists (10 fixtures: empty, single node, linear, diamond, chain w/ depth, cycle, multi I/O, sparse indices, non-main types, duplicate edges). |
 | `reference/harness.mjs` | Node.js harness running the **verbatim original n8n functions** (`getConnectedNodes`, `getChildNodes`, `getParentNodes`, `mapConnectionsByDestination` from `reference/n8n/packages/workflow/src/common/`, n8n v2.9.4) plus the spec-defined `detectCycles`/`findCycle`/`getStartNodes`. No npm packages required (Node ≥ 18). |
 | `golden/*.expected.txt` | Reference outputs captured from the harness (canonical JSON, one line per query: `<query>\t<json>`). |
-| `gen_rust_golden.py` | Regenerates `golden/` and embeds it into `crates/n8n-workflow/tests/compat_golden.rs` (byte-exact). |
+| `gen_rust_golden.py` | Regenerates `golden/` and embeds it into `tools/n8n-workflow-compat/tests/compat_golden.rs` (byte-exact). |
 | `run.sh` | Full differential driver: Node reference vs `cargo run -p n8n-workflow --bin n8n-workflow-compat` per fixture, then `cargo test`. |
 
 ## How it works
 
 1. Both sides read the same fixture JSON.
-2. Both sides execute the same query grammar (see `crates/n8n-workflow/src/compat_engine.rs` — mirrored 1:1 in the harness).
+2. Both sides execute the same query grammar (see `tools/n8n-workflow-compat/src/compat_engine.rs` — mirrored 1:1 in the harness).
 3. Both sides emit **canonical JSON** (object keys sorted at every level,
    compact separators, standard escaping) so a plain `diff` is a strict,
    order-sensitive comparison.
 4. The Rust crate ALSO embeds all fixtures + expected outputs as golden
-   tests (`crates/n8n-workflow/tests/compat_golden.rs`), so `cargo test`
+   tests (`tools/n8n-workflow-compat/tests/compat_golden.rs`), so `cargo test`
    alone is a self-contained compatibility gate (no Node required).
 
 ## Running
@@ -97,7 +97,7 @@ Fixture schema:
 
 ## Current status
 
-- Phase 3 (RUST IMPLEMENTED): crate complete — `crates/n8n-workflow`.
+- Phase 3 (RUST IMPLEMENTED): crate complete — `tools/n8n-workflow-compat`.
 - Reference harness verified locally on Node (golden outputs captured).
 - Rust execution (compile + `cargo test` + differential `run.sh`): to be run
   in the VPS pipeline (this sandbox's network policy blocks

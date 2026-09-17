@@ -8,7 +8,7 @@ Steps performed:
     1. Run the Node reference harness (verbatim original n8n functions) on
        every fixture in tests/compatibility/fixtures/
        → tests/compatibility/golden/<name>.expected.txt
-    2. Emit crates/n8n-workflow/tests/compat_golden.rs embedding each
+    2. Emit tools/n8n-workflow-compat/tests/compat_golden.rs embedding each
        fixture and its expected output as byte-exact raw strings.
 
 Requires: node >= 18 (no npm packages).
@@ -23,7 +23,7 @@ COMPAT = os.path.join(ROOT, "tests", "compatibility")
 FIXTURES = os.path.join(COMPAT, "fixtures")
 GOLDEN = os.path.join(COMPAT, "golden")
 HARNESS = os.path.join(COMPAT, "reference", "harness.mjs")
-OUT = os.path.join(ROOT, "crates", "n8n-workflow", "tests", "compat_golden.rs")
+OUT = os.path.join(ROOT, "tools", "n8n-workflow-compat", "tests", "compat_golden.rs")
 
 HEADER = '''//! Differential golden tests: Rust crate vs ORIGINAL n8n behavior.
 //!
@@ -40,7 +40,7 @@ HEADER = '''//! Differential golden tests: Rust crate vs ORIGINAL n8n behavior.
 //! DO NOT EDIT BY HAND — regenerate with `tests/compatibility/gen_rust_golden.py`.
 
 fn check(name: &str, fixture: &str, expected: &str) {
-    let actual = n8n_workflow::compat_engine::run_fixture(fixture)
+    let actual = n8n_workflow_compat::compat_engine::run_fixture(fixture)
         .unwrap_or_else(|e| panic!("fixture `{name}` failed to run: {e}"));
     assert_eq!(
         actual, expected,

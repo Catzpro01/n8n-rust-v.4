@@ -35,7 +35,7 @@ for f in "$SCRIPT_DIR"/fixtures/*.json; do
     continue
   fi
 
-  if ! (cd "$ROOT" && cargo run --quiet -p n8n-workflow --bin n8n-workflow-compat -- "$f") > "$rust_out" 2> "$TMP/${name}.rust.err"; then
+  if ! (cd "$ROOT" && cargo run --quiet -p n8n-workflow-compat --bin n8n-workflow-compat -- "$f") > "$rust_out" 2> "$TMP/${name}.rust.err"; then
     echo "[ERROR] ${name}: rust compat binary failed"
     cat "$TMP/${name}.rust.err"
     FAIL=$((FAIL + 1))
@@ -57,7 +57,7 @@ echo "differential fixtures: ${PASS} passed, ${FAIL} failed"
 echo "────────────────────────────────────────────"
 
 echo "=== [RUST] cargo test (unit + embedded golden) ==="
-if (cd "$ROOT" && cargo test -p n8n-workflow); then
+if (cd "$ROOT" && cargo test -p n8n-workflow-compat); then
   CARGO=0
 else
   echo "[FAIL] cargo test"
