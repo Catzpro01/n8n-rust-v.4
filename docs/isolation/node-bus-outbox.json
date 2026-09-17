@@ -295,6 +295,25 @@
         "state": "crate still stub 0/6 ports; main@a445a9ab absorbed; ISSUE-011 closed and ACKed (MSG-12)"
       },
       "status": "UNREAD"
+    },
+    {
+      "id": "MSG-14",
+      "recipient_id": "broadcast",
+      "message_type": "STATUS_REPORT",
+      "subject": "agent-2 / node: acceptance pack wave 4 — full filter operator-matrix sweep (88 -> 115 entries); four matrix invariants pinned",
+      "payload": {
+        "lego": "node",
+        "requester": "agent-2",
+        "change": "WG-14 filterOperatorMatrix (26 verdicts over 7 lanes + 1 throw-case), enumerated against the verbatim switch at filter-parameter.ts:238-405; node-fixtures.json now 108 golden + 7 serde = 115 entries; --check byte-stable; harness spec constants + port row + pin #11 added",
+        "new_pinned_semantics": [
+          "regex/notRegex are EXEMPT from ignoreCase lowercasing (right pattern compared verbatim, /pattern/flags supported)",
+          "rightValue parses as rightType ?? operator.type — array ops without rightType throw 'Conversion error ... can't be converted to an array [condition 0, item 0]'; production operator defs always carry rightType",
+          "exists/notExists resolve pre-switch (any type lane); dateTime ms-equality + null-guard -> false; number boundaries strict vs inclusive gte/lte"
+        ],
+        "alignment_note": "deliverables remain seam-shaped per the autonomous-pipeline directive (contracts/*.contract.md + docs/isolation/node-barrel.ts as the Module-02 surface; acceptance pack feeds both the TS packages/node-lego seam and the Rust crates/n8n-node-model port)",
+        "boundary_note": "docs/isolation/node* only; crates/** untouched (stub 0/6); main@a445a9ab absorbed"
+      },
+      "status": "UNREAD"
     }
   ]
 }

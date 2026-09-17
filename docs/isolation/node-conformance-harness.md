@@ -53,8 +53,11 @@ const FILTER_COND_CASES: usize = 9;     // executeFilterCondition (verdicts)
 const FILTER_COND_THROW_CASES: usize = 2; // …conversion-error FilterErrors (byte-exact messages)
 const FILTER_VALIDATE_CASES: usize = 4; // validateFilterParameter (leniency pins, all {})
 const FILTER_COMBINE_CASES: usize = 3;  // executeFilter (and/or combinators)
+// Wave 4 operator matrix (WG-14)
+const FILTER_MATRIX_CASES: usize = 26;  // filterOperatorMatrix per-lane verdicts
+const FILTER_MATRIX_THROW_CASES: usize = 1; // …missing-rightType conversion FilterError
 // + serdeConformance round-trips: 5 descriptions, 2 INode samples
-// TOTAL asserted entries = 19 + 38 + 24 + 7 = 88
+// TOTAL asserted entries = 19 + 38 + 24 + 27 + 7 = 115
 ```
 
 - Fixture load via `env!("CARGO_MANIFEST_DIR")/./../../` (same `repo_root()` convention as
@@ -92,6 +95,7 @@ const FILTER_COMBINE_CASES: usize = 3;  // executeFilter (and/or combinators)
 | `executeFilterCondition.cases` | `pub struct FilterCondition/FilterOptions` + `pub fn execute_filter_condition(...) -> Result<bool, FilterError>` | `ignoreCase = !caseSensitive`; **unknown operator ⇒ `false` (not error)**; conversion failures ⇒ `FilterError` with template `Conversion error: the string '{v}' can't be converted to a {type} [condition {i}, item {j}]` |
 | `validateFilterParameter.cases` | `pub fn validate_filter_parameter(prop, filter) -> HashMap<String, Vec<String>>` | **validation is lenient**: only `parseFilterConditionValues` errors become issues (keys `{name}.{index}`); malformed type/unknown-op conditions STILL validate to `{}` |
 | `executeFilter.cases` | `pub fn execute_filter(filter, item_index) -> bool` | `and` = all, `or` = any, per-condition metadata `{index, itemIndex}` |
+| `filterOperatorMatrix.cases` | same filter surface, per-lane sweeps | rightValue parsed as `rightType ?? operator.type` (missing rightType ⇒ FilterError); regex ops exempt from ignoreCase lowering; `exists`/`notExists` pre-switch any-type; dateTime null-guard ⇒ `false` |
 | `serdeConformance` | `INodeTypeDescription`, `INode` | deserialize → serialize round-trip equality |
 
 ## 4. Reference-observed semantics the harness pins (do not "improve")
@@ -138,14 +142,22 @@ const FILTER_COMBINE_CASES: usize = 3;  // executeFilter (and/or combinators)
     nodes present in `pinDataNodeNames`, and required-but-display-hidden parameters —
     display gating beats `required:true`. The exact issue message currency is
     `Parameter "{displayName}" is required.`
+11. **Operator-matrix invariants** (WG-14, switch at `filter-parameter.ts:238-405`):
+    (a) `regex`/`notRegex` are EXEMPT from ignoreCase lowercasing — the right pattern is
+    compared verbatim (supports `/pattern/flags`); (b) rightValue parses as
+    `rightType ?? operator.type` — array ops without `rightType` throw the conversion
+    FilterError; (c) `exists`/`notExists` resolve BEFORE the type switch (valid on any
+    lane); (d) dateTime equality comparison is millisecond-based with a null-guard
+    returning `false` after `empty`/`notEmpty`; (e) number boundaries are strict `>`
+    and `<` with `gte`/`lte` inclusive.
 
 ## 5. Acceptance wiring (brief §4, gate 1)
 
 `n8n-node-model` is **RUST IMPLEMENTED-verified for the Node LEGO when**:
 
-1. This harness reproduces all 88 entries (19 frozen-port golden cases + 38 wave-2 pure
-   helper cases + 24 wave-3 parameter-issues/filter cases + 7 serde samples) green under
-   `tools/rust-offline-rig/run.sh test` (offline).
+1. This harness reproduces all 115 entries (19 frozen-port golden cases + 38 wave-2 pure
+   helper cases + 24 wave-3 parameter-issues/filter cases + 27 wave-4 operator-matrix
+   cases + 7 serde samples) green under `tools/rust-offline-rig/run.sh test` (offline).
 2. The 6 frozen ports exist with the exact snake_cased names listed in brief §3
    (`get_node_parameters`, `get_node_inputs`, `get_node_outputs`, `get_connection_types`,
    `rename_form_fields`, `apply_access_patterns`) and crate exports match contract §11.
@@ -164,8 +176,9 @@ report via bus to agent-2/mediator; never "fix" the semantics to match the port.
   GC dynamic cases only pin the failure fallthrough).
 - No timing/perf assertions (perf gates live with Agent 5's Phase-3 gate variant — MSG-07).
 - Full 532-reference-test coverage remains the Phase-3 stretch goal (brief §4.1); this
-  pack is the **frozen-port minimum plus the pure-helper and issues/filter waves** that
-  gates acceptance. Larger sweeps (filter operator-matrix beyond the 9 pinned core ops,
-  `rename-node-utils` variants, custom-ops/RLC fixtures…) follow the same
-  add-category/add-constant protocol: extend the generator, hard-assert the verified
-  values, bump the fixture file in one commit.
+  pack is the **frozen-port minimum plus the pure-helper, issues/filter, and
+  operator-matrix waves** that gates acceptance. Larger sweeps (`rename-node-utils`
+  variants, custom-ops/RLC fixtures, optionValueExtractors, collection/nested
+  `getNodeParameters` shapes…) follow the same add-category/add-constant protocol:
+  extend the generator, hard-assert the verified values, bump the fixture file in one
+  commit.

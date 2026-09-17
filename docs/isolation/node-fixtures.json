@@ -7,7 +7,8 @@
     "coverage": {
       "frozenPorts": "GC-1..GC-7 (19 cases)",
       "wave2PureHelpers": "resolveRelativePath:4, hasDotNotationBannedChar:7, mergeNodeProperties:3, makeNodeName:5, makeDescription:3, isDefaultNodeName:4, isTriggerNode:3, displayParameter:6, assertParamIsType:3",
-      "wave3IssuesAndFilters": "getNodeParametersIssues:6, executeFilterCondition:9+2t, validateFilterParameter:4, executeFilter:3"
+      "wave3IssuesAndFilters": "getNodeParametersIssues:6, executeFilterCondition:9+2t, validateFilterParameter:4, executeFilter:3",
+      "wave4OperatorMatrix": "filterOperatorMatrix:26+1t"
     }
   },
   "applyAccessPatterns": {
@@ -1585,6 +1586,468 @@
         "expect": true
       }
     ]
+  },
+  "filterOperatorMatrix": {
+    "optionsDefault": {
+      "caseSensitive": false
+    },
+    "cases": [
+      {
+        "name": "string-notEquals",
+        "condition": {
+          "id": "w4-string-notEquals",
+          "leftValue": "alpha",
+          "operator": {
+            "type": "string",
+            "operation": "notEquals"
+          },
+          "rightValue": "beta"
+        },
+        "options": {
+          "caseSensitive": false
+        },
+        "expect": true
+      },
+      {
+        "name": "string-notContains",
+        "condition": {
+          "id": "w4-string-notContains",
+          "leftValue": "the quick fox",
+          "operator": {
+            "type": "string",
+            "operation": "notContains"
+          },
+          "rightValue": "brown"
+        },
+        "options": {
+          "caseSensitive": false
+        },
+        "expect": true
+      },
+      {
+        "name": "string-startsWith-ci",
+        "condition": {
+          "id": "w4-string-startsWith-ci",
+          "leftValue": "workflow engine",
+          "operator": {
+            "type": "string",
+            "operation": "startsWith"
+          },
+          "rightValue": "WORK"
+        },
+        "options": {
+          "caseSensitive": false
+        },
+        "expect": true
+      },
+      {
+        "name": "string-endsWith-ci",
+        "condition": {
+          "id": "w4-string-endsWith-ci",
+          "leftValue": "workflow engine",
+          "operator": {
+            "type": "string",
+            "operation": "endsWith"
+          },
+          "rightValue": "ENGINE"
+        },
+        "options": {
+          "caseSensitive": false
+        },
+        "expect": true
+      },
+      {
+        "name": "string-regex-i-flag-exempt-from-ci",
+        "condition": {
+          "id": "w4-string-regex-i-flag-exempt-from-ci",
+          "leftValue": "the Quick fox",
+          "operator": {
+            "type": "string",
+            "operation": "regex"
+          },
+          "rightValue": "/^the quick/i"
+        },
+        "options": {
+          "caseSensitive": false
+        },
+        "expect": true
+      },
+      {
+        "name": "string-null-coerces-empty",
+        "condition": {
+          "id": "w4-string-null-coerces-empty",
+          "leftValue": null,
+          "operator": {
+            "type": "string",
+            "operation": "equals"
+          },
+          "rightValue": "x"
+        },
+        "options": {
+          "caseSensitive": false
+        },
+        "expect": false
+      },
+      {
+        "name": "number-lt",
+        "condition": {
+          "id": "w4-number-lt",
+          "leftValue": 3,
+          "operator": {
+            "type": "number",
+            "operation": "lt"
+          },
+          "rightValue": 10
+        },
+        "options": {
+          "caseSensitive": false
+        },
+        "expect": true
+      },
+      {
+        "name": "number-gte-boundary",
+        "condition": {
+          "id": "w4-number-gte-boundary",
+          "leftValue": 10,
+          "operator": {
+            "type": "number",
+            "operation": "gte"
+          },
+          "rightValue": 10
+        },
+        "options": {
+          "caseSensitive": false
+        },
+        "expect": true
+      },
+      {
+        "name": "number-lte-boundary-fail",
+        "condition": {
+          "id": "w4-number-lte-boundary-fail",
+          "leftValue": 10,
+          "operator": {
+            "type": "number",
+            "operation": "lte"
+          },
+          "rightValue": 9
+        },
+        "options": {
+          "caseSensitive": false
+        },
+        "expect": false
+      },
+      {
+        "name": "number-gt-boundary-fail",
+        "condition": {
+          "id": "w4-number-gt-boundary-fail",
+          "leftValue": 10,
+          "operator": {
+            "type": "number",
+            "operation": "gt"
+          },
+          "rightValue": 10
+        },
+        "options": {
+          "caseSensitive": false
+        },
+        "expect": false
+      },
+      {
+        "name": "dateTime-after",
+        "condition": {
+          "id": "w4-dateTime-after",
+          "leftValue": "2026-09-17",
+          "operator": {
+            "type": "dateTime",
+            "operation": "after"
+          },
+          "rightValue": "2026-09-16"
+        },
+        "options": {
+          "caseSensitive": false
+        },
+        "expect": true
+      },
+      {
+        "name": "dateTime-before-mismatch",
+        "condition": {
+          "id": "w4-dateTime-before-mismatch",
+          "leftValue": "2026-09-17",
+          "operator": {
+            "type": "dateTime",
+            "operation": "before"
+          },
+          "rightValue": "2026-09-16"
+        },
+        "options": {
+          "caseSensitive": false
+        },
+        "expect": false
+      },
+      {
+        "name": "dateTime-afterOrEquals-equal",
+        "condition": {
+          "id": "w4-dateTime-afterOrEquals-equal",
+          "leftValue": "2026-09-17T00:00:00Z",
+          "operator": {
+            "type": "dateTime",
+            "operation": "afterOrEquals"
+          },
+          "rightValue": "2026-09-17T00:00:00Z"
+        },
+        "options": {
+          "caseSensitive": false
+        },
+        "expect": true
+      },
+      {
+        "name": "dateTime-null-guard-false",
+        "condition": {
+          "id": "w4-dateTime-null-guard-false",
+          "leftValue": null,
+          "operator": {
+            "type": "dateTime",
+            "operation": "after"
+          },
+          "rightValue": "2026-09-16"
+        },
+        "options": {
+          "caseSensitive": false
+        },
+        "expect": false
+      },
+      {
+        "name": "boolean-false-op",
+        "condition": {
+          "id": "w4-boolean-false-op",
+          "leftValue": false,
+          "operator": {
+            "type": "boolean",
+            "operation": "false"
+          },
+          "rightValue": null
+        },
+        "options": {
+          "caseSensitive": false
+        },
+        "expect": true
+      },
+      {
+        "name": "boolean-equals",
+        "condition": {
+          "id": "w4-boolean-equals",
+          "leftValue": true,
+          "operator": {
+            "type": "boolean",
+            "operation": "equals"
+          },
+          "rightValue": true
+        },
+        "options": {
+          "caseSensitive": false
+        },
+        "expect": true
+      },
+      {
+        "name": "boolean-notEquals-fail",
+        "condition": {
+          "id": "w4-boolean-notEquals-fail",
+          "leftValue": true,
+          "operator": {
+            "type": "boolean",
+            "operation": "notEquals"
+          },
+          "rightValue": true
+        },
+        "options": {
+          "caseSensitive": false
+        },
+        "expect": false
+      },
+      {
+        "name": "array-contains-ci-string-rightType",
+        "condition": {
+          "id": "w4-array-contains-ci-string-rightType",
+          "leftValue": [
+            "Alpha",
+            "BETA"
+          ],
+          "operator": {
+            "type": "array",
+            "rightType": "string",
+            "operation": "contains"
+          },
+          "rightValue": "alpha"
+        },
+        "options": {
+          "caseSensitive": false
+        },
+        "expect": true
+      },
+      {
+        "name": "array-contains-ci-any-rightType",
+        "condition": {
+          "id": "w4-array-contains-ci-any-rightType",
+          "leftValue": [
+            "Alpha",
+            "BETA"
+          ],
+          "operator": {
+            "type": "array",
+            "rightType": "any",
+            "operation": "contains"
+          },
+          "rightValue": "alpha"
+        },
+        "options": {
+          "caseSensitive": false
+        },
+        "expect": true
+      },
+      {
+        "name": "array-lengthEquals",
+        "condition": {
+          "id": "w4-array-lengthEquals",
+          "leftValue": [
+            1,
+            2,
+            3
+          ],
+          "operator": {
+            "type": "array",
+            "rightType": "number",
+            "operation": "lengthEquals"
+          },
+          "rightValue": 3
+        },
+        "options": {
+          "caseSensitive": false
+        },
+        "expect": true
+      },
+      {
+        "name": "array-lengthGt-fail",
+        "condition": {
+          "id": "w4-array-lengthGt-fail",
+          "leftValue": [
+            1
+          ],
+          "operator": {
+            "type": "array",
+            "rightType": "number",
+            "operation": "lengthGt"
+          },
+          "rightValue": 2
+        },
+        "options": {
+          "caseSensitive": false
+        },
+        "expect": false
+      },
+      {
+        "name": "array-empty",
+        "condition": {
+          "id": "w4-array-empty",
+          "leftValue": [],
+          "operator": {
+            "type": "array",
+            "operation": "empty"
+          },
+          "rightValue": null
+        },
+        "options": {
+          "caseSensitive": false
+        },
+        "expect": true
+      },
+      {
+        "name": "object-empty",
+        "condition": {
+          "id": "w4-object-empty",
+          "leftValue": {},
+          "operator": {
+            "type": "object",
+            "operation": "empty"
+          },
+          "rightValue": null
+        },
+        "options": {
+          "caseSensitive": false
+        },
+        "expect": true
+      },
+      {
+        "name": "object-notEmpty",
+        "condition": {
+          "id": "w4-object-notEmpty",
+          "leftValue": {
+            "a": 1
+          },
+          "operator": {
+            "type": "object",
+            "operation": "notEmpty"
+          },
+          "rightValue": null
+        },
+        "options": {
+          "caseSensitive": false
+        },
+        "expect": true
+      },
+      {
+        "name": "any-exists",
+        "condition": {
+          "id": "w4-any-exists",
+          "leftValue": "x",
+          "operator": {
+            "type": "any",
+            "operation": "exists"
+          },
+          "rightValue": null
+        },
+        "options": {
+          "caseSensitive": false
+        },
+        "expect": true
+      },
+      {
+        "name": "any-notExists-null",
+        "condition": {
+          "id": "w4-any-notExists-null",
+          "leftValue": null,
+          "operator": {
+            "type": "any",
+            "operation": "notExists"
+          },
+          "rightValue": null
+        },
+        "options": {
+          "caseSensitive": false
+        },
+        "expect": true
+      }
+    ],
+    "throwCases": [
+      {
+        "name": "array-contains-missing-rightType",
+        "condition": {
+          "id": "w4-missing-rightType",
+          "leftValue": [
+            "alpha"
+          ],
+          "operator": {
+            "type": "array",
+            "operation": "contains"
+          },
+          "rightValue": "alpha"
+        },
+        "thrown": {
+          "errorClass": "FilterError",
+          "message": "Conversion error: the string 'alpha' can't be converted to an array [condition 0, item 0]"
+        }
+      }
+    ],
+    "lanes": "string(6) number(4) dateTime(4) boolean(3) array(5) object(2) any-exists(2) — verbatim switch enumeration from src/node-parameters/filter-parameter.ts:238-405"
   },
   "serdeConformance": {
     "note": "Synthetic conformance samples for crates/n8n-node-model serde shapes (node-rust-brief.md §1 G-1..G-4). Equality rule: deserialize -> serialize must be an exact JSON round-trip. Real node instances are read by the harness from tests/reference/0*/workflow.json, not embedded here.",

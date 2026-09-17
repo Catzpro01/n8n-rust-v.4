@@ -206,6 +206,27 @@ behavior the Rust port MUST preserve (issues are raised only from
 
 `and` both-pass → `true` · `and` one-fails → `false` · `or` one-passes → `true`.
 
+## Wave 4 — filter operator matrix sweep (WG-14)
+
+Authority: verbatim switch enumeration at `src/node-parameters/filter-parameter.ts:238-405`
+(`/tmp` dist execution pinned each verdict). Lanes: **string(6) number(4) dateTime(4)
+boolean(3) array(5) object(2) any-exists(2) = 26 verdicts + 1 throw-case.**
+
+| Lane | Cases (name → verdict) |
+|---|---|
+| string | `notEquals` T · `notContains` T · `startsWith` T (CI) · `endsWith` T (CI) · **`regex '/^the quick/i'` T — regex ops are EXEMPT from ignoreCase lowercasing** (right not lowered) · `equals` null-left F (null coerces to `''`) |
+| number | `lt` T · `gte` boundary-equal T · `lte` 10≤9 F · `gt` equal F (strict boundaries) |
+| dateTime | `after` T · `before` (wrong direction) F · `afterOrEquals` equal-millis T · **null-left guard → F (throws nothing)** |
+| boolean | `false`-op on `false` T · `equals` true/true T · `notEquals` true/true F |
+| array | `contains` CI T (rightType `string`) · `contains` CI T (rightType `any`) · `lengthEquals` 3 T (rightType `number`) · `lengthGt` [1]>2 F · `empty` [] T |
+| object | `empty` `{}` T · `notEmpty` `{a:1}` T |
+| any | `exists` on `'x'` T · `notExists` on `null` T (pre-switch lane) |
+
+**Throw-case:** array `contains` WITHOUT `rightType` throws
+`FilterError: Conversion error: the string 'alpha' can't be converted to an array [condition 0, item 0]`
+— rightValue parsing defaults to `rightType ?? operator.type`; production operator
+definitions always carry `rightType`, the Rust port must too (or keep the default).
+
 ### Reproduction
 
 ```bash
@@ -226,8 +247,8 @@ fixtures power `docs/isolation/node-conformance-harness.md`. Dist resolution ord
 
 ### Parity acceptance rule for `n8n-node-model` (Phase 3)
 
-The crate's unit tests MUST reproduce GC-1..GC-7, WG-1..WG-9, and WG-10..WG-13
-byte-identically (JSON equality after serialization) — 81 golden cases in
+The crate's unit tests MUST reproduce GC-1..GC-7, WG-1..WG-9, WG-10..WG-13, and WG-14
+byte-identically (JSON equality after serialization) — 108 golden cases in
 `docs/isolation/node-fixtures.json`, plus the 7 `serdeConformance` round-trip probes
 (see `node-conformance-harness.md` §5 for the binding acceptance gate). Any deviation is
 a conformance defect (register it as MSG back to agent-2/mediator, do not "fix" semantics).

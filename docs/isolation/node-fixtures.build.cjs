@@ -489,6 +489,63 @@ const executeFilterCases = [
   },
 ];
 
+/* ---------------- Wave 4: filter operator matrix sweep (verbatim switch lanes) ------ */
+/* Enumerated from src/node-parameters/filter-parameter.ts:238-405. Non-negotiables:
+   - regex/notRegex are EXEMPT from ignoreCase lowercasing (CI applies to plain strings only)
+   - `exists`/`notExists` handled pre-switch (any type lane)
+   - rightType ?: operator.type governs rightValue parsing (missing rightType on array
+     ops throws 'can't be converted to an array')
+   - dateTime null-guard returns false (no throw) after empty/notEmpty */
+
+function mCase(name, leftValue, operator, rightValue) {
+  const condition = { id: `w4-${name}`, leftValue, operator, rightValue };
+  return {
+    name, condition, options: filterOptionsDefault,
+    expect: filterParameter.executeFilterCondition(condition, filterOptionsDefault),
+  };
+}
+const filterOperatorMatrixCases = [
+  mCase("string-notEquals", "alpha", { type: "string", operation: "notEquals" }, "beta"),
+  mCase("string-notContains", "the quick fox", { type: "string", operation: "notContains" }, "brown"),
+  mCase("string-startsWith-ci", "workflow engine", { type: "string", operation: "startsWith" }, "WORK"),
+  mCase("string-endsWith-ci", "workflow engine", { type: "string", operation: "endsWith" }, "ENGINE"),
+  mCase("string-regex-i-flag-exempt-from-ci", "the Quick fox", { type: "string", operation: "regex" }, "/^the quick/i"),
+  mCase("string-null-coerces-empty", null, { type: "string", operation: "equals" }, "x"),
+  mCase("number-lt", 3, { type: "number", operation: "lt" }, 10),
+  mCase("number-gte-boundary", 10, { type: "number", operation: "gte" }, 10),
+  mCase("number-lte-boundary-fail", 10, { type: "number", operation: "lte" }, 9),
+  mCase("number-gt-boundary-fail", 10, { type: "number", operation: "gt" }, 10),
+  mCase("dateTime-after", "2026-09-17", { type: "dateTime", operation: "after" }, "2026-09-16"),
+  mCase("dateTime-before-mismatch", "2026-09-17", { type: "dateTime", operation: "before" }, "2026-09-16"),
+  mCase("dateTime-afterOrEquals-equal", "2026-09-17T00:00:00Z", { type: "dateTime", operation: "afterOrEquals" }, "2026-09-17T00:00:00Z"),
+  mCase("dateTime-null-guard-false", null, { type: "dateTime", operation: "after" }, "2026-09-16"),
+  mCase("boolean-false-op", false, { type: "boolean", operation: "false" }, null),
+  mCase("boolean-equals", true, { type: "boolean", operation: "equals" }, true),
+  mCase("boolean-notEquals-fail", true, { type: "boolean", operation: "notEquals" }, true),
+  mCase("array-contains-ci-string-rightType", ["Alpha", "BETA"], { type: "array", rightType: "string", operation: "contains" }, "alpha"),
+  mCase("array-contains-ci-any-rightType", ["Alpha", "BETA"], { type: "array", rightType: "any", operation: "contains" }, "alpha"),
+  mCase("array-lengthEquals", [1, 2, 3], { type: "array", rightType: "number", operation: "lengthEquals" }, 3),
+  mCase("array-lengthGt-fail", [1], { type: "array", rightType: "number", operation: "lengthGt" }, 2),
+  mCase("array-empty", [], { type: "array", operation: "empty" }, null),
+  mCase("object-empty", {}, { type: "object", operation: "empty" }, null),
+  mCase("object-notEmpty", { a: 1 }, { type: "object", operation: "notEmpty" }, null),
+  mCase("any-exists", "x", { type: "any", operation: "exists" }, null),
+  mCase("any-notExists-null", null, { type: "any", operation: "notExists" }, null),
+];
+const filterOperatorMatrixThrowCases = [
+  (() => {
+    const condition = { id: "w4-missing-rightType", leftValue: ["alpha"],
+      operator: { type: "array", operation: "contains" }, rightValue: "alpha" };
+    let thrown = null;
+    try {
+      filterParameter.executeFilterCondition(condition, filterOptionsDefault);
+    } catch (error) {
+      thrown = { errorClass: error.constructor.name, message: error.message };
+    }
+    return { name: "array-contains-missing-rightType", condition, thrown };
+  })(),
+];
+
 /* ---------------- Regression tripwire: results must equal the VERIFIED goldens ------ */
 /* (docs/isolation/node-golden-cases.md — values frozen by VERIFIED-BY-EXECUTION)      */
 
@@ -550,6 +607,19 @@ assertGolden("W11 throw-messages", executeFilterConditionThrowCases.map((c) => c
 assertGolden("W12 all-lenient", validateFilterParameterCases.map((c) => Object.keys(c.expect).length),
   [0, 0, 0, 0]);
 assertGolden("W13 verdicts", executeFilterCases.map((c) => c.expect), [true, false, true]);
+assertGolden("W14 matrix-verdicts", filterOperatorMatrixCases.map((c) => c.expect), [
+  true, true, true, true, true, false,        // string lane
+  true, true, false, false,                   // number lane
+  true, false, true, false,                   // dateTime lane
+  true, true, false,                          // boolean lane
+  true, true, true, false, true,              // array lane
+  true, true,                                 // object lane
+  true, true,                                 // any-exists lane
+]);
+assertGolden("W14 throw", [
+  filterOperatorMatrixThrowCases[0].thrown?.errorClass,
+  filterOperatorMatrixThrowCases[0].thrown?.message,
+], ["FilterError", "Conversion error: the string 'alpha' can't be converted to an array [condition 0, item 0]"]);
 
 if (trip.length) {
   console.error("REFERENCE DRIFT vs docs/isolation/node-golden-cases.md:");
@@ -636,6 +706,9 @@ const fixtures = {
         `validateFilterParameter:${validateFilterParameterCases.length}`,
         `executeFilter:${executeFilterCases.length}`,
       ].join(", "),
+      wave4OperatorMatrix: [
+        `filterOperatorMatrix:${filterOperatorMatrixCases.length}+${filterOperatorMatrixThrowCases.length}t`,
+      ].join(", "),
     },
   },
   applyAccessPatterns: { cases: applyAccessPatternsCases },
@@ -662,6 +735,12 @@ const fixtures = {
   },
   validateFilterParameter: { cases: validateFilterParameterCases },
   executeFilter: { cases: executeFilterCases },
+  filterOperatorMatrix: {
+    optionsDefault: filterOptionsDefault,
+    cases: filterOperatorMatrixCases,
+    throwCases: filterOperatorMatrixThrowCases,
+    lanes: "string(6) number(4) dateTime(4) boolean(3) array(5) object(2) any-exists(2) — verbatim switch enumeration from src/node-parameters/filter-parameter.ts:238-405",
+  },
   serdeConformance,
 };
 
