@@ -54,3 +54,14 @@ engine differential 84/0 · activation differential 43/0 · conformance 42/42 ·
 `packages/trigger-lego/src/index.mjs`, `packages/trigger-lego/test/lifecycle.test.mjs` (+2 tests),
 `tools/trigger-lego-gate.mjs` (T03 9→11), `packages/execution-engine/package.json` (test glob),
 `docs/isolation/CROSS-AGENT-ISSUES.md` (ISSUE-023 second addendum), `tasks/TASK-TRIGGER-DIFF-01.yaml`.
+
+## Merge addendum (same day)
+
+During the pre-push fetch/merge, two peer commits landed (`9743f210` scheduler-lego, `28fb50ef`
+webhook-lego) that partially executed the ISSUE-023 consolidation in parallel: `packages/scheduler-lego`
+is now the canonical home of `toCronExpression` + `toCronKey` + `ScheduledTaskManager`, and
+trigger-lego consumes it via a compatibility seam. Conflict resolution and retargeting are recorded in
+the ISSUE-023 ADDENDUM 2 (`docs/isolation/CROSS-AGENT-ISSUES.md`). Final merged-tree state:
+activation differential **43/0** · engine differential **84/0** · `verify:all` **real exit 0**
+(execution 10/10 · trigger 5/5 · webhook 5/5 · scheduler 6/6) · conformance 42/42 · boundary PASS ·
+remote tip `59e9412d`.
