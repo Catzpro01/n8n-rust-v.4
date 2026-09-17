@@ -127,3 +127,32 @@ AUDIT RESULT: PASS (all edges documented)
 
 No self-approval: the phase-1 targets are other workers' artefacts, every verdict is a re-run
 command, and the gate that failed before my own contract edit was fixed by that edit — not waived.
+
+---
+
+### Addendum — post-merge reconciliation with the concurrent `TASK-406-phase3-trigger-lego`
+
+The rebase landed on top of `da5817da feat(trigger): reconstruct activation and polling lifecycle`, which
+put the *same* reference surface in a **new** `packages/trigger-lego/` package (9 tests, its own gate
+`5/5`, wired into `verify:all` as `trigger:gate`). Both implementations are green on the merged tree
+(`execution-engine` 60/60, `trigger-lego` 9/9) and nothing in either package imports the other.
+
+Decision taken here (a worker does not delete a peer's package): keep both, and make the duplication
+**measurable instead of prose** — `tools/activation-differential.mjs` runs 11 comparisons over both
+implementations (read-only import), result on this tree:
+
+**`ACTIVATION DIFFERENTIAL: 8 agree / 3 diverge · harness errors: 0`**
+
+| Where | Finding |
+|---|---|
+| Happy paths | AGREE — activation order (triggers → initial poll test → cron registration), registered cron contexts, `remove()` semantics, manual-mode `emit`/deferred wiring, poll/trigger error messages |
+| `toCronExpression` | `trigger-lego` supports `everyMinute`/`everyHour`/`everyDay` only and throws `UserError('Unsupported poll mode: …')` for `everyWeek`, `everyMonth` and custom `cronExpression`; the reference implements all six (`cron.ts` L52-72) |
+| Error class | `trigger-lego` throws `TriggerLifecycleError` where the reference throws `ApplicationError` (messages identical) |
+| Missing-hooks rejection | `trigger-lego` rejects with `TriggerLifecycleError`; this LEGO rejects with `AssertionError`, mirroring the reference's `assert.ok` |
+| Surfaces | `ExecutionLifecycleHooks`, `TriggerContext` and `createDeferredPromise` exist only in this LEGO |
+
+One fidelity fix came out of writing the harness: `triggers-and-pollers.mjs` now uses `node:assert`'s
+`assert.ok(hooks, 'Execution lifecycle hooks are not defined')` verbatim (the reference imports
+`node:assert`), so the rejection is an `AssertionError` rather than a plain `Error` — the module docstring
+and suite assertion were updated with it. Recorded as **ISSUE-023** in `docs/isolation/CROSS-AGENT-ISSUES.md`
+(OPEN: ownership/consolidation, exactly the ISSUE-021 pattern one layer down).

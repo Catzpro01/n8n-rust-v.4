@@ -16,6 +16,8 @@
  * reference where `ExecuteContext`/`TriggerContext` are constructed by the caller).
  */
 
+import assert from 'node:assert';
+
 import { ApplicationError } from './errors.mjs';
 
 export class TriggersAndPollers {
@@ -43,7 +45,10 @@ export class TriggersAndPollers {
 			// Add the manual trigger response which resolves when the first time data got emitted
 			triggerResponse.manualTriggerResponse = new Promise((resolve, reject) => {
 				const { hooks } = additionalData;
-				if (!hooks) throw new Error('Execution lifecycle hooks are not defined');
+				// Verbatim from the reference (triggers-and-pollers.ts L50): a node:assert
+				// assertion inside the executor — so the failure is an AssertionError that
+				// rejects `manualTriggerResponse`, never a synchronous throw from runTrigger.
+				assert.ok(hooks, 'Execution lifecycle hooks are not defined');
 
 				triggerFunctions.emit = (data, responsePromise, donePromise) => {
 					if (responsePromise) {

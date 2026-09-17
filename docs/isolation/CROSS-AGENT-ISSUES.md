@@ -1294,3 +1294,30 @@ consolidation onto `trigger-lego` would have to absorb those two surfaces as wel
 
 **Status:** OPEN — documented, not resolved by this session (deleting another worker's package is not
 the execution LEGO's call).
+
+### ADDENDUM 2026-09-18 (`TASK-ENGINE-ACTIVATION-01`, differential evidence — no peer file touched)
+
+Rather than leave the sentence "no behavioural divergence proven yet" in place, both implementations were
+run over identical scenarios (`tools/activation-differential.mjs`, informational like the engine harness —
+exit 0 with findings, exit 1 only if the harness breaks; `packages/trigger-lego/**` imported read-only):
+
+**`ACTIVATION DIFFERENTIAL: 3 diverge / 8 agree · harness errors: 0`** (T = `trigger-lego`, E = `execution-engine`)
+
+| # | Scenario | Verdict | Reference says |
+| :--- | :--- | :--- | :--- |
+| D1 | `toCronExpression` over six trigger-time modes | **DIVERGE** — T supports `everyMinute`/`everyHour`/`everyDay` only and throws `UserError('Unsupported poll mode: …')` for `everyWeek`, `everyMonth` and custom `cronExpression`; both emit a fixed second `0` unless a random source is injected | `cron.ts` L52-72: all six modes exist, and the second (plus the minute for `everyX: hours`) is **randomised** per poller (`randomInt(60)`), which is what keeps N pollers of the same workflow from firing in the same second |
+| D2 | missing `trigger`/`poll` function | **DIVERGE (name only)** — messages agree verbatim, T throws `TriggerLifecycleError`, E throws `ApplicationError` | `triggers-and-pollers.ts` L35-40/L105-110 throw `ApplicationError` with `extra.nodeName` + `tags.nodeType` |
+| D3 | manual-mode `emit` → `manualTriggerResponse` + deferreds | AGREE | L42-90 + oracle manual block |
+| D4 | manual mode without `hooks` | **DIVERGE (name only)** — message agrees; T rejects with `TriggerLifecycleError`, E with `AssertionError` (E mirrors `assert.ok` from the reference) | L50 `assert.ok(hooks, …)` runs inside the promise executor, so the failure is an `AssertionError` rejecting `manualTriggerResponse` |
+| D5 | `add()` trigger + poller → order, cron contexts, `remove()` | AGREE (order: trigger → initial poll test → register → deregister; identical contexts and return values) | L81-186 |
+| D6 | too-short interval | **DIVERGE (message)** — T rejects with `WorkflowActivationError` wrapping *"Unsupported poll mode: cronExpression"* because D1 throws before the interval check; E wraps *"The polling interval is too short…"* and rolls back | L170-175 |
+| D7 | `ExecutionLifecycleHooks`/`TriggerContext`/`createDeferredPromise` presence | DIVERGE by design — E has all three, T has none (its lane owns `contracts/trigger.contract.md` only) | L88-134 (hooks), trigger-context.ts L14-56 |
+
+**Reading:** the two implementations agree on the *happy paths* (activation order, cron contexts, removal,
+manual emit wiring), and the divergences cluster in one place — `toCronExpression` fidelity — which is
+also the one surface where the peer's version is a strict subset of the reference. Anything consolidated
+onto `trigger-lego` must absorb: the four missing trigger-time modes, randomised seconds, the
+`ApplicationError` class name, and the `ExecutionLifecycleHooks` + `TriggerContext` surfaces.
+
+**Status:** OPEN (unchanged ownership question) — now with a reproducible instrument:
+`node tools/activation-differential.mjs`.
