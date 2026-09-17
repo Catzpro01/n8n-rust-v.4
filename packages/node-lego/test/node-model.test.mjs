@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+	ApplicationError,
 	NodeConnectionTypes,
 	NodeOperationError,
 	assertIsValidNodeParameterValueType,
@@ -17,7 +18,7 @@ import {
 	assertParamIsOfAnyTypes,
 	assertParamIsString,
 	checkConditions,
-	cloneDeep,
+	deepCopy,
 	displayParameter,
 	displayParameterPath,
 	get,
@@ -25,6 +26,7 @@ import {
 	getNodeFeatures,
 	getNodeInputs,
 	getNodeOutputs,
+	getNodeParameters,
 	getParameterValueByPath,
 	getPropertyValues,
 	getSubworkflowId,
@@ -44,6 +46,8 @@ import {
 	isSubNodeType,
 	isTool,
 	isToolType,
+	isEqual,
+	isExpression,
 	isTriggerLikeNode,
 	isTriggerNode,
 	makeDescription,
@@ -625,12 +629,257 @@ test('get/toPath: lodash path grammar used by node parameters', () => {
 	assert.equal(get({ a: { b: null } }, 'a.b.c', 'D'), 'D');
 });
 
-test('cloneDeep/isEqual: JSON-shaped values (documented delta)', () => {
-	const source = { a: [1, { b: 2 }], when: new Date(0) };
-	const copy = cloneDeep(source);
+test('isEqual: JSON-shaped values (documented delta)', () => {
+	const source = { a: [1, { b: 2 }] };
+	assert.equal(isEqual(source, { a: [1, { b: 2 }] }), true);
+	assert.equal(isEqual({ a: 1 }, { a: 2 }), false);
+	assert.equal(getConnectionTypes([{ type: NodeConnectionTypes.Main }])[0], 'main');
+});
+
+test('deepCopy: verbatim utils.ts semantics (L53-87)', () => {
+	const source = { a: [1, { b: 2 }] };
+	const copy = deepCopy(source);
 	assert.notEqual(copy, source);
 	assert.notEqual(copy.a, source.a);
 	assert.deepEqual(copy, source);
-	assert.ok(copy.when instanceof Date);
-	assert.equal(getConnectionTypes([{ type: NodeConnectionTypes.Main }])[0], 'main');
+
+	// primitives, null and functions are returned as-is
+	assert.equal(deepCopy('x'), 'x');
+	assert.equal(deepCopy(null), null);
+	const fn = () => 1;
+	assert.equal(deepCopy(fn), fn);
+
+	// objects with toJSON are replaced by their toJSON() result (a Date becomes a string)
+	assert.equal(deepCopy(new Date(0)), '1970-01-01T00:00:00.000Z');
+
+	// cycles are preserved through the WeakMap
+	const cyclic = { a: 1 };
+	cyclic.self = cyclic;
+	const cyclicCopy = deepCopy(cyclic);
+	assert.equal(cyclicCopy.self, cyclicCopy);
+	assert.equal(cyclicCopy.a, 1);
+
+	// the clone is a plain object
+	assert.equal(Object.getPrototypeOf(deepCopy(Object.create({ marker: true }))), Object.prototype);
+});
+
+test('isExpression: only strings starting with "=" (expression-helpers.ts L1-10)', () => {
+	assert.equal(isExpression('='), true);
+	assert.equal(isExpression('={{ 1 + 1 }}'), true);
+	assert.equal(isExpression('x'), false);
+	assert.equal(isExpression(''), false);
+	assert.equal(isExpression(1), false);
+	assert.equal(isExpression(null), false);
+	assert.equal(isExpression(undefined), false);
+});
+
+test('ApplicationError: reference surface (name stays "Error", level "error")', () => {
+	const error = new ApplicationError('boom', { extra: { k: 1 } });
+	assert.equal(error.name, 'Error');
+	assert.equal(error.message, 'boom');
+	assert.equal(error.level, 'error');
+	assert.deepEqual(error.extra, { k: 1 });
+	assert.deepEqual(error.tags, {});
+});
+
+/* --- parameter resolution (node-helpers.test.ts `getNodeParameters`) ------- */
+
+const PARAM_NODE = { typeVersion: 1 };
+const resolveParams = (nodePropertiesArray, nodeValues, returnDefaults, returnNoneDisplayed, options) =>
+	getNodeParameters(nodePropertiesArray, nodeValues, returnDefaults, returnNoneDisplayed, PARAM_NODE, null, options);
+
+test('getNodeParameters: plain values, defaults and none-displayed matrix (oracle L53-334)', () => {
+	const nodePropertiesArray = [
+		{ name: 'string1', displayName: 'String 1', type: 'string', default: '' },
+		{ name: 'string2', displayName: 'String 2', type: 'string', default: 'default string 2' },
+		{ name: 'number1', displayName: 'Number 1', type: 'number', default: 10 },
+		{ name: 'boolean1', displayName: 'Boolean 1', type: 'boolean', default: false },
+	];
+	const nodeValues = { string1: 'hello', number1: 0, boolean1: false };
+
+	// without defaults only values differing from their default survive: number1 (0 vs 10) stays,
+	// boolean1 (false === default) is dropped
+	assert.deepEqual(resolveParams(nodePropertiesArray, nodeValues, false, false), {
+		string1: 'hello',
+		number1: 0,
+	});
+	assert.deepEqual(resolveParams(nodePropertiesArray, { string1: 'hello' }, false, false), { string1: 'hello' });
+	// with defaults everything appears, false/0 keeping their real value (L790-800)
+	assert.deepEqual(resolveParams(nodePropertiesArray, { string1: 'hello' }, true, false), {
+		string1: 'hello',
+		string2: 'default string 2',
+		number1: 10,
+		boolean1: false,
+	});
+	// null values resolve to an empty result instead of throwing (oracle L3466)
+	assert.deepEqual(resolveParams(nodePropertiesArray, null, true, false), {});
+});
+
+test('getNodeParameters: displayOptions show match/mismatch + returnNoneDisplayed (oracle L335-619)', () => {
+	const nodePropertiesArray = [
+		{ name: 'mode', displayName: 'Mode', type: 'options', default: 'a', options: [{ name: 'A', value: 'a' }, { name: 'B', value: 'b' }] },
+		{ name: 'child', displayName: 'Child', type: 'string', default: 'x', displayOptions: { show: { mode: ['b'] } } },
+	];
+	assert.deepEqual(resolveParams(nodePropertiesArray, { mode: 'b' }, true, false), { mode: 'b', child: 'x' });
+	assert.deepEqual(resolveParams(nodePropertiesArray, { mode: 'a' }, true, false), { mode: 'a' });
+	// without defaults a value equal to its default is dropped as well
+	assert.deepEqual(resolveParams(nodePropertiesArray, { mode: 'a', child: 'hidden but set' }, false, false), {});
+	// returnNoneDisplayed keeps the hidden parameter (and drops the default-valued one)
+	assert.deepEqual(resolveParams(nodePropertiesArray, { mode: 'a', child: 'hidden but set' }, false, true), {
+		child: 'hidden but set',
+	});
+});
+
+test('getNodeParameters: duplicate parameter names are re-checked individually (L726-737)', () => {
+	const nodePropertiesArray = [
+		{ name: 'resource', displayName: 'Resource', type: 'options', default: 'r1', options: [{ name: 'R1', value: 'r1' }] },
+		{ name: 'value', displayName: 'V1', type: 'string', default: 'd1', displayOptions: { show: { resource: ['r1'] } } },
+		{ name: 'value', displayName: 'V2', type: 'string', default: 'd2', displayOptions: { show: { resource: ['r2'] } } },
+	];
+	assert.deepEqual(resolveParams(nodePropertiesArray, { resource: 'r2', value: 'user value' }, false, false), {
+		resource: 'r2',
+		value: 'user value',
+	});
+	assert.deepEqual(resolveParams(nodePropertiesArray, { resource: 'r1' }, true, false), {
+		resource: 'r1',
+		value: 'd1',
+	});
+});
+
+test('getNodeParameters: noDataExpression strips the expression prefix (oracle L6321-6524)', () => {
+	const nodePropertiesArray = [
+		{ name: 'code', displayName: 'Code', type: 'string', default: '', noDataExpression: true },
+		{ name: 'keep', displayName: 'Keep', type: 'string', default: '' },
+	];
+	// pinned quirk: the strip runs after the returnDefaults branch, so it only applies there
+	assert.deepEqual(resolveParams(nodePropertiesArray, { code: '={{ 1 + 1 }}', keep: '=not stripped' }, true, false), {
+		code: '{{ 1 + 1 }}',
+		keep: '=not stripped',
+	});
+	assert.deepEqual(resolveParams(nodePropertiesArray, { code: '={{ 1 + 1 }}', keep: '=not stripped' }, false, false), {
+		code: '={{ 1 + 1 }}',
+		keep: '=not stripped',
+	});
+	// non-string values are left alone
+	assert.deepEqual(
+		resolveParams([{ name: 'n', displayName: 'N', type: 'number', default: 1, noDataExpression: true }], { n: 5 }, false, false),
+		{ n: 5 },
+	);
+});
+
+test('getNodeParameters: resourceLocator defaults get the __rl marker (L781-790)', () => {
+	assert.deepEqual(
+		resolveParams([{ name: 'rl', displayName: 'RL', type: 'resourceLocator', default: { mode: 'list', value: 'v' } }], {}, true, false),
+		{ rl: { __rl: true, mode: 'list', value: 'v' } },
+	);
+	assert.deepEqual(
+		resolveParams([{ name: 'rl', displayName: 'RL', type: 'resourceLocator', default: { mode: 'list', value: 'v' } }], {}, false, false),
+		{},
+	);
+});
+
+test('getNodeParameters: collection with multipleValues and single collections (L820-876)', () => {
+	const multi = [
+		{
+			name: 'col', displayName: 'Col', type: 'collection', default: [], typeOptions: { multipleValues: true },
+			options: [{ name: 'a', displayName: 'A', type: 'string', default: '' }],
+		},
+	];
+	assert.deepEqual(resolveParams(multi, { col: [{ a: 'x' }] }, false, false), { col: [{ a: 'x' }] });
+	// nothing set: with defaults an empty array is returned even when the default is not an array (L829-838)
+	assert.deepEqual(resolveParams(multi, {}, true, false), { col: [] });
+
+	const single = [
+		{
+			name: 'col', displayName: 'Col', type: 'collection', default: {},
+			options: [
+				{ name: 'a', displayName: 'A', type: 'string', default: 'da' },
+				{ name: 'b', displayName: 'B', type: 'string', default: 'db' },
+			],
+		},
+	];
+	// inside a collection a value equal to its default is still returned (L805-807)
+	assert.deepEqual(resolveParams(single, { col: { b: 'user' } }, false, false), { col: { b: 'user' } });
+	assert.deepEqual(resolveParams(single, { col: { a: 'da' } }, false, false), { col: { a: 'da' } });
+	// without values the collection default itself is returned — child defaults are NOT materialised
+	assert.deepEqual(resolveParams(single, {}, true, false), { col: {} });
+	// and an explicitly empty collection stays empty even with returnDefaults: inside a collection a
+	// `undefined` child is skipped (L703-708), so child defaults are never invented
+	assert.deepEqual(resolveParams(single, { col: {} }, true, false), { col: {} });
+	assert.deepEqual(resolveParams(single, { col: { a: 'da' } }, true, false), { col: { a: 'da' } });
+});
+
+test('getNodeParameters: fixedCollection multipleValues keeps every item (oracle L620-726)', () => {
+	const nodePropertiesArray = [
+		{
+			name: 'fc', displayName: 'FC', type: 'fixedCollection', default: {}, typeOptions: { multipleValues: true },
+			options: [{ name: 'item', displayName: 'Item', values: [{ name: 'v', displayName: 'V', type: 'string', default: '' }] }],
+		},
+	];
+	assert.deepEqual(resolveParams(nodePropertiesArray, { fc: { item: [{ v: 'one' }, { v: 'two' }] } }, false, false), {
+		fc: { item: [{ v: 'one' }, { v: 'two' }] },
+	});
+	assert.throws(() => resolveParams(nodePropertiesArray, { fc: { unknown: [{ v: '1' }] } }, false, false), {
+		name: 'Error',
+		message: 'Could not find property option',
+	});
+	// pinned quirk: a non-array element is iterated with `for…of`, so a *string* yields one empty
+	// object per character instead of being rejected (L905-916 guards the outer value only)
+	const perCharacter = Array.from({ length: 'not-an-array'.length }, () => ({}));
+	assert.deepEqual(resolveParams(nodePropertiesArray, { fc: { item: 'not-an-array' } }, false, false), {
+		fc: { item: perCharacter },
+	});
+});
+
+test('getNodeParameters: fixedCollection single-value GitHub cases (L903-1030)', () => {
+	const nodePropertiesArray = [
+		{
+			name: 'fc', displayName: 'FC', type: 'fixedCollection', default: {}, typeOptions: { multipleValues: false },
+			options: [{
+				name: 'item', displayName: 'Item',
+				values: [
+					{ name: 'mode', displayName: 'Mode', type: 'options', default: 'a', options: [{ name: 'A', value: 'a' }] },
+					{ name: 'child', displayName: 'Child', type: 'string', default: '', displayOptions: { show: { mode: ['b'] } } },
+				],
+			}],
+		},
+	];
+	// hidden field with a non-default value: the whole collection is dropped (test case, L1000-1030)
+	assert.deepEqual(resolveParams(nodePropertiesArray, { fc: { item: { mode: 'a', child: 'typed but hidden' } } }, false, false), {});
+	// explicitly added item that only holds defaults is preserved (GitHub case, L966-997)
+	const defaultsOnly = [
+		{
+			name: 'fc', displayName: 'FC', type: 'fixedCollection', default: {}, typeOptions: { multipleValues: false },
+			options: [{ name: 'item', displayName: 'Item', values: [{ name: 'v', displayName: 'V', type: 'string', default: 'dv' }] }],
+		},
+	];
+	assert.deepEqual(resolveParams(defaultsOnly, { fc: { item: { v: 'dv' } } }, false, false), { fc: { item: {} } });
+	// an empty object value short-circuits the whole resolution and returns the values back (L880-887)
+	assert.deepEqual(resolveParams(defaultsOnly, { fc: {} }, false, false), { fc: {} });
+});
+
+test('getNodeParameters: dependency cycles terminate (resolve-order quirk, L577-656)', () => {
+	const nodePropertiesArray = [
+		{ name: 'a', displayName: 'A', type: 'string', default: '', displayOptions: { show: { b: ['x'] } } },
+		{ name: 'b', displayName: 'B', type: 'string', default: '', displayOptions: { show: { a: ['x'] } } },
+	];
+	// Pinned quirk: the `continue` statements inside the dependency loop only advance that loop,
+	// so an unresolved parameter is re-queued AND resolved anyway — a cycle terminates instead of
+	// hanging or throwing, and both parameters come back when none-displayed values are requested.
+	assert.deepEqual(resolveParams(nodePropertiesArray, { a: '1', b: '2' }, true, false), {});
+	assert.deepEqual(resolveParams(nodePropertiesArray, { a: '1', b: '2' }, false, true), { a: '1', b: '2' });
+	// the max-iterations guard itself is only reachable when the queue keeps growing (L627-652)
+});
+
+test('getNodeParameters: unknown fixedCollection option throws the reference error (L913-919)', () => {
+	const nodePropertiesArray = [
+		{
+			name: 'fc', displayName: 'FC', type: 'fixedCollection', default: {}, typeOptions: { multipleValues: true },
+			options: [{ name: 'known', displayName: 'K', values: [{ name: 'v', displayName: 'V', type: 'string', default: '' }] }],
+		},
+	];
+	assert.throws(() => resolveParams(nodePropertiesArray, { fc: { unknown: [{ v: '1' }] } }, false, false), {
+		name: 'Error',
+		message: 'Could not find property option',
+	});
 });

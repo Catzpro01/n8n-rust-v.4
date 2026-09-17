@@ -14,7 +14,7 @@
  *   Oracle: node-helpers.test.ts (getNodeInputs/getNodeOutputs/nodeHasOutputType/…)
  */
 
-import { cloneDeep } from './lodash-lite.mjs';
+import { deepCopy } from './deep-copy.mjs';
 
 export const NodeConnectionTypes = Object.freeze({ Main: 'main', AiTool: 'ai_tool' });
 
@@ -84,7 +84,7 @@ export function getNodeOutputs(workflow, node, nodeTypeData) {
 	if (node.onError === 'continueErrorOutput') {
 		// Copy the data to make sure that we do not change the data of the
 		// node type and so change the displayNames for all nodes in the flow
-		outputs = cloneDeep(outputs);
+		outputs = deepCopy(outputs);
 		if (outputs.length === 1) {
 			// Set the displayName to "Success"
 			if (typeof outputs[0] === 'string') outputs[0] = { type: outputs[0] };

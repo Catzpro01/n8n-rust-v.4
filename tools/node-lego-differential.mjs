@@ -41,6 +41,10 @@ const port = await import(join(REPO, 'packages/node-lego/src/index.mjs'));
 
 const REF = {
 	...reference.NodeHelpers,
+	deepCopy: reference.deepCopy,
+	isExpression: reference.isExpression,
+	ApplicationError: reference.ApplicationError,
+	NodeOperationError: reference.NodeOperationError,
 	validateNodeCredentials: reference.validateNodeCredentials,
 	isNodeConnected: reference.isNodeConnected,
 	isTriggerLikeNode: reference.isTriggerLikeNode,
@@ -76,6 +80,7 @@ const EXAMINED_SURFACE = [
 	'isNodeParameterValue', 'isNodeParameters', 'isValidNodeParameterValueType',
 	'assertIsValidNodeParameterValueType', 'assertParamIsNumber', 'assertParamIsString', 'assertParamIsBoolean',
 	'assertParamIsOfAnyTypes', 'assertParamIsArray', 'validateNodeParameters',
+	'getNodeParameters', 'deepCopy', 'isExpression', 'ApplicationError', 'NodeOperationError',
 ];
 
 /* --- comparison ------------------------------------------------------------ */
@@ -493,6 +498,198 @@ scenario('N15', 'exported surface', (api, capture) => {
 	}
 	capture('NOT-DIFFABLE renameFormFields', typeof api.renameFormFields);
 	capture('NOT-DIFFABLE getPropertyValues', typeof api.getPropertyValues);
+});
+
+/* --- N16/N17: getNodeParameters (parameter resolution) ------------------- */
+const paramNode = { typeVersion: 1 };
+
+const PARAM_FIXTURES = {
+	'plain values': {
+		nodePropertiesArray: [
+			{ name: 'string1', displayName: 'String 1', type: 'string', default: '' },
+			{ name: 'string2', displayName: 'String 2', type: 'string', default: 'default string 2' },
+			{ name: 'number1', displayName: 'Number 1', type: 'number', default: 10 },
+			{ name: 'boolean1', displayName: 'Boolean 1', type: 'boolean', default: false },
+			{ name: 'options1', displayName: 'Options 1', type: 'options', default: 'a', options: [{ name: 'A', value: 'a' }] },
+		],
+		nodeValues: { number1: 0, boolean1: false, string1: 'hello' },
+	},
+	'show match': {
+		nodePropertiesArray: [
+			{ name: 'mode', displayName: 'Mode', type: 'options', default: 'a', options: [{ name: 'A', value: 'a' }, { name: 'B', value: 'b' }] },
+			{ name: 'child', displayName: 'Child', type: 'string', default: 'x', displayOptions: { show: { mode: ['b'] } } },
+		],
+		nodeValues: { mode: 'b' },
+	},
+	'show mismatch with value': {
+		nodePropertiesArray: [
+			{ name: 'mode', displayName: 'Mode', type: 'options', default: 'a', options: [{ name: 'A', value: 'a' }] },
+			{ name: 'child', displayName: 'Child', type: 'string', default: 'x', displayOptions: { show: { mode: ['b'] } } },
+		],
+		nodeValues: { mode: 'a', child: 'hidden but set' },
+	},
+	'duplicate names': {
+		nodePropertiesArray: [
+			{ name: 'resource', displayName: 'Resource', type: 'options', default: 'r1', options: [{ name: 'R1', value: 'r1' }] },
+			{ name: 'value', displayName: 'V1', type: 'string', default: 'd1', displayOptions: { show: { resource: ['r1'] } } },
+			{ name: 'value', displayName: 'V2', type: 'string', default: 'd2', displayOptions: { show: { resource: ['r2'] } } },
+		],
+		nodeValues: { resource: 'r2', value: 'user value' },
+	},
+	'noDataExpression': {
+		nodePropertiesArray: [
+			{ name: 'code', displayName: 'Code', type: 'string', default: '', noDataExpression: true },
+			{ name: 'keep', displayName: 'Keep', type: 'string', default: '' },
+		],
+		nodeValues: { code: '={{ 1 + 1 }}', keep: '=not stripped' },
+	},
+	'resourceLocator default': {
+		nodePropertiesArray: [{ name: 'rl', displayName: 'RL', type: 'resourceLocator', default: { mode: 'list', value: 'v' } }],
+		nodeValues: {},
+	},
+	'collection multipleValues': {
+		nodePropertiesArray: [
+			{ name: 'col', displayName: 'Col', type: 'collection', default: [], typeOptions: { multipleValues: true }, options: [{ name: 'a', displayName: 'A', type: 'string', default: '' }] },
+		],
+		nodeValues: { col: [{ a: 'x' }] },
+	},
+	'collection single': {
+		nodePropertiesArray: [
+			{ name: 'col', displayName: 'Col', type: 'collection', default: {}, options: [{ name: 'a', displayName: 'A', type: 'string', default: 'da' }, { name: 'b', displayName: 'B', type: 'string', default: 'db' }] },
+		],
+		nodeValues: { col: { b: 'user' } },
+	},
+	'fixedCollection multipleValues': {
+		nodePropertiesArray: [
+			{ name: 'fc', displayName: 'FC', type: 'fixedCollection', default: {}, typeOptions: { multipleValues: true }, options: [{ name: 'item', displayName: 'Item', values: [{ name: 'v', displayName: 'V', type: 'string', default: '' }] }] },
+		],
+		nodeValues: { fc: { item: [{ v: 'one' }, { v: 'two' }] } },
+	},
+	'fixedCollection default-only values': {
+		nodePropertiesArray: [
+			{ name: 'fc', displayName: 'FC', type: 'fixedCollection', default: {}, typeOptions: { multipleValues: false }, options: [{ name: 'item', displayName: 'Item', values: [{ name: 'v', displayName: 'V', type: 'string', default: 'dv' }] }] },
+		],
+		nodeValues: { fc: { item: { v: 'dv' } } },
+	},
+	'fixedCollection empty value': {
+		nodePropertiesArray: [
+			{ name: 'fc', displayName: 'FC', type: 'fixedCollection', default: {}, typeOptions: { multipleValues: false }, options: [{ name: 'item', displayName: 'Item', values: [{ name: 'v', displayName: 'V', type: 'string', default: 'dv' }] }] },
+		],
+		nodeValues: { fc: {} },
+	},
+	'fixedCollection hidden fields': {
+		nodePropertiesArray: [
+			{
+				name: 'fc', displayName: 'FC', type: 'fixedCollection', default: {}, typeOptions: { multipleValues: false },
+				options: [{ name: 'item', displayName: 'Item', values: [
+					{ name: 'mode', displayName: 'Mode', type: 'options', default: 'a', options: [{ name: 'A', value: 'a' }] },
+					{ name: 'child', displayName: 'Child', type: 'string', default: '', displayOptions: { show: { mode: ['b'] } } },
+				] }],
+			},
+		],
+		nodeValues: { fc: { item: { mode: 'a', child: 'typed but hidden' } } },
+	},
+	'null values': { nodePropertiesArray: [{ name: 'a', displayName: 'A', type: 'string', default: 'da' }], nodeValues: null },
+	'root-prefixed rule': {
+		nodePropertiesArray: [
+			{ name: 'top', displayName: 'Top', type: 'string', default: 'dt' },
+			{ name: 'child', displayName: 'Child', type: 'string', default: 'dc', displayOptions: { show: { '/top': ['dt'] } } },
+		],
+		nodeValues: { child: 'kept?' },
+	},
+};
+
+function runParameters(api, fixture, returnDefaults, returnNoneDisplayed, options = undefined) {
+	try {
+		return api.getNodeParameters(fixture.nodePropertiesArray, fixture.nodeValues, returnDefaults, returnNoneDisplayed, paramNode, null, options);
+	} catch (error) {
+		return { thrown: error.name, message: error.message };
+	}
+}
+
+scenario('N16', 'getNodeParameters matrix (defaults × noneDisplayed)', (api, capture) => {
+	for (const [name, fixture] of Object.entries(PARAM_FIXTURES)) {
+		for (const returnDefaults of [false, true]) {
+			for (const returnNoneDisplayed of [false, true]) {
+				capture(`${name} [d=${returnDefaults} n=${returnNoneDisplayed}]`, runParameters(api, fixture, returnDefaults, returnNoneDisplayed));
+			}
+		}
+	}
+});
+
+scenario('N17', 'getNodeParameters edge cases', (api, capture) => {
+	capture('mutual dependency guard', runParameters(api, {
+		nodePropertiesArray: [
+			{ name: 'a', displayName: 'A', type: 'string', default: '', displayOptions: { show: { b: ['x'] } } },
+			{ name: 'b', displayName: 'B', type: 'string', default: '', displayOptions: { show: { a: ['x'] } } },
+		],
+		nodeValues: { a: '1', b: '2' },
+	}, true, false));
+	capture('self dependency guard', runParameters(api, {
+		nodePropertiesArray: [{ name: 'a', displayName: 'A', type: 'string', default: '', displayOptions: { show: { a: ['x'] } } }],
+		nodeValues: { a: 'x' },
+	}, false, false));
+	capture('unknown fixedCollection option', runParameters(api, {
+		nodePropertiesArray: [
+			{ name: 'fc', displayName: 'FC', type: 'fixedCollection', default: {}, typeOptions: { multipleValues: true }, options: [{ name: 'known', displayName: 'K', values: [{ name: 'v', displayName: 'V', type: 'string', default: '' }] }] },
+		],
+		nodeValues: { fc: { unknown: [{ v: '1' }] } },
+	}, false, false));
+	capture('Date value through deepCopy', runParameters(api, {
+		nodePropertiesArray: [{ name: 'd', displayName: 'D', type: 'dateTime', default: new Date(0) }],
+		nodeValues: { d: new Date(1000) },
+	}, true, false));
+	capture('onlySimpleTypes + dataIsResolved', runParameters(api, {
+		nodePropertiesArray: [
+			{ name: 'col', displayName: 'Col', type: 'collection', default: {}, options: [{ name: 'a', displayName: 'A', type: 'string', default: 'da' }] },
+			{ name: 'plain', displayName: 'P', type: 'string', default: 'dp' },
+		],
+		nodeValues: { col: { a: 'x' }, plain: 'y' },
+	}, false, false, { onlySimpleTypes: true, dataIsResolved: true }));
+	capture('parentType=collection keeps defaults', runParameters(api, {
+		nodePropertiesArray: [{ name: 'a', displayName: 'A', type: 'string', default: 'da' }],
+		nodeValues: { a: 'da' },
+	}, false, false, { parentType: 'collection', dataIsResolved: true }));
+	capture('noDataExpression on a number', runParameters(api, {
+		nodePropertiesArray: [{ name: 'n', displayName: 'N', type: 'number', default: 1, noDataExpression: true }],
+		nodeValues: { n: 5 },
+	}, false, false));
+	capture('collection with empty object value', runParameters(api, {
+		nodePropertiesArray: [
+			{ name: 'col', displayName: 'Col', type: 'collection', default: {}, options: [{ name: 'a', displayName: 'A', type: 'string', default: 'da' }, { name: 'b', displayName: 'B', type: 'string', default: 'db' }] },
+		],
+		nodeValues: { col: {} },
+	}, true, false));
+	capture('fixedCollection element not an array', runParameters(api, {
+		nodePropertiesArray: [
+			{ name: 'fc', displayName: 'FC', type: 'fixedCollection', default: {}, typeOptions: { multipleValues: true }, options: [{ name: 'item', displayName: 'Item', values: [{ name: 'v', displayName: 'V', type: 'string', default: '' }] }] },
+		],
+		nodeValues: { fc: { item: 'not-an-array' } },
+	}, false, false));
+	capture('collection defaults', runParameters(api, {
+		nodePropertiesArray: [{ name: 'col', displayName: 'Col', type: 'collection', default: {}, options: [{ name: 'a', displayName: 'A', type: 'string', default: 'da' }] }],
+		nodeValues: {},
+	}, true, false));
+	capture('hidden parameter with defaults', runParameters(api, {
+		nodePropertiesArray: [
+			{ name: 'mode', displayName: 'Mode', type: 'options', default: 'a', options: [{ name: 'A', value: 'a' }] },
+			{ name: 'child', displayName: 'Child', type: 'string', default: 'dc', displayOptions: { show: { mode: ['b'] } } },
+		],
+		nodeValues: { mode: 'a' },
+	}, true, false));
+});
+
+/* --- N18: deepCopy / isExpression / error classes ------------------------ */
+scenario('N18', 'deepCopy / isExpression / error surface', (api, capture) => {
+	capture('deepCopy(Date)', api.deepCopy(new Date(0)));
+	capture('deepCopy primitives', ['a', 1, true, null, undefined].map((value) => api.deepCopy(value)));
+	capture('deepCopy function identity', typeof api.deepCopy(() => 1));
+	capture('deepCopy cycle', (() => { const source = { a: 1 }; source.self = source; const copy = api.deepCopy(source); return { a: copy.a, selfIsCopy: copy.self === copy, isSameRef: copy === source }; })());
+	capture('deepCopy nested array', api.deepCopy({ a: [1, { b: 2 }] }));
+	capture('deepCopy prototype is a plain object', Object.getPrototypeOf(api.deepCopy({ a: 1 })) === Object.prototype);
+	capture('isExpression matrix', ['=', '=1+1', 'x', '', 1, null, undefined].map((value) => api.isExpression(value)));
+	capture('ApplicationError surface', (() => { const error = new api.ApplicationError('boom', { extra: { k: 1 } }); return { name: error.name, level: error.level, extra: error.extra, tags: error.tags }; })());
+	capture('NodeOperationError surface', (() => { const error = new api.NodeOperationError({ name: 'N', type: 't' }, 'x', { level: 'info' }); return { name: error.name, level: error.level, messages: error.messages, context: error.context }; })());
 });
 
 /* --- report -------------------------------------------------------------- */

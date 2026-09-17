@@ -15,6 +15,24 @@
  * `tools/node-lego-differential.mjs` (N09/N10).
  */
 
+/**
+ * Mirrors `ApplicationError` from `@n8n/errors` (the class `node-helpers.ts` imports).
+ *
+ * Pinned quirk: the reference class does **not** set `name`, so a thrown instance keeps
+ * `name === 'Error'` while `level` defaults to `'error'` and `tags`/`extra` are set.
+ * `packageName` (the reference derives it from the call site) is not reconstructed —
+ * it is environment-dependent and excluded from the differential.
+ */
+export class ApplicationError extends Error {
+	constructor(message, options = {}) {
+		const { level, tags = {}, extra, ...rest } = options;
+		super(message, rest);
+		this.level = level ?? 'error';
+		this.tags = tags;
+		this.extra = extra;
+	}
+}
+
 /** Mirrors `NodeError` + `NodeOperationError` in the subset the validation boundary exposes. */
 export class NodeOperationError extends Error {
 	constructor(node, error, options = {}) {

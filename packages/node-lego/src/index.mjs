@@ -1,5 +1,7 @@
-export { NodeOperationError } from './errors.mjs';
-export { cloneDeep, get, isEqual, toPath } from './lodash-lite.mjs';
+export { ApplicationError, NodeOperationError } from './errors.mjs';
+export { deepCopy } from './deep-copy.mjs';
+export { isExpression } from './expression-helpers.mjs';
+export { get, isEqual, toPath } from './lodash-lite.mjs';
 export {
 	NodeConnectionTypes,
 	getConnectionTypes,
@@ -14,6 +16,7 @@ export {
 export { checkConditions, getNodeFeatures } from './conditions.mjs';
 export { displayParameter, displayParameterPath, getPropertyValues } from './display.mjs';
 export { isNodeConnected, isTriggerLikeNode, validateNodeCredentials } from './node-validation.mjs';
+export { getNodeParameters } from './parameter-resolution.mjs';
 export {
 	assertIsValidNodeParameterValueType,
 	getParameterValueByPath,

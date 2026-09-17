@@ -229,47 +229,66 @@ model — the part the Workflow Model and the Execution LEGO import at runtime.
 | `parameter-utils.mjs` | `node-parameters/path-utils.ts` (`resolveRelativePath`), `rename-node-utils.ts` (`renameFormFields`), `node-parameter-value-type-guard.ts` (all guards), `type-guards.ts` L15/L60/L93 guards, `node-helpers.ts` `getParameterValueByPath` L1369 | `test/node-parameters/*.test.ts`, `test/rename-node-utils.test.ts` |
 | `parameter-type-validation.mjs` | `node-parameters/parameter-type-validation.ts` (272 ln) incl. `validateNodeParameters` | `test/node-parameters/parameter-type-validation.test.ts` (806 ln) |
 | `properties.mjs` | `node-helpers.ts` `mergeNodeProperties` L1641, `getVersionedNodeType` L1661, `isNodeWithWorkflowSelector` L1688, `resolveResourceAndOperation` L1692, `makeDescription` L1741, `isToolType`/`isHitlToolType`/`isTool` L1761-1814, `makeNodeName` L1816, `isDefaultNodeName` L1849, `getUpdatedToolDescription` L1864, `getToolDescriptionForNode` L1890, `getSubworkflowId` L1908; `type-guards.ts` L21-39 property guards | `test/node-helpers.test.ts` |
-| `errors.mjs` | `errors/node-operation.error.ts` + `errors/abstract/{node,execution-base}.error.ts` — **validation boundary only** | `tools/node-lego-differential.mjs` N09/N10 |
-| `lodash-lite.mjs` | the `lodash/{get,isEqual,cloneDeep}` subset the Node Model exercises | `node-model.test.mjs` |
+| `parameter-resolution.mjs` | `node-helpers.ts` `getParameterDependencies` L542, `getParameterResolveOrder` L577, `getNodeParameters` L658-1056 | `test/node-helpers.test.ts` `describe('getNodeParameters')` L34-3466, `noDataExpression` L6321-6524 |
+| `deep-copy.mjs` | `utils.ts` `deepCopy` L53-87 (the copy the Node Model uses — **not** lodash `cloneDeep`) | differential N18 |
+| `expression-helpers.mjs` | `expressions/expression-helpers.ts` `isExpression` (the only expressions surface the Node Model owns) | differential N18 |
+| `errors.mjs` | `errors/node-operation.error.ts` + `errors/abstract/{node,execution-base}.error.ts` + `@n8n/errors` `application.error.ts` — **validation/resolution boundary only** | differential N09/N10/N17/N18 |
+| `lodash-lite.mjs` | the `lodash/{get,isEqual}` helpers `node-helpers.ts` imports (DELTA-01) | `node-model.test.mjs` |
 
 ### 12.2 Explicit deltas (everything not 1:1)
 
-1. **`lodash` → `lodash-lite.mjs`.** DELTA-01. The reference imports `lodash/get`,
-   `lodash/isEqual`, `lodash/cloneDeep`; a LEGO must stay dependency-free (gate `N01`).
-   The subset is reimplemented and pinned by tests (`get`/`toPath` path grammar,
-   `isEqual` value semantics incl. `Date`, `cloneDeep` shape preservation).
+1. **`lodash` → `lodash-lite.mjs`.** DELTA-01. The reference imports exactly two lodash
+   helpers in `node-helpers.ts` (`lodash/get`, `lodash/isEqual`); a LEGO must stay
+   dependency-free (gate `N01`). Both are reimplemented and pinned by tests (`get`/`toPath`
+   path grammar, `isEqual` value semantics incl. `Date`). `deepCopy` is the reference's own
+   `utils.ts` helper and is reconstructed verbatim (`src/deep-copy.mjs`) — including its
+   `toJSON`-first behaviour, so a `Date` parameter becomes an ISO string.
 2. **Error class is a boundary-local reconstruction.** DELTA-02. `NodeOperationError`
    keeps the reference `name`, `message`, `level`, `node`, `context`, `messages`,
    `timestamp` — verified field-by-field (`N09/N10`) — but the *hierarchy*
    (`ExecutionBaseError`/`NodeError`/`ApplicationError`) stays outside this LEGO.
    Consolidation with `packages/execution-engine/src/errors.mjs` is ISSUE-024.
-3. **Not reconstructed (out of Node Model scope, listed so absence is explicit):**
-   `getNodeParameters`/`getNodeParametersIssues`/`getParameterIssues` (parameter ISSUES
-   engine), `getContext`, `getNodeWebhookPath`/`Url`, `cronNodeOptions`,
-   `getUpdatedToolDescription` callers, `filter-parameter.ts` (owned by the expressions
-   track), `node-reference-parser-utils.ts`, workflow validation. `renameFormFields` is
+3. **`ApplicationError` name quirk.** DELTA-03 (pinned, not a deviation): the reference
+   imports `ApplicationError` from `@n8n/errors`, whose constructor never sets `name` — so the
+   resolve-order guard throws an error whose `name === 'Error'` while `level === 'error'`.
+   `src/errors.mjs` reproduces that exactly; the differential compares `name`, `message`,
+   `level`, `extra` and `tags`.
+4. **Pinned behavioural quirks found while porting** (each verified against the published
+   build, i.e. bug-for-bug): `noDataExpression` strips the leading `=` only on the
+   `returnDefaults` path; a collection never materialises child defaults when no values are
+   set; `getParameterResolveOrder`'s unresolved-dependency `continue` only advances the
+   dependency loop, so cycles terminate with both parameters resolved; and a non-array
+   `fixedCollection` element is iterated with `for…of` (a string yields one empty object per
+   character). All are covered by `N16/N17` comparisons.
+5. **Not reconstructed (out of Node Model scope, listed so absence is explicit):**
+   `getNodeParametersIssues`/`getParameterIssues`/`mergeIssues` (parameter ISSUES engine —
+   needs the field-type validation and `filter-parameter.ts` ports), `getContext`,
+   `getNodeWebhookPath`/`Url`, `cronNodeOptions`, `getUpdatedToolDescription` callers,
+   `node-reference-parser-utils.ts`, workflow validation. `renameFormFields` is
    reconstructed though not re-exported by the published build (internal call site only).
 
 ### 12.3 Acceptance evidence
 
 * `tools/node-lego-gate.mjs` — gates `N01`…`N06` (`docs/isolation/evidence/node-lego-gate.json`).
-* `tools/node-lego-differential.mjs` — 234 comparisons against the published
-  `n8n-workflow@2.9.1` build (the version the pinned reference commit ships):
-  **234 agree / 0 diverge**, 2 NOT-DIFFABLE (`renameFormFields`, private `getPropertyValues`).
-  Falsifiability: each injected behavioral mutation (empty-array rule, expression
-  short-circuit) produced a `DIVERGE`, so the harness is not vacuous.
-* `packages/node-lego/test/node-model.test.mjs` — 45 cases, oracle-cited.
+* `tools/node-lego-differential.mjs` — 18 scenario groups / 315 comparisons against the
+  published `n8n-workflow@2.9.1` build (the version the pinned reference commit ships):
+  **315 agree / 0 diverge**, 2 NOT-DIFFABLE (`renameFormFields`, private `getPropertyValues`).
+  Falsifiability: injected behavioral mutations (empty-array rule, expression short-circuit,
+  the fixedCollection "value would get lost" early return, `deepCopy`'s `toJSON` handling)
+  each produced a `DIVERGE`, so the harness is not vacuous.
+* `packages/node-lego/test/node-model.test.mjs` — 58 cases, oracle-cited.
 
-### 12.4 Exported symbol list (54 — gate `N07` asserts every one is named here)
+### 12.4 Exported symbol list (57 — gate `N07` asserts every one is named here)
 
 | | | | | | |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `NodeConnectionTypes` | `NodeOperationError` | `assertIsValidNodeParameterValueType` | `assertParamIsArray` | `assertParamIsBoolean` | `assertParamIsNumber` |
-| `assertParamIsOfAnyTypes` | `assertParamIsString` | `checkConditions` | `cloneDeep` | `displayParameter` | `displayParameterPath` |
-| `get` | `getConnectionTypes` | `getNodeFeatures` | `getNodeInputs` | `getNodeOutputs` | `getParameterValueByPath` |
-| `getPropertyValues` | `getSubworkflowId` | `getToolDescriptionForNode` | `getUpdatedToolDescription` | `getVersionedNodeType` | `isAssignmentCollectionValue` |
-| `isDefaultNodeName` | `isEqual` | `isExecutable` | `isFilterValue` | `isHitlToolType` | `isINodeProperties` |
-| `isINodePropertyOptions` | `isINodePropertyOptionsList` | `isNodeConnected` | `isNodeParameterValue` | `isNodeParameters` | `isNodeWithWorkflowSelector` |
-| `isResourceLocatorValue` | `isResourceMapperValue` | `isSubNodeType` | `isTool` | `isToolType` | `isTriggerLikeNode` |
-| `isTriggerNode` | `isValidNodeParameterValueType` | `makeDescription` | `makeNodeName` | `mergeNodeProperties` | `nodeAcceptsInputType` |
-| `nodeHasOutputType` | `renameFormFields` | `resolveRelativePath` | `toPath` | `validateNodeCredentials` | `validateNodeParameters` |
+| `ApplicationError` | `NodeConnectionTypes` | `NodeOperationError` | `assertIsValidNodeParameterValueType` | `assertParamIsArray` | `assertParamIsBoolean` |
+| `assertParamIsNumber` | `assertParamIsOfAnyTypes` | `assertParamIsString` | `checkConditions` | `deepCopy` | `displayParameter` |
+| `displayParameterPath` | `get` | `getConnectionTypes` | `getNodeFeatures` | `getNodeInputs` | `getNodeOutputs` |
+| `getNodeParameters` | `getParameterValueByPath` | `getPropertyValues` | `getSubworkflowId` | `getToolDescriptionForNode` | `getUpdatedToolDescription` |
+| `getVersionedNodeType` | `isAssignmentCollectionValue` | `isDefaultNodeName` | `isEqual` | `isExecutable` | `isExpression` |
+| `isFilterValue` | `isHitlToolType` | `isINodeProperties` | `isINodePropertyOptions` | `isINodePropertyOptionsList` | `isNodeConnected` |
+| `isNodeParameterValue` | `isNodeParameters` | `isNodeWithWorkflowSelector` | `isResourceLocatorValue` | `isResourceMapperValue` | `isSubNodeType` |
+| `isTool` | `isToolType` | `isTriggerLikeNode` | `isTriggerNode` | `isValidNodeParameterValueType` | `makeDescription` |
+| `makeNodeName` | `mergeNodeProperties` | `nodeAcceptsInputType` | `nodeHasOutputType` | `renameFormFields` | `resolveRelativePath` |
+| `toPath` | `validateNodeCredentials` | `validateNodeParameters` |
