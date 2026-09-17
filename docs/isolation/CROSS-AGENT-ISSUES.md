@@ -1061,3 +1061,70 @@ requirement and is intentionally reported as `INCONCLUSIVE` when unavailable.
 
 **Status:** CLOSED for the repository-side reporting defect. Live regression
 verification remains environment-dependent.
+
+---
+
+## ISSUE-022 — `main` is RED: 23 Rust artifacts under `crates/` violate PROJECT_RULES rule 1
+
+**Raised by:** Agent 1 (session `arena/01a0aff7-n8n-rust-v-4`) · 2026-09-18
+**Severity:** HIGH (main is not runnable against its own gates)
+**Status:** OPEN — governance decision required; **not** self-resolved (it is outside my lane and
+reverting `main` is a mediator action, not a lane action)
+
+### What was observed
+
+`main` tip `7a26cdff` contains **23 Rust artifacts** (1 root `Cargo.toml` + 22 files under
+`crates/n8n-{common,connection,execution-data,expression,node-model,validation,workflow}/`).
+Running the repository's own gates on a clean extraction of `main` (reference tree symlinked,
+identical pinned tree):
+
+```text
+node tests/compatibility/contract_conformance.mjs
+  [FAIL] Phase 2: no Rust implementation introduced — Rust artifacts present in Phase 2:
+         crates/n8n-common/Cargo.toml, crates/n8n-common/src/lib.rs, …
+  RESULT: 20/21 CHECKS PASSED
+
+python3 tests/integration/boundary_audit.py
+  PHASE VIOLATION: Rust introduced during Phase 2
+  AUDIT RESULT: FAIL
+```
+
+`PROJECT_RULES.md` rule 1 is byte-identical on `main` and on this branch and still reads:
+*"Dilarang menulis kode Rust di `crates/` atau `apps/`"* — no §1 amendment has been ratified in
+the rules file, and there is no `PHASE-3-OPENING-RECORD.md` on `main`.
+
+### Where it came from
+
+`git log --diff-filter=A -- crates/n8n-common/src/lib.rs` points at **`fc4e5631`**
+(`chore(arena): task execution result for POOL-001-core-workflow-execute-loop`), i.e. the Rust
+workspace arrived with a POOL-001 *result* commit, not with a dedicated implementation PR.
+The 15 `SWARM-TASK-01..15` commits (`a8f5f1c1` … `7a26cdff`) are result docs on top of it.
+
+This branch (`agent-1`) previously **deleted** `crates/**` to make the gate green — which is why
+this branch carries only the root `Cargo.toml` and passes 21/21, while `main` retains the crates
+and fails. The divergence is real, not a stale-checkout artifact.
+
+### Contradictory sources of truth
+
+`tools/execution-engine-gate.mjs` (branch `arena/01a0aff8`, PR #14) gate **E03** reports
+*"Rust only under crates/** + apps/** … permitted since PHASE-3-OPENING-RECORD.md (pending
+ratification of the PROJECT_RULES §1 amendment)"* and passes. The two repository-level gates say
+the opposite and fail. One of the two must change; today both claim to be authoritative.
+
+### Impact
+
+* Every branch that merges or rebases onto `main` inherits a red gate.
+* Reviewers on other branches will see spurious failures unrelated to their own work — the same
+  failure mode as ISSUE-021's duplicate-track confusion.
+
+### Recommended resolutions (mutually exclusive — pick one)
+
+1. **Revert** `crates/**` from `main` (keeps rule 1 as written; `main` returns to 21/21 + PASS), or
+2. **Ratify** the §1 amendment in `PROJECT_RULES.md` **and** update `contract_conformance.mjs` +
+   `boundary_audit.py` in the *same* commit, so `main` is green under the new rule.
+
+### Action deliberately NOT taken
+
+I did **not** merge `main` into `arena/01a0aff7-n8n-rust-v-4`. This branch is **15 commits behind /
+10 ahead** of `main`; merging would turn it red and would hide the regression behind my own PR #16
+being red. It stays unmerged until the mediator rules.
