@@ -1,6 +1,6 @@
 # Execution LEGO — verification (Phase 3 reconstruction)
 
-Generated: 2026-09-17T19:37:26.594Z  ·  Package: `packages/execution-engine`  ·  Language: JavaScript (Node.js ESM)
+Generated: 2026-09-17T19:40:54.951Z  ·  Package: `packages/execution-engine`  ·  Language: JavaScript (Node.js ESM)
 
 **Gates: 12/12 PASS** · RUST: NONE via this LEGO (JavaScript track); Phase-3 port track confined to crates/** + apps/** · **Reference: n8n 2.9.4 (read-only)**
 
@@ -16,7 +16,7 @@ Generated: 2026-09-17T19:37:26.594Z  ·  Package: `packages/execution-engine`  �
 | E08 | public surface is documented in contracts/execution.contract.md | ✅ PASS | 72 exported symbols documented |
 | E09 | sandboxed expression evaluator security + compatibility | ✅ PASS | 7 pass / 0 fail |
 | E10 | activation lifecycle: triggers, pollers, lifecycle hooks | ✅ PASS | 20 pass / 0 fail |
-| E11 | waiting execution tracking & resumption (WaitTracker) | ✅ PASS | 18 pass / 0 fail |
+| E11 | waiting execution tracking & resumption (WaitTracker) | ✅ PASS | 23 pass / 0 fail |
 | E12 | active executions registry & lifecycle (ActiveExecutions) | ✅ PASS | 10 pass / 0 fail |
 
 Machine-readable evidence: `docs/isolation/evidence/execution-engine-gate.json`

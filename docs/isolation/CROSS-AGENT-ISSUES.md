@@ -1745,7 +1745,7 @@ real exit 0 unaffected.
 
 ---
 
-## ISSUE-028 — `WaitTracker` diverges from the reference in five observable ways (OPEN)
+## ISSUE-028 — `WaitTracker` diverges from the reference in five observable ways (CLOSED)
 
 **Detected by:** arena-worker, 2026-09-18 (review sweep 20, `results/REVIEW-SWEEP-2026-09-18.md`)
 **Affected:** `packages/execution-engine/src/wait-tracker.mjs` (TASK-428, commit `2d70d2c4`)
@@ -1775,4 +1775,13 @@ upside, and it is invisible to the current suite because `07-wait-tracker.test.m
 as a declared deviation in the task result plus `contracts/execution.contract.md`, pinned by a
 test. Add a key-set assertion on the `data` object so this class cannot recur unnoticed.
 
-**Status:** OPEN
+**Resolution:**
+All 5 items restored to verbatim reference parity in `packages/execution-engine/src/wait-tracker.mjs`:
+1. `startedAt: fullExecutionData.startedAt` is set unconditionally in the `data` literal, guaranteeing all 6 keys (`executionMode`, `executionData`, `workflowData`, `projectId`, `pushRef`, `startedAt`) are always present in the dispatched run payload.
+2. `triggerTime = execution.waitTill.getTime() - now` without `Math.max(0, ...)`, permitting negative delays for past timestamps as in reference line 78.
+3. Removed re-entry guard `if (this.#mainTimer) return` from `startTracking()`.
+4. Non-Date `waitTill` is not coerced (`waitTill.getTime()` called directly), raising `TypeError` on invalid types.
+5. Direct access `!fullExecutionData.workflowData.id` without `?.`, throwing `TypeError` if `workflowData` is undefined.
+Pinned with 5 new regression tests in `packages/execution-engine/test/07-wait-tracker.test.mjs` asserting all 5 reference behaviors and exact shape keys. Gate E11 updated from 18 to 23 tests passing.
+
+**Status:** CLOSED

@@ -114,8 +114,6 @@ export class WaitTracker {
 	}
 
 	startTracking() {
-		if (this.#mainTimer) return;
-
 		this.#mainTimer = this.#setIntervalFn(() => {
 			void this.getWaitingExecutions();
 		}, this.#pollIntervalMs);
@@ -142,10 +140,7 @@ export class WaitTracker {
 		for (const execution of executions) {
 			const executionId = String(execution.id);
 			if (!this.#waitingExecutions.has(executionId)) {
-				const waitTillDate = execution.waitTill instanceof Date
-					? execution.waitTill
-					: new Date(execution.waitTill);
-				const triggerTime = Math.max(0, waitTillDate.getTime() - now);
+				const triggerTime = execution.waitTill.getTime() - now;
 				const timer = this.#setTimeoutFn(() => {
 					void this.startExecution(executionId);
 				}, triggerTime);
@@ -183,7 +178,7 @@ export class WaitTracker {
 		if (fullExecutionData.finished) {
 			throw new UnexpectedError('The execution did succeed and can so not be started again.');
 		}
-		if (!fullExecutionData.workflowData?.id) {
+		if (!fullExecutionData.workflowData.id) {
 			throw new UnexpectedError('Only saved workflows can be resumed.');
 		}
 
@@ -196,10 +191,8 @@ export class WaitTracker {
 			workflowData: fullExecutionData.workflowData,
 			projectId: project?.id,
 			pushRef: fullExecutionData.data?.pushRef,
+			startedAt: fullExecutionData.startedAt,
 		};
-		if (fullExecutionData.startedAt !== undefined) {
-			data.startedAt = fullExecutionData.startedAt;
-		}
 
 		try {
 			await this.#workflowRunner.run(data, false, false, strId);

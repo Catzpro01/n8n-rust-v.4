@@ -578,3 +578,104 @@ test('helper: updateParentExecutionWithChildResults skips non-waiting parent', a
 	await updateParentExecutionWithChildResults(repo, 'parent-1', childRun);
 	assert.equal(updated, false);
 });
+
+test('ISSUE-028 fidelity: data object has exactly 6 keys even when startedAt is undefined', async () => {
+	let capturedData;
+	const runner = {
+		run: async (data) => {
+			capturedData = data;
+		},
+	};
+	const repo = {
+		findSingleExecution: async () => ({
+			id: 'exec-shape',
+			mode: 'manual',
+			finished: false,
+			workflowData: { id: 'wf-1' },
+			data: { pushRef: 'p-1' },
+			startedAt: undefined,
+		}),
+	};
+	const tracker = new WaitTracker({
+		workflowRunner: runner,
+		executionRepository: repo,
+		ownershipService: { getWorkflowProjectCached: async () => ({ id: 'proj-1' }) },
+	});
+
+	await tracker.startExecution('exec-shape');
+	assert.ok('startedAt' in capturedData, "'startedAt' must be present in data");
+	assert.deepEqual(
+		Object.keys(capturedData).sort(),
+		['executionData', 'executionMode', 'projectId', 'pushRef', 'startedAt', 'workflowData'].sort(),
+	);
+});
+
+test('ISSUE-028 fidelity: negative delay passed to setTimeout for past waitTill', async () => {
+	const delays = [];
+	const customSetTimeout = (_fn, delay) => {
+		delays.push(delay);
+		return 123;
+	};
+	const pastDate = new Date(Date.now() - 5000);
+	const repo = {
+		getWaitingExecutions: async () => [{ id: 'exec-past', waitTill: pastDate }],
+	};
+	const tracker = new WaitTracker({
+		executionRepository: repo,
+		setTimeoutFn: customSetTimeout,
+	});
+
+	await tracker.getWaitingExecutions();
+	assert.equal(delays.length, 1);
+	assert.ok(delays[0] <= -4000, `delay should be negative (~-5000), got ${delays[0]}`);
+});
+
+test('ISSUE-028 fidelity: double startTracking creates 2 intervals (no re-entry guard)', () => {
+	let intervalCount = 0;
+	const customSetInterval = () => {
+		intervalCount++;
+		return intervalCount;
+	};
+	const tracker = new WaitTracker({
+		setIntervalFn: customSetInterval,
+		executionRepository: { getWaitingExecutions: async () => [] },
+	});
+
+	tracker.startTracking();
+	tracker.startTracking();
+	assert.equal(intervalCount, 2, 'reference does not guard re-entry, creates 2 intervals');
+});
+
+test('ISSUE-028 fidelity: non-Date waitTill throws TypeError', async () => {
+	const repo = {
+		getWaitingExecutions: async () => [{ id: 'exec-str', waitTill: '2026-09-18T00:00:00Z' }],
+	};
+	const tracker = new WaitTracker({
+		executionRepository: repo,
+	});
+
+	await assert.rejects(
+		() => tracker.getWaitingExecutions(),
+		(err) => err instanceof TypeError && /getTime/.test(err.message),
+	);
+});
+
+test('ISSUE-028 fidelity: undefined workflowData throws TypeError', async () => {
+	const repo = {
+		findSingleExecution: async () => ({
+			id: 'exec-nowf',
+			mode: 'manual',
+			finished: false,
+			workflowData: undefined,
+			data: {},
+		}),
+	};
+	const tracker = new WaitTracker({
+		executionRepository: repo,
+	});
+
+	await assert.rejects(
+		() => tracker.startExecution('exec-nowf'),
+		(err) => err instanceof TypeError,
+	);
+});
