@@ -40,8 +40,8 @@
 | `C04` | adjacency, input/output edges, roots, leaves, `hasPath`, extractable | **FAIL — 35/223 berbeda** | PASS (271) |
 | `C05` | `compareConnections` atas pasangan korpus | PASS (6 pasangan) | PASS (6) |
 | `C06` | twin TS == twin ESM (anti-drift) | **FAIL — 20 divergensi** | PASS (12 graf) |
-| `C07` | `packages/connection-lego/test/*.test.mjs` | PASS (5/5, dangkal) | PASS (**13/13**) |
-| **Total** | | **4/7 check** | **7/7 · 1.246 panggilan · 0 divergensi** |
+| `C07` | `packages/connection-lego/test/*.test.mjs` | PASS (5/5, dangkal) | PASS (**20/20** setelah PHASE5-CONNECTION-INTEGRATION) |
+| **Total** | | **4/7 check** | **7/7 · 1.246 panggilan · 0 divergensi** (kini 8/8 · 1.258 dengan C08) |
 
 Contoh divergensi nyata yang tertangkap (tersimpan di evidence):
 
