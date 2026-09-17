@@ -36,7 +36,25 @@ async function runTests() {
 		},
 		{ name: '04-execution-data', fn: async () => { const s = await facade.persistence.saveWorkflow({ nodes: [{ name: 'Test' }], connections: {} }); const e = await facade.persistence.saveExecution({ workflowId: s.id, status: 'success' }); const g = await facade.persistence.getExecution(e.id); if (!g) throw new Error('not found'); } },
 		{ name: '05-expression', fn: async () => { const isExpr = (text) => /\{\{.*\}\}/.test(text); if (!isExpr('{{ $json.test }}')) throw new Error('isExpression fail'); } },
-		{ name: '06-trigger', fn: async () => { await facade.activateWorkflow('test-trigger', { nodes: [{ type: 'manualTrigger' }] }); if (!facade.trigger.isActive('test-trigger')) throw new Error('not active'); await facade.deactivateWorkflow('test-trigger'); if (facade.trigger.isActive('test-trigger')) throw new Error('still active'); } },
+		{
+			name: '06-trigger',
+			fn: async () => {
+				// `n8n-nodes-base.manualTrigger` cannot activate a workflow (STARTING_NODES) — the API
+				// layer rejects it, so the suite uses a schedule trigger and pins that rejection too.
+				let rejected = false;
+				try {
+					await facade.activateWorkflow('manual-only', { nodes: [{ name: 'Manual', type: 'n8n-nodes-base.manualTrigger' }] });
+				} catch (error) {
+					rejected = /has no trigger node/.test(error.message);
+				}
+				if (!rejected) throw new Error('manual-only workflow must not be activatable');
+
+				await facade.activateWorkflow('test-trigger', { nodes: [{ name: 'Cron', type: 'n8n-nodes-base.scheduleTrigger' }] });
+				if (!facade.trigger.isActive('test-trigger')) throw new Error('not active');
+				await facade.deactivateWorkflow('test-trigger');
+				if (facade.trigger.isActive('test-trigger')) throw new Error('still active');
+			},
+		},
 		{ name: '07-webhook', fn: async () => { facade.webhook.storeWebhook({ webhookPath: 'test', method: 'POST', node: 'Webhook', workflowId: 'wf1' }); const found = facade.webhook.findWebhook('POST', 'test'); if (!found) throw new Error('not found'); try { facade.webhook.storeWebhook({ webhookPath: 'test', method: 'POST', node: 'W2', workflowId: 'wf2' }); throw new Error('should conflict'); } catch (error) { if (!error.message.includes('conflict')) throw error; } } },
 		{ name: '08-scheduler', fn: async () => { facade.scheduler.registerCron({ workflowId: 'wf', nodeId: '1', expression: '* * * * *' }, () => {}); facade.scheduler.deregisterCrons('wf'); if (facade.scheduler.cronsByWorkflow.has('wf')) throw new Error('not deregistered'); } },
 		{ name: '09-persistence', fn: async () => { const s = await facade.persistence.saveWorkflow({ nodes: [{ name: 'Test' }], connections: {} }); const g = await facade.persistence.getWorkflow(s.id); if (!g) throw new Error('not found'); } },

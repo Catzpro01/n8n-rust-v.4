@@ -96,7 +96,27 @@ Golden: activate → `{active:true, triggerCount:1}`, `GET /rest/active-workflow
 - Node contract (SHARED): `INodeType.trigger(this: ITriggerFunctions): Promise<ITriggerResponse | undefined>`, `INodeType.poll(this: IPollFunctions): Promise<INodeExecutionData[][] | null>`.
 - Push: `workflowActivated` / `workflowDeactivated` / `workflowFailedToActivate` events.
 
-## 11. Compatibility requirements
+## 11. Verification
+
+`npm run trigger:check` (`tools/trigger-isolation-gate.mjs`) runs the port and the pinned reference
+side by side over the *same* `Workflow` objects, with stub logger / pollers / cron manager so the
+call order is observable:
+
+| Check | Scope | Evidence |
+|---|---|---|
+| `T01` | declared surface (7 exports, 6 registry members) | `ActiveWorkflows` comparison |
+| `T02` | state machine: add, duplicate add, trigger-less add, `get`, id ordering (`Object.keys`), remove, remove-all | 6 scenarios, 18 compared steps |
+| `T03` | failure semantics: activation wrapping, close-error reporting, deactivation wrapping, post-state | error name/message/node/level/cause visibility |
+| `T04` | `validateWorkflowHasTriggerLikeNode` (disabled nodes, unknown types, `STARTING_NODES`) | 9 node maps x 3 ignore lists |
+| `T05` | `toCronExpression` (crypto randomness frozen) | 8 trigger-time shapes x 3 random draws |
+| `T06` | `packages/trigger-lego/test/*.test.mjs` | 13/13 |
+
+Registry semantics that the gate pins and a naive implementation would break: duplicate activation is
+allowed, trigger-less workflows are stored with an empty response list, ids follow `Object.keys`
+ordering, `deregisterCrons` runs before the close calls, and the activation error does not expose
+`cause`. See `docs/isolation/trigger.md` §7.
+
+## 12. Compatibility requirements
 - Exact error strings above (tests and editor match on them).
 - Activation must be idempotent from the HTTP surface (second activate → 200 `active:true`).
 - Poll nodes must run under `mode:'trigger'` with `staticData` persisted after each poll (`WorkflowStaticDataService.saveStaticDataById`).

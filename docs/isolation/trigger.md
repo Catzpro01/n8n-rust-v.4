@@ -251,3 +251,64 @@ Agent 4 golden tests (added in this phase, executable without a database):
   the seconds field.
 * Manual-mode trigger execution depends on `additionalData.hooks` being set
   (assert in `TriggersAndPollers.runTrigger`).
+
+---
+
+## 7. Phase 5 — the runtime registry is now a port, not a copy
+
+Phase 4 shipped `packages/reconstructed-engine/src/trigger-engine.ts` as a 30-line `TriggerEngine`
+that invented its own semantics: it threw `'Workflow is already active'` on a second activation, it
+refused workflows without trigger nodes (`Workflow cannot be activated because it has no trigger
+node…` — that message belongs to the **API layer**, `validateWorkflowHasTriggerLikeNode`, not to the
+registry), and `allActive()` returned insertion order. The facade carried a second, slightly
+different copy (`InternalTriggerEngine`). Nothing compared either against n8n.
+
+### 7.1 The port (`packages/reconstructed-engine/src/trigger-engine.ts`)
+
+| Reference source | Ported symbols |
+|---|---|
+| `n8n-core` `execution-engine/active-workflows.ts` | `TriggerEngine`: `isActive`, `allActiveWorkflows`, `get`, `add`, `remove`, `removeAllTriggerAndPollerBasedWorkflows`, `closeTrigger` |
+| `n8n-workflow` `errors/workflow-activation.error.ts` (+ deactivation/trigger-close) | `WorkflowActivationError` (incl. the level heuristic), `WorkflowDeactivationError`, `TriggerCloseError` |
+| `n8n-workflow` `workflow-validation.ts` | `validateWorkflowHasTriggerLikeNode` + the `STARTING_NODES` list the CLI passes |
+| `n8n-workflow` `cron.ts` + `utils.randomInt` | `toCronExpression` / `randomInt` (crypto based, exactly like the reference) |
+
+Declared deviations (also in the LEGO manifest): the polling branch of `add()` is delegated through
+the `polling` hook because cron scheduling is owned by the Scheduler LEGO; there is no tracing span;
+the error classes are local (this module stays dependency-free), so `instanceof n8n-workflow` does
+not hold — `name`, `message`, `node`, `workflowId`, `level` and `cause` visibility do.
+
+### 7.2 Surprising reference semantics now pinned by tests
+
+- Re-adding an active workflow is **legal**: the triggers start again and the entry is replaced.
+  There is no `'Workflow is already active'` error anywhere in `ActiveWorkflows`.
+- A workflow **without** trigger nodes is stored with `triggerResponses: []`; only the CLI/API
+  validation rejects activation.
+- `allActiveWorkflows()` is `Object.keys(activeWorkflows)` — integer-like workflow ids sort first
+  (`['2','10','wf-2','wf-1']`), which a `Map`-based port would get wrong.
+- `remove()` calls `deregisterCrons(workflowId)` **before** closing the trigger responses, logs a
+  warning for unknown ids and returns `false` for them.
+- `WorkflowActivationError` does **not** expose `cause` (its `ApplicationError` base swallows it),
+  and `TriggerCloseError` keeps `name === 'Error'`; a `TriggerCloseError` during close is only
+  reported (never wrapped), every other close failure becomes a `WorkflowDeactivationError`.
+- `toCronExpression` draws its random fields from `crypto.getRandomValues` (not `Math.random`), and
+  `everyX`/hours randomises the **minute** field as well.
+
+### 7.3 Verification
+
+```bash
+npm run trigger:check      # T01..T06 → docs/isolation/evidence/trigger-lego-gate.json
+node --test packages/trigger-lego/test/*.test.mjs
+```
+
+`T02` alone replays six scenarios through the real `ActiveWorkflows` and the port side by side over
+the *same* `Workflow` objects, comparing return values, thrown-error shape and the ordered call log
+(trigger starts, cron deregistration, close calls, logger lines).
+
+Negative controls (injected, caught, reverted):
+
+| Injected defect | Caught by |
+|---|---|
+| `allActiveWorkflows()` returns insertion order instead of `Object.keys` order | `T02` — `T02-d-ordering-of-ids` |
+| `add()` rethrows the raw trigger error instead of wrapping it | `T03` — `T03-a-trigger-throws` |
+| validator stops skipping `disabled` nodes | `T04` — `nodes=Disabled trigger` |
+| `everyX`/hours loses its randomised minute field | `T05` — `everyX {unit: hours}` |

@@ -19,7 +19,7 @@ The reconstruction never rewrites n8n from guesswork: n8n 2.9.4 is the behaviora
 | **VALIDATION (LEGO 04)** | **✅ VERIFIED** | cycle + uniqueness + dangling |
 | **EXECUTION-DATA (LEGO 05)** | **✅ VERIFIED** | Phase 4-12, I1-I14, factories v1, 2/2 PASS |
 | **EXPRESSION (LEGO 06)** | **✅ VERIFIED** | Phase 4-12, E1-E8, isExpression + sandbox, 4/4 PASS |
-| **TRIGGER (LEGO 07)** | **✅ VERIFIED** | Phase 4-14, ActiveWorkflows, 2/2 PASS |
+| **TRIGGER (LEGO 07)** | **✅ VERIFIED + INTEGRATED** | `ActiveWorkflows` port · `npm run trigger:check` 6/6 · 78 differential calls vs `n8n-core`/`n8n-workflow` · 13/13 unit · consumed by the facade |
 | **WEBHOOK (LEGO 08)** | **✅ VERIFIED** | Phase 4-14, WebhookService dynamic matching, 2/2 PASS |
 | **SCHEDULER (LEGO 09)** | **✅ VERIFIED** | Phase 4-14, ScheduledTaskManager CronJob, 2/2 PASS |
 | **PERSISTENCE (LEGO 10)** | **✅ VERIFIED** | Phase 4-14, WorkflowRepository + flatted, 2/2 PASS |
@@ -86,6 +86,7 @@ npm run verify                            # 12 gates G01-G12, ~30 s, writes docs
 npm run verify:fast                       # same minus the live engine checks
 npm run i18n:check                        # Phase 4B: 6-locale parity + 24 behaviour tests (offline)
 npm run connection:check                  # Phase 3B/5: differential gate vs n8n-workflow@2.9.1, 1,944 calls (C01-C09)
+npm run trigger:check                     # Phase 5: ActiveWorkflows port vs n8n-core@2.9.1, T01-T06
 ```
 
 ## Production Readiness Certificate

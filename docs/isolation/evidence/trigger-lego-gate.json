@@ -1,0 +1,73 @@
+{
+  "generatedAt": "2026-09-17T21:01:55.066Z",
+  "phase": "phase-5-trigger",
+  "lego": "trigger",
+  "ports": [
+    "P-TRIGGER-REGISTRY",
+    "P-TRIGGER-VALIDATION"
+  ],
+  "oracle": {
+    "core": "/home/user/n8n-rust-v.4/.runtime/node_modules/n8n-core",
+    "workflow": "/home/user/n8n-rust-v.4/.runtime/node_modules/n8n-workflow",
+    "version": "2.9.1"
+  },
+  "scenarios": [
+    "T02-a-add-and-inspect",
+    "T02-b-duplicate-add",
+    "T02-c-workflow-without-triggers",
+    "T02-d-ordering-of-ids",
+    "T02-e-remove-once-and-twice",
+    "T02-f-remove-all",
+    "T03-a-trigger-throws",
+    "T03-b-close-throws",
+    "T03-c-trigger-close-error-is-reported"
+  ],
+  "comparisons": {
+    "total": 78,
+    "byCheck": {
+      "T02": 27,
+      "T04": 27,
+      "T05": 24
+    }
+  },
+  "differences": [],
+  "checks": [
+    {
+      "id": "T01",
+      "title": "the port exports the reference surface",
+      "status": "PASS",
+      "detail": "7 exports, 6 registry methods (reference ActiveWorkflows: 9 members)"
+    },
+    {
+      "id": "T02",
+      "title": "state machine differential: add / duplicate / no-trigger / ordering / remove",
+      "status": "PASS",
+      "detail": "18 registry calls identical over 6 scenarios"
+    },
+    {
+      "id": "T03",
+      "title": "failure semantics differential: activation, close and deactivation errors",
+      "status": "PASS",
+      "detail": "activation error name/message/node, close-error wrapping and post-state identical"
+    },
+    {
+      "id": "T04",
+      "title": "activation validation differential: validateWorkflowHasTriggerLikeNode",
+      "status": "PASS",
+      "detail": "27 validation calls identical (9 node maps x 3 ignore lists)"
+    },
+    {
+      "id": "T05",
+      "title": "cron helper differential: toCronExpression shapes",
+      "status": "PASS",
+      "detail": "24 cron expressions identical (crypto randomness frozen per call: the reference randomises seconds, and a minute for everyX/hours)"
+    },
+    {
+      "id": "T06",
+      "title": "Trigger LEGO unit suite PASS (packages/trigger-lego/test)",
+      "status": "PASS",
+      "detail": "node --test test/*.test.mjs → 17/17 PASS"
+    }
+  ],
+  "verdict": "PASS"
+}

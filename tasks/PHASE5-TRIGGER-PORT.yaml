@@ -1,0 +1,44 @@
+# PHASE5-TRIGGER-PORT — the trigger registry must be a port of ActiveWorkflows, not a guess
+# Trigger: `packages/reconstructed-engine/src/trigger-engine.ts` (and the facade's inline
+#   `InternalTriggerEngine` copy) invented semantics that contradict n8n:
+#     * a second activation threw 'Workflow is already active' (the reference allows it),
+#     * a workflow without trigger nodes was rejected by the registry (the reference stores it with
+#       an empty response list; the rejection belongs to the API layer validator),
+#     * allActive() returned insertion order while the reference returns Object.keys order,
+#     * errors were generic `Error`s instead of WorkflowActivationError/WorkflowDeactivationError,
+#     * `toCronExpression` used Math.random and dropped the random minute field for everyX/hours.
+# LEGO cycle: IMPLEMENTED → VERIFIED (differential gate T01-T06) → INTEGRATED into the facade.
+
+phase: 5
+lego: trigger
+agent: agent-3 (Arena session arena/01a0b104-n8n-rust-v-4)
+
+allowed_paths:
+  - packages/reconstructed-engine/src/trigger-engine.ts
+  - packages/reconstructed-engine/src/n8n-reconstructed-facade.ts
+  - packages/reconstructed-engine/test-integration.mjs
+  - packages/trigger-lego/**
+  - tools/trigger-isolation-gate.mjs
+  - docs/isolation/trigger.md
+  - docs/isolation/evidence/trigger-lego-gate.json
+  - contracts/trigger.contract.md
+  - package.json
+  - README.md
+  - tasks/PHASE5-TRIGGER-PORT.yaml
+  - results/PHASE5-TRIGGER-PORT.md
+
+forbidden_paths:
+  - reference/n8n/**        # pinned, read-only (Vue editor UI stays byte-identical)
+  - crates/**
+  - apps/**
+
+oracle:
+  - .runtime/node_modules/n8n-core — ActiveWorkflows (state machine, error wrapping)
+  - .runtime/node_modules/n8n-workflow — validateWorkflowHasTriggerLikeNode, toCronExpression,
+    WorkflowActivationError/WorkflowDeactivationError/TriggerCloseError
+
+tests:
+  - trigger_check      # npm run trigger:check → T01..T06, 6/6, 78 differential calls
+  - trigger_suite      # node --test packages/trigger-lego/test/*.test.mjs → 13/13
+  - engine_typecheck   # tsc -p packages/reconstructed-engine/tsconfig.json → 0 errors
+  - repository_gate    # npm run verify (12/12) + connection:check (9/9) + i18n:check (5/5)

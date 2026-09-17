@@ -8,6 +8,7 @@
 // (`connection-routing-engine.ts`, proven 1:1 against n8n-workflow@2.9.1 by
 // `npm run connection:check`) and exposes it as `facade.connection`.
 import * as connectionPort from './connection-routing-engine.ts';
+import { STARTING_NODES, TriggerEngine, validateWorkflowHasTriggerLikeNode } from './trigger-engine.ts';
 
 export interface N8nReconstructedConfig {
   mode: 'production' | 'development' | 'test';
@@ -56,34 +57,6 @@ class InternalExecutionDataEngine {
       startData: {},
     };
   }
-}
-
-class InternalTriggerEngine {
-  activeWorkflows = new Map<string, any>();
-  triggerResponses = new Map<string, any[]>();
-
-  async addWorkflow(workflowId: string, workflow: any, mode = 'activate') {
-    if (this.activeWorkflows.has(workflowId)) throw new Error('Workflow is already active');
-    const triggerNodes = workflow.nodes?.filter((n: any) => n.type?.toLowerCase().includes('trigger')) || [];
-    if (triggerNodes.length === 0 && (workflow.nodes?.filter((n: any) => n.type?.toLowerCase().includes('webhook')).length === 0)) {
-      // Allow if has webhook or polling, but for simplicity require at least 1 node
-      if (workflow.nodes?.length === 0) throw new Error('Workflow cannot be activated because it has no trigger node. At least one trigger, webhook, or polling node is required.');
-    }
-    this.activeWorkflows.set(workflowId, { workflow, mode, triggers: triggerNodes });
-    return { triggerCount: triggerNodes.length };
-  }
-
-  async removeWorkflow(workflowId: string) {
-    const responses = this.triggerResponses.get(workflowId) || [];
-    for (const resp of responses) {
-      try { await resp.closeFunction?.(); } catch (e) { console.warn('Failed to close trigger', e); }
-    }
-    this.triggerResponses.delete(workflowId);
-    return this.activeWorkflows.delete(workflowId);
-  }
-
-  isActive(workflowId: string) { return this.activeWorkflows.has(workflowId); }
-  allActive() { return [...this.activeWorkflows.keys()]; }
 }
 
 class InternalWebhookEngine {
@@ -206,7 +179,8 @@ export class N8nReconstructedFacade {
    */
   public readonly connection = connectionPort;
 
-  public readonly trigger: InternalTriggerEngine;
+  /** LEGO 07 · trigger — the reference-exact registry (no inline copy any more). */
+  public readonly trigger: TriggerEngine;
   public readonly webhook: InternalWebhookEngine;
   public readonly scheduler: InternalSchedulerEngine;
   public readonly persistence: InternalPersistenceEngine;
@@ -214,7 +188,7 @@ export class N8nReconstructedFacade {
 
   private constructor(config: N8nReconstructedConfig) {
     this.config = config;
-    this.trigger = new InternalTriggerEngine();
+    this.trigger = new TriggerEngine();
     this.webhook = new InternalWebhookEngine();
     this.scheduler = new InternalSchedulerEngine();
     this.persistence = new InternalPersistenceEngine();
@@ -342,6 +316,22 @@ export class N8nReconstructedFacade {
   }
 
   async activateWorkflow(workflowId: string, workflow: any): Promise<{ success: boolean; triggerCount: number }> {
+    // API-layer policy (n8n `workflow-validation.service.ts` + `active-workflow-manager.ts`): a
+    // workflow needs a trigger-like node to be activatable. The registry below accepts anything.
+    const nodesByName = Object.fromEntries((workflow?.nodes ?? []).map((node: any) => [node.name, node]));
+    const nodeTypes = {
+      // The engine has no node catalogue, so the classification is name-based (documented deviation).
+      getByNameAndVersion: (type: string) => {
+        const lower = String(type).toLowerCase();
+        return lower.includes('trigger') || lower.includes('webhook') || lower.includes('poll') || lower.includes('schedule') || lower.includes('cron')
+          ? { trigger: {} }
+          : {};
+      },
+    };
+    // `STARTING_NODES` is what the CLI passes: manual triggers cannot *activate* a workflow.
+    const validation = validateWorkflowHasTriggerLikeNode(nodesByName, nodeTypes, STARTING_NODES);
+    if (!validation.isValid && (workflow?.nodes ?? []).length > 0) throw new Error(validation.error);
+
     const triggerResult = await this.trigger.addWorkflow(workflowId, workflow, 'activate');
     const webhooks = workflow.nodes?.filter((n: any) => n.type?.toLowerCase().includes('webhook')) || [];
     for (const whNode of webhooks) {
