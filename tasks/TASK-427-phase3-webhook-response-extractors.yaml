@@ -1,0 +1,25 @@
+id: TASK-427-phase3-webhook-response-extractors
+agent: arena-worker
+lego: webhook
+module: response-extractors
+phase: 3
+title: "Webhook LEGO: on-received and last-node response extraction"
+status: SUBMITTED_FOR_REVIEW
+objective: "Extract reference-compatible webhook bodies from node and execution results."
+acceptance:
+  - "onReceived noData, explicit, node-response, and default precedence"
+  - "firstEntryJson nested property and content-type handling"
+  - "first-output compatibility with optional all-output scanning"
+  - "exact firstEntryBinary missing-item/property errors"
+  - "in-memory base64 and persisted binary stream handling with MIME precedence"
+  - "allEntries and noData static results"
+  - "webhook suite 59/59; webhook gate 5/5"
+allowed_paths:
+  - packages/webhook-lego/**
+  - tools/webhook-lego-gate.mjs
+  - contracts/webhook.contract.md
+  - docs/isolation/LEGO-MASTER-MAP.md
+  - docs/isolation/evidence/webhook-lego-gate.json
+  - tasks/TASK-427-phase3-webhook-response-extractors.yaml
+  - results/TASK-427-phase3-webhook-response-extractors.md
+forbidden_paths: [reference/n8n/**, crates/**, apps/**]

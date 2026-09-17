@@ -112,6 +112,7 @@ asserts that confinement.
 | `TASK-424-phase3-waiting-forms` | webhook waiting form rendering | `contracts/webhook.contract.md` ✅ | `docs/isolation/webhook.md` ✅ | `packages/webhook-lego/test/*.test.mjs` 35/35 ✅ (11 waiting-form cases) | `tools/webhook-lego-gate.mjs` 5/5 ✅ | **SUBMITTED_FOR_REVIEW** |
 | `TASK-425-phase3-webhook-body-parser` | webhook native body parsing | `contracts/webhook.contract.md` ✅ | `docs/isolation/webhook.md` ✅ | `packages/webhook-lego/test/*.test.mjs` 42/42 ✅ (7 body-parser cases) | `tools/webhook-lego-gate.mjs` 5/5 ✅ | **SUBMITTED_FOR_REVIEW** |
 | `TASK-426-phase3-webhook-streaming-response` | webhook response/stream transport | `contracts/webhook.contract.md` ✅ | `docs/isolation/webhook.md` ✅ | `packages/webhook-lego/test/*.test.mjs` 49/49 ✅ (7 response-stream cases) | `tools/webhook-lego-gate.mjs` 5/5 ✅ | **SUBMITTED_FOR_REVIEW** |
+| `TASK-427-phase3-webhook-response-extractors` | webhook response extraction | `contracts/webhook.contract.md` ✅ | `docs/isolation/webhook.md` ✅ | `packages/webhook-lego/test/*.test.mjs` 59/59 ✅ (10 extractor cases) | `tools/webhook-lego-gate.mjs` 5/5 ✅ | **SUBMITTED_FOR_REVIEW** |
 
 | Phase 3 gate | Result |
 | :--- | :--- |
@@ -124,7 +125,8 @@ holds 35 cases in 5 groups; `checksum` (8) + `toJSON` (6) + `rename` (6) are cov
 `packages/workflow-model-lego`, `traversal` (9) + `compareConnections` (6) by
 `packages/connection-lego`. The same file is the acceptance set for the Rust port track.
 
-**Next Phase 3 work:** caveat C1 (11/11 live smoke on the VPS + PostgreSQL), the remaining frozen
-Workflow surface (`getStartNode`, `getHighestNode`, `getNodeConnectionIndexes`,
-`getParentMainInputNode`, `getParentNodesByDepth`), and the remaining runtime around the activation
-LEGO (distributed activation pub/sub and waiting-form rendering are covered by TASK-423/TASK-424) — see `docs/isolation/execution.md` §7.
+**Next Phase 3 work:** caveat C1 (11/11 live smoke on the VPS + PostgreSQL) and production integration
+wiring for the reconstructed ports. The formerly listed frozen Workflow surface is implemented and
+covered by Workflow Model tests; distributed activation pub/sub, waiting forms, native body parsing,
+and streaming/response extraction are covered by TASK-423 through TASK-427 — see
+`docs/isolation/execution.md` §7.
