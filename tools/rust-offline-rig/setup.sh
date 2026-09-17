@@ -18,7 +18,10 @@ RUST_VERSION="1.88.0"
 NPM_HOST="https://registry.npmjs.org"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# target -> crate tags: the 12 crates the workspace dependency closure needs
+# target -> crate tags: the crates the workspace dependency closure needs.
+# Keep this list in sync with vendor_prep.py::PLAN. It intentionally includes
+# the small transitive closures for indexmap and regex so `run.sh test` is truly
+# offline and does not depend on crates.io metadata.
 CRATES=(
   "serde-rs/serde:v1.0.219"
   "serde-rs/json:v1.0.140"
@@ -30,6 +33,11 @@ CRATES=(
   "dtolnay/ryu:1.0.18"
   "BurntSushi/memchr:2.7.4"
   "dtolnay/unicode-ident:1.0.14"
+  "indexmap-rs/indexmap:2.2.6"
+  "indexmap-rs/equivalent:v1.0.1"
+  "rust-lang/hashbrown:v0.14.5"
+  "rust-lang/regex:1.10.6"
+  "BurntSushi/aho-corasick:1.1.3"
 )
 
 mkdir -p "$RIG/dl" "$RIG/vendorsrc"
@@ -85,9 +93,10 @@ for spec in "${CRATES[@]}"; do
 done
 
 # --- 3. vendor dir ------------------------------------------------------------
-if [ ! -d "$RIG/vendor" ] || [ -z "$(ls -A "$RIG/vendor" 2>/dev/null)" ]; then
-  python3 "$HERE/vendor_prep.py" "$RIG/vendorsrc" "$RIG/vendor"
-fi
+# Rebuild every time: vendor_prep.py is deterministic and removes stale entries,
+# which keeps the offline directory source aligned with the checked-in PLAN after
+# dependency-closure fixes.
+python3 "$HERE/vendor_prep.py" "$RIG/vendorsrc" "$RIG/vendor"
 
 echo
 echo "ready. next: tools/rust-offline-rig/run.sh check   (or: run.sh test)"

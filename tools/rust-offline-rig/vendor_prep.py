@@ -32,6 +32,13 @@ PLAN = [
     ("ryu", "ryu", "1.0.18"),
     ("memchr", "memchr", "2.7.4"),
     ("unicode-ident", "unicode-ident", "1.0.14"),
+    ("indexmap", "indexmap", "2.2.6"),
+    ("equivalent", "equivalent", "1.0.1"),
+    ("hashbrown", "hashbrown", "0.14.5"),
+    ("regex", "regex", "1.10.6"),
+    ("regex/regex-automata", "regex-automata", "0.4.7"),
+    ("regex/regex-syntax", "regex-syntax", "0.8.4"),
+    ("aho-corasick", "aho-corasick", "1.1.3"),
 ]
 
 DEP_VER = {name: ver for _, name, ver in PLAN}
@@ -76,6 +83,12 @@ def rewrite_manifest(path, name, version):
             continue
         if not stripped or stripped.startswith("#"):
             out.append(line)
+            continue
+        if stripped.startswith('workspace = "'):
+            report.append("  - dropped package workspace pointer")
+            continue
+        if stripped.startswith('path = "'):
+            report.append("  - dropped dependency path pointer")
             continue
         dotted = DOTTED.match(stripped)
         if dotted:
