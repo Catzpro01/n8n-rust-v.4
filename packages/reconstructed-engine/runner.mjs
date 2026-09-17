@@ -3,6 +3,15 @@
  * Keeps scheduling, execution data, and node context behind explicit boundaries.
  */
 import { NodeExecutionContext } from './execution-context.mjs';
+import {
+  isSoftFailure,
+  mergeErrorInfo,
+  retryPlanFor,
+  shouldContinueOnError,
+  sleep,
+  splitErrorOutput,
+  toErrorRecord,
+} from './error-policy.mjs';
 
 function normalizeItems(data) {
   const values = Array.isArray(data) ? data : [data];
@@ -87,66 +96,115 @@ export class WorkflowExecutionEngine {
       if (!node || node.disabled) continue;
 
       const inputData = prepareInput(queued.inputData);
+      // R5 passthrough uses the items AS RECEIVED (upstream pairedItems intact),
+      // not the re-stamped inputData.
+      const receivedItems = normalizeItems(queued.inputData);
       const runIndex = runData[node.name]?.length ?? 0;
       const context = new NodeExecutionContext({
         engine: this, node, inputData, runData, runIndex, source: queued.source, mode,
       });
       const handler = this.nodeTypes.get(node.type);
       const startedAt = Date.now();
+      const { maxTries, waitBetweenTries } = retryPlanFor(node); // R1
+      const sleepFn = options.sleep ?? sleep;
 
-      try {
-        let output = handler ? await handler(node, context.getInputData(), context) : context.getInputData();
-        let outputs = assignPairedItems(normalizeOutputs(output), inputData);
-        if (node.alwaysOutputData && outputs.every((branch) => branch.length === 0)) {
-          outputs = [[{ json: {}, pairedItem: inputData.map((_item, item) => ({ item })) }]];
+      // R1+R2+R3 — retry loop. Reference: for (tryIndex...) with pre-retry wait
+      // and error reset, plus the inner soft-fail (`json.error`) re-run loop.
+      // `rawOutputs` (pre-paired-assignment) is kept: R7 splits BEFORE the
+      // engine assigns paired items, exactly like the reference.
+      let executionError;
+      let outputs;
+      let rawOutputs;
+      const invoke = () => (handler ? handler(node, context.getInputData(), context) : context.getInputData());
+      for (let tryIndex = 0; tryIndex < maxTries; tryIndex++) {
+        if (tryIndex !== 0) {
+          executionError = undefined;
+          if (waitBetweenTries !== 0) await sleepFn(waitBetweenTries);
         }
-
-        const task = {
-          startTime: startedAt,
-          executionIndex,
-          executionTime: Date.now() - startedAt,
-          source: queued.source,
-          executionStatus: 'success',
-          data: { main: outputs },
-        };
-        (runData[node.name] ??= []).push(task);
-        executionData.set(node.name, outputs[0] ?? []);
-        executionLog.push({
-          node: node.name,
-          type: node.type,
-          inputCount: inputData.length,
-          outputCount: outputs.reduce((total, branch) => total + branch.length, 0),
-          durationMs: task.executionTime,
-          status: 'success',
-        });
-
-        const mainConnections = this.connections[node.name]?.main ?? [];
-        outputs.forEach((branchItems, outputIndex) => {
-          if (branchItems.length === 0) return;
-          for (const connection of mainConnections[outputIndex] ?? []) {
-            queue.push({
-              nodeName: connection.node,
-              inputData: branchItems,
-              source: [{ previousNode: node.name, previousNodeOutput: outputIndex, previousNodeRun: runIndex }],
-            });
+        try {
+          rawOutputs = normalizeOutputs(await invoke());
+          outputs = assignPairedItems(rawOutputs, inputData);
+          while (isSoftFailure(rawOutputs) && tryIndex !== maxTries - 1) {
+            await sleepFn(waitBetweenTries);
+            rawOutputs = normalizeOutputs(await invoke());
+            outputs = assignPairedItems(rawOutputs, inputData);
+            tryIndex++;
           }
-        });
-      } catch (error) {
-        const task = {
-          startTime: startedAt,
-          executionIndex,
-          executionTime: Date.now() - startedAt,
-          source: queued.source,
-          executionStatus: 'error',
-          error: { name: error.name, message: error.message },
-        };
-        (runData[node.name] ??= []).push(task);
-        executionLog.push({ node: node.name, type: node.type, durationMs: task.executionTime, status: 'error', error: task.error });
-        return {
-          status: 'ERROR', finished: false, lastNodeExecuted: node.name,
-          error: task.error, executionLog, runData, data: Object.fromEntries(executionData),
-        };
+          break;
+        } catch (error) {
+          executionError = toErrorRecord(error); // R4 (Sentry reporting has no equivalent here)
+        }
       }
+
+      if (executionError !== undefined) {
+        // R5 — stop path: task WITHOUT data, execution ends with the error.
+        // (Reference also re-queues the node for restart; this engine has no
+        // restart API yet — deferred to the persistence LEGO, see ERROR-POLICY.md.)
+        if (!shouldContinueOnError(node)) {
+          const task = {
+            startTime: startedAt,
+            executionIndex,
+            executionTime: Date.now() - startedAt,
+            source: queued.source,
+            executionStatus: 'error',
+            error: executionError,
+          };
+          (runData[node.name] ??= []).push(task);
+          executionLog.push({ node: node.name, type: node.type, durationMs: task.executionTime, status: 'error', error: executionError });
+          return {
+            status: 'ERROR', finished: false, lastNodeExecuted: node.name,
+            error: executionError, executionLog, runData, data: Object.fromEntries(executionData),
+          };
+        }
+        // R5 — continue path: the node's input becomes its output.
+        outputs = [receivedItems];
+      }
+
+      if (executionError === undefined && node.onError === 'continueErrorOutput') {
+        // R7 — success-path split only (the reference splits inside the try
+        // block, BEFORE paired assignment and BEFORE the R6 merge).
+        outputs = assignPairedItems(
+          splitErrorOutput(rawOutputs, inputData, (this.connections[node.name]?.main ?? []).length),
+          inputData,
+        );
+      }
+      outputs = mergeErrorInfo(outputs); // R6 — runs on success AND continue paths
+      if (node.alwaysOutputData && outputs.every((branch) => branch.length === 0)) {
+        outputs = [[{ json: {}, pairedItem: inputData.map((_item, item) => ({ item })) }]];
+      }
+
+      const task = {
+        startTime: startedAt,
+        executionIndex,
+        executionTime: Date.now() - startedAt,
+        source: queued.source,
+        executionStatus: executionError !== undefined ? 'error' : 'success',
+        ...(executionError !== undefined ? { error: executionError } : {}),
+        data: { main: outputs },
+      };
+      (runData[node.name] ??= []).push(task);
+      executionData.set(node.name, outputs[0] ?? []);
+      executionLog.push({
+        node: node.name,
+        type: node.type,
+        inputCount: inputData.length,
+        outputCount: outputs.reduce((total, branch) => total + branch.length, 0),
+        durationMs: task.executionTime,
+        status: executionError !== undefined ? 'error' : 'success',
+        ...(executionError !== undefined ? { error: executionError } : {}),
+      });
+
+      const mainConnections = this.connections[node.name]?.main ?? [];
+      outputs.forEach((branchItems, outputIndex) => {
+        if (branchItems.length === 0) return;
+        for (const connection of mainConnections[outputIndex] ?? []) {
+          queue.push({
+            nodeName: connection.node,
+            inputData: branchItems,
+            source: [{ previousNode: node.name, previousNodeOutput: outputIndex, previousNodeRun: runIndex }],
+          });
+        }
+      });
       executionIndex += 1;
     }
 

@@ -1,0 +1,86 @@
+id: TASK-ENGINE-ERROR-01
+agent: arena-worker
+lego: execution
+module: reconstructed-engine
+phase: 3
+title: "Reconstructed engine: reference-faithful error, onError-routing & retry policy (POOL-003 lineage)"
+status: AVAILABLE
+
+# Lineage: results/POOL-003-error-retry-handling.md (agent-3) recorded only git
+# operations — no implementation. The reconstructed engine (packages/
+# reconstructed-engine, peer commit dc0f1dd5) currently stops with ERROR on any
+# node throw: no retry, no onError routing, no error-output split. This task ports
+# the WorkflowExecute failure policy 1:1 from n8n 2.9.4 source (read-only).
+#
+# Reference (all read-only, with line citations in ERROR-POLICY.md):
+# - reference/n8n/packages/core/src/execution-engine/workflow-execute.ts
+#   retry L1600-1630, soft-fail re-run L1670-1690, success error-split L1720,
+#   thrown-error handling L1781-1900, merge loop L1902-1917, routing L1985-2017,
+#   handleNodeErrorOutput L2463+
+# - reference/n8n/packages/workflow/src/node-helpers.ts:1170 (error output append)
+# - reference/n8n/packages/workflow/src/interfaces.ts:1296 (OnError type)
+# - reference/n8n/packages/nodes-base/nodes/Code/Code.node.ts:246-293
+#   (per-item error-item conversion behind continueOnFail)
+
+allowed_paths:
+  - tasks/TASK-ENGINE-ERROR-01.yaml
+  - packages/reconstructed-engine/error-policy.mjs
+  - packages/reconstructed-engine/runner.mjs
+  - packages/reconstructed-engine/error-policy.test.mjs
+  - packages/reconstructed-engine/ERROR-POLICY.md
+  - results/TASK-ENGINE-ERROR-01.md
+
+forbidden_paths:
+  - reference/n8n/**
+  - crates/**
+  - apps/**
+  - packages/frontend/**
+  - reference/n8n/packages/frontend/**
+
+requires:
+  - packages/reconstructed-engine/runner.mjs
+  - packages/reconstructed-engine/execution-context.mjs
+
+source_modification: none   # reference is read-only; engine package only
+
+operations:
+  - name: git_status
+  - name: read_reference
+    args:
+      files:
+        - reference/n8n/packages/core/src/execution-engine/workflow-execute.ts
+        - reference/n8n/packages/workflow/src/node-helpers.ts
+        - reference/n8n/packages/nodes-base/nodes/Code/Code.node.ts
+  - name: write_file
+    args: { path: packages/reconstructed-engine/error-policy.mjs }
+  - name: edit_file
+    args: { path: packages/reconstructed-engine/runner.mjs }
+  - name: write_file
+    args: { path: packages/reconstructed-engine/error-policy.test.mjs }
+  - name: write_file
+    args: { path: packages/reconstructed-engine/ERROR-POLICY.md }
+  - name: run_shell
+    args: { cmd: "npm run reconstructed-engine:test", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "node packages/reconstructed-engine/test-run.mjs", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "node tests/compatibility/contract_conformance.mjs", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "python3 tests/integration/boundary_audit.py", expect_exit: 0 }
+  - name: write_file
+    args: { path: results/TASK-ENGINE-ERROR-01.md }
+
+acceptance:
+  - reconstructed-engine suite green (existing 5 + new error-policy tests)
+  - test-run.mjs demo still COMPLETED (no regression in happy path)
+  - offline gates stay green (42/42 + boundary PASS)
+  - retry clamps, pre-retry wait, error reset, soft-fail re-run, continue-mode
+    passthrough, stop path, merge loop, and error-output split all match the
+    cited reference lines; adaptations (error-branch index, paired merge,
+    injected sleep) documented in ERROR-POLICY.md
+  - results file has a non-empty operations table (Stage 2c T1 clean)
+  - no file under reference/, crates/, apps/, or frontend paths touched
+
+merge_condition:
+  - regression_gate_pass
+  - no_contract_violation
