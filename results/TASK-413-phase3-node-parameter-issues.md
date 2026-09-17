@@ -85,6 +85,32 @@ evidence for the pinned quirk). All mutations were reverted before the recorded 
 8. Resource-locator regex validation is skipped for values starting with `=` and for unknown
    modes (`modes.find` miss).
 
+## Concurrent landing (ISSUE-026)
+
+While this slice was being committed, peer commit `768e1e79` (`TASK-412`, same title) landed a
+narrower reconstruction of the same surface: `src/field-validation.mjs` (91 ln) + a 132-line
+`src/parameter-issues.mjs` + 8 tests. Measured on identical matrices against the published
+`n8n-workflow@2.9.1` build before consolidating:
+
+| implementation | `validateFieldType` matrix (560 cases) | issues fixtures |
+| :--- | :--- | :--- |
+| peer `field-validation.mjs` | **456 match / 104 differ** | peer `parameter-issues.mjs`: 13 match / 2 differ (15 fixtures) |
+| this lane (`type-validation.mjs` / `parameter-issues.mjs`) | **560 match / 0 differ** | **56/56** (differential N22) |
+
+Peer deltas (each REF-verified): `datetime` returned the raw input and rejected `12:30`-style
+times REF accepts; `url` returned the un-prefixed value where REF returns `https://…`; `object`
+accepted strict JSON only; `number` rejected inputs REF converts; the mapper branch omitted the
+empty `parameters[<name>]` array REF emits.
+
+Resolution: this lane's modules ship (they are the ones wired into `index.mjs`, the gate and the
+differential); `src/field-validation.mjs` was removed as a superseded duplicate (readable at
+`768e1e79`) since its only consumer was the superseded `parameter-issues.mjs`; the peer's test
+file is **kept** and now runs against the shipped modules (suite **82/82**, one expectation
+corrected against REF with the reason in a comment); the peer's `TASK-412` task/result files and
+map row stay in place and this lane's task is renumbered **TASK-413** (duplicate id → later task
+renumbers). Full write-up: `docs/isolation/CROSS-AGENT-ISSUES.md` ISSUE-026. Nothing else was
+deleted — the peer commit and every other lane artifact remain on the branch.
+
 ## Boundaries
 
 * `reference/n8n/**`, peer LEGO packages, the workflow LEGO and the execution engine are
@@ -112,7 +138,7 @@ Read-only sweep on the working tip, reproducing every peer claim from scratch:
 | engine differential | `84 agree / 0 diverge` |
 | activation differential | `43 agree / 0 diverge` |
 | node differential (this lane) | `1422 agree / 0 diverge / 0 harness errors` |
-| node suite + gate | `82/82` · `7/7 PASS` |
+| node suite + gate | `82/82` (74 + 8 peer cases) · `7/7 PASS` (`N03` 82, `N05` 1422, `N07` 81 symbols) |
 | `npm run verify:all` | exit `0` — 8 gates (execution 10/10 · connection 52/52 · workflow-model 26/26 · reconstructed-engine 28/28 · trigger 5/5 · webhook 5/5 · scheduler 6/6 · node 7/7 · persistence 6/6) |
 | `contract_conformance` / `boundary_audit` | `42/42 CHECKS PASSED` · `PASS (all edges documented)` |
 | reference pin | `15050 files, root f8da35180669d798…` |
