@@ -1,14 +1,19 @@
 # Workflow LEGO — Phase 2 isolation verification
 
+<<<<<<< HEAD
 Generated: 2026-09-17T20:52:11.256Z · reference n8n 2.9.4 (`b6dc2787c456`)
+=======
+Generated: 2026-09-17T20:50:57.353Z · reference n8n 2.9.4 (`b6dc2787c456`)
+>>>>>>> origin/arena/01a0b103-n8n-rust-v-4
 
-**Gates: 10/10 PASS** · **BEHAVIOR CHANGE: NONE DETECTED** · **RUST IMPLEMENTATION: NOT STARTED**
+**Gates: 11/11 PASS** · **BEHAVIOR CHANGE: NONE DETECTED** · **RUST IMPLEMENTATION: NOT STARTED**
 
 ## Requested gate checklist
 
 | gate | status | evidence |
 | :--- | :--- | :--- |
 | TypeScript build PASS | PASS | G06: tsc -p .extract/tsconfig.json → 0 errors<br>G07: tsc --noEmit → 0 errors |
+<<<<<<< HEAD
 | unit tests PASS | PASS | G08: # cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 11891.235951 |
 | workflow load PASS | PASS |  |
 | workflow save PASS | PASS |  |
@@ -18,6 +23,17 @@ Generated: 2026-09-17T20:52:11.256Z · reference n8n 2.9.4 (`b6dc2787c456`)
 | webhook PASS | PASS |  |
 | execution persistence PASS | PASS |  |
 | reference smoke test 11/11 PASS (VPS baseline; here: hash-pinned + live engine re-verified) | PASS | G04: Reference integrity check: PASS (15050 files, root f8da35180669d798…) |
+=======
+| unit tests PASS | PASS | G08: # cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 13270.242619 |
+| workflow load PASS | PASS | G11: 7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS |
+| workflow save PASS | PASS | G11: 7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS |
+| manual execution PASS | PASS | G11: 7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS |
+| 1-node PASS | PASS | G11: 7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS |
+| linear workflow PASS | PASS | G11: 7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS |
+| webhook PASS | PASS | G11: 7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS |
+| execution persistence PASS | PASS | G11: 7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS |
+| reference smoke test 11/11 PASS (VPS baseline; here: hash-pinned + live engine re-verified) | PASS | G04: Reference integrity check: PASS (15050 files, root f8da35180669d798…)<br>G11: 7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS |
+>>>>>>> origin/arena/01a0b103-n8n-rust-v-4
 
 ## All gates
 
@@ -30,9 +46,16 @@ Generated: 2026-09-17T20:52:11.256Z · reference n8n 2.9.4 (`b6dc2787c456`)
 | G05 | isolation extraction (pure import rewrites only) | PASS | isolated unit written to packages/workflow-lego/.extract   owned files copied : 10   port rewrites      : 25 across 10 files     @lego/ports/checksum-digest : 1     @lego/ports/config : 1     @lego/ports/constants : 1    |
 | G06 | TypeScript build PASS (isolated unit, ports only) | PASS | tsc -p .extract/tsconfig.json → 0 errors |
 | G07 | TypeScript build PASS (versioned boundary/ports/facade) | PASS | tsc --noEmit → 0 errors |
+<<<<<<< HEAD
 | G08 | unit tests PASS (boundary, extraction, equivalence, strict isolation, surface) | PASS | # cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 11891.235951 |
 | G09 | BEFORE vs AFTER digest: BEHAVIOR CHANGE NONE | PASS | 252 section comparisons across 18 workflows — 0 differences · strict: 217 identical, 35 in declared port sections |
 | G10 | strict port mode: no hidden coupling to the reference runtime | PASS | # cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 1265.132623 |
+=======
+| G08 | unit tests PASS (boundary, extraction, equivalence, strict isolation, surface) | PASS | # cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 13270.242619 |
+| G09 | BEFORE vs AFTER digest: BEHAVIOR CHANGE NONE | PASS | 252 section comparisons across 18 workflows — 0 differences · strict: 217 identical, 35 in declared port sections |
+| G10 | strict port mode: no hidden coupling to the reference runtime | PASS | # cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 1783.896769 |
+| G11 | live verification: workflow load / save / 1-node / linear / webhook / execution record | PASS | 7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS |
+>>>>>>> origin/arena/01a0b103-n8n-rust-v-4
 
 ## Live verification (reference execution engine)
 
