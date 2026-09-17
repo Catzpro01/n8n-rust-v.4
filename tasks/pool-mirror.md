@@ -18,7 +18,7 @@ standing worker can still obey `STANDING-WORKER-PROTOCOL.md` offline.
    `n/a (offline)` until the orchestration plane is reachable again.
 
 **Generated:** 2026-09-17 15:40 UTC by `arena/01a0afff-n8n-rust-v-4` (TASK-POOL-VERIFY-01)
-**Sources:** `results/*.md` (49 files across open branches) + `tasks/*.yaml` (33 manifests)
+**Sources:** `results/*.md` (64 files across main + open branches) + `tasks/*.yaml` (33 manifests)
 
 ## Completed tasks (result committed)
 

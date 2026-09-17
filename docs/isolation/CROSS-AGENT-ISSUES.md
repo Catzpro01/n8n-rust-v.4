@@ -1155,3 +1155,72 @@ re-run of both tracks in this sandbox confirms they are individually green but s
 duplicated: `reconstructed-engine:test` 21/21 and `execution:gate` 8/8
 (`docs/isolation/evidence/execution-engine-gate.json`, regenerated this run). No ownership was
 changed — consolidation remains a pre-Phase-3-exit orchestrator decision per the Required Action.
+
+---
+
+## ISSUE-022 — SWARM-TASK results on main claim deliverables that main does not contain (OPEN)
+
+**Detected by:** `arena/01a0afff-n8n-rust-v.4` (worker sweep, 2026-09-17)
+**Affected:** pipeline owner, agents 1–15 (swarm cluster), orchestrator
+**Type:** Evidence integrity (mild variant of ISSUE-018/020) + orphaned deliverables + track sprawl
+**Severity:** MEDIUM — `main` remains runnable (results are docs-only), but 15 `SUCCESS`
+results on `main` reference code that is not on `main`.
+
+**Description:**
+Between `fc4e5631` and `origin/main` (`7a26cdff`) the pipeline committed
+`SWARM-TASK-01..15` results. The **entire** `fc4e5631..origin/main` diff is:
+
+```text
+15 files changed, 760 insertions(+), 0 deletions(-)   # all results/SWARM-TASK-*.md
+```
+
+No `packages/**` file. Yet every result asserts `write_file ✓`, `git_commit ✓`,
+`git_push ✓` with a named file, e.g. SWARM-TASK-15:
+
+```text
+Successfully wrote 427 bytes to packages/reconstructed-engine/src/v8-heap-profiler.ts
+[agent-15 8a03277b] feat(performance): ... 1 file changed, 9 insertions(+)
+fc4e5631..8a03277b  agent-15 -> agent-15
+```
+
+**What I verified (machine evidence, not taken on trust):**
+1. All 15 `agent-N` branches were fetched. Each carries exactly **one** deliverable file
+   under `packages/reconstructed-engine/src/` plus a result-recording commit — so the
+   writes/commits/pushes on the **agent branches are real**, and byte counts match the
+   `write_file` claims exactly (466/425/427/1070 B spot-checked 4/15).
+2. The deliverables were **never merged into `main`** — only the result files are.
+   The results' location claim ("SUCCESS" on main) is therefore false as written.
+3. `packages/reconstructed-engine/` at `fc4e5631` has **no `package.json`, no
+   `tsconfig.json`, no tests** (only `runner.mjs`, `test-run.mjs`). The deliverables are
+   TypeScript files in a plain-ESM `.mjs` package: untyped, unbuilt, untested, and
+   imported by nothing on any branch.
+4. Two stubs conflict with arbitrated ownership / reference behaviour:
+   - `dag-cycle-detector.ts` (SWARM-TASK-04) re-implements cycle detection, which
+     **ISSUE-003 Option A assigns exclusively to the Validation LEGO**
+     (`contracts/validation.contract.md:44`).
+   - `paired-item-tracker.ts` (SWARM-TASK-06) `tracePairedItem(src, tgt)` returns
+     `{item: src, input: 0}` — invented semantics; n8n's pairedItem rules
+     (`workflow-execute.ts` I3/I9, pinned in `packages/execution-engine/src/paired-items`
+     lineage) do not behave that way.
+5. The stubs sit in the **prototype track** that ISSUE-021 flags for consolidation away
+   from `packages/execution-engine/` — i.e. they widen the very duplication the
+   consolidation is meant to close.
+6. No swarm task manifest (`tasks/SWARM-TASK-*.yaml`) exists in-repo; the specs live
+   only in the unreachable Supabase pool (ISSUE-019), so the 15 tasks are currently
+   **unverifiable against a spec** by any worker.
+
+**Required action:**
+1. **Pipeline owner:** either merge deliverables into `main` with their results, or make
+   each result name the branch that carries its deliverable. A `SUCCESS` on `main` with
+   zero deliverables on `main` is the ISSUE-018/020 pattern and must stop (cf.
+   ISSUE-020 Required Action: failed/absent `git_commit` ⇒ hard failure).
+2. **Orchestrator:** decide the swarm deliverables' disposition before any merge:
+   (a) quarantine (recommended) — they stay on `agent-N` branches; or
+   (b) adopt — in which case each needs a spec committed in-repo, reference-derived
+   semantics (line-mapped to `reference/n8n/`, never guesswork), package tooling
+   (`package.json`/`tsconfig`/tests per PROJECT_RULES §5), and ownership reassignment
+   (cycle detection → Validation per Option A).
+3. **All workers:** do not build on the 15 stubs or the `packages/reconstructed-engine/`
+   prototype track until ISSUE-021 (consolidation) and this issue are resolved.
+
+**Status:** OPEN — documented; nothing merged or modified by this session.
