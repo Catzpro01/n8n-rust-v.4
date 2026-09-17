@@ -1,5 +1,6 @@
 {
 	"digest": "a8dbef89767c8157040f61c4477bd1b6",
 	"fileCount": 24,
-	"note": "Frozen at the Phase-3 baseline of the execution LEGO. crates/ is legacy and must not grow."
+	"rustWorkspaceFiles": 24,
+	"note": "Phase-3 snapshot of crates/** + apps/** as observed by the JavaScript execution LEGO. Rust is permitted there since docs/isolation/PHASE-3-OPENING-RECORD.md (pending ratification of the PROJECT_RULES §1 amendment); this file records the workspace state, it does not freeze it."
 }

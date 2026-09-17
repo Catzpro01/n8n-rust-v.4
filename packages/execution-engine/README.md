@@ -1,8 +1,9 @@
 # @lego/execution-engine
 
 Reconstructed n8n **2.9.4** workflow execution engine — JavaScript (Node.js ESM), zero
-dependencies, no build step. Part of the Phase-3 reconstruction
-(`PROJECT_RULES.md` v2.9.4: ZERO RUST).
+dependencies, no build step. Part of the Phase-3 reconstruction on the JavaScript track
+(`PROJECT_RULES.md` v2.9.4 §1); gate `E03` proves it contributes no Rust and that the Phase-3 port
+track stays confined to `crates/**` + `apps/**`.
 
 ```bash
 node --test test/*.test.mjs     # 32 assertions, node:test only

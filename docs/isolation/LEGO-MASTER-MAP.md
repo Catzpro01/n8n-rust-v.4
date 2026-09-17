@@ -70,11 +70,14 @@ map and the automated audit can never silently diverge.
 
 ---
 
-## 5. Phase 3 — Reconstruction (JavaScript / TypeScript, ZERO RUST)
+## 5. Phase 3 — Reconstruction (JavaScript / TypeScript track)
 
 Phase 2 isolates behaviour; Phase 3 rebuilds it. `PROJECT_RULES.md` v2.9.4 replaces the Rust
 implementation stage with a 1:1 JavaScript/TypeScript reconstruction of the backend, so the pool
-tasks below are delivered as dependency-free ESM modules, not Rust.
+tasks below are delivered as dependency-free ESM modules, not Rust. Phase 3 was formally opened on
+2026-09-17 (`docs/isolation/PHASE-3-OPENING-RECORD.md`), which also confines the separate Rust port
+track to `crates/**` + `apps/**` — the execution LEGO below is on the JavaScript track and gate `E03`
+asserts that confinement.
 
 | Pool task | LEGO | Contract | Isolation doc | Tests | Gate | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |

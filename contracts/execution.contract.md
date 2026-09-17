@@ -4,7 +4,8 @@
 **Owner:** execution LEGO (Agent-1 scope, Phase 3 reconstruction)
 **Status:** IMPLEMENTED · TESTED (32/32)
 **Implementation:** `packages/execution-engine/src/*.mjs` (JavaScript / Node.js ESM, zero dependencies)
-**Rust:** NOT ALLOWED for this LEGO (`PROJECT_RULES.md` v2.9.4 rule 1)
+**Rust:** none — this LEGO is JavaScript (`PROJECT_RULES.md` v2.9.4 §1). Since `docs/isolation/PHASE-3-OPENING-RECORD.md`,
+Rust is permitted for the port track only under `crates/**` + `apps/**`; gate `E03` enforces that confinement.
 
 ---
 

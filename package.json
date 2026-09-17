@@ -15,6 +15,6 @@
     "reconstructed-engine:test": "node --test packages/reconstructed-engine/*.test.mjs",
     "execution:test": "node --test packages/execution-engine/test/*.test.mjs",
     "execution:gate": "node tools/execution-engine-gate.mjs",
-    "verify:all": "npm run isolation:check && npm run execution:gate"
+    "verify:all": "npm run isolation:check && npm run reconstructed-engine:test && npm run execution:gate"
   }
 }

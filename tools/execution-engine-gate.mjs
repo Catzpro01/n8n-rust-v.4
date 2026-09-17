@@ -96,24 +96,57 @@ gate('E02', 'sources are import-closed (no reference/ or n8n package imports)', 
 	return `${sources.length} source files, all imports relative or node: builtins`;
 });
 
-/* E03 — Rust guard -------------------------------------------------------- */
-gate('E03', 'Rust guard: no Rust added by this LEGO, crates/apps frozen', () => {
-	const rustInPackage = walk(PKG, (path) => path.endsWith('.rs') || path.endsWith('Cargo.toml'));
-	if (rustInPackage.length > 0) throw new Error(`Rust files inside the package: ${rustInPackage.join(', ')}`);
+/* E03 — Rust confinement -------------------------------------------------- */
+gate('E03', 'Rust confinement: Rust only under crates/** + apps/**, this package contributes none', () => {
+	const isRust = (path) => /\.rs$|Cargo\.toml$|Cargo\.lock$/.test(path);
+	const ignored = /\/(\.git|node_modules|target)\//;
 
-	const frozenFiles = [...walk(join(REPO, 'crates')), ...walk(join(REPO, 'apps'))].map((path) => relative(REPO, path)).sort();
-	const digest = createHash('sha256').update(frozenFiles.join('\n')).digest('hex').slice(0, 32);
-	mkdirSync(join(PKG, 'manifest'), { recursive: true });
-	const pinPath = join(PKG, 'manifest/rust-freeze.json');
-	if (existsSync(pinPath)) {
-		const pinned = JSON.parse(readFileSync(pinPath, 'utf8'));
-		if (pinned.digest !== digest) {
-			throw new Error(`crates/ + apps/ changed: pinned ${pinned.digest}, actual ${digest}`);
-		}
-	} else {
-		writeFileSync(pinPath, `${JSON.stringify({ digest, fileCount: frozenFiles.length, note: 'Frozen at the Phase-3 baseline of the execution LEGO. crates/ is legacy and must not grow.' }, null, '\t')}\n`);
+	// Phase-3 rule (docs/isolation/PHASE-3-OPENING-RECORD.md §2): Rust is confined
+	// to crates/** and apps/**. Rust anywhere else in the repo fails both offline
+	// harnesses — this gate repeats that check for the area the LEGO touches.
+	const repoRust = walk(REPO, isRust).filter((path) => !ignored.test(path) && !path.includes('/reference/n8n/'));
+	// The workspace manifest at the repo root is required by the Phase-3 record.
+	const allowedRootManifests = [join(REPO, 'Cargo.toml'), join(REPO, 'Cargo.lock')];
+	const outside = repoRust.filter(
+		(path) =>
+			!path.startsWith(join(REPO, 'crates')) &&
+			!path.startsWith(join(REPO, 'apps')) &&
+			!allowedRootManifests.includes(path),
+	);
+	if (outside.length > 0) {
+		throw new Error(`Rust outside crates/** + apps/**: ${outside.map((path) => relative(REPO, path)).join(', ')}`);
 	}
-	return `${rustInPackage.length} Rust files in the package; crates/+apps/ frozen at ${digest} (${frozenFiles.length} files)`;
+
+	const rustInPackage = walk(PKG, isRust);
+	if (rustInPackage.length > 0) {
+		throw new Error(`Rust inside the JavaScript package: ${rustInPackage.map((path) => relative(REPO, path)).join(', ')}`);
+	}
+
+	// Informational evidence: the digest of the Phase-3 Rust workspace as this
+	// LEGO saw it. It is *recorded*, not frozen — the Rust port track may grow it.
+	const rustWorkspace = [...walk(join(REPO, 'crates')), ...walk(join(REPO, 'apps'))]
+		.map((path) => relative(REPO, path))
+		.sort();
+	const digest = createHash('sha256').update(rustWorkspace.join('\n')).digest('hex').slice(0, 32);
+	mkdirSync(join(PKG, 'manifest'), { recursive: true });
+	writeFileSync(
+		join(PKG, 'manifest/rust-freeze.json'),
+		`${JSON.stringify(
+			{
+				digest,
+				fileCount: rustWorkspace.length,
+				rustWorkspaceFiles: rustWorkspace.length,
+				note:
+					'Phase-3 snapshot of crates/** + apps/** as observed by the JavaScript execution LEGO. ' +
+					'Rust is permitted there since docs/isolation/PHASE-3-OPENING-RECORD.md (pending ratification of the ' +
+					'PROJECT_RULES §1 amendment); this file records the workspace state, it does not freeze it.',
+			},
+			null,
+			'\t',
+		)}\n`,
+	);
+
+	return `${repoRust.length} Rust files repo-wide, all inside crates/**+apps/**; workspace digest ${digest} (${rustWorkspace.length} files); package contributes 0`;
 });
 
 /* E04 — reference integrity ---------------------------------------------- */

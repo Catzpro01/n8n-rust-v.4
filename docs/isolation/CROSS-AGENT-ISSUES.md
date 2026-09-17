@@ -1100,3 +1100,38 @@ carry commit hashes and reproducible commands instead of pipeline-only logs.
 **Required action (pipeline owner):** treat a failed `git_commit` as a hard failure of the task
 verdict — a `SUCCESS` result whose tree is unchanged must not be accepted, and `git_push` must not
 report the branch as updated when the produced commit is empty.
+
+---
+
+## ISSUE-021 — Two engine tracks on the same branch (OPEN, ownership/consolidation)
+
+**Detected by:** `arena/01a0aff8-n8n-rust-v-4` (execution LEGO, Phase 3)
+**Affected:** `packages/reconstructed-engine/**`, `packages/execution-engine/**`, `package.json` scripts
+**Type:** Duplicate implementation / ownership
+**Severity:** MEDIUM
+
+**Description:**
+Two independent workflow engines now live in `packages/`:
+
+1. `packages/reconstructed-engine/` — the earlier prototype (`runner.mjs`, BFS queue over
+   `connections`, default pass-through for unknown types) plus `execution-context.mjs` and
+   `runner.test.mjs` (5/5) added on this branch by the `reconstructed-engine:test` track.
+2. `packages/execution-engine/` — the Phase-3 reconstruction (`83a77195`), line-mapped to
+   `reference/n8n/packages/core/src/execution-engine/workflow-execute.ts` with run-data shape,
+   multi-input join, retry/error policy and pairedItem rules; 32/32 tests, gate `E03` proves it
+   adds no Rust.
+
+The prototype's semantics diverge from the reference in ways the reconstruction pins explicitly
+(children execute on the first parent's data instead of joining on all inputs; no `ITaskData`/`IRunData`;
+no `retryOnFail`/`onError`; no pairedItem; start-node detection by string match on the node type).
+Nothing imports it (`WorkflowExecutionEngine` has no consumer), so it cannot break the tree — but a
+later LEGO could adopt the wrong one.
+
+**Required action (orchestrator / whichever track owns the engine):**
+1. Pick one engine per language track; if the prototype is kept, mark it in its README as a smoke
+   harness that must not be used for behaviour, and move it under `tests/` or `tools/`.
+2. Keep `npm run execution:gate` as the behaviour gate for `packages/execution-engine/`; the
+   prototype's `reconstructed-engine:test` stays a smoke test (both are wired into `verify:all`).
+
+**Status:** OPEN — documented, not resolved by this session (removing another worker's files is not
+the execution LEGO's call).

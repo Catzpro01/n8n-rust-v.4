@@ -1,7 +1,9 @@
 # Execution LEGO — Phase 3 reconstruction record
 
 **Status:** `IMPLEMENTED` · `TESTED` (32/32) · `GATE 8/8`
-**Language:** JavaScript (Node.js ESM) — `PROJECT_RULES.md` v2.9.4 rule 1 (ZERO RUST)
+**Language:** JavaScript (Node.js ESM) — `PROJECT_RULES.md` v2.9.4 rule 1 (ZERO RUST, the JavaScript reconstruction track).
+The Phase-3 opening record (`docs/isolation/PHASE-3-OPENING-RECORD.md`, 2026-09-17) permits Rust **only** under
+`crates/**` + `apps/**` for the separate port track; this LEGO contributes no Rust and stays JavaScript either way.
 **Package:** `packages/execution-engine` (`@lego/execution-engine`, zero dependencies)
 **Contract:** [`contracts/execution.contract.md`](../../contracts/execution.contract.md)
 **Gate:** `node tools/execution-engine-gate.mjs` → `docs/isolation/evidence/execution-engine-gate.json`
@@ -82,16 +84,33 @@ Execution LEGO gate: 8/8 PASS
 6. Monitoring/telemetry (`ErrorReporter`), `sendChunk` streaming and the `nodeExecuteAfter` variants for
    discarded stack entries are not emitted.
 
-## 6. Rust guard
+## 6. Rust confinement
 
-`crates/` and `apps/` contain legacy Rust sources from an earlier project phase and are **frozen**:
-gate `E03` records a digest of every file under both trees in
-`packages/execution-engine/manifest/rust-freeze.json` and fails if anything is added or removed.
-The execution LEGO itself contributes zero `.rs` / `Cargo.toml` files. Per `PROJECT_RULES.md` v2.9.4,
-the reconstruction continues in JavaScript/TypeScript until Phase 3 is formally reopened for Rust.
+Gate `E03` enforces the Phase-3 rule of `docs/isolation/PHASE-3-OPENING-RECORD.md` §2 — Rust is allowed
+only inside `crates/**` and `apps/**` (plus the root workspace manifest) — and additionally proves the
+JavaScript package contributes zero `.rs` / `Cargo.toml` files. `packages/execution-engine/manifest/rust-freeze.json`
+records the workspace digest observed by this LEGO as *evidence* (not a freeze: the Rust port track may grow it).
+`PROJECT_RULES.md` §1 ("ZERO RUST") still governs the reconstruction track; the Phase-3 amendment proposed in
+that record is pending orchestrator ratification.
+
+## 6b. Relationship to `packages/reconstructed-engine/`
+
+The branch carries two engines and they are deliberately kept apart:
+
+| | `packages/reconstructed-engine/` | `packages/execution-engine/` (this LEGO) |
+| :--- | :--- | :--- |
+| Origin | earlier prototype (`runner.mjs`, naive BFS queue) + `execution-context.mjs` added by the `reconstructed-engine:test` track | Phase-3 reconstruction of `workflow-execute.ts` |
+| Fidelity | queue drains children as soon as one parent produced data; no waiting/join, no retry policy, no run-data shape, no pairing rules | line-mapped to the reference (see §2), run-data shape per `contracts/execution-data.contract.md` |
+| Tests | `runner.test.mjs` 5/5 (smoke) | `test/*.test.mjs` 32/32 |
+| Role | smoke harness only | the reference implementation of the JavaScript track |
+
+They are **not** merged: the prototype's API (`WorkflowExecutionEngine#runWorkflow`) is used by no other
+package, while the reconstructed surface follows n8n's own classes so later LEGOs can adopt it without a
+translation layer. Removing or rewiring the prototype is a separate task (see `CROSS-AGENT-ISSUES.md` ISSUE-021).
 
 ## 7. Next
 
 * Close caveat C1 of the Phase-2 verdict (re-run the 11/11 live smoke on the VPS + PostgreSQL baseline).
+* Decide the fate of `packages/reconstructed-engine/` (ISSUE-021) so Phase 3 has a single engine track per language.
 * Sandboxed expression evaluator LEGO (removes delta 1) — required before any untrusted workflow runs.
 * Trigger/webhook/poll service LEGO (`triggers-and-pollers.ts`) so `run()` can be driven by real activations.
