@@ -1,0 +1,48 @@
+id: TASK-POOL-VERIFY-01
+agent: arena/01a0afff-n8n-rust-v-4
+lego: integration
+module: execution
+phase: 3
+
+# Work-stealing takeover per STANDING-WORKER-PROTOCOL.md §4:
+# the POOL-001..003 results that were committed on main were "phantom"
+# (ISSUE-020) and the real implementation only existed on
+# arena/01a0aff8-n8n-rust-v-4. This task brings that implementation
+# onto this branch and re-verifies it with a full regression gate
+# run inside the Arena sandbox, producing fresh machine evidence.
+
+allowed_paths:
+  - packages/execution-engine/**
+  - packages/reconstructed-engine/**
+  - tasks/**
+  - results/**
+  - docs/isolation/CROSS-AGENT-ISSUES.md
+  - docs/isolation/evidence/**
+
+forbidden_paths:
+  - crates/**            # Rust port track — untouched
+  - apps/**              # Rust port track — untouched
+  - reference/n8n/**     # read-only, hash-pinned
+
+operations:
+  - name: merge_ff
+    args: { from: "a7275c06c500ddad9586a4366657ecd77f8c0a88 (arena/01a0aff8-n8n-rust-v-4)" }
+  - name: run_tests
+    args: { cmd: "npm run verify:all", expect: "isolation:check PASS + 21/21 + 8/8 gates" }
+  - name: write_file
+    args: { path: "results/TASK-POOL-VERIFY-01.md" }
+  - name: write_file
+    args: { path: "tasks/pool-mirror.md", note: "ISSUE-019 required action — offline pool mirror" }
+
+verification:
+  isolation_check: "boundary + kernel + port + reference-integrity PASS"
+  reference_integrity: "15050 files, root f8da35180669d798"
+  reconstructed_engine: "21/21 PASS"
+  execution_gate: "8/8 PASS (E01..E08)"
+  pool_suites: "POOL-001 14/14, POOL-002 7/7, POOL-003 11/11"
+  rust_guard: "0 Rust files contributed by this task"
+
+merge_condition:
+  - regression_gate_pass
+  - no_contract_violation
+  - reference_n8n_unmodified

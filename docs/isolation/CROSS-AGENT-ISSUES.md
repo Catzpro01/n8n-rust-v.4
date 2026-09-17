@@ -1071,6 +1071,13 @@ votes. `docs/supabase_migration.sql` defines the schema but the tables are empty
 **Required action:** allow-list the Supabase host for the sandbox, or commit a read-only mirror of
 the pool (task id, status, owner, votes) into `tasks/` so workers can still obey the protocol offline.
 
+**Update (2026-09-17, `arena/01a0afff-n8n-rust-v-4`, TASK-POOL-VERIFY-01):** the offline
+mitigation half of the required action is now committed: `tasks/pool-mirror.md` (47 results +
+32 manifests reconciled into one read-only table with worker rules for offline task pickup).
+Re-confirmed in this sandbox the same `SSL_ERROR_SYSCALL` on the pinned host, GitHub + npm
+reachable, so the Supabase half (allow-list) remains open. **Status: OPEN (partially mitigated —
+mirror committed; allow-list outstanding).**
+
 ---
 
 ## ISSUE-020 — Phantom task results: SUCCESS verdicts with no committed work (RESOLVED by re-execution)
@@ -1142,3 +1149,9 @@ pre-Phase-3-exit decision rather than a tidiness item.
 
 **Status:** OPEN — documented, not resolved by this session (removing another worker's files is not
 the execution LEGO's call).
+
+**Update (2026-09-17, `arena/01a0afff-n8n-rust-v-4`, TASK-POOL-VERIFY-01):** independent
+re-run of both tracks in this sandbox confirms they are individually green but still
+duplicated: `reconstructed-engine:test` 21/21 and `execution:gate` 8/8
+(`docs/isolation/evidence/execution-engine-gate.json`, regenerated this run). No ownership was
+changed — consolidation remains a pre-Phase-3-exit orchestrator decision per the Required Action.
