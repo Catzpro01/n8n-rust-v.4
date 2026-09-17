@@ -1,0 +1,44 @@
+id: TASK-RIG-REPAIR-01
+agent: arena/01a0aff8-n8n-rust-v-4
+lego: integration
+module: rust-offline-rig
+phase: 3
+title: "ISSUE-025: land the vendoring repair — indexmap/regex closure — so cargo claims reproduce on this branch"
+status: SUBMITTED_FOR_REVIEW
+
+# Context: ISSUE-025 (TASK-AUDIT-ISSUES-01, HIGH) — tools/rust-offline-rig as-shipped cannot
+# resolve the workspace (`no matching package named indexmap`): the vendoring PLAN misses
+# indexmap =2.2.6 (workspace-pinned, Cargo.toml L25, features=["serde"]), regex 1.10
+# (n8n-expression), and their transitive closure. Agent 5's repair on another lane never
+# landed here. Required action verbatim: "land the vendoring repair on this branch, then
+# re-run: run.sh check, run.sh test, and the ISSUE-017 execution probe". crates/ stays
+# untouched (allowed_paths forbids it); the repair is rig-only.
+
+allowed_paths:
+  - tasks/TASK-RIG-REPAIR-01.yaml
+  - tools/rust-offline-rig/**            # setup.sh CRATES + vendor_prep.py PLAN (+ README note)
+  - results/TASK-RIG-REPAIR-01.md
+  - docs/isolation/CROSS-AGENT-ISSUES.md # append-only ISSUE-025 addendum
+
+forbidden_paths:
+  - crates/**
+  - apps/**
+  - reference/n8n/**
+  - packages/frontend/**
+
+requires:
+  - docs/isolation/CROSS-AGENT-ISSUES.md (ISSUE-025, ISSUE-017)
+  - tools/rust-offline-rig/setup.sh (npm toolchain + github crate clones; crates.io unreachable)
+
+operations:
+  - name: extend_CRATES_and_PLAN
+  - name: setup_and_iterate_cargo_check
+  - name: cargo_test_workspace
+  - name: issue_017_execution_probe_if_documented
+  - name: record_result_and_addendum
+
+acceptance:
+  - tools/rust-offline-rig/run.sh check exits 0 on a tree copy (crates/ untouched)
+  - tools/rust-offline-rig/run.sh test exits 0 (or every failure triaged with evidence)
+  - ISSUE-017 probe re-run if its command is documented and runnable
+  - no regression: npm run verify:all real exit 0 unchanged

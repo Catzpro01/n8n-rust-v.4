@@ -14,7 +14,7 @@ actually be compiled and tested here instead of only on the VPS.
    rustc binary + driver), `@rustbin/rust-std-1.88.0-x86_64-unknown-linux-gnu` (libstd,
    merged into the rustc sysroot — the rustc package alone has no `libstd`) and
    `@rustbin/cargo-1.88.0-x86_64-unknown-linux-gnu`.
-2. **Crates from git.** The 12 crates in the workspace dependency closure
+2. **Crates from git.** The 15 repos (19 vendored crates incl. subdir members) in the workspace dependency closure — TASK-RIG-REPAIR-01 / ISSUE-025 added indexmap 2.2.6, equivalent 1.0.2, hashbrown 0.14.5, regex 1.10.6 (+ regex-automata 0.4.7 / regex-syntax 0.8.4 from the same tag's subdirs) and aho-corasick 1.1.3
    (`serde`, `serde_derive`, `serde_json`, `thiserror`, `thiserror-impl`, `syn`,
    `proc-macro2`, `quote`, `itoa`, `ryu`, `memchr`, `unicode-ident`) are cloned at pinned
    upstream tags, because crate downloads are blocked.

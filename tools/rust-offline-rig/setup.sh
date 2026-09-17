@@ -18,7 +18,9 @@ RUST_VERSION="1.88.0"
 NPM_HOST="https://registry.npmjs.org"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# target -> crate tags: the 12 crates the workspace dependency closure needs
+# target -> crate tags: the 15 repos covering the workspace dependency closure
+# (TASK-RIG-REPAIR-01 / ISSUE-025: + indexmap/regex and their transitive deps;
+# regex-automata + regex-syntax are vendored from subdirs of the regex repo tag).
 CRATES=(
   "serde-rs/serde:v1.0.219"
   "serde-rs/json:v1.0.140"
@@ -30,6 +32,11 @@ CRATES=(
   "dtolnay/ryu:1.0.18"
   "BurntSushi/memchr:2.7.4"
   "dtolnay/unicode-ident:1.0.14"
+  "indexmap-rs/indexmap:2.2.6"
+  "indexmap-rs/equivalent:v1.0.2"
+  "rust-lang/hashbrown:v0.14.5"
+  "rust-lang/regex:1.10.6"
+  "BurntSushi/aho-corasick:1.1.3"
 )
 
 mkdir -p "$RIG/dl" "$RIG/vendorsrc"

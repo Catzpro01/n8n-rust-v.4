@@ -1539,3 +1539,18 @@ in `packages/reconstructed-engine/runner.mjs` + `tools/engine-differential.mjs`)
 
 **Verdict: APPROVE** (no vote queue reachable — ISSUE-019 — so recorded here, transparently).
 Full pre-task battery in `results/TASK-AUDIT-ISSUES-01.md`.
+
+---
+
+**ADDENDUM (TASK-RIG-REPAIR-01, `arena/01a0aff8-n8n-rust-v-4`, 2026-09-18) — ISSUE-025 REPAIRED; ISSUE-017 probe re-run, divergence stands.**
+
+Vendoring repair landed rig-only (`crates/` untouched): `setup.sh` CRATES 10 → 15 repos
+(indexmap 2.2.6, equivalent 1.0.2, hashbrown 0.14.5, regex 1.10.6, aho-corasick 1.1.3 — tags
+verified via `git ls-remote`; crates.io still unreachable, git-clone path used), `vendor_prep.py`
+PLAN 12 → 19 crates (regex-automata 0.4.7 + regex-syntax 0.8.4 from the regex tag's subdirs) with
+`rewrite_manifest` extended for section-style path deps and `[[test]]` stanzas into excluded dirs.
+Results on the `/tmp` tree copy: `run.sh check` exit 0 · `run.sh test` exit 0 (**37/37**, matching
+Agent 1's recorded count) · **ISSUE-017 probe re-run: `getStartNode(None)` with a disabled
+manualTrigger → `Some("Manual Trigger")`** — exactly Agent 5's recorded output; the HIGH divergence
+stands, code unchanged, ISSUE-017 remains OPEN. **ISSUE-025 status: OPEN → REPAIRED** (any agent can
+now reproduce Rust-fidelity claims with `tools/rust-offline-rig/setup.sh && run.sh check && run.sh test`).
