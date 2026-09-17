@@ -1356,3 +1356,78 @@ bottom, as used here).
 
 Until one of these is chosen, **do not merge two of these branches into `main` in sequence without
 running the detector**.
+
+---
+
+## ISSUE-024 — UPDATE (2026-09-18): the two colliding reconstructions are complementary, not redundant
+
+Agent 1, after reviewing PR #14 (`arena/01a0aff8` @ `ec4dcb4f`). Full record:
+`results/REVIEW-PR14-execution-lego.md`.
+
+I compared the **actual exported symbols** (`import()` on both `src/index.mjs`) rather than file
+counts, for the four lanes we both reconstruct:
+
+| Lane | Mine | PR #14 | Shared | **Union** | Lost if PR #14 wins | Lost if I win |
+| :--- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `api-lego` | 21 | 18 | 10 | 29 | 11 | 8 |
+| `credentials-lego` | 19 | 14 | 7 | 26 | 12 | 7 |
+| `execution-data-lego` | 38 | 21 | 15 | 44 | 23 | 6 |
+| `scheduler-lego` | 4 | 8 | 2 | 10 | 2 | 6 |
+| **Total** | **82** | **61** | **34** | **109** | **48** | **27** |
+
+**Neither branch is a superset of the other.** A winner-take-all merge destroys 27–48 of 109
+exported symbols regardless of who wins. Concretely:
+
+* I hold the Express *response-helper* surface (`send`, `sendSuccessResponse`, `sendErrorResponse`,
+  `healthz`, `readiness`, `reportError`, `NodeApiError`, `ContentTooLargeError`,
+  `TooManyRequestsError`, `NotImplementedError`); PR #14 holds the *dispatch + DTO* surface
+  (`ApiDispatcher`, `validateDto`, `formatZodIssue`, `formatSuccessResponse`,
+  `formatPublicApiError`, `formatUnauthenticatedResponse`, `formatErrorResponse`,
+  `WorkflowValidationError`).
+* `scheduler-lego` is **clearly theirs**: `getSchedulingFunctions`, `CronTimerAdapter`,
+  `createCronTimerJob`, `matchesCron`, `parseCronExpression`, `toCronKey` vs my 4 symbols.
+* `execution-data-lego` binary-storage layer (`storeBinaryData*`, `prepareBinaryDataMetadata`,
+  `getBinaryDataBuffer`, `prettyBytes`, `defaultMimeLookup`, `runExecutionDataV0ToV1`, …) exists
+  only on my side.
+
+### Revised remedy (preferred over the previous list)
+
+1. **Union merge per lane.** After the union both sides are the same superset, so merge order
+   stops mattering entirely — which removes the ISSUE-024 hazard instead of just warning about it.
+2. If a union is too expensive, pick **one owner per lane where the gap is smallest**:
+   `scheduler-lego` → PR #14, `execution-data-lego` → Agent 1, `credentials-lego`/`api-lego` →
+   arbitration (small gap, disjoint surfaces).
+3. Never merge two of these branches in sequence without
+   `node tools/branch-collision-check.mjs --scope packages/ <ref A> <ref B>`.
+
+I still will not rename or delete my four packages without an orchestrator decision; the standing
+offer to namespace them (`packages/agent1-<lane>-lego/`) remains open on request.
+
+---
+
+## ISSUE-025 — `npm run verify:all` fails on a clean clone: per-package dependencies are never installed
+
+**Severity:** medium · **Status:** OPEN · **Reported by:** Agent 1 (2026-09-18) ·
+**Affects:** every agent, every branch that uses `verify:all`.
+
+Same family as **ISSUE-023** (incomplete `.runtime`), one level up: `scripts/setup-reference-runtime.sh`
+installs only the reference runtime, and nothing installs the per-package `devDependencies`.
+
+Reproduction on a pristine `git archive` of `arena/01a0aff8` @ `ec4dcb4f`:
+
+| Step | Symptom | Fix applied |
+| :--- | :--- | :--- |
+| 1 | `sh: 1: tsc: not found` (`connection-lego` build) | `npm install --prefix packages/connection-lego` |
+| 2 | `sh: 1: tsc: not found` (`validation-lego` build) | `npm install --prefix packages/validation-lego` |
+| 3 | `workflow-model-lego` 25 pass / **17 FAIL** — `Cannot find package 'luxon'` from `packages/expression-lego/src/extensions.mjs` | `npm install --prefix packages/expression-lego` |
+| 4 | `node-lego-gate` N05 `[HARNESS-ERROR] Cannot find module 'n8n-workflow'` | `npm install --prefix packages/workflow-lego` |
+
+After those four installs, `verify:all` is green end-to-end (exit 0).
+
+Credit where due: both `workflow-model-lego` and `node-lego-gate` **self-diagnose** — the former
+prints the exact `npm install --prefix …` command to run, the latter reports `[HARNESS-ERROR]` with
+the resolution hint instead of failing silently. That is why this was cheap to find.
+
+**Recommendation:** add a single `scripts/setup-all.sh` that runs `setup-reference-runtime.sh` and
+then `npm install` in every `packages/*/` that declares `devDependencies`, and make `verify:all`
+depend on it (or fail fast with that exact message).

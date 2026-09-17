@@ -5,6 +5,7 @@
   "description": "n8n 2.9.4 anatomy \u2192 contract \u2192 reference runtime \u2192 LEGO isolation \u2192 (later) Rust replacement",
   "scripts": {
     "setup:reference": "bash scripts/setup-reference-runtime.sh",
+    "setup:all": "bash scripts/setup-all.sh",
     "verify": "node tools/workflow-isolation-gate.mjs",
     "verify:fast": "node tools/workflow-isolation-gate.mjs --skip-live",
     "isolation:map": "node tools/workflow-boundary-map.mjs --json packages/workflow-lego/manifest/boundary-map.json --md docs/isolation/workflow-dependency-map.md",
