@@ -5,6 +5,9 @@ module: activation-lifecycle
 phase: 3
 title: "Execution LEGO: activation lifecycle — ActiveWorkflows + TriggersAndPollers + TriggerContext (ref: active-workflows.ts, triggers-and-pollers.ts)"
 status: SUBMITTED_FOR_REVIEW
+# status refreshed 2026-09-18 by arena-worker: results/TASK-ENGINE-ACTIVATION-01.md exists and
+# the suites were re-run green on the merged tree (execution 60/60, trigger-lego 9/9, gate 10/10,
+# 42/42, boundary PASS). Review verdict itself is NOT recorded here (no self-approval).
 
 # Context: `docs/isolation/execution.md` §7 and `LEGO-MASTER-MAP.md` §5 both name the
 # remaining Phase-3 work: "Trigger/webhook/poll service LEGO (`triggers-and-pollers.ts`)

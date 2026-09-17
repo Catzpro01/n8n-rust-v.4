@@ -1416,3 +1416,31 @@ activation differential **43/0** · engine differential **84/0** · `npm run ver
 **Status: OPEN (ownership unchanged)** — the remaining open question is now three-way
 (`trigger-lego` vs `execution-engine` activation surface vs `scheduler-lego` registry home), with both
 differential instruments reproducible and the behavioral deltas at zero on every surface measured so far.
+
+---
+
+## ISSUE-024 — `NodeOperationError` now exists in two packages (OPEN, orchestrator decision)
+
+**Found by:** TASK-409 phase-3 differential (`tools/node-lego-differential.mjs`, N09/N10), 2026-09-18.
+**Status:** OPEN.
+
+`packages/node-lego/src/errors.mjs` reconstructs the validation-boundary subset of
+`NodeOperationError` (`name`, `message`, `level`, `node`, `context`, `messages`, `timestamp`,
+`description`, `functionality`, `type`) because `parameter-type-validation.ts` raises it and the
+package must stay dependency-free. `packages/execution-engine/src/errors.mjs` already carried a
+`NodeOperationError` (same reference file, wider surface incl. `NodeApiError`) before this task.
+
+Both are pinned against the reference: the differential compares `name`, `message`, `level`,
+`node` identity, `context`, `messages`, `code` and `timestamp` against the published
+`n8n-workflow@2.9.1` build and agrees. The duplication is still a consolidation candidate —
+same pattern as ISSUE-023, one layer down:
+
+* **Option A (recommended by this lane):** extract the error model into
+  `packages/errors-lego` (or accept `execution-engine`'s module as canonical) and have
+  `node-lego` import it, once cross-LEGO imports are allowed by the orchestrator. Nothing in
+  `packages/node-lego` depends on the *class identity* beyond `name`/`level`/`node`, so the swap
+  is mechanical.
+* **Option B:** keep the local class (dependency-free property preserved) and pin both against
+  the differential; the cost is a second definition that must be kept in sync.
+
+No file in another agent's path is modified here; the decision is left to the orchestrator.

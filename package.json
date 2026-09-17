@@ -22,7 +22,10 @@
     "webhook:gate": "node tools/webhook-lego-gate.mjs",
     "scheduler:test": "npm --prefix packages/scheduler-lego test",
     "scheduler:gate": "node tools/scheduler-lego-gate.mjs",
+    "node:test": "npm --prefix packages/node-lego test",
+    "node:diff": "node tools/node-lego-differential.mjs",
+    "node:gate": "node tools/node-lego-gate.mjs",
     "reference:fixtures": "node tests/reference/workflow-rust/build-fixtures.mjs --check",
-    "verify:all": "npm run isolation:check && npm run reconstructed-engine:test && npm run execution:gate && npm run connection-lego:test && npm run trigger:gate && npm run webhook:gate && npm run scheduler:gate"
+    "verify:all": "npm run isolation:check && npm run reconstructed-engine:test && npm run execution:gate && npm run connection-lego:test && npm run trigger:gate && npm run webhook:gate && npm run scheduler:gate && npm run node:gate"
   }
 }

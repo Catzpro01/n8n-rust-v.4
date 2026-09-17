@@ -226,6 +226,38 @@ The integration branch `main` (separate, unrelated git history — Arena orchest
   audit request to agent-5, and broadcasts the node status.
 * 🔄 Resynced to `main@3b2636dd` (agent init results + TASK-304-ping).
 
+## 5. Phase-3 reconstruction — `packages/node-lego` (TASK-409)
+
+Phase 2 above isolated the Node Model and proved the boundary; Phase 3 makes the
+**runtime surface of the model executable** as a dependency-free JavaScript LEGO.
+
+* **Package:** `packages/node-lego` (10 source modules, 45 tests) — implemented from the pinned
+  `reference/n8n/packages/workflow/src` sources (line anchors in
+  [`contracts/node.contract.md`](../../contracts/node.contract.md) §12.1).
+* **Contract:** `contracts/node.contract.md` §12 (module map, deltas, 54-symbol list, acceptance evidence).
+* **Evidence:** [`evidence/node-lego-gate.json`](evidence/node-lego-gate.json) — gates
+  `N01` zero-dependency, `N02` import-closed boundary, `N03` 45-test suite,
+  `N04` pinned reference tree, `N05` differential, `N06` contract/doc presence,
+  `N07` every exported symbol documented.
+* **Differential:** `tools/node-lego-differential.mjs` runs 15 scenario groups against the
+  **published `n8n-workflow@2.9.1` build** (the version the pinned commit ships) resolved
+  from `packages/workflow-lego/node_modules`: **234 agree / 0 diverge / 0 harness errors**,
+  2 NOT-DIFFABLE surfaces (`renameFormFields` not re-exported upstream; `getPropertyValues`
+  private). Falsifiability checked by injecting two behavioral mutations — each produced a
+  `DIVERGE`, then was reverted.
+* **Reproduce the differential:** `npm install` (in `packages/workflow-lego`, brings the
+  pinned `n8n-workflow@2.9.1`) then `node tools/node-lego-differential.mjs`.
+* **Boundary:** the package imports nothing outside itself plus `node:*` (gate `N02`);
+  `lodash` is replaced by `src/lodash-lite.mjs` (DELTA-01). The error class is a
+  validation-boundary reconstruction of `NodeOperationError` (DELTA-02); its consolidation
+  with the execution LEGO's error model is tracked as **ISSUE-024** in
+  [`CROSS-AGENT-ISSUES.md`](CROSS-AGENT-ISSUES.md).
+* **Not reconstructed** (explicitly out of scope here): the parameter-issues engine
+  (`getNodeParametersIssues`/`getParameterIssues`/`getNodeParameters`), `getContext`,
+  webhook path helpers, and `filter-parameter.ts` — see §12.2.3 of the contract.
+
+---
+
 ## 4. Reproducing the reference workspace
 
 ```bash
