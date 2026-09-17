@@ -1,0 +1,64 @@
+id: TASK-EERR-01
+agent: arena/01a0aff8-n8n-rust-v-4
+lego: integration
+module: error-surface-differential
+phase: 3
+title: "ISSUE-024: NodeOperationError 3-way differential (node-lego vs execution-engine vs real n8n-workflow@2.9.1) + failing-first faithful-ization"
+status: SUBMITTED_FOR_REVIEW
+
+# Context: ISSUE-024 records NodeOperationError existing in two packages and proposes
+# Option A/B consolidation (orchestrator). Same prescription as ISSUE-023: the decision
+# input is a differential. This task builds tools/error-surface-differential.mjs —
+#   R = real n8n-workflow@2.9.1 (published build, packages/workflow-lego node_modules)
+#   A = packages/node-lego/src/errors.mjs
+#   B = packages/execution-engine/src/errors.mjs
+# over identical construction matrices (explicit options, defaults, Error input,
+# COMMON_ERRORS mapping, reflection, description collapse, options.message override),
+# then fixes divergences failing-first with reference line citations:
+#   reference/n8n/packages/workflow/src/errors/node-operation.error.ts (L16-43),
+#   reference/n8n/packages/workflow/src/errors/abstract/node.error.ts (NodeError,
+#   COMMON_ERRORS, addToMessages, setDescriptiveErrorMessage),
+#   reference/n8n/packages/workflow/src/errors/abstract/execution-base.error.ts
+#   (context keys, functionality 'regular', timestamp).
+#
+# Known documented boundary (execution-engine errors.mjs header): "UI-only fields are
+# preserved when supplied but not invented when absent" — where a fix contradicts that
+# note, the note is updated IN THE SAME CHANGE with the REF citation (the note is a
+# lane decision, not a reference behaviour; REF ExecutionBaseError defaults
+# functionality = 'regular').
+
+allowed_paths:
+  - tasks/TASK-EERR-01.yaml
+  - tools/error-surface-differential.mjs
+  - packages/node-lego/src/errors.mjs
+  - packages/node-lego/test/**
+  - packages/execution-engine/src/errors.mjs
+  - packages/execution-engine/test/**
+  - results/TASK-EERR-01.md
+  - docs/isolation/CROSS-AGENT-ISSUES.md
+
+forbidden_paths:
+  - reference/n8n/**
+  - crates/**
+  - apps/**
+  - packages/frontend/**
+  - contracts/**
+
+requires:
+  - docs/isolation/CROSS-AGENT-ISSUES.md (ISSUE-024)
+  - packages/workflow-lego/node_modules (real n8n-workflow@2.9.1)
+
+operations:
+  - name: build_3way_harness
+  - name: measure_and_triage
+  - name: fix_failing_first
+  - name: falsifiability_control
+  - name: full_matrix_and_record
+
+acceptance:
+  - harness runs R/A/B over identical inputs, informational exit code
+  - every found divergence fixed failing-first with a reference line citation, or
+    documented as a lane boundary with the boundary note updated
+  - falsifiability control recorded (induced mutation detected)
+  - node-lego + execution-engine suites green (updated only with REF-cited reasons)
+  - gates 10/10 + 7/7 · verify:all real exit 0 · no other lane regressed

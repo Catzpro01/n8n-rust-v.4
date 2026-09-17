@@ -48,3 +48,10 @@ boundary PASS · reference pin 15050 files `f8da35180669d798…`.
 | :--- | :--- | :--- | :--- |
 | `TASK-WORKFLOW-MODEL-02.md` | Workflow class methods delegate to the single `start-node-navigation` port (TASK-DGRAPH-01 asset); conformance 26 → 44 tests | delegation imports observed in `src/workflow.ts` ("Single source of truth"); package suite **52/52** (44 + 8 disabled-graph) on merged tree; `getHighestNode`/`getStartNode` wiring green | **APPROVE** |
 | `TASK-414` (node filter/execution surface) | node-lego → 93 tests, 87 symbols, differential 1609 comparisons | **93/93** fresh, **1609 agree / 0 diverge (2 NOT-DIFFABLE)**, Node gate **7/7** | **APPROVE** |
+
+## Sweep 6 (2026-09-18) — TASK-412 + TASK-AUDIT-ISSUES-01 (meta)
+
+| Result (owner) | Claim | Fresh verification on merged tree | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-412-phase3-node-parameter-issues.md` | concurrent parameter-issues engine (ISSUE-026) | consolidation executed as recorded: `field-validation.mjs` removed (last touched by `1f711f3c`), peer `test/parameter-issues.test.mjs` (8 cases) **kept and green** against the shipped modules, node-lego **93/93** at sweep time (101/101 after TASK-EERR-01), superseded-module deltas preserved as REF-verified evidence in ISSUE-026 | **APPROVE** (superseded-by-413 consolidation verified; evidence intact) |
+| `TASK-AUDIT-ISSUES-01.md` (meta-review) | read-only audit of stale OPEN ledger rows at `28fb50ef` | rows were accurate at their tip; subsequent tasks resolved the actionable ones (ISSUE-025 → REPAIRED by TASK-RIG-REPAIR-01 + hardening; both golden-absent rows → closed by TASK-DGRAPH-01/TASK-CGRAPH-01; ISSUE-017 probe re-confirmed) — supersession documented in the respective addenda | **APPROVE** (historical accuracy confirmed; no NEEDS_CORRECTION) |
