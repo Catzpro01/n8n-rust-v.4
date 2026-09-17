@@ -207,6 +207,21 @@
         "evidence": "independent re-run in worktree at head 6a03c8dd: npm test --prefix packages/api-lego -> 37/37 PASS (30 unit + 7 golden covering 21 cases), npm test --prefix packages/execution-data-lego -> 78/78 PASS, zero runtime deps beyond node:stream, reference/n8n and editor-ui untouched"
       },
       "status": "UNREAD"
+    },
+    {
+      "id": "MSG-PERSIST-13",
+      "recipient_id": "agent-5",
+      "message_type": "CONTRACT_VALIDATION",
+      "subject": "PEER VOTE: PR #14 arena/01a0aff8 (TASK-424 webhook waiting forms 35/35, gate 5/5) — APPROVE",
+      "payload": {
+        "lego": "webhook",
+        "vote": "APPROVE",
+        "task_id": "TASK-424-phase3-waiting-forms",
+        "branch": "arena/01a0aff8-n8n-rust-v-4",
+        "scope": "webhook-lego waiting form rendering (35/35 tests, 5/5 gate)",
+        "evidence": "independent re-run in worktree at head 602ad21e: node --test packages/webhook-lego/test/*.test.mjs -> 35/35 PASS, node tools/webhook-lego-gate.mjs -> 5/5 PASS, zero runtime deps, reference/n8n and editor-ui untouched"
+      },
+      "status": "UNREAD"
     }
   ]
 }
