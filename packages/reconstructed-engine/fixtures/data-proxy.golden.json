@@ -3,7 +3,7 @@
   "$source": "pinned reference runtime — values were NOT produced by the reconstruction",
   "$runtimeVersion": "2.9.1",
   "$referenceRootHash": "f8da35180669d79801601bfeb025bbe418c8f00346b1358c3ba3dc68b42da732",
-  "$recordedAt": "2026-09-17T17:35:03.292Z",
+  "$recordedAt": "2026-09-17T17:59:47.972Z",
   "dataProxy": {
     "linear-3-run": {
       "_why": "fully executed linear graph: the happy path of every accessor",
@@ -637,7 +637,7 @@
             "$now"
           ],
           "ok": true,
-          "serialized": "luxon:2026-09-17T13:35:03.221-04:00"
+          "serialized": "luxon:2026-09-17T13:59:47.896-04:00"
         },
         "$today": {
           "_path": [
@@ -1917,6 +1917,607 @@
               "itemIndex": 0,
               "nodeCause": "Nope",
               "descriptionKey": "nodeNotFound"
+            }
+          }
+        }
+      }
+    },
+    "pinned-and-disabled-node": {
+      "_why": "ISSUE-016 follow-up, settled by the oracle instead of by argument: does the data proxy honour `disabled` when it substitutes pinned output? `grep -n disabled packages/workflow/src/workflow-data-proxy.ts` returns NOTHING, while `NodeHelpers.getNodeParametersIssues` (node-helpers.ts:1211) and the execution loop both branch on it. So the proxy layer and the execution layer are allowed to disagree, and the recorded values here are what a port of `$()` must reproduce.",
+      "probes": {
+        "$node.Disabled Set.json": {
+          "_path": [
+            "$node",
+            "Disabled Set",
+            "json"
+          ],
+          "ok": true,
+          "serialized": "{\"pinned\":boolean:true,\"from\":\"pin-of-disabled-node\"}"
+        },
+        "$node.Disabled Set.result": {
+          "_path": [
+            "$node",
+            "Disabled Set",
+            "result"
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "$.(\"Disabled Set\").isExecuted": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Disabled Set"
+              ]
+            },
+            "isExecuted"
+          ],
+          "ok": true,
+          "serialized": "boolean:false"
+        },
+        "$.(\"Disabled Set\").all.()": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Disabled Set"
+              ]
+            },
+            "all",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "[{\"json\":{\"pinned\":boolean:true,\"from\":\"pin-of-disabled-node\"}}]"
+        },
+        "$.(\"Disabled Set\").first.()": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Disabled Set"
+              ]
+            },
+            "first",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "{\"json\":{\"pinned\":boolean:true,\"from\":\"pin-of-disabled-node\"}}"
+        },
+        "$.(\"Disabled Set\").params.mode": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Disabled Set"
+              ]
+            },
+            "params",
+            "mode"
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "$.(\"Set\").all.()": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Set"
+              ]
+            },
+            "all",
+            {
+              "()": []
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "Node 'Set' hasn't been executed",
+            "level": "warning",
+            "functionality": "pairedItem",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0,
+              "messageTemplate": "An expression references this node, but the node is unexecuted. Consider re-wiring your nodes or checking for execution first, i.e. {{ $if( $(\"{{nodeName}}\").isExecuted, <action_if_executed>, \"\") }}",
+              "descriptionKey": "pairedItemNoConnection",
+              "type": "no_execution_data",
+              "nodeCause": "Set"
+            }
+          }
+        },
+        "$input.first.()": {
+          "_path": [
+            "$input",
+            "first",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "{\"json\":{\"pinned\":boolean:true,\"from\":\"pin-of-disabled-node\"}}"
+        }
+      }
+    },
+    "pinned-upstream-substitutes-input": {
+      "_why": "workflow-data-proxy.ts:909-926 — getTaskData() falls back to pinDataToTask(), which FABRICATES an ITaskData ({data:{main:[pinData]}, startTime:0, executionTime:0, executionIndex:0, source:[]}) for the previous node when run data is missing, so pinned upstream output reaches $input although NOTHING executed. Two halves are recorded: with a source present the substitution is visible, and with executeData.source absent $input raises 'No execution data available' instead of answering empty. connectionInputData stays empty so the substitution cannot be confused with real input.",
+      "probes": {
+        "$input.all.()": {
+          "_path": [
+            "$input",
+            "all",
+            {
+              "()": []
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "No execution data available",
+            "level": "warning",
+            "functionality": "regular",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0,
+              "type": "no_execution_data"
+            }
+          }
+        },
+        "$input.first.()": {
+          "_path": [
+            "$input",
+            "first",
+            {
+              "()": []
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "No execution data available",
+            "level": "warning",
+            "functionality": "regular",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0,
+              "type": "no_execution_data"
+            }
+          }
+        },
+        "$input.item": {
+          "_path": [
+            "$input",
+            "item"
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "No execution data available",
+            "level": "warning",
+            "functionality": "regular",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0,
+              "type": "no_execution_data"
+            }
+          }
+        },
+        "$input.params.via": {
+          "_path": [
+            "$input",
+            "params",
+            "via"
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "No execution data available",
+            "level": "warning",
+            "functionality": "regular",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0,
+              "type": "no_execution_data"
+            }
+          }
+        },
+        "$.(\"Set\").all.()": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Set"
+              ]
+            },
+            "all",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "[{\"json\":{\"pinned\":boolean:true,\"via\":\"input-substitution\"}}]"
+        },
+        "$json": {
+          "_path": [
+            "$json"
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "Node 'Code' hasn't been executed",
+            "level": "warning",
+            "functionality": "pairedItem",
+            "context": {
+              "messageTemplate": "An expression references this node, but the node is unexecuted. Consider re-wiring your nodes or checking for execution first, i.e. {{ $if( $(\"{{nodeName}}\").isExecuted, <action_if_executed>, \"\") }}",
+              "descriptionKey": "pairedItemNoConnectionCodeNode",
+              "type": "no_execution_data",
+              "nodeCause": "Code",
+              "runIndex": 0,
+              "itemIndex": 0
+            }
+          }
+        },
+        "$item.json": {
+          "_path": [
+            "$item",
+            "json"
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "$input.context.json": {
+          "_path": [
+            "$input",
+            "context",
+            "json"
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "No execution data available",
+            "level": "warning",
+            "functionality": "regular",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0,
+              "type": "no_execution_data"
+            }
+          }
+        }
+      }
+    },
+    "input-placeholder-sourcing-edge": {
+      "_why": "The reference derives $input's guard from `placeholdersDataInputData`, NOT from the length of connectionInputData: workflow-data-proxy.ts:1061-1079 takes runData[active][runIndex].inputOverride when the ACTIVE node already has run data, and connectionInputData[runIndex].json otherwise, then throws 'No execution data available' when that placeholder object is falsy. A port that only checks `connectionInputData.length === 0` therefore answers where the reference raises — an item with binary and no json is enough to diverge.",
+      "probes": {
+        "$input.all.()": {
+          "_path": [
+            "$input",
+            "all",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "[{\"binary\":{\"data\":{\"id\":\"b1\",\"fileName\":\"a.txt\",\"mimeType\":\"text/plain\",\"fileSize\":number:10}}}]"
+        },
+        "$input.first.()": {
+          "_path": [
+            "$input",
+            "first",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "{\"binary\":{\"data\":{\"id\":\"b1\",\"fileName\":\"a.txt\",\"mimeType\":\"text/plain\",\"fileSize\":number:10}}}"
+        },
+        "$input.params.missing": {
+          "_path": [
+            "$input",
+            "params",
+            "missing"
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "Can’t get data",
+            "description": "Apologies, this is an internal error. See details for more information",
+            "level": "warning",
+            "functionality": "regular",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0,
+              "causeDetailed": "Missing sourceData (probably an internal error)"
+            }
+          }
+        },
+        "$input.item": {
+          "_path": [
+            "$input",
+            "item"
+          ],
+          "ok": true,
+          "serialized": "{\"binary\":{\"data\":{\"id\":\"b1\",\"fileName\":\"a.txt\",\"mimeType\":\"text/plain\",\"fileSize\":number:10}}}"
+        },
+        "$json": {
+          "_path": [
+            "$json"
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        }
+      }
+    },
+    "input-placeholder-from-input-override": {
+      "_why": "Same guard, the other branch: the active node HAS run data carrying inputOverride, so the reference reads the placeholder from there and does not throw even though connectionInputData is empty. Pairs with input-placeholder-sourcing-edge so both sides of `if (!resultData)` are pinned.",
+      "probes": {
+        "$input.all.()": {
+          "_path": [
+            "$input",
+            "all",
+            {
+              "()": []
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "No execution data available",
+            "level": "warning",
+            "functionality": "regular",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0,
+              "type": "no_execution_data"
+            }
+          }
+        },
+        "$input.first.()": {
+          "_path": [
+            "$input",
+            "first",
+            {
+              "()": []
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "No execution data available",
+            "level": "warning",
+            "functionality": "regular",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0,
+              "type": "no_execution_data"
+            }
+          }
+        },
+        "$input.params.via": {
+          "_path": [
+            "$input",
+            "params",
+            "via"
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "No execution data available",
+            "level": "warning",
+            "functionality": "regular",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0,
+              "type": "no_execution_data"
+            }
+          }
+        },
+        "$input.item": {
+          "_path": [
+            "$input",
+            "item"
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "No execution data available",
+            "level": "warning",
+            "functionality": "regular",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0,
+              "type": "no_execution_data"
+            }
+          }
+        },
+        "$json": {
+          "_path": [
+            "$json"
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "Node 'Code' hasn't been executed",
+            "level": "warning",
+            "functionality": "pairedItem",
+            "context": {
+              "messageTemplate": "An expression references this node, but the node is unexecuted. Consider re-wiring your nodes or checking for execution first, i.e. {{ $if( $(\"{{nodeName}}\").isExecuted, <action_if_executed>, \"\") }}",
+              "descriptionKey": "pairedItemNoConnectionCodeNode",
+              "type": "no_execution_data",
+              "nodeCause": "Code",
+              "runIndex": 0,
+              "itemIndex": 0
+            }
+          }
+        }
+      }
+    },
+    "input-placeholder-missing-json": {
+      "_why": "The divergence candidate for the guard above, found by trying to falsify the port rather than to confirm it: the active node has NO run data and connectionInputData holds an item with `binary` but no `json`. The reference computes placeholders as connectionInputData[runIndex]?.json and throws when that is falsy; a port that guards on `connectionInputData.length === 0` answers instead of raising.",
+      "probes": {
+        "$input.all.()": {
+          "_path": [
+            "$input",
+            "all",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "[{\"binary\":{\"data\":{\"id\":\"b1\",\"fileName\":\"a.txt\",\"mimeType\":\"text/plain\",\"fileSize\":number:10}}}]"
+        },
+        "$input.first.()": {
+          "_path": [
+            "$input",
+            "first",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "{\"binary\":{\"data\":{\"id\":\"b1\",\"fileName\":\"a.txt\",\"mimeType\":\"text/plain\",\"fileSize\":number:10}}}"
+        },
+        "$input.params.nope": {
+          "_path": [
+            "$input",
+            "params",
+            "nope"
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "Can’t get data",
+            "description": "Apologies, this is an internal error. See details for more information",
+            "level": "warning",
+            "functionality": "regular",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0,
+              "causeDetailed": "Missing sourceData (probably an internal error)"
+            }
+          }
+        },
+        "$json": {
+          "_path": [
+            "$json"
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "$item.json": {
+          "_path": [
+            "$item",
+            "json"
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        }
+      }
+    },
+    "input-override-ai-tool-placeholder": {
+      "_why": "Attempt to drive the divergence between the reference guard (`placeholdersDataInputData = runData[active][runIndex].inputOverride[NodeConnectionTypes.AiTool]?.[0]?.itemIndex.json`) and this port's `connectionInputData.length === 0` shortcut: an EMPTY connectionInputData plus an active run whose inputOverride carries an ai_tool placeholder. If the reference answers where the port throws, the shortcut must be replaced by the reference expression; if both throw, the simplification is provably safe today and the scenario records why.",
+      "probes": {
+        "$input.all.()": {
+          "_path": [
+            "$input",
+            "all",
+            {
+              "()": []
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "No execution data available",
+            "level": "warning",
+            "functionality": "regular",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0,
+              "type": "no_execution_data"
+            }
+          }
+        },
+        "$input.first.()": {
+          "_path": [
+            "$input",
+            "first",
+            {
+              "()": []
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "No execution data available",
+            "level": "warning",
+            "functionality": "regular",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0,
+              "type": "no_execution_data"
+            }
+          }
+        },
+        "$input.params.via": {
+          "_path": [
+            "$input",
+            "params",
+            "via"
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "No execution data available",
+            "level": "warning",
+            "functionality": "regular",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0,
+              "type": "no_execution_data"
+            }
+          }
+        },
+        "$input.item": {
+          "_path": [
+            "$input",
+            "item"
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "No execution data available",
+            "level": "warning",
+            "functionality": "regular",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0,
+              "type": "no_execution_data"
+            }
+          }
+        },
+        "$json": {
+          "_path": [
+            "$json"
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "Node 'Code' hasn't been executed",
+            "level": "warning",
+            "functionality": "pairedItem",
+            "context": {
+              "messageTemplate": "An expression references this node, but the node is unexecuted. Consider re-wiring your nodes or checking for execution first, i.e. {{ $if( $(\"{{nodeName}}\").isExecuted, <action_if_executed>, \"\") }}",
+              "descriptionKey": "pairedItemNoConnectionCodeNode",
+              "type": "no_execution_data",
+              "nodeCause": "Code",
+              "runIndex": 0,
+              "itemIndex": 0
             }
           }
         }

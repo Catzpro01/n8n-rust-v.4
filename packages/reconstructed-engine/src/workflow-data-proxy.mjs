@@ -897,6 +897,19 @@ export class WorkflowDataProxy {
 					get(target, property, receiver) {
 						if (property === 'isProxy') return true;
 
+						// The reference reaches the same state through a DIFFERENT expression:
+						// `placeholdersDataInputData` comes from
+						// `runData[active][runIndex].inputOverride` when the active node already
+						// has run data and from `connectionInputData[runIndex]?.json` otherwise,
+						// and it guards the fromAI placeholder lookup — not the item getters
+						// (workflow-data-proxy.ts:1061-1079). Copying that expression here instead
+						// would make `$input.all()` raise for an item that carries only `binary`,
+						// where n8n answers. The behavioural equivalence of this shortcut is not a
+						// claim: fixtures/corpus.json pins it with three scenarios
+						// (input-placeholder-sourcing-edge, input-placeholder-from-input-override,
+						// input-override-ai-tool-placeholder) and gate 07 catches both directions
+						// of the mistake — removing the guard AND replacing it with the reference's
+						// own placeholder expression.
 						if (that.connectionInputData.length === 0) {
 							throw createExpressionError('No execution data available', {
 								runIndex: that.runIndex,

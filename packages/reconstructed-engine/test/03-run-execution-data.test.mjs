@@ -26,6 +26,7 @@ import {
 import {
 	KV_LIMIT,
 	InvalidExecutionMetadataError,
+	constructExecutionMetaData,
 	getAllWorkflowExecutionMetadata,
 	getWorkflowExecutionMetadata,
 	setAllWorkflowExecutionMetadata,
@@ -51,6 +52,14 @@ const refRed = runtime
 	: null;
 const refFactory = runtime
 	? req(join(runtime.dir, 'n8n-workflow/dist/cjs/run-execution-data-factory.js'))
+	: null;
+const refCem = runtime
+	? req(
+			join(
+				runtime.dir,
+				'n8n-core/dist/execution-engine/node-execution-context/utils/construct-execution-metadata.js',
+			),
+		)
 	: null;
 const refMeta = runtime
 	? req(
@@ -322,6 +331,88 @@ test('execution metadata: value types are validated per key, and partial writes 
 		InvalidExecutionMetadataError,
 	);
 	assert.deepEqual(getAllWorkflowExecutionMetadata(bag2), { a: 'ok' });
+});
+
+// ------------------------------------------------ constructExecutionMetaData (H-07)
+/**
+ * `packages/core/src/execution-engine/node-execution-context/utils/construct-execution-metadata.ts:13-18`
+ * builds `{ json, pairedItem: itemData, ...rest }` — so an item that ALREADY carries
+ * `pairedItem` overwrites the freshly computed pairing, and `json` is always first.
+ * POOL-005 (`packages/execution-data-lego`) recorded the same finding independently as
+ * H-07; two lanes hitting it from different directions is what makes it a fact instead
+ * of a reading. Pinned here because "cleaning it up" is the tempting mistake.
+ */
+const CEM_CASES = [
+	{
+		name: 'existing pairedItem beats the supplied itemData',
+		input: [{ json: { a: 1 }, pairedItem: { item: 5 } }],
+		options: { itemData: { item: 9 } },
+		expect: [{ json: { a: 1 }, pairedItem: { item: 5 } }],
+		keyOrder: ['json', 'pairedItem'],
+	},
+	{
+		name: 'no prior pairing: itemData lands',
+		input: [{ json: { a: 1 } }],
+		options: { itemData: { item: 9 } },
+		expect: [{ json: { a: 1 }, pairedItem: { item: 9 } }],
+		keyOrder: ['json', 'pairedItem'],
+	},
+	{
+		name: 'a non-object pairedItem survives verbatim',
+		input: [{ json: { a: 1 }, pairedItem: 3 }],
+		options: { itemData: { item: 9 } },
+		expect: [{ json: { a: 1 }, pairedItem: 3 }],
+		keyOrder: ['json', 'pairedItem'],
+	},
+	{
+		name: 'array itemData and sibling keys: rest order wins over pairing',
+		input: [{ json: { a: 1 }, pairedItem: { item: 5 }, binary: { x: 1 } }],
+		options: { itemData: [{ item: 9 }] },
+		expect: [{ json: { a: 1 }, pairedItem: { item: 5 }, binary: { x: 1 } }],
+		keyOrder: ['json', 'pairedItem', 'binary'],
+	},
+	{ name: 'empty input is an empty array', input: [], options: { itemData: { item: 0 } }, expect: [], keyOrder: [] },
+];
+
+test('constructExecutionMetaData: the destructuring order is the behaviour', () => {
+	for (const c of CEM_CASES) {
+		const out = constructExecutionMetaData(structuredClone(c.input), structuredClone(c.options));
+		assert.deepEqual(out, c.expect, c.name);
+		// Key order is asserted because run data is hashed, diffed and rendered from
+		// these objects elsewhere; a reordering "cleanup" is a wire-format change.
+		out.forEach((item, i) =>
+			assert.deepEqual(Object.keys(item), c.keyOrder, `${c.name}: key order of item ${i}`),
+		);
+	}
+});
+
+test('constructExecutionMetaData: a non-array input raises the reference TypeError', () => {
+	const thrown = attempt(() => constructExecutionMetaData({ json: {} }, { itemData: { item: 0 } }));
+	assert.equal(thrown.ok, false);
+	assert.equal(thrown.error.name, 'TypeError');
+	assert.match(thrown.error.message, /inputData\.map is not a function/);
+});
+
+test('live: constructExecutionMetaData is the reference function', (t) => {
+	if (!runtime || !refCem) {
+		t.diagnostic('reference runtime not installed — live parity not run');
+		return;
+	}
+	const ref = refCem.constructExecutionMetaData ?? refCem.default;
+	const diffs = [];
+	for (const c of CEM_CASES) {
+		const a = serialize(constructExecutionMetaData(structuredClone(c.input), structuredClone(c.options)));
+		const b = serialize(ref(structuredClone(c.input), structuredClone(c.options)));
+		if (a !== b) diffs.push(`${c.name}\n    reference:      ${b}\n    reconstruction: ${a}`);
+	}
+	for (const bad of [{ json: {} }, null, undefined, 'x']) {
+		const a = attempt(() => constructExecutionMetaData(bad, { itemData: { item: 0 } }));
+		const b = attempt(() => ref(bad, { itemData: { item: 0 } }));
+		if (serialize(a) !== serialize(b)) {
+			diffs.push(`non-array input ${JSON.stringify(bad)}\n    reference:      ${serialize(b)}\n    reconstruction: ${serialize(a)}`);
+		}
+	}
+	assert.deepEqual(diffs, [], `\n${diffs.join('\n')}`);
 });
 
 // ---------------------------------------------------------------- live parity

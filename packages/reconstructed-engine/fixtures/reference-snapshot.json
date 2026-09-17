@@ -2,7 +2,7 @@
   "$generatedBy": "node test/helpers/record-surface.mjs",
   "$source": "values read out of the pinned reference runtime — DO NOT EDIT",
   "$runtimeVersion": "2.9.1",
-  "$recordedAt": "2026-09-17T17:35:24.458Z",
+  "$recordedAt": "2026-09-17T18:03:54.139Z",
   "constants": {
     "DIGITS": "0123456789",
     "UPPERCASE_LETTERS": "ABCDEFGHIJKLMNOPQRSTUVWXYZ",

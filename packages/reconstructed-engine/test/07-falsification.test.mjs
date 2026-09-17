@@ -105,6 +105,48 @@ const MUTATIONS = [
 		from: ["mode: mode === 'manual' ? 'test' : 'production',"],
 		to: ["mode: mode === 'manual' ? 'production' : 'test',"],
 	},
+	{
+		name: 'pin data over-corrected to honour disabled',
+		file: 'src/workflow-data-proxy.mjs',
+		from: ['\treturn workflow.getPinDataOfNode(nodeName);'],
+		to: [
+			'\tconst pinned = workflow.getPinDataOfNode(nodeName);',
+			"\t// the plausible over-correction: disabled nodes should not feed a run",
+			'\treturn workflow.getNode(nodeName)?.disabled === true ? undefined : pinned;',
+		],
+		note: 'ISSUE-016 evidence: the reference proxy has NO disabled awareness (grep it) — pinned data flows for a disabled node, while isExecuted stays false. A port that "helpfully" filters disabled here looks strictly better and diverges.',
+	},
+	{
+		name: 'pinned node counted as executed',
+		file: 'src/workflow-data-proxy.mjs',
+		from: ['\t\t\t\t\t\t\tthat.runExecutionData?.resultData?.runData.hasOwnProperty(nodeName) ?? false'],
+		to: [
+			'\t\t\t\t\t\t\t(that.runExecutionData?.resultData?.runData.hasOwnProperty(nodeName) ?? false) ||',
+			'\t\t\t\t\t\t\t\tBoolean(getPinDataIfManualExecution(that.workflow, nodeName, that.mode))',
+		],
+		note: 'the other side of the same trap: isExecuted reads run data, never pin data',
+	},
+	{
+		name: 'constructExecutionMetaData pairing precedence "fixed"',
+		file: 'src/execution-metadata.mjs',
+		from: ['\t\treturn { json, pairedItem: itemData, ...rest };'],
+		to: ['\t\treturn { json, ...rest, pairedItem: itemData };'],
+		note: 'the H-07 quirk (existing pairedItem wins) inverted — the reference spreads itemData FIRST, so rest overwrites it',
+	},
+	{
+		name: '$input empty-data guard removed',
+		file: 'src/workflow-data-proxy.mjs',
+		from: ["if (that.connectionInputData.length === 0) {"],
+		to: ['if (false) {'],
+		note: 'the accessors would answer [] / undefined instead of raising No execution data available',
+	},
+	{
+		name: '$input guard copied from the placeholder expression',
+		file: 'src/workflow-data-proxy.mjs',
+		from: ["if (that.connectionInputData.length === 0) {"],
+		to: ['if (!that.connectionInputData[that.runIndex]?.json) {'],
+		note: 'the trap this whole mutation list exists for: the reference DOES compute `!placeholdersDataInputData` (workflow-data-proxy.ts:1061-1079) but only for the fromAI placeholder lookup, not for $input.all()/first()/item — copying the expression without its context makes a binary-only item throw where n8n answers',
+	},
 ];
 
 /** Files the mutants are judged by. Gate 07 itself is excluded (it would recurse). */

@@ -1872,6 +1872,595 @@
           }
         ]
       ]
+    },
+    {
+      "name": "pinned-and-disabled-node",
+      "_why": "ISSUE-016 follow-up, settled by the oracle instead of by argument: does the data proxy honour `disabled` when it substitutes pinned output? `grep -n disabled packages/workflow/src/workflow-data-proxy.ts` returns NOTHING, while `NodeHelpers.getNodeParametersIssues` (node-helpers.ts:1211) and the execution loop both branch on it. So the proxy layer and the execution layer are allowed to disagree, and the recorded values here are what a port of `$()` must reproduce.",
+      "mode": "manual",
+      "activeNodeName": "Code",
+      "itemIndex": 0,
+      "pinData": {
+        "Disabled Set": [
+          {
+            "json": {
+              "pinned": true,
+              "from": "pin-of-disabled-node"
+            }
+          }
+        ]
+      },
+      "connections": {
+        "Manual Trigger": {
+          "main": [
+            [
+              {
+                "node": "Disabled Set",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "Disabled Set": {
+          "main": [
+            [
+              {
+                "node": "Code",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        }
+      },
+      "runData": {
+        "Manual Trigger": [
+          {
+            "startTime": 1,
+            "executionIndex": 0,
+            "executionTime": 1,
+            "source": [],
+            "data": {
+              "main": [
+                [
+                  {
+                    "json": {
+                      "fromTrigger": "hello"
+                    },
+                    "pairedItem": {
+                      "item": 0
+                    }
+                  }
+                ]
+              ]
+            }
+          }
+        ]
+      },
+      "connectionInputData": [
+        {
+          "json": {
+            "pinned": true,
+            "from": "pin-of-disabled-node"
+          }
+        }
+      ],
+      "probes": [
+        [
+          "$node",
+          "Disabled Set",
+          "json"
+        ],
+        [
+          "$node",
+          "Disabled Set",
+          "result"
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Disabled Set"
+            ]
+          },
+          "isExecuted"
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Disabled Set"
+            ]
+          },
+          "all",
+          {
+            "()": []
+          }
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Disabled Set"
+            ]
+          },
+          "first",
+          {
+            "()": []
+          }
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Disabled Set"
+            ]
+          },
+          "params",
+          "mode"
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Set"
+            ]
+          },
+          "all",
+          {
+            "()": []
+          }
+        ],
+        [
+          "$input",
+          "first",
+          {
+            "()": []
+          }
+        ]
+      ]
+    },
+    {
+      "name": "pinned-upstream-substitutes-input",
+      "_why": "workflow-data-proxy.ts:909-926 \u2014 getTaskData() falls back to pinDataToTask(), which FABRICATES an ITaskData ({data:{main:[pinData]}, startTime:0, executionTime:0, executionIndex:0, source:[]}) for the previous node when run data is missing, so pinned upstream output reaches $input although NOTHING executed. Two halves are recorded: with a source present the substitution is visible, and with executeData.source absent $input raises 'No execution data available' instead of answering empty. connectionInputData stays empty so the substitution cannot be confused with real input.",
+      "mode": "manual",
+      "activeNodeName": "Code",
+      "itemIndex": 0,
+      "pinData": {
+        "Set": [
+          {
+            "json": {
+              "pinned": true,
+              "via": "input-substitution"
+            }
+          }
+        ]
+      },
+      "connections": {
+        "Manual Trigger": {
+          "main": [
+            [
+              {
+                "node": "Set",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "Set": {
+          "main": [
+            [
+              {
+                "node": "Code",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        }
+      },
+      "runData": {},
+      "probes": [
+        [
+          "$input",
+          "all",
+          {
+            "()": []
+          }
+        ],
+        [
+          "$input",
+          "first",
+          {
+            "()": []
+          }
+        ],
+        [
+          "$input",
+          "item"
+        ],
+        [
+          "$input",
+          "params",
+          "via"
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Set"
+            ]
+          },
+          "all",
+          {
+            "()": []
+          }
+        ],
+        [
+          "$json"
+        ],
+        [
+          "$item",
+          "json"
+        ],
+        [
+          "$input",
+          "context",
+          "json"
+        ]
+      ],
+      "executeData": {
+        "data": {
+          "main": [
+            []
+          ]
+        },
+        "source": {
+          "main": [
+            [
+              {
+                "previousNode": "Set",
+                "previousNodeOutput": 0,
+                "previousNodeRun": 0
+              }
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "name": "input-placeholder-sourcing-edge",
+      "_why": "The reference derives $input's guard from `placeholdersDataInputData`, NOT from the length of connectionInputData: workflow-data-proxy.ts:1061-1079 takes runData[active][runIndex].inputOverride when the ACTIVE node already has run data, and connectionInputData[runIndex].json otherwise, then throws 'No execution data available' when that placeholder object is falsy. A port that only checks `connectionInputData.length === 0` therefore answers where the reference raises \u2014 an item with binary and no json is enough to diverge.",
+      "mode": "manual",
+      "activeNodeName": "Code",
+      "itemIndex": 0,
+      "connections": {
+        "Manual Trigger": {
+          "main": [
+            [
+              {
+                "node": "Set",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "Set": {
+          "main": [
+            [
+              {
+                "node": "Code",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        }
+      },
+      "runData": {
+        "Code": [
+          {
+            "startTime": 1,
+            "executionIndex": 0,
+            "executionTime": 1,
+            "source": [
+              {
+                "previousNode": "Set",
+                "previousNodeOutput": 0,
+                "previousNodeRun": 0
+              }
+            ]
+          }
+        ]
+      },
+      "connectionInputData": [
+        {
+          "binary": {
+            "data": {
+              "id": "b1",
+              "fileName": "a.txt",
+              "mimeType": "text/plain",
+              "fileSize": 10
+            }
+          }
+        }
+      ],
+      "probes": [
+        [
+          "$input",
+          "all",
+          {
+            "()": []
+          }
+        ],
+        [
+          "$input",
+          "first",
+          {
+            "()": []
+          }
+        ],
+        [
+          "$input",
+          "params",
+          "missing"
+        ],
+        [
+          "$input",
+          "item"
+        ],
+        [
+          "$json"
+        ]
+      ]
+    },
+    {
+      "name": "input-placeholder-from-input-override",
+      "_why": "Same guard, the other branch: the active node HAS run data carrying inputOverride, so the reference reads the placeholder from there and does not throw even though connectionInputData is empty. Pairs with input-placeholder-sourcing-edge so both sides of `if (!resultData)` are pinned.",
+      "mode": "manual",
+      "activeNodeName": "Code",
+      "itemIndex": 0,
+      "connections": {
+        "Manual Trigger": {
+          "main": [
+            [
+              {
+                "node": "Set",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "Set": {
+          "main": [
+            [
+              {
+                "node": "Code",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        }
+      },
+      "runData": {
+        "Code": [
+          {
+            "startTime": 1,
+            "executionIndex": 0,
+            "executionTime": 1,
+            "source": [
+              {
+                "previousNode": "Set",
+                "previousNodeOutput": 0,
+                "previousNodeRun": 0
+              }
+            ],
+            "inputOverride": {
+              "main": [
+                [
+                  {
+                    "json": {
+                      "via": "inputOverride"
+                    }
+                  }
+                ]
+              ]
+            }
+          }
+        ]
+      },
+      "connectionInputData": [],
+      "probes": [
+        [
+          "$input",
+          "all",
+          {
+            "()": []
+          }
+        ],
+        [
+          "$input",
+          "first",
+          {
+            "()": []
+          }
+        ],
+        [
+          "$input",
+          "params",
+          "via"
+        ],
+        [
+          "$input",
+          "item"
+        ],
+        [
+          "$json"
+        ]
+      ]
+    },
+    {
+      "name": "input-placeholder-missing-json",
+      "_why": "The divergence candidate for the guard above, found by trying to falsify the port rather than to confirm it: the active node has NO run data and connectionInputData holds an item with `binary` but no `json`. The reference computes placeholders as connectionInputData[runIndex]?.json and throws when that is falsy; a port that guards on `connectionInputData.length === 0` answers instead of raising.",
+      "mode": "manual",
+      "activeNodeName": "Code",
+      "itemIndex": 0,
+      "connections": {
+        "Manual Trigger": {
+          "main": [
+            [
+              {
+                "node": "Set",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "Set": {
+          "main": [
+            [
+              {
+                "node": "Code",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        }
+      },
+      "runData": {},
+      "connectionInputData": [
+        {
+          "binary": {
+            "data": {
+              "id": "b1",
+              "fileName": "a.txt",
+              "mimeType": "text/plain",
+              "fileSize": 10
+            }
+          }
+        }
+      ],
+      "probes": [
+        [
+          "$input",
+          "all",
+          {
+            "()": []
+          }
+        ],
+        [
+          "$input",
+          "first",
+          {
+            "()": []
+          }
+        ],
+        [
+          "$input",
+          "params",
+          "nope"
+        ],
+        [
+          "$json"
+        ],
+        [
+          "$item",
+          "json"
+        ]
+      ]
+    },
+    {
+      "name": "input-override-ai-tool-placeholder",
+      "_why": "Attempt to drive the divergence between the reference guard (`placeholdersDataInputData = runData[active][runIndex].inputOverride[NodeConnectionTypes.AiTool]?.[0]?.itemIndex.json`) and this port's `connectionInputData.length === 0` shortcut: an EMPTY connectionInputData plus an active run whose inputOverride carries an ai_tool placeholder. If the reference answers where the port throws, the shortcut must be replaced by the reference expression; if both throw, the simplification is provably safe today and the scenario records why.",
+      "mode": "manual",
+      "activeNodeName": "Code",
+      "itemIndex": 0,
+      "connections": {
+        "Manual Trigger": {
+          "main": [
+            [
+              {
+                "node": "Set",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "Set": {
+          "main": [
+            [
+              {
+                "node": "Code",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        }
+      },
+      "runData": {
+        "Code": [
+          {
+            "startTime": 1,
+            "executionIndex": 0,
+            "executionTime": 1,
+            "source": [
+              {
+                "previousNode": "Set",
+                "previousNodeOutput": 0,
+                "previousNodeRun": 0
+              }
+            ],
+            "inputOverride": {
+              "ai_tool": [
+                [
+                  {
+                    "json": {
+                      "via": "placeholder"
+                    }
+                  }
+                ]
+              ]
+            }
+          }
+        ]
+      },
+      "connectionInputData": [],
+      "probes": [
+        [
+          "$input",
+          "all",
+          {
+            "()": []
+          }
+        ],
+        [
+          "$input",
+          "first",
+          {
+            "()": []
+          }
+        ],
+        [
+          "$input",
+          "params",
+          "via"
+        ],
+        [
+          "$input",
+          "item"
+        ],
+        [
+          "$json"
+        ]
+      ]
     }
   ],
   "deferredProbes": {

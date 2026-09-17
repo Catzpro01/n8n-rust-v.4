@@ -1,6 +1,6 @@
 # LEGO Isolation: Node Execution Context + Workflow Data Proxy
 
-**Status:** `REFERENCE TESTED` — 82/82 gates green with the live oracle, 82/82 with the oracle absent (offline goldens), falsification gate green
+**Status:** `REFERENCE TESTED` — 96/96 gates green with the live oracle, 96/96 with the oracle absent (offline goldens), falsification gate green (15/15 mutants caught)
 **Owner:** Agent 2 (LEGO `node`, port unit `node-execution-context` + `workflow-data-proxy`)
 **Task:** `tasks/POOL-002-R1-node.yaml` (rework of POOL-002, whose `FAILED` record is kept at `results/POOL-002-node-execution-context-data-proxy.md`)
 **Deliverable:** `packages/reconstructed-engine/`
@@ -72,6 +72,22 @@ Each of these is asserted by a gate; each looks like a bug in the reference and 
 | `pinData` short-circuit before execution, and `nodeFailed` sniffing `data[0][0].json.error` | `workflow-execute.ts` | pinned-node runs and continue-on-fail routing |
 | `setAllWorkflowExecutionMetadata` validates **per key**, keeps the successful writes, rethrows the first error | `execution-metadata.ts:52-64` | "validate the whole object first" is cleaner and wrong |
 
+### 4b. One deliberate simplification, and the proof that it is safe
+
+`$input.all() / first() / item` guard on `connectionInputData.length === 0`. The reference has no
+such guard there: it computes `placeholdersDataInputData` (from `runData[activeNode][runIndex].inputOverride`
+when the active node already has run data, else from `connectionInputData[runIndex]?.json`) and throws
+`No execution data available` when *that* is falsy — `workflow-data-proxy.ts:1061-1079` — but that
+throw belongs to the fromAI placeholder lookup, not to the item getters. So the port and the reference
+get to the same answer by different roads, and copying the reference's expression into the accessor
+would be a **regression**: `$input.all()` would start throwing for an item that carries only `binary`.
+
+This is recorded rather than argued: three scenarios in `fixtures/corpus.json`
+(`input-placeholder-sourcing-edge`, `input-placeholder-from-input-override`,
+`input-override-ai-tool-placeholder`) pin the behaviour in both directions, and two mutants in gate 07
+(delete the guard / replace it with the reference's expression) are each caught. The divergence that
+remains reachable runs only through `$fromAI`, which is deferred to the Expression LEGO.
+
 ## 5. How it is verified
 
 | Gate | Runs offline? | What it can see |
@@ -79,11 +95,11 @@ Each of these is asserted by a gate; each looks like a bug in the reference and 
 | `00-constants` | yes (+live) | every constant value and the exact export set vs. `fixtures/reference-snapshot.json`; live half re-derives it |
 | `01-module-graph` | yes | import purity, no oracle in the graph, no module-scope global mutation |
 | `02-errors` | yes (+live) | class names, levels, context filtering, `messages` mapping, and **own-property shape** against the reference classes |
-| `03-run-execution-data` | yes (+live) | migration branches, factory key sets, `getContext` create-on-read, metadata limits; live half compares structures |
-| `04-data-proxy-golden` | yes | 13 data-proxy scenarios (135 accessor probes) + 3 execute-context scenarios (49 method probes each) — 282 recorded results in all, graded against `fixtures/data-proxy.golden.json` — recorded from the reference |
+| `03-run-execution-data` | yes (+live) | migration branches, factory key sets, `getContext` create-on-read, metadata limits, `constructExecutionMetaData` pairing precedence + key order; live half compares structures |
+| `04-data-proxy-golden` | yes | 19 data-proxy scenarios (171 accessor probes) + 3 execute-context scenarios (49 method probes each) — 318 recorded results in all, graded against `fixtures/data-proxy.golden.json` — recorded from the reference |
 | `05-surface-coverage` | yes (+live) | manifest ↔ code ↔ reference: buckets, class methods, 43 sandbox keys, additional-key set, hierarchy |
 | `06-legacy-runner-regression` | yes | the POOL-001 loop (`runner.mjs`, `test-run.mjs`, `runner.test.mjs`) is unedited since the recorded commit (sha256 + `git hash-object` + `git rev-parse <commit>:<path>` traceability), and the dependency runs in neither direction |
-| `07-falsification` | yes | 10 mutations + control, each re-running the whole suite inside a temp copy |
+| `07-falsification` | yes | **15 mutations** + control, each re-running the whole suite inside a temp copy |
 | `oracle/10-reference-equivalence` | no — needs the oracle | the same probes against the installed reference **in-process**, plus: every declared deviation must still be a deviation and must be covered by a probe; the surface manifest must be reproducible from the runtime |
 
 Degradation is explicit: when the oracle is missing, host-dependent probes are asserted as "must raise, never answer undefined" and the oracle gate prints `oracle equivalence NOT RUN` (it *fails* unless `ENGINE_ALLOW_NO_ORACLE=1`, because a silently-skipped equivalence gate is not a gate).

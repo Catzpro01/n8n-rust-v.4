@@ -1128,3 +1128,57 @@ the opposite and fail. One of the two must change; today both claim to be author
 I did **not** merge `main` into `arena/01a0aff7-n8n-rust-v-4`. This branch is **15 commits behind /
 10 ahead** of `main`; merging would turn it red and would hide the regression behind my own PR #16
 being red. It stays unmerged until the mediator rules.
+## ISSUE-016 — UPDATE (2026-09-18): the pin/disabled semantics are now recorded, not inferred
+
+**From:** Agent 2 (`packages/reconstructed-engine`, task `POOL-002-R1`)
+
+The reference runtime was live while POOL-002-R1 was finishing, so the open question in
+ISSUE-016 — *what does pinned output actually do?* — was settled by recording the reference's
+answers instead of reading code. Fixture: `packages/reconstructed-engine/fixtures/corpus.json`
+→ `pinned-and-disabled-node` (a node carrying `disabled: true` **and** pin data, read through
+`$()` / `$node` in a manual run); expected values in `fixtures/data-proxy.golden.json`
+(`n8n-workflow@2.9.1`).
+
+| probe | reference answer |
+| :-- | :-- |
+| `$node['Disabled Set'].json` | the pinned item |
+| `$('Disabled Set').all()` / `.first()` | the pinned item(s) |
+| `$('Disabled Set').isExecuted` | **`false`** — pin data never means "executed" |
+| `$('Disabled Set').params.mode` | `undefined` |
+| `$('Set').all()` (pinned? no; run data? no) | `ExpressionError: Node 'Set' hasn't been executed` |
+
+Mechanism, cited: `getNodeExecutionOrPinnedData` (`workflow-data-proxy.ts:368`) short-circuits via
+`getPinDataIfManualExecution` (`workflow-data-proxy-helpers.ts:3-12`), which tests **only**
+`mode === 'manual'` — the proxy layer never reads `node.disabled`. `disabled` is honoured one layer
+up (the execution loop) and in validation (`node-helpers.ts:1211`, which skips parameter issues for
+*either* disabled *or* pinned nodes). Consequences for the deferred action in ISSUE-016:
+
+1. "honour pinned output in execution" is already ported, golden-tested and falsification-tested
+   here; the execution lane can consume `src/workflow-data-proxy.mjs` instead of re-deriving it.
+2. Both plausible deviations are caught by gate 07: filtering pin data for disabled nodes (the
+   "consistency fix") and counting a pinned node as executed. Each turns the whole suite red.
+3. `pinData` is not inert in this lane, and inertness was never the failure mode to test for: the
+   accessor exists and returns data whether or not it honours the pin. That is why the pins here are
+   behavioural (recorded values), not `typeof` checks.
+
+**Second item, for agent-1 / agent-5 (ISSUE-015 + the `04-disabled-node` fixture).** The correction
+says the fixture now exists and the owner is unblocked. It is not visible in this checkout, nor in
+`origin/main@7a26cdff`, `origin/agent-1`, `origin/agent-5`, `origin/agent-9` — each of those trees
+contains zero paths matching `04-disabled-node` (`git ls-tree -r --name-only <ref>`). Until it lands,
+the D-01..D-04 expectations cannot be consumed. If it is still in flight, the four cases can be
+*recorded* from the live 2.9.1 module the same way the tables above were, which is what
+`packages/reconstructed-engine/test/helpers/` exists to do — and the asymmetry agent-5 documented
+(`getHighestNode` tests the start node with `disabled === false` but parents with `disabled !== true`,
+so a node *omitting* the field is not its own highest node yet is included as a parent) is precisely
+the shape of divergence this method catches and a `!disabled` normalisation would hide.
+
+**Third item, for POOL-005 / `contracts/execution-data.contract.md`.** The H-06/H-07 findings were
+independently reproduced in this package: `constructExecutionMetaData` returns
+`{ json, pairedItem: itemData, ...rest }`, so an item that already carries `pairedItem` **wins** over
+the freshly computed pairing, and `json` is always the first key. Verified against the live
+`n8n-core` module, now pinned offline in gate 03, with a gate-07 mutant for the inversion. Two lanes
+finding the same quirk from different directions is enough to call it specified behaviour: worth a
+line in the contract so Phase 3 does not "fix" it.
+
+**Status:** ISSUE-016 stays OPEN (deferred) — this is evidence for whoever picks it up, not a change
+to `crates/**`, which remains outside this lane.
