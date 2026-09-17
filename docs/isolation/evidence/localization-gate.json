@@ -1,6 +1,6 @@
 {
   "gate": "phase-4c-native-localization",
-  "generatedAt": "2026-09-17T22:14:36.785Z",
+  "generatedAt": "2026-09-17T22:35:04.946Z",
   "node": "v22.22.3",
   "modules": [
     "packages/workflow-lego/src/settings-localization-adapter.ts (phase 4A)",
@@ -138,7 +138,7 @@
     "pass": 79,
     "fail": 0,
     "exitCode": 0,
-    "durationMs": 471
+    "durationMs": 476
   },
   "isolatedUnitCompile": {
     "typescriptAvailable": true,
@@ -171,7 +171,7 @@
       "id": "G1",
       "name": "localization test suites pass (4C runtime + 4E envelope + 4F run path)",
       "ok": true,
-      "detail": "79/79 PASS in 471ms"
+      "detail": "79/79 PASS in 476ms"
     },
     {
       "id": "G2",
