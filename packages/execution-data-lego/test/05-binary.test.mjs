@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+	STORED_MODES,
 	checkBinaryRepresentation,
 	createBinaryDataId,
 	fileTypeFromMimeType,
@@ -151,4 +152,43 @@ test('prettyBytes matches the sizes n8n records for binary metadata', () => {
 	assert.equal(prettyBytes(-7), '-7 B');
 	assert.equal(prettyBytes(0.4), '0.4 B');
 	assert.throws(() => prettyBytes(Infinity), /Expected a finite number/);
+});
+
+/**
+ * `signed` is unreachable from n8n (`binary-data.service.ts` always calls
+ * `prettyBytes(n)` un-optioned), which is exactly why it went unpinned:
+ * mutation D11 — dropping the leading space of the signed zero — survived the
+ * whole suite. Values below are cross-checked against the real
+ * `pretty-bytes@5.6.0` in `test/06-parity.test.mjs`.
+ */
+test('prettyBytes signed keeps the leading space on zero and signs everything else', () => {
+	assert.equal(prettyBytes(0, { signed: true }), ' 0 B');
+	assert.equal(prettyBytes(7, { signed: true }), '+7 B');
+	assert.equal(prettyBytes(-7, { signed: true }), '-7 B');
+	assert.equal(prettyBytes(0.4, { signed: true }), '+0.4 B');
+	// ...and unsigned zero has no leading space
+	assert.equal(prettyBytes(0), '0 B');
+});
+
+test('storeBinaryData refuses a stored mode with no fileId (contract I10)', () => {
+	// `id` is `"<mode>:<fileId>"` — without a fileId there is nothing to mint it from.
+	// Driven from the constant so the case can never drift from `STORED_MODES`.
+	assert.deepEqual([...STORED_MODES], ['filesystem', 'filesystem-v2', 's3', 'database']);
+	for (const mode of STORED_MODES) {
+		assert.throws(
+			() => storeBinaryData({}, 12, { mode }),
+			/stored binary modes require a fileId/,
+			`mode ${mode} must require a fileId`,
+		);
+	}
+	// the in-memory branch takes a Buffer, never a size
+	assert.throws(() => storeBinaryData({}, 12), /in-memory binary mode requires a Buffer/);
+	// ...and with a fileId the stored branch succeeds and mints the id
+	assert.deepEqual(storeBinaryData({ mimeType: 'text/plain' }, 12, { mode: 'filesystem', fileId: 'abc' }), {
+		mimeType: 'text/plain',
+		id: 'filesystem:abc',
+		fileSize: '12 B',
+		bytes: 12,
+		data: 'filesystem',
+	});
 });

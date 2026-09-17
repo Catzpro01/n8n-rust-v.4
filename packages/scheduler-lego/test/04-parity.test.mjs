@@ -117,6 +117,34 @@ test('parity: randomInt range matches the reference distribution bounds', { skip
 });
 
 /** Builds both managers with identical fakes and the REAL cron@4 timer. */
+/**
+ * Records every real `cron@4` job this file constructs, so cleanup never depends
+ * on the registry being intact. Found the hard way: a mutation that loses a
+ * registration (e.g. replacing the per-workflow Map instead of extending it)
+ * leaves a live timer that no `deregisterAllCrons()` can reach — which turned a
+ * red test into a 15-minute hang instead of a 1.5 s failure.
+ */
+function trackJobs(CronJob) {
+	const jobs = [];
+	const Tracked = function (...args) {
+		const job = new CronJob(...args);
+		jobs.push(job);
+		return job;
+	};
+	return {
+		CronJob: Tracked,
+		stopAll: () => {
+			for (const job of jobs) {
+				try {
+					job.stop();
+				} catch {
+					/* already stopped, or never startable — cleanup is best effort */
+				}
+			}
+		},
+	};
+}
+
 function both({ isLeader = true, activeInterval = 0 } = {}) {
 	const fakes = () => ({
 		instanceSettings: makeInstanceSettings({ isLeader }),
@@ -127,12 +155,14 @@ function both({ isLeader = true, activeInterval = 0 } = {}) {
 	const mineFakes = fakes();
 	const refFakes = fakes();
 
+	const tracked = trackJobs(ref.cron.CronJob);
+
 	const mine = new ScheduledTaskManager(
 		mineFakes.instanceSettings,
 		mineFakes.logger,
 		{ activeInterval },
 		mineFakes.errorReporter,
-		{ CronJob: ref.cron.CronJob },
+		{ CronJob: tracked.CronJob },
 	);
 
 	const RefScheduledTaskManager = ref.coreModule('execution-engine/scheduled-task-manager').ScheduledTaskManager;
@@ -145,10 +175,17 @@ function both({ isLeader = true, activeInterval = 0 } = {}) {
 
 	const cleanup = () => {
 		// Real cron@4 jobs hold the event loop open — always stop them, otherwise
-		// `node --test` never exits.
+		// `node --test` never exits. Both routes run: the registry (the normal
+		// path) and the construction log (which still reaches jobs the registry
+		// lost track of).
 		mine.deregisterAllCrons();
 		theirs.deregisterAllCrons();
+		tracked.stopAll();
 	};
+
+	// A second safety net: if the test itself throws before `t.after` is reached,
+	// the jobs must still be stopped. `process` level cleanup is not available in
+	// `node --test`, so the construction log is the belt to the registry's braces.
 
 	return { mine, theirs, mineFakes, refFakes, cleanup };
 }

@@ -81,8 +81,12 @@ export class ScheduledTaskManager {
 			? `${expression} (every ${recurrence.intervalSize} ${recurrence.typeInterval})`
 			: expression;
 
-		// FROZEN QUIRK (S-08): the map is read BEFORE the duplicate check, so the
-		// `workflowCrons` used for the later `set` is the pre-existing one.
+		// READ ORDER (S-08): the map is read BEFORE the duplicate check, matching
+		// upstream. Mutation testing showed this order is NOT observable — nothing
+		// mutates `cronsByWorkflow` between the read and the check, so moving the
+		// read after `toCronKey` is an equivalent mutant. The order is kept for
+		// 1:1 fidelity with the reference, not because it changes behaviour; do
+		// not write a test claiming it matters.
 		const workflowCrons = this.cronsByWorkflow.get(workflowId);
 		const key = this.toCronKey({ workflowId, nodeId, expression, timezone, recurrence });
 

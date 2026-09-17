@@ -59,6 +59,31 @@ test('P-03: sourceOverwrite is threaded in for tool executions only', () => {
 	assert.deepEqual(jsonPairsOf(tool.data.main[0]), [{ item: 0, sourceOverwrite: overwrite }]);
 });
 
+/**
+ * Upstream (`.../utils/resolve-source-overwrite.ts` L15-16) tests with
+ * `'sourceOverwrite' in item.pairedItem`, not with a truthiness check. The two
+ * differ for a key that is present but `undefined`: the `in` test passes and the
+ * function returns `undefined`, whereas a truthiness check would fall through to
+ * the `null` fallback. Mutation D9 survived the whole suite because the only
+ * assertion on that path used loose equality, under which `undefined` and `null`
+ * agree — so these pin the distinction explicitly.
+ */
+test('resolveSourceOverwrite uses an `in` test, not truthiness (upstream L15-16)', () => {
+	const tool = { metadata: { preserveSourceOverwrite: true } };
+
+	// present-but-undefined -> returns undefined, NOT the null fallback
+	assert.equal(
+		resolveSourceOverwrite({ json: {}, pairedItem: { sourceOverwrite: undefined } }, tool),
+		undefined,
+	);
+	// absent key -> null fallback
+	assert.equal(resolveSourceOverwrite({ json: {}, pairedItem: {} }, tool), null);
+	// arrays pass `typeof === 'object'` but carry no such key
+	assert.equal(resolveSourceOverwrite({ json: {}, pairedItem: [] }, tool), null);
+	// not a tool execution at all -> null, whatever the item carries
+	assert.equal(resolveSourceOverwrite({ json: {}, pairedItem: { sourceOverwrite: {} } }, {}), null);
+});
+
 test('resolveSourceOverwrite prefers preservedSourceOverwrite, then the item value', () => {
 	const fromItem = { previousNode: 'X' };
 	const item = { json: {}, pairedItem: { item: 0, sourceOverwrite: fromItem } };

@@ -321,3 +321,33 @@ test('parity: prettyBytes', { skip }, () => {
 		assert.strictEqual(prettyBytes(size), ref.prettyBytes(size), `prettyBytes(${size})`);
 	}
 });
+
+/**
+ * The option matrix n8n never exercises (`prettyBytes` is always called
+ * un-optioned from `binary-data.service.ts`), but which the port promises to
+ * keep equivalent. Mutation D11 showed `signed` was unpinned: dropping the
+ * leading space of the signed zero (`' 0 B'` -> `'0 B'`) survived the whole
+ * suite, so these cases now drive the real `pretty-bytes@5.6.0` as the oracle.
+ */
+test('parity: prettyBytes option matrix (signed / bits / binary)', { skip }, () => {
+	const OPTION_SETS = [
+		{ signed: true },
+		{ bits: true },
+		{ binary: true },
+		{ signed: true, bits: true },
+		{ signed: true, binary: true },
+		{ bits: true, binary: true },
+		{ signed: true, bits: true, binary: true },
+		{ locale: 'de-DE' },
+		{ signed: true, locale: 'de-DE' },
+		{ minimumFractionDigits: 3 },
+		{ maximumFractionDigits: 0 },
+	];
+
+	for (const size of SIZES) {
+		for (const options of OPTION_SETS) {
+			const label = `prettyBytes(${size}, ${JSON.stringify(options)})`;
+			assert.strictEqual(prettyBytes(size, options), ref.prettyBytes(size, options), label);
+		}
+	}
+});

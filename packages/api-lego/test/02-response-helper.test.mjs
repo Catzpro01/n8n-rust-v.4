@@ -142,6 +142,45 @@ test('A-07a a 409 on form-waiting renders the form-trigger-409 page', () => {
 	});
 });
 
+/**
+ * Upstream keys the form-trigger exceptions off `error.errorCode`, not off
+ * `error.httpStatusCode`. For `NotFoundError` the two are both 404, so a test
+ * that only ever sends a `NotFoundError` cannot tell them apart — mutation A8
+ * (swap the field) survived the whole suite. The pair below separates them:
+ * `BadRequestError('x', 404)` carries `errorCode: 404` over `httpStatusCode: 400`.
+ */
+test('A-07 keys off errorCode, not httpStatusCode', () => {
+	const res = makeRes({ originalUrl: '/form/abc-123' });
+	sendErrorResponse(res, new BadRequestError('bad form', 404));
+	assert.equal(res.body, undefined, 'the form renderer wins over the JSON envelope');
+	assert.deepEqual(res.rendered, { view: 'form-trigger-404', options: { isTestWebhook: false } });
+
+	// ...and an error whose *status* is 404 but whose code is something else
+	// must NOT render — it is ordinary JSON.
+	const plain = makeRes({ originalUrl: '/form/abc-123' });
+	sendErrorResponse(plain, new ResponseError('not a form', 404, 400));
+	assert.equal(plain.rendered, undefined);
+	assert.deepEqual(plain.body, { code: 400, message: 'not a form' });
+});
+
+/**
+ * A-07a matches the literal path segment `form-waiting`, not the looser
+ * substring `form`. Mutation A9 (loosen the match) survived the whole suite
+ * because no test sent a 409 down a plain `/form/...` URL.
+ */
+test('A-07a the 409 exception requires the form-waiting path, not any form path', () => {
+	const waiting = makeRes({ originalUrl: '/form-waiting/abc' });
+	sendErrorResponse(waiting, new ResponseError('still running', 409, 409));
+	assert.deepEqual(waiting.rendered.view, 'form-trigger-409');
+
+	// A 409 anywhere else is ordinary JSON, even on a form URL.
+	const elsewhere = makeRes({ originalUrl: '/form/abc-123' });
+	sendErrorResponse(elsewhere, new ResponseError('conflict', 409, 409));
+	assert.equal(elsewhere.rendered, undefined);
+	assert.equal(elsewhere.statusCode, 409);
+	assert.deepEqual(elsewhere.body, { code: 409, message: 'conflict' });
+});
+
 test('A-12 isResponseError duck-types on two numeric fields', () => {
 	assert.equal(isResponseError(new NotFoundError('x')), true);
 	assert.equal(isResponseError(new Error('x')), false);
