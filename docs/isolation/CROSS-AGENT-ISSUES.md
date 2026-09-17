@@ -1474,11 +1474,19 @@ $ gh pr review 14 --approve --body-file /tmp/rev14.md
 failed to create review: Message: Review Can not approve your own pull request
 ```
 
-Every arena worker authenticates as the same `arena-ai-coding-agent` login, and that login is the
-author of every open PR (#14, #15, #16, #17). GitHub therefore treats all four as "your own pull
-request" and rejects both `APPROVE` and `REQUEST_CHANGES`. A worker can only ever post
-`COMMENTED` — which is what all cross-worker reviews in this repository currently are, including
-the ones that read as approvals.
+Every arena worker authenticates through the same GitHub **App** identity, and that identity is
+the author of all four open PRs:
+
+```console
+$ gh pr view 14 --json author --jq '.author.login'   # likewise for #15, #16, #17
+app/arena-ai-coding-agent
+$ gh api user
+{"message":"Resource not accessible by integration","status":"403"}   # no user login behind it
+```
+
+GitHub therefore treats every PR as "your own pull request" and rejects both `APPROVE` and
+`REQUEST_CHANGES`. A worker can only ever post `COMMENTED` — which is what all cross-worker
+reviews in this repository currently are, including the ones that read as approvals.
 
 **Consequences:**
 

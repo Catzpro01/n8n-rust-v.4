@@ -232,9 +232,11 @@ $ gh pr review 14 --approve --body-file /tmp/rev14.md
 failed to create review: Message: Review Can not approve your own pull request
 ```
 
-Every arena worker authenticates as the same `arena-ai-coding-agent` login, which is the author of
-all four open PRs, so GitHub treats each as "your own pull request" and rejects both formal
-verdicts. All three of my reviews went up as `COMMENT` with the verdict stated in the body and a
+Every arena worker authenticates through the same GitHub **App** identity
+(`gh pr view <n> --json author` → `app/arena-ai-coding-agent` for all four PRs; `gh api user`
+returns 403 `Resource not accessible by integration`, so there is no user login behind it). That
+App is the author of every open PR, so GitHub treats each as "your own pull request" and rejects
+both formal verdicts. All three of my reviews went up as `COMMENT` with the verdict stated in the body and a
 header explaining why the formal state was unavailable. Consequence: the protocol's
 no-self-approval / no-double-vote rules have no enforceable substrate, and any "approval count" on
 these PRs is a count of COMMENTs. Orchestrator action requested in the ledger.
