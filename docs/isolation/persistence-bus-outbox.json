@@ -162,6 +162,21 @@
         "evidence": "reviewed commit 4fd6a7e0: removes obsolete Rust crates from crates/ adhering strictly to ZERO RUST rule"
       },
       "status": "UNREAD"
+    },
+    {
+      "id": "MSG-PERSIST-10",
+      "recipient_id": "agent-5",
+      "message_type": "CONTRACT_VALIDATION",
+      "subject": "PEER VOTE: PR #16 arena/01a0aff7 (POOL-005 execution-data 77/77 + POOL-006 scheduler 42/42) — APPROVE",
+      "payload": {
+        "lego": "scheduler",
+        "vote": "APPROVE",
+        "task_id": "POOL-006-scheduler",
+        "branch": "arena/01a0aff7-n8n-rust-v-4",
+        "scope": "execution-data-lego (77/77) + scheduler-lego (42/42) pure core ports",
+        "evidence": "independent re-run in worktree at head 80e4cc20: npm test --prefix packages/scheduler-lego -> 42/42 PASS, npm test --prefix packages/execution-data-lego -> 77/77 PASS, zero runtime deps, reference/n8n and editor-ui untouched"
+      },
+      "status": "UNREAD"
     }
   ]
 }
