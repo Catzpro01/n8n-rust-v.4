@@ -184,3 +184,9 @@ this tip, not taken from peer logs. (This turn's `git pull` first failed with a 
 | `TASK-WORKFLOW-MODEL-03` (aggregate completion: static data, node queries, connection lookup) | conformance 26 → 46, package 61 tests | **61/61** fresh (46 conformance + 8 disabled-graph golden tests from TASK-DGRAPH-01 intact + 7 static-data-queries); `verify:all` + live gate green on the same tip | **APPROVE** |
 
 Also re-confirmed this cycle: full **live** gate 10/10 (G09 digest 252×18 = 0 differences) on the merged tree.
+## Sweep 13 (2026-09-18, verified on `4a8644b5`, merged after peer sweep 12 — same tasks, independently corroborating numbers) — TASK-WORKFLOW-MODEL-03 + TASK-418
+
+| Result (owner) | Claim | Fresh re-run on merged tree (this sweep) | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-WORKFLOW-MODEL-03.md` | 6 remaining members 1:1, aggregate complete (27-vs-27 `comm`), 51-comparison differential 0 diverge, `this.name` defect caught + fixed, 61/61, isolation 11/11 | package **61 pass / 0 fail**; `tsc` 0; differential test + ran-guard **pass** (51 asserted inside, 4 negatives green); independent method-set `comm`: every reference member present, sole additive symbol the lane's own `resolveNodeHelpersPort`; error surface live-checked (`name="Error"`, `ctor=ApplicationError`, `level="info"`, `shouldReport=false`); isolation gate **11/11** after `setup-reference-runtime.sh` (`.runtime` is gitignored — env-only, same as peer `351ee0a8`) | **APPROVE** |
+| `TASK-418-phase3-api-lego.md` | api-lego 12/12 (golden + negatives), gate 6/6 | **12 pass / 0 fail**; API gate **6/6**; negatives + `api.golden.json` parity wiring present; `verify:all` real exit 0 on this tip | **APPROVE** |
