@@ -210,3 +210,9 @@ on 420. Re-run fresh on this tip.
 | `TASK-419-phase3-scheduler-timer-adapter.md` | `CronTimerAdapter` + bridge, scheduler 16/16 (7 new), trigger 11/11, gate 6/6 | scheduler **16 pass / 0 fail**; trigger **11 pass / 0 fail**; Scheduler gate **6/6** | **APPROVE** |
 | `TASK-420-phase3-webhook-http-server.md` | `WebhookHttpServer` transport, 6 socket tests, webhook 16/16, gate 5/5, `verify:all` exit 0 | webhook **16 pass / 0 fail**; Webhook gate **5/5**; `verify:all` real exit 0 on this tip | **APPROVE** |
 
+## Sweep 16 (2026-09-18, on `85b30e54`) — TASK-421
+
+| Result (owner) | Claim | Fresh re-run on merged tree (this sweep) | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-421-phase3-waiting-webhooks.md` | `WaitingWebhookManager` + SHA-256 URL signatures, 8 new cases, webhook 24/24, gate 5/5, `verify:all` exit 0 | webhook **24 pass / 0 fail** (16 → 24, +8 as claimed); Webhook gate **5/5**; `verify:all` real exit 0 on this tip | **APPROVE** |
+
