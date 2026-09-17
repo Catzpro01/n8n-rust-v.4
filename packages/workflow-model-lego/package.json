@@ -1,0 +1,22 @@
+{
+  "name": "@lego/workflow-model",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Workflow Model LEGO — Phase 3 Node.js/TypeScript reconstruction of the n8n 2.9.4 Workflow aggregate (nodes map, connection indexes, renameNode incl. D-08, calculateWorkflowChecksum). Graph traversal is consumed from @lego/connection via port CD-02.",
+  "license": "SEE LICENSE IN ../../reference/n8n/LICENSE.md",
+  "type": "commonjs",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "npm --prefix ../connection-lego run build && tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "npm run build && node --test test/*.test.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "~5.9.2"
+  }
+}

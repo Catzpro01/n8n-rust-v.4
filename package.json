@@ -2,7 +2,7 @@
   "name": "n8n-rust-v4",
   "version": "0.4.0",
   "private": true,
-  "description": "n8n 2.9.4 anatomy \u2192 contract \u2192 reference runtime \u2192 LEGO isolation \u2192 Phase-3 reconstruction (JS/TS track + Rust port confined to crates/**, apps/**)",
+  "description": "n8n 2.9.4 anatomy → contract → reference runtime → LEGO isolation → Phase-3 reconstruction (JS/TS track + Rust port confined to crates/**, apps/**)",
   "scripts": {
     "setup:reference": "bash scripts/setup-reference-runtime.sh",
     "verify": "node tools/workflow-isolation-gate.mjs",
@@ -17,6 +17,7 @@
     "execution:gate": "node tools/execution-engine-gate.mjs",
     "connection-lego:test": "npm --prefix packages/connection-lego test",
     "reference:fixtures": "node tests/reference/workflow-rust/build-fixtures.mjs --check",
-    "verify:all": "npm run isolation:check && npm run reconstructed-engine:test && npm run execution:gate && npm run connection-lego:test"
+    "workflow-model-lego:test": "npm --prefix packages/workflow-model-lego test",
+    "verify:all": "npm run isolation:check && npm run reconstructed-engine:test && npm run execution:gate && npm run connection-lego:test && npm run workflow-model-lego:test"
   }
 }

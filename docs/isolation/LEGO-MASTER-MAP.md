@@ -86,6 +86,7 @@ asserts that confinement.
 | `POOL-003-error-retry-handling` | execution (validation surface) | same ✅ | same ✅ | `test/03-error-retry.test.mjs` 11/11 ✅ | `E07` ✅ | **IMPLEMENTED** |
 | `TASK-EXPRESSION-SANDBOX-01` | execution (expression security) | `contracts/expression.contract.md` ✅ | same ✅ | `test/04-expression-sandbox.test.mjs` 7/7 ✅ | `E09` ✅ | **IMPLEMENTED** |
 | `TASK-405-phase3-connection-lego` | connection (LEGO 03) | `contracts/connection.contract.md` ✅ | `docs/isolation/connection.md` ✅ | `packages/connection-lego/test/conformance.test.mjs` 52/52 ✅ (15 reference fixtures + 32 golden probes + 2 negative controls) | `contract_conformance` 42/42 ✅ · `boundary_audit` PASS ✅ | **VERIFIED** |
+| `TASK-408-phase3-workflow-model-lego` | workflow (LEGO 01) | `contracts/workflow.contract.md` ✅ (§6 frozen surface) | `docs/isolation/workflow.md` ✅ | `packages/workflow-model-lego/test/conformance.test.mjs` 26/26 ✅ (fixtures `checksum` 8 + `toJSON` 6 + `rename` 6 + 3 negative controls) | `contract_conformance` 42/42 ✅ · `boundary_audit` PASS ✅ | **VERIFIED** |
 
 | Phase 3 gate | Result |
 | :--- | :--- |
@@ -93,5 +94,12 @@ asserts that confinement.
 | Reference tree | unmodified (15050 files, root digest `f8da3518…`) |
 | Evidence | `docs/isolation/evidence/execution-engine-gate.json` |
 
-**Next Phase 3 work:** caveat C1 (11/11 live smoke on the VPS + PostgreSQL), sandboxed expression
-evaluator, trigger/webhook/poll services — see `docs/isolation/execution.md` §7.
+**Reference-fixture coverage on the JS/TS track: 35/35.** `tests/reference/workflow-rust/fixtures.json`
+holds 35 cases in 5 groups; `checksum` (8) + `toJSON` (6) + `rename` (6) are covered by
+`packages/workflow-model-lego`, `traversal` (9) + `compareConnections` (6) by
+`packages/connection-lego`. The same file is the acceptance set for the Rust port track.
+
+**Next Phase 3 work:** caveat C1 (11/11 live smoke on the VPS + PostgreSQL), the remaining frozen
+Workflow surface (`getStartNode`, `getHighestNode`, `getNodeConnectionIndexes`,
+`getParentMainInputNode`, `getParentNodesByDepth`), trigger/webhook/poll services — see
+`docs/isolation/execution.md` §7.
