@@ -89,6 +89,7 @@ asserts that confinement.
 | `TASK-406-phase3-trigger-lego` | trigger | `contracts/trigger.contract.md` ✅ | `docs/isolation/trigger.md` ✅ | `packages/trigger-lego/test/lifecycle.test.mjs` 9/9 ✅ | `tools/trigger-lego-gate.mjs` 5/5 ✅ | **IMPLEMENTED** |
 | `TASK-ENGINE-ACTIVATION-01` | execution (activation lifecycle) | `contracts/execution.contract.md` ✅ | `docs/isolation/execution.md` ✅ | `packages/execution-engine/test/05-activation.test.mjs` 20/20 ✅ (ported from the two reference oracle suites) | `E10` ✅ | **IMPLEMENTED** |
 | `TASK-407-phase3-webhook-lego` | webhook | `contracts/webhook.contract.md` ✅ | `docs/isolation/webhook.md` ✅ | `packages/webhook-lego/test/routing.test.mjs` 10/10 ✅ | `tools/webhook-lego-gate.mjs` 5/5 ✅ | **IMPLEMENTED** |
+| `TASK-408-phase3-scheduler-lego` | scheduler | `contracts/scheduler.contract.md` ✅ | `docs/isolation/scheduler.md` ✅ | `packages/scheduler-lego/test/scheduler.test.mjs` 9/9 ✅ · Trigger regression 9/9 ✅ | `tools/scheduler-lego-gate.mjs` 6/6 ✅ | **IMPLEMENTED** |
 
 | Phase 3 gate | Result |
 | :--- | :--- |

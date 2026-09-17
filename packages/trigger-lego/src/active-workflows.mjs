@@ -5,17 +5,10 @@ import {
   WorkflowDeactivationError,
 } from './errors.mjs';
 import { ScheduledTaskManager } from './scheduled-task-manager.mjs';
+import { toCronExpression } from '../../scheduler-lego/src/cron.mjs';
 import { TriggersAndPollers } from './triggers-and-pollers.mjs';
 
 const NOOP_LOGGER = Object.freeze({ debug() {}, info() {}, warn() {}, error() {} });
-
-function defaultToCronExpression(triggerTime) {
-  if (triggerTime.mode === 'custom') return triggerTime.cronExpression;
-  if (triggerTime.mode === 'everyMinute') return '0 * * * * *';
-  if (triggerTime.mode === 'everyHour') return `0 ${triggerTime.minute ?? 0} * * * *`;
-  if (triggerTime.mode === 'everyDay') return `0 ${triggerTime.minute ?? 0} ${triggerTime.hour ?? 0} * * *`;
-  throw new UserError(`Unsupported poll mode: ${triggerTime.mode}`);
-}
 
 export class ActiveWorkflows {
   constructor({
@@ -23,13 +16,13 @@ export class ActiveWorkflows {
     scheduledTaskManager = new ScheduledTaskManager(),
     triggersAndPollers = new TriggersAndPollers(),
     errorReporter = { error() {} },
-    toCronExpression = defaultToCronExpression,
+    toCronExpression: cronExpressionFactory = toCronExpression,
   } = {}) {
     this.logger = logger;
     this.scheduledTaskManager = scheduledTaskManager;
     this.triggersAndPollers = triggersAndPollers;
     this.errorReporter = errorReporter;
-    this.toCronExpression = toCronExpression;
+    this.toCronExpression = cronExpressionFactory;
     this.activeWorkflows = Object.create(null);
   }
 
@@ -75,7 +68,7 @@ export class ActiveWorkflows {
   async activatePolling(node, workflow, additionalData, getPollFunctions, mode, activation) {
     const pollFunctions = getPollFunctions(workflow, node, additionalData, mode, activation);
     const pollTimes = pollFunctions.getNodeParameter('pollTimes') ?? { item: [] };
-    const expressions = (pollTimes.item ?? []).map(this.toCronExpression);
+    const expressions = (pollTimes.item ?? []).map((item) => this.toCronExpression(item));
     const execute = this.createPollExecuteFn(workflow, node, pollFunctions);
     await execute(true);
 
