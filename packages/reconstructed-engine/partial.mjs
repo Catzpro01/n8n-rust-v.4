@@ -586,3 +586,260 @@ export function findSubgraph(options) {
 
 	return subgraph;
 }
+
+/* ================================================================== *
+ * run data helpers
+ * ================================================================== */
+
+/**
+ * 1:1 port of `run-data-utils.ts:11-26`.
+ *
+ * The execution index tracks the sequence of workflow executions; this finds the highest existing
+ * index in the run data and increments it. Nodes executed before `executionIndex` existed simply
+ * lack the field, which is why the `typeof value === 'number'` filter is there.
+ */
+export function getNextExecutionIndex(runData = {}) {
+	// If runData is empty, return 0 as the first execution index
+	if (!runData || Object.keys(runData).length === 0) return 0;
+
+	const previousIndices = Object.values(runData)
+		.flat()
+		.map((taskData) => taskData.executionIndex)
+		// filter out undefined if previous execution does not have index
+		// this can happen if rerunning execution before executionIndex was introduced
+		.filter((value) => typeof value === 'number');
+
+	// If no valid indices were found, return 0 as the first execution index
+	if (previousIndices.length === 0) return 0;
+
+	return Math.max(...previousIndices) + 1;
+}
+
+/** 1:1 port of `get-incoming-data.ts:3-11`. */
+export function getIncomingData(runData, nodeName, runIndex, connectionType, outputIndex) {
+	return runData[nodeName]?.at(runIndex)?.data?.[connectionType].at(outputIndex) ?? null;
+}
+
+/** 1:1 port of `get-incoming-data.ts:13-15`. */
+function getRunIndexLength(runData, nodeName) {
+	return runData[nodeName]?.length ?? 0;
+}
+
+/** 1:1 port of `get-incoming-data.ts:17-34`. */
+export function getIncomingDataFromAnyRun(runData, nodeName, connectionType, outputIndex) {
+	const maxRunIndexes = getRunIndexLength(runData, nodeName);
+
+	for (let runIndex = 0; runIndex < maxRunIndexes; runIndex++) {
+		const data = getIncomingData(runData, nodeName, runIndex, connectionType, outputIndex);
+
+		if (data && data.length > 0) {
+			return { data, runIndex };
+		}
+	}
+
+	return undefined;
+}
+
+/**
+ * 1:1 port of `clean-run-data.ts:12-49`.
+ *
+ * Returns new run data without any node that is a child of any of the passed nodes — this is what
+ * makes a re-run start from scratch instead of reusing stale results. Does not mutate the input.
+ * Sub-node run data (AI models/tools attached via non-`main` links) is dropped too, which is why the
+ * `type === MAIN` connections are skipped rather than followed.
+ */
+export function cleanRunData(runData, graph, nodesToClean) {
+	const newRunData = { ...runData };
+
+	for (const nodeToClean of nodesToClean) {
+		delete newRunData[nodeToClean.name];
+
+		const children = graph.getChildren(nodeToClean);
+		for (const node of [nodeToClean, ...children]) {
+			delete newRunData[node.name];
+
+			// Delete runData for subNodes
+			const subNodeConnections = graph.getParentConnections(node);
+			for (const subNodeConnection of subNodeConnections) {
+				// Sub nodes never use the Main connection type, so this filters out
+				// the connection that goes upstream of the node to clean.
+				if (subNodeConnection.type === MAIN) {
+					continue;
+				}
+
+				delete newRunData[subNodeConnection.from.name];
+			}
+		}
+	}
+
+	// Remove run data for all nodes that are not part of the subgraph
+	for (const nodeName of Object.keys(newRunData)) {
+		if (!graph.hasNode(nodeName)) {
+			// remove run data for node that is not part of the graph
+			delete newRunData[nodeName];
+		}
+	}
+
+	return newRunData;
+}
+
+/**
+ * 1:1 port of `handle-cycles.ts:15-56`.
+ *
+ * For every start node this checks whether it sits inside a cycle and, if so, replaces it with the
+ * cycle's start — otherwise partial execution would have to work out which run of the cycle to
+ * repeat.
+ */
+export function handleCycles(graph, startNodes, trigger) {
+	// Strongly connected components can also be nodes that are not part of a
+	// cycle. They form a strongly connected component of one. E.g the trigger is
+	// always a strongly connected component by itself because it does not have
+	// any inputs and thus cannot build a cycle.
+	//
+	// We're not interested in them so we filter them out.
+	const cycles = graph.getStronglyConnectedComponents().filter((cycle) => cycle.size >= 1);
+	const newStartNodes = new Set(startNodes);
+
+	// For each start node, check if the node is part of a cycle and if it is
+	// replace the start node with the start of the cycle.
+	if (cycles.length === 0) {
+		return newStartNodes;
+	}
+
+	for (const startNode of startNodes) {
+		for (const cycle of cycles) {
+			const isPartOfCycle = cycle.has(startNode);
+			if (isPartOfCycle) {
+				const firstNode = graph.depthFirstSearch({
+					from: trigger,
+					fn: (node) => cycle.has(node),
+				});
+
+				assert.ok(
+					firstNode,
+					"the trigger must be connected to the cycle, otherwise the cycle wouldn't be part of the subgraph",
+				);
+
+				newStartNodes.delete(startNode);
+				newStartNodes.add(firstNode);
+			}
+		}
+	}
+
+	return newStartNodes;
+}
+
+/* ================================================================== *
+ * finding the trigger to start a partial run from
+ * ================================================================== */
+
+/** `find-trigger-for-partial-execution.ts:6` */
+const isTriggerNode = (nodeType) => nodeType.description.group.includes('trigger');
+
+/** 1:1 port of `find-trigger-for-partial-execution.ts:8-28`. */
+function findAllParentTriggers(workflow, destinationNodeName) {
+	const parentNodes = workflow
+		.getParentNodes(destinationNodeName)
+		.map((name) => {
+			const node = workflow.getNode(name);
+
+			// We got the node name from `workflow.getParentNodes`. The node must
+			// exist.
+			assert.ok(node);
+
+			return {
+				node,
+				nodeType: workflow.nodeTypes.getByNameAndVersion(node.type, node.typeVersion),
+			};
+		})
+		.filter((value) => value !== null)
+		.filter(({ nodeType }) => isTriggerNode(nodeType))
+		.map(({ node }) => node);
+
+	return parentNodes;
+}
+
+/** 1:1 port of `find-trigger-for-partial-execution.ts:30-64`. */
+export function anyReachableRootHasRunData(workflow, destinationNodeName, runData) {
+	const destinationNode = workflow.getNodes().get(destinationNodeName);
+	if (!destinationNode) return false;
+
+	// Get all parent connections recursively
+	const parentConnections = workflow.getParentConnections(destinationNode);
+
+	// Extract unique parent nodes from connections
+	const parentNodes = new Set();
+	for (const connection of parentConnections) {
+		parentNodes.add(connection.from);
+	}
+
+	// Find all root nodes (nodes with no incoming connections)
+	const rootNodes = new Set();
+	for (const parentNode of parentNodes) {
+		const hasParents = workflow.getDirectParentConnections(parentNode).length > 0;
+		if (!hasParents) {
+			rootNodes.add(parentNode);
+		}
+	}
+
+	// Check if at least one root node has run data
+	for (const rootNode of rootNodes) {
+		if (runData[rootNode.name]) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/**
+ * 1:1 port of `find-trigger-for-partial-execution.ts:67-112`.
+ *
+ * The reference's own TODO says this should be rewritten on top of `DirectedGraph`; until n8n does,
+ * this keeps working on a `Workflow` (`getParentNodes`, `getNode`, `nodeTypes`, `pinData`), which is
+ * why the reconstructed engine passes a workflow-shaped object rather than a `DirectedGraph`.
+ *
+ * Precedence: the destination itself (if it is an enabled trigger) → a parent trigger that already
+ * has run data → a pinned trigger (webhook-typed ones first) → a webhook-typed trigger → the first
+ * parent trigger.
+ */
+export function findTriggerForPartialExecution(workflow, destinationNodeName, runData) {
+	// First, check if the destination node itself is a trigger
+	const destinationNode = workflow.getNode(destinationNodeName);
+	if (!destinationNode) return;
+
+	const destinationNodeType = workflow.nodeTypes.getByNameAndVersion(
+		destinationNode.type,
+		destinationNode.typeVersion,
+	);
+
+	if (isTriggerNode(destinationNodeType) && !destinationNode.disabled) {
+		return destinationNode;
+	}
+
+	// Since the destination node wasn't a trigger, we try to find a parent node that's a trigger
+	const parentTriggers = findAllParentTriggers(workflow, destinationNodeName).filter(
+		(trigger) => !trigger.disabled,
+	);
+
+	// prefer triggers that have run data
+	for (const trigger of parentTriggers) {
+		if (runData[trigger.name]) {
+			return trigger;
+		}
+	}
+
+	// Prioritize webhook triggers with pinned-data
+	const pinnedTriggers = parentTriggers
+		.filter((trigger) => workflow.pinData?.[trigger.name])
+		// Put nodes which names end with 'webhook' first, while also reversing the
+		// order they had in the original array.
+		.sort((a, b) => (a.type.endsWith('webhook') ? -1 : b.type.endsWith('webhook') ? 1 : 0));
+	if (pinnedTriggers.length) {
+		return pinnedTriggers[0];
+	}
+
+	// Prioritize webhook triggers over other parent triggers
+	const webhookTriggers = parentTriggers.filter((trigger) => trigger.type.endsWith('webhook'));
+	return webhookTriggers.length > 0 ? webhookTriggers[0] : parentTriggers[0];
+}

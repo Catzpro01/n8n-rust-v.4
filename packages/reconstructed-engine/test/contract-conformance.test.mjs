@@ -225,6 +225,16 @@ test('contract §8: every provenance citation points at real lines in reference/
 			'packages/core/src/execution-engine/partial-execution-utils/filter-disabled-nodes.ts',
 		'find-subgraph.ts':
 			'packages/core/src/execution-engine/partial-execution-utils/find-subgraph.ts',
+		'run-data-utils.ts':
+			'packages/core/src/execution-engine/partial-execution-utils/run-data-utils.ts',
+		'get-incoming-data.ts':
+			'packages/core/src/execution-engine/partial-execution-utils/get-incoming-data.ts',
+		'clean-run-data.ts':
+			'packages/core/src/execution-engine/partial-execution-utils/clean-run-data.ts',
+		'handle-cycles.ts':
+			'packages/core/src/execution-engine/partial-execution-utils/handle-cycles.ts',
+		'find-trigger-for-partial-execution.ts':
+			'packages/core/src/execution-engine/partial-execution-utils/find-trigger-for-partial-execution.ts',
 	};
 
 	const citation = /([a-z-]+\.ts):(\d+)(?:-(\d+))?/g;
