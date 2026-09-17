@@ -4,7 +4,7 @@ lego: execution
 module: workflow-runner
 phase: 3
 title: "Execution LEGO: WorkflowRunner execution coordinator and lifecycle dispatcher"
-status: SUBMITTED_FOR_REVIEW
+status: VERIFIED
 objective: "Reconstruct WorkflowRunner coordinator 1:1 against n8n 2.9.4 CLI reference (reference/n8n/packages/cli/src/workflow-runner.ts)."
 acceptance:
   - "workflow execution coordination across ActiveExecutions, WorkflowExecute, and ExecutionLifecycleHooks"
