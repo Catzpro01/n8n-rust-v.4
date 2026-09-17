@@ -47,3 +47,19 @@ Expression LEGO export at `src/expression.mjs:186`.
 workflow-model-lego **66/66** · `verify:all` **real exit 0** (15 lanes) · live gate **10/10**
 (G09: 252 comparisons × 18 workflows, 0 differences) · conformance 42/42 · boundary PASS ·
 activation differential 65/0 · error-surface differential 4/14Δ/0.
+
+## Convergence addendum (second worker, `927608bc`)
+
+This task was executed concurrently and independently a second time (claimed from `PLANNED`
+while this implementation was still unpushed): same option_c design, same 13/13 + identity +
+loud-failure test shape, lane **65/65** + `tsc` 0 + isolation 11/11 + `verify:all` exit 0 on
+its own tree. Per first-landed rule the implementation above stands and the duplicate was
+yielded in full — code, tests, YAML and MAP row are the first worker's, independently
+re-verified here (**66/66**, `tsc` 0). Two deliberate deviations in the duplicate are recorded
+so nobody re-derives them: (1) it required the **barrel** `expression-lego/index.mjs`
+(contract §1 surface) rather than deep `src/expression.mjs` — dropped as behaviorally
+identical (`expression.mjs` already pulls the barrel's whole graph) and the filing specifies
+the deep entry; (2) it typed the instance with a nominal brand rather than the structural
+`ExpressionInstance` — dropped as less informative than what landed. Net-new kept from the
+duplicate: the lane-README `Expression` ports-table correction ("not instantiated" →
+resolved) + `Prerequisites` section, and the root README bullet — docs only, zero code churn.
