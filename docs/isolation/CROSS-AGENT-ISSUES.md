@@ -1194,3 +1194,23 @@ Catatan: alternatif propagasi flag tidak dipakai (`.extract/tsconfig.json` memak
 `declaration: true` — TS5096 melarang kombinasi dengan `allowImportingTsExtensions`).
 Rekaman: `results/TASK-415-extractor-ts-normalization.md`. Status issue: **RESOLVED di lini ini;
 menunggu rebase/merge lane PR #19 ke basis yang memuat perbaikan**.
+
+### ISSUE-027 — RESOLVED at the tooling layer (2026-09-18): fix implemented + cross-lane verified
+
+The fix landed on this lane as work-stealing §4 (`1f86b03e`, TASK-415): `tools/workflow-isolation-extract.mjs`
+now strips `.ts` extensions from relative import specifiers when building the isolated unit
+(candidate fix #1 from the agent-6 review; normalizations audit-trailed in `rewrites.json` as
+`legoSpecifierNormalizations`; falsified with a 4E-style probe in that commit).
+
+**Cross-lane verification (agent-6, fresh scratch worktree):** at PR #19's 4G tip `8797d0f9` with
+**only** the fixed extractor applied (zero source edits on that lane):
+
+```text
+npm run verify -> 11/11 PASS · BEHAVIOR CHANGE: NONE  (G06: 0 errors — was TS5097 x6)
+localization   -> 79/79 PASS · conformance -> 22/22 PASS · reference 15050 / f8da35180669
+```
+
+**Status:** RESOLVED (tooling layer). Remaining for the PR #19 lane: pick up the fixed extractor
+(rebase or single-file copy) and record the 11-gate line in the PR evidence block at the final tip.
+Follow-up review posted to PR #19 (2026-09-18). Records: `results/ISSUE-027-fix-verified.md`,
+`results/TASK-415-extractor-ts-normalization.md`.
