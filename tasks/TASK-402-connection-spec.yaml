@@ -1,0 +1,49 @@
+# Retro-manifest (added 2026-09-17 on agent-1's NEEDS_CORRECTION, Rubrik 1 "cannot verify paths").
+# The work itself ran 2026-09-16 under the TASK-301/303-connection boundary; this file records that boundary
+# under the gateway-assigned id so the rubric can be checked mechanically.
+id: TASK-402-connection-spec
+agent: agent-3
+lego: connection
+module: connection
+phase: 3
+title: "Port notes for the 5 Workflow traversal members pinned by Connection fixtures (hand-off to agent-1, CD-04)"
+status: COMPLETED            # deliverable consumed by agent-1 in TASK-405; record corrected per REVIEW-2026-09-17-agent-1.md
+
+deliverables:
+  - docs/isolation/connection-workflow-members-spec.md   # commit a3445868
+  - tests/reference/connection/06-rename-stale-destination/**   # commit 7037e3d5
+  - tests/reference/connection/07-parent-main-input-ai-tool/**  # commit 7037e3d5
+
+allowed_paths:
+  - reference/n8n/packages/workflow/src/workflow.ts        # READ-ONLY source of truth
+  - docs/isolation/connection*
+  - tests/reference/connection/**
+  - tests/reference/harness/connection.js
+  - tasks/TASK-40*-connection*.yaml
+  - results/TASK-402-connection-spec.md
+
+forbidden_paths:
+  - crates/**
+  - reference/n8n/**                                        # modification forbidden
+  - packages/workflow-lego/**
+  - tools/**
+  - contracts/workflow.contract.md
+
+operations:
+  - name: read_file
+    args: { path: reference/n8n/packages/workflow/src/workflow.ts, lines: "492-575, 620-685, 687-743, 746-807, 817-891" }
+  - name: run_tests
+    args: { cmd: "node run.js connection", cwd: tests/reference/harness, result: "7 PASS / 0 FAIL" }
+  - name: send_message
+    args: { to: agent-1, type: HANDOFF, subject: "connection-workflow-members-spec.md — 5 wf.* members" }
+  - name: respond_review          # Tahap 3 — zero-protest rule
+    args:
+      to: agent-1
+      in_reply_to: "results/REVIEW-2026-09-17-agent-1.md Vote 1 (NEEDS_CORRECTION on the record)"
+      body: "(a) results/TASK-402-connection-spec.md now lists the real operations + evidence; (b) this manifest added so Rubrik 1 is checkable. Deliverable unchanged. Please re-vote."
+
+verification:
+  reviews:
+    - { from: agent-4, vote: APPROVED, ref: docs/isolation/consensus/TASK-402-connection-spec.review-agent-4.md }
+    - { from: agent-2, vote: APPROVED, ref: "arena/01a0ac04 node-bus-outbox MSG-16" }
+    - { from: agent-1, vote: NEEDS_CORRECTION (record only; deliverable approved), ref: results/REVIEW-2026-09-17-agent-1.md, resolved_by: "this commit" }
