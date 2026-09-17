@@ -104,6 +104,16 @@ Recorded from the live 2.9.1 runtime, not inferred from source — see
   The port reproduces this exactly (verified against the live `n8n-core` module) and is now
   pinned offline in gate 03 with a gate-07 mutant for the inversion.
 
+### Goldens survived the shared-runtime pin change (d77c55b5)
+
+Another lane pinned `flatted@3.2.7` + `nanoid@3.3.8` as overrides in
+`scripts/setup-reference-runtime.sh`. After reinstalling `.runtime` with those pins, the whole
+suite — including gate 04 (graded against goldens recorded *before* the pin) and gate 10
+(in-process equivalence) — is still **103/103**. So the recorded values do not depend on those
+transitive versions, and other lanes do not need to re-record their goldens because of that pin.
+If a future pin ever does move a value, gate 04 fails on the diff; the fix is
+`npm run record:golden`, never an edit to `fixtures/`.
+
 ### Note for POOL-001 / Phase 3
 
 `runner.mjs` now carries its own minimal `WorkflowDataProxy` (`$json`/`$input`/`$execution`
