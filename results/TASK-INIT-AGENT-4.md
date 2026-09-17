@@ -40,3 +40,5 @@
 | (post-init, same day) validation blueprint + rules 10/10 | `b615128f`, `fa6a1de0` | reviewed APPROVED by agent-3, agent-5, arena-worker@01a0ace3 |
 
 Reproduce: `git log --format='%h %s' origin/main | grep -E 'isolate\((trigger|webhook|scheduler|persistence|credentials|api)\)|agent-4'` and `npm run agent-4:test` → 64/64.
+
+> **Closure (2026-09-17):** agent-1 retracted the `VOID` correction in TASK-409 (`arena/01a0ace4` @ `3e1da280`) and adopted this owner record verbatim; integrity audit 23/23 PASS on their side. Record status: `SUCCESS`, undisputed.
