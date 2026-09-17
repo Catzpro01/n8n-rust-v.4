@@ -1,0 +1,73 @@
+{
+  "gate": "phase-4c-native-localization",
+  "generatedAt": "2026-09-17T20:25:12.816Z",
+  "node": "v22.22.3",
+  "modules": [
+    "packages/workflow-lego/src/settings-localization-adapter.ts (phase 4A)",
+    "packages/workflow-lego/src/backend-localization-service.ts (phase 4B)",
+    "packages/workflow-lego/src/localization-runtime.ts (phase 4C)"
+  ],
+  "localizationTestFile": "packages/workflow-lego/test/06-localization-runtime.test.ts",
+  "locales": [
+    "id",
+    "en",
+    "jv",
+    "ar",
+    "zh",
+    "ru"
+  ],
+  "suite": {
+    "command": "node --test packages/workflow-lego/test/06-localization-runtime.test.ts",
+    "tests": 31,
+    "pass": 31,
+    "fail": 0,
+    "exitCode": 0,
+    "durationMs": 215
+  },
+  "checks": [
+    {
+      "id": "G1",
+      "name": "localization test suite passes",
+      "ok": true,
+      "detail": "31/31 PASS in 215ms"
+    },
+    {
+      "id": "G2",
+      "name": "runtime catalog == Phase 4B SUPPORTED_LOCALES",
+      "ok": true,
+      "detail": "6 locales identical"
+    },
+    {
+      "id": "G3",
+      "name": "runtime catalog == dictionary key set",
+      "ok": true,
+      "detail": "6 locales, 9 keys each"
+    },
+    {
+      "id": "G4",
+      "name": "dictionary parity across all six locales",
+      "ok": true,
+      "detail": "6 locales consistent, 0 empty values"
+    },
+    {
+      "id": "G5",
+      "name": "every locale returns a real translation for the probe key",
+      "ok": true,
+      "detail": "{\"id\":\"Pengaturan\",\"en\":\"Settings\",\"jv\":\"Setelan\",\"ar\":\"الإعدادات\",\"zh\":\"设置\",\"ru\":\"Настройки\"}"
+    },
+    {
+      "id": "G6",
+      "name": "direction table matches the catalog (Arabic rtl)",
+      "ok": true,
+      "detail": "id:ltr, en:ltr, jv:ltr, ar:rtl, zh:ltr, ru:ltr"
+    },
+    {
+      "id": "G7",
+      "name": "engine status overlay covers every locale and status",
+      "ok": true,
+      "detail": "5 statuses x 6 locales"
+    }
+  ],
+  "verdict": "PASS",
+  "failed": []
+}
