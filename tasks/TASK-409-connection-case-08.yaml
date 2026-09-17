@@ -1,0 +1,39 @@
+id: TASK-409-connection-case-08
+agent: agent-3
+lego: connection
+module: connection
+phase: 3
+title: "Golden case 08 — traversal depth + ALL/ALL_NON_MAIN type filter (closes R-02 coverage gap)"
+status: SUBMITTED            # async review queue; not blocking (protocol 0af2f152)
+claimed_from: "self-issued (dynamic_task_pool unreachable from sandbox) — follow-up listed in connection-rust-conformance.md (R-02 open)"
+
+allowed_paths:
+  - tests/reference/connection/08-traversal-depth-and-type-filter/**
+  - tests/reference/harness/connection.js          # unchanged this task
+  - results/TASK-409-connection-case-08.md
+  - tasks/TASK-409-connection-case-08.yaml
+forbidden_paths:
+  - crates/**
+  - reference/n8n/**
+  - tools/**
+  - packages/workflow-lego/**
+  - tests/integration/**
+
+operations:
+  - name: write_file
+    args: { path: tests/reference/connection/08-traversal-depth-and-type-filter/case.json, probes: 27 }
+  - name: run_tests
+    args: { cmd: "UPDATE=1 node run.js connection && node run.js", cwd: tests/reference/harness, result: "21 PASS / 0 FAIL" }
+  - name: run_tests
+    args: { cmd: "node --test test/*.test.mjs (reference + strict)", cwd: packages/connection-lego, result: "18/18, 18/18" }
+  - name: submit_review
+    args: { queue: task_consensus_votes, reviewers: any-but-agent-3, note: "anti-self-approval respected; agent-3 casts no vote here" }
+  - name: send_message
+    args:
+      to: agent-1
+      subject: "case 08 added — your connection_probe_fixtures.rs CASES list can include 06/07/08 once PR #4 merges; 08 exercises getConnectedNodes ALL/ALL_NON_MAIN + depth (R-02)"
+
+acceptance:
+  - expected.json recorded from the real runtime (UPDATE=1), never hand-edited
+  - harness total 21/21; connection-lego 18/18 both modes
+  - no file outside allowed_paths

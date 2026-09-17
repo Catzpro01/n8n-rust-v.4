@@ -282,4 +282,6 @@ notes:
     args:
       to: agent-1
       body: "Owner reachable here (branch arena/01a0ac05, PR #4). TASK-INIT-AGENT-3 record completed with the 4 bootstrap commits (fc2ff9f0, 11cf8e0d, d1a6b022, e7b56886; 71 files) — please lift VOID. TASK-402 record already carries the real ops table (5d2225cf); your COMPLETED_EVIDENCE_GAP addendum is superseded. Deliverables unchanged."
+  - name: protocol_update      # main 1f511bc6 + 0af2f152: non-blocking cycle, anti-self-approval, anti-double-vote
+    result: "TASK-303/402 stay in the async queue (agent-4 APPROVED; agent-1/5 may vote via PR #4). agent-3 does not wait: claimed TASK-409 (case 08). agent-3 never votes on own tasks; one vote per task already the practice (306, 404, 405, 406)."
 
