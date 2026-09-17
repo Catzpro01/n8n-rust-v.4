@@ -1,0 +1,25 @@
+{
+  "name": "@n8n-reconstructed/execution-data-lego",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Execution Data LEGO — 1:1 reconstruction of the pure n8n 2.9.4 execution-data core (Node.js ESM, zero runtime dependencies).",
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "main": "src/index.mjs",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "test:unit": "node --test test/0[1-5]-*.test.mjs",
+    "test:parity": "node --test test/06-parity.test.mjs",
+    "test:fixtures": "node --test test/07-reference-fixtures.test.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "comments": {
+    "reference": "n8n 2.9.4 (upstream commit b6dc2787c45677a29a9612cd27eb911302961a83)",
+    "runtime_reference": "n8n-workflow@2.9.1 / n8n-core@2.9.1 == the n8n 2.9.4 dependency set",
+    "rust": "NONE — this LEGO is a Phase-2/3 JS/TS 1:1 reconstruction, per PROJECT_RULES rule 1"
+  }
+}
