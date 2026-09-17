@@ -1244,3 +1244,53 @@ Why it matters beyond cosmetics: `docs/isolation/LEGO-MASTER-MAP.md` §5 and
 `results/TASK-EXPRESSION-SANDBOX-01.md` cite this package's tests as Phase-3 evidence. An evidence
 citation whose documented command exits non-zero is exactly the failure mode ISSUE-010 and
 ISSUE-020 were raised for. The numbers were real; only the runner was wrong.
+
+### NOTE 2026-09-18 (arena-worker, `TASK-ENGINE-ACTIVATION-01`) — ACTIVATION does not reopen ISSUE-021
+
+The activation work (ActiveWorkflows / TriggersAndPollers / TriggerContext / ExecutionLifecycleHooks /
+ScheduledTaskManager / toCronExpression, gate `E10`, suite 20/20) landed in
+`packages/execution-engine/**` only. It does **not** widen the duplicate-engine problem: the prototype
+(`packages/reconstructed-engine`) has no activation surface and nothing in this task imports, edits or
+depends on it. The engine duplication itself is still an open ownership decision for the orchestrator
+(see the DIFF-02 addendum above for the current, divergence-free state).
+
+## ISSUE-023 — Two activation-lifecycle implementations landed concurrently (OPEN, ownership/consolidation)
+
+**Detected by:** `arena/01a0aff8-n8n-rust-v-4` (execution LEGO)
+**Affected:** `packages/execution-engine/src/{active-workflows,triggers-and-pollers,trigger-context,lifecycle-hooks}.mjs`,
+`packages/trigger-lego/src/*`, root `package.json` scripts
+**Type:** Duplicate implementation / ownership
+**Severity:** MEDIUM (no behavioural divergence proven yet; both suites green)
+
+**Description:** two workers reconstructed the same reference surface within the same hour from two
+different pool entries, and both landed:
+
+1. **`packages/trigger-lego/`** (`da5817da`, `TASK-406-phase3-trigger-lego`) — a *new* LEGO package with
+   `active-workflows.mjs`, `triggers-and-pollers.mjs`, `scheduled-task-manager.mjs`, `errors.mjs`,
+   its own `src/index.mjs`, 9 tests and `tools/trigger-lego-gate.mjs` (5/5 PASS), wired in as
+   `npm run trigger:test` / `trigger:gate`. Owns `contracts/trigger.contract.md`.
+2. **`packages/execution-engine/src/*`** (`TASK-ENGINE-ACTIVATION-01`, gate `E10`, 20/20 tests) — the
+   *same four reference files* (`active-workflows.ts`, `triggers-and-pollers.ts`,
+   `scheduled-task-manager.ts`, `execution-lifecycle-hooks.ts`, `trigger-context.ts`, `cron.ts`)
+   reconstructed inside the existing execution LEGO, against `contracts/execution.contract.md`.
+
+Both packages are dependency-free, both reproduce `ActiveWorkflows`/`TriggersAndPollers`/
+`ScheduledTaskManager`, and both are green on the merged tree (re-verified read-only:
+`npm --prefix packages/trigger-lego test` 9/9, `node tools/trigger-lego-gate.mjs` 5/5,
+`node --test packages/execution-engine/test/*.test.mjs` 60/60).
+
+**Why this is not automatically wrong:** the two placements answer different questions — `trigger-lego`
+exists so the *Trigger LEGO contract* (`contracts/trigger.contract.md`) has an implementation and a gate
+of its own, while `execution-engine` needs an in-process activation path for its own `run()` to be
+drivable. But they are the same code twice, and the `verify:all` chain now runs both.
+
+**Required action (orchestrator / whichever track owns the engine):** pick one home for the activation
+lifecycle before Phase 3 exits, exactly like ISSUE-021. The differential harness pattern from
+`TASK-ENGINE-DIFF-01/02` is the cheap way to decide: run both implementations over identical
+scenarios; any divergence found is a bug in one of them and should be fixed failing-first. Note that
+`execution-engine`'s version additionally reconstructs `ExecutionLifecycleHooks` and `TriggerContext`
+(the hook store + the node context handed to `nodeType.trigger`), which `trigger-lego` does not — so a
+consolidation onto `trigger-lego` would have to absorb those two surfaces as well.
+
+**Status:** OPEN — documented, not resolved by this session (deleting another worker's package is not
+the execution LEGO's call).
