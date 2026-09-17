@@ -17,7 +17,7 @@ npm --prefix packages/webhook-lego test
 node tools/webhook-lego-gate.mjs
 ```
 
-Execution-owned streaming remains a host adapter outside this package; binary persistence is an injected port.
+Workflow execution and binary persistence remain injected ports.
 
 ## Native HTTP transport (TASK-420)
 
@@ -50,3 +50,10 @@ binary-safe multipart bodies while retaining `rawBody`. Multipart output matches
 `{ data, files }` shape, normalizes single values, preserves repeated fields/files, applies a
 per-file size limit, and crosses binary persistence only through an injected `storeFile` callback.
 Aggregate payload limits still fail before manager execution.
+
+## Response and streaming transport (TASK-426)
+
+Symbol-tagged no-response, static, and stream variants make response ownership explicit. The request
+handler preserves empty responses and translates custom status/headers, while the native server
+pipes stream and NDJSON bodies without buffering. Respond-to-Webhook binary IDs cross an injected
+`getBinaryStream` port; JSON and in-memory Buffers remain static responses.

@@ -4,6 +4,17 @@ export { ALLOWED_METHODS, LiveWebhookManager, WebhookRequestHandler } from './we
 export { InMemoryWebhookRepository, WebhookEntity, WebhookService } from './webhook-service.mjs';
 export { WebhookHttpServer } from './http-server.mjs';
 export { getMultipartBoundary, normalizeFormData, parseMultipartFormData, parseWebhookBody } from './body-parser.mjs';
+export {
+  WebhookResponseTag,
+  createNoResponse,
+  createStaticResponse,
+  createStreamResponse,
+  extractResponseNodeResult,
+  isWebhookNoResponse,
+  isWebhookResponse,
+  isWebhookStaticResponse,
+  isWebhookStreamResponse,
+} from './webhook-response.mjs';
 export { WaitingWebhookManager, generateWaitingWebhookSignature, validateWaitingWebhookSignature } from './waiting-webhooks.mjs';
 export {
   FORM_NODE_TYPE,

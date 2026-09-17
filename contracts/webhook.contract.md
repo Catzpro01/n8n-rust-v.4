@@ -147,3 +147,15 @@ retaining the exact `rawBody`. `WebhookHttpServer` applies the aggregate body li
 passes multipart files to the webhook manager, and never imports a filesystem, database, formidable,
 or binary storage implementation. Missing boundaries and malformed multipart payloads produce a
 400 response; oversized aggregate bodies remain 413.
+
+## Phase-3 response and streaming transport (TASK-426)
+
+Webhook results use a symbol-tagged, mutually exclusive response algebra: `createNoResponse()`,
+`createStaticResponse(body, code, headers)`, or `createStreamResponse(stream, code, headers)`. The
+request handler recognizes these variants before legacy callback data, preserving explicit empty
+responses and custom status/header metadata.
+
+`extractResponseNodeResult` keeps JSON and in-memory Buffer results static. A response body carrying
+`binaryData.id` is resolved through an injected `getBinaryStream` port and becomes a stream response;
+missing storage capability fails loudly. `WebhookHttpServer` pipes stream bodies directly to the
+client, including NDJSON, without buffering or importing execution/binary storage implementations.

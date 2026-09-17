@@ -1,0 +1,25 @@
+id: TASK-426-phase3-webhook-streaming-response
+agent: arena-worker
+lego: webhook
+module: response-streaming-transport
+phase: 3
+title: "Webhook LEGO: explicit response algebra and streaming transport"
+status: SUBMITTED_FOR_REVIEW
+objective: "Preserve static, empty, binary, and streaming webhook responses across the native transport."
+acceptance:
+  - "symbol-tagged no-response, static, and stream variants"
+  - "custom status/header translation before legacy callback handling"
+  - "explicit empty response without default webhook JSON"
+  - "JSON and in-memory Buffer response-node bodies remain static"
+  - "persisted binary IDs resolve through injected stream storage port"
+  - "native HTTP pipes NDJSON without buffering"
+  - "webhook suite 49/49; webhook gate 5/5"
+allowed_paths:
+  - packages/webhook-lego/**
+  - tools/webhook-lego-gate.mjs
+  - contracts/webhook.contract.md
+  - docs/isolation/LEGO-MASTER-MAP.md
+  - docs/isolation/evidence/webhook-lego-gate.json
+  - tasks/TASK-426-phase3-webhook-streaming-response.yaml
+  - results/TASK-426-phase3-webhook-streaming-response.md
+forbidden_paths: [reference/n8n/**, crates/**, apps/**]
