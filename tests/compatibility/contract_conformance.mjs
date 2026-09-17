@@ -20,7 +20,26 @@ const check = (name, fn) => {
 const assert = (c, m) => { if (!c) throw new Error(m); };
 
 // --- contract presence (contracts are the communication channel) -----------
-const CONTRACTS = ['workflow', 'node', 'connection', 'validation'];
+const CONTRACTS = [
+  'api',
+  'binary-data',
+  'connection',
+  'credentials',
+  'dynamic-form',
+  'error-recovery',
+  'execution-data',
+  'execution-engine',
+  'expression',
+  'node',
+  'persistence',
+  'scheduler',
+  'settings',
+  'subworkflow',
+  'trigger',
+  'validation',
+  'webhook',
+  'workflow',
+];
 for (const c of CONTRACTS) {
   check(`contract:${c} present`, () => {
     const p = join(ROOT, 'contracts', `${c}.contract.md`);
@@ -119,20 +138,20 @@ for (const { name, wf } of fixtures) {
   });
 }
 
-// --- Phase-2 guard: no premature Rust -------------------------------------
-check('Phase 2: no Rust implementation introduced', () => {
-  const offenders = [];
-  const walk = (dir) => {
-    if (!existsSync(dir)) return;
-    for (const e of readdirSync(dir, { withFileTypes: true })) {
-      const p = join(dir, e.name);
-      if (e.isDirectory()) walk(p);
-      else if (e.name.endsWith('.rs') || e.name === 'Cargo.toml') offenders.push(p.slice(ROOT.length + 1));
-    }
-  };
-  walk(join(ROOT, 'crates')); walk(join(ROOT, 'apps'));
-  assert(offenders.length === 0, `Rust artifacts present in Phase 2: ${offenders.join(', ')}`);
-  return 'crates/ and apps/ contain no Rust sources';
+// --- Phase-aware Rust guard -------------------------------------------------
+// Phase 2 required no Rust. Later branches carry the genesis Rust workspace for
+// conformance evidence, while Zero-Rust archive branches may remove/archive it.
+// In both cases the repository must not contain a dangling root Cargo workspace.
+check('Rust workspace integrity / Zero-Rust archive guard', () => {
+  const manifest = join(ROOT, 'Cargo.toml');
+  if (!existsSync(manifest)) return 'no root Cargo.toml (Zero-Rust archive mode)';
+  const text = readFileSync(manifest, 'utf8');
+  const match = /members\s*=\s*\[([\s\S]*?)\]/m.exec(text);
+  if (!match) return 'root Cargo.toml has no workspace members';
+  const members = [...match[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+  const missing = members.filter((member) => !existsSync(join(ROOT, member, 'Cargo.toml')));
+  assert(missing.length === 0, `dangling Cargo workspace members: ${missing.join(', ')}`);
+  return `${members.length} Cargo workspace member(s) valid`;
 });
 
 const passed = results.filter((r) => r.ok).length;

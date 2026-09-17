@@ -44,6 +44,9 @@ export * as SettingsLEGO from './settings/settings';
 // Binary LEGO
 export * as BinaryLEGO from './binary/binary-data';
 
+// Error Recovery LEGO (retry policy, onError routing, error-item split)
+export * as ErrorRecoveryLEGO from './error-recovery-policy';
+
 export const ENGINE_PROVENANCE = {
   name: 'n8n-reconstructed-engine',
   version: '2.9.4',
@@ -53,3 +56,9 @@ export const ENGINE_PROVENANCE = {
   backend: 'modular-lego-data-flow',
   rust: 'zero-rust',
 } as const;
+
+// Subworkflow LEGO (parent-child propagation)
+export * as SubworkflowLEGO from './subworkflow-context';
+
+// Dynamic Form LEGO (resource locator, resource mapper)
+export * as DynamicFormLEGO from './dynamic-form-validator';

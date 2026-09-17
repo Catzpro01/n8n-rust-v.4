@@ -1,6 +1,6 @@
 # Workflow LEGO — Phase 2 isolation verification
 
-Generated: 2026-09-17T20:53:35.890Z · reference n8n 2.9.4 (`b6dc2787c456`)
+Generated: 2026-09-17T21:08:12.312Z · reference n8n 2.9.4 (`b6dc2787c456`)
 
 **Gates: 11/11 PASS** · **BEHAVIOR CHANGE: NONE DETECTED** · **RUST IMPLEMENTATION: NOT STARTED**
 
@@ -9,7 +9,7 @@ Generated: 2026-09-17T20:53:35.890Z · reference n8n 2.9.4 (`b6dc2787c456`)
 | gate | status | evidence |
 | :--- | :--- | :--- |
 | TypeScript build PASS | PASS | G06: tsc -p .extract/tsconfig.json → 0 errors<br>G07: tsc --noEmit → 0 errors |
-| unit tests PASS | PASS | G08: # cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 13373.56996 |
+| unit tests PASS | PASS | G08: # cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 13735.875441 |
 | workflow load PASS | PASS | G11: 7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS |
 | workflow save PASS | PASS | G11: 7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS |
 | manual execution PASS | PASS | G11: 7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS |
@@ -30,9 +30,9 @@ Generated: 2026-09-17T20:53:35.890Z · reference n8n 2.9.4 (`b6dc2787c456`)
 | G05 | isolation extraction (pure import rewrites only) | PASS | isolated unit written to packages/workflow-lego/.extract   owned files copied : 10   port rewrites      : 25 across 10 files     @lego/ports/checksum-digest : 1     @lego/ports/config : 1     @lego/ports/constants : 1    |
 | G06 | TypeScript build PASS (isolated unit, ports only) | PASS | tsc -p .extract/tsconfig.json → 0 errors |
 | G07 | TypeScript build PASS (versioned boundary/ports/facade) | PASS | tsc --noEmit → 0 errors |
-| G08 | unit tests PASS (boundary, extraction, equivalence, strict isolation, surface) | PASS | # cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 13373.56996 |
+| G08 | unit tests PASS (boundary, extraction, equivalence, strict isolation, surface) | PASS | # cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 13735.875441 |
 | G09 | BEFORE vs AFTER digest: BEHAVIOR CHANGE NONE | PASS | 252 section comparisons across 18 workflows — 0 differences · strict: 217 identical, 35 in declared port sections |
-| G10 | strict port mode: no hidden coupling to the reference runtime | PASS | # cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 1958.420363 |
+| G10 | strict port mode: no hidden coupling to the reference runtime | PASS | # cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 1857.556305 |
 | G11 | live verification: workflow load / save / 1-node / linear / webhook / execution record | PASS | 7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS |
 
 ## Live verification (reference execution engine)

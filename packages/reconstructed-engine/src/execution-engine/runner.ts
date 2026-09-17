@@ -133,7 +133,7 @@ export class ReconstructedWorkflowEngine {
     const result = await workflowExecute.run(this.workflow, startNodeName);
 
     const executionLog = Object.entries(result.resultData.runData).map(([nodeName, taskDataArray]) => {
-      const taskData = taskDataArray[taskDataArray.length - 1];
+      const taskData = (taskDataArray as any[])[(taskDataArray as any[]).length - 1];
       return {
         node: nodeName,
         status: taskData.executionStatus,
