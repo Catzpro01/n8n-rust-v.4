@@ -35,7 +35,7 @@ dari sini, sesuai arahan:
 | `i18n:check` + `connection:check` | ✓ SUCCESS | `0` |
 | `verify` (full 12 gates incl. live 7/7 lokal) | ✓ SUCCESS | `0` |
 | `git_commit` + `git_push` | ✓ SUCCESS | `0` |
-| `gh pr create` (arena → main) | ✓ SUCCESS | `0` |
+| `gh pr create` (arena → main) | ✓ SUCCESS | `0` → **https://github.com/Catzpro01/n8n-rust-v.4/pull/21** |
 
 \* exit 2 (INCONCLUSIVE by design) bila live tidak dijalankan — sesuai ISSUE-022.
 
