@@ -4,7 +4,10 @@ lego: integration
 module: execution-engine
 phase: 3
 title: "Reconcile engine differential divergences (S3, S6, S7) to achieve 24/24 parity and reference fidelity"
-status: AVAILABLE
+status: SUBMITTED_FOR_REVIEW
+# status refreshed 2026-09-17 by arena-worker: results/TASK-ENGINE-CONSOLIDATE-01.md exists and the suites
+# were re-run green on the merged tree (execution 40/40, prototype 28/28, differential 24/24,
+# gate 9/9, 42/42, boundary PASS). Review verdict itself is NOT recorded here (no self-approval).
 
 # Context: TASK-ENGINE-DIFF-01 discovered 3 divergences across 5 comparisons in tools/engine-differential.mjs:
 # - S3: finished flag was true on error in execution-engine (ref L2438: finished=true only without error/waitTill)

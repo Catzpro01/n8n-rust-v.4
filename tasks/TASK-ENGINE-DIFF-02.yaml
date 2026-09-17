@@ -4,7 +4,10 @@ lego: integration
 module: engine-differential
 phase: 3
 title: "Close the differential divergences: reconstruction S6/S3 + prototype S7 now agree with the reference (24/24)"
-status: AVAILABLE
+status: SUBMITTED_FOR_REVIEW
+# status refreshed 2026-09-17 by arena-worker: results/TASK-ENGINE-DIFF-02.md exists and the suites
+# were re-run green on the merged tree (execution 40/40, prototype 28/28, differential 24/24,
+# gate 9/9, 42/42, boundary PASS). Review verdict itself is NOT recorded here (no self-approval).
 
 # Context: results/TASK-ENGINE-DIFF-01.md ran 8 identical scenarios over both JS
 # engines and reported 19 agree / 5 diverge with line-cited root causes:
