@@ -283,9 +283,18 @@ localization suite stayed 79/79 throughout.
   `contracts/api.contract.md` §3 shapes, not by captured fixtures — a route-by-route golden sweep is
   the natural next step, not something this LEGO can prove offline.
 * `npm run verify` (11/11, Phase 4H) includes G11 — the **reference-engine live harness** running the
-  real `n8n-workflow`/`n8n-core`/`n8n-nodes-base` 2.9.1 stack from `.runtime/` (npm install, 885
-  packages, git-ignored, recreate with `npm run setup:reference`). That is *not* the same thing as the
-  VPS/docker `run_gate.sh` live 11/11 stage, which remains **NOT RUN** here — no docker, no VPS.
+  real `n8n-workflow`/`n8n-core`/`n8n-nodes-base` 2.9.1 stack from `.runtime/`. That is *not* the same
+  thing as the VPS/docker `run_gate.sh` live 11/11 stage, which remains **NOT RUN** here — no docker,
+  no VPS.
+* **Reproducing the 11/11 locally takes two extra commands**, because the runtime that G11 needs is a
+  642 MB npm install and is therefore deliberately **not** kept in the working tree (it is git-ignored
+  and outside the snapshot):
+  `npm run setup:reference` (≈80 s, installs 885 packages into `.runtime/`) → `npm run verify`.
+  Without it the gate honestly reports `reference runtime not found` and 7/11 — the committed record in
+  `docs/isolation/evidence/gate-report.json` is from a run *with* it.
+* The offline Rust rig lives in `/tmp/rust-rig` by design (`tools/rust-offline-rig/README.md`):
+  `bash tools/rust-offline-rig/setup.sh` rebuilds the 19-crate vendor dir from npm + git tags, then
+  `npm run rust:check-offline` / `npm run rust:test-offline` reproduce the 37/0 record.
 * The counterpart gate of the parallel branch (`tools/localization-hub-check.mjs`, `i18n:check`)
   could not be executed here: its loader compiles TypeScript with the pinned `typescript` from
   `packages/workflow-lego/node_modules`, which this sandbox cannot install. This line's gate needs no
