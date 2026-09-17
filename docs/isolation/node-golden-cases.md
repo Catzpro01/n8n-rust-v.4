@@ -378,6 +378,33 @@ plain string → `undefined`) → `workflowId.value`. `isExecutable`: true iff s
 outputs contain `main`/`ai_tool` OR node is a trigger (`ai_memory` alone → false);
 the static path never consults `workflow` (stub `{}` pinned safe).
 
+## Wave 11 — tool-description update + getContext + assert extras (WG-32..WG-34)
+
+### WG-32 `getUpdatedToolDescription(nodeType, newParameters, currentParameters)`
+
+Returns the refreshed auto-description ONLY when `descriptionType:'manual'` AND the
+stored `toolDescription` provably came from an auto source: equals the **previous**
+`makeDescription` · is blank/whitespace · or equals `nodeType.description`. Custom
+manual text → `undefined` (preserved). Non-manual / null nodeType / null parameters
+→ `undefined`.
+
+### WG-33 `getContext(runExecutionData, type, node?)`
+
+Keys: literal `flow`, or `node:<node.name>` — **node NAME, not id**. Missing key is
+**lazily inserted into `contextData` (mutation!)**. Errors (`ApplicationError`,
+byte-exact): `` `executionData` is not initialized `` ·
+`The request data of context type "node" the node parameter has to be set!` ·
+`Unknown context type. Only \`flow\` and \`node\` are supported.` (+`extra.contextType`).
+
+### WG-34 `getParameterValueByPath` + assertParamIs* extras
+
+`getParameterValueByPath` = lodash-get of joined `path.name` (empty path → bare name;
+array-index segments resolve; missing → `undefined`). Assert extras (W2 covered
+string/number): `assertParamIsBoolean` → `Parameter "x" is not boolean` ·
+`assertParamIsOfAnyTypes` → `Parameter "x" must be string or number` ·
+`assertParamIsArray` → `... is not an array` / `... has elements that don't match
+expected types` (validator per element via plain for-loop — sparse-safe).
+
 ### Reproduction
 
 ```bash
@@ -399,8 +426,9 @@ fixtures power `docs/isolation/node-conformance-harness.md`. Dist resolution ord
 ### Parity acceptance rule for `n8n-node-model` (Phase 3)
 
 The crate's unit tests MUST reproduce GC-1..GC-7, WG-1..WG-9, WG-10..WG-13, WG-14, WG-15,
-WG-16..WG-19, WG-20..WG-24, WG-25/WG-26, WG-27/WG-28, and WG-29..WG-31 byte-identically
-(JSON equality after serialization) — 213 golden cases in
-`docs/isolation/node-fixtures.json`, plus the 7 `serdeConformance` round-trip probes (see
-`node-conformance-harness.md` §5 for the binding acceptance gate). Any deviation is a
-conformance defect (register it as MSG back to agent-2/mediator, do not "fix" semantics).
+WG-16..WG-19, WG-20..WG-24, WG-25/WG-26, WG-27/WG-28, WG-29..WG-31, and WG-32..WG-34
+byte-identically (JSON equality after serialization) — 237 golden cases in
+`docs/isolation/node-fixtures.json`, plus the 7 `serdeConformance` round-trip probes
+(see `node-conformance-harness.md` §5 for the binding acceptance gate). Any deviation is
+a conformance defect (register it as MSG back to agent-2/mediator, do not "fix"
+semantics).

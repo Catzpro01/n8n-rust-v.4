@@ -14,7 +14,8 @@
       "wave7IoConditions": "nodeAcceptsInputType:5, nodeHasOutputType:3, isSubNodeType:3, checkConditions:8, getNodeFeatures:4",
       "wave8DisplayPath": "displayParameterPath:4, optionsIssues:6",
       "wave9NestedIssues": "nestedRequiredIssues:6, fixedCollectionFieldCounts:5",
-      "wave10ToolsAndMerge": "mergeIssues:4, isToolType:7 isHitlToolType:3 isTool:4, toolMode:4 workflowSelector/subworkflow:8 isExecutable:4"
+      "wave10ToolsAndMerge": "mergeIssues:4, isToolType:7 isHitlToolType:3 isTool:4, toolMode:4 workflowSelector/subworkflow:8 isExecutable:4",
+      "wave11ContextAndAsserts": "getUpdatedToolDescription:8, getContext:6, getParameterValueByPath:3 assertParamIsExtras:7"
     }
   },
   "applyAccessPatterns": {
@@ -4696,6 +4697,294 @@
       }
     ],
     "note": "workflow is an untouched stub {} — static-output paths never consult it"
+  },
+  "updatedToolDescription": {
+    "cases": [
+      {
+        "name": "manual-match-prev-description",
+        "newParameters": {
+          "descriptionType": "manual",
+          "toolDescription": "send op in Thing",
+          "resource": "op",
+          "operation": "send"
+        },
+        "currentParameters": {
+          "resource": "op",
+          "operation": "send"
+        },
+        "expect": "send op in Thing"
+      },
+      {
+        "name": "manual-blank",
+        "newParameters": {
+          "descriptionType": "manual",
+          "toolDescription": "",
+          "resource": "op",
+          "operation": "send"
+        },
+        "currentParameters": {
+          "resource": "op",
+          "operation": "send"
+        },
+        "expect": "send op in Thing"
+      },
+      {
+        "name": "manual-whitespace",
+        "newParameters": {
+          "descriptionType": "manual",
+          "toolDescription": "   ",
+          "resource": "op",
+          "operation": "send"
+        },
+        "currentParameters": {
+          "resource": "op",
+          "operation": "send"
+        },
+        "expect": "send op in Thing"
+      },
+      {
+        "name": "manual-equals-type-description",
+        "newParameters": {
+          "descriptionType": "manual",
+          "toolDescription": "Fallback desc",
+          "resource": "op",
+          "operation": "send"
+        },
+        "currentParameters": {
+          "resource": "op",
+          "operation": "send"
+        },
+        "expect": "send op in Thing"
+      },
+      {
+        "name": "manual-custom-preserved",
+        "newParameters": {
+          "descriptionType": "manual",
+          "toolDescription": "KeepMe",
+          "resource": "op",
+          "operation": "send"
+        },
+        "currentParameters": {
+          "resource": "op",
+          "operation": "send"
+        },
+        "expect": null
+      },
+      {
+        "name": "non-manual-ignored",
+        "newParameters": {
+          "descriptionType": "auto",
+          "toolDescription": "send op in Thing",
+          "resource": "op",
+          "operation": "send"
+        },
+        "currentParameters": {
+          "resource": "op",
+          "operation": "send"
+        },
+        "expect": null
+      },
+      {
+        "name": "no-node-type",
+        "newParameters": {
+          "descriptionType": "manual"
+        },
+        "currentParameters": {
+          "resource": "op",
+          "operation": "send"
+        },
+        "expect": null
+      },
+      {
+        "name": "null-new-parameters",
+        "newParameters": null,
+        "currentParameters": {
+          "resource": "op",
+          "operation": "send"
+        },
+        "expect": null
+      }
+    ],
+    "nodeType": {
+      "displayName": "Thing",
+      "name": "thing",
+      "version": 1,
+      "defaults": {
+        "name": "Thing"
+      },
+      "properties": [
+        {
+          "displayName": "Resource",
+          "name": "resource",
+          "type": "options",
+          "options": [
+            {
+              "name": "Op",
+              "value": "op"
+            }
+          ],
+          "default": ""
+        },
+        {
+          "displayName": "Operation",
+          "name": "operation",
+          "type": "options",
+          "options": [
+            {
+              "name": "Send",
+              "value": "send"
+            }
+          ],
+          "default": ""
+        }
+      ],
+      "description": "Fallback desc"
+    }
+  },
+  "getContext": {
+    "cases": [
+      {
+        "name": "flow",
+        "expect": {
+          "returned": {
+            "a": 1
+          },
+          "contextDataAfter": {
+            "flow": {
+              "a": 1
+            },
+            "node:N": {
+              "x": 2
+            }
+          }
+        }
+      },
+      {
+        "name": "node-name-key",
+        "expect": {
+          "returned": {
+            "x": 2
+          },
+          "contextDataAfter": {
+            "flow": {
+              "a": 1
+            },
+            "node:N": {
+              "x": 2
+            }
+          }
+        }
+      },
+      {
+        "name": "node-lazy-create-mutation",
+        "expect": {
+          "returned": {},
+          "contextDataAfter": {
+            "node:N": {}
+          }
+        }
+      },
+      {
+        "name": "uninitialized-execution-data",
+        "expect": {
+          "errorClass": "ApplicationError",
+          "message": "`executionData` is not initialized",
+          "extra": null
+        }
+      },
+      {
+        "name": "node-type-without-node",
+        "expect": {
+          "errorClass": "ApplicationError",
+          "message": "The request data of context type \"node\" the node parameter has to be set!",
+          "extra": null
+        }
+      },
+      {
+        "name": "unknown-type-with-extra",
+        "expect": {
+          "errorClass": "ApplicationError",
+          "message": "Unknown context type. Only `flow` and `node` are supported.",
+          "extra": {
+            "contextType": "local"
+          }
+        }
+      }
+    ],
+    "note": "key rules: 'flow' literal or 'node:<node.name>' (node NAME, not id); missing key lazily inserted (mutation of runExecutionData.contextData); error arms are ApplicationError with byte-exact messages"
+  },
+  "parameterValueByPath": {
+    "cases": [
+      {
+        "name": "nested-path",
+        "nodeValues": {
+          "a": {
+            "b": [
+              10,
+              20
+            ]
+          }
+        },
+        "parameterName": "b[1]",
+        "path": "a",
+        "expect": 20
+      },
+      {
+        "name": "empty-path-bare-name",
+        "nodeValues": {
+          "q": 5
+        },
+        "parameterName": "q",
+        "path": "",
+        "expect": 5
+      },
+      {
+        "name": "missing",
+        "nodeValues": {},
+        "parameterName": "x",
+        "path": "deep",
+        "expect": null
+      }
+    ]
+  },
+  "assertParamIsExtras": {
+    "cases": [
+      {
+        "name": "boolean-ok",
+        "ok": true,
+        "message": null
+      },
+      {
+        "name": "boolean-bad",
+        "ok": false,
+        "message": "Parameter \"pB\" is not boolean"
+      },
+      {
+        "name": "of-any-types-ok",
+        "ok": true,
+        "message": null
+      },
+      {
+        "name": "of-any-types-bad",
+        "ok": false,
+        "message": "Parameter \"pA\" must be string or number"
+      },
+      {
+        "name": "array-ok",
+        "ok": true,
+        "message": null
+      },
+      {
+        "name": "array-element-bad",
+        "ok": false,
+        "message": "Parameter \"pArr\" has elements that don't match expected types"
+      },
+      {
+        "name": "array-not-an-array",
+        "ok": false,
+        "message": "Parameter \"pArr\" is not an array"
+      }
+    ]
   },
   "serdeConformance": {
     "note": "Synthetic conformance samples for crates/n8n-node-model serde shapes (node-rust-brief.md §1 G-1..G-4). Equality rule: deserialize -> serialize must be an exact JSON round-trip. Real node instances are read by the harness from tests/reference/0*/workflow.json, not embedded here.",

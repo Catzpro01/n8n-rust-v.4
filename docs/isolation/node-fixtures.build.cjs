@@ -939,6 +939,96 @@ const isExecutableCases = [
   { name: "ai-non-tool-output", group: [], outputs: ["ai_memory"], expect: helpers.isExecutable(WF_STUB, execStubNode, execDesc([], ["ai_memory"])) },
 ];
 
+/* ---------------- Wave 11: getUpdatedToolDescription + getContext + param extras ----- */
+
+for (const [label, fn] of Object.entries({
+  getUpdatedToolDescription: helpers.getUpdatedToolDescription,
+  getContext: helpers.getContext,
+  getParameterValueByPath: helpers.getParameterValueByPath,
+})) {
+  if (typeof fn !== "function") {
+    console.error(`reference export changed: ${label}`);
+    process.exit(2);
+  }
+}
+const ptvExtras = ref("node-parameters/parameter-type-validation.js");
+
+// WG-32 getUpdatedToolDescription: auto-upgrade only when manual AND the stored
+// toolDescription provably came from an auto source (matches previous auto-description,
+// is blank/whitespace, or equals the node-type description). Custom text is preserved.
+const utdType = {
+  displayName: "Thing", name: "thing", version: 1, defaults: { name: "Thing" },
+  properties: [
+    { displayName: "Resource", name: "resource", type: "options", options: [ { name: "Op", value: "op" } ], default: "" },
+    { displayName: "Operation", name: "operation", type: "options", options: [ { name: "Send", value: "send" } ], default: "" },
+  ],
+  description: "Fallback desc",
+};
+const utdCurrent = { resource: "op", operation: "send" };
+const utdCase = (name, nodeType, newParameters, currentParameters) => ({
+  name, newParameters, currentParameters,
+  expect: helpers.getUpdatedToolDescription(nodeType, newParameters, currentParameters) ?? null,
+});
+const updatedToolDescriptionCases = [
+  utdCase("manual-match-prev-description", utdType, { descriptionType: "manual", toolDescription: "send op in Thing", resource: "op", operation: "send" }, utdCurrent),
+  utdCase("manual-blank", utdType, { descriptionType: "manual", toolDescription: "", resource: "op", operation: "send" }, utdCurrent),
+  utdCase("manual-whitespace", utdType, { descriptionType: "manual", toolDescription: "   ", resource: "op", operation: "send" }, utdCurrent),
+  utdCase("manual-equals-type-description", utdType, { descriptionType: "manual", toolDescription: "Fallback desc", resource: "op", operation: "send" }, utdCurrent),
+  utdCase("manual-custom-preserved", utdType, { descriptionType: "manual", toolDescription: "KeepMe", resource: "op", operation: "send" }, utdCurrent),
+  utdCase("non-manual-ignored", utdType, { descriptionType: "auto", toolDescription: "send op in Thing", resource: "op", operation: "send" }, utdCurrent),
+  utdCase("no-node-type", null, { descriptionType: "manual" }, utdCurrent),
+  utdCase("null-new-parameters", utdType, null, utdCurrent),
+];
+
+// WG-33 getContext: keys are "flow" and "node:<node.NAME>" (name, not id); missing key
+// is LAZILY CREATED (mutating runExecutionData.contextData); three ApplicationError arms.
+const ctxNode = { id: "nd", name: "N", type: "t", typeVersion: 1, position: [0, 0], parameters: {} };
+function ctxRun(contextData) { return { executionData: { contextData } }; }
+function ctxErrorCase(name, runExecutionData, type, node) {
+  try {
+    helpers.getContext(runExecutionData, type, node);
+    return { name, expect: null };
+  } catch (e) {
+    return { name, expect: { errorClass: e.constructor.name, message: e.message, extra: e.extra ?? null } };
+  }
+}
+const getContextCases = [
+  { name: "flow", expect: (() => { const r = ctxRun({ flow: { a: 1 }, "node:N": { x: 2 } }); return { returned: helpers.getContext(r, "flow"), contextDataAfter: r.executionData.contextData }; })() },
+  { name: "node-name-key", expect: (() => { const r = ctxRun({ flow: { a: 1 }, "node:N": { x: 2 } }); return { returned: helpers.getContext(r, "node", ctxNode), contextDataAfter: r.executionData.contextData }; })() },
+  { name: "node-lazy-create-mutation", expect: (() => { const r = ctxRun({}); return { returned: helpers.getContext(r, "node", ctxNode), contextDataAfter: r.executionData.contextData }; })() },
+  ctxErrorCase("uninitialized-execution-data", {}, "flow"),
+  ctxErrorCase("node-type-without-node", ctxRun({ flow: {} }), "node"),
+  ctxErrorCase("unknown-type-with-extra", ctxRun({ flow: {} }), "local"),
+];
+
+// WG-34a getParameterValueByPath: lodash-get join `path.name` (empty path → bare name).
+const parameterValueByPathCases = [
+  { name: "nested-path", nodeValues: { a: { b: [10, 20] } }, parameterName: "b[1]", path: "a", expect: helpers.getParameterValueByPath({ a: { b: [10, 20] } }, "b[1]", "a") },
+  { name: "empty-path-bare-name", nodeValues: { q: 5 }, parameterName: "q", path: "", expect: helpers.getParameterValueByPath({ q: 5 }, "q", "") },
+  { name: "missing", nodeValues: {}, parameterName: "x", path: "deep", expect: helpers.getParameterValueByPath({}, "x", "deep") ?? null },
+];
+
+// WG-34b assertParamIs* extras (W2 covered string/number). Validator-driven array
+// assert uses a plain for-loop (sparse-safe) — messages pinned byte-exact.
+function assertExtra(name, fn) {
+  try {
+    fn();
+    return { name, ok: true, message: null };
+  } catch (e) {
+    return { name, ok: false, message: e.message };
+  }
+}
+const isNum = (v) => typeof v === "number";
+const assertParamExtraCases = [
+  assertExtra("boolean-ok", () => ptvExtras.assertParamIsBoolean("pB", true)),
+  assertExtra("boolean-bad", () => ptvExtras.assertParamIsBoolean("pB", "yes")),
+  assertExtra("of-any-types-ok", () => ptvExtras.assertParamIsOfAnyTypes("pA", "x", ["string", "number"])),
+  assertExtra("of-any-types-bad", () => ptvExtras.assertParamIsOfAnyTypes("pA", true, ["string", "number"])),
+  assertExtra("array-ok", () => ptvExtras.assertParamIsArray("pArr", [1, 2], isNum, undefined)),
+  assertExtra("array-element-bad", () => ptvExtras.assertParamIsArray("pArr", [1, "a"], isNum, undefined)),
+  assertExtra("array-not-an-array", () => ptvExtras.assertParamIsArray("pArr", "nope", isNum, undefined)),
+];
+
 /* ---------------- Regression tripwire: results must equal the VERIFIED goldens ------ */
 /* (docs/isolation/node-golden-cases.md — values frozen by VERIFIED-BY-EXECUTION)      */
 
@@ -1086,6 +1176,32 @@ assertGolden("W31 workflow-selector", workflowSelectorCases.map((c) => c.expect 
   [true, true, false, "42", "99", null, null, null]);
 assertGolden("W31 isExecutable", isExecutableCases.map((c) => c.expect),
   [true, true, true, false]);
+assertGolden("W32 updated-tool-description", updatedToolDescriptionCases.map((c) => c.expect), [
+  "send op in Thing",
+  "send op in Thing",
+  "send op in Thing",
+  "send op in Thing",
+  null, null, null, null,
+]);
+assertGolden("W33 getContext", getContextCases.map((c) => c.expect), [
+  { returned: { a: 1 }, contextDataAfter: { flow: { a: 1 }, "node:N": { x: 2 } } },
+  { returned: { x: 2 }, contextDataAfter: { flow: { a: 1 }, "node:N": { x: 2 } } },
+  { returned: {}, contextDataAfter: { "node:N": {} } },
+  { errorClass: "ApplicationError", message: "`executionData` is not initialized", extra: null },
+  { errorClass: "ApplicationError", message: 'The request data of context type "node" the node parameter has to be set!', extra: null },
+  { errorClass: "ApplicationError", message: "Unknown context type. Only `flow` and `node` are supported.", extra: { contextType: "local" } },
+]);
+assertGolden("W34 param-value-by-path", parameterValueByPathCases.map((c) => c.expect),
+  [20, 5, null]);
+assertGolden("W34 assert-extras", assertParamExtraCases.map((c) => [c.ok, c.message]), [
+  [true, null],
+  [false, 'Parameter "pB" is not boolean'],
+  [true, null],
+  [false, 'Parameter "pA" must be string or number'],
+  [true, null],
+  [false, `Parameter "pArr" has elements that don't match expected types`],
+  [false, 'Parameter "pArr" is not an array'],
+]);
 
 if (trip.length) {
   console.error("REFERENCE DRIFT vs docs/isolation/node-golden-cases.md:");
@@ -1204,6 +1320,11 @@ const fixtures = {
         `isToolType:${isToolTypeCases.length} isHitlToolType:${isHitlToolTypeCases.length} isTool:${isToolCases.length}`,
         `toolMode:${toolModeCases.length} workflowSelector/subworkflow:${workflowSelectorCases.length} isExecutable:${isExecutableCases.length}`,
       ].join(", "),
+      wave11ContextAndAsserts: [
+        `getUpdatedToolDescription:${updatedToolDescriptionCases.length}`,
+        `getContext:${getContextCases.length}`,
+        `getParameterValueByPath:${parameterValueByPathCases.length} assertParamIsExtras:${assertParamExtraCases.length}`,
+      ].join(", "),
     },
   },
   applyAccessPatterns: { cases: applyAccessPatternsCases },
@@ -1257,6 +1378,10 @@ const fixtures = {
   toolMode: { cases: toolModeCases, nodeType: toolDescNodeType },
   workflowSelector: { cases: workflowSelectorCases },
   isExecutable: { cases: isExecutableCases, note: "workflow is an untouched stub {} — static-output paths never consult it" },
+  updatedToolDescription: { cases: updatedToolDescriptionCases, nodeType: utdType },
+  getContext: { cases: getContextCases, note: "key rules: 'flow' literal or 'node:<node.name>' (node NAME, not id); missing key lazily inserted (mutation of runExecutionData.contextData); error arms are ApplicationError with byte-exact messages" },
+  parameterValueByPath: { cases: parameterValueByPathCases },
+  assertParamIsExtras: { cases: assertParamExtraCases },
   serdeConformance,
 };
 

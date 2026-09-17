@@ -229,17 +229,26 @@ const OPTIONS_ISSUES_CASES: usize = 6;  // options/multiOptions required + lenie
     `toolDescription` as absent and falls back to `makeDescription`; `getSubworkflowId`
     requires BOTH a selector node type AND a full RLC object with `__rl`; `isExecutable`
     accepts `main`/`ai_tool` outputs or trigger group — never `ai_memory` alone.
+22. **Auto-description upgrade rule** (WG-32): `getUpdatedToolDescription` refreshes a
+    manual-mode toolDescription ONLY when it provably originated from an auto source
+    (equals previous `makeDescription`, blank/whitespace, or equals the node-type
+    description); custom text is preserved → `undefined`.
+23. **getContext naming + mutation** (WG-33): keys are `flow` and `node:<node.name>`
+    (NAME — a port keyed by id is wrong); missing keys are lazily created by mutating
+    `runExecutionData.contextData`; three byte-exact `ApplicationError` arms incl.
+    `extra.contextType` on the unknown-type branch.
 
 ## 5. Acceptance wiring (brief §4, gate 1)
 
 `n8n-node-model` is **RUST IMPLEMENTED-verified for the Node LEGO when**:
 
-1. This harness reproduces all 220 entries (19 frozen-port golden cases + 38 wave-2 pure
+1. This harness reproduces all 244 entries (19 frozen-port golden cases + 38 wave-2 pure
    helper cases + 24 wave-3 parameter-issues/filter cases + 27 wave-4 operator-matrix
    cases + 9 wave-5 nested-parameter cases + 18 wave-6 RLC/resourceMapper cases + 23
    wave-7 IO/conditions/features cases + 10 wave-8 display-path/options cases + 11
-   wave-9 nested-issues cases + 34 wave-10 tool/merge cases + 7 serde samples) green
-   under `tools/rust-offline-rig/run.sh test` (offline).
+   wave-9 nested-issues cases + 34 wave-10 tool/merge cases + 24 wave-11
+   context/tool-description/assert cases + 7 serde samples) green under
+   `tools/rust-offline-rig/run.sh test` (offline).
 2. The 6 frozen ports exist with the exact snake_cased names listed in brief §3
    (`get_node_parameters`, `get_node_inputs`, `get_node_outputs`, `get_connection_types`,
    `rename_form_fields`, `apply_access_patterns`) and crate exports match contract §11.
