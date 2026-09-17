@@ -1,0 +1,113 @@
+id: TASK-419-isolation-gate-guard
+agent: agent-4
+lego: integration
+module: isolation-gate
+phase: 4H
+
+# Self-assigned from the standing protocol (STANDING-WORKER-PROTOCOL.md §2: take the next available work
+# without waiting; §6: the project is done only when nothing is left failing). The Supabase pool is
+# unreachable from every sandbox (ISSUE-019: HTTP 000 on gqtxugkxekdqxsaqrum.supabase.co), so the queue
+# used is the in-repo one: Phase 4H closed ISSUE-027 with a one-off falsifier (`npm run
+# issuez027:falsify`), which proves a moment but does not keep the closure true — and the localization
+# gate still had no check that compiles the isolated unit, which is precisely how a red `npm run verify`
+# (9/11) once sat next to a green 12/12 gate.
+#
+# ID: claimed as TASK-415, then TASK-417, renumbered TASK-419 — both ids were taken concurrently by other
+# lanes (1dcb96b5 run-path + 1f86b03e extractor; then Phase 4H's TASK-417-verify-11-11-and-rust-rig).
+# This lane yielded; no other lane's ids, records or files were touched.
+
+allowed_paths:
+  - tools/localization-gate.mjs
+  - docs/isolation/localization.md
+  - docs/isolation/CROSS-AGENT-ISSUES.md
+  - docs/isolation/evidence/**
+  - docs/isolation/workflow-verification.md
+  - docs/isolation/validation-bus-outbox.json
+  # Audit-trail sync from origin/main (1c4965a2): every results/*.md main carries that this branch lacked,
+  # copied byte-identically (verified with diff against `git show origin/main:<path>`). 25 files, docs only.
+  - results/SWARM-PHASE4-06.md      # …-10.md (5 records)
+  - results/SWARM-ROUND3-01.md      # …-15.md (15 records)
+  - results/SWARM-ROUND4-01.md      # …-05.md (5 records)
+  - results/TASK-418-dual-phase-review-sweep.md
+  - tasks/TASK-418-dual-phase-review-sweep.yaml
+  - results/TASK-419-isolation-gate-guard.md
+  - tasks/TASK-419-isolation-gate-guard.yaml
+
+forbidden_paths:
+  - reference/n8n/**                       # read-only, hash-pinned (G04)
+  - packages/frontend/**                   # UI stays 100% stock (PROJECT_RULES §2)
+  - packages/workflow-lego/src/**          # the guard belongs in the gate, NOT in the sources
+  - packages/workflow-lego/test/**         # no test was weakened to make a gate pass
+  - tools/workflow-isolation-extract.mjs   # ADOPTED from 1f86b03e via Phase 4H — this lane's variant was dropped
+  - tools/issuez027-falsify.mjs            # Phase 4H's tool, left as authored
+  - tools/rust-offline-rig/**              # adopted from 87b5960d (arena/01a0b103), left as authored
+  - packages/reconstructed-engine/**       # quarantined pending ISSUE-021/ISSUE-022
+  - legacy/rust-port/**                    # archive stays inert (TASK-413)
+  - crates/**                              # ZERO RUST (PROJECT_RULES §1) — and NOT synced back from main
+  - apps/**
+
+requires:
+  - docs/isolation/localization.md
+  - docs/isolation/CROSS-AGENT-ISSUES.md
+  - packages/workflow-lego/manifest/ownership.json
+
+operations:
+  - name: setup_reference_runtime
+    args:
+      command: npm run setup:reference
+      result: n8n-workflow/core/nodes-base 2.9.1 in .runtime/ — the stage G11 needs
+  - name: npm_install
+    args:
+      prefix: packages/workflow-lego
+      result: typescript 5.9.3 available — the capability the authoring sandbox lacked
+  - name: rebase
+    args:
+      onto: origin/arena/01a0b105-n8n-rust-v-4 = b4818f00 (Phase 4H)
+      skipped_commit: this lane's own cherry-pick of 1f86b03e — became empty because the base already
+                      carries a byte-identical adoption (a85f51bb)
+      conflicts: [docs/isolation/CROSS-AGENT-ISSUES.md, docs/isolation/localization.md,
+                  docs/isolation/workflow-verification.md, docs/isolation/evidence/*.json]
+      resolution: their Phase 4H content kept in full (ISSUE-027 closure, ISSUE-023 follow-up, §4.6,
+                  §5 reproduction notes); this lane adds only §4.7 + the G16/M15 rows + the CLOSED §5
+                  bullet, and regenerates the evidence by re-running the gates
+  - name: edit_file
+    args:
+      path: tools/localization-gate.mjs
+      what: new check G16 — static four-form specifier audit + real extract/tsc run + count cross-check
+            against .extract/rewrites.json (legoSpecifierNormalizations) + loud COMPILE STAGE NOT RUN;
+            evidence field isolatedUnitCompile
+      numbering: authored as G12, renumbered G16 because Phase 4F/4G own G12-G15 (and M15 because they own M9-M14)
+  - name: mutation_test
+    args:
+      id: M15
+      mutation: disable the ISSUE-027 normalization write in the ADOPTED extractor (if (false) writeFileSync(abs, after))
+      result: localization gate exit 1 · FAIL 16/17 with G16 red; extractor restored byte-identical
+              (git diff vs the adopted commit empty) → exit 0 · PASS 17/17
+  - name: run_gate
+    args:
+      command: npm run verify
+      phase: after
+      result: 11/11 PASS · BEHAVIOR CHANGE: NONE DETECTED (G06 0 errors, G07 0 errors, G08 19/19,
+              G09 252/0, G11 live 7/7 R0..R6)
+  - name: run_gate
+    args:
+      command: npm run localization:all
+      phase: after
+      result: 79/79 tests + 17/17 gate (G16 reports 11 specifiers across 4 LEGO files, cross-checked)
+  - name: sync_from_main
+    args:
+      files: 25 records — results/SWARM-PHASE4-06..10.md, results/SWARM-ROUND3-01..15.md, results/SWARM-ROUND4-01..05.md
+      note: byte-identical copies, re-verified against the CURRENT main head after it moved to 1c4965a2
+      excluded_on_purpose: the 24 main-only crates/** + Cargo.toml paths — that is the Rust track this branch
+              archived reversibly in TASK-413 (legacy/rust-port/, guards green), so syncing them back would
+              undo a deliberate disposition and pre-empt the arbitration in A4-MSG-05 / ISSUE-023
+
+tests:
+  - workflow_isolation_gate      # npm run verify — 11/11 (G01..G11, incl. live engine 7/7)
+  - lego_isolation_suite         # bash scripts/run-lego-tests.sh — 19/19
+  - localization_suite           # npm run localization:test — 79/79
+  - localization_gate            # npm run localization:gate — 17/17 (G16 included)
+  - issuez027_falsify            # npm run issuez027:falsify — Phase 4H's proof, re-run green/red
+  - contract_conformance         # tests/compatibility/contract_conformance.mjs — 22/22
+  - boundary_audit               # tests/integration/boundary_audit.py — PASS
+  - isolation_check              # npm run isolation:check — 4/4

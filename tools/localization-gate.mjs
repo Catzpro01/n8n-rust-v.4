@@ -15,13 +15,21 @@
  *   G5  every locale translates a probe key (real strings, not fallbacks)
  *   G6  Arabic resolves to rtl, the other five to ltr
  *   G7  the engine-status overlay covers every locale and every status key
+ *   G12 execution-log record: reference field names, derived duration, localized block (phase 4F)
+ *   G13 API responses: reference-exact statuses/bodies with localized text (phase 4F)
+ *   G14 product vocabulary: parity, no key collisions, run-path modules stay in-package (phase 4F)
+ *   G15 catalogue ownership: a superset 4B keeps its keys, divergence is reported (phase 4G)
+ *   G16 the localization modules keep the isolated unit compilable — the `.ts` specifiers these
+ *       modules need for Node's type-stripping loader are normalized by the extractor, and (when
+ *       typescript is installed) `extract + tsc -p .extract/tsconfig.json` is really executed.
+ *       Without this check the gate once reported PASS while `npm run verify` was red at G06/G08.
  *
  * usage: node tools/localization-gate.mjs [--json <path>] [--quiet]
  * exit:  0 = PASS, 1 = FAIL
  */
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
@@ -496,6 +504,111 @@ check('G15', 'catalogue ownership: a superset 4B keeps its keys, divergence is r
 	return `${real.length} overlaps with the current 4B, rule proven against a grown catalogue`;
 });
 
+/* --- G16: the localization line must not break the isolated-unit build ------------------- */
+/**
+ * Regression guard for the failure this gate once had a blind spot for.
+ *
+ * The localization modules are executed directly by Node's type-stripping loader, so their
+ * relative specifiers carry an explicit `.ts` suffix. The *isolated unit* is compiled instead:
+ * `tools/workflow-isolation-extract.mjs` copies `packages/workflow-lego/src` into
+ * `.extract/src/lego` and normalizes those suffixes, because `tsc` rejects a `.ts` import path
+ * (TS5097) unless `allowImportingTsExtensions` is set — and that flag is illegal in an emitting
+ * build, which `.extract` must be (`test/05-surface-parity.test.mjs` loads `dist/model-api.js`).
+ *
+ * Before the normalization existed, this gate reported 12/12 PASS while the repository gate was
+ * red (`npm run verify` → 9/11, G06 TS5097 + G08 cascade): the compile stage could not run in a
+ * sandbox without `node_modules`. So this check has two halves, and the second one reports
+ * NOT RUN loudly instead of passing silently when typescript is absent.
+ */
+const LEGO_SRC = join(ROOT, 'packages', 'workflow-lego', 'src');
+const walkLegoSources = (dir, acc = []) => {
+	for (const entry of readdirSync(dir)) {
+		const p = join(dir, entry);
+		if (statSync(p).isDirectory()) walkLegoSources(p, acc);
+		else if (p.endsWith('.ts')) acc.push(p);
+	}
+	return acc;
+};
+/**
+ * Specifier the extractor normalizes — mirrors `LEGO_EXT_SPECS` in
+ * `tools/workflow-isolation-extract.mjs` (ISSUE-027): `from './x.ts'`, `import './x.ts'`,
+ * `import('./x.ts')`, `require('./x.ts')`.
+ */
+const NORMALIZABLE_TS_SPEC_RE = /\b(?:from|import|require)\s*\(?\s*['"](\.[^'"]*?)\.ts['"]/g;
+/** Any quoted relative path ending in `.ts`, whatever its position. */
+const ANY_QUOTED_TS_PATH_RE = /['"](\.[^'"]*?)\.ts['"]/g;
+
+const tsSpecifierScan = walkLegoSources(LEGO_SRC)
+	.sort()
+	.flatMap((file) => {
+		const source = readFileSync(file, 'utf8');
+		const normalizable = [...source.matchAll(NORMALIZABLE_TS_SPEC_RE)].map((m) => m[1]);
+		const all = [...source.matchAll(ANY_QUOTED_TS_PATH_RE)].map((m) => m[1]);
+		return {
+			file: relative(ROOT, file),
+			normalizable,
+			stray: all.filter((spec) => !normalizable.includes(spec)).map((spec) => `${relative(ROOT, file)}: '${spec}.ts' is not in an import/export-from position`),
+		};
+	});
+const tsSpecifierAudit = tsSpecifierScan.flatMap((s) => s.stray);
+/** How many `.ts` specifiers the extractor must normalize — derived from the sources, not from its log. */
+const expectedNormalizations = tsSpecifierScan.reduce((n, s) => n + s.normalizable.length, 0);
+
+const tscBin = join(ROOT, 'packages', 'workflow-lego', 'node_modules', '.bin', 'tsc');
+const compileStage = existsSync(tscBin)
+	? (() => {
+			const extract = spawnSync(process.execPath, [join(ROOT, 'tools', 'workflow-isolation-extract.mjs')], {
+				cwd: ROOT,
+				encoding: 'utf8',
+				timeout: 300_000,
+			});
+			if (extract.status !== 0) {
+				return { ran: true, ok: false, detail: `extraction failed (exit ${extract.status}): ${(extract.stderr ?? '').slice(-300)}` };
+			}
+			// Structured audit, not stdout scraping: the extractor records every normalization it
+			// performed in .extract/rewrites.json (ISSUE-027, `legoSpecifierNormalizations`).
+			const auditPath = join(ROOT, 'packages', 'workflow-lego', '.extract', 'rewrites.json');
+			if (!existsSync(auditPath)) {
+				return { ran: true, ok: false, detail: 'extraction succeeded but .extract/rewrites.json is missing — no normalization audit to cross-check' };
+			}
+			const audit = JSON.parse(readFileSync(auditPath, 'utf8')).legoSpecifierNormalizations ?? [];
+			const normalizedCount = audit.reduce((n, entry) => n + (entry.specifiers ?? 0), 0);
+			const build = spawnSync(tscBin, ['-p', join(ROOT, 'packages', 'workflow-lego', '.extract', 'tsconfig.json')], {
+				cwd: join(ROOT, 'packages', 'workflow-lego'),
+				encoding: 'utf8',
+				timeout: 300_000,
+			});
+			if (build.status !== 0) {
+				return {
+					ran: true,
+					ok: false,
+					detail: `isolated-unit build failed (exit ${build.status}): ${((build.stdout ?? '') + (build.stderr ?? '')).slice(0, 400)}`,
+				};
+			}
+			// the extractor's own count must equal what the sources actually contain — a parse
+			// regression here would otherwise report a comfortable "nothing to normalize"
+			if (normalizedCount !== expectedNormalizations) {
+				return {
+					ran: true,
+					ok: false,
+					detail: `extractor normalized ${normalizedCount} specifier(s) but the LEGO sources contain ${expectedNormalizations}`,
+				};
+			}
+			return {
+				ran: true,
+				ok: true,
+				audit,
+				detail: `extract + tsc -p .extract/tsconfig.json → 0 errors (ISSUE-027 normalization: ${normalizedCount} .ts specifier(s) across ${audit.length} file(s), matching the ${expectedNormalizations} present in packages/workflow-lego/src)`,
+			};
+		})()
+	: { ran: false, ok: true, detail: 'COMPILE STAGE NOT RUN — typescript is not installed (npm install --prefix packages/workflow-lego); only the static specifier audit below was enforced' };
+
+check('G16', 'localization modules keep the isolated unit compilable (G06/G08 of npm run verify)', () => {
+	assert(tsSpecifierAudit.length === 0, `un-normalizable .ts specifiers: ${tsSpecifierAudit.join('; ')}`);
+	assert(compileStage.ok, compileStage.detail);
+	return compileStage.detail;
+});
+
 /* --- evidence + verdict ----------------------------------------------------------------- */
 const failed = checks.filter((c) => !c.ok);
 const record = {
@@ -526,6 +639,15 @@ const record = {
 	},
 	promotedSymbols: [...promoted].sort(),
 	suite: suiteSummary,
+	isolatedUnitCompile: {
+		typescriptAvailable: compileStage.ran,
+		ok: compileStage.ok,
+		detail: compileStage.detail,
+		tsSpecifiersInLegoSources: expectedNormalizations,
+		normalizationsByFile: compileStage.audit ?? [],
+		unNormalizableTsSpecifiers: tsSpecifierAudit,
+		issue: 'ISSUE-027 (extractor specifier normalization, cherry-picked from 1f86b03e on arena/01a0b101)',
+	},
 	checks,
 	verdict: failed.length === 0 ? 'PASS' : 'FAIL',
 	failed: failed.map((c) => `${c.id} ${c.name}`),

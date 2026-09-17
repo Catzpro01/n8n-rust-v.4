@@ -3,8 +3,8 @@
 **Scope:** native multi-language runtime for the reconstructed backend.
 **Reference:** n8n `2.9.4` (`reference/n8n`, upstream `b6dc2787c45677a29a9612cd27eb911302961a83`) — **unmodified**.
 **Contract:** [`contracts/localization.contract.md`](../../contracts/localization.contract.md)
-**Status:** `TESTED` — 79/79 module tests, 16/16 gate checks, **`npm run verify` 11/11** (G01–G11,
-ISSUE-027 closed on this branch), mutations M1–M14 detected, surface promoted (Phase 4D), run-data/API
+**Status:** `TESTED` — 79/79 module tests, 17/17 gate checks, **`npm run verify` 11/11** (G01–G11,
+ISSUE-027 closed on this branch), mutations M1–M15 detected, surface promoted (Phase 4D), run-data/API
 envelope (Phase 4E), consumed by the run path (Phase 4F: execution-log record + localized HTTP
 payloads), **merge-tested against the parallel 4B hub** (Phase 4G: catalogue ownership, cross-branch
 diff, simulation with proven promotion recipe) and **review-closed** (Phase 4H: ISSUE-027 falsified
@@ -87,7 +87,7 @@ manifest update — see contract §11.6.
 | Check | Command | Result |
 | :--- | :--- | :--- |
 | Module tests | `node --test packages/workflow-lego/test/{06,07,08}-*.test.ts` | **79/79 PASS** (L1–L13, E1–E10, F1–F13) |
-| Localization gate | `node tools/localization-gate.mjs` | **16/16 PASS** → `docs/isolation/evidence/localization-gate.json` |
+| Localization gate | `node tools/localization-gate.mjs` | **17/17 PASS** → `docs/isolation/evidence/localization-gate.json` |
 | Surface parity (4D/4E/4F) | gate check G8 | PASS — 57 runtime + 26 type symbols promoted, UI module excluded |
 | Runnable surface (4D) | gate check G9 / `npm run localization:inspect` | PASS — `--lang jv --key node.error` → `Gagal dilakokake`; unknown locale exits 2 |
 | Vocabulary (4E) | gate check G10 | PASS — 14 engine/API keys × 6 locales, identical key sets, 0 empty |
@@ -100,6 +100,7 @@ manifest update — see contract §11.6.
 | Catalogue ownership (4G) | gate check G15 | PASS — 0 overlaps with the current 4B; the rule (catalogue wins, divergence reported) is proven against a grown stub |
 | Full isolation gate (4H) | `npm run verify` | **11/11 PASS** — G06 `tsc -p .extract/tsconfig.json → 0 errors` (was TS5097), G11 live 7/7, BEHAVIOR CHANGE: NONE (252 comparisons / 18 workflows) |
 | ISSUE-027 falsification (4H) | `npm run issuez027:falsify` | **CONFIRMED** — `tsc` exit 0 with the fix, exit 2 with **9× TS5097** in the control (normalization undone exactly where the sources carry `.ts`) → `docs/isolation/evidence/issuez027-verification.json` |
+| Standing build guard (4H) | gate check **G16** | PASS — `extract + tsc -p .extract/tsconfig.json` → 0 errors on **every** gate run, 11 `.ts` specifiers across 4 files normalized, count read from the extractor's structured audit and cross-checked against the sources (§4.7) |
 | Offline Rust rig (4H) | `setup.sh` + `npm run rust:check-offline` + `npm run rust:test-offline` | **PASS** — 19 vendored crates, `cargo check` clean, **37 Rust tests passed / 0 failed** on `legacy/rust-port` → `docs/isolation/evidence/rust-rig-verification.json` |
 | Cross-branch hub diff (4G) | `npm run localization:hub-diff -- --their-ref 7fba8a6d --base d357e6e5` | **COMPATIBLE** — 6/6 locales, 35 vs 27 keys, **66 identical value pairs / 0 divergent**, 6 file collisions, 0 script collisions |
 | Merge simulation (4G) | clean worktree + PR #21's 4B hub | **79/79 + 16/16 PASS** after the 18-symbol promotion recipe → `docs/isolation/evidence/merge-simulation-pr21.json` |
@@ -136,6 +137,8 @@ must be able to go red before it is allowed to mean anything green:
 | M13 | `withoutCatalogueOwnedKeys()` stops dropping catalogue-owned keys | **exit 1** | G15 (catalogue must win the lookup) |
 | M14 | `index.ts` stops promoting `catalogueOverlaps` | **exit 1** | G8 (surface parity) |
 | — | sources restored | **exit 0** | 79/79 + 16/16 |
+| M15 | ISSUE-027 normalization write disabled in the extractor (`if (false) writeFileSync(abs, after)`) | **exit 1** | G16 (isolated unit no longer compiles — TS5097) |
+| — | extractor restored byte-identical (`git diff` vs the adopted commit empty) | **exit 0** | 79/79 + 17/17 |
 
 M12 is the interesting one: the test suite stayed green (nothing in test 08 asserted a non-manual
 trigger on the *record*), and only the gate's end-to-end G12 caught it — which is exactly why the
@@ -263,15 +266,59 @@ failed on `indexmap`. With the completed 19-crate closure the rig produced `carg
 Both adopted fixes came from other lanes as `cherry-pick -x`; no source of this line changed, and the
 localization suite stayed 79/79 throughout.
 
+### 4.7 The standing guard (G16) — a falsification run proves a moment, a gate check proves the future
+
+Phase 4H's `npm run issuez027:falsify` proves the fix works *and* that its absence breaks, which is exactly
+the right shape of evidence. It is, however, a tool somebody has to remember to run. The regression it covers
+was invisible for two reasons, and neither is fixed by a one-off probe:
+
+* **the authoring sandbox could not compile at all** — no registry access, no `node_modules`, so G06/G08 never
+  executed there and §5 honestly said so; and
+* **the localization gate reported 12/12 PASS next to a red repository gate** — it asserted the extension-style
+  import pattern (G11) without ever compiling the unit that pattern has to survive.
+
+So the guard was added where it runs by default: **`G16` in `tools/localization-gate.mjs`**, on every
+`npm run localization:gate` / `localization:all` invocation.
+
+| Half | What it enforces |
+| :--- | :--- |
+| static audit | every quoted relative `.ts` path under `packages/workflow-lego/src/**` must sit in one of the four positions the extractor normalizes (`from` / bare `import` / `import()` / `require()`); a stray one — a `.ts` path in a data string, a form the extractor does not know — fails with file and specifier |
+| real compile | `extract` + `tsc -p .extract/tsconfig.json` whenever typescript is installed, i.e. the same command G06 runs, so the two gates cannot disagree again |
+| count cross-check | the normalization count is read from the extractor's **structured** audit (`.extract/rewrites.json → legoSpecifierNormalizations`), not scraped from its stdout, and compared against a count derived independently from the sources — a regex regression in *either* implementation cannot report a comfortable "nothing to normalize" |
+| no silent skip | without typescript the evidence records `COMPILE STAGE NOT RUN — typescript is not installed` and says so in the check detail, instead of passing quietly (the exact blind spot this regression lived in) |
+
+Fail direction, re-proven against the **adopted** extractor rather than a local variant — mutation **M15**:
+disabling the normalization write (`if (false) writeFileSync(abs, after)`) makes the gate **exit 1 · FAIL
+16/17 with G16 red**; restoring the file byte-identically returns **exit 0 · PASS 17/17**. The guard therefore
+protects a tool this lane does not own, and goes red in *any* lane that disables ISSUE-027 normalization.
+
+**Convergence, not duplication.** This lane had independently written the same class of fix before agent-7's
+`1f86b03e` was visible here — three specifier forms instead of four. Rather than ship two implementations of
+one shared tool, that variant was **dropped** and the superset adopted (`cherry-pick -x`, authorship and
+provenance intact); `tools/workflow-isolation-extract.mjs` on this branch is byte-identical to the adopted
+commit, so what this lane contributes on top of it is the guard described here and nothing else. At this head
+the extractor normalizes **11 specifiers across 4 LEGO files** (4E envelope + 4F vocabulary /
+execution-log-record / api-error-response).
+
+*Coordination note (recorded, not silently absorbed):* `dynamic_task_pool` and `task_consensus_votes` are
+unreadable from every sandbox (ISSUE-019), so the same ids were claimed in parallel — three `TASK-415`s
+(`1dcb96b5` run-path, `1f86b03e` extractor, this gate restoration) and then two `TASK-417`s (Phase 4H's
+`TASK-417-verify-11-11-and-rust-rig` and this record). This lane yielded and renumbered to **TASK-419** /
+**TASK-418** and touched nobody else's ids or records; id allocation needs an orchestrator-side fix, because
+"whoever pushes last wins" is not a policy.
+
 ## 5. Known limitations
 
 * `normalizeLocale` resolves only tags the catalog knows: an unknown tag is *reported*, never
   guessed, so adding a language requires touching the catalog by design (contract §11.1).
 * The engine overlay ships three statuses (`running`, `waiting`, `cancelled`) that Phase 4B does not
   carry; product labels and engine messages are deliberately kept in separate owners (contract §4.6).
-* `tsc --noEmit` could not be executed in this sandbox (no registry access, `node_modules` absent for
-  `packages/workflow-lego`). The module is erasable-syntax-only and is executed by Node's type-stripping
-  loader in every gate run; a typed CI run remains the stronger check.
+* ~~`tsc --noEmit` could not be executed in this sandbox (no registry access, `node_modules` absent for
+  `packages/workflow-lego`)~~ **CLOSED**: this sandbox has registry access, so `npm install --prefix
+  packages/workflow-lego` (typescript 5.9.3) + `npm run setup:reference` were run and the typed checks execute
+  for real — G07 `tsc --noEmit` 0 errors over the whole 4A–4H line, G06 isolated-unit build 0 errors, and gate
+  check **G16** (§4.7) now runs that compile stage on *every* invocation instead of leaving it to a one-off
+  falsification run. Running it is what exposed the G06/G08 regression in the first place.
 * A run summary intentionally requires all three parts (duration, node count, item count): a run
   that reports only some of them gets the lifecycle message instead of a truncated sentence. That is
   a deliberate trade (contract §4.10) — a caller that wants a partial sentence must build it itself

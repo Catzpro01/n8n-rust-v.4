@@ -1201,3 +1201,40 @@ npm run rust:test-offline              → exit 0 · 37 Rust tests passed, 0 fai
 Jadi klaim "rig offline" di PR #19 sekarang **terukur**, bukan diwarisi dari deskripsi: closure lengkap,
 toolchain dari npm `@rustbin`, crate dari git tag upstream, tanpa crates.io/rustup. Rekaman:
 `docs/isolation/evidence/rust-rig-verification.json`.
+
+### ISSUE-027 follow-up — regression guard G16 added so the closure cannot rot silently (TASK-419)
+
+Penutupan ISSUE-027 di atas dibuktikan dengan `npm run issuez027:falsify` (hijau dengan perbaikan, 9× TS5097
+tanpanya) — bentuk bukti yang benar, tetapi alat itu harus *diingat* untuk dijalankan. Dua sebab regresi ini
+tak terlihat sebelumnya tidak sembuh oleh probe sekali jalan: sandbox penulis tidak bisa mengompilasi sama
+sekali (tanpa registry/`node_modules`, G06/G08 tak pernah jalan), dan gate lokalisasi melaporkan **12/12 PASS**
+tepat di sebelah gate repositori yang merah karena ia meng-assert pola impor berekstensi (G11) tanpa pernah
+mengompilasi unit yang harus tahan pola itu.
+
+Karena itu penjaganya dipasang di jalur yang jalan sendiri: **check `G16`** di `tools/localization-gate.mjs`,
+setiap kali `npm run localization:gate` / `localization:all` dijalankan.
+
+| Setengah | Yang ditegakkan |
+| :--- | :--- |
+| audit statis | setiap path `.ts` relatif berkutip di `packages/workflow-lego/src/**` harus berada di salah satu dari empat posisi yang dinormalkan extractor (`from` / bare `import` / `import()` / `require()`); yang menyimpang gagal dengan nama berkas + specifier |
+| kompilasi nyata | `extract` + `tsc -p .extract/tsconfig.json` bila typescript terpasang — perintah yang sama dengan G06, supaya dua gate tidak bisa berbeda pendapat lagi |
+| cross-check jumlah | jumlah normalisasi dibaca dari audit **terstruktur** (`.extract/rewrites.json → legoSpecifierNormalizations`), bukan dikerok dari stdout, lalu dibandingkan dengan jumlah yang dihitung independen dari sumber; regresi regex di implementasi mana pun tidak bisa melaporkan "nothing to normalize" yang menenangkan |
+| tanpa skip diam-diam | tanpa typescript, evidence mencatat `COMPILE STAGE NOT RUN — typescript is not installed` dan detail check mengatakannya, alih-alih lolos diam-diam |
+
+Arah-gagal diulang terhadap extractor yang **diadopsi** (bukan varian lokal): mutasi **M15** — penulisan
+normalisasi dilumpuhkan (`if (false) writeFileSync(abs, after)`) → gate **exit 1 · FAIL 16/17 dengan G16
+merah**; berkas dipulihkan byte-identical → **exit 0 · PASS 17/17**. Jadi G16 menjaga alat yang bukan milik
+lane ini dan akan merah di lane mana pun yang menonaktifkan normalisasi ISSUE-027. Di head ini extractor
+menormalkan **11 specifier pada 4 berkas LEGO**.
+
+Konvergensi: lane ini sempat menulis perbaikan sejenis sendiri (tiga bentuk specifier) sebelum `1f86b03e`
+terlihat di sini; varian itu **dibuang** dan superset-nya diadopsi apa adanya, sehingga satu tool bersama punya
+satu implementasi (`tools/workflow-isolation-extract.mjs` byte-identical dengan commit adopsi). Kontribusi lane
+ini di atasnya hanyalah penjaga di atas. Rekaman: `docs/isolation/localization.md` §4.7,
+`results/TASK-419-isolation-gate-guard.md`.
+
+Catatan koordinasi: `dynamic_task_pool` / `task_consensus_votes` tak terbaca dari sandbox mana pun (ISSUE-019),
+maka id yang sama diklaim paralel — tiga `TASK-415` (`1dcb96b5` run-path, `1f86b03e` extractor, gate
+restoration lane ini) lalu dua `TASK-417` (Phase 4H `TASK-417-verify-11-11-and-rust-rig` dan rekaman lane ini).
+Lane ini mengalah dan menomori ulang ke **TASK-419** / **TASK-418** tanpa menyentuh id atau rekaman lane lain;
+alokasi id perlu perbaikan di sisi orchestrator, karena "siapa yang push terakhir menang" bukan kebijakan.
