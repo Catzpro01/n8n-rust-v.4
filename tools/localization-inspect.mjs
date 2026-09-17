@@ -7,11 +7,13 @@
  * gate verifies. `tools/localization-gate.mjs` runs this binary as check G9.
  *
  * usage:
- *   node tools/localization-inspect.mjs [--lang <tag>] [--key <k>] [--text <template>] [--param k=v] [--json]
+ *   node tools/localization-inspect.mjs [--lang <tag>] [--key <k>] [--text <t>] [--param k=v]
+ *                                       [--envelope] [--status <s>] [--json]
  *
  *   node tools/localization-inspect.mjs                                  # full catalog table
  *   node tools/localization-inspect.mjs --lang jv --key settings.title    # one string
  *   node tools/localization-inspect.mjs --text "Node {name} selesai" --param name=Webhook
+ *   node tools/localization-inspect.mjs --lang ar --envelope              # run-data block (Phase 4E)
  *
  * exit: 0 ok · 2 unusable arguments/locale
  */
@@ -27,6 +29,13 @@ import {
 	normalizeLocale,
 } from '../packages/workflow-lego/src/localization-runtime.ts';
 import { NativeLocalizationService } from '../packages/workflow-lego/src/backend-localization-service.ts';
+import {
+	API_ERROR_CODES,
+	buildRunEnvelope,
+	createEnvelopeRuntime,
+	extensionKeys,
+	localizeApiError,
+} from '../packages/workflow-lego/src/localization-envelope.ts';
 
 const argv = process.argv.slice(2);
 const flag = (name) => {
@@ -46,6 +55,7 @@ const runtime = createLocalizationRuntime({
 	dictionaries: NativeLocalizationService,
 	fallbackLocale: 'en',
 });
+const envelopeRuntime = createEnvelopeRuntime({ fallbackLocale: 'en' });
 
 const requested = flag('lang');
 let locale = runtime.getLocale();
@@ -68,6 +78,39 @@ const emit = (payload, lines) => {
 	}
 	for (const line of lines) console.log(line);
 };
+
+/* --- run envelope (Phase 4E) ------------------------------------------------------------ */
+if (has('envelope')) {
+	const status = flag('status') ?? 'success';
+	const envelope = buildRunEnvelope(
+		{
+			executionId: flag('execution') ?? 'EX-DEMO-01',
+			workflowName: flag('workflow') ?? 'SMOKETEST001TEST',
+			status,
+			locale,
+			itemCount: Number(flag('items') ?? 3),
+			durationMs: Number(flag('duration') ?? 25),
+			nodes: [
+				{ nodeName: 'Webhook', status: 'success', itemCount: 3, durationMs: 12 },
+				{ nodeName: 'Code', status },
+			],
+		},
+		envelopeRuntime,
+	);
+	const apiErrors = API_ERROR_CODES.map((code) => localizeApiError(code, envelopeRuntime, undefined, locale));
+	const payload = { envelope, vocabulary: extensionKeys('en').length, apiErrors };
+	if (json) {
+		console.log(JSON.stringify(payload, null, 2));
+	} else {
+		console.log(`run envelope — ${envelope.locale} (${envelope.direction})  status=${envelope.status}`);
+		console.log(`  message     : ${envelope.message}`);
+		console.log(`  labels      : ${JSON.stringify(envelope.labels)}`);
+		for (const line of envelope.nodeLines) console.log(`  node        : ${line}`);
+		for (const error of apiErrors) console.log(`  api error   : ${error.code} -> ${error.message}`);
+		console.log(`  diagnostics : ${envelope.diagnostics.missingKeys.length} missing key(s)`);
+	}
+	process.exit(0);
+}
 
 /* --- single key ------------------------------------------------------------------------ */
 const key = flag('key');

@@ -48,6 +48,7 @@ export { NODE_CONNECTION_TYPES, STARTING_NODE_TYPES, DEFAULT_TIMEZONE } from './
  *   settings-localization-adapter  — where the operator's choice lives (Phase 4A)
  *   backend-localization-service   — the canonical catalog and the six dictionaries (Phase 4B)
  *   localization-runtime           — resolution chain, direction, interpolation, engine messages (Phase 4C)
+ *   localization-envelope          — run data / node status lines / API errors (Phase 4E, consumer seam)
  *
  * BOUNDARY: the runtime has no imports and consumes the service through a port, so promoting the
  * line adds symbols to the package surface without adding a single dependency edge. The UI module
@@ -94,6 +95,25 @@ export {
 	type LocaleMetadata,
 	type SupportedLocale,
 } from './backend-localization-service';
+export {
+	API_ERROR_CODES,
+	ENVELOPE_DICTIONARY_EXTENSION,
+	EXECUTION_LIFECYCLE,
+	EXECUTION_MESSAGE_KEYS,
+	buildRunEnvelope,
+	createEnvelopeRuntime,
+	envelopeDictionaryParity,
+	envelopeLocales,
+	extensionKeys,
+	localizeApiError,
+	localizeNodeStatus,
+	type ApiErrorCode,
+	type LocalizedApiError,
+	type LocalizedNodeStatusLine,
+	type NodeRunResult,
+	type RunEnvelope,
+	type RunEnvelopeInput,
+} from './localization-envelope';
 
 /** Provenance of the isolation layer itself. */
 export const LEGO_PROVENANCE = {

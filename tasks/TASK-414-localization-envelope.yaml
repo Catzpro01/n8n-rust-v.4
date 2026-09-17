@@ -1,0 +1,78 @@
+id: TASK-414-localization-envelope
+agent: agent-5
+lego: localization
+module: localization
+phase: 4e
+
+# Phase 4E — the consumer seam: run-data envelope, per-node status lines, API error mapping and the
+# engine/API vocabulary extension. Additive only: the frozen Phase 4B catalogue is NOT edited
+# (new keys live in ENVELOPE_DICTIONARY_EXTENSION), no reference path, no Rust, no UI.
+
+allowed_paths:
+  - packages/workflow-lego/src/localization-envelope.ts
+  - packages/workflow-lego/src/index.ts                      # additive export block
+  - packages/workflow-lego/src/localization-runtime.ts       # read-only (types only)
+  - packages/workflow-lego/test/07-localization-envelope.test.ts
+  - packages/workflow-lego/tsconfig.json                     # allowImportingTsExtensions (noEmit already set)
+  - tools/localization-gate.mjs                              # G1 widened, G8 widened, G10/G10b/G11 added
+  - tools/localization-inspect.mjs                           # --envelope mode
+  - contracts/localization.contract.md
+  - docs/isolation/localization.md
+  - docs/isolation/evidence/localization-gate.json
+  - package.json
+  - tasks/TASK-414-localization-envelope.yaml
+  - results/TASK-414-localization-envelope.md
+
+forbidden_paths:
+  - crates/**
+  - apps/**
+  - reference/n8n/**
+  - packages/workflow-lego/src/backend-localization-service.ts   # frozen 4B catalogue: no key edits
+  - packages/workflow-lego/src/settings-localization-adapter.ts  # UI-owned, not promoted
+
+requires:
+  - contracts/localization.contract.md
+  - docs/isolation/localization.md
+
+subject_branch: arena/01a0b105-n8n-rust-v-4
+base: b40bdac7                     # Phase 4D tip (restored from origin after a local .git rollback)
+
+operations:
+  - name: write_file
+    args: { path: packages/workflow-lego/src/localization-envelope.ts, kind: implementation }
+  - name: write_file
+    args: { path: packages/workflow-lego/test/07-localization-envelope.test.ts, kind: test }
+  - name: edit_file
+    args: { path: packages/workflow-lego/src/index.ts, change: "re-export the envelope module (11 values + 6 types)" }
+  - name: edit_file
+    args: { path: tools/localization-gate.mjs, change: "G1 runs both suites, G8 covers the envelope module, new G10/G10b/G11" }
+  - name: edit_file
+    args: { path: tools/localization-inspect.mjs, change: "--envelope mode" }
+  - name: run_tests
+    args: { cmd: "node --test packages/workflow-lego/test/06-*.test.ts packages/workflow-lego/test/07-*.test.ts", expect: "50/50 PASS" }
+  - name: run_gate
+    args: { cmd: "node tools/localization-gate.mjs", expect: "12/12 PASS" }
+  - name: run_cli
+    args: { cmd: "node tools/localization-inspect.mjs --lang ar --envelope --status error", expect: "rtl envelope, Arabic messages, 5 API errors, 0 missing keys" }
+  - name: mutation_test
+    args:
+      mutations: 4
+      expect: "M5/M6 vocabulary -> G10 red; M7 forbidden import -> G11 red; M8 surface -> G8 red; restore -> green"
+
+verification:
+  module_tests: 50/50 PASS (L1–L13 runtime, E1–E10 envelope)
+  localization_gate: 12/12 PASS (G1–G11)
+  promoted_symbols: 34 runtime + 18 type (UI module still excluded)
+  vocabulary: 14 engine/API keys x 6 locales, identical key sets, 0 empty values
+  contract_conformance: 22/22 PASS
+  boundary_audit: PASS
+  isolation_checks: boundary PASS · kernel PASS · port-surface PASS · reference 15050 / f8da35180669
+  rust_added: none
+  reference_modified: none
+  catalogue_4b_modified: none
+
+merge_condition:
+  - localization_gate_pass
+  - no_contract_violation
+  - no_reference_modification
+  - frozen_4b_catalogue_untouched

@@ -1,13 +1,17 @@
 {
   "gate": "phase-4c-native-localization",
-  "generatedAt": "2026-09-17T20:31:12.302Z",
+  "generatedAt": "2026-09-17T20:40:54.547Z",
   "node": "v22.22.3",
   "modules": [
     "packages/workflow-lego/src/settings-localization-adapter.ts (phase 4A)",
     "packages/workflow-lego/src/backend-localization-service.ts (phase 4B)",
-    "packages/workflow-lego/src/localization-runtime.ts (phase 4C)"
+    "packages/workflow-lego/src/localization-runtime.ts (phase 4C)",
+    "packages/workflow-lego/src/localization-envelope.ts (phase 4E)"
   ],
-  "localizationTestFile": "packages/workflow-lego/test/06-localization-runtime.test.ts",
+  "localizationTestFiles": [
+    "packages/workflow-lego/test/06-localization-runtime.test.ts",
+    "packages/workflow-lego/test/07-localization-envelope.test.ts"
+  ],
   "locales": [
     "id",
     "en",
@@ -16,8 +20,30 @@
     "zh",
     "ru"
   ],
+  "vocabulary": {
+    "keys": 14,
+    "locales": [
+      "id",
+      "en",
+      "jv",
+      "ar",
+      "zh",
+      "ru"
+    ],
+    "apiErrorCodes": [
+      "badRequest",
+      "unauthorized",
+      "notFound",
+      "conflict",
+      "internal"
+    ]
+  },
   "promotedSymbols": [
+    "API_ERROR_CODES",
     "ENGINE_STATUS_OVERLAY",
+    "ENVELOPE_DICTIONARY_EXTENSION",
+    "EXECUTION_LIFECYCLE",
+    "EXECUTION_MESSAGE_KEYS",
     "FALLBACK_LOCALE",
     "LOCALE_CATALOG",
     "LocalizationRuntime",
@@ -27,10 +53,15 @@
     "SUPPORTED_LOCALES",
     "SUPPORTED_LOCALE_CODES",
     "UnsupportedLocaleError",
+    "buildRunEnvelope",
+    "createEnvelopeRuntime",
     "createLocalizationRuntime",
     "describeLocale",
     "dictionaryParity",
     "directionOf",
+    "envelopeDictionaryParity",
+    "envelopeLocales",
+    "extensionKeys",
     "firstResolvingSource",
     "fromConstant",
     "fromEnvironment",
@@ -38,8 +69,11 @@
     "hasUnfilledPlaceholder",
     "interpolate",
     "isSupportedLocale",
+    "localizeApiError",
+    "localizeNodeStatus",
     "mergeOverlays",
     "normalizeLocale",
+    "type ApiErrorCode",
     "type DictionaryParityReport",
     "type DictionaryPort",
     "type Direction",
@@ -50,23 +84,28 @@
     "type LocaleSourcePort",
     "type LocalizationOptions",
     "type LocalizationSnapshot",
+    "type LocalizedApiError",
+    "type LocalizedNodeStatusLine",
+    "type NodeRunResult",
+    "type RunEnvelope",
+    "type RunEnvelopeInput",
     "type SettingsStatePort",
     "type SupportedLocale"
   ],
   "suite": {
-    "command": "node --test packages/workflow-lego/test/06-localization-runtime.test.ts",
-    "tests": 33,
-    "pass": 33,
+    "command": "node --test packages/workflow-lego/test/{06-localization-runtime,07-localization-envelope}.test.ts",
+    "tests": 50,
+    "pass": 50,
     "fail": 0,
     "exitCode": 0,
-    "durationMs": 196
+    "durationMs": 420
   },
   "checks": [
     {
       "id": "G1",
-      "name": "localization test suite passes",
+      "name": "localization test suites pass (4C runtime + 4E envelope)",
       "ok": true,
-      "detail": "33/33 PASS in 196ms"
+      "detail": "50/50 PASS in 420ms"
     },
     {
       "id": "G2",
@@ -108,13 +147,31 @@
       "id": "G8",
       "name": "Phase 4D: index.ts re-exports every runtime symbol of the localization line",
       "ok": true,
-      "detail": "23 runtime + 12 type symbols promoted"
+      "detail": "34 runtime + 18 type symbols promoted"
     },
     {
       "id": "G9",
       "name": "the promoted surface is runnable from a checkout (localization-inspect)",
       "ok": true,
       "detail": "20 symbols loadable, unknown locale rejected with exit 2"
+    },
+    {
+      "id": "G10",
+      "name": "engine/API vocabulary: six locales, identical key sets, no empty values",
+      "ok": true,
+      "detail": "14 keys x 6 locales"
+    },
+    {
+      "id": "G10b",
+      "name": "run envelope: shape, direction and API error coverage",
+      "ok": true,
+      "detail": "2 node lines, 5 API error codes"
+    },
+    {
+      "id": "G11",
+      "name": "envelope module boundary: only the two in-package collaborators",
+      "ok": true,
+      "detail": "imports: ./localization-runtime.ts, ./backend-localization-service.ts"
     }
   ],
   "verdict": "PASS",

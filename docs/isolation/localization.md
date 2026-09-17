@@ -3,8 +3,8 @@
 **Scope:** native multi-language runtime for the reconstructed backend.
 **Reference:** n8n `2.9.4` (`reference/n8n`, upstream `b6dc2787c45677a29a9612cd27eb911302961a83`) — **unmodified**.
 **Contract:** [`contracts/localization.contract.md`](../../contracts/localization.contract.md)
-**Status:** `TESTED` — 33/33 module tests, 9/9 gate checks, mutations M1–M4 detected, surface promoted
-(Phase 4D).
+**Status:** `TESTED` — 50/50 module tests, 12/12 gate checks, mutations M1–M8 detected, surface
+promoted (Phase 4D) and consumed by the run-data/API seam (Phase 4E).
 **Rust:** none (PROJECT_RULES #1).
 
 ---
@@ -16,7 +16,8 @@
 | 4A | `settings-localization-adapter.ts` — which language the operator picked | agent-1 session | landed on `main` |
 | 4B | `backend-localization-service.ts` — catalog + 6 dictionaries + `translate()` | orchestrator commit `8f3f1af4` | landed on `main` |
 | 4C | `localization-runtime.ts` — resolution → direction → interpolation → engine messages → diagnostics | this session | TESTED |
-| **4D** | **surface promotion** — `src/index.ts` re-exports the line; `tools/localization-inspect.mjs` makes it runnable | **this session** | **TESTED** |
+| 4D | surface promotion — `src/index.ts` re-exports the line; `tools/localization-inspect.mjs` makes it runnable | this session | TESTED |
+| **4E** | **consumer seam** — `localization-envelope.ts`: run envelope, node status lines, API errors, engine/API vocabulary | **this session** | **TESTED** |
 
 Phase 4A gave the project a two-language settings toggle, Phase 4B gave it six dictionaries and a
 lookup function. Neither could answer the questions an executing backend actually asks: *which*
@@ -78,10 +79,13 @@ manifest update — see contract §11.6.
 
 | Check | Command | Result |
 | :--- | :--- | :--- |
-| Module tests | `node --test packages/workflow-lego/test/06-localization-runtime.test.ts` | **33/33 PASS** (L1–L13) |
-| Localization gate | `node tools/localization-gate.mjs` | **9/9 PASS** → `docs/isolation/evidence/localization-gate.json` |
-| Surface parity (4D) | gate check G8 | PASS — 23 runtime + 12 type symbols promoted, UI module excluded |
+| Module tests | `node --test packages/workflow-lego/test/{06,07}-*.test.ts` | **50/50 PASS** (L1–L13, E1–E10) |
+| Localization gate | `node tools/localization-gate.mjs` | **12/12 PASS** → `docs/isolation/evidence/localization-gate.json` |
+| Surface parity (4D/4E) | gate check G8 | PASS — 34 runtime + 18 type symbols promoted, UI module excluded |
 | Runnable surface (4D) | gate check G9 / `npm run localization:inspect` | PASS — `--lang jv --key node.error` → `Gagal dilakokake`; unknown locale exits 2 |
+| Vocabulary (4E) | gate check G10 | PASS — 14 engine/API keys × 6 locales, identical key sets, 0 empty |
+| Run envelope (4E) | gate check G10b / `npm run localization:envelope` | PASS — run block + 2 node lines + 5 API error codes, Arabic envelope `rtl` |
+| Envelope boundary (4E) | gate check G11 | PASS — imports exactly `./localization-runtime.ts` + `./backend-localization-service.ts` |
 | Catalog ↔ 4B drift | gate check G2/G3 | PASS — 6 locales, 9 keys each, field-identical |
 | Dictionary parity | gate check G4 | PASS — 0 missing, 0 extra, 0 empty |
 | RTL | gate check G6 | `ar:rtl`, the other five `ltr` |
@@ -101,7 +105,12 @@ Four mutations were applied to the sources, the gate re-run, and the sources res
 | M2 | `ar` direction flipped to `ltr` in Phase 4B | **exit 1** | G1, G2 (drift gate) |
 | M3 | catalog loses the `jw` alias | **exit 1** | G1 (30/31 — test L1) |
 | M4 | catalog drops the whole `ru` locale | **exit 1** | G1, G2, G3, G7 |
-| — | sources restored | **exit 0** | 31/31 + 7/7 |
+| — | sources restored | **exit 0** | 33/33 + 9/9 |
+| M5 | `jv` vocabulary loses `execution.failed` | **exit 1** | G1, G10 (parity) |
+| M6 | `ru` `run.items` emptied | **exit 1** | G1, G10 (empty value) |
+| M7 | envelope module imports `node:fs` (boundary breach) | **exit 1** | G1, G11 (import list) |
+| M8 | `index.ts` stops promoting the envelope module | **exit 1** | G8 (surface parity) |
+| — | sources restored | **exit 0** | 50/50 + 12/12 |
 
 ### 4.2 The ZERO RUST guard finding — found pre-existing, RESOLVED in this branch
 
@@ -133,6 +142,17 @@ Evidence: `docs/isolation/evidence/rust-guard-restoration.json`. Neither guard a
 return: restoring the crates to the root fails them unless the archive README disappears and the
 repository-root `Cargo.toml` comes back — a decision that belongs to the orchestrator, not a commit.
 
+### 4.3 What the envelope layer consumes
+
+```text
+execution logger ─┐
+API error path  ──┼─► localization-envelope.ts ──► { locale, direction, message, messages,
+run log lines   ──┘        (4E, data in)            labels, nodeLines, diagnostics }
+                                                        │
+                                        persisted run data / HTTP payload  (transport stays
+                                        in the persistence & API LEGOs — 4E shapes, never sends)
+```
+
 ## 5. Known limitations
 
 * `normalizeLocale` resolves only tags the catalog knows: an unknown tag is *reported*, never
@@ -147,9 +167,9 @@ repository-root `Cargo.toml` comes back — a decision that belongs to the orche
 
 ## 6. Next
 
-1. **Phase 4E (proposed):** consume the promoted surface from the API envelope and the execution
-   logger — `runtime.snapshot()` into run data, `runtime.tStatus()` into per-node status lines —
-   then extend the dictionaries beyond the 9 product keys.
+1. **Phase 4F (proposed):** wire the envelope into a live run path — the execution logger writing
+   `buildRunEnvelope()` into persisted run data and the API layer returning `localizeApiError()`
+   payloads — plus a product-key expansion pass beyond the 9 Phase 4B keys + 14 engine/API keys.
 2. Extend the dictionaries: `packages/workflow-lego/src/backend-localization-service.ts` ships 9
    product keys; engine strings live in this module's overlay, so a dictionary refresh cannot silently
    un-translate a status (contract §4.6).

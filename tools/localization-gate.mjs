@@ -35,6 +35,7 @@ import {
 } from '../packages/workflow-lego/src/localization-runtime.ts';
 import * as runtimeModule from '../packages/workflow-lego/src/localization-runtime.ts';
 import * as serviceModule from '../packages/workflow-lego/src/backend-localization-service.ts';
+import * as envelopeModule from '../packages/workflow-lego/src/localization-envelope.ts';
 import {
 	NATIVE_DICTIONARIES,
 	NativeLocalizationService,
@@ -61,9 +62,11 @@ const assert = (condition, message) => {
 };
 
 /* --- G1: the test suite ---------------------------------------------------------------- */
-const testFile = join(ROOT, 'packages', 'workflow-lego', 'test', '06-localization-runtime.test.ts');
+const testFiles = ['06-localization-runtime.test.ts', '07-localization-envelope.test.ts'].map((f) =>
+	join(ROOT, 'packages', 'workflow-lego', 'test', f),
+);
 const started = Date.now();
-const suite = spawnSync(process.execPath, ['--test', testFile], { cwd: ROOT, encoding: 'utf8' });
+const suite = spawnSync(process.execPath, ['--test', ...testFiles], { cwd: ROOT, encoding: 'utf8' });
 const suiteDurationMs = Date.now() - started;
 const suiteOut = `${suite.stdout ?? ''}${suite.stderr ?? ''}`;
 const num = (label) => {
@@ -71,7 +74,7 @@ const num = (label) => {
 	return match ? Number(match[1]) : null;
 };
 const suiteSummary = {
-	command: `node --test packages/workflow-lego/test/06-localization-runtime.test.ts`,
+	command: `node --test packages/workflow-lego/test/{06-localization-runtime,07-localization-envelope}.test.ts`,
 	tests: num('tests'),
 	pass: num('pass'),
 	fail: num('fail'),
@@ -79,7 +82,7 @@ const suiteSummary = {
 	durationMs: suiteDurationMs,
 };
 
-check('G1', 'localization test suite passes', () => {
+check('G1', 'localization test suites pass (4C runtime + 4E envelope)', () => {
 	assert(suiteSummary.tests !== null, 'could not parse the test-runner summary');
 	assert(suiteSummary.fail === 0 && suite.status === 0, `${suiteSummary.fail} failing test(s)`);
 	return `${suiteSummary.pass}/${suiteSummary.tests} PASS in ${suiteDurationMs}ms`;
@@ -182,12 +185,17 @@ const indexSource = readFileSync(join(ROOT, 'packages', 'workflow-lego', 'src', 
 const blocks = exportBlocks(indexSource);
 const promoted = new Set();
 for (const block of blocks) {
-	if (block.specifier === './localization-runtime' || block.specifier === './backend-localization-service') {
+	if (
+		block.specifier === './localization-runtime' ||
+		block.specifier === './backend-localization-service' ||
+		block.specifier === './localization-envelope'
+	) {
 		for (const entry of block.names) promoted.add(`${entry.typeOnly ? 'type ' : ''}${entry.name}`);
 	}
 }
 const runtimeValues = Object.keys(runtimeModule).filter((k) => k !== 'default');
 const serviceValues = Object.keys(serviceModule).filter((k) => k !== 'default');
+const envelopeValues = Object.keys(envelopeModule).filter((k) => k !== 'default');
 const promotedTypes = [...promoted].filter((n) => n.startsWith('type ')).map((n) => n.slice(5));
 
 /** Declared type/class symbols of a module, read from its source (no tsc in this sandbox). */
@@ -201,7 +209,7 @@ const declaredTypes = (file) => {
 };
 
 check('G8', 'Phase 4D: index.ts re-exports every runtime symbol of the localization line', () => {
-	for (const name of [...runtimeValues, ...serviceValues]) {
+	for (const name of [...runtimeValues, ...serviceValues, ...envelopeValues]) {
 		assert(promoted.has(name), `src/index.ts does not re-export runtime symbol "${name}"`);
 	}
 	assert(
@@ -212,11 +220,15 @@ check('G8', 'Phase 4D: index.ts re-exports every runtime symbol of the localizat
 		![...blocks].some((b) => b.specifier.includes('settings-localization-adapter')),
 		'the UI-phase module (settings-localization-adapter) must not enter the package surface',
 	);
-	const declared = new Set([...declaredTypes('localization-runtime.ts'), ...declaredTypes('backend-localization-service.ts')]);
+	const declared = new Set([
+	...declaredTypes('localization-runtime.ts'),
+	...declaredTypes('backend-localization-service.ts'),
+	...declaredTypes('localization-envelope.ts'),
+]);
 	for (const name of promotedTypes) {
 		assert(declared.has(name), `src/index.ts promotes type "${name}" which the module does not declare`);
 	}
-	return `${runtimeValues.length + serviceValues.length} runtime + ${promotedTypes.length} type symbols promoted`;
+	return `${runtimeValues.length + serviceValues.length + envelopeValues.length} runtime + ${promotedTypes.length} type symbols promoted`;
 });
 
 check('G9', 'the promoted surface is runnable from a checkout (localization-inspect)', () => {
@@ -239,6 +251,82 @@ check('G9', 'the promoted surface is runnable from a checkout (localization-insp
 	return `${runtimeValues.length} symbols loadable, unknown locale rejected with exit 2`;
 });
 
+/* --- G10/G11: Phase 4E envelope ---------------------------------------------------------- */
+
+const envelopeParity = envelopeModule.envelopeDictionaryParity('en');
+
+check('G10', 'engine/API vocabulary: six locales, identical key sets, no empty values', () => {
+	assert(envelopeParity.consistent, `inconsistent vocabulary: ${JSON.stringify(envelopeParity)}`);
+	for (const locale of SUPPORTED_LOCALE_CODES) {
+		assert((envelopeParity.missingByLocale[locale] ?? []).length === 0, `missing keys in ${locale}`);
+		assert((envelopeParity.extraByLocale[locale] ?? []).length === 0, `extra keys in ${locale}`);
+	}
+	assert(
+		JSON.stringify([...envelopeModule.envelopeLocales()]) === JSON.stringify([...SUPPORTED_LOCALE_CODES]),
+		'vocabulary locales do not cover the catalog exactly',
+	);
+	const keys = envelopeModule.extensionKeys('en');
+	assert(keys.length >= 10, `only ${keys.length} vocabulary keys`);
+	for (const locale of SUPPORTED_LOCALE_CODES) {
+		const rt = envelopeModule.createEnvelopeRuntime({ localeSource: { getLocale: () => locale } });
+		for (const key of keys) {
+			assert(rt.t(key, { count: 1, ms: 5 }, locale) !== key, `${locale}:${key} untranslated`);
+		}
+		assert(rt.getMissingKeys().length === 0, `${locale}: unexpected diagnostics ${rt.getMissingKeys()}`);
+	}
+	return `${keys.length} keys x ${SUPPORTED_LOCALE_CODES.length} locales`;
+});
+
+check('G10b', 'run envelope: shape, direction and API error coverage', () => {
+	const rt = envelopeModule.createEnvelopeRuntime({ localeSource: { getLocale: () => 'id' } });
+	const envelope = envelopeModule.buildRunEnvelope(
+		{
+			executionId: 'GATE-EX',
+			workflowName: 'gate',
+			status: 'success',
+			nodes: [
+				{ nodeName: 'Webhook', status: 'success', itemCount: 3, durationMs: 12 },
+				{ nodeName: 'Code', status: 'error' },
+			],
+			itemCount: 3,
+			durationMs: 25,
+		},
+		rt,
+	);
+	assert(envelope.locale === 'id' && envelope.direction === 'ltr', `locale/direction ${envelope.locale}/${envelope.direction}`);
+	assert(envelope.message === 'Eksekusi selesai', `message ${envelope.message}`);
+	assert(envelope.labels.items === '3 item' && envelope.labels.nodes === '2 node', `labels ${JSON.stringify(envelope.labels)}`);
+	assert(envelope.nodeLines[1] === '[Code] Gagal dieksekusi', `node line ${envelope.nodeLines[1]}`);
+	assert(envelope.diagnostics.missingKeys.length === 0, `diagnostics ${envelope.diagnostics.missingKeys}`);
+
+	const ar = envelopeModule.buildRunEnvelope(
+		{ executionId: 'GATE-EX-AR', workflowName: 'gate', status: 'error', locale: 'ar' },
+		envelopeModule.createEnvelopeRuntime(),
+	);
+	assert(ar.direction === 'rtl', `arabic direction ${ar.direction}`);
+
+	for (const code of envelopeModule.API_ERROR_CODES) {
+		const localized = envelopeModule.localizeApiError(code, envelopeModule.createEnvelopeRuntime());
+		assert(localized.fallbackUsed === false, `api error ${code} fell back`);
+		assert(localized.message !== code, `api error ${code} returned the raw code`);
+	}
+	const unknown = envelopeModule.localizeApiError('teapot', rt);
+	assert(unknown.fallbackUsed === true && unknown.message === 'teapot', 'unknown codes must be echoed');
+	return `${envelope.nodeLines.length} node lines, ${envelopeModule.API_ERROR_CODES.length} API error codes`;
+});
+
+check('G11', 'envelope module boundary: only the two in-package collaborators', () => {
+	const source = readFileSync(join(ROOT, 'packages', 'workflow-lego', 'src', 'localization-envelope.ts'), 'utf8');
+	const specifiers = [...source.matchAll(/(?:^|\n)\s*(?:import|export)[\s\S]*?from\s+'([^']+)'/g)].map((m) => m[1]);
+	assert(
+		JSON.stringify([...specifiers].sort()) ===
+			JSON.stringify(['./backend-localization-service.ts', './localization-runtime.ts']),
+		`unexpected imports: ${specifiers.join(', ')}`,
+	);
+	assert(!/process\.env/.test(source), 'the envelope layer must not read the environment directly');
+	return `imports: ${specifiers.join(', ')}`;
+});
+
 /* --- evidence + verdict ----------------------------------------------------------------- */
 const failed = checks.filter((c) => !c.ok);
 const record = {
@@ -249,9 +337,18 @@ const record = {
 		'packages/workflow-lego/src/settings-localization-adapter.ts (phase 4A)',
 		'packages/workflow-lego/src/backend-localization-service.ts (phase 4B)',
 		'packages/workflow-lego/src/localization-runtime.ts (phase 4C)',
+		'packages/workflow-lego/src/localization-envelope.ts (phase 4E)',
 	],
-	localizationTestFile: 'packages/workflow-lego/test/06-localization-runtime.test.ts',
+	localizationTestFiles: [
+		'packages/workflow-lego/test/06-localization-runtime.test.ts',
+		'packages/workflow-lego/test/07-localization-envelope.test.ts',
+	],
 	locales: [...SUPPORTED_LOCALE_CODES],
+	vocabulary: {
+		keys: envelopeModule.extensionKeys('en').length,
+		locales: [...envelopeModule.envelopeLocales()],
+		apiErrorCodes: [...envelopeModule.API_ERROR_CODES],
+	},
 	promotedSymbols: [...promoted].sort(),
 	suite: suiteSummary,
 	checks,

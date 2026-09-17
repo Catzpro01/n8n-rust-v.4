@@ -5,12 +5,12 @@
 | Owner | Agent 5 (integration), Phase 4C continuation of the Phase 4A/4B line |
 | LEGO | `localization` — locale resolution, direction, interpolation, engine status messages |
 | Reference | n8n 2.9.4 (`reference/n8n`) for **boundary discipline only**: no runtime behavior of the reference is replaced or re-interpreted here |
-| Implementation | `packages/workflow-lego/src/localization-runtime.ts` (Phase 4C), with `settings-localization-adapter.ts` (4A) and `backend-localization-service.ts` (4B) as injected collaborators |
+| Implementation | `packages/workflow-lego/src/localization-runtime.ts` (Phase 4C) + `localization-envelope.ts` (Phase 4E), with `settings-localization-adapter.ts` (4A) and `backend-localization-service.ts` (4B) as injected collaborators |
 | Blueprint | `docs/isolation/localization.md` |
-| Tests | `packages/workflow-lego/test/06-localization-runtime.test.ts` — **33/33 PASS** |
-| Gate / evidence | `tools/localization-gate.mjs` → `docs/isolation/evidence/localization-gate.json` — **9/9 PASS** |
-| Surface | promoted in Phase 4D: `src/index.ts` re-exports 23 runtime + 12 type symbols (`LocalizationRuntime`, `LOCALE_CATALOG`, `NativeLocalizationService`, …) |
-| Runnable view | `node tools/localization-inspect.mjs [--lang … --key …]` |
+| Tests | gate 6 `06-localization-runtime.test.ts` (33) + gate 7 `07-localization-envelope.test.ts` (17) — **50/50 PASS** |
+| Gate / evidence | `tools/localization-gate.mjs` → `docs/isolation/evidence/localization-gate.json` — **12/12 PASS** |
+| Surface | promoted in Phase 4D/4E: `src/index.ts` re-exports 34 runtime + 18 type symbols (`LocalizationRuntime`, `LOCALE_CATALOG`, `NativeLocalizationService`, `buildRunEnvelope`, …) |
+| Runnable view | `node tools/localization-inspect.mjs [--lang … --key …] [--envelope]` |
 | Status | **TESTED** (no reference path touched, UI untouched) |
 
 ## 1. Purpose
@@ -30,6 +30,9 @@ execution fail because of a translation**.
 | Explicit locale | `string \| null \| undefined` (any BCP-47-ish tag) | caller (API payload, per-run override) |
 | Locale source | `{ getLocale(): string \| null \| undefined }` (port) | Phase 4A settings adapter, request context, `fromEnvironment()` |
 | Dictionaries | `{ translate(key, locale?): string }` (port) | Phase 4B `NativeLocalizationService` |
+| Node run result | `{ nodeName, status, itemCount?, durationMs? }` (plain data) | execution engine / run data |
+| API error code | `'badRequest' \| 'unauthorized' \| 'notFound' \| 'conflict' \| 'internal'` | API layer |
+| Run identity | `{ executionId, workflowName, status, nodes?, itemCount?, durationMs?, locale? }` | execution logger |
 | Overlay | `Record<locale, Record<key, string>>` | product/engine additions, tests |
 | Execution status | `'success' \| 'error' \| 'running' \| 'waiting' \| 'cancelled'` | engine per-node run |
 
@@ -44,6 +47,9 @@ execution fail because of a translation**.
 | `LocalizationRuntime#tStatus(status)` | localized status text (`success` → "Execution succeeded" / "Berhasil dieksekusi") |
 | `LocalizationRuntime#snapshot()` | `{ locale, direction, fallbackLocale, supportedLocales, missingKeys }` — per-run audit payload |
 | `dictionaryParity(dictionaries, ref)` | `{ consistent, missingByLocale, extraByLocale, emptyValues }` |
+| `buildRunEnvelope(input, runtime)` | `RunEnvelope` — locale, direction, `message`, 5 `messages`, `labels`, `nodeStatusLines`/`nodeLines`, `diagnostics.missingKeys`; deterministic and JSON-safe |
+| `localizeNodeStatus(result, runtime, locale?)` | `{ statusText, itemsText?, durationText?, line }` — `line` renders `[Node] Status (n item, m ms)` |
+| `localizeApiError(code, runtime, params?, locale?)` | `{ code, messageKey, message, fallbackUsed }` — unknown codes echo the raw code and record diagnostics |
 
 ## 4. Responsibilities
 
@@ -66,21 +72,31 @@ execution fail because of a translation**.
    `getMissingKeys()` / `snapshot()`; `resetDiagnostics()` scopes the collection to a single run.
 8. **Determinism.** The active locale is instance state; the Phase 4B static `activeLocale` is never
    read or written, so two runtimes cannot influence each other.
+9. **Consumer seam (Phase 4E, `localization-envelope.ts`).** Assemble the values the backend actually
+   persists or returns: the **run envelope** (`buildRunEnvelope()` — execution id, workflow name,
+   status, locale, direction, five lifecycle messages, item/node/duration labels, per-node status
+   lines, diagnostics), the **node status line** (`localizeNodeStatus()`), and the **API error
+   mapping** (`localizeApiError()` over `API_ERROR_CODES`). It also owns the engine/API **vocabulary
+   extension** (`ENVELOPE_DICTIONARY_EXTENSION`, 14 keys × 6 locales) instead of editing the frozen
+   Phase 4B catalogue — the parity rules of §11.2 apply to it unchanged.
 
 ## 5. Non-responsibilities
 
-1. **Not a UI feature.** `editor-ui`, `@n8n/i18n`, `@n8n/design-system` and every Vue bundle in
+1. **Not a transport or a logger.** The envelope layer *shapes* run data and error payloads; it
+   never writes them. Persisting run data, emitting logs and sending HTTP responses belong to the
+   persistence/API LEGOs — they consume the envelope, they are not replaced by it.
+2. **Not a UI feature.** `editor-ui`, `@n8n/i18n`, `@n8n/design-system` and every Vue bundle in
    `reference/n8n` stay byte-identical (PROJECT_RULES #2). This module produces **backend** message
    strings and direction metadata only; it ships no bundle, no CSS and no template.
-2. **Not the dictionary owner.** The canonical language table, the native names and the product
+3. **Not the dictionary owner.** The canonical language table, the native names and the product
    strings belong to Phase 4B (`backend-localization-service.ts`). This module consumes them through
    a port and never imports, re-exports or mutates them.
-3. **Not the settings owner.** Which language the operator picked, where it is persisted and when it
+4. **Not the settings owner.** Which language the operator picked, where it is persisted and when it
    is updated belongs to Phase 4A / the settings API. The runtime only *reads* through a port.
-4. **Not the reference behavior.** n8n 2.9.4 has no equivalent module; nothing in
+5. **Not the reference behavior.** n8n 2.9.4 has no equivalent module; nothing in
    `reference/n8n/packages/workflow` is replaced, wrapped or re-interpreted, and the isolation
    invariants (`boundary audit`, `reference integrity 15050 / f8da35180669`) are untouched.
-5. **No execution semantics.** This module never decides whether a node succeeds, retries or fails;
+6. **No execution semantics.** This module never decides whether a node succeeds, retries or fails;
    it only phrases what already happened.
 
 ## 6. Dependencies
@@ -90,7 +106,8 @@ execution fail because of a translation**.
 | Phase 4B `NativeLocalizationService` | consumed | injected as `dictionaries` port (structural, no import) |
 | Phase 4A `SettingsLocalizationAdapter` | consumed | injected as `localeSource` port via `fromSettingsState()` |
 | Environment (`N8N_DEFAULT_LOCALE`, `LANG`) | consumed | injected via `fromEnvironment(env)` — **no `process.env` read inside the module** |
-| `node:` core modules | **none** | zero imports: the module is pure TypeScript |
+| Execution engine / API / logger | consumed | **data only** — `NodeRunResult`, error codes and run identity are plain values passed in |
+| `node:` core modules | **none** | zero imports: the runtime is pure TypeScript; the envelope imports only the two modules above |
 
 The module deliberately has **no imports at all**, so it cannot create a hidden LEGO edge; the
 `tools/workflow-boundary-map.mjs --check` result is unchanged.
@@ -107,6 +124,8 @@ The module deliberately has **no imports at all**, so it cannot create a hidden 
 | Placeholder without a param | placeholder is preserved verbatim |
 | `tStatus` receives an unmapped status | returns the status string and records `status.<status>` |
 | Unknown locale passed to `directionOf` | `'ltr'` (never throws; renderers cannot crash on it) |
+| API error code without vocabulary | `fallbackUsed: true`, `message` = the raw code, diagnostics record `api.error.<code>` |
+| Node run without item count/duration | the corresponding label is omitted from the envelope (never a placeholder) |
 
 ## 8. Lifecycle
 
@@ -136,6 +155,10 @@ No filesystem, database or network access at any point; the object is a plain in
 | API envelope / error payloads | `runtime.t(key, params)` |
 | Per-node status line | `runtime.tStatus(status)` |
 | Settings API (read path) | `fromSettingsState(adapter)` as `localeSource` |
+| Execution logger / run data | `buildRunEnvelope(input, runtime)` — the block persisted per execution |
+| Run log lines | `localizeNodeStatus(result, runtime)` |
+| API error responses | `localizeApiError(code, runtime)` / `API_ERROR_CODES` |
+| Health endpoint | `runtime.t('api.health.ok')` |
 | CLI / worker bootstrap | `fromEnvironment(env)` / `fromConstant(code)` / `firstResolvingSource(...)` |
 | Evidence tooling | `tools/localization-gate.mjs` (imports the module directly; `--json` for CI) |
 
@@ -147,10 +170,14 @@ No filesystem, database or network access at any point; the object is a plain in
    asserted by test L4 and gate check G4.
 3. **Status coverage:** all five engine statuses resolve in all six locales — gate check G7.
 4. **Additive only:** existing 4A/4B files may gain behavior, but existing signatures, exported
-   names and dictionary contents must not change. This module never edits them at runtime.
-5. **Erasable-syntax TypeScript:** no enums, namespaces or parameter properties, so the module runs
+   names and dictionary contents must not change. This module never edits them at runtime. New
+   vocabulary goes into `ENVELOPE_DICTIONARY_EXTENSION` (4E), never into the frozen 4B catalogue.
+5. **Envelope stability:** the `RunEnvelope` field set is additive-only; consumers may rely on
+   `executionId`, `status`, `locale`, `direction`, `message`, `messages`, `labels` and
+   `nodeLines` always being present, and on the envelope being JSON round-trippable.
+6. **Erasable-syntax TypeScript:** no enums, namespaces or parameter properties, so the module runs
    unchanged under `node --test` (Node ≥ 22) and under `tsc`.
-6. **Surface promotion (Phase 4D).** `src/index.ts` re-exports every runtime symbol of
+7. **Surface promotion (Phase 4D/4E).** `src/index.ts` re-exports every runtime symbol of
    `localization-runtime.ts` and `backend-localization-service.ts`, and those two modules import
    nothing — so the promotion adds surface without adding a dependency edge (the port-surface
    manifest is unchanged because the *consumed* port set is unchanged). The UI-owned Phase 4A module
