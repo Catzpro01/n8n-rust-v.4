@@ -1,0 +1,123 @@
+id: TASK-414-phase3-node-filter-execution
+agent: arena-worker
+lego: node
+module: node-filter-execution
+phase: 3
+title: "Node LEGO: filter execution + webhook paths + cron options — executeFilter/executeFilterCondition/arrayContainsValue/parseRegexPattern, getNodeWebhookPath/Url, cronNodeOptions (ref: filter-parameter.ts L196-424, node-helpers.ts L56-241 + L1057-1101)"
+status: SUBMITTED_FOR_REVIEW
+
+# Context: TASK-413 landed the filter VALIDATION half. This task closes the remaining
+# `node-helpers.ts` surface listed in contract §12.2 item 7: the filter EXECUTION half (the
+# evaluator the Filter node and the IF node run on every item), the two webhook-path helpers the
+# webhook/trigger lanes consume, and `cronNodeOptions` (the Schedule Trigger property literal).
+# After this task, everything in `node-helpers.ts` L1-1949 and `filter-parameter.ts` is runnable
+# in the LEGO; only the `jsonrepair` recovery, the node-reference parser and workflow validation
+# stay out of scope.
+#
+# Reference (read-only, line-cited in the module docblocks):
+# - reference/n8n/packages/workflow/src/node-parameters/filter-parameter.ts
+#     parseRegexPattern L196-207, arrayContainsValue L209-220, executeFilterCondition L222-404
+#     (incl. the reference's intentional case fall-throughs), executeFilter L409-424
+# - reference/n8n/packages/workflow/src/node-helpers.ts
+#     cronNodeOptions L56-241, getNodeWebhookPath L1057-1084, getNodeWebhookUrl L1087-1101
+# - Oracles: test/filter-parameter.test.ts (combinators L34, case sensitivity L60/L84, version
+#   handling L236-275, type errors L111-241, arrayContainsValue L1329-1359),
+#   test/node-helpers.test.ts describe('getNodeWebhookPath') L6211
+#
+# Sanctioned delta added by this task (contract §12.2):
+# - DELTA-06: the reference warns through the `LoggerProxy` module singleton (two call sites).
+#   The port takes a logger on the `metadata` / `executeFilter` options, default no-op (rule E01).
+#   The same metadata carries the DELTA-04 `dateTimeFactory`, so date conditions are parsed by
+#   the same factory as the rest of the package and no date library is imported.
+
+allowed_paths:
+  - tasks/TASK-414-phase3-node-filter-execution.yaml
+  - results/TASK-414-phase3-node-filter-execution.md
+  - packages/node-lego/**
+  - tools/node-lego-differential.mjs
+  - tools/node-lego-gate.mjs
+  - contracts/node.contract.md
+  - docs/isolation/node.md
+  - docs/isolation/evidence/node-lego-gate.json
+  - docs/isolation/LEGO-MASTER-MAP.md
+  - README.md
+
+forbidden_paths:
+  - reference/n8n/**
+  - crates/**
+  - apps/**
+  - packages/frontend/**
+  - packages/workflow-lego/**
+  - packages/trigger-lego/**
+  - packages/webhook-lego/**
+  - packages/scheduler-lego/**
+  - packages/persistence-lego/**
+  - packages/connection-lego/**
+  - packages/expression-lego/**
+  - packages/reconstructed-engine/**
+  - packages/execution-engine/**
+
+requires:
+  - reference/n8n/packages/workflow/src/node-parameters/filter-parameter.ts
+  - reference/n8n/packages/workflow/src/node-helpers.ts
+  - reference/n8n/packages/workflow/test/filter-parameter.test.ts
+  - reference/n8n/packages/workflow/test/node-helpers.test.ts
+  - packages/node-lego/src/type-validation.mjs
+  - packages/node-lego/src/parameter-issues.mjs
+
+source_modification: read-only-reference   # no file under reference/n8n/** is touched
+
+operations:
+  - name: read_reference
+    args: { path: reference/n8n/packages/workflow/src/node-parameters/filter-parameter.ts, lines: "196-424" }
+  - name: read_reference
+    args: { path: reference/n8n/packages/workflow/src/node-helpers.ts, lines: "56-241, 1057-1101" }
+  - name: write_file
+    args: { path: packages/node-lego/src/webhook-path.mjs }
+  - name: write_file
+    args: { path: packages/node-lego/src/cron-node-options.mjs }
+  - name: edit_file
+    args: { path: packages/node-lego/src/filter-parameter.mjs }
+  - name: edit_file
+    args: { path: packages/node-lego/src/index.mjs }
+  - name: write_file
+    args: { path: packages/node-lego/test/filter-execution.test.mjs }
+  - name: edit_file
+    args: { path: tools/node-lego-differential.mjs }
+  - name: edit_file
+    args: { path: tools/node-lego-gate.mjs }
+  - name: run_shell
+    args: { cmd: "node --test packages/node-lego/test/*.test.mjs", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "node tools/node-lego-differential.mjs", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "node tools/node-lego-gate.mjs", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "npm run verify:all", expect_exit: 0 }
+  - name: write_file
+    args: { path: results/TASK-414-phase3-node-filter-execution.md }
+
+acceptance:
+  - `executeFilter` reproduces the `and`/`or` combinators (including the empty-list short-circuits)
+    and the unknown-combinator warning path
+  - `executeFilterCondition` reproduces every operator family bug-for-bug: string (incl.
+    `/pattern/flags` literals via `parseRegexPattern`, `empty`/`notEmpty`), number, boolean
+    (`true`/`false`/`equals`/`notEquals` and the version-dependent `'false'` coercion),
+    array (membership with `ignoreCase` + the length operators), object, `dateTime` via
+    `toMillis()`, `exists`/`notExists` before the type switch, and the reference's intentional
+    switch fall-through for unknown operations
+  - type errors throw `FilterError` with the reference message/description and `name === 'Error'`
+    (DELTA-03), and the logger is injectable with a no-op default (DELTA-06)
+  - `arrayContainsValue` matches the oracle's 8-case matrix (ignoreCase applies to string needles only)
+  - `getNodeWebhookPath`/`getNodeWebhookUrl` match the reference on the static, dynamic,
+    `isFullPath` and `restartWebhook` paths, incl. lower-cased URI-encoded node names
+  - `cronNodeOptions` is byte-identical to the published build's literal (differentially compared)
+  - differential vs the published `n8n-workflow@2.9.1` build: **0 divergences** across ≥1600
+    comparisons (N23 163, N24 18 new) with the falsifiability probe re-run (each injected
+    mutation must produce a DIVERGE)
+  - gate `N01`…`N07` PASS; `npm run verify:all` exit 0; conformance 42/42; boundary PASS
+  - no file under reference/, crates/, apps/, the frontend or a peer package is touched
+
+merge_condition:
+  - regression_gate_pass
+  - no_contract_violation

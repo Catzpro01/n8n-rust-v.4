@@ -19,7 +19,7 @@ is a Rust replacement attempted.
 | **EXECUTION ENGINE (Phase 3, JS reconstruction)** | **✅ IMPLEMENTED · TESTED 60/60 · GATE 10/10 — see [`docs/isolation/execution.md`](docs/isolation/execution.md)** |
 | **CONNECTION LEGO 03 (Phase 3, TS reconstruction)** | **✅ IMPLEMENTED · VERIFIED 52/52 — see [`packages/connection-lego/`](packages/connection-lego/README.md)** |
 | **WORKFLOW MODEL LEGO 01 (Phase 3, TS reconstruction)** | **✅ IMPLEMENTED · VERIFIED 26/26 — see [`packages/workflow-model-lego/`](packages/workflow-model-lego/README.md)** |
-| **NODE LEGO 02 (Phase 3, JS reconstruction)** | **✅ IMPLEMENTED · TESTED 82/82 · GATE 7/7 · DIFFERENTIAL 1422 agree / 0 diverge — see [`docs/isolation/node.md`](docs/isolation/node.md) §5** |
+| **NODE LEGO 02 (Phase 3, JS reconstruction)** | **✅ IMPLEMENTED · TESTED 93/93 · GATE 7/7 · DIFFERENTIAL 1609 agree / 0 diverge — see [`docs/isolation/node.md`](docs/isolation/node.md) §5** |
 | **TRIGGER (406) · WEBHOOK (407) LEGOs (Phase 3)** | ✅ IMPLEMENTED (peer lanes) — see `docs/isolation/LEGO-MASTER-MAP.md` §5 |
 | RUST PORT (crates/**, apps/**) | ▶ Phase 3 open for the port track (`docs/isolation/PHASE-3-OPENING-RECORD.md`); the JS reconstruction track stays ZERO RUST |
 
@@ -36,7 +36,7 @@ contract. It does **not** mean it was replaced by Rust.
 - `packages/execution-engine/` : reconstructed n8n 2.9.4 execute loop, node context/data proxy and error/retry policy (JavaScript ESM, zero dependencies)
 - `packages/connection-lego/` : reconstructed n8n 2.9.4 connection routing — `common/**`, `graph/graph-utils.ts`, `connections-diff.ts` (TypeScript, accepted by the reference-recorded goldens)
 - `packages/workflow-model-lego/` : reconstructed n8n 2.9.4 `Workflow` aggregate — nodes map, connection indexes, `renameNode` (incl. defect D-08), `calculateWorkflowChecksum` (TypeScript; graph traversal consumed from `connection-lego` via port CD-02)
-- `packages/node-lego/` : reconstructed Node Model pure functions — `NodeHelpers` (connection IO, display conditions, parameter resolution, parameter issues, naming/tool helpers), `node-validation.ts`, `node-parameters/*`, `type-validation.ts`, `utils.deepCopy` (JavaScript ESM, zero dependencies, differentially pinned to `n8n-workflow@2.9.1`)
+- `packages/node-lego/` : reconstructed Node Model pure functions — `NodeHelpers` (connection IO, display conditions, parameter resolution, parameter issues, filter execution, webhook paths), `node-validation.ts`, `node-parameters/*`, `type-validation.ts`, `utils.deepCopy` (JavaScript ESM, zero dependencies, differentially pinned to `n8n-workflow@2.9.1`)
 - `tools/` : boundary mapper, kernel/port/reference gates, isolation extractor, model digest, gate runner, live engine harness
 - `tests/reference/` : golden workflows + baseline smoke test evidence
 - `tasks/`, `results/` : inbound task manifests and execution results

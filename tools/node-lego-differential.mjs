@@ -89,6 +89,9 @@ const REF = {
 	tryToParseJwt: reference.tryToParseJwt,
 	tryToParseJsonToFormFields: reference.tryToParseJsonToFormFields,
 	validateFilterParameter: reference.validateFilterParameter,
+	executeFilter: reference.executeFilter,
+	executeFilterCondition: reference.executeFilterCondition,
+	arrayContainsValue: reference.arrayContainsValue,
 	FilterError: reference.FilterError,
 	deepCopy: reference.deepCopy,
 	isExpression: reference.isExpression,
@@ -135,6 +138,8 @@ const EXAMINED_SURFACE = [
 	'tryToParseArray', 'tryToParseObject', 'tryToParseBinary', 'tryToParseUrl', 'tryToParseJwt',
 	'tryToParseJsonToFormFields', 'validateFilterParameter', 'FilterError',
 	'getNodeParametersIssues', 'getParameterIssues', 'mergeIssues', 'getContext',
+	'executeFilter', 'executeFilterCondition', 'arrayContainsValue', 'getNodeWebhookPath',
+	'getNodeWebhookUrl', 'cronNodeOptions',
 ];
 
 /* --- comparison ------------------------------------------------------------ */
@@ -1008,8 +1013,145 @@ scenario('N22', 'getNodeParametersIssues / getParameterIssues / mergeIssues / ge
 		req('a', 'A', 'string'), {}, '', node({ a: '' }), null)));
 });
 
+
+/* --- N23: filter-parameter execution ------------------------------------- */
+scenario('N23', 'executeFilter / executeFilterCondition / arrayContainsValue', (api, capture) => {
+	const condition = (type, operation, left, right, extra = {}) => ({
+		operator: { type, operation, ...extra },
+		leftValue: left,
+		rightValue: right,
+	});
+	const filterValue = (conditions, options = {}, combinator = 'and') => ({
+		options: { caseSensitive: true, leftValue: '', typeValidation: 'loose', version: 2, ...options },
+		conditions,
+		combinator,
+	});
+	const metadata = { index: 0, itemIndex: 0, dateTimeFactory };
+
+	const conditions = [
+		['string equals', condition('string', 'equals', 'a', 'a')],
+		['string equals miss', condition('string', 'equals', 'a', 'b')],
+		['string equals ignoreCase', condition('string', 'equals', 'A', 'a')],
+		['string notEquals', condition('string', 'notEquals', 'a', 'b')],
+		['string contains', condition('string', 'contains', 'hello world', 'world')],
+		['string notContains', condition('string', 'notContains', 'hello', 'zz')],
+		['string startsWith', condition('string', 'startsWith', 'hello', 'he')],
+		['string notStartsWith', condition('string', 'notStartsWith', 'hello', 'xx')],
+		['string endsWith', condition('string', 'endsWith', 'hello', 'lo')],
+		['string empty', condition('string', 'empty', '', 'x')],
+		['string notEmpty', condition('string', 'notEmpty', 'x', '')],
+		['string regex literal', condition('string', 'regex', 'abc123', '/^abc\\d+$/')],
+		['string regex plain', condition('string', 'regex', 'abc123', 'abc')],
+		['string notRegex', condition('string', 'notRegex', 'abc', '/[0-9]+/')],
+		['string regex flags', condition('string', 'regex', 'ABC', '/abc/i')],
+		['number equals', condition('number', 'equals', 5, 5)],
+		['number gt', condition('number', 'gt', 5, 3)],
+		['number lte', condition('number', 'lte', 3, 3)],
+		['number empty', condition('number', 'empty', null, 1)],
+		['number unknown op (falls through)', condition('number', 'weird', 5, 3)],
+		['boolean true', condition('boolean', 'true', true, '')],
+		['boolean false', condition('boolean', 'false', false, '')],
+		['boolean equals', condition('boolean', 'equals', true, true)],
+		['array contains', condition('array', 'contains', ['a', 'B'], 'b')],
+		['array contains miss', condition('array', 'contains', ['a'], 'z')],
+		['array contains ignoreCase', condition('array', 'contains', ['A'], 'a')],
+		['array lengthEquals', condition('array', 'lengthEquals', [1, 2], 2)],
+		['array lengthGt', condition('array', 'lengthGt', [1, 2], 3)],
+		['array empty', condition('array', 'empty', [], 1)],
+		['array notEmpty', condition('array', 'notEmpty', [1], 1)],
+		['object empty', condition('object', 'empty', {}, '')],
+		['object notEmpty', condition('object', 'notEmpty', { a: 1 }, '')],
+		['exists', condition('string', 'exists', 'x', '')],
+		['exists null', condition('string', 'exists', null, '')],
+		['notExists', condition('string', 'notExists', undefined, '')],
+		['exists on array', condition('array', 'exists', [1], '')],
+		['unknown type', condition('nope', 'equals', 1, 1)],
+		['unknown operation', condition('string', 'nope', 'a', 'a')],
+		['dateTime after', condition('dateTime', 'after', '2024-01-02T00:00:00Z', '2024-01-01T00:00:00Z')],
+		['dateTime before', condition('dateTime', 'before', '2024-01-01T00:00:00Z', '2024-01-02T00:00:00Z')],
+		['dateTime equals', condition('dateTime', 'equals', '2024-01-01T00:00:00Z', '2024-01-01T00:00:00Z')],
+		['dateTime notEquals', condition('dateTime', 'notEquals', '2024-01-01T00:00:00Z', '2024-01-02T00:00:00Z')],
+		['dateTime afterOrEquals', condition('dateTime', 'afterOrEquals', '2024-01-01T00:00:00Z', '2024-01-01T00:00:00Z')],
+		['dateTime empty', condition('dateTime', 'empty', null, '2024-01-01T00:00:00Z')],
+		['dateTime missing side', condition('dateTime', 'after', '2024-01-01T00:00:00Z', null)],
+		['dateTime invalid', condition('dateTime', 'after', 'not a date', '2024-01-01T00:00:00Z')],
+		['type error both sides', condition('number', 'equals', 'nope', 'also nope')],
+		['type error strict', condition('number', 'equals', 'nope', 1)],
+		['unresolved expression left', condition('number', 'equals', '={{ $json.n }}', 1)],
+	];
+	conditions.forEach(([label, value], index) => {
+		capture(`condition [${index}] ${label}`, safe(() => api.executeFilterCondition(value, { caseSensitive: true, typeValidation: 'loose', version: 2 }, metadata)));
+		capture(`condition ignoreCase [${index}] ${label}`, safe(() => api.executeFilterCondition(value, { caseSensitive: false, typeValidation: 'loose', version: 2 }, metadata)));
+		capture(`condition strict [${index}] ${label}`, safe(() => api.executeFilterCondition(value, { caseSensitive: true, typeValidation: 'strict', version: 2 }, metadata)));
+	});
+
+	const filters = [
+		filterValue([condition('number', 'equals', 1, 1), condition('number', 'equals', 2, 3)]),
+		{ ...filterValue([condition('number', 'equals', 1, 1), condition('number', 'equals', 2, 3)]), combinator: 'or' },
+		{ ...filterValue([]), combinator: 'or' },
+		filterValue([]),
+		{ ...filterValue([condition('number', 'equals', 1, 1)]), combinator: 'xor' },
+		filterValue([condition('string', 'equals', 'a', 'a')], { caseSensitive: false }),
+		filterValue([condition('dateTime', 'after', '2024-01-02T00:00:00Z', '2024-01-01T00:00:00Z')]),
+		filterValue([condition('number', 'equals', 'nope', 'also nope')], { typeValidation: 'strict' }),
+	];
+	filters.forEach((value, index) => {
+		capture(`executeFilter [${index}]`, safe(() => api.executeFilter(value, { itemIndex: 0 })));
+	});
+
+	const arrays = [
+		[['a', 'b'], 'a', false],
+		[['a', 'b'], 'c', false],
+		[['A'], 'a', true],
+		[['A'], 'a', false],
+		[[1, 2], 1, true],
+		[[1, 2], '1', false],
+		[[], 'a', true],
+		[['a'], 1, true],
+	];
+	arrays.forEach(([array, value, ignoreCase], index) => {
+		capture(`arrayContainsValue [${index}]`, api.arrayContainsValue(array, value, ignoreCase));
+	});
+});
+
+/* --- N24: webhook paths + cronNodeOptions -------------------------------- */
+scenario('N24', 'getNodeWebhookPath / getNodeWebhookUrl / cronNodeOptions', (api, capture) => {
+	const node = (extra = {}) => ({ name: 'My Node', type: 'n8n-nodes-base.webhook', parameters: {}, ...extra });
+	const cases = [
+		['wf', node(), 'hook', undefined, undefined],
+		['wf', node(), 'hook', undefined, true],
+		['wf', node(), 'hook', false, false],
+		['wf', node(), '', undefined, undefined],
+		['wf', node({ webhookId: 'abc' }), 'hook', undefined, undefined],
+		['wf', node({ webhookId: 'abc' }), 'hook', true, undefined],
+		['wf', node({ webhookId: 'abc' }), '', true, undefined],
+		['wf', node({ webhookId: 'abc' }), 'hook', true, true],
+		['', node(), 'hook', undefined, undefined],
+	];
+	cases.forEach(([workflowId, n, path, isFullPath, restartWebhook], index) => {
+		capture(`getNodeWebhookPath [${index}]`, api.getNodeWebhookPath(workflowId, n, path, isFullPath, restartWebhook));
+	});
+
+	const urlCases = [
+		['https://base', 'wf', node(), 'hook', undefined],
+		['https://base', 'wf', node({ webhookId: 'abc' }), ':id', undefined],
+		['https://base', 'wf', node({ webhookId: 'abc' }), 'x/:id', undefined],
+		['https://base', 'wf', node({ webhookId: 'abc' }), ':id', true],
+		['https://base', 'wf', node(), '/hook', undefined],
+		['https://base', 'wf', node({ webhookId: 'abc' }), 'hook', true],
+		['https://base', 'wf', node({ name: 'Ünïcode Node' }), 'hook', undefined],
+	];
+	urlCases.forEach(([baseUrl, workflowId, n, path, isFullPath], index) => {
+		capture(`getNodeWebhookUrl [${index}]`, api.getNodeWebhookUrl(baseUrl, workflowId, n, path, isFullPath));
+	});
+
+	capture('cronNodeOptions structure', api.cronNodeOptions);
+	capture('cronNodeOptions mode values', api.cronNodeOptions[0].values[0].options.map((option) => option.value));
+});
+
 /* --- report -------------------------------------------------------------- */
-const missing = EXAMINED_SURFACE.filter((name) => typeof port[name] !== 'function');
+// values are allowed too (e.g. `cronNodeOptions`) — only presence matters here
+const missing = EXAMINED_SURFACE.filter((name) => !(name in port));
 if (missing.length) {
 	harnessErrors++;
 	console.error(`[HARNESS-ERROR] port exports missing: ${missing.join(', ')}`);

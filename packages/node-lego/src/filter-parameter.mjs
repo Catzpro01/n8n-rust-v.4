@@ -16,18 +16,28 @@
  * therefore unreachable and the function returns `{}` for every input — and it would throw
  * a TypeError (`issues[key].push` on `undefined`) if it ever were reached.
  *
- * Not reconstructed in this slice (contract §12.2.6): the execution half of the same file —
- * `arrayContainsValue`, `executeFilterCondition`, `executeFilter`, `parseRegexPattern` —
- * which evaluates conditions against data and needs the luxon-backed date operators. The
- * `validateFilterParameter` path never calls them.
+ *   reference/n8n/packages/workflow/src/node-parameters/filter-parameter.ts (execution half)
+ *     - parseRegexPattern               L196-207
+ *     - arrayContainsValue              L209-220
+ *     - executeFilterCondition          L222-404
+ *     - executeFilter                   L409-424
+ *
+ * DELTA-06: the reference logs through the `LoggerProxy` module singleton. A LEGO must not own
+ * a logging transport, so the two `warn` call sites (`unknown operator` and
+ * `unknown filter combinator`) go through an injected logger carried on the `metadata` object /
+ * the `executeFilter` options — default is a no-op, matching rule E01 elsewhere. The same
+ * metadata carries the DELTA-04 `dateTimeFactory` into `parseSingleFilterValue`, so date
+ * conditions are parsed by the same factory as everywhere else in this package.
  *
  * Boundaries: leaf-ish module — `./errors.mjs` (ApplicationError, DELTA-03) and
- * `./type-validation.mjs` (validateFieldType). No logging adapter: the reference's
- * `LoggerProxy.warn` sits in `executeFilter`, which is not reconstructed here.
+ * `./type-validation.mjs` (validateFieldType). Date operators compare via the `toMillis()` of
+ * whatever the DELTA-04 date-time factory returned, so no date library is imported here.
  */
 
 import { ApplicationError } from './errors.mjs';
 import { validateFieldType } from './type-validation.mjs';
+
+const NOOP_LOGGER = { warn: () => {} };
 
 export class FilterError extends ApplicationError {
 	constructor(message, description) {
@@ -36,7 +46,7 @@ export class FilterError extends ApplicationError {
 	}
 }
 
-function parseSingleFilterValue(value, type, strict = false, version = 1) {
+function parseSingleFilterValue(value, type, strict = false, version = 1, dateTimeFactory) {
 	if (type === 'any' || value === null || value === undefined) {
 		return { valid: true, newValue: value };
 	}
@@ -62,7 +72,7 @@ function parseSingleFilterValue(value, type, strict = false, version = 1) {
 		}
 	}
 
-	return validateFieldType('filter', value, type, { strict, parseStrings: true });
+	return validateFieldType('filter', value, type, { strict, parseStrings: true, dateTimeFactory });
 }
 
 const withIndefiniteArticle = (noun) => {
@@ -83,8 +93,15 @@ function parseFilterConditionValues(condition, options, metadata) {
 		operator.type,
 		strict,
 		version,
+		metadata.dateTimeFactory,
 	);
-	const parsedRightValue = parseSingleFilterValue(condition.rightValue, rightType, strict, version);
+	const parsedRightValue = parseSingleFilterValue(
+		condition.rightValue,
+		rightType,
+		strict,
+		version,
+		metadata.dateTimeFactory,
+	);
 	const leftValid =
 		parsedLeftValue.valid ||
 		(metadata.unresolvedExpressions &&
@@ -206,3 +223,229 @@ export const validateFilterParameter = (nodeProperties, value) => {
 		return issues;
 	}, {});
 };
+
+function parseRegexPattern(pattern) {
+	const regexMatch = (pattern || '').match(new RegExp('^/(.*?)/([gimusy]*)$'));
+	let regex;
+
+	if (!regexMatch) {
+		regex = new RegExp((pattern || '').toString());
+	} else {
+		regex = new RegExp(regexMatch[1], regexMatch[2]);
+	}
+
+	return regex;
+}
+
+export function arrayContainsValue(array, value, ignoreCase) {
+	if (ignoreCase && typeof value === 'string') {
+		return array.some((item) => {
+			if (typeof item !== 'string') {
+				return false;
+			}
+			return item.toString().toLocaleLowerCase() === value.toLocaleLowerCase();
+		});
+	}
+	return array.includes(value);
+}
+
+export function executeFilterCondition(condition, filterOptions, metadata = {}) {
+	const ignoreCase = !filterOptions.caseSensitive;
+	const { operator } = condition;
+	const parsedValues = parseFilterConditionValues(condition, filterOptions, metadata);
+
+	if (!parsedValues.ok) {
+		throw parsedValues.error;
+	}
+
+	let { left: leftValue, right: rightValue } = parsedValues.result;
+
+	const exists = leftValue !== undefined && leftValue !== null && !Number.isNaN(leftValue);
+	if (condition.operator.operation === 'exists') {
+		return exists;
+	} else if (condition.operator.operation === 'notExists') {
+		return !exists;
+	}
+
+	switch (operator.type) {
+		case 'string': {
+			if (ignoreCase) {
+				if (typeof leftValue === 'string') {
+					leftValue = leftValue.toLocaleLowerCase();
+				}
+
+				if (
+					typeof rightValue === 'string' &&
+					!(condition.operator.operation === 'regex' || condition.operator.operation === 'notRegex')
+				) {
+					rightValue = rightValue.toLocaleLowerCase();
+				}
+			}
+
+			const left = leftValue ?? '';
+			const right = rightValue ?? '';
+
+			switch (condition.operator.operation) {
+				case 'empty':
+					return left.length === 0;
+				case 'notEmpty':
+					return left.length !== 0;
+				case 'equals':
+					return left === right;
+				case 'notEquals':
+					return left !== right;
+				case 'contains':
+					return left.includes(right);
+				case 'notContains':
+					return !left.includes(right);
+				case 'startsWith':
+					return left.startsWith(right);
+				case 'notStartsWith':
+					return !left.startsWith(right);
+				case 'endsWith':
+					return left.endsWith(right);
+				case 'notEndsWith':
+					return !left.endsWith(right);
+				case 'regex':
+					return parseRegexPattern(right).test(left);
+				case 'notRegex':
+					return !parseRegexPattern(right).test(left);
+			}
+
+			break;
+		}
+		case 'number': {
+			const left = leftValue;
+			const right = rightValue;
+
+			switch (condition.operator.operation) {
+				case 'empty':
+					return !exists;
+				case 'notEmpty':
+					return exists;
+				case 'equals':
+					return left === right;
+				case 'notEquals':
+					return left !== right;
+				case 'gt':
+					return left > right;
+				case 'lt':
+					return left < right;
+				case 'gte':
+					return left >= right;
+				case 'lte':
+					return left <= right;
+			}
+		}
+		// eslint-disable-next-line no-fallthrough -- mirrors the reference's switch (no break)
+		case 'dateTime': {
+			const left = leftValue;
+			const right = rightValue;
+
+			if (condition.operator.operation === 'empty') {
+				return !exists;
+			} else if (condition.operator.operation === 'notEmpty') {
+				return exists;
+			}
+
+			if (!left || !right) {
+				return false;
+			}
+
+			switch (condition.operator.operation) {
+				case 'equals':
+					return left.toMillis() === right.toMillis();
+				case 'notEquals':
+					return left.toMillis() !== right.toMillis();
+				case 'after':
+					return left.toMillis() > right.toMillis();
+				case 'before':
+					return left.toMillis() < right.toMillis();
+				case 'afterOrEquals':
+					return left.toMillis() >= right.toMillis();
+				case 'beforeOrEquals':
+					return left.toMillis() <= right.toMillis();
+			}
+		}
+		// eslint-disable-next-line no-fallthrough -- mirrors the reference's switch (no break)
+		case 'boolean': {
+			const left = leftValue;
+			const right = rightValue;
+
+			switch (condition.operator.operation) {
+				case 'empty':
+					return !exists;
+				case 'notEmpty':
+					return exists;
+				case 'true':
+					return left;
+				case 'false':
+					return !left;
+				case 'equals':
+					return left === right;
+				case 'notEquals':
+					return left !== right;
+			}
+		}
+		// eslint-disable-next-line no-fallthrough -- mirrors the reference's switch (no break)
+		case 'array': {
+			const left = leftValue ?? [];
+			const rightNumber = rightValue;
+
+			switch (condition.operator.operation) {
+				case 'contains':
+					return arrayContainsValue(left, rightValue, ignoreCase);
+				case 'notContains':
+					return !arrayContainsValue(left, rightValue, ignoreCase);
+				case 'lengthEquals':
+					return left.length === rightNumber;
+				case 'lengthNotEquals':
+					return left.length !== rightNumber;
+				case 'lengthGt':
+					return left.length > rightNumber;
+				case 'lengthLt':
+					return left.length < rightNumber;
+				case 'lengthGte':
+					return left.length >= rightNumber;
+				case 'lengthLte':
+					return left.length <= rightNumber;
+				case 'empty':
+					return left.length === 0;
+				case 'notEmpty':
+					return left.length !== 0;
+			}
+		}
+		// eslint-disable-next-line no-fallthrough -- mirrors the reference's switch (no break)
+		case 'object': {
+			const left = leftValue;
+
+			switch (condition.operator.operation) {
+				case 'empty':
+					return !left || Object.keys(left).length === 0;
+				case 'notEmpty':
+					return !!left && Object.keys(left).length !== 0;
+			}
+		}
+	}
+
+	(metadata.logger ?? NOOP_LOGGER).warn(
+		`Unknown filter parameter operator "${operator.type}:${operator.operation}"`,
+	);
+
+	return false;
+}
+
+export function executeFilter(value, { itemIndex, logger } = {}) {
+	const conditionPass = (condition, index) =>
+		executeFilterCondition(condition, value.options, { index, itemIndex, logger });
+
+	if (value.combinator === 'and') {
+		return value.conditions.every(conditionPass);
+	} else if (value.combinator === 'or') {
+		return value.conditions.some(conditionPass);
+	}
+
+	(logger ?? NOOP_LOGGER).warn(`Unknown filter combinator "${value.combinator}"`);
+
+	return false;
+}
