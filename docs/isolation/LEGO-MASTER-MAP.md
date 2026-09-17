@@ -36,7 +36,7 @@ All 8 secondary LEGOs have been contracted and isolated under Phase 2 boundary r
 | Webhook | Agent 4 | `contracts/webhook.contract.md` ✅ | `docs/isolation/webhook.md` ✅ | golden fixture + routing test ✅ | **ISOLATED** |
 | Scheduler | Agent 4 | `contracts/scheduler.contract.md` ✅ | `docs/isolation/scheduler.md` ✅ | golden fixture + scheduler test ✅ | **ISOLATED** |
 | Persistence | Agent 4 | `contracts/persistence.contract.md` ✅ | `docs/isolation/persistence.md` ✅ | golden fixture + persistence test ✅ | **ISOLATED** |
-| Credentials | Agent 4 | `contracts/credentials.contract.md` ✅ | `docs/isolation/credentials.md` ✅ | golden fixture + credentials test ✅ | **ISOLATED** |
+| Credentials | Agent 4 | `contracts/credentials.contract.md` ✅ | `docs/isolation/credentials.md` ✅ | `packages/credentials-lego` 22/22 ✅ · gate 6/6 ✅ | **VERIFIED** |
 | API | Agent 4 | `contracts/api.contract.md` ✅ | `docs/isolation/api.md` ✅ | golden fixture + envelope test ✅ | **ISOLATED** |
 
 ## 3. Source-of-truth mapping (verified against source, not assumed)
@@ -101,6 +101,7 @@ asserts that confinement.
 | `TASK-413-phase3-node-parameter-issues` | node (field-type validation + issues engine, full surface) | `contracts/node.contract.md` §12 ✅ | `docs/isolation/node.md` §5 ✅ | `packages/node-lego/test/node-model.test.mjs` 74/74 ✅ + `parameter-issues.test.mjs` 8/8 ✅ (N19/N20/N21/N22 = 1107 new differential comparisons) | `tools/node-lego-gate.mjs` 7/7 ✅ (`N05` differential 1422 agree / 0 diverge) | **SUBMITTED_FOR_REVIEW** |
 | `TASK-414-phase3-node-filter-execution` | node (filter execution, webhook paths, cron options) | `contracts/node.contract.md` §12 ✅ | `docs/isolation/node.md` §5 ✅ | `packages/node-lego/test/filter-execution.test.mjs` 11/11 ✅ (N23/N24 = 181 new differential comparisons) | `tools/node-lego-gate.mjs` 7/7 ✅ (`N05` differential 1609 agree / 0 diverge) | **SUBMITTED_FOR_REVIEW** |
 | `TASK-415-phase3-validation-lego` | validation (LEGO 04) | `contracts/validation.contract.md` ✅ | `docs/isolation/validation.md` ✅ | `packages/validation-lego/test/conformance.test.mjs` 20/20 ✅ (Golden cases A/B/C/D, parity with n8n-workflow, 2 negative controls) | `contract_conformance` 42/42 ✅ · `boundary_audit` PASS ✅ | **VERIFIED** |
+| `TASK-416-phase3-credentials-lego` | credentials | `contracts/credentials.contract.md` ✅ | `docs/isolation/credentials.md` ✅ | `packages/credentials-lego/test/conformance.test.mjs` 22/22 ✅ (cipher round-trip, OpenSSL EVP_BytesToKey parity, 2 negative controls) | `tools/credentials-lego-gate.mjs` 6/6 ✅ | **VERIFIED** |
 
 | Phase 3 gate | Result |
 | :--- | :--- |

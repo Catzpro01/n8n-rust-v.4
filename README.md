@@ -24,6 +24,7 @@ is a Rust replacement attempted.
 | **NODE LEGO 02 (Phase 3, JS reconstruction)** | **✅ IMPLEMENTED · TESTED 93/93 · GATE 7/7 · DIFFERENTIAL 1609 agree / 0 diverge — see [`docs/isolation/node.md`](docs/isolation/node.md) §5** |
 | **CONNECTION LEGO 03 (Phase 3, TS reconstruction)** | **✅ IMPLEMENTED · VERIFIED 52/52 — see [`packages/connection-lego/`](packages/connection-lego/README.md)** |
 | **VALIDATION LEGO 04 (Phase 3, TS reconstruction)** | **✅ IMPLEMENTED · VERIFIED 20/20 — see [`packages/validation-lego/`](packages/validation-lego/README.md)** |
+| **CREDENTIALS LEGO (Phase 3, JS reconstruction)** | **✅ IMPLEMENTED · VERIFIED 22/22 · GATE 6/6 — see [`packages/credentials-lego/`](packages/credentials-lego/README.md)** |
 | **TRIGGER (406) · WEBHOOK (407) LEGOs (Phase 3)** | ✅ IMPLEMENTED (peer lanes) — see `docs/isolation/LEGO-MASTER-MAP.md` §5 |
 | RUST PORT (crates/**, apps/**) | ▶ Phase 3 open for the port track (`docs/isolation/PHASE-3-OPENING-RECORD.md`); the JS reconstruction track stays ZERO RUST |
 
@@ -45,6 +46,7 @@ contract. It does **not** mean it was replaced by Rust.
 - `packages/node-lego/` : reconstructed Node Model pure functions — `NodeHelpers` (connection IO, display conditions, parameter resolution, parameter issues, naming/tool helpers), `node-validation.ts`, `node-parameters/*`, `type-validation.ts`, `utils.deepCopy` (JavaScript ESM, zero dependencies, differentially pinned to `n8n-workflow@2.9.1`)
 - `packages/node-lego/` : reconstructed Node Model pure functions — `NodeHelpers` (connection IO, display conditions, parameter resolution, parameter issues, filter execution, webhook paths), `node-validation.ts`, `node-parameters/*`, `type-validation.ts`, `utils.deepCopy` (JavaScript ESM, zero dependencies, differentially pinned to `n8n-workflow@2.9.1`)
 - `packages/validation-lego/` : reconstructed n8n 2.9.4 schema and type validation — `type-validation.ts`, `type-guards.ts`, `schemas.ts`, `workflow-rules.ts` (TypeScript, accepted by golden cases A/B/C/D)
+- `packages/credentials-lego/` : reconstructed n8n 2.9.4 credentials boundary — `cipher.mjs`, `credentials.mjs`, `redaction.mjs`, `overwrites.mjs`, `helper.mjs` (JavaScript ESM, zero dependencies, EVP_BytesToKey OpenSSL compatibility)
 - `tools/` : boundary mapper, kernel/port/reference gates, isolation extractor, model digest, gate runner, live engine harness
 - `tests/reference/` : golden workflows + baseline smoke test evidence
 - `tasks/`, `results/` : inbound task manifests and execution results
