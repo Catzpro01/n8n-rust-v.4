@@ -209,7 +209,7 @@ export function getNodeByName(nodes: any[], name: string): any | undefined {
  */
 /* ------------------------------------------------------------------ *
  * Graph analysis — reference-exact port of `packages/workflow/src/graph/graph-utils.ts`
- * (n8n 2.9.4). The differential gate (`tools/connection-lego-gate.mjs`) executes every
+ * (n8n 2.9.4). The differential gate (`tools/connection-isolation-gate.mjs`) executes every
  * function below against the pinned `n8n-workflow@2.9.1` artifact; the port deliberately
  * keeps the reference's helpers, iteration order and error payloads so the comparison is
  * byte-for-byte.

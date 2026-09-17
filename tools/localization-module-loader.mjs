@@ -22,6 +22,7 @@ export const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const HUB_SOURCES = {
 	service: join(REPO, 'packages/workflow-lego/src/backend-localization-service.ts'),
 	adapter: join(REPO, 'packages/workflow-lego/src/settings-localization-adapter.ts'),
+	validator: join(REPO, 'packages/workflow-lego/src/parameter-issues.ts'),
 };
 
 const require = createRequire(join(REPO, 'packages/workflow-lego/package.json'));
@@ -66,16 +67,20 @@ export async function loadLocalizationHub({ fresh = false } = {}) {
 
 	const service = compile(HUB_SOURCES.service, 'backend-localization-service');
 	const adapter = compile(HUB_SOURCES.adapter, 'settings-localization-adapter');
+	const validator = compile(HUB_SOURCES.validator, 'parameter-issues');
 
 	const serviceModule = await import(pathToFileURL(service.outFile).href);
 	const adapterModule = await import(pathToFileURL(adapter.outFile).href);
+	const validatorModule = await import(pathToFileURL(validator.outFile).href);
 
 	cached = {
 		service: serviceModule,
 		adapter: adapterModule,
+		validator: validatorModule,
 		sources: {
 			service: { path: HUB_SOURCES.service, digest: service.digest },
 			adapter: { path: HUB_SOURCES.adapter, digest: adapter.digest },
+			validator: { path: HUB_SOURCES.validator, digest: validator.digest },
 		},
 		outDir,
 	};

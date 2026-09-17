@@ -10,6 +10,10 @@
  *
  * The suite is offline by design: the hub imports nothing, so it is compiled on the fly
  * (`tools/localization-module-loader.mjs`) and needs no reference runtime.
+ *
+ * Phase 4C: the four `param.*` keys (27 per locale) and the `NodeParameterValidator`
+ * integration — validation messages render through the hub, Indonesian default
+ * byte-identical to the Phase 3C engine.
  */
 import { test, before, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
@@ -17,7 +21,7 @@ import { readFileSync } from 'node:fs';
 import { loadLocalizationHub } from '../../../tools/localization-module-loader.mjs';
 
 const hub = await loadLocalizationHub({ fresh: true });
-const { service, adapter } = hub;
+const { service, adapter, validator } = hub;
 const {
 	NativeLocalizationService,
 	SUPPORTED_LOCALES,
@@ -30,6 +34,7 @@ const {
 	isTranslatableKey,
 } = service;
 const { SettingsLocalizationAdapter } = adapter;
+const { NodeParameterValidator } = validator;
 
 const LOCALE_ORDER = ['id', 'en', 'jv', 'ar', 'zh', 'ru'];
 
@@ -62,7 +67,7 @@ test('the registry exposes exactly the six requested locales with metadata', () 
 test('every locale is key-identical to the English base text (parity report)', () => {
 	const report = NativeLocalizationService.parityReport();
 	assert.equal(report.base, 'en');
-	assert.equal(report.baseKeyCount, 23, 'the six locale dictionaries merged from the Phase 4B seed');
+	assert.equal(report.baseKeyCount, 27, 'the six locale dictionaries merged from the Phase 4B seed plus the four Phase 4C param.* keys');
 	assert.equal(report.ok, true, JSON.stringify(report.locales));
 	for (const entry of report.locales) {
 		assert.equal(entry.keyCount, report.baseKeyCount, `${entry.locale} key count`);
@@ -363,12 +368,13 @@ test('the settings adapter projects the hub: six languages, native names, direct
 
 /* ------------------------------------------------------------------ */
 /* Phase 4B seed surface (merged): 23 keys, aliases, browser storage    */
+/* Phase 4C adds the four param.* keys -> 27 keys per locale.          */
 /* ------------------------------------------------------------------ */
 
-test('the merged dictionary surface spans 23 keys and resolves in every locale', () => {
+test('the merged dictionary surface spans 27 keys and resolves in every locale', () => {
 	const keys = NativeLocalizationService.listKeys('en');
-	assert.equal(keys.length, 23);
-	for (const key of ['workflow.active', 'execution.finished', 'validation.cycle', 'system.recovered']) {
+	assert.equal(keys.length, 27);
+	for (const key of ['workflow.active', 'execution.finished', 'validation.cycle', 'system.recovered', 'param.required']) {
 		assert.ok(keys.includes(key), `missing merged key ${key}`);
 	}
 	for (const locale of LOCALE_ORDER) {
@@ -430,3 +436,76 @@ test('the adapter exposes the Phase 4B helper surface on top of the hub projecti
 	assert.equal(SettingsLocalizationAdapter.suppressAggressiveUpdateNotice(), true);
 	assert.equal(SettingsLocalizationAdapter.getState().isUpdateNoticeSuppressed, true);
 });
+
+/* ------------------------------------------------------------------ */
+/* Phase 4C — NodeParameterValidator renders through the hub           */
+/* ------------------------------------------------------------------ */
+
+test('Phase 4C: the validator default (id) output is byte-identical to Phase 3C', () => {
+	const def = {
+		name: 'amount',
+		type: 'number',
+		required: true,
+		typeOptions: { minValue: 1, maxValue: 10 },
+	};
+
+	assert.deepEqual(NodeParameterValidator.validateField(def, undefined), {
+		parameter: 'amount',
+		message: 'Parameter "amount" wajib diisi.',
+		issueType: 'missing',
+	});
+	assert.deepEqual(NodeParameterValidator.validateField(def, 'abc'), {
+		parameter: 'amount',
+		message: 'Nilai "abc" harus berupa angka yang valid.',
+		issueType: 'invalid_type',
+	});
+	assert.deepEqual(NodeParameterValidator.validateField(def, 0), {
+		parameter: 'amount',
+		message: 'Nilai 0 lebih kecil dari batas minimum 1.',
+		issueType: 'out_of_bounds',
+	});
+	assert.deepEqual(NodeParameterValidator.validateField(def, 99), {
+		parameter: 'amount',
+		message: 'Nilai 99 lebih besar dari batas maksimum 10.',
+		issueType: 'out_of_bounds',
+	});
+	assert.equal(NodeParameterValidator.validateField(def, 5), null);
+});
+
+test('Phase 4C: parameter issues follow the active locale and the adapter language switch', () => {
+	const def = { name: 'amount', type: 'number', required: true };
+
+	NativeLocalizationService.setLocale('en');
+	assert.equal(
+		NodeParameterValidator.validateField(def, null)?.message,
+		'Parameter "amount" is required.'
+	);
+
+	// the adapter setter is the single entry point: the hub follows it,
+	// so the validator (a hub consumer) renders in the same language
+	assert.equal(SettingsLocalizationAdapter.setLanguage('zh'), 'zh');
+	assert.equal(NativeLocalizationService.getLocale(), 'zh');
+	assert.equal(
+		NodeParameterValidator.validateField(def, null)?.message,
+		'参数 "amount" 为必填项。'
+	);
+
+	// jv walks its declared fallback chain jv -> id -> en for a missing key,
+	// but param.* exists in jv, so the Javanese text is served
+	SettingsLocalizationAdapter.setLanguage('jv');
+	assert.equal(
+		NodeParameterValidator.validateField(def, null)?.message,
+		'Parameter "amount" kudu diisi.'
+	);
+
+	const issues = NodeParameterValidator.getNodeParametersIssues(
+		[
+			{ name: 'amount', type: 'number', required: true },
+			{ name: 'url', type: 'string', required: true },
+		],
+		{ url: '' }
+	);
+	assert.equal(issues.length, 2);
+	assert.deepEqual(issues.map((i) => i.parameter), ['amount', 'url']);
+});
+

@@ -37,7 +37,7 @@
 | Sumber koneksi | `class InternalConnectionEngine` di dalam facade | impor port `connection-routing-engine.ts` |
 | Pemakaian | `const byDest = ...` — hasil dibuang | `facade.connection` (port asli) + `resolveExecutionPlan()` + `executionOrder` |
 | Urutan hasil eksekusi | urutan deklarasi node | urutan koneksi (depth-first dari root) |
-| Tes facade | `test-integration.mjs` menguji `TestFacade` salinan | `test/03-facade-integration.test.mjs` mengimpor facade asli (C07) |
+| Tes facade | `test-integration.mjs` menguji `TestFacade` salinan | `test/03-facade-integration.test.mjs` mengimpor facade asli (C07); suite integrasi kini memakai facade asli (`PHASE5-INTEGRATION-SUITE`) |
 | Gate | C01–C07 · 1.246 panggilan | **C08** · **1.258 panggilan** |
 | Paket engine | tanpa `package.json` (ISSUE-022) | `packages/reconstructed-engine/package.json` (`type: module`) |
 
@@ -77,5 +77,6 @@ npm run i18n:check && npm run isolation:check && npm run verify
 - Facade masih menyimpan `Internal*Engine` lain (trigger, webhook, scheduler, persistence,
   credentials, api) yang belum diintegrasikan ke paket LEGO masing-masing. Pola yang sama berlaku:
   impor paket, hapus salinan, buktikan dengan gate. Kandidat task berikutnya untuk agent terkait.
-- `test-integration.mjs` masih memakai `TestFacade` salinan — sebaiknya diarahkan ke facade asli
-  agar tidak ada perilaku yang hanya hidup di dalam tes.
+- ~~`test-integration.mjs` masih memakai `TestFacade` salinan~~ — selesai di `PHASE5-INTEGRATION-SUITE`
+  (`test-integration.mjs` kini mengimpor `./src/n8n-reconstructed-facade.ts`; skenario 03 memaku
+  urutan koneksi `A>B>C` dari deklarasi `C,A,B`).

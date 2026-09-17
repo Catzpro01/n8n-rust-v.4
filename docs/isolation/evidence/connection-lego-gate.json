@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-17T20:54:06.738Z",
+  "generatedAt": "2026-09-17T20:58:43.214Z",
   "phase": "phase-3+5-connection",
   "lego": "connection",
   "port": "P-CONNECTION-GRAPH",
@@ -70,12 +70,13 @@
     }
   ],
   "comparisons": {
-    "total": 1258,
+    "total": 1944,
     "byCheck": {
       "C03": 969,
       "C04": 271,
       "C05": 6,
-      "C08": 12
+      "C08": 12,
+      "C09": 686
     }
   },
   "differences": [],
@@ -120,13 +121,19 @@
       "id": "C07",
       "title": "unit suite PASS (packages/connection-lego/test)",
       "status": "PASS",
-      "detail": "node --test test/*.test.mjs → 20/20 PASS"
+      "detail": "node --test test/*.test.mjs → 22/22 PASS"
     },
     {
       "id": "C08",
       "title": "facade integration: the Phase 5 facade schedules workflows through the verified port",
       "status": "PASS",
       "detail": "12 plans identical over 12 graphs (oracle-derived) + executeWorkflow order verified"
+    },
+    {
+      "id": "C09",
+      "title": "workflow wrapper methods: getNodeConnectionIndexes + getHighestNode vs the reference Workflow",
+      "status": "PASS",
+      "detail": "686 wrapper calls identical (12 corpus graphs + a ghost-source fixture, every node pair x every connection type, plus a disabled-node pass)"
     }
   ],
   "verdict": "PASS"

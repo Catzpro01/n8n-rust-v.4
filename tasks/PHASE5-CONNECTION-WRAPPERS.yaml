@@ -1,0 +1,37 @@
+# PHASE5-CONNECTION-WRAPPERS — the Workflow members carried by the routing engine, pinned
+# Trigger: `packages/reconstructed-engine/runner.mjs` imports `getNodeConnectionIndexes` and
+#   `getHighestNode` from the routing engine, but those two members belong to LEGO 01 (Workflow) per
+#   `packages/connection-lego/manifest/ownership.json` → `doesNotOwn`. Gate check C01 only inspects
+#   `publicSurface`, so a wrong copy of either member could not fail anything — the last unchecked
+#   behaviour in the connection module.
+# LEGO cycle: VERIFIED → INTEGRATED (hardening of an INTEGRATED module).
+
+phase: 5
+lego: connection
+agent: agent-3 (Arena session arena/01a0b104-n8n-rust-v-4)
+
+allowed_paths:
+  - tools/connection-isolation-gate.mjs
+  - packages/connection-lego/test/02-routing-graph.test.mjs
+  - packages/connection-lego/manifest/ownership.json
+  - docs/isolation/connection.md
+  - contracts/connection.contract.md
+  - docs/isolation/evidence/connection-lego-gate.json
+  - README.md
+  - tasks/PHASE5-CONNECTION-WRAPPERS.yaml
+  - results/PHASE5-CONNECTION-WRAPPERS.md
+
+forbidden_paths:
+  - reference/n8n/**        # pinned, read-only (Vue editor UI stays byte-identical)
+  - crates/**
+  - apps/**
+
+oracle:
+  - .runtime/node_modules/n8n-workflow@2.9.1 — `new Workflow({ nodes, connections, nodeTypes })`,
+    methods `getNodeConnectionIndexes` / `getHighestNode` executed directly
+
+tests:
+  - connection_check   # npm run connection:check → C01..C09, 9/9 checks, 1,944 differential calls
+  - connection_suite   # node --test packages/connection-lego/test/*.test.mjs → 22/22
+  - isolation_gate     # npm run verify → 12/12 PASS, live 7/7, behavior change none
+  - i18n_check         # npm run i18n:check → 5/5 (unaffected)
