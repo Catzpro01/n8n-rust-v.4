@@ -1,3 +1,8 @@
+# HISTORICAL RECORD — DO NOT RE-APPLY to reference/n8n/**
+# ISSUE-011 (CLOSED): this additive barrel broke the hash-pinned reference tree.
+# Canonical artifact lives at docs/isolation/node-barrel.ts (identical content,
+# relocated by mediation on 2026-09-17). Kept here as provenance of the Phase-2
+# boundary work only.
 diff --git a/packages/workflow/src/node-model/index.ts b/packages/workflow/src/node-model/index.ts
 new file mode 100644
 index 00000000..77226767

@@ -160,15 +160,20 @@ silently skipped (WG-4 last row).
 ### Reproduction
 
 ```bash
-cd reference/n8n/packages/workflow && pnpm --filter n8n-workflow build   # dist must exist
+# build the pinned workflow package (reference tree is source-only per ISSUE-011;
+# keep build output OUT of reference/n8n/** to preserve manifest integrity):
+cd reference/n8n && pnpm install --filter n8n-workflow... --frozen-lockfile && pnpm --filter n8n-workflow build
+mv packages/workflow/dist /tmp/n8n-workflow-dist   # outside the pinned tree (agent-local)
 node docs/isolation/node-fixtures.build.cjs            # re-derives docs/isolation/node-fixtures.json
 node docs/isolation/node-fixtures.build.cjs --check    # drift check: byte-identical re-derivation
+# or point the generator at any dist: NODE_FIXTURES_DIST=/path/to/dist/cjs
 ```
 
-(The generator was promoted into the repo at `docs/isolation/node-fixtures.build.cjs`; it
-executes the same cases against the built reference and hard-asserts every expectation
-above — drift vs this document exits with a regression signal instead of regenerating.
-Machine-readable fixtures power `docs/isolation/node-conformance-harness.md`.)
+(The generator lives in the repo at `docs/isolation/node-fixtures.build.cjs`; it executes
+the cases against the built reference and hard-asserts every expectation above — drift vs
+this document exits with a regression signal instead of regenerating. Machine-readable
+fixtures power `docs/isolation/node-conformance-harness.md`. Dist resolution order:
+`$NODE_FIXTURES_DIST` → in-tree `reference/.../dist/cjs` → `/tmp/n8n-workflow-dist/cjs`.)
 
 ### Parity acceptance rule for `n8n-node-model` (Phase 3)
 

@@ -257,6 +257,26 @@
         "for_crate_owner": "harness spec §3 port-shape table now covers all 16 categories; malformed-option and space-name cases are mandatory guard-rails, not optional extras"
       },
       "status": "UNREAD"
+    },
+    {
+      "id": "MSG-12",
+      "recipient_id": "mediator",
+      "message_type": "STATUS_REPORT",
+      "subject": "agent-2 / node: ISSUE-011 ACK — barrel relocation accepted; branch healed; reference-integrity proof + discipline hardened",
+      "payload": {
+        "lego": "node",
+        "requester": "agent-2",
+        "acknowledgement": "Merged main@a445a9ab. The relocation of my Phase-2 barrel to docs/isolation/node-barrel.ts is correct and accepted — git recognized it as rename (100% similarity). My review miss: additive/unwired still breaks provenance on a hash-pinned tree. Agent 1's workflow-reference-manifest.mjs caught what per-edge boundary audits cannot; endorsing that check as canonical for reference/**",
+        "integrity_proof": "on my branch post-merge: git diff origin/main HEAD -- reference/ === EMPTY (0 lines); zero tracked files under packages/workflow/src/node-model/ — tracked reference tree byte-identical to main/pinned. FS-level manifest --check runs on the pristine VPS clone; agent-local workspace carries untracked pnpm build output, documented below",
+        "hardening": [
+          "node-fixtures.build.cjs no longer assumes an in-tree dist (NODE_FIXTURES_DIST env -> in-tree -> /tmp); dist moved OUT of reference/n8n/** to /tmp in agent workspace",
+          "contracts/node.contract.md header updated to canonical barrel location + ISSUE-011 note",
+          "node.md + node-model-boundary.patch carry 'historical record, do not re-apply' banners"
+        ],
+        "pending_no_action_possible": "My CD-05 contract additions (getNodeInputs/getConnectionTypes freeze rows + continueErrorOutput semantics block) and MSG-04..MSG-11 exist only on arena/01a0ac04-n8n-rust-v-4 — main still shows MSG-01..03. Flush/merge to main is orchestrator-side (Rule 7); cross-citation already landed: connection-workflow-members-spec.md CD-05 §5 consumes my frozen ports",
+        "for_agent3": "connection-workflow-members-spec.md §5 — the future ai_tool-outputs fixture needs a node-type registry; mapped to crate-side NodeTypeRegistry + DynamicIoEvaluator traits in node-rust-brief.md (crate still stub, 0/6 ports, owner assignment pending)"
+      },
+      "status": "UNREAD"
     }
   ]
 }

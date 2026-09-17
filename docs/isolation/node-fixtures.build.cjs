@@ -24,14 +24,23 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
-const DIST = path.join(REPO_ROOT, "reference/n8n/packages/workflow/dist/cjs");
+// ISSUE-011 discipline: the pinned reference tree must stay build-output-free. The dist
+// is therefore resolved from (1) explicit env override, (2) an in-tree build (verification
+// environments that build in place and clean before the integrity check), or
+// (3) the agent-local relocated copy /tmp/n8n-workflow-dist (this sandbox).
+const DIST = [
+  process.env.NODE_FIXTURES_DIST,
+  path.join(REPO_ROOT, "reference/n8n/packages/workflow/dist/cjs"),
+  "/tmp/n8n-workflow-dist/cjs",
+].find((candidate) => candidate && fs.existsSync(path.join(candidate, "node-helpers.js")));
 const OUT = path.join(__dirname, "node-fixtures.json");
 
 function ref(name) {
   const file = path.join(DIST, name);
   if (!fs.existsSync(file)) {
     console.error(`reference module not found: ${file}`);
-    console.error("build the pinned workflow package first: pnpm --filter n8n-workflow build");
+    console.error("build the pinned workflow package first: pnpm --filter n8n-workflow build,");
+    console.error("or set NODE_FIXTURES_DIST (see docs/isolation/node-golden-cases.md → Reproduction)");
     process.exit(2);
   }
   return require(file);

@@ -2,7 +2,11 @@
 
 **Reference:** n8n `2.9.4` (`n8n@2.9.4`, commit `b6dc2787c45677a29a9612cd27eb911302961a83`)
 **Package:** `n8n-workflow@2.9.1` (`reference/n8n/packages/workflow`)
-**Boundary module added:** `packages/workflow/src/node-model/index.ts` (pure re-export barrel; no code moved)
+**Boundary module:** `docs/isolation/node-barrel.ts` (pure re-export barrel; no code moved).
+Relocated out of the hash-pinned reference tree by mediation — the former in-tree copy at
+`packages/workflow/src/node-model/index.ts` violated reference provenance (**ISSUE-011**,
+CLOSED: re-exporting is allowed, ADDING FILES to `reference/**` is not — hash-pinned
+byte-identical rule). The barrel remains the normative statement of this LEGO's public surface.
 **Status source of truth:** this contract was written **from the source**, not vice-versa. Where a previous draft of this file disagreed with the source, the source wins.
 
 ---

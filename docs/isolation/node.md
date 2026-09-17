@@ -79,6 +79,10 @@ Own the **definition surface of a node**: identity, type/version, parameter sche
 ### Source files
 
 See table §1.1. **Added by this task:** `reference/n8n/packages/workflow/src/node-model/index.ts` (boundary barrel, additive only).
+> **UPDATE (2026-09-17, ISSUE-011 CLOSED):** the barrel was relocated by mediation to
+> **`docs/isolation/node-barrel.ts`** — identical bytes. `reference/**` is hash-pinned
+> (byte-identical) so even additive files there break provenance. All in-tree-path
+> mentions below are historical Phase-2 record.
 
 ### Public API
 
