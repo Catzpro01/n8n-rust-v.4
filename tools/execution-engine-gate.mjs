@@ -16,6 +16,7 @@
  *   E07 POOL-003 suite — error & retry handling
  *   E08 the declared public surface is documented in contracts/execution.contract.md
  *   E09 sandboxed expression evaluator security + compatibility suite
+ *   E10 activation lifecycle: ActiveWorkflows / TriggersAndPollers / TriggerContext
  *
  * usage: node tools/execution-engine-gate.mjs [--json]
  */
@@ -203,6 +204,12 @@ gate('E09', 'sandboxed expression evaluator security + compatibility', () =>
 	'packages/execution-engine/test/04-expression-sandbox.test.mjs',
 );
 
+/* E10 — activation lifecycle --------------------------------------------- */
+gate('E10', 'activation lifecycle: triggers, pollers, lifecycle hooks', () =>
+	runNodeTest('test/05-activation.test.mjs', PKG),
+	'packages/execution-engine/test/05-activation.test.mjs',
+);
+
 /* ---------------- evidence + human-readable report ----------------------- */
 const totals = {
 	gates: results.length,
@@ -241,6 +248,10 @@ const report = {
 		'POOL-003-error-retry-handling': {
 			status: results.find((entry) => entry.id === 'E07')?.status === 'PASS' ? 'IMPLEMENTED' : 'FAILED',
 			surface: ['resolveRetryPolicy', 'resolveErrorStrategy', 'splitErrorOutputs', 'error classes'],
+		},
+		'TASK-ENGINE-ACTIVATION-01': {
+			status: results.find((entry) => entry.id === 'E10')?.status === 'PASS' ? 'IMPLEMENTED' : 'FAILED',
+			surface: ['ActiveWorkflows', 'TriggersAndPollers', 'TriggerContext', 'ExecutionLifecycleHooks', 'toCronExpression', 'ScheduledTaskManager'],
 		},
 		'TASK-EXPRESSION-SANDBOX-01': {
 			status: results.find((entry) => entry.id === 'E09')?.status === 'PASS' ? 'IMPLEMENTED' : 'FAILED',

@@ -1,0 +1,50 @@
+id: TASK-ENGINE-DIFF-03
+agent: arena-agent
+lego: integration
+module: engine-differential
+phase: 3
+title: "Task envelope shape parity — close the last recorded differential delta (ISSUE-021)"
+status: SUBMITTED_FOR_REVIEW
+
+# Context: TASK-ENGINE-DIFF-02 closed S3/S6/S7 and left exactly one recorded known
+# delta: the ITaskData envelope ("hints, startTime, executionTime … can never be
+# identical across engines" — engine-differential.mjs S7 note). The reference
+# construction is workflow-execute.ts L1506-1511 (taskStartedData) + L1817-1823
+# (taskData literal incl. `metadata`) + L1826 (`error`) + L1919 (`data` last).
+# This task turns the recorded prose delta into a machine-checked comparison and
+# fixes whichever engine deviates from the reference envelope SHAPE (key set,
+# construction-order key sequence, field types) — volatile timing VALUES stay
+# excluded by design.
+
+allowed_paths:
+  - tasks/TASK-ENGINE-DIFF-03.yaml
+  - tools/engine-differential.mjs          # harness: add shape comparator (stays informational)
+  - packages/reconstructed-engine/runner.mjs
+  - packages/execution-engine/src/workflow-execute.mjs   # only if B deviates from reference shape
+  - results/TASK-ENGINE-DIFF-03.md
+  - docs/isolation/CROSS-AGENT-ISSUES.md   # append-only ISSUE-021 addendum
+
+forbidden_paths:
+  - reference/n8n/**
+  - crates/**
+  - apps/**
+  - packages/frontend/**
+  - contracts/**
+
+requires:
+  - docs/isolation/CROSS-AGENT-ISSUES.md (ISSUE-021 + DIFF-01/02 addenda)
+  - reference/n8n/packages/core/src/execution-engine/workflow-execute.ts (L1506-1511, L1817-1823, L1826, L1919)
+
+operations:
+  - name: read_reference_task_envelope
+  - name: extend_harness_with_shape_comparator
+  - name: align_engine_envelopes_to_reference
+  - name: rerun_differential_and_all_suites
+  - name: write_result_and_issue_addendum
+
+acceptance:
+  - differential harness reports shape parity for every compared task envelope
+  - node --test packages/reconstructed-engine/*.test.mjs PASS (unchanged semantics)
+  - node --test packages/execution-engine/test/*.test.mjs PASS
+  - npm run verify:all exit 0
+  - contract_conformance 42/42 · boundary_audit PASS (no drift)

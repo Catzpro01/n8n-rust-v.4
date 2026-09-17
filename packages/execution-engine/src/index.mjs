@@ -28,6 +28,19 @@ export {
 	withRetry,
 } from './retry.mjs';
 export {
+	ApplicationError,
+	NodeApiError,
+	NodeOperationError,
+	TriggerCloseError,
+	UnexpectedError,
+	UserError,
+	WorkflowActivationError,
+	WorkflowDeactivationError,
+	errorMessageOf,
+	isSoftFailure,
+	toExecutionError,
+} from './errors.mjs';
+export {
 	ERROR_STRATEGIES,
 	buildErrorItem,
 	continuesOnError,
@@ -49,14 +62,9 @@ export {
 	createRunExecutionData,
 	RUN_EXECUTION_DATA_VERSION,
 } from './run-execution-data.mjs';
-export {
-	ApplicationError,
-	NodeApiError,
-	NodeOperationError,
-	UnexpectedError,
-	errorMessageOf,
-	isSoftFailure,
-	toExecutionError,
-} from './errors.mjs';
 export { ExpressionError, evaluateCode, evaluateExpressionValue, isExpression, resolveParameterValue } from './expression.mjs';
 export { NodeTypesRegistry, ReconstructedWorkflow, isTriggerLike } from './workflow.mjs';
+export { ExecutionLifecycleHooks, createDeferredPromise } from './lifecycle-hooks.mjs';
+export { TriggersAndPollers } from './triggers-and-pollers.mjs';
+export { ActiveWorkflows, ScheduledTaskManager, toCronExpression } from './active-workflows.mjs';
+export { TriggerContext } from './trigger-context.mjs';

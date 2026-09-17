@@ -83,14 +83,17 @@ asserts that confinement.
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | `POOL-001-core-workflow-execute-loop` | execution | `contracts/execution.contract.md` ✅ | `docs/isolation/execution.md` ✅ | `test/01-execution-loop.test.mjs` 14/14 ✅ | `E05` ✅ | **IMPLEMENTED** |
 | `POOL-002-node-execution-context-data-proxy` | execution (expression surface) | same ✅ | same ✅ | `test/02-node-context-data-proxy.test.mjs` 7/7 ✅ | `E06` ✅ | **IMPLEMENTED** |
-| `POOL-003-error-retry-handling` | execution (validation surface) | same ✅ | same ✅ | `test/03-error-retry.test.mjs` 11/11 ✅ | `E07` ✅ | **IMPLEMENTED** |
+| `POOL-003-error-retry-handling` | execution (validation surface) | same ✅ | same ✅ | `test/03-error-retry.test.mjs` 12/12 ✅ | `E07` ✅ | **IMPLEMENTED** |
 | `TASK-EXPRESSION-SANDBOX-01` | execution (expression security) | `contracts/expression.contract.md` ✅ | same ✅ | `test/04-expression-sandbox.test.mjs` 7/7 ✅ | `E09` ✅ | **IMPLEMENTED** |
 | `TASK-405-phase3-connection-lego` | connection (LEGO 03) | `contracts/connection.contract.md` ✅ | `docs/isolation/connection.md` ✅ | `packages/connection-lego/test/conformance.test.mjs` 52/52 ✅ (15 reference fixtures + 32 golden probes + 2 negative controls) | `contract_conformance` 42/42 ✅ · `boundary_audit` PASS ✅ | **VERIFIED** |
+| `TASK-406-phase3-trigger-lego` | trigger | `contracts/trigger.contract.md` ✅ | `docs/isolation/trigger.md` ✅ | `packages/trigger-lego/test/lifecycle.test.mjs` 9/9 ✅ | `tools/trigger-lego-gate.mjs` 5/5 ✅ | **IMPLEMENTED** |
+| `TASK-ENGINE-ACTIVATION-01` | execution (activation lifecycle) | `contracts/execution.contract.md` ✅ | `docs/isolation/execution.md` ✅ | `packages/execution-engine/test/05-activation.test.mjs` 20/20 ✅ (ported from the two reference oracle suites) | `E10` ✅ | **IMPLEMENTED** |
+| `TASK-407-phase3-webhook-lego` | webhook | `contracts/webhook.contract.md` ✅ | `docs/isolation/webhook.md` ✅ | `packages/webhook-lego/test/routing.test.mjs` 10/10 ✅ | `tools/webhook-lego-gate.mjs` 5/5 ✅ | **IMPLEMENTED** |
 | `TASK-408-phase3-workflow-model-lego` | workflow (LEGO 01) | `contracts/workflow.contract.md` ✅ (§6 frozen surface) | `docs/isolation/workflow.md` ✅ | `packages/workflow-model-lego/test/conformance.test.mjs` 26/26 ✅ (fixtures `checksum` 8 + `toJSON` 6 + `rename` 6 + 3 negative controls) | `contract_conformance` 42/42 ✅ · `boundary_audit` PASS ✅ | **VERIFIED** |
 
 | Phase 3 gate | Result |
 | :--- | :--- |
-| `tools/execution-engine-gate.mjs` | **PASS 9/9** — no dependencies, import-closed, Rust confined, reference intact, 39/39 tests, public surface contracted, expression sandboxed |
+| `tools/execution-engine-gate.mjs` | **PASS 10/10** — no dependencies, import-closed, Rust confined, reference intact, 60/60 tests, public surface contracted (60 symbols), expression sandboxed, activation lifecycle |
 | Reference tree | unmodified (15050 files, root digest `f8da3518…`) |
 | Evidence | `docs/isolation/evidence/execution-engine-gate.json` |
 
@@ -101,5 +104,5 @@ holds 35 cases in 5 groups; `checksum` (8) + `toJSON` (6) + `rename` (6) are cov
 
 **Next Phase 3 work:** caveat C1 (11/11 live smoke on the VPS + PostgreSQL), the remaining frozen
 Workflow surface (`getStartNode`, `getHighestNode`, `getNodeConnectionIndexes`,
-`getParentMainInputNode`, `getParentNodesByDepth`), trigger/webhook/poll services — see
-`docs/isolation/execution.md` §7.
+`getParentMainInputNode`, `getParentNodesByDepth`), and the runtime around the activation LEGO
+(cron timer adapter, webhook HTTP servers) — see `docs/isolation/execution.md` §7.

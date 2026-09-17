@@ -1244,3 +1244,107 @@ Why it matters beyond cosmetics: `docs/isolation/LEGO-MASTER-MAP.md` §5 and
 `results/TASK-EXPRESSION-SANDBOX-01.md` cite this package's tests as Phase-3 evidence. An evidence
 citation whose documented command exits non-zero is exactly the failure mode ISSUE-010 and
 ISSUE-020 were raised for. The numbers were real; only the runner was wrong.
+
+### ADDENDUM 2026-09-18 (arena-agent, `TASK-ENGINE-DIFF-03` — envelope-shape delta CLOSED)
+
+The one remaining recorded delta ("envelope metadata … a known delta for a future
+task-shape task") is now machine-checked instead of prose. `tools/engine-differential.mjs`
+gained `compareShape()` (TASK-ENGINE-DIFF-03): per task envelope it compares the key SET,
+the key sequence in the reference construction order (workflow-execute.ts L1506-1511
+taskStartedData spread → L1817-1823 literal with `metadata` → L1826 `error` → L1919
+`data` last), `typeof` of the volatile numeric fields, `executionStatus`, and
+`data.main` branch/item counts. Volatile timing VALUES remain excluded by design.
+
+The check found a real deviation: `packages/reconstructed-engine` task objects lacked the
+`metadata` key and used a different key order (`executionTime` before `source`/`hints`;
+stop-path task lacked `hints`). Both fixed 1:1 against the reference construction in this
+task, including the R5 stop-path envelope (pushed WITHOUT `data`, exactly like the
+reference stop path which assigns `taskData.data` only after the strategy branches).
+
+Falsifiability control (same method as TASK-PHASE3-GATE-01 M1-M3): reverting only the
+runner.mjs fix → **20 DIVERGE** (key set + key order across every scenario); restoring it
+→ **`DIFFERENTIAL: 84 agree / 0 diverge / 0 not-comparable (84 comparisons, 0 harness errors)`**
+(24 semantic comparisons from DIFF-02 + 60 new shape comparisons). Suites re-run after the
+change: reconstructed-engine 28/28, execution-engine 40/40, expression-lego 46/46,
+connection-lego 52/52, `verify:all` exit 0, conformance 42/42, boundary PASS.
+
+ISSUE-021's ledger now has NO recorded behavioral delta between the two engines; what
+remains is the ownership/consolidation decision itself (item 1 of the required action),
+which stays with the orchestrator.
+
+### NOTE 2026-09-18 (arena-worker, `TASK-ENGINE-ACTIVATION-01`) — ACTIVATION does not reopen ISSUE-021
+
+The activation work (ActiveWorkflows / TriggersAndPollers / TriggerContext / ExecutionLifecycleHooks /
+ScheduledTaskManager / toCronExpression, gate `E10`, suite 20/20) landed in
+`packages/execution-engine/**` only. It does **not** widen the duplicate-engine problem: the prototype
+(`packages/reconstructed-engine`) has no activation surface and nothing in this task imports, edits or
+depends on it. The engine duplication itself is still an open ownership decision for the orchestrator
+(see the DIFF-02 addendum above for the current, divergence-free state).
+
+## ISSUE-023 — Two activation-lifecycle implementations landed concurrently (OPEN, ownership/consolidation)
+
+**Detected by:** `arena/01a0aff8-n8n-rust-v-4` (execution LEGO)
+**Affected:** `packages/execution-engine/src/{active-workflows,triggers-and-pollers,trigger-context,lifecycle-hooks}.mjs`,
+`packages/trigger-lego/src/*`, root `package.json` scripts
+**Type:** Duplicate implementation / ownership
+**Severity:** MEDIUM (no behavioural divergence proven yet; both suites green)
+
+**Description:** two workers reconstructed the same reference surface within the same hour from two
+different pool entries, and both landed:
+
+1. **`packages/trigger-lego/`** (`da5817da`, `TASK-406-phase3-trigger-lego`) — a *new* LEGO package with
+   `active-workflows.mjs`, `triggers-and-pollers.mjs`, `scheduled-task-manager.mjs`, `errors.mjs`,
+   its own `src/index.mjs`, 9 tests and `tools/trigger-lego-gate.mjs` (5/5 PASS), wired in as
+   `npm run trigger:test` / `trigger:gate`. Owns `contracts/trigger.contract.md`.
+2. **`packages/execution-engine/src/*`** (`TASK-ENGINE-ACTIVATION-01`, gate `E10`, 20/20 tests) — the
+   *same four reference files* (`active-workflows.ts`, `triggers-and-pollers.ts`,
+   `scheduled-task-manager.ts`, `execution-lifecycle-hooks.ts`, `trigger-context.ts`, `cron.ts`)
+   reconstructed inside the existing execution LEGO, against `contracts/execution.contract.md`.
+
+Both packages are dependency-free, both reproduce `ActiveWorkflows`/`TriggersAndPollers`/
+`ScheduledTaskManager`, and both are green on the merged tree (re-verified read-only:
+`npm --prefix packages/trigger-lego test` 9/9, `node tools/trigger-lego-gate.mjs` 5/5,
+`node --test packages/execution-engine/test/*.test.mjs` 60/60).
+
+**Why this is not automatically wrong:** the two placements answer different questions — `trigger-lego`
+exists so the *Trigger LEGO contract* (`contracts/trigger.contract.md`) has an implementation and a gate
+of its own, while `execution-engine` needs an in-process activation path for its own `run()` to be
+drivable. But they are the same code twice, and the `verify:all` chain now runs both.
+
+**Required action (orchestrator / whichever track owns the engine):** pick one home for the activation
+lifecycle before Phase 3 exits, exactly like ISSUE-021. The differential harness pattern from
+`TASK-ENGINE-DIFF-01/02` is the cheap way to decide: run both implementations over identical
+scenarios; any divergence found is a bug in one of them and should be fixed failing-first. Note that
+`execution-engine`'s version additionally reconstructs `ExecutionLifecycleHooks` and `TriggerContext`
+(the hook store + the node context handed to `nodeType.trigger`), which `trigger-lego` does not — so a
+consolidation onto `trigger-lego` would have to absorb those two surfaces as well.
+
+**Status:** OPEN — documented, not resolved by this session (deleting another worker's package is not
+the execution LEGO's call).
+
+### ADDENDUM 2026-09-18 (`TASK-ENGINE-ACTIVATION-01`, differential evidence — no peer file touched)
+
+Rather than leave the sentence "no behavioural divergence proven yet" in place, both implementations were
+run over identical scenarios (`tools/activation-differential.mjs`, informational like the engine harness —
+exit 0 with findings, exit 1 only if the harness breaks; `packages/trigger-lego/**` imported read-only):
+
+**`ACTIVATION DIFFERENTIAL: 3 diverge / 8 agree · harness errors: 0`** (T = `trigger-lego`, E = `execution-engine`)
+
+| # | Scenario | Verdict | Reference says |
+| :--- | :--- | :--- | :--- |
+| D1 | `toCronExpression` over six trigger-time modes | **DIVERGE** — T supports `everyMinute`/`everyHour`/`everyDay` only and throws `UserError('Unsupported poll mode: …')` for `everyWeek`, `everyMonth` and custom `cronExpression`; both emit a fixed second `0` unless a random source is injected | `cron.ts` L52-72: all six modes exist, and the second (plus the minute for `everyX: hours`) is **randomised** per poller (`randomInt(60)`), which is what keeps N pollers of the same workflow from firing in the same second |
+| D2 | missing `trigger`/`poll` function | **DIVERGE (name only)** — messages agree verbatim, T throws `TriggerLifecycleError`, E throws `ApplicationError` | `triggers-and-pollers.ts` L35-40/L105-110 throw `ApplicationError` with `extra.nodeName` + `tags.nodeType` |
+| D3 | manual-mode `emit` → `manualTriggerResponse` + deferreds | AGREE | L42-90 + oracle manual block |
+| D4 | manual mode without `hooks` | **DIVERGE (name only)** — message agrees; T rejects with `TriggerLifecycleError`, E with `AssertionError` (E mirrors `assert.ok` from the reference) | L50 `assert.ok(hooks, …)` runs inside the promise executor, so the failure is an `AssertionError` rejecting `manualTriggerResponse` |
+| D5 | `add()` trigger + poller → order, cron contexts, `remove()` | AGREE (order: trigger → initial poll test → register → deregister; identical contexts and return values) | L81-186 |
+| D6 | too-short interval | **DIVERGE (message)** — T rejects with `WorkflowActivationError` wrapping *"Unsupported poll mode: cronExpression"* because D1 throws before the interval check; E wraps *"The polling interval is too short…"* and rolls back | L170-175 |
+| D7 | `ExecutionLifecycleHooks`/`TriggerContext`/`createDeferredPromise` presence | DIVERGE by design — E has all three, T has none (its lane owns `contracts/trigger.contract.md` only) | L88-134 (hooks), trigger-context.ts L14-56 |
+
+**Reading:** the two implementations agree on the *happy paths* (activation order, cron contexts, removal,
+manual emit wiring), and the divergences cluster in one place — `toCronExpression` fidelity — which is
+also the one surface where the peer's version is a strict subset of the reference. Anything consolidated
+onto `trigger-lego` must absorb: the four missing trigger-time modes, randomised seconds, the
+`ApplicationError` class name, and the `ExecutionLifecycleHooks` + `TriggerContext` surfaces.
+
+**Status:** OPEN (unchanged ownership question) — now with a reproducible instrument:
+`node tools/activation-differential.mjs`.

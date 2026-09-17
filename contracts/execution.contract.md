@@ -2,7 +2,7 @@
 
 **Derived from:** n8n 2.9.4 source — `packages/core/src/execution-engine/workflow-execute.ts`, `.../node-execution-context/*`, `packages/workflow/src/{workflow.ts,workflow-data-proxy.ts,errors/*,run-execution-data-factory.ts}`
 **Owner:** execution LEGO (Agent-1 scope, Phase 3 reconstruction)
-**Status:** IMPLEMENTED · TESTED (40/40)
+**Status:** IMPLEMENTED · TESTED (60/60)
 **Implementation:** `packages/execution-engine/src/*.mjs` (JavaScript / Node.js ESM, zero dependencies)
 **Rust:** none — this LEGO is JavaScript (`PROJECT_RULES.md` v2.9.4 §1). Since `docs/isolation/PHASE-3-OPENING-RECORD.md`,
 Rust is permitted for the port track only under `crates/**` + `apps/**`; gate `E03` enforces that confinement.
@@ -37,6 +37,10 @@ retry/error policy. Everything the loop consumes from other LEGOs is injected
   `startTime`, `executionIndex`, `executionTime`, `source[]`, `executionStatus`, `data.main`, optional `error`.
 * `data.resultData.lastNodeExecuted`, `data.resultData.error`.
 * `data.executionData.{nodeExecutionStack, waitingExecution, waitingExecutionSource}` keep the restart/join state.
+* Activation path (TASK-ENGINE-ACTIVATION-01): `ActiveWorkflows.add(workflowId, …)` returns once every trigger node is
+  started and every poller is registered; `remove(workflowId)` closes triggers and deregisters crons;
+  `TriggersAndPollers.runTrigger` returns the node's `ITriggerResponse`, and in manual mode the response carries
+  `manualTriggerResponse` (a promise resolved by `emit(data)` / `emitError(error)` / `saveFailedExecution(error)`).
 
 ## 4. Public surface (must match `E08` of `tools/execution-engine-gate.mjs`)
 
@@ -54,6 +58,11 @@ retry/error policy. Everything the loop consumes from other LEGOs is injected
 | `ApplicationError`, `NodeOperationError`, `NodeApiError`, `UnexpectedError`, `toExecutionError`, `isSoftFailure`, `errorMessageOf` | errors.mjs | error model |
 | `evaluateExpressionValue`, `evaluateCode`, `resolveParameterValue`, `isExpression`, `ExpressionError` | expression.mjs | parameter resolution (subset, see §7) |
 | `NodeTypesRegistry`, `ReconstructedWorkflow`, `isTriggerLike` | workflow.mjs | injected carriers for the loop (not a model implementation) |
+| `WorkflowActivationError`, `WorkflowDeactivationError`, `TriggerCloseError`, `UserError` | errors.mjs | activation/deactivation error model, including the `cause` re-wrap and `level` derivation |
+| `ExecutionLifecycleHooks`, `createDeferredPromise` | lifecycle-hooks.mjs | the 8-name hook store (`addHandler`/`runHook`, handlers awaited in order) + the deferred-promise factory used by manual triggers |
+| `TriggersAndPollers` | triggers-and-pollers.mjs | runs a trigger node (`runTrigger`, incl. the manual-mode `manualTriggerResponse` + emit/emitError/saveFailedExecution overrides) and a poller (`runPoll`) |
+| `ActiveWorkflows`, `ScheduledTaskManager`, `toCronExpression` | active-workflows.mjs | activation registry (`add`/`remove`/`closeTrigger`/`createPollExecuteFn`), dependency-free cron bookkeeping (keying, duplicate guard, deregistration) and the `TriggerTime → cron` mapper |
+| `TriggerContext` | trigger-context.mjs | `nodeType.trigger`'s context: throwing `emit`/`emitError`/`saveFailedExecution` defaults, `getActivationMode()`, `getCredentials()` boundary, `helpers.createDeferredPromise`/`returnJsonArray` |
 
 ## 5. Loop invariants (pinned to source lines)
 
@@ -88,6 +97,22 @@ retry/error policy. Everything the loop consumes from other LEGOs is injected
 | E8 | Items carrying `error` (or `{ $error, $json }`) are normalised to `{ json: { error: message } }` with the error object preserved on the item | L1934-1958 | 03 · normalisation |
 | E9 | `NodeOperationError` / `NodeApiError` keep `node`, `description`, `httpCode`, `errorResponse`; `toExecutionError` serialises the subset stored in run data | errors/*.ts | 03 · classes |
 
+## 6b. Activation invariants (TASK-ENGINE-ACTIVATION-01, pinned to reference lines)
+
+| # | Invariant | Source | Test |
+|---|---|---|---|
+| A1 | `runTrigger` without a trigger function throws `ApplicationError('Node type does not have a trigger function defined')` with `extra.nodeName` + `tags.nodeType`; `runPoll` mirrors it for `poll` | triggers-and-pollers.ts L35-40, L105-110 | 05 · runTrigger/runPoll |
+| A2 | Manual mode attaches `manualTriggerResponse` *after* the trigger ran; the emit/emitError/saveFailedExecution overrides are installed inside the promise executor, so a missing `hooks` object rejects that promise instead of throwing | L42-90 (oracle triggers-and-pollers.test.ts manual block) | 05 · manual mode |
+| A3 | `emit(data, responsePromise?, donePromise?)` resolves the manual response and registers `sendResponse` / `workflowExecuteAfter` handlers that settle the caller's deferred promises | L55-66 | 05 · emit |
+| A4 | `add()` starts triggers first, stores `{ triggerResponses }`, then polling; a polling failure deletes the entry only when there was no trigger response, and always rejects with `WorkflowActivationError` | active-workflows.ts L81-145 | 05 · add/rollback |
+| A5 | Polling: the initial test run happens **before** any cron registration and rethrows; later ticks emit data, skip `null`, and emit the error instead of throwing | L150-186, L255-288 | 05 · polling |
+| A6 | A cron expression whose first field contains `*` is rejected with `UserError` ("The polling interval is too short. It has to be at least a minute.") before registration | L170-175 | 05 · interval |
+| A7 | `remove()` deregisters crons, closes triggers, returns `false` + warns for an inactive id; `TriggerCloseError` is logged/reported (not thrown), other close errors become `WorkflowDeactivationError` | L189-249 | 05 · remove/close |
+| A8 | `WorkflowActivationError` copies an `ApplicationError` cause into a plain Error keeping name/message/stack and derives `level` (timeout/refused/auth ⇒ `warning`) | workflow-activation.error.ts L19-59 | 05 · interval (cause quirk) |
+| A9 | Hook store: 8 names, `addHandler` pushes, `runHook` awaits handlers in order with `this` bound, a throwing handler stops the rest | execution-lifecycle-hooks.ts L88-134 | 05 · hooks |
+| A10 | `queryNodes`/`getTriggerNodes`/`getPollNodes` skip disabled nodes and keep declaration order | workflow.ts L254-295 | 05 · model |
+| A11 | `toCronExpression` inserts the random second (and random minute for `everyX: hours`) and trims a custom expression verbatim | cron.ts L52-72 | 05 · cron |
+
 ## 7. Known deltas vs. n8n 2.9.4 (explicit, not accidental)
 
 1. **Expression evaluation is a bounded JavaScript subset, not the upstream sandbox.**
@@ -109,7 +134,17 @@ retry/error policy. Everything the loop consumes from other LEGOs is injected
    webhook/polling services (`triggers-and-pollers.ts`, `active-workflows.ts`) are out of scope.
 8. **Data proxy**: `$vars`, `$secrets`, `$evaluateExpression`, data tables, `$fromAI`, `$jmespath`
    and the full Luxon surface are not reconstructed (`DataProxyDateTime` covers the common tokens).
-9. **Queue mode, hooks beyond the five lifecycle hooks, error reporting/telemetry** are out of scope.
+9. **Queue mode, error reporting/telemetry** are out of scope. The lifecycle hook store itself *is*
+   reconstructed (`ExecutionLifecycleHooks`), but the engine only ever fires the hooks it already fires.
+10. **Cron scheduling is an injected adapter.** The reference `ScheduledTaskManager` wraps the `cron`
+   package (a runtime dependency the engine must not take — gate `E01`), so `registerCron(ctx, onTick)`
+   / `deregisterCrons(workflowId)` are the boundary: `ScheduledTaskManager` reproduces the keying,
+   summaries and duplicate guard, and the caller supplies the timer.
+11. **TriggerContext helper families**: only `createDeferredPromise` + `returnJsonArray` are present; the
+   SSH-tunnel, request, binary and scheduling helper families belong to other LEGOs/adapters and are not
+   reconstructed here.
+12. **`getCredentials()`** delegates to an injected `_getCredentials` adapter when the caller supplies one
+   (credentials LEGO); otherwise it raises the boundary warning error instead of returning `{}`.
 
 ## 8. Dependencies
 
@@ -129,3 +164,4 @@ retry/error policy. Everything the loop consumes from other LEGOs is injected
 | node execution context surface + data proxy variables | expression sandboxing / JEXL semantics |
 | the bounded `node:vm` evaluator guard (`expression-sandbox.mjs`) | upstream AST rewriting (`@n8n/tournament`), JEXL semantics |
 | run-data factories used by the loop | persistence, pruning, queueing, webhooks, credentials, binary storage |
+| activation lifecycle (trigger responses, poller scheduling bookkeeping, lifecycle hook store) | the scheduling runtime (`cron`), webhook HTTP servers, credential resolution, instance leadership |

@@ -1,0 +1,75 @@
+id: TASK-ENGINE-VERIFY-02
+agent: arena-worker
+lego: execution
+module: integration
+phase: 3
+title: "Independent tip verification sweep: reproduce every Phase-3 JS/TS evidence claim on da5817da"
+status: AVAILABLE
+
+# Context: STANDING-WORKER-PROTOCOL dual-phase review duty with the remote
+# queue unreachable (ISSUE-019: Supabase SSL blocked from sandbox). Local
+# substitute, per precedent b3aa0986 (independent verification addendum):
+# before taking new work, independently re-run every evidence claim behind
+# the SUBMITTED_FOR_REVIEW engine-track tasks plus the adjacent Phase-3
+# JS/TS lanes (expression-lego, connection-lego) on the true tip, which
+# moved via three merges since the last full refresh. Read-only: no source,
+# contract, reference, or peer file is modified; only this manifest and the
+# results file are written. Any claim that fails to reproduce becomes a
+# NEEDS_CORRECTION protest in the shared log instead of silent approval.
+
+allowed_paths:
+  - tasks/TASK-ENGINE-VERIFY-02.yaml
+  - results/TASK-ENGINE-VERIFY-02.md
+
+forbidden_paths:
+  - reference/n8n/**
+  - crates/**
+  - apps/**
+  - packages/frontend/**
+  - packages/**
+  - tools/**
+  - tests/**
+  - contracts/**
+  - docs/**
+
+requires: []
+
+source_modification: none   # verification only; the tree must be byte-identical after (modulo ignored build output)
+
+operations:
+  - name: git_status
+  - name: run_shell
+    args: { cmd: "npm run verify:all", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "node tools/engine-differential.mjs", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "node --test packages/execution-engine/test/*.test.mjs", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "node tests/compatibility/contract_conformance.mjs", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "python3 tests/integration/boundary_audit.py", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "python3 tests/integration/result_integrity_audit.py", expect_exit: 1 }
+    # expect 1: 6 pre-existing T1 empty-ops in peer/old result files (POOL-001,
+    # POOL-003, TASK-402, TASK-403, TASK-INIT-AGENT-3/4); reconstructing someone
+    # else's audit trail from archaeology would fabricate evidence (ISSUE-020),
+    # so this task records the tally and does NOT touch peer files.
+  - name: run_shell
+    args: { cmd: "npm --prefix packages/expression-lego test", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "npm --prefix packages/connection-lego test", expect_exit: 0 }
+  - name: write_file
+    args: { path: results/TASK-ENGINE-VERIFY-02.md }
+
+acceptance:
+  - every command above re-run on the tip in one session; exact tallies recorded
+  - documented install prerequisites (READMEs) followed verbatim before any verdict
+  - any non-reproducing claim filed as a dated protest in CROSS-AGENT-ISSUES.md
+    (allowed_paths extended only then, single addendum)
+  - results file has a non-empty operations table (Stage 2c T1 clean)
+  - git status clean of source changes at commit time (ignored node_modules/dist only)
+  - no review verdict on own tasks recorded (no self-approval)
+
+merge_condition:
+  - regression_gate_pass
+  - no_contract_violation

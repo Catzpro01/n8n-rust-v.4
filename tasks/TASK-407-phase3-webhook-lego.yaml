@@ -1,0 +1,29 @@
+id: TASK-407-phase3-webhook-lego
+agent: arena-worker
+lego: webhook
+module: webhook-routing
+phase: 3
+status: IMPLEMENTED
+reference: n8n@2.9.4
+objective: Reconstruct webhook registration, lookup, HTTP edge behavior, and test listeners behind persistence and execution ports.
+allowed_paths:
+  - packages/webhook-lego/**
+  - tools/webhook-lego-gate.mjs
+  - docs/isolation/**
+  - tasks/TASK-407-phase3-webhook-lego.yaml
+  - results/TASK-407-phase3-webhook-lego.md
+forbidden_paths:
+  - reference/n8n/**
+  - crates/**
+  - apps/**
+requires:
+  - contracts/webhook.contract.md
+  - contracts/execution.contract.md
+  - contracts/persistence.contract.md
+verification:
+  - npm --prefix packages/webhook-lego test
+  - node tools/webhook-lego-gate.mjs
+acceptance:
+  routing_tests: 10/10
+  gate: 5/5
+  reference_integrity: 15050 files; f8da35180669d798
