@@ -113,6 +113,25 @@ Option A is drafted (not executed) as `tasks/TASK-303-connection.yaml`, status `
 exact 12 graph + 1 content symbols for port `P-CONNECTION-GRAPH`, the types that stay in the shared kernel,
 and the gates that must be green first (Connection row TESTED, Agent 5 + Agent 1 ACK, live 11/11 re-runnable).
 
+### 0.10 `packages/connection-lego/` (core directive — directory decoupling only)
+
+Created in response to the core directive (module 03 = `packages/connection-lego/`). Shape mirrors
+`packages/workflow-lego/`; contents are **the reference code, not a rewrite**:
+
+| piece | what it is |
+|---|---|
+| `src/model-surface.ts` | the only seam: 12 runtime symbols of `P-CONNECTION-GRAPH` (4 traversal, 7 graph-utils, `compareConnections`) + types |
+| `src/adapters/reference/` | `LEGO_PORT_MODE=reference` (default) → `n8n-workflow@2.9.1` `dist/cjs/{common,graph/graph-utils,connections-diff}` |
+| `src/adapters/strict/vendored/` | `LEGO_PORT_MODE=strict` → the 6 reference `.ts` files copied verbatim (only `../interfaces` → `kernel/vocabulary.ts`); test 01 asserts byte-equality with `reference/n8n/...` |
+| `src/kernel/vocabulary.ts` | `NodeConnectionTypes` + `IConnection*` types, drift-checked against `interfaces.ts` |
+| `manifest/ownership.json` | owns / doesNotOwn (CD-04, CD-05, D-10, CD-07) / ports / pinned sha256 of the 6 files |
+| `test/01–04` | boundary+verbatim, fixture replay (34 pure probes of cases 01–07, `wf.*` skipped → LEGO 01), seam parity + `rustImplementation: 'not-started'`, strict isolation (0 `node_modules` on module graph, strict == reference) |
+
+Result: **17/17** in reference mode, **17/17** in strict mode (`node --test test/*.test.mjs`, Node 22, no install).
+JS harness unchanged: 20/20. Not touched: `packages/workflow-lego/**`, `tools/**`, `crates/**`, `reference/n8n/**`.
+Overlap note: Workflow-lego's seam still re-exports graph-utils/connections-diff (frozen 15-symbol surface) — both
+seams bind the same reference bodies, so no divergence; the ownership transfer remains the MSG-18 thread.
+
 ## 1. Purpose
 
 Own the **edge model** of a workflow and the **pure functions** over it:

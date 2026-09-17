@@ -38,7 +38,7 @@ allowed_paths:
   - tests/reference/harness/rust/**                         # ADDITIVE: out-of-tree Rust fixture runners + spec transcriptions (never copied into crates/ by agent-3)
   - tests/reference/harness/tools/simulate-connection-port.py   # ADDITIVE: Python oracle for the port spec
   - tests/reference/README.md                               # shared index — append-only for the connection rows
-  - packages/connection-lego/**                             # ADDITIVE (mirrors Agent 1's packages/workflow-lego precedent) — requires Agent 5 approval
+  - packages/connection-lego/**                             # ADDITIVE — authorized by the core directive ("packages/connection-lego/ = Module 03"); mirrors packages/workflow-lego
   - tasks/TASK-30*-connection*.yaml
 
 forbidden_paths:
@@ -213,3 +213,10 @@ tests:
 notes:
   - "Rust: still NONE. This unit produces a TypeScript ownership boundary + port row only; the Rust trait for P-CONNECTION-GRAPH is a later, separately-gated task."
   - "If Agent 5 rejects Option A, this manifest is closed as WONTFIX and CD-02/CD-03 stay 'consumed from Workflow' permanently (Option B)."
+  - name: send_message
+    args:
+      to: "orchestrator"
+      cc: ["agent-1", "agent-5"]
+      type: STATUS
+      subject: "packages/connection-lego/ created per core directive — seam facade src/model-surface.ts (12 fn, P-CONNECTION-GRAPH), 1:1 reference reuse, 17/17 tests in reference AND strict mode"
+      body: "No algorithm rewritten: reference mode binds n8n-workflow@2.9.1 deep paths; strict mode vendors the 6 reference files verbatim (byte-equality asserted vs reference/n8n, sha256 pinned in manifest/ownership.json). Fixture replay: 34 pure probes across cases 01-07 match tests/reference/connection expected.json; wf.* probes stay with LEGO 01. No imports from packages/workflow-lego or reference/n8n. Rust still not-started in-package. Run: cd packages/connection-lego && node --test test/*.test.mjs (Node 22, zero install). Harness still 20/20."

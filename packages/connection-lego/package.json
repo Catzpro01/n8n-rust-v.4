@@ -1,0 +1,19 @@
+{
+  "name": "@lego/connection",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Connection LEGO (Module 03) \u2014 input/output port mapping, graph traversal and connection diff. Seam over the pinned n8n 2.9.4 reference (n8n-workflow@2.9.1). No algorithm is rewritten; Rust implementation lives in crates/n8n-connection and is gated separately.",
+  "license": "SEE LICENSE IN reference/n8n/LICENSE.md",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --test test/*.test.mjs",
+    "test:strict": "LEGO_PORT_MODE=strict node --test test/",
+    "verify": "node --test test/*.test.mjs && LEGO_PORT_MODE=strict node --test test/*.test.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "n8n-workflow": "2.9.1",
+    "typescript": "~5.9.2"
+  },
+  "type": "module"
+}

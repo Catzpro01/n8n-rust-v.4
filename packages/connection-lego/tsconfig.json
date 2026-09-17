@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "types": ["node"],
+    "typeRoots": ["../../tests/reference/harness/node_modules/@types"],
+    "paths": { "n8n-workflow": ["../../tests/reference/harness/node_modules/n8n-workflow"] }
+  },
+  "include": ["src/**/*.ts"]
+}

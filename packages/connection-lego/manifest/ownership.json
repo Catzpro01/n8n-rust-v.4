@@ -1,0 +1,70 @@
+{
+  "lego": "connection",
+  "module": "03",
+  "agent": "agent-3",
+  "phase": "phase-3-seam",
+  "contract": "contracts/connection.contract.md",
+  "reference": {
+    "pinnedVersion": "2.9.4",
+    "pinnedCommit": "b6dc2787c45677a29a9612cd27eb911302961a83",
+    "sourceRoot": "reference/n8n/packages/workflow/src",
+    "artifact": "n8n-workflow@2.9.1",
+    "rules": [
+      "reference/n8n/** is read-only; this package binds to it, never copies-and-diverges.",
+      "No algorithm is rewritten. Every function on the seam is the reference function, reached through the adapter.",
+      "Ownership of graph/graph-utils + connections-diff follows MSG-02/MSG-10/MSG-12: Option A (Connection owns) for Phase 3; the Workflow LEGO keeps re-exporting them so its frozen 15-symbol surface is unchanged."
+    ]
+  },
+  "owns": {
+    "description": "Connection endpoints, source<->destination inversion, typed traversal over IConnections, main-only graph utilities, connection diff.",
+    "files": [
+      "graph/graph-utils",
+      "connections-diff"
+    ],
+    "filesPendingTransfer": {
+      "note": "Runtime-imported by workflow.ts L5-9 (MSG-12 correction 1). Consumed here, still owned by Workflow until the P-CONNECTION-TRAVERSAL unit runs.",
+      "files": ["common/get-connected-nodes", "common/get-child-nodes", "common/get-parent-nodes", "common/map-connections-by-destination"]
+    },
+    "pinnedSha256": {
+      "common/get-connected-nodes.ts": "179e1cc0698b86ee9da1371cdc7164085acce898b57ce4a04d95ae5879b0d372",
+      "common/get-child-nodes.ts": "833ca272ce3a80c2f7c2c7957d7879cef81d3ccd3826acf4e14c2ef6f89ba37f",
+      "common/get-parent-nodes.ts": "4ccbf85af2837b03e7474ef36d662927e391a361c459f31ca54106c8f285208a",
+      "common/map-connections-by-destination.ts": "79b092618933dcfc9b263bd5841d5b55c60b1424c2379f7a105eb4a156bbbb87",
+      "graph/graph-utils.ts": "cb396a8761d594d6ead26370692e9d3694df53e7c8c384a1210e04618ab533d9",
+      "connections-diff.ts": "3d71809c94bd912e1f37bedd943635bb4d83d6c7a8585c8cd8e0273182acb685"
+    }
+  },
+  "doesNotOwn": [
+    "Workflow class members (getNodeConnectionIndexes, getHighestNode, getStartNode, getParentMainInputNode, getParentNodesByDepth) — LEGO 01, CD-04",
+    "declared port counts / NodeHelpers.getNodeInputs|getNodeOutputs — LEGO 02, CD-05",
+    "cycle detection / topological sort — LEGO 04 (ISSUE-003 Option A) and core partial-execution-utils (D-10)",
+    "IConnection / IConnections / NodeConnectionType(s) — shared kernel types, CD-07"
+  ],
+  "ports": [
+    { "id": "P-KERNEL-TYPES", "direction": "in", "provides": "IConnection, IConnections, NodeConnectionType, NodeConnectionTypes (value)", "adapter": "src/ports/vocabulary.ts" }
+  ],
+  "providedPort": {
+    "id": "P-CONNECTION-GRAPH",
+    "direction": "out",
+    "consumers": ["LEGO 01 Workflow (re-export on its barrel; workflow-diff.ts:11)", "LEGO 04 Validation (DanglingConnections reads traversal)"],
+    "symbols": {
+      "traversal": ["getConnectedNodes", "getChildNodes", "getParentNodes", "mapConnectionsByDestination"],
+      "graph": ["buildAdjacencyList", "getInputEdges", "getOutputEdges", "getRootNodes", "getLeafNodes", "hasPath", "parseExtractableSubgraphSelection"],
+      "content": ["compareConnections"],
+      "types": ["IConnectionAdjacencyList", "ExtractableErrorResult", "ExtractableSubgraphData", "ConnectionsDiff", "INodeConnectionsDiff", "IConnection", "IConnections", "NodeConnectionType"]
+    }
+  },
+  "publicSurface": {
+    "runtime": [
+      "getConnectedNodes", "getChildNodes", "getParentNodes", "mapConnectionsByDestination",
+      "buildAdjacencyList", "getInputEdges", "getOutputEdges", "getRootNodes", "getLeafNodes", "hasPath", "parseExtractableSubgraphSelection",
+      "compareConnections"
+    ]
+  },
+  "conformance": {
+    "fixtures": "tests/reference/connection/*/{case,expected}.json (7 cases, runtime-pinned)",
+    "jsHarness": "node tests/reference/harness/run.js connection",
+    "rustRunner": "tests/reference/harness/rust/",
+    "rustCrate": "crates/n8n-connection (owner: orchestrator; status tracked in docs/isolation/connection-rust-conformance.md)"
+  }
+}
