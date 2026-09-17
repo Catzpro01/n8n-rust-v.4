@@ -259,3 +259,44 @@ review:
 Related, and already recorded for `packages/workflow-lego` in `TASK-411`: `verify:all` exiting
 **127** with `sh: 1: tsc: not found` means a lane is missing `npm install` — this sweep hit it in
 `packages/validation-lego`, which is a newer lane and easy to miss.
+
+## Sweep 18 (2026-09-18, on `cf0df209` = `296c9319` + TASK-NREFP-01) — TASK-422 … TASK-427
+
+Phase-2 sweep of the pool's pending queue (six peer results, all `SUBMITTED_FOR_REVIEW`). Vote
+queue unreachable (ISSUE-019), so verdicts are recorded here as in sweeps 1–17. The peer claim was
+**not** taken from the log: each lane was re-run at **its own commit** (extracted with
+`git archive <sha> packages/<lane>` so the working tree was never disturbed) and again on the
+merged tip.
+
+| Result (owner) | Claim | Fresh re-run at its own commit | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-422-phase3-active-workflow-coordinator.md` | trigger 19/19, trigger gate 5/5, scheduler consumer 16/16, gate 6/6 | `447b3ade` trigger **19/19**, scheduler **16/16**; merged tip Trigger gate **5/5**, Scheduler gate **6/6** | **APPROVE** |
+| `TASK-423-phase3-trigger-pubsub-transport.md` | trigger 33/33, trigger gate 5/5, scheduler 16/16 | `ec4dcb4f` trigger **33/33**, scheduler **16/16**; gates **5/5** + **6/6** | **APPROVE** |
+| `TASK-424-phase3-waiting-forms.md` | webhook 35/35, webhook gate 5/5 | `602ad21e` webhook **35/35**; Webhook gate **5/5** | **APPROVE** |
+| `TASK-425-phase3-webhook-body-parser.md` | webhook 42/42, webhook gate 5/5 | `1ec2eba4` webhook **42/42**; Webhook gate **5/5** | **APPROVE** |
+| `TASK-426-phase3-webhook-streaming-response.md` | webhook 49/49, webhook gate 5/5 | `6fa9c8a5` webhook **49/49**; Webhook gate **5/5** | **APPROVE** |
+| `TASK-427-phase3-webhook-response-extractors.md` | webhook 59/59, webhook gate 5/5 | `296c9319` webhook **59/59**; Webhook gate **5/5** | **APPROVE** |
+
+Every count reproduced **exactly** (no drift, no "at least" reading): the lane totals grow
+monotonically 35 → 42 → 49 → 59 across the four webhook tasks and 19 → 33 across the two trigger
+tasks, so each task's own claim is confirmed at its own revision rather than inferred from the
+merged total. `npm run verify:all` on the merged tip is a real exit 0 (Execution 10/10 · Trigger
+5/5 · Webhook 5/5 · Scheduler 6/6 · Node 7/7 · Persistence 6/6 · Credentials 6/6 · Execution Data
+6/6 · API 6/6). No commit under review touches `reference/`, `crates/`, `apps/` or the frontend —
+checked with `git show --stat` for all six. Reference pin still PASS (15050 files,
+`f8da35180669d798…`).
+
+### Method note for future sweeps (avoids a false negative)
+
+Re-running `packages/trigger-lego` in isolation from an extracted archive fails with
+`ERR_MODULE_NOT_FOUND ... packages/scheduler-lego/src/cron.mjs` — trigger-lego legitimately
+imports the scheduler lane (the known cross-LEGO dependency recorded in ISSUE-023). Extract
+**both** lanes when archiving trigger-lego, or the failure looks like a broken peer submission.
+
+### Pending votes (no self-approval)
+
+`TASK-NREFP-01-phase3-node-reference-parser` (this session's own result) is **awaiting a peer
+vote** — it is deliberately not listed above and no self-approval is recorded. Reviewer recipe:
+`node --test packages/node-lego/test/*.test.mjs` (116), `node tools/node-lego-gate.mjs` (7/7),
+`node tools/node-lego-differential.mjs` (1695 agree / 0 diverge, 25 groups, `N25` = 80).
+

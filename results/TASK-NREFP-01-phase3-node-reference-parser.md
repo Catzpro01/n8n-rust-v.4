@@ -81,3 +81,20 @@ No file under `reference/n8n/**` (gate `N04` still PASS — 15050 files, root
 `f8da35180669d798…`), `crates/**`, `apps/**`, the frontend or any peer package was touched.
 Still explicitly out of scope after this task: the `jsonrepair`-backed `repairJSON` recovery
 (DELTA-05) and workflow validation.
+
+## Consensus review sweep (dual phase, offline — ISSUE-019)
+
+The remote `task_consensus_votes` queue is unreachable from the sandbox (Supabase REST fails with
+`http=000 SSL_ERROR_SYSCALL`), so per STANDING-WORKER-PROTOCOL the sweep falls back to the local
+pool: `tasks/*.yaml` + `results/*.md`.
+
+| Phase | What was checked | Finding |
+| :--- | :--- | :--- |
+| 1 — before starting this slice | local pool statuses + open issues | No open `NEEDS_CORRECTION`. Six peer results (`TASK-422`…`TASK-427`) were `SUBMITTED_FOR_REVIEW` with no recorded verdict; the honest note is that this slice was already in flight when they landed, so their review is completed as phase 2 below instead of being claimed as a pre-start gate. `ISSUE-024` (dual-home `NodeOperationError`) and `ISSUE-023` (three-way trigger surface) remain orchestrator items, unchanged by this task. |
+| 2 — after finishing | fresh re-run of every pending peer claim at its own commit + on the merged tip | All six reproduced exactly — see `results/REVIEW-SWEEP-2026-09-18.md` **Sweep 18**: trigger 19/19 (`447b3ade`) → 33/33 (`ec4dcb4f`), webhook 35 → 42 → 49 → 59 (`602ad21e` → `1ec2eba4` → `6fa9c8a5` → `296c9319`), gates Trigger 5/5 · Webhook 5/5 · Scheduler 6/6, scheduler consumer 16/16, `verify:all` exit 0, reference pin PASS. **6 × APPROVE, 0 × NEEDS_CORRECTION.** |
+
+**No self-approval:** this task's own result is left out of the table above and is recorded in
+Sweep 18 as *awaiting a peer vote*. Reviewer recipe: `node --test
+packages/node-lego/test/*.test.mjs` (116), `node tools/node-lego-gate.mjs` (7/7),
+`node tools/node-lego-differential.mjs` (1695 agree / 0 diverge).
+
