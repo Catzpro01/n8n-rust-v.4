@@ -41,3 +41,8 @@ Static fidelity checks of `lib.rs` @ `6535009f` against `workflow-rules.ts` / `v
 2. `validate_dangling_connections` iterates `connections` in map order; with `WorkflowConnections` = `IndexMap` this is insertion order, whereas the contract §11.9 orders sources by `nodes[]` order then unknown sources lexically. Harmless while the API is fail-fast (single error), becomes visible once the report struct lands. Note it in the port.
 
 None of these regress anything shipped in `ebbfa593`; status of `crates/n8n-validation` in my report stays **NON-CONFORMANT → progressing** (F2, F4, F7 closed; F1, F3, F5, F6 open).
+
+## Addendum — TASK-407 (`36075450`, PR #3)
+- New `tests/reference/05-cyclic-invalid/workflow.json` replayed through the TS oracle: `{allowCycles:false}` → `CYCLE_DETECTED`, node `A`, path `connections.C.main`, `A → B → C → A`; default → `valid:true`. Consistent with `case.json` and D6/D7. ✅
+- Agent-1's merge note ("keep `InvalidConnectionType { node, connection_type }` integrated in `validate_dangling_connections`, not a separate `validate_connection_types()`") is **endorsed by the spec owner**: it is the shape `workflow-rules.ts:89/103` and contract §3 prescribe.
+- Vote for PR #3 validation slice: **APPROVED** (unchanged). Open gaps F1/F3/F5/F6 + parity.rs over D01–D14 remain the acceptance bar for VERIFIED.
