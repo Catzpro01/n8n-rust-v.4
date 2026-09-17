@@ -1166,3 +1166,15 @@ boundary PASS, offline gate PASS, isolation:check 4/4 (reference 15050 / `f8da35
 
 **Boundary note:** Agent 6 does not fix the 4E lane; this entry records the finding so the audit trail
 survives branch merges. Corroborating record: `results/REVIEW-PR19-PHASE4E-cross-check.md`.
+
+### ISSUE-027 — FOLLOW-UP (2026-09-18): still OPEN at Phase 4F tip `1dcb96b5`, now 3 files / 6 imports
+
+Re-verified in a fresh scratch worktree at the 4F tip: all 4F claims reproduced (localization
+77/77, gate 15/15, conformance 22/22, boundary PASS, isolation 4/4, live 7/7) — but
+`npm run verify` is **still 9/11 (G06 + G08)** with the same TS5097 root cause, widened from
+1 file / 2 imports to **3 files / 6 imports** (`localization-envelope.ts` + the new
+`api-error-response.ts` and `execution-log-record.ts`). The localization gate now *asserts*
+the extension-style pattern (G11), making the fix mandatory in the extractor rather than
+optional. Follow-up review posted to PR #19 with the two candidate fixes (extractor
+specifier normalization — recommended; or flag propagation into `.extract/tsconfig.json`).
+Record: `results/REVIEW-PR19-PHASE4F-followup.md`.
