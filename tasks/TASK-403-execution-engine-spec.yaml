@@ -1,0 +1,91 @@
+id: TASK-403-execution-engine-spec
+# take-over owner under protocol §4 (work-stealing); original owner: agent-1
+agent: agent-6
+lego: workflow
+module: execution-engine
+phase: 2
+title: Execution-engine spec for the workflow LEGO (producer of the execution scoping coordinates)
+
+# PUBLISHED AS PART OF THE CORRECTION of the two NEEDS_CORRECTION votes on this task:
+# the task had a result file claiming SUCCESS but no manifest and no operations table, so the
+# claim was unverifiable. This manifest is the missing bookkeeping artifact; the technical
+# correction is the evidence set referenced below.
+
+allowed_paths:
+  - docs/isolation/execution-engine.md
+  - contracts/execution-engine.contract.md
+  - docs/isolation/agent-6-probes/engine-probes.cjs
+  - docs/isolation/agent-6-probes/engine-observations.json
+  - docs/isolation/agent-6-probes/engine-determinism-check.cjs
+  - docs/isolation/agent-6-probes/README.md
+  - results/TASK-403-execution-engine-spec.md
+  - tasks/TASK-403-execution-engine-spec.yaml
+
+forbidden_paths:
+  - crates/**                        # Phase 2 is isolation-only on this branch
+  - apps/**
+  - reference/n8n/**                 # read-only behavioural truth
+  - tests/reference/**               # golden fixtures: protection rule
+
+operations:
+  - name: read_reference_source
+    args:
+      files:
+        - packages/core/src/execution-engine/workflow-execute.ts          # 2655 L, read in full pass
+        - packages/core/src/execution-engine/node-execution-context/base-execute-context.ts
+        - packages/core/src/execution-engine/node-execution-context/node-execution-context.ts
+        - packages/core/src/execution-engine/node-execution-context/execute-context.ts
+        - packages/core/src/execution-engine/routing-node.ts              # only ExecuteSingleContext site (:93)
+        - packages/core/src/execution-engine/utils/{get-additional-keys,execution-metadata,resolve-source-overwrite}.ts
+        - packages/workflow/src/workflow.ts                                 # getStartNode :817-890
+      runtime_version: '2.9.1'
+
+  - name: record_runtime_observations
+    args:
+      runner: docs/isolation/agent-6-probes/engine-probes.cjs
+      outfile: docs/isolation/agent-6-probes/engine-observations.json
+      command: 'NODE_PATH=$PWD/.runtime/node_modules node docs/isolation/agent-6-probes/engine-probes.cjs docs/isolation/agent-6-probes/engine-observations.json'
+      groups: 13                    # 403A, 403A2, 403B, 403C, 403D, 403E, 403E.timeout, 403F, 403G, 403H, 403I, 403J, 403K
+      leaf_values: 4601
+      recorded_throws: 10
+      lifecycle_scenarios: 24
+      sha256: 0016e713b34240dda1efc8eaa2abec442b2fcc7376497a24056519f380f020fb
+
+  - name: replay_determinism_check
+    args:
+      command: 'node docs/isolation/agent-6-probes/engine-determinism-check.cjs <run1.json> <run2.json>'
+      expected: 'ENGINE DETERMINISM CHECK: MATCH'
+      masked_fields: [generatedAt, startTime, executionTime, establishedAt, timestamp, instanceId, pushRef, lineNumber]
+
+  - name: write_anatomy
+    args: { path: docs/isolation/execution-engine.md, findings: [E1, E2, E3, E4, E5, E6, E7, E8, E9, E10] }
+
+  - name: write_contract
+    args: { path: contracts/execution-engine.contract.md, rules: 'O1..O25', invariants: 'INV-1..INV-8', gaps: 'G-1..G-5' }
+
+  - name: gate_reference_manifest
+    args: { command: 'node tools/workflow-reference-manifest.mjs --check', expected: 'PASS 15050 files' }
+
+  - name: gate_result_integrity
+    args: { command: 'python3 tests/integration/result_integrity_audit.py', expected: 'this task passes T1 (STATUS + non-empty operations table + existing evidence paths)' }
+
+  - name: request_re_review
+    args:
+      note: >-
+        Both prior NEEDS_CORRECTION votes (agent-1 self-record and the independent review on
+        arena/01a0ace3) are addressed. Under the anti-double-vote rule the take-over owner does not
+        re-vote on its own task; a fresh reviewer must set the status.
+
+deliverables:
+  - docs/isolation/execution-engine.md
+  - contracts/execution-engine.contract.md
+  - docs/isolation/agent-6-probes/engine-probes.cjs
+  - docs/isolation/agent-6-probes/engine-observations.json
+  - docs/isolation/agent-6-probes/engine-determinism-check.cjs
+
+merge_condition:
+  - re_review_by_agent_that_did_not_author_this_takeover
+  - engine_evidence_reproducible_from_clean_checkout   # runner + determinism script committed
+  - no_changes_under_crates_or_apps
+
+expected_outcome: CORRECTED_AND_READY_FOR_RE_REVIEW

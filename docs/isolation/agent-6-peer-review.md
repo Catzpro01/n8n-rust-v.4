@@ -149,3 +149,30 @@ audience: `contracts/variable-lookup.contract.md` §8 and `contracts/expression-
 are written as the exact consumer contract a Phase-3 `n8n-expression` port must satisfy, and
 `13E_gap_closure` now pins the four behaviours that are easiest to get wrong while porting (`$fromAI`
 source selection, `$tool` fallback, eager `$agentInfo`, lineage `sourceOverwrite` + its crash).
+
+---
+
+## Third pass — §4 work-stealing cycle (2026-09-17, protocol `0af2f152`)
+
+The protocol changed the shape of this ledger's job. Under the blocking cycle I could only *report* on other agents'
+results; under the non-blocking cycle with §4, a `NEEDS_CORRECTION` task is unlocked and **any free agent may take the
+work over**, with the previous review history kept as an audit trail. The pool still had nothing addressed to `agent-6`
+(24 manifests in `tasks/`, none mine; `dynamic_task_pool` on Supabase still unreachable), so I acted on the protested
+tasks I can actually fix instead of idling.
+
+What I did, and what I deliberately did **not** do:
+
+| Task | Prior state | My action (as take-over worker) | Not done, on purpose |
+| :--- | :--- | :--- | :--- |
+| `TASK-403-execution-engine-spec` | `SUCCESS`, empty ops table, no manifest, no `docs/isolation/execution-engine.md` / `contracts/execution-engine.contract.md`; 2 `NEEDS_CORRECTION` votes (mine + `01a0ace3`) | took ownership; wrote the anatomy (`E1`–`E10`) and the contract (`IF-1..6`, `O1..O25`, `INV-1..8`, `G-1..G-5`); published `tasks/TASK-403-execution-engine-spec.yaml`; recorded 13 probe groups / 4601 values from real `WorkflowExecute` runs (sha256 `0016e713b34240dd…`, determinism **MATCH**); rewrote the result with a filled ops table | did **not** cast a second vote (anti-double-vote) and did **not** set the task to approved (anti-self-approval) — re-review is requested instead |
+| `TASK-402-connection-spec`, `TASK-INIT-AGENT-3`, `TASK-INIT-AGENT-4` | `SUCCESS` with empty tables; no manifests | appended a labelled *verification record* (existence, line counts, sha256 prefixes, `--all` vs `HEAD` commit reachability, staleness diff vs `peers/01a0ac05/06`), so each file is self-consistent for `T1`; filed `ISSUE-020` for the provenance gap | did **not** rewrite their status or invent their operations — I never ran their pipeline, so a table of "operations" written by me would have been the same category of fabrication the protest was about |
+| `TASK-PIPE-12`, `TASK-PIPE-13` (mine) | delivered, 0 protests anywhere (re-checked across all fetched peer refs) | nothing to do | will not review my own records |
+
+The single most useful thing the take-over produced for **other** LEGO owners, not just for `workflow`: `403H` shows that
+`onError: 'continueErrorOutput'` makes `NodeHelpers.getNodeOutputs` return a *synthetic* third main output, so
+`handleNodeErrorOutput` writes errors one branch past the node's own last output (`data.main = [2,0,2]`, the connected
+error path left empty). Any port of the engine, and any node-model contract that describes error outputs, has to
+reproduce that off-by-one — it is now recorded with the observed value in
+[`../contracts/execution-engine.contract.md`](../../contracts/execution-engine.contract.md) `O17`. Second: `403C` proves the
+per-task error record is a plain `{...e, message, stack}` snapshot (`instanceof Error === false`, `context` overwritten to
+`{itemIndex, runIndex, metadata}`), which is the constraint `execution-data` owners must respect when they persist run data.

@@ -1,0 +1,5586 @@
+{
+  "meta": {
+    "generatedAt": "2026-09-17T02:05:56.697Z",
+    "runtime": {
+      "n8n-core": "2.9.1",
+      "n8n-workflow": "2.9.1"
+    },
+    "node": "v22.22.3"
+  },
+  "403A_context_surface": {
+    "capturedContexts": 1,
+    "context": {
+      "label": "Probe",
+      "class": "ExecuteContext",
+      "protoChain": [
+        {
+          "class": "ExecuteContext",
+          "members": [
+            "addExecutionHints",
+            "addInputData",
+            "addOutputData",
+            "getInputConnectionData",
+            "getInputData",
+            "getParentCallbackManager",
+            "isStreaming",
+            "isToolExecution",
+            "logNodeOutput",
+            "sendChunk",
+            "sendResponse"
+          ]
+        },
+        {
+          "class": "BaseExecuteContext",
+          "members": [
+            "continueOnFail",
+            "executeWorkflow",
+            "getContext",
+            "getCredentials",
+            "getExecuteData",
+            "getExecutionCancelSignal",
+            "getExecutionContext",
+            "getExecutionDataById",
+            "getInputItems",
+            "getInputSourceData",
+            "getRunnerStatus",
+            "getWorkflowDataProxy",
+            "logAiEvent",
+            "onExecutionCancellation",
+            "putExecutionToWait",
+            "sendMessageToUI",
+            "setMetadata",
+            "startJob"
+          ]
+        },
+        {
+          "class": "NodeExecutionContext",
+          "members": [
+            "_getCredentials",
+            "_getNodeParameter",
+            "additionalKeys",
+            "evaluateExpression",
+            "getChatTrigger",
+            "getChildNodes",
+            "getConnectedNodes",
+            "getConnections",
+            "getCredentialsProperties",
+            "getExecutionContext",
+            "getExecutionId",
+            "getInstanceBaseUrl",
+            "getInstanceId",
+            "getKnownNodeTypes",
+            "getMode",
+            "getNode",
+            "getNodeInputs",
+            "getNodeOutputs",
+            "getNodeParameter",
+            "getParentNodes",
+            "getRestApiUrl",
+            "getSignedResumeUrl",
+            "getTimezone",
+            "getWorkflow",
+            "getWorkflowSettings",
+            "getWorkflowStaticData",
+            "isNodeFeatureEnabled",
+            "logger",
+            "nodeFeatures",
+            "nodeInputs",
+            "nodeOutputs",
+            "nodeType",
+            "prepareOutputData",
+            "setSignatureValidationRequired",
+            "workflowSettings"
+          ]
+        }
+      ],
+      "fields": {
+        "abortSignal": {
+          "__type": "object",
+          "keys": []
+        },
+        "additionalData": {
+          "__type": "object",
+          "keys": [
+            "credentialsHelper",
+            "executeWorkflow",
+            "restApiUrl",
+            "instanceBaseUrl",
+            "webhookBaseUrl",
+            "webhookWaitingBaseUrl",
+            "webhookTestBaseUrl",
+            "formWaitingBaseUrl",
+            "userId",
+            "variables",
+            "hooks",
+            "currentNodeExecutionIndex",
+            "executionId"
+          ]
+        },
+        "closeFunctions": {
+          "__type": "array",
+          "length": 0
+        },
+        "connectionInputData": {
+          "__type": "array",
+          "length": 3
+        },
+        "executeData": {
+          "__type": "object",
+          "keys": [
+            "node",
+            "data",
+            "source",
+            "runIndex",
+            "metadata"
+          ]
+        },
+        "getNodeParameter": {
+          "__type": "function"
+        },
+        "helpers": {
+          "__type": "object",
+          "keys": [
+            "createDeferredPromise",
+            "returnJsonArray",
+            "copyInputItems",
+            "normalizeItems",
+            "constructExecutionMetaData",
+            "httpRequest",
+            "requestWithAuthenticationPaginated",
+            "httpRequestWithAuthentication",
+            "refreshOAuth2Token",
+            "request",
+            "requestWithAuthentication",
+            "requestOAuth1",
+            "requestOAuth2",
+            "getBinaryPath"
+          ]
+        },
+        "hints": {
+          "__type": "array",
+          "length": 0
+        },
+        "inputData": {
+          "__type": "object",
+          "keys": [
+            "main"
+          ]
+        },
+        "instanceSettings": {
+          "__type": "object",
+          "keys": [
+            "config",
+            "logger",
+            "n8nFolder",
+            "staticCacheDir",
+            "customExtensionDir",
+            "nodesDownloadDir",
+            "nodeDefinitionsDir",
+            "settingsFile",
+            "enforceSettingsFilePermissions",
+            "instanceRole",
+            "isMultiMainEnabled",
+            "isMultiMainLicensed",
+            "instanceType",
+            "hostId"
+          ]
+        },
+        "mode": "manual",
+        "node": {
+          "__type": "object",
+          "keys": [
+            "id",
+            "name",
+            "type",
+            "typeVersion",
+            "position",
+            "parameters"
+          ]
+        },
+        "nodeHelpers": {
+          "__type": "object",
+          "keys": [
+            "copyBinaryFile"
+          ]
+        },
+        "runExecutionData": {
+          "__type": "object",
+          "keys": [
+            "version",
+            "startData",
+            "resultData",
+            "executionData",
+            "parentExecution",
+            "validateSignature",
+            "waitTill",
+            "manualData",
+            "pushRef"
+          ]
+        },
+        "runIndex": 0,
+        "subNodeExecutionResults": {
+          "__type": "object",
+          "keys": [
+            "actionResponses",
+            "metadata"
+          ]
+        },
+        "workflow": {
+          "__type": "object",
+          "keys": [
+            "id",
+            "name",
+            "nodes",
+            "connectionsBySourceNode",
+            "connectionsByDestinationNode",
+            "nodeTypes",
+            "expression",
+            "active",
+            "settings",
+            "timezone",
+            "staticData",
+            "testStaticData",
+            "pinData"
+          ]
+        }
+      },
+      "methods": {
+        "getMode": "manual",
+        "getExecutionId": "eng-manual-1",
+        "getExecutionContext": {
+          "version": 1,
+          "establishedAt": 1789610756702,
+          "source": "manual",
+          "triggerNode": {
+            "name": "Start",
+            "type": "n8n-nodes-base.manualTrigger"
+          }
+        },
+        "workflowName": "eng",
+        "timezone": "America/New_York",
+        "workflowSettings": {
+          "executionOrder": "v1"
+        },
+        "nodeTypeDescriptionName": "ctxProbe",
+        "nodeInputsGetter": [
+          {
+            "type": "main"
+          }
+        ],
+        "nodeOutputsGetter": [
+          {
+            "type": "main"
+          }
+        ],
+        "getNodeInputs": [
+          {
+            "type": "main"
+          }
+        ],
+        "getNodeOutputs": [
+          {
+            "type": "main"
+          }
+        ],
+        "knownNodeTypesRaw": {
+          "type": "object",
+          "keys": []
+        },
+        "getChildNodes": [],
+        "getParentNodes": [
+          {
+            "name": "Start",
+            "type": "n8n-nodes-base.manualTrigger",
+            "typeVersion": 1,
+            "disabled": false
+          }
+        ],
+        "getConnectedNodes": [
+          {
+            "id": "Start",
+            "name": "Start",
+            "type": "n8n-nodes-base.manualTrigger",
+            "typeVersion": 1,
+            "position": [
+              0,
+              0
+            ],
+            "parameters": {}
+          }
+        ],
+        "isToolExecution": false,
+        "continueOnFail": false,
+        "isStreaming": false,
+        "getInputDataLen": 3,
+        "getInputConnectionData": {
+          "type": "function"
+        },
+        "getInputSourceData": {
+          "previousNode": "Start",
+          "previousNodeOutput": 0,
+          "previousNodeRun": 0
+        },
+        "currentNodeExecutionIndexOnAdditionalData": 2,
+        "getExecuteDataKeys": [
+          "data",
+          "metadata",
+          "node",
+          "runIndex",
+          "source"
+        ],
+        "cancelSignal": {
+          "aborted": false,
+          "ctor": "AbortSignal"
+        },
+        "onExecutionCancellation": {
+          "type": "function"
+        },
+        "workflowStaticData": {
+          "type": "object"
+        },
+        "restApiUrl": "",
+        "instanceBaseUrl": "",
+        "instanceIdPresent": true,
+        "proxyOwnKeys": [
+          "$",
+          "$agentInfo",
+          "$binary",
+          "$data",
+          "$env",
+          "$evaluateExpression",
+          "$execution",
+          "$executionId",
+          "$fromAI",
+          "$fromAi",
+          "$fromai",
+          "$getPairedItem",
+          "$input",
+          "$item",
+          "$itemIndex",
+          "$items",
+          "$jmesPath",
+          "$jmespath",
+          "$json",
+          "$mode",
+          "$node",
+          "$nodeId",
+          "$nodeVersion",
+          "$now",
+          "$parameter",
+          "$position",
+          "$prevNode",
+          "$rawParameter",
+          "$resumeWebhookUrl",
+          "$runIndex",
+          "$secrets",
+          "$self",
+          "$thisItem",
+          "$thisItemIndex",
+          "$thisRunIndex",
+          "$today",
+          "$tool",
+          "$vars",
+          "$webhookId",
+          "$workflow",
+          "DateTime",
+          "Duration",
+          "Interval"
+        ],
+        "additionalKeysKeys": [
+          "$execution",
+          "$executionId",
+          "$resumeWebhookUrl",
+          "$secrets",
+          "$vars"
+        ],
+        "helpersKeys": [
+          "assertBinaryData",
+          "binaryToBuffer",
+          "binaryToString",
+          "checkProcessedAndRecord",
+          "checkProcessedItemsAndRecord",
+          "clearAllProcessedItems",
+          "constructExecutionMetaData",
+          "copyBinaryFile",
+          "copyInputItems",
+          "createBinarySignedUrl",
+          "createDeferredPromise",
+          "createReadStream",
+          "detectBinaryEncoding",
+          "getBinaryDataBuffer",
+          "getBinaryMetadata",
+          "getBinaryPath",
+          "getBinaryStream",
+          "getProcessedDataCount",
+          "getSSHClient",
+          "getStoragePath",
+          "httpRequest",
+          "httpRequestWithAuthentication",
+          "isFilePathBlocked",
+          "normalizeItems",
+          "prepareBinaryData",
+          "refreshOAuth2Token",
+          "removeProcessed",
+          "request",
+          "requestOAuth1",
+          "requestOAuth2",
+          "requestWithAuthentication",
+          "requestWithAuthenticationPaginated",
+          "resolvePath",
+          "returnJsonArray",
+          "setBinaryDataBuffer",
+          "updateLastUsed",
+          "writeContentToFile"
+        ],
+        "nodeHelpersKeys": [
+          "copyBinaryFile"
+        ],
+        "hintsArray": {
+          "isArray": true,
+          "length": 0
+        },
+        "runnerStatus": {
+          "available": true
+        },
+        "addInputData": {
+          "threw": {
+            "__type": "ApplicationError",
+            "message": "addInputData should not be called on IExecuteFunctions"
+          }
+        },
+        "addOutputData": {
+          "threw": {
+            "__type": "ApplicationError",
+            "message": "addOutputData should not be called on IExecuteFunctions"
+          }
+        },
+        "getNodeParameter_value": 2,
+        "evaluateExpression_itemIndex": 0
+      },
+      "proxySurfaceFromEngine": {
+        "$itemIndex": 0,
+        "$runIndex": 0,
+        "$mode": "manual",
+        "$position": 0,
+        "$workflow": {
+          "active": false,
+          "id": "eng",
+          "name": "eng"
+        },
+        "$prevNode": {
+          "name": "Start",
+          "outputIndex": 0,
+          "runIndex": 0
+        },
+        "$nodeVersion": 1,
+        "$nodeId": "Probe",
+        "$execution": {
+          "id": "eng-manual-1",
+          "mode": "test",
+          "resumeUrl": "/eng-manual-1",
+          "resumeFormUrl": "/eng-manual-1",
+          "customData": {
+            "set": {
+              "__type": "function",
+              "name": "set"
+            },
+            "setAll": {
+              "__type": "function",
+              "name": "setAll"
+            },
+            "get": {
+              "__type": "function",
+              "name": "get"
+            },
+            "getAll": {
+              "__type": "function",
+              "name": "getAll"
+            }
+          }
+        },
+        "$executionId": "eng-manual-1",
+        "$config": {
+          "__type": "undefined"
+        },
+        "$json": {
+          "n": 0
+        },
+        "$inputKeys": [
+          "all",
+          "context",
+          "first",
+          "item",
+          "last",
+          "params"
+        ],
+        "$executionRunningMode": "test"
+      }
+    },
+    "note": "ExecuteContext (index-based) is what WorkflowExecute.executeNode() builds (workflow-execute.ts:1020); ExecuteSingleContext is only built for routing-node sub-executions (routing-node.ts:93).",
+    "run": {
+      "status": "success",
+      "finished": true,
+      "mode": "manual",
+      "lastNodeExecuted": "Probe",
+      "runDataKeys": [
+        "Start",
+        "Probe"
+      ],
+      "runExecutionDataTopKeys": [
+        "executionData",
+        "manualData",
+        "parentExecution",
+        "pushRef",
+        "resultData",
+        "startData",
+        "validateSignature",
+        "version",
+        "waitTill"
+      ],
+      "resultDataKeys": [
+        "error",
+        "lastNodeExecuted",
+        "metadata",
+        "pinData",
+        "runData"
+      ],
+      "perNode": {
+        "Start": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 0,
+              "data": {
+                "main": [
+                  3
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  },
+                  {
+                    "n": 2
+                  }
+                ]
+              ],
+              "source": [],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  },
+                  {
+                    "item": 2
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "Probe": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 1,
+              "data": {
+                "main": [
+                  3
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  },
+                  {
+                    "n": 2
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Start",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  },
+                  {
+                    "item": 2
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        }
+      },
+      "startData": {
+        "destination": null,
+        "runNodeFilter": null
+      }
+    }
+  },
+  "403A2_context_surface_without_executionId": {
+    "getExecutionId": {
+      "__type": "undefined"
+    },
+    "executionProxy": {
+      "id": "__UNKNOWN__",
+      "mode": "test",
+      "resumeUrl": "/__UNKNOWN__",
+      "resumeFormUrl": "/__UNKNOWN__",
+      "customData": {
+        "set": {
+          "__type": "function",
+          "name": "set"
+        },
+        "setAll": {
+          "__type": "function",
+          "name": "setAll"
+        },
+        "get": {
+          "__type": "function",
+          "name": "get"
+        },
+        "getAll": {
+          "__type": "function",
+          "name": "getAll"
+        }
+      }
+    },
+    "executionIdProxy": "__UNKNOWN__"
+  },
+  "403B_one_context_per_node_run": {
+    "contextCount": 2,
+    "identities": [
+      {
+        "node": "P1",
+        "runIndex": 0,
+        "itemIndexField": "absent — ExecuteContext resolves the item lazily via getNodeParameter(name, itemIndex)",
+        "inputDataLen": 4,
+        "connectionInputDataLen": 4,
+        "proxyItemIndex": 0
+      },
+      {
+        "node": "P2",
+        "runIndex": 0,
+        "itemIndexField": "absent — ExecuteContext resolves the item lazily via getNodeParameter(name, itemIndex)",
+        "inputDataLen": 4,
+        "connectionInputDataLen": 4,
+        "proxyItemIndex": 0
+      }
+    ]
+  },
+  "403C_lifecycle_matrix": {
+    "linear_success": {
+      "status": "success",
+      "finished": true,
+      "mode": "manual",
+      "lastNodeExecuted": "B",
+      "runDataKeys": [
+        "Start",
+        "A",
+        "B"
+      ],
+      "runExecutionDataTopKeys": [
+        "executionData",
+        "manualData",
+        "parentExecution",
+        "pushRef",
+        "resultData",
+        "startData",
+        "validateSignature",
+        "version",
+        "waitTill"
+      ],
+      "resultDataKeys": [
+        "error",
+        "lastNodeExecuted",
+        "metadata",
+        "pinData",
+        "runData"
+      ],
+      "perNode": {
+        "Start": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 0,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "A": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 1,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Start",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "B": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 2,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "A",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        }
+      },
+      "startData": {
+        "destination": null,
+        "runNodeFilter": null
+      }
+    },
+    "disabled_node_passes_input_through": {
+      "status": "success",
+      "finished": true,
+      "mode": "manual",
+      "lastNodeExecuted": "B",
+      "runDataKeys": [
+        "Start",
+        "Off",
+        "B"
+      ],
+      "runExecutionDataTopKeys": [
+        "executionData",
+        "manualData",
+        "parentExecution",
+        "pushRef",
+        "resultData",
+        "startData",
+        "validateSignature",
+        "version",
+        "waitTill"
+      ],
+      "resultDataKeys": [
+        "error",
+        "lastNodeExecuted",
+        "metadata",
+        "pinData",
+        "runData"
+      ],
+      "perNode": {
+        "Start": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 0,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "Off": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 1,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Start",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "B": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 2,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Off",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        }
+      },
+      "startData": {
+        "destination": null,
+        "runNodeFilter": null
+      }
+    },
+    "throw_stops_workflow": {
+      "status": "error",
+      "mode": "manual",
+      "lastNodeExecuted": "Boom",
+      "runDataKeys": [
+        "Start",
+        "Boom"
+      ],
+      "resultError": {
+        "name": "Object",
+        "message": "permanent boom",
+        "isErrorInstance": false
+      },
+      "runExecutionDataTopKeys": [
+        "executionData",
+        "manualData",
+        "parentExecution",
+        "pushRef",
+        "resultData",
+        "startData",
+        "validateSignature",
+        "version",
+        "waitTill"
+      ],
+      "resultDataKeys": [
+        "error",
+        "lastNodeExecuted",
+        "metadata",
+        "pinData",
+        "runData"
+      ],
+      "perNode": {
+        "Start": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 0,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "Boom": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "error",
+              "ei": 1,
+              "source": [
+                {
+                  "prev": "Start",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "error": {
+                "name": "Object",
+                "message": "permanent boom",
+                "keys": [
+                  "message",
+                  "stack"
+                ],
+                "isErrorInstance": false,
+                "hasCause": false
+              },
+              "hasExecutionTime": "number"
+            }
+          ]
+        }
+      },
+      "startData": {
+        "destination": null,
+        "runNodeFilter": null
+      }
+    },
+    "throw_continueOnFail_passthrough": {
+      "status": "success",
+      "finished": true,
+      "mode": "manual",
+      "lastNodeExecuted": "After",
+      "runDataKeys": [
+        "Start",
+        "Boom",
+        "After"
+      ],
+      "runExecutionDataTopKeys": [
+        "executionData",
+        "manualData",
+        "parentExecution",
+        "pushRef",
+        "resultData",
+        "startData",
+        "validateSignature",
+        "version",
+        "waitTill"
+      ],
+      "resultDataKeys": [
+        "error",
+        "lastNodeExecuted",
+        "metadata",
+        "pinData",
+        "runData"
+      ],
+      "perNode": {
+        "Start": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 0,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "Boom": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "error",
+              "ei": 1,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Start",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "error": {
+                "name": "Object",
+                "message": "permanent boom",
+                "keys": [
+                  "message",
+                  "stack"
+                ],
+                "isErrorInstance": false,
+                "hasCause": false
+              },
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "After": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 2,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Boom",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        }
+      },
+      "startData": {
+        "destination": null,
+        "runNodeFilter": null
+      }
+    },
+    "returns_null_ends_branch": {
+      "status": "success",
+      "finished": true,
+      "mode": "manual",
+      "lastNodeExecuted": "Start",
+      "runDataKeys": [
+        "Start"
+      ],
+      "runExecutionDataTopKeys": [
+        "executionData",
+        "manualData",
+        "parentExecution",
+        "pushRef",
+        "resultData",
+        "startData",
+        "validateSignature",
+        "version",
+        "waitTill"
+      ],
+      "resultDataKeys": [
+        "error",
+        "lastNodeExecuted",
+        "metadata",
+        "pinData",
+        "runData"
+      ],
+      "perNode": {
+        "Start": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 0,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        }
+      },
+      "startData": {
+        "destination": null,
+        "runNodeFilter": null
+      }
+    },
+    "empty_branch_output": {
+      "status": "success",
+      "finished": true,
+      "mode": "manual",
+      "lastNodeExecuted": "Empty",
+      "runDataKeys": [
+        "Start",
+        "Empty"
+      ],
+      "runExecutionDataTopKeys": [
+        "executionData",
+        "manualData",
+        "parentExecution",
+        "pushRef",
+        "resultData",
+        "startData",
+        "validateSignature",
+        "version",
+        "waitTill"
+      ],
+      "resultDataKeys": [
+        "error",
+        "lastNodeExecuted",
+        "metadata",
+        "pinData",
+        "runData"
+      ],
+      "perNode": {
+        "Start": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 0,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "Empty": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 1,
+              "data": {
+                "main": [
+                  0
+                ]
+              },
+              "dataJson": [
+                []
+              ],
+              "source": [
+                {
+                  "prev": "Start",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                []
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        }
+      },
+      "startData": {
+        "destination": null,
+        "runNodeFilter": null
+      }
+    },
+    "alwaysOutputData_on_empty": {
+      "status": "success",
+      "finished": true,
+      "mode": "manual",
+      "lastNodeExecuted": "After",
+      "runDataKeys": [
+        "Start",
+        "Empty",
+        "After"
+      ],
+      "runExecutionDataTopKeys": [
+        "executionData",
+        "manualData",
+        "parentExecution",
+        "pushRef",
+        "resultData",
+        "startData",
+        "validateSignature",
+        "version",
+        "waitTill"
+      ],
+      "resultDataKeys": [
+        "error",
+        "lastNodeExecuted",
+        "metadata",
+        "pinData",
+        "runData"
+      ],
+      "perNode": {
+        "Start": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 0,
+              "data": {
+                "main": [
+                  3
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  },
+                  {
+                    "n": 2
+                  }
+                ]
+              ],
+              "source": [],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  },
+                  {
+                    "item": 2
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "Empty": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 1,
+              "data": {
+                "main": [
+                  1
+                ]
+              },
+              "dataJson": [
+                [
+                  {}
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Start",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  [
+                    {
+                      "item": 0,
+                      "input": 0
+                    },
+                    {
+                      "item": 1,
+                      "input": 0
+                    },
+                    {
+                      "item": 2,
+                      "input": 0
+                    }
+                  ]
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "After": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 2,
+              "data": {
+                "main": [
+                  1
+                ]
+              },
+              "dataJson": [
+                [
+                  {}
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Empty",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        }
+      },
+      "startData": {
+        "destination": null,
+        "runNodeFilter": null
+      }
+    },
+    "error_in_json_soft_failure": {
+      "status": "success",
+      "finished": true,
+      "mode": "manual",
+      "lastNodeExecuted": "After",
+      "runDataKeys": [
+        "Start",
+        "Soft",
+        "After"
+      ],
+      "runExecutionDataTopKeys": [
+        "executionData",
+        "manualData",
+        "parentExecution",
+        "pushRef",
+        "resultData",
+        "startData",
+        "validateSignature",
+        "version",
+        "waitTill"
+      ],
+      "resultDataKeys": [
+        "error",
+        "lastNodeExecuted",
+        "metadata",
+        "pinData",
+        "runData"
+      ],
+      "perNode": {
+        "Start": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 0,
+              "data": {
+                "main": [
+                  1
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  }
+                ]
+              ],
+              "source": [],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "Soft": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 1,
+              "data": {
+                "main": [
+                  1
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "error": "soft failure"
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Start",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "After": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 2,
+              "data": {
+                "main": [
+                  1
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "error": "soft failure"
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Soft",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        }
+      },
+      "startData": {
+        "destination": null,
+        "runNodeFilter": null
+      }
+    },
+    "retryOnFail_recovers": {
+      "status": "success",
+      "finished": true,
+      "mode": "manual",
+      "lastNodeExecuted": "After",
+      "runDataKeys": [
+        "Start",
+        "Flaky",
+        "After"
+      ],
+      "runExecutionDataTopKeys": [
+        "executionData",
+        "manualData",
+        "parentExecution",
+        "pushRef",
+        "resultData",
+        "startData",
+        "validateSignature",
+        "version",
+        "waitTill"
+      ],
+      "resultDataKeys": [
+        "error",
+        "lastNodeExecuted",
+        "metadata",
+        "pinData",
+        "runData"
+      ],
+      "perNode": {
+        "Start": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 0,
+              "data": {
+                "main": [
+                  1
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  }
+                ]
+              ],
+              "source": [],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "Flaky": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 1,
+              "data": {
+                "main": [
+                  1
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "recoveredAfterAttempts": 2
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Start",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "After": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 2,
+              "data": {
+                "main": [
+                  1
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "recoveredAfterAttempts": 2
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Flaky",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        }
+      },
+      "startData": {
+        "destination": null,
+        "runNodeFilter": null
+      }
+    },
+    "executeOnce_slices_inputs": {
+      "status": "success",
+      "finished": true,
+      "mode": "manual",
+      "lastNodeExecuted": "Once",
+      "runDataKeys": [
+        "Start",
+        "Once"
+      ],
+      "runExecutionDataTopKeys": [
+        "executionData",
+        "manualData",
+        "parentExecution",
+        "pushRef",
+        "resultData",
+        "startData",
+        "validateSignature",
+        "version",
+        "waitTill"
+      ],
+      "resultDataKeys": [
+        "error",
+        "lastNodeExecuted",
+        "metadata",
+        "pinData",
+        "runData"
+      ],
+      "perNode": {
+        "Start": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 0,
+              "data": {
+                "main": [
+                  4
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  },
+                  {
+                    "n": 2
+                  },
+                  {
+                    "n": 3
+                  }
+                ]
+              ],
+              "source": [],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  },
+                  {
+                    "item": 2
+                  },
+                  {
+                    "item": 3
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "Once": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 1,
+              "data": {
+                "main": [
+                  1
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "count": 1
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Start",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        }
+      },
+      "startData": {
+        "destination": null,
+        "runNodeFilter": null
+      }
+    },
+    "no_executeOnce_sees_all": {
+      "status": "success",
+      "finished": true,
+      "mode": "manual",
+      "lastNodeExecuted": "All",
+      "runDataKeys": [
+        "Start",
+        "All"
+      ],
+      "runExecutionDataTopKeys": [
+        "executionData",
+        "manualData",
+        "parentExecution",
+        "pushRef",
+        "resultData",
+        "startData",
+        "validateSignature",
+        "version",
+        "waitTill"
+      ],
+      "resultDataKeys": [
+        "error",
+        "lastNodeExecuted",
+        "metadata",
+        "pinData",
+        "runData"
+      ],
+      "perNode": {
+        "Start": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 0,
+              "data": {
+                "main": [
+                  4
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  },
+                  {
+                    "n": 2
+                  },
+                  {
+                    "n": 3
+                  }
+                ]
+              ],
+              "source": [],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  },
+                  {
+                    "item": 2
+                  },
+                  {
+                    "item": 3
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "All": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 1,
+              "data": {
+                "main": [
+                  1
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "count": 4
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Start",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        }
+      },
+      "startData": {
+        "destination": null,
+        "runNodeFilter": null
+      }
+    },
+    "pinned_middle_manual": {
+      "status": "success",
+      "finished": true,
+      "mode": "manual",
+      "lastNodeExecuted": "After",
+      "runDataKeys": [
+        "Start",
+        "Pin",
+        "After"
+      ],
+      "runExecutionDataTopKeys": [
+        "executionData",
+        "manualData",
+        "parentExecution",
+        "pushRef",
+        "resultData",
+        "startData",
+        "validateSignature",
+        "version",
+        "waitTill"
+      ],
+      "resultDataKeys": [
+        "error",
+        "lastNodeExecuted",
+        "metadata",
+        "pinData",
+        "runData"
+      ],
+      "perNode": {
+        "Start": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 0,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "Pin": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 1,
+              "data": {
+                "main": [
+                  1
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "pinned": true
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Start",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "After": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 2,
+              "data": {
+                "main": [
+                  1
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "pinned": true
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Pin",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        }
+      },
+      "startData": {
+        "destination": null,
+        "runNodeFilter": null
+      }
+    },
+    "pinned_middle_cli": {
+      "status": "success",
+      "finished": true,
+      "mode": "cli",
+      "lastNodeExecuted": "After",
+      "runDataKeys": [
+        "Start",
+        "Pin",
+        "After"
+      ],
+      "runExecutionDataTopKeys": [
+        "executionData",
+        "manualData",
+        "parentExecution",
+        "pushRef",
+        "resultData",
+        "startData",
+        "validateSignature",
+        "version",
+        "waitTill"
+      ],
+      "resultDataKeys": [
+        "error",
+        "lastNodeExecuted",
+        "metadata",
+        "pinData",
+        "runData"
+      ],
+      "perNode": {
+        "Start": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 0,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "Pin": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 1,
+              "data": {
+                "main": [
+                  1
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "pinned": true
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Start",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "After": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 2,
+              "data": {
+                "main": [
+                  1
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "pinned": true
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Pin",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        }
+      },
+      "startData": {
+        "destination": null,
+        "runNodeFilter": null
+      }
+    },
+    "pinned_disabled_node_ignored": {
+      "status": "success",
+      "finished": true,
+      "mode": "manual",
+      "lastNodeExecuted": "After",
+      "runDataKeys": [
+        "Start",
+        "Pin",
+        "After"
+      ],
+      "runExecutionDataTopKeys": [
+        "executionData",
+        "manualData",
+        "parentExecution",
+        "pushRef",
+        "resultData",
+        "startData",
+        "validateSignature",
+        "version",
+        "waitTill"
+      ],
+      "resultDataKeys": [
+        "error",
+        "lastNodeExecuted",
+        "metadata",
+        "pinData",
+        "runData"
+      ],
+      "perNode": {
+        "Start": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 0,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "Pin": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 1,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Start",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "After": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 2,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Pin",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        }
+      },
+      "startData": {
+        "destination": null,
+        "runNodeFilter": null
+      }
+    },
+    "setMetadata_lands_in_task": {
+      "status": "success",
+      "finished": true,
+      "mode": "manual",
+      "lastNodeExecuted": "Meta",
+      "runDataKeys": [
+        "Start",
+        "Meta"
+      ],
+      "runExecutionDataTopKeys": [
+        "executionData",
+        "manualData",
+        "parentExecution",
+        "pushRef",
+        "resultData",
+        "startData",
+        "validateSignature",
+        "version",
+        "waitTill"
+      ],
+      "resultDataKeys": [
+        "error",
+        "lastNodeExecuted",
+        "metadata",
+        "pinData",
+        "runData"
+      ],
+      "perNode": {
+        "Start": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 0,
+              "data": {
+                "main": [
+                  1
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  }
+                ]
+              ],
+              "source": [],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "Meta": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 1,
+              "metadata": [
+                "customKey",
+                "subExecutionRef"
+              ],
+              "data": {
+                "main": [
+                  1
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Start",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        }
+      },
+      "startData": {
+        "destination": null,
+        "runNodeFilter": null
+      }
+    },
+    "hints_landed_on_task": {
+      "status": "success",
+      "finished": true,
+      "mode": "manual",
+      "lastNodeExecuted": "Hint",
+      "runDataKeys": [
+        "Start",
+        "Hint"
+      ],
+      "runExecutionDataTopKeys": [
+        "executionData",
+        "manualData",
+        "parentExecution",
+        "pushRef",
+        "resultData",
+        "startData",
+        "validateSignature",
+        "version",
+        "waitTill"
+      ],
+      "resultDataKeys": [
+        "error",
+        "lastNodeExecuted",
+        "metadata",
+        "pinData",
+        "runData"
+      ],
+      "perNode": {
+        "Start": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 0,
+              "data": {
+                "main": [
+                  1
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  }
+                ]
+              ],
+              "source": [],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "Hint": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 1,
+              "hints": [
+                {
+                  "message": "engine-probe hint",
+                  "type": "warning",
+                  "location": "outputPane"
+                }
+              ],
+              "data": {
+                "main": [
+                  1
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Start",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        }
+      },
+      "startData": {
+        "destination": null,
+        "runNodeFilter": null
+      }
+    },
+    "pairedItem_autofix_single_input_output": {
+      "status": "success",
+      "finished": true,
+      "mode": "manual",
+      "lastNodeExecuted": "After",
+      "runDataKeys": [
+        "Start",
+        "Map",
+        "After"
+      ],
+      "runExecutionDataTopKeys": [
+        "executionData",
+        "manualData",
+        "parentExecution",
+        "pushRef",
+        "resultData",
+        "startData",
+        "validateSignature",
+        "version",
+        "waitTill"
+      ],
+      "resultDataKeys": [
+        "error",
+        "lastNodeExecuted",
+        "metadata",
+        "pinData",
+        "runData"
+      ],
+      "perNode": {
+        "Start": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 0,
+              "data": {
+                "main": [
+                  3
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  },
+                  {
+                    "n": 2
+                  }
+                ]
+              ],
+              "source": [],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  },
+                  {
+                    "item": 2
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "Map": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 1,
+              "data": {
+                "main": [
+                  3
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0,
+                    "seen": true
+                  },
+                  {
+                    "n": 1,
+                    "seen": true
+                  },
+                  {
+                    "n": 2,
+                    "seen": true
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Start",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  },
+                  {
+                    "item": 2
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "After": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 2,
+              "data": {
+                "main": [
+                  3
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0,
+                    "seen": true
+                  },
+                  {
+                    "n": 1,
+                    "seen": true
+                  },
+                  {
+                    "n": 2,
+                    "seen": true
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Map",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  },
+                  {
+                    "item": 2
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        }
+      },
+      "startData": {
+        "destination": null,
+        "runNodeFilter": null
+      }
+    },
+    "pairedItem_breaks_on_cardinality_mismatch": {
+      "status": "success",
+      "finished": true,
+      "mode": "manual",
+      "lastNodeExecuted": "After",
+      "runDataKeys": [
+        "Start",
+        "Exp",
+        "After"
+      ],
+      "runExecutionDataTopKeys": [
+        "executionData",
+        "manualData",
+        "parentExecution",
+        "pushRef",
+        "resultData",
+        "startData",
+        "validateSignature",
+        "version",
+        "waitTill"
+      ],
+      "resultDataKeys": [
+        "error",
+        "lastNodeExecuted",
+        "metadata",
+        "pinData",
+        "runData"
+      ],
+      "perNode": {
+        "Start": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 0,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "Exp": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 1,
+              "data": {
+                "main": [
+                  4
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "from": 0,
+                    "part": 0
+                  },
+                  {
+                    "from": 0,
+                    "part": 1
+                  },
+                  {
+                    "from": 1,
+                    "part": 0
+                  },
+                  {
+                    "from": 1,
+                    "part": 1
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Start",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  "absent",
+                  "absent",
+                  "absent",
+                  "absent"
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "After": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 2,
+              "data": {
+                "main": [
+                  4
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "from": 0,
+                    "part": 0
+                  },
+                  {
+                    "from": 0,
+                    "part": 1
+                  },
+                  {
+                    "from": 1,
+                    "part": 0
+                  },
+                  {
+                    "from": 1,
+                    "part": 1
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Exp",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  },
+                  {
+                    "item": 2
+                  },
+                  {
+                    "item": 3
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        }
+      },
+      "startData": {
+        "destination": null,
+        "runNodeFilter": null
+      }
+    },
+    "multi_input_merge_waits": {
+      "status": "success",
+      "finished": true,
+      "mode": "manual",
+      "lastNodeExecuted": "Merge",
+      "runDataKeys": [
+        "S1",
+        "R",
+        "L",
+        "Merge"
+      ],
+      "runExecutionDataTopKeys": [
+        "executionData",
+        "manualData",
+        "parentExecution",
+        "pushRef",
+        "resultData",
+        "startData",
+        "validateSignature",
+        "version",
+        "waitTill"
+      ],
+      "resultDataKeys": [
+        "error",
+        "lastNodeExecuted",
+        "metadata",
+        "pinData",
+        "runData"
+      ],
+      "perNode": {
+        "S1": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 0,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "R": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 1,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "S1",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "L": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 2,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "S1",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "Merge": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 3,
+              "data": {
+                "main": [
+                  1
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "count": 2
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "L",
+                  "out": 0,
+                  "run": 0
+                },
+                {
+                  "prev": "R",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  "absent"
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        }
+      },
+      "startData": {
+        "destination": null,
+        "runNodeFilter": null
+      }
+    },
+    "fan_out_runIndex_per_branch": {
+      "status": "success",
+      "finished": true,
+      "mode": "manual",
+      "lastNodeExecuted": "Join",
+      "runDataKeys": [
+        "Start",
+        "Split",
+        "Right",
+        "Left",
+        "Join"
+      ],
+      "runExecutionDataTopKeys": [
+        "executionData",
+        "manualData",
+        "parentExecution",
+        "pushRef",
+        "resultData",
+        "startData",
+        "validateSignature",
+        "version",
+        "waitTill"
+      ],
+      "resultDataKeys": [
+        "error",
+        "lastNodeExecuted",
+        "metadata",
+        "pinData",
+        "runData"
+      ],
+      "perNode": {
+        "Start": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 0,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "Split": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 1,
+              "data": {
+                "main": [
+                  1,
+                  1
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  }
+                ],
+                [
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Start",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  }
+                ],
+                [
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "Right": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 2,
+              "data": {
+                "main": [
+                  1
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Split",
+                  "out": 1,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "Left": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 3,
+              "data": {
+                "main": [
+                  1
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Split",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "Join": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 4,
+              "data": {
+                "main": [
+                  1
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "count": 1
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Left",
+                  "out": 0,
+                  "run": 0
+                },
+                {
+                  "prev": "Right",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  "absent"
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        }
+      },
+      "startData": {
+        "destination": null,
+        "runNodeFilter": null
+      }
+    },
+    "node_op_error_recorded_in_task": {
+      "status": "error",
+      "mode": "manual",
+      "lastNodeExecuted": "Op",
+      "runDataKeys": [
+        "Start",
+        "Op"
+      ],
+      "resultError": {
+        "name": "NodeOperationError",
+        "message": "node-op boom",
+        "isErrorInstance": false,
+        "description": "a human readable hint",
+        "contextKeys": [
+          "itemIndex",
+          "metadata",
+          "runIndex"
+        ]
+      },
+      "runExecutionDataTopKeys": [
+        "executionData",
+        "manualData",
+        "parentExecution",
+        "pushRef",
+        "resultData",
+        "startData",
+        "validateSignature",
+        "version",
+        "waitTill"
+      ],
+      "resultDataKeys": [
+        "error",
+        "lastNodeExecuted",
+        "metadata",
+        "pinData",
+        "runData"
+      ],
+      "perNode": {
+        "Start": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 0,
+              "data": {
+                "main": [
+                  1
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  }
+                ]
+              ],
+              "source": [],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "Op": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "error",
+              "ei": 1,
+              "source": [
+                {
+                  "prev": "Start",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "error": {
+                "name": "NodeOperationError",
+                "message": "node-op boom",
+                "keys": [
+                  "cause",
+                  "context",
+                  "description",
+                  "errorResponse",
+                  "extra",
+                  "functionality",
+                  "level",
+                  "lineNumber",
+                  "message",
+                  "messages",
+                  "name",
+                  "node",
+                  "stack",
+                  "tags",
+                  "timestamp",
+                  "type"
+                ],
+                "isErrorInstance": false,
+                "description": "a human readable hint",
+                "contextKeys": [
+                  "itemIndex",
+                  "metadata",
+                  "runIndex"
+                ],
+                "hasCause": false
+              },
+              "hasExecutionTime": "number"
+            }
+          ]
+        }
+      },
+      "startData": {
+        "destination": null,
+        "runNodeFilter": null
+      }
+    },
+    "legacy_order_v0_linear": {
+      "status": "success",
+      "finished": true,
+      "mode": "manual",
+      "lastNodeExecuted": "B",
+      "runDataKeys": [
+        "Start",
+        "A",
+        "B"
+      ],
+      "runExecutionDataTopKeys": [
+        "executionData",
+        "manualData",
+        "parentExecution",
+        "pushRef",
+        "resultData",
+        "startData",
+        "validateSignature",
+        "version",
+        "waitTill"
+      ],
+      "resultDataKeys": [
+        "error",
+        "lastNodeExecuted",
+        "metadata",
+        "pinData",
+        "runData"
+      ],
+      "perNode": {
+        "Start": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 0,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "A": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 1,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Start",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "B": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 2,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "A",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        }
+      },
+      "startData": {
+        "destination": null,
+        "runNodeFilter": null
+      }
+    },
+    "legacy_order_v0_fan_out": {
+      "status": "success",
+      "finished": true,
+      "mode": "manual",
+      "lastNodeExecuted": "Right",
+      "runDataKeys": [
+        "Start",
+        "Split",
+        "Left",
+        "Right"
+      ],
+      "runExecutionDataTopKeys": [
+        "executionData",
+        "manualData",
+        "parentExecution",
+        "pushRef",
+        "resultData",
+        "startData",
+        "validateSignature",
+        "version",
+        "waitTill"
+      ],
+      "resultDataKeys": [
+        "error",
+        "lastNodeExecuted",
+        "metadata",
+        "pinData",
+        "runData"
+      ],
+      "perNode": {
+        "Start": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 0,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "Split": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 1,
+              "data": {
+                "main": [
+                  1,
+                  1
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  }
+                ],
+                [
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Start",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  }
+                ],
+                [
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "Left": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 2,
+              "data": {
+                "main": [
+                  1
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Split",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "Right": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 3,
+              "data": {
+                "main": [
+                  1
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Split",
+                  "out": 1,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        }
+      },
+      "startData": {
+        "destination": null,
+        "runNodeFilter": null
+      }
+    },
+    "empty_branch_v0": {
+      "status": "success",
+      "finished": true,
+      "mode": "manual",
+      "lastNodeExecuted": "Empty",
+      "runDataKeys": [
+        "Start",
+        "Empty"
+      ],
+      "runExecutionDataTopKeys": [
+        "executionData",
+        "manualData",
+        "parentExecution",
+        "pushRef",
+        "resultData",
+        "startData",
+        "validateSignature",
+        "version",
+        "waitTill"
+      ],
+      "resultDataKeys": [
+        "error",
+        "lastNodeExecuted",
+        "metadata",
+        "pinData",
+        "runData"
+      ],
+      "perNode": {
+        "Start": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 0,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "Empty": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 1,
+              "data": {
+                "main": [
+                  0
+                ]
+              },
+              "dataJson": [
+                []
+              ],
+              "source": [
+                {
+                  "prev": "Start",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                []
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        }
+      },
+      "startData": {
+        "destination": null,
+        "runNodeFilter": null
+      }
+    }
+  },
+  "403D_scheduling": {
+    "destination_inclusive": {
+      "status": "success",
+      "finished": true,
+      "mode": "manual",
+      "lastNodeExecuted": "A",
+      "runDataKeys": [
+        "Start",
+        "A"
+      ],
+      "runExecutionDataTopKeys": [
+        "executionData",
+        "manualData",
+        "parentExecution",
+        "pushRef",
+        "resultData",
+        "startData",
+        "validateSignature",
+        "version",
+        "waitTill"
+      ],
+      "resultDataKeys": [
+        "error",
+        "lastNodeExecuted",
+        "metadata",
+        "pinData",
+        "runData"
+      ],
+      "perNode": {
+        "Start": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 0,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "A": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 1,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Start",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        }
+      },
+      "startData": {
+        "destination": {
+          "nodeName": "A",
+          "mode": "inclusive"
+        },
+        "runNodeFilter": [
+          "Start",
+          "A"
+        ]
+      }
+    },
+    "destination_exclusive": {
+      "status": "success",
+      "finished": true,
+      "mode": "manual",
+      "lastNodeExecuted": "A",
+      "runDataKeys": [
+        "Start",
+        "A"
+      ],
+      "runExecutionDataTopKeys": [
+        "executionData",
+        "manualData",
+        "parentExecution",
+        "pushRef",
+        "resultData",
+        "startData",
+        "validateSignature",
+        "version",
+        "waitTill"
+      ],
+      "resultDataKeys": [
+        "error",
+        "lastNodeExecuted",
+        "metadata",
+        "pinData",
+        "runData"
+      ],
+      "perNode": {
+        "Start": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 0,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "A": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 1,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Start",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        }
+      },
+      "startData": {
+        "destination": {
+          "nodeName": "B",
+          "mode": "exclusive"
+        },
+        "runNodeFilter": [
+          "Start",
+          "A"
+        ]
+      }
+    },
+    "missing_startNode_with_only_action_node": {
+      "outcome": "resolved success"
+    },
+    "missing_startNode_two_action_nodes": {
+      "threw": {
+        "__type": "ApplicationError",
+        "message": "No node to start the workflow from could be found"
+      }
+    },
+    "startNodeResolutionNote": "Workflow.__getStartNode (workflow.ts:817) short-circuits when the graph has exactly one node, else it picks the first non-disabled trigger/poll type, else the first node whose type is in STARTING_NODE_TYPES (constants.ts:53 = manualTrigger, executeWorkflowTrigger, errorTrigger, evaluationTrigger, formTrigger); if nothing matches, run() throws.",
+    "missing_startNode_with_only_action_node_note": "single-node short-circuit",
+    "missing_startNode_resolved_from_trigger": {
+      "outcome": "resolved",
+      "status": "success",
+      "runDataKeys": [
+        "T"
+      ]
+    },
+    "executionIndex_sequence": [
+      {
+        "node": "P1",
+        "runIndex": 0
+      },
+      {
+        "node": "P2",
+        "runIndex": 0
+      },
+      {
+        "node": "P3",
+        "runIndex": 0
+      }
+    ],
+    "additionalData_currentNodeExecutionIndex_after_run": 4,
+    "startNode_source_is_null": {
+      "source": [],
+      "startTimePresent": "number",
+      "metadata": "undefined"
+    }
+  },
+  "403E_cancel": {
+    "cancelResult": "cancel() called before completion",
+    "hasCancelMethod": true,
+    "caught": null,
+    "responseTopLevelKeys": [
+      "data",
+      "mode",
+      "startedAt",
+      "status",
+      "stoppedAt",
+      "storedAt"
+    ],
+    "summary": {
+      "status": "canceled",
+      "mode": "manual",
+      "runDataKeys": [],
+      "resultError": {
+        "name": "ManualExecutionCancelledError",
+        "message": "The execution was cancelled manually",
+        "isErrorInstance": false,
+        "contextKeys": [],
+        "extraKeys": [
+          "executionId"
+        ]
+      },
+      "runExecutionDataTopKeys": [
+        "executionData",
+        "manualData",
+        "parentExecution",
+        "pushRef",
+        "resultData",
+        "startData",
+        "validateSignature",
+        "version",
+        "waitTill"
+      ],
+      "resultDataKeys": [
+        "error",
+        "lastNodeExecuted",
+        "metadata",
+        "pinData",
+        "runData"
+      ],
+      "perNode": {},
+      "startData": {
+        "destination": null,
+        "runNodeFilter": null
+      }
+    }
+  },
+  "403E_cancel.executionTimeoutTimestamp_in_the_past": {
+    "responseKeys": [
+      "data",
+      "mode",
+      "startedAt",
+      "status",
+      "stoppedAt",
+      "storedAt"
+    ],
+    "status": "canceled",
+    "runDataKeys": [],
+    "resultError": {
+      "name": "TimeoutExecutionCancelledError",
+      "message": "The execution was cancelled because it timed out"
+    }
+  },
+  "403F_context_class_by_flags": {
+    "classes": [
+      {
+        "node": "OnceCtx",
+        "class": "ExecuteContext",
+        "ownFieldCount": 17,
+        "continueOnFail": false,
+        "inputDataLen": 1
+      },
+      {
+        "node": "RetryCtx",
+        "class": "ExecuteContext",
+        "ownFieldCount": 17,
+        "continueOnFail": false,
+        "inputDataLen": 1
+      },
+      {
+        "node": "ContCtx",
+        "class": "ExecuteContext",
+        "ownFieldCount": 17,
+        "continueOnFail": true,
+        "inputDataLen": 1
+      },
+      {
+        "node": "ErrOutCtx",
+        "class": "ExecuteContext",
+        "ownFieldCount": 17,
+        "continueOnFail": true,
+        "inputDataLen": 1
+      }
+    ],
+    "note": "executeOnce does not change the context class: handleExecuteOnce (workflow-execute.ts:990) slices every input branch to its first item instead. continueOnFail() on the context reports the node flag (base-execute-context.ts:85)."
+  },
+  "403G_validation_gate": {
+    "unknown_node_type": null,
+    "missing_required_parameter": null,
+    "disabled_node_skipped": null,
+    "pinned_node_exempt_when_pinDataNodeNames_given": null,
+    "pinned_node_reported_without_pinDataNodeNames": null,
+    "destination_scoped_to_parents": {
+      "A": {
+        "parameters": {
+          "must": [
+            "Parameter \"Must\" is required."
+          ]
+        }
+      }
+    },
+    "startNode_scoped_to_children": {
+      "A": {
+        "parameters": {
+          "must": [
+            "Parameter \"Must\" is required."
+          ]
+        }
+      }
+    },
+    "two_main_outputs_accepted": null,
+    "onError_continueErrorOutput_on_single_output_node_gate": null
+  },
+  "403H_error_output_routing": {
+    "effective_outputs_of_the_two_branch_type": {
+      "withOnError_continueErrorOutput": [
+        "main",
+        "main",
+        {
+          "category": "error",
+          "type": "main",
+          "displayName": "Error"
+        }
+      ],
+      "without_onError": [
+        "main",
+        "main"
+      ],
+      "note": "onError: \"continueErrorOutput\" adds a synthetic extra main output, so mainOutputTypes.length - 1 (workflow-execute.ts:2551) is one index further than the node author returned."
+    },
+    "two_branch_node_onError_continueErrorOutput": {
+      "status": "success",
+      "finished": true,
+      "mode": "manual",
+      "lastNodeExecuted": "OkPath",
+      "runDataKeys": [
+        "Start",
+        "Split",
+        "OkPath"
+      ],
+      "runExecutionDataTopKeys": [
+        "executionData",
+        "manualData",
+        "parentExecution",
+        "pushRef",
+        "resultData",
+        "startData",
+        "validateSignature",
+        "version",
+        "waitTill"
+      ],
+      "resultDataKeys": [
+        "error",
+        "lastNodeExecuted",
+        "metadata",
+        "pinData",
+        "runData"
+      ],
+      "perNode": {
+        "Start": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 0,
+              "data": {
+                "main": [
+                  4
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  },
+                  {
+                    "n": 2
+                  },
+                  {
+                    "n": 3
+                  }
+                ]
+              ],
+              "source": [],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  },
+                  {
+                    "item": 2
+                  },
+                  {
+                    "item": 3
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "Split": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 1,
+              "data": {
+                "main": [
+                  2,
+                  0,
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 2
+                  }
+                ],
+                [],
+                [
+                  {
+                    "n": 1,
+                    "error": "item 1 failed"
+                  },
+                  {
+                    "n": 3,
+                    "error": "item 3 failed"
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Start",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 2
+                  }
+                ],
+                [],
+                [
+                  {
+                    "item": 1
+                  },
+                  {
+                    "item": 3
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "OkPath": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 2,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 2
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Split",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        }
+      },
+      "startData": {
+        "destination": null,
+        "runNodeFilter": null
+      }
+    },
+    "two_branch_node_without_onError_flag": {
+      "status": "success",
+      "finished": true,
+      "mode": "manual",
+      "lastNodeExecuted": "OkPath",
+      "runDataKeys": [
+        "Start",
+        "Split",
+        "ErrPath",
+        "OkPath"
+      ],
+      "runExecutionDataTopKeys": [
+        "executionData",
+        "manualData",
+        "parentExecution",
+        "pushRef",
+        "resultData",
+        "startData",
+        "validateSignature",
+        "version",
+        "waitTill"
+      ],
+      "resultDataKeys": [
+        "error",
+        "lastNodeExecuted",
+        "metadata",
+        "pinData",
+        "runData"
+      ],
+      "perNode": {
+        "Start": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 0,
+              "data": {
+                "main": [
+                  4
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  },
+                  {
+                    "n": 2
+                  },
+                  {
+                    "n": 3
+                  }
+                ]
+              ],
+              "source": [],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  },
+                  {
+                    "item": 2
+                  },
+                  {
+                    "item": 3
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "Split": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 1,
+              "data": {
+                "main": [
+                  2,
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 2
+                  }
+                ],
+                [
+                  {
+                    "error": "item 1 failed"
+                  },
+                  {
+                    "error": "item 3 failed"
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Start",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 2
+                  }
+                ],
+                [
+                  {
+                    "item": 1
+                  },
+                  {
+                    "item": 3
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "ErrPath": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 2,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "error": "item 1 failed"
+                  },
+                  {
+                    "error": "item 3 failed"
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Split",
+                  "out": 1,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "OkPath": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 3,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 2
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Split",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        }
+      },
+      "startData": {
+        "destination": null,
+        "runNodeFilter": null
+      }
+    }
+  },
+  "403I_runIndex_and_proxy_per_activation": {
+    "note": "C is reachable from two parents on the same input index, so it is activated twice: runIndex is the position in runData[nodeName] (workflow-execute.ts:1560-1566).",
+    "run": {
+      "status": "success",
+      "finished": true,
+      "mode": "manual",
+      "lastNodeExecuted": "C",
+      "runDataKeys": [
+        "Start",
+        "B",
+        "C",
+        "A"
+      ],
+      "runExecutionDataTopKeys": [
+        "executionData",
+        "manualData",
+        "parentExecution",
+        "pushRef",
+        "resultData",
+        "startData",
+        "validateSignature",
+        "version",
+        "waitTill"
+      ],
+      "resultDataKeys": [
+        "error",
+        "lastNodeExecuted",
+        "metadata",
+        "pinData",
+        "runData"
+      ],
+      "perNode": {
+        "Start": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 0,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "B": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 1,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Start",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "C": {
+          "runs": 2,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 2,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "B",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            },
+            {
+              "st": "success",
+              "ei": 4,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "A",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "A": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 3,
+              "data": {
+                "main": [
+                  2
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  },
+                  {
+                    "n": 1
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Start",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  },
+                  {
+                    "item": 1
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        }
+      },
+      "startData": {
+        "destination": null,
+        "runNodeFilter": null
+      }
+    },
+    "activations": [
+      {
+        "node": "C",
+        "runIndexField": 0,
+        "proxy": {
+          "$itemIndex": 0,
+          "$runIndex": 0,
+          "$mode": "manual",
+          "$position": 0,
+          "$workflow": {
+            "active": false,
+            "id": "eng",
+            "name": "eng"
+          },
+          "$prevNode": {
+            "name": "B",
+            "outputIndex": 0,
+            "runIndex": 0
+          },
+          "$nodeVersion": 1,
+          "$nodeId": "C",
+          "$execution": {
+            "id": "eng-i",
+            "mode": "test",
+            "resumeUrl": "/eng-i",
+            "resumeFormUrl": "/eng-i",
+            "customData": {
+              "set": {
+                "__type": "function",
+                "name": "set"
+              },
+              "setAll": {
+                "__type": "function",
+                "name": "setAll"
+              },
+              "get": {
+                "__type": "function",
+                "name": "get"
+              },
+              "getAll": {
+                "__type": "function",
+                "name": "getAll"
+              }
+            }
+          },
+          "$executionId": "eng-i",
+          "$config": {
+            "__type": "undefined"
+          },
+          "$json": {
+            "n": 0
+          },
+          "$inputKeys": [
+            "all",
+            "context",
+            "first",
+            "item",
+            "last",
+            "params"
+          ],
+          "$executionRunningMode": "test"
+        }
+      },
+      {
+        "node": "C",
+        "runIndexField": 1,
+        "proxy": {
+          "$itemIndex": 0,
+          "$runIndex": 1,
+          "$mode": "manual",
+          "$position": 0,
+          "$workflow": {
+            "active": false,
+            "id": "eng",
+            "name": "eng"
+          },
+          "$prevNode": {
+            "name": "A",
+            "outputIndex": 0,
+            "runIndex": 0
+          },
+          "$nodeVersion": 1,
+          "$nodeId": "C",
+          "$execution": {
+            "id": "eng-i",
+            "mode": "test",
+            "resumeUrl": "/eng-i",
+            "resumeFormUrl": "/eng-i",
+            "customData": {
+              "set": {
+                "__type": "function",
+                "name": "set"
+              },
+              "setAll": {
+                "__type": "function",
+                "name": "setAll"
+              },
+              "get": {
+                "__type": "function",
+                "name": "get"
+              },
+              "getAll": {
+                "__type": "function",
+                "name": "getAll"
+              }
+            }
+          },
+          "$executionId": "eng-i",
+          "$config": {
+            "__type": "undefined"
+          },
+          "$json": {
+            "n": 0
+          },
+          "$inputKeys": [
+            "all",
+            "context",
+            "first",
+            "item",
+            "last",
+            "params"
+          ],
+          "$executionRunningMode": "test"
+        }
+      }
+    ]
+  },
+  "403J_sibling_order": {
+    "note": "v1 sorts nodesToAdd by canvas position (workflow-execute.ts:2041) and enqueues with unshift (enqueueFn, workflow-execute.ts:418); v0 appends with push.",
+    "v1": {
+      "runDataKeys": [
+        "Start",
+        "Near",
+        "Far",
+        "Bottom"
+      ],
+      "executionIndexes": {
+        "Start": 0,
+        "Near": 1,
+        "Far": 2,
+        "Bottom": 3
+      }
+    },
+    "v0": {
+      "runDataKeys": [
+        "Start",
+        "Far",
+        "Near",
+        "Bottom"
+      ],
+      "executionIndexes": {
+        "Start": 0,
+        "Far": 1,
+        "Near": 2,
+        "Bottom": 3
+      }
+    }
+  },
+  "403K_pre_run_gate": {
+    "note": "processRunExecutionData calls checkForWorkflowIssues (workflow-execute.ts:1407 -> 1316) which scopes checkReadyForExecution to the first stack node / destinationNode and exempts pinData nodes.",
+    "missing_required_parameter_blocks_run": {
+      "threw": {
+        "__type": "WorkflowHasIssuesError",
+        "message": "The workflow has issues and cannot be executed for that reason. Please fix them first."
+      }
+    },
+    "same_node_pinned_runs": {
+      "status": "success",
+      "finished": true,
+      "mode": "manual",
+      "lastNodeExecuted": "Req",
+      "runDataKeys": [
+        "Start",
+        "Req"
+      ],
+      "runExecutionDataTopKeys": [
+        "executionData",
+        "manualData",
+        "parentExecution",
+        "pushRef",
+        "resultData",
+        "startData",
+        "validateSignature",
+        "version",
+        "waitTill"
+      ],
+      "resultDataKeys": [
+        "error",
+        "lastNodeExecuted",
+        "metadata",
+        "pinData",
+        "runData"
+      ],
+      "perNode": {
+        "Start": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 0,
+              "data": {
+                "main": [
+                  1
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  }
+                ]
+              ],
+              "source": [],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "Req": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 1,
+              "data": {
+                "main": [
+                  1
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "ok": true
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Start",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        }
+      },
+      "startData": {
+        "destination": null,
+        "runNodeFilter": null
+      }
+    },
+    "same_node_disabled_runs": {
+      "status": "success",
+      "finished": true,
+      "mode": "manual",
+      "lastNodeExecuted": "Req",
+      "runDataKeys": [
+        "Start",
+        "Req"
+      ],
+      "runExecutionDataTopKeys": [
+        "executionData",
+        "manualData",
+        "parentExecution",
+        "pushRef",
+        "resultData",
+        "startData",
+        "validateSignature",
+        "version",
+        "waitTill"
+      ],
+      "resultDataKeys": [
+        "error",
+        "lastNodeExecuted",
+        "metadata",
+        "pinData",
+        "runData"
+      ],
+      "perNode": {
+        "Start": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 0,
+              "data": {
+                "main": [
+                  1
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  }
+                ]
+              ],
+              "source": [],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        },
+        "Req": {
+          "runs": 1,
+          "tasks": [
+            {
+              "st": "success",
+              "ei": 1,
+              "data": {
+                "main": [
+                  1
+                ]
+              },
+              "dataJson": [
+                [
+                  {
+                    "n": 0
+                  }
+                ]
+              ],
+              "source": [
+                {
+                  "prev": "Start",
+                  "out": 0,
+                  "run": 0
+                }
+              ],
+              "pairedItem": [
+                [
+                  {
+                    "item": 0
+                  }
+                ]
+              ],
+              "hasExecutionTime": "number"
+            }
+          ]
+        }
+      },
+      "startData": {
+        "destination": null,
+        "runNodeFilter": null
+      }
+    },
+    "unknown_node_type_blocks_run": {
+      "threw": {
+        "__type": "WorkflowHasIssuesError",
+        "message": "The workflow has issues and cannot be executed for that reason. Please fix them first."
+      }
+    },
+    "gate_result_for_unknown_type_caller_supplied_startNode": {
+      "Un": {
+        "typeUnknown": true
+      }
+    },
+    "bare_gate_call_checks_nothing": null,
+    "issues_shape_for_missing_parameter": {
+      "Req": {
+        "parameters": {
+          "must": [
+            "Parameter \"Must\" is required."
+          ]
+        }
+      }
+    }
+  },
+  "fixture": {
+    "note": "Node types registered by this runner into the harness registry only; nothing under tests/reference/** or reference/** was modified.",
+    "types": [
+      "ref.ctxProbe",
+      "ref.hintNode",
+      "ref.throwsOnce",
+      "ref.throwsAlways",
+      "ref.returnNull",
+      "ref.emptyOut",
+      "ref.errorInJson",
+      "ref.setMeta",
+      "ref.asyncDelay",
+      "ref.twoMainOutputs"
+    ],
+    "harness": "tests/reference/harness/harness.js (registry, buildWorkflow, runWorkflow)",
+    "harnessLimitation": "runWorkflow(wf, {executionId}) forwards executionId into IWorkflowExecutionDataProcess.additionalData; omitting it reproduces $execution.id === \"__UNKNOWN__\" (see 403A2)."
+  }
+}

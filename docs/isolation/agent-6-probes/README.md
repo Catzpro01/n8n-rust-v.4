@@ -10,7 +10,31 @@ observations.json       503 recorded entries (266 PIPE-12 · 214 PIPE-13 · 23 f
                         418 outcome records = 353 values + 65 typed throws
                         (reproduce with: grep -c on the keys `ok` and `threw`)
 determinism-check.cjs   replays two observation files against each other, masking environment-dependent fields
+
+engine-probes.cjs            TASK-403 runner: drives real WorkflowExecute runs and records the execution engine
+engine-observations.json     13 probe groups / 4601 leaf values / 10 recorded throws (24 lifecycle graphs)
+                             sha256 0016e713b34240dda1efc8eaa2abec442b2fcc7376497a24056519f380f020fb
+engine-determinism-check.cjs same replay check for the engine file (masks generatedAt, startTime,
+                             executionTime, establishedAt, timestamp, instanceId, pushRef, lineNumber)
 ```
+
+## TASK-403 (engine) run
+
+```bash
+NODE_PATH=$PWD/.runtime/node_modules \
+  node docs/isolation/agent-6-probes/engine-probes.cjs /tmp/engine-observations.json
+node docs/isolation/agent-6-probes/engine-determinism-check.cjs \
+  /tmp/engine-observations.json docs/isolation/agent-6-probes/engine-observations.json
+```
+
+Engine group map: `403A`/`403A2` context surface (+ missing `executionId` ⇒ `__UNKNOWN__`) · `403B` one context per
+node run · `403C` 24-graph lifecycle matrix (disabled / `null` / empty branch / pin data / retries / `executeOnce` /
+`continueOnFail` / hints / `setMetadata` / pairedItem autofix / merge waiting / v0 vs v1) · `403D` start-node
+resolution, destination filter, `executionIndex` · `403E` cancel + `executionTimeoutTimestamp` · `403F` context class
+vs node flags · `403G` bare `checkReadyForExecution` · `403H` error-output routing incl. the synthetic error output ·
+`403I` `runIndex` + proxy per activation · `403J` sibling order by canvas position · `403K` the gate the engine itself
+applies. Written up in [`../execution-engine.md`](../execution-engine.md) and
+[`contracts/execution-engine.contract.md`](../../../contracts/execution-engine.contract.md).
 
 ## Run
 
