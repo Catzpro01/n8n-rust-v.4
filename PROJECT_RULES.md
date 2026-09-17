@@ -23,3 +23,15 @@
 ```text
 DISCOVERED ──► ISOLATED ──► CONTRACTED ──► IMPLEMENTED (NODE.JS/TS) ──► VERIFIED ──► INTEGRATED
 ```
+
+---
+
+## Amandemen Fase Proyek (Ratifikasi Phase 3 Gateway)
+1. **Pemisahan Jalur Rekonstruksi (Dual-Track Architecture)**:
+   - **Jalur Utama Node.js / TypeScript (`packages/*`)**: Tetap wajib mematuhi **ZERO RUST** 100% murni tanpa dependensi native Rust. Rekonstruksi logika eksekusi n8n v2.9.4 harus murni JS/TS.
+   - **Jalur Porting Paralel (`crates/*`)**: Resmi dibuka pada **Phase 3** (diaktifkan oleh keberadaan `[workspace]` manifest pada root `Cargo.toml` sesuai `docs/isolation/phase3-gate-mode.md`). Crate Rust di `crates/` diuji secara terisolasi via offline rig / `cargo test` tanpa mengontaminasi runtime Node.js.
+2. **Kepatuhan Gate & Conformance**:
+   - Harness `contract_conformance.mjs` dan `boundary_audit.py` beroperasi dalam mode Phase 3 saat `[workspace]` aktif di `Cargo.toml` (Stage 1: 43/43 PASS, Stage 2: PASS, Stage 2b: FRESH EVIDENCE PASS, Stage 2c: 7/7 crates PASS).
+3. **Frontend UI Mutlak Asli**:
+   - Seluruh aset, Vue Canvas SPA, CSS, dan file di `packages/editor-ui` tetap **100% bawaan resmi n8n tanpa perubahan sedikit pun**.
+
