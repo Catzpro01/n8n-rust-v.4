@@ -2,6 +2,12 @@
 /**
  * Workflow LEGO — Rust port conformance fixtures.
  *
+ * NOTE (2026-09-17): `crates/n8n-workflow` was removed — PROJECT_RULES #1 (ZERO RUST) forbids Rust
+ * in `crates/`/`apps/`, see docs/isolation/RUST-PURGE-RECORD.md. This generator and its corpus are
+ * retained on purpose: they are pure Node/JSON and the *consumer* is now whatever implements the
+ * Workflow Model in Phase 3 under rule 1 (JavaScript / TypeScript, 1:1 from n8n 2.9.4). The header
+ * below keeps its original wording as the historical record of why these cases exist.
+ *
  * The Phase-3 Rust crate (`crates/n8n-workflow`) must reproduce the reference
  * Workflow Model. This script derives the *expected* values from the pinned
  * reference runtime (n8n-workflow 2.9.1 = the 2.9.4 dependency set) and writes
