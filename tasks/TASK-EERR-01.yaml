@@ -4,7 +4,7 @@ lego: integration
 module: error-surface-differential
 phase: 3
 title: "ISSUE-024: NodeOperationError 3-way differential (node-lego vs execution-engine vs real n8n-workflow@2.9.1) + failing-first faithful-ization"
-status: SUBMITTED_FOR_REVIEW
+status: VERIFIED
 
 # Context: ISSUE-024 records NodeOperationError existing in two packages and proposes
 # Option A/B consolidation (orchestrator). Same prescription as ISSUE-023: the decision

@@ -4,7 +4,7 @@ lego: node
 module: node-filter-execution
 phase: 3
 title: "Node LEGO: filter execution + webhook paths + cron options — executeFilter/executeFilterCondition/arrayContainsValue/parseRegexPattern, getNodeWebhookPath/Url, cronNodeOptions (ref: filter-parameter.ts L196-424, node-helpers.ts L56-241 + L1057-1101)"
-status: SUBMITTED_FOR_REVIEW
+status: VERIFIED
 
 # Context: TASK-413 landed the filter VALIDATION half. This task closes the remaining
 # `node-helpers.ts` surface listed in contract §12.2 item 7: the filter EXECUTION half (the

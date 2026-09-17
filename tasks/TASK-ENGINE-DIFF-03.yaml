@@ -4,7 +4,7 @@ lego: integration
 module: engine-differential
 phase: 3
 title: "Task envelope shape parity — close the last recorded differential delta (ISSUE-021)"
-status: SUBMITTED_FOR_REVIEW
+status: VERIFIED
 
 # Context: TASK-ENGINE-DIFF-02 closed S3/S6/S7 and left exactly one recorded known
 # delta: the ITaskData envelope ("hints, startTime, executionTime … can never be

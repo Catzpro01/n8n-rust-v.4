@@ -4,7 +4,7 @@ lego: workflow-model
 module: start-node-navigation
 phase: 3
 title: "Executable D-01..D-04 golden (observed) + 1:1 getHighestNode/getStartNode reconstruction — ISSUE-015/017 evidence base"
-status: SUBMITTED_FOR_REVIEW
+status: VERIFIED
 
 # Context: the audit (TASK-AUDIT-ISSUES-01 / ISSUE-025 table) records that
 # tests/reference/04-disabled-node/ and 05-cyclic-invalid/ contain workflow.json only —

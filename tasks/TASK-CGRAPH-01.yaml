@@ -4,7 +4,7 @@ lego: integration
 module: cyclic-graph-golden
 phase: 3
 title: "Executable golden for 05-cyclic-invalid (observed) — reference accepts the cycle; detection is the additive validator's job (R5/R6 oracle)"
-status: SUBMITTED_FOR_REVIEW
+status: VERIFIED
 
 # Context: the audit table (TASK-AUDIT-ISSUES-01) records "04-disabled-node/ and
 # 05-cyclic-invalid/ contain workflow.json only" and "no 05-cyclic disk read anywhere in

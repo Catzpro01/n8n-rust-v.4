@@ -4,7 +4,7 @@ lego: integration
 module: test-infrastructure
 phase: 3
 title: "Repair rust-offline-rig vendoring so cargo check/test reproduce on this branch (ISSUE-025)"
-status: SUBMITTED_FOR_REVIEW
+status: VERIFIED
 # submitted 2026-09-18 by arena-worker: results/TASK-RIG-VENDOR-01.md present,
 # rig re-run green (check 7/7, test 37/0), verify:all exit 0. Converged with
 # peer TASK-RIG-REPAIR-01 (landed first): peer core kept + independently

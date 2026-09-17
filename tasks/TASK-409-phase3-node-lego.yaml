@@ -4,7 +4,7 @@ lego: node
 module: node-model-helpers
 phase: 3
 title: "Node LEGO: Node Model pure-function surface — NodeHelpers (connection IO, display conditions, naming/tool helpers), node-validation.ts, node-parameters/* (ref: node-helpers.ts, node-validation.ts, path-utils.ts, rename-node-utils.ts, node-parameter-value-type-guard.ts, parameter-type-validation.ts)"
-status: SUBMITTED_FOR_REVIEW
+status: VERIFIED
 
 # Context: Phase 2 isolated the Node Model (`docs/isolation/node.md`, `contracts/node.contract.md`)
 # and proved the boundary — `packages/workflow-lego` *ports* it (`src/ports/node-model.ts`) and

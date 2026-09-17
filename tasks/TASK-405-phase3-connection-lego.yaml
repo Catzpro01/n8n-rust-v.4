@@ -5,7 +5,7 @@ module: connection
 phase: 3
 track: "JavaScript/TypeScript reconstruction (docs/isolation/PHASE-3-OPENING-RECORD.md §2)"
 title: "Reconstruct the Connection Model in TypeScript and accept it with the reference-recorded goldens"
-status: SUBMITTED_FOR_REVIEW
+status: VERIFIED
 authority: PROJECT_RULES.md §1, §3, §6 · contracts/connection.contract.md §7 · docs/isolation/PHASE-3-OPENING-RECORD.md
 
 objective: >
