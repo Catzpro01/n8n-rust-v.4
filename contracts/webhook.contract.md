@@ -111,3 +111,11 @@ query parsing, JSON/text/binary request bodies, a configurable body-size limit, 
 or stream responses. Route lookup and execution remain delegated to `IWebhookManager`; persistence
 and workflow execution do not cross into the transport. Invalid JSON and oversized payloads fail
 before execution with deterministic 400/413 envelopes.
+
+## Phase-3 waiting execution resume (TASK-421)
+
+`WaitingWebhookManager` consumes an execution-repository port, a waiting-webhook resolver, and a
+resume-execution callback. It reproduces missing/running/failed/finished guards, send-and-wait URL
+HMAC validation, wait-node disabling, `waitTill` clearing, prior run-data removal, HITL `ai_tool`
+rewiring, `inputOverride` preservation, request-parameter reset, and a local concurrent-resume guard.
+Persistence and engine continuation remain owned by their injected ports.

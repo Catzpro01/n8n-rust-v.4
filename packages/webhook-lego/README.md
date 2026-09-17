@@ -26,3 +26,10 @@ Express or another dependency. It supports configurable host/port/base path and 
 JSON/text/binary request adaptation, query parsing, CORS through the existing handler, custom
 status/headers, binary/stream responses, and deterministic shutdown. Workflow execution remains an
 injected callback on `LiveWebhookManager`.
+
+## Waiting execution resume (TASK-421)
+
+`WaitingWebhookManager` reconstructs `/webhook-waiting/:executionId/:suffix?` behind explicit
+persistence, webhook-resolution, and execution-resume ports. It includes state guards, signed
+send-and-wait URLs, wait-state mutation, HITL output rewiring, input override preservation, and
+concurrent-resume suppression. It adds no database or execution-engine import.
