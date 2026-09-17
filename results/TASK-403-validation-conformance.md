@@ -45,3 +45,8 @@ Agent-4 / LEGO validation. `n8n-validation` unified on the normative
   (the record attests inputs at generation time; generating pre-commit leaves
   the record stale and the gate BLOCKED until stage 2b re-runs it).
 - Behavioural surface is additive/opt-in per contract §10 — regression gate unaffected.
+- Post-task rebase: peer `e0d1b59c` (evidence timestamp refresh on Phase-2
+  workflow gate records, no file overlap, reviewed PASS) landed first; rebased
+  conflict-free (`336c71aa`, `1b755e6d`) and re-ran acceptance `--force`
+  (PASS at `1b755e6d`, 49/49) since rebased-away `headCommit` values fail
+  freshness on fresh clones.
