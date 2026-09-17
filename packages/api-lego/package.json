@@ -1,0 +1,24 @@
+{
+	"name": "@n8n-reconstructed/api-lego",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"description": "API LEGO — 1:1 reconstruction of the pure n8n 2.9.4 REST response core (Node.js ESM, zero runtime dependencies).",
+	"exports": {
+		".": "./src/index.mjs"
+	},
+	"main": "src/index.mjs",
+	"scripts": {
+		"test": "node --test test/*.test.mjs",
+		"test:unit": "node --test test/0[1-3]-*.test.mjs",
+		"test:golden": "node --test test/04-golden-conformance.test.mjs"
+	},
+	"engines": {
+		"node": ">=20"
+	},
+	"comments": {
+		"reference": "n8n 2.9.4 (upstream commit b6dc2787c45677a29a9612cd27eb911302961a83)",
+		"ab_surface": "NONE — @n8n/api-types and express are not present in the pinned .runtime, so this LEGO is verified by golden conformance + mutation testing, not by A/B",
+		"rust": "NONE — this LEGO is a JS/TS 1:1 reconstruction, per PROJECT_RULES rule 1"
+	}
+}

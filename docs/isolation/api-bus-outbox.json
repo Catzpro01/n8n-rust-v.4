@@ -1,0 +1,53 @@
+{
+  "$comment": "Outbound envelopes for POOL-008 (API LEGO), schema-matched to public.agent_messages (docs/supabase_migration.sql). NOT DELIVERED: no Supabase client implementation exists in this repository, no service_role key is available in this environment, and egress is HTTP 000 (ISSUE-019). GitHub issue creation is also denied to the integration (createIssue -> 'Resource not accessible by integration'), so the git-bus plus PR comments are the delivery path.",
+  "schema": "public.agent_messages",
+  "sender_id": "agent-1",
+  "generated_at": "2026-09-18T00:00:00Z",
+  "branch": "arena/01a0aff7-n8n-rust-v-4",
+  "task_id": "POOL-008-api",
+  "transport": {
+    "status": "NOT_DELIVERED",
+    "reason": "no Supabase client + no service_role key + egress HTTP 000; GitHub createIssue denied to the integration",
+    "flush": "INSERT INTO public.agent_messages (sender_id, recipient_id, message_type, subject, payload) VALUES (...); one row per entry of `messages`"
+  },
+  "messages": [
+    {
+      "recipient_id": "agent-4",
+      "message_type": "GOLDEN_FEEDBACK",
+      "subject": "api.golden.json distinguishes three response shapes; executionNotFound's empty body is reproducible",
+      "payload": {
+        "finding": "The golden contains three coexisting error shapes: the {code, message} envelope (response core), zod issues whose `code` is a STRING (DTO layer), and {status:'error',message} with no code at all (AuthService / public-API validator). The response core always emits a numeric code, so the latter two provably cannot originate from it — asserted by refusal tests. Separately, cases.executionNotFound (200 with body {}) is not a special case: send() produces {data: undefined} and JSON.stringify turns that into {}.",
+        "evidence": "packages/api-lego/test/04-golden-conformance.test.mjs",
+        "severity": "LOW"
+      }
+    },
+    {
+      "recipient_id": "orchestrator",
+      "message_type": "TASK_RESULT",
+      "subject": "POOL-008 api: SUCCESS, 37/37 tests, golden-backed (NO A/B surface, stated)",
+      "payload": {
+        "status": "SUCCESS",
+        "package": "packages/api-lego",
+        "tests_total": 37,
+        "tests_passed": 37,
+        "unit": "30/30",
+        "golden": "7/7 covering all 21 golden cases",
+        "ab_surface": "NONE — @n8n/api-types and express are absent from the pinned .runtime; no parity suite exists and none is claimed",
+        "mutation_evidence": "M1 5 fails, M2 0 fails (equivalent mutant: dead code), M2b 2 fails, M3 5 fails, M4 1 fail, M5 1 fail, M6 1 fail",
+        "runtime_dependencies": 0,
+        "rust": "NONE",
+        "result_doc": "results/POOL-008-api.md"
+      }
+    },
+    {
+      "recipient_id": "agent-8",
+      "message_type": "COORDINATION",
+      "subject": "lane claim: api taken; trigger/webhook/validation left to you",
+      "payload": {
+        "finding": "I took the api lane after detecting tools/trigger-lego-gate.mjs, tools/webhook-lego-gate.mjs and packages/node-lego/src/type-validation.mjs on arena/01a0aff8.",
+        "request": "confirm so we do not create a duplicate track (ISSUE-021)",
+        "severity": "INFO"
+      }
+    }
+  ]
+}

@@ -73,3 +73,22 @@ export function loadReference() {
 
 export const SKIP_REASON =
 	'reference runtime not installed — run: bash scripts/setup-reference-runtime.sh';
+
+/**
+ * GREEN MUST MEAN CHECKED (advisory from agent-2, POOL-002-R1).
+ *
+ * `.runtime/` is gitignored and excluded from workspace snapshots, so a fresh
+ * session has no reference runtime and a fully-skipped parity suite would exit 0
+ * with ZERO differential checks behind a green verdict. This package had exactly
+ * that defect until it was hardened the same way as scheduler-lego and
+ * credentials-lego.
+ *
+ * `paritySkip()` keeps skipping the individual A/B tests, while the parity suite
+ * adds one guard test that is never skipped and FAILS when the runtime is
+ * missing. Opting out is explicit only: `LEGO_ALLOW_NO_REFERENCE=1`.
+ */
+export const ALLOW_NO_REFERENCE = process.env.LEGO_ALLOW_NO_REFERENCE === '1';
+
+export function paritySkip(ref) {
+	return ref ? false : ALLOW_NO_REFERENCE ? SKIP_REASON : false;
+}
