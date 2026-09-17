@@ -1182,3 +1182,64 @@ line in the contract so Phase 3 does not "fix" it.
 
 **Status:** ISSUE-016 stays OPEN (deferred) — this is evidence for whoever picks it up, not a change
 to `crates/**`, which remains outside this lane.
+
+---
+
+## ISSUE-022 — UPDATE (2026-09-18): perbaikannya sudah ada, dan sudah saya verifikasi
+
+**Correction by Agent 1.** Saat mengangkat ISSUE-022 saya menulis bahwa ia "membutuhkan keputusan
+mediator" dengan dua resolusi yang saling eksklusif (revert `crates/**` **atau** ratifikasi
+amendemen §1 + perbarui gate). Itu **keliru pada bagian "keputusan"**: perbaikannya sudah ada,
+sudah terdokumentasi, dan dimiliki seseorang.
+
+### Perbaikan yang sudah ada
+
+`docs/isolation/phase3-gate-mode.md` — **Status: ACTIVE**, pemilik **Agent 5**, diajukan 2026-09-17,
+hidup di branch `arena/01a0aff6` (PR #15). Dokumen itu menyebutkan persisnya gejala yang saya
+ukur (`contract_conformance.mjs` 20/21 dan `boundary_audit.py` → `PHASE VIOLATION`) dan
+mengklasifikasikannya dengan tepat sebagai *masalah daur-hidup gate, bukan regresi*.
+
+Aturan fasenya adalah satu sumber kebenaran, tanpa env var maupun flag:
+
+> **Fase 3 terbuka jika dan hanya jika ada manifest `[workspace]` di root repo (`Cargo.toml`).**
+
+Di fase 3, `contract_conformance.mjs` mengganti pemeriksaan "tidak boleh ada Rust" dengan empat
+pemeriksaan (manifest workspace ada, 35 fixture acceptance `workflow-rust`, permukaan `Workflow`
+15 simbol beku, dan bukti `cargo test` yang masih segar), sedangkan `boundary_audit.py` menjadikan
+inventaris Rust sekadar baris informasi.
+
+### Apa yang saya verifikasi
+
+Pohon `main` (`7937e7cb`, 23 artefak Rust) + harness `tests/` dan rekaman
+`docs/isolation/evidence/` dari PR #15:
+
+```text
+node tests/compatibility/contract_conformance.mjs  ->  RESULT: 43/43 CHECKS PASSED
+python3 tests/integration/boundary_audit.py        ->  AUDIT RESULT: PASS
+         (Phase-3 Rust inventory: 22 file(s) … (accepted: workspace open))
+```
+
+Jadi **pohon `main` menjadi hijau begitu harness PR #15 menyertainya** — predikat fasenya bekerja.
+
+### Batas bukti saya (jujur)
+
+1. Sub-pemeriksaan "bukti `cargo test` masih segar" memanggil `git diff --name-only <recHead> HEAD`.
+   Sandbox ekstrak saya tidak punya `.git`, dan kodenya **sengaja** menangkap kondisi itu:
+   `// No git (or shallow oddity): fall back to the fixtures-hash check above.` Jadi pada lari saya
+   yang berjalan hanyalah pemeriksaan **hash `fixtures.json`** — bukan perbandingan riwayat.
+2. Saya **tidak dapat** mengulang `cargo test`: tidak ada `cargo`/`rustc` di sandbox ini. Rekaman
+   PR #15 (`rust-test-record.json`, `runner: tools/rust-offline-rig (rustc 1.88.0, vendored crates)`,
+   `result: PASS`) saya baca, bukan saya buktikan ulang. Sesuai "honesty constraints" mereka sendiri
+   (MSG-19), `cargo test` di VPS dengan registry nyata tetap menjadi syarat merge.
+
+### Rekomendasi yang direvisi
+
+~~Pilih salah satu: revert `crates/**` atau ratifikasi §1.~~
+
+**Rekomendasi baru:** daratkan perubahan harness PR #15 supaya `main` hijau lagi. Bila perubahan
+gate itu ingin dipisahkan dari 33 berkas Rust-nya, itu justru lebih baik — `main` berhenti merah
+lebih cepat dan tinjauan Rust-nya tidak terblokir.
+
+ISSUE-022 tetap **OPEN** sebagai pernyataan keadaan: checkout `main` yang bersih hari ini masih
+gagal terhadap gate-nya sendiri. Yang berubah adalah bahwa ia kini memiliki perbaikan terverifikasi,
+bukan sekadar pilihan kebijakan.
