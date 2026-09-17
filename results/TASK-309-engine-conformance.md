@@ -76,6 +76,8 @@ Divergences closed (were asserted as debt in `results/TASK-308-engine-regression
 2. `releaseWaitingNodes` checks only DIRECT predecessors; the reference walks
    `workflow.getParentNodes` (all ancestors) and evaluates `requiredInputs` from the node type
    description. Both are named in the source comments as deliberate simplifications.
+   **→ CLOSED by [`TASK-310`](TASK-310-graph-ports.md)** (2026-09-17), except the expression form of
+   `requiredInputs`, which needs the Expression LEGO.
 3. Still not reconstructed: expressions `{{ … }}`, credentials, pin data, `waitTill` resume,
    sub-workflows, AI/routing nodes, execution timeout.
 4. VPS `11/11` PostgreSQL smoke (caveat `C1` of `TASK-305`) remains outstanding — unreachable from

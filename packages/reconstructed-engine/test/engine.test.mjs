@@ -424,3 +424,134 @@ test('mapConnectionsByDestination pads input slots like the reference (map-conne
 	assert.deepEqual(byDestination.Merge.main[0], []);
 	assert.deepEqual(byDestination.Merge.main[1], [{ node: 'B', type: 'main', index: 0 }]);
 });
+
+/* ------------------------------------------------------------------ *
+ * releaseWaitingNodes — requiredInputs and the full ancestor rule
+ * (workflow-execute.ts:2094-2160)
+ * ------------------------------------------------------------------ */
+
+/** IF-style graph: only output 0 fires, so `False` (and everything behind it) never runs. */
+const partialGraph = () => ({
+	nodes: [
+		{ name: 'If', type: 'n8n-nodes-base.if' },
+		{ name: 'True', type: 'n8n-nodes-base.set' },
+		{ name: 'False', type: 'n8n-nodes-base.set' },
+		{ name: 'Merge', type: 'n8n-nodes-base.merge' },
+	],
+	connections: {
+		If: { main: [[conn('True')], [conn('False')]] },
+		True: { main: [[conn('Merge', 0)]] },
+		False: { main: [[conn('Merge', 1)]] },
+	},
+});
+
+const runPartial = async (description, settings) => {
+	const engine = new WorkflowExecutionEngine({ ...partialGraph(), settings });
+	engine.registerNodeType('n8n-nodes-base.if', async () => [item({ ok: true })]);
+	engine.registerNodeType('n8n-nodes-base.set', async (_n, items) => items);
+	engine.registerNodeType('n8n-nodes-base.merge', async (_n, _i, ctx) => [item({ slots: ctx.inputData.length })], {
+		inputs: ['main', 'main'],
+		...description,
+	});
+	return engine.runWorkflow('If', [{ ok: true }]);
+};
+
+test('requiredInputs as a COUNT: 1 releases with partial data, 2 never does (:2107-2177)', { timeout: 5000 }, async () => {
+	const one = await runPartial({ requiredInputs: 1 });
+	assert.equal(one.resultData.runData.Merge?.length, 1, 'requiredInputs: 1 → released');
+	assert.deepEqual(one.data.Merge, [item({ slots: 2 })]);
+
+	const two = await runPartial({ requiredInputs: 2 });
+	assert.equal(two.resultData.runData.Merge, undefined, 'requiredInputs === inputs.length → never released (:2119-2123)');
+	assert.equal(two.status, 'success');
+});
+
+test('requiredInputs as INDEXES: only those slots must have data (:2160-2172)', { timeout: 5000 }, async () => {
+	const zero = await runPartial({ requiredInputs: [0] });
+	assert.equal(zero.resultData.runData.Merge?.length, 1, 'input 0 has data → released');
+
+	const one = await runPartial({ requiredInputs: [1] });
+	assert.equal(one.resultData.runData.Merge, undefined, 'input 1 never receives data → stays waiting');
+
+	const both = await runPartial({ requiredInputs: [0, 1] });
+	assert.equal(both.resultData.runData.Merge, undefined, 'all inputs required → never released');
+});
+
+test('requiredInputs is ignored for executionOrder v0 (:2107-2110)', { timeout: 5000 }, async () => {
+	const v0 = await runPartial({ requiredInputs: 2 }, { executionOrder: 'v0' });
+	assert.equal(v0.resultData.runData.Merge?.length, 1, 'v0 does not consult requiredInputs');
+});
+
+test('an EXPRESSION requiredInputs is treated as unspecified (needs the Expression LEGO)', { timeout: 5000 }, async () => {
+	// Merge v3 in n8n 2.9.4 really uses this form:
+	//   requiredInputs: '={{ $parameter["mode"] === "chooseBranch" ? [0, 1] : 1 }}'
+	// Evaluating it is the Expression LEGO's job; documented gap, asserted so it cannot
+	// silently change meaning.
+	const result = await runPartial({ requiredInputs: '={{ 2 }}' });
+	assert.equal(result.resultData.runData.Merge?.length, 1, 'string form falls back to "not specified"');
+});
+
+test('a node is NOT released while a distant ANCESTOR is still waiting (:2136-2142)', { timeout: 5000 }, async () => {
+	// Discriminating case: Merge's DIRECT predecessors (Q, S) are not waiting, but its
+	// ancestor P is. The old direct-predecessor check released Merge here; n8n does not.
+	// P and Merge use different node types so their requiredInputs do not collide.
+	const engine = new WorkflowExecutionEngine({
+		nodes: [
+			{ name: 'If', type: 'n8n-nodes-base.if' },
+			{ name: 'True', type: 'n8n-nodes-base.set' },
+			{ name: 'False', type: 'n8n-nodes-base.set' },
+			{ name: 'P', type: 'n8n-nodes-base.mergeAll' }, // requires ALL inputs → waits forever
+			{ name: 'S', type: 'n8n-nodes-base.set' },
+			{ name: 'Q', type: 'n8n-nodes-base.set' },
+			{ name: 'Merge', type: 'n8n-nodes-base.mergeAny' }, // one input is enough
+		],
+		connections: {
+			If: { main: [[conn('True')], [conn('False')]] },
+			True: { main: [[conn('P', 0), conn('Q')]] }, // one output feeds both P and Q
+			False: { main: [[conn('P', 1)]] },
+			P: { main: [[conn('S')]] },
+			Q: { main: [[conn('Merge', 0)]] },
+			S: { main: [[conn('Merge', 1)]] },
+		},
+	});
+	engine.registerNodeType('n8n-nodes-base.if', async () => [item({ ok: true })]);
+	engine.registerNodeType('n8n-nodes-base.set', async (_n, items) => items);
+	engine.registerNodeType(
+		'n8n-nodes-base.mergeAll',
+		async (_n, _i, ctx) => [item({ slots: ctx.inputData.length })],
+		{ inputs: ['main', 'main'], requiredInputs: 2 },
+	);
+	engine.registerNodeType(
+		'n8n-nodes-base.mergeAny',
+		async (_n, _i, ctx) => [item({ slots: ctx.inputData.length })],
+		{ inputs: ['main', 'main'], requiredInputs: 1 },
+	);
+
+	const result = await engine.runWorkflow('If', [{ ok: true }]);
+
+	assert.deepEqual(
+		result.executionLog.map((e) => e.node),
+		['If', 'True', 'Q'],
+		'P never runs (needs both inputs) and Merge is held back because its ancestor P is still waiting',
+	);
+	assert.equal(result.resultData.runData.Merge, undefined);
+	assert.equal(result.resultData.runData.P, undefined);
+	assert.equal(result.status, 'success');
+});
+
+test('getParentNodes returns ALL ancestors, deepest-first, without looping on cycles', { timeout: 5000 }, async () => {
+	const engine = new WorkflowExecutionEngine({
+		nodes: ['If', 'True', 'Q', 'Merge'].map((name) => ({ name, type: 'n8n-nodes-base.set' })),
+		connections: {
+			If: { main: [[conn('True')]] },
+			True: { main: [[conn('Q')]] },
+			Q: { main: [[conn('Merge')]] },
+			Merge: { main: [[conn('If')]] }, // cycle
+		},
+	});
+
+	const parents = engine.getParentNodes('Merge');
+	assert.deepEqual(parents, ['If', 'True', 'Q'], 'ancestors, not just the direct predecessor');
+	assert.deepEqual(engine.getParentNodes('If'), ['True', 'Q', 'Merge'], 'cycle-safe: terminates');
+	assert.deepEqual(engine.getParentNodes('NoSuchNode'), []);
+});

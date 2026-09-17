@@ -31,6 +31,10 @@
  *     safety net so a graph that slipped through cannot hang the process: see maxExecutionsFor().
  */
 
+import { getConnectedNodes, getParentNodes } from './graph.mjs';
+
+export { getConnectedNodes, getParentNodes };
+
 const MAIN = 'main';
 
 /**
@@ -87,10 +91,23 @@ export class WorkflowExecutionEngine {
 		this.connectionsByDestinationNode = mapConnectionsByDestination(this.connections);
 		this.settings = workflowDefinition.settings ?? {};
 		this.nodeTypes = new Map();
+		/** type name -> the slice of the n8n node type description the engine reads. */
+		this.nodeTypeDescriptions = new Map();
 	}
 
-	registerNodeType(typeName, handler) {
+	/**
+	 * Register the implementation of a node type.
+	 *
+	 * @param {string} typeName
+	 * @param {Function} handler `(node, items, ctx) => items[]`
+	 * @param {object} [description] the parts of the n8n node type description the engine needs:
+	 *   `requiredInputs` (`number | number[]`, interfaces.ts:2355) and `inputs` (input type list,
+	 *   used for its `.length`). Without a description the engine falls back to the number of
+	 *   connected input slots.
+	 */
+	registerNodeType(typeName, handler, description = {}) {
 		this.nodeTypes.set(typeName, handler);
+		this.nodeTypeDescriptions.set(typeName, description ?? {});
 	}
 
 	/** `workflow-execute.ts:421-423` — number of input SLOTS, not number of incoming edges. */
@@ -115,10 +132,13 @@ export class WorkflowExecutionEngine {
 		return Math.max(1, this.numberOfInputs(nodeName));
 	}
 
-	/** Direct predecessors of a node, from the by-destination map. */
-	predecessors(nodeName) {
-		const slots = this.connectionsByDestinationNode[nodeName]?.[MAIN] ?? [];
-		return slots.flat().map((c) => c.node);
+	/**
+	 * ALL ancestors of a node — `Workflow#getParentNodes` (workflow.ts:590-596).
+	 * The release pass needs the full ancestor set, not just the direct predecessors:
+	 * a node must not be released while any node upstream of it is still waiting.
+	 */
+	getParentNodes(nodeName, type = MAIN, depth = -1) {
+		return getParentNodes(this.connectionsByDestinationNode, nodeName, type, depth);
 	}
 
 	/** `workflow-execute.ts:387-403` — one `null` per input slot. */
@@ -193,24 +213,64 @@ export class WorkflowExecutionEngine {
 	}
 
 	/**
-	 * `workflow-execute.ts:2079-2130` — the stack is drained but nodes are still waiting for
-	 * inputs that will never arrive (e.g. the untaken branch of an IF). n8n runs them anyway,
-	 * substituting `[]` for the missing inputs. Simplification: `requiredInputs` is not
-	 * evaluated (it needs node type descriptions) and only DIRECT predecessors are checked
-	 * for "still waiting" instead of the full ancestor set from `getParentNodes`.
+	 * `workflow-execute.ts:2079-2160` — the stack is drained but nodes are still waiting for
+	 * inputs that will never arrive (e.g. the untaken branch of an IF). n8n releases them one
+	 * per pass, substituting `[]` for the inputs that received nothing.
+	 *
+	 * Two rules from the reference are enforced here:
+	 *   - `requiredInputs` (`interfaces.ts:2355`, only honoured for executionOrder 'v1'): a node
+	 *     that requires ALL its inputs is never released with partial data (:2107-2124), and a
+	 *     node that requires *some* inputs is released only when those slots have data
+	 *     (:2126-2160). The reference can also take an EXPRESSION string here (Merge v2:
+	 *     `requiredInputs: '={{ $parameter["mode"] === "chooseBranch" ? [0, 1] : 1 }}'`);
+	 *     evaluating that needs the Expression LEGO, so the string form is treated as
+	 *     "not specified" and is the one documented gap left in this pass.
+	 *   - "is an ancestor still waiting" uses ALL ancestors via `getParentNodes`
+	 *     (:2136), not just the direct predecessors.
 	 */
 	releaseWaitingNodes(ctx) {
-		for (const nodeName of Object.keys(ctx.waiting)) {
+		const waitingNames = Object.keys(ctx.waiting);
+
+		for (const nodeName of waitingNames) {
 			const node = this.nodes.get(nodeName);
-			if (!node) continue;
+			if (!node) continue; // :2098-2100
 
-			const waitingNames = Object.keys(ctx.waiting);
-			if (this.predecessors(nodeName).some((p) => waitingNames.includes(p))) continue;
+			const description = this.nodeTypeDescriptions.get(node.type) ?? {};
+			const declaredInputs = description.inputs?.length;
+			const inputSlots = declaredInputs ?? this.numberOfInputs(nodeName);
 
-			const firstRunIndex = Object.keys(ctx.waiting[nodeName])[0];
+			// :2107-2110 — requiredInputs is only consulted for executionOrder 'v1'
+			let requiredInputs = this.executionOrder === 'v1' ? description.requiredInputs : undefined;
+			if (typeof requiredInputs === 'string') requiredInputs = undefined; // needs the Expression LEGO
+
+			if (
+				requiredInputs !== undefined &&
+				((Array.isArray(requiredInputs) && requiredInputs.length === inputSlots) ||
+					requiredInputs === inputSlots)
+			) {
+				continue; // :2119-2123 — all inputs are required but not all have data
+			}
+
+			// :2136-2142 — a node stays waiting while ANY ancestor is still waiting
+			if (this.getParentNodes(nodeName).some((value) => waitingNames.includes(value))) continue;
+
+			const runIndexes = Object.keys(ctx.waiting[nodeName]).sort();
+			const firstRunIndex = runIndexes[0];
 			if (firstRunIndex === undefined) continue;
 
-			const taskDataMain = ctx.waiting[nodeName][firstRunIndex].main.map((d) => (d === null ? [] : d));
+			const slots = ctx.waiting[nodeName][firstRunIndex].main;
+			// :2144-2152 — slots that received data, even an empty array, count as "has data"
+			const inputsWithData = slots.map((data, index) => (data === null ? null : index)).filter((v) => v !== null);
+
+			if (requiredInputs !== undefined) {
+				if (Array.isArray(requiredInputs)) {
+					if (requiredInputs.some((required) => !inputsWithData.includes(required))) continue; // :2160-2172
+				} else if (inputsWithData.length < requiredInputs) {
+					continue; // :2174-2177
+				}
+			}
+
+			const taskDataMain = slots.map((data) => (data === null ? [] : data));
 			const source = ctx.waitingSource[nodeName][firstRunIndex];
 
 			delete ctx.waiting[nodeName][firstRunIndex];
@@ -220,9 +280,13 @@ export class WorkflowExecutionEngine {
 				delete ctx.waitingSource[nodeName];
 			}
 
-			if (taskDataMain.some((d) => d.length)) {
+			if (taskDataMain.some((data) => data.length)) {
+				// :2192-2196 — every input at least receives an empty array
+				if (declaredInputs !== undefined) {
+					while (taskDataMain.length < declaredInputs) taskDataMain.push([]);
+				}
 				ctx.enqueue({ node, data: { main: taskDataMain }, source });
-				return true; // n8n releases one node per pass (:2129-2132)
+				return true; // n8n releases one node per pass (:2226-2229)
 			}
 		}
 		return false;
