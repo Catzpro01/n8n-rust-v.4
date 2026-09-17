@@ -52,7 +52,8 @@ detectCycles:all	false
 findCycle:all	null
 getChild:Ghost	[]
 getParent:Ghost	[]
-getNode:Ghost	null"#,
+getNode:Ghost	null
+"#,
     );
 }
 
@@ -92,7 +93,8 @@ getParent:Start	[]
 getConnected:Start	[]
 getNode:Start	{"disabled":false,"name":"Start","position":[250,300],"type":"n8n-nodes-base.manualTrigger","typeVersion":1}
 detectCycles:main	false
-findCycle:main	null"#,
+findCycle:main	null
+"#,
     );
 }
 
@@ -131,7 +133,8 @@ getParent:A	[]
 getParent:B	["A"]
 getParent:C	["A","B"]
 getStartNodes	["A"]
-detectCycles:main	false"#,
+detectCycles:main	false
+"#,
     );
 }
 
@@ -178,7 +181,8 @@ getParent:C	["A"]
 getParent:D	["A","C","B"]
 getStartNodes	["A"]
 detectCycles:main	false
-findCycle:main	null"#,
+findCycle:main	null
+"#,
     );
 }
 
@@ -225,7 +229,8 @@ getChild:A:main:6	["E","D","C","B"]
 getParent:E	["A","B","C","D"]
 getParent:E:main:1	["D"]
 getParent:E:main:2	["C","D"]
-getParent:E:main:10	["A","B","C","D"]"#,
+getParent:E:main:10	["A","B","C","D"]
+"#,
     );
 }
 
@@ -267,7 +272,8 @@ getParent:B	["C","A"]
 getParent:C	["A","B"]
 detectCycles:main	true
 findCycle:main	["A","B","C"]
-getStartNodes	[]"#,
+getStartNodes	[]
+"#,
     );
 }
 
@@ -313,7 +319,8 @@ getParent:A	[]
 getParent:B	["A","A"]
 getParent:C	["A"]
 getStartNodes	["A"]
-detectCycles:main	false"#,
+detectCycles:main	false
+"#,
     );
 }
 
@@ -342,7 +349,8 @@ fn golden_08_sparse_indices() {
 getChild:A	["B"]
 getParent:B	["A"]
 getConnected:A	["B"]
-getStartNodes	["A"]"#,
+getStartNodes	["A"]
+"#,
     );
 }
 
@@ -394,7 +402,8 @@ getParent:D:ALL	["A","B"]
 getNode:C	{"disabled":false,"name":"C","position":[440,0],"type":"@n8n/n8n-nodes-langchain.agent","typeVersion":1.7}
 getStartNodes	["A","C","E"]
 detectCycles:all	false
-findCycle:all	null"#,
+findCycle:all	null
+"#,
     );
 }
 
@@ -425,7 +434,8 @@ getChild:A	["B","B"]
 getParent:B	["A","A"]
 getConnected:A	["B","B"]
 detectCycles:main	false
-findCycle:main	null"#,
+findCycle:main	null
+"#,
     );
 }
 
@@ -458,6 +468,7 @@ getStartNodes	["Bézier"]
 getChild:Bézier	["When clicking ‘Test step’"]
 getParent:When clicking ‘Test step’	["Bézier"]
 getNode:When clicking ‘Test step’	{"disabled":false,"name":"When clicking ‘Test step’","position":[220,0],"type":"n8n-nodes-base.manualTrigger","typeVersion":1}
-detectCycles:main	false"#,
+detectCycles:main	false
+"#,
     );
 }

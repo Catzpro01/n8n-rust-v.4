@@ -73,7 +73,9 @@ def main() -> int:
         if proc.returncode != 0:
             print(f"reference harness FAILED on {name}:\n{proc.stderr}", file=sys.stderr)
             return 1
-        expected = proc.stdout.rstrip("\n")
+        # Keep the trailing newline: run_fixture emits exactly one, matching
+        # the harness (lines.join("\n") + "\n").
+        expected = proc.stdout
         with open(golden_path, "w") as f:
             f.write(proc.stdout)
 

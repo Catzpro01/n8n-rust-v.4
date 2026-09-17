@@ -19,8 +19,6 @@
 //! - Output-index level: JS integer-like object keys always iterate in
 //!   ascending numeric order — identical to Rust `Vec` index order.
 
-use std::collections::BTreeMap;
-
 use crate::model::Connections;
 
 /// Connection-type filter, mirroring the original `connectionType` argument:
@@ -157,6 +155,8 @@ pub fn get_parent_nodes_typed(
 /// Build a small linear graph A → B → C (test helper).
 #[cfg(test)]
 pub(crate) fn linear_connections() -> Connections {
+    use std::collections::BTreeMap;
+
     use crate::model::{Connection, MAIN};
     let mut a: BTreeMap<String, Vec<Option<Vec<Connection>>>> = BTreeMap::new();
     a.insert(
@@ -185,6 +185,8 @@ pub(crate) fn linear_connections() -> Connections {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::BTreeMap;
+
     use crate::model::MAIN;
 
     /// Diamond: A→B, A→C, B→D, C→D (C feeds D's second input).

@@ -23,6 +23,11 @@ rm -rf "$BUILD"
 mkdir -p "$BUILD/.cargo"
 cp -a "$REPO/Cargo.toml" "$BUILD/"
 cp -a "$REPO/crates" "$BUILD/"
+# verification tooling that is a workspace member but lives outside crates/
+if [ -d "$REPO/tools/n8n-workflow-compat" ]; then
+  mkdir -p "$BUILD/tools"
+  cp -a "$REPO/tools/n8n-workflow-compat" "$BUILD/tools/"
+fi
 # integration tests read the reference fixtures/goldens relative to the manifest dir
 if [ -d "$REPO/tests/reference" ]; then
   mkdir -p "$BUILD/tests"

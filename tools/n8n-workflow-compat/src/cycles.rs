@@ -43,7 +43,6 @@ impl CycleScope {
 }
 
 fn build_adjacency(connections: &Connections, scope: CycleScope) -> (Vec<String>, BTreeMap<String, Vec<String>>) {
-    let mut names: Vec<String> = Vec::new();
     let mut seen: BTreeMap<String, ()> = BTreeMap::new();
     let mut adj: BTreeMap<String, Vec<String>> = BTreeMap::new();
 
@@ -68,7 +67,7 @@ fn build_adjacency(connections: &Connections, scope: CycleScope) -> (Vec<String>
     for neighbors in adj.values_mut() {
         neighbors.sort();
     }
-    names = seen.into_keys().collect(); // BTreeMap ⇒ sorted
+    let names: Vec<String> = seen.into_keys().collect(); // BTreeMap ⇒ sorted
     (names, adj)
 }
 
@@ -163,11 +162,16 @@ mod tests {
         (src.to_string(), by_type)
     }
 
+    fn insert_edge(conns: &mut BTreeMap<String, BTreeMap<String, Vec<Option<Vec<Connection>>>>>, src: &str, dst: &str) {
+        let (k, v) = edge(src, dst);
+        conns.insert(k, v);
+    }
+
     #[test]
     fn acyclic_graph() {
         let mut conns = BTreeMap::new();
-        conns.insert(edge("A", "B"));
-        conns.insert(edge("B", "C"));
+        insert_edge(&mut conns, "A", "B");
+        insert_edge(&mut conns, "B", "C");
         assert!(!detect_cycles(&conns, CycleScope::Main));
         assert!(find_cycle(&conns, CycleScope::Main).is_none());
     }
@@ -175,9 +179,9 @@ mod tests {
     #[test]
     fn detects_three_node_cycle() {
         let mut conns = BTreeMap::new();
-        conns.insert(edge("A", "B"));
-        conns.insert(edge("B", "C"));
-        conns.insert(edge("C", "A"));
+        insert_edge(&mut conns, "A", "B");
+        insert_edge(&mut conns, "B", "C");
+        insert_edge(&mut conns, "C", "A");
         assert!(detect_cycles(&conns, CycleScope::Main));
         assert_eq!(
             find_cycle(&conns, CycleScope::Main),
@@ -188,7 +192,7 @@ mod tests {
     #[test]
     fn self_loop_is_a_cycle() {
         let mut conns = BTreeMap::new();
-        conns.insert(edge("A", "A"));
+        insert_edge(&mut conns, "A", "A");
         assert!(detect_cycles(&conns, CycleScope::Main));
         assert_eq!(find_cycle(&conns, CycleScope::Main), Some(vec!["A".to_string()]));
     }

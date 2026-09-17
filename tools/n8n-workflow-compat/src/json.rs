@@ -441,8 +441,9 @@ mod tests {
         assert!(parse_document("{1:2}").is_err());
         assert!(parse_document("[1,]").is_err());
         assert!(parse_document("{\"a\": \"\u{1}\"}").is_err()); // raw control char
-        assert!(parse_document("{\"a\": \"\u{e9}\"}").is_err()); // stray continuation byte
-        assert!(parse_document("{\"a\": \"\\u00"}).is_err()); // truncated escape
+        // Lone high surrogate: valid UTF-8 text, invalid JSON string.
+        assert!(parse_document(r#"{"a": "\ud800"}"#).is_err()); // surrogate without low pair
+        assert!(parse_document(r#"{"a": "\u00"}"#).is_err()); // truncated escape
     }
 
     #[test]

@@ -30,6 +30,24 @@ CRATES=(
   "dtolnay/ryu:1.0.18"
   "BurntSushi/memchr:2.7.4"
   "dtolnay/unicode-ident:1.0.14"
+  # 2026-09-17 (agent-1): indexmap + regex dependency closures
+  # (crates/n8n-workflow -n8n-connection -n8n-validation need indexmap,
+  #  crates/n8n-expression needs regex)
+  "indexmap-rs/indexmap:2.2.6"
+  "indexmap-rs/equivalent:v1.0.1"
+  "rust-lang/hashbrown:v0.14.5"
+  "tkaitchuck/aHash:v0.8.11"
+  "zakarumych/allocator-api2:v0.2.16"
+  "orlp/foldhash:v0.1.4"
+  "google/zerocopy:v0.7.35"
+  "BurntSushi/byteorder:1.5.0"
+  "rust-lang/cfg-if:1.0.0"
+  "rust-lang/libc:0.2.155"
+  "matklad/once_cell:v1.19.0"
+  "SergioBenitez/version_check:v0.9.4"
+  "rust-random/getrandom:v0.2.15"
+  "BurntSushi/aho-corasick:1.1.3"
+  "rust-lang/regex:1.10.5"
 )
 
 mkdir -p "$RIG/dl" "$RIG/vendorsrc"
