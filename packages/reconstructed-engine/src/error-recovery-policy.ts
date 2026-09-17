@@ -271,15 +271,228 @@ export interface ErrorOutputSplit {
 	errorItems: NodeExecutionItem[];
 }
 
+// ---------------------------------------------------------------------------
+// 5. Provenance item error — $getPairedItem (workflow-data-proxy.ts L922-L1035)
+// ---------------------------------------------------------------------------
+
+/** `IPairedItemData` (interfaces.ts) — penunjuk ke item asal sebuah item turunan. */
+export interface PairedItemData {
+	item: number;
+	input?: number;
+	sourceOverwrite?: SourceData | null;
+}
+
+/** `ISourceData` (interfaces.ts) — asal-usul input sebuah node. */
+export interface SourceData {
+	previousNode: string;
+	previousNodeOutput?: number | undefined;
+	previousNodeRun?: number | undefined;
+}
+
+/** Bentuk minimal `ITaskData` yang dipakai resolver (data per output + source). */
+export interface TaskDataLike {
+	data?: { main?: NodeOutputData } | null;
+	source?: Array<SourceData | null> | null;
+}
+
+/** `runData` n8n: nodeName -> array taskData per runIndex. */
+export type RunDataLike = Record<string, Array<TaskDataLike | undefined> | undefined>;
+
 /**
- * workflow-execute.ts L2463-L2561 (handleNodeErrorOutput), tanpa resolusi data-proxy:
+ * Ambil referensi pairedItem dari sebuah item — workflow-execute.ts L2517-L2523:
+ * `item.pairedItem && typeof item.pairedItem === 'object' ? (Array.isArray(...) ? [0] : ...) : undefined`.
+ */
+export function resolvePairedItemRef(
+	item: NodeExecutionItem | undefined,
+): PairedItemData | undefined {
+	const paired = item?.pairedItem;
+	if (!paired || typeof paired !== 'object') return undefined;
+	return Array.isArray(paired) ? (paired[0] as PairedItemData) : (paired as PairedItemData);
+}
+
+function normalizePairedItem(
+	paired: number | PairedItemData | Array<number | PairedItemData> | null | undefined,
+): PairedItemData[] {
+	if (paired === null || paired === undefined) return [];
+	const items = Array.isArray(paired) ? paired : [paired];
+	return items.map((entry) => (typeof entry === 'number' ? { item: entry } : entry));
+}
+
+export interface PairedItemResolverOptions {
+	/** Nama koneksi yang dipakai (default `main`, sesuai NodeConnectionTypes.Main). */
+	connectionType?: string;
+	/** true -> lempar error seperti upstream; false (default) -> kembalikan null. */
+	strict?: boolean;
+}
+
+export type PairedItemResolver = (
+	destinationNodeName: string,
+	incomingSourceData: SourceData | null | undefined,
+	initialPairedItem: PairedItemData | number,
+) => NodeExecutionItem | null;
+
+/**
+ * Port 1:1 `WorkflowDataProxy.$getPairedItem` (workflow-data-proxy.ts L922-L1035) —
+ * menelusuri rantai leluhur `runData` untuk menemukan item asal yang dipasangkan.
+ *
+ * Perbedaan terkendali: upstream melempar (`createPairedItemNotFound`,
+ * `createMissingPairedItemError`, `createBranchNotFoundError`,
+ * `createPairedItemMultipleItemsFound`, “Missing output data”). Port ini
+ * mengembalikan `null` agar pemanggil bisa memilih fallback — aktifkan
+ * `strict: true` untuk perilaku melempar persis seperti upstream.
+ */
+export function createPairedItemResolver(
+	runData: RunDataLike,
+	options: PairedItemResolverOptions = {},
+): PairedItemResolver {
+	const fail = (message: string): never | null => {
+		if (options.strict) throw new Error(message);
+		return null;
+	};
+
+	const getTaskData = (source: SourceData): TaskDataLike | undefined =>
+		runData?.[source.previousNode]?.[source.previousNodeRun || 0] ?? undefined;
+
+	const getNodeOutput = (taskData: TaskDataLike | undefined, source: SourceData) =>
+		taskData?.data?.main?.[source.previousNodeOutput || 0];
+
+	const resolve = (
+		destinationNodeName: string,
+		incomingSourceData: SourceData | null | undefined,
+		initialPairedItem: PairedItemData | number,
+		nodeBeforeLast?: string,
+	): NodeExecutionItem | null => {
+		let pairedItem: PairedItemData =
+			typeof initialPairedItem === 'number' ? { item: initialPairedItem } : initialPairedItem;
+		const sourceData = pairedItem.sourceOverwrite || incomingSourceData;
+
+		if (!sourceData) {
+			return fail(`Paired item not found for node "${destinationNodeName}"`) as NodeExecutionItem | null;
+		}
+
+		const taskData = getTaskData(sourceData);
+		const outputData = getNodeOutput(taskData, sourceData);
+		if (!outputData) {
+			return fail(`Missing output data for node "${sourceData.previousNode}"`) as NodeExecutionItem | null;
+		}
+
+		const item = outputData[pairedItem.item];
+		const sourceArray = taskData?.source ?? [];
+
+		// Selesai: leluhur yang dicari tercapai pada rantai ini
+		if (sourceData.previousNode === destinationNodeName) {
+			if (pairedItem.item >= outputData.length) {
+				return fail(
+					`Missing paired item ${pairedItem.item} on node "${sourceData.previousNode}"`,
+				) as NodeExecutionItem | null;
+			}
+			return item ?? null;
+		}
+
+		if (!item) {
+			return fail(
+				`Missing paired item ${pairedItem.item} on node "${sourceData.previousNode}"`,
+			) as NodeExecutionItem | null;
+		}
+
+		const nextPairedItems = normalizePairedItem(item.pairedItem as PairedItemData | number | Array<number | PairedItemData> | null | undefined);
+		if (nextPairedItems.length === 0) {
+			return fail(
+				`Missing paired item on node "${sourceData.previousNode}" (node before last: ${nodeBeforeLast ?? '-'})`,
+			) as NodeExecutionItem | null;
+		}
+
+		const matched: NodeExecutionItem[] = [];
+		let sawFailure = false;
+		for (const nextPairedItem of nextPairedItems) {
+			const inputIndex = nextPairedItem.input || 0;
+			if (inputIndex >= sourceArray.length) {
+				sawFailure = true;
+				continue;
+			}
+			const nextSource = nextPairedItem.sourceOverwrite ?? sourceArray[inputIndex];
+			const found = resolve(
+				destinationNodeName,
+				nextSource ?? null,
+				{ ...nextPairedItem, input: inputIndex },
+				sourceData.previousNode,
+			);
+			if (found) matched.push(found);
+			else sawFailure = true;
+		}
+
+		if (matched.length === 0) {
+			if (sourceArray.length === 0) {
+				return fail(`No connection from "${destinationNodeName}"`) as NodeExecutionItem | null;
+			}
+			return fail(
+				`Branch not found: item ${pairedItem.item} on "${sourceData.previousNode}"`,
+			) as NodeExecutionItem | null;
+		}
+
+		const [first, ...rest] = matched;
+		if (rest.some((candidate) => candidate !== first)) {
+			return fail(
+				`Multiple paired items found for item ${pairedItem.item} on "${destinationNodeName}"`,
+			) as NodeExecutionItem | null;
+		}
+		void sawFailure; // upstream hanya memakai kegagalan bila TIDAK ada yang cocok
+		return first;
+	};
+
+	return resolve;
+}
+
+export interface ErrorOutputSplitOptions {
+	/** Resolver `$getPairedItem` (lihat `createPairedItemResolver`). */
+	resolver?: PairedItemResolver;
+	/** `executionData.source` node yang sedang dieksekusi: connectionType -> source per input. */
+	source?: Record<string, Array<SourceData | null> | undefined> | null;
+	/** Nama koneksi utama (default `main`). */
+	connectionType?: string;
+}
+
+/**
+ * Lengkapi item error dengan JSON item asalnya — workflow-execute.ts L2524-L2560:
+ * `errorItems.push({ ...item, json: { ...constPairedItem.json, ...item.json } })`.
+ * Bila provenance tidak tersedia (source null / tanpa pairedItem / resolver gagal),
+ * item dilewatkan apa adanya (L2525-L2527).
+ */
+export function withErrorItemProvenance(
+	item: NodeExecutionItem,
+	options: ErrorOutputSplitOptions = {},
+): NodeExecutionItem {
+	const { resolver, source, connectionType = 'main' } = options;
+	if (!resolver || !source) return item;
+
+	const pairedItemData = resolvePairedItemRef(item);
+	if (pairedItemData === undefined) return item;
+
+	const sourceList = source[connectionType];
+	if (!sourceList || sourceList.length === 0) return item;
+
+	const sourceData = sourceList[pairedItemData.input || 0];
+	if (!sourceData) return item;
+
+	const sourceItem = resolver(sourceData.previousNode, sourceData, pairedItemData);
+	if (sourceItem === null) return item;
+
+	return { ...item, json: { ...sourceItem.json, ...item.json } };
+}
+
+/**
+ * workflow-execute.ts L2463-L2561 (handleNodeErrorOutput):
  * item error pada output reguler (0..mainOutputCount-2) dipindah ke output TERAKHIR
- * (index `mainOutputCount - 1`). Resolusi `$getPairedItem` tidak diport karena butuh
- * WorkflowDataProxy — lihat bagian "Batas Port" di contracts/error-recovery.contract.md.
+ * (index `mainOutputCount - 1`).
+ *
+ * Bila `options.resolver` + `options.source` diberikan, item error juga diperkaya dengan
+ * JSON item asalnya melalui `$getPairedItem` (L2524-L2560) — kalau tidak, perilakunya
+ * identik dengan versi sebelumnya (item dilewatkan apa adanya).
  */
 export function splitErrorOutput(
 	output: NodeOutputData,
 	mainOutputCount = 2,
+	options: ErrorOutputSplitOptions = {},
 ): ErrorOutputSplit {
 	const data: NodeOutputData = Array.from({ length: Math.max(1, mainOutputCount) }, () => []);
 	const source = output ?? [];
@@ -293,7 +506,7 @@ export function splitErrorOutput(
 			const item = items.shift();
 			if (item === undefined) continue;
 			if (isErrorItem(item)) {
-				errorItems.push(item);
+				errorItems.push(withErrorItemProvenance(item, options));
 			} else {
 				successItems.push(item);
 			}

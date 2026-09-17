@@ -7,7 +7,7 @@
 | Reference | n8n 2.9.4, `packages/core/src/execution-engine/workflow-execute.ts`; `packages/workflow/src/{interfaces,node-helpers}.ts` |
 | Implementation | `packages/reconstructed-engine/src/error-recovery-policy.ts` (pure, dependency-free) |
 | Consumers | `packages/reconstructed-engine/runner.mjs` (legacy JS engine) · `src/execution-engine/workflow-execute.ts` (TS engine) |
-| Tests | unit `test/error-recovery-policy.test.mjs` + engine `test/engine-error-recovery.test.mjs` — 22/22 PASS; TS integration `test/ts-error-recovery.integration.mjs` — PASS (needs `npm --prefix packages/reconstructed-engine run emit:cjs`, skips automatically otherwise) |
+| Tests | unit `test/{error-recovery-policy,paired-item-provenance}.test.mjs` + engine `test/engine-error-recovery.test.mjs` — 34/34 PASS (32 milik LEGO ini + 2 dari session paralel); TS integration `test/ts-error-recovery.integration.mjs` — 3/3 PASS (needs `npm --prefix packages/reconstructed-engine run emit:cjs`, skips automatically otherwise) |
 | Status | TESTED — `typecheck` 0 errors (16/16 packages), `test-run.mjs` + `test-enhanced.mjs` green, `isolation:check` 4/4 PASS (reference source untouched) |
 
 ## 1. Purpose
@@ -41,6 +41,12 @@ normalizeOutputItems(out) -> INodeExecutionData[][]
 isErrorItem(item)         -> boolean
 splitErrorOutput(out, mainOutputCount) -> { data, errorItems }
 executeNodeWithRecovery(node, task, options) -> RetryOutcome
+
+# provenance item error ($getPairedItem)
+resolvePairedItemRef(item)                       -> PairedItemData | undefined
+createPairedItemResolver(runData, { strict? })   -> (destinationNode, sourceData, pairedItem) => item | null
+withErrorItemProvenance(item, { resolver, source, connectionType? }) -> INodeExecutionData
+splitErrorOutput(out, mainOutputCount, { resolver?, source?, connectionType? }) -> { data, errorItems }
 ```
 
 ## 4. Guarantees
@@ -61,7 +67,13 @@ executeNodeWithRecovery(node, task, options) -> RetryOutcome
    (i.e. `continueOnFail` routes through the regular output).
 6. **Output shape** — all outputs are `INodeExecutionData[][]` (per-output branches). Flat arrays
    returned by legacy handlers are wrapped into one branch by the consumer (`toOutputBranches`).
-7. **Error-output split** — with `continueErrorOutput`, item-level errors detected by `isErrorItem`
+7. **Error-item provenance (`$getPairedItem`)** — when a resolver and the node's `source` are
+   supplied, an error item is enriched with the JSON of its origin item:
+   `{ ...item, json: { ...sourceItem.json, ...item.json } }` (`workflow-execute.ts` L2524–L2560,
+   resolver ported from `workflow-data-proxy.ts` L922–L1035, including the recursive ancestry walk,
+   `sourceOverwrite`, and the ambiguity check). If the source is missing, the item carries no
+   `pairedItem`, or the walk fails, the item passes through unchanged (L2525–L2527).
+8. **Error-output split** — with `continueErrorOutput`, item-level errors detected by `isErrorItem`
    (`item.error`, or `json.error` as the only key, or `json.error` + `json.message`) are moved out of
    outputs `0..n-2` into the last main output, exactly like `handleNodeErrorOutput`.
 
@@ -84,15 +96,17 @@ executeNodeWithRecovery(node, task, options) -> RetryOutcome
    Error output (`workflow-execute.ts` L1848–L1855). This is the behaviour users report upstream
    (n8n issue #23224, “output goes to success branch despite being an error”). The item-level path
    (§4.7) is the mechanism that actually populates the Error branch.
-2. **`$getPairedItem` reconstruction is not ported.** `handleNodeErrorOutput` resolves paired-item data
-   through `WorkflowDataProxy`; the port pushes the error item unchanged. Items therefore keep their
-   `pairedItem` but do not gain the merged source JSON.
+2. **`$getPairedItem` is ported as a standalone resolver** (`createPairedItemResolver`), not through
+   `WorkflowDataProxy`. Upstream throws five different error types on failure; the port returns `null`
+   by default so callers keep the upstream fallback (“push the item unchanged”), and offers
+   `strict: true` for the throwing behaviour. `$getPairedItem` also stays reachable from expressions
+   in the Expression LEGO — this module is the *engine-side* consumer, not a replacement.
 3. **Hardcoded retry limits** (2/3/5 tries, 0/1000/5000 ms) are duplicated from upstream, including the
    upstream `TODO` to move them into `NodeSettings.vue`.
 
 ## 8. Verification
 ```bash
-npm --prefix packages/reconstructed-engine run test:unit   # 22 tests: policy unit + JS engine integration
+npm --prefix packages/reconstructed-engine run test:unit   # 34 tests (32 LEGO ini + 2 paralel): retry/routing + provenance
 node packages/reconstructed-engine/test-run.mjs            # legacy regression demo -> VERIFIKASI BERHASIL
 node packages/reconstructed-engine/test-enhanced.mjs       # 14-LEGO integration -> VERIFIKASI BERHASIL
 npm --prefix packages/reconstructed-engine run typecheck   # 0 errors (16/16 paket LEGO hijau)
@@ -108,3 +122,4 @@ Gate: every change must keep all of the above green (PROJECT_RULES #6).
 |---|---|---|
 | ISSUE-ERR-RECOVERY-01 | `tsc --noEmit` reported 26 errors in `packages/reconstructed-engine`: 24× TS2835 (extensionless relative imports under `moduleResolution: NodeNext`), 2× TS2339 (`.length` on `unknown`), 1× TS6059 (`src/index.ts` re-exports `../runner.mjs` outside `rootDir`). | Resolved together with the parallel session on this branch: the package now uses `module: commonjs` / `moduleResolution: node` (extensionless imports stay), `src/index.ts` re-exports every LEGO as a namespace (`export * as XLEGO`) which removes the ambiguous-barrel errors, and the two `unknown` values are cast. `typecheck` is 0 errors and all 16 LEGO packages typecheck clean. |
 | ISSUE-ERR-RECOVERY-02 | TS execution engine crashed at runtime for every handler that returns a flat item array (`normalizeItems: items.map is not a function`), so `ReconstructedWorkflowEngine.executeWorkflow()` could not run at all — the 14-LEGO “VERIFIED” status only ever exercised `runner.mjs`. | Handler output is normalised to `INodeExecutionData[][]` (flat arrays are wrapped into output 0) — same rule as `toOutputBranches()` in `runner.mjs` and matching n8n, where node output is per-output. Verified by `test/ts-error-recovery.integration.mjs`. |
+| ISSUE-ERR-RECOVERY-03 | The reconstructed TS engine built `executionData.source` as `{ main: [[ ISourceData ]] }` (nested), while n8n's `ITaskDataConnectionsSource` is `{ main: [ ISourceData \| null ] }` (`interfaces.ts` L2721-L2727, built at `workflow-execute.ts` L803-L813). Any consumer indexing `source.main[inputIndex]` — including error-item provenance — silently got an array. | Source construction aligned to upstream (flat). Only two consumers existed: `taskData.source` flattening (unchanged result for both shapes) and the new provenance call. |
