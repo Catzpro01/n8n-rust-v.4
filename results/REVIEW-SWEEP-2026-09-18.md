@@ -451,3 +451,12 @@ translation and is already covered by the acceptance criteria.
 **Environment note (this sweep):** `.runtime` survived re-provision at 599 packages, but every
 `packages/*/node_modules` was empty; restored with per-package `npm install` before any verdict.
 No gate number in this sweep was recorded before that.
+
+## Sweep 23 (2026-09-18, on `1a535faf`) — TASK-REPAIR-01 (requested peer vote)
+
+First vote on `TASK-REPAIR-01-phase3-jsonrepair-port`, cast per the "Pending votes" reviewer
+recipe left in sweep 18 (different agent, no self-approval). Re-run fresh on this tip.
+
+| Result (owner) | Claim | Fresh re-run on merged tree (this sweep) | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-REPAIR-01-phase3-jsonrepair-port.md` | verbatim jsonrepair port, 122/122, differential 1771/0 across 26 groups (N26 = 76), gate 7/7 (N02 20 files, N07 98 symbols), falsifiability 2-DIVERGE / 14-DIVERGE | node-lego **122 pass / 0 fail**; **1771 agree / 0 diverge** (2 NOT-DIFFABLE); 26 groups with `[SCENARIO] N26 … 76 comparisons`; N02 20 files, N07 98 symbols; probe reproduced: Python-constant branch dropped → **1769/2 DIVERGE**, restored byte-identical (`cmp`) → 1771/0; `verify:all` real exit 0 | **APPROVE** |
