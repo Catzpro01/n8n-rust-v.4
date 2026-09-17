@@ -1,0 +1,1535 @@
+{
+ "generator": "build-fixtures.mjs",
+ "source": "workflow-rules.ts",
+ "cases": [
+  {
+   "id": "D1-empty-valid",
+   "fn": "validateWorkflow",
+   "workflow": {
+    "id": "wf-empty",
+    "name": "Empty Workflow",
+    "nodes": [],
+    "connections": {}
+   },
+   "expect": {
+    "valid": true,
+    "errors": []
+   }
+  },
+  {
+   "id": "D2-linear-valid",
+   "fn": "validateWorkflow",
+   "workflow": {
+    "id": "wf-linear",
+    "name": "Linear Two Nodes",
+    "nodes": [
+     {
+      "id": "node-1",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+       240,
+       300
+      ],
+      "parameters": {}
+     },
+     {
+      "id": "node-2",
+      "name": "Code",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+       460,
+       300
+      ],
+      "parameters": {
+       "jsCode": "return [{ json: { status: 'ok', count: 42 } }];"
+      }
+     }
+    ],
+    "connections": {
+     "Manual Trigger": {
+      "main": [
+       [
+        {
+         "node": "Code",
+         "type": "main",
+         "index": 0
+        }
+       ]
+      ]
+     }
+    }
+   },
+   "expect": {
+    "valid": true,
+    "errors": []
+   }
+  },
+  {
+   "id": "D2-linear-strict",
+   "fn": "validateWorkflow",
+   "options": {
+    "allowCycles": false
+   },
+   "workflow": {
+    "id": "wf-linear",
+    "name": "Linear Two Nodes",
+    "nodes": [
+     {
+      "id": "node-1",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+       240,
+       300
+      ],
+      "parameters": {}
+     },
+     {
+      "id": "node-2",
+      "name": "Code",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+       460,
+       300
+      ],
+      "parameters": {
+       "jsCode": "return [{ json: { status: 'ok', count: 42 } }];"
+      }
+     }
+    ],
+    "connections": {
+     "Manual Trigger": {
+      "main": [
+       [
+        {
+         "node": "Code",
+         "type": "main",
+         "index": 0
+        }
+       ]
+      ]
+     }
+    }
+   },
+   "expect": {
+    "valid": true,
+    "errors": []
+   }
+  },
+  {
+   "id": "D3-duplicate-disabled",
+   "fn": "validateWorkflow",
+   "workflow": {
+    "nodes": [
+     {
+      "id": "Code",
+      "name": "Code",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     },
+     {
+      "id": "Code",
+      "name": "Code",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {},
+      "disabled": true
+     }
+    ],
+    "connections": {}
+   },
+   "expect": {
+    "valid": false,
+    "errors": [
+     {
+      "code": "DUPLICATE_NODE_NAME",
+      "node": "Code",
+      "path": [
+       "nodes",
+       "1",
+       "name"
+      ],
+      "message": "Duplicate node name \"Code\""
+     }
+    ]
+   }
+  },
+  {
+   "id": "D3b-uniqueness-clean",
+   "fn": "checkNodeUniqueness",
+   "workflow": {
+    "nodes": [
+     {
+      "id": "A",
+      "name": "A",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     },
+     {
+      "id": "B",
+      "name": "B",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     }
+    ]
+   },
+   "expect": {
+    "errors": []
+   }
+  },
+  {
+   "id": "D4-dangling-ghost",
+   "fn": "validateWorkflow",
+   "workflow": {
+    "nodes": [
+     {
+      "id": "Trigger",
+      "name": "Trigger",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     }
+    ],
+    "connections": {
+     "Trigger": {
+      "main": [
+       [
+        {
+         "node": "Ghost",
+         "type": "main",
+         "index": 0
+        }
+       ]
+      ]
+     }
+    }
+   },
+   "expect": {
+    "valid": false,
+    "errors": [
+     {
+      "code": "DANGLING_CONNECTION",
+      "node": "Trigger",
+      "path": [
+       "connections",
+       "Trigger",
+       "main",
+       "0",
+       "0"
+      ],
+      "message": "Connection from \"Trigger\" to unknown node \"Ghost\""
+     }
+    ]
+   }
+  },
+  {
+   "id": "D5-bad-type-key",
+   "fn": "validateWorkflow",
+   "workflow": {
+    "nodes": [
+     {
+      "id": "A",
+      "name": "A",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     },
+     {
+      "id": "B",
+      "name": "B",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     }
+    ],
+    "connections": {
+     "A": {
+      "foo": [
+       [
+        {
+         "node": "B",
+         "type": "foo",
+         "index": 0
+        }
+       ]
+      ]
+     }
+    }
+   },
+   "expect": {
+    "valid": false,
+    "errors": [
+     {
+      "code": "INVALID_CONNECTION_TYPE",
+      "node": "A",
+      "path": [
+       "connections",
+       "A",
+       "foo"
+      ],
+      "message": "Unknown connection type \"foo\" on node \"A\""
+     },
+     {
+      "code": "INVALID_CONNECTION_TYPE",
+      "node": "A",
+      "path": [
+       "connections",
+       "A",
+       "foo",
+       "0",
+       "0",
+       "type"
+      ],
+      "message": "Unknown connection type \"foo\" on node \"A\""
+     }
+    ]
+   }
+  },
+  {
+   "id": "D5b-unknown-source",
+   "fn": "checkDanglingConnections",
+   "workflow": {
+    "nodes": [
+     {
+      "id": "A",
+      "name": "A",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     }
+    ],
+    "connections": {
+     "Nope": {
+      "main": [
+       [
+        {
+         "node": "A",
+         "type": "main",
+         "index": 0
+        }
+       ]
+      ]
+     }
+    }
+   },
+   "expect": {
+    "errors": [
+     {
+      "code": "DANGLING_CONNECTION",
+      "node": "Nope",
+      "path": [
+       "connections",
+       "Nope"
+      ],
+      "message": "Connection from unknown node \"Nope\""
+     }
+    ]
+   }
+  },
+  {
+   "id": "D6-cycle-default-allowed",
+   "fn": "validateWorkflow",
+   "workflow": {
+    "nodes": [
+     {
+      "id": "A",
+      "name": "A",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     },
+     {
+      "id": "B",
+      "name": "B",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     }
+    ],
+    "connections": {
+     "A": {
+      "main": [
+       [
+        {
+         "node": "B",
+         "type": "main",
+         "index": 0
+        }
+       ]
+      ]
+     },
+     "B": {
+      "main": [
+       [
+        {
+         "node": "A",
+         "type": "main",
+         "index": 0
+        }
+       ]
+      ]
+     }
+    }
+   },
+   "expect": {
+    "valid": true,
+    "errors": []
+   }
+  },
+  {
+   "id": "D6b-cycle-strict",
+   "fn": "validateWorkflow",
+   "options": {
+    "allowCycles": false
+   },
+   "workflow": {
+    "nodes": [
+     {
+      "id": "A",
+      "name": "A",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     },
+     {
+      "id": "B",
+      "name": "B",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     }
+    ],
+    "connections": {
+     "A": {
+      "main": [
+       [
+        {
+         "node": "B",
+         "type": "main",
+         "index": 0
+        }
+       ]
+      ]
+     },
+     "B": {
+      "main": [
+       [
+        {
+         "node": "A",
+         "type": "main",
+         "index": 0
+        }
+       ]
+      ]
+     }
+    }
+   },
+   "expect": {
+    "valid": false,
+    "errors": [
+     {
+      "code": "CYCLE_DETECTED",
+      "node": "A",
+      "path": [
+       "connections",
+       "B",
+       "main"
+      ],
+      "message": "Cycle detected: A → B → A"
+     }
+    ]
+   }
+  },
+  {
+   "id": "D7-ai-cycle-ignored",
+   "fn": "validateWorkflow",
+   "options": {
+    "allowCycles": false
+   },
+   "workflow": {
+    "nodes": [
+     {
+      "id": "A",
+      "name": "A",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     },
+     {
+      "id": "B",
+      "name": "B",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     }
+    ],
+    "connections": {
+     "A": {
+      "ai_tool": [
+       [
+        {
+         "node": "B",
+         "type": "ai_tool",
+         "index": 0
+        }
+       ]
+      ]
+     },
+     "B": {
+      "ai_tool": [
+       [
+        {
+         "node": "A",
+         "type": "ai_tool",
+         "index": 0
+        }
+       ]
+      ]
+     }
+    }
+   },
+   "expect": {
+    "valid": true,
+    "errors": []
+   }
+  },
+  {
+   "id": "D8a-self-loop",
+   "fn": "detectCycles",
+   "workflow": {
+    "nodes": [
+     {
+      "id": "A",
+      "name": "A",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     }
+    ],
+    "connections": {
+     "A": {
+      "main": [
+       [
+        {
+         "node": "A",
+         "type": "main",
+         "index": 0
+        }
+       ]
+      ]
+     }
+    }
+   },
+   "expect": {
+    "errors": [
+     {
+      "code": "CYCLE_DETECTED",
+      "node": "A",
+      "path": [
+       "connections",
+       "A",
+       "main"
+      ],
+      "message": "Cycle detected: A → A"
+     }
+    ]
+   }
+  },
+  {
+   "id": "D8b-three-cycle",
+   "fn": "detectCycles",
+   "workflow": {
+    "nodes": [
+     {
+      "id": "A",
+      "name": "A",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     },
+     {
+      "id": "B",
+      "name": "B",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     },
+     {
+      "id": "C",
+      "name": "C",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     }
+    ],
+    "connections": {
+     "A": {
+      "main": [
+       [
+        {
+         "node": "B",
+         "type": "main",
+         "index": 0
+        }
+       ]
+      ]
+     },
+     "B": {
+      "main": [
+       [
+        {
+         "node": "C",
+         "type": "main",
+         "index": 0
+        }
+       ]
+      ]
+     },
+     "C": {
+      "main": [
+       [
+        {
+         "node": "A",
+         "type": "main",
+         "index": 0
+        }
+       ]
+      ]
+     }
+    }
+   },
+   "expect": {
+    "errors": [
+     {
+      "code": "CYCLE_DETECTED",
+      "node": "A",
+      "path": [
+       "connections",
+       "C",
+       "main"
+      ],
+      "message": "Cycle detected: A → B → C → A"
+     }
+    ]
+   }
+  },
+  {
+   "id": "D8c-diamond",
+   "fn": "detectCycles",
+   "workflow": {
+    "nodes": [
+     {
+      "id": "A",
+      "name": "A",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     },
+     {
+      "id": "B",
+      "name": "B",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     },
+     {
+      "id": "C",
+      "name": "C",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     },
+     {
+      "id": "D",
+      "name": "D",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     }
+    ],
+    "connections": {
+     "A": {
+      "main": [
+       [
+        {
+         "node": "B",
+         "type": "main",
+         "index": 0
+        },
+        {
+         "node": "C",
+         "type": "main",
+         "index": 0
+        }
+       ]
+      ]
+     },
+     "B": {
+      "main": [
+       [
+        {
+         "node": "D",
+         "type": "main",
+         "index": 0
+        }
+       ]
+      ]
+     },
+     "C": {
+      "main": [
+       [
+        {
+         "node": "D",
+         "type": "main",
+         "index": 0
+        }
+       ]
+      ]
+     }
+    }
+   },
+   "expect": {
+    "errors": []
+   }
+  },
+  {
+   "id": "D10a-garbage-string",
+   "fn": "validateWorkflow",
+   "workflow": "garbage",
+   "expect": {
+    "valid": false,
+    "errors": [
+     {
+      "code": "INVALID_INPUT",
+      "message": "Workflow must be an object with a `nodes` array of named nodes"
+     }
+    ]
+   }
+  },
+  {
+   "id": "D10b-nodes-not-array",
+   "fn": "validateWorkflow",
+   "workflow": {
+    "nodes": "x"
+   },
+   "expect": {
+    "valid": false,
+    "errors": [
+     {
+      "code": "INVALID_INPUT",
+      "message": "Workflow must be an object with a `nodes` array of named nodes"
+     }
+    ]
+   }
+  },
+  {
+   "id": "D10c-connections-not-object",
+   "fn": "validateWorkflow",
+   "workflow": {
+    "nodes": [],
+    "connections": []
+   },
+   "expect": {
+    "valid": false,
+    "errors": [
+     {
+      "code": "INVALID_INPUT",
+      "message": "`connections` must be an object",
+      "path": [
+       "connections"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "D10d-unnamed-node",
+   "fn": "validateWorkflow",
+   "workflow": {
+    "nodes": [
+     {
+      "name": 1
+     }
+    ]
+   },
+   "expect": {
+    "valid": false,
+    "errors": [
+     {
+      "code": "INVALID_INPUT",
+      "message": "Workflow must be an object with a `nodes` array of named nodes"
+     }
+    ]
+   }
+  },
+  {
+   "id": "D10e-empty-nodes-valid",
+   "fn": "validateWorkflow",
+   "workflow": {
+    "nodes": []
+   },
+   "expect": {
+    "valid": true,
+    "errors": []
+   }
+  },
+  {
+   "id": "X1-malformed-target",
+   "fn": "validateWorkflow",
+   "workflow": {
+    "nodes": [
+     {
+      "id": "A",
+      "name": "A",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     },
+     {
+      "id": "B",
+      "name": "B",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     }
+    ],
+    "connections": {
+     "A": {
+      "main": [
+       [
+        {
+         "node": 7
+        }
+       ]
+      ]
+     }
+    }
+   },
+   "expect": {
+    "valid": false,
+    "errors": [
+     {
+      "code": "DANGLING_CONNECTION",
+      "node": "A",
+      "path": [
+       "connections",
+       "A",
+       "main",
+       "0",
+       "0"
+      ],
+      "message": "Malformed connection target from \"A\""
+     }
+    ]
+   }
+  },
+  {
+   "id": "X2-null-output-slot",
+   "fn": "validateWorkflow",
+   "workflow": {
+    "nodes": [
+     {
+      "id": "A",
+      "name": "A",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     },
+     {
+      "id": "B",
+      "name": "B",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     }
+    ],
+    "connections": {
+     "A": {
+      "main": [
+       null,
+       [
+        {
+         "node": "B",
+         "type": "main",
+         "index": 0
+        }
+       ]
+      ]
+     }
+    }
+   },
+   "expect": {
+    "valid": true,
+    "errors": []
+   }
+  },
+  {
+   "id": "X3-nonobject-bytype",
+   "fn": "validateWorkflow",
+   "workflow": {
+    "nodes": [
+     {
+      "id": "A",
+      "name": "A",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     }
+    ],
+    "connections": {
+     "A": 42
+    }
+   },
+   "expect": {
+    "valid": true,
+    "errors": []
+   }
+  },
+  {
+   "id": "X4-missing-connections-key",
+   "fn": "validateWorkflow",
+   "workflow": {
+    "nodes": [
+     {
+      "id": "A",
+      "name": "A",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     }
+    ]
+   },
+   "expect": {
+    "valid": true,
+    "errors": []
+   }
+  },
+  {
+   "id": "X5-mixed-types-main-only",
+   "fn": "validateWorkflow",
+   "options": {
+    "allowCycles": false
+   },
+   "workflow": {
+    "nodes": [
+     {
+      "id": "A",
+      "name": "A",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     },
+     {
+      "id": "B",
+      "name": "B",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     }
+    ],
+    "connections": {
+     "A": {
+      "main": [
+       [
+        {
+         "node": "B",
+         "type": "main",
+         "index": 0
+        }
+       ]
+      ],
+      "ai_tool": [
+       [
+        {
+         "node": "A",
+         "type": "ai_tool",
+         "index": 0
+        }
+       ]
+      ]
+     }
+    }
+   },
+   "expect": {
+    "valid": true,
+    "errors": []
+   }
+  },
+  {
+   "id": "X6-triple-duplicate",
+   "fn": "validateWorkflow",
+   "workflow": {
+    "nodes": [
+     {
+      "id": "A",
+      "name": "A",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     },
+     {
+      "id": "A",
+      "name": "A",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     },
+     {
+      "id": "A",
+      "name": "A",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     }
+    ],
+    "connections": {}
+   },
+   "expect": {
+    "valid": false,
+    "errors": [
+     {
+      "code": "DUPLICATE_NODE_NAME",
+      "node": "A",
+      "path": [
+       "nodes",
+       "1",
+       "name"
+      ],
+      "message": "Duplicate node name \"A\""
+     },
+     {
+      "code": "DUPLICATE_NODE_NAME",
+      "node": "A",
+      "path": [
+       "nodes",
+       "2",
+       "name"
+      ],
+      "message": "Duplicate node name \"A\""
+     }
+    ]
+   }
+  },
+  {
+   "id": "X7-target-type-bad-only",
+   "fn": "validateWorkflow",
+   "workflow": {
+    "nodes": [
+     {
+      "id": "A",
+      "name": "A",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     },
+     {
+      "id": "B",
+      "name": "B",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     }
+    ],
+    "connections": {
+     "A": {
+      "main": [
+       [
+        {
+         "node": "B",
+         "type": "foo",
+         "index": 0
+        }
+       ]
+      ]
+     }
+    }
+   },
+   "expect": {
+    "valid": false,
+    "errors": [
+     {
+      "code": "INVALID_CONNECTION_TYPE",
+      "node": "A",
+      "path": [
+       "connections",
+       "A",
+       "main",
+       "0",
+       "0",
+       "type"
+      ],
+      "message": "Unknown connection type \"foo\" on node \"A\""
+     }
+    ]
+   }
+  },
+  {
+   "id": "X8-root-order-deterministic",
+   "fn": "detectCycles",
+   "workflow": {
+    "nodes": [
+     {
+      "id": "B",
+      "name": "B",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     },
+     {
+      "id": "A",
+      "name": "A",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     }
+    ],
+    "connections": {
+     "A": {
+      "main": [
+       [
+        {
+         "node": "B",
+         "type": "main",
+         "index": 0
+        }
+       ]
+      ]
+     },
+     "B": {
+      "main": [
+       [
+        {
+         "node": "A",
+         "type": "main",
+         "index": 0
+        }
+       ]
+      ]
+     }
+    }
+   },
+   "expect": {
+    "errors": [
+     {
+      "code": "CYCLE_DETECTED",
+      "node": "B",
+      "path": [
+       "connections",
+       "A",
+       "main"
+      ],
+      "message": "Cycle detected: B → A → B"
+     }
+    ]
+   }
+  },
+  {
+   "id": "X9-connections-null",
+   "fn": "validateWorkflow",
+   "workflow": {
+    "nodes": [],
+    "connections": null
+   },
+   "expect": {
+    "valid": false,
+    "errors": [
+     {
+      "code": "INVALID_INPUT",
+      "message": "`connections` must be an object",
+      "path": [
+       "connections"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "X10-null-workflow",
+   "fn": "validateWorkflow",
+   "workflow": null,
+   "expect": {
+    "valid": false,
+    "errors": [
+     {
+      "code": "INVALID_INPUT",
+      "message": "Workflow must be an object with a `nodes` array of named nodes"
+     }
+    ]
+   }
+  },
+  {
+   "id": "X11-null-node-entry",
+   "fn": "validateWorkflow",
+   "workflow": {
+    "nodes": [
+     null
+    ]
+   },
+   "expect": {
+    "valid": false,
+    "errors": [
+     {
+      "code": "INVALID_INPUT",
+      "message": "Workflow must be an object with a `nodes` array of named nodes"
+     }
+    ]
+   }
+  },
+  {
+   "id": "X12-main-not-array",
+   "fn": "validateWorkflow",
+   "workflow": {
+    "nodes": [
+     {
+      "id": "A",
+      "name": "A",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     }
+    ],
+    "connections": {
+     "A": {
+      "main": "x"
+     }
+    }
+   },
+   "expect": {
+    "valid": true,
+    "errors": []
+   }
+  },
+  {
+   "id": "X13-null-target",
+   "fn": "validateWorkflow",
+   "workflow": {
+    "nodes": [
+     {
+      "id": "A",
+      "name": "A",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     }
+    ],
+    "connections": {
+     "A": {
+      "main": [
+       [
+        null
+       ]
+      ]
+     }
+    }
+   },
+   "expect": {
+    "valid": false,
+    "errors": [
+     {
+      "code": "DANGLING_CONNECTION",
+      "node": "A",
+      "path": [
+       "connections",
+       "A",
+       "main",
+       "0",
+       "0"
+      ],
+      "message": "Malformed connection target from \"A\""
+     }
+    ]
+   }
+  },
+  {
+   "id": "X14-missing-nodes-key",
+   "fn": "validateWorkflow",
+   "workflow": {},
+   "expect": {
+    "valid": false,
+    "errors": [
+     {
+      "code": "INVALID_INPUT",
+      "message": "Workflow must be an object with a `nodes` array of named nodes"
+     }
+    ]
+   }
+  },
+  {
+   "id": "X15-collect-all-insertion-order",
+   "fn": "validateWorkflow",
+   "workflow": {
+    "nodes": [
+     {
+      "id": "Z",
+      "name": "Z",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     },
+     {
+      "id": "A",
+      "name": "A",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     },
+     {
+      "id": "B",
+      "name": "B",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+       0,
+       0
+      ],
+      "parameters": {}
+     }
+    ],
+    "connections": {
+     "Z": {
+      "zzz": [
+       [
+        {
+         "node": "B",
+         "type": "main",
+         "index": 0
+        }
+       ]
+      ],
+      "main": [
+       [
+        {
+         "node": "GhostZ",
+         "type": "main",
+         "index": 0
+        }
+       ]
+      ]
+     },
+     "A": {
+      "main": [
+       [
+        {
+         "node": "GhostA",
+         "type": "main",
+         "index": 0
+        }
+       ]
+      ]
+     }
+    }
+   },
+   "expect": {
+    "valid": false,
+    "errors": [
+     {
+      "code": "INVALID_CONNECTION_TYPE",
+      "node": "Z",
+      "path": [
+       "connections",
+       "Z",
+       "zzz"
+      ],
+      "message": "Unknown connection type \"zzz\" on node \"Z\""
+     },
+     {
+      "code": "DANGLING_CONNECTION",
+      "node": "Z",
+      "path": [
+       "connections",
+       "Z",
+       "main",
+       "0",
+       "0"
+      ],
+      "message": "Connection from \"Z\" to unknown node \"GhostZ\""
+     },
+     {
+      "code": "DANGLING_CONNECTION",
+      "node": "A",
+      "path": [
+       "connections",
+       "A",
+       "main",
+       "0",
+       "0"
+      ],
+      "message": "Connection from \"A\" to unknown node \"GhostA\""
+     }
+    ]
+   }
+  }
+ ]
+}

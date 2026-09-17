@@ -1,5 +1,5 @@
 use n8n_node_model::INode;
-use n8n_validation::validate_node_uniqueness;
+use n8n_validation::check_node_uniqueness;
 use std::fs;
 use std::path::Path;
 
@@ -15,7 +15,7 @@ fn test_fixture_empty_workflow() {
     let nodes: Vec<INode> = serde_json::from_value(json["nodes"].clone()).unwrap_or_default();
     let node_names: Vec<String> = nodes.iter().map(|n| n.name.clone()).collect();
 
-    assert!(validate_node_uniqueness(&node_names).is_ok());
+    assert!(check_node_uniqueness(&node_names).is_empty());
     assert_eq!(nodes.len(), 0);
 }
 
@@ -31,6 +31,6 @@ fn test_fixture_linear_workflow() {
     let nodes: Vec<INode> = serde_json::from_value(json["nodes"].clone()).unwrap_or_default();
     let node_names: Vec<String> = nodes.iter().map(|n| n.name.clone()).collect();
 
-    assert!(validate_node_uniqueness(&node_names).is_ok());
+    assert!(check_node_uniqueness(&node_names).is_empty());
     assert_eq!(nodes.len(), 2);
 }

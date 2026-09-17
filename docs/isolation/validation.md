@@ -157,3 +157,42 @@ workflow (the regression gate 11/11 must stay green; the reference never calls t
    port must define an equivalent date model. Documented, not refactored.
 4. **`DisabledHandling`** was previously "untested" in `LEGO-MASTER-MAP.md`; it is now explicitly a
    non-responsibility of this LEGO (owner: Execution/Workflow), which closes that row for Validation.
+
+---
+
+## 7. Rust conformance (Phase 3, TASK-403)
+
+`crates/n8n-validation` is an exact port of `tests/reference/agent-4/validation/workflow-rules.ts`
+(contract §4.4/§10), replacing the earlier first-error helpers (which additionally walked *all*
+connection types for cycles, contradicting §11.8).
+
+| `workflow-rules.ts` | Rust (`n8n-validation`) |
+|---|---|
+| `validateWorkflow(workflow, { allowCycles })` | `validate_workflow(&OrderedValue, &ValidateOptions)` + `validate_workflow_json(&str, …)` text entry |
+| `checkNodeUniqueness` | `check_node_uniqueness(&[String])` |
+| `checkDanglingConnections` | `check_dangling_connections(&[String], &OrderedValue)` |
+| `detectCycles` (main-only iterative DFS) | `detect_cycles(&[String], &OrderedValue)` |
+| `ValidationError { code, node?, path?, message }` | `ValidationError` (serde, same field order) |
+| `NODE_CONNECTION_TYPES` (13) | `NODE_CONNECTION_TYPES` |
+
+Design notes:
+
+- **Inputs are `OrderedValue`, not `serde_json::Value`.** Collect-all error order follows
+  `Object.entries` insertion order (pinned by fixture `X15-collect-all-insertion-order`), and
+  `serde_json::Value` without `preserve_order` sorts keys (`BTreeMap`). Enabling `preserve_order`
+  was tried and reverted: the feature unifies workspace-wide and silently broke `n8n-workflow`'s
+  checksum, whose canonicalisation relies on the `BTreeMap` backend. The `IndexMap`-backed
+  `OrderedValue` follows the `n8n-connection` / `OrderedMap` precedent instead. The checksum's
+  backend reliance was passed to agent-1 as an observation (outbox `A4-MSG-04`); LEGO 01 files
+  were not touched for it.
+- **Malformed input never throws/panics**: non-object workflows, non-array `nodes`, unnamed nodes,
+  and non-object `connections` all yield a single `INVALID_INPUT` error (D10 + X9–X11/X14 probes);
+  JSON-syntax-invalid text maps to the same code.
+- **Downstream migration**: `crates/n8n-workflow/tests/conformance.rs` used the removed
+  `validate_node_uniqueness` (3-line migration to `check_node_uniqueness(...).is_empty()`, with bus
+  notice; the dep line stays since the test still uses the crate).
+
+Conformance pins: `tests/reference/agent-4/validation/fixtures.json` — 34 cases generated from
+`workflow-rules.ts` itself by `build-fixtures.mjs` (`--check` byte-compares; D1–D10 plus X1–X15
+guard-branch probes) — asserted by `crates/n8n-validation/tests/validation_fixtures.rs`, plus
+8 unit tests. Evidence: `docs/isolation/evidence/rust-test-record.json`.

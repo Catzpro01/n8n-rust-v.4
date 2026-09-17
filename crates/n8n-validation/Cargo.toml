@@ -5,9 +5,10 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-n8n-common = { path = "../n8n-common" }
-n8n-connection = { path = "../n8n-connection" }
 serde.workspace = true
 serde_json.workspace = true
-thiserror.workspace = true
+# OrderedValue objects are IndexMaps (n8n-connection precedent): document
+# order must survive the parse for collect-all error order (fixture X15).
+# Deliberately NOT serde_json/preserve_order: that unifies workspace-wide
+# and would silently break n8n-workflow's BTreeMap-backed checksum.
 indexmap.workspace = true

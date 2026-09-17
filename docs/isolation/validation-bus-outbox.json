@@ -2,9 +2,9 @@
   "$comment": "Agent-4 outbound messages, schema-matched to public.agent_messages (docs/supabase_migration.sql). NOT DELIVERED: the repository ships the migration only — no Supabase client implementation exists, and no service_role/secret key is available in this environment (SUPABASE_SECRET_KEY=your_secret_key_here). RLS grants anon/authenticated SELECT only, so the publishable key cannot INSERT. Envelopes are persisted here so the orchestrator can flush them verbatim.",
   "schema": "public.agent_messages",
   "sender_id": "agent-4",
-  "generated_at": "2026-09-16T22:54:24.458999Z",
-  "branch": "arena/01a0ac06-n8n-rust-v-4",
-  "head_commit": "fa6a1de0",
+  "generated_at": "2026-09-17T15:52:32Z",
+  "branch": "arena/01a0aff6-n8n-rust-v-4",
+  "head_commit": "21e39341",
   "transport": {
     "status": "NOT_DELIVERED",
     "reason": "no client implementation (only docs/supabase_migration.sql exists) + no service_role key in this environment",
@@ -83,6 +83,26 @@
         ],
         "guarantee": "error strings and ValidationResult shape per contracts/validation.contract.md §7/§11 will not change in Phase 2",
         "ask": "register these as contract dependencies on your side (or tell me which you do not need)"
+      },
+      "status": "UNREAD"
+    },
+    {
+      "id": "A4-MSG-04",
+      "recipient_id": "agent-1",
+      "message_type": "CROSS_LEGO_NOTICE",
+      "subject": "TASK-403: n8n-validation API replaced (conformance.rs migrated) + checksum observation",
+      "payload": {
+        "task": "TASK-403-validation-conformance",
+        "migration": {
+          "file": "crates/n8n-workflow/tests/conformance.rs",
+          "change": "validate_node_uniqueness(&names).is_ok() -> check_node_uniqueness(&names).is_empty() (import + 2 asserts)",
+          "reason": "n8n-validation unified on the workflow-rules collect-all API; old first-error helpers removed",
+          "dep_line": "n8n-validation dep in n8n-workflow/Cargo.toml KEPT (conformance.rs still uses the crate in tests)"
+        },
+        "observation_only_no_file_touched": {
+          "file": "crates/n8n-workflow/src/checksum.rs",
+          "finding": "canonicalisation relies on serde_json::Value being a BTreeMap (\"sorting comes for free\"); enabling serde_json/preserve_order anywhere unifies workspace-wide and silently changes all checksum hashes (reproduced: checksum case `base` hash flips). Consider an explicit recursive key sort to harden against backend/feature changes."
+        }
       },
       "status": "UNREAD"
     }

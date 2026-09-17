@@ -1,0 +1,84 @@
+id: TASK-403-validation-conformance
+agent: agent-4
+lego: validation
+module: validation
+phase: 3
+title: "Port workflow-rules.ts to n8n-validation + generated fixture harness"
+
+# n8n-validation implements the NEW CAPABILITY shape but diverges from the
+# normative workflow-rules.ts (contracts/validation.contract.md §4.4/§10):
+#  1. detect_cycles walks ALL connection types; the rule is MAIN-ONLY (§11.8).
+#  2. No INVALID_INPUT / INVALID_CONNECTION_TYPE codes, no paths/messages,
+#     first-error instead of collect-all, no allowCycles option, no
+#     validate_workflow report.
+# This task unifies the crate on the workflow-rules API (check_* collect-all
+# parts + validate_workflow report over serde_json::Value so malformed input
+# never throws), migrates the single downstream test usage, and pins
+# everything with fixtures GENERATED from workflow-rules.ts (not transcribed).
+
+allowed_paths:
+  - crates/n8n-validation/**
+  - tests/reference/agent-4/validation/build-fixtures.mjs
+  - tests/reference/agent-4/validation/fixtures.json
+  - docs/isolation/validation.md
+  - docs/isolation/validation-bus-outbox.json
+  - docs/isolation/evidence/rust-test-record.json
+  - tasks/TASK-403-validation-conformance.yaml
+  - results/TASK-403-validation-conformance.md
+
+# Surgical exception (documented, with bus notice to agent-1): the old
+# validate_node_uniqueness is replaced by the collect-all API, so
+# crates/n8n-workflow/tests/conformance.rs needs a 3-line migration (import +
+# 2 asserts). The n8n-validation dep line in n8n-workflow/Cargo.toml STAYS
+# (conformance.rs still uses the crate; the review's §2.5 "unused" claim only
+# holds for src/). Nothing else in LEGO 01.
+forbidden_paths:
+  - reference/n8n/**
+  - crates/n8n-workflow/src/**
+  - crates/n8n-connection/**
+  - crates/n8n-node-model/**
+  - crates/n8n-common/**
+  - crates/n8n-execution-data/**
+  - crates/n8n-expression/**
+  - apps/**
+  - packages/**
+  - contracts/**
+
+requires:
+  - contracts/validation.contract.md
+  - tests/reference/agent-4/validation/workflow-rules.ts
+  - tests/reference/agent-4/validation/validation.test.ts
+  - docs/isolation/validation-golden-cases.md
+
+operations:
+  - name: port_rules
+    args:
+      spec: tests/reference/agent-4/validation/workflow-rules.ts
+      api: [check_node_uniqueness, check_dangling_connections, detect_cycles, validate_workflow, ValidationError, ValidationReport, NODE_CONNECTION_TYPES]
+      notes: "main-only deterministic cycles with path report; collect-all; INVALID_INPUT on malformed shapes (never throws/panics). Inputs are OrderedValue (IndexMap-backed, n8n-connection precedent), NOT serde_json::Value: collect-all order needs insertion order, and serde_json/preserve_order was rejected (unifies workspace-wide, silently breaks n8n-workflow's BTreeMap-backed checksum) -> observation passed to agent-1 via outbox, LEGO 01 file untouched"
+  - name: generate_fixtures
+    args:
+      generator: tests/reference/agent-4/validation/build-fixtures.mjs
+      output: tests/reference/agent-4/validation/fixtures.json
+      source: "D1-D10 cases executed against workflow-rules.ts itself (--check byte-compares)"
+  - name: fixture_harness
+    args:
+      path: crates/n8n-validation/tests/validation_fixtures.rs
+      asserts: "every generated case + case count"
+  - name: migrate_downstream
+      args: "conformance.rs 3-line migration to collect-all API; dep line stays (bus notice A4-MSG-04)"
+  - name: refresh_evidence
+    args:
+      cmd: bash tools/phase3-rust-acceptance.sh --force
+      reason: "crates changed -> Phase-3 evidence must be re-recorded (TASK-401 rule)"
+
+acceptance:
+  - cargo test --workspace green incl. new validation fixture tests
+  - node tests/reference/agent-4/validation/validation.test.ts still green (TS side untouched)
+  - contract_conformance 24/24, boundary_audit PASS
+  - no reference modification, no fixture hand-editing (generated file only)
+
+merge_condition:
+  - regression_gate_pass
+  - no_contract_violation
+  - agent_5_verification
