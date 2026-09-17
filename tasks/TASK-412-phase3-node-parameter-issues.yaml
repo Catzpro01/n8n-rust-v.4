@@ -1,0 +1,36 @@
+id: TASK-412-phase3-node-parameter-issues
+agent: arena-worker
+lego: node
+module: node-parameter-issues
+phase: 3
+title: "Node LEGO: parameter issues engine"
+status: SUBMITTED_FOR_REVIEW
+
+scope:
+  - Reconstruct getNodeParametersIssues, getParameterIssues, and mergeIssues from pinned node-helpers.ts.
+  - Preserve display-aware required checks and recursive collection/fixedCollection paths.
+  - Preserve resource locator regex, resource mapper schema, validateType, disabled-node, and pin-data semantics.
+  - Supply the dependency-free issue-facing validateFieldType subset.
+  - Differential-test against published n8n-workflow@2.9.1.
+
+acceptance:
+  tests: "66 pass / 0 fail, including 8 issue-engine cases"
+  differential: "337 agree / 0 diverge / 337 comparisons, 0 harness errors"
+  gate: "N01-N07 7/7 PASS"
+  reference_integrity: "15050 files, pinned root digest"
+
+allowed_paths:
+  - tasks/TASK-412-phase3-node-parameter-issues.yaml
+  - results/TASK-412-phase3-node-parameter-issues.md
+  - packages/node-lego/**
+  - tools/node-lego-differential.mjs
+  - tools/node-lego-gate.mjs
+  - contracts/node.contract.md
+  - docs/isolation/node.md
+  - docs/isolation/evidence/node-lego-gate.json
+  - docs/isolation/LEGO-MASTER-MAP.md
+
+forbidden_paths:
+  - reference/n8n/**
+  - crates/**
+  - apps/**

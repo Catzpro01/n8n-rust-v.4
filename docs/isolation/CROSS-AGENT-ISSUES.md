@@ -1417,6 +1417,26 @@ activation differential **43/0** · engine differential **84/0** · `npm run ver
 (`trigger-lego` vs `execution-engine` activation surface vs `scheduler-lego` registry home), with both
 differential instruments reproducible and the behavioral deltas at zero on every surface measured so far.
 
+### Addendum 4 — independent re-verification of the three-way claims (TASK-412 sweep, 2026-09-18, read-only)
+
+Claim → reproduced: sweep on the merged tip **TASK-412** verified without trusting the peer narrative:
+
+| claim | reproduced |
+| :--- | :--- |
+| execution-engine suite + gate | `60/60` · gate `10/10 PASS` (`E08` 60 symbols, `E10` 20 pass / 0 fail) |
+| trigger-lego | `11/11` (`T03` gate 11) |
+| scheduler-lego (canonical cron home) | `9/9` (`S04` gate 11) |
+| webhook-lego | `10/10` (gate 5/5) |
+| activation differential (`tools/activation-differential.mjs`) | **65 agree / 0 diverge** |
+| engine differential (`tools/engine-differential.mjs`) | **84 agree / 0 diverge** |
+| `npm run verify:all` | exit `0` (8 gates; matrix in `results/TASK-412-phase3-node-parameter-issues.md`) |
+| conformance / boundary | `42/42 CHECKS PASSED` · `PASS (all edges documented)` |
+| reference pin | `15050 files, root f8da35180669d798…` |
+
+No new divergence surfaced, so no protest is filed and no `NEEDS_CORRECTION` is raised by this lane.
+Nothing under `packages/{trigger,scheduler,webhook,connection,execution}*` or `packages/execution-engine`
+was written — this lane only measured. The consolidation decision itself stays with the orchestrator.
+
 ---
 
 ## ISSUE-024 — `NodeOperationError` now exists in two packages (OPEN, orchestrator decision)
@@ -1571,3 +1591,42 @@ rejects the asymmetry-normalising mutation that ISSUE-017 recorded in the Rust p
 remains OPEN for the Rust owner** — the executable oracle they need now exists at
 `tests/reference/04-disabled-node/expected.json`. ISSUE-015's scope warning (plain traversal has no
 disabled concept) is preserved verbatim in `case.json`.
+
+---
+
+## ISSUE-026 — Two concurrent reconstructions of the parameter-issues engine (CONSOLIDATED on this branch)
+
+**Found by:** TASK-413 rebase, 2026-09-18. **Status:** CONSOLIDATED (orchestrator may still review the call).
+
+Two lanes implemented the same Node-Model surface in the same package at the same time:
+
+| | peer commit `768e1e79` (`TASK-412`) | this lane (`TASK-413`) |
+| :--- | :--- | :--- |
+| files | `src/field-validation.mjs` (91 ln), `src/parameter-issues.mjs` (132 ln) | `src/type-validation.mjs`, `src/filter-parameter.mjs`, `src/parameter-issues.mjs` |
+| tests | `test/parameter-issues.test.mjs` (8 cases) | `test/node-model.test.mjs` (+16 cases, 74 total) |
+| differential | +32 lines | N19–N22 = **1107 new comparisons** |
+| measured vs REF | `field-validation.mjs`: **456 match / 104 differ** (560-case matrix) · `parameter-issues.mjs`: **13 match / 2 differ** (15 fixtures) | `type-validation.mjs` 560/560 on the same matrix · `parameter-issues.mjs` 56/56 · whole package **1422 agree / 0 diverge** |
+
+Measured deltas of the superseded module (each REF-verified, kept here as evidence): `datetime`
+returned the raw input instead of a parsed value (and rejected `12:30`-style times the reference
+accepts), `url` returned the un-prefixed value where REF returns `https://…`, `object` accepted
+strict JSON only (no JS-object recovery), `number` rejected `NaN`-adjacent inputs REF converts,
+and the mapper branch did not materialise the empty `parameters[<name>]` array the reference emits.
+
+Resolution on this branch:
+
+* `src/type-validation.mjs` + `src/filter-parameter.mjs` + `src/parameter-issues.mjs` (this lane)
+  are the implementation that ships; they are the ones wired into `index.mjs` and the gate.
+* `src/field-validation.mjs` was **removed** (superseded duplicate; its only consumer was the peer
+  `parameter-issues.mjs`, itself superseded) — its content stays readable at `768e1e79`.
+* the peer's `test/parameter-issues.test.mjs` is **kept** and now runs against the shipped modules
+  (82 tests total); one assertion that encoded the missing `map: []` artefact was corrected
+  against REF, with the reason in a comment.
+* the peer's `tasks/TASK-412-*.yaml` + `results/TASK-412-*.md` and its map row stay in place; this
+  lane's task is renumbered **TASK-413** (duplicate id, later task renumbers — house rule).
+* peer differential/gate additions were superseded by N19–N22 rather than merged (their N03 count
+  and differential lines described the smaller surface).
+
+Nothing else was deleted: the peer package lanes, their evidence files and their commits remain on
+the branch. If the orchestrator prefers the peer implementation, the swap is local to
+`packages/node-lego/src/{type-validation,filter-parameter,parameter-issues}.mjs` + `index.mjs`.
