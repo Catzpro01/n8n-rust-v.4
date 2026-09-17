@@ -1,0 +1,40 @@
+id: TASK-418-phase3-api-lego
+agent: arena-worker
+lego: api
+module: api-boundary
+phase: 3
+status: IMPLEMENTED
+reference: n8n@2.9.4
+objective: Reconstruct n8n 2.9.4 HTTP API boundary, uniform response envelopes ({data}, {code,message}), error classes, DTO validation formatting (raw first issue on 400), health endpoints, and SPA 404 fallback.
+allowed_paths:
+  - packages/api-lego/**
+  - tools/api-lego-gate.mjs
+  - docs/isolation/**
+  - package.json
+  - README.md
+  - tasks/TASK-418-phase3-api-lego.yaml
+  - results/TASK-418-phase3-api-lego.md
+forbidden_paths:
+  - reference/n8n/**
+  - crates/**
+  - apps/**
+requires:
+  - contracts/api.contract.md
+  - docs/isolation/api.md
+verification:
+  - npm --prefix packages/api-lego test
+  - node tools/api-lego-gate.mjs
+acceptance:
+  tests: 12/12
+  gate: 6/6
+  reference_integrity: 15050 files; f8da35180669d798
+outputs:
+  - packages/api-lego/src/index.mjs
+  - packages/api-lego/src/errors.mjs
+  - packages/api-lego/src/envelope.mjs
+  - packages/api-lego/src/validation.mjs
+  - packages/api-lego/src/dispatcher.mjs
+  - packages/api-lego/test/conformance.test.mjs
+  - tools/api-lego-gate.mjs
+  - results/TASK-418-phase3-api-lego.md
+  - tasks/TASK-418-phase3-api-lego.yaml

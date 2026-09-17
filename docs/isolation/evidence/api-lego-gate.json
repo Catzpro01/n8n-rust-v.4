@@ -1,0 +1,47 @@
+{
+  "generatedAt": "2026-09-17T18:30:35.945Z",
+  "task": "TASK-418-phase3-api-lego",
+  "reference": "n8n 2.9.4",
+  "totals": {
+    "passed": 6,
+    "gates": 6
+  },
+  "gates": [
+    {
+      "id": "A01",
+      "name": "zero runtime dependencies",
+      "status": "PASS",
+      "detail": "0 dependencies"
+    },
+    {
+      "id": "A02",
+      "name": "source boundary is import-closed",
+      "status": "PASS",
+      "detail": "5 source files"
+    },
+    {
+      "id": "A03",
+      "name": "api conformance suite",
+      "status": "PASS",
+      "detail": "12 pass / 0 fail"
+    },
+    {
+      "id": "A04",
+      "name": "reference tree remains pinned",
+      "status": "PASS",
+      "detail": "Reference integrity check: PASS (15050 files, root f8da35180669d798…)"
+    },
+    {
+      "id": "A05",
+      "name": "formal api contract present",
+      "status": "PASS",
+      "detail": "8/8 core symbols contracted"
+    },
+    {
+      "id": "A06",
+      "name": "reference golden parity check",
+      "status": "PASS",
+      "detail": "golden constants & cases verified"
+    }
+  ]
+}

@@ -37,7 +37,7 @@ All 8 secondary LEGOs have been contracted and isolated under Phase 2 boundary r
 | Scheduler | Agent 4 | `contracts/scheduler.contract.md` ✅ | `docs/isolation/scheduler.md` ✅ | golden fixture + scheduler test ✅ | **ISOLATED** |
 | Persistence | Agent 4 | `contracts/persistence.contract.md` ✅ | `docs/isolation/persistence.md` ✅ | golden fixture + persistence test ✅ | **ISOLATED** |
 | Credentials | Agent 4 | `contracts/credentials.contract.md` ✅ | `docs/isolation/credentials.md` ✅ | `packages/credentials-lego` 22/22 ✅ · gate 6/6 ✅ | **VERIFIED** |
-| API | Agent 4 | `contracts/api.contract.md` ✅ | `docs/isolation/api.md` ✅ | golden fixture + envelope test ✅ | **ISOLATED** |
+| API | Agent 4 | `contracts/api.contract.md` ✅ | `docs/isolation/api.md` ✅ | `packages/api-lego` 12/12 ✅ · gate 6/6 ✅ | **VERIFIED** |
 
 ## 3. Source-of-truth mapping (verified against source, not assumed)
 
@@ -102,6 +102,7 @@ asserts that confinement.
 | `TASK-415-phase3-validation-lego` | validation (LEGO 04) | `contracts/validation.contract.md` ✅ | `docs/isolation/validation.md` ✅ | `packages/validation-lego/test/conformance.test.mjs` 20/20 ✅ (Golden cases A/B/C/D, parity with n8n-workflow, 2 negative controls) | `contract_conformance` 42/42 ✅ · `boundary_audit` PASS ✅ | **VERIFIED** |
 | `TASK-416-phase3-credentials-lego` | credentials | `contracts/credentials.contract.md` ✅ | `docs/isolation/credentials.md` ✅ | `packages/credentials-lego/test/conformance.test.mjs` 22/22 ✅ (cipher round-trip, OpenSSL EVP_BytesToKey parity, 2 negative controls) | `tools/credentials-lego-gate.mjs` 6/6 ✅ | **VERIFIED** |
 | `TASK-417-phase3-execution-data-lego` | execution-data | `contracts/execution-data.contract.md` ✅ | `docs/isolation/execution-data.md` ✅ | `packages/execution-data-lego/test/conformance.test.mjs` 24/24 ✅ (7 reference suites, pairing rules, 2 negative controls) | `tools/execution-data-lego-gate.mjs` 6/6 ✅ | **VERIFIED** |
+| `TASK-418-phase3-api-lego` | api | `contracts/api.contract.md` ✅ | `docs/isolation/api.md` ✅ | `packages/api-lego/test/conformance.test.mjs` 12/12 ✅ (envelopes, zod 400 raw issues, SPA fallback, 2 negative controls) | `tools/api-lego-gate.mjs` 6/6 ✅ | **VERIFIED** |
 
 | Phase 3 gate | Result |
 | :--- | :--- |

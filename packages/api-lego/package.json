@@ -1,0 +1,14 @@
+{
+  "name": "@lego/api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Phase-3 JavaScript reconstruction of n8n 2.9.4 API LEGO, REST/public envelopes, response errors, DTO validation formatting, and SPA fallback",
+  "type": "module",
+  "main": "src/index.mjs",
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  }
+}
