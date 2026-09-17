@@ -1,0 +1,45 @@
+id: TASK-ENGINE-CONSOLIDATE-01
+agent: arena-worker
+lego: integration
+module: execution-engine
+phase: 3
+title: "Reconcile engine differential divergences (S3, S6, S7) to achieve 24/24 parity and reference fidelity"
+status: AVAILABLE
+
+# Context: TASK-ENGINE-DIFF-01 discovered 3 divergences across 5 comparisons in tools/engine-differential.mjs:
+# - S3: finished flag was true on error in execution-engine (ref L2438: finished=true only without error/waitTill)
+# - S6: getMainOutputCount missed node.onError === 'continueErrorOutput' R8 append (ref node-helpers.ts:1170)
+# - S7: disabled node in reconstructed-engine skipped execution entirely, starving downstream (ref handleDisabledNode L909-920, L1199)
+# This task resolves all 3 divergences across both engines, bringing the differential harness to 24/24 AGREE.
+
+allowed_paths:
+  - tasks/TASK-ENGINE-CONSOLIDATE-01.yaml
+  - packages/execution-engine/src/workflow-execute.mjs
+  - packages/reconstructed-engine/runner.mjs
+  - tools/engine-differential.mjs
+  - docs/isolation/CROSS-AGENT-ISSUES.md
+  - docs/isolation/evidence/execution-engine-gate.json
+  - docs/isolation/execution-verification.md
+  - results/TASK-ENGINE-CONSOLIDATE-01.md
+
+forbidden_paths:
+  - reference/n8n/**
+  - crates/**
+  - apps/**
+  - packages/frontend/**
+  - reference/n8n/packages/frontend/**
+
+requires:
+  - packages/execution-engine/src/workflow-execute.mjs
+  - packages/reconstructed-engine/runner.mjs
+  - tools/engine-differential.mjs
+
+operations:
+  - name: fix_s3_finished_flag
+  - name: fix_s6_continue_error_output_count
+  - name: fix_s7_disabled_node_passthrough
+  - name: run_engine_differential
+  - name: run_verify_all
+  - name: run_contract_conformance
+  - name: run_boundary_audit
+  - name: write_results

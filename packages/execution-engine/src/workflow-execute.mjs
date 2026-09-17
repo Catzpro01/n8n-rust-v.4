@@ -685,7 +685,7 @@ export class WorkflowExecute {
 			executionData.node.typeVersion,
 		);
 
-		const mainOutputCount = getMainOutputCount(nodeType.description);
+		const mainOutputCount = getMainOutputCount(nodeType?.description, executionData.node);
 
 		const context = new ExecuteContext({
 			workflow: this.workflow,
@@ -789,7 +789,7 @@ export class WorkflowExecute {
 			mode: this.mode,
 			startedAt,
 			stoppedAt: new Date(),
-			finished: this.status !== 'running',
+			finished: this.status === 'success' && !this.runExecutionData.waitTill,
 			data: this.runExecutionData,
 			waitTill: this.runExecutionData.waitTill,
 		};
@@ -813,11 +813,17 @@ export class WorkflowExecute {
 }
 
 /** Counts `main` outputs in a node description (`outputs` may be strings or objects). */
-export function getMainOutputCount(description = {}) {
-	const outputs = description.outputs ?? ['main'];
-	if (typeof outputs === 'string') return outputs === 'main' ? 1 : 0;
+export function getMainOutputCount(description = {}, node = null) {
+	const outputs = description?.outputs ?? ['main'];
+	let count = typeof outputs === 'string'
+		? (outputs === 'main' ? 1 : 0)
+		: outputs.filter((output) => (typeof output === 'string' ? output === 'main' : output?.type === 'main')).length;
 
-	return outputs.filter((output) => (typeof output === 'string' ? output === 'main' : output?.type === 'main')).length;
+	if (node?.onError === 'continueErrorOutput' && count === 1) {
+		count = 2;
+	}
+
+	return count;
 }
 
 export { incomingConnectionIsEmpty };

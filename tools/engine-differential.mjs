@@ -294,9 +294,9 @@ const aJson = (result, node) => (result.data[node] ?? []).map((item) => item.jso
   } catch (error) { console.error(`[HARNESS-ERROR] S6: ${error.message}`); harnessErrors++; }
 }
 
-// --- S7: disabled node ---------------------------------------------------------
+// --- S7: disabled node (passthrough per handleDisabledNode L909-920, L1199) ---
 {
-  const s = scenario('S7 disabled node skipped');
+  const s = scenario('S7 disabled node passthrough', { reference: 'handleDisabledNode returns inputData (L909-920, L1199)' });
   const def = {
     nodes: [
       nodeDef('Trigger', 'trigger'),
@@ -322,8 +322,8 @@ const aJson = (result, node) => (result.data[node] ?? []).map((item) => item.jso
     const a = await runA(def, aHandlers);
     const b = await runB(def, bHandlers);
     s.compare('completed', a.status === 'COMPLETED', b.status === 'success');
-    s.compare('disabled node produced no task', a.runData.Middle, b.data.resultData.runData.Middle);
-    s.compare('downstream never ran', a.runData.Sink, b.data.resultData.runData.Sink);
+    s.compare('disabled node task status', a.runData.Middle[0].executionStatus, bTask(b, 'Middle').executionStatus);
+    s.compare('downstream received passthrough items', aJson(a, 'Sink'), bJson(b, 'Sink'));
   } catch (error) { console.error(`[HARNESS-ERROR] S7: ${error.message}`); harnessErrors++; }
 }
 

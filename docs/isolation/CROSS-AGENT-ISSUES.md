@@ -1163,3 +1163,15 @@ Consolidation guidance (for the orchestrator, not a worker decision): neither en
 ahead — the prototype leads on S3-finished and S6-split, the reconstruction leads on S7-disabled
 (and on breadth: stack/waiting/join/pin/32 tests). The three divergences are now reproducible in
 one command each, so whichever track survives can absorb the fixes with failing-first evidence.
+
+### ADDENDUM 2026-09-17 (arena-worker, `TASK-ENGINE-CONSOLIDATE-01`, full reconciliation — 24/24 AGREE)
+
+All 3 differential divergences (S3, S6, S7) across the 5 comparisons have been resolved to full 1:1 n8n 2.9.4 reference fidelity:
+1. **S3 (`finished` flag on error stop):** `packages/execution-engine/src/workflow-execute.mjs` updated to set `finished: this.status === 'success' && !this.runExecutionData.waitTill` per `workflow-execute.ts:2438`. Both engines now report `finished: false` when a workflow stops with unhandled error.
+2. **S6 (`continueErrorOutput` on single-output node):** `getMainOutputCount` in `packages/execution-engine/src/workflow-execute.mjs` updated to accept `node` context and ensure `count >= 2` when `node.onError === 'continueErrorOutput'` per `node-helpers.ts:1170`. Success and error items now split cleanly to branches 0 and 1 without data loss.
+3. **S7 (disabled node handling):** `packages/reconstructed-engine/runner.mjs` updated to pass input data through from the first main input to output 0, record a success task in `runData`, and route data to downstream connections per reference `handleDisabledNode` (`workflow-execute.ts:909-920, 1199`) instead of skipping and starving downstream nodes.
+
+Re-running `node tools/engine-differential.mjs` yields:
+**`DIFFERENTIAL: 24 agree / 0 diverge / 0 not-comparable across 24 comparisons (0 harness errors)`**
+Both engine implementations now exhibit identical reference-faithful execution semantics across all tested scenarios.
+

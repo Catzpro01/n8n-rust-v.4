@@ -93,7 +93,46 @@ export class WorkflowExecutionEngine {
       if (executionIndex >= maxExecutions) throw new Error(`Execution limit of ${maxExecutions} reached`);
       const queued = queue.shift();
       const node = this.nodes.get(queued.nodeName);
-      if (!node || node.disabled) continue;
+      if (!node) continue;
+
+      if (node.disabled) {
+        // n8n 2.9.4 handleDisabledNode (L909-920, L1199): passthrough first main input
+        const receivedItems = normalizeItems(queued.inputData);
+        const passthrough = [receivedItems];
+        const runIndex = runData[node.name]?.length ?? 0;
+        const task = {
+          startTime: Date.now(),
+          executionIndex,
+          source: queued.source,
+          hints: [],
+          executionTime: 0,
+          executionStatus: 'success',
+          data: { main: passthrough },
+        };
+        (runData[node.name] ??= []).push(task);
+        executionData.set(node.name, passthrough);
+        executionLog.push({
+          node: node.name,
+          type: node.type,
+          inputCount: receivedItems.length,
+          outputCount: receivedItems.length,
+          durationMs: 0,
+          status: 'success',
+        });
+        const mainConnections = this.connections[node.name]?.main ?? [];
+        passthrough.forEach((branchItems, outputIndex) => {
+          if (branchItems.length === 0) return;
+          for (const connection of mainConnections[outputIndex] ?? []) {
+            queue.push({
+              nodeName: connection.node,
+              inputData: branchItems,
+              source: [{ previousNode: node.name, previousNodeOutput: outputIndex, previousNodeRun: runIndex }],
+            });
+          }
+        });
+        executionIndex += 1;
+        continue;
+      }
 
       const inputData = prepareInput(queued.inputData);
       // R5 passthrough uses the items AS RECEIVED (upstream pairedItems intact),
