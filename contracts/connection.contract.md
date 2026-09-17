@@ -97,8 +97,9 @@ Ownership of `common/**`, `graph/graph-utils.ts`, `connections-diff.ts`: Phase 2
 | `C04` | adjacency, input/output edges, roots, leaves, `hasPath`, extractable selection | 271 calls |
 | `C05` | `compareConnections` over corpus pairs | 6 pairs |
 | `C06` | the compiled TypeScript twin == the committed ESM twin (anti-drift) | 12 graphs |
-| `C07` | `packages/connection-lego/test/*.test.mjs` (boundary + graph analysis + facade integration) | 20/20 |
+| `C07` | `packages/connection-lego/test/*.test.mjs` (boundary + graph analysis + facade integration + wrapper members) | 22/22 |
 | `C08` | the Phase 5 facade consumes this port: `facade.connection` is the port module itself, `resolveExecutionPlan()`/`executeWorkflow()` match the oracle-derived order over the corpus, no inline duplicate remains | 12/12 plans + 1 execution order |
+| `C09` | the two Workflow members carried for `runner.mjs` (`getNodeConnectionIndexes`, `getHighestNode` — owner LEGO 01, deviation `D-11`) match the real `n8n-workflow` `Workflow` class, including disabled nodes and connection sources that are not nodes | 686 calls |
 
 The ESM twin is generated (`node tools/connection-isolation-extract.mjs --emit-esm`); editing it by
 hand fails `C06`. Consumers (Phase 5 facade) import the TypeScript port directly and must expose it

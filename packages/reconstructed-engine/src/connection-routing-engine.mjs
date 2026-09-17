@@ -1,6 +1,6 @@
 // AUTO-GENERATED from connection-routing-engine.ts — do not edit by hand.
 // regenerate: node tools/connection-isolation-extract.mjs --emit-esm
-// verify:     node tools/connection-lego-gate.mjs   (C06 twin parity)
+// verify:     node tools/connection-isolation-gate.mjs   (C06 twin parity)
 // Connection Routing Engine — 1:1 dari n8n 2.9.4 packages/workflow/src/common/* + graph/* + connections-diff
 // Owner: Agent 3 — LEGO connection
 // Zero Rust, pure JS/TS, frontend UI untouched

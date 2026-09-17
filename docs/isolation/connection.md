@@ -252,8 +252,8 @@ Two semantic divergences mattered beyond the shape:
 | `C04` graph analysis | PASS — 271/271 identical |
 | `C05` connection diff | PASS — 6/6 pairs identical |
 | `C06` twin parity (TS vs generated ESM) | PASS — 12 graphs |
-| `C07` unit suite (`packages/connection-lego/test`) | PASS — 20/20 (5 boundary + 8 graph-analysis + 7 facade integration) |
-| **Total** | **1,246 differential calls, 0 divergences** |
+| `C07` unit suite (`packages/connection-lego/test`) | PASS — 22/22 (5 boundary + 10 graph-analysis + 7 facade integration) |
+| **Total** | **1,246 differential calls, 0 divergences** (current gate: 9/9 · 1,944 calls) |
 
 Evidence: `docs/isolation/evidence/connection-lego-gate.json`.
 
@@ -291,3 +291,49 @@ Negative controls (temporarily injected, gate caught each, then reverted):
 | (earlier) ESM twin left un-regenerated after a TS edit | `C06` — 20 twin divergences |
 
 Evidence: `docs/isolation/evidence/connection-lego-gate.json` (`phase: phase-3+5-connection`).
+
+## 14. Phase 5 — the Workflow wrapper members (check `C09`)
+
+`packages/reconstructed-engine/runner.mjs` imports two members that the manifest explicitly assigns
+to **LEGO 01 (Workflow)** — `getNodeConnectionIndexes` and `getHighestNode`
+(`manifest/ownership.json` → `doesNotOwn`, deviation `D-11`). They were the last part of the routing
+engine that no check touched: `C01` only looks at `publicSurface`, so a wrong copy here could not
+fail anything.
+
+`C09` closes that hole: it builds a **real `n8n-workflow` `Workflow`** (`new Workflow({ nodes,
+connections, nodeTypes })`, the pinned `@2.9.1`) for every corpus graph, and compares
+
+| Call | Coverage |
+|---|---|
+| `getHighestNode(node)` / `getHighestNode(node, 0)` | every declared node, twice: all nodes enabled, and with the 2nd node `disabled: true` |
+| `getNodeConnectionIndexes(node, parent, type)` | every node x every parent candidate x every connection type in the graph |
+
+Parent candidates include names that are **not** nodes: the dangling target of `G07` and a dedicated
+`G13-ghost-source` fixture whose `connections` key (`Ghost`) has no node — n8n keeps those entries
+when a node is deleted from a workflow, and the reference bails out early because `getNode('Ghost')`
+is `null`. That case is also pinned offline in `packages/connection-lego/test/02-routing-graph.test.mjs`.
+
+**Result:** `C09` → 686/686 identical · gate total 9/9 checks · 1,944 differential calls.
+
+Two negative controls (injected, caught, reverted):
+
+| Injected defect | Caught by |
+|---|---|
+| `nodeConnectionIndexes` loses the `getNode(parent) === null → undefined` guard | `C09` — `G13-ghost-source getNodeConnectionIndexes(A, Ghost, main)`, 6/686 divergences |
+| `getHighestNode` proposes a `disabled: true` node as highest | `C09` — `G05-cycle getHighestNode(A) (2nd node disabled)`, 6/686 divergences |
+
+The gate reporter itself had a latent bug that this exposed: `show()` called
+`JSON.stringify(value).length`, and `JSON.stringify(undefined)` is `undefined`, so the first
+divergence whose reference value is `undefined` crashed the run instead of being reported. It now
+renders `<undefined>`.
+
+### 14.1 Semantics the oracle pinned (documented because they are surprising)
+
+- `getHighestNode` walks **upstream** and returns the top-most enabled node(s); it traverses
+  *through* disabled nodes but never returns them, and only accepts a node whose flag is exactly
+  `false` (`disabled: undefined` is not "enabled" — dedicated assertion in the unit suite).
+- `getNodeConnectionIndexes` is a **BFS over the destination index**, not a direct lookup: asking for
+  `(C, A)` in `A → B → C` returns A's edge, and the returned `sourceIndex` is the *output slot* on the
+  parent (`fan-out` case: `(C, A)` → `{ sourceIndex: 1 }`).
+- Both return `undefined` for connection types the graph does not use, and neither throws on cycles,
+  self-loops or dangling targets.

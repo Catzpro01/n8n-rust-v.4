@@ -15,7 +15,7 @@ The reconstruction never rewrites n8n from guesswork: n8n 2.9.4 is the behaviora
 | **WORKFLOW ISOLATION (LEGO 01)** | **✅ VERIFIED** | `docs/isolation/workflow.md` 5/5 PASS |
 | **NODE MODEL (LEGO 02)** | **✅ VERIFIED** | contract 21/21 PASS |
 | **CONNECTION (LEGO 03)** | **✅ VERIFIED + INTEGRATED** | P-CONNECTION-GRAPH · differential gate 8/8 · 1,258 calls vs `n8n-workflow@2.9.1` · 20/20 unit · consumed by the Phase 5 facade (check `C08`) |
-| **LOCALIZATION HUB (Phase 4B→4C)** | **✅ VERIFIED** | `id · en · jv · ar · zh · ru` — 27 keys x 6 locales (incl. `param.*` validation keys), `npm run i18n:check` 5/5 · 26/26 behaviour |
+| **LOCALIZATION HUB (Phase 4B)** | **✅ VERIFIED** | `id · en · jv · ar · zh · ru` — 23 keys x 6 locales, `npm run i18n:check` 5/5 · 24/24 behaviour |
 | **VALIDATION (LEGO 04)** | **✅ VERIFIED** | cycle + uniqueness + dangling |
 | **EXECUTION-DATA (LEGO 05)** | **✅ VERIFIED** | Phase 4-12, I1-I14, factories v1, 2/2 PASS |
 | **EXPRESSION (LEGO 06)** | **✅ VERIFIED** | Phase 4-12, E1-E8, isExpression + sandbox, 4/4 PASS |
@@ -68,7 +68,7 @@ bash tests/integration/run_gate.sh --offline-only  # OFFLINE PASS, LIVE NOT RUN 
 # Package LEGO tests
 node --test packages/execution-data-lego/test/*.mjs   # 2/2 PASS
 node --test packages/expression-lego/test/*.mjs       # 4/4 PASS
-node --test packages/connection-lego/test/*.mjs       # 20/20 PASS (boundary + graph analysis + facade integration)
+node --test packages/connection-lego/test/*.mjs       # 22/22 PASS (boundary + graph analysis + facade integration + Workflow members)
 node --test packages/trigger-lego/test/*.mjs          # 2/2 PASS
 node --test packages/webhook-lego/test/*.mjs          # 2/2 PASS
 node --test packages/scheduler-lego/test/*.mjs        # 2/2 PASS
@@ -85,7 +85,7 @@ npm install --prefix packages/workflow-lego
 npm run verify                            # 12 gates G01-G12, ~30 s, writes docs/isolation/evidence/*
 npm run verify:fast                       # same minus the live engine checks
 npm run i18n:check                        # Phase 4B: 6-locale parity + 24 behaviour tests (offline)
-npm run connection:check                  # Phase 3B/5: differential gate vs n8n-workflow@2.9.1, 1,258 calls incl. facade integration
+npm run connection:check                  # Phase 3B/5: differential gate vs n8n-workflow@2.9.1, 1,944 calls (C01-C09)
 ```
 
 ## Production Readiness Certificate

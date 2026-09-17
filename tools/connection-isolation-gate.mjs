@@ -17,6 +17,7 @@
  *   C06 twin parity      — the compiled TypeScript twin == the committed ESM twin
  *   C07 unit suite       — packages/connection-lego/test/*.test.mjs
  *   C08 facade integration — the Phase 5 facade schedules workflows through this port
+ *   C09 workflow wrappers  — getNodeConnectionIndexes / getHighestNode vs the reference Workflow class
  *
  * usage: node tools/connection-isolation-gate.mjs [--quiet]
  * evidence: docs/isolation/evidence/connection-lego-gate.json
@@ -67,6 +68,7 @@ const reference = {
 	hasPath: graphUtils.hasPath,
 	parseExtractableSubgraphSelection: graphUtils.parseExtractableSubgraphSelection,
 	compareConnections: connectionsDiff.compareConnections,
+	Workflow: barrel.Workflow,
 	__version: req(join(referencePackage, 'package.json')).version,
 };
 
@@ -183,6 +185,7 @@ function selections(entry) {
 /* normalization + differential                                      */
 /* ---------------------------------------------------------------- */
 const norm = (value) => {
+	if (value === undefined) return '<undefined>';
 	if (value instanceof Map) {
 		return [...value.entries()]
 			.map(([key, val]) => [key, norm(val)])
@@ -197,7 +200,10 @@ const norm = (value) => {
 };
 
 const show = (value, max = 200) => {
-	const text = JSON.stringify(norm(value));
+	// `JSON.stringify(undefined)` is `undefined`, which used to crash the reporter on the very
+	// divergence it was supposed to describe (reference `getNodeConnectionIndexes` returns
+	// `undefined` whenever the parent node is absent).
+	const text = JSON.stringify(norm(value)) ?? 'undefined';
 	return text.length > max ? `${text.slice(0, max)}…` : text;
 };
 
@@ -207,8 +213,8 @@ const comparisons = { total: 0, byCheck: {} };
 function compare(check, entryId, call, referenceValue, candidateValue) {
 	comparisons.total++;
 	comparisons.byCheck[check] = (comparisons.byCheck[check] ?? 0) + 1;
-	const a = JSON.stringify(norm(referenceValue));
-	const b = JSON.stringify(norm(candidateValue));
+	const a = JSON.stringify(norm(referenceValue)) ?? 'undefined';
+	const b = JSON.stringify(norm(candidateValue)) ?? 'undefined';
 	if (a === b) return;
 	differences.push({
 		check,
@@ -286,6 +292,87 @@ function runConnectionsDiff(prevEntry, nextEntry) {
 		reference.compareConnections(prevEntry.connections, nextEntry.connections),
 		candidate.compareConnections(prevEntry.connections, nextEntry.connections),
 	);
+}
+
+/* ---------------------------------------------------------------- */
+/* C09 — Workflow wrapper methods (consumed by runner.mjs)            */
+/* ---------------------------------------------------------------- */
+const nodeTypeStub = { description: { name: 'stub', properties: [], version: 1 } };
+const nodeTypesStub = {
+	getByNameAndVersion: () => nodeTypeStub,
+	getByName: () => nodeTypeStub,
+	getByNameAndVersionOrFail: () => nodeTypeStub,
+};
+
+/** A real `n8n-workflow` Workflow over a corpus graph — the oracle for the two wrapper methods. */
+function referenceWorkflow(entry, disabledNames = []) {
+	return new reference.Workflow({
+		id: entry.id,
+		nodes: entry.nodes.map((name) => ({
+			name,
+			type: 'n8n-nodes-base.noOp',
+			typeVersion: 1,
+			position: [0, 0],
+			parameters: {},
+			...(disabledNames.includes(name) ? { disabled: true } : {}),
+		})),
+		connections: entry.connections,
+		active: false,
+		nodeTypes: nodeTypesStub,
+	});
+}
+
+/**
+ * Extra wrapper-only fixtures. `G13-ghost-source` has a connections key (`Ghost`) that is not a
+ * declared node — n8n keeps such entries when a node is deleted from a workflow, and the reference
+ * `getNodeConnectionIndexes` bails out early because `getNode('Ghost')` is null.
+ */
+const WRAPPER_ONLY_FIXTURES = [
+	{
+		id: 'G13-ghost-source',
+		description: 'a connection source that is not a declared node',
+		nodes: ['A', 'B', 'C'],
+		connections: { Ghost: { main: [[main('A')]] }, A: { main: [[main('B')]] }, B: { main: [[main('C')]] } },
+	},
+];
+
+function runWorkflowWrappers(entry) {
+	const disabledNames = entry.nodes.length > 1 ? [entry.nodes[1]] : [];
+	for (const [label, workflow] of [
+		['', referenceWorkflow(entry)],
+		[' (2nd node disabled)', referenceWorkflow(entry, disabledNames)],
+	]) {
+		const byDestination = workflow.connectionsByDestinationNode;
+		const types = new Set(Object.values(entry.connections).flatMap((typeMap) => Object.keys(typeMap)));
+		for (const name of entry.nodes) {
+			compare('C09', entry.id, `getHighestNode(${name})${label}`, workflow.getHighestNode(name), candidate.getHighestNode(byDestination, workflow.nodes, name));
+			compare('C09', entry.id, `getHighestNode(${name}, 0)${label}`, workflow.getHighestNode(name, 0), candidate.getHighestNode(byDestination, workflow.nodes, name, 0));
+		}
+		// Parent candidates include every node named by a connection (dangling targets such as
+		// G07's `X` included) — the reference bails out when `getNode(parent)` is null.
+		const referenced = new Set([
+			...entry.nodes,
+			'missing-node',
+			...Object.keys(entry.connections),
+			...Object.values(entry.connections).flatMap((typeMap) =>
+				Object.values(typeMap).flatMap((slots) => (slots ?? []).flatMap((slot) => (slot ?? []).map((connection) => connection.node))),
+			),
+		]);
+		for (const nodeName of [...entry.nodes, 'missing-node']) {
+			for (const parentName of referenced) {
+				for (const type of types) {
+					const calls = `getNodeConnectionIndexes(${nodeName}, ${parentName}, ${type})${label}`;
+					compare(
+						'C09',
+						entry.id,
+						calls,
+						workflow.getNodeConnectionIndexes(nodeName, parentName, type),
+						candidate.getNodeConnectionIndexes(byDestination, nodeName, parentName, type, (name) => workflow.getNode(name)),
+					);
+				}
+			}
+		}
+	}
 }
 
 /* ---------------------------------------------------------------- */
@@ -502,6 +589,17 @@ await record('C08', 'facade integration: the Phase 5 facade schedules workflows 
 		);
 	}
 	return `${comparisons.byCheck.C08} plans identical over ${CORPUS.length} graphs (oracle-derived) + executeWorkflow order verified`;
+});
+
+await record('C09', 'workflow wrapper methods: getNodeConnectionIndexes + getHighestNode vs the reference Workflow', () => {
+	for (const entry of [...CORPUS, ...WRAPPER_ONLY_FIXTURES]) runWorkflowWrappers(entry);
+	const failed = differences.filter((d) => d.check === 'C09');
+	if (failed.length) {
+		throw new Error(
+			`${failed.length}/${comparisons.byCheck.C09} wrapper calls diverge; first: ${failed[0].corpus} ${failed[0].call}\n  reference: ${failed[0].reference}\n  candidate: ${failed[0].candidate}`,
+		);
+	}
+	return `${comparisons.byCheck.C09} wrapper calls identical (12 corpus graphs + a ghost-source fixture, every node pair x every connection type, plus a disabled-node pass)`;
 });
 
 /* ---------------------------------------------------------------- */

@@ -29,6 +29,8 @@ const {
 	hasPath,
 	parseExtractableSubgraphSelection,
 	mapConnectionsByDestination,
+	getHighestNode,
+	getNodeConnectionIndexes,
 } = engine;
 
 const main = (node, index = 0) => ({ node, type: 'main', index });
@@ -149,6 +151,61 @@ test('dangling destinations do not break traversal', () => {
 	assert.ok(hasPath('B', 'X', adjacency));
 	assert.deepEqual(asArray(getRootNodes(new Set(['A', 'B']), adjacency)), ['B']);
 	assert.deepEqual(mapConnectionsByDestination({ A: { main: [[main('X')]] } }).X.main[0][0].node, 'A');
+});
+
+test('getHighestNode walks to the top of the selection and honours `disabled`', () => {
+	// Expected values read off the reference Workflow (`n8n-workflow@2.9.1`) before being written.
+	const nodes = (names, disabled = []) =>
+		Object.fromEntries(names.map((name) => [name, { name, disabled: disabled.includes(name) ? true : false }]));
+	const chain = mapConnectionsByDestination(CHAIN);
+
+	assert.deepEqual(getHighestNode(chain, nodes(['A', 'B', 'C', 'D']), 'C'), ['A']);
+	assert.deepEqual(getHighestNode(chain, nodes(['A', 'B', 'C', 'D']), 'B'), ['A']);
+	assert.deepEqual(getHighestNode(chain, nodes(['A', 'B', 'C', 'D']), 'A'), ['A'], 'A is a root and enabled');
+	assert.deepEqual(getHighestNode(chain, nodes(['A', 'B', 'C', 'D']), 'C', 0), ['A']);
+	// The reference only accepts a node whose flag is exactly `false` — an absent flag is not
+	// "enabled" for this method (n8n always materialises `disabled`, workflows built by hand may not).
+	assert.deepEqual(
+		getHighestNode(chain, { A: { name: 'A' }, B: { name: 'B' }, C: { name: 'C' } }, 'A'),
+		[],
+		'`disabled: undefined` is not treated as enabled',
+	);
+
+	// Disabled nodes are never proposed as highest, but they are still traversed.
+	assert.deepEqual(getHighestNode(chain, nodes(['A', 'B', 'C', 'D'], ['A']), 'C'), ['B']);
+	assert.deepEqual(getHighestNode(chain, nodes(['A', 'B', 'C', 'D'], ['A']), 'B'), []);
+
+	const diamond = mapConnectionsByDestination({
+		A: { main: [[main('B')], [main('C')]] },
+		B: { main: [[main('D')]] },
+		C: { main: [[main('D')]] },
+	});
+	assert.deepEqual(getHighestNode(diamond, nodes(['A', 'B', 'C', 'D']), 'D'), ['A']);
+});
+
+test('getNodeConnectionIndexes reports the edge, and bails out when the parent is absent', () => {
+	// Values read off the reference Workflow before being written.
+	const chain = mapConnectionsByDestination(CHAIN);
+	const existing = (name) => ({ name, disabled: false });
+
+	assert.deepEqual(getNodeConnectionIndexes(chain, 'C', 'B', 'main', existing), { sourceIndex: 0, destinationIndex: 0 });
+	assert.deepEqual(getNodeConnectionIndexes(chain, 'C', 'A', 'main', existing), { sourceIndex: 0, destinationIndex: 0 }, 'transitive parents are found by BFS');
+	assert.deepEqual(getNodeConnectionIndexes(chain, 'A', 'B', 'main', existing), undefined, 'B is not a parent of A');
+
+	const fanOut = mapConnectionsByDestination({ A: { main: [[main('B')], [main('C')]] } });
+	assert.deepEqual(getNodeConnectionIndexes(fanOut, 'B', 'A', 'main', existing), { sourceIndex: 0, destinationIndex: 0 });
+	assert.deepEqual(getNodeConnectionIndexes(fanOut, 'C', 'A', 'main', existing), { sourceIndex: 1, destinationIndex: 0 }, 'the output slot is reported');
+
+	// A connection source that is not a node of the workflow (n8n keeps these when a node is
+	// deleted): the reference returns undefined because `getNode(parent)` is null.
+	const ghost = mapConnectionsByDestination({ Ghost: { main: [[main('A')]] }, A: { main: [[main('B')]] } });
+	assert.equal(
+		getNodeConnectionIndexes(ghost, 'A', 'Ghost', 'main', (name) => (name === 'Ghost' ? null : existing(name))),
+		undefined,
+	);
+	// Without the getNode port the lookup falls back to a pure graph walk.
+	assert.deepEqual(getNodeConnectionIndexes(ghost, 'A', 'Ghost', 'main'), { sourceIndex: 0, destinationIndex: 0 });
+	assert.equal(getNodeConnectionIndexes(chain, 'C', 'B', 'ai_languageModel', existing), undefined, 'other connection types are ignored');
 });
 
 test('the ESM twin is the generated artifact of the TypeScript source', () => {
