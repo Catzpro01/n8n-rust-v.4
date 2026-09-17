@@ -76,8 +76,12 @@ console.log(`Eksekusi Selesai dalam ${duration}ms!`);
 console.log("Hasil Eksekusi Node:");
 console.log(JSON.stringify(result, null, 2));
 
-if (result.status === "COMPLETED" && result.data["Transform Output"]) {
-  console.log("\n>>> VERIFIKASI BERHASIL: Engine n8n Rekonstruksi Berfungsi 100% Sempurna! <<<");
+// `status` sekarang memakai ExecutionStatus n8n asli ('success' | 'error'),
+// lihat reference/n8n/packages/workflow/src/execution-status.ts — bukan 'COMPLETED' lagi.
+// Skrip ini hanya demo console; kontrak yang sesungguhnya ada di test/engine.test.mjs
+// dan test/reference-equivalence.test.mjs (`npm run engine:test`).
+if (result.status === "success" && result.data["Transform Output"]) {
+  console.log("\n>>> Demo berhasil. Verifikasi yang sebenarnya: npm run engine:test <<<");
 } else {
   console.error("Eksekusi gagal");
   process.exit(1);

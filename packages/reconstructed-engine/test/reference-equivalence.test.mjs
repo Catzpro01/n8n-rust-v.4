@@ -1,0 +1,250 @@
+/**
+ * Reference-equivalence check — reconstructed engine vs the REAL n8n execution engine.
+ *
+ * The unit suite in `engine.test.mjs` asserts the reconstruction against the reference *source*.
+ * This file asserts it against the reference *runtime*: the same workflow JSON is executed by
+ * `WorkflowExecute` from the pinned n8n-core 2.9.1 (the dependency set of n8n 2.9.4) and by
+ * `WorkflowExecutionEngine`, and the two are compared.
+ *
+ * What is compared (engine orchestration, which is what this package reconstructs):
+ *   - the order in which nodes are executed (`ITaskData.executionIndex`, interfaces.ts:2677)
+ *   - how many times each node runs (`runData[name].length`)
+ *   - how many items each node emits (`runData[name][i].data.main[0].length`)
+ *   - whether the run ended in error (`resultData.error`)
+ *
+ * What is NOT compared: node *implementations*. The reconstruction takes node logic from
+ * registered handlers by design, so both sides are given behaviourally identical stubs
+ * (manualTrigger → 1 item, set → 1 item, noOp → passthrough). Comparing node logic belongs to
+ * the Node LEGO (packages/nodes-base), not to this engine.
+ *
+ * Skipped automatically when the pinned runtime is absent (`scripts/setup-reference-runtime.sh`).
+ * run: npm run engine:test
+ */
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { createRequire } from 'node:module';
+import { existsSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import { WorkflowExecutionEngine } from '../runner.mjs';
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+const REPO = join(HERE, '..', '..', '..');
+const RUNTIME = process.env.LEGO_LIVE_RUNTIME ?? join(REPO, '.runtime', 'node_modules');
+const runtimeReady =
+	existsSync(join(RUNTIME, 'n8n-workflow', 'package.json')) &&
+	existsSync(join(RUNTIME, 'n8n-core', 'package.json')) &&
+	existsSync(join(RUNTIME, 'n8n-nodes-base', 'package.json'));
+
+const skipReason = runtimeReady
+	? false
+	: `pinned reference runtime not installed at ${RUNTIME} (run scripts/setup-reference-runtime.sh)`;
+
+/* ---------- reference side: real n8n-core WorkflowExecute ------------- */
+let referenceApi = null;
+async function loadReference() {
+	if (referenceApi) return referenceApi;
+	// n8n 2.x runs Code nodes out of process; the harness in tools/live disables the broker.
+	process.env.N8N_RUNNERS_ENABLED ??= 'false';
+	process.env.N8N_RUNNERS_TASK_BROKER_URI ??= '';
+
+	const req = createRequire(join(RUNTIME, 'package.json'));
+	const core = req('n8n-core');
+	const wf = req('n8n-workflow');
+
+	const loader = new core.PackageDirectoryLoader(join(RUNTIME, 'n8n-nodes-base'));
+	await loader.loadAll();
+	const byShortName = loader.nodeTypes;
+	const known = loader.known?.nodes ?? {};
+
+	const resolveEntry = (type) => {
+		if (known[type]) {
+			const { className } = known[type];
+			if (className && byShortName[className]) return byShortName[className];
+		}
+		const short = type.includes('.') ? type.split('.').slice(1).join('.') : type;
+		return byShortName[short] ?? byShortName[short.charAt(0).toLowerCase() + short.slice(1)] ?? null;
+	};
+
+	const additionalData = new Proxy(
+		{
+			credentialsHelper: {
+				getDecrypted: async () => ({}),
+				getCredentialsProperties: () => [],
+				getParentTypes: () => [],
+				authenticate: async () => ({}),
+			},
+			executeWorkflow: async () => {
+				throw new Error('sub-workflow execution is out of scope');
+			},
+			getRunExecutionData: async () => undefined,
+			hooks: { runHook: async () => undefined },
+			httpRequest: async () => ({}),
+			externalHooks: {},
+			executionId: '1',
+			instanceBaseUrl: 'http://127.0.0.1:5678/',
+			restApiUrl: 'http://127.0.0.1:5678/rest',
+			mode: 'manual',
+			workflowSettings: {},
+			staticData: undefined,
+			isTest: false,
+		},
+		{
+			get(target, prop) {
+				if (prop in target) return target[prop];
+				if (typeof prop === 'string' && /^get|^run|^send|^save|^update|^log|^is[A-Z]/.test(prop)) {
+					return async () => undefined;
+				}
+				return undefined;
+			},
+		},
+	);
+
+	referenceApi = {
+		async run(json) {
+			const registry = {
+				getByNameAndVersion(type, version) {
+					const entry = resolveEntry(type);
+					if (!entry) return undefined;
+					return wf.NodeHelpers.getVersionedNodeType(entry.type, version);
+				},
+			};
+			const workflow = new wf.Workflow({
+				id: json.id ?? 'equivalence',
+				name: json.name ?? 'equivalence',
+				nodes: JSON.parse(JSON.stringify(json.nodes ?? [])),
+				connections: JSON.parse(JSON.stringify(json.connections ?? {})),
+				active: true,
+				nodeTypes: registry,
+				settings: json.settings ?? { executionOrder: 'v1' },
+			});
+			const execute = new core.WorkflowExecute(additionalData, 'manual');
+			const run = await execute.run({ workflow, startNode: workflow.getStartNode() });
+			return run.data.resultData;
+		},
+	};
+	return referenceApi;
+}
+
+/* ---------- reconstructed side: identical node behaviour -------------- */
+function reconstructedRun(json) {
+	const engine = new WorkflowExecutionEngine(json);
+	engine.registerNodeType('n8n-nodes-base.manualTrigger', async () => [{ json: {} }]);
+	engine.registerNodeType('n8n-nodes-base.set', async () => [{ json: { status: 'ok', count: 42 } }]);
+	engine.registerNodeType('n8n-nodes-base.noOp', async (_n, items) => items);
+	return engine.runWorkflow();
+}
+
+/** Flatten both engines into the same comparable shape. */
+function shape(resultData) {
+	const runData = resultData.runData ?? {};
+	const ordered = Object.entries(runData)
+		.flatMap(([name, runs]) => runs.map((run, i) => ({ name, runIndex: i, run })))
+		.sort((a, b) => a.run.executionIndex - b.run.executionIndex);
+	return {
+		order: ordered.map((e) => e.name),
+		runsPerNode: Object.fromEntries(ordered.map((e) => [e.name, runData[e.name].length])),
+		itemCounts: Object.fromEntries(
+			ordered.map((e) => [e.name, e.run.data?.main?.[0]?.length ?? 0]),
+		),
+		failed: Boolean(resultData.error),
+	};
+}
+
+const manualTrigger = (id, name, position) => ({
+	id,
+	name,
+	type: 'n8n-nodes-base.manualTrigger',
+	typeVersion: 1,
+	position,
+	parameters: {},
+});
+const setNode = (id, name, position) => ({
+	id,
+	name,
+	type: 'n8n-nodes-base.set',
+	typeVersion: 3.4,
+	position,
+	parameters: {
+		mode: 'manual',
+		includeOtherFields: false,
+		assignments: {
+			assignments: [
+				{ id: `${id}a`, name: 'status', value: 'ok', type: 'string' },
+				{ id: `${id}b`, name: 'count', value: 42, type: 'number' },
+			],
+		},
+		options: {},
+	},
+});
+const noOp = (id, name, position) => ({
+	id,
+	name,
+	type: 'n8n-nodes-base.noOp',
+	typeVersion: 1,
+	position,
+	parameters: {},
+});
+const edge = (node, index = 0) => ({ node, type: 'main', index });
+
+const LINEAR = {
+	id: 'eq-linear',
+	name: 'Equivalence — linear',
+	nodes: [manualTrigger('t', 'Manual Trigger', [0, 0]), setNode('s', 'Set', [200, 0]), noOp('n', 'NoOp', [400, 0])],
+	connections: {
+		'Manual Trigger': { main: [[edge('Set')]] },
+		Set: { main: [[edge('NoOp')]] },
+	},
+};
+
+const FANOUT = {
+	id: 'eq-fanout',
+	name: 'Equivalence — fan-out',
+	nodes: [
+		manualTrigger('t', 'Manual Trigger', [0, 0]),
+		setNode('a', 'Lower', [200, 200]), // lower on the canvas
+		setNode('b', 'Upper', [200, -200]), // higher on the canvas
+		noOp('na', 'NoOp Lower', [400, 200]),
+		noOp('nb', 'NoOp Upper', [400, -200]),
+	],
+	connections: {
+		'Manual Trigger': { main: [[edge('Lower'), edge('Upper')]] },
+		Lower: { main: [[edge('NoOp Lower')]] },
+		Upper: { main: [[edge('NoOp Upper')]] },
+	},
+};
+
+test('EQUIVALENCE linear: Manual Trigger → Set → NoOp matches the reference engine', { timeout: 120000, skip: skipReason }, async () => {
+	const reference = shape(await (await loadReference()).run(LINEAR));
+	const reconstructed = shape((await reconstructedRun(LINEAR)).resultData);
+
+	assert.deepEqual(reconstructed.order, reference.order);
+	assert.deepEqual(reconstructed.runsPerNode, reference.runsPerNode);
+	assert.deepEqual(reconstructed.itemCounts, reference.itemCounts);
+	assert.equal(reconstructed.failed, reference.failed);
+	assert.deepEqual(reconstructed.order, ['Manual Trigger', 'Set', 'NoOp']);
+});
+
+test('EQUIVALENCE fan-out (v1): top-left-first ordering matches the reference engine', { timeout: 120000, skip: skipReason }, async () => {
+	const reference = shape(await (await loadReference()).run(FANOUT));
+	const reconstructed = shape((await reconstructedRun(FANOUT)).resultData);
+
+	assert.deepEqual(
+		reconstructed.order,
+		reference.order,
+		'workflow-execute.ts:2041-2055 sorts the nodes to add by canvas position',
+	);
+	assert.deepEqual(reconstructed.itemCounts, reference.itemCounts);
+	assert.equal(reconstructed.failed, reference.failed);
+});
+
+test('EQUIVALENCE fan-out (v0): FIFO ordering matches the reference engine', { timeout: 120000, skip: skipReason }, async () => {
+	const json = { ...FANOUT, id: 'eq-fanout-v0', settings: { executionOrder: 'v0' } };
+	const reference = shape(await (await loadReference()).run(json));
+	const reconstructed = shape((await reconstructedRun(json)).resultData);
+
+	assert.deepEqual(reconstructed.order, reference.order, 'workflow-execute.ts:417 — v0 pushes (FIFO)');
+	assert.deepEqual(reconstructed.itemCounts, reference.itemCounts);
+	assert.notDeepEqual(reference.order, shape(await (await loadReference()).run(FANOUT)).order, 'v0 and v1 really do differ, so the comparison is meaningful');
+});

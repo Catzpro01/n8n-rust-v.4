@@ -1,0 +1,91 @@
+id: TASK-309-engine-conformance
+agent: arena-worker (session arena/01a0aee7-n8n-rust-v-4)
+lego: workflow
+module: reconstructed-engine
+phase: 2
+
+# Third self-assigned task of this session (STANDING-WORKER-PROTOCOL §2 non-blocking).
+# dynamic_task_pool still unreachable: https://gqctxugkxekdqxsaqrum.supabase.co -> curl HTTP 000
+# (DNS resolves, TLS connect refused), while api.github.com -> 200. No pool read, no vote cast.
+
+trigger: >
+  TASK-308 left two divergences from n8n 2.9.4 locked as known debt in the reconstructed
+  engine (diamond fan-in ran the destination once per arriving edge; a throwing handler
+  rejected the whole run). This task closes them from the reference source and then proves
+  the result against the reference RUNTIME, not just against the source text.
+
+reference_evidence:            # every behaviour below was read off these lines
+  - reference/n8n/packages/core/src/execution-engine/workflow-execute.ts:157-171  # initial stack
+  - reference/n8n/packages/core/src/execution-engine/workflow-execute.ts:189-191  # 'v1' is the default order
+  - reference/n8n/packages/core/src/execution-engine/workflow-execute.ts:387-403  # prepareWaitingToExecution
+  - reference/n8n/packages/core/src/execution-engine/workflow-execute.ts:405-560  # fan-in waiting
+  - reference/n8n/packages/core/src/execution-engine/workflow-execute.ts:417      # unshift (v1) / push (v0)
+  - reference/n8n/packages/core/src/execution-engine/workflow-execute.ts:1823-1900 # error + continueOnFail
+  - reference/n8n/packages/core/src/execution-engine/workflow-execute.ts:1918-1945 # runData push
+  - reference/n8n/packages/core/src/execution-engine/workflow-execute.ts:2005-2012 # missing destination THROWS
+  - reference/n8n/packages/core/src/execution-engine/workflow-execute.ts:2013-2019 # empty output does not run the branch
+  - reference/n8n/packages/core/src/execution-engine/workflow-execute.ts:2041-2055 # v1 sorts top-left first
+  - reference/n8n/packages/core/src/execution-engine/workflow-execute.ts:2079-2130 # release waiting nodes with []
+  - reference/n8n/packages/core/src/execution-engine/workflow-execute.ts:2383-2400 # final status error/success
+  - reference/n8n/packages/workflow/src/common/map-connections-by-destination.ts:5-49
+  - reference/n8n/packages/workflow/src/interfaces.ts:2675-2691                   # ITaskStartedData / ITaskData
+  - reference/n8n/packages/workflow/src/execution-status.ts:1-11                  # ExecutionStatusList
+
+allowed_paths:
+  - packages/reconstructed-engine/**
+  - package.json
+  - tests/integration/run_gate.sh
+  - tasks/TASK-309-engine-conformance.yaml
+  - results/TASK-309-engine-conformance.md
+  - docs/isolation/evidence/**        # rewritten by npm run verify, tracked by design
+
+forbidden_paths:
+  - reference/n8n/**                  # read-only; gate G04 re-verifies 15050 files
+  - crates/**
+  - apps/**
+  - packages/workflow-lego/src/**
+
+operations:
+  - name: read_reference
+    args: { what: "WorkflowExecute.run / addNodeToBeExecuted / error path / waiting-release" }
+  - name: rewrite_engine
+    args:
+      file: packages/reconstructed-engine/runner.mjs
+      added:
+        - "mapConnectionsByDestination (1:1 port) + connectionsByDestinationNode"
+        - "fan-in waiting: a node with >1 input slot runs ONCE with all inputs"
+        - "release pass for waiting nodes whose inputs will never arrive ([] substitute)"
+        - "error path: taskData.error + executionStatus 'error', run stops with status 'error'"
+        - "continueOnFail / onError=continueRegularOutput|continueErrorOutput pass the INPUT through"
+        - "missing destination node throws ApplicationError('Destination node not found')"
+        - "an output that produced no items does not run its branch"
+        - "v1 top-left-first sort of the nodes to add; v0 FIFO"
+        - "result in the n8n shape: resultData.{runData,lastNodeExecuted,error}, status ∈ ExecutionStatus"
+      kept: "cycle safety net (n8n relies on the Validation LEGO to reject cycles)"
+  - name: add_equivalence_suite
+    args:
+      file: packages/reconstructed-engine/test/reference-equivalence.test.mjs
+      against: "real WorkflowExecute from the pinned n8n-core 2.9.1"
+      compares: "execution order, runs per node, item counts, error flag"
+      skips_when: "the pinned runtime is not installed"
+  - name: wire_gate
+    args: { file: tests/integration/run_gate.sh, stage: 3 }
+
+verification:
+  unit_suite: "npm run engine:test -> 22 tests, 22 pass, 0 fail, 0 skipped, exit 0"
+  equivalence: "reference order == reconstructed order, e.g. [Manual Trigger, Upper, NoOp Upper, Lower, NoOp Lower] on both sides"
+  gate_wiring_negative_test: "temp failing test -> run_gate.sh exit 1, 'OFFLINE STAGES : FAIL'; removed -> PASS"
+  lego_gate: "npm run verify -> 11/11 PASS, BEHAVIOR CHANGE: NONE DETECTED"
+  offline_gate: "contract_conformance 21/21, boundary_audit PASS, engine suite 22/22"
+  legacy_script: "node packages/reconstructed-engine/test-run.mjs -> exit 0 (status is now 'success', not 'COMPLETED')"
+
+breaking_changes:
+  - "result.status is an n8n ExecutionStatus ('success' | 'error') instead of 'COMPLETED'"
+  - "a connection to a node missing from the graph now rejects (n8n behaviour) instead of being ignored"
+  - "a handler that throws no longer rejects the promise; the error is recorded and the run ends with status 'error'"
+
+merge_condition:
+  - engine_suite_pass
+  - equivalence_pass
+  - no_reference_change
+  - no_ui_change
