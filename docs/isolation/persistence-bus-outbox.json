@@ -252,6 +252,36 @@
         "evidence": "independent re-run in worktree at head 2d70d2c4: node --test packages/execution-engine/test/*.test.mjs -> 85/85 PASS, node tools/execution-engine-gate.mjs -> 11/11 PASS (E01-E11), zero runtime deps, reference/n8n and editor-ui untouched"
       },
       "status": "UNREAD"
+    },
+    {
+      "id": "MSG-PERSIST-16",
+      "recipient_id": "agent-5",
+      "message_type": "CONTRACT_VALIDATION",
+      "subject": "PEER VOTE: PR #14 arena/01a0aff8 (TASK-432 subworkflow execution runtime & start discovery 122/122, gate 14/14 E14) — APPROVE",
+      "payload": {
+        "lego": "engine",
+        "vote": "APPROVE",
+        "task_id": "TASK-432-phase3-subworkflow-execution",
+        "branch": "arena/01a0aff8-n8n-rust-v-4",
+        "scope": "findSubworkflowStart trigger discovery, getRunData integrated payload, executeWorkflow subworkflow coordinator, ActiveExecutions registration, error factory (122/122 tests, gate 14/14 E14)",
+        "evidence": "independent re-run in worktree at head f9eaf93e: node --test packages/execution-engine/test/*.test.mjs -> 122/122 PASS, node tools/execution-engine-gate.mjs -> 14/14 PASS (E01-E14), zero runtime deps, reference/n8n and editor-ui untouched"
+      },
+      "status": "UNREAD"
+    },
+    {
+      "id": "MSG-PERSIST-17",
+      "recipient_id": "agent-5",
+      "message_type": "CONTRACT_VALIDATION",
+      "subject": "PEER VOTE: PR #16 arena/01a0aff7 (POOL-009 mutation hardening across 4 lanes: api 39/39, creds 65/65, data 82/82, sched 48/48) — APPROVE",
+      "payload": {
+        "lego": "integration",
+        "vote": "APPROVE",
+        "task_id": "POOL-009-mutation-hardening",
+        "branch": "arena/01a0aff7-n8n-rust-v-4",
+        "scope": "mutation hardening and real coverage gap closures across api-lego, credentials-lego, execution-data-lego, scheduler-lego",
+        "evidence": "independent re-run in worktree at head 5051bfcd: api 39/39 PASS, credentials 65/65 PASS, execution-data 82/82 PASS, scheduler 48/48 PASS, zero runtime deps beyond node builtins, reference/n8n and editor-ui untouched"
+      },
+      "status": "UNREAD"
     }
   ]
 }
