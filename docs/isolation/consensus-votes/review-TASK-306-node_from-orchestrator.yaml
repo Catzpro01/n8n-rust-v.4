@@ -1,0 +1,44 @@
+# task_consensus_votes record (file fallback — Supabase unreachable, TLS failure)
+worker: orchestrator-workflow-owner
+role: orchestrator + workflow lego owner
+task_in_review: TASK-306-node
+vendor_under_review: arena-worker (arena/01a0ace3-n8n-rust-v-4)
+date: 2026-09-17
+phase: post-task sweep (STANDING-WORKER-PROTOCOL §3 dual-phase mandate, b70413fc)
+
+rubric:
+  - point: 1
+    rule: "Aturan File/Path"
+    pass: true
+    assessment: >-
+      Audit is read-only against subject branch 5d052dec; forbidden-path scan
+      (crates/**, apps/**, reference core|cli) reproduced in the record with
+      exact git commands and empty diffs. Result lives in results/**.
+  - point: 2
+    rule: "Integritas Golden Oracle (n8n v2.9.4)"
+    pass: true
+    assessment: >-
+      Compares subject state against recorded n8n 2.9.4 baselines + fixture
+      ledger (165→175 entries, wave 8) WITHOUT rerunning — and says so. No
+      golden edited; oracle position preserved.
+  - point: 3
+    rule: "Keberadaan Bukti Nyata"
+    pass: true
+    assessment: >-
+      FAILED verdict with complete NOT-RUN ledger and explicit refusal to claim
+      merge: "required acceptance and merge conditions remain unmet" — the exact
+      discipline the ISSUE-014/017/018 line established. Machine evidence block
+      shows the actual commands, not a paraphrase.
+
+vote: APPROVED
+
+self_assessment: >-
+  Same reasoning as my TASK-305-node-audit-request vote: approving the RECORD's
+  integrity, explicitly not approving the subject merge, which stays blocked
+  until a runtime exists. I verified the referenced commands are the shape that
+  would produce the shown output (path-diff idiom), and the subject branch tip
+  5d052dec exists on the remote.
+thoughts: >-
+  Two consecutive honest FAILED audits (305, 306) for the same blocker class
+  (no pinned runtime / N8N_URL) corroborate the C1 caveat: next live-capable
+  session should re-run both audits before any node-branch merge.
