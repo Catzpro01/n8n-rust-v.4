@@ -1,5 +1,5 @@
 {
-	"generatedAt": "2026-09-17T20:01:35.344Z",
+	"generatedAt": "2026-09-17T20:02:41.010Z",
 	"lego": "execution",
 	"phase": "phase-3-reconstruction",
 	"language": "JavaScript (Node.js ESM)",
@@ -35,14 +35,14 @@
 			"title": "Rust confinement: Rust only under crates/** + apps/**, this package contributes none",
 			"status": "PASS",
 			"detail": "23 Rust files repo-wide, all inside crates/**+apps/**; workspace digest a8dbef89767c8157040f61c4477bd1b6 (24 files); package contributes 0",
-			"ms": 84
+			"ms": 91
 		},
 		{
 			"id": "E04",
 			"title": "reference/n8n tree still matches the pinned hashes",
 			"status": "PASS",
 			"detail": "Reference integrity check: PASS (15050 files, root f8da35180669d798…)",
-			"ms": 471
+			"ms": 540
 		},
 		{
 			"id": "E05",
@@ -50,7 +50,7 @@
 			"requirement": "packages/execution-engine/test/01-execution-loop.test.mjs",
 			"status": "PASS",
 			"detail": "14 pass / 0 fail",
-			"ms": 134
+			"ms": 178
 		},
 		{
 			"id": "E06",
@@ -58,7 +58,7 @@
 			"requirement": "packages/execution-engine/test/02-node-context-data-proxy.test.mjs",
 			"status": "PASS",
 			"detail": "7 pass / 0 fail",
-			"ms": 192
+			"ms": 224
 		},
 		{
 			"id": "E07",
@@ -66,7 +66,7 @@
 			"requirement": "packages/execution-engine/test/03-error-retry.test.mjs",
 			"status": "PASS",
 			"detail": "12 pass / 0 fail",
-			"ms": 160
+			"ms": 141
 		},
 		{
 			"id": "E08",
@@ -81,7 +81,7 @@
 			"requirement": "packages/execution-engine/test/04-expression-sandbox.test.mjs",
 			"status": "PASS",
 			"detail": "7 pass / 0 fail",
-			"ms": 137
+			"ms": 144
 		},
 		{
 			"id": "E10",
@@ -89,7 +89,7 @@
 			"requirement": "packages/execution-engine/test/05-activation.test.mjs",
 			"status": "PASS",
 			"detail": "20 pass / 0 fail",
-			"ms": 134
+			"ms": 156
 		},
 		{
 			"id": "E11",
@@ -97,7 +97,7 @@
 			"requirement": "packages/execution-engine/test/07-wait-tracker.test.mjs",
 			"status": "PASS",
 			"detail": "23 pass / 0 fail",
-			"ms": 154
+			"ms": 155
 		},
 		{
 			"id": "E12",
@@ -105,7 +105,7 @@
 			"requirement": "packages/execution-engine/test/08-active-executions.test.mjs",
 			"status": "PASS",
 			"detail": "10 pass / 0 fail",
-			"ms": 174
+			"ms": 184
 		},
 		{
 			"id": "E13",
@@ -113,7 +113,7 @@
 			"requirement": "packages/execution-engine/test/09-workflow-runner.test.mjs",
 			"status": "PASS",
 			"detail": "10 pass / 0 fail",
-			"ms": 122
+			"ms": 131
 		},
 		{
 			"id": "E14",
@@ -121,7 +121,7 @@
 			"requirement": "packages/execution-engine/test/10-subworkflow-execution.test.mjs",
 			"status": "PASS",
 			"detail": "12 pass / 0 fail",
-			"ms": 160
+			"ms": 192
 		}
 	],
 	"totals": {
