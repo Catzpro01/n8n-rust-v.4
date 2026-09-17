@@ -159,3 +159,9 @@ Scheduler 6/6 · Node 7/7 · Persistence 6/6 · Credentials 6/6 · error-surface
 `VERIFIED` while its YAML says `IMPLEMENTED`, and phase-3 tasks 406/407/408/410 sit at
 `IMPLEMENTED` despite sweep-1 APPROVEs. Owners/orchestrator should reconcile; peer YAMLs left
 untouched by this sweep.
+
+## Sweep 10 (2026-09-18, on `fe1f93cb`) — TASK-417
+
+| Result (owner) | Claim | Fresh re-run on merged tree | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-417` (execution-data LEGO) | 24/24 tests, gate 6/6, verify:all 13/13 | **24/24** fresh, **Execution Data gate 6/6**, merged-tree `verify:all` real exit 0 (now 14 lanes) | **APPROVE** |
