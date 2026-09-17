@@ -250,3 +250,45 @@ workflow              Workflow (graph queries + settings + pinData + nodeTypes) 
 | Engine integration (`ref.exprEcho` node resolving parameters per item inside real `WorkflowExecute`) | covered by `execution-data/03`, `06` |
 | Reference baseline 11/11 | unchanged (no source modification) |
 | Live VPS | not reachable from sandbox → status `TESTED` |
+
+---
+
+## 14. Rust conformance (Phase 3, TASK-406)
+
+`crates/n8n-expression` ports the first-party evaluation SHELL in
+`reference/n8n/packages/workflow/src/expression.ts` /
+`expressions/expression-helpers.ts`, with the JS evaluator injected —
+`tournament.execute` and the `WorkflowDataProxy` are not portable to pure
+Rust, so they stay behind a `Fn(&str) -> Result<EvalValue, EvalFault>`:
+
+| Reference piece | Rust port |
+|---|---|
+| `isExpression` (`charAt(0) === '='`, contract E1) | `is_expression(&str)` — exact; replaces the old brace-sniffing gate (which wrongly rejected `"="` and accepted brace-bearing plain strings) |
+| `resolveSimpleParameterValue` shape (identity / strip `=` / constructor check / function errors / string passthrough / `returnObjectAsString`) | `resolve_leaf(&Value, bool, &F)` |
+| `renderExpression` catch ladder (rethrow / `invalid syntax` / else `null`) | `classify_render_outcome(Result<EvalValue, EvalFault>)` |
+| `convertObjectValueToString` plain branch (`` `[Object: …]` `` / `` `[Array: …]` ``, `,"` → `, "` then `":` → `": `) | `convert_object_value_to_string(&Value)` |
+| `getParameterValue` recursive walk (arrays mapped, objects rebuilt key-by-key in order) | `resolve_value(&Value, bool, &F)` |
+| Error classes + verbatim messages | `ExpressionError` (`error_name()` parity; engine-owned `context` fields stay out, as in TASK-405) |
+
+Ported quirks, not fixed: the unanchored constructor regex (`. constructor`
+and even `x.constructors` trip it), the dead `typeof !== 'object'` → `{}`
+line (documented, no JSON counterpart), `siblingParameters` not threaded
+(unobservable without the proxy), and the frontend-only `TypeError` quirk
+(dead on the backend, documented).
+
+- **Backend kept**: `resolve_template` / `evaluate_simple_json_path`
+  (`$json.path` interpolation only) behind `simple_backend_evaluate`,
+  behaviour-identical — it is the documented limited backend, not the
+  port's claim of JS evaluation.
+- **Probe audit** (`crates/n8n-expression/tests/expression_fixtures.rs`):
+  all 90 runtime probes classified — 6 value matches + 2 shell-error
+  matches (constructor rejections, pinned name+message against the
+  oracles) and an 82-row gap table with per-probe reasons; E1 pinned
+  over all 87 string probes (non-`=` identity vs `=`-processed); the 06
+  object probes pin walk structure plus per-leaf gaps. No new fixture
+  files — the runtime fixtures are consumed in place.
+- **`undefined` convention**: unrepresentable in JSON, maps to
+  `Value::Null` (same as TASK-405 N6/P2), compared against the
+  fixtures' `{"undefined": true}` marker where applicable.
+
+Evidence: `docs/isolation/evidence/rust-test-record.json`.

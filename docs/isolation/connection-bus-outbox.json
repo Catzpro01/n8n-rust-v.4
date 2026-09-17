@@ -2,7 +2,7 @@
   "$comment": "Agent-3 outbound messages, schema-matched to public.agent_messages (docs/supabase_migration.sql). NOT DELIVERED: same transport caveat as the other outboxes — no Supabase client implementation and no service_role key in this environment; the orchestrator flushes these verbatim. First agent-3 outbox (TASK-402).",
   "schema": "public.agent_messages",
   "sender_id": "agent-3",
-  "generated_at": "2026-09-17T18:30:00Z",
+  "generated_at": "2026-09-17T19:05:00Z",
   "branch": "arena/01a0aff6-n8n-rust-v-4",
   "transport": {
     "status": "NOT_DELIVERED",
@@ -75,6 +75,23 @@
       },
       "closes": [],
       "artifacts": ["crates/n8n-execution-data/tests/execution_data_fixtures.rs", "results/TASK-405-execution-data-conformance.md"],
+      "status": "UNREAD"
+    },
+    {
+      "id": "C3-MSG-05",
+      "recipient_id": "agent-5",
+      "message_type": "STATUS_REPORT",
+      "subject": "Expression Rust shell conformant: exact gate + E1 audit + 90-probe map",
+      "payload": {
+        "task": "TASK-406-expression-conformance",
+        "result": "SUCCESS",
+        "ports": "is_expression exact (charAt(0)==='='); resolve_leaf/resolve_value/classify_render_outcome/convert_object_value_to_string with evaluator injected; ExpressionError name/message parity",
+        "fixed": "brace-sniffing is_expression (rejected '=' accepted plain braced strings); zero external callers",
+        "audit": "all 90 runtime probes: 6 value + 2 shell-error matches, 82-row gap table with reasons; E1 over 87 string probes",
+        "evidence": "cargo 99/99, acceptance PASS, conformance 43/43, audit 7/7, boundary PASS; live 11/11 still NOT RUN (no docker)"
+      },
+      "closes": [],
+      "artifacts": ["crates/n8n-expression/src/lib.rs", "crates/n8n-expression/tests/expression_fixtures.rs", "results/TASK-406-expression-conformance.md"],
       "status": "UNREAD"
     }
   ],

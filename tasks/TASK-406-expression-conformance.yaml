@@ -1,0 +1,85 @@
+id: TASK-406-expression-conformance
+agent: agent-3
+lego: expression
+module: expression
+phase: 3
+title: "Port expression shell (isExpression exact + leaf/walk/error shell) + 90-probe audit"
+
+# n8n-expression ships an invented regex backend (resolve_template /
+# evaluate_simple_json_path) plus a WRONG is_expression (brace-sniffing;
+# reference is `charAt(0) === '='`). The JS evaluator (tournament) and the
+# data proxy are not portable to pure Rust -- but the first-party SHELL is:
+# isExpression, the resolveSimpleParameterValue leaf shape (identity /
+# strip `=` / constructor-regex rejection / function-return errors /
+# string passthrough / returnObjectAsString), the renderExpression error
+# ladder, convertObjectValueToString (plain-object branch), and the
+# getParameterValue recursive walk. This task ports that shell with the
+# evaluator injected, keeps the regex backend as the documented limited
+# backend, and audits ALL 90 runtime probes in tests/reference/expression/
+# 01-06: each becomes a MATCH pin or a DIVERGE entry with a classified
+# reason. No new fixture files: the runtime fixtures are consumed in
+# place. The peer suite's `assert!(!is_expression("="))` flips to true
+# with the caller audit its own comment demands (zero callers outside
+# this crate's tests).
+
+allowed_paths:
+  - crates/n8n-expression/**
+  - docs/isolation/expression.md
+  - docs/isolation/connection-bus-outbox.json
+  - docs/isolation/evidence/rust-test-record.json
+  - tasks/TASK-406-expression-conformance.yaml
+  - results/TASK-406-expression-conformance.md
+
+forbidden_paths:
+  - reference/n8n/**
+  - crates/n8n-common/**
+  - crates/n8n-workflow/**
+  - crates/n8n-connection/**
+  - crates/n8n-validation/**
+  - crates/n8n-node-model/**
+  - crates/n8n-execution-data/**
+  - apps/**
+  - packages/**
+  - contracts/**
+  - tests/reference/expression/**
+
+requires:
+  - contracts/expression.contract.md
+  - docs/isolation/expression.md
+  - reference/n8n/packages/workflow/src/expressions/expression-helpers.ts
+  - reference/n8n/packages/workflow/src/expression.ts
+  - reference/n8n/packages/workflow/src/expression-evaluator-proxy.ts
+  - tests/reference/expression/01-json-access/{case,expected}.json
+  - tests/reference/expression/02-input-access/{case,expected}.json
+  - tests/reference/expression/03-node-data-access/{case,expected}.json
+  - tests/reference/expression/04-multiple-items/{case,expected}.json
+  - tests/reference/expression/05-missing-property/{case,expected}.json
+  - tests/reference/expression/06-expression-inside-parameter/{case,expected}.json
+
+operations:
+  - name: port_shell
+    args:
+      api: [is_expression, resolve_leaf, resolve_value, convert_object_value_to_string, classify_render_outcome, ExpressionError, EvalValue]
+      notes: "exact isExpression (charAt(0)==='='); leaf/walk/error-ladder ports with evaluator injected (Fn(&str) -> Result<EvalValue, ExpressionError>); constructor regex /\\.\\s*constructor/m; function-return + invalid-syntax + invalid-DateTime messages verbatim; undefined unrepresentable -> Value::Null (405 N6/P2 convention); frontend-only TypeError quirk documented, not ported (dead on backend)"
+  - name: backend_keep
+    args:
+      fns: [resolve_template, evaluate_simple_json_path]
+      notes: "kept as the documented limited backend (regex $json-path interpolation only) + Value adapter; every probe it cannot do lands on the gap table with a reason"
+  - name: probe_audit
+    args:
+      path: crates/n8n-expression/tests/expression_fixtures.rs
+      asserts: "all 90 probes classified: MATCH pins (identity/interpolation/=//=text/missing-in-text) + DIVERGE table with reasons; E1 audit (non-= identity vs =-processed over every string probe); constructor-regex + invalid-syntax pins from 05; walk-structure pins from the 06 object probes; =-divergence pin flipped with caller audit"
+  - name: refresh_evidence
+    args:
+      cmd: bash tools/phase3-rust-acceptance.sh --force
+      reason: "crates changed -> re-record AFTER the code commit (TASK-403 lesson)"
+
+acceptance:
+  - cargo test --workspace green incl. new/updated expression tests
+  - contract_conformance 43/43, rust_conformance_audit 7/7, boundary_audit PASS
+  - no reference modification; no other crate touched; no new fixture files
+
+merge_condition:
+  - regression_gate_pass
+  - no_contract_violation
+  - agent_5_verification
