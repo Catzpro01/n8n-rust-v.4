@@ -78,6 +78,7 @@ manifest update — see contract §11.6.
 | Dictionary parity | gate check G4 | PASS — 0 missing, 0 extra, 0 empty |
 | RTL | gate check G6 | `ar:rtl`, the other five `ltr` |
 | Status coverage | gate check G7 | 5 statuses × 6 locales |
+| Integration gate stage | `bash tests/integration/run_gate.sh --offline-only` | `STAGE 2d: NATIVE LOCALIZATION GATE` → **PASS (7/7)**, guarded so a checkout without the module reports `SKIPPED`, never `FAIL` |
 
 Real strings for the same key (`settings.title`), produced by the gate:
 `id:Pengaturan · en:Settings · jv:Setelan · ar:الإعدادات · zh:设置 · ru:Настройки`
@@ -130,7 +131,8 @@ Reversible: the inverse `git mv` restores the Rust track untouched.
 
 1. **Phase 4D (proposed):** expose the line through `src/index.ts` + port-surface manifest, and
    switch the API envelope / execution logger to `runtime.snapshot()`.
-2. Wire the localization gate into `tests/integration/run_gate.sh` (done in this change as
-   *Stage 2d*, guarded so a checkout without the module reports `SKIPPED`, not `FAIL`).
-3. Close the Rust guard finding above; it is the only thing standing between the project and a
-   fully green offline stage.
+2. Extend the dictionaries: `packages/workflow-lego/src/backend-localization-service.ts` ships 9
+   product keys; engine strings live in this module's overlay, so a dictionary refresh cannot silently
+   un-translate a status (contract §4.6).
+3. Close the Rust guard finding above (§4.2); it is the only thing standing between the project and a
+   fully green offline stage — `Stage 2d` already passes.
