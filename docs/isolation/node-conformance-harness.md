@@ -218,17 +218,28 @@ const OPTIONS_ISSUES_CASES: usize = 6;  // options/multiOptions required + lenie
     emit byte-exact `At least N field(s) (is|are) required.` / `At most N field(s)
     (is|are) allowed.` keyed by the fixedCollection name; unset options (`undefined`)
     are skipped entirely — no count validation, no child validation.
+20. **mergeIssues is mutating and lossy** (WG-29): merge happens INTO the destination;
+    only `parameters`, `credentials` (array concat per key) and a RAISE-only
+    `execution` flag transfer; unknown top-level keys are silently dropped. A port that
+    returns a new object or spreads arbitrary keys behaves differently.
+21. **Tool classification + tool-mode resolution** (WG-30/WG-31): `isToolType` uses the
+    last dotted segment with `endsWith('Tool')` OR `startsWith('tool')` (dual-sided,
+    `includeHitl` defaults true); `isTool` special-cases `vectorStore` names via
+    `mode === 'retrieve-as-tool'`; `getToolDescriptionForNode` treats blank/whitespace
+    `toolDescription` as absent and falls back to `makeDescription`; `getSubworkflowId`
+    requires BOTH a selector node type AND a full RLC object with `__rl`; `isExecutable`
+    accepts `main`/`ai_tool` outputs or trigger group — never `ai_memory` alone.
 
 ## 5. Acceptance wiring (brief §4, gate 1)
 
 `n8n-node-model` is **RUST IMPLEMENTED-verified for the Node LEGO when**:
 
-1. This harness reproduces all 186 entries (19 frozen-port golden cases + 38 wave-2 pure
+1. This harness reproduces all 220 entries (19 frozen-port golden cases + 38 wave-2 pure
    helper cases + 24 wave-3 parameter-issues/filter cases + 27 wave-4 operator-matrix
    cases + 9 wave-5 nested-parameter cases + 18 wave-6 RLC/resourceMapper cases + 23
    wave-7 IO/conditions/features cases + 10 wave-8 display-path/options cases + 11
-   wave-9 nested-issues cases + 7 serde samples) green under
-   `tools/rust-offline-rig/run.sh test` (offline).
+   wave-9 nested-issues cases + 34 wave-10 tool/merge cases + 7 serde samples) green
+   under `tools/rust-offline-rig/run.sh test` (offline).
 2. The 6 frozen ports exist with the exact snake_cased names listed in brief §3
    (`get_node_parameters`, `get_node_inputs`, `get_node_outputs`, `get_connection_types`,
    `rename_form_fields`, `apply_access_patterns`) and crate exports match contract §11.

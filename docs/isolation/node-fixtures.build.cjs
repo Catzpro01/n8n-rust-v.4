@@ -821,6 +821,124 @@ const fcFieldCountCases = [
   nestedIssuesCase("unset-option-skipped", propsTwoOptions, { fixed: { opts: { inn: "ok" } } }),
 ];
 
+/* ---------------- Wave 10: mergeIssues + isTool* + tool-mode/subworkflow helpers ----- */
+
+for (const [label, fn] of Object.entries({
+  mergeIssues: helpers.mergeIssues,
+  isToolType: helpers.isToolType,
+  isHitlToolType: helpers.isHitlToolType,
+  isTool: helpers.isTool,
+  getToolDescriptionForNode: helpers.getToolDescriptionForNode,
+  getSubworkflowId: helpers.getSubworkflowId,
+  isNodeWithWorkflowSelector: helpers.isNodeWithWorkflowSelector,
+  isExecutable: helpers.isExecutable,
+})) {
+  if (typeof fn !== "function") {
+    console.error(`reference export changed: ${label}`);
+    process.exit(2);
+  }
+}
+
+// WG-29 mergeIssues mutates DESTINATION and returns undefined (port must mirror:
+// only `parameters`/`credentials` object properties + `execution:true` move across).
+function mergedDestination(destination, source) {
+  const d = JSON.parse(JSON.stringify(destination));
+  if (source !== null) {
+    const s = JSON.parse(JSON.stringify(source));
+    helpers.mergeIssues(d, s);
+  } else {
+    helpers.mergeIssues(d, null);
+  }
+  return d;
+}
+const mergeIssuesCases = [
+  { name: "null-source-noop", destination: {}, source: null,
+    expect: mergedDestination({}, null) },
+  { name: "parameters-concat", destination: { parameters: { pA: ["x"] } }, source: { parameters: { pA: ["y"], pB: ["z"] } },
+    expect: mergedDestination({ parameters: { pA: ["x"] } }, { parameters: { pA: ["y"], pB: ["z"] } }) },
+  { name: "credentials-concat-execution-true", destination: { credentials: { c1: ["a"] } }, source: { credentials: { c1: ["b"] }, execution: true },
+    expect: mergedDestination({ credentials: { c1: ["a"] } }, { credentials: { c1: ["b"] }, execution: true }) },
+  { name: "unknown-top-dropped-exec-false-ignored", destination: {}, source: { execution: false, unknownTop: ["a"], parameters: { p: ["m"] } },
+    expect: mergedDestination({}, { parameters: { p: ["m"] } }) },
+];
+
+// WG-30 tool-type classification
+const isToolTypeCases = [
+  { name: "suffix-Tool", nodeType: "n8n-nodes-base.myTool", options: undefined, expect: helpers.isToolType("n8n-nodes-base.myTool") },
+  { name: "prefix-tool", nodeType: "n8n-nodes-base.toolCalculator", options: undefined, expect: helpers.isToolType("n8n-nodes-base.toolCalculator") },
+  { name: "plain-name", nodeType: "n8n-nodes-base.set", options: undefined, expect: helpers.isToolType("n8n-nodes-base.set") },
+  { name: "hitl-included-default", nodeType: "x.y.myHitlTool", options: undefined, expect: helpers.isToolType("x.y.myHitlTool") },
+  { name: "hitl-excluded", nodeType: "x.y.myHitlTool", options: { includeHitl: false }, expect: helpers.isToolType("x.y.myHitlTool", { includeHitl: false }) },
+  { name: "no-dot-name", nodeType: "myTool", options: undefined, expect: helpers.isToolType("myTool") },
+  { name: "undefined-type", nodeType: undefined, options: undefined, expect: helpers.isToolType(undefined) },
+];
+const isHitlToolTypeCases = [
+  { name: "hits-suffix", nodeType: "a.myHitlTool", expect: helpers.isHitlToolType("a.myHitlTool") },
+  { name: "hitl-midword", nodeType: "a.myToolHitl", expect: helpers.isHitlToolType("a.myToolHitl") },
+  { name: "other", nodeType: "a.other", expect: helpers.isHitlToolType("a.other") },
+];
+const isToolCases = [
+  { name: "vectorstore-retrieve-as-tool", description: { name: "vectorStorePinecone" }, parameters: { mode: "retrieve-as-tool" },
+    expect: helpers.isTool({ name: "vectorStorePinecone" }, { mode: "retrieve-as-tool" }) },
+  { name: "vectorstore-other-mode", description: { name: "vectorStorePinecone" }, parameters: { mode: "upsert" },
+    expect: helpers.isTool({ name: "vectorStorePinecone" }, { mode: "upsert" }) },
+  { name: "static-ai-tool-output", description: { name: "xyz", outputs: ["ai_tool"] }, parameters: {},
+    expect: helpers.isTool({ name: "xyz", outputs: ["ai_tool"] }, {}) },
+  { name: "static-main-output", description: { name: "xyz", outputs: ["main"] }, parameters: {},
+    expect: helpers.isTool({ name: "xyz", outputs: ["main"] }, {}) },
+];
+
+// WG-31 tool-description / subworkflow / executability
+const toolDescNodeType = {
+  description: {
+    displayName: "Thing", name: "thing", version: 1, defaults: { name: "Thing" },
+    properties: [
+      { displayName: "Resource", name: "resource", type: "options", options: [ { name: "Op", value: "op" } ], default: "" },
+      { displayName: "Operation", name: "operation", type: "options", options: [ { name: "Send", value: "send" } ], default: "" },
+    ],
+    description: "Fallback desc",
+  },
+};
+const toolModeNode = (parameters) => ({ id: "i", name: "N", type: "t", typeVersion: 1, position: [0, 0], parameters });
+const toolModeCases = [
+  { name: "auto-description-type", parameters: { descriptionType: "auto", resource: "op", operation: "send" },
+    expect: helpers.getToolDescriptionForNode(toolModeNode({ descriptionType: "auto", resource: "op", operation: "send" }), toolDescNodeType) },
+  { name: "manual-verbatim", parameters: { descriptionType: "manual", toolDescription: "Custom!", resource: "op", operation: "send" },
+    expect: helpers.getToolDescriptionForNode(toolModeNode({ descriptionType: "manual", toolDescription: "Custom!", resource: "op", operation: "send" }), toolDescNodeType) },
+  { name: "manual-blank-fallback", parameters: { descriptionType: "manual", toolDescription: "  ", resource: "op", operation: "send" },
+    expect: helpers.getToolDescriptionForNode(toolModeNode({ descriptionType: "manual", toolDescription: "  ", resource: "op", operation: "send" }), toolDescNodeType) },
+  { name: "manual-missing-fallback", parameters: { descriptionType: "manual", resource: "op", operation: "send" },
+    expect: helpers.getToolDescriptionForNode(toolModeNode({ descriptionType: "manual", resource: "op", operation: "send" }), toolDescNodeType) },
+];
+const EXC_EXEC_WF = "n8n-nodes-base.executeWorkflow";
+const EXC_TOOL_WF = "@n8n/n8n-nodes-langchain.toolWorkflow";
+const workflowSelectorCases = [
+  { name: "selector-exec-wf", nodeType: EXC_EXEC_WF, expect: helpers.isNodeWithWorkflowSelector({ type: EXC_EXEC_WF }) },
+  { name: "selector-tool-wf", nodeType: EXC_TOOL_WF, expect: helpers.isNodeWithWorkflowSelector({ type: EXC_TOOL_WF }) },
+  { name: "selector-random", nodeType: "n8n-nodes-base.set", expect: helpers.isNodeWithWorkflowSelector({ type: "n8n-nodes-base.set" }) },
+  // getSubworkflowId: requires BOTH selector type AND full RLC value incl. `__rl`
+  { name: "subwf-rlc", nodeType: EXC_EXEC_WF, workflowId: { __rl: true, value: "42", mode: "id" },
+    expect: helpers.getSubworkflowId({ type: EXC_EXEC_WF, parameters: { workflowId: { __rl: true, value: "42", mode: "id" } } }) },
+  { name: "subwf-tool-rlc", nodeType: EXC_TOOL_WF, workflowId: { __rl: true, value: "99", mode: "list" },
+    expect: helpers.getSubworkflowId({ type: EXC_TOOL_WF, parameters: { workflowId: { __rl: true, value: "99", mode: "list" } } }) },
+  { name: "subwf-rl-missing-flag", nodeType: EXC_EXEC_WF, workflowId: { value: "42", mode: "id" },
+    expect: helpers.getSubworkflowId({ type: EXC_EXEC_WF, parameters: { workflowId: { value: "42", mode: "id" } } }) },
+  { name: "subwf-plain-string", nodeType: EXC_EXEC_WF, workflowId: "42",
+    expect: helpers.getSubworkflowId({ type: EXC_EXEC_WF, parameters: { workflowId: "42" } }) },
+  { name: "subwf-wrong-type", nodeType: "n8n-nodes-base.set", workflowId: { __rl: true, value: "1", mode: "id" },
+    expect: helpers.getSubworkflowId({ type: "n8n-nodes-base.set", parameters: { workflowId: { __rl: true, value: "1", mode: "id" } } }) },
+];
+// isExecutable reads STATIC outputs without touching workflow (pin: workflow:{} is safe).
+const WF_STUB = {};
+const execStubNode = { id: "x", name: "x", type: "t", typeVersion: 1, position: [0, 0], parameters: {} };
+const execDesc = (group, outputs) => ({ group, version: 1, defaults: { name: "x" }, inputs: [], outputs, properties: [] });
+const isExecutableCases = [
+  { name: "main-output", group: ["output"], outputs: ["main"], expect: helpers.isExecutable(WF_STUB, execStubNode, execDesc(["output"], ["main"])) },
+  { name: "ai-tool-only", group: [], outputs: ["ai_tool"], expect: helpers.isExecutable(WF_STUB, execStubNode, execDesc([], ["ai_tool"])) },
+  { name: "trigger-no-outputs", group: ["trigger"], outputs: [], expect: helpers.isExecutable(WF_STUB, execStubNode, execDesc(["trigger"], [])) },
+  { name: "ai-non-tool-output", group: [], outputs: ["ai_memory"], expect: helpers.isExecutable(WF_STUB, execStubNode, execDesc([], ["ai_memory"])) },
+];
+
 /* ---------------- Regression tripwire: results must equal the VERIFIED goldens ------ */
 /* (docs/isolation/node-golden-cases.md — values frozen by VERIFIED-BY-EXECUTION)      */
 
@@ -950,6 +1068,24 @@ assertGolden("W28 fc-field-counts", fcFieldCountCases.map((c) => c.expect), [
   { parameters: { fixed: ["At least 1 field is required."] } },
   null,
 ]);
+assertGolden("W29 mergeIssues", mergeIssuesCases.map((c) => c.expect), [
+  {},
+  { parameters: { pA: ["x", "y"], pB: ["z"] } },
+  { credentials: { c1: ["a", "b"] }, execution: true },
+  { parameters: { p: ["m"] } },
+]);
+assertGolden("W30 isToolType", isToolTypeCases.map((c) => c.expect),
+  [true, true, false, true, false, true, false]);
+assertGolden("W30 isHitlToolType", isHitlToolTypeCases.map((c) => c.expect),
+  [true, false, false]);
+assertGolden("W30 isTool", isToolCases.map((c) => c.expect),
+  [true, false, true, false]);
+assertGolden("W31 tool-mode", toolModeCases.map((c) => c.expect),
+  ["send op in Thing", "Custom!", "send op in Thing", "send op in Thing"]);
+assertGolden("W31 workflow-selector", workflowSelectorCases.map((c) => c.expect ?? null),
+  [true, true, false, "42", "99", null, null, null]);
+assertGolden("W31 isExecutable", isExecutableCases.map((c) => c.expect),
+  [true, true, true, false]);
 
 if (trip.length) {
   console.error("REFERENCE DRIFT vs docs/isolation/node-golden-cases.md:");
@@ -1063,6 +1199,11 @@ const fixtures = {
         `nestedRequiredIssues:${nestedRequiredCases.length}`,
         `fixedCollectionFieldCounts:${fcFieldCountCases.length}`,
       ].join(", "),
+      wave10ToolsAndMerge: [
+        `mergeIssues:${mergeIssuesCases.length}`,
+        `isToolType:${isToolTypeCases.length} isHitlToolType:${isHitlToolTypeCases.length} isTool:${isToolCases.length}`,
+        `toolMode:${toolModeCases.length} workflowSelector/subworkflow:${workflowSelectorCases.length} isExecutable:${isExecutableCases.length}`,
+      ].join(", "),
     },
   },
   applyAccessPatterns: { cases: applyAccessPatternsCases },
@@ -1109,6 +1250,13 @@ const fixtures = {
   optionsIssues: { cases: optionsIssuesCases },
   nestedRequiredIssues: { cases: nestedRequiredCases },
   fixedCollectionFieldCounts: { cases: fcFieldCountCases },
+  mergeIssues: { cases: mergeIssuesCases },
+  isToolType: { cases: isToolTypeCases },
+  isHitlToolType: { cases: isHitlToolTypeCases },
+  isTool: { cases: isToolCases },
+  toolMode: { cases: toolModeCases, nodeType: toolDescNodeType },
+  workflowSelector: { cases: workflowSelectorCases },
+  isExecutable: { cases: isExecutableCases, note: "workflow is an untouched stub {} — static-output paths never consult it" },
   serdeConformance,
 };
 

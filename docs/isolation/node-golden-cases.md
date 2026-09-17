@@ -350,6 +350,34 @@ by the fixedCollection NAME: `At least 2 fields are required.` · `At most 3 fie
 allowed.` · singular variant `At least 1 field is required.` · within bounds → `null` ·
 **unset option (`undefined`) is skipped entirely** (no count, no child check).
 
+## Wave 10 — mergeIssues + tool classification + tool-mode/subworkflow (WG-29..WG-31)
+
+### WG-29 `mergeIssues(destination, source)` — mutating merge
+
+`null` source → no-op · per-property array concat for `parameters` AND `credentials`
+(same key appends in order) · `execution:true` copies UP (flag is only ever raised,
+never lowered: `execution:false` from source ignored) · **unknown top-level keys are
+dropped** — only `parameters`/`credentials`/`execution` transfer.
+
+### WG-30 tool-type classification
+
+`isToolType`: last dotted segment matters · `endsWith('Tool')` OR `startsWith('tool')`
+· HITL names (`*.myHitlTool`) count by default, excluded with `{includeHitl:false}` ·
+`undefined` → `false`. `isHitlToolType`: strict `endsWith('HitlTool')` (`myToolHitl` →
+false). `isTool(desc, params)`: `name.includes('vectorStore')` → true ONLY in
+`retrieve-as-tool` mode; else true iff static outputs contain `ai_tool`.
+
+### WG-31 tool-mode & selectors
+
+`getToolDescriptionForNode`: auto OR **blank/whitespace/missing** `toolDescription`
+→ `makeDescription(...)` (e.g. `send op in Thing`); manual with real text → verbatim.
+`isNodeWithWorkflowSelector`: exact set `{n8n-nodes-base.executeWorkflow,
+@n8n/n8n-nodes-langchain.toolWorkflow}`. `getSubworkflowId`: BOTH selector type AND
+full RLC object (`__rl:true` REQUIRED — `{value,mode}` without `__rl` → `undefined`;
+plain string → `undefined`) → `workflowId.value`. `isExecutable`: true iff static
+outputs contain `main`/`ai_tool` OR node is a trigger (`ai_memory` alone → false);
+the static path never consults `workflow` (stub `{}` pinned safe).
+
 ### Reproduction
 
 ```bash
@@ -371,8 +399,8 @@ fixtures power `docs/isolation/node-conformance-harness.md`. Dist resolution ord
 ### Parity acceptance rule for `n8n-node-model` (Phase 3)
 
 The crate's unit tests MUST reproduce GC-1..GC-7, WG-1..WG-9, WG-10..WG-13, WG-14, WG-15,
-WG-16..WG-19, WG-20..WG-24, WG-25/WG-26, and WG-27/WG-28 byte-identically (JSON equality
-after serialization) — 179 golden cases in `docs/isolation/node-fixtures.json`, plus the
-7 `serdeConformance` round-trip probes (see `node-conformance-harness.md` §5 for the
-binding acceptance gate). Any deviation is a conformance defect (register it as MSG back
-to agent-2/mediator, do not "fix" semantics).
+WG-16..WG-19, WG-20..WG-24, WG-25/WG-26, WG-27/WG-28, and WG-29..WG-31 byte-identically
+(JSON equality after serialization) — 213 golden cases in
+`docs/isolation/node-fixtures.json`, plus the 7 `serdeConformance` round-trip probes (see
+`node-conformance-harness.md` §5 for the binding acceptance gate). Any deviation is a
+conformance defect (register it as MSG back to agent-2/mediator, do not "fix" semantics).

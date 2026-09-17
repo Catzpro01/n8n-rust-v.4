@@ -13,7 +13,8 @@
       "wave6RlcRm": "isValidResourceLocatorParameterValue:8, resourceLocatorIssues:5, rlcDefaults:1, resourceMapperIssues:4",
       "wave7IoConditions": "nodeAcceptsInputType:5, nodeHasOutputType:3, isSubNodeType:3, checkConditions:8, getNodeFeatures:4",
       "wave8DisplayPath": "displayParameterPath:4, optionsIssues:6",
-      "wave9NestedIssues": "nestedRequiredIssues:6, fixedCollectionFieldCounts:5"
+      "wave9NestedIssues": "nestedRequiredIssues:6, fixedCollectionFieldCounts:5",
+      "wave10ToolsAndMerge": "mergeIssues:4, isToolType:7 isHitlToolType:3 isTool:4, toolMode:4 workflowSelector/subworkflow:8 isExecutable:4"
     }
   },
   "applyAccessPatterns": {
@@ -4320,6 +4321,381 @@
         "expect": null
       }
     ]
+  },
+  "mergeIssues": {
+    "cases": [
+      {
+        "name": "null-source-noop",
+        "destination": {},
+        "source": null,
+        "expect": {}
+      },
+      {
+        "name": "parameters-concat",
+        "destination": {
+          "parameters": {
+            "pA": [
+              "x"
+            ]
+          }
+        },
+        "source": {
+          "parameters": {
+            "pA": [
+              "y"
+            ],
+            "pB": [
+              "z"
+            ]
+          }
+        },
+        "expect": {
+          "parameters": {
+            "pA": [
+              "x",
+              "y"
+            ],
+            "pB": [
+              "z"
+            ]
+          }
+        }
+      },
+      {
+        "name": "credentials-concat-execution-true",
+        "destination": {
+          "credentials": {
+            "c1": [
+              "a"
+            ]
+          }
+        },
+        "source": {
+          "credentials": {
+            "c1": [
+              "b"
+            ]
+          },
+          "execution": true
+        },
+        "expect": {
+          "credentials": {
+            "c1": [
+              "a",
+              "b"
+            ]
+          },
+          "execution": true
+        }
+      },
+      {
+        "name": "unknown-top-dropped-exec-false-ignored",
+        "destination": {},
+        "source": {
+          "execution": false,
+          "unknownTop": [
+            "a"
+          ],
+          "parameters": {
+            "p": [
+              "m"
+            ]
+          }
+        },
+        "expect": {
+          "parameters": {
+            "p": [
+              "m"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "isToolType": {
+    "cases": [
+      {
+        "name": "suffix-Tool",
+        "nodeType": "n8n-nodes-base.myTool",
+        "expect": true
+      },
+      {
+        "name": "prefix-tool",
+        "nodeType": "n8n-nodes-base.toolCalculator",
+        "expect": true
+      },
+      {
+        "name": "plain-name",
+        "nodeType": "n8n-nodes-base.set",
+        "expect": false
+      },
+      {
+        "name": "hitl-included-default",
+        "nodeType": "x.y.myHitlTool",
+        "expect": true
+      },
+      {
+        "name": "hitl-excluded",
+        "nodeType": "x.y.myHitlTool",
+        "options": {
+          "includeHitl": false
+        },
+        "expect": false
+      },
+      {
+        "name": "no-dot-name",
+        "nodeType": "myTool",
+        "expect": true
+      },
+      {
+        "name": "undefined-type",
+        "expect": false
+      }
+    ]
+  },
+  "isHitlToolType": {
+    "cases": [
+      {
+        "name": "hits-suffix",
+        "nodeType": "a.myHitlTool",
+        "expect": true
+      },
+      {
+        "name": "hitl-midword",
+        "nodeType": "a.myToolHitl",
+        "expect": false
+      },
+      {
+        "name": "other",
+        "nodeType": "a.other",
+        "expect": false
+      }
+    ]
+  },
+  "isTool": {
+    "cases": [
+      {
+        "name": "vectorstore-retrieve-as-tool",
+        "description": {
+          "name": "vectorStorePinecone"
+        },
+        "parameters": {
+          "mode": "retrieve-as-tool"
+        },
+        "expect": true
+      },
+      {
+        "name": "vectorstore-other-mode",
+        "description": {
+          "name": "vectorStorePinecone"
+        },
+        "parameters": {
+          "mode": "upsert"
+        },
+        "expect": false
+      },
+      {
+        "name": "static-ai-tool-output",
+        "description": {
+          "name": "xyz",
+          "outputs": [
+            "ai_tool"
+          ]
+        },
+        "parameters": {},
+        "expect": true
+      },
+      {
+        "name": "static-main-output",
+        "description": {
+          "name": "xyz",
+          "outputs": [
+            "main"
+          ]
+        },
+        "parameters": {},
+        "expect": false
+      }
+    ]
+  },
+  "toolMode": {
+    "cases": [
+      {
+        "name": "auto-description-type",
+        "parameters": {
+          "descriptionType": "auto",
+          "resource": "op",
+          "operation": "send"
+        },
+        "expect": "send op in Thing"
+      },
+      {
+        "name": "manual-verbatim",
+        "parameters": {
+          "descriptionType": "manual",
+          "toolDescription": "Custom!",
+          "resource": "op",
+          "operation": "send"
+        },
+        "expect": "Custom!"
+      },
+      {
+        "name": "manual-blank-fallback",
+        "parameters": {
+          "descriptionType": "manual",
+          "toolDescription": "  ",
+          "resource": "op",
+          "operation": "send"
+        },
+        "expect": "send op in Thing"
+      },
+      {
+        "name": "manual-missing-fallback",
+        "parameters": {
+          "descriptionType": "manual",
+          "resource": "op",
+          "operation": "send"
+        },
+        "expect": "send op in Thing"
+      }
+    ],
+    "nodeType": {
+      "description": {
+        "displayName": "Thing",
+        "name": "thing",
+        "version": 1,
+        "defaults": {
+          "name": "Thing"
+        },
+        "properties": [
+          {
+            "displayName": "Resource",
+            "name": "resource",
+            "type": "options",
+            "options": [
+              {
+                "name": "Op",
+                "value": "op"
+              }
+            ],
+            "default": ""
+          },
+          {
+            "displayName": "Operation",
+            "name": "operation",
+            "type": "options",
+            "options": [
+              {
+                "name": "Send",
+                "value": "send"
+              }
+            ],
+            "default": ""
+          }
+        ],
+        "description": "Fallback desc"
+      }
+    }
+  },
+  "workflowSelector": {
+    "cases": [
+      {
+        "name": "selector-exec-wf",
+        "nodeType": "n8n-nodes-base.executeWorkflow",
+        "expect": true
+      },
+      {
+        "name": "selector-tool-wf",
+        "nodeType": "@n8n/n8n-nodes-langchain.toolWorkflow",
+        "expect": true
+      },
+      {
+        "name": "selector-random",
+        "nodeType": "n8n-nodes-base.set",
+        "expect": false
+      },
+      {
+        "name": "subwf-rlc",
+        "nodeType": "n8n-nodes-base.executeWorkflow",
+        "workflowId": {
+          "__rl": true,
+          "value": "42",
+          "mode": "id"
+        },
+        "expect": "42"
+      },
+      {
+        "name": "subwf-tool-rlc",
+        "nodeType": "@n8n/n8n-nodes-langchain.toolWorkflow",
+        "workflowId": {
+          "__rl": true,
+          "value": "99",
+          "mode": "list"
+        },
+        "expect": "99"
+      },
+      {
+        "name": "subwf-rl-missing-flag",
+        "nodeType": "n8n-nodes-base.executeWorkflow",
+        "workflowId": {
+          "value": "42",
+          "mode": "id"
+        }
+      },
+      {
+        "name": "subwf-plain-string",
+        "nodeType": "n8n-nodes-base.executeWorkflow",
+        "workflowId": "42"
+      },
+      {
+        "name": "subwf-wrong-type",
+        "nodeType": "n8n-nodes-base.set",
+        "workflowId": {
+          "__rl": true,
+          "value": "1",
+          "mode": "id"
+        }
+      }
+    ]
+  },
+  "isExecutable": {
+    "cases": [
+      {
+        "name": "main-output",
+        "group": [
+          "output"
+        ],
+        "outputs": [
+          "main"
+        ],
+        "expect": true
+      },
+      {
+        "name": "ai-tool-only",
+        "group": [],
+        "outputs": [
+          "ai_tool"
+        ],
+        "expect": true
+      },
+      {
+        "name": "trigger-no-outputs",
+        "group": [
+          "trigger"
+        ],
+        "outputs": [],
+        "expect": true
+      },
+      {
+        "name": "ai-non-tool-output",
+        "group": [],
+        "outputs": [
+          "ai_memory"
+        ],
+        "expect": false
+      }
+    ],
+    "note": "workflow is an untouched stub {} — static-output paths never consult it"
   },
   "serdeConformance": {
     "note": "Synthetic conformance samples for crates/n8n-node-model serde shapes (node-rust-brief.md §1 G-1..G-4). Equality rule: deserialize -> serialize must be an exact JSON round-trip. Real node instances are read by the harness from tests/reference/0*/workflow.json, not embedded here.",
