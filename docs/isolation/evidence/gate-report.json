@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-17T20:46:22.382Z",
+  "generatedAt": "2026-09-17T20:50:04.464Z",
   "lego": "workflow",
   "phase": "phase-2-isolation",
   "reference": {
@@ -12,7 +12,7 @@
       "Ownership is declared here and enforced by tools/workflow-boundary-map.mjs (drift gate)."
     ]
   },
-  "runtime": null,
+  "runtime": "/home/user/n8n-rust-v.4/.runtime/node_modules",
   "behaviorChange": "NONE DETECTED",
   "digestEvidence": {
     "corpus": {
@@ -57,8 +57,8 @@
   },
   "rustImplementation": "NOT STARTED",
   "totals": {
-    "gates": 10,
-    "passed": 10,
+    "gates": 11,
+    "passed": 11,
     "failed": 0
   },
   "gates": [
@@ -67,70 +67,77 @@
       "title": "boundary drift gate (owned files, crossings, inbound edges)",
       "status": "PASS",
       "detail": "src files scanned         : 104\nLEGO owned files          : 10\ncompile closure           : 103\noutbound crossings        : 21\nundeclared crossings      : 0\ninbound edges             : 9\nmonorepo import sites     : 6318 root + 5 subpath\n\nBoundary check: PASS (no drift vs packages/workflow-lego/manifest/boundary.expectations.json)",
-      "ms": 321
+      "ms": 266
     },
     {
       "id": "G02",
       "title": "kernel snapshot conformance (constants/vocabulary vs reference)",
       "status": "PASS",
       "detail": "Kernel snapshot check: PASS (snapshots match the pinned reference source)",
-      "ms": 50
+      "ms": 36
     },
     {
       "id": "G03",
       "title": "port surface matches the imports of the owned sources",
       "status": "PASS",
       "detail": "Required port surface (from actual imports in owned files):\n\n@lego/ports/checksum-digest  [value]\n   symbols : jsSHA\n   used by : workflow-checksum (jssha)\n@lego/ports/config  [value]\n   symbols : getGlobalState\n   used by : workflow (./global-state)\n@lego/ports/constants  [value]\n   symbols : MANUAL_CHAT_TRIGGER_LANGCHAIN_NODE_TYPE, NODES_WITH_RENAMABLE_CONTENT, NODES_WITH_RENAMABLE_FORM_HTML_CONTENT, NODES_WITH_RENAMEABLE_TOPLEVEL_HTML_CONTENT, STARTING_NODE_TYPES\n   used by : workflow (./constants)\n@lego/ports/errors  [value]\n   symbols : ApplicationError, UserError\n   used by : workflow (./errors), workflow (@n8n/errors)\n@lego/ports/expression-runtime  [value]\n   symbols : Expression\n   used by : workflow (./expression)\n@lego/ports/node-model  [value]\n   symbols : * as NodeHelpers\n   u",
-      "ms": 280
+      "ms": 271
     },
     {
       "id": "G04",
       "title": "reference tree byte-identical to the pinned hashes",
       "status": "PASS",
       "detail": "Reference integrity check: PASS (15050 files, root f8da35180669d798…)",
-      "ms": 472
+      "ms": 450
     },
     {
       "id": "G05",
       "title": "isolation extraction (pure import rewrites only)",
       "status": "PASS",
       "detail": "isolated unit written to packages/workflow-lego/.extract\n  owned files copied : 10\n  port rewrites      : 25 across 10 files\n    @lego/ports/checksum-digest : 1\n    @lego/ports/config : 1\n    @lego/ports/constants : 1\n    @lego/ports/errors : 2\n    @lego/ports/expression-runtime : 1\n    @lego/ports/node-model : 1\n    @lego/ports/node-reference : 1\n    @lego/ports/node-rename : 1\n    @lego/ports/observable-object : 1\n    @lego/ports/utils : 2\n    @lego/ports/vocabulary : 13",
-      "ms": 309
+      "ms": 278
     },
     {
       "id": "G06",
       "title": "TypeScript build PASS (isolated unit, ports only)",
       "status": "PASS",
       "detail": "tsc -p .extract/tsconfig.json → 0 errors",
-      "ms": 1814
+      "ms": 1795
     },
     {
       "id": "G07",
       "title": "TypeScript build PASS (versioned boundary/ports/facade)",
       "status": "PASS",
       "detail": "tsc --noEmit → 0 errors",
-      "ms": 1212
+      "ms": 1422
     },
     {
       "id": "G08",
       "title": "unit tests PASS (boundary, extraction, equivalence, strict isolation, surface)",
       "status": "PASS",
-      "detail": "# cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 13367.421235",
-      "ms": 13408
+      "detail": "# cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 13401.738278",
+      "ms": 13440
     },
     {
       "id": "G09",
       "title": "BEFORE vs AFTER digest: BEHAVIOR CHANGE NONE",
       "status": "PASS",
       "detail": "252 section comparisons across 18 workflows — 0 differences · strict: 217 identical, 35 in declared port sections",
-      "ms": 2186
+      "ms": 2865
     },
     {
       "id": "G10",
       "title": "strict port mode: no hidden coupling to the reference runtime",
       "status": "PASS",
-      "detail": "# cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 1452.550738",
-      "ms": 1490
+      "detail": "# cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 1676.378859",
+      "ms": 1713
+    },
+    {
+      "id": "G11",
+      "title": "live verification: workflow load / save / 1-node / linear / webhook / execution record",
+      "status": "PASS",
+      "detail": "7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS",
+      "ms": 3901
     }
   ]
 }
