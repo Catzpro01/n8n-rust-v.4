@@ -66,9 +66,9 @@ python3 tests/integration/boundary_audit.py        # PASS Rust guard clean
 bash tests/integration/run_gate.sh --offline-only  # OFFLINE PASS, LIVE NOT RUN (expected)
 
 # Package LEGO tests
-node --test packages/execution-data-lego/test/*.mjs  # 2/2 PASS
-node --test packages/expression-lego/test/*.mjs      # 4/4 PASS
-node --test packages/connection-lego/test/*.mjs       # 5/5 PASS
+node --test packages/execution-data-lego/test/*.mjs   # 2/2 PASS
+node --test packages/expression-lego/test/*.mjs       # 4/4 PASS
+node --test packages/connection-lego/test/*.mjs       # 20/20 PASS (boundary + graph analysis + facade integration)
 node --test packages/trigger-lego/test/*.mjs          # 2/2 PASS
 node --test packages/webhook-lego/test/*.mjs          # 2/2 PASS
 node --test packages/scheduler-lego/test/*.mjs        # 2/2 PASS
@@ -80,27 +80,10 @@ node --test packages/api-lego/test/*.mjs              # 2/2 PASS
 node packages/reconstructed-engine/test-integration.mjs  # 12/12 PASS 100% Sempurna
 node packages/reconstructed-engine/test-run.mjs          # 100% Sempurna
 
-# Full workflow-lego gate (needs npm install + reference runtime)
+# Full gate (needs npm install + reference runtime)
 npm install --prefix packages/workflow-lego
-npm run verify:fast   # 5/10 PASS offline (G01-G05 PASS, G06-G10 need TS)
-# Package LEGO tests
-node --test packages/execution-data-lego/test/*.mjs  # 2/2 PASS
-node --test packages/expression-lego/test/*.mjs      # 4/4 PASS
-node --test packages/connection-lego/test/*.mjs       # 13/13 PASS
-node --test packages/trigger-lego/test/*.mjs          # 2/2 PASS
-node --test packages/webhook-lego/test/*.mjs          # 2/2 PASS
-node --test packages/scheduler-lego/test/*.mjs        # 2/2 PASS
-node --test packages/persistence-lego/test/*.mjs      # 2/2 PASS
-node --test packages/credentials-lego/test/*.mjs      # 2/2 PASS
-node --test packages/api-lego/test/*.mjs              # 2/2 PASS
-
-# Integration
-node packages/reconstructed-engine/test-integration.mjs  # 12/12 PASS 100% Sempurna
-node packages/reconstructed-engine/test-run.mjs          # 100% Sempurna
-
-# Full workflow-lego gate (needs npm install + reference runtime)
-npm install --prefix packages/workflow-lego
-npm run verify:fast   # 5/10 PASS offline (G01-G05 PASS, G06-G10 need TS)
+npm run verify                            # 12 gates G01-G12, ~30 s, writes docs/isolation/evidence/*
+npm run verify:fast                       # same minus the live engine checks
 npm run i18n:check                        # Phase 4B: 6-locale parity + 24 behaviour tests (offline)
 npm run connection:check                  # Phase 3B/5: differential gate vs n8n-workflow@2.9.1, 1,258 calls incl. facade integration
 ```

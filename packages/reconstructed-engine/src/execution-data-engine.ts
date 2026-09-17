@@ -80,7 +80,7 @@ export function isEmptyOutput(data: ITaskDataConnections | undefined): boolean {
   if (!data) return true;
   const main = data.main;
   if (!main) return true;
-  return main.length === 0 || (main.length === 1 && main[0] && main[0].length === 0);
+  return main.length === 0 || (main.length === 1 && main[0] != null && main[0].length === 0);
 }
 
 export function applyAlwaysOutputData(

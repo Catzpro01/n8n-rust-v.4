@@ -7,11 +7,11 @@ export class CredentialsEngine {
   private credentials = new Map();
   private overwrites = new Map();
 
-  setOverwrite(type, data) {
+  setOverwrite(type: any, data: any) {
     this.overwrites.set(type, data);
   }
 
-  async createCredential(type, name, data) {
+  async createCredential(type: any, name: any, data: any) {
     const sanitized = CredentialEncryptionGuard.sanitizeCredentialInput(data);
     if (!sanitized.sanitized) throw new Error(`Credential sanitization failed: ${sanitized.errors.join(', ')}`);
     const id = `cred_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
@@ -21,7 +21,7 @@ export class CredentialsEngine {
     return { id, type, name };
   }
 
-  async getDecrypted(id, type) {
+  async getDecrypted(id: any, type: any) {
     const cred = this.credentials.get(id);
     if (!cred) throw new Error(`Credential with ID "${id}" does not exist for type "${type}"`);
     if (cred.type !== type) throw new Error(`Node does not have credential type "${type}"`);
@@ -36,8 +36,8 @@ export class CredentialsEngine {
     }
   }
 
-  redact(data) {
-    const redacted = {};
+  redact(data: any) {
+    const redacted: Record<string, any> = {};
     for (const [k,v] of Object.entries(data)) {
       redacted[k] = typeof v === 'string' && v.length > 0 ? '***' : v;
     }

@@ -299,7 +299,7 @@ export class N8nReconstructedFacade {
       const plan = this.resolveExecutionPlan(request.workflow);
 
       const nodes = request.workflow.nodes || [];
-      const nodesByName = new Map(nodes.map((node: any) => [node?.name, node]));
+      const nodesByName = new Map<string, any>(nodes.map((node: any) => [node?.name, node]));
       const results: any[] = [];
 
       for (const nodeName of plan.order) {

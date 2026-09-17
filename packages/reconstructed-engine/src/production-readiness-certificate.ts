@@ -20,7 +20,7 @@ export class ProductionReadinessCertificate {
       connectionRouting: { status: 'PASS', details: 'Connection LEGO VERIFIED, 5/5 reference tests PASS, P-CONNECTION-GRAPH port ready' },
       validation: { status: 'PASS', details: 'Validation LEGO VERIFIED, cycle + uniqueness + dangling' },
       executionData: { status: 'PASS', details: 'Execution Data LEGO VERIFIED, 7 golden suites, factories + I1-I14 invariants, pairedItem auto-assignment' },
-      expression: { status: 'PASS', details: 'Expression LEGO VERIFIED, 6 golden suites, isExpression + sandbox + $json/$('X') proxy, E1-E8 invariants' },
+      expression: { status: 'PASS', details: "Expression LEGO VERIFIED, 6 golden suites, isExpression + sandbox + $json/$('X') proxy, E1-E8 invariants" },
       trigger: { status: 'PASS', details: 'Trigger LEGO VERIFIED, ActiveWorkflows + TriggersAndPollers, activation/deactivation, 2/2 PASS' },
       webhook: { status: 'PASS', details: 'Webhook LEGO VERIFIED, WebhookService + dynamic matching + conflict detection, 2/2 PASS' },
       scheduler: { status: 'PASS', details: 'Scheduler LEGO VERIFIED, ScheduledTaskManager + CronJob + recurrence, 2/2 PASS' },

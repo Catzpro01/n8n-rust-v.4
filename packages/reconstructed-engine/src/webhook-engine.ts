@@ -12,7 +12,7 @@ export interface WebhookData {
 export class WebhookEngine {
   private webhooks = new Map(); // key: `${method}:${path}`
 
-  storeWebhook(data) {
+  storeWebhook(data: any) {
     const key = `${data.method}:${data.webhookPath}`;
     if (this.webhooks.has(key)) {
       throw new Error('There is a conflict with one of the webhooks.');
@@ -21,7 +21,7 @@ export class WebhookEngine {
     return data;
   }
 
-  findWebhook(method, path) {
+  findWebhook(method: any, path: any) {
     const exact = this.webhooks.get(`${method}:${path}`);
     if (exact) return exact;
     // Dynamic matching by webhookId + pathLength longest first
@@ -31,13 +31,13 @@ export class WebhookEngine {
     return candidates[0] || null;
   }
 
-  deleteWebhooksByWorkflow(workflowId) {
+  deleteWebhooksByWorkflow(workflowId: any) {
     for (const [key, wh] of this.webhooks.entries()) {
       if (wh.workflowId === workflowId) this.webhooks.delete(key);
     }
   }
 
-  buildWebhookPayload(request) {
+  buildWebhookPayload(request: any) {
     return {
       headers: request.headers,
       params: request.params,

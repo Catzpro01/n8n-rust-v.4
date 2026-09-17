@@ -119,6 +119,18 @@ gate('G08', 'unit tests PASS (boundary, extraction, equivalence, strict isolatio
 	run(process.execPath, ['--test', 'test/*.test.mjs'], { cwd: PKG, timeout: 600_000 }).split('\n').slice(-4).join(' · '),
 );
 
+/* ------------------------------------------------------------------ */
+/* 2b. reconstructed engine — strict typecheck                         */
+/* ------------------------------------------------------------------ */
+gate('G12', 'TypeScript strict typecheck PASS (reconstructed engine, 12 LEGO facade)', () => {
+	const tsc = join(PKG, 'node_modules/.bin/tsc');
+	if (!existsSync(tsc)) throw new Error('typescript missing — run: npm install (packages/workflow-lego)');
+	const config = join(REPO, 'packages/reconstructed-engine/tsconfig.json');
+	if (!existsSync(config)) throw new Error('packages/reconstructed-engine/tsconfig.json missing');
+	run(tsc, ['-p', config], { cwd: REPO, timeout: 300_000 });
+	return 'tsc -p packages/reconstructed-engine/tsconfig.json → 0 errors (strict)';
+});
+
 /* --- evidence digests (BEFORE / AFTER / STRICT) -------------------- */
 /**
  * Raw digests are large (multi-MB) and are therefore written to a temporary
@@ -236,6 +248,7 @@ writeFileSync(join(EVIDENCE, 'gate-report.json'), JSON.stringify(report, null, 2
 
 const checklist = [
 	['TypeScript build PASS', ['G06', 'G07']],
+	['TypeScript strict typecheck PASS (reconstructed engine)', ['G12']],
 	['unit tests PASS', ['G08']],
 	['workflow load PASS', ['G11']],
 	['workflow save PASS', ['G11']],

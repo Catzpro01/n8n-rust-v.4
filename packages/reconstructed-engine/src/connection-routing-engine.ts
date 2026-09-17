@@ -32,19 +32,36 @@ export interface INodeConnection {
 
 export type IConnectionAdjacencyList = Map<string, Set<IConnection>>;
 
-export interface ExtractableErrorResult {
-  errorCode: 'Multiple Input Nodes' | 'Multiple Output Nodes' | 'Input Edge To Non-Root Node' | 'Output Edge From Non-Leaf Node' | 'No Continuous Path From Root To Leaf In Selection';
-  message: string;
-}
+export type MultipleInputNodesError = { errorCode: 'Multiple Input Nodes'; nodes: Set<string> };
+export type MultipleOutputNodesError = { errorCode: 'Multiple Output Nodes'; nodes: Set<string> };
+export type InputEdgeToNonRootNodeError = { errorCode: 'Input Edge To Non-Root Node'; node: string };
+export type OutputEdgeFromNonLeafNodeError = { errorCode: 'Output Edge From Non-Leaf Node'; node: string };
+export type NoContinuousPathFromRootToLeafError = {
+  errorCode: 'No Continuous Path From Root To Leaf In Selection';
+  start: string;
+  end: string;
+};
+/** Same union as `n8n-workflow` `ExtractableErrorResult`. */
+export type ExtractableErrorResult =
+  | MultipleInputNodesError
+  | MultipleOutputNodesError
+  | InputEdgeToNonRootNodeError
+  | OutputEdgeFromNonLeafNodeError
+  | NoContinuousPathFromRootToLeafError;
 
 export interface ExtractableSubgraphData {
   start?: string;
   end?: string;
 }
 
+/** Same shape as `n8n-workflow` `INodeConnectionsDiff` / `ConnectionsDiff`. */
+export type INodeConnectionsDiff = Record<
+  string,
+  Array<{ sourceIndex: number; value: { index: number; connection: IConnection } | null }>
+>;
 export type ConnectionsDiff = {
-  added: Record<string, Record<string, Array<{ sourceIndex: number; value: { index: number; connection: IConnection } | null }>>>;
-  removed: Record<string, Record<string, Array<{ sourceIndex: number; value: { index: number; connection: IConnection } | null }>>>;
+  added: Record<string, INodeConnectionsDiff>;
+  removed: Record<string, INodeConnectionsDiff>;
 };
 
 export const NodeConnectionTypes = {
@@ -102,7 +119,7 @@ export function mapConnectionsByDestination(connections: IConnections): IConnect
 
   // Pad missing indexes
   for (const destMap of Object.values(byDest)) {
-    for (const slots of Object.values(destMap as any)) {
+    for (const slots of Object.values(destMap as Record<string, Array<IConnection[] | null>>)) {
       for (let i = 0; i < slots.length; i++) {
         if (!slots[i]) slots[i] = [];
       }
@@ -318,11 +335,11 @@ export function parseExtractableSubgraphSelection(
   let rootNodes = getRootNodes(nodes, adjacency);
   if (rootNodes.size === 0 && inputNodes.size === 1) rootNodes = inputNodes;
   for (const inputNode of difference(inputNodes, rootNodes).values()) {
-    errors.push({ errorCode: 'Input Edge To Non-Root Node', node: inputNode } as ExtractableErrorResult);
+    errors.push({ errorCode: 'Input Edge To Non-Root Node', node: inputNode });
   }
   const rootInputNodes = intersection(rootNodes, inputNodes);
   if (rootInputNodes.size > 1) {
-    errors.push({ errorCode: 'Multiple Input Nodes', nodes: rootInputNodes } as unknown as ExtractableErrorResult);
+    errors.push({ errorCode: 'Multiple Input Nodes', nodes: rootInputNodes });
   }
 
   // 0-1 Output nodes
@@ -331,11 +348,11 @@ export function parseExtractableSubgraphSelection(
   let leafNodes = getLeafNodes(nodes, adjacency);
   if (leafNodes.size === 0 && outputNodes.size === 1) leafNodes = outputNodes;
   for (const outputNode of difference(outputNodes, leafNodes).values()) {
-    errors.push({ errorCode: 'Output Edge From Non-Leaf Node', node: outputNode } as ExtractableErrorResult);
+    errors.push({ errorCode: 'Output Edge From Non-Leaf Node', node: outputNode });
   }
   const leafOutputNodes = intersection(leafNodes, outputNodes);
   if (leafOutputNodes.size > 1) {
-    errors.push({ errorCode: 'Multiple Output Nodes', nodes: leafOutputNodes } as unknown as ExtractableErrorResult);
+    errors.push({ errorCode: 'Multiple Output Nodes', nodes: leafOutputNodes });
   }
 
   const start = rootInputNodes.values().next().value as string | undefined;
@@ -369,8 +386,12 @@ export function compareConnections(prev: IConnections, next: IConnections): Conn
       for (let sourceIndex = 0; sourceIndex < maxLength; sourceIndex++) {
         const prevConnections = prevInputConnections[sourceIndex] ?? [];
         const nextConnections = nextInputConnections[sourceIndex] ?? [];
-        const prevMap = new Map(prevConnections.map((conn: any, idx: number) => [JSON.stringify(conn), { index: idx, connection: conn }]));
-        const nextMap = new Map(nextConnections.map((conn: any, idx: number) => [JSON.stringify(conn), { index: idx, connection: conn }]));
+        const prevMap = new Map<string, { index: number; connection: IConnection }>(
+          (prevConnections as any[]).map((conn: any, idx: number) => [JSON.stringify(conn), { index: idx, connection: conn }]),
+        );
+        const nextMap = new Map<string, { index: number; connection: IConnection }>(
+          (nextConnections as any[]).map((conn: any, idx: number) => [JSON.stringify(conn), { index: idx, connection: conn }]),
+        );
 
         for (const [key, value] of nextMap) {
           if (!prevMap.has(key)) {

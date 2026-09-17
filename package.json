@@ -13,6 +13,7 @@
     "i18n:check": "node tools/localization-hub-check.mjs",
     "connection:check": "node tools/connection-isolation-gate.mjs",
     "workflow-lego:build": "npm --prefix packages/workflow-lego run build",
-    "workflow-lego:test": "bash scripts/run-lego-tests.sh"
+    "workflow-lego:test": "bash scripts/run-lego-tests.sh",
+    "engine:typecheck": "packages/workflow-lego/node_modules/.bin/tsc -p packages/reconstructed-engine/tsconfig.json"
   }
 }

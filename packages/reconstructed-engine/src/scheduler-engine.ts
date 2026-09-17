@@ -12,7 +12,7 @@ export interface CronContext {
 export class SchedulerEngine {
   private cronsByWorkflow = new Map();
 
-  registerCron(ctx, onTick) {
+  registerCron(ctx: any, onTick: any) {
     const key = JSON.stringify(ctx);
     if (!this.cronsByWorkflow.has(ctx.workflowId)) {
       this.cronsByWorkflow.set(ctx.workflowId, new Map());
@@ -28,7 +28,7 @@ export class SchedulerEngine {
     byWf.set(key, job);
   }
 
-  deregisterCrons(workflowId) {
+  deregisterCrons(workflowId: any) {
     const byWf = this.cronsByWorkflow.get(workflowId);
     if (!byWf) return;
     for (const job of byWf.values()) job.active = false;
@@ -39,7 +39,7 @@ export class SchedulerEngine {
     for (const wfId of this.cronsByWorkflow.keys()) this.deregisterCrons(wfId);
   }
 
-  toCronExpression(triggerTime) {
+  toCronExpression(triggerTime: any) {
     // Simplified — real impl in workflow/cron.ts uses randomInt(60) for seconds
     if (triggerTime.mode === 'everyMinute') return `${Math.floor(Math.random()*60)} * * * * *`;
     if (triggerTime.mode === 'everyHour') return `${Math.floor(Math.random()*60)} ${triggerTime.hour || 0} * * *`;

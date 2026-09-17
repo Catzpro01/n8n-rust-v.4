@@ -1,15 +1,16 @@
 # Workflow LEGO — Phase 2 isolation verification
 
-Generated: 2026-09-17T20:36:26.714Z · reference n8n 2.9.4 (`b6dc2787c456`)
+Generated: 2026-09-17T20:40:15.826Z · reference n8n 2.9.4 (`b6dc2787c456`)
 
-**Gates: 11/11 PASS** · **BEHAVIOR CHANGE: NONE DETECTED** · **RUST IMPLEMENTATION: NOT STARTED**
+**Gates: 12/12 PASS** · **BEHAVIOR CHANGE: NONE DETECTED** · **RUST IMPLEMENTATION: NOT STARTED**
 
 ## Requested gate checklist
 
 | gate | status | evidence |
 | :--- | :--- | :--- |
 | TypeScript build PASS | PASS | G06: tsc -p .extract/tsconfig.json → 0 errors<br>G07: tsc --noEmit → 0 errors |
-| unit tests PASS | PASS | G08: # cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 14934.780925 |
+| TypeScript strict typecheck PASS (reconstructed engine) | PASS | G12: tsc -p packages/reconstructed-engine/tsconfig.json → 0 errors (strict) |
+| unit tests PASS | PASS | G08: # cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 15301.789924 |
 | workflow load PASS | PASS | G11: 7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS |
 | workflow save PASS | PASS | G11: 7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS |
 | manual execution PASS | PASS | G11: 7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS |
@@ -30,9 +31,10 @@ Generated: 2026-09-17T20:36:26.714Z · reference n8n 2.9.4 (`b6dc2787c456`)
 | G05 | isolation extraction (pure import rewrites only) | PASS | isolated unit written to packages/workflow-lego/.extract   owned files copied : 10   port rewrites      : 25 across 10 files     @lego/ports/checksum-digest : 1     @lego/ports/config : 1     @lego/ports/constants : 1    |
 | G06 | TypeScript build PASS (isolated unit, ports only) | PASS | tsc -p .extract/tsconfig.json → 0 errors |
 | G07 | TypeScript build PASS (versioned boundary/ports/facade) | PASS | tsc --noEmit → 0 errors |
-| G08 | unit tests PASS (boundary, extraction, equivalence, strict isolation, surface) | PASS | # cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 14934.780925 |
+| G08 | unit tests PASS (boundary, extraction, equivalence, strict isolation, surface) | PASS | # cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 15301.789924 |
+| G12 | TypeScript strict typecheck PASS (reconstructed engine, 12 LEGO facade) | PASS | tsc -p packages/reconstructed-engine/tsconfig.json → 0 errors (strict) |
 | G09 | BEFORE vs AFTER digest: BEHAVIOR CHANGE NONE | PASS | 252 section comparisons across 18 workflows — 0 differences · strict: 218 identical, 34 in declared port sections |
-| G10 | strict port mode: no hidden coupling to the reference runtime | PASS | # cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 1795.433662 |
+| G10 | strict port mode: no hidden coupling to the reference runtime | PASS | # cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 2142.791674 |
 | G11 | live verification: workflow load / save / 1-node / linear / webhook / execution record | PASS | 7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS |
 
 ## Live verification (reference execution engine)
