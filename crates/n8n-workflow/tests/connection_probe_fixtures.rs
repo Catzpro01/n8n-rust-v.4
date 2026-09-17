@@ -12,7 +12,7 @@ use serde_json::{json, Value};
 use std::fs;
 use std::path::{Path, PathBuf};
 
-const CASES: [&str; 8] = [
+const CASES: [&str; 9] = [
     "01-linear",
     "02-multi-output",
     "03-connection-types",
@@ -26,11 +26,17 @@ const CASES: [&str; 8] = [
     // (diamond dedupe, unbounded farthest-first) + ALL/ALL_NON_MAIN type filters + byDest
     // insertion-order + getHighestNode/getParentNodesByDepth/getNodeConnectionIndexes.
     "08-traversal-depth-and-type-filter",
+    // Adopted from agent-3/worker-05 (arena/01a0ac05 @ 0f7d4d96): error output (plain
+    // sourceIndex 1), sparse null/[] slots, direct-level duplicate in getChildNodes
+    // ([Log, Log, ...] — reference does NOT dedupe there), order-dependent getHighestNode
+    // via the shared checkedNodes, BFS-up getNodeConnectionIndexes, destinationIndex as
+    // the slot POSITION, and the graph-utils selection ops.
+    "10-error-output-sparse-slots",
 ];
 
 /// Expected probe totals: 46 total, all executable (no tracked skips remain since
 /// TASK-406 ported the graph-utils ops).
-const PROBE_TOTAL: usize = 88;
+const PROBE_TOTAL: usize = 119;
 
 fn repo_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
@@ -206,6 +212,12 @@ fn connection_golden_probes_match_the_pinned_runtime() {
                     filter_of(&probe),
                     depth_of(&probe),
                 ))
+                .unwrap(),
+                // Case 10: the adjacency list's document-order keys (sources that emit
+                // at least one non-empty edge) — JS `Object.keys(adjacencyList)`.
+                "adjacencyKeys" => serde_json::to_value(
+                    adjacency_list.keys().cloned().collect::<Vec<String>>(),
+                )
                 .unwrap(),
                 "wf.sourceKeys" => {
                     serde_json::to_value(workflow.connections_by_source_node.key_names()).unwrap()
