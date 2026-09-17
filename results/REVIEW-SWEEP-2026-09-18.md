@@ -325,3 +325,9 @@ Second vote on `TASK-NREFP-01-phase3-node-reference-parser` (peer submitted in `
 | `TASK-NREFP-01-phase3-node-reference-parser.md` | node-reference-parser + lodash-lite + OperationalError, 15 new cases, suite 116/116, gate 7/7, differential N25 1695 agree / 0 diverge across 25 groups | package **116 pass / 0 fail**; Node gate **7/7**; differential **1695 agree / 0 diverge** (0 harness errors); `verify:all` 14 lanes real exit 0 | **APPROVE** (second vote) |
 
 
+
+## Sweep 15 (2026-09-18, on merged TASK-428 tree) — TASK-428
+
+| Result (owner) | Claim | Fresh re-run on merged tree | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-428-phase3-wait-tracker.md` | WaitTracker + execution resumption runtime; suite 67 → 85; gate 10/10 → 11/11 (new E11) | execution-engine **85/85** fresh, **Execution gate 11/11** (E11 green), live gate 10/10 + `verify:all` real exit 0 on the same merged tip | **APPROVE** |
