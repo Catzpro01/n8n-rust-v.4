@@ -1,4 +1,4 @@
-id: TASK-409-phase3-workflow-model-lego
+id: TASK-WORKFLOW-MODEL-01
 agent: arena-worker
 lego: workflow
 module: workflow
@@ -21,8 +21,8 @@ allowed_paths:
   - README.md
   - package.json
   - .gitignore
-  - results/TASK-409-phase3-workflow-model-lego.md
-  - tasks/TASK-409-phase3-workflow-model-lego.yaml
+  - results/TASK-WORKFLOW-MODEL-01.md
+  - tasks/TASK-WORKFLOW-MODEL-01.yaml
 
 forbidden_paths:
   - reference/n8n/**
@@ -84,6 +84,8 @@ notes:
   - "Remaining frozen Workflow surface not yet reconstructed: getStartNode, getHighestNode, getNodeConnectionIndexes, getParentMainInputNode, getParentNodesByDepth."
 
 id_note: >
-  Numbered 409 after two collisions with concurrent peers on the same branch: 406 was taken by
-  TASK-406-phase3-trigger-lego, then 408 by TASK-408-phase3-scheduler-lego, both pushed while this
-  task was in flight. The numeric ID is kept unique so the task pool stays unambiguous.
+  Lane-scoped ID rather than a number: while this task was in flight, concurrent peers pushed
+  TASK-406-phase3-trigger-lego, TASK-407-phase3-webhook-lego, TASK-408-phase3-scheduler-lego and
+  TASK-409 (Node LEGO) to the same branch, so sequential numbers kept colliding. This follows the
+  existing lane-scoped convention (TASK-ENGINE-ACTIVATION-01, TASK-EXPRESSION-SANDBOX-01,
+  TASK-TRIGGER-DIFF-01).

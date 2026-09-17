@@ -41,8 +41,9 @@ gate('T03', 'trigger lifecycle conformance suite', () => {
   const output = run(process.execPath, ['--test', 'test/*.test.mjs'], pkg);
   const pass = /^# pass (\d+)$/m.exec(output)?.[1];
   const fail = /^# fail (\d+)$/m.exec(output)?.[1];
-  if (pass !== '9' || fail !== '0') throw new Error(`${pass} pass / ${fail} fail`);
-  return '9 pass / 0 fail';
+  // TASK-TRIGGER-DIFF-01: +2 regression tests (toCronExpression reference port)
+  if (pass !== '11' || fail !== '0') throw new Error(`${pass} pass / ${fail} fail`);
+  return '11 pass / 0 fail';
 });
 gate('T04', 'reference tree remains pinned', () => {
   const output = run(process.execPath, ['tools/workflow-reference-manifest.mjs', '--check']);

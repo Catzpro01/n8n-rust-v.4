@@ -90,7 +90,8 @@ asserts that confinement.
 | `TASK-ENGINE-ACTIVATION-01` | execution (activation lifecycle) | `contracts/execution.contract.md` ✅ | `docs/isolation/execution.md` ✅ | `packages/execution-engine/test/05-activation.test.mjs` 20/20 ✅ (ported from the two reference oracle suites) | `E10` ✅ | **IMPLEMENTED** |
 | `TASK-407-phase3-webhook-lego` | webhook | `contracts/webhook.contract.md` ✅ | `docs/isolation/webhook.md` ✅ | `packages/webhook-lego/test/routing.test.mjs` 10/10 ✅ | `tools/webhook-lego-gate.mjs` 5/5 ✅ | **IMPLEMENTED** |
 | `TASK-408-phase3-scheduler-lego` | scheduler | `contracts/scheduler.contract.md` ✅ | `docs/isolation/scheduler.md` ✅ | `packages/scheduler-lego/test/scheduler.test.mjs` 9/9 ✅ · Trigger regression 9/9 ✅ | `tools/scheduler-lego-gate.mjs` 6/6 ✅ | **IMPLEMENTED** |
-| `TASK-409-phase3-workflow-model-lego` | workflow (LEGO 01) | `contracts/workflow.contract.md` ✅ (§6 frozen surface) | `docs/isolation/workflow.md` ✅ | `packages/workflow-model-lego/test/conformance.test.mjs` 26/26 ✅ (fixtures `checksum` 8 + `toJSON` 6 + `rename` 6 + 3 negative controls) | `contract_conformance` 42/42 ✅ · `boundary_audit` PASS ✅ | **VERIFIED** |
+| `TASK-WORKFLOW-MODEL-01` | workflow (LEGO 01) | `contracts/workflow.contract.md` ✅ (§6 frozen surface) | `docs/isolation/workflow.md` ✅ | `packages/workflow-model-lego/test/conformance.test.mjs` 26/26 ✅ (fixtures `checksum` 8 + `toJSON` 6 + `rename` 6 + 3 negative controls) | `contract_conformance` 42/42 ✅ · `boundary_audit` PASS ✅ | **VERIFIED** |
+| `TASK-409-phase3-node-lego` | node (Node Model helpers) | `contracts/node.contract.md` §12 ✅ | `docs/isolation/node.md` §5 ✅ | `packages/node-lego/test/node-model.test.mjs` 45/45 ✅ | `tools/node-lego-gate.mjs` 7/7 ✅ (`N05` differential 234 agree / 0 diverge) | **SUBMITTED_FOR_REVIEW** |
 
 | Phase 3 gate | Result |
 | :--- | :--- |

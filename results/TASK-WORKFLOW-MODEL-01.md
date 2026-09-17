@@ -1,4 +1,4 @@
-# TASK RESULT: TASK-409-phase3-workflow-model-lego
+# TASK RESULT: TASK-WORKFLOW-MODEL-01
 
 - **STATUS**: `SUCCESS`
 - **AGENT**: `arena-worker`

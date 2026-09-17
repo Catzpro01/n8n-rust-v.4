@@ -1,0 +1,53 @@
+{
+  "generatedAt": "2026-09-17T17:37:21.732Z",
+  "task": "TASK-409-phase3-node-lego",
+  "reference": "n8n 2.9.4",
+  "totals": {
+    "passed": 7,
+    "gates": 7
+  },
+  "gates": [
+    {
+      "id": "N01",
+      "name": "zero runtime dependencies",
+      "status": "PASS",
+      "detail": "0 dependencies"
+    },
+    {
+      "id": "N02",
+      "name": "source boundary is import-closed",
+      "status": "PASS",
+      "detail": "10 source files, no cross-LEGO imports"
+    },
+    {
+      "id": "N03",
+      "name": "node-model conformance suite",
+      "status": "PASS",
+      "detail": "45 pass / 0 fail"
+    },
+    {
+      "id": "N04",
+      "name": "reference tree remains pinned",
+      "status": "PASS",
+      "detail": "Reference integrity check: PASS (15050 files, root f8da35180669d798…)"
+    },
+    {
+      "id": "N05",
+      "name": "differential vs the published reference build",
+      "status": "PASS",
+      "detail": "234 agree / 0 diverge across 234 comparisons (2 NOT-DIFFABLE, 0 harness errors)"
+    },
+    {
+      "id": "N06",
+      "name": "formal contract + isolation doc present",
+      "status": "PASS",
+      "detail": "contract §12 + docs/isolation/node.md §5"
+    },
+    {
+      "id": "N07",
+      "name": "every exported symbol is documented in the contract",
+      "status": "PASS",
+      "detail": "54 exported symbols documented"
+    }
+  ]
+}

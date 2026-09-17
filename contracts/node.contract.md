@@ -209,3 +209,67 @@ The role-granted read scope `src/run-execution-data/**` is used read-only; its r
 types (`IRun`, `IRunData`, …) remain owned by Execution and are deliberately not re-exported
 by the `node-model` barrel. The item-level contract (`INodeExecutionData[]` =
 `[{ json, binary, pairedItem?, ... }]`) *is* owned here (barrel group 7) per responsibility #4.
+
+---
+
+## 12. Phase-3 reconstruction (`packages/node-lego`, TASK-409)
+
+The Phase-2 contract above describes the Node Model *as data/type contracts*. Phase 3 adds a
+runnable, dependency-free JavaScript reconstruction of the **pure-function surface** of that
+model — the part the Workflow Model and the Execution LEGO import at runtime.
+
+### 12.1 Module map (all paths under `packages/node-lego/src/`)
+
+| Module | Reconstructs (pinned source) | Reference oracle |
+|---|---|---|
+| `connection-io.mjs` | `node-helpers.ts` `getConnectionTypes` L1104, `getNodeInputs` L1117, `getNodeOutputs` L1140, `isSubNodeType` L247, `isTriggerNode` L1671, `isExecutable` L1675, `nodeAcceptsInputType` L1921, `nodeHasOutputType` L1949 | `test/node-helpers.test.ts` |
+| `conditions.mjs` | `checkConditions` L330, `evaluateFeature` L265, `getNodeFeatures` L275 | `test/node-helpers.conditions.test.ts` |
+| `display.mjs` | `getPropertyValues` L290, `displayParameter` L403, `displayParameterPath` L469 | `test/node-helpers.conditions.test.ts` |
+| `node-validation.mjs` | `node-validation.ts` whole file (88 ln): `validateNodeCredentials` L24, `isNodeConnected` L67, `isTriggerLikeNode` L92 | `test/node-validation.test.ts` (18 cases) |
+| `parameter-utils.mjs` | `node-parameters/path-utils.ts` (`resolveRelativePath`), `rename-node-utils.ts` (`renameFormFields`), `node-parameter-value-type-guard.ts` (all guards), `type-guards.ts` L15/L60/L93 guards, `node-helpers.ts` `getParameterValueByPath` L1369 | `test/node-parameters/*.test.ts`, `test/rename-node-utils.test.ts` |
+| `parameter-type-validation.mjs` | `node-parameters/parameter-type-validation.ts` (272 ln) incl. `validateNodeParameters` | `test/node-parameters/parameter-type-validation.test.ts` (806 ln) |
+| `properties.mjs` | `node-helpers.ts` `mergeNodeProperties` L1641, `getVersionedNodeType` L1661, `isNodeWithWorkflowSelector` L1688, `resolveResourceAndOperation` L1692, `makeDescription` L1741, `isToolType`/`isHitlToolType`/`isTool` L1761-1814, `makeNodeName` L1816, `isDefaultNodeName` L1849, `getUpdatedToolDescription` L1864, `getToolDescriptionForNode` L1890, `getSubworkflowId` L1908; `type-guards.ts` L21-39 property guards | `test/node-helpers.test.ts` |
+| `errors.mjs` | `errors/node-operation.error.ts` + `errors/abstract/{node,execution-base}.error.ts` — **validation boundary only** | `tools/node-lego-differential.mjs` N09/N10 |
+| `lodash-lite.mjs` | the `lodash/{get,isEqual,cloneDeep}` subset the Node Model exercises | `node-model.test.mjs` |
+
+### 12.2 Explicit deltas (everything not 1:1)
+
+1. **`lodash` → `lodash-lite.mjs`.** DELTA-01. The reference imports `lodash/get`,
+   `lodash/isEqual`, `lodash/cloneDeep`; a LEGO must stay dependency-free (gate `N01`).
+   The subset is reimplemented and pinned by tests (`get`/`toPath` path grammar,
+   `isEqual` value semantics incl. `Date`, `cloneDeep` shape preservation).
+2. **Error class is a boundary-local reconstruction.** DELTA-02. `NodeOperationError`
+   keeps the reference `name`, `message`, `level`, `node`, `context`, `messages`,
+   `timestamp` — verified field-by-field (`N09/N10`) — but the *hierarchy*
+   (`ExecutionBaseError`/`NodeError`/`ApplicationError`) stays outside this LEGO.
+   Consolidation with `packages/execution-engine/src/errors.mjs` is ISSUE-024.
+3. **Not reconstructed (out of Node Model scope, listed so absence is explicit):**
+   `getNodeParameters`/`getNodeParametersIssues`/`getParameterIssues` (parameter ISSUES
+   engine), `getContext`, `getNodeWebhookPath`/`Url`, `cronNodeOptions`,
+   `getUpdatedToolDescription` callers, `filter-parameter.ts` (owned by the expressions
+   track), `node-reference-parser-utils.ts`, workflow validation. `renameFormFields` is
+   reconstructed though not re-exported by the published build (internal call site only).
+
+### 12.3 Acceptance evidence
+
+* `tools/node-lego-gate.mjs` — gates `N01`…`N06` (`docs/isolation/evidence/node-lego-gate.json`).
+* `tools/node-lego-differential.mjs` — 234 comparisons against the published
+  `n8n-workflow@2.9.1` build (the version the pinned reference commit ships):
+  **234 agree / 0 diverge**, 2 NOT-DIFFABLE (`renameFormFields`, private `getPropertyValues`).
+  Falsifiability: each injected behavioral mutation (empty-array rule, expression
+  short-circuit) produced a `DIVERGE`, so the harness is not vacuous.
+* `packages/node-lego/test/node-model.test.mjs` — 45 cases, oracle-cited.
+
+### 12.4 Exported symbol list (54 — gate `N07` asserts every one is named here)
+
+| | | | | | |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `NodeConnectionTypes` | `NodeOperationError` | `assertIsValidNodeParameterValueType` | `assertParamIsArray` | `assertParamIsBoolean` | `assertParamIsNumber` |
+| `assertParamIsOfAnyTypes` | `assertParamIsString` | `checkConditions` | `cloneDeep` | `displayParameter` | `displayParameterPath` |
+| `get` | `getConnectionTypes` | `getNodeFeatures` | `getNodeInputs` | `getNodeOutputs` | `getParameterValueByPath` |
+| `getPropertyValues` | `getSubworkflowId` | `getToolDescriptionForNode` | `getUpdatedToolDescription` | `getVersionedNodeType` | `isAssignmentCollectionValue` |
+| `isDefaultNodeName` | `isEqual` | `isExecutable` | `isFilterValue` | `isHitlToolType` | `isINodeProperties` |
+| `isINodePropertyOptions` | `isINodePropertyOptionsList` | `isNodeConnected` | `isNodeParameterValue` | `isNodeParameters` | `isNodeWithWorkflowSelector` |
+| `isResourceLocatorValue` | `isResourceMapperValue` | `isSubNodeType` | `isTool` | `isToolType` | `isTriggerLikeNode` |
+| `isTriggerNode` | `isValidNodeParameterValueType` | `makeDescription` | `makeNodeName` | `mergeNodeProperties` | `nodeAcceptsInputType` |
+| `nodeHasOutputType` | `renameFormFields` | `resolveRelativePath` | `toPath` | `validateNodeCredentials` | `validateNodeParameters` |

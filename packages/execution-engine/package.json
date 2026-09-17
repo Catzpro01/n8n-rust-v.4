@@ -10,7 +10,7 @@
 		".": "./src/index.mjs"
 	},
 	"scripts": {
-		"test": "node --test test/",
+		"test": "node --test \"test/*.test.mjs\"",
 		"test:loop": "node --test test/01-execution-loop.test.mjs",
 		"test:context": "node --test test/02-node-context-data-proxy.test.mjs",
 		"test:errors": "node --test test/03-error-retry.test.mjs",

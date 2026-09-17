@@ -112,6 +112,40 @@ test('rejects sub-minute polling and removes poll-only workflow registration', a
   assert.equal(active.isActive('wf'), false);
 });
 
+// TASK-TRIGGER-DIFF-01 / ISSUE-023: the cron-expression surface now lives in
+// packages/scheduler-lego/src/cron.mjs (post-consolidation home of the trigger-lego
+// defaultToCronExpression port) and is a 1:1 port of reference cron.ts toCronExpression
+// L52-72 — everyX/everyWeek/everyMonth, custom-expression trim, randomized second
+// (injected here for determinism).
+test('toCronExpression follows reference cron.ts L52-72 (everyX, trim, random second)', async () => {
+  const { toCronExpression: defaultToCronExpression } = await import('../../scheduler-lego/src/cron.mjs');
+  const fixed = () => 42;
+  assert.equal(defaultToCronExpression({ mode: 'everyMinute' }, fixed), '42 * * * * *');
+  assert.equal(defaultToCronExpression({ mode: 'everyHour', minute: 5 }, fixed), '42 5 * * * *');
+  assert.equal(defaultToCronExpression({ mode: 'everyX', unit: 'minutes', value: 7 }, fixed), '42 */7 * * * *');
+  assert.equal(defaultToCronExpression({ mode: 'everyX', unit: 'hours', value: 3 }, fixed), '42 42 */3 * * *');
+  assert.equal(defaultToCronExpression({ mode: 'everyDay', minute: 30, hour: 9 }, fixed), '42 30 9 * * *');
+  assert.equal(defaultToCronExpression({ mode: 'everyWeek', minute: 0, hour: 12, weekday: 1 }, fixed), '42 0 12 * * 1');
+  assert.equal(defaultToCronExpression({ mode: 'everyMonth', minute: 15, hour: 6, dayOfMonth: 3 }, fixed), '42 15 6 3 * *');
+  assert.equal(defaultToCronExpression({ mode: 'custom', cronExpression: '  0 5 * * * *  ' }, fixed), '0 5 * * * *');
+  // default random: second (first cron field) is any integer in 0..59
+  const [second] = defaultToCronExpression({ mode: 'everyMinute' }).split(' ');
+  assert.ok(Number.isInteger(Number(second)) && Number(second) >= 0 && Number(second) <= 59);
+});
+
+// The activation loop must pass only the item (not Array#map's index) to the mapper.
+test('poll activation registers reference-shaped expressions for everyX mode', async () => {
+  const node = { id: 'p', name: 'Poll', type: 'poll' };
+  const wf = workflow({ polls: [node], types: { poll: { async poll() { return null; } } } });
+  const scheduled = new ScheduledTaskManager();
+  const active = new ActiveWorkflows({ scheduledTaskManager: scheduled });
+  await active.add('wf', wf, {}, 'trigger', 'activate', triggerFunctions(), pollFunctions({ item: [{ mode: 'everyX', unit: 'minutes', value: 7 }] }));
+  const entries = [...scheduled.cronsByWorkflow.get('wf').values()];
+  assert.equal(entries.length, 1);
+  assert.match(entries[0].context.expression, /^\d+ \*\/7 \* \* \* \*$/);
+  await active.remove('wf');
+});
+
 test('scheduled ticks run only while the host is leader and duplicates are ignored', async () => {
   let leader = false;
   let tick;

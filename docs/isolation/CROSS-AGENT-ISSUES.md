@@ -1348,3 +1348,99 @@ onto `trigger-lego` must absorb: the four missing trigger-time modes, randomised
 
 **Status:** OPEN (unchanged ownership question) — now with a reproducible instrument:
 `node tools/activation-differential.mjs`.
+
+---
+
+**ADDENDUM (TASK-TRIGGER-DIFF-01, `arena/01a0aff8-n8n-rust-v-4`, 2026-09-18) — D1/D6 fixed failing-first; independent harness converges on the same root cause.**
+
+Built a second, independent differential harness (`node tools/activation-differential.mjs`, 12 scenarios /
+43 comparisons, informational exit-0-with-findings like the engine differential) that runs both
+implementations over identical fixtures: lifecycle S1, cron registration S2, activation error S3, poll
+rollback S4, duplicate cron S5, too-short interval S6, closeTrigger taxonomy S7, `everyX` mode S8,
+custom-expression trim S9, disabled nodes S10, `removeAll` S11, multi-node S12.
+
+**Result after the fix: `43 agree / 0 diverge / 0 harness errors`.** Falsifiability control: reverting the
+trigger-lego fix (`git stash`) reproduces exactly **5 DIVERGE / 38 agree** (S8: `everyX` minutes — T threw
+`Unsupported poll mode: everyX` while E registered `R */7 * * * *` per cron.ts L57-59; S9: custom
+`cronExpression` stored untrimmed vs `cron.ts` L72 `.trim()`), i.e. the harness detects the class of bug
+the peer addendum's D1/D6 recorded.
+
+**Fix applied (failing-first, trigger-lego side):**
+1. `packages/trigger-lego/src/active-workflows.mjs` — `defaultToCronExpression` replaced with a 1:1 port of
+   reference `toCronExpression` (cron.ts L52-72): randomized second (injectable `randomInt`, default
+   `Math.random`), `everyX` minutes/hours, `everyWeek`, `everyMonth`, `cronExpression.trim()` fallback; the
+   `UserError('Unsupported poll mode: …')` throw removed (the reference has none). Now exported from
+   `src/index.mjs` (parity with execution-engine's `toCronExpression` export). Call site fixed from
+   `.map(this.toCronExpression)` to `.map((item) => this.toCronExpression(item))` — `Array#map` was leaking
+   the index into the injected-random second parameter.
+2. Regression tests: trigger-lego 9/9 → **11/11** (cron.ts table + everyX activation shape); gate T03
+   expectation updated 9→11 (`tools/trigger-lego-gate.mjs`, 5/5 PASS).
+3. `packages/execution-engine/package.json` — `test` script `node --test test/` → `node --test "test/*.test.mjs"`
+   (the bare-directory form fails with MODULE_NOT_FOUND on Node v22.22.3 in this sandbox even from the package
+   cwd; the glob form runs the identical 60/60; same class of env fix as ISSUE-022).
+
+**Post-fix full matrix (this branch):** trigger-lego 11/11 · execution-engine 60/60 · expression-lego 46/46 ·
+connection-lego 52/52 · reconstructed-engine via `verify:all` exit 0 · execution gate 10/10 · trigger gate 5/5 ·
+engine differential 84/0 · activation differential 43/0 · conformance 42/42 · boundary PASS.
+
+**Remaining (out of harness scope, for the consolidation decision):** the class-name-only divergences (peer D2/D4 —
+`TriggerLifecycleError` vs `ApplicationError`/`AssertionError`) and the by-design hooks/context presence (D7) are
+unchanged; the harness compares behavior, not transport/class identity, and treats per-package error taxonomy as a
+documented boundary. **Status: OPEN (ownership unchanged) — behavioral divergence evidence now at zero on the
+shared surface; both instruments remain reproducible.**
+
+**ADDENDUM 2 (TASK-TRIGGER-DIFF-01 merge pass, same day) — consolidation wave landed concurrently: `packages/scheduler-lego` (TASK-408) is now the canonical cron-expression/registry home.**
+
+Merging the peer's `9743f210` (scheduler) + `28fb50ef` (webhook) onto this branch revealed that the
+consolidation ISSUE-023 asked for partially happened in parallel: `packages/scheduler-lego/src/cron.mjs`
+now carries a `toCronExpression` that is semantically identical to the 1:1 port described above
+(random second via injectable `randomInt`, everyX/everyWeek/everyMonth, `.trim()` fallback), plus a
+reference-faithful `toCronKey` (scheduled-task-manager.ts L139-161) and a `ScheduledTaskManager`
+(summaries, duplicate guard via errorReporter **and** `onDuplicate`, isLeader-guarded ticks).
+`packages/trigger-lego/src/scheduled-task-manager.mjs` is now a compatibility re-export seam of
+scheduler-lego, and `trigger-lego/src/active-workflows.mjs` imports `toCronExpression` from
+scheduler-lego (its call site already binds per-item, matching my fix). Resolution taken on this branch:
+
+- conflict in `trigger-lego/src/active-workflows.mjs` resolved in favor of the scheduler-lego consolidation;
+- the 2 regression tests added by TASK-TRIGGER-DIFF-01 were **retargeted** at
+  `packages/scheduler-lego/src/cron.mjs` (the live implementation) — trigger-lego suite still **11/11**;
+- `trigger-lego/src/index.mjs` re-exports `toCronExpression` from scheduler-lego (API parity preserved);
+- peer gates updated for the legitimate suite growth: `tools/trigger-lego-gate.mjs` T03 9→11,
+  `tools/scheduler-lego-gate.mjs` S04 9→11.
+
+Post-merge matrix (this branch, after both fixes): trigger-lego **11/11** · scheduler-lego **9/9** ·
+webhook-lego **10/10** · execution-engine **60/60** · expression-lego 46/46 · connection-lego 52/52 ·
+activation differential **43/0** · engine differential **84/0** · `npm run verify:all` **real exit 0**
+(execution 10/10 · trigger 5/5 · webhook 5/5 · scheduler 6/6) · conformance 42/42 · boundary PASS.
+
+**Status: OPEN (ownership unchanged)** — the remaining open question is now three-way
+(`trigger-lego` vs `execution-engine` activation surface vs `scheduler-lego` registry home), with both
+differential instruments reproducible and the behavioral deltas at zero on every surface measured so far.
+
+---
+
+## ISSUE-024 — `NodeOperationError` now exists in two packages (OPEN, orchestrator decision)
+
+**Found by:** TASK-409 phase-3 differential (`tools/node-lego-differential.mjs`, N09/N10), 2026-09-18.
+**Status:** OPEN.
+
+`packages/node-lego/src/errors.mjs` reconstructs the validation-boundary subset of
+`NodeOperationError` (`name`, `message`, `level`, `node`, `context`, `messages`, `timestamp`,
+`description`, `functionality`, `type`) because `parameter-type-validation.ts` raises it and the
+package must stay dependency-free. `packages/execution-engine/src/errors.mjs` already carried a
+`NodeOperationError` (same reference file, wider surface incl. `NodeApiError`) before this task.
+
+Both are pinned against the reference: the differential compares `name`, `message`, `level`,
+`node` identity, `context`, `messages`, `code` and `timestamp` against the published
+`n8n-workflow@2.9.1` build and agrees. The duplication is still a consolidation candidate —
+same pattern as ISSUE-023, one layer down:
+
+* **Option A (recommended by this lane):** extract the error model into
+  `packages/errors-lego` (or accept `execution-engine`'s module as canonical) and have
+  `node-lego` import it, once cross-LEGO imports are allowed by the orchestrator. Nothing in
+  `packages/node-lego` depends on the *class identity* beyond `name`/`level`/`node`, so the swap
+  is mechanical.
+* **Option B:** keep the local class (dependency-free property preserved) and pin both against
+  the differential; the cost is a second definition that must be kept in sync.
+
+No file in another agent's path is modified here; the decision is left to the orchestrator.

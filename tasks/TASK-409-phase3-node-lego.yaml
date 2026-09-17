@@ -1,0 +1,141 @@
+id: TASK-409-phase3-node-lego
+agent: arena-worker
+lego: node
+module: node-model-helpers
+phase: 3
+title: "Node LEGO: Node Model pure-function surface — NodeHelpers (connection IO, display conditions, naming/tool helpers), node-validation.ts, node-parameters/* (ref: node-helpers.ts, node-validation.ts, path-utils.ts, rename-node-utils.ts, node-parameter-value-type-guard.ts, parameter-type-validation.ts)"
+status: SUBMITTED_FOR_REVIEW
+
+# Context: Phase 2 isolated the Node Model (`docs/isolation/node.md`, `contracts/node.contract.md`)
+# and proved the boundary — `packages/workflow-lego` *ports* it (`src/ports/node-model.ts`) and
+# `packages/execution-engine` consumes `nodeType.*` at run time — but no package RAN the model:
+# every Node-Model helper was still only reachable through the pinned reference tree. This task
+# makes that surface executable as a dependency-free JavaScript LEGO and diffs it against the
+# published reference build, so the Workflow/Execution LEGOs have a concrete provider to wire.
+#
+# Reference (read-only, line-cited in the module docblocks):
+# - reference/n8n/packages/workflow/src/node-helpers.ts (1966 ln)
+# - reference/n8n/packages/workflow/src/node-validation.ts (88 ln)
+# - reference/n8n/packages/workflow/src/node-parameters/{path-utils.ts 24 ln, rename-node-utils.ts 29 ln,
+#   node-parameter-value-type-guard.ts 127 ln, parameter-type-validation.ts 272 ln}
+# - reference/n8n/packages/workflow/src/type-guards.ts (guards composed by the value guard)
+# - reference/n8n/packages/workflow/src/errors/{node-operation.error.ts, abstract/node.error.ts,
+#   abstract/execution-base.error.ts}
+# - Oracle tests: test/node-helpers.test.ts (6528 ln), test/node-helpers.conditions.test.ts (2208 ln),
+#   test/node-validation.test.ts (371 ln), test/node-parameters/*.test.ts (1016 ln),
+#   test/rename-node-utils.test.ts
+# - Differential target: published `n8n-workflow@2.9.1` build (declared devDependency of
+#   `packages/workflow-lego`) — the version the pinned reference commit ships.
+
+allowed_paths:
+  - tasks/TASK-409-phase3-node-lego.yaml
+  - results/TASK-409-phase3-node-lego.md
+  - packages/node-lego/**
+  - tools/node-lego-gate.mjs
+  - tools/node-lego-differential.mjs
+  - contracts/node.contract.md
+  - docs/isolation/node.md
+  - docs/isolation/evidence/node-lego-gate.json
+  - docs/isolation/LEGO-MASTER-MAP.md
+  - docs/isolation/CROSS-AGENT-ISSUES.md
+  - README.md
+  - package.json
+
+forbidden_paths:
+  - reference/n8n/**
+  - crates/**
+  - apps/**
+  - packages/frontend/**
+  - packages/trigger-lego/**
+  - packages/webhook-lego/**
+  - packages/connection-lego/**
+  - packages/expression-lego/**
+  - packages/reconstructed-engine/**
+  - packages/execution-engine/**
+
+requires:
+  - reference/n8n/packages/workflow/src/node-helpers.ts
+  - reference/n8n/packages/workflow/src/node-validation.ts
+  - reference/n8n/packages/workflow/src/node-parameters/parameter-type-validation.ts
+  - contracts/node.contract.md
+  - docs/isolation/node.md
+
+source_modification: read-only-reference   # no file under reference/n8n/** is touched
+
+operations:
+  - name: read_reference
+    args: { path: reference/n8n/packages/workflow/src/node-helpers.ts, lines: "247-505, 1057-1200, 1369-1375, 1641-1966" }
+  - name: read_reference
+    args: { path: reference/n8n/packages/workflow/src/node-validation.ts }
+  - name: read_reference
+    args: { path: reference/n8n/packages/workflow/src/node-parameters/parameter-type-validation.ts }
+  - name: write_file
+    args: { path: packages/node-lego/src/lodash-lite.mjs }
+  - name: write_file
+    args: { path: packages/node-lego/src/errors.mjs }
+  - name: write_file
+    args: { path: packages/node-lego/src/connection-io.mjs }
+  - name: write_file
+    args: { path: packages/node-lego/src/conditions.mjs }
+  - name: write_file
+    args: { path: packages/node-lego/src/display.mjs }
+  - name: write_file
+    args: { path: packages/node-lego/src/node-validation.mjs }
+  - name: write_file
+    args: { path: packages/node-lego/src/parameter-utils.mjs }
+  - name: write_file
+    args: { path: packages/node-lego/src/parameter-type-validation.mjs }
+  - name: write_file
+    args: { path: packages/node-lego/src/properties.mjs }
+  - name: write_file
+    args: { path: packages/node-lego/src/index.mjs }
+  - name: write_file
+    args: { path: packages/node-lego/test/node-model.test.mjs }
+  - name: write_file
+    args: { path: tools/node-lego-differential.mjs }
+  - name: write_file
+    args: { path: tools/node-lego-gate.mjs }
+  - name: edit_file
+    args: { path: contracts/node.contract.md }
+  - name: edit_file
+    args: { path: docs/isolation/node.md }
+  - name: run_shell
+    args: { cmd: "npm install  # packages/workflow-lego, brings the pinned n8n-workflow@2.9.1 differential target", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "node --test packages/node-lego/test/*.test.mjs", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "node tools/node-lego-differential.mjs", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "node tools/node-lego-gate.mjs", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "npm run verify:all", expect_exit: 0 }
+  - name: write_file
+    args: { path: results/TASK-409-phase3-node-lego.md }
+
+acceptance:
+  - `getConnectionTypes` / `getNodeInputs` / `getNodeOutputs` / `isSubNodeType` / `isTriggerNode` /
+    `isExecutable` / `nodeAcceptsInputType` / `nodeHasOutputType` reproduce the pinned lines,
+    including the `continueErrorOutput` error-output append, the "Success" relabel of a single
+    output, the deep-copied outputs (node type data never mutated) and the post-map filter
+    quirk that makes a literal `undefined` entry throw
+  - `checkConditions` / `getNodeFeatures` reproduce every `_cnd` operator, the empty-actual-values
+    rule (`not` true, everything else false), value-based object equality and `@version` features
+  - `displayParameter` / `displayParameterPath` reproduce show=all-rules / hide=any-rule,
+    the expression short-circuit, `/`-root and `@version`/`@tool`/`@feature` resolution,
+    `__rl` unwrapping and the `parameters`-root path rule
+  - `validateNodeCredentials` / `isNodeConnected` / `isTriggerLikeNode` reproduce all 18 cases of
+    `test/node-validation.test.ts`
+  - `validateNodeParameters` and the `assertParamIs*` helpers reproduce every message, the
+    aggregate "does not match any of the expected types" surface, sparse-array rejection via the
+    index loop, `level: 'info'` and the thrown class identity (`NodeOperationError`)
+  - `resolveRelativePath` reproduces all 8 oracle rows; `getParameterValueByPath`,
+    `renameFormFields`, the value guards and every path helper of `properties.mjs`
+    (merge/versioning/naming/descriptions/tool detection/subworkflow id) reproduce the pinned lines
+  - differential vs the published `n8n-workflow@2.9.1` build: **0 divergences** across ≥200
+    comparisons, with NOT-DIFFABLE surfaces listed explicitly and a falsifiability check
+  - gate `N01`…`N07` PASS (`docs/isolation/evidence/node-lego-gate.json`); `verify:all` exit 0
+  - no file under reference/, crates/, apps/, frontend or the peer packages is touched
+
+merge_condition:
+  - regression_gate_pass
+  - no_contract_violation

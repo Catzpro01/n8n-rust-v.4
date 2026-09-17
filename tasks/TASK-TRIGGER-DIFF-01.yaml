@@ -1,0 +1,57 @@
+id: TASK-TRIGGER-DIFF-01
+agent: arena/01a0aff8-n8n-rust-v-4
+lego: integration
+module: activation-differential
+phase: 3
+title: "Activation-lifecycle differential: trigger-lego vs execution-engine (ISSUE-023 evidence)"
+status: SUBMITTED_FOR_REVIEW
+
+# Context: ISSUE-023 records that two activation-lifecycle reconstructions landed
+# concurrently (packages/trigger-lego from TASK-406, packages/execution-engine
+# activation surface from TASK-ENGINE-ACTIVATION-01) and prescribes the cheap way
+# to decide: "run both implementations over identical scenarios; any divergence
+# found is a bug in one of them and should be fixed failing-first." This task
+# executes exactly that, with the same informational-harness conventions as
+# TASK-ENGINE-DIFF-01/02 (exit 0 with findings; exit 1 only if the harness broke).
+#
+# Oracle: reference/n8n/packages/core/src/execution-engine/active-workflows.ts,
+# scheduled-task-manager.ts (L52-161), reference/n8n/packages/workflow/src/cron.ts
+# (toCronExpression L52-72), workflow.ts queryNodes L272-293 (disabled skip).
+# Injected transports (logger/errorReporter/onDuplicate/timer) are compared as
+# signal-presence, not transport shape — the reference's exact transports depend
+# on instanceSettings, which both dependency-free packages legitimately abstract
+# (documented boundary in execution-engine/src/active-workflows.mjs header).
+
+allowed_paths:
+  - tasks/TASK-TRIGGER-DIFF-01.yaml
+  - tools/activation-differential.mjs      # new informational harness (NOT a gate)
+  - packages/trigger-lego/src/**           # failing-first fixes go here if A deviates
+  - packages/execution-engine/src/**       # failing-first fixes go here if B deviates
+  - results/TASK-TRIGGER-DIFF-01.md
+  - docs/isolation/CROSS-AGENT-ISSUES.md   # append-only ISSUE-023 addendum
+
+forbidden_paths:
+  - reference/n8n/**
+  - crates/**
+  - apps/**
+  - packages/frontend/**
+  - contracts/**
+
+requires:
+  - docs/isolation/CROSS-AGENT-ISSUES.md (ISSUE-023)
+  - contracts/trigger.contract.md
+  - contracts/execution.contract.md
+
+operations:
+  - name: read_reference_activation_surface
+  - name: build_identical_scenario_harness
+  - name: run_and_triage_divergences
+  - name: fix_failing_first
+  - name: rerun_all_suites_and_gates
+  - name: write_result_and_issue_addendum
+
+acceptance:
+  - harness runs both implementations over identical scenarios, informational exit code
+  - every found divergence fixed failing-first with a reference line citation
+  - trigger-lego 9/9 (or updated), execution-engine 60/60, trigger gate 5/5, execution gate 10/10
+  - npm run verify:all exit 0 · conformance 42/42 · boundary PASS
