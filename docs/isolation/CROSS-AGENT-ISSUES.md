@@ -1648,3 +1648,19 @@ instead of silently reusing stale vendors, and a clone-tag guard that re-clones 
 checkouts sitting on the wrong tag (it caught a real one on first run: cached
 aho-corasick 1.1.5 vs wanted 1.1.3). ISSUE-025 stays REPAIRED per the addendum above;
 evidence: `results/TASK-RIG-VENDOR-01.md`.
+
+---
+
+**ADDENDUM (TASK-CGRAPH-01, `arena/01a0aff8-n8n-rust-v-4`, 2026-09-18) — the 05-cyclic-invalid golden is landed, observed, and executable; R5 composition gap found on the TS side.**
+
+`tests/reference/05-cyclic-invalid/` now carries `case.json` + OBSERVED `expected.json`
+(`tests/reference/harness/cyclic-graph.js`; UPDATE=1/verify modes) and an additive consumer test in
+`packages/connection-lego/test/cyclic-golden.test.mjs` (suite 52 → **58/58**). Golden sections:
+C-01 **reference runtime constructs the cycle and resolves no start node** (triggerless cycle →
+`getStartNode()` = null; destination shortcut `getStartNode("B")` = "A") — a port rejecting cycles
+at construction/traversal DIVERGES; C-02 Connection LEGO traversal is cycle-safe (visited-sets);
+C-03 the **additive** `detectCycles` flags `Cycle detected: A → B → C → A` while the acyclic twin
+stays clean — this is the R5/R6 oracle for the Rust `detect_cycles`. **Finding:** `validateWorkflow`
+(`workflow-rules.ts:168`) does not compose its own `detectCycles` — a cyclic workflow passes as
+`valid: true` (observed, pinned by test N2). Both golden-absent audit rows (04, 05) are now closed
+(04 via TASK-DGRAPH-01, 05 via this task).

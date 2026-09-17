@@ -1,0 +1,139 @@
+{
+  "family": "cyclic-graph",
+  "fixture": "tests/reference/05-cyclic-invalid/workflow.json",
+  "description": "Cycle-graph probes for n8n-workflow 2.9.1: the reference runtime has NO cycle validation (grep: 'cyclic' absent from reference/n8n packages/workflow/src and packages/core/src), so C-01/C-02 record that a cyclic workflow CONSTRUCTS and TRAVERSES fine; C-03 records the ADDITIVE validation LEGO (agent-4 workflow-rules.ts, ISSUE-003 Option A NEW CAPABILITY) flagging CYCLE_DETECTED. Sections are labelled; do not read C-03 as reference behaviour.",
+  "scopeWarning": "The reference n8n 2.9.4 accepts cyclic workflows at construction and traversal. A port that rejects a cycle at construction or in plain traversal DIVERGES from the reference. Cycle detection exists only in the additive validator (and the Rust port's detect_cycles, which must match workflow-rules.ts, not the runtime).",
+  "probes": {
+    "C-01_runtime_constructs_cycle_no_start_node": {
+      "section": "reference behaviour",
+      "reference": "workflow.ts constructor (no cycle validation); getStartNode :867-883 (no STARTING_NODE_TYPES node, no trigger/poll node types)",
+      "fixtureNodes": true,
+      "edges": [
+        [
+          "A",
+          "B"
+        ],
+        [
+          "B",
+          "C"
+        ],
+        [
+          "C",
+          "A"
+        ]
+      ],
+      "calls": [
+        {
+          "method": "construct"
+        },
+        {
+          "method": "getStartNode"
+        },
+        {
+          "method": "getStartNode",
+          "args": [
+            "B"
+          ]
+        }
+      ]
+    },
+    "C-02_traversal_is_cycle_safe": {
+      "section": "reference behaviour (Connection LEGO 1:1 port of common/*.ts + graph-utils.ts)",
+      "reference": "get-child-nodes.ts / get-connected-nodes.ts (visited-set cycle safety)",
+      "nodes": [
+        {
+          "name": "A",
+          "type": "n8n-nodes-base.noOp",
+          "typeVersion": 1
+        },
+        {
+          "name": "B",
+          "type": "n8n-nodes-base.noOp",
+          "typeVersion": 1
+        },
+        {
+          "name": "C",
+          "type": "n8n-nodes-base.noOp",
+          "typeVersion": 1
+        }
+      ],
+      "edges": [
+        [
+          "A",
+          "B"
+        ],
+        [
+          "B",
+          "C"
+        ],
+        [
+          "C",
+          "A"
+        ]
+      ],
+      "graphCalls": [
+        {
+          "method": "getChildNodes",
+          "args": [
+            "A"
+          ]
+        },
+        {
+          "method": "getChildNodes",
+          "args": [
+            "B"
+          ]
+        },
+        {
+          "method": "getParentNodes",
+          "args": [
+            "A"
+          ]
+        }
+      ]
+    },
+    "C-03_additive_validator_flags_cycle": {
+      "section": "NEW CAPABILITY — additive validator (agent-4 workflow-rules.ts), NOT reference behaviour",
+      "reference": "tests/reference/agent-4/validation/workflow-rules.ts detectCycles (ISSUE-003 Option A); Rust oracle: crates/n8n-validation detect_cycles lib.rs:48. FINDING (this task): validateWorkflow composes only checkNodeUniqueness + checkDanglingConnections (workflow-rules.ts :168) — its own detectCycles is never called, so validateWorkflow reports a 3-cycle workflow as valid:true. Probes target the composable directly.",
+      "fixtureNodes": true,
+      "edges": [
+        [
+          "A",
+          "B"
+        ],
+        [
+          "B",
+          "C"
+        ],
+        [
+          "C",
+          "A"
+        ]
+      ],
+      "validateCalls": [
+        {
+          "function": "detectCycles",
+          "input": "fixture"
+        },
+        {
+          "function": "detectCycles",
+          "input": "acyclic-twin"
+        },
+        {
+          "function": "validateWorkflow",
+          "input": "fixture"
+        }
+      ],
+      "acyclicTwinEdges": [
+        [
+          "A",
+          "B"
+        ],
+        [
+          "B",
+          "C"
+        ]
+      ]
+    }
+  }
+}
