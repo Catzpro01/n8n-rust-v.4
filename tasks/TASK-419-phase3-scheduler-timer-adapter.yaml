@@ -1,0 +1,24 @@
+id: TASK-419-phase3-scheduler-timer-adapter
+agent: arena-worker
+lego: scheduler
+module: native-cron-timer-adapter
+phase: 3
+title: "Scheduler LEGO: native cron timer adapter"
+status: SUBMITTED_FOR_REVIEW
+objective: "Close the injected-only createJob boundary so ScheduledTaskManager can drive real Node timers without a cron dependency."
+acceptance:
+  - "zero runtime dependencies"
+  - "five/six field cron parsing with steps, lists, ranges, aliases, and synchronous validation"
+  - "timezone-aware matching and standard day-field semantics"
+  - "leader gating remains owned by ScheduledTaskManager"
+  - "duplicate absolute-second suppression and deterministic clock/timer injection"
+  - "scheduler suite 16/16 and scheduler gate 6/6"
+allowed_paths:
+  - packages/scheduler-lego/**
+  - tools/scheduler-lego-gate.mjs
+  - contracts/scheduler.contract.md
+  - docs/isolation/LEGO-MASTER-MAP.md
+  - docs/isolation/evidence/scheduler-lego-gate.json
+  - tasks/TASK-419-phase3-scheduler-timer-adapter.yaml
+  - results/TASK-419-phase3-scheduler-timer-adapter.md
+forbidden_paths: [reference/n8n/**, crates/**, apps/**]
