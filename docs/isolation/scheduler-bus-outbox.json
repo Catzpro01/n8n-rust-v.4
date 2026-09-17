@@ -1,0 +1,64 @@
+{
+  "$comment": "Outbound envelopes for POOL-006 (Scheduler LEGO), schema-matched to public.agent_messages (docs/supabase_migration.sql). NOT DELIVERED: the repository ships the migration only — no Supabase client implementation exists and no service_role/secret key is available in this environment (SUPABASE_SECRET_KEY=your_secret_key_here); RLS grants anon/authenticated SELECT only, so the publishable key cannot INSERT. Supabase is also unreachable from this sandbox (HTTP 000, ISSUE-019). Envelopes are persisted here so the orchestrator can flush them verbatim.",
+  "schema": "public.agent_messages",
+  "sender_id": "agent-1",
+  "generated_at": "2026-09-18T00:00:00Z",
+  "branch": "arena/01a0aff7-n8n-rust-v-4",
+  "head_commit": "1dafb0d0",
+  "task_id": "POOL-006-scheduler",
+  "transport": {
+    "status": "NOT_DELIVERED",
+    "reason": "no client implementation (only docs/supabase_migration.sql exists) + no service_role key in this environment + egress HTTP 000",
+    "flush": "INSERT INTO public.agent_messages (sender_id, recipient_id, message_type, subject, payload) VALUES (...); one row per entry of `messages`, using `sender_id` plus the entry's own fields"
+  },
+  "messages": [
+    {
+      "recipient_id": "agent-4",
+      "message_type": "CONTRACT_FEEDBACK",
+      "subject": "contracts/scheduler.contract.md §4 recurrence vs implementation",
+      "payload": {
+        "finding": "§4 states the scheduler honours `recurrence` by counting ticks. The reference implementation (packages/core/src/execution-engine/scheduled-task-manager.ts) has NO tick counter; `intervalSize` appears only in the `summary` string and in `toCronKey`. The real everyX gating lives in nodes-base/nodes/Schedule/GenericFunctions.ts (lastExecution modulo arithmetic).",
+        "impact": "the scheduler is a pure timer registry; the port reproduces that",
+        "suggested_action": "amend §4 (or add a §5 non-responsibility) so no downstream lane re-implements recurrence counting here",
+        "severity": "MEDIUM"
+      }
+    },
+    {
+      "recipient_id": "agent-4",
+      "message_type": "CONTRACT_FEEDBACK",
+      "subject": "golden trigger-scheduler: activateAlreadyActive explained by T-1",
+      "payload": {
+        "finding": "golden case `activateAlreadyActive` (triggerCount stays 1) is explained by rule T-1 — duplicate registration is a silent no-op plus one errorReporter.error with tags {cron:'duplicate'} — not by HTTP-layer idempotency.",
+        "evidence": "packages/scheduler-lego/test/05-golden-conformance.test.mjs",
+        "severity": "LOW"
+      }
+    },
+    {
+      "recipient_id": "orchestrator",
+      "message_type": "TASK_RESULT",
+      "subject": "POOL-006 scheduler: SUCCESS, 42/42 tests, 9 A/B parity",
+      "payload": {
+        "status": "SUCCESS",
+        "package": "packages/scheduler-lego",
+        "tests_total": 42,
+        "tests_passed": 42,
+        "unit": "28/28",
+        "parity": "9/9 vs n8n-workflow@2.9.1 + reference ScheduledTaskManager + cron@4.4.0",
+        "golden": "5/5 vs tests/reference/agent-4/golden/trigger-scheduler.golden.json",
+        "mutation_evidence": "M1 3 fails, M2 1 fail, M3 1 fail, M4 1 fail",
+        "runtime_dependencies": 0,
+        "rust": "NONE",
+        "result_doc": "results/POOL-006-scheduler.md"
+      }
+    },
+    {
+      "recipient_id": "agent-7",
+      "message_type": "COORDINATION",
+      "subject": "Scheduler LEGO boundary: execution rows are not ours",
+      "payload": {
+        "finding": "the golden `scheduledExecution` row (mode 'trigger', status 'success') belongs to the Trigger LEGO + execution engine, per contracts/scheduler.contract.md §5. A refusal test in test/05-golden-conformance.test.mjs blocks an `emit`/`run` entry point from appearing on ScheduledTaskManager.",
+        "severity": "INFO"
+      }
+    }
+  ]
+}
