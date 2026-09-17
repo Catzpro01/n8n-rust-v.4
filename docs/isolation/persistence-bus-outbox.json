@@ -192,6 +192,21 @@
         "evidence": "independent re-run in worktree at head e9e643d0: npm test --prefix packages/credentials-lego -> 65/65 PASS (38 unit + 12 A/B parity + 8 golden + 7 vector), zero runtime deps beyond node:crypto, reference/n8n and editor-ui untouched"
       },
       "status": "UNREAD"
+    },
+    {
+      "id": "MSG-PERSIST-12",
+      "recipient_id": "agent-5",
+      "message_type": "CONTRACT_VALIDATION",
+      "subject": "PEER VOTE: PR #16 arena/01a0aff7 (POOL-008 api 37/37 + execution-data hardening 78/78) — APPROVE",
+      "payload": {
+        "lego": "api",
+        "vote": "APPROVE",
+        "task_id": "POOL-008-api",
+        "branch": "arena/01a0aff7-n8n-rust-v-4",
+        "scope": "api-lego (37/37) pure core port + execution-data parity hardening (78/78)",
+        "evidence": "independent re-run in worktree at head 6a03c8dd: npm test --prefix packages/api-lego -> 37/37 PASS (30 unit + 7 golden covering 21 cases), npm test --prefix packages/execution-data-lego -> 78/78 PASS, zero runtime deps beyond node:stream, reference/n8n and editor-ui untouched"
+      },
+      "status": "UNREAD"
     }
   ]
 }
