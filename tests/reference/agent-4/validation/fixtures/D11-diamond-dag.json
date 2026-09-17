@@ -1,0 +1,101 @@
+{
+  "description": "A→{B,C}→D diamond, allowCycles=false → valid (no false positive on shared descendant)",
+  "expected": {
+    "errors": [],
+    "valid": true
+  },
+  "id": "D11-diamond-dag",
+  "input": {
+    "options": {
+      "allowCycles": false
+    },
+    "workflow": {
+      "connections": {
+        "A": {
+          "main": [
+            [
+              {
+                "index": 0,
+                "node": "B",
+                "type": "main"
+              },
+              {
+                "index": 0,
+                "node": "C",
+                "type": "main"
+              }
+            ]
+          ]
+        },
+        "B": {
+          "main": [
+            [
+              {
+                "index": 0,
+                "node": "D",
+                "type": "main"
+              }
+            ]
+          ]
+        },
+        "C": {
+          "main": [
+            [
+              {
+                "index": 0,
+                "node": "D",
+                "type": "main"
+              }
+            ]
+          ]
+        }
+      },
+      "nodes": [
+        {
+          "id": "A",
+          "name": "A",
+          "parameters": {},
+          "position": [
+            0,
+            0
+          ],
+          "type": "n8n-nodes-base.noOp",
+          "typeVersion": 1
+        },
+        {
+          "id": "B",
+          "name": "B",
+          "parameters": {},
+          "position": [
+            0,
+            0
+          ],
+          "type": "n8n-nodes-base.noOp",
+          "typeVersion": 1
+        },
+        {
+          "id": "C",
+          "name": "C",
+          "parameters": {},
+          "position": [
+            0,
+            0
+          ],
+          "type": "n8n-nodes-base.noOp",
+          "typeVersion": 1
+        },
+        {
+          "id": "D",
+          "name": "D",
+          "parameters": {},
+          "position": [
+            0,
+            0
+          ],
+          "type": "n8n-nodes-base.noOp",
+          "typeVersion": 1
+        }
+      ]
+    }
+  }
+}

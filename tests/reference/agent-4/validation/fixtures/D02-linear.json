@@ -1,0 +1,56 @@
+{
+  "description": "reference golden 03: Trigger → Code is valid (also with allowCycles=false)",
+  "expected": {
+    "errors": [],
+    "valid": true
+  },
+  "id": "D02-linear",
+  "input": {
+    "options": {
+      "allowCycles": false
+    },
+    "workflow": {
+      "connections": {
+        "Manual Trigger": {
+          "main": [
+            [
+              {
+                "index": 0,
+                "node": "Code",
+                "type": "main"
+              }
+            ]
+          ]
+        }
+      },
+      "id": "wf-linear",
+      "name": "Linear Two Nodes",
+      "nodes": [
+        {
+          "id": "node-1",
+          "name": "Manual Trigger",
+          "parameters": {},
+          "position": [
+            240,
+            300
+          ],
+          "type": "n8n-nodes-base.manualTrigger",
+          "typeVersion": 1
+        },
+        {
+          "id": "node-2",
+          "name": "Code",
+          "parameters": {
+            "jsCode": "return [{ json: { status: 'ok', count: 42 } }];"
+          },
+          "position": [
+            460,
+            300
+          ],
+          "type": "n8n-nodes-base.code",
+          "typeVersion": 2
+        }
+      ]
+    }
+  }
+}

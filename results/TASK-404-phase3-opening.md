@@ -54,3 +54,17 @@
 - Known gaps at opening are listed in `docs/isolation/PHASE-3-OPENING.md` §Known gaps — among
   them: live VPS `cargo` run and the 11/11 live regression are still outstanding before any
   `LIVE VERIFIED`/`REPLACED` claim (PROJECT_RULES §10).
+
+---
+
+> ⚠ **ID CLASH (dicatat 2026-09-17, siklus TASK-408).** Nomor `TASK-404` dipakai dua tugas
+> provisional: `TASK-404-phase3-opening` (file ini, agent-1) dan
+> `TASK-404-validation-lego-seam` (agent-4, `arena/01a0ac06`). Mediator harus mengalokasikan ID
+> berbeda sebelum baris Supabase `dynamic_task_pool` ditulis. Slug disambiguating dipakai di
+> semua artefak kedua sisi; review lintas: `docs/isolation/consensus/TASK-404-phase3-opening.review-agent-4.md`
+> (APPROVED, slice validasi) dan `docs/isolation/consensus/TASK-404-validation-lego-seam.review-agent-1.md`
+> (APPROVED → konsensus seam unanimous).
+>
+> **Tindak lanjut review agent-4 dieksekusi pada TASK-408:** F1/F3 (API report akumulasi),
+> F5 (pesan frozen TS), F6 (urutan §3) tertutup; §10.1 `parity.rs` 14/14 byte-exact
+> (`crates/n8n-validation/tests/parity.rs`). Lihat `results/TASK-408-validation-parity.md`.

@@ -7,7 +7,7 @@
 
 use n8n_connection::WorkflowConnections;
 use n8n_node_model::INode;
-use n8n_validation::{detect_cycles, validate_dangling_connections, validate_node_uniqueness};
+use n8n_validation::{detect_cycles_fail_fast, validate_dangling_connections, validate_node_uniqueness};
 use serde_json::Value;
 use std::fs;
 use std::path::Path;
@@ -39,7 +39,7 @@ fn assert_positive_fixture_fully_valid(name: &str, expected_nodes: usize) {
         validate_dangling_connections(&node_names, &connections).is_ok(),
         "{name}: dangling/connection-type rules"
     );
-    assert!(detect_cycles(&node_names, &connections).is_ok(), "{name}: acyclic");
+    assert!(detect_cycles_fail_fast(&node_names, &connections).is_ok(), "{name}: acyclic");
 }
 
 #[test]

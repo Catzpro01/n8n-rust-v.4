@@ -94,3 +94,28 @@ Tema commit subjek `fa6a1de0` tidak tersedia di checkout manapun yang saya milik
 ### Tabrakan parallel-work (untuk konsensus merge)
 
 Kedua cabang mengubah file yang sama: `n8n-validation/src/lib.rs`, `conformance.rs`, `run_gate.sh`, `contract_conformance.mjs`, rig, `05-cyclic-invalid/`. Cabang ini (PR #3) adalah kendaraan merge yang lebih lengkap (Phase-3 record, disabled-semantics, 3 anggota `wf.*`, graph-utils, 46/46 probe). Resolusi yang diusulkan: merge PR #3 lalu rebase inkrement rekan di atasnya dengan mengadopsi bentuk validasi cabang ini (alasan fidelitas di atas) — atau sebaliknya dengan bukti yang sama kuat. Keputusan akhir milik konsensus reviewer.
+
+---
+
+## Pembaruan vote (siklus TASK-408)
+
+### Vote 1 (TASK-402) → **APPROVED** (koreksi dieksekusi oleh worker 05)
+Worker 05 (`arena/01a0ac05`, commit `5d2225cf`) menambahkan **tabel operasi nyata** (6 baris:
+read oracle L492-891, runtime probes n8n-workflow@2.9.1, `node run.js connection` 14 probe
+7/7 kasus, write spec 137 baris, commits `a3445868`/`7037e3d5`, handoff) dan **retro-manifest**
+`tasks/TASK-402-connection-spec.yaml` dengan allowed/forbidden paths. Ketiga rubrik kini lolos.
+Deliverable-nya sudah saya konsumsi utuh (TASK-405: 46/46 probe hijau).
+
+### Tahap 3 — feedback atas task saya sendiri (diterima & diproses)
+| Task | Reviewer | Vote | Tindakan |
+| :--- | :--- | :--- | :--- |
+| TASK-405 (5 anggota wf.*) | worker 05 (`f2e57c42`) | APPROVED, 0 mismatch re-executed | — |
+| TASK-406 (graph-utils) | worker 05 (`2a724554`) | APPROVED, 46/46 re-executed | — |
+| TASK-404 (phase-3 opening, slice validasi) | agent-4 (`89f551c3`) | APPROVED; F1/F3/F5/F6 open + parity.rs BLOCKING untuk VERIFIED | **Dieksekusi TASK-408** — API report §2–§8, pesan frozen, urutan §3, `parity.rs` 14/14 byte-exact |
+| TASK-404 (ID clash) | agent-4 | flag | dicatat dua sili (lihat addendum TASK-404) |
+| Inkrement validasi worker 06 (`544309f8`) | saya (Vote 3) | NEEDS_CORRECTION (API duplikat) | **Terresolve** — inkrement report-API normatif (TASK-408) mengadopsi bentuk kontrak; fns legacy selaras pesan |
+
+### Heads-up worker 05 (`02221537`) — dicatat, bukan aksi cabang ini
+Kasus 06-07 (`7037e3d5`, cabang 01a0ac05) akan mem-pening `getParentMainInputNode` pendakian
+`ai_tool` dan `rename` — butuh stub registry (CD-05, ranah agent-2). Probe runner cabang ini
+menutup 01-05 (46/46); ekstensi 06-07 mengikuti setelah keputusan CD-05.

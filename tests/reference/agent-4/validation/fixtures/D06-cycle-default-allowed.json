@@ -1,0 +1,61 @@
+{
+  "description": "A→B→A on main, default options → valid (reference parity, allowCycles defaults true)",
+  "expected": {
+    "errors": [],
+    "valid": true
+  },
+  "id": "D06-cycle-default-allowed",
+  "input": {
+    "options": {},
+    "workflow": {
+      "connections": {
+        "A": {
+          "main": [
+            [
+              {
+                "index": 0,
+                "node": "B",
+                "type": "main"
+              }
+            ]
+          ]
+        },
+        "B": {
+          "main": [
+            [
+              {
+                "index": 0,
+                "node": "A",
+                "type": "main"
+              }
+            ]
+          ]
+        }
+      },
+      "nodes": [
+        {
+          "id": "A",
+          "name": "A",
+          "parameters": {},
+          "position": [
+            0,
+            0
+          ],
+          "type": "n8n-nodes-base.noOp",
+          "typeVersion": 1
+        },
+        {
+          "id": "B",
+          "name": "B",
+          "parameters": {},
+          "position": [
+            0,
+            0
+          ],
+          "type": "n8n-nodes-base.noOp",
+          "typeVersion": 1
+        }
+      ]
+    }
+  }
+}

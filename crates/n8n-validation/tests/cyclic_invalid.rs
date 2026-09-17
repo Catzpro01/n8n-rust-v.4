@@ -6,7 +6,7 @@
 //! `detectCycles`, golden case D7).
 
 use n8n_connection::WorkflowConnections;
-use n8n_validation::{validate_dangling_connections, validate_node_uniqueness, detect_cycles, ValidationError};
+use n8n_validation::{detect_cycles_fail_fast, validate_dangling_connections, validate_node_uniqueness, ValidationError};
 use serde_json::Value;
 use std::fs;
 use std::path::Path;
@@ -51,7 +51,7 @@ fn cyclic_fixture_is_rejected_with_the_reference_path_message() {
         .expect("expected.json errors[0].message");
     let expected_code = expected["errors"][0]["code"].as_str().expect("errors[0].code");
 
-    let error = detect_cycles(&nodes, &connections).expect_err("cycle fixture must be rejected");
+    let error = detect_cycles_fail_fast(&nodes, &connections).expect_err("cycle fixture must be rejected");
     assert_eq!(expected_code, "CYCLE_DETECTED");
     assert_eq!(
         error.to_string(),

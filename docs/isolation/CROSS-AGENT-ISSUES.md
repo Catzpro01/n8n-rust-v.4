@@ -1153,3 +1153,21 @@ NEEDS_CORRECTION): `results/TASK-403-execution-engine-spec.md` status dikoreksi 
 dengan addendum. Selain itu, Stage 2c (`result_integrity_audit.py`) kini **terikat ke gate**
 (adopsi dari rekan) dan seluruh 21 record di `results/` self-consistent — T1 (SUCCESS tanpa
 operasi) tidak lagi mungkin lewat tanpa terdeteksi.
+
+---
+
+## ISSUE-012 P3 / spec §9 — GAP TABLE UPDATE (2026-09-17, TASK-408)
+
+Validasi Rust kini **CONFORMANT to `validation-rust-port-spec.md` §2–§8** (offline):
+
+| Gap | Status |
+| :--- | :--- |
+| F1/F3 — `validate_workflow` report API (akumulasi, INVALID_INPUT gate) | **CLOSED** — `crates/n8n-validation/src/lib.rs` §2 API persis spec |
+| F5 — pesan frozen TS | **CLOSED** — byte-equal (diverifikasi 14/14 fixture) |
+| F6 — determinisme §3 | **CLOSED** — sources nodes[]-order → unknowns lexical, types lexical, DFS iteratif first-back-edge |
+| §10.1 `parity.rs` D01–D14 | **CLOSED (offline)** — `crates/n8n-validation/tests/parity.rs` 14/14 byte-exact, no silent skip |
+| §10.3 clippy / §10.4 node --test di checkout sama | OPEN — butuh VPS/live environment |
+| §10.5 dependensi | OK — serde/serde_json/indexmap (+thiserror legacy enum; n8n-connection via legacy fns) |
+
+F2/F4/F7 sudah ditutup sebelumnya (review agent-4 @ `89f551c3`). Status crate:
+NON-CONFORMANT → **CONFORMANT (offline acceptance)**; VERIFIED menunggu §10.2–10.4 live.
