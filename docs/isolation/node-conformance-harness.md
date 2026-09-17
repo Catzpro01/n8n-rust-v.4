@@ -56,8 +56,10 @@ const FILTER_COMBINE_CASES: usize = 3;  // executeFilter (and/or combinators)
 // Wave 4 operator matrix (WG-14)
 const FILTER_MATRIX_CASES: usize = 26;  // filterOperatorMatrix per-lane verdicts
 const FILTER_MATRIX_THROW_CASES: usize = 1; // …missing-rightType conversion FilterError
+// Wave 5 nested parameter shapes (WG-15)
+const PARAM_NESTED_CASES: usize = 9;    // getNodeParameters collection/fixedCollection
 // + serdeConformance round-trips: 5 descriptions, 2 INode samples
-// TOTAL asserted entries = 19 + 38 + 24 + 27 + 7 = 115
+// TOTAL asserted entries = 19 + 38 + 24 + 27 + 9 + 7 = 124
 ```
 
 - Fixture load via `env!("CARGO_MANIFEST_DIR")/./../../` (same `repo_root()` convention as
@@ -96,6 +98,7 @@ const FILTER_MATRIX_THROW_CASES: usize = 1; // …missing-rightType conversion F
 | `validateFilterParameter.cases` | `pub fn validate_filter_parameter(prop, filter) -> HashMap<String, Vec<String>>` | **validation is lenient**: only `parseFilterConditionValues` errors become issues (keys `{name}.{index}`); malformed type/unknown-op conditions STILL validate to `{}` |
 | `executeFilter.cases` | `pub fn execute_filter(filter, item_index) -> bool` | `and` = all, `or` = any, per-condition metadata `{index, itemIndex}` |
 | `filterOperatorMatrix.cases` | same filter surface, per-lane sweeps | rightValue parsed as `rightType ?? operator.type` (missing rightType ⇒ FilterError); regex ops exempt from ignoreCase lowering; `exists`/`notExists` pre-switch any-type; dateTime null-guard ⇒ `false` |
+| `getNodeParametersNested.cases` | `get_node_parameters` with `collection`/`fixedCollection` trees | empty containers materialize as `{}` without inner defaults; plain collection NEVER inner-fills; fixedCollection fills inner defaults **inside populated members only**; `multipleValues` ⇒ member arrays; hidden nested dropped at parent level |
 | `serdeConformance` | `INodeTypeDescription`, `INode` | deserialize → serialize round-trip equality |
 
 ## 4. Reference-observed semantics the harness pins (do not "improve")
@@ -150,14 +153,20 @@ const FILTER_MATRIX_THROW_CASES: usize = 1; // …missing-rightType conversion F
     lane); (d) dateTime equality comparison is millisecond-based with a null-guard
     returning `false` after `empty`/`notEmpty`; (e) number boundaries are strict `>`
     and `<` with `gte`/`lte` inclusive.
+12. **Nested-default asymmetry** (WG-15): an empty `collection`/`fixedCollection`
+    materializes as `{key:{}}` with NO inner defaults; a plain `collection` never fills
+    inner defaults (provided keys pass verbatim), while a `fixedCollection` DOES fill
+    missing inner defaults **inside populated members** (and fabricates nothing when
+    devoid of members); display-hidden nested structures are dropped at the parent level.
 
 ## 5. Acceptance wiring (brief §4, gate 1)
 
 `n8n-node-model` is **RUST IMPLEMENTED-verified for the Node LEGO when**:
 
-1. This harness reproduces all 115 entries (19 frozen-port golden cases + 38 wave-2 pure
+1. This harness reproduces all 124 entries (19 frozen-port golden cases + 38 wave-2 pure
    helper cases + 24 wave-3 parameter-issues/filter cases + 27 wave-4 operator-matrix
-   cases + 7 serde samples) green under `tools/rust-offline-rig/run.sh test` (offline).
+   cases + 9 wave-5 nested-parameter cases + 7 serde samples) green under
+   `tools/rust-offline-rig/run.sh test` (offline).
 2. The 6 frozen ports exist with the exact snake_cased names listed in brief §3
    (`get_node_parameters`, `get_node_inputs`, `get_node_outputs`, `get_connection_types`,
    `rename_form_fields`, `apply_access_patterns`) and crate exports match contract §11.

@@ -546,6 +546,63 @@ const filterOperatorMatrixThrowCases = [
   })(),
 ];
 
+/* ---------------- Wave 5: getNodeParameters nested shapes (collection/fixedCollection) */
+/* Verified asymmetry: plain `collection` passes provided keys WITHOUT inner-default fill;
+   fixedCollection FILLS inner defaults inside populated members; empty containers stay {}. */
+
+const nestedCollectionProps = [
+  { displayName: "Collection", name: "coll", type: "collection", default: {}, options: [
+    { displayName: "Inner Text", name: "inner", type: "string", default: "inner-default" },
+    { displayName: "Inner Num", name: "num", type: "number", default: 7 },
+  ] },
+];
+const nestedFixedProps = [
+  { displayName: "Fixed", name: "fixed", type: "fixedCollection", default: {}, options: [
+    { name: "opts", displayName: "Opts", values: [
+      { displayName: "Inner", name: "in", type: "string", default: "dflt" },
+    ] },
+  ] },
+];
+const nestedFixedMultiProps = [
+  { displayName: "Fixed", name: "fixed", type: "fixedCollection",
+    typeOptions: { multipleValues: true }, default: {}, options: [
+    { name: "opts", displayName: "Opts", values: [
+      { displayName: "Inner", name: "in", type: "string", default: "dflt" },
+      { displayName: "Inner2", name: "other", type: "number", default: 9 },
+    ] },
+  ] },
+];
+const nestedHiddenProps = [
+  { displayName: "Mode", name: "mode", type: "options",
+    options: [{ name: "A", value: "a" }, { name: "B", value: "b" }], default: "a" },
+  { displayName: "Collection", name: "coll", type: "collection", default: {},
+    displayOptions: { show: { mode: ["b"] } }, options: [
+    { displayName: "Inner", name: "inner", type: "string", default: "x" },
+  ] },
+];
+function nestedCase(name, properties, values) {
+  return {
+    name,
+    properties,
+    values,
+    returnDefaults: true,
+    returnNoneDisplayed: false,
+    expect: helpers.getNodeParameters(
+      JSON.parse(JSON.stringify(properties)), JSON.parse(JSON.stringify(values)), true, false, null, null),
+  };
+}
+const getNodeParametersNestedCases = [
+  nestedCase("collection-empty-defaults-materialize-container", nestedCollectionProps, {}),
+  nestedCase("collection-provided-no-inner-fill", nestedCollectionProps, { coll: { inner: "override" } }),
+  nestedCase("fixed-single-empty", nestedFixedProps, {}),
+  nestedCase("fixed-single-provided-verbatim", nestedFixedProps, { fixed: { opts: { in: "x" } } }),
+  nestedCase("fixed-multi-one-member-verbatim", nestedFixedMultiProps, { fixed: { opts: [{ in: "one", other: 3 }] } }),
+  nestedCase("fixed-multi-empty", nestedFixedMultiProps, {}),
+  nestedCase("fixed-multi-partial-member-inner-fill", nestedFixedMultiProps, { fixed: { opts: [{ in: "one" }] } }),
+  nestedCase("hidden-collection-dropped", nestedHiddenProps, { mode: "a", coll: { inner: "typed" } }),
+  nestedCase("shown-collection-verbatim", nestedHiddenProps, { mode: "b", coll: { inner: "typed" } }),
+];
+
 /* ---------------- Regression tripwire: results must equal the VERIFIED goldens ------ */
 /* (docs/isolation/node-golden-cases.md — values frozen by VERIFIED-BY-EXECUTION)      */
 
@@ -620,6 +677,17 @@ assertGolden("W14 throw", [
   filterOperatorMatrixThrowCases[0].thrown?.errorClass,
   filterOperatorMatrixThrowCases[0].thrown?.message,
 ], ["FilterError", "Conversion error: the string 'alpha' can't be converted to an array [condition 0, item 0]"]);
+assertGolden("W15 nested-results", getNodeParametersNestedCases.map((c) => c.expect), [
+  { coll: {} },
+  { coll: { inner: "override" } },
+  { fixed: {} },
+  { fixed: { opts: { in: "x" } } },
+  { fixed: { opts: [{ in: "one", other: 3 }] } },
+  { fixed: {} },
+  { fixed: { opts: [{ in: "one", other: 9 }] } },
+  { mode: "a" },
+  { mode: "b", coll: { inner: "typed" } },
+]);
 
 if (trip.length) {
   console.error("REFERENCE DRIFT vs docs/isolation/node-golden-cases.md:");
@@ -709,6 +777,9 @@ const fixtures = {
       wave4OperatorMatrix: [
         `filterOperatorMatrix:${filterOperatorMatrixCases.length}+${filterOperatorMatrixThrowCases.length}t`,
       ].join(", "),
+      wave5NestedParameters: [
+        `getNodeParametersNested:${getNodeParametersNestedCases.length}`,
+      ].join(", "),
     },
   },
   applyAccessPatterns: { cases: applyAccessPatternsCases },
@@ -741,6 +812,7 @@ const fixtures = {
     throwCases: filterOperatorMatrixThrowCases,
     lanes: "string(6) number(4) dateTime(4) boolean(3) array(5) object(2) any-exists(2) — verbatim switch enumeration from src/node-parameters/filter-parameter.ts:238-405",
   },
+  getNodeParametersNested: { cases: getNodeParametersNestedCases },
   serdeConformance,
 };
 

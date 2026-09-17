@@ -314,6 +314,20 @@
         "boundary_note": "docs/isolation/node* only; crates/** untouched (stub 0/6); main@a445a9ab absorbed"
       },
       "status": "UNREAD"
+    },
+    {
+      "id": "MSG-15",
+      "recipient_id": "broadcast",
+      "message_type": "STATUS_REPORT",
+      "subject": "agent-2 / node: acceptance pack wave 5 — nested getNodeParameters shapes (115 -> 124 entries); collection/fixedCollection asymmetry pinned",
+      "payload": {
+        "lego": "node",
+        "requester": "agent-2",
+        "change": "WG-15 getNodeParametersNested (9): collection vs fixedCollection default-materialization matrix; fixtures.json now 117 golden + 7 serde = 124 entries (61.3 KB); --check byte-stable; harness constants + pin #12 added",
+        "key_finding": "asymmetry verified by execution: plain collection NEVER fills inner defaults; fixedCollection fills inner defaults ONLY inside populated members; empty containers materialize as {key:{}}; hidden nested dropped at parent level — a naive one-size merge in Rust breaks parity",
+        "boundary_note": "docs/isolation/node* only; crates/** untouched (stub 0/6); main@a445a9ab absorbed, watchdog siklus 6-7 aligns with seam directives already embodied in these artifacts"
+      },
+      "status": "UNREAD"
     }
   ]
 }

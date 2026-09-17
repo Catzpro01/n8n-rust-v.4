@@ -227,6 +227,22 @@ boolean(3) array(5) object(2) any-exists(2) = 26 verdicts + 1 throw-case.**
 — rightValue parsing defaults to `rightType ?? operator.type`; production operator
 definitions always carry `rightType`, the Rust port must too (or keep the default).
 
+## Wave 5 — getNodeParameters nested shapes (WG-15)
+
+All with `returnDefaults:true, returnNoneDisplayed:false, node:null, description:null`.
+
+| Case | Expected | Pin |
+|---|---|---|
+| empty `collection` | `{coll:{}}` | container key materializes, **inner defaults NOT filled** |
+| provided `{coll:{inner:'override'}}` | verbatim | plain collection NEVER fills inner defaults (even with data) |
+| empty `fixedCollection` (single) | `{fixed:{}}` | same container rule |
+| provided fixed single | verbatim `opts` object | pass-through |
+| fixed multipleValues 1 full member | verbatim array | member shape preserved |
+| fixed multipleValues empty | `{fixed:{}}` | no default members fabricated |
+| fixed multipleValues **partial member** `{in:'one'}` | `{in:'one', other:9}` | **inner defaults ARE filled inside populated members** — asymmetry vs plain collection |
+| display-hidden collection (parent rule) | dropped entirely | display gating wins, value discarded |
+| display-shown collection | kept verbatim | baseline |
+
 ### Reproduction
 
 ```bash
@@ -247,8 +263,8 @@ fixtures power `docs/isolation/node-conformance-harness.md`. Dist resolution ord
 
 ### Parity acceptance rule for `n8n-node-model` (Phase 3)
 
-The crate's unit tests MUST reproduce GC-1..GC-7, WG-1..WG-9, WG-10..WG-13, and WG-14
-byte-identically (JSON equality after serialization) — 108 golden cases in
+The crate's unit tests MUST reproduce GC-1..GC-7, WG-1..WG-9, WG-10..WG-13, WG-14, and
+WG-15 byte-identically (JSON equality after serialization) — 117 golden cases in
 `docs/isolation/node-fixtures.json`, plus the 7 `serdeConformance` round-trip probes
 (see `node-conformance-harness.md` §5 for the binding acceptance gate). Any deviation is
 a conformance defect (register it as MSG back to agent-2/mediator, do not "fix" semantics).

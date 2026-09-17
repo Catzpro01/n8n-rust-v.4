@@ -8,7 +8,8 @@
       "frozenPorts": "GC-1..GC-7 (19 cases)",
       "wave2PureHelpers": "resolveRelativePath:4, hasDotNotationBannedChar:7, mergeNodeProperties:3, makeNodeName:5, makeDescription:3, isDefaultNodeName:4, isTriggerNode:3, displayParameter:6, assertParamIsType:3",
       "wave3IssuesAndFilters": "getNodeParametersIssues:6, executeFilterCondition:9+2t, validateFilterParameter:4, executeFilter:3",
-      "wave4OperatorMatrix": "filterOperatorMatrix:26+1t"
+      "wave4OperatorMatrix": "filterOperatorMatrix:26+1t",
+      "wave5NestedParameters": "getNodeParametersNested:9"
     }
   },
   "applyAccessPatterns": {
@@ -2048,6 +2049,410 @@
       }
     ],
     "lanes": "string(6) number(4) dateTime(4) boolean(3) array(5) object(2) any-exists(2) — verbatim switch enumeration from src/node-parameters/filter-parameter.ts:238-405"
+  },
+  "getNodeParametersNested": {
+    "cases": [
+      {
+        "name": "collection-empty-defaults-materialize-container",
+        "properties": [
+          {
+            "displayName": "Collection",
+            "name": "coll",
+            "type": "collection",
+            "default": {},
+            "options": [
+              {
+                "displayName": "Inner Text",
+                "name": "inner",
+                "type": "string",
+                "default": "inner-default"
+              },
+              {
+                "displayName": "Inner Num",
+                "name": "num",
+                "type": "number",
+                "default": 7
+              }
+            ]
+          }
+        ],
+        "values": {},
+        "returnDefaults": true,
+        "returnNoneDisplayed": false,
+        "expect": {
+          "coll": {}
+        }
+      },
+      {
+        "name": "collection-provided-no-inner-fill",
+        "properties": [
+          {
+            "displayName": "Collection",
+            "name": "coll",
+            "type": "collection",
+            "default": {},
+            "options": [
+              {
+                "displayName": "Inner Text",
+                "name": "inner",
+                "type": "string",
+                "default": "inner-default"
+              },
+              {
+                "displayName": "Inner Num",
+                "name": "num",
+                "type": "number",
+                "default": 7
+              }
+            ]
+          }
+        ],
+        "values": {
+          "coll": {
+            "inner": "override"
+          }
+        },
+        "returnDefaults": true,
+        "returnNoneDisplayed": false,
+        "expect": {
+          "coll": {
+            "inner": "override"
+          }
+        }
+      },
+      {
+        "name": "fixed-single-empty",
+        "properties": [
+          {
+            "displayName": "Fixed",
+            "name": "fixed",
+            "type": "fixedCollection",
+            "default": {},
+            "options": [
+              {
+                "name": "opts",
+                "displayName": "Opts",
+                "values": [
+                  {
+                    "displayName": "Inner",
+                    "name": "in",
+                    "type": "string",
+                    "default": "dflt"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "values": {},
+        "returnDefaults": true,
+        "returnNoneDisplayed": false,
+        "expect": {
+          "fixed": {}
+        }
+      },
+      {
+        "name": "fixed-single-provided-verbatim",
+        "properties": [
+          {
+            "displayName": "Fixed",
+            "name": "fixed",
+            "type": "fixedCollection",
+            "default": {},
+            "options": [
+              {
+                "name": "opts",
+                "displayName": "Opts",
+                "values": [
+                  {
+                    "displayName": "Inner",
+                    "name": "in",
+                    "type": "string",
+                    "default": "dflt"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "values": {
+          "fixed": {
+            "opts": {
+              "in": "x"
+            }
+          }
+        },
+        "returnDefaults": true,
+        "returnNoneDisplayed": false,
+        "expect": {
+          "fixed": {
+            "opts": {
+              "in": "x"
+            }
+          }
+        }
+      },
+      {
+        "name": "fixed-multi-one-member-verbatim",
+        "properties": [
+          {
+            "displayName": "Fixed",
+            "name": "fixed",
+            "type": "fixedCollection",
+            "typeOptions": {
+              "multipleValues": true
+            },
+            "default": {},
+            "options": [
+              {
+                "name": "opts",
+                "displayName": "Opts",
+                "values": [
+                  {
+                    "displayName": "Inner",
+                    "name": "in",
+                    "type": "string",
+                    "default": "dflt"
+                  },
+                  {
+                    "displayName": "Inner2",
+                    "name": "other",
+                    "type": "number",
+                    "default": 9
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "values": {
+          "fixed": {
+            "opts": [
+              {
+                "in": "one",
+                "other": 3
+              }
+            ]
+          }
+        },
+        "returnDefaults": true,
+        "returnNoneDisplayed": false,
+        "expect": {
+          "fixed": {
+            "opts": [
+              {
+                "in": "one",
+                "other": 3
+              }
+            ]
+          }
+        }
+      },
+      {
+        "name": "fixed-multi-empty",
+        "properties": [
+          {
+            "displayName": "Fixed",
+            "name": "fixed",
+            "type": "fixedCollection",
+            "typeOptions": {
+              "multipleValues": true
+            },
+            "default": {},
+            "options": [
+              {
+                "name": "opts",
+                "displayName": "Opts",
+                "values": [
+                  {
+                    "displayName": "Inner",
+                    "name": "in",
+                    "type": "string",
+                    "default": "dflt"
+                  },
+                  {
+                    "displayName": "Inner2",
+                    "name": "other",
+                    "type": "number",
+                    "default": 9
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "values": {},
+        "returnDefaults": true,
+        "returnNoneDisplayed": false,
+        "expect": {
+          "fixed": {}
+        }
+      },
+      {
+        "name": "fixed-multi-partial-member-inner-fill",
+        "properties": [
+          {
+            "displayName": "Fixed",
+            "name": "fixed",
+            "type": "fixedCollection",
+            "typeOptions": {
+              "multipleValues": true
+            },
+            "default": {},
+            "options": [
+              {
+                "name": "opts",
+                "displayName": "Opts",
+                "values": [
+                  {
+                    "displayName": "Inner",
+                    "name": "in",
+                    "type": "string",
+                    "default": "dflt"
+                  },
+                  {
+                    "displayName": "Inner2",
+                    "name": "other",
+                    "type": "number",
+                    "default": 9
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "values": {
+          "fixed": {
+            "opts": [
+              {
+                "in": "one"
+              }
+            ]
+          }
+        },
+        "returnDefaults": true,
+        "returnNoneDisplayed": false,
+        "expect": {
+          "fixed": {
+            "opts": [
+              {
+                "in": "one",
+                "other": 9
+              }
+            ]
+          }
+        }
+      },
+      {
+        "name": "hidden-collection-dropped",
+        "properties": [
+          {
+            "displayName": "Mode",
+            "name": "mode",
+            "type": "options",
+            "options": [
+              {
+                "name": "A",
+                "value": "a"
+              },
+              {
+                "name": "B",
+                "value": "b"
+              }
+            ],
+            "default": "a"
+          },
+          {
+            "displayName": "Collection",
+            "name": "coll",
+            "type": "collection",
+            "default": {},
+            "displayOptions": {
+              "show": {
+                "mode": [
+                  "b"
+                ]
+              }
+            },
+            "options": [
+              {
+                "displayName": "Inner",
+                "name": "inner",
+                "type": "string",
+                "default": "x"
+              }
+            ]
+          }
+        ],
+        "values": {
+          "mode": "a",
+          "coll": {
+            "inner": "typed"
+          }
+        },
+        "returnDefaults": true,
+        "returnNoneDisplayed": false,
+        "expect": {
+          "mode": "a"
+        }
+      },
+      {
+        "name": "shown-collection-verbatim",
+        "properties": [
+          {
+            "displayName": "Mode",
+            "name": "mode",
+            "type": "options",
+            "options": [
+              {
+                "name": "A",
+                "value": "a"
+              },
+              {
+                "name": "B",
+                "value": "b"
+              }
+            ],
+            "default": "a"
+          },
+          {
+            "displayName": "Collection",
+            "name": "coll",
+            "type": "collection",
+            "default": {},
+            "displayOptions": {
+              "show": {
+                "mode": [
+                  "b"
+                ]
+              }
+            },
+            "options": [
+              {
+                "displayName": "Inner",
+                "name": "inner",
+                "type": "string",
+                "default": "x"
+              }
+            ]
+          }
+        ],
+        "values": {
+          "mode": "b",
+          "coll": {
+            "inner": "typed"
+          }
+        },
+        "returnDefaults": true,
+        "returnNoneDisplayed": false,
+        "expect": {
+          "mode": "b",
+          "coll": {
+            "inner": "typed"
+          }
+        }
+      }
+    ]
   },
   "serdeConformance": {
     "note": "Synthetic conformance samples for crates/n8n-node-model serde shapes (node-rust-brief.md §1 G-1..G-4). Equality rule: deserialize -> serialize must be an exact JSON round-trip. Real node instances are read by the harness from tests/reference/0*/workflow.json, not embedded here.",
