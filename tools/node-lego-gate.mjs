@@ -4,7 +4,7 @@
  *
  *   N01  zero runtime dependencies
  *   N02  source boundary import-closed (relative + node: only)
- *   N03  node-model conformance suite (116 tests)
+ *   N03  node-model conformance suite (122 tests)
  *   N04  reference tree pinned (workflow-reference-manifest --check)
  *   N05  differential vs the published reference build: 0 divergences
  *   N06  formal contract + isolation doc present
@@ -59,7 +59,8 @@ await await gate('N03', 'node-model conformance suite', () => {
 	const fail = /^# fail (\d+)$/m.exec(out)?.[1];
 	// TASK-EERR-01: +8 NodeOperationError reference-port regression tests (93 -> 101).
 	// TASK-NREFP-01: +15 node-reference-parser-utils reference-port tests (101 -> 116).
-	if (pass !== '116' || fail !== '0') throw new Error(`${pass} pass / ${fail} fail`);
+	// TASK-REPAIR-01: +6 jsonrepair / repairJSON tests (116 -> 122).
+	if (pass !== '122' || fail !== '0') throw new Error(`${pass} pass / ${fail} fail`);
 	return `${pass} pass / 0 fail`;
 });
 
@@ -98,7 +99,7 @@ await gate('N07', 'every exported symbol is documented in the contract', async (
 
 const report = {
 	generatedAt: new Date().toISOString(),
-	task: 'TASK-NREFP-01-phase3-node-reference-parser',
+	task: 'TASK-REPAIR-01-phase3-jsonrepair-port',
 	reference: 'n8n 2.9.4',
 	totals: { passed: gates.filter((g) => g.status === 'PASS').length, gates: gates.length },
 	gates,

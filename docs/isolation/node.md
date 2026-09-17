@@ -231,17 +231,17 @@ The integration branch `main` (separate, unrelated git history — Arena orchest
 Phase 2 above isolated the Node Model and proved the boundary; Phase 3 makes the
 **runtime surface of the model executable** as a dependency-free JavaScript LEGO.
 
-* **Package:** `packages/node-lego` (19 source modules, **116 tests** across `node-model.test.mjs`, `filter-execution.test.mjs`, `parameter-issues.test.mjs`, the `TASK-EERR-01` error-surface suite and `node-reference-parser.test.mjs`) — implemented from the pinned
+* **Package:** `packages/node-lego` (20 source modules, **122 tests** across `node-model.test.mjs`, `filter-execution.test.mjs`, `parameter-issues.test.mjs`, the `TASK-EERR-01` error-surface suite, `node-reference-parser.test.mjs` and `json-repair.test.mjs`) — implemented from the pinned
   `reference/n8n/packages/workflow/src` sources (line anchors in
   [`contracts/node.contract.md`](../../contracts/node.contract.md) §12.1).
-* **Contract:** `contracts/node.contract.md` §12 (module map, deltas, 96-symbol list, acceptance evidence).
+* **Contract:** `contracts/node.contract.md` §12 (module map, deltas, 98-symbol list, acceptance evidence).
 * **Evidence:** [`evidence/node-lego-gate.json`](evidence/node-lego-gate.json) — gates
-  `N01` zero-dependency, `N02` import-closed boundary, `N03` 116-test suite,
+  `N01` zero-dependency, `N02` import-closed boundary, `N03` 122-test suite,
   `N04` pinned reference tree, `N05` differential, `N06` contract/doc presence,
   `N07` every exported symbol documented.
-* **Differential:** `tools/node-lego-differential.mjs` runs 25 scenario groups against the
+* **Differential:** `tools/node-lego-differential.mjs` runs 26 scenario groups against the
   **published `n8n-workflow@2.9.1` build** (the version the pinned commit ships) resolved
-  from `packages/workflow-lego/node_modules`: **1695 agree / 0 diverge / 0 harness errors**,
+  from `packages/workflow-lego/node_modules`: **1771 agree / 0 diverge / 0 harness errors**,
   2 NOT-DIFFABLE surfaces (`renameFormFields` not re-exported upstream; `getPropertyValues`
   private). The `N25` group covers the node-reference parser; `cloneDeep`/`mapValues`/
   `escapeRegExp` are not in the published surface, so they are compared against the reference
@@ -258,10 +258,11 @@ Phase 2 above isolated the Node Model and proved the boundary; Phase 3 makes the
   [`CROSS-AGENT-ISSUES.md`](CROSS-AGENT-ISSUES.md).
 * **Reconstructed since §5 was written:** the parameter-issues engine
   (`getNodeParametersIssues`/`getParameterIssues`/`mergeIssues`/`getContext`), webhook path
-  helpers, `cronNodeOptions`, all of `filter-parameter.ts` and all of
-  `node-reference-parser-utils.ts`. **Still not reconstructed** (explicitly out of scope):
-  the `jsonrepair`-backed `repairJSON` recovery and workflow validation — see §12.2 of the
-  contract.
+  helpers, `cronNodeOptions`, all of `filter-parameter.ts`, all of
+  `node-reference-parser-utils.ts` and the `jsonrepair` port that makes the `repairJSON`
+  recovery real. **Still not reconstructed** (explicitly out of scope here): workflow validation
+  (`validateWorkflow` and friends, reconstructed in `packages/validation-lego`) — see §12.2 of
+  the contract.
 
 ---
 

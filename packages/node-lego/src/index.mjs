@@ -2,6 +2,7 @@ export { ApplicationError, NodeOperationError, OperationalError } from './errors
 export { deepCopy } from './deep-copy.mjs';
 export { isExpression } from './expression-helpers.mjs';
 export { cloneDeep, escapeRegExp, get, isEqual, mapValues, toPath } from './lodash-lite.mjs';
+export { JSONRepairError, jsonrepair } from './json-repair.mjs';
 export {
 	NodeConnectionTypes,
 	getConnectionTypes,

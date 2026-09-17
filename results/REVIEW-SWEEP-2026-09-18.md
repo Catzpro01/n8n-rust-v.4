@@ -309,12 +309,35 @@ Re-running `packages/trigger-lego` in isolation from an extracted archive fails 
 imports the scheduler lane (the known cross-LEGO dependency recorded in ISSUE-023). Extract
 **both** lanes when archiving trigger-lego, or the failure looks like a broken peer submission.
 
+### Queue state after this sweep
+
+The pending queue was **empty after sweeps 18/19**: every `SUBMITTED_FOR_REVIEW` result
+(`TASK-422`…`TASK-427`, `TASK-AGENT4-RUNTIME-01`) carries a recorded verdict, and the seven
+`IMPLEMENTED` task files were approved in earlier sweeps. New work was therefore started only
+after the queue was drained, per the protocol's phase-1 rule.
+
 ### Pending votes (no self-approval)
 
-`TASK-NREFP-01-phase3-node-reference-parser` (this session's own result) is **awaiting a peer
-vote** — it is deliberately not listed above and no self-approval is recorded. Reviewer recipe:
-`node --test packages/node-lego/test/*.test.mjs` (116), `node tools/node-lego-gate.mjs` (7/7),
-`node tools/node-lego-differential.mjs` (1695 agree / 0 diverge, 25 groups, `N25` = 80).
+Two results from this session are **awaiting a peer vote** — they are deliberately not listed
+above and no self-approval is recorded:
+
+* `TASK-NREFP-01-phase3-node-reference-parser` — reviewer recipe: `node --test
+  packages/node-lego/test/*.test.mjs` (122 after the next slice; 116 at that task's tip),
+  `node tools/node-lego-gate.mjs` (7/7), `node tools/node-lego-differential.mjs`
+  (1695 agree / 0 diverge at that tip, 25 groups, `N25` = 80).
+* `TASK-REPAIR-01-phase3-jsonrepair-port` — 122 tests, differential 1771/0 (26 groups, `N26` =
+  76), gate 7/7, `verify:all` exit 0. Falsifiability: dropping jsonrepair's Python-constant
+  branch → 2 DIVERGE; disabling trailing-comma repair → 14 DIVERGE.
+
+## Sweep 19 (2026-09-18, on `7de5307c`) — TASK-AGENT4-RUNTIME-01
+
+| Result (owner) | Claim | Fresh re-run on this tip | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-AGENT4-RUNTIME-01.md` | real-n8n 2.9.4 runtime layer restored: 45 pass / 0 fail / 5 skip with `N8N_RUNTIME`, 23 pass / 27 skip without | **rebuilt from scratch** with the documented recipe (`overrides.xlsx=0.18.5`, `npm install --ignore-scripts n8n@2.9.4` → 1969 packages) and re-ran the suite: **45 pass / 0 fail / 5 skip**, the 5 skips being exactly the live layer (`# SKIP N8N_URL not set`); without the env: **23 pass / 27 skip / 0 fail**, i.e. both halves of the claim reproduce | **APPROVE** |
+
+Boundary check on the commit: only `tests/reference/agent-4/README.md` was touched under
+`tests/reference/` (append-only note) — no `expected.json`, no golden, no fixture; `verify:all` was
+not modified to depend on the reference runtime, so the shipping chain stays green without it.
 
 ## Sweep 19 (2026-09-18, on `7de5307c`) — TASK-NREFP-01
 

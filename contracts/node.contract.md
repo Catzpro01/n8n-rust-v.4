@@ -234,6 +234,7 @@ model — the part the Workflow Model and the Execution LEGO import at runtime.
 | `expression-helpers.mjs` | `expressions/expression-helpers.ts` `isExpression` (the only expressions surface the Node Model owns) | differential N18 |
 | `errors.mjs` | `errors/node-operation.error.ts` + `errors/abstract/{node,execution-base}.error.ts` + `@n8n/errors` `application.error.ts` — **validation/resolution boundary only** | differential N09/N10/N17/N18 |
 | `lodash-lite.mjs` | the `lodash/{get,isEqual,isObject}` helpers `node-helpers.ts`/`type-validation.ts` import, plus `escapeRegExp`, `mapValues` and `cloneDeep` for `node-reference-parser-utils.ts` and `base.error.ts` (DELTA-01) | `node-model.test.mjs`, differential `N25` |
+| `json-repair.mjs` | `jsonrepair@3.13.1` (ISC) as bundled by the published reference build — the `jsonParse(..., { repairJSON: true })` path (`utils.ts` L5/L164-170) — ported verbatim from the resolved UMD bundle (903 ln) | differential `N26`, `test/utils.test.ts` `describe('JSON repair')` L162-290 |
 | `type-validation.mjs` | `type-validation.ts` (481 ln): `tryToParseNumber` L15, `tryToParseString` L24, `tryToParseAlphanumericString` L38, `tryToParseBoolean` L48, `tryToParseDateTime` L72, `tryToParseTime` L114, `tryToParseArray` L124, `tryToParseObject` L146, `tryToParseBinary` L162, `tryToParseJsonToFormFields` L206, `getValueDescription` L272, `tryToParseUrl` L284, `tryToParseJwt` L305, `validateFieldType` L326-481; `utils.ts` `jsonParse` L152 (+`parseJSObject` L123); `type-guards.ts` `isBinaryValue` L168 | `test/type-validation.test.ts` (512 ln), differential N19/N20 |
 | `filter-parameter.mjs` | `node-parameters/filter-parameter.ts` whole file: `FilterError` L23, `parseSingleFilterValue` L32, `withIndefiniteArticle` L66, `parseFilterConditionValues` L71, `parseRegexPattern` L196, `arrayContainsValue` L209, `executeFilterCondition` L222-404, `executeFilter` L409-424, `validateFilterParameter` L427-450 | `test/filter-parameter.test.ts`, differential N21/N23 |
 | `webhook-path.mjs` | `node-helpers.ts` `getNodeWebhookPath` L1057-1084, `getNodeWebhookUrl` L1087-1101 | `test/node-helpers.test.ts` L6211, differential N24 |
@@ -277,12 +278,17 @@ model — the part the Workflow Model and the Execution LEGO import at runtime.
    `{ isValid, toISO, toJSDate, toMillis }` value instead of a `DateTime`. The differential
    injects the reference's own luxon, so the format cascade, the `startsWith('=')`-free error
    handling and every returned value are compared bit-for-bit — only the adapter differs.
-5. **`esprima`/`jsonrepair` → injected JS-object parser.** DELTA-05. `jsonParse`'s
+5. **`esprima`/`jsonrepair` → injected adapters with real defaults.** DELTA-05. `jsonParse`'s
    `acceptJSObject` recovery is the reference's esprima-backed `parseJSObject`; here it is an
    injected adapter (`parseJSObject` option, used by `tryToParseObject` and
    `tryToParseJsonToFormFields`) whose default handles the relaxed shapes the editor produces
-   (unquoted keys, single-quoted strings, trailing commas). The `repairJSON` path is a no-op
-   without an adapter. Both are exercised differentially with the reference's own parser.
+   (unquoted keys, single-quoted strings, trailing commas). The `repairJSON` path is **no longer
+   a no-op**: its default `repairJSONParser` is `src/json-repair.mjs`, a verbatim port of the
+   exact `jsonrepair@3.13.1` bundle the reference resolves (`n8n-workflow@2.9.1`'s
+   `node_modules/jsonrepair`), so malformed JSON is repaired exactly as upstream — same repaired
+   text, same `JSONRepairError` positions. An injected adapter still overrides it. Both paths
+   are exercised differentially (N20 for the JS-object parser, N26 = 76 end-to-end repair cases
+   for jsonrepair) and by the ported oracle block.
 6. **Pinned behavioural quirks found while porting** (each verified against the published
    build, i.e. bug-for-bug): `noDataExpression` strips the leading `=` only on the
    `returnDefaults` path; a collection never materialises child defaults when no values are
@@ -307,18 +313,22 @@ model — the part the Workflow Model and the Execution LEGO import at runtime.
    conditions are compared through the `toMillis()` of whatever the DELTA-04
    `dateTimeFactory` returned, and the same metadata carries that factory into
    `parseSingleFilterValue`, so no date library is imported.
-8. **Not reconstructed (out of Node Model scope, listed so absence is explicit):** the
-   `jsonrepair`-backed `repairJSON` recovery (DELTA-05) and workflow validation
-   (`validateWorkflow` and friends — the contract §12.2 tail still open). Everything else in `node-helpers.ts` L1-1949 and
+8. **Not reconstructed (out of Node Model scope, listed so absence is explicit):** workflow
+   validation (`validateWorkflow` and friends — reconstructed in `packages/validation-lego`).
+   With the jsonrepair port (DELTA-05) every module this LEGO's boundary names is now runnable
+   in `packages/node-lego`. Everything else in `node-helpers.ts` L1-1949 and
    `node-parameters/filter-parameter.ts` is now reconstructed. `renameFormFields` is reconstructed though not re-exported by the
    published build (internal call site only).
 
 ### 12.3 Acceptance evidence
 
 * `tools/node-lego-gate.mjs` — gates `N01`…`N06` (`docs/isolation/evidence/node-lego-gate.json`).
-* `tools/node-lego-differential.mjs` — 25 scenario groups / 1695 comparisons against the
+* `tools/node-lego-differential.mjs` — 26 scenario groups / 1771 comparisons against the
   published `n8n-workflow@2.9.1` build (the version the pinned reference commit ships):
-  **1695 agree / 0 diverge**, 2 NOT-DIFFABLE (`renameFormFields`, private `getPropertyValues`).
+  **1771 agree / 0 diverge**, 2 NOT-DIFFABLE (`renameFormFields`, private `getPropertyValues`).
+  `N26` (76 comparisons) drives `jsonParse({ repairJSON: true })` over the oracle's 25 repair
+  cases plus jsonrepair's wider feature list, so the port is compared end-to-end against the
+  reference build's own bundled jsonrepair.
   `N25` covers the node-reference parser (80 comparisons); `cloneDeep`/`mapValues`/
   `escapeRegExp` are absent from the published surface, so they are compared against the
   reference build's own bundled `lodash` via `PORT_ONLY_SURFACE`, with the reference side
@@ -332,20 +342,24 @@ model — the part the Workflow Model and the Execution LEGO import at runtime.
   `ITEM_TO_DATA_ACCESSORS` (1) and disabling the `Date` branch of `cloneDeep` (2) are all
   caught — the last one required making the `N25` probes slot-safe (a `Date`-prototype object
   without the internal `[[DateValue]]` slot passes `instanceof Date` but throws on every
-  `Date` method).
+  `Date` method). Slice-6 probe: dropping jsonrepair's Python-constant branch (2 divergences)
+  and disabling its trailing-comma repair (14 divergences, 4 repair sites) are both caught.
 * `packages/node-lego/test/node-model.test.mjs` — 74 cases, oracle-cited;
   `packages/node-lego/test/filter-execution.test.mjs` — 11 cases (filter execution, webhook
   paths, `cronNodeOptions`); `packages/node-lego/test/node-reference-parser.test.mjs` — 15
   cases, ported from `test/node-reference-parser-utils.test.ts`; plus
   `packages/node-lego/test/parameter-issues.test.mjs` — 8 cases (concurrent lane, retained and
   corrected against REF where its expectations encoded an unfaithful detail — ISSUE-026) and
-  the 8-case error-surface suite from `TASK-EERR-01` — **116 pass / 0 fail** in total.
+  the 8-case error-surface suite from `TASK-EERR-01` and `test/json-repair.test.mjs` — 6 cases,
+  the oracle's 25 repair expectations grouped + the ported wider feature set / error positions —
+  **122 pass / 0 fail** in total.
 
-### 12.4 Exported symbol list (96 — gate `N07` asserts every one is named here)
+### 12.4 Exported symbol list (98 — gate `N07` asserts every one is named here)
 
 | | | | | | |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `ApplicationError` | `FilterError` | `NodeConnectionTypes` | `NodeOperationError` | `OperationalError` | `applyAccessPatterns` |
+| `ApplicationError` | `FilterError` | `JSONRepairError` | `NodeConnectionTypes` | `NodeOperationError` | `OperationalError` |
+| `applyAccessPatterns` | `jsonrepair` | | | | |
 | `arrayContainsValue` | `assertIsValidNodeParameterValueType` | `assertParamIsArray` | `assertParamIsBoolean` | `assertParamIsNumber` | `assertParamIsOfAnyTypes` |
 | `assertParamIsString` | `backslashEscape` | `checkConditions` | `cloneDeep` | `cronNodeOptions` | `deepCopy` |
 | `defaultDateTimeFactory` | `defaultParseJSObject` | `displayParameter` | `displayParameterPath` | `dollarEscape` | `escapeRegExp` |

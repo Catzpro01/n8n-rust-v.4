@@ -30,15 +30,19 @@
  *     format needs the injected factory. The differential injects the reference's own
  *     luxon factory, so the cascade below is compared bit-for-bit.
  *   DELTA-05 — no `esprima`/`jsonrepair`. `jsonParse`'s `acceptJSObject` and `repairJSON`
- *     recovery paths are delegated to injected adapters; the default `parseJSObject`
+ *     recovery paths are delegated to injectable adapters; the default `parseJSObject`
  *     handles the common relaxed-JS-object shape (unquoted/-single-quoted keys and
- *     strings, trailing commas) instead of a full JS parser.
+ *     strings, trailing commas) instead of a full JS parser, and the default
+ *     `repairJSONParser` is the dependency-free port of the exact `jsonrepair` version the
+ *     reference bundles (`src/json-repair.mjs`), so the `repairJSON` path is no longer a no-op.
  *
- * Boundaries: leaf module — it depends only on `./errors.mjs` (ApplicationError, DELTA-02/03)
- * and the two injected adapters above. No package or JSON-parsing dependency is imported.
+ * Boundaries: leaf module — it depends only on `./errors.mjs` (ApplicationError, DELTA-02/03),
+ * `./json-repair.mjs` and the injected adapters above. No package or JSON-parsing dependency
+ * is imported.
  */
 
 import { ApplicationError } from './errors.mjs';
+import { jsonrepair } from './json-repair.mjs';
 import { isObject } from './lodash-lite.mjs';
 
 export const tryToParseNumber = (value) => {
@@ -249,7 +253,17 @@ export const defaultParseJSObject = (objectAsString) => {
 
 export const jsonParse = (
 	jsonString,
-	{ acceptJSObject = false, repairJSON = false, fallbackValue, errorMessage, parseJSObject = defaultParseJSObject } = {},
+	{
+		acceptJSObject = false,
+		repairJSON = false,
+		fallbackValue,
+		errorMessage,
+		parseJSObject = defaultParseJSObject,
+		// DELTA-05: the reference calls the `jsonrepair` package directly; the default here is
+		// the dependency-free port of the exact version it bundles (`src/json-repair.mjs`).
+		// An injected adapter still wins, so a caller may supply its own repairer.
+		repairJSONParser = jsonrepair,
+	} = {},
 ) => {
 	try {
 		return JSON.parse(jsonString);
@@ -263,8 +277,12 @@ export const jsonParse = (
 			}
 		}
 		if (repairJSON) {
-			// DELTA-05: the reference delegates to the `jsonrepair` package; the injected
-			// adapter owns this path (no adapter -> the recovery is skipped).
+			try {
+				const jsonStringCleaned = repairJSONParser(jsonString);
+				return JSON.parse(jsonStringCleaned);
+			} catch (e) {
+				// Ignore this error and return the original error or the fallback value
+			}
 		}
 		if (fallbackValue !== undefined) {
 			if (fallbackValue instanceof Function) {
