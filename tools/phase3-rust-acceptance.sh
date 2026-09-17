@@ -28,6 +28,12 @@ fi
 
 HEAD="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
 FIXSHA="$(sha256sum tests/reference/workflow-rust/fixtures.json 2>/dev/null | awk '{print $1}')"
+RUST_INPUTS_DIRTY="$(git status --porcelain -- crates Cargo.toml Cargo.lock tests/reference/workflow-rust tools/rust-offline-rig tools/phase3-rust-acceptance.sh 2>/dev/null | head -n 5)"
+if [ -n "$RUST_INPUTS_DIRTY" ]; then
+  echo "!! WARNING: Rust inputs have uncommitted changes — the record will attest"
+  echo "!! HEAD ($HEAD), so commit first and re-run for a meaningful attestation:"
+  echo "$RUST_INPUTS_DIRTY" | sed 's/^/!!   /'
+fi
 
 if [ "$FORCE" -eq 0 ] && [ -f "$RECORD" ]; then
   if python3 - "$RECORD" "$HEAD" "$FIXSHA" <<'EOF' 2>/dev/null; then
@@ -90,6 +96,7 @@ export ACCEPT_NOW="$NOW" ACCEPT_RUNNER="$RUNNER" ACCEPT_RESULT="$RESULT"
 export ACCEPT_TEST_RC="$TEST_RC" ACCEPT_REF_RC="$REF_RC"
 export ACCEPT_REF_LINE="$REF_LINE" ACCEPT_FIXTURES="$FIXTURES_CHECK"
 export ACCEPT_HEAD="$HEAD" ACCEPT_FIXSHA="$FIXSHA" ACCEPT_TAIL="$(echo "$TEST_OUT" | tail -n 15)"
+export ACCEPT_SUMMARY="$(echo "$TEST_OUT" | grep -E '^test result' || true)"
 python3 - "$RECORD" <<'EOF'
 import json, os, sys
 record = {
@@ -103,6 +110,7 @@ record = {
     "fixturesReproduction": os.environ["ACCEPT_FIXTURES"],
     "headCommit": os.environ["ACCEPT_HEAD"],
     "fixturesSha256": os.environ["ACCEPT_FIXSHA"],
+    "testSummary": [l for l in os.environ["ACCEPT_SUMMARY"].strip().splitlines() if l],
     "testTail": os.environ["ACCEPT_TAIL"].strip().splitlines(),
 }
 json.dump(record, open(sys.argv[1], "w"), indent=2)

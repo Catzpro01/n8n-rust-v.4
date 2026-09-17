@@ -18,7 +18,11 @@ RUST_VERSION="1.88.0"
 NPM_HOST="https://registry.npmjs.org"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# target -> crate tags: the 12 crates the workspace dependency closure needs
+# target -> crate tags: the workspace dependency closure, vendored from git.
+# Spec format is "repo:tag" or "repo:tag:alias" (alias = vendorsrc dir name;
+# needed when one repo yields several crates at different tags, e.g. the
+# rust-lang/regex monorepo). Extended 2026-09-17 for the indexmap + regex
+# closures (TASK-401): the 12-crate set predates crates that use them.
 CRATES=(
   "serde-rs/serde:v1.0.219"
   "serde-rs/json:v1.0.140"
@@ -30,6 +34,13 @@ CRATES=(
   "dtolnay/ryu:1.0.18"
   "BurntSushi/memchr:2.7.4"
   "dtolnay/unicode-ident:1.0.14"
+  "indexmap-rs/indexmap:2.2.6"
+  "indexmap-rs/equivalent:v1.0.2"
+  "rust-lang/hashbrown:v0.14.5"
+  "rust-lang/regex:1.10.6:regex-1.10.6"
+  "rust-lang/regex:regex-automata-0.4.9:regex-automata-0.4.9"
+  "rust-lang/regex:regex-syntax-0.8.5:regex-syntax-0.8.5"
+  "BurntSushi/aho-corasick:1.1.5"
 )
 
 mkdir -p "$RIG/dl" "$RIG/vendorsrc"
@@ -77,10 +88,10 @@ echo "cargo  $("$RIG/cargo/package/cargo/bin/cargo" --version)"
 
 # --- 2. crate sources ---------------------------------------------------------
 for spec in "${CRATES[@]}"; do
-  repo="${spec%:*}"; tag="${spec#*:}"
-  name="$(basename "$repo")"
+  IFS=':' read -r repo tag alias <<< "$spec"
+  name="${alias:-$(basename "$repo")}"
   if [ -d "$RIG/vendorsrc/$name" ]; then echo "have   $name"; continue; fi
-  echo "clone  $repo @ $tag"
+  echo "clone  $repo @ $tag -> $name"
   git clone -q --depth 1 --branch "$tag" "https://github.com/$repo" "$RIG/vendorsrc/$name"
 done
 

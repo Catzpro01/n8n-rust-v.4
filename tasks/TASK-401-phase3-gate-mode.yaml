@@ -9,11 +9,17 @@ title: "Phase-3 gate mode for the Agent-5 harnesses (closes MSG-14/MSG-19)"
 # 20/21, boundary_audit PHASE VIOLATION) — a gate-lifecycle problem, not a
 # regression. This task adds the Phase-3 mode both MSG-14 and MSG-19 requested.
 
+# Amendment (same task, same commit series): tools/rust-offline-rig/** added
+# because the 12-crate vendor set predates the workspace's indexmap + regex
+# use — without the extension `cargo test` cannot resolve and the acceptance
+# this task wires in fails. Changes are additive (7 pinned tags, alias clones,
+# manifest-rewriter hardening for multi-line path deps); no existing pin moved.
 allowed_paths:
   - tests/compatibility/contract_conformance.mjs
   - tests/integration/boundary_audit.py
   - tests/integration/run_gate.sh
   - tools/phase3-rust-acceptance.sh
+  - tools/rust-offline-rig/**
   - docs/isolation/phase3-gate-mode.md
   - docs/isolation/evidence/rust-test-record.json
   - package.json

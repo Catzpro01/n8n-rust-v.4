@@ -45,6 +45,7 @@ review.
 | Date | Command | Result |
 | :--- | :--- | :--- |
 | 2026-09-17 | `run.sh check` on `crates/**` @ `014471e6` (Phase-3 workspace) | **PASS** — `Finished dev profile … in 6.26s`, 12 vendored deps compiled, 5 workspace crates checked |
+| 2026-09-17 | `run.sh test` on `crates/**` @ `3e9effd5` (TASK-401) | **PASS** — 37/37 tests green (incl. 5 harness tests over all 35 reference fixtures), 19 vendored deps, 7 workspace crates checked |
 
 ## Caveats
 

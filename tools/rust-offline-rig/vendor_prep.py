@@ -32,6 +32,17 @@ PLAN = [
     ("ryu", "ryu", "1.0.18"),
     ("memchr", "memchr", "2.7.4"),
     ("unicode-ident", "unicode-ident", "1.0.14"),
+    # TASK-401: indexmap closure (indexmap 2.2.6 pins hashbrown 0.14 with
+    # default-features = false, so ahash is never in the resolve graph) and
+    # the regex 1.10 closure (regex-syntax 0.8.5 satisfies both regex ^0.8.2
+    # and regex-automata 0.4.9's ^0.8.5; log/arbitrary stay optional).
+    ("indexmap", "indexmap", "2.2.6"),
+    ("equivalent", "equivalent", "1.0.2"),
+    ("hashbrown", "hashbrown", "0.14.5"),
+    ("regex-1.10.6", "regex", "1.10.6"),
+    ("regex-automata-0.4.9/regex-automata", "regex-automata", "0.4.9"),
+    ("regex-syntax-0.8.5/regex-syntax", "regex-syntax", "0.8.5"),
+    ("aho-corasick", "aho-corasick", "1.1.5"),
 ]
 
 DEP_VER = {name: ver for _, name, ver in PLAN}
@@ -56,16 +67,20 @@ PKG_FIELDS = {
 }
 
 SECTION = re.compile(r"^\[([^\]]+)\]$")
+HDR = re.compile(r"^\[(\[?)([A-Za-z0-9_.-]+)\]\]?$")
 DOTTED = re.compile(r"^([A-Za-z0-9_.-]+)\.workspace\s*=\s*true$")
+BARE_PATH = re.compile(r"^path\s*=\s*\"[^\"]*\"\s*(#.*)?$")
+TARGET_SECTIONS = ("lib", "bin", "test", "bench", "example")
 
 
 def rewrite_manifest(path, name, version):
-    out, drop_section, report = [], False, []
+    out, drop_section, report, section = [], False, [], ""
     for line in open(path, encoding="utf-8").read().split("\n"):
         stripped = line.strip()
         header = SECTION.match(stripped)
-        if header:
-            section = header.group(1)
+        hdr = HDR.match(stripped)
+        if header or hdr:
+            section = header.group(1) if header else hdr.group(2)
             drop_section = section == "workspace" or section.startswith("patch.")
             if drop_section:
                 report.append(f"  - dropped table [{section}]")
@@ -98,11 +113,33 @@ def rewrite_manifest(path, name, version):
         stripped_path = re.sub(r'path\s*=\s*"[^"]*"\s*,\s*', "", stripped_path)
         if stripped_path != line:
             report.append("  ~ stripped a path dependency")
-        out.append(stripped_path)
-    body = "\n".join(out)
-    if "workspace = true" in body or re.search(r'path\s*=\s*"', body):
-        raise SystemExit(f"FATAL: {name}: manifest still has workspace/path remnants")
-    open(path, "w", encoding="utf-8").write(body)
+            line = stripped_path
+        # Bare `path = "..."` lines (multi-line [dependencies.x] tables, as in
+        # the regex family) carry no version on the same line, so the inline
+        # strips above cannot see them — drop the whole line instead.
+        if BARE_PATH.match(line.strip()) and section.split(".")[0] in (
+            "dependencies", "dev-dependencies", "build-dependencies",
+        ):
+            report.append(f"  - dropped bare path line in [{section}]")
+            continue
+        out.append(line)
+    # Backstop: `path =` is legal inside target sections ([lib], [[test]], ...)
+    # where it points at a source file, so only flag it elsewhere. Comment-only
+    # lines are ignored (they can legitimately mention either keyword).
+    bad, cur = [], ""
+    for line in out:
+        s = line.strip()
+        h = HDR.match(s) or SECTION.match(s)
+        if h:
+            cur = (h.group(2) if h.re is HDR else h.group(1)).split(".")[0]
+            continue
+        if not s or s.startswith("#") or cur in TARGET_SECTIONS:
+            continue
+        if "workspace = true" in s or re.search(r'path\s*=\s*"', s):
+            bad.append(s)
+    if bad:
+        raise SystemExit(f"FATAL: {name}: manifest still has workspace/path remnants: {bad[:3]}")
+    open(path, "w", encoding="utf-8").write("\n".join(out))
     with open(os.path.join(os.path.dirname(path), ".cargo-checksum.json"), "w") as fh:
         json.dump({"files": {}}, fh)
     return report
