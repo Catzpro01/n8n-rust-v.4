@@ -29,9 +29,11 @@
 | PR #21 `run_gate.sh --offline-only` (claim OFFLINE PASS) | ✓ **OFFLINE STAGES: PASS** · live NOT RUN → **INCONCLUSIVE** (their own design) | `2` |
 | PR #21 `result_integrity_audit.py` | ✗ **100/104 → FAIL** (4 records inherited from `main`) → **ISSUE-028** | `1` |
 | PR #20 `verify:fast` (claim **10/10**) | ✓ **10/10 PASS · BEHAVIOR CHANGE: NONE DETECTED** | `0` |
+| PR #20 full `npm run verify` (**not claimed** — run to hand them the datapoint) | ✓ **11/11 PASS · BEHAVIOR CHANGE: NONE DETECTED**, G11 live 7/7, G09 218 identical + 34 port sections | `0` |
 | PR #20 lego suite (body claims 31/31) | ✓ **34/34** — head exceeds the body | `0` |
 | PR #18 `npm run verify` (claim **11/11**) | ✓ **11/11 PASS · BEHAVIOR CHANGE: NONE DETECTED** (G11 live 7/7) | `0` |
 | PR #18 `contract_conformance` | ✓ **35/35 CHECKS PASSED** — a *third* denominator → **ISSUE-028 B** | `0` |
+| label-diff of the three conformance scripts | ✓ **35 = 21 base + 14 per-LEGO `contract:*` presence checks**; 22 = 21 + the TASK-413 archive check; 21 = base only — recorded in ISSUE-028 B with the exact labels | `0` |
 | PR #18 `boundary_audit` · `isolation:check` | ✓ **PASS** · **4/4** | `0` |
 | `read_messages` (Supabase pool) | ✗ UNREACHABLE (`HTTP 000`, ISSUE-019) — votes mirrored as PR comments | — |
 

@@ -1284,7 +1284,22 @@ Measured in one sandbox, same day, same pinned reference (`15 050` files, root `
 
 All three print `RESULT: N/N CHECKS PASSED`, so "conformance PASS" is not a comparable statement across
 branches — ISSUE-023 already flagged 22 vs 21; the sweep adds a third denominator (35) and confirms the
-divergence is growing, not settling. Related measured divergence: G09's strict digest split is
+divergence is growing, not settling.
+
+The composition was measured, not guessed, by diffing the printed check labels:
+
+* **35 (PR #18)** = the 21 base checks **+ 14 per-LEGO contract-presence checks** (`contract:api`,
+  `binary-data`, `credentials`, `dynamic-form`, `error-recovery`, `execution-data`, `execution-engine`,
+  `expression`, `persistence`, `scheduler`, `settings`, `subworkflow`, `trigger`, `webhook`), and its Rust
+  guard is named `Rust workspace integrity / Zero-Rust archive guard`.
+* **22 (this branch)** = 21 base + `Rust legacy archive is documented and inert` (the TASK-413 archive).
+* **21 (PR #21)** = base only, with the guard named `Phase 2: no Rust implementation introduced`.
+
+None of the three is dishonest about its own tree — the checks each branch has really do exist there. The
+defect is that the *number* is the only thing a reviewer sees, so the merge winner silently defines what
+"conformance PASS" means for the project. Concrete proposal: a named-check manifest (canonical base list +
+per-LEGO presence checks as a declared optional group + the Rust guard's disposition named explicitly), so
+branches can be diffed on *which checks ran*. Related measured divergence: G09's strict digest split is
 **218 identical + 34 declared-port sections** on this branch and on PR #21, but **217 + 35** on PR #18 — one
 section has moved into the declared-port surface there, which is exactly the kind of drift a shared
 denominator would have made obvious.
