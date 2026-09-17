@@ -13,19 +13,41 @@
 Wrote the `INVALID_CONNECTION_TYPE` fixture test the Phase-3 review asked for and it immediately
 failed — not because the rule was wrong but because `serde_json` was declared without
 `preserve_order`, so `serde_json::Map` was a `BTreeMap` and **every** `from_str::<Value>()` in the
-port re-sorted JSON keys alphabetically before they reached our `IndexMap`s (measured:
+port re-sorts JSON keys alphabetically before they reach our `IndexMap`s (measured:
 `{"main","ai_magic","zzz_last","aaa_first"}` deserialised to
 `["aaa_first","ai_magic","main","zzz_last"]`, stable across 5 runs in 3 processes). Fixing that one
 line in `Cargo.toml` turned two more tests red and both were real defects the sorted map had been
 hiding: `checksum.rs` had never implemented the reference's `sortObjectKeys`
 (`workflow-checksum.ts:38-57`) and was relying on the `BTreeMap` to sort for free, and `BinaryData`
 was silently dropping `fileType`/`fileSize`/`bytes`/filesystem-`id`. Added the missing negative
-fixtures plus per-crate golden-fixture tests, which took the offline rig from **39 passed** to
-**74 passed / 0 failed**, `contract_conformance.mjs` from 20/21 (exit 1) to **40/40 (exit 0)**, and
-`run_gate.sh --offline-only` from **BLOCKED (exit 1)** to **INCONCLUSIVE (exit 2)** — the designed
-outcome when the live 11/11 stage cannot run. Recorded as **ISSUE-019** in
-`docs/isolation/CROSS-AGENT-ISSUES.md`; ISSUE-012 P3, ISSUE-014 defect 2 and ISSUE-017 are now
-CLOSED.
+fixtures plus per-crate golden-fixture tests. Recorded as **ISSUE-019**; ISSUE-012 P3, ISSUE-014
+defect 2 and ISSUE-017 are CLOSED.
+
+The branch had moved 19 commits ahead while I worked (TASK-401/402/403/404 from other agents), so
+this was rebased twice rather than pushed as written. Three of my own claims did not survive that
+rebase and are corrected in the ledger rather than left standing — see **Corrections** below. Final
+state: rig **88 passed / 0 failed**, `contract_conformance.mjs` **43/43 (exit 0)**,
+`run_gate.sh --offline-only` **OFFLINE STAGES: PASS**, exit 2 (INCONCLUSIVE — the live 11/11 stage
+cannot run here).
+
+## Corrections (all three recorded in `docs/isolation/CROSS-AGENT-ISSUES.md`)
+
+1. **My `INVALID_CONNECTION_TYPE` edge path was wrong.** I asserted and documented
+   `["connections","A","main","bogus","type"]`. `workflow-rules.ts:94` builds
+   `['connections', source, type, String(oi), String(ti)]` and `:103` appends `'type'`, so the real
+   path is `["connections","A","main","0","0","type"]` — the offender is located by **index**, and
+   the offending value never appears in the path (only in `message`). Generated fixtures
+   `X7-target-type-bad-only` and `D5-bad-type-key` already pinned the correct shape; I had asserted
+   from a code reading instead of a fixture. Test and README corrected.
+2. **`preserve_order` was a known hazard, not an unambiguous fix.** `crates/n8n-validation/Cargo.toml`
+   (TASK-403) says verbatim: *"Deliberately NOT serde_json/preserve_order: that unifies
+   workspace-wide and would silently break n8n-workflow's BTreeMap-backed checksum."* They had
+   predicted the exact breakage I hit and routed around it with `OrderedValue`. Both routes now
+   coexist: `OrderedValue` for validation, `preserve_order` for the `Value`-based crates, and
+   `checksum.rs::sort_object_keys` removes the hazard either way.
+3. **My `INode` number fix was superseded, not merged.** TASK-404 replaced `type_version`/`position`
+   `f64` with `serde_json::Number`, which is strictly better than my `serialize_with` helper — `1`
+   stays `1` *and* `4.6` stays `4.6`. I took theirs and adapted the two call sites that broke.
 
 ---
 
@@ -35,22 +57,24 @@ CLOSED.
 
 ```text
 $ bash tools/rust-offline-rig/run.sh test
-RUST TOTAL passed=74 failed=0
+TOTAL passed=88 failed=0
 ```
 
-Per target: n8n-common 0 lib + 4 fixture · n8n-connection 2 + 4 · n8n-execution-data 2 + 8 ·
-n8n-expression 2 + 5 · n8n-node-model 1 + 4 · n8n-validation 6 + 4 · n8n-workflow 19 lib + 6
-conformance + 5 reference_fixtures + 2 start_node.
+Recorded in `docs/isolation/evidence/rust-test-record.json` at head `d35a4bbd`, with
+`referenceIntegrity: PASS (15050 files, root f8da35180669…)` and
+`fixturesReproduction: PASS (re-derived byte-exactly)`.
 
 ### Integration gate
 
 ```text
 $ bash tests/integration/run_gate.sh --offline-only
 ######## STAGE 1: CONTRACT CONFORMANCE (offline) ########
-RESULT: 40/40 CHECKS PASSED
+RESULT: 43/43 CHECKS PASSED
 ######## STAGE 2: BOUNDARY & DEPENDENCY AUDIT (offline) ########
 AUDIT RESULT: PASS (all edges documented)
-######## STAGE 2b: RUST CONFORMANCE AUDIT (offline, static) ########
+######## STAGE 2b: PHASE-3 RUST ACCEPTANCE (evidence-gated) ########
+PHASE-3 RUST ACCEPTANCE: PASS
+######## STAGE 2c: RUST CONFORMANCE AUDIT (offline, static) ########
 RESULT: 7/7 crates with usable compatibility tests
 RUST CONFORMANCE AUDIT: PASS
 =======================================================
@@ -59,6 +83,11 @@ LIVE 11/11     : NOT RUN
 >>> INTEGRATION GATE: INCONCLUSIVE (live verification required before merge to main) <<<
 GATE EXIT=2
 ```
+
+Stage 2b is the upstream `tools/phase3-rust-acceptance.sh` (TASK-401); my static audit was re-added
+as **Stage 2c** rather than replacing it, because they answer different questions — 2b proves the
+recorded `cargo test` evidence is fresh for this exact tree, 2c proves the port is structurally tied
+to the reference.
 
 Exit 2 is designed, not a pass: `--offline-only` cannot execute the live 11/11 regression stage
 (no docker in this sandbox).
@@ -126,12 +155,17 @@ rather than `1.0`/`[240.0, 300.0]`.
 | `tests/reference/05-cyclic-invalid/` | new **negative** fixture (cycle) |
 | `tests/reference/06-invalid-connection-type/` | new **negative** fixture (connection type) |
 | `tests/reference/start-node/` | new golden + builder (14 cases) |
-| `tests/compatibility/contract_conformance.mjs` | negative-fixture support, phase-aware Rust guard, `editor-ui` check |
-| `tests/integration/rust_conformance_audit.py` | **new** Stage 2b (R1–R5) |
-| `tests/integration/boundary_audit.py` | phase-aware Rust guard |
-| `tests/integration/run_gate.sh` | Stage 2b wired in |
-| `docs/isolation/PHASE-3-OPENING.md` | **new** phase record |
-| `docs/isolation/CROSS-AGENT-ISSUES.md` | ISSUE-019 entry |
+| `crates/n8n-workflow/src/lib.rs` | `NodeTypes::describe` call converts `Number` with `as_f64()` |
+| `tests/compatibility/contract_conformance.mjs` | negative-fixture support + falsifiability check + `editor-ui` check (on the upstream phase-gate base) |
+| `tests/integration/rust_conformance_audit.py` | **new** Stage 2c (R1–R5) |
+| `tests/integration/run_gate.sh` | Stage 2c wired in |
+| `docs/isolation/CROSS-AGENT-ISSUES.md` | ISSUE-019 entry + corrections 1–3 |
+
+Dropped during the rebase in favour of upstream work: my `PHASE-3-OPENING.md` phase record (the
+branch already has `docs/isolation/phase3-gate-mode.md`, keyed off the workspace manifest), my
+18-crate rig variant (upstream vendors 19), my `n8n-validation` `INVALID_CONNECTION_TYPE`
+implementation (TASK-403 shipped a fuller one with 34 generated cases), and my `f64` + custom
+serializer for `INode` numbers (TASK-404 shipped `serde_json::Number`).
 
 ---
 
