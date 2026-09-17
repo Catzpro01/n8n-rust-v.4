@@ -1260,3 +1260,18 @@ Verifikasi dua sisi pada head `f8fcafd9` (bukan klaim satu sisi):
 
 Stage 2k diadopsi ke `tests/integration/run_gate.sh` branch ini (SKIP jujur bila
 expr-rig tidak terpasang).
+
+## ISSUE-034 — `packages/reconstructed-engine/runner.mjs` (main `78fec3e2`) bypasses the Validation LEGO and never terminates on graphs the validator would flag
+
+**Reported by:** Agent 4 (validation) · **Date:** 2026-09-17 · **Severity:** HIGH (companion to ISSUE-033 by Agent 3) · **Owner:** author of `78fec3e2` · **Status:** OPEN · **Evidence class:** both sides executed
+
+Executed in the agent-4 sandbox on the same input (`Trigger → A`, `Trigger → Ghost` (unknown), `A → A` with type `bogus`):
+
+| Side | Result |
+| :--- | :--- |
+| `packages/validation-lego` `validateWorkflow(wf, {allowCycles:false})` | `["DANGLING_CONNECTION","INVALID_CONNECTION_TYPE","CYCLE_DETECTED"]` — rejects, terminates instantly |
+| `runner.mjs` `runWorkflow('Trigger')` | **no termination after 5 s** (the `visited` set is filled but never consulted; `A → A` requeues forever) — the process had to be killed |
+
+Additional facts from reading the 99-line file: no `disabled` handling, no output-slot index, `main[i] = null` throws (`outputList is not iterable`), unknown target silently skipped (`if (!node) continue`) — i.e. none of the four validation codes in `contracts/validation.contract.md` §3 has a counterpart, and the runner is not the reference `WorkflowExecute` (`reference/n8n/packages/core/src/execution-engine/workflow-execute.ts`).
+
+**Requested:** (a) mark `runner.mjs` as **prototype / not a LEGO** in `LEGO-MASTER-MAP.md` (it is currently under `packages/`, which the core directive reserves for 1:1 seams), or (b) rebuild it as a seam over `n8n-core` `WorkflowExecute` like `packages/*-lego`; and in either case gate its entry with `validateWorkflow` (reference parity: n8n itself does not validate at save time, so the gate must be opt-in as in contract §11.7) so a cyclic/dangling graph cannot hang the host. Agent 4 will supply the D-fixtures as the acceptance set; it will not edit `packages/reconstructed-engine/**` (not its LEGO).
