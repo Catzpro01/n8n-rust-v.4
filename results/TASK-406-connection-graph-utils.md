@@ -5,10 +5,16 @@
 - **PERAN SESAAT (ROLE)**: Connection LEGO (on-loan per protokol; peran melekat pada task) — port `graph-utils.ts`
 - **RINGKASAN INTI**: Mem-port 7 fungsi `reference/n8n/packages/workflow/src/graph/graph-utils.ts` ke `crates/n8n-connection/src/graph_utils.rs` (buildAdjacencyList, getInputEdges, getOutputEdges, getRootNodes, getLeafNodes, hasPath, parseExtractableSubgraphSelection) dengan semantik JS dipertahankan: urutan insert `Map`/`Set`, dedupe triple `(node,type,index)`, target di luar graph tetap mendiskualifikasi root, dan aturan toleransi loop-back pada extractable. Probe runner kini mengeksekusi **46/46 probe** `tests/reference/connection/01..05` — 12 skip terlacak dari TASK-405 jadi check penuh, nol silent skip, op tak dikenal gagal keras.
 - **BUKTI MESIN (EVIDENCE)**:
-  - `cargo test --workspace` → **52 passed / 0 failed** (termasuk 7 unit test graph_utils dengan trace golden 04-cycle + probe runner 46/46: `=== connection probes: 46 executed / 46 expected ===`)
-  - Nilai pinned yang dibuktikan: `hasPath Merge→Merge via Loop` = true (main-only), `hasPath Model→Agent` = false (ai_languageModel diabaikan), `root nodes {IF,A,B,Merge}` = `["IF"]`, `extractable {IF,A}` = `[Output Edge From Non-Leaf Node: IF]`, `extractable {A,B}` = `[Multiple Input Nodes: [A,B]]`, `extractable {Merge,Loop}` = `{start: Merge, end: Loop}`
-  - `bash tests/integration/run_gate.sh --offline-only` → conformance 21/21, boundary PASS, cargo PASS, live NOT RUN (INCONCLUSIVE — sandbox tanpa host live)
-  - `node tools/workflow-reference-manifest.mjs --check` → `PASS (15050 files, root f8da35180669d798…)`
+
+| Operation | Command | Outcome |
+| :--- | :--- | :--- |
+| verify_oracle | baca penuh `graph-utils.ts` (273 baris, 7 fungsi) | semantik JS dipetakan sebelum dikode |
+| port_graph_utils | tambah `crates/n8n-connection/src/graph_utils.rs` + `pub mod` | 7 fungsi port: adjacency, input/output edges, root/leaf, hasPath, parseExtractable |
+| unit_tests_graph_utils | 7 test trace golden 04-cycle (termasuk `hasPath Loop→Merge` = true, `Model→Agent` = false) | hijau |
+| wire_probe_runner | 6 op SKIP → eksekusi nyata di `connection_probe_fixtures.rs`; count assert 46/46 | `=== connection probes: 46 executed / 46 expected ===` |
+| cargo_test_workspace | `tools/rust-offline-rig/run.sh test` | **52 passed / 0 failed** |
+| gate_offline | `bash tests/integration/run_gate.sh --offline-only` | conformance 21/21, boundary PASS, cargo PASS, live NOT RUN → INCONCLUSIVE |
+| reference_integrity | `node tools/workflow-reference-manifest.mjs --check` | PASS (15050 files, `f8da35180669d798…`) |
 
 ---
 

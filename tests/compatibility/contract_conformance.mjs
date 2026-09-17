@@ -33,14 +33,18 @@ for (const c of CONTRACTS) {
 const refDir = join(ROOT, 'tests', 'reference');
 const fixtures = readdirSync(refDir, { withFileTypes: true })
   .filter((d) => d.isDirectory() && existsSync(join(refDir, d.name, 'workflow.json')))
-  .map((d) => ({ name: d.name, wf: JSON.parse(readFileSync(join(refDir, d.name, 'workflow.json'), 'utf8')) }));
+  .map((d) => ({
+    name: d.name,
+    negative: d.name.endsWith('-invalid'),
+    wf: JSON.parse(readFileSync(join(refDir, d.name, 'workflow.json'), 'utf8')),
+  }));
 
 check('golden fixtures discovered', () => {
   assert(fixtures.length > 0, 'no golden fixtures found under tests/reference');
   return fixtures.map((f) => f.name).join(', ');
 });
 
-for (const { name, wf } of fixtures) {
+for (const { name, wf, negative } of fixtures) {
   // WorkflowContract schema
   check(`${name}: workflow schema`, () => {
     assert(typeof wf.id === 'string' && wf.id, 'id must be a non-empty string');
@@ -97,8 +101,11 @@ for (const { name, wf } of fixtures) {
     return `${count} edge(s)`;
   });
 
-  // ValidationContract: CycleDetection
-  check(`${name}: CycleDetection (acyclic)`, () => {
+  // ValidationContract: CycleDetection. Directories ending in `-invalid` are
+  // deliberate negative fixtures and must CONTAIN a cycle — adopted from the sibling
+  // worker cycle (arena/01a0ace3): returning without checking would make the gate
+  // silently pass on a negative fixture.
+  check(`${name}: CycleDetection (${negative ? 'rejects cycle' : 'acyclic'})`, () => {
     const adj = new Map(wf.nodes.map((n) => [n.name, []]));
     for (const [src, byType] of Object.entries(wf.connections))
       for (const outputs of Object.values(byType))
@@ -106,15 +113,25 @@ for (const { name, wf } of fixtures) {
     const WHITE = 0, GREY = 1, BLACK = 2;
     const color = new Map(wf.nodes.map((n) => [n.name, WHITE]));
     const stack = [];
+    let cycle;
     const visit = (n) => {
       color.set(n, GREY); stack.push(n);
       for (const m of adj.get(n) ?? []) {
-        if (color.get(m) === GREY) throw new Error(`cycle detected: ${[...stack, m].join(' -> ')}`);
-        if (color.get(m) === WHITE) visit(m);
+        if (color.get(m) === GREY) {
+          cycle = [...stack, m];
+          break;
+        }
+        if (color.get(m) === WHITE && !cycle) visit(m);
+        if (cycle) break;
       }
       stack.pop(); color.set(n, BLACK);
     };
-    for (const n of color.keys()) if (color.get(n) === WHITE) visit(n);
+    for (const n of color.keys()) if (color.get(n) === WHITE && !cycle) visit(n);
+    if (negative) {
+      assert(cycle, 'negative fixture was accepted as acyclic');
+      return `cycle rejected: ${cycle.join(' -> ')}`;
+    }
+    assert(!cycle, `cycle detected: ${cycle?.join(' -> ') ?? ''}`);
     return 'acyclic';
   });
 }

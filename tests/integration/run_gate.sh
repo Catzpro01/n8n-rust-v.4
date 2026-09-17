@@ -32,6 +32,12 @@ else
   rust_stage="NOT RUN"
 fi
 
+echo; echo "######## STAGE 2c: TASK-RESULT INTEGRITY AUDIT (offline) ########"
+# Adopted from the sibling worker cycle (arena/01a0ace3): the audit catches `SUCCESS`
+# results with no recorded operations (ISSUE-018 / T1). Findings are gate-fatal so a
+# status line can never substitute for evidence.
+python3 tests/integration/result_integrity_audit.py || fail=1
+
 echo; echo "######## STAGE 3: 11/11 LIVE REGRESSION GATE ########"
 if [ "$OFFLINE" = "1" ]; then
   echo "SKIPPED (--offline-only): live regression NOT RUN — gate cannot be declared VERIFIED."
@@ -46,6 +52,7 @@ fi
 echo; echo "======================================================="
 echo "OFFLINE STAGES : $([ $fail -eq 0 ] && echo PASS || echo FAIL)"
 echo "RUST CARGO TEST: $rust_stage"
+echo "RESULT INTEGRITY: $([ $fail -ne 0 ] && echo 'SEE ABOVE' || echo PASS)"
 echo "LIVE 11/11     : $live"
 if [ $fail -ne 0 ]; then
   echo ">>> INTEGRATION GATE: BLOCKED <<<"; exit 1

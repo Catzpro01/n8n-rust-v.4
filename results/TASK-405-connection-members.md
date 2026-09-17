@@ -5,10 +5,15 @@
 - **PERAN SESAAT (ROLE)**: Rust port owner — Workflow LEGO (Phase 3)
 - **RINGKASAN INTI**: Menyelesaikan serah terima agent-3 (`connection-workflow-members-spec.md`): tiga anggota `wf.*` di-porting setia — `get_node_connection_indexes` (workflow.ts:746-807), `get_parent_nodes_by_depth`/`searchNodesBFS` (:620-685), `get_parent_main_input_node` (:687-743, jalur early-return yang dipin fixture; pendakian penuh menunggu registry CD-05). Ditemukan & diperbaiki satu divergensi: peta tujuan mem-padding slot dengan `null`, padahal oracle mem-padding `[]` (dipin probe `byDest End`). Probe runner baru mengeksekusi 34 dari 46 probe golden `tests/reference/connection/*`; 12 sisanya berada di daftar SKIP eksplisit milik Connection LEGO (graph-utils.ts, agent-3) — tanpa silent skip.
 - **BUKTI MESIN (EVIDENCE)**:
-  - `cargo test --workspace` → **47 passed / 0 failed** (termasuk `connection_golden_probes_match_the_pinned_runtime`: 34 executed + 12 tracked skips = 46 total, asserted)
-  - Probe yang membuktikan fidelitas: `Merge <- Loop indexes` → `{sourceIndex:0, destinationIndex:1}` (BFS melalui siklus), `parents by depth of Merge` → `IF.indicies = [1,0]` (merge dedupe pada objek ter-emit), `byDest End` → `[[Loop],[],[Sparse]]` (padding `[]`)
-  - Divergensi yang ditangkap fixture lalu diperbaiki: (1) nama field wire `source_index` → `sourceIndex`, (2) kedalaman emit pakai depth entri antrean, bukan level loop (off-by-one)
-  - `bash tests/integration/run_gate.sh --offline-only` → offline PASS, live NOT RUN (INCONCLUSIVE — tidak ada host live di sandbox)
+
+| Operation | Command | Outcome |
+| :--- | :--- | :--- |
+| verify_oracle | baca `workflow.ts:746-807,620-685,687-743` + `getConnectionsByDestination` | pseudocode serah terima cocok sumber |
+| fix_destination_padding | edit `crates/n8n-workflow/src/connections.rs` | padding slot tujuan `null` → `[]` (pin probe `byDest End` `[[Loop],[],[Sparse]]`) |
+| port_members | `get_node_connection_indexes`, `get_parent_nodes_by_depth`, `get_parent_main_input_node` di `lib.rs` | 3 anggota `wf.*` port setia + wire name `sourceIndex`/`destinationIndex` |
+| add_probe_runner | `crates/n8n-workflow/tests/connection_probe_fixtures.rs` | 34 executed + 12 tracked skips = 46 asserted; run pertama menangkap 2 bug (wire-name, depth off-by-one) lalu hijau |
+| cargo_test_workspace | `tools/rust-offline-rig/run.sh test` | **47 passed / 0 failed** |
+| gate_offline | `bash tests/integration/run_gate.sh --offline-only` | conformance 21/21, boundary PASS, cargo PASS, live NOT RUN → INCONCLUSIVE |
 
 ---
 

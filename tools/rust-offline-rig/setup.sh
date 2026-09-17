@@ -97,8 +97,17 @@ for spec in "${CRATES[@]}"; do
 done
 
 # --- 3. vendor dir ------------------------------------------------------------
-if [ ! -d "$RIG/vendor" ] || [ -z "$(ls -A "$RIG/vendor" 2>/dev/null)" ]; then
+# Rebuild when the dependency plan changes; otherwise an older rig can silently keep an
+# incomplete vendor directory and report a misleading resolver error. (Adopted from the
+# sibling worker cycle, arena/01a0ace3.)
+VENDOR_PLAN_VERSION="2"
+PLAN_MARKER="$RIG/vendor/.n8n-rust-rig-plan"
+if [ ! -d "$RIG/vendor" ] || [ ! -f "$PLAN_MARKER" ] || [ "$(cat "$PLAN_MARKER" 2>/dev/null)" != "$VENDOR_PLAN_VERSION" ]; then
+  rm -rf "$RIG/vendor"
   python3 "$HERE/vendor_prep.py" "$RIG/vendorsrc" "$RIG/vendor"
+  printf '%s\n' "$VENDOR_PLAN_VERSION" > "$PLAN_MARKER"
+else
+  echo "have   vendor plan $VENDOR_PLAN_VERSION"
 fi
 
 echo

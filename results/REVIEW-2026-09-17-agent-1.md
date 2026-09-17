@@ -66,3 +66,31 @@ koreksinya direkam di sini dan di lampiran ISSUE-018.
 
 - PR #3 (TASK-404 + TASK-405 + TASK-406): belum ada suara. Zero Protest Rule tetap berlaku —
   satu pun protes wajib dibetulkan sampai unanimous sebelum merge.
+
+---
+
+## TAHAP 2 (siklus TASK-407) — review inkrement worker saudari `arena/01a0ace3-n8n-rust-v-4`
+
+### Vote 3 — validasi inkrement (`crates/n8n-validation` + `conformance.rs` + fixture `05-cyclic-invalid`) → **APPROVED dengan catatan integrasi**
+
+| Rubrik | Temuan |
+| :--- | :--- |
+| 1. Jalur berkas | BERES — perubahan di area validation/workflow-test/gate/rig; tidak menyentuh `reference/`. |
+| 2. Golden oracle | Kosakata `NODE_CONNECTION_TYPES` (13) cocok `interfaces.ts:2249`; logika negative-fixture di `contract_conformance.mjs` benar (dir `-invalid` wajib mengandung siklus); `workflow.json` A→B→C→A valid sebagai fixture negatif. |
+| 3. Bukti nyata | Deliberable fisik ada; test dijalankan via rig. |
+
+**Catatan integrasi (diadopsi ke cabang ini):** (a) wiring **Stage 2c** `result_integrity_audit.py` ke gate; (b) logika **negative-fixture** di `contract_conformance.mjs` + fixture `05-cyclic-invalid/workflow.json`; (c) **rantai validator penuh** pada fixture positif di `conformance.rs`; (d) **PLAN_MARKER** di rig setup. Semua diuji ulang di cabang ini: conformance 26/26, integrity 21/21, cargo 52/52.
+
+**Koreksi yang diminta pada rekan (rubrik 2 — fidelitas):** bentuk `InvalidConnectionType(String)` + `validate_connection_types()` terpisah + `is_valid_connection_type()` di `n8n-validation` **duplikatif dan kurang setia** dibentuk kontrak: `contracts/validation.contract.md` §3 mendefinisikan error ber-`node?`/`path?`, dan `workflow-rules.ts` memancarkan `INVALID_CONNECTION_TYPE` **di dalam** `checkDanglingConnections` (bukan fungsi terpisah). Pada saat merge, bentuk milik cabang ini yang harus dipakai: `InvalidConnectionType { node, connection_type }` terintegrasi di `validate_dangling_connections` (sudah diuji golden D5 + edge-level `workflow-rules.ts:103`). Bit pin mereka (`regex 1.10.6`, `hashbrown 0.14.1`) lebih tua dari pin cabang ini (1.11.1 / 0.14.5) — pertahankan yang baru, selisih ini aman (keduanya dalam rentang semver `1.10`/`0.14`).
+
+### Vote 4 — review rekan atas TASK-403 (`results/REVIEW-TASK-403-execution-engine-spec.md`) → **APPROVED (protes diproses)**
+
+Keputusan `NEEDS_CORRECTION` mereka konsisten dengan konfirmasi ISSUE-018 milik saya. Sesuai Zero Protest Rule, koreksi dieksekusi: `results/TASK-403-execution-engine-spec.md` status dikoreksi `SUCCESS` → `VOID` dengan addendum lengkap (deliverable memang tidak pernah ada; task harus di-reissue bila dikehendaki).
+
+### Vote 5 — review rekan atas TASK-306 (`results/REVIEW-TASK-306-validation-audit-request.md`) → **SETUJU (bukan ranah saya mengeksekusi)**
+
+Tema commit subjek `fa6a1de0` tidak tersedia di checkout manapun yang saya miliki — kesimpulan `NEEDS_CORRECTION` mereka berdasar bukti. Koreksi menjadi tanggung jawab owner TASK-306 (agent-2 lineage); saya tidak dapat mengeksekusinya.
+
+### Tabrakan parallel-work (untuk konsensus merge)
+
+Kedua cabang mengubah file yang sama: `n8n-validation/src/lib.rs`, `conformance.rs`, `run_gate.sh`, `contract_conformance.mjs`, rig, `05-cyclic-invalid/`. Cabang ini (PR #3) adalah kendaraan merge yang lebih lengkap (Phase-3 record, disabled-semantics, 3 anggota `wf.*`, graph-utils, 46/46 probe). Resolusi yang diusulkan: merge PR #3 lalu rebase inkrement rekan di atasnya dengan mengadopsi bentuk validasi cabang ini (alasan fidelitas di atas) — atau sebaliknya dengan bukti yang sama kuat. Keputusan akhir milik konsensus reviewer.

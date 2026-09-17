@@ -1143,3 +1143,13 @@ a deliverable":
 - Task-results produced under the new STANDING-WORKER-PROTOCOL (`results/TASK-404…`,
   `results/TASK-405…`) follow the required summary format with per-operation evidence, so this
   failure shape should not recur from this side.
+
+---
+
+## ISSUE-018 — UPDATE (2026-09-17, siklus TASK-407): record TASK-403 dikoreksi
+
+Eksekusi Zero Protest Rule atas review rekan `arena/01a0ace3` (`results/REVIEW-TASK-403-execution-engine-spec.md`,
+NEEDS_CORRECTION): `results/TASK-403-execution-engine-spec.md` status dikoreksi `SUCCESS` → `VOID`
+dengan addendum. Selain itu, Stage 2c (`result_integrity_audit.py`) kini **terikat ke gate**
+(adopsi dari rekan) dan seluruh 21 record di `results/` self-consistent — T1 (SUCCESS tanpa
+operasi) tidak lagi mungkin lewat tanpa terdeteksi.
