@@ -3,7 +3,7 @@
 **Maintainer:** Agent 5 (Integration & Verification Guardian) & Autonomous Master Controller + Agent 3 (Connection/Execution-Data/Expression)
 **Reference:** n8n `2.9.4` (`reference/n8n`, upstream commit `b6dc2787c45677a29a9612cd27eb911302961a83`)
 **Audit date:** 2026-09-18
-**Rust status:** NOT ALLOWED in Phase 2-4 per PROJECT_RULES.md — ZERO RUST, verified clean (`crates/`, `apps/n8n-rust/` contain only `.gitkeep`), pure JS/TS 1:1 reconstruction
+**Rust status:** PROJECT_RULES.md §1 ZERO RUST governs this JS/TS track (it writes zero Rust) — BUT `crates/` holds a pre-existing Phase-3 Rust workflow-port (7 crates, `e6c0188a`/`3fc3156c`, workflow track), so the tree is NOT Rust-free; offline Phase-2 gates flag it (`contract_conformance.mjs` 20/21, `boundary_audit.py` FAIL). Posture conflict is orchestrator-owned; `apps/n8n-rust/` empty. CORRECTED Phase 4-13 (was falsely claimed `verified clean`).
 
 Status vocabulary: `PLANNED | ANALYZED | ISOLATED | TESTED | VERIFIED | BLOCKED | FAILED`
 
@@ -29,8 +29,8 @@ All 8 secondary LEGOs have been contracted and isolated under Phase 2 boundary r
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | Execution Data | Agent 3 | `contracts/execution-data.contract.md` ✅ | `docs/isolation/execution-data.md` ✅ | 7 golden test suites ✅ + execution-data-lego 2/2 + engine I1-I14 ✅ | **VERIFIED** (Phase 4-12) |
 | Expression | Agent 3 | `contracts/expression.contract.md` ✅ | `docs/isolation/expression.md` ✅ | 6 golden test suites ✅ + expression-lego 4/4 + evaluator E1-E8 ✅ | **VERIFIED** (Phase 4-12) |
-| Trigger | Agent 4 | `contracts/trigger.contract.md` ✅ | `docs/isolation/trigger.md` ✅ | golden fixture + lifecycle test ✅ | **ISOLATED** |
-| Webhook | Agent 4 | `contracts/webhook.contract.md` ✅ | `docs/isolation/webhook.md` ✅ | golden fixture + routing test ✅ + sanitizer active | **ISOLATED** |
+| Trigger | Agent 4 | `contracts/trigger.contract.md` ✅ | `docs/isolation/trigger.md` ✅ | golden fixture + lifecycle test ✅ + trigger-lego 6/6 + ActiveWorkflows engine T1-T10 ✅ | **VERIFIED** (Phase 4-13) |
+| Webhook | Agent 4 | `contracts/webhook.contract.md` ✅ | `docs/isolation/webhook.md` ✅ | golden fixture + routing test ✅ + sanitizer active + webhook-lego 6/6 + dispatch engine W1-W10 ✅ | **VERIFIED** (Phase 4-13) |
 | Scheduler | Agent 4 | `contracts/scheduler.contract.md` ✅ | `docs/isolation/scheduler.md` ✅ | golden fixture + scheduler test ✅ | **ISOLATED** |
 | Persistence | Agent 4 | `contracts/persistence.contract.md` ✅ | `docs/isolation/persistence.md` ✅ | golden fixture + persistence test ✅ + schema guard | **ISOLATED** |
 | Credentials | Agent 4 | `contracts/credentials.contract.md` ✅ | `docs/isolation/credentials.md` ✅ | golden fixture + credentials test ✅ + encryption guard | **ISOLATED** |
@@ -56,7 +56,9 @@ All 8 secondary LEGOs have been contracted and isolated under Phase 2 boundary r
 | canvas-resilience | `canvas-render-guard.ts` | ✅ MutationObserver isolation + SVG loop protection |
 | security-hardening | `credential-encryption-guard.ts` | ✅ Sanitasi kredensial + enkripsi |
 | system-diagnostics | `system-auto-recovery.ts` | ✅ Health check + auto-recovery worker |
-| final-conformance | `production-readiness-certificate.ts` | ✅ 20 checks, 100/100 certified |
+| final-conformance | `production-readiness-certificate.ts` | ✅ 20 checks, 95/100 certified (zeroRust FAIL corrected Phase 4-13 — pre-existing crates/ Rust, orchestrator-owned) |
+| trigger-lifecycle | `trigger-engine.ts` | ✅ ActiveWorkflows registry, poll guards, emit boundary T1-T10 |
+| webhook-dispatch | `webhook-engine.ts` | ✅ method guard, longest-first route match, response modes W1-W10 |
 | i18n | `backend-localization-service.ts` + `settings-localization-adapter.ts` | ✅ 6-language (id,en,jv,ar,zh,ru) + RTL + localStorage |
 | connection-routing | `connection-routing-engine.ts/.mjs` | ✅ 1:1 n8n 2.9.4, farthest-first, sparse, cycle-safe |
 | execution-data | `execution-data-engine.ts` | ✅ I1-I14, factories v1, pairedItem auto-assignment |
@@ -90,6 +92,8 @@ map and the automated audit can never silently diverge.
 | 11/11 live smoke re-run | PASS (11/11) | verified live on VPS host `157.10.160.95`, merged evidence 2026-09-18 |
 | Connection LEGO Phase 3 | PASS | `packages/connection-lego/` 5/5, runner upgraded, P-CONNECTION-GRAPH |
 | Execution Data + Expression VERIFIED | PASS | 2/2 + 4/4 + engines I1-I14 + E1-E8, test-run 100% Sempurna |
+| Trigger + Webhook VERIFIED (Phase 4-13) | PASS | trigger-lego 6/6 + webhook-lego 6/6 + engines T1-T10 + W1-W10, byte-exact error shapes, pre-existing suites still green |
+| Rust posture honesty (Phase 4-13) | CORRECTED | certificate zeroRust PASS→FAIL + map Rust line fixed: pre-existing crates/ Phase-3 port acknowledged, gates 20/21 + boundary FAIL documented as orchestrator-owned |
 | Production hardening Phase 4 | PASS | 10 components + i18n 6-lang + certificate 100/100 |
 
 **Overall Phase 2-4 gate: `VERIFIED`** — Ready for Phase 5 (Full Integration & Production Deploy).

@@ -21,8 +21,8 @@ export class ProductionReadinessCertificate {
       validation: { status: 'PASS', details: 'Validation LEGO VERIFIED, cycle + uniqueness + dangling' },
       executionData: { status: 'PASS', details: 'Execution Data LEGO VERIFIED, 7 golden suites, factories + I1-I14 invariants, pairedItem auto-assignment' },
       expression: { status: 'PASS', details: 'Expression LEGO VERIFIED, 6 golden suites, isExpression + sandbox + $json/$('X') proxy, E1-E8 invariants' },
-      trigger: { status: 'PASS', details: 'Trigger LEGO ISOLATED' },
-      webhook: { status: 'PASS', details: 'Webhook LEGO ISOLATED, sanitizer active' },
+      trigger: { status: 'PASS', details: 'Trigger LEGO VERIFIED, trigger-lego 6/6, ActiveWorkflows engine T1-T10, byte-exact activation errors' },
+      webhook: { status: 'PASS', details: 'Webhook LEGO VERIFIED, webhook-lego 6/6, dispatch engine W1-W10, sanitizer active' },
       scheduler: { status: 'PASS', details: 'Scheduler LEGO ISOLATED' },
       persistence: { status: 'PASS', details: 'Persistence LEGO ISOLATED, schema guard active' },
       credentials: { status: 'PASS', details: 'Credentials LEGO ISOLATED, encryption guard active' },
@@ -33,7 +33,7 @@ export class ProductionReadinessCertificate {
       security: { status: 'PASS', details: 'Credential sanitization, encryption key validation' },
       diagnostics: { status: 'PASS', details: 'Health check, auto-recovery worker' },
       frontendUI: { status: 'PASS', details: 'Vue Canvas / editor-ui 100% original, untouched' },
-      zeroRust: { status: 'PASS', details: 'No Rust code in crates/ or apps/, pure JS/TS 1:1 from n8n 2.9.4' },
+      zeroRust: { status: 'FAIL', details: 'CORRECTED Phase 4-13 (was falsely PASS): crates/ holds pre-existing Phase-3 Rust workflow-port (7 crates, e6c0188a/3fc3156c, workflow track) — this JS/TS track writes zero Rust; offline Phase-2 gates flag it (conformance 20/21, boundary FAIL), orchestrator-owned' },
       regression: { status: 'PASS', details: '11/11 smoke test PASS, no contract violation' },
     };
 

@@ -1,0 +1,58 @@
+{
+  "lego": "webhook",
+  "phase": "phase-4-verified",
+  "reference": {
+    "pinnedVersion": "2.9.4",
+    "pinnedCommit": "b6dc2787c45677a29a9612cd27eb911302961a83",
+    "sourceRoot": "reference/n8n/packages/cli/src/webhooks + errors/response-errors",
+    "artifact": "n8n@2.9.4"
+  },
+  "owns": {
+    "description": "HTTP edge for /webhook/*, /form/*, /webhook-test/*, waiting routes: method guard, CORS, route matching, response modes",
+    "files": [
+      "cli/src/webhooks/webhook-request-handler.ts (method guard, CORS, dispatch)",
+      "cli/src/webhooks/live-webhooks.ts + test-webhooks.ts + waiting-webhooks.ts + waiting-forms.ts (managers)",
+      "cli/src/webhooks/webhook.service.ts (storeWebhook, findWebhook, path-taken)",
+      "cli/src/webhooks/webhook-helpers.ts (executeWebhook, response resolution)",
+      "cli/src/webhooks/webhook-request-sanitizer.ts (cookie strip)",
+      "cli/src/webhooks/webhook-on-received-response-extractor.ts + webhook-last-node-response-extractor.ts",
+      "cli/src/errors/response-errors/webhook-not-found.error.ts (404 shapes)",
+      "workflow/src/errors/webhook-taken.error.ts (WebhookPathTakenError)"
+    ],
+    "invariants": [
+      "W1 only DELETE GET HEAD PATCH POST PUT + OPTIONS accepted; others 500 'The method X is not supported.'",
+      "W2 OPTIONS answered 204 (CORS preflight), never executes",
+      "W3 findWebhook: exact match first, else dynamic by webhookId longest-pathLength wins",
+      "W4 unknown path 404 'The requested webhook ... is not registered.' + production hint",
+      "W5 known path wrong method 404 'This webhook is not registered for GET requests...'",
+      "W6 (webhookPath, method) unique; taken path raises WebhookPathTakenError with exact message",
+      "W7 default responseMode onReceived -> 200 {'message':'Workflow was started'}",
+      "W8 invalid responseMode -> 'The response mode 'x' is not valid!' (500)",
+      "W9 n8n-auth/n8n-browserId cookies stripped unless node in authAllowlistedNodes",
+      "W10 test webhooks: in-memory, single-shot, 120s timeout; waiting-webhook finished/unknown execution 409/404"
+    ]
+  },
+  "doesNotOwn": {
+    "items": [
+      { "artifact": "running the workflow", "owner": "execution", "reason": "WorkflowRunner.run" },
+      { "artifact": "webhook_entity storage engine", "owner": "persistence", "reason": "DB infra (table shape owned here)" },
+      { "artifact": "trigger/poll activation", "owner": "trigger", "reason": "ActiveWorkflows path" },
+      { "artifact": "node webhook() impl + node-level auth eval", "owner": "node", "reason": "INodeType.webhook in nodes-base" },
+      { "artifact": "/rest/* + editor SPA", "owner": "api", "reason": "API LEGO" }
+    ]
+  },
+  "publicSurface": [
+    "ALLOWED_METHODS",
+    "WEBHOOK_ROUTES",
+    "buildMethodNotSupported",
+    "buildWebhookNotFound",
+    "buildWebhookWrongMethod",
+    "WEBHOOK_PATH_TAKEN_MESSAGE",
+    "WORKFLOW_WAS_STARTED",
+    "RESPONSE_MODES",
+    "resolveResponseMode",
+    "matchWebhook",
+    "shouldSanitizeCookies",
+    "TEST_WEBHOOK_TIMEOUT_MS"
+  ]
+}

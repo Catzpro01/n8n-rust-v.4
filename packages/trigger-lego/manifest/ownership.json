@@ -1,0 +1,57 @@
+{
+  "lego": "trigger",
+  "phase": "phase-4-verified",
+  "reference": {
+    "pinnedVersion": "2.9.4",
+    "pinnedCommit": "b6dc2787c45677a29a9612cd27eb911302961a83",
+    "sourceRoot": "reference/n8n/packages/core/src/execution-engine + reference/n8n/packages/cli/src",
+    "artifact": "n8n-core@2.9.4 / n8n@2.9.4"
+  },
+  "owns": {
+    "description": "Activation lifecycle of trigger/poll nodes: in-memory registry, activation guards, emit boundary",
+    "files": [
+      "core/src/execution-engine/active-workflows.ts (ActiveWorkflows registry)",
+      "core/src/execution-engine/triggers-and-pollers.ts (runTrigger, activatePolling)",
+      "cli/src/active-workflow-manager.ts (add/remove orchestration, getExecuteTriggerFunctions, getExecutePollFunctions)",
+      "activation modes (WorkflowActivateMode: init|create|update|activate|manual|leadershipChange)",
+      "emit / emitError / __emit / __emitError boundary closures",
+      "poll guards (immediate executeTrigger(true), seconds-field rejection)",
+      "deactivation close semantics (closeFunction, deregisterCrons)"
+    ],
+    "invariants": [
+      "T1 any trigger-node failure aborts activation, workflow NOT stored active",
+      "T2 poll nodes activate AFTER trigger nodes; poll failure with zero trigger responses deletes the entry",
+      "T3 pollers execute once immediately so broken pollers fail activation",
+      "T4 poll cron with '*' in seconds field rejected (min 1 minute)",
+      "T5 only the leader owns in-memory triggers/pollers",
+      "T6 disabled nodes are never registered",
+      "T7 emit after remove is dropped (emit-after-close guard)",
+      "T8 manual mode emit is one-shot into manualTriggerResponse",
+      "T9 remove of unknown id returns false silently (HTTP 200 at the edge)",
+      "T10 closeFunction TriggerCloseError is logged+swallowed, other errors throw WorkflowDeactivationError"
+    ]
+  },
+  "doesNotOwn": {
+    "items": [
+      { "artifact": "HTTP webhook registration", "owner": "webhook", "reason": "addWebhooks path" },
+      { "artifact": "cron scheduling", "owner": "scheduler", "reason": "ScheduledTaskManager owns cron" },
+      { "artifact": "execution rows / running the execution", "owner": "execution", "reason": "WorkflowRunner.run" },
+      { "artifact": "workflow rows / staticData storage", "owner": "persistence", "reason": "repositories + staticData service" },
+      { "artifact": "node trigger()/poll() implementations", "owner": "node", "reason": "INodeType in nodes-base" }
+    ]
+  },
+  "publicSurface": [
+    "WorkflowActivateMode",
+    "ITriggerResponse",
+    "IPollResponse",
+    "ActiveWorkflowsShape",
+    "buildActivationError",
+    "NO_TRIGGER_NODE_MESSAGE",
+    "POLL_INTERVAL_TOO_SHORT_MESSAGE",
+    "isLeaderActivation",
+    "shouldRunPollImmediately",
+    "rejectShortPollInterval",
+    "createManualEmit",
+    "closeTrigger"
+  ]
+}
