@@ -28,7 +28,7 @@ All 8 secondary LEGOs have been contracted and isolated under Phase 2 boundary r
 | LEGO | Owner | Contract | Isolation Doc | Golden / Tests | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | Execution Data | Agent 3 | `contracts/execution-data.contract.md` ✅ | `docs/isolation/execution-data.md` ✅ | 7 golden test suites ✅ | **ISOLATED** |
-| Expression | Agent 3 | `contracts/expression.contract.md` ✅ | `docs/isolation/expression.md` ✅ | 6 golden test suites ✅ | **ISOLATED** |
+| Expression | Agent 3 | `contracts/expression.contract.md` ✅ | `docs/isolation/expression.md` ✅ | 6 golden test suites ✅ · reconstruction `packages/expression-lego` 6/6 golden + 40/40 contract PASS | **IMPLEMENTED (NODE.JS)** |
 | Trigger | Agent 4 | `contracts/trigger.contract.md` ✅ | `docs/isolation/trigger.md` ✅ | golden fixture + lifecycle test ✅ | **ISOLATED** |
 | Webhook | Agent 4 | `contracts/webhook.contract.md` ✅ | `docs/isolation/webhook.md` ✅ | golden fixture + routing test ✅ | **ISOLATED** |
 | Scheduler | Agent 4 | `contracts/scheduler.contract.md` ✅ | `docs/isolation/scheduler.md` ✅ | golden fixture + scheduler test ✅ | **ISOLATED** |

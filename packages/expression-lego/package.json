@@ -1,0 +1,18 @@
+{
+  "name": "@lego/expression",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Expression LEGO (Phase 3 reconstruction, pure Node.js) — `{{ ... }}` evaluator + WorkflowDataProxy, 1:1 behavior port of n8n-workflow 2.9.4 expression.ts / workflow-data-proxy.ts. Takeover of FAILED pool task POOL-002-node-execution-context-data-proxy.",
+  "license": "SEE LICENSE IN reference/n8n/LICENSE.md",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "test": "node --test test/",
+    "test:golden": "node --test test/golden.test.mjs",
+    "test:contract": "node --test test/contract.test.mjs"
+  },
+  "dependencies": {
+    "jmespath": "^0.16.0",
+    "luxon": "^3.5.0"
+  }
+}
