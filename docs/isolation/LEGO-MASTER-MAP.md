@@ -85,6 +85,7 @@ asserts that confinement.
 | `POOL-002-node-execution-context-data-proxy` | execution (expression surface) | same ✅ | same ✅ | `test/02-node-context-data-proxy.test.mjs` 7/7 ✅ | `E06` ✅ | **IMPLEMENTED** |
 | `POOL-003-error-retry-handling` | execution (validation surface) | same ✅ | same ✅ | `test/03-error-retry.test.mjs` 11/11 ✅ | `E07` ✅ | **IMPLEMENTED** |
 | `TASK-EXPRESSION-SANDBOX-01` | execution (expression security) | `contracts/expression.contract.md` ✅ | same ✅ | `test/04-expression-sandbox.test.mjs` 7/7 ✅ | `E09` ✅ | **IMPLEMENTED** |
+| `TASK-405-phase3-connection-lego` | connection (LEGO 03) | `contracts/connection.contract.md` ✅ | `docs/isolation/connection.md` ✅ | `packages/connection-lego/test/conformance.test.mjs` 52/52 ✅ (15 reference fixtures + 32 golden probes + 2 negative controls) | `contract_conformance` 42/42 ✅ · `boundary_audit` PASS ✅ | **VERIFIED** |
 
 | Phase 3 gate | Result |
 | :--- | :--- |

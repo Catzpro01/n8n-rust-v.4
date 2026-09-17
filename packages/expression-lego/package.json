@@ -7,7 +7,7 @@
   "license": "SEE LICENSE IN reference/n8n/LICENSE.md",
   "engines": { "node": ">=20" },
   "scripts": {
-    "test": "node --test test/",
+    "test": "node --test test/*.test.mjs",
     "test:golden": "node --test test/golden.test.mjs",
     "test:contract": "node --test test/contract.test.mjs"
   },

@@ -1209,3 +1209,38 @@ bookkeeping. `contracts/execution.contract.md` gained the 49th documented symbol
 and an accurate §7 delta 1 for the new bounded `node:vm` evaluator (`expression-sandbox.mjs`, gate
 `E09`), which the previous wording still described as "JEXL sandbox not reconstructed yet".
 Evidence: `results/TASK-ENGINE-DIFF-02.md`.
+
+## ISSUE-022 — `packages/expression-lego` `npm test` could not run its own suite (RESOLVED by script fix)
+
+| Field | Value |
+| :--- | :--- |
+| Reported by | arena-worker, 2026-09-17, while sweeping the Phase-3 JS/TS track |
+| Owner | expression LEGO (agent-4 lane) |
+| Severity | LOW (test runner wiring only — no behaviour, no source change) |
+| Status | **RESOLVED** on this branch |
+
+`packages/expression-lego/package.json` declared `"test": "node --test test/"`. On the sandbox
+toolchain (`node v22.22.3`) a bare directory argument with a trailing slash is resolved as a module
+path, not as a test root, so the documented entry point failed before any test ran:
+
+```text
+$ npm --prefix packages/expression-lego test
+Error: Cannot find module '/…/packages/expression-lego/test'   code: 'MODULE_NOT_FOUND'
+# tests 1 / # fail 1
+```
+
+The suite itself is healthy — invoked with a glob it is **46/46 PASS**:
+
+```text
+$ node --test test/*.test.mjs      # from packages/expression-lego
+# tests 46 · # pass 46 · # fail 0
+```
+
+Fix applied: `"test": "node --test test/*.test.mjs"` (matches the convention already used by
+`packages/workflow-lego`, `packages/execution-engine` and `packages/connection-lego`). No source
+file in the LEGO was touched.
+
+Why it matters beyond cosmetics: `docs/isolation/LEGO-MASTER-MAP.md` §5 and
+`results/TASK-EXPRESSION-SANDBOX-01.md` cite this package's tests as Phase-3 evidence. An evidence
+citation whose documented command exits non-zero is exactly the failure mode ISSUE-010 and
+ISSUE-020 were raised for. The numbers were real; only the runner was wrong.

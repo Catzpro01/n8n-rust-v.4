@@ -17,6 +17,7 @@ is a Rust replacement attempted.
 | **WORKFLOW ISOLATION (LEGO 01)** | **✅ VERIFIED — see [`docs/isolation/workflow.md`](docs/isolation/workflow.md)** |
 | NODE MODEL (LEGO 02) · CONNECTION (03) · VALIDATION (04) | ⏸ next |
 | **EXECUTION ENGINE (Phase 3, JS reconstruction)** | **✅ IMPLEMENTED · TESTED 40/40 · GATE 9/9 — see [`docs/isolation/execution.md`](docs/isolation/execution.md)** |
+| **CONNECTION LEGO 03 (Phase 3, TS reconstruction)** | **✅ IMPLEMENTED · VERIFIED 52/52 — see [`packages/connection-lego/`](packages/connection-lego/README.md)** |
 | RUST PORT (crates/**, apps/**) | ▶ Phase 3 open for the port track (`docs/isolation/PHASE-3-OPENING-RECORD.md`); the JS reconstruction track stays ZERO RUST |
 
 “Isolated” means the TypeScript component now has an enforced boundary and a
@@ -30,6 +31,7 @@ contract. It does **not** mean it was replaced by Rust.
 - `docs/isolation/` : Phase 2 isolation records, dependency map, port contract, verification report
 - `packages/workflow-lego/` : the isolated Workflow Model LEGO (boundary, ports, tests, manifests)
 - `packages/execution-engine/` : reconstructed n8n 2.9.4 execute loop, node context/data proxy and error/retry policy (JavaScript ESM, zero dependencies)
+- `packages/connection-lego/` : reconstructed n8n 2.9.4 connection routing — `common/**`, `graph/graph-utils.ts`, `connections-diff.ts` (TypeScript, accepted by the reference-recorded goldens)
 - `tools/` : boundary mapper, kernel/port/reference gates, isolation extractor, model digest, gate runner, live engine harness
 - `tests/reference/` : golden workflows + baseline smoke test evidence
 - `tasks/`, `results/` : inbound task manifests and execution results

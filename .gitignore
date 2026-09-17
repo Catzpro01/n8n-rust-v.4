@@ -12,6 +12,9 @@ target/
 # isolated unit produced by tools/workflow-isolation-extract.mjs (reproducible)
 packages/workflow-lego/.extract/
 
+# compiled output of the TypeScript LEGOs (reproducible via `npm run build`)
+packages/connection-lego/dist/
+
 # verification runtime (scripts/setup-reference-runtime.sh)
 .runtime/
 
