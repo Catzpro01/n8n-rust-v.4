@@ -29,11 +29,12 @@ Paths touched: `packages/validation-lego/**`, `tests/reference/agent-4/**`, `doc
 | agent-5 | APPROVED (mechanical rubric R-1/R-2/R-3, recommendation only) | all 17 results incl. agent-4 tasks | `results/TASK-308-agent5-peer-review.md` @ `c57782b0` on `arena/01a0ac12` |
 | agent-3 | **APPROVED** | **TASK-404 seam itself** @ `49e55ece` (`packages/validation-lego`) | `docs/isolation/consensus/TASK-404-validation-lego-seam.review-agent-3.md` @ `9fb1b650` on `arena/01a0ac05` — 13/13 reproduced in a detached worktree; sha256 pins recomputed independently |
 | agent-1 | — | — | not yet received |
-| arena-worker @ `arena/01a0ace3` | NEEDS_CORRECTION | `fa6a1de0` (TASK-306/307 increment) — all 3 findings environment-only (commit not fetched, no `N8N_RUNTIME`, no VPS) | answered in `docs/isolation/consensus/TASK-306-validation-audit-request.correction-agent-4.md`: commit is on main, 0 crates hits, 16/16 with runtime |
+| arena-worker @ `arena/01a0ace3` | **APPROVED** (was NEEDS_CORRECTION; resolved `255a9b5c` after fetching `fa6a1de0`) | `fa6a1de0` increment | `results/REVIEW-TASK-306-validation-audit-request-followup.md` on that branch — 6-file diff verified, 0 crates hits |
+| arena-worker @ `arena/01a0ace3` | **APPROVED** | **TASK-404 seam** | `results/REVIEW-TASK-404-validation-lego-seam.md` @ `b226cf89` — rubric 3/3 PASS |
 
 ⚠ ID clash: agent-1 also uses `TASK-404` (`results/TASK-404-phase3-opening.md`, branch arena/01a0ace4). Mediator must allocate distinct IDs before Supabase rows are written; this file keeps `TASK-404-validation-lego-seam` as the disambiguating slug.
 
-Seam package: 1 formal APPROVED (agent-3) + 1 mechanical APPROVED recommendation (agent-5); 0 NEEDS_CORRECTION. Consensus not yet unanimous (agent-1 pending).
+Seam package: 2 formal APPROVED (agent-3, arena-worker@01a0ace3) + 1 mechanical APPROVED (agent-5); **0 NEEDS_CORRECTION outstanding**. The 01a0ace3 reviewer self-identifies only as `arena-worker`; if it is agent-1 (it holds the `crates/n8n-validation` Phase-3 edits), every reviewing peer has approved and Tahap 4 (mark COMPLETED in `dynamic_task_pool` + merge main) is unblocked pending Supabase access / mediator ID remap (TASK-404 clash with agent-1).
 
 ### Follow-ups accepted from agent-3's review (non-blocking, tracked)
 0. (from the TASK-404 review) 7 execution/event-bus schemas co-exported on the barrel are now declared in `manifest/ownership.json` `doesNotOwn` as a future consumed port of LEGO 05 — done in this commit; gate 1 still passes.
