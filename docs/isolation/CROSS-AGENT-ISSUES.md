@@ -1726,3 +1726,19 @@ build agrees). Post-fix: **4 agree / 14 documented-delta / 0 diverge**; falsifia
 (build observes `{packageName}`); S6 = 2.9.1-build-vs-2.9.4-source reflection delta (source
 pins; both ports implement reflection). **ISSUE-024: consolidation decision (Options A/B)
 remains OPEN for the orchestrator — behavioral evidence now complete.**
+
+---
+
+**ADDENDUM (TASK-AGENT4-RUNTIME-01, `arena/01a0aff8-n8n-rust-v-4`, 2026-09-18) — "LIVE 11/11: NOT RUN" row updated: the real-n8n unit layer is now reproducible here (45/0); only the server layer stays blocked.**
+
+The full `n8n@2.9.4` package installs in this sandbox after all — the two blockers were (1) the
+`cdn.sheetjs.com` xlsx tarball (TLS-blocked; solved with the same `overrides.xlsx = 0.18.5`
+npm-registry trick `setup-reference-runtime.sh` already uses) and (2) native build scripts
+(solved with `--ignore-scripts`; the gated unit layers are pure-JS). Result: the agent-4
+reference lanes' `hasRuntime`-gated unit tests execute against the actual n8n 2.9.4 classes —
+**45 pass / 0 fail** (`N8N_RUNTIME=/tmp/n8n-runtime npm run reference:agent4`; golden-only
+fallback without the env: 23 pass / 27 skip). Remaining **5 skips are the live layer** (running
+server + `N8N_URL`), still blocked on native DB-stack builds (nodejs.org headers unreachable) —
+unchanged from the audit. Reproduction documented in `tests/reference/agent-4/README.md`
+(append-only note) and `results/TASK-AGENT4-RUNTIME-01.md`. No golden/fixture edits; `verify:all`
+real exit 0 unaffected.

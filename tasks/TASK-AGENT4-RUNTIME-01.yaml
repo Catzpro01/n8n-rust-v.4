@@ -1,0 +1,49 @@
+id: TASK-AGENT4-RUNTIME-01
+agent: arena/01a0aff8-n8n-rust-v-4
+lego: integration
+module: agent4-reference-runtime
+phase: 3
+title: "Restore the real-n8n 2.9.4 runtime layer for the agent-4 reference lanes (27 skipped -> 45/50 live-stack verification)"
+status: SUBMITTED_FOR_REVIEW
+
+# Context: the audit row "INTEGRATION GATE: BLOCKED / LIVE 11/11: NOT RUN — verdict
+# INCONCLUSIVE" and the agent-4 unit layers gated on `N8N_RUNTIME` (a directory with the
+# FULL `n8n` package) were unreachable in this sandbox: the setup script skips the full
+# n8n CLI because its native deps need nodejs.org headers, and the first full install
+# died on `cdn.sheetjs.com` (TLS-blocked, same reason setup-reference-runtime.sh
+# overrides xlsx). This task restores the layer WITHOUT any native builds:
+#   npm install --ignore-scripts n8n@2.9.4 with the xlsx override = 0.18.5
+# (the CDN override is the SAME recipe setup-reference-runtime.sh already uses for the
+# partial runtime). Result: the agent-4 unit layers execute against the REAL n8n 2.9.4
+# classes: 45 pass / 5 skip (the live layer needs a RUNNING n8n server + N8N_URL —
+# one test per lane, documented) / 0 fail.
+#
+# This task adds: the reproducible npm script, the README operational note (append-only),
+# the ledger addendum. No fixture/golden edits, no gate wiring changes (the suite stays
+# an explicitly-invoked verification layer; it is NOT added to verify:all — peers own
+# that chain and the lanes are reference material, not reconstruction gates).
+
+allowed_paths:
+  - tasks/TASK-AGENT4-RUNTIME-01.yaml
+  - results/TASK-AGENT4-RUNTIME-01.md
+  - docs/isolation/CROSS-AGENT-ISSUES.md   # append-only addendum
+  - tests/reference/agent-4/README.md      # append-only operational note (NOT a golden change)
+  - package.json                           # one additive script: reference:agent4
+
+forbidden_paths:
+  - tests/reference/**/expected.json
+  - tests/reference/agent-4/**             # except the README note above
+  - crates/**
+  - reference/n8n/**
+  - packages/**
+
+operations:
+  - name: install_full_runtime_offline_safe
+  - name: run_reference_lanes_against_real_294
+  - name: document_reproduction
+  - name: record_and_push
+
+acceptance:
+  - agent-4 suite green against real n8n@2.9.4 (0 fail; skips = live layer only, documented)
+  - reproduction documented (command + overrides + --ignore-scripts rationale)
+  - no fixture/golden file touched; verify:all unaffected (real exit 0)

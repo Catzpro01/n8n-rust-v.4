@@ -64,3 +64,29 @@ Note: `node --test <dir>` only auto-discovers `*.test.js`; pass the `.ts` files 
 | Validation: validateFieldType / tryToParse* / guards / schemas (frozen) + workflow rules (new) | `validation/validation.test.ts` 10 cases |
 
 Last run (2026-09-16, live n8n 2.9.4 in sandbox): trigger 8/8, scheduler 7/7, webhook 7/7, persistence 5/5, credentials 5/5, api 8/8; smoke 11/11 before and after.
+
+---
+
+## Operational note (TASK-AGENT4-RUNTIME-01, 2026-09-18) — restoring the N8N_RUNTIME layer in this sandbox
+
+The full-runtime unit layers above (everything gated on `hasRuntime`) were unreproducible here for
+two reasons, both solved without native builds:
+
+1. `cdn.sheetjs.com` (an `xlsx` tarball in the n8n tree) is TLS-blocked in this sandbox — the SAME
+   blocker `scripts/setup-reference-runtime.sh` solves for the partial runtime with an npm-registry
+   override. Use the identical override:
+   ```bash
+   mkdir -p /tmp/n8n-runtime && cd /tmp/n8n-runtime && npm init -y
+   npm pkg set overrides.xlsx=0.18.5
+   npm install --ignore-scripts --no-audit --no-fund n8n@2.9.4     # ~1969 packages, ~2 min
+   ```
+2. `--ignore-scripts` is REQUIRED: native deps would otherwise need nodejs.org headers (blocked).
+   The unit layers drive pure-JS classes (`ActiveWorkflows`, `TriggersAndPollers`,
+   `ScheduledTaskManager`, `WebhookService`, `Cipher`, `Credentials`, `flatted`), so nothing native
+   is exercised.
+
+Run: `N8N_RUNTIME=/tmp/n8n-runtime node --test tests/reference/agent-4/<lane>/*.test.ts ...`
+(observed on 2026-09-18: **45 pass / 0 fail**, the remaining **5 skips are the live layer** —
+they need a RUNNING n8n server + `N8N_URL` and stay blocked here because server startup requires
+native module builds). `npm run reference:agent4` runs the same suite without the runtime env
+(unit-golden layers only, 23 pass / 27 skip).
