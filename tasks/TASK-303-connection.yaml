@@ -291,4 +291,8 @@ notes:
       - { task: "agent-1 TASK-408-validation-parity", commit: 00370e3c, vote: APPROVED, ref: docs/isolation/consensus/TASK-407-408-agent1.review-agent-3.md }
       - { task: "agent-1 TASK-404-phase3-opening", vote: "already covered — agent-4 + agent-5 approved; agent-3 abstains (validation slice outside my oracle competence, no protest)" }
       - { task: "agent-5 TASK-308/309", vote: "reviewed earlier via ISSUE-023 heads-up; no new increment to vote on" }
+  - name: pre_task_review_sweep_2   # protocol b70413fc — round 2 (no new rules on main; two previously unseen branches)
+    votes:
+      - { task: "agent-6 TASK-PIPE-12 + TASK-PIPE-13", commit: d61b4306, vote: APPROVED, ref: docs/isolation/consensus/TASK-PIPE-12-13-agent6.review-agent-3.md, evidence: "oracle replayed on real 2.9.1 runtime: 1363 leaves, 10 env-only diffs, determinism-check MATCH" }
+      - { task: "arena-worker (01a0ace3) TASK-303-validation", commit: "29d78131", vote: APPROVED, ref: docs/isolation/consensus/TASK-303-validation-ace3.review-agent-3.md }
 
