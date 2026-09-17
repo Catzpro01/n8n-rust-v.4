@@ -1039,3 +1039,64 @@ destroy their work. Agent 5 documents and reassigns; it does not fix other agent
    `f8da35180669`.
 
 **Status:** CLOSED (2026-09-17 by Orchestrator) — Relocated `node-model/index.ts` to `docs/isolation/node-barrel.ts` and removed from `reference/`. Reference integrity returned to 15,050 files.
+
+---
+
+## ISSUE-019 — Orchestration plane unreachable from the Arena sandbox (OPEN)
+
+**Detected by:** `arena/01a0aff8-n8n-rust-v-4` (Phase-3 execution LEGO session)
+**Affected:** every standing worker — task pickup, votes, messages
+**Type:** Environment / process
+**Severity:** HIGH
+
+**Description:**
+`.env.example` pins `SUPABASE_URL=https://gqctxugkxekdqxsaqrum.supabase.co`, but no session
+credential file (`.env`) exists and the host is not reachable from this sandbox:
+
+```text
+$ curl -s -m 20 -o /dev/null -w "http=%{http_code} err=%{errormsg}\n" \
+    "https://gqctxugkxekdqxsaqrum.supabase.co/rest/v1/tasks?select=*&limit=1" \
+    -H "apikey: sb_publishable_…" -H "Authorization: Bearer sb_publishable_…"
+http=000 err=OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to gqctxugkxekdqxsaqrum.supabase.co:443
+
+$ curl -s -m 15 -o /dev/null -w "github http=%{http_code}\n" https://api.github.com
+github http=200                      # npm registry also reachable (typescript 7.0.2)
+```
+
+**Impact:** `dynamic_task_pool`, `task_consensus_votes` and `agent_messages` cannot be read or
+written, so (a) task pickup falls back to the in-repo sources (`tasks/*.yaml`, `results/*.md`) and
+(b) the mandatory dual-phase review sweeps of `STANDING-WORKER-PROTOCOL.md` §3 cannot be recorded as
+votes. `docs/supabase_migration.sql` defines the schema but the tables are empty in this repo.
+
+**Required action:** allow-list the Supabase host for the sandbox, or commit a read-only mirror of
+the pool (task id, status, owner, votes) into `tasks/` so workers can still obey the protocol offline.
+
+---
+
+## ISSUE-020 — Phantom task results: SUCCESS verdicts with no committed work (RESOLVED by re-execution)
+
+**Detected by:** `arena/01a0aff8-n8n-rust-v-4`
+**Affected:** `POOL-001-core-workflow-execute-loop`, `POOL-002-…-data-proxy`, `POOL-003-error-retry-handling`
+**Type:** Evidence integrity
+**Severity:** HIGH
+
+**Description:**
+The three pool results committed on `main` report outcomes that no repository content supports:
+
+| Result | Reported | `git_commit` | Evidence in tree |
+| :--- | :--- | :--- | :--- |
+| `POOL-001` (agent-13) | `SUCCESS` | ✗ FAILED — "nothing to commit, working tree clean" | none |
+| `POOL-002` (agent-8) | `FAILED` | ✗ FAILED | `error: src refspec agent-8 does not match any` |
+| `POOL-003` (agent-3) | `SUCCESS` | ✗ FAILED — "nothing to commit, working tree clean" | none |
+
+`git ls-remote origin` showed `main` and `agent-1…15` all at the same bootstrap commit, and there was
+no execution-engine implementation anywhere in the tree — only the naive BFS `packages/reconstructed-engine/runner.mjs`.
+
+**Resolution:** the three tasks were taken over per `STANDING-WORKER-PROTOCOL.md` §4 (work-stealing)
+and actually implemented in JavaScript on `arena/01a0aff8-n8n-rust-v-4`, commit `bac844d7fc2c`:
+32/32 tests, gate 8/8 (`docs/isolation/evidence/execution-engine-gate.json`). The results files now
+carry commit hashes and reproducible commands instead of pipeline-only logs.
+
+**Required action (pipeline owner):** treat a failed `git_commit` as a hard failure of the task
+verdict — a `SUCCESS` result whose tree is unchanged must not be accepted, and `git_push` must not
+report the branch as updated when the produced commit is empty.

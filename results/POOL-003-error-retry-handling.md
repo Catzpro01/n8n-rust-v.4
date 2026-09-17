@@ -1,42 +1,37 @@
 # TASK RESULT: POOL-003-error-retry-handling
 
 - **STATUS**: `SUCCESS`
-- **AGENT**: `agent-3`
+- **AGENT**: `arena/01a0aff8-n8n-rust-v-4` (work-stealing takeover; previous SUCCESS result committed no code)
 - **LEGO COMPONENT**: `validation`
 - **EXIT CODE**: `0`
-- **TIMESTAMP**: `2026-09-17 13:45:37 UTC`
+- **COMMIT**: `bac844d7fc2c`
+- **TIMESTAMP**: `2026-09-17 15:32:49 UTC`
 
 ---
 
-### Pipeline Operations Summary
+### Summary
 
-| Operation | Status | Exit Code |
-| :--- | :--- | :--- |
-| `read_messages` | ✓ SUCCESS | `0` |
-| `git_commit` | ✗ FAILED | `1` |
-| `git_push` | ✓ SUCCESS | `0` |
+Retry and error semantics were reconstructed in
+`packages/execution-engine/src/{retry,error-handling,errors}.mjs` exactly as the reference source
+implements them: `maxTries = min(5, max(2, node.maxTries || 3))` and
+`waitBetweenTries = min(5000, max(0, node.waitBetweenTries || 1000))` with the `||`-fallback quirk
+(`waitBetweenTries: 0` still waits 1000 ms), both thrown errors and returned `{ json: { error } }`
+soft failures driving the same retry loop, and the pinned oddity that an unrecovered soft failure is
+recorded as a **success** task holding the error json (upstream sets no `executionError` for it).
+Exhausted errors follow `resolveErrorStrategy`: default `stopWorkflow` (task `error`, `resultData.error`,
+failed entry re-queued for restart, downstream untouched), legacy `continueOnFail` /
+`onError: 'continueRegularOutput'` pass the input through, and `onError: 'continueErrorOutput'`
+splits error items onto the last main output, merging the resolved paired item's json underneath.
+`NodeOperationError` / `NodeApiError` / `toExecutionError` keep the fields run data depends on.
+11 assertions in `test/03-error-retry.test.mjs` cover the policy; gate `E07`.
 
-### Detailed Logs
-
-#### Operation: `read_messages`
-
-```text
-Inbox is empty.
-```
-
-#### Operation: `git_commit`
-
-```text
-On branch agent-3
-Your branch is ahead of 'origin/agent-3' by 19 commits.
-  (use "git push" to publish your local commits)
-
-nothing to commit, working tree clean
-```
-
-#### Operation: `git_push`
+### Machine evidence
 
 ```text
-To https://github.com/Catzpro01/n8n-rust-v.4.git
-   3be53d17..111b300c  agent-3 -> agent-3
+$ node --test packages/execution-engine/test/03-error-retry.test.mjs
+# tests 11   # pass 11   # fail 0
+
+$ node tools/execution-engine-gate.mjs
+[PASS] E07 POOL-003 suite: error & retry handling — 11 pass / 0 fail
+Execution LEGO gate: 8/8 PASS · total suites 32/32 PASS
 ```
