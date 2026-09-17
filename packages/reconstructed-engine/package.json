@@ -1,0 +1,13 @@
+{
+  "name": "@n8n-rust-v4/reconstructed-engine",
+  "version": "0.4.0",
+  "private": true,
+  "type": "module",
+  "description": "n8n 2.9.4 reconstructed backend engine (Node.js/TypeScript) — LEGO increments from agents 1-5, integrated by agent-5.",
+  "scripts": {
+    "test": "node --experimental-strip-types --test test/",
+    "smoke": "node test-run.mjs",
+    "locale:audit": "node audit-locales.mjs",
+    "locale:check": "node audit-locales.mjs --check"
+  }
+}

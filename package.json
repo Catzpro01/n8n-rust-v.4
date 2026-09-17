@@ -16,6 +16,10 @@
     "queue:test": "npm --prefix packages/queue-lego test",
     "events:test": "npm --prefix packages/events-lego test",
     "realtime:test": "npm --prefix packages/realtime-lego test",
-    "phase6:integration": "node --test tests/integration/phase6-integration.test.mjs"
+    "phase6:integration": "node --test tests/integration/phase6-integration.test.mjs",
+    "engine:test": "node --experimental-strip-types --test packages/reconstructed-engine/test/locale-enforcer.test.ts",
+    "engine:smoke": "node packages/reconstructed-engine/test-run.mjs",
+    "locale:audit": "node --experimental-strip-types packages/reconstructed-engine/audit-locales.mjs",
+    "locale:check": "node --experimental-strip-types packages/reconstructed-engine/audit-locales.mjs --check"
   }
 }

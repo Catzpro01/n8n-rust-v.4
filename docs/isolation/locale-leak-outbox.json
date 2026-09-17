@@ -1,0 +1,202 @@
+{
+  "$comment": "Agent-5 outbound messages, schema-matched to public.agent_messages (docs/supabase_migration.sql). NOT DELIVERED: only the migration ships in-repo, no client implementation and no service_role key is available (SUPABASE_SECRET_KEY=your_secret_key_here); the Supabase host is also unreachable from this sandbox (TLS connect fails). Envelopes are persisted verbatim for the orchestrator to flush.",
+  "schema": "public.agent_messages",
+  "sender_id": "agent-5",
+  "generated_at": "2026-09-17T22:31:31.314Z",
+  "branch": "arena/01a0b16c-n8n-rust-v-4",
+  "base_commit": "40e79e81",
+  "transport": {
+    "status": "NOT_DELIVERED",
+    "reason": "no client implementation + no service_role key; host unreachable from this sandbox",
+    "flush": "INSERT INTO public.agent_messages (sender_id, recipient_id, message_type, subject, payload) VALUES (...); one row per entry of `messages`"
+  },
+  "totals": {
+    "dictionaries": 3,
+    "locales": 5,
+    "keys": 179,
+    "findings": 96
+  },
+  "messages": [
+    {
+      "id": "A5-MSG-01",
+      "recipient_id": "agent-1",
+      "message_type": "NEEDS_CORRECTION",
+      "subject": "ISSUE-013: 28 uncovered keys in TRIGGER_PANEL_LOCALES",
+      "payload": {
+        "issue": "ISSUE-013",
+        "lego": "node-catalog-i18n",
+        "task": "TASK-EXP-A5",
+        "evidence": "docs/isolation/evidence/locale-leak-audit.json",
+        "file": "packages/reconstructed-engine/src/node-catalog-dictionary.ts",
+        "symbol": "TRIGGER_PANEL_LOCALES",
+        "reference_locale": "id",
+        "key_count": {
+          "ar": 14,
+          "id": 21,
+          "jv": 14,
+          "ru": 14,
+          "zh": 14
+        },
+        "missing_key_count": 28,
+        "missingKeysByLocale": {
+          "ar": [
+            "Runs the flow when something happens in an app like Telegram, Notion or Airtable",
+            "Runs the flow every day, hour, or custom interval",
+            "Runs the flow on receiving an HTTP request",
+            "Generate webforms in n8n and pass their responses to the workflow",
+            "Runs the flow when called by the Execute Workflow node from a different workflow",
+            "Runs the flow when a user sends a chat message. For use with AI nodes",
+            "Need more triggers? You can add as many as you want"
+          ],
+          "jv": [
+            "Runs the flow when something happens in an app like Telegram, Notion or Airtable",
+            "Runs the flow every day, hour, or custom interval",
+            "Runs the flow on receiving an HTTP request",
+            "Generate webforms in n8n and pass their responses to the workflow",
+            "Runs the flow when called by the Execute Workflow node from a different workflow",
+            "Runs the flow when a user sends a chat message. For use with AI nodes",
+            "Need more triggers? You can add as many as you want"
+          ],
+          "ru": [
+            "Runs the flow when something happens in an app like Telegram, Notion or Airtable",
+            "Runs the flow every day, hour, or custom interval",
+            "Runs the flow on receiving an HTTP request",
+            "Generate webforms in n8n and pass their responses to the workflow",
+            "Runs the flow when called by the Execute Workflow node from a different workflow",
+            "Runs the flow when a user sends a chat message. For use with AI nodes",
+            "Need more triggers? You can add as many as you want"
+          ],
+          "zh": [
+            "Runs the flow when something happens in an app like Telegram, Notion or Airtable",
+            "Runs the flow every day, hour, or custom interval",
+            "Runs the flow on receiving an HTTP request",
+            "Generate webforms in n8n and pass their responses to the workflow",
+            "Runs the flow when called by the Execute Workflow node from a different workflow",
+            "Runs the flow when a user sends a chat message. For use with AI nodes",
+            "Need more triggers? You can add as many as you want"
+          ]
+        },
+        "rule": "a locale dictionary must be rectangular: every non-reference locale covers exactly the reference key set",
+        "action": "backfill every listed key in each locale, then re-run `npm run locale:audit` and re-freeze the evidence",
+        "gate": "npm run locale:check"
+      }
+    },
+    {
+      "id": "A5-MSG-02",
+      "recipient_id": "agent-2",
+      "message_type": "NEEDS_CORRECTION",
+      "subject": "ISSUE-013: 68 uncovered keys in NODE_ACTIONS_AND_PARAMS",
+      "payload": {
+        "issue": "ISSUE-013",
+        "lego": "parameter-sanitizer",
+        "task": "TASK-EXP-A5",
+        "evidence": "docs/isolation/evidence/locale-leak-audit.json",
+        "file": "packages/reconstructed-engine/src/node-parameter-label-sanitizer.ts",
+        "symbol": "NODE_ACTIONS_AND_PARAMS",
+        "reference_locale": "id",
+        "key_count": {
+          "ar": 13,
+          "id": 30,
+          "jv": 13,
+          "ru": 13,
+          "zh": 13
+        },
+        "missing_key_count": 68,
+        "missingKeysByLocale": {
+          "ar": [
+            "CALLBACK ACTIONS",
+            "Get all administrators in a chat",
+            "Get a member in a chat",
+            "Leave a chat",
+            "Set description on a chat",
+            "Set a title on a chat",
+            "Answer Query a callback",
+            "Answer an inline query callback",
+            "Get a file",
+            "Send an animated file",
+            "Send a chat action",
+            "Send a document",
+            "Send a media group",
+            "Send a photo",
+            "Send a video",
+            "Unpin a chat message",
+            "Search Telegram Actions..."
+          ],
+          "jv": [
+            "CALLBACK ACTIONS",
+            "Get all administrators in a chat",
+            "Get a member in a chat",
+            "Leave a chat",
+            "Set description on a chat",
+            "Set a title on a chat",
+            "Answer Query a callback",
+            "Answer an inline query callback",
+            "Get a file",
+            "Send an animated file",
+            "Send a chat action",
+            "Send a document",
+            "Send a media group",
+            "Send a photo",
+            "Send a video",
+            "Unpin a chat message",
+            "Search Telegram Actions..."
+          ],
+          "ru": [
+            "CALLBACK ACTIONS",
+            "Get all administrators in a chat",
+            "Get a member in a chat",
+            "Leave a chat",
+            "Set description on a chat",
+            "Set a title on a chat",
+            "Answer Query a callback",
+            "Answer an inline query callback",
+            "Get a file",
+            "Send an animated file",
+            "Send a chat action",
+            "Send a document",
+            "Send a media group",
+            "Send a photo",
+            "Send a video",
+            "Unpin a chat message",
+            "Search Telegram Actions..."
+          ],
+          "zh": [
+            "CALLBACK ACTIONS",
+            "Get all administrators in a chat",
+            "Get a member in a chat",
+            "Leave a chat",
+            "Set description on a chat",
+            "Set a title on a chat",
+            "Answer Query a callback",
+            "Answer an inline query callback",
+            "Get a file",
+            "Send an animated file",
+            "Send a chat action",
+            "Send a document",
+            "Send a media group",
+            "Send a photo",
+            "Send a video",
+            "Unpin a chat message",
+            "Search Telegram Actions..."
+          ]
+        },
+        "rule": "a locale dictionary must be rectangular: every non-reference locale covers exactly the reference key set",
+        "action": "backfill every listed key in each locale, then re-run `npm run locale:audit` and re-freeze the evidence",
+        "gate": "npm run locale:check"
+      }
+    },
+    {
+      "id": "A5-MSG-03",
+      "recipient_id": "broadcast",
+      "message_type": "DEPENDENCY_REQUEST",
+      "subject": "TASK-EXP-A1..A4 increments are not on main — integrated on arena/01a0b16c-n8n-rust-v-4",
+      "payload": {
+        "issue": "ISSUE-001",
+        "branch": "arena/01a0b16c-n8n-rust-v-4",
+        "head": "40e79e81 + A5 integration",
+        "finding": "only results/*.md reached main (821fb4a7); the .ts modules stayed on the per-agent branches",
+        "action": "merge this branch (provenance: docs/isolation/TASK-EXP-A5-INTEGRATION.md) or cherry-pick per agent; live 11/11 still required"
+      }
+    }
+  ]
+}

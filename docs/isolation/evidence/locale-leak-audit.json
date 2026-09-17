@@ -1,0 +1,561 @@
+{
+  "dictionaries": [
+    {
+      "name": "canvas-node-locales.CANVAS_NODE_LOCALES",
+      "locales": [
+        "ar",
+        "id",
+        "jv",
+        "ru",
+        "zh"
+      ],
+      "referenceLocale": "id",
+      "keyCount": {
+        "ar": 4,
+        "id": 4,
+        "jv": 4,
+        "ru": 4,
+        "zh": 4
+      },
+      "missingKeys": [],
+      "untranslated": [],
+      "blankValues": [],
+      "clean": true
+    },
+    {
+      "name": "node-catalog-dictionary.TRIGGER_PANEL_LOCALES",
+      "locales": [
+        "ar",
+        "id",
+        "jv",
+        "ru",
+        "zh"
+      ],
+      "referenceLocale": "id",
+      "keyCount": {
+        "ar": 14,
+        "id": 21,
+        "jv": 14,
+        "ru": 14,
+        "zh": 14
+      },
+      "missingKeys": [
+        {
+          "locale": "ar",
+          "key": "Runs the flow when something happens in an app like Telegram, Notion or Airtable",
+          "value": ""
+        },
+        {
+          "locale": "ar",
+          "key": "Runs the flow every day, hour, or custom interval",
+          "value": ""
+        },
+        {
+          "locale": "ar",
+          "key": "Runs the flow on receiving an HTTP request",
+          "value": ""
+        },
+        {
+          "locale": "ar",
+          "key": "Generate webforms in n8n and pass their responses to the workflow",
+          "value": ""
+        },
+        {
+          "locale": "ar",
+          "key": "Runs the flow when called by the Execute Workflow node from a different workflow",
+          "value": ""
+        },
+        {
+          "locale": "ar",
+          "key": "Runs the flow when a user sends a chat message. For use with AI nodes",
+          "value": ""
+        },
+        {
+          "locale": "ar",
+          "key": "Need more triggers? You can add as many as you want",
+          "value": ""
+        },
+        {
+          "locale": "jv",
+          "key": "Runs the flow when something happens in an app like Telegram, Notion or Airtable",
+          "value": ""
+        },
+        {
+          "locale": "jv",
+          "key": "Runs the flow every day, hour, or custom interval",
+          "value": ""
+        },
+        {
+          "locale": "jv",
+          "key": "Runs the flow on receiving an HTTP request",
+          "value": ""
+        },
+        {
+          "locale": "jv",
+          "key": "Generate webforms in n8n and pass their responses to the workflow",
+          "value": ""
+        },
+        {
+          "locale": "jv",
+          "key": "Runs the flow when called by the Execute Workflow node from a different workflow",
+          "value": ""
+        },
+        {
+          "locale": "jv",
+          "key": "Runs the flow when a user sends a chat message. For use with AI nodes",
+          "value": ""
+        },
+        {
+          "locale": "jv",
+          "key": "Need more triggers? You can add as many as you want",
+          "value": ""
+        },
+        {
+          "locale": "ru",
+          "key": "Runs the flow when something happens in an app like Telegram, Notion or Airtable",
+          "value": ""
+        },
+        {
+          "locale": "ru",
+          "key": "Runs the flow every day, hour, or custom interval",
+          "value": ""
+        },
+        {
+          "locale": "ru",
+          "key": "Runs the flow on receiving an HTTP request",
+          "value": ""
+        },
+        {
+          "locale": "ru",
+          "key": "Generate webforms in n8n and pass their responses to the workflow",
+          "value": ""
+        },
+        {
+          "locale": "ru",
+          "key": "Runs the flow when called by the Execute Workflow node from a different workflow",
+          "value": ""
+        },
+        {
+          "locale": "ru",
+          "key": "Runs the flow when a user sends a chat message. For use with AI nodes",
+          "value": ""
+        },
+        {
+          "locale": "ru",
+          "key": "Need more triggers? You can add as many as you want",
+          "value": ""
+        },
+        {
+          "locale": "zh",
+          "key": "Runs the flow when something happens in an app like Telegram, Notion or Airtable",
+          "value": ""
+        },
+        {
+          "locale": "zh",
+          "key": "Runs the flow every day, hour, or custom interval",
+          "value": ""
+        },
+        {
+          "locale": "zh",
+          "key": "Runs the flow on receiving an HTTP request",
+          "value": ""
+        },
+        {
+          "locale": "zh",
+          "key": "Generate webforms in n8n and pass their responses to the workflow",
+          "value": ""
+        },
+        {
+          "locale": "zh",
+          "key": "Runs the flow when called by the Execute Workflow node from a different workflow",
+          "value": ""
+        },
+        {
+          "locale": "zh",
+          "key": "Runs the flow when a user sends a chat message. For use with AI nodes",
+          "value": ""
+        },
+        {
+          "locale": "zh",
+          "key": "Need more triggers? You can add as many as you want",
+          "value": ""
+        }
+      ],
+      "untranslated": [],
+      "blankValues": [],
+      "clean": false
+    },
+    {
+      "name": "node-parameter-label-sanitizer.NODE_ACTIONS_AND_PARAMS",
+      "locales": [
+        "ar",
+        "id",
+        "jv",
+        "ru",
+        "zh"
+      ],
+      "referenceLocale": "id",
+      "keyCount": {
+        "ar": 13,
+        "id": 30,
+        "jv": 13,
+        "ru": 13,
+        "zh": 13
+      },
+      "missingKeys": [
+        {
+          "locale": "ar",
+          "key": "CALLBACK ACTIONS",
+          "value": ""
+        },
+        {
+          "locale": "ar",
+          "key": "Get all administrators in a chat",
+          "value": ""
+        },
+        {
+          "locale": "ar",
+          "key": "Get a member in a chat",
+          "value": ""
+        },
+        {
+          "locale": "ar",
+          "key": "Leave a chat",
+          "value": ""
+        },
+        {
+          "locale": "ar",
+          "key": "Set description on a chat",
+          "value": ""
+        },
+        {
+          "locale": "ar",
+          "key": "Set a title on a chat",
+          "value": ""
+        },
+        {
+          "locale": "ar",
+          "key": "Answer Query a callback",
+          "value": ""
+        },
+        {
+          "locale": "ar",
+          "key": "Answer an inline query callback",
+          "value": ""
+        },
+        {
+          "locale": "ar",
+          "key": "Get a file",
+          "value": ""
+        },
+        {
+          "locale": "ar",
+          "key": "Send an animated file",
+          "value": ""
+        },
+        {
+          "locale": "ar",
+          "key": "Send a chat action",
+          "value": ""
+        },
+        {
+          "locale": "ar",
+          "key": "Send a document",
+          "value": ""
+        },
+        {
+          "locale": "ar",
+          "key": "Send a media group",
+          "value": ""
+        },
+        {
+          "locale": "ar",
+          "key": "Send a photo",
+          "value": ""
+        },
+        {
+          "locale": "ar",
+          "key": "Send a video",
+          "value": ""
+        },
+        {
+          "locale": "ar",
+          "key": "Unpin a chat message",
+          "value": ""
+        },
+        {
+          "locale": "ar",
+          "key": "Search Telegram Actions...",
+          "value": ""
+        },
+        {
+          "locale": "jv",
+          "key": "CALLBACK ACTIONS",
+          "value": ""
+        },
+        {
+          "locale": "jv",
+          "key": "Get all administrators in a chat",
+          "value": ""
+        },
+        {
+          "locale": "jv",
+          "key": "Get a member in a chat",
+          "value": ""
+        },
+        {
+          "locale": "jv",
+          "key": "Leave a chat",
+          "value": ""
+        },
+        {
+          "locale": "jv",
+          "key": "Set description on a chat",
+          "value": ""
+        },
+        {
+          "locale": "jv",
+          "key": "Set a title on a chat",
+          "value": ""
+        },
+        {
+          "locale": "jv",
+          "key": "Answer Query a callback",
+          "value": ""
+        },
+        {
+          "locale": "jv",
+          "key": "Answer an inline query callback",
+          "value": ""
+        },
+        {
+          "locale": "jv",
+          "key": "Get a file",
+          "value": ""
+        },
+        {
+          "locale": "jv",
+          "key": "Send an animated file",
+          "value": ""
+        },
+        {
+          "locale": "jv",
+          "key": "Send a chat action",
+          "value": ""
+        },
+        {
+          "locale": "jv",
+          "key": "Send a document",
+          "value": ""
+        },
+        {
+          "locale": "jv",
+          "key": "Send a media group",
+          "value": ""
+        },
+        {
+          "locale": "jv",
+          "key": "Send a photo",
+          "value": ""
+        },
+        {
+          "locale": "jv",
+          "key": "Send a video",
+          "value": ""
+        },
+        {
+          "locale": "jv",
+          "key": "Unpin a chat message",
+          "value": ""
+        },
+        {
+          "locale": "jv",
+          "key": "Search Telegram Actions...",
+          "value": ""
+        },
+        {
+          "locale": "ru",
+          "key": "CALLBACK ACTIONS",
+          "value": ""
+        },
+        {
+          "locale": "ru",
+          "key": "Get all administrators in a chat",
+          "value": ""
+        },
+        {
+          "locale": "ru",
+          "key": "Get a member in a chat",
+          "value": ""
+        },
+        {
+          "locale": "ru",
+          "key": "Leave a chat",
+          "value": ""
+        },
+        {
+          "locale": "ru",
+          "key": "Set description on a chat",
+          "value": ""
+        },
+        {
+          "locale": "ru",
+          "key": "Set a title on a chat",
+          "value": ""
+        },
+        {
+          "locale": "ru",
+          "key": "Answer Query a callback",
+          "value": ""
+        },
+        {
+          "locale": "ru",
+          "key": "Answer an inline query callback",
+          "value": ""
+        },
+        {
+          "locale": "ru",
+          "key": "Get a file",
+          "value": ""
+        },
+        {
+          "locale": "ru",
+          "key": "Send an animated file",
+          "value": ""
+        },
+        {
+          "locale": "ru",
+          "key": "Send a chat action",
+          "value": ""
+        },
+        {
+          "locale": "ru",
+          "key": "Send a document",
+          "value": ""
+        },
+        {
+          "locale": "ru",
+          "key": "Send a media group",
+          "value": ""
+        },
+        {
+          "locale": "ru",
+          "key": "Send a photo",
+          "value": ""
+        },
+        {
+          "locale": "ru",
+          "key": "Send a video",
+          "value": ""
+        },
+        {
+          "locale": "ru",
+          "key": "Unpin a chat message",
+          "value": ""
+        },
+        {
+          "locale": "ru",
+          "key": "Search Telegram Actions...",
+          "value": ""
+        },
+        {
+          "locale": "zh",
+          "key": "CALLBACK ACTIONS",
+          "value": ""
+        },
+        {
+          "locale": "zh",
+          "key": "Get all administrators in a chat",
+          "value": ""
+        },
+        {
+          "locale": "zh",
+          "key": "Get a member in a chat",
+          "value": ""
+        },
+        {
+          "locale": "zh",
+          "key": "Leave a chat",
+          "value": ""
+        },
+        {
+          "locale": "zh",
+          "key": "Set description on a chat",
+          "value": ""
+        },
+        {
+          "locale": "zh",
+          "key": "Set a title on a chat",
+          "value": ""
+        },
+        {
+          "locale": "zh",
+          "key": "Answer Query a callback",
+          "value": ""
+        },
+        {
+          "locale": "zh",
+          "key": "Answer an inline query callback",
+          "value": ""
+        },
+        {
+          "locale": "zh",
+          "key": "Get a file",
+          "value": ""
+        },
+        {
+          "locale": "zh",
+          "key": "Send an animated file",
+          "value": ""
+        },
+        {
+          "locale": "zh",
+          "key": "Send a chat action",
+          "value": ""
+        },
+        {
+          "locale": "zh",
+          "key": "Send a document",
+          "value": ""
+        },
+        {
+          "locale": "zh",
+          "key": "Send a media group",
+          "value": ""
+        },
+        {
+          "locale": "zh",
+          "key": "Send a photo",
+          "value": ""
+        },
+        {
+          "locale": "zh",
+          "key": "Send a video",
+          "value": ""
+        },
+        {
+          "locale": "zh",
+          "key": "Unpin a chat message",
+          "value": ""
+        },
+        {
+          "locale": "zh",
+          "key": "Search Telegram Actions...",
+          "value": ""
+        }
+      ],
+      "untranslated": [],
+      "blankValues": [],
+      "clean": false
+    }
+  ],
+  "clean": false,
+  "totals": {
+    "dictionaries": 3,
+    "locales": 5,
+    "keys": 179,
+    "findings": 96
+  },
+  "generatedAt": "2026-09-17T22:29:56.591Z",
+  "modules": 22
+}
