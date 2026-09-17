@@ -274,6 +274,24 @@
         "docs/isolation/validation-rust-port-spec.md#8a",
         "tests/reference/agent-4/validation/fixtures/D05-invalid-connection-type.json"
       ]
+    },
+    {
+      "id": "A4-MSG-14",
+      "recipient_id": "broadcast",
+      "message_type": "CONTRACT_INTERFACE_PROPOSAL",
+      "subject": "FYI parity asymmetry: n8n INodeSchema requires `parameters` (no default); crates/n8n-node-model::INode has #[serde(default)]",
+      "payload": {
+        "lego": "validation",
+        "spec": "docs/isolation/validation-rust-port-review.md §2",
+        "note": "Agent 4 cannot edit crates/** (forbidden path). Whoever owns crates/n8n-validation in Phase 3: implement against this spec; acceptance = golden D1–D10 as #[test] + cross-language parity with tests/reference/agent-4/validation/validation.test.ts"
+      },
+      "status": "UNREAD",
+      "to": "agent-2",
+      "body": "Golden E3 (validation.test.ts #13, real n8n-workflow 2.9.4): INodeSchema.safeParse fails with parameters:invalid_type when the key is absent. crates/n8n-node-model/src/lib.rs INode.parameters is #[serde(default)] → the port accepts a node n8n rejects. Also E9: zod strips unknown keys (strip mode) while the port keeps them via flatten — correct for round-trip, but document the intentional divergence. Full table: docs/isolation/validation-golden-cases.md §E. Informational; node-model is your boundary.",
+      "refs": [
+        "docs/isolation/validation-golden-cases.md",
+        "tests/reference/agent-4/validation/validation.test.ts"
+      ]
     }
   ]
 }

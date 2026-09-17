@@ -109,7 +109,7 @@ offline golden tests, and optional live replays.
 | Persistence | `persistence/persistence.test.ts` | flatted wire format; status transitions golden; execution save/load golden; workflow save/load golden; live save→load→run→status + SQLite rows + `workflow_history` | 5/5 |
 | Credentials | `credentials/credentials.test.ts` | encrypt/decrypt + independent EVP_BytesToKey cross-check; wrong key/short input; `Credentials` NO_DATA/DECRYPTION_FAILED/INVALID_JSON; golden redaction; live lookup/missing/invalid | 5/5 |
 | API | `api/api-envelope.test.ts` | health/401; `{data}` envelope; `{code,message,hint,meta}`; zod raw issue 400; not-found variants; public API; baseline; live valid/invalid/404/validation/success | 8/8 |
-| Validation | `validation/validation.test.ts` | goldens A/B/C against real `n8n-workflow` 2.9.4 (`Workflow` accepts duplicates/dangling/cycles — parity); goldens D1–D10 against `workflow-rules.ts` (new opt-in rules); fixture anti-drift; robustness fuzz (300 docs, no-throw, determinism, self-loop shape) | 12/12 |
+| Validation | `validation/validation.test.ts` | goldens A/B/C against real `n8n-workflow` 2.9.4 (`Workflow` accepts duplicates/dangling/cycles — parity); goldens D1–D10 against `workflow-rules.ts` (new opt-in rules); fixture anti-drift; robustness fuzz (300 docs, no-throw, determinism, self-loop shape); golden E `INodeSchema` parity anchor (E1–E10) | 13/13 |
 
 Golden fixtures (INPUT / EXPECTED OUTPUT / ERROR / SIDE EFFECT): `golden/api.golden.json`,
 `credentials.golden.json` (dummy credential; plaintext never stored), `execution-status.golden.json`,
@@ -184,5 +184,5 @@ installed, so `regression_gate.py` could not run. Instead n8n **2.9.4** was inst
 | Validation (TypeScript, Phase 2) | **VERIFIED** |
 | Validation Rust port (`crates/n8n-validation`, Phase 3, not Agent 4-owned) | **ANALYZED** — spec delivered, crate NON-CONFORMANT, awaiting VPS implementation |
 
-Criteria met: source-verified docs + contracts, 52/52 reference tests, 11/11 smoke before and
+Criteria met: source-verified docs + contracts, 53/53 reference tests, 11/11 smoke before and
 after (re-recorded back-to-back 2026-09-17), live verification on n8n 2.9.4, zero modification of Agent 1/2/3 files, no Rust, no secrets.

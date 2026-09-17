@@ -173,3 +173,24 @@ test('robustness: validateWorkflow never throws and always returns a well-formed
 	const self = validateWorkflow({ nodes: [{ name: 'A' }], connections: { A: { main: [[{ node: 'A', type: 'main', index: 0 }]] } } }, { allowCycles: false });
 	assert.deepEqual(self.errors, [{ code: 'CYCLE_DETECTED', node: 'A', path: ['connections', 'A', 'main'], message: 'Cycle detected: A → A' }]);
 });
+
+test('golden E: INodeSchema (real n8n-workflow 2.9.4) — parity anchor for node shape', { skip: hasRuntime ? false : 'N8N_RUNTIME not found' }, () => {
+	const w = n8nRequire('n8n-workflow');
+	const base = { id: '1', name: 'A', type: 'n8n-nodes-base.noOp', typeVersion: 1, position: [0, 0], parameters: {} };
+	const ok = (v: unknown) => w.INodeSchema.safeParse(v);
+	const fail = (v: unknown, path: string, code: string) => { const r = ok(v); assert.equal(r.success, false); assert.deepEqual([r.error.issues[0].path.join('.'), r.error.issues[0].code], [path, code]); };
+	assert.equal(ok(base).success, true, 'E1 minimal node');
+	assert.equal(ok({ ...base, disabled: true, notes: 'n', notesInFlow: true, retryOnFail: true, maxTries: 3, waitBetweenTries: 1000, alwaysOutputData: true, executeOnce: true, onError: 'continueErrorOutput', continueOnFail: false, webhookId: 'w', extendsCredential: 'x', rewireOutputLogTo: 'ai_tool', credentials: { httpBasicAuth: { id: null, name: 'c' } }, forceCustomOperation: { resource: 'r', operation: 'o' } }).success, true, 'E2 all 15 optional fields');
+	const { parameters: _p, ...noParams } = base; fail(noParams, 'parameters', 'invalid_type');            // E3 parameters is REQUIRED (not defaulted)
+	fail({ ...base, position: [0, 0, 0] }, 'position', 'too_big');                                          // E4 position is a strict 2-tuple
+	fail({ ...base, typeVersion: '1' }, 'typeVersion', 'invalid_type');                                     // E5 no coercion
+	fail({ ...base, onError: 'explode' }, 'onError', 'invalid_enum_value');                                 // E6 OnErrorSchema enum
+	fail({ ...base, rewireOutputLogTo: 'foo' }, 'rewireOutputLogTo', 'invalid_enum_value');                 // E7 NodeConnectionTypeSchema enum
+	fail({ ...base, credentials: { x: { name: 'c' } } }, 'credentials.x.id', 'invalid_type');               // E8 credentials.id: string|null, required key
+	const extra = ok({ ...base, someFutureField: 42 });                                                     // E9 unknown keys: accepted but STRIPPED (zod default)
+	assert.equal(extra.success, true); assert.equal('someFutureField' in extra.data, false, 'zod strips unknown keys — a port must NOT use this schema as a save gate or it loses round-trip data');
+	for (const d of ['01-empty-workflow', '03-linear']) {                                                  // E10 reference fixtures conform
+		const wf = JSON.parse(readFileSync(resolve(here, '..', d, 'workflow.json'), 'utf8'));
+		assert.equal(w.INodesSchema.safeParse(wf.nodes).success, true, d);
+	}
+});
