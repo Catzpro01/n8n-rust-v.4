@@ -12,6 +12,12 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 find_runtime() {
+  # ENGINE_NO_RUNTIME=1 makes the offline path reproducible on a machine that DOES have
+  # .runtime (the evidence recorder needs both modes in one session, and `.runtime`
+  # cannot be renamed from inside a script without racing other lanes).
+  if [ "${ENGINE_NO_RUNTIME:-0}" = "1" ]; then
+    return 1
+  fi
   for dir in "${LEGO_LIVE_RUNTIME:-}" "$ROOT/.runtime" "/home/user/.n8n-live"; do
     [ -n "$dir" ] || continue
     if [ -f "$dir/node_modules/n8n-workflow/package.json" ] && [ -f "$dir/node_modules/n8n-core/package.json" ]; then
@@ -28,9 +34,15 @@ if RUNTIME="$(find_runtime)"; then
   echo "reference runtime: $RUNTIME/node_modules"
   ARGS+=("test/oracle/*.test.mjs")
 else
-  echo "WARNING: reference runtime not found — oracle gate will fail with setup instructions." >&2
-  echo "         run: scripts/setup-reference-runtime.sh" >&2
-  echo "         (or set ENGINE_ALLOW_NO_ORACLE=1 to turn it into a loud diagnostic)" >&2
+  if [ "${ENGINE_NO_RUNTIME:-0}" = "1" ]; then
+    # Deliberate offline mode, not a missing dependency: say so on stdout so the captured
+    # transcript proves WHICH environment the suite ran in (gate 08 asserts this line).
+    echo "reference runtime: suppressed by ENGINE_NO_RUNTIME=1 (offline mode on purpose)"
+  else
+    echo "WARNING: reference runtime not found — oracle gate will fail with setup instructions." >&2
+    echo "         run: scripts/setup-reference-runtime.sh" >&2
+    echo "         (or set ENGINE_ALLOW_NO_ORACLE=1 to turn it into a loud diagnostic)" >&2
+  fi
   if [ "${ENGINE_ALLOW_NO_ORACLE:-0}" = "1" ]; then
     ARGS+=("test/oracle/*.test.mjs")
   fi

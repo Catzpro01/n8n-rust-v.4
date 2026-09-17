@@ -1,0 +1,92 @@
+{
+  "$comment": "Machine-readable companion to the transcripts in this directory, produced by test/helpers/capture-evidence.mjs (npm run verify:engine:evidence). Transcripts hold verdict lines only; these counts are what test/08-evidence asserts. Re-run after ANY change to fixtures/ or src/ — the gate fails when the hashes here stop matching the tree, which is the point.",
+  "capturedAt": "2026-09-17T18:39:22.741Z",
+  "head": "7196779eeda64179a6db264c966b016cbad7f01c",
+  "branch": "arena/01a0aff7-n8n-rust-v-4",
+  "node": "v22.22.3",
+  "referenceRuntime": {
+    "n8nWorkflow": "2.9.1",
+    "n8nCore": "2.9.1"
+  },
+  "artifacts": {
+    "fixtures/data-proxy.golden.json": {
+      "sha256": "4964add3f78a2275643150e4a5b9feb4da72953ac5ff903458cc015831384976",
+      "bytes": 117098,
+      "volatileKeysSkipped": [
+        "$recordedAt",
+        "capturedAt",
+        "$generatedAt",
+        "recordedAt"
+      ]
+    },
+    "fixtures/corpus.json": {
+      "sha256": "6c0c928d223eeebb390a109d7cd3f828427d9c92a87d12f9301677504a221645",
+      "bytes": 57147,
+      "volatileKeysSkipped": [
+        "$recordedAt",
+        "capturedAt",
+        "$generatedAt",
+        "recordedAt"
+      ]
+    },
+    "fixtures/reference-snapshot.json": {
+      "sha256": "951213492a86e0e7e1115f747b9e0339b9a80e80af6c0a61b116071cfccc95a2",
+      "bytes": 11546,
+      "volatileKeysSkipped": [
+        "$recordedAt",
+        "capturedAt",
+        "$generatedAt",
+        "recordedAt"
+      ]
+    },
+    "manifest/port-surface.json": {
+      "sha256": "01705c810c06eb7fa08f633016ce753b9585dd35c8e1acca7735a7807f0c536e",
+      "bytes": 30761,
+      "volatileKeysSkipped": [
+        "$recordedAt",
+        "capturedAt",
+        "$generatedAt",
+        "recordedAt"
+      ]
+    }
+  },
+  "srcFiles": [
+    "additional-keys.mjs",
+    "constants.mjs",
+    "errors.mjs",
+    "execution-metadata.mjs",
+    "get-secrets-proxy.mjs",
+    "node-execution-context.mjs",
+    "reference-runtime.mjs",
+    "run-execution-data.mjs",
+    "utils.mjs",
+    "workflow-data-proxy-env-provider.mjs",
+    "workflow-data-proxy.mjs"
+  ],
+  "runs": {
+    "live": {
+      "transcript": "evidence/POOL-002-R1-live.txt",
+      "command": "bash scripts/run-engine-tests.sh",
+      "counts": {
+        "tests": 103,
+        "pass": 103,
+        "fail": 0,
+        "skipped": 0
+      },
+      "runtimeAsSeenBySuite": "/home/user/n8n-rust-v.4/.runtime/node_modules",
+      "notOk": []
+    },
+    "offline": {
+      "transcript": "evidence/POOL-002-R1-offline.txt",
+      "command": "ENGINE_NO_RUNTIME=1 ENGINE_ALLOW_NO_ORACLE=1 bash scripts/run-engine-tests.sh",
+      "counts": {
+        "tests": 103,
+        "pass": 103,
+        "fail": 0,
+        "skipped": 0
+      },
+      "runtimeAsSeenBySuite": "suppressed by ENGINE_NO_RUNTIME=1 (offline mode on purpose)",
+      "notOk": []
+    }
+  }
+}

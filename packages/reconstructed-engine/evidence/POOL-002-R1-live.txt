@@ -1,0 +1,235 @@
+captured: 2026-09-17T18:39:12.578Z
+command: bash scripts/run-engine-tests.sh
+head: 7196779eeda64179a6db264c966b016cbad7f01c
+branch: arena/01a0aff7-n8n-rust-v-4
+node: v22.22.3
+reference runtime: /home/user/n8n-rust-v.4/.runtime/node_modules
+installed reference packages: n8n-workflow@2.9.1 n8n-core@2.9.1
+
+# Subtest: constants: every reference export exists here with the identical value
+ok 1 - constants: every reference export exists here with the identical value
+# Subtest: constants: no undeclared extras
+ok 2 - constants: no undeclared extras
+# Subtest: constants: arrays and sets are mutable, matching the compiled reference
+ok 3 - constants: arrays and sets are mutable, matching the compiled reference
+# Subtest: constants: live reference agrees with the committed snapshot (stale-snapshot guard)
+ok 4 - constants: live reference agrees with the committed snapshot (stale-snapshot guard)
+# Subtest: src/: every import is relative (no bare specifier, no path escape)
+ok 5 - src/: every import is relative (no bare specifier, no path escape)
+# Subtest: src/: only reference-runtime.mjs may touch node_modules
+ok 6 - src/: only reference-runtime.mjs may touch node_modules
+# Subtest: src/: no file reads the reference source tree
+ok 7 - src/: no file reads the reference source tree
+# Subtest: src/: the whole graph loads with no oracle on the path
+ok 8 - src/: the whole graph loads with no oracle on the path
+# Subtest: src/: the seam reports "unavailable" instead of throwing when the oracle is missing
+ok 9 - src/: the seam reports "unavailable" instead of throwing when the oracle is missing
+# Subtest: src/: no module performs I/O or mutates globals at import time
+ok 10 - src/: no module performs I/O or mutates globals at import time
+# Subtest: the import-time pattern distinguishes a write from a read
+ok 11 - the import-time pattern distinguishes a write from a read
+# Subtest: ApplicationError keeps the built-in name and defaults level to "error"
+ok 12 - ApplicationError keeps the built-in name and defaults level to "error"
+# Subtest: ApplicationError passes unknown options through to Error, keeps the rest
+ok 13 - ApplicationError passes unknown options through to Error, keeps the rest
+# Subtest: ExecutionBaseError sets the class name (the one place that does)
+ok 14 - ExecutionBaseError sets the class name (the one place that does)
+# Subtest: NodeOperationError: level warning, idempotent wrapping, extra context
+ok 15 - NodeOperationError: level warning, idempotent wrapping, extra context
+# Subtest: NodeOperationError maps well-known error text to the shared message table
+ok 16 - NodeOperationError maps well-known error text to the shared message table
+# Subtest: setDescriptiveErrorMessage keeps the reference case-sensitivity quirk
+ok 17 - setDescriptiveErrorMessage keeps the reference case-sensitivity quirk
+# Subtest: ExpressionError filters its context to the allowed keys
+ok 18 - ExpressionError filters its context to the allowed keys
+# Subtest: WorkflowOperationError is an ExecutionBaseError with the right name
+ok 19 - WorkflowOperationError is an ExecutionBaseError with the right name
+# Subtest: live: error shapes are indistinguishable from the reference (same input, same output)
+ok 20 - live: error shapes are indistinguishable from the reference (same input, same output)
+# Subtest: migrateRunExecutionData: v0 startData.destinationNode is rewritten, the stack is NOT
+ok 21 - migrateRunExecutionData: v0 startData.destinationNode is rewritten, the stack is NOT
+# Subtest: migrateRunExecutionData: an empty startData gains both undefined keys
+ok 22 - migrateRunExecutionData: an empty startData gains both undefined keys
+# Subtest: migrateRunExecutionData: v1 is passed through unchanged
+ok 23 - migrateRunExecutionData: v1 is passed through unchanged
+# Subtest: migrateRunExecutionData: unsupported versions throw the reference message
+ok 24 - migrateRunExecutionData: unsupported versions throw the reference message
+# Subtest: runExecutionDataV0ToV1: the exported helper is the same rewrite
+ok 25 - runExecutionDataV0ToV1: the exported helper is the same rewrite
+# Subtest: createRunExecutionData: every optional field is present-and-undefined, not absent
+ok 26 - createRunExecutionData: every optional field is present-and-undefined, not absent
+# Subtest: createEmptyRunExecutionData: the minimal shape downstream code depends on
+ok 27 - createEmptyRunExecutionData: the minimal shape downstream code depends on
+# Subtest: createErrorExecutionData: an error run is a full IRunExecutionData, not a fragment
+ok 28 - createErrorExecutionData: an error run is a full IRunExecutionData, not a fragment
+# Subtest: getContext: create-on-read, and the mutation is visible to the caller
+ok 29 - getContext: create-on-read, and the mutation is visible to the caller
+# Subtest: getContext: the three error paths, with the reference wording
+ok 30 - getContext: the three error paths, with the reference wording
+# Subtest: execution metadata: the bag lives on resultData, and 10 keys is a silent cap
+ok 31 - execution metadata: the bag lives on resultData, and 10 keys is a silent cap
+# Subtest: execution metadata: keys/values are truncated to 50/512, and only >255 warns
+ok 32 - execution metadata: keys/values are truncated to 50/512, and only >255 warns
+# Subtest: execution metadata: value types are validated per key, and partial writes survive
+ok 33 - execution metadata: value types are validated per key, and partial writes survive
+# Subtest: constructExecutionMetaData: the destructuring order is the behaviour
+ok 34 - constructExecutionMetaData: the destructuring order is the behaviour
+# Subtest: constructExecutionMetaData: a non-array input raises the reference TypeError
+ok 35 - constructExecutionMetaData: a non-array input raises the reference TypeError
+# Subtest: live: constructExecutionMetaData is the reference function
+ok 36 - live: constructExecutionMetaData is the reference function
+# Subtest: live: the reference functions produce the identical structures
+ok 37 - live: the reference functions produce the identical structures
+# Subtest: goldens carry reference provenance
+ok 38 - goldens carry reference provenance
+# Subtest: the corpus and the golden cover exactly the same probes
+ok 39 - the corpus and the golden cover exactly the same probes
+# Subtest: data-proxy :: linear-3-run
+ok 40 - data-proxy :: linear-3-run
+# Subtest: data-proxy :: linear-3-item-index-1
+ok 41 - data-proxy :: linear-3-item-index-1
+# Subtest: data-proxy :: pinned-node-manual
+ok 42 - data-proxy :: pinned-node-manual
+# Subtest: data-proxy :: pinned-node-production
+ok 43 - data-proxy :: pinned-node-production
+# Subtest: data-proxy :: unexecuted-and-unknown-node
+ok 44 - data-proxy :: unexecuted-and-unknown-node
+# Subtest: data-proxy :: no-connection-input
+ok 45 - data-proxy :: no-connection-input
+# Subtest: data-proxy :: branch-output-selection
+ok 46 - data-proxy :: branch-output-selection
+# Subtest: data-proxy :: empty-run-and-multi-run
+ok 47 - data-proxy :: empty-run-and-multi-run
+# Subtest: data-proxy :: binary-mode-combined
+ok 48 - data-proxy :: binary-mode-combined
+# Subtest: data-proxy :: parameters-and-resource-locator
+ok 49 - data-proxy :: parameters-and-resource-locator
+# Subtest: data-proxy :: context-data-and-nodes
+ok 50 - data-proxy :: context-data-and-nodes
+# Subtest: data-proxy :: execution-metadata-and-vars
+ok 51 - data-proxy :: execution-metadata-and-vars
+# Subtest: data-proxy :: orphan-branch-default
+ok 52 - data-proxy :: orphan-branch-default
+# Subtest: data-proxy :: pinned-and-disabled-node
+ok 53 - data-proxy :: pinned-and-disabled-node
+# Subtest: data-proxy :: pinned-upstream-substitutes-input
+ok 54 - data-proxy :: pinned-upstream-substitutes-input
+# Subtest: data-proxy :: input-placeholder-sourcing-edge
+ok 55 - data-proxy :: input-placeholder-sourcing-edge
+# Subtest: data-proxy :: input-placeholder-from-input-override
+ok 56 - data-proxy :: input-placeholder-from-input-override
+# Subtest: data-proxy :: input-placeholder-missing-json
+ok 57 - data-proxy :: input-placeholder-missing-json
+# Subtest: data-proxy :: input-override-ai-tool-placeholder
+ok 58 - data-proxy :: input-override-ai-tool-placeholder
+# Subtest: node-context :: ctx-basic
+ok 59 - node-context :: ctx-basic
+# Subtest: node-context :: ctx-single-run-data
+ok 60 - node-context :: ctx-single-run-data
+# Subtest: node-context :: ctx-on-error-routing
+ok 61 - node-context :: ctx-on-error-routing
+# Subtest: deferred symbols fail loudly instead of returning a value
+ok 62 - deferred symbols fail loudly instead of returning a value
+# Subtest: getContext mirrors the reference mutation-on-read
+ok 63 - getContext mirrors the reference mutation-on-read
+# Subtest: manifest: every bucket is disjoint and complete per module
+ok 64 - manifest: every bucket is disjoint and complete per module
+# Subtest: manifest: class surfaces match the reference method-for-method
+ok 65 - manifest: class surfaces match the reference method-for-method
+# Subtest: expression sandbox: my key set equals the reference key set
+ok 66 - expression sandbox: my key set equals the reference key set
+# Subtest: context surface: every method the reference context exposes is reachable here
+ok 67 - context surface: every method the reference context exposes is reachable here
+# Subtest: additional keys: $execution/$vars/$secrets key set equals the reference
+ok 68 - additional keys: $execution/$vars/$secrets key set equals the reference
+# Subtest: $secrets: disabled yields undefined, enabled yields the reference proxy behaviour
+ok 69 - $secrets: disabled yields undefined, enabled yields the reference proxy behaviour
+# Subtest: live: the manifest is not stale against the installed runtime
+ok 70 - live: the manifest is not stale against the installed runtime
+# Subtest: POOL-001 files still hash to what the lock recorded
+ok 71 - POOL-001 files still hash to what the lock recorded
+# Subtest: the lock is traceable to a commit, not to a vibe
+ok 72 - the lock is traceable to a commit, not to a vibe
+# Subtest: the pin covers every POOL-001 file at the package root
+ok 73 - the pin covers every POOL-001 file at the package root
+# Subtest: port → prototype: the dependency does not exist in either direction
+ok 74 - port → prototype: the dependency does not exist in either direction
+# Subtest: prototype → port: the dependency does not exist in either direction
+ok 75 - prototype → port: the dependency does not exist in either direction
+# Subtest: control: an untouched copy of the package passes the whole suite
+ok 76 - control: an untouched copy of the package passes the whole suite
+# Subtest: mutation "binaryMode unwrap inverted" is caught by the suite
+ok 77 - mutation "binaryMode unwrap inverted" is caught by the suite
+# Subtest: mutation "context errors normalised instead of raised" is caught by the suite
+ok 78 - mutation "context errors normalised instead of raised" is caught by the suite
+# Subtest: mutation "inert-pinData (ISSUE-016 pattern)" is caught by the suite
+ok 79 - mutation "inert-pinData (ISSUE-016 pattern)" is caught by the suite
+# Subtest: mutation "default branchIndex shifted" is caught by the suite
+ok 80 - mutation "default branchIndex shifted" is caught by the suite
+# Subtest: mutation "metadata limit "fixed" to 20" is caught by the suite
+ok 81 - mutation "metadata limit "fixed" to 20" is caught by the suite
+# Subtest: mutation "unsupported-version error swallowed" is caught by the suite
+ok 82 - mutation "unsupported-version error swallowed" is caught by the suite
+# Subtest: mutation "default error level downgraded to warning" is caught by the suite
+ok 83 - mutation "default error level downgraded to warning" is caught by the suite
+# Subtest: mutation "BINARY_MODE_COMBINED literal typo" is caught by the suite
+ok 84 - mutation "BINARY_MODE_COMBINED literal typo" is caught by the suite
+# Subtest: mutation "$secrets proxy accepts writes" is caught by the suite
+ok 85 - mutation "$secrets proxy accepts writes" is caught by the suite
+# Subtest: mutation "$execution.mode mapping swapped" is caught by the suite
+ok 86 - mutation "$execution.mode mapping swapped" is caught by the suite
+# Subtest: mutation "pin data over-corrected to honour disabled" is caught by the suite
+ok 87 - mutation "pin data over-corrected to honour disabled" is caught by the suite
+# Subtest: mutation "pinned node counted as executed" is caught by the suite
+ok 88 - mutation "pinned node counted as executed" is caught by the suite
+# Subtest: mutation "constructExecutionMetaData pairing precedence "fixed"" is caught by the suite
+ok 89 - mutation "constructExecutionMetaData pairing precedence "fixed"" is caught by the suite
+# Subtest: mutation "$input empty-data guard removed" is caught by the suite
+ok 90 - mutation "$input empty-data guard removed" is caught by the suite
+# Subtest: mutation "$input guard copied from the placeholder expression" is caught by the suite
+ok 91 - mutation "$input guard copied from the placeholder expression" is caught by the suite
+# Subtest: the evidence directory exists and is complete
+ok 92 - the evidence directory exists and is complete
+# Subtest: the transcripts describe the artifacts currently in the tree
+ok 93 - the transcripts describe the artifacts currently in the tree
+# recorder run (ENGINE_EVIDENCE_RECORDER=1): existing evidence is about to be rewritten, not graded
+# Subtest: both recorded runs are green and internally consistent
+ok 94 - both recorded runs are green and internally consistent
+# recorder run (ENGINE_EVIDENCE_RECORDER=1): existing evidence is about to be rewritten, not graded
+# Subtest: the live run really used the pinned reference, the offline run really did not
+ok 95 - the live run really used the pinned reference, the offline run really did not
+# recorder run (ENGINE_EVIDENCE_RECORDER=1): existing evidence is about to be rewritten, not graded
+# Subtest: the recorded head is a real commit, not an invented sha
+ok 96 - the recorded head is a real commit, not an invented sha
+# recorder run (ENGINE_EVIDENCE_RECORDER=1): existing evidence is about to be rewritten, not graded
+# Subtest: evidence is committed, not scratch output
+ok 97 - evidence is committed, not scratch output
+# Subtest: the oracle artifact is the pinned one
+ok 98 - the oracle artifact is the pinned one
+# Subtest: goldens carry reference provenance, not self-grading
+ok 99 - goldens carry reference provenance, not self-grading
+# Subtest: the probe set in the goldens matches the corpus exactly
+ok 100 - the probe set in the goldens matches the corpus exactly
+# Subtest: every probe is equivalent to the reference, or declared
+ok 101 - every probe is equivalent to the reference, or declared
+# declared deviation: ctx-basic :: getInstanceId()
+# declared deviation: ctx-basic :: getSignedResumeUrl()
+# declared deviation: ctx-basic :: getInputConnectionData("ai_tool",0)
+# declared deviation: ctx-single-run-data :: getInstanceId()
+# declared deviation: ctx-single-run-data :: getSignedResumeUrl()
+# declared deviation: ctx-single-run-data :: getInputConnectionData("ai_tool",0)
+# declared deviation: ctx-on-error-routing :: getInstanceId()
+# declared deviation: ctx-on-error-routing :: getSignedResumeUrl()
+# declared deviation: ctx-on-error-routing :: getInputConnectionData("ai_tool",0)
+# Subtest: declared deviations are covered and still deviations
+ok 102 - declared deviations are covered and still deviations
+# Subtest: manifest/port-surface.json is reproducible from this runtime
+ok 103 - manifest/port-surface.json is reproducible from this runtime
+# tests 103
+# suites 0
+# pass 103
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 71446.898778

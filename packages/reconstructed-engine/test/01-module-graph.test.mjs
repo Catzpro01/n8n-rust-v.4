@@ -127,8 +127,31 @@ test('src/: no module performs I/O or mutates globals at import time', () => {
 			.join('\n');
 		assert.doesNotMatch(
 			topLevel,
-			/Settings\.|Intl\.DateTime\.|process\.env\.[A-Z_]+\s*=/,
+			IMPORT_TIME_MUTATION,
 			`${file} mutates a global at module scope`,
 		);
 	}
+});
+
+/**
+ * Module-scope ambient *writes*. The comparison operator has to be excluded explicitly:
+ * `process.env.FOO === 'x'` is a read, and an earlier version of this pattern flagged the
+ * seam's own suppression check, which taught exactly the wrong lesson (a gate that cries
+ * wolf gets edited away, not trusted).
+ */
+const IMPORT_TIME_MUTATION = /Settings\.[A-Za-z]+\s*=|Intl\.DateTime\.|process\.env\.[A-Z_]+\s*=(?!=)|globalThis\.[A-Za-z_$]+\s*=(?!=)/;
+
+test('the import-time pattern distinguishes a write from a read', () => {
+	assert.ok(
+		IMPORT_TIME_MUTATION.test("process.env.TZ = 'UTC';"),
+		'a module-scope env write must be caught',
+	);
+	assert.ok(
+		IMPORT_TIME_MUTATION.test('Settings.defaultZone = zone;'),
+		'a module-scope Settings write must be caught',
+	);
+	assert.ok(
+		!IMPORT_TIME_MUTATION.test("const off = process.env.ENGINE_NO_RUNTIME === '1';"),
+		'comparing an env var is not a mutation — flagging it turns this gate into noise',
+	);
 });

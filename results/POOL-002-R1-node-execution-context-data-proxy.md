@@ -33,10 +33,11 @@ classes, all of `constants.ts`) plus nine gates that compare it to the pinned re
 
 | Run | Result |
 |---|---|
-| `npm run verify:engine` (oracle `n8n-workflow@2.9.1`/`n8n-core@2.9.1` installed) | **96/96 pass** |
-| `npm run verify:engine:offline` (`.runtime` hidden) | **96/96 pass**; oracle gate prints `oracle equivalence NOT RUN`, host-dependent probes degrade to "must raise" |
+| `npm run verify:engine` (oracle `n8n-workflow@2.9.1`/`n8n-core@2.9.1` installed) | **103/103 pass** |
+| `npm run verify:engine:offline` (oracle suppressed at the seam via `ENGINE_NO_RUNTIME=1`) | **103/103 pass**, and the transcript must *prove* the suppression (gate 08): `oracle equivalence NOT RUN` ×6 + host-dependent degradation lines |
 | `test/07-falsification` | control green; **15/15 mutations caught** (each re-runs the whole suite in a temp copy) |
 | `test/05-surface-coverage` | 0 undeclared gaps, 0 undeclared additions, 43/43 sandbox keys, 5/5 additional keys, 4/4 class hierarchies match |
+| `evidence/` (gate 08 audits it) | transcripts of both runs above at head `7196779e`, node v22.22.3, captured by `npm run verify:engine:evidence`; recorder refuses red runs |
 
 ### Bugs this method found (and that a read-the-source review would not have)
 
@@ -55,6 +56,24 @@ classes, all of `constants.ts`) plus nine gates that compare it to the pinned re
 6. Harness traps fixed on the way: JSON turns `undefined` call args into `null` (needs a
    sentinel); goldens keyed by a re-parsed rendered string lose `Date`/args (store `_path`);
    nested `node --test` inherits `NODE_OPTIONS`/`NODE_TEST_CONTEXT` and reports nothing.
+
+### Also fixed on 2026-09-18: the offline claim was not verifiable, and prose was the only proof
+
+Two defects in the *verification machinery*, both found while adding `evidence/`:
+
+1. `verify:engine:offline` suppressed the runtime in the shell wrapper only;
+   `src/reference-runtime.mjs` kept discovering `<repo>/.runtime` itself. So the "offline"
+   run was actually a live run and its transcript contained no degradation lines. Fixed by
+   making `ENGINE_NO_RUNTIME=1` a property of the seam, and by having gate 08 require the
+   degradation markers to be present in the captured offline transcript.
+2. Gate 01's "no import-time global mutation" pattern also matched
+   `process.env.X === 'y'` (a read). Tightened to real assignments, with a self-check test
+   asserting both directions (a planted `process.env.TZ = 'UTC'` must be caught; a comparison
+   must not) — because a static gate that cries wolf gets disabled rather than fixed.
+
+New artifacts: `test/08-evidence-consistency.test.mjs`, `test/helpers/capture-evidence.mjs`,
+`evidence/` (2 transcripts + summary.json + README), `ENGINE_NO_RUNTIME` support in
+`scripts/run-engine-tests.sh`, and `npm run verify:engine:evidence`.
 
 ### Cross-lane evidence produced while finishing (2026-09-18)
 

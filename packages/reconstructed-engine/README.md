@@ -12,7 +12,8 @@ src/      the port            constants, utils, errors, run-execution-data,
 fixtures/ the evidence        corpus.json (probe definitions, hand-written),
                               data-proxy.golden.json + reference-snapshot.json
                               (RECORDED from the pinned reference — do not hand-edit)
-test/     the gates           00-07 + oracle/10, helpers/ (harness, stub host, recorders)
+evidence/ the captured proof  transcripts of both modes + summary.json (gate 08 audits them)
+test/     the gates           00-08 + oracle/10, helpers/ (harness, stub host, recorders)
 manifest/ the surface record  port-surface.json (generated: ported / deferred /
                               out-of-scope / additions, per module and per class)
 runner.mjs, test-run.mjs,     POOL-001's execution-loop lane. NOT part of this port:
@@ -25,6 +26,7 @@ runner.test.mjs               gate 06 pins them unedited and forbids imports eit
 npm run verify:engine            # everything, including the live oracle gate
 npm run verify:engine:offline    # usable where .runtime is missing; oracle degrades loudly
 npm --prefix packages/reconstructed-engine test          # same as verify:engine
+npm run verify:engine:evidence          # re-capture evidence/*.txt + summary.json (auditor-facing)
 node --test --test-force-exit packages/reconstructed-engine/test/04-*.test.mjs   # one gate
 ```
 
@@ -39,10 +41,14 @@ node --test --test-force-exit packages/reconstructed-engine/test/04-*.test.mjs  
    Gate 10 re-derives the same probes from the live runtime, so a stale golden is a
    failure, not an assumption. Re-record with `npm run record:golden` (needs the oracle;
    `scripts/setup-reference-runtime.sh`).
-2. **A gate that cannot fail is not a gate.** `test/07-falsification.test.mjs` copies the
+2. **Claims are reproducible, not quoted.** `evidence/` holds a transcript of both modes
+   with the counts and the sha256 of the fixtures they were produced against; gate 08 fails
+   if those drift apart, and the recorder refuses to write evidence for a red run.
+3. **A gate that cannot fail is not a gate.** `test/07-falsification.test.mjs` copies the
    package to a temp dir, applies one defect to `src/`, re-runs the whole suite, and
    requires red — with an unmutated control that must be green. It has already paid for
-   itself: it exposed that `$execution.mode` had no probe, and the corpus grew to cover it.
+   itself: it exposed that `$execution.mode` had no probe, and the corpus grew to cover it. 15 mutants
+   are on the list today (behaviour, error shapes, limits, traps in the harness itself).
    Nested `node --test` runs must strip `NODE_OPTIONS`/`NODE_TEST_CONTEXT` or the child
    reports nothing and exits 0 (the mutation would "pass").
 

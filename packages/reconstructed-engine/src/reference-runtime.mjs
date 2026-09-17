@@ -8,6 +8,10 @@
  * of throwing — so a missing runtime degrades to "oracle NOT RUN", never to a
  * false PASS.
  *
+ * `ENGINE_NO_RUNTIME=1` suppresses the seam completely — even when .runtime exists on
+ * disk. Without that, "offline mode" would be a property of the shell wrapper only, and
+ * a captured offline transcript could secretly be a live run (gate 08 checks this).
+ *
  * Search order (first hit wins):
  *   1. $LEGO_LIVE_RUNTIME/node_modules
  *   2. <repo>/.runtime/node_modules            (scripts/setup-reference-runtime.sh)
@@ -21,6 +25,8 @@ import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
 const PKG_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
+
+const suppressed = () => process.env.ENGINE_NO_RUNTIME === '1';
 
 const CANDIDATES = [
 	process.env.LEGO_LIVE_RUNTIME && join(process.env.LEGO_LIVE_RUNTIME, 'node_modules'),
@@ -45,6 +51,7 @@ const load = (name) => {
 			return mod;
 		}
 	}
+	if (suppressed()) return null;
 	try {
 		return require(name);
 	} catch {
@@ -57,6 +64,7 @@ let cache = null;
 /** Resolved reference runtime, or null. Never throws. */
 export function referenceRuntime() {
 	if (cache) return cache;
+	if (suppressed()) return null;
 	const workflow = load('n8n-workflow');
 	if (!workflow) return null;
 	cache = {

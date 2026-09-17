@@ -17,6 +17,7 @@
     "engine:run": "node packages/reconstructed-engine/test-run.mjs",
     "test:js": "npm run execution-data:test && npm run engine:test",
     "verify:engine": "bash scripts/run-engine-tests.sh",
-    "verify:engine:offline": "ENGINE_ALLOW_NO_ORACLE=1 bash scripts/run-engine-tests.sh"
+    "verify:engine:offline": "ENGINE_ALLOW_NO_ORACLE=1 ENGINE_NO_RUNTIME=1 bash scripts/run-engine-tests.sh",
+    "verify:engine:evidence": "node packages/reconstructed-engine/test/helpers/capture-evidence.mjs"
   }
 }

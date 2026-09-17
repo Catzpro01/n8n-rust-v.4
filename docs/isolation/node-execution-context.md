@@ -1,6 +1,6 @@
 # LEGO Isolation: Node Execution Context + Workflow Data Proxy
 
-**Status:** `REFERENCE TESTED` — 96/96 gates green with the live oracle, 96/96 with the oracle absent (offline goldens), falsification gate green (15/15 mutants caught)
+**Status:** `REFERENCE TESTED` — 103/103 gates green with the live oracle and 103/103 with the oracle suppressed at the seam, falsification gate green (15/15 mutants caught); transcripts in `packages/reconstructed-engine/evidence/`, audited by gate 08
 **Owner:** Agent 2 (LEGO `node`, port unit `node-execution-context` + `workflow-data-proxy`)
 **Task:** `tasks/POOL-002-R1-node.yaml` (rework of POOL-002, whose `FAILED` record is kept at `results/POOL-002-node-execution-context-data-proxy.md`)
 **Deliverable:** `packages/reconstructed-engine/`
@@ -100,7 +100,17 @@ remains reachable runs only through `$fromAI`, which is deferred to the Expressi
 | `05-surface-coverage` | yes (+live) | manifest ↔ code ↔ reference: buckets, class methods, 43 sandbox keys, additional-key set, hierarchy |
 | `06-legacy-runner-regression` | yes | the POOL-001 loop (`runner.mjs`, `test-run.mjs`, `runner.test.mjs`) is unedited since the recorded commit (sha256 + `git hash-object` + `git rev-parse <commit>:<path>` traceability), and the dependency runs in neither direction |
 | `07-falsification` | yes | **15 mutations** + control, each re-running the whole suite inside a temp copy |
+| `08-evidence-consistency` | yes | the captured transcripts still describe the tree: fixture/manifest hashes, per-run counts, `# fail 0`, and proof that the "offline" run really had no oracle (it degrades host-dependent probes to "must raise", which must be visible in the transcript) |
 | `oracle/10-reference-equivalence` | no — needs the oracle | the same probes against the installed reference **in-process**, plus: every declared deviation must still be a deviation and must be covered by a probe; the surface manifest must be reproducible from the runtime |
+
+`npm run verify:engine:evidence` re-captures both transcripts (`test/helpers/capture-evidence.mjs`); it refuses to write when a run is red, and gate 08 refuses to let a stale transcript be quoted as current proof.
+
+Offline mode is a property of the **seam**, not of the shell wrapper: `ENGINE_NO_RUNTIME=1` makes
+`reference-runtime.mjs` report "unavailable" even when `.runtime` exists on disk. Before that, the
+runner hid the directory from itself while the modules under test still discovered it — so the
+"offline" run was live, and the transcript said so (it printed no degradation diagnostics at all).
+Gate 08 now requires the offline transcript to *show* `oracle equivalence NOT RUN` and the
+host-dependent degradation lines: an offline claim without them in the file is a failure.
 
 Degradation is explicit: when the oracle is missing, host-dependent probes are asserted as "must raise, never answer undefined" and the oracle gate prints `oracle equivalence NOT RUN` (it *fails* unless `ENGINE_ALLOW_NO_ORACLE=1`, because a silently-skipped equivalence gate is not a gate).
 
