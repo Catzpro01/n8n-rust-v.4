@@ -259,3 +259,17 @@ review:
 Related, and already recorded for `packages/workflow-lego` in `TASK-411`: `verify:all` exiting
 **127** with `sh: 1: tsc: not found` means a lane is missing `npm install` — this sweep hit it in
 `packages/validation-lego`, which is a newer lane and easy to miss.
+
+## Sweep 14 (2026-09-18, post 4th re-provision recovery, on `6fa9c8a5`) — TASK-425 + TASK-426 + infra restore
+
+| Result (owner) | Claim | Fresh re-run on merged tree | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-425-phase3-webhook-body-parser` | native multipart/binary body parsing, 42/42, gate 5/5 | superseded count at this tip (its 7 cases are included in the cumulative **49/49** suite), gate **5/5** | **APPROVE** |
+| `TASK-426-phase3-webhook-streaming-response` | response/stream transport, 49/49, gate 5/5 | **49/49** fresh, **Webhook gate 5/5**, live gate + `verify:all` green on the same tip | **APPROVE** |
+
+**Infra restore (4th re-provision):** `.runtime/` (partial pinned runtime), `/tmp/rust-rig` (Rust
+toolchain + 19 vendored crates) and `/tmp/n8n-runtime` (full `n8n@2.9.4`, 1969 pkgs, xlsx-override +
+`--ignore-scripts` recipe) all re-created from their documented scripts. Full battery on the merged
+tip: `verify:all` real exit 0 · live gate **10/10** (G09 digest 252×18 = 0 differences) · cargo
+**37/0** · reference:agent4 **45/0/5-skip** vs the real runtime · differentials 65/0, 4/14Δ/0, 84/0 ·
+conformance 42/42 · boundary PASS.
