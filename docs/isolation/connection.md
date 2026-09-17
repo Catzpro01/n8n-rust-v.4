@@ -252,7 +252,42 @@ Two semantic divergences mattered beyond the shape:
 | `C04` graph analysis | PASS — 271/271 identical |
 | `C05` connection diff | PASS — 6/6 pairs identical |
 | `C06` twin parity (TS vs generated ESM) | PASS — 12 graphs |
-| `C07` unit suite (`packages/connection-lego/test`) | PASS — 13/13 (5 boundary + 8 graph-analysis, `02-routing-graph.test.mjs`) |
+| `C07` unit suite (`packages/connection-lego/test`) | PASS — 20/20 (5 boundary + 8 graph-analysis + 7 facade integration) |
 | **Total** | **1,246 differential calls, 0 divergences** |
 
 Evidence: `docs/isolation/evidence/connection-lego-gate.json`.
+
+## 13. Phase 5 — the facade consumes the port (INTEGRATED)
+
+Phase 5 shipped `packages/reconstructed-engine/src/n8n-reconstructed-facade.ts` as the single
+production entry point ("12 LEGO unified"), but connection was only *decorative* there: the file
+carried its own `class InternalConnectionEngine` with a hand-written `mapConnectionsByDestination`,
+and the value it computed was never used — `executeWorkflow()` returned results in **declaration
+order**, and the integration suite tested a `TestFacade` clone rather than the facade itself.
+
+### 13.1 What changed
+
+| Before | After |
+|---|---|
+| `InternalConnectionEngine` inline copy (drifted shape: `{node, type, index}` without preserving slot semantics) | deleted; the facade imports the verified port `import * as connectionPort from './connection-routing-engine.ts'` |
+| connection data unused | `facade.connection` **is** the port module (same function objects, no wrapper) |
+| results in declaration order | `resolveExecutionPlan()` (depth-first from every root, outgoing `main` connections in output-index order, each node once; unreachable nodes appended in declaration order) + `executeWorkflow()` returns `data` and `executionOrder` in that plan |
+| `test-integration.mjs` exercised a copy | `test/03-facade-integration.test.mjs` imports the real facade (Node ≥ 22.18 type stripping) and is enforced by `C07` |
+
+### 13.2 New gate check `C08`
+
+`C08` re-computes the expected plan for all 12 corpus graphs **using the oracle only**
+(`buildAdjacencyList` + `getRootNodes` + `getLeafNodes` from `n8n-workflow@2.9.1`, with an
+independently written traversal), compares it to `facade.resolveExecutionPlan()`, performs the port
+identity check, rejects an inline engine in the source, and runs one `executeWorkflow()` whose nodes
+are declared in **reverse** order so declaration order cannot mask a broken wiring.
+
+Negative controls (temporarily injected, gate caught each, then reverted):
+
+| Injected defect | Caught by |
+|---|---|
+| `executeWorkflow` schedules in declaration order | `C08` — `facade.executeWorkflow order ["C","B","A"] ≠ oracle ["A","B","C"]` (and `C07`) |
+| `facade.connection` wraps the port in a copy | `C07` — the port must be exposed by reference |
+| (earlier) ESM twin left un-regenerated after a TS edit | `C06` — 20 twin divergences |
+
+Evidence: `docs/isolation/evidence/connection-lego-gate.json` (`phase: phase-3+5-connection`).

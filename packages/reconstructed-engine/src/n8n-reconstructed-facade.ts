@@ -2,6 +2,12 @@
 // Menyatukan 12 LEGO VERIFIED menjadi satu engine produksi tunggal
 // 1:1 dari n8n 2.9.4, Zero Rust, pure JS/TS, UI 100% asli
 // Owner: Agent 3+4+5 (Integration)
+//
+// LEGO 03 (connection) integration: the facade no longer embeds its own connection
+// mapping. It imports the verified port `P-CONNECTION-GRAPH`
+// (`connection-routing-engine.ts`, proven 1:1 against n8n-workflow@2.9.1 by
+// `npm run connection:check`) and exposes it as `facade.connection`.
+import * as connectionPort from './connection-routing-engine.ts';
 
 export interface N8nReconstructedConfig {
   mode: 'production' | 'development' | 'test';
@@ -20,12 +26,23 @@ export interface WorkflowExecutionRequest {
   webhookData?: any;
 }
 
+export interface ExecutionPlan {
+  /** Nodes in the order the facade schedules them (depth-first from every root). */
+  order: string[];
+  /** Nodes without an incoming `main` connection from another workflow node. */
+  roots: string[];
+  /** Nodes without an outgoing `main` connection into another workflow node. */
+  leaves: string[];
+}
+
 export interface WorkflowExecutionResult {
   success: boolean;
   executionId: string;
   data?: any;
   error?: string;
   duration: number;
+  /** Connection order used for `data` — `facade.resolveExecutionPlan(workflow).order`. */
+  executionOrder?: string[];
 }
 
 // Simplified internal engines — self-contained to avoid import mismatches
@@ -38,26 +55,6 @@ class InternalExecutionDataEngine {
       resultData: { runData: {}, lastNodeExecuted: undefined },
       startData: {},
     };
-  }
-}
-
-class InternalConnectionEngine {
-  static mapConnectionsByDestination(connections: any) {
-    const byDest: Record<string, any> = {};
-    for (const [source, typeMap] of Object.entries(connections as any)) {
-      for (const [type, outputList] of Object.entries(typeMap as any)) {
-        for (let outIdx = 0; outIdx < (outputList as any[]).length; outIdx++) {
-          for (const conn of (outputList as any)[outIdx] || []) {
-            const dest = conn.node;
-            if (!byDest[dest]) byDest[dest] = {};
-            if (!byDest[dest][type]) byDest[dest][type] = [];
-            while (byDest[dest][type].length <= (conn.input || 0)) byDest[dest][type].push([]);
-            byDest[dest][type][conn.input || 0].push({ node: source, type, index: outIdx });
-          }
-        }
-      }
-    }
-    return byDest;
   }
 }
 
@@ -202,6 +199,13 @@ export class N8nReconstructedFacade {
   private config: N8nReconstructedConfig;
   private initialized = false;
 
+  /**
+   * The verified connection port (`P-CONNECTION-GRAPH`) — the same symbols
+   * `npm run connection:check` diffs against n8n-workflow@2.9.1. Exposed by reference,
+   * never wrapped or re-implemented.
+   */
+  public readonly connection = connectionPort;
+
   public readonly trigger: InternalTriggerEngine;
   public readonly webhook: InternalWebhookEngine;
   public readonly scheduler: InternalSchedulerEngine;
@@ -233,6 +237,40 @@ export class N8nReconstructedFacade {
 
   static resetInstance(): void { this.instance = undefined as any; }
 
+  /**
+   * Deterministic execution plan for a workflow, built only from the verified connection port:
+   * depth-first from the root nodes (no incoming `main` connection), following the connections
+   * of a node in output-index order. Every node is visited once; nodes that no root can reach
+   * (cycles without an entry point, or declared nodes with no edges at all) are appended in
+   * declaration order.
+   */
+  resolveExecutionPlan(workflow: { nodes?: any[]; connections?: any }): ExecutionPlan {
+    const connections = (workflow?.connections ?? {}) as connectionPort.IConnections;
+    const nodes = Array.isArray(workflow?.nodes) ? workflow.nodes : [];
+    const names = nodes.map((node: any) => node?.name).filter((name: unknown): name is string => typeof name === 'string');
+    const declared = new Set(names);
+    const adjacency = connectionPort.buildAdjacencyList(connections);
+    const roots = [...connectionPort.getRootNodes(declared, adjacency)];
+    const leaves = [...connectionPort.getLeafNodes(declared, adjacency)];
+
+    const order: string[] = [];
+    const visited = new Set<string>();
+    const visit = (name: string): void => {
+      if (visited.has(name)) return;
+      visited.add(name);
+      order.push(name);
+      const outgoing = [...(adjacency.get(name) ?? [])]
+        .filter((connection) => connection.type === 'main' && declared.has(connection.node))
+        .sort((a, b) => a.index - b.index);
+      for (const connection of outgoing) visit(connection.node);
+    };
+
+    for (const name of names) if (roots.includes(name)) visit(name);
+    for (const name of names) visit(name);
+
+    return { order, roots, leaves };
+  }
+
   async initialize(): Promise<{ success: boolean; score: number }> {
     console.log('[Facade] Initializing 12 LEGO engines...');
     this.initialized = true;
@@ -256,13 +294,17 @@ export class N8nReconstructedFacade {
         mode: request.mode,
       });
 
-      const connections = request.workflow.connections || {};
-      const byDest = InternalConnectionEngine.mapConnectionsByDestination(connections);
+      // Connection order comes from the verified port: roots first, then outgoing `main`
+      // connections in output-index order, each node visited once.
+      const plan = this.resolveExecutionPlan(request.workflow);
 
       const nodes = request.workflow.nodes || [];
+      const nodesByName = new Map(nodes.map((node: any) => [node?.name, node]));
       const results: any[] = [];
 
-      for (const node of nodes) {
+      for (const nodeName of plan.order) {
+        const node = nodesByName.get(nodeName);
+        if (!node) continue;
         if (node.credentials) {
           for (const [credType, credRef] of Object.entries(node.credentials as any)) {
             try { await this.credentials.getDecrypted((credRef as any).id, credType); } catch (e) { console.warn(`[Facade] Credential check failed for ${node.name}:`, (e as Error).message); }
@@ -281,7 +323,7 @@ export class N8nReconstructedFacade {
         finishedAt: new Date().toISOString(),
       });
 
-      return { success: true, executionId, data: results, duration: Date.now() - startTime };
+      return { success: true, executionId, data: results, duration: Date.now() - startTime, executionOrder: plan.order };
     } catch (error) {
       const duration = Date.now() - startTime;
       try {

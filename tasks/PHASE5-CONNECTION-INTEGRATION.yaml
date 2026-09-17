@@ -1,0 +1,35 @@
+# PHASE5-CONNECTION-INTEGRATION — make the Phase 5 facade consume the verified connection port
+# Trigger: Phase 5 shipped `n8n-reconstructed-facade.ts` as "12 LEGO unified", but the connection
+#   LEGO was only decorative there: an inline `InternalConnectionEngine` duplicate, a computed
+#   `byDest` that was never used, `executeWorkflow()` returning results in declaration order, and an
+#   integration suite that tested a `TestFacade` copy instead of the facade.
+# LEGO cycle: VERIFIED (phase 3 + phase 3B gate) → INTEGRATED (this task).
+
+phase: 5
+lego: connection
+agent: agent-3 (Arena session arena/01a0b104-n8n-rust-v-4)
+
+allowed_paths:
+  - packages/reconstructed-engine/src/n8n-reconstructed-facade.ts
+  - packages/reconstructed-engine/package.json
+  - packages/connection-lego/test/03-facade-integration.test.mjs
+  - tools/connection-isolation-gate.mjs
+  - docs/isolation/connection.md
+  - contracts/connection.contract.md
+  - docs/isolation/evidence/connection-lego-gate.json
+  - tasks/PHASE5-CONNECTION-INTEGRATION.yaml
+  - results/PHASE5-CONNECTION-INTEGRATION.md
+
+forbidden_paths:
+  - reference/n8n/**        # pinned, read-only (Vue editor UI stays byte-identical)
+  - crates/**
+  - apps/**
+
+oracle:
+  - .runtime/node_modules/n8n-workflow@2.9.1 (graph utils) — used by gate C08 only
+
+tests:
+  - connection_check    # npm run connection:check → C01..C08, 1,258 differential calls
+  - connection_suite    # node --test packages/connection-lego/test/*.test.mjs (20/20)
+  - engine_suites       # node packages/reconstructed-engine/test-run.mjs + test-integration.mjs
+  - repository_gate     # npm run verify (11/11) + npm run i18n:check (5/5) + npm run isolation:check

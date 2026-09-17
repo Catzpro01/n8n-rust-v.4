@@ -16,6 +16,7 @@
  *   C05 connection diff  — compareConnections over corpus pairs
  *   C06 twin parity      — the compiled TypeScript twin == the committed ESM twin
  *   C07 unit suite       — packages/connection-lego/test/*.test.mjs
+ *   C08 facade integration — the Phase 5 facade schedules workflows through this port
  *
  * usage: node tools/connection-isolation-gate.mjs [--quiet]
  * evidence: docs/isolation/evidence/connection-lego-gate.json
@@ -288,6 +289,44 @@ function runConnectionsDiff(prevEntry, nextEntry) {
 }
 
 /* ---------------------------------------------------------------- */
+/* Phase 5 facade integration (LEGO cycle: VERIFIED → INTEGRATED)     */
+/* ---------------------------------------------------------------- */
+const FACADE_SOURCE = join(REPO, 'packages/reconstructed-engine/src/n8n-reconstructed-facade.ts');
+let facade = null;
+let tsPort = null;
+try {
+	// Node >= 22.18 executes TypeScript natively (type stripping) — no build step needed.
+	facade = (await import(pathToFileURL(FACADE_SOURCE).href)).n8nFacade;
+	tsPort = await import(pathToFileURL(join(REPO, 'packages/reconstructed-engine/src/connection-routing-engine.ts')).href);
+} catch {
+	facade = null;
+}
+
+/**
+ * The expected plan, computed with the ORACLE only (reference adjacency + reference roots) by an
+ * implementation written independently from the facade's — same documented spec, two code paths.
+ */
+function oracleExecutionOrder(entry) {
+	const adjacency = reference.buildAdjacencyList(entry.connections);
+	const declared = new Set(entry.nodes);
+	const roots = reference.getRootNodes(declared, adjacency);
+	const order = [];
+	const visited = new Set();
+	const visit = (name) => {
+		if (visited.has(name)) return;
+		visited.add(name);
+		order.push(name);
+		const outgoing = [...(adjacency.get(name) ?? [])]
+			.filter((connection) => connection.type === 'main' && declared.has(connection.node))
+			.sort((a, b) => a.index - b.index);
+		for (const connection of outgoing) visit(connection.node);
+	};
+	for (const name of entry.nodes) if (roots.has(name)) visit(name);
+	for (const name of entry.nodes) visit(name);
+	return { order, roots: [...roots], leaves: [...reference.getLeafNodes(declared, adjacency)] };
+}
+
+/* ---------------------------------------------------------------- */
 /* checks                                                            */
 /* ---------------------------------------------------------------- */
 const checks = [];
@@ -423,13 +462,55 @@ await record('C07', 'unit suite PASS (packages/connection-lego/test)', () => {
 	return `node --test test/*.test.mjs → ${pass}/${pass + fail} PASS`;
 });
 
+await record('C08', 'facade integration: the Phase 5 facade schedules workflows through the verified port', async () => {
+	if (!facade || !tsPort || typeof facade.resolveExecutionPlan !== 'function') {
+		throw new Error('facade does not expose resolveExecutionPlan (Node >= 22.18 required for native TypeScript)');
+	}
+	if (facade.connection.mapConnectionsByDestination !== tsPort.mapConnectionsByDestination) {
+		throw new Error('facade.connection is not the verified port — mapConnectionsByDestination identity differs');
+	}
+	const source = readFileSync(FACADE_SOURCE, 'utf8');
+	if (/class InternalConnectionEngine/.test(source)) throw new Error('the facade still embeds an inline connection engine');
+	if (!/import \* as connectionPort from '\.\/connection-routing-engine\.ts'/.test(source)) {
+		throw new Error('the facade does not import the port');
+	}
+	for (const entry of CORPUS) {
+		const workflow = { nodes: entry.nodes.map((name) => ({ name })), connections: entry.connections };
+		compare('C08', entry.id, 'resolveExecutionPlan(workflow)', oracleExecutionOrder(entry), facade.resolveExecutionPlan(workflow));
+	}
+	// The manager path must use that plan too — otherwise the port would be decorative.
+	// Nodes are declared in reverse so declaration order ≠ connection order.
+	const probe = CORPUS[0];
+	const probeNodes = [...probe.nodes].reverse();
+	const expectedProbe = oracleExecutionOrder({ ...probe, nodes: probeNodes });
+	const result = await facade.executeWorkflow({
+		workflowId: `gate-${probe.id}`,
+		workflow: { nodes: probeNodes.map((name) => ({ name })), connections: probe.connections },
+		mode: 'manual',
+	});
+	if (!result.success) throw new Error(`facade.executeWorkflow failed: ${result.error}`);
+	if (JSON.stringify(result.executionOrder) !== JSON.stringify(expectedProbe.order)) {
+		throw new Error(`facade.executeWorkflow order ${JSON.stringify(result.executionOrder)} ≠ oracle ${JSON.stringify(expectedProbe.order)}`);
+	}
+	if (JSON.stringify(result.data.map((entry) => entry.node)) !== JSON.stringify(expectedProbe.order)) {
+		throw new Error('facade.executeWorkflow data is not in connection order');
+	}
+	const failedC08 = differences.filter((d) => d.check === 'C08');
+	if (failedC08.length) {
+		throw new Error(
+			`${failedC08.length}/${comparisons.byCheck.C08} execution plans diverge from the oracle-derived order; first: ${failedC08[0].corpus}\n  reference: ${failedC08[0].reference}\n  candidate: ${failedC08[0].candidate}`,
+		);
+	}
+	return `${comparisons.byCheck.C08} plans identical over ${CORPUS.length} graphs (oracle-derived) + executeWorkflow order verified`;
+});
+
 /* ---------------------------------------------------------------- */
 /* evidence                                                          */
 /* ---------------------------------------------------------------- */
 const failed = checks.filter((check) => check.status === 'FAIL');
 const evidence = {
 	generatedAt: new Date().toISOString(),
-	phase: 'phase-3-connection',
+	phase: 'phase-3+5-connection',
 	lego: 'connection',
 	port: 'P-CONNECTION-GRAPH',
 	oracle: { package: referencePackage, version: reference.__version },
