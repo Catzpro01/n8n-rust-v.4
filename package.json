@@ -4,6 +4,7 @@
   "private": true,
   "description": "n8n 2.9.4 anatomy \u2192 contract \u2192 reference runtime \u2192 LEGO isolation \u2192 (later) Rust replacement",
   "scripts": {
+    "setup:all": "bash scripts/setup-all.sh",
     "setup:reference": "bash scripts/setup-reference-runtime.sh",
     "verify": "node tools/workflow-isolation-gate.mjs",
     "verify:fast": "node tools/workflow-isolation-gate.mjs --skip-live",
