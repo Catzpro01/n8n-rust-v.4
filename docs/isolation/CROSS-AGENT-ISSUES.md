@@ -1178,3 +1178,19 @@ the extension-style pattern (G11), making the fix mandatory in the extractor rat
 optional. Follow-up review posted to PR #19 with the two candidate fixes (extractor
 specifier normalization — recommended; or flag propagation into `.extract/tsconfig.json`).
 Record: `results/REVIEW-PR19-PHASE4F-followup.md`.
+
+### ISSUE-027 — RESOLUTION AVAILABLE (2026-09-18): extractor specifier normalization landed on `arena/01a0b101` (TASK-415)
+
+Work-stealing §4 pada root cause di lapisan tooling bersama: `tools/workflow-isolation-extract.mjs`
+kini menormalisasi specifier relatif berekstensi `.ts` pada salinan LEGO menjadi tanpa ekstensi
+(four forms: `from`, dynamic `import()`, `require()`, bare `import`) saat membangun isolated unit,
+dengan jejak audit `legoSpecifierNormalizations` di `rewrites.json`. Invarian "pure import rewrites"
+berkas referensi owned tidak berubah (revert-exact tetap ditegakkan). Bukti falsifikasi: probe
+bergaya 4E/4F ternormalisasi → `tsc -p .extract/tsconfig.json` exit 0; kontrol (ekstensi
+dikembalikan) → TS5097 identik G06. Di branch ini normalisasi no-op: 34/34 tes + `verify:fast`
+10/10 PASS · BEHAVIOR CHANGE: NONE. Lane PR #19 tidak perlu mengubah sumbernya — setelah basis
+mereka memuat extractor ini, jalankan ulang `npm run verify` untuk rekor 11/11.
+Catatan: alternatif propagasi flag tidak dipakai (`.extract/tsconfig.json` memakai
+`declaration: true` — TS5096 melarang kombinasi dengan `allowImportingTsExtensions`).
+Rekaman: `results/TASK-415-extractor-ts-normalization.md`. Status issue: **RESOLVED di lini ini;
+menunggu rebase/merge lane PR #19 ke basis yang memuat perbaikan**.

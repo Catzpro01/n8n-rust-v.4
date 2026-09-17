@@ -11,6 +11,12 @@
  *      (manifest.extraction.portSpecifiers). Reverting those specifiers must
  *      reproduce the reference file byte-for-byte — otherwise extraction fails.
  *   3. Nothing under reference/n8n/** is written to.
+ *   4. Relative specifiers in the copied LEGO sources that end in `.ts` are
+ *      normalized to extensionless form (ISSUE-027): the isolated unit builds
+ *      with a CommonJS/node10 tsconfig that does not set
+ *      `allowImportingTsExtensions`, so extension-style imports (valid under
+ *      Node type-stripping) would break G06/G08. Recorded in rewrites.json
+ *      under `legoSpecifierNormalizations` for auditing.
  *
  * Output layout (default packages/workflow-lego/.extract):
  *   src/<owned file>.ts          copy of the owned sources (paths preserved)
@@ -21,7 +27,7 @@
  *
  * Usage: node tools/workflow-isolation-extract.mjs [--out <dir>]
  */
-import { readFileSync, writeFileSync, mkdirSync, rmSync, cpSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, rmSync, cpSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { REPO, MANIFEST, analyse, resolveSpecifier } from './workflow-boundary-map.mjs';
 
@@ -68,6 +74,45 @@ function mapSpecifier(file, spec) {
 if (existsSync(OUT)) rmSync(OUT, { recursive: true, force: true });
 mkdirSync(join(OUT, 'src'), { recursive: true });
 cpSync(join(PKG_DIR, 'src'), join(OUT, 'src/lego'), { recursive: true });
+
+/* ISSUE-027: normalize `.ts`-extension relative specifiers in the LEGO copy.
+ * Extension-style imports are valid for Node type-stripping but break the
+ * isolated-unit build (.extract/tsconfig.json has no allowImportingTsExtensions,
+ * TS5097 → G06/G08 red). Stripping is compile- and runtime-safe for CJS output
+ * (node10 resolves './x' → './x.ts', emitted require('./x') → './x.js'). */
+const LEGO_EXT_SPECS = [
+	/(\bfrom\s+['"]\.[^'"]*?)\.ts(['"])/g,           // import/export ... from './x.ts'
+	/(\bimport\s*\(\s*['"]\.[^'"]*?)\.ts(['"])/g,    // dynamic import('./x.ts')
+	/(\brequire\s*\(\s*['"]\.[^'"]*?)\.ts(['"])/g,   // require('./x.ts')
+	/(\bimport\s+['"]\.[^'"]*?)\.ts(['"])/g,         // bare import './x.ts'
+];
+const legoSpecifierNormalizations = [];
+{
+	const legoRoot = join(OUT, 'src', 'lego');
+	const stack = [legoRoot];
+	while (stack.length > 0) {
+		const dir = stack.pop();
+		for (const entry of readdirSync(dir)) {
+			const abs = join(dir, entry);
+			if (statSync(abs).isDirectory()) {
+				stack.push(abs);
+			} else if (entry.endsWith('.ts')) {
+				const before = readFileSync(abs, 'utf8');
+				let after = before;
+				let count = 0;
+				for (const re of LEGO_EXT_SPECS) {
+					const hits = after.match(re);
+					if (hits) count += hits.length;
+					after = after.replace(re, '$1$2');
+				}
+				if (after !== before) {
+					writeFileSync(abs, after);
+					legoSpecifierNormalizations.push({ file: relative(OUT, abs).split(sep).join('/'), specifiers: count });
+				}
+			}
+		}
+	}
+}
 
 const IMPORTS_RE = /((?:^|\n)[ \t]*(?:import|export)[\s\S]*?from\s+['"])([^'"]+)(['"]\s*;)|((?:^|\n)[ \t]*import\s+['"])([^'"]+)(['"]\s*;)/g;
 
@@ -191,6 +236,7 @@ writeFileSync(
 			ownedFiles: written,
 			publicSurface: surface,
 			rewrites,
+			legoSpecifierNormalizations,
 		},
 		null,
 		2,
@@ -200,6 +246,7 @@ writeFileSync(
 console.log(`isolated unit written to ${relative(REPO, OUT)}`);
 console.log(`  owned files copied : ${written.length}`);
 console.log(`  port rewrites      : ${rewrites.reduce((a, r) => a + r.edits.length, 0)} across ${rewrites.length} files`);
+console.log(`  .ts-ext normalized : ${legoSpecifierNormalizations.reduce((a, n) => a + n.specifiers, 0)} specifier(s) across ${legoSpecifierNormalizations.length} LEGO file(s) (ISSUE-027)`);
 const byPort = {};
 for (const r of rewrites) for (const e of r.edits) byPort[e.port] = (byPort[e.port] ?? 0) + 1;
 for (const [port, n] of Object.entries(byPort).sort()) console.log(`    ${port} : ${n}`);
