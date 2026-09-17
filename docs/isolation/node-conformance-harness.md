@@ -58,8 +58,13 @@ const FILTER_MATRIX_CASES: usize = 26;  // filterOperatorMatrix per-lane verdict
 const FILTER_MATRIX_THROW_CASES: usize = 1; // …missing-rightType conversion FilterError
 // Wave 5 nested parameter shapes (WG-15)
 const PARAM_NESTED_CASES: usize = 9;    // getNodeParameters collection/fixedCollection
+// Wave 6 resourceLocator + resourceMapper (WG-16..WG-19)
+const RLC_VALID_CASES: usize = 8;       // isValidResourceLocatorParameterValue
+const RLC_ISSUES_CASES: usize = 5;      // resourceLocator regex/expression/mode handling
+const RLC_DEFAULT_CASES: usize = 1;     // __rl:true planted into object defaults
+const RM_ISSUES_CASES: usize = 4;       // resourceMapper auto/define/expression handling
 // + serdeConformance round-trips: 5 descriptions, 2 INode samples
-// TOTAL asserted entries = 19 + 38 + 24 + 27 + 9 + 7 = 124
+// TOTAL asserted entries = 19 + 38 + 24 + 27 + 9 + 18 + 7 = 142
 ```
 
 - Fixture load via `env!("CARGO_MANIFEST_DIR")/./../../` (same `repo_root()` convention as
@@ -99,6 +104,10 @@ const PARAM_NESTED_CASES: usize = 9;    // getNodeParameters collection/fixedCol
 | `executeFilter.cases` | `pub fn execute_filter(filter, item_index) -> bool` | `and` = all, `or` = any, per-condition metadata `{index, itemIndex}` |
 | `filterOperatorMatrix.cases` | same filter surface, per-lane sweeps | rightValue parsed as `rightType ?? operator.type` (missing rightType ⇒ FilterError); regex ops exempt from ignoreCase lowering; `exists`/`notExists` pre-switch any-type; dateTime null-guard ⇒ `false` |
 | `getNodeParametersNested.cases` | `get_node_parameters` with `collection`/`fixedCollection` trees | empty containers materialize as `{}` without inner defaults; plain collection NEVER inner-fills; fixedCollection fills inner defaults **inside populated members only**; `multipleValues` ⇒ member arrays; hidden nested dropped at parent level |
+| `isValidResourceLocatorParameterValue.cases` | `pub fn is_valid_resource_locator_parameter_value(value: &Value) -> bool` | numbers always accepted (incl. 0); plain truthiness of `.value` only — `__rl`/`mode` NOT shape-checked here |
+| `resourceLocatorIssues.cases` | `get_node_parameters_issues` over RLC properties | mode.validation regex errors verbatim from properties.errorMessage; `={{…}}` expressions bypass validation; unknown mode ⇒ skipped silently; non-RLC shape falls to the generic required branch |
+| `rlcDefaults.cases` | `get_node_parameters` RLC defaults | engine plants `__rl: true` into object defaults |
+| `resourceMapperIssues.cases` | `get_node_parameters_issues` over resourceMapper | `autoMapInputData` skipped; required-field message uses capitalized fieldWords.singular; **empty-array key `map` present — do NOT serialize-skip empty Vecs**; expression values exempt |
 | `serdeConformance` | `INodeTypeDescription`, `INode` | deserialize → serialize round-trip equality |
 
 ## 4. Reference-observed semantics the harness pins (do not "improve")
@@ -158,15 +167,23 @@ const PARAM_NESTED_CASES: usize = 9;    // getNodeParameters collection/fixedCol
     inner defaults (provided keys pass verbatim), while a `fixedCollection` DOES fill
     missing inner defaults **inside populated members** (and fabricates nothing when
     devoid of members); display-hidden nested structures are dropped at the parent level.
+13. **RLC/RM validation asymmetries** (WG-16..WG-19): (a)
+    `isValidResourceLocatorParameterValue` accepts ALL numbers (including `0`) and checks
+    only `.value` truthiness — `__rl`/`mode` are checked elsewhere
+    (`isINodeParameterResourceLocator`); (b) mode.validation regex failures surface the
+    mode's custom `errorMessage` byte-verbatim; (c) `={{…}}` expressions bypass RLC and
+    ResourceMapper validation at issue level; (d) engine plants `__rl:true` into RLC
+    object defaults; (e) resourceMapper required-field failures emit BOTH an empty-array
+    parent key and the `key.field-id` entry — serializers must NOT drop empty arrays.
 
 ## 5. Acceptance wiring (brief §4, gate 1)
 
 `n8n-node-model` is **RUST IMPLEMENTED-verified for the Node LEGO when**:
 
-1. This harness reproduces all 124 entries (19 frozen-port golden cases + 38 wave-2 pure
+1. This harness reproduces all 142 entries (19 frozen-port golden cases + 38 wave-2 pure
    helper cases + 24 wave-3 parameter-issues/filter cases + 27 wave-4 operator-matrix
-   cases + 9 wave-5 nested-parameter cases + 7 serde samples) green under
-   `tools/rust-offline-rig/run.sh test` (offline).
+   cases + 9 wave-5 nested-parameter cases + 18 wave-6 RLC/resourceMapper cases + 7 serde
+   samples) green under `tools/rust-offline-rig/run.sh test` (offline).
 2. The 6 frozen ports exist with the exact snake_cased names listed in brief §3
    (`get_node_parameters`, `get_node_inputs`, `get_node_outputs`, `get_connection_types`,
    `rename_form_fields`, `apply_access_patterns`) and crate exports match contract §11.

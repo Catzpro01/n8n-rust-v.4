@@ -9,7 +9,8 @@
       "wave2PureHelpers": "resolveRelativePath:4, hasDotNotationBannedChar:7, mergeNodeProperties:3, makeNodeName:5, makeDescription:3, isDefaultNodeName:4, isTriggerNode:3, displayParameter:6, assertParamIsType:3",
       "wave3IssuesAndFilters": "getNodeParametersIssues:6, executeFilterCondition:9+2t, validateFilterParameter:4, executeFilter:3",
       "wave4OperatorMatrix": "filterOperatorMatrix:26+1t",
-      "wave5NestedParameters": "getNodeParametersNested:9"
+      "wave5NestedParameters": "getNodeParametersNested:9",
+      "wave6RlcRm": "isValidResourceLocatorParameterValue:8, resourceLocatorIssues:5, rlcDefaults:1, resourceMapperIssues:4"
     }
   },
   "applyAccessPatterns": {
@@ -2451,6 +2452,639 @@
             "inner": "typed"
           }
         }
+      }
+    ]
+  },
+  "isValidResourceLocatorParameterValue": {
+    "cases": [
+      {
+        "name": "number-value",
+        "input": {
+          "__rl": true,
+          "value": 123,
+          "mode": "id"
+        },
+        "expect": true
+      },
+      {
+        "name": "string-value",
+        "input": {
+          "__rl": true,
+          "value": "x",
+          "mode": "id"
+        },
+        "expect": true
+      },
+      {
+        "name": "empty-string-value",
+        "input": {
+          "__rl": true,
+          "value": "",
+          "mode": "id"
+        },
+        "expect": false
+      },
+      {
+        "name": "false-value",
+        "input": {
+          "__rl": true,
+          "value": false,
+          "mode": "id"
+        },
+        "expect": false
+      },
+      {
+        "name": "zero-number-value",
+        "input": {
+          "__rl": true,
+          "value": 0,
+          "mode": "id"
+        },
+        "expect": true
+      },
+      {
+        "name": "raw-string",
+        "input": "raw-string",
+        "expect": true
+      },
+      {
+        "name": "empty-raw-string",
+        "input": "",
+        "expect": false
+      },
+      {
+        "name": "raw-zero",
+        "input": 0,
+        "expect": false
+      }
+    ]
+  },
+  "resourceLocatorIssues": {
+    "cases": [
+      {
+        "name": "regex-validation-fail-exact-message",
+        "properties": [
+          {
+            "displayName": "Channel",
+            "name": "channel",
+            "type": "resourceLocator",
+            "required": true,
+            "default": {},
+            "modes": [
+              {
+                "displayName": "By ID",
+                "name": "id",
+                "type": "string",
+                "validation": [
+                  {
+                    "type": "regex",
+                    "properties": {
+                      "regex": "[0-9]+",
+                      "errorMessage": "Channel ID must be digits"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "node": {
+          "id": "w17",
+          "name": "W17 Node",
+          "type": "noop",
+          "typeVersion": 1,
+          "position": [
+            0,
+            0
+          ],
+          "parameters": {
+            "channel": {
+              "__rl": true,
+              "value": "abc",
+              "mode": "id"
+            }
+          }
+        },
+        "expect": {
+          "parameters": {
+            "channel": [
+              "Channel ID must be digits"
+            ]
+          }
+        }
+      },
+      {
+        "name": "valid-value",
+        "properties": [
+          {
+            "displayName": "Channel",
+            "name": "channel",
+            "type": "resourceLocator",
+            "required": true,
+            "default": {},
+            "modes": [
+              {
+                "displayName": "By ID",
+                "name": "id",
+                "type": "string",
+                "validation": [
+                  {
+                    "type": "regex",
+                    "properties": {
+                      "regex": "[0-9]+",
+                      "errorMessage": "Channel ID must be digits"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "node": {
+          "id": "w17",
+          "name": "W17 Node",
+          "type": "noop",
+          "typeVersion": 1,
+          "position": [
+            0,
+            0
+          ],
+          "parameters": {
+            "channel": {
+              "__rl": true,
+              "value": "123",
+              "mode": "id"
+            }
+          }
+        },
+        "expect": null
+      },
+      {
+        "name": "expression-exempt",
+        "properties": [
+          {
+            "displayName": "Channel",
+            "name": "channel",
+            "type": "resourceLocator",
+            "required": true,
+            "default": {},
+            "modes": [
+              {
+                "displayName": "By ID",
+                "name": "id",
+                "type": "string",
+                "validation": [
+                  {
+                    "type": "regex",
+                    "properties": {
+                      "regex": "[0-9]+",
+                      "errorMessage": "Channel ID must be digits"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "node": {
+          "id": "w17",
+          "name": "W17 Node",
+          "type": "noop",
+          "typeVersion": 1,
+          "position": [
+            0,
+            0
+          ],
+          "parameters": {
+            "channel": {
+              "__rl": true,
+              "value": "={{$json.id}}",
+              "mode": "id"
+            }
+          }
+        },
+        "expect": null
+      },
+      {
+        "name": "unknown-mode-validation-skipped",
+        "properties": [
+          {
+            "displayName": "Channel",
+            "name": "channel",
+            "type": "resourceLocator",
+            "required": true,
+            "default": {},
+            "modes": [
+              {
+                "displayName": "By ID",
+                "name": "id",
+                "type": "string",
+                "validation": [
+                  {
+                    "type": "regex",
+                    "properties": {
+                      "regex": "[0-9]+",
+                      "errorMessage": "Channel ID must be digits"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "node": {
+          "id": "w17",
+          "name": "W17 Node",
+          "type": "noop",
+          "typeVersion": 1,
+          "position": [
+            0,
+            0
+          ],
+          "parameters": {
+            "channel": {
+              "__rl": true,
+              "value": "abc",
+              "mode": "missing-mode"
+            }
+          }
+        },
+        "expect": null
+      },
+      {
+        "name": "empty-object-required-branch",
+        "properties": [
+          {
+            "displayName": "Channel",
+            "name": "channel",
+            "type": "resourceLocator",
+            "required": true,
+            "default": {},
+            "modes": [
+              {
+                "displayName": "By ID",
+                "name": "id",
+                "type": "string",
+                "validation": [
+                  {
+                    "type": "regex",
+                    "properties": {
+                      "regex": "[0-9]+",
+                      "errorMessage": "Channel ID must be digits"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "node": {
+          "id": "w17",
+          "name": "W17 Node",
+          "type": "noop",
+          "typeVersion": 1,
+          "position": [
+            0,
+            0
+          ],
+          "parameters": {
+            "channel": {}
+          }
+        },
+        "expect": {
+          "parameters": {
+            "channel": [
+              "Parameter \"Channel\" is required."
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "rlcDefaults": {
+    "cases": [
+      {
+        "name": "rlc-object-default-plants-rl-flag",
+        "properties": [
+          {
+            "displayName": "Channel",
+            "name": "channel",
+            "type": "resourceLocator",
+            "required": true,
+            "default": {},
+            "modes": [
+              {
+                "displayName": "By ID",
+                "name": "id",
+                "type": "string",
+                "validation": [
+                  {
+                    "type": "regex",
+                    "properties": {
+                      "regex": "[0-9]+",
+                      "errorMessage": "Channel ID must be digits"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "values": {},
+        "returnDefaults": true,
+        "returnNoneDisplayed": false,
+        "expect": {
+          "channel": {
+            "__rl": true
+          }
+        }
+      }
+    ]
+  },
+  "resourceMapperIssues": {
+    "cases": [
+      {
+        "name": "auto-map-mode-skipped",
+        "properties": [
+          {
+            "displayName": "Map",
+            "name": "map",
+            "type": "resourceMapper",
+            "required": true,
+            "default": {},
+            "typeOptions": {
+              "resourceMapper": {
+                "resourceMapperMethod": "manualMapping",
+                "mode": "add",
+                "fieldWords": {
+                  "singular": "field",
+                  "plural": "fields"
+                },
+                "addAllFields": false,
+                "allowToEnterFieldName": false,
+                "validateRequired": true,
+                "matchingColumns": [
+                  "c1"
+                ],
+                "schema": [
+                  {
+                    "id": "f1",
+                    "displayName": "F1",
+                    "required": true,
+                    "defaultMatch": false,
+                    "display": true,
+                    "type": "string",
+                    "canBeUsedToMatch": true
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "node": {
+          "id": "w17",
+          "name": "W17 Node",
+          "type": "noop",
+          "typeVersion": 1,
+          "position": [
+            0,
+            0
+          ],
+          "parameters": {
+            "map": {
+              "mappingMode": "autoMapInputData",
+              "value": null,
+              "matchingColumns": [],
+              "schema": [
+                {
+                  "id": "f1",
+                  "displayName": "F1",
+                  "required": true,
+                  "defaultMatch": false,
+                  "display": true,
+                  "type": "string",
+                  "canBeUsedToMatch": true
+                }
+              ]
+            }
+          }
+        },
+        "expect": null
+      },
+      {
+        "name": "define-mapping-missing-required-field",
+        "properties": [
+          {
+            "displayName": "Map",
+            "name": "map",
+            "type": "resourceMapper",
+            "required": true,
+            "default": {},
+            "typeOptions": {
+              "resourceMapper": {
+                "resourceMapperMethod": "manualMapping",
+                "mode": "add",
+                "fieldWords": {
+                  "singular": "field",
+                  "plural": "fields"
+                },
+                "addAllFields": false,
+                "allowToEnterFieldName": false,
+                "validateRequired": true,
+                "matchingColumns": [
+                  "c1"
+                ],
+                "schema": [
+                  {
+                    "id": "f1",
+                    "displayName": "F1",
+                    "required": true,
+                    "defaultMatch": false,
+                    "display": true,
+                    "type": "string",
+                    "canBeUsedToMatch": true
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "node": {
+          "id": "w17",
+          "name": "W17 Node",
+          "type": "noop",
+          "typeVersion": 1,
+          "position": [
+            0,
+            0
+          ],
+          "parameters": {
+            "map": {
+              "mappingMode": "defineMapping",
+              "value": {},
+              "matchingColumns": [],
+              "schema": [
+                {
+                  "id": "f1",
+                  "displayName": "F1",
+                  "required": true,
+                  "defaultMatch": false,
+                  "display": true,
+                  "type": "string",
+                  "canBeUsedToMatch": true
+                }
+              ]
+            }
+          }
+        },
+        "expect": {
+          "parameters": {
+            "map": [],
+            "map.f1": [
+              "Field \"f1\" is required"
+            ]
+          }
+        }
+      },
+      {
+        "name": "define-mapping-filled",
+        "properties": [
+          {
+            "displayName": "Map",
+            "name": "map",
+            "type": "resourceMapper",
+            "required": true,
+            "default": {},
+            "typeOptions": {
+              "resourceMapper": {
+                "resourceMapperMethod": "manualMapping",
+                "mode": "add",
+                "fieldWords": {
+                  "singular": "field",
+                  "plural": "fields"
+                },
+                "addAllFields": false,
+                "allowToEnterFieldName": false,
+                "validateRequired": true,
+                "matchingColumns": [
+                  "c1"
+                ],
+                "schema": [
+                  {
+                    "id": "f1",
+                    "displayName": "F1",
+                    "required": true,
+                    "defaultMatch": false,
+                    "display": true,
+                    "type": "string",
+                    "canBeUsedToMatch": true
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "node": {
+          "id": "w17",
+          "name": "W17 Node",
+          "type": "noop",
+          "typeVersion": 1,
+          "position": [
+            0,
+            0
+          ],
+          "parameters": {
+            "map": {
+              "mappingMode": "defineMapping",
+              "value": {
+                "f1": "ok"
+              },
+              "matchingColumns": [],
+              "schema": [
+                {
+                  "id": "f1",
+                  "displayName": "F1",
+                  "required": true,
+                  "defaultMatch": false,
+                  "display": true,
+                  "type": "string",
+                  "canBeUsedToMatch": true
+                }
+              ]
+            }
+          }
+        },
+        "expect": null
+      },
+      {
+        "name": "define-mapping-expression-exempt",
+        "properties": [
+          {
+            "displayName": "Map",
+            "name": "map",
+            "type": "resourceMapper",
+            "required": true,
+            "default": {},
+            "typeOptions": {
+              "resourceMapper": {
+                "resourceMapperMethod": "manualMapping",
+                "mode": "add",
+                "fieldWords": {
+                  "singular": "field",
+                  "plural": "fields"
+                },
+                "addAllFields": false,
+                "allowToEnterFieldName": false,
+                "validateRequired": true,
+                "matchingColumns": [
+                  "c1"
+                ],
+                "schema": [
+                  {
+                    "id": "f1",
+                    "displayName": "F1",
+                    "required": true,
+                    "defaultMatch": false,
+                    "display": true,
+                    "type": "string",
+                    "canBeUsedToMatch": true
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "node": {
+          "id": "w17",
+          "name": "W17 Node",
+          "type": "noop",
+          "typeVersion": 1,
+          "position": [
+            0,
+            0
+          ],
+          "parameters": {
+            "map": {
+              "mappingMode": "defineMapping",
+              "value": {
+                "f1": "={{$json.f1}}"
+              },
+              "matchingColumns": [],
+              "schema": [
+                {
+                  "id": "f1",
+                  "displayName": "F1",
+                  "required": true,
+                  "defaultMatch": false,
+                  "display": true,
+                  "type": "string",
+                  "canBeUsedToMatch": true
+                }
+              ]
+            }
+          }
+        },
+        "expect": null
       }
     ]
   },

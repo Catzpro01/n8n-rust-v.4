@@ -603,6 +603,75 @@ const getNodeParametersNestedCases = [
   nestedCase("shown-collection-verbatim", nestedHiddenProps, { mode: "b", coll: { inner: "typed" } }),
 ];
 
+/* ---------------- Wave 6: resourceLocator + resourceMapper issues & defaults --------- */
+
+const tg2 = ref("type-guards.js");
+const isValidResourceLocatorParameterValue = tg2.isValidResourceLocatorParameterValue;
+if (typeof isValidResourceLocatorParameterValue !== "function") {
+  console.error("reference export changed: isValidResourceLocatorParameterValue");
+  process.exit(2);
+}
+
+const isValidResourceLocatorCases = [
+  { name: "number-value", input: { __rl: true, value: 123, mode: "id" } },
+  { name: "string-value", input: { __rl: true, value: "x", mode: "id" } },
+  { name: "empty-string-value", input: { __rl: true, value: "", mode: "id" } },
+  { name: "false-value", input: { __rl: true, value: false, mode: "id" } },
+  { name: "zero-number-value", input: { __rl: true, value: 0, mode: "id" } },
+  { name: "raw-string", input: "raw-string" },
+  { name: "empty-raw-string", input: "" },
+  { name: "raw-zero", input: 0 },
+].map((c) => ({ ...c, expect: isValidResourceLocatorParameterValue(c.input) }));
+
+const rlcProps = [
+  { displayName: "Channel", name: "channel", type: "resourceLocator", required: true, default: {},
+    modes: [{ displayName: "By ID", name: "id", type: "string",
+      validation: [{ type: "regex", properties: { regex: "[0-9]+", errorMessage: "Channel ID must be digits" } }] }] },
+];
+const rlcNode = (parameters) => ({ id: "w17", name: "W17 Node", type: "noop", typeVersion: 1, position: [0, 0], parameters });
+function rlcIssuesCase(name, channelValue) {
+  const node = rlcNode({ channel: channelValue });
+  return { name, properties: rlcProps, node, expect: helpers.getNodeParametersIssues(rlcProps, node, null) };
+}
+const resourceLocatorIssuesCases = [
+  rlcIssuesCase("regex-validation-fail-exact-message", { __rl: true, value: "abc", mode: "id" }),
+  rlcIssuesCase("valid-value", { __rl: true, value: "123", mode: "id" }),
+  rlcIssuesCase("expression-exempt", { __rl: true, value: "={{$json.id}}", mode: "id" }),
+  rlcIssuesCase("unknown-mode-validation-skipped", { __rl: true, value: "abc", mode: "missing-mode" }),
+  rlcIssuesCase("empty-object-required-branch", {}),
+];
+
+const rlcDefaultCases = [
+  {
+    name: "rlc-object-default-plants-rl-flag", properties: rlcProps, values: {},
+    returnDefaults: true, returnNoneDisplayed: false,
+    expect: helpers.getNodeParameters(rlcProps, {}, true, false, null, null),
+  },
+];
+
+const rmSchema = [
+  { id: "f1", displayName: "F1", required: true, defaultMatch: false, display: true,
+    type: "string", canBeUsedToMatch: true },
+];
+const rmProps = [
+  { displayName: "Map", name: "map", type: "resourceMapper", required: true, default: {},
+    typeOptions: { resourceMapper: {
+      resourceMapperMethod: "manualMapping", mode: "add",
+      fieldWords: { singular: "field", plural: "fields" },
+      addAllFields: false, allowToEnterFieldName: false, validateRequired: true,
+      matchingColumns: ["c1"], schema: rmSchema } } },
+];
+function rmIssuesCase(name, mappingMode, value) {
+  const node = rlcNode({ map: { mappingMode, value, matchingColumns: [], schema: rmSchema } });
+  return { name, properties: rmProps, node, expect: helpers.getNodeParametersIssues(rmProps, node, null) };
+}
+const resourceMapperIssuesCases = [
+  rmIssuesCase("auto-map-mode-skipped", "autoMapInputData", null),
+  rmIssuesCase("define-mapping-missing-required-field", "defineMapping", {}),
+  rmIssuesCase("define-mapping-filled", "defineMapping", { f1: "ok" }),
+  rmIssuesCase("define-mapping-expression-exempt", "defineMapping", { f1: "={{$json.f1}}" }),
+];
+
 /* ---------------- Regression tripwire: results must equal the VERIFIED goldens ------ */
 /* (docs/isolation/node-golden-cases.md — values frozen by VERIFIED-BY-EXECUTION)      */
 
@@ -687,6 +756,19 @@ assertGolden("W15 nested-results", getNodeParametersNestedCases.map((c) => c.exp
   { fixed: { opts: [{ in: "one", other: 9 }] } },
   { mode: "a" },
   { mode: "b", coll: { inner: "typed" } },
+]);
+assertGolden("W16 rlc-valid", isValidResourceLocatorCases.map((c) => c.expect),
+  [true, true, false, false, true, true, false, false]);
+assertGolden("W17 rlc-issues", resourceLocatorIssuesCases.map((c) => c.expect), [
+  { parameters: { channel: ["Channel ID must be digits"] } },
+  null, null, null,
+  { parameters: { channel: ['Parameter "Channel" is required.'] } },
+]);
+assertGolden("W18 rlc-default", rlcDefaultCases[0].expect, { channel: { __rl: true } });
+assertGolden("W19 rm-issues", resourceMapperIssuesCases.map((c) => c.expect), [
+  null,
+  { parameters: { map: [], "map.f1": ['Field "f1" is required'] } },
+  null, null,
 ]);
 
 if (trip.length) {
@@ -780,6 +862,12 @@ const fixtures = {
       wave5NestedParameters: [
         `getNodeParametersNested:${getNodeParametersNestedCases.length}`,
       ].join(", "),
+      wave6RlcRm: [
+        `isValidResourceLocatorParameterValue:${isValidResourceLocatorCases.length}`,
+        `resourceLocatorIssues:${resourceLocatorIssuesCases.length}`,
+        `rlcDefaults:${rlcDefaultCases.length}`,
+        `resourceMapperIssues:${resourceMapperIssuesCases.length}`,
+      ].join(", "),
     },
   },
   applyAccessPatterns: { cases: applyAccessPatternsCases },
@@ -813,6 +901,10 @@ const fixtures = {
     lanes: "string(6) number(4) dateTime(4) boolean(3) array(5) object(2) any-exists(2) — verbatim switch enumeration from src/node-parameters/filter-parameter.ts:238-405",
   },
   getNodeParametersNested: { cases: getNodeParametersNestedCases },
+  isValidResourceLocatorParameterValue: { cases: isValidResourceLocatorCases },
+  resourceLocatorIssues: { cases: resourceLocatorIssuesCases },
+  rlcDefaults: { cases: rlcDefaultCases },
+  resourceMapperIssues: { cases: resourceMapperIssuesCases },
   serdeConformance,
 };
 

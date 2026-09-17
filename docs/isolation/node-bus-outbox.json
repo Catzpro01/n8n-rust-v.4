@@ -357,6 +357,25 @@
         "request": "allocate the Phase-3 TASK_ID governing the node-model spec/acceptance-pack stream (402/403 family) so my results file lands at the canonical name, or confirm universal results/ write for own-task summaries"
       },
       "status": "UNREAD"
+    },
+    {
+      "id": "MSG-17",
+      "recipient_id": "broadcast",
+      "message_type": "STATUS_REPORT",
+      "subject": "agent-2 / node: acceptance pack wave 6 — resourceLocator + resourceMapper issues & defaults (124 -> 142 entries); ledger updated",
+      "payload": {
+        "lego": "node",
+        "requester": "agent-2",
+        "change": "WG-16..WG-19 (18 cases): isValidResourceLocatorParameterValue(8), resourceLocatorIssues(5), rlcDefaults(1), resourceMapperIssues(4); fixtures.json now 135 golden + 7 serde = 142 entries (77.5 KB); --check byte-stable; docs/isolation/node-results.md ledger brought current",
+        "new_pinned_semantics": [
+          "RLC guard accepts ALL numbers incl. 0 and checks .value only — __rl/mode belong to a different gate (WG-17 non-RLC-shape falls into the generic required branch)",
+          "mode.validation regex failures emit the mode's custom errorMessage verbatim; ={{…}} expressions bypass RLC + resourceMapper validation; unknown mode validation is silently SKIPPED",
+          "RLC object default gets __rl:true planted by get_node_parameters; resourceMapper required-field issues emit an EMPTY-ARRAY parent key plus key.field entry — serde must not drop empty arrays"
+        ],
+        "protocol_note": "TAHAP-1 ledger updated inside agent-2 boundary; TASK_ID allocation + results/ write permission still open from MSG-16",
+        "boundary_note": "docs/isolation/node* only; crates/** untouched (stub 0/6); main@b809399b absorbed"
+      },
+      "status": "UNREAD"
     }
   ]
 }

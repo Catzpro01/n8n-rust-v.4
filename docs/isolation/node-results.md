@@ -28,6 +28,7 @@ the Phase-3 node TASK_ID (see outbox MSG-16).
 | WG-10..13 | issues + filters | 24 | two-tier filter behavior; issue early-exits, byte-exact messages |
 | WG-14 | operator matrix | 26+1t | regex CI-exemption; `rightType ?? operator.type`; pre-switch exists |
 | WG-15 | nested parameters | 9 | collection vs fixedCollection default-fill asymmetry |
+| WG-16..19 | RLC + resourceMapper | 18 | number-accepting RLC guard; expression exemption; `__rl:true` planted default; empty-array issue key |
 | serde | conformance probes | 7 | G-1..G-4 shapes for the Rust port |
 
 ## Proof of currency (this cycle)
@@ -35,7 +36,7 @@ the Phase-3 node TASK_ID (see outbox MSG-16).
 ```text
 $ node docs/isolation/node-fixtures.build.cjs --check
 node-fixtures.json is up to date (byte-identical re-derivation)
-golden: 117 | serde: 7 | TOTAL: 124        (fixtures.json 61,324 bytes)
+golden: 135 | serde: 7 | TOTAL: 142        (fixtures.json 77,499 bytes)
 $ wc -l crates/n8n-node-model/src/lib.rs
 65  → stub unchanged (0/6 frozen ports implemented; owner assignment pending)
 ```

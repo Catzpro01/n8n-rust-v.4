@@ -243,6 +243,41 @@ All with `returnDefaults:true, returnNoneDisplayed:false, node:null, description
 | display-hidden collection (parent rule) | dropped entirely | display gating wins, value discarded |
 | display-shown collection | kept verbatim | baseline |
 
+## Wave 6 — resourceLocator + resourceMapper (WG-16..WG-19)
+
+### WG-16 `isValidResourceLocatorParameterValue(value) -> boolean`
+
+`{value:123}` T · `{value:'x'}` T · `{value:''}` F · `{value:false}` F · **`{value:0}` T
+(numbers always accepted, incl. 0)** · raw string truthy T · `''` F · raw `0` F.
+Guard tests only `.value` presence/truthiness — shape (`__rl`, `mode`) is NOT checked here.
+
+### WG-17 RLC issues (`type:'resourceLocator'`, modes carry regex validation)
+
+| Case | Expected | Pin |
+|---|---|---|
+| `value:'abc'` vs regex `[0-9]+` | `{channel:['Channel ID must be digits']}` | errorMessage comes verbatim from mode.validation.properties |
+| valid value | `null` | |
+| `value:'={{…}}'` | `null` | **expressions bypass mode.validation entirely** |
+| unknown `mode` | `null` | **no-mode-match → validation silently skipped** |
+| value `{}` (no value/mode) | required-branch message | shape check precedes validation |
+
+### WG-18 RLC default in `getNodeParameters`
+
+`type:'resourceLocator'` with object default → output `{channel: {__rl: true}}` —
+the engine **plants `__rl:true` into object defaults** (verbatim structure otherwise).
+
+### WG-19 ResourceMapper issues (`type:'resourceMapper'`)
+
+| Case | Expected | Pin |
+|---|---|---|
+| `mappingMode:'autoMapInputData'` | `null` | automatic mapping = no user input to validate |
+| `defineMapping` with required field missing | **`{map: [], 'map.f1': ["Field \"f1\" is required"]}`** | empty-array key `map` PRESENT + singular fieldWords capitalized verbatim |
+| filled | `null` | |
+| expression value | `null` | expressions exempt at issue level |
+
+The empty-array `map` key is a deliberate shape pin — a Rust serde implementation using
+`skip_serializing_if: Vec::is_empty` would LOSE it and break byte parity.
+
 ### Reproduction
 
 ```bash
@@ -263,8 +298,8 @@ fixtures power `docs/isolation/node-conformance-harness.md`. Dist resolution ord
 
 ### Parity acceptance rule for `n8n-node-model` (Phase 3)
 
-The crate's unit tests MUST reproduce GC-1..GC-7, WG-1..WG-9, WG-10..WG-13, WG-14, and
-WG-15 byte-identically (JSON equality after serialization) — 117 golden cases in
-`docs/isolation/node-fixtures.json`, plus the 7 `serdeConformance` round-trip probes
+The crate's unit tests MUST reproduce GC-1..GC-7, WG-1..WG-9, WG-10..WG-13, WG-14, WG-15,
+and WG-16..WG-19 byte-identically (JSON equality after serialization) — 135 golden cases
+in `docs/isolation/node-fixtures.json`, plus the 7 `serdeConformance` round-trip probes
 (see `node-conformance-harness.md` §5 for the binding acceptance gate). Any deviation is
 a conformance defect (register it as MSG back to agent-2/mediator, do not "fix" semantics).
