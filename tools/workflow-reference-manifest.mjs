@@ -27,8 +27,8 @@ function listFiles(root, out = []) {
 		const abs = join(root, entry);
 		const st = lstatSync(abs);
 		if (st.isDirectory()) listFiles(abs, out);
-		else if (st.isSymbolicLink()) out.push(relative(REF, abs) + ' ->symlink');
-		else out.push(relative(REF, abs));
+		else if (st.isSymbolicLink()) out.push(relative(REF, abs).replace(/\\/g, '/') + ' ->symlink');
+		else out.push(relative(REF, abs).replace(/\\/g, '/'));
 	}
 	return out;
 }
