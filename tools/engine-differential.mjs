@@ -49,6 +49,28 @@ function scenario(name, { reference = null } = {}) {
       findings.push({ scenario: name, label, verdict, detail, reference });
       console.log(`[${verdict}] ${name} :: ${label}${detail ? ` — ${detail}` : ''}${reference ? ` (ref: ${reference})` : ''}`);
     },
+    /**
+     * ITaskData ENVELOPE shape parity (TASK-ENGINE-DIFF-03).
+     * Reference construction: workflow-execute.ts L1506-1511 (taskStartedData)
+     * + L1817-1823 (literal with `metadata`) + L1826 (`error`) + L1919 (`data`
+     * assigned last). Volatile timing VALUES are excluded by design — only the
+     * key set, the construction-order key sequence, field types, the
+     * executionStatus value and the data.main branch/item counts are compared.
+     */
+    compareShape(label, aTask, bTask) {
+      this.compare(`${label} [shape] key set`,
+        Object.keys(aTask ?? {}).sort(),
+        Object.keys(bTask ?? {}).sort());
+      this.compare(`${label} [shape] key order (reference construction order)`,
+        Object.keys(aTask ?? {}).join(','),
+        Object.keys(bTask ?? {}).join(','));
+      for (const field of ['startTime', 'executionTime']) {
+        this.compare(`${label} [shape] typeof ${field}`, typeof aTask?.[field], typeof bTask?.[field]);
+      }
+      this.compare(`${label} [shape] executionStatus`, aTask?.executionStatus, bTask?.executionStatus);
+      const branchCounts = (t) => (t?.data?.main ?? []).map((branch) => (branch ?? []).length);
+      this.compare(`${label} [shape] data.main branch item counts`, branchCounts(aTask), branchCounts(bTask));
+    },
   };
 }
 
@@ -113,6 +135,9 @@ const aJson = (result, node) => (result.data[node] ?? []).map((item) => item.jso
     s.compare('end items json', aJson(a, 'End'), bJson(b, 'End'));
     s.compare('completed', a.status === 'COMPLETED', b.status === 'success');
     s.compare('last node', a.lastNodeExecuted, b.data.resultData.lastNodeExecuted);
+    for (const node of ['Trigger', 'Set', 'End']) {
+      s.compareShape(node, a.runData[node]?.[0], bTask(b, node));
+    }
   } catch (error) { console.error(`[HARNESS-ERROR] S1: ${error.message}`); harnessErrors++; }
 }
 
@@ -148,6 +173,8 @@ const aJson = (result, node) => (result.data[node] ?? []).map((item) => item.jso
     s.compare('sink items json', aJson(a, 'Sink'), bJson(b, 'Sink'));
     s.compare('try counts', aCalls, bCalls);
     s.compare('flaky task status', a.runData.Flaky[0].executionStatus, bTask(b, 'Flaky').executionStatus);
+    s.compareShape('Flaky', a.runData.Flaky[0], bTask(b, 'Flaky'));
+    s.compareShape('Sink', a.runData.Sink[0], bTask(b, 'Sink'));
   } catch (error) { console.error(`[HARNESS-ERROR] S2: ${error.message}`); harnessErrors++; }
 }
 
@@ -183,6 +210,7 @@ const aJson = (result, node) => (result.data[node] ?? []).map((item) => item.jso
     s.compare('stopped with error', a.status === 'ERROR', b.status === 'error');
     s.compare('finished flag', a.finished, b.finished);
     s.compare('last node executed', a.lastNodeExecuted, b.data.resultData.lastNodeExecuted);
+    s.compareShape('Flaky stop task', a.runData.Flaky[0], bTask(b, 'Flaky'));
     s.compare('error message', a.error.message, b.data.resultData.error?.message);
     s.compare('try counts', aCalls, bCalls);
     s.compare('sink never ran', a.runData.Sink, b.data.resultData.runData.Sink);
@@ -291,14 +319,17 @@ const aJson = (result, node) => (result.data[node] ?? []).map((item) => item.jso
     s.compare('success-branch json', aJson(a, 'Sink'), bJson(b, 'Sink'));
     // NOTE: downstream nodes always receive on branch 0 of their own run data.
     s.compare('error-branch json', aJson(a, 'ErrSink'), bJson(b, 'ErrSink', 0));
+    s.compareShape('Sink', a.runData.Sink?.[0], bTask(b, 'Sink'));
+    s.compareShape('ErrSink', a.runData.ErrSink?.[0], bTask(b, 'ErrSink', 0));
   } catch (error) { console.error(`[HARNESS-ERROR] S6: ${error.message}`); harnessErrors++; }
 }
 
 // --- S7: disabled node ---------------------------------------------------------
-// Compares the semantic projection (presence + status + data json), NOT raw
-// task objects: envelope metadata (hints, startTime, executionTime) can never
-// be identical across engines. Envelope shape remains a known delta for a
-// future task-shape task — recorded, not hidden.
+// Compares the semantic projection (presence + status + data json). Raw task
+// VALUES (hints, startTime, executionTime) are still never compared — but since
+// TASK-ENGINE-DIFF-03 the task ENVELOPE SHAPE (key set, reference construction
+// order, field types, branch counts) is machine-compared via compareShape()
+// below and in S1/S2/S3/S6, closing the previously recorded known delta.
 {
   const s = scenario('S7 disabled node passthrough', { reference: 'handleDisabledNode passthrough (L909-920 via L1199)' });
   const def = {
@@ -338,6 +369,8 @@ const aJson = (result, node) => (result.data[node] ?? []).map((item) => item.jso
       dataJson: (bMiddle?.data?.main?.[0] ?? []).map((item) => item.json),
     });
     s.compare('downstream ran on input json', aJson(a, 'Sink'), bJson(b, 'Sink'));
+    s.compareShape('disabled Middle task', aMiddle, bMiddle);
+    s.compareShape('Sink', a.runData.Sink?.[0], bTask(b, 'Sink'));
   } catch (error) { console.error(`[HARNESS-ERROR] S7: ${error.message}`); harnessErrors++; }
 }
 

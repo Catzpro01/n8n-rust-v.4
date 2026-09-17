@@ -1244,3 +1244,30 @@ Why it matters beyond cosmetics: `docs/isolation/LEGO-MASTER-MAP.md` §5 and
 `results/TASK-EXPRESSION-SANDBOX-01.md` cite this package's tests as Phase-3 evidence. An evidence
 citation whose documented command exits non-zero is exactly the failure mode ISSUE-010 and
 ISSUE-020 were raised for. The numbers were real; only the runner was wrong.
+
+### ADDENDUM 2026-09-18 (arena-agent, `TASK-ENGINE-DIFF-03` — envelope-shape delta CLOSED)
+
+The one remaining recorded delta ("envelope metadata … a known delta for a future
+task-shape task") is now machine-checked instead of prose. `tools/engine-differential.mjs`
+gained `compareShape()` (TASK-ENGINE-DIFF-03): per task envelope it compares the key SET,
+the key sequence in the reference construction order (workflow-execute.ts L1506-1511
+taskStartedData spread → L1817-1823 literal with `metadata` → L1826 `error` → L1919
+`data` last), `typeof` of the volatile numeric fields, `executionStatus`, and
+`data.main` branch/item counts. Volatile timing VALUES remain excluded by design.
+
+The check found a real deviation: `packages/reconstructed-engine` task objects lacked the
+`metadata` key and used a different key order (`executionTime` before `source`/`hints`;
+stop-path task lacked `hints`). Both fixed 1:1 against the reference construction in this
+task, including the R5 stop-path envelope (pushed WITHOUT `data`, exactly like the
+reference stop path which assigns `taskData.data` only after the strategy branches).
+
+Falsifiability control (same method as TASK-PHASE3-GATE-01 M1-M3): reverting only the
+runner.mjs fix → **20 DIVERGE** (key set + key order across every scenario); restoring it
+→ **`DIFFERENTIAL: 84 agree / 0 diverge / 0 not-comparable (84 comparisons, 0 harness errors)`**
+(24 semantic comparisons from DIFF-02 + 60 new shape comparisons). Suites re-run after the
+change: reconstructed-engine 28/28, execution-engine 40/40, expression-lego 46/46,
+connection-lego 52/52, `verify:all` exit 0, conformance 42/42, boundary PASS.
+
+ISSUE-021's ledger now has NO recorded behavioral delta between the two engines; what
+remains is the ownership/consolidation decision itself (item 1 of the required action),
+which stays with the orchestrator.

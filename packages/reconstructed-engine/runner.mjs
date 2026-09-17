@@ -150,11 +150,17 @@ export class WorkflowExecutionEngine {
         // (Reference also re-queues the node for restart; this engine has no
         // restart API yet — deferred to the persistence LEGO, see ERROR-POLICY.md.)
         if (!shouldContinueOnError(node)) {
+          // Reference in-loop stop path (workflow-execute.ts L1817-1823 + L1826 +
+          // push before L1919): taskStartedData spread + executionTime + metadata
+          // + executionStatus + error — and NO `data` key, because the reference
+          // pushes taskData before `taskData.data` is ever assigned.
           const task = {
             startTime: startedAt,
             executionIndex,
-            executionTime: Date.now() - startedAt,
             source: queued.source,
+            hints: [], // taskStartedData (workflow-execute.ts L1506-1511)
+            executionTime: Date.now() - startedAt,
+            metadata: queued.metadata, // IExecuteData.metadata (L1822) — undefined on direct runs, key present
             executionStatus: 'error',
             error: executionError,
           };
@@ -186,12 +192,16 @@ export class WorkflowExecutionEngine {
         outputs = [[{ json: {}, pairedItem: inputData.map((_item, item) => ({ item })) }]];
       }
 
+      // Reference task construction (workflow-execute.ts L1506-1511 spread +
+      // L1817-1823 literal + L1826 error + L1919 data last): the key order below
+      // is the runtime key order of the reference task object.
       const task = {
         startTime: startedAt,
         executionIndex,
-        executionTime: Date.now() - startedAt,
         source: queued.source,
         hints: [], // taskStartedData (workflow-execute.ts L1506-1511)
+        executionTime: Date.now() - startedAt,
+        metadata: queued.metadata, // IExecuteData.metadata (L1822) — undefined on direct runs, key present
         executionStatus: executionError !== undefined ? 'error' : 'success',
         ...(executionError !== undefined ? { error: executionError } : {}),
         data: { main: outputs },
