@@ -1,0 +1,42 @@
+id: TASK-417-phase3-execution-data-lego
+agent: arena-worker
+lego: execution-data
+module: execution-data-boundary
+phase: 3
+status: IMPLEMENTED
+reference: n8n@2.9.4
+objective: Reconstruct n8n 2.9.4 Execution Data boundary, item envelope helpers (normalizeItems, returnJsonArray, copyInputItems, constructExecutionMetaData), auto-pairing rules (assignPairedItems, prepareInputPairedItems, applyAlwaysOutputData), run execution data factories, and in-memory binary metadata.
+allowed_paths:
+  - packages/execution-data-lego/**
+  - tools/execution-data-lego-gate.mjs
+  - docs/isolation/**
+  - package.json
+  - README.md
+  - tasks/TASK-417-phase3-execution-data-lego.yaml
+  - results/TASK-417-phase3-execution-data-lego.md
+forbidden_paths:
+  - reference/n8n/**
+  - crates/**
+  - apps/**
+requires:
+  - contracts/execution-data.contract.md
+  - docs/isolation/execution-data.md
+verification:
+  - npm --prefix packages/execution-data-lego test
+  - node tools/execution-data-lego-gate.mjs
+acceptance:
+  tests: 24/24
+  gate: 6/6
+  reference_integrity: 15050 files; f8da35180669d798
+outputs:
+  - packages/execution-data-lego/src/index.mjs
+  - packages/execution-data-lego/src/constants.mjs
+  - packages/execution-data-lego/src/errors.mjs
+  - packages/execution-data-lego/src/item-helpers.mjs
+  - packages/execution-data-lego/src/paired-items.mjs
+  - packages/execution-data-lego/src/run-execution-data-factory.mjs
+  - packages/execution-data-lego/src/binary-data.mjs
+  - packages/execution-data-lego/test/conformance.test.mjs
+  - tools/execution-data-lego-gate.mjs
+  - results/TASK-417-phase3-execution-data-lego.md
+  - tasks/TASK-417-phase3-execution-data-lego.yaml

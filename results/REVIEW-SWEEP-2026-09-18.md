@@ -136,3 +136,26 @@ hidden behind a different entry point. Restored via `scripts/setup-reference-run
 The branch is now, for the first time since the re-provisions, verified end-to-end against the **real
 pinned runtime** (not only the offline/vendored lanes). Evidence refreshed:
 `docs/isolation/evidence/{gate-report,live-verification,model-digest.comparison}.json`.
+
+---
+
+## Sweep 9 (2026-09-18, on `ef823058`) — TASK-EERR-01 + TASK-416
+
+Sandbox was re-provisioned before this sweep (git ref rolled to `fc4e5631`, all lane
+`node_modules` wiped — gitignored, not snapshotted). Recovered via
+`fetch + checkout -B + reset --hard` onto `ef823058` (own `5b761716` confirmed ancestor;
+worktree files verified intact first), then `npm install` in the five lanes that need it
+(documented ISSUE-022-class prerequisite, third occurrence).
+
+| Result (owner) | Claim | Fresh re-run on merged tree (this sweep) | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-EERR-01.md` | 3-way error-surface differential 4 agree / 14 documented / 0 diverge; stash control 16 DIVERGE; node 101/101, exec 67/67; gates 10/10 + 7/7 | **4 agree / 14 documented-delta / 0 diverge across 18**; control reproduced by swapping pre-fix `errors.mjs` from `2227bbdc^` → **16 DIVERGE**, restored → 4/14/0 (tree verified byte-clean after); **101/101** + **67/67**; Node gate **7/7**, Execution gate **10/10** | **APPROVE** |
+| `TASK-416-phase3-credentials-lego.md` | credentials-lego 22/22 (2 negatives + golden parity), gate 6/6 | **22 pass / 0 fail**; Credentials gate **6/6**; negatives + `credentials.golden.json` parity wiring present | **APPROVE** |
+
+**Matrix at sweep time:** `verify:all` real exit 0 · Execution 10/10 · Trigger 5/5 · Webhook 5/5 ·
+Scheduler 6/6 · Node 7/7 · Persistence 6/6 · Credentials 6/6 · error-surface 4/14/0.
+
+**Status-hygiene note (not a vote, for the orchestrator):** `TASK-416`'s result claims
+`VERIFIED` while its YAML says `IMPLEMENTED`, and phase-3 tasks 406/407/408/410 sit at
+`IMPLEMENTED` despite sweep-1 APPROVEs. Owners/orchestrator should reconcile; peer YAMLs left
+untouched by this sweep.
