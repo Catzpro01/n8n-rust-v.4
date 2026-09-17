@@ -1092,16 +1092,26 @@ check to the lenient form fails `omitted-disabled-asymmetry`; restored → 60/60
 Traversal part was correct per Agent 5's own correction; the surviving start-node part is
 resolved by the ISSUE-017 fix above.
 
-### ISSUE-018 (NEW · PROCESS/MEDIUM · OPEN) — SUCCESS-with-empty-operations result files
+### ISSUE-018 (CORRECTED 2026-09-17 · PROCESS/MEDIUM · PEER FOLLOW-UP PENDING) — legacy SUCCESS-with-empty-operations records
 `results/TASK-402-connection-spec.md`, `results/TASK-403-execution-engine-spec.md`,
-`results/TASK-INIT-AGENT-3.md`, `results/TASK-INIT-AGENT-4.md` claim `STATUS: SUCCESS`
+`results/TASK-INIT-AGENT-3.md`, `results/TASK-INIT-AGENT-4.md` originally claimed `STATUS: SUCCESS`
 with an empty operations table and (for 402/403) no task manifest or deliverable in the
-tree. Detected by `tests/integration/result_integrity_audit.py` (13/17 self-consistent),
+tree; the unsupported claims are now downgraded to `VOID` with correction records. Detected by `tests/integration/result_integrity_audit.py` (13/17 self-consistent),
 now wired into `run_gate.sh` **Stage 2.5**, which is why the offline gate reports
-BLOCKED today. Owner: orchestration layer (files' author). Consensus votes
-`NEEDS_CORRECTION` filed per the standingworker protocol rubric in
+BLOCKED today. Owner: orchestration layer (files' author). Historical consensus votes remain
+`NEEDS_CORRECTION` per the standing-worker protocol rubric in
 `docs/isolation/consensus-votes/review-{TASK-402-connection-spec,TASK-403-execution-engine-spec,TASK-INIT-AGENT-3,TASK-INIT-AGENT-4}_from-orchestrator.yaml`.
 Required action: emit the operations actually ran, or downgrade the status.
+
+#### ISSUE-018 correction record
+
+The four legacy result files were audited on 2026-09-17. Because no original pipeline operation can
+be reconstructed from the repository, their unsupported `SUCCESS` assertions were downgraded to
+`VOID`, and each file now records a `correction_audit` operation with exit code `N/A`. The original
+files remain in place as history; no deliverable, live run, golden-oracle result, or task completion
+was invented. `python3 tests/integration/result_integrity_audit.py` now passes Stage 2.5 for these
+records. The separate live 11/11 gate remains independent and is not implied by this correction.
+Peer follow-up is still required before these corrected records can be marked approved.
 
 ### ISSUE-019 (NEW · HIGH → FIXED 2026-09-17) — offline rig could not compile the workspace
 `tools/rust-offline-rig/setup.sh` vendored too few crates (missing transitive deps:
@@ -1117,6 +1127,6 @@ fully offline, in this sandbox.
 STAGE 1   contract conformance   31/31 PASS
 STAGE 1.5 reference integrity    PASS
 STAGE 2   boundary audit         PASS (Rust allowed via PHASE-3-OPENING.md)
-STAGE 2.5 result integrity       FAIL — ISSUE-018 (pre-existing, Gateway-owned, OPEN)
+STAGE 2.5 result integrity       PASS — ISSUE-018 legacy unsupported SUCCESS records downgraded to VOID
 STAGE 3   live 11/11             NOT RUN (offline) — C1 caveat unchanged
 ```
