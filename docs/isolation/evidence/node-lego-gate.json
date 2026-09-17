@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-17T18:03:11.734Z",
-  "task": "TASK-413-phase3-node-parameter-issues",
+  "generatedAt": "2026-09-17T18:02:25.077Z",
+  "task": "TASK-414-phase3-node-filter-execution",
   "reference": "n8n 2.9.4",
   "totals": {
     "passed": 7,
@@ -17,13 +17,13 @@
       "id": "N02",
       "name": "source boundary is import-closed",
       "status": "PASS",
-      "detail": "16 source files, no cross-LEGO imports"
+      "detail": "18 source files, no cross-LEGO imports"
     },
     {
       "id": "N03",
       "name": "node-model conformance suite",
       "status": "PASS",
-      "detail": "82 pass / 0 fail"
+      "detail": "93 pass / 0 fail"
     },
     {
       "id": "N04",
@@ -35,7 +35,7 @@
       "id": "N05",
       "name": "differential vs the published reference build",
       "status": "PASS",
-      "detail": "1422 agree / 0 diverge across 1422 comparisons (2 NOT-DIFFABLE, 0 harness errors)"
+      "detail": "1609 agree / 0 diverge across 1609 comparisons (2 NOT-DIFFABLE, 0 harness errors)"
     },
     {
       "id": "N06",
@@ -47,7 +47,7 @@
       "id": "N07",
       "name": "every exported symbol is documented in the contract",
       "status": "PASS",
-      "detail": "81 exported symbols documented"
+      "detail": "87 exported symbols documented"
     }
   ]
 }

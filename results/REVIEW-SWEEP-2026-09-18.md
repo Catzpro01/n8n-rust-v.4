@@ -35,3 +35,9 @@ boundary PASS · reference pin 15050 files `f8da35180669d798…`.
 | Result (owner) | Claim | Fresh re-run on merged tree | Verdict |
 | :--- | :--- | :--- | :--- |
 | `TASK-413-phase3-node-parameter-issues.md` | node-lego 13 → 16 modules, 58 → 82 tests, differential vs published build | **82/82** fresh, **1422 agree / 0 diverge (2 NOT-DIFFABLE)**, Node gate **7/7** | **APPROVE** |
+
+## Sweep 4 (2026-09-18, post re-provision, on `803b05ec`) — TASK-RIG-VENDOR-01
+
+| Result (owner) | Claim | Fresh re-run on merged tree | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-RIG-VENDOR-01.md` | convergence onto TASK-RIG-REPAIR-01 + staleness hardening (`.rig-plan` fingerprint, clone tag guard); check exit 0, test 37/37 | hardened `setup.sh` **detected the pre-hardening vendor as stale and re-vendored automatically** (19 crates, aho-corasick 1.1.3 — the designed behavior, observed live); second-run idempotence `vendor up to date`; `run.sh check` exit 0; `run.sh test` **37/37** (16 result lines); `git diff -- crates/ reference/` empty; probe never committed | **APPROVE** |

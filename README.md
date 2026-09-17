@@ -22,6 +22,7 @@ is a Rust replacement attempted.
 | **WORKFLOW MODEL LEGO 02 (frozen surface closed)** | **✅ IMPLEMENTED · VERIFIED 52/52 — all 15 frozen §6 symbols + the 14 `wf.*` connection-golden probes (traversal delegated to `start-node-navigation`, single source of truth)** |
 | **NODE LEGO 02 (Phase 3, JS reconstruction)** | **✅ IMPLEMENTED · TESTED 45/45 · GATE 7/7 · DIFFERENTIAL 234 agree / 0 diverge — see [`docs/isolation/node.md`](docs/isolation/node.md) §5** |
 | **NODE LEGO 02 (Phase 3, JS reconstruction)** | **✅ IMPLEMENTED · TESTED 82/82 · GATE 7/7 · DIFFERENTIAL 1422 agree / 0 diverge — see [`docs/isolation/node.md`](docs/isolation/node.md) §5** |
+| **NODE LEGO 02 (Phase 3, JS reconstruction)** | **✅ IMPLEMENTED · TESTED 93/93 · GATE 7/7 · DIFFERENTIAL 1609 agree / 0 diverge — see [`docs/isolation/node.md`](docs/isolation/node.md) §5** |
 | **TRIGGER (406) · WEBHOOK (407) LEGOs (Phase 3)** | ✅ IMPLEMENTED (peer lanes) — see `docs/isolation/LEGO-MASTER-MAP.md` §5 |
 | RUST PORT (crates/**, apps/**) | ▶ Phase 3 open for the port track (`docs/isolation/PHASE-3-OPENING-RECORD.md`); the JS reconstruction track stays ZERO RUST |
 
@@ -41,6 +42,7 @@ contract. It does **not** mean it was replaced by Rust.
 - `packages/workflow-model-lego/` (02) : the remaining frozen §6 surface — `getHighestNode`, `searchNodesBFS`, `getParentNodesByDepth`, `getParentMainInputNode`, `getNodeConnectionIndexes`, `__getStartNode`, `getStartNode` (`getNodeOutputs` consumed from `node-lego` via port CD-05; `getNodeParameters` still an injected port, ISSUE-027)
 - `packages/node-lego/` : reconstructed Node Model pure functions — `NodeHelpers` (connection IO, display conditions, naming/tool helpers), `node-validation.ts`, `node-parameters/*` (JavaScript ESM, zero dependencies, differentially pinned to `n8n-workflow@2.9.1`)
 - `packages/node-lego/` : reconstructed Node Model pure functions — `NodeHelpers` (connection IO, display conditions, parameter resolution, parameter issues, naming/tool helpers), `node-validation.ts`, `node-parameters/*`, `type-validation.ts`, `utils.deepCopy` (JavaScript ESM, zero dependencies, differentially pinned to `n8n-workflow@2.9.1`)
+- `packages/node-lego/` : reconstructed Node Model pure functions — `NodeHelpers` (connection IO, display conditions, parameter resolution, parameter issues, filter execution, webhook paths), `node-validation.ts`, `node-parameters/*`, `type-validation.ts`, `utils.deepCopy` (JavaScript ESM, zero dependencies, differentially pinned to `n8n-workflow@2.9.1`)
 - `tools/` : boundary mapper, kernel/port/reference gates, isolation extractor, model digest, gate runner, live engine harness
 - `tests/reference/` : golden workflows + baseline smoke test evidence
 - `tasks/`, `results/` : inbound task manifests and execution results

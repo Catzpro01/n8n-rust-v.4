@@ -231,7 +231,7 @@ The integration branch `main` (separate, unrelated git history — Arena orchest
 Phase 2 above isolated the Node Model and proved the boundary; Phase 3 makes the
 **runtime surface of the model executable** as a dependency-free JavaScript LEGO.
 
-* **Package:** `packages/node-lego` (16 source modules, 82 tests across `node-model.test.mjs` and the concurrent `parameter-issues.test.mjs`) — implemented from the pinned
+* **Package:** `packages/node-lego` (18 source modules, 93 tests across `node-model.test.mjs`, `filter-execution.test.mjs` and the concurrent `parameter-issues.test.mjs`) — implemented from the pinned
   `reference/n8n/packages/workflow/src` sources (line anchors in
   [`contracts/node.contract.md`](../../contracts/node.contract.md) §12.1).
 * **Contract:** `contracts/node.contract.md` §12 (module map, deltas, 54-symbol list, acceptance evidence).
@@ -239,9 +239,9 @@ Phase 2 above isolated the Node Model and proved the boundary; Phase 3 makes the
   `N01` zero-dependency, `N02` import-closed boundary, `N03` 58-test suite,
   `N04` pinned reference tree, `N05` differential, `N06` contract/doc presence,
   `N07` every exported symbol documented.
-* **Differential:** `tools/node-lego-differential.mjs` runs 22 scenario groups against the
+* **Differential:** `tools/node-lego-differential.mjs` runs 24 scenario groups against the
   **published `n8n-workflow@2.9.1` build** (the version the pinned commit ships) resolved
-  from `packages/workflow-lego/node_modules`: **1422 agree / 0 diverge / 0 harness errors**,
+  from `packages/workflow-lego/node_modules`: **1609 agree / 0 diverge / 0 harness errors**,
   2 NOT-DIFFABLE surfaces (`renameFormFields` not re-exported upstream; `getPropertyValues`
   private). Falsifiability checked by injecting two behavioral mutations — each produced a
   `DIVERGE`, then was reverted (same for the parameter-resolution slice).

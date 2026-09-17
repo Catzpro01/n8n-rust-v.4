@@ -235,7 +235,9 @@ model — the part the Workflow Model and the Execution LEGO import at runtime.
 | `errors.mjs` | `errors/node-operation.error.ts` + `errors/abstract/{node,execution-base}.error.ts` + `@n8n/errors` `application.error.ts` — **validation/resolution boundary only** | differential N09/N10/N17/N18 |
 | `lodash-lite.mjs` | the `lodash/{get,isEqual,isObject}` helpers `node-helpers.ts`/`type-validation.ts` import (DELTA-01) | `node-model.test.mjs` |
 | `type-validation.mjs` | `type-validation.ts` (481 ln): `tryToParseNumber` L15, `tryToParseString` L24, `tryToParseAlphanumericString` L38, `tryToParseBoolean` L48, `tryToParseDateTime` L72, `tryToParseTime` L114, `tryToParseArray` L124, `tryToParseObject` L146, `tryToParseBinary` L162, `tryToParseJsonToFormFields` L206, `getValueDescription` L272, `tryToParseUrl` L284, `tryToParseJwt` L305, `validateFieldType` L326-481; `utils.ts` `jsonParse` L152 (+`parseJSObject` L123); `type-guards.ts` `isBinaryValue` L168 | `test/type-validation.test.ts` (512 ln), differential N19/N20 |
-| `filter-parameter.mjs` | `node-parameters/filter-parameter.ts` VALIDATION half only: `FilterError` L23, `parseSingleFilterValue` L32, `withIndefiniteArticle` L66, `parseFilterConditionValues` L71, `validateFilterParameter` L427-450 | `test/filter-parameter.test.ts`, differential N21 |
+| `filter-parameter.mjs` | `node-parameters/filter-parameter.ts` whole file: `FilterError` L23, `parseSingleFilterValue` L32, `withIndefiniteArticle` L66, `parseFilterConditionValues` L71, `parseRegexPattern` L196, `arrayContainsValue` L209, `executeFilterCondition` L222-404, `executeFilter` L409-424, `validateFilterParameter` L427-450 | `test/filter-parameter.test.ts`, differential N21/N23 |
+| `webhook-path.mjs` | `node-helpers.ts` `getNodeWebhookPath` L1057-1084, `getNodeWebhookUrl` L1087-1101 | `test/node-helpers.test.ts` L6211, differential N24 |
+| `cron-node-options.mjs` | `node-helpers.ts` `cronNodeOptions` L56-241 (verbatim data literal) | differential N24 (byte-compared) |
 | `parameter-issues.mjs` | `node-helpers.ts` `getContext` L505-538, `getNodeParametersIssues` L1202, `validateResourceLocatorParameter` L1228, `validateResourceMapperParameter` L1257, `validateParameter` L1305, `addToIssuesIfMissing` L1325, `getParameterIssues` L1389-1580, `mergeIssues` L1600-1635; `type-guards.ts` `isValidResourceLocatorParameterValue` L47-57 | `test/node-helpers.test.ts` `describe('getParameterIssues')` L3683 + `required parameters validation` L4270, differential N22 |
 
 ### 12.2 Explicit deltas (everything not 1:1)
@@ -288,29 +290,37 @@ model — the part the Workflow Model and the Execution LEGO import at runtime.
    key, appending both messages); `getContext` creates `executionData.contextData[key]` lazily
    and the resource-locator regex is skipped for values starting with `=`. Covered by
    `N19`…`N22`.
-7. **Not reconstructed (out of Node Model scope, listed so absence is explicit):**
-   the filter-parameter EXECUTION half (`arrayContainsValue` L209, `executeFilterCondition`
-   L222, `executeFilter` L409, `parseRegexPattern` L196 — luxon-backed date operators and the
-   logger adapter), `getNodeWebhookPath`/`getNodeWebhookUrl` (L6211 oracle), `cronNodeOptions`,
-   the `jsonrepair`-backed `repairJSON` recovery (DELTA-05), `node-reference-parser-utils.ts`
-   and workflow validation. `renameFormFields` is reconstructed though not re-exported by the
+7. **Filter execution logs through an injected logger.** DELTA-06. The reference's two
+   `LoggerProxy.warn` call sites (`Unknown filter parameter operator …` in
+   `executeFilterCondition`, `Unknown filter combinator …` in `executeFilter`) go through a
+   logger carried on the `metadata`/options object, defaulting to a no-op (rule E01). Date
+   conditions are compared through the `toMillis()` of whatever the DELTA-04
+   `dateTimeFactory` returned, and the same metadata carries that factory into
+   `parseSingleFilterValue`, so no date library is imported.
+8. **Not reconstructed (out of Node Model scope, listed so absence is explicit):** the
+   `jsonrepair`-backed `repairJSON` recovery (DELTA-05), `node-reference-parser-utils.ts` and
+   workflow validation. Everything else in `node-helpers.ts` L1-1949 and
+   `node-parameters/filter-parameter.ts` is now reconstructed. `renameFormFields` is reconstructed though not re-exported by the
    published build (internal call site only).
 
 ### 12.3 Acceptance evidence
 
 * `tools/node-lego-gate.mjs` — gates `N01`…`N06` (`docs/isolation/evidence/node-lego-gate.json`).
-* `tools/node-lego-differential.mjs` — 22 scenario groups / 1422 comparisons against the
+* `tools/node-lego-differential.mjs` — 24 scenario groups / 1609 comparisons against the
   published `n8n-workflow@2.9.1` build (the version the pinned reference commit ships):
-  **1422 agree / 0 diverge**, 2 NOT-DIFFABLE (`renameFormFields`, private `getPropertyValues`).
+  **1609 agree / 0 diverge**, 2 NOT-DIFFABLE (`renameFormFields`, private `getPropertyValues`).
   Falsifiability: injected behavioral mutations (empty-array rule, expression short-circuit,
   the fixedCollection "value would get lost" early return, `deepCopy`'s `toJSON` handling,
   the min/max field-count wording, the required-`undefined` check, `getValueDescription`'s
-  `null` wording) each produced a `DIVERGE`, so the harness is not vacuous.
-* `packages/node-lego/test/node-model.test.mjs` — 74 cases, oracle-cited; plus
+  `null` wording, string `contains` → equality, dropped `ignoreCase`, dropped webhook-path
+  lower-casing) each produced a `DIVERGE`, so the harness is not vacuous.
+* `packages/node-lego/test/node-model.test.mjs` — 74 cases, oracle-cited;
+  `packages/node-lego/test/filter-execution.test.mjs` — 11 cases (filter execution, webhook
+  paths, `cronNodeOptions`); plus
   `packages/node-lego/test/parameter-issues.test.mjs` — 8 cases (concurrent lane, retained and
   corrected against REF where its expectations encoded an unfaithful detail — ISSUE-026).
 
-### 12.4 Exported symbol list (81 — gate `N07` asserts every one is named here)
+### 12.4 Exported symbol list (87 — gate `N07` asserts every one is named here)
 
 | | | | | | |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -324,6 +334,7 @@ model — the part the Workflow Model and the Execution LEGO import at runtime.
 | `isTool` | `isToolType` | `isTriggerLikeNode` | `isTriggerNode` | `isValidNodeParameterValueType` | `makeDescription` |
 | `makeNodeName` | `mergeNodeProperties` | `nodeAcceptsInputType` | `nodeHasOutputType` | `renameFormFields` | `resolveRelativePath` |
 | `toPath` | `validateNodeCredentials` | `validateNodeParameters` |
+| `arrayContainsValue` | `cronNodeOptions` | `executeFilter` | `executeFilterCondition` | `getNodeWebhookPath` | `getNodeWebhookUrl` |
 | `FilterError` | `defaultDateTimeFactory` | `defaultParseJSObject` | `getContext` | `getNodeParametersIssues` | `getParameterIssues` |
 | `getValueDescription` | `isBinaryValue` | `jsonParse` | `mergeIssues` | `tryToParseAlphanumericString` | `tryToParseArray` |
 | `tryToParseBinary` | `tryToParseBoolean` | `tryToParseDateTime` | `tryToParseJsonToFormFields` | `tryToParseJwt` | `tryToParseNumber` |
