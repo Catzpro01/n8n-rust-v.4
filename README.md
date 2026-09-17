@@ -14,8 +14,8 @@ The reconstruction never rewrites n8n from guesswork: n8n 2.9.4 is the behaviora
 | REFERENCE RUNTIME (baseline 11/11 smoke) | ✅ | live VPS verified |
 | **WORKFLOW ISOLATION (LEGO 01)** | **✅ VERIFIED** | `docs/isolation/workflow.md` 5/5 PASS |
 | **NODE MODEL (LEGO 02)** | **✅ VERIFIED** | contract 21/21 PASS |
-| **CONNECTION (LEGO 03)** | **✅ VERIFIED + INTEGRATED** | P-CONNECTION-GRAPH · differential gate 8/8 · 1,258 calls vs `n8n-workflow@2.9.1` · 20/20 unit · consumed by the Phase 5 facade (check `C08`) |
-| **LOCALIZATION HUB (Phase 4B)** | **✅ VERIFIED** | `id · en · jv · ar · zh · ru` — 23 keys x 6 locales, `npm run i18n:check` 5/5 · 24/24 behaviour |
+| **CONNECTION (LEGO 03)** | **✅ VERIFIED + INTEGRATED** | P-CONNECTION-GRAPH · differential gate 9/9 · 1,944 calls vs `n8n-workflow@2.9.1` (incl. the real `Workflow` class members, check `C09`) · 22/22 unit · consumed by the Phase 5 facade (`C08`) |
+| **LOCALIZATION HUB (Phase 4B→4C)** | **✅ VERIFIED** | `id · en · jv · ar · zh · ru` — 27 keys x 6 locales (incl. `param.*` validation keys), `npm run i18n:check` 5/5 · 26/26 behaviour |
 | **VALIDATION (LEGO 04)** | **✅ VERIFIED** | cycle + uniqueness + dangling |
 | **EXECUTION-DATA (LEGO 05)** | **✅ VERIFIED** | Phase 4-12, I1-I14, factories v1, 2/2 PASS |
 | **EXPRESSION (LEGO 06)** | **✅ VERIFIED** | Phase 4-12, E1-E8, isExpression + sandbox, 4/4 PASS |
