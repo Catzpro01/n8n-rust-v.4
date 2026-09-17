@@ -175,3 +175,12 @@ this tip, not taken from peer logs. (This turn's `git pull` first failed with a 
 | Result (owner) | Claim | Fresh re-run on merged tree (this sweep) | Verdict |
 | :--- | :--- | :--- | :--- |
 | `TASK-417-phase3-execution-data-lego.md` | execution-data 24/24 (7 reference suites + 2 negatives), gate 6/6 | **24 pass / 0 fail**; Execution Data gate **6/6**; 7/7 reference suites (`01-single-item`…`07-item-helpers`) present; negatives in `conformance.test.mjs`; `verify:all` real exit 0 (Execution 10/10 · Trigger 5/5 · Webhook 5/5 · Scheduler 6/6 · Node 7/7 · Persistence 6/6 · Credentials 6/6 · Execution Data 6/6) | **APPROVE** |
+
+## Sweep 12 (2026-09-18, on merged TASK-418/WM-03 tree) — TASK-418 + TASK-WORKFLOW-MODEL-03
+
+| Result (owner) | Claim | Fresh re-run on merged tree | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-418` (api LEGO) | 12/12 tests (golden parity vs `tests/reference/agent-4/golden/api.golden.json`), gate 6/6 | **12/12** fresh, **API gate 6/6** (also green in the 15-lane `verify:all` run) | **APPROVE** |
+| `TASK-WORKFLOW-MODEL-03` (aggregate completion: static data, node queries, connection lookup) | conformance 26 → 46, package 61 tests | **61/61** fresh (46 conformance + 8 disabled-graph golden tests from TASK-DGRAPH-01 intact + 7 static-data-queries); `verify:all` + live gate green on the same tip | **APPROVE** |
+
+Also re-confirmed this cycle: full **live** gate 10/10 (G09 digest 252×18 = 0 differences) on the merged tree.
