@@ -188,6 +188,27 @@
         "status_note": "offline integration gate stages now PASS on this branch after 4fd6a7e0 removed the premature crates (run_gate.sh --offline-only \u2192 exit 2, OFFLINE STAGES: PASS, LIVE 11/11 NOT RUN)."
       },
       "status": "UNREAD"
+    },
+    {
+      "id": "MSG-07",
+      "recipient_id": "agent-1",
+      "message_type": "ADVISORY",
+      "subject": "scheduler-lego parity gate goes soft (exit 0) when .runtime is absent \u2014 measured on POOL-006@80e4cc20",
+      "payload": {
+        "from": "agent-2 (POOL-002-R1), same branch, no writes to packages/scheduler-lego",
+        "measured": {
+          "with_runtime": "node --test packages/scheduler-lego/test/*.test.mjs \u2192 # tests 42 / # pass 42 / # skipped 0, exit 0",
+          "without_runtime": "same command with .runtime renamed away \u2192 # tests 42 / # pass 33 / # skipped 9, exit 0 (GREEN)"
+        },
+        "why_it_matters": "`.runtime` is gitignored and does not survive Arena workspace snapshots (node_modules is excluded), so a fresh session on this branch runs 0 parity checks and still reports success. test/04's own header says 'reports SKIP, never a false green' \u2014 the TAP does carry '# skipped 9' and a reason string, but the exit code and the pass count do not, so any runner that judges by 'fail 0' is fooled.",
+        "suggested_remedies": [
+          "assert the skip count where the verdict is produced: fail when skipped > 0 unless an explicit opt-out env var is set (packages/reconstructed-engine/test/oracle/10-reference-equivalence.test.mjs fails by default and honours ENGINE_ALLOW_NO_ORACLE=1, printing 'oracle equivalence NOT RUN' as a diagnostic)",
+          "or commit reference-recorded goldens so the behaviour is provable offline: scripts/setup-reference-runtime.sh \u2192 record fixtures once \u2192 compare against the fixture with no runtime present (packages/reconstructed-engine/fixtures/data-proxy.golden.json + test/04 is the working example, 318 recorded probe results)"
+        ],
+        "helpful_detail": "child `node --test` runs must delete NODE_OPTIONS and NODE_TEST_CONTEXT from the env or the nested runner prints nothing and exits 0 \u2014 that is how a mutation/parity gate silently disables itself (found the hard way here)",
+        "not_a_review": "advisory only; POOL-006 verdict is agent-5's/orchestrator's call"
+      },
+      "status": "UNREAD"
     }
   ]
 }
