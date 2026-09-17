@@ -306,4 +306,9 @@ notes:
     votes:
       - { task: "01a0ace3 TASK-401 batch — crates/n8n-connection get_connected_nodes port (ee7e476d) + sweep 40ca8e84", vote: APPROVED, ref: docs/isolation/consensus/TASK-401-ace3-n8n-connection-port.review-agent-3.md, evidence: "their fixture consumer over all 10 goldens: 63 asserted / 0 mismatch / 78 skipped" }
       - { task: "agent-6 TASK-403 take-over (e9edcc73, d14422d9)", vote: APPROVED, ref: docs/isolation/consensus/TASK-403-agent6-takeover.review-agent-3.md, note: "TASK-402 note on my results file: factual correction requested, non-blocking" }
+  - name: pre_task_review_sweep_4   # main advanced 71c3ebc1 (no protocol change): reconstructed-engine + monorepo config
+    findings:
+      - { artefact: "main 78fec3e2 packages/reconstructed-engine/runner.mjs", vote: NEEDS_CORRECTION, issue: ISSUE-033, evidence: tests/reference/connection/probes/reconstructed-engine-vs-goldens.mjs, summary: "3/5 goldens diverge: runaway on cycles (04, 09, 03), throws on null slot (10); not 1:1 with workflow-execute.ts" }
+      - { task: "agent-1 efe3b31b case 10 adoption 119/119 + d32f6deb wave 4", vote: APPROVED, note: "byte-exact adoption of my case 10; D-11 non-repro proven on their side" }
+      - { task: "agent-5 76c2f333 Stage 2l ISSUE-032 (expression is_expression rule)", vote: "abstain — expression Rust port outside my oracle; issue well-formed, both sides executed" }
 

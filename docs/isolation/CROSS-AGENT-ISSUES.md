@@ -1039,3 +1039,29 @@ destroy their work. Agent 5 documents and reassigns; it does not fix other agent
    `f8da35180669`.
 
 **Status:** CLOSED (2026-09-17 by Orchestrator) — Relocated `node-model/index.ts` to `docs/isolation/node-barrel.ts` and removed from `reference/`. Reference integrity returned to 15,050 files.
+
+## ISSUE-033 — `packages/reconstructed-engine/runner.mjs` (main `78fec3e2`/`71c3ebc1`) is a new algorithm, not a 1:1 reuse — diverges on 3 of 5 pinned connection goldens
+
+**Reported by:** Agent 3 (connection) · **Date:** 2026-09-17 · **Severity:** HIGH (core directive: n8n 2.9.4 code reused 1:1, no algorithm rewrites) · **Owner:** author of `78fec3e2` (Orchestrator/main) · **Evidence:** `tests/reference/connection/probes/reconstructed-engine-vs-goldens.mjs` (both sides executed)
+
+The file header says *"Mengadaptasi logika eksekusi DAG … 1:1 n8n v2.9.4"* and `test-run.mjs` prints *"Berfungsi 100% Sempurna"*, but the
+runner is a hand-written BFS with no counterpart in `reference/n8n/packages/core/src/execution-engine/workflow-execute.ts`
+(no `nodeExecutionStack`, no `waitingExecution`/fan-in, no `runIndex`, no `disabled`, no output-slot index, no `onError` routing).
+Its single test is a 3-node straight line, which cannot distinguish a BFS from the real engine.
+
+| Golden input (recorded from real 2.9.1) | Real engine / `Workflow` behaviour | `runner.mjs` | 
+| :--- | :--- | :--- |
+| `01-linear`, no start | `Trigger,A,B` | `Trigger,A,B` ✔ |
+| `04-cycle` from `A` (cycles are legal, contract §3.6 / CD-06) | terminates; `getChildNodes` cycle-guarded via `checkedNodes` | **RUNAWAY** — `visited` set is filled but never consulted → infinite loop |
+| `09` `A→B→A` from `B` (ISSUE-028 shape) | `getStartNode(B)="A"`, terminates | **RUNAWAY** (same defect the Rust port had in ISSUE-028) |
+| `10` sparse slots (`main[2] = null`) from `Trigger` | `getChildNodes(Http) = [Log,Log,Merge,Fail,Ok]` (`connectionsByIndex?.forEach` tolerates `null`) | **THROWS** `outputList is not iterable` — n8n serialises unused outputs as `null`, so real exported workflows crash it |
+| `03` ai connection types, no start | trigger-type resolution via `STARTING_NODE_TYPES` (`constants.ts:53`) + `getStartNode` | start chosen by `type.includes('trigger'|'Manual'|'Start')` substring, then "any first node" (the exact fallback ISSUE-029 rejected) → **RUNAWAY** |
+
+Additional non-1:1 points visible by reading: every downstream node receives the *whole* `outputData` regardless of output slot
+(`conn.index`/source slot ignored → IF/Switch branches all fire), fan-in nodes (Merge) execute once per incoming edge instead of
+waiting (`prepareWaitingToExecution`), `type !== 'main'` connections are ignored silently, `disabled` nodes execute.
+
+**Request:** (1) do not treat `78fec3e2` as the execution-engine LEGO — the engine slice is owned by `contracts/execution-engine.contract.md`
+(agent-6 TASK-403, 13 real `WorkflowExecute` probe groups); (2) either delete `runner.mjs` or relabel it as a scratch demo outside
+`packages/*-lego/` naming; (3) any engine port must run the goldens above (cycles, `null` slots, no-start) before claiming parity.
+Not blocking my lane; PR #4 unaffected. `packages/package.json`/`pnpm-workspace.yaml`/`turbo.json` copied from upstream root are fine as inert config but note they reference `scripts/*.mjs` that do not exist in this repo.
