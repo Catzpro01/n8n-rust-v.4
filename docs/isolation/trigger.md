@@ -312,3 +312,18 @@ Negative controls (injected, caught, reverted):
 | `add()` rethrows the raw trigger error instead of wrapping it | `T03` — `T03-a-trigger-throws` |
 | validator stops skipping `disabled` nodes | `T04` — `nodes=Disabled trigger` |
 | `everyX`/hours loses its randomised minute field | `T05` — `everyX {unit: hours}` |
+
+### 7.4 Concurrent spec track
+
+The Phase 4-13 spec track (invariants T1-T10, `packages/trigger-lego/src/model-surface.ts`) wrote its
+own `ActiveWorkflows` into the same file. After the rebase both live in
+`packages/reconstructed-engine/src/trigger-engine.ts`: `TriggerEngine` is the reference-exact port the
+facade uses (verified by T01-T06), while the spec track's surface — its `ActiveWorkflows`,
+`createManualTrigger`, `shouldAddTriggersAndPollers`, `activationError`, `POLL_INTERVAL_TOO_SHORT`
+and its types — is preserved verbatim below it so `packages/trigger-lego/test/01-boundary.test.mjs`
+keeps passing (suite: 17/17).
+
+Two documented disagreements, never hidden: the spec registry rejects a second activation
+(`Workflow is already active`) and swallows `TriggerCloseError`; real `ActiveWorkflows` allows the
+second call and *reports* a `TriggerCloseError` through the error reporter instead of swallowing it.
+The port follows the reference.

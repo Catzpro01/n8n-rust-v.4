@@ -75,7 +75,24 @@ npm run verify             # 12 gates G01-G12 · live 7/7 · BEHAVIOR CHANGE NON
 npm run connection:check && npm run i18n:check        # 9/9 · 5/5
 ```
 
-## 5. Catatan terbuka (bukan bagian task ini)
+## 5. Rekonsiliasi dengan track spesifikasi paralel (commit `81954043`)
+
+Branch ini juga menerima track paralel **Phase 4-13 "trigger spec"** (invariant T1–T10 di
+`packages/trigger-lego/src/model-surface.ts` + 4 tes boundary) yang menulis ulang file yang sama.
+Rebase menabrak file itu; penyelesaiannya:
+
+- port referensi dipertahankan sebagai `TriggerEngine` (dipakai facade + diverifikasi gate), dan
+- seluruh permukaan spesifikasi track paralel (`ActiveWorkflows` spek, `createManualTrigger`,
+  `shouldAddTriggersAndPollers`, `activationError`, `POLL_INTERVAL_TOO_SHORT`, tipe
+  `WorkflowActivateMode`/`TriggerHandle`/`PollHandle`) dipulihkan **verbatim** di bagian bawah file
+  yang sama dengan catatan bahwa itu bukan yang dipakai facade.
+
+Perbedaan semantik yang terdokumentasi antar keduanya: `ActiveWorkflows` spek menolak aktivasi kedua
+(`Workflow is already active`) dan menelan `TriggerCloseError`; referensi `n8n-core` **mengizinkan**
+aktivasi kedua dan **melaporkan** (bukan menelan) `TriggerCloseError` lewat error reporter. Registry
+referensi yang dipakai produksi; penamaan tetap jelas agar tidak ada dua kebenaran yang tersembunyi.
+
+## 6. Catatan terbuka (bukan bagian task ini)
 
 - Cabang **polling** (`activatePolling`) didelegasikan lewat hook `polling`; implementasinya milik
   Scheduler LEGO (deviation tercatat di manifest). Saat LEGO 09 menyediakan `ScheduledTaskManager`
