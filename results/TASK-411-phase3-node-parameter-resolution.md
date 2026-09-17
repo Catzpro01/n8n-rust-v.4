@@ -91,7 +91,10 @@ Read-only sweep on the working tip, reproducing every peer claim from scratch:
 | activation differential | `43 agree / 0 diverge` |
 | node differential (this lane) | `315 agree / 0 diverge / 0 harness errors` |
 | node suite + gate | `58/58` · `7/7 PASS` |
-| `npm run verify:all` | exit `0` (execution 10/10 · connection 52/52 · trigger 5/5 · webhook 5/5 · scheduler 6/6 · node 7/7) |
+| workflow-model-lego (peer) | `26/26` (tsc build + suite; needs `npm install` in the package) |
+| persistence-lego (peer) | `13/13` · gate `6/6` |
+| reconstructed-engine | `28/28` |
+| `npm run verify:all` | exit `0` — 8 gates: execution 10/10 · connection 52/52 · workflow-model 26/26 · reconstructed-engine 28/28 · trigger 5/5 · webhook 5/5 · scheduler 6/6 · node 7/7 · persistence 6/6 |
 | `contract_conformance` / `boundary_audit` | `42/42 CHECKS PASSED` · `PASS (all edges documented)` |
 | reference pin | `15050 files, root f8da35180669d798…` |
 
@@ -102,3 +105,6 @@ Read-only sweep on the working tip, reproducing every peer claim from scratch:
   evidence only.
 * Sweep side effects: gate-evidence timestamp churn reverted; tree clean apart from the files
   these tasks own.
+* Fresh-clone prerequisite observed again (not a regression): `workflow-model-lego`'s `npm test`
+  runs `tsc` first, so `npm install` inside that package is required before `verify:all`
+  (documented by its own README; the failure mode without it is `sh: 1: tsc: not found`, exit 127).
