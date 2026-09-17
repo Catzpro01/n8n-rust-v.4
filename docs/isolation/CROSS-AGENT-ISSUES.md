@@ -1039,3 +1039,77 @@ destroy their work. Agent 5 documents and reassigns; it does not fix other agent
    `f8da35180669`.
 
 **Status:** CLOSED (2026-09-17 by Orchestrator) — Relocated `node-model/index.ts` to `docs/isolation/node-barrel.ts` and removed from `reference/`. Reference integrity returned to 15,050 files.
+
+---
+
+## ISSUE-019
+
+**Detected by:** Agent 6 (2026-09-17, TASK-PIPE-12/PIPE-13 dissection — expression syntax + variable lookup)
+**Affected:** Agent 1 (`workflow`), Agent 2 (`node model`), Agent 3 (`expression`, `execution-data`), Agent 5 (gate)
+**Type:** Hidden cross-module dependency + fidelity traps for the golden fixtures
+**Severity:** MEDIUM (HIGH for `$parameter` fidelity: it silently changes resolved values)
+
+Four things my slice cannot be ported correctly without, each established by runtime observation rather
+than inference. Evidence file: [`agent-6-probes/observations.json`](agent-6-probes/observations.json)
+(sha256 `6a5878218b9620e42fc450b82405ec61628fc338ca1c90464e2366889467f452`); rules in
+[`../../contracts/variable-lookup.contract.md`](../../contracts/variable-lookup.contract.md) /
+[`../../contracts/expression-syntax.contract.md`](../../contracts/expression-syntax.contract.md).
+
+### 1. `$parameter` resolves against a **mutated** `node.parameters` — a `Workflow`-ctor side effect nobody declared
+
+`workflow.ts:90-141` — the `Workflow` constructor runs `NodeHelpers.getNodeParameters(props, params,
+returnDefaults=true, returnNoneDisplayed=false, node, description)` and stores the **result** as
+`this.nodes[node.name].parameters`. So `WorkflowDataProxy`'s `$parameter` / `$rawParameter` /
+`$input.params` never see the stored JSON as written:
+
+| case | observed |
+| :--- | :--- |
+| key not declared by the node type | dropped (`$parameter.absent` → `undefined`) |
+| declared + display-hidden default | `undefined` (not the default) |
+| declared, absent in JSON | returns the **default** |
+| node type unresolvable | raw JSON survives untouched |
+
+`contracts/node.contract.md` (line 126) documents `getNodeParameters` and
+`contracts/workflow.contract.md` (lines 95, 116) declares it as a *consumed port*, but **no contract states that `Workflow`'s ctor applies it to
+every node at construction time**. Under `PROJECT_RULES.md` ("no hidden cross-module dependencies") that
+is the missing line. **Ask (Agent 1):** state it in `contracts/workflow.contract.md` as a constructor
+effect + golden vectors; **ask (Agent 2):** cross-reference it from `P-NODE-MODEL`. Until then the
+`$parameter` rows of my contract are untestable in isolation, because a Rust `Workflow` that stores the
+raw map resolves expressions to *different values* while passing every proxy-level test.
+
+### 2. Sandbox allow/deny lives in the **Expression entry point**, not in the data proxy
+
+`Expression.initializeGlobalContext(data)` (`expression.ts:183`) seeds `process`/`JSON`/`Object`/… into
+the proxy object *before* evaluation. A proxy obtained from
+`BaseExecuteContext.getWorkflowDataProxy()` and used directly therefore has **no** `process`, `JSON`, or
+`Object` at all — `13D_extra.global_seed_asymmetry` records all three as `undefined`. Two consequences:
+(i) an evaluator that routes through that proxy bypasses both the deny-list *and* the allow-list, so
+"the sandbox" is a property of `Expression`, not of `WorkflowDataProxy`; (ii) porting seeding into the
+proxy constructor (the tempting refactor) **silently widens** what the Code-node path can reach.
+**Ask:** keep seeding where n8n keeps it, and have Agent 3 record the asymmetry in
+`contracts/expression.contract.md` §4 (it currently describes only the seeded path).
+
+### 3. Two nearly identical error strings, and one error message that contradicts its own regex
+
+* `Referenced node doesn't exist` (`nodeGetter` / `base.$`, `descriptionKey: nodeNotFound`) vs
+  `Referenced node does not exist` (`nodeDataGetter`, `type: paired_item_no_connection`,
+  `functionality: pairedItem`). Different code paths, different keys, one apostrophe apart.
+* `$fromAI` validates with `/^[a-zA-Z0-9_-]{0,64}$/` (`workflow-data-proxy.ts:1050`) but throws
+  `"…must be between 1 and 64 characters long…"` (`:1053`) — the regex admits an empty key, and the empty
+  case is caught by an earlier guard with a different message.
+
+**Ask (Agent 5 / fixture owners):** pin both strings and the exact `context` objects in goldens; treat
+"harmonising" them as a **behaviour change** requiring a recorded deviation, not a cleanup. My
+acceptance criteria assume they stay verbatim.
+
+### 4. `{{ process.version }}` returns the **PID**
+
+`expression.ts:424-433` assigns `version: process.pid` into the sandbox's `process` subset, so a template
+reading `process.version` yields a bare integer (e.g. `2448`, `12B/12D`), and `{...process}` exposes
+`arch, env, platform, pid, ppid, release, version, versions`. This is an upstream defect, not a port
+bug. **Ask (Agent 5):** decide once — fidelity (my default, `DEV-1` in
+`contracts/expression-syntax.contract.md`) or an approved deviation — so two agents do not port it two
+different ways.
+
+**Status:** OPEN (filed by Agent 6; no Rust written, no `reference/` file touched —
+`node tools/workflow-reference-manifest.mjs --check` → `PASS (15050 files, root f8da35180669d798…)` after all of the above)
