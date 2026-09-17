@@ -1133,5 +1133,12 @@ later LEGO could adopt the wrong one.
 2. Keep `npm run execution:gate` as the behaviour gate for `packages/execution-engine/`; the
    prototype's `reconstructed-engine:test` stays a smoke test (both are wired into `verify:all`).
 
+**Update (2026-09-17, `937ca1d6`, `TASK-ENGINE-ERROR-01`):** the prototype track has since ported its own
+failure policy (`packages/reconstructed-engine/error-policy.mjs` + `ERROR-POLICY.md`), which overlaps
+`packages/execution-engine/src/{retry,error-handling}.mjs` one-for-one (retry budget, soft-fail re-run,
+`$error` merge, error-output split). Both are tested and both are wired into `verify:all`; the
+duplication is now confirmed in two of the three pool-task lineages, so consolidation is a
+pre-Phase-3-exit decision rather than a tidiness item.
+
 **Status:** OPEN — documented, not resolved by this session (removing another worker's files is not
 the execution LEGO's call).
