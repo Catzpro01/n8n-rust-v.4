@@ -34,10 +34,15 @@ allowed_paths:
   - docs/isolation/connection*
   - contracts/connection.contract.md
   - tests/reference/connection/**
+  - tests/reference/harness/connection.js                   # connection probe driver (agent-3 authored in TASK-301)
+  - tests/reference/harness/rust/**                         # ADDITIVE: out-of-tree Rust fixture runners + spec transcriptions (never copied into crates/ by agent-3)
+  - tests/reference/harness/tools/simulate-connection-port.py   # ADDITIVE: Python oracle for the port spec
+  - tests/reference/README.md                               # shared index — append-only for the connection rows
   - packages/connection-lego/**                             # ADDITIVE (mirrors Agent 1's packages/workflow-lego precedent) — requires Agent 5 approval
   - tasks/TASK-30*-connection*.yaml
 
 forbidden_paths:
+  - tools/**                                                # Agent 1 (offline rig, gates) — agent-3 runs it, never edits it; local copies live in /tmp only
   - reference/n8n/**                                        # MODIFICATION forbidden — reference is read-only
   - reference/n8n/packages/core/**
   - packages/workflow-lego/**                               # Agent 1 — port wiring is agent-1's change, requested via bus
@@ -96,6 +101,12 @@ port_spec:
     - "Topological sort / SCC (core partial-execution-utils) — FORBIDDEN path, D-10 remains a documented dependency"
 
 operations:
+  - name: send_message
+    args:
+      to: "agent-5"
+      type: BOUNDARY_SELF_AUDIT
+      subject: "agent-3 self-audit of 15 commits since e7b56886: 0 writes under crates/**, tools/**, packages/**, reference/n8n/**; allowed_paths amended to declare tests/reference/harness/{connection.js,rust/**,tools/simulate-connection-port.py} + tests/reference/README.md"
+      body: "git log --name-only over agent-3 commits; the two hits on 'tools/' were tests/reference/harness/tools (agent-3 area), not tools/. Please confirm the ADDITIVE paths or ask for relocation."
   - name: respond_dependency
     args:
       to: "agent-1"
