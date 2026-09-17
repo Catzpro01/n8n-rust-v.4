@@ -14,6 +14,24 @@ pub type ConnectionOutput = Option<Vec<ConnectionItem>>;
 pub type NodeConnections = IndexMap<String, Vec<ConnectionOutput>>;
 pub type WorkflowConnections = IndexMap<String, NodeConnections>;
 
+/// The source-verified `nodeConnectionTypes` vocabulary from n8n 2.9.4.
+/// This is the single Rust owner; consumers such as validation re-export it.
+pub const NODE_CONNECTION_TYPES: [&str; 13] = [
+    "ai_agent",
+    "ai_chain",
+    "ai_document",
+    "ai_embedding",
+    "ai_languageModel",
+    "ai_memory",
+    "ai_outputParser",
+    "ai_retriever",
+    "ai_reranker",
+    "ai_textSplitter",
+    "ai_tool",
+    "ai_vectorStore",
+    "main",
+];
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ConnectionTypeFilter {
     Type(String),

@@ -1,4 +1,5 @@
 use n8n_connection::WorkflowConnections;
+pub use n8n_connection::NODE_CONNECTION_TYPES;
 use serde::Serialize;
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
@@ -15,25 +16,9 @@ pub enum ValidationError {
     CycleDetected(String),
 }
 
-/// The source-verified `nodeConnectionTypes` vocabulary from n8n 2.9.4.
-/// Keep this list explicit: accepting an arbitrary string would make the Rust
-/// validator diverge from the Validation LEGO's INVALID_CONNECTION_TYPE rule.
-pub const NODE_CONNECTION_TYPES: [&str; 13] = [
-    "ai_agent",
-    "ai_chain",
-    "ai_document",
-    "ai_embedding",
-    "ai_languageModel",
-    "ai_memory",
-    "ai_outputParser",
-    "ai_retriever",
-    "ai_reranker",
-    "ai_textSplitter",
-    "ai_tool",
-    "ai_vectorStore",
-    "main",
-];
-
+/// Keep the canonical connection vocabulary explicit at the connection boundary:
+/// accepting an arbitrary string would make the validator diverge from the
+/// Validation LEGO's INVALID_CONNECTION_TYPE rule.
 pub fn is_valid_connection_type(connection_type: &str) -> bool {
     NODE_CONNECTION_TYPES.contains(&connection_type)
 }
