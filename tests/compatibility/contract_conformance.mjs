@@ -20,7 +20,7 @@ const check = (name, fn) => {
 const assert = (c, m) => { if (!c) throw new Error(m); };
 
 // --- contract presence (contracts are the communication channel) -----------
-const CONTRACTS = ['workflow', 'node', 'connection', 'validation'];
+const CONTRACTS = ['workflow', 'node', 'connection', 'validation', 'execution-engine'];
 for (const c of CONTRACTS) {
   check(`contract:${c} present`, () => {
     const p = join(ROOT, 'contracts', `${c}.contract.md`);

@@ -63,7 +63,7 @@ map and the automated audit can never silently diverge.
 
 | Gate | Result | Evidence |
 | :--- | :--- | :--- |
-| Contracts present | PASS (12/12) | `contract_conformance.mjs` + extended contracts |
+| Contracts present | PASS (13/13, re-verified 2026-09-17) | `contract_conformance.mjs` 22/22 exit 0 — incl. `execution-engine.contract.md` |
 | Golden fixtures conform to contracts | PASS (21/21) | `contract_conformance.mjs` |
 | Cross-LEGO edges all documented | PASS | `boundary_audit.py` |
 | No premature Rust | PASS (re-verified 2026-09-17) | `contract_conformance.mjs` 21/21 exit 0 · `boundary_audit.py` `AUDIT RESULT: PASS` exit 0 · `npm run rust:guard` exit 0 — see §5 |

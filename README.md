@@ -34,6 +34,7 @@ contract. It does **not** mean it was replaced by Rust.
 - `contracts/` : formal LEGO contracts (`workflow`, `node`, `connection`, `validation`)
 - `docs/isolation/` : Phase 2 isolation records, dependency map, port contract, verification report
 - `packages/workflow-lego/` : the isolated Workflow Model LEGO (boundary, ports, tests, manifests)
+- `packages/reconstructed-engine/` : the Workflow Execution Engine reconstructed in JavaScript (rule 1 ZERO RUST) — contract [`contracts/execution-engine.contract.md`](contracts/execution-engine.contract.md), `npm run engine:test`
 - `tools/` : boundary mapper, kernel/port/reference gates, isolation extractor, model digest, gate runner, live engine harness
 - `tests/reference/` : golden workflows + baseline smoke test evidence
 - `tasks/`, `results/` : inbound task manifests and execution results
