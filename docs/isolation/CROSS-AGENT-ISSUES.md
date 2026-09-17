@@ -1138,3 +1138,77 @@ pass, and it is no longer a false red.
   at `D-04`; dropping the registry `disabled` check fails at `D-01`).
 * **Phase-3 record written** (`docs/isolation/PHASE-3-OPENING.md`); both Rust guards now key off it,
   and a new check asserts `packages/editor-ui` still contains no Rust.
+
+---
+
+## ISSUE-019 — TWO CORRECTIONS after rebasing onto the TASK-401/402/403 head
+
+The ISSUE-019 entry above was written against `fc4e5631`. Rebasing onto the 15 commits that had
+landed on this branch (`53c8bf1a`) contradicted two things in it. Both corrections are below; the
+core finding stands.
+
+### Correction 1 — my `INVALID_CONNECTION_TYPE` path assertion was WRONG
+
+I asserted the edge-side path was `["connections", "A", "main", "bogus", "type"]` and documented
+that shape in `tests/reference/06-invalid-connection-type/README.md`. The reference does not do
+that. `tests/reference/agent-4/validation/workflow-rules.ts:94` builds
+
+```ts
+const path = ['connections', source, type, String(oi), String(ti)];
+```
+
+and `:103` appends `'type'` — so the edge violation is located by **output and target index**, and
+the offending *value* never appears in the path at all (it appears in `message`). The real shape is
+`["connections", "A", "main", "0", "0", "type"]`.
+
+This was the same failure mode as the ISSUE-014 defect-1 retraction: I asserted from a reading of
+the code instead of from a generated fixture. The generated fixtures already pinned the correct
+shape — `X7-target-type-bad-only` → `[['connections','A','main','0','0','type']]` and
+`D5-bad-type-key` → `[['connections','A','foo'], ['connections','A','foo','0','0','type']]`. The
+assertion and the README are now corrected to match, and the test passes.
+
+### Correction 2 — `preserve_order` was a *known* hazard, and upstream had already routed around it
+
+I presented `serde_json = { features = ["preserve_order"] }` as an unambiguous fix. It is not
+unambiguous, and the branch already said so. `crates/n8n-validation/Cargo.toml` (TASK-403) carries:
+
+```toml
+# Deliberately NOT serde_json/preserve_order: that unifies workspace-wide
+# and would silently break n8n-workflow's BTreeMap-backed checksum.
+```
+
+That is exactly the checksum breakage I hit — they had predicted it and avoided the feature,
+solving the ordering problem locally with `OrderedValue` (an insertion-ordered JSON value whose
+objects are `IndexMap`s) so validation error order matches the reference without touching the
+workspace.
+
+Both routes are now in the tree, and they are complementary rather than redundant:
+
+* `OrderedValue` fixes order for **n8n-validation** without a workspace-wide feature.
+* `preserve_order` fixes order for everything that still parses through `serde_json::Value` —
+  `n8n-workflow`'s `Connections`/`toJSON`, `n8n-connection`, `n8n-node-model`.
+* `checksum.rs::sort_object_keys` removes the hazard the upstream comment warns about, so the
+  checksum no longer depends on either choice.
+
+If a future change reverts `preserve_order`, `sort_object_keys` keeps the checksum correct and only
+the `Value`-based crates regress — which is a smaller blast radius than before, and is now
+documented rather than implicit.
+
+### Re-verified after the rebase
+
+```text
+$ bash tools/rust-offline-rig/run.sh test          -> 81 passed / 0 failed
+$ bash tools/phase3-rust-acceptance.sh --force     -> PHASE-3 RUST ACCEPTANCE: PASS
+   reference integrity: PASS (15050 files, root f8da35180669…)
+   fixtures reproduction: PASS (re-derived byte-exactly)
+$ bash tests/integration/run_gate.sh --offline-only
+   STAGE 1  RESULT: 43/43 CHECKS PASSED
+   STAGE 2  AUDIT RESULT: PASS (all edges documented)
+   STAGE 2b PHASE-3 RUST ACCEPTANCE: PASS
+   STAGE 2c RUST CONFORMANCE AUDIT: PASS — 7/7 crates
+   OFFLINE STAGES : PASS / LIVE 11/11 : NOT RUN  -> INCONCLUSIVE (exit 2)
+```
+
+The rig itself is the upstream one (19 crates, `regex-automata` 0.4.9 / `regex-syntax` 0.8.5 /
+`aho-corasick` 1.1.5); my 18-crate variant and my `PHASE-3-OPENING.md`-keyed guards were dropped in
+favour of the `phase3-gate-mode.md` mechanism, and my static audit was re-added as Stage 2c.
