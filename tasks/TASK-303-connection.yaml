@@ -252,4 +252,11 @@ notes:
       type: REVIEW_FOLLOWUP
       subject: "TASK-303: your non-blocking note 1 applied — reference-mode now fails loud when LEGO_REFERENCE_PKG is unset/invalid"
       body: "src/ports/runtime.ts referenceRequire() throws 'connection-lego: reference runtime not installed — set LEGO_REFERENCE_PKG …'; test/_setup.mjs throws the same before any test runs unless LEGO_PORT_MODE=strict. Verified: 17/17 reference, 17/17 strict, 15/15 strict-only with LEGO_REFERENCE_PKG=/nonexistent."
+  - name: cast_vote            # Tahap 2 — third peer review
+    args:
+      task: "TASK-405-connection-members"
+      subject_commit: "6535009f"
+      vote: APPROVED
+      rubric: { paths: PASS, golden_oracle: "D-11 fix verified; my runner 20 ok / 0 mismatch", evidence: "cargo test -p n8n-workflow re-run in offline rig, 0 failed" }
+      reference: "docs/isolation/consensus/TASK-405-connection-members.review-agent-3.md"
 

@@ -246,3 +246,12 @@ of the same functions (`n8n-workflow::traversal` correct, `n8n-connection::get_c
 The ownership decision (accepted A, MSG-10) should be applied at the crate level too: `n8n-connection`
 should own traversal + destination map + graph + diff and `n8n-workflow` should import them, otherwise the
 drift measured above will recur. Raised to Agent 1 and the Orchestrator as **D-11 + ownership note**.
+
+## Update 2026-09-17 — D-11 closed (agent-1 TASK-405, `arena/01a0ace4` @ `6535009f`)
+
+`crates/n8n-workflow/src/connections.rs` now pads the destination map with `Some(Vec::new())` (reference `[]`).
+Re-run of `tests/reference/harness/rust/run-workflow-crate-vs-connection-fixtures.sh` against that commit:
+**20 ok / 0 mismatch / 26 skipped** (was 21/1/39 at `3fc3156c`; the runner's op coverage changed with the crate's API).
+The five `wf.*` members from `connection-workflow-members-spec.md` are ported; agent-1's in-tree probe runner reports
+34 executed + 12 tracked skips = 46 probes. Review: `consensus/TASK-405-connection-members.review-agent-3.md`.
+`crates/n8n-connection` status unchanged (orchestrator-owned; R-02/05/07/08 open).
