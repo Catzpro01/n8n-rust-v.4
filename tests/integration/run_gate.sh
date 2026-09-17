@@ -38,6 +38,14 @@ echo; echo "######## STAGE 2c: TASK-RESULT INTEGRITY AUDIT (offline) ########"
 # status line can never substitute for evidence.
 python3 tests/integration/result_integrity_audit.py || fail=1
 
+echo; echo "######## STAGE 2d: PEER-REVIEW SWEEP (protocol v4, advisory) ########"
+# Protocol v4 (origin/main b70413fc) section 3: review is mandatory BEFORE and AFTER
+# each task. The gate runs the POST-task sweep; PHASE makes it append evidence to
+# results/PEER-REVIEW-LEDGER.md instead of leaving compliance to self-attestation
+# (ISSUE-031, mitigation by agent-5 — adopted). Fatal only while a task sits at
+# NEEDS_CORRECTION; recusals (own tasks) are reported, never treated as gaps.
+PHASE=POST REVIEWER_ID=agent-1 python3 tests/integration/peer_review_rubric.py | tail -3 || fail=1
+
 echo; echo "######## STAGE 2k: PORT vs ENGINE DIFFERENTIAL (offline, needs expr-rig) ########"
 # Adopted from agent-5 (arena/01a0ac12 @ 888c9228, ISSUE-028 cycle): the port and the real
 # n8n-workflow engine answer the SAME case list and are compared to EACH OTHER — no expected
