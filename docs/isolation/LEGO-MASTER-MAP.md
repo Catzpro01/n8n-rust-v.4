@@ -3,7 +3,10 @@
 **Maintainer:** Agent 5 (Integration & Verification Guardian) & Autonomous Master Controller
 **Reference:** n8n `2.9.4` (`reference/n8n`, upstream commit `b6dc2787c45677a29a9612cd27eb911302961a83`)
 **Audit date:** 2026-09-17
-**Rust status:** NOT ALLOWED in Phase 2 — verified clean (`crates/`, `apps/n8n-rust/` contain only `.gitkeep`)
+**Rust status:** NOT ALLOWED (`PROJECT_RULES.md` v2.9.4 rule 1). `crates/` + `apps/` hold legacy Rust sources from an
+earlier project phase; they are frozen by digest in `packages/execution-engine/manifest/rust-freeze.json`
+(gate `E03` of `tools/execution-engine-gate.mjs` fails if the tree grows or shrinks). The Phase-3
+reconstruction is JavaScript/TypeScript in `packages/`.
 
 Status vocabulary: `PLANNED | ANALYZED | ISOLATED | TESTED | VERIFIED | BLOCKED | FAILED`
 
@@ -64,3 +67,26 @@ map and the automated audit can never silently diverge.
 | 11/11 live smoke re-run | PASS (11/11) | verified live on VPS host `157.10.160.95` |
 
 **Overall Phase 2 gate: `VERIFIED`** — Ready for Phase 3 (Reference Test & Rust Contract Implementation).
+
+---
+
+## 5. Phase 3 — Reconstruction (JavaScript / TypeScript, ZERO RUST)
+
+Phase 2 isolates behaviour; Phase 3 rebuilds it. `PROJECT_RULES.md` v2.9.4 replaces the Rust
+implementation stage with a 1:1 JavaScript/TypeScript reconstruction of the backend, so the pool
+tasks below are delivered as dependency-free ESM modules, not Rust.
+
+| Pool task | LEGO | Contract | Isolation doc | Tests | Gate | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `POOL-001-core-workflow-execute-loop` | execution | `contracts/execution.contract.md` ✅ | `docs/isolation/execution.md` ✅ | `test/01-execution-loop.test.mjs` 14/14 ✅ | `E05` ✅ | **IMPLEMENTED** |
+| `POOL-002-node-execution-context-data-proxy` | execution (expression surface) | same ✅ | same ✅ | `test/02-node-context-data-proxy.test.mjs` 7/7 ✅ | `E06` ✅ | **IMPLEMENTED** |
+| `POOL-003-error-retry-handling` | execution (validation surface) | same ✅ | same ✅ | `test/03-error-retry.test.mjs` 11/11 ✅ | `E07` ✅ | **IMPLEMENTED** |
+
+| Phase 3 gate | Result |
+| :--- | :--- |
+| `tools/execution-engine-gate.mjs` | **PASS 8/8** — no dependencies, import-closed, Rust frozen, reference intact, 32/32 tests, public surface contracted |
+| Reference tree | unmodified (15050 files, root digest `f8da3518…`) |
+| Evidence | `docs/isolation/evidence/execution-engine-gate.json` |
+
+**Next Phase 3 work:** caveat C1 (11/11 live smoke on the VPS + PostgreSQL), sandboxed expression
+evaluator, trigger/webhook/poll services — see `docs/isolation/execution.md` §7.

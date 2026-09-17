@@ -1,0 +1,114 @@
+{
+	"generatedAt": "2026-09-17T15:32:34.795Z",
+	"lego": "execution",
+	"phase": "phase-3-reconstruction",
+	"language": "JavaScript (Node.js ESM)",
+	"rustImplementation": "NOT ALLOWED / NOT STARTED",
+	"package": "packages/execution-engine",
+	"contract": "contracts/execution.contract.md",
+	"reference": {
+		"pinnedVersion": "2.9.4",
+		"pinnedCommit": "b6dc2787c45677a29a9612cd27eb911302961a83",
+		"sourceRoot": "reference/n8n/packages/core/src/execution-engine",
+		"rules": [
+			"reference/n8n/** is read-only; the reconstruction never imports or edits it.",
+			"PROJECT_RULES.md v2.9.4: ZERO RUST — the execution LEGO is JavaScript."
+		]
+	},
+	"gates": [
+		{
+			"id": "E01",
+			"title": "execution-engine has no runtime dependencies",
+			"status": "PASS",
+			"detail": "no dependencies, no devDependencies, no install step (node:test only)",
+			"ms": 0
+		},
+		{
+			"id": "E02",
+			"title": "sources are import-closed (no reference/ or n8n package imports)",
+			"status": "PASS",
+			"detail": "11 source files, all imports relative or node: builtins",
+			"ms": 3
+		},
+		{
+			"id": "E03",
+			"title": "Rust guard: no Rust added by this LEGO, crates/apps frozen",
+			"status": "PASS",
+			"detail": "0 Rust files in the package; crates/+apps/ frozen at a8dbef89767c8157040f61c4477bd1b6 (24 files)",
+			"ms": 3
+		},
+		{
+			"id": "E04",
+			"title": "reference/n8n tree still matches the pinned hashes",
+			"status": "PASS",
+			"detail": "Reference integrity check: PASS (15050 files, root f8da35180669d798…)",
+			"ms": 518
+		},
+		{
+			"id": "E05",
+			"title": "POOL-001 suite: core workflow execute loop",
+			"requirement": "packages/execution-engine/test/01-execution-loop.test.mjs",
+			"status": "PASS",
+			"detail": "14 pass / 0 fail",
+			"ms": 141
+		},
+		{
+			"id": "E06",
+			"title": "POOL-002 suite: node execution context + data proxy",
+			"requirement": "packages/execution-engine/test/02-node-context-data-proxy.test.mjs",
+			"status": "PASS",
+			"detail": "7 pass / 0 fail",
+			"ms": 147
+		},
+		{
+			"id": "E07",
+			"title": "POOL-003 suite: error & retry handling",
+			"requirement": "packages/execution-engine/test/03-error-retry.test.mjs",
+			"status": "PASS",
+			"detail": "11 pass / 0 fail",
+			"ms": 150
+		},
+		{
+			"id": "E08",
+			"title": "public surface is documented in contracts/execution.contract.md",
+			"status": "PASS",
+			"detail": "48 exported symbols documented",
+			"ms": 0
+		}
+	],
+	"totals": {
+		"gates": 8,
+		"passed": 8,
+		"failed": 0
+	},
+	"pools": {
+		"POOL-001-core-workflow-execute-loop": {
+			"status": "IMPLEMENTED",
+			"surface": [
+				"WorkflowExecute",
+				"addNodeToBeExecuted",
+				"ensureInputData",
+				"assignPairedItems",
+				"routeOutputData"
+			]
+		},
+		"POOL-002-node-execution-context-data-proxy": {
+			"status": "IMPLEMENTED",
+			"surface": [
+				"ExecuteContext",
+				"WorkflowDataProxy",
+				"expression resolution",
+				"helpers"
+			]
+		},
+		"POOL-003-error-retry-handling": {
+			"status": "IMPLEMENTED",
+			"surface": [
+				"resolveRetryPolicy",
+				"resolveErrorStrategy",
+				"splitErrorOutputs",
+				"error classes"
+			]
+		}
+	}
+}

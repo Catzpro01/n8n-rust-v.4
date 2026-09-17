@@ -1,0 +1,5 @@
+{
+	"digest": "a8dbef89767c8157040f61c4477bd1b6",
+	"fileCount": 24,
+	"note": "Frozen at the Phase-3 baseline of the execution LEGO. crates/ is legacy and must not grow."
+}

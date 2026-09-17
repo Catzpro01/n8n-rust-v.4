@@ -1,0 +1,19 @@
+{
+	"name": "@lego/execution-engine",
+	"version": "0.1.0",
+	"private": true,
+	"description": "Reconstructed n8n 2.9.4 core execution loop, node execution context, data proxy and error/retry policy (JavaScript ESM, zero dependencies).",
+	"license": "SEE LICENSE IN reference/n8n/LICENSE.md",
+	"type": "module",
+	"main": "src/index.mjs",
+	"exports": {
+		".": "./src/index.mjs"
+	},
+	"scripts": {
+		"test": "node --test test/",
+		"test:loop": "node --test test/01-execution-loop.test.mjs",
+		"test:context": "node --test test/02-node-context-data-proxy.test.mjs",
+		"test:errors": "node --test test/03-error-retry.test.mjs",
+		"gate": "node ../../tools/execution-engine-gate.mjs"
+	}
+}

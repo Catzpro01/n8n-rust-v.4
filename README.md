@@ -16,7 +16,8 @@ is a Rust replacement attempted.
 | REFERENCE RUNTIME (baseline 11/11 smoke test) | ✅ |
 | **WORKFLOW ISOLATION (LEGO 01)** | **✅ VERIFIED — see [`docs/isolation/workflow.md`](docs/isolation/workflow.md)** |
 | NODE MODEL (LEGO 02) · CONNECTION (03) · VALIDATION (04) | ⏸ next |
-| RUST IMPLEMENTATION | ⏸ not started |
+| **EXECUTION ENGINE (Phase 3, JS reconstruction)** | **✅ IMPLEMENTED · TESTED 32/32 · GATE 8/8 — see [`docs/isolation/execution.md`](docs/isolation/execution.md)** |
+| RUST IMPLEMENTATION | ⛔ not allowed — `PROJECT_RULES.md` v2.9.4 rule 1 (ZERO RUST); `crates/` is frozen |
 
 “Isolated” means the TypeScript component now has an enforced boundary and a
 contract. It does **not** mean it was replaced by Rust.
@@ -28,6 +29,7 @@ contract. It does **not** mean it was replaced by Rust.
 - `contracts/` : formal LEGO contracts (`workflow`, `node`, `connection`, `validation`)
 - `docs/isolation/` : Phase 2 isolation records, dependency map, port contract, verification report
 - `packages/workflow-lego/` : the isolated Workflow Model LEGO (boundary, ports, tests, manifests)
+- `packages/execution-engine/` : reconstructed n8n 2.9.4 execute loop, node context/data proxy and error/retry policy (JavaScript ESM, zero dependencies)
 - `tools/` : boundary mapper, kernel/port/reference gates, isolation extractor, model digest, gate runner, live engine harness
 - `tests/reference/` : golden workflows + baseline smoke test evidence
 - `tasks/`, `results/` : inbound task manifests and execution results
@@ -42,6 +44,14 @@ npm run verify                            # 11 gates; writes docs/isolation/evid
 
 npm run verify:fast                       # same, without the live engine checks
 npm run isolation:check                   # boundary + kernel + port + reference-integrity only
+```
+
+## Verify the execution engine (Phase 3)
+
+```bash
+npm run execution:test                    # 32 tests (node:test), no install step
+npm run execution:gate                    # 8 gates; writes docs/isolation/evidence/execution-engine-gate.json
+npm run verify:all                        # isolation:check + execution:gate
 ```
 
 A failing gate means the isolation is void and must be rolled back — the records
