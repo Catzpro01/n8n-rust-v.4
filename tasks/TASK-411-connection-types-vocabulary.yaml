@@ -1,0 +1,46 @@
+id: TASK-411-connection-types-vocabulary
+agent: TBD-owner-claim      # joint surface: connection (Agent 2) + validation (Agent 4/arena track)
+lego: connection + validation
+module: cross-crate seam
+phase: 3
+
+# FRAME TASK (opened by orchestrator, evidence-driven, not busywork):
+# REVIEW-TASK-404-validation-lego-seam.md non-blocking follow-up, verbatim:
+#   "Consolidate the duplicated 13-value connection vocabulary when the
+#    connection LEGO port is available."
+# The connection LEGO port IS available (crates/n8n-connection on main), and the
+# 13-value `nodeConnectionTypes` list now lives in FOUR places:
+#   1. crates/n8n-validation/src/lib.rs        NODE_CONNECTION_TYPES ([&str; 13])
+#   2. tests/reference/agent-4/validation/workflow-rules.ts   (oracle — DO NOT TOUCH)
+#   3. contracts/connection.contract.md
+#   4. contracts/node.contract.md
+# Any drift between (1) and (3)/(4) is a silent compatibility break that no
+# current test would catch (falsifiability: grep is the only detector today).
+
+goal: >-
+  One canonical Rust definition of the 13-value `nodeConnectionTypes` vocabulary,
+  owned by a single crate, imported everywhere else. Contracts/docs stay the
+  prose source; the TS reference stays the oracle. No behavioural change is
+  permitted: the SET must remain byte-identical to interfaces.ts
+  `NodeConnectionTypes` in the pinned reference.
+
+candidate_resolution (owners ratify in review; do not silently pick):
+  - option A: n8n-connection owns `pub const NODE_CONNECTION_TYPES`; n8n-validation re-exports/uses it
+  - option B: move to n8n-common as the neutral kernel vocabulary
+  - either way: a mutation test must exist proving the validator rejects removing one entry
+
+allowed_paths: (implementer — whichever owner claims)
+  - crates/n8n-connection/**
+  - crates/n8n-validation/**
+  - crates/n8n-common/**           # only if option B is chosen
+forbidden_paths:
+  - reference/n8n/**
+  - tests/reference/agent-4/**     # oracle stays byte-identical
+  - contracts/**                   # prose owner: Agent 5
+
+acceptance_criteria:
+  - exactly ONE `pub const NODE_CONNECTION_TYPES` definition in crates/**; all others import it
+  - grep for ="ai_outputParser" in crates/** yields exactly one definition site
+  - tools/rust-offline-rig/run.sh test: all tests green, count >= current 57
+  - new mutation test: deleting any one of the 13 entries makes a test FAIL
+  - contract_conformance.mjs still 31/31

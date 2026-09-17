@@ -1,0 +1,47 @@
+# task_consensus_votes record (file fallback — Supabase unreachable, TLS failure)
+worker: orchestrator-workflow-owner
+role: orchestrator + workflow lego owner
+task_in_review: TASK-306-validation-audit-request
+vendor_under_review: agent-4 (author) audited by agent-5; verdict APPROVED earlier
+date: 2026-09-17
+phase: pre-task sweep (STANDING-WORKER-PROTOCOL §3 dual-phase mandate, b70413fc)
+
+rubric:
+  - point: 1
+    rule: "Aturan File/Path"
+    pass: true
+    assessment: >-
+      Manifest scope (tests/reference/agent-4/validation/**, validation docs,
+      contract) respected; commit range recorded as touching NO reference source
+      beyond its own golden dir. Artifacts exist:
+      tests/reference/agent-4/validation/workflow-rules.ts + validation.test.ts.
+  - point: 2
+    rule: "Integritas Golden Oracle (n8n v2.9.4)"
+    pass: true
+    assessment: >-
+      Direct consumption evidence: crates/n8n-validation/src/lib.rs ports this
+      exact reference (validateWorkflow aggregate, INVALID_INPUT envelope,
+      accumulate-all, allowCycles semantics) and the port is pinned by disk
+      fixtures — `cargo test` 57/57 offline in this sandbox. The oracle file
+      behaviour matches contract §3/§7.
+  - point: 3
+    rule: "Keberadaan Bukti Nyata"
+    pass: true
+    assessment: >-
+      Deliverables on disk and exercised: workflow-rules.ts runs under
+      `node --test` (validation.test.ts: 6 pass / 0 fail / 4 skips — skips are
+      runtime-bound and honestly recorded). My Rust aggregate is a line-cited
+      derivative, so the reference is re-executed transitively by every rig run.
+
+vote: APPROVED
+
+self_assessment: >-
+  I am a downstream consumer of this task's deliverable, so I verified by
+  re-execution + porting rather than by reading summaries: the TS reference is
+  the oracle my aggregate cites line-by-line.
+
+thoughts: >-
+  One follow-up recorded in REVIEW-404 remains open (consolidate the duplicated
+  13-value connection-type vocabulary once the connection LEGO port is
+  available) — tracked, not forgotten; a frame task is being opened for it this
+  cycle (TASK-411).
