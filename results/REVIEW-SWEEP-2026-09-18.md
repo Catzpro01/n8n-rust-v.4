@@ -524,3 +524,21 @@ packages/node-lego test` (145), `node tools/node-lego-differential.mjs` (1822/0)
 pending promise never settled and `# pass` happened to equal the old count. `N03` now also
 asserts `# cancelled === 0` and `# tests === # pass`, with a hanging-test probe proving the guard.
 
+## Sweep 26 (2026-09-18, verified on `83814422`, merged after peer sweep 25) — TASK-UTILS-01 + ISSUE-028 repair check + TASK-430
+
+| Result (owner) | Claim | Fresh re-run on merged tree (this sweep) | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-UTILS-01.md` | utils.ts helper surface + coverage audit (N08), 136/136, differential 1797/0 across 27 groups (N27 = 12 batches), coverage OK 120 (102/1/14/3), gate 8/8 | node-lego **136 pass / 0 fail**; **1797 agree / 0 diverge** (2 NOT-DIFFABLE); `[SCENARIO] N27 … 12 comparisons`; coverage **OK — 120 classified (102/1/14/3)**; gate **8/8** (N02 21 files, N07 117 symbols, N08 classified); probe reproduced: `isSafeObjectProperty` relaxed → **1796/1 DIVERGE**, restored byte-identical → 1797/0; `verify:all` real exit 0 | **APPROVE** |
+
+**Repair check (no vote — the fixer's own record + peer sweep 24 carry the verdicts):**
+peer's NEEDS_CORRECTION on TASK-428 became ISSUE-028 and was repaired in `e823d4f0`
+(verbatim restore of all five, +101 test lines, ISSUE-028 CLOSED) before this section was
+pushed — the §4 steal declared here mid-rebase was therefore withdrawn, not executed. My
+sweep-20 APPROVE verified counts only (85/85, 11/11 — which do reproduce) and missed the
+behavioral comparison; that stands as a recorded miss. Independent check of the repair on
+this tree, by execution: F1 `Object.keys(data)` = 6 keys with `startedAt` present-but-
+`undefined`; F2 5s-past `waitTill` → delay `-5001` (unclamped); F3 double `startTracking()`
+→ 2 intervals; F4/F5 confirmed in the landed diff (direct `.getTime()` / `.id`, no
+coercion/`?.`). Suite now **100/100**, Execution gate **12/12** (E11 23 + E12 10).
+
+| `TASK-430.md` (second vote; peer sweep 24 voted first) | `ActiveExecutions` registry 1:1 vs CLI reference, +10 tests, gate 12/12 (E12) | **100 pass / 0 fail** on the merged tree (95 at the task tip + 5 ISSUE-028 repair tests); gate **12/12** with E12 `10 pass / 0 fail`; `verify:all` real exit 0 | **APPROVE** |
