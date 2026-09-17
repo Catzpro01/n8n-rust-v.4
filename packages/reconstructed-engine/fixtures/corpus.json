@@ -2657,10 +2657,148 @@
           }
         ]
       ]
+    },
+    {
+      "name": "luxon-injection",
+      "_why": "The luxon seam: workflow-data-proxy.ts:7 imports { DateTime, Duration, Interval, Settings } and the ctor writes Settings.defaultZone = timezone (:90), while the sandbox exposes DateTime.now() (:1535), a SECOND DateTime.now() floored to midnight (:1536) and the three classes as shorthand keys (:1539-1543). Every probe here is chosen to be deterministic so it can be recorded from the reference and replayed offline: fromISO/toISO round-trips print the ambient zone (so skipping the defaultZone write, or using the wrong zone, changes the value), and the class probes prove the keys are real luxon and not stubs. Interval.fromISO and DateTime.fromISO(...).offset are used instead of Interval.parseDuration / offsetNameShort, which this luxon build does not expose \u2014 checked against the installed runtime rather than assumed.",
+      "settings": {
+        "timezone": "Asia/Tokyo"
+      },
+      "mode": "manual",
+      "activeNodeName": "Code",
+      "itemIndex": 0,
+      "connections": {
+        "Manual Trigger": {
+          "main": [
+            [
+              {
+                "node": "Set",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "Set": {
+          "main": [
+            [
+              {
+                "node": "Code",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        }
+      },
+      "runData": {
+        "Code": [
+          {
+            "startTime": 1,
+            "executionIndex": 0,
+            "executionTime": 1,
+            "source": [],
+            "data": {
+              "main": [
+                [
+                  {
+                    "json": {
+                      "n": 1
+                    }
+                  }
+                ]
+              ]
+            }
+          }
+        ]
+      },
+      "connectionInputData": [
+        {
+          "json": {
+            "n": 1
+          }
+        }
+      ],
+      "probes": [
+        [
+          "DateTime",
+          "fromISO",
+          {
+            "()": [
+              "2024-02-29T12:00:00.000"
+            ]
+          },
+          "toISO",
+          {
+            "()": []
+          }
+        ],
+        [
+          "DateTime",
+          "fromISO",
+          {
+            "()": [
+              "2024-02-29T12:00:00.000"
+            ]
+          },
+          "offset"
+        ],
+        [
+          "$now",
+          "zoneName"
+        ],
+        [
+          "$now",
+          "isValid"
+        ],
+        [
+          "$today",
+          "hour"
+        ],
+        [
+          "$today",
+          "minute"
+        ],
+        [
+          "Duration",
+          "fromObject",
+          {
+            "()": [
+              {
+                "hours": 1
+              }
+            ]
+          },
+          "as",
+          {
+            "()": [
+              "minutes"
+            ]
+          }
+        ],
+        [
+          "Interval",
+          "fromISO",
+          {
+            "()": [
+              "2024-01-01T00:00:00.000/P1D"
+            ]
+          },
+          "length",
+          {
+            "()": [
+              "days"
+            ]
+          }
+        ],
+        [
+          "$agentInfo"
+        ]
+      ]
     }
   ],
   "deferredProbes": {
-    "$comment": "Symbols the port does NOT implement. They are asserted to raise NotPortedError (loud) rather than return a value (silently wrong). The reference value, when it has one, is recorded by the oracle run. This is the anti-ISSUE-016 pattern: a field or accessor that exists but is inert is worse than one that is missing, because it reads as implemented. NOTE: $env used to live here and was promoted to a real probe \u2014 the oracle showed it throwing 'access to env vars denied', and a stub that returns undefined would have looked like a pass.",
+    "$comment": "Symbols the port does NOT implement. They are asserted to raise NotPortedError (loud) rather than return a value (silently wrong). The reference value, when it has one, is recorded by the oracle run. This is the anti-ISSUE-016 pattern: a field or accessor that exists but is inert is worse than one that is missing, because it reads as implemented. NOTE: $env used to live here and was promoted to a real probe \u2014 the oracle showed it throwing 'access to env vars denied', and a stub that returns undefined would have looked like a pass. MOVED OUT (2026-09-18): $jmesPath/$jmespath and $now/$today. They are ported now (jmespath and luxon injected), and a wall-clock probe is by construction un-replayable \u2014 the recorded $now was 'luxon:2026-09-17T15:41:47.163-04:00', so keeping them here was a latent flake, not coverage. What replaces them is deterministic: the luxon-injection scenario ($now.zoneName, $today.hour, fromISO round-trips that print the ambient zone) plus gate 04's fake-luxon and fake-jmespath tests, which assert the no-injection case raises.",
     "probes": [
       [
         "$fromAI",
@@ -2672,28 +2810,6 @@
       ],
       [
         "$tool"
-      ],
-      [
-        "$jmesPath",
-        {
-          "()": [
-            {
-              "a": 1
-            },
-            "a"
-          ]
-        }
-      ],
-      [
-        "$jmespath",
-        {
-          "()": [
-            {
-              "a": 1
-            },
-            "a"
-          ]
-        }
       ],
       [
         "$agentInfo"
@@ -2737,12 +2853,6 @@
           ]
         },
         "pairedItem"
-      ],
-      [
-        "$now"
-      ],
-      [
-        "$today"
       ]
     ]
   },

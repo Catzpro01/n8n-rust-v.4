@@ -100,10 +100,16 @@ function build(scenario) {
 	};
 }
 
-/** jmespath arrives through the same seam the reference runtime is loaded from (null offline). */
-const injectedJmespath = () => referenceRuntime()?.jmespath;
+/**
+ * jmespath and luxon arrive through the same seam the reference runtime is loaded from
+ * (both null offline, which is what routes the dependent probes to the must-raise branch).
+ */
+const injectedCapabilities = () => {
+	const runtime = referenceRuntime();
+	return { jmespath: runtime?.jmespath, luxon: runtime?.luxon };
+};
 
-const proxyUnderTest = (fixture, deps = { jmespath: injectedJmespath() }) =>
+const proxyUnderTest = (fixture, deps = injectedCapabilities()) =>
 	new WorkflowDataProxy(
 		fixture.workflow,
 		fixture.runExecutionData,
@@ -118,11 +124,9 @@ const proxyUnderTest = (fixture, deps = { jmespath: injectedJmespath() }) =>
 		-1,
 		{},
 		fixture.activeNodeName,
-		// The 15th argument is this port's injection seam. jmespath is passed when the
-		// host has it (the reference imports it directly, so the golden's side always did);
-		// with no runtime installed the probes above fall back to "must raise" instead.
-		// luxon is deliberately NOT injected here: gate 04 grades the data proxy without a
-		// date provider, and gate 10 is where luxon-backed probes are compared.
+		// The 15th argument is this port's injection seam. Both capabilities are passed when
+		// the host has them — the reference imports them at module scope, so the golden's side
+		// always did — and with no runtime installed the probes fall back to "must raise".
 		undefined,
 		deps,
 	).getDataProxy();
@@ -396,4 +400,124 @@ test('$jmesPath validates its arguments before touching the injected module', ()
 	}
 	// A *valid* call with no module is the one case that says "not ported" — loudly, never undefined.
 	assert.throws(() => proxy.$jmesPath({ a: 1 }, 'a'), /NotPortedError/);
+});
+
+test('the luxon keys are values when injected and loud when not', () => {
+	// No oracle needed: a fake luxon answers the questions the real clock cannot — how many
+	// times the reference samples it, and what happens to the user-visible keys on a host that
+	// supplies nothing at all.
+	const scenario = corpus.scenarios.find((entry) => entry.name === 'luxon-injection');
+	assert.ok(scenario, 'the corpus lost the luxon scenario');
+	const fixture = build(scenario);
+	const calls = [];
+	const fakeLuxon = {
+		Settings: {},
+		DateTime: {
+			now() {
+				calls.push('now');
+				return { seq: calls.length, set: (parts) => ({ flooredFrom: calls.length, parts }) };
+			},
+		},
+		Interval: 'the-Interval-class',
+		Duration: 'the-Duration-class',
+	};
+	const proxy = proxyUnderTest(fixture, { luxon: fakeLuxon });
+
+	// :1535-1536 — TWO separate DateTime.now() calls, and $today floors the SECOND one.
+	assert.deepEqual(calls, ['now', 'now'], 'the reference samples the clock twice; so must this port');
+	assert.equal(proxy.DateTime, fakeLuxon.DateTime, 'DateTime is the injected class, verbatim');
+	assert.equal(proxy.Interval, fakeLuxon.Interval);
+	assert.equal(proxy.Duration, fakeLuxon.Duration);
+	assert.deepEqual(proxy.$today, { flooredFrom: 2, parts: { hour: 0, minute: 0, second: 0, millisecond: 0 } });
+	assert.equal(proxy.$now.seq, 1, '$now is the FIRST sampling, untouched');
+
+	// :90 — the ambient write the isolation ledger records as ISSUE-006. It happens at
+	// construction, with the WORKFLOW's timezone, and only because a host handed over the object.
+	assert.equal(fakeLuxon.Settings.defaultZone, 'Asia/Tokyo');
+
+	// And with no luxon at all: five raising keys, never five undefineds.
+	const bare = proxyUnderTest(fixture, {});
+	for (const key of ['DateTime', 'Interval', 'Duration', '$now', '$today']) {
+		assert.throws(
+			() => bare[key],
+			(error) =>
+				error.name === 'NotPortedError' &&
+				error.message.includes('workflow-data-proxy.ts:1535-1543') &&
+				error.message.includes(key),
+			`${key} must name the missing capability and the reference range`,
+		);
+	}
+});
+
+test('$agentInfo answers undefined for non-agent nodes and raises for the agent type', () => {
+	// reference :1061-1063 — `if (!agentNode || agentNode.type !== AGENT_LANGCHAIN_NODE_TYPE)
+	// return undefined;` The whole corpus is non-agent, so `undefined` there is fidelity; the
+	// agent branch is what is not ported, and it must say so.
+	const scenario = corpus.scenarios.find((entry) => entry.name === 'luxon-injection');
+	const plain = build(scenario);
+	assert.equal(proxyUnderTest(plain).$agentInfo, undefined, 'non-agent node: match the reference exactly');
+
+	const agentScenario = structuredClone(scenario);
+	agentScenario.nodeOverrides = {
+		[scenario.activeNodeName]: { type: '@n8n/n8n-nodes-langchain.agent' },
+	};
+	const agent = build(agentScenario);
+	assert.throws(
+		() => proxyUnderTest(agent).$agentInfo,
+		(error) =>
+			error.name === 'NotPortedError' &&
+			error.message.includes('workflow-data-proxy.ts:1061-1108') &&
+			error.message.includes('agent-runtime'),
+		'an agent node must not read a silent undefined',
+	);
+});
+
+test('the ambient luxon zone is process-global: last proxy constructed wins', () => {
+	// workflow-data-proxy.ts:90 writes `Settings.defaultZone` on the SHARED module object, so
+	// two live proxies do not get two zones — the second construction rewrites what the first
+	// one's `DateTime`/`Interval`/`Duration` keys resolve against, while `$now`/`$today` keep
+	// the zone they sampled. Measured on the reference before being written down here, and the
+	// port reproduces it, so this is a pin rather than an opinion.
+	const scenario = corpus.scenarios.find((entry) => entry.name === 'luxon-injection');
+	const fixture = build(scenario); // settings.timezone = Asia/Tokyo
+	const shared = { Settings: {} };
+	const makeLuxon = () => ({
+		...shared,
+		DateTime: {
+			// `set(...)` exists because the port floors the SECOND sample for $today
+			// (workflow-data-proxy.ts:1536); the zone is read at call time on purpose.
+			now: () => ({
+				zoneName: shared.Settings.defaultZone,
+				set: () => ({ zoneName: shared.Settings.defaultZone, floored: true }),
+			}),
+		},
+	});
+	const first = proxyUnderTest(fixture, { luxon: makeLuxon() });
+	assert.equal(first.$now.zoneName, 'Asia/Tokyo');
+
+	// A second SCENARIO, not a cloned fixture: build() owns the stub, and structuredClone of a
+	// class instance throws DataCloneError on its methods.
+	const newYorkScenario = { ...structuredClone(scenario), settings: { timezone: 'America/New_York' } };
+	const secondFixture = build(newYorkScenario);
+	proxyUnderTest(secondFixture, { luxon: makeLuxon() });
+
+	// $now was snapshotted at construction, so it still reports Tokyo…
+	assert.equal(first.$now.zoneName, 'Asia/Tokyo');
+	// …while the global the class keys read against has moved.
+	assert.equal(shared.Settings.defaultZone, 'America/New_York', 'the reference does not restore it, so neither do we');
+
+	if (oracleAvailable) {
+		// Same claim with the real module, where the leak is observable in a value rather than
+		// in a bookkeeping field: an ISO round-trip prints whatever zone is ambient NOW.
+		const rt = referenceRuntime();
+		const iso = '2024-02-29T12:00:00.000';
+		const refTokyo = proxyUnderTest(fixture, { luxon: rt.luxon });
+		const before = refTokyo.DateTime.fromISO(iso).toISO();
+		const refNewYork = proxyUnderTest(secondFixture, { luxon: rt.luxon });
+		const after = refTokyo.DateTime.fromISO(iso).toISO();
+		assert.match(before, /\+09:00$/);
+		assert.notEqual(after, before, 'the second proxy\'s timezone changed what the first one resolves');
+		assert.match(after, /-05:00$/);
+		assert.equal(refNewYork.$now.zoneName, 'America/New_York');
+	}
 });

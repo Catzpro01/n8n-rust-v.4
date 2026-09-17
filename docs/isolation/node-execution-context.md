@@ -1,6 +1,6 @@
 # LEGO Isolation: Node Execution Context + Workflow Data Proxy
 
-**Status:** `REFERENCE TESTED` — 108/108 gates green with the live oracle and 108/108 with the oracle suppressed at the seam, falsification gate green (17/17 mutants caught); transcripts in `packages/reconstructed-engine/evidence/`, audited by gate 08
+**Status:** `REFERENCE TESTED` — 117/117 gates green with the live oracle and 117/117 with the oracle suppressed at the seam, falsification gate green (22/22 mutants caught); transcripts in `packages/reconstructed-engine/evidence/`, audited by gate 08
 **Owner:** Agent 2 (LEGO `node`, port unit `node-execution-context` + `workflow-data-proxy`)
 **Task:** `tasks/POOL-002-R1-node.yaml` (rework of POOL-002, whose `FAILED` record is kept at `results/POOL-002-node-execution-context-data-proxy.md`)
 **Deliverable:** `packages/reconstructed-engine/`
@@ -33,7 +33,6 @@ Everything below raises `NotPortedError` (which carries the reference file:line)
 | `$('n').pairedItem` / `.itemMatching` / `.item`, `$getPairedItem` | paired-item resolution algorithm | paired-item |
 | `$fromAI` / `$fromAi` / `$fromai` | fromAI placeholder parsing | Expression |
 | `$tool`, `$agentInfo`, `agentInfo`, `buildAgentToolInfo` | agent runtime | agent |
-| `DateTime` / `Duration` / `Interval`, `$now` / `$today` without `luxon` | `luxon` is *injected* (15th ctor arg); no ambient dependency | Workflow model |
 | `getInputConnectionData` | `utils/get-input-connection-data.ts` + HITL tools | connection |
 | `getSignedResumeUrl`, `getInstanceBaseUrl`, `getInstanceId` | webhook URL signing / instance settings service | webhook / persistence |
 | `startJob` | long-running job resumption | jobs |
@@ -47,8 +46,10 @@ Class hierarchy is compared, not assumed: `BaseExecuteContext extends NodeExecut
 
 The reference reaches outside itself in ways this port had to make explicit:
 
-1. **`Settings.defaultZone`** — `workflow-data-proxy.ts` writes a global timezone default through `luxon`. The port takes `luxon` as an injected option and only performs that write when a host supplied the object. Without the injection `$now`/`$today` raise; there is no ambient global mutation and no import of the oracle at module load.
+1. **`luxon`** (`:7`, `:90`, `:1535-1536`, `:1539-1543`) — the reference imports `{ DateTime, Duration, Interval, Settings }` and writes a global timezone default at construction. The port takes `luxon` as an injected option and performs that write only when a host supplied the object. All five dependent sandbox keys (`$now`, `$today`, `DateTime`, `Interval`, `Duration`) are installed by ONE loop, so "no luxon" means five loud `NotPortedError`s — not three `undefined`s and two errors, which is what the previous shape gave and what the ISSUE-016 rule forbids. The consequence is worth stating for the Expression lane and for the Rust port: because the write lands on the shared module object, **two live proxies do not get two timezones — the last one constructed wins** for everything read through the `DateTime`/`Interval`/`Duration` keys, while `$now`/`$today` keep the zone they sampled. Measured on the reference (`DateTime.fromISO('2024-02-29T12:00:00.000').toISO()` on proxy A goes `…+09:00` → `…-05:00` after proxy B is built, with A's `$now.zoneName` unchanged) and reproduced here; `test/04`'s last test pins both halves. Two further points are pinned by gate 04 against a *fake* luxon, because a real clock cannot be pinned: `DateTime.now()` is called **twice** (`$today` floors the second sample, so across midnight the reference can hand out a `$today` ahead of `$now` — reproduced, not "fixed"; mutant *$today derived from $now's clock sample*), and `Settings.defaultZone` is written exactly at construction with the **workflow's** timezone (mutant *Settings.defaultZone write skipped as global mutation*).
 2. **`jmespath`** — `$jmesPath` / `$jmespath` (`workflow-data-proxy.ts:763-775`) calls `jmespath.search`. The reference does `import * as jmespath from 'jmespath'`, a bare specifier, and gate 01 forbids bare specifiers in `src/`. So the module is injected as `jmespath` in the same options object as `luxon`, and the harness resolves it from the seam (`reference-runtime.mjs`); the sandbox keys are wired to a module-scope `jmespathWrapper(proxy, data, query)` because the reference defines it at module scope and gate 05 compares the class prototype method-for-method. Both `typeof`-guard behaviour and the reference's `{ ...data }` copy (jmespath mutates what it walks — it stamps `__ident__` onto nodes — while arrays pass by identity) are pinned: the value probes in the golden, and two offline tests in gate 04 that use a *fake* jmespath so the copy semantics and the guard ordering are graded even where no oracle exists.
+The `agentInfo` slot deserves a note because it is *half* ported and that is the correct outcome: `workflow-data-proxy.ts:1061-1063` returns `undefined` for every node type except `@n8n/n8n-nodes-langchain.agent`, so `undefined` IS the faithful answer for the corpus — but a constant `undefined` would be a lie for agent workflows. The port therefore keeps the reference's method name on the prototype (TS `private` is compile-time only, and gate 05 compares the class method-for-method) and raises `NotPortedError` for the agent branch only.
+
 3. **`Container.get(...)`** — the reference resolves `Logger`, `InstanceSettings` and `NodeHelpers` from the DI container. The port's constructor takes them as `deps` (`deps.logger`, `deps.nodeHelpers`, `deps.instanceId`), defaulting to a silent logger and a *raising* NodeHelpers seam. The oracle harness is the only place that installs the real ones.
 
 `test/01-module-graph.test.mjs` enforces the resulting invariant: every import in `src/` is relative (plus `node:` builtins), only `reference-runtime.mjs` may touch an installed package, and the whole graph must load in a child process with the oracle hidden from it.
@@ -59,6 +60,7 @@ Each of these is asserted by a gate; each looks like a bug in the reference and 
 
 | Quirk | Reference | Consequence if "improved" |
 |---|---|---|
+| `$now` and `$today` each call `DateTime.now()` | `workflow-data-proxy.ts:1535-1536` | sharing one sample makes `$today` lag `$now` across a midnight boundary — a plausible-looking bug fix that changes which day a long-running expression sees |
 | `ApplicationError` does not set `this.name` | `@n8n/errors/application.error.ts` | every `error.name === 'ApplicationError'` check changes answer |
 | `@n8n/errors` compiles with `useDefineForClassFields:false`, `n8n-workflow` with `true` | build configs | `packageName`/`cause`/`description` appear or vanish as *own keys*; `toJSON()` output and telemetry shape move |
 | `WorkflowOperationError(message, node?, description?)` | `workflow-operation.error.ts:8-24` | reading arg 2 as an options bag yields `node: undefined` + the options in `cause` |
@@ -96,10 +98,10 @@ remains reachable runs only through `$fromAI`, which is deferred to the Expressi
 | `01-module-graph` | yes | import purity, no oracle in the graph, no module-scope global mutation |
 | `02-errors` | yes (+live) | class names, levels, context filtering, `messages` mapping, and **own-property shape** against the reference classes |
 | `03-run-execution-data` | yes (+live) | migration branches, factory key sets, `getContext` create-on-read, metadata limits, `constructExecutionMetaData` pairing precedence + key order; live half compares structures |
-| `04-data-proxy-golden` | yes | 20 data-proxy scenarios (181 accessor probes + 11 deferred-symbol probes) + 3 execute-context scenarios (49 method probes each) — **339 recorded results** in all, graded against `fixtures/data-proxy.golden.json` — recorded from the reference. 7 of the proxy probes are flagged `_oracleDependent` *by rule* (they need a host-injected capability); offline they are asserted as must-raise, never skipped |
+| `04-data-proxy-golden` | yes | 21 data-proxy scenarios (190 accessor probes + 7 deferred-symbol probes) + 3 execute-context scenarios (49 method probes each) — **344 recorded results** in all, graded against `fixtures/data-proxy.golden.json`, recorded from the reference. 15 proxy probes are flagged `_oracleDependent` *by rule* (they need a host-injected capability — jmespath or luxon); offline they are asserted as must-raise, never skipped. Two of the tests here run against fake injected modules, which is the only way to grade the injected-capability quirks deterministically |
 | `05-surface-coverage` | yes (+live) | manifest ↔ code ↔ reference: buckets, class methods, 43 sandbox keys, additional-key set, hierarchy |
 | `06-legacy-runner-regression` | yes | the POOL-001 loop (`runner.mjs`, `test-run.mjs`, `runner.test.mjs`) is unedited since the recorded commit (sha256 + `git hash-object` + `git rev-parse <commit>:<path>` traceability), and the dependency runs in neither direction |
-| `07-falsification` | yes | **17 mutations** + control, each re-running the whole suite inside a temp copy |
+| `07-falsification` | yes | **22 mutations** + control, each re-running the whole suite inside a temp copy |
 | `08-evidence-consistency` | yes | the captured transcripts still describe the tree: fixture/manifest hashes, per-run counts, `# fail 0`, and proof that the "offline" run really had no oracle (it degrades host-dependent probes to "must raise", which must be visible in the transcript) |
 | `oracle/10-reference-equivalence` | no — needs the oracle | the same probes against the installed reference **in-process**, plus: every declared deviation must still be a deviation and must be covered by a probe; the surface manifest must be reproducible from the runtime |
 

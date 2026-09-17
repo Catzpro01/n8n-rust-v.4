@@ -3,7 +3,7 @@
   "$source": "pinned reference runtime — values were NOT produced by the reconstruction",
   "$runtimeVersion": "2.9.1",
   "$referenceRootHash": "f8da35180669d79801601bfeb025bbe418c8f00346b1358c3ba3dc68b42da732",
-  "$recordedAt": "2026-09-17T19:21:00.694Z",
+  "$recordedAt": "2026-09-17T19:42:23.199Z",
   "dataProxy": {
     "linear-3-run": {
       "_why": "fully executed linear graph: the happy path of every accessor",
@@ -513,36 +513,6 @@
           "ok": true,
           "serialized": "{\"name\":undefined,\"parameters\":undefined}"
         },
-        "$jmesPath.({\"a\":1},\"a\")": {
-          "_path": [
-            "$jmesPath",
-            {
-              "()": [
-                {
-                  "a": 1
-                },
-                "a"
-              ]
-            }
-          ],
-          "ok": true,
-          "serialized": "number:1"
-        },
-        "$jmespath.({\"a\":1},\"a\")": {
-          "_path": [
-            "$jmespath",
-            {
-              "()": [
-                {
-                  "a": 1
-                },
-                "a"
-              ]
-            }
-          ],
-          "ok": true,
-          "serialized": "number:1"
-        },
         "$agentInfo": {
           "_path": [
             "$agentInfo"
@@ -631,20 +601,6 @@
           ],
           "ok": true,
           "serialized": "[fn]"
-        },
-        "$now": {
-          "_path": [
-            "$now"
-          ],
-          "ok": true,
-          "serialized": "luxon:2026-09-17T15:21:00.613-04:00"
-        },
-        "$today": {
-          "_path": [
-            "$today"
-          ],
-          "ok": true,
-          "serialized": "luxon:2026-09-17T00:00:00.000-04:00"
         }
       }
     },
@@ -2724,6 +2680,129 @@
           "ok": true,
           "serialized": "number:1",
           "_oracleDependent": true
+        }
+      }
+    },
+    "luxon-injection": {
+      "_why": "The luxon seam: workflow-data-proxy.ts:7 imports { DateTime, Duration, Interval, Settings } and the ctor writes Settings.defaultZone = timezone (:90), while the sandbox exposes DateTime.now() (:1535), a SECOND DateTime.now() floored to midnight (:1536) and the three classes as shorthand keys (:1539-1543). Every probe here is chosen to be deterministic so it can be recorded from the reference and replayed offline: fromISO/toISO round-trips print the ambient zone (so skipping the defaultZone write, or using the wrong zone, changes the value), and the class probes prove the keys are real luxon and not stubs. Interval.fromISO and DateTime.fromISO(...).offset are used instead of Interval.parseDuration / offsetNameShort, which this luxon build does not expose — checked against the installed runtime rather than assumed.",
+      "probes": {
+        "DateTime.fromISO.(\"2024-02-29T12:00:00.000\").toISO.()": {
+          "_path": [
+            "DateTime",
+            "fromISO",
+            {
+              "()": [
+                "2024-02-29T12:00:00.000"
+              ]
+            },
+            "toISO",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "\"2024-02-29T12:00:00.000+09:00\"",
+          "_oracleDependent": true
+        },
+        "DateTime.fromISO.(\"2024-02-29T12:00:00.000\").offset": {
+          "_path": [
+            "DateTime",
+            "fromISO",
+            {
+              "()": [
+                "2024-02-29T12:00:00.000"
+              ]
+            },
+            "offset"
+          ],
+          "ok": true,
+          "serialized": "number:540",
+          "_oracleDependent": true
+        },
+        "$now.zoneName": {
+          "_path": [
+            "$now",
+            "zoneName"
+          ],
+          "ok": true,
+          "serialized": "\"Asia/Tokyo\"",
+          "_oracleDependent": true
+        },
+        "$now.isValid": {
+          "_path": [
+            "$now",
+            "isValid"
+          ],
+          "ok": true,
+          "serialized": "boolean:true",
+          "_oracleDependent": true
+        },
+        "$today.hour": {
+          "_path": [
+            "$today",
+            "hour"
+          ],
+          "ok": true,
+          "serialized": "number:0",
+          "_oracleDependent": true
+        },
+        "$today.minute": {
+          "_path": [
+            "$today",
+            "minute"
+          ],
+          "ok": true,
+          "serialized": "number:0",
+          "_oracleDependent": true
+        },
+        "Duration.fromObject.({\"hours\":1}).as.(\"minutes\")": {
+          "_path": [
+            "Duration",
+            "fromObject",
+            {
+              "()": [
+                {
+                  "hours": 1
+                }
+              ]
+            },
+            "as",
+            {
+              "()": [
+                "minutes"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "number:60",
+          "_oracleDependent": true
+        },
+        "Interval.fromISO.(\"2024-01-01T00:00:00.000/P1D\").length.(\"days\")": {
+          "_path": [
+            "Interval",
+            "fromISO",
+            {
+              "()": [
+                "2024-01-01T00:00:00.000/P1D"
+              ]
+            },
+            "length",
+            {
+              "()": [
+                "days"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "number:1",
+          "_oracleDependent": true
+        },
+        "$agentInfo": {
+          "_path": [
+            "$agentInfo"
+          ],
+          "ok": true,
+          "serialized": "undefined"
         }
       }
     }

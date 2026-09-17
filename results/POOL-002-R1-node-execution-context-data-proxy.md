@@ -22,7 +22,7 @@ classes, all of `constants.ts`) plus nine gates that compare it to the pinned re
 | `src/*.mjs` (10 files) | the port; every symbol documents its reference `file:line` |
 | `fixtures/corpus.json` | 19 data-proxy scenarios + 3 execute-context scenarios + deferred-probe set |
 | `fixtures/legacy-runner.lock.json` | POOL-001 non-entanglement pin (sha256 + traceable commit blob) |
-| `fixtures/data-proxy.golden.json` | 339 reference-recorded probe results (values *and* errors) |
+| `fixtures/data-proxy.golden.json` | 344 reference-recorded probe results (values *and* errors), 21 proxy + 3 context scenarios |
 | `fixtures/reference-snapshot.json` | recorded constant values, sandbox key set, context method set, additional-key set |
 | `manifest/port-surface.json` | generated per-module/per-class classification: ported / deferred / out-of-scope / additions + class hierarchy check |
 | `test/00…07`, `test/oracle/10` | the gates, incl. recorders (`record-golden.mjs`, `record-surface.mjs`) and an offline host stub that throws on anything unmodelled |
@@ -33,9 +33,9 @@ classes, all of `constants.ts`) plus nine gates that compare it to the pinned re
 
 | Run | Result |
 |---|---|
-| `npm run verify:engine` (oracle `n8n-workflow@2.9.1`/`n8n-core@2.9.1` installed) | **108/108 pass** |
-| `npm run verify:engine:offline` (oracle suppressed at the seam via `ENGINE_NO_RUNTIME=1`) | **108/108 pass**, and the transcript must *prove* the suppression (gate 08): `oracle equivalence NOT RUN` ×6 + host-dependent degradation lines |
-| `test/07-falsification` | control green; **17/17 mutations caught** (each re-runs the whole suite in a temp copy) |
+| `npm run verify:engine` (oracle `n8n-workflow@2.9.1`/`n8n-core@2.9.1` installed) | **117/117 pass** |
+| `npm run verify:engine:offline` (oracle suppressed at the seam via `ENGINE_NO_RUNTIME=1`) | **117/117 pass**, and the transcript must *prove* the suppression (gate 08): `oracle equivalence NOT RUN` ×6 + host-dependent degradation lines |
+| `test/07-falsification` | control green; **22/22 mutations caught** (each re-runs the whole suite in a temp copy) |
 | `test/05-surface-coverage` | 0 undeclared gaps, 0 undeclared additions, 43/43 sandbox keys, 5/5 additional keys, 4/4 class hierarchies match |
 | `evidence/` (gate 08 audits it) | transcripts of both runs above at head `7196779e`, node v22.22.3, captured by `npm run verify:engine:evidence`; recorder refuses red runs |
 
@@ -83,8 +83,8 @@ Three defects in the *verification machinery*, all found while adding `evidence/
 New artifacts: `test/08-evidence-consistency.test.mjs`, `test/helpers/capture-evidence.mjs`,
 `evidence/` (2 transcripts + summary.json + README), `ENGINE_NO_RUNTIME` support and per-file result integrity checks in
 `scripts/run-engine-tests.sh`, and `npm run verify:engine:evidence`. Numbers at that point: 103/103
-live, 103/103 offline, 15/15 mutants caught; after the JMESPath port below, 108/108, 108/108 and
-17/17.
+live, 103/103 offline, 15/15 mutants caught; after the JMESPath port below, 117/117, 117/117 and
+22/22.
 
 ### Cross-lane evidence produced while finishing (2026-09-18)
 
@@ -130,6 +130,51 @@ Ten value probes are host-dependent and therefore flagged `_oracleDependent` by 
 `record-golden.mjs` stamps any probe whose root needs an injected capability *and* that answered
 successfully. Offline gate 04 then asserts those raise instead of answering (diagnostic: "5
 probe(s) graded as must-raise only"), which keeps the honest-degradation contract intact.
+
+### Then the luxon keys: the deferred rule turned on my own port
+
+Porting jmespath made the neighbouring `luxon` group the last one on the deferred list that no
+other LEGO owns, and looking at it properly produced a finding against this port rather than a new
+feature: `DateTime`/`Interval`/`Duration` were installed as `this.luxon?.X`, i.e. **three silent
+`undefined`s** whenever no host injected luxon — exactly the inert-field pattern `ISSUE-016` was
+raised for, and the one place in the package where "deferred symbols raise, nothing answers
+undefined" (an acceptance criterion in `tasks/POOL-002-R1-node.yaml`) was untrue. All five
+luxon-dependent keys now go through one installation loop: values when the capability is there,
+`NotPortedError` naming `workflow-data-proxy.ts:1535-1543` when it is not.
+
+Two reference details came with it, both pinned the only way they can be — against a fake luxon,
+since a wall clock cannot be recorded:
+- `DateTime.now()` is called **twice** (`:1535-1536`), so `$today` can be a day ahead of `$now`
+  across midnight. Deriving one from the other reads like a fix; it is a deviation, and it is now a
+  mutant (`$today derived from $now's clock sample`) alongside the "obviously better" `skip the
+  Settings.defaultZone write` mutant.
+- the corpus previously probed `$now`/`$today` as *deferred* symbols, and the recorded reference
+  value was a timestamp (`luxon:2026-09-17T15:41:47.163-04:00`) — a latent flake waiting for any
+  run that answered them. They are removed from `corpus.deferredProbes` (11 → 7 probes) and replaced
+  by deterministic ones: `DateTime.fromISO(…).toISO()` prints the ambient zone (`…+09:00` for a
+  workflow with `settings.timezone: Asia/Tokyo`), so the golden grades the global write instead of
+  the clock.
+
+`$agentInfo` was the third finding in the same sweep: the port had a constant `undefined`, the
+reference has a method whose *first guard* returns `undefined` and whose rest is agent metadata.
+`WorkflowDataProxy.prototype.agentInfo` now exists with the reference's name (gate 05 compares
+prototypes method-for-method and had already caught `jmespathWrapper` being a method), answers
+`undefined` for non-agent nodes and raises for `@n8n/n8n-nodes-langchain.agent`. That took the
+ported-class method count from 11 to 12 of the reference's 13.
+
+And the sweep turned up the behaviour behind `ISSUE-006` rather than a bug: the ambient write is on
+the *shared* module object, so with two live proxies the later construction changes what the
+earlier one's `DateTime` key resolves against (`+09:00` → `-05:00` measured on the reference), while
+`$now`/`$today` stay snapshot-zoned. Not a defect to fix in a frozen port — a constraint to record,
+now pinned by the last test in gate 04 and relayed as MSG-10.
+
+Two accidents worth recording, because the gates caught both and I would not have noticed otherwise:
+a `from:` anchor in a new mutant still named `agentInfoValue` after the rename, and gate 07's
+"anchor must match exactly once" rule made that a red test instead of a disabled one; and inserting
+the four mutants with `rindex("\n];")` produced `},,` — an array hole — which `for…of` walked into a
+TypeError, so the file reported 22 tests when it should have reported 23 and the failure was a file
+level `not ok`, easy to lose under a `| head`. Counting `name:` lines in the source is not a
+substitute for counting tests.
 
 ### Goldens survived the shared-runtime pin change (d77c55b5)
 

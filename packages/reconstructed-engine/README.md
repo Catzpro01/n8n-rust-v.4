@@ -70,12 +70,21 @@ Anything not ported raises `NotPortedError` naming the reference `file:line`. Th
 generated, not remembered: `test/05` fails if `src/` grows an undeclared export, if a
 deferred symbol starts returning a value, or if the manifest stops matching the runtime.
 See `manifest/port-surface.json` and `docs/isolation/node-execution-context.md` §2 for
-the table (paired-item accessors, `$fromAI*`, `$tool`, `$agentInfo`,
-`DateTime/Duration/Interval`, `getInputConnectionData`, `getSignedResumeUrl`, `startJob`,
+the table (paired-item accessors, `$fromAI*`, `$tool`, the agent branch of `$agentInfo`,
+`getInputConnectionData`, `getSignedResumeUrl`, `startJob`,
 `augmentObject/augmentArray`, the `getNodeParameter` strategy options, and the
-host-supplied `NodeHelpers` decisions). `$jmesPath` / `$jmespath` used to be in that table; they
-are now ported and take the `jmespath` module through the same injected-options seam as `luxon` —
-without an injected module a valid call still raises `NotPortedError`, it never answers `undefined`.
+host-supplied `NodeHelpers` decisions).
+
+Two groups left that table this week and moved into the injection rule instead:
+`$jmesPath`/`$jmespath` (needs `jmespath`) and `$now`/`$today`/`DateTime`/`Interval`/`Duration`
+(needs `luxon`). Both modules are resolved by `src/reference-runtime.mjs` and handed to the
+constructor's 15th argument, because the reference's module-scope `import ... from 'luxon'` is a
+bare specifier and `src/` may not have one (gate 01). The rule that came out of it is stricter than
+"optional dependency": an unmet capability must RAISE, so no dependent key is ever installed as
+`undefined` — a key that exists and answers nothing reads as implemented from the outside, which is
+the failure mode `ISSUE-016` was about. `$agentInfo` stayed in the deferred list with an narrowed
+claim, because `undefined` IS the reference answer for every non-agent node (`:1062`) while the
+agent node type must be told the branch is missing.
 
 ## Provenance
 

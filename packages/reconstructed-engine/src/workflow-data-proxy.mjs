@@ -27,14 +27,19 @@
  * `test/05-surface-coverage.test.mjs`.
  *
  *   deferred: $fromAI / $fromai / $fromAi, $tool,
- *             $agentInfo, DateTime / Duration / Interval, $now / $today,
+ *             $agentInfo (agent-node branch only — the non-agent answer `undefined` IS ported),
  *             $('n').pairedItem / .itemMatching / .item, $getPairedItem,
  *             augmentObject / augmentArray (scripting-node copy-on-write)
  *
- * `$jmesPath` / `$jmespath` are ported but need the `jmespath` module, which the reference
- * imports as a bare specifier (workflow-data-proxy.ts:6). This package keeps `src/` free of
- * bare specifiers (gate 01), so it is injected the same way luxon is: no injection, no answer —
- * the accessor raises `NotPortedError` rather than returning `undefined`.
+ * Ported but needing an injected capability, so they raise rather than answer without it:
+ * `$jmesPath` / `$jmespath` (module `jmespath`) and `$now` / `$today` / `DateTime` /
+ * `Interval` / `Duration` (module `luxon`).
+ *
+ * The reference imports `luxon` and `jmespath` at module scope (workflow-data-proxy.ts:6-7);
+ * this package keeps `src/` free of bare specifiers (gate 01), so both are injected through the
+ * ctor's options object. "Not injected" is never "undefined": every dependent sandbox key is
+ * installed as a throwing accessor, because a key that exists but answers nothing reads as
+ * implemented (the ISSUE-016 pattern).
  *
  * `luxon` is optional and injected: when supplied (the equivalence harness
  * injects the copy installed with the reference runtime) `$now`, `$today` and
@@ -44,6 +49,7 @@
  */
 
 import {
+	AGENT_LANGCHAIN_NODE_TYPE,
 	BINARY_MODE_COMBINED,
 	NodeConnectionTypes,
 	SCRIPTING_NODE_TYPES,
@@ -140,6 +146,24 @@ export class WorkflowDataProxy {
 			// *visible* behind an injected capability instead of an import.
 			this.luxon.Settings.defaultZone = this.timezone;
 		}
+	}
+
+	/**
+	 * workflow-data-proxy.ts:1061 `private agentInfo()` — same name, same slot on the
+	 * prototype (gate 05 compares the class method-for-method, and TS `private` is compile-time
+	 * only, so the reference really does expose this at runtime). Only the first guard is
+	 * ported: the reference returns `undefined` unless the active node is
+	 * `AGENT_LANGCHAIN_NODE_TYPE`, and everything past that guard (connected tools, memory
+	 * detection, unconnected-tool discovery, buildAgentToolInfo) belongs to the agent-runtime
+	 * LEGO — which is exactly what `manifest/port-surface.json → deferred` says.
+	 */
+	agentInfo() {
+		const agentNode = this.workflow.getNode(this.activeNodeName);
+		if (agentNode?.type !== AGENT_LANGCHAIN_NODE_TYPE) return undefined;
+		throw new NotPortedError(
+			'$agentInfo',
+			'workflow-data-proxy.ts:1061-1108 — agent tool metadata; needs the agent-runtime LEGO',
+		);
 	}
 
 	/**
@@ -1088,9 +1112,11 @@ export class WorkflowDataProxy {
 			$itemIndex: this.itemIndex,
 			$jmesPath: (data, query) => jmespathWrapper(that, data, query),
 
-			DateTime: this.luxon?.DateTime,
-			Interval: this.luxon?.Interval,
-			Duration: this.luxon?.Duration,
+			// The reference puts the three luxon classes here (:1539-1543) as shorthand keys
+			// for its module-scope import, and $now/$today just above (:1535-1536). This port
+			// has no module-scope luxon: the classes and the two instances are installed
+			// together in one loop below, so "no injected luxon" produces a loud
+			// NotPortedError on all five keys instead of three `undefined`s and two errors.
 			...that.additionalKeys,
 			$getPairedItem: () => {
 				throw new NotPortedError('$getPairedItem', 'workflow-data-proxy.ts:962');
@@ -1104,26 +1130,50 @@ export class WorkflowDataProxy {
 			$thisRunIndex: this.runIndex,
 			$nodeVersion: that.workflow.getNode(that.activeNodeName)?.typeVersion,
 			$nodeId: that.workflow.getNode(that.activeNodeName)?.id,
-			$agentInfo: undefined,
+			// reference :1556 `$agentInfo: this.agentInfo()`, and agentInfo() itself returns
+			// undefined for every node type except the LangChain agent (:1061-1063). A bare
+			// `undefined` here was faithful for the corpus and silently wrong for real agent
+			// workflows — the inert-field pattern this package treats as a bug — so the node
+			// type is checked. (Lazy where the reference is eager: the only observable
+			// difference is that a malformed agent graph fails on read, not on construction.)
+			get $agentInfo() {
+				return that.agentInfo();
+			},
 			$webhookId: that.workflow.getNode(that.activeNodeName)?.webhookId,
 		};
 
-		// Reference computes $now/$today once, at proxy construction (1538-1539), and
-		// they are luxon DateTimes. Same construction point here; without an injected
-		// luxon the accessors fail loudly instead of returning a wrong type.
-		if (this.luxon) {
-			const now = this.luxon.DateTime.now();
-			base.$now = now;
-			base.$today = now.set({ hour: 0, minute: 0, second: 0, millisecond: 0 });
-		} else {
-			for (const symbol of ['$now', '$today']) {
-				Object.defineProperty(base, symbol, {
-					enumerable: true,
-					get() {
-						throw new NotPortedError(symbol, 'workflow-data-proxy.ts:1538 (luxon)');
-					},
-				});
+		// workflow-data-proxy.ts:1535-1536 + :1539-1543.
+		//
+		// `DateTime.now()` is called TWICE because the reference calls it twice. Deriving
+		// $today from $now's instant looks like a bug fix (across a midnight boundary the two
+		// can disagree by a day) but it is a behavioural deviation, and this package's job is
+		// to be the contract the Rust port is written against — so the double sampling is
+		// reproduced and gate 04 pins the call count with a fake luxon, which is the only way
+		// to test a clock at all.
+		const luxon = this.luxon;
+		const luxonSandboxKeys = {
+			DateTime: luxon?.DateTime,
+			Interval: luxon?.Interval,
+			Duration: luxon?.Duration,
+			$now: luxon ? luxon.DateTime.now() : undefined,
+			$today: luxon
+				? luxon.DateTime.now().set({ hour: 0, minute: 0, second: 0, millisecond: 0 })
+				: undefined,
+		};
+		for (const [symbol, value] of Object.entries(luxonSandboxKeys)) {
+			if (value !== undefined) {
+				base[symbol] = value;
+				continue;
 			}
+			Object.defineProperty(base, symbol, {
+				enumerable: true,
+				get() {
+					throw new NotPortedError(
+						symbol,
+						'workflow-data-proxy.ts:1535-1543 — needs luxon; this package injects it as `luxon` (see reference-runtime.mjs)',
+					);
+				},
+			});
 		}
 
 		const throwOnMissingExecutionData = opts?.throwOnMissingExecutionData ?? true;

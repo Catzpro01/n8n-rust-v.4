@@ -47,10 +47,10 @@ operations:
   # - docs/isolation/node-execution-context.md
   # - scripts/run-engine-tests.sh, root package.json verify:engine[:offline]
   - name: run_tests
-    args: { command: "npm run verify:engine", expect: "108/108 pass" }
+    args: { command: "npm run verify:engine", expect: "117/117 pass" }
   - name: run_tests
-    args: { command: "npm run verify:engine:offline", expect: "108/108 pass, oracle gate reports NOT RUN" }
-  # Counts grew 82 → 103 → 108 as lanes were added (evidence gate 08 + the JMESPath port).
+    args: { command: "npm run verify:engine:offline", expect: "117/117 pass, oracle gate reports NOT RUN" }
+  # Counts grew 82 → 103 → 108 → 117 as lanes were added (evidence gate 08 + the JMESPath port).
   # The coordination subjects below keep the numbers as they were sent; this comment is the
   # reconciliation, so nobody has to guess whether the task file was left stale on purpose.
   - name: read_messages

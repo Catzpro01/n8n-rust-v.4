@@ -152,7 +152,10 @@ const MODULES = [
 		// jmespath module (see the ctor's 15th argument); moved out of `deferred` when
 		// the seam started resolving it, because "inert without an injected capability"
 		// is not the same claim as "not ported".
-		injected: { jmespath: 'reference-runtime.mjs seam → ctor; without it the accessors raise' },
+		injected: {
+			jmespath: 'reference-runtime.mjs seam → ctor; without it $jmesPath/$jmespath raise',
+			luxon: 'same seam; without it $now/$today/DateTime/Interval/Duration raise instead of answering undefined',
+		},
 		reference: [
 			{ pkg: 'n8n-workflow', path: `${WF}/workflow-data-proxy.js` },
 			{ pkg: 'n8n-workflow', path: `${WF}/workflow-data-proxy-helpers.js` },
@@ -161,8 +164,7 @@ const MODULES = [
 			'$($x).pairedItem': 'paired-item resolution — paired-item LEGO (see docs)',
 			getPairedItem: 'paired-item LEGO',
 			$tool: 'tool/agent runtime (agent LEGO)',
-			$agentInfo: 'agent-runtime metadata',
-			DateTime: 'luxon-dependent; available through the injected luxon seam',
+			$agentInfo: 'only the agent-node branch of workflow-data-proxy.ts:1061 is missing; the non-agent answer (undefined) is ported and a real agent node raises instead of answering nothing',
 			agentInfo: 'workflow-data-proxy.ts:1061 agentInfo getter — needs the agent-runtime LEGO',
 			buildAgentToolInfo: 'workflow-data-proxy.ts agent tool metadata — agent-runtime LEGO',
 			$fromAI:
@@ -344,7 +346,10 @@ for (const cls of CLASSES) {
 	const refSuper = superOf(Ref);
 	const mySuper = superOf(Mine);
 	manifest.classes[cls.name] = {
-		module: `src/${cls.my}.mjs`,
+		// `cls.my` already carries the extension — the doubled `…mjs.mjs` this line used to
+		// produce pointed at a file that does not exist, which is worse than useless in a
+		// manifest the Rust port reads to find the reference for each symbol.
+		module: `src/${cls.my}`,
 		referenceExtends: refSuper,
 		portExtends: mySuper,
 		hierarchyMatches: refSuper === mySuper,

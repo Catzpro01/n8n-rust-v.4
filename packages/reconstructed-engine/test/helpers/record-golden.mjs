@@ -38,7 +38,7 @@ import { resolvePath } from '../helpers/serialize.mjs';
  * where the runtime is installed. Offline these must raise — which is asserted; they are
  * never downgraded to "no check".
  */
-const INJECTED_CAPABILITY_ROOTS = new Set(['$jmesPath', '$jmespath', '$now', '$today', 'DateTime']);
+const INJECTED_CAPABILITY_ROOTS = new Set(['$jmesPath', '$jmespath', '$now', '$today', 'DateTime', 'Duration', 'Interval']);
 function needsInjectedCapability(path) {
 	return Array.isArray(path) && typeof path[0] === 'string' && INJECTED_CAPABILITY_ROOTS.has(path[0]);
 }

@@ -185,6 +185,48 @@ const MUTATIONS = [
 		],
 		note: 'the natural "fail fast on the missing dependency" refactor. It changes WHICH error a malformed call raises on a host without jmespath, and the reference — and therefore this port — answers with the argument error regardless of the module. That is what lets the golden compare the bad-argument probes even in offline mode',
 	},
+	{
+		name: 'luxon keys answer undefined when nothing is injected',
+		file: 'src/workflow-data-proxy.mjs',
+		from: [
+			'\t\t\tif (value !== undefined) {',
+			'\t\t\t\tbase[symbol] = value;',
+			'\t\t\t\tcontinue;',
+			'\t\t\t}',
+		],
+		to: ['\t\t\tbase[symbol] = value;'],
+		note: "the ISSUE-016 pattern in its purest form: five sandbox keys that exist and answer nothing. `{{ DateTime.now() }}` then fails as \"Cannot read properties of undefined\" instead of naming the missing capability, and every surface audit still reports the key as present",
+	},
+	{
+		name: "$today derived from $now's clock sample",
+		file: 'src/workflow-data-proxy.mjs',
+		from: ['\t\t\t\t? luxon.DateTime.now().set({ hour: 0, minute: 0, second: 0, millisecond: 0 })'],
+		to: ['\t\t\t\t? base.$now.set({ hour: 0, minute: 0, second: 0, millisecond: 0 })'],
+		note: 'reads like a fix for a double-sampling bug — across midnight the reference CAN hand out a $today one day ahead of $now — but this port is the contract for the Rust rewrite, so the behaviour is reproduced and the call count is asserted against a fake luxon, since a real clock cannot be pinned',
+	},
+	{
+		name: 'Settings.defaultZone write skipped as global mutation',
+		file: 'src/workflow-data-proxy.mjs',
+		from: ['\t\t\tthis.luxon.Settings.defaultZone = this.timezone;'],
+		to: ['\t\t\t// not written: mutating a module-level default is bad practice'],
+		note: 'correct engineering opinion, wrong port: workflow-data-proxy.ts:90 does exactly this, and it is why `{{ DateTime.fromISO(x).toISO() }}` prints the WORKFLOW timezone. Dropping it changes every date expression silently; the isolation ledger (ISSUE-006) is where the ambient write is tracked, not by hiding it',
+	},
+	{
+		name: '$agentInfo flattened back to a constant undefined',
+		file: 'src/workflow-data-proxy.mjs',
+		from: ['\t\t\t\treturn that.agentInfo();'],
+		to: ['\t\t\t\treturn undefined;'],
+		note: 'the corpus has no agent node, and for non-agent nodes undefined IS the reference answer (workflow-data-proxy.ts:1062) — so this mutant keeps every fixture green and is visible only because gate 04 also exercises the agent node type',
+	}
+,
+	{
+		name: 'defaultZone written only if unset (polite version)',
+		file: 'src/workflow-data-proxy.mjs',
+		from: ['\t\t\tthis.luxon.Settings.defaultZone = this.timezone;'],
+		to: ['\t\t\tif (!this.luxon.Settings.defaultZone) this.luxon.Settings.defaultZone = this.timezone;'],
+		note: 'the reasonable-looking courtesy fix — do not stomp a zone another workflow already installed. It is a real behavioural difference: the reference rewrites the global on EVERY construction, so the last proxy built wins for all live proxies. gate 04\'s two-proxy test is what makes this visible; no single-proxy test can see it',
+	}
+
 ];
 
 /** Files the mutants are judged by. Gate 07 itself is excluded (it would recurse). */

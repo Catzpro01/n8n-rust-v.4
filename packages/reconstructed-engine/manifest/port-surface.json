@@ -3,7 +3,7 @@
   "$source": "GENERATED from the pinned reference runtime — DO NOT EDIT. Re-record after touching src/. Test 05 re-derives these lists live and fails on drift; test 05 also works offline against this file.",
   "$runtimeVersion": "2.9.1",
   "$referenceRootHash": "f8da35180669d79801601bfeb025bbe418c8f00346b1358c3ba3dc68b42da732",
-  "$recordedAt": "2026-09-17T19:24:24.710Z",
+  "$recordedAt": "2026-09-17T19:46:52.984Z",
   "legend": {
     "ported": "exported by my module with the reference name",
     "deferred": "NOT implemented: must raise NotPortedError, never a value (anti-ISSUE-016)",
@@ -458,8 +458,7 @@
         "$($x).pairedItem": "paired-item resolution — paired-item LEGO (see docs)",
         "getPairedItem": "paired-item LEGO",
         "$tool": "tool/agent runtime (agent LEGO)",
-        "$agentInfo": "agent-runtime metadata",
-        "DateTime": "luxon-dependent; available through the injected luxon seam",
+        "$agentInfo": "only the agent-node branch of workflow-data-proxy.ts:1061 is missing; the non-agent answer (undefined) is ported and a real agent node raises instead of answering nothing",
         "agentInfo": "workflow-data-proxy.ts:1061 agentInfo getter — needs the agent-runtime LEGO",
         "buildAgentToolInfo": "workflow-data-proxy.ts agent tool metadata — agent-runtime LEGO",
         "$fromAI": "workflow-data-proxy.ts:1038-1108 handleFromAi — fromAI placeholder parsing belongs to the Expression LEGO. The three sandbox keys ($fromAI/$fromAi/$fromai) exist and raise, so a workflow cannot read a silent undefined."
@@ -526,7 +525,7 @@
   },
   "classes": {
     "WorkflowDataProxy": {
-      "module": "src/workflow-data-proxy.mjs.mjs",
+      "module": "src/workflow-data-proxy.mjs",
       "referenceExtends": null,
       "portExtends": null,
       "hierarchyMatches": true,
@@ -547,6 +546,7 @@
         "workflowGetter"
       ],
       "portedFromThisClass": [
+        "agentInfo",
         "getDataProxy",
         "getNodeExecutionData",
         "getNodeExecutionOrPinnedData",
@@ -565,7 +565,7 @@
       "extras": []
     },
     "BaseExecuteContext": {
-      "module": "src/node-execution-context.mjs.mjs",
+      "module": "src/node-execution-context.mjs",
       "referenceExtends": "NodeExecutionContext",
       "portExtends": "NodeExecutionContext",
       "hierarchyMatches": true,
@@ -615,7 +615,7 @@
       "extras": []
     },
     "ExecuteContext": {
-      "module": "src/node-execution-context.mjs.mjs",
+      "module": "src/node-execution-context.mjs",
       "referenceExtends": "BaseExecuteContext",
       "portExtends": "BaseExecuteContext",
       "hierarchyMatches": true,
@@ -652,7 +652,7 @@
       "extras": []
     },
     "NodeExecutionContext": {
-      "module": "src/node-execution-context.mjs.mjs",
+      "module": "src/node-execution-context.mjs",
       "referenceExtends": null,
       "portExtends": null,
       "hierarchyMatches": true,
