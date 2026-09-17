@@ -1,5 +1,6 @@
 import { getGlobalState } from './global-state';
 import { resolveGraphPort } from './graph-port';
+import { resolveExpressionPort, type ExpressionInstance, type ExpressionPort } from './expression-port';
 import {
 	NODES_WITH_RENAMABLE_CONTENT,
 	NODES_WITH_RENAMABLE_FORM_HTML_CONTENT,
@@ -69,13 +70,16 @@ import type {
  * | :--- | :--- | :--- |
  * | graph traversal + destination index | CD-02, `connection.contract.md` §7 | `packages/connection-lego` (resolved at runtime, see `graph-port.ts`) |
  * | `NodeHelpers.getNodeParameters` | CD-05, `node.contract.md` §2 | injected via `WorkflowParameters.nodeParametersPort` |
- * | `Expression` | `expression.contract.md` | `packages/expression-lego` — not instantiated here |
+ * | `Expression` (the last instance property) | `expression.contract.md` | `packages/expression-lego` (resolved eagerly in the constructor, see `expression-port.ts`, TASK-WORKFLOW-MODEL-04) |
  *
  * Two additive, behaviour-preserving extensions versus the reference constructor: the optional
- * `graphPort` and `nodeParametersPort` parameters. `expression` is deliberately **not** created —
- * the Expression LEGO owns it, and constructing one here would couple two LEGOs for a member no
- * fixture observes. If a node's type *is* resolvable and no `nodeParametersPort` was injected, the
- * constructor throws rather than silently skipping default-parameter application.
+ * `graphPort` and `nodeParametersPort` parameters (plus the `expressionPort` injection of the
+ * expression port). `expression` **is** wired like the reference (`workflow.ts:134` — the last
+ * constructor statement, `this.expression = new Expression(this)`): resolution failure throws a
+ * loud error naming the prerequisite (`npm install --prefix packages/expression-lego`), never a
+ * silent `undefined` (the failure mode ISSUE-027 was about). If a node's type *is* resolvable and
+ * no `nodeParametersPort` was injected, the constructor throws rather than silently skipping
+ * default-parameter application.
  */
 
 export interface WorkflowParameters {
@@ -94,6 +98,8 @@ export interface WorkflowParameters {
 	nodeHelpersPort?: NodeHelpersPort;
 	/** @deprecated kept as an alias of `nodeHelpersPort.getNodeParameters`. */
 	nodeParametersPort?: NodeHelpersPort['getNodeParameters'];
+	/** The `workflow.expression` port — defaults to `packages/expression-lego` (TASK-WORKFLOW-MODEL-04). */
+	expressionPort?: ExpressionPort;
 }
 
 /** The 13 names `renameNode` refuses, verbatim from `workflow.ts:394-408`. */
@@ -125,6 +131,13 @@ export class Workflow {
 	connectionsByDestinationNode: IConnections = {};
 
 	nodeTypes: INodeTypes;
+
+	/**
+	 * The last reference instance property (`workflow.ts:72`, assigned last in the
+	 * constructor at `:134`) — an `Expression` from the Expression LEGO holding the
+	 * aggregate itself. Resolved eagerly through `expression-port.ts`.
+	 */
+	expression: ExpressionInstance;
 
 	active: boolean;
 
@@ -202,6 +215,11 @@ export class Workflow {
 		});
 
 		this.timezone = this.settings.timezone ?? getGlobalState().defaultTimezone;
+
+		// The reference assigns `expression` as the LAST constructor statement
+		// (`workflow.ts:134`). Resolution failure throws a loud error naming the
+		// prerequisite — never a silent `expression === undefined` (ISSUE-027 class).
+		this.expression = new (resolveExpressionPort(parameters.expressionPort).Expression)(this);
 	}
 
 	// Save nodes in workflow as object to be able to get the nodes easily by their name.
