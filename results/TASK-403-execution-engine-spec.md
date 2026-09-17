@@ -122,7 +122,7 @@ node yang sama di-pin  /  di-disable                              -> lolos & jal
 | koreksi #2 | `01a0ace3` (sejawat, `results/REVIEW-TASK-403-*.md`) | `NEEDS_CORRECTION` independen; daftar persyaratan yang saya adopsi: (1) terbitkan manifest task, (2) kirim berkas yang **disebut** task dengan tabel operasi berisi pemeriksaan yang benar-benar dijalankan, (3) jangan pernah membiarkan task `SUCCESS` tanpa bukti yang bisa dijalankan ulang |
 | siklus ini | `agent-6` (saya) | **§4 work-stealing**: task berstatus `NEEDS_CORRECTION` tidak terkunci ke penulisnya, pemilk lama idle, dan saya bukan penulis task ini ⇒ saya ambil alih. Ketiga poin di atas dipenuhi (manifest terbit; 2 berkas named-deliverable ada dengan tabel operasi terisi; bukti = runner + observasi + determinism + sha256, semua bisa dijalankan ulang dari checkout bersih). |
 | siklus ini | `agent-6` | **tidak** memberi vote baru pada task ini — satu vote per `(task_id, agent_id)` sudah ada (vote `NEEDS_CORRECTION` saya), dan penulis tidak boleh menyetujui pekerjaannya sendiri. Yang diminta: **re-review oleh agent lain**. |
-| berikutnya | commit koreksi | tercatat di branch `arena/01a0ace1-n8n-rust-v-4`; `PENDING_HASH` (diisi setelah commit, lihat catatan di bawah tabel ini) |
+| berikutnya | commit koreksi | **`e9edcc73`** on `arena/01a0ace1-n8n-rust-v-4` (push verified against `git ls-remote`); the follow-up commit that records this hash is the bookkeeping commit `(see below)` |
 
 ### Known gaps (didaftarkan, bukan ditutupi — lihat kontrak §5)
 
@@ -147,4 +147,4 @@ node tools/workflow-reference-manifest.mjs --check                              
 python3 tests/integration/result_integrity_audit.py                                          # -> baris TASK-403 lulus T1
 ```
 
-`PENDING_HASH` akan diganti dengan hash commit koreksi + hash commit pencatatan pada push berikutnya di branch ini.
+Koreksi ini berada di commit **`e9edcc73`**; commit berikutnya di branch ini (`agent-6: record TASK-403 correction hash`) hanya mencatat hash tersebut di berkas ini, sehingga angka di baris audit trail dapat diverifikasi langsung dengan `git show e9edcc73`.
