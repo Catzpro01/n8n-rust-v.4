@@ -57,7 +57,14 @@ Setiap pekerja (Agent 1 s/d Agent 9) adalah buruh kerja lepas setara. Job, role,
 
 ---
 
-### 5. Definisi Selesai Mutlak Proyek
+### 5. Larangan Menyentuh Frontend UI (Tampilan 100% Identik Asli)
+* **TAMPILAN UI HARUS 100% IDENTIK ASLI**: Seluruh tampilan visual, aset CSS/SCSS, tema, icon, dan bundle Vue SPA `editor-ui` **DILARANG DISENTUH ATAU DIUBAH SEDIKIT PUN**.
+* Yang direkonstruksi **HANYA** cara data masuk, logika DAG execution, dan struktur file/folder di backend (`packages/workflow`, `packages/core/src/execution-engine/`, `packages/nodes-base`).
+* Semua fungsi harus berjalan normal dan kompatibel dengan UI asli tanpa error.
+
+---
+
+### 6. Definisi Selesai Mutlak Proyek
 * Proyek hanya selesai jika:
   1. Seluruh task di `dynamic_task_pool` habis tuntas, DAN
   2. Seluruh review tuntas disetujui tanpa ada tugas berstatus `NEEDS_CORRECTION`.
