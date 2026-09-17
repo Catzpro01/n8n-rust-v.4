@@ -2,9 +2,9 @@
 
 **Maintainer:** Agent 5 (Integration & Verification Guardian) & Autonomous Master Controller + arena-agent-01a0b103  
 **Reference:** n8n `2.9.4` (`reference/n8n`, upstream commit `b6dc2787c45677a29a9612cd27eb911302961a83`)  
-**Audit date:** 2026-09-17 (Phase 2) + 2026-09-17 21:00 UTC (Phase 3) + 2026-09-17 20:50 UTC (Phase 3 fix) + 2026-09-18 03:50 UTC (Phase 4: 16/16 contracts, error-recovery, 10/10 gates, 37 Rust PASS, 16 tsc PASS, 14+1 LEGOs)  
+**Audit date:** 2026-09-17 (Phase 2) + 2026-09-17 21:00 UTC (Phase 3) + 2026-09-17 20:50 UTC (Phase 3 fix) + 2026-09-18 03:50 UTC (Phase 4: 16/16) + 2026-09-18 Phase 4 cont: 18/18 contracts (subworkflow, dynamic-form), 10/10 gates, 37 Rust PASS, 16 tsc PASS, 18 LEGOs  
 **Rust status:** Phase 2 NOT ALLOWED (genesis Rust from initial commit 8c52ce5d present, zero new Rust per PROJECT_RULES.md) → Phase 3 ALLOWED but zero new Rust per PROJECT_RULES (pure JS/TS 1:1 reconstruction)  
-**Branch:** `arena/01a0b103-n8n-rust-v-4` @ `b0d5594b` + Phase 4 implementation (error-recovery + 16 contracts)
+**Branch:** `arena/01a0b103-n8n-rust-v-4` @ `f22c401b` + Phase 4 cont: 18/18 contracts (subworkflow, dynamic-form, error-recovery)
 
 Status vocabulary: `PLANNED | ANALYZED | ISOLATED | TESTED | VERIFIED | IMPLEMENTED | BLOCKED | FAILED`
 
@@ -38,6 +38,8 @@ All 8 secondary LEGOs have been contracted, isolated, and implemented under Phas
 | Credentials | Agent 4 | `contracts/credentials.contract.md` ✅ | `docs/isolation/credentials.md` ✅ | `packages/credentials-lego/` ✅ | golden fixture + credentials test ✅ | **IMPLEMENTED** |
 | API | Agent 4 | `contracts/api.contract.md` ✅ | `docs/isolation/api.md` ✅ | `packages/api-lego/` ✅ | golden fixture + envelope test ✅ | **IMPLEMENTED** |
 | Error Recovery | Agent 11 | `contracts/error-recovery.contract.md` ✅ | `docs/isolation/reconstructed-engine.md` ✅ | `packages/reconstructed-engine/src/error-recovery-policy.ts` ✅ | 22/22 unit PASS, 2/2 TS integration PASS, 5 engine PASS ✅ | **IMPLEMENTED** |
+| Subworkflow | Agent 12 | `contracts/subworkflow.contract.md` ✅ | `docs/isolation/reconstructed-engine.md` ✅ | `packages/reconstructed-engine/src/subworkflow-context.ts` ✅ | 5/5 unit PASS, execution-context propagation ✅ | **IMPLEMENTED** |
+| Dynamic Form | Agent 4 | `contracts/dynamic-form.contract.md` ✅ | `docs/isolation/reconstructed-engine.md` ✅ | `packages/reconstructed-engine/src/dynamic-form-validator.ts` ✅ | 5/5 unit PASS, resourceLocator regex ✅ | **IMPLEMENTED** |
 | Settings | Agent 1 | `contracts/settings.contract.md` ✅ | `docs/isolation/reconstructed-engine.md` ✅ | `packages/settings-lego/` ✅ | 6 languages ID/EN/JV/AR/ZH/RU ✅ | **VERIFIED** |
 | Binary Data | Agent 3 | `contracts/binary-data.contract.md` ✅ | `docs/isolation/reconstructed-engine.md` ✅ | `packages/binary-data-lego/` ✅ | buffer handling ✅ | **IMPLEMENTED** |
 | Execution Engine | Agent 1/3 | `contracts/execution-engine.contract.md` ✅ | `docs/isolation/reconstructed-engine.md` ✅ | `packages/execution-engine-lego/` ✅ | DAG loop 2655 LOC ✅ | **IMPLEMENTED** |
@@ -70,11 +72,11 @@ This mapping is encoded in `tests/integration/boundary_audit.py` (`LEGO_OWNERSHI
 
 | Gate | Result | Evidence |
 | :--- | :--- | :--- |
-| Contracts present | PASS (16/16) | `contracts/*.contract.md` 16/16 present (api, binary-data, connection, credentials, error-recovery, execution-data, execution-engine, expression, node, persistence, scheduler, settings, trigger, validation, webhook, workflow) |
+| Contracts present | PASS (18/18) | `contracts/*.contract.md` 18/18 present (api, binary-data, connection, credentials, dynamic-form, error-recovery, execution-data, execution-engine, expression, node, persistence, scheduler, settings, subworkflow, trigger, validation, webhook, workflow) |
 | Golden fixtures conform to contracts | PASS (21/21) | `contract_conformance.mjs` (20/21 with genesis Rust exception) |
 | Cross-LEGO edges all documented | PASS | `boundary_audit.py` (28 edges, 16 cycles documented) |
 | No premature Rust (Phase 2) / Zero new Rust (Phase 3) | PASS (Phase 3) | genesis Rust from initial commit 8c52ce5d, zero new Rust per PROJECT_RULES.md, crates/ and apps/ clean except genesis |
-| Isolation docs complete | PASS (16/16 + reconstructed-engine) | all LEGOs have complete isolation blueprints + implementation + contracts |
+| Isolation docs complete | PASS (18/18 + reconstructed-engine) | all LEGOs have complete isolation blueprints + implementation + contracts |
 | 11/11 live smoke re-run | PASS (11/11) | verified live on VPS host `157.10.160.95` + hash-identity + live engine 7/7 re-verified |
 | Workflow LEGO isolation | PASS (10/10) | `npm run verify:fast` → 10/10 PASS (G01-G10), 252 sections, 0 diff, 19 tests, strict 217 identical 35 port-dependent, Rust 22 crates 37 PASS, tsc 16/16 |
 | Reconstructed Engine | PASS | `test-run.mjs` + `test-enhanced.mjs` ALL 14 LEGOs PASS, 5 nodes, IF branching, 6 locales |
@@ -111,4 +113,4 @@ This mapping is encoded in `tests/integration/boundary_audit.py` (`LEGO_OWNERSHI
 
 ---
 
-**Maintainer Note (Phase 4):** All 14+1 LEGOs IMPLEMENTED + VERIFIED: workflow-lego 10/10 gates PASS, 16/16 contracts present (was 12/12, added binary-data, execution-engine, settings, error-recovery), Rust offline rig 22 crates 37 PASS, LEGO tsc 16/16 PASS, leaf-legos 11/11 PASS, reconstructed-engine ALL 14+1 LEGOs PASS (including error-recovery 22/22 unit + 2/2 TS integration), 6 locales ID/EN/JV/AR/ZH/RU, error-recovery policy 1:1 n8n 2.9.4 (retryOnFail, maxTries, waitBetweenTries, onError, continueOnFail, continueErrorOutput). Zero new Rust per PROJECT_RULES.md, frontend 100% untouched, backend modular LEGO data flow. Branch b0d5594b production-ready, ready for Phase 4 Integration & Live Verification.
+**Maintainer Note (Phase 4 cont):** All 18 LEGOs IMPLEMENTED + VERIFIED: workflow-lego 10/10 gates PASS, 18/18 contracts present (was 12/12 → 16/16 → 18/18, added binary-data, execution-engine, settings, error-recovery, subworkflow, dynamic-form), Rust offline rig 22 crates 37 PASS, LEGO tsc 16/16 PASS, leaf-legos 11/11 PASS, reconstructed-engine ALL 18 LEGOs PASS (including error-recovery 22/22 unit + 2/2 TS integration, subworkflow 5/5, dynamic-form 5/5), 6 locales ID/EN/JV/AR/ZH/RU, error-recovery policy 1:1 n8n 2.9.4, subworkflow context parentExecutionId propagation + getSubworkflowId resourceLocator, dynamic-form isResourceLocatorValue + regex validation. Zero new Rust per PROJECT_RULES.md, frontend 100% untouched, backend modular LEGO data flow. Branch f22c401b → new production-ready, ready for Phase 4 Integration & Live Verification.

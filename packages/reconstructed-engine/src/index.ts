@@ -56,3 +56,9 @@ export const ENGINE_PROVENANCE = {
   backend: 'modular-lego-data-flow',
   rust: 'zero-rust',
 } as const;
+
+// Subworkflow LEGO (parent-child propagation)
+export * as SubworkflowLEGO from './subworkflow-context';
+
+// Dynamic Form LEGO (resource locator, resource mapper)
+export * as DynamicFormLEGO from './dynamic-form-validator';
