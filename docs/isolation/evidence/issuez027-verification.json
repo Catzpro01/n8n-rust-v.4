@@ -1,6 +1,6 @@
 {
 	"tool": "issuez027-falsify",
-	"generatedAt": "2026-09-17T22:04:02.157Z",
+	"generatedAt": "2026-09-17T22:14:08.900Z",
 	"issue": "ISSUE-027 — TS5097 in the isolated unit (npm run verify G06/G08)",
 	"rootCause": "LEGO sources use .ts-extension relative specifiers (valid under Node type-stripping); .extract/tsconfig.json is CommonJS + declaration:true and cannot set allowImportingTsExtensions (TS5096).",
 	"fix": "tools/workflow-isolation-extract.mjs normalizes those specifiers in the copied LEGO sources (cherry-picked from arena/01a0b101 @ 1f86b03e).",

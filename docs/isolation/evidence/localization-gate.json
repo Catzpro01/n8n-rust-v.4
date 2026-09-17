@@ -1,6 +1,6 @@
 {
   "gate": "phase-4c-native-localization",
-  "generatedAt": "2026-09-17T22:04:54.554Z",
+  "generatedAt": "2026-09-17T22:14:36.785Z",
   "node": "v22.22.3",
   "modules": [
     "packages/workflow-lego/src/settings-localization-adapter.ts (phase 4A)",
@@ -138,14 +138,40 @@
     "pass": 79,
     "fail": 0,
     "exitCode": 0,
-    "durationMs": 557
+    "durationMs": 471
+  },
+  "isolatedUnitCompile": {
+    "typescriptAvailable": true,
+    "ok": true,
+    "detail": "extract + tsc -p .extract/tsconfig.json → 0 errors (ISSUE-027 normalization: 11 .ts specifier(s) across 4 file(s), matching the 11 present in packages/workflow-lego/src)",
+    "tsSpecifiersInLegoSources": 11,
+    "normalizationsByFile": [
+      {
+        "file": "src/lego/api-error-response.ts",
+        "specifiers": 3
+      },
+      {
+        "file": "src/lego/execution-log-record.ts",
+        "specifiers": 3
+      },
+      {
+        "file": "src/lego/localization-envelope.ts",
+        "specifiers": 2
+      },
+      {
+        "file": "src/lego/localization-vocabulary.ts",
+        "specifiers": 3
+      }
+    ],
+    "unNormalizableTsSpecifiers": [],
+    "issue": "ISSUE-027 (extractor specifier normalization, cherry-picked from 1f86b03e on arena/01a0b101)"
   },
   "checks": [
     {
       "id": "G1",
       "name": "localization test suites pass (4C runtime + 4E envelope + 4F run path)",
       "ok": true,
-      "detail": "79/79 PASS in 557ms"
+      "detail": "79/79 PASS in 471ms"
     },
     {
       "id": "G2",
@@ -236,6 +262,12 @@
       "name": "catalogue ownership: a superset 4B keeps its keys, divergence is reported",
       "ok": true,
       "detail": "0 overlaps with the current 4B, rule proven against a grown catalogue"
+    },
+    {
+      "id": "G16",
+      "name": "localization modules keep the isolated unit compilable (G06/G08 of npm run verify)",
+      "ok": true,
+      "detail": "extract + tsc -p .extract/tsconfig.json → 0 errors (ISSUE-027 normalization: 11 .ts specifier(s) across 4 file(s), matching the 11 present in packages/workflow-lego/src)"
     }
   ],
   "verdict": "PASS",
