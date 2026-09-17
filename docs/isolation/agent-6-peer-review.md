@@ -103,3 +103,49 @@ review of Agent 3's `docs/isolation/expression.md` §5 is limited to the one ref
 [`expression-syntax-pipeline.md`](expression-syntax-pipeline.md) (errors do **not** escape `renderExpression` as
 `null`; the `shouldWrapInTry` gate runs on the post-polyfill AST, so runtime errors degrade to `undefined` — verified
 with `{{ nope?.x }}`, `{{ new nope() }}`, `{{ nope() }}` in `12B`).
+
+---
+
+## Second pass — cross-branch check (TAHAP 2 breadth + TAHAP 3)
+
+Peer work is not only in `results/`: nine sibling Arena branches exist on `origin`. Method (read-only,
+reproducible):
+
+```bash
+for b in 01a0abf6 01a0ac04 01a0ac05 01a0ac06 01a0ac12 01a0ac62 01a0ac85 01a0ace3 01a0ace4; do
+  git fetch origin "refs/heads/arena/$b-n8n-rust-v-4:refs/remotes/peers/$b"; done
+# per ref: results/*.md added since origin/main -> STATUS + ops-row count (T1 rule),
+#          plus git diff --name-only origin/main...ref -- crates apps
+```
+
+| Peer ref | new `results/*.md` | SUCCESS with empty ops table | `crates/**`/`apps/**` changed |
+| :--- | ---: | ---: | ---: |
+| `01a0abf6`, `01a0ac04`, `01a0ac62` | 0 | 0 | 0 |
+| `01a0ac05`, `01a0ac06`, `01a0ac12`, `01a0ac85` | 1 | 0 | 0 |
+| `01a0ace3` | 6 (all `REVIEW-*` + `TASK-303-validation`) | 0 | 2 |
+| `01a0ace4` | 6 (`TASK-404`…`TASK-408` + review) | 0 | 10 |
+
+**TAHAP 3 (feedback on my own tasks): none.** `git grep -e "PIPE-1" -e "agent-6" -e "Agent 6"` over every
+fetched peer ref returns nothing, so there is no protest or correction request against `TASK-PIPE-12` /
+`TASK-PIPE-13` to resolve. Both stay open pending consensus, and they are held to the same bar as the
+tasks above — which is why they carry filled operation tables and a machine oracle.
+
+**TASK-403 now has two independent `NEEDS_CORRECTION` votes.** `results/REVIEW-TASK-403-execution-engine-spec.md`
+on `arena/01a0ace3-n8n-rust-v-4` reaches the same verdict on the same three rubric points, from a
+different starting assumption, and records the same Supabase limitation ("voting `task_consensus_votes`
+tidak dapat dikirim dari sandbox ini karena endpoint Supabase tidak dapat dijangkau (TLS connection
+failure)"). Their required correction is **stricter** than mine and I adopt it as the binding set:
+(1) publish a task manifest with scope + `allowed_paths`/`forbidden_paths`, (2) produce a reviewable
+spec/contract deliverable, (3) fill the operation evidence — or move the status off `SUCCESS`,
+"jangan mengesahkan laporan kosong".
+
+**Phase boundary status (matters to my two contracts).** `arena/01a0ace4` opened **Phase 3** formally
+(`docs/isolation/PHASE-3-OPENING.md`, phase-aware gate guards, `cargo test` wired into the gate, Rust
+under `crates/n8n-{workflow,connection,validation}` with a 14/14 parity suite against the shared TS
+oracle). That branch is **not merged** — `origin/main` is still `b809399b`, where the master map states
+`Rust status: NOT ALLOWED in Phase 2`. So my mandate (isolation only, `crates/**` off-limits) is
+unchanged this cycle, and I deliberately added **no** Rust. What Phase 3 changes for my slice is the
+audience: `contracts/variable-lookup.contract.md` §8 and `contracts/expression-syntax.contract.md` §8
+are written as the exact consumer contract a Phase-3 `n8n-expression` port must satisfy, and
+`13E_gap_closure` now pins the four behaviours that are easiest to get wrong while porting (`$fromAI`
+source selection, `$tool` fallback, eager `$agentInfo`, lineage `sourceOverwrite` + its crash).
