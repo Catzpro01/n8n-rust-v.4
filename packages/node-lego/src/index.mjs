@@ -17,8 +17,6 @@ export { checkConditions, getNodeFeatures } from './conditions.mjs';
 export { displayParameter, displayParameterPath, getPropertyValues } from './display.mjs';
 export { isNodeConnected, isTriggerLikeNode, validateNodeCredentials } from './node-validation.mjs';
 export { getNodeParameters } from './parameter-resolution.mjs';
-export { getNodeParametersIssues, getParameterIssues, mergeIssues } from './parameter-issues.mjs';
-export { validateFieldType } from './field-validation.mjs';
 export {
 	assertIsValidNodeParameterValueType,
 	getParameterValueByPath,
@@ -57,3 +55,33 @@ export {
 	makeNodeName,
 	mergeNodeProperties,
 } from './properties.mjs';
+export {
+	FilterError,
+	validateFilterParameter,
+} from './filter-parameter.mjs';
+export {
+	getContext,
+	getNodeParametersIssues,
+	getParameterIssues,
+	mergeIssues,
+} from './parameter-issues.mjs';
+export {
+	defaultDateTimeFactory,
+	defaultParseJSObject,
+	getValueDescription,
+	isBinaryValue,
+	jsonParse,
+	tryToParseAlphanumericString,
+	tryToParseArray,
+	tryToParseBinary,
+	tryToParseBoolean,
+	tryToParseDateTime,
+	tryToParseJsonToFormFields,
+	tryToParseJwt,
+	tryToParseNumber,
+	tryToParseObject,
+	tryToParseString,
+	tryToParseTime,
+	tryToParseUrl,
+	validateFieldType,
+} from './type-validation.mjs';

@@ -40,7 +40,15 @@ test('fixedCollection enforces field counts and recursively checks required chil
 test('resourceMapper validates required schema fields and declared types', () => {
 	const property = { name: 'map', displayName: 'Map', type: 'resourceMapper', typeOptions: { resourceMapper: { mode: 'add', fieldWords: { singular: 'column' } } } };
 	const value = { mappingMode: 'defineBelow', schema: [{ id: 'name', required: true, type: 'string' }, { id: 'age', type: 'number' }], value: { age: 'not-number' } };
-	assert.deepEqual(getParameterIssues(property, { map: value }, '', node(), null), { parameters: { 'map.name': ['Column "name" is required'], 'map.age': ["'age' expects a number but we got 'not-number'"] } });
+	// REF-verified detail (differential N22): the mapper branch materialises an empty
+	// `parameters[<name>]` array next to the per-field keys.
+	assert.deepEqual(getParameterIssues(property, { map: value }, '', node(), null), {
+		parameters: {
+			map: [],
+			'map.name': ['Column "name" is required'],
+			'map.age': ["'age' expects a number but we got 'not-number'"],
+		},
+	});
 });
 
 test('validateType reports invalid values but accepts unresolved expressions', () => {

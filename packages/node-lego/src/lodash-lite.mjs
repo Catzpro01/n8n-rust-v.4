@@ -67,3 +67,11 @@ export function isEqual(a, b) {
 
 	return aKeys.every((key) => Object.hasOwn(b, key) && isEqual(a[key], b[key]));
 }
+
+/**
+ * lodash `isObject` — the reference's `type-validation.ts` uses it for the `object` field
+ * type check. Same verdicts: objects, arrays and functions are objects, `null` is not.
+ */
+export function isObject(value) {
+	return value !== null && (typeof value === 'object' || typeof value === 'function');
+}

@@ -1,0 +1,139 @@
+id: TASK-413-phase3-node-parameter-issues
+agent: arena-worker
+lego: node
+module: node-parameter-issues
+phase: 3
+title: "Node LEGO: field-type validation + parameter-issues engine — validateFieldType/tryToParse*, validateFilterParameter, getNodeParametersIssues/getParameterIssues/mergeIssues/getContext (ref: type-validation.ts L15-481, filter-parameter.ts L23-450, node-helpers.ts L505-1635)"
+status: SUBMITTED_FOR_REVIEW
+
+# Context: TASK-409/411 made the Node Model runnable, but the *validation* half was still
+# pinned-out (contract §12.2): nothing could answer "is this node configured correctly?".
+# This task closes that gap — the surface the editor's issue badges and the workflow
+# validation pass consume — plus the two support modules it needs (field-type validation and
+# filter-parameter validation). Everything is differentially compared against the published
+# `n8n-workflow@2.9.1` build, including the 624-case `validateFieldType` matrix.
+#
+# Reference (read-only, line-cited in the module docblocks):
+# - reference/n8n/packages/workflow/src/type-validation.ts (whole file, 481 ln)
+# - reference/n8n/packages/workflow/src/utils.ts jsonParse L152 + parseJSObject L123
+# - reference/n8n/packages/workflow/src/type-guards.ts isBinaryValue L168,
+#   isValidResourceLocatorParameterValue L47
+# - reference/n8n/packages/workflow/src/node-parameters/filter-parameter.ts L23-450
+#   (VALIDATION half; the execution half is explicitly out of scope)
+# - reference/n8n/packages/workflow/src/node-helpers.ts getContext L505-538,
+#   getNodeParametersIssues L1202-1225, validateResourceLocatorParameter L1228-1255,
+#   validateResourceMapperParameter L1257-1303, validateParameter L1305-1323,
+#   addToIssuesIfMissing L1325-1358, getParameterIssues L1389-1580, mergeIssues L1600-1635
+# - Oracles: test/type-validation.test.ts (512 ln), test/filter-parameter.test.ts,
+#   test/node-helpers.test.ts describe('getParameterIssues') L3683 +
+#   describe('getParameterIssues, required parameters validation') L4270
+#
+# Sanctioned deltas added by this task (contract §12.2):
+# - DELTA-04: no `luxon` — date-times go through an injected `dateTimeFactory`; the built-in
+#   factory understands Date/ISO-8601/HTTP-date/RFC-2822/SQL. The differential injects the
+#   reference's own luxon so the cascade is compared bit-for-bit.
+# - DELTA-05: no `esprima`/`jsonrepair` — `jsonParse`'s recovery paths are injected adapters
+#   (default: relaxed-JS-object normaliser), so `tryToParseObject`/`tryToParseJsonToFormFields`
+#   stay dependency-free.
+
+allowed_paths:
+  - tasks/TASK-413-phase3-node-parameter-issues.yaml
+  - results/TASK-412-phase3-node-parameter-issues.md
+  - packages/node-lego/**
+  - tools/node-lego-differential.mjs
+  - tools/node-lego-gate.mjs
+  - contracts/node.contract.md
+  - docs/isolation/node.md
+  - docs/isolation/evidence/node-lego-gate.json
+  - docs/isolation/LEGO-MASTER-MAP.md
+  - docs/isolation/CROSS-AGENT-ISSUES.md
+  - README.md
+
+forbidden_paths:
+  - reference/n8n/**
+  - crates/**
+  - apps/**
+  - packages/frontend/**
+  - packages/workflow-lego/**
+  - packages/trigger-lego/**
+  - packages/webhook-lego/**
+  - packages/scheduler-lego/**
+  - packages/persistence-lego/**
+  - packages/connection-lego/**
+  - packages/expression-lego/**
+  - packages/reconstructed-engine/**
+  - packages/execution-engine/**
+
+requires:
+  - reference/n8n/packages/workflow/src/type-validation.ts
+  - reference/n8n/packages/workflow/src/node-parameters/filter-parameter.ts
+  - reference/n8n/packages/workflow/src/node-helpers.ts
+  - reference/n8n/packages/workflow/test/type-validation.test.ts
+  - reference/n8n/packages/workflow/test/node-helpers.test.ts
+  - packages/node-lego/src/display.mjs
+  - packages/node-lego/src/parameter-utils.mjs
+
+source_modification: read-only-reference   # no file under reference/n8n/** is touched
+
+operations:
+  - name: read_reference
+    args: { path: reference/n8n/packages/workflow/src/type-validation.ts, lines: "1-481" }
+  - name: read_reference
+    args: { path: reference/n8n/packages/workflow/src/node-parameters/filter-parameter.ts, lines: "1-450" }
+  - name: read_reference
+    args: { path: reference/n8n/packages/workflow/src/node-helpers.ts, lines: "505-1635" }
+  - name: write_file
+    args: { path: packages/node-lego/src/type-validation.mjs }
+  - name: write_file
+    args: { path: packages/node-lego/src/filter-parameter.mjs }
+  - name: write_file
+    args: { path: packages/node-lego/src/parameter-issues.mjs }
+  - name: edit_file
+    args: { path: packages/node-lego/src/lodash-lite.mjs }
+  - name: edit_file
+    args: { path: packages/node-lego/src/index.mjs }
+  - name: edit_file
+    args: { path: packages/node-lego/test/node-model.test.mjs }
+  - name: edit_file
+    args: { path: tools/node-lego-differential.mjs }
+  - name: edit_file
+    args: { path: tools/node-lego-gate.mjs }
+  - name: run_shell
+    args: { cmd: "node --test packages/node-lego/test/*.test.mjs", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "node tools/node-lego-differential.mjs", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "node tools/node-lego-gate.mjs", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "npm run verify:all", expect_exit: 0 }
+  - name: write_file
+    args: { path: results/TASK-412-phase3-node-parameter-issues.md }
+
+acceptance:
+  - `validateFieldType` reproduces the reference for every supported type: the `options`
+    whitelist message lists the allowed values, `strict` refuses conversions, `parseStrings`
+    only affects `string`, `null`/`undefined` are always valid, unknown types pass through, and
+    `Number('')` stays `0` (empty string valid, empty string invalid for `boolean`)
+  - date-times follow the reference cascade (factory → JSDate → ISO → HTTP → RFC2822 → SQL →
+    millis) through an injected factory; the invalid-date message keeps the reference's
+    luxon hint verbatim (DELTA-04)
+  - `jsonParse` tries strict JSON first, then the injected/relaxed object recovery, then
+    `fallbackValue`/`errorMessage` — and the recovery adapter is injectable (DELTA-05)
+  - `validateFilterParameter` reproduces the pinned dead-code quirk (always `{}`) and
+    `FilterError` keeps `name === 'Error'`, `level === 'warning'`, `description` (DELTA-03)
+  - the issues engine matches the reference on every fixture: required-parameter messages,
+    disabled/pin-data short-circuit, display gating, resource-locator regex + `=` skip +
+    unknown mode, resource-mapper (incl. `mode !== 'add'` skipping required checks and the
+    empty `parameters[<name>]` artefact), filter parameters, `validateType`, collection and
+    fixedCollection children (min/max wording, per-item iteration, leaf-name issue keys)
+  - `mergeIssues` merges only `parameters`/`credentials`/`execution`/`typeUnknown`;
+    `getContext` creates context objects lazily and raises the three reference errors
+  - differential vs the published `n8n-workflow@2.9.1` build: **0 divergences** across ≥1400
+    comparisons (N19 624, N20 392, N21 12, N22 58 new) with the falsifiability probe re-run
+    (each injected mutation must produce a DIVERGE)
+  - gate `N01`…`N07` PASS; `npm run verify:all` exit 0; conformance 42/42; boundary PASS
+  - no file under reference/, crates/, apps/, the frontend or a peer package is touched
+
+merge_condition:
+  - regression_gate_pass
+  - no_contract_violation

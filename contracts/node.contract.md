@@ -230,19 +230,21 @@ model — the part the Workflow Model and the Execution LEGO import at runtime.
 | `parameter-type-validation.mjs` | `node-parameters/parameter-type-validation.ts` (272 ln) incl. `validateNodeParameters` | `test/node-parameters/parameter-type-validation.test.ts` (806 ln) |
 | `properties.mjs` | `node-helpers.ts` `mergeNodeProperties` L1641, `getVersionedNodeType` L1661, `isNodeWithWorkflowSelector` L1688, `resolveResourceAndOperation` L1692, `makeDescription` L1741, `isToolType`/`isHitlToolType`/`isTool` L1761-1814, `makeNodeName` L1816, `isDefaultNodeName` L1849, `getUpdatedToolDescription` L1864, `getToolDescriptionForNode` L1890, `getSubworkflowId` L1908; `type-guards.ts` L21-39 property guards | `test/node-helpers.test.ts` |
 | `parameter-resolution.mjs` | `node-helpers.ts` `getParameterDependencies` L542, `getParameterResolveOrder` L577, `getNodeParameters` L658-1056 | `test/node-helpers.test.ts` `describe('getNodeParameters')` L34-3466, `noDataExpression` L6321-6524 |
-| `parameter-issues.mjs` | `node-helpers.ts` `getNodeParametersIssues` L1202, resource-locator/resource-mapper validators, `getParameterIssues` L1389, `mergeIssues` L1600 | `test/node-helpers.test.ts` L3683-4335; differential N19 |
-| `field-validation.mjs` | dependency-free `validateFieldType` subset consumed by parameter issues (`number`, `boolean`, string/alphanumeric, date/time, object/array, options, URL, JWT) | `type-validation.ts` L326-468; differential N20 |
 | `deep-copy.mjs` | `utils.ts` `deepCopy` L53-87 (the copy the Node Model uses — **not** lodash `cloneDeep`) | differential N18 |
 | `expression-helpers.mjs` | `expressions/expression-helpers.ts` `isExpression` (the only expressions surface the Node Model owns) | differential N18 |
 | `errors.mjs` | `errors/node-operation.error.ts` + `errors/abstract/{node,execution-base}.error.ts` + `@n8n/errors` `application.error.ts` — **validation/resolution boundary only** | differential N09/N10/N17/N18 |
-| `lodash-lite.mjs` | the `lodash/{get,isEqual}` helpers `node-helpers.ts` imports (DELTA-01) | `node-model.test.mjs` |
+| `lodash-lite.mjs` | the `lodash/{get,isEqual,isObject}` helpers `node-helpers.ts`/`type-validation.ts` import (DELTA-01) | `node-model.test.mjs` |
+| `type-validation.mjs` | `type-validation.ts` (481 ln): `tryToParseNumber` L15, `tryToParseString` L24, `tryToParseAlphanumericString` L38, `tryToParseBoolean` L48, `tryToParseDateTime` L72, `tryToParseTime` L114, `tryToParseArray` L124, `tryToParseObject` L146, `tryToParseBinary` L162, `tryToParseJsonToFormFields` L206, `getValueDescription` L272, `tryToParseUrl` L284, `tryToParseJwt` L305, `validateFieldType` L326-481; `utils.ts` `jsonParse` L152 (+`parseJSObject` L123); `type-guards.ts` `isBinaryValue` L168 | `test/type-validation.test.ts` (512 ln), differential N19/N20 |
+| `filter-parameter.mjs` | `node-parameters/filter-parameter.ts` VALIDATION half only: `FilterError` L23, `parseSingleFilterValue` L32, `withIndefiniteArticle` L66, `parseFilterConditionValues` L71, `validateFilterParameter` L427-450 | `test/filter-parameter.test.ts`, differential N21 |
+| `parameter-issues.mjs` | `node-helpers.ts` `getContext` L505-538, `getNodeParametersIssues` L1202, `validateResourceLocatorParameter` L1228, `validateResourceMapperParameter` L1257, `validateParameter` L1305, `addToIssuesIfMissing` L1325, `getParameterIssues` L1389-1580, `mergeIssues` L1600-1635; `type-guards.ts` `isValidResourceLocatorParameterValue` L47-57 | `test/node-helpers.test.ts` `describe('getParameterIssues')` L3683 + `required parameters validation` L4270, differential N22 |
 
 ### 12.2 Explicit deltas (everything not 1:1)
 
 1. **`lodash` → `lodash-lite.mjs`.** DELTA-01. The reference imports exactly two lodash
    helpers in `node-helpers.ts` (`lodash/get`, `lodash/isEqual`); a LEGO must stay
    dependency-free (gate `N01`). Both are reimplemented and pinned by tests (`get`/`toPath`
-   path grammar, `isEqual` value semantics incl. `Date`). `deepCopy` is the reference's own
+   path grammar, `isEqual` value semantics incl. `Date`), plus `isObject` for the `object`
+   field type of `type-validation.ts`. `deepCopy` is the reference's own
    `utils.ts` helper and is reconstructed verbatim (`src/deep-copy.mjs`) — including its
    `toJSON`-first behaviour, so a `Date` parameter becomes an ISO string.
 2. **Error class is a boundary-local reconstruction.** DELTA-02. `NodeOperationError`
@@ -255,36 +257,60 @@ model — the part the Workflow Model and the Execution LEGO import at runtime.
    resolve-order guard throws an error whose `name === 'Error'` while `level === 'error'`.
    `src/errors.mjs` reproduces that exactly; the differential compares `name`, `message`,
    `level`, `extra` and `tags`.
-4. **Pinned behavioural quirks found while porting** (each verified against the published
+4. **`luxon` → injected date-time factory.** DELTA-04. The reference parses date-times with
+   `luxon` (`DateTime.fromISO`/`fromHTTP`/`fromRFC2822`/`fromSQL`/`fromMillis`/`fromJSDate`).
+   A LEGO must stay dependency-free, so `tryToParseDateTime`/`validateFieldType` take an
+   injected `dateTimeFactory` implementing that subset; the built-in default understands JS
+   `Date`, ISO-8601, HTTP-date/RFC-2822 and `YYYY-MM-DD HH:mm:ss` strings and returns a plain
+   `{ isValid, toISO, toJSDate, toMillis }` value instead of a `DateTime`. The differential
+   injects the reference's own luxon, so the format cascade, the `startsWith('=')`-free error
+   handling and every returned value are compared bit-for-bit — only the adapter differs.
+5. **`esprima`/`jsonrepair` → injected JS-object parser.** DELTA-05. `jsonParse`'s
+   `acceptJSObject` recovery is the reference's esprima-backed `parseJSObject`; here it is an
+   injected adapter (`parseJSObject` option, used by `tryToParseObject` and
+   `tryToParseJsonToFormFields`) whose default handles the relaxed shapes the editor produces
+   (unquoted keys, single-quoted strings, trailing commas). The `repairJSON` path is a no-op
+   without an adapter. Both are exercised differentially with the reference's own parser.
+6. **Pinned behavioural quirks found while porting** (each verified against the published
    build, i.e. bug-for-bug): `noDataExpression` strips the leading `=` only on the
    `returnDefaults` path; a collection never materialises child defaults when no values are
    set; `getParameterResolveOrder`'s unresolved-dependency `continue` only advances the
    dependency loop, so cycles terminate with both parameters resolved; and a non-array
    `fixedCollection` element is iterated with `for…of` (a string yields one empty object per
-   character). All are covered by `N16/N17` comparisons.
-5. **Issue-facing field validation subset.** DELTA-04. The parameter-issues engine uses a
-   dependency-free `validateFieldType` reconstruction for its schema and `validateType`
-   paths. The issue-facing types are differential-tested; binary/form-field parsing and
-   Luxon object construction remain outside this slice. The pinned filter issue path is
-   preserved as observed (unresolved filter expressions yield no issue object).
-6. **Not reconstructed (out of Node Model scope, listed so absence is explicit):**
-   `getContext`, `getNodeWebhookPath`/`Url`, `cronNodeOptions`,
-   `getUpdatedToolDescription` callers, `node-reference-parser-utils.ts`, workflow
-   validation, and filter execution. `renameFormFields` is reconstructed though not
-   re-exported by the published build (internal call site only).
+   character). All are covered by `N16/N17` comparisons. Slice 3 added: `Number('')` is `0`, so
+   an empty string is a *valid* `number` field and `''` is an *invalid* `boolean`;
+   `validateFilterParameter` is a no-op — `parseFilterConditionValues` *returns* a
+   `{ ok: false }` Result, so the `catch (error instanceof FilterError)` block is unreachable
+   and reaching it would throw (`issues[key]` is `undefined`); a `resourceMapper` only checks
+   required fields when `typeOptions.resourceMapper.mode === 'add'`; the mapper branch
+   materialises an empty `parameters[<name>]` array next to the per-field keys; issue keys are
+   *parameter names*, not value paths (two broken fixed-collection items collapse into one
+   key, appending both messages); `getContext` creates `executionData.contextData[key]` lazily
+   and the resource-locator regex is skipped for values starting with `=`. Covered by
+   `N19`…`N22`.
+7. **Not reconstructed (out of Node Model scope, listed so absence is explicit):**
+   the filter-parameter EXECUTION half (`arrayContainsValue` L209, `executeFilterCondition`
+   L222, `executeFilter` L409, `parseRegexPattern` L196 — luxon-backed date operators and the
+   logger adapter), `getNodeWebhookPath`/`getNodeWebhookUrl` (L6211 oracle), `cronNodeOptions`,
+   the `jsonrepair`-backed `repairJSON` recovery (DELTA-05), `node-reference-parser-utils.ts`
+   and workflow validation. `renameFormFields` is reconstructed though not re-exported by the
+   published build (internal call site only).
 
 ### 12.3 Acceptance evidence
 
 * `tools/node-lego-gate.mjs` — gates `N01`…`N06` (`docs/isolation/evidence/node-lego-gate.json`).
-* `tools/node-lego-differential.mjs` — 20 scenario groups / 337 comparisons against the
+* `tools/node-lego-differential.mjs` — 22 scenario groups / 1422 comparisons against the
   published `n8n-workflow@2.9.1` build (the version the pinned reference commit ships):
-  **337 agree / 0 diverge**, 2 NOT-DIFFABLE (`renameFormFields`, private `getPropertyValues`).
+  **1422 agree / 0 diverge**, 2 NOT-DIFFABLE (`renameFormFields`, private `getPropertyValues`).
   Falsifiability: injected behavioral mutations (empty-array rule, expression short-circuit,
-  the fixedCollection "value would get lost" early return, `deepCopy`'s `toJSON` handling)
-  each produced a `DIVERGE`, so the harness is not vacuous.
-* `packages/node-lego/test/*.test.mjs` — 66 cases, oracle-cited (8 issue-engine cases).
+  the fixedCollection "value would get lost" early return, `deepCopy`'s `toJSON` handling,
+  the min/max field-count wording, the required-`undefined` check, `getValueDescription`'s
+  `null` wording) each produced a `DIVERGE`, so the harness is not vacuous.
+* `packages/node-lego/test/node-model.test.mjs` — 74 cases, oracle-cited; plus
+  `packages/node-lego/test/parameter-issues.test.mjs` — 8 cases (concurrent lane, retained and
+  corrected against REF where its expectations encoded an unfaithful detail — ISSUE-026).
 
-### 12.4 Exported symbol list (61 — gate `N07` asserts every one is named here)
+### 12.4 Exported symbol list (81 — gate `N07` asserts every one is named here)
 
 | | | | | | |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -297,5 +323,8 @@ model — the part the Workflow Model and the Execution LEGO import at runtime.
 | `isNodeParameterValue` | `isNodeParameters` | `isNodeWithWorkflowSelector` | `isResourceLocatorValue` | `isResourceMapperValue` | `isSubNodeType` |
 | `isTool` | `isToolType` | `isTriggerLikeNode` | `isTriggerNode` | `isValidNodeParameterValueType` | `makeDescription` |
 | `makeNodeName` | `mergeNodeProperties` | `nodeAcceptsInputType` | `nodeHasOutputType` | `renameFormFields` | `resolveRelativePath` |
-| `toPath` | `validateNodeCredentials` | `validateNodeParameters` | `getNodeParametersIssues` | `getParameterIssues` | `mergeIssues` |
-| `validateFieldType` | | | | | |
+| `toPath` | `validateNodeCredentials` | `validateNodeParameters` |
+| `FilterError` | `defaultDateTimeFactory` | `defaultParseJSObject` | `getContext` | `getNodeParametersIssues` | `getParameterIssues` |
+| `getValueDescription` | `isBinaryValue` | `jsonParse` | `mergeIssues` | `tryToParseAlphanumericString` | `tryToParseArray` |
+| `tryToParseBinary` | `tryToParseBoolean` | `tryToParseDateTime` | `tryToParseJsonToFormFields` | `tryToParseJwt` | `tryToParseNumber` |
+| `tryToParseObject` | `tryToParseString` | `tryToParseTime` | `tryToParseUrl` | `validateFieldType` | `validateFilterParameter` |
