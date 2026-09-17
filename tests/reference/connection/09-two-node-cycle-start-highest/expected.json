@@ -1,0 +1,51 @@
+{
+  "highest nodes of B (A->B->A)": [
+    "A"
+  ],
+  "highest nodes of A": [
+    "B"
+  ],
+  "start node of B": "A",
+  "start node of A": "B",
+  "start node (no destination)": null,
+  "parents of B terminate": [
+    "A"
+  ],
+  "children of A terminate": [
+    "B"
+  ],
+  "getNodeConnectionIndexes A <- B": {
+    "sourceIndex": 0,
+    "destinationIndex": 0
+  },
+  "getNodeConnectionIndexes A <- A (via B)": {
+    "sourceIndex": 0,
+    "destinationIndex": 0
+  },
+  "parents by depth of A": [
+    {
+      "name": "B",
+      "indicies": [
+        0
+      ],
+      "depth": 1
+    }
+  ],
+  "self-loop: highest nodes of S": [],
+  "self-loop: start node of S": "S",
+  "self-loop: parents of S": [],
+  "self-loop: getNodeConnectionIndexes S <- S": {
+    "sourceIndex": 0,
+    "destinationIndex": 0
+  },
+  "disabled in cycle: highest nodes of P (Q disabled -> skipped, P itself)": [],
+  "disabled in cycle: highest nodes of Q": [
+    "P"
+  ],
+  "disabled in cycle: start node of P": "P",
+  "hasPath A->A via B": true,
+  "hasPath S->S": true,
+  "roots of {A,B} (none)": [],
+  "leaves of {A,B} (none)": [],
+  "extractable {A,B}": {}
+}

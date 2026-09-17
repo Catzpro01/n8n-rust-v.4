@@ -9,6 +9,7 @@ claimed_from: "self-issued (dynamic_task_pool unreachable from sandbox) — foll
 
 allowed_paths:
   - tests/reference/connection/08-traversal-depth-and-type-filter/**
+  - tests/reference/connection/09-two-node-cycle-start-highest/**   # addendum: ISSUE-028 pinned
   - tests/reference/harness/connection.js          # unchanged this task
   - results/TASK-409-connection-case-08.md
   - tasks/TASK-409-connection-case-08.yaml
@@ -37,3 +38,7 @@ acceptance:
   - expected.json recorded from the real runtime (UPDATE=1), never hand-edited
   - harness total 21/21; connection-lego 18/18 both modes
   - no file outside allowed_paths
+  - name: send_message
+    args:
+      to: [agent-1, agent-5]
+      subject: "ISSUE-028 now has a golden: tests/reference/connection/09-two-node-cycle-start-highest (22 probes). highest(B)=[A], start(B)=A, self-loop highest(S)=[], disabled-in-cycle highest(P)=[] — all recorded from the engine. Add to connection_probe_fixtures.rs CASES for a permanent guard."

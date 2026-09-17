@@ -1,0 +1,243 @@
+{
+  "description": "ISSUE-028 minimal repro pinned as golden: pure 2-node cycle A->B->A with no trigger and no acyclic entry. getHighestNode/getStartNode must terminate (checkedNodes guard, workflow.ts:492-575 / 817-891), traversal must terminate, getNodeConnectionIndexes BFS must terminate. Also a self-loop S->S and a disabled node inside a cycle (P->Q(disabled)->P) for the `disabled === false` quirk.",
+  "nodes": [
+    {
+      "id": "A",
+      "name": "A",
+      "type": "x",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "B",
+      "name": "B",
+      "type": "x",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "S",
+      "name": "S",
+      "type": "x",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "P",
+      "name": "P",
+      "type": "x",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "Q",
+      "name": "Q",
+      "type": "x",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {},
+      "disabled": true
+    }
+  ],
+  "connections": {
+    "A": {
+      "main": [
+        [
+          {
+            "node": "B",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "B": {
+      "main": [
+        [
+          {
+            "node": "A",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "S": {
+      "main": [
+        [
+          {
+            "node": "S",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "P": {
+      "main": [
+        [
+          {
+            "node": "Q",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Q": {
+      "main": [
+        [
+          {
+            "node": "P",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "probes": [
+    {
+      "name": "highest nodes of B (A->B->A)",
+      "op": "wf.getHighestNode",
+      "node": "B"
+    },
+    {
+      "name": "highest nodes of A",
+      "op": "wf.getHighestNode",
+      "node": "A"
+    },
+    {
+      "name": "start node of B",
+      "op": "wf.getStartNode",
+      "node": "B"
+    },
+    {
+      "name": "start node of A",
+      "op": "wf.getStartNode",
+      "node": "A"
+    },
+    {
+      "name": "start node (no destination)",
+      "op": "wf.getStartNode"
+    },
+    {
+      "name": "parents of B terminate",
+      "op": "getParentNodes",
+      "node": "B"
+    },
+    {
+      "name": "children of A terminate",
+      "op": "getChildNodes",
+      "node": "A"
+    },
+    {
+      "name": "getNodeConnectionIndexes A <- B",
+      "op": "wf.getNodeConnectionIndexes",
+      "node": "A",
+      "parent": "B"
+    },
+    {
+      "name": "getNodeConnectionIndexes A <- A (via B)",
+      "op": "wf.getNodeConnectionIndexes",
+      "node": "A",
+      "parent": "A"
+    },
+    {
+      "name": "parents by depth of A",
+      "op": "wf.getParentNodesByDepth",
+      "node": "A"
+    },
+    {
+      "name": "self-loop: highest nodes of S",
+      "op": "wf.getHighestNode",
+      "node": "S"
+    },
+    {
+      "name": "self-loop: start node of S",
+      "op": "wf.getStartNode",
+      "node": "S"
+    },
+    {
+      "name": "self-loop: parents of S",
+      "op": "getParentNodes",
+      "node": "S"
+    },
+    {
+      "name": "self-loop: getNodeConnectionIndexes S <- S",
+      "op": "wf.getNodeConnectionIndexes",
+      "node": "S",
+      "parent": "S"
+    },
+    {
+      "name": "disabled in cycle: highest nodes of P (Q disabled -> skipped, P itself)",
+      "op": "wf.getHighestNode",
+      "node": "P"
+    },
+    {
+      "name": "disabled in cycle: highest nodes of Q",
+      "op": "wf.getHighestNode",
+      "node": "Q"
+    },
+    {
+      "name": "disabled in cycle: start node of P",
+      "op": "wf.getStartNode",
+      "node": "P"
+    },
+    {
+      "name": "hasPath A->A via B",
+      "op": "hasPath",
+      "start": "A",
+      "end": "A"
+    },
+    {
+      "name": "hasPath S->S",
+      "op": "hasPath",
+      "start": "S",
+      "end": "S"
+    },
+    {
+      "name": "roots of {A,B} (none)",
+      "op": "getRootNodes",
+      "graph": [
+        "A",
+        "B"
+      ]
+    },
+    {
+      "name": "leaves of {A,B} (none)",
+      "op": "getLeafNodes",
+      "graph": [
+        "A",
+        "B"
+      ]
+    },
+    {
+      "name": "extractable {A,B}",
+      "op": "parseExtractable",
+      "graph": [
+        "A",
+        "B"
+      ]
+    }
+  ]
+}

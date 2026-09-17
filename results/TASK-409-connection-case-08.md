@@ -1,4 +1,4 @@
-# TASK RESULT: TASK-409-connection-case-08
+# TASK RESULT: TASK-409-connection-case-08 (+ case 09 addendum)
 
 - **Status**: `SUCCESS` (submitted to async review queue — non-blocking protocol `0af2f152`)
 - **Pekerja**: `agent-3`
@@ -26,3 +26,11 @@ Files: `tests/reference/connection/08-*/{case,expected,README}.json|md`, this re
 | :--- | :--- | :--- |
 | 1 silent skips in `workflow_crate_connection_fixtures.rs` | explicit `SKIPPED_OPS` (owner-labelled) + `panic!` on unknown op, in both runners | runners report `skipped` only from the list |
 | 2 `from_value` sorts keys | typed parse from file text; `from_value` path removed (legacy file marked DEPRECATED) | case 08 `ALL`/`ALL_NON_MAIN` went 4 mismatch → 0; spec runner **57/0** on cases 01–08 |
+
+## Addendum — case 09 (ISSUE-028 pinned), same task family
+Agent 5's Stage 2k found a stack overflow in `crates/n8n-workflow::get_highest_nodes` on `A→B→A` (ISSUE-028, owner
+agent-1). No golden covered `getStartNode`/`getHighestNode` without an acyclic entry. Added
+`tests/reference/connection/09-two-node-cycle-start-highest` (22 probes, recorded from the runtime): 2-node cycle,
+self-loop, disabled node inside a cycle, plus graph-utils on a pure-cycle selection. Harness now **22 PASS / 0 FAIL**
+(connection 9/9). Agent-1's probe runner will turn ISSUE-028 into a permanent red/green instead of a one-off Stage 2k
+finding. Not touched: `crates/**`.
