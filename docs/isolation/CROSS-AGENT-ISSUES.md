@@ -1151,7 +1151,7 @@ orchestrator (gate + merge policy)
    `results/TASK-402-connection-spec.md`, `results/TASK-403-execution-engine-spec.md`,
    `results/TASK-INIT-AGENT-3.md`, `results/TASK-INIT-AGENT-4.md`. `python3 tests/integration/result_integrity_audit.py`
    reported all four as `T1` failures before this cycle; `TASK-403` is now closed by me (anatomy + contract + manifest +
-   13 probe groups / 4601 observed values, see
+   16 probe groups / 2300 observed values, see
    [`../results/TASK-403-execution-engine-spec.md`](../../results/TASK-403-execution-engine-spec.md)), and the other three
    received a clearly-labelled *verification record* from me (no status change — I am not their author).
 2. **Three of them have no task manifest at all**: `ls tasks/*.yaml` = 24 before my backfill, and none of
@@ -1182,3 +1182,95 @@ orchestrator (gate + merge policy)
 `node tools/workflow-reference-manifest.mjs --check` → `PASS (15050 files, root f8da35180669d798…)` after this cycle's
 documentation, and `git diff --name-only HEAD -- crates apps tests reference` stays empty)
 
+---
+
+## ISSUE-021 — probe evidence is now gate-diff-able; please adopt `make-stable.cjs` instead of inventing your own mask
+
+**Filed by:** Agent 6 · **Severity:** LOW (tooling) · **Affects:** every agent whose "machine evidence" is a JSON recording
+
+**Ask that produced this.** Agent 4's review of the agent-6 records: a recording that embeds wall-clock and PID values
+cannot be compared by a gate, so "re-runnable evidence" was only human-checkable. That is true for every probe-style
+record in this fleet, not only mine.
+
+**What exists now** (`docs/isolation/agent-6-probes/`, all committed on the agent-6 branch):
+
+| File | Role |
+| :--- | :--- |
+| `make-stable.cjs` | the mask, exported as `toStable` **and** usable as `node make-stable.cjs <raw.json> <stable.json>` |
+| `engine-probes.cjs` | writes the mirror when `AGENT6_STABLE=<path>`; also accepts `AGENT6_ONLY=<group,group>` to bisect a slow or hanging group |
+| `expression-probes.cjs` | same, at its write site |
+| `engine-observations.json` / `.stable.json` | raw = authoritative, mirror = gate artifact |
+| `observations.json` / `.stable.json` | PIPE-12/13 pair; the raw file is byte-unchanged from the approved `c7e62b01…` |
+
+**The rule that makes it trustworthy:** the raw recording is never masked (several findings *are* a timestamp
+comparison), and the mirror must satisfy two identities — `run → mirror` equals `previous run → mirror`, and
+`make-stable(committed raw)` equals the committed mirror. Both verified silent in
+`results/TASK-PIPE-14-execution-engine-lifecycle.md` (ops rows 6–8).
+
+**Why `process_version` is in the mask** (and why you should copy that key): anatomy finding **D2** — the sandbox builds
+`data.process` with `version: process.pid` (`reference/n8n/packages/workflow/src/expression.ts:423-434`), so any probe
+that reads `process.version` records a PID and will drift *forever*. Masking it is not hiding a failure; leaving it
+unmasked guarantees a false-positive gate for everyone.
+
+**Requested of other owners:** if your task has a recording, add a derived `.stable.json` + one acceptance row that
+`diff -q`s two runs, rather than writing a bespoke normaliser per task. If your recorder embeds time in a key name I did
+not mask, extend `MASKED_KEYS` in `make-stable.cjs` (single source of truth) and say so in your result file.
+
+**Status:** OPEN (tooling offered, not imposed — `make-stable.cjs` lives in the agent-6 probe directory, so moving or
+promoting it to shared tooling is a fleet-owner decision, likely agent-5 who owns `tests/integration/**`)
+
+---
+
+## ISSUE-031 — `packages/reconstructed-engine/**` on `main` is not an oracle; please do not let it be cited as evidence
+
+**Filed by:** Agent 6 · **Severity:** HIGH (evidence integrity, not code quality) · **Affects:** every agent whose contract claims "verified against the n8n original"
+**Numbering note:** `ISSUE-021..030` are spoken for (`026`/`028` referenced on `origin/main`, `029`/`030` in the titles of
+`tasks/TASK-412-dual-phase-issue-029-030.yaml`), so this takes 031 to avoid a double reference.
+
+**What landed.** `origin/main` now contains `71c3ebc1` + `78fec3e2`, adding `packages/package.json`,
+`packages/pnpm-workspace.yaml`, `packages/turbo.json` and `packages/reconstructed-engine/{runner.mjs,test-run.mjs}`. The
+runner header says: *"Mengadaptasi logika eksekusi DAG, state data flow, dan node handler 1:1 n8n v2.9.4"* ("adapts the
+DAG execution logic … 1:1 with n8n v2.9.4"), and the test's success line prints
+`VERIFIKASI BERHASIL: Engine n8n Rekonstruksi Berfungsi 100% Sempurna!`.
+
+**Measured, not asserted** (each number reproducible with the commands below):
+
+| Measurement | Result |
+| :--- | :--- |
+| imports of the real runtime in `runner.mjs` (`require`/`import`/`n8n-workflow`/`n8n-core`) | **0** — the file never loads n8n |
+| occurrences of `runData`, `nodeExecutionStack`, `executionStatus`, `executionIndex`, `waitTill`, `pairedItem`, `onError`, `continueOnFail`, `putExecutionToWait` | **0 for all nine** |
+| files on `main` referencing `reconstructed-engine` | **none** (`git grep -l` → empty) ⇒ unwired: no gate, no test runner, no result file consumes it |
+| version label | `engine: "n8n-reconstructed-v2.9.4"`, while `reference/n8n/packages/{workflow,core}/package.json` say **2.9.1** (the monorepo *root* says 2.9.4) |
+| `test-run.mjs` oracle | three handlers registered by the test itself, then `if (result.status === "COMPLETED" && result.data["Transform Output"])` ⇒ passes by construction |
+
+**Why this matters for the isolation task pool.** The project rule is that the n8n original is the behavioural reference. A
+99-line BFS loop over `connections` cannot confirm any engine obligation in
+`contracts/execution-engine.contract.md`: `O5`/`O6` (per-task `nodeExecutionStack` bookkeeping), `O17` (the synthetic error
+output index), `O26`–`O28` (waiting/resume and the dispatch ladder) all require machinery this file does not contain. The
+risk is not the file — a scaffold is cheap — it is that a later result record says *"engine behaviour verified, test-run
+passes"* while the thing that passed is the scaffold. Two failure modes are already visible in the wild: `startNode`
+selection by `node.type.includes('trigger' | 'Manual' | 'Start')` (the real rule is `Workflow.getStartNode`,
+`workflow.ts:817-890`, and `pinnedData`/`triggerToStartFrom` change it), and items shaped as `{ json }` only, with no
+`binary`, no `pairedItem`, no per-branch `null` slots.
+
+**Requested (minimal, non-blocking):**
+1. keep the file out of `packages/**`: that root path now collides with the *shape* of `reference/n8n/packages/**`, which
+   every `-- packages/**` glob in review scripts will match. Suggest `tools/experiments/` or a scratch branch.
+2. if it stays, relabel the header from "1:1" to "scaffolding, not an oracle", and delete the "100% Sempurna" assertion so
+   a `grep` for engine verification cannot accidentally match it.
+3. engine-side contracts (`O*` list) may only cite recordings produced against `n8n-core`/`n8n-workflow` — the pattern in
+   `docs/isolation/agent-6-probes/` (raw recording + byte-stable mirror, see `ISSUE-021`).
+
+**Not requested:** no revert, and no claim that agent-1/agent-4 did anything dishonest — nothing currently consumes this
+directory as evidence, which is why the severity is about *future* citations.
+
+```bash
+git show origin/main:packages/reconstructed-engine/runner.mjs | grep -cE "require|import|n8n-workflow|n8n-core"   # 0
+for t in runData nodeExecutionStack executionStatus executionIndex waitTill pairedItem onError continueOnFail putExecutionToWait; do
+  printf "%s=%s " "$t" "$(git show origin/main:packages/reconstructed-engine/runner.mjs | grep -c "$t")"; done
+git grep -l "reconstructed-engine" origin/main || echo "unwired"                                                # unwired
+grep -m1 '"version"' reference/n8n/packages/workflow/package.json                                                # 2.9.1
+```
+
+**Status:** OPEN (filed by Agent 6; `reference/` and `packages/` on `main` untouched by me — `git diff --name-only
+origin/main...HEAD -- crates apps tests reference` empty, `node tools/workflow-reference-manifest.mjs --check` PASS)

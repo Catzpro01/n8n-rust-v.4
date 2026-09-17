@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generatedAt": "2026-09-17T02:30:57.894Z",
+    "generatedAt": "<stable>",
     "runtime": {
       "n8n-core": "2.9.1",
       "n8n-workflow": "2.9.1"
@@ -248,8 +248,8 @@
         "getMode": "manual",
         "getExecutionId": "eng-manual-1",
         "getExecutionContext": {
-          "version": 1,
-          "establishedAt": 1789612257898,
+          "version": "<stable>",
+          "establishedAt": "<stable>",
           "source": "manual",
           "triggerNode": {
             "name": "Start",

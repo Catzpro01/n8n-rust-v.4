@@ -45,11 +45,11 @@ operations:
       runner: docs/isolation/agent-6-probes/engine-probes.cjs
       outfile: docs/isolation/agent-6-probes/engine-observations.json
       command: 'NODE_PATH=$PWD/.runtime/node_modules node docs/isolation/agent-6-probes/engine-probes.cjs docs/isolation/agent-6-probes/engine-observations.json'
-      groups: 13                    # 403A, 403A2, 403B, 403C, 403D, 403E, 403E.timeout, 403F, 403G, 403H, 403I, 403J, 403K
-      leaf_values: 4601
+      groups: 16                    # 403A, 403A2, 403B, 403C, 403D, 403E, 403E.timeout, 403F, 403G, 403H, 403I, 403J, 403K
+      leaf_values: 2300
       recorded_throws: 10
       lifecycle_scenarios: 24
-      sha256: 0016e713b34240dda1efc8eaa2abec442b2fcc7376497a24056519f380f020fb
+      sha256: cadbfaf2f5ad95ae9bb5dcbb61bca46b033b4e794d853ae9014d84674f9a8009
 
   - name: replay_determinism_check
     args:

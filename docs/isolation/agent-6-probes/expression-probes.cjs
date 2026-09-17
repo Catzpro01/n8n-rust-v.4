@@ -1022,6 +1022,11 @@ const output = {
 const json = JSON.stringify(output, null, 2);
 const outFile = process.argv[2];
 if (outFile) fs.writeFileSync(outFile, json + '\n');
+// Byte-stable mirror for the gate diff (same mask as the engine runner — see make-stable.cjs).
+if (process.env.AGENT6_STABLE) {
+	const { toStable } = require(path.join(__dirname, 'make-stable.cjs'));
+	fs.writeFileSync(process.env.AGENT6_STABLE, JSON.stringify(toStable(JSON.parse(json)), null, 2) + '\n');
+}
 else console.log(json);
 	process.exit(0);
 

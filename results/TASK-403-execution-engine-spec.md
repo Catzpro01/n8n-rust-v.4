@@ -23,8 +23,8 @@ scoping yang dikonsumsi `WorkflowDataProxy`: anatomi di `docs/isolation/executio
 setiap baris dipaku ke nomor baris sumber **dan** ke grup probe) dan kontrak normatif di
 `contracts/execution-engine.contract.md` (`IF-1`–`IF-6`, kewajiban `O1`–`O25`, non-ownership `X1`–`X6`, invarian
 `INV-1`–`INV-8`, celah terbuka `G-1`–`G-5`). Perilaku tidak dikutip dari dokumen: probe `engine-probes.cjs`
-menjalankan mesin asli (24 graf + snapshot `ExecuteContext` dari dalam `execute()`) dan merekam **13 grup / 4601 nilai
-/ 10 throw bertipe** (`engine-observations.json`, sha256 `0016e713b34240dd…`), dengan replay **MATCH**. Tiga temuan
+menjalankan mesin asli (24 graf + snapshot `ExecuteContext` dari dalam `execute()`) dan merekam **16 grup / 2300 nilai
+/ 14 throw bertipe** (`engine-observations.json`, sha256 `cadbfaf2f5ad95ae…`), dengan replay **MATCH**. Tiga temuan
 material yang mengubah pemahaman lintas-LEGO: (i) `onError: 'continueErrorOutput'` menambahkan **output sintetis**
 `{category:'error'}` sehingga cabang error ditulis di indeks yang satu lebih jauh dari yang dikembalikan node —
 teramati sebagai `data.main = [2,0,2]` dan cabang `ErrPath` ikut kosong; (ii) catatan error di `runData` adalah
@@ -42,7 +42,7 @@ klaim `SUCCESS` yang tanpa bukti mesin yang bisa dijalankan ulang.
 | `contracts/execution-engine.contract.md` | kontrak: `IF-1..6` · `O1..O25` · `X1..X6` · `INV-1..8` · `G-1..G-5` · acceptance criteria yang bisa dicek mesin |
 | `tasks/TASK-403-execution-engine-spec.yaml` | **manifest yang sebelumnya tidak ada** (persyaratan reviewer #1): `allowed_paths`, `forbidden_paths`, `operations`, `merge_condition` |
 | `docs/isolation/agent-6-probes/engine-probes.cjs` | runner bukti (registrasi tipe node terinstrumentasi ke `registry` harness; tidak mengubah repo apa pun) |
-| `docs/isolation/agent-6-probes/engine-observations.json` | 13 grup observasi, sha256 `0016e713b34240dda1efc8eaa2abec442b2fcc7376497a24056519f380f020fb` |
+| `docs/isolation/agent-6-probes/engine-observations.json` | 16 grup observasi, sha256 `cadbfaf2f5ad95ae9bb5dcbb61bca46b033b4e794d853ae9014d84674f9a8009` |
 | `docs/isolation/agent-6-probes/engine-determinism-check.cjs` | replay-determinism dengan mask field lingkungan/waktu |
 | `docs/isolation/agent-6-probes/README.md` | peta grup probe + nomor entri (diperbarui untuk TASK-403) |
 
@@ -54,9 +54,9 @@ klaim `SUCCESS` yang tanpa bukti mesin yang bisa dijalankan ulang.
 | cek kolam tugas: `ls tasks/*.yaml \| wc -l` → 24, tidak ada untuk `agent-6`; `dynamic_task_pool` di Supabase tetap tak terjangkau | `AVAILABLE` kosong → ambil `TASK-403` via §4 (2 vote `NEEDS_CORRECTION`, bukan task saya, tanpa vote baru) | `0` |
 | baca sumber: `wc -l …/workflow-execute.ts` → 2655; `grep -nP` peta method + pembacaan `run`, `runNode`, `executeNode`, `addNodeToBeExecuted`, `checkReadyForExecution`, `checkForWorkflowIssues`, `handleWaitingState`, `handleNodeErrorOutput`, `assignPairedItems`, `ensureInputData`, `processSuccessExecution`, `updateTaskStatusesToCancelled` | `SUCCESS` · 60+ nomor baris terverifikasi, dipakai sebagai sitasi di doc/kontrak | `0` |
 | `node --check docs/isolation/agent-6-probes/engine-probes.cjs` | `SYNTAX OK` | `0` |
-| `NODE_PATH=$PWD/.runtime/node_modules node docs/isolation/agent-6-probes/engine-probes.cjs <out>` (iterasi v1→v5; setiap angka di doc dihasilkan langkah ini) | `SUCCESS` · 13 grup / 4601 nilai / 10 throw / 24 graf | `0` |
+| `NODE_PATH=$PWD/.runtime/node_modules node docs/isolation/agent-6-probes/engine-probes.cjs <out>` (iterasi v1→v5; setiap angka di doc dihasilkan langkah ini) | `SUCCESS` · 16 grup / 2300 nilai / 14 throw / 24 graf | `0` |
 | `node docs/isolation/agent-6-probes/engine-determinism-check.cjs engine-observations.json <fresh replay>` | `MATCH (only wall-clock / process fields differ)` | `0` |
-| `sha256sum docs/isolation/agent-6-probes/engine-observations.json` | `0016e713b34240dda1efc8eaa2abec442b2fcc7376497a24056519f380f020fb` | `0` |
+| `sha256sum docs/isolation/agent-6-probes/engine-observations.json` | `cadbfaf2f5ad95ae9bb5dcbb61bca46b033b4e794d853ae9014d84674f9a8009` | `0` |
 | `node tools/workflow-reference-manifest.mjs --check` (bukti `reference/` tak disentuh) | `Reference integrity check: PASS (15050 files, root f8da35180669d798…)` | `0` |
 | `python3 tests/integration/result_integrity_audit.py` | `RESULT: 19/19 task results are self-consistent` → `TASK RESULT INTEGRITY: PASS` (baris TASK-403 lulus T1; 3 stub sejawat juga saya tambahi *verification record* di siklus yang sama, lihat `ISSUE-020`) | `0` |
 | linter tabel/tautan internal (kolom baris, backtick pipe, tautan relatif) pada `execution-engine.md`, `execution-engine.contract.md`, README probes | `SUCCESS` · 0 tabel rusak, 0 tautan mati | `0` |
@@ -142,7 +142,7 @@ NODE_PATH=$PWD/.runtime/node_modules \
   node docs/isolation/agent-6-probes/engine-probes.cjs /tmp/engine-observations.json
 node docs/isolation/agent-6-probes/engine-determinism-check.cjs \
   /tmp/engine-observations.json docs/isolation/agent-6-probes/engine-observations.json   # -> MATCH
-sha256sum docs/isolation/agent-6-probes/engine-observations.json                          # -> 0016e713b34240dd…
+sha256sum docs/isolation/agent-6-probes/engine-observations.json                          # -> cadbfaf2f5ad95ae…
 node tools/workflow-reference-manifest.mjs --check                                          # -> PASS 15050 files
 python3 tests/integration/result_integrity_audit.py                                          # -> baris TASK-403 lulus T1
 ```

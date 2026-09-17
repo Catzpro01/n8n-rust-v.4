@@ -111,6 +111,19 @@ function summarizeRun(run) {
 
 const CAPTURE = [];
 
+// ---------- optional byte-stable mirror (drift gate) ---------------------------------------
+// Reviewer request (agent-4, consensus record for TASK-PIPE-12/13): make the evidence file
+// diff-able by a gate instead of only "MATCH after masking". AGENT6_STABLE=<path> writes a second,
+// masked JSON whose bytes are reproducible across runs and machines, so
+//   node <runner> --check /dev/null   style gates can diff it against the committed file.
+// The raw file stays authoritative (it holds the real pid/PID-style findings); the masked mirror is
+// derived from it, and the mask list is exactly the one engine-determinism-check.cjs uses.
+const STABLE_OUT = process.env.AGENT6_STABLE || null;
+const { toStable } = require(path.join(__dirname, 'make-stable.cjs'));
+// AGENT6_ONLY='L,M' restricts the run to those groups (used to bisect a hang); default = all.
+const ONLY = (process.env.AGENT6_ONLY || '').split(',').map((x) => x.trim()).filter(Boolean);
+const want = (g) => ONLY.length === 0 || ONLY.some((x) => x.toUpperCase() === g);
+
 // ---------- instrumented node types ------------------------------------------------------
 const strProps = (...names) => names.map((n) => ({ displayName: n, name: n, type: 'string', default: '' }));
 
@@ -226,6 +239,34 @@ registry['ref.nodeOpThrows'] = {
 			functionality: 'execution',
 		});
 	},
+};
+// arms for 403L/403M: waiting + poll/trigger/webhook dispatch
+registry['ref.waitOnce'] = {
+	description: { displayName: 'waitOnce', name: 'waitOnce', group: ['transform'], version: 1, description: '', defaults: { name: 'waitOnce' }, inputs: ['main'], outputs: ['main'], properties: [] },
+	waited: false,
+	async execute() {
+		if (!registry['ref.waitOnce'].waited) {
+			registry['ref.waitOnce'].waited = true;
+			await this.putExecutionToWait(new Date(Date.now() + 60));
+			return [this.getInputData()];
+		}
+		return [[{ json: { resumedAfterWait: true } }]];
+	},
+};
+registry['ref.poller'] = {
+	description: { displayName: 'poller', name: 'poller', group: ['transform'], version: 1, description: '', defaults: { name: 'poller' }, inputs: ['main'], outputs: ['main'], properties: [] },
+	async poll() {
+		const ctx = this;
+		return [[{ json: { arm: 'poll', ctxClass: ctx.constructor.name, mode: ctx.getMode(), node: ctx.getNode().name } }]];
+	},
+};
+registry['ref.triggerNode'] = {
+	description: { displayName: 'triggerNode', name: 'triggerNode', group: ['transform'], version: 1, description: '', defaults: { name: 'triggerNode' }, inputs: [], outputs: ['main'], properties: [] },
+	async trigger() { return [[{ json: { arm: 'trigger' } }]]; },
+};
+registry['ref.webhookNode'] = {
+	description: { displayName: 'webhookNode', name: 'webhookNode', group: ['transform'], version: 1, description: '', defaults: { name: 'webhookNode' }, inputs: ['main'], outputs: ['main'], properties: [] },
+	async execute() { return [[{ json: { arm: 'execute-on-webhook-node' } }]]; },
 };
 registry['ref.requiredParam'] = {
 	description: { displayName: 'requiredParam', name: 'requiredParam', group: ['transform'], version: 1, description: '', defaults: { name: 'requiredParam' }, inputs: ['main'], outputs: ['main'], properties: [{ displayName: 'Must', name: 'must', type: 'string', required: true, default: '' }] },
@@ -597,8 +638,8 @@ const items = (n) => Array.from({ length: n }, (_, i) => ({ json: { n: i } }));
 			{ executionOrder: order },
 		);
 		let v1 = null, v0 = null;
-		try { v1 = summarizeRun(await runWorkflow(build('v1'), { startItems: items(1) })); } catch (e) { v1 = { threw: show(e) }; }
-		try { v0 = summarizeRun(await runWorkflow(build('v0'), { startItems: items(1) })); } catch (e) { v0 = { threw: show(e) }; }
+		try { v1 = summarizeRun(await withTimeout(runWorkflow(build('v1'), { startItems: items(1) }), 5000, '403N v1')); } catch (e) { v1 = { threw: show(e) }; }
+		try { v0 = summarizeRun(await withTimeout(runWorkflow(build('v0'), { startItems: items(1) }), 5000, '403N v0')); } catch (e) { v0 = { threw: show(e) }; }
 		out['403J_sibling_order'] = {
 			note: 'v1 sorts nodesToAdd by canvas position (workflow-execute.ts:2041) and enqueues with unshift (enqueueFn, workflow-execute.ts:418); v0 appends with push.',
 			v1: { runDataKeys: v1.runDataKeys, executionIndexes: v1.perNode ? Object.fromEntries(Object.entries(v1.perNode).map(([k, t]) => [k, t.tasks[0].ei])) : v1 },
@@ -641,6 +682,90 @@ const items = (n) => Array.from({ length: n }, (_, i) => ({ json: { n: i } }));
 		out['403K_pre_run_gate'] = res['403K_pre_run_gate'];
 	}
 
+	// ---------- L: waiting state and resume (handleWaitingState, workflow-execute.ts:1285) ----
+	if (want('L')) {
+		const ad = () => ({
+			credentialsHelper: {}, executeWorkflow: async () => { }, restApiUrl: '', instanceBaseUrl: '', webhookBaseUrl: '',
+			webhookWaitingBaseUrl: '', webhookTestBaseUrl: '', formWaitingBaseUrl: '', userId: 'eng', variables: {},
+			hooks: { runHook: async () => { } }, currentNodeExecutionIndex: 0, executionId: 'eng-wait',
+		});
+		registry['ref.waitOnce'].waited = false;
+		const mk = () => buildWorkflow(lin([
+			{ name: 'Start', type: 'n8n-nodes-base.manualTrigger' }, { name: 'Wait', type: 'ref.waitOnce' }, { name: 'After', type: 'ref.passthrough' },
+		]));
+		const wf1 = mk();
+		const seed = { name: 'Start', data: { startTime: 0, executionTime: 0, executionIndex: 0, source: [], data: { main: [items(1)] } } };
+		let first = null, firstRaw = null;
+		try {
+			firstRaw = await withTimeout(new WorkflowExecute(ad(), 'manual').run({ workflow: wf1, startNode: wf1.getNode('Start'), triggerToStartFrom: seed }), 6000, '403L first run');
+			first = summarizeRun(firstRaw);
+		} catch (e) { first = { threw: show(e) }; }
+		let second = null;
+		try {
+			const wf2 = mk();
+			const resumed = await withTimeout(new WorkflowExecute(ad(), 'manual', firstRaw ? firstRaw.data : undefined).processRunExecutionData(wf2), 6000, '403L resume');
+			second = summarizeRun(resumed);
+		} catch (e) { second = { threw: show(e) }; }
+		out['403L_waiting_and_resume'] = {
+			note: 'A node calling putExecutionToWait() (base-execute-context.ts:107) sets runExecutionData.waitTill, which the engine reads when it writes executionStatus; handleWaitingState then clears waitTill, disables the waiting node on the stack and pops the duplicated task.',
+			first_run_ends_waiting: first,
+			waitTill_present: first ? first.waitTill : undefined,
+			stack_entry_after_wait: firstRaw && firstRaw.data && firstRaw.data.executionData
+				? { stackLength: firstRaw.data.executionData.nodeExecutionStack.length, waitingNode: firstRaw.data.executionData.nodeExecutionStack[0] ? firstRaw.data.executionData.nodeExecutionStack[0].node.name : null, waitingNodeDisabled: firstRaw.data.executionData.nodeExecutionStack[0] ? firstRaw.data.executionData.nodeExecutionStack[0].node.disabled : null, waitingExecutionKeys: Object.keys(firstRaw.data.executionData.waitingExecution || {}) }
+				: 'no executionData on the response',
+			resume_run: second,
+		};
+	}
+
+	// ---------- M: runNode dispatch arms (poll / trigger / webhook) -------------------------
+	if (want('M')) {
+		registry['ref.webhookNode'].webhook = { httpMethod: 'GET', responseMode: 'onReceived', path: 'probe' };
+		const arms = {};
+		arms.poll_manual_mode = await (async () => {
+			try { return summarizeRun(await withTimeout(runWorkflow(lin([{ name: 'Start', type: 'n8n-nodes-base.manualTrigger' }, { name: 'Poll', type: 'ref.poller' }]), { startItems: items(2), mode: 'manual' }), 5000, '403M poll/manual')); } catch (e) { return { threw: show(e) }; }
+		})();
+		arms.poll_cli_mode_passthrough = (() => {
+			const f = async () => { try { return summarizeRun(await withTimeout(runWorkflow(lin([{ name: 'Start', type: 'n8n-nodes-base.manualTrigger' }, { name: 'Poll', type: 'ref.poller' }]), { startItems: items(2), mode: 'cli' }), 5000, '403M poll/cli')); } catch (e) { return { threw: show(e) }; } };
+			return f();
+		})();
+		arms.trigger_manual_mode_container = (() => {
+			const f = async () => { try { return summarizeRun(await withTimeout(runWorkflow(mkWf([nd('T', 'ref.triggerNode')], {}), { mode: 'manual' }), 5000, '403M trigger/manual')); } catch (e) { return { threw: show(e) }; } };
+			return f();
+		})();
+		arms.trigger_cli_mode_passthrough = (() => {
+			const f = async () => { try { return summarizeRun(await withTimeout(runWorkflow(mkWf([nd('T', 'ref.triggerNode')], {}), { mode: 'cli' }), 5000, '403M trigger/cli')); } catch (e) { return { threw: show(e) }; } };
+			return f();
+		})();
+		arms.webhook_node_without_requestDefaults = (() => {
+			const f = async () => { try { return summarizeRun(await withTimeout(runWorkflow(lin([
+				{ name: 'Start', type: 'n8n-nodes-base.manualTrigger' }, { name: 'W', type: 'ref.webhookNode' }, { name: 'After', type: 'ref.passthrough' },
+			]), { startItems: items(3) }), 5000, '403M webhook')); } catch (e) { return { threw: show(e) }; } };
+			return f();
+		})();
+		for (const [k, v] of Object.entries(arms)) arms[k] = await v;
+		out['403M_dispatch_arms'] = {
+			note: 'workflow-execute.ts:1237-1268: execute||customOperation -> executeNode, poll -> executePollNode (:1078, runs nodeType.poll only in manual mode), trigger -> executeTriggerNode (:1098, needs the DI TriggersAndPollers service), webhook without description.requestDefaults -> plain passthrough, else executeDeclarativeNodeInTest (:1151).',
+			arms,
+		};
+	}
+
+	// ---------- N: the endless-loop guard (workflow-execute.ts:1559-1584, 2315-2344) --------
+	if (want('N')) {
+		const build = (executionOrder) => mkWf(
+			[nd('Start', 'n8n-nodes-base.manualTrigger'), nd('Nul', 'ref.returnNull'), nd('Child', 'ref.passthrough')],
+			{ Start: { main: [[{ node: 'Nul', type: 'main', index: 0 }]] }, Nul: { main: [[{ node: 'Child', type: 'main', index: 0 }]] } },
+			{ executionOrder },
+		);
+		let v1 = null, v0 = null;
+		try { v1 = summarizeRun(await runWorkflow(build('v1'), { startItems: items(1) })); } catch (e) { v1 = { threw: show(e) }; }
+		try { v0 = summarizeRun(await runWorkflow(build('v0'), { startItems: items(1) })); } catch (e) { v0 = { threw: show(e) }; }
+		out['403N_endless_loop_guard'] = {
+			mechanism: 'a parent returning null writes null into the single-input stack branch; ensureInputData (:2338-2343) only rejects a null branch in legacy order (isLegacyExecutionOrder), and it re-pushes the same entry (:2331). The loop guard (:1567) compares node:runIndex against lastExecutionTry, which is assigned only on that re-push path (:1582).',
+			v1_child_runs_with_null_branch: v1.threw ? { threw: v1.threw } : { status: v1.status, runDataKeys: v1.runDataKeys, childTask: v1.perNode && v1.perNode.Child ? v1.perNode.Child.tasks[0].data : (v1.perNode ? 'Child absent from runData' : v1) },
+			v0_guard_trips: v0.threw ? { threw: v0.threw } : { status: v0.status, runDataKeys: v0.runDataKeys, childTask: v0.perNode && v0.perNode.Child ? v0.perNode.Child.tasks[0].data : 'Child absent from runData' },
+		};
+	}
+
 	out.fixture = {
 		note: 'Node types registered by this runner into the harness registry only; nothing under tests/reference/** or reference/** was modified.',
 		types: ['ref.ctxProbe', 'ref.hintNode', 'ref.throwsOnce', 'ref.throwsAlways', 'ref.returnNull', 'ref.emptyOut', 'ref.errorInJson', 'ref.setMeta', 'ref.asyncDelay', 'ref.twoMainOutputs'],
@@ -652,5 +777,6 @@ const items = (n) => Array.from({ length: n }, (_, i) => ({ json: { n: i } }));
 	const outFile = process.argv[2];
 	if (outFile) fs.writeFileSync(outFile, json + '\n');
 	else console.log(json);
+	if (STABLE_OUT) fs.writeFileSync(STABLE_OUT, JSON.stringify(toStable(out), null, 2) + '\n');
 	process.exit(0);
 })().catch((e) => { console.error(e); process.exit(2); });

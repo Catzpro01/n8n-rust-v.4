@@ -8,9 +8,9 @@
 `node-execution-context/{base-execute-context,node-execution-context,execute-context}.ts`,
 `routing-node.ts`, `../utils/{get-additional-keys,execution-metadata,resolve-source-overwrite}.ts`,
 `packages/workflow/src/workflow.ts:817-890` (`getStartNode`).
-**Machine evidence:** 13 probe groups / 4601 recorded values / 10 recorded typed throws from **real `WorkflowExecute` runs**
+**Machine evidence:** 16 probe groups / 2300 recorded values / 14 recorded typed throws from **real `WorkflowExecute` runs**
 — [`docs/isolation/agent-6-probes/engine-observations.json`](agent-6-probes/engine-observations.json)
-(sha256 `0016e713b34240dda1efc8eaa2abec442b2fcc7376497a24056519f380f020fb`), produced by
+(sha256 `cadbfaf2f5ad95ae9bb5dcbb61bca46b033b4e794d853ae9014d84674f9a8009`), produced by
 [`engine-probes.cjs`](agent-6-probes/engine-probes.cjs); replay determinism **MATCH** via
 [`agent-6-probes/engine-determinism-check.cjs`](agent-6-probes/engine-determinism-check.cjs).
 **Contract:** [`contracts/execution-engine.contract.md`](../../contracts/execution-engine.contract.md)
@@ -270,7 +270,57 @@ sha256sum docs/isolation/agent-6-probes/engine-observations.json
 Probe groups: `403A` context surface · `403A2` missing `executionId` · `403B` one context per run ·
 `403C` 24-graph lifecycle matrix · `403D` start-node/destination/executionIndex · `403E` cancel + timeout ·
 `403F` context class vs node flags · `403G` bare `checkReadyForExecution` · `403H` error-output routing ·
-`403I` `runIndex` + proxy per activation · `403J` sibling order · `403K` the gate the engine itself applies.
+`403I` `runIndex` + proxy per activation · `403J` sibling order · `403K` the gate the engine itself applies. `403L` waiting + resume · `403M` `runNode` dispatch arms · `403N` the endless-loop guard.
+
+Byte-stable mirror (reviewer-requested, agent-4): `AGENT6_STABLE=<path>` on the runner, or
+`node agent-6-probes/make-stable.cjs <raw.json> <stable.json>` — the same mask, one source of truth, so
+`engine-observations.stable.json` (sha256 `110d4a3600f0da060c79cb40ac81f9a0398ba04434dbcaf47c0a53d4e0876489`) is
+diff-able by a gate: two consecutive recordings are **byte-identical** (`diff -q` → no output).
+
+**Counting errata for this record:** an earlier version of my header claimed *4601* values for the 13-group file. That
+number came from a bug in my counting snippet (it walked each group and then the whole document again). The corrected
+figure for the 16-group file is 2300 leaves / 14 throws, and it is reproducible with the same one-liner over the JSON.
+
+---
+
+## 12. `E11` — Waiting, resume, dispatch arms, and the guard (cycle 3 additions)
+
+**`403L` waiting → resume.** A node that calls `putExecutionToWait(date)` (`base-execute-context.ts:107-112`) makes the
+engine write `taskData.executionStatus = 'waiting'` (`workflow-execute.ts:1821`), keep the node's entry at the front of
+`nodeExecutionStack`, and return `status: 'waiting'` with `waitTill` set. Resuming through a *second* engine instance fed
+with the first run's `IRunExecutionData` produces, measured:
+
+| Observation | Value |
+| :--- | :--- |
+| resumed run | `status: 'success'`, `waitTill` cleared, `runDataKeys: [Start, Wait, After]` |
+| the waiting node's task after resume | `executionStatus: 'success'`, and **its `dataJson` is its input** (`[{n:0}]`), not a fresh execution result |
+| why | `handleWaitingState` (`:1285-1303`) sets `executionStackEntry.node.disabled = true` before the loop, so on resume the node goes down the *disabled* path (`handleDisabledNode`, `E4` row 4) and passes its input through; the duplicated task is removed with `runData[lastNodeExecuted].pop()` (`:1299`) |
+| `executionIndex` on resume | restarts at `0` for the waiting node — the counter lives on `additionalData.currentNodeExecutionIndex`, which a resumed instance does not inherit (`E5`) |
+
+Consequence for the Expression slice: after a resume, `$json`/`$node[<waiting node>]` resolve to the node's *input*, and
+`$runIndex` of the resumed activations is **not** the same index the first run used, because `executionIndex` restarts
+while `runIndex` (the `runData` array position) continues. Both numbers appear in `403L`.
+
+**`403M` `runNode` dispatch arms** (`:1221-1268`). Precedence is what a port must copy, not just the existence of the arms:
+
+| Arm | Condition | Measured outcome |
+| :--- | :--- | :--- |
+| `execute` (or a custom operation) | wins first, **even on a webhook node** | `ref.webhookNode` (type carrying `webhook` **and** `execute`) ran `execute()`: `W.dataJson = [[{arm:'execute-on-webhook-node'}]]` and `After` received it |
+| `poll` in `manual` | `new PollContext(...)` then `nodeType.poll.call(ctx)` | node output `arm:'poll'`, `ctxClass: 'PollContext'`, `mode:'manual'` — a **third** context class in the family, with no item index at all |
+| `poll` in any other mode | passthrough `{data: inputData.main}` | `Poll.dataJson` equals `Start`'s items verbatim (`[{n:0},{n:1}]`) |
+| `trigger` in `manual` | `Container.get(TriggersAndPollers).runTrigger(...)` | **hung** in the harness: recorded as `probe-timeout after 5000ms: 403M trigger/manual` (the DI service is absent outside the CLI app) ⇒ this arm is not reproducible without the container; documented, not guessed |
+| `trigger` in other modes | passthrough | `T.dataJson = [[{}]]` — the default seed item from `run()` (`E1` row 7) reaches the child unchanged |
+| webhook **without** `execute` | `{ data: inputData.main }` (`:1257`) | covered by the row above's passthrough semantics |
+
+**`403N` the endless-loop guard.** Mechanism (`:1559-1584` + `ensureInputData` `:2315-2344`): `lastExecutionTry` is
+assigned *only* on the re-queue path, so the guard can only trip when `ensureInputData` rejects an entry whose branch is
+`null` — and that rejection exists only in **legacy** order. My construction (parent returns `null` → child on a single
+input) never reaches it in either order, because `nodeSuccessData === null` short-circuits at `:1769` *before* the child
+is ever enqueued. Measured: `runDataKeys: ['Start']` in **both** `v0` and `v1`, child absent. So the guard is reachable
+only through the multi-input/waiting machinery (`addNodeToBeExecuted` writing `null` into a waiting slot, `:485-495`), and
+`G-3` stays open — now with the positive result that a `null`-returning parent cannot trigger it, which is itself the
+answer to "when does an execution get declared endless".
+
 
 `403G`/`403K` deliberately contrast each other: `checkReadyForExecution(wf, {})` returns `null` for a workflow with an
 unknown node type (no scope ⇒ nothing checked), while the same workflow **through `run()`** throws

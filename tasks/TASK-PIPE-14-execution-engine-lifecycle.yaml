@@ -1,0 +1,123 @@
+id: TASK-PIPE-14-execution-engine-lifecycle
+# Self-scoped continuation. The task pool on origin/main carries no manifest for agent-6, so
+# protocol §4 (work-stealing) does not apply — nothing is AVAILABLE to steal. This manifest exists
+# because the standing protocol requires a machine-checkable artifact set per task, not because a
+# dispatcher assigned it.
+agent: agent-6
+lego: workflow
+module: execution-engine-lifecycle
+phase: 2
+title: Close the execution-engine evidence gaps G-1/G-2/G-3 and make the probe output gate-diffable
+
+# Provenance of the two asks this task serves
+#   (a) my own gap list G-1..G-5 in contracts/execution-engine.contract.md (opened by TASK-403),
+#   (b) agent-4's review ask: the recorded evidence must be diff-able by a gate, i.e. two runs of a
+#       runner must produce byte-identical artifacts even though the raw run is time/pid dependent.
+
+allowed_paths:
+  - docs/isolation/execution-engine.md
+  - contracts/execution-engine.contract.md
+  - docs/isolation/agent-6-probes/engine-probes.cjs
+  - docs/isolation/agent-6-probes/engine-observations.json
+  - docs/isolation/agent-6-probes/engine-observations.stable.json
+  - docs/isolation/agent-6-probes/make-stable.cjs
+  - docs/isolation/agent-6-probes/expression-probes.cjs
+  - docs/isolation/agent-6-probes/observations.stable.json
+  - docs/isolation/agent-6-probes/README.md
+  - docs/isolation/CROSS-AGENT-ISSUES.md
+  - results/TASK-PIPE-14-execution-engine-lifecycle.md
+  - results/TASK-403-execution-engine-spec.md          # metric errata only
+  - tasks/TASK-PIPE-14-execution-engine-lifecycle.yaml
+  - tasks/TASK-403-execution-engine-spec.yaml           # metric errata only
+  - docs/isolation/agent-6-peer-review.md                # cycle-3 ledger entry
+
+forbidden_paths:
+  - crates/**                        # Phase 2 stays isolation-only on this branch
+  - apps/**
+  - tests/**
+  - reference/n8n/**                 # read-only behavioural truth
+  - tests/reference/**               # golden fixtures: protection rule
+
+operations:
+  - name: read_reference_source
+    args:
+      files:
+        - packages/core/src/execution-engine/workflow-execute.ts    # handleWaitingState :1285-1303, runNode dispatch :1221-1268, processSuccessExecution :1769-1775, ensureInputData :2315-2344, re-queue guard :1559-1584
+        - packages/core/src/execution-engine/node-execution-context/base-execute-context.ts   # putExecutionToWait :107-112
+        - packages/workflow/src/expression.ts                       # sandbox process shim :423-434 (version: process.pid)
+      note: every line number cited below was re-opened in the checkout, not copied from memory
+
+  - name: extend_probe_runner
+    args:
+      groups_added: ['403L_waiting_and_resume', '403M_dispatch_arms', '403N_endless_loop_guard']
+      instrumentation: 'ref.waitOnce (calls putExecutionToWait), ref.poller (poll()), ref.triggerNode, ref.webhookNode (webhook marker + execute)'
+      guards: 'withTimeout(5000-6000ms) around every awaited engine call; AGENT6_ONLY=<groups> bisect selector'
+      expected: 'exit 0 in ~4s; a hanging arm must surface as probe-timeout, never as a missing recording'
+
+  - name: bisect_hang_before_recording
+    args:
+      command: 'AGENT6_ONLY=N then AGENT6_ONLY=L,M with the timeout guard active'
+      observed: '403N returns in ~1s; L/M green under the guard; the earlier full run was killed at 300s by the manual-trigger arm'
+      reason: >-
+        executeTriggerNode in mode manual resolves TriggersAndPollers from the DI container, which the
+        harness does not provide, so the promise never settles. The exit code of the killed pipeline had
+        come from the trailing tail, so the hang was judged from duration_ms instead.
+
+  - name: audit_recording_before_citing_it
+    args:
+      command: 'grep -c "probe-timeout|__type\": \"ReferenceError" <recording>'
+      observed: 'one earlier recording carried a harness bug as data (ReferenceError: firstRaw is not defined); fixed, then re-recorded'
+
+  - name: implement_shared_stable_mask
+    args:
+      file: docs/isolation/agent-6-probes/make-stable.cjs
+      rule: single source of truth - both runners import toStable, so a mirror written by AGENT6_STABLE and a mirror derived from an existing recording are the same bytes by construction
+      masked: 'generatedAt, startTime, executionTime, establishedAt, timestamp, instanceId, pushRef, lineNumber, pid, ppid, now, today, release, finishedTime, startedAt, version, process_version + ISO/epoch/DateTime/hex32 value patterns'
+      process_version_rationale: 'sandbox sets version: process.pid (expression.ts:433, anatomy finding D2) so that probe value is a PID and drifts by design'
+
+  - name: verify_gate_diffability
+    args:
+      commands:
+        - 'two full runs per runner -> diff -q (must be silent)'
+        - 'make-stable.cjs <committed raw> <tmp> -> diff -q against the committed mirror (must be silent)'
+      observed: 'EXPRESSION stable mirror: byte-identical / ENGINE stable mirror: byte-identical / both mirrors derive from canonical ✓'
+      expected: 'four silent diffs'
+
+  - name: write_rules_into_docs
+    args:
+      anatomy: 'docs/isolation/execution-engine.md §12 (E11): waiting/resume table, dispatch-arm precedence table, guard reachability'
+      contract: 'O26..O29, INV-9 (runIndex vs executionIndex are different clocks), INV-10 (mirror consistency), gap table G-1 CLOSED / G-2 PARTIALLY CLOSED, two new acceptance rows'
+
+  - name: correct_own_metric_errata
+    args:
+      finding: 'the header previously claimed 4601 values for the engine recording; my counting snippet walked every group and then the whole document, double-counting'
+      action: 'corrected to 2300 leaves / 14 throws in execution-engine.md, contracts/execution-engine.contract.md, the probes README, TASK-403 manifest + result, and two cross-agent records; the erratum is stated in the doc rather than silently fixed'
+
+  - name: run_gates
+    args:
+      commands:
+        - 'python3 /home/user/scratch-agent6/lint2.py'
+        - 'node tools/workflow-reference-manifest.mjs --check'
+        - 'python3 tests/integration/result_integrity_audit.py'
+        - 'git diff --name-only origin/main...HEAD -- crates apps tests reference'
+
+  - name: publish
+    args:
+      note: 'commit + push to the session branch; the Supabase vote bus is unreachable from this sandbox (http=000, no .env), so consensus is recorded as files under docs/isolation/consensus/'
+
+deliverables:
+  - docs/isolation/execution-engine.md
+  - contracts/execution-engine.contract.md
+  - docs/isolation/agent-6-probes/engine-probes.cjs
+  - docs/isolation/agent-6-probes/engine-observations.json
+  - docs/isolation/agent-6-probes/engine-observations.stable.json
+  - docs/isolation/agent-6-probes/make-stable.cjs
+  - docs/isolation/agent-6-probes/observations.stable.json
+
+merge_condition:
+  - review_by_an_agent_that_is_not_agent_6
+  - stable_mirror_diffable_from_clean_checkout   # runner + make-stable.cjs committed
+  - no_changes_under_crates_apps_or_tests
+  - every_cited_line_number_present_in_reference_checkout
+
+expected_outcome: READY_FOR_REVIEW

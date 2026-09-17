@@ -2,7 +2,10 @@
 
 Machine-recorded behaviour of the n8n `{{ … }}` pipeline and the `WorkflowDataProxy` lookup slice.
 **Not a test suite: an oracle recorder.** `observations.json` is the raw output of the pinned
-n8n 2.9.4 runtime; the two isolation records cite it by ID.
+n8n runtime resolved to `n8n-workflow` 2.9.1 / `n8n-core` 2.9.1 (recorded in `meta.runtime`; re-check with
+`node -p "require('./.runtime/node_modules/n8n-workflow/package.json').version"`). Note for anyone comparing versions:
+`reference/n8n/package.json` says `2.9.4` (the monorepo root) while `reference/n8n/packages/{workflow,core}/package.json`
+say `2.9.1` — both statements in the fleet are about the same tree; the **packages** are what the probes drive; the two isolation records cite it by ID.
 
 ```text
 expression-probes.cjs   the runner (drives the real n8n-workflow + n8n-core; re-implements nothing)
@@ -12,10 +15,22 @@ observations.json       503 recorded entries (266 PIPE-12 · 214 PIPE-13 · 23 f
 determinism-check.cjs   replays two observation files against each other, masking environment-dependent fields
 
 engine-probes.cjs            TASK-403 runner: drives real WorkflowExecute runs and records the execution engine
-engine-observations.json     13 probe groups / 4601 leaf values / 10 recorded throws (24 lifecycle graphs)
-                             sha256 0016e713b34240dda1efc8eaa2abec442b2fcc7376497a24056519f380f020fb
+engine-observations.json     16 probe groups / 2300 leaf values / 14 recorded throws (24 lifecycle graphs)
+                             sha256 cadbfaf2f5ad95ae9bb5dcbb61bca46b033b4e794d853ae9014d84674f9a8009
 engine-determinism-check.cjs same replay check for the engine file (masks generatedAt, startTime,
                              executionTime, establishedAt, timestamp, instanceId, pushRef, lineNumber)
+make-stable.cjs            THE mask, as a module + CLI: masks the keys above plus pid, ppid, now, today, release,
+                             finishedTime, startedAt, version, process_version, and ISO/epoch/DateTime/hex32 values.
+                             Both runners import it, so "written by the runner" and "derived from a recording"
+                             are the same bytes by construction.
+observations.stable.json   sha256 bddbd1238983c53a0ca9145b36b978b94b8f7f3805922f2ef95cd6947b2bd677
+engine-observations.stable.json
+                            sha256 110d4a3600f0da060c79cb40ac81f9a0398ba04434dbcaf47c0a53d4e0876489
+
+Why two files per runner: the raw JSON is the authoritative observation (it must keep the real timestamps, because
+`meta.now` vs an expression's resolved date IS the finding in several cases). The `.stable.json` mirror exists only so
+a CI gate can `diff -q` two runs. `process_version` is masked because the sandbox sets `version: process.pid`
+(`expression.ts:433`, anatomy finding D2), i.e. that probe's value is a PID and drifts by design.
 ```
 
 ## TASK-403 (engine) run
@@ -26,6 +41,18 @@ NODE_PATH=$PWD/.runtime/node_modules \
 node docs/isolation/agent-6-probes/engine-determinism-check.cjs \
   /tmp/engine-observations.json docs/isolation/agent-6-probes/engine-observations.json
 ```
+
+```bash
+# gate-diffability check (agent-4's ask): two consecutive runs must be byte-identical
+R=docs/isolation/agent-6-probes
+NODE_PATH=$PWD/.runtime/node_modules AGENT6_STABLE=/tmp/a.json node $R/engine-probes.cjs /tmp/ra.json
+NODE_PATH=$PWD/.runtime/node_modules AGENT6_STABLE=/tmp/b.json node $R/engine-probes.cjs /tmp/rb.json
+diff -q /tmp/a.json /tmp/b.json            # -> no output
+diff -q /tmp/a.json $R/engine-observations.stable.json   # -> no output
+```
+
+Runner flags: `AGENT6_STABLE=<path>` (write the masked mirror) · `AGENT6_ONLY=403L,403M` (bisect; a group that hangs is
+recorded as `probe-timeout` instead of blocking the run).
 
 Engine group map: `403A`/`403A2` context surface (+ missing `executionId` ⇒ `__UNKNOWN__`) · `403B` one context per
 node run · `403C` 24-graph lifecycle matrix (disabled / `null` / empty branch / pin data / retries / `executeOnce` /

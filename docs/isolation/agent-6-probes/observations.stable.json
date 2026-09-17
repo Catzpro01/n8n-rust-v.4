@@ -1,0 +1,3715 @@
+{
+  "meta": {
+    "generatedAt": "<stable>",
+    "runtime": {
+      "n8n-workflow": "2.9.1",
+      "n8n-core": "2.9.1",
+      "@n8n/tournament": "1.0.6",
+      "luxon": "3.7.2"
+    },
+    "node": "v22.22.3"
+  },
+  "PIPE-12": {
+    "12A_chunking_n8n_vs_tournament": {
+      "\"{{a}}\"": {
+        "n8n": {
+          "ok": [
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "code",
+              "text": "a",
+              "hasClosingBrackets": true
+            }
+          ]
+        },
+        "tournament": {
+          "ok": [
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "code",
+              "text": "a",
+              "hasClosingBrackets": true
+            }
+          ]
+        },
+        "roundTripN8n": {
+          "ok": "{{a}}"
+        }
+      },
+      "\"a{{b}}c\"": {
+        "n8n": {
+          "ok": [
+            {
+              "type": "text",
+              "text": "a"
+            },
+            {
+              "type": "code",
+              "text": "b",
+              "hasClosingBrackets": true
+            },
+            {
+              "type": "text",
+              "text": "c"
+            }
+          ]
+        },
+        "tournament": {
+          "ok": [
+            {
+              "type": "text",
+              "text": "a"
+            },
+            {
+              "type": "code",
+              "text": "b",
+              "hasClosingBrackets": true
+            },
+            {
+              "type": "text",
+              "text": "c"
+            }
+          ]
+        },
+        "roundTripN8n": {
+          "ok": "a{{b}}c"
+        }
+      },
+      "\"{{a}}{{b}}\"": {
+        "n8n": {
+          "ok": [
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "code",
+              "text": "a",
+              "hasClosingBrackets": true
+            },
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "code",
+              "text": "b",
+              "hasClosingBrackets": true
+            }
+          ]
+        },
+        "tournament": {
+          "ok": [
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "code",
+              "text": "a",
+              "hasClosingBrackets": true
+            },
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "code",
+              "text": "b",
+              "hasClosingBrackets": true
+            }
+          ]
+        },
+        "roundTripN8n": {
+          "ok": "{{a}}{{b}}"
+        }
+      },
+      "\"{{ a }}\"": {
+        "n8n": {
+          "ok": [
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "code",
+              "text": " a ",
+              "hasClosingBrackets": true
+            }
+          ]
+        },
+        "tournament": {
+          "ok": [
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "code",
+              "text": " a ",
+              "hasClosingBrackets": true
+            }
+          ]
+        },
+        "roundTripN8n": {
+          "ok": "{{ a }}"
+        }
+      },
+      "\"\\\\{{a}}\"": {
+        "n8n": {
+          "ok": [
+            {
+              "type": "text",
+              "text": "\\{{a}}"
+            }
+          ]
+        },
+        "tournament": {
+          "ok": [
+            {
+              "type": "text",
+              "text": "\\{{a}}"
+            }
+          ]
+        },
+        "roundTripN8n": {
+          "ok": "\\{{a}}"
+        }
+      },
+      "\"\\\\\\\\{{a}}\"": {
+        "n8n": {
+          "ok": [
+            {
+              "type": "text",
+              "text": "\\\\{{a}}"
+            }
+          ]
+        },
+        "tournament": {
+          "ok": [
+            {
+              "type": "text",
+              "text": "\\"
+            },
+            {
+              "type": "code",
+              "text": "a",
+              "hasClosingBrackets": true
+            }
+          ]
+        },
+        "roundTripN8n": {
+          "ok": "\\\\{{a}}"
+        }
+      },
+      "\"\\\\\\\\\\\\{{a}}\"": {
+        "n8n": {
+          "ok": [
+            {
+              "type": "text",
+              "text": "\\\\\\{{a}}"
+            }
+          ]
+        },
+        "tournament": {
+          "ok": [
+            {
+              "type": "text",
+              "text": "\\\\\\{{a}}"
+            }
+          ]
+        },
+        "roundTripN8n": {
+          "ok": "\\\\\\{{a}}"
+        }
+      },
+      "\"{{a}\"": {
+        "n8n": {
+          "ok": [
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "code",
+              "text": "a}",
+              "hasClosingBrackets": false
+            }
+          ]
+        },
+        "tournament": {
+          "ok": [
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "code",
+              "text": "a}",
+              "hasClosingBrackets": false
+            }
+          ]
+        },
+        "roundTripN8n": {
+          "ok": "{{a}"
+        }
+      },
+      "\"a}}\"": {
+        "n8n": {
+          "ok": [
+            {
+              "type": "text",
+              "text": "a}}"
+            }
+          ]
+        },
+        "tournament": {
+          "ok": [
+            {
+              "type": "text",
+              "text": "a}}"
+            }
+          ]
+        },
+        "roundTripN8n": {
+          "ok": "a}}"
+        }
+      },
+      "\"{{}}\"": {
+        "n8n": {
+          "ok": [
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "code",
+              "text": "",
+              "hasClosingBrackets": true
+            }
+          ]
+        },
+        "tournament": {
+          "ok": [
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "code",
+              "text": "",
+              "hasClosingBrackets": true
+            }
+          ]
+        },
+        "roundTripN8n": {
+          "ok": "{{}}"
+        }
+      },
+      "\"{{ }}\"": {
+        "n8n": {
+          "ok": [
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "code",
+              "text": " ",
+              "hasClosingBrackets": true
+            }
+          ]
+        },
+        "tournament": {
+          "ok": [
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "code",
+              "text": " ",
+              "hasClosingBrackets": true
+            }
+          ]
+        },
+        "roundTripN8n": {
+          "ok": "{{ }}"
+        }
+      },
+      "\"{{ }}{{ }}\"": {
+        "n8n": {
+          "ok": [
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "code",
+              "text": " ",
+              "hasClosingBrackets": true
+            },
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "code",
+              "text": " ",
+              "hasClosingBrackets": true
+            }
+          ]
+        },
+        "tournament": {
+          "ok": [
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "code",
+              "text": " ",
+              "hasClosingBrackets": true
+            },
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "code",
+              "text": " ",
+              "hasClosingBrackets": true
+            }
+          ]
+        },
+        "roundTripN8n": {
+          "ok": "{{ }}{{ }}"
+        }
+      },
+      "\"a\\\\}}b\"": {
+        "n8n": {
+          "ok": [
+            {
+              "type": "text",
+              "text": "a\\}}b"
+            }
+          ]
+        },
+        "tournament": {
+          "ok": [
+            {
+              "type": "text",
+              "text": "a\\}}b"
+            }
+          ]
+        },
+        "roundTripN8n": {
+          "ok": "a\\}}b"
+        }
+      },
+      "\"{{\\\"{{\\\"}}\"": {
+        "n8n": {
+          "ok": [
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "code",
+              "text": "\"{{\"",
+              "hasClosingBrackets": true
+            }
+          ]
+        },
+        "tournament": {
+          "ok": [
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "code",
+              "text": "\"{{\"",
+              "hasClosingBrackets": true
+            }
+          ]
+        },
+        "roundTripN8n": {
+          "ok": "{{\"{{\"}}"
+        }
+      },
+      "\"{{\\\"}}}}\"": {
+        "n8n": {
+          "ok": [
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "code",
+              "text": "\"",
+              "hasClosingBrackets": true
+            },
+            {
+              "type": "text",
+              "text": "}}"
+            }
+          ]
+        },
+        "tournament": {
+          "ok": [
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "code",
+              "text": "\"",
+              "hasClosingBrackets": true
+            },
+            {
+              "type": "text",
+              "text": "}}"
+            }
+          ]
+        },
+        "roundTripN8n": {
+          "ok": "{{\"}}}}"
+        }
+      },
+      "\"{{a\\nb}}\"": {
+        "n8n": {
+          "ok": [
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "code",
+              "text": "a\nb",
+              "hasClosingBrackets": true
+            }
+          ]
+        },
+        "tournament": {
+          "ok": [
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "code",
+              "text": "a\nb",
+              "hasClosingBrackets": true
+            }
+          ]
+        },
+        "roundTripN8n": {
+          "ok": "{{a\nb}}"
+        }
+      },
+      "\"x{{1\"": {
+        "n8n": {
+          "ok": [
+            {
+              "type": "text",
+              "text": "x"
+            },
+            {
+              "type": "code",
+              "text": "1",
+              "hasClosingBrackets": false
+            }
+          ]
+        },
+        "tournament": {
+          "ok": [
+            {
+              "type": "text",
+              "text": "x"
+            },
+            {
+              "type": "code",
+              "text": "1",
+              "hasClosingBrackets": false
+            }
+          ]
+        },
+        "roundTripN8n": {
+          "ok": "x{{1"
+        }
+      },
+      "\"{{1}}x\"": {
+        "n8n": {
+          "ok": [
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "code",
+              "text": "1",
+              "hasClosingBrackets": true
+            },
+            {
+              "type": "text",
+              "text": "x"
+            }
+          ]
+        },
+        "tournament": {
+          "ok": [
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "code",
+              "text": "1",
+              "hasClosingBrackets": true
+            },
+            {
+              "type": "text",
+              "text": "x"
+            }
+          ]
+        },
+        "roundTripN8n": {
+          "ok": "{{1}}x"
+        }
+      },
+      "\"\\\\\"": {
+        "n8n": {
+          "ok": [
+            {
+              "type": "text",
+              "text": "\\"
+            }
+          ]
+        },
+        "tournament": {
+          "ok": [
+            {
+              "type": "text",
+              "text": "\\"
+            }
+          ]
+        },
+        "roundTripN8n": {
+          "ok": "\\"
+        }
+      },
+      "\"\\\\\\\\\"": {
+        "n8n": {
+          "ok": [
+            {
+              "type": "text",
+              "text": "\\\\"
+            }
+          ]
+        },
+        "tournament": {
+          "ok": [
+            {
+              "type": "text",
+              "text": "\\\\"
+            }
+          ]
+        },
+        "roundTripN8n": {
+          "ok": "\\\\"
+        }
+      },
+      "\"a\\\\\\\\b{{1}}\"": {
+        "n8n": {
+          "ok": [
+            {
+              "type": "text",
+              "text": "a\\\\b"
+            },
+            {
+              "type": "code",
+              "text": "1",
+              "hasClosingBrackets": true
+            }
+          ]
+        },
+        "tournament": {
+          "ok": [
+            {
+              "type": "text",
+              "text": "a\\b"
+            },
+            {
+              "type": "code",
+              "text": "1",
+              "hasClosingBrackets": true
+            }
+          ]
+        },
+        "roundTripN8n": {
+          "ok": "a\\\\b{{1}}"
+        }
+      },
+      "\"a\\\\\\\\b\"": {
+        "n8n": {
+          "ok": [
+            {
+              "type": "text",
+              "text": "a\\\\b"
+            }
+          ]
+        },
+        "tournament": {
+          "ok": [
+            {
+              "type": "text",
+              "text": "a\\\\b"
+            }
+          ]
+        },
+        "roundTripN8n": {
+          "ok": "a\\\\b"
+        }
+      }
+    },
+    "12B_template_semantics_resolveWithoutWorkflow": {
+      "num": {
+        "ok": 1
+      },
+      "str": {
+        "ok": "x"
+      },
+      "arr": {
+        "ok": [
+          1,
+          2
+        ]
+      },
+      "obj": {
+        "ok": {
+          "a": 1
+        }
+      },
+      "bool": {
+        "ok": true
+      },
+      "null": {
+        "ok": null
+      },
+      "undefined_lit": {
+        "ok": {
+          "__type": "undefined"
+        }
+      },
+      "nan": {
+        "ok": {
+          "__type": "Number",
+          "value": "NaN"
+        }
+      },
+      "infinity": {
+        "ok": {
+          "__type": "Number",
+          "value": "Infinity"
+        }
+      },
+      "concat_text_code": {
+        "ok": "ab"
+      },
+      "prefix_text": {
+        "ok": "x1"
+      },
+      "suffix_text": {
+        "ok": "1x"
+      },
+      "missing_in_text": {
+        "ok": "xy"
+      },
+      "null_in_text": {
+        "ok": "xy"
+      },
+      "false_in_text": {
+        "ok": "xfalsey"
+      },
+      "zero_in_text": {
+        "ok": "x0y"
+      },
+      "obj_in_text": {
+        "ok": "x[object Object]y"
+      },
+      "empty_code_only": {
+        "threw": {
+          "__type": "SyntaxError",
+          "message": "Not a expression statement"
+        }
+      },
+      "empty_code_in_text": {
+        "threw": {
+          "__type": "SyntaxError",
+          "message": "Not a expression statement"
+        }
+      },
+      "unclosed_code": {
+        "ok": "x1"
+      },
+      "unknown_ident": {
+        "ok": {
+          "__type": "undefined"
+        }
+      },
+      "unknown_ident_in_text": {
+        "ok": "xy"
+      },
+      "member_missing": {
+        "ok": {
+          "__type": "undefined"
+        }
+      },
+      "member_missing_in_text": {
+        "ok": "xy"
+      },
+      "template_string": {
+        "ok": "a1b"
+      },
+      "iife": {
+        "ok": 42
+      },
+      "iife_throw": {
+        "ok": {
+          "__type": "undefined"
+        }
+      },
+      "iife_throw_in_text": {
+        "ok": "xy"
+      },
+      "callback_throw": {
+        "ok": {
+          "__type": "undefined"
+        }
+      },
+      "add_object": {
+        "ok": "1[object Object]"
+      },
+      "typeof_undef": {
+        "ok": "undefined"
+      },
+      "sequence": {
+        "ok": 2
+      },
+      "new_date": {
+        "ok": "1970-01-01T00:00:00.000Z"
+      },
+      "trailing_semicolon": {
+        "ok": 2
+      },
+      "multiline": {
+        "ok": 3
+      },
+      "syntax_error": {
+        "threw": {
+          "__type": "SyntaxError",
+          "message": "Line 1: Unexpected end of input"
+        }
+      },
+      "syntax_error_dot": {
+        "threw": {
+          "__type": "SyntaxError",
+          "message": "Line 1: Unexpected token ."
+        }
+      },
+      "syntax_error_member": {
+        "threw": {
+          "__type": "SyntaxError",
+          "message": "Line 1: Unexpected end of input"
+        }
+      },
+      "assignment": {
+        "ok": 1
+      },
+      "assignment_then_use": {
+        "ok": 1
+      }
+    },
+    "12B2_param_pipeline_raw_strings": {
+      "input_number": {
+        "ok": 1
+      },
+      "input_string": {
+        "ok": "plain"
+      },
+      "equals_only": {
+        "ok": ""
+      },
+      "equals_text": {
+        "ok": "just text"
+      },
+      "equals_braced_num": {
+        "ok": 1
+      },
+      "equals_bare_num": {
+        "ok": "1"
+      },
+      "equals_undefined": {
+        "ok": {
+          "__type": "undefined"
+        }
+      },
+      "equals_notDefined": {
+        "ok": {
+          "__type": "undefined"
+        }
+      },
+      "equals_text_and_undefined": {
+        "ok": "ab"
+      },
+      "equals_obj": {
+        "ok": {
+          "a": 1
+        }
+      },
+      "equals_syntax_error": {
+        "threw": {
+          "__type": "ApplicationError",
+          "message": "invalid syntax"
+        }
+      },
+      "equals_throwing_fn": {
+        "ok": "x"
+      },
+      "non_expression_string_with_braces": {
+        "ok": "{{1}}"
+      },
+      "array_of_expressions": {
+        "ok": [
+          1,
+          2,
+          "plain"
+        ]
+      },
+      "object_tree": {
+        "ok": {
+          "a": 1,
+          "b": {
+            "c": 2
+          },
+          "d": null,
+          "e": {
+            "__type": "undefined"
+          },
+          "f": [
+            {
+              "g": 3
+            }
+          ]
+        }
+      }
+    },
+    "12C_extension_syntax": {
+      "isEmpty_on_member": {
+        "input": "{{ $json.a.isEmpty() }}",
+        "hasExpressionExtension": {
+          "ok": true
+        },
+        "hasNativeMethod": {
+          "ok": false
+        },
+        "extendSyntax": {
+          "ok": "{{ extend($json.a, \"isEmpty\", []) }}"
+        },
+        "extendSyntax_forced": {
+          "ok": "{{ extend($json.a, \"isEmpty\", []) }}"
+        }
+      },
+      "trim_native": {
+        "input": "{{ \"x\".trim() }}",
+        "hasExpressionExtension": {
+          "ok": false
+        },
+        "hasNativeMethod": {
+          "ok": false
+        },
+        "extendSyntax": {
+          "ok": "{{ \"x\".trim() }}"
+        },
+        "extendSyntax_forced": {
+          "ok": "{{ \"x\".trim() }}"
+        }
+      },
+      "trim_after_extension": {
+        "input": "{{ $json.a.trim().isEmpty() }}",
+        "hasExpressionExtension": {
+          "ok": true
+        },
+        "hasNativeMethod": {
+          "ok": false
+        },
+        "extendSyntax": {
+          "ok": "{{ extend($json.a.trim(), \"isEmpty\", []) }}"
+        },
+        "extendSyntax_forced": {
+          "ok": "{{ extend($json.a.trim(), \"isEmpty\", []) }}"
+        }
+      },
+      "if_fn": {
+        "input": "{{ $if($json.a, \"y\", \"n\") }}",
+        "hasExpressionExtension": {
+          "ok": true
+        },
+        "hasNativeMethod": {
+          "ok": false
+        },
+        "extendSyntax": {
+          "ok": "{{ $json.a ? \"y\" : \"n\" }}"
+        },
+        "extendSyntax_forced": {
+          "ok": "{{ $json.a ? \"y\" : \"n\" }}"
+        }
+      },
+      "min_max": {
+        "input": "{{ $min(1, 2) }}",
+        "hasExpressionExtension": {
+          "ok": false
+        },
+        "hasNativeMethod": {
+          "ok": false
+        },
+        "extendSyntax": {
+          "ok": "{{ $min(1, 2) }}"
+        },
+        "extendSyntax_forced": {
+          "ok": "{{ $min(1, 2) }}"
+        }
+      },
+      "optional_chain_ext": {
+        "input": "{{ $json.a?.isEmpty() }}",
+        "hasExpressionExtension": {
+          "ok": true
+        },
+        "hasNativeMethod": {
+          "ok": false
+        },
+        "extendSyntax": {
+          "ok": "{{global.chainCancelToken1 = ((global.chainValue1 = $json.a) ?? undefined) === undefined, global.chainCancelToken1 === true ? undefined : extend(global.chainValue1, \"isEmpty\", [])}}"
+        },
+        "extendSyntax_forced": {
+          "ok": "{{global.chainCancelToken1 = ((global.chainValue1 = $json.a) ?? undefined) === undefined, global.chainCancelToken1 === true ? undefined : extend(global.chainValue1, \"isEmpty\", [])}}"
+        }
+      },
+      "obj_literal": {
+        "input": "{{ { data: 1 } }}",
+        "hasExpressionExtension": {
+          "ok": false
+        },
+        "hasNativeMethod": {
+          "ok": false
+        },
+        "extendSyntax": {
+          "ok": "{{ { data: 1 } }}"
+        },
+        "extendSyntax_forced": {
+          "ok": "{{ { data: 1 } }}"
+        }
+      },
+      "toDate": {
+        "input": "{{ $json.t.toDate() }}",
+        "hasExpressionExtension": {
+          "ok": true
+        },
+        "hasNativeMethod": {
+          "ok": false
+        },
+        "extendSyntax": {
+          "ok": "{{ extend($json.t, \"toDate\", []) }}"
+        },
+        "extendSyntax_forced": {
+          "ok": "{{ extend($json.t, \"toDate\", []) }}"
+        }
+      },
+      "mixed_text": {
+        "input": "a{{ $json.x.trim() }}b",
+        "hasExpressionExtension": {
+          "ok": false
+        },
+        "hasNativeMethod": {
+          "ok": false
+        },
+        "extendSyntax": {
+          "ok": "a{{ $json.x.trim() }}b"
+        },
+        "extendSyntax_forced": {
+          "ok": "a{{ $json.x.trim() }}b"
+        }
+      },
+      "quote_strip_quirk": {
+        "input": "{{ \"literal.isEmpty()\" }}",
+        "hasExpressionExtension": {
+          "ok": true
+        },
+        "hasNativeMethod": {
+          "ok": false
+        },
+        "extendSyntax": {
+          "ok": "{{ \"literal.isEmpty()\" }}"
+        },
+        "extendSyntax_forced": {
+          "ok": "{{ \"literal.isEmpty()\" }}"
+        }
+      }
+    },
+    "12C2_extension_inventory": {
+      "extendedFunctions": [
+        "min",
+        "max",
+        "not",
+        "average",
+        "numberList",
+        "zip",
+        "$min",
+        "$max",
+        "$average",
+        "$not",
+        "$ifEmpty"
+      ],
+      "byType": [
+        {
+          "typeName": "Array",
+          "aliases": [],
+          "functions": [
+            "removeDuplicates",
+            "unique",
+            "first",
+            "last",
+            "pluck",
+            "randomItem",
+            "sum",
+            "min",
+            "max",
+            "average",
+            "isNotEmpty",
+            "isEmpty",
+            "compact",
+            "smartJoin",
+            "chunk",
+            "renameKeys",
+            "merge",
+            "union",
+            "difference",
+            "intersection",
+            "append",
+            "toJsonString",
+            "toInt",
+            "toFloat",
+            "toBoolean",
+            "toDateTime"
+          ]
+        },
+        {
+          "typeName": "Date",
+          "aliases": [],
+          "functions": [
+            "beginningOf",
+            "endOfMonth",
+            "extract",
+            "isBetween",
+            "isDst",
+            "isInLast",
+            "isWeekend",
+            "minus",
+            "plus",
+            "format",
+            "toDateTime",
+            "diffTo",
+            "diffToNow",
+            "toInt",
+            "toFloat",
+            "toBoolean",
+            "isEmpty",
+            "isNotEmpty"
+          ]
+        },
+        {
+          "typeName": "Number",
+          "aliases": [],
+          "functions": [
+            "ceil",
+            "floor",
+            "format",
+            "round",
+            "abs",
+            "isInteger",
+            "isEven",
+            "isOdd",
+            "toBoolean",
+            "toInt",
+            "toFloat",
+            "toDateTime"
+          ]
+        },
+        {
+          "typeName": "Object",
+          "aliases": [],
+          "functions": [
+            "isEmpty",
+            "isNotEmpty",
+            "hasField",
+            "removeField",
+            "removeFieldsContaining",
+            "keepFieldsContaining",
+            "compact",
+            "urlEncode",
+            "keys",
+            "values",
+            "toJsonString",
+            "toInt",
+            "toFloat",
+            "toBoolean",
+            "toDateTime"
+          ]
+        },
+        {
+          "typeName": "String",
+          "aliases": [],
+          "functions": [
+            "hash",
+            "removeMarkdown",
+            "removeTags",
+            "toDate",
+            "toDateTime",
+            "toBoolean",
+            "toDecimalNumber",
+            "toNumber",
+            "toFloat",
+            "toInt",
+            "toWholeNumber",
+            "toSentenceCase",
+            "toSnakeCase",
+            "toTitleCase",
+            "urlDecode",
+            "urlEncode",
+            "quote",
+            "replaceSpecialChars",
+            "length",
+            "isDomain",
+            "isEmail",
+            "isNumeric",
+            "isUrl",
+            "isEmpty",
+            "isNotEmpty",
+            "toJsonString",
+            "extractEmail",
+            "extractDomain",
+            "extractUrl",
+            "extractUrlPath",
+            "parseJson",
+            "base64Encode",
+            "base64Decode"
+          ]
+        },
+        {
+          "typeName": "Boolean",
+          "aliases": [],
+          "functions": [
+            "toBoolean",
+            "toInt",
+            "toFloat",
+            "toNumber",
+            "toDateTime"
+          ]
+        }
+      ]
+    },
+    "12D_sandbox": {
+      "constructor_direct": {
+        "expr": "={{ {}.constructor }}",
+        "result": {
+          "threw": {
+            "__type": "ExpressionError",
+            "message": "Expression contains invalid constructor function call",
+            "context": {
+              "causeDetailed": "Constructor override attempt is not allowed due to security concerns",
+              "runIndex": 0,
+              "itemIndex": 0
+            }
+          }
+        }
+      },
+      "constructor_member": {
+        "expr": "={{ $json.a.constructor }}",
+        "result": {
+          "threw": {
+            "__type": "ExpressionError",
+            "message": "Expression contains invalid constructor function call",
+            "context": {
+              "causeDetailed": "Constructor override attempt is not allowed due to security concerns",
+              "runIndex": 0,
+              "itemIndex": 0
+            }
+          }
+        }
+      },
+      "constructor_computed": {
+        "expr": "={{ {}[\"constructor\"] }}",
+        "result": {
+          "threw": {
+            "__type": "ExpressionError",
+            "message": "Cannot access \"constructor\" due to security concerns"
+          }
+        }
+      },
+      "proto_literal": {
+        "expr": "={{ ({}).__proto__ }}",
+        "result": {
+          "threw": {
+            "__type": "ExpressionError",
+            "message": "Cannot access \"__proto__\" due to security concerns"
+          }
+        }
+      },
+      "proto_member": {
+        "expr": "={{ $json.a.__proto__ }}",
+        "result": {
+          "threw": {
+            "__type": "ExpressionError",
+            "message": "Cannot access \"__proto__\" due to security concerns"
+          }
+        }
+      },
+      "proto_computed": {
+        "expr": "={{ {}[\"__proto__\"] }}",
+        "result": {
+          "threw": {
+            "__type": "ExpressionError",
+            "message": "Cannot access \"__proto__\" due to security concerns"
+          }
+        }
+      },
+      "proto_dynamic": {
+        "expr": "={{ {}[ \"pro\" + \"to\" + \"__\" ] }}",
+        "result": {
+          "ok": {
+            "__type": "undefined"
+          }
+        }
+      },
+      "prototype_dynamic": {
+        "expr": "={{ {}[ \"pro\" + \"type\" ] }}",
+        "result": {
+          "ok": {
+            "__type": "undefined"
+          }
+        }
+      },
+      "with_stmt": {
+        "expr": "={{ (() => { with ({a:1}) { return a } })() }}",
+        "result": {
+          "threw": {
+            "__type": "ExpressionWithStatementError",
+            "message": "Cannot use \"with\" statements due to security concerns"
+          }
+        }
+      },
+      "class_extends_fn": {
+        "expr": "={{ (class extends Function {}) }}",
+        "result": {
+          "threw": {
+            "__type": "ExpressionClassExtensionError",
+            "message": "Cannot extend \"Function\" due to security concerns"
+          }
+        }
+      },
+      "class_dynamic_extends": {
+        "expr": "={{ (class extends (function(){}){}) }}",
+        "result": {
+          "threw": {
+            "__type": "ExpressionError",
+            "message": "Cannot use dynamic class extension due to security concerns"
+          }
+        }
+      },
+      "reserved_shadow": {
+        "expr": "={{ (() => { const ___n8n_data = 1; return 1 })() }}",
+        "result": {
+          "threw": {
+            "__type": "ExpressionReservedVariableError",
+            "message": "Cannot use \"___n8n_data\" due to security concerns"
+          }
+        }
+      },
+      "sanitize_shadow": {
+        "expr": "={{ (() => { const __sanitize = 1; return 1 })() }}",
+        "result": {
+          "threw": {
+            "__type": "ExpressionReservedVariableError",
+            "message": "Cannot use \"__sanitize\" due to security concerns"
+          }
+        }
+      },
+      "bare_dollar": {
+        "expr": "={{ $ }}",
+        "result": {
+          "threw": {
+            "__type": "ExpressionError",
+            "message": "Cannot access \"$\" without calling it as a function"
+          }
+        }
+      },
+      "dollar_object": {
+        "expr": "={{ $.json }}",
+        "result": {
+          "threw": {
+            "__type": "ExpressionError",
+            "message": "Cannot access \"$\" without calling it as a function"
+          }
+        }
+      },
+      "dollar_property": {
+        "expr": "={{ ({$:\"\"}).$ }}",
+        "result": {
+          "threw": {
+            "__type": "ExpressionError",
+            "message": "Cannot access \"$\" without calling it as a function"
+          }
+        }
+      },
+      "this_expr": {
+        "expr": "={{ this }}",
+        "result": {
+          "ok": {
+            "process": {},
+            "require": {},
+            "module": {},
+            "Buffer": {}
+          }
+        }
+      },
+      "this_arrow_process": {
+        "expr": "={{ (() => this)() }}",
+        "result": {
+          "ok": {
+            "process": {},
+            "require": {},
+            "module": {},
+            "Buffer": {}
+          }
+        }
+      },
+      "globalThis": {
+        "expr": "={{ globalThis }}",
+        "result": {
+          "ok": {}
+        }
+      },
+      "global_this_member": {
+        "expr": "={{ globalThis.process }}",
+        "result": {
+          "ok": {
+            "__type": "undefined"
+          }
+        }
+      },
+      "process_env": {
+        "expr": "={{ process.env.PATH }}",
+        "result": {
+          "ok": {
+            "__type": "undefined"
+          }
+        }
+      },
+      "require_call": {
+        "expr": "={{ require(\"fs\") }}",
+        "result": {
+          "ok": {
+            "__type": "undefined"
+          }
+        }
+      },
+      "eval_call": {
+        "expr": "={{ eval(\"1+1\") }}",
+        "result": {
+          "ok": {
+            "__type": "undefined"
+          }
+        }
+      },
+      "fn_ctor": {
+        "expr": "={{ Function(\"return 1\")() }}",
+        "result": {
+          "ok": {
+            "__type": "undefined"
+          }
+        }
+      },
+      "spread_process": {
+        "expr": "={{ {...process} }}",
+        "result": {
+          "ok": {
+            "arch": "x64",
+            "env": {},
+            "platform": "linux",
+            "pid": "<stable>",
+            "ppid": "<stable>",
+            "release": "<stable>",
+            "version": "<stable>",
+            "versions": {
+              "node": "22.22.3",
+              "acorn": "8.16.0",
+              "ada": "2.9.2",
+              "amaro": "1.1.8",
+              "ares": "1.34.6",
+              "brotli": "1.1.0",
+              "cjs_module_lexer": "2.2.0",
+              "cldr": "48.0",
+              "icu": "78.2",
+              "llhttp": "9.3.1",
+              "modules": "127",
+              "napi": "10",
+              "nbytes": "0.1.3",
+              "ncrypto": "0.0.1",
+              "nghttp2": "1.64.0",
+              "openssl": "3.5.6",
+              "simdjson": "4.5.0",
+              "simdutf": "6.4.2",
+              "sqlite": "3.51.3",
+              "tz": "2026a",
+              "undici": "6.24.1",
+              "unicode": "17.0",
+              "uv": "1.51.0",
+              "uvwasi": "0.0.23",
+              "v8": "12.4.254.21-node.56",
+              "zlib": "1.3.1-e00f703",
+              "zstd": "1.5.7"
+            }
+          }
+        }
+      },
+      "destructure_proto": {
+        "expr": "={{ (() => { const { __proto__ } = {}; return 1 })() }}",
+        "result": {
+          "threw": {
+            "__type": "ExpressionDestructuringError",
+            "message": "Cannot destructure \"__proto__\" due to security concerns"
+          }
+        }
+      },
+      "destructure_computed": {
+        "expr": "={{ (() => { const { [1]: a } = [9]; return a })() }}",
+        "result": {
+          "threw": {
+            "__type": "ExpressionComputedDestructuringError",
+            "message": "Computed property names in destructuring are not allowed due to security concerns"
+          }
+        }
+      },
+      "promise_new": {
+        "expr": "={{ Promise.resolve(1) }}",
+        "result": {
+          "ok": {
+            "__type": "undefined"
+          }
+        }
+      },
+      "buffer_new": {
+        "expr": "={{ Buffer.from(\"a\") }}",
+        "result": {
+          "ok": {
+            "__type": "undefined"
+          }
+        }
+      },
+      "date_ok": {
+        "expr": "={{ new Date(0).toISOString() }}",
+        "result": {
+          "ok": "1970-01-01T00:00:00.000Z"
+        }
+      },
+      "object_assign": {
+        "expr": "={{ Object.assign({}, {a:1}) }}",
+        "result": {
+          "ok": {
+            "a": 1
+          }
+        }
+      },
+      "object_create": {
+        "expr": "={{ Object.create(null) }}",
+        "result": {
+          "ok": {}
+        }
+      },
+      "object_define": {
+        "expr": "={{ Object.defineProperty({}, \"a\", {value:1}) }}",
+        "result": {
+          "ok": {
+            "__type": "undefined"
+          }
+        }
+      },
+      "error_capture": {
+        "expr": "={{ Error.captureStackTrace }}",
+        "result": {
+          "ok": {
+            "__type": "undefined"
+          }
+        }
+      },
+      "error_prepare_set": {
+        "expr": "={{ Error.prepareStackTrace = 1 }}",
+        "result": {
+          "threw": {
+            "__type": "ExpressionError",
+            "message": "Cannot access \"prepareStackTrace\" due to security concerns"
+          }
+        }
+      },
+      "safe_global_lookup": {
+        "expr": "={{ JSON.stringify({a:1}) }}",
+        "result": {
+          "ok": "{\"a\":1}"
+        }
+      },
+      "process_version": "<stable>",
+      "process_env_direct": {
+        "expr": "={{ process.env }}",
+        "result": {
+          "ok": {}
+        }
+      },
+      "process_keys_expression": {
+        "expr": "={{ Object.keys({ ...process }) }}",
+        "result": {
+          "ok": [
+            "arch",
+            "env",
+            "platform",
+            "pid",
+            "ppid",
+            "release",
+            "version",
+            "versions"
+          ]
+        }
+      }
+    }
+  },
+  "PIPE-13": {
+    "13A_lookup_matrix": {
+      "$json": {
+        "ok": {
+          "n": 0
+        }
+      },
+      "$data": {
+        "ok": {
+          "n": 0
+        }
+      },
+      "$binary": {
+        "ok": {}
+      },
+      "$json.deep_missing": {
+        "threw": {
+          "__type": "TypeError",
+          "message": "Cannot read properties of undefined (reading 'deeper')"
+        }
+      },
+      "$json.n": {
+        "ok": 0
+      },
+      "$itemIndex": {
+        "ok": 0
+      },
+      "$runIndex": {
+        "ok": 0
+      },
+      "$mode": {
+        "ok": "manual"
+      },
+      "$position": {
+        "ok": 0
+      },
+      "$thisItem": {
+        "ok": {
+          "json": {
+            "n": 0
+          },
+          "pairedItem": {
+            "item": 0,
+            "input": {
+              "__type": "undefined"
+            }
+          }
+        }
+      },
+      "$thisItemIndex": {
+        "ok": 0
+      },
+      "$thisRunIndex": {
+        "ok": 0
+      },
+      "$nodeVersion": {
+        "ok": 1
+      },
+      "$nodeId": {
+        "ok": "End"
+      },
+      "$webhookId": {
+        "ok": {
+          "__type": "undefined"
+        }
+      },
+      "$workflow": {
+        "ok": {
+          "active": false,
+          "id": "agent6",
+          "name": "agent6"
+        }
+      },
+      "$prevNode": {
+        "ok": {
+          "name": "Split",
+          "outputIndex": 0,
+          "runIndex": 0
+        }
+      },
+      "$parameter": {
+        "ok": {
+          "msg": "hello",
+          "expr": 42,
+          "nested": {
+            "a": "={{ 1 + 1 }}"
+          },
+          "rl": "https://x/42"
+        }
+      },
+      "$parameter.msg": {
+        "ok": "hello"
+      },
+      "$parameter.other (nested expression)": {
+        "ok": {
+          "__type": "undefined"
+        }
+      },
+      "$parameter.nested": {
+        "ok": {
+          "a": "={{ 1 + 1 }}"
+        }
+      },
+      "$parameter.locator (resource locator)": {
+        "ok": {
+          "__type": "undefined"
+        }
+      },
+      "$parameter[&sibling]": {
+        "ok": "hello"
+      },
+      "$parameter[&missing]": {
+        "threw": {
+          "__type": "ApplicationError",
+          "message": "Could not find sibling parameter on node"
+        }
+      },
+      "$parameter.missing": {
+        "ok": {
+          "__type": "undefined"
+        }
+      },
+      "$parameter.toJSON()": {
+        "ok": "{\"msg\":\"hello\",\"expr\":\"={{ 21 * 2 }}\",\"nested\":{\"a\":\"={{ 1 + 1 }}\"},\"rl\":{\"__rl\":true,\"value\":\"={{ \\\"https://x/42\\\" }}\",\"mode\":\"url\"}}"
+      },
+      "$rawParameter.other": {
+        "ok": {
+          "__type": "undefined"
+        }
+      },
+      "$input.item": {
+        "ok": {
+          "json": {
+            "n": 0
+          },
+          "pairedItem": {
+            "item": 0,
+            "input": {
+              "__type": "undefined"
+            }
+          }
+        }
+      },
+      "$input.first()": {
+        "ok": {
+          "json": {
+            "n": 0
+          },
+          "pairedItem": {
+            "item": 0,
+            "input": {
+              "__type": "undefined"
+            }
+          }
+        }
+      },
+      "$input.last()": {
+        "ok": {
+          "json": {
+            "n": 2
+          },
+          "pairedItem": {
+            "item": 1,
+            "input": {
+              "__type": "undefined"
+            }
+          }
+        }
+      },
+      "$input.all()": {
+        "ok": [
+          {
+            "json": {
+              "n": 0
+            },
+            "pairedItem": {
+              "item": 0,
+              "input": {
+                "__type": "undefined"
+              }
+            }
+          },
+          {
+            "json": {
+              "n": 2
+            },
+            "pairedItem": {
+              "item": 1,
+              "input": {
+                "__type": "undefined"
+              }
+            }
+          }
+        ]
+      },
+      "$input.params": {
+        "ok": {}
+      },
+      "$input.context": {
+        "ok": {}
+      },
+      "$input.first(1) with args": {
+        "threw": {
+          "__type": "ExpressionError",
+          "message": "$input.first() should have no arguments",
+          "context": {
+            "runIndex": 0,
+            "itemIndex": 0
+          }
+        }
+      },
+      "$input.nope (unknown property)": {
+        "ok": {
+          "__type": "undefined"
+        }
+      },
+      "$(\"Split\").all()": {
+        "ok": [
+          {
+            "json": {
+              "n": 0
+            },
+            "pairedItem": {
+              "item": 0
+            }
+          },
+          {
+            "json": {
+              "n": 2
+            },
+            "pairedItem": {
+              "item": 2
+            }
+          }
+        ]
+      },
+      "$(\"Split\").first()": {
+        "ok": {
+          "json": {
+            "n": 0
+          },
+          "pairedItem": {
+            "item": 0
+          }
+        }
+      },
+      "$(\"Split\").last()": {
+        "ok": {
+          "json": {
+            "n": 2
+          },
+          "pairedItem": {
+            "item": 2
+          }
+        }
+      },
+      "$(\"Split\").all(1) second branch": {
+        "ok": [
+          {
+            "json": {
+              "n": 1
+            },
+            "pairedItem": {
+              "item": 1
+            }
+          },
+          {
+            "json": {
+              "n": 3
+            },
+            "pairedItem": {
+              "item": 3
+            }
+          }
+        ]
+      },
+      "$(\"Split\").all(2) out of range": {
+        "threw": {
+          "__type": "ExpressionError",
+          "message": "Node \"Split\" has no branch with index 2.",
+          "context": {
+            "runIndex": 0,
+            "itemIndex": 0
+          }
+        }
+      },
+      "$(\"Split\").isExecuted": {
+        "ok": true
+      },
+      "$(\"Nope\").all() unknown node": {
+        "threw": {
+          "__type": "ExpressionError",
+          "message": "Referenced node doesn't exist",
+          "context": {
+            "runIndex": 0,
+            "itemIndex": 0,
+            "nodeCause": "Nope",
+            "descriptionKey": "nodeNotFound"
+          }
+        }
+      },
+      "$(\"Start\").item": {
+        "ok": {
+          "json": {
+            "n": 0
+          },
+          "pairedItem": {
+            "item": 0,
+            "input": {
+              "__type": "undefined"
+            }
+          }
+        }
+      },
+      "$(\"Start\").pairedItem(0)": {
+        "ok": {
+          "json": {
+            "n": 0
+          },
+          "pairedItem": {
+            "item": 0,
+            "input": {
+              "__type": "undefined"
+            }
+          }
+        }
+      },
+      "$(\"Start\").itemMatching(1)": {
+        "ok": {
+          "json": {
+            "n": 2
+          },
+          "pairedItem": {
+            "item": 2,
+            "input": {
+              "__type": "undefined"
+            }
+          }
+        }
+      },
+      "$(\"Start\").itemMatching() no arg": {
+        "threw": {
+          "__type": "ExpressionError",
+          "message": "Missing item index for .itemMatching()",
+          "context": {
+            "runIndex": 0
+          }
+        }
+      },
+      "$(\"End\").item self": {
+        "threw": {
+          "__type": "ExpressionError",
+          "message": "Invalid expression",
+          "context": {
+            "runIndex": 0,
+            "itemIndex": 0,
+            "messageTemplate": "No path back to referenced node",
+            "descriptionKey": "pairedItemNoConnection",
+            "type": "paired_item_no_connection",
+            "nodeCause": "End"
+          }
+        }
+      },
+      "$node[\"Start\"].json": {
+        "ok": {
+          "n": 0
+        }
+      },
+      "$node[\"Start\"].binary": {
+        "ok": {}
+      },
+      "$node[\"Start\"].parameter": {
+        "ok": {}
+      },
+      "$node[\"Start\"].runIndex": {
+        "ok": 0
+      },
+      "$node[\"Start\"].context": {
+        "ok": {}
+      },
+      "$node[\"Missing\"].json": {
+        "threw": {
+          "__type": "ExpressionError",
+          "message": "Referenced node doesn't exist",
+          "context": {
+            "runIndex": 0,
+            "itemIndex": 0,
+            "nodeCause": "Missing",
+            "descriptionKey": "nodeNotFound"
+          }
+        }
+      },
+      "$items()": {
+        "ok": [
+          {
+            "json": {
+              "n": 0
+            },
+            "pairedItem": {
+              "item": 0,
+              "input": {
+                "__type": "undefined"
+              }
+            }
+          },
+          {
+            "json": {
+              "n": 2
+            },
+            "pairedItem": {
+              "item": 1,
+              "input": {
+                "__type": "undefined"
+              }
+            }
+          }
+        ]
+      },
+      "$items(\"Start\")": {
+        "ok": [
+          {
+            "json": {
+              "n": 0
+            },
+            "pairedItem": {
+              "item": 0,
+              "input": {
+                "__type": "undefined"
+              }
+            }
+          },
+          {
+            "json": {
+              "n": 1
+            },
+            "pairedItem": {
+              "item": 1,
+              "input": {
+                "__type": "undefined"
+              }
+            }
+          },
+          {
+            "json": {
+              "n": 2
+            },
+            "pairedItem": {
+              "item": 2,
+              "input": {
+                "__type": "undefined"
+              }
+            }
+          },
+          {
+            "json": {
+              "n": 3
+            },
+            "pairedItem": {
+              "item": 3,
+              "input": {
+                "__type": "undefined"
+              }
+            }
+          }
+        ]
+      },
+      "$item(2).$json": {
+        "threw": {
+          "__type": "ExpressionError",
+          "message": "\"End\" node has 2 item(s) but you're trying to access item 2",
+          "context": {
+            "messageTemplate": "Adjust your expression to access an existing item index (0-{{maxIndex}})",
+            "descriptionKey": "pairedItemInvalidIndex",
+            "type": "no_execution_data",
+            "nodeCause": "End",
+            "runIndex": 0,
+            "itemIndex": 2
+          }
+        }
+      },
+      "$now": {
+        "ok": "<ts>"
+      },
+      "$today": {
+        "ok": "<ts>"
+      },
+      "$jmespath": {
+        "ok": [
+          1,
+          2
+        ]
+      },
+      "$env.PATH": {
+        "threw": {
+          "__type": "ExpressionError",
+          "message": "access to env vars denied",
+          "context": {
+            "causeDetailed": "If you need access please contact the administrator to remove the environment variable ‘N8N_BLOCK_ENV_ACCESS_IN_NODE‘",
+            "runIndex": 0,
+            "itemIndex": 0
+          }
+        }
+      },
+      "$vars.myVar": {
+        "ok": {
+          "__type": "undefined"
+        }
+      },
+      "$secrets": {
+        "ok": {
+          "__type": "undefined"
+        }
+      },
+      "$execution": {
+        "ok": {
+          "__type": "undefined"
+        }
+      },
+      "$executionId (deprecated)": {
+        "ok": {
+          "__type": "undefined"
+        }
+      },
+      "$resumeWebhookUrl (deprecated)": {
+        "ok": {
+          "__type": "undefined"
+        }
+      },
+      "$evaluateExpression": {
+        "ok": "=42"
+      },
+      "$fromAI(\"k\")": {
+        "threw": {
+          "__type": "ExpressionError",
+          "message": "No execution data available",
+          "context": {
+            "runIndex": 0,
+            "itemIndex": 0,
+            "type": "no_execution_data"
+          }
+        }
+      },
+      "$fromAI() empty": {
+        "threw": {
+          "__type": "ExpressionError",
+          "message": "Add a key, e.g. $fromAI('placeholder_name')",
+          "context": {
+            "runIndex": 0,
+            "itemIndex": 0
+          }
+        }
+      },
+      "$fromAI(\"bad key!\")": {
+        "threw": {
+          "__type": "ExpressionError",
+          "message": "Invalid parameter key, must be between 1 and 64 characters long and only contain lowercase letters, uppercase letters, numbers, underscores, and hyphens",
+          "context": {
+            "runIndex": 0,
+            "itemIndex": 0
+          }
+        }
+      },
+      "$tool": {
+        "ok": {
+          "__type": "undefined"
+        }
+      },
+      "$self": {
+        "ok": {}
+      },
+      "$agentInfo": {
+        "ok": {
+          "__type": "undefined"
+        }
+      },
+      "$unknownVar": {
+        "ok": {
+          "__type": "undefined"
+        }
+      },
+      "plainVar": {
+        "ok": {
+          "__type": "undefined"
+        }
+      },
+      "$parameter.msg (declared)": {
+        "ok": "hello"
+      },
+      "$parameter.expr (expression param)": {
+        "ok": 42
+      },
+      "$parameter.rl (resource locator)": {
+        "ok": "https://x/42"
+      },
+      "$parameter.hidden (default-injected, not displayed)": {
+        "ok": {
+          "__type": "undefined"
+        }
+      },
+      "$parameter.absent (no such property)": {
+        "ok": {
+          "__type": "undefined"
+        }
+      },
+      "$rawParameter.expr": {
+        "ok": "={{ 21 * 2 }}"
+      },
+      "$rawParameter.rl": {
+        "ok": "={{ \"https://x/42\" }}"
+      },
+      "process.version via data.process": {
+        "ok": {
+          "__type": "undefined"
+        }
+      },
+      "process keys via data.process": {
+        "ok": []
+      },
+      "proxy surface: \"json\" in $node.X": {
+        "ok": true
+      },
+      "proxy surface: Object.keys($node.X)": {
+        "ok": [
+          "binary",
+          "data",
+          "json"
+        ]
+      },
+      "proxy surface: \"$json\" in p": {
+        "ok": true
+      },
+      "proxy surface: Object.keys(p)": {
+        "ok": [
+          "$",
+          "$input",
+          "$binary",
+          "$data",
+          "$env",
+          "$evaluateExpression",
+          "$item",
+          "$fromAI",
+          "$fromai",
+          "$fromAi",
+          "$items",
+          "$tool",
+          "$json",
+          "$node",
+          "$self",
+          "$parameter",
+          "$rawParameter",
+          "$prevNode",
+          "$runIndex",
+          "$mode",
+          "$workflow",
+          "$itemIndex",
+          "$now",
+          "$today",
+          "$jmesPath",
+          "DateTime",
+          "Interval",
+          "Duration",
+          "$getPairedItem",
+          "$jmespath",
+          "$position",
+          "$thisItem",
+          "$thisItemIndex",
+          "$thisRunIndex",
+          "$nodeVersion",
+          "$nodeId",
+          "$agentInfo",
+          "$webhookId"
+        ]
+      },
+      "proxy surface: isProxy": {
+        "ok": true
+      },
+      "proxy surface: $input.item.isProxy": {
+        "ok": {
+          "__type": "undefined"
+        }
+      },
+      "raw workflow node.parameters (post-Workflow-ctor)": {
+        "ok": {
+          "msg": "hello",
+          "expr": "={{ 21 * 2 }}",
+          "nested": {
+            "a": "={{ 1 + 1 }}"
+          },
+          "rl": {
+            "__rl": true,
+            "value": "={{ \"https://x/42\" }}",
+            "mode": "url"
+          }
+        }
+      }
+    },
+    "13B_scoping": {
+      "itemIndex_shifts_json": {
+        "threw": {
+          "__type": "ExpressionError",
+          "message": "\"End\" node has 2 item(s) but you're trying to access item 2",
+          "context": {
+            "messageTemplate": "Adjust your expression to access an existing item index (0-{{maxIndex}})",
+            "descriptionKey": "pairedItemInvalidIndex",
+            "type": "no_execution_data",
+            "nodeCause": "End",
+            "runIndex": 0,
+            "itemIndex": 2
+          }
+        }
+      },
+      "itemIndex_out_of_range": {
+        "threw": {
+          "__type": "ExpressionError",
+          "message": "\"End\" node has 2 item(s) but you're trying to access item 9",
+          "context": {
+            "messageTemplate": "Adjust your expression to access an existing item index (0-{{maxIndex}})",
+            "descriptionKey": "pairedItemInvalidIndex",
+            "type": "no_execution_data",
+            "nodeCause": "End",
+            "runIndex": 0,
+            "itemIndex": 9
+          }
+        }
+      },
+      "contextNodeName_switches_json": {
+        "ok": {
+          "json": {
+            "n": 0
+          },
+          "prevNode": {
+            "name": "Split",
+            "outputIndex": 0,
+            "runIndex": 0
+          },
+          "parameter": {}
+        }
+      },
+      "no_executeData_pairing": {
+        "threw": {
+          "__type": "ExpressionError",
+          "message": "Can’t get data for expression",
+          "description": "Apologies, this is an internal error. See details for more information",
+          "context": {
+            "runIndex": 0,
+            "itemIndex": 0,
+            "messageTemplate": "Can’t get data for expression under ‘%%PARAMETER%%’ field",
+            "causeDetailed": "Missing sourceData (probably an internal error)"
+          }
+        }
+      },
+      "runExecutionData_null": {
+        "$json still works": {
+          "ok": 0
+        },
+        "$node throws": {
+          "threw": {
+            "__type": "ExpressionError",
+            "message": "The workflow hasn't been executed yet, so you can't reference any output data",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0
+            }
+          }
+        },
+        "$() throws": {
+          "threw": {
+            "__type": "ExpressionError",
+            "message": "Node 'Start' hasn't been executed",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0,
+              "messageTemplate": "An expression references this node, but the node is unexecuted. Consider re-wiring your nodes or checking for execution first, i.e. {{ $if( $(\"{{nodeName}}\").isExecuted, <action_if_executed>, \"\") }}",
+              "descriptionKey": "pairedItemNoConnection",
+              "type": "no_execution_data",
+              "nodeCause": "Start"
+            }
+          }
+        }
+      },
+      "empty_input": {
+        "$json": {
+          "threw": {
+            "__type": "ExpressionError",
+            "message": "Node 'End' hasn't been executed",
+            "context": {
+              "messageTemplate": "An expression references this node, but the node is unexecuted. Consider re-wiring your nodes or checking for execution first, i.e. {{ $if( $(\"{{nodeName}}\").isExecuted, <action_if_executed>, \"\") }}",
+              "descriptionKey": "pairedItemNoConnection",
+              "type": "no_execution_data",
+              "nodeCause": "End",
+              "runIndex": 0,
+              "itemIndex": 0
+            }
+          }
+        },
+        "$input": {
+          "threw": {
+            "__type": "ExpressionError",
+            "message": "No execution data available",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0,
+              "type": "no_execution_data"
+            }
+          }
+        },
+        "$thisItem": {
+          "ok": {
+            "__type": "undefined"
+          }
+        }
+      },
+      "throwOnMissingExecutionData_false": {
+        "threw": {
+          "__type": "ExpressionError",
+          "message": "Referenced node does not exist",
+          "context": {
+            "messageTemplate": "Make sure to double-check the node name for typos",
+            "descriptionKey": "pairedItemNoConnection",
+            "type": "paired_item_no_connection",
+            "nodeCause": "Unrun",
+            "runIndex": 0,
+            "itemIndex": 0
+          }
+        }
+      },
+      "returnObjectAsString": {
+        "object_raw": {
+          "ok": {
+            "a": 1
+          }
+        },
+        "object_as_string": {
+          "ok": "[Object: {\"a\": 1}]"
+        },
+        "jsdate_as_string": {
+          "ok": "[Date: <ts>]"
+        },
+        "luxon_as_string": {
+          "ok": "[DateTime:<stable>]"
+        },
+        "invalid_luxon": {
+          "threw": {
+            "__type": "ApplicationError",
+            "message": "invalid DateTime"
+          }
+        },
+        "null_as_string": {
+          "ok": null
+        },
+        "array_as_string": {
+          "ok": "[Array: [1,2]]"
+        }
+      },
+      "additionalKeys_precedence": {
+        "ok": {
+          "position": 0,
+          "itemIndex": "callerD",
+          "now": "<stable>",
+          "json": {
+            "n": 0
+          },
+          "vars": {
+            "v": 1
+          }
+        }
+      },
+      "pairedItem_per_item": {
+        "item0": {
+          "ok": {
+            "n": 0
+          }
+        },
+        "item1": {
+          "ok": {
+            "n": 2
+          }
+        },
+        "item2": {
+          "threw": {
+            "__type": "ExpressionError",
+            "message": "Can’t get data for expression",
+            "description": "Some intermediate nodes between ‘<strong>Start</strong>‘ and  ‘<strong>End</strong>‘ have not executed yet.",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 2,
+              "messageTemplate": "Can’t get data for expression under ‘%%PARAMETER%%’ field",
+              "causeDetailed": "pairedItem can't be found when intermediate nodes between ‘<strong>Start</strong>‘ and  ‘<strong>End</strong> have not executed yet.",
+              "type": "paired_item_intermediate_nodes"
+            }
+          }
+        },
+        "item3": {
+          "threw": {
+            "__type": "ExpressionError",
+            "message": "Can’t get data for expression",
+            "description": "Some intermediate nodes between ‘<strong>Start</strong>‘ and  ‘<strong>End</strong>‘ have not executed yet.",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 3,
+              "messageTemplate": "Can’t get data for expression under ‘%%PARAMETER%%’ field",
+              "causeDetailed": "pairedItem can't be found when intermediate nodes between ‘<strong>Start</strong>‘ and  ‘<strong>End</strong> have not executed yet.",
+              "type": "paired_item_intermediate_nodes"
+            }
+          }
+        }
+      },
+      "pairedItem_paired_via_split": {
+        "item0": {
+          "ok": {
+            "n": 0
+          }
+        },
+        "item1": {
+          "ok": {
+            "n": 2
+          }
+        }
+      },
+      "pairedItem_via_node": {
+        "ok": [
+          {
+            "n": 0
+          },
+          {
+            "n": 1
+          },
+          {
+            "n": 2
+          },
+          {
+            "n": 3
+          }
+        ]
+      },
+      "branch_default_from_graph": {
+        "ok": {
+          "def": 2,
+          "b1": 2
+        }
+      },
+      "pinned_data": {
+        "manual": {
+          "ok": [
+            {
+              "json": {
+                "n": 0
+              },
+              "pairedItem": {
+                "item": 0
+              }
+            },
+            {
+              "json": {
+                "n": 2
+              },
+              "pairedItem": {
+                "item": 2
+              }
+            }
+          ]
+        },
+        "regular": {
+          "ok": [
+            {
+              "json": {
+                "n": 0
+              },
+              "pairedItem": {
+                "item": 0
+              }
+            },
+            {
+              "json": {
+                "n": 2
+              },
+              "pairedItem": {
+                "item": 2
+              }
+            }
+          ]
+        }
+      },
+      "combined_binaryMode": {
+        "$input.item": {
+          "ok": {
+            "n": 1
+          }
+        },
+        "$input.all()": {
+          "ok": [
+            {
+              "n": 1
+            }
+          ]
+        },
+        "$json": {
+          "ok": {
+            "n": 1
+          }
+        }
+      },
+      "code_node_augmentation": {
+        "ok": {
+          "before": {
+            "n": 0
+          },
+          "after": {
+            "n": 0
+          },
+          "mutated": false
+        }
+      },
+      "timezone_side_effect": {
+        "ok": {
+          "before": "America/New_York",
+          "after": "Asia/Jakarta",
+          "nowZone": "Asia/Jakarta",
+          "proxyNowZone": "Asia/Jakarta"
+        }
+      },
+      "parameter_recursion_guard": {
+        "ok": {
+          "self": {
+            "ok": {
+              "__type": "undefined"
+            }
+          },
+          "other": {
+            "ok": {
+              "__type": "undefined"
+            }
+          }
+        }
+      },
+      "nested_parameter_walk": {
+        "ok": {
+          "a": 1,
+          "b": [
+            2,
+            {
+              "c": "x"
+            }
+          ],
+          "d": 5,
+          "e": null
+        }
+      }
+    },
+    "13C_core_glue": {
+      "run": {
+        "status": "success",
+        "items": [
+          {
+            "index": 0,
+            "value": "5 plus",
+            "raw": "={{ $json.n }} plus",
+            "numString": "7",
+            "numNumber": 7,
+            "numBool": true,
+            "numJson": 7,
+            "evalDefaultItem": 5,
+            "evalI": 5,
+            "proxyJson": {
+              "n": 5
+            },
+            "proxyParamKeys": [
+              "value",
+              "num",
+              "locator",
+              "typed"
+            ],
+            "proxySibling": "THROWS: ApplicationError: Could not find sibling parameter on node",
+            "proxyExec": {
+              "id": "exec-1",
+              "mode": "test",
+              "resumeUrl": "https://wait/resume/exec-1",
+              "resumeFormUrl": "https://form/resume/exec-1",
+              "hasCustomData": true
+            },
+            "proxyVars": {
+              "myVar": "myValue"
+            },
+            "proxyEnv": "THROWS: access to env vars denied",
+            "mode": "manual",
+            "workflow": {
+              "id": "glue",
+              "name": "glue",
+              "active": false
+            },
+            "now": "<stable>"
+          },
+          {
+            "index": 1,
+            "value": "6 plus",
+            "raw": "={{ $json.n }} plus",
+            "numString": "7",
+            "numNumber": 7,
+            "numBool": true,
+            "numJson": 7,
+            "evalDefaultItem": 5,
+            "evalI": 6,
+            "proxyJson": {
+              "n": 6
+            },
+            "proxyParamKeys": [
+              "value",
+              "num",
+              "locator",
+              "typed"
+            ],
+            "proxySibling": "THROWS: ApplicationError: Could not find sibling parameter on node",
+            "proxyExec": {
+              "id": "exec-1",
+              "mode": "test",
+              "resumeUrl": "https://wait/resume/exec-1",
+              "resumeFormUrl": "https://form/resume/exec-1",
+              "hasCustomData": true
+            },
+            "proxyVars": {
+              "myVar": "myValue"
+            },
+            "proxyEnv": "THROWS: access to env vars denied",
+            "mode": "manual",
+            "workflow": {
+              "id": "glue",
+              "name": "glue",
+              "active": false
+            },
+            "now": "<stable>"
+          }
+        ],
+        "error": {
+          "__type": "undefined"
+        },
+        "runError": {
+          "__type": "undefined"
+        }
+      },
+      "overallStatus": "success",
+      "errorContext": {
+        "status": "error",
+        "errorName": "ExpressionError",
+        "message": "Referenced node doesn't exist",
+        "context": {
+          "runIndex": 0,
+          "itemIndex": 0,
+          "nodeCause": "Nope",
+          "descriptionKey": "nodeNotFound",
+          "parameter": "value"
+        },
+        "description": {
+          "__type": "undefined"
+        },
+        "runError": "Referenced node doesn't exist",
+        "runErrorContext": {
+          "runIndex": 0,
+          "itemIndex": 0,
+          "nodeCause": "Nope",
+          "descriptionKey": "nodeNotFound",
+          "parameter": "value"
+        }
+      }
+    },
+    "13D_extra": {
+      "binary_metadata_only": {
+        "$binary (item 0)": {
+          "ok": {
+            "data": {
+              "mimeType": "text/plain",
+              "fileName": "a.txt",
+              "fileSize": "5 bytes"
+            },
+            "png": {
+              "mimeType": "image/png",
+              "fileName": "b.png"
+            }
+          }
+        },
+        "$binary (item 1, none)": {
+          "ok": {}
+        },
+        "$item(0).$binary": {
+          "ok": {
+            "data": {
+              "mimeType": "text/plain",
+              "fileName": "a.txt",
+              "fileSize": "5 bytes"
+            },
+            "png": {
+              "mimeType": "image/png",
+              "fileName": "b.png"
+            }
+          }
+        },
+        "$input.item.binary (FULL)": {
+          "ok": {
+            "data": {
+              "data": "aGVsbG8=",
+              "mimeType": "text/plain",
+              "fileName": "a.txt",
+              "fileSize": "5 bytes"
+            },
+            "png": {
+              "data": "iVBOR",
+              "mimeType": "image/png",
+              "fileName": "b.png"
+            }
+          }
+        },
+        "$input.all()[0].binary (FULL)": {
+          "ok": {
+            "data": {
+              "data": "aGVsbG8=",
+              "mimeType": "text/plain",
+              "fileName": "a.txt",
+              "fileSize": "5 bytes"
+            },
+            "png": {
+              "data": "iVBOR",
+              "mimeType": "image/png",
+              "fileName": "b.png"
+            }
+          }
+        }
+      },
+      "evaluate_expression_forms": {
+        "without = prefix": {
+          "ok": "1 + 1"
+        },
+        "with = prefix": {
+          "ok": "=1 + 1"
+        },
+        "with braces+prefix": {
+          "ok": "=2"
+        },
+        "explicit itemIndex": {
+          "ok": 3
+        },
+        "braced_no_prefix": {
+          "ok": 2
+        },
+        "plain_text": {
+          "ok": "hello"
+        }
+      },
+      "run_index_errors": {
+        "$(\"Start\").first(0, 5)": {
+          "threw": {
+            "__type": "ExpressionError",
+            "message": "Run 5 of node \"Start\" not found",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0
+            }
+          }
+        },
+        "$(\"Start\").first(0, 0)": {
+          "ok": {
+            "json": {
+              "n": 0
+            },
+            "pairedItem": {
+              "item": 0,
+              "input": {
+                "__type": "undefined"
+              }
+            }
+          }
+        },
+        "$items(\"Start\", 0, 0)": {
+          "ok": [
+            {
+              "json": {
+                "n": 0
+              },
+              "pairedItem": {
+                "item": 0,
+                "input": {
+                  "__type": "undefined"
+                }
+              }
+            },
+            {
+              "json": {
+                "n": 1
+              },
+              "pairedItem": {
+                "item": 1,
+                "input": {
+                  "__type": "undefined"
+                }
+              }
+            },
+            {
+              "json": {
+                "n": 2
+              },
+              "pairedItem": {
+                "item": 2,
+                "input": {
+                  "__type": "undefined"
+                }
+              }
+            },
+            {
+              "json": {
+                "n": 3
+              },
+              "pairedItem": {
+                "item": 3,
+                "input": {
+                  "__type": "undefined"
+                }
+              }
+            }
+          ]
+        },
+        "$items(\"Start\", 9)": {
+          "threw": {
+            "__type": "ExpressionError",
+            "message": "Node \"Start\" has no branch with index 9.",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0
+            }
+          }
+        }
+      },
+      "pinned_active_node": {
+        "$json with End pinned (manual)": {
+          "ok": {
+            "n": 0
+          }
+        },
+        "$('End').all() with End pinned (manual)": {
+          "ok": [
+            {
+              "json": {
+                "n": 0
+              },
+              "pairedItem": {
+                "item": 0,
+                "input": {
+                  "__type": "undefined"
+                }
+              }
+            },
+            {
+              "json": {
+                "n": 2
+              },
+              "pairedItem": {
+                "item": 1,
+                "input": {
+                  "__type": "undefined"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "non_ancestor_reference": {
+        "$('Solo').item": {
+          "threw": {
+            "__type": "ExpressionError",
+            "message": "Invalid expression",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0,
+              "messageTemplate": "No path back to referenced node",
+              "descriptionKey": "pairedItemNoConnection",
+              "type": "paired_item_no_connection",
+              "nodeCause": "Solo"
+            }
+          }
+        },
+        "$('Solo').all()": {
+          "threw": {
+            "__type": "ExpressionError",
+            "message": "Node 'Solo' hasn't been executed",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0,
+              "messageTemplate": "An expression references this node, but the node is unexecuted. Consider re-wiring your nodes or checking for execution first, i.e. {{ $if( $(\"{{nodeName}}\").isExecuted, <action_if_executed>, \"\") }}",
+              "descriptionKey": "pairedItemNoConnection",
+              "type": "no_execution_data",
+              "nodeCause": "Solo"
+            }
+          }
+        },
+        "$('Solo').all() (exists, never executed)": {
+          "threw": {
+            "__type": "ExpressionError",
+            "message": "Node 'Solo' hasn't been executed",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0,
+              "messageTemplate": "An expression references this node, but the node is unexecuted. Consider re-wiring your nodes or checking for execution first, i.e. {{ $if( $(\"{{nodeName}}\").isExecuted, <action_if_executed>, \"\") }}",
+              "descriptionKey": "pairedItemNoConnection",
+              "type": "no_execution_data",
+              "nodeCause": "Solo"
+            }
+          }
+        },
+        "$node[\"Solo\"].json (exists, never executed)": {
+          "threw": {
+            "__type": "ExpressionError",
+            "message": "Node 'Solo' hasn't been executed",
+            "context": {
+              "messageTemplate": "An expression references this node, but the node is unexecuted. Consider re-wiring your nodes or checking for execution first, i.e. {{ $if( $(\"{{nodeName}}\").isExecuted, <action_if_executed>, \"\") }}",
+              "descriptionKey": "pairedItemNoConnection",
+              "type": "no_execution_data",
+              "nodeCause": "Solo",
+              "runIndex": 0,
+              "itemIndex": 0
+            }
+          }
+        },
+        "$node[\"Solo\"].runIndex (never executed)": {
+          "ok": -1
+        },
+        "$node[\"Solo\"].json + throwOnMissingExecutionData:false": {
+          "threw": {
+            "__type": "ExpressionError",
+            "message": "Node 'Solo' hasn't been executed",
+            "context": {
+              "messageTemplate": "An expression references this node, but the node is unexecuted. Consider re-wiring your nodes or checking for execution first, i.e. {{ $if( $(\"{{nodeName}}\").isExecuted, <action_if_executed>, \"\") }}",
+              "descriptionKey": "pairedItemNoConnection",
+              "type": "no_execution_data",
+              "nodeCause": "Solo",
+              "runIndex": 0,
+              "itemIndex": 0
+            }
+          }
+        }
+      },
+      "unrun_node_reference": {
+        "$node[\"Start\"].unrun (unknown property on an executed node proxy)": {
+          "ok": {
+            "__type": "undefined"
+          }
+        },
+        "$node[\"Nope\"] (name not in workflow.nodes; throw happens at lookup, not at the accessor)": {
+          "threw": {
+            "__type": "ExpressionError",
+            "message": "Referenced node doesn't exist",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0,
+              "nodeCause": "Nope",
+              "descriptionKey": "nodeNotFound"
+            }
+          }
+        },
+        "$(\"End\").first() (self, executed)": {
+          "ok": {
+            "json": {
+              "n": 0
+            },
+            "pairedItem": {
+              "item": 0,
+              "input": {
+                "__type": "undefined"
+              }
+            }
+          }
+        }
+      },
+      "legacy_syntax_aliases": {
+        "$jmespath vs $jmesPath": {
+          "ok": [
+            1,
+            1
+          ]
+        },
+        "$fromai / $fromAi aliases": {
+          "ok": [
+            "THROWS: Invalid parameter key, must be between 1 and 64 characters long and only contain lowercase letters, uppercase letters, numbers, underscores, and hyphens",
+            "THROWS: Invalid parameter key, must be between 1 and 64 characters long and only contain lowercase letters, uppercase letters, numbers, underscores, and hyphens"
+          ]
+        },
+        "$items() vs $input.all()": {
+          "ok": {
+            "same": true
+          }
+        }
+      },
+      "global_seed_asymmetry": {
+        "raw proxy .process (getWorkflowDataProxy path)": {
+          "ok": {
+            "__type": "undefined"
+          }
+        },
+        "raw proxy .Object (getWorkflowDataProxy path)": {
+          "ok": {
+            "__type": "undefined"
+          }
+        },
+        "raw proxy .JSON (getWorkflowDataProxy path)": {
+          "ok": {
+            "__type": "undefined"
+          }
+        }
+      },
+      "selfdata": {
+        "ok": {
+          "selfToolDirect": "TOOLVAL",
+          "selfItemIndex": 7,
+          "spread": {},
+          "itemIndexStillFromCtor": 0
+        }
+      },
+      "defaultReturnRunIndex": {
+        "ok": {
+          "run0": {
+            "n": 0
+          }
+        }
+      }
+    },
+    "13E_gap_closure": {
+      "fromAI_inputOverride": {
+        "query_map_wins": {
+          "ok": "Jakarta"
+        },
+        "top_level_only_key": {
+          "ok": "TOP"
+        },
+        "query_beats_top_level": {
+          "ok": "FROM_TOPLEVEL"
+        },
+        "unknown_key": {
+          "ok": {
+            "__type": "undefined"
+          }
+        },
+        "unknown_key_with_default": {
+          "ok": "FALLBACK"
+        },
+        "item_selected_by_itemIndex": {
+          "ok": [
+            "Jakarta",
+            "Bandung"
+          ]
+        },
+        "itemIndex_out_of_range": {
+          "threw": {
+            "__type": "TypeError",
+            "message": "Cannot read properties of undefined (reading 'json')"
+          }
+        },
+        "key_64_chars_accepted": {
+          "ok": {
+            "__type": "undefined"
+          }
+        },
+        "key_65_chars_throws": {
+          "threw": {
+            "__type": "ExpressionError",
+            "message": "Invalid parameter key, must be between 1 and 64 characters long and only contain lowercase letters, uppercase letters, numbers, underscores, and hyphens",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0
+            }
+          }
+        },
+        "key_with_dot_throws": {
+          "threw": {
+            "__type": "ExpressionError",
+            "message": "Invalid parameter key, must be between 1 and 64 characters long and only contain lowercase letters, uppercase letters, numbers, underscores, and hyphens",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0
+            }
+          }
+        },
+        "alias_fromai_matches": {
+          "ok": "Jakarta"
+        },
+        "alias_fromAi_matches": {
+          "ok": "Jakarta"
+        },
+        "existing_task_without_inputOverride_does_not_fall_back": {
+          "threw": {
+            "__type": "ExpressionError",
+            "message": "No execution data available",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 3,
+              "type": "no_execution_data"
+            }
+          }
+        },
+        "no_task_at_runIndex_falls_back_to_connectionInputData_at_runIndex": {
+          "ok": "b"
+        }
+      },
+      "tool_access": {
+        "from_query_map": {
+          "ok": {
+            "name": "search",
+            "parameters": {
+              "q": "hello"
+            }
+          }
+        },
+        "from_top_level": {
+          "ok": {
+            "name": "topTool",
+            "parameters": {
+              "z": 1
+            }
+          }
+        },
+        "partial_only_name": {
+          "ok": {
+            "name": "onlyName",
+            "parameters": {
+              "__type": "undefined"
+            }
+          }
+        },
+        "no_data_with_fallback": {
+          "ok": {
+            "name": "fallbackTool",
+            "parameters": {
+              "a": 1
+            }
+          }
+        },
+        "no_data_no_fallback": {
+          "ok": {
+            "__type": "undefined"
+          }
+        },
+        "empty_override_item_index_out_of_range": {
+          "threw": {
+            "__type": "TypeError",
+            "message": "Cannot read properties of undefined (reading 'json')"
+          }
+        },
+        "toolName_via_expression": {
+          "ok": "search"
+        }
+      },
+      "agent_info": {
+        "agentInfo_on_agent_node": {
+          "ok": {
+            "memoryConnectedToAgent": true,
+            "tools": [
+              {
+                "connected": true,
+                "name": "Tool1",
+                "type": "Keyword Tool",
+                "resource": "Resource A",
+                "operation": "Operation A",
+                "hasCredentials": true,
+                "hasValidCalendar": {
+                  "__type": "undefined"
+                },
+                "aiDefinedFields": [
+                  "User Query"
+                ]
+              },
+              {
+                "connected": false,
+                "name": "Tool2",
+                "type": "Keyword Tool",
+                "resource": "Resource B",
+                "operation": null,
+                "hasCredentials": false,
+                "hasValidCalendar": {
+                  "__type": "undefined"
+                },
+                "aiDefinedFields": []
+              },
+              {
+                "connected": false,
+                "name": "Cal",
+                "type": "Calendar Tool",
+                "resource": null,
+                "operation": null,
+                "hasCredentials": false,
+                "hasValidCalendar": true,
+                "aiDefinedFields": []
+              }
+            ]
+          }
+        },
+        "agentInfo_on_non_agent_node": {
+          "ok": {
+            "__type": "undefined"
+          }
+        },
+        "tools_are_from_queryNodes_not_connections_only": {
+          "ok": {
+            "connected": [
+              "Tool1"
+            ],
+            "unconnected": [
+              "Tool2",
+              "Cal"
+            ]
+          }
+        },
+        "aiDefinedFields_and_calendar": {
+          "ok": {
+            "tool1": {
+              "resource": "Resource A",
+              "operation": "Operation A",
+              "hasCredentials": true,
+              "aiDefinedFields": [
+                "User Query"
+              ],
+              "type": "Keyword Tool"
+            },
+            "cal": {
+              "hasValidCalendar": true,
+              "resource": null,
+              "operation": null
+            }
+          }
+        },
+        "memoryConnectedToAgent_then_not": {
+          "ok": {
+            "withMemory": true,
+            "withoutMemory": false
+          }
+        },
+        "eager_snapshot_not_lazy": {
+          "ok": {
+            "before": 3,
+            "after": 3,
+            "fresh": 4
+          }
+        }
+      },
+      "lineage_sourceOverwrite": {
+        "natural_walk": {
+          "ok": {
+            "n": 0
+          }
+        },
+        "redirected_via_pairedItem_sourceOverwrite": {
+          "ok": {
+            "n": "RUN1"
+          }
+        },
+        "input_index_beyond_sourceArray": {
+          "threw": {
+            "__type": "TypeError",
+            "message": "Cannot read properties of undefined (reading 'error')"
+          }
+        },
+        "core_resolveSourceOverwrite_matrix": {
+          "no metadata": {
+            "ok": null
+          },
+          "flag off": {
+            "ok": null
+          },
+          "preservedSourceOverwrite wins": {
+            "ok": {
+              "previousNode": "PRESERVED"
+            }
+          },
+          "falls back to pairedItem.sourceOverwrite": {
+            "ok": {
+              "previousNode": "FROM_ITEM"
+            }
+          },
+          "flag on, nothing set": {
+            "ok": null
+          },
+          "pairedItem is a number": {
+            "ok": null
+          }
+        }
+      },
+      "additionalKeys_surface": {
+        "getAdditionalKeys_shape": {
+          "ok": {
+            "keys": [
+              "$execution",
+              "$executionId",
+              "$resumeWebhookUrl",
+              "$secrets",
+              "$vars"
+            ],
+            "id": "exec-1",
+            "mode": "test",
+            "resumeUrl": "https://wait/resume/exec-1",
+            "resumeFormUrl": "https://form/resume/exec-1",
+            "vars": {
+              "myVar": "myValue"
+            },
+            "secrets": {
+              "__type": "undefined"
+            },
+            "deprecatedExecutionId": "exec-1"
+          }
+        },
+        "getAdditionalKeys_production_mode": {
+          "ok": {
+            "mode": "production",
+            "id": "__UNKNOWN__",
+            "resumeUrl": "https://h/wait/__UNKNOWN__"
+          }
+        },
+        "getAdditionalKeys_without_runData": {
+          "ok": {
+            "keys": [
+              "$execution",
+              "$executionId",
+              "$resumeWebhookUrl",
+              "$secrets",
+              "$vars"
+            ],
+            "customData": {
+              "__type": "undefined"
+            }
+          }
+        },
+        "getNonWorkflowAdditionalKeys_shape": {
+          "ok": {
+            "keys": [
+              "$secrets",
+              "$vars"
+            ],
+            "vars": {
+              "myVar": "myValue"
+            },
+            "secrets": {
+              "__type": "undefined"
+            }
+          }
+        },
+        "secrets_proxy_surface": {
+          "providers": {
+            "ok": []
+          },
+          "secret_value": {
+            "ok": "SECRET_A"
+          },
+          "nested_object": {
+            "ok": "D"
+          },
+          "enumeration_is_invisible": {
+            "ok": {
+              "objectKeys": [],
+              "hasOperator": false,
+              "getOwnPropertyNames": [
+                "vaultA"
+              ],
+              "directRead": "SECRET_A"
+            }
+          },
+          "unknown_provider_throws": {
+            "threw": {
+              "__type": "ExpressionError",
+              "message": "Could not load secrets",
+              "description": "The credential in use pulls secrets from an external store that is not reachable"
+            }
+          },
+          "unknown_secret_throws": {
+            "threw": {
+              "__type": "ExpressionError",
+              "message": "Could not load secrets",
+              "description": "The credential in use tries to use secret from an external store that could not be found"
+            }
+          },
+          "writes_are_refused": {
+            "ok": {
+              "threw": "TypeError"
+            }
+          },
+          "disabled_flag_leaves_key_undefined": {
+            "ok": {
+              "__type": "undefined"
+            }
+          }
+        },
+        "nonWorkflow_keys_no_secrets": {
+          "ok": {
+            "__type": "undefined"
+          }
+        },
+        "customData_set_get_manual_mode": {
+          "ok": {
+            "stored": "v1",
+            "all": {
+              "k1": "v1"
+            },
+            "inRunData": {
+              "k1": "v1"
+            }
+          }
+        },
+        "customData_bad_value_throws_in_manual": {
+          "threw": {
+            "__type": "InvalidExecutionMetadataError",
+            "message": "Custom data values must be a string (key \"k2\")"
+          }
+        },
+        "customData_bad_value_swallowed_in_production": {
+          "ok": {
+            "ok": true,
+            "after": {
+              "__type": "undefined"
+            }
+          }
+        },
+        "webhookId_precedence_engine_wins": {
+          "ok": {
+            "fromCaller": "FROM_CALLER",
+            "seenByProxy": {
+              "__type": "undefined"
+            },
+            "engineValueFromNode": {
+              "__type": "undefined"
+            }
+          }
+        },
+        "webhookId_from_node_when_present": {
+          "ok": "node-wh-id"
+        }
+      }
+    },
+    "fixture": {
+      "workflow": {
+        "id": "agent6",
+        "name": "agent6",
+        "settings": {
+          "executionOrder": "v1"
+        },
+        "nodes": [
+          {
+            "id": "Start",
+            "name": "Start",
+            "type": "n8n-nodes-base.manualTrigger",
+            "typeVersion": 1,
+            "position": [
+              0,
+              0
+            ],
+            "parameters": {}
+          },
+          {
+            "id": "Split",
+            "name": "Split",
+            "type": "ref.split2",
+            "typeVersion": 1,
+            "position": [
+              1,
+              0
+            ],
+            "parameters": {}
+          },
+          {
+            "id": "End",
+            "name": "End",
+            "type": "ref.pipeTarget",
+            "typeVersion": 1,
+            "position": [
+              2,
+              0
+            ],
+            "parameters": {
+              "msg": "hello",
+              "expr": "={{ 21 * 2 }}",
+              "nested": {
+                "a": "={{ 1 + 1 }}"
+              },
+              "rl": {
+                "__rl": true,
+                "value": "={{ \"https://x/42\" }}",
+                "mode": "url"
+              }
+            }
+          }
+        ],
+        "connections": {
+          "Start": {
+            "main": [
+              [
+                {
+                  "node": "Split",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Split": {
+            "main": [
+              [
+                {
+                  "node": "End",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          }
+        }
+      },
+      "startItems": [
+        {
+          "json": {
+            "n": 0
+          }
+        },
+        {
+          "json": {
+            "n": 1
+          }
+        },
+        {
+          "json": {
+            "n": 2
+          }
+        },
+        {
+          "json": {
+            "n": 3
+          }
+        }
+      ],
+      "runDataKeys": [
+        "Start",
+        "Split",
+        "End"
+      ],
+      "endTask": {
+        "startTime": "<stable>",
+        "executionIndex": 2,
+        "source": [
+          {
+            "previousNode": "Split",
+            "previousNodeOutput": 0,
+            "previousNodeRun": 0
+          }
+        ],
+        "hints": [],
+        "executionTime": "<stable>",
+        "metadata": {
+          "__type": "undefined"
+        },
+        "executionStatus": "success",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "__type": "object",
+                  "keys": [
+                    "n"
+                  ]
+                },
+                "pairedItem": {
+                  "__type": "object",
+                  "keys": [
+                    "item",
+                    "input"
+                  ]
+                }
+              },
+              {
+                "json": {
+                  "__type": "object",
+                  "keys": [
+                    "n"
+                  ]
+                },
+                "pairedItem": {
+                  "__type": "object",
+                  "keys": [
+                    "item",
+                    "input"
+                  ]
+                }
+              }
+            ]
+          ]
+        }
+      },
+      "connectionInputData": [
+        {
+          "json": {
+            "n": 0
+          },
+          "pairedItem": {
+            "item": 0,
+            "input": {
+              "__type": "undefined"
+            }
+          }
+        },
+        {
+          "json": {
+            "n": 2
+          },
+          "pairedItem": {
+            "item": 1,
+            "input": {
+              "__type": "undefined"
+            }
+          }
+        }
+      ],
+      "executionStatus": "success"
+    }
+  }
+}

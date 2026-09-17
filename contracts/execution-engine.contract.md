@@ -6,9 +6,9 @@
 `node-execution-context/{base-execute-context,node-execution-context,execute-context}.ts`, `routing-node.ts`,
 `utils/{get-additional-keys,execution-metadata,resolve-source-overwrite}.ts`,
 `packages/workflow/src/{workflow.ts:817-890,errors/…,node-helpers.ts}`
-**Evidence:** 13 probe groups / 4601 values / 10 typed throws from real `WorkflowExecute` runs —
+**Evidence:** 16 probe groups / 2300 values / 14 typed throws from real `WorkflowExecute` runs —
 [`engine-observations.json`](../docs/isolation/agent-6-probes/engine-observations.json)
-(sha256 `0016e713b34240dda1efc8eaa2abec442b2fcc7376497a24056519f380f020fb`), runner
+(sha256 `cadbfaf2f5ad95ae9bb5dcbb61bca46b033b4e794d853ae9014d84674f9a8009`), runner
 [`engine-probes.cjs`](../docs/isolation/agent-6-probes/engine-probes.cjs), determinism **MATCH**
 **Anatomy:** [`docs/isolation/execution-engine.md`](../docs/isolation/execution-engine.md) (`E1`–`E10`)
 **Consumed by:** [`variable-lookup.contract.md`](variable-lookup.contract.md) (interface `P1`–`P6`), [`expression-syntax.contract.md`](expression-syntax.contract.md)
@@ -97,6 +97,10 @@ the engine never extends it (`403A.additionalKeysKeys` = the 5 predicted keys).
 | `O22` | Pre-run gate: `checkForWorkflowIssues` calls `checkReadyForExecution` with `startNode = first stack node`, `destinationNode`, `pinDataNodeNames = keys(resultData.pinData)`; any issue ⇒ `WorkflowHasIssuesError`. A bare `checkReadyForExecution(wf, {})` validates **nothing** | `:1305-1333`, `:826-891` | `403K.{missing_required_parameter_blocks_run,same_node_pinned_runs,same_node_disabled_runs}` vs `403K.bare_gate_call_checks_nothing === null` |
 | `O23` | `executionIndex` is a per-engine monotone counter read from `additionalData.currentNodeExecutionIndex` at pop time; the start node's task gets `0` | `:1506-1512` | `403D.executionIndex_sequence`, `…after_run: 4` for a 4-node run |
 | `O24` | `additionalData.executionTimeoutTimestamp` past ⇒ `status='canceled'`, `timedOut=true`, checked once per iteration; `cancel()` additionally emits `workflowExecuteAfter` with the partial run data | `:1486-1492`, `:1423-1431` | `403E_cancel.executionTimeoutTimestamp_in_the_past` |
+| `O26` | A waiting node is **not re-executed on resume**: `handleWaitingState` disables the waiting node on the stack and pops the duplicated task, so its resumed `runData` entry is the *input* passthrough and `waitTill` is cleared | `:1285-1303` | `403L_waiting_and_resume` |
+| `O27` | `executionIndex` restarts from `0` in a resumed engine instance (the counter lives on `additionalData`), while `runIndex` continues from the `runData` array position — the two must not be conflated | `:1506-1512`, `:1556-1565` | `403L` (resumed `Wait` has `ei: 0`) |
+| `O28` | Dispatch precedence is `execute ‖ customOperation` → `poll` (manual only; other modes pass through) → `trigger` (manual needs the DI `TriggersAndPollers`; other modes pass through) → webhook-without-`execute` → declarative-in-test. A webhook type that also declares `execute` runs `execute()` | `:1221-1268` | `403M_dispatch_arms` (5 arms, incl. the `PollContext` identity and the hung manual-trigger arm) |
+| `O29` | The endless-loop guard can only fire from the `ensureInputData` re-queue path, which is legacy-order-only; a parent returning `null` never reaches it because `nodeSuccessData === null` skips child scheduling entirely | `:1567-1584`, `:1769-1775`, `:2315-2344` | `403N_endless_loop_guard` (`runDataKeys: ['Start']` in both orders) |
 | `O25` | Node-side writers: `setMetadata()` → `taskData.metadata`; `addExecutionHints()` → `taskData.hints` (via `context.hints`) | `:73-79`, `:1715-1717` | `403C.setMetadata_lands_in_task`, `.hints_landed_on_task` |
 
 ---
@@ -134,6 +138,12 @@ the engine never extends it (`403A.additionalKeysKeys` = the 5 predicted keys).
 - `INV-7` `pinData`, `executeOnce`, `continueOnFail`, `retryOnFail`, `onError`, `alwaysOutputData` alter **data shape or
   control flow**, never the context class or the scoping tuple (`403F`).
 - `INV-8` Validation is scoped and pin-exempt; an unscoped `checkReadyForExecution` is a no-op (`O22`).
+- `INV-9` `runIndex` and `executionIndex` are different clocks: the first is the position in `runData[nodeName]`
+  (continues across a resume), the second is a per-engine-instance counter (restarts at 0 on resume). Any persistence
+  that merges runs must key on `runIndex`, never on `executionIndex` (`O27`, `403L`).
+- `INV-10` The stable mirror `engine-observations.stable.json` is derived from the raw recording by
+  `make-stable.cjs`; the runner's `AGENT6_STABLE` path and the CLI must produce identical bytes, and the mirror must be
+  byte-identical across consecutive runs (`§6` drift row).
 
 ---
 
@@ -141,8 +151,8 @@ the engine never extends it (`403A.additionalKeysKeys` = the 5 predicted keys).
 
 | ID | Gap | Why it stays open |
 | :--- | :--- | :--- |
-| `G-1` | `handleWaitingState` / resume-from-wait is documented from source only | needs `putExecutionToWait` + a resume entry point; the harness exposes no resume driver (`403C` has no waiting scenario) |
-| `G-2` | `poll` / `trigger` / `webhook` dispatch arms (`:1237-1257`) unobserved | the harness registers no poll/webhook-capable type; recorded as source-derived only |
+| `G-1` | **CLOSED** (`403L`): waiting + resume measured end-to-end, incl. the disabled-node-on-resume rule and the `executionIndex` restart | still unobserved: `WebhookTokenManager`/queue-mode resume transports, which are outside this slice |
+| `G-2` | **PARTIALLY CLOSED** (`403M`): poll (both modes), trigger (cli passthrough), webhook-with-`execute` all observed; the `manual` trigger arm **cannot** be observed here — it needs the DI container and hung, recorded as `probe-timeout after 5000ms` | the trigger arm requires `Container.get(TriggersAndPollers)`; a port must model that dependency explicitly rather than fake a result |
 | `G-3` | Endless-loop guard (`:1565-1571`) not reproducible without a crafted re-queue cycle | assertion is derived from the `ensureInputData` re-push path; kept as a normative `O`-free hazard in anatomy §10.7 |
 | `G-4` | `subNodeExecutionResults` / `EngineResponse` and `rewireOutputLogTo` (AI tool paths) not exercised | owned by `X6`; only the field's presence is recorded (`403A.fields`) |
 | `G-5` | `getKnownNodeTypes()` returns `{}` under the harness because `nodeTypes` there is a minimal shim | harness limitation, not an n8n behaviour claim |
@@ -153,9 +163,11 @@ the engine never extends it (`403A.additionalKeysKeys` = the 5 predicted keys).
 
 | Check | Command | Expected |
 | :--- | :--- | :--- |
-| Evidence exists and is re-derivable | `NODE_PATH=$PWD/.runtime/node_modules node docs/isolation/agent-6-probes/engine-probes.cjs /tmp/e.json` | exit `0`, 13 groups, 4601 values |
+| Evidence exists and is re-derivable | `NODE_PATH=$PWD/.runtime/node_modules node docs/isolation/agent-6-probes/engine-probes.cjs /tmp/e.json` | exit `0`, 16 groups, 2300 leaf values, 14 throws, 24 lifecycle scenarios |
 | Determinism | `node docs/isolation/agent-6-probes/engine-determinism-check.cjs /tmp/e.json docs/isolation/agent-6-probes/engine-observations.json` | `MATCH` |
-| Recorded file integrity | `sha256sum docs/isolation/agent-6-probes/engine-observations.json` | `0016e713b34240dda1efc8eaa2abec442b2fcc7376497a24056519f380f020fb` |
+| Byte-stable drift gate | `NODE_PATH=$PWD/.runtime/node_modules AGENT6_STABLE=/tmp/a.json node …/engine-probes.cjs /tmp/raw-a.json` then `diff -q /tmp/a.json docs/isolation/agent-6-probes/engine-observations.stable.json` | no output (identical) |
+| Mirror consistency | `node docs/isolation/agent-6-probes/make-stable.cjs docs/isolation/agent-6-probes/engine-observations.json /tmp/x.json && diff -q /tmp/x.json docs/isolation/agent-6-probes/engine-observations.stable.json` | no output |
+| Recorded file integrity | `sha256sum docs/isolation/agent-6-probes/engine-observations.json` | `cadbfaf2f5ad95ae9bb5dcbb61bca46b033b4e794d853ae9014d84674f9a8009` |
 | No Rust touched | `git diff --name-only HEAD -- crates apps tests reference` | empty |
 | Reference tree untouched | `node tools/workflow-reference-manifest.mjs --check` | `PASS 15050 files` |
 | Result integrity | `python3 tests/integration/result_integrity_audit.py` | this task's row: STATUS + non-empty operations table + evidence paths exist |
