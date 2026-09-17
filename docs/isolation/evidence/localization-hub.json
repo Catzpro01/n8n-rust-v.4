@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-17T20:58:44.749Z",
+  "generatedAt": "2026-09-17T20:54:30.581Z",
   "phase": "phase-4b-localization",
   "lego": "localization-hub",
   "referenceGrounding": "reference/n8n/packages/frontend/@n8n/i18n (mechanism parity; the six translations are product-supplied)",
@@ -115,7 +115,7 @@
   "suite": {
     "pass": 26,
     "fail": 0,
-    "summary": "# tests 26 · # pass 26 · # fail 0 · # duration_ms 528.824407"
+    "summary": "# tests 26 · # pass 26 · # fail 0 · # duration_ms 501.103964"
   },
   "checks": [
     {
