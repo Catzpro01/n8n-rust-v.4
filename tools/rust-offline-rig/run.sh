@@ -14,21 +14,26 @@ set -euo pipefail
 
 RIG="${RUST_RIG:-/tmp/rust-rig}"
 REPO="${REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
+# The Phase-3 Rust track is archived (PROJECT_RULES #1 ZERO RUST): legacy/rust-port/{Cargo.toml,crates}.
+# Point RUST_LEGACY at the live crates/ + Cargo.toml pair after a `git mv` restore.
+LEGACY="${RUST_LEGACY:-$REPO/legacy/rust-port}"
 MODE="${1:-check}"; shift || true
 
 [ -d "$RIG/vendor" ] || { echo "rig missing: run tools/rust-offline-rig/setup.sh first" >&2; exit 2; }
 
+[ -f "$LEGACY/Cargo.toml" ] || { echo "no Cargo.toml under $LEGACY — restore the track or set RUST_LEGACY" >&2; exit 2; }
+
 BUILD="$RIG/build/repo"
 rm -rf "$BUILD"
 mkdir -p "$BUILD/.cargo"
-cp -a "$REPO/Cargo.toml" "$BUILD/"
-cp -a "$REPO/crates" "$BUILD/"
+cp -a "$LEGACY/Cargo.toml" "$BUILD/"
+cp -a "$LEGACY/crates" "$BUILD/"
 # integration tests read the reference fixtures/goldens relative to the manifest dir
 if [ -d "$REPO/tests/reference" ]; then
   mkdir -p "$BUILD/tests"
   cp -a "$REPO/tests/reference" "$BUILD/tests/"
 fi
-[ -f "$REPO/Cargo.lock" ] && cp -a "$REPO/Cargo.lock" "$BUILD/"
+[ -f "$LEGACY/Cargo.lock" ] && cp -a "$LEGACY/Cargo.lock" "$BUILD/"
 
 cat > "$BUILD/.cargo/config.toml" <<EOF
 [source.crates-io]

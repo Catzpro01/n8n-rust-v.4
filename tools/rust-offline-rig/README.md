@@ -36,8 +36,9 @@ tools/rust-offline-rig/run.sh test       # cargo test  --workspace
 tools/rust-offline-rig/run.sh fmt        # any other cargo subcommand
 ```
 
-`run.sh` copies `Cargo.toml` + `crates/` into `$RUST_RIG/build/repo` and runs cargo
-there, so `Cargo.lock`, `target/` and any generated file stay out of the tree under
+`run.sh` copies the archived workspace (`legacy/rust-port/Cargo.toml` + `legacy/rust-port/crates/`,
+or `crates/` + `Cargo.toml` after a restore — override with `RUST_LEGACY=…`) into
+`$RUST_RIG/build/repo` and runs cargo there, so `Cargo.lock`, `target/` and any generated file stay out of the tree under
 review.
 
 ## Status

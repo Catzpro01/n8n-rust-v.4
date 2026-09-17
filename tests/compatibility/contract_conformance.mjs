@@ -135,6 +135,28 @@ check('Phase 2: no Rust implementation introduced', () => {
   return 'crates/ and apps/ contain no Rust sources';
 });
 
+// --- Phase-2 guard companion: the archived Rust track must stay documented and inert ------
+// (PROJECT_RULES #1 forbids Rust under crates/ and apps/. The Phase-3 track was archived to
+//  legacy/rust-port/ rather than deleted — this keeps it from becoming a silent build root.)
+check('Rust legacy archive is documented and inert', () => {
+  const legacy = join(ROOT, 'legacy', 'rust-port');
+  if (!existsSync(legacy)) return 'no legacy archive present';
+  assert(
+    existsSync(join(legacy, 'README.md')),
+    'legacy/rust-port/ exists without README.md — an undocumented archive cannot be audited',
+  );
+  const crates = join(legacy, 'crates');
+  const archived = existsSync(crates) ? readdirSync(crates).length : 0;
+  assert(archived > 0, 'legacy/rust-port/crates/ is empty — archive incompletely moved');
+  for (const root of ['Cargo.toml', 'Cargo.lock']) {
+    assert(
+      !existsSync(join(ROOT, root)),
+      `${root} exists at the repository root: cargo would treat this ZERO RUST repo as a Rust workspace`,
+    );
+  }
+  return `legacy/rust-port/ documented, ${archived} crates archived, no root cargo manifest`;
+});
+
 const passed = results.filter((r) => r.ok).length;
 console.log('=== [AGENT 5] CONTRACT CONFORMANCE (offline) ===');
 for (const r of results) console.log(`${r.ok ? '[PASS]' : '[FAIL]'} ${r.name}${r.detail ? ` — ${r.detail}` : ''}`);

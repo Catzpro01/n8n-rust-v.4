@@ -16,7 +16,8 @@ is a Rust replacement attempted.
 | REFERENCE RUNTIME (baseline 11/11 smoke test) | ✅ |
 | **WORKFLOW ISOLATION (LEGO 01)** | **✅ VERIFIED — see [`docs/isolation/workflow.md`](docs/isolation/workflow.md)** |
 | NODE MODEL (LEGO 02) · CONNECTION (03) · VALIDATION (04) | ⏸ next |
-| RUST IMPLEMENTATION | ⏸ not started |
+| **NATIVE LOCALIZATION (4A/4B/4C/4D)** | **✅ TESTED — 33/33 tests, 9/9 gate, see [`docs/isolation/localization.md`](docs/isolation/localization.md)** |
+| RUST IMPLEMENTATION | ⏸ not started (Phase-3 track archived — see `legacy/rust-port/`) |
 
 “Isolated” means the TypeScript component now has an enforced boundary and a
 contract. It does **not** mean it was replaced by Rust.
@@ -31,7 +32,10 @@ contract. It does **not** mean it was replaced by Rust.
 - `tools/` : boundary mapper, kernel/port/reference gates, isolation extractor, model digest, gate runner, live engine harness
 - `tests/reference/` : golden workflows + baseline smoke test evidence
 - `tasks/`, `results/` : inbound task manifests and execution results
-- `crates/`, `apps/n8n-rust/` : (reserved) Rust implementation
+- `crates/`, `apps/n8n-rust/` : **must stay empty** while PROJECT_RULES #1 (ZERO RUST) stands
+- `legacy/rust-port/` : the archived Phase-3 Rust workspace (`Cargo.toml` + 7 crates), inert and
+  out of scope; `git mv legacy/rust-port/{crates,Cargo.toml} .` restores it. Both guards assert that
+  the archive is documented and that no cargo manifest is visible at the repository root.
 
 ## Verify a LEGO
 
@@ -42,6 +46,9 @@ npm run verify                            # 11 gates; writes docs/isolation/evid
 
 npm run verify:fast                       # same, without the live engine checks
 npm run isolation:check                   # boundary + kernel + port + reference-integrity only
+npm run localization:test                 # Phase 4C/4D runtime, 33 tests, runs with no build step
+npm run localization:gate                 # 9 checks; writes docs/isolation/evidence/localization-gate.json
+npm run localization:inspect -- --lang jv # runnable view of the promoted surface
 ```
 
 A failing gate means the isolation is void and must be rolled back — the records

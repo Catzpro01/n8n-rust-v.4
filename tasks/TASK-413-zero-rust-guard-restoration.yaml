@@ -1,0 +1,74 @@
+id: TASK-413-zero-rust-guard-restoration
+agent: agent-5
+lego: integration
+module: guard-restoration
+phase: 4e
+
+# Restore PROJECT_RULES #1 (ZERO RUST) as a *passing* invariant by archiving the Phase-3 Rust
+# workspace out of the build path, without deleting anyone's work, and without weakening a guard.
+# Reversible in one command pair; every automated guard now passes on this branch.
+
+allowed_paths:
+  - legacy/rust-port/**            # git mv destination (crates/** + root Cargo.toml, rename-preserving)
+  - crates/**                      # source of the move (removed by git mv only)
+  - Cargo.toml                     # source of the move (removed by git mv only)
+  - tests/compatibility/contract_conformance.mjs
+  - tests/integration/boundary_audit.py
+  - tools/rust-offline-rig/run.sh
+  - tools/rust-offline-rig/README.md
+  - tests/reference/workflow-rust/build-fixtures.mjs   # comment only
+  - docs/isolation/evidence/rust-guard-restoration.json
+  - docs/isolation/localization.md                     # §4.2 rewritten (finding resolved)
+  - README.md
+  - tasks/TASK-413-zero-rust-guard-restoration.yaml
+  - results/TASK-413-zero-rust-guard-restoration.md
+
+forbidden_paths:
+  - reference/n8n/**               # untouched
+  - apps/**                        # stays empty of Rust (only .gitkeep)
+  - packages/**                    # no product code touched by this task
+
+requires:
+  - PROJECT_RULES.md               # #1 ZERO RUST, #6 regression mandatory
+  - docs/isolation/evidence/rust-guard-restoration.json
+
+subject_branch: arena/01a0b105-n8n-rust-v-4
+base: d1c000ce                     # Phase 4D tip
+
+operations:
+  - name: git_mv
+    args: { from: crates, to: legacy/rust-port/crates }
+  - name: git_mv
+    args: { from: Cargo.toml, to: legacy/rust-port/Cargo.toml }
+  - name: write_file
+    args: { path: legacy/rust-port/README.md, kind: archive-record }
+  - name: edit_file
+    args: { path: tests/compatibility/contract_conformance.mjs, change: "new check: archive documented + inert (no root cargo manifest)" }
+  - name: edit_file
+    args: { path: tests/integration/boundary_audit.py, change: "same assertions as a dedicated audit line" }
+  - name: edit_file
+    args: { path: tools/rust-offline-rig/run.sh, change: "RUST_LEGACY defaults to legacy/rust-port" }
+  - name: run_gate
+    args: { cmd: "node tests/compatibility/contract_conformance.mjs", expect: "22/22 PASS (was 20/21)" }
+  - name: run_gate
+    args: { cmd: "python3 tests/integration/boundary_audit.py", expect: "PASS (was FAIL)" }
+  - name: run_gate
+    args: { cmd: "bash tests/integration/run_gate.sh --offline-only", expect: "OFFLINE STAGES: PASS (exit 2 = live not runnable here, by design)" }
+  - name: run_tests
+    args: { cmd: "node --test packages/workflow-lego/test/06-localization-runtime.test.ts", expect: "33/33 PASS (unchanged)" }
+  - name: run_gate
+    args: { cmd: "node tools/localization-gate.mjs", expect: "9/9 PASS (unchanged)" }
+
+verification:
+  contract_conformance: 22/22 PASS
+  boundary_audit: PASS (all edges documented)
+  run_gate_offline: "OFFLINE STAGES: PASS — exit 2 INCONCLUSIVE because the live 11/11 needs docker/VPS"
+  localization: "33/33 tests, 9/9 gate (unaffected)"
+  cargo_reverified: "no — no Rust toolchain in this sandbox; the archive is inert and its evidence claims are attributed, not re-asserted"
+  deletions: none (git mv, rename detection preserved)
+
+merge_condition:
+  - zero_rust_guard_pass
+  - no_deletion_of_prior_work
+  - reversible_archive
+  - no_contract_violation

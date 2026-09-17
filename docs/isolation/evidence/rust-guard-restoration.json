@@ -1,0 +1,46 @@
+{
+  "gate": "zero-rust-guard-restoration",
+  "generatedAt": "2026-09-17T20:30:13Z",
+  "rule": "PROJECT_RULES.md #1 \u2014 ZERO RUST (crates/, apps/ must not contain Rust)",
+  "finding": {
+    "cause": "the Phase-3 Rust workspace (root Cargo.toml + 7 crates, 23 tracked files) lived at the repository root where cargo auto-discovers it",
+    "impact": "contract_conformance 20/21 and boundary_audit FAIL for every branch; no session could claim a green offline gate",
+    "prior_status": "documented as pre-existing in docs/isolation/localization.md 4.2 and CROSS-AGENT-ISSUES (ISSUE-011 / MSG-14)"
+  },
+  "action": {
+    "command": [
+      "git mv crates legacy/rust-port/crates",
+      "git mv Cargo.toml legacy/rust-port/Cargo.toml"
+    ],
+    "reversible": [
+      "git mv legacy/rust-port/crates crates",
+      "git mv legacy/rust-port/Cargo.toml Cargo.toml"
+    ],
+    "files_moved": 23,
+    "archive_record": "legacy/rust-port/README.md",
+    "tooling_followed": [
+      "tools/rust-offline-rig/run.sh (RUST_LEGACY, defaults to legacy/rust-port)",
+      "tools/rust-offline-rig/README.md",
+      "tests/reference/workflow-rust/build-fixtures.mjs (comment)"
+    ]
+  },
+  "new_checks": [
+    "contract_conformance.mjs \u2014 'Rust legacy archive is documented and inert': README present, archive non-empty, no Cargo.toml/Cargo.lock at the repository root",
+    "boundary_audit.py \u2014 legacy_archive_findings(): same assertions, printed as a dedicated audit line"
+  ],
+  "before": {
+    "contract_conformance": "20/21 (FAIL: 'Phase 2: no Rust implementation introduced' \u2014 22 offenders under crates/)",
+    "boundary_audit": "FAIL (PHASE VIOLATION: Rust introduced during Phase 2)",
+    "run_gate_offline": "OFFLINE STAGES: FAIL (BLOCKED)"
+  },
+  "after": {
+    "contract_conformance": "RESULT: 22/22 CHECKS PASSED",
+    "boundary_audit": "AUDIT RESULT: PASS (all edges documented)",
+    "run_gate_offline": "OFFLINE STAGES : PASS | LIVE 11/11     : NOT RUN",
+    "exit_code_run_gate": 2
+  },
+  "not_verified_here": [
+    "cargo check/test on the archived crates (no Rust toolchain in this sandbox)",
+    "live 11/11 regression (no docker/VPS from this sandbox \u2014 the gate reports NOT RUN, exit 2 INCONCLUSIVE by design)"
+  ]
+}

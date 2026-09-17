@@ -2,7 +2,8 @@
 /**
  * Workflow LEGO — Rust port conformance fixtures.
  *
- * The Phase-3 Rust crate (`crates/n8n-workflow`) must reproduce the reference
+ * The Phase-3 Rust crate (`legacy/rust-port/crates/n8n-workflow` — archived per PROJECT_RULES #1;
+ * restore with `git mv legacy/rust-port/crates crates`) must reproduce the reference
  * Workflow Model. This script derives the *expected* values from the pinned
  * reference runtime (n8n-workflow 2.9.1 = the 2.9.4 dependency set) and writes
  * them as golden JSON, so a Rust test can assert against the same numbers

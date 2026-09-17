@@ -86,7 +86,7 @@ manifest update — see contract §11.6.
 | Dictionary parity | gate check G4 | PASS — 0 missing, 0 extra, 0 empty |
 | RTL | gate check G6 | `ar:rtl`, the other five `ltr` |
 | Status coverage | gate check G7 | 5 statuses × 6 locales |
-| Integration gate stage | `bash tests/integration/run_gate.sh --offline-only` | `STAGE 2d: NATIVE LOCALIZATION GATE` → **PASS (7/7)**, guarded so a checkout without the module reports `SKIPPED`, never `FAIL` |
+| Integration gate stage | `bash tests/integration/run_gate.sh --offline-only` | `STAGE 2d: NATIVE LOCALIZATION GATE` → **PASS (9/9)**; full offline stage now **PASS** (§4.2) |
 
 Real strings for the same key (`settings.title`), produced by the gate:
 `id:Pengaturan · en:Settings · jv:Setelan · ar:الإعدادات · zh:设置 · ru:Настройки`
@@ -103,25 +103,35 @@ Four mutations were applied to the sources, the gate re-run, and the sources res
 | M4 | catalog drops the whole `ru` locale | **exit 1** | G1, G2, G3, G7 |
 | — | sources restored | **exit 0** | 31/31 + 7/7 |
 
-### 4.2 Pre-existing finding (NOT caused by this change, NOT fixed here)
+### 4.2 The ZERO RUST guard finding — found pre-existing, RESOLVED in this branch
 
-`tests/compatibility/contract_conformance.mjs` reports **20/21** and
-`tests/integration/boundary_audit.py` reports **FAIL**, both for the same single reason:
+When Phase 4C was written, `tests/compatibility/contract_conformance.mjs` reported **20/21** and
+`tests/integration/boundary_audit.py` reported **FAIL**, both for one reason:
 
 ```text
 -- Phase-2 Rust guard: VIOLATION ['crates/n8n-common/Cargo.toml', … 22 files …]
 PHASE VIOLATION: Rust introduced during Phase 2
 ```
 
-PROJECT_RULES #1 mandates *ZERO RUST* (`crates/`, `apps/`) while `crates/` still carries the
-Phase-3 Rust crates (`n8n-workflow`, `n8n-connection`, …). All 21 contract/boundary checks
-themselves pass; only the Rust guard fails. The baseline is identical **before and after** this
-change (`20/21` both ways), so this PR neither introduces nor worsens it.
+PROJECT_RULES #1 mandates *ZERO RUST* (`crates/`, `apps/`) while the Phase-3 Rust workspace
+(root `Cargo.toml` + 7 crates) sat at the repository root, where cargo auto-discovers it. The
+baseline was identical **before and after** the localization work, so Phase 4C neither introduced
+nor worsened it — and the same baseline was inherited by every branch in the repository.
 
-**Required action (orchestrator / crate owner):** either archive the legacy crates to a non-build
-path (`git mv crates legacy/rust-port/crates && git mv Cargo.toml legacy/rust-port/Cargo.toml`) or
-re-amend PROJECT_RULES. Until one of the two happens, no session can claim a green integration gate.
-Reversible: the inverse `git mv` restores the Rust track untouched.
+**Resolution (same branch, later commit):** the track was archived with `git mv crates
+legacy/rust-port/crates && git mv Cargo.toml legacy/rust-port/Cargo.toml` — reversible, history
+preserved, no file deleted (`legacy/rust-port/README.md` is the archive record; the offline rig now
+reads `legacy/rust-port/` and a `RUST_LEGACY=…` override exists for a restored track).
+
+| | before | after |
+| :--- | :--- | :--- |
+| `contract_conformance.mjs` | 20/21 (Rust guard) | **22/22 PASS** (new check: archive documented & inert) |
+| `boundary_audit.py` | FAIL (PHASE VIOLATION) | **PASS** + dedicated archive audit line |
+| `run_gate.sh --offline-only` | OFFLINE STAGES: **FAIL** (BLOCKED) | OFFLINE STAGES: **PASS**, exit 2 INCONCLUSIVE *only* because the live stage is not runnable here |
+
+Evidence: `docs/isolation/evidence/rust-guard-restoration.json`. Neither guard accepts a silent
+return: restoring the crates to the root fails them unless the archive README disappears and the
+repository-root `Cargo.toml` comes back — a decision that belongs to the orchestrator, not a commit.
 
 ## 5. Known limitations
 
@@ -143,5 +153,5 @@ Reversible: the inverse `git mv` restores the Rust track untouched.
 2. Extend the dictionaries: `packages/workflow-lego/src/backend-localization-service.ts` ships 9
    product keys; engine strings live in this module's overlay, so a dictionary refresh cannot silently
    un-translate a status (contract §4.6).
-3. Close the Rust guard finding above (§4.2); it is the only thing standing between the project and a
-   fully green offline stage — `Stage 2d` already passes.
+3. The ZERO RUST guard finding is closed (§4.2). The only stage that cannot run from this sandbox is
+   the live 11/11 regression, which needs a running n8n + PostgreSQL.
