@@ -102,3 +102,12 @@ deactivate → clearWebhooks → webhook_entity delete [+ webhookMethods.default
 - Default response `200 {"message":"Workflow was started"}` for `onReceived` without `responseData`.
 - Webhook listeners must be present on **every** main instance, unlike triggers.
 - `webhookId` on the node is stable across saves; changing `path`/`httpMethod` requires re-activation (`update` mode does remove+add).
+
+## Phase-3 native HTTP transport (TASK-420)
+
+`WebhookHttpServer` adapts Node's `http` request/response objects to the framework-independent
+`WebhookRequestHandler`. It owns listen/close lifecycle, configurable base-path isolation, URL and
+query parsing, JSON/text/binary request bodies, a configurable body-size limit, and JSON/text/binary
+or stream responses. Route lookup and execution remain delegated to `IWebhookManager`; persistence
+and workflow execution do not cross into the transport. Invalid JSON and oversized payloads fail
+before execution with deterministic 400/413 envelopes.

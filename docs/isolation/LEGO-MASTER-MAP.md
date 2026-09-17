@@ -105,6 +105,7 @@ asserts that confinement.
 | `TASK-417-phase3-execution-data-lego` | execution-data | `contracts/execution-data.contract.md` ✅ | `docs/isolation/execution-data.md` ✅ | `packages/execution-data-lego/test/conformance.test.mjs` 24/24 ✅ (7 reference suites, pairing rules, 2 negative controls) | `tools/execution-data-lego-gate.mjs` 6/6 ✅ | **VERIFIED** |
 | `TASK-418-phase3-api-lego` | api | `contracts/api.contract.md` ✅ | `docs/isolation/api.md` ✅ | `packages/api-lego/test/conformance.test.mjs` 12/12 ✅ (envelopes, zod 400 raw issues, SPA fallback, 2 negative controls) | `tools/api-lego-gate.mjs` 6/6 ✅ | **VERIFIED** |
 | `TASK-419-phase3-scheduler-timer-adapter` | scheduler runtime | `contracts/scheduler.contract.md` ✅ | `docs/isolation/scheduler.md` ✅ | `packages/scheduler-lego/test/*.test.mjs` 16/16 ✅ (7 native timer cases) | `tools/scheduler-lego-gate.mjs` 6/6 ✅ · Trigger regression 11/11 ✅ | **SUBMITTED_FOR_REVIEW** |
+| `TASK-420-phase3-webhook-http-server` | webhook HTTP runtime | `contracts/webhook.contract.md` ✅ | `docs/isolation/webhook.md` ✅ | `packages/webhook-lego/test/*.test.mjs` 16/16 ✅ (6 real-socket transport cases) | `tools/webhook-lego-gate.mjs` 5/5 ✅ | **SUBMITTED_FOR_REVIEW** |
 
 | Phase 3 gate | Result |
 | :--- | :--- |
@@ -120,4 +121,4 @@ holds 35 cases in 5 groups; `checksum` (8) + `toJSON` (6) + `rename` (6) are cov
 **Next Phase 3 work:** caveat C1 (11/11 live smoke on the VPS + PostgreSQL), the remaining frozen
 Workflow surface (`getStartNode`, `getHighestNode`, `getNodeConnectionIndexes`,
 `getParentMainInputNode`, `getParentNodesByDepth`), and the remaining runtime around the activation
-LEGO (webhook HTTP servers and instance leadership) — see `docs/isolation/execution.md` §7.
+LEGO (instance leadership and waiting-execution resume) — see `docs/isolation/execution.md` §7.
