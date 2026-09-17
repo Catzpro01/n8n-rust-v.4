@@ -1,0 +1,16 @@
+{
+  "name": "@lego/reconstructed-engine",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Reconstructed n8n 2.9.4 Workflow Execution Engine in JavaScript (PROJECT_RULES #1 ZERO RUST). Contract: contracts/execution-engine.contract.md",
+  "license": "SEE LICENSE IN reference/n8n/LICENSE.md",
+  "type": "module",
+  "main": "runner.mjs",
+  "exports": {
+    ".": "./runner.mjs",
+    "./graph": "./graph.mjs"
+  },
+  "scripts": {
+    "test": "node --test --test-force-exit test/*.test.mjs"
+  }
+}

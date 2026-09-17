@@ -1,0 +1,70 @@
+id: TASK-307-rust-guard
+agent: arena-worker (session arena/01a0aee7-n8n-rust-v-4)
+lego: integration
+module: integration
+phase: 2
+
+# Self-assigned from the standing rules, NOT taken from dynamic_task_pool:
+# the Supabase orchestration endpoint is unreachable from this sandbox
+# (https://gqctxugkxekdqxsaqrum.supabase.co -> curl HTTP 000, while
+# api.github.com -> 200), so the pool / task_consensus_votes queues could not be
+# polled and no vote could be cast. The work item was derived instead from the
+# repository's own failing gate, which is the authoritative signal available here.
+
+trigger: >
+  PROJECT_RULES.md rule 1 (ZERO RUST) was violated at d721b603 by 22 tracked
+  artifacts under crates/. Both offline harnesses were failing on it
+  (contract_conformance.mjs 20/21 exit 1; boundary_audit.py AUDIT RESULT: FAIL),
+  while docs/isolation/LEGO-MASTER-MAP.md claimed "No premature Rust | PASS".
+
+allowed_paths:
+  - crates/**                       # removal only; directories stay reserved (.gitkeep)
+  - tools/rust-guard.mjs
+  - package.json
+  - docs/isolation/LEGO-MASTER-MAP.md
+  - docs/isolation/RUST-PURGE-RECORD.md
+  - docs/isolation/evidence/**      # rewritten by the gate run, tracked by design
+  - docs/isolation/workflow-verification.md
+  - docs/isolation/STANDING-WORKER-PROTOCOL.md   # mirrors rule 5 from origin/main
+  - tests/reference/workflow-rust/build-fixtures.mjs  # header note only
+  - tasks/TASK-307-rust-guard.yaml
+  - results/TASK-307-rust-guard.md
+
+forbidden_paths:
+  - reference/n8n/**                # untouched — verified by gate G04 (15050 files, root f8da3518…)
+  - apps/**                         # only apps/n8n-rust/.gitkeep exists; left as-is
+  - packages/workflow-lego/src/**
+
+requires:
+  - PROJECT_RULES.md
+  - docs/isolation/STANDING-WORKER-PROTOCOL.md
+  - tests/compatibility/contract_conformance.mjs
+  - tests/integration/boundary_audit.py
+
+operations:
+  - name: rust_guard_baseline
+    args: { expect: "VIOLATION — 22 artifacts (15 .rs / 2740 lines + 7 Cargo.toml / 85 lines)" }
+  - name: git_rm
+    args: { paths: "crates/**/*.{rs,toml}", keep: ["crates/.gitkeep", "apps/n8n-rust/.gitkeep"] }
+  - name: add_guard
+    args: { file: tools/rust-guard.mjs, script: "npm run rust:guard", chain_into: "npm run isolation:check" }
+  - name: negative_test
+    args: { plant: "crates/n8n-probe/{Cargo.toml,src/lib.rs}", expect: "all three guards exit 1; exit 0 after removal" }
+  - name: setup_reference_runtime
+    args: { cmd: "bash scripts/setup-reference-runtime.sh", expect: "n8n-workflow/core/nodes-base 2.9.1" }
+  - name: regression_gate
+    args: { cmd: "npm run verify", expect: "11/11 PASS, BEHAVIOR CHANGE: NONE DETECTED" }
+
+verification:
+  rust_guard: "node tools/rust-guard.mjs -> PASS, exit 0"
+  contract_conformance: "21/21 CHECKS PASSED, exit 0 (was 20/21, exit 1)"
+  boundary_audit: "AUDIT RESULT: PASS (all edges documented), exit 0 (was FAIL, exit 1)"
+  isolation_check: "npm run isolation:check -> exit 0 (now ends with the rust guard)"
+  workflow_lego_gate: "npm run verify -> 11/11 PASS (G11 live 7/7 R0..R6)"
+  fixtures: "build-fixtures.mjs --check -> fixtures match the pinned reference, exit 0"
+  live_vps_11_of_11: "NOT RUN — no route to 157.10.160.95 from this sandbox, docker absent; run_gate.sh reports INCONCLUSIVE"
+
+merge_condition:
+  - offline_gates_pass
+  - no_contract_violation
+  - vps_11_of_11_still_owed   # caveat C1 of TASK-305 remains open

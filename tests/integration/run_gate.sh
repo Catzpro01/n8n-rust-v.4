@@ -15,7 +15,13 @@ node tests/compatibility/contract_conformance.mjs || fail=1
 echo; echo "######## STAGE 2: BOUNDARY & DEPENDENCY AUDIT (offline) ########"
 python3 tests/integration/boundary_audit.py || fail=1
 
-echo; echo "######## STAGE 3: 11/11 LIVE REGRESSION GATE ########"
+# The reconstructed JavaScript engine (PROJECT_RULES #1 ZERO RUST) has its own regression
+# suite. The reference-equivalence cases in it skip themselves when the pinned runtime is
+# absent, so this stage stays runnable on a bare checkout.
+echo; echo "######## STAGE 3: RECONSTRUCTED ENGINE REGRESSION (offline) ########"
+npm run --silent engine:test || fail=1
+
+echo; echo "######## STAGE 4: 11/11 LIVE REGRESSION GATE ########"
 if [ "$OFFLINE" = "1" ]; then
   echo "SKIPPED (--offline-only): live regression NOT RUN — gate cannot be declared VERIFIED."
   live="NOT RUN"

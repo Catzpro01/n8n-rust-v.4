@@ -1,0 +1,85 @@
+id: TASK-311-execution-details
+agent: arena-worker (session arena/01a0aee7-n8n-rust-v-4)
+lego: workflow
+module: reconstructed-engine
+phase: 2
+
+# Fifth self-assigned task of this session (STANDING-WORKER-PROTOCOL §2 non-blocking).
+# dynamic_task_pool still unreachable (Supabase -> curl HTTP 000; api.github.com -> 200), so no
+# pool read and no vote — recorded here rather than skipped silently.
+
+trigger: >
+  Four behaviours of the reference execution loop were still missing from the reconstructed
+  engine. Each was read off workflow-execute.ts and then checked against the REAL engine, which
+  caught one divergence that reading the source alone had missed.
+
+reference_evidence:
+  - reference/n8n/packages/core/src/execution-engine/workflow-execute.ts:1486-1496  # executionTimeoutTimestamp -> canceled
+  - reference/n8n/packages/core/src/execution-engine/workflow-execute.ts:1517-1552  # re-stamp pairedItem on INPUT items
+  - reference/n8n/packages/core/src/execution-engine/workflow-execute.ts:1632-1637  # pinData replaces the node run
+  - reference/n8n/packages/core/src/execution-engine/workflow-execute.ts:1736       # assignPairedItems call site
+  - reference/n8n/packages/core/src/execution-engine/workflow-execute.ts:1739/1778  # lastNodeExecuted on data / on error
+  - reference/n8n/packages/core/src/execution-engine/workflow-execute.ts:1742-1767  # alwaysOutputData
+  - reference/n8n/packages/core/src/execution-engine/workflow-execute.ts:2387-2389  # canceled takes precedence
+  - reference/n8n/packages/core/src/execution-engine/workflow-execute.ts:2581-2641  # assignPairedItems
+  - reference/n8n/packages/core/src/execution-engine/workflow-execute.ts:123-130    # pinData is a run() argument, not a Workflow one
+
+allowed_paths:
+  - packages/reconstructed-engine/**
+  - tasks/TASK-311-execution-details.yaml
+  - results/TASK-311-execution-details.md
+  - docs/isolation/evidence/**       # rewritten by npm run verify, tracked by design
+
+forbidden_paths:
+  - reference/n8n/**                 # read-only; gate G04 re-verifies 15050 files
+  - crates/**
+  - apps/**
+  - packages/workflow-lego/src/**
+
+operations:
+  - name: probe_reference_first
+    args:
+      why: "get the fixtures right against the real engine before asserting anything"
+      found:
+        - "pinData must be passed to run(), not to the Workflow constructor (:123-130)"
+        - "Limit node with maxItems 0 is a deterministic empty output for the alwaysOutputData case"
+        - "an elapsed executionTimeoutTimestamp yields run.status 'canceled' with zero runData"
+  - name: implement
+    args:
+      - "execution timeout: deadline checked once per node -> status 'canceled', timedOut true (:1486-1496)"
+      - "pinData: pinned node is not executed, its pinned output flows on; a disabled node ignores pins (:1632-1637)"
+      - "alwaysOutputData: empty output emits [{ json: {}, pairedItem: [...] }] so the branch continues (:1742-1767)"
+      - "assignPairedItems 1:1 port (:2581-2641)"
+      - "input items re-stamped with pairedItem { item, input: inputIndex || undefined } before each node (:1517-1552)"
+      - "lastNodeExecuted now follows the last node that produced data, or the failing node (:1739, :1778)"
+  - name: extend_suites
+    args:
+      unit: "packages/reconstructed-engine/test/engine.test.mjs -> 45 cases"
+      equivalence: "packages/reconstructed-engine/test/reference-equivalence.test.mjs -> 7 cases vs the real engine"
+
+verification:
+  engine_suite: "npm run engine:test -> 49 tests, 49 pass, 0 skipped, exit 0"
+  negative_control: "disabling the input re-stamping -> not ok 49 (pairedItem differs on NoOp), 48/49; restored -> 49/49"
+  divergence_found_by_equivalence: >
+    The reference stamps INPUT items with { item, input: inputIndex || undefined } before running a
+    node, so a passthrough node hands on `input: undefined` for input 0. The reconstruction was
+    emitting `{ item: 0 }` only. Reading the source alone did not surface this; the real-engine
+    comparison did.
+  offline_gate: "run_gate.sh --offline-only -> stages 1-3 PASS (21/21, AUDIT PASS, 49/49), live NOT RUN -> INCONCLUSIVE"
+  lego_gate: "npm run verify -> 11/11 PASS, BEHAVIOR CHANGE: NONE DETECTED"
+  rust_guard: "npm run rust:guard -> exit 0"
+  legacy_script: "test-run.mjs -> exit 0"
+
+breaking_changes:
+  - "output items now carry pairedItem, exactly like n8n; payload assertions moved to a payload() helper (same convention as tools/live/engine-harness.mjs)"
+  - "runWorkflow(startNode, initialData, options) gained options.{executionTimeoutTimestamp,pinData}"
+
+not_reconstructed:
+  - "the sourceOverwrite branch of the input re-stamp (:1530-1541) — AI tool executions"
+  - "waitTill resume, sub-workflows, credentials, expressions, AI/routing nodes"
+
+merge_condition:
+  - engine_suite_pass
+  - equivalence_pass
+  - no_reference_change
+  - no_ui_change

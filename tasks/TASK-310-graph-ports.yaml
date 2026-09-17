@@ -1,0 +1,78 @@
+id: TASK-310-graph-ports
+agent: arena-worker (session arena/01a0aee7-n8n-rust-v-4)
+lego: workflow
+module: reconstructed-engine
+phase: 2
+
+# Fourth self-assigned task of this session (STANDING-WORKER-PROTOCOL §2 non-blocking).
+# dynamic_task_pool still unreachable: https://gqctxugkxekdqxsaqrum.supabase.co -> curl HTTP 000,
+# api.github.com -> 200. No pool read, no vote cast — recorded, not skipped silently.
+
+trigger: >
+  TASK-309 shipped with two simplifications named in its own handoff: the waiting-node release
+  pass checked only DIRECT predecessors instead of the full ancestor set, and ignored
+  requiredInputs entirely. Both are correctness gaps against workflow-execute.ts:2136 and
+  :2107-2177.
+
+reference_evidence:
+  - reference/n8n/packages/workflow/src/common/get-connected-nodes.ts:11-95
+  - reference/n8n/packages/workflow/src/common/get-parent-nodes.ts:11-18
+  - reference/n8n/packages/workflow/src/workflow.ts:590-596
+  - reference/n8n/packages/workflow/src/interfaces.ts:2355          # requiredInputs?: string | number[] | number
+  - reference/n8n/packages/core/src/execution-engine/workflow-execute.ts:2094-2229  # release pass
+  - reference/n8n/packages/nodes-base/nodes/CompareDatasets/CompareDatasets.node.ts:27-29  # requiredInputs: 1
+  - reference/n8n/packages/nodes-base/nodes/Merge/v3/actions/versionDescription.ts:20       # expression form
+
+allowed_paths:
+  - packages/reconstructed-engine/**
+  - tasks/TASK-310-graph-ports.yaml
+  - results/TASK-310-graph-ports.md
+  - docs/isolation/evidence/**      # rewritten by npm run verify, tracked by design
+
+forbidden_paths:
+  - reference/n8n/**                # read-only; gate G04 re-verifies 15050 files
+  - crates/**
+  - apps/**
+  - packages/workflow-lego/src/**
+
+operations:
+  - name: add_graph_module
+    args:
+      file: packages/reconstructed-engine/graph.mjs
+      ports: "getConnectedNodes (1:1, incl. the dedup/reorder loop) and getParentNodes"
+  - name: use_full_ancestors
+    args: { where: "releaseWaitingNodes", replaces: "direct-predecessor check", ref: "workflow-execute.ts:2136-2142" }
+  - name: implement_required_inputs
+    args:
+      where: releaseWaitingNodes
+      forms: "number (count) and number[] (specific indexes); ignored when executionOrder !== 'v1'"
+      gap: "the EXPRESSION string form (Merge v3) needs the Expression LEGO → treated as unspecified, asserted by a test"
+      api: "registerNodeType(type, handler, description) — description.{requiredInputs,inputs} mirrors nodeType.description"
+  - name: port_equivalence_suite
+    args:
+      file: packages/reconstructed-engine/test/graph-equivalence.test.mjs
+      against: "the real getParentNodes / getConnectedNodes / mapConnectionsByDestination exported by n8n-workflow 2.9.1"
+      fixtures: "8 graphs (empty, linear, diamond, cycle, self-loop, sparse index, multi-type ai_tool, 3-way fan-in)"
+      variants: "connectionType main / ALL / ALL_NON_MAIN × depth -1 / 0 / 1 / 2"
+  - name: negative_control
+    args:
+      what: "temporarily revert the ancestor rule to direct predecessors and re-run the suite"
+      expect: "the ancestor test fails (27/28) — proving the test discriminates"
+
+verification:
+  engine_suite: "npm run engine:test -> 31 tests, 31 pass, 0 skipped, exit 0"
+  negative_control: "direct-predecessor variant -> not ok 24, 27/28; restored -> 31/31"
+  port_equivalence: "mapConnectionsByDestination + getParentNodes + getConnectedNodes identical to n8n-workflow 2.9.1 on all fixtures/variants"
+  offline_gate: "run_gate.sh --offline-only -> stages 1-3 PASS (21/21, AUDIT PASS, 31/31), live NOT RUN -> INCONCLUSIVE"
+  lego_gate: "npm run verify -> 11/11 PASS, BEHAVIOR CHANGE: NONE DETECTED"
+  rust_guard: "npm run rust:guard -> exit 0"
+
+remaining_known_gaps:
+  - "requiredInputs given as an expression string is not evaluated (Expression LEGO)"
+  - "still not reconstructed: expressions, credentials, pin data, waitTill resume, sub-workflows, AI/routing nodes, execution timeout"
+
+merge_condition:
+  - engine_suite_pass
+  - port_equivalence_pass
+  - no_reference_change
+  - no_ui_change

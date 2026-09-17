@@ -1,0 +1,71 @@
+id: TASK-312-engine-contract
+agent: arena-worker (session arena/01a0aee7-n8n-rust-v-4)
+lego: workflow
+module: reconstructed-engine
+phase: 2
+
+# Sixth self-assigned task of this session (STANDING-WORKER-PROTOCOL §2 non-blocking).
+# dynamic_task_pool still unreachable (Supabase -> curl HTTP 000; api.github.com -> 200), so no
+# pool read and no vote — recorded here rather than skipped silently.
+
+trigger: >
+  PROJECT_RULES.md rule 5: "Setiap modul wajib memiliki boundary jelas dan kontrak formal
+  (contracts/*.contract.md)". After five tasks packages/reconstructed-engine had 49 passing tests
+  and real substance but NO contract, no package.json and no README — the one module in packages/
+  without a formal boundary document.
+
+allowed_paths:
+  - contracts/execution-engine.contract.md
+  - packages/reconstructed-engine/**
+  - tests/compatibility/contract_conformance.mjs
+  - docs/isolation/LEGO-MASTER-MAP.md
+  - README.md
+  - tasks/TASK-312-engine-contract.yaml
+  - results/TASK-312-engine-contract.md
+  - docs/isolation/evidence/**        # rewritten by npm run verify, tracked by design
+
+forbidden_paths:
+  - reference/n8n/**                  # read-only; gate G04 re-verifies 15050 files
+  - crates/**
+  - apps/**
+  - packages/workflow-lego/src/**
+
+operations:
+  - name: write_contract
+    args:
+      file: contracts/execution-engine.contract.md
+      sections: "scope/boundary, public surface, result shape, 14 behavioural guarantees, determinism, failure contract, non-goals, provenance, verification hooks"
+      machine_blocks: "CONTRACT-SURFACE, CONTRACT-RESULT, CONTRACT-STATUS, CONTRACT-NONGOALS"
+  - name: add_conformance_test
+    args:
+      file: packages/reconstructed-engine/test/contract-conformance.test.mjs
+      checks:
+        - "every required section exists"
+        - "module exports == declared exports (deepEqual, both directions)"
+        - "prototype methods/accessors == declared list; instance fields == declared list"
+        - "runWorkflow result keys / resultData keys / ITaskData keys / log entry keys == declared"
+        - "declared statuses are a subset of the real ExecutionStatusList read from reference/"
+        - "declared non-goals do not appear in the implementation (comments stripped, so prose cannot satisfy the check)"
+        - "every `file:line` citation in runner.mjs/graph.mjs resolves inside the referenced file in reference/n8n"
+        - "the guarantee table only names test files that exist"
+  - name: package_module
+    args: { files: ["packages/reconstructed-engine/package.json", "packages/reconstructed-engine/README.md"] }
+  - name: enforce_presence_central_harness
+    args: { file: tests/compatibility/contract_conformance.mjs, change: "CONTRACTS += 'execution-engine' -> 22 checks" }
+
+verification:
+  engine_suite: "npm run engine:test -> 56 tests, 56 pass, 0 skipped, exit 0 (49 behaviour + 7 contract)"
+  drift_caught_while_writing:
+    - "two entries listed as engine accessors were actually instance fields (caught by the surface check)"
+    - "runner.mjs cites execution-status.ts and workflow.ts, which were not registered in the citation table (caught by the provenance check)"
+  negative_control: "shifting one citation to workflow-execute.ts:9100-9200 -> not ok 6, 55/56; restored -> 56/56"
+  central_harness: "node tests/compatibility/contract_conformance.mjs -> 22/22 exit 0 (was 21/21)"
+  offline_gate: "run_gate.sh --offline-only -> stages 1-3 PASS (22/22, AUDIT PASS, 56/56), live NOT RUN -> INCONCLUSIVE"
+  lego_gate: "npm run verify -> 11/11 PASS, BEHAVIOR CHANGE: NONE DETECTED"
+  rust_guard: "npm run rust:guard -> exit 0"
+
+merge_condition:
+  - engine_suite_pass
+  - contract_present_and_checked
+  - no_reference_change
+  - no_ui_change
