@@ -7,8 +7,61 @@ pub enum ValidationError {
     DuplicateNodeName(String),
     #[error("Connection targets non-existent node '{0}'")]
     DanglingConnection(String),
+    #[error("Invalid connection type '{0}'")]
+    InvalidConnectionType(String),
     #[error("Workflow contains cycle involving node '{0}'")]
     CycleDetected(String),
+}
+
+/// The source-verified `nodeConnectionTypes` vocabulary from n8n 2.9.4.
+/// Keep this list explicit: accepting an arbitrary string would make the Rust
+/// validator diverge from the Validation LEGO's INVALID_CONNECTION_TYPE rule.
+pub const NODE_CONNECTION_TYPES: [&str; 13] = [
+    "ai_agent",
+    "ai_chain",
+    "ai_document",
+    "ai_embedding",
+    "ai_languageModel",
+    "ai_memory",
+    "ai_outputParser",
+    "ai_retriever",
+    "ai_reranker",
+    "ai_textSplitter",
+    "ai_tool",
+    "ai_vectorStore",
+    "main",
+];
+
+pub fn is_valid_connection_type(connection_type: &str) -> bool {
+    NODE_CONNECTION_TYPES.contains(&connection_type)
+}
+
+/// Validate both connection-map type positions used by n8n:
+/// `connections[source][type]` and each target's `type` field.
+pub fn validate_connection_types(
+    connections: &WorkflowConnections,
+) -> Result<(), ValidationError> {
+    for (_source, outputs) in connections {
+        for (connection_type, slots) in outputs {
+            if !is_valid_connection_type(connection_type) {
+                return Err(ValidationError::InvalidConnectionType(
+                    connection_type.clone(),
+                ));
+            }
+            for slot in slots {
+                if let Some(items) = slot {
+                    for item in items {
+                        if !is_valid_connection_type(&item.connection_type) {
+                            return Err(ValidationError::InvalidConnectionType(
+                                item.connection_type.clone(),
+                            ));
+                        }
+                    }
+                }
+            }
+        }
+    }
+    Ok(())
 }
 
 pub fn validate_node_uniqueness(nodes: &[String]) -> Result<(), ValidationError> {
@@ -123,6 +176,42 @@ mod tests {
         assert_eq!(
             validate_node_uniqueness(&nodes),
             Err(ValidationError::DuplicateNodeName("A".to_string()))
+        );
+    }
+
+    #[test]
+    fn test_connection_type_validation_rejects_unknown_map_and_target_types() {
+        let mut conns = WorkflowConnections::new();
+        let mut outputs = IndexMap::new();
+        outputs.insert(
+            "unknown".into(),
+            vec![Some(vec![n8n_connection::ConnectionItem {
+                node: "B".into(),
+                connection_type: "unknown".into(),
+                index: 0,
+            }])],
+        );
+        conns.insert("A".into(), outputs);
+
+        assert_eq!(
+            validate_connection_types(&conns),
+            Err(ValidationError::InvalidConnectionType("unknown".into()))
+        );
+
+        let mut valid_map = WorkflowConnections::new();
+        let mut main_outputs = IndexMap::new();
+        main_outputs.insert(
+            "main".into(),
+            vec![Some(vec![n8n_connection::ConnectionItem {
+                node: "B".into(),
+                connection_type: "unknown".into(),
+                index: 0,
+            }])],
+        );
+        valid_map.insert("A".into(), main_outputs);
+        assert_eq!(
+            validate_connection_types(&valid_map),
+            Err(ValidationError::InvalidConnectionType("unknown".into()))
         );
     }
 

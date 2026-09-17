@@ -18,7 +18,9 @@ RUST_VERSION="1.88.0"
 NPM_HOST="https://registry.npmjs.org"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# target -> crate tags: the 12 crates the workspace dependency closure needs
+# Repository dependency closure. Keep this list in sync with `vendor_prep.py`.
+# The workspace uses indexmap and regex directly; their transitive crates are
+# included here because crates.io is intentionally unavailable in this rig.
 CRATES=(
   "serde-rs/serde:v1.0.219"
   "serde-rs/json:v1.0.140"
@@ -29,8 +31,15 @@ CRATES=(
   "dtolnay/itoa:1.0.14"
   "dtolnay/ryu:1.0.18"
   "BurntSushi/memchr:2.7.4"
+  "BurntSushi/aho-corasick:1.1.3"
   "dtolnay/unicode-ident:1.0.14"
+  "indexmap-rs/indexmap:2.2.6"
+  "indexmap-rs/equivalent:v1.0.1"
+  "rust-lang/hashbrown:v0.14.1"
+  "rust-lang/regex:1.10.6"
 )
+
+VENDOR_PLAN_VERSION="5"
 
 mkdir -p "$RIG/dl" "$RIG/vendorsrc"
 
@@ -85,8 +94,15 @@ for spec in "${CRATES[@]}"; do
 done
 
 # --- 3. vendor dir ------------------------------------------------------------
-if [ ! -d "$RIG/vendor" ] || [ -z "$(ls -A "$RIG/vendor" 2>/dev/null)" ]; then
+# Rebuild when the dependency plan changes; otherwise an older rig can silently
+# keep an incomplete vendor directory and report a misleading resolver error.
+PLAN_MARKER="$RIG/vendor/.n8n-rust-rig-plan"
+if [ ! -d "$RIG/vendor" ] || [ ! -f "$PLAN_MARKER" ] || [ "$(cat "$PLAN_MARKER" 2>/dev/null)" != "$VENDOR_PLAN_VERSION" ]; then
+  rm -rf "$RIG/vendor"
   python3 "$HERE/vendor_prep.py" "$RIG/vendorsrc" "$RIG/vendor"
+  printf '%s\n' "$VENDOR_PLAN_VERSION" > "$PLAN_MARKER"
+else
+  echo "have   vendor plan $VENDOR_PLAN_VERSION"
 fi
 
 echo

@@ -1,0 +1,65 @@
+{
+  "id": "wf-cyclic-invalid",
+  "name": "Invalid Cyclic Workflow",
+  "nodes": [
+    {
+      "id": "node-a",
+      "name": "A",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "parameters": {}
+    },
+    {
+      "id": "node-b",
+      "name": "B",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [220, 0],
+      "parameters": {}
+    },
+    {
+      "id": "node-c",
+      "name": "C",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [440, 0],
+      "parameters": {}
+    }
+  ],
+  "connections": {
+    "A": {
+      "main": [
+        [
+          {
+            "node": "B",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "B": {
+      "main": [
+        [
+          {
+            "node": "C",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "C": {
+      "main": [
+        [
+          {
+            "node": "A",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
