@@ -320,10 +320,22 @@ own `ActiveWorkflows` into the same file. After the rebase both live in
 `packages/reconstructed-engine/src/trigger-engine.ts`: `TriggerEngine` is the reference-exact port the
 facade uses (verified by T01-T06), while the spec track's surface — its `ActiveWorkflows`,
 `createManualTrigger`, `shouldAddTriggersAndPollers`, `activationError`, `POLL_INTERVAL_TOO_SHORT`
-and its types — is preserved verbatim below it so `packages/trigger-lego/test/01-boundary.test.mjs`
-keeps passing (suite: 17/17).
+and its types — is preserved below it (aligned to the reference in Phase 5-07, see below) so
+`packages/trigger-lego/test/01-boundary.test.mjs` keeps passing (suite: 18/18).
 
-Two documented disagreements, never hidden: the spec registry rejects a second activation
-(`Workflow is already active`) and swallows `TriggerCloseError`; real `ActiveWorkflows` allows the
-second call and *reports* a `TriggerCloseError` through the error reporter instead of swallowing it.
-The port follows the reference.
+Two documented disagreements, never hidden — both ADJUDICATED in Phase 5-07 by direct
+reference read (`core/src/execution-engine/active-workflows.ts`), and the spec side was aligned:
+
+- D1 duplicate activation: the reference `add` (lines 70-110) has NO duplicate guard — a second
+  call re-runs the triggers and OVERWRITES `activeWorkflows[id]`. The string `Workflow is already
+  active` exists NOWHERE in `n8n-core`/`n8n-workflow` (grep-verified 2026-09-18). The spec
+  registry's throw was removed; `contracts/trigger.contract.md` §4 was corrected.
+- D2 `TriggerCloseError`: the reference `closeTrigger` (lines 220-226) REPORTS via
+  `logger.error` + `errorReporter.error(e, { extra: { workflowId } })` and removal proceeds; only
+  other close errors become `WorkflowDeactivationError`. The spec registry now exposes the report
+  via `reportedCloseErrors`; the envelope was fixed to the byte-exact
+  `Failed to deactivate trigger of workflow ID "X": "…"` (lines 231-234).
+
+The spec suite gained one test for the adjudicated behavior
+(`01-boundary.test.mjs`: 6 → 7 tests); combined trigger suite is 18/18. Both registries now agree
+with the reference; `TriggerEngine` remains what the facade uses.

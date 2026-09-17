@@ -39,6 +39,6 @@ oracle:
 
 tests:
   - trigger_check      # npm run trigger:check → T01..T06, 6/6, 78 differential calls
-  - trigger_suite      # node --test packages/trigger-lego/test/*.test.mjs → 13/13
+  - trigger_suite      # node --test packages/trigger-lego/test/*.test.mjs → 18/18
   - engine_typecheck   # tsc -p packages/reconstructed-engine/tsconfig.json → 0 errors
   - repository_gate    # npm run verify (12/12) + connection:check (9/9) + i18n:check (5/5)

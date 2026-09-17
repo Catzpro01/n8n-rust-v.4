@@ -115,9 +115,14 @@ export type NumberFormats = Record<string, Intl.NumberFormatOptions>;
  * locales are key-identical to the English base text; `parityReport()` proves it on every run.
  */
 /**
- * Shipped dictionaries (six locales x 27 keys — the Phase 4B seed's 23 plus the four
- * Phase 4C `param.*` validation keys) — merged verbatim from the Phase 4B seed on
- * this branch, now checked for key parity by `parityReport()`.
+ * Shipped dictionaries (six locales x 29 keys — the Phase 4B seed's 23 plus the four
+ * Phase 4C `param.*` validation keys plus the two Phase 5-07 `canvas.node.subtitle.*`
+ * keys) — merged verbatim from the Phase 4B seed on this branch, now checked for
+ * key parity by `parityReport()`. The two canvas keys adopt SWARM-ROUND4-03
+ * (agent-3, `workflow-canvas-text-translator`) hub-natively: the non-English values
+ * are that deliverable's dictionaries verbatim; the English base text is the
+ * reference-exact ManualTrigger default name modulo quote style
+ * (`ManualTrigger.node.ts:20`), matched by `canvas-text-translator.ts`.
  */
 export const NATIVE_DICTIONARIES: Record<SupportedLocale, LocaleMessages> = {
   id: {
@@ -141,6 +146,8 @@ export const NATIVE_DICTIONARIES: Record<SupportedLocale, LocaleMessages> = {
     'error.natural': 'Node gagal dieksekusi',
     'banner.update.suppressed': 'Banner update diredam',
     'canvas.protected': 'Canvas dilindungi',
+    'canvas.node.subtitle.manual': "Saat mengklik 'Jalankan alur kerja'",
+    'canvas.node.subtitle.testStep': "Saat mengklik 'Uji langkah'",
     'credential.sanitized': 'Kredensial disanitasi',
     'system.healthy': 'Sistem sehat',
     'system.recovered': 'Sistem dipulihkan otomatis',
@@ -170,6 +177,8 @@ export const NATIVE_DICTIONARIES: Record<SupportedLocale, LocaleMessages> = {
     'error.natural': 'Node execution failed',
     'banner.update.suppressed': 'Update banner suppressed',
     'canvas.protected': 'Canvas protected',
+    'canvas.node.subtitle.manual': "When clicking 'Execute workflow'",
+    'canvas.node.subtitle.testStep': "When clicking 'Test step'",
     'credential.sanitized': 'Credential sanitized',
     'system.healthy': 'System healthy',
     'system.recovered': 'System auto-recovered',
@@ -199,6 +208,8 @@ export const NATIVE_DICTIONARIES: Record<SupportedLocale, LocaleMessages> = {
     'error.natural': 'Node gagal dilakokake',
     'banner.update.suppressed': 'Banner update diredam',
     'canvas.protected': 'Canvas dilindungi',
+    'canvas.node.subtitle.manual': "Nalika mencet 'Lakokake alur kerja'",
+    'canvas.node.subtitle.testStep': "Nalika mencet 'Uji jangkah'",
     'credential.sanitized': 'Kredensial disanitasi',
     'system.healthy': 'Sistem sehat',
     'system.recovered': 'Sistem dipulihake otomatis',
@@ -228,6 +239,8 @@ export const NATIVE_DICTIONARIES: Record<SupportedLocale, LocaleMessages> = {
     'error.natural': 'فشل تنفيذ العقدة',
     'banner.update.suppressed': 'تم كبح لافتة التحديث',
     'canvas.protected': 'اللوحة محمية',
+    'canvas.node.subtitle.manual': "عند النقر على 'تشغيل سير العمل'",
+    'canvas.node.subtitle.testStep': "عند النقر على 'اختبار الخطوة'",
     'credential.sanitized': 'تم تطهير بيانات الاعتماد',
     'system.healthy': 'النظام سليم',
     'system.recovered': 'تم استرداد النظام تلقائياً',
@@ -257,6 +270,8 @@ export const NATIVE_DICTIONARIES: Record<SupportedLocale, LocaleMessages> = {
     'error.natural': '节点执行失败',
     'banner.update.suppressed': '更新横幅已抑制',
     'canvas.protected': '画布已保护',
+    'canvas.node.subtitle.manual': "点击'执行工作流'时",
+    'canvas.node.subtitle.testStep': "点击'测试步骤'时",
     'credential.sanitized': '凭证已清理',
     'system.healthy': '系统健康',
     'system.recovered': '系统已自动恢复',
@@ -286,6 +301,8 @@ export const NATIVE_DICTIONARIES: Record<SupportedLocale, LocaleMessages> = {
     'error.natural': 'Ошибка выполнения узла',
     'banner.update.suppressed': 'Баннер обновления подавлен',
     'canvas.protected': 'Холст защищён',
+    'canvas.node.subtitle.manual': "При нажатии 'Запустить процесс'",
+    'canvas.node.subtitle.testStep': "При нажатии 'Тестировать шаг'",
     'credential.sanitized': 'Учётные данные очищены',
     'system.healthy': 'Система исправна',
     'system.recovered': 'Система автоматически восстановлена',

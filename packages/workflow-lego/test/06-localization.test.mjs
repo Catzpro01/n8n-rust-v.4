@@ -12,6 +12,7 @@
  * (`tools/localization-module-loader.mjs`) and needs no reference runtime.
  *
  * Phase 4C: the four `param.*` keys (27 per locale) and the `NodeParameterValidator`
+ * Phase 5-07: the two `canvas.node.subtitle.*` keys (29 per locale, R4-03 adopted hub-natively)
  * integration — validation messages render through the hub, Indonesian default
  * byte-identical to the Phase 3C engine.
  */
@@ -67,7 +68,7 @@ test('the registry exposes exactly the six requested locales with metadata', () 
 test('every locale is key-identical to the English base text (parity report)', () => {
 	const report = NativeLocalizationService.parityReport();
 	assert.equal(report.base, 'en');
-	assert.equal(report.baseKeyCount, 27, 'the six locale dictionaries merged from the Phase 4B seed plus the four Phase 4C param.* keys');
+	assert.equal(report.baseKeyCount, 29, 'the six locale dictionaries merged from the Phase 4B seed plus the four Phase 4C param.* keys plus the two Phase 5-07 canvas.node.subtitle.* keys');
 	assert.equal(report.ok, true, JSON.stringify(report.locales));
 	for (const entry of report.locales) {
 		assert.equal(entry.keyCount, report.baseKeyCount, `${entry.locale} key count`);
@@ -369,11 +370,12 @@ test('the settings adapter projects the hub: six languages, native names, direct
 /* ------------------------------------------------------------------ */
 /* Phase 4B seed surface (merged): 23 keys, aliases, browser storage    */
 /* Phase 4C adds the four param.* keys -> 27 keys per locale.          */
+/* Phase 5-07 adds the two canvas.node.subtitle.* keys -> 29 per locale. */
 /* ------------------------------------------------------------------ */
 
-test('the merged dictionary surface spans 27 keys and resolves in every locale', () => {
+test('the merged dictionary surface spans 29 keys and resolves in every locale', () => {
 	const keys = NativeLocalizationService.listKeys('en');
-	assert.equal(keys.length, 27);
+	assert.equal(keys.length, 29);
 	for (const key of ['workflow.active', 'execution.finished', 'validation.cycle', 'system.recovered', 'param.required']) {
 		assert.ok(keys.includes(key), `missing merged key ${key}`);
 	}

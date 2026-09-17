@@ -12,7 +12,7 @@ test('trigger surface pins T1-T10 + provenance', async () => {
     'WorkflowActivateMode', 'ITriggerResponse', 'IPollResponse', 'ActiveWorkflowsShape',
     'buildActivationError', 'NO_TRIGGER_NODE_MESSAGE', 'POLL_INTERVAL_TOO_SHORT_MESSAGE',
     'isLeaderActivation', 'guardedEmit', 'createManualEmit', 'closeTriggerOutcome',
-    'removeWorkflow', 'b6dc2787c45677a29a9612cd27eb911302961a83',
+    'buildDeactivationError', 'removeWorkflow', 'b6dc2787c45677a29a9612cd27eb911302961a83',
   ]) {
     assert.ok(surface.includes(sym), `missing surface symbol: ${sym}`);
   }
@@ -68,13 +68,31 @@ test('T9 unknown remove silent false, T2 poll-fail deletes empty entry', async (
   assert.equal(shouldDelete(1), false);
 });
 
-test('T10 TriggerCloseError swallowed, others escalate; T6 disabled skipped', async () => {
-  const outcome = (name) => name === null ? 'closed' : name === 'TriggerCloseError' ? 'trigger-close-swallowed' : 'deactivation-error';
+test('T10 TriggerCloseError reported, others escalate; T6 disabled skipped', async () => {
+  const outcome = (name) => name === null ? 'closed' : name === 'TriggerCloseError' ? 'trigger-close-reported' : 'deactivation-error';
   assert.equal(outcome(null), 'closed');
-  assert.equal(outcome('TriggerCloseError'), 'trigger-close-swallowed');
+  assert.equal(outcome('TriggerCloseError'), 'trigger-close-reported');
   assert.equal(outcome('Error'), 'deactivation-error');
+  // Adjudicated Phase 5-07: reference REPORTS (logger+errorReporter, active-workflows.ts:220-226)
+  assert.ok(surface.includes('trigger-close-reported'));
+  assert.ok(!surface.includes('trigger-close-swallowed'));
   const registrable = (disabled) => disabled !== true;
   assert.equal(registrable(true), false);
   assert.equal(registrable(false), true);
   assert.equal(registrable(undefined), true);
+});
+
+test('adjudicated Phase 5-07: re-add overwrites (no already-active guard); deactivation envelope byte-exact', async () => {
+  // D1: reference add() has no duplicate guard — second add overwrites the entry
+  const records = {};
+  const add = (id, triggers) => { records[id] = { triggers }; };
+  add('wf1', ['a']); add('wf1', ['b']);
+  assert.deepEqual(records.wf1.triggers, ['b']);
+  // D2: WorkflowDeactivationError envelope (active-workflows.ts:231-234)
+  const buildDeactivationError = (id, m) => `Failed to deactivate trigger of workflow ID "${id}": "${m}"`;
+  assert.equal(
+    buildDeactivationError('wf1', 'boom'),
+    'Failed to deactivate trigger of workflow ID "wf1": "boom"',
+  );
+  assert.ok(surface.includes('Failed to deactivate trigger of workflow ID "${workflowId}": "${message}"'));
 });

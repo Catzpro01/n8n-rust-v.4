@@ -43,7 +43,9 @@ export function buildActivationError(nodeMessage: string): string {
   return `There was a problem activating the workflow: "${nodeMessage}"`;
 }
 
-/** Contract §7 — no trigger-like node guard (checked before add). */
+/** Contract §7 + workflow-validation.ts:57 — raised by the VALIDATION layer
+ * (validateWorkflowHasTriggerLikeNode path), checked before add; the registry
+ * itself stores trigger-less workflows with an empty response list. */
 export const NO_TRIGGER_NODE_MESSAGE =
   'Workflow cannot be activated because it has no trigger node. ' +
   'At least one trigger, webhook, or polling node is required.';
@@ -109,17 +111,24 @@ export function createManualEmit(): ManualEmitBox {
   };
 }
 
-export type CloseOutcome = 'closed' | 'trigger-close-swallowed' | 'deactivation-error';
+export type CloseOutcome = 'closed' | 'trigger-close-reported' | 'deactivation-error';
 
 /**
- * R3 — deactivation close semantics (T10): TriggerCloseError is logged and
- * swallowed; any other close error becomes WorkflowDeactivationError (thrown).
- * Pure decision function: caller performs logging / throwing.
+ * R3 — deactivation close semantics (T10): TriggerCloseError is REPORTED
+ * (logger.error + errorReporter.error, active-workflows.ts:220-226) and removal
+ * proceeds; any other close error becomes WorkflowDeactivationError (thrown).
+ * Pure decision function: caller performs reporting / throwing.
+ * CORRECTED Phase 5-07 (the old value claimed a silent swallow — the reference reports).
  */
 export function closeTriggerOutcome(errorName: string | null): CloseOutcome {
   if (errorName === null) return 'closed';
-  if (errorName === 'TriggerCloseError') return 'trigger-close-swallowed';
+  if (errorName === 'TriggerCloseError') return 'trigger-close-reported';
   return 'deactivation-error';
+}
+
+/** R3 active-workflows.ts:231-234 — exact deactivation-failure envelope. */
+export function buildDeactivationError(workflowId: string, message: string): string {
+  return `Failed to deactivate trigger of workflow ID "${workflowId}": "${message}"`;
 }
 
 /** R3 — remove of an unknown id returns false silently (T9). */

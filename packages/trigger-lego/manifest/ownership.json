@@ -28,7 +28,7 @@
       "T7 emit after remove is dropped (emit-after-close guard)",
       "T8 manual mode emit is one-shot into manualTriggerResponse",
       "T9 remove of unknown id returns false silently (HTTP 200 at the edge)",
-      "T10 closeFunction TriggerCloseError is logged+swallowed, other errors throw WorkflowDeactivationError"
+      "T10 closeFunction TriggerCloseError is REPORTED via logger+errorReporter (active-workflows.ts:220-226), other errors throw WorkflowDeactivationError"
     ]
   },
   "doesNotOwn": {
@@ -52,6 +52,7 @@
     "shouldRunPollImmediately",
     "rejectShortPollInterval",
     "createManualEmit",
-    "closeTrigger"
+    "closeTriggerOutcome",
+    "buildDeactivationError"
   ]
 }

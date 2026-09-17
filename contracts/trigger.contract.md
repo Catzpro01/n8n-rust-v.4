@@ -36,7 +36,7 @@ runs the execution itself.
 - On activation failure: roll back nothing that has not been started; throw `WorkflowActivationError` with `node`, `cause`, `level` and let `ActiveWorkflowManager` record it in `ActivationErrorsService`.
 - On `remove`: call every `closeFunction`, `deregisterCrons(workflowId)`, delete the record, clear activation error.
 - `manualTriggerFunction`: when `activationMode === 'manual'` (used by the editor "listen for event" path), the trigger is executed with `getExecuteTriggerFunctions` in manual mode so first emit finishes the manual execution.
-- Re-throw with `WorkflowActivationError` when `add` is called for an already-active workflow (`Workflow is already active`) only inside `ActiveWorkflows.add` — the manager guards with `isActive` first so callers observe idempotent 200.
+- `ActiveWorkflows.add` has NO duplicate guard: a second `add` re-runs the triggers and OVERWRITES `activeWorkflows[id]` (`core/.../active-workflows.ts:70-110`). No `Workflow is already active` error exists anywhere in `n8n-core` / `n8n-workflow` (verified 2026-09-18 — the earlier contract text invented it; corrected Phase 5-07).
 
 ## 5. Non-responsibilities
 - Does **not** register HTTP webhooks (→ Webhook LEGO, `addWebhooks`, called by the same manager in the same activation).

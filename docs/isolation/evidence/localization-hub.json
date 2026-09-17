@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-09-17T21:02:43.682Z",
+  "generatedAt": "2026-09-17T22:30:55.788Z",
   "phase": "phase-4b-localization",
   "lego": "localization-hub",
   "referenceGrounding": "reference/n8n/packages/frontend/@n8n/i18n (mechanism parity; the six translations are product-supplied)",
   "sources": {
     "service": {
       "path": "/home/user/n8n-rust-v.4/packages/workflow-lego/src/backend-localization-service.ts",
-      "digest": "6387fdda4dd1f18ca4c30a33cb1e88249099bd3f8391e56f90bd9caba9141790"
+      "digest": "a81285fb31532760f8aa6999cc96db87df7539d1288c54479482d0d23f7007d0"
     },
     "adapter": {
       "path": "/home/user/n8n-rust-v.4/packages/workflow-lego/src/settings-localization-adapter.ts",
@@ -71,42 +71,42 @@
   ],
   "parity": {
     "base": "en",
-    "baseKeyCount": 27,
+    "baseKeyCount": 29,
     "ok": true,
     "locales": [
       {
         "locale": "id",
-        "keyCount": 27,
+        "keyCount": 29,
         "missing": [],
         "extra": []
       },
       {
         "locale": "en",
-        "keyCount": 27,
+        "keyCount": 29,
         "missing": [],
         "extra": []
       },
       {
         "locale": "jv",
-        "keyCount": 27,
+        "keyCount": 29,
         "missing": [],
         "extra": []
       },
       {
         "locale": "ar",
-        "keyCount": 27,
+        "keyCount": 29,
         "missing": [],
         "extra": []
       },
       {
         "locale": "zh",
-        "keyCount": 27,
+        "keyCount": 29,
         "missing": [],
         "extra": []
       },
       {
         "locale": "ru",
-        "keyCount": 27,
+        "keyCount": 29,
         "missing": [],
         "extra": []
       }
@@ -115,14 +115,14 @@
   "suite": {
     "pass": 26,
     "fail": 0,
-    "summary": "# tests 26 · # pass 26 · # fail 0 · # duration_ms 518.863329"
+    "summary": "# tests 26 · # pass 26 · # fail 0 · # duration_ms 484.937995"
   },
   "checks": [
     {
       "id": "L01",
       "title": "six locales registered and key-identical to the English base text",
       "status": "PASS",
-      "detail": "id · en · jv · ar · zh · ru — 27 keys x 6 locales, fallback chain terminates at en"
+      "detail": "id · en · jv · ar · zh · ru — 29 keys x 6 locales, fallback chain terminates at en"
     },
     {
       "id": "L02",

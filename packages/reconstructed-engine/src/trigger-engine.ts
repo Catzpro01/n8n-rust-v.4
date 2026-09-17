@@ -405,9 +405,10 @@ export class TriggerEngine {
 // reference-exact registry above (`TriggerEngine`) is what the facade uses and what
 // `npm run trigger:check` verifies against `n8n-core`'s `ActiveWorkflows`.
 //
-// Where the two disagree, the reference wins for `TriggerEngine`; the spec registry below keeps its
-// own (documented) semantics, e.g. it rejects a duplicate activation, which real `ActiveWorkflows`
-// does not.
+// The two disagreements once documented here (duplicate-activation rejection, silent
+// TriggerCloseError swallow) were adjudicated against the reference in Phase 5-07 and the
+// spec registry below was ALIGNED: re-add overwrites, close errors are reported. History
+// preserved in `docs/isolation/trigger.md` §7.4.
 
 export type WorkflowActivateMode =
   | 'init' | 'create' | 'update' | 'activate' | 'manual' | 'leadershipChange';
@@ -435,10 +436,17 @@ export function activationError(message: string): Error {
   return err;
 }
 
+export interface TriggerCloseReport {
+  error: unknown;
+  workflowId: string;
+}
+
 /** Spec-track registry (T1-T10). Not used by the facade — see the note above. */
 export class ActiveWorkflows {
   private records: Record<string, ActiveRecord> = {};
   private closedEmits: Set<string> = new Set();
+  /** Observable report hook — stands in for logger.error + errorReporter.error (active-workflows.ts:220-226). */
+  readonly reportedCloseErrors: TriggerCloseReport[] = [];
 
   get activeIds(): string[] {
     return Object.keys(this.records);
@@ -448,11 +456,10 @@ export class ActiveWorkflows {
     return this.records[workflowId] !== undefined;
   }
 
-  /** T1: kegagalan satu node trigger menggagalkan seluruh aktivasi. */
+  /** T1: kegagalan satu node trigger menggagalkan seluruh aktivasi.
+   * Adjudicated Phase 5-07: NO duplicate guard — a second add re-runs and
+   * OVERWRITES (active-workflows.ts:70-110); no 'already active' error exists. */
   add(workflowId: string, triggerNodes: string[], startTrigger: (node: string) => TriggerHandle): void {
-    if (this.records[workflowId] !== undefined) {
-      throw activationError('Workflow is already active');
-    }
     const record: ActiveRecord = { triggers: [], polls: [] };
     try {
       for (const node of triggerNodes) {
@@ -487,7 +494,9 @@ export class ActiveWorkflows {
     return 'delivered';
   }
 
-  /** T9+T10: remove unknown = false senyap; TriggerCloseError ditelan. */
+  /** T9+T10: remove unknown = false senyap; TriggerCloseError DILAPORKAN
+   * (reportedCloseErrors), error lain -> WorkflowDeactivationError reference-exact
+   * (active-workflows.ts:226-234). Adjudicated Phase 5-07. */
   async remove(workflowId: string): Promise<boolean> {
     const record = this.records[workflowId];
     if (!record) return false;
@@ -495,8 +504,12 @@ export class ActiveWorkflows {
       try {
         await t.closeFunction?.();
       } catch (e: any) {
-        if (e?.name !== 'TriggerCloseError') {
-          const err = new Error(`Failed to deactivate workflow "${workflowId}"`);
+        if (e?.name === 'TriggerCloseError') {
+          this.reportedCloseErrors.push({ error: e, workflowId });
+        } else {
+          const err = new Error(
+            `Failed to deactivate trigger of workflow ID "${workflowId}": "${e?.message ?? e}"`,
+          );
           err.name = 'WorkflowDeactivationError';
           throw err;
         }

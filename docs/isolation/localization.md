@@ -104,6 +104,24 @@ hardcoded monolingual strings. It now renders every issue through the hub:
   and `tools/localization-module-loader.mjs` compiles it alongside the hub and the adapter so
   the offline suite covers the whole Phase 4 stack.
 
+### 4.3 Phase 5-07 — canvas subtitles join the hub (29 keys, R4-03 adopted)
+
+SWARM-ROUND4-03 (agent-3, `workflow-canvas-text-translator`) shipped raw id/jv/ar/zh/ru
+dictionaries keyed by the STRAIGHT-quote form `When clicking 'Execute workflow'` — no matcher,
+no tests — which misses the reference-exact CURLY default name (`ManualTrigger.node.ts:20`).
+Adopted hub-natively instead of copying the file:
+
+* two keys per locale — `canvas.node.subtitle.manual`, `canvas.node.subtitle.testStep` — take the
+  dictionaries from 27 to **29 keys** (R4-03 non-English values verbatim; English base text is
+  the straight-quote canonical form), key parity still proven by `parityReport()` / `L01`;
+* `packages/workflow-lego/src/canvas-text-translator.ts` matches subtitle text to a hub key,
+  normalizing quote style (curly/straight/double/backtick/none) and whitespace; case is NOT
+  folded and workflow names / unknown text pass through UNCHANGED (user content, not chrome);
+* `packages/workflow-lego/test/07-canvas-text.test.mjs` (6 tests) pins the R4-03 value table
+  verbatim in all six locales plus fallback (`xx` → `en`, `in` → `id`) and passthrough;
+* the translator imports nothing (hub-style boundary) and takes the hub's `translate` as a
+  callback; the hub's already-owned `execute.workflow` / `test.step` keys needed no changes.
+
 ## 5. How to verify
 
 ```bash
@@ -111,7 +129,7 @@ npm install --prefix packages/workflow-lego     # typescript (the gate compiles 
 npm run i18n:check                              # L01–L05 → docs/isolation/evidence/localization-hub.json
 node --test packages/workflow-lego/test/06-localization.test.mjs   # behaviour suite (offline)
 npm run isolation:check                         # boundary/kernel/port/reference unaffected
-npm run verify                                  # full 11-gate repository regression
+npm run verify                                  # full 12-gate repository regression
 ```
 
 ## 6. Risks / open points
