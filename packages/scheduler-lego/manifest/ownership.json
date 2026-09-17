@@ -1,0 +1,23 @@
+{
+  "lego": "scheduler",
+  "phase": "phase-4-verified",
+  "reference": {
+    "pinnedVersion": "2.9.4",
+    "pinnedCommit": "b6dc2787c45677a29a9612cd27eb911302961a83"
+  },
+  "owns": {
+    "description": "Cron registry — ScheduledTaskManager, CronJob, leadership check, recurrence",
+    "files": [
+      "ScheduledTaskManager",
+      "cronsByWorkflow",
+      "toCronExpression",
+      "toCronKey"
+    ]
+  },
+  "publicSurface": [
+    "ScheduledTaskManager",
+    "cronsByWorkflow",
+    "toCronExpression",
+    "toCronKey"
+  ]
+}

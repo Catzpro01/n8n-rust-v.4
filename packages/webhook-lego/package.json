@@ -1,0 +1,17 @@
+{
+  "name": "@lego/webhook",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Webhook routing — /webhook/*, /webhook-test/*, /form/*, registration, matching, response modes — LEGO webhook (Phase 2-4). Rust NOT STARTED.",
+  "license": "SEE LICENSE IN reference/n8n/LICENSE.md",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --test test/*.test.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "n8n-workflow": "2.9.1",
+    "typescript": "~5.9.2"
+  }
+}

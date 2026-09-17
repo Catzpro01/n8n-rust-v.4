@@ -11,6 +11,7 @@ target/
 
 # isolated unit produced by tools/workflow-isolation-extract.mjs (reproducible)
 packages/workflow-lego/.extract/
+packages/connection-lego/.extract/
 
 # verification runtime (scripts/setup-reference-runtime.sh)
 .runtime/

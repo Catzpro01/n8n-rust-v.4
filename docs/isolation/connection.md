@@ -196,3 +196,63 @@ connectionsByDestinationNode[dest][type][inputIndex] = IConnection[]  (src node,
 | full harness (`execution-data` + `expression` + `connection`) | 18/18 PASS |
 | `git diff -- reference/n8n` | empty → 11/11 baseline unaffected |
 | Live VPS | unreachable from sandbox → status `TESTED` |
+
+## 12. Phase 3 gate — differential verification of the routing engine (P-CONNECTION-GRAPH)
+
+The Phase-3 takeover (`da1654a8`) implemented the routing engine in
+`packages/reconstructed-engine/src/connection-routing-engine.ts` (+ a hand-written ESM twin that
+`runner.mjs` imports) and declared `extract` / `verify` scripts — but the two referenced tools did
+not exist, so nothing independently checked the "1:1 dari n8n 2.9.4" claim. That gate now exists:
+
+```bash
+npm run connection:check     # tools/connection-isolation-gate.mjs → C01..C07
+```
+
+The gate executes the reference oracle (`n8n-workflow@2.9.1` — the exact n8n 2.9.4 dependency set)
+and the candidate engine over a 12-graph corpus (linear, fan-out, sparse slots, multi-type, cycle,
+self-loop, dangling, diamond, depth chain, empty, external input edge, loop-back selection) and
+compares **1,246 call results**: traversal order matters, so arrays are compared verbatim.
+
+### 12.1 What the first run found (before)
+
+| Check | Verdict at `da1654a8` |
+|---|---|
+| `C01` declared surface | **FAIL** — `getInputEdges`, `getOutputEdges` declared in the manifest but not implemented in the ESM twin |
+| `C03` traversal (969 calls) | PASS — `mapConnectionsByDestination`, `getConnected/Child/ParentNodes` were already reference-exact |
+| `C04` graph analysis (223 calls) | **FAIL — 35 divergences**, first: `buildAdjacencyList` invented empty destination keys (`['C', []]`) |
+| `C05` connection diff (6 pairs) | PASS |
+| `C06` twin parity | **FAIL — 20 divergences**: the TypeScript source and the ESM twin had already drifted (the TS twin has the edge helpers, the ESM twin does not) |
+
+Two semantic divergences mattered beyond the shape:
+
+1. **`getRootNodes` used every source in the adjacency map**, including nodes outside the selection.
+   The reference only marks a node inner when an edge *from a node inside the selection* points at
+   it, so a selection that receives an external `main` edge (case `G11-external-input`) got the wrong
+   root set — which then changed `parseExtractableSubgraphSelection` verdicts.
+2. **`parseExtractableSubgraphSelection` returned `{start, end}` for any 1-root/1-leaf selection**,
+   while the reference only yields `start`/`end` for nodes that are simultaneously a root **and** an
+   input node (resp. leaf **and** output node); everything else is `{ start: undefined, end: undefined }`.
+
+### 12.2 What changed
+
+- `connection-routing-engine.ts` is now a reference-exact port of `graph/graph-utils.ts`
+  (helpers `union`/`intersection`/`difference` included, same iteration order and error payloads).
+- The ESM twin is **generated** from the TypeScript source:
+  `node tools/connection-isolation-extract.mjs --emit-esm`; `C06` fails if the two drift again.
+- `getInputEdges` / `getOutputEdges` are implemented (edge-leading-in / edge-leading-out of a
+  selection, all connection types, exactly like the reference).
+
+### 12.3 After
+
+| Check | Verdict |
+|---|---|
+| `C01` declared surface | PASS — 13 symbols in reference **and** candidate |
+| `C02` boundary (candidate imports nothing) | PASS |
+| `C03` traversal | PASS — 969/969 identical |
+| `C04` graph analysis | PASS — 271/271 identical |
+| `C05` connection diff | PASS — 6/6 pairs identical |
+| `C06` twin parity (TS vs generated ESM) | PASS — 12 graphs |
+| `C07` unit suite (`packages/connection-lego/test`) | PASS — 13/13 (5 boundary + 8 graph-analysis, `02-routing-graph.test.mjs`) |
+| **Total** | **1,246 differential calls, 0 divergences** |
+
+Evidence: `docs/isolation/evidence/connection-lego-gate.json`.
