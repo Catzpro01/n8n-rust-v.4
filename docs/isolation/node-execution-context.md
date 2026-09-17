@@ -125,6 +125,13 @@ shapes — a file that cannot load, and a red assertion — were verified to exi
 intact; under `set -euo pipefail` that also required tolerating `grep`, which exits 1 on zero
 matches and was silently aborting the loop instead of reporting the empty result.
 
+**Re-capture is the last step before publishing, not the first.** Each transcript header records
+the commit whose tree it graded, and gate 08 asserts that sha names a real commit — which is only a
+useful check if the recorded commit survives. A `git rebase` rewrites it, so evidence captured
+*before* a rebase points at an object no other clone will have. The procedure this lane follows:
+rebase, then `npm run verify:engine:evidence`, then commit and push; the whole gate then proves the
+transcripts match the tree that is actually about to be checked out elsewhere.
+
 Degradation is explicit: when the oracle is missing, host-dependent probes are asserted as "must raise, never answer undefined" and the oracle gate prints `oracle equivalence NOT RUN` (it *fails* unless `ENGINE_ALLOW_NO_ORACLE=1`, because a silently-skipped equivalence gate is not a gate).
 
 ## 6. What the goldens found (why this method is worth its cost)

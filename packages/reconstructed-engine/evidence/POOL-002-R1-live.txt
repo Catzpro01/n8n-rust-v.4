@@ -1,6 +1,6 @@
-captured: 2026-09-17T20:12:59.726Z
+captured: 2026-09-17T20:15:55.173Z
 command: bash scripts/run-engine-tests.sh
-head: 7adae1c8e2cd722a626475db10c23c33a414daf9
+head: 5051bfcd7356577e922378bef236907cce749ad0
 branch: arena/01a0aff7-n8n-rust-v-4
 node: v22.22.3
 reference runtime: /home/user/n8n-rust-v.4/.runtime/node_modules

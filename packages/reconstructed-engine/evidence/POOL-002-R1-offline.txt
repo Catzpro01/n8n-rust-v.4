@@ -1,6 +1,6 @@
-captured: 2026-09-17T20:13:15.852Z
+captured: 2026-09-17T20:16:11.491Z
 command: ENGINE_NO_RUNTIME=1 ENGINE_ALLOW_NO_ORACLE=1 bash scripts/run-engine-tests.sh
-head: 7adae1c8e2cd722a626475db10c23c33a414daf9
+head: 5051bfcd7356577e922378bef236907cce749ad0
 branch: arena/01a0aff7-n8n-rust-v-4
 node: v22.22.3
 reference runtime: suppressed by ENGINE_NO_RUNTIME=1 (offline mode on purpose)
