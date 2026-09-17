@@ -21,7 +21,9 @@ export interface AcceptLanguageEntry {
 	quality: number;
 }
 
-/** Mengurai header `Accept-Language` menjadi daftar locale terurut by q-value. */
+/** Mengurai header `Accept-Language` menjadi daftar locale terurut by q-value.
+ *  Entri dengan q-value di luar 0..1 atau bersistaksional (mis. `q=1.5`, `q=2`)
+ *  ditolak sesuai RFC 7231 §5.3.1 — entri itu tidak boleh mengungguli preferensi valid. */
 export function parseAcceptLanguage(header: string): AcceptLanguageEntry[] {
 	if (!header || typeof header !== 'string') return [];
 	const out: AcceptLanguageEntry[] = [];
@@ -32,10 +34,18 @@ export function parseAcceptLanguage(header: string): AcceptLanguageEntry[] {
 		const tag = rawTag.trim();
 		if (!tag || !/^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*$/.test(tag)) continue;
 		let quality = 1;
+		let rejected = false;
 		for (const param of params) {
-			const m = /^\s*q\s*=\s*([01](\.\d{0,3})?)\s*$/i.exec(param);
-			if (m) quality = Number(m[1]);
+			if (!/^\s*q\s*=/i.test(param)) continue; // parameter selain q diabaikan
+			const m = /^\s*q\s*=\s*(\d+(?:\.\d{1,3})?)\s*$/i.exec(param);
+			const q = m ? Number(m[1]) : NaN;
+			if (!Number.isFinite(q) || q < 0 || q > 1) {
+				rejected = true; // q-value invalid menurut RFC 7231 (harus 0..1)
+				break;
+			}
+			quality = q;
 		}
+		if (rejected) continue;
 		out.push({ locale: normalizeLocaleTag(tag), quality });
 	}
 	// stabil: q desc, urutan asal sebagai tie-breaker
@@ -99,17 +109,27 @@ export function resolveFromAcceptLanguage(
 
 export type PluralCategory = 'zero' | 'one' | 'two' | 'few' | 'many' | 'other';
 
-/** Aturan plural kardinal CLDR untuk keenam locale yang didukung. */
+/**
+ * Aturan plural kardinal CLDR untuk keenam locale yang didukung.
+ * Sesuai CLDR: pecahan desimal (v > 0) tidak pernah `one/few/...` pada
+ * en/ru (jatuh ke `other`), dan kategori exact-match/range ar hanya berlaku
+ * untuk nilai integer. `i` = digit integer, `v` = digit pecahan yang terlihat.
+ */
 export function selectPluralCategory(n: number, locale: SupportedLocale): PluralCategory {
-	const i = Math.floor(Math.abs(n)); // integer digits (v = 0 diasumsikan input integer)
+	if (!Number.isFinite(n)) return 'other';
+	const abs = Math.abs(n);
+	const i = Math.floor(abs); // integer digits
+	const dot = String(abs).indexOf('.');
+	const v = dot === -1 ? 0 : String(abs).length - dot - 1; // visible fraction digits
 	switch (locale) {
 		case 'id':
 		case 'jv':
 		case 'zh':
 			return 'other';
 		case 'en':
-			return i === 1 ? 'one' : 'other';
+			return i === 1 && v === 0 ? 'one' : 'other';
 		case 'ru': {
+			if (v !== 0) return 'other'; // CLDR: semua aturan ru mensyaratkan v = 0
 			const mod10 = i % 10;
 			const mod100 = i % 100;
 			if (mod10 === 1 && mod100 !== 11) return 'one';
@@ -119,9 +139,10 @@ export function selectPluralCategory(n: number, locale: SupportedLocale): Plural
 			return 'other';
 		}
 		case 'ar': {
-			if (n === 0) return 'zero';
-			if (n === 1) return 'one';
-			if (n === 2) return 'two';
+			if (abs === 0) return 'zero';
+			if (abs === 1) return 'one';
+			if (abs === 2) return 'two';
+			if (!Number.isInteger(abs)) return 'other'; // range CLDR hanya utk integer
 			const mod100 = i % 100;
 			if (mod100 >= 3 && mod100 <= 10) return 'few';
 			if (mod100 >= 11 && mod100 <= 99) return 'many';

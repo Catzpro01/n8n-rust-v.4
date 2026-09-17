@@ -96,6 +96,32 @@ test('parseAcceptLanguage: q-value ordering, wildcard junk dropped, case normali
 	assert.deepEqual(parseAcceptLanguage(';;;'), []);
 });
 
+test('parseAcceptLanguage: RFC 7231 — q-values outside 0..1 or malformed are rejected', () => {
+	// q=1.5 tidak boleh mengungguli preferensi valid
+	assert.deepEqual(
+		parseAcceptLanguage('en;q=1.5,fr;q=0.9').map((e) => `${e.locale}:${e.quality}`),
+		['fr:0.9'],
+	);
+	// q=2 dan q negatif juga ditolak
+	assert.deepEqual(parseAcceptLanguage('en;q=2'), []);
+	assert.deepEqual(
+		parseAcceptLanguage('id;q=-0.5,en;q=0.4').map((e) => `${e.locale}:${e.quality}`),
+		['en:0.4'],
+	);
+	// sintaks q tak dikenal → entri ditolak (bukan dianggap q=1)
+	assert.deepEqual(parseAcceptLanguage('en;q=abc'), []);
+	// q=1.000 tetap sah (= 1)
+	assert.deepEqual(
+		parseAcceptLanguage('en;q=1.000').map((e) => `${e.locale}:${e.quality}`),
+		['en:1'],
+	);
+	// q=0 sah (artinya "tidak diinginkan")
+	assert.deepEqual(
+		parseAcceptLanguage('ru;q=0').map((e) => `${e.locale}:${e.quality}`),
+		['ru:0'],
+	);
+});
+
 test('normalizeLocaleTag: language lowercase, region uppercase, script title-case', () => {
 	assert.equal(normalizeLocaleTag('ID-id'), 'id-ID');
 	assert.equal(normalizeLocaleTag('ZH-hans-cn'), 'zh-Hans-CN');
@@ -149,6 +175,27 @@ test('selectPluralCategory: CLDR cardinal rules (en, ru, ar, id/jv/zh)', () => {
 			assert.equal(selectPluralCategory(n, code), 'other', `${code}(${n})`);
 		}
 	}
+});
+
+test('selectPluralCategory: CLDR fraction handling (v > 0 → never one/few/many)', () => {
+	// English: 1.5 punya visible fraction → other, bukan one
+	assert.equal(selectPluralCategory(1.5, 'en'), 'other');
+	assert.equal(selectPluralCategory(0.5, 'en'), 'other');
+	// 1.0 sebagai number JS tampil tanpa pecahan (v=0) → tetap one
+	assert.equal(selectPluralCategory(1.0, 'en'), 'one');
+	// Russian: semua aturan butuh v = 0
+	assert.equal(selectPluralCategory(1.5, 'ru'), 'other');
+	assert.equal(selectPluralCategory(2.5, 'ru'), 'other');
+	assert.equal(selectPluralCategory(21.0, 'ru'), 'one');
+	// Arabic: exact-match & range hanya untuk nilai integer
+	assert.equal(selectPluralCategory(1.5, 'ar'), 'other');
+	assert.equal(selectPluralCategory(3.5, 'ar'), 'other');
+	assert.equal(selectPluralCategory(11.5, 'ar'), 'other');
+	assert.equal(selectPluralCategory(103, 'ar'), 'few');
+	assert.equal(selectPluralCategory(11.0, 'ar'), 'many');
+	// input non-finite tidak pernah melempar
+	assert.equal(selectPluralCategory(Number.NaN, 'ru'), 'other');
+	assert.equal(selectPluralCategory(Number.POSITIVE_INFINITY, 'en'), 'other');
 });
 
 test('interpolate: substitutes known params, keeps unknown placeholders', () => {

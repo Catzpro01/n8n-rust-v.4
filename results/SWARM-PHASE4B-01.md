@@ -86,3 +86,23 @@ G01..G10: 10/10 PASS · BEHAVIOR CHANGE: NONE DETECTED
 (catatan: evidence 11/11 live VPS yang sudah tercatat di branch dipertahankan,
 evidence fast-run tidak ditimpa agar rekor G11 tidak turun)
 ```
+
+---
+
+### ADDENDUM — Koreksi Review (PR #20, 2026-09-17 ±20:50 UTC)
+
+Review rekan (NEEDS_CORRECTION) menemukan 2 celah spesifikasi; keduanya diperbaiki
+dengan tes regresi yang gagal lebih dulu:
+
+1. **CLDR desimal**: `selectPluralCategory` sebelumnya mem-floor input sehingga `1.5`
+   terklasifikasi `one` (en/ru). Kini `v` (visible fraction digits) dihitung: pecahan
+   jatuh ke `other` sesuai CLDR (en/ru), dan exact-match/range `ar` hanya untuk nilai
+   integer; input non-finite tidak pernah melempar.
+2. **q-value RFC 7231**: `parseAcceptLanguage` sebelumnya menerima `q=1.5` (regex
+   `[01](.digits)`). Kini setiap parameter `q=` disintaks-valid; nilai di luar 0..1
+   atau tak terparse → entri ditolak, `q=1.000` sah (=1), `q=0` sah.
+
+Tes baru: `parseAcceptLanguage: RFC 7231 — q-values outside 0..1 or malformed are rejected`
+dan `selectPluralCategory: CLDR fraction handling (v > 0 → never one/few/many)`.
+Bukti ulang pasca-koreksi: `run-lego-tests.sh` **33/33 PASS** · `tsc` 0 errors ·
+`verify:fast` 10/10 PASS · BEHAVIOR CHANGE: NONE.
