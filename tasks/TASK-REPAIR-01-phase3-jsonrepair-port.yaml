@@ -1,0 +1,109 @@
+id: TASK-REPAIR-01-phase3-jsonrepair-port
+agent: arena-worker
+lego: node
+module: json-repair
+phase: 3
+title: "Node LEGO: jsonrepair port — dependency-free reconstruction of the exact jsonrepair@3.13.1 bundle the published reference resolves, wired as jsonParse's default repairJSON adapter (closes DELTA-05's no-op path)"
+status: VERIFIED
+
+# Context: DELTA-05 documented that `jsonParse`'s `repairJSON` branch was a no-op without an
+# injected adapter, because the reference delegates to the `jsonrepair` package (`utils.ts` L5,
+# L164-170). That left a real, oracle-covered behaviour gap: `test/utils.test.ts`
+# `describe('JSON repair')` L162-290 pins 25 repair cases, and the published
+# `n8n-workflow@2.9.1` build ships a working jsonrepair — so the gap was measurable and
+# fixable rather than merely documented.
+#
+# Reference (read-only):
+# - reference/n8n/packages/workflow/src/utils.ts L5 + L152-180 (jsonParse, the repairJSON branch)
+# - reference/n8n/packages/workflow/test/utils.test.ts L100-160 (acceptJSObject) + L162-290 (JSON repair)
+# - the resolved dependency bundle: packages/workflow-lego/node_modules/jsonrepair/lib/umd/jsonrepair.js
+#   (jsonrepair@3.13.1, ISC, 903 ln) — the code the reference actually runs
+#
+# Sanctioned delta, revised (contract §12.2 item 5):
+# - DELTA-05 now means "no third-party dependency, injectable adapter, faithful default" instead of
+#   "no-op": `jsonParse`'s default `repairJSONParser` is `src/json-repair.mjs`, a verbatim port of
+#   the bundle above (wrapper removed, code dedented, ESM exports). An injected adapter still wins.
+
+allowed_paths:
+  - tasks/TASK-REPAIR-01-phase3-jsonrepair-port.yaml
+  - results/TASK-REPAIR-01-phase3-jsonrepair-port.md
+  - packages/node-lego/**
+  - tools/node-lego-differential.mjs
+  - tools/node-lego-gate.mjs
+  - contracts/node.contract.md
+  - docs/isolation/node.md
+  - docs/isolation/evidence/node-lego-gate.json
+  - docs/isolation/LEGO-MASTER-MAP.md
+  - README.md
+
+forbidden_paths:
+  - reference/n8n/**
+  - crates/**
+  - apps/**
+  - packages/frontend/**
+  - packages/workflow-lego/**
+  - packages/trigger-lego/**
+  - packages/webhook-lego/**
+  - packages/scheduler-lego/**
+  - packages/persistence-lego/**
+  - packages/connection-lego/**
+  - packages/expression-lego/**
+  - packages/reconstructed-engine/**
+  - packages/execution-engine/**
+
+requires:
+  - reference/n8n/packages/workflow/src/utils.ts
+  - reference/n8n/packages/workflow/test/utils.test.ts
+  - packages/workflow-lego/node_modules/jsonrepair/lib/umd/jsonrepair.js
+
+source_modification: read-only-reference   # no file under reference/n8n/** is touched
+
+operations:
+  - name: read_reference
+    args: { path: reference/n8n/packages/workflow/src/utils.ts, lines: "100-180" }
+  - name: read_reference
+    args: { path: reference/n8n/packages/workflow/test/utils.test.ts, lines: "100-290" }
+  - name: write_file
+    args: { path: packages/node-lego/src/json-repair.mjs }
+  - name: edit_file
+    args: { path: packages/node-lego/src/type-validation.mjs }
+  - name: edit_file
+    args: { path: packages/node-lego/src/index.mjs }
+  - name: write_file
+    args: { path: packages/node-lego/test/json-repair.test.mjs }
+  - name: edit_file
+    args: { path: tools/node-lego-differential.mjs }
+  - name: edit_file
+    args: { path: tools/node-lego-gate.mjs }
+  - name: run_shell
+    args: { cmd: "node --test packages/node-lego/test/*.test.mjs", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "node tools/node-lego-differential.mjs", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "node tools/node-lego-gate.mjs", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "npm run verify:all", expect_exit: 0 }
+  - name: write_file
+    args: { path: results/TASK-REPAIR-01-phase3-jsonrepair-port.md }
+
+acceptance:
+  - `jsonParse(text, { repairJSON: true })` matches the reference build on every case where the
+    reference repairs (25 oracle cases + the wider jsonrepair feature list, 76 comparisons in N26)
+  - no runtime dependency is added (gate `N01`) and the module imports nothing outside the package
+    (gate `N02`); the port is a verbatim adaptation of the bundle the reference resolves
+  - `JSONRepairError` reproduces the upstream contract: `name === 'Error'`, message
+    `<detail> at position <n>`, `position` set
+  - the pre-existing paths are untouched: `repairJSON` still defaults off, `acceptJSObject`
+    (DELTA-05's other adapter) still wins first, a failing repair still rethrows the original
+    `JSON.parse` error, `fallbackValue`/`errorMessage` behave as before, and an injected
+    `repairJSONParser` overrides the default
+  - differential vs the published `n8n-workflow@2.9.1` build: **0 divergences** across 1771
+    comparisons (N26 = 76 new); falsifiability probe re-run — dropping jsonrepair's
+    Python-constant branch → 2 DIVERGE, disabling trailing-comma repair (4 sites) → 14 DIVERGE
+  - gate `N01`…`N07` PASS (N02 20 source files, N03 122 tests, N05 1771/0, N07 98 symbols);
+    `npm run verify:all` exit 0
+  - no file under reference/, crates/, apps/, the frontend or a peer package is touched
+
+merge_condition:
+  - regression_gate_pass
+  - no_contract_violation

@@ -1,0 +1,25 @@
+id: TASK-429-phase3-webhook-response-headers
+agent: arena-worker
+lego: webhook
+module: response-headers
+phase: 3
+title: "Webhook LEGO: validated and protected response headers"
+status: SUBMITTED_FOR_REVIEW
+objective: "Validate workflow-controlled HTTP response headers before static or streamed delivery."
+acceptance:
+  - "lower-case valid names and deterministic replacement"
+  - "drop invalid names and control-character values with warning"
+  - "block content-security-policy regardless of case"
+  - "plain object stringification and node entries support"
+  - "bulk framework and native setHeader application"
+  - "request handler normalization without internal-state leakage"
+  - "webhook suite 67/67; webhook gate 5/5"
+allowed_paths:
+  - packages/webhook-lego/**
+  - tools/webhook-lego-gate.mjs
+  - contracts/webhook.contract.md
+  - docs/isolation/LEGO-MASTER-MAP.md
+  - docs/isolation/evidence/webhook-lego-gate.json
+  - tasks/TASK-429-phase3-webhook-response-headers.yaml
+  - results/TASK-429-phase3-webhook-response-headers.md
+forbidden_paths: [reference/n8n/**, crates/**, apps/**]

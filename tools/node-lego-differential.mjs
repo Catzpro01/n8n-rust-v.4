@@ -1388,6 +1388,107 @@ scenario('N25', 'extractReferencesInNodeExpressions / access patterns / lodash h
 	})());
 });
 
+/* --- N26: jsonrepair port (DELTA-05 default repair adapter) ---------------- */
+// DELTA-05: `jsonrepair` itself is not exported by the published build, so this group compares
+// through the same entry point the reference uses: `jsonParse(text, { repairJSON: true })`.
+// Every case is therefore an end-to-end repair + parse comparison against the REF build's own
+// bundled jsonrepair. Fixture provenance: the oracle `test/utils.test.ts` L162-290 ("JSON repair")
+// plus the feature list of jsonrepair@3.13.1.
+scenario('N26', 'jsonParse repairJSON (jsonrepair port)', (api, capture) => {
+	const repair = (label, text) => capture(`repair: ${label}`, safe(() => api.jsonParse(text, { repairJSON: true })));
+
+	/* oracle cases — test/utils.test.ts L162-290 */
+	repair('single quotes', "{name: 'John', age: 30}");
+	repair('nested single quotes', "{user: {name: 'John', active: true},}");
+	repair('empty string value', "{key: ''}");
+	repair('numeric string value', "{key: '123'}");
+	repair('multi key trailing comma', "{a: '1', b: '2', c: '3',}");
+	repair('single quote string', "{key: 'value'}");
+	repair('unquoted key', "{myKey: 'value'}");
+	repair('trailing comma object', "{key: 'value',}");
+	repair('trailing comma nested', "{outer: {inner: 'value',},}");
+	repair('multiple issues', "{key1: 'value1', key2: 'value2',}");
+	repair('quoted number', "{key: '123'}");
+	repair('quoted boolean', "{key: 'true'}");
+	repair('url', '{"key": "https://example.com",}');
+	repair('ipv6', '{"key": "2a01:c50e:3544:bd00:4df0:7609:251a:f6d0",}');
+	repair('single quotes containing double quotes', '{key: \'value with "quotes" inside\'}');
+	repair('escaped single quote', "{key: 'it\\'s escaped'}");
+	repair('key with hyphen', "{key-with-dash: 'value'}");
+	repair('key with dot', "{key.name: 'value'}");
+	repair('unquoted string value', '{key: value}');
+	repair('unquoted multi-word value', '{key: some text}');
+	repair('double quotes with inner single quotes', '{key: "value with \'single\' quotes"}');
+	repair('key starting with a number', "{123key: 'value'}");
+	repair('nested object with quotes', '{outer: {inner: \'value with "quotes"\', other: \'test\'},}');
+	repair('complex nested quote conflict', "{key: 'value with \"quotes\" inside', nested: {inner: 'test'}}");
+
+	/* jsonrepair feature list (jsonrepair@3.13.1) */
+	repair('py constants', '{a: True, b: False, c: None}');
+	repair('nan and infinity', '{a: NaN, b: Infinity, c: -Infinity}');
+	repair('numbers keep leading zeros', '{a: 01, b: 2.}');
+	repair('hex numbers', '{a: 0x1F, b: -0x10}');
+	repair('line comments', '{a: 1, // note\nb: 2}');
+	repair('block comments', '{a: 1 /* note */, b: 2}');
+	repair('hash comment', '{a: 1} # trailing');
+	repair('missing comma between props', '{a: 1 b: 2}');
+	repair('missing colon', '{a 1}');
+	repair('missing closing brace', '{"a": 1');
+	repair('missing closing bracket', '[1, 2');
+	repair('unclosed string', '{"a": "value');
+	repair('unclosed array of objects', '[{"a": 1}, {"b": 2');
+	repair('array trailing comma', '[1, 2, 3,]');
+	repair('newline delimited json', '{"a":1}\n{"b":2}');
+	repair('markdown fence', '```json\n{"a": 1}\n```');
+	repair('markdown fence no lang', '```\n{"a": 1}\n```');
+	repair('jsonp wrapper', 'callback({"a": 1});');
+	repair('leading dollar sign', '$ {"a": 1}');
+	repair('trailing ellipsis', '{"a": 1, ...}');
+	repair('smart quotes', '{\u201Ca\u201D: \u201Cvalue\u201D}');
+	repair('non-breaking space', '{"a":\u00a01}');
+	repair('single quoted empty object', "[{'a': 1}]");
+	repair('escaped double quote in single quotes', "{a: 'say \\\"hi\\\"'}");
+	repair('nested arrays', '[1, [2, 3,], 4]');
+	repair('mixed nesting', "{a: [1, {b: 'c',},],}");
+	repair('root string', "'hello'");
+	repair('root number', '42');
+	repair('root true', 'True');
+	repair('root null', 'null');
+	repair('empty string', '');
+	repair('whitespace only', '   ');
+	repair('unicode escapes', '{"a": "\\u00e9"}');
+	repair('newlines inside string', '{"a": "line1\nline2"}');
+	repair('duplicate keys last wins', '{a: 1, a: 2}');
+	repair('nested unquoted keys', '{a: {b: {c: d}}}');
+	repair('string with braces', '{"a": "{not json}"}');
+	repair('colon in unquoted value', '{a: b:c}');
+	repair('stray comma', '[,1,2]');
+	repair('unquoted value stops at comma', '{a: hello, b: world}');
+	repair('object without value', '{a: }');
+	repair('big number precision', '{"a": 123456789012345678901234567890}');
+	repair('negative float', "{a: -.5}");
+	repair('plus sign number', '{a: +1}');
+	repair('nested markdown fence plus quotes', '```json\n{name: \'John\',}\n```');
+	repair('json after text prefix', 'Here is the JSON: {"a": 1}');
+	repair('json with trailing text', '{"a": 1} and some text');
+	repair('array of numbers with comments', '[1, /* c */ 2]');
+	repair('escaped backslash', '{"a": "c:\\\\path"}');
+
+	/* control: values that are already valid JSON must bypass the repair path identically */
+	repair('already valid object', '{"a": 1}');
+	repair('already valid array', '[1, 2, 3]');
+
+	/* the port's own surface: JSONRepairError shape (port-only, compared to itself) */
+	capture('JSONRepairError message/position', (() => {
+		try {
+			api.jsonParse('{"a": ', { repairJSON: true });
+			return { threw: false };
+		} catch (error) {
+			return { threw: true, name: error.name, message: error.message };
+		}
+	})());
+});
+
 /* --- report -------------------------------------------------------------- */
 // values are allowed too (e.g. `cronNodeOptions`) — only presence matters here
 const missing = [...EXAMINED_SURFACE, ...PORT_ONLY_SURFACE].filter((name) => !(name in port));

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-17T19:29:25.592Z",
+  "generatedAt": "2026-09-17T19:34:37.893Z",
   "task": "TASK-407-phase3-webhook-lego",
   "reference": "n8n 2.9.4",
   "totals": {
@@ -17,13 +17,13 @@
       "id": "W02",
       "name": "source boundary is import-closed",
       "status": "PASS",
-      "detail": "11 source files"
+      "detail": "12 source files"
     },
     {
       "id": "W03",
       "name": "webhook routing conformance suite",
       "status": "PASS",
-      "detail": "59 pass / 0 fail"
+      "detail": "67 pass / 0 fail"
     },
     {
       "id": "W04",
@@ -35,7 +35,7 @@
       "id": "W05",
       "name": "formal webhook contract present",
       "status": "PASS",
-      "detail": "10/10 core surfaces contracted"
+      "detail": "11/11 core surfaces contracted"
     }
   ]
 }

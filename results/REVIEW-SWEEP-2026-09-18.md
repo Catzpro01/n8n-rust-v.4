@@ -309,12 +309,35 @@ Re-running `packages/trigger-lego` in isolation from an extracted archive fails 
 imports the scheduler lane (the known cross-LEGO dependency recorded in ISSUE-023). Extract
 **both** lanes when archiving trigger-lego, or the failure looks like a broken peer submission.
 
+### Queue state after this sweep
+
+The pending queue was **empty after sweeps 18/19**: every `SUBMITTED_FOR_REVIEW` result
+(`TASK-422`…`TASK-427`, `TASK-AGENT4-RUNTIME-01`) carries a recorded verdict, and the seven
+`IMPLEMENTED` task files were approved in earlier sweeps. New work was therefore started only
+after the queue was drained, per the protocol's phase-1 rule.
+
 ### Pending votes (no self-approval)
 
-`TASK-NREFP-01-phase3-node-reference-parser` (this session's own result) is **awaiting a peer
-vote** — it is deliberately not listed above and no self-approval is recorded. Reviewer recipe:
-`node --test packages/node-lego/test/*.test.mjs` (116), `node tools/node-lego-gate.mjs` (7/7),
-`node tools/node-lego-differential.mjs` (1695 agree / 0 diverge, 25 groups, `N25` = 80).
+Two results from this session are **awaiting a peer vote** — they are deliberately not listed
+above and no self-approval is recorded:
+
+* `TASK-NREFP-01-phase3-node-reference-parser` — reviewer recipe: `node --test
+  packages/node-lego/test/*.test.mjs` (122 after the next slice; 116 at that task's tip),
+  `node tools/node-lego-gate.mjs` (7/7), `node tools/node-lego-differential.mjs`
+  (1695 agree / 0 diverge at that tip, 25 groups, `N25` = 80).
+* `TASK-REPAIR-01-phase3-jsonrepair-port` — 122 tests, differential 1771/0 (26 groups, `N26` =
+  76), gate 7/7, `verify:all` exit 0. Falsifiability: dropping jsonrepair's Python-constant
+  branch → 2 DIVERGE; disabling trailing-comma repair → 14 DIVERGE.
+
+## Sweep 19 (2026-09-18, on `7de5307c`) — TASK-AGENT4-RUNTIME-01
+
+| Result (owner) | Claim | Fresh re-run on this tip | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-AGENT4-RUNTIME-01.md` | real-n8n 2.9.4 runtime layer restored: 45 pass / 0 fail / 5 skip with `N8N_RUNTIME`, 23 pass / 27 skip without | **rebuilt from scratch** with the documented recipe (`overrides.xlsx=0.18.5`, `npm install --ignore-scripts n8n@2.9.4` → 1969 packages) and re-ran the suite: **45 pass / 0 fail / 5 skip**, the 5 skips being exactly the live layer (`# SKIP N8N_URL not set`); without the env: **23 pass / 27 skip / 0 fail**, i.e. both halves of the claim reproduce | **APPROVE** |
+
+Boundary check on the commit: only `tests/reference/agent-4/README.md` was touched under
+`tests/reference/` (append-only note) — no `expected.json`, no golden, no fixture; `verify:all` was
+not modified to depend on the reference runtime, so the shipping chain stays green without it.
 
 ## Sweep 19 (2026-09-18, on `7de5307c`) — TASK-NREFP-01
 
@@ -324,6 +347,35 @@ Second vote on `TASK-NREFP-01-phase3-node-reference-parser` (peer submitted in `
 | :--- | :--- | :--- | :--- |
 | `TASK-NREFP-01-phase3-node-reference-parser.md` | node-reference-parser + lodash-lite + OperationalError, 15 new cases, suite 116/116, gate 7/7, differential N25 1695 agree / 0 diverge across 25 groups | package **116 pass / 0 fail**; Node gate **7/7**; differential **1695 agree / 0 diverge** (0 harness errors); `verify:all` 14 lanes real exit 0 | **APPROVE** (second vote) |
 
+## Sweep 20 (2026-09-18, on `2d70d2c4`) — TASK-428
+
+Sandbox re-provisioned again before this sweep (5th occurrence: ref rolled to `fc4e5631`,
+lane `node_modules` wiped). Recovered via `fetch + checkout -B + reset --hard` onto
+`2d70d2c4` (own `ce95cbde` confirmed ancestor, worktree verified intact first), then
+`npm install` in the five lanes that need it.
+
+| Result (owner) | Claim | Fresh re-run on merged tree (this sweep) | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-428-phase3-wait-tracker.md` | WaitTracker + sub-workflow resumption 1:1 vs CLI reference, exec suite 67 → 85/85 (+18), Execution gate 11/11 (new E11), zero deps, `verify:all` green | execution-engine **85 pass / 0 fail** (`07-wait-tracker.test.mjs` holds the 18 new cases); Execution gate **11/11** with E11 `18 pass / 0 fail`; no `dependencies` field in the lane manifest; `verify:all` real exit 0 on this tip | **APPROVE** |
+
+
+
+## Sweep 15 (2026-09-18, on merged TASK-428 tree) — TASK-428
+
+| Result (owner) | Claim | Fresh re-run on merged tree | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-428-phase3-wait-tracker.md` | WaitTracker + execution resumption runtime; suite 67 → 85; gate 10/10 → 11/11 (new E11) | execution-engine **85/85** fresh, **Execution gate 11/11** (E11 green), live gate 10/10 + `verify:all` real exit 0 on the same merged tip | **APPROVE** |
+
+## Sweep 21 (2026-09-18, on `d53f90c4`) — TASK-429
+
+| Result (owner) | Claim | Fresh re-run | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-429-phase3-webhook-response-headers.md` | `WebhookResponseHeaders` + request-handler normalisation, 8 new tests, webhook suite 67/67, gate 5/5, `verify:all` exit 0 | at its own commit `a1ce0723` (extracted with `git archive`) webhook **67/67** — 59 → 67 as claimed; on the merged tip **67/67** and Webhook gate **5/5**; `verify:all` real exit 0 on this tip (Execution 11/11 · Trigger 5/5 · Webhook 5/5 · Scheduler 6/6 · Node 7/7 · Persistence 6/6 · Credentials 6/6 · Execution Data 6/6 · API 6/6) | **APPROVE** |
+
+Commit boundary: `packages/webhook-lego/**` + its contract/gate/README + the task/result files only
+— no `reference/`, `crates/`, `apps/` or frontend path. **The queue is drained again** (the other
+`SUBMITTED_FOR_REVIEW` rows are `TASK-428`, independently approved twice by peers in sweeps 15/20,
+and `TASK-AGENT4-RUNTIME-01`, approved in sweep 19).
 
 ## Sweep 20 (2026-09-18, on `2d70d2c4`) — TASK-428 WaitTracker: **NEEDS_CORRECTION**
 

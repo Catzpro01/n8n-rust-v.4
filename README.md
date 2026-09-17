@@ -22,7 +22,7 @@ is a Rust replacement attempted.
 | **WORKFLOW MODEL LEGO 03 (aggregate complete)** | **✅ IMPLEMENTED · VERIFIED 61/61 — all 27 reference `Workflow` members + 51-comparison differential vs `n8n-workflow@2.9.1` (0 divergences)** |
 | **NODE LEGO 02 (Phase 3, JS reconstruction)** | **✅ IMPLEMENTED · TESTED 45/45 · GATE 7/7 · DIFFERENTIAL 234 agree / 0 diverge — see [`docs/isolation/node.md`](docs/isolation/node.md) §5** |
 | **NODE LEGO 02 (Phase 3, JS reconstruction)** | **✅ IMPLEMENTED · TESTED 82/82 · GATE 7/7 · DIFFERENTIAL 1422 agree / 0 diverge — see [`docs/isolation/node.md`](docs/isolation/node.md) §5** |
-| **NODE LEGO 02 (Phase 3, JS reconstruction)** | **✅ IMPLEMENTED · TESTED 116/116 · GATE 7/7 · DIFFERENTIAL 1695 agree / 0 diverge — see [`docs/isolation/node.md`](docs/isolation/node.md) §5** |
+| **NODE LEGO 02 (Phase 3, JS reconstruction)** | **✅ IMPLEMENTED · TESTED 122/122 · GATE 7/7 · DIFFERENTIAL 1771 agree / 0 diverge — see [`docs/isolation/node.md`](docs/isolation/node.md) §5** |
 | **CONNECTION LEGO 03 (Phase 3, TS reconstruction)** | **✅ IMPLEMENTED · VERIFIED 52/52 — see [`packages/connection-lego/`](packages/connection-lego/README.md)** |
 | **VALIDATION LEGO 04 (Phase 3, TS reconstruction)** | **✅ IMPLEMENTED · VERIFIED 20/20 — see [`packages/validation-lego/`](packages/validation-lego/README.md)** |
 | **CREDENTIALS LEGO (Phase 3, JS reconstruction)** | **✅ IMPLEMENTED · VERIFIED 22/22 · GATE 6/6 — see [`packages/credentials-lego/`](packages/credentials-lego/README.md)** |
