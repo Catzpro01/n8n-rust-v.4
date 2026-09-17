@@ -85,13 +85,14 @@ Non-responsibilities.
 `nodeConnectionTypes` const), `isBinaryValue` (`mimeType` + `data`|`id`). All are pure, total functions
 (`unknown → boolean`), no throws.
 
-### 3.3 `schemas.ts` — zod runtime schemas (≈40 exports)
+### 3.3 `schemas.ts` — zod runtime schemas (45 exports)
 
 Typed `z.ZodType<T>` mirrors of `interfaces.ts`, grouped:
 - **Parameter values:** `INodeParameterResourceLocatorSchema`, `GenericValueSchema`, `IDataObjectSchema` (lazy/recursive), `ResourceMapperValueSchema`, `FilterValueSchema` (+ `FilterConditionValueSchema`, `FilterOperatorValueSchema`, `FilterOperatorTypeSchema`, `FilterOptionsValueSchema`, `FilterTypeCombinatorSchema`), `AssignmentValueSchema`, `AssignmentCollectionValueSchema`, `NodeParameterValueTypeSchema` (lazy union), **`INodeParametersSchema`** (`z.record(NodeParameterValueTypeSchema)`).
 - **Node description:** `FieldTypeSchema` (enum), `DisplayConditionSchema`, `IDisplayOptionsSchema`, `INodePropertyOptionsSchema`, `INodePropertyRoutingSchema`, `IconOrEmojiSchema`, `NumberOrStringSchema`.
 - **Declarative routing:** `IRequestOptionsSimplifiedAuthSchema`, `IN8nRequestOperations*Schema`, `IPostReceive*Schema` (8 variants) + `PostReceiveActionSchema`, `INodeRequestOutputSchema`, `HttpRequestOptionsSchema`, `INodeRequestSendSchema`.
 - **Graph:** **`NodeConnectionTypeSchema`** (enum of all `NodeConnectionType`s — `main`, `ai_*`, …).
+- **Node document (added 2026-09-17, inventory gap):** **`INodeSchema`** (`z.ZodType<INode>`, schemas.ts:470) — the runtime shape of a workflow node: required `id`, `name`, `type`, `typeVersion: number`, `position: [number, number]`, `parameters: INodeParametersSchema`; optional `disabled`, `notes`, `notesInFlow`, `retryOnFail`, `maxTries`, `waitBetweenTries`, `alwaysOutputData`, `executeOnce`, `onError: OnErrorSchema`, `continueOnFail`, `webhookId`, `extendsCredential`, `rewireOutputLogTo: NodeConnectionTypeSchema`, `credentials: INodeCredentialsSchema`, `forceCustomOperation {resource, operation}`. **`INodesSchema`** = `z.array(INodeSchema)`. Supporting: **`OnErrorSchema`** (`continueErrorOutput | continueRegularOutput | stopWorkflow`), **`INodeCredentialsDetailsSchema`** (`{id: string|null, name}`), **`INodeCredentialsSchema`** (`record<string, details>`), `ResourceMapperFieldSchema`. In 2.9.4 the only consumer outside `workflow` is `@n8n/api-types/src/chat-hub.ts`; the REST workflow save path does **not** parse nodes with `INodeSchema` (it uses DTO classes) — so this schema is a *parity anchor* for ports (`crates/n8n-node-model::INode` must accept exactly these fields), not a save-time gate.
 
 Static ↔ runtime parity is guaranteed by the `z.ZodType<T>` annotations: TypeScript fails to compile if
 a schema drifts from its interface (responsibility 3 of this LEGO is thus already enforced by `tsc`).
