@@ -7,23 +7,24 @@
  *
  * SUBSET — documented in contracts/expression.contract.md and
  * docs/isolation/execution.md §"Known deltas":
- *   - `=`-prefixed strings are evaluated as JavaScript expressions
- *     (`={{ ... }}` templates are supported, including mixed text+expressions).
- *   - The upstream sandbox (tourney/JEXL, `expression-sandboxing.ts`, allow-listed
- *     prototypes) is NOT part of this reconstruction yet. Expression input comes
- *     from workflow authors, exactly as it does upstream, but this subset must not
- *     be pointed at untrusted workflows until the sandbox LEGO lands.
+ *   - `=`-prefixed strings resolve `={{ ... }}` templates, including mixed text.
+ *   - Evaluation runs in a fresh node:vm context with code generation disabled,
+ *     a read-only execution-data membrane, a prototype/global deny-list, and a
+ *     bounded synchronous timeout. This reconstructs the upstream security
+ *     invariants without importing the upstream tournament/JEXL dependencies.
  *   - Multi-statement expressions, `$variables`, `$secrets` and the Luxon surface
  *     beyond the shim in data-proxy.mjs are not implemented.
  */
 
 import { ApplicationError } from './errors.mjs';
+import { ExpressionSandboxError, runExpressionInSandbox } from './expression-sandbox.mjs';
 
 export class ExpressionError extends ApplicationError {
 	constructor(message, options = {}) {
 		super(message, options);
 		this.name = 'ExpressionError';
 		this.description = options.description ?? 'Expression could not be evaluated';
+		if (options.code !== undefined) this.code = options.code;
 	}
 }
 
@@ -42,38 +43,43 @@ export function evaluateExpressionValue(rawValue, scope, { itemIndex = 0 } = {})
 	if (!isExpression(rawValue)) return rawValue;
 
 	const code = rawValue.slice(1);
+	const matches = [...code.matchAll(TEMPLATE_PATTERN)];
 
-	// Pure single expression → the evaluated value keeps its type.
-	const single = code.match(/^\s*{{([\s\S]*)}}\s*$/);
-	if (single) return evaluateCode(single[1], scope, { itemIndex });
+	// Pure single expression → the evaluated value keeps its type. Checking the
+	// match boundaries avoids treating `{{ a }} {{ b }}` as one greedy expression.
+	if (
+		matches.length === 1 &&
+		code.slice(0, matches[0].index).trim() === '' &&
+		code.slice(matches[0].index + matches[0][0].length).trim() === ''
+	) {
+		return evaluateCode(matches[0][1], scope, { itemIndex });
+	}
 
-	// Mixed template → string interpolation.
+	// Mixed template → string interpolation. Upstream JavaScript coercion turns
+	// objects into "[object Object]" rather than serialising them as JSON.
 	return code.replace(TEMPLATE_PATTERN, (_match, expression) => {
 		const value = evaluateCode(expression, scope, { itemIndex });
 		if (value === undefined || value === null) return '';
-		if (typeof value === 'object') return JSON.stringify(value);
 		return String(value);
 	});
 }
 
 /**
- * Evaluates one JavaScript expression against the data-proxy scope.
- * Parameters (not `with`) keep the code in strict mode; the scope keys are
- * exactly the `$…` variables the data proxy exposes — same surface upstream
- * injects into the JEXL context.
+ * Evaluates one synchronous expression in an isolated node:vm context. The
+ * context has no process/module loader, disables string/wasm code generation,
+ * enforces a short timeout, and wraps execution data in a read-only membrane.
  */
-export function evaluateCode(code, scope = {}, { itemIndex = 0 } = {}) {
-	const names = Object.keys(scope);
-	const values = names.map((name) => scope[name]);
-
+export function evaluateCode(code, scope = {}, { itemIndex = 0, timeoutMs = 100 } = {}) {
 	try {
-		// eslint-disable-next-line no-new-func
-		const fn = new Function(...names, `"use strict"; return (${code});`);
-		return fn(...values);
+		return runExpressionInSandbox(code, scope, { timeoutMs });
 	} catch (error) {
 		throw new ExpressionError(
 			`[item ${itemIndex}] ${error.message}`,
-			{ description: `Error evaluating expression "${code.trim()}"`, cause: error },
+			{
+				description: `Error evaluating expression "${code.trim()}"`,
+				cause: error,
+				...(error instanceof ExpressionSandboxError ? { code: error.code } : {}),
+			},
 		);
 	}
 }

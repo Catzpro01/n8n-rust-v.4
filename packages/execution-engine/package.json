@@ -14,6 +14,7 @@
 		"test:loop": "node --test test/01-execution-loop.test.mjs",
 		"test:context": "node --test test/02-node-context-data-proxy.test.mjs",
 		"test:errors": "node --test test/03-error-retry.test.mjs",
+		"test:sandbox": "node --test test/04-expression-sandbox.test.mjs",
 		"gate": "node ../../tools/execution-engine-gate.mjs"
 	}
 }

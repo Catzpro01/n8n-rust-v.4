@@ -1,6 +1,6 @@
 # Execution LEGO — Phase 3 reconstruction record
 
-**Status:** `IMPLEMENTED` · `TESTED` (32/32) · `GATE 8/8`
+**Status:** `IMPLEMENTED` · `TESTED` (39/39) · `GATE 9/9`
 **Language:** JavaScript (Node.js ESM) — `PROJECT_RULES.md` v2.9.4 rule 1 (ZERO RUST, the JavaScript reconstruction track).
 The Phase-3 opening record (`docs/isolation/PHASE-3-OPENING-RECORD.md`, 2026-09-17) permits Rust **only** under
 `crates/**` + `apps/**` for the separate port track; this LEGO contributes no Rust and stays JavaScript either way.
@@ -20,6 +20,7 @@ The three open pool tasks of the execution LEGO:
 | `POOL-001-core-workflow-execute-loop` | the execute loop | `src/workflow-execute.mjs`, `src/execution-stack.mjs`, `src/run-execution-data.mjs` |
 | `POOL-002-node-execution-context-data-proxy` | node context + data proxy | `src/node-execution-context.mjs`, `src/data-proxy.mjs`, `src/expression.mjs` |
 | `POOL-003-error-retry-handling` | retry + error policy | `src/retry.mjs`, `src/error-handling.mjs`, `src/errors.mjs` |
+| `TASK-EXPRESSION-SANDBOX-01` | bounded expression security boundary | `src/expression.mjs`, `src/expression-sandbox.mjs` |
 
 ## 2. Source mapping (verified against the reference, not assumed)
 
@@ -38,6 +39,7 @@ The three open pool tasks of the execution LEGO:
 | `getInputData` / `getInputItems` | `.../node-execution-context/{execute-context,base-execute-context}.ts` | — |
 | `returnJsonArray`, `normalizeItems`, `constructExecutionMetaData`, `copyInputItems` | `.../node-execution-context/utils/*.ts` | — |
 | `$json/$node/$items/$input/$prevNode/$env/$now` | `packages/workflow/src/workflow-data-proxy.ts` | — |
+| expression sandbox deny rules | `packages/workflow/src/expression-sandboxing.ts`, `expression-evaluator-proxy.ts` | — |
 | retry clamps | `workflow-execute.ts` | 1597-1612 |
 | error strategies | `workflow-execute.ts` | 1707, 1843-1865, 1934-1958 |
 | error classes | `packages/workflow/src/errors/*.ts` | — |
@@ -64,18 +66,21 @@ The three open pool tasks of the execution LEGO:
 | `test/01-execution-loop.test.mjs` | 14 | linear chain, item order/pairing, multiple outputs, empty output (I8), `alwaysOutputData` (I9), `null` branch, `executeOnce`, destination filter, 2-input join, pin data, runIndex (I12), endless-loop guard, hooks, disabled node |
 | `test/02-node-context-data-proxy.test.mjs` | 7 | input data/source data, parameter resolution (literals, templates, typed expressions, nested, per item, fallback), `$json/$node/$items/$input/$prevNode/$env/$now/$today/$runIndex/$itemIndex/$binary`, helpers, standalone context/proxy, error surfaces |
 | `test/03-error-retry.test.mjs` | 11 | retry clamps, retry-on-throw, soft-failure retry, pinned "unrecovered soft failure stays success" quirk, stop-the-workflow, `continueRegularOutput`, legacy `continueOnFail`, `continueErrorOutput` split with paired-item merge, error-item normalisation, `withRetry`, error classes |
+| `test/04-expression-sandbox.test.mjs` | 7 | typed/template evaluation, JS interpolation coercion, Node global denial, prototype escape denial, read-only data, timeout, DateTime methods |
 
 ```
 $ cd packages/execution-engine && node --test test/*.test.mjs
-# tests 32   # pass 32   # fail 0
+# tests 39   # pass 39   # fail 0
 $ node tools/execution-engine-gate.mjs
-Execution LEGO gate: 8/8 PASS
+Execution LEGO gate: 9/9 PASS
 ```
 
 ## 5. Known deltas (must be closed before this LEGO is swapped for anything else)
 
-1. **Expression evaluation is a JS subset without the upstream sandbox** (`expression-sandboxing.ts`
-   / JEXL allow-lists). Until the sandbox lands, this engine must not be pointed at untrusted workflows.
+1. **Expression syntax remains a subset of upstream**: dependency-free `node:vm` isolation adds
+   code-generation denial, a read-only membrane, and a timeout, but Node.js explicitly does not
+   treat `node:vm` as a hard security boundary. Keep workflows trusted until process/worker isolation
+   lands. Multi-statement expressions and n8n extension-method rewriting remain unsupported.
 2. No cancellation / timeouts, no engine requests (AI pause/resume), no partial execution, no binary
    conversion, no queue mode.
 3. Legacy `forceInputNodeExecution` follows direct inputs only (no grandparent walk).
@@ -112,5 +117,5 @@ translation layer. Removing or rewiring the prototype is a separate task (see `C
 
 * Close caveat C1 of the Phase-2 verdict (re-run the 11/11 live smoke on the VPS + PostgreSQL baseline).
 * Decide the fate of `packages/reconstructed-engine/` (ISSUE-021) so Phase 3 has a single engine track per language.
-* Sandboxed expression evaluator LEGO (removes delta 1) — required before any untrusted workflow runs.
+* Add process/worker isolation before accepting untrusted expressions; extend syntax rewriting and proxy variables.
 * Trigger/webhook/poll service LEGO (`triggers-and-pollers.ts`) so `run()` can be driven by real activations.

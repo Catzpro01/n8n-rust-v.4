@@ -15,6 +15,7 @@
  *   E06 POOL-002 suite — node execution context + data proxy
  *   E07 POOL-003 suite — error & retry handling
  *   E08 the declared public surface is documented in contracts/execution.contract.md
+ *   E09 sandboxed expression evaluator security + compatibility suite
  *
  * usage: node tools/execution-engine-gate.mjs [--json]
  */
@@ -197,6 +198,11 @@ gate('E08', 'public surface is documented in contracts/execution.contract.md', (
 	return `${exported.size} exported symbols documented`;
 });
 
+gate('E09', 'sandboxed expression evaluator security + compatibility', () =>
+	runNodeTest('test/04-expression-sandbox.test.mjs', PKG),
+	'packages/execution-engine/test/04-expression-sandbox.test.mjs',
+);
+
 /* ---------------- evidence + human-readable report ----------------------- */
 const totals = {
 	gates: results.length,
@@ -236,6 +242,10 @@ const report = {
 			status: results.find((entry) => entry.id === 'E07')?.status === 'PASS' ? 'IMPLEMENTED' : 'FAILED',
 			surface: ['resolveRetryPolicy', 'resolveErrorStrategy', 'splitErrorOutputs', 'error classes'],
 		},
+		'TASK-EXPRESSION-SANDBOX-01': {
+			status: results.find((entry) => entry.id === 'E09')?.status === 'PASS' ? 'IMPLEMENTED' : 'FAILED',
+			surface: ['node:vm isolation', 'read-only membrane', 'prototype/global deny-list', 'execution timeout'],
+		},
 	},
 };
 
@@ -246,7 +256,7 @@ const lines = [
 	'',
 	`Generated: ${report.generatedAt}  ·  Package: \`packages/execution-engine\`  ·  Language: JavaScript (Node.js ESM)`,
 	'',
-	`**Gates: ${totals.passed}/${totals.gates} PASS** · **RUST: ${report.rustImplementation}** · **Reference: n8n ${report.reference.pinnedVersion} (read-only)**`,
+	`**Gates: ${totals.passed}/${totals.gates} PASS** · RUST: ${report.rustImplementation} · **Reference: n8n ${report.reference.pinnedVersion} (read-only)**`,
 	'',
 	'| Gate | Requirement | Result | Detail |',
 	'| :--- | :--- | :--- | :--- |',
