@@ -1,0 +1,14 @@
+{
+  "name": "@lego/credentials",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Phase-3 JavaScript reconstruction of n8n 2.9.4 credentials boundary, cipher, redaction, and access verification",
+  "type": "module",
+  "main": "src/index.mjs",
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  }
+}

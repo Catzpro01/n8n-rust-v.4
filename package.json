@@ -28,8 +28,12 @@
     "node:gate": "node tools/node-lego-gate.mjs",
     "persistence:test": "npm --prefix packages/persistence-lego test",
     "persistence:gate": "node tools/persistence-lego-gate.mjs",
+    "credentials:test": "npm --prefix packages/credentials-lego test",
+    "credentials:gate": "node tools/credentials-lego-gate.mjs",
+    "execution-data:test": "npm --prefix packages/execution-data-lego test",
+    "execution-data:gate": "node tools/execution-data-lego-gate.mjs",
     "reference:fixtures": "node tests/reference/workflow-rust/build-fixtures.mjs --check",
     "workflow-model-lego:test": "npm --prefix packages/workflow-model-lego test",
-    "verify:all": "npm run isolation:check && npm run reconstructed-engine:test && npm run execution:gate && npm run connection-lego:test && npm run validation-lego:test && npm run workflow-model-lego:test && npm run trigger:gate && npm run webhook:gate && npm run scheduler:gate && npm run node:gate && npm run persistence:gate"
+    "verify:all": "npm run isolation:check && npm run reconstructed-engine:test && npm run execution:gate && npm run connection-lego:test && npm run validation-lego:test && npm run workflow-model-lego:test && npm run trigger:gate && npm run webhook:gate && npm run scheduler:gate && npm run node:gate && npm run persistence:gate && npm run credentials:gate && npm run execution-data:gate"
   }
 }

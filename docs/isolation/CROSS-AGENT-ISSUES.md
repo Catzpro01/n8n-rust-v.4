@@ -1708,3 +1708,21 @@ stays clean — this is the R5/R6 oracle for the Rust `detect_cycles`. **Finding
 (`workflow-rules.ts:168`) does not compose its own `detectCycles` — a cyclic workflow passes as
 `valid: true` (observed, pinned by test N2). Both golden-absent audit rows (04, 05) are now closed
 (04 via TASK-DGRAPH-01, 05 via this task).
+
+---
+
+**ADDENDUM (TASK-EERR-01, `arena/01a0aff8-n8n-rust-v-4`, 2026-09-18) — ISSUE-024: behavioral instrument landed; both NodeOperationError reconstructions faithful-ized to the 2.9.4 source.**
+
+`tools/error-surface-differential.mjs` (R = published `n8n-workflow@2.9.1`, A = node-lego,
+B = execution-engine) measured **2/14** on identical construction matrices; both lanes fixed
+failing-first (default `level` 'warning' L33 · `options.message` override L30 · description
+fallback+collapse L39-43 · `context` = `{runIndex, itemIndex, metadata}` L37-39 ·
+`functionality = 'regular'` execution-base L31 · `type` L36-37 · COMMON_ERRORS message
+replacement + `messages` preservation node.error.ts L12-47/L137-166 · reflection L16-18 ·
+string-wrap L19-21; Error causes deliberately not observable per execution-base L47-51 —
+build agrees). Post-fix: **4 agree / 14 documented-delta / 0 diverge**; falsifiability stash →
+16 DIVERGE. Suites: node-lego **101/101**, execution-engine **67/67**, gates 10/10 + 7/7,
+`verify:all` real exit 0. Documented deltas: `tags`/`extra` = external `@n8n/errors` surface
+(build observes `{packageName}`); S6 = 2.9.1-build-vs-2.9.4-source reflection delta (source
+pins; both ports implement reflection). **ISSUE-024: consolidation decision (Options A/B)
+remains OPEN for the orchestrator — behavioral evidence now complete.**

@@ -48,6 +48,16 @@ boundary PASS · reference pin 15050 files `f8da35180669d798…`.
 | :--- | :--- | :--- | :--- |
 | `TASK-WORKFLOW-MODEL-02.md` | Workflow class methods delegate to the single `start-node-navigation` port (TASK-DGRAPH-01 asset); conformance 26 → 44 tests | delegation imports observed in `src/workflow.ts` ("Single source of truth"); package suite **52/52** (44 + 8 disabled-graph) on merged tree; `getHighestNode`/`getStartNode` wiring green | **APPROVE** |
 | `TASK-414` (node filter/execution surface) | node-lego → 93 tests, 87 symbols, differential 1609 comparisons | **93/93** fresh, **1609 agree / 0 diverge (2 NOT-DIFFABLE)**, Node gate **7/7** | **APPROVE** |
+
+## Sweep 6 (2026-09-18) — TASK-412 + TASK-AUDIT-ISSUES-01 (meta)
+
+| Result (owner) | Claim | Fresh verification on merged tree | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-412-phase3-node-parameter-issues.md` | concurrent parameter-issues engine (ISSUE-026) | consolidation executed as recorded: `field-validation.mjs` removed (last touched by `1f711f3c`), peer `test/parameter-issues.test.mjs` (8 cases) **kept and green** against the shipped modules, node-lego **93/93** at sweep time (101/101 after TASK-EERR-01), superseded-module deltas preserved as REF-verified evidence in ISSUE-026 | **APPROVE** (superseded-by-413 consolidation verified; evidence intact) |
+| `TASK-AUDIT-ISSUES-01.md` (meta-review) | read-only audit of stale OPEN ledger rows at `28fb50ef` | rows were accurate at their tip; subsequent tasks resolved the actionable ones (ISSUE-025 → REPAIRED by TASK-RIG-REPAIR-01 + hardening; both golden-absent rows → closed by TASK-DGRAPH-01/TASK-CGRAPH-01; ISSUE-017 probe re-confirmed) — supersession documented in the respective addenda | **APPROVE** (historical accuracy confirmed; no NEEDS_CORRECTION) |
+
+---
+
 ## Sweep 6 (2026-09-18, verified on `124a9f12`, merged after peer sweep 5) — remaining queue: 405 / 412 / DGRAPH / CONSOLIDATE / DIFF-01..03 / DISABLED / ERROR-01 / PHASE3-GATE / RIG-REPAIR / SCHED-DIFF / TRIGGER-DIFF / WORKFLOW-MODEL
 
 Method: current-tree claims re-run fresh on the merged tip; point-in-time claims verified at
@@ -94,3 +104,74 @@ first vote on CGRAPH-01. All numbers re-run fresh on this tip, not taken from pe
 
 **Matrix at sweep time:** `verify:all` real exit 0 · conformance 42/42 · boundary PASS ·
 connection 58/58 · workflow-model 52/52 · node 93/93 + differential 1609/0.
+
+## Sweep 8 (2026-09-18, on `f83c3f4b`) — MODEL-02 delta (ISSUE-027 fix) + TASK-415
+
+| Result (owner) | Claim | Fresh re-run on merged tree (this sweep) | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-WORKFLOW-MODEL-02.md` (updated, `3393a781`) | constructor now passes the reference's six `getNodeParameters` args; port self-resolves from node-lego; 54/54; mangling falsification test; ISSUE-027 FIXED | package **54 pass / 0 fail**; six-arg call observed in `workflow.ts:180-187` (properties, parameters, true, false, node, description); falsification test re-derives the 14 `wf.*` probes under a deliberately mangling stand-in; ledger entry corrected to FIXED with its own staleness documented (own-entry correction, history preserved — no append-only violation) | **APPROVE** (supersedes sweep-7 52/52 vote) |
+| `TASK-415-phase3-validation-lego.md` | validation-lego 20/20 (golden A–D + reference parity + 2 negative controls), strict tsc, no forbidden touches | **20 pass / 0 fail** after `npm install` in the lane (typescript devDep declared but never installed here — env-only, ISSUE-022 class, same as the workflow-lego precedent); negatives + `n8n-workflow` parity wiring present in `conformance.test.mjs`; commit touches zero `reference/`/`crates/`/`apps/` paths; `verify:all` exit 0 on this tip | **APPROVE** |
+
+## Sweep 9 (2026-09-18, on `ef823058`) — TASK-416
+
+| Result (owner) | Claim | Fresh re-run on merged tree | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-416-phase3-credentials-lego.md` | Credentials LEGO (cipher EVP_BytesToKey + AES-256-CBC wire format, Credentials model with frozen error strings, 22/22, gate 6/6, parity vs `tests/reference/agent-4/golden/credentials.golden.json`) | **22/22** fresh, **Credentials gate 6/6** (also green inside `verify:all` 13-lane run on this tip), lane touches `packages/credentials-lego` + contract + gate tool only | **APPROVE** |
+
+## Infra restore (2026-09-18, on `ef823058`) — live-verification lane G08–G10 red → green
+
+The sandbox re-provisions had left the pinned reference runtime (`.runtime/`, gitignored) absent, so
+`node tools/workflow-isolation-gate.mjs --skip-live` reported **ISOLATION FAILED (3 gates): G08, G09, G10**
+while the `verify:all` chain (which uses `isolation:check`, not the live gate) stayed green — a red lane
+hidden behind a different entry point. Restored via `scripts/setup-reference-runtime.sh`
+(n8n-workflow@2.9.1 + n8n-core@2.9.1 + n8n-nodes-base@2.9.1, ~75 s from the npm registry), then:
+
+- `npm run verify` (FULL live gate) → **exit 0, 10/10 PASS** — G06/G07 tsc builds, G08 unit suite,
+  **G09 BEFORE vs AFTER digest: BEHAVIOR CHANGE NONE — 252 section comparisons across 18 workflows,
+  0 differences (218 identical + 34 in declared port sections)**, G10 strict port mode.
+- Full matrix re-confirmed on the same tip: `verify:all` real exit 0 (13-lane chain) · activation
+  differential 65/0 · error-surface differential 4/14Δ/0 · engine differential 84/0 · conformance 42/42 ·
+  boundary PASS.
+
+The branch is now, for the first time since the re-provisions, verified end-to-end against the **real
+pinned runtime** (not only the offline/vendored lanes). Evidence refreshed:
+`docs/isolation/evidence/{gate-report,live-verification,model-digest.comparison}.json`.
+
+---
+
+## Sweep 9 (2026-09-18, on `ef823058`) — TASK-EERR-01 + TASK-416
+
+Sandbox was re-provisioned before this sweep (git ref rolled to `fc4e5631`, all lane
+`node_modules` wiped — gitignored, not snapshotted). Recovered via
+`fetch + checkout -B + reset --hard` onto `ef823058` (own `5b761716` confirmed ancestor;
+worktree files verified intact first), then `npm install` in the five lanes that need it
+(documented ISSUE-022-class prerequisite, third occurrence).
+
+| Result (owner) | Claim | Fresh re-run on merged tree (this sweep) | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-EERR-01.md` | 3-way error-surface differential 4 agree / 14 documented / 0 diverge; stash control 16 DIVERGE; node 101/101, exec 67/67; gates 10/10 + 7/7 | **4 agree / 14 documented-delta / 0 diverge across 18**; control reproduced by swapping pre-fix `errors.mjs` from `2227bbdc^` → **16 DIVERGE**, restored → 4/14/0 (tree verified byte-clean after); **101/101** + **67/67**; Node gate **7/7**, Execution gate **10/10** | **APPROVE** |
+| `TASK-416-phase3-credentials-lego.md` | credentials-lego 22/22 (2 negatives + golden parity), gate 6/6 | **22 pass / 0 fail**; Credentials gate **6/6**; negatives + `credentials.golden.json` parity wiring present | **APPROVE** |
+
+**Matrix at sweep time:** `verify:all` real exit 0 · Execution 10/10 · Trigger 5/5 · Webhook 5/5 ·
+Scheduler 6/6 · Node 7/7 · Persistence 6/6 · Credentials 6/6 · error-surface 4/14/0.
+
+**Status-hygiene note (not a vote, for the orchestrator):** `TASK-416`'s result claims
+`VERIFIED` while its YAML says `IMPLEMENTED`, and phase-3 tasks 406/407/408/410 sit at
+`IMPLEMENTED` despite sweep-1 APPROVEs. Owners/orchestrator should reconcile; peer YAMLs left
+untouched by this sweep.
+
+## Sweep 10 (2026-09-18, on `fe1f93cb`) — TASK-417
+
+| Result (owner) | Claim | Fresh re-run on merged tree | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-417` (execution-data LEGO) | 24/24 tests, gate 6/6, verify:all 13/13 | **24/24** fresh, **Execution Data gate 6/6**, merged-tree `verify:all` real exit 0 (now 14 lanes) | **APPROVE** |
+
+## Sweep 11 (2026-09-18, on `745701e1`) — TASK-417 (second vote)
+
+Second vote (peer sweep 10 voted first; different agent, no double-vote). Re-run fresh on
+this tip, not taken from peer logs. (This turn's `git pull` first failed with a transient
+`repository not found`; immediate retry succeeded — no action needed.)
+
+| Result (owner) | Claim | Fresh re-run on merged tree (this sweep) | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-417-phase3-execution-data-lego.md` | execution-data 24/24 (7 reference suites + 2 negatives), gate 6/6 | **24 pass / 0 fail**; Execution Data gate **6/6**; 7/7 reference suites (`01-single-item`…`07-item-helpers`) present; negatives in `conformance.test.mjs`; `verify:all` real exit 0 (Execution 10/10 · Trigger 5/5 · Webhook 5/5 · Scheduler 6/6 · Node 7/7 · Persistence 6/6 · Credentials 6/6 · Execution Data 6/6) | **APPROVE** |

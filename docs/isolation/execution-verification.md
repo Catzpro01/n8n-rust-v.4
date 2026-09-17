@@ -1,6 +1,6 @@
 # Execution LEGO — verification (Phase 3 reconstruction)
 
-Generated: 2026-09-17T18:24:38.722Z  ·  Package: `packages/execution-engine`  ·  Language: JavaScript (Node.js ESM)
+Generated: 2026-09-17T18:25:38.372Z  ·  Package: `packages/execution-engine`  ·  Language: JavaScript (Node.js ESM)
 
 **Gates: 10/10 PASS** · RUST: NONE via this LEGO (JavaScript track); Phase-3 port track confined to crates/** + apps/** · **Reference: n8n 2.9.4 (read-only)**
 

@@ -4,7 +4,7 @@
  *
  *   N01  zero runtime dependencies
  *   N02  source boundary import-closed (relative + node: only)
- *   N03  node-model conformance suite (93 tests)
+ *   N03  node-model conformance suite (101 tests)
  *   N04  reference tree pinned (workflow-reference-manifest --check)
  *   N05  differential vs the published reference build: 0 divergences
  *   N06  formal contract + isolation doc present
@@ -57,7 +57,8 @@ await await gate('N03', 'node-model conformance suite', () => {
 	const out = run(['--test', 'test/*.test.mjs'], pkg);
 	const pass = /^# pass (\d+)$/m.exec(out)?.[1];
 	const fail = /^# fail (\d+)$/m.exec(out)?.[1];
-	if (pass !== '93' || fail !== '0') throw new Error(`${pass} pass / ${fail} fail`);
+	// TASK-EERR-01: +8 NodeOperationError reference-port regression tests (93 -> 101).
+	if (pass !== '101' || fail !== '0') throw new Error(`${pass} pass / ${fail} fail`);
 	return `${pass} pass / 0 fail`;
 });
 
