@@ -1,0 +1,168 @@
+{
+  "$schema": "./ownership.schema.json",
+  "lego": "connection",
+  "phase": "phase-3-ownership-transfer",
+  "reference": {
+    "pinnedVersion": "2.9.4",
+    "pinnedCommit": "b6dc2787c45677a29a9612cd27eb911302961a83",
+    "sourceRoot": "reference/n8n/packages/workflow",
+    "artifact": "n8n-workflow@2.9.1",
+    "rules": [
+      "reference/n8n/** is read-only. Isolation layer must never modify or duplicate-and-diverge it.",
+      "Ownership is declared here and enforced by boundary audit.",
+      "Phase 3 Option A: Connection owns graph/** + connections-diff behind port P-CONNECTION-GRAPH; Workflow re-exports via port."
+    ]
+  },
+  "owns": {
+    "description": "Edge model, adjacency, traversal, subgraph analysis, connection diffing",
+    "files": [
+      "graph/graph-utils",
+      "connections-diff",
+      "common/map-connections-by-destination",
+      "common/get-connected-nodes",
+      "common/get-child-nodes",
+      "common/get-parent-nodes",
+      "common/get-node-by-name",
+      "common/index"
+    ],
+    "responsibilities": [
+      "IConnections orientation semantics (source-keyed vs destination-keyed), sparse-slot rules",
+      "mapConnectionsByDestination (inversion exact, padded with [])",
+      "getConnectedNodes / getChildNodes / getParentNodes (farthest-first, deduped, depth-bounded, cycle-safe)",
+      "buildAdjacencyList, getRootNodes, getLeafNodes, getInputEdges, getOutputEdges, hasPath, parseExtractableSubgraphSelection",
+      "compareConnections (JSON identity {node,type,index})",
+      "Invariants C1-C8 as contract"
+    ]
+  },
+  "doesNotOwn": {
+    "description": "Explicitly outside Connection LEGO. Consumed through declared ports or owned by other LEGOs.",
+    "items": [
+      {
+        "artifact": "Workflow class traversal members",
+        "owner": "LEGO 01 — Workflow",
+        "reason": "getNodeConnectionIndexes, getHighestNode, getStartNode, getParentMainInputNode, getParentNodesByDepth, renameNode — Agent 1, CD-04, pinned by fixtures 01-04"
+      },
+      {
+        "artifact": "NodeHelpers.getNodeOutputs/getNodeInputs",
+        "owner": "LEGO 02 — Node Model",
+        "reason": "declared port counts incl. trailing error output, CD-05"
+      },
+      {
+        "artifact": "Item routing at runtime",
+        "owner": "engine — WorkflowExecute",
+        "reason": "executionOrder v0/v1, addNodeToBeExecuted"
+      },
+      {
+        "artifact": "DirectedGraph, handleCycles, findSubgraph, findStartNodes",
+        "owner": "packages/core partial-execution-utils",
+        "reason": "FORBIDDEN path, D-10 documented dependency"
+      },
+      {
+        "artifact": "Cycle detection as validation",
+        "owner": "NEW CAPABILITY — Validation LEGO (ISSUE-003)",
+        "reason": "does not exist in 2.9.4 reference, must not reject cyclic graphs"
+      }
+    ]
+  },
+  "sharedKernel": {
+    "description": "Cross-LEGO vocabulary and utilities. Not owned by Connection; consumed through kernel ports.",
+    "files": [
+      "interfaces",
+      "constants"
+    ]
+  },
+  "ports": [
+    {
+      "id": "P-CONNECTION-GRAPH",
+      "kind": "functions",
+      "direction": "out",
+      "provided_by": "LEGO 03 — Connection",
+      "consumed_as": "re-export from workflow-lego barrel (graph/graph-utils + connections-diff)",
+      "symbols": {
+        "graph": [
+          "getChildNodes",
+          "getParentNodes",
+          "getConnectedNodes",
+          "getNodeByName",
+          "mapConnectionsByDestination",
+          "buildAdjacencyList",
+          "parseExtractableSubgraphSelection",
+          "getRootNodes",
+          "getLeafNodes",
+          "hasPath",
+          "getInputEdges",
+          "getOutputEdges"
+        ],
+        "content": [
+          "compareConnections"
+        ]
+      },
+      "types_only": [
+        "IConnection",
+        "IConnections",
+        "INodeConnection",
+        "IConnectionAdjacencyList",
+        "ExtractableSubgraphData",
+        "ExtractableErrorResult",
+        "ConnectionsDiff",
+        "INodeConnectionsDiff",
+        "NodeConnectionType",
+        "NodeConnectionTypes"
+      ]
+    },
+    {
+      "id": "P-KERNEL-TYPES",
+      "kind": "types",
+      "direction": "in",
+      "provided_by": "shared kernel",
+      "symbols": [
+        "IConnection",
+        "IConnections",
+        "INodeConnection",
+        "NodeConnectionType"
+      ]
+    }
+  ],
+  "deviations": [
+    {
+      "id": "D-08",
+      "file": "workflow.ts",
+      "owner": "Agent 1",
+      "description": "Workflow.renameNode mutates connectionsBySourceNode in place but does NOT rebuild connectionsByDestinationNode — observed, not fixed by Connection, reported to Agent 1"
+    },
+    {
+      "id": "D-09",
+      "file": "node-helpers.ts",
+      "owner": "Agent 2",
+      "description": "NodeHelpers.getNodeOutputs/getNodeInputs/getConnectionTypes provide declared port counts incl. trailing error output — contract-satisfied per node.contract.md §6"
+    },
+    {
+      "id": "D-10",
+      "file": "partial-execution-utils",
+      "owner": "core",
+      "description": "DirectedGraph, handleCycles, findSubgraph — FORBIDDEN path, documented dependency, not owned"
+    }
+  ],
+  "publicSurface": [
+    "mapConnectionsByDestination",
+    "getChildNodes",
+    "getParentNodes",
+    "getConnectedNodes",
+    "getNodeByName",
+    "buildAdjacencyList",
+    "getRootNodes",
+    "getLeafNodes",
+    "getInputEdges",
+    "getOutputEdges",
+    "hasPath",
+    "parseExtractableSubgraphSelection",
+    "compareConnections"
+  ],
+  "evidence": {
+    "pure_leaf": [
+      "graph/graph-utils.ts: single import, import type {...} from '../interfaces'",
+      "connections-diff.ts: single type import, only consumer workflow-diff.ts:11"
+    ],
+    "tests": "tests/reference/connection 5/5 PASS, tests/reference/harness/run.js connection"
+  }
+}
