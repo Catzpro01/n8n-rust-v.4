@@ -94,3 +94,10 @@ first vote on CGRAPH-01. All numbers re-run fresh on this tip, not taken from pe
 
 **Matrix at sweep time:** `verify:all` real exit 0 · conformance 42/42 · boundary PASS ·
 connection 58/58 · workflow-model 52/52 · node 93/93 + differential 1609/0.
+
+## Sweep 8 (2026-09-18, on `f83c3f4b`) — MODEL-02 delta (ISSUE-027 fix) + TASK-415
+
+| Result (owner) | Claim | Fresh re-run on merged tree (this sweep) | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-WORKFLOW-MODEL-02.md` (updated, `3393a781`) | constructor now passes the reference's six `getNodeParameters` args; port self-resolves from node-lego; 54/54; mangling falsification test; ISSUE-027 FIXED | package **54 pass / 0 fail**; six-arg call observed in `workflow.ts:180-187` (properties, parameters, true, false, node, description); falsification test re-derives the 14 `wf.*` probes under a deliberately mangling stand-in; ledger entry corrected to FIXED with its own staleness documented (own-entry correction, history preserved — no append-only violation) | **APPROVE** (supersedes sweep-7 52/52 vote) |
+| `TASK-415-phase3-validation-lego.md` | validation-lego 20/20 (golden A–D + reference parity + 2 negative controls), strict tsc, no forbidden touches | **20 pass / 0 fail** after `npm install` in the lane (typescript devDep declared but never installed here — env-only, ISSUE-022 class, same as the workflow-lego precedent); negatives + `n8n-workflow` parity wiring present in `conformance.test.mjs`; commit touches zero `reference/`/`crates/`/`apps/` paths; `verify:all` exit 0 on this tip | **APPROVE** |
