@@ -32,3 +32,17 @@ export class UserError extends Error {
 		Object.setPrototypeOf(this, UserError.prototype);
 	}
 }
+
+/**
+ * `ApplicationError` — thrown by `getParentMainInputNode` when a connected node it resolved by
+ * name is missing from the map. Reference: `@n8n/errors` via `workflow.ts:19`. Structural, for the
+ * same reason as `UserError`: `error.constructor.name` is observable and must stay
+ * `ApplicationError`.
+ */
+export class ApplicationError extends Error {
+	constructor(message: string) {
+		super(message);
+		this.name = 'ApplicationError';
+		Object.setPrototypeOf(this, ApplicationError.prototype);
+	}
+}

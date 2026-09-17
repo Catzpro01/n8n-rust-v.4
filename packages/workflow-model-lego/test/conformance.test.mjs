@@ -17,7 +17,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -295,4 +295,189 @@ test('negative control: adding a collision guard to renameNode is rejected', () 
 		return;
 	}
 	assert.fail('unreachable');
+});
+
+/* ------------------------------------------------------------------ */
+/* 5. the Workflow-aggregate probes of the connection goldens (14)    */
+/* ------------------------------------------------------------------ */
+
+/**
+ * `tests/reference/connection/01..04` also probe the Workflow aggregate (`wf.*`). Those 14 probes
+ * were skipped by `packages/connection-lego` because they belong to this LEGO
+ * (`contracts/connection.contract.md` §7). They are asserted here.
+ *
+ * The node-type stub and the Workflow construction mirror `tests/reference/harness/connection.js`
+ * exactly, so the same recorded expectations apply: a generic 1-in/1-out node per fixture name,
+ * except names starting with `Trigger`, which have no inputs.
+ */
+const generic = (name) => ({
+	description: {
+		displayName: name,
+		name,
+		group: ['transform'],
+		version: 1,
+		description: '',
+		defaults: {},
+		inputs: name.startsWith('Trigger') ? [] : ['main'],
+		outputs: ['main'],
+		properties: [],
+	},
+});
+const stubNodeTypes = {
+	getByName: (n) => generic(n),
+	getByNameAndVersion: (n) => generic(n),
+	getKnownTypes: () => ({}),
+};
+
+/**
+ * CD-05 port for these probes.
+ *
+ * - `getNodeOutputs` is the **real** `packages/node-lego` implementation, resolved by the package
+ *   itself; it is re-declared here only so the constructor has a port at all.
+ * - `getNodeParameters` is **not reconstructed anywhere on this branch** (it is ~1 000 lines of
+ *   `node-helpers.ts` and outside both this LEGO's and `packages/node-lego`'s delivered scope).
+ *   The identity stand-in below leaves `node.parameters` untouched. That is a declared gap, not a
+ *   claim of parity — and the test further down proves the 14 probe expectations do not depend on
+ *   it, so the acceptance set is not being satisfied by the stand-in.
+ */
+const identityNodeHelpers = {
+	getNodeOutputs: (wf, node, nodeTypeData) =>
+		lego.resolveNodeHelpersPort().getNodeOutputs(wf, node, nodeTypeData),
+	getNodeParameters: (node) => node.parameters ?? {},
+};
+
+const WF_OPS = new Set([
+	'wf.getNodeConnectionIndexes',
+	'wf.getHighestNode',
+	'wf.getStartNode',
+	'wf.getParentMainInputNode',
+	'wf.getParentNodesByDepth',
+]);
+
+/** Same value normalisation the recording harness applied. */
+const harnessPlain = (v) =>
+	v === undefined
+		? { undefined: true }
+		: JSON.parse(
+				JSON.stringify(v, (_, x) =>
+					x instanceof Set ? [...x] : x instanceof Map ? Object.fromEntries(x) : x,
+				),
+			);
+
+function runWfProbe(wf, p) {
+	switch (p.op) {
+		case 'wf.getNodeConnectionIndexes':
+			return wf.getNodeConnectionIndexes(p.node, p.parent, p.type);
+		case 'wf.getHighestNode':
+			return wf.getHighestNode(p.node);
+		case 'wf.getStartNode':
+			return wf.getStartNode(p.node)?.name ?? null;
+		case 'wf.getParentMainInputNode':
+			return wf.getParentMainInputNode(wf.getNode(p.node)).name;
+		case 'wf.getParentNodesByDepth':
+			return wf.getParentNodesByDepth(p.node, p.depth);
+		default:
+			throw new Error(`unhandled op ${p.op}`);
+	}
+}
+
+let wfProbes = 0;
+for (const name of readdirSync(join(REPO, 'tests/reference/connection')).sort()) {
+	const dir = join(REPO, 'tests/reference/connection', name);
+	let kase;
+	let expected;
+	try {
+		kase = JSON.parse(readFileSync(join(dir, 'case.json'), 'utf8'));
+		expected = JSON.parse(readFileSync(join(dir, 'expected.json'), 'utf8'));
+	} catch {
+		continue;
+	}
+	if (!kase.nodes) continue;
+
+	const wf = new Workflow({
+		id: 'conn',
+		name: 'conn',
+		nodes: kase.nodes.map((n) => ({ ...n, type: n.name })),
+		connections: kase.connections,
+		active: false,
+		nodeTypes: stubNodeTypes,
+		settings: {},
+		nodeHelpersPort: identityNodeHelpers,
+	});
+
+	for (const p of kase.probes) {
+		if (!WF_OPS.has(p.op)) continue;
+		wfProbes++;
+		test(`connection/${name} :: ${p.op.slice(3)} :: ${p.name}`, () => {
+			assert.deepEqual(harnessPlain(runWfProbe(wf, p)), expected[p.name]);
+		});
+	}
+}
+
+test('Workflow-aggregate coverage: all 14 wf.* probes asserted', () => {
+	assert.equal(wfProbes, 14, `expected 14 wf.* probes, ran ${wfProbes}`);
+});
+
+test('negative control: a DFS getHighestNode order is rejected', () => {
+	const kase = JSON.parse(
+		readFileSync(join(REPO, 'tests/reference/connection/04-cycle/expected.json'), 'utf8'),
+	);
+	// A plausible reimplementation returns ancestors nearest-first instead of following the
+	// reference's checkedNodes + indexOf de-duplication order.
+	const reversed = [...kase['highest nodes of End']].reverse();
+	assert.notDeepEqual(reversed, kase['highest nodes of End'], 'fixture is order-insensitive');
+});
+
+test('negative control: returning null instead of undefined for an unconnected pair is rejected', () => {
+	const kase = JSON.parse(
+		readFileSync(join(REPO, 'tests/reference/connection/02-multi-output/expected.json'), 'utf8'),
+	);
+	const expected = kase['Merge <- Sparse (not connected)'];
+	assert.deepEqual(expected, { undefined: true });
+	assert.notDeepEqual(harnessPlain(null), expected, 'oracle failed to discriminate');
+});
+
+test('falsification: the 14 wf.* expectations do not depend on the getNodeParameters stand-in', () => {
+	// Replace the identity stand-in with one that deliberately mangles node.parameters. If any of
+	// the 14 probe results changed, the acceptance set would be sensitive to a function this
+	// branch does not reconstruct — which would make the 14/14 claim unsound.
+	const mangling = {
+		getNodeOutputs: identityNodeHelpers.getNodeOutputs,
+		getNodeParameters: () => ({ __mangled: true, nested: { a: [1, 2, 3] } }),
+	};
+	const results = { identity: {}, mangling: {} };
+	for (const name of readdirSync(join(REPO, 'tests/reference/connection')).sort()) {
+		const dir = join(REPO, 'tests/reference/connection', name);
+		let kase;
+		try {
+			kase = JSON.parse(readFileSync(join(dir, 'case.json'), 'utf8'));
+		} catch {
+			continue;
+		}
+		if (!kase.nodes) continue;
+		for (const [label, port] of [
+			['identity', identityNodeHelpers],
+			['mangling', mangling],
+		]) {
+			const wf = new Workflow({
+				id: 'conn',
+				name: 'conn',
+				nodes: kase.nodes.map((n) => ({ ...n, type: n.name })),
+				connections: kase.connections,
+				active: false,
+				nodeTypes: stubNodeTypes,
+				settings: {},
+				nodeHelpersPort: port,
+			});
+			for (const p of kase.probes) {
+				if (!WF_OPS.has(p.op)) continue;
+				results[label][`${name}/${p.name}`] = JSON.stringify(harnessPlain(runWfProbe(wf, p)));
+			}
+		}
+	}
+	const keys = Object.keys(results.identity);
+	assert.equal(keys.length, 14, `expected 14 probes compared, got ${keys.length}`);
+	for (const key of keys) {
+		assert.equal(results.mangling[key], results.identity[key], `${key} depends on getNodeParameters`);
+	}
 });
