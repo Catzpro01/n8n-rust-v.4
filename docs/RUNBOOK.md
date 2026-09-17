@@ -20,6 +20,10 @@ npm run isolation:check
 node tests/compatibility/contract_conformance.mjs
 # Expected: 21/21 PASS (Rust guard clean)
 
+npm run cargo:workspace-check
+# Expected: PASS (no root Cargo.toml, or all workspace members exist) —
+# closes the PR #21 review blocker: a dangling Cargo workspace contradicts Zero Rust
+
 python3 tests/integration/boundary_audit.py
 # Expected: PASS (all edges documented, Rust guard clean)
 
@@ -28,6 +32,10 @@ bash tests/integration/run_gate.sh --offline-only
 
 node --test packages/*-lego/test/*.test.mjs
 # Expected: 23/23 PASS individual (execution-data 2, expression 4, connection 5, trigger 2, webhook 2, scheduler 2, persistence 2, credentials 2, api 2)
+# NOTE: workflow-lego is NOT in this list — its 45 tests REQUIRE the harness env
+# (LEGO_REFERENCE_PKG / LEGO_NODES_JSON / built isolated unit). Run instead:
+bash scripts/run-lego-tests.sh
+# Expected: workflow-lego 45/45 PASS (raw `node --test` without the env fails 7 tests — not a regression)
 
 node packages/reconstructed-engine/test-integration.mjs
 # Expected: 12/12 PASS 100% Sempurna
@@ -254,6 +262,14 @@ bash tests/integration/run_gate.sh  # LIVE 11/11
 
 # Expected: 11/11 PASS → gate VERIFIED
 ```
+
+**Substitute-evidence option (documented for the release owner, PR #21 review):** if the VPS
+live run stays out of reach, gate `G11` of `npm run verify` already executes a live 7-step
+regression (workflow load / save / 1-node / linear / webhook / execution record) against the
+pinned reference engine (`n8n-core` / `n8n-nodes-base` / `n8n-workflow` 2.9.1 — exactly the
+n8n 2.9.4 dependency set) and is recorded in `docs/isolation/evidence/live-verification.json`.
+The owner may accept G11 7/7 as substitute evidence for the merge decision; `run_gate.sh`
+LIVE (Docker + n8n + PostgreSQL on the VPS) remains the stricter, preferred path.
 
 ### Main Merge
 ```bash

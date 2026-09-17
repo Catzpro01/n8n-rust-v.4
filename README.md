@@ -87,7 +87,13 @@ npm run verify:fast                       # same minus the live engine checks
 npm run i18n:check                        # Phase 4B: 6-locale parity + 24 behaviour tests (offline)
 npm run connection:check                  # Phase 3B/5: differential gate vs n8n-workflow@2.9.1, 1,944 calls (C01-C09)
 npm run trigger:check                     # Phase 5: ActiveWorkflows port vs n8n-core@2.9.1, T01-T06
+npm run cargo:workspace-check             # Zero-Rust guard: no dangling Cargo workspace members
 ```
+
+> **Running the workflow LEGO tests by hand?** Always use `npm run workflow-lego:test`
+> (`scripts/run-lego-tests.sh`). Raw `node --test packages/workflow-lego/test/*.test.mjs`
+> fails 7 environment-dependent tests because `LEGO_REFERENCE_PKG` / `LEGO_NODES_JSON`
+> and the built isolated unit are wired up by the script — this is not a regression.
 
 ## Production Readiness Certificate
 

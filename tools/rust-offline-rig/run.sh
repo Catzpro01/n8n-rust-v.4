@@ -21,6 +21,11 @@ MODE="${1:-check}"; shift || true
 BUILD="$RIG/build/repo"
 rm -rf "$BUILD"
 mkdir -p "$BUILD/.cargo"
+if [ ! -f "$REPO/Cargo.toml" ]; then
+  echo "rust-offline-rig: root Cargo.toml absent — the Rust workspace was archived (ZERO RUST, PROJECT_RULES §1)."
+  echo "This historical rig only runs on branches that carry the Phase 3 crates."
+  exit 77
+fi
 cp -a "$REPO/Cargo.toml" "$BUILD/"
 cp -a "$REPO/crates" "$BUILD/"
 # integration tests read the reference fixtures/goldens relative to the manifest dir
