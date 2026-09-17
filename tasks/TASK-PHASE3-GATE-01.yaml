@@ -1,0 +1,95 @@
+id: TASK-PHASE3-GATE-01
+agent: arena-worker
+lego: integration
+module: integration
+phase: 3
+title: "Open Phase 3 (decision record) + Phase-3-aware offline gates + missing golden fixtures"
+status: AVAILABLE
+
+# Context: Phase 2 is VERIFIED (docs/isolation/LEGO-MASTER-MAP.md). The Phase-3 Rust
+# workspace exists on main (crates/** + root Cargo.toml), but the two offline
+# harnesses still enforce the Phase-2 rule "no Rust may exist", so both report FAIL
+# (contract_conformance 20/21, boundary_audit FAIL) on a tree whose behavior gates
+# (G01-G04) are all PASS. docs/isolation/workflow-rust-port-review.md section 7
+# explicitly requests a Phase-3 gate mode owned by the integration guardian.
+# Additionally, tests/reference/04-disabled-node and 05-cyclic-invalid (declared in
+# docs/isolation/CROSS-AGENT-ISSUES.md ISSUE-005) are absent from this tree.
+
+allowed_paths:
+  - tasks/TASK-PHASE3-GATE-01.yaml
+  - docs/isolation/PHASE-3-OPENING-RECORD.md
+  - tests/compatibility/contract_conformance.mjs
+  - tests/integration/boundary_audit.py
+  - tests/reference/04-disabled-node/**
+  - tests/reference/05-cyclic-invalid/**
+  - results/TASK-PHASE3-GATE-01.md
+
+forbidden_paths:
+  - reference/n8n/**
+  - crates/**
+  - apps/**
+  - packages/frontend/**
+  - reference/n8n/packages/frontend/**
+
+requires:
+  - contracts/workflow.contract.md
+  - contracts/node.contract.md
+  - contracts/connection.contract.md
+  - contracts/validation.contract.md
+  - docs/isolation/LEGO-MASTER-MAP.md
+  - docs/isolation/CROSS-AGENT-ISSUES.md
+  - docs/isolation/workflow-rust-port-review.md
+
+source_modification: none   # test infrastructure + docs only; no reference, no Rust
+
+operations:
+  - name: git_status
+  - name: pre_task_review_sweep
+    args:
+      queue: task_consensus_votes
+      result: UNREACHABLE_FROM_SANDBOX
+      note: "Supabase REST unreachable (SSL blocked); npm+github reachable. No remote
+        votes could be fetched, so no remote review was performed or skipped silently.
+        Proceeded with the highest-priority repo-local blocker per
+        docs/isolation/workflow-rust-port-review.md section 7."
+  - name: write_file
+    args: { path: docs/isolation/PHASE-3-OPENING-RECORD.md }
+  - name: write_file
+    args: { path: tests/reference/04-disabled-node/workflow.json }
+  - name: write_file
+    args: { path: tests/reference/05-cyclic-invalid/workflow.json }
+  - name: edit_file
+    args: { path: tests/compatibility/contract_conformance.mjs }
+  - name: edit_file
+    args: { path: tests/integration/boundary_audit.py }
+  - name: run_shell
+    args: { cmd: "node tests/compatibility/contract_conformance.mjs", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "python3 tests/integration/boundary_audit.py", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "node tools/workflow-reference-manifest.mjs --check", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "node tools/workflow-boundary-map.mjs --check", expect_exit: 0 }
+  - name: meta_test_falsifiability
+    args:
+      m1_negative_fixture: "remove C->A edge from 05-cyclic-invalid, expect conformance FAIL, restore, expect PASS"
+      m2_opening_record: "hide PHASE-3-OPENING-RECORD.md, expect Phase-2 Rust-guard FAIL, restore, expect PASS"
+      m3_confinement: "plant tools/__phase3_probe.rs, expect both harnesses to flag it, delete, expect PASS"
+  - name: write_file
+    args: { path: results/TASK-PHASE3-GATE-01.md }
+  - name: post_task_review_sweep
+    args:
+      queue: task_consensus_votes
+      result: UNREACHABLE_FROM_SANDBOX
+
+acceptance:
+  - contract_conformance reports all checks PASS (new denominator documented in record)
+  - boundary_audit reports PASS with zero undocumented edges
+  - reference-manifest check still PASS (15050 files, root f8da35180669)
+  - M1/M2/M3 meta-tests demonstrated both directions (fail when broken, pass when whole)
+  - results/TASK-PHASE3-GATE-01.md has a non-empty operations table (Stage 2c T1 clean)
+  - no file under reference/, crates/, apps/, or frontend paths touched
+
+merge_condition:
+  - regression_gate_pass
+  - no_contract_violation
