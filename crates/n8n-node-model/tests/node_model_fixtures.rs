@@ -92,14 +92,33 @@ fn position_and_type_version_are_floats() {
             node.node_type
         );
     }
-    // `typeVersion` is 1 for the trigger and 2 for `code` in this fixture — a float field must
-    // hold both without loss, and both must serialize back as bare integers.
-    assert_eq!(nodes[0].type_version, 1.0);
-    assert_eq!(nodes[1].type_version, 2.0);
-    assert_eq!(nodes[0].position, [240.0, 300.0]);
+    // `typeVersion` is 1 for the trigger and 2 for `code` in this fixture. The field is a
+    // `serde_json::Number` (not `f64`) precisely so `1` survives as `1` and `4.6` as `4.6`.
+    assert_eq!(nodes[0].type_version, serde_json::Number::from(1));
+    assert_eq!(nodes[1].type_version, serde_json::Number::from(2));
+    assert_eq!(nodes[0].position, [serde_json::Number::from(240), serde_json::Number::from(300)]);
+
+    // A fractional version must survive too — an `f64` field would have made `1` come back `1.0`.
+    let fractional: INode = serde_json::from_str(
+        r#"{"id":"n","name":"N","type":"n8n-nodes-base.noOp","typeVersion":4.6,
+            "position":[1.5,2],"parameters":{}}"#,
+    )
+    .expect("fractional typeVersion parses");
+    assert_eq!(fractional.type_version.as_f64(), Some(4.6));
+
     let rendered = serde_json::to_string(&nodes[1]).expect("serialize");
-    assert!(rendered.contains("\"typeVersion\":2"), "integral typeVersion rendered as a float: {rendered}");
-    assert!(rendered.contains("\"position\":[460,300]"), "integral position rendered as floats: {rendered}");
+    assert!(
+        rendered.contains("\"typeVersion\":2"),
+        "integral typeVersion rendered as a float: {rendered}"
+    );
+    assert!(
+        rendered.contains("\"position\":[460,300]"),
+        "integral position rendered as floats: {rendered}"
+    );
+    assert!(
+        serde_json::to_string(&fractional).expect("serialize").contains("\"typeVersion\":4.6"),
+        "fractional typeVersion lost precision"
+    );
 }
 
 /// Unknown fields must not be dropped: a node carrying `credentials` / `webhookId` has to come

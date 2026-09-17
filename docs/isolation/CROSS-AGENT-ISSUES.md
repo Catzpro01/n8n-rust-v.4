@@ -1212,3 +1212,23 @@ $ bash tests/integration/run_gate.sh --offline-only
 The rig itself is the upstream one (19 crates, `regex-automata` 0.4.9 / `regex-syntax` 0.8.5 /
 `aho-corasick` 1.1.5); my 18-crate variant and my `PHASE-3-OPENING.md`-keyed guards were dropped in
 favour of the `phase3-gate-mode.md` mechanism, and my static audit was re-added as Stage 2c.
+
+### Correction 3 — the `INode` number fix was superseded, not merged
+
+My ISSUE-019 entry claimed `INode` was fixed by keeping `type_version: f64` and adding a
+`serialize_with` helper that renders integral values without `.0`. TASK-404 landed a better fix for
+the same defect while I was writing that: the fields are now `serde_json::Number`, so the
+representation survives the round trip without a custom serializer — `1` stays `1` *and* `4.6`
+stays `4.6`, pinned by the 42-node corpus in `tests/reference/agent-2/node-model/fixtures.json`.
+
+I took theirs and dropped mine. Two adaptations were needed to keep the tree compiling and green:
+
+* `crates/n8n-workflow/src/lib.rs` — the `NodeTypes::describe` registry call passed
+  `node.type_version` straight through; it now converts with `as_f64()`.
+* `crates/n8n-node-model/tests/node_model_fixtures.rs` — asserts `serde_json::Number` equality and
+  adds a fractional (`4.6`) case, which an `f64` field could not have represented losslessly.
+
+The `disabled` half of my fix (`skip_serializing_if = "Option::is_none"`) and the `#[serde(flatten)]
+extra` are present in both versions and unchanged.
+
+Re-verified at this head: `bash tools/rust-offline-rig/run.sh test` → **88 passed / 0 failed**.

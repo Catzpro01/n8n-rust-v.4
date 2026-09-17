@@ -283,8 +283,13 @@ impl Workflow {
                 let Some(node) = self.nodes.get(name) else {
                     continue;
                 };
+                // `INode::type_version` is a `serde_json::Number` so `1` survives a round trip
+                // as `1`; the registry lookup only needs the numeric value.
+                let Some(type_version) = node.type_version.as_f64() else {
+                    continue;
+                };
                 let Some((description_name, is_trigger, is_poll)) =
-                    registry.describe(&node.node_type, node.type_version)
+                    registry.describe(&node.node_type, type_version)
                 else {
                     continue;
                 };
