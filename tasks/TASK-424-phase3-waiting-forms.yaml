@@ -1,0 +1,25 @@
+id: TASK-424-phase3-waiting-forms
+agent: arena-worker
+lego: webhook
+module: waiting-forms
+phase: 3
+title: "Webhook LEGO: waiting form status and completion rendering"
+status: SUBMITTED_FOR_REVIEW
+objective: "Serve waiting Form executions and secure completion pages through explicit persistence and execution ports."
+acceptance:
+  - "execution-status endpoint with form-waiting classification and wildcard CORS"
+  - "auth/browser cookie sanitization before delegated execution"
+  - "reverse parent completion-page selection requiring run data"
+  - "default completion HTML under exact webhook sandbox CSP"
+  - "POST-only stack-node disabling and preserved missing/running/failed behavior"
+  - "native HTTP serves HTML/status and preserves empty noWebhookResponse"
+  - "webhook suite 35/35; webhook gate 5/5"
+allowed_paths:
+  - packages/webhook-lego/**
+  - tools/webhook-lego-gate.mjs
+  - contracts/webhook.contract.md
+  - docs/isolation/LEGO-MASTER-MAP.md
+  - docs/isolation/evidence/webhook-lego-gate.json
+  - tasks/TASK-424-phase3-waiting-forms.yaml
+  - results/TASK-424-phase3-waiting-forms.md
+forbidden_paths: [reference/n8n/**, crates/**, apps/**]

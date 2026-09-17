@@ -190,3 +190,72 @@ Also re-confirmed this cycle: full **live** gate 10/10 (G09 digest 252×18 = 0 d
 | :--- | :--- | :--- | :--- |
 | `TASK-WORKFLOW-MODEL-03.md` | 6 remaining members 1:1, aggregate complete (27-vs-27 `comm`), 51-comparison differential 0 diverge, `this.name` defect caught + fixed, 61/61, isolation 11/11 | package **61 pass / 0 fail**; `tsc` 0; differential test + ran-guard **pass** (51 asserted inside, 4 negatives green); independent method-set `comm`: every reference member present, sole additive symbol the lane's own `resolveNodeHelpersPort`; error surface live-checked (`name="Error"`, `ctor=ApplicationError`, `level="info"`, `shouldReport=false`); isolation gate **11/11** after `setup-reference-runtime.sh` (`.runtime` is gitignored — env-only, same as peer `351ee0a8`) | **APPROVE** |
 | `TASK-418-phase3-api-lego.md` | api-lego 12/12 (golden + negatives), gate 6/6 | **12 pass / 0 fail**; API gate **6/6**; negatives + `api.golden.json` parity wiring present; `verify:all` real exit 0 on this tip | **APPROVE** |
+
+## Sweep 14 (2026-09-18, on `fa3a1264`) — TASK-WORKFLOW-MODEL-04 + TASK-419
+
+Dual-phase review sweep per STANDING-WORKER-PROTOCOL. Both tasks re-verified fresh on merged tree.
+
+| Result (owner) | Claim | Fresh re-run on merged tree (this sweep) | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-WORKFLOW-MODEL-04.md` | 13/13 property parity with reference (expression property wired via expression-port.ts, Option C loud failure mode), package 66/66 tests | package **66 pass / 0 fail** (`expression-property.test.mjs` 5/5, `conformance.test.mjs` 46/46, `disabled-graph.test.mjs` 8/8, `static-data-queries.test.mjs` 7/7); 13/13 reference instance properties verified matching; `workflow.expression instanceof Expression` verified; Option C actionable failure on missing dependency verified; `verify:all` 14 lanes real exit 0 | **APPROVE** |
+| `TASK-419-phase3-scheduler-timer-adapter.md` | native cron timer adapter (`CronTimerAdapter`, `createCronTimerJob`), 16/16 scheduler tests, 11/11 trigger regression, 6/6 gate | scheduler **16 pass / 0 fail**; trigger consumer suite **11 pass / 0 fail**; Scheduler gate **6/6 PASS**; zero runtime dependencies verified | **APPROVE** |
+
+## Sweep 15 (2026-09-18, on `6693b592`) — TASK-419 (second vote) + TASK-420
+
+Second vote on 419 (peer sweep 14 voted first; different agent, no double-vote), first vote
+on 420. Re-run fresh on this tip.
+
+| Result (owner) | Claim | Fresh re-run on merged tree (this sweep) | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-419-phase3-scheduler-timer-adapter.md` | `CronTimerAdapter` + bridge, scheduler 16/16 (7 new), trigger 11/11, gate 6/6 | scheduler **16 pass / 0 fail**; trigger **11 pass / 0 fail**; Scheduler gate **6/6** | **APPROVE** |
+| `TASK-420-phase3-webhook-http-server.md` | `WebhookHttpServer` transport, 6 socket tests, webhook 16/16, gate 5/5, `verify:all` exit 0 | webhook **16 pass / 0 fail**; Webhook gate **5/5**; `verify:all` real exit 0 on this tip | **APPROVE** |
+
+## Sweep 16 (2026-09-18, on `85b30e54`) — TASK-421
+
+| Result (owner) | Claim | Fresh re-run on merged tree (this sweep) | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-421-phase3-waiting-webhooks.md` | `WaitingWebhookManager` + SHA-256 URL signatures, 8 new cases, webhook 24/24, gate 5/5, `verify:all` exit 0 | webhook **24 pass / 0 fail** (16 → 24, +8 as claimed); Webhook gate **5/5**; `verify:all` real exit 0 on this tip | **APPROVE** |
+
+## Sweep 17 (2026-09-18, on `447b3ade`) — TASK-WORKFLOW-MODEL-04 second vote + duplicate convergence
+
+Second vote on WM-04 (peer sweep 14 voted first; different agent, no double-vote). Re-run fresh on
+this tip. **This sweep also converges a duplicate:** I had independently implemented the same filed
+task on the same branch before seeing `505fd44e`. Per the first-landed convention the peer already
+applied in `6693b592`, my duplicate was dropped (`git reset --hard` onto the remote tip; commit
+`3447bbd9` discarded, nothing of it kept). The comparison is recorded because it is useful
+evidence that the filed task was unambiguous, not because any code survived:
+
+| Aspect | Peer `505fd44e` (kept) | My discarded `3447bbd9` |
+| :--- | :--- | :--- |
+| Reference line citations | `workflow.ts:72 / :20 / :134`, `expression.ts:181` | identical |
+| Design | option_c — eager + loud, never silent `undefined` | identical |
+| Port entry | `../../expression-lego/src/expression.mjs` | identical |
+| Injection seam | `WorkflowParameters.expressionPort` + `resolveExpressionPort(explicit, load)` | `stubExpressionPort(value)` only |
+| Degraded-branch test | simulated `MODULE_NOT_FOUND` through the injectable loader | stub returning `undefined` |
+| Tests | 5 (incl. lane-README prerequisite check) | 6 |
+
+The peer's is the stronger of the two (a real loader injection exercises the actual `require`
+failure path; mine only stubbed the resolver), which makes yielding it cost-free.
+
+| Result (owner) | Claim | Fresh re-run on merged tree (this sweep) | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-WORKFLOW-MODEL-04.md` | 13/13 property parity, `expression` wired via `expression-port.ts`, option_c loud failure, package 66/66 | package **66 pass / 0 fail / 0 skipped**; `tsc --strict` **0 errors**; isolation gate **11/11 · BEHAVIOR CHANGE: NONE**, G09 **252 section comparisons / 0 differences** (218 identical, 34 in declared port sections); `contract_conformance` **42/42**; `boundary_audit` **PASS**; reference harness **18/0/0**; `verify:all` **real exit 0** | **APPROVE** (second vote) |
+
+### Environment finding worth recording (not in any prior sweep)
+
+`tools/workflow-isolation-gate.mjs` reported **7/11 · BEHAVIOR CHANGE: ISOLATION FAILED**
+(G08–G11) on a fresh sandbox. That alarm was **false** and was not caused by any code under
+review:
+
+* `scripts/setup-reference-runtime.sh` had been killed part-way through its
+  `npm install`, leaving `.runtime/node_modules` **44 packages short**. Its log ends at
+  `installing reference runtime into .runtime ...` with no completion line — that truncation is
+  the tell.
+* Completing the install (`cd .runtime && npm install`) restored **11/11** with no code change.
+* How to tell it apart from a real regression in one step: `git stash` the change and re-run the
+  gate. If the same gates fail on the pristine tip, it is the environment. Here all four failed
+  identically without my change.
+
+Related, and already recorded for `packages/workflow-lego` in `TASK-411`: `verify:all` exiting
+**127** with `sh: 1: tsc: not found` means a lane is missing `npm install` — this sweep hit it in
+`packages/validation-lego`, which is a newer lane and easy to miss.

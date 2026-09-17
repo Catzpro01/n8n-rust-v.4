@@ -5,7 +5,7 @@ module: workflow
 phase: 3
 track: "JavaScript/TypeScript reconstruction (docs/isolation/PHASE-3-OPENING-RECORD.md §2)"
 title: "Reconstruct the Workflow Model aggregate in TypeScript and close the last 20 reference fixture cases"
-status: SUBMITTED_FOR_REVIEW
+status: VERIFIED
 authority: PROJECT_RULES.md §1, §3, §6 · contracts/workflow.contract.md §6 · docs/isolation/PHASE-3-OPENING-RECORD.md
 
 objective: >

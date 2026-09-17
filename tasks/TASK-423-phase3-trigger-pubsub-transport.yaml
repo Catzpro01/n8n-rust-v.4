@@ -1,0 +1,26 @@
+id: TASK-423-phase3-trigger-pubsub-transport
+agent: arena-worker
+lego: trigger
+module: distributed-activation-pubsub
+phase: 3
+title: "Trigger LEGO: distributed pub/sub transport and activation command routing"
+status: SUBMITTED_FOR_REVIEW
+objective: "Relay multi-main workflow activation and deactivation through dependency-free injected pub/sub ports."
+acceptance:
+  - "deployment-prefixed command envelopes with sender, self-send, and debounce metadata"
+  - "malformed, sender, target, immediate-delivery, and trailing-debounce subscriber rules"
+  - "static instance-type and dynamic leader-role handler filtering without duplicate registration"
+  - "leader-only activation/deactivation mutation and all-main display relays"
+  - "activation failure persists inactive state; webhook cleanup failure does not suppress deactivation"
+  - "trigger suite 33/33; trigger gate 5/5; scheduler consumer gate 6/6"
+allowed_paths:
+  - packages/trigger-lego/**
+  - tools/trigger-lego-gate.mjs
+  - tools/scheduler-lego-gate.mjs
+  - contracts/trigger.contract.md
+  - docs/isolation/LEGO-MASTER-MAP.md
+  - docs/isolation/evidence/trigger-lego-gate.json
+  - docs/isolation/evidence/scheduler-lego-gate.json
+  - tasks/TASK-423-phase3-trigger-pubsub-transport.yaml
+  - results/TASK-423-phase3-trigger-pubsub-transport.md
+forbidden_paths: [reference/n8n/**, crates/**, apps/**]

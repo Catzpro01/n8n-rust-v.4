@@ -1,0 +1,23 @@
+id: TASK-421-phase3-waiting-webhooks
+agent: arena-worker
+lego: webhook
+module: waiting-execution-resume
+phase: 3
+title: "Webhook LEGO: waiting execution resume"
+status: VERIFIED
+objective: "Reconstruct Wait-node webhook continuation through Persistence and Execution ports."
+acceptance:
+  - "missing/running/failed/finished state guards"
+  - "HMAC validation compatible with n8n signature helpers"
+  - "waitTill clearing, node disabling, run-data pop, inputOverride preservation"
+  - "HITL ai_tool rewire and concurrent resume guard"
+  - "webhook suite 24/24 and gate 5/5"
+allowed_paths:
+  - packages/webhook-lego/**
+  - tools/webhook-lego-gate.mjs
+  - contracts/webhook.contract.md
+  - docs/isolation/LEGO-MASTER-MAP.md
+  - docs/isolation/evidence/webhook-lego-gate.json
+  - tasks/TASK-421-phase3-waiting-webhooks.yaml
+  - results/TASK-421-phase3-waiting-webhooks.md
+forbidden_paths: [reference/n8n/**, crates/**, apps/**]

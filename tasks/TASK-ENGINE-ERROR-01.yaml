@@ -4,7 +4,7 @@ lego: execution
 module: reconstructed-engine
 phase: 3
 title: "Reconstructed engine: reference-faithful error, onError-routing & retry policy (POOL-003 lineage)"
-status: SUBMITTED_FOR_REVIEW
+status: VERIFIED
 # status refreshed 2026-09-17 by arena-worker: results/TASK-ENGINE-ERROR-01.md exists and the suites
 # were re-run green on the merged tree (execution 40/40, prototype 28/28, differential 24/24,
 # gate 9/9, 42/42, boundary PASS). Review verdict itself is NOT recorded here (no self-approval).

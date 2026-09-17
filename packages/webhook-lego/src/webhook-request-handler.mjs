@@ -36,7 +36,7 @@ export class WebhookRequestHandler {
       return {
         statusCode: response?.statusCode ?? response?.responseCode ?? 200,
         headers: { ...cors, ...(response?.headers ?? {}) },
-        body: response?.body ?? response?.data ?? { message: 'Workflow was started' },
+        body: response?.noWebhookResponse ? response?.body : (response?.body ?? response?.data ?? { message: 'Workflow was started' }),
       };
     } catch (error) {
       const response = errorResponse(error);

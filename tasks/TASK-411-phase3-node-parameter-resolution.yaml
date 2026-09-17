@@ -4,7 +4,7 @@ lego: node
 module: node-parameter-resolution
 phase: 3
 title: "Node LEGO: parameter resolution — getNodeParameters, dependency ordering, utils.deepCopy, isExpression and the ApplicationError surface (ref: node-helpers.ts L542-1056, utils.ts L53-87, expressions/expression-helpers.ts L1-10, @n8n/errors application.error.ts)"
-status: SUBMITTED_FOR_REVIEW
+status: VERIFIED
 
 # Context: TASK-409 landed the Node Model helper surface but deliberately left the
 # parameter-ISSUES engine and the parameter RESOLVER out (contract §12.2). `getNodeParameters`

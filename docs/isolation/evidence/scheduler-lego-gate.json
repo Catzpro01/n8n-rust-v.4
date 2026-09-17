@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-17T19:13:22.787Z",
+  "generatedAt": "2026-09-17T19:08:00.907Z",
   "task": "TASK-408-phase3-scheduler-lego",
   "reference": "n8n 2.9.4",
   "totals": {
@@ -17,19 +17,19 @@
       "id": "S02",
       "name": "source boundary is import-closed",
       "status": "PASS",
-      "detail": "3 source files"
+      "detail": "4 source files"
     },
     {
       "id": "S03",
       "name": "scheduler conformance suite",
       "status": "PASS",
-      "detail": "9 pass / 0 fail"
+      "detail": "16 pass / 0 fail"
     },
     {
       "id": "S04",
       "name": "trigger consumer suite remains green",
       "status": "PASS",
-      "detail": "11 pass / 0 fail"
+      "detail": "33 pass / 0 fail"
     },
     {
       "id": "S05",
@@ -41,7 +41,7 @@
       "id": "S06",
       "name": "formal scheduler contract present",
       "status": "PASS",
-      "detail": "4/4 surfaces contracted"
+      "detail": "6/6 surfaces contracted"
     }
   ]
 }

@@ -1,0 +1,24 @@
+id: TASK-420-phase3-webhook-http-server
+agent: arena-worker
+lego: webhook
+module: native-http-transport
+phase: 3
+title: "Webhook LEGO: native Node HTTP transport"
+status: VERIFIED
+objective: "Close the webhook HTTP-server runtime gap while preserving manager and execution ports."
+acceptance:
+  - "zero runtime dependencies; node:http only"
+  - "real ephemeral-port integration tests"
+  - "base path, URL/query, JSON/text/binary bodies, and body limits"
+  - "status/header/JSON/binary/stream response adaptation"
+  - "invalid payloads do not execute workflows"
+  - "webhook suite 16/16 and gate 5/5"
+allowed_paths:
+  - packages/webhook-lego/**
+  - tools/webhook-lego-gate.mjs
+  - contracts/webhook.contract.md
+  - docs/isolation/LEGO-MASTER-MAP.md
+  - docs/isolation/evidence/webhook-lego-gate.json
+  - tasks/TASK-420-phase3-webhook-http-server.yaml
+  - results/TASK-420-phase3-webhook-http-server.md
+forbidden_paths: [reference/n8n/**, crates/**, apps/**]

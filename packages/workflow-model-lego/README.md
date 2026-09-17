@@ -33,7 +33,21 @@ This is the Workflow LEGO (LEGO 01) on the JavaScript/TypeScript reconstruction 
 | :--- | :--- | :--- |
 | graph traversal + destination index | CD-02 (`connection.contract.md` §7) | the **real** `packages/connection-lego` build, resolved at runtime (`src/graph-port.ts`). A test asserts identity with the sibling package's exports, so a third copy of the traversal cannot sneak in. |
 | `NodeHelpers.getNodeParameters` | CD-05 (`node.contract.md` §2) | injected via `WorkflowParameters.nodeParametersPort`. If a node type *resolves* and no port was injected, the constructor **throws** instead of silently skipping default-parameter application. |
-| `Expression` | `expression.contract.md` | not instantiated — owned by `packages/expression-lego`. |
+| `Expression` | `expression.contract.md` §1 | the **real** `packages/expression-lego` barrel, resolved at runtime (`src/expression-port.ts`); `this.expression = new Expression(this)` is the constructor's last statement, as in the reference. A test asserts constructor identity with the sibling package's export. Requires that package's runtime deps — see Prerequisites. |
+
+## Prerequisites
+
+`npm test` builds with the lane's own `typescript` devDependency and resolves two sibling
+packages at runtime. `packages/node-lego` is dependency-free; `packages/expression-lego`
+needs its runtime dependencies installed:
+
+```sh
+npm install --prefix packages/expression-lego   # luxon + jmespath; gitignored, absent on a fresh clone
+```
+
+Without them every `new Workflow()` throws a loud error naming this command (never a silent
+`expression === undefined`). The N05-style differential additionally needs
+`packages/workflow-lego/node_modules` (`n8n-workflow`), same as the other lanes.
 
 ## Reference behaviour reproduced on purpose
 

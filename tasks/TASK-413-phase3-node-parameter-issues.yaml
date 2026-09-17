@@ -4,7 +4,7 @@ lego: node
 module: node-parameter-issues
 phase: 3
 title: "Node LEGO: field-type validation + parameter-issues engine — validateFieldType/tryToParse*, validateFilterParameter, getNodeParametersIssues/getParameterIssues/mergeIssues/getContext (ref: type-validation.ts L15-481, filter-parameter.ts L23-450, node-helpers.ts L505-1635)"
-status: SUBMITTED_FOR_REVIEW
+status: VERIFIED
 
 # Context: TASK-409/411 made the Node Model runnable, but the *validation* half was still
 # pinned-out (contract §12.2): nothing could answer "is this node configured correctly?".

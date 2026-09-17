@@ -17,4 +17,28 @@ npm --prefix packages/webhook-lego test
 node tools/webhook-lego-gate.mjs
 ```
 
-Body parsing, multipart/binary storage, waiting-execution resume, and streaming response transport remain host adapters outside this increment.
+Multipart/binary persistence and execution-owned streaming remain host adapters outside this package.
+
+## Native HTTP transport (TASK-420)
+
+`WebhookHttpServer` makes the existing handler runnable on Node's built-in HTTP server without
+Express or another dependency. It supports configurable host/port/base path and body limits,
+JSON/text/binary request adaptation, query parsing, CORS through the existing handler, custom
+status/headers, binary/stream responses, and deterministic shutdown. Workflow execution remains an
+injected callback on `LiveWebhookManager`.
+
+## Waiting execution resume (TASK-421)
+
+`WaitingWebhookManager` reconstructs `/webhook-waiting/:executionId/:suffix?` behind explicit
+persistence, webhook-resolution, and execution-resume ports. It includes state guards, signed
+send-and-wait URLs, wait-state mutation, HITL output rewiring, input override preservation, and
+concurrent-resume suppression. It adds no database or execution-engine import.
+
+## Waiting form rendering (TASK-424)
+
+`WaitingFormManager` reconstructs `/form-waiting/:executionId/:suffix?` through persistence,
+parent-traversal, and form-execution ports. It serves the execution-status polling endpoint,
+classifies waiting Form/Wait nodes, sanitizes authentication cookies, finds the nearest executed
+completion Form, disables stack nodes only on POST, and renders sandboxed default completion HTML.
+The native HTTP adapter preserves empty `noWebhookResponse` results and serves both completion HTML
+and status text directly.

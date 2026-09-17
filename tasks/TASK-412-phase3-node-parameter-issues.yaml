@@ -4,7 +4,7 @@ lego: node
 module: node-parameter-issues
 phase: 3
 title: "Node LEGO: parameter issues engine"
-status: SUBMITTED_FOR_REVIEW
+status: VERIFIED
 
 scope:
   - Reconstruct getNodeParametersIssues, getParameterIssues, and mergeIssues from pinned node-helpers.ts.

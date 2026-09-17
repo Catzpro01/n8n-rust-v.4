@@ -102,3 +102,34 @@ deactivate → clearWebhooks → webhook_entity delete [+ webhookMethods.default
 - Default response `200 {"message":"Workflow was started"}` for `onReceived` without `responseData`.
 - Webhook listeners must be present on **every** main instance, unlike triggers.
 - `webhookId` on the node is stable across saves; changing `path`/`httpMethod` requires re-activation (`update` mode does remove+add).
+
+## Phase-3 native HTTP transport (TASK-420)
+
+`WebhookHttpServer` adapts Node's `http` request/response objects to the framework-independent
+`WebhookRequestHandler`. It owns listen/close lifecycle, configurable base-path isolation, URL and
+query parsing, JSON/text/binary request bodies, a configurable body-size limit, and JSON/text/binary
+or stream responses. Route lookup and execution remain delegated to `IWebhookManager`; persistence
+and workflow execution do not cross into the transport. Invalid JSON and oversized payloads fail
+before execution with deterministic 400/413 envelopes.
+
+## Phase-3 waiting execution resume (TASK-421)
+
+`WaitingWebhookManager` consumes an execution-repository port, a waiting-webhook resolver, and a
+resume-execution callback. It reproduces missing/running/failed/finished guards, send-and-wait URL
+HMAC validation, wait-node disabling, `waitTill` clearing, prior run-data removal, HITL `ai_tool`
+rewiring, `inputOverride` preservation, request-parameter reset, and a local concurrent-resume guard.
+Persistence and engine continuation remain owned by their injected ports.
+
+## Phase-3 waiting form rendering (TASK-424)
+
+`WaitingFormManager` consumes execution persistence, parent traversal, and form-webhook execution as
+explicit ports. `/form-waiting/:executionId/n8n-execution-status` returns the raw execution status,
+classifying waiting Form nodes and Wait nodes with `resume:'form'` as `form-waiting`, with wildcard
+CORS. Auth and browser-identity cookies are stripped before any delegated node execution.
+
+Finished executions render the default `Form Submitted` completion HTML under the exact webhook
+sandbox CSP unless the current node, or nearest already-executed parent in reverse traversal order,
+is an enabled Form completion node. Such completion nodes are delegated through the execution port.
+POST disables the current stack node before delegation; GET does not. Running executions produce no
+response body, missing/failed executions preserve 404/409 behavior, and the native HTTP adapter must
+serve HTML/status text without replacing `noWebhookResponse` with the default webhook JSON body.

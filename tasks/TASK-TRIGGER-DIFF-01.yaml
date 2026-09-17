@@ -4,7 +4,7 @@ lego: integration
 module: activation-differential
 phase: 3
 title: "Activation-lifecycle differential: trigger-lego vs execution-engine (ISSUE-023 evidence)"
-status: SUBMITTED_FOR_REVIEW
+status: VERIFIED
 
 # Context: ISSUE-023 records that two activation-lifecycle reconstructions landed
 # concurrently (packages/trigger-lego from TASK-406, packages/execution-engine

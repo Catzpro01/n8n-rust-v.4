@@ -85,3 +85,12 @@ Golden: Schedule Trigger every 30 s → activation `200 {active:true,triggerCoun
 - Deregistration by `workflowId` must stop **all** crons of that workflow (multiple Schedule nodes / multiple rules).
 - Timezone must be the workflow's, not the process's.
 - Callback is fire-and-forget: scheduler must never await it (a slow execution must not delay the next tick).
+
+## Phase-3 native timer adapter (TASK-419)
+
+`CronTimerAdapter` and `createCronTimerJob` provide the default host-side implementation for the
+existing `createJob(context, onTick)` boundary. It parses five- or six-field cron expressions, supports wildcard/step/list/range
+syntax and English month/weekday aliases, projects instants through `Intl.DateTimeFormat` using the
+workflow timezone, applies standard day-of-month/day-of-week OR semantics, and suppresses duplicate
+fires in the same absolute second. Invalid expressions and timezones fail synchronously before a
+registration is accepted. Timer functions and the clock are injectable for deterministic tests.
