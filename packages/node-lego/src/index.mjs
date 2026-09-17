@@ -2,6 +2,30 @@ export { ApplicationError, NodeOperationError, OperationalError } from './errors
 export { deepCopy } from './deep-copy.mjs';
 export { isExpression } from './expression-helpers.mjs';
 export { cloneDeep, escapeRegExp, get, isEqual, mapValues, toPath } from './lodash-lite.mjs';
+// DELTA-01 note: `lodash/isObject` (the helper `type-validation.ts` imports) is exported as
+// `lodashIsObject` because the boundary name `isObject` belongs to `utils.ts` L29 (the
+// plain-object guard) below.
+export { isObject as lodashIsObject } from './lodash-lite.mjs';
+export {
+	assert,
+	base64DecodeUTF8,
+	fileTypeFromMimeType,
+	hasKey,
+	isCommunityPackageName,
+	isDomainAllowed,
+	isObject,
+	isObjectEmpty,
+	isSafeObjectProperty,
+	isTraversableObject,
+	jsonStringify,
+	randomInt,
+	randomString,
+	removeCircularRefs,
+	replaceCircularReferences,
+	sanitizeFilename,
+	setSafeObjectProperty,
+	setUtilsLogger,
+} from './utils.mjs';
 export { JSONRepairError, jsonrepair } from './json-repair.mjs';
 export {
 	NodeConnectionTypes,

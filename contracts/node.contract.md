@@ -235,6 +235,7 @@ model — the part the Workflow Model and the Execution LEGO import at runtime.
 | `errors.mjs` | `errors/node-operation.error.ts` + `errors/abstract/{node,execution-base}.error.ts` + `@n8n/errors` `application.error.ts` — **validation/resolution boundary only** | differential N09/N10/N17/N18 |
 | `lodash-lite.mjs` | the `lodash/{get,isEqual,isObject}` helpers `node-helpers.ts`/`type-validation.ts` import, plus `escapeRegExp`, `mapValues` and `cloneDeep` for `node-reference-parser-utils.ts` and `base.error.ts` (DELTA-01) | `node-model.test.mjs`, differential `N25` |
 | `json-repair.mjs` | `jsonrepair@3.13.1` (ISC) as bundled by the published reference build — the `jsonParse(..., { repairJSON: true })` path (`utils.ts` L5/L164-170) — ported verbatim from the resolved UMD bundle (903 ln) | differential `N26`, `test/utils.test.ts` `describe('JSON repair')` L162-290 |
+| `utils.mjs` | `utils.ts` helper surface: `isObject` L29, `isObjectEmpty` L37-49, `base64DecodeUTF8` L195-209, `replaceCircularReferences` L211-233, `jsonStringify` L235-237, `fileTypeFromMimeType` L261-270, `assert` L272-289, `isTraversableObject` L290-292, `removeCircularRefs` L294-314, `randomInt` L337-343, `randomString` L354-361, `hasKey` L364-366, `isSafeObjectProperty`/`setSafeObjectProperty` L396-412 (+ the `unsafeObjectProperties` set L367-387), `isDomainAllowed` L415-466, `isCommunityPackageName` L468-475, `sanitizeFilename` L496-511 | `test/utils.test.ts` L21-97/L293-315/L394-484/L485-554/L555-583/L649-916/L917-end, differential `N27` |
 | `type-validation.mjs` | `type-validation.ts` (481 ln): `tryToParseNumber` L15, `tryToParseString` L24, `tryToParseAlphanumericString` L38, `tryToParseBoolean` L48, `tryToParseDateTime` L72, `tryToParseTime` L114, `tryToParseArray` L124, `tryToParseObject` L146, `tryToParseBinary` L162, `tryToParseJsonToFormFields` L206, `getValueDescription` L272, `tryToParseUrl` L284, `tryToParseJwt` L305, `validateFieldType` L326-481; `utils.ts` `jsonParse` L152 (+`parseJSObject` L123); `type-guards.ts` `isBinaryValue` L168 | `test/type-validation.test.ts` (512 ln), differential N19/N20 |
 | `filter-parameter.mjs` | `node-parameters/filter-parameter.ts` whole file: `FilterError` L23, `parseSingleFilterValue` L32, `withIndefiniteArticle` L66, `parseFilterConditionValues` L71, `parseRegexPattern` L196, `arrayContainsValue` L209, `executeFilterCondition` L222-404, `executeFilter` L409-424, `validateFilterParameter` L427-450 | `test/filter-parameter.test.ts`, differential N21/N23 |
 | `webhook-path.mjs` | `node-helpers.ts` `getNodeWebhookPath` L1057-1084, `getNodeWebhookUrl` L1087-1101 | `test/node-helpers.test.ts` L6211, differential N24 |
@@ -257,6 +258,9 @@ model — the part the Workflow Model and the Execution LEGO import at runtime.
    `Date`/`RegExp`/`Map`/`Set` and cycles (pinned by the `N25` mixed-structure comparison),
    whereas the reference `deepCopy` is `toJSON`-first; both coexist in `lodash-lite.mjs`
    because `node-reference-parser-utils.ts` calls lodash's `cloneDeep`, not `deepCopy`.
+   The lodash `isObject` predicate (used inside `type-validation.ts`) is exported as
+   **`lodashIsObject`** because the boundary name `isObject` belongs to `utils.ts` L29, whose
+   plain-object guard is a *different* predicate (arrays and functions are not plain objects).
 2. **Error class is a boundary-local reconstruction.** DELTA-02. `NodeOperationError`
    keeps the reference `name`, `message`, `level`, `node`, `context`, `messages`,
    `timestamp` — verified field-by-field (`N09/N10`) — but the *hierarchy*
@@ -313,19 +317,32 @@ model — the part the Workflow Model and the Execution LEGO import at runtime.
    conditions are compared through the `toMillis()` of whatever the DELTA-04
    `dateTimeFactory` returned, and the same metadata carries that factory into
    `parseSingleFilterValue`, so no date library is imported.
-8. **Not reconstructed (out of Node Model scope, listed so absence is explicit):** workflow
-   validation (`validateWorkflow` and friends — reconstructed in `packages/validation-lego`).
-   With the jsonrepair port (DELTA-05) every module this LEGO's boundary names is now runnable
-   in `packages/node-lego`. Everything else in `node-helpers.ts` L1-1949 and
+8. **Scope is audited, not asserted.** `tools/node-lego-coverage.mjs` (gate `N08`) extracts every
+   exported symbol of the 17 pinned boundary files and requires each one to be classified in its
+   manifest: `ported` (must exist in `src/index.mjs` **and** be named in this contract),
+   `internal`, `out-of-scope` (with the owning package or the delta that excludes it) or
+   `deferred` (with the task that closes it). Current state: **120 symbols — 102 ported,
+   1 internal, 14 out-of-scope, 3 deferred** (`sleep`, `sleepWithAbort`, `updateDisplayOptions`:
+   timer/merge seams, TASK-UTILS-02).
+   Out of scope with a named owner: the DELTA-02 error *hierarchy* (`BaseError`, `NodeError`,
+   `ExecutionBaseError`), TypeScript-only types (`Primitives`, `BaseErrorOptions`,
+   `OperationalErrorOptions`, `NodeCredentialIssue`, `NodeValidationIssue`) and the guard helpers
+   another LEGO owns (`dedupe` → `workflow-lego`/`workflow-model-lego`; `isAssignmentValue`,
+   `isNodeConnectionType`, `isINodePropertyCollection`, `isINodePropertyCollectionList`,
+   `isINodePropertiesList` → `validation-lego`). Workflow validation
+   (`validateWorkflow` and friends) is reconstructed in `packages/validation-lego`. Everything else in `node-helpers.ts` L1-1949 and
    `node-parameters/filter-parameter.ts` is now reconstructed. `renameFormFields` is reconstructed though not re-exported by the
    published build (internal call site only).
 
 ### 12.3 Acceptance evidence
 
 * `tools/node-lego-gate.mjs` — gates `N01`…`N06` (`docs/isolation/evidence/node-lego-gate.json`).
-* `tools/node-lego-differential.mjs` — 26 scenario groups / 1771 comparisons against the
+* `tools/node-lego-differential.mjs` — 27 scenario groups / 1797 comparisons against the
   published `n8n-workflow@2.9.1` build (the version the pinned reference commit ships):
-  **1771 agree / 0 diverge**, 2 NOT-DIFFABLE (`renameFormFields`, private `getPropertyValues`).
+  **1797 agree / 0 diverge**, 2 NOT-DIFFABLE (`renameFormFields`, private `getPropertyValues`).
+  `N27` (12 comparison batches) covers the `utils.ts` helper surface call-for-call, including
+  `randomInt`/`randomString` made exact by stubbing `crypto.getRandomValues` on the Crypto
+  prototype (the reference reads it at call time).
   `N26` (76 comparisons) drives `jsonParse({ repairJSON: true })` over the oracle's 25 repair
   cases plus jsonrepair's wider feature list, so the port is compared end-to-end against the
   reference build's own bundled jsonrepair.
@@ -344,6 +361,14 @@ model — the part the Workflow Model and the Execution LEGO import at runtime.
   without the internal `[[DateValue]]` slot passes `instanceof Date` but throws on every
   `Date` method). Slice-6 probe: dropping jsonrepair's Python-constant branch (2 divergences)
   and disabling its trailing-comma repair (14 divergences, 4 repair sites) are both caught.
+  Slice-7 probe (utils): relaxing `isSafeObjectProperty`'s banned set and dropping
+  `sanitizeFilename`'s null-byte strip are caught by `N27`; the coverage gate itself is probed by
+  renaming an exported symbol (→ ported-but-missing) and by adding a bogus manifest entry
+  (→ stale entry).
+* `packages/node-lego/test/utils.test.mjs` — 14 cases ported from `test/utils.test.ts`
+  (isObjectEmpty incl. the `Object.keys` spy case, jsonStringify, fileTypeFromMimeType,
+  randomInt/randomString, hasKey, the safe-property table, isDomainAllowed, isCommunityPackageName,
+  sanitizeFilename, base64DecodeUTF8, assert) plus a deterministic-RNG exactness case;
 * `packages/node-lego/test/node-model.test.mjs` — 74 cases, oracle-cited;
   `packages/node-lego/test/filter-execution.test.mjs` — 11 cases (filter execution, webhook
   paths, `cronNodeOptions`); `packages/node-lego/test/node-reference-parser.test.mjs` — 15
@@ -352,13 +377,17 @@ model — the part the Workflow Model and the Execution LEGO import at runtime.
   corrected against REF where its expectations encoded an unfaithful detail — ISSUE-026) and
   the 8-case error-surface suite from `TASK-EERR-01` and `test/json-repair.test.mjs` — 6 cases,
   the oracle's 25 repair expectations grouped + the ported wider feature set / error positions —
-  **122 pass / 0 fail** in total.
+  **136 pass / 0 fail** in total.
 
-### 12.4 Exported symbol list (98 — gate `N07` asserts every one is named here)
+### 12.4 Exported symbol list (117 — gate `N07` asserts every one is named here)
 
 | | | | | | |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `ApplicationError` | `FilterError` | `JSONRepairError` | `NodeConnectionTypes` | `NodeOperationError` | `OperationalError` |
+| `assert` | `base64DecodeUTF8` | `fileTypeFromMimeType` | `hasKey` | `isCommunityPackageName` | `isDomainAllowed` |
+| `isObject` | `isObjectEmpty` | `isSafeObjectProperty` | `isTraversableObject` | `jsonStringify` | `lodashIsObject` |
+| `randomInt` | `randomString` | `removeCircularRefs` | `replaceCircularReferences` | `sanitizeFilename` | `setSafeObjectProperty` |
+| `setUtilsLogger` | | | | | |
 | `applyAccessPatterns` | `jsonrepair` | | | | |
 | `arrayContainsValue` | `assertIsValidNodeParameterValueType` | `assertParamIsArray` | `assertParamIsBoolean` | `assertParamIsNumber` | `assertParamIsOfAnyTypes` |
 | `assertParamIsString` | `backslashEscape` | `checkConditions` | `cloneDeep` | `cronNodeOptions` | `deepCopy` |

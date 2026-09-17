@@ -14,6 +14,7 @@ package makes that surface runnable.
 | `src/display.mjs` | `displayParameter`, `displayParameterPath`, `getPropertyValues` (`/root`, `@version`, `@tool`, `@feature`, `__rl`) |
 | `src/node-validation.mjs` | `validateNodeCredentials`, `isNodeConnected`, `isTriggerLikeNode` (`node-validation.ts`, whole file) |
 | `src/parameter-resolution.mjs` | `getNodeParameters` + the private dependency order (`getParameterDependencies`, `getParameterResolveOrder`) |
+| `src/utils.mjs` | DELTA-01/DELTA-06-aware ports of the `utils.ts` surface: `isObject`, `isObjectEmpty`, `base64DecodeUTF8`, `replaceCircularReferences`/`jsonStringify`, `fileTypeFromMimeType`, `assert`, `isTraversableObject`/`removeCircularRefs`, `randomInt`/`randomString`, `hasKey`, `isSafeObjectProperty`/`setSafeObjectProperty`, `isDomainAllowed`, `isCommunityPackageName`, `sanitizeFilename` |
 | `src/json-repair.mjs` | `jsonrepair@3.13.1` (ISC) ported verbatim — the default `repairJSONParser` of `jsonParse`, closing DELTA-05's no-op repair path |
 | `src/type-validation.mjs` | `validateFieldType`, the `tryToParse*` parsers, `getValueDescription`, `jsonParse`, `isBinaryValue` (DELTA-04 injected date-time factory, DELTA-05 injected JS-object parser) |
 | `src/filter-parameter.mjs` | `validateFilterParameter` + `FilterError` (validation half) and `executeFilter`/`executeFilterCondition`/`arrayContainsValue` (execution half) |
@@ -36,15 +37,16 @@ package's boundary names — `node-helpers.ts` L1-1949, `node-parameters/filter-
 ## Verify
 
 ```bash
-npm test                 # 122 tests (node:test), no install step
+npm test                 # 136 tests (node:test), no install step
 node ../../tools/node-lego-differential.mjs   # needs: npm install in packages/workflow-lego
-node ../../tools/node-lego-gate.mjs           # gates N01…N07
+node ../../tools/node-lego-coverage.mjs       # gate N08: reference surface classified
+node ../../tools/node-lego-gate.mjs           # gates N01…N08
 ```
 
-The differential runs 26 scenario groups twice — against this package and against the
+The differential runs 27 scenario groups twice — against this package and against the
 **published `n8n-workflow@2.9.1` build** (the version the pinned commit ships, a declared
 devDependency of `packages/workflow-lego`) — and compares values, thrown class names/messages
-and error field shapes: **1771 agree / 0 diverge** (2 NOT-DIFFABLE surfaces:
+and error field shapes: **1797 agree / 0 diverge** (2 NOT-DIFFABLE surfaces:
 `renameFormFields`, private `getPropertyValues`). A divergence is a bug in the port.
 `cloneDeep`/`mapValues`/`escapeRegExp` are not re-exported by the published build, so those are
 compared against the reference build's own bundled `lodash` instead.

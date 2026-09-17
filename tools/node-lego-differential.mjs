@@ -99,6 +99,21 @@ const REF = {
 	executeFilterCondition: reference.executeFilterCondition,
 	arrayContainsValue: reference.arrayContainsValue,
 	FilterError: reference.FilterError,
+	// N27 — the utils.ts helper surface (all exported by the published build)
+	assert: reference.assert,
+	isObjectEmpty: reference.isObjectEmpty,
+	base64DecodeUTF8: reference.base64DecodeUTF8,
+	replaceCircularReferences: reference.replaceCircularReferences,
+	jsonStringify: reference.jsonStringify,
+	fileTypeFromMimeType: reference.fileTypeFromMimeType,
+	removeCircularRefs: reference.removeCircularRefs,
+	randomInt: reference.randomInt,
+	randomString: reference.randomString,
+	isSafeObjectProperty: reference.isSafeObjectProperty,
+	setSafeObjectProperty: reference.setSafeObjectProperty,
+	isDomainAllowed: reference.isDomainAllowed,
+	isCommunityPackageName: reference.isCommunityPackageName,
+	sanitizeFilename: reference.sanitizeFilename,
 	deepCopy: reference.deepCopy,
 	isExpression: reference.isExpression,
 	ApplicationError: reference.ApplicationError,
@@ -163,6 +178,9 @@ const EXAMINED_SURFACE = [
 	'getNodeWebhookUrl', 'cronNodeOptions',
 	'extractReferencesInNodeExpressions', 'hasDotNotationBannedChar', 'backslashEscape',
 	'dollarEscape', 'applyAccessPatterns', 'OperationalError',
+	'assert', 'isObjectEmpty', 'base64DecodeUTF8', 'replaceCircularReferences', 'jsonStringify',
+	'fileTypeFromMimeType', 'removeCircularRefs', 'randomInt', 'randomString', 'isSafeObjectProperty',
+	'setSafeObjectProperty', 'isDomainAllowed', 'isCommunityPackageName', 'sanitizeFilename',
 ];
 
 /* --- comparison ------------------------------------------------------------ */
@@ -1485,6 +1503,171 @@ scenario('N26', 'jsonParse repairJSON (jsonrepair port)', (api, capture) => {
 			return { threw: false };
 		} catch (error) {
 			return { threw: true, name: error.name, message: error.message };
+		}
+	})());
+});
+
+/* --- N27: utils.ts helper surface ----------------------------------------- */
+// `hasKey`, `isTraversableObject` and `isObject` are NOT re-exported by the published build, so
+// they are covered by the oracle-ported tests instead of this group; everything else here is
+// compared call-for-call against the reference build. randoms are made deterministic by stubbing
+// `crypto.getRandomValues` on the Crypto prototype (the reference reads it at call time), which
+// turns `randomInt`/`randomString` into exact-value comparisons rather than range checks.
+scenario('N27', 'utils.ts helpers (isEmpty/fileType/safe-props/domain/filenames/serialize)', (api, capture) => {
+	capture('isObjectEmpty: null/undefined/arrays/sets/buffers', {
+		null: api.isObjectEmpty(null),
+		undefined: api.isObjectEmpty(undefined),
+		emptyArray: api.isObjectEmpty([]),
+		array: api.isObjectEmpty([1, 2, 3]),
+		emptySet: api.isObjectEmpty(new Set()),
+		set: api.isObjectEmpty(new Set([1])),
+		emptyMap: api.isObjectEmpty(new Map()),
+		map: api.isObjectEmpty(new Map([['a', 1]])),
+		emptyBuffer: api.isObjectEmpty(Buffer.from('')),
+		buffer: api.isObjectEmpty(Buffer.from('abcd')),
+		emptyTyped: api.isObjectEmpty(Uint8Array.from([])),
+		typed: api.isObjectEmpty(Uint8Array.from([1, 2, 3])),
+		emptyArrayBuffer: api.isObjectEmpty(new ArrayBuffer(0)),
+		arrayBuffer: api.isObjectEmpty(new ArrayBuffer(1)),
+		emptyObject: api.isObjectEmpty({}),
+		object: api.isObjectEmpty({ a: 1 }),
+		emptyClass: api.isObjectEmpty(new (class Test {})()),
+		classWithProp: api.isObjectEmpty(new (class Test { prop = 123; })()),
+		number: api.isObjectEmpty(7),
+		string: api.isObjectEmpty('str'),
+	});
+
+	capture('base64DecodeUTF8', {
+		ascii: api.base64DecodeUTF8(Buffer.from('hello').toString('base64')),
+		utf8: api.base64DecodeUTF8(Buffer.from('héllo ✓ 漢字').toString('base64')),
+		empty: api.base64DecodeUTF8(''),
+	});
+
+	capture('replaceCircularReferences', (() => {
+		const source = { a: 1, b: 2, d: new Date(1680089084200), r: new RegExp('^test$', 'ig') };
+		source.c = source;
+		return {
+			circular: api.jsonStringify(source, { replaceCircularRefs: true }),
+			plainToJson: api.replaceCircularReferences({ x: { toJSON: () => 'x:1,y:2' } }),
+			arrayDuplicates: (() => {
+				const y = { z: 5 };
+				return api.jsonStringify([y, y, { y }], { replaceCircularRefs: true });
+			})(),
+			nested: api.replaceCircularReferences({ a: { b: [1, { c: 2 }] } }),
+			regexpPreserved: api.replaceCircularReferences(/ab/g),
+			null: api.replaceCircularReferences(null),
+			primitive: api.replaceCircularReferences(42),
+		};
+	})());
+
+	capture('jsonStringify without replaceCircularRefs', (() => {
+		try {
+			const source = { a: 1 };
+			source.self = source;
+			api.jsonStringify(source);
+			return { threw: false };
+		} catch (error) {
+			return { threw: true, message: error.message };
+		}
+	})());
+
+	capture('fileTypeFromMimeType', [
+		'application/json', 'application/json; charset=utf-8', 'text/html', 'image/jpeg', 'image/avif',
+		'audio/webm', 'video/mp4', 'text/plain', 'text/css', 'text/javascript', 'application/javascript',
+		'application/pdf', 'application/xml', '', 'application/octet-stream',
+	].map((mime) => [mime, api.fileTypeFromMimeType(mime)]));
+
+	capture('assert', (() => {
+		const results = [];
+		try {
+			api.assert(true);
+			results.push('true-ok');
+		} catch { results.push('true-threw'); }
+		for (const msg of [undefined, 'custom message']) {
+			try {
+				api.assert(false, msg);
+				results.push('false-ok');
+			} catch (error) {
+				results.push({ name: error.name, message: error.message });
+			}
+		}
+		return results;
+	})());
+
+	capture('removeCircularRefs', (() => {
+		const obj = { a: { b: 1 } };
+		obj.a.parent = obj;
+		obj.self = obj;
+		obj.list = [{ n: 1 }, obj.a];
+		api.removeCircularRefs(obj);
+		return obj;
+	})());
+
+	capture('isSafeObjectProperty / setSafeObjectProperty', (() => {
+		const target = {};
+		const protoBefore = Object.getPrototypeOf(target) === Object.prototype;
+		for (const prop of ['__proto__', 'prototype', 'constructor', 'getBuiltinModule', 'ok', 'nested.deep']) {
+			api.setSafeObjectProperty(target, prop, prop);
+		}
+		return {
+			safe: ['__proto__', 'prototype', 'constructor', 'caller', 'getBuiltinModule', 'dlopen', 'ok'].map((p) => [p, api.isSafeObjectProperty(p)]),
+			targetKeys: Object.keys(target),
+			protoIntact: Object.getPrototypeOf(target) === Object.prototype && protoBefore,
+		};
+	})());
+
+	capture('isDomainAllowed', (() => {
+		const cases = [
+			['https://api.example.com/x', '*.example.com'],
+			['https://example.com/x', '*.example.com'],
+			['https://sub.deep.example.com', '*.example.com'],
+			['https://example.com', 'example.com'],
+			['https://example.com.', 'example.com'],
+			['https://example.com', 'example.com.'],
+			['https://other.com', 'example.com, other.com'],
+			['https://other.com', 'example.com,other.com'],
+			['https://x.com', ''],
+			['https://x.com', '   '],
+			['not a url', 'example.com'],
+			['https://x.com', '*.'],
+			['https://x.com', '*,example.com'],
+			['ftp://example.com', 'example.com'],
+			['https://EXAMPLE.com', 'example.com'],
+			['file:///etc/passwd', 'example.com'],
+			['https://example.com:8443/p', 'example.com'],
+		];
+		return cases.map(([url, allowed]) => [url, allowed, api.isDomainAllowed(url, { allowedDomains: allowed })]);
+	})());
+
+	capture('isCommunityPackageName', [
+		'n8n-nodes-base', 'n8n-nodes-foo', '@n8n/n8n-nodes-base', '@n8n/n8n-nodes-foo',
+		'@user/n8n-nodes-mine', 'n8n-nodes-base-extra', 'n8n-nodes-', 'other-package',
+		'n8n-nodes-foo', 'n8n-nodes-base',
+	].map((name) => [name, api.isCommunityPackageName(name)]));
+
+	capture('sanitizeFilename', [
+		'path/to/file.txt', '/tmp/upload/doc.pdf', 'C:\\Users\\file.txt', '../../../etc/passwd',
+		'file.txt', '', '.', '..', '...', 'dir\0file.txt', 'nested\\dir\\name.json',
+	].map((name) => [name, api.sanitizeFilename(name)]));
+
+	capture('randomInt / randomString with a deterministic RNG', (() => {
+		const cryptoProto = Object.getPrototypeOf(globalThis.crypto);
+		const original = cryptoProto.getRandomValues;
+		let seed = 0;
+		// same LCG on both sides: every capture below must match exactly, not just in range
+		cryptoProto.getRandomValues = (arr) => {
+			for (let i = 0; i < arr.length; i++) {
+				seed = (seed * 1103515245 + 12345) % 2147483648;
+				arr[i] = seed % 256;
+			}
+			return arr;
+		};
+		try {
+			const ints = [api.randomInt(100), api.randomInt(10, 20), api.randomInt(5), api.randomInt(0, 256)];
+			const strings = [api.randomString(8), api.randomString(4, 6), api.randomString(1)];
+			return { ints, strings, inRange: ints.map((v) => typeof v === 'number' && Number.isInteger(v)) };
+		} finally {
+			cryptoProto.getRandomValues = original;
 		}
 	})());
 });

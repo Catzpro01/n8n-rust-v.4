@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-09-17T19:34:18.394Z",
-  "task": "TASK-REPAIR-01-phase3-jsonrepair-port",
+  "generatedAt": "2026-09-17T19:40:13.201Z",
+  "task": "TASK-UTILS-01-phase3-utils-surface",
   "reference": "n8n 2.9.4",
   "totals": {
-    "passed": 7,
-    "gates": 7
+    "passed": 8,
+    "gates": 8
   },
   "gates": [
     {
@@ -17,13 +17,13 @@
       "id": "N02",
       "name": "source boundary is import-closed",
       "status": "PASS",
-      "detail": "20 source files, no cross-LEGO imports"
+      "detail": "21 source files, no cross-LEGO imports"
     },
     {
       "id": "N03",
       "name": "node-model conformance suite",
       "status": "PASS",
-      "detail": "122 pass / 0 fail"
+      "detail": "136 pass / 0 fail"
     },
     {
       "id": "N04",
@@ -35,7 +35,7 @@
       "id": "N05",
       "name": "differential vs the published reference build",
       "status": "PASS",
-      "detail": "1771 agree / 0 diverge across 1771 comparisons (2 NOT-DIFFABLE, 0 harness errors)"
+      "detail": "1797 agree / 0 diverge across 1797 comparisons (2 NOT-DIFFABLE, 0 harness errors)"
     },
     {
       "id": "N06",
@@ -44,10 +44,16 @@
       "detail": "contract §12 + docs/isolation/node.md §5"
     },
     {
+      "id": "N08",
+      "name": "reference surface is fully classified (ported / internal / out-of-scope)",
+      "status": "PASS",
+      "detail": "120 reference symbols classified (102 ported, 1 internal, 14 out-of-scope, 3 deferred)"
+    },
+    {
       "id": "N07",
       "name": "every exported symbol is documented in the contract",
       "status": "PASS",
-      "detail": "98 exported symbols documented"
+      "detail": "117 exported symbols documented"
     }
   ]
 }

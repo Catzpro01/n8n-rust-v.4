@@ -231,17 +231,19 @@ The integration branch `main` (separate, unrelated git history — Arena orchest
 Phase 2 above isolated the Node Model and proved the boundary; Phase 3 makes the
 **runtime surface of the model executable** as a dependency-free JavaScript LEGO.
 
-* **Package:** `packages/node-lego` (20 source modules, **122 tests** across `node-model.test.mjs`, `filter-execution.test.mjs`, `parameter-issues.test.mjs`, the `TASK-EERR-01` error-surface suite, `node-reference-parser.test.mjs` and `json-repair.test.mjs`) — implemented from the pinned
+* **Package:** `packages/node-lego` (21 source modules, **136 tests** across `node-model.test.mjs`, `filter-execution.test.mjs`, `parameter-issues.test.mjs`, the `TASK-EERR-01` error-surface suite, `node-reference-parser.test.mjs`, `json-repair.test.mjs` and `utils.test.mjs`) — implemented from the pinned
   `reference/n8n/packages/workflow/src` sources (line anchors in
   [`contracts/node.contract.md`](../../contracts/node.contract.md) §12.1).
-* **Contract:** `contracts/node.contract.md` §12 (module map, deltas, 98-symbol list, acceptance evidence).
+* **Contract:** `contracts/node.contract.md` §12 (module map, deltas, 117-symbol list, acceptance evidence).
 * **Evidence:** [`evidence/node-lego-gate.json`](evidence/node-lego-gate.json) — gates
-  `N01` zero-dependency, `N02` import-closed boundary, `N03` 122-test suite,
+  `N01` zero-dependency, `N02` import-closed boundary, `N03` 136-test suite,
   `N04` pinned reference tree, `N05` differential, `N06` contract/doc presence,
-  `N07` every exported symbol documented.
-* **Differential:** `tools/node-lego-differential.mjs` runs 26 scenario groups against the
+  `N07` every exported symbol documented, `N08` reference surface fully classified
+  (`tools/node-lego-coverage.mjs`: 120 symbols — 102 ported · 1 internal · 14 out-of-scope ·
+  3 deferred).
+* **Differential:** `tools/node-lego-differential.mjs` runs 27 scenario groups against the
   **published `n8n-workflow@2.9.1` build** (the version the pinned commit ships) resolved
-  from `packages/workflow-lego/node_modules`: **1771 agree / 0 diverge / 0 harness errors**,
+  from `packages/workflow-lego/node_modules`: **1797 agree / 0 diverge / 0 harness errors**,
   2 NOT-DIFFABLE surfaces (`renameFormFields` not re-exported upstream; `getPropertyValues`
   private). The `N25` group covers the node-reference parser; `cloneDeep`/`mapValues`/
   `escapeRegExp` are not in the published surface, so they are compared against the reference
@@ -259,10 +261,11 @@ Phase 2 above isolated the Node Model and proved the boundary; Phase 3 makes the
 * **Reconstructed since §5 was written:** the parameter-issues engine
   (`getNodeParametersIssues`/`getParameterIssues`/`mergeIssues`/`getContext`), webhook path
   helpers, `cronNodeOptions`, all of `filter-parameter.ts`, all of
-  `node-reference-parser-utils.ts` and the `jsonrepair` port that makes the `repairJSON`
-  recovery real. **Still not reconstructed** (explicitly out of scope here): workflow validation
-  (`validateWorkflow` and friends, reconstructed in `packages/validation-lego`) — see §12.2 of
-  the contract.
+  `node-reference-parser-utils.ts`, the `jsonrepair` port that makes the `repairJSON` recovery
+  real, and the `utils.ts` helper surface (`utils.mjs`, 17 helpers). **Still not reconstructed**
+  (explicitly out of scope here): workflow validation (`validateWorkflow` and friends,
+  reconstructed in `packages/validation-lego`) — and the deliberate remainder is now audited
+  mechanically by gate `N08` (3 deferred: `sleep`, `sleepWithAbort`, `updateDisplayOptions`).
 
 ---
 

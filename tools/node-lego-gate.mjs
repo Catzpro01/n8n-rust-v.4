@@ -4,7 +4,7 @@
  *
  *   N01  zero runtime dependencies
  *   N02  source boundary import-closed (relative + node: only)
- *   N03  node-model conformance suite (122 tests)
+ *   N03  node-model conformance suite (136 tests)
  *   N04  reference tree pinned (workflow-reference-manifest --check)
  *   N05  differential vs the published reference build: 0 divergences
  *   N06  formal contract + isolation doc present
@@ -60,7 +60,8 @@ await await gate('N03', 'node-model conformance suite', () => {
 	// TASK-EERR-01: +8 NodeOperationError reference-port regression tests (93 -> 101).
 	// TASK-NREFP-01: +15 node-reference-parser-utils reference-port tests (101 -> 116).
 	// TASK-REPAIR-01: +6 jsonrepair / repairJSON tests (116 -> 122).
-	if (pass !== '122' || fail !== '0') throw new Error(`${pass} pass / ${fail} fail`);
+	// TASK-UTILS-01: +14 utils.ts helper tests (122 -> 136).
+	if (pass !== '136' || fail !== '0') throw new Error(`${pass} pass / ${fail} fail`);
 	return `${pass} pass / 0 fail`;
 });
 
@@ -88,6 +89,11 @@ await gate('N06', 'formal contract + isolation doc present', () => {
 	return 'contract §12 + docs/isolation/node.md §5';
 });
 
+await gate('N08', 'reference surface is fully classified (ported / internal / out-of-scope)', () => {
+	const out = run([join(root, 'tools/node-lego-coverage.mjs')]);
+	return /NODE LEGO COVERAGE: OK — (.+)$/m.exec(out)?.[1] ?? out.trim().split('\n').at(-1);
+});
+
 await gate('N07', 'every exported symbol is documented in the contract', async () => {
 	const module = await import(join(pkg, 'src/index.mjs'));
 	const contract = readFileSync(join(root, 'contracts/node.contract.md'), 'utf8');
@@ -99,7 +105,7 @@ await gate('N07', 'every exported symbol is documented in the contract', async (
 
 const report = {
 	generatedAt: new Date().toISOString(),
-	task: 'TASK-REPAIR-01-phase3-jsonrepair-port',
+	task: 'TASK-UTILS-01-phase3-utils-surface',
 	reference: 'n8n 2.9.4',
 	totals: { passed: gates.filter((g) => g.status === 'PASS').length, gates: gates.length },
 	gates,
