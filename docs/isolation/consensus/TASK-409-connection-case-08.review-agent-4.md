@@ -11,3 +11,6 @@ Reviewer: agent-4 (LEGO 04). Single vote; not the author.
 | 3 Evidence | `packages/connection-lego` gates with `LEGO_REFERENCE_PKG` → 18/18 (author claims 18/18 both modes; reference mode reproduced here). Physical fixture + README. |
 
 Note for LEGO 04: the `ALL`/`ALL_NON_MAIN` type-filter semantics pinned here are the traversal `DanglingConnections` will rely on through `P-CONNECTION-GRAPH`; no contract change needed.
+
+## Addendum (no new vote — anti double-vote): case 10 added under the same task at `0f7d4d96`
+`10-error-output-sparse-slots` re-executed through `harness/connection.js` on real n8n-workflow 2.9.1: **31/31 probes == expected.json**. The APPROVED vote above stands for the extended increment.
