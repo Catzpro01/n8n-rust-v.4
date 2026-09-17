@@ -1,0 +1,76 @@
+id: TASK-407-workflow-dep-and-msg-closure
+agent: agent-3
+lego: connection
+module: integration
+phase: 3
+title: "Remove unused n8n-validation dep from n8n-workflow; close MSG-02/10/12"
+
+# Two open loops from the survey, no more:
+# 1. Review section 2.5 (workflow-rust-port-review.md): n8n-workflow
+#    declares a production dependency on n8n-validation that no line of
+#    src/ uses (verified by grep) — but tests/conformance.rs DOES use it
+#    (cross-checks fixtures with the validation rules), so the fix is a
+#    move to [dev-dependencies], not a drop. Production LEGO graph no
+#    longer shows Workflow -> Validation. Zero behaviour change; the
+#    full gate suite re-verifies.
+# 2. MSG-02/10/12 (workflow bus): Option A accepted for Phase 3, but the
+#    requested DEPENDENCY_RESPONSE from agent-3 was never sent — MSG-02
+#    stays open until that reply. The Rust-side obligation IS fulfilled
+#    (all 12 symbols ported in n8n-connection, fixture-pinned, declared
+#    verbatim in contracts/connection.contract.md CD-02); the JS file
+#    move was deliberately not executed (digest baseline). Close with
+#    C3-MSG-06, including the traversal/diff dual-implementation note
+#    as a PROPOSAL (agent-1's crate — no unilateral refactor).
+# Out of scope: pin_data typing (deferred to execution phase, R6 WARN
+# by design), live 11/11 (no docker), any other crate.
+
+allowed_paths:
+  - crates/n8n-workflow/Cargo.toml
+  - docs/isolation/connection-bus-outbox.json
+  - docs/isolation/evidence/rust-test-record.json
+  - tasks/TASK-407-workflow-dep-and-msg-closure.yaml
+  - results/TASK-407-workflow-dep-and-msg-closure.md
+
+forbidden_paths:
+  - reference/n8n/**
+  - crates/n8n-workflow/src/**
+  - crates/n8n-workflow/tests/**
+  - crates/n8n-common/**
+  - crates/n8n-connection/**
+  - crates/n8n-validation/**
+  - crates/n8n-node-model/**
+  - crates/n8n-execution-data/**
+  - crates/n8n-expression/**
+  - apps/**
+  - packages/**
+  - contracts/**
+
+requires:
+  - docs/isolation/workflow-rust-port-review.md
+  - docs/isolation/workflow-bus-outbox.json
+  - contracts/connection.contract.md
+
+operations:
+  - name: remove_dep
+    args:
+      file: crates/n8n-workflow/Cargo.toml
+      change: "move n8n-validation from [dependencies] to [dev-dependencies]: production src/ uses no line of it (review section 2.5), but tests/conformance.rs cross-checks fixtures with its rules, so the edge stays test-only instead of being dropped"
+  - name: bus_close
+    args:
+      message: C3-MSG-06
+      closes: [MSG-02, MSG-10, MSG-12]
+      notes: "DEPENDENCY_RESPONSE accepted-A-for-Phase-3 fulfilled on the Rust side (12 symbols ported/pinned/declared CD-02); JS move deferred per digest baseline; traversal/diff dual-implementation convergence as proposal, not action"
+  - name: refresh_evidence
+    args:
+      cmd: bash tools/phase3-rust-acceptance.sh --force
+      reason: "Cargo.toml is a Rust input -> re-record AFTER the code commit"
+
+acceptance:
+  - cargo test --workspace green (99/99 unchanged)
+  - contract_conformance 43/43, rust_conformance_audit 7/7, boundary_audit PASS
+  - no reference modification; workflow src/tests untouched (1-line Cargo.toml only)
+
+merge_condition:
+  - regression_gate_pass
+  - no_contract_violation
+  - agent_5_verification

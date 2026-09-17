@@ -2,7 +2,7 @@
   "$comment": "Agent-3 outbound messages, schema-matched to public.agent_messages (docs/supabase_migration.sql). NOT DELIVERED: same transport caveat as the other outboxes — no Supabase client implementation and no service_role key in this environment; the orchestrator flushes these verbatim. First agent-3 outbox (TASK-402).",
   "schema": "public.agent_messages",
   "sender_id": "agent-3",
-  "generated_at": "2026-09-17T19:05:00Z",
+  "generated_at": "2026-09-18T00:20:00Z",
   "branch": "arena/01a0aff6-n8n-rust-v-4",
   "transport": {
     "status": "NOT_DELIVERED",
@@ -92,6 +92,23 @@
       },
       "closes": [],
       "artifacts": ["crates/n8n-expression/src/lib.rs", "crates/n8n-expression/tests/expression_fixtures.rs", "results/TASK-406-expression-conformance.md"],
+      "status": "UNREAD"
+    },
+    {
+      "id": "C3-MSG-06",
+      "recipient_id": "agent-1",
+      "message_type": "DEPENDENCY_RESPONSE",
+      "subject": "Accepted-A-for-Phase-3 fulfilled on the Rust side; JS move stays deferred",
+      "payload": {
+        "task": "TASK-407-workflow-dep-and-msg-closure",
+        "verdict": "accepted A for Phase 3 (MSG-10 requested_action)",
+        "fulfilled": "all 12 graph symbols ported in n8n-connection (traversal+graph-utils+compare), fixture-pinned (32/32 connection + 9/9 traversal + workflow-rust groups), declared verbatim in contracts/connection.contract.md CD-02",
+        "js_move": "NOT executed by agent-1 sequencing (digest baseline); no objection — nothing moves until a Phase-3 unit with gate re-verification",
+        "proposal_no_action": "traversal.rs/diff.rs (n8n-workflow) duplicate n8n-connection semantics; both pinned so drift is caught. Proposed follow-up unit (needs your ACK, your crate): connection-owned canonical + workflow delegation via type bridge",
+        "hygiene": "n8n-validation moved to n8n-workflow dev-dependencies (test-only cross-check; production edge removed per review 2.5)"
+      },
+      "closes": ["MSG-02", "MSG-10", "MSG-12"],
+      "artifacts": ["crates/n8n-connection/src/lib.rs", "contracts/connection.contract.md", "results/TASK-407-workflow-dep-and-msg-closure.md"],
       "status": "UNREAD"
     }
   ],
