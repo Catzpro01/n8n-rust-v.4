@@ -311,6 +311,25 @@ Composition: conditions `.some(...)`, multi actualValues `._cnd` → `.every(...
 → `{rag:true}` at 2.0 · `{rag:false}` at 1.9 · integer shapes work `{rag:true}` at 2.
 Feature values are `checkConditions(def['@version'], [nodeVersion])` per feature name.
 
+## Wave 8 — displayParameterPath + options required-issues (WG-25/WG-26)
+
+### WG-25 `displayParameterPath(values, property, path, null, null)`
+
+| Case | Expected | Pin |
+|---|---|---|
+| `path:''` | same as `displayParameter` | verbatim delegation |
+| `path:'parameters.nested'`, show key in nested scope | T | local values = `get(values, path)` |
+| `path:'parameters.nested'`, show key lives at params ROOT | **F** | root values (`values.parameters`) feed `$parameter` refs ONLY — flat keys are evaluated on the LOCAL scope only |
+| non-`parameters` path + local key | T | root = whole values |
+
+### WG-26 options/multiOptions required-issues (getNodeParametersIssues)
+
+required options `''` → exact required message · required options valid → `null` ·
+required multiOptions `[]` → exact message · `['one']` → `null` ·
+**required multiOptions `undefined` → `null`** (undefined skips both the array-empty and
+plain-empty branches — accepted!) · **out-of-list `'bogus'` → `null`** (value never
+cross-checked against the options list — leniency surface consistent with WG-12).
+
 ### Reproduction
 
 ```bash
@@ -332,8 +351,8 @@ fixtures power `docs/isolation/node-conformance-harness.md`. Dist resolution ord
 ### Parity acceptance rule for `n8n-node-model` (Phase 3)
 
 The crate's unit tests MUST reproduce GC-1..GC-7, WG-1..WG-9, WG-10..WG-13, WG-14, WG-15,
-WG-16..WG-19, and WG-20..WG-24 byte-identically (JSON equality after serialization) — 158
-golden cases in `docs/isolation/node-fixtures.json`, plus the 7 `serdeConformance`
-round-trip probes (see `node-conformance-harness.md` §5 for the binding acceptance gate).
-Any deviation is a conformance defect (register it as MSG back to agent-2/mediator, do
-not "fix" semantics).
+WG-16..WG-19, WG-20..WG-24, and WG-25/WG-26 byte-identically (JSON equality after
+serialization) — 168 golden cases in `docs/isolation/node-fixtures.json`, plus the 7
+`serdeConformance` round-trip probes (see `node-conformance-harness.md` §5 for the binding
+acceptance gate). Any deviation is a conformance defect (register it as MSG back to
+agent-2/mediator, do not "fix" semantics).

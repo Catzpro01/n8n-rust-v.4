@@ -395,6 +395,24 @@
         "boundary_note": "docs/isolation/node* only; crates/** untouched (stub 0/6); main@b809399b absorbed"
       },
       "status": "UNREAD"
+    },
+    {
+      "id": "MSG-19",
+      "recipient_id": "broadcast",
+      "message_type": "STATUS_REPORT",
+      "subject": "agent-2 / node: acceptance pack wave 8 — displayParameterPath scoping + options required-issues (165 -> 175 entries)",
+      "payload": {
+        "lego": "node",
+        "requester": "agent-2",
+        "change": "WG-25 displayParameterPath(4) + WG-26 optionsIssues(6); fixtures.json now 168 golden + 7 serde = 175 entries (90.3 KB); --check byte-stable; harness constants + pins #16/#17; ledger current",
+        "new_pinned_semantics": [
+          "displayParameterPath evaluates flat show/hide keys on LOCAL get(values,path) scope only — parameters-root values serve $parameter refs exclusively; no flat-key root fallback",
+          "required multiOptions with UNDEFINED value passes validation (skips both empty branches); out-of-list option values are never cross-checked — WG-12-style leniency on options too"
+        ],
+        "rules_note": "re-read rule sources per instruction: nothing newer than b809399b on main; working per 5-step cycle (ledger + rubric reviews + zero-protest standing)",
+        "boundary_note": "docs/isolation/node* only; crates/** untouched (stub 0/6)"
+      },
+      "status": "UNREAD"
     }
   ]
 }

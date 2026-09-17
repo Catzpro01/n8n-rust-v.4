@@ -69,8 +69,11 @@ const OUTPUT_TYPE_CASES: usize = 3;     // nodeHasOutputType
 const SUB_NODE_CASES: usize = 3;        // isSubNodeType
 const CHECK_COND_CASES: usize = 8;      // checkConditions (_cnd evaluator + fallback)
 const NODE_FEATURE_CASES: usize = 4;    // getNodeFeatures
+// Wave 8 display paths + options issues (WG-25/WG-26)
+const DISPLAY_PATH_CASES: usize = 4;    // displayParameterPath scopes
+const OPTIONS_ISSUES_CASES: usize = 6;  // options/multiOptions required + leniency
 // + serdeConformance round-trips: 5 descriptions, 2 INode samples
-// TOTAL asserted entries = 19 + 38 + 24 + 27 + 9 + 18 + 23 + 7 = 165
+// TOTAL asserted entries = 19 + 38 + 24 + 27 + 9 + 18 + 23 + 10 + 7 = 175
 ```
 
 - Fixture load via `env!("CARGO_MANIFEST_DIR")/./../../` (same `repo_root()` convention as
@@ -118,6 +121,8 @@ const NODE_FEATURE_CASES: usize = 4;    // getNodeFeatures
 | `isSubNodeType.cases` | `pub fn is_sub_node_type(desc) -> bool` | any non-main connection TYPE among static outputs; expression-string outputs ⇒ false |
 | `checkConditions.cases` | `pub fn check_conditions(conditions: &[Value], actual: &[Value]) -> bool` | `_cnd` object keys eq/not/gte/lte/gt/lt/between/includes/startsWith/endsWith/regex/exists; empty actualValues ⇒ only `not` is true; conditions `.some`, `_cnd` over multiple actual `.every`; non-`_cnd` fallback = `actual.contains(value)` |
 | `getNodeFeatures.cases` | `pub fn get_node_features(def, version: f64) -> Map<String,bool>` | `None`/missing def ⇒ empty map; each feature = `check_conditions(def["@version"], [version])` |
+| `displayParameterPath.cases` | `pub fn display_parameter_path(values, property, path, ...)` | empty path = display_parameter; `parameters.*` paths delegate local scope to `get(values, path)` — root values serve `$parameter` refs ONLY, never flat-key fallback |
+| `optionsIssues.cases` | `get_node_parameters_issues` over options types | required-empty `''`/`[]` flag with byte-exact message; **required multiOptions with `undefined` value passes**; out-of-list option values never flagged |
 | `serdeConformance` | `INodeTypeDescription`, `INode` | deserialize → serialize round-trip equality |
 
 ## 4. Reference-observed semantics the harness pins (do not "improve")
@@ -195,16 +200,24 @@ const NODE_FEATURE_CASES: usize = 4;    // getNodeFeatures
     actual values while the outer list is `.some`; non-`_cnd` plain values use
     `actual.contains`. `getNodeFeatures` is a strict projection —
     `{feature: check_conditions(def['@version'], [version])}`, undefined def ⇒ `{}`.
+16. **Display-path scoping** (WG-25): `displayParameterPath` evaluates lookups on
+    `get(values, path)` — a `parameters.*` path only redirects the ROOT handle for
+    `$parameter` references; flat show/hide keys do NOT see the root. A Rust port
+    consulting root for flat keys fabricates visibility the reference does not have.
+17. **Required/invalid leniency matrix** (WG-26): required flags hit empty-string for
+    `options` and empty-array for `multiOptions`, but `undefined` sails through both;
+    values are NEVER cross-checked against the declared options list. Do not "harden"
+    either side in the port.
 
 ## 5. Acceptance wiring (brief §4, gate 1)
 
 `n8n-node-model` is **RUST IMPLEMENTED-verified for the Node LEGO when**:
 
-1. This harness reproduces all 165 entries (19 frozen-port golden cases + 38 wave-2 pure
+1. This harness reproduces all 175 entries (19 frozen-port golden cases + 38 wave-2 pure
    helper cases + 24 wave-3 parameter-issues/filter cases + 27 wave-4 operator-matrix
    cases + 9 wave-5 nested-parameter cases + 18 wave-6 RLC/resourceMapper cases + 23
-   wave-7 IO/conditions/features cases + 7 serde samples) green under
-   `tools/rust-offline-rig/run.sh test` (offline).
+   wave-7 IO/conditions/features cases + 10 wave-8 display-path/options cases + 7 serde
+   samples) green under `tools/rust-offline-rig/run.sh test` (offline).
 2. The 6 frozen ports exist with the exact snake_cased names listed in brief §3
    (`get_node_parameters`, `get_node_inputs`, `get_node_outputs`, `get_connection_types`,
    `rename_form_fields`, `apply_access_patterns`) and crate exports match contract §11.

@@ -11,7 +11,8 @@
       "wave4OperatorMatrix": "filterOperatorMatrix:26+1t",
       "wave5NestedParameters": "getNodeParametersNested:9",
       "wave6RlcRm": "isValidResourceLocatorParameterValue:8, resourceLocatorIssues:5, rlcDefaults:1, resourceMapperIssues:4",
-      "wave7IoConditions": "nodeAcceptsInputType:5, nodeHasOutputType:3, isSubNodeType:3, checkConditions:8, getNodeFeatures:4"
+      "wave7IoConditions": "nodeAcceptsInputType:5, nodeHasOutputType:3, isSubNodeType:3, checkConditions:8, getNodeFeatures:4",
+      "wave8DisplayPath": "displayParameterPath:4, optionsIssues:6"
     }
   },
   "applyAccessPatterns": {
@@ -3384,6 +3385,326 @@
         "expect": {
           "rag": true
         }
+      }
+    ]
+  },
+  "displayParameterPath": {
+    "cases": [
+      {
+        "name": "empty-path-is-displayParameter",
+        "nodeValues": {
+          "mode": "b"
+        },
+        "property": {
+          "displayName": "P",
+          "name": "sub",
+          "type": "string",
+          "default": "",
+          "displayOptions": {
+            "show": {
+              "mode": [
+                "b"
+              ]
+            }
+          }
+        },
+        "path": "",
+        "expect": true
+      },
+      {
+        "name": "parameters-nested-local-key",
+        "nodeValues": {
+          "parameters": {
+            "nested": {
+              "innerKey": "x"
+            }
+          }
+        },
+        "property": {
+          "displayName": "P",
+          "name": "sub",
+          "type": "string",
+          "default": "",
+          "displayOptions": {
+            "show": {
+              "innerKey": [
+                "x"
+              ]
+            }
+          }
+        },
+        "path": "parameters.nested",
+        "expect": true
+      },
+      {
+        "name": "parameters-nested-root-key-not-local",
+        "nodeValues": {
+          "parameters": {
+            "mode": "b"
+          },
+          "nested": {
+            "innerKey": "other"
+          }
+        },
+        "property": {
+          "displayName": "P",
+          "name": "sub",
+          "type": "string",
+          "default": "",
+          "displayOptions": {
+            "show": {
+              "mode": [
+                "b"
+              ]
+            }
+          }
+        },
+        "path": "parameters.nested",
+        "expect": false
+      },
+      {
+        "name": "non-parameters-path-local",
+        "nodeValues": {
+          "other": {
+            "innerKey": "x"
+          },
+          "parameters": {}
+        },
+        "property": {
+          "displayName": "P",
+          "name": "sub",
+          "type": "string",
+          "default": "",
+          "displayOptions": {
+            "show": {
+              "innerKey": [
+                "x"
+              ]
+            }
+          }
+        },
+        "path": "other",
+        "expect": true
+      }
+    ]
+  },
+  "optionsIssues": {
+    "cases": [
+      {
+        "name": "options-required-empty-string",
+        "properties": [
+          {
+            "displayName": "Optim",
+            "name": "opt",
+            "type": "options",
+            "options": [
+              {
+                "name": "One",
+                "value": "one"
+              },
+              {
+                "name": "Two",
+                "value": "two"
+              }
+            ],
+            "default": "",
+            "required": true
+          }
+        ],
+        "node": {
+          "id": "w26",
+          "name": "W26 Node",
+          "type": "noop",
+          "typeVersion": 1,
+          "position": [
+            0,
+            0
+          ],
+          "parameters": {
+            "opt": ""
+          }
+        },
+        "expect": {
+          "parameters": {
+            "opt": [
+              "Parameter \"Optim\" is required."
+            ]
+          }
+        }
+      },
+      {
+        "name": "options-required-valid",
+        "properties": [
+          {
+            "displayName": "Optim",
+            "name": "opt",
+            "type": "options",
+            "options": [
+              {
+                "name": "One",
+                "value": "one"
+              },
+              {
+                "name": "Two",
+                "value": "two"
+              }
+            ],
+            "default": "",
+            "required": true
+          }
+        ],
+        "node": {
+          "id": "w26",
+          "name": "W26 Node",
+          "type": "noop",
+          "typeVersion": 1,
+          "position": [
+            0,
+            0
+          ],
+          "parameters": {
+            "opt": "one"
+          }
+        },
+        "expect": null
+      },
+      {
+        "name": "multiOptions-required-empty-array",
+        "properties": [
+          {
+            "displayName": "Multi",
+            "name": "multi",
+            "type": "multiOptions",
+            "options": [
+              {
+                "name": "One",
+                "value": "one"
+              }
+            ],
+            "default": [],
+            "required": true
+          }
+        ],
+        "node": {
+          "id": "w26",
+          "name": "W26 Node",
+          "type": "noop",
+          "typeVersion": 1,
+          "position": [
+            0,
+            0
+          ],
+          "parameters": {
+            "multi": []
+          }
+        },
+        "expect": {
+          "parameters": {
+            "multi": [
+              "Parameter \"Multi\" is required."
+            ]
+          }
+        }
+      },
+      {
+        "name": "multiOptions-required-one-value",
+        "properties": [
+          {
+            "displayName": "Multi",
+            "name": "multi",
+            "type": "multiOptions",
+            "options": [
+              {
+                "name": "One",
+                "value": "one"
+              }
+            ],
+            "default": [],
+            "required": true
+          }
+        ],
+        "node": {
+          "id": "w26",
+          "name": "W26 Node",
+          "type": "noop",
+          "typeVersion": 1,
+          "position": [
+            0,
+            0
+          ],
+          "parameters": {
+            "multi": [
+              "one"
+            ]
+          }
+        },
+        "expect": null
+      },
+      {
+        "name": "multiOptions-required-undefined-accepted",
+        "properties": [
+          {
+            "displayName": "Multi",
+            "name": "multi",
+            "type": "multiOptions",
+            "options": [
+              {
+                "name": "One",
+                "value": "one"
+              }
+            ],
+            "default": [],
+            "required": true
+          }
+        ],
+        "node": {
+          "id": "w26",
+          "name": "W26 Node",
+          "type": "noop",
+          "typeVersion": 1,
+          "position": [
+            0,
+            0
+          ],
+          "parameters": {}
+        },
+        "expect": null
+      },
+      {
+        "name": "options-invalid-value-lenient",
+        "properties": [
+          {
+            "displayName": "Optim",
+            "name": "opt",
+            "type": "options",
+            "options": [
+              {
+                "name": "One",
+                "value": "one"
+              },
+              {
+                "name": "Two",
+                "value": "two"
+              }
+            ],
+            "default": "",
+            "required": true
+          }
+        ],
+        "node": {
+          "id": "w26",
+          "name": "W26 Node",
+          "type": "noop",
+          "typeVersion": 1,
+          "position": [
+            0,
+            0
+          ],
+          "parameters": {
+            "opt": "bogus"
+          }
+        },
+        "expect": null
       }
     ]
   },

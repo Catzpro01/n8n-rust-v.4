@@ -717,6 +717,42 @@ const nodeFeaturesCases = [
   { name: "integer-version-match", featuresDef: { rag: { "@version": [{ _cnd: { gte: 2 } } ] } }, nodeVersion: 2, expect: helpers.getNodeFeatures({ rag: { "@version": [{ _cnd: { gte: 2 } } ] } }, 2) },
 ];
 
+/* ---------------- Wave 8: displayParameterPath + options required-issues ------------- */
+
+if (typeof helpers.displayParameterPath !== "function") {
+  console.error("reference export changed: displayParameterPath");
+  process.exit(2);
+}
+
+const dpPathProp = (name, show) => ({ displayName: "P", name, type: "string", default: "", displayOptions: { show } });
+const displayParameterPathCases = [
+  { name: "empty-path-is-displayParameter", nodeValues: { mode: "b" }, property: dpPathProp("sub", { mode: ["b"] }), path: "" },
+  { name: "parameters-nested-local-key", nodeValues: { parameters: { nested: { innerKey: "x" } } }, property: dpPathProp("sub", { innerKey: ["x"] }), path: "parameters.nested" },
+  { name: "parameters-nested-root-key-not-local", nodeValues: { parameters: { mode: "b" }, nested: { innerKey: "other" } }, property: dpPathProp("sub", { mode: ["b"] }), path: "parameters.nested" },
+  { name: "non-parameters-path-local", nodeValues: { other: { innerKey: "x" }, parameters: {} }, property: dpPathProp("sub", { innerKey: ["x"] }), path: "other" },
+].map((c) => ({ ...c, expect: helpers.displayParameterPath(c.nodeValues, c.property, c.path, null, null) }));
+
+const optionsRequiredProps = [
+  { displayName: "Optim", name: "opt", type: "options",
+    options: [{ name: "One", value: "one" }, { name: "Two", value: "two" }], default: "", required: true },
+];
+const multiOptionsRequiredProps = [
+  { displayName: "Multi", name: "multi", type: "multiOptions",
+    options: [{ name: "One", value: "one" }], default: [], required: true },
+];
+function optionsIssuesCase(name, properties, parameters) {
+  const node = { id: "w26", name: "W26 Node", type: "noop", typeVersion: 1, position: [0, 0], parameters };
+  return { name, properties, node, expect: helpers.getNodeParametersIssues(properties, node, null) };
+}
+const optionsIssuesCases = [
+  optionsIssuesCase("options-required-empty-string", optionsRequiredProps, { opt: "" }),
+  optionsIssuesCase("options-required-valid", optionsRequiredProps, { opt: "one" }),
+  optionsIssuesCase("multiOptions-required-empty-array", multiOptionsRequiredProps, { multi: [] }),
+  optionsIssuesCase("multiOptions-required-one-value", multiOptionsRequiredProps, { multi: ["one"] }),
+  optionsIssuesCase("multiOptions-required-undefined-accepted", multiOptionsRequiredProps, {}),
+  optionsIssuesCase("options-invalid-value-lenient", optionsRequiredProps, { opt: "bogus" }),
+];
+
 /* ---------------- Regression tripwire: results must equal the VERIFIED goldens ------ */
 /* (docs/isolation/node-golden-cases.md — values frozen by VERIFIED-BY-EXECUTION)      */
 
@@ -823,6 +859,14 @@ assertGolden("W23 check-conditions", checkConditionsCases.map((c) => c.expect),
   [true, true, false, true, true, true, false, true]);
 assertGolden("W24 node-features", nodeFeaturesCases.map((c) => c.expect),
   [{}, { rag: true }, { rag: false }, { rag: true }]);
+assertGolden("W25 display-path", displayParameterPathCases.map((c) => c.expect),
+  [true, true, false, true]);
+assertGolden("W26 options-issues", optionsIssuesCases.map((c) => c.expect), [
+  { parameters: { opt: ['Parameter "Optim" is required.'] } },
+  null,
+  { parameters: { multi: ['Parameter "Multi" is required.'] } },
+  null, null, null,
+]);
 
 if (trip.length) {
   console.error("REFERENCE DRIFT vs docs/isolation/node-golden-cases.md:");
@@ -928,6 +972,10 @@ const fixtures = {
         `checkConditions:${checkConditionsCases.length}`,
         `getNodeFeatures:${nodeFeaturesCases.length}`,
       ].join(", "),
+      wave8DisplayPath: [
+        `displayParameterPath:${displayParameterPathCases.length}`,
+        `optionsIssues:${optionsIssuesCases.length}`,
+      ].join(", "),
     },
   },
   applyAccessPatterns: { cases: applyAccessPatternsCases },
@@ -970,6 +1018,8 @@ const fixtures = {
   isSubNodeType: { cases: isSubNodeTypeCases },
   checkConditions: { cases: checkConditionsCases },
   getNodeFeatures: { cases: nodeFeaturesCases },
+  displayParameterPath: { cases: displayParameterPathCases },
+  optionsIssues: { cases: optionsIssuesCases },
   serdeConformance,
 };
 
