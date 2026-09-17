@@ -12,7 +12,9 @@
     "isolation:extract": "node tools/workflow-isolation-extract.mjs",
     "workflow-lego:build": "npm --prefix packages/workflow-lego run build",
     "workflow-lego:test": "bash scripts/run-lego-tests.sh",
+    "execution-data:test": "npm --prefix packages/execution-data-lego test",
     "engine:test": "node --test packages/reconstructed-engine/*.test.mjs",
-    "engine:run": "node packages/reconstructed-engine/test-run.mjs"
+    "engine:run": "node packages/reconstructed-engine/test-run.mjs",
+    "test:js": "npm run execution-data:test && npm run engine:test"
   }
 }

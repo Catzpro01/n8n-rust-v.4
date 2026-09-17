@@ -28,6 +28,7 @@ contract. It does **not** mean it was replaced by Rust.
 - `contracts/` : formal LEGO contracts (`workflow`, `node`, `connection`, `validation`, `execution-data`, `expression`, `execution`, and runtime modules)
 - `docs/isolation/` : Phase 2 isolation records, dependency map, port contract, verification report
 - `packages/workflow-lego/` : the isolated Workflow Model LEGO (boundary, ports, tests, manifests)
+- `packages/execution-data-lego/` : the pure Execution Data LEGO (items, pairing, run-data factories, binary representation)
 - `packages/reconstructed-engine/` : standalone Node.js execution-loop LEGO (routing, fan-in, retries, error policy, execution context)
 - `tools/` : boundary mapper, kernel/port/reference gates, isolation extractor, model digest, gate runner, live engine harness
 - `tests/reference/` : golden workflows + baseline smoke test evidence
@@ -42,6 +43,7 @@ npm install --prefix packages/workflow-lego
 npm run verify                            # 11 gates; writes docs/isolation/evidence/*
 
 npm run verify:fast                       # same, without the live engine checks
+npm run test:js                            # execution-data LEGO + reconstructed engine tests
 npm run isolation:check                   # boundary + kernel + port + reference-integrity only
 ```
 
