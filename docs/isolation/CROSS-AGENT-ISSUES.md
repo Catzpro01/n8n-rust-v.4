@@ -1427,7 +1427,7 @@ Claim → reproduced: sweep on the merged tip **TASK-412** verified without trus
 | trigger-lego | `11/11` (`T03` gate 11) |
 | scheduler-lego (canonical cron home) | `9/9` (`S04` gate 11) |
 | webhook-lego | `10/10` (gate 5/5) |
-| activation differential (`tools/activation-differential.mjs`) | **43 agree / 0 diverge** |
+| activation differential (`tools/activation-differential.mjs`) | **65 agree / 0 diverge** |
 | engine differential (`tools/engine-differential.mjs`) | **84 agree / 0 diverge** |
 | `npm run verify:all` | exit `0` (8 gates; matrix in `results/TASK-412-phase3-node-parameter-issues.md`) |
 | conformance / boundary | `42/42 CHECKS PASSED` · `PASS (all edges documented)` |

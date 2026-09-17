@@ -136,7 +136,7 @@ Read-only sweep on the working tip, reproducing every peer claim from scratch:
 | persistence-lego (peer) | `13/13` · gate `6/6` |
 | connection-lego / expression-lego | `52/52` · `46/46` |
 | engine differential | `84 agree / 0 diverge` |
-| activation differential | `43 agree / 0 diverge` |
+| activation differential | `65 agree / 0 diverge` (peer lane grew it from 43) |
 | node differential (this lane) | `1422 agree / 0 diverge / 0 harness errors` |
 | node suite + gate | `82/82` (74 + 8 peer cases) · `7/7 PASS` (`N03` 82, `N05` 1422, `N07` 81 symbols) |
 | `npm run verify:all` | exit `0` — 8 gates (execution 10/10 · connection 52/52 · workflow-model 26/26 · reconstructed-engine 28/28 · trigger 5/5 · webhook 5/5 · scheduler 6/6 · node 7/7 · persistence 6/6) |
