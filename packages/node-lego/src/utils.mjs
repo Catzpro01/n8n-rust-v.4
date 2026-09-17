@@ -21,20 +21,27 @@
  *   isCommunityPackageName       L468-475
  *   sanitizeFilename             L496-511  `path.basename` via `node:path`
  *
+ * Completed by TASK-UTILS-02 (the trio the coverage manifest used to defer):
+ *   sleep                        L239-241  resolves on the injected timer
+ *   sleepWithAbort               L243-259  rejects with `ManualExecutionCancelledError('')`
+ *   updateDisplayOptions         L316-326  lodash `merge` subset over `displayOptions`
+ *
  * Still out of this module (tracked by the coverage manifest in `tools/node-lego-coverage.mjs`):
- *   sleep / sleepWithAbort       L239-259  need a boundary-local `ManualExecutionCancelledError`
- *                                          + an injectable timer
- *   updateDisplayOptions         L316-326  needs a lodash `merge` subset (DELTA-01 follow-up)
  *   dedupe                       L477-479  already owned by `workflow-lego`/`workflow-model-lego`
  *   deepCopy / jsonParse         L53-193   live in `deep-copy.mjs` / `type-validation.mjs`
  *
  * Deltas used here: DELTA-06 (the reference's `LoggerProxy` call sites become an injected logger,
+ * and `setUtilsTimerFns` is the same seam for `sleep`/`sleepWithAbort` — the defaults are the
+ * globals, so the default behaviour is 1:1),
  * no-op by default; this module's `replaceCircularReferences` and `base64DecodeUTF8` fallback).
  * Boundaries: imports `./lodash-lite.mjs` (`lodashIsObject` semantics not needed here) and
  * `node:path` only.
  */
 
 import { basename } from 'node:path';
+
+import { ManualExecutionCancelledError } from './errors.mjs';
+import { merge } from './lodash-lite.mjs';
 
 /** utils.ts L9/L1-4 — `ALPHABET` is `DIGITS + UPPERCASE + lowercase` from `constants.ts`. */
 const DIGITS = '0123456789';
@@ -301,3 +308,67 @@ export const sanitizeFilename = (fileName) => {
 
 	return sanitized;
 };
+
+/**
+ * Timer seam (DELTA-06): `sleep`/`sleepWithAbort` use the global timer functions by default — the
+ * reference's own behaviour — and the seam exists so tests can drive time deterministically.
+ * `setUtilsTimerFns(null)` restores the defaults.
+ */
+const DEFAULT_TIMER_FNS = {
+	setTimeout: (callback, ms) => globalThis.setTimeout(callback, ms),
+	clearTimeout: (id) => globalThis.clearTimeout(id),
+};
+
+let timerFns = DEFAULT_TIMER_FNS;
+
+export function setUtilsTimerFns(fns) {
+	timerFns = fns ? { ...DEFAULT_TIMER_FNS, ...fns } : DEFAULT_TIMER_FNS;
+}
+
+/** utils.ts L239-241 — resolves after `ms`, no abort support (`sleepWithAbort` has that). */
+export const sleep = async (ms) =>
+	await new Promise((resolve) => {
+		timerFns.setTimeout(resolve, ms);
+	});
+
+/**
+ * utils.ts L243-259 — resolves after `ms`, or rejects with `ManualExecutionCancelledError('')`
+ * when the signal aborts (already-aborted signals reject immediately, without starting a timer).
+ *
+ * Pinned quirks: the abort listener is registered with `{ once: true }` and is **never removed** on
+ * a normal resolve, so a signal that is aborted *after* the sleep resolved has no listener left to
+ * fire (the timer already won); and `clearTimeout` is called only on the abort path.
+ */
+export const sleepWithAbort = async (ms, abortSignal) =>
+	await new Promise((resolve, reject) => {
+		if (abortSignal?.aborted) {
+			reject(new ManualExecutionCancelledError('')); // utils.ts L244
+			return;
+		}
+
+		const timeout = timerFns.setTimeout(resolve, ms);
+
+		const abortHandler = () => {
+			timerFns.clearTimeout(timeout);
+			reject(new ManualExecutionCancelledError('')); // utils.ts L252
+		};
+
+		abortSignal?.addEventListener('abort', abortHandler, { once: true });
+	});
+
+/**
+ * utils.ts L316-326 — folds `displayOptions` into every property's own `displayOptions`.
+ *
+ * The merge target is a fresh `{}` per property and the property objects are copied shallowly
+ * (`{ ...nodeProperty }`), so the caller's `properties` array is never mutated — but non-plain
+ * objects inside a display option are attached **by reference** (lodash behaviour, see
+ * `lodash-lite.merge`), and a property without `displayOptions` gains the caller's options as-is.
+ */
+export function updateDisplayOptions(displayOptions, properties) {
+	return properties.map((nodeProperty) => {
+		return {
+			...nodeProperty,
+			displayOptions: merge({}, nodeProperty.displayOptions, displayOptions),
+		};
+	});
+}

@@ -499,3 +499,28 @@ return as an undocumented improvement. Lesson for the pool: `NEEDS_CORRECTION` w
 so a claim marker (a `results/` stub or a pool state flip) should be written *before* the repair
 starts.
 
+## Sweep 25 (2026-09-18) — `TASK-UTILS-02`: the deferred trio is closed
+
+Phase-1 scan found no unreviewed peer result (every `SUBMITTED_FOR_REVIEW` entry already carried a
+verdict from sweeps 18-24) and no unclaimed pool task that is not an orchestrator decision
+(ISSUE-023/024/026 consolidation, ISSUE-025 Rust tooling). The one addressable remainder was the
+scope manifest's own `DEFERRED` bucket — the three `utils.ts` symbols `TASK-UTILS-01` recorded so
+they could not be silently dropped. They are now ported (`TASK-UTILS-02`):
+
+| Check | Result |
+| :--- | :--- |
+| node-lego suite | **145 pass / 0 fail / 0 cancelled** (136 → 145) |
+| differential | **1822 agree / 0 diverge / 0 harness errors** — 29 groups (`N28` 15 batches, `N29` 4 async batches) |
+| Node gate | **8/8 PASS** (`N07` 125 symbols documented; `N08` 120 classified — **0 deferred**) |
+| `verify:all` | exit 0 |
+| Falsifiability | array-merge mutation / generic abort error / shallow `updateDisplayOptions` → 2 `[DIVERGE]` each; removed export → `N08` drift; hanging test → `N03` FAIL |
+
+`TASK-UTILS-02` is left for a peer vote (no self-approval). Reviewer recipe: `npm --prefix
+packages/node-lego test` (145), `node tools/node-lego-differential.mjs` (1822/0),
+`npm run node:gate` (8/8).
+
+**Gate hardening (found by a cancelled-test accident):** the old `N03` pin (`pass === '136'`,
+`fail === '0'`) accepted a suite whose nine new tests were *cancelled* rather than run, because a
+pending promise never settled and `# pass` happened to equal the old count. `N03` now also
+asserts `# cancelled === 0` and `# tests === # pass`, with a hanging-test probe proving the guard.
+

@@ -204,3 +204,85 @@ export class OperationalError extends Error {
 		this.extra = extra;
 	}
 }
+
+/**
+ * Mirrors `ExecutionBaseError` (`errors/abstract/execution-base.error.ts` L11-62) — the base of the
+ * cancellation hierarchy `sleepWithAbort` raises through.
+ *
+ * Pinned shape (probed against the published build, `tools/error-surface-differential.mjs`
+ * conditions S1-S5): own enumerable keys in exactly the order
+ * `level, tags, extra, description, cause, errorResponse, timestamp, context, lineNumber,
+ * functionality, name, reason` for a `ManualExecutionCancelledError`; `name` IS set here to
+ * `this.constructor.name` (unlike the `ApplicationError` quirk above, which keeps `'Error'`);
+ * `context` defaults to `{}` and `functionality` to `'regular'`; a non-`Error` `cause` is kept;
+ * `toJSON()` exposes message/lineNumber/timestamp/name/description/context/cause.
+ *
+ * DELTA-02: boundary-local error model (the reference imports `@n8n/errors`), and a documented
+ * duplicate of the same hierarchy in `packages/execution-engine/src/errors.mjs` — see ISSUE-024,
+ * consolidation is the orchestrator's call.
+ */
+export class ExecutionBaseError extends ApplicationError {
+	constructor(message, options = {}) {
+		super(message, options);
+
+		const { cause, errorResponse } = options;
+
+		this.description = undefined;
+		this.cause = undefined;
+		this.errorResponse = undefined;
+		this.timestamp = Date.now(); // execution-base.error.ts L39
+		this.context = {};
+
+		if (cause instanceof ExecutionBaseError) {
+			this.context = cause.context;
+		} else if (cause && !(cause instanceof Error)) {
+			this.cause = cause;
+		}
+
+		if (errorResponse) this.errorResponse = errorResponse;
+
+		this.lineNumber = undefined;
+		this.functionality = 'regular'; // execution-base.error.ts L31
+		this.name = this.constructor.name; // execution-base.error.ts L37 — overrides ApplicationError
+	}
+
+	toJSON() {
+		return {
+			message: this.message,
+			lineNumber: this.lineNumber,
+			timestamp: this.timestamp,
+			name: this.name,
+			description: this.description,
+			context: this.context,
+			cause: this.cause,
+		};
+	}
+}
+
+/** `errors/execution-cancelled.error.ts` L1-21 — the abstract base the three reasons share. */
+export class ExecutionCancelledError extends ExecutionBaseError {
+	constructor(executionId, reason) {
+		super('The execution was cancelled', {
+			level: 'warning',
+			extra: { executionId },
+		});
+
+		this.reason = reason;
+	}
+}
+
+/**
+ * `ManualExecutionCancelledError` (`errors/execution-cancelled.error.ts` L23-28) — the class
+ * `sleepWithAbort` rejects with.
+ *
+ * Pinned quirk: the reference passes `''` as the execution id at both call sites
+ * (`utils.ts:244` and `utils.ts:252`), so `extra.executionId` is the **empty string**, and the
+ * constructor replaces the base message with `'The execution was cancelled manually'`.
+ */
+export class ManualExecutionCancelledError extends ExecutionCancelledError {
+	constructor(executionId) {
+		super(executionId, 'manual');
+
+		this.message = 'The execution was cancelled manually';
+	}
+}

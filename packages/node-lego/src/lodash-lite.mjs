@@ -136,3 +136,127 @@ export function cloneDeep(value, seen = new WeakMap()) {
 	}
 	return copy;
 }
+
+/**
+ * `isPlainObject` — the subset of lodash's predicate `merge` needs: an object whose prototype is
+ * `Object.prototype` or `null`. Dates, RegExps, Maps, Sets, class instances and functions are
+ * objects but not *plain* objects, and `merge` treats the two classes differently.
+ */
+function isPlainObject(value) {
+	if (value === null || typeof value !== 'object') return false;
+	const proto = Object.getPrototypeOf(value);
+	return proto === Object.prototype || proto === null;
+}
+
+/**
+ * lodash `keysIn` — own **and inherited enumerable** string keys. `merge` walks sources with
+ * `keysIn`, which is observable: merging an object created with a prototype copies the inherited
+ * enumerable properties too (`merge({}, Object.create({ inherited: 1 }))` keeps `inherited`).
+ */
+function keysIn(value) {
+	const keys = [];
+	for (const key in value) keys.push(key);
+	return keys;
+}
+
+/**
+ * Deep-copies the part of a source `merge` attaches to a key whose destination value is not a
+ * container. Pinned reference behaviour (corpus differential vs `lodash/merge` 4.17.21):
+ * - plain objects and arrays are cloned **deeply** (no nested container is shared),
+ * - everything else (Date, RegExp, Map, Set, functions, class instances) is attached **by
+ *   reference** — observable, and the reference's own call site behaves that way.
+ */
+function cloneMergeSource(value, stack) {
+	if (Array.isArray(value)) {
+		if (stack.has(value)) return stack.get(value);
+		const copy = [];
+		stack.set(value, copy);
+		for (let index = 0; index < value.length; index++) {
+			if (index in value) copy[index] = cloneMergeSource(value[index], stack);
+		}
+		stack.delete(value); // ancestor chain, not a cache: shared (non-cyclic) refs clone twice
+		return copy;
+	}
+
+	if (isPlainObject(value)) {
+		if (stack.has(value)) return stack.get(value);
+		// lodash's `initCloneObject` keeps the source's prototype (a null-prototype source stays
+		// null-prototype, a plain object gets `Object.prototype`)
+		const copy = Object.create(Object.getPrototypeOf(value));
+		stack.set(value, copy);
+		for (const key of keysIn(value)) {
+			if (key === '__proto__') continue;
+			copy[key] = cloneMergeSource(value[key], stack);
+		}
+		stack.delete(value); // see above: keeps cycles safe without collapsing shared references
+		return copy;
+	}
+
+	return value;
+}
+
+/**
+ * Merges one source into `dest` in place — the recursive core of `merge`, mirroring lodash's
+ * `baseMerge`/`baseMergeDeep` decision tree:
+ * - `undefined` source values never overwrite; they only materialise a missing key;
+ * - array source: merged **by index** into an array destination (`[1, 2, 3]` + `['x']` is
+ *   `['x', 2, 3]`), otherwise deep-cloned in;
+ * - plain-object source: merged into an object destination — unless that destination is a function
+ *   or not an object, in which case a fresh object is built (this is what keeps
+ *   `merge({}, {}, { constructor: … })` from touching `Object` itself);
+ * - any other object source (Date, Map, Set, RegExp, class instance): attached by reference;
+ * - primitive/`null` sources and functions are assigned as-is; a string source is merged
+ *   index-wise (`'ab'` -> `{ 0: 'a', 1: 'b' }`); `null`/`undefined`/`number`/`boolean` sources are
+ *   no-ops; `__proto__` keys are skipped (lodash's prototype-pollution guard).
+ */
+function mergeSource(dest, src, stack) {
+	if (src === null || src === undefined || dest === src) return dest;
+	const type = typeof src;
+	if (type !== 'object' && type !== 'string' && type !== 'function') return dest;
+
+	for (const key of keysIn(src)) {
+		if (key === '__proto__') continue;
+
+		const srcValue = src[key];
+		const destValue = dest[key];
+
+		if (srcValue === undefined) {
+			if (!(key in dest)) dest[key] = undefined;
+			continue;
+		}
+
+		if (Array.isArray(srcValue)) {
+			if (Array.isArray(destValue)) mergeSource(destValue, srcValue, stack);
+			else dest[key] = cloneMergeSource(srcValue, stack);
+			continue;
+		}
+
+		if (isPlainObject(srcValue)) {
+			if (destValue !== null && typeof destValue === 'object' && typeof destValue !== 'function') {
+				mergeSource(destValue, srcValue, stack);
+			} else {
+				dest[key] = cloneMergeSource(srcValue, stack);
+			}
+			continue;
+		}
+
+		dest[key] = srcValue;
+	}
+
+	return dest;
+}
+
+/**
+ * lodash `merge` — the recursive merge `utils.ts:323` uses to fold a node property's
+ * `displayOptions` together with the caller's. This is the DELTA-01 lodash subset, validated by
+ * the corpus differential against the real `lodash/merge` bundled with `workflow-lego` (E01: the
+ * real lodash is an oracle, never a runtime dependency).
+ *
+ * The **target is mutated** and returned (`merge({}, a, b)` is the reference's immutable-looking
+ * idiom) and sources are not mutated — except where a source object is attached by reference
+ * (non-plain objects), which is lodash behaviour and pinned in `test/utils.test.mjs`.
+ */
+export function merge(object, ...sources) {
+	for (const source of sources) mergeSource(object, source, new WeakMap());
+	return object;
+}

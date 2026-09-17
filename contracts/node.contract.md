@@ -232,10 +232,10 @@ model — the part the Workflow Model and the Execution LEGO import at runtime.
 | `parameter-resolution.mjs` | `node-helpers.ts` `getParameterDependencies` L542, `getParameterResolveOrder` L577, `getNodeParameters` L658-1056 | `test/node-helpers.test.ts` `describe('getNodeParameters')` L34-3466, `noDataExpression` L6321-6524 |
 | `deep-copy.mjs` | `utils.ts` `deepCopy` L53-87 (the copy the Node Model uses — **not** lodash `cloneDeep`) | differential N18 |
 | `expression-helpers.mjs` | `expressions/expression-helpers.ts` `isExpression` (the only expressions surface the Node Model owns) | differential N18 |
-| `errors.mjs` | `errors/node-operation.error.ts` + `errors/abstract/{node,execution-base}.error.ts` + `@n8n/errors` `application.error.ts` — **validation/resolution boundary only** | differential N09/N10/N17/N18 |
-| `lodash-lite.mjs` | the `lodash/{get,isEqual,isObject}` helpers `node-helpers.ts`/`type-validation.ts` import, plus `escapeRegExp`, `mapValues` and `cloneDeep` for `node-reference-parser-utils.ts` and `base.error.ts` (DELTA-01) | `node-model.test.mjs`, differential `N25` |
+| `errors.mjs` | `errors/node-operation.error.ts` + `errors/abstract/{node,execution-base}.error.ts` + `@n8n/errors` `application.error.ts` — **validation/resolution boundary only**; TASK-UTILS-02 adds the cancellation chain `ExecutionBaseError` → `ExecutionCancelledError` (`reason`) → `ManualExecutionCancelledError` from `errors/execution-cancelled.error.ts` L1-28, the class `sleepWithAbort` rejects with | differential N09/N10/N17/N18/N28 |
+| `lodash-lite.mjs` | the `lodash/{get,isEqual,isObject}` helpers `node-helpers.ts`/`type-validation.ts` import, plus `escapeRegExp`, `mapValues`, `cloneDeep` and `merge` for `node-reference-parser-utils.ts`, `base.error.ts` and `utils.ts:323` (DELTA-01) | `node-model.test.mjs`, differential `N25`/`N28` (merge corpus vs the reference build's own lodash) |
 | `json-repair.mjs` | `jsonrepair@3.13.1` (ISC) as bundled by the published reference build — the `jsonParse(..., { repairJSON: true })` path (`utils.ts` L5/L164-170) — ported verbatim from the resolved UMD bundle (903 ln) | differential `N26`, `test/utils.test.ts` `describe('JSON repair')` L162-290 |
-| `utils.mjs` | `utils.ts` helper surface: `isObject` L29, `isObjectEmpty` L37-49, `base64DecodeUTF8` L195-209, `replaceCircularReferences` L211-233, `jsonStringify` L235-237, `fileTypeFromMimeType` L261-270, `assert` L272-289, `isTraversableObject` L290-292, `removeCircularRefs` L294-314, `randomInt` L337-343, `randomString` L354-361, `hasKey` L364-366, `isSafeObjectProperty`/`setSafeObjectProperty` L396-412 (+ the `unsafeObjectProperties` set L367-387), `isDomainAllowed` L415-466, `isCommunityPackageName` L468-475, `sanitizeFilename` L496-511 | `test/utils.test.ts` L21-97/L293-315/L394-484/L485-554/L555-583/L649-916/L917-end, differential `N27` |
+| `utils.mjs` | `utils.ts` helper surface: `isObject` L29, `isObjectEmpty` L37-49, `base64DecodeUTF8` L195-209, `replaceCircularReferences` L211-233, `jsonStringify` L235-237, `fileTypeFromMimeType` L261-270, `assert` L272-289, `isTraversableObject` L290-292, `removeCircularRefs` L294-314, `randomInt` L337-343, `randomString` L354-361, `hasKey` L364-366, `isSafeObjectProperty`/`setSafeObjectProperty` L396-412 (+ the `unsafeObjectProperties` set L367-387), `isDomainAllowed` L415-466, `isCommunityPackageName` L468-475, `sanitizeFilename` L496-511, `sleep` L239-241, `sleepWithAbort` L243-259, `updateDisplayOptions` L316-326 (+ the DELTA-06 `setUtilsTimerFns` seam) | `test/utils.test.ts` L21-97/L293-315/L394-484/L485-554/L555-583/L584-645/L649-916/L917-end, differential `N27`/`N28`/`N29` |
 | `type-validation.mjs` | `type-validation.ts` (481 ln): `tryToParseNumber` L15, `tryToParseString` L24, `tryToParseAlphanumericString` L38, `tryToParseBoolean` L48, `tryToParseDateTime` L72, `tryToParseTime` L114, `tryToParseArray` L124, `tryToParseObject` L146, `tryToParseBinary` L162, `tryToParseJsonToFormFields` L206, `getValueDescription` L272, `tryToParseUrl` L284, `tryToParseJwt` L305, `validateFieldType` L326-481; `utils.ts` `jsonParse` L152 (+`parseJSObject` L123); `type-guards.ts` `isBinaryValue` L168 | `test/type-validation.test.ts` (512 ln), differential N19/N20 |
 | `filter-parameter.mjs` | `node-parameters/filter-parameter.ts` whole file: `FilterError` L23, `parseSingleFilterValue` L32, `withIndefiniteArticle` L66, `parseFilterConditionValues` L71, `parseRegexPattern` L196, `arrayContainsValue` L209, `executeFilterCondition` L222-404, `executeFilter` L409-424, `validateFilterParameter` L427-450 | `test/filter-parameter.test.ts`, differential N21/N23 |
 | `webhook-path.mjs` | `node-helpers.ts` `getNodeWebhookPath` L1057-1084, `getNodeWebhookUrl` L1087-1101 | `test/node-helpers.test.ts` L6211, differential N24 |
@@ -261,6 +261,14 @@ model — the part the Workflow Model and the Execution LEGO import at runtime.
    The lodash `isObject` predicate (used inside `type-validation.ts`) is exported as
    **`lodashIsObject`** because the boundary name `isObject` belongs to `utils.ts` L29, whose
    plain-object guard is a *different* predicate (arrays and functions are not plain objects).
+   TASK-UTILS-02 adds **`merge`**, the recursive merge `utils.ts:323` uses for `displayOptions`.
+   Its semantics are lodash's, not a "reasonable" deep merge: arrays merge **by index**
+   (`[1,2,3]` + `['x']` -> `['x',2,3]`), `undefined` never overwrites, sources walk `keysIn`
+   (inherited enumerable keys are copied), `__proto__` is skipped while `constructor` is a plain
+   key, non-plain objects (Date, Map, RegExp, class instances) are attached **by reference** and
+   merged into, and a key the target does not have yet receives a **deep clone** (plain objects
+   keep their prototype). All of it is compared against the reference build's own bundled lodash
+   by the `N28` corpus (including cycles and shared references).
 2. **Error class is a boundary-local reconstruction.** DELTA-02. `NodeOperationError`
    keeps the reference `name`, `message`, `level`, `node`, `context`, `messages`,
    `timestamp` — verified field-by-field (`N09/N10`) — but the *hierarchy*
@@ -268,7 +276,21 @@ model — the part the Workflow Model and the Execution LEGO import at runtime.
    Slice 5 added `OperationalError` (`errors/base/operational.error.ts`) with the same
    surface contract: `level` defaults to `'warning'`, `tags` to `{}`, and the pinned DELTA-03
    quirk that the base constructor never assigns `name`, so `name === 'Error'`.
-   Consolidation with `packages/execution-engine/src/errors.mjs` is ISSUE-024.
+   TASK-UTILS-02 adds the cancellation chain `sleepWithAbort` needs, mirroring
+   `errors/abstract/execution-base.error.ts` L11-62 and `errors/execution-cancelled.error.ts`
+   L1-28: `ExecutionBaseError` (which **does** set `name = this.constructor.name`, keeps a
+   non-`Error` cause, inherits `context` from an `ExecutionBaseError` cause, defaults
+   `context`/`functionality` to `{}`/`'regular'` and exposes `toJSON`), the abstract
+   `ExecutionCancelledError(executionId, reason)` (`level: 'warning'`, `extra: { executionId }`,
+   message `'The execution was cancelled'`) and `ManualExecutionCancelledError`
+   (message `'The execution was cancelled manually'`, `reason: 'manual'`). The reference takes
+   `ExecutionBaseError` from the `@n8n/errors` hierarchy; here the class is boundary-local and
+   its own-key order matches the published build key-for-key (`level, tags, extra, description,
+   cause, errorResponse, timestamp, context, lineNumber, functionality, name, reason`), compared
+   by `N28`. Only the reference-boundary symbol `ExecutionBaseError` moves from out-of-scope to
+   ported in the §12.2 scope audit; the rest of the hierarchy (`NodeError`, `BaseError`) stays
+   out of scope. Consolidation with `packages/execution-engine/src/errors.mjs` (which carries the
+   same classes) is ISSUE-024.
 3. **`ApplicationError` name quirk.** DELTA-03 (pinned, not a deviation): the reference
    imports `ApplicationError` from `@n8n/errors`, whose constructor never sets `name` — so the
    resolve-order guard throws an error whose `name === 'Error'` while `level === 'error'`.
@@ -317,15 +339,22 @@ model — the part the Workflow Model and the Execution LEGO import at runtime.
    conditions are compared through the `toMillis()` of whatever the DELTA-04
    `dateTimeFactory` returned, and the same metadata carries that factory into
    `parseSingleFilterValue`, so no date library is imported.
+   The same seam idea covers time: `sleep`/`sleepWithAbort` take an injectable
+   `{ setTimeout, clearTimeout }` through `setUtilsTimerFns`, defaulting to the globals — so the
+   default behaviour is the reference's own `setTimeout`/`clearTimeout` pair (including the
+   pinned quirk that the abort listener is never removed on a *normal* resolve) while tests can
+   drive time deterministically. `updateDisplayOptions` needs no seam: it is pure apart from the
+   DELTA-01 `merge`.
 8. **Scope is audited, not asserted.** `tools/node-lego-coverage.mjs` (gate `N08`) extracts every
    exported symbol of the 17 pinned boundary files and requires each one to be classified in its
    manifest: `ported` (must exist in `src/index.mjs` **and** be named in this contract),
    `internal`, `out-of-scope` (with the owning package or the delta that excludes it) or
-   `deferred` (with the task that closes it). Current state: **120 symbols — 102 ported,
-   1 internal, 14 out-of-scope, 3 deferred** (`sleep`, `sleepWithAbort`, `updateDisplayOptions`:
-   timer/merge seams, TASK-UTILS-02).
-   Out of scope with a named owner: the DELTA-02 error *hierarchy* (`BaseError`, `NodeError`,
-   `ExecutionBaseError`), TypeScript-only types (`Primitives`, `BaseErrorOptions`,
+   `deferred` (with the task that closes it). Current state: **120 symbols — 106 ported,
+   1 internal, 13 out-of-scope, 0 deferred** (TASK-UTILS-02 closed the last three: `sleep` /
+   `sleepWithAbort` via the timer seam + the boundary-local cancellation error, and
+   `updateDisplayOptions` via the DELTA-01 `merge`).
+   Out of scope with a named owner: the rest of the DELTA-02 error *hierarchy* (`BaseError`,
+   `NodeError`), TypeScript-only types (`Primitives`, `BaseErrorOptions`,
    `OperationalErrorOptions`, `NodeCredentialIssue`, `NodeValidationIssue`) and the guard helpers
    another LEGO owns (`dedupe` → `workflow-lego`/`workflow-model-lego`; `isAssignmentValue`,
    `isNodeConnectionType`, `isINodePropertyCollection`, `isINodePropertyCollectionList`,
@@ -336,10 +365,14 @@ model — the part the Workflow Model and the Execution LEGO import at runtime.
 
 ### 12.3 Acceptance evidence
 
-* `tools/node-lego-gate.mjs` — gates `N01`…`N06` (`docs/isolation/evidence/node-lego-gate.json`).
-* `tools/node-lego-differential.mjs` — 27 scenario groups / 1797 comparisons against the
+* `tools/node-lego-gate.mjs` — gates `N01`…`N08` (`docs/isolation/evidence/node-lego-gate.json`),
+  with `N03` pinning the conformance suite (145 tests, 0 cancelled) and `N05` the 0-diverge result.
+* `tools/node-lego-differential.mjs` — 29 scenario groups / 1822 comparisons against the
   published `n8n-workflow@2.9.1` build (the version the pinned reference commit ships):
-  **1797 agree / 0 diverge**, 2 NOT-DIFFABLE (`renameFormFields`, private `getPropertyValues`).
+  **1822 agree / 0 diverge**, 2 NOT-DIFFABLE (`renameFormFields`, private `getPropertyValues`).
+  `N28` (15 comparison batches) covers `updateDisplayOptions`, a `merge` corpus against the
+  reference build's bundled lodash and the cancellation-error shape; `N29` (4 batches, async)
+  drives the real `sleep`/`sleepWithAbort` outcome paths on both sides with tiny durations.
   `N27` (12 comparison batches) covers the `utils.ts` helper surface call-for-call, including
   `randomInt`/`randomString` made exact by stubbing `crypto.getRandomValues` on the Crypto
   prototype (the reference reads it at call time).
@@ -379,7 +412,7 @@ model — the part the Workflow Model and the Execution LEGO import at runtime.
   the oracle's 25 repair expectations grouped + the ported wider feature set / error positions —
   **136 pass / 0 fail** in total.
 
-### 12.4 Exported symbol list (117 — gate `N07` asserts every one is named here)
+### 12.4 Exported symbol list (125 — gate `N07` asserts every one is named here)
 
 | | | | | | |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -387,7 +420,8 @@ model — the part the Workflow Model and the Execution LEGO import at runtime.
 | `assert` | `base64DecodeUTF8` | `fileTypeFromMimeType` | `hasKey` | `isCommunityPackageName` | `isDomainAllowed` |
 | `isObject` | `isObjectEmpty` | `isSafeObjectProperty` | `isTraversableObject` | `jsonStringify` | `lodashIsObject` |
 | `randomInt` | `randomString` | `removeCircularRefs` | `replaceCircularReferences` | `sanitizeFilename` | `setSafeObjectProperty` |
-| `setUtilsLogger` | | | | | |
+| `setUtilsLogger` | `setUtilsTimerFns` | `sleep` | `sleepWithAbort` | `updateDisplayOptions` | `merge` |
+| `ExecutionBaseError` | `ExecutionCancelledError` | `ManualExecutionCancelledError` | | | |
 | `applyAccessPatterns` | `jsonrepair` | | | | |
 | `arrayContainsValue` | `assertIsValidNodeParameterValueType` | `assertParamIsArray` | `assertParamIsBoolean` | `assertParamIsNumber` | `assertParamIsOfAnyTypes` |
 | `assertParamIsString` | `backslashEscape` | `checkConditions` | `cloneDeep` | `cronNodeOptions` | `deepCopy` |

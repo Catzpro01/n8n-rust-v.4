@@ -231,23 +231,25 @@ The integration branch `main` (separate, unrelated git history — Arena orchest
 Phase 2 above isolated the Node Model and proved the boundary; Phase 3 makes the
 **runtime surface of the model executable** as a dependency-free JavaScript LEGO.
 
-* **Package:** `packages/node-lego` (21 source modules, **136 tests** across `node-model.test.mjs`, `filter-execution.test.mjs`, `parameter-issues.test.mjs`, the `TASK-EERR-01` error-surface suite, `node-reference-parser.test.mjs`, `json-repair.test.mjs` and `utils.test.mjs`) — implemented from the pinned
+* **Package:** `packages/node-lego` (21 source modules, **145 tests** across `node-model.test.mjs`, `filter-execution.test.mjs`, `parameter-issues.test.mjs`, the `TASK-EERR-01` error-surface suite, `node-reference-parser.test.mjs`, `json-repair.test.mjs` and `utils.test.mjs`) — implemented from the pinned
   `reference/n8n/packages/workflow/src` sources (line anchors in
   [`contracts/node.contract.md`](../../contracts/node.contract.md) §12.1).
-* **Contract:** `contracts/node.contract.md` §12 (module map, deltas, 117-symbol list, acceptance evidence).
+* **Contract:** `contracts/node.contract.md` §12 (module map, deltas, 125-symbol list, acceptance evidence).
 * **Evidence:** [`evidence/node-lego-gate.json`](evidence/node-lego-gate.json) — gates
-  `N01` zero-dependency, `N02` import-closed boundary, `N03` 136-test suite,
+  `N01` zero-dependency, `N02` import-closed boundary, `N03` 145-test suite (0 cancelled),
   `N04` pinned reference tree, `N05` differential, `N06` contract/doc presence,
   `N07` every exported symbol documented, `N08` reference surface fully classified
-  (`tools/node-lego-coverage.mjs`: 120 symbols — 102 ported · 1 internal · 14 out-of-scope ·
-  3 deferred).
-* **Differential:** `tools/node-lego-differential.mjs` runs 27 scenario groups against the
+  (`tools/node-lego-coverage.mjs`: 120 symbols — 106 ported · 1 internal · 13 out-of-scope ·
+  0 deferred — every symbol of the 17 pinned boundary files is accounted for).
+* **Differential:** `tools/node-lego-differential.mjs` runs 29 scenario groups against the
   **published `n8n-workflow@2.9.1` build** (the version the pinned commit ships) resolved
-  from `packages/workflow-lego/node_modules`: **1797 agree / 0 diverge / 0 harness errors**,
+  from `packages/workflow-lego/node_modules`: **1822 agree / 0 diverge / 0 harness errors**,
   2 NOT-DIFFABLE surfaces (`renameFormFields` not re-exported upstream; `getPropertyValues`
   private). The `N25` group covers the node-reference parser; `cloneDeep`/`mapValues`/
-  `escapeRegExp` are not in the published surface, so they are compared against the reference
-  build's bundled lodash (`PORT_ONLY_SURFACE`). Falsifiability checked by injecting two
+  `escapeRegExp`/`merge` are not in the published surface, so they are compared against the
+  reference build's bundled lodash (`PORT_ONLY_SURFACE`). `N28` covers `updateDisplayOptions`,
+  the `merge` corpus and the cancellation-error shape; `N29` (async) drives the real
+  `sleep`/`sleepWithAbort` outcome paths on both sides. Falsifiability checked by injecting two
   behavioral mutations — each produced a `DIVERGE`, then was reverted (same for every later
   slice; the slice-5 probe additionally catches a dropped `dollarEscape`, a reordered
   `ITEM_TO_DATA_ACCESSORS` and a disabled `cloneDeep` `Date` branch).
@@ -262,10 +264,12 @@ Phase 2 above isolated the Node Model and proved the boundary; Phase 3 makes the
   (`getNodeParametersIssues`/`getParameterIssues`/`mergeIssues`/`getContext`), webhook path
   helpers, `cronNodeOptions`, all of `filter-parameter.ts`, all of
   `node-reference-parser-utils.ts`, the `jsonrepair` port that makes the `repairJSON` recovery
-  real, and the `utils.ts` helper surface (`utils.mjs`, 17 helpers). **Still not reconstructed**
+  real, and all of the runnable `utils.ts` surface (`utils.mjs`, 20 helpers — the helper set plus
+  `sleep`, `sleepWithAbort` and `updateDisplayOptions`, closed by `TASK-UTILS-02` with the
+  injectable timer seam and a boundary-local cancellation error). **Still not reconstructed**
   (explicitly out of scope here): workflow validation (`validateWorkflow` and friends,
-  reconstructed in `packages/validation-lego`) — and the deliberate remainder is now audited
-  mechanically by gate `N08` (3 deferred: `sleep`, `sleepWithAbort`, `updateDisplayOptions`).
+  reconstructed in `packages/validation-lego`). The scope is audited mechanically by gate `N08`
+  and is now **complete for the 17 pinned boundary files: 0 deferred symbols**.
 
 ---
 

@@ -93,6 +93,12 @@ const REF = {
 	backslashEscape: reference.backslashEscape,
 	dollarEscape: reference.dollarEscape,
 	applyAccessPatterns: reference.applyAccessPatterns,
+	sleep: reference.sleep,
+	sleepWithAbort: reference.sleepWithAbort,
+	updateDisplayOptions: reference.updateDisplayOptions,
+	ExecutionBaseError: reference.ExecutionBaseError,
+	ExecutionCancelledError: reference.ExecutionCancelledError,
+	ManualExecutionCancelledError: reference.ManualExecutionCancelledError,
 	OperationalError: reference.OperationalError,
 	validateFilterParameter: reference.validateFilterParameter,
 	executeFilter: reference.executeFilter,
@@ -143,7 +149,7 @@ const REF = {
  * are NOT part of the published `n8n-workflow` surface (upstream gets them from `lodash`), so
  * they are compared against lodash itself instead of the package build.
  */
-const PORT_ONLY_SURFACE = ['cloneDeep', 'mapValues', 'escapeRegExp'];
+const PORT_ONLY_SURFACE = ['cloneDeep', 'mapValues', 'escapeRegExp', 'merge', 'setUtilsTimerFns'];
 
 let lodash;
 try {
@@ -169,6 +175,8 @@ const EXAMINED_SURFACE = [
 	'assertIsValidNodeParameterValueType', 'assertParamIsNumber', 'assertParamIsString', 'assertParamIsBoolean',
 	'assertParamIsOfAnyTypes', 'assertParamIsArray', 'validateNodeParameters',
 	'getNodeParameters', 'deepCopy', 'isExpression', 'ApplicationError', 'NodeOperationError',
+	'sleep', 'sleepWithAbort', 'updateDisplayOptions', 'ExecutionBaseError', 'ExecutionCancelledError',
+	'ManualExecutionCancelledError',
 	'validateFieldType', 'getValueDescription', 'jsonParse', 'tryToParseNumber', 'tryToParseString',
 	'tryToParseAlphanumericString', 'tryToParseBoolean', 'tryToParseDateTime', 'tryToParseTime',
 	'tryToParseArray', 'tryToParseObject', 'tryToParseBinary', 'tryToParseUrl', 'tryToParseJwt',
@@ -233,6 +241,48 @@ function scenario(id, name, body) {
 		if ([...NOT_DIFFABLE].some((name) => label.includes(name))) {
 			notDiffable++;
 			console.log(`[NOT-DIFFABLE] ${id} :: ${label} — port=${JSON.stringify(sides.PORT.get(label))} ref=${JSON.stringify(sides.REF.get(label))}`);
+			continue;
+		}
+		comparables++;
+		try {
+			assert.deepEqual(sides.PORT.get(label), sides.REF.get(label));
+			agreements++;
+			if (VERBOSE) console.log(`[AGREE] ${id} :: ${label}`);
+		} catch {
+			divergences.push({ id, label, port: sides.PORT.get(label), reference: sides.REF.get(label) });
+			console.log(
+				`[DIVERGE] ${id} :: ${label} — port=${JSON.stringify(sides.PORT.get(label))} ref=${JSON.stringify(sides.REF.get(label))}`,
+			);
+		}
+	}
+	console.log(`[SCENARIO] ${id} ${name} — ${sides.REF.size} comparisons`);
+}
+
+/**
+ * Async twin of `scenario` for the timing-dependent surface (`sleep` / `sleepWithAbort`): the body
+ * is awaited on both sides and the captured outcomes are compared the same way. Durations are kept
+ * tiny and only *outcomes* are captured, never elapsed times, so the comparison stays exact.
+ */
+async function asyncScenario(id, name, body) {
+	const sides = {};
+	for (const side of ['REF', 'PORT']) {
+		const captured = new Map();
+		const capture = (label, value) => captured.set(label, canon(value));
+		try {
+			await body(side === 'REF' ? REF : port, capture);
+		} catch (error) {
+			harnessErrors++;
+			console.error(`[HARNESS-ERROR] ${id} (${side}): ${error.message}`);
+			return;
+		}
+		sides[side] = captured;
+	}
+
+	const labels = new Set([...sides.REF.keys(), ...sides.PORT.keys()]);
+	for (const label of labels) {
+		if ([...NOT_DIFFABLE].some((name) => label.includes(name))) {
+			notDiffable++;
+			console.log(`[NOT-DIFFABLE] ${id} :: ${label}`);
 			continue;
 		}
 		comparables++;
@@ -1669,6 +1719,160 @@ scenario('N27', 'utils.ts helpers (isEmpty/fileType/safe-props/domain/filenames/
 		} finally {
 			cryptoProto.getRandomValues = original;
 		}
+	})());
+});
+
+/* --- N28: display options + merge + the cancellation error shape ---------- */
+scenario('N28', 'updateDisplayOptions / merge / ManualExecutionCancelledError', (api, capture) => {
+	// `merge` is a port-only helper (upstream imports lodash): on the REF side compare against
+	// lodash itself, so the comparison *is* port-vs-lodash.
+	const portMerge = (target, ...sources) =>
+		typeof api.merge === 'function' ? api.merge(target, ...sources) : lodash.merge(target, ...sources);
+
+	const options = { show: { mode: ['z'], extra: true } };
+	const properties = [
+		{ name: 'a', displayOptions: { show: { mode: ['x', 'y'], sub: { k: 1 } } } },
+		{ name: 'b' },
+		{ name: 'c', displayOptions: { hide: { z: [1] }, show: { mode: 'single' } } },
+	];
+	capture('updateDisplayOptions oracle', api.updateDisplayOptions(options, properties));
+	capture('updateDisplayOptions empty properties', api.updateDisplayOptions({ show: { a: 1 } }, []));
+	capture('updateDisplayOptions without displayOptions', api.updateDisplayOptions({}, [{ name: 'p' }]));
+	capture('updateDisplayOptions nested', api.updateDisplayOptions({ show: { deep: { nested: [1, { a: 2 }] } } }, [
+		{ name: 'x', displayOptions: { show: { deep: { more: true } } } },
+	]));
+	capture('updateDisplayOptions does not mutate its inputs', (() => {
+		const input = [{ name: 'a', displayOptions: { show: { mode: ['x'] } } }];
+		const out = api.updateDisplayOptions({ show: { extra: true } }, input);
+		return { input: input[0].displayOptions, sharedProperty: out[0] === input[0], keys: Object.keys(out[0]) };
+	})());
+
+	const cyclic = { a: 1 };
+	cyclic.self = cyclic;
+	const shared = { x: 1 };
+	const withDate = (() => {
+		const date = new Date(5);
+		const target = portMerge({}, { a: date }, { a: { b: 2 } });
+		return { isDate: target.a instanceof Date, aliasedToSource: target.a === date, b: target.a.b };
+	})();
+	const corpus = [
+		[{ a: 1 }, { a: 2 }],
+		[{ a: 'str' }, { a: 5 }],
+		[{ a: { b: 1 } }, { a: { c: 2 } }],
+		[{ a: { b: { c: 1 } } }, { a: { b: { d: 2 } } }],
+		[{ a: { b: 1 } }, { a: null }],
+		[{ a: null }, { a: { b: 1 } }],
+		[{ a: 1 }, { a: { b: 2 } }],
+		[{ a: { b: 2 } }, { a: 1 }],
+		[{ a: { b: 2 } }, { a: 'str' }],
+		[{ a: [1, 2, 3] }, { a: ['x'] }],
+		[{ a: [1, 2, 3] }, { a: [undefined, 9] }],
+		[{ a: 1 }, { a: [1, 2] }],
+		[{ a: [1, 2] }, { a: { b: 1 } }],
+		[{ a: { b: 1 } }, { a: [1, 2] }],
+		[{ a: [[1], [2, 3]] }, { a: [[9, 9]] }],
+		[{ a: [{ x: 1 }] }, { a: [{ y: 2 }, { z: 3 }] }],
+		[{ a: undefined }, { a: 2 }],
+		[{ a: 1 }, { a: undefined }],
+		[{ a: { b: undefined, c: 1 } }, { a: { b: 2 } }],
+		[{ a: { b: [undefined, undefined] } }, { a: { b: [1, undefined, 2] } }],
+		[{ a: 1 }, null, undefined, 5, true],
+		[JSON.parse('{"__proto__":{"polluted":1},"q":2}')],
+		[{ constructor: { x: 1 } }],
+		[Object.assign(Object.create({ inherited: 1 }), { own: 2 })],
+		[{ p: shared, q: shared }],
+		[{ show: { mode: ['x', 'y'], sub: { k: 1 } } }, { show: { mode: ['z'], extra: true } }],
+		[undefined, { show: { extra: true } }],
+	];
+	capture('merge corpus (26 shapes)', corpus.map((sources) => safe(() => portMerge({}, ...sources))));
+	capture('merge cyclic source', safe(() => {
+		const out = portMerge({}, cyclic);
+		return { a: out.a, selfIsSelf: out.self === out, keys: Object.keys(out) };
+	}));
+	capture('merge Date aliasing', withDate);
+	capture('merge returns the mutated target', (() => {
+		const target = { keep: true };
+		const out = portMerge(target, { a: { b: 2 } });
+		return { same: out === target, target };
+	})());
+	capture('merge cycle + diamond', (() => {
+		const copy = portMerge({}, cyclic);
+		const diamond = portMerge({}, { p: shared, q: shared });
+		return { cyclePreserved: copy.self === copy, diamondDistinct: diamond.p !== diamond.q, diamond };
+	})());
+	capture('merge does not pollute Object.prototype', {
+		polluted: ({}).polluted ?? null,
+		objectUntouched: typeof Object.x,
+	});
+
+	// The cancellation hierarchy `sleepWithAbort` rejects with (`sleep`/`sleepWithAbort` timing
+	// itself is group N29).
+	const errorSnapshot = (error) => {
+		const json = error.toJSON ? error.toJSON() : null;
+		if (json) delete json.timestamp;
+		return {
+			name: error.name,
+			message: error.message,
+			level: error.level,
+			reason: error.reason,
+			extra: error.extra,
+			context: error.context,
+			description: error.description ?? null,
+			functionality: error.functionality,
+			lineNumber: error.lineNumber ?? null,
+			keys: Object.keys(error),
+			json,
+			isBase: error instanceof api.ExecutionBaseError,
+			isCancelled: error instanceof api.ExecutionCancelledError,
+		};
+	};
+	capture('ManualExecutionCancelledError shape', safe(() => errorSnapshot(new api.ManualExecutionCancelledError('exec-9'))));
+	capture('ManualExecutionCancelledError with the utils execution id', safe(() => errorSnapshot(new api.ManualExecutionCancelledError(''))));
+	capture('ExecutionCancelledError base shape', safe(() => errorSnapshot(new api.ExecutionCancelledError('exec-1', 'shutdown'))));
+	capture('ExecutionBaseError cause handling', safe(() => {
+		const plain = { code: 'ETIMEDOUT' };
+		const withPlain = new api.ExecutionBaseError('boom', { cause: plain });
+		const inner = new api.ExecutionBaseError('inner');
+		inner.context = { runIndex: 3 };
+		const outer = new api.ExecutionBaseError('outer', { cause: inner });
+		return {
+			plainCauseKept: withPlain.cause === plain,
+			outerContext: outer.context,
+			outerCause: outer.cause ?? null,
+			nameIsConstructorName: outer.name === 'ExecutionBaseError',
+		};
+	}));
+});
+
+/* --- N29: sleep / sleepWithAbort outcomes (async, tiny durations) ---------- */
+await asyncScenario('N29', 'sleep / sleepWithAbort', async (api, capture) => {
+	capture('sleep resolves', await api.sleep(5).then(
+		() => 'resolved',
+		(error) => `rejected:${error.name}`,
+	));
+
+	capture('sleepWithAbort resolves without a signal', await api.sleepWithAbort(5, undefined).then(
+		() => 'resolved',
+		(error) => `rejected:${error.name}`,
+	));
+
+	capture('sleepWithAbort already aborted', await (async () => {
+		const controller = new AbortController();
+		controller.abort();
+		return api.sleepWithAbort(50, controller.signal).then(
+			() => 'resolved',
+			(error) => ({ name: error.name, message: error.message, reason: error.reason, extra: error.extra }),
+		);
+	})());
+
+	capture('sleepWithAbort aborted mid-sleep', await (async () => {
+		const controller = new AbortController();
+		const promise = api.sleepWithAbort(5000, controller.signal);
+		setTimeout(() => controller.abort(), 5);
+		return promise.then(
+			() => 'resolved',
+			(error) => ({ name: error.name, reason: error.reason, extra: error.extra, level: error.level }),
+		);
 	})());
 });
 

@@ -1,0 +1,102 @@
+id: TASK-UTILS-02-phase3-deferred-utils
+agent: arena-worker
+lego: node
+module: utils
+phase: 3
+title: "Node LEGO: close the three symbols the coverage audit deferred — sleep/sleepWithAbort (injectable timer + boundary-local ManualExecutionCancelledError) and updateDisplayOptions (lodash merge subset)"
+status: VERIFIED
+
+# Origin: TASK-UTILS-01 recorded these three in the mechanical scope manifest
+# (`tools/node-lego-coverage.mjs` DEFERRED) so the remainder of `utils.ts` could not be silently
+# dropped. This task is that remainder — with the manifest emptied, all 120 exported symbols of
+# the 17 pinned boundary files are now classified (106 ported · 1 internal · 13 out-of-scope ·
+# 0 deferred).
+#
+# Reference (read-only, line-cited in the module):
+# - reference/n8n/packages/workflow/src/utils.ts L239-241 (sleep), L243-259 (sleepWithAbort),
+#   L316-326 (updateDisplayOptions, `merge({}, nodeProperty.displayOptions, displayOptions)`)
+# - reference/n8n/packages/workflow/src/errors/execution-cancelled.error.ts L1-28
+# - reference/n8n/packages/workflow/src/errors/abstract/execution-base.error.ts L11-62
+# - reference/n8n/packages/workflow/test/utils.test.ts L584-645 (the sleepWithAbort oracle block)
+
+allowed_paths:
+  - tasks/TASK-UTILS-02-phase3-deferred-utils.yaml
+  - results/TASK-UTILS-02-phase3-deferred-utils.md
+  - packages/node-lego/**
+  - tools/node-lego-coverage.mjs
+  - tools/node-lego-differential.mjs
+  - tools/node-lego-gate.mjs
+  - contracts/node.contract.md
+  - docs/isolation/node.md
+  - docs/isolation/LEGO-MASTER-MAP.md
+  - docs/isolation/evidence/node-lego-gate.json
+  - README.md
+  - results/REVIEW-SWEEP-2026-09-18.md
+
+forbidden_paths:
+  - reference/n8n/**
+  - crates/**
+  - apps/**
+  - packages/execution-engine/**
+  - packages/trigger-lego/**
+  - packages/webhook-lego/**
+  - packages/scheduler-lego/**
+  - packages/workflow-lego/**
+  - packages/workflow-model-lego/**
+  - packages/validation-lego/**
+  - packages/expression-lego/**
+
+requires:
+  - reference/n8n/packages/workflow/src/utils.ts
+  - reference/n8n/packages/workflow/test/utils.test.ts
+  - packages/node-lego/src/utils.mjs
+  - packages/node-lego/src/lodash-lite.mjs
+
+source_modification: read-only-reference   # no file under reference/n8n/** is touched
+
+operations:
+  - name: read_reference
+    args: { path: reference/n8n/packages/workflow/src/utils.ts, lines: "239-259, 316-326" }
+  - name: edit_file
+    args: { path: packages/node-lego/src/lodash-lite.mjs }   # DELTA-01 merge subset
+  - name: edit_file
+    args: { path: packages/node-lego/src/errors.mjs }        # cancellation chain (DELTA-02)
+  - name: edit_file
+    args: { path: packages/node-lego/src/utils.mjs }         # sleep / sleepWithAbort / updateDisplayOptions
+  - name: edit_file
+    args: { path: packages/node-lego/src/index.mjs }
+  - name: run_shell
+    args: { cmd: "npm --prefix packages/node-lego test", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "node tools/node-lego-differential.mjs", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "npm run node:gate", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "npm run verify:all", expect_exit: 0 }
+
+acceptance:
+  - `sleep(ms)` resolves after `ms` through the `setUtilsTimerFns` seam (globals by default, so the
+    default behaviour is the reference's own `setTimeout`)
+  - `sleepWithAbort(ms, signal)` resolves without a signal, rejects immediately with
+    `ManualExecutionCancelledError` when the signal is already aborted (without scheduling a
+    timer) and rejects + `clearTimeout`s when aborted mid-sleep; the error carries
+    `message 'The execution was cancelled manually'`, `level 'warning'`, `reason 'manual'`,
+    `extra { executionId: '' }` and the reference's own-key order
+  - `updateDisplayOptions(options, properties)` folds the options into every property with the
+    reference's `merge({}, nodeProperty.displayOptions, displayOptions)` semantics (arrays merge by
+    index, nested objects merge, inputs not mutated)
+  - the DELTA-01 `merge` subset matches the reference build's bundled `lodash/merge` on the corpus
+    (arrays by index, `undefined` never overwrites, `keysIn` sources, `__proto__` skipped,
+    non-plain objects by reference, cycles, shared references) — corpus differential run
+  - gate `N08` reports **0 deferred** (all 120 boundary symbols classified) and gate `N07` all
+    **125** exported symbols documented
+  - suite 136 -> **145 tests / 0 fail / 0 cancelled**; differential 1797 -> **1822 agree / 0
+    diverge** (29 groups); `npm run verify:all` exit 0
+  - falsifiability: array-concatenating `merge`, a generic `Error` on abort, a shallow-spread
+    `updateDisplayOptions`, a removed export, and a hanging test each fail the harness/gate they
+    should; all mutations reverted byte-identical
+  - no file under reference/, crates/, apps/, the frontend or a peer package is touched
+
+merge_condition:
+  - regression_gate_pass
+  - no_contract_violation

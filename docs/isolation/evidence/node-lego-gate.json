@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-17T19:42:21.772Z",
-  "task": "TASK-UTILS-01-phase3-utils-surface",
+  "generatedAt": "2026-09-17T19:51:37.956Z",
+  "task": "TASK-UTILS-02-phase3-deferred-utils",
   "reference": "n8n 2.9.4",
   "totals": {
     "passed": 8,
@@ -23,7 +23,7 @@
       "id": "N03",
       "name": "node-model conformance suite",
       "status": "PASS",
-      "detail": "136 pass / 0 fail"
+      "detail": "145 pass / 0 fail"
     },
     {
       "id": "N04",
@@ -35,7 +35,7 @@
       "id": "N05",
       "name": "differential vs the published reference build",
       "status": "PASS",
-      "detail": "1797 agree / 0 diverge across 1797 comparisons (2 NOT-DIFFABLE, 0 harness errors)"
+      "detail": "1822 agree / 0 diverge across 1822 comparisons (2 NOT-DIFFABLE, 0 harness errors)"
     },
     {
       "id": "N06",
@@ -47,13 +47,13 @@
       "id": "N08",
       "name": "reference surface is fully classified (ported / internal / out-of-scope)",
       "status": "PASS",
-      "detail": "120 reference symbols classified (102 ported, 1 internal, 14 out-of-scope, 3 deferred)"
+      "detail": "120 reference symbols classified (106 ported, 1 internal, 13 out-of-scope, 0 deferred)"
     },
     {
       "id": "N07",
       "name": "every exported symbol is documented in the contract",
       "status": "PASS",
-      "detail": "117 exported symbols documented"
+      "detail": "125 exported symbols documented"
     }
   ]
 }

@@ -4,7 +4,7 @@
  *
  *   N01  zero runtime dependencies
  *   N02  source boundary import-closed (relative + node: only)
- *   N03  node-model conformance suite (136 tests)
+ *   N03  node-model conformance suite (145 tests, 0 cancelled)
  *   N04  reference tree pinned (workflow-reference-manifest --check)
  *   N05  differential vs the published reference build: 0 divergences
  *   N06  formal contract + isolation doc present
@@ -55,13 +55,21 @@ await await gate('N02', 'source boundary is import-closed', () => {
 
 await await gate('N03', 'node-model conformance suite', () => {
 	const out = run(['--test', 'test/*.test.mjs'], pkg);
+	const tests = /^# tests (\d+)$/m.exec(out)?.[1];
 	const pass = /^# pass (\d+)$/m.exec(out)?.[1];
 	const fail = /^# fail (\d+)$/m.exec(out)?.[1];
+	const cancelled = /^# cancelled (\d+)$/m?.exec(out)?.[1] ?? '0';
 	// TASK-EERR-01: +8 NodeOperationError reference-port regression tests (93 -> 101).
 	// TASK-NREFP-01: +15 node-reference-parser-utils reference-port tests (101 -> 116).
 	// TASK-REPAIR-01: +6 jsonrepair / repairJSON tests (116 -> 122).
 	// TASK-UTILS-01: +14 utils.ts helper tests (122 -> 136).
-	if (pass !== '136' || fail !== '0') throw new Error(`${pass} pass / ${fail} fail`);
+	// TASK-UTILS-02: +9 tests for sleep / sleepWithAbort / updateDisplayOptions / merge (136 -> 145).
+	// A suite whose tests are merely CANCELLED (a promise that never settles) used to slip through
+	// the `# pass` pin — assert the total and the cancelled counter as well.
+	if (cancelled !== '0') throw new Error(`${cancelled} tests cancelled (a pending promise never settled)`);
+	if (pass !== '145' || fail !== '0' || tests !== pass) {
+		throw new Error(`${tests} tests / ${pass} pass / ${fail} fail`);
+	}
 	return `${pass} pass / 0 fail`;
 });
 
@@ -105,7 +113,7 @@ await gate('N07', 'every exported symbol is documented in the contract', async (
 
 const report = {
 	generatedAt: new Date().toISOString(),
-	task: 'TASK-UTILS-01-phase3-utils-surface',
+	task: 'TASK-UTILS-02-phase3-deferred-utils',
 	reference: 'n8n 2.9.4',
 	totals: { passed: gates.filter((g) => g.status === 'PASS').length, gates: gates.length },
 	gates,

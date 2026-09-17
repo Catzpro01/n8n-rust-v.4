@@ -16,6 +16,8 @@ import test from 'node:test';
 
 import {
 	base64DecodeUTF8,
+	ExecutionBaseError,
+	ExecutionCancelledError,
 	fileTypeFromMimeType,
 	hasKey,
 	isCommunityPackageName,
@@ -26,12 +28,18 @@ import {
 	isTraversableObject,
 	jsonStringify,
 	lodashIsObject,
+	ManualExecutionCancelledError,
+	merge,
 	randomInt,
 	randomString,
 	removeCircularRefs,
 	replaceCircularReferences,
 	sanitizeFilename,
 	setSafeObjectProperty,
+	setUtilsTimerFns,
+	sleep,
+	sleepWithAbort,
+	updateDisplayOptions,
 	assert as utilAssert,
 } from '../src/index.mjs';
 
@@ -324,4 +332,261 @@ test('assert throws with the given message and hides its own stack frame (utils.
 		const frames = error.stack.split('\n');
 		assert.ok(!frames[1].includes('utilAssert'), `assert frame not hidden: ${frames[1]}`);
 	}
+});
+
+/* ---------------------------------------------------------------------------
+ * TASK-UTILS-02 — the trio the coverage manifest used to defer. The timer seam
+ * (`setUtilsTimerFns`) makes `sleep`/`sleepWithAbort` exact instead of timing-dependent; the
+ * oracle cases are ported from `reference/n8n/packages/workflow/test/utils.test.ts` L584-645.
+ * ------------------------------------------------------------------------- */
+
+/** Deterministic timer double: records scheduled callbacks and fires them on demand. */
+function createFakeTimers() {
+	const scheduled = new Map();
+	let nextId = 1;
+	return {
+		scheduled,
+		fns: {
+			setTimeout: (callback, ms) => {
+				const id = nextId++;
+				scheduled.set(id, { callback, ms });
+				return id;
+			},
+			clearTimeout: (id) => {
+				scheduled.delete(id);
+			},
+		},
+		fire(id) {
+			const entry = scheduled.get(id);
+			scheduled.delete(id);
+			entry.callback();
+			return entry.ms;
+		},
+	};
+}
+
+test('sleep resolves once its timer fires (utils.ts L239-241, oracle "resolves after the specified time")', async () => {
+	const timers = createFakeTimers();
+	setUtilsTimerFns(timers.fns);
+	try {
+		let settled = false;
+		const promise = sleep(100).then(() => {
+			settled = true;
+		});
+
+		assert.equal(timers.scheduled.size, 1);
+		const [id, entry] = [...timers.scheduled.entries()][0];
+		assert.equal(entry.ms, 100);
+		assert.equal(settled, false);
+
+		timers.fire(id);
+		await promise;
+		assert.equal(settled, true);
+
+		// a zero-delay sleep still goes through the seam (the reference schedules a real timer)
+		const zero = sleep(0);
+		const [zeroId, zeroEntry] = [...timers.scheduled.entries()][0];
+		assert.equal(zeroEntry.ms, 0);
+		timers.fire(zeroId);
+		assert.equal(await zero, undefined);
+	} finally {
+		setUtilsTimerFns(null);
+	}
+});
+
+test('sleepWithAbort resolves without a signal (oracle "should work without abort signal")', async () => {
+	const timers = createFakeTimers();
+	setUtilsTimerFns(timers.fns);
+	try {
+		const promise = sleepWithAbort(100, undefined);
+		const [id, entry] = [...timers.scheduled.entries()][0];
+		assert.equal(entry.ms, 100);
+		timers.fire(id);
+		assert.equal(await promise, undefined);
+		assert.equal(timers.scheduled.size, 0, 'a plain resolve leaves no pending timer');
+	} finally {
+		setUtilsTimerFns(null);
+	}
+});
+
+test('sleepWithAbort rejects immediately when the signal is already aborted (oracle case, utils.ts L243-245)', async () => {
+	const timers = createFakeTimers();
+	setUtilsTimerFns(timers.fns);
+	try {
+		const controller = new AbortController();
+		controller.abort();
+
+		await assert.rejects(
+			() => sleepWithAbort(1000, controller.signal),
+			(error) => {
+				assert.ok(error instanceof ManualExecutionCancelledError);
+				assert.ok(error instanceof ExecutionCancelledError);
+				assert.ok(error instanceof ExecutionBaseError);
+				assert.equal(error.message, 'The execution was cancelled manually');
+				assert.equal(error.name, 'ManualExecutionCancelledError');
+				assert.equal(error.level, 'warning');
+				assert.equal(error.reason, 'manual');
+				assert.deepEqual(error.extra, { executionId: '' }); // utils.ts L244 — the empty execution id
+				return true;
+			},
+		);
+		assert.equal(timers.scheduled.size, 0, 'the timer must never be scheduled on the fast path');
+	} finally {
+		setUtilsTimerFns(null);
+	}
+});
+
+test('sleepWithAbort rejects and clears its timer when aborted mid-sleep (oracle "should clean up timeout", utils.ts L249-252)', async () => {
+	const timers = createFakeTimers();
+	setUtilsTimerFns(timers.fns);
+	try {
+		const controller = new AbortController();
+		const promise = sleepWithAbort(1000, controller.signal);
+
+		assert.equal(timers.scheduled.size, 1);
+		const id = [...timers.scheduled.keys()][0];
+		controller.abort();
+
+		await assert.rejects(
+			() => promise,
+			(error) => error.name === 'ManualExecutionCancelledError' && error.reason === 'manual',
+		);
+		assert.equal(timers.scheduled.has(id), false, 'clearTimeout must have been called for the pending timer');
+	} finally {
+		setUtilsTimerFns(null);
+	}
+});
+
+test('sleepWithAbort error shape matches the published build key-for-key', async () => {
+	const error = new ManualExecutionCancelledError('exec-9');
+	assert.deepEqual(Object.keys(error), [
+		'level',
+		'tags',
+		'extra',
+		'description',
+		'cause',
+		'errorResponse',
+		'timestamp',
+		'context',
+		'lineNumber',
+		'functionality',
+		'name',
+		'reason',
+	]);
+	assert.equal(typeof error.timestamp, 'number');
+	assert.deepEqual(error.context, {});
+	assert.equal(error.functionality, 'regular');
+	assert.equal(error.lineNumber, undefined);
+	assert.equal(error.description, undefined);
+
+	const serialized = error.toJSON();
+	assert.equal(serialized.message, 'The execution was cancelled manually');
+	assert.equal(serialized.name, 'ManualExecutionCancelledError');
+	assert.deepEqual(serialized.context, {});
+	assert.equal(serialized.lineNumber, undefined);
+	assert.equal(serialized.description, undefined);
+	// `tags` carry the reference's environment-derived `packageName` there; this boundary keeps the
+	// documented local default (DELTA-02), so it is excluded from the comparison.
+	assert.deepEqual(error.tags, {});
+});
+
+test('ExecutionBaseError keeps a non-Error cause and inherits context from an ExecutionBaseError cause', () => {
+	const plainCause = { code: 'ETIMEDOUT' };
+	const withPlain = new ManualExecutionCancelledError('e1');
+	assert.equal(withPlain.cause, undefined);
+	const base = new ExecutionBaseError('boom', { cause: plainCause });
+	assert.equal(base.cause, plainCause);
+	assert.equal(base.name, 'ExecutionBaseError'); // set from constructor.name, unlike ApplicationError
+
+	const inner = new ExecutionBaseError('inner', { cause: plainCause });
+	inner.context = { runIndex: 3 };
+	const outer = new ExecutionBaseError('outer', { cause: inner });
+	assert.deepEqual(outer.context, { runIndex: 3 });
+	assert.equal(outer.cause, undefined, 'an ExecutionBaseError cause keeps its own context, it is not copied to `cause`');
+});
+
+test('updateDisplayOptions folds the caller options into every property (utils.ts L316-326)', () => {
+	const properties = [
+		{ name: 'a', displayOptions: { show: { mode: ['x', 'y'], sub: { k: 1 } } } },
+		{ name: 'b' },
+		{ name: 'c', displayOptions: { hide: { z: [1] }, show: { mode: 'single' } } },
+	];
+
+	const result = updateDisplayOptions({ show: { mode: ['z'], extra: true } }, properties);
+
+	// arrays merge by index (the reference's `merge`, not a concatenation)
+	assert.deepEqual(result, [
+		{ name: 'a', displayOptions: { show: { mode: ['z', 'y'], sub: { k: 1 }, extra: true } } },
+		{ name: 'b', displayOptions: { show: { mode: ['z'], extra: true } } },
+		{ name: 'c', displayOptions: { hide: { z: [1] }, show: { mode: ['z'], extra: true } } },
+	]);
+	// the inputs are untouched: the property objects are shallow-copied, the merge target is fresh
+	assert.deepEqual(properties[0].displayOptions, { show: { mode: ['x', 'y'], sub: { k: 1 } } });
+	assert.equal(result[0] === properties[0], false);
+	assert.equal(result[0].name, 'a');
+	assert.deepEqual(Object.keys(result[0]), ['name', 'displayOptions']);
+});
+
+test('updateDisplayOptions with no properties and with empty options (edge cases)', () => {
+	assert.deepEqual(updateDisplayOptions({ show: { a: 1 } }, []), []);
+	assert.deepEqual(updateDisplayOptions({}, [{ name: 'p' }]), [{ name: 'p', displayOptions: {} }]);
+	assert.deepEqual(updateDisplayOptions({ show: { a: 1 } }, [{ name: 'p', displayOptions: {} }]), [
+		{ name: 'p', displayOptions: { show: { a: 1 } } },
+	]);
+});
+
+test('merge reproduces the lodash subset the display-options call site relies on', () => {
+	// primitives / null overwrite, arrays merge by index, undefined never overwrites
+	assert.deepEqual(merge({}, { a: 1 }, { a: 2 }), { a: 2 });
+	assert.deepEqual(merge({}, { a: { b: 1 } }, { a: null }), { a: null });
+	assert.deepEqual(merge({}, { a: null }, { a: { b: 1 } }), { a: { b: 1 } });
+	assert.deepEqual(merge({}, { a: [1, 2, 3] }, { a: ['x'] }), { a: ['x', 2, 3] });
+	assert.deepEqual(merge({}, { a: [1, 2, 3] }, { a: [undefined, 9] }), { a: [1, 9, 3] });
+	assert.deepEqual(merge({}, { a: 1 }, { a: undefined }), { a: 1 });
+	assert.deepEqual(Object.keys(merge({}, { a: undefined })), ['a']);
+
+	// deep merge, nested array-of-objects merged element-wise
+	assert.deepEqual(merge({}, { a: { b: { c: 1 } } }, { a: { b: { d: 2 } } }), { a: { b: { c: 1, d: 2 } } });
+	assert.deepEqual(merge({}, { a: [{ x: 1 }] }, { a: [{ y: 2 }, { z: 3 }] }), {
+		a: [
+			{ x: 1, y: 2 },
+			{ z: 3 },
+		],
+	});
+
+	// sources that are not containers are no-ops; non-plain objects are attached by reference
+	assert.deepEqual(merge({}, { a: 1 }, null, undefined, 5, true), { a: 1 });
+	assert.deepEqual(merge({}, { a: { b: 1 } }, 'ab'), { a: { b: 1 }, 0: 'a', 1: 'b' });
+	const date = new Date(5);
+	const withDate = merge({}, { a: date }, { a: { b: 2 } });
+	assert.equal(withDate.a, date, 'a Date source is attached by reference (lodash behaviour)');
+	assert.equal(date.b, 2);
+
+	// prototype-pollution guard + inherited enumerable keys (lodash `keysIn`)
+	assert.deepEqual(merge({}, JSON.parse('{"__proto__":{"polluted":1},"q":2}')), { q: 2 });
+	assert.equal({}.polluted, undefined);
+	assert.deepEqual(merge({}, Object.assign(Object.create({ inherited: 1 }), { own: 2 })), {
+		inherited: 1,
+		own: 2,
+	});
+	assert.deepEqual(merge({}, { constructor: { x: 1 } }).constructor, { x: 1 });
+	assert.equal(typeof Object.x, 'undefined', 'the global Object must not be touched');
+
+	// cycles are copied, shared-but-acyclic references are cloned independently. The clone of a
+	// cyclic source is anchored on its own copy, not on the merge target — measured against the
+	// real lodash (see the N28 differential group, where both sides agree on the same booleans).
+	const cyclic = { a: 1 };
+	cyclic.self = cyclic;
+	const cyclicCopy = merge({}, cyclic);
+	assert.notEqual(cyclicCopy.self, cyclicCopy);
+	assert.equal(cyclicCopy.self, cyclicCopy.self.self, 'the cycle survives inside the copy');
+	const shared = { x: 1 };
+	const diamond = merge({}, { p: shared, q: shared });
+	assert.notEqual(diamond.p, diamond.q);
+	assert.deepEqual(diamond.p, { x: 1 });
+
+	// the target is mutated and returned (the reference's `merge({}, …)` idiom)
+	const target = { keep: true };
+	assert.equal(merge(target, { a: 1 }), target);
+	assert.deepEqual(target, { keep: true, a: 1 });
 });

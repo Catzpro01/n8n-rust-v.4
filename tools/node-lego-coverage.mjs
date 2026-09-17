@@ -57,7 +57,7 @@ const OUT_OF_SCOPE = {
 	// Node Model raises are reconstructed (`NodeOperationError`, `OperationalError`).
 	BaseError: 'DELTA-02 — error hierarchy outside the LEGO',
 	NodeError: 'DELTA-02 — error hierarchy outside the LEGO',
-	ExecutionBaseError: 'DELTA-02 — error hierarchy outside the LEGO',
+
 	BaseErrorOptions: 'TypeScript-only type (no runtime surface)',
 	OperationalErrorOptions: 'TypeScript-only type (no runtime surface)',
 	Primitives: 'TypeScript-only type (no runtime surface)',
@@ -78,13 +78,19 @@ const INTERNAL = {
 		'used by `parameter-issues.mjs` (reference `type-guards.ts` L47-57); not re-exported',
 };
 
-/** Real scope that is not done yet — each entry names the task that owns it. */
-const DEFERRED = {
-	sleep: 'TASK-UTILS-02 — needs an injectable timer seam (rule E01)',
-	sleepWithAbort:
-		'TASK-UTILS-02 — needs an injectable timer + a boundary-local `ManualExecutionCancelledError`',
-	updateDisplayOptions: 'TASK-UTILS-02 — needs a lodash `merge` subset (DELTA-01 follow-up)',
-};
+/**
+ * Boundary-local cancellation hierarchy (TASK-UTILS-02): `ExecutionBaseError`,
+ * `ExecutionCancelledError` and `ManualExecutionCancelledError` mirror
+ * `errors/abstract/execution-base.error.ts` + `errors/execution-cancelled.error.ts` for the
+ * `sleepWithAbort` path (DELTA-02). The reference's `ExecutionBaseError` symbol is therefore
+ * counted as PORTED; the rest of the reference hierarchy (`NodeError`, `BaseError`, …) stays
+ * out of scope below.
+ *
+ * Real scope that is not done yet — each entry names the task that owns it. Empty as of
+ * TASK-UTILS-02: the last three deferred symbols (`sleep`, `sleepWithAbort`, `updateDisplayOptions`)
+ * are ported, so every symbol of the 17 pinned boundary files is now accounted for.
+ */
+const DEFERRED = {};
 
 /* ------------------------------------------------------------------ extraction */
 
