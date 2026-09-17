@@ -71,6 +71,9 @@ retry/error policy. Everything the loop consumes from other LEGOs is injected
 | `ExecutionNotFoundError`, `ExecutionCancelledError`, `ManualExecutionCancelledError`, `TimeoutExecutionCancelledError`, `SystemShutdownExecutionCancelledError` | errors.mjs | execution lookup and cancellation errors for active workflow stopping and shutdown |
 | `WorkflowRunner` | workflow-runner.mjs | central workflow execution coordinator: `run`, `runMainProcess`, `processError`, `enqueueExecution`, timeout handling, streaming callbacks, and error recovery |
 | `MaxStalledCountError` | errors.mjs | BullMQ stalled worker error representation for queue-mode retry exhaustions |
+| `SubworkflowOperationError` | errors.mjs | sub-workflow execution error model |
+| `STARTING_NODES`, `findSubworkflowStart` | subworkflow-execution.mjs | sub-workflow trigger discovery (executeWorkflowTrigger priority, manual trigger fallbacks) |
+| `getRunData`, `getBase`, `executeWorkflow` | subworkflow-execution.mjs | sub-workflow execution lifecycle: input mapping, run data construction, active execution tracking, waitTill extraction, and error propagation |
 
 ## 5. Loop invariants (pinned to source lines)
 

@@ -1,6 +1,6 @@
 # Execution LEGO — Phase 3 reconstruction record
 
-**Status:** `IMPLEMENTED` · `TESTED` (110/110) · `GATE 13/13`
+**Status:** `IMPLEMENTED` · `TESTED` (122/122) · `GATE 14/14`
 **Language:** JavaScript (Node.js ESM) — `PROJECT_RULES.md` v2.9.4 rule 1 (ZERO RUST, the JavaScript reconstruction track).
 The Phase-3 opening record (`docs/isolation/PHASE-3-OPENING-RECORD.md`, 2026-09-17) permits Rust **only** under
 `crates/**` + `apps/**` for the separate port track; this LEGO contributes no Rust and stays JavaScript either way.
@@ -74,12 +74,13 @@ The three open pool tasks of the execution LEGO:
 | `test/07-wait-tracker.test.mjs` | 23 | WaitTracker DB polling, timer scheduling, startExecution guards, parent execution resumption, duplicate resume suppression, lifecycle, ISSUE-028 reference parity |
 | `test/08-active-executions.test.mjs` | 10 | ActiveExecutions registry, persistence creation, concurrency reservations, waiting resumption lock, streaming chunks, stopExecution, shutdown |
 | `test/09-workflow-runner.test.mjs` | 10 | WorkflowRunner execution lifecycle, run/runMainProcess, processError, timeout handling, streaming sendChunk callbacks, queue-mode enqueueExecution |
+| `test/10-subworkflow-execution.test.mjs` | 12 | subworkflow start node discovery, input mapping (getRunData), context assembly (getBase), executeWorkflow execution & waiting return, error persistence |
 
 ```
 $ cd packages/execution-engine && node --test test/*.test.mjs
-# tests 110   # pass 110   # fail 0
+# tests 122   # pass 122   # fail 0
 $ node tools/execution-engine-gate.mjs
-Execution LEGO gate: 13/13 PASS
+Execution LEGO gate: 14/14 PASS
 ```
 
 ## 5. Known deltas (must be closed before this LEGO is swapped for anything else)

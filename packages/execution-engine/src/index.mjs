@@ -37,6 +37,7 @@ export {
 	NodeApiError,
 	NodeOperationError,
 	OperationalError,
+	SubworkflowOperationError,
 	SystemShutdownExecutionCancelledError,
 	TimeoutExecutionCancelledError,
 	TriggerCloseError,
@@ -84,3 +85,10 @@ export {
 } from './workflow-helpers.mjs';
 export { ActiveExecutions } from './active-executions.mjs';
 export { WorkflowRunner } from './workflow-runner.mjs';
+export {
+	STARTING_NODES,
+	findSubworkflowStart,
+	getRunData,
+	getBase,
+	executeWorkflow,
+} from './subworkflow-execution.mjs';

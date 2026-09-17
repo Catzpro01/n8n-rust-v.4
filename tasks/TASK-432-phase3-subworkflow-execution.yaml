@@ -1,0 +1,29 @@
+id: TASK-432-phase3-subworkflow-execution
+agent: arena-worker
+lego: execution
+module: subworkflow-execution
+phase: 3
+title: "Execution LEGO: Subworkflow execution runtime and trigger discovery"
+status: SUBMITTED_FOR_REVIEW
+objective: "Reconstruct sub-workflow execution runtime, trigger discovery, input mapping, and parent-child execution flow 1:1 against n8n 2.9.4 CLI reference."
+acceptance:
+  - "findSubworkflowStart: prioritization of executeWorkflowTrigger over manual triggers, error thrown when missing"
+  - "getRunData: maps inputData into nodeExecutionStack main[0] and constructs integrated executionData"
+  - "getBase: baseline execution additional data constructor"
+  - "executeWorkflow: workflow resolution from code or repository, ActiveExecutions registration, event emission"
+  - "executeWorkflow: doNotWaitToFinish returns executionId and [null] data without awaiting"
+  - "executeWorkflow: full execution returns last executed node outputs via getDataLastExecutedNodeData"
+  - "executeWorkflow: waiting execution status preserves waitTill timestamp and returns partial results"
+  - "executeWorkflow: failed execution updates DB repository and propagates error cleanly"
+  - "execution-engine gate passes 14/14 with 0 runtime dependencies and import closed"
+  - "all 14 verify:all gates pass"
+allowed_paths:
+  - packages/execution-engine/**
+  - tools/execution-engine-gate.mjs
+  - contracts/execution.contract.md
+  - docs/isolation/execution.md
+  - docs/isolation/LEGO-MASTER-MAP.md
+  - docs/isolation/evidence/execution-engine-gate.json
+  - tasks/TASK-432-phase3-subworkflow-execution.yaml
+  - results/TASK-432-phase3-subworkflow-execution.md
+forbidden_paths: [reference/n8n/**, crates/**, apps/**]

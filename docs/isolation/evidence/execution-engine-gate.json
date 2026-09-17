@@ -1,5 +1,5 @@
 {
-	"generatedAt": "2026-09-17T19:53:06.477Z",
+	"generatedAt": "2026-09-17T20:01:35.344Z",
 	"lego": "execution",
 	"phase": "phase-3-reconstruction",
 	"language": "JavaScript (Node.js ESM)",
@@ -27,7 +27,7 @@
 			"id": "E02",
 			"title": "sources are import-closed (no reference/ or n8n package imports)",
 			"status": "PASS",
-			"detail": "20 source files, all imports relative or node: builtins",
+			"detail": "21 source files, all imports relative or node: builtins",
 			"ms": 4
 		},
 		{
@@ -42,7 +42,7 @@
 			"title": "reference/n8n tree still matches the pinned hashes",
 			"status": "PASS",
 			"detail": "Reference integrity check: PASS (15050 files, root f8da35180669d798…)",
-			"ms": 502
+			"ms": 471
 		},
 		{
 			"id": "E05",
@@ -50,7 +50,7 @@
 			"requirement": "packages/execution-engine/test/01-execution-loop.test.mjs",
 			"status": "PASS",
 			"detail": "14 pass / 0 fail",
-			"ms": 137
+			"ms": 134
 		},
 		{
 			"id": "E06",
@@ -58,7 +58,7 @@
 			"requirement": "packages/execution-engine/test/02-node-context-data-proxy.test.mjs",
 			"status": "PASS",
 			"detail": "7 pass / 0 fail",
-			"ms": 199
+			"ms": 192
 		},
 		{
 			"id": "E07",
@@ -66,13 +66,13 @@
 			"requirement": "packages/execution-engine/test/03-error-retry.test.mjs",
 			"status": "PASS",
 			"detail": "12 pass / 0 fail",
-			"ms": 149
+			"ms": 160
 		},
 		{
 			"id": "E08",
 			"title": "public surface is documented in contracts/execution.contract.md",
 			"status": "PASS",
-			"detail": "74 exported symbols documented",
+			"detail": "80 exported symbols documented",
 			"ms": 1
 		},
 		{
@@ -81,7 +81,7 @@
 			"requirement": "packages/execution-engine/test/04-expression-sandbox.test.mjs",
 			"status": "PASS",
 			"detail": "7 pass / 0 fail",
-			"ms": 146
+			"ms": 137
 		},
 		{
 			"id": "E10",
@@ -97,7 +97,7 @@
 			"requirement": "packages/execution-engine/test/07-wait-tracker.test.mjs",
 			"status": "PASS",
 			"detail": "23 pass / 0 fail",
-			"ms": 161
+			"ms": 154
 		},
 		{
 			"id": "E12",
@@ -105,7 +105,7 @@
 			"requirement": "packages/execution-engine/test/08-active-executions.test.mjs",
 			"status": "PASS",
 			"detail": "10 pass / 0 fail",
-			"ms": 205
+			"ms": 174
 		},
 		{
 			"id": "E13",
@@ -113,12 +113,20 @@
 			"requirement": "packages/execution-engine/test/09-workflow-runner.test.mjs",
 			"status": "PASS",
 			"detail": "10 pass / 0 fail",
-			"ms": 121
+			"ms": 122
+		},
+		{
+			"id": "E14",
+			"title": "subworkflow execution runtime & start discovery (executeWorkflow)",
+			"requirement": "packages/execution-engine/test/10-subworkflow-execution.test.mjs",
+			"status": "PASS",
+			"detail": "12 pass / 0 fail",
+			"ms": 160
 		}
 	],
 	"totals": {
-		"gates": 13,
-		"passed": 13,
+		"gates": 14,
+		"passed": 14,
 		"failed": 0
 	},
 	"pools": {
@@ -196,6 +204,17 @@
 			"surface": [
 				"WorkflowRunner",
 				"MaxStalledCountError"
+			]
+		},
+		"TASK-432-phase3-subworkflow-execution": {
+			"status": "IMPLEMENTED",
+			"surface": [
+				"executeWorkflow",
+				"getRunData",
+				"findSubworkflowStart",
+				"getBase",
+				"STARTING_NODES",
+				"SubworkflowOperationError"
 			]
 		}
 	}

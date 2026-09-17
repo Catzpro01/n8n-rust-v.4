@@ -133,6 +133,15 @@ export class MaxStalledCountError extends OperationalError {
 	}
 }
 
+/** Error thrown when a subworkflow execution cannot be started — mirrors `SubworkflowOperationError`. */
+export class SubworkflowOperationError extends OperationalError {
+	constructor(message, description = '') {
+		super(message);
+		this.name = 'SubworkflowOperationError';
+		this.description = description;
+	}
+}
+
 /**
  * Mirrors `NodeOperationError` (packages/workflow/src/errors/node-operation.error.ts)
  * — 1:1, TASK-EERR-01 / ISSUE-024. `node` is required exactly like upstream; `error`

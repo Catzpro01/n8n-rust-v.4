@@ -228,6 +228,12 @@ gate('E13', 'workflow runner coordination & dispatch (WorkflowRunner)', () =>
 	'packages/execution-engine/test/09-workflow-runner.test.mjs',
 );
 
+/* E14 — sub-workflow execution runtime ------------------------------------ */
+gate('E14', 'subworkflow execution runtime & start discovery (executeWorkflow)', () =>
+	runNodeTest('test/10-subworkflow-execution.test.mjs', PKG),
+	'packages/execution-engine/test/10-subworkflow-execution.test.mjs',
+);
+
 /* ---------------- evidence + human-readable report ----------------------- */
 const totals = {
 	gates: results.length,
@@ -286,6 +292,10 @@ const report = {
 		'TASK-431-phase3-workflow-runner': {
 			status: results.find((entry) => entry.id === 'E13')?.status === 'PASS' ? 'IMPLEMENTED' : 'FAILED',
 			surface: ['WorkflowRunner', 'MaxStalledCountError'],
+		},
+		'TASK-432-phase3-subworkflow-execution': {
+			status: results.find((entry) => entry.id === 'E14')?.status === 'PASS' ? 'IMPLEMENTED' : 'FAILED',
+			surface: ['executeWorkflow', 'getRunData', 'findSubworkflowStart', 'getBase', 'STARTING_NODES', 'SubworkflowOperationError'],
 		},
 	},
 };
