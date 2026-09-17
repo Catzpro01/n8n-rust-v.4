@@ -2,7 +2,7 @@
   "name": "n8n-rust-v4",
   "version": "0.4.0",
   "private": true,
-  "description": "n8n 2.9.4 anatomy \u2192 contract \u2192 reference runtime \u2192 LEGO isolation \u2192 (later) Rust replacement",
+  "description": "n8n 2.9.4 anatomy → contract → reference runtime → LEGO isolation → (later) Rust replacement",
   "scripts": {
     "setup:reference": "bash scripts/setup-reference-runtime.sh",
     "verify": "node tools/workflow-isolation-gate.mjs",
@@ -11,6 +11,9 @@
     "isolation:check": "node tools/workflow-boundary-map.mjs --check && node tools/workflow-kernel-conformance.mjs --check && node tools/workflow-port-surface.mjs --check && node tools/workflow-reference-manifest.mjs --check",
     "isolation:extract": "node tools/workflow-isolation-extract.mjs",
     "workflow-lego:build": "npm --prefix packages/workflow-lego run build",
-    "workflow-lego:test": "bash scripts/run-lego-tests.sh"
+    "workflow-lego:test": "bash scripts/run-lego-tests.sh",
+    "verify:reconstructed": "node packages/reconstructed-engine/test-run.mjs && node packages/reconstructed-engine/test-enhanced.mjs",
+    "rust:check-offline": "bash tools/rust-offline-rig/run.sh check",
+    "rust:test-offline": "bash tools/rust-offline-rig/run.sh test"
   }
 }
