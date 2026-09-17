@@ -19,8 +19,6 @@ import shutil
 import sys
 
 # (source subdir under <src>, crate name, version)
-# Keep this list in sync with CRATES in setup.sh. Workspace crates depend on
-# indexmap and regex, so their runtime dependency closure is vendored too.
 PLAN = [
     ("serde/serde", "serde", "1.0.219"),
     ("serde/serde_derive", "serde_derive", "1.0.219"),
@@ -33,13 +31,13 @@ PLAN = [
     ("itoa", "itoa", "1.0.14"),
     ("ryu", "ryu", "1.0.18"),
     ("memchr", "memchr", "2.7.4"),
-    ("aho-corasick", "aho-corasick", "1.1.3"),
     ("unicode-ident", "unicode-ident", "1.0.14"),
-    ("equivalent", "equivalent", "1.0.1"),
-    ("hashbrown", "hashbrown", "0.14.1"),
     ("indexmap", "indexmap", "2.2.6"),
-    ("regex/regex-syntax", "regex-syntax", "0.8.4"),
+    ("equivalent", "equivalent", "1.0.1"),
+    ("hashbrown", "hashbrown", "0.14.5"),
+    ("aho-corasick", "aho-corasick", "1.1.3"),
     ("regex/regex-automata", "regex-automata", "0.4.7"),
+    ("regex/regex-syntax", "regex-syntax", "0.8.4"),
     ("regex", "regex", "1.10.6"),
 ]
 
@@ -64,29 +62,63 @@ PKG_FIELDS = {
     "homepage": 'homepage = "https://docs.rs"',
 }
 
-# Match both normal tables (`[dependencies]`) and array tables
-# (`[[test]]`). Test/dev-only tables are not needed when compiling a crate as a
-# directory dependency, and often point at source files excluded from the rig.
+# Plain tables [x] and array-of-tables [[x]] alike — [[bench]] / [[test]] /
+# [[example]] / [[bin]] carry their own `path` keys and must be recognized too.
 SECTION = re.compile(r"^\[+([^\]]+)\]+$")
 DOTTED = re.compile(r"^([A-Za-z0-9_.-]+)\.workspace\s*=\s*true$")
 
 
-def rewrite_manifest(path, name, version):
-    out, drop_section, report = [], False, []
-    current_section = ""
-    for line in open(path, encoding="utf-8").read().split("\n"):
+def collect_devdeps(lines):
+    """First pass: dependency names declared inside dropped [dev-dependencies]
+    sections (incl. dotted forms like [dev-dependencies.env_logger]). Features
+    may reference them (`test = ["syn-test-suite/all-features"]`); once the
+    dev-dep is dropped the feature reference is orphaned and cargo rejects the
+    manifest, so the second pass prunes those lines — but ONLY when the name is
+    not also a real (kept) dependency, because test setups often re-declare the
+    crate's own optional deps as dev-deps (serde_derive, memchr, ...)."""
+    devdeps, realdeps = set(), set()
+    in_dev = in_real = False
+    for line in lines:
         stripped = line.strip()
         header = SECTION.match(stripped)
         if header:
             section = header.group(1)
-            current_section = section
+            in_dev = section == "dev-dependencies" or section.startswith("dev-dependencies.")
+            in_real = (
+                section == "dependencies"
+                or section.startswith("dependencies.")
+                or section == "build-dependencies"
+                or section.startswith("build-dependencies.")
+            )
+            continue
+        if in_dev or in_real:
+            m = re.match(r"^([A-Za-z0-9_-]+)\s*=", stripped)
+            if m:
+                (devdeps if in_dev else realdeps).add(m.group(1))
+    return devdeps - realdeps
+
+
+def rewrite_manifest(path, name, version):
+    raw_lines = open(path, encoding="utf-8").read().split("\n")
+    devdeps = collect_devdeps(raw_lines)
+    out, drop_section, report = [], False, []
+    for line in raw_lines:
+        stripped = line.strip()
+        header = SECTION.match(stripped)
+        if header:
+            section = header.group(1)
+            # Tables that are meaningless or harmful in a directory source:
+            # [workspace]/[patch.*] (inheritance), [dev-dependencies] plus
+            # [[bench]]/[[test]]/[[example]] (may carry path deps), [target.*]
+            # (platform-specific dev-deps), [badges] (retired metadata).
             drop_section = (
                 section == "workspace"
-                or section.startswith("patch.")
                 or section == "dev-dependencies"
                 or section.startswith("dev-dependencies.")
-                or section.endswith(".dev-dependencies")
-                or section in {"test", "bench", "example"}
+                or section == "badges"
+                or section.startswith("patch.")
+                or section.startswith("target.")
+                or section.split(".")[0] in ("bench", "test", "example")
             )
             if drop_section:
                 report.append(f"  - dropped table [{section}]")
@@ -95,25 +127,28 @@ def rewrite_manifest(path, name, version):
             continue
         if drop_section:
             continue
+        # Surgically prune feature ARRAY ITEMS that reference a dropped dev-dep
+        # (e.g. syn's `test = ["syn-test-suite/all-features"]`, hashbrown's
+        # `nightly = ["allocator-api2?/nightly", "bumpalo/allocator_api"]` — keep
+        # the real-dep item, drop only the dev-dep item; dropping the whole line
+        # is wrong because other features may reference the feature itself).
+        if section == "features" and devdeps and "[" in line:
+            open_i = line.index("[")
+            close_i = line.rfind("]")
+            if close_i > open_i:
+                head, inner, tail = line[: open_i + 1], line[open_i + 1 : close_i], line[close_i:]
+
+                def orphaned(item):
+                    core = item.strip().strip('"').split("?")[0].split("/")[0]
+                    return core in devdeps
+
+                items = [i.strip() for i in inner.split(",") if i.strip()]
+                kept = [i for i in items if not orphaned(i)]
+                if len(kept) != len(items):
+                    report.append(f"  - pruned orphaned feature item(s): {stripped[:70]}")
+                line = head + ", ".join(kept) + tail
         if not stripped or stripped.startswith("#"):
             out.append(line)
-            continue
-        # syn exposes a `test` feature only for its excluded dev-only
-        # syn-test-suite workspace member. Keep the feature name for manifest
-        # compatibility but make it inert in the production-only rig.
-        if current_section == "features" and stripped == 'test = ["syn-test-suite/all-features"]':
-            out.append("test = []")
-            report.append("  - made syn test feature inert (dev-only workspace member)")
-            continue
-        if current_section == "features" and stripped == 'nightly = ["allocator-api2?/nightly", "bumpalo/allocator_api"]':
-            out.append('nightly = ["allocator-api2?/nightly"]')
-            report.append("  - removed hashbrown dev-only bumpalo feature reference")
-            continue
-        # Some workspace manifests use `workspace = ".."` rather than the
-        # inherited `key.workspace = true` form. It has no meaning in a
-        # standalone directory source.
-        if re.match(r"^workspace\s*=", stripped):
-            report.append("  - dropped workspace link")
             continue
         dotted = DOTTED.match(stripped)
         if dotted:
@@ -132,12 +167,13 @@ def rewrite_manifest(path, name, version):
                 continue
             line = re.sub(r"workspace\s*=\s*true", f'version = "{DEP_VER[key]}"', line)
             report.append(f"  ~ dep {key} workspace -> version {DEP_VER[key]}")
-        # Remove path fields only from dependency declarations. `[lib] path =
-        # "src/lib.rs"` is a legitimate package-local source path and must
-        # stay. Inline dependency tables are handled by removing the field;
-        # dependency subtables have a standalone `path =` line.
-        if current_section.startswith("dependencies") and re.match(r"^path\s*=", stripped):
-            report.append("  ~ stripped a path dependency")
+        # Standalone `path = "..."` lines inside dependency tables: drop the line
+        # entirely (the versioned dep still resolves from the vendor directory).
+        if (
+            section.startswith("dependencies")
+            or section.startswith("build-dependencies")
+        ) and re.match(r'^path\s*=\s*"[^"]*"\s*$', stripped):
+            report.append(f"  - dropped path-only line in [{section}]")
             continue
         stripped_path = re.sub(r',\s*path\s*=\s*"[^"]*"', "", line)
         stripped_path = re.sub(r'path\s*=\s*"[^"]*"\s*,\s*', "", stripped_path)
@@ -145,8 +181,8 @@ def rewrite_manifest(path, name, version):
             report.append("  ~ stripped a path dependency")
         out.append(stripped_path)
     body = "\n".join(out)
-    if "workspace = true" in body or re.search(r'(?m)^\s*path\s*=\s*"\.\./', body):
-        raise SystemExit(f"FATAL: {name}: manifest still has workspace/path dependency remnants")
+    if "workspace = true" in body or re.search(r'path\s*=\s*"', body):
+        raise SystemExit(f"FATAL: {name}: manifest still has workspace/path remnants")
     open(path, "w", encoding="utf-8").write(body)
     with open(os.path.join(os.path.dirname(path), ".cargo-checksum.json"), "w") as fh:
         json.dump({"files": {}}, fh)

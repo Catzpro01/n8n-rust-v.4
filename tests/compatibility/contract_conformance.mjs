@@ -41,10 +41,10 @@ const fixtures = readdirSync(refDir, { withFileTypes: true })
 
 check('golden fixtures discovered', () => {
   assert(fixtures.length > 0, 'no golden fixtures found under tests/reference');
-  return fixtures.map((f) => f.name).join(', ');
+  return fixtures.map((f) => (f.negative ? `${f.name} [negative]` : f.name)).join(', ');
 });
 
-for (const { name, wf, negative } of fixtures) {
+for (const { name, negative, wf } of fixtures) {
   // WorkflowContract schema
   check(`${name}: workflow schema`, () => {
     assert(typeof wf.id === 'string' && wf.id, 'id must be a non-empty string');
@@ -101,10 +101,10 @@ for (const { name, wf, negative } of fixtures) {
     return `${count} edge(s)`;
   });
 
-  // ValidationContract: CycleDetection. Directories ending in `-invalid`
-  // are deliberate negative fixtures and must contain a cycle; returning from
-  // the test without checking that fact would make the gate silently pass.
-  check(`${name}: CycleDetection (${negative ? 'rejects cycle' : 'acyclic'})`, () => {
+  // ValidationContract: CycleDetection. Directories suffixed `-invalid` are NEGATIVE
+  // fixtures: the cycle MUST be detected. Accepting a negative fixture means the cycle
+  // detector is not falsifiable and the suite cannot be trusted.
+  check(`${name}: CycleDetection (${negative ? 'inverted — cycle required' : 'acyclic'})`, () => {
     const adj = new Map(wf.nodes.map((n) => [n.name, []]));
     for (const [src, byType] of Object.entries(wf.connections))
       for (const outputs of Object.values(byType))
@@ -112,31 +112,31 @@ for (const { name, wf, negative } of fixtures) {
     const WHITE = 0, GREY = 1, BLACK = 2;
     const color = new Map(wf.nodes.map((n) => [n.name, WHITE]));
     const stack = [];
-    let cycle;
+    let cycleFound = false;
     const visit = (n) => {
       color.set(n, GREY); stack.push(n);
       for (const m of adj.get(n) ?? []) {
-        if (color.get(m) === GREY) {
-          cycle = [...stack, m];
-          break;
-        }
-        if (color.get(m) === WHITE && !cycle) visit(m);
-        if (cycle) break;
+        if (color.get(m) === GREY) { cycleFound = [...stack, m].join(' -> '); return; }
+        if (color.get(m) === WHITE) visit(m);
       }
       stack.pop(); color.set(n, BLACK);
     };
-    for (const n of color.keys()) if (color.get(n) === WHITE && !cycle) visit(n);
+    for (const n of color.keys()) if (color.get(n) === WHITE && !cycleFound) visit(n);
     if (negative) {
-      assert(cycle, `negative fixture was accepted as acyclic`);
-      return `cycle rejected: ${cycle.join(' -> ')}`;
+      assert(typeof cycleFound === 'string',
+        'NEGATIVE fixture was accepted as acyclic — cycle detector is not falsifiable');
+      return `cycle correctly detected: ${cycleFound}`;
     }
-    assert(!cycle, `cycle detected: ${cycle?.join(' -> ') ?? ''}`);
+    assert(!cycleFound, `cycle detected: ${cycleFound}`);
     return 'acyclic';
   });
 }
 
-// --- Phase-2 guard: no premature Rust -------------------------------------
-check('Phase 2: no Rust implementation introduced', () => {
+// --- Phase discipline: Rust only under a formal Phase-3 opening (ISSUE-012) --------
+// Before Phase 3: crates/ and apps/ must contain NO Rust.
+// After Phase 3:  Rust is allowed ONLY if docs/isolation/PHASE-3-OPENING.md exists —
+// deleting the record while Rust is present fails the gate.
+check('Phase discipline: Rust matches the phase record', () => {
   const offenders = [];
   const walk = (dir) => {
     if (!existsSync(dir)) return;
@@ -147,8 +147,12 @@ check('Phase 2: no Rust implementation introduced', () => {
     }
   };
   walk(join(ROOT, 'crates')); walk(join(ROOT, 'apps'));
-  assert(offenders.length === 0, `Rust artifacts present in Phase 2: ${offenders.join(', ')}`);
-  return 'crates/ and apps/ contain no Rust sources';
+  if (offenders.length === 0) return 'no Rust present — Phase 2 posture';
+  const opening = join(ROOT, 'docs', 'isolation', 'PHASE-3-OPENING.md');
+  assert(existsSync(opening) && readFileSync(opening, 'utf8').length > 500,
+    `Rust present (${offenders.length} files) but docs/isolation/PHASE-3-OPENING.md is missing or empty — ` +
+    'Phase 3 must be opened with a decision record (ISSUE-012)');
+  return `Rust present under formal Phase-3 opening (${offenders.length} files, record ${readFileSync(opening, 'utf8').length} bytes)`;
 });
 
 const passed = results.filter((r) => r.ok).length;

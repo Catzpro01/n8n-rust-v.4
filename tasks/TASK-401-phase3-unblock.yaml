@@ -1,0 +1,90 @@
+id: TASK-401-phase3-unblock
+agent: workflow-owner        # dual role: Wasm host/orchestrator + workflow LEGO owner
+lego: workflow
+module: workflow
+phase: 3
+
+# PHASE-3 UNBLOCK BATCH. Resolves the four recorded blockers that kept Phase 3
+# undeclared/verbatim-broken:
+#   ISSUE-012 (no phase record)        -> docs/isolation/PHASE-3-OPENING.md + gate flips
+#   ISSUE-014 (fixtures/silent skips)  -> fail-loud loads + validation aggregate + gate
+#   ISSUE-017 (getStartNode disabled)  -> faithful port + runtime-derived startNode fixtures
+#   ISSUE-019 (offline rig broken)     -> vendor chain fixed, workspace builds + tests green
+# Also wires the reference-integrity check into the merge gate (ISSUE-011 class).
+
+allowed_paths:
+  - crates/n8n-workflow/**
+  - crates/n8n-validation/**
+  - tools/rust-offline-rig/**
+  - tools/workflow-reference-manifest.mjs
+  - tests/reference/workflow-rust/**
+  - tests/reference/04-disabled-node/**
+  - tests/reference/05-cyclic-invalid/**
+  - tests/compatibility/contract_conformance.mjs
+  - tests/integration/run_gate.sh
+  - tests/integration/boundary_audit.py
+  - docs/isolation/**
+  - docs/protocol/**
+  - docs/isolation/CROSS-AGENT-ISSUES.md
+  - results/**
+  - tasks/TASK-401-phase3-unblock.yaml
+
+forbidden_paths:
+  - reference/n8n/**           # hash-pinned, read-only (ISSUE-011)
+  - contracts/**               # Agent 5
+  - crates/n8n-connection/**   # Agent 2 — untouched
+  - crates/n8n-node-model/**
+  - crates/n8n-execution-data/**
+  - crates/n8n-expression/**
+  - apps/**
+
+requires:
+  - docs/protocol/PROJECT_RULES.md
+  - docs/isolation/STANDING-WORKER-PROTOCOL.md
+  - docs/isolation/CROSS-AGENT-ISSUES.md
+  - crates/n8n-workflow/src/lib.rs
+  - docs/protocol/connection-workflow-members-spec.md
+
+operations:
+  - name: reference_integrity_baseline
+    args:
+      cmd: node tools/workflow-reference-manifest.mjs --check
+      result: "PASS (15050 files, root f8da35180669d798…)"
+
+  - name: issue_017_fix
+    args:
+      cmd: >-
+        port STARTING_NODE_TYPES + get_highest_nodes/get_start_node asymmetric
+        disabled semantics (workflow.ts:485-887) into crates/n8n-workflow/src/lib.rs
+      evidence: >-
+        tests/reference/workflow-rust/build-fixtures.mjs --check rederives 42 cases
+        incl. 7 startNode cases; mutation test: lenient form breaks
+        `omitted-disabled-asymmetry` as designed (40/41 -> restored 41/41)
+
+  - name: validation_aggregate
+    args:
+      cmd: >-
+        implement InvalidConnectionType (INVALID_CONNECTION_TYPE, 4/4 codes) +
+        validate_workflow aggregate in crates/n8n-validation per contract §11.7/§11.8
+      evidence: "cargo test: 13 validation tests green (offline rig)"
+
+  - name: rig_repair
+    args:
+      cmd: tools/rust-offline-rig/setup.sh + run.sh test
+      result: "vendored 23 crates; workspace check PASS; 60/60 tests PASS offline"
+
+  - name: phase_3_opening_record
+    args:
+      doc: docs/isolation/PHASE-3-OPENING.md
+      gate_flip: >-
+        contract_conformance.mjs + boundary_audit.py: Rust allowed only WITH the
+        record; negative fixtures (-invalid) require cycle DETECTION
+      evidence: "31/31 PASS; 05-cyclic-invalid inverted check proven falsifiable"
+
+acceptance_criteria:
+  - node tools/workflow-reference-manifest.mjs --check exits 0
+  - node tests/reference/workflow-rust/build-fixtures.mjs --check exits 0
+  - tools/rust-offline-rig/run.sh test exits 0 with all crates green
+  - node tests/compatibility/contract_conformance.mjs exits 0 (31/31)
+  - deleting docs/isolation/PHASE-3-OPENING.md fails the gate while Rust is present
+  - 05-cyclic-invalid acceptance as acyclic fails the gate
