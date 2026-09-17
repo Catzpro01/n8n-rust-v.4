@@ -31,7 +31,9 @@ contract. It does **not** mean it was replaced by Rust.
 - `tools/` : boundary mapper, kernel/port/reference gates, isolation extractor, model digest, gate runner, live engine harness
 - `tests/reference/` : golden workflows + baseline smoke test evidence
 - `tasks/`, `results/` : inbound task manifests and execution results
-- `crates/`, `apps/n8n-rust/` : (reserved) Rust implementation
+- `apps/n8n-rust/` : (reserved) Rust implementation — `crates/` is intentionally empty per
+  PROJECT_RULES #1 (ZERO RUST); the legacy Phase-3-attempt workspace is quarantined in
+  `legacy/rust-port/` (see `legacy/rust-port/README.md`)
 
 ## Verify a LEGO
 
