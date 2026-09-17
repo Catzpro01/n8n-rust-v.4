@@ -100,6 +100,7 @@ asserts that confinement.
 | `TASK-412-phase3-node-parameter-issues` | node (field-type validation + issues engine) | `contracts/node.contract.md` §12 ✅ | `docs/isolation/node.md` §5 ✅ | `packages/node-lego/test/parameter-issues.test.mjs` 8/8 ✅ | `tools/node-lego-gate.mjs` 7/7 ✅ | **VERIFIED** (concurrent landing — consolidated into TASK-413, ISSUE-026) |
 | `TASK-413-phase3-node-parameter-issues` | node (field-type validation + issues engine, full surface) | `contracts/node.contract.md` §12 ✅ | `docs/isolation/node.md` §5 ✅ | `packages/node-lego/test/node-model.test.mjs` 74/74 ✅ + `parameter-issues.test.mjs` 8/8 ✅ (N19/N20/N21/N22 = 1107 new differential comparisons) | `tools/node-lego-gate.mjs` 7/7 ✅ (`N05` differential 1422 agree / 0 diverge) | **VERIFIED** |
 | `TASK-414-phase3-node-filter-execution` | node (filter execution, webhook paths, cron options) | `contracts/node.contract.md` §12 ✅ | `docs/isolation/node.md` §5 ✅ | `packages/node-lego/test/filter-execution.test.mjs` 11/11 ✅ (N23/N24 = 181 new differential comparisons) | `tools/node-lego-gate.mjs` 7/7 ✅ (`N05` differential 1609 agree / 0 diverge) | **VERIFIED** |
+| `TASK-NREFP-01-phase3-node-reference-parser` | node (node-reference parser + `OperationalError`) | `contracts/node.contract.md` §12 ✅ | `docs/isolation/node.md` §5 ✅ | `packages/node-lego/test/node-reference-parser.test.mjs` 15/15 ✅ (suite 116/116; N25 = 80 new differential comparisons) | `tools/node-lego-gate.mjs` 7/7 ✅ (`N05` differential 1695 agree / 0 diverge) | **VERIFIED** |
 | `TASK-415-phase3-validation-lego` | validation (LEGO 04) | `contracts/validation.contract.md` ✅ | `docs/isolation/validation.md` ✅ | `packages/validation-lego/test/conformance.test.mjs` 20/20 ✅ (Golden cases A/B/C/D, parity with n8n-workflow, 2 negative controls) | `contract_conformance` 42/42 ✅ · `boundary_audit` PASS ✅ | **VERIFIED** |
 | `TASK-416-phase3-credentials-lego` | credentials | `contracts/credentials.contract.md` ✅ | `docs/isolation/credentials.md` ✅ | `packages/credentials-lego/test/conformance.test.mjs` 22/22 ✅ (cipher round-trip, OpenSSL EVP_BytesToKey parity, 2 negative controls) | `tools/credentials-lego-gate.mjs` 6/6 ✅ | **VERIFIED** |
 | `TASK-417-phase3-execution-data-lego` | execution-data | `contracts/execution-data.contract.md` ✅ | `docs/isolation/execution-data.md` ✅ | `packages/execution-data-lego/test/conformance.test.mjs` 24/24 ✅ (7 reference suites, pairing rules, 2 negative controls) | `tools/execution-data-lego-gate.mjs` 6/6 ✅ | **VERIFIED** |
@@ -112,6 +113,7 @@ asserts that confinement.
 | `TASK-424-phase3-waiting-forms` | webhook waiting form rendering | `contracts/webhook.contract.md` ✅ | `docs/isolation/webhook.md` ✅ | `packages/webhook-lego/test/*.test.mjs` 35/35 ✅ (11 waiting-form cases) | `tools/webhook-lego-gate.mjs` 5/5 ✅ | **SUBMITTED_FOR_REVIEW** |
 | `TASK-425-phase3-webhook-body-parser` | webhook native body parsing | `contracts/webhook.contract.md` ✅ | `docs/isolation/webhook.md` ✅ | `packages/webhook-lego/test/*.test.mjs` 42/42 ✅ (7 body-parser cases) | `tools/webhook-lego-gate.mjs` 5/5 ✅ | **SUBMITTED_FOR_REVIEW** |
 | `TASK-426-phase3-webhook-streaming-response` | webhook response/stream transport | `contracts/webhook.contract.md` ✅ | `docs/isolation/webhook.md` ✅ | `packages/webhook-lego/test/*.test.mjs` 49/49 ✅ (7 response-stream cases) | `tools/webhook-lego-gate.mjs` 5/5 ✅ | **SUBMITTED_FOR_REVIEW** |
+| `TASK-427-phase3-webhook-response-extractors` | webhook response extraction | `contracts/webhook.contract.md` ✅ | `docs/isolation/webhook.md` ✅ | `packages/webhook-lego/test/*.test.mjs` 59/59 ✅ (10 extractor cases) | `tools/webhook-lego-gate.mjs` 5/5 ✅ | **SUBMITTED_FOR_REVIEW** |
 
 | Phase 3 gate | Result |
 | :--- | :--- |
@@ -124,7 +126,8 @@ holds 35 cases in 5 groups; `checksum` (8) + `toJSON` (6) + `rename` (6) are cov
 `packages/workflow-model-lego`, `traversal` (9) + `compareConnections` (6) by
 `packages/connection-lego`. The same file is the acceptance set for the Rust port track.
 
-**Next Phase 3 work:** caveat C1 (11/11 live smoke on the VPS + PostgreSQL), the remaining frozen
-Workflow surface (`getStartNode`, `getHighestNode`, `getNodeConnectionIndexes`,
-`getParentMainInputNode`, `getParentNodesByDepth`), and the remaining runtime around the activation
-LEGO (distributed activation pub/sub and waiting-form rendering are covered by TASK-423/TASK-424) — see `docs/isolation/execution.md` §7.
+**Next Phase 3 work:** caveat C1 (11/11 live smoke on the VPS + PostgreSQL) and production integration
+wiring for the reconstructed ports. The formerly listed frozen Workflow surface is implemented and
+covered by Workflow Model tests; distributed activation pub/sub, waiting forms, native body parsing,
+and streaming/response extraction are covered by TASK-423 through TASK-427 — see
+`docs/isolation/execution.md` §7.

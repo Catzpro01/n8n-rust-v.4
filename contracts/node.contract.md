@@ -233,12 +233,13 @@ model — the part the Workflow Model and the Execution LEGO import at runtime.
 | `deep-copy.mjs` | `utils.ts` `deepCopy` L53-87 (the copy the Node Model uses — **not** lodash `cloneDeep`) | differential N18 |
 | `expression-helpers.mjs` | `expressions/expression-helpers.ts` `isExpression` (the only expressions surface the Node Model owns) | differential N18 |
 | `errors.mjs` | `errors/node-operation.error.ts` + `errors/abstract/{node,execution-base}.error.ts` + `@n8n/errors` `application.error.ts` — **validation/resolution boundary only** | differential N09/N10/N17/N18 |
-| `lodash-lite.mjs` | the `lodash/{get,isEqual,isObject}` helpers `node-helpers.ts`/`type-validation.ts` import (DELTA-01) | `node-model.test.mjs` |
+| `lodash-lite.mjs` | the `lodash/{get,isEqual,isObject}` helpers `node-helpers.ts`/`type-validation.ts` import, plus `escapeRegExp`, `mapValues` and `cloneDeep` for `node-reference-parser-utils.ts` and `base.error.ts` (DELTA-01) | `node-model.test.mjs`, differential `N25` |
 | `type-validation.mjs` | `type-validation.ts` (481 ln): `tryToParseNumber` L15, `tryToParseString` L24, `tryToParseAlphanumericString` L38, `tryToParseBoolean` L48, `tryToParseDateTime` L72, `tryToParseTime` L114, `tryToParseArray` L124, `tryToParseObject` L146, `tryToParseBinary` L162, `tryToParseJsonToFormFields` L206, `getValueDescription` L272, `tryToParseUrl` L284, `tryToParseJwt` L305, `validateFieldType` L326-481; `utils.ts` `jsonParse` L152 (+`parseJSObject` L123); `type-guards.ts` `isBinaryValue` L168 | `test/type-validation.test.ts` (512 ln), differential N19/N20 |
 | `filter-parameter.mjs` | `node-parameters/filter-parameter.ts` whole file: `FilterError` L23, `parseSingleFilterValue` L32, `withIndefiniteArticle` L66, `parseFilterConditionValues` L71, `parseRegexPattern` L196, `arrayContainsValue` L209, `executeFilterCondition` L222-404, `executeFilter` L409-424, `validateFilterParameter` L427-450 | `test/filter-parameter.test.ts`, differential N21/N23 |
 | `webhook-path.mjs` | `node-helpers.ts` `getNodeWebhookPath` L1057-1084, `getNodeWebhookUrl` L1087-1101 | `test/node-helpers.test.ts` L6211, differential N24 |
 | `cron-node-options.mjs` | `node-helpers.ts` `cronNodeOptions` L56-241 (verbatim data literal) | differential N24 (byte-compared) |
 | `parameter-issues.mjs` | `node-helpers.ts` `getContext` L505-538, `getNodeParametersIssues` L1202, `validateResourceLocatorParameter` L1228, `validateResourceMapperParameter` L1257, `validateParameter` L1305, `addToIssuesIfMissing` L1325, `getParameterIssues` L1389-1580, `mergeIssues` L1600-1635; `type-guards.ts` `isValidResourceLocatorParameterValue` L47-57 | `test/node-helpers.test.ts` `describe('getParameterIssues')` L3683 + `required parameters validation` L4270, differential N22 |
+| `node-reference-parser.mjs` | `node-reference-parser-utils.ts` whole file (643 ln): `hasDotNotationBannedChar` L16, `backslashEscape` L17, `dollarEscape` L30, `applyAccessPatterns` L42, `extractReferencesInNodeExpressions` L491-643 + the private expression/candidate parsers, `ACCESS_PATTERNS` and the duplicate/canonical mapping; `errors/base/operational.error.ts` | `test/node-reference-parser-utils.test.ts` (788 ln, 15 ported cases), differential `N25` |
 
 ### 12.2 Explicit deltas (everything not 1:1)
 
@@ -249,10 +250,19 @@ model — the part the Workflow Model and the Execution LEGO import at runtime.
    field type of `type-validation.ts`. `deepCopy` is the reference's own
    `utils.ts` helper and is reconstructed verbatim (`src/deep-copy.mjs`) — including its
    `toJSON`-first behaviour, so a `Date` parameter becomes an ISO string.
+   Slice 5 added the helpers the reference's error/parser boundary pulls in:
+   `escapeRegExp` and `mapValues` (1:1 with lodash, oracle-compared through the reference
+   build's own bundled lodash) and `cloneDeep`. **`cloneDeep` is not `deepCopy`:** lodash keeps
+   `Date`/`RegExp`/`Map`/`Set` and cycles (pinned by the `N25` mixed-structure comparison),
+   whereas the reference `deepCopy` is `toJSON`-first; both coexist in `lodash-lite.mjs`
+   because `node-reference-parser-utils.ts` calls lodash's `cloneDeep`, not `deepCopy`.
 2. **Error class is a boundary-local reconstruction.** DELTA-02. `NodeOperationError`
    keeps the reference `name`, `message`, `level`, `node`, `context`, `messages`,
    `timestamp` — verified field-by-field (`N09/N10`) — but the *hierarchy*
    (`ExecutionBaseError`/`NodeError`/`ApplicationError`) stays outside this LEGO.
+   Slice 5 added `OperationalError` (`errors/base/operational.error.ts`) with the same
+   surface contract: `level` defaults to `'warning'`, `tags` to `{}`, and the pinned DELTA-03
+   quirk that the base constructor never assigns `name`, so `name === 'Error'`.
    Consolidation with `packages/execution-engine/src/errors.mjs` is ISSUE-024.
 3. **`ApplicationError` name quirk.** DELTA-03 (pinned, not a deviation): the reference
    imports `ApplicationError` from `@n8n/errors`, whose constructor never sets `name` — so the
@@ -298,44 +308,56 @@ model — the part the Workflow Model and the Execution LEGO import at runtime.
    `dateTimeFactory` returned, and the same metadata carries that factory into
    `parseSingleFilterValue`, so no date library is imported.
 8. **Not reconstructed (out of Node Model scope, listed so absence is explicit):** the
-   `jsonrepair`-backed `repairJSON` recovery (DELTA-05), `node-reference-parser-utils.ts` and
-   workflow validation. Everything else in `node-helpers.ts` L1-1949 and
+   `jsonrepair`-backed `repairJSON` recovery (DELTA-05) and workflow validation
+   (`validateWorkflow` and friends — the contract §12.2 tail still open). Everything else in `node-helpers.ts` L1-1949 and
    `node-parameters/filter-parameter.ts` is now reconstructed. `renameFormFields` is reconstructed though not re-exported by the
    published build (internal call site only).
 
 ### 12.3 Acceptance evidence
 
 * `tools/node-lego-gate.mjs` — gates `N01`…`N06` (`docs/isolation/evidence/node-lego-gate.json`).
-* `tools/node-lego-differential.mjs` — 24 scenario groups / 1609 comparisons against the
+* `tools/node-lego-differential.mjs` — 25 scenario groups / 1695 comparisons against the
   published `n8n-workflow@2.9.1` build (the version the pinned reference commit ships):
-  **1609 agree / 0 diverge**, 2 NOT-DIFFABLE (`renameFormFields`, private `getPropertyValues`).
+  **1695 agree / 0 diverge**, 2 NOT-DIFFABLE (`renameFormFields`, private `getPropertyValues`).
+  `N25` covers the node-reference parser (80 comparisons); `cloneDeep`/`mapValues`/
+  `escapeRegExp` are absent from the published surface, so they are compared against the
+  reference build's own bundled `lodash` via `PORT_ONLY_SURFACE`, with the reference side
+  degrading to lodash.
   Falsifiability: injected behavioral mutations (empty-array rule, expression short-circuit,
   the fixedCollection "value would get lost" early return, `deepCopy`'s `toJSON` handling,
   the min/max field-count wording, the required-`undefined` check, `getValueDescription`'s
   `null` wording, string `contains` → equality, dropped `ignoreCase`, dropped webhook-path
-  lower-casing) each produced a `DIVERGE`, so the harness is not vacuous.
+  lower-casing) each produced a `DIVERGE`, so the harness is not vacuous. Slice-5 probe:
+  dropping `dollarEscape` in `applyAccessPatterns` (4 divergences), reordering
+  `ITEM_TO_DATA_ACCESSORS` (1) and disabling the `Date` branch of `cloneDeep` (2) are all
+  caught — the last one required making the `N25` probes slot-safe (a `Date`-prototype object
+  without the internal `[[DateValue]]` slot passes `instanceof Date` but throws on every
+  `Date` method).
 * `packages/node-lego/test/node-model.test.mjs` — 74 cases, oracle-cited;
   `packages/node-lego/test/filter-execution.test.mjs` — 11 cases (filter execution, webhook
-  paths, `cronNodeOptions`); plus
+  paths, `cronNodeOptions`); `packages/node-lego/test/node-reference-parser.test.mjs` — 15
+  cases, ported from `test/node-reference-parser-utils.test.ts`; plus
   `packages/node-lego/test/parameter-issues.test.mjs` — 8 cases (concurrent lane, retained and
-  corrected against REF where its expectations encoded an unfaithful detail — ISSUE-026).
+  corrected against REF where its expectations encoded an unfaithful detail — ISSUE-026) and
+  the 8-case error-surface suite from `TASK-EERR-01` — **116 pass / 0 fail** in total.
 
-### 12.4 Exported symbol list (87 — gate `N07` asserts every one is named here)
+### 12.4 Exported symbol list (96 — gate `N07` asserts every one is named here)
 
 | | | | | | |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `ApplicationError` | `NodeConnectionTypes` | `NodeOperationError` | `assertIsValidNodeParameterValueType` | `assertParamIsArray` | `assertParamIsBoolean` |
-| `assertParamIsNumber` | `assertParamIsOfAnyTypes` | `assertParamIsString` | `checkConditions` | `deepCopy` | `displayParameter` |
-| `displayParameterPath` | `get` | `getConnectionTypes` | `getNodeFeatures` | `getNodeInputs` | `getNodeOutputs` |
-| `getNodeParameters` | `getParameterValueByPath` | `getPropertyValues` | `getSubworkflowId` | `getToolDescriptionForNode` | `getUpdatedToolDescription` |
-| `getVersionedNodeType` | `isAssignmentCollectionValue` | `isDefaultNodeName` | `isEqual` | `isExecutable` | `isExpression` |
-| `isFilterValue` | `isHitlToolType` | `isINodeProperties` | `isINodePropertyOptions` | `isINodePropertyOptionsList` | `isNodeConnected` |
-| `isNodeParameterValue` | `isNodeParameters` | `isNodeWithWorkflowSelector` | `isResourceLocatorValue` | `isResourceMapperValue` | `isSubNodeType` |
-| `isTool` | `isToolType` | `isTriggerLikeNode` | `isTriggerNode` | `isValidNodeParameterValueType` | `makeDescription` |
-| `makeNodeName` | `mergeNodeProperties` | `nodeAcceptsInputType` | `nodeHasOutputType` | `renameFormFields` | `resolveRelativePath` |
-| `toPath` | `validateNodeCredentials` | `validateNodeParameters` |
-| `arrayContainsValue` | `cronNodeOptions` | `executeFilter` | `executeFilterCondition` | `getNodeWebhookPath` | `getNodeWebhookUrl` |
-| `FilterError` | `defaultDateTimeFactory` | `defaultParseJSObject` | `getContext` | `getNodeParametersIssues` | `getParameterIssues` |
-| `getValueDescription` | `isBinaryValue` | `jsonParse` | `mergeIssues` | `tryToParseAlphanumericString` | `tryToParseArray` |
-| `tryToParseBinary` | `tryToParseBoolean` | `tryToParseDateTime` | `tryToParseJsonToFormFields` | `tryToParseJwt` | `tryToParseNumber` |
-| `tryToParseObject` | `tryToParseString` | `tryToParseTime` | `tryToParseUrl` | `validateFieldType` | `validateFilterParameter` |
+| `ApplicationError` | `FilterError` | `NodeConnectionTypes` | `NodeOperationError` | `OperationalError` | `applyAccessPatterns` |
+| `arrayContainsValue` | `assertIsValidNodeParameterValueType` | `assertParamIsArray` | `assertParamIsBoolean` | `assertParamIsNumber` | `assertParamIsOfAnyTypes` |
+| `assertParamIsString` | `backslashEscape` | `checkConditions` | `cloneDeep` | `cronNodeOptions` | `deepCopy` |
+| `defaultDateTimeFactory` | `defaultParseJSObject` | `displayParameter` | `displayParameterPath` | `dollarEscape` | `escapeRegExp` |
+| `executeFilter` | `executeFilterCondition` | `extractReferencesInNodeExpressions` | `get` | `getConnectionTypes` | `getContext` |
+| `getNodeFeatures` | `getNodeInputs` | `getNodeOutputs` | `getNodeParameters` | `getNodeParametersIssues` | `getNodeWebhookPath` |
+| `getNodeWebhookUrl` | `getParameterIssues` | `getParameterValueByPath` | `getPropertyValues` | `getSubworkflowId` | `getToolDescriptionForNode` |
+| `getUpdatedToolDescription` | `getValueDescription` | `getVersionedNodeType` | `hasDotNotationBannedChar` | `isAssignmentCollectionValue` | `isBinaryValue` |
+| `isDefaultNodeName` | `isEqual` | `isExecutable` | `isExpression` | `isFilterValue` | `isHitlToolType` |
+| `isINodeProperties` | `isINodePropertyOptions` | `isINodePropertyOptionsList` | `isNodeConnected` | `isNodeParameterValue` | `isNodeParameters` |
+| `isNodeWithWorkflowSelector` | `isResourceLocatorValue` | `isResourceMapperValue` | `isSubNodeType` | `isTool` | `isToolType` |
+| `isTriggerLikeNode` | `isTriggerNode` | `isValidNodeParameterValueType` | `jsonParse` | `makeDescription` | `makeNodeName` |
+| `mapValues` | `mergeIssues` | `mergeNodeProperties` | `nodeAcceptsInputType` | `nodeHasOutputType` | `renameFormFields` |
+| `resolveRelativePath` | `toPath` | `tryToParseAlphanumericString` | `tryToParseArray` | `tryToParseBinary` | `tryToParseBoolean` |
+| `tryToParseDateTime` | `tryToParseJsonToFormFields` | `tryToParseJwt` | `tryToParseNumber` | `tryToParseObject` | `tryToParseString` |
+| `tryToParseTime` | `tryToParseUrl` | `validateFieldType` | `validateFilterParameter` | `validateNodeCredentials` | `validateNodeParameters` |

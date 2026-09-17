@@ -57,3 +57,10 @@ Symbol-tagged no-response, static, and stream variants make response ownership e
 handler preserves empty responses and translates custom status/headers, while the native server
 pipes stream and NDJSON bodies without buffering. Respond-to-Webhook binary IDs cross an injected
 `getBinaryStream` port; JSON and in-memory Buffers remain static responses.
+
+## Response extraction (TASK-427)
+
+The `onReceived` and `lastNode` extractors now preserve response-data precedence, first-output
+backward compatibility, optional all-output scanning, nested JSON property selection, all-entry
+JSON, `noData`, exact binary-property errors, in-memory base64 decoding, MIME precedence, and
+persisted binary streaming through the existing storage port.

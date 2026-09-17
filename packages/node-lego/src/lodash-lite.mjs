@@ -75,3 +75,64 @@ export function isEqual(a, b) {
 export function isObject(value) {
 	return value !== null && (typeof value === 'object' || typeof value === 'function');
 }
+
+/**
+ * lodash `escapeRegExp` — escapes the regexp special characters in a string
+ * (`^$.*+?()[]{}|`). Used by the node-reference parser to build its name alternation.
+ */
+export function escapeRegExp(string) {
+	return string.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&');
+}
+
+/**
+ * lodash `mapValues` — returns a new object with the same keys and every value passed through
+ * `iteratee(value, key, object)`. Like lodash, the result is always a plain object (an array
+ * input produces numeric string keys) and inherited properties are ignored.
+ */
+export function mapValues(object, iteratee) {
+	const result = {};
+	for (const key of Object.keys(object)) {
+		result[key] = iteratee(object[key], key, object);
+	}
+	return result;
+}
+
+/**
+ * lodash `cloneDeep` — the deep clone `node-reference-parser-utils.ts` imports. This is NOT the
+ * same helper as `utils.deepCopy` (`./deep-copy.mjs`): upstream `deepCopy` is `toJSON`-first and
+ * turns a `Date` into a string, while lodash's `cloneDeep` preserves `Date`, `RegExp`, `Map` and
+ * `Set` instances and their prototypes. The parser needs lodash's semantics, so both exist here,
+ * each used by the call sites the reference uses it at.
+ */
+export function cloneDeep(value, seen = new WeakMap()) {
+	if (value === null || typeof value !== 'object') return value;
+	if (seen.has(value)) return seen.get(value);
+
+	let copy;
+	if (value instanceof Date) {
+		copy = new Date(value.getTime());
+	} else if (value instanceof RegExp) {
+		copy = new RegExp(value.source, value.flags);
+	} else if (value instanceof Map) {
+		copy = new Map();
+		seen.set(value, copy);
+		for (const [key, entryValue] of value) copy.set(cloneDeep(key, seen), cloneDeep(entryValue, seen));
+		return copy;
+	} else if (value instanceof Set) {
+		copy = new Set();
+		seen.set(value, copy);
+		for (const entry of value) copy.add(cloneDeep(entry, seen));
+		return copy;
+	} else if (Array.isArray(value)) {
+		copy = new Array(value.length);
+	} else {
+		// plain objects and class instances keep their prototype, like lodash
+		copy = Object.create(Object.getPrototypeOf(value));
+	}
+
+	seen.set(value, copy);
+	for (const key of Object.keys(value)) {
+		copy[key] = cloneDeep(value[key], seen);
+	}
+	return copy;
+}

@@ -1,7 +1,7 @@
-export { ApplicationError, NodeOperationError } from './errors.mjs';
+export { ApplicationError, NodeOperationError, OperationalError } from './errors.mjs';
 export { deepCopy } from './deep-copy.mjs';
 export { isExpression } from './expression-helpers.mjs';
-export { get, isEqual, toPath } from './lodash-lite.mjs';
+export { cloneDeep, escapeRegExp, get, isEqual, mapValues, toPath } from './lodash-lite.mjs';
 export {
 	NodeConnectionTypes,
 	getConnectionTypes,
@@ -90,3 +90,10 @@ export {
 	tryToParseUrl,
 	validateFieldType,
 } from './type-validation.mjs';
+export {
+	applyAccessPatterns,
+	backslashEscape,
+	dollarEscape,
+	extractReferencesInNodeExpressions,
+	hasDotNotationBannedChar,
+} from './node-reference-parser.mjs';

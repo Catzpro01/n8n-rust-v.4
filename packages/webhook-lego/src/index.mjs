@@ -4,6 +4,7 @@ export { ALLOWED_METHODS, LiveWebhookManager, WebhookRequestHandler } from './we
 export { InMemoryWebhookRepository, WebhookEntity, WebhookService } from './webhook-service.mjs';
 export { WebhookHttpServer } from './http-server.mjs';
 export { getMultipartBoundary, normalizeFormData, parseMultipartFormData, parseWebhookBody } from './body-parser.mjs';
+export { extractWebhookLastNodeResponse, extractWebhookOnReceivedResponse } from './response-extractors.mjs';
 export {
   WebhookResponseTag,
   createNoResponse,

@@ -159,3 +159,16 @@ responses and custom status/header metadata.
 `binaryData.id` is resolved through an injected `getBinaryStream` port and becomes a stream response;
 missing storage capability fails loudly. `WebhookHttpServer` pipes stream bodies directly to the
 client, including NDJSON, without buffering or importing execution/binary storage implementations.
+
+## Phase-3 webhook response extractors (TASK-427)
+
+`extractWebhookOnReceivedResponse` preserves reference precedence: `noData` returns `undefined`, an
+evaluated truthy response wins, then node `webhookResponse`, then `{ message: 'Workflow was started' }`.
+
+`extractWebhookLastNodeResponse` supports `firstEntryJson`, `firstEntryBinary`, `noData`, and default
+all-entry JSON. For backward compatibility it inspects only output 0 unless `checkAllMainOutputs` is
+true. JSON extraction supports nested `responsePropertyName` and explicit content type. Binary
+extraction validates the configured property with exact error messages, gives MIME type precedence,
+decodes in-memory base64, and resolves persisted IDs only through `getBinaryStream`. Expected
+user-data failures return `{ ok:false, error }`; successful static/stream values return
+`{ ok:true, result }` for the response algebra adapter.
