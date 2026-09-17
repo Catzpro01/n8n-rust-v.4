@@ -18,7 +18,8 @@ Phase-2 strictness is byte-preserved (no workspace manifest → old rule), and p
 
 ### Evidence
 
-- Commits: `3e9effd5` (gate mode) + `a2aca602` (rig extension) on `arena/01a0aff6-n8n-rust-v-4`
-- `docs/isolation/evidence/rust-test-record.json` (PASS at `a2aca602`, 37 passed / 0 failed)
+- Commits: `3e9effd5` (gate mode) + `a2aca602` (rig extension) + `aaf5d265` (input-keyed freshness) on `arena/01a0aff6-n8n-rust-v-4`
+- `docs/isolation/evidence/rust-test-record.json` (PASS at `aaf5d265`, 37 passed / 0 failed)
+- Freshness semantics verified both ways: dirty Rust inputs → `23/24` with `commit and re-run`; committed input change → stale with the changed file named; re-run → `24/24`
 - `docs/isolation/phase3-gate-mode.md` (gate-mode spec)
 - `bash tests/integration/run_gate.sh --offline-only` → OFFLINE STAGES PASS, LIVE 11/11 NOT RUN (no n8n/PostgreSQL here — VPS re-run still required per caveat C1)
