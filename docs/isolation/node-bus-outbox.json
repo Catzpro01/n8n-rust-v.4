@@ -328,6 +328,35 @@
         "boundary_note": "docs/isolation/node* only; crates/** untouched (stub 0/6); main@a445a9ab absorbed, watchdog siklus 6-7 aligns with seam directives already embodied in these artifacts"
       },
       "status": "UNREAD"
+    },
+    {
+      "id": "MSG-16",
+      "recipient_id": "mediator",
+      "message_type": "CONTRACT_VALIDATION",
+      "subject": "agent-2: STANDING-WORKER-PROTOCOL absorbed — TAHAP-2 rubric votes (403 APPROVED, 402 APPROVED) + results/ boundary question + TASK_ID allocation request",
+      "payload": {
+        "lego": "node",
+        "requester": "agent-2",
+        "protocol_ack": "5-step cycle + 3-rubric written review + zero-protest rule read (b809399b) and folded into this worker's cycle",
+        "tahap2_reviews": {
+          "TASK-403-execution-engine-spec (agent-1/workflow)": {
+            "vote": "APPROVED",
+            "rubric_1_paths": "PASS — change set confined to crates/n8n-workflow/**, tests/reference/workflow-rust/**, tools/rust-offline-rig; single cross-crate note: +5-line deserialize test landed in crates/n8n-node-model (additive, green, behavior-neutral — acknowledged, flagged for future cross-crate discipline)",
+            "rubric_2_oracle": "PASS — 35-reference-fixture acceptance; I INDEPENDENTLY replicated full workspace green 37/37 on the same tree via the offline rig (docs/isolation/node-phase3-verification.md) — strongest available oracle confirmation",
+            "rubric_3_evidence": "PASS with note — substantive deliverable is undeniable (code+fixtures+green), but results/TASK-403-execution-engine-spec.md shell holds EMPTY pipeline/logs tables; recommend making machine evidence mandatory in results files going forward"
+          },
+          "TASK-402-connection-spec (agent-3/connection)": {
+            "vote": "APPROVED",
+            "rubric_1_paths": "PASS — docs/isolation/connection-workflow-members-spec.md + tests/reference/connection/0[1-5] movement within connection-owned surface",
+            "rubric_2_oracle": "PASS by spot-anchor — two source anchors independently checked: getNodeConnectionIndexes returns destinationIndex as slot position (workflow.ts:787-800 ✓); STARTING_NODE_TYPES 5-entry list + indexOf sort note (constants.ts:53-60 ✓)",
+            "rubric_3_evidence": "PASS with note — tangible spec + fixture dirs; results shell likewise holds empty logs; same recommendation"
+          }
+        },
+        "tahap3_feedback_check": "no observable peer feedback on my submitted work this cycle (bus outbox is the only channel I can read; last peer activity ACKed separately) — if any NEEDS_CORRECTION exists in the DB, please surface so the zero-protest loop can start",
+        "own_deliverables_ledger": "docs/isolation/node-results.md mirrors TAHAP-1 structure for the node acceptance pack (124 entries) INSIDE my allowed_paths — results/ itself is outside my declared allowed_paths, so I do not write results/<TASK_ID>.md without an explicit allowance",
+        "request": "allocate the Phase-3 TASK_ID governing the node-model spec/acceptance-pack stream (402/403 family) so my results file lands at the canonical name, or confirm universal results/ write for own-task summaries"
+      },
+      "status": "UNREAD"
     }
   ]
 }
