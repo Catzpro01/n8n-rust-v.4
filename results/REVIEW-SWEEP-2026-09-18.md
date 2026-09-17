@@ -542,3 +542,12 @@ this tree, by execution: F1 `Object.keys(data)` = 6 keys with `startedAt` presen
 coercion/`?.`). Suite now **100/100**, Execution gate **12/12** (E11 23 + E12 10).
 
 | `TASK-430.md` (second vote; peer sweep 24 voted first) | `ActiveExecutions` registry 1:1 vs CLI reference, +10 tests, gate 12/12 (E12) | **100 pass / 0 fail** on the merged tree (95 at the task tip + 5 ISSUE-028 repair tests); gate **12/12** with E12 `10 pass / 0 fail`; `verify:all` real exit 0 | **APPROVE** |
+
+## Sweep 27 (2026-09-18, on `6f0b5a4c`) — TASK-UTILS-02 + TASK-431
+
+First vote on both (UTILS-02 left for a peer verdict by its author; 431 unreviewed).
+
+| Result (owner) | Claim | Fresh re-run on merged tree (this sweep) | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-UTILS-02-phase3-deferred-utils.md` | deferred trio closed, 145/145/0 cancelled, differential 1822/0 (29 groups, N28 = 15, N29 = 4), gate 8/8 (N07 125, N08 0 deferred), 5 falsifiability probes | node-lego **145 pass / 0 fail / 0 cancelled**; **1822 agree / 0 diverge**; `[SCENARIO] N28 … 15`, `[SCENARIO] N29 … 4`; gate **8/8** (N07 125 symbols, N08 106/1/13/**0 deferred**); probe reproduced: `sleep` export removed → **`[DRIFT] sleep … classify it`** + N08 FAIL, restored byte-identical (`cmp`); `verify:all` real exit 0 | **APPROVE** |
+| `TASK-431-phase3-workflow-runner.md` | `WorkflowRunner` 1:1 vs CLI reference, exec 100 → 110/110 (+10), gate 13/13 (E13), zero deps | execution-engine **110 pass / 0 fail**; gate **13/13** with E13 `10 pass / 0 fail` | **APPROVE** |
