@@ -12,7 +12,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { loadReference, SKIP_REASON } from './helpers/reference.mjs';
+import { ALLOW_NO_REFERENCE, SKIP_REASON, loadReference, paritySkip } from './helpers/reference.mjs';
 import {
 	FakeCronJob,
 	FAR_FUTURE,
@@ -27,7 +27,22 @@ import { toCronExpression } from '../src/cron-expression.mjs';
 import { randomInt } from '../src/random.mjs';
 
 const ref = loadReference();
-const skip = ref ? false : SKIP_REASON;
+const skip = paritySkip(ref);
+
+test('parity: A/B evidence requires the pinned reference runtime', () => {
+	if (!ref) {
+		if (ALLOW_NO_REFERENCE) return; // explicit opt-out: no A/B evidence, and no green claim
+		assert.fail(
+			`${SKIP_REASON}\n` +
+				'A fully skipped parity suite exits 0 while running ZERO differential checks ' +
+				'(.runtime is gitignored and excluded from workspace snapshots). Install the ' +
+				'runtime, or opt out explicitly with LEGO_ALLOW_NO_REFERENCE=1.',
+		);
+	}
+	assert.equal(ref.versions['n8n-workflow'], '2.9.1', 'n8n-workflow is not the pinned version');
+	assert.equal(ref.versions['n8n-core'], '2.9.1', 'n8n-core is not the pinned version');
+	assert.equal(ref.versions.cron, '4.4.0', 'cron is not the pinned version');
+});
 
 /**
  * Signature of a cron expression's VARIANCE: sample the same input many times

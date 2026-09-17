@@ -12,7 +12,8 @@
 		"test": "node --test test/*.test.mjs",
 		"test:unit": "node --test test/0[1-3]-*.test.mjs",
 		"test:parity": "node --test test/04-parity.test.mjs",
-		"test:golden": "node --test test/05-golden-conformance.test.mjs"
+		"test:golden": "node --test test/05-golden-conformance.test.mjs",
+		"test:vectors": "node --test test/06-reference-vectors.test.mjs"
 	},
 	"engines": {
 		"node": ">=20"

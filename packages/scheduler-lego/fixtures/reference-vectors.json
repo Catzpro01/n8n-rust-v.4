@@ -1,0 +1,120 @@
+{
+  "$comment": "Recorded from the real n8n 2.9.4 dependency set (n8n-core 2.9.1 / n8n-workflow 2.9.1). Regenerate with: node packages/scheduler-lego/tools/record-reference-vectors.mjs",
+  "recordedAt": "2026-09-17T18:20:55.911Z",
+  "reference": {
+    "n8n-core": "2.9.1",
+    "n8n-workflow": "2.9.1",
+    "node": "22.22.3"
+  },
+  "toCronKey": [
+    {
+      "label": "minimal",
+      "context": {
+        "workflowId": "wf-1",
+        "nodeId": "n1",
+        "timezone": "UTC"
+      },
+      "key": "{\"nodeId\":\"n1\",\"timezone\":\"UTC\",\"workflowId\":\"wf-1\"}"
+    },
+    {
+      "label": "recurrence activated (minutes)",
+      "context": {
+        "workflowId": "wf-2",
+        "nodeId": "n2",
+        "timezone": "Europe/Berlin",
+        "recurrence": {
+          "activated": true,
+          "index": 0,
+          "intervalSize": 5,
+          "typeInterval": "minutes"
+        }
+      },
+      "key": "{\"nodeId\":\"n2\",\"recurrenceActivated\":true,\"recurrenceIndex\":0,\"recurrenceIntervalSize\":5,\"recurrenceTypeInterval\":\"minutes\",\"timezone\":\"Europe/Berlin\",\"workflowId\":\"wf-2\"}"
+    },
+    {
+      "label": "S-10 collision: inactive with intervalSize 2",
+      "context": {
+        "workflowId": "wf-3",
+        "nodeId": "n3",
+        "timezone": "UTC",
+        "recurrence": {
+          "activated": false,
+          "index": 1,
+          "intervalSize": 2,
+          "typeInterval": "hours"
+        }
+      },
+      "key": "{\"nodeId\":\"n3\",\"recurrenceActivated\":false,\"timezone\":\"UTC\",\"workflowId\":\"wf-3\"}"
+    },
+    {
+      "label": "S-10 collision: inactive with intervalSize 7",
+      "context": {
+        "workflowId": "wf-3",
+        "nodeId": "n3",
+        "timezone": "UTC",
+        "recurrence": {
+          "activated": false,
+          "index": 1,
+          "intervalSize": 7,
+          "typeInterval": "hours"
+        }
+      },
+      "key": "{\"nodeId\":\"n3\",\"recurrenceActivated\":false,\"timezone\":\"UTC\",\"workflowId\":\"wf-3\"}"
+    },
+    {
+      "label": "missing workflowId",
+      "context": {
+        "nodeId": "n4",
+        "timezone": "UTC"
+      },
+      "key": "{\"nodeId\":\"n4\",\"timezone\":\"UTC\"}"
+    },
+    {
+      "label": "missing nodeId",
+      "context": {
+        "workflowId": "wf-5",
+        "timezone": "UTC"
+      },
+      "key": "{\"timezone\":\"UTC\",\"workflowId\":\"wf-5\"}"
+    },
+    {
+      "label": "missing timezone",
+      "context": {
+        "workflowId": "wf-6",
+        "nodeId": "n6"
+      },
+      "key": "{\"nodeId\":\"n6\",\"workflowId\":\"wf-6\"}"
+    },
+    {
+      "label": "empty context",
+      "context": {},
+      "key": "{}"
+    }
+  ],
+  "registry": {
+    "afterFirst": {
+      "size": 1,
+      "loggableCrons": {
+        "workflowId-wf-1": [
+          "0 0 1 1 *"
+        ]
+      }
+    },
+    "afterDuplicate": {
+      "size": 1,
+      "reports": 1,
+      "firstMessage": "Skipped registration for already registered cron",
+      "tags": {
+        "cron": "duplicate"
+      }
+    },
+    "afterDeregister": {
+      "size": 0
+    }
+  },
+  "emptyEntrySurvives": {
+    "present": true,
+    "size": 1
+  },
+  "farFutureExpression": "0 0 1 1 *"
+}

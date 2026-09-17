@@ -11,10 +11,11 @@ Sumber: `reference/n8n/packages/core/src/encryption/cipher.ts`,
 Kontrak: [`../../contracts/credentials.contract.md`](../../contracts/credentials.contract.md) (VERIFIED).
 
 ```bash
-npm test --prefix packages/credentials-lego        # 58/58
+npm test --prefix packages/credentials-lego        # 65/65
 npm run test:unit --prefix packages/credentials-lego   # 38  (01–03)
 npm run test:parity --prefix packages/credentials-lego # 12  A/B vs n8n-core@2.9.1
 npm run test:golden --prefix packages/credentials-lego #  8  konformasi golden agen-4
+npm run test:vectors --prefix packages/credentials-lego # 6  vektor referensi terekam (offline)
 ```
 
 ## Permukaan
@@ -65,3 +66,20 @@ scheduler LEGO, dan membuat paket ini bebas dependensi.
   teresolusi.
 - `CredentialsHelper` (resolusi `{id,name}`, OAuth refresh, `applyDefaultsAndOverwrites`),
   aturan akses project, dan seluruh lapisan HTTP.
+
+## Dua lapis bukti A/B
+
+`test:parity` menjalankan perbandingan langsung terhadap `n8n-core@2.9.1` yang nyata (container
+DI-nya diisi dari luar sehingga kelas referensi berjalan apa adanya). Karena `.runtime/` di-gitignore
+dan tidak ikut dalam snapshot workspace, session segar tidak punya runtime itu — dan suite yang
+semua tesnya di-skip akan keluar dengan kode 0, yaitu verdikt hijau tanpa satu pun pemeriksaan
+diferensial (advisory agen-2, POOL-002-R1).
+
+Karena itu:
+
+1. `test:parity` **gagal keras** bila runtime absen, kecuali opt-out eksplisit
+   `LEGO_ALLOW_NO_REFERENCE=1` — hijau harus berarti *diperiksa*.
+2. `test:vectors` membandingkan port terhadap **vektor yang direkam dari referensi nyata**
+   (`fixtures/reference-vectors.json`: cipherteks, tabel penerimaan `setData`, pesan error),
+   sehingga klaim diferensial tetap terbukti offline. Rekam ulang dengan
+   `node packages/credentials-lego/tools/record-reference-vectors.mjs`.

@@ -1,0 +1,154 @@
+{
+  "$comment": "Recorded from the real n8n 2.9.4 dependency set (n8n-core 2.9.1). Regenerate with: node packages/credentials-lego/tools/record-reference-vectors.mjs",
+  "recordedAt": "2026-09-17T18:19:57.599Z",
+  "reference": {
+    "n8n-core": "2.9.1",
+    "node": "22.22.3"
+  },
+  "encryptionKey": "recorded-vector-key",
+  "cipher": [
+    {
+      "label": "flat object",
+      "input": {
+        "user": "u",
+        "pass": "p"
+      },
+      "key": "recorded-vector-key",
+      "ciphertext": "U2FsdGVkX18wjQfVI5Xv+yvM5jugYdfPIWrBhbA2betfgDQREXfUYbhmkDX6uyTp",
+      "plaintext": "{\"user\":\"u\",\"pass\":\"p\"}"
+    },
+    {
+      "label": "empty object",
+      "input": {},
+      "key": "recorded-vector-key",
+      "ciphertext": "U2FsdGVkX19Mx+zKSF3R3pOcmIuYZb92Qio1XRGtGXg=",
+      "plaintext": "{}"
+    },
+    {
+      "label": "nested object",
+      "input": {
+        "a": {
+          "b": [
+            1,
+            2,
+            {
+              "c": null
+            }
+          ]
+        }
+      },
+      "key": "recorded-vector-key",
+      "ciphertext": "U2FsdGVkX19O5r7tVNpKJaAjNl0XFy1XHQqbNwLEbEeZdSARYb7peoKMSvx7YObT",
+      "plaintext": "{\"a\":{\"b\":[1,2,{\"c\":null}]}}"
+    },
+    {
+      "label": "raw string",
+      "input": "plain text",
+      "key": "recorded-vector-key",
+      "ciphertext": "U2FsdGVkX1++EiajsxLK6x8tKIzl4YNe6pXqvm1Lcsw=",
+      "plaintext": "plain text"
+    },
+    {
+      "label": "unicode payload",
+      "input": {
+        "name": "héllo → 世界"
+      },
+      "key": "recorded-vector-key",
+      "ciphertext": "U2FsdGVkX19M9O+1tro28iCONg9IMROxru5BneKY3VQlhWYX44QkR1inbEqvfRk8",
+      "plaintext": "{\"name\":\"héllo → 世界\"}"
+    },
+    {
+      "label": "empty string",
+      "input": "",
+      "key": "recorded-vector-key",
+      "ciphertext": "U2FsdGVkX18sLe5C1aQG6rk/SMhnDmEHcBLrgFVirnA=",
+      "plaintext": ""
+    },
+    {
+      "label": "custom key",
+      "input": {
+        "token": "t"
+      },
+      "key": "a-custom-key",
+      "ciphertext": "U2FsdGVkX1//9KJ0JGQKrA1T4SY7fFPCW/W+25d5mdc=",
+      "plaintext": "{\"token\":\"t\"}"
+    }
+  ],
+  "objectLiteral": [
+    {
+      "kind": "plain-empty",
+      "accepted": true,
+      "storedType": "string"
+    },
+    {
+      "kind": "plain",
+      "accepted": true,
+      "storedType": "string"
+    },
+    {
+      "kind": "nested-plain",
+      "accepted": true,
+      "storedType": "string"
+    },
+    {
+      "kind": "array-empty",
+      "accepted": false,
+      "error": "AssertionError"
+    },
+    {
+      "kind": "array",
+      "accepted": false,
+      "error": "AssertionError"
+    },
+    {
+      "kind": "null",
+      "accepted": false,
+      "error": "AssertionError"
+    },
+    {
+      "kind": "undefined",
+      "accepted": false,
+      "error": "AssertionError"
+    },
+    {
+      "kind": "number",
+      "accepted": false,
+      "error": "AssertionError"
+    },
+    {
+      "kind": "string",
+      "accepted": false,
+      "error": "AssertionError"
+    },
+    {
+      "kind": "date",
+      "accepted": false,
+      "error": "AssertionError"
+    },
+    {
+      "kind": "null-prototype",
+      "accepted": false,
+      "error": "AssertionError"
+    },
+    {
+      "kind": "class-instance",
+      "accepted": false,
+      "error": "AssertionError"
+    }
+  ],
+  "messages": {
+    "noData": "No data is set on this credentials.",
+    "noDataToSave": "No credentials were set to save.",
+    "decryptionFailed": "Credentials could not be decrypted. The likely reason is that a different \"encryptionKey\" was used to encrypt the data.",
+    "invalidJson": "Decrypted credentials data is not valid JSON."
+  },
+  "getDataToSave": {
+    "keys": [
+      "data",
+      "id",
+      "name",
+      "type"
+    ],
+    "dataPrefix": "U2FsdGVkX1"
+  }
+}

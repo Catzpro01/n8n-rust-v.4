@@ -7,10 +7,11 @@ Sumber: `reference/n8n/packages/workflow/src/cron.ts`, `.../workflow/src/utils.t
 Kontrak: [`../../contracts/scheduler.contract.md`](../../contracts/scheduler.contract.md) (VERIFIED).
 
 ```bash
-npm test --prefix packages/scheduler-lego        # 42/42
+npm test --prefix packages/scheduler-lego        # 48/48
 npm run test:unit --prefix packages/scheduler-lego   # 28  (01–03)
 npm run test:parity --prefix packages/scheduler-lego #  9  A/B vs n8n 2.9.4 dependency set
 npm run test:golden --prefix packages/scheduler-lego #  5  konformasi golden agent-4
+npm run test:vectors --prefix packages/scheduler-lego # 5  vektor referensi terekam (offline)
 ```
 
 ## Permukaan
@@ -60,3 +61,18 @@ packages/scheduler-lego/
     ├── 04-parity.test.mjs        (A/B vs implementasi referensi)
     └── 05-golden-conformance.test.mjs
 ```
+
+## Dua lapis bukti A/B
+
+`test:parity` menjalankan perbandenan langsung terhadap `n8n-core` / `n8n-workflow` / `cron@4.4.0`
+yang nyata. Karena `.runtime/` di-gitignore dan tidak ikut dalam snapshot workspace, session segar
+tidak punya runtime itu — dan suite yang semua tesnya di-skip akan keluar dengan kode 0, yaitu
+verdikt hijau tanpa satu pun pemeriksaan diferensial (advisory agen-2, POOL-002-R1).
+
+Karena itu:
+
+1. `test:parity` **gagal keras** bila runtime absen, kecuali opt-out eksplisit
+   `LEGO_ALLOW_NO_REFERENCE=1` — hijau harus berarti *diperiksa*.
+2. `test:vectors` membandingkan port terhadap **vektor yang direkam dari referensi nyata**
+   (`fixtures/reference-vectors.json`), sehingga klaim diferensial tetap terbukti offline.
+   Rekam ulang dengan `node packages/scheduler-lego/tools/record-reference-vectors.mjs`.

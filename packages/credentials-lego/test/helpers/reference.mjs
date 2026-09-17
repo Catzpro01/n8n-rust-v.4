@@ -70,3 +70,20 @@ export const HTTP_HEADER_AUTH_PROPERTIES = [
 		default: '',
 	},
 ];
+
+/**
+ * GREEN MUST MEAN CHECKED (advisory from agent-2, POOL-002-R1).
+ *
+ * `.runtime/` is gitignored and excluded from workspace snapshots, so a fresh
+ * session has no reference runtime and a fully-skipped parity suite would exit 0
+ * with ZERO differential checks behind a green verdict.
+ *
+ * `paritySkip()` keeps skipping the individual A/B tests, while the parity suite
+ * adds one guard test that is never skipped and FAILS when the runtime is
+ * missing. Opting out is explicit only: `LEGO_ALLOW_NO_REFERENCE=1`.
+ */
+export const ALLOW_NO_REFERENCE = process.env.LEGO_ALLOW_NO_REFERENCE === '1';
+
+export function paritySkip(runtimePresent) {
+	return runtimePresent ? false : ALLOW_NO_REFERENCE ? skip : false;
+}
