@@ -63,8 +63,14 @@ const RLC_VALID_CASES: usize = 8;       // isValidResourceLocatorParameterValue
 const RLC_ISSUES_CASES: usize = 5;      // resourceLocator regex/expression/mode handling
 const RLC_DEFAULT_CASES: usize = 1;     // __rl:true planted into object defaults
 const RM_ISSUES_CASES: usize = 4;       // resourceMapper auto/define/expression handling
+// Wave 7 IO-acceptance + conditions + features (WG-20..WG-24)
+const INPUT_TYPE_CASES: usize = 5;      // nodeAcceptsInputType
+const OUTPUT_TYPE_CASES: usize = 3;     // nodeHasOutputType
+const SUB_NODE_CASES: usize = 3;        // isSubNodeType
+const CHECK_COND_CASES: usize = 8;      // checkConditions (_cnd evaluator + fallback)
+const NODE_FEATURE_CASES: usize = 4;    // getNodeFeatures
 // + serdeConformance round-trips: 5 descriptions, 2 INode samples
-// TOTAL asserted entries = 19 + 38 + 24 + 27 + 9 + 18 + 7 = 142
+// TOTAL asserted entries = 19 + 38 + 24 + 27 + 9 + 18 + 23 + 7 = 165
 ```
 
 - Fixture load via `env!("CARGO_MANIFEST_DIR")/./../../` (same `repo_root()` convention as
@@ -108,6 +114,10 @@ const RM_ISSUES_CASES: usize = 4;       // resourceMapper auto/define/expression
 | `resourceLocatorIssues.cases` | `get_node_parameters_issues` over RLC properties | mode.validation regex errors verbatim from properties.errorMessage; `={{…}}` expressions bypass validation; unknown mode ⇒ skipped silently; non-RLC shape falls to the generic required branch |
 | `rlcDefaults.cases` | `get_node_parameters` RLC defaults | engine plants `__rl: true` into object defaults |
 | `resourceMapperIssues.cases` | `get_node_parameters_issues` over resourceMapper | `autoMapInputData` skipped; required-field message uses capitalized fieldWords.singular; **empty-array key `map` present — do NOT serialize-skip empty Vecs**; expression values exempt |
+| `nodeAcceptsInputType.cases`/`nodeHasOutputType.cases` | `pub fn node_accepts_input_type/has_output_type(desc, conn_type) -> bool` | plain strings (array or lone, incl. expression strings) match via `== OR substring includes()`; config objects ONLY exact `.type`; missing IO ⇒ false |
+| `isSubNodeType.cases` | `pub fn is_sub_node_type(desc) -> bool` | any non-main connection TYPE among static outputs; expression-string outputs ⇒ false |
+| `checkConditions.cases` | `pub fn check_conditions(conditions: &[Value], actual: &[Value]) -> bool` | `_cnd` object keys eq/not/gte/lte/gt/lt/between/includes/startsWith/endsWith/regex/exists; empty actualValues ⇒ only `not` is true; conditions `.some`, `_cnd` over multiple actual `.every`; non-`_cnd` fallback = `actual.contains(value)` |
+| `getNodeFeatures.cases` | `pub fn get_node_features(def, version: f64) -> Map<String,bool>` | `None`/missing def ⇒ empty map; each feature = `check_conditions(def["@version"], [version])` |
 | `serdeConformance` | `INodeTypeDescription`, `INode` | deserialize → serialize round-trip equality |
 
 ## 4. Reference-observed semantics the harness pins (do not "improve")
@@ -175,15 +185,26 @@ const RM_ISSUES_CASES: usize = 4;       // resourceMapper auto/define/expression
     ResourceMapper validation at issue level; (d) engine plants `__rl:true` into RLC
     object defaults; (e) resourceMapper required-field failures emit BOTH an empty-array
     parent key and the `key.field-id` entry — serializers must NOT drop empty arrays.
+14. **IO-type matching asymmetry** (WG-20..WG-22): plain STRING entries in
+    inputs/outputs (including expression strings like `={{…}}`) match connection types by
+    `==` OR substring `includes()` — config objects match only by exact `.type`. A Rust
+    port matching strings exactly-first then objects is WRONG for literals containing the
+    type as a substring.
+15. **`checkConditions` evaluator** (WG-23): `_cnd`-object dialect with 12 semantic keys;
+    empty `actualValues` answers `true` ONLY for `not`; `_cnd` uses `.every` across
+    actual values while the outer list is `.some`; non-`_cnd` plain values use
+    `actual.contains`. `getNodeFeatures` is a strict projection —
+    `{feature: check_conditions(def['@version'], [version])}`, undefined def ⇒ `{}`.
 
 ## 5. Acceptance wiring (brief §4, gate 1)
 
 `n8n-node-model` is **RUST IMPLEMENTED-verified for the Node LEGO when**:
 
-1. This harness reproduces all 142 entries (19 frozen-port golden cases + 38 wave-2 pure
+1. This harness reproduces all 165 entries (19 frozen-port golden cases + 38 wave-2 pure
    helper cases + 24 wave-3 parameter-issues/filter cases + 27 wave-4 operator-matrix
-   cases + 9 wave-5 nested-parameter cases + 18 wave-6 RLC/resourceMapper cases + 7 serde
-   samples) green under `tools/rust-offline-rig/run.sh test` (offline).
+   cases + 9 wave-5 nested-parameter cases + 18 wave-6 RLC/resourceMapper cases + 23
+   wave-7 IO/conditions/features cases + 7 serde samples) green under
+   `tools/rust-offline-rig/run.sh test` (offline).
 2. The 6 frozen ports exist with the exact snake_cased names listed in brief §3
    (`get_node_parameters`, `get_node_inputs`, `get_node_outputs`, `get_connection_types`,
    `rename_form_fields`, `apply_access_patterns`) and crate exports match contract §11.

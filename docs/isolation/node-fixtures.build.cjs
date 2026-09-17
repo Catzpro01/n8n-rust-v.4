@@ -672,6 +672,51 @@ const resourceMapperIssuesCases = [
   rmIssuesCase("define-mapping-expression-exempt", "defineMapping", { f1: "={{$json.f1}}" }),
 ];
 
+/* ---------------- Wave 7: IO-type acceptance + checkConditions + node features ------- */
+
+const ioRequired = ["nodeAcceptsInputType", "nodeHasOutputType", "isSubNodeType", "checkConditions", "getNodeFeatures"];
+for (const label of ioRequired) {
+  if (typeof helpers[label] !== "function") { console.error(`reference export changed: ${label}`); process.exit(2); }
+}
+
+const nodeAcceptsInputTypeCases = [
+  { name: "array-string-exact", description: { inputs: ["main"] }, connectionType: "main" },
+  { name: "expression-string-substring", description: { inputs: '={{["ai_tool"]}}' }, connectionType: "ai_tool" },
+  { name: "config-object-exact", description: { inputs: [{ type: "ai_tool" }] }, connectionType: "ai_tool" },
+  { name: "config-object-no-substring", description: { inputs: [{ type: "ai_tool" }] }, connectionType: "tool" },
+  { name: "missing-inputs", description: {}, connectionType: "main" },
+].map((c) => ({ ...c, expect: helpers.nodeAcceptsInputType(c.description, c.connectionType) }));
+
+const nodeHasOutputTypeCases = [
+  { name: "array-string-mixed", description: { outputs: ["main", "ai_tool"] }, connectionType: "ai_tool" },
+  { name: "single-string-literal", description: { outputs: "main" }, connectionType: "main" },
+  { name: "config-object-no-substring", description: { outputs: [{ type: "main" }] }, connectionType: "mai" },
+].map((c) => ({ ...c, expect: helpers.nodeHasOutputType(c.description, c.connectionType) }));
+
+const isSubNodeTypeCases = [
+  { name: "main-only", description: { outputs: ["main"] } },
+  { name: "mixed-with-ai-tool", description: { outputs: [{ type: "ai_tool" }, { type: "main" }] } },
+  { name: "expression-string", description: { outputs: "={{expr}}" } },
+].map((c) => ({ ...c, expect: helpers.isSubNodeType(c.description) }));
+
+const checkConditionsCases = [
+  { name: "cnd-eq", conditions: [{ _cnd: { eq: "b" } }], actualValues: ["b"] },
+  { name: "cnd-not-empty-array", conditions: [{ _cnd: { not: "b" } }], actualValues: [] },
+  { name: "cnd-gte-fail", conditions: [{ _cnd: { gte: 1.2 } }], actualValues: [1.1] },
+  { name: "cnd-between", conditions: [{ _cnd: { between: { from: 1, to: 2 } } }], actualValues: [1.5] },
+  { name: "cnd-includes", conditions: [{ _cnd: { includes: "n8" } }], actualValues: ["n8n-rust"] },
+  { name: "cnd-regex", conditions: [{ _cnd: { regex: "^a+$" } }], actualValues: ["aaa"] },
+  { name: "cnd-exists-fail-null", conditions: [{ _cnd: { exists: true } }], actualValues: [null] },
+  { name: "plain-value-fallback", conditions: ["simple"], actualValues: ["simple"] },
+].map((c) => ({ ...c, expect: helpers.checkConditions(c.conditions, c.actualValues) }));
+
+const nodeFeaturesCases = [
+  { name: "undefined-features-def", featuresDef: null, nodeVersion: 1, expect: helpers.getNodeFeatures(undefined, 1) },
+  { name: "gte-version-match", featuresDef: { rag: { "@version": [{ _cnd: { gte: 2.0 } } ] } }, nodeVersion: 2.0, expect: helpers.getNodeFeatures({ rag: { "@version": [{ _cnd: { gte: 2.0 } } ] } }, 2.0) },
+  { name: "gte-version-below", featuresDef: { rag: { "@version": [{ _cnd: { gte: 2.0 } } ] } }, nodeVersion: 1.9, expect: helpers.getNodeFeatures({ rag: { "@version": [{ _cnd: { gte: 2.0 } } ] } }, 1.9) },
+  { name: "integer-version-match", featuresDef: { rag: { "@version": [{ _cnd: { gte: 2 } } ] } }, nodeVersion: 2, expect: helpers.getNodeFeatures({ rag: { "@version": [{ _cnd: { gte: 2 } } ] } }, 2) },
+];
+
 /* ---------------- Regression tripwire: results must equal the VERIFIED goldens ------ */
 /* (docs/isolation/node-golden-cases.md — values frozen by VERIFIED-BY-EXECUTION)      */
 
@@ -770,6 +815,14 @@ assertGolden("W19 rm-issues", resourceMapperIssuesCases.map((c) => c.expect), [
   { parameters: { map: [], "map.f1": ['Field "f1" is required'] } },
   null, null,
 ]);
+assertGolden("W20 accepts-input", nodeAcceptsInputTypeCases.map((c) => c.expect),
+  [true, true, true, false, false]);
+assertGolden("W21 has-output", nodeHasOutputTypeCases.map((c) => c.expect), [true, true, false]);
+assertGolden("W22 is-sub-node", isSubNodeTypeCases.map((c) => c.expect), [false, true, false]);
+assertGolden("W23 check-conditions", checkConditionsCases.map((c) => c.expect),
+  [true, true, false, true, true, true, false, true]);
+assertGolden("W24 node-features", nodeFeaturesCases.map((c) => c.expect),
+  [{}, { rag: true }, { rag: false }, { rag: true }]);
 
 if (trip.length) {
   console.error("REFERENCE DRIFT vs docs/isolation/node-golden-cases.md:");
@@ -868,6 +921,13 @@ const fixtures = {
         `rlcDefaults:${rlcDefaultCases.length}`,
         `resourceMapperIssues:${resourceMapperIssuesCases.length}`,
       ].join(", "),
+      wave7IoConditions: [
+        `nodeAcceptsInputType:${nodeAcceptsInputTypeCases.length}`,
+        `nodeHasOutputType:${nodeHasOutputTypeCases.length}`,
+        `isSubNodeType:${isSubNodeTypeCases.length}`,
+        `checkConditions:${checkConditionsCases.length}`,
+        `getNodeFeatures:${nodeFeaturesCases.length}`,
+      ].join(", "),
     },
   },
   applyAccessPatterns: { cases: applyAccessPatternsCases },
@@ -905,6 +965,11 @@ const fixtures = {
   resourceLocatorIssues: { cases: resourceLocatorIssuesCases },
   rlcDefaults: { cases: rlcDefaultCases },
   resourceMapperIssues: { cases: resourceMapperIssuesCases },
+  nodeAcceptsInputType: { cases: nodeAcceptsInputTypeCases },
+  nodeHasOutputType: { cases: nodeHasOutputTypeCases },
+  isSubNodeType: { cases: isSubNodeTypeCases },
+  checkConditions: { cases: checkConditionsCases },
+  getNodeFeatures: { cases: nodeFeaturesCases },
   serdeConformance,
 };
 

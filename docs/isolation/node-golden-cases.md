@@ -278,6 +278,39 @@ the engine **plants `__rl:true` into object defaults** (verbatim structure other
 The empty-array `map` key is a deliberate shape pin — a Rust serde implementation using
 `skip_serializing_if: Vec::is_empty` would LOSE it and break byte parity.
 
+## Wave 7 — IO-type acceptance + display conditions + node features (WG-20..WG-24)
+
+### WG-20 `nodeAcceptsInputType(description, connectionType)`
+
+array-string exact T · **expression-string T via `String.includes()` SUBSTRING match**
+(`={{["ai_tool"]}}` accepts `'ai_tool'`) · config-object exact T · **config-object rejects
+substring** (`{type:'ai_tool'}` vs `'tool'` → F) · missing inputs → F.
+Asymmetric: plain strings match by substring, config objects are exact.
+
+### WG-21 `nodeHasOutputType(description, connectionType)`
+
+mixed-string array T · single string literal T (`'main'`), also via includes-substring ·
+config-object `'mai'` substring → F (exact `.type` only).
+
+### WG-22 `isSubNodeType(description)`
+
+`['main']` F · `[{type:'ai_tool'},{type:'main'}]` T (any non-main) · expression-string → F
+(connection types not resolvable statically).
+
+### WG-23 `checkConditions(conditions, actualValues)`
+
+`_cnd` keys: eq/not/gte/lte/gt/lt/between/includes/startsWith/endsWith/regex/exists.
+Pinned: eq T · **`not` on EMPTY actualValues → T (all other keys → F)** · gte 1.2 vs 1.1 F ·
+between [1,2] vs 1.5 T · includes T · regex `^a+$` T · exists on null F · **plain-value
+fallback** (non-_cnd conditions use `actualValues.includes(condition)`) T.
+Composition: conditions `.some(...)`, multi actualValues `._cnd` → `.every(...)`.
+
+### WG-24 `getNodeFeatures(featuresDef, nodeVersion)`
+
+`undefined` def → `{}` (stable empty object) · `{rag:{'@version':[{_cnd:{gte:2.0}}]}}`
+→ `{rag:true}` at 2.0 · `{rag:false}` at 1.9 · integer shapes work `{rag:true}` at 2.
+Feature values are `checkConditions(def['@version'], [nodeVersion])` per feature name.
+
 ### Reproduction
 
 ```bash
@@ -299,7 +332,8 @@ fixtures power `docs/isolation/node-conformance-harness.md`. Dist resolution ord
 ### Parity acceptance rule for `n8n-node-model` (Phase 3)
 
 The crate's unit tests MUST reproduce GC-1..GC-7, WG-1..WG-9, WG-10..WG-13, WG-14, WG-15,
-and WG-16..WG-19 byte-identically (JSON equality after serialization) — 135 golden cases
-in `docs/isolation/node-fixtures.json`, plus the 7 `serdeConformance` round-trip probes
-(see `node-conformance-harness.md` §5 for the binding acceptance gate). Any deviation is
-a conformance defect (register it as MSG back to agent-2/mediator, do not "fix" semantics).
+WG-16..WG-19, and WG-20..WG-24 byte-identically (JSON equality after serialization) — 158
+golden cases in `docs/isolation/node-fixtures.json`, plus the 7 `serdeConformance`
+round-trip probes (see `node-conformance-harness.md` §5 for the binding acceptance gate).
+Any deviation is a conformance defect (register it as MSG back to agent-2/mediator, do
+not "fix" semantics).

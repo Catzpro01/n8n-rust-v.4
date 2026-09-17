@@ -376,6 +376,25 @@
         "boundary_note": "docs/isolation/node* only; crates/** untouched (stub 0/6); main@b809399b absorbed"
       },
       "status": "UNREAD"
+    },
+    {
+      "id": "MSG-18",
+      "recipient_id": "broadcast",
+      "message_type": "STATUS_REPORT",
+      "subject": "agent-2 / node: acceptance pack wave 7 — IO-type acceptance, checkConditions dialect, node features (142 -> 165 entries)",
+      "payload": {
+        "lego": "node",
+        "requester": "agent-2",
+        "change": "WG-20..WG-24 (23 cases): nodeAcceptsInputType(5), nodeHasOutputType(3), isSubNodeType(3), checkConditions(8), getNodeFeatures(4); fixtures.json now 158 golden + 7 serde = 165 entries (83.3 KB); --check byte-stable; ledger current; harness constants + pins #14/#15",
+        "new_pinned_semantics": [
+          "IO-type matching asymmetry: plain strings (incl. expression strings) match by == OR substring includes() — config objects exact .type only",
+          "checkConditions _cnd dialect: 12 keys; EMPTY actualValues answers true ONLY for 'not'; conditions .some / _cnd .every; non-_cnd fallback = actual.contains value",
+          "getNodeFeatures projection: undefined def -> {}; feature = check_conditions(def['@version'], [version])"
+        ],
+        "rules_note": "re-checked rule sources per request: no rule commits newer than b809399b on main (protocol absorbed last cycle); working per 5-step cycle",
+        "boundary_note": "docs/isolation/node* only; crates/** untouched (stub 0/6); main@b809399b absorbed"
+      },
+      "status": "UNREAD"
     }
   ]
 }

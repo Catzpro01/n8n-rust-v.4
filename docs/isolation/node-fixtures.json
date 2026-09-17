@@ -10,7 +10,8 @@
       "wave3IssuesAndFilters": "getNodeParametersIssues:6, executeFilterCondition:9+2t, validateFilterParameter:4, executeFilter:3",
       "wave4OperatorMatrix": "filterOperatorMatrix:26+1t",
       "wave5NestedParameters": "getNodeParametersNested:9",
-      "wave6RlcRm": "isValidResourceLocatorParameterValue:8, resourceLocatorIssues:5, rlcDefaults:1, resourceMapperIssues:4"
+      "wave6RlcRm": "isValidResourceLocatorParameterValue:8, resourceLocatorIssues:5, rlcDefaults:1, resourceMapperIssues:4",
+      "wave7IoConditions": "nodeAcceptsInputType:5, nodeHasOutputType:3, isSubNodeType:3, checkConditions:8, getNodeFeatures:4"
     }
   },
   "applyAccessPatterns": {
@@ -3085,6 +3086,304 @@
           }
         },
         "expect": null
+      }
+    ]
+  },
+  "nodeAcceptsInputType": {
+    "cases": [
+      {
+        "name": "array-string-exact",
+        "description": {
+          "inputs": [
+            "main"
+          ]
+        },
+        "connectionType": "main",
+        "expect": true
+      },
+      {
+        "name": "expression-string-substring",
+        "description": {
+          "inputs": "={{[\"ai_tool\"]}}"
+        },
+        "connectionType": "ai_tool",
+        "expect": true
+      },
+      {
+        "name": "config-object-exact",
+        "description": {
+          "inputs": [
+            {
+              "type": "ai_tool"
+            }
+          ]
+        },
+        "connectionType": "ai_tool",
+        "expect": true
+      },
+      {
+        "name": "config-object-no-substring",
+        "description": {
+          "inputs": [
+            {
+              "type": "ai_tool"
+            }
+          ]
+        },
+        "connectionType": "tool",
+        "expect": false
+      },
+      {
+        "name": "missing-inputs",
+        "description": {},
+        "connectionType": "main",
+        "expect": false
+      }
+    ]
+  },
+  "nodeHasOutputType": {
+    "cases": [
+      {
+        "name": "array-string-mixed",
+        "description": {
+          "outputs": [
+            "main",
+            "ai_tool"
+          ]
+        },
+        "connectionType": "ai_tool",
+        "expect": true
+      },
+      {
+        "name": "single-string-literal",
+        "description": {
+          "outputs": "main"
+        },
+        "connectionType": "main",
+        "expect": true
+      },
+      {
+        "name": "config-object-no-substring",
+        "description": {
+          "outputs": [
+            {
+              "type": "main"
+            }
+          ]
+        },
+        "connectionType": "mai",
+        "expect": false
+      }
+    ]
+  },
+  "isSubNodeType": {
+    "cases": [
+      {
+        "name": "main-only",
+        "description": {
+          "outputs": [
+            "main"
+          ]
+        },
+        "expect": false
+      },
+      {
+        "name": "mixed-with-ai-tool",
+        "description": {
+          "outputs": [
+            {
+              "type": "ai_tool"
+            },
+            {
+              "type": "main"
+            }
+          ]
+        },
+        "expect": true
+      },
+      {
+        "name": "expression-string",
+        "description": {
+          "outputs": "={{expr}}"
+        },
+        "expect": false
+      }
+    ]
+  },
+  "checkConditions": {
+    "cases": [
+      {
+        "name": "cnd-eq",
+        "conditions": [
+          {
+            "_cnd": {
+              "eq": "b"
+            }
+          }
+        ],
+        "actualValues": [
+          "b"
+        ],
+        "expect": true
+      },
+      {
+        "name": "cnd-not-empty-array",
+        "conditions": [
+          {
+            "_cnd": {
+              "not": "b"
+            }
+          }
+        ],
+        "actualValues": [],
+        "expect": true
+      },
+      {
+        "name": "cnd-gte-fail",
+        "conditions": [
+          {
+            "_cnd": {
+              "gte": 1.2
+            }
+          }
+        ],
+        "actualValues": [
+          1.1
+        ],
+        "expect": false
+      },
+      {
+        "name": "cnd-between",
+        "conditions": [
+          {
+            "_cnd": {
+              "between": {
+                "from": 1,
+                "to": 2
+              }
+            }
+          }
+        ],
+        "actualValues": [
+          1.5
+        ],
+        "expect": true
+      },
+      {
+        "name": "cnd-includes",
+        "conditions": [
+          {
+            "_cnd": {
+              "includes": "n8"
+            }
+          }
+        ],
+        "actualValues": [
+          "n8n-rust"
+        ],
+        "expect": true
+      },
+      {
+        "name": "cnd-regex",
+        "conditions": [
+          {
+            "_cnd": {
+              "regex": "^a+$"
+            }
+          }
+        ],
+        "actualValues": [
+          "aaa"
+        ],
+        "expect": true
+      },
+      {
+        "name": "cnd-exists-fail-null",
+        "conditions": [
+          {
+            "_cnd": {
+              "exists": true
+            }
+          }
+        ],
+        "actualValues": [
+          null
+        ],
+        "expect": false
+      },
+      {
+        "name": "plain-value-fallback",
+        "conditions": [
+          "simple"
+        ],
+        "actualValues": [
+          "simple"
+        ],
+        "expect": true
+      }
+    ]
+  },
+  "getNodeFeatures": {
+    "cases": [
+      {
+        "name": "undefined-features-def",
+        "featuresDef": null,
+        "nodeVersion": 1,
+        "expect": {}
+      },
+      {
+        "name": "gte-version-match",
+        "featuresDef": {
+          "rag": {
+            "@version": [
+              {
+                "_cnd": {
+                  "gte": 2
+                }
+              }
+            ]
+          }
+        },
+        "nodeVersion": 2,
+        "expect": {
+          "rag": true
+        }
+      },
+      {
+        "name": "gte-version-below",
+        "featuresDef": {
+          "rag": {
+            "@version": [
+              {
+                "_cnd": {
+                  "gte": 2
+                }
+              }
+            ]
+          }
+        },
+        "nodeVersion": 1.9,
+        "expect": {
+          "rag": false
+        }
+      },
+      {
+        "name": "integer-version-match",
+        "featuresDef": {
+          "rag": {
+            "@version": [
+              {
+                "_cnd": {
+                  "gte": 2
+                }
+              }
+            ]
+          }
+        },
+        "nodeVersion": 2,
+        "expect": {
+          "rag": true
+        }
       }
     ]
   },
