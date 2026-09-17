@@ -138,7 +138,7 @@ Reference: n8n 2.9.4 (b6dc2787c45677a29a9612cd27eb911302961a83)
 Frontend: 100% original Vue Canvas / editor-ui untouched
 Backend: Modular LEGO data flow, clear boundaries, formal contracts
 Rust: ZERO RUST (pure JS/TS)
-Regression: 10/10 workflow-lego gates PASS
+Regression: 11/11 workflow-lego gates PASS
 `);
 
 if (result.status === "COMPLETED") {

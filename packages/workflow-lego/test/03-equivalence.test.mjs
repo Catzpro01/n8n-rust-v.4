@@ -27,23 +27,18 @@ const REFERENCE_PKG = process.env.LEGO_REFERENCE_PKG ?? join(REPO, 'packages/wor
 const NODES_JSON = process.env.LEGO_NODES_JSON ?? join(REPO, 'packages/workflow-lego/node_modules/n8n-nodes-base/dist/types/nodes.json');
 
 const requireReference = () => {
-	// In fast mode, allow missing nodes.json - use empty registry
-	if (!(REFERENCE_PKG && existsSync(join(REFERENCE_PKG, 'package.json')))) {
-		const alt = join(REPO, 'packages/workflow-lego/node_modules/n8n-workflow');
-		if (existsSync(join(alt, 'package.json'))) {
-			return;
-		}
-		// If still not found, try reference-model-api's own fallback
-		try {
-			require('node:fs');
-			return;
-		} catch {}
-	}
-	// NODES_JSON is optional in fast mode - if missing, we use empty registry
-	if (!(NODES_JSON && existsSync(NODES_JSON))) {
-		// console.warn('NODES_JSON not found, using empty registry for fast mode');
-		return;
-	}
+	// Loud by design: an equivalence digest measured against a missing/empty registry
+	// is a false green. The gate (tools/workflow-isolation-gate.mjs) and
+	// scripts/run-lego-tests.sh always export both variables; the path defaults above
+	// only help ad-hoc runs with a fully installed tree.
+	assert.ok(
+		REFERENCE_PKG && existsSync(join(REFERENCE_PKG, 'package.json')),
+		'LEGO_REFERENCE_PKG must point at an installed n8n-workflow package (the pinned reference runtime).',
+	);
+	assert.ok(
+		NODES_JSON && existsSync(NODES_JSON),
+		'LEGO_NODES_JSON must point at n8n-nodes-base/dist/types/nodes.json (real node descriptions for the corpus).',
+	);
 };
 
 const runDigest = (source, mode) => {

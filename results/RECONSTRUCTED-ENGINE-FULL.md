@@ -85,6 +85,18 @@ packages/reconstructed-engine/     enhanced — src/workflow, connection, node, 
 - `docs/isolation/evidence/gate-report.json` → 10/10 PASS, written
 - `packages/workflow-lego/manifest/reference.sha256.json` → 15050 files pinned
 
+### Pipeline Operations Summary (transcribed by the continuing worker from the Verification/Evidence sections above + branch commits `425b2448`/`95402b0e`)
+
+| Operation | Status | Exit Code |
+| :--- | :--- | :--- |
+| `implement_lego_packages` (14 new `packages/*-lego` + reconstructed-engine `src/` tree) | ✓ SUCCESS | `0` |
+| `npm run verify:fast` (10/10, behavior none) | ✓ SUCCESS | `0` |
+| `node packages/reconstructed-engine/test-run.mjs` (COMPLETED) | ✓ SUCCESS | `0` |
+| `node packages/reconstructed-engine/test-enhanced.mjs` (14 LEGOs) | ✓ SUCCESS | `0` |
+| `write_evidence` (`gate-report.json`, `PHASE-3-INTEGRATION-REPORT.md`) | ✓ SUCCESS | `0` |
+
+Corrections recorded by the continuing worker (TASK-BRANCH-GATE-AUDIT-02): full `npm run verify` (with live G11) passes **11/11 in this sandbox** — G11 does not require a VPS; the "Next Steps" premise otherwise is retained. `strict` digest is now 217 identical / 35 port sections (strict-mode marker hardening).
+
 ### Next Steps (Phase 3)
 
 - Implement Rust contract for Workflow LEGO (crates/n8n-workflow) — currently NOT STARTED per provenance, but crates already contain initial Rust from genesis commit
