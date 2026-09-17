@@ -32,6 +32,13 @@ PLAN = [
     ("ryu", "ryu", "1.0.18"),
     ("memchr", "memchr", "2.7.4"),
     ("unicode-ident", "unicode-ident", "1.0.14"),
+    ("indexmap", "indexmap", "2.2.6"),
+    ("equivalent", "equivalent", "1.0.1"),
+    ("hashbrown", "hashbrown", "0.14.5"),
+    ("aho-corasick", "aho-corasick", "1.1.3"),
+    ("regex/regex-automata", "regex-automata", "0.4.7"),
+    ("regex/regex-syntax", "regex-syntax", "0.8.4"),
+    ("regex", "regex", "1.10.6"),
 ]
 
 DEP_VER = {name: ver for _, name, ver in PLAN}
@@ -55,18 +62,64 @@ PKG_FIELDS = {
     "homepage": 'homepage = "https://docs.rs"',
 }
 
-SECTION = re.compile(r"^\[([^\]]+)\]$")
+# Plain tables [x] and array-of-tables [[x]] alike — [[bench]] / [[test]] /
+# [[example]] / [[bin]] carry their own `path` keys and must be recognized too.
+SECTION = re.compile(r"^\[+([^\]]+)\]+$")
 DOTTED = re.compile(r"^([A-Za-z0-9_.-]+)\.workspace\s*=\s*true$")
 
 
-def rewrite_manifest(path, name, version):
-    out, drop_section, report = [], False, []
-    for line in open(path, encoding="utf-8").read().split("\n"):
+def collect_devdeps(lines):
+    """First pass: dependency names declared inside dropped [dev-dependencies]
+    sections (incl. dotted forms like [dev-dependencies.env_logger]). Features
+    may reference them (`test = ["syn-test-suite/all-features"]`); once the
+    dev-dep is dropped the feature reference is orphaned and cargo rejects the
+    manifest, so the second pass prunes those lines — but ONLY when the name is
+    not also a real (kept) dependency, because test setups often re-declare the
+    crate's own optional deps as dev-deps (serde_derive, memchr, ...)."""
+    devdeps, realdeps = set(), set()
+    in_dev = in_real = False
+    for line in lines:
         stripped = line.strip()
         header = SECTION.match(stripped)
         if header:
             section = header.group(1)
-            drop_section = section == "workspace" or section.startswith("patch.")
+            in_dev = section == "dev-dependencies" or section.startswith("dev-dependencies.")
+            in_real = (
+                section == "dependencies"
+                or section.startswith("dependencies.")
+                or section == "build-dependencies"
+                or section.startswith("build-dependencies.")
+            )
+            continue
+        if in_dev or in_real:
+            m = re.match(r"^([A-Za-z0-9_-]+)\s*=", stripped)
+            if m:
+                (devdeps if in_dev else realdeps).add(m.group(1))
+    return devdeps - realdeps
+
+
+def rewrite_manifest(path, name, version):
+    raw_lines = open(path, encoding="utf-8").read().split("\n")
+    devdeps = collect_devdeps(raw_lines)
+    out, drop_section, report = [], False, []
+    for line in raw_lines:
+        stripped = line.strip()
+        header = SECTION.match(stripped)
+        if header:
+            section = header.group(1)
+            # Tables that are meaningless or harmful in a directory source:
+            # [workspace]/[patch.*] (inheritance), [dev-dependencies] plus
+            # [[bench]]/[[test]]/[[example]] (may carry path deps), [target.*]
+            # (platform-specific dev-deps), [badges] (retired metadata).
+            drop_section = (
+                section == "workspace"
+                or section == "dev-dependencies"
+                or section.startswith("dev-dependencies.")
+                or section == "badges"
+                or section.startswith("patch.")
+                or section.startswith("target.")
+                or section.split(".")[0] in ("bench", "test", "example")
+            )
             if drop_section:
                 report.append(f"  - dropped table [{section}]")
                 continue
@@ -74,6 +127,26 @@ def rewrite_manifest(path, name, version):
             continue
         if drop_section:
             continue
+        # Surgically prune feature ARRAY ITEMS that reference a dropped dev-dep
+        # (e.g. syn's `test = ["syn-test-suite/all-features"]`, hashbrown's
+        # `nightly = ["allocator-api2?/nightly", "bumpalo/allocator_api"]` — keep
+        # the real-dep item, drop only the dev-dep item; dropping the whole line
+        # is wrong because other features may reference the feature itself).
+        if section == "features" and devdeps and "[" in line:
+            open_i = line.index("[")
+            close_i = line.rfind("]")
+            if close_i > open_i:
+                head, inner, tail = line[: open_i + 1], line[open_i + 1 : close_i], line[close_i:]
+
+                def orphaned(item):
+                    core = item.strip().strip('"').split("?")[0].split("/")[0]
+                    return core in devdeps
+
+                items = [i.strip() for i in inner.split(",") if i.strip()]
+                kept = [i for i in items if not orphaned(i)]
+                if len(kept) != len(items):
+                    report.append(f"  - pruned orphaned feature item(s): {stripped[:70]}")
+                line = head + ", ".join(kept) + tail
         if not stripped or stripped.startswith("#"):
             out.append(line)
             continue
@@ -94,6 +167,14 @@ def rewrite_manifest(path, name, version):
                 continue
             line = re.sub(r"workspace\s*=\s*true", f'version = "{DEP_VER[key]}"', line)
             report.append(f"  ~ dep {key} workspace -> version {DEP_VER[key]}")
+        # Standalone `path = "..."` lines inside dependency tables: drop the line
+        # entirely (the versioned dep still resolves from the vendor directory).
+        if (
+            section.startswith("dependencies")
+            or section.startswith("build-dependencies")
+        ) and re.match(r'^path\s*=\s*"[^"]*"\s*$', stripped):
+            report.append(f"  - dropped path-only line in [{section}]")
+            continue
         stripped_path = re.sub(r',\s*path\s*=\s*"[^"]*"', "", line)
         stripped_path = re.sub(r'path\s*=\s*"[^"]*"\s*,\s*', "", stripped_path)
         if stripped_path != line:

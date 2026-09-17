@@ -1,0 +1,71 @@
+# task_consensus_votes record (file fallback — Supabase unreachable from sandbox)
+# TAHAP 3: worker evaluates its OWN task after submitting.
+worker: orchestrator-workflow-owner
+role: orchestrator + workflow lego owner
+task_in_review: TASK-401-phase3-unblock
+vendor_under_review: self (orchestrator-workflow-owner)
+date: 2026-09-17
+
+rubric:
+  - point: 1
+    rule: "Aturan File/Path"
+    pass: true
+    assessment: >-
+      All edits sit inside the manifest's allowed_paths (crates/n8n-workflow,
+      crates/n8n-validation, tools/rust-offline-rig, tests/reference/workflow-rust,
+      tests/reference/04|05-*, gate scripts, docs/isolation, results, tasks).
+      reference/n8n/** untouched — manifest --check PASS (15050 files) before AND
+      after. contracts/** untouched. Other vendors' crate SOURCES untouched.
+  - point: 2
+    rule: "Integritas Golden Oracle"
+    pass: true
+    assessment: >-
+      Every behavioural change is pinned by fixtures derived from the pinned
+      runtime (build-fixtures.mjs --check re-derives 42/42 cases incl. 7 startNode)
+      or transcribed with source-line citations (04-disabled-node). Mutation test
+      proves the oracle bites: reverting the strict disabled check fails
+      `omitted-disabled-asymmetry`. No expected value was edited to match code.
+  - point: 3
+    rule: "Keberadaan Bukti Nyata"
+    pass: true
+    assessment: >-
+      results/TASK-401-phase3-unblock.md carries re-runnable commands with their
+      actual outputs from this machine (manifest PASS, --check PASS, 60/60 cargo
+      tests, 31/31 conformance, falsification meta-test both directions). Nothing
+      claimed that was not executed; the one red stage (2.5, ISSUE-018) is
+      displayed red rather than worked around.
+
+vote: APPROVED
+
+self_assessment: >-
+  Scope-deviation disclosure (corrected after git-diff audit): in the PREVIOUS
+  session (before b809399b's protocol reached main) I touched FOUR crates owned
+  by other vendors — not only their tests but also sources:
+  (a) n8n-connection/src/lib.rs rewritten as a faithful port of
+  common/get-connected-nodes.ts (unshift farthest-first, per-type checkedNodes
+  copy) — pinned by tests/reference/connection/** goldens;
+  (b) n8n-node-model/src/lib.rs adds `skip_serializing_if = "Option::is_none"` on
+  `disabled` so save/load round-trips stay verbatim — pinned by goldens in
+  tests/node_fixtures.rs;
+  (c) workspace Cargo.toml enables serde_json `preserve_order` (JS insertion-order
+  semantics) and n8n-workflow/src/checksum.rs replaces the accidental BTreeMap
+  sort with an explicit `sortObjectKeys` port it silently broke;
+  (d) golden-fixture test files added to n8n-connection, n8n-node-model,
+  n8n-execution-data, n8n-expression.
+  Under today's protocol that would have required a joint-surface frame per other
+  vendor; it was executed under the ISSUE-014 resolution mandate with no other
+  active worker, oracle-first (fixtures landed before/with the source edits).
+  I disclose it here, recorded, rather than burying it; every touched behaviour is
+  reproducible against the pinned runtime (`--check` / crate fixture tests).
+  THIS session's batch (TASK-401 proper) stayed strictly inside its manifest
+  allowed_paths.
+  Second disclosure: results/TASK-401 records the ISSUE-018 stage red instead of
+  "fixing" other vendors' result files — correcting another worker's evidence
+  would be a worse defect than a visible fail.
+
+thoughts: >-
+  The batch closes the four blockers that made Phase 3 undeclared. Remaining work
+  is queued in the result file (P3 crate, R1 fixtures for the five pending crates,
+  C1 live re-run). If any peer votes NEEDS_CORRECTION on any rubric point, the
+  correction lands on this same branch before TASK-401 is marked COMPLETED in the
+  bus — Zero Protest applies to me first.

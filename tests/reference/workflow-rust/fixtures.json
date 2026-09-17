@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-16T23:02:31.596Z",
+  "generatedAt": "2026-09-17T01:25:11.273Z",
   "source": "reference runtime (n8n-workflow 2.9.1 — the 2.9.4 dependency set)",
   "runtimeDir": "/home/user/n8n-rust-v.4/.runtime/node_modules",
   "provenance": {
@@ -1062,5 +1062,509 @@
       "depth": -1,
       "result": []
     }
-  ]
+  ],
+  "startNode": {
+    "note": "getHighestNode/getStartNode incl. disabled semantics (ISSUE-017). Registry branch of __getStartNode exercised with a no-trigger/no-poll stub — the registry branch itself is a recorded divergence (PHASE-3-OPENING).",
+    "cases": [
+      {
+        "id": "disabled-parent-skipped",
+        "note": "disabled parent contributes nothing: Code has no highest nodes; startNode('Code') falls back to the only candidate (lenient !disabled, workflow.ts:824); startNode() with no destination yields undefined because :853 skips the disabled starting-type node",
+        "workflow": {
+          "nodes": [
+            {
+              "id": "id-Manual Trigger",
+              "name": "Manual Trigger",
+              "type": "n8n-nodes-base.manualTrigger",
+              "typeVersion": 1,
+              "position": [
+                0,
+                0
+              ],
+              "parameters": {},
+              "disabled": true
+            },
+            {
+              "id": "id-Code",
+              "name": "Code",
+              "type": "n8n-nodes-base.noOp",
+              "typeVersion": 1,
+              "position": [
+                0,
+                0
+              ],
+              "parameters": {}
+            }
+          ],
+          "connections": {
+            "Manual Trigger": {
+              "main": [
+                [
+                  {
+                    "node": "Code",
+                    "type": "main",
+                    "index": 0
+                  }
+                ]
+              ]
+            }
+          }
+        },
+        "probes": [
+          {
+            "op": "getHighestNode",
+            "node": "Code",
+            "expected": []
+          },
+          {
+            "op": "getStartNode",
+            "destination": "Code",
+            "expected": "Code"
+          },
+          {
+            "op": "getStartNode",
+            "expected": null
+          }
+        ]
+      },
+      {
+        "id": "enabled-parent-is-highest",
+        "note": "control case for the one above: enabled manual trigger IS the highest node and the start node",
+        "workflow": {
+          "nodes": [
+            {
+              "id": "id-Manual Trigger",
+              "name": "Manual Trigger",
+              "type": "n8n-nodes-base.manualTrigger",
+              "typeVersion": 1,
+              "position": [
+                0,
+                0
+              ],
+              "parameters": {}
+            },
+            {
+              "id": "id-Code",
+              "name": "Code",
+              "type": "n8n-nodes-base.noOp",
+              "typeVersion": 1,
+              "position": [
+                0,
+                0
+              ],
+              "parameters": {}
+            }
+          ],
+          "connections": {
+            "Manual Trigger": {
+              "main": [
+                [
+                  {
+                    "node": "Code",
+                    "type": "main",
+                    "index": 0
+                  }
+                ]
+              ]
+            }
+          }
+        },
+        "probes": [
+          {
+            "op": "getHighestNode",
+            "node": "Code",
+            "expected": [
+              "Manual Trigger"
+            ]
+          },
+          {
+            "op": "getStartNode",
+            "destination": "Code",
+            "expected": "Manual Trigger"
+          },
+          {
+            "op": "getStartNode",
+            "expected": "Manual Trigger"
+          }
+        ]
+      },
+      {
+        "id": "disabled-grandparent-climb-past",
+        "note": "chain MT(disabled) -> A -> Code: the disabled grandparent is dropped (:553 lenient check fails), the enabled intermediate A becomes the highest node and the start node",
+        "workflow": {
+          "nodes": [
+            {
+              "id": "id-Manual Trigger",
+              "name": "Manual Trigger",
+              "type": "n8n-nodes-base.manualTrigger",
+              "typeVersion": 1,
+              "position": [
+                0,
+                0
+              ],
+              "parameters": {},
+              "disabled": true
+            },
+            {
+              "id": "id-A",
+              "name": "A",
+              "type": "n8n-nodes-base.noOp",
+              "typeVersion": 1,
+              "position": [
+                0,
+                0
+              ],
+              "parameters": {}
+            },
+            {
+              "id": "id-Code",
+              "name": "Code",
+              "type": "n8n-nodes-base.noOp",
+              "typeVersion": 1,
+              "position": [
+                0,
+                0
+              ],
+              "parameters": {}
+            }
+          ],
+          "connections": {
+            "Manual Trigger": {
+              "main": [
+                [
+                  {
+                    "node": "A",
+                    "type": "main",
+                    "index": 0
+                  }
+                ]
+              ]
+            },
+            "A": {
+              "main": [
+                [
+                  {
+                    "node": "Code",
+                    "type": "main",
+                    "index": 0
+                  }
+                ]
+              ]
+            }
+          }
+        },
+        "probes": [
+          {
+            "op": "getHighestNode",
+            "node": "Code",
+            "expected": [
+              "A"
+            ]
+          },
+          {
+            "op": "getStartNode",
+            "destination": "Code",
+            "expected": "A"
+          }
+        ]
+      },
+      {
+        "id": "omitted-disabled-asymmetry",
+        "note": "D-04 quirk: a node that OMITS 'disabled' is not its own highest node (:498 tests === false strictly), yet IS admitted as another node's highest parent (:553 tests !== true); an explicit disabled:false node IS its own highest node",
+        "workflow": {
+          "nodes": [
+            {
+              "id": "id-Solo",
+              "name": "Solo",
+              "type": "n8n-nodes-base.noOp",
+              "typeVersion": 1,
+              "position": [
+                0,
+                0
+              ],
+              "parameters": {}
+            },
+            {
+              "id": "id-Leaf",
+              "name": "Leaf",
+              "type": "n8n-nodes-base.noOp",
+              "typeVersion": 1,
+              "position": [
+                0,
+                0
+              ],
+              "parameters": {}
+            },
+            {
+              "id": "id-Explicit",
+              "name": "Explicit",
+              "type": "n8n-nodes-base.noOp",
+              "typeVersion": 1,
+              "position": [
+                0,
+                0
+              ],
+              "parameters": {},
+              "disabled": false
+            }
+          ],
+          "connections": {
+            "Solo": {
+              "main": [
+                [
+                  {
+                    "node": "Leaf",
+                    "type": "main",
+                    "index": 0
+                  }
+                ]
+              ]
+            }
+          }
+        },
+        "probes": [
+          {
+            "op": "getHighestNode",
+            "node": "Solo",
+            "expected": []
+          },
+          {
+            "op": "getStartNode",
+            "destination": "Solo",
+            "expected": "Solo"
+          },
+          {
+            "op": "getHighestNode",
+            "node": "Leaf",
+            "expected": [
+              "Solo"
+            ]
+          },
+          {
+            "op": "getHighestNode",
+            "node": "Explicit",
+            "expected": [
+              "Explicit"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "start-disabled-fallback",
+        "note": "getStartNode(disabledDestination): the unconditional final fallback `return this.nodes[nodeNames[0]]` (workflow.ts:881) returns the DISABLED node itself",
+        "workflow": {
+          "nodes": [
+            {
+              "id": "id-Manual Trigger",
+              "name": "Manual Trigger",
+              "type": "n8n-nodes-base.manualTrigger",
+              "typeVersion": 1,
+              "position": [
+                0,
+                0
+              ],
+              "parameters": {},
+              "disabled": true
+            },
+            {
+              "id": "id-Code",
+              "name": "Code",
+              "type": "n8n-nodes-base.noOp",
+              "typeVersion": 1,
+              "position": [
+                0,
+                0
+              ],
+              "parameters": {}
+            }
+          ],
+          "connections": {
+            "Manual Trigger": {
+              "main": [
+                [
+                  {
+                    "node": "Code",
+                    "type": "main",
+                    "index": 0
+                  }
+                ]
+              ]
+            }
+          }
+        },
+        "probes": [
+          {
+            "op": "getStartNode",
+            "destination": "Manual Trigger",
+            "expected": "Manual Trigger"
+          }
+        ]
+      },
+      {
+        "id": "highest-connection-index-filter",
+        "note": "getHighestNode(node, connectionIndex) considers only the given INPUT slot (workflow.ts:529-531): index 0 sees A, index 1 sees B, omitted index sees both",
+        "workflow": {
+          "nodes": [
+            {
+              "id": "id-A",
+              "name": "A",
+              "type": "n8n-nodes-base.noOp",
+              "typeVersion": 1,
+              "position": [
+                0,
+                0
+              ],
+              "parameters": {}
+            },
+            {
+              "id": "id-B",
+              "name": "B",
+              "type": "n8n-nodes-base.noOp",
+              "typeVersion": 1,
+              "position": [
+                0,
+                0
+              ],
+              "parameters": {}
+            },
+            {
+              "id": "id-Merge",
+              "name": "Merge",
+              "type": "n8n-nodes-base.noOp",
+              "typeVersion": 1,
+              "position": [
+                0,
+                0
+              ],
+              "parameters": {}
+            }
+          ],
+          "connections": {
+            "A": {
+              "main": [
+                [
+                  {
+                    "node": "Merge",
+                    "type": "main",
+                    "index": 0
+                  }
+                ]
+              ]
+            },
+            "B": {
+              "main": [
+                [
+                  {
+                    "node": "Merge",
+                    "type": "main",
+                    "index": 1
+                  }
+                ]
+              ]
+            }
+          }
+        },
+        "probes": [
+          {
+            "op": "getHighestNode",
+            "node": "Merge",
+            "expected": [
+              "A",
+              "B"
+            ]
+          },
+          {
+            "op": "getHighestNode",
+            "node": "Merge",
+            "index": 0,
+            "expected": [
+              "A"
+            ]
+          },
+          {
+            "op": "getHighestNode",
+            "node": "Merge",
+            "index": 1,
+            "expected": [
+              "B"
+            ]
+          },
+          {
+            "op": "getStartNode",
+            "destination": "Merge",
+            "expected": "A"
+          }
+        ]
+      },
+      {
+        "id": "highest-through-cycle-terminates",
+        "note": "A <-> B cycle: checkedNodes terminates the climb; the other cycle member is reported as the highest node",
+        "workflow": {
+          "nodes": [
+            {
+              "id": "id-A",
+              "name": "A",
+              "type": "n8n-nodes-base.noOp",
+              "typeVersion": 1,
+              "position": [
+                0,
+                0
+              ],
+              "parameters": {}
+            },
+            {
+              "id": "id-B",
+              "name": "B",
+              "type": "n8n-nodes-base.noOp",
+              "typeVersion": 1,
+              "position": [
+                0,
+                0
+              ],
+              "parameters": {}
+            }
+          ],
+          "connections": {
+            "A": {
+              "main": [
+                [
+                  {
+                    "node": "B",
+                    "type": "main",
+                    "index": 0
+                  }
+                ]
+              ]
+            },
+            "B": {
+              "main": [
+                [
+                  {
+                    "node": "A",
+                    "type": "main",
+                    "index": 0
+                  }
+                ]
+              ]
+            }
+          }
+        },
+        "probes": [
+          {
+            "op": "getHighestNode",
+            "node": "A",
+            "expected": [
+              "B"
+            ]
+          },
+          {
+            "op": "getHighestNode",
+            "node": "B",
+            "expected": [
+              "A"
+            ]
+          }
+        ]
+      }
+    ]
+  }
 }

@@ -1,0 +1,35 @@
+{
+  "id": "wf-cyclic-invalid",
+  "name": "Cyclic Invalid Golden",
+  "nodes": [
+    {
+      "id": "id-a",
+      "name": "A",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "parameters": {}
+    },
+    {
+      "id": "id-b",
+      "name": "B",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [300, 0],
+      "parameters": {}
+    },
+    {
+      "id": "id-c",
+      "name": "C",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [600, 0],
+      "parameters": {}
+    }
+  ],
+  "connections": {
+    "A": { "main": [[{ "node": "B", "type": "main", "index": 0 }]] },
+    "B": { "main": [[{ "node": "C", "type": "main", "index": 0 }]] },
+    "C": { "main": [[{ "node": "A", "type": "main", "index": 0 }]] }
+  }
+}

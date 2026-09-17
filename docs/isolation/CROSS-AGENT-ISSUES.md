@@ -1039,3 +1039,84 @@ destroy their work. Agent 5 documents and reassigns; it does not fix other agent
    `f8da35180669`.
 
 **Status:** CLOSED (2026-09-17 by Orchestrator) — Relocated `node-model/index.ts` to `docs/isolation/node-barrel.ts` and removed from `reference/`. Reference integrity returned to 15,050 files.
+
+---
+
+## 2026-09-17 — Phase-3 unblock batch (TASK-401, Orchestrator + Workflow-LEGO owner)
+
+Resolutions recorded in one chronological entry; each line carries its evidence so any
+worker can re-run instead of trusting the claim. Full detail: `results/TASK-401-phase3-unblock.md`.
+
+### ISSUE-011 (reference integrity) — CLOSED, now *gate-enforced*
+Unchanged verdict (barrel relocated to `docs/isolation/node-barrel.ts`, manifest PASS at
+15050 / `f8da35180669`). New: `node tools/workflow-reference-manifest.mjs --check` is wired
+into `tests/integration/run_gate.sh` **Stage 1.5**, so an ISSUE-011-class break fails the
+merge gate instead of being reconstructed weeks later.
+
+### ISSUE-012 (Phase 3 opened in code, not in a record) — RESOLVED IN REPO
+`docs/isolation/PHASE-3-OPENING.md` written: every Agent-5 entry condition answered with
+evidence (ISSUE-011 closed; per-crate golden fixtures shipped; `INVALID_CONNECTION_TYPE`
+implemented, 4/4 codes; `cargo` available via the repaired offline rig; this record).
+Gates flipped: `tests/compatibility/contract_conformance.mjs` and
+`tests/integration/boundary_audit.py` now **require the record when Rust is present**
+(rather than forbidding Rust outright) — deleting it fails the gate. Recorded divergences
+(registry branch of `__getStartNode`, string-valued expression crate, UTF-16 key order,
+f64 text form, totality fallback, `preserve_order`) are enumerated in the record §3.
+The live 11/11 re-run on VPS+PostgreSQL remains caveat C1 — not waved away.
+
+### ISSUE-014 (silent-pass defects + missing fixtures) — FIXED, pending Agent-5 re-audit
+Defect 2 (silent skips→green) removed: all fixture loads are fail-loud
+`CARGO_MANIFEST_DIR`-relative reads — deleting a golden turns the suite red. The
+validation aggregate (`validate_workflow`: `INVALID_INPUT` envelope, accumulate-all,
+`allowCycles` default `true` per contract §11.7, cycles over `main` only per §11.8) and
+`InvalidConnectionType` (`INVALID_CONNECTION_TYPE`, 4/4 vocabulary) are implemented.
+`04-disabled-node/` and `05-cyclic-invalid/` exist as committed assets and are exercised:
+the conformance script treats `*-invalid` directories as negative fixtures that **must be
+rejected** (meta-tested both directions: removing the C→A edge flips 31/31 → 30/31 with
+"cycle detector is not falsifiable"; restore → 31/31).
+
+### ISSUE-017 (getStartNode D-04 asymmetry) — FIXED, pending Agent-5 re-audit
+`crates/n8n-workflow/src/lib.rs` now ports the reference semantics with line citations:
+strict `disabled === false` self-filter (`workflow.ts:498`), lenient parent check
+(`:553`), `currentHighest` discard on re-find (`:555`), disabled-returning unconditional
+fallback (`:874/:880`), `STARTING_NODE_TYPES` = manual/executeWorkflow/error/evaluation/
+form triggers (`:485-493`, order significant), `get_highest_nodes` takes
+`node_connection_index: Option<usize>`. The registry branch (`:830-842`) is deliberately
+not ported (recorded divergence — needs the node-type registry). Pinned by a **runtime-
+derived** `startNode` fixture group (7 cases, `tests/reference/workflow-rust/build-fixtures.mjs`
+regenerates from the pinned n8n-workflow runtime; `--check` passes) and by the hand-
+transcribed `04-disabled-node` expected values. **Falsified:** mutating the strict self-
+check to the lenient form fails `omitted-disabled-asymmetry`; restored → 60/60.
+
+### ISSUE-015 — CLOSED (fully)
+Traversal part was correct per Agent 5's own correction; the surviving start-node part is
+resolved by the ISSUE-017 fix above.
+
+### ISSUE-018 (NEW · PROCESS/MEDIUM · OPEN) — SUCCESS-with-empty-operations result files
+`results/TASK-402-connection-spec.md`, `results/TASK-403-execution-engine-spec.md`,
+`results/TASK-INIT-AGENT-3.md`, `results/TASK-INIT-AGENT-4.md` claim `STATUS: SUCCESS`
+with an empty operations table and (for 402/403) no task manifest or deliverable in the
+tree. Detected by `tests/integration/result_integrity_audit.py` (13/17 self-consistent),
+now wired into `run_gate.sh` **Stage 2.5**, which is why the offline gate reports
+BLOCKED today. Owner: orchestration layer (files' author). Consensus votes
+`NEEDS_CORRECTION` filed per the standingworker protocol rubric in
+`docs/isolation/consensus-votes/review-{TASK-402-connection-spec,TASK-403-execution-engine-spec,TASK-INIT-AGENT-3,TASK-INIT-AGENT-4}_from-orchestrator.yaml`.
+Required action: emit the operations actually ran, or downgrade the status.
+
+### ISSUE-019 (NEW · HIGH → FIXED 2026-09-17) — offline rig could not compile the workspace
+`tools/rust-offline-rig/setup.sh` vendored too few crates (missing transitive deps:
+`indexmap`/`equivalent`/`hashbrown`, `regex`/`aho-corasick`, `regex-automata`/`regex-syntax`)
+and `cargo check` failed offline, so every "`cargo test` green" claim was unverifiable in
+this environment. Fixed in-repo: the vendor set now builds the full workspace
+(`setup.sh` idempotent, `vendor_prep.py` strips dev-deps/orphaned features);
+`run.sh check` PASS and `run.sh test` = **60/60 PASS** (7 crates) with cargo 1.88.0,
+fully offline, in this sandbox.
+
+### State of the offline gate after this batch
+```
+STAGE 1   contract conformance   31/31 PASS
+STAGE 1.5 reference integrity    PASS
+STAGE 2   boundary audit         PASS (Rust allowed via PHASE-3-OPENING.md)
+STAGE 2.5 result integrity       FAIL — ISSUE-018 (pre-existing, Gateway-owned, OPEN)
+STAGE 3   live 11/11             NOT RUN (offline) — C1 caveat unchanged
+```

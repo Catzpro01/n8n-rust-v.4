@@ -12,8 +12,14 @@ fail=0
 echo "######## STAGE 1: CONTRACT CONFORMANCE (offline) ########"
 node tests/compatibility/contract_conformance.mjs || fail=1
 
+echo; echo; echo "######## STAGE 1.5: REFERENCE INTEGRITY (offline, ISSUE-011) ########"
+node tools/workflow-reference-manifest.mjs --check || fail=1
+
 echo; echo "######## STAGE 2: BOUNDARY & DEPENDENCY AUDIT (offline) ########"
 python3 tests/integration/boundary_audit.py || fail=1
+
+echo; echo "######## STAGE 2.5: TASK RESULT INTEGRITY (offline, ISSUE-018) ########"
+python3 tests/integration/result_integrity_audit.py || fail=1
 
 echo; echo "######## STAGE 3: 11/11 LIVE REGRESSION GATE ########"
 if [ "$OFFLINE" = "1" ]; then

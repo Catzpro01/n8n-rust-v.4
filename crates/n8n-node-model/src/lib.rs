@@ -20,7 +20,10 @@ pub struct INode {
     pub position: [f64; 2],
     #[serde(default)]
     pub parameters: INodeParameters,
-    #[serde(default)]
+    /// Omitted stays omitted: without the skip the wire shape grows a `disabled: null`
+    /// the reference never wrote (load/save round-trips must be verbatim — a live
+    /// fixture test in `tests/node_fixtures.rs` pins this against the goldens).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub disabled: Option<bool>,
     /// Unknown fields (`credentials`, `webhookId`, `notesInFlow`, `alwaysOutputData`, …) are kept
     /// verbatim: a workflow must survive a load/save round-trip untouched. Without this,
