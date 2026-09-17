@@ -1,0 +1,1161 @@
+{
+ "generator": "build-fixtures.mjs",
+ "source": "reference node corpus (10 frozen workflow JSONs)",
+ "nodes": [
+  {
+   "id": "workflow.json#0",
+   "source": "tests/reference/02-one-node/workflow.json",
+   "node": {
+    "id": "node-1",
+    "name": "When clicking ‘Test step’",
+    "type": "n8n-nodes-base.manualTrigger",
+    "typeVersion": 1,
+    "position": [
+     240,
+     300
+    ],
+    "parameters": {}
+   },
+   "expectExtraKeys": []
+  },
+  {
+   "id": "workflow.json#0",
+   "source": "tests/reference/03-linear/workflow.json",
+   "node": {
+    "id": "node-1",
+    "name": "Manual Trigger",
+    "type": "n8n-nodes-base.manualTrigger",
+    "typeVersion": 1,
+    "position": [
+     240,
+     300
+    ],
+    "parameters": {}
+   },
+   "expectExtraKeys": []
+  },
+  {
+   "id": "workflow.json#1",
+   "source": "tests/reference/03-linear/workflow.json",
+   "node": {
+    "id": "node-2",
+    "name": "Code",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+     460,
+     300
+    ],
+    "parameters": {
+     "jsCode": "return [{ json: { status: 'ok', count: 42 } }];"
+    }
+   },
+   "expectExtraKeys": []
+  },
+  {
+   "id": "workflow.json#0",
+   "source": "reference/n8n/packages/nodes-base/nodes/Beeminder/test/workflow.json",
+   "node": {
+    "parameters": {},
+    "type": "n8n-nodes-base.manualTrigger",
+    "typeVersion": 1,
+    "position": [
+     -848,
+     -400
+    ],
+    "id": "852d5569-78ec-4d61-8b9c-8bdbe963fe6e",
+    "name": "When clicking ‘Execute workflow’"
+   },
+   "expectExtraKeys": []
+  },
+  {
+   "id": "workflow.json#1",
+   "source": "reference/n8n/packages/nodes-base/nodes/Beeminder/test/workflow.json",
+   "node": {
+    "parameters": {
+     "authentication": "oAuth2",
+     "resource": "goal",
+     "operation": "create",
+     "slug": "test333",
+     "title": "test title",
+     "gunits": "unit",
+     "additionalFields": {
+      "goalval": 1000,
+      "rate": 1
+     }
+    },
+    "type": "n8n-nodes-base.beeminder",
+    "typeVersion": 1,
+    "position": [
+     48,
+     -400
+    ],
+    "id": "0fbc833e-f4fb-430e-a130-9fd6655a35f1",
+    "name": "Create a new goal",
+    "credentials": {
+     "beeminderOAuth2Api": {
+      "id": "tXjFNZhKeJFjFOl7",
+      "name": "Beeminder account 3"
+     }
+    }
+   },
+   "expectExtraKeys": [
+    "credentials"
+   ]
+  },
+  {
+   "id": "workflow.json#2",
+   "source": "reference/n8n/packages/nodes-base/nodes/Beeminder/test/workflow.json",
+   "node": {
+    "parameters": {
+     "authentication": "oAuth2",
+     "goalName": "={{ $json.slug }}",
+     "additionalFields": {}
+    },
+    "type": "n8n-nodes-base.beeminder",
+    "typeVersion": 1,
+    "position": [
+     272,
+     -400
+    ],
+    "id": "b143d8f4-399c-47e9-9497-002497d0a2b3",
+    "name": "Create datapoint for goal",
+    "credentials": {
+     "beeminderOAuth2Api": {
+      "id": "tXjFNZhKeJFjFOl7",
+      "name": "Beeminder account 3"
+     }
+    }
+   },
+   "expectExtraKeys": [
+    "credentials"
+   ]
+  },
+  {
+   "id": "workflow.json#3",
+   "source": "reference/n8n/packages/nodes-base/nodes/Beeminder/test/workflow.json",
+   "node": {
+    "parameters": {
+     "authentication": "oAuth2",
+     "operation": "delete",
+     "goalName": "={{ $('Create a new goal').item.json.slug }}",
+     "datapointId": "={{ $json.id }}"
+    },
+    "type": "n8n-nodes-base.beeminder",
+    "typeVersion": 1,
+    "position": [
+     720,
+     -400
+    ],
+    "id": "69ef60fd-c66b-4cba-aaf6-96e4fd453ac2",
+    "name": "Delete a datapoint",
+    "credentials": {
+     "beeminderOAuth2Api": {
+      "id": "tXjFNZhKeJFjFOl7",
+      "name": "Beeminder account 3"
+     }
+    }
+   },
+   "expectExtraKeys": [
+    "credentials"
+   ]
+  },
+  {
+   "id": "workflow.json#4",
+   "source": "reference/n8n/packages/nodes-base/nodes/Beeminder/test/workflow.json",
+   "node": {
+    "parameters": {
+     "authentication": "oAuth2",
+     "resource": "goal",
+     "operation": "getAll",
+     "additionalFields": {}
+    },
+    "type": "n8n-nodes-base.beeminder",
+    "typeVersion": 1,
+    "position": [
+     -176,
+     -400
+    ],
+    "id": "1bdce766-3434-4e43-81bb-80a313ef4f2d",
+    "name": "Get many goals",
+    "credentials": {
+     "beeminderOAuth2Api": {
+      "id": "tXjFNZhKeJFjFOl7",
+      "name": "Beeminder account 3"
+     }
+    }
+   },
+   "expectExtraKeys": [
+    "credentials"
+   ]
+  },
+  {
+   "id": "workflow.json#5",
+   "source": "reference/n8n/packages/nodes-base/nodes/Beeminder/test/workflow.json",
+   "node": {
+    "parameters": {
+     "authentication": "oAuth2",
+     "resource": "user",
+     "additionalFields": {}
+    },
+    "type": "n8n-nodes-base.beeminder",
+    "typeVersion": 1,
+    "position": [
+     -624,
+     -400
+    ],
+    "id": "25bb239d-d990-4b82-9416-a282cc00f467",
+    "name": "Get user information",
+    "credentials": {
+     "beeminderOAuth2Api": {
+      "id": "tXjFNZhKeJFjFOl7",
+      "name": "Beeminder account 3"
+     }
+    }
+   },
+   "expectExtraKeys": [
+    "credentials"
+   ]
+  },
+  {
+   "id": "workflow.json#6",
+   "source": "reference/n8n/packages/nodes-base/nodes/Beeminder/test/workflow.json",
+   "node": {
+    "parameters": {
+     "authentication": "oAuth2",
+     "resource": "charge",
+     "amount": 10,
+     "additionalFields": {
+      "dryrun": true
+     }
+    },
+    "type": "n8n-nodes-base.beeminder",
+    "typeVersion": 1,
+    "position": [
+     -400,
+     -400
+    ],
+    "id": "2fa9ea2e-e4e7-4291-bb6d-75a6bc15bc4e",
+    "name": "Create a charge",
+    "credentials": {
+     "beeminderOAuth2Api": {
+      "id": "tXjFNZhKeJFjFOl7",
+      "name": "Beeminder account 3"
+     }
+    }
+   },
+   "expectExtraKeys": [
+    "credentials"
+   ]
+  },
+  {
+   "id": "workflow.json#7",
+   "source": "reference/n8n/packages/nodes-base/nodes/Beeminder/test/workflow.json",
+   "node": {
+    "parameters": {
+     "authentication": "oAuth2",
+     "operation": "update",
+     "goalName": "={{ $('Create a new goal').item.json.slug }}",
+     "datapointId": "={{ $json.id }}",
+     "updateFields": {}
+    },
+    "type": "n8n-nodes-base.beeminder",
+    "typeVersion": 1,
+    "position": [
+     496,
+     -400
+    ],
+    "id": "55d4490f-97a2-405b-8745-421291d0c82e",
+    "name": "Update a datapoint",
+    "credentials": {
+     "beeminderOAuth2Api": {
+      "id": "tXjFNZhKeJFjFOl7",
+      "name": "Beeminder account 3"
+     }
+    }
+   },
+   "expectExtraKeys": [
+    "credentials"
+   ]
+  },
+  {
+   "id": "workflow.update_2_1.json#0",
+   "source": "reference/n8n/packages/nodes-base/nodes/Merge/test/node/workflow.update_2_1.json",
+   "node": {
+    "parameters": {},
+    "id": "c7c0cf66-790a-4da7-81c8-ba9e4bbcec9a",
+    "name": "When clicking \"Execute Workflow\"",
+    "type": "n8n-nodes-base.manualTrigger",
+    "typeVersion": 1,
+    "position": [
+     720,
+     300
+    ]
+   },
+   "expectExtraKeys": []
+  },
+  {
+   "id": "workflow.update_2_1.json#1",
+   "source": "reference/n8n/packages/nodes-base/nodes/Merge/test/node/workflow.update_2_1.json",
+   "node": {
+    "parameters": {
+     "jsCode": "return [\n  {id: 1},\n  {id: 2},\n  {id: 3},\n  {id: 4},\n];"
+    },
+    "id": "cec18624-ced0-4de1-8987-d4b184b136b9",
+    "name": "Code",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 1,
+    "position": [
+     1020,
+     200
+    ]
+   },
+   "expectExtraKeys": []
+  },
+  {
+   "id": "workflow.update_2_1.json#2",
+   "source": "reference/n8n/packages/nodes-base/nodes/Merge/test/node/workflow.update_2_1.json",
+   "node": {
+    "parameters": {
+     "jsCode": "return [\n];"
+    },
+    "id": "754d549c-82ce-4625-ba2b-6f8edcbf715e",
+    "name": "Code1",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 1,
+    "position": [
+     1020,
+     400
+    ]
+   },
+   "expectExtraKeys": []
+  },
+  {
+   "id": "workflow.update_2_1.json#3",
+   "source": "reference/n8n/packages/nodes-base/nodes/Merge/test/node/workflow.update_2_1.json",
+   "node": {
+    "parameters": {},
+    "id": "551ed574-607a-4d98-9b06-350df92c805e",
+    "name": "No Operation, do nothing",
+    "type": "n8n-nodes-base.noOp",
+    "typeVersion": 1,
+    "position": [
+     1540,
+     200
+    ]
+   },
+   "expectExtraKeys": []
+  },
+  {
+   "id": "workflow.update_2_1.json#4",
+   "source": "reference/n8n/packages/nodes-base/nodes/Merge/test/node/workflow.update_2_1.json",
+   "node": {
+    "parameters": {},
+    "id": "00e75760-d88e-413c-b276-c759db72411f",
+    "name": "No Operation, do nothing1",
+    "type": "n8n-nodes-base.noOp",
+    "typeVersion": 1,
+    "position": [
+     1540,
+     380
+    ]
+   },
+   "expectExtraKeys": []
+  },
+  {
+   "id": "workflow.update_2_1.json#5",
+   "source": "reference/n8n/packages/nodes-base/nodes/Merge/test/node/workflow.update_2_1.json",
+   "node": {
+    "parameters": {
+     "mode": "combine",
+     "mergeByFields": {
+      "values": [
+       {
+        "field1": "idd",
+        "field2": "idd"
+       }
+      ]
+     },
+     "options": {}
+    },
+    "id": "2d412290-4c43-40a6-be78-946602749aa1",
+    "name": "Merge1",
+    "type": "n8n-nodes-base.merge",
+    "typeVersion": 2.1,
+    "position": [
+     1340,
+     520
+    ],
+    "alwaysOutputData": true
+   },
+   "expectExtraKeys": [
+    "alwaysOutputData"
+   ]
+  },
+  {
+   "id": "workflow.update_2_1.json#6",
+   "source": "reference/n8n/packages/nodes-base/nodes/Merge/test/node/workflow.update_2_1.json",
+   "node": {
+    "parameters": {
+     "mode": "combine",
+     "mergeByFields": {
+      "values": [
+       {
+        "field1": "idd",
+        "field2": "idd"
+       }
+      ]
+     },
+     "options": {}
+    },
+    "id": "b6f05b31-3ca0-48c4-a5ec-c7f81dc7957f",
+    "name": "Merge2",
+    "type": "n8n-nodes-base.merge",
+    "typeVersion": 2,
+    "position": [
+     1320,
+     160
+    ],
+    "continueOnFail": true
+   },
+   "expectExtraKeys": [
+    "continueOnFail"
+   ]
+  },
+  {
+   "id": "ThrowAnError.workflow.json#0",
+   "source": "reference/n8n/packages/nodes-base/nodes/DebugHelper/test/ThrowAnError.workflow.json",
+   "node": {
+    "parameters": {},
+    "type": "n8n-nodes-base.manualTrigger",
+    "typeVersion": 1,
+    "position": [
+     -448,
+     192
+    ],
+    "id": "9f62b838-ecbe-4012-8026-9e3d48669c49",
+    "name": "When clicking ‘Execute workflow’"
+   },
+   "expectExtraKeys": []
+  },
+  {
+   "id": "ThrowAnError.workflow.json#1",
+   "source": "reference/n8n/packages/nodes-base/nodes/DebugHelper/test/ThrowAnError.workflow.json",
+   "node": {
+    "parameters": {},
+    "type": "n8n-nodes-base.debugHelper",
+    "typeVersion": 1,
+    "position": [
+     -224,
+     192
+    ],
+    "id": "7d381110-e62e-4911-8527-e6265fe4be11",
+    "name": "DebugHelper",
+    "onError": "continueErrorOutput"
+   },
+   "expectExtraKeys": [
+    "onError"
+   ]
+  },
+  {
+   "id": "ThrowAnError.workflow.json#2",
+   "source": "reference/n8n/packages/nodes-base/nodes/DebugHelper/test/ThrowAnError.workflow.json",
+   "node": {
+    "parameters": {},
+    "type": "n8n-nodes-base.noOp",
+    "typeVersion": 1,
+    "position": [
+     0,
+     192
+    ],
+    "id": "0a6ef4ec-3876-4d99-998e-9ba26ca474b5",
+    "name": "No Operation, do nothing"
+   },
+   "expectExtraKeys": []
+  },
+  {
+   "id": "query.workflow.json#0",
+   "source": "reference/n8n/packages/nodes-base/nodes/Microsoft/AzureCosmosDb/test/item/query.workflow.json",
+   "node": {
+    "parameters": {},
+    "type": "n8n-nodes-base.manualTrigger",
+    "typeVersion": 1,
+    "position": [
+     -80,
+     -100
+    ],
+    "id": "7da2ce49-9a9d-4240-b082-ff1b12d101b1",
+    "name": "When clicking ‘Execute workflow’"
+   },
+   "expectExtraKeys": []
+  },
+  {
+   "id": "query.workflow.json#1",
+   "source": "reference/n8n/packages/nodes-base/nodes/Microsoft/AzureCosmosDb/test/item/query.workflow.json",
+   "node": {
+    "parameters": {
+     "resource": "item",
+     "operation": "query",
+     "container": {
+      "__rl": true,
+      "value": "newId",
+      "mode": "list",
+      "cachedResultName": "newId"
+     },
+     "query": "SELECT * FROM c WHERE c.id = $1",
+     "options": {
+      "queryOptions": {
+       "queryParameters": "User1"
+      }
+     },
+     "requestOptions": {}
+    },
+    "type": "n8n-nodes-base.azureCosmosDb",
+    "typeVersion": 1,
+    "position": [
+     160,
+     -100
+    ],
+    "id": "0dc90797-8211-457c-a673-b7df28139de8",
+    "name": "queryItems",
+    "retryOnFail": false,
+    "alwaysOutputData": true,
+    "credentials": {
+     "microsoftAzureCosmosDbSharedKeyApi": {
+      "id": "exampleId",
+      "name": "Azure Cosmos DB account "
+     }
+    }
+   },
+   "expectExtraKeys": [
+    "alwaysOutputData",
+    "credentials",
+    "retryOnFail"
+   ]
+  },
+  {
+   "id": "Test_workflow_4_executions_view.json#0",
+   "source": "reference/n8n/packages/testing/playwright/workflows/Test_workflow_4_executions_view.json",
+   "node": {
+    "parameters": {
+     "jsCode": "// Loop over input items and add a new field\n// called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  item.json.myNewField = 1;\n  error\n}\n\nreturn $input.all();"
+    },
+    "id": "d0ab7e12-0e1b-4c08-8081-83107794f37d",
+    "name": "Error",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 1,
+    "position": [
+     680,
+     460
+    ],
+    "disabled": true
+   },
+   "expectExtraKeys": []
+  },
+  {
+   "id": "Test_workflow_4_executions_view.json#1",
+   "source": "reference/n8n/packages/testing/playwright/workflows/Test_workflow_4_executions_view.json",
+   "node": {
+    "parameters": {},
+    "id": "f5026145-66c1-463c-8ac8-46a1309a6632",
+    "name": "On clicking 'execute'",
+    "type": "n8n-nodes-base.manualTrigger",
+    "typeVersion": 1,
+    "position": [
+     460,
+     460
+    ]
+   },
+   "expectExtraKeys": []
+  },
+  {
+   "id": "Test_workflow_4_executions_view.json#2",
+   "source": "reference/n8n/packages/testing/playwright/workflows/Test_workflow_4_executions_view.json",
+   "node": {
+    "parameters": {
+     "jsCode": "// Loop over input items and add a new field\n// called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  item.json.myNewField = 1;\n}\n\nreturn $input.all();"
+    },
+    "id": "9926f884-348a-4af0-872e-dd7c8b3da811",
+    "name": "Code",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 1,
+    "position": [
+     900,
+     460
+    ]
+   },
+   "expectExtraKeys": []
+  },
+  {
+   "id": "Workflow_wait_for_webhook.json#0",
+   "source": "reference/n8n/packages/testing/playwright/workflows/Workflow_wait_for_webhook.json",
+   "node": {
+    "parameters": {},
+    "type": "n8n-nodes-base.manualTrigger",
+    "typeVersion": 1,
+    "position": [
+     0,
+     0
+    ],
+    "id": "42c6e003-10e7-4100-aff8-8865c49f384c",
+    "name": "When clicking ‘Test workflow’"
+   },
+   "expectExtraKeys": []
+  },
+  {
+   "id": "Workflow_wait_for_webhook.json#1",
+   "source": "reference/n8n/packages/testing/playwright/workflows/Workflow_wait_for_webhook.json",
+   "node": {
+    "parameters": {
+     "resume": "webhook",
+     "options": {}
+    },
+    "type": "n8n-nodes-base.wait",
+    "typeVersion": 1.1,
+    "position": [
+     220,
+     0
+    ],
+    "id": "77614c15-c41e-4b8c-95d6-084d48fed328",
+    "name": "Wait node",
+    "webhookId": "62aad98c-81b3-4c44-9adb-b33a23d1271d"
+   },
+   "expectExtraKeys": [
+    "webhookId"
+   ]
+  },
+  {
+   "id": "Onboarding_workflow.json#0",
+   "source": "reference/n8n/packages/testing/playwright/workflows/Onboarding_workflow.json",
+   "node": {
+    "parameters": {
+     "eventsUi": {
+      "eventValues": [
+       {}
+      ]
+     },
+     "additionalFields": {}
+    },
+    "id": "78395fdf-2e8b-4064-a102-c1c0335e0d94",
+    "name": "HubSpot Trigger",
+    "type": "n8n-nodes-base.hubspotTrigger",
+    "typeVersion": 1,
+    "position": [
+     580,
+     320
+    ],
+    "webhookId": "25833e56-c646-4af0-8bbe-2eea8bda4c00",
+    "notesInFlow": true,
+    "notes": "On Contact Created"
+   },
+   "expectExtraKeys": [
+    "notes",
+    "notesInFlow",
+    "webhookId"
+   ]
+  },
+  {
+   "id": "Onboarding_workflow.json#1",
+   "source": "reference/n8n/packages/testing/playwright/workflows/Onboarding_workflow.json",
+   "node": {
+    "parameters": {
+     "conditions": {
+      "string": [
+       {
+        "value1": "={{ $json['identity-profiles'][0].identities[0].value }}",
+        "operation": "contains",
+        "value2": "@gmail"
+       }
+      ]
+     }
+    },
+    "id": "3888d918-c140-47a1-8024-d50fddb3f8f0",
+    "name": "IF",
+    "type": "n8n-nodes-base.if",
+    "typeVersion": 1,
+    "position": [
+     820,
+     320
+    ],
+    "notesInFlow": true,
+    "notes": "Is Gmail Email?"
+   },
+   "expectExtraKeys": [
+    "notes",
+    "notesInFlow"
+   ]
+  },
+  {
+   "id": "Onboarding_workflow.json#2",
+   "source": "reference/n8n/packages/testing/playwright/workflows/Onboarding_workflow.json",
+   "node": {
+    "parameters": {},
+    "id": "416a8876-f496-499c-a089-aad243daabc6",
+    "name": "Is Gmail, Don't Add to Sheet",
+    "type": "n8n-nodes-base.noOp",
+    "typeVersion": 1,
+    "position": [
+     1140,
+     240
+    ]
+   },
+   "expectExtraKeys": []
+  },
+  {
+   "id": "Onboarding_workflow.json#3",
+   "source": "reference/n8n/packages/testing/playwright/workflows/Onboarding_workflow.json",
+   "node": {
+    "parameters": {
+     "content": "## Demo: Creating Google Sheets records when something happens in HubSpot\nThis workflow runs each time a new Contact is added in HubSpot. It filters out Contacts with Gmail email addresses then pushes the remaining new Contacts to [this Google Sheet](https://docs.google.com/spreadsheets/d/1GeWRcu5cvNVA-0hpHZHtatjnFtyunbgWUgRur5uT08A/edit?usp=sharing).",
+     "height": 160.1450000000002,
+     "width": 480.31999999999596
+    },
+    "id": "cf69cda9-ba96-468f-990c-6c3ad5242053",
+    "name": "Sticky Note1",
+    "type": "n8n-nodes-base.stickyNote",
+    "typeVersion": 1,
+    "position": [
+     520,
+     100
+    ]
+   },
+   "expectExtraKeys": []
+  },
+  {
+   "id": "Onboarding_workflow.json#4",
+   "source": "reference/n8n/packages/testing/playwright/workflows/Onboarding_workflow.json",
+   "node": {
+    "parameters": {
+     "operation": "append",
+     "documentId": {
+      "__rl": true,
+      "value": "1GeWRcu5cvNVA-0hpHZHtatjnFtyunbgWUgRur5uT08A",
+      "mode": "list",
+      "cachedResultName": "New HubSpot Contacts",
+      "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1GeWRcu5cvNVA-0hpHZHtatjnFtyunbgWUgRur5uT08A/edit?usp=drivesdk"
+     },
+     "sheetName": {
+      "__rl": true,
+      "value": "gid=0",
+      "mode": "list",
+      "cachedResultName": "New Contacts",
+      "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1GeWRcu5cvNVA-0hpHZHtatjnFtyunbgWUgRur5uT08A/edit#gid=0"
+     },
+     "columns": {
+      "mappingMode": "defineBelow",
+      "value": {
+       "Name": "={{ $json.properties.num_unique_conversion_events.versions[0]['source-type'] }}",
+       "Email": "={{ $json.properties.num_unique_conversion_events.versions[0]['source-label'] }}"
+      },
+      "matchingColumns": [],
+      "schema": [
+       {
+        "id": "Name",
+        "displayName": "Name",
+        "required": false,
+        "defaultMatch": false,
+        "display": true,
+        "type": "string",
+        "canBeUsedToMatch": true
+       },
+       {
+        "id": "Email",
+        "displayName": "Email",
+        "required": false,
+        "defaultMatch": false,
+        "display": true,
+        "type": "string",
+        "canBeUsedToMatch": true
+       },
+       {
+        "id": "Sync timestamp",
+        "displayName": "Sync timestamp",
+        "required": false,
+        "defaultMatch": false,
+        "display": true,
+        "type": "string",
+        "canBeUsedToMatch": true
+       }
+      ]
+     },
+     "options": {}
+    },
+    "id": "1e4084bd-b7fb-41f1-a340-1414ef134468",
+    "name": "Google Sheets",
+    "type": "n8n-nodes-base.googleSheets",
+    "typeVersion": 4,
+    "position": [
+     1140,
+     440
+    ],
+    "notesInFlow": true,
+    "credentials": {
+     "googleSheetsOAuth2Api": {
+      "id": "FrRoXgPJOrFwkeN4",
+      "name": "Replace me with your own Sheets credential"
+     }
+    },
+    "notes": "Append new contact to sheet"
+   },
+   "expectExtraKeys": [
+    "credentials",
+    "notes",
+    "notesInFlow"
+   ]
+  },
+  {
+   "id": "lead-qualification.json#0",
+   "source": "reference/n8n/packages/@n8n/ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/lead-qualification.json",
+   "node": {
+    "id": "c7180c4a-0721-450e-ba74-b39b6a766f97",
+    "name": "Lead Generation Form",
+    "type": "n8n-nodes-base.formTrigger",
+    "typeVersion": 2.3,
+    "position": [
+     250,
+     450
+    ],
+    "parameters": {
+     "formTitle": "Get in Touch - Let's Discuss Your Needs",
+     "formDescription": "Fill out this form and we'll get back to you shortly",
+     "formFields": {
+      "values": [
+       {
+        "fieldLabel": "Full Name",
+        "fieldType": "text",
+        "placeholder": "",
+        "requiredField": true
+       },
+       {
+        "fieldLabel": "Email Address",
+        "fieldType": "email",
+        "placeholder": "",
+        "requiredField": true
+       },
+       {
+        "fieldLabel": "Company Name",
+        "fieldType": "text",
+        "placeholder": "",
+        "requiredField": true
+       },
+       {
+        "fieldLabel": "Company Size",
+        "fieldType": "dropdown",
+        "requiredField": false,
+        "fieldOptions": {
+         "values": [
+          {
+           "option": "1-10 employees"
+          },
+          {
+           "option": "11-50 employees"
+          },
+          {
+           "option": "51-200 employees"
+          },
+          {
+           "option": "201-500 employees"
+          },
+          {
+           "option": "500+ employees"
+          }
+         ]
+        }
+       },
+       {
+        "fieldLabel": "Tell us about your needs",
+        "fieldType": "textarea",
+        "placeholder": "",
+        "requiredField": true
+       },
+       {
+        "fieldLabel": "Budget Range",
+        "fieldType": "dropdown",
+        "requiredField": false,
+        "fieldOptions": {
+         "values": [
+          {
+           "option": "Under $5,000"
+          },
+          {
+           "option": "$5,000 - $15,000"
+          },
+          {
+           "option": "$15,000 - $50,000"
+          },
+          {
+           "option": "$50,000+"
+          },
+          {
+           "option": "Not sure yet"
+          }
+         ]
+        }
+       },
+       {
+        "fieldLabel": "Timeline",
+        "fieldType": "dropdown",
+        "requiredField": false,
+        "fieldOptions": {
+         "values": [
+          {
+           "option": "Urgent (within 1 month)"
+          },
+          {
+           "option": "Soon (1-3 months)"
+          },
+          {
+           "option": "Planning (3-6 months)"
+          },
+          {
+           "option": "Exploring options"
+          }
+         ]
+        }
+       }
+      ]
+     },
+     "responseMode": "onReceived",
+     "options": {
+      "buttonLabel": "Submit",
+      "respondWithOptions": {
+       "values": {
+        "respondWith": "text",
+        "formSubmittedText": "Thank you! We've received your submission and will be in touch soon."
+       }
+      },
+      "appendAttribution": false
+     }
+    },
+    "webhookId": "6ae3c567-6076-4f50-89b1-d96ff4146272"
+   },
+   "expectExtraKeys": [
+    "webhookId"
+   ]
+  },
+  {
+   "id": "lead-qualification.json#1",
+   "source": "reference/n8n/packages/@n8n/ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/lead-qualification.json",
+   "node": {
+    "id": "ba835fa4-9bc8-4a09-acb3-5e3c6069f9e1",
+    "name": "Workflow Configuration",
+    "type": "n8n-nodes-base.set",
+    "typeVersion": 3.4,
+    "position": [
+     250,
+     300
+    ],
+    "parameters": {
+     "mode": "manual",
+     "assignments": {
+      "assignments": [
+       {
+        "id": "id-1",
+        "name": "qualificationThreshold",
+        "value": 70,
+        "type": "number"
+       },
+       {
+        "id": "id-2",
+        "name": "calendarId",
+        "value": "<__PLACEHOLDER_VALUE__Your Google Calendar ID__>",
+        "type": "string"
+       },
+       {
+        "id": "id-3",
+        "name": "senderEmail",
+        "value": "<__PLACEHOLDER_VALUE__Your email address for sending notifications__>",
+        "type": "string"
+       }
+      ]
+     },
+     "includeOtherFields": true,
+     "options": {}
+    }
+   },
+   "expectExtraKeys": []
+  },
+  {
+   "id": "lead-qualification.json#2",
+   "source": "reference/n8n/packages/@n8n/ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/lead-qualification.json",
+   "node": {
+    "id": "536f971a-79b2-4fa3-844f-b9bcc2ca16f3",
+    "name": "Store Lead in Data Table",
+    "type": "n8n-nodes-base.dataTable",
+    "typeVersion": 1,
+    "position": [
+     250,
+     300
+    ],
+    "parameters": {
+     "resource": "row",
+     "operation": "insert",
+     "dataTableId": {
+      "__rl": true,
+      "mode": "id",
+      "value": "leads"
+     },
+     "columns": {
+      "mappingMode": "autoMapInputData",
+      "value": null
+     }
+    }
+   },
+   "expectExtraKeys": []
+  },
+  {
+   "id": "lead-qualification.json#3",
+   "source": "reference/n8n/packages/@n8n/ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/lead-qualification.json",
+   "node": {
+    "id": "71dab5f1-dedf-4401-a3ec-da72dd552eb2",
+    "name": "Qualify Lead with AI",
+    "type": "@n8n/n8n-nodes-langchain.agent",
+    "typeVersion": 3,
+    "position": [
+     250,
+     300
+    ],
+    "parameters": {
+     "promptType": "define",
+     "text": "=Lead Information:\nName: {{ $json.fullName }}\nEmail: {{ $json.emailAddress }}\nCompany: {{ $json.companyName }}\nCompany Size: {{ $json.companySize }}\nNeeds: {{ $json.tellUsAboutYourNeeds }}\nBudget: {{ $json.budgetRange }}\nTimeline: {{ $json.timeline }}",
+     "hasOutputParser": true,
+     "needsFallback": false,
+     "options": {
+      "systemMessage": "You are a lead qualification specialist. Analyze the lead information and assign a qualification score from 0-100 based on these criteria:\n\n1. Budget alignment (30 points): Higher budgets score higher\n2. Timeline urgency (25 points): Urgent timelines score higher\n3. Company size (20 points): Larger companies typically score higher\n4. Needs clarity (25 points): Clear, specific needs score higher\n\nProvide a score and brief reasoning for your assessment."
+     }
+    }
+   },
+   "expectExtraKeys": []
+  },
+  {
+   "id": "lead-qualification.json#4",
+   "source": "reference/n8n/packages/@n8n/ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/lead-qualification.json",
+   "node": {
+    "id": "df8fce24-81ec-4616-891f-d0729b5bfb09",
+    "name": "Anthropic Chat Model",
+    "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+    "typeVersion": 1.3,
+    "position": [
+     250,
+     450
+    ],
+    "parameters": {}
+   },
+   "expectExtraKeys": []
+  },
+  {
+   "id": "lead-qualification.json#5",
+   "source": "reference/n8n/packages/@n8n/ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/lead-qualification.json",
+   "node": {
+    "id": "fb36957d-ae6c-4c2c-b56d-91c44d6833aa",
+    "name": "Structured Output Parser",
+    "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+    "typeVersion": 1.3,
+    "position": [
+     250,
+     450
+    ],
+    "parameters": {
+     "schemaType": "manual",
+     "inputSchema": "{\n\t\"type\": \"object\",\n\t\"properties\": {\n\t\t\"score\": {\n\t\t\t\"type\": \"number\",\n\t\t\t\"description\": \"Qualification score from 0-100\"\n\t\t},\n\t\t\"reasoning\": {\n\t\t\t\"type\": \"string\",\n\t\t\t\"description\": \"Brief explanation of the score\"\n\t\t},\n\t\t\"isHighPriority\": {\n\t\t\t\"type\": \"boolean\",\n\t\t\t\"description\": \"Whether this lead should be prioritized\"\n\t\t}\n\t}\n}",
+     "autoFix": false
+    }
+   },
+   "expectExtraKeys": []
+  },
+  {
+   "id": "lead-qualification.json#6",
+   "source": "reference/n8n/packages/@n8n/ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/lead-qualification.json",
+   "node": {
+    "id": "480fd6ee-9049-4103-8a2c-102a69da6dd2",
+    "name": "Check if High-Score Lead",
+    "type": "n8n-nodes-base.if",
+    "typeVersion": 2.2,
+    "position": [
+     250,
+     300
+    ],
+    "parameters": {
+     "conditions": {
+      "options": {
+       "caseSensitive": true,
+       "leftValue": "",
+       "typeValidation": "loose"
+      },
+      "conditions": [
+       {
+        "id": "id-1",
+        "leftValue": "={{ $json.score }}",
+        "rightValue": "={{ $('Workflow Configuration').first().json.qualificationThreshold }}",
+        "operator": {
+         "type": "number",
+         "operation": "gte"
+        }
+       }
+      ],
+      "combinator": "and"
+     },
+     "looseTypeValidation": true
+    }
+   },
+   "expectExtraKeys": []
+  },
+  {
+   "id": "lead-qualification.json#7",
+   "source": "reference/n8n/packages/@n8n/ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/lead-qualification.json",
+   "node": {
+    "id": "2a400872-959d-4155-a501-01024fd2f836",
+    "name": "Get Available Calendar Slots",
+    "type": "n8n-nodes-base.googleCalendar",
+    "typeVersion": 1.3,
+    "position": [
+     250,
+     300
+    ],
+    "parameters": {
+     "resource": "calendar",
+     "operation": "availability",
+     "calendar": {
+      "__rl": true,
+      "mode": "id",
+      "value": "={{ $('Workflow Configuration').first().json.calendarId }}"
+     },
+     "timeMin": "={{ $now }}",
+     "timeMax": "={{ $now.plus(7, 'days') }}",
+     "options": {}
+    }
+   },
+   "expectExtraKeys": []
+  },
+  {
+   "id": "lead-qualification.json#8",
+   "source": "reference/n8n/packages/@n8n/ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/lead-qualification.json",
+   "node": {
+    "id": "4724c9dc-f33d-4811-9e29-d3dc3330a41c",
+    "name": "Send Email to High-Score Lead",
+    "type": "n8n-nodes-base.gmail",
+    "typeVersion": 2.1,
+    "position": [
+     250,
+     300
+    ],
+    "parameters": {
+     "resource": "message",
+     "operation": "send",
+     "sendTo": "={{ $('Store Lead in Data Table').first().json.emailAddress }}",
+     "subject": "Great news! Let's schedule a call to discuss your needs",
+     "emailType": "html",
+     "message": "=<p>Hi {{ $('Store Lead in Data Table').first().json.fullName }},</p>\n\n<p>Thank you for reaching out! Based on your submission, I'd love to schedule a quick 15-minute call to discuss how we can help with your needs.</p>\n\n<p><strong>Your submission details:</strong></p>\n<ul>\n<li>Company: {{ $('Store Lead in Data Table').first().json.companyName }}</li>\n<li>Timeline: {{ $('Store Lead in Data Table').first().json.timeline }}</li>\n<li>Budget Range: {{ $('Store Lead in Data Table').first().json.budgetRange }}</li>\n</ul>\n\n<p>Please use this link to book a convenient time: <strong><__PLACEHOLDER_VALUE__Your calendar booking link__></strong></p>\n\n<p>Looking forward to speaking with you!</p>\n\n<p>Best regards</p>",
+     "options": {
+      "senderName": "Your Name",
+      "bccList": "={{ $('Workflow Configuration').first().json.senderEmail }}"
+     }
+    },
+    "webhookId": "3cd3b556-9ce4-4d26-947d-b8fe3d0e4f5b"
+   },
+   "expectExtraKeys": [
+    "webhookId"
+   ]
+  }
+ ]
+}

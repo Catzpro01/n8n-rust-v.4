@@ -2,9 +2,9 @@
   "$comment": "Agent-2 (Node LEGO) outbound messages, schema-matched to public.agent_messages (docs/supabase_migration.sql). Transport identical to agent-1's outbox: NOT DELIVERED — the gateway flushes these rows verbatim on the VPS.",
   "schema": "public.agent_messages",
   "sender_id": "agent-2",
-  "generated_at": "2026-09-17",
-  "branch": "arena/01a0ac04-n8n-rust-v-4",
-  "head_commit": "see final commit of this push (outbox lands atomically with deliverables)",
+  "generated_at": "2026-09-17T17:24:50Z",
+  "branch": "arena/01a0aff6-n8n-rust-v-4",
+  "head_commit": "93aaddce",
   "transport": {
     "status": "NOT_DELIVERED",
     "reason": "same as docs/isolation/workflow-bus-outbox.json — persisted for orchestrator flush",
@@ -100,6 +100,34 @@
           "tasks/TASK-305-node-audit-request.yaml"
         ],
         "compliance": "all writes inside allowed agent-2 paths; no Rust; crates/ untouched"
+      },
+      "status": "UNREAD"
+    },
+    {
+      "id": "MSG-04",
+      "recipient_id": "agent-1",
+      "message_type": "CROSS_LEGO_NOTICE",
+      "subject": "TASK-404: INode numeric fields are now serde_json::Number + renameFormFields leaf ported",
+      "payload": {
+        "task": "TASK-404-node-model-conformance",
+        "change": "INode.type_version: f64 -> serde_json::Number; INode.position: [f64; 2] -> [Number; 2] (representation fidelity: 1 round-trips as 1, not 1.0); disabled gained skip_serializing_if (absent stays absent)",
+        "impact": "NONE on n8n-workflow: no readers of either field, all INode construction via serde_json::from_value(json!(...)); full workspace suite green (56/56)",
+        "offer_no_action_required": "rename_form_fields (exact P-NODE-RENAME leaf port, generic callback, no type gate) now lives in n8n-node-model; rename_node_extra_content may dedup onto it at your convenience — your inline version is behaviorally equivalent for the form path and stays pinned, so no change needed",
+        "removed": "dead NodeTypeDescription placeholder (zero users, matched no contract shape)"
+      },
+      "status": "UNREAD"
+    },
+    {
+      "id": "MSG-05",
+      "recipient_id": "agent-5",
+      "message_type": "STATUS_REPORT",
+      "subject": "Node-model Rust port conformant: 42/42 corpus nodes + rename leaf + 7 unit tests",
+      "payload": {
+        "task": "TASK-404-node-model-conformance",
+        "result": "SUCCESS",
+        "pins": "42 real reference nodes (10 frozen workflow JSONs, --check stable): field fidelity, extra retention, semantic round-trip, fixpoint; rename_form_fields real-data pin + guard unit tests; strict §2 boundary tested both sides",
+        "deferred": "full INodeTypeDescription (§3), getNodeParameters/getNodeOutputs (engine-coupled, no fixtures)",
+        "evidence": "docs/isolation/evidence/rust-test-record.json (cargo 56/56)"
       },
       "status": "UNREAD"
     }

@@ -5,7 +5,5 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-n8n-common = { path = "../n8n-common" }
 serde.workspace = true
 serde_json.workspace = true
-thiserror.workspace = true

@@ -1,0 +1,74 @@
+id: TASK-404-node-model-conformance
+agent: agent-2
+lego: node
+module: node-model
+phase: 3
+title: "Pin INode fidelity on a real-node corpus + port renameFormFields"
+
+# n8n-node-model has 1 deserialize test and no fixture pins. This task pins
+# the contract §2 instance model against 42 REAL reference nodes (key
+# coverage: credentials, webhookId, alwaysOutputData, onError,
+# continueOnFail, disabled, notes, notesInFlow, retryOnFail, float
+# typeVersions) and ports the 29-line renameFormFields leaf. Strict
+# contract-faithful model: required §2 fields stay required (4 degenerate
+# mock files with missing id/typeVersion/position are excluded with
+# rationale; the boundary is unit-tested both sides). getNodeParameters /
+# getNodeOutputs stay deferred (1966-line engine-coupled context, no
+# fixtures).
+
+allowed_paths:
+  - crates/n8n-node-model/**
+  - tests/reference/agent-2/**
+  - docs/isolation/node.md
+  - docs/isolation/node-bus-outbox.json
+  - docs/isolation/evidence/rust-test-record.json
+  - tasks/TASK-404-node-model-conformance.yaml
+  - results/TASK-404-node-model-conformance.md
+
+forbidden_paths:
+  - reference/n8n/**
+  - crates/n8n-workflow/**
+  - crates/n8n-connection/**
+  - crates/n8n-validation/**
+  - crates/n8n-common/**
+  - crates/n8n-execution-data/**
+  - crates/n8n-expression/**
+  - apps/**
+  - packages/**
+  - contracts/**
+
+requires:
+  - contracts/node.contract.md
+  - reference/n8n/packages/workflow/src/node-parameters/rename-node-utils.ts
+
+operations:
+  - name: extract_corpus
+    args:
+      generator: tests/reference/agent-2/node-model/build-fixtures.mjs
+      output: tests/reference/agent-2/node-model/fixtures.json
+      source: "10 reference workflow JSONs (frozen list); per-node expectExtraKeys; asserts completeness + key coverage (--check byte-compares)"
+  - name: port_leaf
+    args:
+      spec: reference/n8n/packages/workflow/src/node-parameters/rename-node-utils.ts
+      api: rename_form_fields
+      notes: "exact guard chain; mutates in place like the reference"
+  - name: fidelity_harness
+    args:
+      path: crates/n8n-node-model/tests/node_fixtures.rs
+      asserts: "parse + field fidelity + extra retention + semantic round-trip + fixpoint + count"
+  - name: strictness_fix
+    args: "disabled gets skip_serializing_if (absent stays absent, TS `disabled?` parity); required fields stay required; remove dead NodeTypeDescription (zero users, matches no contract shape); trim unused deps (n8n-common, thiserror)"
+  - name: refresh_evidence
+    args:
+      cmd: bash tools/phase3-rust-acceptance.sh --force
+      reason: "crates changed -> Phase-3 evidence must be re-recorded AFTER the code commit (TASK-403 lesson)"
+
+acceptance:
+  - cargo test --workspace green incl. new node-model fixture tests
+  - contract_conformance 24/24, boundary_audit PASS
+  - no reference modification; no downstream crate touched
+
+merge_condition:
+  - regression_gate_pass
+  - no_contract_violation
+  - agent_5_verification

@@ -239,3 +239,40 @@ pnpm --filter n8n-workflow typecheck && pnpm --filter n8n-workflow build
 ```
 
 `reference/` is git-ignored in this repo (monorepo size) — the committed deliverables are the docs, the contract and the patch.
+
+---
+
+## 5. Rust conformance (Phase 3, TASK-404)
+
+`crates/n8n-node-model` pins the contract §2 instance model plus the
+`renameFormFields` leaf (frozen port P-NODE-RENAME):
+
+- **Corpus**: `tests/reference/agent-2/node-model/fixtures.json` — 42 real
+  reference nodes extracted by `build-fixtures.mjs` from a frozen list of 10
+  workflow JSONs (`--check` byte-compares; the extractor asserts node
+  completeness and key coverage instead of silently pinning a degenerate
+  corpus). Covered §2 keys: `credentials`, `webhookId`, `alwaysOutputData`,
+  `onError`, `continueOnFail`, `disabled`, `notes`, `notesInFlow`,
+  `retryOnFail`, plus float `typeVersion`s and one `formFields` node.
+- **Harness** (`crates/n8n-node-model/tests/node_fixtures.rs`) asserts per
+  node: field fidelity, exact `extra` key set + verbatim values, semantic
+  load/save round-trip, parse fixpoint, and a real-data `rename_form_fields`
+  pin — plus a pinned count of 42.
+- **Representation fidelity**: `type_version` and `position` are
+  `serde_json::Number` (not `f64`), so `1` round-trips as `1`, not `1.0`;
+  `disabled` has `skip_serializing_if` so absent stays absent (TS `disabled?`
+  parity). Required §2 fields stay required — strict like the rest of the
+  workspace (`n8n-workflow` parses `Vec<INode>` strictly).
+- **Boundary**: 4 reference files carry degenerate mock nodes (missing
+  `id`/`typeVersion`/`position`: `Npm.workflow.test.json`,
+  `ReadPDF*.workflow.json`, `Test_workflow_ndv_version.json`) — excluded as
+  partial test doubles / UI probes, with the strict boundary unit-tested both
+  sides (missing required field fails; missing `parameters` defaults).
+- **Removed**: the dead `NodeTypeDescription` placeholder (zero users, matched
+  no contract shape); the full §3 description port stays deferred along with
+  `getNodeParameters`/`getNodeOutputs` (engine-coupled, no fixtures).
+  `n8n-workflow`'s inline form-rename in `rename_node_extra_content` is left
+  untouched (its specialization, fixture-pinned); the new leaf is offered for
+  future dedup via outbox `MSG-04`.
+
+Evidence: `docs/isolation/evidence/rust-test-record.json`.
