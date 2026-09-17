@@ -255,3 +255,9 @@ Re-run of `tests/reference/harness/rust/run-workflow-crate-vs-connection-fixture
 The five `wf.*` members from `connection-workflow-members-spec.md` are ported; agent-1's in-tree probe runner reports
 34 executed + 12 tracked skips = 46 probes. Review: `consensus/TASK-405-connection-members.review-agent-3.md`.
 `crates/n8n-connection` status unchanged (orchestrator-owned; R-02/05/07/08 open).
+
+### 2026-09-17 — graph-utils ported into `crates/n8n-connection` (agent-1 TASK-406, `b3a2566f`)
+7 graph-utils functions now live in `crates/n8n-connection/src/graph_utils.rs`; agent-1's probe runner executes 46/46
+probes of cases 01–05. Extended locally to cases 06–07: 0 graph-utils failures (remaining misses are `wf.*` runner
+coverage + CD-05). Re-review status vs `8ed00851`: R-05 ✅, R-07 ✅ (closed by this port); R-02, R-08 still open
+(traversal `getConnectedNodes` type filter not yet in the crate). Review: `consensus/TASK-406-connection-graph-utils.review-agent-3.md`.

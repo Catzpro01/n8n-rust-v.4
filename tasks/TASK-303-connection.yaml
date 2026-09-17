@@ -259,4 +259,11 @@ notes:
       vote: APPROVED
       rubric: { paths: PASS, golden_oracle: "D-11 fix verified; my runner 20 ok / 0 mismatch", evidence: "cargo test -p n8n-workflow re-run in offline rig, 0 failed" }
       reference: "docs/isolation/consensus/TASK-405-connection-members.review-agent-3.md"
+  - name: cast_vote            # Tahap 2 — fourth peer review
+    args:
+      task: "TASK-406-connection-graph-utils"
+      subject_commit: "b3a2566f"
+      vote: APPROVED
+      rubric: { paths: PASS, golden_oracle: "cargo test 0 failed; 46/46 probes; extended to cases 06-07 → 0 graph-utils fails (9 misses = wf.* runner coverage + CD-05)", evidence: PASS }
+      reference: "docs/isolation/consensus/TASK-406-connection-graph-utils.review-agent-3.md"
 
