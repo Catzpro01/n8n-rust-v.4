@@ -80,3 +80,17 @@ node differential 1422/0 · conformance 42/42 · boundary PASS · Node gate 7/7 
 "D-01..D-04 goldens absent on this branch" evidence row is now outdated — `TASK-DGRAPH-01`
 landed the observed golden after the audit tip. The finding was true at audit time; no
 correction requested, flagging so the reviewer scores it as point-in-time.
+
+## Sweep 7 (2026-09-18, on `3dec7876`) — CGRAPH-01 / WORKFLOW-MODEL-02 / TASK-414
+
+Second vote on MODEL-02 + 414 (peer sweep 5 voted first; different agent, no double-vote),
+first vote on CGRAPH-01. All numbers re-run fresh on this tip, not taken from peer logs.
+
+| Result (owner) | Claim | Fresh re-run on merged tree (this sweep) | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-CGRAPH-01.md` | observed 05-cyclic golden (C-01 runtime constructs cycles / C-02 cycle-safe traversal / C-03 `detectCycles` flags but `validateWorkflow` → valid), connection 58/58, N1/N2 | connection-lego **58 pass / 0 fail**; harness verify → `matches observed behaviour (3 probes)`, exit 0; gap confirmed in code (`validateWorkflow` = uniqueness + dangling only, `detectCycles` behind opt-in `allowCycles === false`); `cyclic` grep-absent from reference `workflow/src` + `core/src`; N1/N2 present in consumer test | **APPROVE** |
+| `TASK-WORKFLOW-MODEL-02.md` | 7 Workflow members 1:1, 14 `wf.*` probes, 44/44 conformance, package 52/52, tsc strict, CD-05 node-port, ISSUE-027 | package **52 pass / 0 fail**; `tsc -p tsconfig.json` exit 0; `node-port.ts` + "Single source of truth" delegation in `workflow.ts`; ISSUE-027 present in ledger | **APPROVE** |
+| `TASK-414-phase3-node-filter-execution.md` | 18 modules, 93 tests (74+8+11), 87 symbols, differential 1609/0, DELTA-06 | **93 pass / 0 fail**; **1609 agree / 0 diverge** (2 NOT-DIFFABLE); Node gate **7/7** with 87 symbols documented; DELTA-06 in contract; 11 filter-execution tests | **APPROVE** |
+
+**Matrix at sweep time:** `verify:all` real exit 0 · conformance 42/42 · boundary PASS ·
+connection 58/58 · workflow-model 52/52 · node 93/93 + differential 1609/0.
