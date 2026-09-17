@@ -1,0 +1,10 @@
+{
+  "id": "guard-isResourceMapperValue-undef",
+  "fn": "isResourceMapperValue",
+  "input": {
+    "value": {
+      "$undefined": true
+    }
+  },
+  "expected": false
+}

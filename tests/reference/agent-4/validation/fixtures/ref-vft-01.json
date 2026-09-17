@@ -1,0 +1,14 @@
+{
+  "id": "ref-vft-01",
+  "fn": "validateFieldType",
+  "input": {
+    "args": [
+      "f",
+      null,
+      "number"
+    ]
+  },
+  "expected": {
+    "valid": true
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "id": "ref-vft-42",
+  "fn": "validateFieldType",
+  "input": {
+    "args": [
+      "f",
+      {
+        "mimeType": "text/plain",
+        "data": "AA=="
+      },
+      "binary"
+    ]
+  },
+  "expected": {
+    "valid": true,
+    "newValue": {
+      "mimeType": "text/plain",
+      "data": "AA=="
+    }
+  }
+}

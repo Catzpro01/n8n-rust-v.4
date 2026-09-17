@@ -1,0 +1,8 @@
+{
+  "id": "guard-isResourceMapperValue-bool",
+  "fn": "isResourceMapperValue",
+  "input": {
+    "value": true
+  },
+  "expected": false
+}

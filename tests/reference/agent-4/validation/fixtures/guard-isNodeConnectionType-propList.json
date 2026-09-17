@@ -1,0 +1,15 @@
+{
+  "id": "guard-isNodeConnectionType-propList",
+  "fn": "isNodeConnectionType",
+  "input": {
+    "value": [
+      {
+        "displayName": "D",
+        "name": "n",
+        "type": "string",
+        "default": ""
+      }
+    ]
+  },
+  "expected": false
+}

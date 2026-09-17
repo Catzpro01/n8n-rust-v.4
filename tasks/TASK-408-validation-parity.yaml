@@ -1,0 +1,49 @@
+id: TASK-408-validation-parity
+agent: agent-1
+lego: validation
+module: validation
+phase: 3
+
+# Close the gaps agent-4 flagged as BLOCKING for VERIFIED (spec §10.1):
+# F1/F3 report API, F5 frozen messages, F6 §3 ordering, parity.rs over D01-D14.
+
+allowed_paths:
+  - crates/n8n-validation/src/lib.rs
+  - crates/n8n-validation/tests/parity.rs
+  - crates/n8n-validation/tests/cyclic_invalid.rs
+  - crates/n8n-workflow/tests/conformance.rs
+  - tests/reference/agent-4/validation/fixtures/D*.json
+  - docs/isolation/validation-rust-port-spec.md
+  - docs/isolation/consensus/TASK-404-validation-lego-seam.review-agent-1.md
+  - results/TASK-404-phase3-opening.md
+  - results/REVIEW-2026-09-17-agent-1.md
+  - results/TASK-408-validation-parity.md
+  - tasks/TASK-408-validation-parity.yaml
+  - docs/isolation/CROSS-AGENT-ISSUES.md
+
+forbidden_paths:
+  - reference/n8n/**
+  - contracts/**
+  - packages/**
+
+requires:
+  - docs/isolation/validation-rust-port-spec.md   # agent-4 spec (Option B hand-off)
+  - tests/reference/agent-4/validation/fixtures/  # D01-D14 shared TS/Rust oracle
+
+operations:
+  - name: adopt_peer_oracle
+    args:
+      detail: "spec + 14 D-fixtures from arena/01a0ac06 (worker 06 branch); guard-*/ref-* (type-guards slice) left out of §10.1 scope"
+  - name: implement_report_api
+    args:
+      detail: "validate_workflow(&Value, ValidateOptions) -> ValidationReport{valid, errors[code,message,node?,path?]}; check_node_uniqueness / check_dangling_connections / detect_cycles over WorkflowView; §4 INVALID_INPUT gate; §8 composition; never panics"
+  - name: close_F5_messages
+    args:
+      detail: "frozen TS strings byte-equal (Duplicate node name \"A\", Connection from unknown node \"X\", Malformed connection output/target, Unknown connection type \"t\" on node \"n\", Cycle detected: A → B → A)"
+  - name: close_F6_ordering
+    args:
+      detail: "§3 determinism: sources = nodes[] order (first occurrence) then unknowns lexical; types lexical; outputs/targets array order; rules uniqueness->dangling->cycles; iterative DFS, single first-back-edge issue"
+  - name: parity_acceptance
+    args:
+      test: crates/n8n-validation/tests/parity.rs
+      detail: "14/14 D-fixtures byte-exact; missing dir / count drift panics"

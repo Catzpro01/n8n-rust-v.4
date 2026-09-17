@@ -26,8 +26,8 @@ node tests/reference/agent-4/live/smoke.mjs --record out.json
 Files:
 - `workflows/02-one-node.json`, `03-linear.json` — copies of `tests/reference/02-one-node`, `03-linear`.
 - `workflows/04-webhook.json` — reconstruction of the baseline `SMOKETEST001TEST` workflow (Webhook v2.1 POST `smoke-test`, responseMode `lastNode` → Code).
-- `baseline-before.json` — recorded **before** Agent 4 isolation work: 11/11.
-- `baseline-after.json` — recorded **after** all Agent 4 deliverables: 11/11.
+- `baseline-before.json` / `baseline-after.json` — 11/11 each. **Re-recorded back-to-back on 2026-09-17 with identical probe code** (closes Agent 5 caveat C2: earlier 'before' used a TRACE probe, 'after' PROPFIND). Field-by-field diff of the two files shows only monotonic counters (`workflowSave.historyCount`, `executionRecorded.db.row.id`, `executionRecorded.db.data.executionId`) — behaviour preserved.
+- Caveat C1 (VPS + PostgreSQL re-run) remains open: it requires VPS access, which this sandbox does not have; the harness is VPS-ready (`N8N_URL`, owner creds via env, SQLite check optional).
 - `record-golden.mjs` — records `../golden/*.golden.json` from a live instance.
 
 Reference instance used in this session: n8n 2.9.4 installed via npm in `/home/user/n8n-runtime`

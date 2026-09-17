@@ -1,0 +1,15 @@
+{
+  "id": "ref-tryToParseDateTime-03",
+  "fn": "tryToParseDateTime",
+  "input": {
+    "args": [
+      ""
+    ]
+  },
+  "expected": {
+    "throws": {
+      "name": "ApplicationError",
+      "message": "Value is not a valid date"
+    }
+  }
+}

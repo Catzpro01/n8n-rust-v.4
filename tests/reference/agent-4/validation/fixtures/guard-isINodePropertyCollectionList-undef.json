@@ -1,0 +1,10 @@
+{
+  "id": "guard-isINodePropertyCollectionList-undef",
+  "fn": "isINodePropertyCollectionList",
+  "input": {
+    "value": {
+      "$undefined": true
+    }
+  },
+  "expected": false
+}

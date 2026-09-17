@@ -1,0 +1,15 @@
+{
+  "id": "ref-tryToParseJwt-08",
+  "fn": "tryToParseJwt",
+  "input": {
+    "args": [
+      "1.5"
+    ]
+  },
+  "expected": {
+    "throws": {
+      "name": "ApplicationError",
+      "message": "The value \"1.5\" is not a valid JWT token."
+    }
+  }
+}

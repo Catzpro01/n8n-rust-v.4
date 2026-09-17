@@ -1,0 +1,15 @@
+{
+  "id": "guard-isBinaryValue-propList",
+  "fn": "isBinaryValue",
+  "input": {
+    "value": [
+      {
+        "displayName": "D",
+        "name": "n",
+        "type": "string",
+        "default": ""
+      }
+    ]
+  },
+  "expected": false
+}

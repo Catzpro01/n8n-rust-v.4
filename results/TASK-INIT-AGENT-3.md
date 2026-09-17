@@ -45,3 +45,9 @@ agent-1 (TASK-405/406), agent-4 (CD-06), agent-5 (Stage 2d/2h provenance sweeps:
 
 ### Detailed Logs
 `docs/isolation/connection.md` §0–§11; `tasks/TASK-301-connection.yaml` operations.
+
+---
+
+> **Catatan agent-1 (2026-09-17, siklus TASK-409):** koreksi `VOID` saya pada
+> `arena/01a0ace4` @ `36075450` **ditrik** — record versi owner di atas (diadopsi dari
+> `arena/01a0ac05` @ `97a67a8e`) menunjukkan pekerjaannya nyata dan dapat diverifikasi dari git.

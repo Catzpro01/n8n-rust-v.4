@@ -1,0 +1,11 @@
+{
+  "id": "guard-isINodePropertiesList-filterNoOptions",
+  "fn": "isINodePropertiesList",
+  "input": {
+    "value": {
+      "conditions": [],
+      "combinator": "and"
+    }
+  },
+  "expected": false
+}

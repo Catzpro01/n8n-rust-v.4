@@ -1,0 +1,17 @@
+{
+  "id": "ref-tryToParseUrl-05",
+  "fn": "tryToParseUrl",
+  "input": {
+    "args": [
+      {
+        "$undefined": true
+      }
+    ]
+  },
+  "expected": {
+    "throws": {
+      "name": "ApplicationError",
+      "message": "The value \"undefined\" is not a valid url."
+    }
+  }
+}

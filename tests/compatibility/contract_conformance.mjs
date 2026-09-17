@@ -33,14 +33,18 @@ for (const c of CONTRACTS) {
 const refDir = join(ROOT, 'tests', 'reference');
 const fixtures = readdirSync(refDir, { withFileTypes: true })
   .filter((d) => d.isDirectory() && existsSync(join(refDir, d.name, 'workflow.json')))
-  .map((d) => ({ name: d.name, wf: JSON.parse(readFileSync(join(refDir, d.name, 'workflow.json'), 'utf8')) }));
+  .map((d) => ({
+    name: d.name,
+    negative: d.name.endsWith('-invalid'),
+    wf: JSON.parse(readFileSync(join(refDir, d.name, 'workflow.json'), 'utf8')),
+  }));
 
 check('golden fixtures discovered', () => {
   assert(fixtures.length > 0, 'no golden fixtures found under tests/reference');
   return fixtures.map((f) => f.name).join(', ');
 });
 
-for (const { name, wf } of fixtures) {
+for (const { name, wf, negative } of fixtures) {
   // WorkflowContract schema
   check(`${name}: workflow schema`, () => {
     assert(typeof wf.id === 'string' && wf.id, 'id must be a non-empty string');
@@ -97,8 +101,11 @@ for (const { name, wf } of fixtures) {
     return `${count} edge(s)`;
   });
 
-  // ValidationContract: CycleDetection
-  check(`${name}: CycleDetection (acyclic)`, () => {
+  // ValidationContract: CycleDetection. Directories ending in `-invalid` are
+  // deliberate negative fixtures and must CONTAIN a cycle — adopted from the sibling
+  // worker cycle (arena/01a0ace3): returning without checking would make the gate
+  // silently pass on a negative fixture.
+  check(`${name}: CycleDetection (${negative ? 'rejects cycle' : 'acyclic'})`, () => {
     const adj = new Map(wf.nodes.map((n) => [n.name, []]));
     for (const [src, byType] of Object.entries(wf.connections))
       for (const outputs of Object.values(byType))
@@ -106,33 +113,67 @@ for (const { name, wf } of fixtures) {
     const WHITE = 0, GREY = 1, BLACK = 2;
     const color = new Map(wf.nodes.map((n) => [n.name, WHITE]));
     const stack = [];
+    let cycle;
     const visit = (n) => {
       color.set(n, GREY); stack.push(n);
       for (const m of adj.get(n) ?? []) {
-        if (color.get(m) === GREY) throw new Error(`cycle detected: ${[...stack, m].join(' -> ')}`);
-        if (color.get(m) === WHITE) visit(m);
+        if (color.get(m) === GREY) {
+          cycle = [...stack, m];
+          break;
+        }
+        if (color.get(m) === WHITE && !cycle) visit(m);
+        if (cycle) break;
       }
       stack.pop(); color.set(n, BLACK);
     };
-    for (const n of color.keys()) if (color.get(n) === WHITE) visit(n);
+    for (const n of color.keys()) if (color.get(n) === WHITE && !cycle) visit(n);
+    if (negative) {
+      assert(cycle, 'negative fixture was accepted as acyclic');
+      return `cycle rejected: ${cycle.join(' -> ')}`;
+    }
+    assert(!cycle, `cycle detected: ${cycle?.join(' -> ') ?? ''}`);
     return 'acyclic';
   });
 }
 
-// --- Phase-2 guard: no premature Rust -------------------------------------
-check('Phase 2: no Rust implementation introduced', () => {
-  const offenders = [];
+// --- Phase guard: Phase 2 forbids Rust, Phase 3 demands reference tests ----
+// The phase flips ONLY via the decision record (docs/isolation/PHASE-3-OPENING.md):
+// delete the record and the Phase-2 "no Rust" rule is back in force.
+check('Phase: Rust guard per docs/isolation/PHASE-3-OPENING.md', () => {
+  const rustFiles = [];
   const walk = (dir) => {
     if (!existsSync(dir)) return;
     for (const e of readdirSync(dir, { withFileTypes: true })) {
       const p = join(dir, e.name);
       if (e.isDirectory()) walk(p);
-      else if (e.name.endsWith('.rs') || e.name === 'Cargo.toml') offenders.push(p.slice(ROOT.length + 1));
+      else if (e.name.endsWith('.rs') || e.name === 'Cargo.toml') rustFiles.push(p.slice(ROOT.length + 1));
     }
   };
   walk(join(ROOT, 'crates')); walk(join(ROOT, 'apps'));
-  assert(offenders.length === 0, `Rust artifacts present in Phase 2: ${offenders.join(', ')}`);
-  return 'crates/ and apps/ contain no Rust sources';
+
+  const phase3Record = join(ROOT, 'docs', 'isolation', 'PHASE-3-OPENING.md');
+  if (!existsSync(phase3Record)) {
+    assert(
+      rustFiles.length === 0,
+      `Rust artifacts present in Phase 2 (no PHASE-3-OPENING.md): ${rustFiles.join(', ')}`,
+    );
+    return 'Phase 2: crates/ and apps/ contain no Rust sources';
+  }
+
+  // Phase 3: implementation allowed — but PROJECT_RULES §5 becomes a gate: at least one
+  // Rust *test file* (crates/**/tests/*.rs) must consume the golden fixtures under
+  // tests/reference/. Doc comments in src/** must not satisfy this — only executable
+  // test files count.
+  const consuming = rustFiles.filter((rel) => {
+    if (!rel.includes('/tests/') || !rel.endsWith('.rs')) return false;
+    const src = readFileSync(join(ROOT, rel), 'utf8');
+    return src.includes('tests/reference');
+  });
+  assert(
+    consuming.length > 0,
+    'Phase 3 opened (PHASE-3-OPENING.md) but no Rust test consumes tests/reference/** (PROJECT_RULES §5)',
+  );
+  return `Phase 3 open: ${rustFiles.length} Rust artifact(s), ${consuming.length} test file(s) reference-driven`;
 });
 
 const passed = results.filter((r) => r.ok).length;

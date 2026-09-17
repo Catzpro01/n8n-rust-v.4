@@ -1,0 +1,10 @@
+{
+  "id": "ref-tryToParseString-12",
+  "fn": "tryToParseString",
+  "input": {
+    "args": [
+      "https://n8n.io"
+    ]
+  },
+  "expected": "https://n8n.io"
+}

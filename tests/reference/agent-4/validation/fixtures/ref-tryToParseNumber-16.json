@@ -1,0 +1,15 @@
+{
+  "id": "ref-tryToParseNumber-16",
+  "fn": "tryToParseNumber",
+  "input": {
+    "args": [
+      "a-1"
+    ]
+  },
+  "expected": {
+    "throws": {
+      "name": "ApplicationError",
+      "message": "Failed to parse value to number"
+    }
+  }
+}

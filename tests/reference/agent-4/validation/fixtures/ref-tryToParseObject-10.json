@@ -1,0 +1,12 @@
+{
+  "id": "ref-tryToParseObject-10",
+  "fn": "tryToParseObject",
+  "input": {
+    "args": [
+      "{\"a\":1}"
+    ]
+  },
+  "expected": {
+    "a": 1
+  }
+}

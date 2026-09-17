@@ -24,9 +24,10 @@
 //! | `calculateWorkflowChecksum(snapshot)` | [`calculate_workflow_checksum`] |
 //! | `compareConnections(prev, next)` | [`compare_connections`] |
 //!
-//! Deliberate divergence to be decided at contract level: `getStartNode` is ported structurally
-//! (highest node lookup + first trigger-ish node) but the reference's node-type heuristics are not
-//! reproduced yet; see `docs/isolation/workflow-rust-port-review.md` §6.
+//! Documented divergence: `getStartNode` reproduces the reference's candidate walk,
+//! single-candidate rule, `STARTING_NODE_TYPES` scan and fallback, but not the trigger/poll
+//! loop (`workflow.ts:828-844`) which needs the node-type registry the Workflow LEGO does not
+//! own; see `docs/isolation/workflow-rust-port-review.md` §6.
 
 pub mod checksum;
 pub mod connections;
@@ -46,7 +47,29 @@ pub use ordered::OrderedMap;
 pub use rename::{is_restricted_node_name, WorkflowError};
 pub use traversal::{get_connected_nodes, ConnectionTypeFilter};
 
+use serde::Serialize;
 use serde_json::{json, Map, Value};
+use std::collections::{HashMap, HashSet, VecDeque};
+
+/// Result of `getNodeConnectionIndexes` (`workflow.ts:793-798`). Field names are the wire
+/// names of the reference (`sourceIndex` / `destinationIndex`).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct NodeConnectionIndexes {
+    #[serde(rename = "sourceIndex")]
+    pub source_index: usize,
+    #[serde(rename = "destinationIndex")]
+    pub destination_index: usize,
+}
+
+/// `IConnectedNode` (`interfaces.ts`) — the reference's misspelled field `indicies`
+/// is reproduced verbatim, including the JSON serialization order `name, indicies, depth`
+/// (pinned by the `getParentNodesByDepth` probes).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct IConnectedNode {
+    pub name: String,
+    pub indicies: Vec<usize>,
+    pub depth: u32,
+}
 
 /// The reference keeps settings as an open bag (`IWorkflowSettings` plus unknown keys that are
 /// passed through untouched — language-server additions, `executionOrder`, …), so the port keeps
@@ -58,13 +81,16 @@ pub type WorkflowSettings = Value;
 /// depending on the host's `TZ`/`Intl` data.
 pub const DEFAULT_TIMEZONE: &str = "America/New_York";
 
-/// `n8n-nodes-base.start`-style triggers the reference treats as start nodes.
+/// `STARTING_NODE_TYPES` verbatim from n8n 2.9.4
+/// (`reference/n8n/packages/workflow/src/constants.ts:53`) — the order is behavioural:
+/// `getStartNode` scans nodes sorted by their index in this list (missing types sort first,
+/// as `indexOf` returns `-1`).
 pub const START_NODE_TYPES: [&str; 5] = [
-    "n8n-nodes-base.start",
     "n8n-nodes-base.manualTrigger",
     "n8n-nodes-base.executeWorkflowTrigger",
-    "n8n-nodes-base.scheduleTrigger",
-    "n8n-nodes-base.cron",
+    "n8n-nodes-base.errorTrigger",
+    "n8n-nodes-base.evaluationTrigger",
+    "n8n-nodes-base.formTrigger",
 ];
 
 #[derive(Debug, Clone, PartialEq)]
@@ -197,68 +223,379 @@ impl Workflow {
         get_connected_nodes(connections, node_name, &filter, depth, None)
     }
 
-    /// Reference `getStartNode(destinationNode?)`.
+    /// Port of `getStartNode(destinationNode?)` (`workflow.ts:816-867`).
     ///
-    /// Without a destination: the first start-type node in node order, else the first node.
-    /// With a destination: the reference walks up through non-disabled parents (`getHighestNode`)
-    /// and falls back to the destination itself; the port does the same walk and then applies the
-    /// same "first start-type node" rule. The reference's additional node-type heuristics
-    /// (polling/webhook triggers, `disabled` handling) are **not** ported yet.
+    /// With a destination: walk up the non-disabled parents (`getHighestNode`), fall back to
+    /// the destination itself when no parent survives, then apply the reference
+    /// `__getStartNode` rules and — if those find nothing — return `nodes[nodeNames[0]]`
+    /// **regardless of its `disabled` flag** (`workflow.ts:862-864`, no check there).
+    ///
+    /// Without a destination: `__getStartNode(Object.keys(this.nodes))` with **no** fallback
+    /// (`workflow.ts:866`).
+    ///
+    /// Documented divergence: the reference's trigger/poll loop (`workflow.ts:833-844`) consults
+    /// the node-type registry, which the Workflow LEGO does not own; the port goes straight to
+    /// the `STARTING_NODE_TYPES` branch (`workflow.ts:846-855`), which is the only reachable
+    /// outcome for the start types themselves.
     pub fn get_start_node(&self, destination_node: Option<&str>) -> Option<&INode> {
-        let candidates: Vec<String> = match destination_node {
+        match destination_node {
             Some(destination) => {
-                let mut names = self.get_highest_nodes(destination);
+                let mut names = self.get_highest_node(destination, None, None);
                 if names.is_empty() {
+                    // If no parent nodes have been found then only the destination-node
+                    // is in the tree so add that one (`workflow.ts:821-825`).
                     names.push(destination.to_string());
                 }
-                names
+                self.get_start_node_from_candidates(&names)
+                    .or_else(|| self.nodes.get(names[0].as_str()))
             }
-            None => self.node_keys(),
-        };
-
-        let first_start = candidates
-            .iter()
-            .filter_map(|name| self.nodes.get(name))
-            .find(|node| START_NODE_TYPES.contains(&node.node_type.as_str()));
-        first_start.or_else(|| candidates.first().and_then(|name| self.nodes.get(name)))
+            None => self.get_start_node_from_candidates(&self.node_keys()),
+        }
     }
 
-    /// Simplified `getHighestNode`: parents of `node_name` that are not disabled, recursively.
-    fn get_highest_nodes(&self, node_name: &str) -> Vec<String> {
-        let parents: Vec<String> = self
-            .get_parent_nodes(node_name, ConnectionTypeFilter::main(), -1)
-            .into_iter()
-            .filter(|name| {
-                self.nodes
-                    .get(name)
-                    .map(|node| node.disabled != Some(true))
-                    .unwrap_or(false)
-            })
-            .collect();
-
-        if parents.is_empty() {
-            return Vec::new();
+    /// Port of `__getStartNode(nodeNames)` (`workflow.ts:811-859`), minus the trigger/poll
+    /// loop that needs the node-type registry (see [`Workflow::get_start_node`]).
+    pub fn get_start_node_from_candidates(&self, node_names: &[String]) -> Option<&INode> {
+        // If there is exactly one candidate it is returned **unless disabled**
+        // (`workflow.ts:819-826`): `!node.disabled` — an omitted flag passes.
+        if node_names.len() == 1 {
+            if let Some(node) = self.nodes.get(&node_names[0]) {
+                if node.disabled != Some(true) {
+                    return Some(node);
+                }
+            }
         }
 
-        let mut highest: Vec<String> = Vec::new();
-        for parent in parents {
-            let from_parent = self.get_highest_nodes(&parent);
-            if from_parent.is_empty() {
-                highest.push(parent);
-            } else {
-                for name in from_parent {
-                    if !highest.contains(&name) {
-                        highest.push(name);
+        // The trigger/poll loop (`workflow.ts:828-844`) needs `nodeTypes` — not ported.
+        // `STARTING_NODE_TYPES` branch (`workflow.ts:846-855`): scan **all** nodes sorted by
+        // their index in `STARTING_NODE_TYPES` (absent types first, `-1` in the reference),
+        // stable — and skip disabled start-type nodes.
+        let mut sorted: Vec<&INode> = self.nodes.values().collect();
+        sorted.sort_by_key(|node| {
+            START_NODE_TYPES
+                .iter()
+                .position(|t| *t == node.node_type)
+                .map(|index| index as isize)
+                .unwrap_or(-1)
+        });
+        for node in sorted {
+            if START_NODE_TYPES.contains(&node.node_type.as_str()) {
+                if node.disabled == Some(true) {
+                    continue;
+                }
+                return Some(node);
+            }
+        }
+
+        None
+    }
+
+    /// Port of `getHighestNode(nodeName, nodeConnectionIndex?, checkedNodes?)`
+    /// (`workflow.ts:487-565`), preserving the reference's deliberate **asymmetry** (D-04,
+    /// `docs/isolation/CROSS-AGENT-ISSUES.md` ISSUE-015 CORRECTION):
+    ///
+    /// * the *starting* node is its own highest node only when `disabled === false`
+    ///   **strictly** (`workflow.ts:498`) — a node that merely omits the flag is NOT pushed;
+    /// * a *parent* is included when `disabled !== true` (`workflow.ts:553`) — an omitted
+    ///   flag IS included.
+    ///
+    /// A disabled node mid-chain is transparent: traversal continues *through* it to its own
+    /// parents, it just never appears in the result.
+    pub fn get_highest_node(
+        &self,
+        node_name: &str,
+        node_connection_index: Option<usize>,
+        checked_nodes: Option<&[String]>,
+    ) -> Vec<String> {
+        let mut shared: Vec<String> = checked_nodes.unwrap_or_default().to_vec();
+        self.get_highest_node_inner(node_name, node_connection_index, &mut shared)
+    }
+
+    /// Internal recursion with the reference's **shared, mutating** `checkedNodes`
+    /// (`workflow.ts:514-545`): the array is passed by reference in JS, so a node pushed
+    /// while exploring one input branch is also skipped when a LATER branch reaches it.
+    /// Cloning per recursion level (the previous port) loses exactly that cross-branch
+    /// pruning — pinned by the `08-traversal-depth-and-type-filter` probe
+    /// "highest nodes of E": oracle `[Trigger, C]`, cloned-port `[Trigger]`.
+    ///
+    /// Copy-semantics note: the public wrapper copies a caller-provided slice instead of
+    /// mutating it in place (the JS API mutates the passed array). No reference caller
+    /// relies on that side effect (`workflow.ts:870` passes nothing).
+    fn get_highest_node_inner(
+        &self,
+        node_name: &str,
+        node_connection_index: Option<usize>,
+        checked_nodes: &mut Vec<String>,
+    ) -> Vec<String> {
+        let mut current_highest: Vec<String> = Vec::new();
+
+        // `workflow.ts:498` — strict `=== false` for the starting node itself.
+        // (The reference dereferences `this.nodes[nodeName].disabled` and would throw on an
+        // unknown node; the port returns empty instead of panicking — documented divergence.)
+        match self.nodes.get(node_name) {
+            Some(node) if node.disabled == Some(false) => {
+                current_highest.push(node_name.to_string());
+            }
+            None => return current_highest,
+            _ => {}
+        }
+
+        let Some(node_inputs) = self.connections_by_destination_node.get(node_name) else {
+            // Node does not have incoming connections
+            return current_highest;
+        };
+        let Some(main_inputs) = node_inputs.get("main") else {
+            // Node does not have incoming connections of the given type
+            return current_highest;
+        };
+
+        if checked_nodes.iter().any(|name| name == node_name) {
+            // Node got checked already before
+            return current_highest;
+        }
+        checked_nodes.push(node_name.to_string());
+
+        let mut return_nodes: Vec<String> = Vec::new();
+
+        for (connection_index, slot) in main_inputs.iter().enumerate() {
+            if let Some(wanted) = node_connection_index {
+                // If a connection-index is given ignore all other ones
+                if wanted != connection_index {
+                    continue;
+                }
+            }
+            let Some(connections) = slot else { continue };
+            for connection in connections {
+                if checked_nodes.iter().any(|name| name == &connection.node) {
+                    // Node got checked already before
+                    continue;
+                }
+                // Ignore connections for nodes that don't exist in this workflow
+                if !self.nodes.contains_key(&connection.node) {
+                    continue;
+                }
+
+                let mut add_nodes =
+                    self.get_highest_node_inner(&connection.node, None, checked_nodes);
+
+                if add_nodes.is_empty() {
+                    // The checked node does not have any further parents so add it
+                    // if it is not disabled (`workflow.ts:553` — lenient `!== true`).
+                    let disabled = self
+                        .nodes
+                        .get(&connection.node)
+                        .and_then(|node| node.disabled);
+                    if disabled != Some(true) {
+                        add_nodes = vec![connection.node.clone()];
+                    }
+                }
+
+                // Only add if node is not on the list already anyway
+                for name in add_nodes {
+                    if !return_nodes.contains(&name) {
+                        return_nodes.push(name);
                     }
                 }
             }
         }
-        highest
+
+        return_nodes
+    }
+
+    /// Port of `getNodeConnectionIndexes(nodeName, parentNodeName, type = 'main')`
+    /// (`workflow.ts:746-807`). BFS **upward** over the destination map; returns
+    /// `{ sourceIndex, destinationIndex }` where `sourceIndex` is the edge's stored
+    /// source-output index and `destinationIndex` is the edge's *position inside the
+    /// destination slot* — NOT the slot (input) index (see the probe pins in
+    /// `tests/reference/connection/02`: `IF -> B` → `{1, 0}`).
+    pub fn get_node_connection_indexes(
+        &self,
+        node_name: &str,
+        parent_node_name: &str,
+        connection_type: &str,
+    ) -> Option<NodeConnectionIndexes> {
+        // `workflow.ts:750-754` — unknown parent → undefined.
+        if self.get_node(parent_node_name).is_none() {
+            return None;
+        }
+
+        let mut visited_nodes: HashSet<String> = HashSet::new();
+        let mut queue: VecDeque<String> = VecDeque::new();
+        queue.push_back(node_name.to_string());
+
+        while let Some(current_node_name) = queue.pop_front() {
+            if visited_nodes.contains(&current_node_name) {
+                continue;
+            }
+            visited_nodes.insert(current_node_name.clone());
+
+            let Some(type_connections) = self
+                .connections_by_destination_node
+                .get(&current_node_name)
+                .and_then(|outputs| outputs.get(connection_type))
+            else {
+                continue;
+            };
+
+            for slot in type_connections {
+                let Some(connections_by_index) = slot else {
+                    continue;
+                };
+                for (destination_index, connection) in connections_by_index.iter().enumerate() {
+                    if parent_node_name == connection.node {
+                        return Some(NodeConnectionIndexes {
+                            source_index: connection.index,
+                            destination_index,
+                        });
+                    }
+                    if !visited_nodes.contains(&connection.node) {
+                        queue.push_back(connection.node.clone());
+                    }
+                }
+            }
+        }
+
+        None
+    }
+
+    /// Port of `getParentNodesByDepth(nodeName, maxDepth = -1)` → `searchNodesBFS`
+    /// (`workflow.ts:620-685`): BFS by depth levels over the **destination** map, `main` only.
+    /// A node reached again later is NOT re-emitted; the new indices are merged (deduped,
+    /// first-occurrence order) into the **already-emitted** object — pinned by the probe
+    /// `parents by depth of Merge` → `IF` carries `indicies: [1, 0]` at depth 1.
+    /// The source node itself is never emitted.
+    pub fn get_parent_nodes_by_depth(&self, node_name: &str, max_depth: i32) -> Vec<IConnectedNode> {
+        // `visited` mirrors the JS object: name → (emitted depth, merged indices).
+        let mut visited: HashMap<String, (u32, Vec<usize>)> = HashMap::new();
+        let mut emission_order: Vec<String> = Vec::new();
+
+        // JS queue entries carry their own `indicies` AND their own `depth` — a node is
+        // emitted with the depth attached when it was PUSHED (the level of its parent's
+        // expansion), not the loop level at which it is dequeued. A re-visit merges.
+        let mut queue: Vec<(String, Vec<usize>, u32)> = vec![(node_name.to_string(), Vec::new(), 0)];
+
+        let mut depth: i32 = 0;
+        while !queue.is_empty() {
+            if max_depth != -1 && depth > max_depth {
+                break;
+            }
+            depth += 1;
+
+            let to_add = std::mem::take(&mut queue);
+            for (name, indicies, entry_depth) in to_add {
+                if let Some((_, existing)) = visited.get_mut(&name) {
+                    // Merge into the ALREADY-EMITTED object: dedupe(concat), first-occurrence
+                    // order preserved (`dedupe` in the reference is `[...new Set(...)]`).
+                    for index in indicies {
+                        if !existing.contains(&index) {
+                            existing.push(index);
+                        }
+                    }
+                    continue;
+                }
+
+                let is_source = name == node_name;
+                visited.insert(name.clone(), (entry_depth, indicies.clone()));
+                if !is_source {
+                    emission_order.push(name.clone());
+                }
+
+                let Some(lists) = self
+                    .connections_by_destination_node
+                    .get(&name)
+                    .and_then(|outputs| outputs.get("main"))
+                else {
+                    continue;
+                };
+                for slot in lists {
+                    let Some(connections) = slot else { continue };
+                    for connection in connections {
+                        queue.push((connection.node.clone(), vec![connection.index], depth as u32));
+                    }
+                }
+            }
+        }
+
+        emission_order
+            .into_iter()
+            .map(|name| {
+                let (depth, indicies) = &visited[&name];
+                IConnectedNode {
+                    name,
+                    indicies: indicies.clone(),
+                    depth: *depth,
+                }
+            })
+            .collect()
+    }
+
+    /// Port of `getParentMainInputNode(node)` (`workflow.ts:687-743`) — early-return wrapper.
+    ///
+    /// The declared outputs come from the node-type registry, which the Workflow LEGO does not
+    /// own (CD-05). This wrapper assumes every node declares only a `main` output — exactly the
+    /// reference harness's fallback stub — so the early-return path applies: the node is its own
+    /// parent-main-input node. Use [`Workflow::get_parent_main_input_node_with`] with a resolver
+    /// to run the full climb (see the `07-parent-main-input-ai-tool` golden).
+    pub fn get_parent_main_input_node(&self, node_name: &str) -> Option<&INode> {
+        self.get_parent_main_input_node_with(node_name, &|_name| vec!["main".to_string()])
+    }
+
+    /// Full port of `getParentMainInputNode(node)` (`workflow.ts:687-743`).
+    ///
+    /// `declared_outputs` is the node-type-registry seam (CD-05): it returns the output types
+    /// the node's type declares. The climb: collect the node's non-`main` declared outputs
+    /// (sorted), gather `getChildNodes(node, type)` for those that exist in the source map,
+    /// and — if any — recurse into the lexicographically first connected sub-node. Missing
+    /// nodes resolve to `None` instead of the reference's `ApplicationError` (documented
+    /// divergence: the port never panics/throws at this boundary).
+    pub fn get_parent_main_input_node_with(
+        &self,
+        node_name: &str,
+        declared_outputs: &dyn Fn(&str) -> Vec<String>,
+    ) -> Option<&INode> {
+        let mut non_main: Vec<String> = declared_outputs(node_name)
+            .into_iter()
+            .filter(|output_type| output_type != "main")
+            .collect();
+        non_main.sort();
+
+        if !non_main.is_empty() {
+            let mut connected: Vec<String> = Vec::new();
+            for output_type in &non_main {
+                let has_edges = self
+                    .connections_by_source_node
+                    .get(node_name)
+                    .is_some_and(|outputs| outputs.contains_key(output_type));
+                if has_edges {
+                    connected.extend(self.get_child_nodes(
+                        node_name,
+                        ConnectionTypeFilter::parse(output_type),
+                        -1,
+                    ));
+                }
+            }
+            if !connected.is_empty() {
+                connected.sort();
+                let first = connected[0].clone();
+                return self.get_parent_main_input_node_with(&first, declared_outputs);
+            }
+        }
+
+        self.get_node(node_name)
     }
 
     pub fn get_timezone(&self) -> &str {
         &self.timezone
     }
+
+    /// Port of `getPinDataOfNode(nodeName)` (`workflow.ts:331-333`): returns the pinData of
+    /// the node with the given name if it exists. Execution behaviour (substituting a node's
+    /// real output with its pinned data) belongs to the execution LEGO and stays deferred
+    /// (ISSUE-016); the accessor closes the "declared but never consulted" gap.
+    pub fn get_pin_data_of_node(&self, node_name: &str) -> Option<&Value> {
+        self.pin_data.as_ref().and_then(|pin| pin.get(node_name))
+    }
+
 
     /// Port of `renameNode` — see `rename.rs` for the parameter rewriting, and `D-08` in
     /// `contracts/workflow.contract.md` §7 for why the destination index stays stale.
@@ -337,6 +674,45 @@ impl Workflow {
             value.get("settings").cloned(),
             value.get("staticData").cloned(),
             value.get("pinData").cloned(),
+        ))
+    }
+
+    /// Document-order-faithful loader: parses the raw wire text with a typed
+    /// `Connections` field so connection keys keep their JSON document order.
+    /// (`from_wire` above goes through `serde_json::Value`, whose `Map` is a BTreeMap —
+    /// connection keys come out alphabetically sorted, which silently diverges from the
+    /// reference for order-sensitive behaviour such as derived-map insertion order or
+    /// multi-type traversal order. See the `06-rename-stale-destination` golden.)
+    pub fn from_wire_str(text: &str) -> Result<Self, serde_json::Error> {
+        #[derive(serde::Deserialize)]
+        struct WireWorkflow {
+            #[serde(default)]
+            id: Option<String>,
+            #[serde(default)]
+            name: Option<String>,
+            #[serde(default)]
+            active: bool,
+            #[serde(default)]
+            nodes: Vec<INode>,
+            #[serde(default)]
+            connections: Connections,
+            settings: Option<WorkflowSettings>,
+            #[serde(rename = "staticData")]
+            static_data: Option<Value>,
+            #[serde(rename = "pinData")]
+            pin_data: Option<Value>,
+        }
+
+        let wire: WireWorkflow = serde_json::from_str(text)?;
+        Ok(Workflow::new(
+            wire.id,
+            wire.name,
+            wire.nodes,
+            wire.connections,
+            wire.active,
+            wire.settings,
+            wire.static_data,
+            wire.pin_data,
         ))
     }
 

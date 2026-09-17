@@ -1,0 +1,15 @@
+{
+  "id": "ref-tryToParseAlphanumericString-07",
+  "fn": "tryToParseAlphanumericString",
+  "input": {
+    "args": [
+      0
+    ]
+  },
+  "expected": {
+    "throws": {
+      "name": "ApplicationError",
+      "message": "Value is not a valid alphanumeric string"
+    }
+  }
+}

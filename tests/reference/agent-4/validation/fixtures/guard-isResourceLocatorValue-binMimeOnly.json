@@ -1,0 +1,10 @@
+{
+  "id": "guard-isResourceLocatorValue-binMimeOnly",
+  "fn": "isResourceLocatorValue",
+  "input": {
+    "value": {
+      "mimeType": "a"
+    }
+  },
+  "expected": false
+}

@@ -18,7 +18,11 @@ tests/reference/agent-4/
 ├── credentials/credentials.test.ts
 ├── api/api-envelope.test.ts
 ├── validation/workflow-rules.ts        NEW CAPABILITY (ISSUE-003 Option A): validateWorkflow / NodeUniqueness / DanglingConnections / CycleDetection
-├── validation/validation.test.ts       golden A/B/C vs real n8n-workflow 2.9.4 + D vs workflow-rules
+├── validation/validation.test.ts       golden A/B/C vs real n8n-workflow 2.9.4 + D vs workflow-rules + fixture anti-drift
+├── validation/gen-fixtures.ts          writes validation/fixtures/D*.json — language-neutral parity oracle for any port (Rust)
+├── validation/gen-reference-fixtures.mjs records validation/fixtures/ref-*.json (229) from the real n8n-workflow runtime — type-validation parity corpus
+├── validation/gen-guard-fixtures.mjs     records validation/fixtures/guard-*.json (352) — type-guards parity corpus (21 TypeErrors are real behaviour)
+├── validation/gen-schema-fixtures.mjs    records validation/fixtures/schema-cases.jsonl (1125) + schema-enums.json (5 frozen vocabularies) — schemas.ts parity corpus
 └── live/                            11-step smoke harness + baselines (see live/README.md)
 ```
 

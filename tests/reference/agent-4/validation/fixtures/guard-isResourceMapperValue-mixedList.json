@@ -1,0 +1,19 @@
+{
+  "id": "guard-isResourceMapperValue-mixedList",
+  "fn": "isResourceMapperValue",
+  "input": {
+    "value": [
+      {
+        "name": "a",
+        "value": "a"
+      },
+      {
+        "displayName": "D",
+        "name": "n",
+        "type": "string",
+        "default": ""
+      }
+    ]
+  },
+  "expected": false
+}

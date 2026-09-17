@@ -1,0 +1,15 @@
+{
+  "id": "ref-tryToParseTime-09",
+  "fn": "tryToParseTime",
+  "input": {
+    "args": [
+      "[1,2]"
+    ]
+  },
+  "expected": {
+    "throws": {
+      "name": "ApplicationError",
+      "message": "Value is not a valid time"
+    }
+  }
+}

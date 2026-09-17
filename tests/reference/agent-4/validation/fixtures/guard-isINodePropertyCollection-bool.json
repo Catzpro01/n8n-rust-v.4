@@ -1,0 +1,13 @@
+{
+  "id": "guard-isINodePropertyCollection-bool",
+  "fn": "isINodePropertyCollection",
+  "input": {
+    "value": true
+  },
+  "expected": {
+    "throws": {
+      "name": "TypeError",
+      "message": "Cannot use 'in' operator to search for 'values' in true"
+    }
+  }
+}

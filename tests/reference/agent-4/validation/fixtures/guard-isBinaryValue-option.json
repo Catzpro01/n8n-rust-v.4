@@ -1,0 +1,11 @@
+{
+  "id": "guard-isBinaryValue-option",
+  "fn": "isBinaryValue",
+  "input": {
+    "value": {
+      "name": "n",
+      "value": "v"
+    }
+  },
+  "expected": false
+}

@@ -1,0 +1,74 @@
+{
+  "description": "connection type foo → INVALID_CONNECTION_TYPE (both on the type key and the target)",
+  "expected": {
+    "errors": [
+      {
+        "code": "INVALID_CONNECTION_TYPE",
+        "message": "Unknown connection type \"foo\" on node \"A\"",
+        "node": "A",
+        "path": [
+          "connections",
+          "A",
+          "foo"
+        ]
+      },
+      {
+        "code": "INVALID_CONNECTION_TYPE",
+        "message": "Unknown connection type \"foo\" on node \"A\"",
+        "node": "A",
+        "path": [
+          "connections",
+          "A",
+          "foo",
+          "0",
+          "0",
+          "type"
+        ]
+      }
+    ],
+    "valid": false
+  },
+  "id": "D05-invalid-connection-type",
+  "input": {
+    "options": {},
+    "workflow": {
+      "connections": {
+        "A": {
+          "foo": [
+            [
+              {
+                "index": 0,
+                "node": "B",
+                "type": "foo"
+              }
+            ]
+          ]
+        }
+      },
+      "nodes": [
+        {
+          "id": "A",
+          "name": "A",
+          "parameters": {},
+          "position": [
+            0,
+            0
+          ],
+          "type": "n8n-nodes-base.noOp",
+          "typeVersion": 1
+        },
+        {
+          "id": "B",
+          "name": "B",
+          "parameters": {},
+          "position": [
+            0,
+            0
+          ],
+          "type": "n8n-nodes-base.noOp",
+          "typeVersion": 1
+        }
+      ]
+    }
+  }
+}

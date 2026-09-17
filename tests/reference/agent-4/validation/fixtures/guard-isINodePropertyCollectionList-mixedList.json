@@ -1,0 +1,19 @@
+{
+  "id": "guard-isINodePropertyCollectionList-mixedList",
+  "fn": "isINodePropertyCollectionList",
+  "input": {
+    "value": [
+      {
+        "name": "a",
+        "value": "a"
+      },
+      {
+        "displayName": "D",
+        "name": "n",
+        "type": "string",
+        "default": ""
+      }
+    ]
+  },
+  "expected": false
+}

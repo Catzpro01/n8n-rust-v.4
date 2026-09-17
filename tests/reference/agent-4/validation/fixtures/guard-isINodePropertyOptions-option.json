@@ -1,0 +1,11 @@
+{
+  "id": "guard-isINodePropertyOptions-option",
+  "fn": "isINodePropertyOptions",
+  "input": {
+    "value": {
+      "name": "n",
+      "value": "v"
+    }
+  },
+  "expected": true
+}

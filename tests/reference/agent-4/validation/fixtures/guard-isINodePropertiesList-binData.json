@@ -1,0 +1,11 @@
+{
+  "id": "guard-isINodePropertiesList-binData",
+  "fn": "isINodePropertiesList",
+  "input": {
+    "value": {
+      "mimeType": "a",
+      "data": "x"
+    }
+  },
+  "expected": false
+}

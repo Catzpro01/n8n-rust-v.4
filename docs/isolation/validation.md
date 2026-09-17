@@ -10,6 +10,9 @@
 
 ## 1. Boundary
 
+> **Package:** `packages/validation-lego/` (seam `src/validation-surface.ts`, manifest `manifest/ownership.json`). Reference sources bound 1:1; rules capability in `src/rules/`.
+
+
 | | Path | Lines | Role |
 |---|---|---|---|
 | ALLOWED (owned) | `reference/n8n/packages/workflow/src/schemas.ts` | 499 | zod runtime schemas mirroring `interfaces.ts` types |
@@ -76,22 +79,35 @@ Non-responsibilities.
 - Default error: `'<field>' expects a <type> but we got <description>`; `datetime` appends Luxon docs hint; `time`, `binary`, `options`, `string-alphanumeric`, `jwt`, `form-fields` have their own messages.
 - `options` compares `option.value === value` (strict equality, no coercion).
 
-### 3.2 `type-guards.ts` — structural guards (14 exports)
+### 3.2 `type-guards.ts` — structural guards (14 exports, 11 public)
 
 `isResourceLocatorValue`, `isINodeProperties`, `isINodePropertyOptions`, `isINodePropertyCollection`,
 `isINodePropertiesList`, `isINodePropertyOptionsList`, `isINodePropertyCollectionList`,
 `isValidResourceLocatorParameterValue`, `isResourceMapperValue`, `isAssignmentValue`,
 `isAssignmentCollectionValue`, `isFilterValue`, `isNodeConnectionType` (checks against
-`nodeConnectionTypes` const), `isBinaryValue` (`mimeType` + `data`|`id`). All are pure, total functions
-(`unknown → boolean`), no throws.
+`nodeConnectionTypes` const), `isBinaryValue` (`mimeType` + `data`|`id`).
 
-### 3.3 `schemas.ts` — zod runtime schemas (≈40 exports)
+**Correction 2026-09-17 (runtime-verified, `gen-guard-fixtures.mjs`, 352 recorded cases):** the earlier
+claim "all pure, total functions (`unknown → boolean`), no throws" was **wrong** for three of them.
+`isINodeProperties`, `isINodePropertyOptions`, `isINodePropertyCollection` are typed over the object union
+`INodePropertyOptions | INodeProperties | INodePropertyCollection` and use the bare `in` operator, so a
+primitive / `null` / `undefined` argument **throws `TypeError: Cannot use 'in' operator to search for
+'name' in null`**. The three `*List` wrappers are safe (they gate on `Array.isArray` first) and the other
+eight are `unknown → boolean` totals. A port must reproduce this: the three item-guards are *partial*
+(precondition: object), not total — or the port documents an intentional hardening.
+
+Barrel exposure (`index.ts:60-72`): 11 of the 14 are re-exported from `n8n-workflow`.
+`isValidResourceLocatorParameterValue` (consumed only by `node-helpers.ts:1346`) and `isAssignmentValue`
+(used only by `isAssignmentCollectionValue`) are **internal** to the package.
+
+### 3.3 `schemas.ts` — zod runtime schemas (45 exports)
 
 Typed `z.ZodType<T>` mirrors of `interfaces.ts`, grouped:
 - **Parameter values:** `INodeParameterResourceLocatorSchema`, `GenericValueSchema`, `IDataObjectSchema` (lazy/recursive), `ResourceMapperValueSchema`, `FilterValueSchema` (+ `FilterConditionValueSchema`, `FilterOperatorValueSchema`, `FilterOperatorTypeSchema`, `FilterOptionsValueSchema`, `FilterTypeCombinatorSchema`), `AssignmentValueSchema`, `AssignmentCollectionValueSchema`, `NodeParameterValueTypeSchema` (lazy union), **`INodeParametersSchema`** (`z.record(NodeParameterValueTypeSchema)`).
 - **Node description:** `FieldTypeSchema` (enum), `DisplayConditionSchema`, `IDisplayOptionsSchema`, `INodePropertyOptionsSchema`, `INodePropertyRoutingSchema`, `IconOrEmojiSchema`, `NumberOrStringSchema`.
 - **Declarative routing:** `IRequestOptionsSimplifiedAuthSchema`, `IN8nRequestOperations*Schema`, `IPostReceive*Schema` (8 variants) + `PostReceiveActionSchema`, `INodeRequestOutputSchema`, `HttpRequestOptionsSchema`, `INodeRequestSendSchema`.
 - **Graph:** **`NodeConnectionTypeSchema`** (enum of all `NodeConnectionType`s — `main`, `ai_*`, …).
+- **Node document (added 2026-09-17, inventory gap):** **`INodeSchema`** (`z.ZodType<INode>`, schemas.ts:470) — the runtime shape of a workflow node: required `id`, `name`, `type`, `typeVersion: number`, `position: [number, number]`, `parameters: INodeParametersSchema`; optional `disabled`, `notes`, `notesInFlow`, `retryOnFail`, `maxTries`, `waitBetweenTries`, `alwaysOutputData`, `executeOnce`, `onError: OnErrorSchema`, `continueOnFail`, `webhookId`, `extendsCredential`, `rewireOutputLogTo: NodeConnectionTypeSchema`, `credentials: INodeCredentialsSchema`, `forceCustomOperation {resource, operation}`. **`INodesSchema`** = `z.array(INodeSchema)`. Supporting: **`OnErrorSchema`** (`continueErrorOutput | continueRegularOutput | stopWorkflow`), **`INodeCredentialsDetailsSchema`** (`{id: string|null, name}`), **`INodeCredentialsSchema`** (`record<string, details>`), `ResourceMapperFieldSchema`. In 2.9.4 the only consumer outside `workflow` is `@n8n/api-types/src/chat-hub.ts`; the REST workflow save path does **not** parse nodes with `INodeSchema` (it uses DTO classes) — so this schema is a *parity anchor* for ports (`crates/n8n-node-model::INode` must accept exactly these fields), not a save-time gate.
 
 Static ↔ runtime parity is guaranteed by the `z.ZodType<T>` annotations: TypeScript fails to compile if
 a schema drifts from its interface (responsibility 3 of this LEGO is thus already enforced by `tsc`).

@@ -1,0 +1,11 @@
+{
+  "id": "guard-isNodeConnectionType-option",
+  "fn": "isNodeConnectionType",
+  "input": {
+    "value": {
+      "name": "n",
+      "value": "v"
+    }
+  },
+  "expected": false
+}

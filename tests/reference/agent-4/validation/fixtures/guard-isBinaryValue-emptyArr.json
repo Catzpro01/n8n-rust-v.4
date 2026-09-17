@@ -1,0 +1,8 @@
+{
+  "id": "guard-isBinaryValue-emptyArr",
+  "fn": "isBinaryValue",
+  "input": {
+    "value": []
+  },
+  "expected": false
+}

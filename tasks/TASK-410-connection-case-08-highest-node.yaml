@@ -1,0 +1,34 @@
+task_id: TASK-410
+title: Connection case 08 adoption + getHighestNode shared-checkedNodes fidelity fix
+worker: agent-1
+branch: arena/01a0ace4-n8n-rust-v-4
+status: SUCCESS
+allow_execution: true
+allowed_paths:
+  - results/TASK-410-connection-case-08-highest-node.md
+  - tasks/TASK-410-connection-case-08-highest-node.yaml
+  - tests/reference/connection/08-traversal-depth-and-type-filter/
+  - crates/n8n-workflow/src/lib.rs
+  - crates/n8n-workflow/tests/connection_probe_fixtures.rs
+forbidden_paths:
+  - reference/n8n/
+  - crates/n8n-validation/**
+  - crates/n8n-connection/**
+  - crates/n8n-core/**
+  - tools/rust-offline-rig/**
+deliverables:
+  - id: connection-08
+    path: tests/reference/connection/08-traversal-depth-and-type-filter/
+    note: adopted from worker-05 ac05 @ 4eec6791 (fixture owner, blob-identical)
+  - id: highest-node-fix
+    path: crates/n8n-workflow/src/lib.rs
+    note: get_highest_node_inner — shared mutating checkedNodes per workflow.ts:514-545
+  - id: runner-extension
+    path: crates/n8n-workflow/tests/connection_probe_fixtures.rs
+    note: CASES 8, PROBE_TOTAL 88; failure-first preserved
+evidence:
+  connection_probes: 88/88 byte-exact (oracle [Trigger,C] case now reproduced)
+  cargo: 57 passed / 0 failed
+  offline_gate: PASS (live NOT RUN -> INCONCLUSIVE)
+  integrity: 24/24 PASS
+  manifest_check: PASS (15050 files, root f8da35180669)

@@ -1,0 +1,11 @@
+{
+  "id": "guard-isResourceLocatorValue-binData",
+  "fn": "isResourceLocatorValue",
+  "input": {
+    "value": {
+      "mimeType": "a",
+      "data": "x"
+    }
+  },
+  "expected": false
+}

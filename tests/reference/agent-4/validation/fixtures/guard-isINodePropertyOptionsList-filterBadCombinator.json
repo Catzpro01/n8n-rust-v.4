@@ -1,0 +1,12 @@
+{
+  "id": "guard-isINodePropertyOptionsList-filterBadCombinator",
+  "fn": "isINodePropertyOptionsList",
+  "input": {
+    "value": {
+      "conditions": [],
+      "combinator": "xor",
+      "options": {}
+    }
+  },
+  "expected": false
+}

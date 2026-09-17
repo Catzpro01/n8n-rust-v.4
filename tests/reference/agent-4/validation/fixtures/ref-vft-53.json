@@ -1,0 +1,15 @@
+{
+  "id": "ref-vft-53",
+  "fn": "validateFieldType",
+  "input": {
+    "args": [
+      "f",
+      "1,2",
+      "array"
+    ]
+  },
+  "expected": {
+    "valid": false,
+    "errorMessage": "'f' expects a array but we got '1,2'"
+  }
+}

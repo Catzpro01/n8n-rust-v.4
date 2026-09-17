@@ -1,0 +1,39 @@
+task_id: TASK-411
+title: ISSUE-028 closure (two-sided) + differential stage 2k adoption
+worker: agent-1
+branch: arena/01a0ace4-n8n-rust-v-4
+status: SUCCESS
+allow_execution: true
+allowed_paths:
+  - results/TASK-411-issue-028-closure-differential.md
+  - tasks/TASK-411-issue-028-closure-differential.yaml
+  - tests/differential/
+  - tests/integration/run_gate.sh
+  - crates/n8n-workflow/tests/cycle_traversal.rs
+  - docs/isolation/CROSS-AGENT-ISSUES.md
+forbidden_paths:
+  - reference/n8n/
+  - crates/n8n-validation/**
+  - crates/n8n-connection/**
+  - crates/n8n-workflow/src/**
+  - tools/rust-offline-rig/**
+deliverables:
+  - id: differential-harness
+    path: tests/differential/
+    note: adopted verbatim from agent-5 ac12 @ 888c9228 (owner) — cases.json, engine_side.mjs, port_side.rs, run.sh
+  - id: gate-stage-2k
+    path: tests/integration/run_gate.sh
+    note: STAGE 2k wired with honest SKIPPED (not a PASS) semantics
+  - id: cycle-regression
+    path: crates/n8n-workflow/tests/cycle_traversal.rs
+    note: pins engine answers getStartNode('B')->"A", getHighestNode('B')->["A"]
+  - id: issue-028-closure
+    path: docs/isolation/CROSS-AGENT-ISSUES.md
+    note: entry added (verbatim from ac12) + closure block with two-sided evidence
+evidence:
+  differential: 14/14 identical, 0 divergences (engine n8n-workflow@2.9.1 vs port @ f8fcafd9)
+  cargo: 59 passed / 0 failed
+  offline_gate: PASS incl. STAGE 2k (live NOT RUN -> INCONCLUSIVE)
+  integrity: 24/24 PASS
+  manifest_check: PASS (15050 files, root f8da35180669)
+id_clash_note: TASK-410 also used by worker-05 (TASK-410-connection-driver-parity, ac05 @ df6dc76d); this increment uses TASK-411

@@ -1,0 +1,15 @@
+{
+  "id": "ref-tryToParseBoolean-17",
+  "fn": "tryToParseBoolean",
+  "input": {
+    "args": [
+      "eyJhbGciOiJIUzI1NiJ9.eyJhIjoxfQ.sig"
+    ]
+  },
+  "expected": {
+    "throws": {
+      "name": "ApplicationError",
+      "message": "Failed to parse value as boolean"
+    }
+  }
+}

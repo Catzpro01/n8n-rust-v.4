@@ -1,0 +1,15 @@
+{
+  "id": "ref-vft-28",
+  "fn": "validateFieldType",
+  "input": {
+    "args": [
+      "f",
+      "not a date",
+      "dateTime"
+    ]
+  },
+  "expected": {
+    "valid": false,
+    "errorMessage": "'f' expects a dateTime but we got 'not a date' <br/><br/> Consider using <a href=\"https://moment.github.io/luxon/api-docs/index.html#datetimefromformat\" target=\"_blank\"><code>DateTime.fromFormat</code></a> to work with custom date formats."
+  }
+}

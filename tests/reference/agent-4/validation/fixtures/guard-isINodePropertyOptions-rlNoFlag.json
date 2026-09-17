@@ -1,0 +1,11 @@
+{
+  "id": "guard-isINodePropertyOptions-rlNoFlag",
+  "fn": "isINodePropertyOptions",
+  "input": {
+    "value": {
+      "mode": "id",
+      "value": "1"
+    }
+  },
+  "expected": false
+}

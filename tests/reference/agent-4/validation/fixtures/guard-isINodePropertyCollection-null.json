@@ -1,0 +1,13 @@
+{
+  "id": "guard-isINodePropertyCollection-null",
+  "fn": "isINodePropertyCollection",
+  "input": {
+    "value": null
+  },
+  "expected": {
+    "throws": {
+      "name": "TypeError",
+      "message": "Cannot use 'in' operator to search for 'values' in null"
+    }
+  }
+}

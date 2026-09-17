@@ -1,0 +1,11 @@
+{
+  "id": "guard-isBinaryValue-filterNoOptions",
+  "fn": "isBinaryValue",
+  "input": {
+    "value": {
+      "conditions": [],
+      "combinator": "and"
+    }
+  },
+  "expected": false
+}

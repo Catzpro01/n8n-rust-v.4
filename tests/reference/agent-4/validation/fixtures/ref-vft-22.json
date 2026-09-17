@@ -1,0 +1,20 @@
+{
+  "id": "ref-vft-22",
+  "fn": "validateFieldType",
+  "input": {
+    "args": [
+      "f",
+      {
+        "a": 1
+      },
+      "string",
+      {
+        "parseStrings": true
+      }
+    ]
+  },
+  "expected": {
+    "valid": true,
+    "newValue": "{\"a\":1}"
+  }
+}

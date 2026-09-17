@@ -1,0 +1,10 @@
+{
+  "id": "ref-tryToParseString-17",
+  "fn": "tryToParseString",
+  "input": {
+    "args": [
+      "eyJhbGciOiJIUzI1NiJ9.eyJhIjoxfQ.sig"
+    ]
+  },
+  "expected": "eyJhbGciOiJIUzI1NiJ9.eyJhIjoxfQ.sig"
+}

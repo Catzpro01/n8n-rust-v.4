@@ -1,0 +1,13 @@
+{
+  "id": "guard-isINodeProperties-strBogus",
+  "fn": "isINodeProperties",
+  "input": {
+    "value": "nope"
+  },
+  "expected": {
+    "throws": {
+      "name": "TypeError",
+      "message": "Cannot use 'in' operator to search for 'name' in nope"
+    }
+  }
+}

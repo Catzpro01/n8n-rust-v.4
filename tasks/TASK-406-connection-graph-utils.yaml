@@ -1,0 +1,47 @@
+id: TASK-406-connection-graph-utils
+agent: agent-1
+lego: connection
+module: connection
+phase: 3
+
+# Port graph-utils.ts (Connection LEGO) so the 12 remaining tracked skips in the
+# connection probe runner become executable checks. Role attached to task per
+# STANDING-WORKER-PROTOCOL (buruh setara, peran sesaat).
+
+allowed_paths:
+  - crates/n8n-connection/src/graph_utils.rs
+  - crates/n8n-connection/src/lib.rs   # `pub mod graph_utils;` line only
+  - crates/n8n-workflow/tests/connection_probe_fixtures.rs
+  - tasks/TASK-406-connection-graph-utils.yaml
+  - results/TASK-406-connection-graph-utils.md
+  - results/REVIEW-2026-09-17-agent-1.md
+
+forbidden_paths:
+  - reference/n8n/**
+  - contracts/**
+  - crates/n8n-workflow/src/**
+  - crates/n8n-validation/**
+
+requires:
+  - tests/reference/connection/01-linear
+  - tests/reference/connection/02-multi-output
+  - tests/reference/connection/03-connection-types
+  - tests/reference/connection/04-cycle
+  - docs/isolation/connection.md
+
+operations:
+  - name: verify_oracle
+    args:
+      source: reference/n8n/packages/workflow/src/graph/graph-utils.ts
+      functions: "getInputEdges, getOutputEdges, getRootNodes, getLeafNodes, hasPath, buildAdjacencyList, parseExtractableSubgraphSelection"
+  - name: port_graph_utils
+    args:
+      module: crates/n8n-connection/src/graph_utils.rs
+      fidelity_notes:
+        - "adjacency list = IndexMap<String, Vec<ConnectionItem>>, insertion order + exact-triple dedupe (JS Map<string, Set<IConnection>>)"
+        - "getRootNodes counts ALL main non-self targets (targets outside the graph still disqualify)"
+        - "hasPath: main-only stack walk, pop -> end-check -> mark seen -> push unseen"
+        - "parseExtractable tolerates loop-back into the single input; error order input -> output -> path; wire names errorCode/node/nodes/start/end"
+  - name: wire_probe_runner
+    args:
+      detail: "6 ops executed instead of tracked-skip; probe count asserted 46/46, unknown op fails loudly"

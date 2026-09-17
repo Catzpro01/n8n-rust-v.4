@@ -1,0 +1,8 @@
+{
+  "id": "guard-isNodeConnectionType-emptyArr",
+  "fn": "isNodeConnectionType",
+  "input": {
+    "value": []
+  },
+  "expected": false
+}

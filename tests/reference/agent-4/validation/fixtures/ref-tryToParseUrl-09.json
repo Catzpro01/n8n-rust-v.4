@@ -1,0 +1,15 @@
+{
+  "id": "ref-tryToParseUrl-09",
+  "fn": "tryToParseUrl",
+  "input": {
+    "args": [
+      "[1,2]"
+    ]
+  },
+  "expected": {
+    "throws": {
+      "name": "ApplicationError",
+      "message": "The value \"https://[1,2]\" is not a valid url."
+    }
+  }
+}

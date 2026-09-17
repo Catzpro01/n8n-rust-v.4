@@ -1,0 +1,15 @@
+{
+  "id": "ref-vft-45",
+  "fn": "validateFieldType",
+  "input": {
+    "args": [
+      "f",
+      "eyJhbGciOiJIUzI1NiJ9.eyJhIjoxfQ.sig",
+      "jwt"
+    ]
+  },
+  "expected": {
+    "valid": true,
+    "newValue": "eyJhbGciOiJIUzI1NiJ9.eyJhIjoxfQ.sig"
+  }
+}

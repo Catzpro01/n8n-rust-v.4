@@ -1,0 +1,11 @@
+{
+  "id": "guard-isNodeConnectionType-mapperNoSchema",
+  "fn": "isNodeConnectionType",
+  "input": {
+    "value": {
+      "mappingMode": "defineBelow",
+      "value": {}
+    }
+  },
+  "expected": false
+}

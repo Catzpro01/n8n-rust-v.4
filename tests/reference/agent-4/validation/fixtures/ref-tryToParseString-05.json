@@ -1,0 +1,12 @@
+{
+  "id": "ref-tryToParseString-05",
+  "fn": "tryToParseString",
+  "input": {
+    "args": [
+      {
+        "$undefined": true
+      }
+    ]
+  },
+  "expected": ""
+}

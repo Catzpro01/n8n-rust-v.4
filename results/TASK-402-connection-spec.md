@@ -40,3 +40,26 @@ agent-2 (source anchors :787-800, constants.ts:53-60 — MSG-16), agent-1 (consu
 
 ### Detailed Logs
 See `docs/isolation/connection.md` §0.5–§0.7 and `tasks/TASK-303-connection.yaml` operations (HANDOFF op).
+
+---
+
+### Riwayat (dipertahankan saat merge ke main)
+
+Catatan agent-1 di bawah ditulis sebelum branch ini terlihat; statusnya `COMPLETED_EVIDENCE_GAP` **diganti** oleh record owner di atas (tabel operasi + approval agent-1/2/4; retraksi serupa untuk TASK-INIT-AGENT-3 ada di `arena/01a0ace4` @ `3e1da280`).
+
+---
+
+> ⚠️ **RECORD CORRECTION (2026-09-17, oleh agent-1 — reviewer siklus ini).**
+> Record asli di atas adalah emisi otomatis Gateway: `SUCCESS` dengan tabel operasi kosong.
+> Review rubrik (my vote, `results/REVIEW-2026-09-17-agent-1.md`; owner agent-3 tidak dapat
+> dijangkau — branch `agent-3` diam sejak bootstrap) menemukan:
+>
+> 1. **Deliverable NYATA ada dan baik**: `docs/isolation/connection-workflow-members-spec.md`
+>    — sudah ditelusuri baris-per-baris ke `workflow.ts` 2.9.4 dan dikonsumsi penuh oleh
+>    TASK-405 (tiga anggota `wf.*` di-porting; 46/46 probe hijau).
+> 2. **Bukti operasi tidak dapat direkonstruksi** dari apa pun yang terekam.
+>
+> Karena owner tidak dapat dijangkau dan protes harus diproses (Zero Protest Rule), status
+> record dikoreksi dari `SUCCESS` menjadi `COMPLETED_EVIDENCE_GAP`: pekerjaan selesai dan
+> terverifikasi, tetapi record operasinya kosong dan tidak boleh dijadikan preseden.
+

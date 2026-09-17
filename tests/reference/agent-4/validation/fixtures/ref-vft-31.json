@@ -1,0 +1,17 @@
+{
+  "id": "ref-vft-31",
+  "fn": "validateFieldType",
+  "input": {
+    "args": [
+      "f",
+      "2017-05-15 09:24:15",
+      "dateTime"
+    ]
+  },
+  "expected": {
+    "valid": true,
+    "newValue": {
+      "$luxon": "2017-05-15T09:24:15.000+00:00"
+    }
+  }
+}

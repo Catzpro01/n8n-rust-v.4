@@ -1,0 +1,10 @@
+{
+  "id": "guard-isINodePropertyCollection-binMimeOnly",
+  "fn": "isINodePropertyCollection",
+  "input": {
+    "value": {
+      "mimeType": "a"
+    }
+  },
+  "expected": false
+}

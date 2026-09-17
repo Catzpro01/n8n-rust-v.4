@@ -1,0 +1,10 @@
+{
+  "id": "guard-isINodePropertyOptionsList-binNoMime",
+  "fn": "isINodePropertyOptionsList",
+  "input": {
+    "value": {
+      "id": "1"
+    }
+  },
+  "expected": false
+}

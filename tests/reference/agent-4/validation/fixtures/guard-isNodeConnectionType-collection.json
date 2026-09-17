@@ -1,0 +1,12 @@
+{
+  "id": "guard-isNodeConnectionType-collection",
+  "fn": "isNodeConnectionType",
+  "input": {
+    "value": {
+      "displayName": "D",
+      "name": "n",
+      "values": []
+    }
+  },
+  "expected": false
+}
