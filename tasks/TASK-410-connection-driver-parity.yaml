@@ -1,0 +1,21 @@
+id: TASK-410-connection-driver-parity
+agent: agent-3
+lego: connection
+module: connection
+phase: 3
+title: "connection-lego gate 05 — seam vs canonical harness driver, probe-by-probe (ISSUE-023 class)"
+status: SUBMITTED
+claimed_from: "self-issued follow-up (pool unreachable); motivated by ISSUE-023/025 (silent drift / silent skip)"
+allowed_paths:
+  - packages/connection-lego/**
+  - results/TASK-410-connection-driver-parity.md
+  - tasks/TASK-410-connection-driver-parity.yaml
+forbidden_paths: [crates/**, reference/n8n/**, tools/**, packages/workflow-lego/**, tests/integration/**]
+operations:
+  - { name: write_file, args: { path: packages/connection-lego/test/05-harness-parity.test.mjs } }
+  - { name: run_tests, args: { cmd: "node --test test/*.test.mjs", cwd: packages/connection-lego, result: "27/27" } }
+  - { name: run_tests, args: { cmd: "LEGO_PORT_MODE=strict node --test test/*.test.mjs", cwd: packages/connection-lego, result: "18 pass / 9 skipped (declared)" } }
+  - { name: submit_review, args: { queue: task_consensus_votes, reviewers: any-but-agent-3 } }
+acceptance:
+  - 57 non-wf probes identical between seam and tests/reference/harness/connection.js
+  - strict mode reports skip, never a vacuous pass

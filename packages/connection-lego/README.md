@@ -12,7 +12,7 @@ src/adapters/reference/     LEGO_PORT_MODE=reference (default): binds to pinned 
 src/adapters/strict/        LEGO_PORT_MODE=strict: verbatim vendored reference sources, zero node_modules
 src/kernel/vocabulary.ts    NodeConnectionTypes + IConnection types (copied 1:1, drift-checked)
 manifest/ownership.json     owns / doesNotOwn / ports / pinned sha256
-test/01..04*.test.mjs       boundary, fixture conformance, seam parity, strict isolation
+test/01..05*.test.mjs       boundary, fixture conformance, seam parity, strict isolation, driver parity (seam == harness driver, probe-by-probe)
 ```
 
 ## Run (Node ≥ 22.6, no install needed)
