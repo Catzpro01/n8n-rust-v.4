@@ -4,3 +4,13 @@ export { ALLOWED_METHODS, LiveWebhookManager, WebhookRequestHandler } from './we
 export { InMemoryWebhookRepository, WebhookEntity, WebhookService } from './webhook-service.mjs';
 export { WebhookHttpServer } from './http-server.mjs';
 export { WaitingWebhookManager, generateWaitingWebhookSignature, validateWaitingWebhookSignature } from './waiting-webhooks.mjs';
+export {
+  FORM_NODE_TYPE,
+  WAIT_NODE_TYPE,
+  WAITING_FORMS_EXECUTION_STATUS,
+  WEBHOOK_SANDBOX_CSP,
+  WaitingFormManager,
+  findCompletionPage,
+  renderDefaultFormCompletion,
+  sanitizeWaitingFormRequest,
+} from './waiting-forms.mjs';

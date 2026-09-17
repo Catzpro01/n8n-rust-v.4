@@ -119,3 +119,17 @@ resume-execution callback. It reproduces missing/running/failed/finished guards,
 HMAC validation, wait-node disabling, `waitTill` clearing, prior run-data removal, HITL `ai_tool`
 rewiring, `inputOverride` preservation, request-parameter reset, and a local concurrent-resume guard.
 Persistence and engine continuation remain owned by their injected ports.
+
+## Phase-3 waiting form rendering (TASK-424)
+
+`WaitingFormManager` consumes execution persistence, parent traversal, and form-webhook execution as
+explicit ports. `/form-waiting/:executionId/n8n-execution-status` returns the raw execution status,
+classifying waiting Form nodes and Wait nodes with `resume:'form'` as `form-waiting`, with wildcard
+CORS. Auth and browser-identity cookies are stripped before any delegated node execution.
+
+Finished executions render the default `Form Submitted` completion HTML under the exact webhook
+sandbox CSP unless the current node, or nearest already-executed parent in reverse traversal order,
+is an enabled Form completion node. Such completion nodes are delegated through the execution port.
+POST disables the current stack node before delegation; GET does not. Running executions produce no
+response body, missing/failed executions preserve 404/409 behavior, and the native HTTP adapter must
+serve HTML/status text without replacing `noWebhookResponse` with the default webhook JSON body.
