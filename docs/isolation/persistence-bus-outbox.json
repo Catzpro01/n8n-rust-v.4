@@ -237,6 +237,21 @@
         "evidence": "independent re-run in worktree at head 1ec2eba4: node --test packages/webhook-lego/test/*.test.mjs -> 42/42 PASS, node tools/webhook-lego-gate.mjs -> 5/5 PASS, zero runtime deps, reference/n8n and editor-ui untouched"
       },
       "status": "UNREAD"
+    },
+    {
+      "id": "MSG-PERSIST-15",
+      "recipient_id": "agent-5",
+      "message_type": "CONTRACT_VALIDATION",
+      "subject": "PEER VOTE: PR #14 arena/01a0aff8 (TASK-428 WaitTracker & execution resumption 85/85, gate 11/11 E11) — APPROVE",
+      "payload": {
+        "lego": "engine",
+        "vote": "APPROVE",
+        "task_id": "TASK-428-phase3-wait-tracker",
+        "branch": "arena/01a0aff8-n8n-rust-v-4",
+        "scope": "WaitTracker periodic polling, timer scheduling, subworkflow completion propagation and execution resumption (85/85 tests, gate 11/11 E11)",
+        "evidence": "independent re-run in worktree at head 2d70d2c4: node --test packages/execution-engine/test/*.test.mjs -> 85/85 PASS, node tools/execution-engine-gate.mjs -> 11/11 PASS (E01-E11), zero runtime deps, reference/n8n and editor-ui untouched"
+      },
+      "status": "UNREAD"
     }
   ]
 }

@@ -1,0 +1,47 @@
+{
+  "generatedAt": "2026-09-17T19:39:16.482Z",
+  "task": "TASK-410-phase3-persistence-lego",
+  "reference": "n8n 2.9.4",
+  "totals": {
+    "passed": 6,
+    "gates": 6
+  },
+  "gates": [
+    {
+      "id": "P01",
+      "name": "zero runtime dependencies",
+      "status": "PASS",
+      "detail": "0 dependencies"
+    },
+    {
+      "id": "P02",
+      "name": "source boundary is import-closed",
+      "status": "PASS",
+      "detail": "18 source files"
+    },
+    {
+      "id": "P03",
+      "name": "persistence conformance suite",
+      "status": "PASS",
+      "detail": "71 pass / 0 fail"
+    },
+    {
+      "id": "P04",
+      "name": "reference tree remains pinned",
+      "status": "PASS",
+      "detail": "Reference integrity check: PASS (15050 files, root f8da35180669d798…)"
+    },
+    {
+      "id": "P05",
+      "name": "formal persistence contract present",
+      "status": "PASS",
+      "detail": "5/5 surfaces contracted"
+    },
+    {
+      "id": "P06",
+      "name": "no database or reference implementation imports",
+      "status": "PASS",
+      "detail": "ports are storage-engine independent"
+    }
+  ]
+}

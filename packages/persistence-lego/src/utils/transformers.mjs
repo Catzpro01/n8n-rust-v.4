@@ -1,5 +1,5 @@
 /**
- * 1:1 port of reference/n8n/packages/@n8n/db/src/utils/transformers.ts
+ * 1:1 port of n8n db package: utils/transformers.ts
  * (full file, zero omissions).
  *
  * Deviations (boundary-only, behavior-preserving):

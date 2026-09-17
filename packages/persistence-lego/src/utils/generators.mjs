@@ -1,8 +1,8 @@
 /**
  * 1:1 port of:
- *   - reference/n8n/packages/@n8n/db/src/utils/generators.ts      (generateHostInstanceId)
- *   - reference/n8n/packages/@n8n/utils/src/workflowId.ts         (generateNanoId)
- *   - reference/n8n/packages/@n8n/constants/src/index.ts L130     (NANOID_ALPHABET pin)
+ *   - n8n db package: utils/generators.ts      (generateHostInstanceId)
+ *   - n8n utils package: src/workflowId.ts     (generateNanoId)
+ *   - n8n constants package: src/index.ts L130 (NANOID_ALPHABET pin)
  *
  * `customAlphabet` is the REAL nanoid@3.3.8 implementation (pnpm catalog pin of
  * n8n@2.9.4) consumed read-only — the RNG wiring is owned by that pinned package,
@@ -34,8 +34,8 @@ import { customAlphabet } from '../consumed.mjs';
 export const generateNanoId = customAlphabet(NANOID_ALPHABET, 16);
 
 /**
- * 1:1 port of @n8n/db utils/generators.ts.
- * instanceType comes from @n8n/constants (e.g. 'main' | 'webhook' | 'worker').
+ * 1:1 port of n8n db utils/generators.ts.
+ * instanceType comes from constants (e.g. 'main' | 'webhook' | 'worker').
  */
 export function generateHostInstanceId(instanceType) {
 	return `${instanceType}-${generateNanoId()}`;

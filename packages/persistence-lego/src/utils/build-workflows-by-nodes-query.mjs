@@ -1,5 +1,5 @@
 /**
- * 1:1 port of reference/n8n/packages/@n8n/db/src/utils/build-workflows-by-nodes-query.ts
+ * 1:1 port of n8n db package: utils/build-workflows-by-nodes-query.ts
  * (full file). The SQL template literals below are byte-identical to the reference,
  * including the tab indentation inside the postgresdb clause — byte parity is
  * machine-pinned in test/05-queries.test.mjs (sha256 of both whereClause strings).

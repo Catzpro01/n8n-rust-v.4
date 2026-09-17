@@ -1,7 +1,7 @@
 /**
- * 1:1 port of the VALUE layer of reference/n8n/packages/@n8n/db/src/entities/abstract-entity.ts
+ * 1:1 port of the VALUE layer of n8n db package: entities/abstract-entity.ts
  *
- * Scope note: the @n8n/typeorm decorators (`Column`, `BeforeInsert`, `CreateDateColumn`,
+ * Scope note: the ORM decorators (`Column`, `BeforeInsert`, `CreateDateColumn`,
  * `UpdateDateColumn`, `PrimaryColumn`) attach metadata consumed by the ORM driver —
  * out of scope for this DB-free increment (contract §12.2). What IS wire-visible and
  * therefore ported faithfully here:

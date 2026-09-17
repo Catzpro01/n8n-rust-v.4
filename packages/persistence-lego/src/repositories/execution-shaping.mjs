@@ -1,14 +1,14 @@
 /**
  * 1:1 port of the pure response-shaping layer of
- *   reference/n8n/packages/@n8n/db/src/repositories/execution.repository.ts
+ *   n8n db package: repositories/execution.repository.ts
  *   (L149 constant, L191-226 findMultipleExecutions, L230-237 reportInvalidExecutions,
  *    L239-247 serializeAnnotation, L269-344 findSingleExecution,
  *    L350-362 markAsCrashed, L388-406 updateExistingExecution payload split,
  *    L1125-1140 handleExecutionRunData)
  * and of the insert planning inside
- *   reference/n8n/packages/cli/src/executions/execution-persistence.ts#create (L33-65).
+ *   n8n cli package: executions/execution-persistence.ts#create (L33-65).
  *
- * Excluded (contract §12.2): TypeORM find/query/update calls themselves. The ORM
+ * Excluded (contract §12.2): Type-ORM find/query/update calls themselves. The ORM
  * boundary is represented by plain data in/out — every function below is exactly
  * the transformation the reference applies around those calls.
  *

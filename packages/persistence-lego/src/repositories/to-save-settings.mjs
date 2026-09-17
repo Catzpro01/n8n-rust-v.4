@@ -1,5 +1,5 @@
 /**
- * 1:1 port of reference/n8n/packages/cli/src/execution-lifecycle/to-save-settings.ts
+ * 1:1 port of n8n cli package: execution-lifecycle/to-save-settings.ts
  * (full file).
  *
  * Deviation D-PERSIST-05: the four `Container.get(GlobalConfig).executions.save*`

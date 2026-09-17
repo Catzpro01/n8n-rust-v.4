@@ -1,5 +1,5 @@
 /**
- * 1:1 port of reference/n8n/packages/@n8n/db/src/utils/get-final-test-result.ts
+ * 1:1 port of n8n db package: utils/get-final-test-result.ts
  *
  * Returns the final result of the test run based on the test case executions.
  * The final result is the most severe status among all test case executions' statuses.

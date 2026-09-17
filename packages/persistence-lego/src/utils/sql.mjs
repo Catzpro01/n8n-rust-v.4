@@ -1,5 +1,5 @@
 /**
- * 1:1 port of reference/n8n/packages/@n8n/db/src/utils/sql.ts
+ * 1:1 port of n8n db package: utils/sql.ts
  *
  * Provides syntax highlighting for embedded SQL queries in template strings.
  */

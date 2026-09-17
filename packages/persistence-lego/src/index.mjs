@@ -1,7 +1,7 @@
 /**
- * @n8n-rust/persistence-lego — POOL-004 pure-core surface.
+ * @n8n-rust/persistence-lego — POOL-004 pure-core + Phase-3 storage ports.
  * Mirrors the exported surface of the reference units (see contract §12.1).
- * The DI/TypeORM-facing parts of @n8n/db remain reference-owned (contract §12.2).
+ * In-memory repositories provide storage-engine independent ports.
  */
 
 // config + reporter ports (P-PERSIST-CONFIG / P-PERSIST-REPORTER)
@@ -77,3 +77,9 @@ export { toSaveSettings } from './repositories/to-save-settings.mjs';
 
 // errors twin
 export { UnexpectedError } from './errors.mjs';
+
+// in-memory storage ports & wire format (TASK-410 / TASK-428)
+export { CorruptedExecutionDataError, parse, parseExecutionData, stringify } from './flatted.mjs';
+export { EXECUTION_STATUSES, ExecutionPersistence, ExecutionRepository } from './execution-repository.mjs';
+export { SettingsRepository, WorkflowStaticDataService, determineFinalExecutionStatus } from './services.mjs';
+export { WorkflowConflictError, WorkflowRepository } from './workflow-repository.mjs';

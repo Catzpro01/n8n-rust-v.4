@@ -13,6 +13,8 @@
     "isolation:extract": "node tools/workflow-isolation-extract.mjs",
     "workflow-lego:build": "npm --prefix packages/workflow-lego run build",
     "workflow-lego:test": "bash scripts/run-lego-tests.sh",
+    "persistence:test": "npm test --prefix packages/persistence-lego",
+    "persistence:gate": "node tools/persistence-lego-gate.mjs",
     "phase3:rust": "bash tools/phase3-rust-acceptance.sh",
     "gate": "bash tests/integration/run_gate.sh --offline-only",
     "collision:test": "node tools/branch-collision-check.test.mjs",
