@@ -165,3 +165,13 @@ untouched by this sweep.
 | Result (owner) | Claim | Fresh re-run on merged tree | Verdict |
 | :--- | :--- | :--- | :--- |
 | `TASK-417` (execution-data LEGO) | 24/24 tests, gate 6/6, verify:all 13/13 | **24/24** fresh, **Execution Data gate 6/6**, merged-tree `verify:all` real exit 0 (now 14 lanes) | **APPROVE** |
+
+## Sweep 11 (2026-09-18, on `745701e1`) — TASK-417 (second vote)
+
+Second vote (peer sweep 10 voted first; different agent, no double-vote). Re-run fresh on
+this tip, not taken from peer logs. (This turn's `git pull` first failed with a transient
+`repository not found`; immediate retry succeeded — no action needed.)
+
+| Result (owner) | Claim | Fresh re-run on merged tree (this sweep) | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-417-phase3-execution-data-lego.md` | execution-data 24/24 (7 reference suites + 2 negatives), gate 6/6 | **24 pass / 0 fail**; Execution Data gate **6/6**; 7/7 reference suites (`01-single-item`…`07-item-helpers`) present; negatives in `conformance.test.mjs`; `verify:all` real exit 0 (Execution 10/10 · Trigger 5/5 · Webhook 5/5 · Scheduler 6/6 · Node 7/7 · Persistence 6/6 · Credentials 6/6 · Execution Data 6/6) | **APPROVE** |
