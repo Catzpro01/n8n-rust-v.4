@@ -29,14 +29,26 @@ DOCUMENT, per the project regression rule.
 One file `crates/n8n-node-model/tests/reference_fixtures.rs` with:
 
 ```rust
-const ACCESS_CASES: usize = 3;       // applyAccessPatterns
-const CONNECTION_CASES: usize = 1;   // getConnectionTypes
-const RENAME_CASES: usize = 1;       // renameFormFields
-const OUTPUT_CASES: usize = 4;       // getNodeOutputs
-const INPUT_CASES: usize = 2;        // getNodeInputs
-const PARAM_CASES: usize = 3;        // getNodeParameters
-const VERSIONED_CASES: usize = 5;    // versionedNodeType ops
+// Frozen ports (GC-1..GC-7)
+const ACCESS_CASES: usize = 3;          // applyAccessPatterns
+const CONNECTION_CASES: usize = 1;      // getConnectionTypes
+const RENAME_CASES: usize = 1;          // renameFormFields
+const OUTPUT_CASES: usize = 4;          // getNodeOutputs
+const INPUT_CASES: usize = 2;           // getNodeInputs
+const PARAM_CASES: usize = 3;           // getNodeParameters
+const VERSIONED_CASES: usize = 5;       // versionedNodeType ops
+// Wave 2 pure helpers (WG-1..WG-9)
+const RESOLVE_PATH_CASES: usize = 4;    // resolveRelativePath
+const BANNED_CHAR_CASES: usize = 7;     // hasDotNotationBannedChar
+const MERGE_CASES: usize = 3;           // mergeNodeProperties
+const MAKE_NAME_CASES: usize = 5;       // makeNodeName
+const MAKE_DESC_CASES: usize = 3;       // makeDescription
+const DEFAULT_NAME_CASES: usize = 4;    // isDefaultNodeName
+const TRIGGER_CASES: usize = 3;         // isTriggerNode
+const DISPLAY_CASES: usize = 6;         // displayParameter
+const ASSERT_CASES: usize = 3;          // assertParamIsString/Number
 // + serdeConformance round-trips: 5 descriptions, 2 INode samples
+// TOTAL asserted entries = 19 + 38 + 7 = 64
 ```
 
 - Fixture load via `env!("CARGO_MANIFEST_DIR")/./../../` (same `repo_root()` convention as
@@ -61,6 +73,15 @@ const VERSIONED_CASES: usize = 5;    // versionedNodeType ops
 | `getNodeInputs.cases` | `pub fn get_node_inputs(...)` | same seam; dynamic-throw case ⇒ `[]` + warned |
 | `getNodeParameters.cases` | `pub fn get_node_parameters(props, values, return_defaults, return_none_displayed, node_type_version: Option<f64>, description: Option<&INodeTypeDescription>) -> Value/Map` | display-gating; expression strings pass verbatim |
 | `versionedNodeType.cases` | `VersionedNodeType` struct + `get_versioned_node_type` | **no-fallback**: absent version ⇒ `None`/undefined, never latest |
+| `resolveRelativePath.cases` | `pub fn resolve_relative_path(full_path: &str, candidate: &str) -> String` | `&`-relative resolution against `parameters.`-rooted path; empty path-to-leaf ⇒ root-relative |
+| `hasDotNotationBannedChar.cases` | `pub fn has_dot_notation_banned_char(name: &str) -> bool` | **space, dot, leading digit, dash, underscore are all banned** (verbatim regex port) |
+| `mergeNodeProperties.cases` | `pub fn merge_node_properties(main: &mut Vec<INodeProperties>, add: &[INodeProperties])` | in-place; same-name **replaced at original index**; `doNotInherit` skipped |
+| `makeNodeName.cases` | `pub fn make_node_name(parameters, description) -> String` | skipNameGeneration ⇒ defaults.name; action ⇒ verbatim action string; else `${Operation} ${resource}` (raw values); options guarded by `isINodePropertyOptions` (`name`+`value` present) — malformed options fall back silently |
+| `makeDescription.cases` | `pub fn make_description(parameters, description) -> String` | `"${action} in ${defaults.name}"`; raw lower-case `${operation} ${resource} in …`; description fallback |
+| `isDefaultNodeName.cases` | `pub fn is_default_node_name(name, description, parameters) -> bool` | makeNodeName prefix + `^\d*$` suffix |
+| `isTriggerNode.cases` | `pub fn is_trigger_node(description) -> bool` | `group.contains("trigger")` |
+| `displayParameter.cases` | `pub fn display_parameter(values, property, type_version, description) -> bool` | no displayOptions ⇒ true; show ⇒ AND across keys; hide-match ⇒ false |
+| `assertParamIsType.cases` | `pub fn assert_param_is_string/number(name, value) -> Result<(), ValidationError>` | error message byte-exact: `Parameter "{name}" is not {type}` |
 | `serdeConformance` | `INodeTypeDescription`, `INode` | deserialize → serialize round-trip equality |
 
 ## 4. Reference-observed semantics the harness pins (do not "improve")
@@ -82,13 +103,28 @@ const VERSIONED_CASES: usize = 5;    // versionedNodeType ops
 4. **Display-gating**: defaults are applied to rendered parameters only; explicitly typed
    values on display-hidden parameters are dropped (unless `returnNoneDisplayed`);
    expression strings (`={{ … }}`) pass through verbatim in all arms.
+5. **`isINodePropertyOptions` type guard** (drives `makeNodeName`/`makeDescription` action
+   resolution): each option must contain BOTH `name` and `value`; an option carrying
+   `value`+`action` but no `name` fails the guard, so the `action` branch is SILENTLY
+   skipped and the `${Operation} ${resource}` fallback is used. The Rust port of the
+   type-guard predicates must be exact.
+6. **Dot-notation banned chars**: the banned set includes space, dot, any leading digit,
+   dash and underscore (full verbatim regex in
+   `src/node-reference-parser-utils.ts` `DOT_NOTATION_BANNED_CHARS`) — names like
+   `'Node A'` therefore require `$node["Node A"]` access. Do not "tighten" this set.
+7. **Assert message templates** (parameter-type validation): throws with byte-exact
+   message `Parameter "{parameterName}" is not {tsType}` — e.g. `Parameter "pAnum" is
+   not string`. Message text is part of the cross-LEGO error surface; no paraphrasing.
+8. **`mergeNodeProperties` is destructive-in-place** on the main array: new names append,
+   same names replace AT THEIR ORIGINAL INDEX (order of merged properties observable),
+   `doNotInherit:true` entries are skipped.
 
 ## 5. Acceptance wiring (brief §4, gate 1)
 
 `n8n-node-model` is **RUST IMPLEMENTED-verified for the Node LEGO when**:
 
-1. This harness reproduces all 26 entries (19 golden cases + 7 serde samples) green under
-   `tools/rust-offline-rig/run.sh test` (offline).
+1. This harness reproduces all 64 entries (19 frozen-port golden cases + 38 wave-2 pure
+   helper cases + 7 serde samples) green under `tools/rust-offline-rig/run.sh test` (offline).
 2. The 6 frozen ports exist with the exact snake_cased names listed in brief §3
    (`get_node_parameters`, `get_node_inputs`, `get_node_outputs`, `get_connection_types`,
    `rename_form_fields`, `apply_access_patterns`) and crate exports match contract §11.
@@ -107,4 +143,7 @@ report via bus to agent-2/mediator; never "fix" the semantics to match the port.
   GC dynamic cases only pin the failure fallthrough).
 - No timing/perf assertions (perf gates live with Agent 5's Phase-3 gate variant — MSG-07).
 - Full 532-reference-test coverage remains the Phase-3 stretch goal (brief §4.1); this
-  pack is the **frozen-port minimum** that gates acceptance.
+  pack is the **frozen-port minimum plus the pure-helper wave** that gates acceptance.
+  Larger sweeps (getNodeParametersIssues, validateFilterParameter,
+  rename-node-utils variants…) follow the same add-category/add-constant protocol:
+  extend the generator, hard-assert verified values, bump the fixture file in one commit.

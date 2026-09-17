@@ -1,9 +1,13 @@
 {
   "meta": {
     "source": "n8n-workflow@2.9.1 dist/cjs (repo tag n8n@2.9.4)",
-    "goldenDocument": "docs/isolation/node-golden-cases.md (GC-1..GC-7, VERIFIED-BY-EXECUTION)",
+    "goldenDocument": "docs/isolation/node-golden-cases.md (GC-1..GC-7 + wave-2, VERIFIED-BY-EXECUTION)",
     "generator": "node docs/isolation/node-fixtures.build.cjs  (drift check: --check)",
-    "comparisonRule": "deep JSON equality after per-key sort; byte-stable file by construction"
+    "comparisonRule": "deep JSON equality after per-key sort; byte-stable file by construction",
+    "coverage": {
+      "frozenPorts": "GC-1..GC-7 (19 cases)",
+      "wave2PureHelpers": "resolveRelativePath:4, hasDotNotationBannedChar:7, mergeNodeProperties:3, makeNodeName:5, makeDescription:3, isDefaultNodeName:4, isTriggerNode:3, displayParameter:6, assertParamIsType:3"
+    }
   },
   "applyAccessPatterns": {
     "cases": [
@@ -327,6 +331,634 @@
       {
         "op": "getVersionedNodeTypePassthrough",
         "expectIdentity": true
+      }
+    ]
+  },
+  "resolveRelativePath": {
+    "cases": [
+      {
+        "fullPath": "parameters.a.b.c",
+        "candidate": "&d",
+        "expect": "a.b.d"
+      },
+      {
+        "fullPath": "parameters.a.b[0].c",
+        "candidate": "&d",
+        "expect": "a.b[0].d"
+      },
+      {
+        "fullPath": "parameters.a.b.c",
+        "candidate": "d",
+        "expect": "d"
+      },
+      {
+        "fullPath": "parameters.a",
+        "candidate": "&d",
+        "expect": "d"
+      }
+    ]
+  },
+  "hasDotNotationBannedChar": {
+    "cases": [
+      {
+        "input": "normalNode",
+        "expect": false
+      },
+      {
+        "input": "NormalNode1",
+        "expect": false
+      },
+      {
+        "input": "Node A",
+        "expect": true
+      },
+      {
+        "input": "with.dot",
+        "expect": true
+      },
+      {
+        "input": "1digit",
+        "expect": true
+      },
+      {
+        "input": "a-b",
+        "expect": true
+      },
+      {
+        "input": "under_score",
+        "expect": true
+      }
+    ]
+  },
+  "mergeNodeProperties": {
+    "cases": [
+      {
+        "name": "append-new-property",
+        "main": [
+          {
+            "name": "a",
+            "default": 1
+          }
+        ],
+        "add": [
+          {
+            "name": "b",
+            "default": 2
+          }
+        ],
+        "after": [
+          {
+            "name": "a",
+            "default": 1
+          },
+          {
+            "name": "b",
+            "default": 2
+          }
+        ]
+      },
+      {
+        "name": "replace-same-name-in-place",
+        "main": [
+          {
+            "name": "a",
+            "default": 1
+          },
+          {
+            "name": "b",
+            "default": 2
+          }
+        ],
+        "add": [
+          {
+            "name": "a",
+            "default": 99,
+            "v": "x"
+          }
+        ],
+        "after": [
+          {
+            "name": "a",
+            "default": 99,
+            "v": "x"
+          },
+          {
+            "name": "b",
+            "default": 2
+          }
+        ]
+      },
+      {
+        "name": "do-not-inherit-skipped",
+        "main": [
+          {
+            "name": "a",
+            "default": 1
+          }
+        ],
+        "add": [
+          {
+            "name": "skip",
+            "doNotInherit": true,
+            "default": 7
+          }
+        ],
+        "after": [
+          {
+            "name": "a",
+            "default": 1
+          }
+        ]
+      }
+    ]
+  },
+  "makeNodeName": {
+    "cases": [
+      {
+        "name": "skip-name-generation",
+        "parameters": {},
+        "description": {
+          "name": "webhookNode",
+          "displayName": "Webhook",
+          "group": [
+            "trigger"
+          ],
+          "version": 1,
+          "defaults": {
+            "name": "My Webhook"
+          },
+          "description": "Webhook desc",
+          "skipNameGeneration": true,
+          "properties": [],
+          "inputs": [],
+          "outputs": [
+            "main"
+          ]
+        },
+        "expect": "My Webhook"
+      },
+      {
+        "name": "operation-action",
+        "parameters": {
+          "resource": "chat",
+          "operation": "send"
+        },
+        "description": {
+          "name": "chatNode",
+          "displayName": "Chat Node",
+          "group": [
+            "transform"
+          ],
+          "version": 1,
+          "defaults": {
+            "name": "Chat Node"
+          },
+          "description": "Chat node desc",
+          "properties": [
+            {
+              "name": "operation",
+              "displayName": "Operation",
+              "type": "options",
+              "default": "send",
+              "options": [
+                {
+                  "name": "Send",
+                  "value": "send",
+                  "action": "Send Message"
+                }
+              ],
+              "displayOptions": {
+                "show": {
+                  "resource": [
+                    "chat"
+                  ]
+                }
+              }
+            }
+          ],
+          "inputs": [
+            "main"
+          ],
+          "outputs": [
+            "main"
+          ]
+        },
+        "expect": "Send Message"
+      },
+      {
+        "name": "operation-no-action",
+        "parameters": {
+          "resource": "item",
+          "operation": "get"
+        },
+        "description": {
+          "name": "itemNode",
+          "displayName": "Item Node",
+          "group": [
+            "transform"
+          ],
+          "version": 1,
+          "defaults": {
+            "name": "Item Node"
+          },
+          "description": "Item node desc",
+          "properties": [
+            {
+              "name": "operation",
+              "displayName": "Operation",
+              "type": "options",
+              "default": "get",
+              "options": [
+                {
+                  "name": "Get",
+                  "value": "get"
+                }
+              ],
+              "displayOptions": {
+                "show": {
+                  "resource": [
+                    "item"
+                  ]
+                }
+              }
+            }
+          ],
+          "inputs": [
+            "main"
+          ],
+          "outputs": [
+            "main"
+          ]
+        },
+        "expect": "Get item"
+      },
+      {
+        "name": "fallback-defaults-name",
+        "parameters": {},
+        "description": {
+          "name": "fallbackNode",
+          "displayName": "FB",
+          "group": [
+            "transform"
+          ],
+          "version": 1,
+          "defaults": {
+            "name": "Fallback Name"
+          },
+          "description": "Fallback description.",
+          "properties": [],
+          "inputs": [
+            "main"
+          ],
+          "outputs": [
+            "main"
+          ]
+        },
+        "expect": "Fallback Name"
+      },
+      {
+        "name": "malformed-option-guard-fallback",
+        "parameters": {
+          "resource": "chat",
+          "operation": "send"
+        },
+        "description": {
+          "name": "chatNode",
+          "displayName": "Chat Node",
+          "group": [
+            "transform"
+          ],
+          "version": 1,
+          "defaults": {
+            "name": "Chat Node"
+          },
+          "description": "Chat node desc",
+          "properties": [
+            {
+              "name": "operation",
+              "displayName": "Operation",
+              "type": "options",
+              "default": "send",
+              "options": [
+                {
+                  "value": "send",
+                  "action": "Send Message"
+                }
+              ],
+              "displayOptions": {
+                "show": {
+                  "resource": [
+                    "chat"
+                  ]
+                }
+              }
+            }
+          ],
+          "inputs": [
+            "main"
+          ],
+          "outputs": [
+            "main"
+          ]
+        },
+        "expect": "Send chat"
+      }
+    ]
+  },
+  "makeDescription": {
+    "cases": [
+      {
+        "name": "operation-action",
+        "parameters": {
+          "resource": "chat",
+          "operation": "send"
+        },
+        "description": {
+          "name": "chatNode",
+          "displayName": "Chat Node",
+          "group": [
+            "transform"
+          ],
+          "version": 1,
+          "defaults": {
+            "name": "Chat Node"
+          },
+          "description": "Chat node desc",
+          "properties": [
+            {
+              "name": "operation",
+              "displayName": "Operation",
+              "type": "options",
+              "default": "send",
+              "options": [
+                {
+                  "name": "Send",
+                  "value": "send",
+                  "action": "Send Message"
+                }
+              ],
+              "displayOptions": {
+                "show": {
+                  "resource": [
+                    "chat"
+                  ]
+                }
+              }
+            }
+          ],
+          "inputs": [
+            "main"
+          ],
+          "outputs": [
+            "main"
+          ]
+        },
+        "expect": "Send Message in Chat Node"
+      },
+      {
+        "name": "operation-no-action",
+        "parameters": {
+          "resource": "item",
+          "operation": "get"
+        },
+        "description": {
+          "name": "itemNode",
+          "displayName": "Item Node",
+          "group": [
+            "transform"
+          ],
+          "version": 1,
+          "defaults": {
+            "name": "Item Node"
+          },
+          "description": "Item node desc",
+          "properties": [
+            {
+              "name": "operation",
+              "displayName": "Operation",
+              "type": "options",
+              "default": "get",
+              "options": [
+                {
+                  "name": "Get",
+                  "value": "get"
+                }
+              ],
+              "displayOptions": {
+                "show": {
+                  "resource": [
+                    "item"
+                  ]
+                }
+              }
+            }
+          ],
+          "inputs": [
+            "main"
+          ],
+          "outputs": [
+            "main"
+          ]
+        },
+        "expect": "get item in Item Node"
+      },
+      {
+        "name": "fallback",
+        "parameters": {},
+        "description": {
+          "name": "fallbackNode",
+          "displayName": "FB",
+          "group": [
+            "transform"
+          ],
+          "version": 1,
+          "defaults": {
+            "name": "Fallback Name"
+          },
+          "description": "Fallback description.",
+          "properties": [],
+          "inputs": [
+            "main"
+          ],
+          "outputs": [
+            "main"
+          ]
+        },
+        "expect": "Fallback description."
+      }
+    ]
+  },
+  "isDefaultNodeName": {
+    "cases": [
+      {
+        "name": "My Webhook",
+        "expect": true
+      },
+      {
+        "name": "My Webhook1",
+        "expect": true
+      },
+      {
+        "name": "My Webhook X",
+        "expect": false
+      },
+      {
+        "name": "Other",
+        "expect": false
+      }
+    ]
+  },
+  "isTriggerNode": {
+    "cases": [
+      {
+        "group": [
+          "trigger"
+        ],
+        "expect": true
+      },
+      {
+        "group": [
+          "input"
+        ],
+        "expect": false
+      },
+      {
+        "group": [
+          "trigger",
+          "output"
+        ],
+        "expect": true
+      }
+    ]
+  },
+  "displayParameter": {
+    "cases": [
+      {
+        "name": "no-display-options",
+        "values": {},
+        "property": {
+          "name": "x",
+          "type": "string",
+          "default": ""
+        },
+        "expect": true
+      },
+      {
+        "name": "show-match",
+        "values": {
+          "mode": "advanced"
+        },
+        "property": {
+          "name": "y",
+          "displayOptions": {
+            "show": {
+              "mode": [
+                "advanced"
+              ]
+            }
+          }
+        },
+        "expect": true
+      },
+      {
+        "name": "show-mismatch",
+        "values": {
+          "mode": "simple"
+        },
+        "property": {
+          "name": "y",
+          "displayOptions": {
+            "show": {
+              "mode": [
+                "advanced"
+              ]
+            }
+          }
+        },
+        "expect": false
+      },
+      {
+        "name": "show-multi-key-and",
+        "values": {
+          "mode": "advanced",
+          "other": 2
+        },
+        "property": {
+          "name": "y",
+          "displayOptions": {
+            "show": {
+              "mode": [
+                "advanced"
+              ],
+              "other": [
+                1
+              ]
+            }
+          }
+        },
+        "expect": false
+      },
+      {
+        "name": "hide-match",
+        "values": {
+          "mode": "advanced"
+        },
+        "property": {
+          "name": "y",
+          "displayOptions": {
+            "hide": {
+              "mode": [
+                "advanced"
+              ]
+            }
+          }
+        },
+        "expect": false
+      },
+      {
+        "name": "hide-mismatch",
+        "values": {
+          "mode": "simple"
+        },
+        "property": {
+          "name": "y",
+          "displayOptions": {
+            "hide": {
+              "mode": [
+                "advanced"
+              ]
+            }
+          }
+        },
+        "expect": true
+      }
+    ]
+  },
+  "assertParamIsType": {
+    "cases": [
+      {
+        "name": "value-is-string",
+        "fn": "string",
+        "parameterName": "param",
+        "value": "ok-str",
+        "ok": true,
+        "message": null
+      },
+      {
+        "name": "value-is-not-string",
+        "fn": "string",
+        "parameterName": "pAnum",
+        "value": 42,
+        "ok": false,
+        "message": "Parameter \"pAnum\" is not string"
+      },
+      {
+        "name": "value-is-not-number",
+        "fn": "number",
+        "parameterName": "pX",
+        "value": "nope",
+        "ok": false,
+        "message": "Parameter \"pX\" is not number"
       }
     ]
   },

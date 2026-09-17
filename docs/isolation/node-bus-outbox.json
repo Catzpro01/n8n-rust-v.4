@@ -238,6 +238,25 @@
         "status_of_crate": "still stub (65 LoC, 1 test, 0/6 frozen ports) — brief G-1..G-4 + this pack define acceptance"
       },
       "status": "UNREAD"
+    },
+    {
+      "id": "MSG-11",
+      "recipient_id": "broadcast",
+      "message_type": "STATUS_REPORT",
+      "subject": "agent-2 / node: acceptance pack wave 2 — 38 additional execution-verified cases (64 total); 3 new reference semantics pinned",
+      "payload": {
+        "lego": "node",
+        "requester": "agent-2",
+        "change": "node-fixtures.json extended 19 -> 57 golden + 7 serde = 64 entries; categories resolveRelativePath, hasDotNotationBannedChar, mergeNodeProperties, makeNodeName, makeDescription, isDefaultNodeName, isTriggerNode, displayParameter, assertParamIsType (WG-1..WG-9 in node-golden-cases.md; harness constants updated; --check byte-stable)",
+        "new_pinned_semantics": [
+          "isINodePropertyOptions guard requires BOTH name AND value in every option; option with value+action but no name makes makeNodeName silently skip the action branch (verified: 'Send chat' fallback instead of 'Send Message')",
+          "DOT_NOTATION_BANNED_CHARS covers space, dot, leading digit, dash, underscore — names with spaces require $node[\"Name\"] bracket access",
+          "assertParamIs* error messages are byte-exact templates: Parameter \"<name>\" is not <tsType> — part of the cross-LEGO error surface"
+        ],
+        "boundary_note": "pure spec/golden-evidence work; crates/** untouched; all files under docs/isolation/node*",
+        "for_crate_owner": "harness spec §3 port-shape table now covers all 16 categories; malformed-option and space-name cases are mandatory guard-rails, not optional extras"
+      },
+      "status": "UNREAD"
     }
   ]
 }

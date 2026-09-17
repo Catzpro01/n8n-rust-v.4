@@ -39,7 +39,9 @@ function ref(name) {
 
 const helpers = ref("node-helpers.js");
 const { renameFormFields } = ref("node-parameters/rename-node-utils.js");
-const { applyAccessPatterns } = ref("node-reference-parser-utils.js");
+const { applyAccessPatterns, hasDotNotationBannedChar } = ref("node-reference-parser-utils.js");
+const { resolveRelativePath } = ref("node-parameters/path-utils.js");
+const { assertParamIsString, assertParamIsNumber } = ref("node-parameters/parameter-type-validation.js");
 const { VersionedNodeType } = ref("versioned-node-type.js");
 
 for (const [label, fn] of Object.entries({
@@ -48,8 +50,18 @@ for (const [label, fn] of Object.entries({
   getNodeOutputs: helpers.getNodeOutputs,
   getNodeInputs: helpers.getNodeInputs,
   getVersionedNodeType: helpers.getVersionedNodeType,
+  displayParameter: helpers.displayParameter,
+  mergeNodeProperties: helpers.mergeNodeProperties,
+  makeNodeName: helpers.makeNodeName,
+  makeDescription: helpers.makeDescription,
+  isDefaultNodeName: helpers.isDefaultNodeName,
+  isTriggerNode: helpers.isTriggerNode,
   renameFormFields,
   applyAccessPatterns,
+  hasDotNotationBannedChar,
+  resolveRelativePath,
+  assertParamIsString,
+  assertParamIsNumber,
   VersionedNodeType,
 })) {
   if (typeof fn !== "function") {
@@ -218,6 +230,119 @@ const versionedNodeTypeCases = [
   },
 ];
 
+/* ---------------- Wave 2: extended pure-function coverage (readiness doc §1.2) ------ */
+
+/** Full description skeletons so fixtures double as G-3-conformant description samples. */
+const descWebhook = {
+  name: "webhookNode", displayName: "Webhook", group: ["trigger"], version: 1,
+  defaults: { name: "My Webhook" }, description: "Webhook desc", skipNameGeneration: true,
+  properties: [], inputs: [], outputs: ["main"],
+};
+const descChat = {
+  name: "chatNode", displayName: "Chat Node", group: ["transform"], version: 1,
+  defaults: { name: "Chat Node" }, description: "Chat node desc",
+  properties: [{ name: "operation", displayName: "Operation", type: "options", default: "send",
+    options: [{ name: "Send", value: "send", action: "Send Message" }],
+    displayOptions: { show: { resource: ["chat"] } } }],
+  inputs: ["main"], outputs: ["main"],
+};
+const descChatMalformedOption = {
+  ...descChat,
+  properties: [{ name: "operation", displayName: "Operation", type: "options", default: "send",
+    options: [{ value: "send", action: "Send Message" }], // no `name` -> isINodePropertyOptions guard fails
+    displayOptions: { show: { resource: ["chat"] } } }],
+};
+const descItem = {
+  name: "itemNode", displayName: "Item Node", group: ["transform"], version: 1,
+  defaults: { name: "Item Node" }, description: "Item node desc",
+  properties: [{ name: "operation", displayName: "Operation", type: "options", default: "get",
+    options: [{ name: "Get", value: "get" }],
+    displayOptions: { show: { resource: ["item"] } } }],
+  inputs: ["main"], outputs: ["main"],
+};
+const descFallback = {
+  name: "fallbackNode", displayName: "FB", group: ["transform"], version: 1,
+  defaults: { name: "Fallback Name" }, description: "Fallback description.",
+  properties: [], inputs: ["main"], outputs: ["main"],
+};
+
+const resolveRelativePathCases = [
+  { fullPath: "parameters.a.b.c", candidate: "&d", expect: resolveRelativePath("parameters.a.b.c", "&d") },
+  { fullPath: "parameters.a.b[0].c", candidate: "&d", expect: resolveRelativePath("parameters.a.b[0].c", "&d") },
+  { fullPath: "parameters.a.b.c", candidate: "d", expect: resolveRelativePath("parameters.a.b.c", "d") },
+  { fullPath: "parameters.a", candidate: "&d", expect: resolveRelativePath("parameters.a", "&d") },
+];
+
+const hasDotNotationBannedCharCases = [
+  "normalNode", "NormalNode1", "Node A", "with.dot", "1digit", "a-b", "under_score",
+].map((input) => ({ input, expect: hasDotNotationBannedChar(input) }));
+
+const mergeAppend = (() => {
+  const main = [{ name: "a", default: 1 }];
+  const add = [{ name: "b", default: 2 }];
+  const after = JSON.parse(JSON.stringify(main)); helpers.mergeNodeProperties(after, JSON.parse(JSON.stringify(add)));
+  return { name: "append-new-property", main, add, after };
+})();
+const mergeReplace = (() => {
+  const main = [{ name: "a", default: 1 }, { name: "b", default: 2 }];
+  const add = [{ name: "a", default: 99, v: "x" }];
+  const after = JSON.parse(JSON.stringify(main)); helpers.mergeNodeProperties(after, JSON.parse(JSON.stringify(add)));
+  return { name: "replace-same-name-in-place", main, add, after };
+})();
+const mergeSkip = (() => {
+  const main = [{ name: "a", default: 1 }];
+  const add = [{ name: "skip", doNotInherit: true, default: 7 }];
+  const after = JSON.parse(JSON.stringify(main)); helpers.mergeNodeProperties(after, JSON.parse(JSON.stringify(add)));
+  return { name: "do-not-inherit-skipped", main, add, after };
+})();
+const mergeNodePropertiesCases = [mergeAppend, mergeReplace, mergeSkip];
+
+const makeNodeNameCases = [
+  { name: "skip-name-generation", parameters: {}, description: descWebhook, expect: helpers.makeNodeName({}, descWebhook) },
+  { name: "operation-action", parameters: { resource: "chat", operation: "send" }, description: descChat, expect: helpers.makeNodeName({ resource: "chat", operation: "send" }, descChat) },
+  { name: "operation-no-action", parameters: { resource: "item", operation: "get" }, description: descItem, expect: helpers.makeNodeName({ resource: "item", operation: "get" }, descItem) },
+  { name: "fallback-defaults-name", parameters: {}, description: descFallback, expect: helpers.makeNodeName({}, descFallback) },
+  { name: "malformed-option-guard-fallback", parameters: { resource: "chat", operation: "send" }, description: descChatMalformedOption, expect: helpers.makeNodeName({ resource: "chat", operation: "send" }, descChatMalformedOption) },
+];
+
+const makeDescriptionCases = [
+  { name: "operation-action", parameters: { resource: "chat", operation: "send" }, description: descChat, expect: helpers.makeDescription({ resource: "chat", operation: "send" }, descChat) },
+  { name: "operation-no-action", parameters: { resource: "item", operation: "get" }, description: descItem, expect: helpers.makeDescription({ resource: "item", operation: "get" }, descItem) },
+  { name: "fallback", parameters: {}, description: descFallback, expect: helpers.makeDescription({}, descFallback) },
+];
+
+const isDefaultNodeNameCases = ["My Webhook", "My Webhook1", "My Webhook X", "Other"]
+  .map((name) => ({ name, expect: helpers.isDefaultNodeName(name, descWebhook, {}) }));
+
+const isTriggerNodeCases = [
+  { group: ["trigger"], expect: helpers.isTriggerNode({ group: ["trigger"] }) },
+  { group: ["input"], expect: helpers.isTriggerNode({ group: ["input"] }) },
+  { group: ["trigger", "output"], expect: helpers.isTriggerNode({ group: ["trigger", "output"] }) },
+];
+
+const displayParameterCases = [
+  { name: "no-display-options", values: {}, property: { name: "x", type: "string", default: "" } },
+  { name: "show-match", values: { mode: "advanced" }, property: { name: "y", displayOptions: { show: { mode: ["advanced"] } } } },
+  { name: "show-mismatch", values: { mode: "simple" }, property: { name: "y", displayOptions: { show: { mode: ["advanced"] } } } },
+  { name: "show-multi-key-and", values: { mode: "advanced", other: 2 }, property: { name: "y", displayOptions: { show: { mode: ["advanced"], other: [1] } } } },
+  { name: "hide-match", values: { mode: "advanced" }, property: { name: "y", displayOptions: { hide: { mode: ["advanced"] } } } },
+  { name: "hide-mismatch", values: { mode: "simple" }, property: { name: "y", displayOptions: { hide: { mode: ["advanced"] } } } },
+].map((c) => ({ ...c, expect: helpers.displayParameter(c.values, c.property, null, null) }));
+
+function assertCase(assertFn, name, parameterName, value) {
+  try {
+    assertFn(parameterName, value, {});
+    return { name, fn: assertFn === assertParamIsString ? "string" : "number", parameterName, value, ok: true, message: null };
+  } catch (error) {
+    return { name, fn: assertFn === assertParamIsString ? "string" : "number", parameterName, value, ok: false, message: error.message };
+  }
+}
+const assertParamIsTypeCases = [
+  assertCase(assertParamIsString, "value-is-string", "param", "ok-str"),
+  assertCase(assertParamIsString, "value-is-not-string", "pAnum", 42),
+  assertCase(assertParamIsNumber, "value-is-not-number", "pX", "nope"),
+];
+
 /* ---------------- Regression tripwire: results must equal the VERIFIED goldens ------ */
 /* (docs/isolation/node-golden-cases.md — values frozen by VERIFIED-BY-EXECUTION)      */
 
@@ -249,6 +374,19 @@ assertGolden("GC-7 no-arg", versionedNodeTypeCases[1].expect, { descriptionVersi
 assertGolden("GC-7 v1", versionedNodeTypeCases[2].expect, { descriptionVersion: 1 });
 assertGolden("GC-7 v9 no-fallback", versionedNodeTypeCases[3].expect, null);
 assertGolden("GC-7 passthrough", versionedNodeTypeCases[4].expectIdentity, true);
+assertGolden("W2 rrm", resolveRelativePathCases.map((c) => c.expect), ["a.b.d", "a.b[0].d", "d", "d"]);
+assertGolden("W2 banned", hasDotNotationBannedCharCases.map((c) => c.expect), [false, false, true, true, true, true, true]);
+assertGolden("W2 merge-append", mergeAppend.after, [{ name: "a", default: 1 }, { name: "b", default: 2 }]);
+assertGolden("W2 merge-replace", mergeReplace.after, [{ name: "a", default: 99, v: "x" }, { name: "b", default: 2 }]);
+assertGolden("W2 merge-skip", mergeSkip.after, [{ name: "a", default: 1 }]);
+assertGolden("W2 mnn", makeNodeNameCases.map((c) => c.expect), ["My Webhook", "Send Message", "Get item", "Fallback Name", "Send chat"]);
+assertGolden("W2 mdesc", makeDescriptionCases.map((c) => c.expect), ["Send Message in Chat Node", "get item in Item Node", "Fallback description."]);
+assertGolden("W2 idn", isDefaultNodeNameCases.map((c) => c.expect), [true, true, false, false]);
+assertGolden("W2 trigger", isTriggerNodeCases.map((c) => c.expect), [true, false, true]);
+assertGolden("W2 dp", displayParameterCases.map((c) => c.expect), [true, true, false, false, false, true]);
+assertGolden("W2 assert-ok", assertParamIsTypeCases[0].ok, true);
+assertGolden("W2 assert-str-msg", assertParamIsTypeCases[1].message, 'Parameter "pAnum" is not string');
+assertGolden("W2 assert-num-msg", assertParamIsTypeCases[2].message, 'Parameter "pX" is not number');
 
 if (trip.length) {
   console.error("REFERENCE DRIFT vs docs/isolation/node-golden-cases.md:");
@@ -313,9 +451,23 @@ const serdeConformance = {
 const fixtures = {
   meta: {
     source: "n8n-workflow@2.9.1 dist/cjs (repo tag n8n@2.9.4)",
-    goldenDocument: "docs/isolation/node-golden-cases.md (GC-1..GC-7, VERIFIED-BY-EXECUTION)",
+    goldenDocument: "docs/isolation/node-golden-cases.md (GC-1..GC-7 + wave-2, VERIFIED-BY-EXECUTION)",
     generator: "node docs/isolation/node-fixtures.build.cjs  (drift check: --check)",
     comparisonRule: "deep JSON equality after per-key sort; byte-stable file by construction",
+    coverage: {
+      frozenPorts: "GC-1..GC-7 (19 cases)",
+      wave2PureHelpers: [
+        `resolveRelativePath:${resolveRelativePathCases.length}`,
+        `hasDotNotationBannedChar:${hasDotNotationBannedCharCases.length}`,
+        `mergeNodeProperties:${mergeNodePropertiesCases.length}`,
+        `makeNodeName:${makeNodeNameCases.length}`,
+        `makeDescription:${makeDescriptionCases.length}`,
+        `isDefaultNodeName:${isDefaultNodeNameCases.length}`,
+        `isTriggerNode:${isTriggerNodeCases.length}`,
+        `displayParameter:${displayParameterCases.length}`,
+        `assertParamIsType:${assertParamIsTypeCases.length}`,
+      ].join(", "),
+    },
   },
   applyAccessPatterns: { cases: applyAccessPatternsCases },
   getConnectionTypes: { cases: getConnectionTypesCases },
@@ -324,6 +476,15 @@ const fixtures = {
   getNodeInputs: { cases: getNodeInputsCases },
   getNodeParameters: { cases: getNodeParametersCases, properties: parameterProperties },
   versionedNodeType: { cases: versionedNodeTypeCases },
+  resolveRelativePath: { cases: resolveRelativePathCases },
+  hasDotNotationBannedChar: { cases: hasDotNotationBannedCharCases },
+  mergeNodeProperties: { cases: mergeNodePropertiesCases },
+  makeNodeName: { cases: makeNodeNameCases },
+  makeDescription: { cases: makeDescriptionCases },
+  isDefaultNodeName: { cases: isDefaultNodeNameCases },
+  isTriggerNode: { cases: isTriggerNodeCases },
+  displayParameter: { cases: displayParameterCases },
+  assertParamIsType: { cases: assertParamIsTypeCases },
   serdeConformance,
 };
 
