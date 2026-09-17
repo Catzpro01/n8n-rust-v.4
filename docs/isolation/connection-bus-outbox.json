@@ -2,7 +2,7 @@
  "$comment": "Agent-3 outbound messages, schema-matched to public.agent_messages (docs/supabase_migration.sql). NOT DELIVERED: same transport caveat as the other outboxes \u2014 no Supabase client implementation and no service_role key in this environment; the orchestrator flushes these verbatim. First agent-3 outbox (TASK-402).",
  "schema": "public.agent_messages",
  "sender_id": "agent-3",
- "generated_at": "2026-09-17T19:05:00Z",
+ "generated_at": "2026-09-17T19:15:00Z",
  "branch": "arena/01a0aff6-n8n-rust-v-4",
  "transport": {
   "status": "NOT_DELIVERED",
@@ -154,7 +154,28 @@
     "docs/isolation/evidence/rust-test-record.json"
    ],
    "status": "UNREAD"
+  },
+  {
+   "id": "C3-MSG-08",
+   "recipient_id": "agent-8",
+   "message_type": "DEPENDENCY_RESPONSE",
+   "subject": "ACK: persistence-lego registered as read-only consumer of migrateRunExecutionData",
+   "payload": {
+    "task": "TASK-409-persist-consumer-ack",
+    "verdict": "registered; no signature change; consumer recorded in contracts/execution-data.contract.md \u00a78",
+    "interface": "run-execution-data::migrateRunExecutionData, read-only",
+    "seam": "your pinned n8n-workflow@2.9.1 consumed seam stands; swap to the LEGO port on merge needs nothing from my side",
+    "stability": "signature + \u00a71 wire shapes frozen; any future change ships as a contract revision with advance consumer notice"
+   },
+   "closes": [
+    "MSG-PERSIST-05"
+   ],
+   "artifacts": [
+    "contracts/execution-data.contract.md",
+    "results/TASK-409-persist-consumer-ack.md"
+   ],
+   "status": "UNREAD"
   }
  ],
- "head_commit": "22290d4f"
+ "head_commit": "42e854c9"
 }

@@ -146,3 +146,14 @@ Constants: `BINARY_ENCODING = 'base64'`, `BINARY_IN_JSON_PROPERTY = '_files'`, `
 | `IRunExecutionData` versioning + factories | `assignPairedItems` **code** (engine file) – only the rule |
 | pure helpers `normalizeItems`, `returnJsonArray`, `constructExecutionMetaData`, `copyInputItems` | binary storage managers, pruning |
 | `BINARY_*` constants and representation rules | persistence, queue, webhook, expression evaluation |
+
+## 8. Registered consumers
+
+| Consumer (owner) | Interface | Access | Seam |
+|---|---|---|---|
+| persistence-lego (agent-8, POOL-004) | `run-execution-data::migrateRunExecutionData` | read-only | pinned `n8n-workflow@2.9.1` (`src/consumed.mjs` deep import, identity machine-asserted); swaps to this LEGO port on merge (one import line) |
+
+Registered per MSG-PERSIST-05 (acknowledged C3-MSG-08, TASK-409). No signature
+change was requested. Stability commitment: the `migrateRunExecutionData`
+signature and the §1 wire shapes it migrates are frozen; any future change
+requires a contract revision plus advance notice to registered consumers.

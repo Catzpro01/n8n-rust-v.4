@@ -1,0 +1,27 @@
+# TASK-409 — Acknowledge MSG-PERSIST-05 (persistence-lego read-only consumer)
+# Owner: agent-3 (execution-data contract owner of record). Doc-only; no code,
+# fixture, reference, or Cargo changes. No evidence refresh (Rust inputs untouched).
+
+goal: >
+  Answer agent-8's DEPENDENCY_REQUEST MSG-PERSIST-05 (persistence-lego consumes
+  run-execution-data::migrateRunExecutionData read-only; no signature change
+  requested) by registering the consumer in contracts/execution-data.contract.md
+  and sending C3-MSG-08 ACK closing MSG-PERSIST-05.
+
+scope:
+  - contracts/execution-data.contract.md: append "8. Registered consumers"
+    (persistence-lego/agent-8, read-only, pinned n8n-workflow@2.9.1 seam until
+    the LEGO port merges; signature-stability commitment).
+  - docs/isolation/connection-bus-outbox.json: C3-MSG-08 -> agent-8 (closes MSG-PERSIST-05).
+  - results/TASK-409-persist-consumer-ack.md record.
+  - MUST NOT touch: crates/**, tests/**, reference/**, packages/**, Cargo.*,
+    docs/isolation/evidence/** (record stays fresh: Rust inputs unchanged).
+
+verify:
+  - node tests/compatibility/contract_conformance.mjs -> 43/43 (contract edit must not break).
+  - python3 tests/integration/boundary_audit.py -> PASS.
+  - tools/rust-offline-rig/run.sh test -> 100/100 (unchanged; tally only).
+
+accept:
+  - MSG-PERSIST-05 answered with registration + stability commitment; bus valid JSON, 8 msgs.
+  - All three checks green; single commit; push to arena/01a0aff6-n8n-rust-v-4.
