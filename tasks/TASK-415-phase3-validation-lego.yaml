@@ -1,0 +1,71 @@
+id: TASK-415-phase3-validation-lego
+agent: arena-worker
+lego: validation
+module: validation
+phase: 3
+track: "JavaScript/TypeScript reconstruction (docs/isolation/PHASE-3-OPENING-RECORD.md §2)"
+title: "Reconstruct the Validation Model in TypeScript and accept it with reference-derived goldens"
+status: SUBMITTED_FOR_REVIEW
+authority: PROJECT_RULES.md §1, §3, §6 · contracts/validation.contract.md §10 · docs/isolation/PHASE-3-OPENING-RECORD.md
+
+objective: >
+  Phase 2 isolated the Validation boundary and established contracts/validation.contract.md.
+  Reconstruct the full Validation LEGO (type-validation.ts, type-guards.ts, schemas.ts, workflow-rules.ts)
+  1:1 against reference/n8n 2.9.4 in TypeScript under packages/validation-lego/, and prove equivalence
+  against the reference-derived golden cases A/B/C/D, differential parity with n8n-workflow,
+  and negative controls.
+
+allowed_paths:
+  - packages/validation-lego/**
+  - docs/isolation/LEGO-MASTER-MAP.md
+  - docs/isolation/CROSS-AGENT-ISSUES.md
+  - README.md
+  - package.json
+  - results/TASK-415-phase3-validation-lego.md
+  - tasks/TASK-415-phase3-validation-lego.yaml
+
+forbidden_paths:
+  - reference/n8n/**
+  - crates/**
+  - apps/**
+  - packages/execution-engine/**
+  - packages/workflow-lego/**
+  - tests/reference/**/expected.json
+
+requires:
+  - contracts/validation.contract.md
+  - docs/isolation/validation.md
+  - docs/isolation/validation-golden-cases.md
+  - tests/reference/01-empty-workflow/workflow.json
+  - tests/reference/03-linear/workflow.json
+
+reconstruction:
+  - { from: "reference/n8n/packages/workflow/src/type-guards.ts", to: "packages/validation-lego/src/type-guards.ts", lines: 110 }
+  - { from: "reference/n8n/packages/workflow/src/type-validation.ts", to: "packages/validation-lego/src/type-validation.ts", lines: 481 }
+  - { from: "reference/n8n/packages/workflow/src/schemas.ts", to: "packages/validation-lego/src/schemas.ts", lines: 499 }
+  - { from: "tests/reference/agent-4/validation/workflow-rules.ts", to: "packages/validation-lego/src/workflow-rules.ts", lines: 186 }
+
+acceptance:
+  - "tsc --strict builds with 0 errors"
+  - "All Golden Cases A (validateFieldType) reproduce verbatim with frozen error messages"
+  - "All Golden Cases B (tryToParse*) reproduce with ApplicationError and frozen messages"
+  - "All Golden Cases C (type guards and Zod schemas) pass"
+  - "All Golden Cases D (rule enforcement: validateWorkflow, NodeUniqueness, DanglingConnections, detectCycles) pass"
+  - "Differential parity against pinned reference n8n-workflow verified"
+  - "Negative controls reject flawed validators and unconstrained cycle checkers"
+  - "No regression across verify:all"
+
+verification:
+  validation_lego: "20 test suites / 20 pass / 0 fail"
+  phase3_conformance: "42/42 CHECKS PASSED"
+  boundary_audit: "AUDIT RESULT: PASS"
+  isolation_check: "PASS"
+  execution_gate: "9/9 PASS"
+  connection_lego: "52/52 PASS"
+  reconstructed_engine: "28/28 PASS"
+  expression_lego: "46/46 PASS"
+  reference_fixtures: "PASS (8 checksum, 6 diff, 6 shape, 6 rename, 9 traversal cases)"
+
+notes:
+  - "Frozen reference quirks reproduced: shape-only time validation (25:99 allowed), unknown type pass-through, URL https:// prefixing, and strict type checking."
+  - "Cycle detection is opt-in (allowCycles: true by default) to preserve reference parity for runtime loops."

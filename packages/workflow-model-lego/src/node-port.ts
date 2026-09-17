@@ -33,9 +33,12 @@ export function resolveNodeHelpersPort(explicit?: NodeHelpersPort): NodeHelpersP
 	}
 
 	const candidate = mod as Partial<NodeHelpersPort>;
-	if (typeof candidate.getNodeOutputs !== 'function') {
+	const missing = (['getNodeOutputs', 'getNodeParameters'] as const).filter(
+		(k) => typeof candidate[k] !== 'function',
+	);
+	if (missing.length > 0) {
 		throw new Error(
-			`Node LEGO at ${NODE_LEGO} does not satisfy NodeHelpersPort; missing: getNodeOutputs`,
+			`Node LEGO at ${NODE_LEGO} does not satisfy NodeHelpersPort; missing: ${missing.join(', ')}`,
 		);
 	}
 

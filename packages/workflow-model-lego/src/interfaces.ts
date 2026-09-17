@@ -194,7 +194,20 @@ export interface IConnectedNode {
  * Implemented by `packages/node-lego` (see `node-port.ts`).
  */
 export interface NodeHelpersPort {
-	getNodeParameters?(node: INode, nodeType: INodeType): INodeParameters | null;
+	/**
+	 * Reference signature, `workflow.ts:110-117` — this is the **raw** NodeHelpers function, not
+	 * the 2-argument facade form:
+	 * `getNodeParameters(properties, nodeValues, returnDefaults, returnNoneDisplayed, node, description)`.
+	 */
+	getNodeParameters?(
+		nodePropertiesArray: unknown,
+		nodeValues: INodeParameters,
+		returnDefaults: boolean,
+		returnNoneDisplayed: boolean,
+		node: INode,
+		nodeTypeDescription: unknown,
+		options?: Record<string, unknown>,
+	): INodeParameters | null;
 	getNodeOutputs(
 		workflow: unknown,
 		node: INode,

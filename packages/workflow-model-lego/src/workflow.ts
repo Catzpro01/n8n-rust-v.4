@@ -165,14 +165,26 @@ export class Workflow {
 
 			if (this.nodeHelpers?.getNodeParameters === undefined) {
 				throw new Error(
-					`Node type "${node.type}" resolved, but no nodeParametersPort (CD-05: ` +
-						'NodeHelpers.getNodeParameters) was injected. Inject it, or pass a nodeTypes ' +
-						'registry that returns undefined for this type.',
+					`Node type "${node.type}" resolved, but no NodeHelpers port (CD-05: ` +
+						'NodeHelpers.getNodeParameters) could be resolved. packages/node-lego exports ' +
+						'it since TASK-411; inject one via WorkflowParameters.nodeHelpersPort if you ' +
+						'are running without that sibling package.',
 				);
 			}
 
-			// Add default values
-			const nodeParameters = this.nodeHelpers.getNodeParameters(node, nodeType);
+			// Add default values — reference `workflow.ts:110-117`, verbatim argument order.
+			const description = nodeType.description as {
+				properties?: unknown;
+				[key: string]: unknown;
+			};
+			const nodeParameters = this.nodeHelpers.getNodeParameters(
+				description.properties,
+				node.parameters,
+				true,
+				false,
+				node,
+				nodeType.description,
+			);
 			node.parameters = nodeParameters !== null ? nodeParameters : {};
 		}
 

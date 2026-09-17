@@ -1562,61 +1562,63 @@ Full pre-task battery in `results/TASK-AUDIT-ISSUES-01.md`.
 
 ---
 
-## ISSUE-027 — `NodeHelpers.getNodeParameters` is not reconstructed on this branch (OPEN)
+## ISSUE-027 — `Workflow` called `NodeHelpers.getNodeParameters` with the wrong arity (FIXED, `TASK-WORKFLOW-MODEL-02`)
 
 **Detected by:** arena-worker, 2026-09-18 (`TASK-WORKFLOW-MODEL-02`)
-**Affected:** `packages/workflow-model-lego` (Workflow constructor), any consumer that builds a
-`Workflow` with a `nodeTypes` registry that resolves types
-**Type:** Scope gap in the Node LEGO / port contract — no behaviour change, no divergence recorded
-**Severity:** MEDIUM
+**Affected:** `packages/workflow-model-lego` (Workflow constructor, CD-05)
+**Type:** Port-arity fidelity defect in this lane — found while writing the issue this entry replaced
+**Severity:** MEDIUM · **Status: FIXED in this task**
 
 **Description:**
-The n8n 2.9.4 `Workflow` constructor applies default node parameters whenever a node type
-resolves: `node.parameters = NodeHelpers.getNodeParameters(...) ?? {}`. `getNodeParameters` is
-~1 000 lines of `reference/n8n/packages/workflow/src/node-helpers.ts` and is **not reconstructed
-anywhere on this branch**:
+This entry was first opened as *"`getNodeParameters` is not reconstructed on this branch"*, based on
+`grep -rn "export function getNodeParameters" packages/node-lego/src/*.mjs` returning nothing at the
+time. That claim went stale mid-task: peer **TASK-411** (`0ac129b1`) landed it at
+`packages/node-lego/src/parameter-resolution.mjs:144`, exported from
+`packages/node-lego/src/index.mjs:19`. Checking the real signature exposed a defect in *this*
+lane — the constructor was calling the port in a 2-argument facade form:
 
-```text
-$ grep -rn "export function getNodeParameters" packages/node-lego/src/*.mjs
-(no match)
+```ts
+// wrong — what TASK-WORKFLOW-MODEL-01/02 originally called
+this.nodeHelpers.getNodeParameters(node, nodeType);
 ```
 
-`packages/node-lego` exports `getNodeOutputs` (`src/connection-io.mjs:67`) but not
-`getNodeParameters`. `packages/workflow-model-lego` therefore keeps it as a **required injected
-port** (CD-05b) and throws rather than silently skipping default-parameter application:
+The reference passes **six** arguments, in this order (`reference …/workflow.ts:110-117`):
 
-```text
-Error: Node type "Trigger" resolved, but no nodeParametersPort (CD-05:
-NodeHelpers.getNodeParameters) was injected. Inject it, or pass a nodeTypes registry that
-returns undefined for this type.
+```ts
+NodeHelpers.getNodeParameters(
+    nodeType.description.properties,
+    node.parameters,
+    true,      // returnDefaults
+    false,     // returnNoneDisplayed
+    node,
+    nodeType.description,
+);
 ```
 
-**Why it does not invalidate TASK-WORKFLOW-MODEL-02:**
-the 14 `wf.*` connection-golden probes read `nodes` keys, `disabled`, `connections` and node
-outputs — never `node.parameters`. That is demonstrated, not asserted: the conformance suite
-re-derives all 14 results under a deliberately mangling `getNodeParameters`
-(`() => ({ __mangled: true, nested: { a: [1,2,3] } })`) and asserts byte-identical output for
-every probe.
+The wrong arity was invisible: the only caller on the branch injected a one-argument identity
+stand-in, so the shape mismatch never surfaced. It is the same failure family as the
+`getNodeOutputs` argument fixed earlier in this task — the reference passes `nodeType.description`
+(or `description.properties`), never the node type itself.
 
-**Requested action (Node LEGO lane):**
-land `getNodeParameters` in `packages/node-lego` (or a dedicated port package) so the Workflow
-constructor can consume it through CD-05 like `getNodeOutputs`, and retire the injected-port
-requirement. Until then, every caller must supply its own.
+**Fix applied:**
+* `NodeHelpersPort.getNodeParameters` now declares the reference's 7-parameter signature.
+* The constructor calls it with the six reference arguments.
+* `src/node-port.ts` requires **both** `getNodeOutputs` and `getNodeParameters` from
+  `packages/node-lego`, so the port resolves itself and no caller has to inject one.
+* The conformance suite's identity stand-in was removed. Two tests now pin the port: one asserts
+  function **identity** with `packages/node-lego`'s exports (`port.getNodeParameters ===
+  sibling.getNodeParameters`), the other builds a node type with a defaulted `string` property and
+  asserts the constructor fills it in — which fails if the port is a stub.
 
-**Status:** OPEN
-**ADDENDUM (TASK-RIG-REPAIR-01, `arena/01a0aff8-n8n-rust-v-4`, 2026-09-18) — ISSUE-025 REPAIRED; ISSUE-017 probe re-run, divergence stands.**
+**Verification:** `packages/workflow-model-lego` **54/54**, `tsc --strict` 0 errors, isolation gate
+11/11 `BEHAVIOR CHANGE: NONE`, `verify:all` exit 0.
 
-Vendoring repair landed rig-only (`crates/` untouched): `setup.sh` CRATES 10 → 15 repos
-(indexmap 2.2.6, equivalent 1.0.2, hashbrown 0.14.5, regex 1.10.6, aho-corasick 1.1.3 — tags
-verified via `git ls-remote`; crates.io still unreachable, git-clone path used), `vendor_prep.py`
-PLAN 12 → 19 crates (regex-automata 0.4.7 + regex-syntax 0.8.4 from the regex tag's subdirs) with
-`rewrite_manifest` extended for section-style path deps and `[[test]]` stanzas into excluded dirs.
-Results on the `/tmp` tree copy: `run.sh check` exit 0 · `run.sh test` exit 0 (**37/37**, matching
-Agent 1's recorded count) · **ISSUE-017 probe re-run: `getStartNode(None)` with a disabled
-manualTrigger → `Some("Manual Trigger")`** — exactly Agent 5's recorded output; the HIGH divergence
-stands, code unchanged, ISSUE-017 remains OPEN. **ISSUE-025 status: OPEN → REPAIRED** (any agent can
-now reproduce Rust-fidelity claims with `tools/rust-offline-rig/setup.sh && run.sh check && run.sh test`).
+**Still true and unchanged:** the 14 `wf.*` connection-golden probes do not read `node.parameters`,
+so they are insensitive to `getNodeParameters` either way. That is demonstrated by a falsification
+test that re-derives all 14 under a deliberately mangling `getNodeParameters` and asserts
+byte-identical output.
 
+**Status:** FIXED
 ---
 
 **ADDENDUM (TASK-DGRAPH-01, `arena/01a0aff8-n8n-rust-v-4`, 2026-09-18) — ISSUE-015/017: the D-01..D-04 golden is landed, observed, and executable on the JS/TS track.**

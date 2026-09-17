@@ -16,6 +16,7 @@
     "execution:test": "node --test packages/execution-engine/test/*.test.mjs",
     "execution:gate": "node tools/execution-engine-gate.mjs",
     "connection-lego:test": "npm --prefix packages/connection-lego test",
+    "validation-lego:test": "npm --prefix packages/validation-lego test",
     "trigger:test": "npm --prefix packages/trigger-lego test",
     "trigger:gate": "node tools/trigger-lego-gate.mjs",
     "webhook:test": "npm --prefix packages/webhook-lego test",
@@ -27,8 +28,10 @@
     "node:gate": "node tools/node-lego-gate.mjs",
     "persistence:test": "npm --prefix packages/persistence-lego test",
     "persistence:gate": "node tools/persistence-lego-gate.mjs",
+    "credentials:test": "npm --prefix packages/credentials-lego test",
+    "credentials:gate": "node tools/credentials-lego-gate.mjs",
     "reference:fixtures": "node tests/reference/workflow-rust/build-fixtures.mjs --check",
-    "verify:all": "npm run isolation:check && npm run reconstructed-engine:test && npm run execution:gate && npm run connection-lego:test && npm run workflow-model-lego:test && npm run trigger:gate && npm run webhook:gate && npm run scheduler:gate && npm run node:gate && npm run persistence:gate",
-    "workflow-model-lego:test": "npm --prefix packages/workflow-model-lego test"
+    "workflow-model-lego:test": "npm --prefix packages/workflow-model-lego test",
+    "verify:all": "npm run isolation:check && npm run reconstructed-engine:test && npm run execution:gate && npm run connection-lego:test && npm run validation-lego:test && npm run workflow-model-lego:test && npm run trigger:gate && npm run webhook:gate && npm run scheduler:gate && npm run node:gate && npm run persistence:gate && npm run credentials:gate"
   }
 }
