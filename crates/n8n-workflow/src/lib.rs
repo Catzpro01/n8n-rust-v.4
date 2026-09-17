@@ -307,6 +307,26 @@ impl Workflow {
         node_connection_index: Option<usize>,
         checked_nodes: Option<&[String]>,
     ) -> Vec<String> {
+        let mut shared: Vec<String> = checked_nodes.unwrap_or_default().to_vec();
+        self.get_highest_node_inner(node_name, node_connection_index, &mut shared)
+    }
+
+    /// Internal recursion with the reference's **shared, mutating** `checkedNodes`
+    /// (`workflow.ts:514-545`): the array is passed by reference in JS, so a node pushed
+    /// while exploring one input branch is also skipped when a LATER branch reaches it.
+    /// Cloning per recursion level (the previous port) loses exactly that cross-branch
+    /// pruning — pinned by the `08-traversal-depth-and-type-filter` probe
+    /// "highest nodes of E": oracle `[Trigger, C]`, cloned-port `[Trigger]`.
+    ///
+    /// Copy-semantics note: the public wrapper copies a caller-provided slice instead of
+    /// mutating it in place (the JS API mutates the passed array). No reference caller
+    /// relies on that side effect (`workflow.ts:870` passes nothing).
+    fn get_highest_node_inner(
+        &self,
+        node_name: &str,
+        node_connection_index: Option<usize>,
+        checked_nodes: &mut Vec<String>,
+    ) -> Vec<String> {
         let mut current_highest: Vec<String> = Vec::new();
 
         // `workflow.ts:498` — strict `=== false` for the starting node itself.
@@ -329,7 +349,6 @@ impl Workflow {
             return current_highest;
         };
 
-        let mut checked_nodes: Vec<String> = checked_nodes.unwrap_or_default().to_vec();
         if checked_nodes.iter().any(|name| name == node_name) {
             // Node got checked already before
             return current_highest;
@@ -357,7 +376,7 @@ impl Workflow {
                 }
 
                 let mut add_nodes =
-                    self.get_highest_node(&connection.node, None, Some(&checked_nodes));
+                    self.get_highest_node_inner(&connection.node, None, checked_nodes);
 
                 if add_nodes.is_empty() {
                     // The checked node does not have any further parents so add it

@@ -12,7 +12,7 @@ use serde_json::{json, Value};
 use std::fs;
 use std::path::{Path, PathBuf};
 
-const CASES: [&str; 7] = [
+const CASES: [&str; 8] = [
     "01-linear",
     "02-multi-output",
     "03-connection-types",
@@ -22,11 +22,15 @@ const CASES: [&str; 7] = [
     // and the full getParentMainInputNode climb through an ai_tool sub-node (harness stub).
     "06-rename-stale-destination",
     "07-parent-main-input-ai-tool",
+    // Adopted from agent-3/worker-05 (arena/01a0ac05 @ 4eec6791): traversal depth pinning
+    // (diamond dedupe, unbounded farthest-first) + ALL/ALL_NON_MAIN type filters + byDest
+    // insertion-order + getHighestNode/getParentNodesByDepth/getNodeConnectionIndexes.
+    "08-traversal-depth-and-type-filter",
 ];
 
 /// Expected probe totals: 46 total, all executable (no tracked skips remain since
 /// TASK-406 ported the graph-utils ops).
-const PROBE_TOTAL: usize = 61;
+const PROBE_TOTAL: usize = 88;
 
 fn repo_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")

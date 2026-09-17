@@ -1,0 +1,191 @@
+{
+  "children Trigger depth 0 -> []": [],
+  "children Trigger depth 1": [
+    "A"
+  ],
+  "children Trigger depth 2 (diamond, dedupe)": [
+    "C",
+    "B",
+    "A"
+  ],
+  "children Trigger depth 3 (D once)": [
+    "D",
+    "C",
+    "B",
+    "A"
+  ],
+  "children Trigger unbounded (farthest first)": [
+    "E",
+    "D",
+    "C",
+    "B",
+    "A"
+  ],
+  "children A -1 explicit == unbounded": [
+    "E",
+    "D",
+    "C",
+    "B"
+  ],
+  "parents E unbounded (diamond collapsed)": [
+    "Trigger",
+    "A",
+    "C",
+    "B",
+    "D"
+  ],
+  "parents E depth 1": [
+    "D"
+  ],
+  "parents E depth 2": [
+    "C",
+    "B",
+    "D"
+  ],
+  "parents D main only": [
+    "Trigger",
+    "A",
+    "C",
+    "B"
+  ],
+  "parents D ai_tool (recurses with the same type: Sub via Tool)": [
+    "Sub",
+    "Tool"
+  ],
+  "parents D ai_languageModel": [
+    "Model"
+  ],
+  "parents D ALL_NON_MAIN (types iterated in key order, main excluded)": [
+    "Model",
+    "Sub",
+    "Tool"
+  ],
+  "parents D ALL (main + ai_*; key order of byDest[D])": [
+    "Model",
+    "Sub",
+    "Tool",
+    "Trigger",
+    "A",
+    "C",
+    "B"
+  ],
+  "parents D ALL depth 1": [
+    "Model",
+    "Tool",
+    "C",
+    "B"
+  ],
+  "parents E ALL (E has main only -> ALL == main)": [
+    "Model",
+    "Sub",
+    "Tool",
+    "Trigger",
+    "A",
+    "C",
+    "B",
+    "D"
+  ],
+  "parents E ALL_NON_MAIN (no non-main keys -> [])": [],
+  "children Sub ai_tool (2-hop chain Sub->Tool->D)": [
+    "D",
+    "Tool"
+  ],
+  "children Sub ALL": [
+    "E",
+    "D",
+    "Tool"
+  ],
+  "children Sub main (none)": [],
+  "getConnectedNodes unknown node -> []": [],
+  "getConnectedNodes A default type/depth": [
+    "E",
+    "D",
+    "C",
+    "B"
+  ],
+  "byDest D key order (main, ai_tool, ai_languageModel = insertion order of sources)": {
+    "main": [
+      [
+        {
+          "node": "B",
+          "type": "main",
+          "index": 0
+        }
+      ],
+      [
+        {
+          "node": "C",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    ],
+    "ai_tool": [
+      [
+        {
+          "node": "Tool",
+          "type": "ai_tool",
+          "index": 0
+        }
+      ]
+    ],
+    "ai_languageModel": [
+      [
+        {
+          "node": "Model",
+          "type": "ai_languageModel",
+          "index": 0
+        }
+      ]
+    ]
+  },
+  "parents by depth of E (indicies merge on diamond)": [
+    {
+      "name": "D",
+      "indicies": [
+        0
+      ],
+      "depth": 1
+    },
+    {
+      "name": "B",
+      "indicies": [
+        0
+      ],
+      "depth": 2
+    },
+    {
+      "name": "C",
+      "indicies": [
+        0
+      ],
+      "depth": 2
+    },
+    {
+      "name": "A",
+      "indicies": [
+        0
+      ],
+      "depth": 3
+    },
+    {
+      "name": "Trigger",
+      "indicies": [
+        0
+      ],
+      "depth": 4
+    }
+  ],
+  "highest nodes of E": [
+    "Trigger",
+    "C"
+  ],
+  "getNodeConnectionIndexes D <- Sub (2 hops via ai_tool)": {
+    "sourceIndex": 0,
+    "destinationIndex": 0
+  },
+  "getNodeConnectionIndexes E <- A (main, 3 hops, first path found)": {
+    "sourceIndex": 0,
+    "destinationIndex": 0
+  }
+}
