@@ -115,6 +115,7 @@ asserts that confinement.
 | `TASK-426-phase3-webhook-streaming-response` | webhook response/stream transport | `contracts/webhook.contract.md` ✅ | `docs/isolation/webhook.md` ✅ | `packages/webhook-lego/test/*.test.mjs` 49/49 ✅ (7 response-stream cases) | `tools/webhook-lego-gate.mjs` 5/5 ✅ | **VERIFIED** |
 | `TASK-427-phase3-webhook-response-extractors` | webhook response extraction | `contracts/webhook.contract.md` ✅ | `docs/isolation/webhook.md` ✅ | `packages/webhook-lego/test/*.test.mjs` 59/59 ✅ (10 extractor cases) | `tools/webhook-lego-gate.mjs` 5/5 ✅ | **VERIFIED** |
 | `TASK-428-phase3-wait-tracker` | execution (wait tracker) | `contracts/execution.contract.md` ✅ | `docs/isolation/execution.md` ✅ | `packages/execution-engine/test/*.test.mjs` 85/85 ✅ (18 WaitTracker cases) | `tools/execution-engine-gate.mjs` 11/11 ✅ | **SUBMITTED_FOR_REVIEW** |
+| `TASK-429-phase3-webhook-response-headers` | webhook response header validation | `contracts/webhook.contract.md` ✅ | `docs/isolation/webhook.md` ✅ | `packages/webhook-lego/test/*.test.mjs` 67/67 ✅ (8 response-header cases) | `tools/webhook-lego-gate.mjs` 5/5 ✅ | **SUBMITTED_FOR_REVIEW** |
 
 | Phase 3 gate | Result |
 | :--- | :--- |
@@ -130,5 +131,5 @@ holds 35 cases in 5 groups; `checksum` (8) + `toJSON` (6) + `rename` (6) are cov
 **Next Phase 3 work:** caveat C1 (11/11 live smoke on the VPS + PostgreSQL) and production integration
 wiring for the reconstructed ports. The formerly listed frozen Workflow surface is implemented and
 covered by Workflow Model tests; distributed activation pub/sub, waiting forms, native body parsing,
-and streaming/response extraction are covered by TASK-423 through TASK-427 — see
-`docs/isolation/execution.md` §7.
+streaming/response extraction, and protected response headers are covered by TASK-423 through
+TASK-429 — see `docs/isolation/execution.md` §7.

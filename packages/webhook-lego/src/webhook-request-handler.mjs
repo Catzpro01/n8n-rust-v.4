@@ -1,5 +1,6 @@
 import { WebhookError, WebhookNotFoundError } from './errors.mjs';
 import { isWebhookNoResponse, isWebhookStaticResponse, isWebhookStreamResponse } from './webhook-response.mjs';
+import { normalizeResponseHeaders } from './response-headers.mjs';
 
 export const ALLOWED_METHODS = new Set(['OPTIONS', 'DELETE', 'GET', 'HEAD', 'PATCH', 'POST', 'PUT']);
 
@@ -36,14 +37,14 @@ export class WebhookRequestHandler {
       const response = await manager.executeWebhook({ ...request, method, path });
       if (isWebhookNoResponse(response)) return { statusCode: 200, headers: cors, body: undefined };
       if (isWebhookStaticResponse(response)) {
-        return { statusCode: response.code ?? 200, headers: { ...cors, ...(response.headers ?? {}) }, body: response.body };
+        return { statusCode: response.code ?? 200, headers: { ...cors, ...normalizeResponseHeaders(response.headers) }, body: response.body };
       }
       if (isWebhookStreamResponse(response)) {
-        return { statusCode: response.code ?? 200, headers: { ...cors, ...(response.headers ?? {}) }, body: response.stream };
+        return { statusCode: response.code ?? 200, headers: { ...cors, ...normalizeResponseHeaders(response.headers) }, body: response.stream };
       }
       return {
         statusCode: response?.statusCode ?? response?.responseCode ?? 200,
-        headers: { ...cors, ...(response?.headers ?? {}) },
+        headers: { ...cors, ...normalizeResponseHeaders(response?.headers) },
         body: response?.noWebhookResponse ? response?.body : (response?.body ?? response?.data ?? { message: 'Workflow was started' }),
       };
     } catch (error) {

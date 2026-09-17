@@ -64,3 +64,10 @@ The `onReceived` and `lastNode` extractors now preserve response-data precedence
 backward compatibility, optional all-output scanning, nested JSON property selection, all-entry
 JSON, `noData`, exact binary-property errors, in-memory base64 decoding, MIME precedence, and
 persisted binary streaming through the existing storage port.
+
+## Validated response headers (TASK-429)
+
+`WebhookResponseHeaders` lower-cases valid names, stringifies object values, accepts node header
+entries, drops invalid names/control-character values, and blocks user-supplied CSP. It applies to
+framework bulk responses or native Node responses, and the request handler consumes it without
+leaking internal state.

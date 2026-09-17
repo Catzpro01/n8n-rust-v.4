@@ -172,3 +172,13 @@ extraction validates the configured property with exact error messages, gives MI
 decodes in-memory base64, and resolves persisted IDs only through `getBinaryStream`. Expected
 user-data failures return `{ ok:false, error }`; successful static/stream values return
 `{ ok:true, result }` for the response algebra adapter.
+
+## Phase-3 validated response headers (TASK-429)
+
+`WebhookResponseHeaders` stores lower-cased names in insertion order and validates names and values
+with Node's HTTP rules. Invalid entries are silently dropped after an injected warning, while
+`content-security-policy` is always protected regardless of case. Plain response objects stringify
+non-string values; node configuration uses the `{ entries:[{name,value}] }` shape. Empty containers
+are no-ops, and validated headers apply through either bulk `setHeaders(Map)` or native
+`setHeader(name,value)`. `WebhookRequestHandler` normalizes this container for static, streaming,
+and legacy results without exposing its logger or internal map.

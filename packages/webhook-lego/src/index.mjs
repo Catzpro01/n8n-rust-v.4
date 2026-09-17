@@ -5,6 +5,7 @@ export { InMemoryWebhookRepository, WebhookEntity, WebhookService } from './webh
 export { WebhookHttpServer } from './http-server.mjs';
 export { getMultipartBoundary, normalizeFormData, parseMultipartFormData, parseWebhookBody } from './body-parser.mjs';
 export { extractWebhookLastNodeResponse, extractWebhookOnReceivedResponse } from './response-extractors.mjs';
+export { WebhookResponseHeaders, normalizeResponseHeaders } from './response-headers.mjs';
 export {
   WebhookResponseTag,
   createNoResponse,
