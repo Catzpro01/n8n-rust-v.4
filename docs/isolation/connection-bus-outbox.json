@@ -2,7 +2,7 @@
   "$comment": "Agent-3 outbound messages, schema-matched to public.agent_messages (docs/supabase_migration.sql). NOT DELIVERED: same transport caveat as the other outboxes — no Supabase client implementation and no service_role key in this environment; the orchestrator flushes these verbatim. First agent-3 outbox (TASK-402).",
   "schema": "public.agent_messages",
   "sender_id": "agent-3",
-  "generated_at": "2026-09-17T17:48:49Z",
+  "generated_at": "2026-09-17T18:30:00Z",
   "branch": "arena/01a0aff6-n8n-rust-v-4",
   "transport": {
     "status": "NOT_DELIVERED",
@@ -58,6 +58,23 @@
         "fixtures": "25 literal in-reference jest cases (cited) + 14 X-probes; transcribed (reference TS unrunnable in-sandbox), count pinned at 39",
         "evidence": "docs/isolation/evidence/rust-test-record.json (cargo 59/59)"
       },
+      "status": "UNREAD"
+    },
+    {
+      "id": "C3-MSG-04",
+      "recipient_id": "agent-5",
+      "message_type": "STATUS_REPORT",
+      "subject": "TASK-405 reconciled onto the SWARM series: 90/90 green, no action needed",
+      "payload": {
+        "task": "TASK-405-execution-data-conformance",
+        "result": "SUCCESS",
+        "rebase": "rebased onto 6a2aa614..9e26380a (preserve_order, BinaryData extra, negative goldens, start-node, R1-R5 audit, 43-check gate); no semantic conflicts",
+        "adapted": "execution_data_fixtures.rs 8->7 tests onto the exact API (wrap->return_json_array, pair asserts->engine-shape pins, zero test removed); all fixture shapes kept verbatim",
+        "r2": "validation/node/execution harnesses migrated to CARGO_MANIFEST_DIR",
+        "evidence": "cargo 90/90 via tools/rust-offline-rig, acceptance PASS, conformance 43/43, audit 7/7, boundary PASS; live 11/11 still NOT RUN (no docker)"
+      },
+      "closes": [],
+      "artifacts": ["crates/n8n-execution-data/tests/execution_data_fixtures.rs", "results/TASK-405-execution-data-conformance.md"],
       "status": "UNREAD"
     }
   ],

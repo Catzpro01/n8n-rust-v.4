@@ -26,11 +26,48 @@ by exact ports of the four pure reference leaves, pinned by 39 cases.
 
 ## Evidence
 
-- `cargo test --workspace`: 59 passed / 0 failed (execution-data: 4 unit + 1 fixture test over 39 cases)
-- `cargo check`: no warnings
-- `contract_conformance.mjs`: 24/24; `boundary_audit.py`: PASS
+- `cargo test --workspace`: 90 passed / 0 failed post-reconcile (59 pre-rebase + the 24-commit SWARM series; execution-data: 4 unit + 1 fixture test over 39 cases + 7 adapted engine-fixture tests)
+- `cargo check --workspace --all-targets`: no warnings
+- `contract_conformance.mjs`: 43/43; `rust_conformance_audit.py`: PASS 7/7; `boundary_audit.py`: PASS; `run_gate.sh --offline-only`: offline PASS (live 11/11 NOT RUN — no docker, as before)
 - `phase3-rust-acceptance.sh --force`: PASS (record refreshed post-commit)
 - Doc: `docs/isolation/execution-data.md` §13; bus: `connection-bus-outbox.json` `C3-MSG-03` (NOT_DELIVERED, orchestrator flush)
+
+## Reconciliation (post-rebase onto the SWARM series)
+
+While TASK-405 was in flight the peer swarm landed 24 commits
+(`6a2aa614..9e26380a`: `preserve_order` + explicit checksum `sortObjectKeys`
+port, `BinaryData` expansion with `extra`, negative goldens 04–06,
+start-node fixtures, `rust_conformance_audit.py` R1–R5, 43-check gate).
+This task rebased onto that tip and reconciled the overlap:
+
+- **Convergences, not conflicts.** Their `BinaryData.extra` complements this
+  task's `INodeExecutionData.extra` (different structs, auto-merged); they
+  adopted this line's `serde_json::Number` approach (`d0b3aa3e`); they
+  enabled `preserve_order` workspace-wide with the explicit checksum sort
+  this line's A4-MSG-04 had suggested. The validation `OrderedValue` doc
+  paragraph claiming the flag "is not an option" is reframed:
+  `OrderedValue` is feature-independent by construction (verified immune —
+  its order comes from its own `IndexMap`, and all `Value ==` asserts in
+  this line's harnesses are order-insensitive under `IndexMap` equality).
+- **Adapted their `execution_data_fixtures.rs`** (8 → 7 tests) to the exact
+  API: `wrap_data` → `return_json_array` (proven identical on the fixture
+  payloads — all are clean `{id}` objects with no `json`/`binary`/
+  `pairedItem` keys), `extract_json` inlined as `payloads_of`, the four
+  `pair_items` asserts replaced by the engine-shape pins they wrapped
+  (all kept verbatim — the RJA/Norm shapes are what prove no count-based
+  helper can be the rule), and the pure-heuristic `zero_source_items`
+  test removed. Their `MapNoPair` comment is kept as-is.
+- **R2 hygiene:** migrated this line's three relative-path harnesses
+  (validation, node-model, execution-data) to `CARGO_MANIFEST_DIR`
+  (connection already used it), so every crate passes the audit on its
+  own rather than via a sibling file.
+- **Verified with their rig** (`tools/rust-offline-rig` — no cargo in
+  this sandbox): `check` clean, `cargo test` **90/90** (predicted exactly:
+  88 − 2 old lib tests − 1 zero test + 4 new lib tests + 1 fixture
+  test), `rust_conformance_audit.py` PASS 7/7, `contract_conformance.mjs`
+  43/43 after the record refresh, `phase3-rust-acceptance.sh --force`
+  PASS. A 31-assertion node simulation of every literal in the adapted
+  test file also holds.
 
 ## Notes for reviewers
 

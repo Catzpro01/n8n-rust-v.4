@@ -12,10 +12,17 @@ use n8n_execution_data::{
 };
 use serde_json::Value;
 use std::fs;
-use std::path::Path;
+use std::path::PathBuf;
 
 fn load_fixtures() -> Value {
-    let path = Path::new("../../tests/reference/agent-3/execution-data/fixtures.json");
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("..")
+        .join("tests")
+        .join("reference")
+        .join("agent-3")
+        .join("execution-data")
+        .join("fixtures.json");
     let content = fs::read_to_string(path).expect("fixtures.json readable");
     serde_json::from_str(&content).expect("fixtures.json parses")
 }
