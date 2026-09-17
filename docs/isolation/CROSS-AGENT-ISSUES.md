@@ -1039,3 +1039,39 @@ destroy their work. Agent 5 documents and reassigns; it does not fix other agent
    `f8da35180669`.
 
 **Status:** CLOSED (2026-09-17 by Orchestrator) — Relocated `node-model/index.ts` to `docs/isolation/node-barrel.ts` and removed from `reference/`. Reference integrity returned to 15,050 files.
+
+---
+
+## ISSUE-019 — Legacy Rust in `crates/**` contradicts PROJECT_RULES "ZERO RUST" (v2.9.4 native pivot)
+
+**Detected by:** worker `arena/01a0adc8-n8n-rust-v-4` (2026-09-17, TASK-PIPE-02 post-task gate run)
+**Affected:** main branch, gate tooling, all Phase-3 workers
+**Type:** Rules/gate inconsistency — pre-existing condition, not introduced by PIPE-02
+**Severity:** HIGH (blocks the offline integration gate)
+
+**Description:**
+`PROJECT_RULES.md` on `main` (`06444565`, "native n8n v2.9.4 reconstruction") now mandates
+**ZERO RUST** (rule 1: JS/TS 1:1 only; writing Rust in `crates/` or `apps/` is forbidden), and
+every `dynamic_task_pool` task lists `crates/**` and `apps/**` as `forbidden_paths`. However
+`crates/` still contains the Rust experiments merged **before** the pivot (PR #2/#3: 7 crates,
+24 files, ~2,740 lines + workspace `Cargo.toml`). Consequences, re-verified this session:
+
+* `node tests/compatibility/contract_conformance.mjs` → 20/21 PASS, sole FAIL =
+  "Rust artifacts present in Phase 2".
+* `python3 tests/integration/boundary_audit.py` → Rust guard VIOLATION (same file list).
+* `tests/integration/run_gate.sh --offline-only` → **BLOCKED**.
+
+No PIPE task may touch `crates/**` (forbidden for every worker), so no currently-available
+worker can legally remove the legacy Rust. This requires an explicit decision from the
+orchestrator/mediator: either a dedicated cleanup task with `crates/**` in its `allowed_paths`,
+or a gate-tooling update that retires the Phase-2 Rust guard in favor of the Phase-3 native
+rules.
+
+**Note:** the PIPE-02 branch also delivers the execution-engine spec + contract whose absence
+was flagged in ISSUE-018 (TASK-403): `docs/isolation/execution-loop-spec.md` (POOL-001) and
+`contracts/execution-engine.contract.md` now exist, machine-verified by 30/30 conformance tests.
+
+**Required action:** orchestrator issues a cleanup task (remove legacy Rust + update the two
+gate tools to the Phase-3 native rules) OR re-classifies the Rust guard as retired.
+
+**Status:** OPEN

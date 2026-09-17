@@ -1,0 +1,19 @@
+{
+  "name": "@reconstructed/engine",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "1:1 native Node.js reconstruction of n8n 2.9.4 WorkflowExecute — node execution loop (stack pop, run, output routing). TASK-PIPE-02, spec: docs/isolation/execution-loop-spec.md (POOL-001).",
+  "engines": {
+    "node": ">=18"
+  },
+  "exports": {
+    ".": "./src/workflow-execute.mjs",
+    "./run-execution-data": "./src/run-execution-data.mjs",
+    "./workflow-scaffold": "./src/workflow-scaffold.mjs",
+    "./hooks": "./src/hooks.mjs"
+  },
+  "scripts": {
+    "test": "node --test test/"
+  }
+}

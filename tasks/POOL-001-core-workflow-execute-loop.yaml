@@ -1,0 +1,58 @@
+id: POOL-001-core-workflow-execute-loop
+agent: worker-arena-01a0adc8
+lego: execution
+module: execution
+phase: 3
+
+# Deconstruct WorkflowExecute.ts main execution loop (topological step-by-step dispatch)
+# Source task: dynamic_task_pool POOL-001-core-workflow-execute-loop (priority 100, AVAILABLE -> executed)
+# Reference: n8n 2.9.4 (packages 2.9.1) — reference/n8n/packages/core/src/execution-engine/workflow-execute.ts
+
+allowed_paths:
+  - docs/isolation/execution-loop-spec.md
+  - tasks/POOL-001-core-workflow-execute-loop.yaml
+  - results/POOL-001-core-workflow-execute-loop.md
+
+forbidden_paths:
+  - crates/**
+  - apps/**
+  - reference/**
+
+requires:
+  - reference/n8n/packages/core/src/execution-engine/workflow-execute.ts
+  - reference/n8n/packages/workflow/src/interfaces.ts
+  - reference/n8n/packages/workflow/src/run-execution-data-factory.ts
+
+operations:
+  - name: read_file
+    args:
+      path: reference/n8n/packages/core/src/execution-engine/workflow-execute.ts
+  - name: read_file
+    args:
+      path: reference/n8n/packages/workflow/src/interfaces.ts
+  - name: read_file
+    args:
+      path: reference/n8n/packages/workflow/src/run-execution-data-factory.ts
+  - name: write_file
+    args:
+      path: docs/isolation/execution-loop-spec.md
+      note: >
+        Line-referenced deconstruction of processRunExecutionData: stack pop (shift),
+        runNode dispatch, retry policy, error/waiting/destination semantics,
+        output routing via addNodeToBeExecuted, waitingExecution join + drain,
+        v0/v1 ordering fork, 15 testable invariants, pipeline mapping to TASK-PIPE-01..05.
+
+spec:
+  source: reference/n8n/packages/core/src/execution-engine/workflow-execute.ts
+  target: docs/isolation/execution-loop-spec.md
+  objective: Map how nodeExecutionStack is popped, executed, and how outputs are pushed downstream.
+  consensus_required: 2
+
+verification:
+  source_line_coverage: "WEX sections cited by line ranges 105-2641; every loop claim carries a WEX:<lines> reference"
+  no_reference_modification: "git diff shows zero changes under reference/**"
+  zero_rust: "no files touched under crates/** or apps/**"
+
+merge_condition:
+  - no_contract_violation
+  - consensus_2_of_5

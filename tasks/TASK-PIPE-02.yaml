@@ -1,0 +1,81 @@
+id: TASK-PIPE-02
+agent: worker-arena-01a0adc8
+lego: execution-engine
+module: workflow
+phase: 3
+
+# Node Execution Loop (Stack Pop, Run, Output Routing)
+# Source task: dynamic_task_pool TASK-PIPE-02 (priority 98, AVAILABLE -> executed)
+# Definition of done: "Runnable code/spec matching n8n v2.9.4 behavior + 5/5 APPROVED consensus votes."
+
+allowed_paths:
+  - packages/reconstructed-engine/**
+  - contracts/execution-engine.contract.md
+  - docs/isolation/**
+  - tasks/TASK-PIPE-02.yaml
+  - results/TASK-PIPE-02.md
+
+forbidden_paths:
+  - crates/**
+  - apps/**
+  - reference/**
+
+requires:
+  - docs/isolation/execution-loop-spec.md
+  - reference/n8n/packages/core/src/execution-engine/workflow-execute.ts
+
+operations:
+  - name: read_file
+    args:
+      path: reference/n8n/packages/core/src/execution-engine/workflow-execute.ts
+  - name: implement
+    args:
+      target: packages/reconstructed-engine/src/workflow-execute.mjs
+      what: >
+        1:1 native JS port of processRunExecutionData (loop), runNode dispatch,
+        addNodeToBeExecuted (output routing + multi-input join), waiting-nodes drain,
+        ensureInputData, assignPairedItems, handleNodeErrorOutput, processSuccessExecution.
+        Every block cites WEX:<lines>.
+  - name: implement
+    args:
+      target: packages/reconstructed-engine/src/run-execution-data.mjs
+      what: createRunExecutionData factory port (1:1)
+  - name: implement
+    args:
+      target: packages/reconstructed-engine/src/workflow-scaffold.mjs
+      what: >
+        Temporary Workflow surface for the loop with 1:1 ports of
+        mapConnectionsByDestination, getConnectedNodes, getHighestNode, getStartNode.
+        To be replaced by TASK-PIPE-01 (Agent 1) native workflow model.
+  - name: implement
+    args:
+      target: packages/reconstructed-engine/src/hooks.mjs
+      what: lifecycle hook runner (workflowExecuteBefore/Resume/After, nodeExecuteBefore/After, sendChunk)
+  - name: write_tests
+    args:
+      target: packages/reconstructed-engine/test/execution-loop.test.mjs
+      what: 30 conformance tests encoding the 15 spec invariants of execution-loop-spec.md section 7
+  - name: write_contract
+    args:
+      target: contracts/execution-engine.contract.md
+      what: formal LEGO contract (PROJECT_RULES rule 5)
+
+spec:
+  title: Node Execution Loop (Stack Pop, Run, Output Routing)
+  pillar: workflow
+  consensus_required: 2
+  definition_of_done: "Runnable code/spec matching n8n v2.9.4 behavior + 5/5 APPROVED consensus votes."
+
+verification:
+  unit_tests: "node --test test/execution-loop.test.mjs -> 30/30 PASS (node v22.22.3)"
+  legacy_runner: "node test-run.mjs -> PASS (unchanged, still runnable)"
+  zero_rust: "no changes under crates/** or apps/**"
+  reference_integrity: "no changes under reference/**"
+
+bugs_found_and_fixed_during_port:
+  - "workflow-scaffold connectionsByDestinationNode initially pushed raw connection data; reference mapConnectionsByDestination REVERSES edges ({node: source, index: source output index}) — fixed to 1:1 port"
+  - "executeNode initially wrapped EngineRequest inside {data}; reference returns engine requests UNWRAPPED (WEX:1059-1061) — fixed"
+
+merge_condition:
+  - no_contract_violation
+  - consensus_2_of_5
