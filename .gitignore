@@ -23,3 +23,7 @@ packages/workflow-lego/.extract/
 reference/**/dist/
 reference/**/.turbo/
 reference/**/coverage/
+
+# reconstructed-engine compiled output (npm --prefix packages/reconstructed-engine run emit:cjs)
+packages/reconstructed-engine/dist/
+packages/reconstructed-engine/dist-cjs/
