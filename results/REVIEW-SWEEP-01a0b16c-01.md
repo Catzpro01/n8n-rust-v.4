@@ -69,6 +69,29 @@ deliberately left untouched: back-filling operations the gateway never recorded 
 evidence. All four Phase-6 records written by this session pass the same audit (92 files scanned,
 the 4 new ones have complete tables).
 
+## 3c. Post-task check — POOL-012 (integration cycle)
+
+The mandate's second phase requires a fresh check *after* the task is done. Re-run on the final
+tree of this branch:
+
+```text
+node --test tests/integration/phase6-integration.test.mjs   → 4/4 PASS   (15/15 clean re-runs)
+node --test packages/queue-lego/test/*.test.mjs             → 17/17 PASS  (10/10 clean re-runs)
+node tools/phase6-isolation-gate.mjs                        → 8/8 PASS    (10/10 clean re-runs)
+tests/compatibility/contract_conformance.mjs                → 21/21 PASS
+python3 tests/integration/boundary_audit.py                 → PASS
+npm run isolation:check                                     → PASS
+npm run verify                                              → 11/11 PASS · BEHAVIOR CHANGE: NONE
+```
+
+The integration cycle also exposed and removed a genuine race in the delivery itself: the first
+`createQueueRuntime` created its own worker subscriber in addition to the one the caller built, so
+`get-worker-status` was answered twice and the debounced drain raced (3/20 failing runs). The
+runtime now takes `instanceType`, `eventService`, `statusFactory`, `recovery`, `mode`,
+`redisPrefix`, `queueMetricsEnabled` and `queueFactory` explicitly, each test builds exactly one
+subscriber per instance, and the metrics assertions read the deterministic `collectQueueMetrics()`
+body instead of wall-clock ticks. 0 flakes in 25 subsequent gate runs.
+
 ## 4. Process gap (for the orchestrator)
 
 The Supabase intake channel is single-homed: when an agent sandbox cannot reach

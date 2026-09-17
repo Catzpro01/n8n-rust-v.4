@@ -8,7 +8,7 @@
 | Contract | `contracts/realtime.contract.md` |
 | Package | `packages/realtime-lego` |
 | Engine | `packages/reconstructed-engine/src/realtime-engine.ts` |
-| Cycle | `DISCOVERED → ISOLATED → CONTRACTED → IMPLEMENTED → VERIFIED` |
+| Cycle | `DISCOVERED → ISOLATED → CONTRACTED → IMPLEMENTED → VERIFIED → INTEGRATED` |
 | Rust | not started (rule §1) |
 
 ## 1. X-Ray
@@ -59,3 +59,10 @@ node tools/phase6-isolation-gate.mjs                       # G01..G07 PASS
 | D1 | sockets are represented by `PushRequest`/`PushResponse`/`WebSocketLike` twins | the wire bytes and lifecycle rules are what the frontend observes; the network layer is injected by the host process |
 | D2 | the 60 s ping loop is exposed as `pingAll()` on demand (plus `PING_INTERVAL_MS` constant) | deterministic tests, identical production timing constant |
 | D3 | `AuthService` middleware is a declared consumed port, not re-implemented | credentials/auth is a different LEGO (`contracts/credentials.contract.md`) |
+
+## 6. Integration (VERIFIED → INTEGRATED)
+
+`tests/integration/phase6-integration.test.mjs` holds two SSE sessions (user-7, user-8) and
+asserts that the worker-status push produced by the queue LEGO's
+`get-worker-status → response-to-get-worker-status` round trip is written to the requesting
+user's socket only — byte-checked against the `data: {…}\n\n` frame format.

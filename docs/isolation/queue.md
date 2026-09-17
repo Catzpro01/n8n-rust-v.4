@@ -8,7 +8,7 @@
 | Contract | `contracts/queue.contract.md` |
 | Package | `packages/queue-lego` |
 | Engine | `packages/reconstructed-engine/src/queue-engine.ts` |
-| Cycle | `DISCOVERED → ISOLATED → CONTRACTED → IMPLEMENTED → VERIFIED` |
+| Cycle | `DISCOVERED → ISOLATED → CONTRACTED → IMPLEMENTED → VERIFIED → INTEGRATED` |
 | Rust | not started (rule §1) |
 
 ## 1. X-Ray — what the subsystem does in the reference
@@ -59,3 +59,11 @@ node tools/phase6-isolation-gate.mjs                     # G01..G07 PASS
 | D1 | Bull/Redis replaced by `MemoryJobQueue` + `MemoryPubSubBroker` | ZERO RUST/zero-dependency reconstruction: the observable semantics (settings, statuses, message kinds) are preserved and testable; a real deployment injects a backed queue through the same seam (`queueFactory`, `broker`) |
 | D2 | Worker status payload fields that are OS-specific (`os.*`, memory) are produced by an injected `statusFactory` | keeps the engine deterministic; the reference getter is preserved in the contract (§2 Q13) |
 | D3 | Timers are `unref()`-ed | the engine must never keep a process alive on its own |
+
+## 6. Integration (VERIFIED → INTEGRATED)
+
+Wired with the other two Phase-6 LEGOs in `tests/integration/phase6-integration.test.mjs`:
+worker dequeues `job` → `JobProcessor` → `job-finished` v2 on the per-job channel, while the
+leader runs `recoverFromQueue()` and one `collectQueueMetrics()` cycle whose
+`job-counts-updated` payload reaches the events relay. The worker-status round trip published
+through `Publisher` is delivered over a real SSE session by the realtime LEGO.

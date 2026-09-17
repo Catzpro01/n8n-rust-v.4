@@ -15,6 +15,7 @@
     "phase6:verify": "node tools/phase6-isolation-gate.mjs",
     "queue:test": "npm --prefix packages/queue-lego test",
     "events:test": "npm --prefix packages/events-lego test",
-    "realtime:test": "npm --prefix packages/realtime-lego test"
+    "realtime:test": "npm --prefix packages/realtime-lego test",
+    "phase6:integration": "node --test tests/integration/phase6-integration.test.mjs"
   }
 }

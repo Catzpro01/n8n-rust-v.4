@@ -15,7 +15,13 @@
  *   docs/isolation/evidence/phase6-gate.json
  *   docs/isolation/PHASE-6-GATE.md
  *
- * usage: node tools/phase6-isolation-gate.mjs [--json] [--skip-tests]
+ * usage: node tools/phase6-isolation-gate.mjs [--json] [--skip-tests] [--lego queue|events|realtime]
+ *
+ * `--lego <name>` runs the isolated subset that belongs to a single LEGO (its artefacts, its
+ * provenance gate and its package tests) and writes per-LEGO evidence under
+ * docs/isolation/evidence/phase6-<lego>-gate.json; the three thin wrappers
+ * tools/{queue,events,realtime}-isolation-gate.mjs call it this way. Without the flag the full
+ * gate runs, including the cross-LEGO integration gate G08.
  */
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -27,11 +33,27 @@ const REPO = join(fileURLToPath(import.meta.url), '..', '..');
 const args = process.argv.slice(2);
 const asJson = args.includes('--json');
 const skipTests = args.includes('--skip-tests');
+const legoFlagIndex = args.findIndex((arg) => arg === '--lego' || arg.startsWith('--lego='));
+const legoArgument = legoFlagIndex === -1 ? null : (args[legoFlagIndex].split('=')[1] ?? args[legoFlagIndex + 1]);
+const only = legoArgument ?? null;
+const LEGOS = ['queue', 'events', 'realtime'];
+if (only !== null && !LEGOS.includes(only)) {
+	console.error(`unknown --lego '${only}' (expected one of ${LEGOS.join(', ')})`);
+	process.exit(2);
+}
+/** gates that belong to exactly one LEGO; everything else is shared or cross-LEGO */
+const SCOPE = { G01: 'all', G02: 'queue', G03: 'events', G04: 'realtime', G05: 'all', G06: 'shared', G07: 'shared', G08: 'cross' };
+const scoped = (list) => (only === null ? list : list.filter((entry) => entry === only));
+const inScope = (entry) => only === null || ['all', 'shared'].includes(entry);
 
 const EVIDENCE = join(REPO, 'docs/isolation/evidence');
 const RESULTS = [];
 
 const gate = (id, title, fn, requirement) => {
+	if (only !== null) {
+		const scope = SCOPE[id] ?? 'shared';
+		if (!inScope(scope)) return; // per-LEGO run: skip gates that belong to the other LEGOs
+	}
 	const started = Date.now();
 	let status = 'PASS';
 	let detail = '';
@@ -83,7 +105,7 @@ gate(
 	'contracts, isolation blueprints and manifests present',
 	() => {
 		const required = [];
-		for (const lego of ['queue', 'events', 'realtime']) {
+		for (const lego of scoped(LEGOS)) {
 			required.push(
 				`contracts/${lego}.contract.md`,
 				`docs/isolation/${lego}.md`,
@@ -96,14 +118,14 @@ gate(
 		const missing = required.filter((rel) => !existsSync(join(REPO, rel)));
 		must(missing.length === 0, `missing artefacts: ${missing.join(', ')}`);
 
-		for (const lego of ['queue', 'events', 'realtime']) {
+		for (const lego of scoped(LEGOS)) {
 			const manifest = JSON.parse(read(`packages/${lego}-lego/manifest/ownership.json`));
 			must(manifest.lego === lego, `${lego}: manifest lego mismatch`);
 			must(manifest.zeroRust === true, `${lego}: zeroRust flag missing`);
 			must(manifest.frontendUntouched === true, `${lego}: frontendUntouched flag missing`);
 			must(Boolean(manifest.implemented?.engine), `${lego}: manifest engine missing`);
 		}
-		return `${required.length} artefacts + 3 manifests`;
+		return `${required.length} artefacts + ${scoped(LEGOS).length} manifest(s)`;
 	},
 	'each LEGO owns a contract, an isolation blueprint, a package and a manifest',
 );
@@ -275,7 +297,7 @@ gate(
 	() => {
 		if (skipTests) return 'skipped (--skip-tests)';
 		const summary = [];
-		for (const lego of ['queue', 'events', 'realtime']) {
+		for (const lego of scoped(LEGOS)) {
 			const cwd = join(REPO, `packages/${lego}-lego`);
 			const testFiles = readdirSync(join(cwd, 'test'))
 				.filter((name) => name.endsWith('.test.mjs'))
@@ -292,6 +314,26 @@ gate(
 		return summary.join(', ');
 	},
 	'every LEGO package must pass its node --test suite',
+);
+
+/* ------------------------------------------------------------------ */
+/* G08 — integration (queue × events × realtime wired together)          */
+/* ------------------------------------------------------------------ */
+gate(
+	'G08',
+	'integration test — QUEUE × EVENTS × REALTIME on one deployment',
+	() => {
+		const file = join(REPO, 'tests/integration/phase6-integration.test.mjs');
+		must(existsSync(file), 'tests/integration/phase6-integration.test.mjs missing');
+		if (skipTests) return 'skipped (--skip-tests)';
+		const out = spawnSync(process.execPath, ['--test', file], { cwd: REPO, encoding: 'utf8', timeout: 120_000 });
+		const text = `${out.stdout ?? ''}${out.stderr ?? ''}`;
+		const pass = Number(text.match(/^# pass (\d+)/m)?.[1] ?? 0);
+		const fail = Number(text.match(/^# fail (\d+)/m)?.[1] ?? 0);
+		must(out.status === 0 && fail === 0, `integration: ${fail} failing test(s)\n${text.slice(-800)}`);
+		return `${pass}/${pass + fail} integration tests`;
+	},
+	'the three LEGOs must work together before they can be declared INTEGRATED',
 );
 
 /* ------------------------------------------------------------------ */
@@ -345,16 +387,18 @@ if (!existsSync(EVIDENCE)) mkdirSync(EVIDENCE, { recursive: true });
 const report = {
 	generatedAt: new Date().toISOString(),
 	phase: 6,
-	legos: ['queue', 'events', 'realtime'],
+	legos: scoped(LEGOS),
 	reference: { version: '2.9.4', upstreamCommit: 'b6dc2787c45677a29a9612cd27eb911302961a83' },
 	result: failed.length === 0 ? 'PASS' : 'FAIL',
 	gateSummary: `${RESULTS.length - failed.length}/${RESULTS.length}`,
 	gates: RESULTS,
 };
-writeFileSync(join(EVIDENCE, 'phase6-gate.json'), `${JSON.stringify(report, null, 2)}\n`);
+const evidenceName = only === null ? 'phase6-gate.json' : `phase6-${only}-gate.json`;
+writeFileSync(join(EVIDENCE, evidenceName), `${JSON.stringify(report, null, 2)}\n`);
 
+const title = only === null ? 'QUEUE / EVENTS / REALTIME' : `${only.toUpperCase()} (isolated subset)`;
 const md = [
-	'# PHASE 6 GATE — QUEUE / EVENTS / REALTIME',
+	`# PHASE 6 GATE — ${title}`,
 	'',
 	`**Generated:** ${report.generatedAt} · **Result:** \`${report.result}\` (${report.gateSummary})`,
 	`**Reference:** n8n 2.9.4 @ b6dc2787c45677a29a9612cd27eb911302961a83`,
@@ -364,9 +408,10 @@ const md = [
 	...RESULTS.map((entry) => `| ${entry.id} | ${entry.title} | ${entry.status} | ${entry.detail.replace(/\n/g, ' ').slice(0, 200)} |`),
 	'',
 ];
-writeFileSync(join(REPO, 'docs/isolation/PHASE-6-GATE.md'), `${md.join('\n')}\n`);
+const mdName = only === null ? 'PHASE-6-GATE.md' : `PHASE-6-${only.toUpperCase()}-GATE.md`;
+writeFileSync(join(REPO, `docs/isolation/${mdName}`), `${md.join('\n')}\n`);
 
 if (asJson) console.log(JSON.stringify(report, null, 2));
 
-console.log(`\nPHASE 6 GATE: ${report.gateSummary} ${report.result}`);
+console.log(`\nPHASE 6 GATE${only === null ? '' : ` [${only}]`}: ${report.gateSummary} ${report.result}`);
 process.exit(failed.length === 0 ? 0 : 1);

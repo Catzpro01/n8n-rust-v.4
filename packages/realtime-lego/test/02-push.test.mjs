@@ -280,7 +280,19 @@ test('R13 — relay rules: worker relays via pubsub, oversized node data is drop
 	assert.equal(holderRes.chunks.length, 2, 'a non-holder ignores the relayed event');
 });
 
-test('R4b — circular references are replaced, never thrown', () => {
+test('R4b — circular references are replaced, repeated (non-ancestor) refs are kept', () => {
+	const shared = ['a', 'b'];
+	const repeated = { first: shared, second: shared };
+	const pushDag = new SSEPush();
+	const dagRes = createMemoryResponse();
+	pushDag.add('dag', 'user-1', { req: sseRequest('dag'), res: dagRes });
+	pushDag.sendToOne({ type: 'nodeExecuteAfter', data: repeated }, 'dag');
+	assert.equal(
+		dagRes.chunks.at(-1),
+		'data: {"type":"nodeExecuteAfter","data":{"first":["a","b"],"second":["a","b"]}}\n\n',
+		'a DAG must serialize normally — only ancestor cycles become "[Circular Reference]"',
+	);
+
 	const push = new SSEPush();
 	const res = createMemoryResponse();
 	push.add('c', 'user-1', { req: sseRequest('c'), res });

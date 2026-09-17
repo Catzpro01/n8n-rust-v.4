@@ -8,7 +8,7 @@
 | Upstream commit | `b6dc2787c45677a29a9612cd27eb911302961a83` |
 | Implemented in | `packages/realtime-lego` + `packages/reconstructed-engine/src/realtime-engine.ts` |
 | Rust | **FORBIDDEN** (`PROJECT_RULES.md` §1) |
-| Status | `VERIFIED` — 14/14 package tests, `tools/phase6-isolation-gate.mjs` PASS |
+| Status | `INTEGRATED` — 14/14 package tests + 4/4 integration tests, per-LEGO gate + `tools/phase6-isolation-gate.mjs` 8/8 PASS |
 
 ---
 
@@ -76,6 +76,11 @@ relay command              = 'relay-execution-lifecycle-event' via n8n.commands
   relayed with `relay-execution-lifecycle-event` and only the holder delivers it to the client.
 * Oversized `nodeExecuteAfterData` is **omitted entirely** (the frontend re-fetches run data at
   the end of the execution); the warning text is frozen in R13.
+* `replaceCircularRefs: true` is **ancestor-scoped**: a genuine cycle becomes
+  `"[Circular Reference]"`, while the same object/array reachable twice through different keys
+  (a DAG — e.g. `payload.runningJobsSummary` reused by the status envelope) serializes normally.
+  Conflating the two would strip data the frontend legitimately needs.
+
 
 ## 5. Verification
 
@@ -83,5 +88,7 @@ relay command              = 'relay-execution-lifecycle-event' via n8n.commands
 cd packages/realtime-lego && node --test test/*.test.mjs  # 14/14
 node tools/realtime-isolation-gate.mjs                     # boundary + provenance + tests
 ```
+
+Integration: `tests/integration/phase6-integration.test.mjs` (gate `G08`, 4/4).
 
 Evidence: `docs/isolation/evidence/phase6-realtime-gate.json`, result record `results/POOL-011-realtime-push-lego.md`.

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-17T22:22:32.682Z",
+  "generatedAt": "2026-09-17T22:26:57.766Z",
   "phase": 6,
   "legos": [
     "queue",
@@ -11,14 +11,14 @@
     "upstreamCommit": "b6dc2787c45677a29a9612cd27eb911302961a83"
   },
   "result": "PASS",
-  "gateSummary": "7/7",
+  "gateSummary": "8/8",
   "gates": [
     {
       "id": "G01",
       "title": "contracts, isolation blueprints and manifests present",
       "requirement": "each LEGO owns a contract, an isolation blueprint, a package and a manifest",
       "status": "PASS",
-      "detail": "18 artefacts + 3 manifests",
+      "detail": "18 artefacts + 3 manifest(s)",
       "ms": 1
     },
     {
@@ -27,7 +27,7 @@
       "requirement": "vectors: constants, command classification, guard/error strings",
       "status": "PASS",
       "detail": "channels, command sets, stalled-job policy and error strings verified",
-      "ms": 1
+      "ms": 0
     },
     {
       "id": "G03",
@@ -51,7 +51,15 @@
       "requirement": "every LEGO package must pass its node --test suite",
       "status": "PASS",
       "detail": "queue 17/17, events 14/14, realtime 14/14",
-      "ms": 2159
+      "ms": 774
+    },
+    {
+      "id": "G08",
+      "title": "integration test — QUEUE × EVENTS × REALTIME on one deployment",
+      "requirement": "the three LEGOs must work together before they can be declared INTEGRATED",
+      "status": "PASS",
+      "detail": "4/4 integration tests",
+      "ms": 227
     },
     {
       "id": "G06",

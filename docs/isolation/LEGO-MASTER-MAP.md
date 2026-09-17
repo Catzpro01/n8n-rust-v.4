@@ -66,7 +66,7 @@ had **no contract, no blueprint, no package and no engine on any branch**:
 Engines: `packages/reconstructed-engine/src/{queue,events,realtime}-engine.ts` (+ shared
 `emitter.ts`). Invariants: `Q1..Q14`, `E1..E12`, `R1..R13` — each one machine-checked against
 the pinned reference (`b6dc2787…`, n8n 2.9.4) by the package tests and by
-`tools/phase6-isolation-gate.mjs` (G01..G07).
+`tools/phase6-isolation-gate.mjs` (G01..G08); per-LEGO subsets via `tools/{queue,events,realtime}-isolation-gate.mjs --lego …`.
 
 ## 5. Gate summary
 
@@ -78,7 +78,8 @@ the pinned reference (`b6dc2787…`, n8n 2.9.4) by the package tests and by
 | No premature Rust | PASS | `crates/` + `apps/` clean; Phase-3 Rust archived read-only under `docs/archive/phase3-rust/` |
 | Isolation docs complete | PASS (15/15) | all LEGOs have complete isolation blueprints |
 | Live smoke re-run | PASS (11/11) | `npm run verify` G11 live verification on this checkout |
-| Phase 6 LEGOs (queue/events/realtime) | PASS (7/7) | `tools/phase6-isolation-gate.mjs` → `docs/isolation/evidence/phase6-gate.json` |
+| Phase 6 LEGOs (queue/events/realtime) | PASS (8/8) | `tools/phase6-isolation-gate.mjs` → `docs/isolation/evidence/phase6-gate.json` |
+| Phase 6 integration (queue × events × realtime) | PASS (4/4) | `tests/integration/phase6-integration.test.mjs` (gate `G08`) |
 
 **Overall gate: `VERIFIED`** — the 18 anatomy subsystems now have 15 contracted LEGOs; queue,
 events and realtime moved `DISCOVERED → VERIFIED` in phase 6 without touching the Vue bundle

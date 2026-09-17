@@ -8,7 +8,7 @@
 | Upstream commit | `b6dc2787c45677a29a9612cd27eb911302961a83` |
 | Implemented in | `packages/events-lego` + `packages/reconstructed-engine/src/events-engine.ts` |
 | Rust | **FORBIDDEN** (`PROJECT_RULES.md` §1) |
-| Status | `VERIFIED` — 14/14 package tests, `tools/phase6-isolation-gate.mjs` PASS |
+| Status | `INTEGRATED` — 14/14 package tests + 4/4 integration tests, per-LEGO gate + `tools/phase6-isolation-gate.mjs` 8/8 PASS |
 
 ---
 
@@ -73,5 +73,7 @@ event naming        = '<domain>-<past-tense-action>' (workflow-saved, node-post-
 cd packages/events-lego && node --test test/*.test.mjs    # 14/14
 node tools/events-isolation-gate.mjs                       # boundary + provenance + tests
 ```
+
+Integration: `tests/integration/phase6-integration.test.mjs` (gate `G08`, 4/4).
 
 Evidence: `docs/isolation/evidence/phase6-events-gate.json`, result record `results/POOL-010-events-eventbus-lego.md`.

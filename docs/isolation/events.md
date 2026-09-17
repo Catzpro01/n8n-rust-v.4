@@ -8,7 +8,7 @@
 | Contract | `contracts/events.contract.md` |
 | Package | `packages/events-lego` |
 | Engine | `packages/reconstructed-engine/src/events-engine.ts` |
-| Cycle | `DISCOVERED → ISOLATED → CONTRACTED → IMPLEMENTED → VERIFIED` |
+| Cycle | `DISCOVERED → ISOLATED → CONTRACTED → IMPLEMENTED → VERIFIED → INTEGRATED` |
 | Rust | not started (rule §1) |
 
 ## 1. X-Ray
@@ -58,3 +58,9 @@ node tools/phase6-isolation-gate.mjs                     # G01..G07 PASS
 | D1 | no DI container (`@n8n/di`) — plain classes | the LEGO must be importable without a container; wiring is done by `createEventRuntime()` |
 | D2 | the retry loop is exposed as `processRetryQueue()` (plus an optional timer) | makes the unconfirmed-message state machine deterministic for tests |
 | D3 | destination adapters (syslog/sentry/webhook) stay outside the LEGO | they belong to `modules/log-streaming.ee/**`, which this LEGO does not own |
+
+## 6. Integration (VERIFIED → INTEGRATED)
+
+`tests/integration/phase6-integration.test.mjs` drives the shared `EventService` from the queue
+LEGO (`job-counts-updated`, `job-dequeued`) and asserts the log-streaming relay forwarded the
+business events (`workflow-executed`) to the message event bus in the same run.

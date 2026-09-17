@@ -1,0 +1,47 @@
+{
+  "generatedAt": "2026-09-17T22:26:51.047Z",
+  "phase": 6,
+  "legos": [
+    "queue"
+  ],
+  "reference": {
+    "version": "2.9.4",
+    "upstreamCommit": "b6dc2787c45677a29a9612cd27eb911302961a83"
+  },
+  "result": "PASS",
+  "gateSummary": "4/4",
+  "gates": [
+    {
+      "id": "G01",
+      "title": "contracts, isolation blueprints and manifests present",
+      "requirement": "each LEGO owns a contract, an isolation blueprint, a package and a manifest",
+      "status": "PASS",
+      "detail": "6 artefacts + 1 manifest(s)",
+      "ms": 1
+    },
+    {
+      "id": "G05",
+      "title": "package tests (queue / events / realtime)",
+      "requirement": "every LEGO package must pass its node --test suite",
+      "status": "PASS",
+      "detail": "queue 17/17",
+      "ms": 284
+    },
+    {
+      "id": "G06",
+      "title": "ZERO RUST — crates/ and apps/ hold no Rust artifacts",
+      "requirement": "PROJECT_RULES.md §1 — reconstruction is JS/TS only",
+      "status": "PASS",
+      "detail": "crates/ + apps/ clean; Phase-3 Rust archived read-only (24 files under docs/archive/phase3-rust)",
+      "ms": 1
+    },
+    {
+      "id": "G07",
+      "title": "reference integrity — owned subsystem trees unchanged at 2.9.4",
+      "requirement": "the mirror must stay pinned; mirroring the wrong source invalidates the LEGO",
+      "status": "PASS",
+      "detail": "2.9.4 · scaling 21/b16360db83d3 · events 12/813313cda09a · eventbus 17/69e349590eb9 · push 11/f5511e10044d",
+      "ms": 6
+    }
+  ]
+}

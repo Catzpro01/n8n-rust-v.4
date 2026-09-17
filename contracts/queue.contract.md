@@ -8,7 +8,7 @@
 | Upstream commit | `b6dc2787c45677a29a9612cd27eb911302961a83` |
 | Implemented in | `packages/queue-lego` + `packages/reconstructed-engine/src/queue-engine.ts` |
 | Rust | **FORBIDDEN** (`PROJECT_RULES.md` §1) |
-| Status | `VERIFIED` — 17/17 package tests, `tools/phase6-isolation-gate.mjs` PASS |
+| Status | `INTEGRATED` — 17/17 package tests + 4/4 integration tests, per-LEGO gate + `tools/phase6-isolation-gate.mjs` 8/8 PASS |
 
 ---
 
@@ -100,5 +100,7 @@ Job messages (`scaling.types.ts`): `respond-to-webhook`, `job-finished` (v1 lega
 cd packages/queue-lego && node --test test/*.test.mjs     # 17/17
 node tools/queue-isolation-gate.mjs                        # boundary + provenance + tests
 ```
+
+Integration: `tests/integration/phase6-integration.test.mjs` (gate `G08`, 4/4).
 
 Evidence: `docs/isolation/evidence/phase6-queue-gate.json`, result record `results/POOL-009-queue-scaling-lego.md`.

@@ -289,15 +289,9 @@ test('Q13 — get-worker-status round trip pushes only to the requesting user', 
 	const broker = new MemoryPubSubBroker();
 	const statusFactory = () => ({ senderId: 'worker-1', runningJobsSummary: [{ jobId: '1' }] });
 
-	const workerRuntime = createQueueRuntime({ hostId: 'worker-1', broker });
-	const workerScaling = new ScalingService({
-		hostId: 'worker-1',
-		instanceType: 'worker',
-		broker,
-		jobProcessor: workerRuntime.jobProcessor,
-		statusFactory,
-	});
-	void workerScaling;
+	// exactly one worker instance on the bus (a second subscriber would answer twice)
+	const workerRuntime = createQueueRuntime({ hostId: 'worker-1', broker, statusFactory });
+	const workerScaling = workerRuntime.scaling;
 
 	const pushes = [];
 	const mainPush = {
@@ -353,13 +347,16 @@ test('Q14 — queue metrics emit job-counts-updated and reset the counters', asy
 	await runtime.getQueue().add(JOB_TYPE_NAME, { workflowId: 'wf-1', executionId: 'exec-1', loadStaticData: true }, {});
 	assert.equal(runtime.jobCounters.completed, 1);
 
-	await runtime.getPendingJobCounts();
-	await new Promise((resolve) => setTimeout(resolve, 1100));
+	// drive one metrics cycle (deterministic twin of the interval body)
+	const payload = await runtime.collectQueueMetrics();
 	runtime.stopQueueMetrics();
 
 	const metrics = emitted.filter(([event]) => event === 'job-counts-updated');
-	assert.ok(metrics.length >= 1, 'job-counts-updated must be emitted');
+	assert.equal(metrics.length, 1, 'job-counts-updated must be emitted once per cycle');
+	assert.equal(payload.completed, 1);
 	assert.equal(metrics[0][1].completed, 1);
+	assert.equal(metrics[0][1].active, 0);
+	assert.equal(metrics[0][1].waiting, 0);
 	assert.equal(runtime.jobCounters.completed, 0, 'counters reset after the tick');
 	assert.ok(scaling);
 });

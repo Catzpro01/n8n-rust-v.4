@@ -869,17 +869,22 @@ export class ScalingService {
 	}
 
 	scheduleQueueMetrics(intervalMs = 1000): void {
-		this.metricsTimer = setInterval(() => {
-			void this.getPendingJobCounts().then((pendingJobCounts) => {
-				this.eventService?.emit('job-counts-updated', {
-					...pendingJobCounts,
-					...this.jobCounters,
-				});
-				this.jobCounters.completed = 0;
-				this.jobCounters.failed = 0;
-			});
-		}, intervalMs);
+		this.metricsTimer = setInterval(() => void this.collectQueueMetrics(), intervalMs);
 		this.metricsTimer.unref?.();
+	}
+
+	/**
+	 * One metrics cycle, exactly the body the interval runs
+	 * (`scheduleQueueMetrics` in the reference): emit `job-counts-updated`
+	 * and reset the completed/failed counters.
+	 */
+	async collectQueueMetrics(): Promise<Record<string, number>> {
+		const pendingJobCounts = await this.getPendingJobCounts();
+		const payload = { ...pendingJobCounts, ...this.jobCounters };
+		this.eventService?.emit('job-counts-updated', payload);
+		this.jobCounters.completed = 0;
+		this.jobCounters.failed = 0;
+		return payload;
 	}
 
 	stopQueueMetrics(): void {
@@ -974,6 +979,18 @@ export type QueueRuntimeOptions = {
 	broker?: MemoryPubSubBroker;
 	concurrency?: number;
 	leader?: boolean;
+	/** `worker` by default; a main instance passes `'main'` (recovery/metrics/status paths). */
+	instanceType?: InstanceType;
+	mode?: 'queue' | 'regular';
+	redisPrefix?: string;
+	recovery?: Partial<QueueRecoveryConfig>;
+	queueMetricsEnabled?: boolean;
+	/** worker-status payload factory (worker-status.service.ee.ts). */
+	statusFactory?: () => Record<string, unknown>;
+	/** Bull seam — inject a backed queue when a real Redis is available. */
+	queueFactory?: () => MemoryJobQueue;
+	/** Consumed port `@lego/events` — the caller's EventService (defaults to a private emitter). */
+	eventService?: TypedEmitter;
 };
 
 export type QueueRuntime = {
@@ -987,25 +1004,32 @@ export type QueueRuntime = {
 
 export function createQueueRuntime(options: QueueRuntimeOptions = {}): QueueRuntime {
 	const broker = options.broker ?? new MemoryPubSubBroker();
-	const events = new TypedEmitter();
+	const events = options.eventService ?? new TypedEmitter();
 	const executions = new MemoryExecutionRepository();
 	const workflows = new MemoryWorkflowRepository();
+	const hostId = options.hostId ?? 'worker-1';
 
 	const jobProcessor = new JobProcessor({
-		hostId: options.hostId ?? 'worker-1',
+		hostId,
 		executionRepository: executions,
 		workflowRepository: workflows,
 		eventService: events,
 	});
 
 	const scaling = new ScalingService({
-		hostId: options.hostId ?? 'worker-1',
-		instanceType: 'worker',
+		hostId,
+		instanceType: options.instanceType ?? 'worker',
 		isLeader: options.leader ?? false,
+		mode: options.mode ?? 'queue',
+		redisPrefix: options.redisPrefix,
 		broker,
 		jobProcessor,
 		executionRepository: executions,
 		eventService: events,
+		recovery: options.recovery,
+		queueMetricsEnabled: options.queueMetricsEnabled,
+		statusFactory: options.statusFactory,
+		queueFactory: options.queueFactory,
 	});
 
 	return { broker, scaling, jobProcessor, executions, workflows, events };

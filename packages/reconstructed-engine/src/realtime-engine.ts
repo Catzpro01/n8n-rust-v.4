@@ -231,14 +231,56 @@ export function createMemoryWebSocket(): WebSocketLike {
  * ------------------------------------------------------------------ */
 
 export function stringifyPushMessage(pushMsg: PushMessage): string {
-	const seen = new WeakSet<object>();
-	return JSON.stringify({ type: pushMsg.type, data: pushMsg.data }, (_key, value) => {
-		if (typeof value === 'object' && value !== null) {
-			if (seen.has(value as object)) return '[Circular Reference]';
-			seen.add(value as object);
+	// `jsonStringify(..., { replaceCircularRefs: true })` only replaces *ancestor*
+	// references. A DAG (the same array/object reachable twice) must serialize normally,
+	// otherwise the frontend receives "[Circular Reference]" for legitimate repeated data.
+	const ancestors: object[] = [];
+
+	const serialize = (value: unknown): string | undefined => {
+		if (value === null) return 'null';
+
+		switch (typeof value) {
+			case 'string':
+				return JSON.stringify(value);
+			case 'number':
+				return Number.isFinite(value) ? JSON.stringify(value) : 'null';
+			case 'boolean':
+				return JSON.stringify(value);
+			case 'bigint':
+				return JSON.stringify(String(value));
+			case 'undefined':
+			case 'function':
+			case 'symbol':
+				return undefined;
+			default:
+				break;
 		}
-		return value;
-	});
+
+		const object = value as object;
+
+		if (object instanceof Date) return JSON.stringify(object.toJSON());
+		if (ancestors.includes(object)) return JSON.stringify('[Circular Reference]');
+
+		ancestors.push(object);
+		try {
+			if (Array.isArray(object)) {
+				const items = object.map((item) => serialize(item) ?? 'null');
+				return `[${items.join(',')}]`;
+			}
+
+			const entries = Object.entries(object as Record<string, unknown>)
+				.map(([key, item]) => {
+					const serialized = serialize(item);
+					return serialized === undefined ? undefined : `${JSON.stringify(key)}:${serialized}`;
+				})
+				.filter((entry): entry is string => entry !== undefined);
+			return `{${entries.join(',')}}`;
+		} finally {
+			ancestors.pop();
+		}
+	};
+
+	return serialize({ type: pushMsg.type, data: pushMsg.data }) ?? 'null';
 }
 
 /* ------------------------------------------------------------------ *
