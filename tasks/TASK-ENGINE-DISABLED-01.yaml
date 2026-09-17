@@ -5,6 +5,9 @@ module: reconstructed-engine
 phase: 3
 title: "Reconstructed engine: disabled-node passthrough per handleDisabledNode (S7 DIVERGE fix)"
 status: SUBMITTED_FOR_REVIEW
+# status refreshed 2026-09-17 by arena-worker: results/TASK-ENGINE-DISABLED-01.md exists and the suites
+# were re-run green on the merged tree (execution 40/40, prototype 28/28, differential 24/24,
+# gate 9/9, 42/42, boundary PASS). Review verdict itself is NOT recorded here (no self-approval).
 
 # Context: differential TASK-ENGINE-DIFF-01 found S7 DIVERGE — reconstructed-engine
 # SKIPS disabled nodes (starving downstream) while the reference PASSES INPUT

@@ -5,6 +5,9 @@ module: engine-differential
 phase: 3
 title: "Differential evidence for ISSUE-021: run both JS engines over identical scenarios"
 status: SUBMITTED_FOR_REVIEW
+# status refreshed 2026-09-17 by arena-worker: results/TASK-ENGINE-DIFF-01.md exists and the suites
+# were re-run green on the merged tree (execution 40/40, prototype 28/28, differential 24/24,
+# gate 9/9, 42/42, boundary PASS). Review verdict itself is NOT recorded here (no self-approval).
 
 # Context: ISSUE-021 records two engine tracks (packages/reconstructed-engine vs
 # packages/execution-engine) and asks the orchestrator to pick one. Its divergence
