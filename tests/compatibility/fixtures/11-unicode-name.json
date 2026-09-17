@@ -1,0 +1,19 @@
+{
+  "name": "11-unicode-name",
+  "nodes": [
+    { "name": "Bézier", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [0, 0], "disabled": false },
+    { "name": "When clicking ‘Test step’", "type": "n8n-nodes-base.manualTrigger", "typeVersion": 1, "position": [220, 0], "disabled": false }
+  ],
+  "connections": {
+    "Bézier": { "main": [[{ "node": "When clicking ‘Test step’", "type": "main", "index": 0 }]] }
+  },
+  "queries": [
+    "mapByDestination",
+    "getAllNodes",
+    "getStartNodes",
+    "getChild:Bézier",
+    "getParent:When clicking ‘Test step’",
+    "getNode:When clicking ‘Test step’",
+    "detectCycles:main"
+  ]
+}

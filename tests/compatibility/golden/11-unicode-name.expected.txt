@@ -1,0 +1,7 @@
+mapByDestination	{"When clicking ‘Test step’":{"main":[[{"index":0,"node":"Bézier","type":"main"}]]}}
+getAllNodes	["Bézier","When clicking ‘Test step’"]
+getStartNodes	["Bézier"]
+getChild:Bézier	["When clicking ‘Test step’"]
+getParent:When clicking ‘Test step’	["Bézier"]
+getNode:When clicking ‘Test step’	{"disabled":false,"name":"When clicking ‘Test step’","position":[220,0],"type":"n8n-nodes-base.manualTrigger","typeVersion":1}
+detectCycles:main	false

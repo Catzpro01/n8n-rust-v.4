@@ -2,8 +2,10 @@
 //!
 //! Why hand-rolled: this crate is dependency-free by design (offline
 //! pipeline constraint — see Cargo.toml). The JSON we consume (workflow
-//! fixtures) and produce (compatibility results) is small and fully under
-//! our control; ASCII-only content is required and enforced.
+//! fixtures, real n8n workflow files) and produce (compatibility results)
+//! is small and fully under our control. Full UTF-8 is supported (real
+//! n8n node names contain non-ASCII text, e.g. curly quotes); raw control
+//! characters in strings are rejected per the JSON spec.
 //!
 //! Canonical form (must be byte-identical to the Node.js reference harness
 //! `JSON.stringify(sortKeys(...))`):
@@ -11,7 +13,8 @@
 //! - compact separators (`:` and `,`, no whitespace);
 //! - standard JSON string escaping (short escapes for `"` `\\` `\b` `\f`
 //!   `\n` `\r` `\t`, `\u00XX` lowercase for other control chars, `/` and
-//!   printable chars left as-is);
+//!   all other characters — including non-ASCII — left as-is, matching
+//!   `JSON.stringify` with `ensure_ascii`-off behavior);
 //! - numbers: integral values printed without a decimal point, other floats
 //!   via the shortest round-trip representation (matches V8/f64 Display).
 
@@ -260,10 +263,37 @@ impl<'a> Parser<'a> {
                     }
                 }
                 other => {
-                    if other >= 0x20 && other < 0x7f {
+                    if other < 0x20 {
+                        return Err(self.err("raw control character in string"));
+                    }
+                    if other < 0x7f {
                         out.push(other as char);
                     } else {
-                        return Err(self.err("non-ASCII or raw control character in string (ASCII-only fixtures required)"));
+                        // UTF-8 multi-byte sequence (real n8n names can be
+                        // non-ASCII, e.g. '’'). Validate and copy verbatim.
+                        let len = if (0xc0..0xe0).contains(&other) {
+                            2
+                        } else if (0xe0..0xf0).contains(&other) {
+                            3
+                        } else if (0xf0..0xf5).contains(&other) {
+                            4
+                        } else {
+                            return Err(self.err("bad UTF-8 leading byte"));
+                        };
+                        let start = self.i - 1; // leading byte already consumed
+                        let end = start + len;
+                        if end > self.bytes.len() {
+                            return Err(self.err("truncated UTF-8 sequence"));
+                        }
+                        for &b in &self.bytes[start + 1..end] {
+                            if b & 0xc0 != 0x80 {
+                                return Err(self.err("bad UTF-8 continuation byte"));
+                            }
+                        }
+                        let s = std::str::from_utf8(&self.bytes[start..end])
+                            .map_err(|e| self.err(&e.to_string()))?;
+                        out.push_str(s);
+                        self.i = end;
                     }
                 }
             }
@@ -410,7 +440,21 @@ mod tests {
         assert!(parse_document("{}x").is_err());
         assert!(parse_document("{1:2}").is_err());
         assert!(parse_document("[1,]").is_err());
-        assert!(parse_document("{\"a\": \"\u{1}\"}").is_err());
+        assert!(parse_document("{\"a\": \"\u{1}\"}").is_err()); // raw control char
+        assert!(parse_document("{\"a\": \"\u{e9}\"}").is_err()); // stray continuation byte
+        assert!(parse_document("{\"a\": \"\\u00"}).is_err()); // truncated escape
+    }
+
+    #[test]
+    fn unicode_round_trip_matches_js() {
+        // Real-world n8n data: node names with curly quotes (U+2018/U+2019).
+        let doc = r#"{"name": "When clicking \u2018Test step\u2019", "x": "h\u00e9llo"}"#;
+        let v = parse_document(doc).expect("parse");
+        assert_eq!(
+            canonicalize(&v),
+            // Non-ASCII passes through unescaped (JS JSON.stringify behavior).
+            "{\"name\":\"When clicking \u{2018}Test step\u{2019}\",\"x\":\"h\u{e9}llo\"}"
+        );
     }
 
     #[test]

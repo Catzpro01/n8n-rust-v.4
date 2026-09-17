@@ -48,13 +48,18 @@ invariant: the same input must always yield the same adjacency list). To make
 both iteration orders coincide — so outputs are directly comparable — fixtures
 MUST follow:
 
-1. Top-level connection node names appear in lexicographic order.
+1. Top-level connection node names appear in lexicographic (code-point)
+   order.
 2. Per-node connection-type keys appear in lexicographic order
    (e.g. `ai_tool` before `main`).
 3. Index levels (integer-like keys) are unaffected: JS always iterates them
    in ascending numeric order, identical to the Rust `Vec` order.
 4. Node/type strings must not contain `:` (query separator).
-5. Content is ASCII only (the Rust JSON parser enforces this).
+5. Content is UTF-8 text (real n8n names can be non-ASCII, e.g. curly
+   quotes — see fixture `11-unicode-name`). Strings must not contain raw
+   control characters. BMP-only names are recommended: the JS harness sorts
+   by UTF-16 code units while Rust/Python sort by code point — identical for
+   BMP text, potentially different for supplementary-plane characters.
 
 ## Adding a fixture
 

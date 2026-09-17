@@ -428,3 +428,36 @@ detectCycles:main	false
 findCycle:main	null"#,
     );
 }
+
+#[test]
+fn golden_11_unicode_name() {
+    check(
+        "11-unicode-name",
+        r#"{
+  "name": "11-unicode-name",
+  "nodes": [
+    { "name": "Bézier", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [0, 0], "disabled": false },
+    { "name": "When clicking ‘Test step’", "type": "n8n-nodes-base.manualTrigger", "typeVersion": 1, "position": [220, 0], "disabled": false }
+  ],
+  "connections": {
+    "Bézier": { "main": [[{ "node": "When clicking ‘Test step’", "type": "main", "index": 0 }]] }
+  },
+  "queries": [
+    "mapByDestination",
+    "getAllNodes",
+    "getStartNodes",
+    "getChild:Bézier",
+    "getParent:When clicking ‘Test step’",
+    "getNode:When clicking ‘Test step’",
+    "detectCycles:main"
+  ]
+}"#,
+        r#"mapByDestination	{"When clicking ‘Test step’":{"main":[[{"index":0,"node":"Bézier","type":"main"}]]}}
+getAllNodes	["Bézier","When clicking ‘Test step’"]
+getStartNodes	["Bézier"]
+getChild:Bézier	["When clicking ‘Test step’"]
+getParent:When clicking ‘Test step’	["Bézier"]
+getNode:When clicking ‘Test step’	{"disabled":false,"name":"When clicking ‘Test step’","position":[220,0],"type":"n8n-nodes-base.manualTrigger","typeVersion":1}
+detectCycles:main	false"#,
+    );
+}
