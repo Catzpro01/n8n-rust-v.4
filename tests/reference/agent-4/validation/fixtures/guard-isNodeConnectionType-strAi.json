@@ -1,0 +1,8 @@
+{
+  "id": "guard-isNodeConnectionType-strAi",
+  "fn": "isNodeConnectionType",
+  "input": {
+    "value": "ai_tool"
+  },
+  "expected": true
+}

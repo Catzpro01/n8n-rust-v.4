@@ -1,0 +1,11 @@
+{
+  "id": "guard-isNodeConnectionType-binData",
+  "fn": "isNodeConnectionType",
+  "input": {
+    "value": {
+      "mimeType": "a",
+      "data": "x"
+    }
+  },
+  "expected": false
+}

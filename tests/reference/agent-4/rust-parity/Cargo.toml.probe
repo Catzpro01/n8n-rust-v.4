@@ -1,0 +1,8 @@
+[package]
+name = "a4-parity"
+version.workspace = true
+edition.workspace = true
+[dependencies]
+n8n-validation = { path = "../n8n-validation" }
+n8n-connection = { path = "../n8n-connection" }
+serde_json = { workspace = true }

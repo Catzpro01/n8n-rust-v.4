@@ -1,0 +1,15 @@
+{
+  "id": "ref-tryToParseArray-17",
+  "fn": "tryToParseArray",
+  "input": {
+    "args": [
+      "eyJhbGciOiJIUzI1NiJ9.eyJhIjoxfQ.sig"
+    ]
+  },
+  "expected": {
+    "throws": {
+      "name": "ApplicationError",
+      "message": "Value is not a valid array"
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "id": "guard-isResourceMapperValue-optionWithDisplay",
+  "fn": "isResourceMapperValue",
+  "input": {
+    "value": {
+      "displayName": "D",
+      "name": "n",
+      "value": "v"
+    }
+  },
+  "expected": false
+}

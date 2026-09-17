@@ -1,0 +1,11 @@
+{
+  "id": "guard-isINodePropertyCollectionList-mapperNoSchema",
+  "fn": "isINodePropertyCollectionList",
+  "input": {
+    "value": {
+      "mappingMode": "defineBelow",
+      "value": {}
+    }
+  },
+  "expected": false
+}

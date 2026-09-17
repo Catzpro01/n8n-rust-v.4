@@ -1,0 +1,11 @@
+{
+  "id": "guard-isFilterValue-mapperNoSchema",
+  "fn": "isFilterValue",
+  "input": {
+    "value": {
+      "mappingMode": "defineBelow",
+      "value": {}
+    }
+  },
+  "expected": false
+}

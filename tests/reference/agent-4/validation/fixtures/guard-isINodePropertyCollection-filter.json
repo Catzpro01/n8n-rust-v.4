@@ -1,0 +1,12 @@
+{
+  "id": "guard-isINodePropertyCollection-filter",
+  "fn": "isINodePropertyCollection",
+  "input": {
+    "value": {
+      "conditions": [],
+      "combinator": "and",
+      "options": {}
+    }
+  },
+  "expected": false
+}

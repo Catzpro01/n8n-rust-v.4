@@ -1,0 +1,15 @@
+{
+  "id": "ref-tryToParseJwt-14",
+  "fn": "tryToParseJwt",
+  "input": {
+    "args": [
+      "2020-01-01"
+    ]
+  },
+  "expected": {
+    "throws": {
+      "name": "ApplicationError",
+      "message": "The value \"2020-01-01\" is not a valid JWT token."
+    }
+  }
+}

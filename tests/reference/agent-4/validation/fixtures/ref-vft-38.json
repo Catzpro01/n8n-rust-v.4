@@ -1,0 +1,27 @@
+{
+  "id": "ref-vft-38",
+  "fn": "validateFieldType",
+  "input": {
+    "args": [
+      "f",
+      "a",
+      "options",
+      {
+        "valueOptions": [
+          {
+            "name": "a",
+            "value": "a"
+          },
+          {
+            "name": "b",
+            "value": "b"
+          }
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "valid": true,
+    "newValue": "a"
+  }
+}

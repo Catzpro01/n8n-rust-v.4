@@ -1,0 +1,10 @@
+{
+  "id": "ref-tryToParseUrl-08",
+  "fn": "tryToParseUrl",
+  "input": {
+    "args": [
+      "1.5"
+    ]
+  },
+  "expected": "https://1.5"
+}

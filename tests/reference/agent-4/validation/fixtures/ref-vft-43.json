@@ -1,0 +1,15 @@
+{
+  "id": "ref-vft-43",
+  "fn": "validateFieldType",
+  "input": {
+    "args": [
+      "f",
+      "str",
+      "binary"
+    ]
+  },
+  "expected": {
+    "valid": false,
+    "errorMessage": "'f' expects a binary but we got 'str'. Make sure the value is a valid binary data object with 'mimeType' and 'data' or 'id' property."
+  }
+}

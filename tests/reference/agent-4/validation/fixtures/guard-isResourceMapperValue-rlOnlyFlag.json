@@ -1,0 +1,10 @@
+{
+  "id": "guard-isResourceMapperValue-rlOnlyFlag",
+  "fn": "isResourceMapperValue",
+  "input": {
+    "value": {
+      "__rl": true
+    }
+  },
+  "expected": false
+}

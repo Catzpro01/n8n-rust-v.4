@@ -1,0 +1,15 @@
+{
+  "id": "ref-tryToParseObject-12",
+  "fn": "tryToParseObject",
+  "input": {
+    "args": [
+      "https://n8n.io"
+    ]
+  },
+  "expected": {
+    "throws": {
+      "name": "ApplicationError",
+      "message": "Value is not a valid object"
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "id": "guard-isNodeConnectionType-rlOnlyFlag",
+  "fn": "isNodeConnectionType",
+  "input": {
+    "value": {
+      "__rl": true
+    }
+  },
+  "expected": false
+}

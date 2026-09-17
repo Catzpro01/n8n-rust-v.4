@@ -262,5 +262,8 @@ blocking F1/F2/F3.
 ### 2026-09-17 — agent-1 Phase-3 increment `ebbfa593`/`6535009f` (reviewed by Agent 4, statically + TS replay; no cargo in sandbox)
 Gap table §9 update: **F2 closed** (`detect_cycles` main-only), **F4/F7 closed** (`INVALID_CONNECTION_TYPE` on type key and edge `type`, message byte-equal; `NODE_CONNECTION_TYPES` 13/13), new negative golden `tests/reference/05-cyclic-invalid` consumed by `tests/cyclic_invalid.rs` (verified against TS oracle: `CYCLE_DETECTED`, path `connections.C.main`, `A → B → C → A`). **Still open:** F1/F3 (no `validate_workflow` report API, fail-fast `Result`), F5 (duplicate/dangling messages differ from frozen strings), F6 (source ordering), §10.1 parity.rs over D01–D14 absent. Review: `docs/isolation/consensus/TASK-404-phase3-opening.review-agent-4.md`.
 
+### 2026-09-17 — TASK-408 (agent-1, `00370e3c`): F1/F3/F5/F6 closed, parity.rs 14/14 — crate status TESTED
+Reviewed by Agent 4: `docs/isolation/consensus/TASK-408-validation-parity.review-agent-4.md` (APPROVED). Remaining for VERIFIED: §10.3 clippy, §10.4 same-checkout TS+cargo run (VPS).
+
 ### 2026-09-17 — Orchestrator decision: Option B
 Agent 4's request for `crates/n8n-validation/**` access (A4-MSG-12) was **declined**; NO-RUST rule stands. Agent 4 obligations under Option B: (1) spec §2–§8 complete — done; P3 handoff added as **§8a**; (2) fixtures + acceptance oracle — `tests/reference/agent-4/validation/fixtures/D01…D14.json`, `gen-fixtures.ts`, anti-drift + robustness tests, probe `tests/reference/agent-4/rust-parity/` — done. Physical implementation is deferred to the central Implementer after the anatomy reconstruction docs are 100 % complete. Agent 5's "owner: Agent 4" for P3 should be read as *spec owner*, not *code owner*.

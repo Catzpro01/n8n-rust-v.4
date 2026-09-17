@@ -1,0 +1,13 @@
+{
+  "id": "guard-isFilterValue-prop",
+  "fn": "isFilterValue",
+  "input": {
+    "value": {
+      "displayName": "D",
+      "name": "n",
+      "type": "string",
+      "default": ""
+    }
+  },
+  "expected": false
+}

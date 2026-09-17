@@ -1,0 +1,10 @@
+{
+  "id": "guard-isNodeConnectionType-undef",
+  "fn": "isNodeConnectionType",
+  "input": {
+    "value": {
+      "$undefined": true
+    }
+  },
+  "expected": false
+}

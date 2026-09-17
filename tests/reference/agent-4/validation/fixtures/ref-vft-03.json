@@ -1,0 +1,18 @@
+{
+  "id": "ref-vft-03",
+  "fn": "validateFieldType",
+  "input": {
+    "args": [
+      "f",
+      "42",
+      "number",
+      {
+        "strict": true
+      }
+    ]
+  },
+  "expected": {
+    "valid": false,
+    "errorMessage": "'f' expects a number but we got '42'"
+  }
+}

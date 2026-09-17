@@ -1,0 +1,15 @@
+{
+  "id": "ref-tryToParseTime-12",
+  "fn": "tryToParseTime",
+  "input": {
+    "args": [
+      "https://n8n.io"
+    ]
+  },
+  "expected": {
+    "throws": {
+      "name": "ApplicationError",
+      "message": "Value is not a valid time"
+    }
+  }
+}

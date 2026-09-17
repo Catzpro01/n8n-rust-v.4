@@ -1,0 +1,17 @@
+{
+  "id": "ref-tryToParseJwt-05",
+  "fn": "tryToParseJwt",
+  "input": {
+    "args": [
+      {
+        "$undefined": true
+      }
+    ]
+  },
+  "expected": {
+    "throws": {
+      "name": "ApplicationError",
+      "message": "The value \"undefined\" is not a valid JWT token."
+    }
+  }
+}

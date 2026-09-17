@@ -1,0 +1,12 @@
+{
+  "id": "ref-tryToParseDateTime-08",
+  "fn": "tryToParseDateTime",
+  "input": {
+    "args": [
+      "1.5"
+    ]
+  },
+  "expected": {
+    "$luxon": "2001-01-05T00:00:00.000+00:00"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "id": "guard-isResourceMapperValue-strAi",
+  "fn": "isResourceMapperValue",
+  "input": {
+    "value": "ai_tool"
+  },
+  "expected": false
+}

@@ -1,0 +1,15 @@
+{
+  "id": "ref-tryToParseDateTime-12",
+  "fn": "tryToParseDateTime",
+  "input": {
+    "args": [
+      "https://n8n.io"
+    ]
+  },
+  "expected": {
+    "throws": {
+      "name": "ApplicationError",
+      "message": "Value is not a valid date"
+    }
+  }
+}

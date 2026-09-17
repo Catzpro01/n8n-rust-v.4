@@ -1,0 +1,12 @@
+{
+  "id": "guard-isBinaryValue-rl",
+  "fn": "isBinaryValue",
+  "input": {
+    "value": {
+      "__rl": true,
+      "mode": "id",
+      "value": "1"
+    }
+  },
+  "expected": false
+}

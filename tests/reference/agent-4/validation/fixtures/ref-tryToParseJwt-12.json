@@ -1,0 +1,15 @@
+{
+  "id": "ref-tryToParseJwt-12",
+  "fn": "tryToParseJwt",
+  "input": {
+    "args": [
+      "https://n8n.io"
+    ]
+  },
+  "expected": {
+    "throws": {
+      "name": "ApplicationError",
+      "message": "The value \"https://n8n.io\" is not a valid JWT token."
+    }
+  }
+}

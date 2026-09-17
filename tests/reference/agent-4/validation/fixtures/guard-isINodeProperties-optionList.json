@@ -1,0 +1,13 @@
+{
+  "id": "guard-isINodeProperties-optionList",
+  "fn": "isINodeProperties",
+  "input": {
+    "value": [
+      {
+        "name": "a",
+        "value": "a"
+      }
+    ]
+  },
+  "expected": false
+}

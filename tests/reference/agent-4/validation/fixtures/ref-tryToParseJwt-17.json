@@ -1,0 +1,10 @@
+{
+  "id": "ref-tryToParseJwt-17",
+  "fn": "tryToParseJwt",
+  "input": {
+    "args": [
+      "eyJhbGciOiJIUzI1NiJ9.eyJhIjoxfQ.sig"
+    ]
+  },
+  "expected": "eyJhbGciOiJIUzI1NiJ9.eyJhIjoxfQ.sig"
+}

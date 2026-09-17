@@ -1,0 +1,10 @@
+{
+  "id": "guard-isBinaryValue-binNoMime",
+  "fn": "isBinaryValue",
+  "input": {
+    "value": {
+      "id": "1"
+    }
+  },
+  "expected": false
+}

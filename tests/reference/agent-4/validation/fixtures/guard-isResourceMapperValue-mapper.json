@@ -1,0 +1,14 @@
+{
+  "id": "guard-isResourceMapperValue-mapper",
+  "fn": "isResourceMapperValue",
+  "input": {
+    "value": {
+      "mappingMode": "defineBelow",
+      "value": {
+        "a": 1
+      },
+      "schema": []
+    }
+  },
+  "expected": true
+}

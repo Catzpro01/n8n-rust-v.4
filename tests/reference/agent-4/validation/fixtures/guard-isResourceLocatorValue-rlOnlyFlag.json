@@ -1,0 +1,10 @@
+{
+  "id": "guard-isResourceLocatorValue-rlOnlyFlag",
+  "fn": "isResourceLocatorValue",
+  "input": {
+    "value": {
+      "__rl": true
+    }
+  },
+  "expected": false
+}

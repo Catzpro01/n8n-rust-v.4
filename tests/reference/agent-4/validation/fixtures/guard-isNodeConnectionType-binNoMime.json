@@ -1,0 +1,10 @@
+{
+  "id": "guard-isNodeConnectionType-binNoMime",
+  "fn": "isNodeConnectionType",
+  "input": {
+    "value": {
+      "id": "1"
+    }
+  },
+  "expected": false
+}

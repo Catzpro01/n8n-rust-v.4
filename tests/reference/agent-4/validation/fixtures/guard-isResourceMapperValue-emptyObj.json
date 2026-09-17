@@ -1,0 +1,8 @@
+{
+  "id": "guard-isResourceMapperValue-emptyObj",
+  "fn": "isResourceMapperValue",
+  "input": {
+    "value": {}
+  },
+  "expected": false
+}

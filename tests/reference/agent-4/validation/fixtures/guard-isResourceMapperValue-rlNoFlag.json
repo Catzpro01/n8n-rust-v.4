@@ -1,0 +1,11 @@
+{
+  "id": "guard-isResourceMapperValue-rlNoFlag",
+  "fn": "isResourceMapperValue",
+  "input": {
+    "value": {
+      "mode": "id",
+      "value": "1"
+    }
+  },
+  "expected": false
+}

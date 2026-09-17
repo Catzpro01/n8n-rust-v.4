@@ -1,0 +1,11 @@
+{
+  "id": "guard-isBinaryValue-binData",
+  "fn": "isBinaryValue",
+  "input": {
+    "value": {
+      "mimeType": "a",
+      "data": "x"
+    }
+  },
+  "expected": true
+}

@@ -1,0 +1,12 @@
+{
+  "id": "guard-isFilterValue-filterBadCombinator",
+  "fn": "isFilterValue",
+  "input": {
+    "value": {
+      "conditions": [],
+      "combinator": "xor",
+      "options": {}
+    }
+  },
+  "expected": true
+}

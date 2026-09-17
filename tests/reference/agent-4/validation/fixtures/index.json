@@ -1,0 +1,21 @@
+{
+  "oracle": "tests/reference/agent-4/validation/workflow-rules.ts",
+  "contract": "contracts/validation.contract.md",
+  "canonicalisation": "JSON with recursively sorted object keys; arrays keep order",
+  "cases": [
+    "D01-empty-workflow",
+    "D02-linear",
+    "D03-duplicate-node-name",
+    "D04-dangling-target",
+    "D05-invalid-connection-type",
+    "D06-cycle-default-allowed",
+    "D07-cycle-strict",
+    "D08-ai-edges-ignored",
+    "D09-disabled-duplicate",
+    "D10-malformed-input",
+    "D11-diamond-dag",
+    "D12-self-loop-and-3-cycle",
+    "D13-unknown-source-and-multiple-errors",
+    "D14-malformed-output-slot"
+  ]
+}

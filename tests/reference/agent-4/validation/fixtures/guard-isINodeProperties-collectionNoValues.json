@@ -1,0 +1,11 @@
+{
+  "id": "guard-isINodeProperties-collectionNoValues",
+  "fn": "isINodeProperties",
+  "input": {
+    "value": {
+      "displayName": "D",
+      "name": "n"
+    }
+  },
+  "expected": false
+}

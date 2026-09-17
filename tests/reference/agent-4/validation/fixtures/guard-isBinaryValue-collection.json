@@ -1,0 +1,12 @@
+{
+  "id": "guard-isBinaryValue-collection",
+  "fn": "isBinaryValue",
+  "input": {
+    "value": {
+      "displayName": "D",
+      "name": "n",
+      "values": []
+    }
+  },
+  "expected": false
+}

@@ -1,0 +1,12 @@
+{
+  "id": "guard-isResourceLocatorValue-propWithValue",
+  "fn": "isResourceLocatorValue",
+  "input": {
+    "value": {
+      "name": "n",
+      "type": "string",
+      "value": "v"
+    }
+  },
+  "expected": false
+}

@@ -1,0 +1,15 @@
+{
+  "id": "ref-tryToParseJwt-04",
+  "fn": "tryToParseJwt",
+  "input": {
+    "args": [
+      null
+    ]
+  },
+  "expected": {
+    "throws": {
+      "name": "ApplicationError",
+      "message": "The value \"null\" is not a valid JWT token."
+    }
+  }
+}

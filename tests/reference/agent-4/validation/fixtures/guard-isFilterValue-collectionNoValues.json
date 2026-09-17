@@ -1,0 +1,11 @@
+{
+  "id": "guard-isFilterValue-collectionNoValues",
+  "fn": "isFilterValue",
+  "input": {
+    "value": {
+      "displayName": "D",
+      "name": "n"
+    }
+  },
+  "expected": false
+}

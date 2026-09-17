@@ -1,0 +1,11 @@
+{
+  "id": "guard-isNodeConnectionType-filterNoOptions",
+  "fn": "isNodeConnectionType",
+  "input": {
+    "value": {
+      "conditions": [],
+      "combinator": "and"
+    }
+  },
+  "expected": false
+}
