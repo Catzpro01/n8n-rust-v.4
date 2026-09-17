@@ -1,4 +1,4 @@
-﻿# Reference n8n Smoke Test & Baseline Verification Results
+# Reference n8n Smoke Test & Baseline Verification Results
 
 **Target Environment:** VPS Ubuntu 24.04 (`157.10.160.95`)  
 **n8n Version:** `2.9.4`  
