@@ -1742,3 +1742,37 @@ server + `N8N_URL`), still blocked on native DB-stack builds (nodejs.org headers
 unchanged from the audit. Reproduction documented in `tests/reference/agent-4/README.md`
 (append-only note) and `results/TASK-AGENT4-RUNTIME-01.md`. No golden/fixture edits; `verify:all`
 real exit 0 unaffected.
+
+---
+
+## ISSUE-028 — `WaitTracker` diverges from the reference in five observable ways (OPEN)
+
+**Detected by:** arena-worker, 2026-09-18 (review sweep 20, `results/REVIEW-SWEEP-2026-09-18.md`)
+**Affected:** `packages/execution-engine/src/wait-tracker.mjs` (TASK-428, commit `2d70d2c4`)
+**Type:** 1:1 reconstruction fidelity — undocumented deviations
+**Severity:** MEDIUM (edge cases; no gate failure, all 85 tests and gate E11 pass)
+
+**Description:**
+`TASK-428`'s objective is a **1:1** reconstruction of
+`reference/n8n/packages/cli/src/wait-tracker.ts`, and its result record declares no deviations.
+Five observable divergences were reproduced by direct execution:
+
+| # | Reference | Reconstruction |
+| :-- | :--- | :--- |
+| 1 | `startedAt` set unconditionally in the `data` literal (`:120-127`) | assigned only when not `undefined` (`wait-tracker.mjs:200-202`) — key set handed to `workflowRunner.run` becomes 5 instead of 6 |
+| 2 | `waitTill.getTime() - Date.now()`, no clamp (`:78`) | `Math.max(0, …)` (`:148`) — a past `waitTill` yields `0` instead of a negative delay |
+| 3 | `startTracking()` has no re-entry guard (`:48-57`) | `if (this.#mainTimer) return` (`:117`) — double call makes 1 interval instead of 2 |
+| 4 | `waitTill!.getTime()` assumes a `Date` (`:78`) | coerces non-`Date` via `new Date(…)` (`:144-146`) — a string `waitTill` no longer throws |
+| 5 | `!fullExecutionData.workflowData.id` (`:113`) | `!fullExecutionData.workflowData?.id` (`:186`) — `workflowData === undefined` throws `UnexpectedError` instead of `TypeError` |
+
+Findings 2-5 are defensible hardening **if declared**; finding 1 is a shape divergence with no
+upside, and it is invisible to the current suite because `07-wait-tracker.test.mjs` sets
+`startedAt: undefined` in a fixture (`:199`) but only asserts the value in the defined case
+(`:251`).
+
+**Requested action:** for each finding, either restore the reference behaviour verbatim (this is a
+1:1 track and other lanes deliberately reproduce such quirks) or keep the hardening and record it
+as a declared deviation in the task result plus `contracts/execution.contract.md`, pinned by a
+test. Add a key-set assertion on the `data` object so this class cannot recur unnoticed.
+
+**Status:** OPEN

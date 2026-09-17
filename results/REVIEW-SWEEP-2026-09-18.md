@@ -325,3 +325,71 @@ Second vote on `TASK-NREFP-01-phase3-node-reference-parser` (peer submitted in `
 | `TASK-NREFP-01-phase3-node-reference-parser.md` | node-reference-parser + lodash-lite + OperationalError, 15 new cases, suite 116/116, gate 7/7, differential N25 1695 agree / 0 diverge across 25 groups | package **116 pass / 0 fail**; Node gate **7/7**; differential **1695 agree / 0 diverge** (0 harness errors); `verify:all` 14 lanes real exit 0 | **APPROVE** (second vote) |
 
 
+## Sweep 20 (2026-09-18, on `2d70d2c4`) — TASK-428 WaitTracker: **NEEDS_CORRECTION**
+
+Dual-phase review sweep per STANDING-WORKER-PROTOCOL. First vote on TASK-428 (no prior sweep
+mentions it). Claims re-run from zero on this tip, then the reconstruction was compared
+line-by-line against `reference/n8n/packages/cli/src/wait-tracker.ts`.
+
+### Claims that reproduce exactly
+
+| Claim | Fresh re-run on merged tree | Result |
+| :--- | :--- | :--- |
+| execution-engine suite 67 → 85/85 | `npm --prefix packages/execution-engine test` | **85 pass / 0 fail** ✅ |
+| execution gate 11/11 with new E11 | `npm run execution:gate` | **11/11 PASS**, `E11` **18 pass / 0 fail** ✅ |
+| 0 runtime deps, import-closed, reference pinned | `E01` / `E02` / `E04` | no deps ✅ · 18 source files, all relative or `node:` ✅ · 15050 files, root `f8da3518…` ✅ |
+
+The reconstruction is genuinely faithful in the parts that matter most: all eight reference
+members are present (`has`, `init`, `startTracking`, `getWaitingExecutions`, `stopExecution`,
+`startExecution`, `stopTracking`, constructor), the three `startExecution` guard messages are
+verbatim, `workflowRunner.run(data, false, false, executionId)` keeps the four-argument form,
+`ExecutionAlreadyResumingError` is swallowed while other errors rethrow, and the two-stage
+`getPostExecutePromise` chain reproduces the reference's **double** `status === 'waiting'` check
+(`wait-tracker.ts:150-168`).
+
+### Five observable divergences, none documented as deviations
+
+The task objective states *"Reconstruct WaitTracker and execution resumption runtime **1:1**
+against n8n 2.9.4 CLI reference"*, and `results/TASK-428-phase3-wait-tracker.md` records no
+deliberate deviations. Each of the following was reproduced by direct execution, not by reading.
+
+| # | Reference | Reconstruction | Measured |
+| :-- | :--- | :--- | :--- |
+| 1 | `data` literal sets `startedAt: fullExecutionData.startedAt` **unconditionally** (`wait-tracker.ts:120-127`) | `startedAt` assigned only `if (startedAt !== undefined)` (`wait-tracker.mjs:200-202`) | with `startedAt: undefined` the object handed to `workflowRunner.run` has **5 keys** and `'startedAt' in data === false`; the reference literal always yields **6 keys** and `true` |
+| 2 | `const triggerTime = execution.waitTill!.getTime() - new Date().getTime()` — **no clamp** (`:78`) | `Math.max(0, waitTillDate.getTime() - now)` (`:148`) | `waitTill` 5 s in the past → peer passes **0** to the (injected) `setTimeoutFn`; the reference expression yields **-5000** |
+| 3 | `startTracking()` has **no** re-entry guard (`:48-57`) | `if (this.#mainTimer) return;` (`:117`) | two `startTracking()` calls → peer creates **1** interval, reference creates **2** and leaks the first |
+| 4 | `execution.waitTill!.getTime()` — assumes a `Date` (`:78`) | `waitTill instanceof Date ? waitTill : new Date(waitTill)` (`:144-146`) | a **string** `waitTill` → peer coerces silently, reference throws `TypeError: s.getTime is not a function` |
+| 5 | `if (!fullExecutionData.workflowData.id)` — direct member access (`:113`) | `if (!fullExecutionData.workflowData?.id)` (`:186`) | `workflowData === undefined` → peer throws `UnexpectedError('Only saved workflows can be resumed.')`, reference throws `TypeError: Cannot read properties of undefined (reading 'id')` |
+
+Findings 2-5 are defensive hardening and would each be defensible **if declared**. Finding 1 is a
+plain shape divergence with no upside: it changes the key set of an object crossing a lane
+boundary, and the existing test does not catch it because `07-wait-tracker.test.mjs:199` sets
+`startedAt: undefined` in a fixture but only asserts `call.data.startedAt` in the *defined* case
+(`:251`).
+
+This is the same defect class as **ISSUE-027** (`this.name` set where the reference left it
+inherited) — a real, observable divergence that value-comparison tests cannot see.
+
+### Verdict
+
+**NEEDS_CORRECTION** — not a rejection of the work, which is high quality and gate-green, but a
+request for one of two resolutions per finding:
+
+1. restore the reference behaviour verbatim (preferred for 1-5, since this lane is a 1:1
+   reconstruction track and other lanes deliberately reproduce quirks such as negative
+   `setTimeout` delays and `TypeError` on malformed input); **or**
+2. keep the hardening and record it as a declared deviation in `results/TASK-428-…md` plus
+   `contracts/execution.contract.md`, with a test that pins the chosen behaviour.
+
+Either way, add a shape assertion to the WaitTracker suite — `assert.deepEqual(Object.keys(data),
+['executionMode','executionData','workflowData','projectId','pushRef','startedAt'])` — so this
+class cannot recur unnoticed.
+
+**Not raised:** the missing `@OnLeaderTakeover()` / `@OnLeaderStepdown()` decorators. They are
+TypeScript decorator metadata with no plain-JS equivalent; the peer wires leadership through
+`instanceSettings.isLeader` in `init()` and an explicit `stopTracking()`, which is the correct
+translation and is already covered by the acceptance criteria.
+
+**Environment note (this sweep):** `.runtime` survived re-provision at 599 packages, but every
+`packages/*/node_modules` was empty; restored with per-package `npm install` before any verdict.
+No gate number in this sweep was recorded before that.
