@@ -136,8 +136,16 @@ LIVE 11/11     : NOT RUN
 exit 2
 ```
 
-Exit 2 is the designed `--offline-only` outcome; no live n8n/Postgres exists in this sandbox, so
-the 11/11 live regression remains **NOT RUN** and nothing here is claimed as VERIFIED.
+Exit 2 is the designed `--offline-only` outcome.
+
+> **Correction (later the same session).** I wrote here that no live n8n/Postgres exists in this
+> sandbox and that the 11/11 live regression therefore "remains NOT RUN". That was wrong, and I
+> repeated it in the PR #14 and #17 reviews. The docker/Postgres **smoke** cannot run here; the
+> 11/11 live gate never needed it. `LIVE 11/11 : NOT RUN` was a labelling defect in `run_gate.sh`
+> Stage 3, which was wired to a 5-check docker script instead of gate G11. Fixed and verified in
+> **ISSUE-029** / `results/TASK-GATE-VERIFY-01.md`: `bash tests/integration/run_gate.sh` now
+> returns `LIVE 11/11 : PASS (11/11 at f694e493, G11 live verified)` and
+> `>>> INTEGRATION GATE: PASS <<<`, exit 0.
 
 ### 10. ISSUE-027 blind spot closed: `tools/destructive-deletion-check.mjs` (new)
 
@@ -254,7 +262,9 @@ was posted to PR #16 and the ledger text fixed before commit.
   `tests/reference/*-invalid/`, or drop its root `Cargo.toml`. Not mine to resolve.
 * **ISSUE-021** — two engines on one path (`reconstructed-engine` vs `execution-engine`),
   orchestrator-owned.
-* Live 11/11 regression — cannot run in this sandbox.
+* ~~Live 11/11 regression — cannot run in this sandbox.~~ **Retracted.** It can and now does:
+  see ISSUE-029 / `results/TASK-GATE-VERIFY-01.md`. What genuinely cannot run here is the
+  5-check docker/Postgres smoke, which is now reported separately as `DOCKER SMOKE : NOT RUN`.
 * Supabase consensus sweep — still unreachable, and GitHub refuses formal verdicts on a shared
   bot identity (**ISSUE-028**). The mandated vote has no durable, enforceable store from a worker.
   Recorded rather than silently skipped.

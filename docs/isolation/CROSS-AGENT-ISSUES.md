@@ -1553,3 +1553,80 @@ merge base is not a deletion" rule, and the ISSUE-026 refusal.
 blocking check would be permanently red until the orchestrator resolves that merge order — and a
 permanently red gate trains everyone to ignore it. The *self-test* does fail the gate; the survey
 does not. Stage 2e should be promoted to blocking once ISSUE-027 is closed.
+
+---
+
+## ISSUE-029 — The integration gate was permanently INCONCLUSIVE because Stage 3 measured the wrong thing (HIGH, found and fixed)
+
+**Detected by:** `arena/01a0aff6-n8n-rust-v-4` (agent-5)
+**Affected:** `tests/integration/run_gate.sh`, `tools/workflow-isolation-gate.mjs`, every `results/*.md` that cites "11/11"
+**Type:** Gate defect — unreachable success state
+**Severity:** HIGH
+
+**Description:**
+`run_gate.sh` Stage 3 was titled `11/11 LIVE REGRESSION GATE` but ran
+`tests/integration/regression_gate.py`, which sets `total_checks = 5` and probes a running n8n on
+`127.0.0.1:5678` plus `docker exec n8n-db-1 psql`. The "11/11" every commit message and result
+file cites is gate **G11 of 11** in `tools/workflow-isolation-gate.mjs` — a different mechanism
+that needs the pinned reference runtime, not docker.
+
+Stage 3 was gated on `command -v docker`, which is absent in the Arena sandbox, so it could only
+ever print `NOT RUN`. The final verdict required `live == PASS`, therefore:
+
+```text
+docker absent  ->  live = NOT RUN  ->  exit 2 INCONCLUSIVE, always
+```
+
+The gate could not return PASS in this environment even with all 11 real gates green — the
+success state was unreachable. Measured before the fix: `LIVE 11/11 : NOT RUN`, exit 2, while
+`npm run verify` was reporting `gates: 11/11 PASS`.
+
+**Fix:**
+
+1. Stage 3 renamed to what it is — `DOCKER + POSTGRES SMOKE (5 checks)` — and reported on its own
+   line instead of standing in for the live regression.
+2. New **Stage 3b** consumes the real live evidence (`docs/isolation/evidence/gate-report.json`),
+   requiring `totals 11/11`, `behaviorChange NONE DETECTED` and `G11 PASS`.
+3. Evidence is only accepted when attributable to the tree being gated. `gate-report.json` now
+   records `git.headCommit / branch / dirtyInputs / inputPaths` (none of the 8 files in
+   `docs/isolation/evidence/` carried any git provenance before, so an undated report was
+   indistinguishable from a fresh one). Stage 3b re-checks
+   `git diff --quiet <recorded> HEAD -- <inputPaths>` **and** `git status --porcelain -- <inputPaths>`,
+   the same freshness rule `tools/phase3-rust-acceptance.sh` established for Stage 2b.
+4. `OFFLINE STAGES` is snapshotted before the live stages so the summary still reports the offline
+   stages on their own merits.
+
+**Verified:**
+
+```console
+$ npm run verify
+gates: 11/11 PASS · BEHAVIOR CHANGE: NONE DETECTED          (exit 0)
+
+$ bash tests/integration/run_gate.sh
+RESULT: 43/43 CHECKS PASSED
+AUDIT RESULT: PASS
+RESULT: 7/7 crates with usable compatibility tests
+RESULT: 8/8 CHECKS PASSED          # Stage 2d
+RESULT: 11/11 CHECKS PASSED        # Stage 2e self-test
+OFFLINE STAGES : PASS
+LIVE 11/11     : PASS (11/11 at f694e493, G11 live verified)
+DOCKER SMOKE   : NOT RUN
+>>> INTEGRATION GATE: PASS <<<     exit 0
+```
+
+Negative cases, each confirmed to exit 1 BLOCKED rather than pass silently:
+
+| injected fault | Stage 3b said |
+| :-- | :-- |
+| `headCommit` set to a bogus sha | `STALE/FAILED (inputs changed since 00000000 — re-run: npm run verify)` |
+| evidence generated before provenance existed | `STALE/FAILED (evidence carries no headCommit)` |
+| `// probe` appended to `packages/workflow-lego/package.json` **after** the run | `STALE/FAILED (gate inputs have uncommitted changes now: ['M packages/workflow-lego/package.json'])` |
+
+The third one was a real hole in my first implementation — `dirtyInputs` only records the tree as
+it was when the report was *written*, so a later edit was accepted as fresh. Found by testing the
+negative case instead of assuming it, and fixed.
+
+**Operational note for every worker:** the sandbox is re-provisioned without `.runtime` and
+without per-package `node_modules`. In that state `npm run verify` reports `5/11 PASS` with
+failures that read like code defects (`typescript missing`, `reference runtime not found`) but are
+not. Run `bash scripts/setup-all.sh` first — it installs both halves and is safe to re-run.
