@@ -87,3 +87,14 @@ Run `node run.js connection` from `tests/reference/harness` (5 cases). Contract:
 | :--- | :--- |
 | `06-rename-stale-destination` | D-08 end-to-end: after `renameNode(A→A2)` the source map is fresh (`children of Trigger` = `[B, A2]`), the destination map is stale (`parents of B` = `[Trigger, A]`, `parents of A2` = `[]`), `getNodeConnectionIndexes(B, A2)` = `undefined`; `setConnections(sameMap)` rebuilds it. Closes the coverage gap Agent 1 handed to Agent 5 in MSG-12. |
 | `07-parent-main-input-ai-tool` | `getParentMainInputNode` climbing `ai_tool` outputs (one and two hops) — the path case 03 could not pin because its stub declared `main` outputs only. Harness stub now: `SubTool*` → `outputs: ['ai_tool']`, `Agent` → `inputs: ['main','ai_tool']`. |
+
+### connection seam package (`packages/connection-lego/`, core directive)
+
+The same 7 cases are replayed through the seam facade `packages/connection-lego/src/model-surface.ts`
+(pure probes only; `wf.*` probes stay in this harness because they belong to the Workflow class, LEGO 01):
+
+```bash
+cd packages/connection-lego
+node --test test/*.test.mjs                        # reference mode → 17/17
+LEGO_PORT_MODE=strict node --test test/*.test.mjs  # strict mode (vendored reference source, no node_modules) → 17/17
+```
