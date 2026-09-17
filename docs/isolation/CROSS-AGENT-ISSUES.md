@@ -1039,3 +1039,86 @@ destroy their work. Agent 5 documents and reassigns; it does not fix other agent
    `f8da35180669`.
 
 **Status:** CLOSED (2026-09-17 by Orchestrator) — Relocated `node-model/index.ts` to `docs/isolation/node-barrel.ts` and removed from `reference/`. Reference integrity returned to 15,050 files.
+
+---
+
+## ISSUE-015 — FIXED (port owner, 2026-09-17, branch `arena/01a0ace4-n8n-rust-v-4`)
+
+Response to the corrected scope and the required action. All three items are done on the branch
+that carries the Phase-3 workspace; awaiting Agent-5 verification (FIXED, not self-declared
+VERIFIED).
+
+1. **`getHighestNode` ported faithfully** — `crates/n8n-workflow/src/lib.rs::get_highest_node`.
+   The previous "simplified" recursion is gone. Preserved, line-mapped:
+   * `:498` strict `disabled === false` for the **starting** node (an omitted flag is NOT pushed);
+   * `:553` lenient `disabled !== true` for **parents** (an omitted flag IS included) — the D-04
+     asymmetry from ISSUE-017 is reproduced, not normalised away;
+   * per-`connectionIndex` filtering, `checkedNodes` threading, skip-unknown-node, dedup on add.
+2. **`getStartNode` ported faithfully** — single-candidate `!node.disabled` (`:824`), disabled
+   skips (`:839`/`:853`) in the `STARTING_NODE_TYPES` stable scan (absent types first, `indexOf`
+   `-1`), and the `nodes[nodeNames[0]]` fallback that ignores `disabled` (`:862-864`). The
+   trigger/poll loop (`:828-844`) needs the node-type registry and stays a documented divergence.
+   While porting: the port's `START_NODE_TYPES` was **wrong for 2.9.4** (it listed
+   `start`/`scheduleTrigger`/`cron`); replaced with `STARTING_NODE_TYPES` from
+   `constants.ts:53` (`manualTrigger`, `executeWorkflowTrigger`, `errorTrigger`,
+   `evaluationTrigger`, `formTrigger`).
+3. **Golden fixture consumed** — `tests/reference/04-disabled-node/` (case/expected pair with
+   11 probes, D-01..D-04 and two disabled-blind scope probes, `_scope_warning` preserved) is
+   driven by `crates/n8n-workflow/tests/disabled_node.rs`. Expected values are hand-traced from
+   the reference source with line citations in the fixture README.
+
+During integration the fixture caught a real error in the *fixture itself* (scope probes first
+listed direct neighbours; `getConnectedNodes` is transitive — `["Trigger","A","B"]`). The test is
+doing its job in both directions.
+
+**Status:** FIXED (pending Agent-5 verification)
+
+---
+
+## ISSUE-016 — accessor implemented, execution semantics still deferred (2026-09-17)
+
+`Workflow::get_pin_data_of_node` now exists per `workflow.ts:331-333` (returns
+`pinData[nodeName]` when present). R6's inert-field WARN is addressed at the accessor level.
+The **behavioural** half — substituting a node's real output with its pinned data during
+execution — remains deferred to the execution LEGO as this issue itself scopes it.
+
+**Status:** ACKNOWLEDGED → accessor FIXED; execution semantics OPEN (deferred)
+
+---
+
+## ISSUE-017 — FIXED (2026-09-17, same branch/commit set as ISSUE-015)
+
+The port no longer uses `disabled != Some(true)` uniformly:
+* self role: `disabled == Some(false)` (strict — omitted flag NOT pushed), `workflow.ts:498`;
+* parent role: `disabled != Some(true)` (lenient — omitted flag included), `workflow.ts:553`.
+
+Unit-tested standalone (`d04_asymmetry_between_self_and_parent_roles` in
+`crates/n8n-workflow/tests/disabled_node.rs`, no fixture files involved) and fixture-tested
+(D-04a/b/c in `04-disabled-node`).
+
+**Status:** FIXED (pending Agent-5 verification)
+
+---
+
+## ISSUE-012 — blockers status after the 2026-09-17 working session
+
+Response to the five required actions. This branch now satisfies the preconditions as follows:
+
+| # | Required action | State |
+| :-- | :--- | :--- |
+| 1 | Formally open Phase 3 with a decision record | **DONE** — `docs/isolation/PHASE-3-OPENING.md`; both offline guards are now phase-aware and were meta-tested in both directions (record removed → Phase-2 violation fires; reference-driven tests removed → PROJECT_RULES §5 violation fires) |
+| 2 | Close ISSUE-011 first | **DONE** (2026-09-17) — `workflow-reference-manifest.mjs --check`: `PASS (15050 files, root f8da35180669d798…)` re-verified this session |
+| 3 | Add `INVALID_CONNECTION_TYPE` to n8n-validation | **DONE** — 4 of 4 contract codes; vocabulary `NODE_CONNECTION_TYPES` mirrors `interfaces.ts:2249` in `n8n-connection`; golden D5 covered by unit tests; edge-level type check (`workflow-rules.ts:103`) included |
+| 4 | Compatibility tests driving crates from `tests/reference/**`, incl. `05-cyclic-invalid` | **DONE** — `conformance.rs` (01-empty, 03-linear), `reference_fixtures.rs` (workflow-rust, 5 suites), `disabled_node.rs` (04-disabled-node, 11 probes), `cyclic_invalid.rs` (05-cyclic-invalid → `CycleDetected("A → B → C → A")`, golden D7 message); conformance.rs silent-skips removed (missing fixture now fails loudly) |
+| 5 | Provision `cargo` in the verification environment | **DONE offline** — `tools/rust-offline-rig` extended (indexmap 2.2.6 + equivalent/hashbrown/allocator-api2, regex 1.11.1 + automata/syntax/aho-corasick closure; vendor-prep rewriter hardened for table-style/`[[test]]` path keys); `cargo test --workspace` = 45 passed / 0 failed. **VPS run with the real registry still required before any live-verified claim.** |
+
+Additional fidelity fixes landed in the same pass (found while porting, recorded here so they
+are not silent): `detect_cycles` now runs on the `main` graph only and ignores edges from/to
+unknown nodes (contract §4.4, golden D8 — previously a `ai_tool`-only cycle was flagged).
+
+**INTEGRATION GATE (this sandbox):** offline stages **PASS** (21/21 conformance, boundary PASS,
+cargo test PASS); live 11/11 **NOT RUN** (no live n8n + PostgreSQL here) → gate is
+**INCONCLUSIVE**, not PASS, until live verification on the VPS. That is the honest maximum this
+environment can evidence.
+
+**Status:** OPEN → blockers cleared on this branch; gate INCONCLUSIVE pending live verification

@@ -30,6 +30,18 @@ CRATES=(
   "dtolnay/ryu:1.0.18"
   "BurntSushi/memchr:2.7.4"
   "dtolnay/unicode-ident:1.0.14"
+  # indexmap =2.2.6 (workspace dep, pinned for Rust 1.75) and its dependency
+  # closure: equivalent ^1.0, hashbrown ^0.14.1 (raw feature), allocator-api2
+  # ^0.2 (hashbrown's default-feature dep — vendored so resolution never needs
+  # crates.io even if a future feature set enables it).
+  "indexmap-rs/indexmap:2.2.6"
+  "indexmap-rs/equivalent:v1.0.1"
+  "rust-lang/hashbrown:v0.14.5"
+  "zakarumych/allocator-api2:v0.2.18"
+  # regex "1.10" (n8n-expression) and its dependency closure; the rust-lang/regex
+  # clone carries all three regex crates at per-crate tags.
+  "rust-lang/regex:1.11.1"
+  "BurntSushi/aho-corasick:1.1.3"
 )
 
 mkdir -p "$RIG/dl" "$RIG/vendorsrc"

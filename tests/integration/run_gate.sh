@@ -12,8 +12,25 @@ fail=0
 echo "######## STAGE 1: CONTRACT CONFORMANCE (offline) ########"
 node tests/compatibility/contract_conformance.mjs || fail=1
 
-echo; echo "######## STAGE 2: BOUNDARY & DEPENDENCY AUDIT (offline) ########"
+echo "######## STAGE 2: BOUNDARY & DEPENDENCY AUDIT (offline) ########"
 python3 tests/integration/boundary_audit.py || fail=1
+
+echo; echo "######## STAGE 2b: RUST CONFORMANCE (offline, needs rust-offline-rig) ########"
+# Phase-3 requirement (ISSUE-012, required action 5): the gate must run `cargo test`.
+# The sandbox cannot reach crates.io, so compilation goes through tools/rust-offline-rig
+# (toolchain from npm, crates vendored from pinned git tags). If the rig is not provisioned
+# the stage is reported as NOT RUN instead of failing: absence of the rig is an
+# environment gap, a red test is a code gap.
+if [ -d "${RUST_RIG:-/tmp/rust-rig}/vendor" ]; then
+  if tools/rust-offline-rig/run.sh test; then
+    rust_stage="PASS"
+  else
+    rust_stage="FAIL"; fail=1
+  fi
+else
+  echo "SKIPPED: rust-offline-rig not provisioned (run tools/rust-offline-rig/setup.sh) — cargo test NOT RUN."
+  rust_stage="NOT RUN"
+fi
 
 echo; echo "######## STAGE 3: 11/11 LIVE REGRESSION GATE ########"
 if [ "$OFFLINE" = "1" ]; then
@@ -28,6 +45,7 @@ fi
 
 echo; echo "======================================================="
 echo "OFFLINE STAGES : $([ $fail -eq 0 ] && echo PASS || echo FAIL)"
+echo "RUST CARGO TEST: $rust_stage"
 echo "LIVE 11/11     : $live"
 if [ $fail -ne 0 ]; then
   echo ">>> INTEGRATION GATE: BLOCKED <<<"; exit 1

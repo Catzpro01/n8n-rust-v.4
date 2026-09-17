@@ -1,18 +1,29 @@
+//! Compatibility tests driving the Rust Workflow port from the golden fixtures under
+//! `tests/reference/` (PROJECT_RULES §5).
+//!
+//! ISSUE-012 (blocker 1): these used to `return;` when a fixture file was missing, so a
+//! deleted or never-integrated fixture silently PASSED. A missing fixture is now a hard
+//! failure — the gate must be able to trust green.
+
 use n8n_node_model::INode;
 use n8n_validation::validate_node_uniqueness;
 use std::fs;
 use std::path::Path;
 
+fn read_fixture(path: &str) -> serde_json::Value {
+    let fixture_path = Path::new(env!("CARGO_MANIFEST_DIR")).join(path);
+    let content = fs::read_to_string(&fixture_path)
+        .unwrap_or_else(|e| panic!("reference fixture missing/unreadable: {} ({e})", fixture_path.display()));
+    serde_json::from_str(&content)
+        .unwrap_or_else(|e| panic!("reference fixture is not valid JSON: {} ({e})", fixture_path.display()))
+}
+
 #[test]
 fn test_fixture_empty_workflow() {
-    let fixture_path = Path::new("../../tests/reference/01-empty-workflow/workflow.json");
-    if !fixture_path.exists() {
-        return;
-    }
-    let content = fs::read_to_string(fixture_path).expect("Failed to read fixture");
-    let json: serde_json::Value = serde_json::from_str(&content).expect("Failed to parse JSON");
+    let json = read_fixture("../../tests/reference/01-empty-workflow/workflow.json");
 
-    let nodes: Vec<INode> = serde_json::from_value(json["nodes"].clone()).unwrap_or_default();
+    let nodes: Vec<INode> = serde_json::from_value(json["nodes"].clone())
+        .expect("fixture nodes do not deserialize into INode");
     let node_names: Vec<String> = nodes.iter().map(|n| n.name.clone()).collect();
 
     assert!(validate_node_uniqueness(&node_names).is_ok());
@@ -21,14 +32,10 @@ fn test_fixture_empty_workflow() {
 
 #[test]
 fn test_fixture_linear_workflow() {
-    let fixture_path = Path::new("../../tests/reference/03-linear/workflow.json");
-    if !fixture_path.exists() {
-        return;
-    }
-    let content = fs::read_to_string(fixture_path).expect("Failed to read fixture");
-    let json: serde_json::Value = serde_json::from_str(&content).expect("Failed to parse JSON");
+    let json = read_fixture("../../tests/reference/03-linear/workflow.json");
 
-    let nodes: Vec<INode> = serde_json::from_value(json["nodes"].clone()).unwrap_or_default();
+    let nodes: Vec<INode> = serde_json::from_value(json["nodes"].clone())
+        .expect("fixture nodes do not deserialize into INode");
     let node_names: Vec<String> = nodes.iter().map(|n| n.name.clone()).collect();
 
     assert!(validate_node_uniqueness(&node_names).is_ok());

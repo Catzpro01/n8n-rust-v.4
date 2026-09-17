@@ -119,20 +119,44 @@ for (const { name, wf } of fixtures) {
   });
 }
 
-// --- Phase-2 guard: no premature Rust -------------------------------------
-check('Phase 2: no Rust implementation introduced', () => {
-  const offenders = [];
+// --- Phase guard: Phase 2 forbids Rust, Phase 3 demands reference tests ----
+// The phase flips ONLY via the decision record (docs/isolation/PHASE-3-OPENING.md):
+// delete the record and the Phase-2 "no Rust" rule is back in force.
+check('Phase: Rust guard per docs/isolation/PHASE-3-OPENING.md', () => {
+  const rustFiles = [];
   const walk = (dir) => {
     if (!existsSync(dir)) return;
     for (const e of readdirSync(dir, { withFileTypes: true })) {
       const p = join(dir, e.name);
       if (e.isDirectory()) walk(p);
-      else if (e.name.endsWith('.rs') || e.name === 'Cargo.toml') offenders.push(p.slice(ROOT.length + 1));
+      else if (e.name.endsWith('.rs') || e.name === 'Cargo.toml') rustFiles.push(p.slice(ROOT.length + 1));
     }
   };
   walk(join(ROOT, 'crates')); walk(join(ROOT, 'apps'));
-  assert(offenders.length === 0, `Rust artifacts present in Phase 2: ${offenders.join(', ')}`);
-  return 'crates/ and apps/ contain no Rust sources';
+
+  const phase3Record = join(ROOT, 'docs', 'isolation', 'PHASE-3-OPENING.md');
+  if (!existsSync(phase3Record)) {
+    assert(
+      rustFiles.length === 0,
+      `Rust artifacts present in Phase 2 (no PHASE-3-OPENING.md): ${rustFiles.join(', ')}`,
+    );
+    return 'Phase 2: crates/ and apps/ contain no Rust sources';
+  }
+
+  // Phase 3: implementation allowed — but PROJECT_RULES §5 becomes a gate: at least one
+  // Rust *test file* (crates/**/tests/*.rs) must consume the golden fixtures under
+  // tests/reference/. Doc comments in src/** must not satisfy this — only executable
+  // test files count.
+  const consuming = rustFiles.filter((rel) => {
+    if (!rel.includes('/tests/') || !rel.endsWith('.rs')) return false;
+    const src = readFileSync(join(ROOT, rel), 'utf8');
+    return src.includes('tests/reference');
+  });
+  assert(
+    consuming.length > 0,
+    'Phase 3 opened (PHASE-3-OPENING.md) but no Rust test consumes tests/reference/** (PROJECT_RULES §5)',
+  );
+  return `Phase 3 open: ${rustFiles.length} Rust artifact(s), ${consuming.length} test file(s) reference-driven`;
 });
 
 const passed = results.filter((r) => r.ok).length;

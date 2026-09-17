@@ -1,0 +1,14 @@
+{
+  "_scope_warning": "Plain traversal (getParentNodes / getChildNodes via graph-utils.ts) has NO disabled branch in n8n 2.9.4 — do NOT assert disabled-filtering on those ops. Only getHighestNode (workflow.ts:498 strict '=== false', :553 lenient '!== true') and getStartNode (:824 '!node.disabled', :839/:853 skip disabled) are disabled-aware. D-04 is the asymmetry between the two roles for a node that OMITS the flag.",
+  "D-01 highest of C is transparent through disabled B": ["Trigger"],
+  "D-02 highest of Y is empty: disabled leaf parent X is excluded (workflow.ts:553)": [],
+  "D-04a highest of E (explicit disabled:false) is itself (workflow.ts:498)": ["E"],
+  "D-04b highest of F (explicit disabled:true) is nothing (workflow.ts:498)": [],
+  "D-04c highest of Trigger (omitted flag) is NOT itself — strict === false (workflow.ts:498)": [],
+  "D-01b highest of A via recursion through no disabled nodes": ["Trigger"],
+  "D-03a start node of D is the single non-disabled highest candidate (workflow.ts:824)": "Trigger",
+  "D-03b start node of Y: highest is empty, destination is the single candidate (workflow.ts:821-825)": "Y",
+  "D-03c start node of F skips the disabled single candidate and scans STARTING_NODE_TYPES (workflow.ts:839/:853)": "Trigger",
+  "scope: parents of C INCLUDE disabled B — plain traversal is disabled-blind": ["Trigger", "A", "B"],
+  "scope: children of A INCLUDE disabled B — plain traversal is disabled-blind": ["D", "C", "B"]
+}

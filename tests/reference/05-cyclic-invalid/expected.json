@@ -1,0 +1,13 @@
+{
+  "_note": "Contract shape of `validateWorkflow(case, { allowCycles: false })` per contracts/validation.contract.md §3 and the approved TS rule implementation (tests/reference/agent-4/validation/workflow-rules.ts, detectCycles). `path` points at the edge that closed the cycle; `message` is the deterministic path string.",
+  "valid": false,
+  "errors": [
+    {
+      "code": "CYCLE_DETECTED",
+      "node": "A",
+      "path": ["connections", "C", "main"],
+      "message": "Cycle detected: A → B → C → A"
+    }
+  ],
+  "_rust_carry": "crates/n8n-validation::detect_cycles returns Err(ValidationError::CycleDetected(\"A → B → C → A\")) — the Display message is the same deterministic path string; the `node`/`path` fields live in the contract-shaped JSON and are asserted by the TS harness."
+}
