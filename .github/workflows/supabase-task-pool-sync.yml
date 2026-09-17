@@ -1,0 +1,44 @@
+name: supabase-task-pool-sync
+
+# Read-only snapshot of the swarm coordination tables on Supabase.
+# Triggered manually; prints the pool/inbox/votes to the run log so the
+# in-session worker agent can read it back via `gh run view --log`.
+on:
+  workflow_dispatch:
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Fetch Supabase coordination tables (read-only)
+        env:
+          SUPABASE_URL: https://gqctxugkxekdqxsaqrum.supabase.co
+          SUPABASE_KEY: sb_publishable_IcoOhu2j_K8wDt-uzdrGEw_3T8RQHYP
+        run: |
+          set -uo pipefail
+          base="$SUPABASE_URL/rest/v1"
+          H1="apikey: $SUPABASE_KEY"
+          H2="Authorization: Bearer $SUPABASE_KEY"
+
+          echo "===== OPENAPI TABLE LIST ====="
+          curl -sS -m 30 "$base/" -H "$H1" -H "$H2" -o /tmp/openapi.json || echo "openapi fetch failed"
+          node -e '
+            const s = require("fs").readFileSync("/tmp/openapi.json", "utf8");
+            try {
+              const j = JSON.parse(s);
+              console.log(Object.keys(j.paths || {}).join("\n"));
+            } catch { console.log(s.slice(0, 2000)); }
+          '
+          echo
+
+          for t in dynamic_task_pool task_consensus_votes agent_messages tasks agent_status locks agent_dependencies; do
+            echo "===== TABLE: $t ====="
+            curl -sS -m 30 "$base/$t?select=*&limit=100" -H "$H1" -H "$H2" -H "Accept: application/json"
+            echo
+            echo
+          done
+          echo "===== DONE ====="
