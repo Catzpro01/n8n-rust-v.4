@@ -4,7 +4,7 @@ lego: trigger
 module: active-workflow-coordinator
 phase: 3
 title: "Trigger LEGO: instance leadership and distributed activation coordination"
-status: SUBMITTED_FOR_REVIEW
+status: VERIFIED
 objective: "Coordinate persisted active workflows with leader-owned triggers/pollers and durable webhook registration."
 acceptance:
   - "reference leader/follower permission matrix"

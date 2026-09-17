@@ -210,6 +210,12 @@ gate('E10', 'activation lifecycle: triggers, pollers, lifecycle hooks', () =>
 	'packages/execution-engine/test/05-activation.test.mjs',
 );
 
+/* E11 — wait tracker & execution resumption ------------------------------- */
+gate('E11', 'waiting execution tracking & resumption (WaitTracker)', () =>
+	runNodeTest('test/07-wait-tracker.test.mjs', PKG),
+	'packages/execution-engine/test/07-wait-tracker.test.mjs',
+);
+
 /* ---------------- evidence + human-readable report ----------------------- */
 const totals = {
 	gates: results.length,
@@ -256,6 +262,10 @@ const report = {
 		'TASK-EXPRESSION-SANDBOX-01': {
 			status: results.find((entry) => entry.id === 'E09')?.status === 'PASS' ? 'IMPLEMENTED' : 'FAILED',
 			surface: ['node:vm isolation', 'read-only membrane', 'prototype/global deny-list', 'execution timeout'],
+		},
+		'TASK-428-phase3-wait-tracker': {
+			status: results.find((entry) => entry.id === 'E11')?.status === 'PASS' ? 'IMPLEMENTED' : 'FAILED',
+			surface: ['WaitTracker', 'shouldRestartParentExecution', 'updateParentExecutionWithChildResults', 'getDataLastExecutedNodeData', 'ExecutionAlreadyResumingError'],
 		},
 	},
 };

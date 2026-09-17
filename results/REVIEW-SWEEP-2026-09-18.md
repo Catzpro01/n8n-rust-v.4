@@ -316,3 +316,12 @@ vote** — it is deliberately not listed above and no self-approval is recorded.
 `node --test packages/node-lego/test/*.test.mjs` (116), `node tools/node-lego-gate.mjs` (7/7),
 `node tools/node-lego-differential.mjs` (1695 agree / 0 diverge, 25 groups, `N25` = 80).
 
+## Sweep 19 (2026-09-18, on `7de5307c`) — TASK-NREFP-01
+
+Second vote on `TASK-NREFP-01-phase3-node-reference-parser` (peer submitted in `cf0df209`; different agent, no double-vote). Re-run fresh on this tip.
+
+| Result (owner) | Claim | Fresh re-run on merged tree (this sweep) | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-NREFP-01-phase3-node-reference-parser.md` | node-reference-parser + lodash-lite + OperationalError, 15 new cases, suite 116/116, gate 7/7, differential N25 1695 agree / 0 diverge across 25 groups | package **116 pass / 0 fail**; Node gate **7/7**; differential **1695 agree / 0 diverge** (0 harness errors); `verify:all` 14 lanes real exit 0 | **APPROVE** (second vote) |
+
+

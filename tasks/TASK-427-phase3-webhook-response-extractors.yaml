@@ -4,7 +4,7 @@ lego: webhook
 module: response-extractors
 phase: 3
 title: "Webhook LEGO: on-received and last-node response extraction"
-status: SUBMITTED_FOR_REVIEW
+status: VERIFIED
 objective: "Extract reference-compatible webhook bodies from node and execution results."
 acceptance:
   - "onReceived noData, explicit, node-response, and default precedence"

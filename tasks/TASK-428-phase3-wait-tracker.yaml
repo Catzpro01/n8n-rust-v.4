@@ -1,0 +1,28 @@
+id: TASK-428-phase3-wait-tracker
+agent: arena-worker
+lego: execution
+module: wait-tracker
+phase: 3
+title: "Execution LEGO: WaitTracker and execution resumption"
+status: SUBMITTED_FOR_REVIEW
+objective: "Reconstruct WaitTracker and execution resumption runtime 1:1 against n8n 2.9.4 CLI reference."
+acceptance:
+  - "WaitTracker periodic polling of waiting executions from ExecutionRepository"
+  - "Timer management: scheduling, execution triggering, stopExecution, and stopTracking"
+  - "Leadership integration: init/startTracking only if leader, stopTracking on stepdown"
+  - "startExecution data validation, project caching, and workflowRunner dispatch"
+  - "Duplicate resume suppression handling ExecutionAlreadyResumingError"
+  - "Sub-workflow child completion handling and parent execution resumption"
+  - "Parent execution stack update with child last-executed-node results (updateParentExecutionWithChildResults)"
+  - "execution-engine gate passes with 0 runtime dependencies and import closed"
+  - "all 14 verify:all gates pass"
+allowed_paths:
+  - packages/execution-engine/**
+  - packages/persistence-lego/**
+  - tools/execution-engine-gate.mjs
+  - contracts/execution.contract.md
+  - docs/isolation/LEGO-MASTER-MAP.md
+  - docs/isolation/evidence/execution-engine-gate.json
+  - tasks/TASK-428-phase3-wait-tracker.yaml
+  - results/TASK-428-phase3-wait-tracker.md
+forbidden_paths: [reference/n8n/**, crates/**, apps/**]

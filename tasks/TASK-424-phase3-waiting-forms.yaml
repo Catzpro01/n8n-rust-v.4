@@ -4,7 +4,7 @@ lego: webhook
 module: waiting-forms
 phase: 3
 title: "Webhook LEGO: waiting form status and completion rendering"
-status: SUBMITTED_FOR_REVIEW
+status: VERIFIED
 objective: "Serve waiting Form executions and secure completion pages through explicit persistence and execution ports."
 acceptance:
   - "execution-status endpoint with form-waiting classification and wildcard CORS"

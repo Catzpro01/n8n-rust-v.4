@@ -4,7 +4,7 @@ lego: trigger
 module: distributed-activation-pubsub
 phase: 3
 title: "Trigger LEGO: distributed pub/sub transport and activation command routing"
-status: SUBMITTED_FOR_REVIEW
+status: VERIFIED
 objective: "Relay multi-main workflow activation and deactivation through dependency-free injected pub/sub ports."
 acceptance:
   - "deployment-prefixed command envelopes with sender, self-send, and debounce metadata"

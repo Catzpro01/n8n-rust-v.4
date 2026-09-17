@@ -102,6 +102,23 @@ export class ApplicationError extends Error {
 	}
 }
 
+/** Base operational error class — mirrors `OperationalError` (reference/n8n/packages/workflow/src/errors/base/operational.error.ts). */
+export class OperationalError extends ApplicationError {
+	constructor(message, options = {}) {
+		super(message, options);
+		this.name = 'OperationalError';
+	}
+}
+
+/** Error thrown when an execution is already resuming — mirrors `ExecutionAlreadyResumingError`. */
+export class ExecutionAlreadyResumingError extends OperationalError {
+	constructor(executionId) {
+		super('Execution is already being resumed by another process', { extra: { executionId } });
+		this.name = 'ExecutionAlreadyResumingError';
+		this.executionId = executionId;
+	}
+}
+
 /**
  * Mirrors `NodeOperationError` (packages/workflow/src/errors/node-operation.error.ts)
  * — 1:1, TASK-EERR-01 / ISSUE-024. `node` is required exactly like upstream; `error`

@@ -4,7 +4,7 @@ lego: webhook
 module: native-request-body-parser
 phase: 3
 title: "Webhook LEGO: native multipart and binary request parsing"
-status: SUBMITTED_FOR_REVIEW
+status: VERIFIED
 objective: "Parse reference-shaped webhook bodies without framework or storage dependencies."
 acceptance:
   - "quoted/unquoted multipart boundary extraction and malformed 400 errors"

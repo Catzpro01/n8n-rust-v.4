@@ -29,8 +29,10 @@ export {
 } from './retry.mjs';
 export {
 	ApplicationError,
+	ExecutionAlreadyResumingError,
 	NodeApiError,
 	NodeOperationError,
+	OperationalError,
 	TriggerCloseError,
 	UnexpectedError,
 	UserError,
@@ -68,3 +70,9 @@ export { ExecutionLifecycleHooks, createDeferredPromise } from './lifecycle-hook
 export { TriggersAndPollers } from './triggers-and-pollers.mjs';
 export { ActiveWorkflows, ScheduledTaskManager, toCronExpression } from './active-workflows.mjs';
 export { TriggerContext } from './trigger-context.mjs';
+export { WaitTracker } from './wait-tracker.mjs';
+export {
+	getDataLastExecutedNodeData,
+	shouldRestartParentExecution,
+	updateParentExecutionWithChildResults,
+} from './workflow-helpers.mjs';

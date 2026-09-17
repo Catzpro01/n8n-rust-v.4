@@ -68,6 +68,13 @@ export class ExecutionRepository {
   hardDelete(id) { const existed = this.entities.delete(String(id)); this.data.delete(String(id)); return existed; }
   getInProgressExecutionIds() { return [...this.entities.values()].filter((e) => e.status === 'new' || e.status === 'running').map((e) => e.id); }
 
+  getWaitingExecutions(windowMs = 70000, now = new Date()) {
+    const horizon = new Date(now.getTime() + windowMs);
+    return [...this.entities.values()]
+      .filter((e) => e.status === 'waiting' && !e.deletedAt && e.waitTill && new Date(e.waitTill) <= horizon)
+      .map((e) => ({ id: e.id, waitTill: e.waitTill instanceof Date ? e.waitTill : new Date(e.waitTill) }));
+  }
+
   #patch(id, patch) { const entity = this.entities.get(String(id)); if (!entity) return false; Object.assign(entity, patch); return true; }
 }
 

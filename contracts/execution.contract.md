@@ -63,6 +63,9 @@ retry/error policy. Everything the loop consumes from other LEGOs is injected
 | `TriggersAndPollers` | triggers-and-pollers.mjs | runs a trigger node (`runTrigger`, incl. the manual-mode `manualTriggerResponse` + emit/emitError/saveFailedExecution overrides) and a poller (`runPoll`) |
 | `ActiveWorkflows`, `ScheduledTaskManager`, `toCronExpression` | active-workflows.mjs | activation registry (`add`/`remove`/`closeTrigger`/`createPollExecuteFn`), dependency-free cron bookkeeping (keying, duplicate guard, deregistration) and the `TriggerTime → cron` mapper |
 | `TriggerContext` | trigger-context.mjs | `nodeType.trigger`'s context: throwing `emit`/`emitError`/`saveFailedExecution` defaults, `getActivationMode()`, `getCredentials()` boundary, `helpers.createDeferredPromise`/`returnJsonArray` |
+| `WaitTracker` | wait-tracker.mjs | schedules and resumes waiting executions via timers, DB queries (`getWaitingExecutions`), project resolution, and parent execution resumption |
+| `getDataLastExecutedNodeData`, `shouldRestartParentExecution`, `updateParentExecutionWithChildResults` | workflow-helpers.mjs | helpers for WaitTracker: child execution output extraction, parent execution restart guards, and parent nodeExecutionStack updates |
+| `OperationalError`, `ExecutionAlreadyResumingError` | errors.mjs | operational errors; duplicate resume suppression during sub-workflow completions |
 
 ## 5. Loop invariants (pinned to source lines)
 

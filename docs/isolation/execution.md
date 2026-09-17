@@ -1,6 +1,6 @@
 # Execution LEGO — Phase 3 reconstruction record
 
-**Status:** `IMPLEMENTED` · `TESTED` (60/60) · `GATE 10/10`
+**Status:** `IMPLEMENTED` · `TESTED` (85/85) · `GATE 11/11`
 **Language:** JavaScript (Node.js ESM) — `PROJECT_RULES.md` v2.9.4 rule 1 (ZERO RUST, the JavaScript reconstruction track).
 The Phase-3 opening record (`docs/isolation/PHASE-3-OPENING-RECORD.md`, 2026-09-17) permits Rust **only** under
 `crates/**` + `apps/**` for the separate port track; this LEGO contributes no Rust and stays JavaScript either way.
@@ -21,6 +21,7 @@ The three open pool tasks of the execution LEGO:
 | `POOL-002-node-execution-context-data-proxy` | node context + data proxy | `src/node-execution-context.mjs`, `src/data-proxy.mjs`, `src/expression.mjs` |
 | `POOL-003-error-retry-handling` | retry + error policy | `src/retry.mjs`, `src/error-handling.mjs`, `src/errors.mjs` |
 | `TASK-EXPRESSION-SANDBOX-01` | bounded expression security boundary | `src/expression.mjs`, `src/expression-sandbox.mjs` |
+| `TASK-428-phase3-wait-tracker` | waiting execution scheduling & resumption | `src/wait-tracker.mjs`, `src/workflow-helpers.mjs` |
 
 ## 2. Source mapping (verified against the reference, not assumed)
 
@@ -67,12 +68,15 @@ The three open pool tasks of the execution LEGO:
 | `test/02-node-context-data-proxy.test.mjs` | 7 | input data/source data, parameter resolution (literals, templates, typed expressions, nested, per item, fallback), `$json/$node/$items/$input/$prevNode/$env/$now/$today/$runIndex/$itemIndex/$binary`, helpers, standalone context/proxy, error surfaces |
 | `test/03-error-retry.test.mjs` | 11 | retry clamps, retry-on-throw, soft-failure retry, pinned "unrecovered soft failure stays success" quirk, stop-the-workflow, `continueRegularOutput`, legacy `continueOnFail`, `continueErrorOutput` split with paired-item merge, error-item normalisation, `withRetry`, error classes |
 | `test/04-expression-sandbox.test.mjs` | 7 | typed/template evaluation, JS interpolation coercion, Node global denial, prototype escape denial, read-only data, timeout, DateTime methods |
+| `test/05-activation.test.mjs` | 20 | activation lifecycle: TriggersAndPollers, ActiveWorkflows, TriggerContext, ScheduledTaskManager |
+| `test/06-error-surface.test.mjs` | 7 | NodeOperationError/NodeApiError error surface, reflection, context |
+| `test/07-wait-tracker.test.mjs` | 18 | WaitTracker DB polling, timer scheduling, startExecution guards, parent execution resumption, duplicate resume suppression, lifecycle |
 
 ```
 $ cd packages/execution-engine && node --test test/*.test.mjs
-# tests 39   # pass 39   # fail 0
+# tests 85   # pass 85   # fail 0
 $ node tools/execution-engine-gate.mjs
-Execution LEGO gate: 9/9 PASS
+Execution LEGO gate: 11/11 PASS
 ```
 
 ## 5. Known deltas (must be closed before this LEGO is swapped for anything else)
