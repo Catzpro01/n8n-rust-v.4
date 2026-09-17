@@ -64,6 +64,9 @@ export class ReconstructedWorkflow {
 		this.name = name;
 		this.active = active;
 		this.settings = { ...settings };
+		// workflow.ts L132: `this.timezone = this.settings.timezone ?? getGlobalState().defaultTimezone`
+		// (the global default is 'America/New_York', global-state.ts L7).
+		this.timezone = settings.timezone ?? 'America/New_York';
 		this.nodeTypes = nodeTypes ?? new NodeTypesRegistry();
 
 		/** `workflow.nodes` is a by-name record upstream (not an array). */
@@ -131,6 +134,37 @@ export class ReconstructedWorkflow {
 			if (isTriggerLike(definition, node)) return node;
 		}
 		return undefined;
+	}
+
+	/**
+	 * `queryNodes(checkFunction)` — reference workflow.ts L272-295: declaration order,
+	 * disabled nodes skipped, and a node whose type is unknown (the registry always
+	 * answers, but a caller may inject a registry that throws) simply does not match.
+	 */
+	queryNodes(checkFunction) {
+		const returnNodes = [];
+
+		for (const nodeName of Object.keys(this.nodes)) {
+			const node = this.nodes[nodeName];
+
+			if (node.disabled === true) continue;
+
+			const nodeType = this.nodeTypes.getByNameAndVersion(node.type, node.typeVersion);
+
+			if (nodeType !== undefined && checkFunction(nodeType)) returnNodes.push(node);
+		}
+
+		return returnNodes;
+	}
+
+	/** `getTriggerNodes()` — reference workflow.ts L254-256. */
+	getTriggerNodes() {
+		return this.queryNodes((nodeType) => !!nodeType.trigger);
+	}
+
+	/** `getPollNodes()` — reference workflow.ts L262-264. */
+	getPollNodes() {
+		return this.queryNodes((nodeType) => !!nodeType.poll);
 	}
 
 	/**

@@ -1,0 +1,128 @@
+id: TASK-ENGINE-ACTIVATION-01
+agent: arena-worker
+lego: execution
+module: activation-lifecycle
+phase: 3
+title: "Execution LEGO: activation lifecycle — ActiveWorkflows + TriggersAndPollers + TriggerContext (ref: active-workflows.ts, triggers-and-pollers.ts)"
+status: AVAILABLE
+
+# Context: `docs/isolation/execution.md` §7 and `LEGO-MASTER-MAP.md` §5 both name the
+# remaining Phase-3 work: "Trigger/webhook/poll service LEGO (`triggers-and-pollers.ts`)
+# so `run()` can be driven by real activations." The execute loop already CALLS
+# `nodeType.trigger.call(...)` / `nodeType.poll.call(...)` inside a run (executeTriggerNode
+# / executePollNode), but nothing in `packages/execution-engine` can ACTIVATE a workflow:
+# there is no ActiveWorkflows registry, no poll scheduler, no trigger context, and no
+# execution-lifecycle hook store, so trigger responses can never be opened or closed.
+#
+# Reference (read-only, line-cited in the module docblocks):
+# - reference/n8n/packages/core/src/execution-engine/active-workflows.ts (288 ln)
+# - reference/n8n/packages/core/src/execution-engine/triggers-and-pollers.ts (111 ln)
+# - reference/n8n/packages/core/src/execution-engine/scheduled-task-manager.ts (162 ln, cron-free parts)
+# - reference/n8n/packages/core/src/execution-engine/execution-lifecycle-hooks.ts (140 ln)
+# - reference/n8n/packages/core/src/execution-engine/node-execution-context/trigger-context.ts (63 ln)
+# - reference/n8n/packages/workflow/src/{workflow.ts (queryNodes L272-295), cron.ts (toCronExpression L52-72),
+#   deferred-promise.ts, errors/{workflow-activation,workflow-deactivation,trigger-close}.error.ts}
+# - Oracle tests: .../execution-engine/__tests__/{triggers-and-pollers,active-workflows}.test.ts
+
+allowed_paths:
+  - tasks/TASK-ENGINE-ACTIVATION-01.yaml
+  - results/TASK-ENGINE-ACTIVATION-01.md
+  - packages/execution-engine/**
+  - tools/execution-engine-gate.mjs
+  - contracts/execution.contract.md
+  - docs/isolation/execution.md
+  - docs/isolation/LEGO-MASTER-MAP.md
+  - docs/isolation/CROSS-AGENT-ISSUES.md
+  - README.md
+
+forbidden_paths:
+  - reference/n8n/**
+  - crates/**
+  - apps/**
+  - packages/frontend/**
+  - packages/connection-lego/**
+  - packages/expression-lego/**
+  - packages/reconstructed-engine/**
+  - packages/workflow-lego/**
+
+requires:
+  - reference/n8n/packages/core/src/execution-engine/active-workflows.ts
+  - reference/n8n/packages/core/src/execution-engine/triggers-and-pollers.ts
+  - reference/n8n/packages/core/src/execution-engine/__tests__/triggers-and-pollers.test.ts
+  - reference/n8n/packages/core/src/execution-engine/__tests__/active-workflows.test.ts
+  - packages/execution-engine/src/workflow.mjs
+  - packages/execution-engine/src/errors.mjs
+
+source_modification: engine-only   # reference/n8n is read-only
+
+operations:
+  - name: read_reference
+    args: { path: reference/n8n/packages/core/src/execution-engine/active-workflows.ts }
+  - name: read_reference
+    args: { path: reference/n8n/packages/core/src/execution-engine/triggers-and-pollers.ts }
+  - name: read_reference
+    args: { path: reference/n8n/packages/core/src/execution-engine/scheduled-task-manager.ts, lines: "40-162" }
+  - name: read_reference
+    args: { path: reference/n8n/packages/core/src/execution-engine/execution-lifecycle-hooks.ts, lines: "90-140" }
+  - name: read_reference
+    args: { path: reference/n8n/packages/workflow/src/cron.ts, lines: "52-72" }
+  - name: write_file
+    args: { path: packages/execution-engine/src/lifecycle-hooks.mjs }
+  - name: write_file
+    args: { path: packages/execution-engine/src/triggers-and-pollers.mjs }
+  - name: write_file
+    args: { path: packages/execution-engine/src/active-workflows.mjs }
+  - name: write_file
+    args: { path: packages/execution-engine/src/trigger-context.mjs }
+  - name: edit_file
+    args: { path: packages/execution-engine/src/workflow.mjs }
+  - name: edit_file
+    args: { path: packages/execution-engine/src/errors.mjs }
+  - name: edit_file
+    args: { path: packages/execution-engine/src/index.mjs }
+  - name: write_file
+    args: { path: packages/execution-engine/test/05-activation.test.mjs }
+  - name: edit_file
+    args: { path: tools/execution-engine-gate.mjs }
+  - name: run_shell
+    args: { cmd: "node --test packages/execution-engine/test/*.test.mjs", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "node tools/execution-engine-gate.mjs", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "npm run verify:all", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "node tests/compatibility/contract_conformance.mjs", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "python3 tests/integration/boundary_audit.py", expect_exit: 0 }
+  - name: edit_file
+    args: { path: contracts/execution.contract.md }
+  - name: write_file
+    args: { path: results/TASK-ENGINE-ACTIVATION-01.md }
+
+acceptance:
+  - `TriggersAndPollers.runTrigger` reproduces the reference oracle:
+    ApplicationError when the node type has no trigger, plain call in non-manual mode,
+    and in manual mode a `manualTriggerResponse` promise resolved by `emit(data)`,
+    rejected by `emitError(error)`, with `sendResponse` / `workflowExecuteAfter` hook
+    handlers bound to the optional response/done deferred promises
+  - `runPoll` throws when the node type has no poll function and otherwise returns the
+    poll result verbatim (null included); poll errors propagate
+  - `ActiveWorkflows.add/remove` reproduce the reference: trigger responses collected,
+    polling activated after triggers, initial poll test run before cron registration,
+    `UserError` for intervals whose first cron field contains `*`, workflow deactivated
+    again when polling fails and there are no trigger responses, `TriggerCloseError`
+    logged + reported instead of thrown, other close errors wrapped in
+    `WorkflowDeactivationError`, `remove()` on an inactive id warns and returns false
+  - workflow model gains `queryNodes/getTriggerNodes/getPollNodes` verbatim (disabled
+    nodes skipped, unknown node type skipped, declaration order)
+  - `ExecutionLifecycleHooks` matches the reference store (8 hook names, addHandler push,
+    runHook awaits handlers in order, handlers bound to `this`)
+  - `TriggerContext` throws on the un-overwritten emit/emitError/saveFailedExecution,
+    exposes `getActivationMode()` and `getCredentials()`, and keeps the base context API
+  - gate `E10` covers the new suite; `E08` covers every new exported symbol via the contract
+  - suites green: execution 40 + new, gate 10/10, verify:all exit 0, 42/42, boundary PASS
+  - no file under reference/, crates/, apps/, frontend or the peer packages is touched
+
+merge_condition:
+  - regression_gate_pass
+  - no_contract_violation

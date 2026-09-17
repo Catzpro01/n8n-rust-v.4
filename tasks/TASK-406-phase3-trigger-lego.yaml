@@ -1,0 +1,29 @@
+id: TASK-406-phase3-trigger-lego
+agent: arena-worker
+lego: trigger
+module: trigger-runtime
+phase: 3
+status: IMPLEMENTED
+reference: n8n@2.9.4
+objective: Reconstruct ActiveWorkflows and TriggersAndPollers behind injected Scheduler, Node, and Execution ports.
+allowed_paths:
+  - packages/trigger-lego/**
+  - tools/trigger-lego-gate.mjs
+  - docs/isolation/**
+  - tasks/TASK-406-phase3-trigger-lego.yaml
+  - results/TASK-406-phase3-trigger-lego.md
+forbidden_paths:
+  - reference/n8n/**
+  - crates/**
+  - apps/**
+requires:
+  - contracts/trigger.contract.md
+  - contracts/scheduler.contract.md
+  - contracts/execution.contract.md
+verification:
+  - npm --prefix packages/trigger-lego test
+  - node tools/trigger-lego-gate.mjs
+acceptance:
+  lifecycle_tests: 9/9
+  gate: 5/5
+  reference_integrity: 15050 files; f8da35180669d798

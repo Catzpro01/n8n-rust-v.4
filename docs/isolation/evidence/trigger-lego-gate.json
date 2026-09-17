@@ -1,0 +1,41 @@
+{
+  "generatedAt": "2026-09-17T17:21:56.691Z",
+  "task": "TASK-406-phase3-trigger-lego",
+  "reference": "n8n 2.9.4",
+  "totals": {
+    "passed": 5,
+    "gates": 5
+  },
+  "gates": [
+    {
+      "id": "T01",
+      "name": "package has no runtime dependencies",
+      "status": "PASS",
+      "detail": "0 runtime dependencies"
+    },
+    {
+      "id": "T02",
+      "name": "source boundary is import-closed",
+      "status": "PASS",
+      "detail": "5 source files, relative imports only"
+    },
+    {
+      "id": "T03",
+      "name": "trigger lifecycle conformance suite",
+      "status": "PASS",
+      "detail": "9 pass / 0 fail"
+    },
+    {
+      "id": "T04",
+      "name": "reference tree remains pinned",
+      "status": "PASS",
+      "detail": "Reference integrity check: PASS (15050 files, root f8da35180669d798…)"
+    },
+    {
+      "id": "T05",
+      "name": "formal trigger contract remains present",
+      "status": "PASS",
+      "detail": "4/4 core symbols contracted"
+    }
+  ]
+}

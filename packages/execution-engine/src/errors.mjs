@@ -88,6 +88,71 @@ export class NodeApiError extends NodeOperationError {
 }
 
 /**
+ * Mirrors `WorkflowActivationError`
+ * (`packages/workflow/src/errors/workflow-activation.error.ts`): keeps `node` and
+ * `workflowId`, re-wraps an `ExecutionBaseError` cause into a plain Error carrying the
+ * same name/message/stack, and derives `level` from the message when none is given
+ * (timeout/refused/auth failures are warnings, everything else is an error).
+ */
+export class WorkflowActivationError extends ApplicationError {
+	constructor(message, { cause, node, level, workflowId } = {}) {
+		let error = cause;
+		if (error instanceof ApplicationError) {
+			const copy = new Error(error.message);
+			copy.constructor = error.constructor;
+			copy.name = error.name;
+			copy.stack = error.stack;
+			error = copy;
+		}
+		super(message, { cause: error });
+		this.name = 'WorkflowActivationError';
+		this.node = node;
+		this.workflowId = workflowId;
+		this.message = message;
+		this.level = level ?? deriveActivationLevel(message);
+	}
+}
+
+/** `WorkflowDeactivationError extends WorkflowActivationError` (workflow-deactivation.error.ts). */
+export class WorkflowDeactivationError extends WorkflowActivationError {
+	constructor(message, options = {}) {
+		super(message, options);
+		this.name = 'WorkflowDeactivationError';
+	}
+}
+
+/** `TriggerCloseError` (trigger-close.error.ts) — carries the node and its level. */
+export class TriggerCloseError extends ApplicationError {
+	constructor(node, { cause, level } = {}) {
+		super('Trigger Close Failed', { cause, extra: { nodeName: node.name } });
+		this.name = 'TriggerCloseError';
+		this.node = node;
+		this.level = level ?? 'error';
+	}
+}
+
+/** `UserError` (workflow/src/errors/base/user.error.ts) — an actionable, user-facing message. */
+export class UserError extends ApplicationError {
+	constructor(message, options = {}) {
+		super(message, options);
+		this.name = 'UserError';
+	}
+}
+
+/** Reference `WorkflowActivationError.setLevel` (L41-59). */
+function deriveActivationLevel(message) {
+	const warningPatterns = [
+		'etimedout', // Node.js
+		'econnrefused', // Node.js
+		'eauth', // OAuth
+		'temporary authentication failure', // IMAP server
+		'invalid credentials',
+	];
+	const lower = String(message).toLowerCase();
+	return warningPatterns.some((pattern) => lower.includes(pattern)) ? 'warning' : 'error';
+}
+
+/**
  * Mirrors `UnexpectedError`.
  */
 export class UnexpectedError extends ApplicationError {

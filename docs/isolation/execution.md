@@ -1,6 +1,6 @@
 # Execution LEGO — Phase 3 reconstruction record
 
-**Status:** `IMPLEMENTED` · `TESTED` (40/40) · `GATE 9/9`
+**Status:** `IMPLEMENTED` · `TESTED` (60/60) · `GATE 10/10`
 **Language:** JavaScript (Node.js ESM) — `PROJECT_RULES.md` v2.9.4 rule 1 (ZERO RUST, the JavaScript reconstruction track).
 The Phase-3 opening record (`docs/isolation/PHASE-3-OPENING-RECORD.md`, 2026-09-17) permits Rust **only** under
 `crates/**` + `apps/**` for the separate port track; this LEGO contributes no Rust and stays JavaScript either way.
@@ -106,7 +106,7 @@ The branch carries two engines and they are deliberately kept apart:
 | :--- | :--- | :--- |
 | Origin | earlier prototype (`runner.mjs`, naive BFS queue) + `execution-context.mjs` added by the `reconstructed-engine:test` track | Phase-3 reconstruction of `workflow-execute.ts` |
 | Fidelity | queue drains children as soon as one parent produced data; no waiting/join, no retry policy, no run-data shape, no pairing rules | line-mapped to the reference (see §2), run-data shape per `contracts/execution-data.contract.md` |
-| Tests | `runner.test.mjs` 5/5 (smoke) | `test/*.test.mjs` 40/40 |
+| Tests | `runner.test.mjs` 5/5 (smoke) | `test/*.test.mjs` 60/60 |
 | Role | smoke harness only | the reference implementation of the JavaScript track |
 
 They are **not** merged: the prototype's API (`WorkflowExecutionEngine#runWorkflow`) is used by no other
@@ -122,3 +122,7 @@ translation layer. Removing or rewiring the prototype is a separate task (see `C
   (join/waiting/pin, 40 tests) versus keeping the prototype as a smoke harness.
 * Add process/worker isolation before accepting untrusted expressions; extend syntax rewriting and proxy variables.
 * Trigger/webhook/poll service LEGO (`triggers-and-pollers.ts`) so `run()` can be driven by real activations.
+  **Done (TASK-ENGINE-ACTIVATION-01)**: `ActiveWorkflows`, `TriggersAndPollers`, `TriggerContext`,
+  `ExecutionLifecycleHooks`, `toCronExpression` and the cron-free `ScheduledTaskManager` are reconstructed
+  (gate `E10`, suite 20/20); what remains for a fully live instance is the runtime around them — the
+  `cron` timer adapter, the webhook HTTP servers (`packages/cli/src/webhooks/**`) and instance leadership.
