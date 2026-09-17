@@ -9,6 +9,7 @@
     "build": "npm run extract && tsc -p .extract/tsconfig.json",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "bash ../../scripts/run-lego-tests.sh",
+    "i18n:check": "node ../../tools/localization-hub-check.mjs",
     "verify": "node ../../tools/workflow-isolation-gate.mjs"
   },
   "devDependencies": {

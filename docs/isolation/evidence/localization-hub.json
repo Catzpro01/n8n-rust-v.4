@@ -1,0 +1,149 @@
+{
+  "generatedAt": "2026-09-17T20:30:40.237Z",
+  "phase": "phase-4b-localization",
+  "lego": "localization-hub",
+  "referenceGrounding": "reference/n8n/packages/frontend/@n8n/i18n (mechanism parity; the six translations are product-supplied)",
+  "sources": {
+    "service": {
+      "path": "/home/user/n8n-rust-v.4/packages/workflow-lego/src/backend-localization-service.ts",
+      "digest": "a2f06f2f34041240c49039ea3db3ecaaeeedca04e52cb8f0bc9b0efa29f9c6f2"
+    },
+    "adapter": {
+      "path": "/home/user/n8n-rust-v.4/packages/workflow-lego/src/settings-localization-adapter.ts",
+      "digest": "4baae27916492b7483c5c6dd388cbee00d0e2584eb5e97ed8042d6c676e5a9ff"
+    }
+  },
+  "locales": [
+    {
+      "code": "id",
+      "name": "Indonesian",
+      "nativeName": "Bahasa Indonesia",
+      "direction": "ltr",
+      "fallbacks": [],
+      "aliases": 5
+    },
+    {
+      "code": "en",
+      "name": "English",
+      "nativeName": "English (US)",
+      "direction": "ltr",
+      "fallbacks": [],
+      "aliases": 4
+    },
+    {
+      "code": "jv",
+      "name": "Javanese",
+      "nativeName": "Basa Jawa",
+      "direction": "ltr",
+      "fallbacks": [
+        "id"
+      ],
+      "aliases": 4
+    },
+    {
+      "code": "ar",
+      "name": "Arabic",
+      "nativeName": "العربية",
+      "direction": "rtl",
+      "fallbacks": [],
+      "aliases": 5
+    },
+    {
+      "code": "zh",
+      "name": "Chinese",
+      "nativeName": "中文 (简体)",
+      "direction": "ltr",
+      "fallbacks": [],
+      "aliases": 8
+    },
+    {
+      "code": "ru",
+      "name": "Russian",
+      "nativeName": "Русский",
+      "direction": "ltr",
+      "fallbacks": [],
+      "aliases": 2
+    }
+  ],
+  "parity": {
+    "base": "en",
+    "baseKeyCount": 23,
+    "ok": true,
+    "locales": [
+      {
+        "locale": "id",
+        "keyCount": 23,
+        "missing": [],
+        "extra": []
+      },
+      {
+        "locale": "en",
+        "keyCount": 23,
+        "missing": [],
+        "extra": []
+      },
+      {
+        "locale": "jv",
+        "keyCount": 23,
+        "missing": [],
+        "extra": []
+      },
+      {
+        "locale": "ar",
+        "keyCount": 23,
+        "missing": [],
+        "extra": []
+      },
+      {
+        "locale": "zh",
+        "keyCount": 23,
+        "missing": [],
+        "extra": []
+      },
+      {
+        "locale": "ru",
+        "keyCount": 23,
+        "missing": [],
+        "extra": []
+      }
+    ]
+  },
+  "suite": {
+    "pass": 24,
+    "fail": 0,
+    "summary": "# tests 24 · # pass 24 · # fail 0 · # duration_ms 465.039427"
+  },
+  "checks": [
+    {
+      "id": "L01",
+      "title": "six locales registered and key-identical to the English base text",
+      "status": "PASS",
+      "detail": "id · en · jv · ar · zh · ru — 23 keys x 6 locales, fallback chain terminates at en"
+    },
+    {
+      "id": "L02",
+      "title": "behaviour suite PASS (resolution, fallback, interpolation, plural, RTL, persistence)",
+      "status": "PASS",
+      "detail": "node --test test/06-localization.test.mjs → 24/24 PASS"
+    },
+    {
+      "id": "L03",
+      "title": "boundary: the hub imports nothing, the adapter imports only the hub",
+      "status": "PASS",
+      "detail": "hub: 0 imports · adapter: 1 relative import (./backend-localization-service)"
+    },
+    {
+      "id": "L04",
+      "title": "the pinned reference tree is byte-identical (Vue UI bundle untouched)",
+      "status": "PASS",
+      "detail": "Reference integrity check: PASS (15050 files, root f8da35180669d798…)"
+    },
+    {
+      "id": "L05",
+      "title": "the Phase 4A adapter holds no second language list (single source of truth)",
+      "status": "PASS",
+      "detail": "language list derived from SUPPORTED_LOCALES"
+    }
+  ],
+  "verdict": "PASS"
+}

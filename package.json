@@ -10,6 +10,8 @@
     "isolation:map": "node tools/workflow-boundary-map.mjs --json packages/workflow-lego/manifest/boundary-map.json --md docs/isolation/workflow-dependency-map.md",
     "isolation:check": "node tools/workflow-boundary-map.mjs --check && node tools/workflow-kernel-conformance.mjs --check && node tools/workflow-port-surface.mjs --check && node tools/workflow-reference-manifest.mjs --check",
     "isolation:extract": "node tools/workflow-isolation-extract.mjs",
+    "i18n:check": "node tools/localization-hub-check.mjs",
+    "connection:check": "node tools/connection-isolation-gate.mjs",
     "workflow-lego:build": "npm --prefix packages/workflow-lego run build",
     "workflow-lego:test": "bash scripts/run-lego-tests.sh"
   }

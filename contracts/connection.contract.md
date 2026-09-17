@@ -83,7 +83,27 @@ Ownership of `common/**`, `graph/graph-utils.ts`, `connections-diff.ts`: Phase 2
 - **Validation (Agent 4):** consumes §3.1–3.2 to implement `DanglingConnections`; note §3.6 — `CycleDetection` must not reject cyclic graphs as invalid for execution.
 - shared `interfaces.ts` for types.
 
-## 7. Ownership
+## 7. Verification
+
+`npm run connection:check` (`tools/connection-isolation-gate.mjs`) executes the reference oracle
+(`n8n-workflow@2.9.1`, the n8n 2.9.4 dependency set) and the reconstructed routing engine over a
+12-graph corpus and compares 1,246 call results, including traversal order:
+
+| Check | Scope | Evidence |
+|---|---|---|
+| `C01` | 13 declared `P-CONNECTION-GRAPH` symbols exist on both sides | `da1654a8` had 2 missing |
+| `C02` | the routing engine imports nothing | boundary stays closed |
+| `C03` | traversal: `mapConnectionsByDestination`, `getConnected/Child/ParentNodes` | 969 calls |
+| `C04` | adjacency, input/output edges, roots, leaves, `hasPath`, extractable selection | 271 calls |
+| `C05` | `compareConnections` over corpus pairs | 6 pairs |
+| `C06` | the compiled TypeScript twin == the committed ESM twin (anti-drift) | 12 graphs |
+| `C07` | `packages/connection-lego/test/*.test.mjs` (boundary + graph analysis) | 13/13 |
+
+The ESM twin is generated (`node tools/connection-isolation-extract.mjs --emit-esm`); editing it by
+hand fails `C06`. Error payloads of `parseExtractableSubgraphSelection` follow the reference exactly
+(`{ errorCode, node }`, `{ errorCode, nodes }`, `{ errorCode, start, end }`).
+
+## 8. Ownership
 
 | Owns | Does NOT own |
 |---|---|

@@ -190,110 +190,120 @@ export function getNodeByName(nodes: any[], name: string): any | undefined {
 /**
  * buildAdjacencyList — 1:1 dari graph/graph-utils.ts
  */
+/* ------------------------------------------------------------------ *
+ * Graph analysis — reference-exact port of `packages/workflow/src/graph/graph-utils.ts`
+ * (n8n 2.9.4). The differential gate (`tools/connection-lego-gate.mjs`) executes every
+ * function below against the pinned `n8n-workflow@2.9.1` artifact; the port deliberately
+ * keeps the reference's helpers, iteration order and error payloads so the comparison is
+ * byte-for-byte.
+ * ------------------------------------------------------------------ */
+
+function union<T>(a: Set<T>, b: Set<T>): Set<T> {
+  const result = new Set<T>();
+  for (const x of a) result.add(x);
+  for (const x of b) result.add(x);
+  return result;
+}
+
+function intersection<T>(a: Set<T>, b: Set<T>): Set<T> {
+  const result = new Set<T>();
+  for (const x of a) if (b.has(x)) result.add(x);
+  return result;
+}
+
+function difference<T>(minuend: Set<T>, subtrahend: Set<T>): Set<T> {
+  const result = new Set<T>(minuend.values());
+  for (const x of subtrahend) result.delete(x);
+  return result;
+}
+
 export function buildAdjacencyList(connections: IConnections): IConnectionAdjacencyList {
-  const adj = new Map<string, Set<IConnection>>();
-  for (const [source, typeMap] of Object.entries(connections)) {
-    for (const slots of Object.values(typeMap as any)) {
-      for (const slot of slots) {
-        if (!slot) continue;
-        for (const conn of slot) {
-          if (!conn) continue;
-          if (!adj.has(source)) adj.set(source, new Set());
-          adj.get(source)!.add(conn);
-          if (!adj.has(conn.node)) adj.set(conn.node, new Set());
+  const result = new Map<string, Set<IConnection>>();
+  const addOrCreate = (k: string, v: IConnection) => result.set(k, union(result.get(k) ?? new Set<IConnection>(), new Set([v])));
+
+  for (const sourceNode of Object.keys(connections)) {
+    for (const type of Object.keys(connections[sourceNode] as any)) {
+      for (const sourceIndex of Object.keys((connections[sourceNode] as any)[type])) {
+        for (const connectionIndex of Object.keys((connections[sourceNode] as any)[type][parseInt(sourceIndex, 10)] ?? [])) {
+          const connection = (connections[sourceNode] as any)[type][parseInt(sourceIndex, 10)]?.[parseInt(connectionIndex, 10)];
+          if (connection) addOrCreate(sourceNode, connection);
         }
       }
     }
   }
-  return adj;
+  return result;
+}
+
+/** Find all edges leading into the graph described in `graphIds`. */
+export function getInputEdges(nodes: Set<string>, adjacency: IConnectionAdjacencyList): Array<[string, IConnection]> {
+  const result: Array<[string, IConnection]> = [];
+  for (const [from, tos] of adjacency.entries()) {
+    if (nodes.has(from)) continue;
+    for (const to of tos) if (nodes.has(to.node)) result.push([from, to]);
+  }
+  return result;
+}
+
+/** Find all edges leading out of the graph described in `graphIds`. */
+export function getOutputEdges(nodes: Set<string>, adjacency: IConnectionAdjacencyList): Array<[string, IConnection]> {
+  const result: Array<[string, IConnection]> = [];
+  for (const [from, tos] of adjacency.entries()) {
+    if (!nodes.has(from)) continue;
+    for (const to of tos) if (!nodes.has(to.node)) result.push([from, to]);
+  }
+  return result;
 }
 
 export function getRootNodes(nodes: Set<string>, adjacency: IConnectionAdjacencyList): Set<string> {
-  const roots = new Set<string>();
-  const hasIncoming = new Set<string>();
-  for (const [, conns] of adjacency.entries()) {
-    for (const conn of conns) {
-      if (conn.type !== 'main') continue;
-      if (nodes.has(conn.node)) hasIncoming.add(conn.node);
-    }
+  // Inner nodes are all nodes with an incoming edge from another node in the graph
+  let innerNodes = new Set<string>();
+  for (const nodeId of nodes) {
+    innerNodes = union(
+      innerNodes,
+      new Set(
+        [...(adjacency.get(nodeId) ?? [])]
+          .filter((x) => x.type === 'main' && x.node !== nodeId)
+          .map((x) => x.node),
+      ),
+    );
   }
-  for (const node of nodes) {
-    // Self-loops ignored for root detection (per C6)
-    let selfLoopOnly = true;
-    const outgoing = adjacency.get(node);
-    if (outgoing) {
-      for (const conn of outgoing) {
-        if (conn.type === 'main' && conn.node !== node && nodes.has(conn.node)) {
-          selfLoopOnly = false;
-          break;
-        }
-      }
-    }
-    if (!hasIncoming.has(node)) roots.add(node);
-  }
-  return roots;
+  return difference(nodes, innerNodes);
 }
 
 export function getLeafNodes(nodes: Set<string>, adjacency: IConnectionAdjacencyList): Set<string> {
-  const leaves = new Set<string>();
-  for (const node of nodes) {
-    const outgoing = adjacency.get(node);
-    if (!outgoing) {
-      leaves.add(node);
-      continue;
-    }
-    let hasMainOutgoing = false;
-    for (const conn of outgoing) {
-      if (conn.type !== 'main') continue;
-      if (conn.node === node) continue; // self-loop ignored
-      if (nodes.has(conn.node)) {
-        hasMainOutgoing = true;
-        break;
-      }
-    }
-    if (!hasMainOutgoing) leaves.add(node);
-  }
-  return leaves;
-}
-
-export function getInputEdges(nodes: Set<string>, adjacency: IConnectionAdjacencyList): Array<[string, IConnection]> {
-  const edges: Array<[string, IConnection]> = [];
-  for (const [source, conns] of adjacency.entries()) {
-    for (const conn of conns) {
-      if (nodes.has(conn.node)) edges.push([source, conn]);
+  const result = new Set<string>();
+  for (const nodeId of nodes) {
+    if (
+      intersection(
+        new Set(
+          [...(adjacency.get(nodeId) ?? [])]
+            .filter((x) => x.type === 'main' && x.node !== nodeId)
+            .map((x) => x.node),
+        ),
+        nodes,
+      ).size === 0
+    ) {
+      result.add(nodeId);
     }
   }
-  return edges;
-}
-
-export function getOutputEdges(nodes: Set<string>, adjacency: IConnectionAdjacencyList): Array<[string, IConnection]> {
-  const edges: Array<[string, IConnection]> = [];
-  for (const node of nodes) {
-    const conns = adjacency.get(node);
-    if (!conns) continue;
-    for (const conn of conns) {
-      edges.push([node, conn]);
-    }
-  }
-  return edges;
+  return result;
 }
 
 export function hasPath(start: string, end: string, adjacency: IConnectionAdjacencyList): boolean {
   const seen = new Set<string>();
-  const queue = [start];
-  while (queue.length > 0) {
-    const current = queue.shift()!;
-    if (current === end) return true;
-    if (seen.has(current)) continue;
-    seen.add(current);
-    const conns = adjacency.get(current);
-    if (!conns) continue;
-    for (const conn of conns) {
-      if (conn.type !== 'main') continue;
-      if (!seen.has(conn.node)) queue.push(conn.node);
-    }
+  const paths: string[] = [start];
+  while (true) {
+    const next = paths.pop();
+    if (next === end) return true;
+    if (next === undefined) return false;
+    seen.add(next);
+    paths.push(
+      ...difference(
+        new Set([...(adjacency.get(next) ?? [])].filter((x) => x.type === 'main').map((x) => x.node)),
+        seen,
+      ),
+    );
   }
-  return false;
 }
 
 export function parseExtractableSubgraphSelection(
@@ -301,55 +311,41 @@ export function parseExtractableSubgraphSelection(
   adjacency: IConnectionAdjacencyList,
 ): ExtractableSubgraphData | ExtractableErrorResult[] {
   const errors: ExtractableErrorResult[] = [];
-  const roots = getRootNodes(nodes, adjacency);
-  const leaves = getLeafNodes(nodes, adjacency);
 
-  if (roots.size > 1) {
-    errors.push({ errorCode: 'Multiple Input Nodes', message: 'Selection has multiple input nodes' });
+  // 0-1 Input nodes
+  const inputEdges = getInputEdges(nodes, adjacency);
+  const inputNodes = new Set(inputEdges.filter((x) => x[1].type === 'main').map((x) => x[1].node));
+  let rootNodes = getRootNodes(nodes, adjacency);
+  if (rootNodes.size === 0 && inputNodes.size === 1) rootNodes = inputNodes;
+  for (const inputNode of difference(inputNodes, rootNodes).values()) {
+    errors.push({ errorCode: 'Input Edge To Non-Root Node', node: inputNode } as ExtractableErrorResult);
   }
-  if (leaves.size > 1) {
-    errors.push({ errorCode: 'Multiple Output Nodes', message: 'Selection has multiple output nodes' });
-  }
-
-  // Input edge to non-root
-  for (const node of nodes) {
-    if (roots.has(node)) continue;
-    for (const [source, conns] of adjacency.entries()) {
-      if (nodes.has(source)) continue;
-      for (const conn of conns) {
-        if (conn.type !== 'main') continue;
-        if (conn.node === node) {
-          errors.push({ errorCode: 'Input Edge To Non-Root Node', message: `Input edge to non-root node ${node}` });
-        }
-      }
-    }
+  const rootInputNodes = intersection(rootNodes, inputNodes);
+  if (rootInputNodes.size > 1) {
+    errors.push({ errorCode: 'Multiple Input Nodes', nodes: rootInputNodes } as unknown as ExtractableErrorResult);
   }
 
-  // Output edge from non-leaf
-  for (const node of nodes) {
-    if (leaves.has(node)) continue;
-    const conns = adjacency.get(node);
-    if (!conns) continue;
-    for (const conn of conns) {
-      if (conn.type !== 'main') continue;
-      if (!nodes.has(conn.node)) {
-        errors.push({ errorCode: 'Output Edge From Non-Leaf Node', message: `Output edge from non-leaf node ${node}` });
-      }
-    }
+  // 0-1 Output nodes
+  const outputEdges = getOutputEdges(nodes, adjacency);
+  const outputNodes = new Set(outputEdges.filter((x) => x[1].type === 'main').map((x) => x[0]));
+  let leafNodes = getLeafNodes(nodes, adjacency);
+  if (leafNodes.size === 0 && outputNodes.size === 1) leafNodes = outputNodes;
+  for (const outputNode of difference(outputNodes, leafNodes).values()) {
+    errors.push({ errorCode: 'Output Edge From Non-Leaf Node', node: outputNode } as ExtractableErrorResult);
+  }
+  const leafOutputNodes = intersection(leafNodes, outputNodes);
+  if (leafOutputNodes.size > 1) {
+    errors.push({ errorCode: 'Multiple Output Nodes', nodes: leafOutputNodes } as unknown as ExtractableErrorResult);
   }
 
-  if (errors.length > 0) return errors;
+  const start = rootInputNodes.values().next().value as string | undefined;
+  const end = leafOutputNodes.values().next().value as string | undefined;
 
-  if (roots.size === 1 && leaves.size === 1) {
-    const root = [...roots][0];
-    const leaf = [...leaves][0];
-    if (!hasPath(root, leaf, adjacency)) {
-      return [{ errorCode: 'No Continuous Path From Root To Leaf In Selection', message: 'No continuous path from root to leaf' }];
-    }
-    return { start: root, end: leaf };
+  if (start && end && !hasPath(start, end, adjacency)) {
+    errors.push({ errorCode: 'No Continuous Path From Root To Leaf In Selection', start, end } as unknown as ExtractableErrorResult);
   }
 
-  return {};
+  return errors.length > 0 ? errors : { start, end };
 }
 
 /**
