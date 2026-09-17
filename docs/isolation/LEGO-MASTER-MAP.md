@@ -119,11 +119,12 @@ asserts that confinement.
 | `TASK-427-phase3-webhook-response-extractors` | webhook response extraction | `contracts/webhook.contract.md` ✅ | `docs/isolation/webhook.md` ✅ | `packages/webhook-lego/test/*.test.mjs` 59/59 ✅ (10 extractor cases) | `tools/webhook-lego-gate.mjs` 5/5 ✅ | **VERIFIED** |
 | `TASK-428-phase3-wait-tracker` | execution (wait tracker) | `contracts/execution.contract.md` ✅ | `docs/isolation/execution.md` ✅ | `packages/execution-engine/test/*.test.mjs` 85/85 ✅ (18 WaitTracker cases) | `tools/execution-engine-gate.mjs` 11/11 ✅ | **VERIFIED** |
 | `TASK-429-phase3-webhook-response-headers` | webhook response header validation | `contracts/webhook.contract.md` ✅ | `docs/isolation/webhook.md` ✅ | `packages/webhook-lego/test/*.test.mjs` 67/67 ✅ (8 response-header cases) | `tools/webhook-lego-gate.mjs` 5/5 ✅ | **VERIFIED** |
-| `TASK-430-phase3-active-executions` | execution (active executions registry) | `contracts/execution.contract.md` ✅ | `docs/isolation/execution.md` ✅ | `packages/execution-engine/test/*.test.mjs` 100/100 ✅ (10 ActiveExecutions cases) | `tools/execution-engine-gate.mjs` 12/12 ✅ | **SUBMITTED_FOR_REVIEW** |
+| `TASK-430-phase3-active-executions` | execution (active executions registry) | `contracts/execution.contract.md` ✅ | `docs/isolation/execution.md` ✅ | `packages/execution-engine/test/*.test.mjs` 100/100 ✅ (10 ActiveExecutions cases) | `tools/execution-engine-gate.mjs` 12/12 ✅ | **VERIFIED** |
+| `TASK-431-phase3-workflow-runner` | execution (workflow runner coordinator) | `contracts/execution.contract.md` ✅ | `docs/isolation/execution.md` ✅ | `packages/execution-engine/test/*.test.mjs` 110/110 ✅ (10 WorkflowRunner cases) | `tools/execution-engine-gate.mjs` 13/13 ✅ | **SUBMITTED_FOR_REVIEW** |
 
 | Phase 3 gate | Result |
 | :--- | :--- |
-| `tools/execution-engine-gate.mjs` | **PASS 12/12** — no dependencies, import-closed, Rust confined, reference intact, 100/100 tests, public surface contracted (72 symbols), expression sandboxed, activation lifecycle, WaitTracker execution resumption, ActiveExecutions registry |
+| `tools/execution-engine-gate.mjs` | **PASS 13/13** — no dependencies, import-closed, Rust confined, reference intact, 110/110 tests, public surface contracted (74 symbols), expression sandboxed, activation lifecycle, WaitTracker execution resumption, ActiveExecutions registry, WorkflowRunner coordinator |
 | Reference tree | unmodified (15050 files, root digest `f8da3518…`) |
 | Evidence | `docs/isolation/evidence/execution-engine-gate.json` |
 

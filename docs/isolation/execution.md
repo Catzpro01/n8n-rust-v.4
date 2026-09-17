@@ -1,6 +1,6 @@
 # Execution LEGO — Phase 3 reconstruction record
 
-**Status:** `IMPLEMENTED` · `TESTED` (95/95) · `GATE 12/12`
+**Status:** `IMPLEMENTED` · `TESTED` (110/110) · `GATE 13/13`
 **Language:** JavaScript (Node.js ESM) — `PROJECT_RULES.md` v2.9.4 rule 1 (ZERO RUST, the JavaScript reconstruction track).
 The Phase-3 opening record (`docs/isolation/PHASE-3-OPENING-RECORD.md`, 2026-09-17) permits Rust **only** under
 `crates/**` + `apps/**` for the separate port track; this LEGO contributes no Rust and stays JavaScript either way.
@@ -71,14 +71,15 @@ The three open pool tasks of the execution LEGO:
 | `test/04-expression-sandbox.test.mjs` | 7 | typed/template evaluation, JS interpolation coercion, Node global denial, prototype escape denial, read-only data, timeout, DateTime methods |
 | `test/05-activation.test.mjs` | 20 | activation lifecycle: TriggersAndPollers, ActiveWorkflows, TriggerContext, ScheduledTaskManager |
 | `test/06-error-surface.test.mjs` | 7 | NodeOperationError/NodeApiError error surface, reflection, context |
-| `test/07-wait-tracker.test.mjs` | 18 | WaitTracker DB polling, timer scheduling, startExecution guards, parent execution resumption, duplicate resume suppression, lifecycle |
+| `test/07-wait-tracker.test.mjs` | 23 | WaitTracker DB polling, timer scheduling, startExecution guards, parent execution resumption, duplicate resume suppression, lifecycle, ISSUE-028 reference parity |
 | `test/08-active-executions.test.mjs` | 10 | ActiveExecutions registry, persistence creation, concurrency reservations, waiting resumption lock, streaming chunks, stopExecution, shutdown |
+| `test/09-workflow-runner.test.mjs` | 10 | WorkflowRunner execution lifecycle, run/runMainProcess, processError, timeout handling, streaming sendChunk callbacks, queue-mode enqueueExecution |
 
 ```
 $ cd packages/execution-engine && node --test test/*.test.mjs
-# tests 95   # pass 95   # fail 0
+# tests 110   # pass 110   # fail 0
 $ node tools/execution-engine-gate.mjs
-Execution LEGO gate: 12/12 PASS
+Execution LEGO gate: 13/13 PASS
 ```
 
 ## 5. Known deltas (must be closed before this LEGO is swapped for anything else)

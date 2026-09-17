@@ -33,6 +33,7 @@ export {
 	ExecutionCancelledError,
 	ExecutionNotFoundError,
 	ManualExecutionCancelledError,
+	MaxStalledCountError,
 	NodeApiError,
 	NodeOperationError,
 	OperationalError,
@@ -82,3 +83,4 @@ export {
 	updateParentExecutionWithChildResults,
 } from './workflow-helpers.mjs';
 export { ActiveExecutions } from './active-executions.mjs';
+export { WorkflowRunner } from './workflow-runner.mjs';

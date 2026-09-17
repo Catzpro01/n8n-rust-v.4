@@ -119,6 +119,20 @@ export class ExecutionAlreadyResumingError extends OperationalError {
 	}
 }
 
+/** Error thrown when BullMQ stalled jobs exceed limit — mirrors `MaxStalledCountError`. */
+export class MaxStalledCountError extends OperationalError {
+	constructor(cause) {
+		super(
+			'This execution failed to be processed too many times and will no longer retry. To allow this execution to complete, please break down your workflow or scale up your workers or adjust your worker settings.',
+			{
+				level: 'warning',
+				cause,
+			},
+		);
+		this.name = 'MaxStalledCountError';
+	}
+}
+
 /**
  * Mirrors `NodeOperationError` (packages/workflow/src/errors/node-operation.error.ts)
  * — 1:1, TASK-EERR-01 / ISSUE-024. `node` is required exactly like upstream; `error`

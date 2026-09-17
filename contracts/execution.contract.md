@@ -69,6 +69,8 @@ retry/error policy. Everything the loop consumes from other LEGOs is injected
 | `OperationalError`, `ExecutionAlreadyResumingError` | errors.mjs | operational errors; duplicate resume suppression during sub-workflow completions |
 | `ActiveExecutions` | active-executions.mjs | in-memory active execution lifecycle, registration, concurrency reservations, streaming chunk writing, post-execute settlement, and cancellation |
 | `ExecutionNotFoundError`, `ExecutionCancelledError`, `ManualExecutionCancelledError`, `TimeoutExecutionCancelledError`, `SystemShutdownExecutionCancelledError` | errors.mjs | execution lookup and cancellation errors for active workflow stopping and shutdown |
+| `WorkflowRunner` | workflow-runner.mjs | central workflow execution coordinator: `run`, `runMainProcess`, `processError`, `enqueueExecution`, timeout handling, streaming callbacks, and error recovery |
+| `MaxStalledCountError` | errors.mjs | BullMQ stalled worker error representation for queue-mode retry exhaustions |
 
 ## 5. Loop invariants (pinned to source lines)
 

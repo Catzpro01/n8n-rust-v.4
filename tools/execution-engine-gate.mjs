@@ -222,6 +222,12 @@ gate('E12', 'active executions registry & lifecycle (ActiveExecutions)', () =>
 	'packages/execution-engine/test/08-active-executions.test.mjs',
 );
 
+/* E13 — workflow runner execution coordinator ----------------------------- */
+gate('E13', 'workflow runner coordination & dispatch (WorkflowRunner)', () =>
+	runNodeTest('test/09-workflow-runner.test.mjs', PKG),
+	'packages/execution-engine/test/09-workflow-runner.test.mjs',
+);
+
 /* ---------------- evidence + human-readable report ----------------------- */
 const totals = {
 	gates: results.length,
@@ -276,6 +282,10 @@ const report = {
 		'TASK-430-phase3-active-executions': {
 			status: results.find((entry) => entry.id === 'E12')?.status === 'PASS' ? 'IMPLEMENTED' : 'FAILED',
 			surface: ['ActiveExecutions', 'ExecutionNotFoundError', 'ExecutionCancelledError', 'ManualExecutionCancelledError', 'TimeoutExecutionCancelledError', 'SystemShutdownExecutionCancelledError'],
+		},
+		'TASK-431-phase3-workflow-runner': {
+			status: results.find((entry) => entry.id === 'E13')?.status === 'PASS' ? 'IMPLEMENTED' : 'FAILED',
+			surface: ['WorkflowRunner', 'MaxStalledCountError'],
 		},
 	},
 };

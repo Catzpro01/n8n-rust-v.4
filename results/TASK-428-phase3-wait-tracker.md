@@ -1,6 +1,6 @@
 # TASK-428 — WaitTracker and Execution Resumption
 
-Status: **SUBMITTED_FOR_REVIEW**
+Status: **VERIFIED** (approved in review sweep 24, `results/REVIEW-SWEEP-2026-09-18.md`)
 
 Reconstructed `WaitTracker` and sub-workflow execution resumption 1:1 against n8n 2.9.4 CLI reference (`reference/n8n/packages/cli/src/wait-tracker.ts`, `workflow-helpers.ts`):
 - Periodic polling (60s default) of upcoming waiting executions via `ExecutionRepository.getWaitingExecutions(windowMs)`

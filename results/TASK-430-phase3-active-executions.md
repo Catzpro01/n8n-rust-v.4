@@ -1,6 +1,6 @@
 # TASK-430 — ActiveExecutions Registry and Lifecycle
 
-Status: **SUBMITTED_FOR_REVIEW**
+Status: **VERIFIED** (approved in review sweep 24, `results/REVIEW-SWEEP-2026-09-18.md`)
 
 Reconstructed `ActiveExecutions` in-memory execution registry and lifecycle 1:1 against n8n 2.9.4 CLI reference (`reference/n8n/packages/cli/src/active-executions.ts`):
 - In-memory active execution management (`activeExecutions`) and response mode mappings.

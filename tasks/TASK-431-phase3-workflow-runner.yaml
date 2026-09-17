@@ -1,0 +1,28 @@
+id: TASK-431-phase3-workflow-runner
+agent: arena-worker
+lego: execution
+module: workflow-runner
+phase: 3
+title: "Execution LEGO: WorkflowRunner execution coordinator and lifecycle dispatcher"
+status: SUBMITTED_FOR_REVIEW
+objective: "Reconstruct WorkflowRunner coordinator 1:1 against n8n 2.9.4 CLI reference (reference/n8n/packages/cli/src/workflow-runner.ts)."
+acceptance:
+  - "workflow execution coordination across ActiveExecutions, WorkflowExecute, and ExecutionLifecycleHooks"
+  - "processError: early return for ExecutionNotFoundError and ExecutionCancelledError, false positive check in queue mode, runData assembly, finalization, and workflowExecuteAfter hook execution"
+  - "run: activeExecutions.add registration, credentials check and early abort with failedRunFactory, responsePromise attachment, queue vs main process branching"
+  - "runMainProcess: static data loading, relative timeout calculation for resumed executions, Workflow instantiation, additionalData assembly, setRunning persistence update"
+  - "streaming: registers sendChunk hook handler writing NDJSON when streamingEnabled is true"
+  - "timeout management: relative calculation against startedAt, immediate cancellation if expired, timeout callback via activeExecutions.stopExecution"
+  - "enqueueExecution: queue mode job creation with priority, cancellation handling, job completion, and MaxStalledCountError handling"
+  - "execution-engine gate passes 13/13 with 0 runtime dependencies and import closed"
+  - "all 14 verify:all gates pass"
+allowed_paths:
+  - packages/execution-engine/**
+  - tools/execution-engine-gate.mjs
+  - contracts/execution.contract.md
+  - docs/isolation/execution.md
+  - docs/isolation/LEGO-MASTER-MAP.md
+  - docs/isolation/evidence/execution-engine-gate.json
+  - tasks/TASK-431-phase3-workflow-runner.yaml
+  - results/TASK-431-phase3-workflow-runner.md
+forbidden_paths: [reference/n8n/**, crates/**, apps/**]

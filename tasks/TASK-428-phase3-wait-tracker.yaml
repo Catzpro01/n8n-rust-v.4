@@ -4,7 +4,7 @@ lego: execution
 module: wait-tracker
 phase: 3
 title: "Execution LEGO: WaitTracker and execution resumption"
-status: SUBMITTED_FOR_REVIEW
+status: VERIFIED
 objective: "Reconstruct WaitTracker and execution resumption runtime 1:1 against n8n 2.9.4 CLI reference."
 acceptance:
   - "WaitTracker periodic polling of waiting executions from ExecutionRepository"
