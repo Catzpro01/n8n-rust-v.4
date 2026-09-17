@@ -249,7 +249,12 @@ function traverse(graph, startNode, type, depth, key) {
 	const connections = graph[startNode];
 	if (!connections) return [];
 
-	const types = type === 'ALL' ? Object.keys(connections) : [type];
+	const types =
+		type === 'ALL'
+			? Object.keys(connections)
+			: type === 'ALL_NON_MAIN'
+				? Object.keys(connections).filter((t) => t !== 'main')
+				: [type];
 	const found = new Set();
 	for (const connectionType of types) {
 		for (const group of connections[connectionType] ?? []) {

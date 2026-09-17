@@ -1,0 +1,31 @@
+id: TASK-433-phase3-manual-execution-service
+agent: arena-worker
+lego: execution
+module: manual-execution
+phase: 3
+title: "Execution LEGO: Manual execution service and graph re-wiring"
+status: SUBMITTED_FOR_REVIEW
+objective: "Reconstruct ManualExecutionService, DirectedGraph, filterDisabledNodes, rewireGraph, recreateNodeExecutionStack, and runPartialWorkflow2 1:1 against n8n 2.9.4 CLI reference."
+acceptance:
+  - "getExecutionStartNode: honors triggerToStartFrom name and startNodes with matching pinData"
+  - "runManually: triggerToStartFrom with trigger data reconstructs nodeExecutionStack and calls processRunExecutionData"
+  - "runManually: full execution calls workflowExecute.run with derived startNode and pinData"
+  - "runManually: tool partial execution rewires graph to TOOL_EXECUTOR_NODE_NAME and preserves originalDestinationNode"
+  - "runManually: regular destination nodes do not trigger graph rewiring"
+  - "runManually: partial execution delegates to workflowExecute.runPartialWorkflow2 and requires destinationNode"
+  - "DirectedGraph: supports node/connection manipulation, cycle detection (Tarjan SCC), and toWorkflow export"
+  - "recreateNodeExecutionStack: validates against disabled nodes and constructs execution stack from runData and pinData"
+  - "WorkflowRunner: delegates manual executions with undefined executionData to ManualExecutionService"
+  - "execution-engine gate passes 15/15 with 0 runtime dependencies and import closed"
+  - "all 14 verify:all gates pass"
+allowed_paths:
+  - packages/execution-engine/**
+  - tools/execution-engine-gate.mjs
+  - contracts/execution.contract.md
+  - docs/isolation/execution.md
+  - docs/isolation/LEGO-MASTER-MAP.md
+  - docs/isolation/evidence/execution-engine-gate.json
+  - docs/isolation/execution-verification.md
+  - tasks/TASK-433-phase3-manual-execution-service.yaml
+  - results/TASK-433-phase3-manual-execution-service.md
+forbidden_paths: [reference/n8n/**, crates/**, apps/**]

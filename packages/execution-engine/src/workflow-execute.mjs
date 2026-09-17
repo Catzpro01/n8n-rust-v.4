@@ -28,13 +28,27 @@
  *   queue mode, no hooks beyond the five lifecycle hooks the loop itself fires.
  */
 
-import { ApplicationError, toExecutionError, isSoftFailure } from './errors.mjs';
+import assert from 'node:assert/strict';
+import { ApplicationError, OperationalError, UserError, toExecutionError, isSoftFailure } from './errors.mjs';
 import { createRunExecutionData } from './run-execution-data.mjs';
 import { resolveRetryPolicy, sleep } from './retry.mjs';
 import { buildErrorItem, errorPassThrough, mergeErrorInformation, resolveErrorStrategy, splitErrorOutputs } from './error-handling.mjs';
 import { addNodeToBeExecuted, incomingConnectionIsEmpty, isLegacyExecutionOrder } from './execution-stack.mjs';
 import { ExecuteContext, returnJsonArray } from './node-execution-context.mjs';
 import { resolvePairedItemJson } from './data-proxy.mjs';
+import {
+	DirectedGraph,
+	TOOL_EXECUTOR_NODE_NAME,
+	cleanRunData,
+	filterDisabledNodes,
+	findStartNodes,
+	findSubgraph,
+	findTriggerForPartialExecution,
+	handleCycles,
+	isTool,
+	recreateNodeExecutionStack,
+	rewireGraph,
+} from './partial-execution.mjs';
 
 export const LOOP_ERRORS = Object.freeze({
 	noStartNode: 'No node to start the workflow from could be found',
@@ -47,16 +61,27 @@ const NOOP_HOOKS = {
 };
 
 export class WorkflowExecute {
-	constructor(workflow, options = {}) {
-		this.workflow = workflow;
-		this.mode = options.mode ?? 'manual';
-		this.additionalData = options.additionalData ?? {};
-		this.hooks = options.hooks ?? this.additionalData.hooks ?? NOOP_HOOKS;
-		this.logger = options.logger ?? { debug() {}, info() {}, warn() {}, error() {} };
-		this.runExecutionData = options.runExecutionData ?? createRunExecutionData();
-		this.pinData = options.pinData;
+	constructor(workflowOrAdditionalData, optionsOrMode = {}, maybeRunExecutionData = undefined) {
+		if (typeof optionsOrMode === 'string') {
+			this.additionalData = workflowOrAdditionalData ?? {};
+			this.mode = optionsOrMode;
+			this.runExecutionData = maybeRunExecutionData ?? createRunExecutionData();
+			this.workflow = undefined;
+			this.hooks = this.additionalData.hooks ?? NOOP_HOOKS;
+			this.logger = this.additionalData.logger ?? { debug() {}, info() {}, warn() {}, error() {} };
+			this.pinData = undefined;
+			this.nodeExecutionIndex = 0;
+		} else {
+			this.workflow = workflowOrAdditionalData;
+			this.mode = optionsOrMode.mode ?? 'manual';
+			this.additionalData = optionsOrMode.additionalData ?? {};
+			this.hooks = optionsOrMode.hooks ?? this.additionalData.hooks ?? NOOP_HOOKS;
+			this.logger = optionsOrMode.logger ?? { debug() {}, info() {}, warn() {}, error() {} };
+			this.runExecutionData = optionsOrMode.runExecutionData ?? createRunExecutionData();
+			this.pinData = optionsOrMode.pinData;
+			this.nodeExecutionIndex = optionsOrMode.nodeExecutionIndex ?? 0;
+		}
 		this.status = 'new';
-		this.nodeExecutionIndex = options.nodeExecutionIndex ?? 0;
 		this.closeFunctions = [];
 		this.contexts = [];
 	}
@@ -67,6 +92,9 @@ export class WorkflowExecute {
 	 * `triggerToStartFrom` (a start node plus its data).
 	 */
 	async run(options = {}) {
+		if (options.workflow) {
+			this.workflow = options.workflow;
+		}
 		const { destinationNode, startNodes, additionalRunFilterNodes } = options;
 		this.status = 'running';
 
@@ -102,8 +130,110 @@ export class WorkflowExecute {
 		return await this.processRunExecutionData();
 	}
 
+	/**
+	 * `runPartialWorkflow2()` — runs only the nodes between the start nodes and destinationNode.
+	 * Reconstruction target: n8n 2.9.4 workflow-execute.ts L197-310.
+	 */
+	async runPartialWorkflow2(
+		workflow,
+		runData,
+		pinData = {},
+		dirtyNodeNames = [],
+		destinationNode,
+		agentRequest,
+	) {
+		this.workflow = workflow;
+		const originalDestination = { ...destinationNode };
+
+		let destination = workflow.getNode(destinationNode.nodeName);
+		assert.ok(
+			destination,
+			`Could not find a node with the name ${destinationNode.nodeName} in the workflow.`,
+		);
+
+		let graph = DirectedGraph.fromWorkflow(workflow);
+
+		const destinationNodeType = workflow.nodeTypes?.getByNameAndVersion?.(
+			destination.type,
+			destination.typeVersion,
+		);
+
+		// Partial execution of nodes as tools
+		if (isTool(destinationNodeType?.description, destination.parameters)) {
+			graph = rewireGraph(destination, graph, agentRequest);
+			workflow = graph.toWorkflow({ ...workflow });
+			this.workflow = workflow;
+			const toolExecutorNode = workflow.getNode(TOOL_EXECUTOR_NODE_NAME);
+			if (!toolExecutorNode) {
+				throw new OperationalError('ToolExecutor can not be found');
+			}
+			destination = toolExecutorNode;
+			destinationNode = { nodeName: toolExecutorNode.name, mode: 'inclusive' };
+		}
+
+		// 1. Find the Trigger
+		let trigger = findTriggerForPartialExecution(workflow, destinationNode.nodeName, runData);
+		if (trigger === undefined) {
+			let startNode;
+			const parentNodes = workflow.getParentNodes(destinationNode.nodeName);
+			for (const nodeName of parentNodes) {
+				if (runData[nodeName]) {
+					startNode = workflow.getNode(nodeName);
+					break;
+				}
+			}
+			if (!startNode) {
+				throw new UserError('Connect a trigger to run this node');
+			}
+			trigger = startNode;
+		}
+
+		// 2. Find the Subgraph
+		graph = findSubgraph({ graph: filterDisabledNodes(graph), destination, trigger });
+		const filteredNodes = graph.getNodes();
+
+		// 3. Find the Start Nodes
+		const dirtyNodes = graph.getNodesByNames(dirtyNodeNames);
+		runData = cleanRunData(runData, graph, dirtyNodes);
+		let startNodes = findStartNodes({ graph, trigger, destination, runData, pinData });
+
+		// 4. Detect & Handle Cycles
+		startNodes = handleCycles(graph, startNodes, trigger);
+
+		// 6. Clean Run Data
+		runData = cleanRunData(runData, graph, startNodes);
+
+		// 7. Recreate Execution Stack
+		const { nodeExecutionStack, waitingExecution, waitingExecutionSource } =
+			recreateNodeExecutionStack(graph, startNodes, runData, pinData ?? {});
+
+		// 8. Execute
+		this.status = 'running';
+		this.runExecutionData = createRunExecutionData({
+			startData: {
+				destinationNode,
+				originalDestinationNode: originalDestination,
+				runNodeFilter: Array.from(filteredNodes.values()).map((node) => node.name),
+			},
+			resultData: {
+				runData,
+				pinData,
+			},
+			executionData: {
+				nodeExecutionStack,
+				waitingExecution,
+				waitingExecutionSource,
+			},
+		});
+
+		return await this.processRunExecutionData(workflow);
+	}
+
 	/** Fires `workflowExecuteBefore`, then runs the main loop. */
-	async processRunExecutionData() {
+	async processRunExecutionData(workflow) {
+		if (workflow) {
+			this.workflow = workflow;
+		}
 		const startedAt = new Date();
 		this.status = 'running';
 

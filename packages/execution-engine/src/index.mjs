@@ -92,3 +92,17 @@ export {
 	getBase,
 	executeWorkflow,
 } from './subworkflow-execution.mjs';
+export { ManualExecutionService } from './manual-execution.mjs';
+export {
+	DirectedGraph,
+	TOOL_EXECUTOR_NODE_NAME,
+	cleanRunData,
+	filterDisabledNodes,
+	findStartNodes,
+	findSubgraph,
+	findTriggerForPartialExecution,
+	handleCycles,
+	isTool,
+	recreateNodeExecutionStack,
+	rewireGraph,
+} from './partial-execution.mjs';

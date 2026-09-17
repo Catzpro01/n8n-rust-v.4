@@ -122,10 +122,11 @@ asserts that confinement.
 | `TASK-430-phase3-active-executions` | execution (active executions registry) | `contracts/execution.contract.md` ✅ | `docs/isolation/execution.md` ✅ | `packages/execution-engine/test/*.test.mjs` 100/100 ✅ (10 ActiveExecutions cases) | `tools/execution-engine-gate.mjs` 12/12 ✅ | **VERIFIED** |
 | `TASK-431-phase3-workflow-runner` | execution (workflow runner coordinator) | `contracts/execution.contract.md` ✅ | `docs/isolation/execution.md` ✅ | `packages/execution-engine/test/*.test.mjs` 110/110 ✅ (10 WorkflowRunner cases) | `tools/execution-engine-gate.mjs` 13/13 ✅ | **VERIFIED** |
 | `TASK-432-phase3-subworkflow-execution` | execution (subworkflow execution runtime) | `contracts/execution.contract.md` ✅ | `docs/isolation/execution.md` ✅ | `packages/execution-engine/test/*.test.mjs` 122/122 ✅ (12 SubworkflowExecution cases) | `tools/execution-engine-gate.mjs` 14/14 ✅ | **SUBMITTED_FOR_REVIEW** |
+| `TASK-433-phase3-manual-execution-service` | execution (manual execution service & graph re-wiring) | `contracts/execution.contract.md` ✅ | `docs/isolation/execution.md` ✅ | `packages/execution-engine/test/*.test.mjs` 144/144 ✅ (22 ManualExecutionService cases) | `tools/execution-engine-gate.mjs` 15/15 ✅ | **SUBMITTED_FOR_REVIEW** |
 
 | Phase 3 gate | Result |
 | :--- | :--- |
-| `tools/execution-engine-gate.mjs` | **PASS 14/14** — no dependencies, import-closed, Rust confined, reference intact, 122/122 tests, public surface contracted (80 symbols), expression sandboxed, activation lifecycle, WaitTracker execution resumption, ActiveExecutions registry, WorkflowRunner coordinator, subworkflow execution |
+| `tools/execution-engine-gate.mjs` | **PASS 15/15** — no dependencies, import-closed, Rust confined, reference intact, 144/144 tests, public surface contracted (92 symbols), expression sandboxed, activation lifecycle, WaitTracker execution resumption, ActiveExecutions registry, WorkflowRunner coordinator, subworkflow execution, manual execution service |
 | Reference tree | unmodified (15050 files, root digest `f8da3518…`) |
 | Evidence | `docs/isolation/evidence/execution-engine-gate.json` |
 

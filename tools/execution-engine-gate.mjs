@@ -234,6 +234,12 @@ gate('E14', 'subworkflow execution runtime & start discovery (executeWorkflow)',
 	'packages/execution-engine/test/10-subworkflow-execution.test.mjs',
 );
 
+/* E15 — manual execution service ------------------------------------------ */
+gate('E15', 'manual execution service & graph re-wiring (ManualExecutionService)', () =>
+	runNodeTest('test/11-manual-execution.test.mjs', PKG),
+	'packages/execution-engine/test/11-manual-execution.test.mjs',
+);
+
 /* ---------------- evidence + human-readable report ----------------------- */
 const totals = {
 	gates: results.length,
@@ -296,6 +302,10 @@ const report = {
 		'TASK-432-phase3-subworkflow-execution': {
 			status: results.find((entry) => entry.id === 'E14')?.status === 'PASS' ? 'IMPLEMENTED' : 'FAILED',
 			surface: ['executeWorkflow', 'getRunData', 'findSubworkflowStart', 'getBase', 'STARTING_NODES', 'SubworkflowOperationError'],
+		},
+		'TASK-433-phase3-manual-execution-service': {
+			status: results.find((entry) => entry.id === 'E15')?.status === 'PASS' ? 'IMPLEMENTED' : 'FAILED',
+			surface: ['ManualExecutionService', 'DirectedGraph', 'filterDisabledNodes', 'rewireGraph', 'recreateNodeExecutionStack', 'TOOL_EXECUTOR_NODE_NAME', 'isTool'],
 		},
 	},
 };
