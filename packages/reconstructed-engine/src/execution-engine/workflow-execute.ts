@@ -16,6 +16,13 @@
 import { Workflow } from '../workflow/workflow';
 import { normalizeItems, assignPairedItems, createRunExecutionData, type IRunExecutionData, type ITaskDataConnections, type INodeExecutionData, type IExecuteData } from '../execution-data/execution-data';
 import { Expression } from '../expression/expression';
+import {
+	resolveErrorOutcome,
+	resolveRetryPolicy,
+	runWithRetry,
+	splitErrorOutput,
+	type ErrorRecoveryNode,
+} from '../error-recovery-policy';
 
 export type WorkflowExecuteMode = 'manual' | 'trigger' | 'webhook' | 'integrated' | 'cli' | 'error' | 'retry';
 
@@ -107,16 +114,34 @@ export class WorkflowExecute {
       const startTime = Date.now();
       let executionResult: INodeExecutionData[][] | null = null;
       let executionError: any = null;
+      let taskDataTries = 1; // Error Recovery LEGO: jumlah percobaan nyata (1 = tanpa retry)
 
       try {
         const handler = this.nodeTypes.get(node.type);
-        if (handler) {
-          const context = this.createNodeExecutionContext(node, nodeInputData, runIndex, currentExecuteData);
-          executionResult = await handler.call(context, nodeInputData.main[0] || []);
-        } else {
-          // Default passthrough
-          executionResult = [nodeInputData.main[0] || []];
+        // Error Recovery LEGO: kebijakan retry 1:1 n8n (workflow-execute.ts L1600-L1680).
+        // Node tanpa `retryOnFail` => maxTries 1, tanpa jeda (perilaku identik dengan
+        // eksekusi langsung sebelumnya).
+        const retryPolicy = resolveRetryPolicy(node as ErrorRecoveryNode);
+        const runOnce = async () => {
+          let raw: INodeExecutionData[][] | INodeExecutionData[];
+          if (handler) {
+            const context = this.createNodeExecutionContext(node, nodeInputData, runIndex, currentExecuteData);
+            raw = (await handler.call(context, nodeInputData.main[0] || [])) as INodeExecutionData[][];
+          } else {
+            // Default passthrough
+            raw = [nodeInputData.main[0] || []] as INodeExecutionData[][];
+          }
+          // n8n: hasil node selalu `INodeExecutionData[][]` (satu array per output).
+          // Handler legacy yang mengembalikan array item datar dibungkus ke output 0.
+          return (Array.isArray(raw) && Array.isArray(raw[0]) ? raw : [raw]) as INodeExecutionData[][];
+        };
+
+        const retryOutcome = await runWithRetry(runOnce, retryPolicy);
+        if (retryOutcome.status === 'error') {
+          throw retryOutcome.error;
         }
+        executionResult = retryOutcome.data;
+        taskDataTries = retryOutcome.tries;
 
         if (!executionResult) {
           executionResult = [[]];
@@ -131,6 +156,14 @@ export class WorkflowExecute {
 
         // Assign paired items (I4 invariant)
         assignPairedItems(executionResult, nodeInputData);
+
+        // Error Recovery LEGO: `onError === 'continueErrorOutput'` menambah output "Error"
+        // (node-helpers.ts L1170-L1195); item error dipindah ke output terakhir
+        // (workflow-execute.ts L1720-L1722 + L2463-L2561).
+        if (node.onError === 'continueErrorOutput' && executionResult.length > 0) {
+          const mainOutputCount = Math.max(executionResult.length + 1, 2);
+          executionResult = splitErrorOutput(executionResult as any, mainOutputCount).data as INodeExecutionData[][];
+        }
 
         // Handle alwaysOutputData (I9 invariant)
         if (executionResult.length === 1 && executionResult[0].length === 0 && node.alwaysOutputData) {
@@ -161,13 +194,15 @@ export class WorkflowExecute {
         executionStatus: executionError ? 'error' : 'success',
         data: executionError ? undefined : { main: executionResult },
         error: executionError,
+        tries: taskDataTries,
       };
 
       this.runExecutionData.resultData.runData[node.name].push(taskData);
       this.runExecutionData.resultData.lastNodeExecuted = node.name;
 
       if (executionError) {
-        if (node.continueOnFail || node.onError === 'continueRegularOutput' || node.onError === 'continueErrorOutput') {
+        // Error Recovery LEGO: keputusan cabang error (workflow-execute.ts L1839-L1846).
+        if (resolveErrorOutcome(node as ErrorRecoveryNode) !== 'stop-workflow') {
           const errorItem: INodeExecutionData = {
             json: { error: executionError.message },
             pairedItem: { item: 0 },
@@ -243,7 +278,7 @@ export class WorkflowExecute {
     const inputData = executeData.data;
     const result: ITaskDataConnections = { main: [] };
 
-    for (const [type, inputs] of Object.entries(inputData)) {
+    for (const [type, inputs] of Object.entries(inputData) as Array<[string, any[]]>) {
       result[type] = [];
       for (let inputIndex = 0; inputIndex < inputs.length; inputIndex++) {
         const input = inputs[inputIndex];

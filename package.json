@@ -15,6 +15,8 @@
     "verify:reconstructed": "node packages/reconstructed-engine/test-run.mjs && node packages/reconstructed-engine/test-enhanced.mjs",
     "rust:check-offline": "bash tools/rust-offline-rig/run.sh check",
     "rust:test-offline": "bash tools/rust-offline-rig/run.sh test",
-    "verify:leaf-legos": "bash -lc 'for p in packages/api-lego packages/binary-data-lego packages/connection-lego packages/credentials-lego packages/execution-data-lego packages/execution-engine-lego packages/persistence-lego packages/scheduler-lego packages/settings-lego packages/trigger-lego packages/webhook-lego; do echo \"== $p ==\"; npm --prefix \"$p\" run build || exit $?; done'"
+    "verify:leaf-legos": "bash -lc 'for p in packages/api-lego packages/binary-data-lego packages/connection-lego packages/credentials-lego packages/execution-data-lego packages/execution-engine-lego packages/persistence-lego packages/scheduler-lego packages/settings-lego packages/trigger-lego packages/webhook-lego; do echo \"== $p ==\"; npm --prefix \"$p\" run build || exit $?; done'",
+    "reconstructed:test": "npm --prefix packages/reconstructed-engine run test:unit",
+    "reconstructed:demo": "node packages/reconstructed-engine/test-run.mjs"
   }
 }

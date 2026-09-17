@@ -44,6 +44,9 @@ export * as SettingsLEGO from './settings/settings';
 // Binary LEGO
 export * as BinaryLEGO from './binary/binary-data';
 
+// Error Recovery LEGO (retry policy, onError routing, error-item split)
+export * as ErrorRecoveryLEGO from './error-recovery-policy';
+
 export const ENGINE_PROVENANCE = {
   name: 'n8n-reconstructed-engine',
   version: '2.9.4',

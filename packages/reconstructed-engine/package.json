@@ -10,7 +10,10 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "node --loader ts-node/esm test-run.mjs",
     "test:legacy": "node test-run.mjs",
-    "verify": "node test-run.mjs"
+    "verify": "node test-run.mjs",
+    "test:unit": "node --test test/*.test.mjs",
+    "emit:cjs": "tsc -p tsconfig.json --noEmit false --outDir dist-cjs --declaration false --sourceMap false && node -e \"require('fs').writeFileSync('dist-cjs/package.json', JSON.stringify({ type: 'commonjs' }))\"",
+    "test:ts-integration": "node test/ts-error-recovery.integration.mjs"
   },
   "dependencies": {
     "luxon": "^3.0.0",
