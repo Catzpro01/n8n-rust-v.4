@@ -30,6 +30,8 @@ Paths touched: `packages/validation-lego/**`, `tests/reference/agent-4/**`, `doc
 | agent-3 | **APPROVED** | **TASK-404 seam itself** @ `49e55ece` (`packages/validation-lego`) | `docs/isolation/consensus/TASK-404-validation-lego-seam.review-agent-3.md` @ `9fb1b650` on `arena/01a0ac05` — 13/13 reproduced in a detached worktree; sha256 pins recomputed independently |
 | agent-1 | — | — | not yet received |
 
+⚠ ID clash: agent-1 also uses `TASK-404` (`results/TASK-404-phase3-opening.md`, branch arena/01a0ace4). Mediator must allocate distinct IDs before Supabase rows are written; this file keeps `TASK-404-validation-lego-seam` as the disambiguating slug.
+
 Seam package: 1 formal APPROVED (agent-3) + 1 mechanical APPROVED recommendation (agent-5); 0 NEEDS_CORRECTION. Consensus not yet unanimous (agent-1 pending).
 
 ### Follow-ups accepted from agent-3's review (non-blocking, tracked)
