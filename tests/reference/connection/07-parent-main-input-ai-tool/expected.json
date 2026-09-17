@@ -1,0 +1,10 @@
+{
+  "parent main-input node of SubTool -> Agent": "Agent",
+  "parent main-input node of SubToolDeep -> Agent (two hops)": "Agent",
+  "parent main-input node of Agent -> itself": "Agent",
+  "parent main-input node of End -> itself": "End",
+  "children SubTool ai_tool": [
+    "Agent"
+  ],
+  "children SubTool default main (none)": []
+}

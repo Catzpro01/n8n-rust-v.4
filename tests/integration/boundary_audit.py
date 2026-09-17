@@ -127,14 +127,45 @@ def hidden_coupling():
                         hits.setdefault(kind, []).append(f"{rel}:{i}")
     return hits
 
+def phase3_open():
+    """Phase flips ONLY via the decision record (docs/isolation/PHASE-3-OPENING.md)."""
+    return os.path.exists(os.path.join(ROOT, "docs", "isolation", "PHASE-3-OPENING.md"))
+
+
 def rust_guard():
-    offenders = []
+    """Phase 2: any Rust artifact is an offender.
+
+    Phase 3 (record present): Rust is allowed, but PROJECT_RULES §5 becomes the guard —
+    at least one Rust test under crates/ must consume tests/reference/**. Returns
+    (offenders, note); offenders non-empty means FAIL in either phase.
+    """
+    rust_files = []
     for base in ("crates", "apps"):
         for dp, _dn, fn in os.walk(os.path.join(ROOT, base)):
             for f in fn:
                 if f.endswith(".rs") or f == "Cargo.toml":
-                    offenders.append(os.path.relpath(os.path.join(dp, f), ROOT))
-    return offenders
+                    rust_files.append(os.path.relpath(os.path.join(dp, f), ROOT))
+
+    if not phase3_open():
+        return rust_files, "Phase 2: no Rust allowed (no PHASE-3-OPENING.md)"
+
+    reference_driven = []
+    for rel in rust_files:
+        # Only integration test files count — a doc comment in src/** must not
+        # satisfy PROJECT_RULES §5.
+        if os.sep + "tests" + os.sep in "/" + rel and rel.endswith(".rs"):
+            try:
+                with open(os.path.join(ROOT, rel), encoding="utf-8") as fh:
+                    if "tests/reference" in fh.read():
+                        reference_driven.append(rel)
+            except OSError:
+                pass
+    if reference_driven:
+        return [], (
+            f"Phase 3 open: {len(rust_files)} Rust artifact(s), "
+            f"{len(reference_driven)} reference-driven test file(s) (PROJECT_RULES §5 ok)"
+        )
+    return rust_files, "Phase 3 open but NO Rust test consumes tests/reference/** (PROJECT_RULES §5)"
 
 def main():
     if not os.path.isdir(SRC):
@@ -167,15 +198,15 @@ def main():
     for kind, locs in sorted(hits.items()):
         print(f"  {kind}: {len(locs)} hit(s) e.g. {locs[:3]}")
 
-    offenders = rust_guard()
-    print(f"\n-- Phase-2 Rust guard: {'VIOLATION ' + str(offenders) if offenders else 'clean (no .rs / Cargo.toml)'}")
+    offenders, note = rust_guard()
+    print(f"\n-- Rust phase guard: {'VIOLATION' if offenders else 'clean'} — {note}")
 
     print("\n-------------------------------------------------------")
     failed = bool(undocumented) or bool(offenders)
     if undocumented:
         print(f"BOUNDARY VIOLATION: {len(undocumented)} undocumented edge(s): {undocumented}")
     if offenders:
-        print("PHASE VIOLATION: Rust introduced during Phase 2")
+        print("PHASE VIOLATION: " + ("Rust introduced during Phase 2" if not phase3_open() else note))
     print("AUDIT RESULT:", "FAIL" if failed else "PASS (all edges documented)")
     return 1 if failed else 0
 

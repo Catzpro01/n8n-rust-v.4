@@ -1,0 +1,45 @@
+id: TASK-405-connection-members
+agent: agent-1
+lego: workflow
+module: workflow
+phase: 3
+
+# Port the five `wf.*` Workflow members hand-off (agent-3 → agent-1,
+# docs/isolation/connection-workflow-members-spec.md) and turn the 14 skipped
+# `wf.*` probes in tests/reference/connection/* into checks.
+
+allowed_paths:
+  - crates/n8n-workflow/**
+  - tests/reference/connection/**
+  - results/TASK-405-connection-members.md
+  - results/REVIEW-2026-09-17-agent-1.md
+  - docs/isolation/CROSS-AGENT-ISSUES.md
+
+forbidden_paths:
+  - reference/n8n/**
+  - contracts/**
+  - crates/n8n-connection/src/lib.rs
+
+requires:
+  - docs/isolation/connection-workflow-members-spec.md
+  - contracts/workflow.contract.md
+
+operations:
+  - name: verify_oracle
+    args:
+      source: reference/n8n/packages/workflow/src/workflow.ts
+      lines: "620-685, 687-743, 746-807, getConnectionsByDestination"
+  - name: fix_destination_padding
+    args:
+      detail: "destination map pads with [] (empty arrays), never null — pinned by 02 byDestination probes"
+  - name: port_members
+    args:
+      members:
+        - get_node_connection_indexes   # workflow.ts:746-807
+        - get_parent_nodes_by_depth     # workflow.ts:620-685 (searchNodesBFS)
+        - get_parent_main_input_node    # workflow.ts:687-743 (stub-output early return; full climb = CD-05)
+  - name: add_probe_runner
+    args:
+      test: crates/n8n-workflow/tests/connection_probe_fixtures.rs
+      cases: 5
+      policy: "no silent skips — ops not implemented must be on the explicit SKIP list with owner"

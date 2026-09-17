@@ -1,0 +1,56 @@
+task_id: TASK-409
+title: Feedback-wave processing + connection cases 06-07 (Rust port)
+worker: agent-1
+branch: arena/01a0ace4-n8n-rust-v-4
+status: SUCCESS
+allow_execution: true
+allowed_paths:
+  - results/TASK-409-connection-cases-06-07.md
+  - tasks/TASK-409-connection-cases-06-07.yaml
+  - tasks/TASK-407-consensus-integration.yaml
+  - results/TASK-INIT-AGENT-3.md
+  - results/TASK-INIT-AGENT-4.md
+  - tests/reference/connection/06-rename-stale-destination/
+  - tests/reference/connection/07-parent-main-input-ai-tool/
+  - crates/n8n-workflow/src/lib.rs
+  - crates/n8n-workflow/tests/connection_probe_fixtures.rs
+  - tests/integration/run_gate.sh
+forbidden_paths:
+  - reference/n8n/
+  - crates/n8n-validation/**
+  - crates/n8n-core/**
+  - crates/n8n-connection/**
+  - tools/rust-offline-rig/**
+deliverables:
+  - id: retraction-void
+    path: results/TASK-INIT-AGENT-3.md
+    note: VOID retracted; owner record adopted (ac05 @ 97a67a8e) + agent-1 note
+  - id: retraction-void-2
+    path: results/TASK-INIT-AGENT-4.md
+    note: VOID retracted; owner record adopted (ac06 @ 7b12ac7a) + agent-1 note
+  - id: retro-manifest-407
+    path: tasks/TASK-407-consensus-integration.yaml
+    note: answers review c54b453a rubric-1 (missing manifest)
+  - id: connection-06
+    path: tests/reference/connection/06-rename-stale-destination/
+    note: adopted from worker-05 ac05 @ 7037e3d5 (fixture owner) — D-08 rename staleness
+  - id: connection-07
+    path: tests/reference/connection/07-parent-main-input-ai-tool/
+    note: adopted from worker-05 ac05 @ 7037e3d5 — full getParentMainInputNode climb (CD-05 stub)
+  - id: port-climb
+    path: crates/n8n-workflow/src/lib.rs
+    note: get_parent_main_input_node_with (workflow.ts:687-743) + from_wire_str (document order)
+  - id: runner-extension
+    path: crates/n8n-workflow/tests/connection_probe_fixtures.rs
+    note: CASES 7, PROBE_TOTAL 61, rename handling, wf.* ops, failure-first preserved
+  - id: gate-hardening
+    path: tests/integration/run_gate.sh
+    note: ISSUE-025 — skipped stage visible as PASS WITH SKIPS
+evidence:
+  cargo: 57 passed / 0 failed
+  connection_probes: 61/61 byte-exact
+  conformance: 26/26
+  boundary: PASS
+  integrity: 23/23 PASS
+  manifest_check: PASS (15050 files, root f8da35180669)
+  live_11_11: NOT_RUN
