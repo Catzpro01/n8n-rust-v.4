@@ -2,8 +2,8 @@
  * Workflow Model LEGO — public surface (the seam).
  *
  * This is what downstream LEGOs (02 Node Model, 03 Connection, 04 Validation)
- * and the future Rust implementation consume. Nothing else of this package is
- * part of the boundary.
+ * and the native JavaScript/TypeScript reconstruction consume. Nothing else of
+ * this package is part of the boundary.
  *
  * PHASE 2 STATUS
  *   - The model is ISOLATED: its sources are import-closed behind the declared
@@ -11,7 +11,7 @@
  *   - The running implementation is still the pinned reference runtime
  *     (`n8n-workflow@2.9.1` — the artifact n8n 2.9.4 ships). This file is the
  *     single place that must change when a replacement lands.
- *   - RUST IMPLEMENTATION: NOT STARTED. “Isolated” does not mean “replaced”.
+ *   - RUST: FORBIDDEN by PROJECT_RULES.md #1. “Isolated” does not mean “reconstructed”.
  *
  * Surface parity is enforced by test/surface-parity.test.mjs: these exports must
  * equal manifest.publicSurface and the isolated unit's generated model-api.

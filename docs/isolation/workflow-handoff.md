@@ -1,11 +1,15 @@
 # Workflow LEGO — Agent-1 handoff & interface proposal
 
+> **Policy supersession (2026-09-17):** This is a historical handoff. Any Phase-3/Rust proposal below
+> is non-normative and superseded by `PROJECT_RULES.md` #1; implementation is JavaScript/TypeScript/
+> Node.js only, while the documented behavioral and port contracts remain applicable.
+
 | Field | Value |
 | :--- | :--- |
 | Agent | `agent-1` — Workflow Domain Engineer |
 | LEGO | `workflow` — Workflow Model / DAG lifecycle |
 | Phase | 2 — LEGO Isolation |
-| Rust | **NOT STARTED** (Phase 2 forbids it — this document is TypeScript-only) |
+| Implementation policy | **JavaScript / TypeScript / Node.js only; Rust forbidden** (`PROJECT_RULES.md` #1) |
 | Branch | `arena/01a0abf6-n8n-rust-v-4` @ `6105e6f5` |
 | Delivered unit | `tasks/TASK-201.yaml` → `results/TASK-201.md` (isolation), this unit `tasks/TASK-303-workflow-handoff.yaml` (specification & handoff) |
 | Self-verification | `npm run verify` → **11/11 PASS** (~27 s) |

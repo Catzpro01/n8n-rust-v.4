@@ -135,16 +135,16 @@ AFTER ISOLATION:
 BEHAVIOR CHANGE:
 NONE DETECTED
 
-RUST IMPLEMENTATION:
-NOT STARTED
+RUST POLICY:
+FORBIDDEN (PROJECT_RULES.md #1)
 
 ---
 
 ### Reading note for the next agent
 
-`isolated` in this document means **the TypeScript Workflow Model now has an explicit, enforced boundary** (`packages/workflow-lego/`), not that it was replaced. The running implementation is still the pinned reference runtime: `packages/workflow-lego/src/model-surface.ts` re-exports it, and that file is the single seam a Rust crate must later replace.
+`isolated` in this document means **the TypeScript Workflow Model now has an explicit, enforced boundary** (`packages/workflow-lego/`), not that reconstruction is complete. The running implementation is still the pinned reference runtime: `packages/workflow-lego/src/model-surface.ts` re-exports it, and that file is the seam the native JavaScript/TypeScript reconstruction must preserve.
 
-Next in the sequence: **LEGO 02 Node Model** → LEGO 03 Connection → LEGO 04 Validation → only then the Rust contract → Rust LEGO.
+Next in the sequence: **LEGO 02 Node Model** → LEGO 03 Connection → LEGO 04 Validation → native JavaScript/TypeScript LEGO reconstruction and parity verification.
 
 ### Governance status of this record (2026-09-17)
 

@@ -1,5 +1,9 @@
 # Workflow LEGO → Node LEGO — port freeze (`P-NODE-*`)
 
+> **Policy supersession (2026-09-17):** Rust trait/Phase-3 passages are retained only as historical
+> design notes and are non-normative. `PROJECT_RULES.md` #1 now requires every implementation of
+> this frozen port to use JavaScript/TypeScript/Node.js and unconditionally forbids Rust.
+
 | Field | Value |
 | :--- | :--- |
 | Unit | Phase-2 post-merge handoff — freeze of the **4 peer signatures** the Workflow LEGO consumes from LEGO 02 |
@@ -11,7 +15,7 @@
 | Authority | `contracts/workflow.contract.md` §6 · `docs/isolation/workflow-port-contract.md` §1/§3 |
 | Machine check | `node tools/workflow-port-surface.mjs --check` → **PASS** (manifest ports == consumed ports) |
 | Bus envelope | `docs/isolation/workflow-bus-outbox.json#MSG-06` — alias **`MSG-01` (Phase 2)** |
-| Rust | **NOT STARTED** — Phase 2 forbids it. §8 sketches trait shapes only, for Phase 3. |
+| Implementation policy | **JavaScript / TypeScript / Node.js only; Rust forbidden**. §8 is historical and non-normative. |
 
 > **What this document is.** The Workflow Model does not import Node internals; it reaches LEGO 02 through
 > three declared ports carrying **four functions**. Those four shapes are now frozen. Agent 2 declares them

@@ -1,22 +1,17 @@
 #!/usr/bin/env node
 /**
- * Workflow LEGO — Rust port conformance fixtures.
+ * Workflow LEGO — reference-derived conformance fixtures.
  *
- * NOTE (2026-09-17): `crates/n8n-workflow` was removed — PROJECT_RULES #1 (ZERO RUST) forbids Rust
- * in `crates/`/`apps/`, see docs/isolation/RUST-PURGE-RECORD.md. This generator and its corpus are
- * retained on purpose: they are pure Node/JSON and the *consumer* is now whatever implements the
- * Workflow Model in Phase 3 under rule 1 (JavaScript / TypeScript, 1:1 from n8n 2.9.4). The header
- * below keeps its original wording as the historical record of why these cases exist.
+ * The historical `workflow-rust/` directory name remains for path compatibility, but this
+ * generator and corpus are pure Node/JSON. PROJECT_RULES.md #1 unconditionally forbids Rust;
+ * consumers are native JavaScript/TypeScript reconstructions of the Workflow Model.
  *
- * The Phase-3 Rust crate (`crates/n8n-workflow`) must reproduce the reference
- * Workflow Model. This script derives the *expected* values from the pinned
- * reference runtime (n8n-workflow 2.9.1 = the 2.9.4 dependency set) and writes
- * them as golden JSON, so a Rust test can assert against the same numbers
- * without a Node host in the loop.
+ * This script derives expected values from the pinned reference runtime
+ * (n8n-workflow 2.9.1 = the n8n 2.9.4 dependency set) and writes golden JSON so
+ * reconstruction tests can assert against the same values without invoking the runtime.
  *
- * It covers the parts of the frozen 15-symbol surface that the Phase-3 crate
- * currently does NOT implement at all, plus the behaviours that a naive
- * re-implementation silently "fixes":
+ * It covers the parts of the frozen 15-symbol surface most vulnerable to drift, including
+ * behaviours that a naive reimplementation may silently "fix":
  *
  *   1. `calculateWorkflowChecksum`  — surface symbol #14 (9 whitelisted fields,
  *      recursively sorted keys, SHA-256 hex; id/active/staticData excluded)
@@ -174,7 +169,7 @@ for (const d of diffCases) d.result = compareConnections(d.prev, d.next);
  * Measured: `Workflow` exposes `nodes` as a name-keyed map, both connection
  * maps, `settings` (default `{}`), `staticData` (default `{}`, observable),
  * `pinData` (undefined unless given) and a readonly `timezone` resolved from
- * `settings.timezone ?? getGlobalState().defaultTimezone`. Serde must model
+ * `settings.timezone ?? getGlobalState().defaultTimezone`. A reconstruction must model
  * exactly this, NOT a `nodes` map on the wire (the API/entity layer stores
  * `nodes` as an array — see checksum cases, whose snapshots use arrays).
  */

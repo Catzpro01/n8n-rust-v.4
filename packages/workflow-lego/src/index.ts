@@ -11,8 +11,8 @@
  *   ./model-surface  the public surface downstream LEGOs may consume
  *   ./ports          the declared outer boundary (contract + adapters)
  *
- * RUST: NOT STARTED. This package currently binds to the pinned reference
- * runtime; it does not replace it.
+ * RUST: FORBIDDEN by PROJECT_RULES.md #1. This package currently binds to the
+ * pinned reference runtime while native JavaScript/TypeScript reconstruction proceeds.
  */
 export * from './model-surface';
 export {
@@ -46,5 +46,5 @@ export const LEGO_PROVENANCE = {
 	referenceVersion: '2.9.4',
 	referenceCommit: 'b6dc2787c45677a29a9612cd27eb911302961a83',
 	behaviorChange: 'none-detected',
-	rustImplementation: 'not-started',
+	rustImplementation: 'forbidden',
 } as const;

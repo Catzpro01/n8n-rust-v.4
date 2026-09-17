@@ -168,14 +168,14 @@ def main():
         print(f"  {kind}: {len(locs)} hit(s) e.g. {locs[:3]}")
 
     offenders = rust_guard()
-    print(f"\n-- Phase-2 Rust guard: {'VIOLATION ' + str(offenders) if offenders else 'clean (no .rs / Cargo.toml)'}")
+    print(f"\n-- Unconditional ZERO-RUST guard: {'VIOLATION ' + str(offenders) if offenders else 'clean (no .rs / Cargo.toml)'}")
 
     print("\n-------------------------------------------------------")
     failed = bool(undocumented) or bool(offenders)
     if undocumented:
         print(f"BOUNDARY VIOLATION: {len(undocumented)} undocumented edge(s): {undocumented}")
     if offenders:
-        print("PHASE VIOLATION: Rust introduced during Phase 2")
+        print("POLICY VIOLATION: Rust is forbidden by PROJECT_RULES.md #1")
     print("AUDIT RESULT:", "FAIL" if failed else "PASS (all edges documented)")
     return 1 if failed else 0
 

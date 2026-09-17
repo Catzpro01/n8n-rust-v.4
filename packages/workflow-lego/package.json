@@ -2,7 +2,7 @@
   "name": "@lego/workflow",
   "version": "0.1.0",
   "private": true,
-  "description": "Workflow Model LEGO (Phase 2 structural isolation) \u2014 boundary, ports and the pinned reference seam. Rust implementation: NOT STARTED.",
+  "description": "Workflow Model LEGO \u2014 boundary, ports and pinned reference seam for native JavaScript/TypeScript reconstruction; Rust is forbidden.",
   "license": "SEE LICENSE IN reference/n8n/LICENSE.md",
   "scripts": {
     "extract": "node ../../tools/workflow-isolation-extract.mjs",

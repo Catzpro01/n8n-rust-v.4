@@ -3,9 +3,9 @@
 Phase 2 structural isolation of the workflow model from
 `reference/n8n/packages/workflow` (n8n 2.9.4).
 
-**Isolated ≠ replaced.** The boundary is real and enforced; the running
-implementation is still the pinned reference runtime. The Rust implementation of
-this LEGO has **not started**.
+**Isolated ≠ fully reconstructed.** The boundary is real and enforced; the running
+implementation is still the pinned reference runtime while the native JavaScript/TypeScript
+reconstruction proceeds. Rust is unconditionally forbidden by `PROJECT_RULES.md` #1.
 
 ## What is in the box
 

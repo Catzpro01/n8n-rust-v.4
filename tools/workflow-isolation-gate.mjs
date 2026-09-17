@@ -228,7 +228,7 @@ const report = {
 				},
 			}
 		: null,
-	rustImplementation: 'NOT STARTED',
+	rustImplementation: 'FORBIDDEN',
 	totals: { gates: results.length, passed: results.length - failed.length, failed: failed.length },
 	gates: results,
 };
@@ -251,7 +251,7 @@ const md = [];
 md.push('# Workflow LEGO — Phase 2 isolation verification', '');
 md.push(`Generated: ${report.generatedAt} · reference n8n ${MANIFEST.reference.pinnedVersion} (\`${MANIFEST.reference.pinnedCommit.slice(0, 12)}\`)`);
 md.push('');
-md.push(`**Gates: ${report.totals.passed}/${report.totals.gates} PASS** · **BEHAVIOR CHANGE: ${report.behaviorChange}** · **RUST IMPLEMENTATION: ${report.rustImplementation}**`);
+md.push(`**Gates: ${report.totals.passed}/${report.totals.gates} PASS** · **BEHAVIOR CHANGE: ${report.behaviorChange}** · **RUST POLICY: ${report.rustImplementation}**`);
 md.push('');
 md.push('## Requested gate checklist', '');
 md.push('| gate | status | evidence |', '| :--- | :--- | :--- |');

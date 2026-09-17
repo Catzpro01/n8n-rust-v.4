@@ -119,8 +119,8 @@ for (const { name, wf } of fixtures) {
   });
 }
 
-// --- Phase-2 guard: no premature Rust -------------------------------------
-check('Phase 2: no Rust implementation introduced', () => {
+// --- PROJECT_RULES #1 guard: Rust is unconditionally forbidden ------------
+check('PROJECT_RULES #1: no Rust implementation', () => {
   const offenders = [];
   const walk = (dir) => {
     if (!existsSync(dir)) return;
@@ -131,7 +131,7 @@ check('Phase 2: no Rust implementation introduced', () => {
     }
   };
   walk(join(ROOT, 'crates')); walk(join(ROOT, 'apps'));
-  assert(offenders.length === 0, `Rust artifacts present in Phase 2: ${offenders.join(', ')}`);
+  assert(offenders.length === 0, `Rust artifacts violate PROJECT_RULES.md #1: ${offenders.join(', ')}`);
   return 'crates/ and apps/ contain no Rust sources';
 });
 

@@ -79,7 +79,7 @@ None of the pure functions throw. Invalid indexes/unknown names are *not* detect
 | CD-06 | Agent 4 / `validation` | `contracts/validation.contract.md` | consumer of §3.1–3.2 (`DanglingConnections`); `CycleDetection` must be labelled NEW CAPABILITY (§3.6, `ISSUE-003`) | — | informational |
 | CD-07 | shared | `packages/workflow/src/interfaces.ts` | `IConnection`, `IConnections`, `INodeConnection`, `NodeConnectionType(s)` | type-only | — |
 
-Ownership of `common/**`, `graph/graph-utils.ts`, `connections-diff.ts`: Phase 2 = consumed from Workflow (Option B); Phase 3 = transferred to Connection behind port `P-CONNECTION-GRAPH` (Option A) — decision recorded in `docs/isolation/connection.md` §0.1, pending Agent 5 acknowledgement.
+Current ownership of `common/**`, `graph/graph-utils.ts`, and `connections-diff.ts` remains with Workflow and is consumed by Connection. Any later transfer behind `P-CONNECTION-GRAPH` must preserve this contract and remain native JavaScript/TypeScript; the former Phase-3 Rust plan is superseded by `PROJECT_RULES.md` #1.
 - **Validation (Agent 4):** consumes §3.1–3.2 to implement `DanglingConnections`; note §3.6 — `CycleDetection` must not reject cyclic graphs as invalid for execution.
 - shared `interfaces.ts` for types.
 

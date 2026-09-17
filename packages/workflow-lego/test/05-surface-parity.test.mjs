@@ -54,8 +54,8 @@ test('reference tree is byte-identical to the pinned hashes', () => {
 	assert.match(result.stdout, /Reference integrity check: PASS/);
 });
 
-test('LEGO provenance states that the Rust implementation has not started', () => {
+test('LEGO provenance records the unconditional ZERO-RUST policy', () => {
 	const src = readFileSync(join(PKG, 'src', 'index.ts'), 'utf8');
-	assert.match(src, /rustImplementation: 'not-started'/);
+	assert.match(src, /rustImplementation: 'forbidden'/);
 	assert.ok(existsSync(join(PKG, 'manifest', 'ownership.json')));
 });

@@ -1,7 +1,8 @@
-# Rust-port conformance fixtures (LEGO 01 — Workflow)
+# Workflow conformance fixtures (LEGO 01)
 
-Golden values for the Phase-3 Rust port of the Workflow Model, **derived from the pinned reference
-runtime** (`n8n-workflow@2.9.1` — the dependency set of n8n `2.9.4`), not hand-written.
+Golden values for the native JavaScript/TypeScript Workflow Model reconstruction, **derived from the
+pinned reference runtime** (`n8n-workflow@2.9.1` — the dependency set of n8n `2.9.4`), not
+hand-written. The `workflow-rust/` directory name is historical; the corpus contains no Rust artifact.
 
 | File | Role |
 | :--- | :--- |
@@ -47,15 +48,15 @@ must be updated deliberately) or the fixtures were hand-edited (never do that).
 * **`traversal`** — `getConnectedNodes` connection-type filter (`main`, `ALL`, `ALL_NON_MAIN`, `ai_*`),
   depth semantics (`0` → `[]`, `n` → n levels, `-1` → unlimited) and deterministic result order.
 
-## Consuming it from Rust
+## Consuming it from JavaScript/TypeScript
 
-```rust
-#[derive(serde::Deserialize)]
-struct Fixtures { /* checksum, compareConnections, toJSON, rename, traversal */ }
+```js
+import assert from 'node:assert/strict';
+import fixtures from './fixtures.json' with { type: 'json' };
 
-let raw = include_str!("../../../../tests/reference/workflow-rust/fixtures.json");
-let fixtures: Fixtures = serde_json::from_str(raw).unwrap();
-// assert each case against the ported implementation
+// Assert each checksum, diff, aggregate-shape, rename, and traversal case
+// against the native reconstructed implementation.
+assert.deepEqual(actual, fixtures.traversal[0].result);
 ```
 
 ## Governance
@@ -63,5 +64,5 @@ let fixtures: Fixtures = serde_json::from_str(raw).unwrap();
 * The reference tree stays **read-only**: this folder only *reads* fixtures from `tests/reference/**` and
   the pinned runtime.
 * Regeneration is allowed only when the reference pin changes (a deliberate, reviewed decision);
-  otherwise `fixtures.json` is frozen and is the acceptance test described in
-  `docs/isolation/workflow-rust-port-review.md` §6.
+  otherwise `fixtures.json` is frozen and remains reference evidence for
+  `contracts/workflow.contract.md`.

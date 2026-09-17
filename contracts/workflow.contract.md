@@ -8,7 +8,7 @@
 | Reference | n8n `2.9.4` — `reference/n8n`, upstream `b6dc2787c45677a29a9612cd27eb911302961a83` |
 | Reference source | `packages/workflow/src` — 10 owned modules, see `packages/workflow-lego/manifest/ownership.json` |
 | Isolation record | `docs/isolation/workflow.md` · ports: `docs/isolation/workflow-port-contract.md` |
-| Rust | **NOT STARTED** — Phase 2 forbids Rust. This document specifies the TypeScript reference behavior a future Rust LEGO must reproduce. |
+| Implementation | **JavaScript / TypeScript / Node.js only** — Rust is unconditionally forbidden by `PROJECT_RULES.md` #1. |
 
 ## 1. Purpose
 
@@ -158,7 +158,7 @@ and the helpers answer for the surviving node. Neither LEGO may "fix" that behav
 **`D-08` — stale destination index after `renameNode` (reported by Agent 3, verified here).**
 `setConnections()` re-derives `connectionsByDestinationNode` from the source map (`workflow.ts:146-148`), but `renameNode()` only rewrites the
 source map. Consequence: any parent-side query immediately after a rename answers from the pre-rename name. This is **reference behavior**, not a
-defect introduced by the isolation, and Phase 2 does not change it — a port (TypeScript or Rust) must reproduce it unless a future decision
+defect introduced by the isolation — a native JavaScript/TypeScript reconstruction must reproduce it unless a future decision
 explicitly changes the contract. Hosts that need a fresh destination index after renaming must call `setConnections`/`mapConnectionsByDestination`
 themselves; consumers are listed in `contracts/connection.contract.md` (`CD-04`, `D-08`).
 
@@ -174,7 +174,7 @@ to expect the stale-index answer to keep the reference behavior verifiable).
 * **Rename** — node object is copied to the new key, `name` is updated, the old key is deleted, then parameter references are rewritten via ports. (`workflow.ts:413-490`)
 * **Serialize** — **there is no serializer in this LEGO.** The reference `Workflow` class has **no `toJSON()`** (`grep -n toJSON workflow.ts` → no hits; measured 2026-09-17 and pinned by `tests/reference/workflow-rust/fixtures.json`). The persisted/API shape (`nodes` as an **array**, `connections`, `settings`, `staticData`, `pinData`) belongs to the entity/API layer outside this package; this LEGO owns only the **in-memory** shape (`nodes` keyed by name, both connection maps). One thing the LEGO does own content-wise is `calculateWorkflowChecksum`, which consumes a `WorkflowSnapshot` — a plain object whose `nodes` **is** an array (`workflow-checksum.ts:18-28`); the checksum's 9 whitelisted fields and the recursive key sorting are covered by `tests/reference/workflow-rust/fixtures.json` (`checksum` section).
 
-> **Self-audit correction (2026-09-17):** an earlier revision of this section claimed `toJSON()` existed here and cited `workflow.ts:136-137`. That was wrong — those lines are the constructor's `expression`/staticData setup. Corrected above; the Phase-3 Rust port must not model a serializer this LEGO never had.
+> **Self-audit correction (2026-09-17):** an earlier revision of this section claimed `toJSON()` existed here and cited `workflow.ts:136-137`. That was wrong — those lines are the constructor's `expression`/staticData setup. Corrected above; the native reconstruction must not model a serializer this LEGO never had.
 
 ## 9. Data ownership
 
