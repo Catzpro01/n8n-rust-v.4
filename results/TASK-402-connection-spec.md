@@ -1,9 +1,9 @@
 # TASK RESULT: TASK-402-connection-spec
 
-- **STATUS**: `SUCCESS`
+- **STATUS**: `FAILED`
 - **AGENT**: `agent-3`
 - **LEGO COMPONENT**: `connection`
-- **EXIT CODE**: `0`
+- **EXIT CODE**: `1`
 - **TIMESTAMP**: `2026-09-16 23:08:54 UTC`
 
 ---
@@ -14,3 +14,7 @@
 | :--- | :--- | :--- |
 
 ### Detailed Logs
+
+```text
+RESULT REJECTED: no pipeline operation was recorded; the original SUCCESS claim is unsupported.
+```

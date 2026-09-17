@@ -1039,3 +1039,25 @@ destroy their work. Agent 5 documents and reassigns; it does not fix other agent
    `f8da35180669`.
 
 **Status:** CLOSED (2026-09-17 by Orchestrator) — Relocated `node-model/index.ts` to `docs/isolation/node-barrel.ts` and removed from `reference/`. Reference integrity returned to 15,050 files.
+
+## ISSUE-018 — RESOLUTION UPDATE (2026-09-17)
+
+The unsupported task-result claims identified above have been corrected without
+inventing missing operations:
+
+- `results/TASK-402-connection-spec.md`
+- `results/TASK-403-execution-engine-spec.md`
+- `results/TASK-INIT-AGENT-3.md`
+- `results/TASK-INIT-AGENT-4.md`
+
+Each result is now marked `FAILED` with exit code `1` and records that no
+pipeline operation was available to support the former `SUCCESS` claim.
+`tests/integration/run_gate.sh` now executes
+`tests/integration/result_integrity_audit.py` as offline **Stage 2C**.
+
+Evidence after the correction: **45/45 task results self-consistent** and all
+offline stages pass. The live 11/11 gate remains a separate VPS/Docker
+requirement and is intentionally reported as `INCONCLUSIVE` when unavailable.
+
+**Status:** CLOSED for the repository-side reporting defect. Live regression
+verification remains environment-dependent.
