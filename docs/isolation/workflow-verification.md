@@ -1,6 +1,6 @@
 # Workflow LEGO — Phase 2 isolation verification
 
-Generated: 2026-09-17T20:47:41.843Z · reference n8n 2.9.4 (`b6dc2787c456`)
+Generated: 2026-09-17T20:50:41.485Z · reference n8n 2.9.4 (`b6dc2787c456`)
 
 **Gates: 10/10 PASS** · **BEHAVIOR CHANGE: NONE DETECTED** · **RUST IMPLEMENTATION: NOT STARTED**
 
@@ -9,7 +9,7 @@ Generated: 2026-09-17T20:47:41.843Z · reference n8n 2.9.4 (`b6dc2787c456`)
 | gate | status | evidence |
 | :--- | :--- | :--- |
 | TypeScript build PASS | PASS | G06: tsc -p .extract/tsconfig.json → 0 errors<br>G07: tsc --noEmit → 0 errors |
-| unit tests PASS | PASS | G08: # cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 12875.225683 |
+| unit tests PASS | PASS | G08: # cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 12797.269015 |
 | workflow load PASS | PASS |  |
 | workflow save PASS | PASS |  |
 | manual execution PASS | PASS |  |
@@ -30,9 +30,9 @@ Generated: 2026-09-17T20:47:41.843Z · reference n8n 2.9.4 (`b6dc2787c456`)
 | G05 | isolation extraction (pure import rewrites only) | PASS | isolated unit written to packages/workflow-lego/.extract   owned files copied : 10   port rewrites      : 25 across 10 files     @lego/ports/checksum-digest : 1     @lego/ports/config : 1     @lego/ports/constants : 1    |
 | G06 | TypeScript build PASS (isolated unit, ports only) | PASS | tsc -p .extract/tsconfig.json → 0 errors |
 | G07 | TypeScript build PASS (versioned boundary/ports/facade) | PASS | tsc --noEmit → 0 errors |
-| G08 | unit tests PASS (boundary, extraction, equivalence, strict isolation, surface) | PASS | # cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 12875.225683 |
+| G08 | unit tests PASS (boundary, extraction, equivalence, strict isolation, surface) | PASS | # cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 12797.269015 |
 | G09 | BEFORE vs AFTER digest: BEHAVIOR CHANGE NONE | PASS | 252 section comparisons across 18 workflows — 0 differences · strict: 217 identical, 35 in declared port sections |
-| G10 | strict port mode: no hidden coupling to the reference runtime | PASS | # cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 1313.800393 |
+| G10 | strict port mode: no hidden coupling to the reference runtime | PASS | # cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 1499.096862 |
 
 ## Live verification (reference execution engine)
 
