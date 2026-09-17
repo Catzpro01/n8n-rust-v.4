@@ -1,0 +1,89 @@
+id: TASK-318-partial-peer-integration
+agent: arena-worker (session arena/01a0af55-n8n-rust-v-4)
+lego: workflow
+module: reconstructed-engine/partial
+phase: 2
+
+# The preceding task's post-review sweep doubled as this task's pre-task sweep: GitHub had no peer
+# PR or open issue awaiting review, and the remote vote store remains unavailable. No self-review or
+# duplicate vote was submitted.
+
+trigger: >
+  Peer commits 7ef51ab0 and b60b7d09 reconstruct the DirectedGraph foundation and seven planning
+  steps used by WorkflowExecute.runPartialWorkflow2. Integrate them after independent strict-runtime
+  verification while preserving this branch's corrected engine contract, exact start semantics,
+  mandatory reference-runtime policy, and ZERO-RUST/UI boundaries.
+
+allowed_paths:
+  - packages/reconstructed-engine/**
+  - contracts/execution-engine.contract.md
+  - README.md
+  - docs/isolation/evidence/**
+  - docs/isolation/workflow-verification.md
+  - tasks/TASK-318-partial-peer-integration.yaml
+  - results/TASK-318-partial-peer-integration.md
+
+forbidden_paths:
+  - reference/n8n/**
+  - crates/**
+  - apps/**
+  - packages/workflow-lego/src/**
+  - packages/editor-ui/**
+  - '**/*.vue'
+  - '**/*.css'
+  - '**/*.scss'
+
+operations:
+  - name: independent_peer_verification
+    args:
+      peer_tip: b60b7d0969dcc9cb93d860adaed55b4ca3217903
+      command: "LEGO_LIVE_RUNTIME=.runtime/node_modules REQUIRE_REFERENCE_RUNTIME=1 node --test --test-force-exit packages/reconstructed-engine/test/*.test.mjs"
+      result: "107/107 pass, 0 skipped, exit 0 in an isolated git archive"
+  - name: integrate_partial_graph_foundation
+    args:
+      commit: 7ef51ab097b23c33059281027212571669b65490
+      ports: [DirectedGraph, filterDisabledNodes, findSubgraph]
+  - name: integrate_partial_planning_steps
+    args:
+      commit: b60b7d0969dcc9cb93d860adaed55b4ca3217903
+      ports:
+        - getNextExecutionIndex
+        - getIncomingData
+        - getIncomingDataFromAnyRun
+        - cleanRunData
+        - handleCycles
+        - anyReachableRootHasRunData
+        - findTriggerForPartialExecution
+  - name: integration_hardening
+    args:
+      details:
+        - "preserve G1-G27 and append partial guarantees G28-G29 rather than accepting stale peer contract text"
+        - "make partial.mjs reachable as @lego/reconstructed-engine/partial and machine-check the export map"
+        - "make both partial parity files honor REQUIRE_REFERENCE_RUNTIME=1 explicitly"
+        - "scan partial.mjs in the formal non-goal guard and correct stale remaining-work documentation"
+
+verification:
+  engine_strict: "npm run engine:test:strict -> 114 tests, 114 pass, 0 fail, 0 skipped"
+  breakdown: "70 engine unit + 4 graph parity + 17 execution parity + 8 partial graph parity + 7 partial step unit/parity + 8 contract"
+  pinned_runtime_differential: "34 cases"
+  package_subpath: "self import @lego/reconstructed-engine/partial exposes 10 declared exports"
+  workflow_gate: "npm run verify -> 11/11 PASS, local live 7/7 PASS, behavior change none"
+  conformance: "22/22 PASS; pinned workflow fixture check PASS"
+  boundary_and_rust: "boundary audit PASS; rust guard PASS"
+  offline_integration: "stages 1-3 PASS; exit 2 only because --offline-only intentionally omits external live"
+
+merge_condition:
+  - isolated_peer_tip_passes
+  - integrated_strict_suite_passes_without_skips
+  - partial_package_subpath_is_machine_checked
+  - formal_contract_matches_all_surfaces
+  - workflow_gate_and_conformance_pass
+  - reference_tree_unchanged
+  - zero_rust_pass
+  - editor_ui_unchanged
+
+known_gap: >
+  These commits reconstruct planning foundations but not the full editor partial-run path.
+  DirectedGraph#toWorkflow, findStartNodes, getSourceDataGroups, recreateNodeExecutionStack,
+  rewireGraph, and WorkflowExecute#runPartialWorkflow2 remain follow-up work and are stated
+  explicitly in the contract and package README.

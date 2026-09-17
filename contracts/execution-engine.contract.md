@@ -1,11 +1,12 @@
 # LEGO Contract: Execution Engine (reconstructed)
 
 **Derived from:** n8n 2.9.4 source (`packages/core/src/execution-engine/workflow-execute.ts`,
+`packages/core/src/execution-engine/partial-execution-utils/*.ts`,
 `packages/workflow/src/common/{get-connected-nodes,get-parent-nodes,map-connections-by-destination}.ts`,
 `packages/workflow/src/{interfaces,execution-status}.ts`) and runtime comparison against the pinned
 `n8n-core` / `n8n-workflow` **2.9.1** (the dependency set of n8n 2.9.4).
 **Owner:** Agent 1 (`workflow`) — reconstruction lives in `packages/reconstructed-engine/`
-**Status:** TESTED — 98 regression cases, 17 of them executed against the real engine
+**Status:** TESTED — 114 regression cases, including 34 pinned-runtime differential cases
 **Rule basis:** `PROJECT_RULES.md` #1 (ZERO RUST → JavaScript/TypeScript, 1:1 from source) and #5
 (every module must have a clear boundary and a formal contract).
 
@@ -18,18 +19,20 @@
 
 ## 1. Scope and boundary
 
-The module reconstructs **the execution loop only**: which node runs next, with what input, what is
-recorded, and when the run ends.
+The module reconstructs the **execution loop and its in-memory partial-run planning layer**: which node
+runs next, with what input, what is recorded, when the run ends, and how a destination subgraph is
+prepared before partial execution.
 
 * **In scope:** start-node selection, traversal order, fan-in waiting, item propagation, run data
   recording, error/retry/cancellation semantics, pin data, `alwaysOutputData`, `executeOnce`,
-  `pairedItem` decoration, wait-state parking/resume, and graph traversal helpers.
+  `pairedItem` decoration, wait-state parking/resume, graph traversal helpers, and the graph/run-data
+  planning primitives used by partial execution.
 * **Out of scope (explicit non-goals, see §7):** node implementations, expressions, credentials,
-  persistence, the scheduler that decides when to resume, sub-workflows, and AI/routing nodes.
-* **Inputs:** a plain workflow object (`{ nodes, connections, settings?, pinData? }`) in the n8n file
-  format, plus registered node type handlers.
-* **Outputs:** a result object in the n8n shape (§3). The module performs **no** I/O: no filesystem,
-  no network, no database, no `process.env` reads.
+  persistence, the scheduler that decides when to resume, sub-workflows, and AI/tool node execution.
+* **Inputs:** a plain workflow object (`{ nodes, connections, settings?, pinData? }`) plus registered
+  node type handlers, or graph/run-data values passed to the in-memory partial-planning subpath.
+* **Outputs:** an execution result in the n8n shape (§3), or in-memory graph/planning values. The
+  module performs **no** I/O: no filesystem, no network, no database, no `process.env` reads.
 
 ## 2. Public surface
 
@@ -72,7 +75,49 @@ recorded, and when the run ends.
     "nodeTypes",
     "nodeTypeDescriptions",
     "runExecutionData"
-  ]
+  ],
+  "partialGraphModule": {
+    "file": "partial.mjs",
+    "packageExport": "./partial",
+    "exports": [
+      "DirectedGraph",
+      "filterDisabledNodes",
+      "findSubgraph",
+      "getNextExecutionIndex",
+      "getIncomingData",
+      "getIncomingDataFromAnyRun",
+      "cleanRunData",
+      "handleCycles",
+      "anyReachableRootHasRunData",
+      "findTriggerForPartialExecution"
+    ],
+    "directedGraphMethods": [
+      "hasNode",
+      "getNodes",
+      "getNodesByNames",
+      "getConnections",
+      "addNode",
+      "addNodes",
+      "removeNode",
+      "addConnection",
+      "addConnections",
+      "getDirectChildConnections",
+      "getChildrenRecursive",
+      "getChildren",
+      "getDirectParentConnections",
+      "getParentConnectionsRecursive",
+      "getParentConnections",
+      "getConnection",
+      "getStronglyConnectedComponents",
+      "depthFirstSearchRecursive",
+      "depthFirstSearch",
+      "clone",
+      "toIConnections",
+      "makeKey"
+    ],
+    "directedGraphStatics": ["fromWorkflow", "fromNodesAndConnections"],
+    "deliberatelyOmitted": ["toWorkflow"]
+  }
 }
 ```
 <!-- CONTRACT-SURFACE:END -->
@@ -124,6 +169,13 @@ An unregistered node type is a **passthrough** (its input items become its outpu
 handler *without* a description is deliberately the same as an unknown node type as far as
 `mainOutputCount` is concerned: `node-helpers.ts:1146-1148` returns `[]` when there is no
 `nodeTypeData`, so such a node has no error output to route to.
+
+The partial-planning API is a separate package subpath, `@lego/reconstructed-engine/partial`. It
+works in memory and performs no external I/O: `DirectedGraph` plus the source-identical graph,
+run-data, cycle, and
+trigger-selection helpers used by `WorkflowExecute.runPartialWorkflow2`. The full partial-run
+orchestrator is **not** yet exposed: `findStartNodes`, execution-stack recreation, graph rewiring,
+`DirectedGraph#toWorkflow`, and `runPartialWorkflow2` remain explicit follow-up work.
 
 ## 3. Result shape
 
@@ -183,6 +235,8 @@ Precedence (`workflow-execute.ts:2383-2400`): `canceled` > `error` > `waiting` >
 | G25 | The same `node:runIndex` arriving twice in a row aborts the run with `ApplicationError('Stopped execution because it seems to be in an endless loop')` instead of spinning | `:1564-1568` | endless-loop test |
 | G26 | With no explicit start, one enabled node wins; otherwise the first registered trigger/poll node wins (excluding the manual-chat trigger), then the exact ordered fallback types are tried. An arbitrary ordinary node is never selected. | `workflow.ts:817-860`, `constants.ts:53-59` | start-node ×6 + equivalence |
 | G27 | A restored stack entry uses its explicit `runIndex` when present; otherwise it continues at the existing `runData[node].length`. Global `executionIndex` likewise continues after the highest persisted index. | `:1555-1561`, `interfaces.ts:2675-2691` | restored runIndex test |
+| G28 | The partial-execution graph foundation (`DirectedGraph`, `filterDisabledNodes`, `findSubgraph`) matches n8n-core 2.9.1 for class surface (except declared `toWorkflow`), imports, traversals, Tarjan components, node removal/rewiring, disabled-node filtering, and subgraph search. | `partial-execution-utils/directed-graph.ts:39-566`, `filter-disabled-nodes.ts:5-18`, `find-subgraph.ts:6-120` | `partial-equivalence.test.mjs` ×8 |
+| G29 | Partial-run planning ports preserve execution-index selection, incoming-data lookup, immutable run-data cleaning, cycle-entry selection, reachable-root detection, and trigger precedence (destination → parent with run data → pinned webhook → webhook → first parent). Five exported reference helpers are runtime-differential tested; the two private incoming-data helpers are source-derived unit tests. | `run-data-utils.ts:11-26`, `get-incoming-data.ts:3-34`, `clean-run-data.ts:12-49`, `handle-cycles.ts:15-56`, `find-trigger-for-partial-execution.ts:6-112` | `partial-steps.test.mjs` ×7 |
 
 ## 5. Determinism
 
@@ -231,14 +285,13 @@ other LEGO contracts (`expression.contract.md`, `credentials.contract.md`,
 
 Every behaviour above cites its source line. The full, machine-checked list lives in the module
 sources; the contract test verifies that each cited range still exists inside the referenced file in
-`reference/n8n/` (currently `workflow-execute.ts` = 2655 lines, `get-connected-nodes.ts` = 95,
-`get-parent-nodes.ts` = 18, `map-connections-by-destination.ts` = 49).
+`reference/n8n/`, including every partial-execution utility named by G28-G29.
 
 ## 9. Verification hooks
 
 | Command | Covers |
 | :--- | :--- |
-| `npm run engine:test` | this contract (98 cases: 70 unit + 4 graph-port equivalence + 17 against the real engine + 7 contract conformance) |
-| `npm run engine:test:strict` | the same 98 cases with the pinned reference runtime mandatory; zero parity skips allowed |
+| `npm run engine:test` | this contract (114 cases: 70 engine unit + 4 graph parity + 17 execution parity + 8 partial-graph parity + 7 partial-step unit/parity + 8 contract conformance) |
+| `npm run engine:test:strict` | the same 114 cases with the pinned reference runtime mandatory; zero parity skips allowed |
 | `bash tests/integration/run_gate.sh --offline-only` | stage 3 runs the suite above; stages 1-2 run the other LEGO gates |
 | `node tests/compatibility/contract_conformance.mjs` | asserts this contract file is present |

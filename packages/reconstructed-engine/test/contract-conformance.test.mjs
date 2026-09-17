@@ -108,6 +108,18 @@ test('contract §2: the partial-graph module surface matches partial.mjs', { tim
 		[...declared.exports].sort(),
 		'contract §2 partialGraphModule.exports drifted from partial.mjs',
 	);
+	const packageJson = JSON.parse(readFileSync(join(PKG, 'package.json'), 'utf8'));
+	assert.equal(
+		packageJson.exports?.[declared.packageExport],
+		`./${declared.file}`,
+		'the declared partial module must be reachable through the package exports map',
+	);
+	const viaPackageSubpath = await import(`${packageJson.name}${declared.packageExport.slice(1)}`);
+	assert.deepEqual(
+		Object.keys(viaPackageSubpath).sort(),
+		[...declared.exports].sort(),
+		'the partial package subpath must resolve to the declared module',
+	);
 
 	// class surface: the port is allowed to omit only what the contract says it omits
 	const actualMethods = Object.getOwnPropertyNames(actual.DirectedGraph.prototype).filter(
@@ -189,7 +201,7 @@ test('contract §3: the declared status vocabulary is a subset of n8n ExecutionS
 
 test('contract §7: declared non-goals are absent from the implementation (not just from prose)', () => {
 	const { nonGoals } = contractBlock('NONGOALS');
-	const code = stripComments(runnerSource) + stripComments(graphSource);
+	const code = stripComments(runnerSource) + stripComments(graphSource) + stripComments(partialSource);
 
 	for (const token of nonGoals) {
 		assert.equal(

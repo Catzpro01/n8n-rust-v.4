@@ -8,7 +8,8 @@
   "main": "runner.mjs",
   "exports": {
     ".": "./runner.mjs",
-    "./graph": "./graph.mjs"
+    "./graph": "./graph.mjs",
+    "./partial": "./partial.mjs"
   },
   "scripts": {
     "test": "node --test --test-force-exit test/*.test.mjs",

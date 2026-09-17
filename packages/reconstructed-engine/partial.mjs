@@ -6,21 +6,27 @@
  *   reference/n8n/packages/core/src/execution-engine/partial-execution-utils/directed-graph.ts:39-566
  *   reference/n8n/packages/core/src/execution-engine/partial-execution-utils/filter-disabled-nodes.ts:5-18
  *   reference/n8n/packages/core/src/execution-engine/partial-execution-utils/find-subgraph.ts:6-120
+ *   reference/n8n/packages/core/src/execution-engine/partial-execution-utils/run-data-utils.ts:11-26
+ *   reference/n8n/packages/core/src/execution-engine/partial-execution-utils/get-incoming-data.ts:3-34
+ *   reference/n8n/packages/core/src/execution-engine/partial-execution-utils/clean-run-data.ts:12-49
+ *   reference/n8n/packages/core/src/execution-engine/partial-execution-utils/handle-cycles.ts:15-56
+ *   reference/n8n/packages/core/src/execution-engine/partial-execution-utils/find-trigger-for-partial-execution.ts:6-112
  *
  * Why a second graph representation exists at all is explained in the reference header
  * (`directed-graph.ts:20-38`): `Workflow` stores the graph in a deeply nested, normalized format
  * that does not lend itself to editing or building graphs incrementally, so partial execution
  * imports it into an adjacency list, edits it, and exports it back.
  *
- * NOT ported here (named so nobody assumes it is):
+ * NOT ported here (named so nobody assumes the editor's partial run is complete):
  *   - `DirectedGraph#toWorkflow` (`directed-graph.ts:456-463`) constructs a `Workflow` instance,
  *     which belongs to the Workflow LEGO (`packages/workflow-lego`, `contracts/workflow.contract.md`).
- *   - The remaining partial-execution steps (`findTriggerForPartialExecution`, `findStartNodes`,
- *     `cleanRunData`, `handleCycles`, `recreateNodeExecutionStack`, `rewireGraph`) — they build on
- *     this module and are the next slice.
+ *   - `findStartNodes`, `getSourceDataGroups`, `recreateNodeExecutionStack`, `rewireGraph`, and the
+ *     `WorkflowExecute#runPartialWorkflow2` orchestrator — these are the remaining planning/execution
+ *     slice required to wire "Execute step" end to end.
  *
- * Everything below is checked against the REAL implementations exported by the pinned n8n-core
- * 2.9.1 in `test/partial-equivalence.test.mjs`.
+ * Exported upstream helpers are checked against the REAL n8n-core 2.9.1 implementations in
+ * `test/partial-{equivalence,steps}.test.mjs`; the two module-private incoming-data helpers are
+ * source-derived unit tests and are identified as such in the formal contract.
  */
 
 import assert from 'node:assert';

@@ -11,7 +11,8 @@
  *   getIncomingData / getIncomingDataFromAnyRun   get-incoming-data.ts:3-34         (unit only —
  *                                      the reference does not export these two)
  *
- * Skipped automatically when the pinned runtime is absent (`scripts/setup-reference-runtime.sh`).
+ * `engine:test` skips when the pinned runtime is absent; `engine:test:strict` fails instead.
+ * Install it with `scripts/setup-reference-runtime.sh`.
  * run: npm run engine:test
  */
 import { test } from 'node:test';
@@ -37,10 +38,14 @@ const REPO = join(HERE, '..', '..', '..');
 const RUNTIME = process.env.LEGO_LIVE_RUNTIME ?? join(REPO, '.runtime', 'node_modules');
 const runtimeReady =
 	existsSync(join(RUNTIME, 'n8n-core', 'package.json')) &&
+	existsSync(join(RUNTIME, 'n8n-workflow', 'package.json')) &&
 	existsSync(join(RUNTIME, 'n8n-nodes-base', 'package.json'));
-const skipReason = runtimeReady
-	? false
-	: `pinned reference runtime not installed at ${RUNTIME} (run scripts/setup-reference-runtime.sh)`;
+const missingRuntimeMessage =
+	`pinned reference runtime not installed at ${RUNTIME} (run scripts/setup-reference-runtime.sh)`;
+if (!runtimeReady && process.env.REQUIRE_REFERENCE_RUNTIME === '1') {
+	throw new Error(missingRuntimeMessage);
+}
+const skipReason = runtimeReady ? false : missingRuntimeMessage;
 
 const req = runtimeReady ? createRequire(join(RUNTIME, 'package.json')) : null;
 const core = runtimeReady ? req('n8n-core') : null;

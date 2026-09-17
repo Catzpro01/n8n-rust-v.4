@@ -12,7 +12,8 @@
  * on both sides and compares node sets, connection sets, traversals, cycle detection, node removal,
  * disabled-node filtering and the subgraph search.
  *
- * Skipped automatically when the pinned runtime is absent (`scripts/setup-reference-runtime.sh`).
+ * `engine:test` skips when the pinned runtime is absent; `engine:test:strict` fails instead.
+ * Install it with `scripts/setup-reference-runtime.sh`.
  * run: npm run engine:test
  */
 import { test } from 'node:test';
@@ -34,9 +35,12 @@ const RUNTIME = process.env.LEGO_LIVE_RUNTIME ?? join(REPO, '.runtime', 'node_mo
 const runtimeReady =
 	existsSync(join(RUNTIME, 'n8n-core', 'package.json')) &&
 	existsSync(join(RUNTIME, 'n8n-workflow', 'package.json'));
-const skipReason = runtimeReady
-	? false
-	: `pinned reference runtime not installed at ${RUNTIME} (run scripts/setup-reference-runtime.sh)`;
+const missingRuntimeMessage =
+	`pinned reference runtime not installed at ${RUNTIME} (run scripts/setup-reference-runtime.sh)`;
+if (!runtimeReady && process.env.REQUIRE_REFERENCE_RUNTIME === '1') {
+	throw new Error(missingRuntimeMessage);
+}
+const skipReason = runtimeReady ? false : missingRuntimeMessage;
 
 const req = runtimeReady ? createRequire(join(RUNTIME, 'package.json')) : null;
 const core = runtimeReady ? req('n8n-core') : null;
