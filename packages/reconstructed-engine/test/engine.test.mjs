@@ -1173,6 +1173,48 @@ test('CONFORMANCE resume: the snapshot survives a JSON round trip, like a real p
 	assert.deepEqual(payload(resumed.resultData.runData.After[0].data.main[0]), [{ v: 1 }]);
 });
 
+test('CONFORMANCE restored runIndex continues existing runData unless the stack overrides it (:1555-1561)', { timeout: 5000 }, async () => {
+	const node = { name: 'Only', type: 'custom.only', parameters: {} };
+	const priorTask = {
+		startTime: 1,
+		executionIndex: 7,
+		source: [null],
+		hints: [],
+		executionTime: 0,
+		executionStatus: 'success',
+		data: { main: [[item({ prior: true })]] },
+	};
+	const stateWith = (runIndex) => ({
+		version: 1,
+		resultData: { runData: { Only: [structuredClone(priorTask)] }, lastNodeExecuted: 'Only' },
+		executionData: {
+			nodeExecutionStack: [{
+				node: { ...node },
+				data: { main: [[item({ resumed: true })]] },
+				source: { main: [null] },
+				...(runIndex === undefined ? {} : { runIndex }),
+			}],
+			waitingExecution: {},
+			waitingExecutionSource: {},
+		},
+	});
+
+	for (const [override, expected] of [[undefined, 1], [9, 9]]) {
+		let observedRunIndex;
+		const engine = new WorkflowExecutionEngine({ nodes: [node], connections: {} }, stateWith(override));
+		engine.registerNodeType('custom.only', async (_node, items, ctx) => {
+			observedRunIndex = ctx.runIndex;
+			return items;
+		});
+
+		const result = await engine.processRunExecutionData();
+
+		assert.equal(observedRunIndex, expected);
+		assert.equal(result.resultData.runData.Only.length, 2);
+		assert.equal(result.resultData.runData.Only[1].executionIndex, 8, 'global executionIndex also continues');
+	}
+});
+
 test('CONFORMANCE handleWaitingState: clears waitTill, disables the parked node, pops its entry (:1285-1302)', { timeout: 5000 }, async () => {
 	const paused = await waitEngine().runWorkflow();
 	const state = JSON.parse(JSON.stringify(paused.runExecutionData));
@@ -1199,9 +1241,9 @@ test('CONFORMANCE handleWaitingState is a no-op for an execution that is not wai
 	assert.equal(state.executionData.nodeExecutionStack[0].node.disabled, undefined, 'nothing is disabled');
 });
 
-test('CONFORMANCE a disabled node reached with no usable input records nothing and ends the branch (:909-920, :1769-1774)', { timeout: 5000 }, async () => {
-	// Two input slots, only the second one is ever fed: the release pass hands the node
-	// [null, items], and handleDisabledNode returns `undefined` for a null first input.
+test('CONFORMANCE a disabled multi-input node passes only its first slot; a missing first slot becomes empty output (:909-920, :2192-2196)', { timeout: 5000 }, async () => {
+	// Output 0 feeds input slot 1. Once the stack drains, the missing slot 0 is normalized to [];
+	// handleDisabledNode must pass that first slot through, not the populated second slot.
 	const engine = new WorkflowExecutionEngine({
 		nodes: [
 			{ name: 'Manual Trigger', type: 'n8n-nodes-base.manualTrigger', parameters: {} },
@@ -1209,7 +1251,7 @@ test('CONFORMANCE a disabled node reached with no usable input records nothing a
 			{ name: 'After', type: 'n8n-nodes-base.noOp', parameters: {} },
 		],
 		connections: {
-			'Manual Trigger': { main: [[], [conn('Fan In', 1)]] },
+			'Manual Trigger': { main: [[conn('Fan In', 1)]] },
 			'Fan In': { main: [[conn('After')]] },
 		},
 	});
@@ -1219,19 +1261,23 @@ test('CONFORMANCE a disabled node reached with no usable input records nothing a
 	const result = await engine.runWorkflow();
 
 	assert.equal(result.status, 'success');
-	assert.equal(result.resultData.runData['Fan In'], undefined, 'no output object at all -> no runData entry');
-	assert.equal(result.resultData.runData.After, undefined, 'and the branch ends');
-	assert.equal(result.resultData.lastNodeExecuted, 'Manual Trigger', ':1738 — a null output does not count');
+	assert.deepEqual(result.resultData.runData['Fan In'][0].data.main, [[]]);
+	assert.equal(result.resultData.runData.After, undefined, 'the empty first-slot output ends the branch');
+	assert.equal(result.resultData.lastNodeExecuted, 'Fan In', ':1738 — an empty output object still counts');
 });
 
-test('CONFORMANCE a disabled trigger is not chosen as the start node (workflow.ts:824, :839, :853)', { timeout: 5000 }, async () => {
+test('CONFORMANCE a disabled trigger is not chosen and ordinary nodes are not fallback starts (workflow.ts:824, :839, :853)', { timeout: 5000 }, async () => {
 	const wf = linear();
 	wf.nodes[0].disabled = true;
 	const engine = new WorkflowExecutionEngine(wf);
 	engine.registerNodeType('n8n-nodes-base.code', async (_n, items) => items);
 	engine.registerNodeType('n8n-nodes-base.set', async (_n, items) => items);
 
-	assert.equal(engine.findStartNode(), 'Code Node');
+	assert.equal(engine.findStartNode(), undefined);
+	await assert.rejects(
+		() => engine.runWorkflow(),
+		(error) => error.name === 'ApplicationError' && error.message === 'No node to start the workflow from could be found',
+	);
 });
 
 /* ------------------------------------------------------------------ *

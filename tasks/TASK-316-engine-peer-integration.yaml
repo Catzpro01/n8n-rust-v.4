@@ -1,0 +1,89 @@
+id: TASK-316-engine-peer-integration
+agent: arena-worker (session arena/01a0af55-n8n-rust-v-4)
+lego: workflow
+module: reconstructed-engine
+phase: 2
+
+# Continued autonomously under STANDING-WORKER-PROTOCOL after the pre-task sweep found no peer PR
+# awaiting review (PR #12 is this session's own PR). The remote task/vote store remains unreachable
+# from this sandbox, so no self-vote or duplicate vote was attempted.
+
+trigger: >
+  Peer branch arena/01a0aee7-n8n-rust-v-4 published three additive execution-engine increments
+  after this branch's corrected start/disabled baseline: retry and error routing (bf923196),
+  wait/resume semantics (173cbe58), and executeOnce/input guards/graph helpers (bec5a034).
+  Integrate the independently verified work without regressing exact n8n start-node behavior,
+  strict reference-runtime enforcement, ZERO-RUST policy, or immutable frontend boundaries.
+
+allowed_paths:
+  - packages/reconstructed-engine/**
+  - contracts/execution-engine.contract.md
+  - README.md
+  - docs/isolation/evidence/**
+  - docs/isolation/workflow-verification.md
+  - tasks/TASK-316-engine-peer-integration.yaml
+  - results/TASK-316-engine-peer-integration.md
+
+forbidden_paths:
+  - reference/n8n/**
+  - crates/**
+  - apps/**
+  - packages/workflow-lego/src/**
+  - packages/editor-ui/**
+  - '**/*.vue'
+  - '**/*.css'
+  - '**/*.scss'
+
+operations:
+  - name: independent_peer_verification
+    args:
+      peer_tip: bec5a0348dcbe10d19ea95a7a0a87a638e7652b4
+      command: "REQUIRE_REFERENCE_RUNTIME=1 node --test --test-force-exit packages/reconstructed-engine/test/*.test.mjs"
+      result: "91/91 pass, 0 skipped, exit 0 in an isolated git archive"
+  - name: integrate_peer_series
+    args:
+      commits:
+        - bf9231960bae69310e8b13fee5984a12a507f607
+        - 173cbe58c16ad88810cffc3f35d01025a792b693
+        - bec5a0348dcbe10d19ea95a7a0a87a638e7652b4
+      preserved_local_semantics:
+        - exact Workflow#getStartNode ordering and ApplicationError
+        - strict reference-runtime merge gate
+        - disabled-node first-input passthrough
+  - name: integration_corrections
+    args:
+      details:
+        - "restored runIndex now follows workflow-execute.ts:1555-1561 (stack override, else existing runData length)"
+        - "replaced a non-exercising disabled multi-input test with a real input-1 fixture"
+        - "added real n8n-core equivalence for missing input 0 -> disabled empty passthrough"
+        - "updated formal contract to G1-G27 and corrected stale wait/resume/start/cycle wording"
+  - name: regenerate_evidence
+    args:
+      command: npm run verify
+      result: "11/11 PASS, local live 7/7, behavior change none"
+
+verification:
+  engine_strict: "npm run engine:test:strict -> 98 tests, 98 pass, 0 fail, 0 skipped, exit 0 (70 unit + 4 graph + 17 real-engine + 7 contract)"
+  workflow_gate: "npm run verify -> 11/11 PASS; local live runtime 7/7 PASS"
+  conformance: "node tests/compatibility/contract_conformance.mjs -> 22/22 PASS"
+  integration_offline: "run_gate.sh --offline-only -> stages 1-3 PASS; exit 2 only because external live 11/11 is intentionally not run"
+  result_integrity: "47/47 PASS before this result is added"
+  boundary: "boundary audit PASS; isolation:check PASS"
+  rust: "rust:guard PASS; no .rs or Cargo.toml under crates/apps"
+  fixtures: "workflow reference fixtures match: 8 checksum, 6 diff, 6 shape, 6 rename, 9 traversal"
+  demo: "packages/reconstructed-engine/test-run.mjs -> success"
+
+merge_condition:
+  - peer_tip_independently_verified
+  - strict_engine_suite_pass
+  - contract_conformance_pass
+  - workflow_gate_pass
+  - boundary_and_zero_rust_pass
+  - reference_tree_unchanged
+  - editor_ui_unchanged
+
+known_external_limit:
+  - >
+    The PostgreSQL-backed external 11/11 stage cannot run in this sandbox because Docker is absent;
+    offline gate exit 2 is therefore INCONCLUSIVE rather than a product failure. The local pinned
+    runtime verification did run and passed 7/7 through npm run verify.

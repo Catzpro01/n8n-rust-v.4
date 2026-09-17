@@ -17,6 +17,7 @@
  *                passed through (used on resume, and by `:1199-1201` in runNode)
  *     :990-1002  handleExecuteOnce(): `executeOnce` narrows every input slot to its first item
  *     :1219      …and it is applied right after the disabled check, before the node runs
+ *     :1555-1561 runIndex comes from the stack override, otherwise the node's existing runData length
  *     :1564-1568 the same `node:runIndex` twice in a row aborts the run ('endless loop')
  *     :1580-1584 ensureInputData(): a node whose inputs are not ready goes back on the stack
  *     :2315-2348 ensureInputData(): a slot whose ancestors are all disabled never waits
@@ -30,8 +31,8 @@
  *                retried the same number of times ("soft" failure)
  *     :1720-1722 onError === 'continueErrorOutput' → handleNodeErrorOutput()
  *     :1736-1741 assignPairedItems, then `if (nodeSuccessData) lastNodeExecuted = node`
- *     :1769-1774 a node with no output object at all records nothing and ends its branch —
- *                unless it parked the execution, which must be recorded to be resumable
+ *     :1769-1774 a `null` node output records nothing and ends its branch — unless it parked
+ *                the execution, which must be recorded to be resumable
  *     :1821      `executionStatus: waitTill ? 'waiting' : 'success'`
  *     :1823-1900 error path: taskData.executionStatus = 'error' + taskData.error;
  *                continueOnFail / onError ∈ {continueRegularOutput, continueErrorOutput} passes the
@@ -59,9 +60,8 @@
  *   - expressions `{{ … }}`, credentials, sub-workflows, AI/routing nodes, and dynamically
  *     computed (`{{ }}`) node `outputs`. `waitTill` pause/resume IS reconstructed; what is not is
  *     the scheduler that decides WHEN to resume (n8n's WaitTracker + the database).
- *   - Cycle REJECTION. n8n refuses cyclic graphs at validation time (Validation LEGO —
- *     contracts/validation.contract.md §CycleDetection). This engine still needs a local
- *     safety net so a graph that slipped through cannot hang the process: see maxExecutionsFor().
+ *   - Full loop-node semantics. Cycles are legal in n8n workflows, so the local execution bound is
+ *     only a fail-safe until loop nodes and their reset data are reconstructed end-to-end.
  */
 
 import { getConnectedNodes, getHighestNode, getParentNodes } from './graph.mjs';
@@ -69,6 +69,24 @@ import { getConnectedNodes, getHighestNode, getParentNodes } from './graph.mjs';
 export { getConnectedNodes, getHighestNode, getParentNodes };
 
 const MAIN = 'main';
+
+// `constants.ts:53-59` — the exact fallback order used by `Workflow#__getStartNode`.
+const STARTING_NODE_TYPES = [
+	'n8n-nodes-base.manualTrigger',
+	'n8n-nodes-base.executeWorkflowTrigger',
+	'n8n-nodes-base.errorTrigger',
+	'n8n-nodes-base.evaluationTrigger',
+	'n8n-nodes-base.formTrigger',
+];
+const MANUAL_CHAT_TRIGGER_LANGCHAIN_NODE_TYPE = '@n8n/n8n-nodes-langchain.manualChatTrigger';
+
+/** Standalone counterpart of n8n-workflow's ApplicationError; intentionally not exported. */
+class ApplicationError extends Error {
+	constructor(message) {
+		super(message);
+		this.name = 'ApplicationError';
+	}
+}
 
 /**
  * 1:1 port of `common/map-connections-by-destination.ts:5-49`.
@@ -144,10 +162,11 @@ export class WorkflowExecutionEngine {
 	 *
 	 * @param {string} typeName
 	 * @param {Function} handler `(node, items, ctx) => items[]`
-	 * @param {object} [description] the parts of the n8n node type description the engine needs:
-	 *   `requiredInputs` (`number | number[]`, interfaces.ts:2355) and `inputs` (input type list,
-	 *   used for its `.length`). Without a description the engine falls back to the number of
-	 *   connected input slots.
+	 * @param {object} [description] the parts of the n8n node type the engine needs:
+	 *   `requiredInputs` (`number | number[]`, interfaces.ts:2355), `inputs` (input type list,
+	 *   used for its `.length`), `trigger` / `poll` (presence marks a start node), and `name`
+	 *   (used to exclude the manual-chat trigger). Without an input description the engine falls
+	 *   back to the number of connected input slots.
 	 */
 	registerNodeType(typeName, handler, description = null) {
 		this.nodeTypes.set(typeName, handler);
@@ -237,12 +256,12 @@ export class WorkflowExecutionEngine {
 	}
 
 	/**
-	 * SAFETY NET, not n8n behaviour. n8n assumes an acyclic graph because the Validation
-	 * LEGO rejects cycles before execution; a naive BFS on a cyclic graph here never
-	 * terminates and, being synchronous, starves the event loop so no watchdog can fire.
-	 * Bound: a node may run at most once per input slot (1 for single-input nodes), which
-	 * guarantees termination (total runs ≤ Σ max(1, inputs)) without ever firing on a
-	 * linear, fan-out or diamond graph — those execute each node exactly once.
+	 * SAFETY NET, not full n8n loop behaviour. n8n permits cyclic workflows and coordinates
+	 * intentional loops with loop-node reset data; that larger execution context is not yet
+	 * reconstructed here. A naive traversal of an accidental cycle would never terminate and,
+	 * being synchronous, would starve the event loop so no watchdog could fire. This temporary
+	 * bound allows at most one run per input slot (one for a single-input node), guaranteeing
+	 * termination without firing on linear, fan-out, or diamond graphs.
 	 */
 	maxExecutionsFor(nodeName) {
 		return Math.max(1, this.numberOfInputs(nodeName));
@@ -408,18 +427,40 @@ export class WorkflowExecutionEngine {
 		return false;
 	}
 
-	/** Start node: explicit argument wins, else the n8n-ish trigger heuristic. */
+	/**
+	 * Start-node selection. An explicit start name is the `WorkflowExecute.run()` input and wins
+	 * unchanged (`workflow-execute.ts:123-138`). With no explicit start, this is the no-destination
+	 * branch of `Workflow#getStartNode` / `#__getStartNode` (`workflow.ts:817-860,867-889`):
+	 * one enabled node wins; then the first enabled trigger/poll node; then the exact ordered list
+	 * in `STARTING_NODE_TYPES`. There is deliberately no "first arbitrary node" fallback.
+	 */
 	findStartNode(startNodeName) {
 		if (startNodeName) return startNodeName;
-		// Heuristic stand-in for `Workflow#getStartNode` (workflow.ts:806-861): the real one asks the
-		// node type descriptions for `trigger`/`poll`, which this engine does not load. What is
-		// copied faithfully is that a `disabled` node is never chosen (`:824`, `:839`, `:853`).
-		const candidates = [...this.nodes.entries()].filter(([, node]) => node.disabled !== true);
-		for (const [name, node] of candidates) {
-			const type = node.type ?? '';
-			if (type.includes('trigger') || type.includes('Manual') || type.includes('Start')) return name;
+
+		const nodeNames = [...this.nodes.keys()];
+		if (nodeNames.length === 1) {
+			const onlyNode = this.nodes.get(nodeNames[0]);
+			if (onlyNode && !onlyNode.disabled) return onlyNode.name; // workflow.ts:822-827
 		}
-		return candidates[0]?.[0];
+
+		for (const nodeName of nodeNames) {
+			const node = this.nodes.get(nodeName);
+			const nodeType = this.nodeTypeDescriptions.get(node?.type) ?? {};
+			if ((nodeType.name ?? node?.type) === MANUAL_CHAT_TRIGGER_LANGCHAIN_NODE_TYPE) continue;
+			if (nodeType.trigger !== undefined || nodeType.poll !== undefined) {
+				if (node?.disabled === true) continue;
+				return nodeName;
+			}
+		}
+
+		const sortedNodes = [...this.nodes.values()].sort(
+			(a, b) => STARTING_NODE_TYPES.indexOf(a.type) - STARTING_NODE_TYPES.indexOf(b.type),
+		);
+		for (const node of sortedNodes) {
+			if (STARTING_NODE_TYPES.includes(node.type) && node.disabled !== true) return node.name;
+		}
+
+		return undefined;
 	}
 
 	/**
@@ -634,7 +675,7 @@ export class WorkflowExecutionEngine {
 			const startName = this.findStartNode(startNodeName);
 			const startNode = startName ? this.nodes.get(startName) : undefined;
 			if (!startNode) {
-				throw new Error('No nodes found in workflow definition');
+				throw new ApplicationError('No node to start the workflow from could be found');
 			}
 			/** workflow-execute.ts:157-171 */
 			stack = [
@@ -692,7 +733,9 @@ export class WorkflowExecutionEngine {
 					});
 					continue;
 				}
-				const runIndex = alreadyRun;
+
+				/** `:1555-1561` — an explicit stack runIndex wins; otherwise continue runData. */
+				const runIndex = executionData.runIndex ?? runData[node.name]?.length ?? 0;
 
 				/**
 				 * `:1564-1568` — if the very same `node:runIndex` comes around twice in a row the
@@ -877,12 +920,10 @@ export class WorkflowExecutionEngine {
 				}
 
 				/**
-				 * `:1769-1774` — a node that returned *no* output object at all (`null`/`undefined`,
-				 * as opposed to an empty one) ends its branch and records nothing at all: the
-				 * reference `continue`s before `taskData` is ever pushed. Two exceptions, both
-				 * because the reference reaches this line only on the success path (it sits inside
-				 * the `try`, so a thrown error skips it): a failed node must record its error, and a
-				 * waiting node must be recorded so the run can be resumed from it.
+				 * `:1769-1774` — a node whose output object is exactly `null` (as opposed to
+				 * `undefined` or an empty output array) ends its branch and records nothing: the
+				 * reference `continue`s before `taskData` is pushed. A failed node must record its
+				 * error, and a waiting node must be recorded so the run can be resumed from it.
 				 */
 				if (executionError === undefined && nodeSuccessData === null && waitTill === undefined) {
 					continue;

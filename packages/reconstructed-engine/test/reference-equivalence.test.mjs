@@ -381,6 +381,31 @@ test('EQUIVALENCE disabled node: first input passes through and pin data is igno
 	assert.deepEqual(shape(reconstructed), shape(reference));
 });
 
+const DISABLED_SECOND_INPUT = {
+	id: 'eq-disabled-second-input',
+	name: 'Equivalence — disabled node receives only input 1',
+	nodes: [
+		manualTrigger('t', 'Manual Trigger', [0, 0]),
+		{ ...noOp('d', 'Disabled', [200, 0]), disabled: true },
+		noOp('a', 'After', [400, 0]),
+	],
+	connections: {
+		'Manual Trigger': { main: [[edge('Disabled', 1)]] },
+		Disabled: { main: [[edge('After')]] },
+	},
+};
+
+test('EQUIVALENCE disabled multi-input node: a missing first slot becomes empty output', { timeout: 120000, skip: skipReason }, async () => {
+	const api = await loadReference();
+	const reference = (await api.run(DISABLED_SECOND_INPUT)).resultData;
+	const reconstructed = (await reconstructedRun(DISABLED_SECOND_INPUT)).resultData;
+
+	assert.deepEqual(reference.runData.Disabled[0].data.main, [[]], 'sanity: reference passes only slot 0');
+	assert.deepEqual(reconstructed.runData.Disabled[0].data.main, reference.runData.Disabled[0].data.main);
+	assert.equal(reconstructed.runData.After, undefined);
+	assert.deepEqual(shape(reconstructed), shape(reference));
+});
+
 test('EQUIVALENCE pinData: the pinned node is not executed and its pinned output flows on', { timeout: 120000, skip: skipReason }, async () => {
 	const api = await loadReference();
 	const reference = (await api.run(PINNED)).resultData;

@@ -5,7 +5,7 @@
 `packages/workflow/src/{interfaces,execution-status}.ts`) and runtime comparison against the pinned
 `n8n-core` / `n8n-workflow` **2.9.1** (the dependency set of n8n 2.9.4).
 **Owner:** Agent 1 (`workflow`) — reconstruction lives in `packages/reconstructed-engine/`
-**Status:** TESTED — 91 regression cases, 14 of them executed against the real engine
+**Status:** TESTED — 98 regression cases, 17 of them executed against the real engine
 **Rule basis:** `PROJECT_RULES.md` #1 (ZERO RUST → JavaScript/TypeScript, 1:1 from source) and #5
 (every module must have a clear boundary and a formal contract).
 
@@ -21,11 +21,11 @@
 The module reconstructs **the execution loop only**: which node runs next, with what input, what is
 recorded, and when the run ends.
 
-* **In scope:** traversal order, fan-in waiting, item propagation, run data recording, error and
-  cancellation semantics, pin data, `alwaysOutputData`, `pairedItem` decoration, graph traversal
-  helpers.
+* **In scope:** start-node selection, traversal order, fan-in waiting, item propagation, run data
+  recording, error/retry/cancellation semantics, pin data, `alwaysOutputData`, `executeOnce`,
+  `pairedItem` decoration, wait-state parking/resume, and graph traversal helpers.
 * **Out of scope (explicit non-goals, see §7):** node implementations, expressions, credentials,
-  persistence, wait/resume, sub-workflows, AI/routing nodes.
+  persistence, the scheduler that decides when to resume, sub-workflows, and AI/routing nodes.
 * **Inputs:** a plain workflow object (`{ nodes, connections, settings?, pinData? }`) in the n8n file
   format, plus registered node type handlers.
 * **Outputs:** a result object in the n8n shape (§3). The module performs **no** I/O: no filesystem,
@@ -87,6 +87,7 @@ type NodeHandler = (
     inputData: INodeExecutionData[][];  // ALL input slots, indexed like the connection map
     source: Array<ISourceData | null>;
     runIndex: number;
+    putExecutionToWait(waitTill: Date): void;
   },
 ) => INodeExecutionData[] | Promise<INodeExecutionData[]>;
 
@@ -95,6 +96,9 @@ registerNodeType(typeName: string, handler: NodeHandler, description?: {
   inputs?: string[];                    // used for its .length
   outputs?: Array<string | { type: string }>;  // node-helpers.ts:1140-1196 — used to find the
                                         // error output when onError is 'continueErrorOutput'
+  trigger?: unknown;                    // presence identifies a trigger start node
+  poll?: unknown;                       // presence identifies a poll start node
+  name?: string;                        // excludes the manual-chat trigger from auto-start
 }): void
 
 // node-helpers.ts:1140-1196 — how many `main` outputs a node has
@@ -146,13 +150,13 @@ handler *without* a description is deliberately the same as an unknown node type
 ```
 <!-- CONTRACT-STATUS:END -->
 
-Precedence (`workflow-execute.ts:2383-2400`): `canceled` > `error` > `success`.
+Precedence (`workflow-execute.ts:2383-2400`): `canceled` > `error` > `waiting` > `success`.
 
 ## 4. Behavioural guarantees
 
 | # | Guarantee | Reference | Test |
 | :-- | :--- | :--- | :--- |
-| G1 | `runWorkflow` **always terminates**, even on a cyclic graph (a node runs at most `max(1, input slots)` times per run; dropped arrivals are reported in `cycleSkips`) | safety net; n8n rejects cycles at validation time | `engine.test.mjs` CYCLE GUARD ×2 |
+| G1 | `runWorkflow` **always terminates**, even on a cyclic graph (a node runs at most `max(1, input slots)` times per run; dropped arrivals are reported in `cycleSkips`) | local fail-safe pending full n8n loop-node/reset-data semantics | `engine.test.mjs` CYCLE GUARD ×2 |
 | G2 | A node with more than one input slot runs **once** with all inputs; missing inputs are released with `[]` only once the stack drains | `:405-560`, `:2079-2160` | CONFORMANCE fan-in ×2 |
 | G3 | A node is not released while **any ancestor** is still waiting | `:2136-2142` | ancestor test |
 | G4 | `requiredInputs` (count or index list) is honoured for `executionOrder: 'v1'` and ignored for `'v0'` | `:2107-2177`, `interfaces.ts:2355` | requiredInputs ×4 |
@@ -173,10 +177,12 @@ Precedence (`workflow-execute.ts:2383-2400`): `canceled` > `error` > `success`.
 | G19 | A node that calls `ctx.putExecutionToWait(date)` parks the run: `executionStatus: 'waiting'`, the node goes back on the stack, nothing downstream runs, `status: 'waiting'`, and the result carries `waitTill` + a resumable `runExecutionData` | `:1821`, `:1948-1959`, `:2391-2396`, `:2435-2436`, `base-execute-context.ts:107-112` | waitTill ×3 + equivalence |
 | G20 | Resuming (`processRunExecutionData`) clears `waitTill`, marks the parked node `disabled` and pops its `waiting` entry, so the node does not run again and does not look like it ran twice | `:1285-1302`, `:1400-1412` | resume ×2 + equivalence |
 | G21 | A `disabled` node is never executed — not even for pin data — and passes its first main input through | `:909-920`, `:1199-1201` | disabled-node ×2 + equivalence |
-| G22 | A node whose output object is `null`/`undefined` (as opposed to empty) records **no** `runData` entry and ends its branch, unless it errored or parked | `:1769-1774` | null-output test |
+| G22 | A disabled multi-input node passes through **only its first main slot**. If that slot never arrived, fan-in release normalizes it to `[]`, so the node records an empty output and the branch ends even when a later slot carried items. | `:909-920`, `:2192-2196`, `:2013-2019` | disabled multi-input test + equivalence |
 | G23 | A node with `executeOnce: true` is handed only the first item of every input slot | `:990-1002`, `:1219` | executeOnce ×2 + equivalence |
 | G24 | A node is only run when its inputs are ready; a slot whose ancestors are all disabled never waits, and an entry that is not ready goes back on the stack | `:2315-2348`, `:1580-1584`, `workflow.ts:492-568` | ensureInputData ×3 + graph equivalence |
 | G25 | The same `node:runIndex` arriving twice in a row aborts the run with `ApplicationError('Stopped execution because it seems to be in an endless loop')` instead of spinning | `:1564-1568` | endless-loop test |
+| G26 | With no explicit start, one enabled node wins; otherwise the first registered trigger/poll node wins (excluding the manual-chat trigger), then the exact ordered fallback types are tried. An arbitrary ordinary node is never selected. | `workflow.ts:817-860`, `constants.ts:53-59` | start-node ×6 + equivalence |
+| G27 | A restored stack entry uses its explicit `runIndex` when present; otherwise it continues at the existing `runData[node].length`. Global `executionIndex` likewise continues after the highest persisted index. | `:1555-1561`, `interfaces.ts:2675-2691` | restored runIndex test |
 
 ## 5. Determinism
 
@@ -187,7 +193,7 @@ same item payloads. The only non-deterministic fields are wall-clock (`startTime
 
 | Situation | Behaviour |
 | :--- | :--- |
-| no nodes in the workflow | rejects with `Error('No nodes found in workflow definition')` |
+| no executable automatic start (empty workflow or multiple ordinary nodes) | rejects with `ApplicationError('No node to start the workflow from could be found')` |
 | dangling connection | rejects with `ApplicationError('Destination node not found')` + `extra.{sourceNodeName,destinationNodeName}` |
 | node handler throws | **does not** reject: recorded as `executionStatus: 'error'`, `resultData.error` set, `status: 'error'` |
 | cyclic graph | terminates; `cyclic: true`, `cycleSkips[]` lists the dropped arrivals |
@@ -215,9 +221,10 @@ given as an expression string, the *scheduler* that decides when a paused execut
 `IRunExecutionData` fields it does not maintain (`contextData`, `metadata`, `manualData`, `pushRef`,
 `runtimeData`), and node implementations themselves.
 
-`waitTill` pause **and** resume are in scope and implemented (G19-G21) — the earlier revision of
+`waitTill` pause **and** resume are in scope and implemented (G19-G20) — the earlier revision of
 this contract listed them as a non-goal, and the conformance test forced this section to be
-corrected when the implementation started using the name. Each is another LEGO's contract (`expression.contract.md`, `credentials.contract.md`,
+corrected when the implementation started using the name. The remaining capabilities belong to
+other LEGO contracts (`expression.contract.md`, `credentials.contract.md`,
 `execution-data.contract.md`, `persistence.contract.md`, `node.contract.md`).
 
 ## 8. Provenance
@@ -231,6 +238,7 @@ sources; the contract test verifies that each cited range still exists inside th
 
 | Command | Covers |
 | :--- | :--- |
-| `npm run engine:test` | this contract (91 cases: 66 unit + 4 graph-port equivalence + 14 against the real engine + 7 contract conformance) |
+| `npm run engine:test` | this contract (98 cases: 70 unit + 4 graph-port equivalence + 17 against the real engine + 7 contract conformance) |
+| `npm run engine:test:strict` | the same 98 cases with the pinned reference runtime mandatory; zero parity skips allowed |
 | `bash tests/integration/run_gate.sh --offline-only` | stage 3 runs the suite above; stages 1-2 run the other LEGO gates |
 | `node tests/compatibility/contract_conformance.mjs` | asserts this contract file is present |
