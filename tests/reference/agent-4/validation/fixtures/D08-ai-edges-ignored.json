@@ -1,0 +1,63 @@
+{
+  "description": "A↔B via ai_tool only, allowCycles=false → valid (only main edges considered)",
+  "expected": {
+    "errors": [],
+    "valid": true
+  },
+  "id": "D08-ai-edges-ignored",
+  "input": {
+    "options": {
+      "allowCycles": false
+    },
+    "workflow": {
+      "connections": {
+        "A": {
+          "ai_tool": [
+            [
+              {
+                "index": 0,
+                "node": "B",
+                "type": "ai_tool"
+              }
+            ]
+          ]
+        },
+        "B": {
+          "ai_tool": [
+            [
+              {
+                "index": 0,
+                "node": "A",
+                "type": "ai_tool"
+              }
+            ]
+          ]
+        }
+      },
+      "nodes": [
+        {
+          "id": "A",
+          "name": "A",
+          "parameters": {},
+          "position": [
+            0,
+            0
+          ],
+          "type": "n8n-nodes-base.noOp",
+          "typeVersion": 1
+        },
+        {
+          "id": "B",
+          "name": "B",
+          "parameters": {},
+          "position": [
+            0,
+            0
+          ],
+          "type": "n8n-nodes-base.noOp",
+          "typeVersion": 1
+        }
+      ]
+    }
+  }
+}

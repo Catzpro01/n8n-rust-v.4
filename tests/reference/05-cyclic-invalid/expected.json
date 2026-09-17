@@ -1,23 +1,13 @@
 {
-  "_source": "contracts/validation.contract.md §3/§4.4 (ISSUE-003 Option A, arbitrated): CycleDetection over main edges reports the first back-edge deterministically. Suite-negative fixture: per the -invalid directory rule the cycle MUST be detected — a validator hardcoded to accept everything turns the gate red.",
-  "negative": true,
-  "cases": {
-    "cycle-detected": {
-      "probe": { "op": "detectCycles" },
-      "expected": {
-        "code": "CYCLE_DETECTED",
-        "node": "A",
-        "message_prefix": "Cycle detected: "
-      }
-    },
-    "validate-workflow-strict": {
-      "probe": { "op": "validateWorkflow", "allowCycles": false },
-      "expected": { "valid": false, "codes": ["CYCLE_DETECTED"] }
-    },
-    "validate-workflow-default-allows-cycles": {
-      "probe": { "op": "validateWorkflow", "allowCycles": true },
-      "expected": { "valid": true, "codes": [] },
-      "explains": "contract §11.7: default allowCycles: true for reference parity (n8n allows runtime loops, e.g. Loop Over Items)"
+  "_note": "Contract shape of `validateWorkflow(case, { allowCycles: false })` per contracts/validation.contract.md §3 and the approved TS rule implementation (tests/reference/agent-4/validation/workflow-rules.ts, detectCycles). `path` points at the edge that closed the cycle; `message` is the deterministic path string.",
+  "valid": false,
+  "errors": [
+    {
+      "code": "CYCLE_DETECTED",
+      "node": "A",
+      "path": ["connections", "C", "main"],
+      "message": "Cycle detected: A → B → C → A"
     }
-  }
+  ],
+  "_rust_carry": "crates/n8n-validation::detect_cycles returns Err(ValidationError::CycleDetected(\"A → B → C → A\")) — the Display message is the same deterministic path string; the `node`/`path` fields live in the contract-shaped JSON and are asserted by the TS harness."
 }

@@ -1,0 +1,355 @@
+{
+  "description": "R-08: node with onError=continueErrorOutput \u2014 main output has 2 populated slots (0 success, 1 error), a null hole (slot 2) and an empty slot (slot 3); duplicate edge Fail->Log; Merge fed on input 0 and 1. Pins slot ordering, null-slot tolerance, sourceIndex of the error output and dedup of parents.",
+  "nodes": [
+    {
+      "id": "Trigger",
+      "name": "Trigger",
+      "type": "x",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "Http",
+      "name": "Http",
+      "type": "x",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {},
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "Ok",
+      "name": "Ok",
+      "type": "x",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "Fail",
+      "name": "Fail",
+      "type": "x",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "Log",
+      "name": "Log",
+      "type": "x",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "Merge",
+      "name": "Merge",
+      "type": "x",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    }
+  ],
+  "connections": {
+    "Trigger": {
+      "main": [
+        [
+          {
+            "node": "Http",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Http": {
+      "main": [
+        [
+          {
+            "node": "Ok",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        null,
+        []
+      ]
+    },
+    "Ok": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fail": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "probes": [
+    {
+      "name": "byDestination whole map (null slot must not create entries)",
+      "op": "byDestination"
+    },
+    {
+      "name": "children of Http main depth 1 (slot order 0 then 1, null/empty ignored)",
+      "op": "getChildNodes",
+      "node": "Http",
+      "type": "main",
+      "depth": 1
+    },
+    {
+      "name": "children of Http unbounded",
+      "op": "getChildNodes",
+      "node": "Http",
+      "type": "main",
+      "depth": -1
+    },
+    {
+      "name": "parents of Log (duplicate edge from Fail must not duplicate)",
+      "op": "getParentNodes",
+      "node": "Log",
+      "type": "main",
+      "depth": -1
+    },
+    {
+      "name": "parents of Merge",
+      "op": "getParentNodes",
+      "node": "Merge",
+      "type": "main",
+      "depth": -1
+    },
+    {
+      "name": "parents of Merge depth 1",
+      "op": "getParentNodes",
+      "node": "Merge",
+      "type": "main",
+      "depth": 1
+    },
+    {
+      "name": "parents of Fail",
+      "op": "getParentNodes",
+      "node": "Fail",
+      "type": "main",
+      "depth": -1
+    },
+    {
+      "name": "connected ALL Log unbounded",
+      "op": "getConnectedNodes",
+      "node": "Log",
+      "type": "ALL",
+      "depth": -1
+    },
+    {
+      "name": "adjacency keys",
+      "op": "adjacencyKeys"
+    },
+    {
+      "name": "roots of full graph",
+      "op": "getRootNodes",
+      "graph": [
+        "Trigger",
+        "Http",
+        "Ok",
+        "Fail",
+        "Log",
+        "Merge"
+      ]
+    },
+    {
+      "name": "leaves of full graph",
+      "op": "getLeafNodes",
+      "graph": [
+        "Trigger",
+        "Http",
+        "Ok",
+        "Fail",
+        "Log",
+        "Merge"
+      ]
+    },
+    {
+      "name": "input edges of {Fail,Log}",
+      "op": "getInputEdges",
+      "graph": [
+        "Fail",
+        "Log"
+      ]
+    },
+    {
+      "name": "output edges of {Http}",
+      "op": "getOutputEdges",
+      "graph": [
+        "Http"
+      ]
+    },
+    {
+      "name": "hasPath Http->Merge",
+      "op": "hasPath",
+      "start": "Http",
+      "end": "Merge"
+    },
+    {
+      "name": "hasPath Log->Merge (false)",
+      "op": "hasPath",
+      "start": "Log",
+      "end": "Merge"
+    },
+    {
+      "name": "extractable {Http,Ok,Fail}",
+      "op": "parseExtractable",
+      "graph": [
+        "Http",
+        "Ok",
+        "Fail"
+      ]
+    },
+    {
+      "name": "extractable {Fail,Log}",
+      "op": "parseExtractable",
+      "graph": [
+        "Fail",
+        "Log"
+      ]
+    },
+    {
+      "name": "indexes Fail<-Http (error slot => sourceIndex 1)",
+      "op": "wf.getNodeConnectionIndexes",
+      "node": "Fail",
+      "parent": "Http",
+      "type": "main"
+    },
+    {
+      "name": "indexes Log<-Http",
+      "op": "wf.getNodeConnectionIndexes",
+      "node": "Log",
+      "parent": "Http",
+      "type": "main"
+    },
+    {
+      "name": "indexes Log<-Fail",
+      "op": "wf.getNodeConnectionIndexes",
+      "node": "Log",
+      "parent": "Fail",
+      "type": "main"
+    },
+    {
+      "name": "indexes Merge<-Fail (destinationIndex 1)",
+      "op": "wf.getNodeConnectionIndexes",
+      "node": "Merge",
+      "parent": "Fail",
+      "type": "main"
+    },
+    {
+      "name": "indexes Merge<-Http (indirect => undefined)",
+      "op": "wf.getNodeConnectionIndexes",
+      "node": "Merge",
+      "parent": "Http",
+      "type": "main"
+    },
+    {
+      "name": "highest of Merge",
+      "op": "wf.getHighestNode",
+      "node": "Merge"
+    },
+    {
+      "name": "highest of Log",
+      "op": "wf.getHighestNode",
+      "node": "Log"
+    },
+    {
+      "name": "parentsByDepth Merge",
+      "op": "wf.getParentNodesByDepth",
+      "node": "Merge",
+      "depth": -1
+    },
+    {
+      "name": "parentsByDepth Log",
+      "op": "wf.getParentNodesByDepth",
+      "node": "Log",
+      "depth": -1
+    },
+    {
+      "name": "wf.getChildNodes Http depth 1",
+      "op": "wf.getChildNodes",
+      "node": "Http",
+      "type": "main",
+      "depth": 1
+    },
+    {
+      "name": "wf.getParentNodes Log",
+      "op": "wf.getParentNodes",
+      "node": "Log",
+      "type": "main",
+      "depth": -1
+    },
+    {
+      "name": "wf.sourceKeys",
+      "op": "wf.sourceKeys"
+    },
+    {
+      "name": "wf.destKeys",
+      "op": "wf.destKeys"
+    },
+    {
+      "name": "rebuild then parents of Log",
+      "op": "wf.rebuildThenGetParentNodes",
+      "node": "Log",
+      "type": "main",
+      "depth": -1
+    }
+  ]
+}

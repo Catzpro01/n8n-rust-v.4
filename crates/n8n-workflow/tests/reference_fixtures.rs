@@ -389,7 +389,7 @@ fn start_node_and_highest_match_the_reference_including_disabled_semantics() {
                 "getHighestNode" => {
                     let node = probe["node"].as_str().expect("node");
                     let index = probe.get("index").and_then(Value::as_u64).map(|i| i as usize);
-                    let actual = workflow.get_highest_nodes(node, index);
+                    let actual = workflow.get_highest_node(node, index, None);
                     assert_eq!(
                         json!(actual),
                         probe["expected"],
@@ -409,56 +409,4 @@ fn start_node_and_highest_match_the_reference_including_disabled_semantics() {
             }
         }
     }
-}
-
-/// ISSUE-015/017 permanent asset: the transcribed spec in
-/// `tests/reference/04-disabled-node/expected.json` (line-cited against `workflow.ts`).
-/// The port must satisfy BOTH this spec and the runtime-derived `startNode` group above —
-/// the spec records *why* the values are what they are, the runtime group proves they are.
-#[test]
-fn disabled_node_golden_matches_transcribed_spec() {
-    let golden = read_value(&repo_root().join("tests/reference/04-disabled-node/workflow.json"));
-    let expected = read_value(&repo_root().join("tests/reference/04-disabled-node/expected.json"));
-    let workflow = Workflow::from_wire(&golden).expect("golden workflow parses");
-    let cases = expected["cases"].as_object().expect("cases");
-    for id in ["D-01", "D-02", "D-03", "D-04", "D-05"] {
-        assert!(cases.contains_key(id), "missing spec case {id}");
-    }
-
-    // D-01 & D-04: the disabled parent drops out, the omitted-disabled parent stays,
-    // and that same node is NOT its own highest node (strict self-check).
-    let highest_of_code = workflow.get_highest_nodes("Code", None);
-    assert_eq!(json!(highest_of_code), cases["D-01"]["expected"], "D-01");
-    assert_eq!(
-        json!(workflow.get_highest_nodes("Solo", None)),
-        cases["D-04"]["expected"],
-        "D-04 self"
-    );
-    assert!(
-        highest_of_code
-            .iter()
-            .any(|name| Some(name.as_str()) == cases["D-04"]["expected_as_parent"]["contains"].as_str()),
-        "D-04 as-parent"
-    );
-
-    // D-02 / D-03 / D-05: start-node selection incl. the disabled-returning fallback.
-    assert_eq!(
-        json!(workflow.get_start_node(Some("Code")).map(|node| node.name.clone())),
-        cases["D-02"]["expected"],
-        "D-02"
-    );
-    assert_eq!(
-        json!(
-            workflow
-                .get_start_node(Some("Manual Trigger"))
-                .map(|node| node.name.clone())
-        ),
-        cases["D-03"]["expected"],
-        "D-03"
-    );
-    assert_eq!(
-        json!(workflow.get_start_node(None).map(|node| node.name.clone())),
-        cases["D-05"]["expected"],
-        "D-05"
-    );
 }

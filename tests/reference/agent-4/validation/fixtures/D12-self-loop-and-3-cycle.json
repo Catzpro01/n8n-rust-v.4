@@ -1,0 +1,96 @@
+{
+  "description": "C→A back-edge in A→B→C, allowCycles=false → path A → B → C → A",
+  "expected": {
+    "errors": [
+      {
+        "code": "CYCLE_DETECTED",
+        "message": "Cycle detected: A → B → C → A",
+        "node": "A",
+        "path": [
+          "connections",
+          "C",
+          "main"
+        ]
+      }
+    ],
+    "valid": false
+  },
+  "id": "D12-self-loop-and-3-cycle",
+  "input": {
+    "options": {
+      "allowCycles": false
+    },
+    "workflow": {
+      "connections": {
+        "A": {
+          "main": [
+            [
+              {
+                "index": 0,
+                "node": "B",
+                "type": "main"
+              }
+            ]
+          ]
+        },
+        "B": {
+          "main": [
+            [
+              {
+                "index": 0,
+                "node": "C",
+                "type": "main"
+              }
+            ]
+          ]
+        },
+        "C": {
+          "main": [
+            [
+              {
+                "index": 0,
+                "node": "A",
+                "type": "main"
+              }
+            ]
+          ]
+        }
+      },
+      "nodes": [
+        {
+          "id": "A",
+          "name": "A",
+          "parameters": {},
+          "position": [
+            0,
+            0
+          ],
+          "type": "n8n-nodes-base.noOp",
+          "typeVersion": 1
+        },
+        {
+          "id": "B",
+          "name": "B",
+          "parameters": {},
+          "position": [
+            0,
+            0
+          ],
+          "type": "n8n-nodes-base.noOp",
+          "typeVersion": 1
+        },
+        {
+          "id": "C",
+          "name": "C",
+          "parameters": {},
+          "position": [
+            0,
+            0
+          ],
+          "type": "n8n-nodes-base.noOp",
+          "typeVersion": 1
+        }
+      ]
+    }
+  }
+}

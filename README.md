@@ -15,13 +15,13 @@ is a Rust replacement attempted.
 | REFERENCE SOURCE (`reference/n8n/`, n8n 2.9.4) | ✅ |
 | REFERENCE RUNTIME (baseline 11/11 smoke test) | ✅ |
 | **WORKFLOW ISOLATION (LEGO 01)** | **✅ VERIFIED — see [`docs/isolation/workflow.md`](docs/isolation/workflow.md)** |
-| NODE MODEL (LEGO 02) · CONNECTION (03) · VALIDATION (04) | **✅ contracts + reference fixtures present** |
-| RUST PORT / PHASE 3 PREFLIGHT | **⚠️ in progress — offline rig + reference-driven tests** |
+| NODE MODEL (LEGO 02) · CONNECTION (03) · VALIDATION (04) | ✅ ISOLATED (Phase 2 complete) |
+| **PHASE 3 — RUST IMPLEMENTATION** | **▶ OPENED 2026-09-17 — [`docs/isolation/PHASE-3-OPENING.md`](docs/isolation/PHASE-3-OPENING.md)** |
+| Reference-driven Rust tests | ✅ 45/45 `cargo test --workspace` (via `tools/rust-offline-rig`) |
+| LIVE VERIFICATION | ⏸ requires the VPS (live 11/11 gate) |
 
 “Isolated” means the TypeScript component now has an enforced boundary and a
-contract. It does **not** mean it was replaced by Rust. The current Rust crates
-are Phase-3 port work; the live integration gate remains separate and must not be
-called verified until its VPS run and formal Phase-3 decision record exist.
+contract. It does **not** mean it was replaced by Rust.
 
 ## Structure
 
@@ -33,8 +33,7 @@ called verified until its VPS run and formal Phase-3 decision record exist.
 - `tools/` : boundary mapper, kernel/port/reference gates, isolation extractor, model digest, gate runner, live engine harness
 - `tests/reference/` : golden workflows + baseline smoke test evidence
 - `tasks/`, `results/` : inbound task manifests and execution results
-- `crates/`, `apps/n8n-rust/` : Phase-3 Rust port (not yet a runtime replacement)
-- `tools/rust-offline-rig/` : reproducible cargo/rustc verification without crates.io
+- `crates/`, `apps/n8n-rust/` : (reserved) Rust implementation
 
 ## Verify a LEGO
 

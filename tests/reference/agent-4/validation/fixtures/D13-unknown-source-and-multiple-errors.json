@@ -1,0 +1,93 @@
+{
+  "description": "errors accumulate: duplicate + unknown source + dangling target in one report",
+  "expected": {
+    "errors": [
+      {
+        "code": "DUPLICATE_NODE_NAME",
+        "message": "Duplicate node name \"A\"",
+        "node": "A",
+        "path": [
+          "nodes",
+          "1",
+          "name"
+        ]
+      },
+      {
+        "code": "DANGLING_CONNECTION",
+        "message": "Connection from \"A\" to unknown node \"Ghost\"",
+        "node": "A",
+        "path": [
+          "connections",
+          "A",
+          "main",
+          "0",
+          "0"
+        ]
+      },
+      {
+        "code": "DANGLING_CONNECTION",
+        "message": "Connection from unknown node \"Nope\"",
+        "node": "Nope",
+        "path": [
+          "connections",
+          "Nope"
+        ]
+      }
+    ],
+    "valid": false
+  },
+  "id": "D13-unknown-source-and-multiple-errors",
+  "input": {
+    "options": {},
+    "workflow": {
+      "connections": {
+        "A": {
+          "main": [
+            [
+              {
+                "index": 0,
+                "node": "Ghost",
+                "type": "main"
+              }
+            ]
+          ]
+        },
+        "Nope": {
+          "main": [
+            [
+              {
+                "index": 0,
+                "node": "A",
+                "type": "main"
+              }
+            ]
+          ]
+        }
+      },
+      "nodes": [
+        {
+          "id": "A",
+          "name": "A",
+          "parameters": {},
+          "position": [
+            0,
+            0
+          ],
+          "type": "n8n-nodes-base.noOp",
+          "typeVersion": 1
+        },
+        {
+          "id": "A",
+          "name": "A",
+          "parameters": {},
+          "position": [
+            0,
+            0
+          ],
+          "type": "n8n-nodes-base.noOp",
+          "typeVersion": 1
+        }
+      ]
+    }
+  }
+}

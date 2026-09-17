@@ -166,6 +166,17 @@ themselves; consumers are listed in `contracts/connection.contract.md` (`CD-04`,
 not exercised by G09. A fixture that renames a node and then queries `getParentNodes` / `getNodeConnectionIndexes` would pin D-08 (and would have
 to expect the stale-index answer to keep the reference behavior verifiable).
 
+**`D-09` (workflow-LEGO) — unknown node name into start-node / highest-node queries returns empty instead of an incidental `TypeError`
+(ISSUE-030, filed by Agent 5; deliberate decision, not silent).** The engine's throw comes from an *unguarded dereference* —
+`__getStartNode` reads `this.nodes[nodeName].disabled` (`workflow.ts:872-886`) and `getHighestNode` reads `this.nodes[nodeName].disabled`
+(`workflow.ts:498-504`) — i.e. the same incidental-crash class, not designed behavior. The Rust port answers `None` (`getStartNode`) and
+`[]` (`getHighestNode`) for unknown names, consistently with `getNode(unknownName)` (`null`) and `getChildNodes`/`getParentNodes(unknown)`
+(`[]`), which the reference itself defines as non-throwing. Per the truth priority (n8n behaviour > contracts) this is **declared here** as an
+intentional deviation rather than left silent; bug-compatibility with the incidental throw is explicitly rejected. Both sides were executed for
+the record: `tests/differential/` Stage 2k case `unknown-node-start` (engine `TypeError` vs port `null`) — 37/38 identical, the single
+remaining divergence is this declared `D-09`. Pinned by `crates/n8n-workflow/tests/unknown_node_semantics.rs`.
+
+
 ## 8. Lifecycle
 
 * **Construction** — `new Workflow({ id, name, nodes, connections, active, nodeTypes, staticData, settings, pinData })`; nodes re-keyed, destination index built, `timezone` resolved, `expression` attached. (`workflow.ts:88-135`)

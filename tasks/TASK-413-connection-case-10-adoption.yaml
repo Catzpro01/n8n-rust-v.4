@@ -1,0 +1,32 @@
+task_id: TASK-413
+title: Connection case 10 adoption (error output + sparse slots) + D-11 non-reproduction proof
+worker: agent-1
+branch: arena/01a0ace4-n8n-rust-v-4
+status: SUCCESS
+allow_execution: true
+allowed_paths:
+  - results/TASK-413-connection-case-10-adoption.md
+  - tasks/TASK-413-connection-case-10-adoption.yaml
+  - tests/reference/connection/10-error-output-sparse-slots/
+  - crates/n8n-workflow/tests/connection_probe_fixtures.rs
+forbidden_paths:
+  - reference/n8n/
+  - crates/n8n-validation/**
+  - crates/n8n-connection/**
+  - crates/n8n-workflow/src/**
+  - tools/rust-offline-rig/**
+deliverables:
+  - id: connection-10
+    path: tests/reference/connection/10-error-output-sparse-slots/
+    note: adopted from worker-05 ac05 @ 0f7d4d96 (fixture owner, blob-identical)
+  - id: runner-extension
+    path: crates/n8n-workflow/tests/connection_probe_fixtures.rs
+    note: CASES 9, PROBE_TOTAL 119, adjacencyKeys arm; failure-first preserved
+evidence:
+  connection_probes: 119/119 byte-exact (first try; D-11 does not reproduce on this head)
+  cargo: 65 passed / 0 failed
+  differential: PASS - 37 identical + 1 declared deviation D-09
+  offline_gate: PASS (live NOT RUN -> INCONCLUSIVE)
+  integrity: 28/28 PASS
+  manifest_check: PASS (15050 files, root f8da35180669)
+id_clash_note: TASK-411 double-used by ace3 (connection-types-vocabulary @ 40ca8e84) - clash #4; mediator allocation requested

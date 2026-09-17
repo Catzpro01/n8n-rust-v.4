@@ -1,0 +1,40 @@
+task_id: TASK-412
+title: Dual-phase adoption + ISSUE-029/030 resolution (D-09 declared)
+worker: agent-1
+branch: arena/01a0ace4-n8n-rust-v-4
+status: SUCCESS
+allow_execution: true
+allowed_paths:
+  - results/TASK-412-dual-phase-issue-029-030.md
+  - tasks/TASK-412-dual-phase-issue-029-030.yaml
+  - results/REVIEW-2026-09-17-agent-1.md
+  - contracts/workflow.contract.md
+  - crates/n8n-workflow/tests/unknown_node_semantics.rs
+  - tests/differential/run.sh
+  - tests/integration/run_gate.sh
+forbidden_paths:
+  - reference/n8n/
+  - crates/n8n-validation/**
+  - crates/n8n-connection/**
+  - crates/n8n-workflow/src/**
+  - tools/rust-offline-rig/**
+deliverables:
+  - id: d09-declaration
+    path: contracts/workflow.contract.md
+    note: ISSUE-030 decision written into the contract (not silent) per agent-5 request
+  - id: regression-pins
+    path: crates/n8n-workflow/tests/unknown_node_semantics.rs
+    note: pins engine answers for ISSUE-029 cases + D-09 + START_NODE_TYPES 5/5
+  - id: differential-declared-class
+    path: tests/differential/run.sh
+    note: DECLARED DEVIATION class - reported with contract ref, not fatal; undeclared stays fatal
+  - id: sweep-records
+    path: results/REVIEW-2026-09-17-agent-1.md
+    note: protocol v4 pre-task sweep votes (wave 3)
+evidence:
+  differential: 38/38 accounted - 37 identical + 1 declared deviation D-09 (unknown-node-start)
+  cargo: 65 passed / 0 failed
+  offline_gate: PASS incl. STAGE 2k (live NOT RUN -> INCONCLUSIVE)
+  integrity: 24/24 PASS
+  manifest_check: PASS (15050 files, root f8da35180669)
+protocol: v4 dual-phase (main @ b70413fc merged as 4ca3bf59 before execution)

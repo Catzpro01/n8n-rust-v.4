@@ -1,0 +1,50 @@
+{
+  "description": "disabled node with duplicate name still reported (disabled-handling is not validation)",
+  "expected": {
+    "errors": [
+      {
+        "code": "DUPLICATE_NODE_NAME",
+        "message": "Duplicate node name \"Code\"",
+        "node": "Code",
+        "path": [
+          "nodes",
+          "1",
+          "name"
+        ]
+      }
+    ],
+    "valid": false
+  },
+  "id": "D09-disabled-duplicate",
+  "input": {
+    "options": {},
+    "workflow": {
+      "connections": {},
+      "nodes": [
+        {
+          "id": "Code",
+          "name": "Code",
+          "parameters": {},
+          "position": [
+            0,
+            0
+          ],
+          "type": "n8n-nodes-base.noOp",
+          "typeVersion": 1
+        },
+        {
+          "disabled": true,
+          "id": "Code",
+          "name": "Code",
+          "parameters": {},
+          "position": [
+            0,
+            0
+          ],
+          "type": "n8n-nodes-base.noOp",
+          "typeVersion": 1
+        }
+      ]
+    }
+  }
+}

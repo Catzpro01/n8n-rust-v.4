@@ -1,21 +1,12 @@
+pub mod graph_utils;
+
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
+use std::collections::{HashSet, VecDeque};
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct ConnectionItem {
-    pub node: String,
-    #[serde(rename = "type")]
-    pub connection_type: String,
-    pub index: usize,
-}
-
-pub type ConnectionOutput = Option<Vec<ConnectionItem>>;
-pub type NodeConnections = IndexMap<String, Vec<ConnectionOutput>>;
-pub type WorkflowConnections = IndexMap<String, NodeConnections>;
-
-/// The source-verified `nodeConnectionTypes` vocabulary from n8n 2.9.4.
-/// This is the single Rust owner; consumers such as validation re-export it.
+/// The 13 connection types of n8n 2.9.4, verbatim from
+/// `reference/n8n/packages/workflow/src/interfaces.ts:2249` (`NodeConnectionTypes`).
+/// Document order is the declaration order of the reference object.
 pub const NODE_CONNECTION_TYPES: [&str; 13] = [
     "ai_agent",
     "ai_chain",
@@ -32,6 +23,25 @@ pub const NODE_CONNECTION_TYPES: [&str; 13] = [
     "main",
 ];
 
+/// Port of `isNodeConnectionType` as used by the Validation LEGO
+/// (`docs/isolation/validation.md` §137): `type ∈ nodeConnectionTypes`.
+pub fn is_node_connection_type(connection_type: &str) -> bool {
+    NODE_CONNECTION_TYPES.contains(&connection_type)
+}
+
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct ConnectionItem {
+    pub node: String,
+    #[serde(rename = "type")]
+    pub connection_type: String,
+    pub index: usize,
+}
+
+pub type ConnectionOutput = Option<Vec<ConnectionItem>>;
+pub type NodeConnections = IndexMap<String, Vec<ConnectionOutput>>;
+pub type WorkflowConnections = IndexMap<String, NodeConnections>;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ConnectionTypeFilter {
     Type(String),
@@ -45,165 +55,85 @@ impl Default for ConnectionTypeFilter {
     }
 }
 
-/// Transitive connected nodes traversal, ported from
-/// `reference/n8n/packages/workflow/src/common/get-connected-nodes.ts` (the shared util behind
-/// `getConnectedNodes` / `getChildNodes` / `getParentNodes`).
-///
-/// Ported details that look like bugs but are observable behaviour (golden suites in
-/// `tests/reference/connection/**` pin them):
-///
-/// * `depth` counts down and `-1` is unlimited (`depth: 1` visits direct neighbours only);
-/// * results are built with `unshift`, and a node that is re-found later is moved to the
-///   front, so the returned array is "closest to the end first" (farthest-first);
-/// * `checkedNodes` is copied **per connection type**, which is why `ALL` can reach nodes
-///   a `main`-only walk would have marked as visited;
-/// * a missing source key yields `[]`.
+/// Transitive connected nodes traversal conforming to reference common/get-connected-nodes.ts
+/// - Deduplicated
+/// - Farthest-first order (prepended recursion results)
+/// - Depth-bounded (-1 = unlimited)
+/// - Cycle-safe
 pub fn get_connected_nodes(
     connections: &WorkflowConnections,
     node_name: &str,
     filter: &ConnectionTypeFilter,
     depth: i64,
 ) -> Vec<String> {
-    let new_depth = if depth == -1 { -1 } else { depth - 1 };
-    if depth == 0 {
-        // Reached max depth
-        return Vec::new();
-    }
-
-    let Some(node_outputs) = connections.get(node_name) else {
-        // Node does not have connections of its own in this map
-        return Vec::new();
-    };
-
-    let types: Vec<String> = match filter {
-        ConnectionTypeFilter::Type(name) => vec![name.clone()],
-        ConnectionTypeFilter::All => node_outputs.keys().cloned().collect(),
-        ConnectionTypeFilter::AllNonMain => node_outputs
-            .keys()
-            .filter(|key| key.as_str() != "main")
-            .cloned()
-            .collect(),
-    };
-
-    let mut return_nodes: Vec<String> = Vec::new();
-    for type_name in types {
-        let Some(output_lists) = node_outputs.get(&type_name) else {
-            continue;
-        };
-
-        let mut checked_nodes: Vec<String> = Vec::new();
-        if checked_nodes.iter().any(|name| name == node_name) {
-            // Node got checked already before
-            continue;
-        }
-        checked_nodes.push(node_name.to_string());
-
-        for slot in output_lists {
-            let Some(connections_in_slot) = slot else {
-                continue;
-            };
-            for connection in connections_in_slot {
-                if checked_nodes.iter().any(|name| name == &connection.node) {
-                    continue;
-                }
-
-                return_nodes.insert(0, connection.node.clone());
-
-                let add_nodes = walk_connected(
-                    connections,
-                    &connection.node,
-                    filter,
-                    new_depth,
-                    &checked_nodes,
-                );
-
-                // JS iterates the collected nodes back to front and unshifts each, removing
-                // a previous occurrence so the order stays "nearest first".
-                for parent_node_name in add_nodes.iter().rev() {
-                    if let Some(position) = return_nodes.iter().position(|name| name == parent_node_name)
-                    {
-                        return_nodes.remove(position);
-                    }
-                    return_nodes.insert(0, parent_node_name.clone());
-                }
-            }
-        }
-    }
-
-    return_nodes
+    let mut checked_nodes = HashSet::new();
+    get_connected_nodes_internal(connections, node_name, filter, depth, &mut checked_nodes)
 }
 
-/// Recursive step with the `checkedNodes` the reference passes down (the original copies
-/// it per type — see [`get_connected_nodes`]).
-fn walk_connected(
+fn get_connected_nodes_internal(
     connections: &WorkflowConnections,
     node_name: &str,
     filter: &ConnectionTypeFilter,
     depth: i64,
-    checked_nodes_incoming: &[String],
+    checked_nodes: &mut HashSet<String>,
 ) -> Vec<String> {
-    let new_depth = if depth == -1 { -1 } else { depth - 1 };
-    if depth == 0 {
+    if checked_nodes.contains(node_name) || depth == 0 {
         return Vec::new();
     }
+    checked_nodes.insert(node_name.to_string());
 
-    let Some(node_outputs) = connections.get(node_name) else {
-        return Vec::new();
-    };
+    let mut direct_nodes = Vec::new();
+    let mut recursive_nodes = Vec::new();
 
-    let types: Vec<String> = match filter {
-        ConnectionTypeFilter::Type(name) => vec![name.clone()],
-        ConnectionTypeFilter::All => node_outputs.keys().cloned().collect(),
-        ConnectionTypeFilter::AllNonMain => node_outputs
-            .keys()
-            .filter(|key| key.as_str() != "main")
-            .cloned()
-            .collect(),
-    };
-
-    let mut return_nodes: Vec<String> = Vec::new();
-    for type_name in types {
-        let Some(output_lists) = node_outputs.get(&type_name) else {
-            continue;
-        };
-
-        let mut checked_nodes: Vec<String> = checked_nodes_incoming.to_vec();
-        if checked_nodes.iter().any(|name| name == node_name) {
-            continue;
-        }
-        checked_nodes.push(node_name.to_string());
-
-        for slot in output_lists {
-            let Some(connections_in_slot) = slot else {
-                continue;
+    if let Some(node_connections) = connections.get(node_name) {
+        for (conn_type, output_slots) in node_connections {
+            let is_matched = match filter {
+                ConnectionTypeFilter::Type(t) => conn_type == t,
+                ConnectionTypeFilter::All => true,
+                ConnectionTypeFilter::AllNonMain => conn_type != "main",
             };
-            for connection in connections_in_slot {
-                if checked_nodes.iter().any(|name| name == &connection.node) {
-                    continue;
-                }
 
-                return_nodes.insert(0, connection.node.clone());
+            if !is_matched {
+                continue;
+            }
 
-                let add_nodes = walk_connected(
-                    connections,
-                    &connection.node,
-                    filter,
-                    new_depth,
-                    &checked_nodes,
-                );
-
-                for parent_node_name in add_nodes.iter().rev() {
-                    if let Some(position) = return_nodes.iter().position(|name| name == parent_node_name)
-                    {
-                        return_nodes.remove(position);
+            for slot in output_slots {
+                if let Some(items) = slot {
+                    for item in items {
+                        if !direct_nodes.contains(&item.node) {
+                            direct_nodes.push(item.node.clone());
+                        }
                     }
-                    return_nodes.insert(0, parent_node_name.clone());
                 }
             }
         }
     }
 
-    return_nodes
+    let next_depth = if depth > 0 { depth - 1 } else { -1 };
+    for next_node in &direct_nodes {
+        let mut sub_nodes = get_connected_nodes_internal(
+            connections,
+            next_node,
+            filter,
+            next_depth,
+            checked_nodes,
+        );
+        for sub in sub_nodes.drain(..) {
+            if !recursive_nodes.contains(&sub) && !direct_nodes.contains(&sub) {
+                recursive_nodes.push(sub);
+            }
+        }
+    }
+
+    // Farthest-first order: recursive nodes prepended before direct nodes
+    let mut result = recursive_nodes;
+    for direct in direct_nodes {
+        if !result.contains(&direct) {
+            result.push(direct);
+        }
+    }
+
+    result
 }
 
 /// Invert connections from bySource to byDestination with padding per contract §3.3
@@ -242,31 +172,26 @@ pub fn map_connections_by_destination(by_source: &WorkflowConnections) -> Workfl
     by_dest
 }
 
-/// Port of `hasPath(start, end, adjacencyList)` from `graph/graph-utils.ts:145-163`:
-/// a DFS over **`main` edges only** (non-main connection types never create a path
-/// edge — golden `hasPath Model->Agent ignores non-main` is `false` despite the
-/// `ai_languageModel` edge), stack-based with a seen-set, `from == to` is trivially true.
+/// Check if there is a directed path from source to target
 pub fn has_path(connections: &WorkflowConnections, from: &str, to: &str) -> bool {
-    let mut seen: HashSet<String> = HashSet::new();
-    let mut paths: Vec<&str> = vec![from];
+    if from == to {
+        return true;
+    }
 
-    while let Some(next) = paths.pop() {
-        if next == to {
-            return true;
-        }
-        seen.insert(next.to_string());
+    let mut visited: HashSet<String> = HashSet::new();
+    let mut queue: VecDeque<String> = VecDeque::new();
+    queue.push_back(from.to_string());
+    visited.insert(from.to_string());
 
-        if let Some(node_outputs) = connections.get(next) {
-            if let Some(slots) = node_outputs.get("main") {
-                for slot in slots {
-                    if let Some(items) = slot {
-                        for item in items {
-                            if !seen.contains(&item.node) {
-                                paths.push(item.node.as_str());
-                            }
-                        }
-                    }
-                }
+    while let Some(current) = queue.pop_front() {
+        let filter = ConnectionTypeFilter::All;
+        for next in get_connected_nodes(connections, &current, &filter, 1) {
+            if next == to {
+                return true;
+            }
+            if !visited.contains(&next) {
+                visited.insert(next.clone());
+                queue.push_back(next);
             }
         }
     }

@@ -1,0 +1,52 @@
+{
+  "description": "Trigger → Ghost, Ghost missing → DANGLING_CONNECTION with path",
+  "expected": {
+    "errors": [
+      {
+        "code": "DANGLING_CONNECTION",
+        "message": "Connection from \"Trigger\" to unknown node \"Ghost\"",
+        "node": "Trigger",
+        "path": [
+          "connections",
+          "Trigger",
+          "main",
+          "0",
+          "0"
+        ]
+      }
+    ],
+    "valid": false
+  },
+  "id": "D04-dangling-target",
+  "input": {
+    "options": {},
+    "workflow": {
+      "connections": {
+        "Trigger": {
+          "main": [
+            [
+              {
+                "index": 0,
+                "node": "Ghost",
+                "type": "main"
+              }
+            ]
+          ]
+        }
+      },
+      "nodes": [
+        {
+          "id": "Trigger",
+          "name": "Trigger",
+          "parameters": {},
+          "position": [
+            0,
+            0
+          ],
+          "type": "n8n-nodes-base.noOp",
+          "typeVersion": 1
+        }
+      ]
+    }
+  }
+}

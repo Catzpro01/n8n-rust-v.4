@@ -1042,116 +1042,221 @@ destroy their work. Agent 5 documents and reassigns; it does not fix other agent
 
 ---
 
-## 2026-09-17 — Phase-3 unblock batch (TASK-401, Orchestrator + Workflow-LEGO owner)
+## ISSUE-015 — FIXED (port owner, 2026-09-17, branch `arena/01a0ace4-n8n-rust-v-4`)
 
-Resolutions recorded in one chronological entry; each line carries its evidence so any
-worker can re-run instead of trusting the claim. Full detail: `results/TASK-401-phase3-unblock.md`.
+Response to the corrected scope and the required action. All three items are done on the branch
+that carries the Phase-3 workspace; awaiting Agent-5 verification (FIXED, not self-declared
+VERIFIED).
 
-### ISSUE-011 (reference integrity) — CLOSED, now *gate-enforced*
-Unchanged verdict (barrel relocated to `docs/isolation/node-barrel.ts`, manifest PASS at
-15050 / `f8da35180669`). New: `node tools/workflow-reference-manifest.mjs --check` is wired
-into `tests/integration/run_gate.sh` **Stage 1.5**, so an ISSUE-011-class break fails the
-merge gate instead of being reconstructed weeks later.
+1. **`getHighestNode` ported faithfully** — `crates/n8n-workflow/src/lib.rs::get_highest_node`.
+   The previous "simplified" recursion is gone. Preserved, line-mapped:
+   * `:498` strict `disabled === false` for the **starting** node (an omitted flag is NOT pushed);
+   * `:553` lenient `disabled !== true` for **parents** (an omitted flag IS included) — the D-04
+     asymmetry from ISSUE-017 is reproduced, not normalised away;
+   * per-`connectionIndex` filtering, `checkedNodes` threading, skip-unknown-node, dedup on add.
+2. **`getStartNode` ported faithfully** — single-candidate `!node.disabled` (`:824`), disabled
+   skips (`:839`/`:853`) in the `STARTING_NODE_TYPES` stable scan (absent types first, `indexOf`
+   `-1`), and the `nodes[nodeNames[0]]` fallback that ignores `disabled` (`:862-864`). The
+   trigger/poll loop (`:828-844`) needs the node-type registry and stays a documented divergence.
+   While porting: the port's `START_NODE_TYPES` was **wrong for 2.9.4** (it listed
+   `start`/`scheduleTrigger`/`cron`); replaced with `STARTING_NODE_TYPES` from
+   `constants.ts:53` (`manualTrigger`, `executeWorkflowTrigger`, `errorTrigger`,
+   `evaluationTrigger`, `formTrigger`).
+3. **Golden fixture consumed** — `tests/reference/04-disabled-node/` (case/expected pair with
+   11 probes, D-01..D-04 and two disabled-blind scope probes, `_scope_warning` preserved) is
+   driven by `crates/n8n-workflow/tests/disabled_node.rs`. Expected values are hand-traced from
+   the reference source with line citations in the fixture README.
 
-### ISSUE-012 (Phase 3 opened in code, not in a record) — RESOLVED IN REPO
-`docs/isolation/PHASE-3-OPENING.md` written: every Agent-5 entry condition answered with
-evidence (ISSUE-011 closed; per-crate golden fixtures shipped; `INVALID_CONNECTION_TYPE`
-implemented, 4/4 codes; `cargo` available via the repaired offline rig; this record).
-Gates flipped: `tests/compatibility/contract_conformance.mjs` and
-`tests/integration/boundary_audit.py` now **require the record when Rust is present**
-(rather than forbidding Rust outright) — deleting it fails the gate. Recorded divergences
-(registry branch of `__getStartNode`, string-valued expression crate, UTF-16 key order,
-f64 text form, totality fallback, `preserve_order`) are enumerated in the record §3.
-The live 11/11 re-run on VPS+PostgreSQL remains caveat C1 — not waved away.
+During integration the fixture caught a real error in the *fixture itself* (scope probes first
+listed direct neighbours; `getConnectedNodes` is transitive — `["Trigger","A","B"]`). The test is
+doing its job in both directions.
 
-### ISSUE-014 (silent-pass defects + missing fixtures) — FIXED, pending Agent-5 re-audit
-Defect 2 (silent skips→green) removed: all fixture loads are fail-loud
-`CARGO_MANIFEST_DIR`-relative reads — deleting a golden turns the suite red. The
-validation aggregate (`validate_workflow`: `INVALID_INPUT` envelope, accumulate-all,
-`allowCycles` default `true` per contract §11.7, cycles over `main` only per §11.8) and
-`InvalidConnectionType` (`INVALID_CONNECTION_TYPE`, 4/4 vocabulary) are implemented.
-`04-disabled-node/` and `05-cyclic-invalid/` exist as committed assets and are exercised:
-the conformance script treats `*-invalid` directories as negative fixtures that **must be
-rejected** (meta-tested both directions: removing the C→A edge flips 31/31 → 30/31 with
-"cycle detector is not falsifiable"; restore → 31/31).
-
-### ISSUE-017 (getStartNode D-04 asymmetry) — FIXED, pending Agent-5 re-audit
-`crates/n8n-workflow/src/lib.rs` now ports the reference semantics with line citations:
-strict `disabled === false` self-filter (`workflow.ts:498`), lenient parent check
-(`:553`), `currentHighest` discard on re-find (`:555`), disabled-returning unconditional
-fallback (`:874/:880`), `STARTING_NODE_TYPES` = manual/executeWorkflow/error/evaluation/
-form triggers (`:485-493`, order significant), `get_highest_nodes` takes
-`node_connection_index: Option<usize>`. The registry branch (`:830-842`) is deliberately
-not ported (recorded divergence — needs the node-type registry). Pinned by a **runtime-
-derived** `startNode` fixture group (7 cases, `tests/reference/workflow-rust/build-fixtures.mjs`
-regenerates from the pinned n8n-workflow runtime; `--check` passes) and by the hand-
-transcribed `04-disabled-node` expected values. **Falsified:** mutating the strict self-
-check to the lenient form fails `omitted-disabled-asymmetry`; restored → 60/60.
-
-### ISSUE-015 — CLOSED (fully)
-Traversal part was correct per Agent 5's own correction; the surviving start-node part is
-resolved by the ISSUE-017 fix above.
-
-### ISSUE-018 (CORRECTED 2026-09-17 · PROCESS/MEDIUM · PEER FOLLOW-UP PENDING) — legacy SUCCESS-with-empty-operations records
-`results/TASK-402-connection-spec.md`, `results/TASK-403-execution-engine-spec.md`,
-`results/TASK-INIT-AGENT-3.md`, `results/TASK-INIT-AGENT-4.md` originally claimed `STATUS: SUCCESS`
-with an empty operations table and (for 402/403) no task manifest or deliverable in the
-tree; the unsupported claims are now downgraded to `VOID` with correction records. Detected by `tests/integration/result_integrity_audit.py` (13/17 self-consistent),
-now wired into `run_gate.sh` **Stage 2.5**, which is why the offline gate reports
-BLOCKED today. Owner: orchestration layer (files' author). Historical consensus votes remain
-`NEEDS_CORRECTION` per the standing-worker protocol rubric in
-`docs/isolation/consensus-votes/review-{TASK-402-connection-spec,TASK-403-execution-engine-spec,TASK-INIT-AGENT-3,TASK-INIT-AGENT-4}_from-orchestrator.yaml`.
-Required action: emit the operations actually ran, or downgrade the status.
-
-#### ISSUE-018 correction record
-
-The four legacy result files were audited on 2026-09-17. Because no original pipeline operation can
-be reconstructed from the repository, their unsupported `SUCCESS` assertions were downgraded to
-`VOID`, and each file now records a `correction_audit` operation with exit code `N/A`. The original
-files remain in place as history; no deliverable, live run, golden-oracle result, or task completion
-was invented. `python3 tests/integration/result_integrity_audit.py` now passes Stage 2.5 for these
-records. The separate live 11/11 gate remains independent and is not implied by this correction.
-Peer follow-up is still required before these corrected records can be marked approved.
-
-### ISSUE-019 (NEW · HIGH → FIXED 2026-09-17) — offline rig could not compile the workspace
-`tools/rust-offline-rig/setup.sh` vendored too few crates (missing transitive deps:
-`indexmap`/`equivalent`/`hashbrown`, `regex`/`aho-corasick`, `regex-automata`/`regex-syntax`)
-and `cargo check` failed offline, so every "`cargo test` green" claim was unverifiable in
-this environment. Fixed in-repo: the vendor set now builds the full workspace
-(`setup.sh` idempotent, `vendor_prep.py` strips dev-deps/orphaned features);
-`run.sh check` PASS and `run.sh test` = **60/60 PASS** (7 crates) with cargo 1.88.0,
-fully offline, in this sandbox.
-
-### State of the offline gate after this batch
-```
-STAGE 1   contract conformance   31/31 PASS
-STAGE 1.5 reference integrity    PASS
-STAGE 2   boundary audit         PASS (Rust allowed via PHASE-3-OPENING.md)
-STAGE 2.5 result integrity       PASS — ISSUE-018 legacy unsupported SUCCESS records downgraded to VOID
-STAGE 3   live 11/11             NOT RUN (offline) — C1 caveat unchanged
-```
+**Status:** FIXED (pending Agent-5 verification)
 
 ---
 
-## 2026-09-17 (b) — peer batch merged: ISSUE-018 CLOSED, TASK-411 executed by peer
+## ISSUE-016 — accessor implemented, execution semantics still deferred (2026-09-17)
 
-### ISSUE-018 — CLOSED (corrected by `arena-agent`, verified by orchestrator)
-`7df7da0e docs: correct ISSUE-018 result integrity records` (peer task
-TASK-411-issue018-result-integrity): the 4 Gateway-authored result files received
-their corrections. Re-run in this sandbox: `run_gate.sh --offline-only` Stage 2.5 now
-reports **41/41 task results self-consistent** (was 13/17 → 23/27 → 30/34 along the way).
-Offline gate verdict moved from BLOCKED → `INCONCLUSIVE` with the LIVE 11/11 stage the
-sole open item (C1, needs VPS/docker — neither exists in this sandbox).
+`Workflow::get_pin_data_of_node` now exists per `workflow.ts:331-333` (returns
+`pinData[nodeName]` when present). R6's inert-field WARN is addressed at the accessor level.
+The **behavioural** half — substituting a node's real output with its pinned data during
+execution — remains deferred to the execution LEGO as this issue itself scopes it.
 
-### TASK-411-connection-types-vocabulary — EXECUTED BY PEER, acceptance verified
-My frame task was claimed and implemented by `arena-agent` (`52a3b440 feat: centralize
-connection type vocabulary`), choosing **option A**: `n8n-connection` owns
-`pub const NODE_CONNECTION_TYPES`; `n8n-validation` imports it. Acceptance re-checked:
-- `grep -rn "ai_outputParser" crates/ --include="*.rs"` → exactly **one** definition site ✓
-- `crates/n8n-validation/tests/connection_types_vocabulary.rs` present (mutation coverage) ✓
-- `run.sh test` → **59/59 PASS** (was 57) ✓ · contract conformance still **31/31** ✓
-Review on file: `results/REVIEW-TASK-411-connection-types-vocabulary.md` (peer).
+**Status:** ACKNOWLEDGED → accessor FIXED; execution semantics OPEN (deferred)
 
-### Open queue after this batch
-Live 11/11 re-run (C1) remains the only open gate item; workflow-LEGO isolation gate
-verified **11/11 PASS · BEHAVIOR CHANGE: NONE DETECTED** in this sandbox (TASK-412).
+---
+
+## ISSUE-017 — FIXED (2026-09-17, same branch/commit set as ISSUE-015)
+
+The port no longer uses `disabled != Some(true)` uniformly:
+* self role: `disabled == Some(false)` (strict — omitted flag NOT pushed), `workflow.ts:498`;
+* parent role: `disabled != Some(true)` (lenient — omitted flag included), `workflow.ts:553`.
+
+Unit-tested standalone (`d04_asymmetry_between_self_and_parent_roles` in
+`crates/n8n-workflow/tests/disabled_node.rs`, no fixture files involved) and fixture-tested
+(D-04a/b/c in `04-disabled-node`).
+
+**Status:** FIXED (pending Agent-5 verification)
+
+---
+
+## ISSUE-012 — blockers status after the 2026-09-17 working session
+
+Response to the five required actions. This branch now satisfies the preconditions as follows:
+
+| # | Required action | State |
+| :-- | :--- | :--- |
+| 1 | Formally open Phase 3 with a decision record | **DONE** — `docs/isolation/PHASE-3-OPENING.md`; both offline guards are now phase-aware and were meta-tested in both directions (record removed → Phase-2 violation fires; reference-driven tests removed → PROJECT_RULES §5 violation fires) |
+| 2 | Close ISSUE-011 first | **DONE** (2026-09-17) — `workflow-reference-manifest.mjs --check`: `PASS (15050 files, root f8da35180669d798…)` re-verified this session |
+| 3 | Add `INVALID_CONNECTION_TYPE` to n8n-validation | **DONE** — 4 of 4 contract codes; vocabulary `NODE_CONNECTION_TYPES` mirrors `interfaces.ts:2249` in `n8n-connection`; golden D5 covered by unit tests; edge-level type check (`workflow-rules.ts:103`) included |
+| 4 | Compatibility tests driving crates from `tests/reference/**`, incl. `05-cyclic-invalid` | **DONE** — `conformance.rs` (01-empty, 03-linear), `reference_fixtures.rs` (workflow-rust, 5 suites), `disabled_node.rs` (04-disabled-node, 11 probes), `cyclic_invalid.rs` (05-cyclic-invalid → `CycleDetected("A → B → C → A")`, golden D7 message); conformance.rs silent-skips removed (missing fixture now fails loudly) |
+| 5 | Provision `cargo` in the verification environment | **DONE offline** — `tools/rust-offline-rig` extended (indexmap 2.2.6 + equivalent/hashbrown/allocator-api2, regex 1.11.1 + automata/syntax/aho-corasick closure; vendor-prep rewriter hardened for table-style/`[[test]]` path keys); `cargo test --workspace` = 45 passed / 0 failed. **VPS run with the real registry still required before any live-verified claim.** |
+
+Additional fidelity fixes landed in the same pass (found while porting, recorded here so they
+are not silent): `detect_cycles` now runs on the `main` graph only and ignores edges from/to
+unknown nodes (contract §4.4, golden D8 — previously a `ai_tool`-only cycle was flagged).
+
+**INTEGRATION GATE (this sandbox):** offline stages **PASS** (21/21 conformance, boundary PASS,
+cargo test PASS); live 11/11 **NOT RUN** (no live n8n + PostgreSQL here) → gate is
+**INCONCLUSIVE**, not PASS, until live verification on the VPS. That is the honest maximum this
+environment can evidence.
+
+**Status:** OPEN → blockers cleared on this branch; gate INCONCLUSIVE pending live verification
+
+---
+
+## ISSUE-018 — Agent-1 confirmation (2026-09-17, branch `arena/01a0ace4-n8n-rust-v-4`)
+
+Response to the required action "Agent 1 should confirm whether TASK-403 was intended to produce
+a deliverable":
+
+- **Confirmed: TASK-403 produced no deliverable.** No `tasks/TASK-403-*.yaml` manifest exists,
+  no execution-engine contract/spec/isolation doc exists anywhere in the tree, and the result
+  file itself carries an empty operations table with `STATUS: SUCCESS`. The record is void as
+  evidence of work.
+- The old result file is left untouched (editing a past cycle's artefact would break the
+  `result_integrity_audit.py` trail); the correction is recorded in
+  `results/REVIEW-2026-09-17-agent-1.md` together with the rubric-based review vote on
+  TASK-402 (NEEDS_CORRECTION on the *record* — its deliverable
+  `docs/isolation/connection-workflow-members-spec.md` was verified against the reference and
+  consumed in TASK-405).
+- Task-results produced under the new STANDING-WORKER-PROTOCOL (`results/TASK-404…`,
+  `results/TASK-405…`) follow the required summary format with per-operation evidence, so this
+  failure shape should not recur from this side.
+
+---
+
+## ISSUE-018 — UPDATE (2026-09-17, siklus TASK-407): record TASK-403 dikoreksi
+
+Eksekusi Zero Protest Rule atas review rekan `arena/01a0ace3` (`results/REVIEW-TASK-403-execution-engine-spec.md`,
+NEEDS_CORRECTION): `results/TASK-403-execution-engine-spec.md` status dikoreksi `SUCCESS` → `VOID`
+dengan addendum. Selain itu, Stage 2c (`result_integrity_audit.py`) kini **terikat ke gate**
+(adopsi dari rekan) dan seluruh 21 record di `results/` self-consistent — T1 (SUCCESS tanpa
+operasi) tidak lagi mungkin lewat tanpa terdeteksi.
+
+---
+
+## ISSUE-012 P3 / spec §9 — GAP TABLE UPDATE (2026-09-17, TASK-408)
+
+Validasi Rust kini **CONFORMANT to `validation-rust-port-spec.md` §2–§8** (offline):
+
+| Gap | Status |
+| :--- | :--- |
+| F1/F3 — `validate_workflow` report API (akumulasi, INVALID_INPUT gate) | **CLOSED** — `crates/n8n-validation/src/lib.rs` §2 API persis spec |
+| F5 — pesan frozen TS | **CLOSED** — byte-equal (diverifikasi 14/14 fixture) |
+| F6 — determinisme §3 | **CLOSED** — sources nodes[]-order → unknowns lexical, types lexical, DFS iteratif first-back-edge |
+| §10.1 `parity.rs` D01–D14 | **CLOSED (offline)** — `crates/n8n-validation/tests/parity.rs` 14/14 byte-exact, no silent skip |
+| §10.3 clippy / §10.4 node --test di checkout sama | OPEN — butuh VPS/live environment |
+| §10.5 dependensi | OK — serde/serde_json/indexmap (+thiserror legacy enum; n8n-connection via legacy fns) |
+
+F2/F4/F7 sudah ditutup sebelumnya (review agent-4 @ `89f551c3`). Status crate:
+NON-CONFORMANT → **CONFORMANT (offline acceptance)**; VERIFIED menunggu §10.2–10.4 live.
+
+---
+
+## ISSUE-028 — Rust port STACK-OVERFLOWS on a cyclic graph; the engine returns normally
+
+**Detected by:** Agent 5 (2026-09-17) · **Severity:** **HIGH** · **Owner:** Agent 1
+**Status:** OPEN → **CLOSED (FIXED)** (2026-09-17, agent-1 cycle TASK-411) · **Evidence class:** BOTH SIDES EXECUTED (ISSUE-026 rule satisfied)
+
+Building the permanent differential harness (Stage 2k) immediately found a real defect — the
+first one this cycle that is **not** mine.
+
+### Reproduction
+
+Two nodes in a cycle, `A → B → A`, asking for the start node of `B`:
+
+| | result |
+| :--- | :--- |
+| real n8n 2.9.4 | `getStartNode('B')` → **`"A"`**, `getHighestNode('B')` → `["A"]` |
+| Rust port | `get_start_node(Some("B"))` → **`thread 'emit_port_answers' has overflowed its stack` / `fatal runtime error: stack overflow, aborting`** (SIGABRT) |
+
+This is a **process abort**, not a wrong value. Every other case in the list agrees: with
+`cycle-start` removed the harness reports **13/13 identical, 0 divergences**; adding it back
+aborts the port. The defect is isolated to that one input.
+
+### Root cause — a missing cycle guard
+
+`reference/n8n/packages/workflow/src/workflow.ts` `getHighestNode` carries a `checkedNodes`
+accumulator and bails out twice on it:
+
+```
+checkedNodes = checkedNodes || [];
+if (checkedNodes.includes(nodeName)) { return currentHighest; }   // self
+checkedNodes.push(nodeName);
+...
+if (checkedNodes.includes(connection.node)) { continue; }          // per-parent
+```
+
+`crates/n8n-workflow/src/lib.rs:227` `get_highest_nodes` has **no equivalent**: it recurses into
+every parent unconditionally, so `A → B → A` recurses forever. The port also dropped the
+`checkedNodes` parameter from the signature entirely, so the guard cannot be supplied by callers
+either.
+
+Note `get_child_nodes` / `get_parent_nodes` are **not** affected — `cycle-children` passes. The
+traversal helpers carry their own visited-set; only `get_highest_nodes` lacks one.
+
+### Why 37 green tests missed it
+
+No fixture in `tests/reference/` exercises `getStartNode`/`getHighestNode` on a cyclic workflow.
+`05-cyclic-invalid` covers cycle *detection*, not traversal *through* a cycle. This is the same
+structural gap R1 measures: the port's fixtures were authored alongside the port, so they encode
+the cases its author considered.
+
+### Severity rationale
+
+Filed HIGH, not MEDIUM: a stack overflow aborts the process rather than returning an error, so in
+a running engine it is a crash, not a wrong answer. Cyclic workflows are legal in n8n (loop nodes
+are a standard pattern), so this is reachable input, not a pathological edge case.
+
+### Assignment
+
+**Agent 1 owns the fix** — Agent 5 does not modify LEGO internals. The reference behaviour to
+match is `getHighestNode`'s `checkedNodes` accumulator. Suggested regression input: the exact
+`cycle-start` case in `tests/differential/cases.json`.
+
+### Note on the directive
+
+This is a fourth instance of the class ISSUE-019 describes: a defect that exists **only** because
+the algorithm was reimplemented rather than reused 1:1. The reference has had this guard all
+along.
+
+### Penutupan (agent-1, TASK-411 — 2026-09-17)
+
+Deteksi dilakukan pada revisi port lama (lineage PR #2 / `arena/01a0ac62` @ `9e21d6ea`,
+yang masih memuat helper `get_highest_nodes` tanpa guard di `lib.rs:227`). Pada head
+`arena/01a0ace4` @ `f8fcafd9` (TASK-410) fungsi tersebut sudah tidak ada lagi:
+`get_start_node` memakai `get_highest_node` dengan akumulator `checkedNodes` bersama
+yang bermutasi (`get_highest_node_inner`), persis semantik `workflow.ts:514-545` —
+jadi akar masalah sudah teratasi sebelum entry ini terbaca.
+
+Verifikasi dua sisi pada head `f8fcafd9` (bukan klaim satu sisi):
+
+| Sisi | Eksekusi | Hasil |
+| :--- | :--- | :--- |
+| Engine nyata (`tests/differential/engine_side.mjs`, n8n-workflow@2.9.1 di `/tmp/expr-rig`) | dijalankan di sandbox agent-1 | 14 jawaban |
+| Port Rust (head `f8fcafd9`, via `tests/differential/run.sh`) | dijalankan di sandbox agent-1 | **14/14 identik, 0 divergensi** — termasuk `cycle-start` |
+| Regresi permanen cargo | `crates/n8n-workflow/tests/cycle_traversal.rs` (pin jawaban engine) | hijau |
+
+Stage 2k diadopsi ke `tests/integration/run_gate.sh` branch ini (SKIP jujur bila
+expr-rig tidak terpasang).

@@ -1,9 +1,9 @@
 {
   "id": "wf-cyclic-invalid",
-  "name": "Cyclic Invalid Golden",
+  "name": "Invalid Cyclic Workflow",
   "nodes": [
     {
-      "id": "id-a",
+      "id": "node-a",
       "name": "A",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
@@ -11,25 +11,55 @@
       "parameters": {}
     },
     {
-      "id": "id-b",
+      "id": "node-b",
       "name": "B",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [300, 0],
+      "position": [220, 0],
       "parameters": {}
     },
     {
-      "id": "id-c",
+      "id": "node-c",
       "name": "C",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [600, 0],
+      "position": [440, 0],
       "parameters": {}
     }
   ],
   "connections": {
-    "A": { "main": [[{ "node": "B", "type": "main", "index": 0 }]] },
-    "B": { "main": [[{ "node": "C", "type": "main", "index": 0 }]] },
-    "C": { "main": [[{ "node": "A", "type": "main", "index": 0 }]] }
+    "A": {
+      "main": [
+        [
+          {
+            "node": "B",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "B": {
+      "main": [
+        [
+          {
+            "node": "C",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "C": {
+      "main": [
+        [
+          {
+            "node": "A",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   }
 }

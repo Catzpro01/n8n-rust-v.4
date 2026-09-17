@@ -51,9 +51,11 @@ pub fn map_connections_by_destination(connections: &Connections) -> Connections 
                     let lists = destination.entry_or_insert_default(&connection.connection_type);
 
                     // JS: maxIndex = length - 1; for (j = maxIndex; j < index; j++) push([])
-                    // → pads the array so that slot `index` exists.
+                    // → pads the array so that slot `index` exists. The reference pads with
+                    // EMPTY ARRAYS (`[]`), never `null` — the byDestination probes in
+                    // tests/reference/connection/02 pin `[[…], [], […]]`.
                     while lists.len() <= connection.index {
-                        lists.push(None);
+                        lists.push(Some(Vec::new()));
                     }
                     if let Some(target_slot) = lists.get_mut(connection.index) {
                         target_slot.get_or_insert_with(Vec::new).push(Connection {
@@ -128,21 +130,61 @@ mod tests {
     }
 
     #[test]
-    fn destination_slots_are_padded_to_the_source_output_index() {
+    fn destination_slots_are_padded_to_the_destination_input_index() {
         let mut outputs = NodeOutputs::new();
-        outputs.insert(
-            "main".into(),
-            vec![None, Some(vec![connection("B", 1)]), None, None],
-        );
+        outputs.insert("main".into(), vec![None, Some(vec![connection("B", 1)])]);
         let mut source: Connections = OrderedMap::new();
         source.insert("A".into(), outputs);
 
         let destination = map_connections_by_destination(&source);
         let b = destination.get("B").unwrap();
         let main = b.get("main").unwrap();
-        // slot 1 is where the source output index lands; earlier slots are padded
+        // The edge's `index` field is B's *destination input index* → slot 1;
+        // the stored index is the *source output index* (A's output 1).
+        // Padding is `[]` (empty arrays), matching the reference
+        // (`getConnectionsByDestination` pushes `[]`, never `null`).
         assert_eq!(main.len(), 2);
-        assert_eq!(main[0], None);
+        assert_eq!(main[0], Some(Vec::new()));
         assert_eq!(main[1].as_ref().unwrap()[0].index, 1);
+    }
+
+    // Golden trace from tests/reference/connection/02-multi-output (IF out 1 → B):
+    // B sits at destination input 0 even though the edge lives in IF's output slot 1,
+    // and the stored index keeps the source output index.
+    #[test]
+    fn destination_slot_is_the_edge_index_not_the_source_slot() {
+        let mut if_outputs = NodeOutputs::new();
+        if_outputs.insert(
+            "main".into(),
+            vec![
+                Some(vec![connection("A", 0)]),
+                Some(vec![connection("B", 0), connection("Merge", 1)]),
+            ],
+        );
+        let mut source: Connections = OrderedMap::new();
+        source.insert("IF".into(), if_outputs);
+
+        let destination = map_connections_by_destination(&source);
+        let b = destination.get("B").unwrap();
+        assert_eq!(
+            b.get("main").unwrap(),
+            &vec![Some(vec![Connection {
+                node: "IF".into(),
+                connection_type: "main".into(),
+                index: 1,
+            }])]
+        );
+        let merge = destination.get("Merge").unwrap();
+        assert_eq!(
+            merge.get("main").unwrap(),
+            &vec![
+                Some(Vec::new()), // padded with [], per the reference
+                Some(vec![Connection {
+                    node: "IF".into(),
+                    connection_type: "main".into(),
+                    index: 1,
+                }])
+            ]
+        );
     }
 }

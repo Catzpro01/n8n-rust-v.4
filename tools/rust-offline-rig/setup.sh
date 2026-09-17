@@ -18,10 +18,7 @@ RUST_VERSION="1.88.0"
 NPM_HOST="https://registry.npmjs.org"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# repo -> crate tags: the crates the workspace dependency closure needs
-# (serde/thiserror + serde_json deps + indexmap's hashbrown/equivalent + regex's
-# automata/syntax/aho-corasick members — the last two groups were missing until
-# 2026-09-17, which is why `cargo` previously could not resolve the workspace offline)
+# target -> crate tags: the 12 crates the workspace dependency closure needs
 CRATES=(
   "serde-rs/serde:v1.0.219"
   "serde-rs/json:v1.0.140"
@@ -33,10 +30,17 @@ CRATES=(
   "dtolnay/ryu:1.0.18"
   "BurntSushi/memchr:2.7.4"
   "dtolnay/unicode-ident:1.0.14"
+  # indexmap =2.2.6 (workspace dep, pinned for Rust 1.75) and its dependency
+  # closure: equivalent ^1.0, hashbrown ^0.14.1 (raw feature), allocator-api2
+  # ^0.2 (hashbrown's default-feature dep — vendored so resolution never needs
+  # crates.io even if a future feature set enables it).
   "indexmap-rs/indexmap:2.2.6"
   "indexmap-rs/equivalent:v1.0.1"
   "rust-lang/hashbrown:v0.14.5"
-  "rust-lang/regex:1.10.6"
+  "zakarumych/allocator-api2:v0.2.18"
+  # regex "1.10" (n8n-expression) and its dependency closure; the rust-lang/regex
+  # clone carries all three regex crates at per-crate tags.
+  "rust-lang/regex:1.11.1"
   "BurntSushi/aho-corasick:1.1.3"
 )
 
@@ -93,8 +97,17 @@ for spec in "${CRATES[@]}"; do
 done
 
 # --- 3. vendor dir ------------------------------------------------------------
-if [ ! -d "$RIG/vendor" ] || [ -z "$(ls -A "$RIG/vendor" 2>/dev/null)" ]; then
+# Rebuild when the dependency plan changes; otherwise an older rig can silently keep an
+# incomplete vendor directory and report a misleading resolver error. (Adopted from the
+# sibling worker cycle, arena/01a0ace3.)
+VENDOR_PLAN_VERSION="2"
+PLAN_MARKER="$RIG/vendor/.n8n-rust-rig-plan"
+if [ ! -d "$RIG/vendor" ] || [ ! -f "$PLAN_MARKER" ] || [ "$(cat "$PLAN_MARKER" 2>/dev/null)" != "$VENDOR_PLAN_VERSION" ]; then
+  rm -rf "$RIG/vendor"
   python3 "$HERE/vendor_prep.py" "$RIG/vendorsrc" "$RIG/vendor"
+  printf '%s\n' "$VENDOR_PLAN_VERSION" > "$PLAN_MARKER"
+else
+  echo "have   vendor plan $VENDOR_PLAN_VERSION"
 fi
 
 echo

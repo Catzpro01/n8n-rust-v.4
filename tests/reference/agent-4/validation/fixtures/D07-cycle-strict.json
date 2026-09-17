@@ -1,0 +1,74 @@
+{
+  "description": "A→B→A on main, allowCycles=false → CYCLE_DETECTED with deterministic path",
+  "expected": {
+    "errors": [
+      {
+        "code": "CYCLE_DETECTED",
+        "message": "Cycle detected: A → B → A",
+        "node": "A",
+        "path": [
+          "connections",
+          "B",
+          "main"
+        ]
+      }
+    ],
+    "valid": false
+  },
+  "id": "D07-cycle-strict",
+  "input": {
+    "options": {
+      "allowCycles": false
+    },
+    "workflow": {
+      "connections": {
+        "A": {
+          "main": [
+            [
+              {
+                "index": 0,
+                "node": "B",
+                "type": "main"
+              }
+            ]
+          ]
+        },
+        "B": {
+          "main": [
+            [
+              {
+                "index": 0,
+                "node": "A",
+                "type": "main"
+              }
+            ]
+          ]
+        }
+      },
+      "nodes": [
+        {
+          "id": "A",
+          "name": "A",
+          "parameters": {},
+          "position": [
+            0,
+            0
+          ],
+          "type": "n8n-nodes-base.noOp",
+          "typeVersion": 1
+        },
+        {
+          "id": "B",
+          "name": "B",
+          "parameters": {},
+          "position": [
+            0,
+            0
+          ],
+          "type": "n8n-nodes-base.noOp",
+          "typeVersion": 1
+        }
+      ]
+    }
+  }
+}
