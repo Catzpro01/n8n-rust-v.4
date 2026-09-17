@@ -5,6 +5,7 @@
 #   n8n-workflow@2.9.1     the Workflow Model (the artifact this LEGO isolates)
 #   n8n-core@2.9.1         the execution engine (live verification)
 #   n8n-nodes-base@2.9.1   real node implementations (live verification)
+#   flatted@3.2.7          the execution_data wire format (pnpm catalog pin of @n8n/db, n8n@2.9.4)
 #
 # Notes
 #  - The full `n8n` CLI is NOT installed: its native `sqlite3` dependency needs
@@ -31,7 +32,8 @@ cat > "$TARGET/package.json" <<'JSON'
   "dependencies": {
     "n8n-core": "2.9.1",
     "n8n-nodes-base": "2.9.1",
-    "n8n-workflow": "2.9.1"
+    "n8n-workflow": "2.9.1",
+    "flatted": "3.2.7"
   }
 }
 JSON

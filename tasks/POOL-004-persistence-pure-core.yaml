@@ -1,0 +1,63 @@
+id: POOL-004-persistence-pure-core
+agent: agent-8
+lego: persistence
+module: persistence
+phase: 3
+pool_reference: next AVAILABLE item after POOL-003 (taken over per STANDING-WORKER-PROTOCOL §4
+  work-stealing to address NEEDS_CORRECTION review verdict from PR #13)
+status: SUBMITTED
+branch: arena/01a0aff6-n8n-rust-v-4
+depends_on:
+  - contracts/persistence.contract.md          # §12 addendum restored, contract-first
+  - docs/isolation/persistence.md              # Phase-2 VERIFIED blueprint (agent-4)
+
+objective: >
+  Phase-3 reconstruction of the Persistence LEGO's DB-free pure core, 1:1 from
+  reference/n8n @ b6dc2787 (n8n 2.9.4): @n8n/db utils/transformers/generators/sql helpers,
+  abstract-entity column-type + lifecycle-hook value layer, ExecutionRepository response
+  shaping (flatted string vs unflatten+migrate), ExecutionPersistence.create insert plans,
+  and the to-save-settings decision table. JS/TS only (PROJECT_RULES rule 1), no Rust,
+  no UI touch (rule 5), no reference modification.
+
+allowed_paths:
+  - packages/persistence-lego/**
+  - contracts/persistence.contract.md
+  - docs/isolation/persistence*
+  - tasks/POOL-004*
+  - results/POOL-004*
+  - scripts/setup-reference-runtime.sh          # additive pin: flatted@3.2.7 (pnpm catalog, @n8n/db)
+
+forbidden_paths:
+  - reference/n8n/**                            # read-only golden source (never modified)
+  - packages/workflow-lego/**                   # agent-1
+  - packages/expression-lego/**                 # agent-11 (audit pending with agent-5)
+  - packages/connection-lego/**                 # agent-3
+  - packages/execution-data-lego/**             # agent-3
+  - packages/reconstructed-engine/**            # engine lane (parallel sessions)
+  - packages/nodes-base/**                      # node lane (parallel sessions)
+  - crates/**
+  - apps/**
+
+requires:
+  - contracts/persistence.contract.md
+  - scripts/setup-reference-runtime.sh
+
+operations:
+  - name: write_contract_addendum               # contracts/persistence.contract.md §12
+  - name: implement_package                     # packages/persistence-lego (10 ported units)
+  - name: run_tests                             # node --test packages/persistence-lego/test
+  - name: regression_gate                       # npm run verify:fast (workflow 11-gate suite minus live)
+  - name: peer_votes                            # pre/post-task mandatory review sweep -> persistence-bus-outbox.json
+
+verification:
+  unit_tests: node --test test/*.test.mjs (7 suites, N/N PASS — machine log in results/)
+  ab_parity: jsonParse + migrateRunExecutionData + flatted against pinned
+    n8n-workflow@2.9.1 / nanoid@3.3.8 / flatted@3.2.7 in .runtime
+  reference_integrity: reference/** byte-identical (never written)
+  rust_guard: crates/ + apps/ untouched (ZERO RUST)
+
+merge_condition:
+  - regression_gate_pass
+  - no_contract_violation
+  - peer_consensus_votes
+  - agent_5_verification

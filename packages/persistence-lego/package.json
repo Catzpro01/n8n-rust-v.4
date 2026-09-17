@@ -1,0 +1,20 @@
+{
+  "name": "@n8n-rust/persistence-lego",
+  "version": "0.1.0",
+  "private": true,
+  "description": "POOL-004 — 1:1 Node.js (ESM) reconstruction of the n8n 2.9.4 Persistence LEGO pure core: @n8n/db utils + abstract-entity value layer + execution response shaping + save-settings policy. ZERO RUST per PROJECT_RULES v2.9.4-native. DB-free units only.",
+  "type": "module",
+  "main": "src/index.mjs",
+  "exports": {
+    ".": "./src/index.mjs",
+    "./consumed": "./src/consumed.mjs",
+    "./execution-shaping": "./src/repositories/execution-shaping.mjs"
+  },
+  "scripts": {
+    "pretest": "node tools/ensure-runtime-link.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

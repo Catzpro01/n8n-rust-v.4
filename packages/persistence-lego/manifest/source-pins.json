@@ -1,0 +1,86 @@
+{
+  "task": "POOL-004-persistence-pure-core",
+  "agent": "agent-12",
+  "branch": "arena/01a0af71-n8n-rust-v-4",
+  "reference": {
+    "repo": "n8n",
+    "tag": "n8n@2.9.4",
+    "commit": "b6dc2787c45677a29a9612cd27eb911302961a83"
+  },
+  "dependency_pins": {
+    "n8n-workflow": "2.9.1",
+    "flatted": "3.2.7",
+    "nanoid": "3.3.8"
+  },
+  "sql_where_sha256": {
+    "postgresdb": "54776ba945cfc1996faeb383f1da201a17b4d346c02972638774cc3a32487181",
+    "sqlite_2types": "8c045d700933c25ebd36531c1d08a761e07b721f28982b4901794c9bffa622bf"
+  },
+  "source_pins": [
+    {
+      "reference": "reference/n8n/packages/@n8n/db/src/utils/transformers.ts",
+      "sha256": "1f09a0809450373584b75636c3494dad3d3151a66524b5d68a9195af10722f94",
+      "ported_to": "src/utils/transformers.mjs (full file)"
+    },
+    {
+      "reference": "reference/n8n/packages/@n8n/db/src/utils/separate.ts",
+      "sha256": "b6f6ef28c3a5bdffcb500ec81bac33e13cdd69d3ec887997d953153e69c0808b",
+      "ported_to": "src/utils/separate.mjs"
+    },
+    {
+      "reference": "reference/n8n/packages/@n8n/db/src/utils/is-string-array.ts",
+      "sha256": "5d8bf1d6408e455a0b6a629504076afadebf0064b75d20c89a5764d5a0b12f66",
+      "ported_to": "src/utils/is-string-array.mjs"
+    },
+    {
+      "reference": "reference/n8n/packages/@n8n/db/src/utils/sql.ts",
+      "sha256": "3fb262d97210b8199b51ded13b434e018e1ddb491e1c31d99173eb5115d02dd9",
+      "ported_to": "src/utils/sql.mjs"
+    },
+    {
+      "reference": "reference/n8n/packages/@n8n/db/src/utils/get-final-test-result.ts",
+      "sha256": "8a794eecf25a7a2d39d7db8113c7cd7240fa43ee5c7cf9d5f731d3ca4f31990e",
+      "ported_to": "src/utils/get-final-test-result.mjs"
+    },
+    {
+      "reference": "reference/n8n/packages/@n8n/db/src/utils/generators.ts",
+      "sha256": "4a8dbdb0433b4d601efe2cd9220900ab441849acc0c12e4f69d29eee9b920f3d",
+      "ported_to": "src/utils/generators.mjs (generateHostInstanceId)"
+    },
+    {
+      "reference": "reference/n8n/packages/@n8n/db/src/utils/build-workflows-by-nodes-query.ts",
+      "sha256": "d75e74ceb3dea854b63233a16dee4f75ee4cfd6f65af9478d8828aa4de9e3294",
+      "ported_to": "src/utils/build-workflows-by-nodes-query.mjs (byte-exact SQL)"
+    },
+    {
+      "reference": "reference/n8n/packages/@n8n/db/src/entities/abstract-entity.ts",
+      "sha256": "eade42fbf03fed834935c0230ec015dfaab30148ebbddf0b449896cda4b2cf3b",
+      "ported_to": "src/entities/abstract-entity.mjs (value layer)"
+    },
+    {
+      "reference": "reference/n8n/packages/@n8n/db/src/repositories/execution.repository.ts",
+      "sha256": "851509b640fd22abca696212b751df1452c9d9c018376f62cf4de2ffef3f8517",
+      "ported_to": "src/repositories/execution-shaping.mjs (L149, L191-226, L230-247, L269-344, L350-362, L388-406, L344, L1125-1140)"
+    },
+    {
+      "reference": "reference/n8n/packages/cli/src/executions/execution-persistence.ts",
+      "sha256": "17c74d7ba9da51c98763f81e2b677faad6595f270f96ad8f65b159dbec233ece",
+      "ported_to": "src/repositories/execution-shaping.mjs#planExecutionPersistenceCreate (create L33-65)"
+    },
+    {
+      "reference": "reference/n8n/packages/cli/src/execution-lifecycle/to-save-settings.ts",
+      "sha256": "207ae2a7988366a24cdd4425a24d872ceaf007bd6f1588e354ab6dd07b9d584f",
+      "ported_to": "src/repositories/to-save-settings.mjs (full file)"
+    },
+    {
+      "reference": "reference/n8n/packages/@n8n/utils/src/workflowId.ts",
+      "sha256": "b79c4f27f9095fe1f87d78b853324eb6884a0c027475c485048eb484bfd52c04",
+      "ported_to": "src/utils/generators.mjs (generateNanoId)"
+    },
+    {
+      "reference": "reference/n8n/packages/@n8n/constants/src/index.ts",
+      "sha256": "def7064100d396b84b448d7219184c018a5c37c07d56c8f7dd2346213d0ce5a6",
+      "ported_to": "src/utils/generators.mjs (NANOID_ALPHABET pin, L130)"
+    }
+  ]
+}
