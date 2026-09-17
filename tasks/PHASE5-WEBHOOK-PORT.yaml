@@ -1,0 +1,46 @@
+# PHASE5-WEBHOOK-PORT — the webhook layer must be a port of the CLI webhook service, not a guess
+# Trigger: the Phase 4 engine + the facade's inline InternalWebhookEngine invented semantics:
+#     * rows keyed `${method}:${path}` and a made-up 'There is a conflict with one of the webhooks.'
+#       (the reference WebhookService.storeWebhook upserts and never throws),
+#     * dynamic matching by `path.includes(webhookId)` (the reference needs an equal segment count,
+#       compares static segments as a set and prefers the most static segments),
+#     * no path composition (the CLI uses NodeHelpers.getNodeWebhookPath),
+#     * `getNodeWebhookUrl`'s `:param` rule, the cookie sanitizer, the on-received extractor, the
+#       not-found payload/hints and the response-header validation were absent entirely.
+# LEGO cycle: IMPLEMENTED -> VERIFIED (W01-W07) -> INTEGRATED into the facade.
+
+phase: 5
+lego: webhook
+agent: agent-3 (Arena session arena/01a0b104-n8n-rust-v-4)
+
+allowed_paths:
+  - packages/reconstructed-engine/src/webhook-engine.ts
+  - packages/reconstructed-engine/src/n8n-reconstructed-facade.ts
+  - packages/reconstructed-engine/test-integration.mjs
+  - packages/webhook-lego/**
+  - tools/webhook-isolation-gate.mjs
+  - docs/isolation/webhook.md
+  - docs/isolation/evidence/webhook-lego-gate.json
+  - contracts/webhook.contract.md
+  - package.json
+  - README.md
+  - tasks/PHASE5-WEBHOOK-PORT.yaml
+  - results/PHASE5-WEBHOOK-PORT.md
+
+forbidden_paths:
+  - reference/n8n/**        # pinned, read-only (Vue editor UI stays byte-identical)
+  - crates/**
+  - apps/**
+
+oracle:
+  - executed: .runtime/node_modules/n8n-workflow@2.9.1 — NodeHelpers.getNodeWebhookPath,
+    NodeHelpers.getNodeWebhookUrl, WebhookPathTakenError, WEBHOOK_NODE_TYPE constants
+  - transcribed: reference/n8n/packages/cli/src/webhooks/{webhook.service,webhook-request-sanitizer,
+    webhook-on-received-response-extractor,webhook-response-headers}.ts +
+    errors/response-errors/webhook-not-found.error.ts (DI/TypeORM/Redis bound, not importable offline)
+
+tests:
+  - webhook_check      # npm run webhook:check → W01..W07, 7/7, 1,869 differential calls
+  - webhook_suite      # node --test packages/webhook-lego/test/*.test.mjs → 18/18
+  - engine_typecheck   # tsc -p packages/reconstructed-engine/tsconfig.json → 0 errors
+  - repository_gate    # npm run verify (12/12) + connection:check (9/9) + trigger:check (6/6) + i18n:check (5/5)

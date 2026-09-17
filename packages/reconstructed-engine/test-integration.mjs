@@ -55,7 +55,31 @@ async function runTests() {
 				if (facade.trigger.isActive('test-trigger')) throw new Error('still active');
 			},
 		},
-		{ name: '07-webhook', fn: async () => { facade.webhook.storeWebhook({ webhookPath: 'test', method: 'POST', node: 'Webhook', workflowId: 'wf1' }); const found = facade.webhook.findWebhook('POST', 'test'); if (!found) throw new Error('not found'); try { facade.webhook.storeWebhook({ webhookPath: 'test', method: 'POST', node: 'W2', workflowId: 'wf2' }); throw new Error('should conflict'); } catch (error) { if (!error.message.includes('conflict')) throw error; } } },
+		{
+			name: '07-webhook',
+			fn: async () => {
+				// Reference semantics (`WebhookService.storeWebhook` upserts on method + webhookPath).
+				facade.webhook.storeWebhook({ webhookPath: 'test', method: 'POST', node: 'Webhook', workflowId: 'wf1' });
+				const found = facade.webhook.findWebhook('POST', 'test');
+				if (!found || found.node !== 'Webhook') throw new Error('static lookup failed');
+
+				facade.webhook.storeWebhook({ webhookPath: 'test', method: 'POST', node: 'W2', workflowId: 'wf2' });
+				if (facade.webhook.findWebhook('POST', 'test').node !== 'W2') throw new Error('upsert did not replace the row');
+				if (facade.webhook.allWebhooks().length !== 1) throw new Error('upsert must not duplicate rows');
+
+				// Dynamic paths: `<uuid>/user/:id/posts` matches by webhookId + segment count + static segments.
+				facade.webhook.storeWebhook({ webhookPath: 'user/:id/posts', method: 'GET', node: 'Dyn', workflowId: 'wf3', webhookId: 'uuid-1' });
+				const dynamic = facade.webhook.findWebhook('GET', 'uuid-1/user/123/posts');
+				if (!dynamic || dynamic.node !== 'Dyn') throw new Error('dynamic lookup failed');
+				if (facade.webhook.findWebhook('GET', 'uuid-1/user/123/comments') !== null) throw new Error('segment count must match');
+				if (facade.webhook.findWebhook('GET', 'uuid-2/user/123/posts') !== null) throw new Error('webhookId must match');
+
+				// Deactivation drops exactly this workflow's rows.
+				facade.webhook.deleteWebhooksByWorkflow('wf3');
+				if (facade.webhook.findWebhook('GET', 'uuid-1/user/123/posts') !== null) throw new Error('rows not deleted');
+				facade.webhook.deleteWebhooksByWorkflow('wf2');
+			},
+		},
 		{ name: '08-scheduler', fn: async () => { facade.scheduler.registerCron({ workflowId: 'wf', nodeId: '1', expression: '* * * * *' }, () => {}); facade.scheduler.deregisterCrons('wf'); if (facade.scheduler.cronsByWorkflow.has('wf')) throw new Error('not deregistered'); } },
 		{ name: '09-persistence', fn: async () => { const s = await facade.persistence.saveWorkflow({ nodes: [{ name: 'Test' }], connections: {} }); const g = await facade.persistence.getWorkflow(s.id); if (!g) throw new Error('not found'); } },
 		{ name: '10-credentials', fn: async () => { const c = await facade.credentials.createCredential('test', 'Test', { key: 'val' }); const d = await facade.credentials.getDecrypted(c.id, 'test'); if (d.key !== 'val') throw new Error('decrypt fail'); } },

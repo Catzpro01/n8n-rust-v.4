@@ -95,7 +95,26 @@ deactivate → clearWebhooks → webhook_entity delete [+ webhookMethods.default
 - Internal service API: `WebhookService.{storeWebhook, findWebhook, deleteWorkflowWebhooks, getWebhookMethods, createWebhookIfNotExists, findCached}`.
 - `IWebhookData`, `IWebhookResponseData`, `WebhookResponseMode` types (n8n-workflow).
 
-## 11. Compatibility requirements
+## 11. Verification
+
+`npm run webhook:check` (`tools/webhook-isolation-gate.mjs`) proves the port in two classes:
+
+| Check | Scope | Evidence class |
+|---|---|---|
+| `W01` | declared surface (16 exports; node type constants) | executed oracle |
+| `W02` | `getNodeWebhookPath` — 3 workflow ids x 4 nodes x 8 paths x 3^2 modes | **executed** `n8n-workflow@2.9.1` |
+| `W03` | `getNodeWebhookUrl` — 3 base URLs, slash trimming, `:var` rule | **executed** `n8n-workflow@2.9.1` |
+| `W04` | `WebhookPathTakenError` — message, name, level `warning`, hidden cause, prototype chain | **executed** `n8n-workflow@2.9.1` |
+| `W05` | registry matching (`findStaticWebhook` / `findDynamicWebhook` / `findCached` / `getWebhookMethods`, cache keys, upsert, delete) | reference transcription |
+| `W06` | `sanitizeWebhookRequest`, `extractWebhookOnReceivedResponse`, `webhookNotFoundErrorMessage` (incl. the `pop()` mutation), `collectNodeWebhooks`, `WebhookResponseHeaders` | reference transcription + `node:http` |
+| `W07` | `packages/webhook-lego/test/*.test.mjs` | 18/18 |
+
+Registry semantics that a naive implementation gets wrong and the gate pins: `storeWebhook` upserts
+(it does not throw), dynamic matching needs an equal segment count and compares static segments as a
+set (most static segments wins, `:var`-only rows are a fallback), and `findCached` caches static hits
+only. See `docs/isolation/webhook.md` §8.
+
+## 12. Compatibility requirements
 - `(webhookPath, method)` uniqueness; longest-`pathLength` wins for dynamic paths.
 - `json` payload shape `{headers, params, query, body, webhookUrl, executionMode:'production'|'test'}` — exactly as recorded in the golden (`received.executionMode === 'production'`).
 - `lastNode` response body = `json` of the first item of the last node (as observed: `{smoke_test:'PASS',received:{…},verified:true}`), content-type `application/json; charset=utf-8`.

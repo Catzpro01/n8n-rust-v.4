@@ -12,6 +12,10 @@ fail=0
 echo "######## STAGE 1: CONTRACT CONFORMANCE (offline) ########"
 node tests/compatibility/contract_conformance.mjs || fail=1
 
+echo; echo "######## STAGE 1b: CARGO WORKSPACE INTEGRITY (offline) ########"
+# Zero-Rust guard: no dangling Cargo workspace members (PR #21 review blocker)
+node tools/cargo-workspace-integrity.mjs || fail=1
+
 echo; echo "######## STAGE 2: BOUNDARY & DEPENDENCY AUDIT (offline) ########"
 python3 tests/integration/boundary_audit.py || fail=1
 
