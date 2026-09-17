@@ -1,0 +1,101 @@
+id: TASK-314-engine-wait-resume
+agent: arena-worker (session arena/01a0aee7-n8n-rust-v-4)
+lego: workflow
+module: reconstructed-engine
+phase: 2
+
+# Eighth self-assigned task of this session (STANDING-WORKER-PROTOCOL §2 non-blocking).
+# dynamic_task_pool still unreachable (Supabase -> curl HTTP 000; api.github.com -> 200), so no
+# pool read and no vote — recorded here rather than skipped silently.
+
+trigger: >
+  contracts/execution-engine.contract.md §7 listed `waitTill` resume as a non-goal, and the engine
+  had no way to park or resume an execution — so a workflow containing a Wait node could not run in
+  the reconstruction at all. While reading the pause path two further gaps turned up: disabled nodes
+  were being executed (the reference does not execute them at all), and `findStartNode` could pick a
+  disabled node as the start.
+
+allowed_paths:
+  - packages/reconstructed-engine/**
+  - contracts/execution-engine.contract.md
+  - tasks/TASK-314-engine-wait-resume.yaml
+  - results/TASK-314-engine-wait-resume.md
+  - docs/isolation/evidence/**        # rewritten by npm run verify, tracked by design
+
+forbidden_paths:
+  - reference/n8n/**                  # read-only; gate G04 re-verifies 15050 files
+  - crates/**
+  - apps/**
+  - packages/workflow-lego/src/**
+  - packages/editor-ui/**             # rule 5: the UI stays untouched
+
+operations:
+  - name: port_pause
+    args:
+      reference: "base-execute-context.ts:107-112, workflow-execute.ts:1821, :1948-1959, :2391-2396, :2435-2436"
+      detail: >
+        the handler context gains putExecutionToWait(date); the parked node's taskData gets
+        executionStatus 'waiting', goes back on the stack, the loop stops, the run status becomes
+        'waiting' and the result carries waitTill.
+  - name: port_resume
+    args:
+      reference: "workflow-execute.ts:1285-1302, :1400-1412, :105-108"
+      new_methods: [handleWaitingState, processRunExecutionData]
+      new_constructor_arg: runExecutionData
+      detail: >
+        resuming clears waitTill, marks the parked node disabled and pops its waiting runData entry;
+        the result's runExecutionData is the persistable snapshot (IRunExecutionData shape,
+        run-execution-data-factory.ts:54-89, trimmed to the fields this engine maintains).
+  - name: port_disabled_node
+    args:
+      reference: "workflow-execute.ts:909-920, :1199-1201"
+      detail: "a disabled node is never executed — its first main input is passed through"
+  - name: port_null_output
+    args:
+      reference: "workflow-execute.ts:1769-1774"
+      detail: "no output object at all -> no runData entry and the branch ends (unless errored or parked)"
+  - name: fix_start_node_selection
+    args:
+      reference: "workflow.ts:824, :839, :853"
+      change: "findStartNode skips disabled nodes"
+  - name: extend_contract
+    args:
+      guarantees: [G19, G20, G21, G22]
+      surface: "+handleWaitingState, +processRunExecutionData, +instance field runExecutionData"
+      result: "+paused, +waitTill, +runExecutionData, status +'waiting'"
+      nongoals: "waitTill removed from §7 (the conformance test forced the correction)"
+
+verification:
+  real_engine_ground_truth:
+    tool: "/tmp/probe7.mjs, /tmp/probe8.mjs against n8n-core 2.9.1 (real Wait / Limit nodes)"
+    pause: >
+      status 'waiting', waitTill 2026-09-17T12:48:24.622Z, Wait entry executionStatus 'waiting' with
+      data [[{}]] (its input), lastNodeExecuted 'Wait', stack [{node:'Wait'}], After absent
+    resume: >
+      new WorkflowExecute(additionalData,'manual', run1.data).processRunExecutionData(workflow) ->
+      status 'success', Wait has ONE entry with executionStatus 'success' (the waiting entry was
+      popped, not duplicated), After runs, lastNodeExecuted 'After', stack []
+    disabled: >
+      a disabled Limit with maxItems 0 and pinData {pinned:true} outputs [[{}]] — its input, not the
+      pin and not the empty Limit result; After runs; lastNodeExecuted 'After'
+  engine_suite: "npm run engine:test -> 82 tests, 82 pass, 0 skipped, exit 0 (59 unit + 3 graph + 13 real engine + 7 contract)"
+  negative_controls:
+    - "handleWaitingState neutralised -> not ok 61,62,63,81 (78/82); restored -> 82/82"
+    - "pause branch neutralised -> not ok 60,61,62,63,81 (77/82); restored -> 82/82"
+    - "disabled-node passthrough neutralised -> not ok 37,82 (80/82); restored -> 82/82"
+  drift_caught:
+    - "contract test: 2 new methods, 1 new instance field, 3 new result keys, status 'waiting', and waitTill still listed as a non-goal"
+    - "contract test: 2 citations to reference files it did not know (run-execution-data-factory.ts, base-execute-context.ts)"
+    - "my first placement of the :1769 null-output check ran on the error path too -> 6 tests failed; the reference reaches that line only inside the try, so it is now guarded by executionError === undefined"
+    - "existing test engine.test.mjs 'a disabled node falls through to the handler' encoded a divergence; the real engine does not execute a disabled node at all -> test rewritten"
+  central_harness: "contract_conformance.mjs -> 22/22 exit 0"
+  offline_gate: "run_gate.sh --offline-only -> stages 1-3 PASS (22/22, AUDIT PASS, 82/82), live NOT RUN -> INCONCLUSIVE"
+  lego_gate: "npm run verify -> 11/11 PASS, BEHAVIOR CHANGE: NONE DETECTED"
+  rust_guard: "npm run rust:guard -> exit 0"
+  legacy_demo: "node packages/reconstructed-engine/test-run.mjs -> exit 0"
+
+merge_condition:
+  - engine_suite_pass
+  - negative_controls_pass
+  - no_reference_change
+  - no_ui_change

@@ -13,6 +13,11 @@
  *                waitingExecution until every slot has data, then is enqueued exactly ONCE
  *     :417       enqueueFn = executionOrder === 'v1' ? 'unshift' : 'push'
  *     :387-403   prepareWaitingToExecution(): one `null` per input slot
+ *     :909-920   handleDisabledNode(): a disabled node is not executed — its first main input is
+ *                passed through (used on resume, and by `:1199-1201` in runNode)
+ *     :1285-1302 handleWaitingState(): resuming clears waitTill, disables the node on top of the
+ *                stack and pops its last runData entry so it does not look like it ran twice
+ *     :1400-1412 processRunExecutionData(): the resume entry point
  *     :1600-1630 retryOnFail: maxTries = min(5, max(2, maxTries || 3)),
  *                waitBetweenTries = min(5000, max(0, waitBetweenTries || 1000)) — note `||`,
  *                so an explicit 0 means 1000 ms, not "no wait"
@@ -20,12 +25,18 @@
  *                retried the same number of times ("soft" failure)
  *     :1720-1722 onError === 'continueErrorOutput' → handleNodeErrorOutput()
  *     :1736-1741 assignPairedItems, then `if (nodeSuccessData) lastNodeExecuted = node`
+ *     :1769-1774 a node with no output object at all records nothing and ends its branch —
+ *                unless it parked the execution, which must be recorded to be resumable
+ *     :1821      `executionStatus: waitTill ? 'waiting' : 'success'`
  *     :1823-1900 error path: taskData.executionStatus = 'error' + taskData.error;
  *                continueOnFail / onError ∈ {continueRegularOutput, continueErrorOutput} passes the
  *                INPUT through and keeps going, otherwise runData.push + stack.unshift + break
  *     :1898-1917 per-item error reporting: `json.$error` + `json.$json` collapse into
  *                `item.error` + `json = { error: message }`
  *     :1918-1945 success path: taskData.data = { main: nodeSuccessData }; runData[name].push(taskData)
+ *     :1948-1959 a waiting node goes back on the stack and the loop stops — nothing downstream runs
+ *     :2391-2396 status 'waiting' when waitTill is set (after 'canceled' and 'error')
+ *     :2435-2436 the run carries `waitTill`
  *     :2079-2130 stack drained but waiting nodes remain → run them with [] for the missing inputs
  *     :2383-2400 final status: 'error' when executionError is set, otherwise 'success'
  *     :2463-2562 handleNodeErrorOutput(): items carrying an error move to the LAST main output
@@ -34,10 +45,14 @@
  *   reference/n8n/packages/workflow/src/execution-status.ts:1-11 ExecutionStatusList
  *   reference/n8n/packages/workflow/src/node-helpers.ts:1140-1196 getNodeOutputs(): with
  *                onError === 'continueErrorOutput' an `error` main output is appended
+ *   reference/n8n/packages/workflow/src/run-execution-data-factory.ts:54-89 IRunExecutionData
+ *   reference/n8n/packages/core/src/execution-engine/node-execution-context/base-execute-context.ts:107-112
+ *                putExecutionToWait(waitTill) — how a node parks the execution
  *
  * Deliberately NOT reconstructed (named so nobody assumes it is there):
- *   - expressions `{{ … }}`, credentials, wait/resume (`waitTill`), sub-workflows, AI/routing
- *     nodes, and dynamically computed (`{{ }}`) node `outputs`.
+ *   - expressions `{{ … }}`, credentials, sub-workflows, AI/routing nodes, and dynamically
+ *     computed (`{{ }}`) node `outputs`. `waitTill` pause/resume IS reconstructed; what is not is
+ *     the scheduler that decides WHEN to resume (n8n's WaitTracker + the database).
  *   - Cycle REJECTION. n8n refuses cyclic graphs at validation time (Validation LEGO —
  *     contracts/validation.contract.md §CycleDetection). This engine still needs a local
  *     safety net so a graph that slipped through cannot hang the process: see maxExecutionsFor().
@@ -94,8 +109,16 @@ function normalizeItems(list) {
 }
 
 export class WorkflowExecutionEngine {
-	constructor(workflowDefinition = {}) {
+	/**
+	 * @param {object} workflowDefinition `{ nodes, connections, settings?, pinData? }`
+	 * @param {object|null} [runExecutionData] a persisted `IRunExecutionData`
+	 *   (`run-execution-data-factory.ts:54-89`) to continue from — this is the reference's third
+	 *   constructor argument (`workflow-execute.ts:105-108`), and it is what makes a paused
+	 *   execution resumable.
+	 */
+	constructor(workflowDefinition = {}, runExecutionData = null) {
 		this.definition = workflowDefinition;
+		this.runExecutionData = runExecutionData ?? null;
 		this.nodes = new Map();
 		for (const node of workflowDefinition.nodes ?? []) {
 			this.nodes.set(node.name, node);
@@ -315,11 +338,15 @@ export class WorkflowExecutionEngine {
 	/** Start node: explicit argument wins, else the n8n-ish trigger heuristic. */
 	findStartNode(startNodeName) {
 		if (startNodeName) return startNodeName;
-		for (const [name, node] of this.nodes.entries()) {
+		// Heuristic stand-in for `Workflow#getStartNode` (workflow.ts:806-861): the real one asks the
+		// node type descriptions for `trigger`/`poll`, which this engine does not load. What is
+		// copied faithfully is that a `disabled` node is never chosen (`:824`, `:839`, `:853`).
+		const candidates = [...this.nodes.entries()].filter(([, node]) => node.disabled !== true);
+		for (const [name, node] of candidates) {
 			const type = node.type ?? '';
 			if (type.includes('trigger') || type.includes('Manual') || type.includes('Start')) return name;
 		}
-		return this.nodes.keys().next().value;
+		return candidates[0]?.[0];
 	}
 
 	/**
@@ -464,6 +491,45 @@ export class WorkflowExecutionEngine {
 	}
 
 	/**
+	 * `workflow-execute.ts:1285-1302` — 1:1 port of `handleWaitingState`.
+	 *
+	 * Resuming a waiting execution is not "run it again": the state has to be repaired first.
+	 *   1. `waitTill` is cleared;
+	 *   2. the node on top of the stack — the one that paused the run — is marked `disabled`, so it
+	 *      will not execute again (a disabled node passes its input through, see `:909-920`);
+	 *   3. that node's last `runData` entry is popped, so it does not look like it ran twice.
+	 * Mutates the state it is given, exactly like the reference.
+	 */
+	handleWaitingState(state) {
+		if (!state?.waitTill) return state;
+
+		state.waitTill = undefined;
+
+		const executionStackEntry = state.executionData?.nodeExecutionStack?.[0];
+		if (executionStackEntry) executionStackEntry.node.disabled = true;
+
+		const lastNodeExecuted = state.resultData?.lastNodeExecuted;
+		if (lastNodeExecuted) state.resultData.runData[lastNodeExecuted]?.pop();
+
+		return state;
+	}
+
+	/**
+	 * `workflow-execute.ts:1400-1412` — the entry point that runs whatever execution state this
+	 * engine was constructed with, applying `handleWaitingState` first. This is how n8n resumes a
+	 * paused execution: build the engine on the persisted `IRunExecutionData`, then call this.
+	 *
+	 * ```js
+	 * const paused = await new WorkflowExecutionEngine(json).runWorkflow();      // status 'waiting'
+	 * const done = await new WorkflowExecutionEngine(json, paused.runExecutionData)
+	 *   .processRunExecutionData();                                              // status 'success'
+	 * ```
+	 */
+	processRunExecutionData(options = {}) {
+		return this.runWorkflow(null, [], { ...options, runExecutionData: this.runExecutionData });
+	}
+
+	/**
 	 * Execute the workflow.
 	 *
 	 * @param {string|null} startNodeName
@@ -478,34 +544,53 @@ export class WorkflowExecutionEngine {
 		 * `options.executionTimeoutTimestamp` — `IWorkflowExecutionData`-style deadline, checked at
 		 * the top of every loop iteration (workflow-execute.ts:1486-1496).
 		 * `options.pinData` — overrides `definition.pinData` (workflow-execute.ts:1632-1637).
+		 * `options.runExecutionData` — a persisted `IRunExecutionData` to continue from; defaults to
+		 * the one this engine was constructed with (workflow-execute.ts:105-108).
 		 */
 		const executionTimeoutTimestamp = options.executionTimeoutTimestamp;
 		const pinData = options.pinData ?? this.definition.pinData;
-		const startName = this.findStartNode(startNodeName);
-		const startNode = startName ? this.nodes.get(startName) : undefined;
-		if (!startNode) {
-			throw new Error('No nodes found in workflow definition');
-		}
+		const restored = options.runExecutionData ?? this.runExecutionData;
 
-		/** workflow-execute.ts:157-171 */
-		const stack = [
-			{ node: startNode, data: { main: [normalizeItems(initialData)] }, source: { main: [null] } },
-		];
-		const waiting = {};
-		const waitingSource = {};
+		/** workflow-execute.ts:1407 — a waiting execution is repaired before it runs on. */
+		if (restored) this.handleWaitingState(restored);
+
+		let stack;
+		if (restored) {
+			stack = restored.executionData?.nodeExecutionStack ?? [];
+		} else {
+			const startName = this.findStartNode(startNodeName);
+			const startNode = startName ? this.nodes.get(startName) : undefined;
+			if (!startNode) {
+				throw new Error('No nodes found in workflow definition');
+			}
+			/** workflow-execute.ts:157-171 */
+			stack = [
+				{ node: startNode, data: { main: [normalizeItems(initialData)] }, source: { main: [null] } },
+			];
+		}
+		const waiting = restored?.executionData?.waitingExecution ?? {};
+		const waitingSource = restored?.executionData?.waitingExecutionSource ?? {};
 		const enqueue =
 			this.executionOrder === 'v1' ? (entry) => stack.unshift(entry) : (entry) => stack.push(entry); // :417
 		const ctx = { enqueue, waiting, waitingSource };
 
-		const runData = {}; // IRunData: nodeName -> ITaskData[]
+		const runData = restored?.resultData?.runData ?? {}; // IRunData: nodeName -> ITaskData[]
 		const executionLog = [];
 		const cycleSkips = [];
 		const executionCounts = new Map();
-		let executionIndex = 0;
-		let executionError;
-		let lastNodeExecuted;
+		// `additionalData.currentNodeExecutionIndex` in the reference (interfaces.ts:2677) — a
+		// resumed run continues the numbering it was persisted with.
+		let executionIndex = Object.values(runData).reduce(
+			(max, runs) => Math.max(max, ...runs.map((run) => (run.executionIndex ?? -1) + 1)),
+			0,
+		);
+		let executionError = restored?.resultData?.error;
+		let lastNodeExecuted = restored?.resultData?.lastNodeExecuted;
+		/** `IRunExecutionData.waitTill` — set by `putExecutionToWait` (base-execute-context.ts:107). */
+		let waitTill = restored?.waitTill;
 		let stopped = false;
 		let timedOut = false;
+		let paused = false;
 
 		for (;;) {
 			while (stack.length > 0) {
@@ -588,7 +673,18 @@ export class WorkflowExecutionEngine {
 
 				/** One attempt — pin data first (`:1632-1637`), otherwise the registered handler. */
 				const runNodeOnce = async () => {
-					if (pinData && !node.disabled && pinData[node.name] !== undefined) {
+					/**
+					 * `:1199-1201` → `handleDisabledNode` (`:909-920`): a disabled node is not
+					 * executed at all; its first main input is passed through, or `undefined`
+					 * (which ends the branch) when there is none.
+					 */
+					if (node.disabled === true) {
+						if (Object.hasOwn(inputData, MAIN) && inputData.main.length > 0) {
+							return inputData.main[0] === null ? undefined : [inputData.main[0]];
+						}
+						return undefined;
+					}
+					if (pinData && pinData[node.name] !== undefined) {
 						return [pinData[node.name]]; // always the zeroth runIndex
 					}
 					const produced = handler
@@ -596,6 +692,13 @@ export class WorkflowExecutionEngine {
 								inputData: inputData.main ?? [],
 								source: taskData.source,
 								runIndex,
+								/**
+								 * `base-execute-context.ts:107-112` — how a node (the Wait node does
+								 * exactly this) parks the whole execution until a point in time.
+								 */
+								putExecutionToWait: (date) => {
+									waitTill = date;
+								},
 							})
 						: items; // unregistered node type: passthrough
 					/** INodeExecutionData[][] — one entry per output index. */
@@ -665,8 +768,21 @@ export class WorkflowExecutionEngine {
 					nodeSuccessData[0] = [{ json: {}, pairedItem }];
 				}
 
+				/**
+				 * `:1769-1774` — a node that returned *no* output object at all (`null`/`undefined`,
+				 * as opposed to an empty one) ends its branch and records nothing at all: the
+				 * reference `continue`s before `taskData` is ever pushed. Two exceptions, both
+				 * because the reference reaches this line only on the success path (it sits inside
+				 * the `try`, so a thrown error skips it): a failed node must record its error, and a
+				 * waiting node must be recorded so the run can be resumed from it.
+				 */
+				if (executionError === undefined && nodeSuccessData === null && waitTill === undefined) {
+					continue;
+				}
+
 				taskData.executionTime = Date.now() - startTime;
-				taskData.executionStatus = 'success';
+				/** `:1821` — `executionStatus: this.runExecutionData.waitTill ? 'waiting' : 'success'`. */
+				taskData.executionStatus = waitTill !== undefined ? 'waiting' : 'success';
 
 				if (executionError !== undefined) {
 					/** workflow-execute.ts:1778, 1824-1900 */
@@ -732,6 +848,18 @@ export class WorkflowExecutionEngine {
 					durationMs: taskData.executionTime,
 					status: taskData.executionStatus,
 				});
+
+				/**
+				 * `:1948-1959` — a node that parked the execution: the node goes back on the stack
+				 * so the run can start again from it, and the loop stops here. Nothing downstream
+				 * runs until the execution is resumed.
+				 */
+				if (waitTill !== undefined) {
+					stack.unshift(executionData);
+					paused = true;
+					stopped = true;
+					break;
+				}
 
 				const outputs = this.connections[node.name]?.[MAIN] ?? [];
 				/** workflow-execute.ts:1990-2065 */
@@ -802,7 +930,17 @@ export class WorkflowExecutionEngine {
 		}
 
 		/** workflow-execute.ts:2383-2400 — 'canceled' takes precedence, then 'error', then 'success'. */
-		const status = timedOut ? 'canceled' : executionError !== undefined ? 'error' : 'success';
+		/**
+		 * `workflow-execute.ts:2383-2400` — status precedence: `canceled` (timeout/cancel) beats
+		 * `error`, which beats `waiting`, which beats `success`.
+		 */
+		const status = timedOut
+			? 'canceled'
+			: executionError !== undefined
+				? 'error'
+				: waitTill !== undefined
+					? 'waiting'
+					: 'success';
 
 		// Flat compatibility view: last run of each node, first output slot.
 		const data = {};
@@ -815,12 +953,32 @@ export class WorkflowExecutionEngine {
 			finished: status === 'success',
 			/** true when the run stopped because executionTimeoutTimestamp passed (:1489-1490). */
 			timedOut,
+			/** true when a node parked the run with `putExecutionToWait` (:1948-1959). */
+			paused,
+			/** `IRunExecutionData.waitTill` — the moment the run may be resumed (:2435-2436). */
+			waitTill,
 			/** true when the safety net had to drop arrivals — the graph contains a cycle. */
 			cyclic: cycleSkips.length > 0,
 			cycleSkips,
 			executionLog,
 			data,
 			resultData: { runData, lastNodeExecuted, error: executionError },
+			/**
+			 * The persistable snapshot (`run-execution-data-factory.ts:54-89`, trimmed to the fields
+			 * this engine maintains). Hand it back as the constructor's second argument — or as
+			 * `options.runExecutionData` — and call `processRunExecutionData()` to resume.
+			 */
+			runExecutionData: {
+				version: 1,
+				startData: { startNodes: [{ source: null, startNode: startNodeName ?? undefined }] },
+				resultData: { runData, lastNodeExecuted, error: executionError },
+				executionData: {
+					nodeExecutionStack: stack,
+					waitingExecution: waiting,
+					waitingExecutionSource: waitingSource,
+				},
+				waitTill,
+			},
 		};
 	}
 }

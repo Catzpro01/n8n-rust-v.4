@@ -703,7 +703,13 @@ test('PIN DATA: a pinned node is not executed and its pinned output flows downst
 	assert.equal(taskOf(result, 'Code Node').executionStatus, 'success');
 });
 
-test('DISABLED + PIN DATA: handler and pin are both skipped; first main input passes through', { timeout: 5000 }, async () => {
+/**
+ * A disabled node is not executed at all: `runNode` returns before anything else
+ * (`workflow-execute.ts:1199-1201`) and `handleDisabledNode` (`:909-920`) passes the first main
+ * input through. Verified against the real engine — a disabled `Limit` with `maxItems: 0` (which
+ * would emit nothing) and a pin of `{ pinned: true }` still outputs its input.
+ */
+test('PIN DATA: a disabled node is not executed — its first main input passes through and its pin is ignored (:909-920)', { timeout: 5000 }, async () => {
 	const wf = linear();
 	wf.nodes[1].disabled = true;
 	const engine = new WorkflowExecutionEngine({ ...wf, pinData: { 'Code Node': [item({ pinned: true })] } });
@@ -717,8 +723,8 @@ test('DISABLED + PIN DATA: handler and pin are both skipped; first main input pa
 	const result = await engine.runWorkflow();
 
 	assert.equal(codeCalls, 0, 'handleDisabledNode returns before the node implementation (:1199-1201)');
-	assert.deepEqual(payload(result.data['Code Node']), [{ start: true }]);
-	assert.deepEqual(payload(result.data['Transform Output']), [{ start: true }]);
+	assert.deepEqual(payload(result.data['Code Node']), [{ start: true }], 'the first main input is passed through');
+	assert.deepEqual(payload(result.data['Transform Output']), [{ start: true }], 'and it flows downstream');
 });
 
 test('PIN DATA can also be passed per run, overriding the workflow definition', { timeout: 5000 }, async () => {
@@ -1085,4 +1091,145 @@ test('CONFORMANCE an item already carrying .error gets json replaced by { error:
 	const [out] = taskOf(result, 'Flaky').data.main[0];
 	assert.deepEqual(out.json, { error: 'carried' });
 	assert.equal(out.error.message, 'carried');
+});
+
+/* ------------------------------------------------------------------ *
+ * waitTill: pause and resume
+ * (workflow-execute.ts:1821, :1948-1959, :1285-1302, :1400-1412)
+ * ------------------------------------------------------------------ */
+
+const waitFixture = () => ({
+	nodes: [
+		{ name: 'Manual Trigger', type: 'n8n-nodes-base.manualTrigger', parameters: {} },
+		{ name: 'Wait', type: 'n8n-nodes-base.wait', parameters: {} },
+		{ name: 'After', type: 'n8n-nodes-base.noOp', parameters: {} },
+	],
+	connections: {
+		'Manual Trigger': { main: [[conn('Wait')]] },
+		Wait: { main: [[conn('After')]] },
+	},
+});
+
+/** The handler behaves like the real Wait node: park the execution, then hand the input on. */
+const waitEngine = (when = new Date(Date.now() + 60_000)) => {
+	const engine = new WorkflowExecutionEngine(waitFixture());
+	engine.registerNodeType('n8n-nodes-base.manualTrigger', async () => [item({ v: 1 })]);
+	engine.registerNodeType('n8n-nodes-base.wait', async (_node, items, ctx) => {
+		await ctx.putExecutionToWait(when);
+		return items; // Wait.node.ts:621-624 — `return [context.getInputData()]`
+	});
+	engine.registerNodeType('n8n-nodes-base.noOp', async (_n, items) => items);
+	return engine;
+};
+
+test('CONFORMANCE waitTill: a node that parks the run stops it with status waiting (:1821, :1948-1959, :2391-2396)', { timeout: 5000 }, async () => {
+	const when = new Date(Date.now() + 60_000);
+	const result = await waitEngine(when).runWorkflow();
+
+	assert.equal(result.status, 'waiting');
+	assert.equal(result.paused, true);
+	assert.equal(result.finished, false);
+	assert.equal(result.waitTill, when, ':2435-2436 — the run carries waitTill');
+	assert.equal(taskOf(result, 'Wait').executionStatus, 'waiting', ':1821');
+	assert.deepEqual(payload(taskOf(result, 'Wait').data.main[0]), [{ v: 1 }]);
+	assert.equal(result.resultData.runData.After, undefined, 'nothing downstream runs while parked');
+	assert.equal(result.resultData.lastNodeExecuted, 'Wait');
+	assert.deepEqual(
+		result.runExecutionData.executionData.nodeExecutionStack.map((entry) => entry.node.name),
+		['Wait'],
+		':1957 — the node goes back on the stack so the run can start again from it',
+	);
+});
+
+test('CONFORMANCE resume: processRunExecutionData continues from the parked node (:1400-1412)', { timeout: 5000 }, async () => {
+	const paused = await waitEngine().runWorkflow();
+	assert.equal(paused.status, 'waiting', 'sanity: the first run parked');
+
+	const resumed = await new WorkflowExecutionEngine(
+		waitFixture(),
+		paused.runExecutionData,
+	).processRunExecutionData();
+
+	assert.equal(resumed.status, 'success');
+	assert.equal(resumed.paused, false);
+	assert.equal(resumed.waitTill, undefined);
+	assert.equal(resumed.resultData.runData.Wait.length, 1, ':1300 — the waiting entry is popped, not added to');
+	assert.equal(resumed.resultData.runData.Wait[0].executionStatus, 'success');
+	assert.deepEqual(payload(resumed.resultData.runData.Wait[0].data.main[0]), [{ v: 1 }]);
+	assert.deepEqual(payload(resumed.resultData.runData.After[0].data.main[0]), [{ v: 1 }]);
+	assert.equal(resumed.resultData.lastNodeExecuted, 'After');
+	assert.deepEqual(resumed.runExecutionData.executionData.nodeExecutionStack, []);
+});
+
+test('CONFORMANCE resume: the snapshot survives a JSON round trip, like a real persisted execution', { timeout: 5000 }, async () => {
+	const paused = await waitEngine().runWorkflow();
+	// n8n stores IRunExecutionData in the database, so the snapshot must be plain JSON.
+	const persisted = JSON.parse(JSON.stringify(paused.runExecutionData));
+	assert.equal(persisted.waitTill, paused.waitTill.toISOString());
+
+	const resumed = await new WorkflowExecutionEngine(waitFixture(), persisted).processRunExecutionData();
+
+	assert.equal(resumed.status, 'success');
+	assert.deepEqual(payload(resumed.resultData.runData.After[0].data.main[0]), [{ v: 1 }]);
+});
+
+test('CONFORMANCE handleWaitingState: clears waitTill, disables the parked node, pops its entry (:1285-1302)', { timeout: 5000 }, async () => {
+	const paused = await waitEngine().runWorkflow();
+	const state = JSON.parse(JSON.stringify(paused.runExecutionData));
+	const engine = new WorkflowExecutionEngine(waitFixture());
+
+	assert.equal(state.executionData.nodeExecutionStack[0].node.disabled, undefined, 'not disabled while parked');
+	engine.handleWaitingState(state);
+
+	assert.equal(state.waitTill, undefined, '1. waitTill is cleared');
+	assert.equal(state.executionData.nodeExecutionStack[0].node.disabled, true, '2. the parked node is disabled');
+	assert.equal(state.resultData.runData.Wait.length, 0, '3. its waiting entry is popped');
+});
+
+test('CONFORMANCE handleWaitingState is a no-op for an execution that is not waiting (:1286)', { timeout: 5000 }, async () => {
+	const engine = new WorkflowExecutionEngine(waitFixture());
+	const state = {
+		waitTill: undefined,
+		executionData: { nodeExecutionStack: [{ node: { name: 'Wait' } }] },
+		resultData: { runData: { Wait: [{ executionStatus: 'success' }] }, lastNodeExecuted: 'Wait' },
+	};
+	engine.handleWaitingState(state);
+
+	assert.equal(state.resultData.runData.Wait.length, 1, 'nothing is popped');
+	assert.equal(state.executionData.nodeExecutionStack[0].node.disabled, undefined, 'nothing is disabled');
+});
+
+test('CONFORMANCE a disabled node reached with no usable input records nothing and ends the branch (:909-920, :1769-1774)', { timeout: 5000 }, async () => {
+	// Two input slots, only the second one is ever fed: the release pass hands the node
+	// [null, items], and handleDisabledNode returns `undefined` for a null first input.
+	const engine = new WorkflowExecutionEngine({
+		nodes: [
+			{ name: 'Manual Trigger', type: 'n8n-nodes-base.manualTrigger', parameters: {} },
+			{ name: 'Fan In', type: 'n8n-nodes-base.noOp', parameters: {}, disabled: true },
+			{ name: 'After', type: 'n8n-nodes-base.noOp', parameters: {} },
+		],
+		connections: {
+			'Manual Trigger': { main: [[], [conn('Fan In', 1)]] },
+			'Fan In': { main: [[conn('After')]] },
+		},
+	});
+	engine.registerNodeType('n8n-nodes-base.manualTrigger', async () => [item({ v: 1 })]);
+	engine.registerNodeType('n8n-nodes-base.noOp', async (_n, items) => items);
+
+	const result = await engine.runWorkflow();
+
+	assert.equal(result.status, 'success');
+	assert.equal(result.resultData.runData['Fan In'], undefined, 'no output object at all -> no runData entry');
+	assert.equal(result.resultData.runData.After, undefined, 'and the branch ends');
+	assert.equal(result.resultData.lastNodeExecuted, 'Manual Trigger', ':1738 — a null output does not count');
+});
+
+test('CONFORMANCE a disabled trigger is not chosen as the start node (workflow.ts:824, :839, :853)', { timeout: 5000 }, async () => {
+	const wf = linear();
+	wf.nodes[0].disabled = true;
+	const engine = new WorkflowExecutionEngine(wf);
+	engine.registerNodeType('n8n-nodes-base.code', async (_n, items) => items);
+	engine.registerNodeType('n8n-nodes-base.set', async (_n, items) => items);
+
+	assert.equal(engine.findStartNode(), 'Code Node');
 });

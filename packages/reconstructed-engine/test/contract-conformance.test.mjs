@@ -177,6 +177,9 @@ test('contract §8: every provenance citation points at real lines in reference/
 		'workflow.ts': 'packages/workflow/src/workflow.ts',
 		'node-helpers.ts': 'packages/workflow/src/node-helpers.ts',
 		'workflow-data-proxy.ts': 'packages/workflow/src/workflow-data-proxy.ts',
+		'run-execution-data-factory.ts': 'packages/workflow/src/run-execution-data-factory.ts',
+		'base-execute-context.ts':
+			'packages/core/src/execution-engine/node-execution-context/base-execute-context.ts',
 	};
 
 	const citation = /([a-z-]+\.ts):(\d+)(?:-(\d+))?/g;

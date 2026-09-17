@@ -5,7 +5,7 @@
 `packages/workflow/src/{interfaces,execution-status}.ts`) and runtime comparison against the pinned
 `n8n-core` / `n8n-workflow` **2.9.1** (the dependency set of n8n 2.9.4).
 **Owner:** Agent 1 (`workflow`) — reconstruction lives in `packages/reconstructed-engine/`
-**Status:** TESTED — 73 regression cases, 11 of them executed against the real engine
+**Status:** TESTED — 82 regression cases, 13 of them executed against the real engine
 **Rule basis:** `PROJECT_RULES.md` #1 (ZERO RUST → JavaScript/TypeScript, 1:1 from source) and #5
 (every module must have a clear boundary and a formal contract).
 
@@ -51,6 +51,8 @@ recorded, and when the run ends.
     "assignPairedItems",
     "mainOutputCount",
     "handleNodeErrorOutput",
+    "handleWaitingState",
+    "processRunExecutionData",
     "addNodeToBeExecuted",
     "prepareWaitingToExecution",
     "releaseWaitingNodes",
@@ -64,7 +66,8 @@ recorded, and when the run ends.
     "connectionsByDestinationNode",
     "settings",
     "nodeTypes",
-    "nodeTypeDescriptions"
+    "nodeTypeDescriptions",
+    "runExecutionData"
   ]
 }
 ```
@@ -95,7 +98,19 @@ mainOutputCount(node: INode): number
 
 // workflow-execute.ts:2463-2562 — move error items onto the last main output, in place
 handleNodeErrorOutput(node: INode, nodeSuccessData: INodeExecutionData[][], executionData: IExecuteData): void
+
+// workflow-execute.ts:1285-1302 — repair a waiting IRunExecutionData so it can run on (mutates it)
+handleWaitingState(state: IRunExecutionData): IRunExecutionData
+
+// workflow-execute.ts:1400-1412 — run the state this engine was constructed with
+processRunExecutionData(options?: RunOptions): Promise<RunResult>
 ```
+
+The handler context also carries `putExecutionToWait(waitTill: Date)`
+(`base-execute-context.ts:107-112`) — how a node parks the whole execution. `options.runExecutionData`
+(or the constructor's second argument) continues a persisted run; the result's `runExecutionData` is
+the snapshot to persist. The status precedence is `canceled` > `error` > `waiting` > `success`
+(`:2383-2400`).
 
 An unregistered node type is a **passthrough** (its input items become its output). Registering a
 handler *without* a description is deliberately the same as an unknown node type as far as
@@ -107,7 +122,7 @@ handler *without* a description is deliberately the same as an unknown node type
 <!-- CONTRACT-RESULT:BEGIN -->
 ```json
 {
-  "resultKeys": ["status", "finished", "timedOut", "cyclic", "cycleSkips", "executionLog", "data", "resultData"],
+  "resultKeys": ["status", "finished", "timedOut", "paused", "waitTill", "cyclic", "cycleSkips", "executionLog", "data", "resultData", "runExecutionData"],
   "resultDataKeys": ["runData", "lastNodeExecuted", "error"],
   "taskDataKeys": ["startTime", "executionIndex", "source", "hints", "executionTime", "executionStatus", "data", "error"],
   "taskDataRequired": ["startTime", "executionIndex", "source", "hints", "executionTime", "executionStatus", "data"],
@@ -123,7 +138,7 @@ handler *without* a description is deliberately the same as an unknown node type
 
 <!-- CONTRACT-STATUS:BEGIN -->
 ```json
-{ "statuses": ["success", "error", "canceled"] }
+{ "statuses": ["success", "error", "canceled", "waiting"] }
 ```
 <!-- CONTRACT-STATUS:END -->
 
@@ -151,6 +166,10 @@ Precedence (`workflow-execute.ts:2383-2400`): `canceled` > `error` > `success`.
 | G16 | A node that did not throw but returned `json.error` on its first item is retried with the same budget and then counts as a **success** | `:1670-1692` | soft-failure test |
 | G17 | With `onError: 'continueErrorOutput'`, items carrying an error move off every regular output onto the **last** main output; the error output exists because `getNodeOutputs` appends one, so a node type with no registered description routes nothing | `:1720-1722`, `:2463-2562`, `node-helpers.ts:1140-1196` | continueErrorOutput ×5 + equivalence |
 | G18 | Items reporting an error inline (`json.$error` + `json.$json`, or an `item.error`) are collapsed to `item.error` + `json = { error: message }`, on a successful node too | `:1898-1917` | inline error ×2 + equivalence |
+| G19 | A node that calls `ctx.putExecutionToWait(date)` parks the run: `executionStatus: 'waiting'`, the node goes back on the stack, nothing downstream runs, `status: 'waiting'`, and the result carries `waitTill` + a resumable `runExecutionData` | `:1821`, `:1948-1959`, `:2391-2396`, `:2435-2436`, `base-execute-context.ts:107-112` | waitTill ×3 + equivalence |
+| G20 | Resuming (`processRunExecutionData`) clears `waitTill`, marks the parked node `disabled` and pops its `waiting` entry, so the node does not run again and does not look like it ran twice | `:1285-1302`, `:1400-1412` | resume ×2 + equivalence |
+| G21 | A `disabled` node is never executed — not even for pin data — and passes its first main input through | `:909-920`, `:1199-1201` | disabled-node ×2 + equivalence |
+| G22 | A node whose output object is `null`/`undefined` (as opposed to empty) records **no** `runData` entry and ends its branch, unless it errored or parked | `:1769-1774` | null-output test |
 
 ## 5. Determinism
 
@@ -173,7 +192,6 @@ same item payloads. The only non-deterministic fields are wall-clock (`startTime
 ```json
 {
   "nonGoals": [
-    "waitTill",
     "subExecution",
     "credentials",
     "expression",
@@ -183,10 +201,16 @@ same item payloads. The only non-deterministic fields are wall-clock (`startTime
 ```
 <!-- CONTRACT-NONGOALS:END -->
 
-Concretely: `waitTill` resume, sub-workflow execution, credential resolution, expression evaluation
-(`{{ … }}`), the `sourceOverwrite` branch of the input re-stamp (AI tool executions, `:1530-1541`),
-`requiredInputs` given as an expression string, execution data persistence, and node implementations
-themselves. Each is another LEGO's contract (`expression.contract.md`, `credentials.contract.md`,
+Concretely: sub-workflow execution, credential resolution, expression evaluation (`{{ … }}`), the
+`sourceOverwrite` branch of the input re-stamp (AI tool executions, `:1530-1541`), `requiredInputs`
+given as an expression string, the *scheduler* that decides when a paused execution is resumed
+(n8n's `WaitTracker` plus the database — this engine only parks and resumes), the persisted
+`IRunExecutionData` fields it does not maintain (`contextData`, `metadata`, `manualData`, `pushRef`,
+`runtimeData`), and node implementations themselves.
+
+`waitTill` pause **and** resume are in scope and implemented (G19-G21) — the earlier revision of
+this contract listed them as a non-goal, and the conformance test forced this section to be
+corrected when the implementation started using the name. Each is another LEGO's contract (`expression.contract.md`, `credentials.contract.md`,
 `execution-data.contract.md`, `persistence.contract.md`, `node.contract.md`).
 
 ## 8. Provenance
@@ -200,6 +224,6 @@ sources; the contract test verifies that each cited range still exists inside th
 
 | Command | Covers |
 | :--- | :--- |
-| `npm run engine:test` | this contract (73 cases: 52 unit + 3 graph-port equivalence + 11 against the real engine + 7 contract conformance) |
+| `npm run engine:test` | this contract (82 cases: 59 unit + 3 graph-port equivalence + 13 against the real engine + 7 contract conformance) |
 | `bash tests/integration/run_gate.sh --offline-only` | stage 3 runs the suite above; stages 1-2 run the other LEGO gates |
 | `node tests/compatibility/contract_conformance.mjs` | asserts this contract file is present |

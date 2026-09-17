@@ -129,7 +129,32 @@ async function loadReference() {
 				startNode: workflow.getStartNode(),
 				pinData: json.pinData,
 			});
-			return { resultData: run.data.resultData, status: run.status };
+			return { resultData: run.data.resultData, status: run.status, data: run.data };
+		},
+		/**
+		 * Resume a parked execution the way n8n does: a new WorkflowExecute built on the persisted
+		 * IRunExecutionData, then `processRunExecutionData` (workflow-execute.ts:105-108, :1400-1412).
+		 */
+		async resume(json, savedRunData) {
+			const registry = {
+				getByNameAndVersion(type, version) {
+					const entry = resolveEntry(type);
+					if (!entry) return undefined;
+					return wf.NodeHelpers.getVersionedNodeType(entry.type, version);
+				},
+			};
+			const workflow = new wf.Workflow({
+				id: json.id ?? 'equivalence',
+				name: json.name ?? 'equivalence',
+				nodes: JSON.parse(JSON.stringify(json.nodes ?? [])),
+				connections: JSON.parse(JSON.stringify(json.connections ?? {})),
+				active: true,
+				nodeTypes: registry,
+				settings: json.settings ?? { executionOrder: 'v1' },
+			});
+			const execute = new core.WorkflowExecute({ ...additionalData }, 'manual', savedRunData);
+			const run = await execute.processRunExecutionData(workflow);
+			return { resultData: run.data.resultData, status: run.status, data: run.data };
 		},
 	};
 	return referenceApi;
@@ -162,6 +187,14 @@ function reconstructedRun(json, { options = {} } = {}) {
 		{ inputs: ['main'], outputs: ['main'] }, // the real Set node declares one main output
 	);
 	engine.registerNodeType('n8n-nodes-base.noOp', async (_n, items) => items);
+	// Wait v1.1 with `resume: timeInterval` parks the execution and hands its input on
+	// (Wait.node.ts:557, :621-624).
+	engine.registerNodeType('n8n-nodes-base.wait', async (node, items, ctx) => {
+		const amount = Number(node.parameters?.amount ?? 1);
+		const perUnit = { seconds: 1000, minutes: 60_000, hours: 3_600_000 }[node.parameters?.unit] ?? 1000;
+		await ctx.putExecutionToWait(new Date(Date.now() + amount * perUnit));
+		return items;
+	});
 	// Stop and Error v1 throws the configured message and declares `outputs: []`.
 	engine.registerNodeType(
 		'n8n-nodes-base.stopAndError',
@@ -587,5 +620,105 @@ test('EQUIVALENCE inline $error/$json collapses into item.error on both engines'
 		reconstructed.resultData.runData.Dollar[0].data.main[0][0].error.message,
 		reference.resultData.runData.Dollar[0].data.main[0][0].error.message,
 	);
+	assert.equal(reconstructed.status, reference.status);
+});
+
+/* ------------------------------------------------------------------ *
+ * waitTill pause/resume and disabled nodes — vs the real engine
+ * ------------------------------------------------------------------ */
+
+const WAIT = {
+	id: 'eq-wait',
+	name: 'Equivalence — waitTill',
+	nodes: [
+		manualTrigger('t', 'Manual Trigger', [0, 0]),
+		{
+			id: 'w',
+			name: 'Wait',
+			type: 'n8n-nodes-base.wait',
+			typeVersion: 1.1,
+			position: [200, 0],
+			parameters: { resume: 'timeInterval', amount: 5, unit: 'minutes' },
+		},
+		noOp('a', 'After', [400, 0]),
+	],
+	connections: {
+		'Manual Trigger': { main: [[edge('Wait')]] },
+		Wait: { main: [[edge('After')]] },
+	},
+};
+
+test('EQUIVALENCE waitTill: the run parks in the same state, then resumes to the same result', { timeout: 120000, skip: skipReason }, async () => {
+	const api = await loadReference();
+
+	const refPaused = await api.run(WAIT);
+	const recPaused = await reconstructedRun(WAIT);
+
+	assert.equal(refPaused.status, 'waiting', 'sanity: the reference really parked');
+	assert.equal(recPaused.status, refPaused.status);
+	assert.equal(recPaused.resultData.runData.Wait[0].executionStatus, 'waiting', ':1821');
+	assert.equal(recPaused.resultData.runData.Wait[0].executionStatus, refPaused.resultData.runData.Wait[0].executionStatus);
+	assert.deepEqual(payloadOf(recPaused.resultData, 'Wait'), payloadOf(refPaused.resultData, 'Wait'));
+	assert.equal(recPaused.resultData.runData.After, undefined, 'nothing downstream runs while parked');
+	assert.equal(recPaused.resultData.lastNodeExecuted, refPaused.resultData.lastNodeExecuted);
+	assert.deepEqual(
+		recPaused.runExecutionData.executionData.nodeExecutionStack.map((e) => e.node.name),
+		refPaused.data.executionData.nodeExecutionStack.map((e) => e.node.name),
+		':1957 — the parked node is back on the stack on both sides',
+	);
+	assert.ok(refPaused.data.waitTill instanceof Date || typeof refPaused.data.waitTill === 'string');
+	assert.ok(recPaused.waitTill instanceof Date, 'the reconstruction carries a Date');
+
+	// Resume both from their own persisted state.
+	const refResumed = await api.resume(WAIT, refPaused.data);
+	const recResumed = await new WorkflowExecutionEngine(WAIT, JSON.parse(JSON.stringify(recPaused.runExecutionData))).processRunExecutionData();
+
+	assert.equal(refResumed.status, 'success', 'sanity: the reference resumed');
+	assert.equal(recResumed.status, refResumed.status);
+	assert.deepEqual(shape(recResumed.resultData).order, shape(refResumed.resultData).order);
+	assert.deepEqual(shape(recResumed.resultData).runsPerNode, shape(refResumed.resultData).runsPerNode);
+	assert.equal(recResumed.resultData.runData.Wait[0].executionStatus, 'success');
+	assert.equal(
+		recResumed.resultData.runData.Wait[0].executionStatus,
+		refResumed.resultData.runData.Wait[0].executionStatus,
+		'the popped waiting entry is replaced by the disabled pass-through run',
+	);
+	assert.deepEqual(payloadOf(recResumed.resultData, 'After'), payloadOf(refResumed.resultData, 'After'));
+	assert.equal(recResumed.resultData.lastNodeExecuted, refResumed.resultData.lastNodeExecuted);
+});
+
+const DISABLED = {
+	id: 'eq-disabled',
+	name: 'Equivalence — disabled node',
+	nodes: [
+		manualTrigger('t', 'Manual Trigger', [0, 0]),
+		{
+			id: 'l',
+			name: 'Lim',
+			type: 'n8n-nodes-base.limit',
+			typeVersion: 1,
+			position: [200, 0],
+			parameters: { maxItems: 0 }, // would emit nothing if it ran
+			disabled: true,
+		},
+		noOp('a', 'After', [400, 0]),
+	],
+	connections: {
+		'Manual Trigger': { main: [[edge('Lim')]] },
+		Lim: { main: [[edge('After')]] },
+	},
+	pinData: { Lim: [{ json: { pinned: true } }] }, // must be ignored
+};
+
+test('EQUIVALENCE disabled node: not executed, pin ignored, input passed through', { timeout: 120000, skip: skipReason }, async () => {
+	const api = await loadReference();
+	const reference = await api.run(DISABLED);
+	const reconstructed = await reconstructedRun(DISABLED);
+
+	assert.deepEqual(payloadOf(reference.resultData, 'Lim'), [{}], 'sanity: the reference passed the input through');
+	assert.deepEqual(payloadOf(reconstructed.resultData, 'Lim'), payloadOf(reference.resultData, 'Lim'));
+	assert.deepEqual(payloadOf(reconstructed.resultData, 'After'), payloadOf(reference.resultData, 'After'));
+	assert.deepEqual(shape(reconstructed.resultData).order, shape(reference.resultData).order);
+	assert.equal(reconstructed.resultData.lastNodeExecuted, reference.resultData.lastNodeExecuted);
 	assert.equal(reconstructed.status, reference.status);
 });
