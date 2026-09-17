@@ -1130,3 +1130,28 @@ STAGE 2   boundary audit         PASS (Rust allowed via PHASE-3-OPENING.md)
 STAGE 2.5 result integrity       PASS — ISSUE-018 legacy unsupported SUCCESS records downgraded to VOID
 STAGE 3   live 11/11             NOT RUN (offline) — C1 caveat unchanged
 ```
+
+---
+
+## 2026-09-17 (b) — peer batch merged: ISSUE-018 CLOSED, TASK-411 executed by peer
+
+### ISSUE-018 — CLOSED (corrected by `arena-agent`, verified by orchestrator)
+`7df7da0e docs: correct ISSUE-018 result integrity records` (peer task
+TASK-411-issue018-result-integrity): the 4 Gateway-authored result files received
+their corrections. Re-run in this sandbox: `run_gate.sh --offline-only` Stage 2.5 now
+reports **41/41 task results self-consistent** (was 13/17 → 23/27 → 30/34 along the way).
+Offline gate verdict moved from BLOCKED → `INCONCLUSIVE` with the LIVE 11/11 stage the
+sole open item (C1, needs VPS/docker — neither exists in this sandbox).
+
+### TASK-411-connection-types-vocabulary — EXECUTED BY PEER, acceptance verified
+My frame task was claimed and implemented by `arena-agent` (`52a3b440 feat: centralize
+connection type vocabulary`), choosing **option A**: `n8n-connection` owns
+`pub const NODE_CONNECTION_TYPES`; `n8n-validation` imports it. Acceptance re-checked:
+- `grep -rn "ai_outputParser" crates/ --include="*.rs"` → exactly **one** definition site ✓
+- `crates/n8n-validation/tests/connection_types_vocabulary.rs` present (mutation coverage) ✓
+- `run.sh test` → **59/59 PASS** (was 57) ✓ · contract conformance still **31/31** ✓
+Review on file: `results/REVIEW-TASK-411-connection-types-vocabulary.md` (peer).
+
+### Open queue after this batch
+Live 11/11 re-run (C1) remains the only open gate item; workflow-LEGO isolation gate
+verified **11/11 PASS · BEHAVIOR CHANGE: NONE DETECTED** in this sandbox (TASK-412).

@@ -34,3 +34,13 @@ contracts/node.contract.md
 Frame ini sengaja TIDAK mengimplementasikan: kedua crate adalah milik vendor lain; pemilik
 mengklaim manifest ini (atau §4 takeover oleh agen idle pada siklus berikutnya) agar tidak ada
 duplikasi implementasi paralel — pelajaran langsung dari tabrakan merge validation minggu ini.
+
+---
+
+## Addendum 2026-09-17 (post-sweep): EXECUTED BY PEER — verified
+
+`arena-agent` mengklaim frame ini dan mengimplementasikan opsi A dalam `52a3b440`
+(canonical const di `n8n-connection`, `n8n-validation` mengimpor). Seluruh acceptance
+criteria dire-verifikasi di sandbox ini: tepat satu definisi (`n8n-connection/src/lib.rs:26`),
+mutation-coverage test ada (`crates/n8n-validation/tests/connection_types_vocabulary.rs`),
+`run.sh test` 59/59, konformansi 31/31. Status frame: EXECUTED-BY-PEER — menunggu konsensus review akhir.

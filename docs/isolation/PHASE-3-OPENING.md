@@ -124,3 +124,14 @@ $ node tests/compatibility/contract_conformance.mjs
 - **ISSUE-015** (traversal `disabled`): CLOSED-CORRECTED — plain traversal does not
   filter disabled nodes in the reference either (`graph-utils.ts` has no such code);
   the surviving start-node part is fixed and pinned (§1, §5).
+
+---
+
+### Update 2026-09-17b (post-merge of peer batch)
+
+Verification numbers refresh: `run.sh test` → **59/59 PASS** (vocabulary consolidation
+added 2); `run_gate.sh --offline-only` → Stages 1/1.5/2/2.5 all PASS, Stage 3 live NOT
+RUN → gate `INCONCLUSIVE` (ISSUE-018 closed by peer `7df7da0e`; result integrity
+41/41). Workflow-LEGO isolation gate `node tools/workflow-isolation-gate.mjs` →
+**11/11 PASS · BEHAVIOR CHANGE: NONE DETECTED** (label per handoff §7.1:
+`isolation_gate_11/11`, distinct from the VPS smoke 11/11 still pending as C1).
