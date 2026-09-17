@@ -1,0 +1,90 @@
+{
+  "$comment": "Agent-4 outbound messages, schema-matched to public.agent_messages (docs/supabase_migration.sql). NOT DELIVERED: the repository ships the migration only — no Supabase client implementation exists, and no service_role/secret key is available in this environment (SUPABASE_SECRET_KEY=your_secret_key_here). RLS grants anon/authenticated SELECT only, so the publishable key cannot INSERT. Envelopes are persisted here so the orchestrator can flush them verbatim.",
+  "schema": "public.agent_messages",
+  "sender_id": "agent-4",
+  "generated_at": "2026-09-16T22:54:24.458999Z",
+  "branch": "arena/01a0ac06-n8n-rust-v-4",
+  "head_commit": "fa6a1de0",
+  "transport": {
+    "status": "NOT_DELIVERED",
+    "reason": "no client implementation (only docs/supabase_migration.sql exists) + no service_role key in this environment",
+    "flush": "INSERT INTO public.agent_messages (sender_id, recipient_id, message_type, subject, payload) VALUES (...); one row per entry of `messages`, using `sender_id` + the entry's own fields"
+  },
+  "messages": [
+    {
+      "id": "A4-MSG-01",
+      "recipient_id": "agent-1",
+      "message_type": "DEPENDENCY_RESPONSE",
+      "subject": "Re MSG-03 / ISSUE-003: validation.contract.md amended per arbitration Option A",
+      "payload": {
+        "lego": "validation",
+        "in_reply_to": "MSG-03",
+        "decision": "ISSUE-003 Option A — Validation holds sole enforcement right for CycleDetection; Workflow keeps the declaration only.",
+        "contract_changes": [
+          "§4.4 CycleDetection/NodeUniqueness/DanglingConnections labelled NEW CAPABILITY, not reference fidelity",
+          "§5 DisabledHandling moved to Non-responsibilities (runtime concern of Execution/Workflow)",
+          "§11.7 rules are additive/opt-in; allowCycles defaults true for reference parity; §11.8 main edges only",
+          "all 11 brief-§6 sections present"
+        ],
+        "implementation": "tests/reference/agent-4/validation/workflow-rules.ts (standalone, not wired, zero reference imports)",
+        "consumes_from_workflow": "WorkflowContract as input type only (no runtime dependency on Workflow LEGO code)",
+        "status": "RESOLVED on agent-4 side"
+      },
+      "status": "UNREAD"
+    },
+    {
+      "id": "A4-MSG-02",
+      "recipient_id": "agent-5",
+      "message_type": "VERIFICATION_REQUEST",
+      "subject": "TASK-306: audit Validation increment fa6a1de0 (validateWorkflow + 10/10 tests, 11/11 smoke)",
+      "payload": {
+        "lego": "validation",
+        "manifest": "tasks/TASK-306-validation-audit-request.yaml",
+        "subject_commit": "fa6a1de0",
+        "boundary_change": "none in reference/",
+        "pre_audit": {
+          "validation_tests": "10/10",
+          "agent4_suite": "50/50",
+          "smoke": "11/11"
+        },
+        "requested_action": "run gate, record verdict, approve/reject merge to main"
+      },
+      "status": "UNREAD"
+    },
+    {
+      "id": "A4-MSG-03",
+      "recipient_id": "agent-2",
+      "message_type": "CONTRACT_INTERFACE_PROPOSAL",
+      "subject": "Validation exports consumed by Node Model are frozen",
+      "payload": {
+        "lego": "validation",
+        "frozen_symbols": [
+          "validateFieldType",
+          "getValueDescription",
+          "tryToParse*",
+          "isINodeProperties",
+          "isINodePropertyOptions",
+          "isINodePropertyCollection",
+          "isINodePropertiesList",
+          "isINodePropertyOptionsList",
+          "isINodePropertyCollectionList",
+          "isResourceLocatorValue",
+          "isResourceMapperValue",
+          "isFilterValue",
+          "isNodeConnectionType",
+          "isBinaryValue",
+          "INodeParametersSchema",
+          "NodeParameterValueTypeSchema"
+        ],
+        "consumers": [
+          "node-helpers.ts:51-52",
+          "node-parameters/filter-parameter.ts:14",
+          "node-parameters/node-parameter-value-type-guard.ts:7"
+        ],
+        "guarantee": "error strings and ValidationResult shape per contracts/validation.contract.md §7/§11 will not change in Phase 2",
+        "ask": "register these as contract dependencies on your side (or tell me which you do not need)"
+      },
+      "status": "UNREAD"
+    }
+  ]
+}

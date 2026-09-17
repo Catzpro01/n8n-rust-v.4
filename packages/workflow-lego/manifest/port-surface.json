@@ -1,0 +1,148 @@
+{
+  "generatedAt": "2026-09-16T20:57:57.039Z",
+  "note": "Exact symbols each port must provide for the LEGO-owned sources to compile.",
+  "ports": {
+    "@lego/ports/checksum-digest": {
+      "module": "@lego/ports/checksum-digest",
+      "kind": "value",
+      "symbols": [
+        "jsSHA"
+      ],
+      "usedBy": [
+        "workflow-checksum (jssha)"
+      ]
+    },
+    "@lego/ports/config": {
+      "module": "@lego/ports/config",
+      "kind": "value",
+      "symbols": [
+        "getGlobalState"
+      ],
+      "usedBy": [
+        "workflow (./global-state)"
+      ]
+    },
+    "@lego/ports/constants": {
+      "module": "@lego/ports/constants",
+      "kind": "value",
+      "symbols": [
+        "MANUAL_CHAT_TRIGGER_LANGCHAIN_NODE_TYPE",
+        "NODES_WITH_RENAMABLE_CONTENT",
+        "NODES_WITH_RENAMABLE_FORM_HTML_CONTENT",
+        "NODES_WITH_RENAMEABLE_TOPLEVEL_HTML_CONTENT",
+        "STARTING_NODE_TYPES"
+      ],
+      "usedBy": [
+        "workflow (./constants)"
+      ]
+    },
+    "@lego/ports/errors": {
+      "module": "@lego/ports/errors",
+      "kind": "value",
+      "symbols": [
+        "ApplicationError",
+        "UserError"
+      ],
+      "usedBy": [
+        "workflow (./errors)",
+        "workflow (@n8n/errors)"
+      ]
+    },
+    "@lego/ports/expression-runtime": {
+      "module": "@lego/ports/expression-runtime",
+      "kind": "value",
+      "symbols": [
+        "Expression"
+      ],
+      "usedBy": [
+        "workflow (./expression)"
+      ]
+    },
+    "@lego/ports/node-model": {
+      "module": "@lego/ports/node-model",
+      "kind": "value",
+      "symbols": [
+        "* as NodeHelpers"
+      ],
+      "usedBy": [
+        "workflow (./node-helpers)"
+      ]
+    },
+    "@lego/ports/node-reference": {
+      "module": "@lego/ports/node-reference",
+      "kind": "value",
+      "symbols": [
+        "applyAccessPatterns"
+      ],
+      "usedBy": [
+        "workflow (./node-reference-parser-utils)"
+      ]
+    },
+    "@lego/ports/node-rename": {
+      "module": "@lego/ports/node-rename",
+      "kind": "value",
+      "symbols": [
+        "renameFormFields"
+      ],
+      "usedBy": [
+        "workflow (./node-parameters/rename-node-utils)"
+      ]
+    },
+    "@lego/ports/observable-object": {
+      "module": "@lego/ports/observable-object",
+      "kind": "value",
+      "symbols": [
+        "* as ObservableObject"
+      ],
+      "usedBy": [
+        "workflow (./observable-object)"
+      ]
+    },
+    "@lego/ports/utils": {
+      "module": "@lego/ports/utils",
+      "kind": "value",
+      "symbols": [
+        "dedupe",
+        "isObject"
+      ],
+      "usedBy": [
+        "workflow (./utils)",
+        "workflow-checksum (./utils)"
+      ]
+    },
+    "@lego/ports/vocabulary": {
+      "module": "@lego/ports/vocabulary",
+      "kind": "type",
+      "symbols": [
+        "IConnectedNode",
+        "IConnection",
+        "IConnections",
+        "IDataObject",
+        "INode",
+        "INodeConnection",
+        "INodeExecutionData",
+        "INodeParameters",
+        "INodeType",
+        "INodeTypes",
+        "INodes",
+        "IObservableObject",
+        "IPinData",
+        "IWorkflowSettings",
+        "NodeConnectionType",
+        "NodeConnectionTypes",
+        "NodeParameterValueType"
+      ],
+      "usedBy": [
+        "common/get-child-nodes (../interfaces)",
+        "common/get-connected-nodes (../interfaces)",
+        "common/get-node-by-name (../interfaces)",
+        "common/get-parent-nodes (../interfaces)",
+        "common/map-connections-by-destination (../interfaces)",
+        "connections-diff (.)",
+        "graph/graph-utils (../interfaces)",
+        "workflow (./interfaces)",
+        "workflow-checksum (./interfaces)"
+      ]
+    }
+  }
+}

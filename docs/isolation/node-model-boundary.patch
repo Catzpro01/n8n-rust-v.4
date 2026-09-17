@@ -1,0 +1,332 @@
+diff --git a/packages/workflow/src/node-model/index.ts b/packages/workflow/src/node-model/index.ts
+new file mode 100644
+index 00000000..77226767
+--- /dev/null
++++ b/packages/workflow/src/node-model/index.ts
+@@ -0,0 +1,326 @@
++/**
++ * NODE MODEL — explicit internal boundary (barrel)
++ *
++ * This module defines the public surface of the n8n **Node Model** LEGO:
++ *
++ *   - Node definition      (INodeType, IVersionedNodeType, abstract Node)
++ *   - Node identity        (INode, INodes, INodeCredentials[Details], OnError)
++ *   - Node type/version    (INodeTypeDescription, INodeTypeBaseDescription, VersionedNodeType)
++ *   - Node parameters      (INodeProperties and sub-types, INodeParameters, NodeParameterValueType)
++ *   - Node inputs/outputs  (NodeConnectionTypes, INodeInputConfiguration, INodeOutputConfiguration)
++ *   - Node metadata/issues (INodeIssues, NodeHint, NodeExecutionHint, icons/codex)
++ *   - Node configuration   (IDisplayOptions, display conditions, credentials-in-description)
++ *   - Node lifecycle API   (execute/supplyData/trigger/poll/webhook/methods/webhookMethods/customOperations)
++ *
++ * It is a NON-BREAKING boundary: nothing was moved. All symbols are re-exported
++ * from their original modules (`interfaces`, `node-helpers`, `versioned-node-type`,
++ * `node-validation`, `node-parameters/*`). Existing imports via `n8n-workflow`
++ * keep working verbatim; the package `index.ts` keeps `export *` of everything.
++ *
++ * Deliberately NOT exported here (owned by other subsystems):
++ *   - Credentials model   (ICredentialType, ICredentialsHelper, ...)        → credentials
++ *   - Execution runtime   (IRun, IRunData, ITaskData, run-execution-data)   → execution (Agent 3)
++ *   - Workflow graph      (Workflow class, IWorkflowBase, connections-diff) → workflow (Agent 1)
++ *   - Expression runtime  (expression evaluator, workflow-data-proxy)       → expression
++ *   - NodeTypes registry implementation, LoadNodesAndCredentials            → cli/loading (Agent 4)
++ *   - RoutingNode / node execution contexts (runtime side)                  → core (Agent 3)
++ *
++ * See contracts/node.contract.md and docs/isolation/node.md.
++ */
++
++// ----------------------------------------------------------------------------
++// Node identity, instances, and parameter values
++// ----------------------------------------------------------------------------
++
++export type {
++	INode,
++	INodes,
++	IPinData,
++	INodeCredentials,
++	INodeCredentialsDetails,
++	OnError,
++	INodeParameters,
++	NodeParameterValue,
++	NodeParameterValueType,
++	INodeParameterResourceLocator,
++	IResourceLocatorResult,
++	ResourceLocatorModes,
++	ExpressionString,
++
++	// Structured parameter value shapes (used by node parameter definitions)
++	FieldType,
++	FieldTypeMap,
++	ResourceMapperValue,
++	ResourceMapperField,
++	ResourceMapperFields,
++	WorkflowInputsData,
++	FilterValue,
++	FilterConditionValue,
++	FilterOperatorType,
++	FilterOperatorValue,
++	FilterOptionsValue,
++	AssignmentCollectionValue,
++	AssignmentValue,
++	FormFieldsParameter,
++	ValidationResult,
++} from '../interfaces';
++
++// ----------------------------------------------------------------------------
++// Node property/parameter definitions (the declarative parameter schema)
++// ----------------------------------------------------------------------------
++
++export type {
++	INodeProperties,
++	NodePropertyTypes,
++	IDisplayOptions,
++	ICredentialsDisplayOptions,
++	DisplayCondition,
++	FeatureCondition,
++	NodeFeatures,
++	NodeFeaturesDefinition,
++	INodePropertyTypeOptions,
++	ResourceMapperTypeOptionsBase,
++	ResourceMapperTypeOptionsLocal,
++	ResourceMapperTypeOptionsExternal,
++	ResourceMapperTypeOptions,
++	FilterTypeCombinator,
++	FilterTypeOptions,
++	AssignmentTypeOptions,
++	INodePropertyOptions,
++	INodePropertyCollection,
++	INodePropertyMode,
++	INodePropertyModeTypeOptions,
++	INodePropertyModeValidation,
++	INodePropertyRegexValidation,
++	INodePropertyValueExtractorBase,
++	INodePropertyValueExtractorRegex,
++	INodePropertyValueExtractorFunction,
++	INodePropertyValueExtractor,
++	INodeListSearchItems,
++	INodeListSearchResult,
++	NodePropertyAction,
++	CalloutActionBase,
++	CalloutActionOpenSampleWorkflowTemplate,
++	CalloutAction,
++	ILoadOptions,
++	IParameterLabel,
++	IParameterDependencies,
++	IParameterBuilderHint,
++	EditorType,
++	CodeAutocompleteTypes,
++	CodeNodeEditorLanguage,
++	CodeExecutionMode,
++	SQLDialect,
++} from '../interfaces';
++
++// ----------------------------------------------------------------------------
++// Node description & metadata (static identity of a node type)
++// ----------------------------------------------------------------------------
++
++export type {
++	INodeTypeBaseDescription,
++	INodeTypeDescription,
++	NodeDefaults,
++	Icon,
++	IconOrEmoji,
++	IconRef,
++	IconFile,
++	Themed,
++	ThemeIconColor,
++	CodexData,
++	DocumentationLink,
++	UsableAsToolDescription,
++	TriggerPanelDefinition,
++	NodeHint,
++	NodeExecutionHint,
++	INodeHookDescription,
++	INodeCredentialDescription,
++	INodeCredentialTestRequest,
++	INodeCredentialTestResult,
++	ITriggerResponse,
++	// workflow-sdk builder hints that live on node descriptions
++	IBuilderHint,
++	BuilderHintInputs,
++	IBuilderHintInputConfig,
++	IRelatedNode,
++
++	// Declarative routing, declared on node descriptions (definition side only;
++	// the runtime that executes routing lives in n8n-core → execution LEGO)
++	INodePropertyRouting,
++	INodeRequestOutput,
++	INodeRequestSend,
++	PostReceiveAction,
++	PreSendAction,
++	IPostReceiveBase,
++	IPostReceiveBinaryData,
++	IPostReceiveFilter,
++	IPostReceiveLimit,
++	IPostReceiveRootProperty,
++	IPostReceiveSet,
++	IPostReceiveSetKeyValue,
++	IPostReceiveSort,
++	IN8nRequestOperations,
++	IN8nRequestOperationPaginationBase,
++	IN8nRequestOperationPaginationGeneric,
++	IN8nRequestOperationPaginationOffset,
++
++	// Webhook *descriptions* carried by node definitions. Webhook registration,
++	// storage and HTTP routing are owned by the webhook/infra LEGO (Agent 4).
++	IWebhookDescription,
++	IWebhookData,
++	WebhookType,
++	WebhookSetupMethodNames,
++	WebhookResponseMode,
++	WebhookResponseData,
++} from '../interfaces';
++
++// ----------------------------------------------------------------------------
++// Node inputs / outputs (connection-side definitions)
++// ----------------------------------------------------------------------------
++
++export { NodeConnectionTypes, nodeConnectionTypes } from '../interfaces';
++export type {
++	NodeConnectionType,
++	AINodeConnectionType,
++	INodeFilter,
++	INodeInputFilter,
++	INodeInputConfiguration,
++	INodeOutputConfiguration,
++	IConnection,
++	INodeConnection,
++	NodeInputConnections,
++	INodeConnections,
++	IConnections,
++	ISourceDataConnections,
++} from '../interfaces';
++
++// ----------------------------------------------------------------------------
++// Node lifecycle contract (definition ↔ execution-engine protocol)
++// ----------------------------------------------------------------------------
++
++export { Node } from '../interfaces';
++export type {
++	INodeType,
++	IVersionedNodeType,
++	SupplyData,
++	NodeOutput,
++	CloseFunction,
++	EngineRequest,
++	EngineResponse,
++	EngineResult,
++	ExecuteNodeResult,
++	ICredentialTestFunction,
++
++	// The `this` context contracts under which node lifecycle methods run.
++	// These are the BOUNDARY types between the Node Model and the execution
++	// engine: owned here as part of the lifecycle signature, implemented in
++	// n8n-core (`execution-engine/node-execution-context`, Agent 3).
++	IExecuteFunctions,
++	IExecuteSingleFunctions,
++	IExecutePaginationFunctions,
++	ISupplyDataFunctions,
++	ILoadOptionsFunctions,
++	ILocalLoadOptionsFunctions,
++	IPollFunctions,
++	ITriggerFunctions,
++	IHookFunctions,
++	IWebhookFunctions,
++} from '../interfaces';
++
++// ----------------------------------------------------------------------------
++// Node output items & node issues
++// ----------------------------------------------------------------------------
++
++export type {
++	INodeExecutionData,
++	IBinaryData,
++	IBinaryKeyData,
++	IPairedItemData,
++	BinaryFileType,
++	NodeExecutionWithMetadata,
++	INodeIssueTypes,
++	INodeIssueObjectProperty,
++	INodeIssueData,
++	INodeIssues,
++} from '../interfaces';
++
++// ----------------------------------------------------------------------------
++// Node type registry — interface only. The registry *implementation*
++// (`NodeTypes` class + `LoadNodesAndCredentials`) lives in `n8n` CLI (Agent 4).
++// ----------------------------------------------------------------------------
++
++export type {
++	INodeTypes,
++	INodeTypeData,
++	LoadingDetails,
++	NodeLoadingDetails,
++	KnownNodesAndCredentials,
++	LoadedNodesAndCredentials,
++	LoadedClass,
++} from '../interfaces';
++
++// ----------------------------------------------------------------------------
++// Versioned node types
++// ----------------------------------------------------------------------------
++
++export { VersionedNodeType } from '../versioned-node-type';
++
++// ----------------------------------------------------------------------------
++// Node validation (pure functions over INode + INodeType)
++// ----------------------------------------------------------------------------
++
++export {
++	validateNodeCredentials,
++	isNodeConnected,
++	isTriggerLikeNode,
++	type NodeValidationIssue,
++	type NodeCredentialIssue,
++} from '../node-validation';
++
++// ----------------------------------------------------------------------------
++// Node helpers (pure functions over INode / INodeTypeDescription).
++// Re-exported in full — see docs/isolation/node.md for per-function ownership.
++// NOTE: `isExecutable()` and `getNodeInputs/getNodeOutputs` take a `Workflow`
++// (type-only dependency into the Workflow LEGO, Agent 1).
++// ----------------------------------------------------------------------------
++
++export * from '../node-helpers';
++
++// ----------------------------------------------------------------------------
++// Node parameter utilities
++// ----------------------------------------------------------------------------
++
++export {
++	// filter parameter
++	FilterError,
++	arrayContainsValue,
++	executeFilterCondition,
++	executeFilter,
++	validateFilterParameter,
++} from '../node-parameters/filter-parameter';
++export {
++	assertParamIsNumber,
++	assertParamIsString,
++	assertParamIsBoolean,
++	assertParamIsOfAnyTypes,
++	assertParamIsArray,
++	validateNodeParameters,
++} from '../node-parameters/parameter-type-validation';
++export {
++	isNodeParameterValue,
++	isAssignmentCollectionValue,
++	isNodeParameters,
++	isValidNodeParameterValueType,
++	assertIsValidNodeParameterValueType,
++} from '../node-parameters/node-parameter-value-type-guard';
++export { resolveRelativePath } from '../node-parameters/path-utils';
++export { renameFormFields } from '../node-parameters/rename-node-utils';
++
++// ----------------------------------------------------------------------------
++// Node reference helpers — P-NODE-REFERENCE port consumed by the Workflow LEGO
++// (frozen per agent-1 DEPENDENCY_REQUEST MSG-01; see contracts/node.contract.md
++// section 11). Expression-evaluation stays outside; this is text-level
++// node-name rewriting only.
++// ----------------------------------------------------------------------------
++
++export { applyAccessPatterns } from '../node-reference-parser-utils';

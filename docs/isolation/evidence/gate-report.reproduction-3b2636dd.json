@@ -1,0 +1,155 @@
+{
+  "generatedAt": "2026-09-16T22:46:06.305Z",
+  "lego": "workflow",
+  "phase": "phase-2-isolation",
+  "reference": {
+    "pinnedVersion": "2.9.4",
+    "pinnedCommit": "b6dc2787c45677a29a9612cd27eb911302961a83",
+    "sourceRoot": "reference/n8n/packages/workflow",
+    "artifact": "n8n-workflow@2.9.1",
+    "rules": [
+      "reference/n8n/** is read-only. The isolation layer must never modify or duplicate-and-diverge it.",
+      "Ownership is declared here and enforced by tools/workflow-boundary-map.mjs (drift gate)."
+    ]
+  },
+  "runtime": "/home/user/n8n-rust-v.4/.runtime/node_modules",
+  "behaviorChange": "NONE DETECTED",
+  "digestEvidence": {
+    "corpus": {
+      "workflows": [
+        "tests/reference/01-empty-workflow/workflow",
+        "tests/reference/02-one-node/workflow",
+        "tests/reference/03-linear/workflow",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/ai-news-digest",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/daily-weather-report",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/email-summary",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/extract-from-file",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/google-sheets-processing",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/invoice-pipeline",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/lead-qualification",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/multi-agent-research",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/rag-assistant",
+        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/youtube-auto-chapters",
+        "workflow-sdk/test-fixtures/committed-workflows/0",
+        "workflow-sdk/test-fixtures/committed-workflows/1",
+        "workflow-sdk/test-fixtures/committed-workflows/2",
+        "workflow-sdk/test-fixtures/committed-workflows/3",
+        "workflow-sdk/test-fixtures/committed-workflows/4"
+      ],
+      "workflowCount": 18,
+      "sectionCount": 14,
+      "hashAlgorithm": "sha256/32",
+      "rawDigestsLocation": "temporary \u2014 recompute with: node tools/model-digest-runner.cjs --source reference|isolated [--mode reference|strict]"
+    },
+    "verdict": {
+      "beforeVsAfter": "NONE DETECTED",
+      "strictPortIndependence": "NO HIDDEN COUPLING"
+    },
+    "beforeVsAfter": {
+      "identical": 252,
+      "differing": 0
+    },
+    "strictVsBefore": {
+      "identical": 218,
+      "differingPortDependent": 34,
+      "differingUndeclared": 0
+    }
+  },
+  "rustImplementation": "NOT STARTED",
+  "totals": {
+    "gates": 11,
+    "passed": 11,
+    "failed": 0
+  },
+  "gates": [
+    {
+      "id": "G01",
+      "title": "boundary drift gate (owned files, crossings, inbound edges)",
+      "status": "PASS",
+      "detail": "src files scanned         : 104\nLEGO owned files          : 10\ncompile closure           : 103\noutbound crossings        : 21\nundeclared crossings      : 0\ninbound edges             : 9\nmonorepo import sites     : 6318 root + 5 subpath\n\nBoundary check: PASS (no drift vs packages/workflow-lego/manifest/boundary.expectations.json)",
+      "ms": 293
+    },
+    {
+      "id": "G02",
+      "title": "kernel snapshot conformance (constants/vocabulary vs reference)",
+      "status": "PASS",
+      "detail": "Kernel snapshot check: PASS (snapshots match the pinned reference source)",
+      "ms": 39
+    },
+    {
+      "id": "G03",
+      "title": "port surface matches the imports of the owned sources",
+      "status": "PASS",
+      "detail": "Required port surface (from actual imports in owned files):\n\n@lego/ports/checksum-digest  [value]\n   symbols : jsSHA\n   used by : workflow-checksum (jssha)\n@lego/ports/config  [value]\n   symbols : getGlobalState\n   used by : workflow (./global-state)\n@lego/ports/constants  [value]\n   symbols : MANUAL_CHAT_TRIGGER_LANGCHAIN_NODE_TYPE, NODES_WITH_RENAMABLE_CONTENT, NODES_WITH_RENAMABLE_FORM_HTML_CONTENT, NODES_WITH_RENAMEABLE_TOPLEVEL_HTML_CONTENT, STARTING_NODE_TYPES\n   used by : workflow (./constants)\n@lego/ports/errors  [value]\n   symbols : ApplicationError, UserError\n   used by : workflow (./errors), workflow (@n8n/errors)\n@lego/ports/expression-runtime  [value]\n   symbols : Expression\n   used by : workflow (./expression)\n@lego/ports/node-model  [value]\n   symbols : * as NodeHelpers\n   u",
+      "ms": 269
+    },
+    {
+      "id": "G04",
+      "title": "reference tree byte-identical to the pinned hashes",
+      "status": "PASS",
+      "detail": "Reference integrity check: PASS (15050 files, root f8da35180669d798\u2026)",
+      "ms": 436
+    },
+    {
+      "id": "G05",
+      "title": "isolation extraction (pure import rewrites only)",
+      "status": "PASS",
+      "detail": "isolated unit written to packages/workflow-lego/.extract\n  owned files copied : 10\n  port rewrites      : 25 across 10 files\n    @lego/ports/checksum-digest : 1\n    @lego/ports/config : 1\n    @lego/ports/constants : 1\n    @lego/ports/errors : 2\n    @lego/ports/expression-runtime : 1\n    @lego/ports/node-model : 1\n    @lego/ports/node-reference : 1\n    @lego/ports/node-rename : 1\n    @lego/ports/observable-object : 1\n    @lego/ports/utils : 2\n    @lego/ports/vocabulary : 13",
+      "ms": 303
+    },
+    {
+      "id": "G06",
+      "title": "TypeScript build PASS (isolated unit, ports only)",
+      "status": "PASS",
+      "detail": "tsc -p .extract/tsconfig.json \u2192 0 errors",
+      "ms": 1824
+    },
+    {
+      "id": "G07",
+      "title": "TypeScript build PASS (versioned boundary/ports/facade)",
+      "status": "PASS",
+      "detail": "tsc --noEmit \u2192 0 errors",
+      "ms": 1216
+    },
+    {
+      "id": "G08",
+      "title": "unit tests PASS (boundary, extraction, equivalence, strict isolation, surface)",
+      "status": "PASS",
+      "detail": "# cancelled 0 \u00b7 # skipped 0 \u00b7 # todo 0 \u00b7 # duration_ms 13328.825649",
+      "ms": 13368
+    },
+    {
+      "id": "G09",
+      "title": "BEFORE vs AFTER digest: BEHAVIOR CHANGE NONE",
+      "status": "PASS",
+      "detail": "252 section comparisons across 18 workflows \u2014 0 differences \u00b7 strict: 218 identical, 34 in declared port sections",
+      "ms": 2750
+    },
+    {
+      "id": "G10",
+      "title": "strict port mode: no hidden coupling to the reference runtime",
+      "status": "PASS",
+      "detail": "# cancelled 0 \u00b7 # skipped 0 \u00b7 # todo 0 \u00b7 # duration_ms 1724.960556",
+      "ms": 1762
+    },
+    {
+      "id": "G11",
+      "title": "live verification: workflow load / save / 1-node / linear / webhook / execution record",
+      "status": "PASS",
+      "detail": "7/7 PASS \u00b7 R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS",
+      "ms": 3945
+    }
+  ],
+  "note": "Reproduction of the 11/11 isolation gate by agent-1 on base main @ 3b2636dd (post-merge handoff unit, docs/isolation/workflow-node-port-freeze.md \u00a77). The verified baseline artifact stays at evidence/gate-report.json; this file is the raw second run \u2014 verdicts identical, only timestamps/durations differ.",
+  "reproduction": {
+    "by": "agent-1",
+    "branch": "arena/01a0ac62-n8n-rust-v-4",
+    "base_commit": "3b2636dd",
+    "base_branch": "main",
+    "command": "npm run verify",
+    "verdict": "11/11 PASS \u00b7 BEHAVIOR CHANGE: NONE DETECTED",
+    "node": "v22.22.3",
+    "runtime": "/home/user/n8n-rust-v.4/.runtime/node_modules (n8n-workflow/core/nodes-base 2.9.1)",
+    "why_separate_file": "the evidence/*.json committed for PR #1 is the artifact Agent 5 verified; this run must not overwrite its provenance"
+  }
+}

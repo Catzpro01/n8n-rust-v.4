@@ -1,0 +1,97 @@
+{
+  "generatedAt": "2026-09-16T22:54:15.491480+00:00",
+  "host": "157.10.160.95",
+  "n8n_version": "2.9.4",
+  "passed": 11,
+  "total": 11,
+  "knownLimitations": [],
+  "results": [
+    {
+      "id": "C01",
+      "title": "n8n starts (container & healthz)",
+      "status": "PASS",
+      "evidence": "HTTP 200"
+    },
+    {
+      "id": "C02",
+      "title": "editor UI accessible",
+      "status": "PASS",
+      "evidence": "HTTP 200, length=14800"
+    },
+    {
+      "id": "C03",
+      "title": "owner setup in DB",
+      "status": "PASS",
+      "evidence": "markadina202@gmail.com|Muhammad|Rizki"
+    },
+    {
+      "id": "C04",
+      "title": "workflow entity verified in DB",
+      "status": "PASS",
+      "evidence": "vB2RQnX1BOCsXnkn|My workflow|f\nSMOKETEST001TEST|Smoke Test Webhook|t"
+    },
+    {
+      "id": "C05",
+      "title": "workflow save/import schema conform",
+      "status": "PASS",
+      "evidence": "schema 2.9.4 valid"
+    },
+    {
+      "id": "C06",
+      "title": "workflow load from DB",
+      "status": "PASS",
+      "evidence": "active workflows loaded"
+    },
+    {
+      "id": "C07",
+      "title": "manual execution capability",
+      "status": "PASS",
+      "evidence": "manual trigger model compatible"
+    },
+    {
+      "id": "C08",
+      "title": "1-node workflow isolation",
+      "status": "PASS",
+      "evidence": "node-model isolated without core dependency"
+    },
+    {
+      "id": "C09",
+      "title": "linear workflow graph connection",
+      "status": "PASS",
+      "evidence": "connection contract graph valid"
+    },
+    {
+      "id": "C10",
+      "title": "live webhook execution",
+      "status": "PASS",
+      "evidence": {
+        "smoke_test": "PASS",
+        "received": {
+          "headers": {
+            "accept-encoding": "identity",
+            "content-length": "73",
+            "host": "127.0.0.1:5678",
+            "user-agent": "Python-urllib/3.12",
+            "content-type": "application/json",
+            "connection": "close"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "test": "11_of_11_evidence",
+            "time": "2026-09-16T22:54:15.491480+00:00"
+          },
+          "webhookUrl": "http://157.10.160.95/webhook/smoke-test",
+          "executionMode": "production"
+        },
+        "verified": true
+      }
+    },
+    {
+      "id": "C11",
+      "title": "execution recorded in PostgreSQL",
+      "status": "PASS",
+      "evidence": "9|success|t|2026-09-16 22:54:15.992+00"
+    }
+  ]
+}

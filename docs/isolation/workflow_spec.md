@@ -31,12 +31,23 @@
 ## 6. Verification Plan
 - Reference Smoke Test: 11/11 PASS
 - Interface Contract Verification by Agent 5: VERIFIED
+<<<<<<< HEAD
 
 ## 7. Phase 3 — Rust Implementation Notes (2026-09-16, agent-1)
 
-Crate: `crates/n8n-workflow` (workspace root `crates/`), std-only, zero
-external dependencies (offline pipeline constraint; the pure model needs no
-IO anyway — golden invariant).
+> **Supersession note (2026-09-17).** The canonical Phase-3 Rust port of the
+> Workflow LEGO is `crates/n8n-workflow` in the root workspace (serde-based,
+> 15 frozen surface symbols, 35 reference fixtures — see
+> `docs/isolation/workflow-rust-port-review.md`). The std-only crate
+> described below was rebranded to **`tools/n8n-workflow-compat`** (package
+> `n8n-workflow-compat`): it is now a self-contained **differential
+> compatibility oracle** — an independent reference implementation whose only
+> consumer is the `tests/compatibility/` suite — not a competing LEGO crate.
+> The type mapping and semantic decisions below still document that oracle.
+
+Crate: `tools/n8n-workflow-compat`, std-only, zero external dependencies
+(offline pipeline constraint; the pure model needs no IO anyway — golden
+invariant).
 
 ### 7.1 Type mapping (original TS → Rust)
 
@@ -91,3 +102,5 @@ IO anyway — golden invariant).
   test) is deferred to the VPS pipeline** — this sandbox's network policy
   blocks `static.rust-lang.org`/`crates.io`, so no Rust toolchain is
   installable here. Any stable toolchain ≥ 1.70 works (no dependencies).
+=======
+>>>>>>> origin/main
