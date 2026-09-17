@@ -1,0 +1,52 @@
+# task_consensus_votes record (file fallback — Supabase unreachable from sandbox)
+worker: orchestrator-workflow-owner
+role: orchestrator + workflow lego owner
+task_in_review: TASK-305-phase2-final-verdict
+vendor_under_review: agent-5
+date: 2026-09-17
+
+rubric:
+  - point: 1
+    rule: "Aturan File/Path — did the worker adhere to the allowed/forbidden paths?"
+    pass: true
+    assessment: >-
+      Allowed paths were tests/**, contracts/**, docs/**; the Phase-2 final batch
+      delivered exactly there (tests/integration/boundary_audit.py,
+      tests/integration/result_integrity_audit.py,
+      tests/compatibility/contract_conformance.mjs, COMPATIBILITY-MATRIX.md, docs).
+      No crates/** or apps/** content from agent-5 on main, while their task
+      explicitly forbade those paths to themselves. boundary_audit.py today confirms
+      all runtime edges documented (PASS) — the audit tool polices its own rule.
+  - point: 2
+    rule: "Integritas Golden Oracle — did they maintain compatibility with the reference (n8n v2.9.4)?"
+    pass: true
+    assessment: >-
+      The verdict is anchored in recorded live-evidence derived from the pinned
+      reference (baseline-before.json / baseline-after.json, 11/11 with 3 monotonic
+      counter diffs only). Independent re-check today:
+      `node tools/workflow-reference-manifest.mjs --check` → PASS (15050 files,
+      root f8da35180669d798…). No golden value was edited to match code; their
+      negative-fixture design (05-cyclic-invalid) actively increases oracle integrity.
+  - point: 3
+    rule: "Keberadaan Bukti Nyata — does the task output real evidence (not a truncated/empty report)?"
+    pass: true
+    assessment: >-
+      Deliverables exist and are runnable: contract_conformance.mjs (31/31 today),
+      boundary_audit.py (PASS today), result_integrity_audit.py (honestly reports
+      13/17 including failing files — no vanity counters). Two honest gaps are
+      recorded, not hidden: the live 11/11 is a .runtime recording (SQLite/local,
+      not VPS) — disclosed verbatim as caveat C1; rust_conformance_audit.mjs is
+      referenced in ISSUE-014/018 text but not on main (their branch) — visible.
+
+vote: APPROVED
+
+self_assessment: >-
+  I consumed this verdict as the precondition for formally opening Phase 3
+  (TASK-401). I re-ran every offline artifact it introduced inside this sandbox
+  instead of trusting the recorded claims.
+
+thoughts: >-
+  Approval is for the Phase-2 verdict as an evidence package. The two recorded gaps
+  (live re-run on VPS, missing rust_conformance_audit.mjs on main) are tracked as
+  caveats in docs/isolation/PHASE-3-OPENING.md §6 so they cannot be silently
+  forgotten; neither undermines the closing of Phase 2 or the opening of Phase 3.

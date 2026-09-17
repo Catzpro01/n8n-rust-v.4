@@ -20,6 +20,7 @@
 //! (F5). The accumulated report API is the normative surface.
 
 use indexmap::{IndexMap, IndexSet};
+pub use n8n_connection::NODE_CONNECTION_TYPES;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashSet;
@@ -65,23 +66,6 @@ impl Default for ValidateOptions {
         Self { allow_cycles: true }
     }
 }
-
-/// Mirrors `NodeConnectionTypes` in n8n 2.9.4 `packages/workflow/src/interfaces.ts:2249`.
-pub const NODE_CONNECTION_TYPES: [&str; 13] = [
-    "ai_agent",
-    "ai_chain",
-    "ai_document",
-    "ai_embedding",
-    "ai_languageModel",
-    "ai_memory",
-    "ai_outputParser",
-    "ai_retriever",
-    "ai_reranker",
-    "ai_textSplitter",
-    "ai_tool",
-    "ai_vectorStore",
-    "main",
-];
 
 /// The typed view built by [`validate_workflow`] after the [`ValidationCode::InvalidInput`]
 /// gate (spec §2). `node_names` keeps `nodes[]` order with duplicates.

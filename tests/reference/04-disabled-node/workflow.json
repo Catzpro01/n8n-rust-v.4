@@ -1,0 +1,39 @@
+{
+  "id": "wf-disabled-golden",
+  "name": "Disabled Node Golden",
+  "nodes": [
+    {
+      "id": "id-mt",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "parameters": {},
+      "disabled": true
+    },
+    {
+      "id": "id-code",
+      "name": "Code",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [300, 0],
+      "parameters": {}
+    },
+    {
+      "id": "id-solo",
+      "name": "Solo",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [0, 160],
+      "parameters": {}
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [[{ "node": "Code", "type": "main", "index": 0 }]]
+    },
+    "Solo": {
+      "main": [[{ "node": "Code", "type": "main", "index": 0 }]]
+    }
+  }
+}
