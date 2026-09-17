@@ -1,6 +1,6 @@
 # Execution LEGO — Phase 3 reconstruction record
 
-**Status:** `IMPLEMENTED` · `TESTED` (85/85) · `GATE 11/11`
+**Status:** `IMPLEMENTED` · `TESTED` (95/95) · `GATE 12/12`
 **Language:** JavaScript (Node.js ESM) — `PROJECT_RULES.md` v2.9.4 rule 1 (ZERO RUST, the JavaScript reconstruction track).
 The Phase-3 opening record (`docs/isolation/PHASE-3-OPENING-RECORD.md`, 2026-09-17) permits Rust **only** under
 `crates/**` + `apps/**` for the separate port track; this LEGO contributes no Rust and stays JavaScript either way.
@@ -22,6 +22,7 @@ The three open pool tasks of the execution LEGO:
 | `POOL-003-error-retry-handling` | retry + error policy | `src/retry.mjs`, `src/error-handling.mjs`, `src/errors.mjs` |
 | `TASK-EXPRESSION-SANDBOX-01` | bounded expression security boundary | `src/expression.mjs`, `src/expression-sandbox.mjs` |
 | `TASK-428-phase3-wait-tracker` | waiting execution scheduling & resumption | `src/wait-tracker.mjs`, `src/workflow-helpers.mjs` |
+| `TASK-430-phase3-active-executions` | active execution registry & lifecycle | `src/active-executions.mjs` |
 
 ## 2. Source mapping (verified against the reference, not assumed)
 
@@ -71,12 +72,13 @@ The three open pool tasks of the execution LEGO:
 | `test/05-activation.test.mjs` | 20 | activation lifecycle: TriggersAndPollers, ActiveWorkflows, TriggerContext, ScheduledTaskManager |
 | `test/06-error-surface.test.mjs` | 7 | NodeOperationError/NodeApiError error surface, reflection, context |
 | `test/07-wait-tracker.test.mjs` | 18 | WaitTracker DB polling, timer scheduling, startExecution guards, parent execution resumption, duplicate resume suppression, lifecycle |
+| `test/08-active-executions.test.mjs` | 10 | ActiveExecutions registry, persistence creation, concurrency reservations, waiting resumption lock, streaming chunks, stopExecution, shutdown |
 
 ```
 $ cd packages/execution-engine && node --test test/*.test.mjs
-# tests 85   # pass 85   # fail 0
+# tests 95   # pass 95   # fail 0
 $ node tools/execution-engine-gate.mjs
-Execution LEGO gate: 11/11 PASS
+Execution LEGO gate: 12/12 PASS
 ```
 
 ## 5. Known deltas (must be closed before this LEGO is swapped for anything else)

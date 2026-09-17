@@ -311,6 +311,55 @@ export class UnexpectedError extends ApplicationError {
 	}
 }
 
+/** Error thrown when an execution is not found in active executions — mirrors `ExecutionNotFoundError`. */
+export class ExecutionNotFoundError extends UnexpectedError {
+	constructor(executionId) {
+		super('No active execution found', { extra: { executionId } });
+		this.name = 'ExecutionNotFoundError';
+		this.executionId = executionId;
+	}
+}
+
+/** Base execution cancellation error — mirrors `ExecutionCancelledError`. */
+export class ExecutionCancelledError extends ApplicationError {
+	constructor(executionId, reason = 'manual') {
+		super('The execution was cancelled', {
+			level: 'warning',
+			extra: { executionId },
+		});
+		this.name = 'ExecutionCancelledError';
+		this.executionId = executionId;
+		this.reason = reason;
+	}
+}
+
+/** Manual execution cancellation error — mirrors `ManualExecutionCancelledError`. */
+export class ManualExecutionCancelledError extends ExecutionCancelledError {
+	constructor(executionId) {
+		super(executionId, 'manual');
+		this.name = 'ManualExecutionCancelledError';
+		this.message = 'The execution was cancelled manually';
+	}
+}
+
+/** Timeout execution cancellation error — mirrors `TimeoutExecutionCancelledError`. */
+export class TimeoutExecutionCancelledError extends ExecutionCancelledError {
+	constructor(executionId) {
+		super(executionId, 'timeout');
+		this.name = 'TimeoutExecutionCancelledError';
+		this.message = 'The execution was cancelled because it timed out';
+	}
+}
+
+/** System shutdown cancellation error — mirrors `SystemShutdownExecutionCancelledError`. */
+export class SystemShutdownExecutionCancelledError extends ExecutionCancelledError {
+	constructor(executionId) {
+		super(executionId, 'shutdown');
+		this.name = 'SystemShutdownExecutionCancelledError';
+		this.message = 'The execution was cancelled because the system is shutting down';
+	}
+}
+
 /**
  * `ExecutionBaseError` is a plain object in run data (see execution-data contract
  * §1 `error?: ExecutionError`). Spread-safe serialisation, never the class itself.

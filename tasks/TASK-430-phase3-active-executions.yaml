@@ -1,0 +1,29 @@
+id: TASK-430-phase3-active-executions
+agent: arena-worker
+lego: execution
+module: active-executions
+phase: 3
+title: "Execution LEGO: ActiveExecutions registry and in-memory lifecycle"
+status: SUBMITTED_FOR_REVIEW
+objective: "Reconstruct ActiveExecutions in-memory registry, cancellation, and response streaming 1:1 against n8n 2.9.4 CLI reference."
+acceptance:
+  - "in-memory active execution tracking (activeExecutions map)"
+  - "add new execution: persistence delegation, capacity reservation, status transition"
+  - "add resuming execution: requireStatus waiting optimistic lock and ExecutionAlreadyResumingError"
+  - "postExecutePromise lifecycle: automatic cleanup for finished/failed executions while preserving waiting executions"
+  - "attachment API: attachWorkflowExecution, attachResponsePromise, resolveResponsePromise, resolveExecutionResponsePromise"
+  - "streaming support: sendChunk writes NDJSON chunks and flushes response"
+  - "cancellation: stopExecution cancels workflowExecution, rejects postExecutePromise, emits execution-cancelled event"
+  - "status and queries: has, getStatus, setStatus, getActiveExecutions, getExecutionOrFail"
+  - "graceful shutdown: concurrency disable, cancel running executions, and drain active executions"
+  - "execution-engine gate passes 12/12 with 0 runtime dependencies and import closed"
+  - "all 14 verify:all gates pass"
+allowed_paths:
+  - packages/execution-engine/**
+  - tools/execution-engine-gate.mjs
+  - contracts/execution.contract.md
+  - docs/isolation/LEGO-MASTER-MAP.md
+  - docs/isolation/evidence/execution-engine-gate.json
+  - tasks/TASK-430-phase3-active-executions.yaml
+  - results/TASK-430-phase3-active-executions.md
+forbidden_paths: [reference/n8n/**, crates/**, apps/**]

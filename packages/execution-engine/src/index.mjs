@@ -30,9 +30,14 @@ export {
 export {
 	ApplicationError,
 	ExecutionAlreadyResumingError,
+	ExecutionCancelledError,
+	ExecutionNotFoundError,
+	ManualExecutionCancelledError,
 	NodeApiError,
 	NodeOperationError,
 	OperationalError,
+	SystemShutdownExecutionCancelledError,
+	TimeoutExecutionCancelledError,
 	TriggerCloseError,
 	UnexpectedError,
 	UserError,
@@ -76,3 +81,4 @@ export {
 	shouldRestartParentExecution,
 	updateParentExecutionWithChildResults,
 } from './workflow-helpers.mjs';
+export { ActiveExecutions } from './active-executions.mjs';

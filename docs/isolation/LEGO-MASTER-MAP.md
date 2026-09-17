@@ -116,12 +116,13 @@ asserts that confinement.
 | `TASK-425-phase3-webhook-body-parser` | webhook native body parsing | `contracts/webhook.contract.md` ✅ | `docs/isolation/webhook.md` ✅ | `packages/webhook-lego/test/*.test.mjs` 42/42 ✅ (7 body-parser cases) | `tools/webhook-lego-gate.mjs` 5/5 ✅ | **VERIFIED** |
 | `TASK-426-phase3-webhook-streaming-response` | webhook response/stream transport | `contracts/webhook.contract.md` ✅ | `docs/isolation/webhook.md` ✅ | `packages/webhook-lego/test/*.test.mjs` 49/49 ✅ (7 response-stream cases) | `tools/webhook-lego-gate.mjs` 5/5 ✅ | **VERIFIED** |
 | `TASK-427-phase3-webhook-response-extractors` | webhook response extraction | `contracts/webhook.contract.md` ✅ | `docs/isolation/webhook.md` ✅ | `packages/webhook-lego/test/*.test.mjs` 59/59 ✅ (10 extractor cases) | `tools/webhook-lego-gate.mjs` 5/5 ✅ | **VERIFIED** |
-| `TASK-428-phase3-wait-tracker` | execution (wait tracker) | `contracts/execution.contract.md` ✅ | `docs/isolation/execution.md` ✅ | `packages/execution-engine/test/*.test.mjs` 85/85 ✅ (18 WaitTracker cases) | `tools/execution-engine-gate.mjs` 11/11 ✅ | **SUBMITTED_FOR_REVIEW** |
-| `TASK-429-phase3-webhook-response-headers` | webhook response header validation | `contracts/webhook.contract.md` ✅ | `docs/isolation/webhook.md` ✅ | `packages/webhook-lego/test/*.test.mjs` 67/67 ✅ (8 response-header cases) | `tools/webhook-lego-gate.mjs` 5/5 ✅ | **SUBMITTED_FOR_REVIEW** |
+| `TASK-428-phase3-wait-tracker` | execution (wait tracker) | `contracts/execution.contract.md` ✅ | `docs/isolation/execution.md` ✅ | `packages/execution-engine/test/*.test.mjs` 85/85 ✅ (18 WaitTracker cases) | `tools/execution-engine-gate.mjs` 11/11 ✅ | **VERIFIED** |
+| `TASK-429-phase3-webhook-response-headers` | webhook response header validation | `contracts/webhook.contract.md` ✅ | `docs/isolation/webhook.md` ✅ | `packages/webhook-lego/test/*.test.mjs` 67/67 ✅ (8 response-header cases) | `tools/webhook-lego-gate.mjs` 5/5 ✅ | **VERIFIED** |
+| `TASK-430-phase3-active-executions` | execution (active executions registry) | `contracts/execution.contract.md` ✅ | `docs/isolation/execution.md` ✅ | `packages/execution-engine/test/*.test.mjs` 95/95 ✅ (10 ActiveExecutions cases) | `tools/execution-engine-gate.mjs` 12/12 ✅ | **SUBMITTED_FOR_REVIEW** |
 
 | Phase 3 gate | Result |
 | :--- | :--- |
-| `tools/execution-engine-gate.mjs` | **PASS 11/11** — no dependencies, import-closed, Rust confined, reference intact, 85/85 tests, public surface contracted (66 symbols), expression sandboxed, activation lifecycle, WaitTracker execution resumption |
+| `tools/execution-engine-gate.mjs` | **PASS 12/12** — no dependencies, import-closed, Rust confined, reference intact, 95/95 tests, public surface contracted (72 symbols), expression sandboxed, activation lifecycle, WaitTracker execution resumption, ActiveExecutions registry |
 | Reference tree | unmodified (15050 files, root digest `f8da3518…`) |
 | Evidence | `docs/isolation/evidence/execution-engine-gate.json` |
 

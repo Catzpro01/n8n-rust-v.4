@@ -66,6 +66,8 @@ retry/error policy. Everything the loop consumes from other LEGOs is injected
 | `WaitTracker` | wait-tracker.mjs | schedules and resumes waiting executions via timers, DB queries (`getWaitingExecutions`), project resolution, and parent execution resumption |
 | `getDataLastExecutedNodeData`, `shouldRestartParentExecution`, `updateParentExecutionWithChildResults` | workflow-helpers.mjs | helpers for WaitTracker: child execution output extraction, parent execution restart guards, and parent nodeExecutionStack updates |
 | `OperationalError`, `ExecutionAlreadyResumingError` | errors.mjs | operational errors; duplicate resume suppression during sub-workflow completions |
+| `ActiveExecutions` | active-executions.mjs | in-memory active execution lifecycle, registration, concurrency reservations, streaming chunk writing, post-execute settlement, and cancellation |
+| `ExecutionNotFoundError`, `ExecutionCancelledError`, `ManualExecutionCancelledError`, `TimeoutExecutionCancelledError`, `SystemShutdownExecutionCancelledError` | errors.mjs | execution lookup and cancellation errors for active workflow stopping and shutdown |
 
 ## 5. Loop invariants (pinned to source lines)
 

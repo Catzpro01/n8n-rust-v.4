@@ -216,6 +216,12 @@ gate('E11', 'waiting execution tracking & resumption (WaitTracker)', () =>
 	'packages/execution-engine/test/07-wait-tracker.test.mjs',
 );
 
+/* E12 — active executions registry & lifecycle --------------------------- */
+gate('E12', 'active executions registry & lifecycle (ActiveExecutions)', () =>
+	runNodeTest('test/08-active-executions.test.mjs', PKG),
+	'packages/execution-engine/test/08-active-executions.test.mjs',
+);
+
 /* ---------------- evidence + human-readable report ----------------------- */
 const totals = {
 	gates: results.length,
@@ -266,6 +272,10 @@ const report = {
 		'TASK-428-phase3-wait-tracker': {
 			status: results.find((entry) => entry.id === 'E11')?.status === 'PASS' ? 'IMPLEMENTED' : 'FAILED',
 			surface: ['WaitTracker', 'shouldRestartParentExecution', 'updateParentExecutionWithChildResults', 'getDataLastExecutedNodeData', 'ExecutionAlreadyResumingError'],
+		},
+		'TASK-430-phase3-active-executions': {
+			status: results.find((entry) => entry.id === 'E12')?.status === 'PASS' ? 'IMPLEMENTED' : 'FAILED',
+			surface: ['ActiveExecutions', 'ExecutionNotFoundError', 'ExecutionCancelledError', 'ManualExecutionCancelledError', 'TimeoutExecutionCancelledError', 'SystemShutdownExecutionCancelledError'],
 		},
 	},
 };

@@ -4,7 +4,7 @@ lego: webhook
 module: response-headers
 phase: 3
 title: "Webhook LEGO: validated and protected response headers"
-status: SUBMITTED_FOR_REVIEW
+status: VERIFIED
 objective: "Validate workflow-controlled HTTP response headers before static or streamed delivery."
 acceptance:
   - "lower-case valid names and deterministic replacement"
