@@ -15,8 +15,8 @@ fixtures/ the evidence        corpus.json (probe definitions, hand-written),
 test/     the gates           00-07 + oracle/10, helpers/ (harness, stub host, recorders)
 manifest/ the surface record  port-surface.json (generated: ported / deferred /
                               out-of-scope / additions, per module and per class)
-runner.mjs, test-run.mjs      POOL-001's execution-loop prototype, pinned byte-identical
-                              by gate 06 and NOT used by this port
+runner.mjs, test-run.mjs,     POOL-001's execution-loop lane. NOT part of this port:
+runner.test.mjs               gate 06 pins them unedited and forbids imports either way
 ```
 
 ## Run it
@@ -45,6 +45,15 @@ node --test --test-force-exit packages/reconstructed-engine/test/04-*.test.mjs  
    itself: it exposed that `$execution.mode` had no probe, and the corpus grew to cover it.
    Nested `node --test` runs must strip `NODE_OPTIONS`/`NODE_TEST_CONTEXT` or the child
    reports nothing and exits 0 (the mutation would "pass").
+
+## Two execution loops, on purpose (for now)
+
+`runner.mjs` owns the *orchestration* seam — a self-contained loop with its own minimal
+data proxy; `src/workflow-data-proxy.mjs` is the *reference-verified* proxy. They are
+siblings, not layers: gate 06 asserts neither imports the other, so Phase 3 can swap the
+loop onto this port (or not) without either side silently inheriting the other's
+assumptions. `runner.mjs`'s `$json`/`$input`/`$execution` shorthands are conveniences with
+different semantics — do not treat them as evidence about n8n.
 
 ## Deferred surface
 

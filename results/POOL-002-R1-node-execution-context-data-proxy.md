@@ -21,7 +21,8 @@ classes, all of `constants.ts`) plus nine gates that compare it to the pinned re
 |---|---|
 | `src/*.mjs` (10 files) | the port; every symbol documents its reference `file:line` |
 | `fixtures/corpus.json` | 13 data-proxy scenarios + 3 execute-context scenarios + deferred-probe set |
-| `fixtures/data-proxy.golden.json` | 100 KB of reference-recorded probe results (values *and* errors) |
+| `fixtures/legacy-runner.lock.json` | POOL-001 non-entanglement pin (sha256 + traceable commit blob) |
+| `fixtures/data-proxy.golden.json` | 282 reference-recorded probe results (values *and* errors), 96 KB |
 | `fixtures/reference-snapshot.json` | recorded constant values, sandbox key set, context method set, additional-key set |
 | `manifest/port-surface.json` | generated per-module/per-class classification: ported / deferred / out-of-scope / additions + class hierarchy check |
 | `test/00…07`, `test/oracle/10` | the gates, incl. recorders (`record-golden.mjs`, `record-surface.mjs`) and an offline host stub that throws on anything unmodelled |
@@ -32,8 +33,8 @@ classes, all of `constants.ts`) plus nine gates that compare it to the pinned re
 
 | Run | Result |
 |---|---|
-| `npm run verify:engine` (oracle `n8n-workflow@2.9.1`/`n8n-core@2.9.1` installed) | **80/80 pass** |
-| `npm run verify:engine:offline` (`.runtime` hidden) | **80/80 pass**; oracle gate prints `oracle equivalence NOT RUN`, host-dependent probes degrade to "must raise" |
+| `npm run verify:engine` (oracle `n8n-workflow@2.9.1`/`n8n-core@2.9.1` installed) | **82/82 pass** |
+| `npm run verify:engine:offline` (`.runtime` hidden) | **82/82 pass**; oracle gate prints `oracle equivalence NOT RUN`, host-dependent probes degrade to "must raise" |
 | `test/07-falsification` | control green; **10/10 mutations caught** (each re-runs the whole suite in a temp copy) |
 | `test/05-surface-coverage` | 0 undeclared gaps, 0 undeclared additions, 43/43 sandbox keys, 5/5 additional keys, 4/4 class hierarchies match |
 
@@ -55,13 +56,23 @@ classes, all of `constants.ts`) plus nine gates that compare it to the pinned re
    sentinel); goldens keyed by a re-parsed rendered string lose `Date`/args (store `_path`);
    nested `node --test` inherits `NODE_OPTIONS`/`NODE_TEST_CONTEXT` and reports nothing.
 
+### Note for POOL-001 / Phase 3
+
+`runner.mjs` now carries its own minimal `WorkflowDataProxy` (`$json`/`$input`/`$execution`
+shorthands, `mode: 'manual'` hardcoded, `runIndex: -1` semantics). That is fine while the two
+lanes are decoupled — gate 06 makes "decoupled" an assertion — but when the loop is migrated it
+should import `src/workflow-data-proxy.mjs` and the reference-recorded behaviour in
+`fixtures/data-proxy.golden.json` becomes the migration test.
+
 ### Scope discipline
 
 - No writes outside `packages/reconstructed-engine/**`, `docs/isolation/node-execution-context.md`,
   `scripts/run-engine-tests.sh`, this `tasks/`+`results/` record, the outbox, and the root
   `package.json` (two added scripts).
-- `packages/reconstructed-engine/runner.mjs` / `test-run.mjs` (POOL-001) untouched — gate 06
-  pins them by sha256 *and* against `git show fc4e5631`.
+- `packages/reconstructed-engine/{runner.mjs,test-run.mjs,runner.test.mjs}` (POOL-001) untouched —
+  gate 06 pins them by sha256, verifies the pin traces to a real commit blob, and forbids imports in
+  either direction. (The lane's own `cc2d111f` rewrite of `runner.mjs` landed on this branch during
+  the work; the pin was re-recorded to it rather than reverted — that file is not this lane's to own.)
 - No Rust, no `crates/**`, no UI files. POOL-003 (error/retry) stays **reported**, not fixed:
   its overlap (`NodeOperationError`, `setDescriptiveErrorMessage`, retry/continue-on-fail
   policy) is ported and pinned here so that task can consume rather than re-port it.

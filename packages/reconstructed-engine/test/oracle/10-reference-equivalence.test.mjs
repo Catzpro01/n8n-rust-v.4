@@ -50,9 +50,14 @@ try {
 
 function requireOracle(t) {
 	if (runtime) return true;
-	const message = `reference runtime unavailable — oracle equivalence NOT RUN (${String(oracleError?.message ?? oracleError).split('\n')[0]})
-    install with: scripts/setup-reference-runtime.sh
-    offline runs may set ENGINE_ALLOW_NO_ORACLE=1 to see this as a diagnostic instead`;
+	// Single line on purpose: node's TAP escapes newlines inside a failure message, and
+	// this string is the one thing an engineer reads when the oracle is missing.
+	const message = [
+		'reference runtime unavailable — oracle equivalence NOT RUN',
+		`reason: ${String(oracleError?.message ?? oracleError).split('\n')[0]}`,
+		'install with: scripts/setup-reference-runtime.sh',
+		'or set ENGINE_ALLOW_NO_ORACLE=1 to downgrade this to a diagnostic',
+	].join(' | ');
 	if (process.env.ENGINE_ALLOW_NO_ORACLE === '1') {
 		t.diagnostic(message);
 		return false;

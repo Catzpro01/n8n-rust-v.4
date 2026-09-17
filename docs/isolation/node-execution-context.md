@@ -1,6 +1,6 @@
 # LEGO Isolation: Node Execution Context + Workflow Data Proxy
 
-**Status:** `REFERENCE TESTED` — 80/80 gates green with the live oracle, 80/80 with the oracle absent (offline goldens), falsification gate green
+**Status:** `REFERENCE TESTED` — 82/82 gates green with the live oracle, 82/82 with the oracle absent (offline goldens), falsification gate green
 **Owner:** Agent 2 (LEGO `node`, port unit `node-execution-context` + `workflow-data-proxy`)
 **Task:** `tasks/POOL-002-R1-node.yaml` (rework of POOL-002, whose `FAILED` record is kept at `results/POOL-002-node-execution-context-data-proxy.md`)
 **Deliverable:** `packages/reconstructed-engine/`
@@ -80,9 +80,9 @@ Each of these is asserted by a gate; each looks like a bug in the reference and 
 | `01-module-graph` | yes | import purity, no oracle in the graph, no module-scope global mutation |
 | `02-errors` | yes (+live) | class names, levels, context filtering, `messages` mapping, and **own-property shape** against the reference classes |
 | `03-run-execution-data` | yes (+live) | migration branches, factory key sets, `getContext` create-on-read, metadata limits; live half compares structures |
-| `04-data-proxy-golden` | yes | 13 proxy scenarios × every accessor + 3 context scenarios × 43 context probes, against `fixtures/data-proxy.golden.json` (recorded from the reference) |
+| `04-data-proxy-golden` | yes | 13 data-proxy scenarios (135 accessor probes) + 3 execute-context scenarios (49 method probes each) — 282 recorded results in all, graded against `fixtures/data-proxy.golden.json` — recorded from the reference |
 | `05-surface-coverage` | yes (+live) | manifest ↔ code ↔ reference: buckets, class methods, 43 sandbox keys, additional-key set, hierarchy |
-| `06-legacy-runner-regression` | yes | POOL-001's `runner.mjs`/`test-run.mjs` are byte-identical (hash + `git show <baseline>`), and `src/` must not import them |
+| `06-legacy-runner-regression` | yes | the POOL-001 loop (`runner.mjs`, `test-run.mjs`, `runner.test.mjs`) is unedited since the recorded commit (sha256 + `git hash-object` + `git rev-parse <commit>:<path>` traceability), and the dependency runs in neither direction |
 | `07-falsification` | yes | 10 mutations + control, each re-running the whole suite inside a temp copy |
 | `oracle/10-reference-equivalence` | no — needs the oracle | the same probes against the installed reference **in-process**, plus: every declared deviation must still be a deviation and must be covered by a probe; the surface manifest must be reproducible from the runtime |
 

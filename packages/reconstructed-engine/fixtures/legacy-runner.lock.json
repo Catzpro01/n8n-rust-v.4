@@ -1,0 +1,29 @@
+{
+  "$comment": "Reference: gate 06 asserts these files still hash to what is recorded here and that neither direction imports the other. Re-record after an AUTHORIZED change to the POOL-001 loop (that lane belongs to POOL-001/agent-2 core, not to this port) and say why in results/.",
+  "purpose": "POOL-001 non-entanglement pin (not a proof of correctness — those files are not reference-derived)",
+  "commitAtRecord": "c1343864d7961370cf7186d37f234bd445251e20",
+  "commitSubjectAtRecord": "POOL-002-R1(node): reference-faithful execution-context + data-proxy port, gated by goldens and a live oracle",
+  "files": {
+    "runner.mjs": {
+      "sha256": "8362d39d47342c9be74a8e975a4023d68cccb64eee06e2b50d1740128385a475",
+      "bytes": 28251,
+      "lastCommit": "cc2d111f5608bbf8125dbbe35975e21c52dda5d9",
+      "gitBlob": "ab4c622dbda803e92e5baa185cd78a31c307559c",
+      "lastCommitSubject": "fix: skip disabled nodes during automatic start selection"
+    },
+    "test-run.mjs": {
+      "sha256": "a9e7e0355c7f1caa1fb1ca7adb4e8fd0c7fd14c38573b16e6f8c3fc42241a705",
+      "bytes": 2102,
+      "lastCommit": "fc4e5631e1fde390d4c21789d407aeef890fb602",
+      "gitBlob": "4435fdbf66c9cbae534b7747678ec9c916e01719",
+      "lastCommitSubject": "chore(arena): task execution result for POOL-001-core-workflow-execute-loop"
+    },
+    "runner.test.mjs": {
+      "sha256": "1958dadb629d8454a2e8c1634f853d780e398978f9a3d49c831e2667725bda21",
+      "bytes": 10511,
+      "lastCommit": "cc2d111f5608bbf8125dbbe35975e21c52dda5d9",
+      "gitBlob": "18517d56306870ff844efa3b8a17b035f4ac671b",
+      "lastCommitSubject": "fix: skip disabled nodes during automatic start selection"
+    }
+  }
+}

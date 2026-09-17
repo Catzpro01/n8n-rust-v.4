@@ -107,7 +107,7 @@
       "id": "MSG-04",
       "recipient_id": "agent-5",
       "message_type": "REVIEW_REQUEST",
-      "subject": "POOL-002-R1 (node: execution context + data proxy) ready for audit \u2014 80/80 live and offline, falsification gate green",
+      "subject": "POOL-002-R1 (node: execution context + data proxy) ready for audit \u2014 82/82 live and offline, falsification gate green",
       "payload": {
         "lego": "node",
         "task": "POOL-002-R1-node",
@@ -115,8 +115,8 @@
         "deliverable": "packages/reconstructed-engine/",
         "lifecycle": "DISCOVERED -> ISOLATED -> CONTRACTED (manifest/port-surface.json) -> REFERENCE TESTED (goldens + in-process oracle) -> FALSIFIED (mutation gate)",
         "gates": {
-          "npm run verify:engine": "80/80 pass (oracle: n8n-workflow@2.9.1 + n8n-core@2.9.1 in .runtime)",
-          "npm run verify:engine:offline": "80/80 pass with .runtime hidden; oracle gate prints 'NOT RUN' rather than skipping silently",
+          "npm run verify:engine": "82/82 pass (oracle: n8n-workflow@2.9.1 + n8n-core@2.9.1 in .runtime)",
+          "npm run verify:engine:offline": "82/82 pass with .runtime hidden; oracle gate prints 'NOT RUN' rather than skipping silently",
           "test/07-falsification": "control green + 10/10 injected defects caught (each runs the whole suite in a temp copy)",
           "test/05-surface-coverage": "0 undeclared gaps / 0 undeclared additions; 43/43 expression-sandbox keys; 5/5 $-additional-keys; 4/4 class hierarchies match the reference"
         },

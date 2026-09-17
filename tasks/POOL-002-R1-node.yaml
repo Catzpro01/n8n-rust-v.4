@@ -47,9 +47,9 @@ operations:
   # - docs/isolation/node-execution-context.md
   # - scripts/run-engine-tests.sh, root package.json verify:engine[:offline]
   - name: run_tests
-    args: { command: "npm run verify:engine", expect: "80/80 pass" }
+    args: { command: "npm run verify:engine", expect: "82/82 pass" }
   - name: run_tests
-    args: { command: "npm run verify:engine:offline", expect: "80/80 pass, oracle gate reports NOT RUN" }
+    args: { command: "npm run verify:engine:offline", expect: "82/82 pass, oracle gate reports NOT RUN" }
   - name: read_messages
 
 coordination:
@@ -57,7 +57,7 @@ coordination:
     args:
       to: agent-5
       type: REVIEW_REQUEST
-      subject: "POOL-002-R1 ready: reconstructed-engine 80/80 (live + offline), falsification green"
+      subject: "POOL-002-R1 ready: reconstructed-engine 82/82 (live + offline), falsification green"
       details: docs/isolation/node-bus-outbox.json MSG-04
   - name: notify_dependency
     args:
@@ -69,7 +69,7 @@ acceptance_criteria:
   - "deferred symbols raise NotPortedError; nothing returns a silent undefined"
   - "goldens are recorded from the reference, never hand-written or produced by src/"
   - "the suite passes with the oracle AND without it, and is proven capable of failing"
-  - "POOL-001 runner.mjs/test-run.mjs byte-identical to baseline fc4e5631"
+  - "POOL-001 lane (runner.mjs, test-run.mjs, runner.test.mjs) unedited and non-entangled, pinned by fixtures/legacy-runner.lock.json"
   - "no writes outside allowed_paths; no Rust, no crates/ changes; POOL-003 stays reported"
 
 status: DONE
