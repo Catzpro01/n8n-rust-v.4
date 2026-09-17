@@ -1,0 +1,86 @@
+id: TASK-411-localization-runtime
+agent: agent-5
+lego: localization
+module: localization
+phase: 4c
+
+# Phase 4C — continuation of the native i18n line (4A settings adapter -> 4B dictionaries
+# -> 4C runtime seam). Additive only: no existing file is modified except the shared gate
+# script and package.json (both additive), no reference/ path is touched, no Rust.
+
+allowed_paths:
+  - packages/workflow-lego/src/localization-runtime.ts
+  - packages/workflow-lego/src/backend-localization-service.ts   # read-only sync of Phase 4B from main
+  - packages/workflow-lego/test/06-localization-runtime.test.ts
+  - contracts/localization.contract.md
+  - docs/isolation/localization.md
+  - docs/isolation/evidence/localization-gate.json
+  - tools/localization-gate.mjs
+  - tests/integration/run_gate.sh
+  - package.json
+  - tasks/TASK-411-localization-runtime.yaml
+  - results/TASK-411-localization-runtime.md
+
+forbidden_paths:
+  - crates/**
+  - apps/**
+  - reference/n8n/**                # reference stays byte-identical (validated: 15050 / f8da35180669)
+  - packages/workflow-lego/src/settings-localization-adapter.ts   # Phase 4A owned by another session
+  - packages/workflow-lego/src/backend-localization-service.ts    # Phase 4B content: synced verbatim, not edited
+
+requires:
+  - contracts/localization.contract.md
+  - PROJECT_RULES.md                # zero Rust, UI untouched, contract per module, regression-tested
+
+subject_branch: arena/01a0b105-n8n-rust-v-4
+base: d357e6e5                     # agent-5 tip (SWARM-PHASE4-05)
+synced_from_main: 8f3f1af4         # Phase 4B backend-localization-service.ts + ISSUE-024 baseline restore
+
+operations:
+  - name: git_fetch
+    args: { remote: origin, refs: [main] }
+  - name: sync_from_main
+    args:
+      files:
+        - packages/workflow-lego/src/backend-localization-service.ts   # Phase 4B (needed by 4C)
+        - tests/reference/baseline/SMOKE_TEST_RESULTS.md               # ISSUE-024 golden restore
+  - name: write_file
+    args: { path: packages/workflow-lego/src/localization-runtime.ts, kind: implementation }
+  - name: write_file
+    args: { path: packages/workflow-lego/test/06-localization-runtime.test.ts, kind: test }
+  - name: write_file
+    args: { path: contracts/localization.contract.md, kind: contract }
+  - name: write_file
+    args: { path: docs/isolation/localization.md, kind: isolation-record }
+  - name: write_file
+    args: { path: tools/localization-gate.mjs, kind: gate }
+  - name: run_tests
+    args: { cmd: "node --test packages/workflow-lego/test/06-localization-runtime.test.ts", expect: "31/31 PASS" }
+  - name: run_gate
+    args: { cmd: "node tools/localization-gate.mjs", expect: "7/7 PASS" }
+  - name: run_gate
+    args: { cmd: "node tests/compatibility/contract_conformance.mjs", expect: "20/21 (pre-existing Rust guard only)" }
+  - name: run_gate
+    args: { cmd: "python3 tests/integration/boundary_audit.py", expect: "FAIL on the same pre-existing Rust guard" }
+  - name: run_gate
+    args: { cmd: "npm run isolation:check", expect: "4/4 PASS" }
+  - name: mutation_test
+    args:
+      mutations: 4
+      expect: "every mutation turns the gate red; restore returns it green"
+
+verification:
+  module_tests: 31/31 PASS (L1–L12)
+  localization_gate: 7/7 PASS (G1–G7)
+  isolation_checks: "boundary PASS · kernel PASS · port-surface PASS · reference 15050 / f8da35180669"
+  contract_conformance: 20/21 (identical before and after this change)
+  boundary_audit: FAIL — pre-existing Rust guard finding only, documented in docs/isolation/localization.md §4.2
+  rust_added: none
+  ui_touched: none
+  reference_modified: none
+
+merge_condition:
+  - localization_gate_pass
+  - no_contract_violation
+  - no_reference_modification
+  - no_new_rust
