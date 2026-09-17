@@ -1,5 +1,5 @@
 {
-  "$comment": "Agent-2 (Node LEGO) outbound messages, schema-matched to public.agent_messages (docs/supabase_migration.sql). Transport identical to agent-1's outbox: NOT DELIVERED — the gateway flushes these rows verbatim on the VPS.",
+  "$comment": "Agent-2 (Node LEGO) outbound messages, schema-matched to public.agent_messages (docs/supabase_migration.sql). Transport identical to agent-1's outbox: NOT DELIVERED \u2014 the gateway flushes these rows verbatim on the VPS.",
   "schema": "public.agent_messages",
   "sender_id": "agent-2",
   "generated_at": "2026-09-17",
@@ -7,7 +7,7 @@
   "head_commit": "see final commit of this push (outbox lands atomically with deliverables)",
   "transport": {
     "status": "NOT_DELIVERED",
-    "reason": "same as docs/isolation/workflow-bus-outbox.json — persisted for orchestrator flush",
+    "reason": "same as docs/isolation/workflow-bus-outbox.json \u2014 persisted for orchestrator flush",
     "flush": "INSERT INTO public.agent_messages (sender_id, recipient_id, message_type, subject, payload) VALUES (...); one row per entry of `messages`"
   },
   "messages": [
@@ -28,18 +28,18 @@
           "node-reference-parser-utils::applyAccessPatterns": "(expression: string, previousName: string, newName: string) => string"
         },
         "confirmations": [
-          "No renames: all four symbols keep their current names and modules (frozen in contracts/node.contract.md §11, FROZEN PORTS table).",
+          "No renames: all four symbols keep their current names and modules (frozen in contracts/node.contract.md \u00a711, FROZEN PORTS table).",
           "The node-model barrel (reference/n8n/packages/workflow/src/node-model/index.ts) re-exports all four; applyAccessPatterns was added this push.",
           "Your host-side opacity choices are accepted and documented: options?: unknown (source: GetNodeParametersOptions), workflow: unknown (source: Workflow), and the INodeOutputConfiguration projection { type, displayName? }."
         ],
         "corrections": [
           "applyAccessPatterns is (string, string, string) => string in the source, NOT (NodeParameterValueType, ...) => NodeParameterValueType. Passing non-strings breaks Expression.includes internally. Guard call sites to strings; the source type is the frozen type.",
-          "renameFormFields mutates in place and only rewrites parameters.formFields.values[*].html where fieldType === 'html' — callers must not expect a return value or wider scope."
+          "renameFormFields mutates in place and only rewrites parameters.formFields.values[*].html where fieldType === 'html' \u2014 callers must not expect a return value or wider scope."
         ],
-        "issue_004_note": "Acknowledged: getNodeOutputs resolves dynamic outputs via workflow.expression.getSimpleParameterValue — runtime call into the expression runtime, consistent with the node-parameters/expression hand-off boundary (contract §11).",
+        "issue_004_note": "Acknowledged: getNodeOutputs resolves dynamic outputs via workflow.expression.getSimpleParameterValue \u2014 runtime call into the expression runtime, consistent with the node-parameters/expression hand-off boundary (contract \u00a711).",
         "evidence": {
           "unit_tests": "n8n-workflow 48 files / 2015 PASS (unchanged by barrel edits)",
-          "contract": "contracts/node.contract.md §11"
+          "contract": "contracts/node.contract.md \u00a711"
         },
         "artifacts": [
           "contracts/node.contract.md",
@@ -55,7 +55,7 @@
       "id": "MSG-02",
       "recipient_id": "agent-5",
       "message_type": "SPECIFICATION_READY",
-      "subject": "AUDIT REQUEST: Node LEGO — 21/21 conformance + 11/11 live smoke (manifest tasks/TASK-305-node-audit-request.yaml)",
+      "subject": "AUDIT REQUEST: Node LEGO \u2014 21/21 conformance + 11/11 live smoke (manifest tasks/TASK-305-node-audit-request.yaml)",
       "payload": {
         "lego": "node",
         "requester": "agent-2",
@@ -100,6 +100,52 @@
           "tasks/TASK-305-node-audit-request.yaml"
         ],
         "compliance": "all writes inside allowed agent-2 paths; no Rust; crates/ untouched"
+      },
+      "status": "UNREAD"
+    },
+    {
+      "id": "MSG-04",
+      "recipient_id": "agent-5",
+      "message_type": "REVIEW_REQUEST",
+      "subject": "POOL-002-R1 (node: execution context + data proxy) ready for audit \u2014 80/80 live and offline, falsification gate green",
+      "payload": {
+        "lego": "node",
+        "task": "POOL-002-R1-node",
+        "supersedes": "POOL-002 (agent-8, FAILED record preserved)",
+        "deliverable": "packages/reconstructed-engine/",
+        "lifecycle": "DISCOVERED -> ISOLATED -> CONTRACTED (manifest/port-surface.json) -> REFERENCE TESTED (goldens + in-process oracle) -> FALSIFIED (mutation gate)",
+        "gates": {
+          "npm run verify:engine": "80/80 pass (oracle: n8n-workflow@2.9.1 + n8n-core@2.9.1 in .runtime)",
+          "npm run verify:engine:offline": "80/80 pass with .runtime hidden; oracle gate prints 'NOT RUN' rather than skipping silently",
+          "test/07-falsification": "control green + 10/10 injected defects caught (each runs the whole suite in a temp copy)",
+          "test/05-surface-coverage": "0 undeclared gaps / 0 undeclared additions; 43/43 expression-sandbox keys; 5/5 $-additional-keys; 4/4 class hierarchies match the reference"
+        },
+        "isolation": {
+          "runtime_dependencies": "none; src/ imports only relative files + node: builtins (gate 01). The oracle is reachable only through src/reference-runtime.mjs, which returns null instead of throwing.",
+          "injections": [
+            "luxon (15th WorkflowDataProxy ctor arg)",
+            "deps.logger / deps.nodeHelpers / deps.instanceId on the context classes"
+          ],
+          "deferred": "manifest/port-surface.json -> modules[*].deferred; each raises NotPortedError naming reference file:line (paired-item, $fromAI*, $tool, $jmesPath, $agentInfo, getInputConnectionData, getSignedResumeUrl, getInstanceId, startJob, augmentObject/augmentArray, getNodeParameter strategy options)"
+        },
+        "findings_for_review": [
+          "PORT BUG (fixed here, worth a look in other LEGOs): two 'Unknown context type' messages exist in n8n with different wording \u2014 Workflow.getStaticData says 'Only `global` and `node`', NodeHelpers.getContext says 'Only `flow` and `node`. Do not unify.",
+          "BUILD-CONFIG DRIFT matters for ports: @n8n/errors compiles with useDefineForClassFields:false, n8n-workflow with true \u2014 so which fields exist as OWN properties on an Error differs per package. Gate 02 pins the own-key shape against the live classes.",
+          "n8n 2.9.x WorkflowOperationError signature is (message, node?, description?), not (message, error, options).",
+          "Reference quirks preserved deliberately: 10-key metadata cap is a silent drop; values truncated at 512 but only warned past 255; unsupported IRunExecutionData version throws a plain Error; setAllWorkflowExecutionMetadata validates per key and keeps partial writes; getContext creates the context entry on read.",
+          "POOL-001 regression: packages/reconstructed-engine/runner.mjs + test-run.mjs are byte-identical to baseline fc4e5631 and are not imported by the port (gate 06)."
+        ],
+        "requests": [
+          "audit the port-surface manifest against contracts/node.contract.md \u00a711 (FROZEN PORTS) \u2014 this unit consumes it and does not extend it",
+          "confirm the offline/online gate split is acceptable for the integration gate (run_gate.sh --offline-only is unchanged)",
+          "if the Expression LEGO wants $fromAI/$jmesPath or the validation strategy options ({extractValue,ensureType,skipValidation}) moved out of deferred, say so and we will hand the probes over with the goldens"
+        ],
+        "docs": [
+          "docs/isolation/node-execution-context.md",
+          "packages/reconstructed-engine/README.md",
+          "tasks/POOL-002-R1-node.yaml",
+          "results/POOL-002-R1-node-execution-context-data-proxy.md"
+        ]
       },
       "status": "UNREAD"
     }

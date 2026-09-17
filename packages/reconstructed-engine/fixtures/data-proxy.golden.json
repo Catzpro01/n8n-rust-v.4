@@ -1,0 +1,3766 @@
+{
+  "$generatedBy": "packages/reconstructed-engine/test/helpers/record-golden.mjs",
+  "$source": "pinned reference runtime — values were NOT produced by the reconstruction",
+  "$runtimeVersion": "2.9.1",
+  "$referenceRootHash": "f8da35180669d79801601bfeb025bbe418c8f00346b1358c3ba3dc68b42da732",
+  "$recordedAt": "2026-09-17T17:35:03.292Z",
+  "dataProxy": {
+    "linear-3-run": {
+      "_why": "fully executed linear graph: the happy path of every accessor",
+      "probes": {
+        "$json": {
+          "_path": [
+            "$json"
+          ],
+          "ok": true,
+          "serialized": "{\"greeting\":\"hello\",\"n\":number:1}"
+        },
+        "$data": {
+          "_path": [
+            "$data"
+          ],
+          "ok": true,
+          "serialized": "{\"greeting\":\"hello\",\"n\":number:1}"
+        },
+        "$binary": {
+          "_path": [
+            "$binary"
+          ],
+          "ok": true,
+          "serialized": "{}"
+        },
+        "$input.item": {
+          "_path": [
+            "$input",
+            "item"
+          ],
+          "ok": true,
+          "serialized": "{\"json\":{\"greeting\":\"hello\",\"n\":number:1}}"
+        },
+        "$input.first.()": {
+          "_path": [
+            "$input",
+            "first",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "{\"json\":{\"greeting\":\"hello\",\"n\":number:1}}"
+        },
+        "$input.last.()": {
+          "_path": [
+            "$input",
+            "last",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "{\"json\":{\"greeting\":\"hello\",\"n\":number:1}}"
+        },
+        "$input.all.()": {
+          "_path": [
+            "$input",
+            "all",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "[{\"json\":{\"greeting\":\"hello\",\"n\":number:1}}]"
+        },
+        "$input.params": {
+          "_path": [
+            "$input",
+            "params"
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "Can’t get data",
+            "description": "Apologies, this is an internal error. See details for more information",
+            "level": "warning",
+            "functionality": "regular",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0,
+              "causeDetailed": "Missing sourceData (probably an internal error)"
+            }
+          }
+        },
+        "$input.context": {
+          "_path": [
+            "$input",
+            "context"
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "Can’t get data",
+            "description": "Apologies, this is an internal error. See details for more information",
+            "level": "warning",
+            "functionality": "regular",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0,
+              "causeDetailed": "Missing sourceData (probably an internal error)"
+            }
+          }
+        },
+        "$node.Set.json": {
+          "_path": [
+            "$node",
+            "Set",
+            "json"
+          ],
+          "ok": true,
+          "serialized": "{\"greeting\":\"hello\",\"n\":number:1}"
+        },
+        "$node.Set.data": {
+          "_path": [
+            "$node",
+            "Set",
+            "data"
+          ],
+          "ok": true,
+          "serialized": "{\"greeting\":\"hello\",\"n\":number:1}"
+        },
+        "$node.Set.binary": {
+          "_path": [
+            "$node",
+            "Set",
+            "binary"
+          ],
+          "ok": true,
+          "serialized": "{}"
+        },
+        "$node.Set.runIndex": {
+          "_path": [
+            "$node",
+            "Set",
+            "runIndex"
+          ],
+          "ok": true,
+          "serialized": "number:0"
+        },
+        "$node.Set.parameter.options": {
+          "_path": [
+            "$node",
+            "Set",
+            "parameter",
+            "options"
+          ],
+          "ok": true,
+          "serialized": "{}"
+        },
+        "$node.Set.context": {
+          "_path": [
+            "$node",
+            "Set",
+            "context"
+          ],
+          "ok": true,
+          "serialized": "{}"
+        },
+        "$node.Manual Trigger.json": {
+          "_path": [
+            "$node",
+            "Manual Trigger",
+            "json"
+          ],
+          "ok": true,
+          "serialized": "{\"fromTrigger\":\"hello\"}"
+        },
+        "$.(\"Set\").isExecuted": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Set"
+              ]
+            },
+            "isExecuted"
+          ],
+          "ok": true,
+          "serialized": "boolean:true"
+        },
+        "$.(\"Set\").all.()": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Set"
+              ]
+            },
+            "all",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "[{\"json\":{\"greeting\":\"hello\",\"n\":number:1},\"pairedItem\":{\"item\":number:0}},{\"json\":{\"greeting\":\"second\",\"n\":number:2},\"pairedItem\":{\"item\":number:0}}]"
+        },
+        "$.(\"Set\").first.()": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Set"
+              ]
+            },
+            "first",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "{\"json\":{\"greeting\":\"hello\",\"n\":number:1},\"pairedItem\":{\"item\":number:0}}"
+        },
+        "$.(\"Set\").last.()": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Set"
+              ]
+            },
+            "last",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "{\"json\":{\"greeting\":\"second\",\"n\":number:2},\"pairedItem\":{\"item\":number:0}}"
+        },
+        "$.(\"Set\").params": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Set"
+              ]
+            },
+            "params"
+          ],
+          "ok": true,
+          "serialized": "{\"assignments\":{\"assignments\":[{\"id\":\"a1\",\"name\":\"greeting\",\"value\":\"={{ $json.fromTrigger }}\",\"type\":\"string\"}]},\"options\":{}}"
+        },
+        "$.(\"Set\").context": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Set"
+              ]
+            },
+            "context"
+          ],
+          "ok": true,
+          "serialized": "{}"
+        },
+        "$parameter.jsCode": {
+          "_path": [
+            "$parameter",
+            "jsCode"
+          ],
+          "ok": true,
+          "serialized": "\"return [{ json: { ok: true } }];\""
+        },
+        "$rawParameter.jsCode": {
+          "_path": [
+            "$rawParameter",
+            "jsCode"
+          ],
+          "ok": true,
+          "serialized": "\"return [{ json: { ok: true } }];\""
+        },
+        "$prevNode.name": {
+          "_path": [
+            "$prevNode",
+            "name"
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "$prevNode.outputIndex": {
+          "_path": [
+            "$prevNode",
+            "outputIndex"
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "$prevNode.runIndex": {
+          "_path": [
+            "$prevNode",
+            "runIndex"
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "$workflow.name": {
+          "_path": [
+            "$workflow",
+            "name"
+          ],
+          "ok": true,
+          "serialized": "\"reconstruction corpus workflow\""
+        },
+        "$workflow.active": {
+          "_path": [
+            "$workflow",
+            "active"
+          ],
+          "ok": true,
+          "serialized": "boolean:false"
+        },
+        "$runIndex": {
+          "_path": [
+            "$runIndex"
+          ],
+          "ok": true,
+          "serialized": "number:0"
+        },
+        "$itemIndex": {
+          "_path": [
+            "$itemIndex"
+          ],
+          "ok": true,
+          "serialized": "number:0"
+        },
+        "$position": {
+          "_path": [
+            "$position"
+          ],
+          "ok": true,
+          "serialized": "number:0"
+        },
+        "$mode": {
+          "_path": [
+            "$mode"
+          ],
+          "ok": true,
+          "serialized": "\"manual\""
+        },
+        "$thisItem": {
+          "_path": [
+            "$thisItem"
+          ],
+          "ok": true,
+          "serialized": "{\"json\":{\"greeting\":\"hello\",\"n\":number:1}}"
+        },
+        "$thisItemIndex": {
+          "_path": [
+            "$thisItemIndex"
+          ],
+          "ok": true,
+          "serialized": "number:0"
+        },
+        "$thisRunIndex": {
+          "_path": [
+            "$thisRunIndex"
+          ],
+          "ok": true,
+          "serialized": "number:0"
+        },
+        "$nodeVersion": {
+          "_path": [
+            "$nodeVersion"
+          ],
+          "ok": true,
+          "serialized": "number:2"
+        },
+        "$nodeId": {
+          "_path": [
+            "$nodeId"
+          ],
+          "ok": true,
+          "serialized": "\"33333333-3333-4333-8333-333333333333\""
+        },
+        "$webhookId": {
+          "_path": [
+            "$webhookId"
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "$items.()": {
+          "_path": [
+            "$items",
+            {
+              "()": []
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "TypeError",
+            "message": "Cannot read properties of undefined (reading 'executeOnce')"
+          }
+        },
+        "$items.(\"Set\",0,-1)": {
+          "_path": [
+            "$items",
+            {
+              "()": [
+                "Set",
+                0,
+                -1
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "[{\"json\":{\"greeting\":\"hello\",\"n\":number:1},\"pairedItem\":{\"item\":number:0}},{\"json\":{\"greeting\":\"second\",\"n\":number:2},\"pairedItem\":{\"item\":number:0}}]"
+        },
+        "$item.(0).$json": {
+          "_path": [
+            "$item",
+            {
+              "()": [
+                0
+              ]
+            },
+            "$json"
+          ],
+          "ok": true,
+          "serialized": "{\"greeting\":\"hello\",\"n\":number:1}"
+        },
+        "$item.(1,0).$json": {
+          "_path": [
+            "$item",
+            {
+              "()": [
+                1,
+                0
+              ]
+            },
+            "$json"
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "\"Code\" node has 1 item(s) but you're trying to access item 1",
+            "level": "warning",
+            "functionality": "pairedItem",
+            "context": {
+              "messageTemplate": "Adjust your expression to access an existing item index (0-{{maxIndex}})",
+              "descriptionKey": "pairedItemInvalidIndex",
+              "type": "no_execution_data",
+              "nodeCause": "Code",
+              "runIndex": 0,
+              "itemIndex": 1
+            }
+          }
+        },
+        "$item.(5).$json": {
+          "_path": [
+            "$item",
+            {
+              "()": [
+                5
+              ]
+            },
+            "$json"
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "\"Code\" node has 1 item(s) but you're trying to access item 5",
+            "level": "warning",
+            "functionality": "pairedItem",
+            "context": {
+              "messageTemplate": "Adjust your expression to access an existing item index (0-{{maxIndex}})",
+              "descriptionKey": "pairedItemInvalidIndex",
+              "type": "no_execution_data",
+              "nodeCause": "Code",
+              "runIndex": 0,
+              "itemIndex": 5
+            }
+          }
+        },
+        "$self": {
+          "_path": [
+            "$self"
+          ],
+          "ok": true,
+          "serialized": "{}"
+        },
+        "nope": {
+          "_path": [
+            "nope"
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        }
+      },
+      "deferredProbes": {
+        "$fromAI.(\"name\")": {
+          "_path": [
+            "$fromAI",
+            {
+              "()": [
+                "name"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "$tool": {
+          "_path": [
+            "$tool"
+          ],
+          "ok": true,
+          "serialized": "{\"name\":undefined,\"parameters\":undefined}"
+        },
+        "$jmesPath.({\"a\":1},\"a\")": {
+          "_path": [
+            "$jmesPath",
+            {
+              "()": [
+                {
+                  "a": 1
+                },
+                "a"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "number:1"
+        },
+        "$jmespath.({\"a\":1},\"a\")": {
+          "_path": [
+            "$jmespath",
+            {
+              "()": [
+                {
+                  "a": 1
+                },
+                "a"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "number:1"
+        },
+        "$agentInfo": {
+          "_path": [
+            "$agentInfo"
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "$getPairedItem": {
+          "_path": [
+            "$getPairedItem"
+          ],
+          "ok": true,
+          "serialized": "[fn]"
+        },
+        "$.(\"Set\").item.(0)": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Set"
+              ]
+            },
+            "item",
+            {
+              "()": [
+                0
+              ]
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "Paired item data for item from node 'Code' is unavailable. Ensure 'Code' is providing the required output.",
+            "level": "warning",
+            "functionality": "pairedItem",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0,
+              "descriptionKey": "pairedItemNoInfoCodeNode",
+              "nodeCause": "Code",
+              "causeDetailed": "Missing pairedItem data (node 'Code' probably didn't supply it)",
+              "type": "paired_item_no_info"
+            }
+          }
+        },
+        "$.(\"Set\").itemMatching.(0)": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Set"
+              ]
+            },
+            "itemMatching",
+            {
+              "()": [
+                0
+              ]
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "Paired item data for itemMatching from node 'Code' is unavailable. Ensure 'Code' is providing the required output.",
+            "level": "warning",
+            "functionality": "pairedItem",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0,
+              "descriptionKey": "pairedItemNoInfoCodeNode",
+              "nodeCause": "Code",
+              "causeDetailed": "Missing pairedItem data (node 'Code' probably didn't supply it)",
+              "type": "paired_item_no_info"
+            }
+          }
+        },
+        "$.(\"Set\").pairedItem": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Set"
+              ]
+            },
+            "pairedItem"
+          ],
+          "ok": true,
+          "serialized": "[fn]"
+        },
+        "$now": {
+          "_path": [
+            "$now"
+          ],
+          "ok": true,
+          "serialized": "luxon:2026-09-17T13:35:03.221-04:00"
+        },
+        "$today": {
+          "_path": [
+            "$today"
+          ],
+          "ok": true,
+          "serialized": "luxon:2026-09-17T00:00:00.000-04:00"
+        }
+      }
+    },
+    "linear-3-item-index-1": {
+      "_why": "same graph, second item: pins itemIndex threading through every accessor",
+      "probes": {
+        "$json": {
+          "_path": [
+            "$json"
+          ],
+          "ok": true,
+          "serialized": "{\"greeting\":\"second\",\"n\":number:2}"
+        },
+        "$input.item": {
+          "_path": [
+            "$input",
+            "item"
+          ],
+          "ok": true,
+          "serialized": "{\"json\":{\"greeting\":\"second\",\"n\":number:2}}"
+        },
+        "$input.last.()": {
+          "_path": [
+            "$input",
+            "last",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "{\"json\":{\"greeting\":\"second\",\"n\":number:2}}"
+        },
+        "$items.()": {
+          "_path": [
+            "$items",
+            {
+              "()": []
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "TypeError",
+            "message": "Cannot read properties of undefined (reading 'executeOnce')"
+          }
+        },
+        "$item.(0).$json": {
+          "_path": [
+            "$item",
+            {
+              "()": [
+                0
+              ]
+            },
+            "$json"
+          ],
+          "ok": true,
+          "serialized": "{\"greeting\":\"hello\",\"n\":number:1}"
+        }
+      }
+    },
+    "pinned-node-manual": {
+      "_why": "ISSUE-016: pinned output must short-circuit node data reads in manual runs",
+      "probes": {
+        "$json": {
+          "_path": [
+            "$json"
+          ],
+          "ok": true,
+          "serialized": "{\"fromPin\":boolean:true}"
+        },
+        "$node.Set.json": {
+          "_path": [
+            "$node",
+            "Set",
+            "json"
+          ],
+          "ok": true,
+          "serialized": "{\"pinned\":boolean:true,\"greeting\":\"from-pin\"}"
+        },
+        "$node.Set.runIndex": {
+          "_path": [
+            "$node",
+            "Set",
+            "runIndex"
+          ],
+          "ok": true,
+          "serialized": "number:-1"
+        },
+        "$.(\"Set\").isExecuted": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Set"
+              ]
+            },
+            "isExecuted"
+          ],
+          "ok": true,
+          "serialized": "boolean:false"
+        },
+        "$.(\"Set\").all.()": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Set"
+              ]
+            },
+            "all",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "[{\"json\":{\"pinned\":boolean:true,\"greeting\":\"from-pin\"}}]"
+        },
+        "$.(\"Set\").first.()": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Set"
+              ]
+            },
+            "first",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "{\"json\":{\"pinned\":boolean:true,\"greeting\":\"from-pin\"}}"
+        },
+        "$.(\"Disabled Set\").all.()": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Disabled Set"
+              ]
+            },
+            "all",
+            {
+              "()": []
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "Node 'Disabled Set' hasn't been executed",
+            "level": "warning",
+            "functionality": "pairedItem",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0,
+              "messageTemplate": "An expression references this node, but the node is unexecuted. Consider re-wiring your nodes or checking for execution first, i.e. {{ $if( $(\"{{nodeName}}\").isExecuted, <action_if_executed>, \"\") }}",
+              "descriptionKey": "pairedItemNoConnection",
+              "type": "no_execution_data",
+              "nodeCause": "Disabled Set"
+            }
+          }
+        }
+      }
+    },
+    "pinned-node-production": {
+      "_why": "the same pinData must be IGNORED outside manual mode (getPinDataIfManualExecution)",
+      "probes": {
+        "$node.Set.json": {
+          "_path": [
+            "$node",
+            "Set",
+            "json"
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "Node 'Set' hasn't been executed",
+            "level": "warning",
+            "functionality": "pairedItem",
+            "context": {
+              "messageTemplate": "An expression references this node, but the node is unexecuted. Consider re-wiring your nodes or checking for execution first, i.e. {{ $if( $(\"{{nodeName}}\").isExecuted, <action_if_executed>, \"\") }}",
+              "descriptionKey": "pairedItemNoConnection",
+              "type": "no_execution_data",
+              "nodeCause": "Set",
+              "runIndex": 0,
+              "itemIndex": 0
+            }
+          }
+        },
+        "$.(\"Set\").all.()": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Set"
+              ]
+            },
+            "all",
+            {
+              "()": []
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "Node 'Set' hasn't been executed",
+            "level": "warning",
+            "functionality": "pairedItem",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0,
+              "messageTemplate": "An expression references this node, but the node is unexecuted. Consider re-wiring your nodes or checking for execution first, i.e. {{ $if( $(\"{{nodeName}}\").isExecuted, <action_if_executed>, \"\") }}",
+              "descriptionKey": "pairedItemNoConnection",
+              "type": "no_execution_data",
+              "nodeCause": "Set"
+            }
+          }
+        },
+        "$.(\"Set\").isExecuted": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Set"
+              ]
+            },
+            "isExecuted"
+          ],
+          "ok": true,
+          "serialized": "boolean:false"
+        }
+      }
+    },
+    "unexecuted-and-unknown-node": {
+      "_why": "the three distinct error shapes: unknown node / unexecuted node / no source data",
+      "probes": {
+        "$node.Set.json": {
+          "_path": [
+            "$node",
+            "Set",
+            "json"
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "Node 'Set' hasn't been executed",
+            "level": "warning",
+            "functionality": "pairedItem",
+            "context": {
+              "messageTemplate": "An expression references this node, but the node is unexecuted. Consider re-wiring your nodes or checking for execution first, i.e. {{ $if( $(\"{{nodeName}}\").isExecuted, <action_if_executed>, \"\") }}",
+              "descriptionKey": "pairedItemNoConnection",
+              "type": "no_execution_data",
+              "nodeCause": "Set",
+              "runIndex": 0,
+              "itemIndex": 0
+            }
+          }
+        },
+        "$.(\"Set\").all.()": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Set"
+              ]
+            },
+            "all",
+            {
+              "()": []
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "Node 'Set' hasn't been executed",
+            "level": "warning",
+            "functionality": "pairedItem",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0,
+              "messageTemplate": "An expression references this node, but the node is unexecuted. Consider re-wiring your nodes or checking for execution first, i.e. {{ $if( $(\"{{nodeName}}\").isExecuted, <action_if_executed>, \"\") }}",
+              "descriptionKey": "pairedItemNoConnection",
+              "type": "no_execution_data",
+              "nodeCause": "Set"
+            }
+          }
+        },
+        "$node.Ghost.json": {
+          "_path": [
+            "$node",
+            "Ghost",
+            "json"
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "Referenced node doesn't exist",
+            "level": "warning",
+            "functionality": "regular",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0,
+              "nodeCause": "Ghost",
+              "descriptionKey": "nodeNotFound"
+            }
+          }
+        },
+        "$.(\"Ghost\").isExecuted": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Ghost"
+              ]
+            },
+            "isExecuted"
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "Referenced node doesn't exist",
+            "level": "warning",
+            "functionality": "regular",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0,
+              "nodeCause": "Ghost",
+              "descriptionKey": "nodeNotFound"
+            }
+          }
+        },
+        "$input.params": {
+          "_path": [
+            "$input",
+            "params"
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "Can’t get data",
+            "description": "Apologies, this is an internal error. See details for more information",
+            "level": "warning",
+            "functionality": "regular",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0,
+              "causeDetailed": "Missing sourceData (probably an internal error)"
+            }
+          }
+        },
+        "$input.context": {
+          "_path": [
+            "$input",
+            "context"
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "Can’t get data",
+            "description": "Apologies, this is an internal error. See details for more information",
+            "level": "warning",
+            "functionality": "regular",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0,
+              "causeDetailed": "Missing sourceData (probably an internal error)"
+            }
+          }
+        },
+        "$prevNode.name": {
+          "_path": [
+            "$prevNode",
+            "name"
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        }
+      }
+    },
+    "no-connection-input": {
+      "_why": "$input with an empty connectionInputData must throw 'No execution data available'",
+      "probes": {
+        "$input.item": {
+          "_path": [
+            "$input",
+            "item"
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "No execution data available",
+            "level": "warning",
+            "functionality": "regular",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0,
+              "type": "no_execution_data"
+            }
+          }
+        },
+        "$input.first.()": {
+          "_path": [
+            "$input",
+            "first",
+            {
+              "()": []
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "No execution data available",
+            "level": "warning",
+            "functionality": "regular",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0,
+              "type": "no_execution_data"
+            }
+          }
+        },
+        "$input.all.()": {
+          "_path": [
+            "$input",
+            "all",
+            {
+              "()": []
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "No execution data available",
+            "level": "warning",
+            "functionality": "regular",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0,
+              "type": "no_execution_data"
+            }
+          }
+        },
+        "$json": {
+          "_path": [
+            "$json"
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "Node 'Code' hasn't been executed",
+            "level": "warning",
+            "functionality": "pairedItem",
+            "context": {
+              "messageTemplate": "An expression references this node, but the node is unexecuted. Consider re-wiring your nodes or checking for execution first, i.e. {{ $if( $(\"{{nodeName}}\").isExecuted, <action_if_executed>, \"\") }}",
+              "descriptionKey": "pairedItemNoConnectionCodeNode",
+              "type": "no_execution_data",
+              "nodeCause": "Code",
+              "runIndex": 0,
+              "itemIndex": 0
+            }
+          }
+        }
+      }
+    },
+    "branch-output-selection": {
+      "_why": "IF-style multiple outputs: sourceIndex selection and the 'no branch' error",
+      "probes": {
+        "$node.Set.json": {
+          "_path": [
+            "$node",
+            "Set",
+            "json"
+          ],
+          "ok": true,
+          "serialized": "{\"branch\":\"true\"}"
+        },
+        "$.(\"Set\").all.(0)": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Set"
+              ]
+            },
+            "all",
+            {
+              "()": [
+                0
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "[{\"json\":{\"branch\":\"true\"},\"pairedItem\":{\"item\":number:0}}]"
+        },
+        "$.(\"Set\").all.(1)": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Set"
+              ]
+            },
+            "all",
+            {
+              "()": [
+                1
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "[{\"json\":{\"branch\":\"false\"},\"pairedItem\":{\"item\":number:0}}]"
+        },
+        "$.(\"Set\").all.(9)": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Set"
+              ]
+            },
+            "all",
+            {
+              "()": [
+                9
+              ]
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "Node \"Set\" has no branch with index 9.",
+            "level": "warning",
+            "functionality": "regular",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0
+            }
+          }
+        },
+        "$items.(\"Set\",1,0)": {
+          "_path": [
+            "$items",
+            {
+              "()": [
+                "Set",
+                1,
+                0
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "[{\"json\":{\"branch\":\"false\"},\"pairedItem\":{\"item\":number:0}}]"
+        }
+      }
+    },
+    "empty-run-and-multi-run": {
+      "_why": "null output run + several runs of one node: runIndex=-1 means LAST run",
+      "probes": {
+        "$node.Set.json": {
+          "_path": [
+            "$node",
+            "Set",
+            "json"
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "No data found from `main` input",
+            "level": "warning",
+            "functionality": "regular",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0
+            }
+          }
+        },
+        "$node.Set.runIndex": {
+          "_path": [
+            "$node",
+            "Set",
+            "runIndex"
+          ],
+          "ok": true,
+          "serialized": "number:2"
+        },
+        "$.(\"Set\").all.(0,0)": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Set"
+              ]
+            },
+            "all",
+            {
+              "()": [
+                0,
+                0
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "[{\"json\":{\"run\":number:0},\"pairedItem\":{\"item\":number:0}}]"
+        },
+        "$.(\"Set\").all.(0,1)": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Set"
+              ]
+            },
+            "all",
+            {
+              "()": [
+                0,
+                1
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "[{\"json\":{\"run\":number:1},\"pairedItem\":{\"item\":number:0}}]"
+        },
+        "$.(\"Set\").all.(0,2)": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Set"
+              ]
+            },
+            "all",
+            {
+              "()": [
+                0,
+                2
+              ]
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "No data found from `main` input",
+            "level": "warning",
+            "functionality": "regular",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0
+            }
+          }
+        },
+        "$.(\"Set\").all.(0,99)": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Set"
+              ]
+            },
+            "all",
+            {
+              "()": [
+                0,
+                99
+              ]
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "Run 99 of node \"Set\" not found",
+            "level": "warning",
+            "functionality": "regular",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0
+            }
+          }
+        },
+        "$items.(\"Set\",0,1)": {
+          "_path": [
+            "$items",
+            {
+              "()": [
+                "Set",
+                0,
+                1
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "[{\"json\":{\"run\":number:1},\"pairedItem\":{\"item\":number:0}}]"
+        }
+      }
+    },
+    "binary-mode-combined": {
+      "_why": "settings.binaryMode='combined' switches $json to json-only and adds $item to the access keys",
+      "probes": {
+        "$json": {
+          "_path": [
+            "$json"
+          ],
+          "ok": true,
+          "serialized": "{\"v\":number:1}"
+        },
+        "$binary": {
+          "_path": [
+            "$binary"
+          ],
+          "ok": true,
+          "serialized": "{\"data\":{\"mimeType\":\"image/png\",\"fileName\":\"a.png\"}}"
+        },
+        "$item": {
+          "_path": [
+            "$item"
+          ],
+          "ok": true,
+          "serialized": "{\"v\":number:1}"
+        },
+        "$input.item": {
+          "_path": [
+            "$input",
+            "item"
+          ],
+          "ok": true,
+          "serialized": "{\"v\":number:1}"
+        },
+        "$input.all.()": {
+          "_path": [
+            "$input",
+            "all",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "[{\"v\":number:1}]"
+        },
+        "$node.Set.json": {
+          "_path": [
+            "$node",
+            "Set",
+            "json"
+          ],
+          "ok": true,
+          "serialized": "{\"v\":number:1}"
+        },
+        "$node.Set.binary": {
+          "_path": [
+            "$node",
+            "Set",
+            "binary"
+          ],
+          "ok": true,
+          "serialized": "{\"data\":{\"mimeType\":\"image/png\",\"fileName\":\"a.png\"}}"
+        },
+        "$.(\"Set\").all.()": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Set"
+              ]
+            },
+            "all",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "[{\"v\":number:1}]"
+        },
+        "$.(\"Set\").first.()": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Set"
+              ]
+            },
+            "first",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "{\"v\":number:1}"
+        }
+      }
+    },
+    "parameters-and-resource-locator": {
+      "_why": "$parameter / $rawParameter: RLC unwrap, __regex extraction, sibling '&' lookup, recursion guard",
+      "probes": {
+        "$parameter.plain": {
+          "_path": [
+            "$parameter",
+            "plain"
+          ],
+          "ok": true,
+          "serialized": "\"static value\""
+        },
+        "$parameter.expression": {
+          "_path": [
+            "$parameter",
+            "expression"
+          ],
+          "ok": true,
+          "serialized": "number:2"
+        },
+        "$parameter.resourceLocator": {
+          "_path": [
+            "$parameter",
+            "resourceLocator"
+          ],
+          "ok": true,
+          "serialized": "\"abc-123\""
+        },
+        "$parameter.withRegex": {
+          "_path": [
+            "$parameter",
+            "withRegex"
+          ],
+          "ok": true,
+          "serialized": "\"99\""
+        },
+        "$parameter.regexNoMatch": {
+          "_path": [
+            "$parameter",
+            "regexNoMatch"
+          ],
+          "ok": true,
+          "serialized": "\"nope\""
+        },
+        "$parameter.selfReference": {
+          "_path": [
+            "$parameter",
+            "selfReference"
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "$parameter.notThere": {
+          "_path": [
+            "$parameter",
+            "notThere"
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "$parameter.assignments": {
+          "_path": [
+            "$parameter",
+            "assignments"
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "$rawParameter.expression": {
+          "_path": [
+            "$rawParameter",
+            "expression"
+          ],
+          "ok": true,
+          "serialized": "\"={{ 1 + 1 }}\""
+        },
+        "$rawParameter.resourceLocator": {
+          "_path": [
+            "$rawParameter",
+            "resourceLocator"
+          ],
+          "ok": true,
+          "serialized": "\"abc-123\""
+        },
+        "$parameter.toJSON.()": {
+          "_path": [
+            "$parameter",
+            "toJSON",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "{\"plain\":\"static value\",\"expression\":\"={{ 1 + 1 }}\",\"resourceLocator\":{\"__rl\":boolean:true,\"mode\":\"list\",\"value\":\"abc-123\"},\"withRegex\":{\"__rl\":boolean:true,\"mode\":\"id\",\"value\":\"id:99\",\"__regex\":\"^id:(\\\\d+)$\"},\"regexNoMatch\":{\"__rl\":boolean:true,\"mode\":\"id\",\"value\":\"nope\",\"__regex\":\"^id:(\\\\d+)$\"},\"selfReference\":\"={{ $parameter.selfReference }}\",\"missing\":null}"
+        },
+        "$.(\"Set\").params.plain": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Set"
+              ]
+            },
+            "params",
+            "plain"
+          ],
+          "ok": true,
+          "serialized": "\"static value\""
+        },
+        "&siblingMissing": {
+          "_path": [
+            "&siblingMissing"
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "$thisItem": {
+          "_path": [
+            "$thisItem"
+          ],
+          "ok": true,
+          "serialized": "{\"json\":{\"x\":number:1}}"
+        }
+      }
+    },
+    "context-data-and-nodes": {
+      "_why": "node context data ($('X').context / $input.context) backed by runExecutionData contextData Also carries the $env provider probe: with N8N_BLOCK_ENV_ACCESS_IN_NODE not set to 'false' the reference throws 'access to env vars denied' on every property read.",
+      "probes": {
+        "$node.Set.context.myKey": {
+          "_path": [
+            "$node",
+            "Set",
+            "context",
+            "myKey"
+          ],
+          "ok": true,
+          "serialized": "\"myValue\""
+        },
+        "$node.Set.context.nested": {
+          "_path": [
+            "$node",
+            "Set",
+            "context",
+            "nested"
+          ],
+          "ok": true,
+          "serialized": "{\"a\":number:1}"
+        },
+        "$node.Set.context.absent": {
+          "_path": [
+            "$node",
+            "Set",
+            "context",
+            "absent"
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "$.(\"Set\").context.myKey": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Set"
+              ]
+            },
+            "context",
+            "myKey"
+          ],
+          "ok": true,
+          "serialized": "\"myValue\""
+        },
+        "$input.context.myKey": {
+          "_path": [
+            "$input",
+            "context",
+            "myKey"
+          ],
+          "ok": false,
+          "error": {
+            "name": "Error",
+            "message": "The request data of context type \"node\" the node parameter has to be set!",
+            "level": "error"
+          }
+        },
+        "$env.HOME": {
+          "_path": [
+            "$env",
+            "HOME"
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "access to env vars denied",
+            "level": "warning",
+            "functionality": "regular",
+            "context": {
+              "causeDetailed": "If you need access please contact the administrator to remove the environment variable ‘N8N_BLOCK_ENV_ACCESS_IN_NODE‘",
+              "runIndex": 0,
+              "itemIndex": 0
+            }
+          }
+        }
+      }
+    },
+    "execution-metadata-and-vars": {
+      "_why": "the additionalKeys half of the sandbox: $execution (id/mode/urls), $vars, the deprecated aliases, and $execution.customData driving execution-metadata. Probes are ORDER-DEPENDENT on purpose: set() then get() must be recorded and replayed in the same sequence. Duplicate probe paths collapse in the golden dict, so each path appears once: getAll is read only after the writes.",
+      "probes": {
+        "$execution.id": {
+          "_path": [
+            "$execution",
+            "id"
+          ],
+          "ok": true,
+          "serialized": "\"exec-oracle-1\""
+        },
+        "$execution.mode": {
+          "_path": [
+            "$execution",
+            "mode"
+          ],
+          "ok": true,
+          "serialized": "\"test\""
+        },
+        "$execution.resumeUrl": {
+          "_path": [
+            "$execution",
+            "resumeUrl"
+          ],
+          "ok": true,
+          "serialized": "\"http://localhost:5678/webhook-waiting/exec-oracle-1\""
+        },
+        "$execution.resumeFormUrl": {
+          "_path": [
+            "$execution",
+            "resumeFormUrl"
+          ],
+          "ok": true,
+          "serialized": "\"http://localhost:5678/form-waiting/exec-oracle-1\""
+        },
+        "$executionId": {
+          "_path": [
+            "$executionId"
+          ],
+          "ok": true,
+          "serialized": "\"exec-oracle-1\""
+        },
+        "$resumeWebhookUrl": {
+          "_path": [
+            "$resumeWebhookUrl"
+          ],
+          "ok": true,
+          "serialized": "\"http://localhost:5678/webhook-waiting/exec-oracle-1\""
+        },
+        "$vars.myVar": {
+          "_path": [
+            "$vars",
+            "myVar"
+          ],
+          "ok": true,
+          "serialized": "\"var-value\""
+        },
+        "$execution.customData.set.alpha.one": {
+          "_path": [
+            "$execution",
+            "customData",
+            "set",
+            "alpha",
+            "one"
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "$execution.customData.get.alpha": {
+          "_path": [
+            "$execution",
+            "customData",
+            "get",
+            "alpha"
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "$execution.customData.get.absent": {
+          "_path": [
+            "$execution",
+            "customData",
+            "get",
+            "absent"
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "$execution.customData.set.bad key!.x": {
+          "_path": [
+            "$execution",
+            "customData",
+            "set",
+            "bad key!",
+            "x"
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "$execution.customData.set.beta.()": {
+          "_path": [
+            "$execution",
+            "customData",
+            "set",
+            "beta",
+            42
+          ],
+          "ok": false,
+          "error": {
+            "name": "Error",
+            "message": "bad probe step: 42"
+          }
+        },
+        "$execution.customData.getAll": {
+          "_path": [
+            "$execution",
+            "customData",
+            "getAll"
+          ],
+          "ok": true,
+          "serialized": "[fn]"
+        }
+      }
+    },
+    "orphan-branch-default": {
+      "_why": "A node that HAS run data but is not connected to the active node: `$('Code')` must fall back to branchIndex 0, the reference's default for an unconnected source. The `$()` getters compute `getNodeConnectionIndexes(active, node)?.sourceIndex ?? 0`, and a mutation of that default is invisible unless the referenced node has MORE THAN ONE output branch — hence main[0] and main[1] carry different items here.",
+      "probes": {
+        "$.(\"Code\").isExecuted": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Code"
+              ]
+            },
+            "isExecuted"
+          ],
+          "ok": true,
+          "serialized": "boolean:true"
+        },
+        "$.(\"Code\").all.()": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Code"
+              ]
+            },
+            "all",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "[{\"json\":{\"branch\":\"zero\",\"n\":number:1},\"pairedItem\":{\"item\":number:0}}]"
+        },
+        "$.(\"Code\").first.()": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Code"
+              ]
+            },
+            "first",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "{\"json\":{\"branch\":\"zero\",\"n\":number:1},\"pairedItem\":{\"item\":number:0}}"
+        },
+        "$.(\"Code\").last.()": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Code"
+              ]
+            },
+            "last",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "{\"json\":{\"branch\":\"zero\",\"n\":number:1},\"pairedItem\":{\"item\":number:0}}"
+        },
+        "$.(\"Code\").all.(1)": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Code"
+              ]
+            },
+            "all",
+            {
+              "()": [
+                1
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "[{\"json\":{\"branch\":\"one\",\"n\":number:2},\"pairedItem\":{\"item\":number:0}}]"
+        },
+        "$.(\"Code\").params.mode": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Code"
+              ]
+            },
+            "params",
+            "mode"
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "$node.Code.json": {
+          "_path": [
+            "$node",
+            "Code",
+            "json"
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "connect \"Set\" to \"Code\"",
+            "level": "warning",
+            "functionality": "regular",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0
+            }
+          }
+        },
+        "$.(\"Manual Trigger\").first.()": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Manual Trigger"
+              ]
+            },
+            "first",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "{\"json\":{\"fromTrigger\":\"hello\"},\"pairedItem\":{\"item\":number:0}}"
+        },
+        "$.(\"Nope\").all.()": {
+          "_path": [
+            "$",
+            {
+              "()": [
+                "Nope"
+              ]
+            },
+            "all",
+            {
+              "()": []
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "Referenced node doesn't exist",
+            "level": "warning",
+            "functionality": "regular",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0,
+              "nodeCause": "Nope",
+              "descriptionKey": "nodeNotFound"
+            }
+          }
+        }
+      }
+    }
+  },
+  "contextMethods": {
+    "ctx-basic": {
+      "_why": "BaseExecuteContext/ExecuteContext surface vs the reference implementation",
+      "results": {
+        "getNode()": {
+          "_path": [
+            "getNode",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "{\"id\":\"22222222-2222-4222-8222-222222222222\",\"name\":\"Set\",\"type\":\"n8n-nodes-base.set\",\"typeVersion\":number:3,\"position\":[number:220,number:0],\"parameters\":{\"value\":\"={{ $json.n }}\",\"nested\":{\"deep\":\"={{ $json.n * 2 }}\"}}}"
+        },
+        "getMode()": {
+          "_path": [
+            "getMode",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "\"manual\""
+        },
+        "getWorkflow()": {
+          "_path": [
+            "getWorkflow",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "{\"id\":\"wf-oracle\",\"name\":\"reconstruction corpus workflow\",\"active\":boolean:false}"
+        },
+        "getInputData()": {
+          "_path": [
+            "getInputData",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "[{\"json\":{\"n\":number:5},\"pairedItem\":{\"item\":number:0}}]"
+        },
+        "getInputData(0)": {
+          "_path": [
+            "getInputData",
+            {
+              "()": [
+                0
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "[{\"json\":{\"n\":number:5},\"pairedItem\":{\"item\":number:0}}]"
+        },
+        "getInputData(1)": {
+          "_path": [
+            "getInputData",
+            {
+              "()": [
+                1
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "[{\"json\":{\"n\":number:6},\"pairedItem\":{\"item\":number:1}}]"
+        },
+        "getInputData(9)": {
+          "_path": [
+            "getInputData",
+            {
+              "()": [
+                9
+              ]
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "Error",
+            "message": "Could not get input with given index",
+            "level": "error"
+          }
+        },
+        "getInputSourceData()": {
+          "_path": [
+            "getInputSourceData",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "[{\"previousNode\":\"Manual Trigger\",\"previousNodeOutput\":number:0,\"previousNodeRun\":number:0}]"
+        },
+        "getInputSourceData(0,\"main\")": {
+          "_path": [
+            "getInputSourceData",
+            {
+              "()": [
+                0,
+                "main"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "[{\"previousNode\":\"Manual Trigger\",\"previousNodeOutput\":number:0,\"previousNodeRun\":number:0}]"
+        },
+        "continueOnFail()": {
+          "_path": [
+            "continueOnFail",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "boolean:false"
+        },
+        "getExecuteData()": {
+          "_path": [
+            "getExecuteData",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "{\"node\":{\"id\":\"22222222-2222-4222-8222-222222222222\",\"name\":\"Set\",\"type\":\"n8n-nodes-base.set\",\"typeVersion\":number:3,\"position\":[number:220,number:0],\"parameters\":{\"value\":\"={{ $json.n }}\",\"nested\":{\"deep\":\"={{ $json.n * 2 }}\"}}},\"data\":{\"main\":[[{\"json\":{\"n\":number:5}}]]},\"source\":{\"main\":[[{\"previousNode\":\"Manual Trigger\",\"previousNodeOutput\":number:0,\"previousNodeRun\":number:0}]]}}"
+        },
+        "getTimezone()": {
+          "_path": [
+            "getTimezone",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "\"America/New_York\""
+        },
+        "getWorkflowSettings()": {
+          "_path": [
+            "getWorkflowSettings",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "{}"
+        },
+        "getKnownNodeTypes()": {
+          "_path": [
+            "getKnownNodeTypes",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "{}"
+        },
+        "getRestApiUrl()": {
+          "_path": [
+            "getRestApiUrl",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "\"http://localhost:5678/api/v1/\""
+        },
+        "getInstanceBaseUrl()": {
+          "_path": [
+            "getInstanceBaseUrl",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "\"http://localhost:5678\""
+        },
+        "getExecutionContext()": {
+          "_path": [
+            "getExecutionContext",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "getExecutionId()": {
+          "_path": [
+            "getExecutionId",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "\"exec-oracle-1\""
+        },
+        "getChatTrigger()": {
+          "_path": [
+            "getChatTrigger",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "null"
+        },
+        "getWorkflowStaticData(\"\")": {
+          "_path": [
+            "getWorkflowStaticData",
+            {
+              "()": [
+                ""
+              ]
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "Error",
+            "message": "Unknown context type. Only `global` and `node` are supported.",
+            "level": "error"
+          }
+        },
+        "getParentNodes(\"Set\")": {
+          "_path": [
+            "getParentNodes",
+            {
+              "()": [
+                "Set"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "[{\"name\":\"Manual Trigger\",\"type\":\"n8n-nodes-base.manualTrigger\",\"typeVersion\":number:1,\"disabled\":boolean:false}]"
+        },
+        "getChildNodes(\"Manual Trigger\")": {
+          "_path": [
+            "getChildNodes",
+            {
+              "()": [
+                "Manual Trigger"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "[{\"name\":\"Set\",\"type\":\"n8n-nodes-base.set\",\"typeVersion\":number:3,\"disabled\":boolean:false}]"
+        },
+        "getRunnerStatus(\"js\")": {
+          "_path": [
+            "getRunnerStatus",
+            {
+              "()": [
+                "js"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "{\"available\":boolean:true}"
+        },
+        "getNodeInputs()": {
+          "_path": [
+            "getNodeInputs",
+            {
+              "()": []
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "TypeError",
+            "message": "Cannot read properties of undefined (reading 'description')"
+          },
+          "_oracleDependent": true
+        },
+        "getNodeOutputs()": {
+          "_path": [
+            "getNodeOutputs",
+            {
+              "()": []
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "TypeError",
+            "message": "Cannot read properties of undefined (reading 'description')"
+          },
+          "_oracleDependent": true
+        },
+        "isNodeFeatureEnabled(\"anything\")": {
+          "_path": [
+            "isNodeFeatureEnabled",
+            {
+              "()": [
+                "anything"
+              ]
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "TypeError",
+            "message": "Cannot read properties of undefined (reading 'description')"
+          },
+          "_oracleDependent": true
+        },
+        "setSignatureValidationRequired()": {
+          "_path": [
+            "setSignatureValidationRequired",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "logNodeOutput(\"{\\\"a\\\":1}\")": {
+          "_path": [
+            "logNodeOutput",
+            {
+              "()": [
+                "{\"a\":1}"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "logNodeOutput(\"not json\")": {
+          "_path": [
+            "logNodeOutput",
+            {
+              "()": [
+                "not json"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "sendMessageToUI(\"hello\")": {
+          "_path": [
+            "sendMessageToUI",
+            {
+              "()": [
+                "hello"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "isToolExecution()": {
+          "_path": [
+            "isToolExecution",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "boolean:false"
+        },
+        "getParentCallbackManager()": {
+          "_path": [
+            "getParentCallbackManager",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "addInputData()": {
+          "_path": [
+            "addInputData",
+            {
+              "()": []
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "Error",
+            "message": "addInputData should not be called on IExecuteFunctions",
+            "level": "error"
+          }
+        },
+        "addOutputData()": {
+          "_path": [
+            "addOutputData",
+            {
+              "()": []
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "Error",
+            "message": "addOutputData should not be called on IExecuteFunctions",
+            "level": "error"
+          }
+        },
+        "isStreaming()": {
+          "_path": [
+            "isStreaming",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "boolean:false"
+        },
+        "sendResponse({\"body\":{}})": {
+          "_path": [
+            "sendResponse",
+            {
+              "()": [
+                {
+                  "body": {}
+                }
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "getCredentials(\"httpHeaderAuth\",0)": {
+          "_path": [
+            "getCredentials",
+            {
+              "()": [
+                "httpHeaderAuth",
+                0
+              ]
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "TypeError",
+            "message": "Cannot read properties of undefined (reading 'description')"
+          },
+          "_oracleDependent": true
+        },
+        "getCredentialsProperties(\"httpHeaderAuth\")": {
+          "_path": [
+            "getCredentialsProperties",
+            {
+              "()": [
+                "httpHeaderAuth"
+              ]
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "TypeError",
+            "message": "this.additionalData.credentialsHelper.getCredentialsProperties is not a function"
+          }
+        },
+        "getInstanceId()": {
+          "_path": [
+            "getInstanceId",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "\"f80acf7801fd2c1ee639250c782970efb21590d32f33883df11b7513bed55b51\"",
+          "_deviation": true
+        },
+        "getSignedResumeUrl()": {
+          "_path": [
+            "getSignedResumeUrl",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "\"http://localhost:5678/webhook-waiting/exec-oracle-1/22222222-2222-4222-8222-222222222222?signature=2c0fb965ca130fefda0a68be7d66d31581e91a7c0fcde450b7328dcdbc43e12a\"",
+          "_deviation": true
+        },
+        "sendChunk(\"text\",0,\"hi\")": {
+          "_path": [
+            "sendChunk",
+            {
+              "()": [
+                "text",
+                0,
+                "hi"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "logAiEvent(\"x\",\"y\")": {
+          "_path": [
+            "logAiEvent",
+            {
+              "()": [
+                "x",
+                "y"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "getInputConnectionData(\"ai_tool\",0)": {
+          "_path": [
+            "getInputConnectionData",
+            {
+              "()": [
+                "ai_tool",
+                0
+              ]
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "TypeError",
+            "message": "Cannot read properties of undefined (reading 'description')"
+          },
+          "_deviation": true
+        },
+        "getWorkflowDataProxy(0).$json": {
+          "_path": [
+            "getWorkflowDataProxy",
+            {
+              "()": [
+                0
+              ]
+            },
+            "$json"
+          ],
+          "ok": true,
+          "serialized": "{\"n\":number:5}"
+        },
+        "getWorkflowDataProxy(0).$node": {
+          "_path": [
+            "getWorkflowDataProxy",
+            {
+              "()": [
+                0
+              ]
+            },
+            "$node",
+            "Manual Trigger",
+            "json"
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "Node 'Manual Trigger' hasn't been executed",
+            "level": "warning",
+            "functionality": "pairedItem",
+            "context": {
+              "messageTemplate": "An expression references this node, but the node is unexecuted. Consider re-wiring your nodes or checking for execution first, i.e. {{ $if( $(\"{{nodeName}}\").isExecuted, <action_if_executed>, \"\") }}",
+              "descriptionKey": "pairedItemNoConnection",
+              "type": "no_execution_data",
+              "nodeCause": "Manual Trigger",
+              "runIndex": 0,
+              "itemIndex": 0
+            }
+          }
+        },
+        "getNodeParameter(\"value\",0)": {
+          "_path": [
+            "getNodeParameter",
+            {
+              "()": [
+                "value",
+                0,
+                "__undefined__",
+                {
+                  "skipValidation": true
+                }
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "number:5"
+        },
+        "evaluateExpression(\"{{ 1 + 1 }}\")": {
+          "_path": [
+            "evaluateExpression",
+            {
+              "()": [
+                "{{ 1 + 1 }}"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "number:2"
+        },
+        "prepareOutputData": {
+          "_path": [
+            "prepareOutputData",
+            {
+              "()": [
+                [
+                  {
+                    "json": {
+                      "a": 1
+                    }
+                  }
+                ]
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "[[{\"json\":{\"a\":number:1}}]]"
+        },
+        "setMetadata+getExecuteData": {
+          "_skip": true,
+          "ok": true,
+          "serialized": "{\"k\":\"v\"}"
+        }
+      }
+    },
+    "ctx-single-run-data": {
+      "_why": "same, but the node runs on runIndex 1 with existing run data + context data",
+      "results": {
+        "getNode()": {
+          "_path": [
+            "getNode",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "{\"id\":\"22222222-2222-4222-8222-222222222222\",\"name\":\"Set\",\"type\":\"n8n-nodes-base.set\",\"typeVersion\":number:3,\"position\":[number:220,number:0],\"parameters\":{\"value\":\"=plain text\"},\"continueOnFail\":boolean:true}"
+        },
+        "getMode()": {
+          "_path": [
+            "getMode",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "\"trigger\""
+        },
+        "getWorkflow()": {
+          "_path": [
+            "getWorkflow",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "{\"id\":\"wf-oracle\",\"name\":\"reconstruction corpus workflow\",\"active\":boolean:false}"
+        },
+        "getInputData()": {
+          "_path": [
+            "getInputData",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "[{\"json\":{\"n\":number:1},\"pairedItem\":{\"item\":number:0}}]"
+        },
+        "getInputData(0)": {
+          "_path": [
+            "getInputData",
+            {
+              "()": [
+                0
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "[{\"json\":{\"n\":number:1},\"pairedItem\":{\"item\":number:0}}]"
+        },
+        "getInputData(1)": {
+          "_path": [
+            "getInputData",
+            {
+              "()": [
+                1
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "[]"
+        },
+        "getInputData(9)": {
+          "_path": [
+            "getInputData",
+            {
+              "()": [
+                9
+              ]
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "Error",
+            "message": "Could not get input with given index",
+            "level": "error"
+          }
+        },
+        "getInputSourceData()": {
+          "_path": [
+            "getInputSourceData",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "[{\"previousNode\":\"Manual Trigger\",\"previousNodeOutput\":number:0,\"previousNodeRun\":number:0}]"
+        },
+        "getInputSourceData(0,\"main\")": {
+          "_path": [
+            "getInputSourceData",
+            {
+              "()": [
+                0,
+                "main"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "[{\"previousNode\":\"Manual Trigger\",\"previousNodeOutput\":number:0,\"previousNodeRun\":number:0}]"
+        },
+        "continueOnFail()": {
+          "_path": [
+            "continueOnFail",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "boolean:true"
+        },
+        "getExecuteData()": {
+          "_path": [
+            "getExecuteData",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "{\"node\":{\"id\":\"22222222-2222-4222-8222-222222222222\",\"name\":\"Set\",\"type\":\"n8n-nodes-base.set\",\"typeVersion\":number:3,\"position\":[number:220,number:0],\"parameters\":{\"value\":\"=plain text\"},\"continueOnFail\":boolean:true},\"data\":{\"main\":[[{\"json\":{\"n\":number:1}}]]},\"source\":{\"main\":[[{\"previousNode\":\"Manual Trigger\",\"previousNodeOutput\":number:0,\"previousNodeRun\":number:0}]]}}"
+        },
+        "getTimezone()": {
+          "_path": [
+            "getTimezone",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "\"America/New_York\""
+        },
+        "getWorkflowSettings()": {
+          "_path": [
+            "getWorkflowSettings",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "{}"
+        },
+        "getKnownNodeTypes()": {
+          "_path": [
+            "getKnownNodeTypes",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "{}"
+        },
+        "getRestApiUrl()": {
+          "_path": [
+            "getRestApiUrl",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "\"http://localhost:5678/api/v1/\""
+        },
+        "getInstanceBaseUrl()": {
+          "_path": [
+            "getInstanceBaseUrl",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "\"http://localhost:5678\""
+        },
+        "getExecutionContext()": {
+          "_path": [
+            "getExecutionContext",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "getExecutionId()": {
+          "_path": [
+            "getExecutionId",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "\"exec-oracle-1\""
+        },
+        "getChatTrigger()": {
+          "_path": [
+            "getChatTrigger",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "null"
+        },
+        "getWorkflowStaticData(\"\")": {
+          "_path": [
+            "getWorkflowStaticData",
+            {
+              "()": [
+                ""
+              ]
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "Error",
+            "message": "Unknown context type. Only `global` and `node` are supported.",
+            "level": "error"
+          }
+        },
+        "getParentNodes(\"Set\")": {
+          "_path": [
+            "getParentNodes",
+            {
+              "()": [
+                "Set"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "[{\"name\":\"Manual Trigger\",\"type\":\"n8n-nodes-base.manualTrigger\",\"typeVersion\":number:1,\"disabled\":boolean:false}]"
+        },
+        "getChildNodes(\"Manual Trigger\")": {
+          "_path": [
+            "getChildNodes",
+            {
+              "()": [
+                "Manual Trigger"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "[{\"name\":\"Set\",\"type\":\"n8n-nodes-base.set\",\"typeVersion\":number:3,\"disabled\":boolean:false}]"
+        },
+        "getRunnerStatus(\"js\")": {
+          "_path": [
+            "getRunnerStatus",
+            {
+              "()": [
+                "js"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "{\"available\":boolean:true}"
+        },
+        "getNodeInputs()": {
+          "_path": [
+            "getNodeInputs",
+            {
+              "()": []
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "TypeError",
+            "message": "Cannot read properties of undefined (reading 'description')"
+          },
+          "_oracleDependent": true
+        },
+        "getNodeOutputs()": {
+          "_path": [
+            "getNodeOutputs",
+            {
+              "()": []
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "TypeError",
+            "message": "Cannot read properties of undefined (reading 'description')"
+          },
+          "_oracleDependent": true
+        },
+        "isNodeFeatureEnabled(\"anything\")": {
+          "_path": [
+            "isNodeFeatureEnabled",
+            {
+              "()": [
+                "anything"
+              ]
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "TypeError",
+            "message": "Cannot read properties of undefined (reading 'description')"
+          },
+          "_oracleDependent": true
+        },
+        "setSignatureValidationRequired()": {
+          "_path": [
+            "setSignatureValidationRequired",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "logNodeOutput(\"{\\\"a\\\":1}\")": {
+          "_path": [
+            "logNodeOutput",
+            {
+              "()": [
+                "{\"a\":1}"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "logNodeOutput(\"not json\")": {
+          "_path": [
+            "logNodeOutput",
+            {
+              "()": [
+                "not json"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "sendMessageToUI(\"hello\")": {
+          "_path": [
+            "sendMessageToUI",
+            {
+              "()": [
+                "hello"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "isToolExecution()": {
+          "_path": [
+            "isToolExecution",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "boolean:false"
+        },
+        "getParentCallbackManager()": {
+          "_path": [
+            "getParentCallbackManager",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "addInputData()": {
+          "_path": [
+            "addInputData",
+            {
+              "()": []
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "Error",
+            "message": "addInputData should not be called on IExecuteFunctions",
+            "level": "error"
+          }
+        },
+        "addOutputData()": {
+          "_path": [
+            "addOutputData",
+            {
+              "()": []
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "Error",
+            "message": "addOutputData should not be called on IExecuteFunctions",
+            "level": "error"
+          }
+        },
+        "isStreaming()": {
+          "_path": [
+            "isStreaming",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "boolean:false"
+        },
+        "sendResponse({\"body\":{}})": {
+          "_path": [
+            "sendResponse",
+            {
+              "()": [
+                {
+                  "body": {}
+                }
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "getCredentials(\"httpHeaderAuth\",0)": {
+          "_path": [
+            "getCredentials",
+            {
+              "()": [
+                "httpHeaderAuth",
+                0
+              ]
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "TypeError",
+            "message": "Cannot read properties of undefined (reading 'description')"
+          },
+          "_oracleDependent": true
+        },
+        "getCredentialsProperties(\"httpHeaderAuth\")": {
+          "_path": [
+            "getCredentialsProperties",
+            {
+              "()": [
+                "httpHeaderAuth"
+              ]
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "TypeError",
+            "message": "this.additionalData.credentialsHelper.getCredentialsProperties is not a function"
+          }
+        },
+        "getInstanceId()": {
+          "_path": [
+            "getInstanceId",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "\"f80acf7801fd2c1ee639250c782970efb21590d32f33883df11b7513bed55b51\"",
+          "_deviation": true
+        },
+        "getSignedResumeUrl()": {
+          "_path": [
+            "getSignedResumeUrl",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "\"http://localhost:5678/webhook-waiting/exec-oracle-1/22222222-2222-4222-8222-222222222222?signature=2c0fb965ca130fefda0a68be7d66d31581e91a7c0fcde450b7328dcdbc43e12a\"",
+          "_deviation": true
+        },
+        "sendChunk(\"text\",0,\"hi\")": {
+          "_path": [
+            "sendChunk",
+            {
+              "()": [
+                "text",
+                0,
+                "hi"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "logAiEvent(\"x\",\"y\")": {
+          "_path": [
+            "logAiEvent",
+            {
+              "()": [
+                "x",
+                "y"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "getInputConnectionData(\"ai_tool\",0)": {
+          "_path": [
+            "getInputConnectionData",
+            {
+              "()": [
+                "ai_tool",
+                0
+              ]
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "TypeError",
+            "message": "Cannot read properties of undefined (reading 'description')"
+          },
+          "_deviation": true
+        },
+        "getWorkflowDataProxy(0).$json": {
+          "_path": [
+            "getWorkflowDataProxy",
+            {
+              "()": [
+                0
+              ]
+            },
+            "$json"
+          ],
+          "ok": true,
+          "serialized": "{\"n\":number:1}"
+        },
+        "getWorkflowDataProxy(0).$node": {
+          "_path": [
+            "getWorkflowDataProxy",
+            {
+              "()": [
+                0
+              ]
+            },
+            "$node",
+            "Manual Trigger",
+            "json"
+          ],
+          "ok": true,
+          "serialized": "{\"n\":number:1}"
+        },
+        "getNodeParameter(\"value\",0)": {
+          "_path": [
+            "getNodeParameter",
+            {
+              "()": [
+                "value",
+                0,
+                "__undefined__",
+                {
+                  "skipValidation": true
+                }
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "\"plain text\""
+        },
+        "evaluateExpression(\"{{ 1 + 1 }}\")": {
+          "_path": [
+            "evaluateExpression",
+            {
+              "()": [
+                "{{ 1 + 1 }}"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "number:2"
+        },
+        "prepareOutputData": {
+          "_path": [
+            "prepareOutputData",
+            {
+              "()": [
+                [
+                  {
+                    "json": {
+                      "a": 1
+                    }
+                  }
+                ]
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "[[{\"json\":{\"a\":number:1}}]]"
+        },
+        "setMetadata+getExecuteData": {
+          "_skip": true,
+          "ok": true,
+          "serialized": "{\"k\":\"v\"}"
+        }
+      }
+    },
+    "ctx-on-error-routing": {
+      "_why": "continueOnFail() reads onError first and only falls back to the legacy flag",
+      "results": {
+        "getNode()": {
+          "_path": [
+            "getNode",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "{\"id\":\"22222222-2222-4222-8222-222222222222\",\"name\":\"Set\",\"type\":\"n8n-nodes-base.set\",\"typeVersion\":number:3,\"position\":[number:220,number:0],\"parameters\":{},\"onError\":\"continueErrorOutput\",\"continueOnFail\":boolean:false}"
+        },
+        "getMode()": {
+          "_path": [
+            "getMode",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "\"manual\""
+        },
+        "getWorkflow()": {
+          "_path": [
+            "getWorkflow",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "{\"id\":\"wf-oracle\",\"name\":\"reconstruction corpus workflow\",\"active\":boolean:false}"
+        },
+        "getInputData()": {
+          "_path": [
+            "getInputData",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "[{\"json\":{}}]"
+        },
+        "getInputData(0)": {
+          "_path": [
+            "getInputData",
+            {
+              "()": [
+                0
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "[{\"json\":{}}]"
+        },
+        "getInputData(1)": {
+          "_path": [
+            "getInputData",
+            {
+              "()": [
+                1
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "[]"
+        },
+        "getInputData(9)": {
+          "_path": [
+            "getInputData",
+            {
+              "()": [
+                9
+              ]
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "Error",
+            "message": "Could not get input with given index",
+            "level": "error"
+          }
+        },
+        "getInputSourceData()": {
+          "_path": [
+            "getInputSourceData",
+            {
+              "()": []
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "Error",
+            "message": "Source data is missing",
+            "level": "error"
+          }
+        },
+        "getInputSourceData(0,\"main\")": {
+          "_path": [
+            "getInputSourceData",
+            {
+              "()": [
+                0,
+                "main"
+              ]
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "Error",
+            "message": "Source data is missing",
+            "level": "error"
+          }
+        },
+        "continueOnFail()": {
+          "_path": [
+            "continueOnFail",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "boolean:true"
+        },
+        "getExecuteData()": {
+          "_path": [
+            "getExecuteData",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "{\"node\":{\"id\":\"22222222-2222-4222-8222-222222222222\",\"name\":\"Set\",\"type\":\"n8n-nodes-base.set\",\"typeVersion\":number:3,\"position\":[number:220,number:0],\"parameters\":{},\"onError\":\"continueErrorOutput\",\"continueOnFail\":boolean:false},\"data\":{\"main\":[[{\"json\":{}}]]},\"source\":null}"
+        },
+        "getTimezone()": {
+          "_path": [
+            "getTimezone",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "\"America/New_York\""
+        },
+        "getWorkflowSettings()": {
+          "_path": [
+            "getWorkflowSettings",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "{}"
+        },
+        "getKnownNodeTypes()": {
+          "_path": [
+            "getKnownNodeTypes",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "{}"
+        },
+        "getRestApiUrl()": {
+          "_path": [
+            "getRestApiUrl",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "\"http://localhost:5678/api/v1/\""
+        },
+        "getInstanceBaseUrl()": {
+          "_path": [
+            "getInstanceBaseUrl",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "\"http://localhost:5678\""
+        },
+        "getExecutionContext()": {
+          "_path": [
+            "getExecutionContext",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "getExecutionId()": {
+          "_path": [
+            "getExecutionId",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "\"exec-oracle-1\""
+        },
+        "getChatTrigger()": {
+          "_path": [
+            "getChatTrigger",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "null"
+        },
+        "getWorkflowStaticData(\"\")": {
+          "_path": [
+            "getWorkflowStaticData",
+            {
+              "()": [
+                ""
+              ]
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "Error",
+            "message": "Unknown context type. Only `global` and `node` are supported.",
+            "level": "error"
+          }
+        },
+        "getParentNodes(\"Set\")": {
+          "_path": [
+            "getParentNodes",
+            {
+              "()": [
+                "Set"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "[]"
+        },
+        "getChildNodes(\"Manual Trigger\")": {
+          "_path": [
+            "getChildNodes",
+            {
+              "()": [
+                "Manual Trigger"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "[]"
+        },
+        "getRunnerStatus(\"js\")": {
+          "_path": [
+            "getRunnerStatus",
+            {
+              "()": [
+                "js"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "{\"available\":boolean:true}"
+        },
+        "getNodeInputs()": {
+          "_path": [
+            "getNodeInputs",
+            {
+              "()": []
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "TypeError",
+            "message": "Cannot read properties of undefined (reading 'description')"
+          },
+          "_oracleDependent": true
+        },
+        "getNodeOutputs()": {
+          "_path": [
+            "getNodeOutputs",
+            {
+              "()": []
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "TypeError",
+            "message": "Cannot read properties of undefined (reading 'description')"
+          },
+          "_oracleDependent": true
+        },
+        "isNodeFeatureEnabled(\"anything\")": {
+          "_path": [
+            "isNodeFeatureEnabled",
+            {
+              "()": [
+                "anything"
+              ]
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "TypeError",
+            "message": "Cannot read properties of undefined (reading 'description')"
+          },
+          "_oracleDependent": true
+        },
+        "setSignatureValidationRequired()": {
+          "_path": [
+            "setSignatureValidationRequired",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "logNodeOutput(\"{\\\"a\\\":1}\")": {
+          "_path": [
+            "logNodeOutput",
+            {
+              "()": [
+                "{\"a\":1}"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "logNodeOutput(\"not json\")": {
+          "_path": [
+            "logNodeOutput",
+            {
+              "()": [
+                "not json"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "sendMessageToUI(\"hello\")": {
+          "_path": [
+            "sendMessageToUI",
+            {
+              "()": [
+                "hello"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "isToolExecution()": {
+          "_path": [
+            "isToolExecution",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "boolean:false"
+        },
+        "getParentCallbackManager()": {
+          "_path": [
+            "getParentCallbackManager",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "addInputData()": {
+          "_path": [
+            "addInputData",
+            {
+              "()": []
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "Error",
+            "message": "addInputData should not be called on IExecuteFunctions",
+            "level": "error"
+          }
+        },
+        "addOutputData()": {
+          "_path": [
+            "addOutputData",
+            {
+              "()": []
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "Error",
+            "message": "addOutputData should not be called on IExecuteFunctions",
+            "level": "error"
+          }
+        },
+        "isStreaming()": {
+          "_path": [
+            "isStreaming",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "boolean:false"
+        },
+        "sendResponse({\"body\":{}})": {
+          "_path": [
+            "sendResponse",
+            {
+              "()": [
+                {
+                  "body": {}
+                }
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "getCredentials(\"httpHeaderAuth\",0)": {
+          "_path": [
+            "getCredentials",
+            {
+              "()": [
+                "httpHeaderAuth",
+                0
+              ]
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "TypeError",
+            "message": "Cannot read properties of undefined (reading 'description')"
+          },
+          "_oracleDependent": true
+        },
+        "getCredentialsProperties(\"httpHeaderAuth\")": {
+          "_path": [
+            "getCredentialsProperties",
+            {
+              "()": [
+                "httpHeaderAuth"
+              ]
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "TypeError",
+            "message": "this.additionalData.credentialsHelper.getCredentialsProperties is not a function"
+          }
+        },
+        "getInstanceId()": {
+          "_path": [
+            "getInstanceId",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "\"f80acf7801fd2c1ee639250c782970efb21590d32f33883df11b7513bed55b51\"",
+          "_deviation": true
+        },
+        "getSignedResumeUrl()": {
+          "_path": [
+            "getSignedResumeUrl",
+            {
+              "()": []
+            }
+          ],
+          "ok": true,
+          "serialized": "\"http://localhost:5678/webhook-waiting/exec-oracle-1/22222222-2222-4222-8222-222222222222?signature=2c0fb965ca130fefda0a68be7d66d31581e91a7c0fcde450b7328dcdbc43e12a\"",
+          "_deviation": true
+        },
+        "sendChunk(\"text\",0,\"hi\")": {
+          "_path": [
+            "sendChunk",
+            {
+              "()": [
+                "text",
+                0,
+                "hi"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "logAiEvent(\"x\",\"y\")": {
+          "_path": [
+            "logAiEvent",
+            {
+              "()": [
+                "x",
+                "y"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "undefined"
+        },
+        "getInputConnectionData(\"ai_tool\",0)": {
+          "_path": [
+            "getInputConnectionData",
+            {
+              "()": [
+                "ai_tool",
+                0
+              ]
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "TypeError",
+            "message": "Cannot read properties of undefined (reading 'description')"
+          },
+          "_deviation": true
+        },
+        "getWorkflowDataProxy(0).$json": {
+          "_path": [
+            "getWorkflowDataProxy",
+            {
+              "()": [
+                0
+              ]
+            },
+            "$json"
+          ],
+          "ok": true,
+          "serialized": "{}"
+        },
+        "getWorkflowDataProxy(0).$node": {
+          "_path": [
+            "getWorkflowDataProxy",
+            {
+              "()": [
+                0
+              ]
+            },
+            "$node",
+            "Manual Trigger",
+            "json"
+          ],
+          "ok": false,
+          "error": {
+            "name": "ExpressionError",
+            "message": "Node 'Manual Trigger' hasn't been executed",
+            "level": "warning",
+            "functionality": "pairedItem",
+            "context": {
+              "messageTemplate": "An expression references this node, but the node is unexecuted. Consider re-wiring your nodes or checking for execution first, i.e. {{ $if( $(\"{{nodeName}}\").isExecuted, <action_if_executed>, \"\") }}",
+              "descriptionKey": "pairedItemNoConnection",
+              "type": "no_execution_data",
+              "nodeCause": "Manual Trigger",
+              "runIndex": 0,
+              "itemIndex": 0
+            }
+          }
+        },
+        "getNodeParameter(\"value\",0)": {
+          "_path": [
+            "getNodeParameter",
+            {
+              "()": [
+                "value",
+                0,
+                "__undefined__",
+                {
+                  "skipValidation": true
+                }
+              ]
+            }
+          ],
+          "ok": false,
+          "error": {
+            "name": "Error",
+            "message": "Could not get parameter",
+            "level": "error"
+          }
+        },
+        "evaluateExpression(\"{{ 1 + 1 }}\")": {
+          "_path": [
+            "evaluateExpression",
+            {
+              "()": [
+                "{{ 1 + 1 }}"
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "number:2"
+        },
+        "prepareOutputData": {
+          "_path": [
+            "prepareOutputData",
+            {
+              "()": [
+                [
+                  {
+                    "json": {
+                      "a": 1
+                    }
+                  }
+                ]
+              ]
+            }
+          ],
+          "ok": true,
+          "serialized": "[[{\"json\":{\"a\":number:1}}]]"
+        },
+        "setMetadata+getExecuteData": {
+          "_skip": true,
+          "ok": true,
+          "serialized": "{\"k\":\"v\"}"
+        }
+      }
+    }
+  }
+}

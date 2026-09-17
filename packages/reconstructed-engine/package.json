@@ -1,0 +1,17 @@
+{
+  "name": "@lego/reconstructed-engine",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Reconstructed n8n execution engine (data proxy, run data, execution context, errors, metadata) — reference-faithful ESM port with golden + oracle gates. Rust implementation: NOT STARTED.",
+  "license": "SEE LICENSE IN reference/n8n/LICENSE.md",
+  "type": "module",
+  "scripts": {
+    "test": "bash ../../scripts/run-engine-tests.sh",
+    "test:offline": "ENGINE_ALLOW_NO_ORACLE=1 node --test --test-force-exit test/0*.test.mjs",
+    "record:golden": "node test/helpers/record-golden.mjs",
+    "record:surface": "node test/helpers/record-surface.mjs"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

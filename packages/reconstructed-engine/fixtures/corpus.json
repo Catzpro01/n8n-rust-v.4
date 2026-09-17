@@ -1,0 +1,2204 @@
+{
+  "$comment": [
+    "Probe corpus for the reconstructed node-side data surface.",
+    "Every scenario is executed twice: once through the pinned reference runtime (n8n-workflow@2.9.1 =",
+    "the artifact n8n 2.9.4 ships) and once through packages/reconstructed-engine. Results are compared",
+    "including thrown errors (name/message/description/context/level), so a wrong value AND a missing",
+    "error both fail the gate.",
+    "",
+    "Probe path language: a string is a property read; {\"()\": [args]} is a call of the value read so far.",
+    "The empty-node-name case '$.()' is written as [\"$\", {\"()\": [\"NodeName\"]}].",
+    "",
+    "Provenance of each asserted behaviour is cited per probe group in test/06-data-proxy-golden.test.mjs."
+  ],
+  "nodes": {
+    "trigger": {
+      "id": "11111111-1111-4111-8111-111111111111",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    },
+    "set": {
+      "id": "22222222-2222-4222-8222-222222222222",
+      "name": "Set",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "greeting",
+              "value": "={{ $json.fromTrigger }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    "code": {
+      "id": "33333333-3333-4333-8333-333333333333",
+      "name": "Code",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: { ok: true } }];"
+      }
+    },
+    "disabledSet": {
+      "id": "44444444-4444-4444-8444-444444444444",
+      "name": "Disabled Set",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        300,
+        200
+      ],
+      "disabled": true,
+      "parameters": {}
+    }
+  },
+  "scenarios": [
+    {
+      "name": "linear-3-run",
+      "_why": "fully executed linear graph: the happy path of every accessor",
+      "mode": "manual",
+      "activeNodeName": "Code",
+      "itemIndex": 0,
+      "connections": {
+        "Manual Trigger": {
+          "main": [
+            [
+              {
+                "node": "Set",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "Set": {
+          "main": [
+            [
+              {
+                "node": "Code",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        }
+      },
+      "runData": {
+        "Manual Trigger": [
+          {
+            "startTime": 1,
+            "executionIndex": 0,
+            "executionTime": 1,
+            "source": [],
+            "data": {
+              "main": [
+                [
+                  {
+                    "json": {
+                      "fromTrigger": "hello"
+                    },
+                    "pairedItem": {
+                      "item": 0
+                    }
+                  }
+                ]
+              ]
+            }
+          }
+        ],
+        "Set": [
+          {
+            "startTime": 2,
+            "executionIndex": 1,
+            "executionTime": 1,
+            "source": [
+              {
+                "previousNode": "Manual Trigger",
+                "previousNodeOutput": 0,
+                "previousNodeRun": 0
+              }
+            ],
+            "data": {
+              "main": [
+                [
+                  {
+                    "json": {
+                      "greeting": "hello",
+                      "n": 1
+                    },
+                    "pairedItem": {
+                      "item": 0
+                    }
+                  },
+                  {
+                    "json": {
+                      "greeting": "second",
+                      "n": 2
+                    },
+                    "pairedItem": {
+                      "item": 0
+                    }
+                  }
+                ]
+              ]
+            }
+          }
+        ]
+      },
+      "connectionInputData": [
+        {
+          "json": {
+            "greeting": "hello",
+            "n": 1
+          }
+        }
+      ],
+      "probes": [
+        [
+          "$json"
+        ],
+        [
+          "$data"
+        ],
+        [
+          "$binary"
+        ],
+        [
+          "$input",
+          "item"
+        ],
+        [
+          "$input",
+          "first",
+          {
+            "()": []
+          }
+        ],
+        [
+          "$input",
+          "last",
+          {
+            "()": []
+          }
+        ],
+        [
+          "$input",
+          "all",
+          {
+            "()": []
+          }
+        ],
+        [
+          "$input",
+          "params"
+        ],
+        [
+          "$input",
+          "context"
+        ],
+        [
+          "$node",
+          "Set",
+          "json"
+        ],
+        [
+          "$node",
+          "Set",
+          "data"
+        ],
+        [
+          "$node",
+          "Set",
+          "binary"
+        ],
+        [
+          "$node",
+          "Set",
+          "runIndex"
+        ],
+        [
+          "$node",
+          "Set",
+          "parameter",
+          "options"
+        ],
+        [
+          "$node",
+          "Set",
+          "context"
+        ],
+        [
+          "$node",
+          "Manual Trigger",
+          "json"
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Set"
+            ]
+          },
+          "isExecuted"
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Set"
+            ]
+          },
+          "all",
+          {
+            "()": []
+          }
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Set"
+            ]
+          },
+          "first",
+          {
+            "()": []
+          }
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Set"
+            ]
+          },
+          "last",
+          {
+            "()": []
+          }
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Set"
+            ]
+          },
+          "params"
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Set"
+            ]
+          },
+          "context"
+        ],
+        [
+          "$parameter",
+          "jsCode"
+        ],
+        [
+          "$rawParameter",
+          "jsCode"
+        ],
+        [
+          "$prevNode",
+          "name"
+        ],
+        [
+          "$prevNode",
+          "outputIndex"
+        ],
+        [
+          "$prevNode",
+          "runIndex"
+        ],
+        [
+          "$workflow",
+          "name"
+        ],
+        [
+          "$workflow",
+          "active"
+        ],
+        [
+          "$runIndex"
+        ],
+        [
+          "$itemIndex"
+        ],
+        [
+          "$position"
+        ],
+        [
+          "$mode"
+        ],
+        [
+          "$thisItem"
+        ],
+        [
+          "$thisItemIndex"
+        ],
+        [
+          "$thisRunIndex"
+        ],
+        [
+          "$nodeVersion"
+        ],
+        [
+          "$nodeId"
+        ],
+        [
+          "$webhookId"
+        ],
+        [
+          "$items",
+          {
+            "()": []
+          }
+        ],
+        [
+          "$items",
+          {
+            "()": [
+              "Set",
+              0,
+              -1
+            ]
+          }
+        ],
+        [
+          "$item",
+          {
+            "()": [
+              0
+            ]
+          },
+          "$json"
+        ],
+        [
+          "$item",
+          {
+            "()": [
+              1,
+              0
+            ]
+          },
+          "$json"
+        ],
+        [
+          "$item",
+          {
+            "()": [
+              5
+            ]
+          },
+          "$json"
+        ],
+        [
+          "$self"
+        ],
+        [
+          "nope"
+        ]
+      ]
+    },
+    {
+      "name": "linear-3-item-index-1",
+      "_why": "same graph, second item: pins itemIndex threading through every accessor",
+      "mode": "manual",
+      "activeNodeName": "Code",
+      "itemIndex": 1,
+      "connections": {
+        "Manual Trigger": {
+          "main": [
+            [
+              {
+                "node": "Set",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "Set": {
+          "main": [
+            [
+              {
+                "node": "Code",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        }
+      },
+      "runData": {
+        "Manual Trigger": [
+          {
+            "startTime": 1,
+            "executionIndex": 0,
+            "executionTime": 1,
+            "source": [],
+            "data": {
+              "main": [
+                [
+                  {
+                    "json": {
+                      "fromTrigger": "hello"
+                    },
+                    "pairedItem": {
+                      "item": 0
+                    }
+                  }
+                ]
+              ]
+            }
+          }
+        ],
+        "Set": [
+          {
+            "startTime": 2,
+            "executionIndex": 1,
+            "executionTime": 1,
+            "source": [
+              {
+                "previousNode": "Manual Trigger",
+                "previousNodeOutput": 0,
+                "previousNodeRun": 0
+              }
+            ],
+            "data": {
+              "main": [
+                [
+                  {
+                    "json": {
+                      "greeting": "hello",
+                      "n": 1
+                    },
+                    "pairedItem": {
+                      "item": 0
+                    }
+                  },
+                  {
+                    "json": {
+                      "greeting": "second",
+                      "n": 2
+                    },
+                    "pairedItem": {
+                      "item": 0
+                    }
+                  }
+                ]
+              ]
+            }
+          }
+        ]
+      },
+      "connectionInputData": [
+        {
+          "json": {
+            "greeting": "hello",
+            "n": 1
+          }
+        },
+        {
+          "json": {
+            "greeting": "second",
+            "n": 2
+          }
+        }
+      ],
+      "probes": [
+        [
+          "$json"
+        ],
+        [
+          "$input",
+          "item"
+        ],
+        [
+          "$input",
+          "last",
+          {
+            "()": []
+          }
+        ],
+        [
+          "$items",
+          {
+            "()": []
+          }
+        ],
+        [
+          "$item",
+          {
+            "()": [
+              0
+            ]
+          },
+          "$json"
+        ]
+      ]
+    },
+    {
+      "name": "pinned-node-manual",
+      "_why": "ISSUE-016: pinned output must short-circuit node data reads in manual runs",
+      "mode": "manual",
+      "activeNodeName": "Code",
+      "itemIndex": 0,
+      "pinData": {
+        "Set": [
+          {
+            "json": {
+              "pinned": true,
+              "greeting": "from-pin"
+            }
+          }
+        ]
+      },
+      "connections": {
+        "Manual Trigger": {
+          "main": [
+            [
+              {
+                "node": "Set",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "Set": {
+          "main": [
+            [
+              {
+                "node": "Code",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        }
+      },
+      "runData": {
+        "Manual Trigger": [
+          {
+            "startTime": 1,
+            "executionIndex": 0,
+            "executionTime": 1,
+            "source": [],
+            "data": {
+              "main": [
+                [
+                  {
+                    "json": {
+                      "fromTrigger": "hello"
+                    },
+                    "pairedItem": {
+                      "item": 0
+                    }
+                  }
+                ]
+              ]
+            }
+          }
+        ]
+      },
+      "connectionInputData": [
+        {
+          "json": {
+            "fromPin": true
+          }
+        }
+      ],
+      "probes": [
+        [
+          "$json"
+        ],
+        [
+          "$node",
+          "Set",
+          "json"
+        ],
+        [
+          "$node",
+          "Set",
+          "runIndex"
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Set"
+            ]
+          },
+          "isExecuted"
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Set"
+            ]
+          },
+          "all",
+          {
+            "()": []
+          }
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Set"
+            ]
+          },
+          "first",
+          {
+            "()": []
+          }
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Disabled Set"
+            ]
+          },
+          "all",
+          {
+            "()": []
+          }
+        ]
+      ]
+    },
+    {
+      "name": "pinned-node-production",
+      "_why": "the same pinData must be IGNORED outside manual mode (getPinDataIfManualExecution)",
+      "mode": "trigger",
+      "activeNodeName": "Code",
+      "itemIndex": 0,
+      "pinData": {
+        "Set": [
+          {
+            "json": {
+              "pinned": true,
+              "greeting": "from-pin"
+            }
+          }
+        ]
+      },
+      "connections": {
+        "Manual Trigger": {
+          "main": [
+            [
+              {
+                "node": "Set",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "Set": {
+          "main": [
+            [
+              {
+                "node": "Code",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        }
+      },
+      "runData": {},
+      "connectionInputData": [
+        {
+          "json": {
+            "fromPin": true
+          }
+        }
+      ],
+      "probes": [
+        [
+          "$node",
+          "Set",
+          "json"
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Set"
+            ]
+          },
+          "all",
+          {
+            "()": []
+          }
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Set"
+            ]
+          },
+          "isExecuted"
+        ]
+      ]
+    },
+    {
+      "name": "unexecuted-and-unknown-node",
+      "_why": "the three distinct error shapes: unknown node / unexecuted node / no source data",
+      "mode": "manual",
+      "activeNodeName": "Code",
+      "itemIndex": 0,
+      "connections": {
+        "Manual Trigger": {
+          "main": [
+            [
+              {
+                "node": "Code",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        }
+      },
+      "runData": {},
+      "connectionInputData": [
+        {
+          "json": {
+            "a": 1
+          }
+        }
+      ],
+      "probes": [
+        [
+          "$node",
+          "Set",
+          "json"
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Set"
+            ]
+          },
+          "all",
+          {
+            "()": []
+          }
+        ],
+        [
+          "$node",
+          "Ghost",
+          "json"
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Ghost"
+            ]
+          },
+          "isExecuted"
+        ],
+        [
+          "$input",
+          "params"
+        ],
+        [
+          "$input",
+          "context"
+        ],
+        [
+          "$prevNode",
+          "name"
+        ]
+      ]
+    },
+    {
+      "name": "no-connection-input",
+      "_why": "$input with an empty connectionInputData must throw 'No execution data available'",
+      "mode": "manual",
+      "activeNodeName": "Code",
+      "itemIndex": 0,
+      "connections": {
+        "Manual Trigger": {
+          "main": [
+            [
+              {
+                "node": "Code",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        }
+      },
+      "runData": {
+        "Manual Trigger": [
+          {
+            "startTime": 1,
+            "executionIndex": 0,
+            "executionTime": 1,
+            "source": [],
+            "data": {
+              "main": [
+                [
+                  {
+                    "json": {
+                      "fromTrigger": "hello"
+                    },
+                    "pairedItem": {
+                      "item": 0
+                    }
+                  }
+                ]
+              ]
+            }
+          }
+        ]
+      },
+      "connectionInputData": [],
+      "probes": [
+        [
+          "$input",
+          "item"
+        ],
+        [
+          "$input",
+          "first",
+          {
+            "()": []
+          }
+        ],
+        [
+          "$input",
+          "all",
+          {
+            "()": []
+          }
+        ],
+        [
+          "$json"
+        ]
+      ]
+    },
+    {
+      "name": "branch-output-selection",
+      "_why": "IF-style multiple outputs: sourceIndex selection and the 'no branch' error",
+      "mode": "manual",
+      "activeNodeName": "Code",
+      "itemIndex": 0,
+      "connections": {
+        "Set": {
+          "main": [
+            [
+              {
+                "node": "Code",
+                "type": "main",
+                "index": 0
+              }
+            ],
+            [
+              {
+                "node": "Disabled Set",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        }
+      },
+      "runData": {
+        "Set": [
+          {
+            "startTime": 1,
+            "executionIndex": 0,
+            "executionTime": 1,
+            "source": [],
+            "data": {
+              "main": [
+                [
+                  {
+                    "json": {
+                      "branch": "true"
+                    },
+                    "pairedItem": {
+                      "item": 0
+                    }
+                  }
+                ],
+                [
+                  {
+                    "json": {
+                      "branch": "false"
+                    },
+                    "pairedItem": {
+                      "item": 0
+                    }
+                  }
+                ]
+              ]
+            }
+          }
+        ]
+      },
+      "connectionInputData": [
+        {
+          "json": {
+            "branch": "true"
+          }
+        }
+      ],
+      "probes": [
+        [
+          "$node",
+          "Set",
+          "json"
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Set"
+            ]
+          },
+          "all",
+          {
+            "()": [
+              0
+            ]
+          }
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Set"
+            ]
+          },
+          "all",
+          {
+            "()": [
+              1
+            ]
+          }
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Set"
+            ]
+          },
+          "all",
+          {
+            "()": [
+              9
+            ]
+          }
+        ],
+        [
+          "$items",
+          {
+            "()": [
+              "Set",
+              1,
+              0
+            ]
+          }
+        ]
+      ]
+    },
+    {
+      "name": "empty-run-and-multi-run",
+      "_why": "null output run + several runs of one node: runIndex=-1 means LAST run",
+      "mode": "manual",
+      "activeNodeName": "Code",
+      "itemIndex": 0,
+      "connections": {
+        "Set": {
+          "main": [
+            [
+              {
+                "node": "Code",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        }
+      },
+      "runData": {
+        "Set": [
+          {
+            "startTime": 1,
+            "executionIndex": 0,
+            "executionTime": 1,
+            "source": [],
+            "data": {
+              "main": [
+                [
+                  {
+                    "json": {
+                      "run": 0
+                    },
+                    "pairedItem": {
+                      "item": 0
+                    }
+                  }
+                ]
+              ]
+            }
+          },
+          {
+            "startTime": 2,
+            "executionIndex": 1,
+            "executionTime": 1,
+            "source": [],
+            "data": {
+              "main": [
+                [
+                  {
+                    "json": {
+                      "run": 1
+                    },
+                    "pairedItem": {
+                      "item": 0
+                    }
+                  }
+                ]
+              ]
+            }
+          },
+          {
+            "startTime": 3,
+            "executionIndex": 2,
+            "executionTime": 1,
+            "source": [],
+            "data": {
+              "main": [
+                null
+              ]
+            }
+          }
+        ]
+      },
+      "connectionInputData": [
+        {
+          "json": {
+            "run": 1
+          }
+        }
+      ],
+      "probes": [
+        [
+          "$node",
+          "Set",
+          "json"
+        ],
+        [
+          "$node",
+          "Set",
+          "runIndex"
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Set"
+            ]
+          },
+          "all",
+          {
+            "()": [
+              0,
+              0
+            ]
+          }
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Set"
+            ]
+          },
+          "all",
+          {
+            "()": [
+              0,
+              1
+            ]
+          }
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Set"
+            ]
+          },
+          "all",
+          {
+            "()": [
+              0,
+              2
+            ]
+          }
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Set"
+            ]
+          },
+          "all",
+          {
+            "()": [
+              0,
+              99
+            ]
+          }
+        ],
+        [
+          "$items",
+          {
+            "()": [
+              "Set",
+              0,
+              1
+            ]
+          }
+        ]
+      ]
+    },
+    {
+      "name": "binary-mode-combined",
+      "_why": "settings.binaryMode='combined' switches $json to json-only and adds $item to the access keys",
+      "mode": "manual",
+      "activeNodeName": "Code",
+      "itemIndex": 0,
+      "settings": {
+        "binaryMode": "combined"
+      },
+      "connections": {
+        "Set": {
+          "main": [
+            [
+              {
+                "node": "Code",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        }
+      },
+      "runData": {
+        "Set": [
+          {
+            "startTime": 1,
+            "executionIndex": 0,
+            "executionTime": 1,
+            "source": [],
+            "data": {
+              "main": [
+                [
+                  {
+                    "json": {
+                      "v": 1
+                    },
+                    "binary": {
+                      "data": {
+                        "data": "REDACTED",
+                        "mimeType": "image/png",
+                        "fileName": "a.png"
+                      }
+                    },
+                    "pairedItem": {
+                      "item": 0
+                    }
+                  }
+                ]
+              ]
+            }
+          }
+        ]
+      },
+      "connectionInputData": [
+        {
+          "json": {
+            "v": 1
+          },
+          "binary": {
+            "data": {
+              "data": "REDACTED",
+              "mimeType": "image/png",
+              "fileName": "a.png"
+            }
+          }
+        }
+      ],
+      "probes": [
+        [
+          "$json"
+        ],
+        [
+          "$binary"
+        ],
+        [
+          "$item"
+        ],
+        [
+          "$input",
+          "item"
+        ],
+        [
+          "$input",
+          "all",
+          {
+            "()": []
+          }
+        ],
+        [
+          "$node",
+          "Set",
+          "json"
+        ],
+        [
+          "$node",
+          "Set",
+          "binary"
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Set"
+            ]
+          },
+          "all",
+          {
+            "()": []
+          }
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Set"
+            ]
+          },
+          "first",
+          {
+            "()": []
+          }
+        ]
+      ]
+    },
+    {
+      "name": "parameters-and-resource-locator",
+      "_why": "$parameter / $rawParameter: RLC unwrap, __regex extraction, sibling '&' lookup, recursion guard",
+      "mode": "manual",
+      "activeNodeName": "Set",
+      "itemIndex": 0,
+      "nodeOverrides": {
+        "Set": {
+          "parameters": {
+            "plain": "static value",
+            "expression": "={{ 1 + 1 }}",
+            "resourceLocator": {
+              "__rl": true,
+              "mode": "list",
+              "value": "abc-123"
+            },
+            "withRegex": {
+              "__rl": true,
+              "mode": "id",
+              "value": "id:99",
+              "__regex": "^id:(\\d+)$"
+            },
+            "regexNoMatch": {
+              "__rl": true,
+              "mode": "id",
+              "value": "nope",
+              "__regex": "^id:(\\d+)$"
+            },
+            "selfReference": "={{ $parameter.selfReference }}",
+            "missing": null
+          }
+        }
+      },
+      "connections": {},
+      "runData": {},
+      "connectionInputData": [
+        {
+          "json": {
+            "x": 1
+          }
+        }
+      ],
+      "probes": [
+        [
+          "$parameter",
+          "plain"
+        ],
+        [
+          "$parameter",
+          "expression"
+        ],
+        [
+          "$parameter",
+          "resourceLocator"
+        ],
+        [
+          "$parameter",
+          "withRegex"
+        ],
+        [
+          "$parameter",
+          "regexNoMatch"
+        ],
+        [
+          "$parameter",
+          "selfReference"
+        ],
+        [
+          "$parameter",
+          "notThere"
+        ],
+        [
+          "$parameter",
+          "assignments"
+        ],
+        [
+          "$rawParameter",
+          "expression"
+        ],
+        [
+          "$rawParameter",
+          "resourceLocator"
+        ],
+        [
+          "$parameter",
+          "toJSON",
+          {
+            "()": []
+          }
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Set"
+            ]
+          },
+          "params",
+          "plain"
+        ],
+        [
+          "&siblingMissing"
+        ],
+        [
+          "$thisItem"
+        ]
+      ],
+      "siblingParameters": {
+        "siblingMissing": "should-not-be-found-via-base"
+      }
+    },
+    {
+      "name": "context-data-and-nodes",
+      "_why": "node context data ($('X').context / $input.context) backed by runExecutionData contextData Also carries the $env provider probe: with N8N_BLOCK_ENV_ACCESS_IN_NODE not set to 'false' the reference throws 'access to env vars denied' on every property read.",
+      "mode": "manual",
+      "activeNodeName": "Code",
+      "itemIndex": 0,
+      "connections": {
+        "Set": {
+          "main": [
+            [
+              {
+                "node": "Code",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        }
+      },
+      "contextData": {
+        "node:Set": {
+          "myKey": "myValue",
+          "nested": {
+            "a": 1
+          }
+        },
+        "flow": {
+          "shared": true
+        }
+      },
+      "runData": {
+        "Set": [
+          {
+            "startTime": 1,
+            "executionIndex": 0,
+            "executionTime": 1,
+            "source": [],
+            "data": {
+              "main": [
+                [
+                  {
+                    "json": {
+                      "v": 1
+                    },
+                    "pairedItem": {
+                      "item": 0
+                    }
+                  }
+                ]
+              ]
+            },
+            "executionContext": {
+              "myKey": "myValue",
+              "nested": {
+                "a": 1
+              }
+            }
+          }
+        ]
+      },
+      "connectionInputData": [
+        {
+          "json": {
+            "v": 1
+          }
+        }
+      ],
+      "executeData": {
+        "node": "Code",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "v": 1
+                }
+              }
+            ]
+          ]
+        },
+        "source": {
+          "main": [
+            [
+              {
+                "previousNode": "Set",
+                "previousNodeOutput": 0,
+                "previousNodeRun": 0
+              }
+            ]
+          ]
+        }
+      },
+      "probes": [
+        [
+          "$node",
+          "Set",
+          "context",
+          "myKey"
+        ],
+        [
+          "$node",
+          "Set",
+          "context",
+          "nested"
+        ],
+        [
+          "$node",
+          "Set",
+          "context",
+          "absent"
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Set"
+            ]
+          },
+          "context",
+          "myKey"
+        ],
+        [
+          "$input",
+          "context",
+          "myKey"
+        ],
+        [
+          "$env",
+          "HOME"
+        ]
+      ]
+    },
+    {
+      "name": "execution-metadata-and-vars",
+      "_why": "the additionalKeys half of the sandbox: $execution (id/mode/urls), $vars, the deprecated aliases, and $execution.customData driving execution-metadata. Probes are ORDER-DEPENDENT on purpose: set() then get() must be recorded and replayed in the same sequence. Duplicate probe paths collapse in the golden dict, so each path appears once: getAll is read only after the writes.",
+      "mode": "manual",
+      "activeNodeName": "Code",
+      "itemIndex": 0,
+      "connections": {
+        "Manual Trigger": {
+          "main": [
+            [
+              {
+                "node": "Set",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "Set": {
+          "main": [
+            [
+              {
+                "node": "Code",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        }
+      },
+      "runData": {},
+      "connectionInputData": [],
+      "executeData": {
+        "source": {
+          "main": [
+            {
+              "previousNode": "Set",
+              "previousNodeOutput": 0,
+              "previousNodeRun": 0
+            }
+          ]
+        }
+      },
+      "probes": [
+        [
+          "$execution",
+          "id"
+        ],
+        [
+          "$execution",
+          "mode"
+        ],
+        [
+          "$execution",
+          "resumeUrl"
+        ],
+        [
+          "$execution",
+          "resumeFormUrl"
+        ],
+        [
+          "$executionId"
+        ],
+        [
+          "$resumeWebhookUrl"
+        ],
+        [
+          "$vars",
+          "myVar"
+        ],
+        [
+          "$execution",
+          "customData",
+          "set",
+          "alpha",
+          "one"
+        ],
+        [
+          "$execution",
+          "customData",
+          "get",
+          "alpha"
+        ],
+        [
+          "$execution",
+          "customData",
+          "get",
+          "absent"
+        ],
+        [
+          "$execution",
+          "customData",
+          "set",
+          "bad key!",
+          "x"
+        ],
+        [
+          "$execution",
+          "customData",
+          "set",
+          "beta",
+          42
+        ],
+        [
+          "$execution",
+          "customData",
+          "getAll"
+        ]
+      ]
+    },
+    {
+      "name": "orphan-branch-default",
+      "_why": "A node that HAS run data but is not connected to the active node: `$('Code')` must fall back to branchIndex 0, the reference's default for an unconnected source. The `$()` getters compute `getNodeConnectionIndexes(active, node)?.sourceIndex ?? 0`, and a mutation of that default is invisible unless the referenced node has MORE THAN ONE output branch \u2014 hence main[0] and main[1] carry different items here.",
+      "mode": "manual",
+      "activeNodeName": "Set",
+      "itemIndex": 0,
+      "connections": {
+        "Manual Trigger": {
+          "main": [
+            [
+              {
+                "node": "Set",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        }
+      },
+      "runData": {
+        "Manual Trigger": [
+          {
+            "startTime": 1,
+            "executionIndex": 0,
+            "executionTime": 1,
+            "source": [],
+            "data": {
+              "main": [
+                [
+                  {
+                    "json": {
+                      "fromTrigger": "hello"
+                    },
+                    "pairedItem": {
+                      "item": 0
+                    }
+                  }
+                ]
+              ]
+            }
+          }
+        ],
+        "Code": [
+          {
+            "startTime": 2,
+            "executionIndex": 1,
+            "executionTime": 1,
+            "source": [
+              {
+                "previousNode": "Set",
+                "previousNodeOutput": 0,
+                "previousNodeRun": 0
+              }
+            ],
+            "data": {
+              "main": [
+                [
+                  {
+                    "json": {
+                      "branch": "zero",
+                      "n": 1
+                    },
+                    "pairedItem": {
+                      "item": 0
+                    }
+                  }
+                ],
+                [
+                  {
+                    "json": {
+                      "branch": "one",
+                      "n": 2
+                    },
+                    "pairedItem": {
+                      "item": 0
+                    }
+                  }
+                ]
+              ]
+            }
+          }
+        ]
+      },
+      "connectionInputData": [
+        {
+          "json": {
+            "greeting": "hello",
+            "n": 1
+          }
+        }
+      ],
+      "probes": [
+        [
+          "$",
+          {
+            "()": [
+              "Code"
+            ]
+          },
+          "isExecuted"
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Code"
+            ]
+          },
+          "all",
+          {
+            "()": []
+          }
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Code"
+            ]
+          },
+          "first",
+          {
+            "()": []
+          }
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Code"
+            ]
+          },
+          "last",
+          {
+            "()": []
+          }
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Code"
+            ]
+          },
+          "all",
+          {
+            "()": [
+              1
+            ]
+          }
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Code"
+            ]
+          },
+          "params",
+          "mode"
+        ],
+        [
+          "$node",
+          "Code",
+          "json"
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Manual Trigger"
+            ]
+          },
+          "first",
+          {
+            "()": []
+          }
+        ],
+        [
+          "$",
+          {
+            "()": [
+              "Nope"
+            ]
+          },
+          "all",
+          {
+            "()": []
+          }
+        ]
+      ]
+    }
+  ],
+  "deferredProbes": {
+    "$comment": "Symbols the port does NOT implement. They are asserted to raise NotPortedError (loud) rather than return a value (silently wrong). The reference value, when it has one, is recorded by the oracle run. This is the anti-ISSUE-016 pattern: a field or accessor that exists but is inert is worse than one that is missing, because it reads as implemented. NOTE: $env used to live here and was promoted to a real probe \u2014 the oracle showed it throwing 'access to env vars denied', and a stub that returns undefined would have looked like a pass.",
+    "probes": [
+      [
+        "$fromAI",
+        {
+          "()": [
+            "name"
+          ]
+        }
+      ],
+      [
+        "$tool"
+      ],
+      [
+        "$jmesPath",
+        {
+          "()": [
+            {
+              "a": 1
+            },
+            "a"
+          ]
+        }
+      ],
+      [
+        "$jmespath",
+        {
+          "()": [
+            {
+              "a": 1
+            },
+            "a"
+          ]
+        }
+      ],
+      [
+        "$agentInfo"
+      ],
+      [
+        "$getPairedItem"
+      ],
+      [
+        "$",
+        {
+          "()": [
+            "Set"
+          ]
+        },
+        "item",
+        {
+          "()": [
+            0
+          ]
+        }
+      ],
+      [
+        "$",
+        {
+          "()": [
+            "Set"
+          ]
+        },
+        "itemMatching",
+        {
+          "()": [
+            0
+          ]
+        }
+      ],
+      [
+        "$",
+        {
+          "()": [
+            "Set"
+          ]
+        },
+        "pairedItem"
+      ],
+      [
+        "$now"
+      ],
+      [
+        "$today"
+      ]
+    ]
+  },
+  "contextScenarios": [
+    {
+      "name": "ctx-basic",
+      "_why": "BaseExecuteContext/ExecuteContext surface vs the reference implementation",
+      "mode": "manual",
+      "activeNodeName": "Set",
+      "itemIndex": 0,
+      "nodeOverrides": {
+        "Set": {
+          "parameters": {
+            "value": "={{ $json.n }}",
+            "nested": {
+              "deep": "={{ $json.n * 2 }}"
+            }
+          }
+        }
+      },
+      "connections": {
+        "Manual Trigger": {
+          "main": [
+            [
+              {
+                "node": "Set",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        }
+      },
+      "runData": {},
+      "connectionInputData": [
+        {
+          "json": {
+            "n": 5
+          }
+        },
+        {
+          "json": {
+            "n": 6
+          }
+        }
+      ],
+      "inputData": {
+        "main": [
+          [
+            {
+              "json": {
+                "n": 5
+              },
+              "pairedItem": {
+                "item": 0
+              }
+            }
+          ],
+          [
+            {
+              "json": {
+                "n": 6
+              },
+              "pairedItem": {
+                "item": 1
+              }
+            }
+          ]
+        ]
+      },
+      "executeData": {
+        "node": "Set",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "n": 5
+                }
+              }
+            ]
+          ]
+        },
+        "source": {
+          "main": [
+            [
+              {
+                "previousNode": "Manual Trigger",
+                "previousNodeOutput": 0,
+                "previousNodeRun": 0
+              }
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "name": "ctx-single-run-data",
+      "_why": "same, but the node runs on runIndex 1 with existing run data + context data",
+      "mode": "trigger",
+      "activeNodeName": "Set",
+      "runIndex": 1,
+      "nodeOverrides": {
+        "Set": {
+          "continueOnFail": true,
+          "parameters": {
+            "value": "=plain text"
+          }
+        }
+      },
+      "connections": {
+        "Manual Trigger": {
+          "main": [
+            [
+              {
+                "node": "Set",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        }
+      },
+      "runData": {
+        "Manual Trigger": [
+          {
+            "startTime": 1,
+            "executionIndex": 0,
+            "executionTime": 1,
+            "source": [],
+            "data": {
+              "main": [
+                [
+                  {
+                    "json": {
+                      "n": 1
+                    },
+                    "pairedItem": {
+                      "item": 0
+                    }
+                  }
+                ]
+              ]
+            }
+          }
+        ]
+      },
+      "contextData": {
+        "node:Set": {
+          "seen": true
+        }
+      },
+      "connectionInputData": [
+        {
+          "json": {
+            "n": 1
+          }
+        }
+      ],
+      "inputData": {
+        "main": [
+          [
+            {
+              "json": {
+                "n": 1
+              },
+              "pairedItem": {
+                "item": 0
+              }
+            }
+          ]
+        ]
+      },
+      "executeData": {
+        "node": "Set",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {
+                  "n": 1
+                }
+              }
+            ]
+          ]
+        },
+        "source": {
+          "main": [
+            [
+              {
+                "previousNode": "Manual Trigger",
+                "previousNodeOutput": 0,
+                "previousNodeRun": 0
+              }
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "name": "ctx-on-error-routing",
+      "_why": "continueOnFail() reads onError first and only falls back to the legacy flag",
+      "mode": "manual",
+      "activeNodeName": "Set",
+      "itemIndex": 0,
+      "nodeOverrides": {
+        "Set": {
+          "onError": "continueErrorOutput",
+          "continueOnFail": false,
+          "parameters": {}
+        }
+      },
+      "connections": {},
+      "runData": {},
+      "connectionInputData": [
+        {
+          "json": {}
+        }
+      ],
+      "inputData": {
+        "main": [
+          [
+            {
+              "json": {}
+            }
+          ]
+        ]
+      },
+      "executeData": {
+        "node": "Set",
+        "data": {
+          "main": [
+            [
+              {
+                "json": {}
+              }
+            ]
+          ]
+        },
+        "source": null
+      }
+    }
+  ]
+}

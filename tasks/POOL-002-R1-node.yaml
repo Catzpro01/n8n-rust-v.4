@@ -1,0 +1,76 @@
+id: POOL-002-R1-node
+agent: agent-2
+lego: node
+module: node-execution-context + workflow-data-proxy
+phase: 2
+task_pool_id: POOL-002-R1
+
+# Rework of POOL-002 after agent-8's FAILED record (see
+# results/POOL-002-node-execution-context-data-proxy.md — left untouched on purpose:
+# it is the audit trail, not a draft). The deliverable is a reference-faithful ESM port
+# of the execution surface plus the gates that prove it, so the Rust port has something
+# to be written against and something to be checked with.
+
+allowed_paths:
+  - packages/reconstructed-engine/**
+  - docs/isolation/node-execution-context.md
+  - scripts/run-engine-tests.sh
+  - package.json            # verify:engine / verify:engine:offline only
+  - tasks/POOL-002-R1-node.yaml
+  - results/POOL-002-R1-node-execution-context-data-proxy.md
+  - docs/isolation/node-bus-outbox.json
+
+forbidden_paths:
+  - reference/n8n/**         # read-only oracle; nothing under it is edited
+  - packages/core/**         # read-only reference copy
+  - packages/workflow-lego/**
+  - crates/**
+  - apps/**
+  - packages/reconstructed-engine/runner.mjs      # POOL-001 artifact, pinned by gate 06
+  - packages/reconstructed-engine/test-run.mjs     # POOL-001 artifact, pinned by gate 06
+
+requires:
+  - contracts/expression.contract.md      # E-06/E-07, 12-arg getParameterValue
+  - contracts/node.contract.md            # §11 frozen ports
+  - docs/isolation/LEGO_PARALLEL_RULES.md
+
+operations:
+  - name: git_status
+  - name: list_files
+    args: { path: reference/n8n/packages/core/src/execution-engine/node-execution-context }
+  # Deliverables (all inside allowed_paths):
+  # - packages/reconstructed-engine/src/*.mjs          10 ported modules + reference seam
+  # - packages/reconstructed-engine/fixtures/*.json    corpus (hand-written) + recorded evidence
+  # - packages/reconstructed-engine/manifest/port-surface.json   generated surface record
+  # - packages/reconstructed-engine/test/**            gates 00-07 + oracle/10 + recorders
+  # - packages/reconstructed-engine/{package.json,README.md}
+  # - docs/isolation/node-execution-context.md
+  # - scripts/run-engine-tests.sh, root package.json verify:engine[:offline]
+  - name: run_tests
+    args: { command: "npm run verify:engine", expect: "80/80 pass" }
+  - name: run_tests
+    args: { command: "npm run verify:engine:offline", expect: "80/80 pass, oracle gate reports NOT RUN" }
+  - name: read_messages
+
+coordination:
+  - name: send_message
+    args:
+      to: agent-5
+      type: REVIEW_REQUEST
+      subject: "POOL-002-R1 ready: reconstructed-engine 80/80 (live + offline), falsification green"
+      details: docs/isolation/node-bus-outbox.json MSG-04
+  - name: notify_dependency
+    args:
+      to: agent-4
+      subject: "POOL-003 overlap: error classes + retry policy are ported and pinned here — consume, do not re-port"
+
+acceptance_criteria:
+  - "every ported symbol cites the reference file:line it came from"
+  - "deferred symbols raise NotPortedError; nothing returns a silent undefined"
+  - "goldens are recorded from the reference, never hand-written or produced by src/"
+  - "the suite passes with the oracle AND without it, and is proven capable of failing"
+  - "POOL-001 runner.mjs/test-run.mjs byte-identical to baseline fc4e5631"
+  - "no writes outside allowed_paths; no Rust, no crates/ changes; POOL-003 stays reported"
+
+status: DONE
+result: results/POOL-002-R1-node-execution-context-data-proxy.md
