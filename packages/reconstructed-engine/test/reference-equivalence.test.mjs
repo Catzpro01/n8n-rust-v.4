@@ -722,3 +722,40 @@ test('EQUIVALENCE disabled node: not executed, pin ignored, input passed through
 	assert.equal(reconstructed.resultData.lastNodeExecuted, reference.resultData.lastNodeExecuted);
 	assert.equal(reconstructed.status, reference.status);
 });
+
+/* ------------------------------------------------------------------ *
+ * executeOnce — vs the real engine
+ * ------------------------------------------------------------------ */
+
+const EXECUTE_ONCE = (executeOnce) => ({
+	id: 'eq-execute-once',
+	name: 'Equivalence — executeOnce',
+	nodes: [
+		manualTrigger('t', 'Manual Trigger', [0, 0]),
+		{ ...setNode('o', 'Only Once', [200, 0]), ...(executeOnce ? { executeOnce: true } : {}) },
+		noOp('a', 'After', [400, 0]),
+	],
+	connections: {
+		'Manual Trigger': { main: [[edge('Only Once')]] },
+		'Only Once': { main: [[edge('After')]] },
+	},
+	// three items into the node, without needing a node that multiplies items
+	pinData: { 'Manual Trigger': [{ json: { n: 1 } }, { json: { n: 2 } }, { json: { n: 3 } }] },
+});
+
+test('EQUIVALENCE executeOnce: only the first item reaches the node, on both engines', { timeout: 120000, skip: skipReason }, async () => {
+	const api = await loadReference();
+
+	const refAll = await api.run(EXECUTE_ONCE(false));
+	const recAll = await reconstructedRun(EXECUTE_ONCE(false));
+	assert.equal(refAll.resultData.runData['Only Once'][0].data.main[0].length, 3, 'sanity: 3 items without the flag');
+	assert.deepEqual(shape(recAll.resultData).itemCounts, shape(refAll.resultData).itemCounts);
+
+	const refOnce = await api.run(EXECUTE_ONCE(true));
+	const recOnce = await reconstructedRun(EXECUTE_ONCE(true));
+	assert.equal(refOnce.resultData.runData['Only Once'][0].data.main[0].length, 1, 'sanity: the reference narrowed it to 1');
+	assert.deepEqual(shape(recOnce.resultData).itemCounts, shape(refOnce.resultData).itemCounts);
+	assert.deepEqual(payloadOf(recOnce.resultData, 'Only Once'), payloadOf(refOnce.resultData, 'Only Once'));
+	assert.deepEqual(payloadOf(recOnce.resultData, 'After'), payloadOf(refOnce.resultData, 'After'));
+	assert.deepEqual(shape(recOnce.resultData).order, shape(refOnce.resultData).order);
+});

@@ -12,6 +12,9 @@
  * otherwise a node can be released while a grand-parent is still waiting for its own inputs.
  */
 
+/** `NodeConnectionTypes.Main` (interfaces.ts) — the only connection type the engine walks. */
+const MAIN = 'main';
+
 /**
  * 1:1 port of `common/get-connected-nodes.ts:11-95`.
  *
@@ -108,4 +111,106 @@ export function getConnectedNodes(
 /** 1:1 port of `common/get-parent-nodes.ts:11-18`. */
 export function getParentNodes(connectionsByDestinationNode, nodeName, type = 'main', depth = -1) {
 	return getConnectedNodes(connectionsByDestinationNode, nodeName, type, depth);
+}
+
+/**
+ * 1:1 port of `workflow.ts:492-568` (`Workflow#getHighestNode`).
+ *
+ * "Highest" = the root-most nodes that feed `nodeName`, i.e. the ancestors that have no incoming
+ * connection of their own and are not disabled. The execution engine needs it in `ensureInputData`
+ * (`workflow-execute.ts:2317-2325`): when every node feeding an input is disabled there is no data
+ * to wait for and the node runs as-is.
+ *
+ * Two details of the reference are load-bearing and easy to "simplify" away:
+ *   - a node that is itself NOT disabled is its own highest node (`:498-501`), and the walk still
+ *     continues, so the result can contain both the node and its ancestors;
+ *   - `checkedNodes` is shared across the recursion as cycle protection (`:514-521`).
+ *
+ * @param {Map<string,object>|object} nodes node lookup — a Map (the engine) or a plain object
+ * @param {object} connectionsByDestinationNode
+ * @param {string} nodeName
+ * @param {number|undefined} nodeConnectionIndex restrict the walk to one input slot
+ * @param {string[]|undefined} checkedNodes
+ * @returns {string[]}
+ */
+export function getHighestNode(
+	nodes,
+	connectionsByDestinationNode,
+	nodeName,
+	nodeConnectionIndex,
+	checkedNodes,
+) {
+	const nodeAt = (name) => (nodes instanceof Map ? nodes.get(name) : nodes?.[name]);
+	const hasNode = (name) =>
+		nodes instanceof Map ? nodes.has(name) : Object.prototype.hasOwnProperty.call(nodes ?? {}, name);
+
+	const currentHighest = [];
+	if (nodeAt(nodeName)?.disabled === false) {
+		// If the current node is not disabled itself is the highest
+		currentHighest.push(nodeName);
+	}
+
+	if (!Object.prototype.hasOwnProperty.call(connectionsByDestinationNode, nodeName)) {
+		// Node does not have incoming connections
+		return currentHighest;
+	}
+
+	if (!Object.prototype.hasOwnProperty.call(connectionsByDestinationNode[nodeName], MAIN)) {
+		// Node does not have incoming connections of given type
+		return currentHighest;
+	}
+
+	checkedNodes = checkedNodes || [];
+
+	if (checkedNodes.includes(nodeName)) {
+		// Node got checked already before
+		return currentHighest;
+	}
+
+	checkedNodes.push(nodeName);
+
+	const returnNodes = [];
+	let addNodes;
+
+	let connectionsByIndex;
+	for (
+		let connectionIndex = 0;
+		connectionIndex < connectionsByDestinationNode[nodeName][MAIN].length;
+		connectionIndex++
+	) {
+		if (nodeConnectionIndex !== undefined && nodeConnectionIndex !== connectionIndex) {
+			// If a connection-index is given ignore all other ones
+			continue;
+		}
+		connectionsByIndex = connectionsByDestinationNode[nodeName][MAIN][connectionIndex];
+
+		connectionsByIndex?.forEach((connection) => {
+			if (checkedNodes.includes(connection.node)) {
+				// Node got checked already before
+				return;
+			}
+
+			// Ignore connections for nodes that don't exist in this workflow
+			if (!hasNode(connection.node)) return;
+
+			addNodes = getHighestNode(nodes, connectionsByDestinationNode, connection.node, undefined, checkedNodes);
+
+			if (addNodes.length === 0) {
+				// The checked node does not have any further parents so add it
+				// if it is not disabled
+				if (nodeAt(connection.node)?.disabled !== true) {
+					addNodes = [connection.node];
+				}
+			}
+
+			addNodes.forEach((name) => {
+				// Only add if node is not on the list already anyway
+				if (returnNodes.indexOf(name) === -1) {
+					returnNodes.push(name);
+				}
+			});
+		});
+	}
+
+	return returnNodes;
 }

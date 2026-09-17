@@ -5,7 +5,7 @@
 `packages/workflow/src/{interfaces,execution-status}.ts`) and runtime comparison against the pinned
 `n8n-core` / `n8n-workflow` **2.9.1** (the dependency set of n8n 2.9.4).
 **Owner:** Agent 1 (`workflow`) — reconstruction lives in `packages/reconstructed-engine/`
-**Status:** TESTED — 82 regression cases, 13 of them executed against the real engine
+**Status:** TESTED — 91 regression cases, 14 of them executed against the real engine
 **Rule basis:** `PROJECT_RULES.md` #1 (ZERO RUST → JavaScript/TypeScript, 1:1 from source) and #5
 (every module must have a clear boundary and a formal contract).
 
@@ -39,6 +39,7 @@ recorded, and when the run ends.
   "exports": [
     "WorkflowExecutionEngine",
     "getConnectedNodes",
+    "getHighestNode",
     "getParentNodes",
     "mapConnectionsByDestination"
   ],
@@ -47,6 +48,9 @@ recorded, and when the run ends.
     "runWorkflow",
     "getParentNodes",
     "numberOfInputs",
+    "getHighestNode",
+    "handleExecuteOnce",
+    "ensureInputData",
     "maxExecutionsFor",
     "assignPairedItems",
     "mainOutputCount",
@@ -170,6 +174,9 @@ Precedence (`workflow-execute.ts:2383-2400`): `canceled` > `error` > `success`.
 | G20 | Resuming (`processRunExecutionData`) clears `waitTill`, marks the parked node `disabled` and pops its `waiting` entry, so the node does not run again and does not look like it ran twice | `:1285-1302`, `:1400-1412` | resume ×2 + equivalence |
 | G21 | A `disabled` node is never executed — not even for pin data — and passes its first main input through | `:909-920`, `:1199-1201` | disabled-node ×2 + equivalence |
 | G22 | A node whose output object is `null`/`undefined` (as opposed to empty) records **no** `runData` entry and ends its branch, unless it errored or parked | `:1769-1774` | null-output test |
+| G23 | A node with `executeOnce: true` is handed only the first item of every input slot | `:990-1002`, `:1219` | executeOnce ×2 + equivalence |
+| G24 | A node is only run when its inputs are ready; a slot whose ancestors are all disabled never waits, and an entry that is not ready goes back on the stack | `:2315-2348`, `:1580-1584`, `workflow.ts:492-568` | ensureInputData ×3 + graph equivalence |
+| G25 | The same `node:runIndex` arriving twice in a row aborts the run with `ApplicationError('Stopped execution because it seems to be in an endless loop')` instead of spinning | `:1564-1568` | endless-loop test |
 
 ## 5. Determinism
 
@@ -224,6 +231,6 @@ sources; the contract test verifies that each cited range still exists inside th
 
 | Command | Covers |
 | :--- | :--- |
-| `npm run engine:test` | this contract (82 cases: 59 unit + 3 graph-port equivalence + 13 against the real engine + 7 contract conformance) |
+| `npm run engine:test` | this contract (91 cases: 66 unit + 4 graph-port equivalence + 14 against the real engine + 7 contract conformance) |
 | `bash tests/integration/run_gate.sh --offline-only` | stage 3 runs the suite above; stages 1-2 run the other LEGO gates |
 | `node tests/compatibility/contract_conformance.mjs` | asserts this contract file is present |

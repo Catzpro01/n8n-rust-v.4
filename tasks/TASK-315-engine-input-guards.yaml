@@ -1,0 +1,79 @@
+id: TASK-315-engine-input-guards
+agent: arena-worker (session arena/01a0aee7-n8n-rust-v-4)
+lego: workflow
+module: reconstructed-engine
+phase: 2
+
+# Ninth self-assigned task of this session (STANDING-WORKER-PROTOCOL §2 non-blocking).
+# dynamic_task_pool still unreachable (Supabase -> curl HTTP 000; api.github.com -> 200), so no
+# pool read and no vote — recorded here rather than skipped silently.
+
+trigger: >
+  Inventorying every method of the reference WorkflowExecute against the reconstruction showed four
+  input-shaping guards still missing: handleExecuteOnce (:990-1002), ensureInputData
+  (:2315-2348, called at :1580-1584), the Workflow#getHighestNode it depends on
+  (workflow.ts:492-568), and the endless-loop guard that makes the "not ready yet" path safe
+  (:1564-1568). Without them a node with `executeOnce` sees every item, and a node can be run
+  before its inputs exist.
+
+allowed_paths:
+  - packages/reconstructed-engine/**
+  - contracts/execution-engine.contract.md
+  - tasks/TASK-315-engine-input-guards.yaml
+  - results/TASK-315-engine-input-guards.md
+  - docs/isolation/evidence/**        # rewritten by npm run verify, tracked by design
+
+forbidden_paths:
+  - reference/n8n/**                  # read-only; gate G04 re-verifies 15050 files
+  - crates/**
+  - apps/**
+  - packages/workflow-lego/src/**
+  - packages/editor-ui/**             # rule 5: the UI stays untouched
+
+operations:
+  - name: port_getHighestNode
+    args:
+      file: packages/reconstructed-engine/graph.mjs
+      reference: "workflow.ts:492-568"
+      detail: >
+        root-most non-disabled ancestors of a node, per input slot; shared checkedNodes as cycle
+        protection; a node that is itself `disabled === false` is its own highest node.
+  - name: port_handleExecuteOnce
+    args: { reference: "workflow-execute.ts:990-1002, call site :1219" }
+  - name: port_ensureInputData
+    args: { reference: "workflow-execute.ts:2315-2348, call site :1580-1584" }
+  - name: port_endless_loop_guard
+    args:
+      reference: "workflow-execute.ts:1564-1568"
+      why: "without it the ensureInputData 'put it back and try later' path can spin forever"
+  - name: extend_contract
+    args:
+      guarantees: [G23, G24, G25]
+      surface: "+getHighestNode export, +getHighestNode/handleExecuteOnce/ensureInputData methods"
+
+verification:
+  port_equivalence: >
+    graph-equivalence.test.mjs compares getHighestNode against the REAL Workflow#getHighestNode in
+    n8n-workflow 2.9.1 over 6 fixtures (linear, linear with explicit disabled:false, diamond with a
+    disabled branch, all-parents-disabled, 3-way fan-in, cycle) x every node x connectionIndex
+    {undefined,0,1,2} — the test asserts > 50 comparisons were made.
+  engine_suite: "npm run engine:test -> 91 tests, 91 pass, 0 skipped, exit 0 (66 unit + 4 graph + 14 real engine + 7 contract)"
+  negative_controls:
+    - "executeOnce narrowing removed -> not ok 67, 91 (89/91); restored -> 91/91"
+    - "ensureInputData call removed -> not ok 73 (90/91); restored -> 91/91"
+  findings:
+    - "n8n-workflow 2.9.1's Workflow constructor takes `nodes` as an ARRAY, not the by-name map of later versions (first attempt: 'parameters.nodes is not iterable')"
+    - "a slot with no incoming connection at all counts as 'no valid incoming node' (:2317-2325) and the node runs as-is — the first fixture for ensureInputData was built on the wrong assumption"
+    - "the release pass replaces null slots with [] (:2144-2152), so ensureInputData's not-ready branches are unreachable in a normal run; the endless-loop guard is defensive and is exercised end-to-end through a restored stack entry carrying a null slot"
+  central_harness: "contract_conformance.mjs -> 22/22 exit 0"
+  offline_gate: "run_gate.sh --offline-only -> stages 1-3 PASS (22/22, AUDIT PASS, 91/91), live NOT RUN -> INCONCLUSIVE"
+  lego_gate: "npm run verify -> 11/11 PASS, BEHAVIOR CHANGE: NONE DETECTED"
+  rust_guard: "npm run rust:guard -> exit 0"
+  legacy_demo: "node packages/reconstructed-engine/test-run.mjs -> exit 0"
+
+merge_condition:
+  - engine_suite_pass
+  - port_equivalence_pass
+  - negative_controls_pass
+  - no_reference_change
+  - no_ui_change

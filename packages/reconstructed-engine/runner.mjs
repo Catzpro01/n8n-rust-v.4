@@ -15,6 +15,11 @@
  *     :387-403   prepareWaitingToExecution(): one `null` per input slot
  *     :909-920   handleDisabledNode(): a disabled node is not executed — its first main input is
  *                passed through (used on resume, and by `:1199-1201` in runNode)
+ *     :990-1002  handleExecuteOnce(): `executeOnce` narrows every input slot to its first item
+ *     :1219      …and it is applied right after the disabled check, before the node runs
+ *     :1564-1568 the same `node:runIndex` twice in a row aborts the run ('endless loop')
+ *     :1580-1584 ensureInputData(): a node whose inputs are not ready goes back on the stack
+ *     :2315-2348 ensureInputData(): a slot whose ancestors are all disabled never waits
  *     :1285-1302 handleWaitingState(): resuming clears waitTill, disables the node on top of the
  *                stack and pops its last runData entry so it does not look like it ran twice
  *     :1400-1412 processRunExecutionData(): the resume entry point
@@ -38,13 +43,14 @@
  *     :2391-2396 status 'waiting' when waitTill is set (after 'canceled' and 'error')
  *     :2435-2436 the run carries `waitTill`
  *     :2079-2130 stack drained but waiting nodes remain → run them with [] for the missing inputs
- *     :2383-2400 final status: 'error' when executionError is set, otherwise 'success'
+ *     :2383-2400 final status precedence: 'canceled' > 'error' > 'waiting' > 'success'
  *     :2463-2562 handleNodeErrorOutput(): items carrying an error move to the LAST main output
  *   reference/n8n/packages/workflow/src/common/map-connections-by-destination.ts:5-49
  *   reference/n8n/packages/workflow/src/interfaces.ts:2675-2691  ITaskStartedData / ITaskData
  *   reference/n8n/packages/workflow/src/execution-status.ts:1-11 ExecutionStatusList
  *   reference/n8n/packages/workflow/src/node-helpers.ts:1140-1196 getNodeOutputs(): with
  *                onError === 'continueErrorOutput' an `error` main output is appended
+ *   reference/n8n/packages/workflow/src/workflow.ts:492-568  Workflow#getHighestNode
  *   reference/n8n/packages/workflow/src/run-execution-data-factory.ts:54-89 IRunExecutionData
  *   reference/n8n/packages/core/src/execution-engine/node-execution-context/base-execute-context.ts:107-112
  *                putExecutionToWait(waitTill) — how a node parks the execution
@@ -58,9 +64,9 @@
  *     safety net so a graph that slipped through cannot hang the process: see maxExecutionsFor().
  */
 
-import { getConnectedNodes, getParentNodes } from './graph.mjs';
+import { getConnectedNodes, getHighestNode, getParentNodes } from './graph.mjs';
 
-export { getConnectedNodes, getParentNodes };
+export { getConnectedNodes, getHighestNode, getParentNodes };
 
 const MAIN = 'main';
 
@@ -156,6 +162,73 @@ export class WorkflowExecutionEngine {
 	/** `workflow-execute.ts:421-423` — number of input SLOTS, not number of incoming edges. */
 	numberOfInputs(nodeName) {
 		return this.connectionsByDestinationNode[nodeName]?.[MAIN]?.length ?? 0;
+	}
+
+	/** `workflow.ts:492-568` — the root-most non-disabled ancestors feeding `nodeName`. */
+	getHighestNode(nodeName, nodeConnectionIndex) {
+		return getHighestNode(this.nodes, this.connectionsByDestinationNode, nodeName, nodeConnectionIndex);
+	}
+
+	/**
+	 * `workflow-execute.ts:990-1002` — 1:1 port of `handleExecuteOnce` (called at `:1219`).
+	 * A node with `executeOnce: true` is handed only the FIRST item of every input slot.
+	 */
+	handleExecuteOnce(node, inputData) {
+		if (node.executeOnce === true) {
+			// If node should be executed only once so use only the first input item
+			const newInputData = {};
+			for (const connectionType of Object.keys(inputData)) {
+				newInputData[connectionType] = inputData[connectionType].map((input) => input && input.slice(0, 1));
+			}
+			return newInputData;
+		}
+		return inputData;
+	}
+
+	/**
+	 * `workflow-execute.ts:2315-2348` — 1:1 port of `ensureInputData` (called at `:1580-1584`).
+	 *
+	 * Decides whether a node may run now:
+	 *   - an input slot whose ancestors are all disabled never receives data, so the node runs
+	 *     as-is instead of waiting forever;
+	 *   - with no `main` data at all (or, in the legacy `'v0'` order, a missing/`null` slot) the
+	 *     entry goes back on the stack and the caller skips this node for now.
+	 *
+	 * @returns {boolean} false = not ready; the entry was pushed back onto `stack`
+	 */
+	ensureInputData(node, executionData, stack) {
+		const inputConnections = this.connectionsByDestinationNode[node.name]?.[MAIN] ?? [];
+		for (let connectionIndex = 0; connectionIndex < inputConnections.length; connectionIndex++) {
+			const highestNodes = this.getHighestNode(node.name, connectionIndex);
+			if (highestNodes.length === 0) {
+				// If there is no valid incoming node (if all are disabled)
+				// then ignore that it has inputs and simply execute it as it is without
+				// any data
+				return true;
+			}
+
+			if (!Object.hasOwn(executionData.data, MAIN)) {
+				// ExecutionData does not even have the connection set up so can
+				// not have that data, so add it again to be executed later
+				stack.push(executionData);
+				return false;
+			}
+
+			if (this.executionOrder !== 'v1') {
+				// Check if it has the data for all the inputs
+				// The most nodes just have one but merge node for example has two and data
+				// of both inputs has to be available to be able to process the node.
+				if (
+					executionData.data.main.length < connectionIndex ||
+					executionData.data.main[connectionIndex] === null
+				) {
+					// Does not have the data of the connections so add back to stack
+					stack.push(executionData);
+					return false;
+				}
+			}
+		}
+		return true;
 	}
 
 	/** `workflow-execute.ts:189-191` — 'v1' is the default in 2.9.4. */
@@ -591,6 +664,8 @@ export class WorkflowExecutionEngine {
 		let stopped = false;
 		let timedOut = false;
 		let paused = false;
+		/** `workflow-execute.ts:1564-1568` — the reference's own endless-loop protection. */
+		let lastExecutionTry;
 
 		for (;;) {
 			while (stack.length > 0) {
@@ -617,8 +692,34 @@ export class WorkflowExecutionEngine {
 					});
 					continue;
 				}
-				executionCounts.set(node.name, alreadyRun + 1);
 				const runIndex = alreadyRun;
+
+				/**
+				 * `:1564-1568` — if the very same `node:runIndex` comes around twice in a row the
+				 * reference aborts the execution instead of spinning. This is what keeps the
+				 * `ensureInputData` "put it back and try later" path from looping forever.
+				 */
+				const currentExecutionTry = `${node.name}:${runIndex}`;
+				if (currentExecutionTry === lastExecutionTry) {
+					executionError = {
+						name: 'ApplicationError',
+						message: 'Stopped execution because it seems to be in an endless loop',
+						node: node.name,
+					};
+					stopped = true;
+					break;
+				}
+
+				/**
+				 * `:1580-1584` — a node whose inputs are not ready goes back on the stack and is
+				 * skipped for now; `ensureInputData` is what pushed it back.
+				 */
+				if (!this.ensureInputData(node, executionData, stack)) {
+					lastExecutionTry = currentExecutionTry;
+					continue;
+				}
+
+				executionCounts.set(node.name, alreadyRun + 1);
 
 				/**
 				 * `workflow-execute.ts:1517-1552` — before a node runs, every INPUT item is
@@ -643,7 +744,6 @@ export class WorkflowExecutionEngine {
 				executionData.data = reStamped;
 
 				const inputData = executionData.data ?? { main: [] };
-				const items = inputData.main?.[0] ?? [];
 				const handler = this.nodeTypes.get(node.type);
 
 				const startTime = Date.now();
@@ -671,6 +771,14 @@ export class WorkflowExecutionEngine {
 					waitBetweenTries = Math.min(5000, Math.max(0, node.waitBetweenTries || 1000));
 				}
 
+				/**
+				 * `:1219` — `executeOnce` narrows every input slot to its first item before the node
+				 * sees it, so the handler and `ctx.inputData` both get the narrowed data.
+				 */
+				const onceData = this.handleExecuteOnce(node, inputData);
+				/** What the node receives: the narrowed data, exactly like `connectionInputData`. */
+				const items = onceData.main?.[0] ?? [];
+
 				/** One attempt — pin data first (`:1632-1637`), otherwise the registered handler. */
 				const runNodeOnce = async () => {
 					/**
@@ -689,7 +797,7 @@ export class WorkflowExecutionEngine {
 					}
 					const produced = handler
 						? await handler(node, items, {
-								inputData: inputData.main ?? [],
+								inputData: onceData.main ?? [],
 								source: taskData.source,
 								runIndex,
 								/**
@@ -929,7 +1037,6 @@ export class WorkflowExecutionEngine {
 			if (!this.releaseWaitingNodes(ctx)) break;
 		}
 
-		/** workflow-execute.ts:2383-2400 — 'canceled' takes precedence, then 'error', then 'success'. */
 		/**
 		 * `workflow-execute.ts:2383-2400` — status precedence: `canceled` (timeout/cancel) beats
 		 * `error`, which beats `waiting`, which beats `success`.

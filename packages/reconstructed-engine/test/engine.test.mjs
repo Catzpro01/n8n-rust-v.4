@@ -1233,3 +1233,168 @@ test('CONFORMANCE a disabled trigger is not chosen as the start node (workflow.t
 
 	assert.equal(engine.findStartNode(), 'Code Node');
 });
+
+/* ------------------------------------------------------------------ *
+ * executeOnce (workflow-execute.ts:990-1002, :1219)
+ * ------------------------------------------------------------------ */
+
+const manyItemsFixture = (extra = {}) => ({
+	nodes: [
+		{ name: 'Manual Trigger', type: 'n8n-nodes-base.manualTrigger', parameters: {} },
+		{ name: 'Only Once', type: 'n8n-nodes-base.code', parameters: {}, ...extra },
+	],
+	connections: { 'Manual Trigger': { main: [[conn('Only Once')]] } },
+});
+
+const manyItemsEngine = (extra = {}) => {
+	const engine = new WorkflowExecutionEngine(manyItemsFixture(extra));
+	const seen = [];
+	engine.registerNodeType('n8n-nodes-base.manualTrigger', async () => [
+		item({ n: 1 }),
+		item({ n: 2 }),
+		item({ n: 3 }),
+	]);
+	engine.registerNodeType('n8n-nodes-base.code', async (_node, items, ctx) => {
+		seen.push({ items: items.length, slots: ctx.inputData.map((slot) => slot?.length ?? null) });
+		return items;
+	});
+	return { engine, seen };
+};
+
+test('CONFORMANCE executeOnce: the node is handed only the first item of every input slot (:990-1002)', { timeout: 5000 }, async () => {
+	const { engine, seen } = manyItemsEngine({ executeOnce: true });
+	const result = await engine.runWorkflow();
+
+	assert.deepEqual(seen, [{ items: 1, slots: [1] }]);
+	assert.deepEqual(payload(taskOf(result, 'Only Once').data.main[0]), [{ n: 1 }]);
+});
+
+test('CONFORMANCE executeOnce off: every item reaches the node (control)', { timeout: 5000 }, async () => {
+	const { engine, seen } = manyItemsEngine();
+	const result = await engine.runWorkflow();
+
+	assert.deepEqual(seen, [{ items: 3, slots: [3] }]);
+	assert.deepEqual(payload(taskOf(result, 'Only Once').data.main[0]), [{ n: 1 }, { n: 2 }, { n: 3 }]);
+});
+
+test('CONFORMANCE handleExecuteOnce narrows every slot and keeps null slots null (:990-1002)', { timeout: 5000 }, async () => {
+	const engine = new WorkflowExecutionEngine(manyItemsFixture());
+	const narrowed = engine.handleExecuteOnce(
+		{ name: 'X', executeOnce: true },
+		{ main: [[item({ a: 1 }), item({ a: 2 })], null, [item({ b: 1 }), item({ b: 2 })]], ai_tool: [[item({ t: 1 }), item({ t: 2 })]] },
+	);
+
+	assert.deepEqual(payload(narrowed.main[0]), [{ a: 1 }]);
+	assert.equal(narrowed.main[1], null, 'a null slot stays null');
+	assert.deepEqual(payload(narrowed.main[2]), [{ b: 1 }]);
+	assert.deepEqual(payload(narrowed.ai_tool[0]), [{ t: 1 }], 'every connection type is narrowed, not just main');
+
+	const untouched = engine.handleExecuteOnce({ name: 'X' }, { main: [[item({ a: 1 }), item({ a: 2 })]] });
+	assert.equal(untouched.main[0].length, 2, 'without the flag the data is returned as-is');
+});
+
+/* ------------------------------------------------------------------ *
+ * ensureInputData / getHighestNode (workflow-execute.ts:2315-2348, workflow.ts:492-568)
+ * ------------------------------------------------------------------ */
+
+test('CONFORMANCE getHighestNode finds the root-most non-disabled ancestors (workflow.ts:492-568)', { timeout: 5000 }, async () => {
+	const engine = new WorkflowExecutionEngine({
+		nodes: [
+			{ name: 'Root', type: 'n8n-nodes-base.manualTrigger', parameters: {} },
+			{ name: 'Mid', type: 'n8n-nodes-base.code', parameters: {}, disabled: true },
+			{ name: 'Leaf', type: 'n8n-nodes-base.set', parameters: {} },
+		],
+		connections: {
+			Root: { main: [[conn('Mid')]] },
+			Mid: { main: [[conn('Leaf')]] },
+		},
+	});
+
+	assert.deepEqual(engine.getHighestNode('Leaf'), ['Root'], 'a disabled node in between is skipped');
+	assert.deepEqual(engine.getHighestNode('Root'), [], 'a root has no incoming connection');
+});
+
+test('CONFORMANCE ensureInputData: a slot whose ancestors are all disabled never waits (:2317-2325)', { timeout: 5000 }, async () => {
+	const engine = new WorkflowExecutionEngine({
+		nodes: [
+			{ name: 'Root', type: 'n8n-nodes-base.manualTrigger', parameters: {}, disabled: true },
+			{ name: 'Leaf', type: 'n8n-nodes-base.set', parameters: {} },
+		],
+		connections: { Root: { main: [[conn('Leaf')]] } },
+	});
+
+	const stack = [];
+	const ready = engine.ensureInputData(engine.nodes.get('Leaf'), { data: {} }, stack);
+
+	assert.equal(ready, true, 'it runs as-is instead of waiting for data that can never arrive');
+	assert.deepEqual(stack, [], 'and it is not pushed back');
+});
+
+test('CONFORMANCE ensureInputData: in the legacy order a missing slot puts the entry back (:2334-2347)', { timeout: 5000 }, async () => {
+	// Both slots need a real ancestor: a slot with no incoming connection at all counts as
+	// "no valid incoming node" and the node runs as-is (:2317-2325).
+	const engine = new WorkflowExecutionEngine({
+		nodes: [
+			{ name: 'Root A', type: 'n8n-nodes-base.manualTrigger', parameters: {} },
+			{ name: 'Root B', type: 'n8n-nodes-base.manualTrigger', parameters: {} },
+			{ name: 'Merge', type: 'n8n-nodes-base.code', parameters: {} },
+		],
+		connections: {
+			'Root A': { main: [[conn('Merge', 0)]] },
+			'Root B': { main: [[conn('Merge', 1)]] },
+		},
+		settings: { executionOrder: 'v0' },
+	});
+
+	const entry = { node: engine.nodes.get('Merge'), data: { main: [null, [item({ v: 1 })]] } };
+	const stack = [];
+
+	assert.equal(engine.ensureInputData(entry.node, entry, stack), false, 'slot 0 is still null');
+	assert.deepEqual(stack, [entry], ':2344 — the entry goes back on the stack');
+
+	const complete = { node: entry.node, data: { main: [[item({ a: 1 })], [item({ v: 1 })]] } };
+	const stack2 = [];
+	assert.equal(engine.ensureInputData(complete.node, complete, stack2), true);
+	assert.deepEqual(stack2, []);
+});
+
+test('CONFORMANCE a stack entry that never becomes ready aborts the run instead of spinning (:1564-1568)', { timeout: 10000 }, async () => {
+	// Restored state whose entry has a null slot in the legacy order: ensureInputData keeps
+	// putting it back, and the reference's own endless-loop guard is what stops it.
+	const engine = new WorkflowExecutionEngine(
+		{
+			nodes: [
+				{ name: 'Root A', type: 'n8n-nodes-base.manualTrigger', parameters: {} },
+				{ name: 'Root B', type: 'n8n-nodes-base.manualTrigger', parameters: {} },
+				{ name: 'Merge', type: 'n8n-nodes-base.code', parameters: {} },
+			],
+			connections: {
+				'Root A': { main: [[conn('Merge', 0)]] },
+				'Root B': { main: [[conn('Merge', 1)]] },
+			},
+			settings: { executionOrder: 'v0' },
+		},
+		{
+			version: 1,
+			resultData: { runData: {}, lastNodeExecuted: undefined },
+			executionData: {
+				nodeExecutionStack: [
+					{ node: { name: 'Merge', type: 'n8n-nodes-base.code', parameters: {} }, data: { main: [null, [item({ v: 1 })]] }, source: { main: [null, null] } },
+				],
+				waitingExecution: {},
+				waitingExecutionSource: {},
+			},
+		},
+	);
+	engine.registerNodeType('n8n-nodes-base.code', async (_n, items) => items);
+
+	const result = await engine.processRunExecutionData();
+
+	assert.equal(result.status, 'error');
+	assert.equal(
+		result.resultData.error.message,
+		'Stopped execution because it seems to be in an endless loop',
+		'workflow-execute.ts:1566',
+	);
+	assert.equal(result.resultData.runData.Merge, undefined, 'the node never ran');
+});

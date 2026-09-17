@@ -4,6 +4,7 @@
  * `packages/reconstructed-engine/graph.mjs` claims to be a 1:1 port of
  *   reference/n8n/packages/workflow/src/common/get-connected-nodes.ts
  *   reference/n8n/packages/workflow/src/common/get-parent-nodes.ts
+ *   reference/n8n/packages/workflow/src/workflow.ts:492-568  (Workflow#getHighestNode)
  * and `runner.mjs` claims the same for
  *   reference/n8n/packages/workflow/src/common/map-connections-by-destination.ts
  *
@@ -23,6 +24,7 @@ import { fileURLToPath } from 'node:url';
 
 import {
 	getConnectedNodes as mineConnected,
+	getHighestNode as mineHighest,
 	getParentNodes as mineParents,
 	mapConnectionsByDestination as mineByDestination,
 } from '../runner.mjs';
@@ -126,4 +128,71 @@ test('PORT getConnectedNodes matches for connectionType main/ALL/ALL_NON_MAIN an
 			}
 		}
 	}
+});
+
+/* ------------------------------------------------------------------ *
+ * getHighestNode — workflow.ts:492-568, compared against a real Workflow
+ * ------------------------------------------------------------------ */
+
+/**
+ * `getHighestNode` is a Workflow method and depends on the `disabled` flag of every node it
+ * visits, so the comparison needs real Workflow instances and explicit `disabled` values
+ * (`undefined` and `false` are NOT the same to the reference: `:498` tests `=== false`).
+ */
+const HIGHEST_FIXTURES = {
+	linear: { connections: GRAPHS.linear, nodes: { A: {}, B: {}, C: {}, D: {} } },
+	linearDisabledFlag: {
+		connections: GRAPHS.linear,
+		nodes: { A: { disabled: false }, B: { disabled: false }, C: { disabled: false }, D: { disabled: false } },
+	},
+	diamondDisabledBranch: {
+		connections: GRAPHS.diamond,
+		nodes: { A: {}, B: { disabled: true }, C: {}, D: {} },
+	},
+	allParentsDisabled: {
+		connections: { A: { main: [[edge('C')]] }, B: { main: [[edge('C')]] } },
+		nodes: { A: { disabled: true }, B: { disabled: true }, C: {} },
+	},
+	fanInThree: { connections: GRAPHS.fanInThree, nodes: { M: {}, A: {}, B: {}, C: {} } },
+	cycle: { connections: GRAPHS.cycle, nodes: { A: {}, B: {}, C: {} } },
+};
+
+const realWorkflow = (fixture) =>
+	new real.Workflow({
+		id: 'graph-equivalence',
+		name: 'graph-equivalence',
+		active: false,
+		// n8n-workflow 2.9.1 takes the node list as an array (not the by-name map of later versions)
+		nodes: Object.entries(fixture.nodes).map(([name, extra]) => ({
+			name,
+			type: 'n8n-nodes-base.noOp',
+			typeVersion: 1,
+			position: [0, 0],
+			parameters: {},
+			...extra,
+		})),
+		connections: structuredClone(fixture.connections),
+		nodeTypes: { getByNameAndVersion: () => undefined }, // getHighestNode never touches it
+		settings: {},
+	});
+
+test('PORT getHighestNode is identical to Workflow#getHighestNode in n8n-workflow 2.9.1', { timeout: 60000, skip: skipReason }, () => {
+	let compared = 0;
+	for (const [name, fixture] of Object.entries(HIGHEST_FIXTURES)) {
+		const workflow = realWorkflow(fixture);
+		const nodes = new Map(Object.entries(fixture.nodes).map(([n, extra]) => [n, { name: n, ...extra }]));
+		const byDestination = real.mapConnectionsByDestination(structuredClone(fixture.connections));
+
+		for (const node of Object.keys(fixture.nodes)) {
+			for (const connectionIndex of [undefined, 0, 1, 2]) {
+				assert.deepEqual(
+					mineHighest(nodes, structuredClone(byDestination), node, connectionIndex),
+					workflow.getHighestNode(node, connectionIndex),
+					`getHighestNode("${node}", ${connectionIndex}) differs on fixture "${name}"`,
+				);
+				compared += 1;
+			}
+		}
+	}
+	assert.ok(compared > 50, `expected a meaningful comparison, made ${compared}`);
 });
