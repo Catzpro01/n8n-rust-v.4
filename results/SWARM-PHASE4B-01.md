@@ -106,3 +106,19 @@ Tes baru: `parseAcceptLanguage: RFC 7231 — q-values outside 0..1 or malformed 
 dan `selectPluralCategory: CLDR fraction handling (v > 0 → never one/few/many)`.
 Bukti ulang pasca-koreksi: `run-lego-tests.sh` **33/33 PASS** · `tsc` 0 errors ·
 `verify:fast` 10/10 PASS · BEHAVIOR CHANGE: NONE.
+
+### ADDENDUM R2 — Koreksi angka & catatan minor review APPROVE (PR #20, 2026-09-17 ±21:05 UTC)
+
+1. **Koreksi arsip**: suite i18n di `test/06-phase4b-i18n.test.mjs` berisi **15 test()**
+   (bukan 12 seperti tertulis di atas — 12 awal + 2 regresi R1 + 1 regresi R2); total
+   suite resmi menjadi **34/34 PASS**.
+2. **Catatan A (bug nyata)**: operand `v` kini dihitung via `visibleFractionDigits()`
+   yang benar untuk notasi eksponensial (`1e-7` → v=7; kode lama menghasilkan `many`
+   untuk `ru(1e-7)` — tes baru membuktikannya gagal di kode lama).
+3. **Catatan B**: entri `q=0` kini dibuang dari hasil `parseAcceptLanguage`
+   (RFC 7231 "not acceptable"), tidak bisa lagi dipilih `resolveLocale`.
+4. **Catatan C**: `normalizeLocaleTag` hanya mengubah kapitalisasi subtag huruf murni
+   (region 2 huruf, script 4 huruf); variant numerik (`1901`) & singleton utuh.
+
+Bukti R2: `run-lego-tests.sh` **34/34 PASS** · `tsc` 0 errors · `verify:fast`
+10/10 PASS · BEHAVIOR CHANGE: NONE.

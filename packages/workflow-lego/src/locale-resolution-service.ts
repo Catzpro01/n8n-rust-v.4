@@ -46,6 +46,8 @@ export function parseAcceptLanguage(header: string): AcceptLanguageEntry[] {
 			quality = q;
 		}
 		if (rejected) continue;
+		// RFC 7231: q=0 berarti "not acceptable" — entri tidak boleh ikut negosiasi
+		if (quality === 0) continue;
 		out.push({ locale: normalizeLocaleTag(tag), quality });
 	}
 	// stabil: q desc, urutan asal sebagai tie-breaker
@@ -55,15 +57,18 @@ export function parseAcceptLanguage(header: string): AcceptLanguageEntry[] {
 		.map(({ entry }) => entry);
 }
 
-/** Normalisasi tag BCP-47 sederhana: language lowercase, region uppercase. */
+/** Normalisasi tag BCP-47 sederhana: language lowercase, region uppercase
+ *  (hanya subtag 2 huruf murni), script title-case (hanya 4 huruf murni);
+ *  subtag variant numerik (mis. `1901`) dan singleton dibiarkan apa adanya. */
 export function normalizeLocaleTag(tag: string): string {
 	const parts = tag.trim().split('-');
 	if (parts.length === 0) return tag.trim();
 	const normalized = parts.map((part, i) => {
 		if (i === 0) return part.toLowerCase();
-		if (part.length === 4) return part[0].toUpperCase() + part.slice(1).toLowerCase(); // script
-		if (part.length === 2) return part.toUpperCase(); // region
-		return part;
+		if (part.length === 4 && /^[A-Za-z]{4}$/.test(part))
+			return part[0].toUpperCase() + part.slice(1).toLowerCase(); // script
+		if (part.length === 2 && /^[A-Za-z]{2}$/.test(part)) return part.toUpperCase(); // region
+		return part; // variant numerik, singleton, extension — tidak diubah
 	});
 	return normalized.join('-');
 }
@@ -110,6 +115,25 @@ export function resolveFromAcceptLanguage(
 export type PluralCategory = 'zero' | 'one' | 'two' | 'few' | 'many' | 'other';
 
 /**
+ * Jumlah digit pecahan yang terlihat (operand `v` CLDR), benar juga untuk
+ * notasi eksponensial: `1e-7` → 7, `1.5e-3` → 4, bilangan bulat → 0.
+ */
+export function visibleFractionDigits(abs: number): number {
+	if (!Number.isFinite(abs) || Number.isInteger(abs)) return 0;
+	const s = String(abs);
+	const expIndex = s.search(/e/i);
+	if (expIndex === -1) {
+		const dot = s.indexOf('.');
+		return dot === -1 ? 0 : s.length - dot - 1;
+	}
+	const mantissa = s.slice(0, expIndex);
+	const exponent = Number(s.slice(expIndex + 1));
+	const dot = mantissa.indexOf('.');
+	const mantissaFrac = dot === -1 ? 0 : mantissa.length - dot - 1;
+	return Math.max(0, mantissaFrac - exponent);
+}
+
+/**
  * Aturan plural kardinal CLDR untuk keenam locale yang didukung.
  * Sesuai CLDR: pecahan desimal (v > 0) tidak pernah `one/few/...` pada
  * en/ru (jatuh ke `other`), dan kategori exact-match/range ar hanya berlaku
@@ -119,8 +143,7 @@ export function selectPluralCategory(n: number, locale: SupportedLocale): Plural
 	if (!Number.isFinite(n)) return 'other';
 	const abs = Math.abs(n);
 	const i = Math.floor(abs); // integer digits
-	const dot = String(abs).indexOf('.');
-	const v = dot === -1 ? 0 : String(abs).length - dot - 1; // visible fraction digits
+	const v = visibleFractionDigits(abs); // visible fraction digits
 	switch (locale) {
 		case 'id':
 		case 'jv':

@@ -115,17 +115,22 @@ test('parseAcceptLanguage: RFC 7231 — q-values outside 0..1 or malformed are r
 		parseAcceptLanguage('en;q=1.000').map((e) => `${e.locale}:${e.quality}`),
 		['en:1'],
 	);
-	// q=0 sah (artinya "tidak diinginkan")
+	// q=0 = "not acceptable" (RFC 7231) → dibuang, tidak boleh ikut negosiasi
+	assert.deepEqual(parseAcceptLanguage('ru;q=0'), []);
 	assert.deepEqual(
-		parseAcceptLanguage('ru;q=0').map((e) => `${e.locale}:${e.quality}`),
-		['ru:0'],
+		parseAcceptLanguage('ru;q=0,en;q=0.5').map((e) => `${e.locale}:${e.quality}`),
+		['en:0.5'],
 	);
+	assert.equal(resolveFromAcceptLanguage('ru;q=0', 'id'), 'id');
 });
 
 test('normalizeLocaleTag: language lowercase, region uppercase, script title-case', () => {
 	assert.equal(normalizeLocaleTag('ID-id'), 'id-ID');
 	assert.equal(normalizeLocaleTag('ZH-hans-cn'), 'zh-Hans-CN');
 	assert.equal(normalizeLocaleTag('EN'), 'en');
+	// subtag variant numerik & singleton tidak diutak-atik
+	assert.equal(normalizeLocaleTag('de-DE-1901'), 'de-DE-1901');
+	assert.equal(normalizeLocaleTag('en-x-custom'), 'en-x-custom');
 });
 
 test('resolveLocale: exact, region→language fallback, case-insensitive, default fallback', () => {
@@ -196,6 +201,17 @@ test('selectPluralCategory: CLDR fraction handling (v > 0 → never one/few/many
 	// input non-finite tidak pernah melempar
 	assert.equal(selectPluralCategory(Number.NaN, 'ru'), 'other');
 	assert.equal(selectPluralCategory(Number.POSITIVE_INFINITY, 'en'), 'other');
+});
+
+test('selectPluralCategory: notasi eksponensial tetap menghitung digit pecahan', () => {
+	// 1e-7 punya 7 digit pecahan → other (bukan many lewat jalan pintas floor lama)
+	assert.equal(selectPluralCategory(1e-7, 'ru'), 'other');
+	assert.equal(selectPluralCategory(2.5e-3, 'en'), 'other');
+	assert.equal(selectPluralCategory(1.5e-3, 'ar'), 'other');
+	// eksponen positif yang bernilai integer tetap mengikuti aturan integer
+	assert.equal(selectPluralCategory(1.5e2, 'ru'), 'many'); // 150 → mod10=0
+	assert.equal(selectPluralCategory(2.1e1, 'en'), 'other'); // 21 ≠ 1
+	assert.equal(selectPluralCategory(1e0, 'en'), 'one'); // 1
 });
 
 test('interpolate: substitutes known params, keeps unknown placeholders', () => {
