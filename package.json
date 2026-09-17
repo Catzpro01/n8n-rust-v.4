@@ -18,7 +18,11 @@
     "connection-lego:test": "npm --prefix packages/connection-lego test",
     "trigger:test": "npm --prefix packages/trigger-lego test",
     "trigger:gate": "node tools/trigger-lego-gate.mjs",
+    "webhook:test": "npm --prefix packages/webhook-lego test",
+    "webhook:gate": "node tools/webhook-lego-gate.mjs",
+    "scheduler:test": "npm --prefix packages/scheduler-lego test",
+    "scheduler:gate": "node tools/scheduler-lego-gate.mjs",
     "reference:fixtures": "node tests/reference/workflow-rust/build-fixtures.mjs --check",
-    "verify:all": "npm run isolation:check && npm run reconstructed-engine:test && npm run execution:gate && npm run connection-lego:test && npm run trigger:gate"
+    "verify:all": "npm run isolation:check && npm run reconstructed-engine:test && npm run execution:gate && npm run connection-lego:test && npm run trigger:gate && npm run webhook:gate && npm run scheduler:gate"
   }
 }

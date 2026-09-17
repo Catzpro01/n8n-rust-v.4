@@ -1,0 +1,31 @@
+id: TASK-408-phase3-scheduler-lego
+agent: arena-worker
+lego: scheduler
+module: cron-registry
+phase: 3
+status: IMPLEMENTED
+reference: n8n@2.9.4
+objective: Reconstruct cron conversion and scheduled task registration behind an injected timer adapter.
+allowed_paths:
+  - packages/scheduler-lego/**
+  - packages/trigger-lego/**
+  - tools/scheduler-lego-gate.mjs
+  - docs/isolation/**
+  - tasks/TASK-408-phase3-scheduler-lego.yaml
+  - results/TASK-408-phase3-scheduler-lego.md
+forbidden_paths:
+  - reference/n8n/**
+  - crates/**
+  - apps/**
+requires:
+  - contracts/scheduler.contract.md
+  - contracts/trigger.contract.md
+verification:
+  - npm --prefix packages/scheduler-lego test
+  - npm --prefix packages/trigger-lego test
+  - node tools/scheduler-lego-gate.mjs
+acceptance:
+  scheduler_tests: 9/9
+  trigger_regression: 9/9
+  gate: 6/6
+  reference_integrity: 15050 files; f8da35180669d798

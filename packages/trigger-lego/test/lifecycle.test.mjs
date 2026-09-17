@@ -112,11 +112,13 @@ test('rejects sub-minute polling and removes poll-only workflow registration', a
   assert.equal(active.isActive('wf'), false);
 });
 
-// TASK-TRIGGER-DIFF-01 / ISSUE-023: defaultToCronExpression is a 1:1 port of
-// reference cron.ts toCronExpression L52-72 — everyX/everyWeek/everyMonth support,
-// custom-expression trim, randomized second (injected here for determinism).
+// TASK-TRIGGER-DIFF-01 / ISSUE-023: the cron-expression surface now lives in
+// packages/scheduler-lego/src/cron.mjs (post-consolidation home of the trigger-lego
+// defaultToCronExpression port) and is a 1:1 port of reference cron.ts toCronExpression
+// L52-72 — everyX/everyWeek/everyMonth, custom-expression trim, randomized second
+// (injected here for determinism).
 test('toCronExpression follows reference cron.ts L52-72 (everyX, trim, random second)', async () => {
-  const { defaultToCronExpression } = await import('../src/active-workflows.mjs');
+  const { toCronExpression: defaultToCronExpression } = await import('../../scheduler-lego/src/cron.mjs');
   const fixed = () => 42;
   assert.equal(defaultToCronExpression({ mode: 'everyMinute' }, fixed), '42 * * * * *');
   assert.equal(defaultToCronExpression({ mode: 'everyHour', minute: 5 }, fixed), '42 5 * * * *');

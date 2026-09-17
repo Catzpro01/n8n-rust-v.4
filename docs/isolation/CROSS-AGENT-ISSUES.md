@@ -1388,3 +1388,31 @@ engine differential 84/0 · activation differential 43/0 · conformance 42/42 ·
 unchanged; the harness compares behavior, not transport/class identity, and treats per-package error taxonomy as a
 documented boundary. **Status: OPEN (ownership unchanged) — behavioral divergence evidence now at zero on the
 shared surface; both instruments remain reproducible.**
+
+**ADDENDUM 2 (TASK-TRIGGER-DIFF-01 merge pass, same day) — consolidation wave landed concurrently: `packages/scheduler-lego` (TASK-408) is now the canonical cron-expression/registry home.**
+
+Merging the peer's `9743f210` (scheduler) + `28fb50ef` (webhook) onto this branch revealed that the
+consolidation ISSUE-023 asked for partially happened in parallel: `packages/scheduler-lego/src/cron.mjs`
+now carries a `toCronExpression` that is semantically identical to the 1:1 port described above
+(random second via injectable `randomInt`, everyX/everyWeek/everyMonth, `.trim()` fallback), plus a
+reference-faithful `toCronKey` (scheduled-task-manager.ts L139-161) and a `ScheduledTaskManager`
+(summaries, duplicate guard via errorReporter **and** `onDuplicate`, isLeader-guarded ticks).
+`packages/trigger-lego/src/scheduled-task-manager.mjs` is now a compatibility re-export seam of
+scheduler-lego, and `trigger-lego/src/active-workflows.mjs` imports `toCronExpression` from
+scheduler-lego (its call site already binds per-item, matching my fix). Resolution taken on this branch:
+
+- conflict in `trigger-lego/src/active-workflows.mjs` resolved in favor of the scheduler-lego consolidation;
+- the 2 regression tests added by TASK-TRIGGER-DIFF-01 were **retargeted** at
+  `packages/scheduler-lego/src/cron.mjs` (the live implementation) — trigger-lego suite still **11/11**;
+- `trigger-lego/src/index.mjs` re-exports `toCronExpression` from scheduler-lego (API parity preserved);
+- peer gates updated for the legitimate suite growth: `tools/trigger-lego-gate.mjs` T03 9→11,
+  `tools/scheduler-lego-gate.mjs` S04 9→11.
+
+Post-merge matrix (this branch, after both fixes): trigger-lego **11/11** · scheduler-lego **9/9** ·
+webhook-lego **10/10** · execution-engine **60/60** · expression-lego 46/46 · connection-lego 52/52 ·
+activation differential **43/0** · engine differential **84/0** · `npm run verify:all` **real exit 0**
+(execution 10/10 · trigger 5/5 · webhook 5/5 · scheduler 6/6) · conformance 42/42 · boundary PASS.
+
+**Status: OPEN (ownership unchanged)** — the remaining open question is now three-way
+(`trigger-lego` vs `execution-engine` activation surface vs `scheduler-lego` registry home), with both
+differential instruments reproducible and the behavioral deltas at zero on every surface measured so far.

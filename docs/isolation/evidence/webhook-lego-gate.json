@@ -1,0 +1,41 @@
+{
+  "generatedAt": "2026-09-17T17:33:21.054Z",
+  "task": "TASK-407-phase3-webhook-lego",
+  "reference": "n8n 2.9.4",
+  "totals": {
+    "passed": 5,
+    "gates": 5
+  },
+  "gates": [
+    {
+      "id": "W01",
+      "name": "zero runtime dependencies",
+      "status": "PASS",
+      "detail": "0 dependencies"
+    },
+    {
+      "id": "W02",
+      "name": "source boundary is import-closed",
+      "status": "PASS",
+      "detail": "5 source files"
+    },
+    {
+      "id": "W03",
+      "name": "webhook routing conformance suite",
+      "status": "PASS",
+      "detail": "10 pass / 0 fail"
+    },
+    {
+      "id": "W04",
+      "name": "reference tree remains pinned",
+      "status": "PASS",
+      "detail": "Reference integrity check: PASS (15050 files, root f8da35180669d798…)"
+    },
+    {
+      "id": "W05",
+      "name": "formal webhook contract present",
+      "status": "PASS",
+      "detail": "4/4 core surfaces contracted"
+    }
+  ]
+}
