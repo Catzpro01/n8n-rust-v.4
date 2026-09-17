@@ -4,6 +4,7 @@ Kumpulan workflow referensi standar untuk menguji kepatuhan validator dan engine
 1. `01-empty-workflow`: Validasi workflow kosong.
 2. `02-one-node`: Validasi satu node trigger tanpa koneksi.
 3. `03-linear`: Validasi alur linear sederhana (Trigger -> Code).
+4. `05-cyclic-invalid`: Fixture negatif untuk memastikan siklus `A -> B -> C -> A` ditolak oleh validator Rust dan harness conformance.
 
 ---
 

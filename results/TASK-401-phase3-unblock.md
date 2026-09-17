@@ -18,8 +18,8 @@ Reference integrity check: PASS (15050 files, root f8da35180669d798…)
 $ node tests/reference/workflow-rust/build-fixtures.mjs --check
 fixtures match the pinned reference: 8 checksum, 6 diff, 6 shape, 6 rename, 9 traversal, 7 startNode cases
 
-$ tools/rust-offline-rig/run.sh test          # offline, cargo 1.88.0, 23 vendored crates
-passed: 60  failed: 0                         # 7 crates
+$ tools/rust-offline-rig/run.sh test          # offline, cargo 1.88.0, vendored closure
+passed: 57  failed: 0                         # 7 crates — post-merge count (see reconciliation below)
 
 $ node tests/compatibility/contract_conformance.mjs
 RESULT: 31/31 CHECKS PASSED                    # incl. inverted CycleDetection for 05-cyclic-invalid
@@ -52,6 +52,29 @@ self-check in `get_highest_nodes` to the lenient form makes fixture case
   ISSUE-006, ISSUE-016 (deferred by design), ISSUE-018 (BLOCKED stage — the failing files
   are Gateway-authored; per path rules only their author or the orchestrator layer may
   correct them; I record the finding rather than rubber-stamp over it).
+
+## Post-merge reconciliation (push collision with fb720dec)
+
+While this task was being written, the same branch gained a parallel increment from
+`arena-agent` (merge `1b8ddd77` + verdict records) which had independently implemented
+the SAME negative fixture (`05-cyclic-invalid` A→B→C→A), the same fail-loud
+conformance idiom, and a tuple-variant `n8n-validation` increment — the latter
+already **peer-APPROVED in writing** via `results/REVIEW-TASK-408-validation-parity.md`
+(3-point rubric, recorded "cargo 57 passed / 0 failed"). Per ASYNC protocol §4 (fix
+history preserved, no duplicate parallel implementations), I adopted the approved
+side for `crates/n8n-validation/src/lib.rs` and `crates/n8n-workflow/tests/conformance.rs`
+wholesale, and layered my contract aggregate (`validate_workflow`/`ValidationCode`/
+`check_*`, contract §3/§7, TASK-306 reference) on top, ported to their API
+(`is_valid_connection_type`, tuple variant). My superseded duplicate lib unit tests
+were dropped; their cases live on in `crates/n8n-validation/tests/validation_fixtures.rs`.
+Verified post-merge: workspace `check` PASS, `test` **57/57 PASS**, conformance 31/31,
+falsification meta-tests re-run.
+
+Separately, protocol rule-sync `0af2f152` (STANDING-WORKER-PROTOCOL §3 HARD BAN 1:
+anti self-approval) arrived mid-flight; the self-vote originally recorded for this
+task is **WITHDRAWN** and retained only as a self-disclosure record
+(`docs/isolation/consensus-votes/disclosure-TASK-401-phase3-unblock_self-record.yaml`).
+This task awaits review votes from OTHER agents.
 
 ## What remains for the next worker (Phase 3 queue)
 

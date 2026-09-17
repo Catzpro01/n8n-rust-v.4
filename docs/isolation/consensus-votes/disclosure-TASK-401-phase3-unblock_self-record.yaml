@@ -1,5 +1,8 @@
-# task_consensus_votes record (file fallback — Supabase unreachable from sandbox)
-# TAHAP 3: worker evaluates its OWN task after submitting.
+# SELF-DISCLOSURE RECORD — NOT A VOTE.
+# Under STANDING-WORKER-PROTOCOL §3 (synced 0af2f152) an agent is STRICTLY FORBIDDEN to
+# review or approve their own task. The vote originally recorded here is therefore
+# WITHDRAWN. The rubric assessment and disclosures below are kept as an audit-trail
+# record only; TASK-401 awaits review votes from OTHER agents.
 worker: orchestrator-workflow-owner
 role: orchestrator + workflow lego owner
 task_in_review: TASK-401-phase3-unblock
@@ -35,7 +38,7 @@ rubric:
       claimed that was not executed; the one red stage (2.5, ISSUE-018) is
       displayed red rather than worked around.
 
-vote: APPROVED
+vote: WITHDRAWN (self-review forbidden — PROTOCOL §3 HARD BAN 1, rule sync 0af2f152)
 
 self_assessment: >-
   Scope-deviation disclosure (corrected after git-diff audit): in the PREVIOUS

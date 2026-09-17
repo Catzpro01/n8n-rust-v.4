@@ -9,16 +9,15 @@ pub enum ValidationError {
     DuplicateNodeName(String),
     #[error("Connection targets non-existent node '{0}'")]
     DanglingConnection(String),
+    #[error("Invalid connection type '{0}'")]
+    InvalidConnectionType(String),
     #[error("Workflow contains cycle involving node '{0}'")]
     CycleDetected(String),
-    #[error("Unknown connection type '{connection_type}' on node '{node}'")]
-    InvalidConnectionType { node: String, connection_type: String },
 }
 
-/// Mirrors `nodeConnectionTypes` in n8n 2.9.4 `packages/workflow/src/interfaces.ts`
-/// (`NodeConnectionTypes`). The connection-type vocabulary every rule check validates against.
-/// Same list as `contracts/validation.contract.md` and the reference implementation
-/// `tests/reference/agent-4/validation/workflow-rules.ts`.
+/// The source-verified `nodeConnectionTypes` vocabulary from n8n 2.9.4.
+/// Keep this list explicit: accepting an arbitrary string would make the Rust
+/// validator diverge from the Validation LEGO's INVALID_CONNECTION_TYPE rule.
 pub const NODE_CONNECTION_TYPES: [&str; 13] = [
     "ai_agent",
     "ai_chain",
@@ -35,30 +34,29 @@ pub const NODE_CONNECTION_TYPES: [&str; 13] = [
     "main",
 ];
 
-pub fn is_connection_type(value: &str) -> bool {
-    NODE_CONNECTION_TYPES.contains(&value)
+pub fn is_valid_connection_type(connection_type: &str) -> bool {
+    NODE_CONNECTION_TYPES.contains(&connection_type)
 }
 
-/// Result-flavoured variant of the connection-type rule, mirroring
-/// [`validate_node_uniqueness`]/[`validate_dangling_connections`]: checks every OUTPUT type key
-/// and every connection `type` field against [`NODE_CONNECTION_TYPES`].
-pub fn validate_connection_types(connections: &WorkflowConnections) -> Result<(), ValidationError> {
-    for (source, outputs) in connections {
-        for (conn_type, lists) in outputs {
-            if !is_connection_type(conn_type) {
-                return Err(ValidationError::InvalidConnectionType {
-                    node: source.clone(),
-                    connection_type: conn_type.clone(),
-                });
+/// Validate both connection-map type positions used by n8n:
+/// `connections[source][type]` and each target's `type` field.
+pub fn validate_connection_types(
+    connections: &WorkflowConnections,
+) -> Result<(), ValidationError> {
+    for (_source, outputs) in connections {
+        for (connection_type, slots) in outputs {
+            if !is_valid_connection_type(connection_type) {
+                return Err(ValidationError::InvalidConnectionType(
+                    connection_type.clone(),
+                ));
             }
-            for slot in lists {
+            for slot in slots {
                 if let Some(items) = slot {
                     for item in items {
-                        if !is_connection_type(&item.connection_type) {
-                            return Err(ValidationError::InvalidConnectionType {
-                                node: source.clone(),
-                                connection_type: item.connection_type.clone(),
-                            });
+                        if !is_valid_connection_type(&item.connection_type) {
+                            return Err(ValidationError::InvalidConnectionType(
+                                item.connection_type.clone(),
+                            ));
                         }
                     }
                 }
@@ -163,6 +161,109 @@ pub fn detect_cycles(
     Ok(())
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use indexmap::IndexMap;
+
+    #[test]
+    fn test_node_uniqueness_pass() {
+        let nodes = vec!["A".to_string(), "B".to_string(), "C".to_string()];
+        assert!(validate_node_uniqueness(&nodes).is_ok());
+    }
+
+    #[test]
+    fn test_node_uniqueness_fail() {
+        let nodes = vec!["A".to_string(), "B".to_string(), "A".to_string()];
+        assert_eq!(
+            validate_node_uniqueness(&nodes),
+            Err(ValidationError::DuplicateNodeName("A".to_string()))
+        );
+    }
+
+    #[test]
+    fn test_connection_type_validation_rejects_unknown_map_and_target_types() {
+        let mut conns = WorkflowConnections::new();
+        let mut outputs = IndexMap::new();
+        outputs.insert(
+            "unknown".into(),
+            vec![Some(vec![n8n_connection::ConnectionItem {
+                node: "B".into(),
+                connection_type: "unknown".into(),
+                index: 0,
+            }])],
+        );
+        conns.insert("A".into(), outputs);
+
+        assert_eq!(
+            validate_connection_types(&conns),
+            Err(ValidationError::InvalidConnectionType("unknown".into()))
+        );
+
+        let mut valid_map = WorkflowConnections::new();
+        let mut main_outputs = IndexMap::new();
+        main_outputs.insert(
+            "main".into(),
+            vec![Some(vec![n8n_connection::ConnectionItem {
+                node: "B".into(),
+                connection_type: "unknown".into(),
+                index: 0,
+            }])],
+        );
+        valid_map.insert("A".into(), main_outputs);
+        assert_eq!(
+            validate_connection_types(&valid_map),
+            Err(ValidationError::InvalidConnectionType("unknown".into()))
+        );
+    }
+
+    #[test]
+    fn test_cycle_detection_pass() {
+        let nodes = vec!["A".to_string(), "B".to_string(), "C".to_string()];
+        let mut conns = WorkflowConnections::new();
+        let mut a_outs = IndexMap::new();
+        a_outs.insert("main".into(), vec![Some(vec![n8n_connection::ConnectionItem {
+            node: "B".into(),
+            connection_type: "main".into(),
+            index: 0,
+        }])]);
+        conns.insert("A".into(), a_outs);
+
+        let mut b_outs = IndexMap::new();
+        b_outs.insert("main".into(), vec![Some(vec![n8n_connection::ConnectionItem {
+            node: "C".into(),
+            connection_type: "main".into(),
+            index: 0,
+        }])]);
+        conns.insert("B".into(), b_outs);
+
+        assert!(detect_cycles(&nodes, &conns).is_ok());
+    }
+
+    #[test]
+    fn test_cycle_detection_fail() {
+        let nodes = vec!["A".to_string(), "B".to_string()];
+        let mut conns = WorkflowConnections::new();
+        
+        let mut a_outs = IndexMap::new();
+        a_outs.insert("main".into(), vec![Some(vec![n8n_connection::ConnectionItem {
+            node: "B".into(),
+            connection_type: "main".into(),
+            index: 0,
+        }])]);
+        conns.insert("A".into(), a_outs);
+
+        let mut b_outs = IndexMap::new();
+        b_outs.insert("main".into(), vec![Some(vec![n8n_connection::ConnectionItem {
+            node: "A".into(),
+            connection_type: "main".into(),
+            index: 0,
+        }])]);
+        conns.insert("B".into(), b_outs);
+
+        assert!(detect_cycles(&nodes, &conns).is_err());
+    }
+}
 /* -------------------------------------------------------------------------- */
 /* Contract aggregate: validateWorkflow (contracts/validation.contract.md §3) */
 /* -------------------------------------------------------------------------- */
@@ -246,7 +347,7 @@ pub fn check_dangling_connections(node_names: &HashSet<&str>, connections: Optio
         }
         let Value::Object(outputs_by_type) = by_type else { continue };
         for (conn_type, outputs) in outputs_by_type {
-            if !is_connection_type(conn_type) {
+            if !is_valid_connection_type(conn_type) {
                 errors.push(issue(
                     ValidationCode::InvalidConnectionType,
                     format!("Unknown connection type \"{conn_type}\" on node \"{source}\""),
@@ -283,7 +384,7 @@ pub fn check_dangling_connections(node_names: &HashSet<&str>, connections: Optio
                                 ));
                             }
                             if let Some(target_type) = target.get("type").and_then(Value::as_str) {
-                                if !is_connection_type(target_type) {
+                                if !is_valid_connection_type(target_type) {
                                     let mut type_path = path.clone();
                                     type_path.push("type".into());
                                     errors.push(issue(
@@ -420,171 +521,3 @@ pub fn validate_workflow(workflow: &Value, allow_cycles: Option<bool>) -> Valida
     ValidationReport { valid: errors.is_empty(), errors }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use indexmap::IndexMap;
-
-    #[test]
-    fn test_node_uniqueness_pass() {
-        let nodes = vec!["A".to_string(), "B".to_string(), "C".to_string()];
-        assert!(validate_node_uniqueness(&nodes).is_ok());
-    }
-
-    #[test]
-    fn test_node_uniqueness_fail() {
-        let nodes = vec!["A".to_string(), "B".to_string(), "A".to_string()];
-        assert_eq!(
-            validate_node_uniqueness(&nodes),
-            Err(ValidationError::DuplicateNodeName("A".to_string()))
-        );
-    }
-
-    #[test]
-    fn test_cycle_detection_pass() {
-        let nodes = vec!["A".to_string(), "B".to_string(), "C".to_string()];
-        let mut conns = WorkflowConnections::new();
-        let mut a_outs = IndexMap::new();
-        a_outs.insert("main".into(), vec![Some(vec![n8n_connection::ConnectionItem {
-            node: "B".into(),
-            connection_type: "main".into(),
-            index: 0,
-        }])]);
-        conns.insert("A".into(), a_outs);
-
-        let mut b_outs = IndexMap::new();
-        b_outs.insert("main".into(), vec![Some(vec![n8n_connection::ConnectionItem {
-            node: "C".into(),
-            connection_type: "main".into(),
-            index: 0,
-        }])]);
-        conns.insert("B".into(), b_outs);
-
-        assert!(detect_cycles(&nodes, &conns).is_ok());
-    }
-
-    #[test]
-    fn test_invalid_connection_type_key_is_rejected() {
-        let mut conns = WorkflowConnections::new();
-        let mut outs = IndexMap::new();
-        outs.insert("bogus".into(), vec![Some(vec![n8n_connection::ConnectionItem {
-            node: "B".into(),
-            connection_type: "bogus".into(),
-            index: 0,
-        }])]);
-        conns.insert("A".into(), outs);
-
-        assert_eq!(
-            validate_connection_types(&conns),
-            Err(ValidationError::InvalidConnectionType {
-                node: "A".to_string(),
-                connection_type: "bogus".to_string(),
-            })
-        );
-    }
-
-    #[test]
-    fn test_valid_connection_types_pass() {
-        for conn_type in NODE_CONNECTION_TYPES {
-            let mut conns = WorkflowConnections::new();
-            let mut outs = IndexMap::new();
-            outs.insert(conn_type.into(), vec![Some(vec![n8n_connection::ConnectionItem {
-                node: "B".into(),
-                connection_type: conn_type.into(),
-                index: 0,
-            }])]);
-            conns.insert("A".into(), outs);
-            assert!(validate_connection_types(&conns).is_ok(), "{conn_type} must be accepted");
-        }
-    }
-
-    #[test]
-    fn test_validate_workflow_malformed_input() {
-        let report = validate_workflow(&serde_json::json!({"connections": {}}), None);
-        assert!(!report.valid);
-        assert_eq!(report.errors.len(), 1);
-        assert_eq!(report.errors[0].code, ValidationCode::InvalidInput);
-        assert_eq!(
-            report.errors[0].message,
-            "Workflow must be an object with a `nodes` array of named nodes"
-        );
-
-        let report = validate_workflow(&serde_json::json!({"nodes": [], "connections": "oops"}), None);
-        assert!(!report.valid);
-        assert_eq!(report.errors[0].code, ValidationCode::InvalidInput);
-        assert_eq!(report.errors[0].message, "`connections` must be an object");
-    }
-
-    #[test]
-    fn test_validate_workflow_accumulates_contract_codes() {
-        let workflow = serde_json::json!({
-            "nodes": [
-                {"name": "A"}, {"name": "A"}, {"name": "B"}
-            ],
-            "connections": {
-                "Ghost": { "main": [[{"node": "B", "type": "main", "index": 0}]] },
-                "A": {
-                    "bogus": [[{"node": "B", "type": "bogus", "index": 0}]],
-                    "main": [[null]]
-                },
-                "B": { "main": "not-an-array" },
-                "C": { "main": "also-not-an-array" }
-            }
-        });
-        let report = validate_workflow(&workflow, None);
-        assert!(!report.valid);
-        let codes: Vec<ValidationCode> = report.errors.iter().map(|error| error.code).collect();
-        assert!(codes.contains(&ValidationCode::DuplicateNodeName), "{codes:?}");
-        assert!(codes.contains(&ValidationCode::DanglingConnection), "{codes:?}");
-        assert!(codes.contains(&ValidationCode::InvalidConnectionType), "{codes:?}");
-        // every message from the contract vocabulary
-        assert!(report.errors.iter().any(|e| e.message == "Duplicate node name \"A\""));
-        assert!(report.errors.iter().any(|e| e.message == "Connection from unknown node \"Ghost\""));
-        assert!(report.errors.iter().any(|e| e.message == "Unknown connection type \"bogus\" on node \"A\""));
-        assert!(report.errors.iter().any(|e| e.message == "Malformed connection target from \"A\""));
-    }
-
-    #[test]
-    fn test_validate_workflow_cycle_semantics() {
-        let workflow = serde_json::json!({
-            "nodes": [{"name": "A"}, {"name": "B"}],
-            "connections": {
-                "A": { "main": [[{"node": "B", "type": "main", "index": 0}]] },
-                "B": { "main": [[{"node": "A", "type": "main", "index": 0}]] }
-            }
-        });
-        // contract §11.7: default allows cycles (reference parity — runtime loops are legal)
-        assert!(validate_workflow(&workflow, None).valid);
-        assert!(validate_workflow(&workflow, Some(true)).valid);
-
-        let strict = validate_workflow(&workflow, Some(false));
-        assert!(!strict.valid);
-        assert_eq!(strict.errors[0].code, ValidationCode::CycleDetected);
-        assert_eq!(strict.errors[0].message, "Cycle detected: A → B → A");
-        assert_eq!(strict.errors[0].node.as_deref(), Some("A"));
-    }
-
-    #[test]
-    fn test_cycle_detection_fail() {
-        let nodes = vec!["A".to_string(), "B".to_string()];
-        let mut conns = WorkflowConnections::new();
-        
-        let mut a_outs = IndexMap::new();
-        a_outs.insert("main".into(), vec![Some(vec![n8n_connection::ConnectionItem {
-            node: "B".into(),
-            connection_type: "main".into(),
-            index: 0,
-        }])]);
-        conns.insert("A".into(), a_outs);
-
-        let mut b_outs = IndexMap::new();
-        b_outs.insert("main".into(), vec![Some(vec![n8n_connection::ConnectionItem {
-            node: "A".into(),
-            connection_type: "main".into(),
-            index: 0,
-        }])]);
-        conns.insert("B".into(), b_outs);
-
-        assert!(detect_cycles(&nodes, &conns).is_err());
-    }
-}
