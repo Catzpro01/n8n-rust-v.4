@@ -460,3 +460,42 @@ recipe left in sweep 18 (different agent, no self-approval). Re-run fresh on thi
 | Result (owner) | Claim | Fresh re-run on merged tree (this sweep) | Verdict |
 | :--- | :--- | :--- | :--- |
 | `TASK-REPAIR-01-phase3-jsonrepair-port.md` | verbatim jsonrepair port, 122/122, differential 1771/0 across 26 groups (N26 = 76), gate 7/7 (N02 20 files, N07 98 symbols), falsifiability 2-DIVERGE / 14-DIVERGE | node-lego **122 pass / 0 fail**; **1771 agree / 0 diverge** (2 NOT-DIFFABLE); 26 groups with `[SCENARIO] N26 … 76 comparisons`; N02 20 files, N07 98 symbols; probe reproduced: Python-constant branch dropped → **1769/2 DIVERGE**, restored byte-identical (`cmp`) → 1771/0; `verify:all` real exit 0 | **APPROVE** |
+
+## Sweep 24 (2026-09-18, on `94909bfa`) — verification: the `ISSUE-028` repair and `TASK-430`
+
+Two results had no verdict from this lane: the `ISSUE-028` repair (`e823d4f0`) and
+`TASK-430-phase3-active-executions` (`ca0350b2`). Both were re-run from zero on the merged tip
+`94909bfa`, never from the authors' numbers.
+
+| Result (owner) | Claim | Fresh re-run on this tip | Verdict |
+| :--- | :--- | :--- | :--- |
+| `e823d4f0` — "resolve ISSUE-028 WaitTracker reference parity divergences" | all five sweep-20 divergences restored to the reference; 5 new regression tests; E11 18 → 23 | execution-engine **100 pass / 0 fail**; gate **12/12**, `E11` **23 pass / 0 fail**; source diff vs `wait-tracker.ts` L47-58 / L78 / L113 / L120-127 is verbatim (mutation table below) | **APPROVE** |
+| `TASK-430-phase3-active-executions` (`ca0350b2`) | ActiveExecutions registry 1:1, 10 new cases, gate E12 | suite **100/100**; gate **12/12** with `E12` **10 pass / 0 fail**; `E01` no dependencies, `E02` 19 source files all relative/`node:`, `E04` reference intact (15050 files, root `f8da3518…`), `E08` 72 symbols contracted; `active-executions.mjs` 337 lines vs `active-executions.ts` 349 | **APPROVE** |
+
+### The ISSUE-028 repair is falsifiable (re-injected, measured, reverted)
+
+| Mutation re-injected into `wait-tracker.mjs` | Result on `07-wait-tracker.test.mjs` |
+| :--- | :--- |
+| `Math.max(0, …)` clamp back on the trigger delay | **22 pass / 1 fail** |
+| `if (this.#mainTimer) return` re-entry guard back in `startTracking()` | **22 pass / 1 fail** |
+| `startedAt` removed from the `data` literal (conditional assignment) | **21 pass / 2 fail** (value + key-set assertions) |
+| `workflowData?.id` optional chaining back | **22 pass / 1 fail** |
+
+The source was restored byte-identical after each probe (`cmp`). The peer's tests assert the
+**exact six-key shape** of the payload, which is precisely the class of bug sweep 20 asked to make
+visible — the correction is complete, so **no `NEEDS_CORRECTION` remains against `TASK-428`**.
+
+### Process note — the same correction was repaired twice in parallel
+
+This lane had independently produced a byte-equivalent repair (five verbatim restorations, five
+`ISSUE-028` regression tests including the key-set assertion, the same 90/90 + E11 23 numbers)
+while the owning worker produced `e823d4f0`. Discovery happened at rebase time, when the two
+commits touched the same five lines of `wait-tracker.mjs`. The duplicate was **dropped**, not
+merged: the peer's commit is in history, its fix is strictly equivalent, and keeping both would
+have meant two competing regression blocks for one issue (the shape of ISSUE-023/024/026). What
+this lane added instead is what the peer left open: the independent verification above and the
+five reference quirks now pinned in `contracts/execution.contract.md`, so the "hardening" cannot
+return as an undocumented improvement. Lesson for the pool: `NEEDS_CORRECTION` work is stealable,
+so a claim marker (a `results/` stub or a pool state flip) should be written *before* the repair
+starts.
+
