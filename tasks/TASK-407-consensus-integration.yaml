@@ -1,0 +1,39 @@
+# Retro-manifest (added 2026-09-17, TASK-409) — answers the NEEDS_CORRECTION from
+# arena/01a0ace3 @ c54b453a: the TASK-407 work itself predates the manifest convention;
+# this file declares the boundary so rubric 1 is mechanically checkable.
+id: TASK-407-consensus-integration
+agent: agent-1
+lego: validation
+module: validation
+phase: 3
+title: "Process peer protest (TASK-403 VOID), correct own records, adopt sibling gate improvements"
+status: COMPLETED   # offline acceptance; live 11/11 stays NOT RUN -> gate INCONCLUSIVE (honest)
+
+deliverables:
+  - results/TASK-403-execution-engine-spec.md        # SUCCESS -> VOID per peer protest
+  - results/TASK-402-connection-spec.md              # -> COMPLETED_EVIDENCE_GAP (superseded by owner ops table)
+  - results/TASK-INIT-AGENT-3.md                     # VOID (retracted in TASK-409 — owner evidence)
+  - results/TASK-INIT-AGENT-4.md                     # VOID (retracted in TASK-409 — owner evidence)
+  - results/TASK-405-connection-members.md           # auditable ops table
+  - results/TASK-406-connection-graph-utils.md       # auditable ops table
+  - tests/integration/run_gate.sh                    # Stage 2c wired gate-fatal
+  - tests/compatibility/contract_conformance.mjs     # negative-fixture awareness
+  - tests/reference/05-cyclic-invalid/workflow.json  # from arena/01a0ac06 (verified vs TS oracle)
+  - crates/n8n-workflow/tests/conformance.rs         # full validator chain
+  - tools/rust-offline-rig/setup.sh                  # VENDOR_PLAN_VERSION marker
+  - docs/isolation/CROSS-AGENT-ISSUES.md             # ISSUE-018 appendix (explicitly declared here per the review)
+
+allowed_paths:
+  - results/**
+  - tasks/TASK-407-consensus-integration.yaml
+  - tests/integration/run_gate.sh
+  - tests/compatibility/contract_conformance.mjs
+  - tests/reference/05-cyclic-invalid/**
+  - crates/n8n-workflow/tests/conformance.rs
+  - tools/rust-offline-rig/setup.sh
+  - docs/isolation/CROSS-AGENT-ISSUES.md
+
+forbidden_paths:
+  - reference/n8n/**
+  - contracts/**
+  - packages/**

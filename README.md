@@ -15,8 +15,10 @@ is a Rust replacement attempted.
 | REFERENCE SOURCE (`reference/n8n/`, n8n 2.9.4) | ✅ |
 | REFERENCE RUNTIME (baseline 11/11 smoke test) | ✅ |
 | **WORKFLOW ISOLATION (LEGO 01)** | **✅ VERIFIED — see [`docs/isolation/workflow.md`](docs/isolation/workflow.md)** |
-| NODE MODEL (LEGO 02) · CONNECTION (03) · VALIDATION (04) | ⏸ next |
-| RUST IMPLEMENTATION | ⏸ not started |
+| NODE MODEL (LEGO 02) · CONNECTION (03) · VALIDATION (04) | ✅ ISOLATED (Phase 2 complete) |
+| **PHASE 3 — RUST IMPLEMENTATION** | **▶ OPENED 2026-09-17 — [`docs/isolation/PHASE-3-OPENING.md`](docs/isolation/PHASE-3-OPENING.md)** |
+| Reference-driven Rust tests | ✅ 45/45 `cargo test --workspace` (via `tools/rust-offline-rig`) |
+| LIVE VERIFICATION | ⏸ requires the VPS (live 11/11 gate) |
 
 “Isolated” means the TypeScript component now has an enforced boundary and a
 contract. It does **not** mean it was replaced by Rust.

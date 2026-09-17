@@ -1,0 +1,296 @@
+{
+  "byDestination whole map (null slot must not create entries)": {
+    "Http": {
+      "main": [
+        [
+          {
+            "node": "Trigger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ok": {
+      "main": [
+        [
+          {
+            "node": "Http",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fail": {
+      "main": [
+        [
+          {
+            "node": "Http",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Log": {
+      "main": [
+        [
+          {
+            "node": "Http",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "Fail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Ok",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "children of Http main depth 1 (slot order 0 then 1, null/empty ignored)": [
+    "Log",
+    "Fail",
+    "Ok"
+  ],
+  "children of Http unbounded": [
+    "Log",
+    "Log",
+    "Merge",
+    "Fail",
+    "Ok"
+  ],
+  "parents of Log (duplicate edge from Fail must not duplicate)": [
+    "Trigger",
+    "Http",
+    "Fail"
+  ],
+  "parents of Merge": [
+    "Trigger",
+    "Http",
+    "Fail",
+    "Ok"
+  ],
+  "parents of Merge depth 1": [
+    "Fail",
+    "Ok"
+  ],
+  "parents of Fail": [
+    "Trigger",
+    "Http"
+  ],
+  "connected ALL Log unbounded": [],
+  "adjacency keys": [
+    "Trigger",
+    "Http",
+    "Ok",
+    "Fail"
+  ],
+  "roots of full graph": [
+    "Trigger"
+  ],
+  "leaves of full graph": [
+    "Log",
+    "Merge"
+  ],
+  "input edges of {Fail,Log}": [
+    [
+      "Http",
+      {
+        "node": "Fail",
+        "type": "main",
+        "index": 0
+      }
+    ],
+    [
+      "Http",
+      {
+        "node": "Log",
+        "type": "main",
+        "index": 0
+      }
+    ]
+  ],
+  "output edges of {Http}": [
+    [
+      "Http",
+      {
+        "node": "Ok",
+        "type": "main",
+        "index": 0
+      }
+    ],
+    [
+      "Http",
+      {
+        "node": "Fail",
+        "type": "main",
+        "index": 0
+      }
+    ],
+    [
+      "Http",
+      {
+        "node": "Log",
+        "type": "main",
+        "index": 0
+      }
+    ]
+  ],
+  "hasPath Http->Merge": true,
+  "hasPath Log->Merge (false)": false,
+  "extractable {Http,Ok,Fail}": [
+    {
+      "errorCode": "Output Edge From Non-Leaf Node",
+      "node": "Http"
+    },
+    {
+      "errorCode": "Multiple Output Nodes",
+      "nodes": [
+        "Ok",
+        "Fail"
+      ]
+    }
+  ],
+  "extractable {Fail,Log}": [
+    {
+      "errorCode": "Input Edge To Non-Root Node",
+      "node": "Log"
+    },
+    {
+      "errorCode": "Output Edge From Non-Leaf Node",
+      "node": "Fail"
+    }
+  ],
+  "indexes Fail<-Http (error slot => sourceIndex 1)": {
+    "sourceIndex": 1,
+    "destinationIndex": 0
+  },
+  "indexes Log<-Http": {
+    "sourceIndex": 1,
+    "destinationIndex": 0
+  },
+  "indexes Log<-Fail": {
+    "sourceIndex": 0,
+    "destinationIndex": 1
+  },
+  "indexes Merge<-Fail (destinationIndex 1)": {
+    "sourceIndex": 0,
+    "destinationIndex": 0
+  },
+  "indexes Merge<-Http (indirect => undefined)": {
+    "sourceIndex": 0,
+    "destinationIndex": 0
+  },
+  "highest of Merge": [
+    "Trigger",
+    "Fail"
+  ],
+  "highest of Log": [
+    "Trigger",
+    "Fail"
+  ],
+  "parentsByDepth Merge": [
+    {
+      "name": "Ok",
+      "indicies": [
+        0
+      ],
+      "depth": 1
+    },
+    {
+      "name": "Fail",
+      "indicies": [
+        0
+      ],
+      "depth": 1
+    },
+    {
+      "name": "Http",
+      "indicies": [
+        0,
+        1
+      ],
+      "depth": 2
+    },
+    {
+      "name": "Trigger",
+      "indicies": [
+        0
+      ],
+      "depth": 3
+    }
+  ],
+  "parentsByDepth Log": [
+    {
+      "name": "Http",
+      "indicies": [
+        1
+      ],
+      "depth": 1
+    },
+    {
+      "name": "Fail",
+      "indicies": [
+        0
+      ],
+      "depth": 1
+    },
+    {
+      "name": "Trigger",
+      "indicies": [
+        0
+      ],
+      "depth": 2
+    }
+  ],
+  "wf.getChildNodes Http depth 1": [
+    "Log",
+    "Fail",
+    "Ok"
+  ],
+  "wf.getParentNodes Log": [
+    "Trigger",
+    "Http",
+    "Fail"
+  ],
+  "wf.sourceKeys": [
+    "Trigger",
+    "Http",
+    "Ok",
+    "Fail",
+    "Log"
+  ],
+  "wf.destKeys": [
+    "Http",
+    "Ok",
+    "Fail",
+    "Log",
+    "Merge"
+  ],
+  "rebuild then parents of Log": [
+    "Trigger",
+    "Http",
+    "Fail"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "description": "Negative fixture (ISSUE-012 / R5): a 3-node cycle on `main` edges. Structurally valid (unique names, all targets exist, connection types known) so ONLY the CYCLE_DETECTED rule fires. Note this is a validation golden, not a runtime case: n8n 2.9.4 allows runtime loops (allowCycles defaults to true for reference parity - golden case D6); the negative case is what `{ allowCycles: false }` must reject with the deterministic path message.",
+  "allowCycles": false,
+  "nodes": [
+    { "id": "A", "name": "A", "type": "x", "typeVersion": 1, "position": [0, 0], "parameters": {} },
+    { "id": "B", "name": "B", "type": "x", "typeVersion": 1, "position": [0, 0], "parameters": {} },
+    { "id": "C", "name": "C", "type": "x", "typeVersion": 1, "position": [0, 0], "parameters": {} }
+  ],
+  "connections": {
+    "A": { "main": [[{ "node": "B", "type": "main", "index": 0 }]] },
+    "B": { "main": [[{ "node": "C", "type": "main", "index": 0 }]] },
+    "C": { "main": [[{ "node": "A", "type": "main", "index": 0 }]] }
+  }
+}

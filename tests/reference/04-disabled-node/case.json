@@ -1,0 +1,85 @@
+{
+  "description": "Disabled-node semantics. Traces the n8n 2.9.4 reference by hand, line by line: getHighestNode (workflow.ts:487-565, strict '=== false' at :498 for the starting node, lenient '!== true' at :553 for parents) and getStartNode/__getStartNode (workflow.ts:816-867, '!node.disabled' at :824, 'disabled === true' skips at :839/:853). Plain traversal (getParentNodes/getChildNodes) has NO disabled branch in the reference (graph-utils.ts) and must stay disabled-blind.",
+  "nodes": [
+    {
+      "id": "Trigger",
+      "name": "Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "parameters": {}
+    },
+    { "id": "A", "name": "A", "type": "x", "typeVersion": 1, "position": [0, 0], "parameters": {} },
+    { "id": "B", "name": "B", "type": "x", "typeVersion": 1, "position": [0, 0], "parameters": {}, "disabled": true },
+    { "id": "C", "name": "C", "type": "x", "typeVersion": 1, "position": [0, 0], "parameters": {} },
+    { "id": "D", "name": "D", "type": "x", "typeVersion": 1, "position": [0, 0], "parameters": {} },
+    { "id": "E", "name": "E", "type": "x", "typeVersion": 1, "position": [0, 0], "parameters": {}, "disabled": false },
+    { "id": "F", "name": "F", "type": "x", "typeVersion": 1, "position": [0, 0], "parameters": {}, "disabled": true },
+    { "id": "X", "name": "X", "type": "x", "typeVersion": 1, "position": [0, 0], "parameters": {}, "disabled": true },
+    { "id": "Y", "name": "Y", "type": "x", "typeVersion": 1, "position": [0, 0], "parameters": {} }
+  ],
+  "connections": {
+    "Trigger": { "main": [[{ "node": "A", "type": "main", "index": 0 }]] },
+    "A": { "main": [[{ "node": "B", "type": "main", "index": 0 }]] },
+    "B": { "main": [[{ "node": "C", "type": "main", "index": 0 }]] },
+    "C": { "main": [[{ "node": "D", "type": "main", "index": 0 }]] },
+    "X": { "main": [[{ "node": "Y", "type": "main", "index": 0 }]] }
+  },
+  "probes": [
+    {
+      "name": "D-01 highest of C is transparent through disabled B",
+      "op": "wf.getHighestNode",
+      "node": "C"
+    },
+    {
+      "name": "D-02 highest of Y is empty: disabled leaf parent X is excluded (workflow.ts:553)",
+      "op": "wf.getHighestNode",
+      "node": "Y"
+    },
+    {
+      "name": "D-04a highest of E (explicit disabled:false) is itself (workflow.ts:498)",
+      "op": "wf.getHighestNode",
+      "node": "E"
+    },
+    {
+      "name": "D-04b highest of F (explicit disabled:true) is nothing (workflow.ts:498)",
+      "op": "wf.getHighestNode",
+      "node": "F"
+    },
+    {
+      "name": "D-04c highest of Trigger (omitted flag) is NOT itself — strict === false (workflow.ts:498)",
+      "op": "wf.getHighestNode",
+      "node": "Trigger"
+    },
+    {
+      "name": "D-01b highest of A via recursion through no disabled nodes",
+      "op": "wf.getHighestNode",
+      "node": "A"
+    },
+    {
+      "name": "D-03a start node of D is the single non-disabled highest candidate (workflow.ts:824)",
+      "op": "wf.getStartNode",
+      "node": "D"
+    },
+    {
+      "name": "D-03b start node of Y: highest is empty, destination is the single candidate (workflow.ts:821-825)",
+      "op": "wf.getStartNode",
+      "node": "Y"
+    },
+    {
+      "name": "D-03c start node of F skips the disabled single candidate and scans STARTING_NODE_TYPES (workflow.ts:839/:853)",
+      "op": "wf.getStartNode",
+      "node": "F"
+    },
+    {
+      "name": "scope: parents of C INCLUDE disabled B — plain traversal is disabled-blind",
+      "op": "getParentNodes",
+      "node": "C"
+    },
+    {
+      "name": "scope: children of A INCLUDE disabled B — plain traversal is disabled-blind",
+      "op": "getChildNodes",
+      "node": "A"
+    }
+  ]
+}

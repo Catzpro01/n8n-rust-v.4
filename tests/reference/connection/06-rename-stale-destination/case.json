@@ -1,0 +1,113 @@
+{
+  "description": "D-08: Workflow.renameNode rewrites the source map in place but never rebuilds connectionsByDestinationNode. Trigger -> A -> B; rename A -> A2, then query both directions.",
+  "nodes": [
+    {
+      "id": "Trigger",
+      "name": "Trigger",
+      "type": "x",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "A",
+      "name": "A",
+      "type": "x",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "B",
+      "name": "B",
+      "type": "x",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    }
+  ],
+  "connections": {
+    "Trigger": {
+      "main": [
+        [
+          {
+            "node": "A",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "A": {
+      "main": [
+        [
+          {
+            "node": "B",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "rename": {
+    "from": "A",
+    "to": "A2"
+  },
+  "probes": [
+    {
+      "name": "after rename: source map keys",
+      "op": "wf.sourceKeys"
+    },
+    {
+      "name": "after rename: destination map keys (stale, still 'A')",
+      "op": "wf.destKeys"
+    },
+    {
+      "name": "after rename: children of Trigger (source map, fresh)",
+      "op": "wf.getChildNodes",
+      "node": "Trigger"
+    },
+    {
+      "name": "after rename: parents of B (destination map, stale -> old name)",
+      "op": "wf.getParentNodes",
+      "node": "B"
+    },
+    {
+      "name": "after rename: parents of A2 (stale -> [])",
+      "op": "wf.getParentNodes",
+      "node": "A2"
+    },
+    {
+      "name": "after rename: parents of A (stale -> still answers)",
+      "op": "wf.getParentNodes",
+      "node": "A"
+    },
+    {
+      "name": "after rename: getNodeConnectionIndexes B <- A2 (stale -> undefined)",
+      "op": "wf.getNodeConnectionIndexes",
+      "node": "B",
+      "parent": "A2"
+    },
+    {
+      "name": "after rename: getNodeConnectionIndexes B <- A (old name: getNode(A) is null -> undefined before the stale map is even consulted)",
+      "op": "wf.getNodeConnectionIndexes",
+      "node": "B",
+      "parent": "A"
+    },
+    {
+      "name": "after setConnections(same map): parents of B (rebuilt)",
+      "op": "wf.rebuildThenGetParentNodes",
+      "node": "B"
+    }
+  ]
+}
