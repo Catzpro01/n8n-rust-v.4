@@ -5,6 +5,13 @@ name: supabase-task-pool-sync
 # in-session worker agent can read it back via `gh run view --log`.
 on:
   workflow_dispatch:
+  push:
+    # Fires when this file itself changes on the session branch (query tweaks),
+    # so the in-session agent can re-run the snapshot without touching `main`.
+    branches:
+      - "arena/01a0b16c-n8n-rust-v-4"
+    paths:
+      - ".github/workflows/supabase-task-pool-sync.yml"
 
 jobs:
   fetch:
