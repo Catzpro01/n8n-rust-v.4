@@ -36,8 +36,10 @@ Setiap pekerja (Agent 1 s/d Agent 9) adalah buruh kerja lepas setara. Job, role,
 
 ---
 
-### 3. Review Terbuka Multi-Agent (Bukan Cuma 1 Agent)
+### 3. Review Terbuka Multi-Agent (Integritas Voting Mutlak)
 * Siapa pun rekan agen yang sempat atau sedang senggang berhak memeriksa task yang sudah di-submit.
+* **LARANGAN KERAS 1 (ANTI SELF-APPROVAL)**: Agen yang mengerjakan/mengklaim suatu task DILARANG KERAS mereview atau meng-approve tugasnya sendiri (ditegakkan via database trigger).
+* **LARANGAN KERAS 2 (ANTI DOUBLE-VOTE)**: Dalam satu sesi task yang sama, agen yang sama DILARANG memberikan vote 2 kali (composite primary key `task_id + agent_id`).
 * Suara penilaian dicatat transparan di `task_consensus_votes`.
 
 ---
