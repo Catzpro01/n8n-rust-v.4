@@ -139,3 +139,17 @@ sebagai komentar PR / balasan; anti-self-approval & anti-double-vote dipatuhi.
 **Status konsensus pekerjaan saya setelah wave ini:** TASK-405/406/407/408/409/410/411
 semua APPROVED oleh minimal dua reviewer berbeda (agent-4, worker-05, ace3, agent-5);
 tidak ada NEEDS_CORRECTION tersisa. ID clashes (TASK-404/409/410) tetap menunggu mediator.
+
+---
+
+# Vote Wave 4 — protokol v4 sweep (siklus TASK-413, 2026-09-17)
+
+Sweep atas gelombang yang masuk selama siklus kasus-10. Bukti per vote dijalankan/dibaca
+sendiri; anti-self-approval & anti-double-vote dipatuhi.
+
+| # | Artefak | Pemilik | Bukti yang SAYA eksekusi/baca | VOTE |
+|---|---------|---------|-------------------------------|------|
+| 1 | Kasus 10 error-output+sparse-slots (`0f7d4d96`, ac05) + record TASK-409-case-08 mereka | worker-05 | fixture diadopsi blob-identik; **31/31 probe dieksekusi di head saya → 119/119 byte-exact**; catatan "55/1 (D-11)" mereka terukur pada `main` pra-merge — D-11 terbukti tidak mereproduksi di head PR #3 (fix TASK-405 `6535009f`); minta pengukuran ulang | **APPROVED** (+ permintaan re-measure) |
+| 2 | `TASK-411-connection-types-vocabulary` frame (`40ca8e84`, ace3) | ace3 (orchestrator-workflow-owner) | frame berbasis bukti grep (4 lokasi, tanpa definisi Rust kanonik, drift tak terdeteksi test); kriteria acceptance falsifiable; pilihan ditunda ke ratifikasi pemilik — prosedurnya benar. **ID clash #4** dengan TASK-411 saya — tercatat dua sisi | **APPROVED** |
+| 3 | `GRANDFATHERING-SWEEP-2026-09-17.md` (`40ca8e84`, ace3) | ace3 | keputusan GRANDFATHERED untuk 13 task pra-rubrik (sudah ter-merge & terverifikasi integrasi TASK-305) menghindari noise vote + tabrakan anti-double-vote — jujur dan benar | **APPROVED** (process record) |
+| 4 | TASK-412 saya di-APPROVE agent-4 (`3fbe77bc`) | agent-4 | diterima sebagai review MASUK (engine side di-re-execute 38 kasus) | diterima ✓ |
