@@ -1,7 +1,7 @@
 # LEGO Contract: Expression Syntax (`{{ … }}` resolution)
 
 **Task:** `TASK-PIPE-12` · **Worker:** Agent 6 (peran sesaat *Expression & Scoping Specialist*) · **Branch:** `agent-6`
-**Derived from:** n8n `2.9.4` source (`reference/n8n/packages/workflow/src/{expression.ts, expression-evaluator-proxy.ts, expression-sandboxing.ts, expressions/expression-helpers.ts, expressions/../extensions/expression-parser.ts, extensions/expression-extension.ts, extensions/*-extensions.ts, extensions/extended-functions.ts}` + `@n8n/tournament@1.0.6`) and 461 runtime observations (see [`docs/isolation/agent-6-probes/observations.json`](../docs/isolation/agent-6-probes/observations.json)).
+**Derived from:** n8n `2.9.4` source (`reference/n8n/packages/workflow/src/{expression.ts, expression-evaluator-proxy.ts, expression-sandboxing.ts, expressions/expression-helpers.ts, expressions/../extensions/expression-parser.ts, extensions/expression-extension.ts, extensions/*-extensions.ts, extensions/extended-functions.ts}` + `@n8n/tournament@1.0.6`) and 503 runtime observations (see [`docs/isolation/agent-6-probes/observations.json`](../docs/isolation/agent-6-probes/observations.json)).
 **Anatomy:** [`docs/isolation/expression-syntax-pipeline.md`](../docs/isolation/expression-syntax-pipeline.md)
 **Relationship to other contracts:** refines [`expression.contract.md`](expression.contract.md) §1/§3/§4 (Agent 3). It is a *sub-contract of the same LEGO* — no new module, no ownership change. On any wording conflict, this file's rule wins **only** for the syntax half and only where it cites an observation ID.
 **Status:** `CONTRACTED` (no implementation yet; Rust not permitted in this phase)
@@ -53,7 +53,7 @@ pure := chunks == [TEXT(''), CODE]             // ONE code chunk and a text chun
 | # | Rule | Vector (observed) |
 |---|---|---|
 | O1 | `pure` ⇒ raw JS value (any type, incl. `undefined`, `NaN`, objects, `DateTime`). Any character outside the braces — **including a single space** — makes it non-`pure` | `={{1}} → 1` · `={{ {a:1} }} → {a:1}` · `={{ undefined }} → undefined` · `= {{1}} → " 1"` (string) · `={{ 1 }}  → "1  "` |
-| O2 | non-`pure` ⇒ `Array.map(part).join('')` with `undefined|null → ""`, `false → "false"`, `0 → "0"`, `NaN → "NaN"`, object → `"[object Object]"` | `=a{{undefined}}b → "ab"` · `=x{{0}}y → "x0y"` · `=a{{ {a:1} }}b → "a[object Object]b"` |
+| O2 | non-`pure` ⇒ `Array.map(part).join('')` with `undefined`/`null` → `""`, `false → "false"`, `0 → "0"`, `NaN → "NaN"`, object → `"[object Object]"` | `=a{{undefined}}b → "ab"` · `=x{{0}}y → "x0y"` · `=a{{ {a:1} }}b → "a[object Object]b"` |
 | O2b | two adjacent code chunks are joined too (never raw), and a chunk that evaluates to `undefined`/`null` contributes `""` | `={{1}}{{2}} → "12"` · `={{ $json.a }}{{ $json.b }} → "1"` (b missing) |
 | O3 | single `=` stripped; second `=` is literal text | `={{1}} → 1` · `=={{1}} → "=1"` |
 | O4 | `"="` → `""`; `"=abc"` → `"abc"` (empty template short-circuits before parsing) | `12B2` |

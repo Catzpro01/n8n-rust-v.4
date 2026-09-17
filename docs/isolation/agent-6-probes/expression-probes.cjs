@@ -8,8 +8,8 @@
  *   PIPE-13  WorkflowDataProxy variable lookup + scoping ($json/$binary/$node/$parameter/…)
  *
  * Nothing here re-implements n8n: every value in the output is what the runtime returned.
- * 461 entries are recorded (266 for PIPE-12, 172 for PIPE-13, 23 fixture entries), of which
- * 55 are typed throws. See README.md for the per-group breakdown and the determinism recipe.
+ * 503 entries are recorded (266 for PIPE-12, 214 for PIPE-13, 23 fixture entries); 418 of them are
+ * outcome records (353 returned values, 65 typed throws), the rest being splitter/inventory rows. See README.md for the per-group breakdown and the determinism recipe.
  *
  * usage (from the repo root):
  *   NODE_PATH=$PWD/.runtime/node_modules \
@@ -623,6 +623,274 @@ const extra = {
 	}),
 };
 
+// ---------- 13-E: gap closure for the PARTIAL rows of contracts/variable-lookup.contract.md §10 -------
+// ($fromAI/$tool data source, $agentInfo with a real agent+tool graph, item-lineage sourceOverwrite,
+//  and the additionalKeys supply surface that every node-execution-context forwards.)
+const CORE_CTX_PATH = 'n8n-core/dist/execution-engine/node-execution-context/index.js';
+const { getAdditionalKeys, getNonWorkflowAdditionalKeys, resolveSourceOverwrite } = require(CORE_CTX_PATH);
+
+const gapClosure = {
+	// ---- E1: $fromAI data source = runData[active][runIndex].inputOverride.ai_tool[0][itemIndex].json
+	fromAI_inputOverride: (() => {
+		const rd = JSON.parse(JSON.stringify(runExecutionData));
+		rd.resultData.runData.End[0].inputOverride = {
+			ai_tool: [[
+				{ json: { query: { city: 'Jakarta', n: 5, tool: 'search', toolParameters: { q: 'hello' } }, topOnly: 'TOP', both: 'FROM_TOPLEVEL' } },
+				{ json: { query: { city: 'Bandung', both: 'FROM_ITEM1' } } },
+			]],
+		};
+		const P = (itemIndex, over = {}) =>
+			new WorkflowDataProxy(over.workflow ?? wf, over.rd ?? rd, over.runIndex ?? 0, itemIndex,
+				over.activeNodeName ?? 'End', over.connectionInputData ?? connectionInputData, {}, over.mode ?? 'manual',
+				over.additionalKeys ?? {}, executeData, -1, {}, 'End').getDataProxy();
+		return {
+			query_map_wins: probe(() => P(0).$fromAI('city')),
+			top_level_only_key: probe(() => P(0).$fromAI('topOnly')),
+			query_beats_top_level: probe(() => P(0).$fromAI('both')),
+			unknown_key: probe(() => P(0).$fromAI('nope')),
+			unknown_key_with_default: probe(() => P(0).$fromAI('nope', 'desc', 'string', 'FALLBACK')),
+			item_selected_by_itemIndex: probe(() => [P(0).$fromAI('city'), P(1).$fromAI('city')]),
+			itemIndex_out_of_range: probe(() => P(2).$fromAI('city')),
+			key_64_chars_accepted: probe(() => P(0).$fromAI('a'.repeat(64))),
+			key_65_chars_throws: probe(() => P(0).$fromAI('a'.repeat(65))),
+			key_with_dot_throws: probe(() => P(0).$fromAI('a.b')),
+			alias_fromai_matches: probe(() => P(0).$fromai('city')),
+			alias_fromAi_matches: probe(() => P(0).$fromAi('city')),
+			// the data source is chosen by whether a TASK exists at [activeNode][runIndex]:
+			// task exists but has no inputOverride => NO fallback (the connection data is never consulted)
+			existing_task_without_inputOverride_does_not_fall_back: probe(() =>
+				({ itemIndex: 3, value: P(3, { rd: runExecutionData, connectionInputData: [{ json: { n: 0 } }, { json: { n: 1 } }, { json: { n: 2 } }, { json: { n: 9 } }] }).$fromAI('n') })),
+			// no task at that runIndex => fallback to connectionInputData[**runIndex**] (upstream quirk: not itemIndex)
+			no_task_at_runIndex_falls_back_to_connectionInputData_at_runIndex: probe(() =>
+				P(0, { runIndex: 1, rd: runExecutionData, connectionInputData: [{ json: { n: 'a' } }, { json: { n: 'b' } }] }).$fromAI('n')),
+		};
+	})(),
+
+	// ---- E2: $tool (handleTool): name/parameters from $fromAI('tool'/'toolParameters') + fallback ----
+	tool_access: (() => {
+		const rd = JSON.parse(JSON.stringify(runExecutionData));
+		const setOverride = (json) => {
+			rd.resultData.runData.End[0].inputOverride = { ai_tool: [[{ json }]] };
+			return rd;
+		};
+		const P = (over = {}) =>
+			new WorkflowDataProxy(wf, over.rd ?? rd, 0, over.itemIndex ?? 0, 'End', connectionInputData, {}, 'manual',
+				over.additionalKeys ?? {}, executeData, -1, {}, 'End').getDataProxy();
+		return {
+			from_query_map: probe(() => { setOverride({ query: { tool: 'search', toolParameters: { q: 'hello' } } }); return P().$tool; }),
+			from_top_level: probe(() => { setOverride({ tool: 'topTool', toolParameters: { z: 1 } }); return P().$tool; }),
+			partial_only_name: probe(() => { setOverride({ query: { tool: 'onlyName' } }); return P().$tool; }),
+			no_data_with_fallback: probe(() => P({ rd: runExecutionData, additionalKeys: { $tool: { name: 'fallbackTool', parameters: { a: 1 } } } }).$tool),
+			no_data_no_fallback: probe(() => P({ rd: runExecutionData }).$tool),
+			empty_override_item_index_out_of_range: probe(() => { setOverride({ query: { tool: 'x' } }); return P({ itemIndex: 4 }).$tool; }),
+			toolName_via_expression: probe(() => { setOverride({ query: { tool: 'search' } }); return wf.expression.getParameterValue('={{ $tool.name }}', rd, 0, 0, 'End', connectionInputData, 'manual', {}, executeData); }),
+		};
+	})(),
+
+	// ---- E3: $agentInfo (agent node type + ai_tool/ai_memory graph) ----
+	agent_info: (() => {
+		registry['@n8n/n8n-nodes-langchain.agent'] = {
+			description: {
+				displayName: 'AI Agent', name: 'agent', group: ['ai'], version: 1, description: '',
+				defaults: { name: 'agent' }, inputs: ['main', 'ai_systemMessage', 'ai_memory', 'ai_tool'], outputs: ['main'],
+				properties: [{ displayName: 'Prompt', name: 'prompt', type: 'string', default: '' }],
+			},
+			async execute() { return [this.getInputData()]; },
+		};
+		registry['@n8n/n8n-nodes-langchain.keywordTool'] = {
+			description: {
+				displayName: 'Keyword Tool', name: 'keywordTool', group: ['ai'], version: 1, description: '',
+				defaults: { name: 'keywordTool' }, inputs: ['ai_tool'], outputs: ['ai_tool'],
+				properties: [
+					{ displayName: 'Resource', name: 'resource', type: 'options', default: 'resA', options: [{ name: 'Resource A', value: 'resA' }, { name: 'Resource B', value: 'resB' }] },
+					{ displayName: 'Operation', name: 'operation', type: 'options', default: 'opA', displayOptions: { show: { resource: ['resA'] } }, options: [{ name: 'Operation A', value: 'opA' }, { name: 'Operation B', value: 'opB' }] },
+					{ displayName: 'User Query', name: 'userQuery', type: 'string', default: '' },
+				],
+			},
+			async execute() { return [[]]; },
+		};
+		registry['@n8n/n8n-nodes-langchain.googleCalendarTool'] = {
+			description: {
+				displayName: 'Calendar Tool', name: 'googleCalendarTool', group: ['ai'], version: 1, description: '',
+				defaults: { name: 'googleCalendarTool' }, inputs: ['ai_tool'], outputs: ['ai_tool'],
+				properties: [
+					{ displayName: 'Calendar', name: 'calendar', type: 'resourceLocator', default: { __rl: true, mode: 'list', value: '' }, modes: [{ displayName: 'List', name: 'list', type: 'list', typeOptions: {} }] },
+				],
+			},
+			async execute() { return [[]]; },
+		};
+		registry['ref.memoryStore'] = {
+			description: { displayName: 'Memory', name: 'memoryStore', group: ['ai'], version: 1, description: '', defaults: { name: 'memoryStore' }, inputs: ['ai_memory'], outputs: ['ai_memory'], properties: [] },
+			async execute() { return [[]]; },
+		};
+		const AG_JSON = {
+			id: 'agent6-agent', name: 'agent6-agent', settings: { executionOrder: 'v1' },
+			nodes: [
+				{ id: 'Start', name: 'Start', type: 'n8n-nodes-base.manualTrigger', typeVersion: 1, position: [0, 0], parameters: {} },
+				{
+					id: 'Agent', name: 'Agent', type: '@n8n/n8n-nodes-langchain.agent', typeVersion: 1, position: [1, 0], parameters: { prompt: 'hi' },
+				},
+				{
+					id: 'Tool1', name: 'Tool1', type: '@n8n/n8n-nodes-langchain.keywordTool', typeVersion: 1, position: [1, 1],
+					parameters: { resource: 'resA', operation: 'opA', userQuery: '={{ $fromAI("user_input") }}' },
+					credentials: { slackApi: { id: 'c1', name: 'Slack' } },
+				},
+				{ id: 'Tool2', name: 'Tool2', type: '@n8n/n8n-nodes-langchain.keywordTool', typeVersion: 1, position: [1, 2], parameters: { resource: 'resB' } },
+				{ id: 'Cal', name: 'Cal', type: '@n8n/n8n-nodes-langchain.googleCalendarTool', typeVersion: 1, position: [1, 3], parameters: { calendar: { __rl: true, mode: 'id', value: 'cal-123' } } },
+				{ id: 'Mem', name: 'Mem', type: 'ref.memoryStore', typeVersion: 1, position: [1, 4], parameters: {} },
+			],
+			connections: {
+				Start: { main: [[{ node: 'Agent', type: 'main', index: 0 }]] },
+				Tool1: { ai_tool: [[{ node: 'Agent', type: 'ai_tool', index: 0 }]] },
+				Mem: { ai_memory: [[{ node: 'Agent', type: 'ai_memory', index: 0 }]] },
+			},
+		};
+		const agWf = buildWorkflow(AG_JSON);
+		const agItems = [{ json: { n: 0 } }];
+		const P = (over = {}) =>
+			new WorkflowDataProxy(agWf, null, 0, 0, over.activeNodeName ?? 'Agent', agItems, {}, 'manual', {}, undefined, -1, {}, over.activeNodeName ?? 'Agent').getDataProxy();
+		return {
+			agentInfo_on_agent_node: probe(() => P().$agentInfo),
+			agentInfo_on_non_agent_node: probe(() => P({ activeNodeName: 'Tool2' }).$agentInfo),
+			tools_are_from_queryNodes_not_connections_only: probe(() => ({
+				connected: P().$agentInfo.tools.filter((t) => t.connected).map((t) => t.name),
+				unconnected: P().$agentInfo.tools.filter((t) => !t.connected).map((t) => t.name),
+			})),
+			aiDefinedFields_and_calendar: probe(() => {
+				const t = P().$agentInfo.tools.find((x) => x.name === 'Tool1');
+				const c = P().$agentInfo.tools.find((x) => x.name === 'Cal');
+				return { tool1: { resource: t.resource, operation: t.operation, hasCredentials: t.hasCredentials, aiDefinedFields: t.aiDefinedFields, type: t.type }, cal: { hasValidCalendar: c.hasValidCalendar, resource: c.resource, operation: c.operation } };
+			}),
+			memoryConnectedToAgent_then_not: probe(() => {
+				const noMemConns = { Start: AG_JSON.connections.Start, Tool1: AG_JSON.connections.Tool1 };   // Mem dropped entirely
+				const noMem = buildWorkflow({ ...AG_JSON, connections: noMemConns });
+				const P2 = new WorkflowDataProxy(noMem, null, 0, 0, 'Agent', agItems, {}, 'manual', {}, undefined, -1, {}, 'Agent').getDataProxy();
+				return { withMemory: P().$agentInfo.memoryConnectedToAgent, withoutMemory: P2.$agentInfo.memoryConnectedToAgent };
+			}),
+			// $agentInfo is computed EAGERLY in `base` (agentInfo() runs at getDataProxy() time)
+			eager_snapshot_not_lazy: probe(() => {
+				const p = P();
+				const before = p.$agentInfo.tools.length;
+				agWf.nodes['Tool3'] = { id: 'Tool3', name: 'Tool3', type: '@n8n/n8n-nodes-langchain.keywordTool', typeVersion: 1, position: [1, 5], parameters: {}, disabled: false };
+				const after = p.$agentInfo.tools.length;
+				const fresh = P().$agentInfo.tools.length;
+				return { before, after, fresh };
+			}),
+		};
+	})(),
+
+	// ---- E4: item-lineage `sourceOverwrite` (workflow-data-proxy) and the core resolveSourceOverwrite rule ----
+	lineage_sourceOverwrite: (() => {
+		// give Start a SECOND run so a redirected source is observable
+		const rd = JSON.parse(JSON.stringify(runExecutionData));
+		rd.resultData.runData.Start.push({
+			startTime: 0, executionTime: 0, executionIndex: 1, source: [],
+			data: { main: [[{ json: { n: 'RUN1' } }]] },
+		});
+		// End item0's pairedItem -> Split run0 item0; Split item0's pairedItem decides the NEXT hop.
+		const splitItem = rd.resultData.runData.Split[0].data.main[0][0];
+		const natural = probe(() => new WorkflowDataProxy(wf, rd, 0, 0, 'End', connectionInputData, {}, 'manual', {}, { ...executeData }, -1, {}, 'End').getDataProxy().$('Start').item.json);
+		const redirected = probe(() => {
+			const rd2 = JSON.parse(JSON.stringify(rd));
+			const item = rd2.resultData.runData.Split[0].data.main[0][0];
+			item.pairedItem = { item: 0, input: 0, sourceOverwrite: { previousNode: 'Start', previousNodeOutput: 0, previousNodeRun: 1 } };
+			return new WorkflowDataProxy(wf, rd2, 0, 0, 'End', connectionInputData, {}, 'manual', {}, { ...executeData }, -1, {}, 'End').getDataProxy().$('Start').item.json;
+		});
+		const badInputIndex = probe(() => {
+			const rd2 = JSON.parse(JSON.stringify(rd));
+			const item = rd2.resultData.runData.Split[0].data.main[0][0];
+			item.pairedItem = { item: 0, input: 7 };   // beyond taskData.source.length
+			return new WorkflowDataProxy(wf, rd2, 0, 0, 'End', connectionInputData, {}, 'manual', {}, { ...executeData }, -1, {}, 'End').getDataProxy().$('Start').item.json;
+		});
+		const ed = (meta) => ({ data: { main: [[{ json: { n: 0 } }]] }, node: wf.getNode('End'), source: [], metadata: meta });
+		return {
+			natural_walk: natural,
+			redirected_via_pairedItem_sourceOverwrite: redirected,
+			input_index_beyond_sourceArray: badInputIndex,
+			core_resolveSourceOverwrite_matrix: {
+				'no metadata': probe(() => resolveSourceOverwrite({ json: {}, pairedItem: { item: 0 } }, ed(undefined))),
+				'flag off': probe(() => resolveSourceOverwrite({ json: {}, pairedItem: { item: 0, sourceOverwrite: { previousNode: 'X' } } }, ed({ preserveSourceOverwrite: false }))),
+				'preservedSourceOverwrite wins': probe(() => resolveSourceOverwrite({ json: {}, pairedItem: { item: 0, sourceOverwrite: { previousNode: 'FROM_ITEM' } } }, ed({ preserveSourceOverwrite: true, preservedSourceOverwrite: { previousNode: 'PRESERVED' } }))),
+				'falls back to pairedItem.sourceOverwrite': probe(() => resolveSourceOverwrite({ json: {}, pairedItem: { item: 0, sourceOverwrite: { previousNode: 'FROM_ITEM' } } }, ed({ preserveSourceOverwrite: true }))),
+				'flag on, nothing set': probe(() => resolveSourceOverwrite({ json: {}, pairedItem: { item: 0 } }, ed({ preserveSourceOverwrite: true }))),
+				'pairedItem is a number': probe(() => resolveSourceOverwrite({ json: {}, pairedItem: 2 }, ed({ preserveSourceOverwrite: true }))),
+			},
+		};
+	})(),
+
+	// ---- E5: the additionalKeys supply side every node-execution-context forwards ----
+	additionalKeys_surface: (() => {
+		const base = additionalFor();
+		return {
+			getAdditionalKeys_shape: probe(() => {
+				const k = getAdditionalKeys(base, 'manual', runExecutionData);
+				return { keys: Object.keys(k).sort(), id: k.$execution.id, mode: k.$execution.mode, resumeUrl: k.$execution.resumeUrl, resumeFormUrl: k.$execution.resumeFormUrl, vars: k.$vars, secrets: k.$secrets, deprecatedExecutionId: k.$executionId };
+			}),
+			getAdditionalKeys_production_mode: probe(() => {
+				const k = getAdditionalKeys({ ...base, executionId: undefined, webhookWaitingBaseUrl: 'https://h/wait' }, 'cli', runExecutionData);
+				return { mode: k.$execution.mode, id: k.$execution.id, resumeUrl: k.$execution.resumeUrl };
+			}),
+			getAdditionalKeys_without_runData: probe(() => {
+				const k = getAdditionalKeys(base, 'manual', null);
+				return { keys: Object.keys(k).sort(), customData: k.$execution.customData };
+			}),
+			getNonWorkflowAdditionalKeys_shape: probe(() => {
+				const k = getNonWorkflowAdditionalKeys(base);
+				return { keys: Object.keys(k).sort(), vars: k.$vars, secrets: k.$secrets };
+			}),
+			secrets_proxy_surface: (() => {
+				const store = { vaultA: { tok: 'SECRET_A', nested: { deep: 'D' } } };
+				const externalSecretsProxy = {
+					listProviders: () => Object.keys(store),
+					hasProvider: (name) => name in store,
+					listSecrets: (name) => Object.keys(store[name] ?? {}),
+					hasSecret: (name, key) => !!store[name] && key in store[name],
+					getSecret: (name, key) => store[name]?.[key],
+				};
+				const withSecrets = (mode = 'manual') => getAdditionalKeys({ ...base, externalSecretsProxy }, mode, runExecutionData, { secretsEnabled: true });
+				return {
+					providers: probe(() => Object.keys(withSecrets().$secrets)),
+					secret_value: probe(() => withSecrets().$secrets.vaultA.tok),
+					nested_object: probe(() => withSecrets().$secrets.vaultA.nested.deep),
+					enumeration_is_invisible: probe(() => { const sp = withSecrets().$secrets; return { objectKeys: Object.keys(sp), hasOperator: 'vaultA' in sp, getOwnPropertyNames: Object.getOwnPropertyNames(sp), directRead: sp.vaultA.tok }; }),
+					unknown_provider_throws: probe(() => withSecrets().$secrets.vaultB.anything),
+					unknown_secret_throws: probe(() => withSecrets().$secrets.vaultA.nope),
+					writes_are_refused: probe(() => { const k = withSecrets(); try { k.$secrets.vaultA = 1; } catch (e) { return { threw: e.constructor.name }; } return { ownKeysAfterWrite: Object.keys(k.$secrets), valueStill: k.$secrets.vaultA.tok }; }),
+					disabled_flag_leaves_key_undefined: probe(() => getAdditionalKeys({ ...base, externalSecretsProxy }, 'manual', runExecutionData).$secrets),
+				};
+			})(),
+			nonWorkflow_keys_no_secrets: probe(() => getNonWorkflowAdditionalKeys({ ...base, externalSecretsProxy: undefined }).$secrets),
+			customData_set_get_manual_mode: probe(() => {
+				const rd = JSON.parse(JSON.stringify(runExecutionData));
+				const k = getAdditionalKeys(base, 'manual', rd);
+				k.$execution.customData.set('k1', 'v1');
+				return { stored: k.$execution.customData.get('k1'), all: k.$execution.customData.getAll(), inRunData: show(rd.resultData.metadata) };
+			}),
+			customData_bad_value_throws_in_manual: probe(() => {
+				const rd = JSON.parse(JSON.stringify(runExecutionData));
+				const k = getAdditionalKeys(base, 'manual', rd);
+				return k.$execution.customData.set('k2', { not: 'a string' });
+			}),
+			customData_bad_value_swallowed_in_production: probe(() => {
+				const rd = JSON.parse(JSON.stringify(runExecutionData));
+				const k = getAdditionalKeys(base, 'cli', rd);
+				k.$execution.customData.set('k3', { not: 'a string' });
+				return { ok: true, after: k.$execution.customData.get('k3') };
+			}),
+			// precedence check: $webhookId is declared AFTER ...additionalKeys, so a caller-supplied
+			// value of the same name must LOSE to the engine's (here: node has no webhookId -> undefined).
+			webhookId_precedence_engine_wins: probe(() => {
+				const p = new WorkflowDataProxy(wf, runExecutionData, 0, 0, 'End', connectionInputData, {}, 'manual', { $webhookId: 'FROM_CALLER' }, executeData, -1, {}, 'End').getDataProxy();
+				return { fromCaller: 'FROM_CALLER', seenByProxy: p.$webhookId, engineValueFromNode: wf.getNode('End').webhookId };
+			}),
+			webhookId_from_node_when_present: probe(() => {
+				const wfW = buildWorkflow({ ...WF_JSON, nodes: WF_JSON.nodes.map((n) => (n.name === 'End' ? { ...n, webhookId: 'node-wh-id' } : n)) });
+				return new WorkflowDataProxy(wfW, runExecutionData, 0, 0, 'End', connectionInputData, {}, 'manual', { $webhookId: 'FROM_CALLER' }, executeData, -1, {}, 'End').getDataProxy().$webhookId;
+			}),
+		};
+	})(),
+};
+
 // ---------- 13-B: n8n-core node-execution-context glue -----------------------------------
 const glue = {};
 {
@@ -739,6 +1007,7 @@ const output = {
 		'13B_scoping': scoping,
 		'13C_core_glue': glue,
 		'13D_extra': extra,
+		'13E_gap_closure': gapClosure,
 		fixture: {
 			workflow: WF_JSON,
 			startItems,

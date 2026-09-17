@@ -18,8 +18,9 @@ Anatomi penuh resolusi variabel pada `WorkflowDataProxy` (`$json`, `$binary`, `$
 `docs/isolation/variable-lookup-scoping.md`, kontrak normatifnya di `contracts/variable-lookup.contract.md`
 (tupel scoping 14-nilai, tabel resolusi per-kunci, aturan `$parameter` P1–P6, algoritma item-lineage
 A1–A8, matriks pin-data/`throwOnMissingExecutionData`, invarian I1–I14). Semua perilaku direkam dari
-runtime asli lewat `WorkflowExecute` sungguhan (bukan stub): 172 entri `PIPE-13` + fixture 23 baris,
-termasuk 3 eksekusi engine live di `13C_core_glue`. Penemuan paling penting untuk port: `$parameter`
+runtime asli lewat `WorkflowExecute` sungguhan (bukan stub): 214 entri `PIPE-13` + fixture 23 baris,
+termasuk 3 eksekusi engine live di `13C_core_glue` dan blok `13E_gap_closure` yang menutup keempat baris
+`PARTIAL` kontrak (`$fromAI`, `$tool`, `$agentInfo`, `resolveSourceOverwrite`/lineage) dengan 42 rekaman baru. Penemuan paling penting untuk port: `$parameter`
 tidak membaca `node.parameters` mentah melainkan hasil **rewrite konstruktor `Workflow`**
 (`NodeHelpers.getNodeParameters(..., returnDefaults=true, returnNoneDisplayed=false)`); `additionalKeys`
 adalah input *required* yang mendominasi sebagian kunci tetapi **bisa** di-shadow untuk kunci lain —
@@ -47,13 +48,15 @@ dan `reference/n8n/**` **tidak** disentuh.
 
 | Operation | Status | Exit Code |
 | :--- | :--- | ---: |
-| `node docs/isolation/agent-6-probes/expression-probes.cjs docs/isolation/agent-6-probes/observations.json` | `SUCCESS` · 172 entri `PIPE-13` (13A 90 · 13B 36 · 13C 12 · 13D 34) + fixture 23 | `0` |
+| `node docs/isolation/agent-6-probes/expression-probes.cjs docs/isolation/agent-6-probes/observations.json` | `SUCCESS` · 214 entri `PIPE-13` (13A 90 · 13B 36 · 13C 12 · 13D 34 · **13E 42**) + fixture 23 | `0` |
 | live engine runs di dalam `13C` (3× `WorkflowExecute` penuh: parameter per-item, parameter gagal, `getWorkflowDataProxy`) | `SUCCESS` · error task tercatat `executionStatus:'error'` dengan `context.parameter='value'` | `0` |
 | replay ke `/tmp/replay5.json` lalu `node docs/isolation/agent-6-probes/determinism-check.cjs observations.json /tmp/replay5.json` | `MATCH (only environment-dependent fields differ)` | `0` |
-| `sha256sum docs/isolation/agent-6-probes/observations.json` | `6a5878218b9620e42fc450b82405ec61628fc338ca1c90464e2366889467f452` | `0` |
+| `sha256sum docs/isolation/agent-6-probes/observations.json` | `c7e62b01a58a017fe9643147442b8d9ce875be79928a45dd25f552c8a6b100c1` | `0` |
 | `node tools/workflow-reference-manifest.mjs --check` | `Reference integrity check: PASS (15050 files, root f8da35180669d798…)` — `reference/` utuh | `0` |
 | verifikasi borderline via harness (`{{ nope?.x }}`→`undefined`, `{{ new nope() }}`, `instanceof nope`, `nope()`) | `SUCCESS` · 4/4 cocok dengan tabel kontrak §2 baris "unknown identifier" | `0` |
 | `python3 tests/integration/result_integrity_audit.py` (audit Agent 5), diukur **setelah** kedua hasil ini ditulis | `RESULT: 15/19 task results are self-consistent` — TASK-PIPE-12/13 **lulus T1**; 4 `[FAIL]` tersisa adalah task lain (TASK-402, TASK-403, TASK-INIT-AGENT-3/4) yang justru saya tagihkan di TAHAP 2 | `1` (karena 4 temuan pre-existing itu) |
+| blok baru `13E_gap_closure` (42 entri) dijalankan terhadap `WorkflowDataProxy` asli + helper `n8n-core` (`getAdditionalKeys`, `getNonWorkflowAdditionalKeys`, `resolveSourceOverwrite`) | `SUCCESS` · 42/42 terekam, 0 UNKNOWN | `0` |
+| replay ulang setelah 13E masuk: `node docs/isolation/agent-6-probes/determinism-check.cjs observations.json /tmp/replayE.json` | `MATCH (only environment-dependent fields differ)` | `0` |
 | `git status --porcelain` | hanya `docs/isolation/**`, `contracts/**`, `results/**` | `0` |
 
 ### Bukti Mesin — vektor kunci lookup (semua dari runtime)
@@ -88,7 +91,8 @@ Perbaikan transparan selama verifikasi akhir: satu baris probe bernama `'$node["
 `$node['Start'].unrun` (salah label — `Unrun` bukan node di fixture). Labelnya dibetulkan menjadi
 `'$node["Start"].unrun (unknown property on an executed node proxy)'` dan **empat baris baru** ditambahkan
 untuk perilaku "node ada tapi belum pernah jalan" yang selama itu tidak teruji (`Solo`). Akibatnya
-`13D_extra` naik 29 → 34 dan sha256 `observations.json` berubah ke `6a587821…`. Saya mencatatnya di sini
+`13D_extra` naik 29 → 34, lalu grup baru `13E_gap_closure` (+42 entri) menutup empat baris `PARTIAL`
+kontrak, dan sha256 `observations.json` berubah ke `c7e62b01…`. Saya mencatatnya di sini
 karena standar yang saya tagihkan ke rekan satu tim adalah standar yang sama untuk diri sendiri.
 
 ### Keterbatasan yang diakui (bukan kegagalan tersembunyi)

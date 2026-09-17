@@ -327,6 +327,24 @@ Contrast with `$node['Start'].json`, which for itemIndex 0..3 returned `n = 0,1,
 no lineage) while `.item` returned `0,2` — the single most common workflow-corruption source when a
 port "unifies" the two.
 
+**`pairedItem.sourceOverwrite` is honoured mid-walk** (`nextPairedItem.sourceOverwrite ?? sourceArray[inputIndex]`,
+L1000) and is the mechanism behind tool/sub-node executions. Observed (`13E.lineage_sourceOverwrite`): with
+Start given a second run whose item is `{n:'RUN1'}`, `$('Start').item` from End returns `{n:0}` naturally and
+`{n:'RUN1'}` once `Split`'s item carries
+`pairedItem = { item:0, input:0, sourceOverwrite:{ previousNode:'Start', previousNodeOutput:0, previousNodeRun:1 } }`.
+The core-side predicate is `resolveSourceOverwrite(item, executionData)` — it returns `null` unless
+`executionData.metadata.preserveSourceOverwrite` is set, prefers `metadata.preservedSourceOverwrite`, and only
+then falls back to `item.pairedItem.sourceOverwrite` (6/6 matrix cases in `13E`, including
+`pairedItem: 2` → `null`, i.e. a numeric pairedItem never redirects).
+
+**Upstream crash, recorded not fixed:** if `input` exceeds `taskData.source.length` for every candidate, the
+candidate list ends up empty, `results.every(r => !r.ok)` is vacuously `true`, and `throw results[0].error`
+dereferences `undefined` → `TypeError: Cannot read properties of undefined (reading 'error')` instead of an
+`ExpressionError` (observed as `13E.lineage_sourceOverwrite.input_index_beyond_sourceArray`). A port that
+"just returns the no-connection error here" is a **behaviour change** and needs a recorded deviation. This is
+also the one case where a bad `pairedItem` produced by the *engine* (Agent 3's `IExecutionData` producer)
+surfaces inside *my* slice — filed as ISSUE-019 §5.
+
 ---
 
 ## 8. Error taxonomy (all observed; class · message · `context`)
@@ -334,7 +352,7 @@ port "unifies" the two.
 | Situation | class | `context` |
 |---|---|---|
 | unknown node via `$node`/`$('X')` | `ExpressionError` `"Referenced node doesn't exist"` | `nodeCause`, `descriptionKey: 'nodeNotFound'`, `runIndex`, `itemIndex` |
-| node exists, not executed | `ExpressionError` `"Node 'X' hasn't been executed"` | `type: 'no_execution_data'`, `nodeCause`, `descriptionKey: 'pairedItemNoConnection'|'pairedItemNoConnectionCodeNode'`, `messageTemplate` (with the embedded `$if(…isExecuted…)` hint) |
+| node exists, not executed | `ExpressionError` `"Node 'X' hasn't been executed"` | `type: 'no_execution_data'`, `nodeCause`, `descriptionKey: 'pairedItemNoConnection'` (or `…CodeNode` for scripting nodes), `messageTemplate` (with the embedded `$if(…isExecuted…)` hint) |
 | `runExecutionData === null` | `ExpressionError` `"The workflow hasn't been executed yet, so you can't reference any output data"` | `runIndex`, `itemIndex` |
 | no input at all, `$json` | `ExpressionError` `"Node '<ctx>' hasn't been executed"` | `type:'no_execution_data'`, `descriptionKey:'pairedItemNoConnection'` |
 | no input, `$input.*` | `ExpressionError` `'No execution data available'` | `type:'no_execution_data'` |
@@ -372,7 +390,10 @@ L2  `$('X')`/`$node[X]` never read `connectionInputData`, except `.item/.pairedI
     which read exactly `connectionInputData[itemIndex].pairedItem` and `executeData.source`.
 L3  `$node[X].*` is positional (current itemIndex); `$('X').item` is lineage-based. They are not
     interchangeable and produce different values whenever item counts differ along the path.
-L4  Unknown *property* ⇒ `undefined`; unknown/unexecuted *node* ⇒ typed `ExpressionError`.
+L4  Three outcomes, never interchangeable: name absent from `workflow.nodes` ⇒ typed `ExpressionError`
+    at the lookup (`nodeNotFound`; thrown before any accessor is read); node present but unexecuted ⇒
+    `Node 'X' hasn't been executed` for `json/data/binary`, `-1` for `runIndex`, `false` for `isExecuted`;
+    unknown *property* on a returned proxy ⇒ `undefined`.
 L5  `$parameter` exposes the effective parameters produced by `Workflow`'s constructor
     (defaults injected, undeclared and non-displayed keys dropped), not the stored JSON.
 L6  `$rawParameter` = same view, expressions unresolved; both unwrap resource locators to `.value`
@@ -398,6 +419,26 @@ L14 `$('X').isExecuted` and `$prevNode` never throw; `$prevNode` is `undefined` 
 L15 Constructing the proxy mutates the process-wide luxon default zone (side effect, not scoped to the evaluation).
 L16 Every leaf evaluation constructs a new proxy ⇒ `$now`/`$today` are per-leaf, so multiple parameters in
     one node can observe different `$now` values.
+L17 `$agentInfo` is computed **eagerly** inside `base` (`agentInfo()` at `getDataProxy()` time): mutating the
+    workflow afterwards does not change an already-built proxy (observed `before:3, after:3, fresh:4`). Its
+    `tools[]` are every node whose *type description name* contains `tool` (`queryNodes`), split into
+    `connected:true` (an `ai_tool` edge into the agent) and `connected:false` (no `ai_tool` child), each with
+    `resource`/`operation` resolved to their option **display names**, `hasCredentials`, `hasValidCalendar`
+    (only defined for a type whose name contains `googleCalendar`) and `aiDefinedFields` (parameter
+    *display names* whose raw value mentions `$fromAI`).
+L18 `$secrets` is readable only by direct property access: `Object.keys` ⇒ `[]` and `'vaultA' in $secrets`
+    ⇒ `false` while `Object.getOwnPropertyNames` ⇒ `['vaultA']`, because the proxy defines `ownKeys` but no
+    `getOwnPropertyDescriptor`/`has`. Writes are refused (`set` returns `false` ⇒ `TypeError` in strict code).
+    Unknown provider and unknown secret are **different** `Could not load secrets` errors ('not reachable' vs
+    'could not be found').
+L19 `$fromAI`/`$tool` pick their source by *task existence*, not by data presence: if
+    `runData[activeNode][runIndex]` exists, only `inputOverride.ai_tool[0][itemIndex].json` is consulted
+    (no `connectionInputData` fallback); if that task does not exist, the fallback is
+    `connectionInputData[**runIndex**]` — an upstream indexing quirk (items are indexed by `itemIndex`
+    everywhere else). Lookup order is `.query[key] ?? json[key] ?? defaultValue`; `itemIndex` beyond the
+    override array raises a raw `TypeError` (the optional chain stops before `.json`).
+L20 `pairedItem.sourceOverwrite` redirects the lineage walk one hop at a time; the walk crashes with a
+    `TypeError` (not an `ExpressionError`) when every candidate's `input` index is out of range (§7).
 ```
 
 ---
@@ -444,11 +485,12 @@ in TypeScript/JS longer, or reimplement it later, without invalidating this slic
 | Check | Result |
 |---|---|
 | Real execution used for data (`WorkflowExecute` manual run over `Start → ref.split2 → ref.passthrough`, 4 start items, `executionOrder: v1`) | run `status: success`, `runData` keys `Start, Split, End`; End's input = 2 items (branch 0) with `pairedItem {item:0}/{item:1}` |
-| Lookup matrix (87 keys × real proxy) | produced, 0 `UNKNOWN` entries |
-| Scoping dimensions (18 groups) + extras (9 groups) | produced |
+| Lookup matrix (90 keys × real proxy) | produced, 0 `UNKNOWN` entries |
+| Gap closure (`13E`, 42 records: `$fromAI` source, `$tool`, `$agentInfo`, lineage `sourceOverwrite`, `resolveSourceOverwrite`, `additionalKeys`/`$secrets`/`customData`) | produced against the real `WorkflowDataProxy` + `getAdditionalKeys`/`resolveSourceOverwrite` from `n8n-core` |
+| Scoping dimensions (19 groups) + extras (10 groups) | produced |
 | n8n-core glue live probes (2 engine runs: full-surface node + failing-expression node) | `13C_core_glue`: parameter/raw/ensureType(`string\|number\|boolean\|json`)/`evaluateExpression` defaults/`getWorkflowDataProxy` (`$parameter` keys, `&sibling` throw, `$execution`, `$vars`, `$env` denial)/`$now`; `errorContext`: `ExpressionError` with `context.parameter:'value'` on the task and on `resultData.error` |
-| Totals | **461 entries**, of which this task's slice is **172** (`13A` 90 · `13B` 36 · `13C` 12 · `13D` 34) plus the 23-entry fixture, in `agent-6-probes/observations.json` (sha256 `6a5878218b9620e42fc450b82405ec61628fc338ca1c90464e2366889467f452`) |
-| Replay determinism | `determinism-check.cjs observations.json <rerun>` → `MATCH (only environment-dependent fields differ)` | verified 2026-09-17 |
+| Totals | **503 entries**, of which this task's slice is **214** (`13A` 90 · `13B` 36 · `13C` 12 · `13D` 34 · `13E` 42) plus the 23-entry fixture, in `agent-6-probes/observations.json` (sha256 `c7e62b01a58a017fe9643147442b8d9ce875be79928a45dd25f552c8a6b100c1`) |
+| Replay determinism | `determinism-check.cjs observations.json <rerun>` → `MATCH (only environment-dependent fields differ)`, recorded 2026-09-17 for the 503-entry file |
 | `reference/n8n/**` integrity | unmodified (`git status --porcelain` shows no `reference/` entries) |
 | Golden set of Agent 3 (`tests/reference/expression/*`) | **not modified**; my records refine wording only (PIPE-12 §10-D1) — no expected.json touched, so the 11/11 baseline and the 6/6 expression suite are unaffected |
 | Live VPS | not reachable from the sandbox; recorded as `ISOLATED`, not `VERIFIED` |
@@ -459,10 +501,34 @@ in TypeScript/JS longer, or reimplement it later, without invalidating this slic
    (Agent 1) and `contracts/node.contract.md` (Agent 2), otherwise the Rust port will read raw JSON.
 2. **`additionalKeys` precedence** (L12) — a port that spreads caller keys last silently changes
    `$position`/`$nodeVersion`; the fix is to keep n8n's literal order, which is what the contract says.
-3. **`$fromAI`/`$tool` input override** — verified only for the "no execution data" and validation
-   errors (the happy path needs `inputOverride.ai_tool`, which the stand-in engine run does not
-   produce). Marked in the contract as `PARTIAL` rather than pretending coverage.
+3. ~~**`$fromAI`/`$tool` input override** — verified only for the "no execution data" and validation
+   errors.~~ **CLOSED** in this revision: the happy path, the fallback indexing quirk, the validation
+   boundaries and `$tool`'s fallback chain are all observed in `13E` (§14). The contract's `PARTIAL`
+   marker is replaced by `L17–L19` + the `13E` vectors.
 4. **`throwOnMissingExecutionData:false`** softens empty data for the four outer-trap keys only, never
    long-syntax accessors nor unknown nodes (§4) — the contract records it so the Rust port does not
    "improve" it into a blanket suppressor. Proven by the two added probe rows
    (`$node["Solo"].json` with the flag `false` still throws; `$node["Solo"].runIndex` → `-1`).
+
+---
+
+## 14. Gap closure — the four rows that were `PARTIAL`, now observed (`13E_gap_closure`)
+
+Method: the proxy and the core helpers are exercised directly (no stubbing) by injecting
+`inputOverride` into a *clone* of the real `runExecutionData`, and by registering synthetic
+agent/tool node types in the harness registry so `queryNodes`/`getByNameAndVersion` resolve for real.
+
+| Former gap | What is now pinned | Where |
+|---|---|---|
+| `$fromAI` data source | 14 records: `query` map beats the item's top level, missing key ⇒ `undefined`, 4th arg is the default, item selected by `itemIndex`, `inputOverride` only read when the task at `[activeNode][runIndex]` exists, otherwise fallback to `connectionInputData[runIndex]`, 64-char key accepted / 65 rejected / dotted rejected, `$fromai`+`$fromAi` aliases identical, out-of-range item ⇒ raw `TypeError` | `13E.fromAI_inputOverride` |
+| `$tool` | 7 records: `{name,parameters}` from `tool`/`toolParameters` keys (query map or top level), partial object when only one is present (`parameters: undefined` kept as a key), `additionalKeys.$tool` used only to cover the swallowed `no_execution_data` case, no-data-and-no-fallback ⇒ `undefined`, works through the expression pipeline (`={{ $tool.name }}`) | `13E.tool_access` |
+| `$agentInfo` | 6 records on a 6-node agent graph (`ai_tool` + `ai_memory` edges, one unconnected tool, one `googleCalendar`-named tool, one tool with a `$fromAI` parameter): shape, `connected`/unconnected split, display-name resolution for `resource`/`operation` (`Resource A`/`Operation A`, `null` when the operation is not declared for the chosen resource), `hasCredentials`, `hasValidCalendar` (`true`/`undefined` only), `aiDefinedFields: ['User Query']`, `undefined` for a non-agent active node, memory flag toggling with the edge, eager snapshot (L17) | `13E.agent_info` |
+| `resolveSourceOverwrite` + lineage | 9 records: the 6-case core matrix (`preserveSourceOverwrite` gate, `preservedSourceOverwrite` precedence, `pairedItem.sourceOverwrite` fallback, numeric pairedItem) plus the proxy-side proof that the redirect actually changes which run the walk lands on (`{n:0}` vs `{n:'RUN1'}`), and the out-of-range-`input` `TypeError` (L20) | `13E.lineage_sourceOverwrite` |
+| `additionalKeys` supply surface (the part of "webhook-context scoping" this slice owns) | 11 records: `getAdditionalKeys` key set (`$execution`, `$executionId`, `$resumeWebhookUrl`, `$secrets`, `$vars` — `resumeFormUrl` is *inside* `$execution`, not a top-level key), `mode:'manual' ⇒ 'test'` vs anything `'production'`, missing `executionId` ⇒ placeholder `__UNKNOWN__` propagated into `resumeUrl`, `$execution.customData` absent without run data, `set/get/getAll` round-trip into `resultData.metadata`, `InvalidExecutionMetadataError` for non-string values in manual mode but swallowed in production, `getNonWorkflowAdditionalKeys` ⇒ only `$vars`/`$secrets`, the `$secrets` proxy surface (L18), and `$webhookId` precedence proven both ways (caller value loses to the engine even when the engine value is `undefined`) | `13E.additionalKeys_surface` |
+
+Still not covered by design: the request-shaped half of the webhook/hook/load-options contexts
+(`body`, `query`, `headers`, `response`, `parseRequestObject`) — those keys are produced by Agent 4's
+webhook LEGO and only *forwarded* into `additionalKeys`; `boundary_audit`/`LEGO-MASTER-MAP` keep them
+out of this slice, and §2's table rows for `$webhookId`/`$resumeWebhookUrl` are the complete interface
+this side has to honour.
+

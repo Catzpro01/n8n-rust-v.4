@@ -4,7 +4,7 @@
 **Tasks:** `TASK-PIPE-12` (evaluation of `{{ … }}`) — companion record: [`variable-lookup-scoping.md`](variable-lookup-scoping.md) (`TASK-PIPE-13`)
 **Reference:** n8n `2.9.4` (`reference/n8n`, upstream commit `b6dc2787c45677a29a9612cd27eb911302961a83`)
 **Runtime observed:** `n8n-workflow@2.9.1`, `n8n-core@2.9.1`, `@n8n/tournament@1.0.6`, `luxon@3.7.2`, Node `v22.22.3`
-**Status:** `ISOLATED` (anatomy + boundary + 461 machine-recorded observations, PIPE-12 slice: 266). **No Rust was written; `crates/`, `apps/`, `packages/workflow-lego/`, `contracts/expression.contract.md` untouched.**
+**Status:** `ISOLATED` (anatomy + boundary + 503 machine-recorded observations, PIPE-12 slice: 266). **No Rust was written; `crates/`, `apps/`, `packages/workflow-lego/`, `contracts/expression.contract.md` untouched.**
 **Contract:** [`contracts/expression-syntax.contract.md`](../../contracts/expression-syntax.contract.md)
 
 > This record is a **slice** of the Expression LEGO already documented in
@@ -27,7 +27,7 @@
 | S4b chunking (extension) | `workflow/src/extensions/expression-parser.ts` | 100 | **n8n's own** `splitExpression` / `joinExpression` / `escapeCode` |
 | S5 evaluator proxy | `workflow/src/expression-evaluator-proxy.ts` | 21 | builds `new Tournament(errorHandler, undefined, undefined, { before:[ThisSanitizer], after:[PrototypeSanitizer, DollarSignValidator] })` |
 | S6 chunking (eval) | `@n8n/tournament/src/ExpressionSplitter.ts` | — | **tournament's own** `splitExpression` (different escape rules, `normalizeBackslashes`) |
-| S7 codegen | `@n8n/tournament/src/ExpressionBuilder.ts` | — | `getExpressionCode()`: tmpl-compatible JS generation, try/catch wrap, `v || v===0 \|\| v===false ? v : ''` |
+| S7 codegen | `@n8n/tournament/src/ExpressionBuilder.ts` | — | `getExpressionCode()`: tmpl-compatible JS generation, try/catch wrap, `v \|\| v===0 \|\| v===false ? v : ''` |
 | S7b scope rewrite | `@n8n/tournament/src/VariablePolyfill.ts` | — | every free identifier → `("<name>" in ___n8n_data) ? ___n8n_data.<name> : global.<name>` |
 | S8 sandbox hooks | `workflow/src/expression-sandboxing.ts` | 563 | `ThisSanitizer`, `PrototypeSanitizer`, `DollarSignValidator`, `__sanitize`, `EMPTY_CONTEXT`, `SAFE_GLOBAL` |
 | S9 execution | `@n8n/tournament/src/FunctionEvaluator.ts` | — | `new Function('E', code)` + `fn.call(data, errorHandler)`; per-template compile cache |
@@ -345,7 +345,7 @@ land PIPE-12 first (pure, deterministic, text-in/value-out) and PIPE-13 second, 
 | D1 | `renderExpression`'s `return null` is effectively unreachable for real expressions because the polyfilled AST always contains a member node ⇒ the chunk is wrapped and errors degrade to `undefined`/`''`. Agent 3's doc says "other errors ⇒ null/undefined". | `12D` + §4 | **Refine** the wording in `docs/isolation/expression.md`; keep behaviour as observed |
 | D2 | `data.process.version` is assigned `process.pid` (`expression.ts` L424-433) → `={{ process.version }}` returns the PID number (`2275` in the recorded run). | `12D.process_version` | Preserve in compat tests; file as **upstream defect** note; Rust port must decide: fidelity (default) vs fix (needs a recorded deviation + Agent 5 approval) |
 | D3 | Two splitters, two escape semantics (§3). | `12A` | Preserve **both** (they serve different stages) OR unify behind a recorded deviation |
-| C2 | The quoted-literal strip in `extendSyntax` (`/("|').*?("|')/`) only removes the **first** quoted span and can hide a real extension call after it, e.g. `'{{ "a" + $json.x.isEmpty() }}'` is classified no-extension. | source L583-585 + `12C.quote_strip_quirk` (inverse case) | Reproduce verbatim; add a golden vector for the hidden-extension case |
+| C2 | The quoted-literal strip in `extendSyntax` (`/("\|\').*?("\|\')/`) only removes the **first** quoted span and can hide a real extension call after it, e.g. `'{{ "a" + $json.x.isEmpty() }}'` is classified no-extension. | source L583-585 + `12C.quote_strip_quirk` (inverse case) | Reproduce verbatim; add a golden vector for the hidden-extension case |
 | C3 | `hasClosingBrackets:false` unclosed `{{` evaluates. | `12B.unclosed_code` | Reproduce; editor UI must not assume well-formedness |
 | C4 | `EXTENDED_SYNTAX_CACHE` and tournament's `_codeCache` are unbounded, module-global (per process). Memory growth is proportional to distinct template strings. | source; `PERFORMANCE-FINDINGS.md` has no entry | Recorded for the Rust design (bounded LRU candidate — behaviour-neutral) |
 | C5 | `?.`+extension lowers to mutable `global.chain*` tokens. | `12C.optional_chain_ext` | Port must define equivalent; **must not** write to a real global |
@@ -358,7 +358,7 @@ land PIPE-12 first (pure, deterministic, text-in/value-out) and PIPE-13 second, 
 
 | Check | Command | Result |
 |---|---|---|
-| Probe suite executed against the pinned runtime | `node docs/isolation/agent-6-probes/expression-probes.cjs <out>` | **461 entries recorded** (PIPE-12 266: 12A 66 · 12B 40 · 12B2 15 · 12C 50 · 12C2 17 · 12D 78; PIPE-13 172: 13A 90 · 13B 36 · 13C 12 · 13D 34; fixture 23), incl. **55 recorded throws**; every entry is a returned value or a typed error — nothing left UNKNOWN |
+| Probe suite executed against the pinned runtime | `node docs/isolation/agent-6-probes/expression-probes.cjs <out>` | **503 entries recorded** (PIPE-12 266: 12A 66 · 12B 40 · 12B2 15 · 12C 50 · 12C2 17 · 12D 78; PIPE-13 214: 13A 90 · 13B 36 · 13C 12 · 13D 34 · 13E 42; fixture 23), incl. **65 recorded throws** (418 outcome records = 353 values + 65 throws); every entry is a returned value or a typed error — nothing left UNKNOWN |
 | Replay determinism | `node docs/isolation/agent-6-probes/determinism-check.cjs <committed.json> <rerun.json>` | `MATCH (only environment-dependent fields differ)` — verified 2026-09-17 |
 | PIPE-12 sections | `12A` 66 · `12B` 40 · `12B2` 15 · `12C` 40 · `12D` 39 (+2) | all produced |
 | Source anchors | every `file:line` in §1/§2/§5 re-read from `reference/n8n` (read-only, unmodified — `git status` clean for `reference/`) | ✔ |
@@ -367,7 +367,7 @@ land PIPE-12 first (pure, deterministic, text-in/value-out) and PIPE-13 second, 
 | Live VPS | not reachable from this sandbox; the 11/11 baseline is unchanged because no source under `reference/` or `packages/` was edited | pending Agent 5 |
 
 Evidence files: [`agent-6-probes/observations.json`](agent-6-probes/observations.json)
-(sha256 `6a5878218b9620e42fc450b82405ec61628fc338ca1c90464e2366889467f452`),
+(sha256 `c7e62b01a58a017fe9643147442b8d9ce875be79928a45dd25f552c8a6b100c1`),
 [`agent-6-probes/expression-probes.cjs`](agent-6-probes/expression-probes.cjs).
 Re-run instructions: [`agent-6-probes/README.md`](agent-6-probes/README.md).
 

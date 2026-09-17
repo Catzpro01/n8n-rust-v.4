@@ -6,7 +6,9 @@ n8n 2.9.4 runtime; the two isolation records cite it by ID.
 
 ```text
 expression-probes.cjs   the runner (drives the real n8n-workflow + n8n-core; re-implements nothing)
-observations.json       461 recorded observations (266 PIPE-12 · 172 PIPE-13 · 23 fixture), incl. 55 throws
+observations.json       503 recorded entries (266 PIPE-12 · 214 PIPE-13 · 23 fixture)
+                        418 outcome records = 353 values + 65 typed throws
+                        (reproduce with: grep -c on the keys `ok` and `threw`)
 determinism-check.cjs   replays two observation files against each other, masking environment-dependent fields
 ```
 
@@ -40,8 +42,9 @@ Per-group counts (verifiable with `node -e` over the JSON — arrays count rows,
 | `13B_scoping` | 36 | 19 groups |
 | `13C_core_glue` | 12 | 3 live `WorkflowExecute` runs |
 | `13D_extra` | 34 | 10 groups |
+| `13E_gap_closure` | 42 | 5 blocks: `$fromAI` 14 · `$tool` 7 · `$agentInfo` 6 · lineage+`resolveSourceOverwrite` 9 · `additionalKeys` surface 11 |
 | `fixture` | 23 | workflow / items / runData anchor |
-| **total** | **461** | 55 of the entries are recorded throws |
+| **total** | **503** | 65 of the entries are recorded throws (418 outcomes = 353 values + 65 throws) |
 
 | Group | Task | Content |
 |---|---|---|
@@ -53,6 +56,7 @@ Per-group counts (verifiable with `node -e` over the JSON — arrays count rows,
 | `PIPE-13 / 13A_lookup_matrix` | PIPE-13 | every `$`-key of `getDataProxy()` against real run data |
 | `13B_scoping` | PIPE-13 | `itemIndex`/`contextNodeName`/`runIndex` shifts, missing-data matrix, `returnObjectAsString`, `additionalKeys` precedence, pin data manual vs regular, `binaryMode: combined`, copy-on-write augmentation, luxon global-zone side effect, `$parameter` recursion guard |
 | `13C_core_glue` | PIPE-13 | two live `WorkflowExecute` runs through `node-execution-context`: `rawExpressions`, `ensureType`, `evaluateExpression` defaults, `getWorkflowDataProxy` (sibling-`&` throw, `$execution`, `$vars`, `$env` denial) and the error-context attachment on a failing parameter |
+| `13E_gap_closure` | PIPE-13 | the four formerly-`PARTIAL` rows, now observed: the `$fromAI` data source, the `connectionInputData[runIndex]` fallback quirk and key validation boundaries; `$tool`'s fallback chain; `$agentInfo` on a real agent + `ai_tool` + `ai_memory` graph (eager snapshot, `queryNodes` tool discovery, resource/operation display names, `hasValidCalendar`, `aiDefinedFields`); the `pairedItem.sourceOverwrite` lineage redirect next to the 6-case `resolveSourceOverwrite` matrix and the empty-candidate `TypeError`; and the `getAdditionalKeys` / `getNonWorkflowAdditionalKeys` / `$secrets` / `$execution.customData` supply surface |
 | `13D_extra` | PIPE-13 | binary metadata vs full binary, `$evaluateExpression` prefix traps, run/branch out-of-range messages, non-ancestor pairing, global-seeding asymmetry, `$self`, `defaultReturnRunIndex` |
 | `fixture` | both | the exact workflow/items/runData the numbers came from (re-runnable determinism anchor) |
 
@@ -70,13 +74,13 @@ node docs/isolation/agent-6-probes/determinism-check.cjs \
 # => DETERMINISM CHECK: MATCH (only environment-dependent fields differ)
 ```
 
-Recorded result for the committed pair (2026-09-17, 461 entries): `MATCH`.
+Recorded result for the committed pair (2026-09-17, 503 entries): `MATCH`.
 
 ## Integrity
 
 ```
-sha256(observations.json)    = 6a5878218b9620e42fc450b82405ec61628fc338ca1c90464e2366889467f452
-sha256(expression-probes.cjs) = 716da4d98881a00647dfdf5d17fbf9ffdbeaab6593557950ed9008254c83431e
+sha256(observations.json)    = c7e62b01a58a017fe9643147442b8d9ce875be79928a45dd25f552c8a6b100c1
+sha256(expression-probes.cjs) = 49c0c739bd112c9ee8cd75fe7dabfe2b4c6cb4b314823a2131a8b7d358c3ff8f
 sha256(determinism-check.cjs) = eda63bb2d4ae685ac794277b785f2830c83ff08af495f4a17233b18f2648b046
 runtime: n8n-workflow@2.9.1  n8n-core@2.9.1  @n8n/tournament@1.0.6  luxon@3.7.2  node v22.22.3
 reference: reference/n8n @ b6dc2787c45677a29a9612cd27eb911302961a83 (unmodified)

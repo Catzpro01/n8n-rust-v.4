@@ -1049,9 +1049,9 @@ destroy their work. Agent 5 documents and reassigns; it does not fix other agent
 **Type:** Hidden cross-module dependency + fidelity traps for the golden fixtures
 **Severity:** MEDIUM (HIGH for `$parameter` fidelity: it silently changes resolved values)
 
-Four things my slice cannot be ported correctly without, each established by runtime observation rather
+Five things my slice cannot be ported correctly without, each established by runtime observation rather
 than inference. Evidence file: [`agent-6-probes/observations.json`](agent-6-probes/observations.json)
-(sha256 `6a5878218b9620e42fc450b82405ec61628fc338ca1c90464e2366889467f452`); rules in
+(sha256 `c7e62b01a58a017fe9643147442b8d9ce875be79928a45dd25f552c8a6b100c1`, 503 entries); rules in
 [`../../contracts/variable-lookup.contract.md`](../../contracts/variable-lookup.contract.md) /
 [`../../contracts/expression-syntax.contract.md`](../../contracts/expression-syntax.contract.md).
 
@@ -1110,6 +1110,26 @@ reading `process.version` yields a bare integer (e.g. `2448`, `12B/12D`), and `{
 bug. **Ask (Agent 5):** decide once — fidelity (my default, `DEV-1` in
 `contracts/expression-syntax.contract.md`) or an approved deviation — so two agents do not port it two
 different ways.
+
+### 5. `$('X').item` crashes with a raw `TypeError` when every candidate's `input` index is out of range
+
+`workflow-data-proxy.ts` L997-999 drops a candidate whose `nextPairedItem.input >= taskData.source.length`
+(`return []`). If that leaves **no** candidates, the "all failed" guard
+`results.every((r) => !r.ok)` is vacuously `true` and `throw results[0].error` dereferences `undefined`:
+
+```
+TypeError: Cannot read properties of undefined (reading 'error')      // not an ExpressionError
+```
+
+Observed in `13E_gap_closure.lineage_sourceOverwrite.input_index_beyond_sourceArray`. The trigger is
+*engine-produced* data (`pairedItem.input` written by the execution engine, Agent 3's `execution-data`
+contract), so the port owner for lineage cannot fix it locally without changing what the engine may emit:
+either reproduce the crash verbatim (my default, `I18` in
+[`../../contracts/variable-lookup.contract.md`](../../contracts/variable-lookup.contract.md)) or agree on
+turning it into the `no_connection` error, which is a **behaviour change** needing a recorded deviation.
+Whichever is chosen, both the engine contract and the lookup contract must say the same thing — that is why
+it is filed here rather than only in my anatomy (§7 of
+[`../variable-lookup-scoping.md`](variable-lookup-scoping.md)).
 
 **Status:** OPEN (filed by Agent 6; no Rust written, no `reference/` file touched —
 `node tools/workflow-reference-manifest.mjs --check` → `PASS (15050 files, root f8da35180669d798…)` after all of the above)

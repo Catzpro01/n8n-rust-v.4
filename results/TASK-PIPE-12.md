@@ -33,7 +33,7 @@ dipertahankan di port.
 | `docs/isolation/expression-syntax-pipeline.md` | anatomi + tabel panggilan + grammar + sandbox + aturan perluasan + temuan | (lihat §0–§12) |
 | `contracts/expression-syntax.contract.md` | kontrak normatif irisan sintaksis | — |
 | `docs/isolation/agent-6-probes/expression-probes.cjs` | runner oracle (menggerakkan n8n asli) | — |
-| `docs/isolation/agent-6-probes/observations.json` | 461 entri observasi (PIPE-12 266 · PIPE-13 172 · fixture 23) | sha256 `6a587821…` |
+| `docs/isolation/agent-6-probes/observations.json` | 503 entri observasi (PIPE-12 266 · PIPE-13 214 · fixture 23) | sha256 `c7e62b01…` |
 | `docs/isolation/agent-6-probes/determinism-check.cjs` | pembanding dua hasil replay | — |
 | `docs/isolation/agent-6-probes/README.md` | cara menjalankan + rincian per grup + integritas | — |
 
@@ -45,9 +45,9 @@ dipertahankan di port.
 | Operation | Status | Exit Code |
 | :--- | :--- | ---: |
 | `scripts/setup-reference-runtime.sh .runtime` (599 paket: `n8n-workflow@2.9.1`, `n8n-core@2.9.1`, `@n8n/tournament@1.0.6`, `luxon@3.7.2`) | `SUCCESS` | `0` |
-| `node docs/isolation/agent-6-probes/expression-probes.cjs docs/isolation/agent-6-probes/observations.json` | `SUCCESS` · 461 entri terekam | `0` |
-| replay ke `/tmp/replay5.json` lalu `node docs/isolation/agent-6-probes/determinism-check.cjs observations.json /tmp/replay5.json` | `MATCH (only environment-dependent fields differ)` | `0` |
-| `sha256sum docs/isolation/agent-6-probes/observations.json` | `6a5878218b9620e42fc450b82405ec61628fc338ca1c90464e2366889467f452` | `0` |
+| `node docs/isolation/agent-6-probes/expression-probes.cjs docs/isolation/agent-6-probes/observations.json` | `SUCCESS` · 503 entri terekam | `0` |
+| replay ke `/tmp/replayE.json` lalu `node docs/isolation/agent-6-probes/determinism-check.cjs observations.json /tmp/replayE.json` (diulang setelah grup `13E` masuk, agar angka kedua task konsisten satu berkas) | `MATCH (only environment-dependent fields differ)` | `0` |
+| `sha256sum docs/isolation/agent-6-probes/observations.json` | `c7e62b01a58a017fe9643147442b8d9ce875be79928a45dd25f552c8a6b100c1` | `0` |
 | `node tools/workflow-reference-manifest.mjs --check` (bukti `reference/` tak diubah) | `Reference integrity check: PASS (15050 files, root f8da35180669d798…)` | `0` |
 | `node --check docs/isolation/agent-6-probes/expression-probes.cjs` | `SYNTAX OK` | `0` |
 | verifikasi ulang 7 kasus borderline terhadap runtime (`{{ nope?.x }}`, `{{ new nope() }}`, `nope()`, `1 in {}`, `[1,2,3].map`, `={{ $json + 1 }}`, `=\\{{1}}` vs `=\\\\{{1}}`) | `SUCCESS` · 7/7 cocok dengan yang didokumentasikan | `0` |
@@ -84,8 +84,8 @@ dipertahankan di port.
 ={{}}                           -> THREW ApplicationError: invalid syntax (jalur parameter) | SyntaxError "Not a expression statement" (jalur resolveWithoutWorkflow)
 ```
 
-Total: 266 entri PIPE-12 di `observations.json`, **51** di antaranya error bertipe dengan kelas + pesan
-+ `context` yang terekam penuh (tidak ada satu pun entri yang berakhir "tidak diketahui").
+Slice ini mencatat **266 entri**; untuk seluruh berkas: 418 outcome records = **353 nilai + 65 throw**
+bertipe, masing-masing dengan kelas + pesan + `context` lengkap (tidak ada entri yang berakhir "tidak diketahui").
 
 ### Catatan untuk peer (TAHAP 3)
 

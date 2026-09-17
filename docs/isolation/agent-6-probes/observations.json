@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generatedAt": "2026-09-17T01:37:07.265Z",
+    "generatedAt": "2026-09-17T01:46:14.796Z",
     "runtime": {
       "n8n-workflow": "2.9.1",
       "n8n-core": "2.9.1",
@@ -1453,15 +1453,15 @@
             "arch": "x64",
             "env": {},
             "platform": "linux",
-            "pid": 3104,
-            "ppid": 3102,
+            "pid": 3942,
+            "ppid": 3941,
             "release": {
               "name": "node",
               "lts": "Jod",
               "sourceUrl": "https://nodejs.org/download/release/v22.22.3/node-v22.22.3.tar.gz",
               "headersUrl": "https://nodejs.org/download/release/v22.22.3/node-v22.22.3-headers.tar.gz"
             },
-            "version": 3104,
+            "version": 3942,
             "versions": {
               "node": "22.22.3",
               "acorn": "8.16.0",
@@ -1582,7 +1582,7 @@
       "process_version": {
         "expr": "={{ process.version }}",
         "result": {
-          "ok": 3104
+          "ok": 3942
         }
       },
       "process_env_direct": {
@@ -2089,7 +2089,7 @@
         }
       },
       "$now": {
-        "ok": "2026-09-16T21:37:07.121-04:00"
+        "ok": "2026-09-16T21:46:14.682-04:00"
       },
       "$today": {
         "ok": "2026-09-16T00:00:00.000-04:00"
@@ -2447,7 +2447,7 @@
           "ok": "[Date: 1969-12-31T19:00:00.000-05:00]"
         },
         "luxon_as_string": {
-          "ok": "[DateTime: 2026-09-16T21:37:07.150-04:00]"
+          "ok": "[DateTime: 2026-09-16T21:46:14.713-04:00]"
         },
         "invalid_luxon": {
           "threw": {
@@ -2698,7 +2698,7 @@
               "name": "glue",
               "active": false
             },
-            "now": "2026-09-16T21:37:07.239-04:00"
+            "now": "2026-09-16T21:46:14.791-04:00"
           },
           {
             "index": 1,
@@ -2737,7 +2737,7 @@
               "name": "glue",
               "active": false
             },
-            "now": "2026-09-16T21:37:07.242-04:00"
+            "now": "2026-09-16T21:46:14.792-04:00"
           }
         ],
         "error": {
@@ -3129,6 +3129,414 @@
         }
       }
     },
+    "13E_gap_closure": {
+      "fromAI_inputOverride": {
+        "query_map_wins": {
+          "ok": "Jakarta"
+        },
+        "top_level_only_key": {
+          "ok": "TOP"
+        },
+        "query_beats_top_level": {
+          "ok": "FROM_TOPLEVEL"
+        },
+        "unknown_key": {
+          "ok": {
+            "__type": "undefined"
+          }
+        },
+        "unknown_key_with_default": {
+          "ok": "FALLBACK"
+        },
+        "item_selected_by_itemIndex": {
+          "ok": [
+            "Jakarta",
+            "Bandung"
+          ]
+        },
+        "itemIndex_out_of_range": {
+          "threw": {
+            "__type": "TypeError",
+            "message": "Cannot read properties of undefined (reading 'json')"
+          }
+        },
+        "key_64_chars_accepted": {
+          "ok": {
+            "__type": "undefined"
+          }
+        },
+        "key_65_chars_throws": {
+          "threw": {
+            "__type": "ExpressionError",
+            "message": "Invalid parameter key, must be between 1 and 64 characters long and only contain lowercase letters, uppercase letters, numbers, underscores, and hyphens",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0
+            }
+          }
+        },
+        "key_with_dot_throws": {
+          "threw": {
+            "__type": "ExpressionError",
+            "message": "Invalid parameter key, must be between 1 and 64 characters long and only contain lowercase letters, uppercase letters, numbers, underscores, and hyphens",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 0
+            }
+          }
+        },
+        "alias_fromai_matches": {
+          "ok": "Jakarta"
+        },
+        "alias_fromAi_matches": {
+          "ok": "Jakarta"
+        },
+        "existing_task_without_inputOverride_does_not_fall_back": {
+          "threw": {
+            "__type": "ExpressionError",
+            "message": "No execution data available",
+            "context": {
+              "runIndex": 0,
+              "itemIndex": 3,
+              "type": "no_execution_data"
+            }
+          }
+        },
+        "no_task_at_runIndex_falls_back_to_connectionInputData_at_runIndex": {
+          "ok": "b"
+        }
+      },
+      "tool_access": {
+        "from_query_map": {
+          "ok": {
+            "name": "search",
+            "parameters": {
+              "q": "hello"
+            }
+          }
+        },
+        "from_top_level": {
+          "ok": {
+            "name": "topTool",
+            "parameters": {
+              "z": 1
+            }
+          }
+        },
+        "partial_only_name": {
+          "ok": {
+            "name": "onlyName",
+            "parameters": {
+              "__type": "undefined"
+            }
+          }
+        },
+        "no_data_with_fallback": {
+          "ok": {
+            "name": "fallbackTool",
+            "parameters": {
+              "a": 1
+            }
+          }
+        },
+        "no_data_no_fallback": {
+          "ok": {
+            "__type": "undefined"
+          }
+        },
+        "empty_override_item_index_out_of_range": {
+          "threw": {
+            "__type": "TypeError",
+            "message": "Cannot read properties of undefined (reading 'json')"
+          }
+        },
+        "toolName_via_expression": {
+          "ok": "search"
+        }
+      },
+      "agent_info": {
+        "agentInfo_on_agent_node": {
+          "ok": {
+            "memoryConnectedToAgent": true,
+            "tools": [
+              {
+                "connected": true,
+                "name": "Tool1",
+                "type": "Keyword Tool",
+                "resource": "Resource A",
+                "operation": "Operation A",
+                "hasCredentials": true,
+                "hasValidCalendar": {
+                  "__type": "undefined"
+                },
+                "aiDefinedFields": [
+                  "User Query"
+                ]
+              },
+              {
+                "connected": false,
+                "name": "Tool2",
+                "type": "Keyword Tool",
+                "resource": "Resource B",
+                "operation": null,
+                "hasCredentials": false,
+                "hasValidCalendar": {
+                  "__type": "undefined"
+                },
+                "aiDefinedFields": []
+              },
+              {
+                "connected": false,
+                "name": "Cal",
+                "type": "Calendar Tool",
+                "resource": null,
+                "operation": null,
+                "hasCredentials": false,
+                "hasValidCalendar": true,
+                "aiDefinedFields": []
+              }
+            ]
+          }
+        },
+        "agentInfo_on_non_agent_node": {
+          "ok": {
+            "__type": "undefined"
+          }
+        },
+        "tools_are_from_queryNodes_not_connections_only": {
+          "ok": {
+            "connected": [
+              "Tool1"
+            ],
+            "unconnected": [
+              "Tool2",
+              "Cal"
+            ]
+          }
+        },
+        "aiDefinedFields_and_calendar": {
+          "ok": {
+            "tool1": {
+              "resource": "Resource A",
+              "operation": "Operation A",
+              "hasCredentials": true,
+              "aiDefinedFields": [
+                "User Query"
+              ],
+              "type": "Keyword Tool"
+            },
+            "cal": {
+              "hasValidCalendar": true,
+              "resource": null,
+              "operation": null
+            }
+          }
+        },
+        "memoryConnectedToAgent_then_not": {
+          "ok": {
+            "withMemory": true,
+            "withoutMemory": false
+          }
+        },
+        "eager_snapshot_not_lazy": {
+          "ok": {
+            "before": 3,
+            "after": 3,
+            "fresh": 4
+          }
+        }
+      },
+      "lineage_sourceOverwrite": {
+        "natural_walk": {
+          "ok": {
+            "n": 0
+          }
+        },
+        "redirected_via_pairedItem_sourceOverwrite": {
+          "ok": {
+            "n": "RUN1"
+          }
+        },
+        "input_index_beyond_sourceArray": {
+          "threw": {
+            "__type": "TypeError",
+            "message": "Cannot read properties of undefined (reading 'error')"
+          }
+        },
+        "core_resolveSourceOverwrite_matrix": {
+          "no metadata": {
+            "ok": null
+          },
+          "flag off": {
+            "ok": null
+          },
+          "preservedSourceOverwrite wins": {
+            "ok": {
+              "previousNode": "PRESERVED"
+            }
+          },
+          "falls back to pairedItem.sourceOverwrite": {
+            "ok": {
+              "previousNode": "FROM_ITEM"
+            }
+          },
+          "flag on, nothing set": {
+            "ok": null
+          },
+          "pairedItem is a number": {
+            "ok": null
+          }
+        }
+      },
+      "additionalKeys_surface": {
+        "getAdditionalKeys_shape": {
+          "ok": {
+            "keys": [
+              "$execution",
+              "$executionId",
+              "$resumeWebhookUrl",
+              "$secrets",
+              "$vars"
+            ],
+            "id": "exec-1",
+            "mode": "test",
+            "resumeUrl": "https://wait/resume/exec-1",
+            "resumeFormUrl": "https://form/resume/exec-1",
+            "vars": {
+              "myVar": "myValue"
+            },
+            "secrets": {
+              "__type": "undefined"
+            },
+            "deprecatedExecutionId": "exec-1"
+          }
+        },
+        "getAdditionalKeys_production_mode": {
+          "ok": {
+            "mode": "production",
+            "id": "__UNKNOWN__",
+            "resumeUrl": "https://h/wait/__UNKNOWN__"
+          }
+        },
+        "getAdditionalKeys_without_runData": {
+          "ok": {
+            "keys": [
+              "$execution",
+              "$executionId",
+              "$resumeWebhookUrl",
+              "$secrets",
+              "$vars"
+            ],
+            "customData": {
+              "__type": "undefined"
+            }
+          }
+        },
+        "getNonWorkflowAdditionalKeys_shape": {
+          "ok": {
+            "keys": [
+              "$secrets",
+              "$vars"
+            ],
+            "vars": {
+              "myVar": "myValue"
+            },
+            "secrets": {
+              "__type": "undefined"
+            }
+          }
+        },
+        "secrets_proxy_surface": {
+          "providers": {
+            "ok": []
+          },
+          "secret_value": {
+            "ok": "SECRET_A"
+          },
+          "nested_object": {
+            "ok": "D"
+          },
+          "enumeration_is_invisible": {
+            "ok": {
+              "objectKeys": [],
+              "hasOperator": false,
+              "getOwnPropertyNames": [
+                "vaultA"
+              ],
+              "directRead": "SECRET_A"
+            }
+          },
+          "unknown_provider_throws": {
+            "threw": {
+              "__type": "ExpressionError",
+              "message": "Could not load secrets",
+              "description": "The credential in use pulls secrets from an external store that is not reachable"
+            }
+          },
+          "unknown_secret_throws": {
+            "threw": {
+              "__type": "ExpressionError",
+              "message": "Could not load secrets",
+              "description": "The credential in use tries to use secret from an external store that could not be found"
+            }
+          },
+          "writes_are_refused": {
+            "ok": {
+              "threw": "TypeError"
+            }
+          },
+          "disabled_flag_leaves_key_undefined": {
+            "ok": {
+              "__type": "undefined"
+            }
+          }
+        },
+        "nonWorkflow_keys_no_secrets": {
+          "ok": {
+            "__type": "undefined"
+          }
+        },
+        "customData_set_get_manual_mode": {
+          "ok": {
+            "stored": "v1",
+            "all": {
+              "k1": "v1"
+            },
+            "inRunData": {
+              "k1": "v1"
+            }
+          }
+        },
+        "customData_bad_value_throws_in_manual": {
+          "threw": {
+            "__type": "InvalidExecutionMetadataError",
+            "message": "Custom data values must be a string (key \"k2\")"
+          }
+        },
+        "customData_bad_value_swallowed_in_production": {
+          "ok": {
+            "ok": true,
+            "after": {
+              "__type": "undefined"
+            }
+          }
+        },
+        "webhookId_precedence_engine_wins": {
+          "ok": {
+            "fromCaller": "FROM_CALLER",
+            "seenByProxy": {
+              "__type": "undefined"
+            },
+            "engineValueFromNode": {
+              "__type": "undefined"
+            }
+          }
+        },
+        "webhookId_from_node_when_present": {
+          "ok": "node-wh-id"
+        }
+      }
+    },
     "fixture": {
       "workflow": {
         "id": "agent6",
@@ -3235,7 +3643,7 @@
         "End"
       ],
       "endTask": {
-        "startTime": 1789609027106,
+        "startTime": 1789609574668,
         "executionIndex": 2,
         "source": [
           {
