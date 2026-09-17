@@ -1,0 +1,84 @@
+id: TASK-AUDIT-ISSUES-01
+agent: arena-worker
+lego: integration
+module: cross-agent-ledger
+phase: 3
+title: "Re-verify stale OPEN rows in CROSS-AGENT-ISSUES.md against tip 28fb50ef (read-only audit)"
+status: SUBMITTED_FOR_REVIEW
+# submitted 2026-09-18 by arena-worker: results/TASK-AUDIT-ISSUES-01.md present,
+# battery re-run green post-rebase (verify:all exit 0, engine 84/0, activation
+# 43/0, 42/42, boundary PASS). Review verdict itself is NOT recorded here
+# (no self-approval).
+
+# Context: the shared ledger still carries OPEN rows from earlier audit cycles
+# (ISSUE-012 UPDATE tables, ISSUE-014d2, R1/R5, P1/ISSUE-011, P3, Phase-3 record,
+# cargo env, ISSUE-015/016/017, ISSUE-018) whose premises have since moved on
+# this branch (ISSUE-011 orchestrator-close, PHASE3-GATE-01 record, DIFF-03
+# envelope parity, ACTIVATION-01, trigger/webhook LEGOs). Stale red rows are
+# as damaging as rubber-stamped green ones (ISSUE-014 lesson). This task
+# re-verifies each row with executed evidence on the current tip and appends
+# dated UPDATE sections in the ledger's own style. READ-ONLY like an Agent-5
+# audit: no source, contract, reference, crate, or peer file is modified —
+# findings are documented, never fixed here (.../NO RUST; LEGO internals stay
+# with their owners). Pre-task review duty (DIFF-03 peer changes to this
+# lane's files + new-lane battery) is executed first and its verdicts
+# recorded in the results file.
+
+allowed_paths:
+  - tasks/TASK-AUDIT-ISSUES-01.yaml
+  - results/TASK-AUDIT-ISSUES-01.md
+  - docs/isolation/CROSS-AGENT-ISSUES.md  # shared log: dated UPDATE addenda only (append-only)
+
+forbidden_paths:
+  - reference/n8n/**
+  - crates/**
+  - apps/**
+  - packages/frontend/**
+  - packages/**
+  - tools/**
+  - tests/**
+  - contracts/**
+  - docs/**  # except the single ledger file above
+
+requires: []
+
+source_modification: none   # audit only; tree byte-identical after (modulo ignored build output)
+
+operations:
+  - name: git_status
+  - name: run_shell
+    args: { cmd: "npm run verify:all", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "node tools/engine-differential.mjs", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "node tools/activation-differential.mjs", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "node tools/workflow-reference-manifest.mjs --check", expect_exit: 0 }
+  - name: read_reference
+    args:
+      files:
+        - reference/n8n/packages/core/src/execution-engine/workflow-execute.ts
+      lines: "1506-1511,1817-1827,1853-1894,1919"
+  - name: run_shell
+    args: { cmd: "python3 tests/integration/result_integrity_audit.py", expect_exit: 1 }
+  - name: run_shell
+    args: { cmd: "grep -rn tests/reference crates/ --include=*.rs | cut -d: -f1 | sort -u", expect_exit: 0 }
+  - name: edit_file
+    args: { path: docs/isolation/CROSS-AGENT-ISSUES.md }
+  - name: write_file
+    args: { path: results/TASK-AUDIT-ISSUES-01.md }
+
+acceptance:
+  - every OPEN row in the ISSUE-012 UPDATE tables + ISSUE-014d2/015/016/017/018
+    re-checked on the tip with a quoted command + output (no grep-to-claim leaps;
+    ISSUE-014/015 lessons apply to this audit too)
+  - ledger updated ONLY via dated UPDATE/CORRECTION sections; no existing row edited
+  - DIFF-03 peer changes to runner.mjs + engine-differential.mjs reviewed with
+    verified line citations; verdict recorded (APPROVE or NEEDS_CORRECTION protest)
+  - results file has a non-empty operations table (Stage 2c T1 clean)
+  - git status clean of source changes at commit time (gate-evidence churn reverted)
+  - no review verdict on own tasks (no self-approval); no Rust code written or edited
+
+merge_condition:
+  - regression_gate_pass
+  - no_contract_violation

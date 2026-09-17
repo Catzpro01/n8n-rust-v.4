@@ -1455,3 +1455,87 @@ all 16 scenarios, no fix required. Falsifiability control: unsorted-key patch in
 (ADDENDUM/ADDENDUM 2) and the engine differential 84/0, the three-way behavioral-evidence base
 ISSUE-023 asked for is complete. **Status: OPEN (ownership decision = orchestrator) — behavioral
 deltas at zero on all measured surfaces; both instruments reproducible.**
+
+---
+
+---
+
+## RE-VERIFICATION 2026-09-18 (arena-worker, `TASK-AUDIT-ISSUES-01`) — Agent-5 audit rows re-checked on `28fb50ef`
+
+The OPEN rows below were written against `main`-era commits (`62486010`, `9e87c8cb`, …). This branch
+has since moved (ISSUE-011 orchestrator-close, `PHASE-3-OPENING-RECORD.md`, DIFF-03, ACTIVATION-01,
+trigger/webhook LEGOs), so every row was re-executed on the tip. Method: quoted command + output,
+no grep-to-claim leaps. Nothing was fixed here — audit only (`crates/`, `reference/`, peer files
+untouched; `git diff -- crates/ reference/` empty throughout).
+
+| Row (as written) | Verdict on `28fb50ef` |
+| :--- | :--- |
+| ISSUE-014 defect 2 (silent skip) | **STILL OPEN, verbatim** — `crates/n8n-workflow/tests/conformance.rs:8-10` and `:24-26` still `if !fixture_path.exists() { return; }` |
+| R1 fixture coverage ("1 of 7", "0/7 usable") | **Half stale.** Still 1 of 7 crates references `tests/reference/**` (7 crates; the `lib.rs` hit is a doc comment). But "0/7 usable" is wrong now: `tests/reference_fixtures.rs` is a hard-read harness (`CARGO_MANIFEST_DIR`, no skip) looping `workflow-rust/fixtures.json`. Precise: 1 usable harness + 1 skippable file, 6 crates uncovered, `04-disabled-node`/`05-cyclic-invalid` consumed by **no** crate |
+| R5 ("stub passes everything" → corrected to MEDIUM provenance gap) | **Correction stands.** `test_cycle_detection_fail` exists (`n8n-validation/src/lib.rs:153`); no `05-cyclic` disk read anywhere in `crates/`. The mutation itself was NOT re-run (it requires editing `crates/`, outside this audit's boundary) |
+| P1 / ISSUE-011 (15051 vs 15050) | **CLOSED, confirmed.** `reference/…/node-model/` absent, `docs/isolation/node-barrel.ts` present (10 714 B), `node tools/workflow-reference-manifest.mjs --check` → `PASS (15050 files, root f8da35180669d798…)` |
+| P3 `INVALID_CONNECTION_TYPE` (3 of 4) | **STILL OPEN** — `ValidationError` enum still 3 variants (`crates/n8n-validation/src/lib.rs:5-12`). Rust-port-only gap; the approved TS reference (`workflow-rules.ts`) has all four |
+| Phase-3 decision record ("no `PHASE-3-OPENING.md`") | **Substance present, filename differs.** `docs/isolation/PHASE-3-OPENING-RECORD.md` carries `PHASE_3_STATUS: OPEN`; conformance M2 (record hidden → Phase-2 guard FAIL) proves the gate keys off it. The old 38/39 snapshot (1 FAIL = Phase-2 guard) is superseded by current **42/42** Phase-3-mode PASS |
+| `cargo` in verification env | **Premise moved twice — see new ISSUE-025.** Toolchain installs fine (`setup.sh`, ~13 s) but the rig as-shipped cannot resolve the workspace, so no cargo claim reproduces on this branch right now |
+| ISSUE-015 (corrected scope) | **Partially implemented.** `get_highest_nodes` filters `disabled != Some(true)` (`lib.rs:234`) but the D-04 asymmetry is still unpreserved; `getStartNode` still missing per the port's own doc comment (`lib.rs:206`) |
+| ISSUE-017 (HIGH, proven) | **STILL OPEN, code unchanged** — `get_start_node` (`lib.rs:207-223`) has no disabled check. Execution probe NOT re-run (rig blocked, ISSUE-025); the standing proof is Agent 5's recorded probe |
+| ISSUE-016 `pin_data` (deferred WARN) | **Unchanged, stays deferred-WARN.** `src/` reads are serialisation (`to_wire`), checksum skip-list, and `from_wire` only; no `get_pin_data_of_node` accessor |
+| ISSUE-018 (empty ops, "4 of 17") | **Still open, now 6 of 63** (`result_integrity_audit.py` → `57/63 FAIL`, re-checked post-rebase onto `b8b5ed36`): POOL-001, POOL-003, TASK-402, TASK-403, TASK-INIT-AGENT-3/4. Nuance: POOL-001/003 now HAVE committed implementations (ISSUE-020 re-execution), so the phantom-work half is resolved but the audit-trail half persists |
+| "INTEGRATION GATE: BLOCKED" | **Stale composition.** This branch's `run_gate.sh` has no Stage 2b/2c; `--offline-only` → `OFFLINE STAGES: PASS`, `LIVE 11/11: NOT RUN`, verdict **INCONCLUSIVE** (exit 0). The Rust-fidelity items above are open-but-unwired here, not gate-blocking |
+| D-01..D-04 goldens ("`04-disabled-node/expected.json` exists") | **Absent on this branch.** `04-disabled-node/` and `05-cyclic-invalid/` contain `workflow.json` only (PHASE3-GATE-01 recreation). Agent 5's "permanent asset" never landed here — the D-04 prediction currently has no executable golden on this branch |
+
+---
+
+## ISSUE-025 — `rust-offline-rig` as-shipped cannot resolve the workspace on this branch (OPEN)
+
+**Detected by:** arena-worker, 2026-09-18 (`TASK-AUDIT-ISSUES-01`, read-only audit)
+**Affected:** every Rust-fidelity claim cited as Phase-3 evidence
+**Type:** Evidence reproducibility — toolchain/infra gap (no behaviour, no source change either side)
+**Severity:** HIGH (reproducibility, not behaviour)
+
+**Description:**
+`tools/rust-offline-rig/setup.sh` works (~13 s, vendor + toolchain into `/tmp/rust-rig`), but
+`run.sh test` (and `check`) fails before compiling anything:
+
+```text
+$ tools/rust-offline-rig/run.sh test
+error: no matching package named `indexmap` found
+```
+
+The workspace needs `indexmap =2.2.6` (`Cargo.toml:25`; used by `n8n-connection`,
+`n8n-validation`, `n8n-workflow`) and `regex 1.10` (`n8n-expression`), neither of which is in the
+12-crate `vendor_prep.py` PLAN. Agent 5 repaired this on `main` ("+8 vendored crates", recorded in
+the rig README section of the audit above); that repair never landed on this branch.
+
+**Impact:** "cargo test green" (Agent 1's 37/37, Agent 5's independent reproduction) is currently
+**unreproducible by anyone on this branch** — the same failure class as ISSUE-010/020 (an evidence
+citation whose documented command exits non-zero). This audit deliberately did NOT repair the rig:
+the auditor does not grade their own repair. The fix belongs in a follow-up task owned by the rig
+maintainer (extend `PLAN`, re-run `check` + `test` on a tree copy, commit; `crates/` stays untouched).
+
+**Required action:** land the vendoring repair on this branch, then re-run: `run.sh check`,
+`run.sh test`, and the ISSUE-017 execution probe (which this audit could not re-run for the same reason).
+
+**Status:** OPEN
+
+---
+
+## Dual-phase review note 2026-09-18 (arena-worker, `TASK-AUDIT-ISSUES-01`) — `TASK-ENGINE-DIFF-03` APPROVED
+
+Pre-task review of the peer commit that touched this lane's files (`5e5caeb6`, envelope-shape parity
+in `packages/reconstructed-engine/runner.mjs` + `tools/engine-differential.mjs`):
+
+* Line citations re-verified against the read-only reference: `taskStartedData` L1506-1511
+  (`startTime, executionIndex, source, hints: []`) ✓; in-loop literal L1817-1823 (spread +
+  `executionTime` + `metadata: executionData.metadata` + `executionStatus`) ✓; `error` L1826
+  (overwriting after the literal, so key order ends `…, executionStatus, error`) ✓;
+  `data` assigned last L1919 on the success path ✓; stop path pushes at L1880 and `break`s at
+  L1893 without reaching L1919 — no `data` key ✓, except the `rewireOutputLogTo` AI-tool special
+  case (L1860-1869), which neither engine models (consistent, pre-existing scope).
+* Numbers reproduced on the tip: `DIFFERENTIAL: 84 agree / 0 diverge`, `reconstructed-engine`
+  28/28, `execution-engine` 60/60, `verify:all` exit 0.
+* `compareShape()` is sound: key set + construction-order sequence + `typeof` volatiles +
+  `executionStatus` + branch counts; null-safe; volatile values excluded by design.
+
+**Verdict: APPROVE** (no vote queue reachable — ISSUE-019 — so recorded here, transparently).
+Full pre-task battery in `results/TASK-AUDIT-ISSUES-01.md`.
