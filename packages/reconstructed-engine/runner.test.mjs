@@ -264,6 +264,27 @@ test('guards cycles with maxNodeExecutions instead of hanging', async () => {
   assert.equal(result.runData.Loop.length, 3);
 });
 
+test('skips disabled triggers when selecting a start node', async () => {
+  const engine = new WorkflowExecutionEngine({
+    nodes: [
+      node('Disabled trigger', 'manualTrigger', { disabled: true }),
+      node('Worker', 'worker'),
+    ],
+    connections: {
+      'Disabled trigger': { main: [[{ node: 'Worker', type: 'main', index: 0 }]] },
+    },
+  });
+  engine.registerNodeType('worker', (_node, items) => items.map((item) => ({
+    json: { ...item.json, startedFrom: 'worker' },
+  })));
+
+  const result = await engine.runWorkflow();
+
+  assert.equal(result.status, 'COMPLETED');
+  assert.equal(result.data['Disabled trigger'], undefined);
+  assert.equal(result.data.Worker[0].json.startedFrom, 'worker');
+});
+
 test('rejects duplicate nodes and dangling connections before execution', () => {
   assert.throws(
     () => new WorkflowExecutionEngine({ nodes: [node('A'), node('A')], connections: {} }),

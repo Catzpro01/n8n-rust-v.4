@@ -68,17 +68,19 @@ omitted, the start node receives one item with `{ json: {} }`.
 ## 3. Scheduling semantics
 
 1. An explicit `startNodeName` wins.
-2. Otherwise the first trigger-like node (`trigger`, `manual`, or `start` in its
-type) is selected.
-3. Otherwise the first main-graph root is selected.
-4. A node runs only after every incoming main connection has delivered its
+2. Disabled nodes are excluded from automatic start selection.
+3. Otherwise the first enabled trigger-like node (`trigger`, `manual`, or `start`
+in its type) is selected.
+4. Otherwise the first enabled main-graph root is selected; if a disabled
+trigger is the only structural root, the first enabled node is used instead.
+5. A node runs only after every incoming main connection has delivered its
 branch. Items from multiple input indexes are retained separately and exposed
 through `context.getInputData(index)`.
-5. A `main[outputIndex]` branch is delivered only to connections attached to
+6. A `main[outputIndex]` branch is delivered only to connections attached to
 that output index; no branch is broadcast to unrelated outputs.
-6. An empty output is recorded as a successful task and does not start a
+7. An empty output is recorded as a successful task and does not start a
 downstream node. `alwaysOutputData` opts into one empty JSON item.
-7. Cycles are bounded by `maxNodeExecutions` (default `1000`) and result in an
+8. Cycles are bounded by `maxNodeExecutions` (default `1000`) and result in an
 `ERROR` execution with code `MAX_NODE_EXECUTIONS` rather than an unbounded loop.
 
 ## 4. Execution data

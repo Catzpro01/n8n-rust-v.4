@@ -510,13 +510,18 @@ export class WorkflowExecutionEngine {
       return startNodeName;
     }
 
-    const trigger = [...this.nodes.values()].find(isTriggerLike);
+    const enabledNodes = [...this.nodes.values()].filter((node) => node.disabled !== true);
+    const trigger = enabledNodes.find(isTriggerLike);
     if (trigger) return trigger.name;
 
-    const root = [...this.nodes.values()].find((node) =>
+    const root = enabledNodes.find((node) =>
       !this.incoming.get(node.name).some((connection) => connection.type === MAIN_CONNECTION),
     );
-    return root?.name ?? this.nodes.keys().next().value;
+    // A disabled trigger can still be the structural parent of the first
+    // executable node. Do not fall back to that disabled node; choose the
+    // first enabled definition instead, matching Workflow.getStartNode's
+    // disabled-node guard and avoiding an execution users explicitly turned off.
+    return root?.name ?? enabledNodes[0]?.name;
   }
 
   _handlerFor(node) {
@@ -654,6 +659,7 @@ export class WorkflowExecutionEngine {
     this.abortController = new AbortController();
     const signal = this.abortController.signal;
     const startNode = this._findStartNode(selectedStart);
+    if (!startNode) throw new WorkflowExecutionError('No enabled node to start the workflow from could be found');
     const initialItems = normalizeItems(startData);
     if (initialItems.length === 0) initialItems.push({ json: {} });
 
