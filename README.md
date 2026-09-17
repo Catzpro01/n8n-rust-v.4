@@ -16,7 +16,8 @@ is a Rust replacement attempted.
 | REFERENCE RUNTIME (baseline 11/11 smoke test) | ✅ |
 | **WORKFLOW ISOLATION (LEGO 01)** | **✅ VERIFIED — see [`docs/isolation/workflow.md`](docs/isolation/workflow.md)** |
 | NODE MODEL (LEGO 02) · CONNECTION (03) · VALIDATION (04) | ⏸ next |
-| RUST IMPLEMENTATION | ⏸ not started |
+| **NATIVE LOCALIZATION (4A/4B/4B-01)** | **✅ TESTED — locale resolution + CLDR plurals (12/12 tests), see [`results/SWARM-PHASE4B-01.md`](results/SWARM-PHASE4B-01.md)** |
+| RUST IMPLEMENTATION | ⏸ not started (Phase-3 track archived — see `legacy/rust-port/`) |
 
 “Isolated” means the TypeScript component now has an enforced boundary and a
 contract. It does **not** mean it was replaced by Rust.
@@ -31,9 +32,10 @@ contract. It does **not** mean it was replaced by Rust.
 - `tools/` : boundary mapper, kernel/port/reference gates, isolation extractor, model digest, gate runner, live engine harness
 - `tests/reference/` : golden workflows + baseline smoke test evidence
 - `tasks/`, `results/` : inbound task manifests and execution results
-- `apps/n8n-rust/` : (reserved) Rust implementation — `crates/` is intentionally empty per
-  PROJECT_RULES #1 (ZERO RUST); the legacy Phase-3-attempt workspace is quarantined in
-  `legacy/rust-port/` (see `legacy/rust-port/README.md`)
+- `crates/`, `apps/n8n-rust/` : **must stay empty** while PROJECT_RULES #1 (ZERO RUST) stands
+- `legacy/rust-port/` : the archived Phase-3 Rust workspace (`Cargo.toml` + 7 crates), inert and
+  out of scope; `git mv legacy/rust-port/{crates,Cargo.toml} .` restores it. Both guards assert that
+  the archive is documented and that no cargo manifest is visible at the repository root.
 
 ## Verify a LEGO
 

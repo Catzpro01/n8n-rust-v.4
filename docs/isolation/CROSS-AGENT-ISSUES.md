@@ -1116,3 +1116,19 @@ Verified on this branch after the move:
   instead elects to keep the port active, the move is a one-pair `git mv` revert.
 
 **Status: RESOLVED.**
+
+### ISSUE-026 — UPDATE (2026-09-18): guard hardened per TASK-413 swarm standard
+
+The quarantine above left a gap: nothing machine-checked would catch a *silent* `git mv`
+restore of the archived workspace. Per the swarm standard published in PR #19
+(`arena/01a0b105`, TASK-413), this branch now carries the companion hardening:
+
+* `contract_conformance.mjs` — new 22nd check `Rust legacy archive is documented and inert`
+  (archive README required, crates non-empty, **no** `Cargo.toml`/`Cargo.lock` at repo root) → **22/22 PASS**.
+* `boundary_audit.py` — `legacy_archive_findings()` with a dedicated `ARCHIVE VIOLATION` failure mode → **PASS**.
+* `run_gate.sh` Stage 2d (4C localization gate) present and correctly **SKIPPED** on this lane.
+* `tools/rust-offline-rig/` re-targeted to `legacy/rust-port` (`RUST_LEGACY` override).
+
+Falsified both directions: a root `Cargo.toml` flips conformance to 21/22; removing it restores
+exit 0. Reverting the archive is now a *decision* (gate goes red), not a silent act.
+Evidence: `docs/isolation/evidence/rust-guard-restoration.json`, `results/TASK-413-zero-rust-guard-restoration.md`.

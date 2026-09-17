@@ -1,0 +1,51 @@
+{
+  "gate": "zero-rust-guard-restoration",
+  "generatedAt": "2026-09-18T05:35:00Z",
+  "session": "arena/01a0b101-n8n-rust-v-4 (agent-6 lane, Phase 4B continuation)",
+  "rule": "PROJECT_RULES.md #1 — ZERO RUST (crates/, apps/ must not contain Rust)",
+  "finding": {
+    "cause": "the Phase-3 Rust workspace (root Cargo.toml + 7 crates, 22 tracked files) lived at the repository root where cargo auto-discovers it",
+    "impact": "contract_conformance 20/21 and boundary_audit FAIL for every branch; no session could claim a green offline gate",
+    "prior_status": "quarantined on this branch in a previous cycle (22 files moved via git mv); this record covers the companion guard hardening per the swarm standard (TASK-413, PR #19)"
+  },
+  "action": {
+    "port": "TASK-413 guard hardening (verbatim from arena/01a0b105-n8n-rust-v-4)",
+    "files": [
+      "tests/compatibility/contract_conformance.mjs (new check: archive documented + inert, no root cargo manifest)",
+      "tests/integration/boundary_audit.py (legacy_archive_findings() + ARCHIVE VIOLATION failure mode)",
+      "tests/integration/run_gate.sh (Stage 2d localization gate — SKIPPED here: 4C module not on this lane)",
+      "tools/rust-offline-rig/run.sh + README.md (RUST_LEGACY defaults to legacy/rust-port)",
+      "legacy/rust-port/README.md (canonical archive record incl. do-not-overclaim table)",
+      "README.md (guard lines; localization row scoped to this lane's 4B-01 work)"
+    ],
+    "reversible": [
+      "git mv legacy/rust-port/crates crates",
+      "git mv legacy/rust-port/Cargo.toml Cargo.toml"
+    ]
+  },
+  "new_checks": [
+    "contract_conformance.mjs — 'Rust legacy archive is documented and inert': README present, archive non-empty, no Cargo.toml/Cargo.lock at the repository root",
+    "boundary_audit.py — legacy_archive_findings(): same assertions, printed as a dedicated audit line"
+  ],
+  "before": {
+    "contract_conformance": "21/21 PASS (quarantine done, companion check absent)",
+    "boundary_audit": "PASS (no archive-hygiene line)"
+  },
+  "after": {
+    "contract_conformance": "RESULT: 22/22 CHECKS PASSED — 'Rust legacy archive is documented and inert — legacy/rust-port/ documented, 8 crates archived, no root cargo manifest'",
+    "boundary_audit": "AUDIT RESULT: PASS — '-- Rust legacy archive: documented and inert (legacy/rust-port/)'",
+    "run_gate_offline": "OFFLINE STAGES : PASS | STAGE 2d SKIPPED (tools/localization-gate.mjs absent in this checkout) | LIVE 11/11 : NOT RUN",
+    "exit_code_run_gate": 2,
+    "npm_verify": "11/11 PASS · BEHAVIOR CHANGE: NONE DETECTED (G04: 15050 files / f8da35180669d798)",
+    "isolation_check": "4/4 (boundary · kernel · port surface · reference integrity)"
+  },
+  "falsification": {
+    "mutation": "echo '[workspace]' > Cargo.toml",
+    "result": "contract_conformance drops to 21/22 — [FAIL] 'Cargo.toml exists at the repository root: cargo would treat this ZERO RUST repo as a Rust workspace'",
+    "restored": "rm Cargo.toml -> boundary_audit exit 0"
+  },
+  "not_verified_here": [
+    "cargo check/test on the archived crates (no Rust toolchain in this sandbox)",
+    "live 11/11 regression via docker/VPS (gate reports NOT RUN, exit 2 INCONCLUSIVE by design)"
+  ]
+}

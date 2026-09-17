@@ -7,6 +7,7 @@ owns it (per docs/LEGO_PARALLEL_RULES.md), and reports:
   * circular dependencies between LEGOs
   * hidden coupling signals (global state, env vars, filesystem/db access)
   * reference-source integrity (no Rust in Phase 2)
+  * Rust legacy archive hygiene (legacy/rust-port/ documented; no root cargo manifest)
 
 Read-only: it never modifies reference source. Exit 1 on undocumented findings.
 """
@@ -136,6 +137,27 @@ def rust_guard():
                     offenders.append(os.path.relpath(os.path.join(dp, f), ROOT))
     return offenders
 
+def legacy_archive_findings():
+    """PROJECT_RULES #1: the Phase-3 Rust track lives archived under legacy/rust-port/.
+
+    The archive is allowed to exist; it is NOT allowed to be undocumented, and it must not
+    present a cargo manifest at the repository root (cargo auto-discovers Cargo.toml upward),
+    which would silently turn this ZERO RUST tree back into a Rust workspace.
+    """
+    findings = []
+    legacy = os.path.join(ROOT, "legacy", "rust-port")
+    if not os.path.isdir(legacy):
+        return findings
+    if not os.path.isfile(os.path.join(legacy, "README.md")):
+        findings.append("legacy/rust-port/ exists without README.md")
+    crates = os.path.join(legacy, "crates")
+    if not os.path.isdir(crates) or not os.listdir(crates):
+        findings.append("legacy/rust-port/crates/ missing or empty")
+    for name in ("Cargo.toml", "Cargo.lock"):
+        if os.path.exists(os.path.join(ROOT, name)):
+            findings.append(f"{name} at the repository root (cargo would build this tree)")
+    return findings
+
 def main():
     if not os.path.isdir(SRC):
         print(f"[FAIL] reference source missing: {SRC}")
@@ -169,13 +191,17 @@ def main():
 
     offenders = rust_guard()
     print(f"\n-- Phase-2 Rust guard: {'VIOLATION ' + str(offenders) if offenders else 'clean (no .rs / Cargo.toml)'}")
+    legacy = legacy_archive_findings()
+    print(f"-- Rust legacy archive: {'FINDINGS ' + str(legacy) if legacy else 'documented and inert (legacy/rust-port/)'}")
 
     print("\n-------------------------------------------------------")
-    failed = bool(undocumented) or bool(offenders)
+    failed = bool(undocumented) or bool(offenders) or bool(legacy)
     if undocumented:
         print(f"BOUNDARY VIOLATION: {len(undocumented)} undocumented edge(s): {undocumented}")
     if offenders:
         print("PHASE VIOLATION: Rust introduced during Phase 2")
+    if legacy:
+        print(f"ARCHIVE VIOLATION: {legacy}")
     print("AUDIT RESULT:", "FAIL" if failed else "PASS (all edges documented)")
     return 1 if failed else 0
 
