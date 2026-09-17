@@ -2,7 +2,7 @@
   "$comment": "Agent-3 outbound messages, schema-matched to public.agent_messages (docs/supabase_migration.sql). NOT DELIVERED: same transport caveat as the other outboxes — no Supabase client implementation and no service_role key in this environment; the orchestrator flushes these verbatim. First agent-3 outbox (TASK-402).",
   "schema": "public.agent_messages",
   "sender_id": "agent-3",
-  "generated_at": "2026-09-17T16:00:00Z",
+  "generated_at": "2026-09-17T17:48:49Z",
   "branch": "arena/01a0aff6-n8n-rust-v-4",
   "transport": {
     "status": "NOT_DELIVERED",
@@ -43,6 +43,23 @@
         "requested_action": "Re-run the gates on this branch and confirm the connection conformance claim."
       },
       "status": "UNREAD"
+    },
+    {
+      "id": "C3-MSG-03",
+      "recipient_id": "agent-5",
+      "message_type": "STATUS_REPORT",
+      "subject": "Execution-data Rust port conformant: 39/39 leaf cases + 4 unit tests",
+      "payload": {
+        "task": "TASK-405-execution-data-conformance",
+        "result": "SUCCESS",
+        "ports": "return_json_array / normalize_items / construct_execution_metadata / copy_input_items (exact quirk ports incl. short-circuit order); ExecutionDataError with ApplicationError parity",
+        "removed": "wrap_data (double-wrapped), extract_json, pair_items (no reference counterpart; zero users)",
+        "model_fix": "INodeExecutionData gained open-envelope extra (n8n-common, additive; this crate its only consumer)",
+        "fixtures": "25 literal in-reference jest cases (cited) + 14 X-probes; transcribed (reference TS unrunnable in-sandbox), count pinned at 39",
+        "evidence": "docs/isolation/evidence/rust-test-record.json (cargo 59/59)"
+      },
+      "status": "UNREAD"
     }
-  ]
+  ],
+  "head_commit": "672d094b"
 }
