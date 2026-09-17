@@ -177,7 +177,7 @@ installed, so `regression_gate.py` could not run. Instead n8n **2.9.4** was inst
 5. **Stack traces in error bodies** — present because the sandbox instance runs with `NODE_ENV` unset; tests strip `stacktrace` and must never assert on it.
 6. **Scheduler `onTick` exceptions** are not caught by `ScheduledTaskManager`; relies on node/Trigger wrappers.
 7. **Multi-main** semantics (triggers leader-only, webhooks on all mains) documented from source but not exercised live (single instance).
-8. **Phase 3 `crates/n8n-validation` is NON-CONFORMANT** to `contracts/validation.contract.md` (review `validation-rust-port-review.md` F1–F7; 3 blocking: no `validate_workflow`/`allow_cycles`, cycles over all edge types instead of `main` only, fail-fast `Result` instead of an accumulated report). It landed on main directly, outside any Agent 5 gate. Full port specification: `validation-rust-port-spec.md`; implementation/`cargo test` is Orchestrator-on-VPS per instruction. Agent 4 has not modified `crates/**`.
+8. **Phase 3 `crates/n8n-validation` was NON-CONFORMANT (now TESTED after agent-1 TASK-408 `00370e3c`; see `validation-rust-port-spec.md` revision log)** — original finding: to `contracts/validation.contract.md` (review `validation-rust-port-review.md` F1–F7; 3 blocking: no `validate_workflow`/`allow_cycles`, cycles over all edge types instead of `main` only, fail-fast `Result` instead of an accumulated report). It landed on main directly, outside any Agent 5 gate. Full port specification: `validation-rust-port-spec.md`; implementation/`cargo test` is Orchestrator-on-VPS per instruction. Agent 4 has not modified `crates/**`.
 9. **Self-inflicted regression found and fixed (2026-09-17):** re-recording the baselines for caveat C2 (41d066ba) bumped `historyCount` 2→5 in `baseline-before.json`, and the offline persistence golden pinned the literal value → 4/5. The assertion now checks the invariant (`≥ 2`, integer) instead of a monotonic per-instance counter. Lesson recorded: goldens must not pin instance counters (ids, history, execution numbers).
 10. **Agent 5 caveat C1** (re-run of the 11/11 gate on VPS + PostgreSQL) remains open — cannot be closed from this sandbox. C2 closed (`live/README.md`).
 
@@ -192,7 +192,7 @@ installed, so `regression_gate.py` could not run. Instead n8n **2.9.4** was inst
 | Credentials | **VERIFIED** |
 | API | **VERIFIED** |
 | Validation (TypeScript, Phase 2) | **VERIFIED** |
-| Validation Rust port (`crates/n8n-validation`, Phase 3, not Agent 4-owned) | **ANALYZED** — spec delivered, crate NON-CONFORMANT, awaiting VPS implementation |
+| Validation Rust port (`crates/n8n-validation`, Phase 3, not Agent 4-owned) | **TESTED** — spec delivered; agent-1 TASK-408 (`00370e3c`, PR #3 branch) closed F1–F7, `parity.rs` 14/14 vs D01–D14; VERIFIED pending §10.3 clippy + §10.4 VPS same-checkout run |
 
 Criteria met: source-verified docs + contracts, 56/56 reference tests, 11/11 smoke before and
 after (re-recorded back-to-back 2026-09-17), live verification on n8n 2.9.4, zero modification of Agent 1/2/3 files, no Rust, no secrets.
