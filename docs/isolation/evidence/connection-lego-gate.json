@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-17T20:40:37.229Z",
-  "phase": "phase-3-connection",
+  "generatedAt": "2026-09-17T20:41:01.546Z",
+  "phase": "phase-3+5-connection",
   "lego": "connection",
   "port": "P-CONNECTION-GRAPH",
   "oracle": {
@@ -70,11 +70,12 @@
     }
   ],
   "comparisons": {
-    "total": 1246,
+    "total": 1258,
     "byCheck": {
       "C03": 969,
       "C04": 271,
-      "C05": 6
+      "C05": 6,
+      "C08": 12
     }
   },
   "differences": [],
@@ -119,7 +120,13 @@
       "id": "C07",
       "title": "unit suite PASS (packages/connection-lego/test)",
       "status": "PASS",
-      "detail": "node --test test/*.test.mjs → 13/13 PASS"
+      "detail": "node --test test/*.test.mjs → 20/20 PASS"
+    },
+    {
+      "id": "C08",
+      "title": "facade integration: the Phase 5 facade schedules workflows through the verified port",
+      "status": "PASS",
+      "detail": "12 plans identical over 12 graphs (oracle-derived) + executeWorkflow order verified"
     }
   ],
   "verdict": "PASS"

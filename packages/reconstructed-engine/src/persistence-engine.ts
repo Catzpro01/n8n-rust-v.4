@@ -7,7 +7,7 @@ export class PersistenceEngine {
   private workflows = new Map();
   private executions = new Map();
 
-  async saveWorkflow(workflow) {
+  async saveWorkflow(workflow: any) {
     const validation = SchemaPersistenceGuard.validateWorkflowSchema(workflow);
     if (!validation.valid) throw new Error(`Workflow validation failed: ${validation.errors.join(', ')}`);
     const sanitized = SchemaPersistenceGuard.sanitizeForPersistence(workflow);
@@ -16,11 +16,11 @@ export class PersistenceEngine {
     return { id };
   }
 
-  async getWorkflow(id) {
+  async getWorkflow(id: any) {
     return this.workflows.get(id) || null;
   }
 
-  async saveExecution(execution) {
+  async saveExecution(execution: any) {
     const id = execution.id || `exec_${Date.now()}`;
     // flatted.stringify in real n8n
     const serialized = JSON.stringify(execution);
@@ -28,13 +28,13 @@ export class PersistenceEngine {
     return { id };
   }
 
-  async getExecution(id) {
+  async getExecution(id: any) {
     const exec = this.executions.get(id);
     if (!exec) return null;
     try { return { ...exec, data: JSON.parse(exec.data) }; } catch { return exec; }
   }
 
-  migrateRunExecutionData(data) {
+  migrateRunExecutionData(data: any) {
     if (!data.version) throw new Error(`Unsupported IRunExecutionData version: ${data.version}`);
     if (data.version === 1) return data;
     // v0 -> v1 migration

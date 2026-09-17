@@ -1,20 +1,16 @@
 {
-  "generatedAt": "2026-09-17T20:40:30.360Z",
+  "generatedAt": "2026-09-17T20:42:21.247Z",
   "phase": "phase-4b-localization",
   "lego": "localization-hub",
   "referenceGrounding": "reference/n8n/packages/frontend/@n8n/i18n (mechanism parity; the six translations are product-supplied)",
   "sources": {
     "service": {
       "path": "/home/user/n8n-rust-v.4/packages/workflow-lego/src/backend-localization-service.ts",
-      "digest": "6387fdda4dd1f18ca4c30a33cb1e88249099bd3f8391e56f90bd9caba9141790"
+      "digest": "a2f06f2f34041240c49039ea3db3ecaaeeedca04e52cb8f0bc9b0efa29f9c6f2"
     },
     "adapter": {
       "path": "/home/user/n8n-rust-v.4/packages/workflow-lego/src/settings-localization-adapter.ts",
       "digest": "4baae27916492b7483c5c6dd388cbee00d0e2584eb5e97ed8042d6c676e5a9ff"
-    },
-    "validator": {
-      "path": "/home/user/n8n-rust-v.4/packages/workflow-lego/src/parameter-issues.ts",
-      "digest": "587e284f47aac165971ee19197c1bcab6c1924684898211ffaec61a05a90bcc4"
     }
   },
   "locales": [
@@ -71,70 +67,70 @@
   ],
   "parity": {
     "base": "en",
-    "baseKeyCount": 27,
+    "baseKeyCount": 23,
     "ok": true,
     "locales": [
       {
         "locale": "id",
-        "keyCount": 27,
+        "keyCount": 23,
         "missing": [],
         "extra": []
       },
       {
         "locale": "en",
-        "keyCount": 27,
+        "keyCount": 23,
         "missing": [],
         "extra": []
       },
       {
         "locale": "jv",
-        "keyCount": 27,
+        "keyCount": 23,
         "missing": [],
         "extra": []
       },
       {
         "locale": "ar",
-        "keyCount": 27,
+        "keyCount": 23,
         "missing": [],
         "extra": []
       },
       {
         "locale": "zh",
-        "keyCount": 27,
+        "keyCount": 23,
         "missing": [],
         "extra": []
       },
       {
         "locale": "ru",
-        "keyCount": 27,
+        "keyCount": 23,
         "missing": [],
         "extra": []
       }
     ]
   },
   "suite": {
-    "pass": 26,
+    "pass": 24,
     "fail": 0,
-    "summary": "# tests 26 · # pass 26 · # fail 0 · # duration_ms 494.086787"
+    "summary": "# tests 24 · # pass 24 · # fail 0 · # duration_ms 468.532238"
   },
   "checks": [
     {
       "id": "L01",
       "title": "six locales registered and key-identical to the English base text",
       "status": "PASS",
-      "detail": "id · en · jv · ar · zh · ru — 27 keys x 6 locales, fallback chain terminates at en"
+      "detail": "id · en · jv · ar · zh · ru — 23 keys x 6 locales, fallback chain terminates at en"
     },
     {
       "id": "L02",
       "title": "behaviour suite PASS (resolution, fallback, interpolation, plural, RTL, persistence)",
       "status": "PASS",
-      "detail": "node --test test/06-localization.test.mjs → 26/26 PASS"
+      "detail": "node --test test/06-localization.test.mjs → 24/24 PASS"
     },
     {
       "id": "L03",
-      "title": "boundary: the hub imports nothing; the adapter and the validator import only the hub",
+      "title": "boundary: the hub imports nothing, the adapter imports only the hub",
       "status": "PASS",
-      "detail": "hub: 0 imports · adapter: 1 relative import (./backend-localization-service) · validator: 1 relative import (./backend-localization-service)"
+      "detail": "hub: 0 imports · adapter: 1 relative import (./backend-localization-service)"
     },
     {
       "id": "L04",

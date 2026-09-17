@@ -10,11 +10,11 @@ export class TriggerEngine {
   private activeWorkflows = new Map();
   private triggerResponses = new Map();
 
-  async addWorkflow(workflowId, workflow, mode = 'activate') {
+  async addWorkflow(workflowId: any, workflow: any, mode = 'activate') {
     if (this.activeWorkflows.has(workflowId)) {
       throw new Error('Workflow is already active');
     }
-    const triggerNodes = workflow.nodes?.filter(n => n.type.includes('Trigger') || n.type.includes('trigger')) || [];
+    const triggerNodes = workflow.nodes?.filter((n: any) => n.type.includes('Trigger') || n.type.includes('trigger')) || [];
     if (triggerNodes.length === 0) {
       throw new Error('Workflow cannot be activated because it has no trigger node. At least one trigger, webhook, or polling node is required.');
     }
@@ -22,7 +22,7 @@ export class TriggerEngine {
     return { triggerCount: triggerNodes.length };
   }
 
-  async removeWorkflow(workflowId) {
+  async removeWorkflow(workflowId: any) {
     const responses = this.triggerResponses.get(workflowId) || [];
     for (const resp of responses) {
       try { await resp.closeFunction?.(); } catch (e) { console.warn('Failed to close trigger', e); }
@@ -31,6 +31,6 @@ export class TriggerEngine {
     return this.activeWorkflows.delete(workflowId);
   }
 
-  isActive(workflowId) { return this.activeWorkflows.has(workflowId); }
+  isActive(workflowId: any) { return this.activeWorkflows.has(workflowId); }
   allActive() { return [...this.activeWorkflows.keys()]; }
 }

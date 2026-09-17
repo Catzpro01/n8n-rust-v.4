@@ -1,0 +1,12 @@
+{
+  "name": "@n8n-reconstructed/engine",
+  "version": "0.5.0",
+  "private": true,
+  "type": "module",
+  "description": "n8n 2.9.4 reconstructed execution engine — Phase 5 integrated facade over the 12 verified LEGO ports (zero Rust)",
+  "main": "src/n8n-reconstructed-facade.ts",
+  "scripts": {
+    "test": "node test-run.mjs",
+    "test:integration": "node test-integration.mjs"
+  }
+}
