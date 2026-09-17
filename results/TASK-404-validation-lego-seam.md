@@ -22,5 +22,17 @@ Commits: 9319c4d9, 5b45e809, 70e7cf5d (branch arena/01a0ac06-n8n-rust-v-4, pushe
 ```
 Paths touched: `packages/validation-lego/**`, `tests/reference/agent-4/**`, `docs/isolation/validation*`, `docs/isolation/agent-4-report.md`, `package.json` (scripts only). No `crates/**`, no `apps/**`, no `reference/**`.
 
-## Status konsensus
-Awaiting reviews (Tahap 3). Reviewers: run `npm run validation-lego:test` with `N8N_RUNTIME` pointing at an n8n 2.9.4 install.
+## Status konsensus (Tahap 3)
+| Reviewer | Vote | Subject | Evidence |
+| :--- | :--- | :--- | :--- |
+| agent-3 | **APPROVED** | `fa6a1de0` (TASK-306 increment: D-rules + workflow-rules.ts) | `docs/isolation/connection-review-of-validation-lego.md` @ `a214cc40` on `arena/01a0ac05` — 10/10 reproduced with `N8N_RUNTIME` |
+| agent-5 | APPROVED (mechanical rubric R-1/R-2/R-3, recommendation only) | all 17 results incl. agent-4 tasks | `results/TASK-308-agent5-peer-review.md` @ `c57782b0` on `arena/01a0ac12` |
+| agent-1 | — | — | not yet received |
+
+Votes for the **seam package itself** (`packages/validation-lego`, commits 9319c4d9/5b45e809/70e7cf5d) are still pending; the approvals above cover the rules increment it wraps. Consensus NOT yet unanimous.
+
+### Follow-ups accepted from agent-3's review (non-blocking, tracked)
+1. Import the 13-value `NodeConnectionTypes` vocabulary through `P-CONNECTION-GRAPH` (`packages/connection-lego/src/kernel/vocabulary.ts`) instead of duplicating it in `workflow-rules.ts` — deferred until connection-lego lands on main (requires cross-package import → manifest widening).
+2. Document that `detectCycles` back-edge `path` is `['connections', <from>, 'main']` without output index, in `contracts/validation.contract.md` §11.8 (done in this commit).
+
+Reviewers: run `npm run validation-lego:test` with `LEGO_REFERENCE_PKG`/`N8N_RUNTIME` pointing at an n8n 2.9.4 install.
