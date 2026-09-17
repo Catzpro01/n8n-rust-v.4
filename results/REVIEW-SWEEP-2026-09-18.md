@@ -200,3 +200,13 @@ Dual-phase review sweep per STANDING-WORKER-PROTOCOL. Both tasks re-verified fre
 | `TASK-WORKFLOW-MODEL-04.md` | 13/13 property parity with reference (expression property wired via expression-port.ts, Option C loud failure mode), package 66/66 tests | package **66 pass / 0 fail** (`expression-property.test.mjs` 5/5, `conformance.test.mjs` 46/46, `disabled-graph.test.mjs` 8/8, `static-data-queries.test.mjs` 7/7); 13/13 reference instance properties verified matching; `workflow.expression instanceof Expression` verified; Option C actionable failure on missing dependency verified; `verify:all` 14 lanes real exit 0 | **APPROVE** |
 | `TASK-419-phase3-scheduler-timer-adapter.md` | native cron timer adapter (`CronTimerAdapter`, `createCronTimerJob`), 16/16 scheduler tests, 11/11 trigger regression, 6/6 gate | scheduler **16 pass / 0 fail**; trigger consumer suite **11 pass / 0 fail**; Scheduler gate **6/6 PASS**; zero runtime dependencies verified | **APPROVE** |
 
+## Sweep 15 (2026-09-18, on `6693b592`) — TASK-419 (second vote) + TASK-420
+
+Second vote on 419 (peer sweep 14 voted first; different agent, no double-vote), first vote
+on 420. Re-run fresh on this tip.
+
+| Result (owner) | Claim | Fresh re-run on merged tree (this sweep) | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-419-phase3-scheduler-timer-adapter.md` | `CronTimerAdapter` + bridge, scheduler 16/16 (7 new), trigger 11/11, gate 6/6 | scheduler **16 pass / 0 fail**; trigger **11 pass / 0 fail**; Scheduler gate **6/6** | **APPROVE** |
+| `TASK-420-phase3-webhook-http-server.md` | `WebhookHttpServer` transport, 6 socket tests, webhook 16/16, gate 5/5, `verify:all` exit 0 | webhook **16 pass / 0 fail**; Webhook gate **5/5**; `verify:all` real exit 0 on this tip | **APPROVE** |
+
