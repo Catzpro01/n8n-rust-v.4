@@ -145,3 +145,26 @@ test('engine: regresi — workflow linear tanpa error tetap COMPLETED (kompatibe
 	assert.equal(result.data['Transform Output'][0].json.finalResult, 'PASS');
 	assert.equal(result.errors.length, 0);
 });
+
+test('engine: continueErrorOutput membawa provenance item asal ke output Error ($getPairedItem)', async () => {
+	const engine = new WorkflowExecutionEngine(
+		linearWorkflow(
+			[
+				{ name: 'Splitter', type: 'test.splitter', onError: 'continueErrorOutput' },
+				{ name: 'Error Branch', type: 'test.sink' },
+			],
+			{ Splitter: { main: [[], [{ node: 'Error Branch', type: 'main', index: 0 }]] } },
+		),
+	);
+	engine.registerNodeType('n8n-nodes-base.manualTrigger', async () => [{ json: { userId: 42 } }]);
+	engine.registerNodeType('test.splitter', async () => [
+		{ json: { ok: 1 } },
+		{ json: { error: 'row failed' }, pairedItem: { item: 0 } },
+	]);
+	engine.registerNodeType('test.sink', async (node, items) => items);
+
+	const result = await engine.runWorkflow();
+	assert.equal(result.status, 'COMPLETED');
+	// Item error mewarisi JSON item asalnya: { ...sourceJson, ...errorJson }
+	assert.deepEqual(result.data['Error Branch'][0].json, { userId: 42, error: 'row failed' });
+});

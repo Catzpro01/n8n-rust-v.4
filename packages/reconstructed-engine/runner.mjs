@@ -12,6 +12,7 @@
  */
 
 import {
+	createPairedItemResolver,
 	resolveErrorOutcome,
 	resolveRetryPolicy,
 	runWithRetry,
@@ -78,12 +79,14 @@ export class WorkflowExecutionEngine {
 		}
 
 		// Queue antrean eksekusi berbasis DAG BFS
-		const queue = [{ nodeName: currentNodeName, inputData: initialData.map((d) => ({ json: d })) }];
+		const queue = [
+			{ nodeName: currentNodeName, inputData: initialData.map((d) => ({ json: d })), sourceNode: null },
+		];
 
 		let status = 'COMPLETED';
 
 		while (queue.length > 0) {
-			const { nodeName, inputData } = queue.shift();
+			const { nodeName, inputData, sourceNode } = queue.shift();
 			const node = this.nodes.get(nodeName);
 			if (!node) continue;
 
@@ -157,7 +160,28 @@ export class WorkflowExecutionEngine {
 			// Jalur sukses: normalisasi item error lalu pindahkan ke output "Error"
 			// (workflow-execute.ts L1720-L1722 + L2463-L2561) bila node memilikinya.
 			if (!executionError && node.onError === 'continueErrorOutput') {
-				const split = splitErrorOutput(outputData, this.mainOutputCount(nodeName, node));
+				// Error Recovery LEGO: item error diperkaya JSON item asalnya lewat
+				// `$getPairedItem` (workflow-execute.ts L2524-L2560). `runData` disusun
+				// dari hasil node yang sudah dieksekusi (satu run per node di engine ini).
+				const resolver = createPairedItemResolver(
+					Object.fromEntries(
+						[...runData.entries()].map(([name, branches]) => [
+							name,
+							[{ data: { main: branches }, source: [] }],
+						]),
+					),
+				);
+				const source = {
+					main: [
+						sourceNode
+							? { previousNode: sourceNode, previousNodeOutput: 0, previousNodeRun: 0 }
+							: null,
+					],
+				};
+				const split = splitErrorOutput(outputData, this.mainOutputCount(nodeName, node), {
+					resolver,
+					source,
+				});
 				outputData = split.data;
 			}
 
@@ -183,7 +207,12 @@ export class WorkflowExecutionEngine {
 					const branchData = outputData?.[outputIndex];
 					if (!branchData || branchData.length === 0) return;
 					for (const conn of outputList) {
-						queue.push({ nodeName: conn.node, inputData: branchData });
+						queue.push({
+							nodeName: conn.node,
+							inputData: branchData,
+							sourceNode: nodeName,
+							sourceOutputIndex: outputIndex,
+						});
 					}
 				});
 			}

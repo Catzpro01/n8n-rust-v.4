@@ -24,7 +24,7 @@ is a Rust replacement attempted.
 | **PERSISTENCE, TRIGGER, WEBHOOK, SCHEDULER, CREDENTIALS, API, SETTINGS, BINARY** | **✅ IMPLEMENTED — `packages/*-lego/`** |
 | **RECONSTRUCTED ENGINE (Full Stack)** | **✅ VERIFIED — `packages/reconstructed-engine/` (14 LEGOs integrated, 6 languages ID/EN/JV/AR/ZH/RU)** |
 | RUST IMPLEMENTATION | ⏸ NOT STARTED (crates contain genesis Rust, zero new Rust per PROJECT_RULES) |
-| **ERROR RECOVERY (LEGO)** | **✅ TESTED 22/22 — retry + onError/continueOnFail routing, see [`contracts/error-recovery.contract.md`](contracts/error-recovery.contract.md)** |
+| **ERROR RECOVERY (LEGO)** | **✅ TESTED 32/32 — retry, onError/continueOnFail routing, `$getPairedItem` provenance — see [`contracts/error-recovery.contract.md`](contracts/error-recovery.contract.md)** |
 
 “Isolated” means the TypeScript component now has an enforced boundary and a
 contract. “Implemented” means the LEGO has been reconstructed 1:1 in pure JS/TS from n8n 2.9.4 source with clear boundary and formal contract. It does **not** mean it was replaced by Rust — ZERO RUST per PROJECT_RULES.md, frontend 100% original untouched.
@@ -45,7 +45,7 @@ contract. “Implemented” means the LEGO has been reconstructed 1:1 in pure JS
 - `packages/persistence-lego/` : Persistence LEGO (ExecutionRepository, migration, pruning)
 - `packages/trigger-lego/`, `webhook-lego/`, `scheduler-lego/`, `credentials-lego/`, `api-lego/`, `settings-lego/`, `binary-data-lego/` : Extended LEGOs (8 secondary)
 - `packages/reconstructed-engine/` : Full-stack reconstructed engine integrating all 14 LEGOs, modular src/, 6-language i18n (ID, EN, JV, AR, ZH, RU), zero Rust, frontend untouched — VERIFIED
-- `packages/reconstructed-engine/src/error-recovery-policy.ts` : isolated Error Recovery LEGO (retry policy, `onError` routing, error-item split) — consumed by `runner.mjs` and the TS execution engine
+- `packages/reconstructed-engine/src/error-recovery-policy.ts` : isolated Error Recovery LEGO (retry policy, `onError` routing, error-item split, `$getPairedItem` provenance) — consumed by `runner.mjs` and the TS execution engine
 - `tools/` : boundary mapper, kernel/port/reference gates, isolation extractor, model digest, gate runner, live engine harness
 - `tests/reference/` : golden workflows + baseline smoke test evidence (connection, execution-data, expression, workflow-rust)
 - `tasks/`, `results/` : inbound task manifests and execution results
@@ -73,7 +73,7 @@ npm --prefix packages/expression-lego run typecheck
 npm --prefix packages/execution-data-lego run typecheck
 
 # Error Recovery LEGO (retry + error routing)
-npm run reconstructed:test                # 22 tests: error-recovery policy unit + JS engine integration
+npm run reconstructed:test                # 32 tests: error-recovery + pairedItem provenance (unit & JS engine)
 npm run reconstructed:demo                # end-to-end regression demo (must print VERIFIKASI BERHASIL)
 
 npm --prefix packages/reconstructed-engine run typecheck   # 0 errors (16/16 LEGO packages)

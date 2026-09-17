@@ -17,6 +17,7 @@ import { Workflow } from '../workflow/workflow';
 import { normalizeItems, assignPairedItems, createRunExecutionData, type IRunExecutionData, type ITaskDataConnections, type INodeExecutionData, type IExecuteData } from '../execution-data/execution-data';
 import { Expression } from '../expression/expression';
 import {
+	createPairedItemResolver,
 	resolveErrorOutcome,
 	resolveRetryPolicy,
 	runWithRetry,
@@ -162,7 +163,12 @@ export class WorkflowExecute {
         // (workflow-execute.ts L1720-L1722 + L2463-L2561).
         if (node.onError === 'continueErrorOutput' && executionResult.length > 0) {
           const mainOutputCount = Math.max(executionResult.length + 1, 2);
-          executionResult = splitErrorOutput(executionResult as any, mainOutputCount).data as INodeExecutionData[][];
+          // Error Recovery LEGO: item error diperkaya JSON item asalnya lewat
+          // `$getPairedItem` (workflow-execute.ts L2524-L2560).
+          executionResult = splitErrorOutput(executionResult as any, mainOutputCount, {
+            resolver: createPairedItemResolver(this.runExecutionData.resultData.runData as any),
+            source: (currentExecuteData.source ?? null) as any,
+          }).data as INodeExecutionData[][];
         }
 
         // Handle alwaysOutputData (I9 invariant)
@@ -247,15 +253,15 @@ export class WorkflowExecute {
             childInputData.main[i] = i === connection.index ? outputData : [];
           }
 
+          // 1:1 n8n (workflow-execute.ts L803-L813 / ITaskDataConnectionsSource):
+          // `source.main[inputIndex]` adalah SATU ISourceData (atau null), bukan array bersarang.
           const sourceData = {
             main: [
-              [
-                {
-                  previousNode: node.name,
-                  previousNodeOutput: outputIndex,
-                  previousNodeRun: runIndex,
-                },
-              ],
+              {
+                previousNode: node.name,
+                previousNodeOutput: outputIndex,
+                previousNodeRun: runIndex,
+              },
             ],
           };
 

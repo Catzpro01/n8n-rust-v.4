@@ -86,4 +86,37 @@ assert.equal(splitRun.data.main[1].length, 1, 'output 1 (Error) berisi item erro
 assert.ok(result2.resultData.runData['Error Branch'], 'cabang error harus dieksekusi');
 console.log('TS engine continueErrorOutput integration: PASS');
 
+// 3) provenance item error: JSON item asal digabung via $getPairedItem (L2524-L2560)
+const engine3 = new ReconstructedWorkflowEngine({ mode: 'manual' });
+engine3.loadWorkflow({
+	nodes: [
+		{ name: 'Manual Trigger', type: 'n8n-nodes-base.manualTrigger', parameters: {} },
+		{ name: 'Splitter', type: 'test.splitter2', parameters: {}, onError: 'continueErrorOutput' },
+		{ name: 'Error Branch', type: 'test.sink', parameters: {} },
+	],
+	connections: {
+		'Manual Trigger': { main: [[{ node: 'Splitter', type: 'main', index: 0 }]] },
+		Splitter: { main: [[], [{ node: 'Error Branch', type: 'main', index: 0 }]] },
+	},
+});
+engine3.registerNodeType('n8n-nodes-base.manualTrigger', async function () {
+	return [{ json: { userId: 42 } }];
+});
+engine3.registerNodeType('test.splitter2', async function () {
+	return [
+		{ json: { ok: 1 }, pairedItem: { item: 0 } },
+		{ json: { error: 'row failed' }, pairedItem: { item: 0 } },
+	];
+});
+engine3.registerNodeType('test.sink', async function (items) {
+	return items;
+});
+
+const result3 = await engine3.executeWorkflow('Manual Trigger');
+const errorBranchItems = result3.resultData.runData['Error Branch']?.[0]?.data?.main?.[0] ?? [];
+assert.equal(errorBranchItems.length, 1, 'cabang error menerima 1 item');
+assert.equal(errorBranchItems[0].json.error, 'row failed');
+assert.equal(errorBranchItems[0].json.userId, 42, 'item error mewarisi JSON item asal');
+console.log('TS engine pairedItem provenance integration: PASS');
+
 console.log('ALL TS ENGINE INTEGRATION CHECKS PASSED');
