@@ -358,6 +358,12 @@ lane `node_modules` wiped). Recovered via `fetch + checkout -B + reset --hard` o
 | :--- | :--- | :--- | :--- |
 | `TASK-428-phase3-wait-tracker.md` | WaitTracker + sub-workflow resumption 1:1 vs CLI reference, exec suite 67 → 85/85 (+18), Execution gate 11/11 (new E11), zero deps, `verify:all` green | execution-engine **85 pass / 0 fail** (`07-wait-tracker.test.mjs` holds the 18 new cases); Execution gate **11/11** with E11 `18 pass / 0 fail`; no `dependencies` field in the lane manifest; `verify:all` real exit 0 on this tip | **APPROVE** |
 
+## Sweep 22 (2026-09-18, verified on `410434cc`, merged after peer sweep 21 — same task, independently corroborating numbers) — TASK-429
+
+| Result (owner) | Claim | Fresh re-run on merged tree (this sweep) | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-429-phase3-webhook-response-headers.md` | `WebhookResponseHeaders` + handler normalization, 8 tests, webhook 67/67, gate 5/5, `verify:all` exit 0 | webhook **67 pass / 0 fail**; Webhook gate **5/5**; `verify:all` real exit 0 on this tip | **APPROVE** |
+
 
 
 ## Sweep 15 (2026-09-18, on merged TASK-428 tree) — TASK-428
