@@ -1,23 +1,23 @@
 # Workflow LEGO — Phase 2 isolation verification
 
-Generated: 2026-09-17T22:35:24.495Z · reference n8n 2.9.4 (`b6dc2787c456`)
+Generated: 2026-09-17T22:36:41.140Z · reference n8n 2.9.4 (`b6dc2787c456`)
 
-**Gates: 10/10 PASS** · **BEHAVIOR CHANGE: NONE DETECTED** · **RUST IMPLEMENTATION: NOT STARTED**
+**Gates: 11/11 PASS** · **BEHAVIOR CHANGE: NONE DETECTED** · **RUST IMPLEMENTATION: NOT STARTED**
 
 ## Requested gate checklist
 
 | gate | status | evidence |
 | :--- | :--- | :--- |
 | TypeScript build PASS | PASS | G06: tsc -p .extract/tsconfig.json → 0 errors<br>G07: tsc --noEmit → 0 errors |
-| unit tests PASS | PASS | G08: # cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 15335.211187 |
-| workflow load PASS | PASS |  |
-| workflow save PASS | PASS |  |
-| manual execution PASS | PASS |  |
-| 1-node PASS | PASS |  |
-| linear workflow PASS | PASS |  |
-| webhook PASS | PASS |  |
-| execution persistence PASS | PASS |  |
-| reference smoke test 11/11 PASS (VPS baseline; here: hash-pinned + live engine re-verified) | PASS | G04: Reference integrity check: PASS (15050 files, root f8da35180669d798…) |
+| unit tests PASS | PASS | G08: # cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 11593.284725 |
+| workflow load PASS | PASS | G11: 7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS |
+| workflow save PASS | PASS | G11: 7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS |
+| manual execution PASS | PASS | G11: 7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS |
+| 1-node PASS | PASS | G11: 7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS |
+| linear workflow PASS | PASS | G11: 7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS |
+| webhook PASS | PASS | G11: 7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS |
+| execution persistence PASS | PASS | G11: 7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS |
+| reference smoke test 11/11 PASS (VPS baseline; here: hash-pinned + live engine re-verified) | PASS | G04: Reference integrity check: PASS (15050 files, root f8da35180669d798…)<br>G11: 7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS |
 
 ## All gates
 
@@ -30,9 +30,10 @@ Generated: 2026-09-17T22:35:24.495Z · reference n8n 2.9.4 (`b6dc2787c456`)
 | G05 | isolation extraction (pure import rewrites only) | PASS | isolated unit written to packages/workflow-lego/.extract   owned files copied : 10   port rewrites      : 25 across 10 files     @lego/ports/checksum-digest : 1     @lego/ports/config : 1     @lego/ports/constants : 1    |
 | G06 | TypeScript build PASS (isolated unit, ports only) | PASS | tsc -p .extract/tsconfig.json → 0 errors |
 | G07 | TypeScript build PASS (versioned boundary/ports/facade) | PASS | tsc --noEmit → 0 errors |
-| G08 | unit tests PASS (boundary, extraction, equivalence, strict isolation, surface) | PASS | # cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 15335.211187 |
+| G08 | unit tests PASS (boundary, extraction, equivalence, strict isolation, surface) | PASS | # cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 11593.284725 |
 | G09 | BEFORE vs AFTER digest: BEHAVIOR CHANGE NONE | PASS | 252 section comparisons across 18 workflows — 0 differences · strict: 218 identical, 34 in declared port sections |
-| G10 | strict port mode: no hidden coupling to the reference runtime | PASS | # cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 2093.877325 |
+| G10 | strict port mode: no hidden coupling to the reference runtime | PASS | # cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 1432.382199 |
+| G11 | live verification: workflow load / save / 1-node / linear / webhook / execution record | PASS | 7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS |
 
 ## Live verification (reference execution engine)
 
