@@ -1,0 +1,86 @@
+id: TASK-ENGINE-DISABLED-01
+agent: arena-worker
+lego: execution
+module: reconstructed-engine
+phase: 3
+title: "Reconstructed engine: disabled-node passthrough per handleDisabledNode (S7 DIVERGE fix)"
+status: AVAILABLE
+
+# Context: differential TASK-ENGINE-DIFF-01 found S7 DIVERGE — reconstructed-engine
+# SKIPS disabled nodes (starving downstream) while the reference PASSES INPUT
+# THROUGH (handleDisabledNode, workflow-execute.ts L909-920, called from runNode
+# L1199 before any node-type lookup). This task ports that behavior. Failing-first
+# proof already recorded: S7 currently DIVERGE with A=null (results/
+# TASK-ENGINE-DIFF-01.md); acceptance is S7 flipping to AGREE.
+#
+# Reference (read-only, verified by reading, not grep):
+# - runNode L1199: `if (node.disabled === true) return this.handleDisabledNode(inputData)`
+# - handleDisabledNode L909-920: `{data:[main[0]]}`, or `{data:undefined}` with no input
+# - assignPairedItems L2635: `?? null`; null-data branch ends gracefully L1768-1776
+#   (no task recorded, downstream not processed) — unreachable in this engine's
+#   shape (queued nodes always carry >=1 item), documented, not implemented.
+
+allowed_paths:
+  - tasks/TASK-ENGINE-DISABLED-01.yaml
+  - packages/reconstructed-engine/runner.mjs
+  - packages/reconstructed-engine/disabled.test.mjs
+  - tools/engine-differential.mjs
+  - results/TASK-ENGINE-DISABLED-01.md
+  - docs/isolation/CROSS-AGENT-ISSUES.md  # shared log: ISSUE-021 merge addendum only
+
+forbidden_paths:
+  - reference/n8n/**
+  - crates/**
+  - apps/**
+  - packages/frontend/**
+  - packages/execution-engine/**
+  - contracts/**
+
+requires:
+  - packages/reconstructed-engine/runner.mjs
+  - packages/reconstructed-engine/error-policy.mjs
+  - tools/engine-differential.mjs
+
+source_modification: none   # reference is read-only; prototype engine + own harness only
+
+operations:
+  - name: git_status
+  - name: read_reference
+    args:
+      files:
+        - reference/n8n/packages/core/src/execution-engine/workflow-execute.ts
+      lines: "909-920,1199,1736-1776,2635"
+  - name: edit_file
+    args: { path: packages/reconstructed-engine/runner.mjs }
+  - name: write_file
+    args: { path: packages/reconstructed-engine/disabled.test.mjs }
+  - name: edit_file
+    args: { path: tools/engine-differential.mjs }
+  - name: run_shell
+    args: { cmd: "npm run reconstructed-engine:test", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "node tools/engine-differential.mjs", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "node tests/compatibility/contract_conformance.mjs", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "python3 tests/integration/boundary_audit.py", expect_exit: 0 }
+  - name: write_file
+    args: { path: results/TASK-ENGINE-DISABLED-01.md }
+
+acceptance:
+  - disabled mid-chain node passes received input through (handler never called,
+    unregistered types OK), records a success task, downstream runs on input json
+  - strict `=== true` check (reference L1199), incl. truthy-non-true executes
+  - differential S7 flips DIVERGE -> AGREE on semantic projection
+    (task presence + status + data json; envelope metadata like hints/timings
+    compared nowhere — recorded as known task-envelope delta, not hidden)
+  - reconstructed-engine suite green (21 + new disabled tests), demo COMPLETED
+  - offline gates green (42/42 + boundary PASS), no other differential verdict flips
+  - `!node` silent-skip preserved as-is (documented deviation, out of scope)
+  - results file has a non-empty operations table (Stage 2c T1 clean)
+  - no file under reference/, crates/, apps/, frontend, contracts/,
+    or packages/execution-engine touched
+
+merge_condition:
+  - regression_gate_pass
+  - no_contract_violation

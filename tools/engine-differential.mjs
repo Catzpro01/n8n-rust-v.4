@@ -294,9 +294,13 @@ const aJson = (result, node) => (result.data[node] ?? []).map((item) => item.jso
   } catch (error) { console.error(`[HARNESS-ERROR] S6: ${error.message}`); harnessErrors++; }
 }
 
-// --- S7: disabled node (passthrough per handleDisabledNode L909-920, L1199) ---
+// --- S7: disabled node ---------------------------------------------------------
+// Compares the semantic projection (presence + status + data json), NOT raw
+// task objects: envelope metadata (hints, startTime, executionTime) can never
+// be identical across engines. Envelope shape remains a known delta for a
+// future task-shape task — recorded, not hidden.
 {
-  const s = scenario('S7 disabled node passthrough', { reference: 'handleDisabledNode returns inputData (L909-920, L1199)' });
+  const s = scenario('S7 disabled node passthrough', { reference: 'handleDisabledNode passthrough (L909-920 via L1199)' });
   const def = {
     nodes: [
       nodeDef('Trigger', 'trigger'),
@@ -321,9 +325,19 @@ const aJson = (result, node) => (result.data[node] ?? []).map((item) => item.jso
   try {
     const a = await runA(def, aHandlers);
     const b = await runB(def, bHandlers);
+    const aMiddle = a.runData.Middle?.[0];
+    const bMiddle = bTask(b, 'Middle');
     s.compare('completed', a.status === 'COMPLETED', b.status === 'success');
-    s.compare('disabled node task status', a.runData.Middle[0].executionStatus, bTask(b, 'Middle').executionStatus);
-    s.compare('downstream received passthrough items', aJson(a, 'Sink'), bJson(b, 'Sink'));
+    s.compare('disabled task semantic', {
+      present: aMiddle !== undefined,
+      status: aMiddle?.executionStatus,
+      dataJson: (aMiddle?.data?.main?.[0] ?? []).map((item) => item.json),
+    }, {
+      present: bMiddle !== undefined,
+      status: bMiddle?.executionStatus,
+      dataJson: (bMiddle?.data?.main?.[0] ?? []).map((item) => item.json),
+    });
+    s.compare('downstream ran on input json', aJson(a, 'Sink'), bJson(b, 'Sink'));
   } catch (error) { console.error(`[HARNESS-ERROR] S7: ${error.message}`); harnessErrors++; }
 }
 

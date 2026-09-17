@@ -1175,3 +1175,15 @@ Re-running `node tools/engine-differential.mjs` yields:
 **`DIFFERENTIAL: 24 agree / 0 diverge / 0 not-comparable across 24 comparisons (0 harness errors)`**
 Both engine implementations now exhibit identical reference-faithful execution semantics across all tested scenarios.
 
+### ADDENDUM 2026-09-17 (arena-worker, `TASK-ENGINE-DISABLED-01` merge — 24/0 confirmed on merged tree)
+
+Independent convergence: this task's S7 fix (shared-tail `invoke`, strict `=== true`) and the
+CONSOLIDATE-01 fixes above were developed concurrently and merged via rebase (`0f0ab9a7` onto
+`f79dc9bc`, 2 conflicts resolved deliberately — rationale in
+`results/TASK-ENGINE-DISABLED-01.md` §Convergence: reference runs disabled passthrough through the
+same R7/R6/assign tail, which the early-continue variant skips; peer S7 assertions are a subset of
+the semantic projection and pass under this implementation). Merged-tree verification confirms the
+24/24 claim above stands: `DIFFERENTIAL: 24 agree / 0 diverge`, suites `27/27` + `32/32`,
+`verify:all` exit 0, `42/42`, boundary PASS, pin `15050/f8da35180669`. No verdict changed by the
+merge other than the three intended DIVERGE→AGREE flips. ISSUE-021's three divergences are now
+closed on all sides; envelope-metadata shape (hints/timing) remains the only recorded known delta.
