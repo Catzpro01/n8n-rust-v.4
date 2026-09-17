@@ -60,8 +60,11 @@ The live step, wired into `tests/integration/run_gate.sh` as Stage 2b:
 * **The VPS `cargo test` (real registry) stays a merge condition** for anything
   that depends on the Rust side. The `--force` re-run on the VPS is what
   promotes "green here" to "green everywhere".
-* The record is keyed to an exact commit + fixtures hash: any tree movement
-  invalidates it loudly instead of silently.
+* The record is keyed to the **Rust-input tree state** (`crates/`, `Cargo.toml`,
+  `Cargo.lock`, `tests/reference/workflow-rust/`, the rig, the acceptance script
+  itself) plus the fixtures hash: any committed or uncommitted change to those
+  inputs invalidates it loudly instead of silently, while doc/result-only
+  commits (including the record commit itself) keep it green.
 
 ## Reproduce
 

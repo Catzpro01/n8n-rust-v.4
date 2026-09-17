@@ -35,16 +35,23 @@ if [ -n "$RUST_INPUTS_DIRTY" ]; then
   echo "$RUST_INPUTS_DIRTY" | sed 's/^/!!   /'
 fi
 
+# Freshness = record PASS + Rust inputs unchanged since the recorded commit +
+# same fixtures hash + G04 PASS. The record commit itself (record + results
+# files) never invalidates evidence; any Rust-input change does.
 if [ "$FORCE" -eq 0 ] && [ -f "$RECORD" ]; then
-  if python3 - "$RECORD" "$HEAD" "$FIXSHA" <<'EOF' 2>/dev/null; then
+  REC_HEAD="$(python3 -c "import json,sys; print(json.load(open(sys.argv[1])).get('headCommit',''))" "$RECORD" 2>/dev/null || true)"
+  INPUTS_SAME=1
+  if [ -n "$REC_HEAD" ] && [ "$REC_HEAD" != "unknown" ]; then
+    git diff --quiet "$REC_HEAD" HEAD -- crates Cargo.toml Cargo.lock tests/reference/workflow-rust tools/rust-offline-rig tools/phase3-rust-acceptance.sh 2>/dev/null && INPUTS_SAME=0
+  fi
+  if [ "$INPUTS_SAME" -eq 0 ] && python3 - "$RECORD" "$FIXSHA" <<'EOF' 2>/dev/null; then
 import json, sys
 record = json.load(open(sys.argv[1]))
 sys.exit(0 if (record.get("result") == "PASS"
-               and record.get("headCommit") == sys.argv[2]
-               and record.get("fixturesSha256") == sys.argv[3]
+               and record.get("fixturesSha256") == sys.argv[2]
                and record.get("referenceIntegrity") == "PASS") else 1)
 EOF
-    echo "Phase-3 Rust acceptance: FRESH EVIDENCE at ${HEAD} — live run skipped (pass --force to re-run)"
+    echo "Phase-3 Rust acceptance: FRESH EVIDENCE (Rust inputs unchanged since ${REC_HEAD}) — live run skipped (pass --force to re-run)"
     exit 0
   fi
 fi

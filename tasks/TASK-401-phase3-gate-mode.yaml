@@ -46,7 +46,7 @@ operations:
         - "workspace manifest present, members resolve"
         - "workflow-rust fixtures present with exact 8/6/6/6/9 case counts"
         - "frozen 15-symbol Workflow surface intact (ownership.json)"
-        - "cargo test evidence fresh (record PASS + G04 PASS + HEAD + fixtures sha match)"
+        - "cargo test evidence fresh (record PASS + G04 PASS + Rust inputs unchanged since record commit + fixtures sha match)"
       phase3_audit: "Rust guard becomes an accepted inventory line; undocumented edges still fail"
   - name: acceptance_runner
     args:

@@ -226,17 +226,31 @@ if (!PHASE3) {
       record.fixturesSha256 === fixturesSha,
       `fixtures.json changed since the last green cargo test — re-run: ${rerun}`,
     );
-    let head = null;
+    // Evidence stays valid while the Rust inputs are unchanged since the
+    // recorded commit (the record commit itself only adds the record, so it
+    // never invalidates evidence). Uncommitted Rust-input changes fail too.
     try {
-      head = execSync('git rev-parse HEAD', { cwd: ROOT, encoding: 'utf8' }).trim();
-    } catch {
-      head = null;
-    }
-    if (head) {
+      const recHead = String(record.headCommit || '');
+      assert(recHead && recHead !== 'unknown', `record has no headCommit — re-run: ${rerun}`);
+      const changed = execSync(
+        `git diff --name-only ${recHead} HEAD -- crates Cargo.toml Cargo.lock tests/reference/workflow-rust tools/rust-offline-rig tools/phase3-rust-acceptance.sh`,
+        { cwd: ROOT, encoding: 'utf8' },
+      ).trim();
       assert(
-        record.headCommit === head,
-        `tree moved since the last green cargo test (${String(record.headCommit).slice(0, 8)} -> ${head.slice(0, 8)}) — re-run: ${rerun}`,
+        !changed,
+        `Rust inputs changed since the last green cargo test (${changed.split('\n').slice(0, 3).join(', ')}…) — re-run: ${rerun}`,
       );
+      const dirty = execSync(
+        'git status --porcelain -- crates Cargo.toml Cargo.lock tests/reference/workflow-rust tools/rust-offline-rig tools/phase3-rust-acceptance.sh',
+        { cwd: ROOT, encoding: 'utf8' },
+      ).trim();
+      assert(
+        !dirty,
+        `uncommitted Rust-input changes present (${dirty.split('\n').slice(0, 3).join(', ')}…) — commit and re-run: ${rerun}`,
+      );
+    } catch (e) {
+      if (/re-run: /.test(e.message)) throw e;
+      // No git (or shallow oddity): fall back to the fixtures-hash check above.
     }
     assert(
       record.referenceIntegrity === 'PASS',
