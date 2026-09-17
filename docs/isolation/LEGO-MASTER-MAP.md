@@ -123,10 +123,11 @@ asserts that confinement.
 | `TASK-431-phase3-workflow-runner` | execution (workflow runner coordinator) | `contracts/execution.contract.md` ✅ | `docs/isolation/execution.md` ✅ | `packages/execution-engine/test/*.test.mjs` 110/110 ✅ (10 WorkflowRunner cases) | `tools/execution-engine-gate.mjs` 13/13 ✅ | **VERIFIED** |
 | `TASK-432-phase3-subworkflow-execution` | execution (subworkflow execution runtime) | `contracts/execution.contract.md` ✅ | `docs/isolation/execution.md` ✅ | `packages/execution-engine/test/*.test.mjs` 122/122 ✅ (12 SubworkflowExecution cases) | `tools/execution-engine-gate.mjs` 14/14 ✅ | **SUBMITTED_FOR_REVIEW** |
 | `TASK-433-phase3-manual-execution-service` | execution (manual execution service & graph re-wiring) | `contracts/execution.contract.md` ✅ | `docs/isolation/execution.md` ✅ | `packages/execution-engine/test/*.test.mjs` 144/144 ✅ (22 ManualExecutionService cases) | `tools/execution-engine-gate.mjs` 15/15 ✅ | **SUBMITTED_FOR_REVIEW** |
+| `TASK-434-phase3-execution-lifecycle-and-error-workflow` | execution (execution lifecycle & error workflow dispatch) | `contracts/execution.contract.md` ✅ | `docs/isolation/execution.md` ✅ | `packages/execution-engine/test/*.test.mjs` 157/157 ✅ (13 ExecutionLifecycle cases) | `tools/execution-engine-gate.mjs` 16/16 ✅ | **SUBMITTED_FOR_REVIEW** |
 
 | Phase 3 gate | Result |
 | :--- | :--- |
-| `tools/execution-engine-gate.mjs` | **PASS 15/15** — no dependencies, import-closed, Rust confined, reference intact, 144/144 tests, public surface contracted (92 symbols), expression sandboxed, activation lifecycle, WaitTracker execution resumption, ActiveExecutions registry, WorkflowRunner coordinator, subworkflow execution, manual execution service |
+| `tools/execution-engine-gate.mjs` | **PASS 16/16** — no dependencies, import-closed, Rust confined, reference intact, 157/157 tests, public surface contracted (98 symbols), expression sandboxed, activation lifecycle, WaitTracker execution resumption, ActiveExecutions registry, WorkflowRunner coordinator, subworkflow execution, manual execution service, execution lifecycle & error workflow |
 | Reference tree | unmodified (15050 files, root digest `f8da3518…`) |
 | Evidence | `docs/isolation/evidence/execution-engine-gate.json` |
 

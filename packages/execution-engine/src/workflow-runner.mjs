@@ -25,6 +25,7 @@ import { ExecutionLifecycleHooks } from './lifecycle-hooks.mjs';
 import { createRunExecutionData } from './run-execution-data.mjs';
 import { WorkflowExecute } from './workflow-execute.mjs';
 import { ReconstructedWorkflow } from './workflow.mjs';
+import { FailedRunFactory } from './failed-run-factory.mjs';
 
 export class WorkflowRunner {
 	#logger;
@@ -75,27 +76,8 @@ export class WorkflowRunner {
 			hostId: 'default',
 		};
 		this.#manualExecutionService = options.manualExecutionService ?? null;
-		this.#failedRunFactory = options.failedRunFactory ?? {
-			generateFailedExecutionFromError: (executionMode, error, node) => ({
-				data: createRunExecutionData({
-					resultData: {
-						error: {
-							...error,
-							message: error.message,
-							stack: error.stack,
-							node,
-						},
-						runData: {},
-					},
-				}),
-				finished: false,
-				mode: executionMode,
-				startedAt: new Date(),
-				stoppedAt: new Date(),
-				status: 'error',
-				storedAt: this.#storageConfig?.modeTag ?? 'default',
-			}),
-		};
+		this.#failedRunFactory =
+			options.failedRunFactory ?? new FailedRunFactory(this.#storageConfig);
 		this.#eventService = options.eventService ?? {
 			emit: () => {},
 		};

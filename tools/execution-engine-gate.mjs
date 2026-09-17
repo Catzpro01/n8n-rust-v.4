@@ -240,6 +240,12 @@ gate('E15', 'manual execution service & graph re-wiring (ManualExecutionService)
 	'packages/execution-engine/test/11-manual-execution.test.mjs',
 );
 
+/* E16 — execution lifecycle & error workflow ----------------------------- */
+gate('E16', 'execution lifecycle & error workflow (executeErrorWorkflow, toSaveSettings, FailedRunFactory)', () =>
+	runNodeTest('test/12-execution-lifecycle.test.mjs', PKG),
+	'packages/execution-engine/test/12-execution-lifecycle.test.mjs',
+);
+
 /* ---------------- evidence + human-readable report ----------------------- */
 const totals = {
 	gates: results.length,
@@ -306,6 +312,10 @@ const report = {
 		'TASK-433-phase3-manual-execution-service': {
 			status: results.find((entry) => entry.id === 'E15')?.status === 'PASS' ? 'IMPLEMENTED' : 'FAILED',
 			surface: ['ManualExecutionService', 'DirectedGraph', 'filterDisabledNodes', 'rewireGraph', 'recreateNodeExecutionStack', 'TOOL_EXECUTOR_NODE_NAME', 'isTool'],
+		},
+		'TASK-434-phase3-execution-lifecycle-and-error-workflow': {
+			status: results.find((entry) => entry.id === 'E16')?.status === 'PASS' ? 'IMPLEMENTED' : 'FAILED',
+			surface: ['toSaveSettings', 'DEFAULT_SAVE_CONFIG', 'FailedRunFactory', 'generateFailedExecutionFromError', 'executeErrorWorkflow', 'saveExecutionProgress'],
 		},
 	},
 };

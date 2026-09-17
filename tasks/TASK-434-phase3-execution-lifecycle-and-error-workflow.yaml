@@ -1,0 +1,31 @@
+id: TASK-434-phase3-execution-lifecycle-and-error-workflow
+agent: arena-worker
+lego: execution
+module: execution-lifecycle
+phase: 3
+title: "Execution LEGO: Execution lifecycle hooks, error workflow dispatch, and save settings"
+status: SUBMITTED_FOR_REVIEW
+objective: "Reconstruct toSaveSettings, FailedRunFactory, executeErrorWorkflow, and saveExecutionProgress 1:1 against n8n 2.9.4 CLI reference."
+acceptance:
+  - "toSaveSettings: resolves error, success, manual, progress persistence settings against workflow settings and global defaults"
+  - "toSaveSettings: safely accepts null workflow settings and converts string settings to boolean flags"
+  - "FailedRunFactory: generates structured failed execution run data with error, mode, status, and node details"
+  - "FailedRunFactory: creates startData, lastNodeExecuted, runData task record, and nodeExecutionStack when node is provided"
+  - "executeErrorWorkflow: builds workflowErrorData with execution metadata (url, error, lastNodeExecuted, mode, retryOf, context)"
+  - "executeErrorWorkflow: triggers external error workflow and prevents recursive error workflow execution"
+  - "executeErrorWorkflow: triggers internal error workflow when errorTrigger node is present in workflow"
+  - "saveExecutionProgress: updates execution progress in database with requireNotFinished and requireNotCanceled guards"
+  - "saveExecutionProgress: catches database write errors and reports via errorReporter without bubbling up"
+  - "execution-engine gate passes 16/16 with 0 runtime dependencies and import closed"
+  - "all 14 verify:all gates pass"
+allowed_paths:
+  - packages/execution-engine/**
+  - tools/execution-engine-gate.mjs
+  - contracts/execution.contract.md
+  - docs/isolation/execution.md
+  - docs/isolation/LEGO-MASTER-MAP.md
+  - docs/isolation/evidence/execution-engine-gate.json
+  - docs/isolation/execution-verification.md
+  - tasks/TASK-434-phase3-execution-lifecycle-and-error-workflow.yaml
+  - results/TASK-434-phase3-execution-lifecycle-and-error-workflow.md
+forbidden_paths: [reference/n8n/**, crates/**, apps/**]

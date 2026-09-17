@@ -106,3 +106,6 @@ export {
 	recreateNodeExecutionStack,
 	rewireGraph,
 } from './partial-execution.mjs';
+export { DEFAULT_SAVE_CONFIG, toSaveSettings } from './save-settings.mjs';
+export { FailedRunFactory, generateFailedExecutionFromError } from './failed-run-factory.mjs';
+export { executeErrorWorkflow, saveExecutionProgress } from './error-workflow.mjs';

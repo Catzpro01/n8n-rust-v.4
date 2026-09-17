@@ -23,6 +23,7 @@ import { createRunExecutionData } from './run-execution-data.mjs';
 import { WorkflowExecute } from './workflow-execute.mjs';
 import { getDataLastExecutedNodeData } from './workflow-helpers.mjs';
 import { ReconstructedWorkflow } from './workflow.mjs';
+import { FailedRunFactory } from './failed-run-factory.mjs';
 
 export const STARTING_NODES = Object.freeze([
 	'@n8n/n8n-nodes-langchain.manualChatTrigger',
@@ -277,26 +278,7 @@ async function startSubExecution(
 		activeExecutions.attachWorkflowExecution(executionId, execution);
 		data = await execution;
 	} catch (error) {
-		const failedRunFactory = context.failedRunFactory ?? {
-			generateFailedExecutionFromError: (mode, err, node, start) => ({
-				data: createRunExecutionData({
-					resultData: {
-						error: {
-							...err,
-							message: err?.message,
-							stack: err?.stack,
-							node,
-						},
-						runData: {},
-					},
-				}),
-				mode,
-				finished: false,
-				startedAt: new Date(start),
-				stoppedAt: new Date(),
-				status: 'error',
-			}),
-		};
+		const failedRunFactory = context.failedRunFactory ?? new FailedRunFactory();
 
 		const fullRunData = failedRunFactory.generateFailedExecutionFromError(
 			runData.executionMode,

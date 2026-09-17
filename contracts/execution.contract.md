@@ -76,6 +76,9 @@ retry/error policy. Everything the loop consumes from other LEGOs is injected
 | `getRunData`, `getBase`, `executeWorkflow` | subworkflow-execution.mjs | sub-workflow execution lifecycle: input mapping, run data construction, active execution tracking, waitTill extraction, and error propagation |
 | `ManualExecutionService` | manual-execution.mjs | manual execution service coordinating trigger-to-start, full, and partial runs |
 | `DirectedGraph`, `TOOL_EXECUTOR_NODE_NAME`, `cleanRunData`, `filterDisabledNodes`, `findStartNodes`, `findSubgraph`, `findTriggerForPartialExecution`, `handleCycles`, `isTool`, `recreateNodeExecutionStack`, `rewireGraph` | partial-execution.mjs | graph representations and partial execution algorithms for manual trigger starts and sub-graph isolation |
+| `DEFAULT_SAVE_CONFIG`, `toSaveSettings` | save-settings.mjs | execution save settings resolution against global and per-workflow policies |
+| `FailedRunFactory`, `generateFailedExecutionFromError` | failed-run-factory.mjs | structured failed execution run data creation for pre-execution failures and permission blocks |
+| `executeErrorWorkflow`, `saveExecutionProgress` | error-workflow.mjs | error workflow execution dispatching and per-node execution progress database persistence |
 
 ## 5. Loop invariants (pinned to source lines)
 
