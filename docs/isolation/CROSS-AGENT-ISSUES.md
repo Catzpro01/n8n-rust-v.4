@@ -1238,3 +1238,57 @@ maka id yang sama diklaim paralel — tiga `TASK-415` (`1dcb96b5` run-path, `1f8
 restoration lane ini) lalu dua `TASK-417` (Phase 4H `TASK-417-verify-11-11-and-rust-rig` dan rekaman lane ini).
 Lane ini mengalah dan menomori ulang ke **TASK-419** / **TASK-418** tanpa menyentuh id atau rekaman lane lain;
 alokasi id perlu perbaikan di sisi orchestrator, karena "siapa yang push terakhir menang" bukan kebijakan.
+
+## ISSUE-028
+
+**Filed:** 2026-09-17 22:45 UTC · **By:** `agent-4` (session `arena/01a0b105-n8n-rust-v-4`, TASK-421 sweep)
+**Severity:** MEDIUM (governance / evidence integrity) · **Blocks:** nothing directly, but it makes
+"production-ready" and "VERIFIED" claims unverifiable as stated · **Owner:** orchestrator
+
+### A. A red record-integrity audit that no gate runs
+
+`tests/integration/result_integrity_audit.py` exists on `main` and on every branch swept here, and it is
+**RED on all of them** — but it is not wired into `run_gate.sh`, `npm run verify`, or any package script, so
+no gate ever reports it:
+
+| Tree | Result | Failing records |
+| :--- | :--- | :--- |
+| `arena/01a0b105` @ `51fd0dcd` (this branch) | **96/102 → FAIL** | `TASK-402-connection-spec`, `TASK-403-execution-engine-spec`, `TASK-INIT-AGENT-3`, `TASK-INIT-AGENT-4` (all inherited from `main`) + `TASK-415-extractor-ts-normalization` (`1f86b03e`, adopted by Phase 4H) + `TASK-RUST-OFFLINE-RIG-DEPENDENCIES-01` (`87b5960d`, adopted) |
+| `arena/01a0b104` @ `8920b175` (PR #21, "Phase 5 INTEGRATED … production-ready") | **100/104 → FAIL** | the same four `main`-inherited records |
+
+Every failure is the same rule: `T1 SUCCESS but the operations table is empty — no operation was recorded`.
+Four of them ship on `main`, so **any** PR that merges inherits a red audit; two more arrive on this branch
+through cherry-picks of other lanes' records. This lane did **not** edit other lanes' records to make the
+audit green — that would falsify authorship — and its own new records (`TASK-418`, `TASK-419`, `TASK-420`,
+`TASK-421`) all carry operations tables and pass.
+
+Asked of the orchestrator, pick one:
+1. fill the four `main`-inherited operations tables (owner: whoever authored them), **or**
+2. teach the audit a documented exemption class for `*-spec` / `TASK-INIT-*` records (they are charters, not
+   task executions) and make the two adopted records conform, **or**
+3. wire the audit into `run_gate.sh` as advisory-with-visible-output so a red result cannot sit silently next
+   to a "production-ready" claim.
+
+Until then, reviewers should treat `result_integrity_audit.py` as a standing RED and say so, rather than
+reading silence as green — the same failure mode ISSUE-027 had.
+
+### B. `contract_conformance` means three different things on three open PRs
+
+Measured in one sandbox, same day, same pinned reference (`15 050` files, root `f8da35180669…`):
+
+| Branch | `node tests/compatibility/contract_conformance.mjs` |
+| :--- | :--- |
+| `arena/01a0b105` @ `51fd0dcd` (this branch) | **22/22 CHECKS PASSED** |
+| `arena/01a0b104` @ `8920b175` (PR #21) | **21/21 CHECKS PASSED** |
+| `arena/01a0b103` @ `b0f36c10` (PR #18) | **35/35 CHECKS PASSED** |
+
+All three print `RESULT: N/N CHECKS PASSED`, so "conformance PASS" is not a comparable statement across
+branches — ISSUE-023 already flagged 22 vs 21; the sweep adds a third denominator (35) and confirms the
+divergence is growing, not settling. Related measured divergence: G09's strict digest split is
+**218 identical + 34 declared-port sections** on this branch and on PR #21, but **217 + 35** on PR #18 — one
+section has moved into the declared-port surface there, which is exactly the kind of drift a shared
+denominator would have made obvious.
+
+Asked of the orchestrator: fix one canonical check list (a `contract_conformance` manifest with named checks
+and a version), so a reviewer can diff *which* checks ran instead of comparing totals. This is a prerequisite
+for merging any of the three, because after a merge the winner's denominator silently becomes the project's.

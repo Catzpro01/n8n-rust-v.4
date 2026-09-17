@@ -342,11 +342,18 @@ unreadable from every sandbox (ISSUE-019), so the same ids were claimed in paral
 * The offline Rust rig lives in `/tmp/rust-rig` by design (`tools/rust-offline-rig/README.md`):
   `bash tools/rust-offline-rig/setup.sh` rebuilds the 19-crate vendor dir from npm + git tags, then
   `npm run rust:check-offline` / `npm run rust:test-offline` reproduce the 37/0 record.
-* The counterpart gate of the parallel branch (`tools/localization-hub-check.mjs`, `i18n:check`)
-  could not be executed here: its loader compiles TypeScript with the pinned `typescript` from
-  `packages/workflow-lego/node_modules`, which this sandbox cannot install. This line's gate needs no
-  dependencies at all (Node type stripping), which is exactly why it runs in a bare checkout — but it
-  also means the *other* gate's verdict on the merged tree is unknown from here.
+* ~~The counterpart gate of the parallel branch (`tools/localization-hub-check.mjs`, `i18n:check`) could not
+  be executed here: its loader compiles TypeScript with the pinned `typescript` from
+  `packages/workflow-lego/node_modules`, which this sandbox cannot install~~ **CLOSED (2026-09-17 22:30 UTC)**:
+  this sandbox installs `typescript` (5.9.3), so the counterpart hub gate was fetched and run against its own
+  branch — PR #21 (`arena/01a0b104` @ `8920b175`): **`localization hub: PASS (5/5 checks)`** — L01 27 keys × 6
+  locales key-identical with a fallback chain terminating at `en`, L02 behaviour suite 26/26, L03 boundary
+  (hub imports nothing; adapter and validator import only the hub), L04 reference tree byte-identical
+  (15 050 files, root `f8da35180669…`), L05 the Phase 4A adapter holds no second language list. So the other
+  gate's verdict is no longer unknown from here, and it agrees with Phase 4G's hub-diff (66 identical value
+  pairs / 0 divergent). What is still *not* settled is which of the two hubs the merged tree keeps — that is
+  the orchestrator's call (ISSUE-023), not something either gate can answer. Note the tool lives on the
+  `arena/01a0b104` branch; `arena/01a0b101` (PR #20) has no `i18n:check` script at all.
 * Phase 4G produces merge intelligence, not a merge: `docs/isolation/localization.md` is an add/add
   conflict with the parallel branch, the two Rust dispositions differ (`legacy/rust-port/` archive vs
   `.gitkeep`), and `contract_conformance` means 22 checks here vs 21 there. Those are orchestrator

@@ -1,0 +1,128 @@
+id: TASK-421-pr18-20-21-review-sweep
+agent: agent-4
+lego: validation
+module: dual-phase-review
+phase: 4H
+
+# STANDING-WORKER-PROTOCOL.md §3: POST-task sweep. The TASK-418 sweep covered the queue as it stood at
+# 2026-09-17 20:47 UTC (#14-#17). Three PRs appeared or moved since, and one of them is the only
+# MERGEABLE PR in the queue — so it is the one that would decide the Rust disposition in practice
+# (A4-MSG-05 / ISSUE-023) if it merged alone.
+#
+# Queue: task_consensus_votes / dynamic_task_pool remain unreadable (ISSUE-019, HTTP 000), so the queue
+# is `gh pr list --state open` and the votes are mirrored as PR comments.
+
+allowed_paths:
+  - results/TASK-421-pr18-20-21-review-sweep.md
+  - tasks/TASK-421-pr18-20-21-review-sweep.yaml
+  - docs/isolation/CROSS-AGENT-ISSUES.md          # ISSUE-028 (A: red audit no gate runs; B: 21/21 vs 22/22 vs 35/35)
+  - docs/isolation/localization.md                # §5 counterpart-gate limitation CLOSED with measured evidence
+  - docs/isolation/validation-bus-outbox.json     # envelope A4-MSG-08
+
+forbidden_paths:
+  - reference/n8n/**                       # read-only, hash-pinned (G04)
+  - packages/**                            # review only — nothing of any subject tree is modified
+  - crates/**                              # ZERO RUST (PROJECT_RULES §1)
+  - apps/**
+  - legacy/rust-port/**                    # the archive stays inert (TASK-413)
+  - tools/rust-offline-rig/**              # adopted from 87b5960d — used as authored
+  - tools/workflow-isolation-extract.mjs   # adopted from 1f86b03e (ISSUE-027)
+  # Other lanes' records are NOT edited to make the integrity audit green (ISSUE-028 A). Concretely untouched:
+  - results/TASK-402-connection-spec.md
+  - results/TASK-403-execution-engine-spec.md
+  - results/TASK-INIT-AGENT-3.md
+  - results/TASK-INIT-AGENT-4.md
+  - results/TASK-415-extractor-ts-normalization.md
+  - results/TASK-415-localization-run-path.md
+  - results/TASK-416-localization-hub-reconciliation.md
+  - results/TASK-417-verify-11-11-and-rust-rig.md
+  - results/TASK-RUST-OFFLINE-RIG-DEPENDENCIES-01.md
+  - packages/frontend/**                   # UI stays 100% stock
+
+requires:
+  - docs/isolation/CROSS-AGENT-ISSUES.md
+  - results/TASK-418-dual-phase-review-sweep.md
+  - results/TASK-420-pr15-rust-reverification.md
+
+operations:
+  - name: list_review_queue
+    args:
+      command: gh pr list --state open
+      result: '#21 arena/01a0b104 @ 8920b175 MERGEABLE · #20 arena/01a0b101 @ 3256fff3 · #18 arena/01a0b103 @ b0f36c10
+               · #19 is this branch (self-review forbidden) · #14-#17 already swept in TASK-418'
+  - name: extract_subjects
+    args:
+      how: git fetch --depth 3 + git archive → /tmp/pr21 (15576 files), /tmp/pr20 (15474), /tmp/pr18 (15655);
+           .runtime 2.9.1 symlinked in; npm install --prefix <tree>/packages/workflow-lego per tree
+      why_archive: the subject tree is never written to — build artefacts, .extract and node_modules stay in /tmp
+  - name: boundary_scan
+    args:
+      command: git diff --name-only origin/main origin/<branch>
+      result: all three — 0 files under reference/n8n/**, 0 under packages/frontend/** | *.vue | *.scss;
+              PR #21 additionally reduces crates/** + apps/** to .gitkeep only (24 main Rust paths gone)
+  - name: independent_rerun
+    args:
+      pr: 21
+      claims: npm run verify 12/12 · contract_conformance 21/21 · boundary_audit PASS · isolation:check 4/4 ·
+              engine integration 12/12 · Zero Rust · connection differential 8/8 · 1258 calls · run_gate OFFLINE PASS
+      measured: verify 12/12 PASS · BEHAVIOR CHANGE NONE (G12 strict engine typecheck 0 errors, G11 live 7/7 R0..R6) ·
+              conformance 21/21 · boundary PASS · isolation 4/4 · integration 12/12 PASS 0 FAIL ·
+              cargo:workspace-check PASS (no root Cargo.toml) · connection:check 9/9 · 1944 calls ·
+              run_gate --offline-only OFFLINE PASS → INCONCLUSIVE exit 2 (live NOT RUN, by their own design) ·
+              i18n:check PASS 5/5 (27 keys × 6 locales, behaviour suite 26/26, reference byte-identical) ·
+              result_integrity_audit 100/104 → FAIL exit 1
+      note: two body claims are conservative against the head (8/8 → 9/9, 1258 → 1944 calls)
+  - name: independent_rerun
+    args:
+      pr: 20
+      claims: verify:fast 10/10 · BEHAVIOR CHANGE NONE · 31/31 suite
+      measured: verify:fast 10/10 PASS · BEHAVIOR CHANGE NONE DETECTED · lego suite 34/34 (head ahead of the body) ·
+                no i18n:check script on this branch at all (the hub tool lives on arena/01a0b104)
+  - name: independent_rerun
+    args:
+      pr: 18
+      claims: npm run verify 11/11
+      measured: verify 11/11 PASS · BEHAVIOR CHANGE NONE (G11 live 7/7) · boundary_audit PASS · isolation:check 4/4 ·
+                contract_conformance 35/35 CHECKS PASSED (a THIRD denominator for the same command) ·
+                G09 strict digest 217 identical + 35 declared-port sections (vs 218 + 34 here and on PR #21)
+  - name: file_issue
+    args:
+      id: ISSUE-028
+      severity: MEDIUM (governance / evidence integrity)
+      a: result_integrity_audit.py is RED on every tree swept (this branch 96/102 → FAIL exit 1; PR #21
+         100/104 → FAIL exit 1) and is wired into NO gate (absent from run_gate.sh, npm run verify and every
+         package script), so "production-ready" claims can stand next to a red integrity audit in silence.
+         Four failing records are inherited from main (TASK-402-connection-spec, TASK-403-execution-engine-spec,
+         TASK-INIT-AGENT-3, TASK-INIT-AGENT-4 — all "T1 SUCCESS but the operations table is empty"), two more
+         arrive here via cherry-picks of other lanes' records. Other lanes' records were NOT edited to green
+         the audit; this lane's own new records all carry operations tables and pass.
+      b: contract_conformance reports 22/22 (this branch), 21/21 (PR #21) and 35/35 (PR #18) — the same
+         command name, three denominators, all printing "RESULT: N/N CHECKS PASSED", plus the G09 218+34 vs
+         217+35 drift. Measured in one sandbox, same day, same pinned reference (15050 files, root f8da35180669…).
+      asks: fill or exempt the four main-inherited records, or wire the audit in as visible advisory; and fix
+            one canonical named-check list for contract_conformance before any of the three merges, because the
+            winner's denominator silently becomes the project's
+  - name: close_limitation
+    args:
+      where: docs/isolation/localization.md §5
+      what: "the counterpart hub gate (tools/localization-hub-check.mjs, i18n:check) was declared unrunnable here
+             because typescript could not be installed — it was installed and run: PASS 5/5 at PR #21 head 8920b175"
+  - name: post_votes
+    args:
+      pr_21: APPROVE on content / merge must wait for the Rust ruling + a canonical conformance denominator —
+             it is the only MERGEABLE PR, so merging alone would set the Rust disposition de facto (delete to
+             .gitkeep) while #15 extends crates/ and amends PROJECT_RULES.md and this branch archives reversibly
+      pr_20: APPROVE on content / BLOCKED on merge (mergeable UNKNOWN; it is the lane that fixed ISSUE-027, so it
+             should land with or after a base that carries the adoption)
+      pr_18: APPROVE on content / BLOCKED on merge (mergeable UNKNOWN; reconcile 35/35 with 21/21 and 22/22 first)
+      how: GitHub PR comments (offline fallback per ISSUE-019) + envelope A4-MSG-08 to the mediator
+
+tests:
+  - pr21_verify                 # npm run verify — 12/12 PASS
+  - pr21_integration            # packages/reconstructed-engine/test-integration.mjs — 12/12 PASS
+  - pr21_hub_gate               # npm run i18n:check — PASS 5/5
+  - pr21_zero_rust              # npm run cargo:workspace-check — PASS (no root Cargo.toml)
+  - pr20_verify_fast            # npm run verify:fast — 10/10 PASS
+  - pr18_verify                 # npm run verify — 11/11 PASS
+  - conformance_denominators    # 22/22 (here) vs 21/21 (#21) vs 35/35 (#18) — ISSUE-028 B
+  - result_integrity_audit      # 96/102 FAIL (here) vs 100/104 FAIL (#21) — ISSUE-028 A

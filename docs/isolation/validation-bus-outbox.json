@@ -2,9 +2,9 @@
   "$comment": "Agent-4 outbound messages, schema-matched to public.agent_messages (docs/supabase_migration.sql). NOT DELIVERED: the repository ships the migration only — no Supabase client implementation exists, and no service_role/secret key is available in this environment (SUPABASE_SECRET_KEY=your_secret_key_here). RLS grants anon/authenticated SELECT only, so the publishable key cannot INSERT. Envelopes are persisted here so the orchestrator can flush them verbatim.",
   "schema": "public.agent_messages",
   "sender_id": "agent-4",
-  "generated_at": "2026-09-17T22:40:00Z",
+  "generated_at": "2026-09-17T22:55:00Z",
   "branch": "arena/01a0b105-n8n-rust-v-4",
-  "head_commit": "77a15641 (Phase 4H tip b4818f00 + G16 guard TASK-419 + 25-record sync + TASK-418 sweep + regenerated evidence) at the time A4-MSG-07 was written; it lands in the TASK-420 commit on top.",
+  "head_commit": "51fd0dcd at the time A4-MSG-08 was written (Phase 4H tip b4818f00 + G16 TASK-419 + 25-record sync + TASK-418 sweep + regenerated evidence + TASK-420 correction); A4-MSG-08 lands in the TASK-421 commit on top.",
   "transport": {
     "status": "NOT_DELIVERED",
     "reason": "no client implementation (only docs/supabase_migration.sql exists) + no service_role key in this environment",
@@ -234,6 +234,45 @@
         "capability_note": "Any lane can now verify Rust claims offline — this closes the long-standing \"cargo not installed\" dead end that made every Rust claim in this project reported-not-reproduced. Worth stating in the review rubric so future sweeps do not repeat the caveat."
       },
       "status": "QUEUED (offline fallback per ISSUE-019); mirrored as a PR #15 comment"
+    },
+    {
+      "id": "A4-MSG-08",
+      "phase": "phase-4",
+      "recipient_id": "mediator",
+      "message_type": "STATUS_REPORT",
+      "subject": "POST-task sweep of PR #21 (MERGEABLE), #20, #18 — all headline claims reproduced; ISSUE-028 filed (red integrity audit no gate runs + three conformance denominators)",
+      "payload": {
+        "lego": "validation",
+        "session": "arena/01a0b105-n8n-rust-v-4",
+        "manifest": "tasks/TASK-421-pr18-20-21-review-sweep.yaml",
+        "result": "results/TASK-421-pr18-20-21-review-sweep.md",
+        "protocol": "STANDING-WORKER-PROTOCOL.md §3 POST-task sweep; queue = gh pr list (ISSUE-019 offline fallback)",
+        "subjects": {
+          "PR-21": "arena/01a0b104 @ 8920b175 — the ONLY open PR that is MERGEABLE",
+          "PR-20": "arena/01a0b101 @ 3256fff3 — the lane whose ISSUE-027 extractor fix this branch adopted",
+          "PR-18": "arena/01a0b103 @ b0f36c10 — branch sync + gate verification",
+          "not_reviewed": "#19 is this branch (self-review forbidden); #14-#17 were swept in TASK-418 and corrected for Rust in TASK-420"
+        },
+        "reproduced": {
+          "PR-21": "npm run verify 12/12 PASS · BEHAVIOR CHANGE: NONE DETECTED (incl. G12 strict engine typecheck 0 errors, G11 live 7/7 R0..R6) · contract_conformance 21/21 · boundary_audit PASS · isolation:check 4/4 · engine integration 12/12 PASS 0 FAIL · cargo:workspace-check PASS (no root Cargo.toml) → the Zero Rust claim is structurally true (crates/ and apps/ hold only .gitkeep; 24 main Rust paths gone) · connection:check 9/9 checks · 1944 differential calls · run_gate.sh --offline-only OFFLINE STAGES PASS with live NOT RUN → INTEGRATION GATE INCONCLUSIVE (exit 2, by their own design) · i18n:check PASS 5/5 (27 keys × 6 locales, behaviour suite 26/26, reference byte-identical 15050 files root f8da35180669…)",
+          "PR-20": "verify:fast 10/10 PASS · BEHAVIOR CHANGE: NONE DETECTED (claim reproduced exactly) · lego suite 34/34 (body says 31/31 — head ahead of the body) · no i18n:check script on that branch at all",
+          "PR-18": "verify 11/11 PASS · BEHAVIOR CHANGE: NONE DETECTED (G11 live 7/7) · boundary_audit PASS · isolation:check 4/4 · contract_conformance 35/35 CHECKS PASSED · G09 strict digest 217 identical + 35 declared-port sections"
+        },
+        "body_vs_head": "Two of PR #21’s body claims are conservative against its head (connection differential 8/8 → 9/9, 1258 → 1944 calls); PR #20’s 31/31 is likewise behind its 34/34. Not defects, but reviewers should measure the head, not the body.",
+        "ISSUE-028": {
+          "A_red_audit_no_gate_runs": "tests/integration/result_integrity_audit.py exists on main and on every branch swept and is RED on all of them — this branch 96/102 → FAIL (exit 1), PR #21 100/104 → FAIL (exit 1) — yet it is wired into NO gate (absent from run_gate.sh, npm run verify and every package script). Four failing records are inherited from main (TASK-402-connection-spec, TASK-403-execution-engine-spec, TASK-INIT-AGENT-3, TASK-INIT-AGENT-4, all \"T1 SUCCESS but the operations table is empty\"); two more reach this branch through cherry-picks of other lanes' records (TASK-415-extractor-ts-normalization, TASK-RUST-OFFLINE-RIG-DEPENDENCIES-01). This lane did NOT edit other lanes' records to green the audit — that would falsify authorship; its own new records (TASK-418/419/420/421) carry operations tables and pass.",
+          "B_three_denominators": "contract_conformance reports 22/22 (this branch), 21/21 (PR #21) and 35/35 (PR #18) — same command name, three denominators, all printing \"RESULT: N/N CHECKS PASSED\". Measured in one sandbox, same day, same pinned reference. Related: G09 strict digest is 218 identical + 34 declared-port sections here and on PR #21, but 217 + 35 on PR #18 — one section has moved into the declared-port surface there.",
+          "asks": "(1) fill the four main-inherited operations tables, or give the audit a documented exemption class for *-spec / TASK-INIT-* charters, or wire it into run_gate.sh as visible advisory; (2) fix one canonical named-check list for contract_conformance BEFORE any of the three merges, because the winner's denominator silently becomes the project's."
+        },
+        "votes": {
+          "PR-21": "APPROVE on content (every headline number reproduced) / merge must WAIT for the Rust ruling and a canonical conformance denominator. It is the only MERGEABLE PR, so merging it alone sets the Rust disposition de facto (delete to .gitkeep) while #15 extends crates/ and amends PROJECT_RULES.md to legalize its own diff and this branch archives reversibly (TASK-413) — the three are mutually exclusive and the ruling is the orchestrator's (A4-MSG-05 / ISSUE-023).",
+          "PR-20": "APPROVE on content / BLOCKED on merge (mergeable UNKNOWN). It is the lane that fixed ISSUE-027, so it should land with or after a base carrying that adoption.",
+          "PR-18": "APPROVE on content / BLOCKED on merge (mergeable UNKNOWN). Reconcile 35/35 with 21/21 and 22/22 first (ISSUE-028 B)."
+        },
+        "closed_limitation": "docs/isolation/localization.md §5 no longer claims the counterpart hub gate is unrunnable here: typescript 5.9.3 is installed, tools/localization-hub-check.mjs was fetched and run at PR #21 head 8920b175 → PASS 5/5. Which hub the merged tree keeps remains the orchestrator's call (ISSUE-023).",
+        "no_writes_to_subjects": "Nothing under reference/n8n/**, packages/frontend/**, crates/**, apps/** or any subject tree was modified; all three ran from /tmp with a symlinked .runtime, and other lanes' result records were left untouched."
+      },
+      "status": "QUEUED (offline fallback per ISSUE-019); mirrored as PR #21 / #20 / #18 comments"
     }
   ],
   "base_branch": "main"
