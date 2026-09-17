@@ -1619,3 +1619,92 @@ test that re-derives all 14 under a deliberately mangling `getNodeParameters` an
 byte-identical output.
 
 **Status:** FIXED
+---
+
+**ADDENDUM (TASK-DGRAPH-01, `arena/01a0aff8-n8n-rust-v-4`, 2026-09-18) — ISSUE-015/017: the D-01..D-04 golden is landed, observed, and executable on the JS/TS track.**
+
+`tests/reference/04-disabled-node/` now carries `case.json` (D-01..D-05 probe definitions) +
+`expected.json` **observed from `n8n-workflow@2.9.1`** via `tests/reference/harness/disabled-graph.js`
+(UPDATE=1 writes; verify mode re-observes and exits non-zero on drift — falsified with a seeded
+ISSUE-017-style corruption, then regenerated). Key observed rows: `getStartNode()` with a disabled
+manualTrigger → **null** (reference `:839/:853`); `getStartNode("Code")` → **"Code"**; the D-04
+asymmetry (omitted `disabled` key: self → excluded per `:498` strict `=== false`, parent → included
+per `:553` loose `!== true`). `packages/workflow-model-lego/src/start-node-navigation.ts` ports the
+surface 1:1 and deep-equals the golden (lane 34/34); the N1 negative control proves the golden
+rejects the asymmetry-normalising mutation that ISSUE-017 recorded in the Rust port. **ISSUE-017
+remains OPEN for the Rust owner** — the executable oracle they need now exists at
+`tests/reference/04-disabled-node/expected.json`. ISSUE-015's scope warning (plain traversal has no
+disabled concept) is preserved verbatim in `case.json`.
+
+---
+
+## ISSUE-026 — Two concurrent reconstructions of the parameter-issues engine (CONSOLIDATED on this branch)
+
+**Found by:** TASK-413 rebase, 2026-09-18. **Status:** CONSOLIDATED (orchestrator may still review the call).
+
+Two lanes implemented the same Node-Model surface in the same package at the same time:
+
+| | peer commit `768e1e79` (`TASK-412`) | this lane (`TASK-413`) |
+| :--- | :--- | :--- |
+| files | `src/field-validation.mjs` (91 ln), `src/parameter-issues.mjs` (132 ln) | `src/type-validation.mjs`, `src/filter-parameter.mjs`, `src/parameter-issues.mjs` |
+| tests | `test/parameter-issues.test.mjs` (8 cases) | `test/node-model.test.mjs` (+16 cases, 74 total) |
+| differential | +32 lines | N19–N22 = **1107 new comparisons** |
+| measured vs REF | `field-validation.mjs`: **456 match / 104 differ** (560-case matrix) · `parameter-issues.mjs`: **13 match / 2 differ** (15 fixtures) | `type-validation.mjs` 560/560 on the same matrix · `parameter-issues.mjs` 56/56 · whole package **1422 agree / 0 diverge** |
+
+Measured deltas of the superseded module (each REF-verified, kept here as evidence): `datetime`
+returned the raw input instead of a parsed value (and rejected `12:30`-style times the reference
+accepts), `url` returned the un-prefixed value where REF returns `https://…`, `object` accepted
+strict JSON only (no JS-object recovery), `number` rejected `NaN`-adjacent inputs REF converts,
+and the mapper branch did not materialise the empty `parameters[<name>]` array the reference emits.
+
+Resolution on this branch:
+
+* `src/type-validation.mjs` + `src/filter-parameter.mjs` + `src/parameter-issues.mjs` (this lane)
+  are the implementation that ships; they are the ones wired into `index.mjs` and the gate.
+* `src/field-validation.mjs` was **removed** (superseded duplicate; its only consumer was the peer
+  `parameter-issues.mjs`, itself superseded) — its content stays readable at `768e1e79`.
+* the peer's `test/parameter-issues.test.mjs` is **kept** and now runs against the shipped modules
+  (82 tests total); one assertion that encoded the missing `map: []` artefact was corrected
+  against REF, with the reason in a comment.
+* the peer's `tasks/TASK-412-*.yaml` + `results/TASK-412-*.md` and its map row stay in place; this
+  lane's task is renumbered **TASK-413** (duplicate id, later task renumbers — house rule).
+* peer differential/gate additions were superseded by N19–N22 rather than merged (their N03 count
+  and differential lines described the smaller surface).
+
+Nothing else was deleted: the peer package lanes, their evidence files and their commits remain on
+the branch. If the orchestrator prefers the peer implementation, the swap is local to
+`packages/node-lego/src/{type-validation,filter-parameter,parameter-issues}.mjs` + `index.mjs`.
+
+---
+
+### ADDENDUM 2026-09-18 (arena-worker, `TASK-RIG-VENDOR-01`) — independent convergence onto RIG-REPAIR-01 + staleness hardening
+
+This task derived the same repair concurrently and independently (same 7 crates:
+indexmap 2.2.6 / equivalent 1.0.2 / hashbrown 0.14.5 / regex 1.10.6 + automata 0.4.7 +
+syntax 0.8.4 subdirs, aho-corasick — mine pinned 1.1.5, landed 1.1.3; both satisfy
+^1.0.0), reached 37/37 + the ISSUE-017 probe failure on its own vendor, then found
+`TASK-RIG-REPAIR-01` already landed and **yielded the implementation to it** (first-landed,
+conservative rewrite that keeps dev-deps and so avoids the feature-neutering risk class
+entirely — independently re-verified here: `check` exit 0, `test` 37/37 same per-crate
+split). Net-new contribution merged on top: **staleness hardening** — a `.rig-plan`
+fingerprint (PLAN + rewrite-rule rev) so re-vendoring is automatic on edited plans
+instead of silently reusing stale vendors, and a clone-tag guard that re-clones cached
+checkouts sitting on the wrong tag (it caught a real one on first run: cached
+aho-corasick 1.1.5 vs wanted 1.1.3). ISSUE-025 stays REPAIRED per the addendum above;
+evidence: `results/TASK-RIG-VENDOR-01.md`.
+
+---
+
+**ADDENDUM (TASK-CGRAPH-01, `arena/01a0aff8-n8n-rust-v-4`, 2026-09-18) — the 05-cyclic-invalid golden is landed, observed, and executable; R5 composition gap found on the TS side.**
+
+`tests/reference/05-cyclic-invalid/` now carries `case.json` + OBSERVED `expected.json`
+(`tests/reference/harness/cyclic-graph.js`; UPDATE=1/verify modes) and an additive consumer test in
+`packages/connection-lego/test/cyclic-golden.test.mjs` (suite 52 → **58/58**). Golden sections:
+C-01 **reference runtime constructs the cycle and resolves no start node** (triggerless cycle →
+`getStartNode()` = null; destination shortcut `getStartNode("B")` = "A") — a port rejecting cycles
+at construction/traversal DIVERGES; C-02 Connection LEGO traversal is cycle-safe (visited-sets);
+C-03 the **additive** `detectCycles` flags `Cycle detected: A → B → C → A` while the acyclic twin
+stays clean — this is the R5/R6 oracle for the Rust `detect_cycles`. **Finding:** `validateWorkflow`
+(`workflow-rules.ts:168`) does not compose its own `detectCycles` — a cyclic workflow passes as
+`valid: true` (observed, pinned by test N2). Both golden-absent audit rows (04, 05) are now closed
+(04 via TASK-DGRAPH-01, 05 via this task).

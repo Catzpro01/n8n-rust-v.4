@@ -1,0 +1,70 @@
+{
+	"_meta": {
+		"runtime": "n8n-workflow@2.9.1",
+		"traversal": "packages/connection-lego dist",
+		"additiveValidator": "tests/reference/agent-4/validation/workflow-rules.ts (NEW CAPABILITY, not reference behaviour)",
+		"observedAt": "UPDATE=1 run of tests/reference/harness/cyclic-graph.js",
+		"method": "OBSERVED behaviour — never hand-written (see tests/reference/README.md)"
+	},
+	"C-01_runtime_constructs_cycle_no_start_node": [
+		{
+			"constructed": true,
+			"nodeCount": 3
+		},
+		{
+			"startNode": null
+		},
+		{
+			"startNode": "A"
+		}
+	],
+	"C-02_traversal_is_cycle_safe": [
+		{
+			"getChildNodes": [
+				"C",
+				"B"
+			]
+		},
+		{
+			"getChildNodes": [
+				"A",
+				"C"
+			]
+		},
+		{
+			"getParentNodes": [
+				"C",
+				"B"
+			]
+		}
+	],
+	"C-03_additive_validator_flags_cycle": [
+		{
+			"function": "detectCycles",
+			"input": "fixture",
+			"errors": [
+				{
+					"code": "CYCLE_DETECTED",
+					"node": "A",
+					"path": [
+						"connections",
+						"C",
+						"main"
+					],
+					"message": "Cycle detected: A → B → C → A"
+				}
+			]
+		},
+		{
+			"function": "detectCycles",
+			"input": "acyclic-twin",
+			"errors": []
+		},
+		{
+			"function": "validateWorkflow",
+			"input": "fixture",
+			"valid": true,
+			"errors": []
+		}
+	]
+}
