@@ -2,10 +2,10 @@
 
 **Derived from:** n8n 2.9.4 source (`packages/core/src/execution-engine/workflow-execute.ts`,
 `packages/workflow/src/common/{get-connected-nodes,get-parent-nodes,map-connections-by-destination}.ts`,
-`packages/workflow/src/{interfaces,execution-status}.ts`) and runtime comparison against the pinned
-`n8n-core` / `n8n-workflow` **2.9.1** (the dependency set of n8n 2.9.4).
+`packages/workflow/src/{workflow,constants,interfaces,execution-status}.ts`) and runtime comparison
+against the pinned `n8n-core` / `n8n-workflow` **2.9.1** (the dependency set of n8n 2.9.4).
 **Owner:** Agent 1 (`workflow`) — reconstruction lives in `packages/reconstructed-engine/`
-**Status:** TESTED — 49 regression cases, 7 of them executed against the real engine
+**Status:** TESTED — 61 regression cases, 12 of them executed against the real runtime
 **Rule basis:** `PROJECT_RULES.md` #1 (ZERO RUST → JavaScript/TypeScript, 1:1 from source) and #5
 (every module must have a clear boundary and a formal contract).
 
@@ -21,9 +21,9 @@
 The module reconstructs **the execution loop only**: which node runs next, with what input, what is
 recorded, and when the run ends.
 
-* **In scope:** traversal order, fan-in waiting, item propagation, run data recording, error and
-  cancellation semantics, pin data, `alwaysOutputData`, `pairedItem` decoration, graph traversal
-  helpers.
+* **In scope:** start-node selection, traversal order, fan-in waiting, item propagation, disabled
+  node passthrough, run data recording, error and cancellation semantics, pin data,
+  `alwaysOutputData`, `pairedItem` decoration, and graph traversal helpers.
 * **Out of scope (explicit non-goals, see §7):** node implementations, expressions, credentials,
   persistence, wait/resume, sub-workflows, AI/routing nodes.
 * **Inputs:** a plain workflow object (`{ nodes, connections, settings?, pinData? }`) in the n8n file
@@ -84,6 +84,9 @@ type NodeHandler = (
 registerNodeType(typeName: string, handler: NodeHandler, description?: {
   requiredInputs?: number | number[];   // interfaces.ts:2355 — the expression form is NOT supported
   inputs?: string[];                    // used for its .length
+  name?: string;                        // canonical name; used for Manual Chat exclusion
+  trigger?: unknown;                    // presence marks a trigger start candidate, as in workflow.ts
+  poll?: unknown;                       // presence marks a poll start candidate, as in workflow.ts
 }): void
 ```
 
@@ -120,7 +123,7 @@ Precedence (`workflow-execute.ts:2383-2400`): `canceled` > `error` > `success`.
 
 | # | Guarantee | Reference | Test |
 | :-- | :--- | :--- | :--- |
-| G1 | `runWorkflow` **always terminates**, even on a cyclic graph (a node runs at most `max(1, input slots)` times per run; dropped arrivals are reported in `cycleSkips`) | safety net; n8n rejects cycles at validation time | `engine.test.mjs` CYCLE GUARD ×2 |
+| G1 | `runWorkflow` **always terminates**, even on a malformed or currently unsupported cyclic execution path (a node runs at most `max(1, input slots)` times per run; dropped arrivals are reported in `cycleSkips`) | reconstruction safety bound; full n8n loop/reset semantics remain outside this engine | `engine.test.mjs` CYCLE GUARD ×2 |
 | G2 | A node with more than one input slot runs **once** with all inputs; missing inputs are released with `[]` only once the stack drains | `:405-560`, `:2079-2160` | CONFORMANCE fan-in ×2 |
 | G3 | A node is not released while **any ancestor** is still waiting | `:2136-2142` | ancestor test |
 | G4 | `requiredInputs` (count or index list) is honoured for `executionOrder: 'v1'` and ignored for `'v0'` | `:2107-2177`, `interfaces.ts:2355` | requiredInputs ×4 |
@@ -129,11 +132,12 @@ Precedence (`workflow-execute.ts:2383-2400`): `canceled` > `error` > `success`.
 | G7 | A connection to a node missing from the graph throws `ApplicationError('Destination node not found')` | `:2005-2012` | dangling test |
 | G8 | A node error is recorded (`executionStatus: 'error'`, `error`), the run ends with `status: 'error'`, downstream nodes do not run; `continueOnFail` / `onError ∈ {continueRegularOutput, continueErrorOutput}` pass the **input** through and continue | `:1823-1900` | error + continueOnFail ×3 |
 | G9 | An elapsed `executionTimeoutTimestamp` cancels the run before the next node | `:1486-1496` | TIMEOUT ×3 + equivalence |
-| G10 | Pin data replaces the node run; a `disabled` node ignores its pin | `:1632-1637` | PIN DATA ×3 + equivalence |
+| G10 | Pin data replaces an enabled node run. A `disabled` node bypasses both its handler and pin data, forwarding only its first main input (or no data when absent/null) | `:909-920`, `:1199-1201`, `:1632-1637` | PIN DATA ×3 + disabled unit/live equivalence |
 | G11 | `alwaysOutputData` emits one `{ json: {}, pairedItem }` item so the branch continues | `:1742-1767` | alwaysOutputData ×2 + equivalence |
 | G12 | Input items are re-stamped with `pairedItem: { item, input: inputIndex \|\| undefined }` before the node runs; output items get `pairedItem` auto-fixed where unambiguous | `:1517-1552`, `:2581-2641` | pairedItem ×5 + equivalence |
 | G13 | `lastNodeExecuted` is the last node that produced data, or the failing node | `:1739`, `:1778` | lastNodeExecuted test |
 | G14 | `getConnectedNodes` / `getParentNodes` / `mapConnectionsByDestination` are byte-behaviour-identical to `n8n-workflow` 2.9.1 | `common/*.ts` | `graph-equivalence.test.mjs` ×3 |
+| G15 | Explicit start name wins. Otherwise: one enabled node; then the first enabled registered trigger/poll (excluding Manual Chat); then enabled exact starting types in reference priority; otherwise no start. Arbitrary ordinary nodes are not a multi-node fallback | `workflow.ts:817-889`, `constants.ts:53-59` | start selection ×5 + live reordered-node equivalence |
 
 ## 5. Determinism
 
@@ -144,7 +148,7 @@ same item payloads. The only non-deterministic fields are wall-clock (`startTime
 
 | Situation | Behaviour |
 | :--- | :--- |
-| no nodes in the workflow | rejects with `Error('No nodes found in workflow definition')` |
+| no executable start (including an empty workflow, disabled-only workflow, or multiple ordinary nodes) | rejects with `ApplicationError('No node to start the workflow from could be found')` |
 | dangling connection | rejects with `ApplicationError('Destination node not found')` + `extra.{sourceNodeName,destinationNodeName}` |
 | node handler throws | **does not** reject: recorded as `executionStatus: 'error'`, `resultData.error` set, `status: 'error'` |
 | cyclic graph | terminates; `cyclic: true`, `cycleSkips[]` lists the dropped arrivals |
@@ -176,13 +180,15 @@ themselves. Each is another LEGO's contract (`expression.contract.md`, `credenti
 
 Every behaviour above cites its source line. The full, machine-checked list lives in the module
 sources; the contract test verifies that each cited range still exists inside the referenced file in
-`reference/n8n/` (currently `workflow-execute.ts` = 2655 lines, `get-connected-nodes.ts` = 95,
-`get-parent-nodes.ts` = 18, `map-connections-by-destination.ts` = 49).
+`reference/n8n/` (currently `workflow-execute.ts` = 2655 lines, `workflow.ts` = 925,
+`constants.ts` = 140, `get-connected-nodes.ts` = 98, `get-parent-nodes.ts` = 18, and
+`map-connections-by-destination.ts` = 49).
 
 ## 9. Verification hooks
 
 | Command | Covers |
 | :--- | :--- |
-| `npm run engine:test` | this contract (49 cases: 45 unit + 4 graph-port equivalence, 7 of them against the real engine) |
-| `bash tests/integration/run_gate.sh --offline-only` | stage 3 runs the suite above; stages 1-2 run the other LEGO gates |
+| `npm run engine:test` | 61 cases: 42 engine + 7 contract + 3 graph-port + 9 engine-runtime; 12 runtime cases may skip when the pinned runtime is absent |
+| `npm run engine:test:strict` | the same 61 cases with `REQUIRE_REFERENCE_RUNTIME=1`; all 61 must run and missing runtime is a hard failure |
+| `bash tests/integration/run_gate.sh --offline-only` | stage 3 runs the strict suite above; stages 1-2 run the other LEGO gates |
 | `node tests/compatibility/contract_conformance.mjs` | asserts this contract file is present |

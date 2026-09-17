@@ -11,6 +11,7 @@
     "./graph": "./graph.mjs"
   },
   "scripts": {
-    "test": "node --test --test-force-exit test/*.test.mjs"
+    "test": "node --test --test-force-exit test/*.test.mjs",
+    "test:strict": "REQUIRE_REFERENCE_RUNTIME=1 node --test --test-force-exit test/*.test.mjs"
   }
 }

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Agent 5 — full integration gate.
-#   Stage 1 (offline, always runnable): contract conformance + boundary audit
-#   Stage 2 (live, needs running n8n + PostgreSQL): 11/11 regression gate
+#   Offline: contract conformance + boundary/result audits + strict engine/reference parity
+#   Live: needs running n8n + PostgreSQL for the 11/11 regression gate
 # Exit 0 only if every executed stage passes AND the live stage was actually executed,
 # unless --offline-only is given (then live is reported as NOT RUN and the gate is INCONCLUSIVE).
 set -uo pipefail
@@ -12,14 +12,16 @@ fail=0
 echo "######## STAGE 1: CONTRACT CONFORMANCE (offline) ########"
 node tests/compatibility/contract_conformance.mjs || fail=1
 
-echo; echo "######## STAGE 2: BOUNDARY & DEPENDENCY AUDIT (offline) ########"
+echo; echo "######## STAGE 2A: BOUNDARY & DEPENDENCY AUDIT (offline) ########"
 python3 tests/integration/boundary_audit.py || fail=1
 
-# The reconstructed JavaScript engine (PROJECT_RULES #1 ZERO RUST) has its own regression
-# suite. The reference-equivalence cases in it skip themselves when the pinned runtime is
-# absent, so this stage stays runnable on a bare checkout.
-echo; echo "######## STAGE 3: RECONSTRUCTED ENGINE REGRESSION (offline) ########"
-npm run --silent engine:test || fail=1
+echo; echo "######## STAGE 2B: TASK-RESULT INTEGRITY AUDIT (offline) ########"
+python3 tests/integration/result_integrity_audit.py || fail=1
+
+# Engine integration is valid only when the pinned reference runtime executes every parity
+# case. Unit developers may use engine:test without it; this merge gate deliberately may not.
+echo; echo "######## STAGE 3: RECONSTRUCTED ENGINE + STRICT REFERENCE PARITY ########"
+npm run --silent engine:test:strict || fail=1
 
 echo; echo "######## STAGE 4: 11/11 LIVE REGRESSION GATE ########"
 if [ "$OFFLINE" = "1" ]; then

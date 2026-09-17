@@ -17,8 +17,8 @@
  * (manualTrigger → 1 item, set → 1 item, noOp → passthrough). Comparing node logic belongs to
  * the Node LEGO (packages/nodes-base), not to this engine.
  *
- * Skipped automatically when the pinned runtime is absent (`scripts/setup-reference-runtime.sh`).
- * run: npm run engine:test
+ * `engine:test` skips when the runtime is absent; `engine:test:strict` fails instead and is the
+ * integration/merge path. Install with `scripts/setup-reference-runtime.sh`.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -37,9 +37,12 @@ const runtimeReady =
 	existsSync(join(RUNTIME, 'n8n-core', 'package.json')) &&
 	existsSync(join(RUNTIME, 'n8n-nodes-base', 'package.json'));
 
-const skipReason = runtimeReady
-	? false
-	: `pinned reference runtime not installed at ${RUNTIME} (run scripts/setup-reference-runtime.sh)`;
+const missingRuntimeMessage =
+	`pinned reference runtime not installed at ${RUNTIME} (run scripts/setup-reference-runtime.sh)`;
+if (!runtimeReady && process.env.REQUIRE_REFERENCE_RUNTIME === '1') {
+	throw new Error(missingRuntimeMessage);
+}
+const skipReason = runtimeReady ? false : missingRuntimeMessage;
 
 /* ---------- reference side: real n8n-core WorkflowExecute ------------- */
 let referenceApi = null;
@@ -263,8 +266,22 @@ test('EQUIVALENCE fan-out (v0): FIFO ordering matches the reference engine', { t
 	assert.notDeepEqual(reference.order, shape((await (await loadReference()).run(FANOUT)).resultData).order, 'v0 and v1 really do differ, so the comparison is meaningful');
 });
 
+test('EQUIVALENCE start selection: manual trigger wins even when an ordinary node is first', { timeout: 120000, skip: skipReason }, async () => {
+	const json = {
+		id: 'eq-start-order',
+		name: 'Equivalence — start-node order',
+		nodes: [noOp('n', 'Ordinary First', [200, 0]), manualTrigger('t', 'Manual Trigger', [0, 0])],
+		connections: { 'Manual Trigger': { main: [[edge('Ordinary First')]] } },
+	};
+	const reference = shape((await (await loadReference()).run(json)).resultData);
+	const reconstructed = shape((await reconstructedRun(json)).resultData);
+
+	assert.deepEqual(reference.order, ['Manual Trigger', 'Ordinary First']);
+	assert.deepEqual(reconstructed.order, reference.order);
+});
+
 /* ------------------------------------------------------------------ *
- * pin data, alwaysOutputData, timeout, pairedItem — vs the real engine
+ * disabled nodes, pin data, alwaysOutputData, timeout, pairedItem — real engine
  * ------------------------------------------------------------------ */
 
 const PINNED = {
@@ -277,6 +294,30 @@ const PINNED = {
 	},
 	pinData: { Set: [{ json: { pinned: true } }] },
 };
+
+const DISABLED_WITH_PIN = {
+	...PINNED,
+	id: 'eq-disabled-pin',
+	name: 'Equivalence — disabled node ignores pin data',
+	nodes: PINNED.nodes.map((node) =>
+		node.name === 'Set' ? { ...node, disabled: true } : node,
+	),
+};
+
+test('EQUIVALENCE disabled node: first input passes through and pin data is ignored', { timeout: 120000, skip: skipReason }, async () => {
+	const api = await loadReference();
+	const reference = (await api.run(DISABLED_WITH_PIN)).resultData;
+	const reconstructed = (await reconstructedRun(DISABLED_WITH_PIN)).resultData;
+
+	assert.deepEqual(payloadOf(reference, 'Set'), [{}], 'sanity: reference ignored the pinned Set output');
+	assert.deepEqual(
+		reconstructed.runData.Set[0].data.main[0],
+		reference.runData.Set[0].data.main[0],
+		'disabled passthrough preserves the same item metadata',
+	);
+	assert.deepEqual(payloadOf(reconstructed, 'After'), payloadOf(reference, 'After'));
+	assert.deepEqual(shape(reconstructed), shape(reference));
+});
 
 test('EQUIVALENCE pinData: the pinned node is not executed and its pinned output flows on', { timeout: 120000, skip: skipReason }, async () => {
 	const api = await loadReference();

@@ -11,8 +11,8 @@
  * `n8n-workflow` package (the 2.9.4 dependency set) on the same inputs and comparing the
  * results exactly — including ordering, empty-slot padding and cycle termination.
  *
- * Skipped automatically when the pinned runtime is absent (`scripts/setup-reference-runtime.sh`).
- * run: npm run engine:test
+ * `engine:test` skips when the runtime is absent; `engine:test:strict` fails instead and is the
+ * integration/merge path. Install with `scripts/setup-reference-runtime.sh`.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -31,9 +31,12 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = join(HERE, '..', '..', '..');
 const RUNTIME = process.env.LEGO_LIVE_RUNTIME ?? join(REPO, '.runtime', 'node_modules');
 const runtimeReady = existsSync(join(RUNTIME, 'n8n-workflow', 'package.json'));
-const skipReason = runtimeReady
-	? false
-	: `pinned reference runtime not installed at ${RUNTIME} (run scripts/setup-reference-runtime.sh)`;
+const missingRuntimeMessage =
+	`pinned reference runtime not installed at ${RUNTIME} (run scripts/setup-reference-runtime.sh)`;
+if (!runtimeReady && process.env.REQUIRE_REFERENCE_RUNTIME === '1') {
+	throw new Error(missingRuntimeMessage);
+}
+const skipReason = runtimeReady ? false : missingRuntimeMessage;
 
 const req = runtimeReady ? createRequire(join(RUNTIME, 'package.json')) : null;
 const real = runtimeReady ? req('n8n-workflow') : null;

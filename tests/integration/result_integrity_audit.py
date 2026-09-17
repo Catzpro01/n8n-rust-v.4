@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Agent 5 — task-result integrity audit (Stage 2c of run_gate.sh).
+"""Agent 5 — task-result integrity audit (Stage 2B of run_gate.sh).
 
 A `results/TASK-*.md` file is an ASSERTION that work happened. This audit checks the
 assertion against the repository, because a status line costs nothing to write:

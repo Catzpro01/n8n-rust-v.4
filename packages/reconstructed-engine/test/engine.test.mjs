@@ -295,9 +295,9 @@ test('onError=stopAndError does NOT continue (:1861-1893)', { timeout: 5000 }, a
 });
 
 test('CYCLE GUARD: A->B->A terminates and is reported, it does not hang', { timeout: 5000 }, async () => {
-	// n8n rejects cycles at validation time (Validation LEGO); this engine still needs the
-	// local bound, because a synchronous BFS on a cyclic graph never yields to the event loop
-	// (verified against the pre-fix runner: still alive at 12 s, killed by `timeout`).
+	// n8n workflows can contain intentional cycles (for example Loop nodes). Full loop/reset
+	// semantics are not reconstructed yet, so this engine keeps a fail-safe bound: a malformed
+	// cycle must not starve the event loop (the pre-fix runner was still alive after 12 seconds).
 	const engine = new WorkflowExecutionEngine({
 		nodes: [
 			{ name: 'A', type: 'n8n-nodes-base.manualTrigger' },
@@ -339,12 +339,74 @@ test('CYCLE GUARD: self-loop and 3-node cycle terminate', { timeout: 5000 }, asy
 	assert.equal(b.executionLog.length, 3, 'each node still runs exactly once');
 });
 
-test('empty workflow throws "No nodes found"', { timeout: 5000 }, async () => {
-	const engine = new WorkflowExecutionEngine({ nodes: [], connections: {} });
-	await assert.rejects(() => engine.runWorkflow(), /No nodes found/);
+test('no executable start throws the reference ApplicationError', { timeout: 5000 }, async () => {
+	for (const nodes of [
+		[],
+		[
+			{ name: 'A', type: 'n8n-nodes-base.set' },
+			{ name: 'B', type: 'n8n-nodes-base.noOp' },
+		],
+	]) {
+		const engine = new WorkflowExecutionEngine({ nodes, connections: {} });
+		await assert.rejects(() => engine.runWorkflow(), (error) => {
+			assert.equal(error.name, 'ApplicationError');
+			assert.equal(error.constructor.name, 'ApplicationError');
+			assert.equal(error.message, 'No node to start the workflow from could be found');
+			return true;
+		});
+	}
 });
 
-test('explicit start node beats trigger auto-detection', { timeout: 5000 }, async () => {
+test('a single enabled ordinary node is a valid start; a disabled one is not (:822-827)', { timeout: 5000 }, async () => {
+	const enabled = new WorkflowExecutionEngine({
+		nodes: [{ name: 'Only', type: 'n8n-nodes-base.set' }],
+		connections: {},
+	});
+	assert.equal(enabled.findStartNode(), 'Only');
+
+	const disabled = new WorkflowExecutionEngine({
+		nodes: [{ name: 'Only', type: 'n8n-nodes-base.set', disabled: true }],
+		connections: {},
+	});
+	assert.equal(disabled.findStartNode(), undefined);
+});
+
+test('START NODE: exact fallback types beat array order and disabled starts are skipped (:817-860)', () => {
+	const engine = new WorkflowExecutionEngine({
+		nodes: [
+			{ name: 'Ordinary first', type: 'n8n-nodes-base.set' },
+			{ name: 'Disabled manual', type: 'n8n-nodes-base.manualTrigger', disabled: true },
+			{ name: 'Form', type: 'n8n-nodes-base.formTrigger' },
+			{ name: 'Error', type: 'n8n-nodes-base.errorTrigger' },
+		],
+		connections: {},
+	});
+
+	assert.equal(engine.findStartNode(), 'Error', 'fallback order follows constants.ts:53-59, not node order');
+});
+
+test('START NODE: registered trigger/poll flags win and disabled/manual-chat triggers are skipped', () => {
+	const engine = new WorkflowExecutionEngine({
+		nodes: [
+			{ name: 'Disabled trigger', type: 'custom.disabled', disabled: true },
+			{ name: 'Manual chat', type: '@n8n/n8n-nodes-langchain.manualChatTrigger' },
+			{ name: 'Poll', type: 'custom.poll' },
+			{ name: 'Manual', type: 'n8n-nodes-base.manualTrigger' },
+		],
+		connections: {},
+	});
+	const handler = async (_node, items) => items;
+	engine.registerNodeType('custom.disabled', handler, { trigger: handler });
+	engine.registerNodeType('@n8n/n8n-nodes-langchain.manualChatTrigger', handler, {
+		name: '@n8n/n8n-nodes-langchain.manualChatTrigger',
+		trigger: handler,
+	});
+	engine.registerNodeType('custom.poll', handler, { poll: handler });
+
+	assert.equal(engine.findStartNode(), 'Poll');
+});
+
+test('explicit start node beats automatic start-node selection', { timeout: 5000 }, async () => {
 	const engine = new WorkflowExecutionEngine({
 		nodes: [
 			{ name: 'T', type: 'n8n-nodes-base.manualTrigger' },
@@ -641,7 +703,7 @@ test('PIN DATA: a pinned node is not executed and its pinned output flows downst
 	assert.equal(taskOf(result, 'Code Node').executionStatus, 'success');
 });
 
-test('PIN DATA: a disabled node ignores its pin data (:1634)', { timeout: 5000 }, async () => {
+test('DISABLED + PIN DATA: handler and pin are both skipped; first main input passes through', { timeout: 5000 }, async () => {
 	const wf = linear();
 	wf.nodes[1].disabled = true;
 	const engine = new WorkflowExecutionEngine({ ...wf, pinData: { 'Code Node': [item({ pinned: true })] } });
@@ -654,8 +716,9 @@ test('PIN DATA: a disabled node ignores its pin data (:1634)', { timeout: 5000 }
 
 	const result = await engine.runWorkflow();
 
-	assert.equal(codeCalls, 1, 'a disabled node falls through to the handler');
-	assert.deepEqual(payload(result.data['Code Node']), [{ computed: true }]);
+	assert.equal(codeCalls, 0, 'handleDisabledNode returns before the node implementation (:1199-1201)');
+	assert.deepEqual(payload(result.data['Code Node']), [{ start: true }]);
+	assert.deepEqual(payload(result.data['Transform Output']), [{ start: true }]);
 });
 
 test('PIN DATA can also be passed per run, overriding the workflow definition', { timeout: 5000 }, async () => {

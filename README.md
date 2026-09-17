@@ -1,16 +1,16 @@
 # n8n-rust-v.4
 
-High-Performance Rust Port of n8n with Arena AI Virtual SSH Engine.
+Native JavaScript/TypeScript reconstruction of n8n 2.9.4 with Arena AI Virtual SSH Engine.
 
-The port never rewrites n8n from guesswork: n8n 2.9.4 is the behavioral
+The reconstruction never rewrites n8n from guesswork: n8n 2.9.4 is the behavioral
 reference, every component is isolated behind an explicit contract, and only then
-is a replacement attempted.
+is its backend data flow reconstructed as a modular LEGO.
 
-> **Governing rule right now:** [`PROJECT_RULES.md`](PROJECT_RULES.md) (v2.9.4 NATIVE) — rule 1
+> **Governing rule:** [`PROJECT_RULES.md`](PROJECT_RULES.md) (v2.9.4 NATIVE) — rule 1
 > **ZERO RUST**. The reconstruction is JavaScript / TypeScript / Node.js, 1:1 from the n8n 2.9.4
-> source, and `crates/` + `apps/` must stay empty until Phase 3 is formally opened. A Rust prototype
-> that had landed in `crates/` was removed on 2026-09-17 and the gate that allows it back was
-> tightened: [`docs/isolation/RUST-PURGE-RECORD.md`](docs/isolation/RUST-PURGE-RECORD.md).
+> source, and `crates/` + `apps/` must contain no Rust artifacts. A former Rust prototype was
+> removed on 2026-09-17; the unconditional guard and evidence are recorded in
+> [`docs/isolation/RUST-PURGE-RECORD.md`](docs/isolation/RUST-PURGE-RECORD.md).
 
 ## Project status
 
@@ -22,10 +22,10 @@ is a replacement attempted.
 | REFERENCE RUNTIME (baseline 11/11 smoke test) | ✅ |
 | **WORKFLOW ISOLATION (LEGO 01)** | **✅ VERIFIED — see [`docs/isolation/workflow.md`](docs/isolation/workflow.md)** |
 | NODE MODEL (LEGO 02) · CONNECTION (03) · VALIDATION (04) | ⏸ next |
-| RUST IMPLEMENTATION | ⛔ forbidden until Phase 3 opens (PROJECT_RULES #1) — `crates/`, `apps/` kept empty, guarded by `npm run rust:guard` |
+| IMPLEMENTATION LANGUAGE | JavaScript / TypeScript / Node.js only; Rust is unconditionally forbidden by PROJECT_RULES #1 and `npm run rust:guard` |
 
 “Isolated” means the TypeScript component now has an enforced boundary and a
-contract. It does **not** mean it was replaced by Rust.
+contract. It does **not** mean its native JavaScript/TypeScript reconstruction is complete.
 
 ## Structure
 
@@ -38,7 +38,7 @@ contract. It does **not** mean it was replaced by Rust.
 - `tools/` : boundary mapper, kernel/port/reference gates, isolation extractor, model digest, gate runner, live engine harness
 - `tests/reference/` : golden workflows + baseline smoke test evidence
 - `tasks/`, `results/` : inbound task manifests and execution results
-- `crates/`, `apps/n8n-rust/` : reserved and **empty by rule** (`.gitkeep` only) — no Rust before Phase 3
+- `crates/`, `apps/n8n-rust/` : placeholder directories, **empty by rule** (`.gitkeep` only); Rust artifacts are forbidden
 
 ## Verify a LEGO
 
@@ -48,6 +48,7 @@ npm install --prefix packages/workflow-lego
 npm run verify                            # 11 gates; writes docs/isolation/evidence/*
 
 npm run verify:fast                       # same, without the live engine checks
+npm run engine:test:strict                # 61/61; pinned runtime required, no parity skips allowed
 npm run isolation:check                   # boundary + kernel + port + reference-integrity + rust guard
 npm run rust:guard                        # PROJECT_RULES #1: no .rs / Cargo.toml under crates/ or apps/
 ```

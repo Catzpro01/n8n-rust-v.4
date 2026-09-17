@@ -24,11 +24,11 @@
  *   reference/n8n/packages/workflow/src/execution-status.ts:1-11 ExecutionStatusList
  *
  * Deliberately NOT reconstructed (named so nobody assumes it is there):
- *   - expressions `{{ … }}`, credentials, pin data, wait/resume (`waitTill`), sub-workflows,
- *     AI/routing nodes, execution timeout, `requiredInputs` (needs node type descriptions).
- *   - Cycle REJECTION. n8n refuses cyclic graphs at validation time (Validation LEGO —
- *     contracts/validation.contract.md §CycleDetection). This engine still needs a local
- *     safety net so a graph that slipped through cannot hang the process: see maxExecutionsFor().
+ *   - expressions `{{ … }}`, credentials, wait/resume (`waitTill`), sub-workflows and
+ *     AI/routing nodes. Pin data, execution timeout and static `requiredInputs` are reconstructed;
+ *     expression-valued `requiredInputs` remains owned by the Expression LEGO.
+ *   - Full loop-node semantics. Cycles are legal in n8n workflows, so the local execution bound is
+ *     only a fail-safe until loop nodes and their reset data are reconstructed end-to-end.
  */
 
 import { getConnectedNodes, getParentNodes } from './graph.mjs';
@@ -36,6 +36,24 @@ import { getConnectedNodes, getParentNodes } from './graph.mjs';
 export { getConnectedNodes, getParentNodes };
 
 const MAIN = 'main';
+
+// `constants.ts:53-59` — the exact fallback order used by `Workflow#__getStartNode`.
+const STARTING_NODE_TYPES = [
+	'n8n-nodes-base.manualTrigger',
+	'n8n-nodes-base.executeWorkflowTrigger',
+	'n8n-nodes-base.errorTrigger',
+	'n8n-nodes-base.evaluationTrigger',
+	'n8n-nodes-base.formTrigger',
+];
+const MANUAL_CHAT_TRIGGER_LANGCHAIN_NODE_TYPE = '@n8n/n8n-nodes-langchain.manualChatTrigger';
+
+/** Standalone counterpart of n8n-workflow's ApplicationError; intentionally not exported. */
+class ApplicationError extends Error {
+	constructor(message) {
+		super(message);
+		this.name = 'ApplicationError';
+	}
+}
 
 /**
  * 1:1 port of `common/map-connections-by-destination.ts:5-49`.
@@ -100,10 +118,11 @@ export class WorkflowExecutionEngine {
 	 *
 	 * @param {string} typeName
 	 * @param {Function} handler `(node, items, ctx) => items[]`
-	 * @param {object} [description] the parts of the n8n node type description the engine needs:
-	 *   `requiredInputs` (`number | number[]`, interfaces.ts:2355) and `inputs` (input type list,
-	 *   used for its `.length`). Without a description the engine falls back to the number of
-	 *   connected input slots.
+	 * @param {object} [description] the parts of the n8n node type the engine needs:
+	 *   `requiredInputs` (`number | number[]`, interfaces.ts:2355), `inputs` (input type list,
+	 *   used for its `.length`), `trigger` / `poll` (presence marks a start node), and `name`
+	 *   (used to exclude the manual-chat trigger). Without an input description the engine falls
+	 *   back to the number of connected input slots.
 	 */
 	registerNodeType(typeName, handler, description = {}) {
 		this.nodeTypes.set(typeName, handler);
@@ -292,14 +311,40 @@ export class WorkflowExecutionEngine {
 		return false;
 	}
 
-	/** Start node: explicit argument wins, else the n8n-ish trigger heuristic. */
+	/**
+	 * Start-node selection. An explicit start name is the `WorkflowExecute.run()` input and wins
+	 * unchanged (`workflow-execute.ts:123-138`). With no explicit start, this is the no-destination
+	 * branch of `Workflow#getStartNode` / `#__getStartNode` (`workflow.ts:817-860,867-889`):
+	 * one enabled node wins; then the first enabled trigger/poll node; then the exact ordered list
+	 * in `STARTING_NODE_TYPES`. There is deliberately no "first arbitrary node" fallback.
+	 */
 	findStartNode(startNodeName) {
 		if (startNodeName) return startNodeName;
-		for (const [name, node] of this.nodes.entries()) {
-			const type = node.type ?? '';
-			if (type.includes('trigger') || type.includes('Manual') || type.includes('Start')) return name;
+
+		const nodeNames = [...this.nodes.keys()];
+		if (nodeNames.length === 1) {
+			const onlyNode = this.nodes.get(nodeNames[0]);
+			if (onlyNode && !onlyNode.disabled) return onlyNode.name; // workflow.ts:822-827
 		}
-		return this.nodes.keys().next().value;
+
+		for (const nodeName of nodeNames) {
+			const node = this.nodes.get(nodeName);
+			const nodeType = this.nodeTypeDescriptions.get(node?.type) ?? {};
+			if ((nodeType.name ?? node?.type) === MANUAL_CHAT_TRIGGER_LANGCHAIN_NODE_TYPE) continue;
+			if (nodeType.trigger !== undefined || nodeType.poll !== undefined) {
+				if (node?.disabled === true) continue;
+				return nodeName;
+			}
+		}
+
+		const sortedNodes = [...this.nodes.values()].sort(
+			(a, b) => STARTING_NODE_TYPES.indexOf(a.type) - STARTING_NODE_TYPES.indexOf(b.type),
+		);
+		for (const node of sortedNodes) {
+			if (STARTING_NODE_TYPES.includes(node.type) && node.disabled !== true) return node.name;
+		}
+
+		return undefined;
 	}
 
 	/**
@@ -372,7 +417,7 @@ export class WorkflowExecutionEngine {
 		const startName = this.findStartNode(startNodeName);
 		const startNode = startName ? this.nodes.get(startName) : undefined;
 		if (!startNode) {
-			throw new Error('No nodes found in workflow definition');
+			throw new ApplicationError('No node to start the workflow from could be found');
 		}
 
 		/** workflow-execute.ts:157-171 */
@@ -462,7 +507,15 @@ export class WorkflowExecutionEngine {
 				executionError = undefined;
 
 				try {
-					if (pinData && !node.disabled && pinData[node.name] !== undefined) {
+					if (node.disabled === true) {
+						/**
+						 * `workflow-execute.ts:909-920,1199-1201` — disabled nodes never invoke
+						 * their implementation. They pass through the first main input, or return no
+						 * data when that input is absent/null. This check intentionally precedes pinData.
+						 */
+						const firstMainInput = inputData.main?.[0];
+						nodeSuccessData = firstMainInput == null ? null : [firstMainInput];
+					} else if (pinData && pinData[node.name] !== undefined) {
 						/** workflow-execute.ts:1632-1637 — pinned output replaces the node run. */
 						nodeSuccessData = [pinData[node.name]]; // always the zeroth runIndex
 					} else {

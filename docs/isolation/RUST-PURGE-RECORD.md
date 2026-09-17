@@ -71,8 +71,8 @@ $ node tests/reference/workflow-rust/build-fixtures.mjs --check
 fixtures match the pinned reference: 8 checksum, 6 diff, 6 shape, 6 rename, 9 traversal cases   (exit 0)
 ```
 
-Whatever implements the Workflow Model in Phase 3 asserts against those numbers; the corpus is
-implementation-language agnostic and was not collateral damage.
+Any native JavaScript/TypeScript reconstruction of the Workflow Model can assert against those
+numbers; the corpus is implementation-language agnostic and was not collateral damage.
 
 ---
 
@@ -131,4 +131,6 @@ Evidence files rewritten by the gate run (tracked by design): `docs/isolation/ev
   Caveat `C1` of `TASK-305-phase2-final-verdict` stays **open**.
 * `ISSUE-004` (runtime cycles) and `ISSUE-006` (global state / env coupling) remain open; they are
   inherited from upstream n8n 2.9.4 and are untouched by this change.
-* Phase 3 is **not** opened by this record. `crates/` and `apps/` stay empty and guarded until it is.
+* `PROJECT_RULES.md` #1 is unconditional: no phase transition authorizes Rust. `crates/` and
+  `apps/` remain empty placeholders and stay guarded while the reconstruction proceeds only in
+  JavaScript / TypeScript / Node.js.

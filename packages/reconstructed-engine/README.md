@@ -18,9 +18,9 @@ live in `crates/` (removed 2026-09-17, see `docs/isolation/RUST-PURGE-RECORD.md`
 ```text
 runner.mjs                        the engine (WorkflowExecutionEngine) + mapConnectionsByDestination
 graph.mjs                         getConnectedNodes / getParentNodes — 1:1 ports
-test/engine.test.mjs              45 behaviour cases
+test/engine.test.mjs              42 behaviour cases
 test/graph-equivalence.test.mjs    3 cases comparing the graph ports to the real n8n-workflow
-test/reference-equivalence.test.mjs  7 cases running the same JSON through the real n8n-core
+test/reference-equivalence.test.mjs  9 cases running the same JSON through the real n8n-core
 test/contract-conformance.test.mjs  7 cases holding the contract against the implementation
 test-run.mjs                      console demo (not a test — no assertions; kept for history)
 ```
@@ -49,15 +49,16 @@ result.resultData.error;            // set when the run stopped on a node error
 ## Verify
 
 ```bash
-npm run engine:test                       # 56 cases (from the repository root)
-bash tests/integration/run_gate.sh --offline-only   # the suite is stage 3 of the integration gate
+npm run engine:test                # 61 cases; 12 parity cases may skip if the runtime is absent
+npm run engine:test:strict         # 61/61 required; missing runtime is a hard failure
+bash tests/integration/run_gate.sh --offline-only   # stage 3 invokes the strict command above
 ```
 
-The three equivalence files compare against the pinned reference runtime; they skip themselves when
-it is not installed:
+The two equivalence files compare against the pinned reference runtime. Install it before running
+the strict suite or the integration gate:
 
 ```bash
-scripts/setup-reference-runtime.sh        # n8n-workflow / n8n-core / n8n-nodes-base 2.9.1
+scripts/setup-reference-runtime.sh # n8n-workflow / n8n-core / n8n-nodes-base 2.9.1
 ```
 
 ## What this is NOT

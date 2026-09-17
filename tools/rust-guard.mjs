@@ -2,11 +2,11 @@
 /**
  * Rust guard — PROJECT_RULES rule 1 ("ZERO RUST") enforcement.
  *
- * Phase 2 (and every phase before Phase 3 is formally opened) forbids Rust
- * sources inside the reserved implementation directories. Two harnesses already
- * check this inline (tests/compatibility/contract_conformance.mjs and
- * tests/integration/boundary_audit.py); this tool exists so the same rule can be
- * run on its own, in isolation, without a python runtime or the reference tree.
+ * The rule unconditionally forbids Rust sources inside the reserved implementation
+ * directories; no phase transition relaxes it. Two harnesses also check this inline
+ * (tests/compatibility/contract_conformance.mjs and tests/integration/boundary_audit.py);
+ * this tool exists so the same rule can run independently, without Python or the
+ * reference tree.
  *
  * Detection set is deliberately IDENTICAL to the two existing harnesses:
  * a file is an offender when its name ends with `.rs` or equals `Cargo.toml`.
@@ -125,7 +125,7 @@ function main() {
 	for (const o of found.offenders) process.stdout.write(`[FAIL] ${o}\n`);
 	process.stdout.write(
 		`RESULT: FAIL — ${found.offenders.length} Rust artifact(s) in reserved dirs; ` +
-			`Rust is forbidden until Phase 3 is formally opened\n`,
+			`Rust is unconditionally forbidden by PROJECT_RULES.md #1\n`,
 	);
 	return 1;
 }

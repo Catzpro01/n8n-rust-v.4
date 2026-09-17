@@ -108,7 +108,7 @@ test('contract §3: the result shape matches what runWorkflow actually returns',
 	e.registerNodeType('x.manualTrigger', async () => [{ json: { a: 1 } }]);
 	e.registerNodeType('x.set', async (_n, items) => items);
 
-	const result = await e.runWorkflow();
+	const result = await e.runWorkflow('T');
 	const task = result.resultData.runData.T[0];
 
 	assert.deepEqual(Object.keys(result).sort(), [...declared.resultKeys].sort());
@@ -175,6 +175,7 @@ test('contract §8: every provenance citation points at real lines in reference/
 		'interfaces.ts': 'packages/workflow/src/interfaces.ts',
 		'execution-status.ts': 'packages/workflow/src/execution-status.ts',
 		'workflow.ts': 'packages/workflow/src/workflow.ts',
+		'constants.ts': 'packages/workflow/src/constants.ts',
 	};
 
 	const citation = /([a-z-]+\.ts):(\d+)(?:-(\d+))?/g;
