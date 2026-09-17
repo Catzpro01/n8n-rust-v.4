@@ -4,7 +4,7 @@ lego: execution
 module: integration
 phase: 3
 title: "Independent tip verification sweep: reproduce every Phase-3 JS/TS evidence claim on da5817da"
-status: AVAILABLE
+status: SUBMITTED_FOR_REVIEW
 
 # Context: STANDING-WORKER-PROTOCOL dual-phase review duty with the remote
 # queue unreachable (ISSUE-019: Supabase SSL blocked from sandbox). Local

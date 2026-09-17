@@ -4,7 +4,7 @@ lego: execution
 module: activation-lifecycle
 phase: 3
 title: "Execution LEGO: activation lifecycle — ActiveWorkflows + TriggersAndPollers + TriggerContext (ref: active-workflows.ts, triggers-and-pollers.ts)"
-status: AVAILABLE
+status: SUBMITTED_FOR_REVIEW
 
 # Context: `docs/isolation/execution.md` §7 and `LEGO-MASTER-MAP.md` §5 both name the
 # remaining Phase-3 work: "Trigger/webhook/poll service LEGO (`triggers-and-pollers.ts`)
