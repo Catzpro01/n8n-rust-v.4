@@ -510,17 +510,58 @@ impl Workflow {
             .collect()
     }
 
-    /// Port of `getParentMainInputNode(node)` (`workflow.ts:687-743`).
+    /// Port of `getParentMainInputNode(node)` (`workflow.ts:687-743`) — early-return wrapper.
     ///
-    /// Divergence (needs the node-type registry, CD-05 / Agent 2): the reference resolves the
-    /// node's declared outputs and, when non-`main` outputs exist, climbs from the first
-    /// connected sub-node. The Workflow port owns no registry, so — exactly like the reference
-    /// test harness stub (`tests/reference/harness/connection.js`, every node declares
-    /// `outputs: ['main']`) — every node is treated as having only a `main` output and the
-    /// pinned early-return path applies: the node is its own parent-main-input node.
+    /// The declared outputs come from the node-type registry, which the Workflow LEGO does not
+    /// own (CD-05). This wrapper assumes every node declares only a `main` output — exactly the
+    /// reference harness's fallback stub — so the early-return path applies: the node is its own
+    /// parent-main-input node. Use [`Workflow::get_parent_main_input_node_with`] with a resolver
+    /// to run the full climb (see the `07-parent-main-input-ai-tool` golden).
     pub fn get_parent_main_input_node(&self, node_name: &str) -> Option<&INode> {
-        // With the stub semantics (`outputs: ['main']`) `nonMainConnectionTypes` is always
-        // empty and the reference returns the node itself (`workflow.ts:742`).
+        self.get_parent_main_input_node_with(node_name, &|_name| vec!["main".to_string()])
+    }
+
+    /// Full port of `getParentMainInputNode(node)` (`workflow.ts:687-743`).
+    ///
+    /// `declared_outputs` is the node-type-registry seam (CD-05): it returns the output types
+    /// the node's type declares. The climb: collect the node's non-`main` declared outputs
+    /// (sorted), gather `getChildNodes(node, type)` for those that exist in the source map,
+    /// and — if any — recurse into the lexicographically first connected sub-node. Missing
+    /// nodes resolve to `None` instead of the reference's `ApplicationError` (documented
+    /// divergence: the port never panics/throws at this boundary).
+    pub fn get_parent_main_input_node_with(
+        &self,
+        node_name: &str,
+        declared_outputs: &dyn Fn(&str) -> Vec<String>,
+    ) -> Option<&INode> {
+        let mut non_main: Vec<String> = declared_outputs(node_name)
+            .into_iter()
+            .filter(|output_type| output_type != "main")
+            .collect();
+        non_main.sort();
+
+        if !non_main.is_empty() {
+            let mut connected: Vec<String> = Vec::new();
+            for output_type in &non_main {
+                let has_edges = self
+                    .connections_by_source_node
+                    .get(node_name)
+                    .is_some_and(|outputs| outputs.contains_key(output_type));
+                if has_edges {
+                    connected.extend(self.get_child_nodes(
+                        node_name,
+                        ConnectionTypeFilter::parse(output_type),
+                        -1,
+                    ));
+                }
+            }
+            if !connected.is_empty() {
+                connected.sort();
+                let first = connected[0].clone();
+                return self.get_parent_main_input_node_with(&first, declared_outputs);
+            }
+        }
+
         self.get_node(node_name)
     }
 
@@ -614,6 +655,45 @@ impl Workflow {
             value.get("settings").cloned(),
             value.get("staticData").cloned(),
             value.get("pinData").cloned(),
+        ))
+    }
+
+    /// Document-order-faithful loader: parses the raw wire text with a typed
+    /// `Connections` field so connection keys keep their JSON document order.
+    /// (`from_wire` above goes through `serde_json::Value`, whose `Map` is a BTreeMap —
+    /// connection keys come out alphabetically sorted, which silently diverges from the
+    /// reference for order-sensitive behaviour such as derived-map insertion order or
+    /// multi-type traversal order. See the `06-rename-stale-destination` golden.)
+    pub fn from_wire_str(text: &str) -> Result<Self, serde_json::Error> {
+        #[derive(serde::Deserialize)]
+        struct WireWorkflow {
+            #[serde(default)]
+            id: Option<String>,
+            #[serde(default)]
+            name: Option<String>,
+            #[serde(default)]
+            active: bool,
+            #[serde(default)]
+            nodes: Vec<INode>,
+            #[serde(default)]
+            connections: Connections,
+            settings: Option<WorkflowSettings>,
+            #[serde(rename = "staticData")]
+            static_data: Option<Value>,
+            #[serde(rename = "pinData")]
+            pin_data: Option<Value>,
+        }
+
+        let wire: WireWorkflow = serde_json::from_str(text)?;
+        Ok(Workflow::new(
+            wire.id,
+            wire.name,
+            wire.nodes,
+            wire.connections,
+            wire.active,
+            wire.settings,
+            wire.static_data,
+            wire.pin_data,
         ))
     }
 

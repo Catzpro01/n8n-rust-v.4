@@ -50,7 +50,13 @@ else
 fi
 
 echo; echo "======================================================="
-echo "OFFLINE STAGES : $([ $fail -eq 0 ] && echo PASS || echo FAIL)"
+# ISSUE-025 lesson (agent-5, adopted): a skipped stage must be visible in the summary —
+# a flat PASS would let "gate PASS" be quoted while cargo never ran.
+if [ "$rust_stage" = "NOT RUN" ] && [ $fail -eq 0 ]; then
+  echo "OFFLINE STAGES : PASS WITH SKIPS (Stage 2b NOT RUN — rig missing; run tools/rust-offline-rig/setup.sh)"
+else
+  echo "OFFLINE STAGES : $([ $fail -eq 0 ] && echo PASS || echo FAIL)"
+fi
 echo "RUST CARGO TEST: $rust_stage"
 echo "RESULT INTEGRITY: $([ $fail -ne 0 ] && echo 'SEE ABOVE' || echo PASS)"
 echo "LIVE 11/11     : $live"

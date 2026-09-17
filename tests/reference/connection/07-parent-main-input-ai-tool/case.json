@@ -1,0 +1,139 @@
+{
+  "description": "getParentMainInputNode climbs non-main outputs. Node types: names starting with 'SubTool' declare outputs ['ai_tool']; 'Agent' declares inputs ['main','ai_tool'].",
+  "nodes": [
+    {
+      "id": "Trigger",
+      "name": "Trigger",
+      "type": "x",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "Agent",
+      "name": "Agent",
+      "type": "x",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "SubTool",
+      "name": "SubTool",
+      "type": "x",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "SubToolDeep",
+      "name": "SubToolDeep",
+      "type": "x",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "End",
+      "name": "End",
+      "type": "x",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    }
+  ],
+  "connections": {
+    "Trigger": {
+      "main": [
+        [
+          {
+            "node": "Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent": {
+      "main": [
+        [
+          {
+            "node": "End",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SubTool": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SubToolDeep": {
+      "ai_tool": [
+        [
+          {
+            "node": "SubTool",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "probes": [
+    {
+      "name": "parent main-input node of SubTool -> Agent",
+      "op": "wf.getParentMainInputNode",
+      "node": "SubTool"
+    },
+    {
+      "name": "parent main-input node of SubToolDeep -> Agent (two hops)",
+      "op": "wf.getParentMainInputNode",
+      "node": "SubToolDeep"
+    },
+    {
+      "name": "parent main-input node of Agent -> itself",
+      "op": "wf.getParentMainInputNode",
+      "node": "Agent"
+    },
+    {
+      "name": "parent main-input node of End -> itself",
+      "op": "wf.getParentMainInputNode",
+      "node": "End"
+    },
+    {
+      "name": "children SubTool ai_tool",
+      "op": "getChildNodes",
+      "node": "SubTool",
+      "type": "ai_tool"
+    },
+    {
+      "name": "children SubTool default main (none)",
+      "op": "getChildNodes",
+      "node": "SubTool"
+    }
+  ]
+}
