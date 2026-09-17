@@ -75,12 +75,16 @@ ports:
       reference's try/catch swallows it, console.warn fires and outputs collapses to [].
   - id: CD-05b
     what: "NodeHelpers.getNodeParameters"
-    provider: "none on this branch"
+    provider: "packages/node-lego (src/parameter-resolution.mjs:144, exported at src/index.mjs:19, landed by peer TASK-411)"
     resolution: >
-      Still a required injected port. It is not reconstructed in packages/node-lego (which exports
-      getNodeOutputs but not getNodeParameters) nor anywhere else. Recorded as ISSUE-027; the
-      conformance suite injects an identity stand-in and then PROVES by falsification that none of
-      the 14 probe expectations depend on it.
+      Resolved by src/node-port.ts alongside getNodeOutputs; the port now requires both functions.
+      The constructor calls it with the reference's SIX arguments (workflow.ts:110-117) — an
+      earlier 2-argument facade call was a real defect, fixed here and recorded as ISSUE-027. Two
+      tests pin it: function identity with the sibling package's exports, and a defaulted string
+      property that only the real implementation fills in.
+    falsification: >
+      The 14 wf.* probe expectations are additionally shown to be insensitive to getNodeParameters
+      by re-deriving all 14 under a deliberately mangling one and asserting byte-identical output.
 
 acceptance:
   - "tsc --strict builds with 0 errors"
@@ -91,7 +95,7 @@ acceptance:
   - "no regression anywhere on the branch"
 
 verification:
-  workflow_model_lego: "package 52/52 (conformance.test.mjs 44/44 — was 26, +14 wf.* probes, +1 coverage assertion, +3 controls; disabled-graph.test.mjs 8/8 from TASK-DGRAPH-01)"
+  workflow_model_lego: "package 54/54 (conformance.test.mjs 46/46 — was 26, +14 wf.* probes, +1 coverage assertion, +5 controls/port tests; disabled-graph.test.mjs 8/8 from TASK-DGRAPH-01)"
   tsc_strict: "tsc -p tsconfig.json -> exit 0"
   phase3_conformance: "42/42 CHECKS PASSED"
   boundary_audit: "AUDIT RESULT: PASS (all edges documented)"

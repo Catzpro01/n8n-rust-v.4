@@ -20,6 +20,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = join(HERE, '..', '..', '..');
@@ -332,19 +333,16 @@ const stubNodeTypes = {
 /**
  * CD-05 port for these probes.
  *
- * - `getNodeOutputs` is the **real** `packages/node-lego` implementation, resolved by the package
- *   itself; it is re-declared here only so the constructor has a port at all.
- * - `getNodeParameters` is **not reconstructed anywhere on this branch** (it is ~1 000 lines of
- *   `node-helpers.ts` and outside both this LEGO's and `packages/node-lego`'s delivered scope).
- *   The identity stand-in below leaves `node.parameters` untouched. That is a declared gap, not a
- *   claim of parity — and the test further down proves the 14 probe expectations do not depend on
- *   it, so the acceptance set is not being satisfied by the stand-in.
+ * Since TASK-411 `packages/node-lego` exports **both** NodeHelpers functions the Workflow
+ * aggregate calls — `getNodeOutputs` (`src/connection-io.mjs:67`) and `getNodeParameters`
+ * (`src/parameter-resolution.mjs:144`). `src/node-port.ts` resolves that module and the package
+ * therefore needs no injected port here: the constructor applies the reference's real
+ * default-parameter logic (`workflow.ts:110-117`, six arguments in reference order).
+ *
+ * `manglingNodeHelpers` below exists to prove the 14 probe expectations are *insensitive* to
+ * `getNodeParameters`, so the 14/14 result is not an artefact of that function either way.
  */
-const identityNodeHelpers = {
-	getNodeOutputs: (wf, node, nodeTypeData) =>
-		lego.resolveNodeHelpersPort().getNodeOutputs(wf, node, nodeTypeData),
-	getNodeParameters: (node) => node.parameters ?? {},
-};
+const realNodeHelpers = lego.resolveNodeHelpersPort();
 
 const WF_OPS = new Set([
 	'wf.getNodeConnectionIndexes',
@@ -402,7 +400,6 @@ for (const name of readdirSync(join(REPO, 'tests/reference/connection')).sort())
 		active: false,
 		nodeTypes: stubNodeTypes,
 		settings: {},
-		nodeHelpersPort: identityNodeHelpers,
 	});
 
 	for (const p of kase.probes) {
@@ -437,12 +434,13 @@ test('negative control: returning null instead of undefined for an unconnected p
 	assert.notDeepEqual(harnessPlain(null), expected, 'oracle failed to discriminate');
 });
 
-test('falsification: the 14 wf.* expectations do not depend on the getNodeParameters stand-in', () => {
-	// Replace the identity stand-in with one that deliberately mangles node.parameters. If any of
-	// the 14 probe results changed, the acceptance set would be sensitive to a function this
-	// branch does not reconstruct — which would make the 14/14 claim unsound.
+test('falsification: the 14 wf.* expectations do not depend on getNodeParameters', () => {
+	// Swap the real getNodeParameters for one that deliberately mangles node.parameters. If any of
+	// the 14 probe results changed, the acceptance set would be sensitive to default-parameter
+	// application — which would make the 14/14 claim depend on a different surface than the one
+	// under test.
 	const mangling = {
-		getNodeOutputs: identityNodeHelpers.getNodeOutputs,
+		getNodeOutputs: realNodeHelpers.getNodeOutputs,
 		getNodeParameters: () => ({ __mangled: true, nested: { a: [1, 2, 3] } }),
 	};
 	const results = { identity: {}, mangling: {} };
@@ -456,7 +454,7 @@ test('falsification: the 14 wf.* expectations do not depend on the getNodeParame
 		}
 		if (!kase.nodes) continue;
 		for (const [label, port] of [
-			['identity', identityNodeHelpers],
+			['identity', realNodeHelpers],
 			['mangling', mangling],
 		]) {
 			const wf = new Workflow({
@@ -480,4 +478,63 @@ test('falsification: the 14 wf.* expectations do not depend on the getNodeParame
 	for (const key of keys) {
 		assert.equal(results.mangling[key], results.identity[key], `${key} depends on getNodeParameters`);
 	}
+});
+
+test('CD-05 resolves to packages/node-lego and satisfies both NodeHelpers functions', () => {
+	const port = lego.resolveNodeHelpersPort();
+	assert.equal(typeof port.getNodeOutputs, 'function');
+	assert.equal(typeof port.getNodeParameters, 'function');
+
+	// Identity, not a re-implementation: the resolved functions must BE the sibling package's.
+	const sibling = createRequire(import.meta.url)('../../node-lego/src/index.mjs');
+	assert.equal(port.getNodeOutputs, sibling.getNodeOutputs, 'getNodeOutputs is not node-lego’s');
+	assert.equal(port.getNodeParameters, sibling.getNodeParameters, 'getNodeParameters is not node-lego’s');
+
+	lego.resetNodeHelpersPort();
+	const again = lego.resolveNodeHelpersPort();
+	assert.equal(again.getNodeParameters, sibling.getNodeParameters, 'resolution is not stable');
+});
+
+test('the constructor applies the real default-parameter logic when a node type resolves', () => {
+	// A node type with a defaulted property: the reference constructor must fill it in through
+	// NodeHelpers.getNodeParameters (workflow.ts:110-117). If the port were still an identity
+	// stand-in, `value` would be missing.
+	const withDefault = {
+		description: {
+			displayName: 'Defaults',
+			name: 'Defaults',
+			group: ['transform'],
+			version: 1,
+			description: '',
+			defaults: {},
+			inputs: ['main'],
+			outputs: ['main'],
+			properties: [
+				{
+					displayName: 'Value',
+					name: 'value',
+					type: 'string',
+					default: 'filled-by-getNodeParameters',
+				},
+			],
+		},
+	};
+	const wf = new Workflow({
+		id: 'defaults',
+		name: 'defaults',
+		nodes: [{ id: 'D', name: 'D', type: 'Defaults', typeVersion: 1, position: [0, 0], parameters: {} }],
+		connections: {},
+		active: false,
+		nodeTypes: {
+			getByName: () => withDefault,
+			getByNameAndVersion: () => withDefault,
+			getKnownTypes: () => ({}),
+		},
+		settings: {},
+	});
+	assert.equal(
+		wf.getNode('D').parameters.value,
+		'filled-by-getNodeParameters',
+		'default parameter was not applied — the CD-05 port is not the real one',
+	);
 });

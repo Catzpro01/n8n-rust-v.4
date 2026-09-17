@@ -18,16 +18,18 @@ landing in `src/utils.ts`, `src/node-type-constants.ts` and `src/interfaces.ts`.
 members the **14 `wf.*` probes** of `tests/reference/connection/01..04` — which
 `contracts/connection.contract.md` §7 assigned to this LEGO and `packages/connection-lego` had
 never claimed — are now asserted here against the values recorded from the real n8n 2.9.4
-runtime; `test/conformance.test.mjs` went from 26 to **44 tests / 44 pass / 0 fail**, the package
-as a whole reports **52/52** (the peer's `disabled-graph.test.mjs` 8 included), and
-`tsc -p tsconfig.json` exits 0 under `strict`. Port CD-05 was re-cut for this: `getNodeOutputs` is resolved from
+runtime; `test/conformance.test.mjs` went from 26 to **46 tests**, the package as a whole reports
+**54/54** (the peer's `disabled-graph.test.mjs` 8 included), and `tsc -p tsconfig.json` exits 0
+under `strict`. Port CD-05 was re-cut for this: `getNodeOutputs` is resolved from
 `packages/node-lego/src/index.mjs` through the new `src/node-port.ts`, and the constructor
 parameter `nodeParametersPort` became `nodeHelpersPort` (old name kept as a deprecated alias).
-Two things that would otherwise have been silently wrong are pinned by evidence rather than by
+Three things that would otherwise have been silently wrong are pinned by evidence rather than by
 reading: the reference passes `nodeType.description` and **not** the node type (verified by an
-observed call — `getNodeOutputs` fired once for `Tool` with `outputs: ["main"]`), and the 14/14
-result is proven insensitive to `getNodeParameters`, which is still not reconstructed anywhere on
-this branch (filed as **ISSUE-027**).
+observed call — `getNodeOutputs` fired once for `Tool` with `outputs: ["main"]`); the constructor
+calls `getNodeParameters` with the reference's **six** arguments (`workflow.ts:110-117`), now
+resolved from `packages/node-lego`'s real implementation rather than an injected stand-in
+(**ISSUE-027**); and the 14/14 result is proven insensitive to `getNodeParameters` by a
+falsification test that re-derives all 14 under a deliberately mangling one.
 
 ---
 
@@ -35,8 +37,8 @@ this branch (filed as **ISSUE-027**).
 
 ```
 $ npm --prefix packages/workflow-model-lego test
-# tests 52          # conformance.test.mjs 44 + disabled-graph.test.mjs 8
-# pass 52
+# tests 54          # conformance.test.mjs 46 + disabled-graph.test.mjs 8
+# pass 54
 # fail 0
 TEST_EXIT=0
 
@@ -109,7 +111,10 @@ Both sides were kept, but not as two copies of the traversal:
 
 That makes the two verifications cross-check each other: the peer's functions were validated
 against their own D-01..D-05 goldens, and now also drive the 14 `wf.*` probes asserted here. After
-the merge the package is 52/52 and `tsc --strict` is clean.
+the merge the package is 54/54 and `tsc --strict` is clean.
+
+The same merge also brought peer **TASK-411**, which reconstructed `getNodeParameters`. That
+invalidated the gap this task had just filed and exposed a real defect here — see ISSUE-027.
 
 The peer also took the ISSUE number `ISSUE-026` (parameter-issues consolidation); the
 `getNodeParameters` gap recorded below was renumbered to **ISSUE-027**.
@@ -133,10 +138,13 @@ The peer also took the ISSUE number `ISSUE-026` (parameter-issues consolidation)
 
 ## Known gaps (not hidden)
 
-- **ISSUE-027** — `NodeHelpers.getNodeParameters` is not reconstructed on this branch. The
-  Workflow constructor requires it whenever a node type resolves; until it exists, every caller
-  must inject it. The 14 golden probes do not read `node.parameters`, which is proven above rather
-  than asserted.
+- **ISSUE-027** — opened as *"`getNodeParameters` is not reconstructed"* and closed in the same
+  task as a **fixed port-arity defect**: peer TASK-411 (`0ac129b1`) had landed
+  `getNodeParameters` at `packages/node-lego/src/parameter-resolution.mjs:144` while this task was
+  in flight, and checking its real signature showed this lane was calling it in a 2-argument
+  facade form. Both the interface and the call site now match `workflow.ts:110-117`, and two tests
+  pin the port (function identity with the sibling package, plus a defaulted property that only
+  the real implementation fills in).
 - Pre-existing and unchanged: ISSUE-010 / ISSUE-011 / ISSUE-019–020 / ISSUE-025 remain open; the
   live 11/11 stage of `tests/integration/run_gate.sh` is not runnable in this sandbox (no docker,
   VPS `157.10.160.95:5678` → `Connection reset by peer`), so G11 is reported at its 7/7 sandbox
