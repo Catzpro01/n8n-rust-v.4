@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-17T15:52:46Z",
+  "generatedAt": "2026-09-17T15:53:18Z",
   "phase": "phase-3",
   "runner": "tools/rust-offline-rig (rustc 1.88.0, vendored crates)",
   "result": "PASS",
@@ -7,7 +7,7 @@
   "referenceIntegrity": "PASS",
   "referenceDetail": "Reference integrity check: PASS (15050 files, root f8da35180669d798\u2026)",
   "fixturesReproduction": "PASS (re-derived byte-exactly)",
-  "headCommit": "21e393419e7f3fd5c1b23b57e055bec73fbe360c",
+  "headCommit": "3f8af1b830d871b264ae4e5ef39a9edd3223b5ec",
   "fixturesSha256": "8d9d7b9ce56d258b9c285735fb729f6b1a44310fac668176a36b5d7a36b04a60",
   "testSummary": [
     "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",

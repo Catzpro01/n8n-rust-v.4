@@ -37,7 +37,11 @@ Agent-4 / LEGO validation. `n8n-validation` unified on the normative
 
 ## Notes for reviewers
 
-- The acceptance script's fixture-reproduction covers only `workflow-rust/fixtures.json`
-  (shared gate tooling, out of scope); validation fixtures are enforced by the
-  generator's `--check` convention plus the harness's pinned case count.
+- The acceptance script covers only `workflow-rust/fixtures.json`, both in its
+  Rust-input set and in fixture-reproduction (shared TASK-401 gate tooling, out
+  of scope); validation fixtures are enforced by the generator's `--check`
+  convention plus the harness's pinned case count.
+- Sequencing lesson: code must be committed *before* `acceptance --force`
+  (the record attests inputs at generation time; generating pre-commit leaves
+  the record stale and the gate BLOCKED until stage 2b re-runs it).
 - Behavioural surface is additive/opt-in per contract §10 — regression gate unaffected.
