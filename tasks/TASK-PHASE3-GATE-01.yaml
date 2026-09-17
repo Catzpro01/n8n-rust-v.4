@@ -4,7 +4,7 @@ lego: integration
 module: integration
 phase: 3
 title: "Open Phase 3 (decision record) + Phase-3-aware offline gates + missing golden fixtures"
-status: AVAILABLE
+status: SUBMITTED_FOR_REVIEW
 
 # Context: Phase 2 is VERIFIED (docs/isolation/LEGO-MASTER-MAP.md). The Phase-3 Rust
 # workspace exists on main (crates/** + root Cargo.toml), but the two offline
