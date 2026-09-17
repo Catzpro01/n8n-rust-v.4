@@ -1,0 +1,66 @@
+{
+	"_meta": {
+		"runtime": "n8n-workflow@2.9.1",
+		"observedAt": "UPDATE=1 run of tests/reference/harness/disabled-graph.js",
+		"method": "OBSERVED runtime behaviour — never hand-written (see tests/reference/README.md)"
+	},
+	"D-01_getHighestNode_midChainDisabled": [
+		{
+			"highestNodes": [
+				"Manual Trigger"
+			]
+		},
+		{
+			"highestNodes": [
+				"Manual Trigger"
+			]
+		}
+	],
+	"D-02_getHighestNode_disabledParentFallback": [
+		{
+			"highestNodes": [
+				"A"
+			]
+		},
+		{
+			"highestNodes": [
+				"A"
+			]
+		},
+		{
+			"highestNodes": []
+		}
+	],
+	"D-03_getStartNode_disabledTrigger": [
+		{
+			"startNode": null
+		},
+		{
+			"startNode": "Code",
+			"type": "n8n-nodes-base.code",
+			"disabled": false
+		}
+	],
+	"D-04_getHighestNode_omittedKeyAsymmetry": [
+		{
+			"highestNodes": []
+		},
+		{
+			"highestNodes": [
+				"Y"
+			]
+		},
+		{
+			"highestNodes": [
+				"W"
+			]
+		}
+	],
+	"D-05_getStartNode_startingOrderAndChatSkip": [
+		{
+			"startNode": "Form",
+			"type": "n8n-nodes-base.formTrigger",
+			"disabled": false
+		}
+	]
+}

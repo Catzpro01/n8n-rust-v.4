@@ -1554,3 +1554,20 @@ Agent 1's recorded count) · **ISSUE-017 probe re-run: `getStartNode(None)` with
 manualTrigger → `Some("Manual Trigger")`** — exactly Agent 5's recorded output; the HIGH divergence
 stands, code unchanged, ISSUE-017 remains OPEN. **ISSUE-025 status: OPEN → REPAIRED** (any agent can
 now reproduce Rust-fidelity claims with `tools/rust-offline-rig/setup.sh && run.sh check && run.sh test`).
+
+---
+
+**ADDENDUM (TASK-DGRAPH-01, `arena/01a0aff8-n8n-rust-v-4`, 2026-09-18) — ISSUE-015/017: the D-01..D-04 golden is landed, observed, and executable on the JS/TS track.**
+
+`tests/reference/04-disabled-node/` now carries `case.json` (D-01..D-05 probe definitions) +
+`expected.json` **observed from `n8n-workflow@2.9.1`** via `tests/reference/harness/disabled-graph.js`
+(UPDATE=1 writes; verify mode re-observes and exits non-zero on drift — falsified with a seeded
+ISSUE-017-style corruption, then regenerated). Key observed rows: `getStartNode()` with a disabled
+manualTrigger → **null** (reference `:839/:853`); `getStartNode("Code")` → **"Code"**; the D-04
+asymmetry (omitted `disabled` key: self → excluded per `:498` strict `=== false`, parent → included
+per `:553` loose `!== true`). `packages/workflow-model-lego/src/start-node-navigation.ts` ports the
+surface 1:1 and deep-equals the golden (lane 34/34); the N1 negative control proves the golden
+rejects the asymmetry-normalising mutation that ISSUE-017 recorded in the Rust port. **ISSUE-017
+remains OPEN for the Rust owner** — the executable oracle they need now exists at
+`tests/reference/04-disabled-node/expected.json`. ISSUE-015's scope warning (plain traversal has no
+disabled concept) is preserved verbatim in `case.json`.
