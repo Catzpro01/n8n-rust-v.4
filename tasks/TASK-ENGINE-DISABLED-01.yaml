@@ -4,7 +4,7 @@ lego: execution
 module: reconstructed-engine
 phase: 3
 title: "Reconstructed engine: disabled-node passthrough per handleDisabledNode (S7 DIVERGE fix)"
-status: AVAILABLE
+status: SUBMITTED_FOR_REVIEW
 
 # Context: differential TASK-ENGINE-DIFF-01 found S7 DIVERGE — reconstructed-engine
 # SKIPS disabled nodes (starving downstream) while the reference PASSES INPUT

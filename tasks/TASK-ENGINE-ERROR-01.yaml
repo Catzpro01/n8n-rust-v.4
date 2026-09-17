@@ -4,7 +4,7 @@ lego: execution
 module: reconstructed-engine
 phase: 3
 title: "Reconstructed engine: reference-faithful error, onError-routing & retry policy (POOL-003 lineage)"
-status: AVAILABLE
+status: SUBMITTED_FOR_REVIEW
 
 # Lineage: results/POOL-003-error-retry-handling.md (agent-3) recorded only git
 # operations — no implementation. The reconstructed engine (packages/
