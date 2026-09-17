@@ -1,0 +1,14 @@
+{
+  "id": "guard-isINodePropertyOptionsList-mapper",
+  "fn": "isINodePropertyOptionsList",
+  "input": {
+    "value": {
+      "mappingMode": "defineBelow",
+      "value": {
+        "a": 1
+      },
+      "schema": []
+    }
+  },
+  "expected": false
+}

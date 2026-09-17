@@ -1,0 +1,17 @@
+{
+  "description": "reference golden 01: empty workflow is valid",
+  "expected": {
+    "errors": [],
+    "valid": true
+  },
+  "id": "D01-empty-workflow",
+  "input": {
+    "options": {},
+    "workflow": {
+      "connections": {},
+      "id": "wf-empty",
+      "name": "Empty Workflow",
+      "nodes": []
+    }
+  }
+}

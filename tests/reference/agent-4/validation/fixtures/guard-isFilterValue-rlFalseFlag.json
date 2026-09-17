@@ -1,0 +1,12 @@
+{
+  "id": "guard-isFilterValue-rlFalseFlag",
+  "fn": "isFilterValue",
+  "input": {
+    "value": {
+      "__rl": false,
+      "mode": "id",
+      "value": "1"
+    }
+  },
+  "expected": false
+}

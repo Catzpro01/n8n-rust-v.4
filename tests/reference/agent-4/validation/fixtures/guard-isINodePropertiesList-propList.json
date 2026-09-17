@@ -1,0 +1,15 @@
+{
+  "id": "guard-isINodePropertiesList-propList",
+  "fn": "isINodePropertiesList",
+  "input": {
+    "value": [
+      {
+        "displayName": "D",
+        "name": "n",
+        "type": "string",
+        "default": ""
+      }
+    ]
+  },
+  "expected": true
+}

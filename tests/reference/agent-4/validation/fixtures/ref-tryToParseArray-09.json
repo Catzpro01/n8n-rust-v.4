@@ -1,0 +1,13 @@
+{
+  "id": "ref-tryToParseArray-09",
+  "fn": "tryToParseArray",
+  "input": {
+    "args": [
+      "[1,2]"
+    ]
+  },
+  "expected": [
+    1,
+    2
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "id": "ref-vft-39",
+  "fn": "validateFieldType",
+  "input": {
+    "args": [
+      "f",
+      "a",
+      "options"
+    ]
+  },
+  "expected": {
+    "valid": false,
+    "errorMessage": "'f' expects one of the following values: [] but we got 'a'"
+  }
+}

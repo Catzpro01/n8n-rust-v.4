@@ -1,0 +1,10 @@
+{
+  "id": "guard-isINodePropertyOptionsList-undef",
+  "fn": "isINodePropertyOptionsList",
+  "input": {
+    "value": {
+      "$undefined": true
+    }
+  },
+  "expected": false
+}

@@ -1,0 +1,11 @@
+{
+  "id": "guard-isBinaryValue-mapperNoSchema",
+  "fn": "isBinaryValue",
+  "input": {
+    "value": {
+      "mappingMode": "defineBelow",
+      "value": {}
+    }
+  },
+  "expected": false
+}

@@ -64,7 +64,10 @@ test('Persistence golden: execution save/load observed live (manual, webhook, tr
 });
 
 test('Persistence golden: workflow save/load rules (versionId bump, duplicate id, not found, archive-before-delete)', () => {
-	assert.deepEqual(baseline.steps.workflowSave, { settingsOnly: { status: 200, versionChanged: false }, nodesChanged: { status: 200, versionChanged: true }, historyCount: 2 });
+	const { historyCount, ...save } = baseline.steps.workflowSave;
+	assert.deepEqual(save, { settingsOnly: { status: 200, versionChanged: false }, nodesChanged: { status: 200, versionChanged: true } });
+	// workflow_history is a monotonic per-instance counter (grows with every re-recording) — assert the invariant, not the value
+	assert.ok(Number.isInteger(historyCount) && historyCount >= 2, `historyCount ${historyCount} must be ≥ 2 (initial + nodes-changed version)`);
 	assert.deepEqual(baseline.steps.workflowLoad, { status: 200, nodes: 1 });
 	assert.equal(baseline.steps.workflowCreateDuplicateId.status, 400);
 	assert.equal(baseline.steps.workflowCreateDuplicateId.message, 'Workflow with id wf-linear exists already.');

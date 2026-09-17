@@ -1,0 +1,8 @@
+{
+  "id": "guard-isResourceLocatorValue-strBogus",
+  "fn": "isResourceLocatorValue",
+  "input": {
+    "value": "nope"
+  },
+  "expected": false
+}

@@ -6,7 +6,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { hasRuntime, n8nRequire, here } from '../helpers.ts';
 import * as rules from './workflow-rules.ts';
@@ -134,4 +134,110 @@ test('pure: input is not mutated', () => {
 	const before = JSON.stringify(wf);
 	validateWorkflow(wf, { allowCycles: false });
 	assert.equal(JSON.stringify(wf), before);
+});
+
+test('fixtures: parity fixtures match the TS oracle (regenerate with gen-fixtures.ts if this fails)', () => {
+	const dir = resolve(here, 'validation', 'fixtures');
+	const canon = (v: unknown): unknown => Array.isArray(v) ? v.map(canon) : v && typeof v === 'object' ? Object.fromEntries(Object.keys(v as object).sort().map((k) => [k, canon((v as any)[k])])) : v;
+	const files = readdirSync(dir).filter((f) => f.startsWith('D') && f.endsWith('.json'));
+	assert.ok(files.length >= 14);
+	for (const f of files) {
+		const fx = JSON.parse(readFileSync(resolve(dir, f), 'utf8'));
+		assert.deepEqual(canon(validateWorkflow(fx.input.workflow, fx.input.options)), fx.expected, f);
+	}
+});
+
+test('robustness: validateWorkflow never throws and always returns a well-formed report (spec §8)', () => {
+	const CODES = new Set(['INVALID_INPUT', 'DUPLICATE_NODE_NAME', 'DANGLING_CONNECTION', 'INVALID_CONNECTION_TYPE', 'CYCLE_DETECTED']);
+	const junk: unknown[] = [undefined, null, 0, 1, 'x', true, [], {}, { nodes: null }, { nodes: {} }, { nodes: [null] }, { nodes: [{}] }, { nodes: [{ name: 1 }] },
+		{ nodes: [], connections: [] }, { nodes: [], connections: 'x' }, { nodes: [], connections: null },
+		{ nodes: [{ name: 'A' }], connections: { A: null } }, { nodes: [{ name: 'A' }], connections: { A: [] } }, { nodes: [{ name: 'A' }], connections: { A: { main: null } } },
+		{ nodes: [{ name: 'A' }], connections: { A: { main: {} } } }, { nodes: [{ name: 'A' }], connections: { A: { main: [null, [null], [{}], [{ node: 1 }], [{ node: 'A', type: 7 }], [{ node: 'A', type: 'zzz' }]] } } },
+		{ nodes: [{ name: 'A' }], connections: { A: { main: [[{ node: 'A', type: 'main', index: 0 }]] } } }, // self-loop
+		{ nodes: [{ name: '' }, { name: '' }], connections: { '': { '': [[{ node: '' }]] } } }, // empty-string names/types
+		{ nodes: [{ name: '__proto__' }, { name: 'constructor' }], connections: { __proto__: { main: [[{ node: 'constructor', type: 'main', index: 0 }]] }, constructor: { main: [[{ node: '__proto__', type: 'main', index: 0 }]] } } },
+	];
+	// deterministic PRNG-generated deep garbage
+	let seed = 42; const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+	const gen = (d: number): unknown => { const r = rnd(); if (d > 3 || r < 0.2) return [null, 1, 'A', 'B', true][Math.floor(rnd() * 5)]; if (r < 0.5) return Array.from({ length: Math.floor(rnd() * 3) }, () => gen(d + 1)); const o: any = {}; for (const k of ['nodes', 'connections', 'name', 'node', 'type', 'main', 'A', 'B', 'index']) if (rnd() < 0.4) o[k] = gen(d + 1); return o; };
+	for (let i = 0; i < 300; i++) junk.push(gen(0));
+
+	for (const w of junk) for (const opts of [{}, { allowCycles: false }]) {
+		let r: any; assert.doesNotThrow(() => { r = validateWorkflow(w, opts); }, `threw on ${JSON.stringify(w)}`);
+		assert.equal(typeof r.valid, 'boolean'); assert.ok(Array.isArray(r.errors)); assert.equal(r.valid, r.errors.length === 0);
+		for (const e of r.errors) { assert.ok(CODES.has(e.code), e.code); assert.equal(typeof e.message, 'string'); if (e.path) assert.ok(e.path.every((p: unknown) => typeof p === 'string')); }
+		// determinism: same input twice → identical report
+		assert.deepEqual(validateWorkflow(w, opts), r);
+	}
+	// self-loop shape is frozen (spec §7)
+	const self = validateWorkflow({ nodes: [{ name: 'A' }], connections: { A: { main: [[{ node: 'A', type: 'main', index: 0 }]] } } }, { allowCycles: false });
+	assert.deepEqual(self.errors, [{ code: 'CYCLE_DETECTED', node: 'A', path: ['connections', 'A', 'main'], message: 'Cycle detected: A → A' }]);
+});
+
+test('golden E: INodeSchema (real n8n-workflow 2.9.4) — parity anchor for node shape', { skip: hasRuntime ? false : 'N8N_RUNTIME not found' }, () => {
+	const w = n8nRequire('n8n-workflow');
+	const base = { id: '1', name: 'A', type: 'n8n-nodes-base.noOp', typeVersion: 1, position: [0, 0], parameters: {} };
+	const ok = (v: unknown) => w.INodeSchema.safeParse(v);
+	const fail = (v: unknown, path: string, code: string) => { const r = ok(v); assert.equal(r.success, false); assert.deepEqual([r.error.issues[0].path.join('.'), r.error.issues[0].code], [path, code]); };
+	assert.equal(ok(base).success, true, 'E1 minimal node');
+	assert.equal(ok({ ...base, disabled: true, notes: 'n', notesInFlow: true, retryOnFail: true, maxTries: 3, waitBetweenTries: 1000, alwaysOutputData: true, executeOnce: true, onError: 'continueErrorOutput', continueOnFail: false, webhookId: 'w', extendsCredential: 'x', rewireOutputLogTo: 'ai_tool', credentials: { httpBasicAuth: { id: null, name: 'c' } }, forceCustomOperation: { resource: 'r', operation: 'o' } }).success, true, 'E2 all 15 optional fields');
+	const { parameters: _p, ...noParams } = base; fail(noParams, 'parameters', 'invalid_type');            // E3 parameters is REQUIRED (not defaulted)
+	fail({ ...base, position: [0, 0, 0] }, 'position', 'too_big');                                          // E4 position is a strict 2-tuple
+	fail({ ...base, typeVersion: '1' }, 'typeVersion', 'invalid_type');                                     // E5 no coercion
+	fail({ ...base, onError: 'explode' }, 'onError', 'invalid_enum_value');                                 // E6 OnErrorSchema enum
+	fail({ ...base, rewireOutputLogTo: 'foo' }, 'rewireOutputLogTo', 'invalid_enum_value');                 // E7 NodeConnectionTypeSchema enum
+	fail({ ...base, credentials: { x: { name: 'c' } } }, 'credentials.x.id', 'invalid_type');               // E8 credentials.id: string|null, required key
+	const extra = ok({ ...base, someFutureField: 42 });                                                     // E9 unknown keys: accepted but STRIPPED (zod default)
+	assert.equal(extra.success, true); assert.equal('someFutureField' in extra.data, false, 'zod strips unknown keys — a port must NOT use this schema as a save gate or it loses round-trip data');
+	for (const d of ['01-empty-workflow', '03-linear']) {                                                  // E10 reference fixtures conform
+		const wf = JSON.parse(readFileSync(resolve(here, '..', d, 'workflow.json'), 'utf8'));
+		assert.equal(w.INodesSchema.safeParse(wf.nodes).success, true, d);
+	}
+});
+
+test('reference fixtures: 229 recorded validateFieldType/tryToParse* results still match the live n8n-workflow 2.9.4 runtime', { skip: hasRuntime ? false : 'N8N_RUNTIME not found' }, () => {
+	const w = n8nRequire('n8n-workflow');
+	const dir = resolve(here, 'validation', 'fixtures');
+	const enc = (v: any): any => v === undefined ? undefined : v && typeof v === 'object' && typeof v.toISO === 'function' && 'zoneName' in v ? { $luxon: v.toISO() } : Array.isArray(v) ? v.map(enc) : v && typeof v === 'object' ? Object.fromEntries(Object.entries(v).filter(([, x]) => x !== undefined).map(([k, x]) => [k, enc(x)])) : v;
+	const files = readdirSync(dir).filter((f) => f.startsWith('ref-') && f !== 'ref-index.json');
+	assert.equal(files.length, 229);
+	for (const f of files) {
+		const fx = JSON.parse(readFileSync(resolve(dir, f), 'utf8'));
+		const args = fx.input.args.map((a: any) => a && typeof a === 'object' && a.$undefined ? undefined : a);
+		let actual: any; try { actual = enc(w[fx.fn](...args)); } catch (e: any) { actual = { throws: { name: e.constructor.name, message: e.message } }; }
+		assert.deepEqual(actual, fx.expected, f);
+	}
+});
+
+test('guard fixtures: 352 recorded type-guard results (incl. 21 TypeErrors) still match the live runtime', { skip: hasRuntime ? false : 'N8N_RUNTIME not found' }, () => {
+	const w = n8nRequire('n8n-workflow');
+	const dir = resolve(here, 'validation', 'fixtures');
+	const files = readdirSync(dir).filter((f) => f.startsWith('guard-'));
+	assert.equal(files.length, 352);
+	let throws = 0;
+	for (const f of files) {
+		const fx = JSON.parse(readFileSync(resolve(dir, f), 'utf8'));
+		const v = fx.input.value && typeof fx.input.value === 'object' && fx.input.value.$undefined ? undefined : fx.input.value;
+		let actual: any; try { actual = w[fx.fn](v); } catch (e: any) { actual = { throws: { name: e.constructor.name, message: e.message } }; throws++; }
+		assert.deepEqual(actual, fx.expected, f);
+	}
+	assert.equal(throws, 21, 'three item-guards × seven non-object inputs');
+});
+
+test('schema fixtures: 1125 recorded zod results + 5 frozen enums still match the live runtime; NODE_CONNECTION_TYPES == NodeConnectionTypeSchema', { skip: hasRuntime ? false : 'N8N_RUNTIME not found' }, () => {
+	const w = n8nRequire('n8n-workflow');
+	const dir = resolve(here, 'validation', 'fixtures');
+	const lines = readFileSync(resolve(dir, 'schema-cases.jsonl'), 'utf8').trim().split('\n');
+	assert.equal(lines.length, 1125);
+	for (const line of lines) {
+		const fx = JSON.parse(line);
+		const v = fx.input.value && typeof fx.input.value === 'object' && fx.input.value.$undefined ? undefined : fx.input.value;
+		const r = w[fx.schema].safeParse(v);
+		const actual = r.success ? { success: true, data: r.data === undefined ? { $undefined: true } : r.data } : { success: false, issues: r.error.issues.map((i: any) => ({ path: i.path, code: i.code })) };
+		assert.deepEqual(actual, fx.expected, fx.id);
+	}
+	const enums = JSON.parse(readFileSync(resolve(dir, 'schema-enums.json'), 'utf8')).enums;
+	assert.deepEqual([...enums.NodeConnectionTypeSchema].sort(), [...rules.NODE_CONNECTION_TYPES].sort(), 'workflow-rules whitelist must equal the runtime enum');
+	assert.deepEqual(enums.FieldTypeSchema, ['boolean', 'number', 'string', 'string-alphanumeric', 'dateTime', 'time', 'array', 'object', 'options', 'url', 'jwt', 'form-fields']);
+	assert.deepEqual(enums.OnErrorSchema, ['continueErrorOutput', 'continueRegularOutput', 'stopWorkflow']);
 });

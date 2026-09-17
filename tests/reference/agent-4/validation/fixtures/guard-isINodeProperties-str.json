@@ -1,0 +1,13 @@
+{
+  "id": "guard-isINodeProperties-str",
+  "fn": "isINodeProperties",
+  "input": {
+    "value": "main"
+  },
+  "expected": {
+    "throws": {
+      "name": "TypeError",
+      "message": "Cannot use 'in' operator to search for 'name' in main"
+    }
+  }
+}

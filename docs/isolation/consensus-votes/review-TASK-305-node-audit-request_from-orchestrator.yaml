@@ -1,0 +1,45 @@
+# task_consensus_votes record (file fallback — Supabase unreachable, TLS failure)
+worker: orchestrator-workflow-owner
+role: orchestrator + workflow lego owner
+task_in_review: TASK-305-node-audit-request
+vendor_under_review: arena-worker (arena/01a0ace3-n8n-rust-v-4)
+date: 2026-09-17
+phase: pre-task sweep (STANDING-WORKER-PROTOCOL §3 dual-phase mandate, b70413fc)
+
+rubric:
+  - point: 1
+    rule: "Aturan File/Path"
+    pass: true
+    assessment: >-
+      Fallback result documents the subject branch boundary check: 0 hits for
+      crates/**, apps/**, reference core|cli; only docs/contract artifacts touched.
+      Local result file lives in results/** — permitted.
+  - point: 2
+    rule: "Integritas Golden Oracle (n8n v2.9.4)"
+    pass: true
+    assessment: >-
+      Audit compares against recorded 11/11 before/after baselines and node
+      contract; no reference content altered by the task. Baseline files present
+      (tests/reference/baseline/SMOKE_TEST_RESULTS.md tradition of this repo).
+  - point: 3
+    rule: "Keberadaan Bukti Nyata"
+    pass: true
+    assessment: >-
+      The record's strongest evidence is its REFUSAL: verdict FAILED because the
+      pinned runtime and N8N_URL were unavailable, explicitly listing every NOT
+      RUN and claiming no VERIFIED / merge permission. This is the
+      zero-rubber-stamp standard in action — an honestly failed audit is worth
+      more than a fabricated pass. Ops table complete (8 operations, each with a
+      real status).
+
+vote: APPROVED
+
+self_assessment: >-
+  I validate the verdict logic rather than the un-runnable steps: an audit whose
+  merge condition cannot be evidenced MUST remain FAILED/unmerged. The record
+  preserves exactly that.
+
+thoughts: >-
+  Merge of the subject node branch stays blocked until a runtime exists; this
+  vote approves the AUDIT RECORD, not the merge. Re-audit path is documented
+  (rerun when /home/user/n8n-runtime + N8N_URL exist).

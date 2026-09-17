@@ -1,0 +1,8 @@
+{
+  "id": "guard-isINodePropertyOptionsList-strAi",
+  "fn": "isINodePropertyOptionsList",
+  "input": {
+    "value": "ai_tool"
+  },
+  "expected": false
+}

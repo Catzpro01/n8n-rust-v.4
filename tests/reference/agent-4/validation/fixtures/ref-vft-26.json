@@ -1,0 +1,15 @@
+{
+  "id": "ref-vft-26",
+  "fn": "validateFieldType",
+  "input": {
+    "args": [
+      "f",
+      "ab-c",
+      "string-alphanumeric"
+    ]
+  },
+  "expected": {
+    "valid": false,
+    "errorMessage": "Value is not a valid alphanumeric string, only letters, numbers and underscore allowed"
+  }
+}

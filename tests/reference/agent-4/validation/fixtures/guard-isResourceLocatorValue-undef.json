@@ -1,0 +1,10 @@
+{
+  "id": "guard-isResourceLocatorValue-undef",
+  "fn": "isResourceLocatorValue",
+  "input": {
+    "value": {
+      "$undefined": true
+    }
+  },
+  "expected": false
+}

@@ -1,0 +1,13 @@
+{
+  "id": "guard-isFilterValue-optionList",
+  "fn": "isFilterValue",
+  "input": {
+    "value": [
+      {
+        "name": "a",
+        "value": "a"
+      }
+    ]
+  },
+  "expected": false
+}

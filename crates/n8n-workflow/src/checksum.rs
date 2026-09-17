@@ -6,10 +6,12 @@
 //! recursively (`sortObjectKeys`; arrays keep their order), serialises with `JSON.stringify`
 //! and hashes the UTF-8 bytes as lowercase hex.
 //!
-//! In Rust the sorting comes for free: `serde_json::Value` objects are `BTreeMap`s, so
-//! serialising the payload sorts keys at every nesting level. Divergence to be aware of:
-//! JavaScript sorts keys by UTF-16 code units, Rust by UTF-8 bytes — identical for ASCII
-//! (all fixture data), different only for astral-plane keys.
+//! The sorting is implemented explicitly (a port of `sortObjectKeys`) instead of relying
+//! on `serde_json`'s map implementation — the workspace enables `preserve_order` for
+//! JS insertion-order semantics elsewhere, so "sort for free via BTreeMap" no longer
+//! holds (and silently broke under it). Divergence to be aware of: JavaScript sorts keys
+//! by UTF-16 code units, Rust by UTF-8 bytes — identical for ASCII (all fixture data),
+//! different only for astral-plane keys.
 
 use serde_json::{Map, Value};
 
@@ -37,7 +39,25 @@ pub fn checksum_payload(snapshot: &Value) -> Value {
             }
         }
     }
-    Value::Object(payload)
+    sort_object_keys(&Value::Object(payload))
+}
+
+/// Port of `sortObjectKeys` (`workflow-checksum.ts`): plain-object keys are sorted at
+/// every nesting level; arrays keep their element order; scalars pass through.
+fn sort_object_keys(value: &Value) -> Value {
+    match value {
+        Value::Array(items) => Value::Array(items.iter().map(sort_object_keys).collect()),
+        Value::Object(map) => {
+            let mut sorted: Vec<(&String, &Value)> = map.iter().collect();
+            sorted.sort_by(|(key_a, _), (key_b, _)| key_a.cmp(key_b));
+            let mut out = Map::new();
+            for (key, item) in sorted {
+                out.insert(key.clone(), sort_object_keys(item));
+            }
+            Value::Object(out)
+        }
+        other => other.clone(),
+    }
 }
 
 pub fn calculate_workflow_checksum(snapshot: &Value) -> String {

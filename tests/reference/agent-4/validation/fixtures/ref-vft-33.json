@@ -1,0 +1,15 @@
+{
+  "id": "ref-vft-33",
+  "fn": "validateFieldType",
+  "input": {
+    "args": [
+      "f",
+      "25:99",
+      "time"
+    ]
+  },
+  "expected": {
+    "valid": true,
+    "newValue": "25:99"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "@lego/validation",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Validation LEGO (module 04, Phase 2 structural isolation) — schema & type validation seam bound 1:1 to the pinned n8n 2.9.4 runtime, plus the opt-in workflow rule engine (ISSUE-003 Option A). Rust implementation: NOT STARTED.",
+  "license": "SEE LICENSE IN reference/n8n/LICENSE.md",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": { "@types/node": "^22.10.0", "typescript": "~5.9.2" }
+}

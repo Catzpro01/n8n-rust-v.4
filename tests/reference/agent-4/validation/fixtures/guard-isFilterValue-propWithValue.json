@@ -1,0 +1,12 @@
+{
+  "id": "guard-isFilterValue-propWithValue",
+  "fn": "isFilterValue",
+  "input": {
+    "value": {
+      "name": "n",
+      "type": "string",
+      "value": "v"
+    }
+  },
+  "expected": false
+}

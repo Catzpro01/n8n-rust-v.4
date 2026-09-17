@@ -1,0 +1,56 @@
+id: TASK-411-issue018-result-integrity
+agent: arena-worker
+lego: integration
+module: orchestration-reporting
+phase: 3
+status: COMPLETED
+allocation: local-fallback
+
+# Work-steal of the recorded ISSUE-018 NEEDS_CORRECTION item. The dynamic task pool
+# and Supabase transport are unavailable; this is not a remote allocation claim.
+# The correction changes only legacy result metadata and issue documentation. It
+# does not manufacture execution evidence and does not touch Rust or the golden tree.
+
+allowed_paths:
+  - results/TASK-402-connection-spec.md
+  - results/TASK-403-execution-engine-spec.md
+  - results/TASK-INIT-AGENT-3.md
+  - results/TASK-INIT-AGENT-4.md
+  - results/TASK-411-issue018-result-integrity.md
+  - tasks/TASK-411-issue018-result-integrity.yaml
+  - docs/isolation/CROSS-AGENT-ISSUES.md
+  - results/PRE-TASK-REVIEW-SWEEP-2026-09-17-rules.md
+  - results/POST-TASK-REVIEW-SWEEP-2026-09-17.md
+
+forbidden_paths:
+  - reference/**
+  - crates/**
+  - apps/**
+  - contracts/**
+  - tests/**
+  - tools/**
+  - docs/isolation/consensus-votes/**
+
+requires:
+  - tests/integration/result_integrity_audit.py
+  - docs/isolation/CROSS-AGENT-ISSUES.md
+  - docs/isolation/STANDING-WORKER-PROTOCOL.md
+  - pre-task peer-review sweep
+
+operations:
+  - name: inspect_legacy_results
+    evidence: "Four SUCCESS records have empty Pipeline Operations Summary tables."
+  - name: invalidate_unsupported_success_claims
+    evidence: "Each legacy result is retained, changed to VOID, and given a correction-audit row; no original operation is invented."
+  - name: update_issue_018_record
+    evidence: "CROSS-AGENT-ISSUES.md records the correction and separates result-integrity resolution from live verification."
+  - name: result_integrity_audit
+    cmd: python3 tests/integration/result_integrity_audit.py
+    expected: "PASS"
+
+acceptance_criteria:
+  - all four legacy result files are non-SUCCESS
+  - each corrected result retains an auditable correction operation
+  - result_integrity_audit.py exits 0
+  - no forbidden path changes
+  - no live, consensus, merge, or golden-oracle claim is manufactured

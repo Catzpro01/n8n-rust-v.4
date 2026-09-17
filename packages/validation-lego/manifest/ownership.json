@@ -1,0 +1,76 @@
+{
+  "lego": "validation",
+  "module": "04",
+  "phase": "phase-2-isolation",
+  "agent": "agent-4",
+  "reference": {
+    "pinnedVersion": "2.9.4",
+    "pinnedCommit": "b6dc2787c45677a29a9612cd27eb911302961a83",
+    "sourceRoot": "reference/n8n/packages/workflow",
+    "artifact": "n8n-workflow@2.9.1",
+    "rules": [
+      "reference/n8n/** is read-only. Owned sources are consumed 1:1 through the pinned runtime artifact; nothing is rewritten.",
+      "Ownership is declared here and checked by test/01-boundary.test.mjs (sha256 of the owned sources + import closure)."
+    ]
+  },
+  "owns": {
+    "description": "Schema & type validation (runtime shape checks, coercing field parsers, structural guards) plus the opt-in workflow rule engine agreed in ISSUE-003 Option A. Nothing else.",
+    "files": ["type-validation", "type-guards", "schemas"],
+    "sha256": {
+      "type-validation": "e7a1fb311d102b448ce7c268a76d801368fb48f52c8b0d76fc4a58ff5fddaf53",
+      "type-guards": "8d7853d4e952f45f2216e6d0ec017fb29ef759023bc91714a2b5341992c34d1c",
+      "schemas": "e6e438094a8b1ffd575350e27340304bc7f6069ce54841a240bb8bd09c895113"
+    },
+    "newCapability": {
+      "file": "src/rules/workflow-rules.ts",
+      "reason": "ISSUE-003 Option A — Validation is the only LEGO permitted to ENFORCE NodeUniqueness / DanglingConnections / CycleDetection; n8n 2.9.4 itself never rejects these at save time (golden A/B/C), so this is additive and opt-in (allowCycles defaults to true).",
+      "oracle": "tests/reference/agent-4/validation/fixtures/D01..D14.json"
+    },
+    "responsibilities": [
+      "validateFieldType + tryToParse* coercing parsers (type-validation)",
+      "structural type guards (type-guards; 11 public, 2 package-internal, 1 used only internally)",
+      "zod runtime schemas mirroring interfaces.ts (schemas; 45 public)",
+      "workflow rule enforcement: DUPLICATE_NODE_NAME, DANGLING_CONNECTION, INVALID_CONNECTION_TYPE, CYCLE_DETECTED, INVALID_INPUT (rules)"
+    ]
+  },
+  "doesNotOwn": {
+    "items": [
+      { "artifact": "node-parameters/parameter-type-validation", "owner": "LEGO 02 — Node Model", "reason": "parameter-type validation is bound to node descriptions" },
+      { "artifact": "workflow (Workflow class), graph/graph-utils", "owner": "LEGO 01 — Workflow", "reason": "graph traversal; Validation declares the acyclicity rule, Workflow does not enforce it (ISSUE-003)" },
+      { "artifact": "interfaces, constants, utils (jsonParse), errors (ApplicationError)", "owner": "shared kernel", "reason": "consumed through ports" },
+      { "artifact": "DisabledHandling", "owner": "execution pipeline", "reason": "moved to Non-responsibilities (ISSUE-006 fix); disabled nodes are still validated" },
+      { "artifact": "expression, execution-context, persistence, webhook, scheduler", "owner": "runtime / other packages", "reason": "must not leak into validation" },
+      { "artifact": "7 execution/event-bus zod schemas exported from the n8n-workflow barrel (see schema-surface.json notOwnedButOnBarrel)", "owner": "LEGO 05 — Execution (future packages/core-lego port)", "reason": "co-exported on the barrel but describe execution/event-bus payloads, not field/type validation; to be declared as a consumed port once LEGO 05 seam exists (agent-3 review note, TASK-404)" }
+    ]
+  },
+  "ports": [
+    { "id": "P-KERNEL-TYPES", "role": "shared-kernel", "provides": "FieldType, ValidationResult, INode, IBinaryData, NodeConnectionType, NodeParameterValueType (types only)", "referenceTargets": ["interfaces"], "adapter": "src/ports/vocabulary.ts" },
+    { "id": "P-KERNEL-ERRORS", "role": "shared-kernel", "provides": "ApplicationError (thrown by tryToParse*)", "referenceTargets": ["errors"], "adapter": "src/ports/errors.ts" },
+    { "id": "P-KERNEL-UTILS", "role": "shared-kernel", "provides": "jsonParse", "referenceTargets": ["utils"], "adapter": "src/ports/utils.ts" },
+    { "id": "P-EXTERNAL-LUXON", "role": "third-party", "provides": "DateTime (dateTime field type)", "referenceTargets": ["luxon@3.7.2"], "adapter": "src/ports/external.ts" },
+    { "id": "P-EXTERNAL-ZOD", "role": "third-party", "provides": "z (schemas)", "referenceTargets": ["zod@3.25.67"], "adapter": "src/ports/external.ts" },
+    { "id": "P-EXTERNAL-LODASH", "role": "third-party", "provides": "isObject", "referenceTargets": ["lodash/isObject"], "adapter": "src/ports/external.ts" }
+  ],
+  "inbound": {
+    "description": "Who consumes this LEGO inside reference/n8n/packages/workflow (measured: grep of relative imports).",
+    "edges": [
+      { "from": "index (barrel)", "imports": "type-validation (export *), schemas (export *), type-guards (11 named)" },
+      { "from": "node-helpers", "imports": "type-guards (isValidResourceLocatorParameterValue, …), type-validation" },
+      { "from": "workflow-data-proxy", "imports": "type-guards" }
+    ]
+  },
+  "publicSurface": {
+    "description": "The only symbols downstream LEGOs may consume from this LEGO (validation-surface.ts).",
+    "typeValidation": ["validateFieldType", "tryToParseNumber", "tryToParseString", "tryToParseAlphanumericString", "tryToParseBoolean", "tryToParseDateTime", "tryToParseTime", "tryToParseArray", "tryToParseObject", "tryToParseUrl", "tryToParseJwt", "getValueDescription"],
+    "typeGuards": ["isINodeProperties", "isINodePropertyOptions", "isINodePropertyCollection", "isINodePropertiesList", "isINodePropertyOptionsList", "isINodePropertyCollectionList", "isResourceMapperValue", "isResourceLocatorValue", "isFilterValue", "isNodeConnectionType", "isBinaryValue"],
+    "schemas": "all 45 *Schema exports of schemas.ts (enumerated at test time from the pinned source; see manifest/schema-surface.json)",
+    "rules": ["validateWorkflow", "checkNodeUniqueness", "checkDanglingConnections", "detectCycles", "NODE_CONNECTION_TYPES"]
+  },
+  "oracles": {
+    "typeValidation": "tests/reference/agent-4/validation/fixtures/ref-*.json (229, recorded from runtime)",
+    "typeGuards": "tests/reference/agent-4/validation/fixtures/guard-*.json (352)",
+    "schemas": "tests/reference/agent-4/validation/fixtures/schema-cases.jsonl (1125) + schema-enums.json",
+    "rules": "tests/reference/agent-4/validation/fixtures/D01..D14.json"
+  },
+  "rustImplementation": "not-started (spec: docs/isolation/validation-rust-port-spec.md; crate crates/n8n-validation is NON-CONFORMANT, owned by central Implementer per Orchestrator Option B)"
+}

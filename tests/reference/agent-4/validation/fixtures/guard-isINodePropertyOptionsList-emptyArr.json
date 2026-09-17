@@ -1,0 +1,8 @@
+{
+  "id": "guard-isINodePropertyOptionsList-emptyArr",
+  "fn": "isINodePropertyOptionsList",
+  "input": {
+    "value": []
+  },
+  "expected": true
+}

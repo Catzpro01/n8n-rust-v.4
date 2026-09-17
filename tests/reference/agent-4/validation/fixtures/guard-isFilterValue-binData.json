@@ -1,0 +1,11 @@
+{
+  "id": "guard-isFilterValue-binData",
+  "fn": "isFilterValue",
+  "input": {
+    "value": {
+      "mimeType": "a",
+      "data": "x"
+    }
+  },
+  "expected": false
+}

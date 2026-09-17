@@ -1,0 +1,12 @@
+{
+  "id": "guard-isNodeConnectionType-rl",
+  "fn": "isNodeConnectionType",
+  "input": {
+    "value": {
+      "__rl": true,
+      "mode": "id",
+      "value": "1"
+    }
+  },
+  "expected": false
+}

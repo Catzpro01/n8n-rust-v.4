@@ -3,7 +3,10 @@
 **Maintainer:** Agent 5 (Integration & Verification Guardian) & Autonomous Master Controller
 **Reference:** n8n `2.9.4` (`reference/n8n`, upstream commit `b6dc2787c45677a29a9612cd27eb911302961a83`)
 **Audit date:** 2026-09-17
-**Rust status:** NOT ALLOWED in Phase 2 — verified clean (`crates/`, `apps/n8n-rust/` contain only `.gitkeep`)
+**Rust status:** Phase 3 **opened** 2026-09-17 via decision record
+[`docs/isolation/PHASE-3-OPENING.md`](PHASE-3-OPENING.md) — Rust allowed under its rules
+(reference-driven tests required, reference tree stays frozen at 15 050 files). Deleting the
+record reinstates the Phase-2 "no Rust" guard.
 
 Status vocabulary: `PLANNED | ANALYZED | ISOLATED | TESTED | VERIFIED | BLOCKED | FAILED`
 
@@ -63,4 +66,7 @@ map and the automated audit can never silently diverge.
 | Isolation docs complete | PASS (12/12) | all LEGOs have complete isolation blueprints |
 | 11/11 live smoke re-run | PASS (11/11) | verified live on VPS host `157.10.160.95` |
 
-**Overall Phase 2 gate: `VERIFIED`** — Ready for Phase 3 (Reference Test & Rust Contract Implementation).
+**Overall Phase 2 gate: `VERIFIED`** — Phase 3 formally opened 2026-09-17
+(`docs/isolation/PHASE-3-OPENING.md`): offline gate PASS (contract conformance 21/21, boundary
+audit PASS, `cargo test --workspace` 45/45 via `tools/rust-offline-rig`), live 11/11 NOT RUN in
+this sandbox — live verification on the VPS remains required before any `LIVE VERIFIED` claim.

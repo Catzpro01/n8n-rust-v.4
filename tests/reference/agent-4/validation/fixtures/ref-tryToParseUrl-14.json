@@ -1,0 +1,10 @@
+{
+  "id": "ref-tryToParseUrl-14",
+  "fn": "tryToParseUrl",
+  "input": {
+    "args": [
+      "2020-01-01"
+    ]
+  },
+  "expected": "https://2020-01-01"
+}

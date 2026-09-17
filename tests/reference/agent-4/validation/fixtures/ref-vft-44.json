@@ -1,0 +1,15 @@
+{
+  "id": "ref-vft-44",
+  "fn": "validateFieldType",
+  "input": {
+    "args": [
+      "f",
+      "nope",
+      "jwt"
+    ]
+  },
+  "expected": {
+    "valid": false,
+    "errorMessage": "Value is not a valid JWT token"
+  }
+}

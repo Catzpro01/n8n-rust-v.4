@@ -1,0 +1,15 @@
+{
+  "id": "ref-vft-18",
+  "fn": "validateFieldType",
+  "input": {
+    "args": [
+      "f",
+      "tru",
+      "boolean"
+    ]
+  },
+  "expected": {
+    "valid": false,
+    "errorMessage": "'f' expects a boolean but we got 'tru'"
+  }
+}

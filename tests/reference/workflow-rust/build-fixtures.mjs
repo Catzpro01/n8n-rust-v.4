@@ -359,6 +359,144 @@ const traversalCases = [
 }));
 
 /* ------------------------------------------------------------------ */
+/* 6. getHighestNode / getStartNode — disabled semantics (ISSUE-017)  */
+/* ------------------------------------------------------------------ */
+/**
+ * Everything in this group is measured on the pinned runtime, not reasoned out.
+ * The `nodeTypes` registry is a minimal stub: `getByNameAndVersion` returns
+ * `{ description: { name: <type> } }` (no `trigger`/`poll`), because the real registry
+ * lives in n8n-nodes-base and is not derivable inside the Workflow LEGO. The registry
+ * branch of `__getStartNode` (`workflow.ts:830-842`) is therefore exercised as
+ * "no trigger/poll methods found" — exactly the branch the Rust port implements; the
+ * remaining branch is a recorded divergence (`docs/isolation/PHASE-3-OPENING.md`).
+ */
+const nodeTypesStub = {
+	getByNameAndVersion: (type) => ({
+		description: { name: type, displayName: type, properties: [] },
+	}),
+};
+const startWf = (nodes, connections) =>
+	new Workflow({ id: 'wf-start', name: 'Start Probes', nodes, connections, active: false, nodeTypes: nodeTypesStub });
+
+const MT = 'n8n-nodes-base.manualTrigger';
+const NOOP = 'n8n-nodes-base.noOp';
+
+const startNodeCases = [
+	{
+		id: 'disabled-parent-skipped',
+		note: `disabled parent contributes nothing: Code has no highest nodes; startNode('Code') falls back to the only candidate (lenient !disabled, workflow.ts:824); startNode() with no destination yields undefined because :853 skips the disabled starting-type node`,
+		workflow: {
+			nodes: [
+				node('Manual Trigger', MT, { disabled: true }),
+				node('Code', NOOP),
+			],
+			connections: { 'Manual Trigger': { main: [[c('Code')]] } },
+		},
+		probes: [
+			{ op: 'getHighestNode', node: 'Code' },
+			{ op: 'getStartNode', destination: 'Code' },
+			{ op: 'getStartNode' },
+		],
+	},
+	{
+		id: 'enabled-parent-is-highest',
+		note: 'control case for the one above: enabled manual trigger IS the highest node and the start node',
+		workflow: {
+			nodes: [node('Manual Trigger', MT), node('Code', NOOP)],
+			connections: { 'Manual Trigger': { main: [[c('Code')]] } },
+		},
+		probes: [
+			{ op: 'getHighestNode', node: 'Code' },
+			{ op: 'getStartNode', destination: 'Code' },
+			{ op: 'getStartNode' },
+		],
+	},
+	{
+		id: 'disabled-grandparent-climb-past',
+		note: 'chain MT(disabled) -> A -> Code: the disabled grandparent is dropped (:553 lenient check fails), the enabled intermediate A becomes the highest node and the start node',
+		workflow: {
+			nodes: [node('Manual Trigger', MT, { disabled: true }), node('A', NOOP), node('Code', NOOP)],
+			connections: {
+				'Manual Trigger': { main: [[c('A')]] },
+				A: { main: [[c('Code')]] },
+			},
+		},
+		probes: [
+			{ op: 'getHighestNode', node: 'Code' },
+			{ op: 'getStartNode', destination: 'Code' },
+		],
+	},
+	{
+		id: 'omitted-disabled-asymmetry',
+		note: `D-04 quirk: a node that OMITS 'disabled' is not its own highest node (:498 tests === false strictly), yet IS admitted as another node's highest parent (:553 tests !== true); an explicit disabled:false node IS its own highest node`,
+		workflow: {
+			nodes: [node('Solo', NOOP), node('Leaf', NOOP), node('Explicit', NOOP, { disabled: false })],
+			connections: { Solo: { main: [[c('Leaf')]] } },
+		},
+		probes: [
+			{ op: 'getHighestNode', node: 'Solo' },
+			{ op: 'getStartNode', destination: 'Solo' },
+			{ op: 'getHighestNode', node: 'Leaf' },
+			{ op: 'getHighestNode', node: 'Explicit' },
+		],
+	},
+	{
+		id: 'start-disabled-fallback',
+		note: 'getStartNode(disabledDestination): the unconditional final fallback `return this.nodes[nodeNames[0]]` (workflow.ts:881) returns the DISABLED node itself',
+		workflow: {
+			nodes: [node('Manual Trigger', MT, { disabled: true }), node('Code', NOOP)],
+			connections: { 'Manual Trigger': { main: [[c('Code')]] } },
+		},
+		probes: [{ op: 'getStartNode', destination: 'Manual Trigger' }],
+	},
+	{
+		id: 'highest-connection-index-filter',
+		note: 'getHighestNode(node, connectionIndex) considers only the given INPUT slot (workflow.ts:529-531): index 0 sees A, index 1 sees B, omitted index sees both',
+		workflow: {
+			nodes: [node('A', NOOP), node('B', NOOP), node('Merge', NOOP)],
+			connections: {
+				A: { main: [[c('Merge')]] },
+				B: { main: [[c('Merge', 'main', 1)]] },
+			},
+		},
+		probes: [
+			{ op: 'getHighestNode', node: 'Merge' },
+			{ op: 'getHighestNode', node: 'Merge', index: 0 },
+			{ op: 'getHighestNode', node: 'Merge', index: 1 },
+			{ op: 'getStartNode', destination: 'Merge' },
+		],
+	},
+	{
+		id: 'highest-through-cycle-terminates',
+		note: 'A <-> B cycle: checkedNodes terminates the climb; the other cycle member is reported as the highest node',
+		workflow: {
+			nodes: [node('A', NOOP), node('B', NOOP)],
+			connections: {
+				A: { main: [[c('B')]] },
+				B: { main: [[c('A')]] },
+			},
+		},
+		probes: [
+			{ op: 'getHighestNode', node: 'A' },
+			{ op: 'getHighestNode', node: 'B' },
+		],
+	},
+];
+
+for (const startCase of startNodeCases) {
+	const wf = startWf(startCase.workflow.nodes, startCase.workflow.connections);
+	for (const probe of startCase.probes) {
+		if (probe.op === 'getHighestNode') {
+			probe.expected = wf.getHighestNode(probe.node, probe.index);
+		} else if (probe.op === 'getStartNode') {
+			probe.expected = wf.getStartNode(probe.destination)?.name ?? null;
+		} else {
+			throw new Error(`unknown probe op: ${probe.op}`);
+		}
+	}
+}
+
+/* ------------------------------------------------------------------ */
 /* output                                                             */
 /* ------------------------------------------------------------------ */
 const payload = {
@@ -379,6 +517,10 @@ const payload = {
 	toJSON: shapeCases,
 	rename: renameCases,
 	traversal: traversalCases,
+	startNode: {
+		note: 'getHighestNode/getStartNode incl. disabled semantics (ISSUE-017). Registry branch of __getStartNode exercised with a no-trigger/no-poll stub — the registry branch itself is a recorded divergence (PHASE-3-OPENING).',
+		cases: startNodeCases,
+	},
 };
 
 const json = JSON.stringify(payload, null, 2) + '\n';
@@ -399,11 +541,11 @@ if (process.argv.includes('--check')) {
 		console.error(`  recomputed: ${b[at]}`);
 		process.exit(1);
 	}
-	console.log(`fixtures match the pinned reference: ${payload.checksum.cases.length} checksum, ${payload.compareConnections.length} diff, ${payload.toJSON.length} shape, ${payload.rename.length} rename, ${payload.traversal.length} traversal cases`);
+	console.log(`fixtures match the pinned reference: ${payload.checksum.cases.length} checksum, ${payload.compareConnections.length} diff, ${payload.toJSON.length} shape, ${payload.rename.length} rename, ${payload.traversal.length} traversal, ${payload.startNode.cases.length} startNode cases`);
 	process.exit(0);
 }
 
 mkdirSync(HERE, { recursive: true });
 writeFileSync(OUT, json);
 console.log(`wrote ${OUT}`);
-console.log(`  checksum ${payload.checksum.cases.length} · diff ${payload.compareConnections.length} · shape ${payload.toJSON.length} · rename ${payload.rename.length} · traversal ${payload.traversal.length}`);
+console.log(`  checksum ${payload.checksum.cases.length} · diff ${payload.compareConnections.length} · shape ${payload.toJSON.length} · rename ${payload.rename.length} · traversal ${payload.traversal.length} · startNode ${payload.startNode.cases.length}`);

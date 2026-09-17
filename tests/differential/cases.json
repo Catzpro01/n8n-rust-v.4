@@ -1,0 +1,1282 @@
+{
+ "_purpose": "Shared case list for the port-vs-engine differential (Stage 2k). Each case is executed TWICE: once by the real n8n 2.9.4 engine and once by the Rust port. Neither side's answer is written here \u2014 the harness compares them to each other, so this file can never encode a wrong expectation.",
+ "_rule": "ISSUE-026: a divergence claim requires BOTH sides executed.",
+ "cases": [
+  {
+   "id": "lone-omitted",
+   "op": "getStartNode",
+   "dest": "A",
+   "nodes": [
+    [
+     "A",
+     null
+    ]
+   ],
+   "connections": {}
+  },
+  {
+   "id": "lone-false",
+   "op": "getStartNode",
+   "dest": "A",
+   "nodes": [
+    [
+     "A",
+     false
+    ]
+   ],
+   "connections": {}
+  },
+  {
+   "id": "lone-true",
+   "op": "getStartNode",
+   "dest": "A",
+   "nodes": [
+    [
+     "A",
+     true
+    ]
+   ],
+   "connections": {}
+  },
+  {
+   "id": "parent-omitted",
+   "op": "getStartNode",
+   "dest": "B",
+   "nodes": [
+    [
+     "A",
+     null
+    ],
+    [
+     "B",
+     null
+    ]
+   ],
+   "connections": {
+    "A": {
+     "main": [
+      [
+       {
+        "node": "B",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "id": "parent-false",
+   "op": "getStartNode",
+   "dest": "B",
+   "nodes": [
+    [
+     "A",
+     false
+    ],
+    [
+     "B",
+     null
+    ]
+   ],
+   "connections": {
+    "A": {
+     "main": [
+      [
+       {
+        "node": "B",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "id": "parent-true",
+   "op": "getStartNode",
+   "dest": "B",
+   "nodes": [
+    [
+     "A",
+     true
+    ],
+    [
+     "B",
+     null
+    ]
+   ],
+   "connections": {
+    "A": {
+     "main": [
+      [
+       {
+        "node": "B",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "id": "mid-omitted",
+   "op": "getStartNode",
+   "dest": "C",
+   "nodes": [
+    [
+     "T",
+     null
+    ],
+    [
+     "M",
+     null
+    ],
+    [
+     "C",
+     null
+    ]
+   ],
+   "connections": {
+    "T": {
+     "main": [
+      [
+       {
+        "node": "M",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    },
+    "M": {
+     "main": [
+      [
+       {
+        "node": "C",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "id": "mid-true",
+   "op": "getStartNode",
+   "dest": "C",
+   "nodes": [
+    [
+     "T",
+     null
+    ],
+    [
+     "M",
+     true
+    ],
+    [
+     "C",
+     null
+    ]
+   ],
+   "connections": {
+    "T": {
+     "main": [
+      [
+       {
+        "node": "M",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    },
+    "M": {
+     "main": [
+      [
+       {
+        "node": "C",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "id": "diamond",
+   "op": "getStartNode",
+   "dest": "D",
+   "nodes": [
+    [
+     "T",
+     null
+    ],
+    [
+     "L",
+     null
+    ],
+    [
+     "R",
+     true
+    ],
+    [
+     "D",
+     null
+    ]
+   ],
+   "connections": {
+    "T": {
+     "main": [
+      [
+       {
+        "node": "L",
+        "type": "main",
+        "index": 0
+       },
+       {
+        "node": "R",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    },
+    "L": {
+     "main": [
+      [
+       {
+        "node": "D",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    },
+    "R": {
+     "main": [
+      [
+       {
+        "node": "D",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "id": "children-linear",
+   "op": "getChildNodes",
+   "dest": "T",
+   "nodes": [
+    [
+     "T",
+     null
+    ],
+    [
+     "M",
+     true
+    ],
+    [
+     "C",
+     null
+    ]
+   ],
+   "connections": {
+    "T": {
+     "main": [
+      [
+       {
+        "node": "M",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    },
+    "M": {
+     "main": [
+      [
+       {
+        "node": "C",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "id": "parents-linear",
+   "op": "getParentNodes",
+   "dest": "C",
+   "nodes": [
+    [
+     "T",
+     null
+    ],
+    [
+     "M",
+     true
+    ],
+    [
+     "C",
+     null
+    ]
+   ],
+   "connections": {
+    "T": {
+     "main": [
+      [
+       {
+        "node": "M",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    },
+    "M": {
+     "main": [
+      [
+       {
+        "node": "C",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "id": "cycle-children",
+   "op": "getChildNodes",
+   "dest": "A",
+   "nodes": [
+    [
+     "A",
+     null
+    ],
+    [
+     "B",
+     null
+    ]
+   ],
+   "connections": {
+    "A": {
+     "main": [
+      [
+       {
+        "node": "B",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    },
+    "B": {
+     "main": [
+      [
+       {
+        "node": "A",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "id": "cycle-start",
+   "op": "getStartNode",
+   "dest": "B",
+   "nodes": [
+    [
+     "A",
+     null
+    ],
+    [
+     "B",
+     null
+    ]
+   ],
+   "connections": {
+    "A": {
+     "main": [
+      [
+       {
+        "node": "B",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    },
+    "B": {
+     "main": [
+      [
+       {
+        "node": "A",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "id": "orphan-start",
+   "op": "getStartNode",
+   "dest": "Z",
+   "nodes": [
+    [
+     "A",
+     null
+    ],
+    [
+     "Z",
+     null
+    ]
+   ],
+   "connections": {
+    "A": {
+     "main": [
+      [
+       {
+        "node": "A",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "id": "children-depth1",
+   "op": "getChildNodes",
+   "dest": "T",
+   "depth": 1,
+   "nodes": [
+    [
+     "T",
+     null
+    ],
+    [
+     "M",
+     null
+    ],
+    [
+     "C",
+     null
+    ]
+   ],
+   "connections": {
+    "T": {
+     "main": [
+      [
+       {
+        "node": "M",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    },
+    "M": {
+     "main": [
+      [
+       {
+        "node": "C",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "id": "children-depth2",
+   "op": "getChildNodes",
+   "dest": "T",
+   "depth": 2,
+   "nodes": [
+    [
+     "T",
+     null
+    ],
+    [
+     "M",
+     null
+    ],
+    [
+     "C",
+     null
+    ]
+   ],
+   "connections": {
+    "T": {
+     "main": [
+      [
+       {
+        "node": "M",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    },
+    "M": {
+     "main": [
+      [
+       {
+        "node": "C",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "id": "children-depth0",
+   "op": "getChildNodes",
+   "dest": "T",
+   "depth": 0,
+   "nodes": [
+    [
+     "T",
+     null
+    ],
+    [
+     "M",
+     null
+    ]
+   ],
+   "connections": {
+    "T": {
+     "main": [
+      [
+       {
+        "node": "M",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "id": "parents-depth1",
+   "op": "getParentNodes",
+   "dest": "C",
+   "depth": 1,
+   "nodes": [
+    [
+     "T",
+     null
+    ],
+    [
+     "M",
+     null
+    ],
+    [
+     "C",
+     null
+    ]
+   ],
+   "connections": {
+    "T": {
+     "main": [
+      [
+       {
+        "node": "M",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    },
+    "M": {
+     "main": [
+      [
+       {
+        "node": "C",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "id": "filter-all",
+   "op": "getChildNodes",
+   "dest": "T",
+   "filter": "ALL",
+   "nodes": [
+    [
+     "T",
+     null
+    ],
+    [
+     "M",
+     null
+    ],
+    [
+     "AI",
+     null
+    ]
+   ],
+   "connections": {
+    "T": {
+     "main": [
+      [
+       {
+        "node": "M",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ],
+     "ai_tool": [
+      [
+       {
+        "node": "AI",
+        "type": "ai_tool",
+        "index": 0
+       }
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "id": "filter-all-non-main",
+   "op": "getChildNodes",
+   "dest": "T",
+   "filter": "ALL_NON_MAIN",
+   "nodes": [
+    [
+     "T",
+     null
+    ],
+    [
+     "M",
+     null
+    ],
+    [
+     "AI",
+     null
+    ]
+   ],
+   "connections": {
+    "T": {
+     "main": [
+      [
+       {
+        "node": "M",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ],
+     "ai_tool": [
+      [
+       {
+        "node": "AI",
+        "type": "ai_tool",
+        "index": 0
+       }
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "id": "filter-named-nonmain",
+   "op": "getChildNodes",
+   "dest": "T",
+   "filter": "ai_tool",
+   "nodes": [
+    [
+     "T",
+     null
+    ],
+    [
+     "M",
+     null
+    ],
+    [
+     "AI",
+     null
+    ]
+   ],
+   "connections": {
+    "T": {
+     "main": [
+      [
+       {
+        "node": "M",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ],
+     "ai_tool": [
+      [
+       {
+        "node": "AI",
+        "type": "ai_tool",
+        "index": 0
+       }
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "id": "filter-main-only",
+   "op": "getChildNodes",
+   "dest": "T",
+   "nodes": [
+    [
+     "T",
+     null
+    ],
+    [
+     "M",
+     null
+    ],
+    [
+     "AI",
+     null
+    ]
+   ],
+   "connections": {
+    "T": {
+     "main": [
+      [
+       {
+        "node": "M",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ],
+     "ai_tool": [
+      [
+       {
+        "node": "AI",
+        "type": "ai_tool",
+        "index": 0
+       }
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "id": "self-loop-children",
+   "op": "getChildNodes",
+   "dest": "A",
+   "nodes": [
+    [
+     "A",
+     null
+    ]
+   ],
+   "connections": {
+    "A": {
+     "main": [
+      [
+       {
+        "node": "A",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "id": "self-loop-start",
+   "op": "getStartNode",
+   "dest": "A",
+   "nodes": [
+    [
+     "A",
+     null
+    ]
+   ],
+   "connections": {
+    "A": {
+     "main": [
+      [
+       {
+        "node": "A",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "id": "three-cycle-start",
+   "op": "getStartNode",
+   "dest": "C",
+   "nodes": [
+    [
+     "A",
+     null
+    ],
+    [
+     "B",
+     null
+    ],
+    [
+     "C",
+     null
+    ]
+   ],
+   "connections": {
+    "A": {
+     "main": [
+      [
+       {
+        "node": "B",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    },
+    "B": {
+     "main": [
+      [
+       {
+        "node": "C",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    },
+    "C": {
+     "main": [
+      [
+       {
+        "node": "A",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "id": "cycle-parents",
+   "op": "getParentNodes",
+   "dest": "B",
+   "nodes": [
+    [
+     "A",
+     null
+    ],
+    [
+     "B",
+     null
+    ]
+   ],
+   "connections": {
+    "A": {
+     "main": [
+      [
+       {
+        "node": "B",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    },
+    "B": {
+     "main": [
+      [
+       {
+        "node": "A",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "id": "tail-into-cycle-start",
+   "op": "getStartNode",
+   "dest": "X",
+   "nodes": [
+    [
+     "A",
+     null
+    ],
+    [
+     "B",
+     null
+    ],
+    [
+     "X",
+     null
+    ]
+   ],
+   "connections": {
+    "A": {
+     "main": [
+      [
+       {
+        "node": "B",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    },
+    "B": {
+     "main": [
+      [
+       {
+        "node": "A",
+        "type": "main",
+        "index": 0
+       },
+       {
+        "node": "X",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "id": "multi-output-children",
+   "op": "getChildNodes",
+   "dest": "S",
+   "nodes": [
+    [
+     "S",
+     null
+    ],
+    [
+     "O0",
+     null
+    ],
+    [
+     "O1",
+     null
+    ]
+   ],
+   "connections": {
+    "S": {
+     "main": [
+      [
+       {
+        "node": "O0",
+        "type": "main",
+        "index": 0
+       }
+      ],
+      [
+       {
+        "node": "O1",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "id": "empty-slot-children",
+   "op": "getChildNodes",
+   "dest": "S",
+   "nodes": [
+    [
+     "S",
+     null
+    ],
+    [
+     "O1",
+     null
+    ]
+   ],
+   "connections": {
+    "S": {
+     "main": [
+      null,
+      [
+       {
+        "node": "O1",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "id": "fanin-parents",
+   "op": "getParentNodes",
+   "dest": "D",
+   "nodes": [
+    [
+     "P1",
+     null
+    ],
+    [
+     "P2",
+     null
+    ],
+    [
+     "D",
+     null
+    ]
+   ],
+   "connections": {
+    "P1": {
+     "main": [
+      [
+       {
+        "node": "D",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    },
+    "P2": {
+     "main": [
+      [
+       {
+        "node": "D",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "id": "dangling-connection-children",
+   "op": "getChildNodes",
+   "dest": "A",
+   "nodes": [
+    [
+     "A",
+     null
+    ]
+   ],
+   "connections": {
+    "A": {
+     "main": [
+      [
+       {
+        "node": "GHOST",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "id": "unknown-node-children",
+   "op": "getChildNodes",
+   "dest": "NOPE",
+   "nodes": [
+    [
+     "A",
+     null
+    ]
+   ],
+   "connections": {}
+  },
+  {
+   "id": "unknown-node-start",
+   "op": "getStartNode",
+   "dest": "NOPE",
+   "nodes": [
+    [
+     "A",
+     null
+    ]
+   ],
+   "connections": {}
+  },
+  {
+   "id": "nodest-single",
+   "op": "getStartNode",
+   "dest": null,
+   "nodes": [
+    [
+     "A",
+     null
+    ]
+   ],
+   "connections": {}
+  },
+  {
+   "id": "nodest-chain",
+   "op": "getStartNode",
+   "dest": null,
+   "nodes": [
+    [
+     "T",
+     null
+    ],
+    [
+     "M",
+     null
+    ]
+   ],
+   "connections": {
+    "T": {
+     "main": [
+      [
+       {
+        "node": "M",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "id": "nodest-first-disabled",
+   "op": "getStartNode",
+   "dest": null,
+   "nodes": [
+    [
+     "T",
+     true
+    ],
+    [
+     "M",
+     null
+    ]
+   ],
+   "connections": {
+    "T": {
+     "main": [
+      [
+       {
+        "node": "M",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "id": "all-parents-disabled-start",
+   "op": "getStartNode",
+   "dest": "C",
+   "nodes": [
+    [
+     "T",
+     true
+    ],
+    [
+     "M",
+     true
+    ],
+    [
+     "C",
+     null
+    ]
+   ],
+   "connections": {
+    "T": {
+     "main": [
+      [
+       {
+        "node": "M",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    },
+    "M": {
+     "main": [
+      [
+       {
+        "node": "C",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "id": "disabled-dest-with-parent",
+   "op": "getStartNode",
+   "dest": "B",
+   "nodes": [
+    [
+     "A",
+     null
+    ],
+    [
+     "B",
+     true
+    ]
+   ],
+   "connections": {
+    "A": {
+     "main": [
+      [
+       {
+        "node": "B",
+        "type": "main",
+        "index": 0
+       }
+      ]
+     ]
+    }
+   }
+  }
+ ]
+}

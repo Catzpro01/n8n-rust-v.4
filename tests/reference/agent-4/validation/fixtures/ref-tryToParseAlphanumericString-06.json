@@ -1,0 +1,10 @@
+{
+  "id": "ref-tryToParseAlphanumericString-06",
+  "fn": "tryToParseAlphanumericString",
+  "input": {
+    "args": [
+      true
+    ]
+  },
+  "expected": "true"
+}

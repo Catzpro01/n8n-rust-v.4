@@ -1,0 +1,11 @@
+{
+  "id": "guard-isINodePropertyCollectionList-option",
+  "fn": "isINodePropertyCollectionList",
+  "input": {
+    "value": {
+      "name": "n",
+      "value": "v"
+    }
+  },
+  "expected": false
+}

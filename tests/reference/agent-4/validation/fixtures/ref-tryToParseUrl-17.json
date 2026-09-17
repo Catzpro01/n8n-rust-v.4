@@ -1,0 +1,10 @@
+{
+  "id": "ref-tryToParseUrl-17",
+  "fn": "tryToParseUrl",
+  "input": {
+    "args": [
+      "eyJhbGciOiJIUzI1NiJ9.eyJhIjoxfQ.sig"
+    ]
+  },
+  "expected": "https://eyJhbGciOiJIUzI1NiJ9.eyJhIjoxfQ.sig"
+}

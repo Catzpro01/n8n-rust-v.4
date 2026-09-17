@@ -1,0 +1,8 @@
+{
+  "id": "guard-isFilterValue-emptyArr",
+  "fn": "isFilterValue",
+  "input": {
+    "value": []
+  },
+  "expected": false
+}

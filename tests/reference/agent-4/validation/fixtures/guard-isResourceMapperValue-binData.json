@@ -1,0 +1,11 @@
+{
+  "id": "guard-isResourceMapperValue-binData",
+  "fn": "isResourceMapperValue",
+  "input": {
+    "value": {
+      "mimeType": "a",
+      "data": "x"
+    }
+  },
+  "expected": false
+}

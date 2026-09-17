@@ -1,0 +1,49 @@
+{
+  "description": "two nodes named Code → DUPLICATE_NODE_NAME",
+  "expected": {
+    "errors": [
+      {
+        "code": "DUPLICATE_NODE_NAME",
+        "message": "Duplicate node name \"Code\"",
+        "node": "Code",
+        "path": [
+          "nodes",
+          "1",
+          "name"
+        ]
+      }
+    ],
+    "valid": false
+  },
+  "id": "D03-duplicate-node-name",
+  "input": {
+    "options": {},
+    "workflow": {
+      "connections": {},
+      "nodes": [
+        {
+          "id": "Code",
+          "name": "Code",
+          "parameters": {},
+          "position": [
+            0,
+            0
+          ],
+          "type": "n8n-nodes-base.noOp",
+          "typeVersion": 1
+        },
+        {
+          "id": "Code",
+          "name": "Code",
+          "parameters": {},
+          "position": [
+            0,
+            0
+          ],
+          "type": "n8n-nodes-base.noOp",
+          "typeVersion": 1
+        }
+      ]
+    }
+  }
+}

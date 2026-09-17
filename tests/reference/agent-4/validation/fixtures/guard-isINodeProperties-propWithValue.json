@@ -1,0 +1,12 @@
+{
+  "id": "guard-isINodeProperties-propWithValue",
+  "fn": "isINodeProperties",
+  "input": {
+    "value": {
+      "name": "n",
+      "type": "string",
+      "value": "v"
+    }
+  },
+  "expected": false
+}

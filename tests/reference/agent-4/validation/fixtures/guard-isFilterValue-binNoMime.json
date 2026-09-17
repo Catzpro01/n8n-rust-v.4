@@ -1,0 +1,10 @@
+{
+  "id": "guard-isFilterValue-binNoMime",
+  "fn": "isFilterValue",
+  "input": {
+    "value": {
+      "id": "1"
+    }
+  },
+  "expected": false
+}

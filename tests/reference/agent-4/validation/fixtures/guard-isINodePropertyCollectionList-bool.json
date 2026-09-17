@@ -1,0 +1,8 @@
+{
+  "id": "guard-isINodePropertyCollectionList-bool",
+  "fn": "isINodePropertyCollectionList",
+  "input": {
+    "value": true
+  },
+  "expected": false
+}

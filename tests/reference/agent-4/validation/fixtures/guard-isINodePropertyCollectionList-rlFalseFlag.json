@@ -1,0 +1,12 @@
+{
+  "id": "guard-isINodePropertyCollectionList-rlFalseFlag",
+  "fn": "isINodePropertyCollectionList",
+  "input": {
+    "value": {
+      "__rl": false,
+      "mode": "id",
+      "value": "1"
+    }
+  },
+  "expected": false
+}

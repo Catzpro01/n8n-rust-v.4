@@ -1,0 +1,14 @@
+{
+  "id": "guard-isResourceMapperValue-collectionList",
+  "fn": "isResourceMapperValue",
+  "input": {
+    "value": [
+      {
+        "displayName": "D",
+        "name": "n",
+        "values": []
+      }
+    ]
+  },
+  "expected": false
+}

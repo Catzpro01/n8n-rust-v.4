@@ -1,0 +1,10 @@
+{
+  "id": "ref-tryToParseString-01",
+  "fn": "tryToParseString",
+  "input": {
+    "args": [
+      "42"
+    ]
+  },
+  "expected": "42"
+}

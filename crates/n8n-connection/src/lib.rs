@@ -1,6 +1,34 @@
+pub mod graph_utils;
+
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashSet, VecDeque};
+
+/// The 13 connection types of n8n 2.9.4, verbatim from
+/// `reference/n8n/packages/workflow/src/interfaces.ts:2249` (`NodeConnectionTypes`).
+/// Document order is the declaration order of the reference object.
+pub const NODE_CONNECTION_TYPES: [&str; 13] = [
+    "ai_agent",
+    "ai_chain",
+    "ai_document",
+    "ai_embedding",
+    "ai_languageModel",
+    "ai_memory",
+    "ai_outputParser",
+    "ai_retriever",
+    "ai_reranker",
+    "ai_textSplitter",
+    "ai_tool",
+    "ai_vectorStore",
+    "main",
+];
+
+/// Port of `isNodeConnectionType` as used by the Validation LEGO
+/// (`docs/isolation/validation.md` §137): `type ∈ nodeConnectionTypes`.
+pub fn is_node_connection_type(connection_type: &str) -> bool {
+    NODE_CONNECTION_TYPES.contains(&connection_type)
+}
+
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct ConnectionItem {

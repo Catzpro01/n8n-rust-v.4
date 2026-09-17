@@ -1,0 +1,12 @@
+{
+  "id": "guard-isINodePropertyOptions-optionWithDisplay",
+  "fn": "isINodePropertyOptions",
+  "input": {
+    "value": {
+      "displayName": "D",
+      "name": "n",
+      "value": "v"
+    }
+  },
+  "expected": false
+}

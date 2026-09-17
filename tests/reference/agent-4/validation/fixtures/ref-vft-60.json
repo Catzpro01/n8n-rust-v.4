@@ -1,0 +1,15 @@
+{
+  "id": "ref-vft-60",
+  "fn": "validateFieldType",
+  "input": {
+    "args": [
+      "f",
+      "x",
+      "form-fields"
+    ]
+  },
+  "expected": {
+    "valid": false,
+    "errorMessage": "Value is not valid JSON"
+  }
+}

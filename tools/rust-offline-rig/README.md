@@ -45,6 +45,7 @@ review.
 | Date | Command | Result |
 | :--- | :--- | :--- |
 | 2026-09-17 | `run.sh check` on `crates/**` @ `014471e6` (Phase-3 workspace) | **PASS** — `Finished dev profile … in 6.26s`, 12 vendored deps compiled, 5 workspace crates checked |
+| 2026-09-17 | `run.sh test` after extending the vendor closure | **PASS** — 45 tests / 0 failed across the 7-crate workspace. Added to the closure: `indexmap 2.2.6` (+ `equivalent 1.0.1`, `hashbrown 0.14.5`, `allocator-api2 0.2.18`), `regex 1.11.1` (+ `regex-automata 0.4.9`, `regex-syntax 0.8.5`, `aho-corasick 1.1.3`); `vendor_prep.py` now also strips table-style `path = …` keys inside `[dependencies.*]` and drops `[[test]]`/`[[bench]]` target sections (the regex manifests tripped the old rewriter). |
 
 ## Caveats
 

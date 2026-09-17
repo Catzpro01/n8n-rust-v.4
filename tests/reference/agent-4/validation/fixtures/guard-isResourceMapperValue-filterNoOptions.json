@@ -1,0 +1,11 @@
+{
+  "id": "guard-isResourceMapperValue-filterNoOptions",
+  "fn": "isResourceMapperValue",
+  "input": {
+    "value": {
+      "conditions": [],
+      "combinator": "and"
+    }
+  },
+  "expected": false
+}

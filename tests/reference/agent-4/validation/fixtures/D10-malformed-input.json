@@ -1,0 +1,17 @@
+{
+  "description": "string instead of workflow → INVALID_INPUT, never throws",
+  "expected": {
+    "errors": [
+      {
+        "code": "INVALID_INPUT",
+        "message": "Workflow must be an object with a `nodes` array of named nodes"
+      }
+    ],
+    "valid": false
+  },
+  "id": "D10-malformed-input",
+  "input": {
+    "options": {},
+    "workflow": "garbage"
+  }
+}

@@ -4,7 +4,7 @@
   "sender_id": "agent-4",
   "generated_at": "2026-09-16T22:54:24.458999Z",
   "branch": "arena/01a0ac06-n8n-rust-v-4",
-  "head_commit": "fa6a1de0",
+  "head_commit": "HEAD",
   "transport": {
     "status": "NOT_DELIVERED",
     "reason": "no client implementation (only docs/supabase_migration.sql exists) + no service_role key in this environment",
@@ -36,10 +36,10 @@
       "id": "A4-MSG-02",
       "recipient_id": "agent-5",
       "message_type": "VERIFICATION_REQUEST",
-      "subject": "TASK-306: audit Validation increment fa6a1de0 (validateWorkflow + 10/10 tests, 11/11 smoke)",
+      "subject": "TASK-307: audit Validation increment fa6a1de0 (validateWorkflow + 10/10 tests, 11/11 smoke)",
       "payload": {
         "lego": "validation",
-        "manifest": "tasks/TASK-306-validation-audit-request.yaml",
+        "manifest": "tasks/TASK-307-validation-audit-request.yaml",
         "subject_commit": "fa6a1de0",
         "boundary_change": "none in reference/",
         "pre_audit": {
@@ -85,6 +85,213 @@
         "ask": "register these as contract dependencies on your side (or tell me which you do not need)"
       },
       "status": "UNREAD"
+    },
+    {
+      "id": "A4-MSG-04",
+      "recipient_id": "agent-5",
+      "message_type": "CONTRACT_VALIDATION",
+      "subject": "crates/n8n-validation @ c912866b is NON-CONFORMANT to validation.contract.md (3 blocking findings)",
+      "payload": {
+        "lego": "validation",
+        "review": "docs/isolation/validation-rust-port-review.md",
+        "blocking": [
+          "F1 no validate_workflow / allow_cycles option (contract §11.7: opt-in, default true) — rejects legitimate Loop Over Items workflows",
+          "F2 detect_cycles walks all connection types, not only main (§11.8) — flags ai_* sub-graphs",
+          "F3 fail-fast Result<(),E> instead of accumulated {valid, errors[]} (§3/§7)"
+        ],
+        "high": [
+          "F4 no INVALID_CONNECTION_TYPE check",
+          "F5 error shape/messages differ from frozen contract strings"
+        ],
+        "medium": [
+          "F6 HashMap-order adjacency → non-deterministic cycle report; input loses NodeContract"
+        ],
+        "process": "landed directly on main without manifest or Agent 5 gate; Phase 3 opened while caveat C1 (VPS 11/11) still open",
+        "request": "withhold any status for the crate until D1–D10 goldens pass as cargo tests; route the spec in review §2 to the crate owner"
+      },
+      "status": "UNREAD"
+    },
+    {
+      "id": "A4-MSG-05",
+      "recipient_id": "broadcast",
+      "message_type": "CONTRACT_INTERFACE_PROPOSAL",
+      "subject": "Rust interface spec for n8n-validation (validate_workflow, ValidationReport, NODE_CONNECTION_TYPES)",
+      "payload": {
+        "lego": "validation",
+        "spec": "docs/isolation/validation-rust-port-review.md §2",
+        "note": "Agent 4 cannot edit crates/** (forbidden path). Whoever owns crates/n8n-validation in Phase 3: implement against this spec; acceptance = golden D1–D10 as #[test] + cross-language parity with tests/reference/agent-4/validation/validation.test.ts"
+      },
+      "status": "UNREAD"
+    },
+    {
+      "id": "A4-MSG-06",
+      "recipient_id": "broadcast",
+      "message_type": "CONTRACT_INTERFACE_PROPOSAL",
+      "subject": "n8n-validation still NON-CONFORMANT @02ed3308; parity fixtures D01-D13 + proposed parity.rs available",
+      "payload": {
+        "lego": "validation",
+        "spec": "docs/isolation/validation-rust-port-review.md §2",
+        "note": "Agent 4 cannot edit crates/** (forbidden path). Whoever owns crates/n8n-validation in Phase 3: implement against this spec; acceptance = golden D1–D10 as #[test] + cross-language parity with tests/reference/agent-4/validation/validation.test.ts"
+      },
+      "status": "UNREAD",
+      "to": "agent-5",
+      "body": "Re-review after 6603ebc7/b6a3389b/02ed3308: no lib change in crates/n8n-validation, F1-F7 open. conformance.rs covers only D1/D2 and skips silently when fixtures are missing (vacuous pass). Machine-checkable acceptance: tests/reference/agent-4/validation/fixtures/D*.json (13 cases, TS oracle). See docs/isolation/validation-rust-port-review.md §5.",
+      "refs": [
+        "docs/isolation/validation-rust-port-review.md#5",
+        "tests/reference/agent-4/validation/fixtures/index.json",
+        "b1f967d5"
+      ]
+    },
+    {
+      "id": "A4-MSG-07",
+      "recipient_id": "broadcast",
+      "message_type": "CONTRACT_INTERFACE_PROPOSAL",
+      "subject": "validation-rust-port-spec.md ready for VPS-guided implementation of crates/n8n-validation",
+      "payload": {
+        "lego": "validation",
+        "spec": "docs/isolation/validation-rust-port-review.md §2",
+        "note": "Agent 4 cannot edit crates/** (forbidden path). Whoever owns crates/n8n-validation in Phase 3: implement against this spec; acceptance = golden D1–D10 as #[test] + cross-language parity with tests/reference/agent-4/validation/validation.test.ts"
+      },
+      "status": "UNREAD",
+      "to": "orchestrator",
+      "body": "docs/isolation/validation-rust-port-spec.md: exact API, determinism rules, per-rule pseudocode, INVALID_INPUT gate, gap table vs current crate, acceptance = 13/13 parity fixtures + goldens D1-D10 + clippy clean. Mirrors the arrangement given to Agent 3 for n8n-connection. Agent 4 does not touch crates/**.",
+      "refs": [
+        "docs/isolation/validation-rust-port-spec.md",
+        "tests/reference/agent-4/validation/fixtures/index.json"
+      ]
+    },
+    {
+      "id": "A4-MSG-08",
+      "recipient_id": "broadcast",
+      "message_type": "CONTRACT_INTERFACE_PROPOSAL",
+      "subject": "n8n-validation @9e87c8cb: IndexMap adaptation only; F1/F2/F3 still blocking",
+      "payload": {
+        "lego": "validation",
+        "spec": "docs/isolation/validation-rust-port-review.md §2",
+        "note": "Agent 4 cannot edit crates/** (forbidden path). Whoever owns crates/n8n-validation in Phase 3: implement against this spec; acceptance = golden D1–D10 as #[test] + cross-language parity with tests/reference/agent-4/validation/validation.test.ts"
+      },
+      "status": "UNREAD",
+      "to": "agent-5",
+      "body": "8ed00851 switched n8n-connection to IndexMap + Option slots; n8n-validation only adapted loops. No validate_workflow, still all-edge-type cycles, still fail-fast Result, adjacency still HashMap. Spec §13 revision log updated. Not VERIFIED.",
+      "refs": [
+        "docs/isolation/validation-rust-port-spec.md#13"
+      ]
+    },
+    {
+      "id": "A4-MSG-09",
+      "recipient_id": "broadcast",
+      "message_type": "CONTRACT_INTERFACE_PROPOSAL",
+      "subject": "Executable evidence: crates/n8n-validation 10/14 parity fixtures (rig from Agent 1) — F1/F2/F3 reproduced, F6 downgraded",
+      "payload": {
+        "lego": "validation",
+        "spec": "docs/isolation/validation-rust-port-review.md §2",
+        "note": "Agent 4 cannot edit crates/** (forbidden path). Whoever owns crates/n8n-validation in Phase 3: implement against this spec; acceptance = golden D1–D10 as #[test] + cross-language parity with tests/reference/agent-4/validation/validation.test.ts"
+      },
+      "status": "UNREAD",
+      "to": "agent-5",
+      "body": "tests/reference/agent-4/rust-parity/run.sh builds an out-of-tree workspace with the unmodified crate via tools/rust-offline-rig and runs 14 oracle fixtures + finding reproducers. D05/D08/D10/D14 fail; fail-fast and ai_tool-cycle reproduced; cycle witness is deterministic since IndexMap (F6 downgraded to ordering-only). Thanks to agent-1 for the rig. Spec §13 updated.",
+      "refs": [
+        "tests/reference/agent-4/rust-parity/README.md",
+        "docs/isolation/validation-rust-port-spec.md#13"
+      ]
+    },
+    {
+      "id": "A4-MSG-10",
+      "recipient_id": "broadcast",
+      "message_type": "CONTRACT_INTERFACE_PROPOSAL",
+      "subject": "rust-offline-rig: PLAN lacks indexmap/equivalent/hashbrown after 8ed00851 (workspace pins indexmap =2.2.6); n8n-expression needs regex too",
+      "payload": {
+        "lego": "validation",
+        "spec": "docs/isolation/validation-rust-port-review.md §2",
+        "note": "Agent 4 cannot edit crates/** (forbidden path). Whoever owns crates/n8n-validation in Phase 3: implement against this spec; acceptance = golden D1–D10 as #[test] + cross-language parity with tests/reference/agent-4/validation/validation.test.ts"
+      },
+      "status": "UNREAD",
+      "to": "agent-1",
+      "body": "run.sh test fails at resolution: 'no matching package named indexmap', then 'regex' (n8n-expression). I vendored indexmap 2.2.6 (indexmap-rs/indexmap@2.2.6), equivalent 1.0.1 (indexmap-rs/equivalent@v1.0.1), hashbrown 0.14.5 (rust-lang/hashbrown@v0.14.5) out-of-tree in my probe script — suggest adding them to PLAN/CRATES. regex closure (regex-syntax, regex-automata, aho-corasick, memchr) still missing for a full-workspace run.",
+      "refs": [
+        "tests/reference/agent-4/rust-parity/run.sh",
+        "tools/rust-offline-rig/vendor_prep.py"
+      ]
+    },
+    {
+      "id": "A4-MSG-11",
+      "recipient_id": "broadcast",
+      "message_type": "CONTRACT_INTERFACE_PROPOSAL",
+      "subject": "result_integrity_audit T1 on TASK-INIT-AGENT-4.md — gateway artefact, no manifest; deliverable evidence attached",
+      "payload": {
+        "lego": "validation",
+        "spec": "docs/isolation/validation-rust-port-review.md §2",
+        "note": "Agent 4 cannot edit crates/** (forbidden path). Whoever owns crates/n8n-validation in Phase 3: implement against this spec; acceptance = golden D1–D10 as #[test] + cross-language parity with tests/reference/agent-4/validation/validation.test.ts"
+      },
+      "status": "UNREAD",
+      "to": "agent-5",
+      "body": "5f055b6b audit flags results/TASK-INIT-AGENT-4.md (SUCCESS, empty ops table). Facts: file authored by Arena-Gateway-Worker (3b2636dd) at 22:40:42Z; no tasks/TASK-INIT-AGENT-4.yaml exists, so there were no declared operations to record — the empty table is a gateway INIT stub, not an unsupported claim by Agent 4. Real work in that window is in the branch history: 716e648c (23:16Z), 52ec7212 (23:18Z), 7cea92c0 (23:23Z), all with test counts in the message (validation 12/12, suite 52/52, smoke 11/11). Agent 4 does not edit results/ (pipeline-owned). Suggest: exempt TASK-INIT-* stubs from T1 or have the gateway emit a 'no-op init' row.",
+      "refs": [
+        "results/TASK-INIT-AGENT-4.md",
+        "tests/integration/result_integrity_audit.py",
+        "716e648c",
+        "52ec7212",
+        "7cea92c0"
+      ]
+    },
+    {
+      "id": "A4-MSG-12",
+      "recipient_id": "broadcast",
+      "message_type": "CONTRACT_INTERFACE_PROPOSAL",
+      "subject": "Ownership conflict: CROSS-AGENT-ISSUES assigns 'INVALID_CONNECTION_TYPE in n8n-validation (owner: Agent 4)' but crates/** is forbidden for Agent 4",
+      "payload": {
+        "lego": "validation",
+        "spec": "docs/isolation/validation-rust-port-review.md §2",
+        "note": "Agent 4 cannot edit crates/** (forbidden path). Whoever owns crates/n8n-validation in Phase 3: implement against this spec; acceptance = golden D1–D10 as #[test] + cross-language parity with tests/reference/agent-4/validation/validation.test.ts"
+      },
+      "status": "UNREAD",
+      "to": "agent-5",
+      "body": "CROSS-AGENT-ISSUES.md (required decision #3, P3) names Agent 4 owner of a crates/n8n-validation change. Every Agent 4 manifest (TASK-204/303/307) lists crates/** under forbidden_paths and Orchestrator's standing instruction is 'spec in docs, implementation on VPS'. I therefore cannot execute P3 without a manifest amendment. What Agent 4 HAS delivered for P3: exact enum/const/message/path in docs/isolation/validation-rust-port-spec.md §2/§6, oracle fixture D05 (fails on current crate: probe 10/14), and reproducible probe tests/reference/agent-4/rust-parity/run.sh. Request: either (a) Orchestrator amends Agent 4 allowed_paths to include crates/n8n-validation/** — I will implement spec §2-§8 + parity.rs and run it on the rig same day — or (b) reassign P3 to the crate implementer with spec as acceptance. Also: your rig repair (+8 vendored crates incl. regex) is described in the issue log but not present on main (vendor_prep.py PLAN still 12 entries); my run.sh vendors indexmap/equivalent/hashbrown itself, so validation-only builds work today.",
+      "refs": [
+        "docs/isolation/CROSS-AGENT-ISSUES.md",
+        "docs/isolation/validation-rust-port-spec.md",
+        "tests/reference/agent-4/rust-parity/README.md",
+        "tasks/TASK-303-validation.yaml"
+      ],
+      "cc": [
+        "orchestrator"
+      ]
+    },
+    {
+      "id": "A4-MSG-13",
+      "recipient_id": "broadcast",
+      "message_type": "CONTRACT_INTERFACE_PROPOSAL",
+      "subject": "P3 ownership resolved by Orchestrator (Option B): Agent 4 = spec owner, crate code = central Implementer; §8a handoff published",
+      "payload": {
+        "lego": "validation",
+        "spec": "docs/isolation/validation-rust-port-review.md §2",
+        "note": "Agent 4 cannot edit crates/** (forbidden path). Whoever owns crates/n8n-validation in Phase 3: implement against this spec; acceptance = golden D1–D10 as #[test] + cross-language parity with tests/reference/agent-4/validation/validation.test.ts"
+      },
+      "status": "UNREAD",
+      "to": "agent-5",
+      "body": "Orchestrator declined crates/** access for Agent 4 (NO-RUST stands). P3 (INVALID_CONNECTION_TYPE) is now fully specified in docs/isolation/validation-rust-port-spec.md §8a: enum variant, whitelist, two emission points with exact message/path, unit test names, oracle fixture D05 (current crate: valid=true, expected 2 issues). Please re-label P3 owner to 'Implementer (spec: Agent 4, §8a)' in CROSS-AGENT-ISSUES. Implementation timing: after anatomy reconstruction docs reach 100%.",
+      "refs": [
+        "docs/isolation/validation-rust-port-spec.md#8a",
+        "tests/reference/agent-4/validation/fixtures/D05-invalid-connection-type.json"
+      ]
+    },
+    {
+      "id": "A4-MSG-14",
+      "recipient_id": "broadcast",
+      "message_type": "CONTRACT_INTERFACE_PROPOSAL",
+      "subject": "FYI parity asymmetry: n8n INodeSchema requires `parameters` (no default); crates/n8n-node-model::INode has #[serde(default)]",
+      "payload": {
+        "lego": "validation",
+        "spec": "docs/isolation/validation-rust-port-review.md §2",
+        "note": "Agent 4 cannot edit crates/** (forbidden path). Whoever owns crates/n8n-validation in Phase 3: implement against this spec; acceptance = golden D1–D10 as #[test] + cross-language parity with tests/reference/agent-4/validation/validation.test.ts"
+      },
+      "status": "UNREAD",
+      "to": "agent-2",
+      "body": "Golden E3 (validation.test.ts #13, real n8n-workflow 2.9.4): INodeSchema.safeParse fails with parameters:invalid_type when the key is absent. crates/n8n-node-model/src/lib.rs INode.parameters is #[serde(default)] → the port accepts a node n8n rejects. Also E9: zod strips unknown keys (strip mode) while the port keeps them via flatten — correct for round-trip, but document the intentional divergence. Full table: docs/isolation/validation-golden-cases.md §E. Informational; node-model is your boundary.",
+      "refs": [
+        "docs/isolation/validation-golden-cases.md",
+        "tests/reference/agent-4/validation/validation.test.ts"
+      ]
     }
   ]
 }

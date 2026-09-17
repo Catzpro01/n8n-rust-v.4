@@ -32,12 +32,15 @@ PLAN = [
     ("ryu", "ryu", "1.0.18"),
     ("memchr", "memchr", "2.7.4"),
     ("unicode-ident", "unicode-ident", "1.0.14"),
-    # 2026-09-17 (agent-1): indexmap + regex dependency closures
+    # 2026-09-17: indexmap + regex dependency closures.
+    # (main's tested closure + session-01a0ac85 defensive hashbrown-default
+    #  feature closure: ahash/foldhash/zerocopy family — inert unless a future
+    #  feature set enables hashbrown's default features.)
     ("indexmap", "indexmap", "2.2.6"),
     ("equivalent", "equivalent", "1.0.1"),
     ("hashbrown", "hashbrown", "0.14.5"),
+    ("allocator-api2", "allocator-api2", "0.2.18"),
     ("aHash", "ahash", "0.8.11"),
-    ("allocator-api2", "allocator-api2", "0.2.16"),
     ("foldhash", "foldhash", "0.1.4"),
     ("zerocopy", "zerocopy", "0.7.35"),
     ("zerocopy/zerocopy-derive", "zerocopy-derive", "0.7.35"),
@@ -47,10 +50,10 @@ PLAN = [
     ("once_cell", "once_cell", "1.19.0"),
     ("version_check", "version_check", "0.9.4"),
     ("getrandom", "getrandom", "0.2.15"),
+    ("regex", "regex", "1.11.1"),
+    ("regex/regex-automata", "regex-automata", "0.4.9"),
+    ("regex/regex-syntax", "regex-syntax", "0.8.5"),
     ("aho-corasick", "aho-corasick", "1.1.3"),
-    ("regex", "regex", "1.10.5"),
-    ("regex/regex-automata", "regex-automata", "0.4.7"),
-    ("regex/regex-syntax", "regex-syntax", "0.8.4"),
 ]
 
 DEP_VER = {name: ver for _, name, ver in PLAN}
@@ -74,8 +77,14 @@ PKG_FIELDS = {
     "homepage": 'homepage = "https://docs.rs"',
 }
 
-SECTION = re.compile(r"^\[([^\]]+)\]$")
+SECTION = re.compile(r"^\[+\s*([^\]]+)\s*\]+$")
+TARGET_SECTION = re.compile(r"^\[\[(test|bench|example|bin)\]\]$")
 DOTTED = re.compile(r"^([A-Za-z0-9_.-]+)\.workspace\s*=\s*true$")
+STANDALONE_PATH = re.compile(r'^path\s*=\s*"')
+# Target sections ([[test]], [[bench]], [[example]], [[bin]]) are irrelevant to a
+# vendored build (their sources are excluded anyway) and carry `path = ...` keys
+# that are *not* dependency paths, so they are dropped wholesale.
+TARGET_SECTION = re.compile(r"^\[\[(test|bench|example|bin)\]\]$")
 
 
 
@@ -86,6 +95,7 @@ def is_dep_section(section_name):
 
 def rewrite_manifest(path, name, version):
     out, drop_section, report = [], False, []
+
     section_name = "package"
     dropped_deps = []
     DEPSUB = re.compile(r'^((dev|build)?-dependencies)\.([A-Za-z0-9_-]+)$')
@@ -104,6 +114,7 @@ def rewrite_manifest(path, name, version):
             out.append(hdr)
             out.extend(lines)
 
+
     for line in open(path, encoding="utf-8").read().split("\n"):
         stripped = line.strip()
         header = SECTION.match(stripped)
@@ -111,7 +122,10 @@ def rewrite_manifest(path, name, version):
             flush_pending()
             section = header.group(1)
             drop_section = (
-                section == "workspace" or section.startswith("patch.")
+                section == "workspace"
+                or section.startswith("patch.")
+                or TARGET_SECTION.match(stripped) is not None
+
             )
             if drop_section:
                 report.append(f"  - dropped table [{section}]")
@@ -152,6 +166,11 @@ def rewrite_manifest(path, name, version):
                 continue
             line = re.sub(r"workspace\s*=\s*true", f'version = "{DEP_VER[key]}"', line)
             report.append(f"  ~ dep {key} workspace -> version {DEP_VER[key]}")
+        in_dep_section = section.startswith("dependencies")
+        if STANDALONE_PATH.match(stripped) and in_dep_section:
+            # table-style dependency `path = "..."` on its own line
+            report.append("  - dropped a table-style path key")
+            continue
         stripped_path = re.sub(r',\s*path\s*=\s*"[^"]*"', "", line)
         stripped_path = re.sub(r'\{\s*path\s*=\s*"[^"]*"\s*\}', "{ }", stripped_path)
         stripped_path = re.sub(r'path\s*=\s*"[^"]*"\s*,\s*', "", stripped_path)

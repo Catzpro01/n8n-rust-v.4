@@ -1,0 +1,15 @@
+{
+  "id": "ref-vft-59",
+  "fn": "validateFieldType",
+  "input": {
+    "args": [
+      "f",
+      "https://n8n.io",
+      "url"
+    ]
+  },
+  "expected": {
+    "valid": true,
+    "newValue": "https://n8n.io"
+  }
+}

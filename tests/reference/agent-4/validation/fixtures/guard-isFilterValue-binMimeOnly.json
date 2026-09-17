@@ -1,0 +1,10 @@
+{
+  "id": "guard-isFilterValue-binMimeOnly",
+  "fn": "isFilterValue",
+  "input": {
+    "value": {
+      "mimeType": "a"
+    }
+  },
+  "expected": false
+}

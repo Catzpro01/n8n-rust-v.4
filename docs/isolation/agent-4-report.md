@@ -1,10 +1,10 @@
 # Agent 4 — Phase 2 LEGO Isolation Report
 
-**LEGOs:** Trigger · Webhook · Scheduler · Persistence · Credentials · API
+**LEGOs:** Trigger · Webhook · Scheduler · Persistence · Credentials · API · **Validation** (added via TASK-303-validation / ISSUE-003 Option A)
 **Reference:** n8n **2.9.4** (`reference/n8n`, upstream `b6dc2787c45677a29a9612cd27eb911302961a83`)
 **Branch:** `arena/01a0ac06-n8n-rust-v-4` (Agent 4 worktree, branched from `agent-4` @ `e65a2f38`)
-**Date:** 2026-09-16
-**Overall status:** **VERIFIED** (all six LEGOs)
+**Date:** 2026-09-16 (rev. 2026-09-17)
+**Overall status:** **VERIFIED** (all seven LEGOs; Agent 5 verdict TASK-305 7f60fbd6, merged 99b47f86)
 
 ---
 
@@ -95,6 +95,16 @@ were documented instead of forced apart:
 - `webhook_entity` and `credentials_entity` live in `@n8n/db` (Persistence infra) while their semantics belong to Webhook/Credentials.
 - Some API controllers touch repositories directly (`SettingsRepository`, `WorkflowRepository`).
 
+## 5a. Seam package (core directive, 2026-09-17)
+
+`packages/validation-lego/` — module 04 in the decoupled-directory layout, sibling of `packages/workflow-lego`.
+Reference sources are bound **1:1 by identity** to the pinned runtime (no algorithm rewritten); `src/rules/` holds
+the ISSUE-003 Option A capability (moved from `tests/reference/agent-4/validation/workflow-rules.ts`, which is now a
+re-export shim). Seam: `src/validation-surface.ts`. 13 package gates pass (boundary sha256 pin + import closure,
+surface parity by identity, equivalence over 229+352+1125 recorded fixtures + D01–D14, strict isolation: the rule
+engine passes its oracle with `n8n-workflow`/luxon/zod blocked from the module graph; the reference-bound seam fails
+loudly — never silently — without the pinned runtime).
+
 ## 6. Tests
 
 `tests/reference/agent-4/` (TypeScript, `node --test`, Node ≥ 22.6, no build, no extra deps).
@@ -109,11 +119,17 @@ offline golden tests, and optional live replays.
 | Persistence | `persistence/persistence.test.ts` | flatted wire format; status transitions golden; execution save/load golden; workflow save/load golden; live save→load→run→status + SQLite rows + `workflow_history` | 5/5 |
 | Credentials | `credentials/credentials.test.ts` | encrypt/decrypt + independent EVP_BytesToKey cross-check; wrong key/short input; `Credentials` NO_DATA/DECRYPTION_FAILED/INVALID_JSON; golden redaction; live lookup/missing/invalid | 5/5 |
 | API | `api/api-envelope.test.ts` | health/401; `{data}` envelope; `{code,message,hint,meta}`; zod raw issue 400; not-found variants; public API; baseline; live valid/invalid/404/validation/success | 8/8 |
+| Validation | `validation/validation.test.ts` | goldens A/B/C against real `n8n-workflow` 2.9.4 (`Workflow` accepts duplicates/dangling/cycles — parity); goldens D1–D10 against `workflow-rules.ts` (new opt-in rules); fixture anti-drift; robustness fuzz (300 docs, no-throw, determinism, self-loop shape); golden E `INodeSchema` parity anchor (E1–E10); 229 + 352 + 1125 recorded reference/guard/schema fixtures re-executed live; frozen enums | 16/16 |
 
 Golden fixtures (INPUT / EXPECTED OUTPUT / ERROR / SIDE EFFECT): `golden/api.golden.json`,
 `credentials.golden.json` (dummy credential; plaintext never stored), `execution-status.golden.json`,
 `trigger-scheduler.golden.json`, `webhook.golden.json`; recorder: `live/record-golden.mjs`.
 No credentials or secrets are in the repo; the credential tests use a throw-away key and dummy values.
+
+**Language-neutral parity oracle (Phase 3 bridge):** `validation/gen-fixtures.ts` emits
+`validation/fixtures/D01…D14.json` (`{input:{workflow,options}, expected}`, key-sorted canonical JSON) from the TS
+oracle. Any port of the Validation rules — in particular `crates/n8n-validation` — is accepted only if it
+reproduces all 14 with zero diffs (`docs/isolation/validation-rust-port-spec.md` §10).
 
 ## 7. Reference Regression (11/11)
 
@@ -161,6 +177,9 @@ installed, so `regression_gate.py` could not run. Instead n8n **2.9.4** was inst
 5. **Stack traces in error bodies** — present because the sandbox instance runs with `NODE_ENV` unset; tests strip `stacktrace` and must never assert on it.
 6. **Scheduler `onTick` exceptions** are not caught by `ScheduledTaskManager`; relies on node/Trigger wrappers.
 7. **Multi-main** semantics (triggers leader-only, webhooks on all mains) documented from source but not exercised live (single instance).
+8. **Phase 3 `crates/n8n-validation` was NON-CONFORMANT (now TESTED after agent-1 TASK-408 `00370e3c`; see `validation-rust-port-spec.md` revision log)** — original finding: to `contracts/validation.contract.md` (review `validation-rust-port-review.md` F1–F7; 3 blocking: no `validate_workflow`/`allow_cycles`, cycles over all edge types instead of `main` only, fail-fast `Result` instead of an accumulated report). It landed on main directly, outside any Agent 5 gate. Full port specification: `validation-rust-port-spec.md`; implementation/`cargo test` is Orchestrator-on-VPS per instruction. Agent 4 has not modified `crates/**`.
+9. **Self-inflicted regression found and fixed (2026-09-17):** re-recording the baselines for caveat C2 (41d066ba) bumped `historyCount` 2→5 in `baseline-before.json`, and the offline persistence golden pinned the literal value → 4/5. The assertion now checks the invariant (`≥ 2`, integer) instead of a monotonic per-instance counter. Lesson recorded: goldens must not pin instance counters (ids, history, execution numbers).
+10. **Agent 5 caveat C1** (re-run of the 11/11 gate on VPS + PostgreSQL) remains open — cannot be closed from this sandbox. C2 closed (`live/README.md`).
 
 ## 11. Status
 
@@ -172,6 +191,8 @@ installed, so `regression_gate.py` could not run. Instead n8n **2.9.4** was inst
 | Persistence | **VERIFIED** |
 | Credentials | **VERIFIED** |
 | API | **VERIFIED** |
+| Validation (TypeScript, Phase 2) | **VERIFIED** |
+| Validation Rust port (`crates/n8n-validation`, Phase 3, not Agent 4-owned) | **TESTED** — spec delivered; agent-1 TASK-408 (`00370e3c`, PR #3 branch) closed F1–F7, `parity.rs` 14/14 vs D01–D14; VERIFIED pending §10.3 clippy + §10.4 VPS same-checkout run |
 
-Criteria met: source-verified docs + contracts, 40/40 reference tests, 11/11 smoke before and
-after, live verification on n8n 2.9.4, zero modification of Agent 1/2/3 files, no Rust, no secrets.
+Criteria met: source-verified docs + contracts, 56/56 reference tests, 11/11 smoke before and
+after (re-recorded back-to-back 2026-09-17), live verification on n8n 2.9.4, zero modification of Agent 1/2/3 files, no Rust, no secrets.

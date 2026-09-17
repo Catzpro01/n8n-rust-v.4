@@ -1,0 +1,14 @@
+{
+  "id": "guard-isResourceLocatorValue-mapper",
+  "fn": "isResourceLocatorValue",
+  "input": {
+    "value": {
+      "mappingMode": "defineBelow",
+      "value": {
+        "a": 1
+      },
+      "schema": []
+    }
+  },
+  "expected": false
+}

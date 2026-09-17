@@ -1,0 +1,10 @@
+{
+  "id": "guard-isBinaryValue-binMimeOnly",
+  "fn": "isBinaryValue",
+  "input": {
+    "value": {
+      "mimeType": "a"
+    }
+  },
+  "expected": false
+}

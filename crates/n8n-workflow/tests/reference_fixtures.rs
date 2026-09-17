@@ -19,6 +19,7 @@ const DIFF_CASES: usize = 6;
 const SHAPE_CASES: usize = 6;
 const RENAME_CASES: usize = 6;
 const TRAVERSAL_CASES: usize = 9;
+const START_NODE_CASES: usize = 7;
 
 fn repo_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -365,5 +366,47 @@ fn traversal_matches_the_reference_type_and_depth_rules() {
 
         let actual = get_connected_nodes(&graph, from, &filter, depth, None);
         assert_eq!(json!(actual), case["result"], "traversal case `{id}`");
+    }
+}
+
+/// ISSUE-017: `getStartNode` / `getHighestNode` against the runtime-derived `startNode`
+/// group — including the strict-vs-lenient `disabled` asymmetry, the disabled-returning
+/// final fallback, and the `nodeConnectionIndex` filter. A port treating every omitted
+/// `disabled` as `false` (or vice versa) fails `omitted-disabled-asymmetry`.
+#[test]
+fn start_node_and_highest_match_the_reference_including_disabled_semantics() {
+    let fixtures = fixtures();
+    let cases = fixtures["startNode"]["cases"].as_array().expect("cases");
+    assert_eq!(cases.len(), START_NODE_CASES, "startNode case count");
+
+    for case in cases {
+        let id = case["id"].as_str().expect("id");
+        let workflow = Workflow::from_wire(&case["workflow"])
+            .unwrap_or_else(|error| panic!("case `{id}` workflow parses: {error}"));
+
+        for probe in case["probes"].as_array().expect("probes") {
+            match probe["op"].as_str().expect("op") {
+                "getHighestNode" => {
+                    let node = probe["node"].as_str().expect("node");
+                    let index = probe.get("index").and_then(Value::as_u64).map(|i| i as usize);
+                    let actual = workflow.get_highest_node(node, index, None);
+                    assert_eq!(
+                        json!(actual),
+                        probe["expected"],
+                        "case `{id}` getHighestNode({node}, {index:?})"
+                    );
+                }
+                "getStartNode" => {
+                    let destination = probe.get("destination").and_then(Value::as_str);
+                    let actual = workflow.get_start_node(destination).map(|node| node.name.clone());
+                    assert_eq!(
+                        json!(actual),
+                        probe["expected"],
+                        "case `{id}` getStartNode({destination:?})"
+                    );
+                }
+                other => panic!("case `{id}` unknown probe op `{other}`"),
+            }
+        }
     }
 }

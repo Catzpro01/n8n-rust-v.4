@@ -1,0 +1,8 @@
+{
+  "id": "guard-isNodeConnectionType-bool",
+  "fn": "isNodeConnectionType",
+  "input": {
+    "value": true
+  },
+  "expected": false
+}

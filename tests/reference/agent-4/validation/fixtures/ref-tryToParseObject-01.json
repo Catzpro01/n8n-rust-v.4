@@ -1,0 +1,15 @@
+{
+  "id": "ref-tryToParseObject-01",
+  "fn": "tryToParseObject",
+  "input": {
+    "args": [
+      "42"
+    ]
+  },
+  "expected": {
+    "throws": {
+      "name": "ApplicationError",
+      "message": "Value is not a valid object"
+    }
+  }
+}
