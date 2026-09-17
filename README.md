@@ -15,6 +15,7 @@ is a Rust replacement attempted.
 | REFERENCE SOURCE (`reference/n8n/`, n8n 2.9.4) | ✅ |
 | REFERENCE RUNTIME (baseline 11/11 smoke test) | ✅ |
 | **WORKFLOW ISOLATION (LEGO 01)** | **✅ VERIFIED — see [`docs/isolation/workflow.md`](docs/isolation/workflow.md)** |
+| NATIVE LOCALIZATION HUB (Phase 4A/4B → 4C integration, 6 locales) | ✅ `packages/workflow-lego/src` · tests: `test/06-localization.test.mjs` |
 | NODE MODEL (LEGO 02) · CONNECTION (03) · VALIDATION (04) | ⏸ next |
 | RUST IMPLEMENTATION | ⏸ not started |
 

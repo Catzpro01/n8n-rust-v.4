@@ -1,4 +1,11 @@
 // Node Parameter Issues & Validation Engine (Phase 3C)
+//
+// Phase 4C: pesan validasi tidak lagi di-hardcode dalam satu bahasa — kini
+// dirender melalui NativeLocalizationService (kunci `param.*`, 6 bahasa).
+// Locale default tetap 'id', sehingga keluaran bawaan identik dengan Phase 3C.
+
+import { NativeLocalizationService } from './backend-localization-service';
+
 export interface ParameterIssue {
   parameter: string;
   message: string;
@@ -24,7 +31,9 @@ export class NodeParameterValidator {
     if (paramDef.required && (val === undefined || val === null || val === '')) {
       return {
         parameter: paramDef.name,
-        message: `Parameter "${paramDef.name}" wajib diisi.`,
+        message: NativeLocalizationService.translate('param.required', undefined, {
+          name: paramDef.name,
+        }),
         issueType: 'missing',
       };
     }
@@ -35,21 +44,29 @@ export class NodeParameterValidator {
         if (isNaN(num)) {
           return {
             parameter: paramDef.name,
-            message: `Nilai "${val}" harus berupa angka yang valid.`,
+            message: NativeLocalizationService.translate('param.invalid_number', undefined, {
+              value: String(val),
+            }),
             issueType: 'invalid_type',
           };
         }
         if (paramDef.typeOptions?.minValue !== undefined && num < paramDef.typeOptions.minValue) {
           return {
             parameter: paramDef.name,
-            message: `Nilai ${num} lebih kecil dari batas minimum ${paramDef.typeOptions.minValue}.`,
+            message: NativeLocalizationService.translate('param.below_min', undefined, {
+              value: num,
+              min: paramDef.typeOptions.minValue,
+            }),
             issueType: 'out_of_bounds',
           };
         }
         if (paramDef.typeOptions?.maxValue !== undefined && num > paramDef.typeOptions.maxValue) {
           return {
             parameter: paramDef.name,
-            message: `Nilai ${num} lebih besar dari batas maksimum ${paramDef.typeOptions.maxValue}.`,
+            message: NativeLocalizationService.translate('param.above_max', undefined, {
+              value: num,
+              max: paramDef.typeOptions.maxValue,
+            }),
             issueType: 'out_of_bounds',
           };
         }

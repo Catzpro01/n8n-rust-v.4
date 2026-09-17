@@ -48,3 +48,27 @@ export const LEGO_PROVENANCE = {
 	behaviorChange: 'none-detected',
 	rustImplementation: 'not-started',
 } as const;
+
+/* ------------------------------------------------------------------ */
+/* Phase 4 — Native Localization Hub (4A/4B) + integration (4C).       */
+/* Self-contained modules: no reference imports, no port crossings.    */
+/* ------------------------------------------------------------------ */
+export {
+	NATIVE_DICTIONARIES,
+	NativeLocalizationService,
+	SUPPORTED_LOCALES,
+	type LocaleMetadata,
+	type SupportedLocale,
+	type TranslationParams,
+} from './backend-localization-service';
+export {
+	SettingsLocalizationAdapter,
+	type LanguageCode,
+	type LanguageOption,
+	type LocalizationSettingsState,
+} from './settings-localization-adapter';
+export {
+	NodeParameterValidator,
+	type NodeParameterDefinition,
+	type ParameterIssue,
+} from './parameter-issues';
