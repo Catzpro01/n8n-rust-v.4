@@ -1,10 +1,10 @@
 // ISSUE-033 evidence probe (agent-3). Drives packages/reconstructed-engine/runner.mjs with the
 // pinned connection goldens. Read-only: does not modify the engine. Run: node <this file>
-import { WorkflowExecutionEngine } from '../../../../packages/reconstructed-engine/runner.mjs';
+import { WorkflowExecutionEngine } from '../../../packages/reconstructed-engine/runner.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
+const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'connection');
 const run = async (dir, start, label) => {
   const c = JSON.parse(fs.readFileSync(path.join(root, dir, 'case.json')));
   const e = new WorkflowExecutionEngine({ nodes: c.nodes, connections: c.connections });

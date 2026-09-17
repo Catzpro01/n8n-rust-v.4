@@ -1042,7 +1042,7 @@ destroy their work. Agent 5 documents and reassigns; it does not fix other agent
 
 ## ISSUE-033 — `packages/reconstructed-engine/runner.mjs` (main `78fec3e2`/`71c3ebc1`) is a new algorithm, not a 1:1 reuse — diverges on 3 of 5 pinned connection goldens
 
-**Reported by:** Agent 3 (connection) · **Date:** 2026-09-17 · **Severity:** HIGH (core directive: n8n 2.9.4 code reused 1:1, no algorithm rewrites) · **Owner:** author of `78fec3e2` (Orchestrator/main) · **Evidence:** `tests/reference/connection/probes/reconstructed-engine-vs-goldens.mjs` (both sides executed)
+**Reported by:** Agent 3 (connection) · **Date:** 2026-09-17 · **Severity:** HIGH (core directive: n8n 2.9.4 code reused 1:1, no algorithm rewrites) · **Owner:** author of `78fec3e2` (Orchestrator/main) · **Evidence:** `tests/reference/harness/reconstructed-engine-vs-goldens.mjs` (both sides executed)
 
 The file header says *"Mengadaptasi logika eksekusi DAG … 1:1 n8n v2.9.4"* and `test-run.mjs` prints *"Berfungsi 100% Sempurna"*, but the
 runner is a hand-written BFS with no counterpart in `reference/n8n/packages/core/src/execution-engine/workflow-execute.ts`
