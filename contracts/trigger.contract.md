@@ -111,3 +111,18 @@ error-reporting, and retry ports. It reproduces leader/follower permission rules
 startup/leadership webhooks, leader-only in-memory triggers and pollers, bounded activation batches,
 a concurrent-sweep lock, active-version error context, authorization no-retry behavior, leader
 takeover activation, and stepdown/shutdown teardown.
+
+## Phase-3 distributed activation pub/sub (TASK-423)
+
+`PubSubPublisher` emits deployment-prefixed command envelopes through an injected Redis-like client,
+adding `senderId`, reference `selfSend`, and reference `debounce` metadata. `PubSubSubscriber`
+rejects malformed, same-sender, and non-targeted commands, dispatches immediate activation commands,
+and coalesces debounced bursts through `PubSubEventBus`. `PubSubRegistry` binds handlers by instance
+type and checks mutable leader/follower role at event time; reinitialization must remove old handlers.
+
+`ActiveWorkflowPubSubRouter` owns the five multi-main workflow commands. Activation/deactivation
+mutations execute only behind leader-filtered handlers. Activation requires `activeVersionId`, leader
+execution suppresses republishing, failures persist inactive state, and success/failure/deactivation
+UI messages are broadcast locally then relayed to all main instances. Deactivation must still be
+published if local webhook cleanup fails. Clients and persistence remain injected ports; the Trigger
+LEGO does not import Redis or database implementations.

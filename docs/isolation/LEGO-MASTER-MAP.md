@@ -108,6 +108,7 @@ asserts that confinement.
 | `TASK-420-phase3-webhook-http-server` | webhook HTTP runtime | `contracts/webhook.contract.md` ✅ | `docs/isolation/webhook.md` ✅ | `packages/webhook-lego/test/*.test.mjs` 16/16 ✅ (6 real-socket transport cases) | `tools/webhook-lego-gate.mjs` 5/5 ✅ | **VERIFIED** |
 | `TASK-421-phase3-waiting-webhooks` | webhook waiting resume | `contracts/webhook.contract.md` ✅ | `docs/isolation/webhook.md` ✅ | `packages/webhook-lego/test/*.test.mjs` 24/24 ✅ (8 waiting-resume cases) | `tools/webhook-lego-gate.mjs` 5/5 ✅ | **VERIFIED** |
 | `TASK-422-phase3-active-workflow-coordinator` | trigger leadership runtime | `contracts/trigger.contract.md` ✅ | `docs/isolation/trigger.md` ✅ | `packages/trigger-lego/test/*.test.mjs` 19/19 ✅ (8 leadership cases) | `tools/trigger-lego-gate.mjs` 5/5 ✅ · Scheduler consumer 19/19 ✅ | **SUBMITTED_FOR_REVIEW** |
+| `TASK-423-phase3-trigger-pubsub-transport` | trigger distributed activation transport | `contracts/trigger.contract.md` ✅ | `docs/isolation/trigger.md` ✅ | `packages/trigger-lego/test/*.test.mjs` 33/33 ✅ (14 pub/sub + routing cases) | `tools/trigger-lego-gate.mjs` 5/5 ✅ · Scheduler consumer 33/33 ✅ | **SUBMITTED_FOR_REVIEW** |
 
 | Phase 3 gate | Result |
 | :--- | :--- |
@@ -123,4 +124,4 @@ holds 35 cases in 5 groups; `checksum` (8) + `toJSON` (6) + `rename` (6) are cov
 **Next Phase 3 work:** caveat C1 (11/11 live smoke on the VPS + PostgreSQL), the remaining frozen
 Workflow surface (`getStartNode`, `getHighestNode`, `getNodeConnectionIndexes`,
 `getParentMainInputNode`, `getParentNodesByDepth`), and the remaining runtime around the activation
-LEGO (distributed pub/sub transport and waiting-form rendering) — see `docs/isolation/execution.md` §7.
+LEGO (waiting-form rendering; distributed activation pub/sub is covered by TASK-423) — see `docs/isolation/execution.md` §7.

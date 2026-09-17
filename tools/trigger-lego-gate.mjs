@@ -41,8 +41,8 @@ gate('T03', 'trigger lifecycle conformance suite', () => {
   const output = run(process.execPath, ['--test', 'test/*.test.mjs'], pkg);
   const pass = /^# pass (\d+)$/m.exec(output)?.[1];
   const fail = /^# fail (\d+)$/m.exec(output)?.[1];
-  if (pass !== '19' || fail !== '0') throw new Error(`${pass} pass / ${fail} fail`);
-  return '19 pass / 0 fail';
+  if (pass !== '33' || fail !== '0') throw new Error(`${pass} pass / ${fail} fail`);
+  return '33 pass / 0 fail';
 });
 gate('T04', 'reference tree remains pinned', () => {
   const output = run(process.execPath, ['tools/workflow-reference-manifest.mjs', '--check']);
@@ -50,10 +50,10 @@ gate('T04', 'reference tree remains pinned', () => {
 });
 gate('T05', 'formal trigger contract remains present', () => {
   const contract = readFileSync(join(root, 'contracts/trigger.contract.md'), 'utf8');
-  for (const symbol of ['ActiveWorkflows', 'ActiveWorkflowCoordinator', 'TriggersAndPollers', 'ScheduledTaskManager', 'WorkflowActivationError']) {
+  for (const symbol of ['ActiveWorkflows', 'ActiveWorkflowCoordinator', 'ActiveWorkflowPubSubRouter', 'PubSubPublisher', 'PubSubSubscriber', 'PubSubRegistry', 'TriggersAndPollers', 'ScheduledTaskManager', 'WorkflowActivationError']) {
     if (!contract.includes(symbol)) throw new Error(`missing ${symbol}`);
   }
-  return '5/5 core symbols contracted';
+  return '9/9 core symbols contracted';
 });
 
 const report = {

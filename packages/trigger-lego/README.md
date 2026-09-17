@@ -33,3 +33,13 @@ The scheduler adapter intentionally does not parse or execute cron itself; that 
 batches active workflow startup, prevents concurrent sweeps, populates webhook rows during init and
 leadership changes on every main, restricts in-memory triggers/pollers to the leader, reports
 activation errors using active-version data, controls retries, and tears down on stepdown/shutdown.
+
+## Distributed activation transport (TASK-423)
+
+The dependency-free `PubSubPublisher` and `PubSubSubscriber` reproduce deployment-prefixed command
+envelopes, sender/target filtering, self-send activation commands, immediate delivery, trailing
+debounce, malformed-message rejection, and client shutdown through injected Redis-like ports.
+`PubSubRegistry` applies static instance-type filtering and dynamic leader/follower role filtering.
+`ActiveWorkflowPubSubRouter` wires the activation and deactivation command choreography: only the
+leader mutates trigger/poller state, while activation, deactivation, and activation-error display
+commands reach every main instance.
