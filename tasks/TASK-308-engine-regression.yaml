@@ -1,0 +1,62 @@
+id: TASK-308-engine-regression
+agent: arena-worker (session arena/01a0aee7-n8n-rust-v-4)
+lego: workflow
+module: reconstructed-engine
+phase: 2
+
+# Self-assigned, second task of this session (STANDING-WORKER-PROTOCOL §2: non-blocking,
+# take the next task without waiting for approval). dynamic_task_pool is still unreachable
+# (Supabase -> curl HTTP 000 from this sandbox), so the item came from the repository state.
+
+trigger: >
+  packages/reconstructed-engine is the only JavaScript reconstruction artifact required by
+  PROJECT_RULES.md rule 1 (ZERO RUST), yet its only "test" was test-run.mjs — a console
+  script with zero assertions that prints "Berfungsi 100% Sempurna!" whenever
+  status === "COMPLETED". Probing it with a 2-node cyclic workflow showed runWorkflow()
+  never terminates: the BFS while-loop is synchronous, so it also starves the event loop
+  and no external watchdog can fire (process still alive at 12 s, killed by `timeout`).
+
+allowed_paths:
+  - packages/reconstructed-engine/**
+  - package.json
+  - tasks/TASK-308-engine-regression.yaml
+  - results/TASK-308-engine-regression.md
+
+forbidden_paths:
+  - reference/n8n/**
+  - crates/**
+  - apps/**
+  - packages/workflow-lego/src/**
+  - reference/n8n/packages/editor-ui/**     # PROJECT_RULES rule 5: UI untouched
+
+operations:
+  - name: reproduce_hang
+    args: { cmd: "timeout 12 node /tmp/cycle-probe.mjs", expect: "exit 124 (killed, never completes)" }
+  - name: fix_cycle_guard
+    args:
+      file: packages/reconstructed-engine/runner.mjs
+      rule: "a node may execute at most max(1, inbound-edge count) times per run"
+      rationale: >
+        Guaranteed termination (total executions bounded by sum over nodes of
+        max(1, inbound)) while leaving linear and diamond graphs byte-identical to the
+        previous behaviour. Cyclic arrivals are reported, not silently swallowed.
+  - name: add_regression_suite
+    args: { file: packages/reconstructed-engine/test/engine.test.mjs, cases: 13 }
+  - name: wire_script
+    args: { script: "npm run engine:test" }
+
+verification:
+  before: "timeout 12 node /tmp/cycle-probe.mjs -> exit 124 (hung)"
+  after: "same probe -> 'completed, log entries: 2', exit 0"
+  suite: "npm run engine:test -> 13 tests, 13 pass, 0 fail, exit 0"
+  backward_compat: "node packages/reconstructed-engine/test-run.mjs -> exit 0 (unchanged output shape)"
+  reference_untouched: "git status shows no reference/n8n/** path"
+
+known_divergences_locked_by_tests:   # asserted as-is on purpose, NOT endorsed as correct
+  - "diamond fan-in: destination executes once per inbound edge; n8n 2.9.4 waits for all inputs and executes once with merged items"
+  - "handler throw rejects the whole run; n8n records the node error and stops with status 'error' + persisted runData"
+
+merge_condition:
+  - engine_suite_pass
+  - no_reference_change
+  - no_ui_change
