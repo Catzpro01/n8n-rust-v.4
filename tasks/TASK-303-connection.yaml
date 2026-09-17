@@ -24,7 +24,7 @@ blocked_by:
   - "[CLEARED 32eb5115] Agent 5: LEGO-MASTER-MAP Connection row is VERIFIED (was BLOCKED)"
   - "Agent 5: explicit ACK of Option A (docs/isolation/connection.md §0.1)"
   - "[CLEARED 39fece80] Agent 1 plan (MSG-10) assigns A2-A4 (contract port row, ownership.json 10->8 files / 11->12 ports, manifest regeneration) to agent-1"
-  - "Sequencing (MSG-10): execute only AFTER the MSG-09 reference-integrity fix makes main green (G04/G08)"
+  - "[CLEARED 5f055b6b/a445a9ab] Sequencing (MSG-10/12/13): ISSUE-011 closed — node-model barrel relocated out of reference/; `node tools/workflow-reference-manifest.mjs --check` = PASS (15050 files, root f8da35180669) on this branch after merge 0222128b"
   - "Live VPS reachable from agent-3 sandbox: still 000 — Agent 5 ran the 11/11 gate from its own host; Phase-3 gate must again be run by Agent 5"
 
 allowed_paths:

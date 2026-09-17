@@ -99,7 +99,15 @@ Implementation + `cargo test` are run by the Orchestrator on the VPS host.
 
 Harness total: 20 cases (connection 7/7).
 
-### 0.8 Phase-3 follow-up manifest
+### 0.8 Gate status after ISSUE-011 closure
+
+`5f055b6b` moved the agent-authored `node-model/index.ts` out of `reference/n8n/**`; verified locally:
+`node tools/workflow-reference-manifest.mjs --check` → **PASS** (15050 files, root `f8da35180669`).
+The last *sequencing* blocker on `P-CONNECTION-GRAPH` (MSG-12 "not while G04/G08 red") is therefore
+cleared. Remaining `blocked_by` in `TASK-303`: Agent 5 ACK of the proposal + `packages/connection-lego/**`
+path, Agent 1's A2–A4 (manifest/port row), and Agent 5 running the 11 gates from the VPS host.
+
+### 0.9 Phase-3 follow-up manifest
 
 Option A is drafted (not executed) as `tasks/TASK-303-connection.yaml`, status `PROPOSED`. It lists the
 exact 12 graph + 1 content symbols for port `P-CONNECTION-GRAPH`, the types that stay in the shared kernel,
