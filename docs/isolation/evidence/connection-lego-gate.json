@@ -1,0 +1,133 @@
+{
+  "generatedAt": "2026-09-17T20:54:06.738Z",
+  "phase": "phase-3+5-connection",
+  "lego": "connection",
+  "port": "P-CONNECTION-GRAPH",
+  "oracle": {
+    "package": "/home/user/n8n-rust-v.4/packages/workflow-lego/node_modules/n8n-workflow",
+    "version": "2.9.1"
+  },
+  "corpus": [
+    {
+      "id": "G01-linear",
+      "description": "A → B → C",
+      "nodes": 3
+    },
+    {
+      "id": "G02-multi-output",
+      "description": "A fans out to B and C, both join D",
+      "nodes": 4
+    },
+    {
+      "id": "G03-sparse-slots",
+      "description": "A has an empty middle slot and a null slot",
+      "nodes": 3
+    },
+    {
+      "id": "G04-multi-type",
+      "description": "A → B on main plus an ai_languageModel sub-node",
+      "nodes": 3
+    },
+    {
+      "id": "G05-cycle",
+      "description": "A → B → C → A (cycles are legal)",
+      "nodes": 3
+    },
+    {
+      "id": "G06-self-loop",
+      "description": "A → A plus A → B",
+      "nodes": 2
+    },
+    {
+      "id": "G07-dangling",
+      "description": "A → X where X is not part of the workflow, B → A",
+      "nodes": 2
+    },
+    {
+      "id": "G08-diamond-duplicates",
+      "description": "diamond with duplicated paths A→B→D, A→C→D, C→E, D→E",
+      "nodes": 5
+    },
+    {
+      "id": "G09-chain-depth",
+      "description": "A → B → C → D → E for depth-bounded traversal",
+      "nodes": 5
+    },
+    {
+      "id": "G10-empty",
+      "description": "no connections at all",
+      "nodes": 2
+    },
+    {
+      "id": "G11-external-input",
+      "description": "sub-selection {B,C} receives an input edge from A outside the selection",
+      "nodes": 4
+    },
+    {
+      "id": "G12-loop-back",
+      "description": "selection with a loop back into itself (root tolerance rule)",
+      "nodes": 3
+    }
+  ],
+  "comparisons": {
+    "total": 1258,
+    "byCheck": {
+      "C03": 969,
+      "C04": 271,
+      "C05": 6,
+      "C08": 12
+    }
+  },
+  "differences": [],
+  "checks": [
+    {
+      "id": "C01",
+      "title": "declared surface (P-CONNECTION-GRAPH) exists in the reference and the candidate",
+      "status": "PASS",
+      "detail": "13 symbols in both, reference n8n-workflow@2.9.1"
+    },
+    {
+      "id": "C02",
+      "title": "boundary: the candidate routing engine imports nothing",
+      "status": "PASS",
+      "detail": "ESM twin: 0 imports"
+    },
+    {
+      "id": "C03",
+      "title": "traversal differential: mapConnectionsByDestination + getConnected/Child/ParentNodes",
+      "status": "PASS",
+      "detail": "969 calls identical"
+    },
+    {
+      "id": "C04",
+      "title": "graph analysis differential: adjacency, edges, roots, leaves, hasPath, extractable",
+      "status": "PASS",
+      "detail": "271 calls identical"
+    },
+    {
+      "id": "C05",
+      "title": "connection diff differential: compareConnections",
+      "status": "PASS",
+      "detail": "6 pairs identical"
+    },
+    {
+      "id": "C06",
+      "title": "twin parity: the compiled TypeScript twin behaves exactly like the committed ESM twin",
+      "status": "PASS",
+      "detail": "typescript twin == esm twin over 12 graphs"
+    },
+    {
+      "id": "C07",
+      "title": "unit suite PASS (packages/connection-lego/test)",
+      "status": "PASS",
+      "detail": "node --test test/*.test.mjs → 20/20 PASS"
+    },
+    {
+      "id": "C08",
+      "title": "facade integration: the Phase 5 facade schedules workflows through the verified port",
+      "status": "PASS",
+      "detail": "12 plans identical over 12 graphs (oracle-derived) + executeWorkflow order verified"
+    }
+  ],
+  "verdict": "PASS"
+}

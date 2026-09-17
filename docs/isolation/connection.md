@@ -196,3 +196,98 @@ connectionsByDestinationNode[dest][type][inputIndex] = IConnection[]  (src node,
 | full harness (`execution-data` + `expression` + `connection`) | 18/18 PASS |
 | `git diff -- reference/n8n` | empty → 11/11 baseline unaffected |
 | Live VPS | unreachable from sandbox → status `TESTED` |
+
+## 12. Phase 3 gate — differential verification of the routing engine (P-CONNECTION-GRAPH)
+
+The Phase-3 takeover (`da1654a8`) implemented the routing engine in
+`packages/reconstructed-engine/src/connection-routing-engine.ts` (+ a hand-written ESM twin that
+`runner.mjs` imports) and declared `extract` / `verify` scripts — but the two referenced tools did
+not exist, so nothing independently checked the "1:1 dari n8n 2.9.4" claim. That gate now exists:
+
+```bash
+npm run connection:check     # tools/connection-isolation-gate.mjs → C01..C07
+```
+
+The gate executes the reference oracle (`n8n-workflow@2.9.1` — the exact n8n 2.9.4 dependency set)
+and the candidate engine over a 12-graph corpus (linear, fan-out, sparse slots, multi-type, cycle,
+self-loop, dangling, diamond, depth chain, empty, external input edge, loop-back selection) and
+compares **1,246 call results**: traversal order matters, so arrays are compared verbatim.
+
+### 12.1 What the first run found (before)
+
+| Check | Verdict at `da1654a8` |
+|---|---|
+| `C01` declared surface | **FAIL** — `getInputEdges`, `getOutputEdges` declared in the manifest but not implemented in the ESM twin |
+| `C03` traversal (969 calls) | PASS — `mapConnectionsByDestination`, `getConnected/Child/ParentNodes` were already reference-exact |
+| `C04` graph analysis (223 calls) | **FAIL — 35 divergences**, first: `buildAdjacencyList` invented empty destination keys (`['C', []]`) |
+| `C05` connection diff (6 pairs) | PASS |
+| `C06` twin parity | **FAIL — 20 divergences**: the TypeScript source and the ESM twin had already drifted (the TS twin has the edge helpers, the ESM twin does not) |
+
+Two semantic divergences mattered beyond the shape:
+
+1. **`getRootNodes` used every source in the adjacency map**, including nodes outside the selection.
+   The reference only marks a node inner when an edge *from a node inside the selection* points at
+   it, so a selection that receives an external `main` edge (case `G11-external-input`) got the wrong
+   root set — which then changed `parseExtractableSubgraphSelection` verdicts.
+2. **`parseExtractableSubgraphSelection` returned `{start, end}` for any 1-root/1-leaf selection**,
+   while the reference only yields `start`/`end` for nodes that are simultaneously a root **and** an
+   input node (resp. leaf **and** output node); everything else is `{ start: undefined, end: undefined }`.
+
+### 12.2 What changed
+
+- `connection-routing-engine.ts` is now a reference-exact port of `graph/graph-utils.ts`
+  (helpers `union`/`intersection`/`difference` included, same iteration order and error payloads).
+- The ESM twin is **generated** from the TypeScript source:
+  `node tools/connection-isolation-extract.mjs --emit-esm`; `C06` fails if the two drift again.
+- `getInputEdges` / `getOutputEdges` are implemented (edge-leading-in / edge-leading-out of a
+  selection, all connection types, exactly like the reference).
+
+### 12.3 After
+
+| Check | Verdict |
+|---|---|
+| `C01` declared surface | PASS — 13 symbols in reference **and** candidate |
+| `C02` boundary (candidate imports nothing) | PASS |
+| `C03` traversal | PASS — 969/969 identical |
+| `C04` graph analysis | PASS — 271/271 identical |
+| `C05` connection diff | PASS — 6/6 pairs identical |
+| `C06` twin parity (TS vs generated ESM) | PASS — 12 graphs |
+| `C07` unit suite (`packages/connection-lego/test`) | PASS — 20/20 (5 boundary + 8 graph-analysis + 7 facade integration) |
+| **Total** | **1,246 differential calls, 0 divergences** |
+
+Evidence: `docs/isolation/evidence/connection-lego-gate.json`.
+
+## 13. Phase 5 — the facade consumes the port (INTEGRATED)
+
+Phase 5 shipped `packages/reconstructed-engine/src/n8n-reconstructed-facade.ts` as the single
+production entry point ("12 LEGO unified"), but connection was only *decorative* there: the file
+carried its own `class InternalConnectionEngine` with a hand-written `mapConnectionsByDestination`,
+and the value it computed was never used — `executeWorkflow()` returned results in **declaration
+order**, and the integration suite tested a `TestFacade` clone rather than the facade itself.
+
+### 13.1 What changed
+
+| Before | After |
+|---|---|
+| `InternalConnectionEngine` inline copy (drifted shape: `{node, type, index}` without preserving slot semantics) | deleted; the facade imports the verified port `import * as connectionPort from './connection-routing-engine.ts'` |
+| connection data unused | `facade.connection` **is** the port module (same function objects, no wrapper) |
+| results in declaration order | `resolveExecutionPlan()` (depth-first from every root, outgoing `main` connections in output-index order, each node once; unreachable nodes appended in declaration order) + `executeWorkflow()` returns `data` and `executionOrder` in that plan |
+| `test-integration.mjs` exercised a copy | `test/03-facade-integration.test.mjs` imports the real facade (Node ≥ 22.18 type stripping) and is enforced by `C07` |
+
+### 13.2 New gate check `C08`
+
+`C08` re-computes the expected plan for all 12 corpus graphs **using the oracle only**
+(`buildAdjacencyList` + `getRootNodes` + `getLeafNodes` from `n8n-workflow@2.9.1`, with an
+independently written traversal), compares it to `facade.resolveExecutionPlan()`, performs the port
+identity check, rejects an inline engine in the source, and runs one `executeWorkflow()` whose nodes
+are declared in **reverse** order so declaration order cannot mask a broken wiring.
+
+Negative controls (temporarily injected, gate caught each, then reverted):
+
+| Injected defect | Caught by |
+|---|---|
+| `executeWorkflow` schedules in declaration order | `C08` — `facade.executeWorkflow order ["C","B","A"] ≠ oracle ["A","B","C"]` (and `C07`) |
+| `facade.connection` wraps the port in a copy | `C07` — the port must be exposed by reference |
+| (earlier) ESM twin left un-regenerated after a TS edit | `C06` — 20 twin divergences |
+
+Evidence: `docs/isolation/evidence/connection-lego-gate.json` (`phase: phase-3+5-connection`).

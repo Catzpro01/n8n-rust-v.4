@@ -1,0 +1,46 @@
+# PHASE3B-CONNECTION-GATE — differential gate for the Connection LEGO (P-CONNECTION-GRAPH)
+# Trigger: origin/arena/01a0b104 da1654a8 "Continue per arahan — implement connection-lego
+#   P-CONNECTION-GRAPH … Tests: connection-lego 5/5 PASS".
+# Findings that this task closes:
+#   - packages/connection-lego/package.json declared `extract` and `verify` scripts pointing at
+#     tools/connection-isolation-extract.mjs and tools/connection-isolation-gate.mjs, but neither
+#     file existed: the "1:1 dari n8n 2.9.4" claim had no independent verification at all.
+#   - the ESM twin (what runner.mjs imports) and the TypeScript source had already drifted: the TS
+#     twin implements getInputEdges/getOutputEdges, the ESM twin does not (20 divergences on the
+#     differential corpus) — exactly the failure mode the 5/5 unit suite cannot see.
+#   - getRootNodes counted incoming edges from OUTSIDE the selection, and
+#     parseExtractableSubgraphSelection returned {start,end} where the reference returns {}.
+#     Together: 35/223 graph-analysis calls diverged from the pinned reference artifact.
+
+phase: 3B
+lego: connection
+agent: agent-1 (Arena session arena/01a0b104-n8n-rust-v-4)
+
+allowed_paths:
+  - packages/reconstructed-engine/src/connection-routing-engine.ts
+  - packages/reconstructed-engine/src/connection-routing-engine.mjs   # generated twin
+  - tools/connection-isolation-gate.mjs
+  - tools/connection-isolation-extract.mjs
+  - packages/connection-lego/**        # manifest already declared the port; no source change
+  - docs/isolation/connection.md
+  - docs/isolation/evidence/connection-lego-gate.json
+  - contracts/connection.contract.md
+  - package.json
+  - .gitignore
+  - tasks/PHASE3B-CONNECTION-GATE.yaml
+  - results/PHASE3B-CONNECTION-GATE.md
+
+forbidden_paths:
+  - reference/n8n/**                   # pinned, read-only (Vue editor UI must stay identical)
+  - crates/**
+  - apps/**
+
+oracle:
+  - .runtime/node_modules/n8n-workflow@2.9.1 (barrel + dist/cjs/graph/graph-utils.js +
+    dist/cjs/connections-diff.js) — the exact n8n 2.9.4 dependency set
+
+tests:
+  - connection_check   # npm run connection:check → C01..C07, 1,246 differential calls
+  - connection_suite   # node --test packages/connection-lego/test/*.test.mjs (13/13: boundary + graph analysis)
+  - twin_parity        # tools/connection-isolation-extract.mjs --emit-esm + gate C06
+  - repository_gate    # npm run verify (11/11) + npm run i18n:check (5/5)

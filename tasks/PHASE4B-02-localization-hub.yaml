@@ -1,0 +1,48 @@
+# PHASE4B-02 — Backend Native Localization Hub hardening (6 locales)
+# Trigger: origin/main 8f3f1af4 "feat(i18n): implement 6-language NativeLocalizationService
+#   (ID, EN, JV, AR, ZH, RU) [Phase 4B]" + SWARM-PHASE4-01..10 results (all 10 claim SUCCESS).
+# Findings that this task closes:
+#   - the shipped hub had NO key-parity guarantee: 6 dictionaries happened to be equal,
+#     nothing proved it and nothing failed when they drifted.
+#   - translate() had no interpolation, no plural choice, no defaultValue, no way to turn
+#     the English base fallback off; locale input was not normalised (setLocale('en-US')
+#     was a silent no-op) and the declared RTL metadata was unused.
+#   - the Phase 4A settings adapter kept its own two-language list ('id' | 'en'), i.e. two
+#     competing sources of truth for the language switcher.
+#   - nothing imported the hub: no export, no test, no contract, no evidence, no gate.
+
+phase: 4B
+lego: localization-hub
+agent: agent-1 (Arena session arena/01a0b104-n8n-rust-v-4)
+
+allowed_paths:
+  - packages/workflow-lego/src/backend-localization-service.ts
+  - packages/workflow-lego/src/settings-localization-adapter.ts
+  - packages/workflow-lego/test/06-localization.test.mjs
+  - tools/localization-hub-check.mjs
+  - tools/localization-module-loader.mjs
+  - contracts/i18n.contract.md
+  - docs/isolation/localization.md
+  - docs/isolation/evidence/localization-hub.json
+  - package.json
+  - packages/workflow-lego/package.json
+  - tasks/PHASE4B-02-localization-hub.yaml
+  - results/PHASE4B-02-localization-hub.md
+
+forbidden_paths:
+  - reference/n8n/**            # the Vue editor bundle must stay 100% identical (PROJECT_RULES §2)
+  - crates/**                   # ZERO RUST in the JS/TS reconstruction (PROJECT_RULES §1)
+  - apps/**
+
+requires:
+  - contracts/i18n.contract.md
+
+reference:
+  - reference/n8n/packages/frontend/@n8n/i18n (mechanism parity: fallbackLocale 'en',
+    warnHtmlMessage false, GetBaseTextKey '_' exclusion, LocaleMessages.numberFormats)
+
+tests:
+  - i18n_check        # node tools/localization-hub-check.mjs (L01..L05)
+  - localization_suite # node --test packages/workflow-lego/test/06-localization.test.mjs
+  - isolation_check   # boundary + kernel + port + reference integrity
+  - repository_gate   # npm run verify (11/11, live verification included)

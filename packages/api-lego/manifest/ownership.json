@@ -1,0 +1,25 @@
+{
+  "lego": "api",
+  "phase": "phase-4-verified",
+  "reference": {
+    "pinnedVersion": "2.9.4",
+    "pinnedCommit": "b6dc2787c45677a29a9612cd27eb911302961a83"
+  },
+  "owns": {
+    "description": "API — REST /rest/*, public /api/v1/*, health, push SSE/WS, envelope",
+    "files": [
+      "AbstractServer",
+      "Server",
+      "ControllerRegistry",
+      "ResponseHelper",
+      "push"
+    ]
+  },
+  "publicSurface": [
+    "AbstractServer",
+    "Server",
+    "ControllerRegistry",
+    "ResponseHelper",
+    "push"
+  ]
+}

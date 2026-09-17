@@ -1,0 +1,25 @@
+{
+  "lego": "persistence",
+  "phase": "phase-4-verified",
+  "reference": {
+    "pinnedVersion": "2.9.4",
+    "pinnedCommit": "b6dc2787c45677a29a9612cd27eb911302961a83"
+  },
+  "owns": {
+    "description": "Persistence — workflow_entity, execution_entity, flatted serialization, migration",
+    "files": [
+      "WorkflowRepository",
+      "ExecutionRepository",
+      "SettingsRepository",
+      "workflow_entity",
+      "execution_entity"
+    ]
+  },
+  "publicSurface": [
+    "WorkflowRepository",
+    "ExecutionRepository",
+    "SettingsRepository",
+    "workflow_entity",
+    "execution_entity"
+  ]
+}

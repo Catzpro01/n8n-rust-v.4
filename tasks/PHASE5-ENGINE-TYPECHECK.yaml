@@ -1,0 +1,35 @@
+# PHASE5-ENGINE-TYPECHECK — the reconstructed engine must compile under strict TypeScript
+# Trigger: ISSUE-022 ("reconstructed-engine .ts files are untyped/unbuilt") plus the discovery that
+#   `production-readiness-certificate.ts` did not even parse: an unescaped `'` inside a single-quoted
+#   string (`$json/$('X')`) made the whole file invalid TypeScript — the "100/100 production ready"
+#   artifact could not be loaded by any tool. Nothing in the repo type-checked the engine package.
+# LEGO cycle: INTEGRATED (Phase 5) → hardened.
+
+phase: 5
+lego: integration (engine package)
+agent: agent-3 (Arena session arena/01a0b104-n8n-rust-v-4)
+
+allowed_paths:
+  - packages/reconstructed-engine/**
+  - tools/workflow-isolation-gate.mjs
+  - package.json
+  - README.md
+  - docs/isolation/evidence/gate-report.json
+  - docs/isolation/workflow-verification.md
+  - tasks/PHASE5-ENGINE-TYPECHECK.yaml
+  - results/PHASE5-ENGINE-TYPECHECK.md
+
+forbidden_paths:
+  - reference/n8n/**        # pinned, read-only (Vue editor UI stays byte-identical)
+  - crates/**
+  - apps/**
+  - packages/workflow-lego/**
+
+oracle:
+  - none needed (compile-time task); the connection differential oracle is unaffected
+
+tests:
+  - engine_typecheck   # tsc -p packages/reconstructed-engine/tsconfig.json → 0 errors (strict)
+  - isolation_gate     # npm run verify → G01..G12, 12/12 PASS, live 7/7, behavior change none
+  - connection_check   # npm run connection:check → C01..C08, 1,258 differential calls
+  - engine_suites      # test-run.mjs 100% + test-integration.mjs 12/12
