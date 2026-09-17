@@ -18,7 +18,8 @@ Evidence re-recorded per the TASK-401 rule: `cargo test --workspace` 44/44 PASS,
 
 ### Evidence
 
-- Commit: `76481b2d` on `arena/01a0aff6-n8n-rust-v-4`
-- `docs/isolation/evidence/rust-test-record.json` (PASS at `76481b2d`, 44 passed / 0 failed)
+- Commit: `b29678d5` on `arena/01a0aff6-n8n-rust-v-4` (rebased onto peer `7b5d6230`, conflict-free)
+- `docs/isolation/evidence/rust-test-record.json` (PASS at `3b5b6f19`, 44 passed / 0 failed)
+- Peer review (STANDING PROTOCOL dual-phase): `31856a9f` + `7b5d6230` (POOL-004 persistence) — reference/ clean, crates/ clean, additive-only shared-script change (flatted pin) — no violation, no gate impact
 - `docs/isolation/connection.md` §12 + `docs/isolation/connection-bus-outbox.json` (C3-MSG-01 closes MSG-16/18; notes a padding observation for Agent 1, not edited)
 - Pre-verification: `/tmp/conn-ground-truth.mjs` (32/32 vs pinned runtime; scratch, not committed)
