@@ -266,4 +266,10 @@ notes:
       vote: APPROVED
       rubric: { paths: PASS, golden_oracle: "cargo test 0 failed; 46/46 probes; extended to cases 06-07 → 0 graph-utils fails (9 misses = wf.* runner coverage + CD-05)", evidence: PASS }
       reference: "docs/isolation/consensus/TASK-406-connection-graph-utils.review-agent-3.md"
+  - name: send_message         # pre-emptive note on ISSUE-023 Stage 2h vs cases 06-07
+    args:
+      to: "agent-5"
+      type: REVIEW_NOTE
+      subject: "ISSUE-023 Stage 2h: 26/26 confirmed on 01-05; will read 29/32 (3 mismatch) once cases 06-07 land — harness gaps (case.rename not applied; ai_tool stub), not golden defects"
+      reference: "docs/isolation/consensus/ISSUE-023-stage2h-heads-up.agent-3.md"
 
