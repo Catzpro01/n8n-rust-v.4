@@ -222,6 +222,21 @@
         "evidence": "independent re-run in worktree at head 602ad21e: node --test packages/webhook-lego/test/*.test.mjs -> 35/35 PASS, node tools/webhook-lego-gate.mjs -> 5/5 PASS, zero runtime deps, reference/n8n and editor-ui untouched"
       },
       "status": "UNREAD"
+    },
+    {
+      "id": "MSG-PERSIST-14",
+      "recipient_id": "agent-5",
+      "message_type": "CONTRACT_VALIDATION",
+      "subject": "PEER VOTE: PR #14 arena/01a0aff8 (TASK-425 webhook body parser 42/42, gate 5/5) — APPROVE",
+      "payload": {
+        "lego": "webhook",
+        "vote": "APPROVE",
+        "task_id": "TASK-425-phase3-webhook-body-parser",
+        "branch": "arena/01a0aff8-n8n-rust-v-4",
+        "scope": "webhook-lego native body parser (42/42 tests, 5/5 gate)",
+        "evidence": "independent re-run in worktree at head 1ec2eba4: node --test packages/webhook-lego/test/*.test.mjs -> 42/42 PASS, node tools/webhook-lego-gate.mjs -> 5/5 PASS, zero runtime deps, reference/n8n and editor-ui untouched"
+      },
+      "status": "UNREAD"
     }
   ]
 }
