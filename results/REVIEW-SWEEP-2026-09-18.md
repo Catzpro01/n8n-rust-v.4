@@ -111,3 +111,24 @@ connection 58/58 · workflow-model 52/52 · node 93/93 + differential 1609/0.
 | :--- | :--- | :--- | :--- |
 | `TASK-WORKFLOW-MODEL-02.md` (updated, `3393a781`) | constructor now passes the reference's six `getNodeParameters` args; port self-resolves from node-lego; 54/54; mangling falsification test; ISSUE-027 FIXED | package **54 pass / 0 fail**; six-arg call observed in `workflow.ts:180-187` (properties, parameters, true, false, node, description); falsification test re-derives the 14 `wf.*` probes under a deliberately mangling stand-in; ledger entry corrected to FIXED with its own staleness documented (own-entry correction, history preserved — no append-only violation) | **APPROVE** (supersedes sweep-7 52/52 vote) |
 | `TASK-415-phase3-validation-lego.md` | validation-lego 20/20 (golden A–D + reference parity + 2 negative controls), strict tsc, no forbidden touches | **20 pass / 0 fail** after `npm install` in the lane (typescript devDep declared but never installed here — env-only, ISSUE-022 class, same as the workflow-lego precedent); negatives + `n8n-workflow` parity wiring present in `conformance.test.mjs`; commit touches zero `reference/`/`crates/`/`apps/` paths; `verify:all` exit 0 on this tip | **APPROVE** |
+
+## Sweep 9 (2026-09-18, on `ef823058`) — TASK-EERR-01 + TASK-416
+
+Sandbox was re-provisioned before this sweep (git ref rolled to `fc4e5631`, all lane
+`node_modules` wiped — gitignored, not snapshotted). Recovered via
+`fetch + checkout -B + reset --hard` onto `ef823058` (own `5b761716` confirmed ancestor;
+worktree files verified intact first), then `npm install` in the five lanes that need it
+(documented ISSUE-022-class prerequisite, third occurrence).
+
+| Result (owner) | Claim | Fresh re-run on merged tree (this sweep) | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-EERR-01.md` | 3-way error-surface differential 4 agree / 14 documented / 0 diverge; stash control 16 DIVERGE; node 101/101, exec 67/67; gates 10/10 + 7/7 | **4 agree / 14 documented-delta / 0 diverge across 18**; control reproduced by swapping pre-fix `errors.mjs` from `2227bbdc^` → **16 DIVERGE**, restored → 4/14/0 (tree verified byte-clean after); **101/101** + **67/67**; Node gate **7/7**, Execution gate **10/10** | **APPROVE** |
+| `TASK-416-phase3-credentials-lego.md` | credentials-lego 22/22 (2 negatives + golden parity), gate 6/6 | **22 pass / 0 fail**; Credentials gate **6/6**; negatives + `credentials.golden.json` parity wiring present | **APPROVE** |
+
+**Matrix at sweep time:** `verify:all` real exit 0 · Execution 10/10 · Trigger 5/5 · Webhook 5/5 ·
+Scheduler 6/6 · Node 7/7 · Persistence 6/6 · Credentials 6/6 · error-surface 4/14/0.
+
+**Status-hygiene note (not a vote, for the orchestrator):** `TASK-416`'s result claims
+`VERIFIED` while its YAML says `IMPLEMENTED`, and phase-3 tasks 406/407/408/410 sit at
+`IMPLEMENTED` despite sweep-1 APPROVEs. Owners/orchestrator should reconcile; peer YAMLs left
+untouched by this sweep.
