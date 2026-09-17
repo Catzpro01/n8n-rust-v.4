@@ -324,6 +324,17 @@ Second vote on `TASK-NREFP-01-phase3-node-reference-parser` (peer submitted in `
 | :--- | :--- | :--- | :--- |
 | `TASK-NREFP-01-phase3-node-reference-parser.md` | node-reference-parser + lodash-lite + OperationalError, 15 new cases, suite 116/116, gate 7/7, differential N25 1695 agree / 0 diverge across 25 groups | package **116 pass / 0 fail**; Node gate **7/7**; differential **1695 agree / 0 diverge** (0 harness errors); `verify:all` 14 lanes real exit 0 | **APPROVE** (second vote) |
 
+## Sweep 20 (2026-09-18, on `2d70d2c4`) — TASK-428
+
+Sandbox re-provisioned again before this sweep (5th occurrence: ref rolled to `fc4e5631`,
+lane `node_modules` wiped). Recovered via `fetch + checkout -B + reset --hard` onto
+`2d70d2c4` (own `ce95cbde` confirmed ancestor, worktree verified intact first), then
+`npm install` in the five lanes that need it.
+
+| Result (owner) | Claim | Fresh re-run on merged tree (this sweep) | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-428-phase3-wait-tracker.md` | WaitTracker + sub-workflow resumption 1:1 vs CLI reference, exec suite 67 → 85/85 (+18), Execution gate 11/11 (new E11), zero deps, `verify:all` green | execution-engine **85 pass / 0 fail** (`07-wait-tracker.test.mjs` holds the 18 new cases); Execution gate **11/11** with E11 `18 pass / 0 fail`; no `dependencies` field in the lane manifest; `verify:all` real exit 0 on this tip | **APPROVE** |
+
 
 
 ## Sweep 15 (2026-09-18, on merged TASK-428 tree) — TASK-428
