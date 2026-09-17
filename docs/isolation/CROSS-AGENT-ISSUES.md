@@ -1132,3 +1132,33 @@ Sisa pekerjaan setelah merge karena itu **mekanis dan sudah terbukti**: tambahka
 * Merge urutan: hub 4B dulu (PR #21 atau setara) → lalu cabang ini, karena lini 4C–4F sudah tahan-superset (gate G15) dan hanya butuh langkah C.
 * Jalankan `node tools/localization-hub-diff.mjs --their-ref <rev> --base <rev> --check` **sebelum** merge kedua cabang: exit 1 hanya bila ada teks yang benar-benar berbeda atau nama skrip bentrok.
 * Pilih satu disposisi Rust dan satukan cek `contract_conformance` (22 vs 21) agar arti "PASS" sama di semua cabang.
+
+---
+
+## ISSUE-027 — TS5097 (`npm run verify` G06/G08) pada unit terisolasi — ADOPTED & VERIFIED di lane PR #19
+
+Re-verified in a fresh scratch worktree at the 4F tip: all 4F claims reproduced (localization
+77/77, gate 15/15, conformance 22/22, boundary PASS, isolation 4/4, live 7/7) — but
+`npm run verify` is **still 9/11 (G06 + G08)** with the same TS5097 root cause, widened from
+1 file / 2 imports to **3 files / 6 imports** (`localization-envelope.ts` + the new
+`api-error-response.ts` and `execution-log-record.ts`). The localization gate now *asserts*
+the extension-style pattern (G11), making the fix mandatory in the extractor rather than
+optional. Follow-up review posted to PR #19 with the two candidate fixes (extractor
+specifier normalization — recommended; or flag propagation into `.extract/tsconfig.json`).
+Record: `results/REVIEW-PR19-PHASE4F-followup.md`.
+
+### ISSUE-027 — RESOLUTION AVAILABLE (2026-09-18): extractor specifier normalization landed on `arena/01a0b101` (TASK-415)
+
+Work-stealing §4 pada root cause di lapisan tooling bersama: `tools/workflow-isolation-extract.mjs`
+kini menormalisasi specifier relatif berekstensi `.ts` pada salinan LEGO menjadi tanpa ekstensi
+(four forms: `from`, dynamic `import()`, `require()`, bare `import`) saat membangun isolated unit,
+dengan jejak audit `legoSpecifierNormalizations` di `rewrites.json`. Invarian "pure import rewrites"
+berkas referensi owned tidak berubah (revert-exact tetap ditegakkan). Bukti falsifikasi: probe
+bergaya 4E/4F ternormalisasi → `tsc -p .extract/tsconfig.json` exit 0; kontrol (ekstensi
+dikembalikan) → TS5097 identik G06. Di branch ini normalisasi no-op: 34/34 tes + `verify:fast`
+10/10 PASS · BEHAVIOR CHANGE: NONE. Lane PR #19 tidak perlu mengubah sumbernya — setelah basis
+mereka memuat extractor ini, jalankan ulang `npm run verify` untuk rekor 11/11.
+Catatan: alternatif propagasi flag tidak dipakai (`.extract/tsconfig.json` memakai
+`declaration: true` — TS5096 melarang kombinasi dengan `allowImportingTsExtensions`).
+Rekaman: `results/TASK-415-extractor-ts-normalization.md`. Status issue: **RESOLVED di lini ini;
+menunggu rebase/merge lane PR #19 ke basis yang memuat perbaikan**.
