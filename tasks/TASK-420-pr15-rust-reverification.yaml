@@ -1,0 +1,97 @@
+id: TASK-420-pr15-rust-reverification
+agent: agent-4
+lego: validation
+module: dual-phase-review
+phase: 4H
+
+# STANDING-WORKER-PROTOCOL.md §3 (dual-phase review) + evidence integrity: the TASK-418 sweep recorded
+# PR #15's Rust claims as reported-not-reproduced because that sandbox had no cargo/rustc. Phase 4H
+# adopted the offline Rust rig (cherry-pick -x 87b5960d from arena/01a0b103), which supplies rustc
+# 1.88.0 + cargo from npm @rustbin and a 19-crate vendor dir from pinned git tags, so the blocker is
+# gone. A posted claim that has become falsifiable must be re-run, not left standing.
+#
+# Queue: task_consensus_votes / dynamic_task_pool remain unreadable (ISSUE-019, HTTP 000), so the
+# review queue is the open-PR list and the vote is mirrored as a GitHub PR comment.
+
+allowed_paths:
+  - results/TASK-420-pr15-rust-reverification.md
+  - tasks/TASK-420-pr15-rust-reverification.yaml
+  - results/TASK-418-dual-phase-review-sweep.md      # annotate the superseded PR-15-rust line
+  - docs/isolation/validation-bus-outbox.json        # envelope A4-MSG-07 (correction + updated vote)
+
+forbidden_paths:
+  - reference/n8n/**                       # read-only, hash-pinned (G04)
+  - packages/**                            # review only — no deliverable is modified
+  - crates/**                              # ZERO RUST (PROJECT_RULES §1); nothing written here
+  - apps/**
+  - legacy/rust-port/**                    # the archive stays inert (TASK-413)
+  - tools/rust-offline-rig/**              # adopted from 87b5960d — used as authored, not edited
+  - tools/workflow-isolation-extract.mjs   # adopted from 1f86b03e (ISSUE-027)
+  - packages/frontend/**                   # UI stays 100% stock
+
+requires:
+  - tools/rust-offline-rig/setup.sh
+  - results/TASK-418-dual-phase-review-sweep.md
+
+operations:
+  - name: setup_rust_rig
+    args:
+      command: bash tools/rust-offline-rig/setup.sh
+      result: 19 crates vendored into /tmp/rust-rig/vendor (outside the repository; nothing committed)
+      toolchain: rustc 1.88.0 + cargo from npm @rustbin — no crates.io, no rustup
+  - name: run_rig
+    args:
+      commands: [npm run rust:check-offline, npm run rust:test-offline]
+      subject: this branch's archived Phase-3 workspace (legacy/rust-port)
+      result: cargo check clean (7 crates) · 37 Rust tests passed / 0 failed — Phase 4H's claim reproduced
+  - name: extract_subject
+    args:
+      pr: 15
+      branch: arena/01a0aff6-n8n-rust-v-4
+      head: 8277d670
+      how: git archive → /tmp/pr15 (15523 files); the rig builds in /tmp/rust-rig/build/repo so
+           Cargo.lock/target never touch the tree under review
+  - name: run_rig
+    args:
+      commands:
+        - RUST_LEGACY=/tmp/pr15 REPO_ROOT=/tmp/pr15 tools/rust-offline-rig/run.sh check
+        - RUST_LEGACY=/tmp/pr15 REPO_ROOT=/tmp/pr15 tools/rust-offline-rig/run.sh test
+      result: 7/7 crates clean (Finished dev profile in 1.88s) · 100 passed / 0 failed / 0 ignored across 26 suites
+  - name: run_gate
+    args:
+      command: cd /tmp/pr15 && RUST_RIG=/tmp/rust-rig bash tests/integration/run_gate.sh --offline-only
+      result: Stage 1 43/43 CHECKS PASSED · Stage 2 boundary PASS · Stage 2b PHASE-3 RUST ACCEPTANCE PASS
+              (reference integrity PASS, 15050 files, root f8da35180669…) · Stage 2c 7/7 crates ·
+              Stage 2d 8/8 · Stage 2e 11/11 advisory · Stage 3/3b NOT RUN → INCONCLUSIVE (exit 2, by design)
+  - name: triage_finding
+    args:
+      symptom: second run reported "fixtures reproduction: FAIL (drift vs pinned runtime)" and Stage 1
+               "[FAIL] cargo test evidence fresh — record has no headCommit"
+      verdict: BOTH are artifacts of this reviewer's environment, not defects of PR #15
+      proof_a: the fixture diff is exactly ONE line — the absolute runtimeDir (/home/user/n8n-rust-v.4/…
+               committed vs /tmp/pr15/… recomputed); normalizing only that path (14 bytes) makes the
+               fixtures re-derive byte-exactly against the pinned 2.9.1 runtime:
+               "fixtures match the pinned reference: 8 checksum, 6 diff, 6 shape, 6 rename, 9 traversal
+               cases" (35 cases, matching Stage 1's "35 cases (8/6/6/6/9)"). The check is informational
+               by their own script ("never a failure on its own") and Stage 2b stayed PASS.
+      proof_b: headCommit is unresolvable in a git-archive extraction (no .git), so their freshness rule
+               correctly refused the record — reviewers must use a real worktree, not an archive.
+      findings_low:
+        - fixtures.json stores an absolute runtimeDir, so --check is byte-exact only at the canonical
+          checkout path; suggest a relative path or excluding the field from the compared payload
+        - headCommit "unknown" is recorded silently when the tree is not a worktree
+  - name: update_vote
+    args:
+      pr: 15
+      before: APPROVE on the persistence LEGO (71/71) / NEEDS_CORRECTION on governance; Rust claims
+              reported-not-reproduced (no cargo in that sandbox)
+      after: Rust track VERIFIED-IN-SANDBOX (100/100 · 43/43 · 7/7); governance objection UNCHANGED and
+             independent of test results — main forbids Rust (PROJECT_RULES §1) while shipping 24 Rust
+             paths, and this PR amends PROJECT_RULES.md to legalize its own diff; merge still BLOCKED
+             (CONFLICTING); the Rust disposition belongs to the orchestrator (A4-MSG-05 / ISSUE-023)
+
+tests:
+  - rust_rig_archive           # npm run rust:test-offline — 37 passed / 0 failed
+  - rust_rig_pr15              # run.sh test on /tmp/pr15 — 100 passed / 0 failed / 26 suites
+  - pr15_offline_gate          # run_gate.sh --offline-only — 43/43 · PASS · PASS · 7/7 · 8/8 · 11/11
+  - fixtures_reproduction      # build-fixtures.mjs --check — byte-exact once the absolute path is normalized

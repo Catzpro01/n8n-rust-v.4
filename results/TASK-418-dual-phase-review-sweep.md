@@ -20,6 +20,7 @@
 | `independent_rerun` PR #15 `packages/persistence-lego` | ✓ **71/71 PASS** | `0` |
 | `independent_rerun` PR #16 (4 LEGOs) | ✓ **234/234 PASS** | `0` |
 | `independent_rerun` PR #15 Rust claims (`cargo test`) | ✗ **NOT REPRODUCIBLE** (no `cargo`/`rustc` in sandbox) | — |
+| ↳ **CORRECTED 2026-09-17 22:35 UTC** — re-run via the Phase 4H offline rig (`rustc 1.88.0` + `cargo` from npm `@rustbin`, 19 vendored crates): **100 passed / 0 failed** across 26 suites, `cargo check` **7/7 crates** clean, their own `run_gate.sh --offline-only` Stage 1 **43/43** · 2b **PASS** · 2c **7/7** → see `results/TASK-420-pr15-rust-reverification.md` | ✓ **REPRODUCED** | `0` |
 | `boundary_scan` (reference / frontend / crates / apps) | ✓ SUCCESS | `0` |
 | `post_votes` (`gh pr review --comment` ×4) | ✓ SUCCESS — 20:47 UTC | `0` |
 | `write_file` (`docs/isolation/validation-bus-outbox.json`, A4-MSG-04/05) | ✓ SUCCESS | `0` |
@@ -44,7 +45,15 @@ anti-false-green mereka terbukti bekerja** karena saya memicu sendiri: tanpa `.r
 merah **52/13** dengan pesan *".runtime/node_modules is missing … A fully skipped parity suite exits 0 while
 running ZERO differential checks"* alih-alih hijau palsu. Klaim **Rust** PR #15 (`100/100 cargo test`, `43/43
 conformance`, `7/7 crates`) **tidak dapat direproduksi** di sini — `command -v cargo` dan `command -v rustc`
-kosong — sehingga dicatat sebagai *reported, not reproduced*, dengan permintaan transkrip mentah. Pemindaian
+kosong — sehingga dicatat sebagai *reported, not reproduced*, dengan permintaan transkrip mentah.
+**[KOREKSI 2026-09-17 22:35 UTC]** blockers itu hilang setelah Phase 4H mengadopsi rig Rust offline
+(`cherry-pick -x 87b5960d`): klaim Rust PR #15 **direproduksi mandiri** di sandbox ini — `cargo test`
+**100 passed / 0 failed** pada 26 suite, `cargo check` **7/7 crate** bersih, dan gate mereka sendiri
+`run_gate.sh --offline-only` → Stage 1 **43/43**, Stage 2b **PASS**, Stage 2c **7/7 crates** (Stage 3/3b
+NOT RUN → INCONCLUSIVE sesuai desain). Dua "FAIL" pada run kedua terbukti artefak lingkungan reviewer
+(satu baris path absolut `runtimeDir`; `headCommit` tak terbaca dari ekstraksi `git archive`), bukan defek
+PR #15. Vote governance **tidak berubah** dan tidak bergantung pada hasil test. Rincian:
+`results/TASK-420-pr15-rust-reverification.md`. Pemindaian
 batas (`git diff --name-only origin/main <branch>`) menunjukkan **0 file** di `reference/n8n/**` dan **0** di
 `packages/frontend/**`/`*.vue`/`*.scss` pada keempat PR (UI tetap asli, pin referensi utuh); `crates/**` hanya
 disentuh #15 (memperluas) dan #16 (menghapus). Vote dikirim sebagai komentar review GitHub pada **20:47 UTC**
