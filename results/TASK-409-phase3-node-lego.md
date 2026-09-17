@@ -92,3 +92,34 @@ class names/messages, error field shapes) are compared one by one.
 * `contracts/node.contract.md` §12 (module map, deltas, acceptance evidence),
   `docs/isolation/node.md` §5 (isolation record), README status row, `LEGO-MASTER-MAP.md` §5 row
 * `docs/isolation/CROSS-AGENT-ISSUES.md` ISSUE-024 (error-model consolidation)
+
+## Post-task consensus / verification sweep (offline; `task_consensus_votes` unreachable, ISSUE-019)
+
+Per `docs/isolation/STANDING-WORKER-PROTOCOL.md` the review sweep ran read-only against the
+**merged tip `6dfe9492`** (after the concurrent `scheduler-lego` consolidation wave) and
+reproduced every peer claim from scratch:
+
+| Claim (peer lane) | Reproduced on `6dfe9492` |
+| :--- | :--- |
+| execution-engine suite | `# tests 60 · pass 60 · fail 0` |
+| execution gate `E01…E10` | `10/10 PASS` (incl. `E08 60 exported symbols`, `E10 20 pass / 0 fail`) |
+| trigger-lego suite + gate | `11/11` · `5/5 PASS` (T03 grew 9→11 with the cron.ts table) |
+| scheduler-lego suite + gate | `9/9` · `6/6 PASS` |
+| webhook-lego suite + gate | `10/10` · `5/5 PASS` |
+| connection-lego | `52/52` (tsc build + suite) |
+| expression-lego | `46/46` |
+| `tools/engine-differential.mjs` | `84 agree / 0 diverge / 0 not-comparable` |
+| `tools/activation-differential.mjs` | `43 agree / 0 diverge` |
+| `tools/node-lego-differential.mjs` (this task) | `234 agree / 0 diverge / 0 harness errors` |
+| `tests/compatibility/contract_conformance.mjs` | `42/42 CHECKS PASSED` |
+| `tests/integration/boundary_audit.py` | `PASS (all edges documented)` |
+| reference pin | `PASS (15050 files, root f8da35180669d798…)` |
+| `npm run verify:all` | exit `0` (all five LEGO gates green in one run) |
+
+* **No `NEEDS_CORRECTION` is raised:** nothing failed to reproduce. The only known
+  non-green instrument remains `tests/integration/result_integrity_audit.py`
+  (pre-existing T1 empty-ops in older peer files, documented by TASK-ENGINE-VERIFY-02 —
+  not a claim of this task and deliberately not rewritten, per ISSUE-020).
+* **No self-approval:** TASK-409 stays `SUBMITTED_FOR_REVIEW`; this sweep records evidence only.
+* Sweep side effects: gate evidence timestamp churn was reverted; the tree stays clean except
+  the files this task owns.
