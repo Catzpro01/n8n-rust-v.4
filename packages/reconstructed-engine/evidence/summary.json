@@ -1,7 +1,7 @@
 {
   "$comment": "Machine-readable companion to the transcripts in this directory, produced by test/helpers/capture-evidence.mjs (npm run verify:engine:evidence). Transcripts hold verdict lines only; these counts are what test/08-evidence asserts. Re-run after ANY change to fixtures/ or src/ — the gate fails when the hashes here stop matching the tree, which is the point.",
-  "capturedAt": "2026-09-17T18:39:22.741Z",
-  "head": "7196779eeda64179a6db264c966b016cbad7f01c",
+  "capturedAt": "2026-09-17T18:59:25.789Z",
+  "head": "f0475874c68a7c54675122c5739e66480cf88874",
   "branch": "arena/01a0aff7-n8n-rust-v-4",
   "node": "v22.22.3",
   "referenceRuntime": {

@@ -112,6 +112,17 @@ runner hid the directory from itself while the modules under test still discover
 Gate 08 now requires the offline transcript to *show* `oracle equivalence NOT RUN` and the
 host-dependent degradation lines: an offline claim without them in the file is a failure.
 
+**`--test-force-exit` under-reports, so the runner does the counting.** A single
+`node --test` over all ten gate files reported `# tests 97`, `100`, `102` and `103` on
+identical trees, always with `fail 0`: results still in flight when the process is killed never
+reach the ok lines *or* the summary, so a green count can simply be smaller than the suite.
+`scripts/run-engine-tests.sh` therefore runs one gate file per process, cross-checks each file's
+declared count against the results actually printed (a mismatch is `RESULT INTEGRITY FAILED`, not
+a pass), drops the runner's own tally, and prints an aggregate it computed itself. Both failure
+shapes — a file that cannot load, and a red assertion — were verified to exit 1 with the message
+intact; under `set -euo pipefail` that also required tolerating `grep`, which exits 1 on zero
+matches and was silently aborting the loop instead of reporting the empty result.
+
 Degradation is explicit: when the oracle is missing, host-dependent probes are asserted as "must raise, never answer undefined" and the oracle gate prints `oracle equivalence NOT RUN` (it *fails* unless `ENGINE_ALLOW_NO_ORACLE=1`, because a silently-skipped equivalence gate is not a gate).
 
 ## 6. What the goldens found (why this method is worth its cost)

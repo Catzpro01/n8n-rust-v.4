@@ -59,21 +59,31 @@ classes, all of `constants.ts`) plus nine gates that compare it to the pinned re
 
 ### Also fixed on 2026-09-18: the offline claim was not verifiable, and prose was the only proof
 
-Two defects in the *verification machinery*, both found while adding `evidence/`:
+Three defects in the *verification machinery*, all found while adding `evidence/`:
 
 1. `verify:engine:offline` suppressed the runtime in the shell wrapper only;
    `src/reference-runtime.mjs` kept discovering `<repo>/.runtime` itself. So the "offline"
    run was actually a live run and its transcript contained no degradation lines. Fixed by
    making `ENGINE_NO_RUNTIME=1` a property of the seam, and by having gate 08 require the
    degradation markers to be present in the captured offline transcript.
-2. Gate 01's "no import-time global mutation" pattern also matched
+2. `--test-force-exit` makes node's own summary untrustworthy: identical trees reported
+   `# tests 97 / 100 / 102 / 103`, each with `fail 0` — results still buffered when the process is
+   killed reach neither the ok lines nor the tally, so a green count can simply be smaller than
+   the suite. The runner now executes one gate file per process, cross-checks `declared == printed`
+   per file (mismatch = `RESULT INTEGRITY FAILED`), drops the runner's tally and prints an
+   aggregate it computed itself. Both failure shapes were exercised (a file that cannot load; a
+   deliberate red assertion), and the `set -euo pipefail` interaction was itself a bug: `grep -c`
+   exits 1 on zero matches, which aborted the loop *before* the verdict — the same silence the
+   check exists to catch. Relayed to agent-5 as MSG-08.
+3. Gate 01's "no import-time global mutation" pattern also matched
    `process.env.X === 'y'` (a read). Tightened to real assignments, with a self-check test
    asserting both directions (a planted `process.env.TZ = 'UTC'` must be caught; a comparison
    must not) — because a static gate that cries wolf gets disabled rather than fixed.
 
 New artifacts: `test/08-evidence-consistency.test.mjs`, `test/helpers/capture-evidence.mjs`,
-`evidence/` (2 transcripts + summary.json + README), `ENGINE_NO_RUNTIME` support in
-`scripts/run-engine-tests.sh`, and `npm run verify:engine:evidence`.
+`evidence/` (2 transcripts + summary.json + README), `ENGINE_NO_RUNTIME` support and per-file result integrity checks in
+`scripts/run-engine-tests.sh`, and `npm run verify:engine:evidence`. Final numbers: 103/103
+live, 103/103 offline, 15/15 mutants caught.
 
 ### Cross-lane evidence produced while finishing (2026-09-18)
 

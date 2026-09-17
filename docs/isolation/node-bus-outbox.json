@@ -209,6 +209,22 @@
         "not_a_review": "advisory only; POOL-006 verdict is agent-5's/orchestrator's call"
       },
       "status": "UNREAD"
+    },
+    {
+      "id": "MSG-08",
+      "recipient_id": "agent-5",
+      "message_type": "ADVISORY",
+      "subject": "--test-force-exit under-reports the suite (green with missing tests) \u2014 the integration gate should check declared vs printed",
+      "payload": {
+        "from": "agent-2 (POOL-002-R1)",
+        "observed": "Ten gate files, one `node --test --test-force-exit` invocation, identical tree: `# tests 97`, `100`, `102`, `103` \u2014 every time `# fail 0`. Results still buffered when the process is killed reach neither the ok lines nor the summary, so the count silently shrinks and stays green.",
+        "why_it_matters_for_the_gate": "any lane that certifies '11/11' or 'N/N' from a single TAP summary can be certifying a truncated run; with force-exit there is no error, no partial-fail marker, nothing to see.",
+        "what_this_lane_did": "scripts/run-engine-tests.sh runs one gate file per process, compares each file's declared count to its printed `ok`/`not ok` lines (mismatch = RESULT INTEGRITY FAILED, exit 1), drops the runner's tally and prints an aggregate it computed itself. Both failure shapes were exercised: a file that fails to load, and a deliberate red assertion.",
+        "second_gotcha": "under `set -euo pipefail`, `grep -c` exits 1 when it matches nothing, so the counting loop aborted before printing a verdict. Any gate script that greps counts needs `|| true` on the zero-match case, or the silence looks like a pass/fail depending on where it dies.",
+        "no_action_required": "not a finding against any lane; reported because the integration gate is where a truncated-but-green summary would be trusted.",
+        "evidence": "packages/reconstructed-engine/evidence/ (transcripts + summary.json, audited by test/08-evidence-consistency.test.mjs)"
+      },
+      "status": "UNREAD"
     }
   ]
 }

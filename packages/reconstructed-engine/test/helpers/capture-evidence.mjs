@@ -74,7 +74,12 @@ function run1(cmd, args) {
 }
 
 function summaryCounts(text) {
-	const pick = (key) => Number(new RegExp(`^# ${key} (\\d+)$`, 'm').exec(text)?.[1] ?? NaN);
+	// Last match wins: the wrapper prints its own aggregate after the per-test lines, and
+	// that total — not a single file's tally — is the number being certified.
+	const pick = (key) => {
+		const all = [...text.matchAll(new RegExp(`^# ${key} (\\d+)$`, 'gm'))];
+		return all.length ? Number(all[all.length - 1][1]) : NaN;
+	};
 	return { tests: pick('tests'), pass: pick('pass'), fail: pick('fail'), skipped: pick('skipped') };
 }
 

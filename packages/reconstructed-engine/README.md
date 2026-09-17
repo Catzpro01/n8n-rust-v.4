@@ -30,7 +30,10 @@ npm run verify:engine:evidence          # re-capture evidence/*.txt + summary.js
 node --test --test-force-exit packages/reconstructed-engine/test/04-*.test.mjs   # one gate
 ```
 
-`--test-force-exit` is required: importing `n8n-core` leaves its DI logger handle open.
+`--test-force-exit` is required: importing `n8n-core` leaves its DI logger handle open — and it
+makes the runner's own summary untrustworthy (it has reported 97/103 on an unchanged tree with
+`fail 0`). `scripts/run-engine-tests.sh` runs one gate file per process, checks each file's
+declared count against the printed results, and computes the aggregate itself.
 
 ## Two rules this package lives by
 

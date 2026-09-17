@@ -1,6 +1,6 @@
-captured: 2026-09-17T18:39:12.578Z
+captured: 2026-09-17T18:59:16.183Z
 command: bash scripts/run-engine-tests.sh
-head: 7196779eeda64179a6db264c966b016cbad7f01c
+head: f0475874c68a7c54675122c5739e66480cf88874
 branch: arena/01a0aff7-n8n-rust-v-4
 node: v22.22.3
 reference runtime: /home/user/n8n-rust-v.4/.runtime/node_modules
@@ -205,13 +205,13 @@ ok 96 - the recorded head is a real commit, not an invented sha
 # Subtest: evidence is committed, not scratch output
 ok 97 - evidence is committed, not scratch output
 # Subtest: the oracle artifact is the pinned one
-ok 98 - the oracle artifact is the pinned one
+ok 1 - the oracle artifact is the pinned one
 # Subtest: goldens carry reference provenance, not self-grading
-ok 99 - goldens carry reference provenance, not self-grading
+ok 2 - goldens carry reference provenance, not self-grading
 # Subtest: the probe set in the goldens matches the corpus exactly
-ok 100 - the probe set in the goldens matches the corpus exactly
+ok 3 - the probe set in the goldens matches the corpus exactly
 # Subtest: every probe is equivalent to the reference, or declared
-ok 101 - every probe is equivalent to the reference, or declared
+ok 4 - every probe is equivalent to the reference, or declared
 # declared deviation: ctx-basic :: getInstanceId()
 # declared deviation: ctx-basic :: getSignedResumeUrl()
 # declared deviation: ctx-basic :: getInputConnectionData("ai_tool",0)
@@ -222,9 +222,9 @@ ok 101 - every probe is equivalent to the reference, or declared
 # declared deviation: ctx-on-error-routing :: getSignedResumeUrl()
 # declared deviation: ctx-on-error-routing :: getInputConnectionData("ai_tool",0)
 # Subtest: declared deviations are covered and still deviations
-ok 102 - declared deviations are covered and still deviations
+ok 5 - declared deviations are covered and still deviations
 # Subtest: manifest/port-surface.json is reproducible from this runtime
-ok 103 - manifest/port-surface.json is reproducible from this runtime
+ok 6 - manifest/port-surface.json is reproducible from this runtime
 # tests 103
 # suites 0
 # pass 103
@@ -232,4 +232,3 @@ ok 103 - manifest/port-surface.json is reproducible from this runtime
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 71446.898778

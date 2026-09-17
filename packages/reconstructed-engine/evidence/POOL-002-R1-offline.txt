@@ -1,6 +1,6 @@
-captured: 2026-09-17T18:39:22.740Z
+captured: 2026-09-17T18:59:25.788Z
 command: ENGINE_NO_RUNTIME=1 ENGINE_ALLOW_NO_ORACLE=1 bash scripts/run-engine-tests.sh
-head: 7196779eeda64179a6db264c966b016cbad7f01c
+head: f0475874c68a7c54675122c5739e66480cf88874
 branch: arena/01a0aff7-n8n-rust-v-4
 node: v22.22.3
 reference runtime: suppressed by ENGINE_NO_RUNTIME=1 (offline mode on purpose)
@@ -214,22 +214,22 @@ ok 96 - the recorded head is a real commit, not an invented sha
 # Subtest: evidence is committed, not scratch output
 ok 97 - evidence is committed, not scratch output
 # Subtest: the oracle artifact is the pinned one
-ok 98 - the oracle artifact is the pinned one
+ok 1 - the oracle artifact is the pinned one
 # reference runtime unavailable — oracle equivalence NOT RUN | reason: The reference runtime is required for this check. Run: scripts/setup-reference-runtime.sh (installs n8n-workflow@2.9.1 / n8n-core@2.9.1 / n8n-nodes-base@2.9.1 into .runtime) | install with: scripts/setup-reference-runtime.sh | or set ENGINE_ALLOW_NO_ORACLE=1 to downgrade this to a diagnostic
 # Subtest: goldens carry reference provenance, not self-grading
-ok 99 - goldens carry reference provenance, not self-grading
+ok 2 - goldens carry reference provenance, not self-grading
 # reference runtime unavailable — oracle equivalence NOT RUN | reason: The reference runtime is required for this check. Run: scripts/setup-reference-runtime.sh (installs n8n-workflow@2.9.1 / n8n-core@2.9.1 / n8n-nodes-base@2.9.1 into .runtime) | install with: scripts/setup-reference-runtime.sh | or set ENGINE_ALLOW_NO_ORACLE=1 to downgrade this to a diagnostic
 # Subtest: the probe set in the goldens matches the corpus exactly
-ok 100 - the probe set in the goldens matches the corpus exactly
+ok 3 - the probe set in the goldens matches the corpus exactly
 # reference runtime unavailable — oracle equivalence NOT RUN | reason: The reference runtime is required for this check. Run: scripts/setup-reference-runtime.sh (installs n8n-workflow@2.9.1 / n8n-core@2.9.1 / n8n-nodes-base@2.9.1 into .runtime) | install with: scripts/setup-reference-runtime.sh | or set ENGINE_ALLOW_NO_ORACLE=1 to downgrade this to a diagnostic
 # Subtest: every probe is equivalent to the reference, or declared
-ok 101 - every probe is equivalent to the reference, or declared
+ok 4 - every probe is equivalent to the reference, or declared
 # reference runtime unavailable — oracle equivalence NOT RUN | reason: The reference runtime is required for this check. Run: scripts/setup-reference-runtime.sh (installs n8n-workflow@2.9.1 / n8n-core@2.9.1 / n8n-nodes-base@2.9.1 into .runtime) | install with: scripts/setup-reference-runtime.sh | or set ENGINE_ALLOW_NO_ORACLE=1 to downgrade this to a diagnostic
 # Subtest: declared deviations are covered and still deviations
-ok 102 - declared deviations are covered and still deviations
+ok 5 - declared deviations are covered and still deviations
 # reference runtime unavailable — oracle equivalence NOT RUN | reason: The reference runtime is required for this check. Run: scripts/setup-reference-runtime.sh (installs n8n-workflow@2.9.1 / n8n-core@2.9.1 / n8n-nodes-base@2.9.1 into .runtime) | install with: scripts/setup-reference-runtime.sh | or set ENGINE_ALLOW_NO_ORACLE=1 to downgrade this to a diagnostic
 # Subtest: manifest/port-surface.json is reproducible from this runtime
-ok 103 - manifest/port-surface.json is reproducible from this runtime
+ok 6 - manifest/port-surface.json is reproducible from this runtime
 # reference runtime unavailable — oracle equivalence NOT RUN | reason: The reference runtime is required for this check. Run: scripts/setup-reference-runtime.sh (installs n8n-workflow@2.9.1 / n8n-core@2.9.1 / n8n-nodes-base@2.9.1 into .runtime) | install with: scripts/setup-reference-runtime.sh | or set ENGINE_ALLOW_NO_ORACLE=1 to downgrade this to a diagnostic
 # tests 103
 # suites 0
@@ -238,4 +238,3 @@ ok 103 - manifest/port-surface.json is reproducible from this runtime
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 10120.611574
