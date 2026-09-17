@@ -2,7 +2,7 @@
   "name": "n8n-rust-v4",
   "version": "0.4.0",
   "private": true,
-  "description": "n8n 2.9.4 anatomy \u2192 contract \u2192 reference runtime \u2192 LEGO isolation \u2192 (later) Rust replacement",
+  "description": "n8n 2.9.4 anatomy → contract → reference runtime → LEGO isolation → (later) Rust replacement",
   "scripts": {
     "setup:all": "bash scripts/setup-all.sh",
     "setup:reference": "bash scripts/setup-reference-runtime.sh",
@@ -14,6 +14,8 @@
     "workflow-lego:build": "npm --prefix packages/workflow-lego run build",
     "workflow-lego:test": "bash scripts/run-lego-tests.sh",
     "phase3:rust": "bash tools/phase3-rust-acceptance.sh",
-    "gate": "bash tests/integration/run_gate.sh --offline-only"
+    "gate": "bash tests/integration/run_gate.sh --offline-only",
+    "collision:test": "node tools/branch-collision-check.test.mjs",
+    "collision:check": "node tools/branch-collision-check.mjs"
   }
 }

@@ -73,12 +73,29 @@ if (targets.length < 2) {
 console.log(`comparing ${targets.length} refs${scope ? ` (scope: ${scope})` : ''}`);
 
 const trees = new Map();
+const unreadable = [];
 for (const ref of targets) {
 	try {
 		trees.set(ref, listTreeWithHashes(ref, scope));
 	} catch (error) {
+		unreadable.push(ref);
 		console.error(`  ! cannot read ${ref}: ${String(error.message).split('\n')[0]}`);
 	}
+}
+
+// A ref we could not read is NOT a clean result. Skipping the pair and then reporting
+// "no collisions / safe to merge in any order" turns a typo'd or unfetched branch name into a
+// green light — the exact false negative this tool exists to prevent. Reproduced before the fix:
+//   node tools/branch-collision-check.mjs --scope crates/ bogus-a bogus-b
+//   -> "No path collisions with differing content. Safe to merge in any order." (exit 0)
+// Fail as a usage error instead (exit 2, per the contract in the header).
+if (unreadable.length > 0) {
+	console.error(
+		`\nREFUSED: ${unreadable.length} of ${targets.length} ref(s) unreadable — ` +
+			`cannot claim anything about collisions.\n` +
+			`Fetch them first (git fetch origin <branch>) or fix the ref name.`,
+	);
+	process.exit(2);
 }
 
 let totalCollisions = 0;

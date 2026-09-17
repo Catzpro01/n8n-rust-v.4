@@ -28,6 +28,17 @@ else
   echo "SKIPPED: no crates/ or no Phase-3 record — nothing to audit."
 fi
 
+echo; echo "######## STAGE 2d: MERGE-ORDER SAFETY TOOLING SELF-TEST (offline) ########"
+# The cross-branch collision detector (tools/branch-collision-check.mjs, contributed under
+# ISSUE-024) is what warns us when two agents wrote different content to the same path. A tool
+# that answers "safe to merge in any order" for a ref it could not read is worse than no tool,
+# so its own exit-code contract is tested here on every gate run. See ISSUE-026.
+if [ -f tools/branch-collision-check.mjs ]; then
+  node tools/branch-collision-check.test.mjs || fail=1
+else
+  echo "SKIPPED: tools/branch-collision-check.mjs not present on this tree."
+fi
+
 echo; echo "######## STAGE 3: 11/11 LIVE REGRESSION GATE ########"
 if [ "$OFFLINE" = "1" ]; then
   echo "SKIPPED (--offline-only): live regression NOT RUN — gate cannot be declared VERIFIED."

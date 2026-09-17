@@ -1341,3 +1341,116 @@ changed — consolidation remains a pre-Phase-3-exit orchestrator decision per t
 - Gagalnya jangkauan ke `gqctxugkxekdqxsaqrum.supabase.co` (TLS handshake 000 dari environment terisolasi) resmi dimitigasi dengan sistem **Local SQLite Bus & Mirror Pool** di `/home/fern/arena/bus.db`.
 - Antrean task, konsensus suara, dan review multi-agen dijalankan secara lokal di VPS dengan latensi ultra-rendah (< 2ms), lalu disinkronkan secara asinkron ke Supabase via orchestrator bridge.
 
+
+---
+
+## ISSUE-026 — Merge-order safety tooling answered "safe to merge" for branches it could not read (HIGH, found and fixed)
+
+**Detected by:** `arena/01a0aff6-n8n-rust-v-4` (agent-5, pre-task sweep)
+**Affected:** `tools/branch-collision-check.mjs` (contributed by Agent 1 under ISSUE-024)
+**Type:** Gate false-negative
+**Severity:** HIGH — the tool's whole job is to stop a silent destructive merge
+
+**Description:**
+ISSUE-024 shipped a detector whose documented contract is `0 = clean · 1 = collision · 2 = misuse`.
+When a ref could not be read it logged a warning, skipped that pair, and then fell through to the
+all-clear:
+
+```console
+$ node tools/branch-collision-check.mjs --scope crates/ definitely-not-a-ref also-not-a-ref
+comparing 2 refs (scope: crates/)
+fatal: Not a valid object name definitely-not-a-ref
+  ! cannot read definitely-not-a-ref: Command failed: git ls-tree -r definitely-not-a-ref
+fatal: Not a valid object name also-not-a-ref
+  ! cannot read also-not-a-ref: Command failed: git ls-tree -r also-not-a-ref
+
+No path collisions with differing content. Safe to merge in any order.
+$ echo $?
+0
+```
+
+A typo'd branch name — or, much more likely here, a branch that simply has not been fetched into
+this worker's clone yet — therefore produced a **green** result. Every arena worker clones
+shallow/partial, so "not fetched yet" is the normal case, not the edge case.
+
+**Fix (this branch):**
+Unreadable refs are now collected and the tool refuses with exit 2 and an explicit reason:
+
+```console
+REFUSED: 2 of 2 ref(s) unreadable — cannot claim anything about collisions.
+Fetch them first (git fetch origin <branch>) or fix the ref name.
+```
+
+Mixed input (one readable + one unreadable) also refuses, because the comparison is incomplete.
+
+**Regression pinned:** `tools/branch-collision-check.test.mjs` — **8/8 CHECKS PASSED**. The
+collision cases run against a throwaway repo in the OS temp dir (via `GIT_DIR`/`GIT_WORK_TREE`),
+so the test never creates commits, branches, or checkouts in the real repository. Wired into
+`run_gate.sh` as **Stage 2d** and exposed as `npm run collision:test` / `npm run collision:check`.
+The real detections are asserted too, so the fix cannot silently degrade into "always exit 2":
+
+| case | exit |
+| :-- | :-- |
+| two bogus refs | 2 (was **0**) |
+| one readable + one bogus ref | 2 (was **0**) |
+| same path, differing content | 1 |
+| same path, identical content | 0 |
+| scope neither ref touches | 0 |
+
+**Note on ISSUE-024's scope:** the detector compares *content of shared paths*. It cannot see a
+path that one branch **deleted** and another still ships — which is precisely the PR #16 /
+`crates/` collision in ISSUE-027. Both are needed; neither subsumes the other.
+
+---
+
+## ISSUE-027 — PR #16 deletes the Phase-3 Rust workspace while still declaring it (BLOCKING for that merge)
+
+**Detected by:** `arena/01a0aff6-n8n-rust-v-4` (agent-5, pre-task sweep of PR #16)
+**Affected:** `arena/01a0aff7-n8n-rust-v-4` (PR #16) ↔ `arena/01a0aff6-n8n-rust-v-4` (PR #15) and the TASK-401..409 Phase-3 lineage
+**Type:** Destructive merge conflict
+**Severity:** BLOCKING
+
+**Measured, in a detached worktree at PR #16 head `560f1133`:**
+
+```console
+$ git ls-tree -r --name-only 560f1133 -- crates
+crates/.gitkeep                      # 1 file
+$ git ls-tree -r --name-only d2346dfb -- crates | wc -l
+33                                   # agent-5 branch tip (PR #15)
+$ git ls-tree -r --name-only origin/main -- crates | wc -l
+23                                   # what main has today
+$ git show --stat --format="" 4fd6a7e0 | tail -1 # "chore: remove premature Rust artifacts from Phase 2"
+ 22 files changed, 2825 deletions(-)
+$ git merge-base --is-ancestor 4fd6a7e0 560f1133 && echo YES
+YES                                  # the deletion is in PR #16's history
+$ git show 560f1133:Cargo.toml | head -1
+[workspace]                          # ...and the manifest still declares 7 members
+```
+
+PR #16's own gate reports `[PASS] Phase 2: no Rust implementation introduced` and `21/21`,
+because that gate predates the Phase-3 mode. Running the **current** Phase-3 conformance harness
+against the same tree:
+
+```console
+[FAIL] Phase 3: Rust workspace manifest present — workspace members without a manifest:
+       crates/n8n-common, crates/n8n-workflow, crates/n8n-connection, crates/n8n-validation,
+       crates/n8n-node-model, crates/n8n-execution-data, crates/n8n-expression
+[FAIL] Phase 3: cargo test evidence fresh — no cargo test evidence on this tree
+[FAIL] negative fixtures present — no `-invalid` fixture under tests/reference
+RESULT: 23/26 CHECKS PASSED   (exit 1)
+```
+
+Merging PR #16 as-is would delete the Phase-3 Rust port (33 files, rig 88/0, 100/100 crate tests)
+that PR #15 carries. "Premature Rust artifacts" no longer describes them — Phase 3 is formally
+open on that lineage (`docs/isolation/phase3-gate-mode.md`, `docs/isolation/PHASE-3-OPENING.md`).
+
+**Required before that merge:** rebase PR #16 onto the Phase-3 lineage and restore `crates/**`
+plus `tests/reference/*-invalid/`; **or**, if PR #16 is deliberately meant to stay Phase 2, drop
+its root `Cargo.toml` so the branch stops declaring a workspace it does not contain. Either way
+re-run `bash tests/integration/run_gate.sh --offline-only` with the current harness.
+
+**PR #16's own test evidence is honest** — all four suites reproduce exactly once the pinned
+reference runtime is installed (`execution-data` 78/78, `scheduler` 48/48, `credentials` 65/65,
+`api` 37/37, every exit 0). The blocker is the `crates/` deletion only. Full review posted on
+PR #16; GitHub refused a formal `REQUEST_CHANGES` because every arena worker shares one bot
+identity, so it went up as a `COMMENT` review with the verdict stated in the body.
