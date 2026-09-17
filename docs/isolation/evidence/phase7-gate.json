@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-17T22:33:46.478Z",
+  "generatedAt": "2026-09-17T22:34:57.744Z",
   "phase": 7,
   "lego": "execution",
   "reference": {
@@ -15,7 +15,7 @@
       "requirement": "a LEGO without contract, blueprint, package, manifest and gate does not exist",
       "status": "PASS",
       "detail": "8 artefacts + manifest (10 owned sources)",
-      "ms": 1
+      "ms": 0
     },
     {
       "id": "H02",
@@ -23,7 +23,7 @@
       "requirement": "error messages are part of the API contract of an execution runtime",
       "status": "PASS",
       "detail": "10 error messages + 5 level heuristics",
-      "ms": 0
+      "ms": 1
     },
     {
       "id": "H03",
@@ -31,7 +31,7 @@
       "requirement": "the runtime is observable through its log lines and its delays",
       "status": "PASS",
       "detail": "14 lifecycle literals + 2 timings",
-      "ms": 2
+      "ms": 1
     },
     {
       "id": "H04",
@@ -47,7 +47,7 @@
       "requirement": "the LEGO must pass its own node --test suite",
       "status": "PASS",
       "detail": "execution 32/32",
-      "ms": 580
+      "ms": 414
     },
     {
       "id": "H06",
@@ -63,7 +63,7 @@
       "requirement": "the mirror must stay pinned; mirroring the wrong source invalidates the LEGO",
       "status": "PASS",
       "detail": "2.9.4 · cli 1252/92422d731d61 · core/execution-engine 128/c22c079afa52 · workflow/errors 28/b9c8efc37fb5 · config 41/82ec73f70254",
-      "ms": 56
+      "ms": 48
     },
     {
       "id": "H08",
@@ -71,7 +71,7 @@
       "requirement": "POOL-012 back-fill: the Phase-6 pin used the reference test fixture instead of the config defaults",
       "status": "PASS",
       "detail": "{ interval: 180, batchSize: 100 } — engine, reference config and queue test agree",
-      "ms": 0
+      "ms": 1
     }
   ]
 }

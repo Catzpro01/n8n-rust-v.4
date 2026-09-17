@@ -1,6 +1,6 @@
 # PHASE 6 GATE — QUEUE / EVENTS / REALTIME
 
-**Generated:** 2026-09-17T22:31:37.876Z · **Result:** `PASS` (8/8)
+**Generated:** 2026-09-17T22:34:57.238Z · **Result:** `PASS` (8/8)
 **Reference:** n8n 2.9.4 @ b6dc2787c45677a29a9612cd27eb911302961a83
 
 | gate | title | status | detail |

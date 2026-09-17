@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-17T22:31:37.876Z",
+  "generatedAt": "2026-09-17T22:34:57.238Z",
   "phase": 6,
   "legos": [
     "queue",
@@ -43,7 +43,7 @@
       "requirement": "wire-level strings and guards must match the reference push subsystem",
       "status": "PASS",
       "detail": "SSE handshake/frames, WS liveness, config default and relay guard verified",
-      "ms": 1
+      "ms": 0
     },
     {
       "id": "G05",
@@ -51,7 +51,7 @@
       "requirement": "every LEGO package must pass its node --test suite",
       "status": "PASS",
       "detail": "queue 17/17, events 14/14, realtime 14/14",
-      "ms": 740
+      "ms": 771
     },
     {
       "id": "G08",
@@ -59,7 +59,7 @@
       "requirement": "the three LEGOs must work together before they can be declared INTEGRATED",
       "status": "PASS",
       "detail": "4/4 integration tests",
-      "ms": 232
+      "ms": 230
     },
     {
       "id": "G06",
@@ -75,7 +75,7 @@
       "requirement": "the mirror must stay pinned; mirroring the wrong source invalidates the LEGO",
       "status": "PASS",
       "detail": "2.9.4 · scaling 21/b16360db83d3 · events 12/813313cda09a · eventbus 17/69e349590eb9 · push 11/f5511e10044d",
-      "ms": 5
+      "ms": 6
     }
   ]
 }
