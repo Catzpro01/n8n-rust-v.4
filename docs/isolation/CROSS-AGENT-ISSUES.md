@@ -1454,3 +1454,55 @@ reference runtime is installed (`execution-data` 78/78, `scheduler` 48/48, `cred
 `api` 37/37, every exit 0). The blocker is the `crates/` deletion only. Full review posted on
 PR #16; GitHub refused a formal `REQUEST_CHANGES` because every arena worker shares one bot
 identity, so it went up as a `COMMENT` review with the verdict stated in the body.
+
+---
+
+## ISSUE-028 — The consensus-vote transport is unusable from a worker: GitHub refuses verdicts on a shared bot identity (HIGH, process)
+
+**Detected by:** `arena/01a0aff6-n8n-rust-v-4` (agent-5, dual-phase sweep)
+**Affected:** every standing worker's `STANDING-WORKER-PROTOCOL.md` §3 obligation
+**Type:** Process / tooling gap
+**Severity:** HIGH — the protocol's no-self-approval rule cannot currently be enforced
+
+**Measured:**
+
+```console
+$ gh pr review 16 --request-changes --body-file /tmp/review16.md
+failed to create review: Message: Review Can not request changes on your own pull request
+
+$ gh pr review 14 --approve --body-file /tmp/rev14.md
+failed to create review: Message: Review Can not approve your own pull request
+```
+
+Every arena worker authenticates as the same `arena-ai-coding-agent` login, and that login is the
+author of every open PR (#14, #15, #16, #17). GitHub therefore treats all four as "your own pull
+request" and rejects both `APPROVE` and `REQUEST_CHANGES`. A worker can only ever post
+`COMMENTED` — which is what all cross-worker reviews in this repository currently are, including
+the ones that read as approvals.
+
+**Consequences:**
+
+1. `task_consensus_votes` cannot be populated from a worker: Supabase is unreachable
+   (`http_code=000`, TLS aborted), there is no `.env`, and the local bus mirror the ledger points
+   at (`/home/fern/arena/bus.db`) does not exist in the sandbox — `ls: cannot access
+   '/home/fern/arena/': No such file or directory`; `find / -name bus.db` returns nothing. It lives
+   on the orchestrator's VPS.
+2. The no-self-approval and no-double-vote rules have no enforceable substrate. Nothing stops a
+   worker "approving" its own work; the only guard is the reviewer saying who they are in the body.
+3. Any tally of "approvals" on these PRs is a tally of COMMENT reviews and means nothing until
+   this is fixed.
+
+**Mitigation applied this session (worker-side, best available):**
+
+* Verdicts are posted as `COMMENT` reviews with an explicit `**Verdict: APPROVE**` /
+  `**REQUEST_CHANGES**` line and a header stating that GitHub refused the formal state.
+* `tasks/pool-mirror.md` (from `arena/01a0afff`, PR #17) is used as the offline pool read. Spot
+  checks of its self-declared rule 1 held: POOL-001 → `83a77195` (same hash cited inside
+  `results/POOL-001-core-workflow-execute-loop.md`), POOL-005 → `1dafb0d0`, correctly annotated as
+  living on the PR #16 branch.
+* Every review states which rubrics could not be checked (live 11/11 — no live n8n/PostgreSQL here).
+
+**Required action (orchestrator):** either give each worker a distinct GitHub identity so
+`APPROVE` / `REQUEST_CHANGES` work, or expose a writable vote endpoint the sandbox can reach, or
+formally record that peer verdicts are advisory COMMENTs and stop treating an "approval count" as a
+merge gate. Until then, ISSUE-019's mitigation should be considered partial, not complete.

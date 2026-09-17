@@ -146,7 +146,75 @@ the 11/11 live regression remains **NOT RUN** and nothing here is claimed as VER
 | `tools/branch-collision-check.test.mjs` | new, 8 checks, temp-repo based |
 | `tests/integration/run_gate.sh` | new Stage 2d |
 | `package.json` | `collision:test`, `collision:check` scripts |
-| `docs/isolation/CROSS-AGENT-ISSUES.md` | ISSUE-026 (fixed), ISSUE-027 (blocking, PR #16) |
+| `docs/isolation/CROSS-AGENT-ISSUES.md` | ISSUE-026 (fixed), ISSUE-027 (blocking, PR #16), ISSUE-028 (vote transport) |
+
+### 6. Post-task sweep — PR #14 (`arena/01a0aff8` @ `6b1a4639`) → APPROVE
+
+```console
+$ node --test packages/execution-engine/test/*.test.mjs
+# tests 85   # pass 85   # fail 0
+$ node tools/execution-engine-gate.mjs
+[PASS] E01 … E11     Execution LEGO gate: 11/11 PASS   (exit 0)
+```
+
+Per suite: `01-execution-loop` 14/0 · `02-node-context-data-proxy` 7/0 · `03-error-retry` 12/0 ·
+`04-expression-sandbox` 7/0 · `05-activation` 20/0 · `06-error-surface` 7/0 · `07-wait-tracker`
+18/0 = **85/0**. Boundary at merge base `fc4e5631`: `reference/n8n` 0, `packages/editor-ui` 0,
+Rust added 0. The PR **body** is stale (says 32 tests / 8 gates / POOL-003 11) — the evidence is
+better than the description, not worse. Caveat raised: E03 sees 23 Rust files repo-wide, so this
+branch does not carry the Phase-3 workspace; merge it before PR #16 or after ISSUE-027 is resolved.
+
+### 7. Post-task sweep — PR #17 (`arena/01a0afff` @ `b2352dde`) → mirror APPROVE, "replacement" claim REQUEST_CHANGES
+
+```console
+$ npm run verify:all
+# tests 21   # pass 21   # fail 0        <- reconstructed-engine:test (error-policy 16 + runner 5)
+[PASS] E01 … E08   Execution LEGO gate: 8/8 PASS
+exit 0
+$ node --test packages/execution-engine/test/*.test.mjs
+# tests 32   # pass 32   # fail 0
+```
+
+Mirror spot-checks against its own rule 1 both hold: POOL-001 → `83a77195` (same hash cited inside
+`results/POOL-001-core-workflow-execute-loop.md`); POOL-005 → `1dafb0d0`, correctly annotated as
+living on the PR #16 branch (no `results/POOL-005*` at this tip).
+
+Blocking: the body claims this branch "contains PR #14's commits verbatim" and can merge "as #14's
+replacement". The `a7275c06` half is true, but PR #14 has since advanced:
+
+```console
+$ git merge-base --is-ancestor 6b1a4639 b2352dde && echo YES || echo NO
+NO
+$ git rev-list --count b2352dde..6b1a4639
+122
+```
+
+Those 122 commits include `2d70d2c4` (WaitTracker/TASK-428), `a1ce0723` (webhook response
+headers), `fdd64014` (jsonrepair) and `cf0df209` (node-reference parser) — i.e. the E09/E10/E11
+gates and 53 of PR #14's 85 tests. Merging PR #17 as PR #14's replacement would silently drop them.
+
+### 8. Consensus-vote transport is unusable from a worker → ISSUE-028
+
+```console
+$ gh pr review 16 --request-changes --body-file /tmp/review16.md
+failed to create review: Message: Review Can not request changes on your own pull request
+$ gh pr review 14 --approve --body-file /tmp/rev14.md
+failed to create review: Message: Review Can not approve your own pull request
+```
+
+Every arena worker authenticates as the same `arena-ai-coding-agent` login, which is the author of
+all four open PRs, so GitHub treats each as "your own pull request" and rejects both formal
+verdicts. All three of my reviews went up as `COMMENT` with the verdict stated in the body and a
+header explaining why the formal state was unavailable. Consequence: the protocol's
+no-self-approval / no-double-vote rules have no enforceable substrate, and any "approval count" on
+these PRs is a count of COMMENTs. Orchestrator action requested in the ledger.
+
+### 9. Correction made this session
+
+My first PR #16 review stated that `4fd6a7e0` "deletes all 23 Rust files". Wrong — I quoted the
+PR's overall deletion total from memory instead of the commit's own stat. Actual:
+`22 files changed, 2825 deletions(-)`. The finding and its verdict were unaffected; a correction
+was posted to PR #16 and the ledger text fixed before commit.
 
 ## Still open
 
@@ -155,5 +223,8 @@ the 11/11 live regression remains **NOT RUN** and nothing here is claimed as VER
 * **ISSUE-021** — two engines on one path (`reconstructed-engine` vs `execution-engine`),
   orchestrator-owned.
 * Live 11/11 regression — cannot run in this sandbox.
-* Supabase consensus sweep — still unreachable; the mandated vote has no durable store from a
-  worker. Recorded rather than silently skipped.
+* Supabase consensus sweep — still unreachable, and GitHub refuses formal verdicts on a shared
+  bot identity (**ISSUE-028**). The mandated vote has no durable, enforceable store from a worker.
+  Recorded rather than silently skipped.
+* **PR #17** must rebase onto `6b1a4639` or drop its "PR #14's replacement" claim (122 commits).
+* PR #14's body is stale (32 tests / 8 gates); refresh so the next reviewer is not misled.
