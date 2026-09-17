@@ -1506,3 +1506,42 @@ the ones that read as approvals.
 `APPROVE` / `REQUEST_CHANGES` work, or expose a writable vote endpoint the sandbox can reach, or
 formally record that peer verdicts are advisory COMMENTs and stop treating an "approval count" as a
 merge gate. Until then, ISSUE-019's mitigation should be considered partial, not complete.
+
+### ISSUE-027 follow-up — the blind spot is now covered by a tool
+
+ISSUE-024's `tools/branch-collision-check.mjs` compares blob hashes of paths present on **both**
+sides, so a path one branch deleted never enters the comparison. Shipped on this branch:
+`tools/destructive-deletion-check.mjs`, same exit-code contract (`0` clean · `1` found ·
+`2` misuse, including the ISSUE-026 refusal for unreadable refs).
+
+Semantics: for each pair, take `git merge-base --octopus A B`; a path counts as destructively
+deleted by ref X when it exists at that merge base and is absent from X's tree, and it is
+reported when another ref in the set still ships it. Anchoring on the merge base keeps files a
+branch simply never had out of the report, so the output is an actionable list rather than a diff
+of unrelated lanes.
+
+Against the live branches:
+
+```console
+$ node tools/destructive-deletion-check.mjs $(git for-each-ref --format='%(refname)' refs/remotes/origin | grep -v '/HEAD$')
+arena/01a0aff7-n8n-rust-v-4  <->  arena/01a0aff8-n8n-rust-v-4   (merge base fc4e5631)
+  arena/01a0aff7-n8n-rust-v-4 deletes 22 path(s) that arena/01a0aff8-n8n-rust-v-4 still ships:
+      crates/n8n-common/Cargo.toml
+      crates/n8n-common/src/lib.rs
+      …
+DESTRUCTIVE: 22 distinct path(s) removed across 1 ref(s) (44 ref-pair incidences).
+Deleting refs (distinct paths each would remove):
+  arena/01a0aff7-n8n-rust-v-4 — 22
+```
+
+The count agrees with the commit that caused it: `git show --stat --format="" 4fd6a7e0 | tail -1`
+→ `22 files changed, 2825 deletions(-)`.
+
+Pinned by `tools/destructive-deletion-check.test.mjs` — **11/11 CHECKS PASSED** — covering the
+ISSUE-027 shape, symmetry under argument order, a three-ref comparison, the "absent from the
+merge base is not a deletion" rule, and the ISSUE-026 refusal.
+
+**Wired as gate Stage 2e, deliberately ADVISORY (never sets `fail=1`).** ISSUE-027 is live, so a
+blocking check would be permanently red until the orchestrator resolves that merge order — and a
+permanently red gate trains everyone to ignore it. The *self-test* does fail the gate; the survey
+does not. Stage 2e should be promoted to blocking once ISSUE-027 is closed.

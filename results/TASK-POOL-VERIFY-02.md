@@ -128,7 +128,8 @@ RESULT: 43/43 CHECKS PASSED          # Stage 1
 AUDIT RESULT: PASS                   # Stage 2
 RESULT: 7/7 crates with usable compatibility tests   # Stage 2c
 ######## STAGE 2d: MERGE-ORDER SAFETY TOOLING SELF-TEST (offline) ########
-RESULT: 8/8 CHECKS PASSED            # Stage 2d (new)
+RESULT: 8/8 CHECKS PASSED            # Stage 2d (new, blocking)
+RESULT: 11/11 CHECKS PASSED          # Stage 2e self-test (new, blocking)
 OFFLINE STAGES : PASS
 LIVE 11/11     : NOT RUN
 >>> INTEGRATION GATE: INCONCLUSIVE (live verification required before merge to main) <<<
@@ -138,15 +139,44 @@ exit 2
 Exit 2 is the designed `--offline-only` outcome; no live n8n/Postgres exists in this sandbox, so
 the 11/11 live regression remains **NOT RUN** and nothing here is claimed as VERIFIED.
 
+### 10. ISSUE-027 blind spot closed: `tools/destructive-deletion-check.mjs` (new)
+
+ISSUE-024's collision detector compares blob hashes of paths present on **both** sides, so a path
+one branch deleted never enters the comparison — which is why it could not see PR #16 emptying
+`crates/`. The new tool takes `git merge-base --octopus A B` for each pair and reports a path as
+destructively deleted when it exists at that merge base, is absent from one ref, and is still
+shipped by another.
+
+```console
+$ node tools/destructive-deletion-check.mjs $(git for-each-ref --format='%(refname)' refs/remotes/origin | grep -v '/HEAD$')
+arena/01a0aff7-n8n-rust-v-4  <->  arena/01a0aff8-n8n-rust-v-4   (merge base fc4e5631)
+  arena/01a0aff7-n8n-rust-v-4 deletes 22 path(s) that arena/01a0aff8-n8n-rust-v-4 still ships
+DESTRUCTIVE: 22 distinct path(s) removed across 1 ref(s) (44 ref-pair incidences).
+Deleting refs (distinct paths each would remove):
+  arena/01a0aff7-n8n-rust-v-4 — 22
+```
+
+That 22 agrees with the commit that caused it (`4fd6a7e0` → `22 files changed, 2825 deletions(-)`).
+Self-test `tools/destructive-deletion-check.test.mjs` → **11/11 CHECKS PASSED**, covering the
+ISSUE-027 shape, symmetry under argument order, a three-ref comparison, the "absent from the merge
+base is not a deletion" rule, and the ISSUE-026 refusal for unreadable refs.
+
+Wired as gate **Stage 2e, deliberately advisory** (never sets `fail=1`): ISSUE-027 is live, so a
+blocking check would be permanently red until the orchestrator settles that merge order, and a
+permanently red gate trains everyone to ignore it. The self-test does fail the gate; the survey
+does not. Promote Stage 2e to blocking when ISSUE-027 closes.
+
 ## Files changed
 
 | path | change |
 | :-- | :-- |
 | `tools/branch-collision-check.mjs` | unreadable refs now refuse with exit 2 instead of reporting "safe to merge" |
 | `tools/branch-collision-check.test.mjs` | new, 8 checks, temp-repo based |
-| `tests/integration/run_gate.sh` | new Stage 2d |
-| `package.json` | `collision:test`, `collision:check` scripts |
-| `docs/isolation/CROSS-AGENT-ISSUES.md` | ISSUE-026 (fixed), ISSUE-027 (blocking, PR #16), ISSUE-028 (vote transport) |
+| `tests/integration/run_gate.sh` | new Stage 2d (blocking self-test) and Stage 2e (advisory survey) |
+| `package.json` | `collision:test`, `collision:check`, `deletion:test`, `deletion:check` scripts |
+| `tools/destructive-deletion-check.mjs` | new — detects the delete/modify class the collision detector cannot see |
+| `tools/destructive-deletion-check.test.mjs` | new, 11 checks, temp-repo based |
+| `docs/isolation/CROSS-AGENT-ISSUES.md` | ISSUE-026 (fixed), ISSUE-027 (blocking, PR #16, + tooling follow-up), ISSUE-028 (vote transport) |
 
 ### 6. Post-task sweep — PR #14 (`arena/01a0aff8` @ `6b1a4639`) → APPROVE
 

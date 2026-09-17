@@ -39,6 +39,27 @@ else
   echo "SKIPPED: tools/branch-collision-check.mjs not present on this tree."
 fi
 
+echo; echo "######## STAGE 2e: DESTRUCTIVE-DELETION SURVEY (advisory, does not fail the gate) ########"
+# Delete/modify conflicts across branches: a path one branch deleted and another still ships.
+# This is deliberately ADVISORY and never sets fail=1. ISSUE-027 is live right now — PR #16
+# really does delete crates/ while this branch and main still ship it — so a blocking check
+# would be permanently red until the orchestrator resolves that merge order, and a permanently
+# red gate teaches everyone to ignore it. It becomes a blocking stage once ISSUE-027 is closed.
+# Its own correctness is enforced by the self-test below (that one does fail the gate).
+if [ -f tools/destructive-deletion-check.mjs ]; then
+  node tools/destructive-deletion-check.test.mjs || fail=1
+  refs=$(git for-each-ref --format='%(refname)' refs/remotes/origin | grep -v '/HEAD$' | wc -l)
+  if [ "$refs" -ge 2 ]; then
+    # shellcheck disable=SC2046
+    node tools/destructive-deletion-check.mjs $(git for-each-ref --format='%(refname)' refs/remotes/origin | grep -v '/HEAD$' | tr '\n' ' ') \
+      || echo "  ^ advisory: destructive deletions exist between branches — resolve before merging (ISSUE-027). Not failing the gate."
+  else
+    echo "SKIPPED: fewer than two origin refs in this clone (fetch the branches to survey them)."
+  fi
+else
+  echo "SKIPPED: tools/destructive-deletion-check.mjs not present on this tree."
+fi
+
 echo; echo "######## STAGE 3: 11/11 LIVE REGRESSION GATE ########"
 if [ "$OFFLINE" = "1" ]; then
   echo "SKIPPED (--offline-only): live regression NOT RUN — gate cannot be declared VERIFIED."

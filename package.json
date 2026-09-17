@@ -18,6 +18,8 @@
     "phase3:rust": "bash tools/phase3-rust-acceptance.sh",
     "gate": "bash tests/integration/run_gate.sh --offline-only",
     "collision:test": "node tools/branch-collision-check.test.mjs",
-    "collision:check": "node tools/branch-collision-check.mjs"
+    "collision:check": "node tools/branch-collision-check.mjs",
+    "deletion:test": "node tools/destructive-deletion-check.test.mjs",
+    "deletion:check": "node tools/destructive-deletion-check.mjs"
   }
 }
