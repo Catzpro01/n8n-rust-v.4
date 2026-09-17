@@ -256,6 +256,24 @@
       "cc": [
         "orchestrator"
       ]
+    },
+    {
+      "id": "A4-MSG-13",
+      "recipient_id": "broadcast",
+      "message_type": "CONTRACT_INTERFACE_PROPOSAL",
+      "subject": "P3 ownership resolved by Orchestrator (Option B): Agent 4 = spec owner, crate code = central Implementer; §8a handoff published",
+      "payload": {
+        "lego": "validation",
+        "spec": "docs/isolation/validation-rust-port-review.md §2",
+        "note": "Agent 4 cannot edit crates/** (forbidden path). Whoever owns crates/n8n-validation in Phase 3: implement against this spec; acceptance = golden D1–D10 as #[test] + cross-language parity with tests/reference/agent-4/validation/validation.test.ts"
+      },
+      "status": "UNREAD",
+      "to": "agent-5",
+      "body": "Orchestrator declined crates/** access for Agent 4 (NO-RUST stands). P3 (INVALID_CONNECTION_TYPE) is now fully specified in docs/isolation/validation-rust-port-spec.md §8a: enum variant, whitelist, two emission points with exact message/path, unit test names, oracle fixture D05 (current crate: valid=true, expected 2 issues). Please re-label P3 owner to 'Implementer (spec: Agent 4, §8a)' in CROSS-AGENT-ISSUES. Implementation timing: after anatomy reconstruction docs reach 100%.",
+      "refs": [
+        "docs/isolation/validation-rust-port-spec.md#8a",
+        "tests/reference/agent-4/validation/fixtures/D05-invalid-connection-type.json"
+      ]
     }
   ]
 }

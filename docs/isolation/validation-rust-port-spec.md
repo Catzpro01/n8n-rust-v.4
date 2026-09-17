@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | Author | Agent 4 (LEGO `validation`) — spec only; `crates/**` is outside Agent 4 allowed_paths |
-| Implementation & `cargo test` | Orchestrator on VPS host (same arrangement as `connection-rust-port-spec.md`) |
+| Implementation & `cargo test` | **Orchestrator / central Implementer**, after the n8n anatomy reconstruction docs are 100% complete (Orchestrator decision 2026-09-17, Option B — Agent 4 `forbidden_paths: crates/**, apps/**` stands) |
 | Normative sources (priority) | n8n 2.9.4 source › `contracts/validation.contract.md` (§4.4, §7, §11.7–11.9) › TS oracle `tests/reference/agent-4/validation/workflow-rules.ts` › fixtures `tests/reference/agent-4/validation/fixtures/D*.json` |
 | Supersedes | `validation-rust-port-review.md` §2 (kept as history; findings F1–F7 map to the requirements below) |
 | Status of current crate (main @ 06412afb) | NON-CONFORMANT — see §9 gap table |
@@ -181,6 +181,21 @@ ValidationReport { valid: errors.is_empty(), errors }
 ```
 Must never panic or return `Err` for any `serde_json::Value`. Recommended: `#[deny(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]` on the crate, and a proptest/fuzz target feeding arbitrary `Value`s.
 
+## 8a. P3 — `INVALID_CONNECTION_TYPE` (Agent 5 blocker P3, CROSS-AGENT-ISSUES "required decision #3") — complete handoff
+
+Ownership per Orchestrator decision (Option B): **specified by Agent 4 here; implemented centrally.** Everything the implementer needs:
+
+| Item | Value |
+|---|---|
+| Enum variant | `ValidationCode::InvalidConnectionType` → serialises as `"INVALID_CONNECTION_TYPE"` (4th of the 4 codes in `contracts/validation.contract.md` §3; plus `INVALID_INPUT` as the gate code) |
+| Whitelist | `NODE_CONNECTION_TYPES` (§2, 13 entries, source: n8n 2.9.4 `packages/workflow/src/interfaces.ts` `NodeConnectionTypes`). Owned by Validation; Connection may re-export, never redefine (§11). |
+| Emission point 1 — type key | in `check_dangling_connections`, for each `ty` in `sorted(connections[source].keys())` with `ty ∉ NODE_CONNECTION_TYPES`: `{ code: INVALID_CONNECTION_TYPE, node: source, path: ["connections", source, ty], message: "Unknown connection type \"{ty}\" on node \"{source}\"" }` — emitted **before** iterating that key's outputs, and iteration still continues (targets under an unknown key are still checked for dangling). |
+| Emission point 2 — target `type` field | for each well-formed target with `target.type` a string `∉ NODE_CONNECTION_TYPES`: same code/message, `path: ["connections", source, ty, oi, ti, "type"]`, emitted **after** the target's dangling check. A missing/non-string `target.type` is *not* an error (n8n treats the key as authoritative). |
+| Does not affect | `valid` short-circuiting (all issues accumulate), cycle detection (unknown-type edges are never `main`, so never traversed), node uniqueness. |
+| Oracle fixture | `tests/reference/agent-4/validation/fixtures/D05-invalid-connection-type.json` — input `A --foo--> B`, expected **exactly two** issues in this order: key-level `["connections","A","foo"]`, then target-level `["connections","A","foo","0","0","type"]`, both `node:"A"`, `valid:false`. Current crate result on the probe: `valid=true, codes=[]` (`tests/reference/agent-4/rust-parity/README.md`). |
+| Unit tests to add (names) | `invalid_type_key_reported`, `invalid_type_on_target_reported`, `valid_ai_types_not_reported` (all 13 whitelist entries pass), `unknown_type_targets_still_checked_for_dangling` (`A --foo--> Ghost` ⇒ INVALID_CONNECTION_TYPE ×2 **and** DANGLING_CONNECTION ×1, in that path order) |
+| Reference-parity note | n8n 2.9.4 itself does not reject unknown types at save time (golden C); this rule is opt-in enforcement (ISSUE-003 Option A), so the crate must expose it through `validate_workflow`, never by failing deserialisation. |
+
 ## 9. Gap table — current crate vs this spec
 
 | Req | Current `lib.rs` | Finding |
@@ -242,3 +257,6 @@ runs the unmodified crate against the 14 fixtures: **10/14** (code-set parity on
 remaining F6 scope is only that error *order* follows JSON key order instead of §3 (`nodes[]` order, sorted types),
 which matters for D13-style multi-error reports once accumulation (F3) is implemented. Verdict unchanged: NON-CONFORMANT,
 blocking F1/F2/F3.
+
+### 2026-09-17 — Orchestrator decision: Option B
+Agent 4's request for `crates/n8n-validation/**` access (A4-MSG-12) was **declined**; NO-RUST rule stands. Agent 4 obligations under Option B: (1) spec §2–§8 complete — done; P3 handoff added as **§8a**; (2) fixtures + acceptance oracle — `tests/reference/agent-4/validation/fixtures/D01…D14.json`, `gen-fixtures.ts`, anti-drift + robustness tests, probe `tests/reference/agent-4/rust-parity/` — done. Physical implementation is deferred to the central Implementer after the anatomy reconstruction docs are 100 % complete. Agent 5's "owner: Agent 4" for P3 should be read as *spec owner*, not *code owner*.
