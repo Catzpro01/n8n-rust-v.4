@@ -25,9 +25,10 @@ contract. It does **not** mean it was replaced by Rust.
 
 - `reference/n8n/` : pristine upstream n8n 2.9.4 source (read-only, hash-pinned)
 - `docs/anatomy/` : system anatomy (18 documents)
-- `contracts/` : formal LEGO contracts (`workflow`, `node`, `connection`, `validation`)
+- `contracts/` : formal LEGO contracts (`workflow`, `node`, `connection`, `validation`, `execution-data`, `expression`, `execution`, and runtime modules)
 - `docs/isolation/` : Phase 2 isolation records, dependency map, port contract, verification report
 - `packages/workflow-lego/` : the isolated Workflow Model LEGO (boundary, ports, tests, manifests)
+- `packages/reconstructed-engine/` : standalone Node.js execution-loop LEGO (routing, fan-in, retries, error policy, execution context)
 - `tools/` : boundary mapper, kernel/port/reference gates, isolation extractor, model digest, gate runner, live engine harness
 - `tests/reference/` : golden workflows + baseline smoke test evidence
 - `tasks/`, `results/` : inbound task manifests and execution results
