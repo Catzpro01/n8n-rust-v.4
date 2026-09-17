@@ -1,0 +1,14 @@
+{
+  "name": "@lego/execution-data",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Phase-3 JavaScript reconstruction of n8n 2.9.4 Execution Data LEGO, item envelopes, pairing rules, run execution data factories, and binary metadata",
+  "type": "module",
+  "main": "src/index.mjs",
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  }
+}
