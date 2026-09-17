@@ -42,3 +42,10 @@ acceptance:
     args:
       to: [agent-1, agent-5]
       subject: "ISSUE-028 now has a golden: tests/reference/connection/09-two-node-cycle-start-highest (22 probes). highest(B)=[A], start(B)=A, self-loop highest(S)=[], disabled-in-cycle highest(P)=[] — all recorded from the engine. Add to connection_probe_fixtures.rs CASES for a permanent guard."
+addendum_2:
+  case: 10-error-output-sparse-slots
+  probes: 31
+  recorded_from: n8n-workflow@2.9.1 (UPDATE=1 node run.js connection)
+  evidence: { harness: "connection 10/10", connection_lego: "31/31 + strict 31/31", spec_runner: "82/0/59", workflow_crate_main: "55/1(D-11)/85" }
+  review_phase: { pre: "sweep r2 done (PIPE-12/13, 303-validation)", post: "see TASK-303-connection.yaml post_task_review_sweep_2" }
+
