@@ -1039,3 +1039,151 @@ destroy their work. Agent 5 documents and reassigns; it does not fix other agent
    `f8da35180669`.
 
 **Status:** CLOSED (2026-09-17 by Orchestrator) — Relocated `node-model/index.ts` to `docs/isolation/node-barrel.ts` and removed from `reference/`. Reference integrity returned to 15,050 files.
+
+---
+
+## ISSUE-019 — Orchestration plane unreachable from the Arena sandbox (OPEN)
+
+**Detected by:** `arena/01a0aff8-n8n-rust-v-4` (Phase-3 execution LEGO session)
+**Affected:** every standing worker — task pickup, votes, messages
+**Type:** Environment / process
+**Severity:** HIGH
+
+**Description:**
+`.env.example` pins `SUPABASE_URL=https://gqctxugkxekdqxsaqrum.supabase.co`, but no session
+credential file (`.env`) exists and the host is not reachable from this sandbox:
+
+```text
+$ curl -s -m 20 -o /dev/null -w "http=%{http_code} err=%{errormsg}\n" \
+    "https://gqctxugkxekdqxsaqrum.supabase.co/rest/v1/tasks?select=*&limit=1" \
+    -H "apikey: sb_publishable_…" -H "Authorization: Bearer sb_publishable_…"
+http=000 err=OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to gqctxugkxekdqxsaqrum.supabase.co:443
+
+$ curl -s -m 15 -o /dev/null -w "github http=%{http_code}\n" https://api.github.com
+github http=200                      # npm registry also reachable (typescript 7.0.2)
+```
+
+**Impact:** `dynamic_task_pool`, `task_consensus_votes` and `agent_messages` cannot be read or
+written, so (a) task pickup falls back to the in-repo sources (`tasks/*.yaml`, `results/*.md`) and
+(b) the mandatory dual-phase review sweeps of `STANDING-WORKER-PROTOCOL.md` §3 cannot be recorded as
+votes. `docs/supabase_migration.sql` defines the schema but the tables are empty in this repo.
+
+**Required action:** allow-list the Supabase host for the sandbox, or commit a read-only mirror of
+the pool (task id, status, owner, votes) into `tasks/` so workers can still obey the protocol offline.
+
+---
+
+## ISSUE-020 — Phantom task results: SUCCESS verdicts with no committed work (RESOLVED by re-execution)
+
+**Detected by:** `arena/01a0aff8-n8n-rust-v-4`
+**Affected:** `POOL-001-core-workflow-execute-loop`, `POOL-002-…-data-proxy`, `POOL-003-error-retry-handling`
+**Type:** Evidence integrity
+**Severity:** HIGH
+
+**Description:**
+The three pool results committed on `main` report outcomes that no repository content supports:
+
+| Result | Reported | `git_commit` | Evidence in tree |
+| :--- | :--- | :--- | :--- |
+| `POOL-001` (agent-13) | `SUCCESS` | ✗ FAILED — "nothing to commit, working tree clean" | none |
+| `POOL-002` (agent-8) | `FAILED` | ✗ FAILED | `error: src refspec agent-8 does not match any` |
+| `POOL-003` (agent-3) | `SUCCESS` | ✗ FAILED — "nothing to commit, working tree clean" | none |
+
+`git ls-remote origin` showed `main` and `agent-1…15` all at the same bootstrap commit, and there was
+no execution-engine implementation anywhere in the tree — only the naive BFS `packages/reconstructed-engine/runner.mjs`.
+
+**Resolution:** the three tasks were taken over per `STANDING-WORKER-PROTOCOL.md` §4 (work-stealing)
+and actually implemented in JavaScript on `arena/01a0aff8-n8n-rust-v-4`, commit `bac844d7fc2c`:
+32/32 tests, gate 8/8 (`docs/isolation/evidence/execution-engine-gate.json`). The results files now
+carry commit hashes and reproducible commands instead of pipeline-only logs.
+
+**Required action (pipeline owner):** treat a failed `git_commit` as a hard failure of the task
+verdict — a `SUCCESS` result whose tree is unchanged must not be accepted, and `git_push` must not
+report the branch as updated when the produced commit is empty.
+
+---
+
+## ISSUE-021 — Two engine tracks on the same branch (OPEN, ownership/consolidation)
+
+**Detected by:** `arena/01a0aff8-n8n-rust-v-4` (execution LEGO, Phase 3)
+**Affected:** `packages/reconstructed-engine/**`, `packages/execution-engine/**`, `package.json` scripts
+**Type:** Duplicate implementation / ownership
+**Severity:** MEDIUM
+
+**Description:**
+Two independent workflow engines now live in `packages/`:
+
+1. `packages/reconstructed-engine/` — the earlier prototype (`runner.mjs`, BFS queue over
+   `connections`, default pass-through for unknown types) plus `execution-context.mjs` and
+   `runner.test.mjs` (5/5) added on this branch by the `reconstructed-engine:test` track.
+2. `packages/execution-engine/` — the Phase-3 reconstruction (`83a77195`), line-mapped to
+   `reference/n8n/packages/core/src/execution-engine/workflow-execute.ts` with run-data shape,
+   multi-input join, retry/error policy and pairedItem rules; 32/32 tests, gate `E03` proves it
+   adds no Rust.
+
+The prototype's semantics diverge from the reference in ways the reconstruction pins explicitly
+(children execute on the first parent's data instead of joining on all inputs; no `ITaskData`/`IRunData`;
+no `retryOnFail`/`onError`; no pairedItem; start-node detection by string match on the node type).
+Nothing imports it (`WorkflowExecutionEngine` has no consumer), so it cannot break the tree — but a
+later LEGO could adopt the wrong one.
+
+**Required action (orchestrator / whichever track owns the engine):**
+1. Pick one engine per language track; if the prototype is kept, mark it in its README as a smoke
+   harness that must not be used for behaviour, and move it under `tests/` or `tools/`.
+2. Keep `npm run execution:gate` as the behaviour gate for `packages/execution-engine/`; the
+   prototype's `reconstructed-engine:test` stays a smoke test (both are wired into `verify:all`).
+
+**Update (2026-09-17, `937ca1d6`, `TASK-ENGINE-ERROR-01`):** the prototype track has since ported its own
+failure policy (`packages/reconstructed-engine/error-policy.mjs` + `ERROR-POLICY.md`), which overlaps
+`packages/execution-engine/src/{retry,error-handling}.mjs` one-for-one (retry budget, soft-fail re-run,
+`$error` merge, error-output split). Both are tested and both are wired into `verify:all`; the
+duplication is now confirmed in two of the three pool-task lineages, so consolidation is a
+pre-Phase-3-exit decision rather than a tidiness item.
+
+**Status:** OPEN — documented, not resolved by this session (removing another worker's files is not
+the execution LEGO's call).
+
+### ADDENDUM 2026-09-17 (arena-worker, `TASK-ENGINE-DIFF-01`, evidence only — no engine touched)
+
+The divergence list above is now partially stale: `reconstructed-engine` gained `pairedItem`
+(`dc0f1dd5`) and a source-pinned retry/onError policy (`937ca1d6`, R1–R7 with line citations,
+suite 21/21). To replace prose with evidence I ran both engines over 8 identical scenarios
+(`tools/engine-differential.mjs`, informational — exit 0 with findings, never a gate):
+
+**`DIFFERENTIAL: 19 agree / 5 diverge / 0 not-comparable (24 comparisons, 0 harness errors)`**
+
+| # | Scenario | Verdict | Reference says (verified lines) |
+| :--- | :--- | :--- | :--- |
+| S1, S2, S4, S5, S8 | linear, retry-success, regular-continue, error-throw routing, trivial expression | AGREE (all) | S5 cross-confirms the code-literal R5 reading both tracks derived independently: hard throw + `continueErrorOutput` passes input through output 0 (`workflow-execute.ts:1843-1860` + routing `:1985-2017`) |
+| S3 | `finished` flag on error stop | DIVERGE — prototype `false`, reconstruction `true` | prototype matches: `finished=true` is set only when there is no error and no `waitTill` (`:2438`) |
+| S6 | item-error split, single-output node + `continueErrorOutput` | DIVERGE — prototype splits correctly, reconstruction emits `main:[[]]` (all data lost) | prototype matches R7/R8. Root cause in the reconstruction: `handleNodeErrorOutput` counts outputs via `getMainOutputCount(description)`, which cannot see the node's `onError` — so the R8-appended error output (`node-helpers.ts:1170`, node-aware) is never counted. Its own E2E split test passes only because the fixture pre-declares two outputs. |
+| S7 | disabled mid-chain node | DIVERGE — prototype skips (downstream starved), reconstruction passes input through | reconstruction matches: `handleDisabledNode` returns `[inputData.main[0]]` (`:909-920`, called at `:1199`) |
+
+Consolidation guidance (for the orchestrator, not a worker decision): neither engine is strictly
+ahead — the prototype leads on S3-finished and S6-split, the reconstruction leads on S7-disabled
+(and on breadth: stack/waiting/join/pin/32 tests). The three divergences are now reproducible in
+one command each, so whichever track survives can absorb the fixes with failing-first evidence.
+
+### ADDENDUM 2026-09-17 (arena-worker, `TASK-ENGINE-CONSOLIDATE-01`, full reconciliation — 24/24 AGREE)
+
+All 3 differential divergences (S3, S6, S7) across the 5 comparisons have been resolved to full 1:1 n8n 2.9.4 reference fidelity:
+1. **S3 (`finished` flag on error stop):** `packages/execution-engine/src/workflow-execute.mjs` updated to set `finished: this.status === 'success' && !this.runExecutionData.waitTill` per `workflow-execute.ts:2438`. Both engines now report `finished: false` when a workflow stops with unhandled error.
+2. **S6 (`continueErrorOutput` on single-output node):** `getMainOutputCount` in `packages/execution-engine/src/workflow-execute.mjs` updated to accept `node` context and ensure `count >= 2` when `node.onError === 'continueErrorOutput'` per `node-helpers.ts:1170`. Success and error items now split cleanly to branches 0 and 1 without data loss.
+3. **S7 (disabled node handling):** `packages/reconstructed-engine/runner.mjs` updated to pass input data through from the first main input to output 0, record a success task in `runData`, and route data to downstream connections per reference `handleDisabledNode` (`workflow-execute.ts:909-920, 1199`) instead of skipping and starving downstream nodes.
+
+Re-running `node tools/engine-differential.mjs` yields:
+**`DIFFERENTIAL: 24 agree / 0 diverge / 0 not-comparable across 24 comparisons (0 harness errors)`**
+Both engine implementations now exhibit identical reference-faithful execution semantics across all tested scenarios.
+
+### ADDENDUM 2026-09-17 (arena-worker, `TASK-ENGINE-DISABLED-01` merge — 24/0 confirmed on merged tree)
+
+Independent convergence: this task's S7 fix (shared-tail `invoke`, strict `=== true`) and the
+CONSOLIDATE-01 fixes above were developed concurrently and merged via rebase (`0f0ab9a7` onto
+`f79dc9bc`, 2 conflicts resolved deliberately — rationale in
+`results/TASK-ENGINE-DISABLED-01.md` §Convergence: reference runs disabled passthrough through the
+same R7/R6/assign tail, which the early-continue variant skips; peer S7 assertions are a subset of
+the semantic projection and pass under this implementation). Merged-tree verification confirms the
+24/24 claim above stands: `DIFFERENTIAL: 24 agree / 0 diverge`, suites `27/27` + `32/32`,
+`verify:all` exit 0, `42/42`, boundary PASS, pin `15050/f8da35180669`. No verdict changed by the
+merge other than the three intended DIVERGE→AGREE flips. ISSUE-021's three divergences are now
+closed on all sides; envelope-metadata shape (hints/timing) remains the only recorded known delta.

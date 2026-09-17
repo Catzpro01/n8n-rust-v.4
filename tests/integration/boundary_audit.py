@@ -6,7 +6,8 @@ owns it (per docs/LEGO_PARALLEL_RULES.md), and reports:
   * cross-LEGO edges (DIRECT RUNTIME vs TYPE-ONLY)
   * circular dependencies between LEGOs
   * hidden coupling signals (global state, env vars, filesystem/db access)
-  * reference-source integrity (no Rust in Phase 2)
+  * phase guard: no Rust in Phase 2; Rust confined to crates/** and apps/**
+    once docs/isolation/PHASE-3-OPENING-RECORD.md opens Phase 3
 
 Read-only: it never modifies reference source. Exit 1 on undocumented findings.
 """
@@ -14,6 +15,7 @@ import os, re, sys, json
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SRC = os.path.join(ROOT, "reference", "n8n", "packages", "workflow", "src")
+OPENING_RECORD = os.path.join(ROOT, "docs", "isolation", "PHASE-3-OPENING-RECORD.md")
 
 LEGO_OWNERSHIP = {
     "workflow":       (["workflow.ts"], "Agent 1"),
@@ -127,14 +129,57 @@ def hidden_coupling():
                         hits.setdefault(kind, []).append(f"{rel}:{i}")
     return hits
 
+def phase3_open():
+    """Phase 3 is open only when the opening record exists AND carries its
+    machine markers. A bare file with the right name does not open anything."""
+    if not os.path.exists(OPENING_RECORD):
+        return False
+    text = open(OPENING_RECORD, encoding="utf8", errors="replace").read()
+    return (
+        "PHASE_3_STATUS: OPEN" in text
+        and "PHASE_2_VERDICT: VERIFIED" in text
+        and "REFERENCE_PIN: 15050/f8da35180669" in text
+    )
+
+
 def rust_guard():
+    """Returns (offenders, mode, detail).
+
+    Phase 2: any .rs / Cargo.toml under crates/ or apps/ is an offender.
+    Phase 3: Rust is accepted under crates/** and apps/** (with a root
+    workspace manifest); a .rs / Cargo.toml anywhere else is an offender.
+    reference/** is excluded from the scan — its integrity belongs to G04."""
     offenders = []
-    for base in ("crates", "apps"):
-        for dp, _dn, fn in os.walk(os.path.join(ROOT, base)):
-            for f in fn:
-                if f.endswith(".rs") or f == "Cargo.toml":
-                    offenders.append(os.path.relpath(os.path.join(dp, f), ROOT))
-    return offenders
+    if not phase3_open():
+        for base in ("crates", "apps"):
+            for dp, _dn, fn in os.walk(os.path.join(ROOT, base)):
+                for f in fn:
+                    if f.endswith(".rs") or f == "Cargo.toml":
+                        offenders.append(os.path.relpath(os.path.join(dp, f), ROOT))
+        return offenders, "phase-2", "no Rust may exist"
+    skip = {".git", "reference", "node_modules", "target", ".runtime"}
+    for dp, dn, fn in os.walk(ROOT):
+        dn[:] = [d for d in dn if d not in skip]
+        for f in fn:
+            if f.endswith(".rs") or f == "Cargo.toml":
+                rel = os.path.relpath(os.path.join(dp, f), ROOT)
+                if rel == "Cargo.toml":
+                    continue  # root workspace manifest — required, checked below
+                if not (rel.startswith("crates/") or rel.startswith("apps/")):
+                    offenders.append(rel)
+    root_manifest = os.path.join(ROOT, "Cargo.toml")
+    if not os.path.exists(root_manifest):
+        offenders.append("Cargo.toml: missing root workspace manifest (required in Phase 3)")
+    elif "[workspace]" not in open(root_manifest, encoding="utf8", errors="replace").read():
+        offenders.append("Cargo.toml: root manifest is not a [workspace] manifest")
+    confined = sum(
+        1
+        for base in ("crates", "apps")
+        for _dp, _dn, fn in os.walk(os.path.join(ROOT, base))
+        for f in fn
+        if f.endswith(".rs") or f == "Cargo.toml"
+    )
+    return offenders, "phase-3", f"{confined} Rust file(s) confined, workspace manifest present"
 
 def main():
     if not os.path.isdir(SRC):
@@ -167,15 +212,21 @@ def main():
     for kind, locs in sorted(hits.items()):
         print(f"  {kind}: {len(locs)} hit(s) e.g. {locs[:3]}")
 
-    offenders = rust_guard()
-    print(f"\n-- Phase-2 Rust guard: {'VIOLATION ' + str(offenders) if offenders else 'clean (no .rs / Cargo.toml)'}")
+    offenders, mode, detail = rust_guard()
+    if mode == "phase-2":
+        print(f"\n-- Phase-2 Rust guard: {'VIOLATION ' + str(offenders) if offenders else 'clean (no .rs / Cargo.toml)'}")
+    else:
+        print(f"\n-- Phase-3 Rust confinement: {'VIOLATION ' + str(offenders) if offenders else detail}")
 
     print("\n-------------------------------------------------------")
     failed = bool(undocumented) or bool(offenders)
     if undocumented:
         print(f"BOUNDARY VIOLATION: {len(undocumented)} undocumented edge(s): {undocumented}")
     if offenders:
-        print("PHASE VIOLATION: Rust introduced during Phase 2")
+        if mode == "phase-2":
+            print("PHASE VIOLATION: Rust introduced during Phase 2 (no Phase-3 opening record)")
+        else:
+            print("PHASE VIOLATION: Rust outside crates/** and apps/**, or workspace manifest missing (Phase 3 confinement)")
     print("AUDIT RESULT:", "FAIL" if failed else "PASS (all edges documented)")
     return 1 if failed else 0
 
