@@ -1,0 +1,62 @@
+id: TASK-401-phase3-gate-mode
+agent: agent-5
+lego: integration
+module: integration
+phase: 3
+title: "Phase-3 gate mode for the Agent-5 harnesses (closes MSG-14/MSG-19)"
+
+# Starting Phase 3 turned the two Phase-2 Rust guards red (contract_conformance
+# 20/21, boundary_audit PHASE VIOLATION) — a gate-lifecycle problem, not a
+# regression. This task adds the Phase-3 mode both MSG-14 and MSG-19 requested.
+
+allowed_paths:
+  - tests/compatibility/contract_conformance.mjs
+  - tests/integration/boundary_audit.py
+  - tests/integration/run_gate.sh
+  - tools/phase3-rust-acceptance.sh
+  - docs/isolation/phase3-gate-mode.md
+  - docs/isolation/evidence/rust-test-record.json
+  - package.json
+  - tasks/TASK-401-phase3-gate-mode.yaml
+  - results/TASK-401-phase3-gate-mode.md
+
+forbidden_paths:
+  - reference/n8n/**
+  - crates/**
+  - apps/**
+  - packages/workflow-lego/**
+
+requires:
+  - contracts/workflow.contract.md
+  - docs/isolation/workflow-rust-port-review.md
+  - docs/isolation/workflow-bus-outbox.json
+
+operations:
+  - name: phase_gate
+    args:
+      rule: "Phase 3 is open iff a [workspace] manifest exists at the repo root"
+      phase2: "unchanged strict rule (any .rs/Cargo.toml under crates/ or apps/ fails)"
+      phase3_conformance:
+        - "workspace manifest present, members resolve"
+        - "workflow-rust fixtures present with exact 8/6/6/6/9 case counts"
+        - "frozen 15-symbol Workflow surface intact (ownership.json)"
+        - "cargo test evidence fresh (record PASS + G04 PASS + HEAD + fixtures sha match)"
+      phase3_audit: "Rust guard becomes an accepted inventory line; undocumented edges still fail"
+  - name: acceptance_runner
+    args:
+      script: tools/phase3-rust-acceptance.sh
+      runners: ["cargo test --workspace (VPS/PATH)", "tools/rust-offline-rig/run.sh test (sandbox)"]
+      evidence: docs/isolation/evidence/rust-test-record.json
+      gate_stage: "run_gate.sh Stage 2b"
+  - name: verify
+    args:
+      expect:
+        - "contract_conformance: 24/24"
+        - "boundary_audit: PASS"
+        - "phase3-rust-acceptance: PASS with fresh record"
+        - "run_gate.sh --offline-only: offline stages PASS, live NOT RUN"
+
+merge_condition:
+  - regression_gate_pass
+  - no_contract_violation
+  - agent_5_verification

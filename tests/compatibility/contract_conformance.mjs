@@ -8,6 +8,8 @@
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { execSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const CONN_TYPES = ['main', 'ai_tool', 'ai_memory', 'ai_languageModel'];
@@ -119,8 +121,14 @@ for (const { name, wf } of fixtures) {
   });
 }
 
-// --- Phase-2 guard: no premature Rust -------------------------------------
-check('Phase 2: no Rust implementation introduced', () => {
+// --- Phase gate: Rust presence vs project phase -------------------------------
+// Phase 3 opens when the workspace manifest exists at the repo root
+// (MSG-14/MSG-19: "accept Rust under crates/** when the workspace manifest
+// exists at the repo root"). In Phase 2 the strict rule stands; in Phase 3 the
+// gate asserts the workspace, the frozen surface, the acceptance fixtures and
+// fresh `cargo test` evidence instead of forbidding crates/**.
+// Spec: docs/isolation/phase3-gate-mode.md
+const collectRustArtifacts = () => {
   const offenders = [];
   const walk = (dir) => {
     if (!existsSync(dir)) return;
@@ -131,9 +139,112 @@ check('Phase 2: no Rust implementation introduced', () => {
     }
   };
   walk(join(ROOT, 'crates')); walk(join(ROOT, 'apps'));
-  assert(offenders.length === 0, `Rust artifacts present in Phase 2: ${offenders.join(', ')}`);
-  return 'crates/ and apps/ contain no Rust sources';
-});
+  return offenders;
+};
+const RUST_ARTIFACTS = collectRustArtifacts();
+const PHASE3 = (() => {
+  try {
+    return /\[workspace\]/.test(readFileSync(join(ROOT, 'Cargo.toml'), 'utf8'));
+  } catch {
+    return false;
+  }
+})();
+
+if (!PHASE3) {
+  check('Phase 2: no Rust implementation introduced', () => {
+    assert(RUST_ARTIFACTS.length === 0, `Rust artifacts present in Phase 2: ${RUST_ARTIFACTS.join(', ')}`);
+    return 'crates/ and apps/ contain no Rust sources';
+  });
+} else {
+  check('Phase 3: Rust workspace manifest present', () => {
+    const manifest = readFileSync(join(ROOT, 'Cargo.toml'), 'utf8');
+    const members = [...manifest.matchAll(/"([^"]+)"/g)]
+      .map((m) => m[1])
+      .filter((m) => m.startsWith('crates/') || m.startsWith('apps/'));
+    assert(members.length > 0, 'workspace declares no crates/* or apps/* members');
+    const missing = members.filter((m) => !existsSync(join(ROOT, m, 'Cargo.toml')));
+    assert(missing.length === 0, `workspace members without a manifest: ${missing.join(', ')}`);
+    return `${members.length} workspace member(s): ${members.join(', ')}`;
+  });
+
+  check('Phase 3: workflow-rust acceptance fixtures present (35 cases)', () => {
+    const fxPath = join(ROOT, 'tests', 'reference', 'workflow-rust', 'fixtures.json');
+    assert(existsSync(fxPath), 'missing tests/reference/workflow-rust/fixtures.json');
+    const fx = JSON.parse(readFileSync(fxPath, 'utf8'));
+    const counts = {
+      checksum: (fx.checksum?.cases ?? []).length,
+      compareConnections: (fx.compareConnections ?? []).length,
+      toJSON: (fx.toJSON ?? []).length,
+      rename: (fx.rename ?? []).length,
+      traversal: (fx.traversal ?? []).length,
+    };
+    // Mirrors the Rust harness constants in crates/n8n-workflow/tests/reference_fixtures.rs
+    const expected = { checksum: 8, compareConnections: 6, toJSON: 6, rename: 6, traversal: 9 };
+    for (const [k, want] of Object.entries(expected)) {
+      assert(
+        counts[k] === want,
+        `${k}: want ${want} cases, have ${counts[k]} (fixtures.json drifted vs the Rust harness constants)`,
+      );
+    }
+    const total = Object.values(counts).reduce((a, b) => a + b, 0);
+    return `${total} cases (8/6/6/6/9)`;
+  });
+
+  check('Phase 3: frozen 15-symbol Workflow surface intact', () => {
+    const ownershipPath = join(ROOT, 'packages', 'workflow-lego', 'manifest', 'ownership.json');
+    assert(existsSync(ownershipPath), 'missing packages/workflow-lego/manifest/ownership.json');
+    const ownership = JSON.parse(readFileSync(ownershipPath, 'utf8'));
+    const surface = ownership.publicSurface;
+    assert(surface, 'ownership.json has no publicSurface block');
+    const eq = (a, b) => JSON.stringify([...a].sort()) === JSON.stringify([...b].sort());
+    assert(eq(surface.aggregate ?? [], ['Workflow']), 'aggregate surface drifted from the frozen record');
+    assert(
+      eq(surface.graph ?? [], [
+        'getChildNodes', 'getParentNodes', 'getConnectedNodes', 'getNodeByName',
+        'mapConnectionsByDestination', 'buildAdjacencyList', 'parseExtractableSubgraphSelection',
+        'getRootNodes', 'getLeafNodes', 'hasPath', 'getInputEdges', 'getOutputEdges',
+      ]),
+      'graph surface drifted from the frozen record',
+    );
+    assert(
+      eq(surface.content ?? [], ['calculateWorkflowChecksum', 'compareConnections']),
+      'content surface drifted from the frozen record',
+    );
+    return '1 aggregate + 12 graph + 2 content symbols';
+  });
+
+  check('Phase 3: cargo test evidence fresh', () => {
+    const recordPath = join(ROOT, 'docs', 'isolation', 'evidence', 'rust-test-record.json');
+    const rerun = 'bash tools/phase3-rust-acceptance.sh';
+    assert(existsSync(recordPath), `no cargo test evidence on this tree — run: ${rerun}`);
+    const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+    assert(record.result === 'PASS', `last Rust acceptance run did not pass (result=${record.result}) — re-run: ${rerun}`);
+    const fixturesSha = createHash('sha256')
+      .update(readFileSync(join(ROOT, 'tests', 'reference', 'workflow-rust', 'fixtures.json')))
+      .digest('hex');
+    assert(
+      record.fixturesSha256 === fixturesSha,
+      `fixtures.json changed since the last green cargo test — re-run: ${rerun}`,
+    );
+    let head = null;
+    try {
+      head = execSync('git rev-parse HEAD', { cwd: ROOT, encoding: 'utf8' }).trim();
+    } catch {
+      head = null;
+    }
+    if (head) {
+      assert(
+        record.headCommit === head,
+        `tree moved since the last green cargo test (${String(record.headCommit).slice(0, 8)} -> ${head.slice(0, 8)}) — re-run: ${rerun}`,
+      );
+    }
+    assert(
+      record.referenceIntegrity === 'PASS',
+      `reference-integrity (G04) was not PASS at the last green run — re-run: ${rerun}`,
+    );
+    return `PASS at ${String(record.headCommit).slice(0, 8)} via ${record.runner} (${record.generatedAt})`;
+  });
+}
 
 const passed = results.filter((r) => r.ok).length;
 console.log('=== [AGENT 5] CONTRACT CONFORMANCE (offline) ===');

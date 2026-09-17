@@ -6,7 +6,8 @@ owns it (per docs/LEGO_PARALLEL_RULES.md), and reports:
   * cross-LEGO edges (DIRECT RUNTIME vs TYPE-ONLY)
   * circular dependencies between LEGOs
   * hidden coupling signals (global state, env vars, filesystem/db access)
-  * reference-source integrity (no Rust in Phase 2)
+  * Rust presence vs project phase (strict in Phase 2, inventoried in Phase 3;
+    spec: docs/isolation/phase3-gate-mode.md)
 
 Read-only: it never modifies reference source. Exit 1 on undocumented findings.
 """
@@ -127,6 +128,20 @@ def hidden_coupling():
                         hits.setdefault(kind, []).append(f"{rel}:{i}")
     return hits
 
+def project_phase():
+    """Phase 3 opens when the workspace manifest exists at the repo root.
+
+    Same rule as tests/compatibility/contract_conformance.mjs (MSG-14/MSG-19):
+    "accept Rust under crates/** when the workspace manifest exists at the
+    repo root". Returns 2 or 3.
+    """
+    try:
+        with open(os.path.join(ROOT, "Cargo.toml"), encoding="utf8") as f:
+            return 3 if "[workspace]" in f.read() else 2
+    except OSError:
+        return 2
+
+
 def rust_guard():
     offenders = []
     for base in ("crates", "apps"):
@@ -167,14 +182,20 @@ def main():
     for kind, locs in sorted(hits.items()):
         print(f"  {kind}: {len(locs)} hit(s) e.g. {locs[:3]}")
 
+    phase = project_phase()
     offenders = rust_guard()
-    print(f"\n-- Phase-2 Rust guard: {'VIOLATION ' + str(offenders) if offenders else 'clean (no .rs / Cargo.toml)'}")
+    if phase == 2:
+        print(f"\n-- Phase-2 Rust guard: {'VIOLATION ' + str(offenders) if offenders else 'clean (no .rs / Cargo.toml)'}")
+    else:
+        print(f"\n-- Phase-3 Rust inventory: {len(offenders)} file(s) under crates//apps/ (accepted: workspace open)")
+        if offenders:
+            print(f"   e.g. {sorted(offenders)[:5]}")
 
     print("\n-------------------------------------------------------")
-    failed = bool(undocumented) or bool(offenders)
+    failed = bool(undocumented) or (bool(offenders) and phase == 2)
     if undocumented:
         print(f"BOUNDARY VIOLATION: {len(undocumented)} undocumented edge(s): {undocumented}")
-    if offenders:
+    if offenders and phase == 2:
         print("PHASE VIOLATION: Rust introduced during Phase 2")
     print("AUDIT RESULT:", "FAIL" if failed else "PASS (all edges documented)")
     return 1 if failed else 0
