@@ -60,23 +60,97 @@ else
   echo "SKIPPED: tools/destructive-deletion-check.mjs not present on this tree."
 fi
 
-echo; echo "######## STAGE 3: 11/11 LIVE REGRESSION GATE ########"
+echo; echo "######## STAGE 3: DOCKER + POSTGRES SMOKE (5 checks, needs a running n8n) ########"
+# Snapshot the offline result before any live stage can touch it, so the summary line still
+# reports the offline stages on their own merits.
+offline_fail=$fail
+# NOTE: this stage was previously titled "11/11 LIVE REGRESSION GATE". That title was wrong.
+# tests/integration/regression_gate.py implements 5 checks (total_checks = 5) against a running
+# n8n on 127.0.0.1:5678 plus `docker exec n8n-db-1 psql`. The "11/11" the repo cites is gate G11
+# of the 11 in tools/workflow-isolation-gate.mjs — a different mechanism that needs no docker.
+# Conflating the two meant this stage could only ever print NOT RUN, which made the whole gate
+# permanently INCONCLUSIVE even when all 11 real gates passed. See ISSUE-029.
 if [ "$OFFLINE" = "1" ]; then
-  echo "SKIPPED (--offline-only): live regression NOT RUN — gate cannot be declared VERIFIED."
-  live="NOT RUN"
+  echo "SKIPPED (--offline-only): docker/Postgres smoke NOT RUN."
+  smoke="NOT RUN"
 elif ! command -v docker >/dev/null 2>&1; then
-  echo "SKIPPED: docker not available in this environment — live regression NOT RUN."
-  live="NOT RUN"
+  echo "SKIPPED: docker not available in this environment — docker/Postgres smoke NOT RUN."
+  smoke="NOT RUN"
 else
-  python3 tests/integration/regression_gate.py && live="PASS" || { live="FAIL"; fail=1; }
+  python3 tests/integration/regression_gate.py && smoke="PASS" || { smoke="FAIL"; fail=1; }
+fi
+
+echo; echo "######## STAGE 3b: 11/11 LIVE GATE EVIDENCE (G01..G11, provenance-checked) ########"
+# The real live regression: tools/workflow-isolation-gate.mjs runs 11 gates, G11 being live
+# verification with the reference execution engine (load / save / 1-node / linear / webhook /
+# execution record). It needs .runtime, not docker. This stage consumes its evidence and only
+# accepts it when the evidence is attributable to the tree being gated — recorded headCommit
+# plus an unchanged diff over the paths the gates read (same freshness rule as Stage 2b).
+REPORT=docs/isolation/evidence/gate-report.json
+if [ "$OFFLINE" = "1" ]; then
+  echo "SKIPPED (--offline-only): 11/11 live gate NOT RUN — gate cannot be declared VERIFIED."
+  live="NOT RUN"
+elif [ ! -f "$REPORT" ]; then
+  echo "MISSING: $REPORT — run: npm run verify"
+  live="MISSING"; fail=1
+else
+  live=$(python3 - "$REPORT" <<'PY'
+import json, subprocess, sys
+
+report_path = sys.argv[1]
+try:
+    d = json.load(open(report_path))
+except Exception as exc:
+    print(f"UNREADABLE ({exc})"); sys.exit(0)
+
+git = d.get("git") or {}
+totals = d.get("totals") or {}
+gates = d.get("gates") or []
+live_gate = next((g for g in gates if g.get("id") == "G11"), None)
+
+problems = []
+if totals.get("gates") != 11 or totals.get("passed") != 11:
+    problems.append(f"totals are {totals.get('passed')}/{totals.get('gates')}, want 11/11")
+if d.get("behaviorChange") != "NONE DETECTED":
+    problems.append(f"behaviorChange is {d.get('behaviorChange')!r}")
+if live_gate is None:
+    problems.append("no G11 entry in the report")
+elif live_gate.get("status") != "PASS":
+    problems.append(f"G11 status is {live_gate.get('status')!r}")
+
+head = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+recorded = git.get("headCommit") or ""
+if not recorded or recorded == "unknown":
+    problems.append("evidence carries no headCommit — regenerate with: npm run verify")
+else:
+    paths = git.get("inputPaths") or []
+    diff = subprocess.run(["git", "diff", "--quiet", recorded, "HEAD", "--", *paths],
+                          capture_output=True, text=True)
+    if diff.returncode != 0:
+        problems.append(f"inputs changed since {recorded[:8]} — re-run: npm run verify")
+    if git.get("dirtyInputs"):
+        problems.append(f"uncommitted changes in gate inputs: {git['dirtyInputs'][:3]}")
+
+if problems:
+    print("STALE/FAILED (" + "; ".join(problems) + ")")
+else:
+    print(f"PASS (11/11 at {recorded[:8]}, G11 live verified)")
+PY
+)
+  echo "11/11 LIVE GATE : $live"
+  case "$live" in
+    PASS*) : ;;
+    *) fail=1 ;;
+  esac
 fi
 
 echo; echo "======================================================="
-echo "OFFLINE STAGES : $([ $fail -eq 0 ] && echo PASS || echo FAIL)"
+echo "OFFLINE STAGES : $([ $offline_fail -eq 0 ] && echo PASS || echo FAIL)"
 echo "LIVE 11/11     : $live"
+echo "DOCKER SMOKE   : ${smoke:-NOT RUN}"
 if [ $fail -ne 0 ]; then
   echo ">>> INTEGRATION GATE: BLOCKED <<<"; exit 1
-elif [ "$live" != "PASS" ]; then
+elif [ "${live%% *}" != "PASS" ]; then
   echo ">>> INTEGRATION GATE: INCONCLUSIVE (live verification required before merge to main) <<<"; exit 2
 else
   echo ">>> INTEGRATION GATE: PASS <<<"; exit 0

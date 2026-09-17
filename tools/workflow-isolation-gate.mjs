@@ -209,8 +209,43 @@ if (!args.includes('--skip-live')) {
 /* ------------------------------------------------------------------ */
 mkdirSync(EVIDENCE, { recursive: true });
 const failed = results.filter((r) => r.status === 'FAIL');
+
+/* Provenance. Without this the report is an undated assertion: a consumer cannot tell whether it
+ * was produced by the tree in front of them or by a checkout from last week, so it cannot be
+ * used as fresh evidence. This follows the convention tools/phase3-rust-acceptance.sh already
+ * established (record headCommit, then re-check the relevant paths with `git diff --quiet
+ * <recorded> HEAD`). The paths below are the ones the 11 gates actually read, so an unchanged
+ * diff over them is what makes an older report still trustworthy. */
+function gitOut(args) {
+	const r = spawnSync('git', args, { cwd: REPO, encoding: 'utf8' });
+	return r.status === 0 ? String(r.stdout).trim() : '';
+}
+const gitProvenance = {
+	headCommit: gitOut(['rev-parse', 'HEAD']) || 'unknown',
+	branch: gitOut(['rev-parse', '--abbrev-ref', 'HEAD']) || 'unknown',
+	dirtyInputs: gitOut([
+		'status',
+		'--porcelain',
+		'--',
+		'packages/workflow-lego',
+		'tools/live',
+		'tests/reference',
+		'reference/n8n/packages/workflow',
+	])
+		.split('\n')
+		.filter((line) => line.trim().length > 0)
+		.slice(0, 10),
+	inputPaths: [
+		'packages/workflow-lego',
+		'tools/live',
+		'tests/reference',
+		'reference/n8n/packages/workflow',
+	],
+};
+
 const report = {
 	generatedAt: new Date().toISOString(),
+	git: gitProvenance,
 	lego: 'workflow',
 	phase: 'phase-2-isolation',
 	reference: MANIFEST.reference,
