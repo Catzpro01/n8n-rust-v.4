@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-17T17:21:56.691Z",
+  "generatedAt": "2026-09-17T17:30:13.890Z",
   "task": "TASK-406-phase3-trigger-lego",
   "reference": "n8n 2.9.4",
   "totals": {
@@ -23,7 +23,7 @@
       "id": "T03",
       "name": "trigger lifecycle conformance suite",
       "status": "PASS",
-      "detail": "9 pass / 0 fail"
+      "detail": "11 pass / 0 fail"
     },
     {
       "id": "T04",

@@ -1,4 +1,4 @@
-export { ActiveWorkflows } from './active-workflows.mjs';
+export { ActiveWorkflows, defaultToCronExpression } from './active-workflows.mjs';
 export { ScheduledTaskManager } from './scheduled-task-manager.mjs';
 export { TriggersAndPollers } from './triggers-and-pollers.mjs';
 export {

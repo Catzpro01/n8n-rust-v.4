@@ -9,12 +9,31 @@ import { TriggersAndPollers } from './triggers-and-pollers.mjs';
 
 const NOOP_LOGGER = Object.freeze({ debug() {}, info() {}, warn() {}, error() {} });
 
-function defaultToCronExpression(triggerTime) {
-  if (triggerTime.mode === 'custom') return triggerTime.cronExpression;
-  if (triggerTime.mode === 'everyMinute') return '0 * * * * *';
-  if (triggerTime.mode === 'everyHour') return `0 ${triggerTime.minute ?? 0} * * * *`;
-  if (triggerTime.mode === 'everyDay') return `0 ${triggerTime.minute ?? 0} ${triggerTime.hour ?? 0} * * *`;
-  throw new UserError(`Unsupported poll mode: ${triggerTime.mode}`);
+/**
+ * `toCronExpression(item)` — 1:1 port of reference
+ * `reference/n8n/packages/workflow/src/cron.ts` `toCronExpression` L52-72:
+ * randomized second (and minute for `everyX` hours), everyX/everyWeek/everyMonth
+ * modes, and `cronExpression.trim()` for the `custom` fallback. `randomInt` is
+ * injectable for deterministic tests (reference uses `randomInt` from `node:crypto`).
+ */
+export function defaultToCronExpression(item, randomInt = (max) => Math.floor(Math.random() * max)) {
+  const randomSecond = randomInt(60);
+
+  if (item.mode === 'everyMinute') return `${randomSecond} * * * * *`;
+  if (item.mode === 'everyHour') return `${randomSecond} ${item.minute} * * * *`;
+
+  if (item.mode === 'everyX') {
+    if (item.unit === 'minutes') return `${randomSecond} */${item.value} * * * *`;
+
+    const randomMinute = randomInt(60);
+    if (item.unit === 'hours') return `${randomSecond} ${randomMinute} */${item.value} * * *`;
+  }
+  if (item.mode === 'everyDay') return `${randomSecond} ${item.minute} ${item.hour} * * *`;
+  if (item.mode === 'everyWeek') return `${randomSecond} ${item.minute} ${item.hour} * * ${item.weekday}`;
+
+  if (item.mode === 'everyMonth') return `${randomSecond} ${item.minute} ${item.hour} ${item.dayOfMonth} * *`;
+
+  return item.cronExpression.trim();
 }
 
 export class ActiveWorkflows {
@@ -75,7 +94,7 @@ export class ActiveWorkflows {
   async activatePolling(node, workflow, additionalData, getPollFunctions, mode, activation) {
     const pollFunctions = getPollFunctions(workflow, node, additionalData, mode, activation);
     const pollTimes = pollFunctions.getNodeParameter('pollTimes') ?? { item: [] };
-    const expressions = (pollTimes.item ?? []).map(this.toCronExpression);
+    const expressions = (pollTimes.item ?? []).map((item) => this.toCronExpression(item));
     const execute = this.createPollExecuteFn(workflow, node, pollFunctions);
     await execute(true);
 

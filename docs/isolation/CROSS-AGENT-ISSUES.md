@@ -1348,3 +1348,43 @@ onto `trigger-lego` must absorb: the four missing trigger-time modes, randomised
 
 **Status:** OPEN (unchanged ownership question) — now with a reproducible instrument:
 `node tools/activation-differential.mjs`.
+
+---
+
+**ADDENDUM (TASK-TRIGGER-DIFF-01, `arena/01a0aff8-n8n-rust-v-4`, 2026-09-18) — D1/D6 fixed failing-first; independent harness converges on the same root cause.**
+
+Built a second, independent differential harness (`node tools/activation-differential.mjs`, 12 scenarios /
+43 comparisons, informational exit-0-with-findings like the engine differential) that runs both
+implementations over identical fixtures: lifecycle S1, cron registration S2, activation error S3, poll
+rollback S4, duplicate cron S5, too-short interval S6, closeTrigger taxonomy S7, `everyX` mode S8,
+custom-expression trim S9, disabled nodes S10, `removeAll` S11, multi-node S12.
+
+**Result after the fix: `43 agree / 0 diverge / 0 harness errors`.** Falsifiability control: reverting the
+trigger-lego fix (`git stash`) reproduces exactly **5 DIVERGE / 38 agree** (S8: `everyX` minutes — T threw
+`Unsupported poll mode: everyX` while E registered `R */7 * * * *` per cron.ts L57-59; S9: custom
+`cronExpression` stored untrimmed vs `cron.ts` L72 `.trim()`), i.e. the harness detects the class of bug
+the peer addendum's D1/D6 recorded.
+
+**Fix applied (failing-first, trigger-lego side):**
+1. `packages/trigger-lego/src/active-workflows.mjs` — `defaultToCronExpression` replaced with a 1:1 port of
+   reference `toCronExpression` (cron.ts L52-72): randomized second (injectable `randomInt`, default
+   `Math.random`), `everyX` minutes/hours, `everyWeek`, `everyMonth`, `cronExpression.trim()` fallback; the
+   `UserError('Unsupported poll mode: …')` throw removed (the reference has none). Now exported from
+   `src/index.mjs` (parity with execution-engine's `toCronExpression` export). Call site fixed from
+   `.map(this.toCronExpression)` to `.map((item) => this.toCronExpression(item))` — `Array#map` was leaking
+   the index into the injected-random second parameter.
+2. Regression tests: trigger-lego 9/9 → **11/11** (cron.ts table + everyX activation shape); gate T03
+   expectation updated 9→11 (`tools/trigger-lego-gate.mjs`, 5/5 PASS).
+3. `packages/execution-engine/package.json` — `test` script `node --test test/` → `node --test "test/*.test.mjs"`
+   (the bare-directory form fails with MODULE_NOT_FOUND on Node v22.22.3 in this sandbox even from the package
+   cwd; the glob form runs the identical 60/60; same class of env fix as ISSUE-022).
+
+**Post-fix full matrix (this branch):** trigger-lego 11/11 · execution-engine 60/60 · expression-lego 46/46 ·
+connection-lego 52/52 · reconstructed-engine via `verify:all` exit 0 · execution gate 10/10 · trigger gate 5/5 ·
+engine differential 84/0 · activation differential 43/0 · conformance 42/42 · boundary PASS.
+
+**Remaining (out of harness scope, for the consolidation decision):** the class-name-only divergences (peer D2/D4 —
+`TriggerLifecycleError` vs `ApplicationError`/`AssertionError`) and the by-design hooks/context presence (D7) are
+unchanged; the harness compares behavior, not transport/class identity, and treats per-package error taxonomy as a
+documented boundary. **Status: OPEN (ownership unchanged) — behavioral divergence evidence now at zero on the
+shared surface; both instruments remain reproducible.**
