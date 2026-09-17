@@ -41,3 +41,10 @@ boundary PASS · reference pin 15050 files `f8da35180669d798…`.
 | Result (owner) | Claim | Fresh re-run on merged tree | Verdict |
 | :--- | :--- | :--- | :--- |
 | `TASK-RIG-VENDOR-01.md` | convergence onto TASK-RIG-REPAIR-01 + staleness hardening (`.rig-plan` fingerprint, clone tag guard); check exit 0, test 37/37 | hardened `setup.sh` **detected the pre-hardening vendor as stale and re-vendored automatically** (19 crates, aho-corasick 1.1.3 — the designed behavior, observed live); second-run idempotence `vendor up to date`; `run.sh check` exit 0; `run.sh test` **37/37** (16 result lines); `git diff -- crates/ reference/` empty; probe never committed | **APPROVE** |
+
+## Sweep 5 (2026-09-18, after second re-provision recovery, on merged `2f312a93`) — TASK-WORKFLOW-MODEL-02 + TASK-414
+
+| Result (owner) | Claim | Fresh re-run on merged tree | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-WORKFLOW-MODEL-02.md` | Workflow class methods delegate to the single `start-node-navigation` port (TASK-DGRAPH-01 asset); conformance 26 → 44 tests | delegation imports observed in `src/workflow.ts` ("Single source of truth"); package suite **52/52** (44 + 8 disabled-graph) on merged tree; `getHighestNode`/`getStartNode` wiring green | **APPROVE** |
+| `TASK-414` (node filter/execution surface) | node-lego → 93 tests, 87 symbols, differential 1609 comparisons | **93/93** fresh, **1609 agree / 0 diverge (2 NOT-DIFFABLE)**, Node gate **7/7** | **APPROVE** |
