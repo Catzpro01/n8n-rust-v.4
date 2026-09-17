@@ -1,0 +1,52 @@
+{
+  "lego": "execution-data",
+  "phase": "phase-3-verified",
+  "reference": {
+    "pinnedVersion": "2.9.4",
+    "pinnedCommit": "b6dc2787c45677a29a9612cd27eb911302961a83",
+    "sourceRoot": "reference/n8n/packages/workflow",
+    "artifact": "n8n-workflow@2.9.1"
+  },
+  "owns": {
+    "description": "Passive execution data model, factories, helpers, binary handling",
+    "files": [
+      "interfaces (IBinaryData, IDataObject, ISourceData, IPairedItemData, INodeExecutionData, ITaskDataConnections, ITaskData, IRunData, IExecuteData, IRunExecutionData)",
+      "run-execution-data/run-execution-data",
+      "run-execution-data-factory",
+      "constants (BINARY_*)",
+      "normalize-items, return-json-array, construct-execution-metadata, copy-input-items"
+    ],
+    "invariants": [
+      "I1 json always present via helpers, engine does not validate arbitrary output",
+      "I3 Input pairedItem re-indexed to {item:inputIndex}",
+      "I4 Output pairedItem auto-assignment rules",
+      "I6 source per input",
+      "I8 Empty output [[]] valid success",
+      "I9 alwaysOutputData",
+      "I10 Binary modes",
+      "I11 IRunExecutionData factories only, version 1",
+      "I13 Item order preserved",
+      "I14 Node references by name"
+    ]
+  },
+  "doesNotOwn": {
+    "items": [
+      { "artifact": "WorkflowExecute loop", "owner": "engine", "reason": "scheduling, stack" },
+      { "artifact": "assignPairedItems code", "owner": "engine", "reason": "only rule documented here" },
+      { "artifact": "BinaryDataService managers", "owner": "core", "reason": "storage" }
+    ]
+  },
+  "publicSurface": [
+    "INodeExecutionData",
+    "IBinaryData",
+    "IPairedItemData",
+    "ISourceData",
+    "ITaskDataConnections",
+    "ITaskData",
+    "IRunData",
+    "IRunExecutionData",
+    "createRunExecutionData",
+    "normalizeItems",
+    "returnJsonArray"
+  ]
+}
