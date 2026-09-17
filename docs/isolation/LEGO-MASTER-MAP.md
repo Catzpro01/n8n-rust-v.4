@@ -110,6 +110,7 @@ asserts that confinement.
 | `TASK-422-phase3-active-workflow-coordinator` | trigger leadership runtime | `contracts/trigger.contract.md` ✅ | `docs/isolation/trigger.md` ✅ | `packages/trigger-lego/test/*.test.mjs` 19/19 ✅ (8 leadership cases) | `tools/trigger-lego-gate.mjs` 5/5 ✅ · Scheduler consumer 19/19 ✅ | **SUBMITTED_FOR_REVIEW** |
 | `TASK-423-phase3-trigger-pubsub-transport` | trigger distributed activation transport | `contracts/trigger.contract.md` ✅ | `docs/isolation/trigger.md` ✅ | `packages/trigger-lego/test/*.test.mjs` 33/33 ✅ (14 pub/sub + routing cases) | `tools/trigger-lego-gate.mjs` 5/5 ✅ · Scheduler consumer 33/33 ✅ | **SUBMITTED_FOR_REVIEW** |
 | `TASK-424-phase3-waiting-forms` | webhook waiting form rendering | `contracts/webhook.contract.md` ✅ | `docs/isolation/webhook.md` ✅ | `packages/webhook-lego/test/*.test.mjs` 35/35 ✅ (11 waiting-form cases) | `tools/webhook-lego-gate.mjs` 5/5 ✅ | **SUBMITTED_FOR_REVIEW** |
+| `TASK-425-phase3-webhook-body-parser` | webhook native body parsing | `contracts/webhook.contract.md` ✅ | `docs/isolation/webhook.md` ✅ | `packages/webhook-lego/test/*.test.mjs` 42/42 ✅ (7 body-parser cases) | `tools/webhook-lego-gate.mjs` 5/5 ✅ | **SUBMITTED_FOR_REVIEW** |
 
 | Phase 3 gate | Result |
 | :--- | :--- |

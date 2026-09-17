@@ -17,7 +17,7 @@ npm --prefix packages/webhook-lego test
 node tools/webhook-lego-gate.mjs
 ```
 
-Multipart/binary persistence and execution-owned streaming remain host adapters outside this package.
+Execution-owned streaming remains a host adapter outside this package; binary persistence is an injected port.
 
 ## Native HTTP transport (TASK-420)
 
@@ -42,3 +42,11 @@ classifies waiting Form/Wait nodes, sanitizes authentication cookies, finds the 
 completion Form, disables stack nodes only on POST, and renders sandboxed default completion HTML.
 The native HTTP adapter preserves empty `noWebhookResponse` results and serves both completion HTML
 and status text directly.
+
+## Native request body parsing (TASK-425)
+
+The native HTTP transport now parses JSON, repeated URL-encoded values, text/XML, opaque binary, and
+binary-safe multipart bodies while retaining `rawBody`. Multipart output matches the reference
+`{ data, files }` shape, normalizes single values, preserves repeated fields/files, applies a
+per-file size limit, and crosses binary persistence only through an injected `storeFile` callback.
+Aggregate payload limits still fail before manager execution.

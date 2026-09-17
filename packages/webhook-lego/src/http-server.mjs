@@ -1,6 +1,5 @@
 import { createServer } from 'node:http';
-
-const JSON_TYPE = /^application\/(?:[\w.+-]+\+)?json(?:\s*;|$)/i;
+import { parseWebhookBody } from './body-parser.mjs';
 
 function writeResponse(response, result) {
   response.statusCode = result.statusCode ?? 200;
@@ -23,7 +22,7 @@ function writeResponse(response, result) {
   response.end(JSON.stringify(result.body));
 }
 
-async function readBody(request, limit) {
+async function readBody(request, limit, parserOptions) {
   const chunks = [];
   let size = 0;
   for await (const chunk of request) {
@@ -36,30 +35,19 @@ async function readBody(request, limit) {
     chunks.push(chunk);
   }
   const rawBody = Buffer.concat(chunks);
-  if (rawBody.length === 0) return { rawBody, body: undefined };
-  const contentType = String(request.headers['content-type'] ?? '');
-  if (JSON_TYPE.test(contentType)) {
-    try { return { rawBody, body: JSON.parse(rawBody.toString('utf8')) }; }
-    catch {
-      const error = new Error('Invalid JSON in webhook request body');
-      error.statusCode = 400;
-      throw error;
-    }
-  }
-  if (contentType.startsWith('text/') || contentType.startsWith('application/x-www-form-urlencoded')) {
-    return { rawBody, body: rawBody.toString('utf8') };
-  }
-  return { rawBody, body: rawBody };
+  const parsed = await parseWebhookBody(rawBody, request.headers['content-type'], parserOptions);
+  return { rawBody, ...parsed };
 }
 
 /** Native HTTP transport around the framework-independent WebhookRequestHandler. */
 export class WebhookHttpServer {
-  constructor({ handler, manager, basePath = '', bodyLimit = 16 * 1024 * 1024, serverFactory = createServer } = {}) {
+  constructor({ handler, manager, basePath = '', bodyLimit = 16 * 1024 * 1024, maxFileSize = bodyLimit, storeFile, serverFactory = createServer } = {}) {
     if (!handler || !manager) throw new Error('WebhookHttpServer requires handler and manager');
     this.handler = handler;
     this.manager = manager;
     this.basePath = String(basePath).replace(/^\/+|\/+$/g, '');
     this.bodyLimit = bodyLimit;
+    this.parserOptions = { maxFileSize, storeFile };
     this.server = serverFactory((request, response) => { void this.handle(request, response); });
   }
 
@@ -75,13 +63,14 @@ export class WebhookHttpServer {
           return;
         }
       }
-      const { body, rawBody } = await readBody(request, this.bodyLimit);
+      const { body, files, rawBody } = await readBody(request, this.bodyLimit, this.parserOptions);
       const result = await this.handler.handle({
         method: request.method,
         path,
         headers: request.headers,
         query: Object.fromEntries(origin.searchParams),
         body,
+        files,
         rawBody,
         request,
         response,

@@ -133,3 +133,17 @@ is an enabled Form completion node. Such completion nodes are delegated through 
 POST disables the current stack node before delegation; GET does not. Running executions produce no
 response body, missing/failed executions preserve 404/409 behavior, and the native HTTP adapter must
 serve HTML/status text without replacing `noWebhookResponse` with the default webhook JSON body.
+
+## Phase-3 native request body parsing (TASK-425)
+
+`parseMultipartFormData` parses multipart boundaries without converting file payloads to text,
+normalizes one-value field/file arrays, preserves repeated values, enforces a per-file size ceiling,
+and delegates accepted file persistence to an optional `storeFile` port. Its output is
+`{ data, files }`, matching the reference formidable adapter, with file descriptors carrying
+`originalFilename`, `mimetype`, and byte `size`.
+
+`parseWebhookBody` also handles JSON, repeated URL-encoded values, text/XML, and opaque binary while
+retaining the exact `rawBody`. `WebhookHttpServer` applies the aggregate body limit before parsing,
+passes multipart files to the webhook manager, and never imports a filesystem, database, formidable,
+or binary storage implementation. Missing boundaries and malformed multipart payloads produce a
+400 response; oversized aggregate bodies remain 413.

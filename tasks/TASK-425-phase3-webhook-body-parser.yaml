@@ -1,0 +1,25 @@
+id: TASK-425-phase3-webhook-body-parser
+agent: arena-worker
+lego: webhook
+module: native-request-body-parser
+phase: 3
+title: "Webhook LEGO: native multipart and binary request parsing"
+status: SUBMITTED_FOR_REVIEW
+objective: "Parse reference-shaped webhook bodies without framework or storage dependencies."
+acceptance:
+  - "quoted/unquoted multipart boundary extraction and malformed 400 errors"
+  - "binary-safe fields/files with normalized singles and preserved repeats"
+  - "per-file size ceiling and injected binary storage port"
+  - "JSON, repeated URL-encoded, text/XML, and opaque binary parsing"
+  - "exact rawBody retention and aggregate 413 body limit"
+  - "real native-HTTP multipart regression"
+  - "webhook suite 42/42; webhook gate 5/5"
+allowed_paths:
+  - packages/webhook-lego/**
+  - tools/webhook-lego-gate.mjs
+  - contracts/webhook.contract.md
+  - docs/isolation/LEGO-MASTER-MAP.md
+  - docs/isolation/evidence/webhook-lego-gate.json
+  - tasks/TASK-425-phase3-webhook-body-parser.yaml
+  - results/TASK-425-phase3-webhook-body-parser.md
+forbidden_paths: [reference/n8n/**, crates/**, apps/**]
