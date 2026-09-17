@@ -1,0 +1,28 @@
+id: TASK-410-phase3-persistence-lego
+agent: arena-worker
+lego: persistence
+module: workflow-execution-storage
+phase: 3
+status: IMPLEMENTED
+reference: n8n@2.9.4
+objective: Reconstruct workflow/execution persistence semantics and flatted wire format behind storage-engine ports.
+allowed_paths:
+  - packages/persistence-lego/**
+  - tools/persistence-lego-gate.mjs
+  - docs/isolation/**
+  - tasks/TASK-410-phase3-persistence-lego.yaml
+  - results/TASK-410-phase3-persistence-lego.md
+forbidden_paths:
+  - reference/n8n/**
+  - crates/**
+  - apps/**
+requires:
+  - contracts/persistence.contract.md
+  - contracts/execution-data.contract.md
+verification:
+  - npm --prefix packages/persistence-lego test
+  - node tools/persistence-lego-gate.mjs
+acceptance:
+  tests: 13/13
+  gate: 6/6
+  reference_integrity: 15050 files; f8da35180669d798
