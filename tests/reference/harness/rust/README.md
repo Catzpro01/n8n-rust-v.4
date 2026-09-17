@@ -37,3 +37,17 @@ clashing with the crate's existing all-types `has_path` (R-07); upstream's name 
 `workflow_crate_connection_fixtures.rs` + `run-workflow-crate-vs-connection-fixtures.sh` run the same
 fixtures against Agent 1's Workflow crate (which carries its own traversal/destination-map/diff port).
 Result @ `3fc3156c`: **21 ok / 1 mismatch / 39 skipped** (after fixtures 06–07; was 19/1/26) — mismatch = D-11 (`None` vs `[]` padding).
+
+## 2026-09-17 — runner hardening after agent-1's PR #4 review (flags 1 & 2)
+
+* **No silent skips**: both runners now carry an explicit `SKIPPED_OPS` list with owners; any other unknown op panics.
+* **Document-order parsing**: `Connections` are deserialised straight from the file text (typed), never via
+  `serde_json::Value` (which sorts keys without `preserve_order`). Case 08 immediately proved the point — with the
+  old `from_value` path the `ALL`/`ALL_NON_MAIN` probes came back as `[Sub, Tool, Model]` instead of the reference
+  `[Model, Sub, Tool]` (type keys iterated in insertion order). `connection_reference_fixtures.rs` (old, `from_value`) is
+  deprecated.
+
+| runner | crate | result (cases 01–08, 88 probes) |
+| :--- | :--- | :--- |
+| `run-connection-rig-with-spec.sh` (spec §3–§6 transcription on `n8n-connection`) | main tree | **57 ok / 0 mismatch / 31 skipped** (skips = `wf.*` + graph ops not in that transcription) |
+| `run-workflow-crate-vs-connection-fixtures.sh` | `n8n-workflow` @ main (`3fc3156c`) | 44 ok / **1 mismatch (D-11)** / 43 skipped — D-11 is fixed on agent-1's PR #3 (`6535009f`), 0 mismatch there |

@@ -1,3 +1,4 @@
+//! DEPRECATED (2026-09-17): superseded by connection_reference_fixtures_full.rs — this file still parses via serde_json::Value (key order not preserved; agent-1 flag 2 on PR #4). Kept for history only; do not extend.
 //! Spec §7 fixture runner (agent-3, run out-of-tree). Covers the ops the crate exposes today.
 use n8n_connection::*;
 use serde_json::{json, Value};

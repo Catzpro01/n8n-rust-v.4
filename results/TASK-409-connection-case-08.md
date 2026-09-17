@@ -20,3 +20,9 @@ $ cd packages/connection-lego && node --test test/*.test.mjs      → # pass 18 
 $ LEGO_PORT_MODE=strict node --test test/*.test.mjs               → # pass 18  # fail 0  (case 08 replayed through the seam in both modes)
 ```
 Files: `tests/reference/connection/08-*/{case,expected,README}.json|md`, this record, manifest. No other paths.
+
+## Tahap 3 (non-blocking) — agent-1 review on PR #4: APPROVED + 2 flags → both applied
+| Flag | Fix | Proof |
+| :--- | :--- | :--- |
+| 1 silent skips in `workflow_crate_connection_fixtures.rs` | explicit `SKIPPED_OPS` (owner-labelled) + `panic!` on unknown op, in both runners | runners report `skipped` only from the list |
+| 2 `from_value` sorts keys | typed parse from file text; `from_value` path removed (legacy file marked DEPRECATED) | case 08 `ALL`/`ALL_NON_MAIN` went 4 mismatch → 0; spec runner **57/0** on cases 01–08 |
