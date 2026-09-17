@@ -111,11 +111,12 @@ export type LocaleMessages = { [key: string]: MessageValue };
 export type NumberFormats = Record<string, Intl.NumberFormatOptions>;
 
 /**
- * Shipped dictionaries (six locales x 23 keys). All six locales are key-identical to the
- * English base text; `NativeLocalizationService.parityReport()` proves it on every run.
+ * Shipped dictionaries (six locales x 27 keys — Phase 4C adds the four param.* keys). All six
+ * locales are key-identical to the English base text; `parityReport()` proves it on every run.
  */
 /**
- * Shipped dictionaries (six locales x 23 keys) — merged verbatim from the Phase 4B seed on
+ * Shipped dictionaries (six locales x 27 keys — the Phase 4B seed's 23 plus the four
+ * Phase 4C `param.*` validation keys) — merged verbatim from the Phase 4B seed on
  * this branch, now checked for key parity by `parityReport()`.
  */
 export const NATIVE_DICTIONARIES: Record<SupportedLocale, LocaleMessages> = {
@@ -143,6 +144,10 @@ export const NATIVE_DICTIONARIES: Record<SupportedLocale, LocaleMessages> = {
     'credential.sanitized': 'Kredensial disanitasi',
     'system.healthy': 'Sistem sehat',
     'system.recovered': 'Sistem dipulihkan otomatis',
+    'param.required': 'Parameter "{name}" wajib diisi.',
+    'param.invalid_number': 'Nilai "{value}" harus berupa angka yang valid.',
+    'param.below_min': 'Nilai {value} lebih kecil dari batas minimum {min}.',
+    'param.above_max': 'Nilai {value} lebih besar dari batas maksimum {max}.',
   },
   en: {
     'execute.workflow': 'Execute workflow',
@@ -168,6 +173,10 @@ export const NATIVE_DICTIONARIES: Record<SupportedLocale, LocaleMessages> = {
     'credential.sanitized': 'Credential sanitized',
     'system.healthy': 'System healthy',
     'system.recovered': 'System auto-recovered',
+    'param.required': 'Parameter "{name}" is required.',
+    'param.invalid_number': 'Value "{value}" must be a valid number.',
+    'param.below_min': 'Value {value} is below the minimum limit of {min}.',
+    'param.above_max': 'Value {value} exceeds the maximum limit of {max}.',
   },
   jv: {
     'execute.workflow': 'Lakokake alur kerja',
@@ -193,6 +202,10 @@ export const NATIVE_DICTIONARIES: Record<SupportedLocale, LocaleMessages> = {
     'credential.sanitized': 'Kredensial disanitasi',
     'system.healthy': 'Sistem sehat',
     'system.recovered': 'Sistem dipulihake otomatis',
+    'param.required': 'Parameter "{name}" kudu diisi.',
+    'param.invalid_number': 'Nilai "{value}" kudu awujud angka sing bener.',
+    'param.below_min': 'Nilai {value} luwih cilik saka wates minimal {min}.',
+    'param.above_max': 'Nilai {value} luwih gedhe saka wates maksimal {max}.',
   },
   ar: {
     'execute.workflow': 'تشغيل سير العمل',
@@ -218,6 +231,10 @@ export const NATIVE_DICTIONARIES: Record<SupportedLocale, LocaleMessages> = {
     'credential.sanitized': 'تم تطهير بيانات الاعتماد',
     'system.healthy': 'النظام سليم',
     'system.recovered': 'تم استرداد النظام تلقائياً',
+    'param.required': 'المعامل "{name}" مطلوب.',
+    'param.invalid_number': 'يجب أن تكون القيمة "{value}" رقمًا صالحًا.',
+    'param.below_min': 'القيمة {value} أصغر من الحد الأدنى {min}.',
+    'param.above_max': 'القيمة {value} أكبر من الحد الأقصى {max}.',
   },
   zh: {
     'execute.workflow': '执行工作流',
@@ -243,6 +260,10 @@ export const NATIVE_DICTIONARIES: Record<SupportedLocale, LocaleMessages> = {
     'credential.sanitized': '凭证已清理',
     'system.healthy': '系统健康',
     'system.recovered': '系统已自动恢复',
+    'param.required': '参数 "{name}" 为必填项。',
+    'param.invalid_number': '值 "{value}" 必须是有效的数字。',
+    'param.below_min': '值 {value} 小于最小限制 {min}。',
+    'param.above_max': '值 {value} 大于最大限制 {max}。',
   },
   ru: {
     'execute.workflow': 'Запустить процесс',
@@ -268,6 +289,10 @@ export const NATIVE_DICTIONARIES: Record<SupportedLocale, LocaleMessages> = {
     'credential.sanitized': 'Учётные данные очищены',
     'system.healthy': 'Система исправна',
     'system.recovered': 'Система автоматически восстановлена',
+    'param.required': 'Параметр "{name}" обязателен для заполнения.',
+    'param.invalid_number': 'Значение "{value}" должно быть корректным числом.',
+    'param.below_min': 'Значение {value} меньше минимального предела {min}.',
+    'param.above_max': 'Значение {value} больше максимального предела {max}.',
   },
 };
 

@@ -4,7 +4,7 @@
 **Reference:** n8n 2.9.4 — `reference/n8n/packages/frontend/@n8n/i18n` (`@n8n/i18n@2.9.2`, pinned tree `f8da35180669d798`)
 **Contract:** `contracts/i18n.contract.md`
 **Gate:** `npm run i18n:check` → `docs/isolation/evidence/localization-hub.json`
-**Status:** TESTED — 24/24 behaviour tests · L01–L05 PASS · repository gate 11/11 unaffected
+**Status:** TESTED — 26/26 behaviour tests (Phase 4C adds the two validator tests) · L01–L05 PASS · repository gate 11/11 unaffected
 
 ---
 
@@ -80,12 +80,29 @@ suppression flag and `localStorage` reads. That work is merged here rather than 
 
 | Seed behaviour | Kept as |
 |---|---|
-| 23 keys x 6 locales | the dictionaries are merged verbatim; `parityReport()` now proves 23 keys, not 9 |
+| 23 keys x 6 locales | the dictionaries are merged verbatim; `parityReport()` proved 23 keys at merge time (27 after Phase 4C below) |
+| (Phase 4C) `param.*` validation keys | four keys added per locale (27 total) so `NodeParameterValidator` (Phase 3C) renders its issues through the hub; the Indonesian default output stays byte-identical to Phase 3C |
 | `localStorage.getItem('n8n_locale')` inside `getLocale()` | `attachBrowserStorage()` → persistence port + `hydrate()` (the hub stays free of globals in Node) |
 | `suppressUpdateBanner()` writing the flag directly | same name, writes through browser storage when present |
 | `isRTL()` | kept as an alias of `isRtl()` |
 | `formatExecutionMessage(key, params)` with `String.replace` (first occurrence only) | re-implemented on `translate(key, { interpolate })` — every occurrence is replaced, HTML/unknown placeholders preserved |
 | `getState().supportedLanguages[].label` = native name | `label` = English name, `nativeLabel`/`nativeName` = native name (both call shapes work) |
+
+### 4.2 Phase 4C — the parameter validator joins the hub (27 keys)
+
+`NodeParameterValidator` (Phase 3C, `parameter-issues.ts`) was the last Phase 3/4 module with
+hardcoded monolingual strings. It now renders every issue through the hub:
+
+* four keys per locale — `param.required`, `param.invalid_number`, `param.below_min`,
+  `param.above_max` — take the dictionaries from 23 to **27 keys**, key parity still proven by
+  `parityReport()` / `L01`;
+* the messages are resolved with `translate(key, { interpolate })`, so they follow the active
+  locale, the declared fallback chains and the adapter's `setLanguage()` (single entry point);
+* the Indonesian default output is **byte-identical to Phase 3C** (pinned by test 25), so no
+  existing consumer sees a behaviour change;
+* the boundary is unchanged: the validator imports only the hub (`L03` extended to prove it),
+  and `tools/localization-module-loader.mjs` compiles it alongside the hub and the adapter so
+  the offline suite covers the whole Phase 4 stack.
 
 ## 5. How to verify
 

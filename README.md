@@ -15,7 +15,7 @@ The reconstruction never rewrites n8n from guesswork: n8n 2.9.4 is the behaviora
 | **WORKFLOW ISOLATION (LEGO 01)** | **✅ VERIFIED** | `docs/isolation/workflow.md` 5/5 PASS |
 | **NODE MODEL (LEGO 02)** | **✅ VERIFIED** | contract 21/21 PASS |
 | **CONNECTION (LEGO 03)** | **✅ VERIFIED** | Phase 3 P-CONNECTION-GRAPH · differential gate 7/7 · 1,246 calls vs `n8n-workflow@2.9.1` · 13/13 unit |
-| **LOCALIZATION HUB (Phase 4B)** | **✅ VERIFIED** | `id · en · jv · ar · zh · ru` — 23 keys x 6 locales, `npm run i18n:check` 5/5 · 24/24 behaviour |
+| **LOCALIZATION HUB (Phase 4B→4C)** | **✅ VERIFIED** | `id · en · jv · ar · zh · ru` — 27 keys x 6 locales (incl. `param.*` validation keys), `npm run i18n:check` 5/5 · 26/26 behaviour |
 | **VALIDATION (LEGO 04)** | **✅ VERIFIED** | cycle + uniqueness + dangling |
 | **EXECUTION-DATA (LEGO 05)** | **✅ VERIFIED** | Phase 4-12, I1-I14, factories v1, 2/2 PASS |
 | **EXPRESSION (LEGO 06)** | **✅ VERIFIED** | Phase 4-12, E1-E8, isExpression + sandbox, 4/4 PASS |

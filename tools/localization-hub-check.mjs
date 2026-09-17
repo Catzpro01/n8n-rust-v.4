@@ -7,7 +7,8 @@
  *
  *   L01 registry + parity — six locales, every one key-identical to the English base text
  *   L02 behaviour suite  — `node --test test/06-localization.test.mjs` (offline, no reference runtime)
- *   L03 boundary         — the hub imports nothing; the Phase 4A adapter imports only the hub
+ *   L03 boundary         — the hub imports nothing; the Phase 4A adapter and the Phase 4C
+ *                          validator import only the hub
  *   L04 reference rule   — the pinned n8n tree is byte-identical (the Vue UI bundle is untouched)
  *   L05 single source    — the adapter carries no second language list of its own
  *
@@ -79,16 +80,21 @@ record('L02', 'behaviour suite PASS (resolution, fallback, interpolation, plural
 });
 
 /* L03 — boundary ---------------------------------------------------------- */
-record('L03', 'boundary: the hub imports nothing, the adapter imports only the hub', () => {
+record('L03', 'boundary: the hub imports nothing; the adapter and the validator import only the hub', () => {
 	const strip = (text) => text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 	const hubSource = strip(readFileSync(hub.sources.service.path, 'utf8'));
 	if (/^\s*import\s/m.test(hubSource)) throw new Error('the localization hub imports a module');
-	const adapterSource = strip(readFileSync(hub.sources.adapter.path, 'utf8'));
-	const specifiers = [...adapterSource.matchAll(/from\s+['"]([^'"]+)['"]/g)].map((match) => match[1]);
-	if (specifiers.length !== 1 || specifiers[0] !== './backend-localization-service') {
-		throw new Error(`unexpected adapter imports: ${specifiers.join(', ') || '(none)'}`);
+	const specifiersOf = (sourcePath) =>
+		[...strip(readFileSync(sourcePath, 'utf8')).matchAll(/from\s+['"]([^'"]+)['"]/g)].map((match) => match[1]);
+	const adapterSpecifiers = specifiersOf(hub.sources.adapter.path);
+	if (adapterSpecifiers.length !== 1 || adapterSpecifiers[0] !== './backend-localization-service') {
+		throw new Error(`unexpected adapter imports: ${adapterSpecifiers.join(', ') || '(none)'}`);
 	}
-	return `hub: 0 imports · adapter: 1 relative import (${specifiers[0]})`;
+	const validatorSpecifiers = specifiersOf(hub.sources.validator.path);
+	if (validatorSpecifiers.length !== 1 || validatorSpecifiers[0] !== './backend-localization-service') {
+		throw new Error(`unexpected validator imports: ${validatorSpecifiers.join(', ') || '(none)'}`);
+	}
+	return `hub: 0 imports · adapter: 1 relative import (${adapterSpecifiers[0]}) · validator: 1 relative import (${validatorSpecifiers[0]})`;
 });
 
 /* L04 — reference tree untouched ----------------------------------------- */

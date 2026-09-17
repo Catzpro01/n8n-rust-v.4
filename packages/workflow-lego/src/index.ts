@@ -58,14 +58,15 @@ export {
 	NativeLocalizationService,
 	SUPPORTED_LOCALES,
 	type LocaleMetadata,
+	type LocaleMessages,
 	type SupportedLocale,
-	type TranslationParams,
+	type TranslateOptions,
 } from './backend-localization-service';
 export {
 	SettingsLocalizationAdapter,
 	type LanguageCode,
-	type LanguageOption,
 	type LocalizationSettingsState,
+	type SupportedLanguageEntry,
 } from './settings-localization-adapter';
 export {
 	NodeParameterValidator,
