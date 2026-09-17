@@ -6,7 +6,7 @@
 `packages/workflow/src/{interfaces,execution-status}.ts`) and runtime comparison against the pinned
 `n8n-core` / `n8n-workflow` **2.9.1** (the dependency set of n8n 2.9.4).
 **Owner:** Agent 1 (`workflow`) — reconstruction lives in `packages/reconstructed-engine/`
-**Status:** TESTED — 114 regression cases, including 34 pinned-runtime differential cases
+**Status:** TESTED — 126 regression cases, including 48 pinned-runtime differential cases
 **Rule basis:** `PROJECT_RULES.md` #1 (ZERO RUST → JavaScript/TypeScript, 1:1 from source) and #5
 (every module must have a clear boundary and a formal contract).
 
@@ -89,7 +89,14 @@ prepared before partial execution.
       "cleanRunData",
       "handleCycles",
       "anyReachableRootHasRunData",
-      "findTriggerForPartialExecution"
+      "findTriggerForPartialExecution",
+      "isDirty",
+      "findStartNodes",
+      "getSourceDataGroups",
+      "addWaitingExecution",
+      "addWaitingExecutionSource",
+      "recreateNodeExecutionStack",
+      "rewireGraph"
     ],
     "directedGraphMethods": [
       "hasNode",
@@ -173,9 +180,9 @@ handler *without* a description is deliberately the same as an unknown node type
 The partial-planning API is a separate package subpath, `@lego/reconstructed-engine/partial`. It
 works in memory and performs no external I/O: `DirectedGraph` plus the source-identical graph,
 run-data, cycle, and
-trigger-selection helpers used by `WorkflowExecute.runPartialWorkflow2`. The full partial-run
-orchestrator is **not** yet exposed: `findStartNodes`, execution-stack recreation, graph rewiring,
-`DirectedGraph#toWorkflow`, and `runPartialWorkflow2` remain explicit follow-up work.
+trigger/start selection, source grouping, execution-stack recreation, and AI-tool rewiring helpers
+used by `WorkflowExecute.runPartialWorkflow2`. The full partial-run orchestrator is **not** yet
+exposed: `DirectedGraph#toWorkflow` and `runPartialWorkflow2` remain explicit follow-up work.
 
 ## 3. Result shape
 
@@ -236,7 +243,8 @@ Precedence (`workflow-execute.ts:2383-2400`): `canceled` > `error` > `waiting` >
 | G26 | With no explicit start, one enabled node wins; otherwise the first registered trigger/poll node wins (excluding the manual-chat trigger), then the exact ordered fallback types are tried. An arbitrary ordinary node is never selected. | `workflow.ts:817-860`, `constants.ts:53-59` | start-node ×6 + equivalence |
 | G27 | A restored stack entry uses its explicit `runIndex` when present; otherwise it continues at the existing `runData[node].length`. Global `executionIndex` likewise continues after the highest persisted index. | `:1555-1561`, `interfaces.ts:2675-2691` | restored runIndex test |
 | G28 | The partial-execution graph foundation (`DirectedGraph`, `filterDisabledNodes`, `findSubgraph`) matches n8n-core 2.9.1 for class surface (except declared `toWorkflow`), imports, traversals, Tarjan components, node removal/rewiring, disabled-node filtering, and subgraph search. | `partial-execution-utils/directed-graph.ts:39-566`, `filter-disabled-nodes.ts:5-18`, `find-subgraph.ts:6-120` | `partial-equivalence.test.mjs` ×8 |
-| G29 | Partial-run planning ports preserve execution-index selection, incoming-data lookup, immutable run-data cleaning, cycle-entry selection, reachable-root detection, and trigger precedence (destination → parent with run data → pinned webhook → webhook → first parent). Five exported reference helpers are runtime-differential tested; the two private incoming-data helpers are source-derived unit tests. | `run-data-utils.ts:11-26`, `get-incoming-data.ts:3-34`, `clean-run-data.ts:12-49`, `handle-cycles.ts:15-56`, `find-trigger-for-partial-execution.ts:6-112` | `partial-steps.test.mjs` ×7 |
+| G29 | Partial-run planning ports preserve execution-index selection, incoming-data lookup, immutable run-data cleaning, cycle-entry selection, reachable-root detection, and trigger precedence (destination → parent with run data → pinned webhook → webhook → first parent). All seven cases are runtime-differential tested; incoming-data helpers omitted from the root barrel are loaded from their pinned deep module and also retain no-runtime assertions. | `run-data-utils.ts:11-26`, `get-incoming-data.ts:3-34`, `clean-run-data.ts:12-49`, `handle-cycles.ts:15-56`, `find-trigger-for-partial-execution.ts:6-112` | `partial-steps.test.mjs` ×7 |
+| G30 | Partial start selection stops at the earliest dirty node on each traversed branch and preserves Loop Over Items completion rules; deterministic source grouping then reconstructs complete stack entries or sparse waiting entries, while AI-tool rewiring inserts the exact virtual executor and removes the reachable root. All twelve cases compare the pinned runtime in strict mode; support helpers omitted from the root barrel also retain no-runtime assertions. | `find-start-nodes.ts:13-185`, `get-source-data-groups.ts:5-164`, `recreate-node-execution-stack.ts:20-220`, `rewire-graph.ts:7-58`, `execution.ts:1` | `partial-stack-equivalence.test.mjs` ×12 |
 
 ## 5. Determinism
 
@@ -285,13 +293,13 @@ other LEGO contracts (`expression.contract.md`, `credentials.contract.md`,
 
 Every behaviour above cites its source line. The full, machine-checked list lives in the module
 sources; the contract test verifies that each cited range still exists inside the referenced file in
-`reference/n8n/`, including every partial-execution utility named by G28-G29.
+`reference/n8n/`, including every partial-execution utility named by G28-G30.
 
 ## 9. Verification hooks
 
 | Command | Covers |
 | :--- | :--- |
-| `npm run engine:test` | this contract (114 cases: 70 engine unit + 4 graph parity + 17 execution parity + 8 partial-graph parity + 7 partial-step unit/parity + 8 contract conformance) |
-| `npm run engine:test:strict` | the same 114 cases with the pinned reference runtime mandatory; zero parity skips allowed |
+| `npm run engine:test` | this contract (126 cases: 70 engine unit + 4 graph parity + 17 execution parity + 8 partial-graph parity + 7 partial-step unit/parity + 12 partial-stack unit/parity + 8 contract conformance) |
+| `npm run engine:test:strict` | the same 126 cases with the pinned reference runtime mandatory; zero parity skips allowed |
 | `bash tests/integration/run_gate.sh --offline-only` | stage 3 runs the suite above; stages 1-2 run the other LEGO gates |
 | `node tests/compatibility/contract_conformance.mjs` | asserts this contract file is present |

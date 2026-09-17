@@ -8,8 +8,8 @@
  *   handleCycles                       handle-cycles.ts:15-56                       (vs real)
  *   anyReachableRootHasRunData         find-trigger-for-partial-execution.ts:30-64  (vs real)
  *   findTriggerForPartialExecution     find-trigger-for-partial-execution.ts:67-112 (vs real)
- *   getIncomingData / getIncomingDataFromAnyRun   get-incoming-data.ts:3-34         (unit only —
- *                                      the reference does not export these two)
+ *   getIncomingData / getIncomingDataFromAnyRun   get-incoming-data.ts:3-34
+ *                                      (deep-module parity; omitted only from the root barrel)
  *
  * `engine:test` skips when the pinned runtime is absent; `engine:test:strict` fails instead.
  * Install it with `scripts/setup-reference-runtime.sh`.
@@ -50,6 +50,9 @@ const skipReason = runtimeReady ? false : missingRuntimeMessage;
 const req = runtimeReady ? createRequire(join(RUNTIME, 'package.json')) : null;
 const core = runtimeReady ? req('n8n-core') : null;
 const wf = runtimeReady ? req('n8n-workflow') : null;
+const realIncomingData = runtimeReady
+	? req(join(RUNTIME, 'n8n-core/dist/execution-engine/partial-execution-utils/get-incoming-data.js'))
+	: null;
 const RealDirectedGraph = runtimeReady ? core.DirectedGraph : null;
 
 /* ------------------------------------------------------------------ *
@@ -122,10 +125,10 @@ const runDataFor = (fixture, { indexes = true, only = null } = {}) => {
 };
 
 /* ------------------------------------------------------------------ *
- * unit checks for the two helpers the reference does not export
+ * local assertions plus deep-module parity (these helpers are omitted from the root barrel)
  * ------------------------------------------------------------------ */
 
-test('UNIT getIncomingData reads one slot of one run', { timeout: 60000 }, () => {
+test('UNIT/PORT getIncomingData reads one slot of one run', { timeout: 60000 }, () => {
 	const runData = {
 		A: [
 			{ data: { main: [[{ json: { run: 0, slot: 0 } }], [{ json: { run: 0, slot: 1 } }]] } },
@@ -140,9 +143,21 @@ test('UNIT getIncomingData reads one slot of one run', { timeout: 60000 }, () =>
 	assert.equal(mineGetIncomingData(runData, 'Z', 0, 'main', 0), null);
 	assert.equal(mineGetIncomingData(runData, 'A', 7, 'main', 0), null);
 	assert.equal(mineGetIncomingData(runData, 'A', 1, 'main', 3), null);
+
+	if (runtimeReady) {
+		for (const args of [
+			[runData, 'A', 0, 'main', 1],
+			[runData, 'A', 1, 'main', 0],
+			[runData, 'Z', 0, 'main', 0],
+			[runData, 'A', 7, 'main', 0],
+			[runData, 'A', 1, 'main', 3],
+		]) {
+			assert.deepEqual(mineGetIncomingData(...args), realIncomingData.getIncomingData(...args));
+		}
+	}
 });
 
-test('UNIT getIncomingDataFromAnyRun returns the first run that actually has items', { timeout: 60000 }, () => {
+test('UNIT/PORT getIncomingDataFromAnyRun returns the first run that actually has items', { timeout: 60000 }, () => {
 	const runData = {
 		A: [
 			{ data: { main: [[]] } }, // run 0 produced nothing
@@ -158,6 +173,19 @@ test('UNIT getIncomingDataFromAnyRun returns the first run that actually has ite
 	// nothing anywhere -> undefined; missing node -> undefined
 	assert.equal(mineGetIncomingDataFromAnyRun({ A: [{ data: { main: [[]] } }] }, 'A', 'main', 0), undefined);
 	assert.equal(mineGetIncomingDataFromAnyRun({}, 'A', 'main', 0), undefined);
+
+	if (runtimeReady) {
+		for (const args of [
+			[runData, 'A', 'main', 0],
+			[{ A: [{ data: { main: [[]] } }] }, 'A', 'main', 0],
+			[{}, 'A', 'main', 0],
+		]) {
+			assert.deepEqual(
+				mineGetIncomingDataFromAnyRun(...args),
+				realIncomingData.getIncomingDataFromAnyRun(...args),
+			);
+		}
+	}
 });
 
 /* ------------------------------------------------------------------ *

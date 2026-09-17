@@ -11,6 +11,11 @@
  *   reference/n8n/packages/core/src/execution-engine/partial-execution-utils/clean-run-data.ts:12-49
  *   reference/n8n/packages/core/src/execution-engine/partial-execution-utils/handle-cycles.ts:15-56
  *   reference/n8n/packages/core/src/execution-engine/partial-execution-utils/find-trigger-for-partial-execution.ts:6-112
+ *   reference/n8n/packages/core/src/execution-engine/partial-execution-utils/find-start-nodes.ts:13-185
+ *   reference/n8n/packages/core/src/execution-engine/partial-execution-utils/get-source-data-groups.ts:5-164
+ *   reference/n8n/packages/core/src/execution-engine/partial-execution-utils/recreate-node-execution-stack.ts:20-220
+ *   reference/n8n/packages/core/src/execution-engine/partial-execution-utils/rewire-graph.ts:7-58
+ *   reference/n8n/packages/@n8n/constants/src/execution.ts:1
  *
  * Why a second graph representation exists at all is explained in the reference header
  * (`directed-graph.ts:20-38`): `Workflow` stores the graph in a deeply nested, normalized format
@@ -20,19 +25,23 @@
  * NOT ported here (named so nobody assumes the editor's partial run is complete):
  *   - `DirectedGraph#toWorkflow` (`directed-graph.ts:456-463`) constructs a `Workflow` instance,
  *     which belongs to the Workflow LEGO (`packages/workflow-lego`, `contracts/workflow.contract.md`).
- *   - `findStartNodes`, `getSourceDataGroups`, `recreateNodeExecutionStack`, `rewireGraph`, and the
- *     `WorkflowExecute#runPartialWorkflow2` orchestrator — these are the remaining planning/execution
- *     slice required to wire "Execute step" end to end.
+ *   - The `WorkflowExecute#runPartialWorkflow2` orchestrator, which composes these helpers with
+ *     execution-engine state and `DirectedGraph#toWorkflow` to wire "Execute step" end to end.
  *
- * Exported upstream helpers are checked against the REAL n8n-core 2.9.1 implementations in
- * `test/partial-{equivalence,steps}.test.mjs`; the two module-private incoming-data helpers are
- * source-derived unit tests and are identified as such in the formal contract.
+ * Every helper is checked against the REAL n8n-core 2.9.1 implementation in
+ * `test/partial-{equivalence,steps,stack-equivalence}.test.mjs`; helpers omitted from n8n-core's root
+ * barrel are loaded from their pinned deep modules and retain source-derived no-runtime assertions.
  */
 
 import assert from 'node:assert';
+import strictAssert from 'node:assert/strict';
 
 /** `NodeConnectionTypes.Main` — the data/control flow connection type. */
 const MAIN = 'main';
+/** `NodeConnectionTypes.AiTool` — a tool-to-agent utility connection. */
+const AI_TOOL = 'ai_tool';
+/** `@n8n/constants/src/execution.ts:1`. */
+const TOOL_EXECUTOR_NODE_NAME = 'PartialExecutionToolExecutor';
 
 /**
  * 1:1 port of `directed-graph.ts:39-566`.
@@ -848,4 +857,513 @@ export function findTriggerForPartialExecution(workflow, destinationNodeName, ru
 	// Prioritize webhook triggers over other parent triggers
 	const webhookTriggers = parentTriggers.filter((trigger) => trigger.type.endsWith('webhook'));
 	return webhookTriggers.length > 0 ? webhookTriggers[0] : parentTriggers[0];
+}
+
+/* ================================================================== *
+ * finding partial-execution start nodes
+ * ================================================================== */
+
+/**
+ * 1:1 port of `find-start-nodes.ts:13-48`.
+ *
+ * The three TODO branches intentionally remain false, exactly as in n8n 2.9.4. Today a node is
+ * clean when it has either pinned data or any run-data entry; otherwise it is dirty.
+ */
+export function isDirty(node, runData = {}, pinData = {}) {
+	// TODO: implement
+	const propertiesOrOptionsChanged = false;
+
+	if (propertiesOrOptionsChanged) {
+		return true;
+	}
+
+	// TODO: implement
+	const parentNodeGotDisabled = false;
+
+	if (parentNodeGotDisabled) {
+		return true;
+	}
+
+	// TODO: implement
+	const hasAnError = false;
+
+	if (hasAnError) {
+		return true;
+	}
+
+	const hasPinnedData = pinData[node.name] !== undefined;
+
+	if (hasPinnedData) {
+		return false;
+	}
+
+	const hasRunData = runData?.[node.name];
+
+	if (hasRunData) {
+		return false;
+	}
+
+	return true;
+}
+
+/** `find-start-nodes.ts:50-137`. */
+function findStartNodesRecursive(graph, current, destination, runData, pinData, startNodes, seen) {
+	const nodeIsDirty = isDirty(current, runData, pinData);
+
+	// If the current node is dirty stop following this branch, we found a start
+	// node.
+	if (nodeIsDirty) {
+		startNodes.add(current);
+
+		return startNodes;
+	}
+
+	// If the current node is the destination node stop following this branch, we
+	// found a start node.
+	if (current === destination) {
+		startNodes.add(current);
+		return startNodes;
+	}
+
+	// If the current node is a loop node, check if the `done` output has data on
+	// the last run. If it doesn't the loop wasn't fully executed and needs to be
+	// re-run from the start. Thus the loop node become the start node.
+	if (current.type === 'n8n-nodes-base.splitInBatches') {
+		const nodeRunData = getIncomingData(
+			runData,
+			current.name,
+			// last run
+			-1,
+			MAIN,
+			// Although this is a Loop node, the graph may not actually have a loop here e.g.,
+			// while the workflow is under development. If there's not a loop, we treat the loop
+			// node as a normal node and take the data from the first output at index 1.
+			// If there *is* a loop, we take the data from the `done` output at index 0.
+			isALoop(graph, current) ? 0 : 1,
+		);
+
+		if (nodeRunData === null || nodeRunData.length === 0) {
+			startNodes.add(current);
+			return startNodes;
+		}
+	}
+
+	// If we detect a cycle stop following the branch, there is no start node on
+	// this branch.
+	if (seen.has(current)) {
+		return startNodes;
+	}
+
+	// Recurse with every direct child that is part of the sub graph.
+	const outGoingConnections = graph.getDirectChildConnections(current);
+	for (const outGoingConnection of outGoingConnections) {
+		const nodeRunData = getIncomingDataFromAnyRun(
+			runData,
+			outGoingConnection.from.name,
+			outGoingConnection.type,
+			outGoingConnection.outputIndex,
+		);
+
+		// If the node has multiple outputs, only follow the outputs that have run data.
+		const hasNoRunData =
+			nodeRunData === null || nodeRunData === undefined || nodeRunData.data.length === 0;
+		const hasNoPinnedData = pinData[outGoingConnection.from.name] === undefined;
+		if (hasNoRunData && hasNoPinnedData) {
+			continue;
+		}
+
+		findStartNodesRecursive(
+			graph,
+			outGoingConnection.to,
+			destination,
+			runData,
+			pinData,
+			startNodes,
+			new Set(seen).add(current),
+		);
+	}
+
+	return startNodes;
+}
+
+/** `find-start-nodes.ts:139-141`. */
+function isALoop(graph, node) {
+	return graph.getChildren(node).has(node);
+}
+
+/**
+ * 1:1 port of `find-start-nodes.ts:143-185`.
+ *
+ * Traverses from the selected trigger toward the destination and returns the earliest dirty node on
+ * every branch. The returned nodes are the ones partial execution must execute or re-execute.
+ */
+export function findStartNodes(options) {
+	const graph = options.graph;
+	const trigger = options.trigger;
+	const destination = options.destination;
+	const runData = { ...options.runData };
+	const pinData = options.pinData;
+
+	const startNodes = findStartNodesRecursive(
+		graph,
+		trigger,
+		destination,
+		runData,
+		pinData,
+		// start nodes found
+		new Set(),
+		// seen
+		new Set(),
+	);
+
+	return startNodes;
+}
+
+/* ================================================================== *
+ * source grouping and execution-stack recreation
+ * ================================================================== */
+
+/** `get-source-data-groups.ts:7-16`. */
+function sortByInputIndexThenByName(connection1, connection2) {
+	if (connection1.inputIndex === connection2.inputIndex) {
+		return connection1.from.name.localeCompare(connection2.from.name);
+	} else {
+		return connection1.inputIndex - connection2.inputIndex;
+	}
+}
+
+/** `get-source-data-groups.ts:31-36`. */
+function newGroup() {
+	return {
+		complete: true,
+		connections: [],
+	};
+}
+
+/**
+ * 1:1 port of `get-source-data-groups.ts:86-164`.
+ *
+ * Incoming connections are sorted by input index and source-node name, then distributed so each
+ * group contains at most one connection for each input. Data-bearing connections are preferred;
+ * missing-data main connections make their group incomplete, while missing-data non-main
+ * connections are ignored.
+ */
+export function getSourceDataGroups(graph, node, runData, pinnedData) {
+	const connections = graph.getConnections({ to: node });
+
+	const sortedConnectionsWithData = [];
+	const sortedConnectionsWithoutData = [];
+
+	for (const connection of connections) {
+		const hasData = runData[connection.from.name] || pinnedData[connection.from.name];
+
+		if (hasData) {
+			sortedConnectionsWithData.push(connection);
+		} else if (connection.type === MAIN) {
+			sortedConnectionsWithoutData.push(connection);
+		}
+	}
+
+	if (sortedConnectionsWithData.length === 0 && sortedConnectionsWithoutData.length === 0) {
+		return [];
+	}
+
+	sortedConnectionsWithData.sort(sortByInputIndexThenByName);
+	sortedConnectionsWithoutData.sort(sortByInputIndexThenByName);
+
+	const groups = [];
+	let currentGroup = newGroup();
+	let currentInputIndex =
+		Math.min(
+			...sortedConnectionsWithData.map((c) => c.inputIndex),
+			...sortedConnectionsWithoutData.map((c) => c.inputIndex),
+		) - 1;
+
+	while (sortedConnectionsWithData.length > 0 || sortedConnectionsWithoutData.length > 0) {
+		currentInputIndex++;
+
+		const connectionWithDataIndex = sortedConnectionsWithData.findIndex(
+			(c) => c.inputIndex === currentInputIndex,
+		);
+
+		if (connectionWithDataIndex >= 0) {
+			const connection = sortedConnectionsWithData[connectionWithDataIndex];
+
+			currentGroup.connections.push(connection);
+
+			sortedConnectionsWithData.splice(connectionWithDataIndex, 1);
+			continue;
+		}
+
+		const connectionWithoutDataIndex = sortedConnectionsWithoutData.findIndex(
+			(c) => c.inputIndex === currentInputIndex,
+		);
+
+		if (connectionWithoutDataIndex >= 0) {
+			const connection = sortedConnectionsWithoutData[connectionWithoutDataIndex];
+
+			currentGroup.connections.push(connection);
+			currentGroup.complete = false;
+
+			sortedConnectionsWithoutData.splice(connectionWithoutDataIndex, 1);
+			continue;
+		}
+
+		groups.push(currentGroup);
+		currentGroup = newGroup();
+		currentInputIndex =
+			Math.min(
+				...sortedConnectionsWithData.map((c) => c.inputIndex),
+				...sortedConnectionsWithoutData.map((c) => c.inputIndex),
+			) - 1;
+	}
+
+	groups.push(currentGroup);
+
+	return groups;
+}
+
+/** 1:1 port of `recreate-node-execution-stack.ts:20-37`. Mutates `waitingExecution`. */
+export function addWaitingExecution(
+	waitingExecution,
+	nodeName,
+	runIndex,
+	inputType,
+	inputIndex,
+	executionData,
+) {
+	const waitingExecutionObject = waitingExecution[nodeName] ?? {};
+	const taskDataConnections = waitingExecutionObject[runIndex] ?? {};
+	const executionDataList = taskDataConnections[inputType] ?? [];
+
+	executionDataList[inputIndex] = executionData;
+
+	taskDataConnections[inputType] = executionDataList;
+	waitingExecutionObject[runIndex] = taskDataConnections;
+	waitingExecution[nodeName] = waitingExecutionObject;
+}
+
+/** 1:1 port of `recreate-node-execution-stack.ts:39-56`. Mutates `waitingExecutionSource`. */
+export function addWaitingExecutionSource(
+	waitingExecutionSource,
+	nodeName,
+	runIndex,
+	inputType,
+	inputIndex,
+	sourceData,
+) {
+	const waitingExecutionSourceObject = waitingExecutionSource[nodeName] ?? {};
+	const taskDataConnectionsSource = waitingExecutionSourceObject[runIndex] ?? {};
+	const sourceDataList = taskDataConnectionsSource[inputType] ?? [];
+
+	sourceDataList[inputIndex] = sourceData;
+
+	taskDataConnectionsSource[inputType] = sourceDataList;
+	waitingExecutionSourceObject[runIndex] = taskDataConnectionsSource;
+	waitingExecutionSource[nodeName] = waitingExecutionSourceObject;
+}
+
+/**
+ * 1:1 port of `recreate-node-execution-stack.ts:58-220`.
+ *
+ * Rebuilds `nodeExecutionStack`, `waitingExecution`, and `waitingExecutionSource` from a filtered
+ * directed graph plus existing run/pin data. This is the in-memory state consumed by the execution
+ * loop after partial-run planning.
+ */
+export function recreateNodeExecutionStack(graph, startNodes, runData, pinData) {
+	// Validate invariants.
+
+	// The graph needs to be free of disabled nodes. If it's not it hasn't been
+	// passed through findSubgraph.
+	for (const node of graph.getNodes().values()) {
+		strictAssert.notEqual(
+			node.disabled,
+			true,
+			`Graph contains disabled nodes. This is not supported. Make sure to pass the graph through "findSubgraph" before calling "recreateNodeExecutionStack". The node in question is "${node.name}"`,
+		);
+	}
+
+	// Initialize the nodeExecutionStack and waitingExecution with
+	// the data from runData
+	const nodeExecutionStack = [];
+	const waitingExecution = {};
+	const waitingExecutionSource = {};
+
+	for (const startNode of startNodes) {
+		const incomingStartNodeConnections = graph
+			.getDirectParentConnections(startNode)
+			.filter((c) => c.type === MAIN);
+
+		let incomingData = [];
+		let incomingSourceData = null;
+
+		if (incomingStartNodeConnections.length === 0) {
+			incomingData.push([{ json: {} }]);
+
+			const executeData = {
+				node: startNode,
+				data: { main: incomingData },
+				source: incomingSourceData,
+			};
+
+			nodeExecutionStack.push(executeData);
+		} else {
+			const sourceDataSets = getSourceDataGroups(graph, startNode, runData, pinData);
+
+			for (const sourceData of sourceDataSets) {
+				if (sourceData.complete) {
+					// All incoming connections have data, so let's put the node on the
+					// stack!
+					incomingData = [];
+
+					incomingSourceData = { main: [] };
+
+					for (const incomingConnection of sourceData.connections) {
+						let runIndex = 0;
+						const sourceNode = incomingConnection.from;
+
+						if (pinData[sourceNode.name]) {
+							incomingData.push(pinData[sourceNode.name]);
+						} else {
+							strictAssert.ok(
+								runData[sourceNode.name],
+								`Start node(${incomingConnection.to.name}) has an incoming connection with no run or pinned data. This is not supported. The connection in question is "${sourceNode.name}->${startNode.name}". Are you sure the start nodes come from the "findStartNodes" function?`,
+							);
+
+							const nodeIncomingData = getIncomingDataFromAnyRun(
+								runData,
+								sourceNode.name,
+								incomingConnection.type,
+								incomingConnection.outputIndex,
+							);
+
+							if (nodeIncomingData) {
+								runIndex = nodeIncomingData.runIndex;
+								incomingData.push(nodeIncomingData.data);
+							}
+						}
+
+						incomingSourceData.main.push({
+							previousNode: incomingConnection.from.name,
+							previousNodeOutput: incomingConnection.outputIndex,
+							previousNodeRun: runIndex,
+						});
+					}
+
+					const executeData = {
+						node: startNode,
+						data: { main: incomingData },
+						source: incomingSourceData,
+					};
+
+					nodeExecutionStack.push(executeData);
+				} else {
+					const nodeName = startNode.name;
+					const nextRunIndex = waitingExecution[nodeName]
+						? Object.keys(waitingExecution[nodeName]).length
+						: 0;
+
+					for (const incomingConnection of sourceData.connections) {
+						const sourceNode = incomingConnection.from;
+						const maybeNodeIncomingData = getIncomingDataFromAnyRun(
+							runData,
+							sourceNode.name,
+							incomingConnection.type,
+							incomingConnection.outputIndex,
+						);
+						const nodeIncomingData = maybeNodeIncomingData?.data ?? null;
+
+						if (nodeIncomingData) {
+							addWaitingExecution(
+								waitingExecution,
+								nodeName,
+								nextRunIndex,
+								incomingConnection.type,
+								incomingConnection.inputIndex,
+								nodeIncomingData,
+							);
+
+							addWaitingExecutionSource(
+								waitingExecutionSource,
+								nodeName,
+								nextRunIndex,
+								incomingConnection.type,
+								incomingConnection.inputIndex,
+								nodeIncomingData
+									? {
+											previousNode: incomingConnection.from.name,
+											previousNodeRun: nextRunIndex,
+											previousNodeOutput: incomingConnection.outputIndex,
+										}
+									: null,
+							);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return {
+		nodeExecutionStack,
+		waitingExecution,
+		waitingExecutionSource,
+	};
+}
+
+/* ================================================================== *
+ * AI-tool graph rewiring
+ * ================================================================== */
+
+/**
+ * 1:1 port of `rewire-graph.ts:7-58` and
+ * `packages/@n8n/constants/src/execution.ts:1`.
+ */
+export function rewireGraph(tool, graph, agentRequest) {
+	const modifiedGraph = graph.clone();
+	const children = modifiedGraph.getChildren(tool);
+
+	if (children.size === 0) {
+		return graph;
+	}
+
+	const rootNode = [...children][children.size - 1];
+
+	strictAssert.ok(rootNode);
+
+	const allIncomingConnection = modifiedGraph
+		.getDirectParentConnections(rootNode)
+		.filter((cn) => cn.type === MAIN);
+
+	// Create virtual agent node
+	const toolExecutor = {
+		name: TOOL_EXECUTOR_NODE_NAME,
+		disabled: false,
+		type: '@n8n/n8n-nodes-langchain.toolExecutor',
+		parameters: {
+			query: JSON.stringify(agentRequest?.query ?? {}),
+			toolName: agentRequest?.tool?.name ?? '',
+			node: tool.name,
+		},
+		id: rootNode.id,
+		typeVersion: 0,
+		position: [0, 0],
+	};
+
+	// Add virtual agent to graph
+	modifiedGraph.addNode(toolExecutor);
+
+	// Rewire tool output to virtual agent
+	tool.rewireOutputLogTo = AI_TOOL;
+	modifiedGraph.addConnection({ from: tool, to: toolExecutor, type: AI_TOOL });
+
+	// Rewire all incoming connections to virtual agent
+	for (const cn of allIncomingConnection) {
+		modifiedGraph.addConnection({ from: cn.from, to: toolExecutor, type: cn.type });
+	}
+
+	// Remove original agent node
+	modifiedGraph.removeNode(rootNode);
+
+	return modifiedGraph;
 }

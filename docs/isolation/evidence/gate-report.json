@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-17T14:00:17.249Z",
+  "generatedAt": "2026-09-17T14:21:05.593Z",
   "lego": "workflow",
   "phase": "phase-2-isolation",
   "reference": {
@@ -67,14 +67,14 @@
       "title": "boundary drift gate (owned files, crossings, inbound edges)",
       "status": "PASS",
       "detail": "src files scanned         : 104\nLEGO owned files          : 10\ncompile closure           : 103\noutbound crossings        : 21\nundeclared crossings      : 0\ninbound edges             : 9\nmonorepo import sites     : 6318 root + 5 subpath\n\nBoundary check: PASS (no drift vs packages/workflow-lego/manifest/boundary.expectations.json)",
-      "ms": 246
+      "ms": 243
     },
     {
       "id": "G02",
       "title": "kernel snapshot conformance (constants/vocabulary vs reference)",
       "status": "PASS",
       "detail": "Kernel snapshot check: PASS (snapshots match the pinned reference source)",
-      "ms": 38
+      "ms": 35
     },
     {
       "id": "G03",
@@ -88,56 +88,56 @@
       "title": "reference tree byte-identical to the pinned hashes",
       "status": "PASS",
       "detail": "Reference integrity check: PASS (15050 files, root f8da35180669d798…)",
-      "ms": 383
+      "ms": 386
     },
     {
       "id": "G05",
       "title": "isolation extraction (pure import rewrites only)",
       "status": "PASS",
       "detail": "isolated unit written to packages/workflow-lego/.extract\n  owned files copied : 10\n  port rewrites      : 25 across 10 files\n    @lego/ports/checksum-digest : 1\n    @lego/ports/config : 1\n    @lego/ports/constants : 1\n    @lego/ports/errors : 2\n    @lego/ports/expression-runtime : 1\n    @lego/ports/node-model : 1\n    @lego/ports/node-reference : 1\n    @lego/ports/node-rename : 1\n    @lego/ports/observable-object : 1\n    @lego/ports/utils : 2\n    @lego/ports/vocabulary : 13",
-      "ms": 257
+      "ms": 276
     },
     {
       "id": "G06",
       "title": "TypeScript build PASS (isolated unit, ports only)",
       "status": "PASS",
       "detail": "tsc -p .extract/tsconfig.json → 0 errors",
-      "ms": 1484
+      "ms": 1536
     },
     {
       "id": "G07",
       "title": "TypeScript build PASS (versioned boundary/ports/facade)",
       "status": "PASS",
       "detail": "tsc --noEmit → 0 errors",
-      "ms": 981
+      "ms": 1013
     },
     {
       "id": "G08",
       "title": "unit tests PASS (boundary, extraction, equivalence, strict isolation, surface)",
       "status": "PASS",
-      "detail": "# cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 11757.486136",
-      "ms": 11792
+      "detail": "# cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 12196.234232",
+      "ms": 12229
     },
     {
       "id": "G09",
       "title": "BEFORE vs AFTER digest: BEHAVIOR CHANGE NONE",
       "status": "PASS",
       "detail": "252 section comparisons across 18 workflows — 0 differences · strict: 218 identical, 34 in declared port sections",
-      "ms": 2380
+      "ms": 2453
     },
     {
       "id": "G10",
       "title": "strict port mode: no hidden coupling to the reference runtime",
       "status": "PASS",
-      "detail": "# cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 1514.545418",
-      "ms": 1549
+      "detail": "# cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 1615.977323",
+      "ms": 1649
     },
     {
       "id": "G11",
       "title": "live verification: workflow load / save / 1-node / linear / webhook / execution record",
       "status": "PASS",
       "detail": "7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS",
-      "ms": 3209
+      "ms": 3400
     }
   ]
 }

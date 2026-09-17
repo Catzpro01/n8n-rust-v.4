@@ -10,7 +10,7 @@ The n8n 2.9.4 **Workflow Execution Engine**, reconstructed in native JavaScript.
   machine-checked by `test/contract-conformance.test.mjs`.
 - **Provenance:** implemented behavior cites the corresponding n8n source lines. The contract suite
   verifies every citation against the pinned `reference/n8n/` tree.
-- **Runtime parity:** 34 differential cases call the pinned real `n8n-core` / `n8n-workflow` 2.9.1
+- **Runtime parity:** 48 differential cases call the pinned real `n8n-core` / `n8n-workflow` 2.9.1
   runtime used by n8n 2.9.4.
 
 ## Reconstructed boundary
@@ -23,23 +23,23 @@ already ported from `partial-execution-utils`.
 
 It does not own node implementations, credentials, expression evaluation, persistence,
 sub-workflows, AI/tool execution, or the scheduler that decides when to resume a parked execution.
-The full partial-run orchestrator is not complete yet: `findStartNodes`, source-data grouping,
-execution-stack recreation, graph rewiring, `DirectedGraph#toWorkflow`, and
-`WorkflowExecute#runPartialWorkflow2` remain explicit follow-up work. See contract §7 and G28-G29.
+The full partial-run orchestrator is not complete yet: `DirectedGraph#toWorkflow` and
+`WorkflowExecute#runPartialWorkflow2` remain explicit follow-up work. See contract §7 and G28-G30.
 
 ## Layout
 
 ```text
-runner.mjs                          execution engine + mapConnectionsByDestination
-graph.mjs                           getConnectedNodes / getParentNodes / getHighestNode
-partial.mjs                         partial-run graph and planning helpers
-test/engine.test.mjs                70 behavior cases
-test/graph-equivalence.test.mjs      4 graph-port parity cases
-test/reference-equivalence.test.mjs 17 execution parity cases
-test/partial-equivalence.test.mjs    8 partial-graph parity cases
-test/partial-steps.test.mjs          7 partial-step unit/parity cases
-test/contract-conformance.test.mjs   8 machine-checked contract cases
-test-run.mjs                        console demo (not an assertion suite)
+runner.mjs                                execution engine + mapConnectionsByDestination
+graph.mjs                                 getConnectedNodes / getParentNodes / getHighestNode
+partial.mjs                               partial-run graph and planning helpers
+test/engine.test.mjs                      70 behavior cases
+test/graph-equivalence.test.mjs            4 graph-port parity cases
+test/reference-equivalence.test.mjs       17 execution parity cases
+test/partial-equivalence.test.mjs          8 partial-graph parity cases
+test/partial-steps.test.mjs                7 partial-step unit/parity cases
+test/partial-stack-equivalence.test.mjs   12 start/stack/rewire unit/parity cases
+test/contract-conformance.test.mjs         8 machine-checked contract cases
+test-run.mjs                              console demo (not an assertion suite)
 ```
 
 ## Use the execution engine
@@ -75,12 +75,18 @@ import {
   DirectedGraph,
   filterDisabledNodes,
   findSubgraph,
+  findStartNodes,
+  recreateNodeExecutionStack,
   cleanRunData,
   handleCycles,
 } from '@lego/reconstructed-engine/partial';
 
 const graph = DirectedGraph.fromNodesAndConnections(workflowJson.nodes, workflowJson.connections);
-const enabledGraph = filterDisabledNodes(graph);
+const subgraph = findSubgraph({ graph: filterDisabledNodes(graph), trigger, destination });
+let startNodes = findStartNodes({ graph: subgraph, trigger, destination, runData, pinData });
+startNodes = handleCycles(subgraph, startNodes, trigger);
+const cleanedRunData = cleanRunData(runData, subgraph, startNodes);
+const executionState = recreateNodeExecutionStack(subgraph, startNodes, cleanedRunData, pinData);
 ```
 
 The partial subpath performs no execution or external I/O. Full API and behavior guarantees are
@@ -90,10 +96,10 @@ specified in contract §§2 and 4.
 
 ```bash
 npm run engine:test
-# 114 cases; the 34 parity cases may skip if the reference runtime is absent
+# 126 cases; 48 cases add pinned-runtime comparisons when that runtime is present
 
 npm run engine:test:strict
-# 114/114 required; missing reference runtime is a hard failure
+# 126/126 required; missing reference runtime is a hard failure
 
 bash tests/integration/run_gate.sh --offline-only
 # stage 3 invokes the strict suite

@@ -48,7 +48,7 @@ npm install --prefix packages/workflow-lego
 npm run verify                            # 11 gates; writes docs/isolation/evidence/*
 
 npm run verify:fast                       # same, without the live engine checks
-npm run engine:test:strict                # 114/114; pinned runtime required, no parity skips allowed
+npm run engine:test:strict                # 126/126; pinned runtime required, no parity skips allowed
 npm run isolation:check                   # boundary + kernel + port + reference-integrity + rust guard
 npm run rust:guard                        # PROJECT_RULES #1: no .rs / Cargo.toml under crates/ or apps/
 ```

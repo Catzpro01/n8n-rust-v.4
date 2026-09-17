@@ -1,0 +1,90 @@
+id: TASK-319-partial-stack-planning
+agent: arena-worker (session arena/01a0af55-n8n-rust-v-4)
+lego: workflow
+module: reconstructed-engine/partial
+phase: 2
+
+# Dual-phase review evidence: the preceding post-task sweep found persistence PR #13. Its submitted
+# head had lost contract §12 and the flatted runtime pin, so a three-rubric NEEDS_CORRECTION review
+# was posted at PR comment #issuecomment-5715717072. GitHub rejected a formal review only because
+# all Arena sessions share the PR author's bot identity; no self-approval or duplicate vote occurred.
+
+trigger: >
+  After integrating the partial graph/run-data foundation, reconstruct the remaining in-memory
+  planning utilities that n8n 2.9.4 calls before WorkflowExecute.runPartialWorkflow2 starts its
+  execution loop: dirty/start-node selection, deterministic source grouping, stack/waiting-state
+  recreation, and AI-tool graph rewiring.
+
+allowed_paths:
+  - packages/reconstructed-engine/**
+  - contracts/execution-engine.contract.md
+  - README.md
+  - docs/isolation/evidence/**
+  - docs/isolation/workflow-verification.md
+  - tasks/TASK-319-partial-stack-planning.yaml
+  - results/TASK-319-partial-stack-planning.md
+
+forbidden_paths:
+  - reference/n8n/**
+  - crates/**
+  - apps/**
+  - packages/workflow-lego/src/**
+  - packages/editor-ui/**
+  - '**/*.vue'
+  - '**/*.css'
+  - '**/*.scss'
+
+operations:
+  - name: port_find_start_nodes
+    args:
+      source: packages/core/src/execution-engine/partial-execution-utils/find-start-nodes.ts
+      exports: [isDirty, findStartNodes]
+  - name: port_source_grouping
+    args:
+      source: packages/core/src/execution-engine/partial-execution-utils/get-source-data-groups.ts
+      exports: [getSourceDataGroups]
+  - name: port_stack_recreation
+    args:
+      source: packages/core/src/execution-engine/partial-execution-utils/recreate-node-execution-stack.ts
+      exports: [addWaitingExecution, addWaitingExecutionSource, recreateNodeExecutionStack]
+  - name: port_ai_tool_rewiring
+    args:
+      source: packages/core/src/execution-engine/partial-execution-utils/rewire-graph.ts
+      exports: [rewireGraph]
+      constant_source: packages/@n8n/constants/src/execution.ts
+  - name: add_differential_regressions
+    args:
+      file: packages/reconstructed-engine/test/partial-stack-equivalence.test.mjs
+      cases: 12
+      coverage:
+        - dirty/pin/run-data decisions
+        - deterministic complete and incomplete source groups
+        - sparse waiting data and source mutators
+        - simple, branching, output-filter, cycle, pin, and loop start selection
+        - root, complete, pinned, incomplete, repeated-input, and disabled-invariant stacks
+        - simple, filtered, no-child, request-parameter, and nested AI-tool rewiring
+
+verification:
+  focused_stack_suite: "12/12 PASS against pinned n8n-core 2.9.1"
+  focused_partial_suites: "19/19 PASS, including deep-module comparisons for barrel-private helpers"
+  engine_strict: "npm run engine:test:strict -> 126 tests, 126 pass, 0 fail, 0 skipped"
+  pinned_runtime_differential: "48 of 126 cases"
+  contract_conformance: "8/8 PASS; all provenance ranges validated"
+  workflow_gate: "npm run verify -> 11/11 PASS, local live 7/7 PASS, behavior change none"
+  compatibility_conformance: "22/22 PASS; pinned workflow fixture check PASS"
+  boundary_and_rust: "boundary audit PASS; rust guard PASS"
+  offline_integration: "stages 1-3 PASS; exit 2 only because --offline-only intentionally omits external live"
+
+merge_condition:
+  - source_faithful_js_port
+  - strict_suite_passes_without_skips
+  - formal_surface_and_provenance_match
+  - workflow_gate_and_conformance_pass
+  - reference_tree_unchanged
+  - zero_rust_pass
+  - editor_ui_unchanged
+
+known_gap: >
+  The in-memory partial planning layer is complete, but end-to-end execution remains follow-up work:
+  DirectedGraph#toWorkflow requires the Workflow LEGO constructor and WorkflowExecute#runPartialWorkflow2
+  must compose the planning state with the reconstructed execution engine.
