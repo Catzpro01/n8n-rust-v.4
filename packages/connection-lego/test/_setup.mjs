@@ -12,9 +12,17 @@ export const HARNESS_NM = join(REPO, 'tests', 'reference', 'harness', 'node_modu
 export function referencePkg() {
 	if (process.env.LEGO_REFERENCE_PKG) return process.env.LEGO_REFERENCE_PKG;
 	const local = join(HARNESS_NM, 'n8n-workflow');
-	return existsSync(join(local, 'package.json')) ? local : 'n8n-workflow';
+	if (existsSync(join(local, 'package.json'))) return local;
+	if (process.env.LEGO_PORT_MODE !== 'strict') {
+		throw new Error(
+			`reference runtime not installed — set LEGO_REFERENCE_PKG (absolute path to n8n-workflow@2.9.1) ` +
+				`or run in LEGO_PORT_MODE=strict. Looked in ${local}.`,
+		);
+	}
+	return '';
 }
-process.env.LEGO_REFERENCE_PKG ??= referencePkg();
+const _ref = referencePkg();
+if (_ref) process.env.LEGO_REFERENCE_PKG ??= _ref;
 
 /** JSON-plain view, same normalisation as tests/reference/harness/connection.js. */
 export const plain = (v) =>

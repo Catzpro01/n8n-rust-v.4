@@ -7,7 +7,8 @@
  * LEGO_REFERENCE_PKG may point at another n8n-workflow install (absolute path).
  */
 import { createRequire } from 'node:module';
-import { join } from 'node:path';
+import { existsSync } from 'node:fs';
+import { isAbsolute, join } from 'node:path';
 
 export type PortMode = 'reference' | 'strict';
 const nodeRequire = createRequire(import.meta.url);
@@ -33,6 +34,18 @@ export function referencePackage(): string {
 	return process.env.LEGO_REFERENCE_PKG ?? 'n8n-workflow';
 }
 
+/**
+ * require() rooted at the reference runtime package. Fails loud (not with an opaque createRequire TypeError)
+ * when the pinned runtime is not installed — reference mode is meaningless without it.
+ */
 export function referenceRequire(): NodeRequire {
-	return createRequire(join(referencePackage(), 'package.json'));
+	const pkg = referencePackage();
+	if (!isAbsolute(pkg) || !existsSync(join(pkg, 'package.json'))) {
+		throw new Error(
+			`connection-lego: reference runtime not installed — set LEGO_REFERENCE_PKG to the absolute path of an ` +
+				`n8n-workflow@2.9.1 install (n8n 2.9.4 artifact). Got: ${JSON.stringify(pkg)}. ` +
+				`Strict mode (LEGO_PORT_MODE=strict) needs no runtime.`,
+		);
+	}
+	return createRequire(join(pkg, 'package.json'));
 }

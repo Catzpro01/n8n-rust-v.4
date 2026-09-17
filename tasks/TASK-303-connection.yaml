@@ -242,5 +242,14 @@ notes:
   - name: read_messages        # Tahap 3 — votes received on agent-3 deliverables
     result:
       - { task: "TASK-402-connection-spec", from: agent-4, vote: APPROVED, ref: "arena/01a0ac06:docs/isolation/consensus/TASK-402-connection-spec.review-agent-4.md" }
-      - { task: "TASK-303-connection (packages/connection-lego)", votes: [], note: "no votes yet; agent-5 rubric tool (arena/01a0ac12 TASK-308) recommends 17/17 APPROVED on older tasks" }
+      - { task: "TASK-402-connection-spec", from: agent-2, vote: APPROVED, ref: "arena/01a0ac04:docs/isolation/node-bus-outbox.json (MSG-16 tahap2_reviews)" }
+      - { task: "TASK-303-connection (packages/connection-lego)", from: agent-4, vote: APPROVED, ref: "arena/01a0ac06:docs/isolation/consensus/TASK-303-connection.review-agent-4.md", followup: "note 1 (opaque error w/o runtime) FIXED — runtime.ts/_setup.mjs now fail loud; note 2 accepted" }
+      - { task: "TASK-303-connection (packages/connection-lego)", from: [agent-1, agent-5], vote: PENDING }
+  - name: send_message         # Tahap 3 — follow-up on agent-4 note 1
+    args:
+      to: "agent-4"
+      cc: ["agent-5"]
+      type: REVIEW_FOLLOWUP
+      subject: "TASK-303: your non-blocking note 1 applied — reference-mode now fails loud when LEGO_REFERENCE_PKG is unset/invalid"
+      body: "src/ports/runtime.ts referenceRequire() throws 'connection-lego: reference runtime not installed — set LEGO_REFERENCE_PKG …'; test/_setup.mjs throws the same before any test runs unless LEGO_PORT_MODE=strict. Verified: 17/17 reference, 17/17 strict, 15/15 strict-only with LEGO_REFERENCE_PKG=/nonexistent."
 

@@ -1,6 +1,6 @@
 # TASK RESULT: TASK-303-connection (Phase-3 seam — `packages/connection-lego/`)
 
-- **Status**: `SUCCESS` (awaiting consensus votes — Tahap 3)
+- **Status**: `SUCCESS` (Tahap 3: agent-4 APPROVED; agent-1 / agent-5 pending)
 - **Pekerja**: `agent-3`
 - **Peran sesaat**: Connection & Graph Traversal Engineer (LEGO 03 `connection`)
 - **Commit**: `84a6bfcf` + `e72025d9` on `arena/01a0ac05-n8n-rust-v-4` (branched from main `a445a9ab`, main `b809399b` merged in `ff285577`)
@@ -31,3 +31,9 @@ connections-diff.ts `3d71809c…82cab5`, common/get-connected-nodes.ts `179e1cc0
 1. Jalur berkas: semua berkas di dalam `allowed_paths` TASK-303 (`packages/connection-lego/**` ADDITIVE, diotorisasi core directive).
 2. Golden oracle: perilaku = n8n 2.9.4 by construction (reuse 1:1; replay 34 probe fixture 01–07 identik).
 3. Bukti nyata: 24 berkas fisik + log tes di atas.
+
+## Tahap 3 — feedback log
+| Reviewer | Vote | Follow-up |
+| :--- | :--- | :--- |
+| agent-4 (`arena/01a0ac06` @ `82f280ab`) | APPROVED | note 1 (opaque `createRequire` TypeError without runtime) → fixed: `referenceRequire()` and `test/_setup.mjs` now fail loud with "reference runtime not installed — set LEGO_REFERENCE_PKG"; strict mode unaffected (15/15 with `LEGO_REFERENCE_PKG=/nonexistent`). note 2 accepted. |
+| agent-1, agent-5 | pending | — |
