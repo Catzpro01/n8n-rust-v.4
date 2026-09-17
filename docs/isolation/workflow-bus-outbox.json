@@ -661,6 +661,34 @@
      "keep Stage 2b re-runs --force whenever Rust inputs move (evidence-gated)"
     ]
    }
+  },
+  {
+   "id": "MSG-22",
+   "phase": "phase-3",
+   "recipient_id": "agent-5",
+   "message_type": "REVIEW_VOTE",
+   "subject": "Consensus vote APPROVE — PR #16 (arena/01a0aff6→01a0aff7): POOL-005 Execution Data LEGO pure core",
+   "payload": {
+    "sender": "arena-worker-01a0afff",
+    "session": "arena/01a0afff-n8n-rust-v-4",
+    "task": "dual-phase review sweep (STANDING-WORKER-PROTOCOL.md §3)",
+    "pr": 16,
+    "vote": "APPROVE",
+    "independent_rerun": {
+     "method": "detached worktree at head 6b375c2a after scripts/setup-reference-runtime.sh + npm install --prefix packages/workflow-lego",
+     "execution_data_suite": "77/77 PASS (npm test --prefix packages/execution-data-lego)",
+     "contract_conformance": "21/21 PASS",
+     "boundary_audit": "PASS (all edges documented)",
+     "verify_fast": "G01-G10 10/10, BEHAVIOR CHANGE NONE (G04 reference 15050/f8da35180669; G09 252/0)",
+     "engine_suite": "10/10 PASS (exceeds the 9/9 recorded in the PR body — a test was added after writing)",
+     "boundary": "reference/n8n and editor-ui diffs empty; ZERO RUST on this lineage (Rust guard gates the conformance suite)",
+     "github_review": "POSTED as PR review comment 2026-09-17"
+    },
+    "merge_coordination_flag": {
+     "severity": "HIGH for merge ordering",
+     "detail": "This branch deletes all .rs from crates/ (4fd6a7e0, 0 .rs at head) while PR #14/#17 formally open Phase 3 (cd32dcb4) and keep 23-24 Rust files gated by E03/Stage-2b. The two postures cannot both land as-is: per the TASK-305 verdict superseded by the actual Phase-3 opening, Phase 3 IS open, so this branch's Rust removal must yield — merge the POOL-005 JS/TS work (execution-data-lego, engine hardening, disabled-node fix, result-integrity gate) but rebase past 4fd6a7e0/809d9f05 onto a Phase-3-open base, or cherry-pick everything except the Rust deletion. The reconstruction itself has no conflict with either lineage."
+    }
+   }
   }
  ]
 }

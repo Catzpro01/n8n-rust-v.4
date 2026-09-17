@@ -18,7 +18,7 @@ standing worker can still obey `STANDING-WORKER-PROTOCOL.md` offline.
    `n/a (offline)` until the orchestration plane is reachable again.
 
 **Generated:** 2026-09-17 15:40 UTC by `arena/01a0afff-n8n-rust-v-4` (TASK-POOL-VERIFY-01)
-**Sources:** `results/*.md` (48 files) + `tasks/*.yaml` (33 manifests)
+**Sources:** `results/*.md` (49 files across open branches) + `tasks/*.yaml` (33 manifests)
 
 ## Completed tasks (result committed)
 
@@ -27,6 +27,7 @@ standing worker can still obey `STANDING-WORKER-PROTOCOL.md` offline.
 | POOL-001-core-workflow-execute-loop | SUCCESS | arena/01a0aff8 (work-stealing takeover) | execution | 83a77195 | results/POOL-001-core-workflow-execute-loop.md |
 | POOL-002-node-execution-context-data-proxy | SUCCESS | arena/01a0aff8 (re-run of FAILED pipeline result) | expression | 83a77195 | results/POOL-002-node-execution-context-data-proxy.md |
 | POOL-003-error-retry-handling | SUCCESS | arena/01a0aff8 (work-stealing takeover) | validation | 83a77195 | results/POOL-003-error-retry-handling.md |
+| POOL-005-execution-data-lego-pure-core | SUCCESS | arena/01a0aff7 (agent-1 session) | execution-data | 1dafb0d0 | results/POOL-005-execution-data-lego-pure-core.md (on PR #16 branch) |
 | TASK-POOL-VERIFY-01 | SUCCESS | arena/01a0afff (takeover: verify POOL-001..003 on this branch + offline pool mirror) | integration | (this commit) | results/TASK-POOL-VERIFY-01.md |
 | TASK-001 | FAILED | agent-1 | — | — | results/TASK-001.md |
 | TASK-002 | SUCCESS | agent-2 | — | — | results/TASK-002.md |
@@ -97,3 +98,9 @@ mediator marks it `AVAILABLE`.
 - **ISSUE-021** — two engine tracks (`packages/reconstructed-engine/` prototype vs
   `packages/execution-engine/` Phase-3 reconstruction); consolidation decision is
   pre-Phase-3-exit and belongs to the orchestrator.
+- **Merge-ordering: Rust posture conflict (HIGH)** — PR #16 (POOL-005, 01a0aff7)
+  **deletes** all `.rs` from `crates/` (pre-Phase-3 posture), while PR #14/#17
+  **formally open Phase 3** (`cd32dcb4`) and keep 23–24 Rust files gated by E03/
+  Stage-2b. Phase 3 being open means #16's removal must yield: merge its JS/TS
+  POOL-005 work but rebase past `4fd6a7e0`/`809d9f05` onto a Phase-3-open base.
+  See MSG-22 in `docs/isolation/workflow-bus-outbox.json`.
