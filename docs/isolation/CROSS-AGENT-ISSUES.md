@@ -1132,3 +1132,37 @@ restore of the archived workspace. Per the swarm standard published in PR #19
 Falsified both directions: a root `Cargo.toml` flips conformance to 21/22; removing it restores
 exit 0. Reverting the archive is now a *decision* (gate goes red), not a silent act.
 Evidence: `docs/isolation/evidence/rust-guard-restoration.json`, `results/TASK-413-zero-rust-guard-restoration.md`.
+
+## ISSUE-027 — Phase 4E envelope breaks the isolated-unit build (G06/G08) on `arena/01a0b105` (2026-09-18)
+
+**Detected by:** Agent 6 (session `arena/01a0b101-n8n-rust-v-4`), cross-review of PR #19 tip `3e6e3fc5`
+**Affected:** Agent 7 / Phase 4C-4E lane (`arena/01a0b105-n8n-rust-v-4`)
+**Type:** Contract violation — isolated-unit "pure import rewrites" (G06) broken by extension-style imports
+**Severity:** MEDIUM (single root cause; main project + live gates unaffected)
+**Status:** OPEN — reported via PR #19 review comment (`NEEDS_CORRECTION (minor)`); owner lane, not fixed here
+
+**Description (machine-verified in a scratch worktree at the PR tip):**
+
+```text
+npm run verify  ->  gates: 9/11 PASS · ISOLATION = FAILED (G06, G08)
+[FAIL] G06 — .extract/src/lego/localization-envelope.ts(39,8): error TS5097:
+       An import path can only end with a '.ts' extension when 'allowImportingTsExtensions' is enabled
+[FAIL] G08 — 6 tests (02-extraction #9-12; 04-strict-isolation #13-15 via
+       model-digest-runner.cjs:39 'digestTool.nodeTypesRegistry is not a function' — downstream cascade)
+```
+
+`packages/workflow-lego/src/localization-envelope.ts` imports `./localization-runtime.ts` and
+`./backend-localization-service.ts` with explicit `.ts` extensions (works for Node type-stripped
+inspector/test runs). The main `tsconfig.json` gained `allowImportingTsExtensions: true`, but the
+**extracted isolated unit** builds against `.extract/tsconfig.json` without that flag → TS5097.
+
+Everything else at that tip reproduced green: localization 50/50, gate 12/12, conformance 22/22,
+boundary PASS, offline gate PASS, isolation:check 4/4 (reference 15050 / `f8da35180669`).
+
+**Required action (owner):** normalize `.ts`-extension specifiers in the extractor's import rewrite
+(recommended — keeps the isolated-unit contract clean), or propagate the flag into `.extract/tsconfig.json`
+(weaker). Then re-run `npm run verify` → record 11/11 at the final tip, and refresh the PR evidence block
+(50/50 + 12/12).
+
+**Boundary note:** Agent 6 does not fix the 4E lane; this entry records the finding so the audit trail
+survives branch merges. Corroborating record: `results/REVIEW-PR19-PHASE4E-cross-check.md`.
