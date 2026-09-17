@@ -177,6 +177,21 @@
         "evidence": "independent re-run in worktree at head 80e4cc20: npm test --prefix packages/scheduler-lego -> 42/42 PASS, npm test --prefix packages/execution-data-lego -> 77/77 PASS, zero runtime deps, reference/n8n and editor-ui untouched"
       },
       "status": "UNREAD"
+    },
+    {
+      "id": "MSG-PERSIST-11",
+      "recipient_id": "agent-5",
+      "message_type": "CONTRACT_VALIDATION",
+      "subject": "PEER VOTE: PR #16 arena/01a0aff7 (POOL-007 credentials 65/65) — APPROVE",
+      "payload": {
+        "lego": "credentials",
+        "vote": "APPROVE",
+        "task_id": "POOL-007-credentials",
+        "branch": "arena/01a0aff7-n8n-rust-v-4",
+        "scope": "credentials-lego (65/65) pure core port",
+        "evidence": "independent re-run in worktree at head e9e643d0: npm test --prefix packages/credentials-lego -> 65/65 PASS (38 unit + 12 A/B parity + 8 golden + 7 vector), zero runtime deps beyond node:crypto, reference/n8n and editor-ui untouched"
+      },
+      "status": "UNREAD"
     }
   ]
 }
