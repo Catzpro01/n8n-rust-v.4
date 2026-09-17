@@ -7,7 +7,7 @@
 | Reference | n8n 2.9.4, `packages/core/src/execution-engine/workflow-execute.ts`; `packages/workflow/src/{interfaces,node-helpers}.ts` |
 | Implementation | `packages/reconstructed-engine/src/error-recovery-policy.ts` (pure, dependency-free) |
 | Consumers | `packages/reconstructed-engine/runner.mjs` (legacy JS engine) · `src/execution-engine/workflow-execute.ts` (TS engine) |
-| Tests | unit `test/{error-recovery-policy,paired-item-provenance}.test.mjs` + engine `test/engine-error-recovery.test.mjs` — 32/32 PASS; TS integration `test/ts-error-recovery.integration.mjs` — 3/3 PASS (needs `npm --prefix packages/reconstructed-engine run emit:cjs`, skips automatically otherwise) |
+| Tests | unit `test/{error-recovery-policy,paired-item-provenance}.test.mjs` + engine `test/engine-error-recovery.test.mjs` — 34/34 PASS (32 milik LEGO ini + 2 dari session paralel); TS integration `test/ts-error-recovery.integration.mjs` — 3/3 PASS (needs `npm --prefix packages/reconstructed-engine run emit:cjs`, skips automatically otherwise) |
 | Status | TESTED — `typecheck` 0 errors (16/16 packages), `test-run.mjs` + `test-enhanced.mjs` green, `isolation:check` 4/4 PASS (reference source untouched) |
 
 ## 1. Purpose
@@ -106,7 +106,7 @@ splitErrorOutput(out, mainOutputCount, { resolver?, source?, connectionType? }) 
 
 ## 8. Verification
 ```bash
-npm --prefix packages/reconstructed-engine run test:unit   # 32 tests: retry/routing + provenance unit & JS engine
+npm --prefix packages/reconstructed-engine run test:unit   # 34 tests (32 LEGO ini + 2 paralel): retry/routing + provenance
 node packages/reconstructed-engine/test-run.mjs            # legacy regression demo -> VERIFIKASI BERHASIL
 node packages/reconstructed-engine/test-enhanced.mjs       # 14-LEGO integration -> VERIFIKASI BERHASIL
 npm --prefix packages/reconstructed-engine run typecheck   # 0 errors (16/16 paket LEGO hijau)

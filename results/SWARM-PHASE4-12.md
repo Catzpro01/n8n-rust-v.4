@@ -14,7 +14,7 @@
 | :--- | :--- | :--- |
 | `pre_task_review` (protokol #3) | ✓ SUCCESS — review PR #20 (vote APPROVE + 3 catatan) | `0` |
 | `write_file` | ✓ SUCCESS | `0` |
-| `run_unit_tests` | ✓ SUCCESS (32/32 PASS) | `0` |
+| `run_unit_tests` | ✓ SUCCESS (34/34 PASS — 32 LEGO ini + 2 session paralel) | `0` |
 | `run_typecheck` | ✓ SUCCESS (0 error; reconstructed-engine + 3 LEGO lain) | `0` |
 | `run_ts_integration` | ✓ SUCCESS (3/3 PASS) | `0` |
 | `run_regression_legacy_enhanced` | ✓ SUCCESS | `0` |
@@ -57,8 +57,8 @@ UBAH  README.md                                                    (jumlah tes)
 
 ```text
 $ npm --prefix packages/reconstructed-engine run test:unit
-# tests 32
-# pass 32
+# tests 34
+# pass 34
 # fail 0
 ```
 
@@ -90,7 +90,7 @@ penelusuran rantai leluhur secara rekursif, `sourceOverwrite`, pengecekan ambigu
 semantik fallback upstream “item dilewatkan apa adanya” bila source/`pairedItem` tidak ada atau
 penelusuran gagal (L2525-L2527, L2549-L2554). Kedua engine kini mengirim resolver + `source`,
 sehingga item yang gagal di cabang “Error” tetap membawa data asalnya
-(`{ ...jsonItemAsal, ...jsonError }`). Verifikasi: 32/32 unit+engine test, 3/3 integrasi engine TS
+(`{ ...jsonItemAsal, ...jsonError }`). Verifikasi: 34/34 unit+engine test (32 milik LEGO ini), 3/3 integrasi engine TS
 (termasuk asersi `userId: 42` ikut terbawa ke cabang error), typecheck 0 error, `verify:reconstructed`
 dan `isolation:check` 4/4 hijau, `reference/n8n/**` tidak tersentuh.
 
