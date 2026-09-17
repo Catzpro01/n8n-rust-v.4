@@ -37,7 +37,7 @@ classes, all of `constants.ts`) plus nine gates that compare it to the pinned re
 | `npm run verify:engine:offline` (oracle suppressed at the seam via `ENGINE_NO_RUNTIME=1`) | **117/117 pass**, and the transcript must *prove* the suppression (gate 08): `oracle equivalence NOT RUN` ×6 + host-dependent degradation lines |
 | `test/07-falsification` | control green; **22/22 mutations caught** (each re-runs the whole suite in a temp copy) |
 | `test/05-surface-coverage` | 0 undeclared gaps, 0 undeclared additions, 43/43 sandbox keys, 5/5 additional keys, 4/4 class hierarchies match |
-| `evidence/` (gate 08 audits it) | transcripts of both runs above at head `7196779e`, node v22.22.3, captured by `npm run verify:engine:evidence`; recorder refuses red runs |
+| `evidence/` (gate 08 audits it) | transcripts of both runs above, captured by `npm run verify:engine:evidence`; each header names the head it graded (`summary.json → head`, asserted to be a real commit) so this row never carries a stale sha, and the recorder refuses to write after a red run |
 
 ### Bugs this method found (and that a read-the-source review would not have)
 

@@ -1,7 +1,7 @@
 {
   "$comment": "Machine-readable companion to the transcripts in this directory, produced by test/helpers/capture-evidence.mjs (npm run verify:engine:evidence). Transcripts hold verdict lines only; these counts are what test/08-evidence asserts. Re-run after ANY change to fixtures/ or src/ — the gate fails when the hashes here stop matching the tree, which is the point.",
-  "capturedAt": "2026-09-17T19:35:58.882Z",
-  "head": "e1cd028e9445e44afec2b86dabd8321d0b4c9a76",
+  "capturedAt": "2026-09-17T20:13:15.852Z",
+  "head": "7adae1c8e2cd722a626475db10c23c33a414daf9",
   "branch": "arena/01a0aff7-n8n-rust-v-4",
   "node": "v22.22.3",
   "referenceRuntime": {
@@ -10,8 +10,8 @@
   },
   "artifacts": {
     "fixtures/data-proxy.golden.json": {
-      "sha256": "f57bee1ed0baa767df8e8b68d7255367f93ce18f210ba7aa41cc5293564c6163",
-      "bytes": 122530,
+      "sha256": "4a9d8d5b99dab03d4fb1a9198b888350c50e2cc40e8c6049112fc3a32a8eee64",
+      "bytes": 125283,
       "volatileKeysSkipped": [
         "$recordedAt",
         "capturedAt",
@@ -20,8 +20,8 @@
       ]
     },
     "fixtures/corpus.json": {
-      "sha256": "2e36b7fb852c78eb1b3e75aec4bd7e4c85e0329fcc258523d021b643f578a198",
-      "bytes": 61368,
+      "sha256": "dcc11a1f07fdfb898d1ec177b451ae53168af5adc3ce3b62625e6809a936b50e",
+      "bytes": 64826,
       "volatileKeysSkipped": [
         "$recordedAt",
         "capturedAt",
@@ -40,8 +40,8 @@
       ]
     },
     "manifest/port-surface.json": {
-      "sha256": "f028ba4b9f9dd1cd51affca951abcec66ea9b5f0e7b4798d790dd218efdb85a9",
-      "bytes": 30691,
+      "sha256": "c4f5560722549427e7ef4fb761744586edd729d9da852f0fc911f86f67106de1",
+      "bytes": 30762,
       "volatileKeysSkipped": [
         "$recordedAt",
         "capturedAt",
@@ -68,8 +68,8 @@
       "transcript": "evidence/POOL-002-R1-live.txt",
       "command": "bash scripts/run-engine-tests.sh",
       "counts": {
-        "tests": 108,
-        "pass": 108,
+        "tests": 117,
+        "pass": 117,
         "fail": 0,
         "skipped": 0
       },
@@ -80,8 +80,8 @@
       "transcript": "evidence/POOL-002-R1-offline.txt",
       "command": "ENGINE_NO_RUNTIME=1 ENGINE_ALLOW_NO_ORACLE=1 bash scripts/run-engine-tests.sh",
       "counts": {
-        "tests": 108,
-        "pass": 108,
+        "tests": 117,
+        "pass": 117,
         "fail": 0,
         "skipped": 0
       },
