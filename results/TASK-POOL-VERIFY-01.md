@@ -4,7 +4,7 @@
 - **AGENT**: `arena/01a0afff-n8n-rust-v-4`
 - **LEGO COMPONENT**: `integration` (verification of the execution LEGO)
 - **EXIT CODE**: `0`
-- **TIMESTAMP**: `2026-09-17 15:40:39 UTC`
+- **TIMESTAMP**: `2026-09-17 17:15:17 UTC` (gate evidence generated 2026-09-17T15:40:39Z)
 
 ---
 
@@ -52,5 +52,17 @@ Gate evidence (fresh, this run): `docs/isolation/evidence/execution-engine-gate.
 - Pre-task review sweep: no in-repo task had a pending-review result requiring a
   worker vote; vote recording itself remains impossible offline (ISSUE-019), now
   mitigated by `tasks/pool-mirror.md`.
+- Post-task review sweep (completed): two open PRs were independently re-run and voted:
+  - **PR #15** (arena/01a0aff6, POOL-004 + TASK-401): APPROVE — 57/57 persistence suite,
+    G01–G10 10/10, offline stages of `run_gate.sh` all PASS, reference/editor-ui diffs
+    empty (live 11/11 accepted as recorded evidence — not reproducible in-sandbox).
+    Vote **posted as GitHub PR review comment**.
+  - **PR #14** (arena/01a0aff8, execution LEGO): APPROVE — full gate set re-executed on
+    top of its tip (8/8 + 21/21 + reference integrity). Vote recorded in-repo as
+    `workflow-bus-outbox.json` MSG-20; GitHub posting **pending** — the sandbox token
+    expired mid-session (401); body preserved verbatim in
+    `results/PR-14-review-pending-post.md` for re-post.
+- Both votes also recorded in `docs/isolation/workflow-bus-outbox.json` (MSG-20, MSG-21)
+  per the repo's outbox convention (transport NOT_DELIVERED — ISSUE-019).
 - Post-task queue: remaining actionable items are orchestrator-class (ISSUE-021 engine
   consolidation; Phase-3 caveat C1 VPS re-run from TASK-305 verdict).
