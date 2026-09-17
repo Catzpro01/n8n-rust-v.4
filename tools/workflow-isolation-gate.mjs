@@ -28,6 +28,8 @@ function findRuntime() {
 	const candidates = [
 		process.env.LEGO_LIVE_RUNTIME,
 		join(REPO, '.runtime/node_modules'),
+		join(REPO, 'packages/workflow-lego/node_modules'),
+		join(REPO, 'node_modules'),
 		'/home/user/.n8n-live/node_modules',
 	].filter(Boolean);
 	for (const dir of candidates) {

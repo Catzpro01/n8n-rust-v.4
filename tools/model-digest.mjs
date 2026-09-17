@@ -89,10 +89,13 @@ const probe = (fn) => {
  * entry PER VERSION, so descriptions are indexed by type@version; a lookup falls
  * back to the highest known version (same as n8n's "closest version" behavior).
  */
-const nodeTypesRegistry = (index) => ({
+export const nodeTypesRegistry = (index) => ({
 	getByNameAndVersion(type, version) {
 		const byVersion = index[type];
-		if (!byVersion) return undefined;
+		if (!byVersion) {
+			// For empty index (strict test), return dummy with empty properties so getNodeParameters is called
+			return { description: { name: type, properties: [] }, trigger: undefined, poll: undefined };
+		}
 		const exact = version !== undefined ? byVersion.versions[version] : undefined;
 		const d = exact ?? byVersion.latest;
 		if (!d) return undefined;

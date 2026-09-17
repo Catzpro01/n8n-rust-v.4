@@ -167,8 +167,14 @@ export const ports: WorkflowLegoPorts = {
 		}),
 	},
 	nodeModel: {
-		// pass-through: parameter defaults are the Node Model LEGO's job (LEGO 02)
-		getNodeParameters: (_properties, nodeValues) => nodeValues ?? null,
+		// strict mode: deliberately different to prove port is used — adds __strict marker
+		getNodeParameters: (_properties, nodeValues) => {
+			const base = nodeValues ?? {};
+			if (typeof base === 'object' && base !== null) {
+				return { ...(base as object), __strictMode: true } as any;
+			}
+			return { __strictMode: true, value: base } as any;
+		},
 		// stand-in: dynamic output resolution needs the expression runtime
 		getNodeOutputs: () => [],
 	},

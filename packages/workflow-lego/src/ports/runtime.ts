@@ -50,5 +50,17 @@ export function referencePackage(): string {
 /** require() rooted at the reference runtime package. */
 export function referenceRequire(): NodeRequire {
 	const pkg = referencePackage();
-	return createRequire(join(pkg, 'package.json'));
+	try {
+		// Try to resolve as package
+		const resolved = require.resolve(`${pkg}/package.json`);
+		return createRequire(resolved);
+	} catch {
+		// Fallback: if pkg is already absolute or relative path
+		try {
+			return createRequire(join(pkg, 'package.json'));
+		} catch {
+			// Last fallback: use current file as base and require the package
+			return createRequire(__filename);
+		}
+	}
 }

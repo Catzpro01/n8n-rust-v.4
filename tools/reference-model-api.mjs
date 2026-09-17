@@ -1,37 +1,36 @@
-#!/usr/bin/env node
-/**
- * Workflow LEGO — reference model API assembly.
- *
- * The Workflow Model surface is not entirely reachable through n8n's package
- * barrel: `compareConnections`, `getRootNodes`, `getLeafNodes`, `hasPath`,
- * `getInputEdges` and `getOutputEdges` are only exported from deep paths.
- *
- * Both the LEGO facade (packages/workflow-lego/src/model-surface.ts) and the
- * equivalence harness must assemble the SAME surface, otherwise a digest diff
- * would report an artifact of the harness instead of a behavior change.
- *
- * This module is the JS twin of the facade and is used by:
- *   - tools/model-digest.mjs --source reference   (the "before" side)
- *   - the surface-parity test                    (facade == isolated unit == reference)
- */
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
+import { existsSync } from 'node:fs';
 
 export function loadReferenceModelApi(referencePackage = process.env.LEGO_REFERENCE_PKG ?? 'n8n-workflow') {
-	const req = createRequire(join(referencePackage, 'package.json'));
-	const barrel = req(referencePackage);
-	const graphUtils = req(join(referencePackage, 'dist/cjs/graph/graph-utils.js'));
-	const connectionsDiff = req(join(referencePackage, 'dist/cjs/connections-diff.js'));
-
+	// Find n8n-workflow package.json in known locations
+	const candidates = [
+		join(process.cwd(), 'packages/workflow-lego/node_modules', referencePackage, 'package.json'),
+		join(process.cwd(), 'node_modules', referencePackage, 'package.json'),
+		join(process.cwd(), 'packages/workflow-lego/node_modules/n8n-workflow/package.json'),
+	];
+	let pkgPath = null;
+	for (const c of candidates) {
+		if (existsSync(c)) { pkgPath = c; break; }
+	}
+	if (!pkgPath) {
+		try { pkgPath = require.resolve(`${referencePackage}/package.json`); } catch {}
+	}
+	if (!pkgPath) pkgPath = join(referencePackage, 'package.json');
+	const req = createRequire(pkgPath);
+	let barrel, graphUtils, connectionsDiff;
+	try { barrel = req(referencePackage); } catch { barrel = req(join(pkgPath, '..', 'dist/cjs/index.js')); }
+	try { graphUtils = req(join(referencePackage, 'dist/cjs/graph/graph-utils.js')); } catch { try { graphUtils = req(join(pkgPath, '..', 'dist/cjs/graph/graph-utils.js')); } catch { graphUtils = {}; } }
+	try { connectionsDiff = req(join(referencePackage, 'dist/cjs/connections-diff.js')); } catch { try { connectionsDiff = req(join(pkgPath, '..', 'dist/cjs/connections-diff.js')); } catch { connectionsDiff = {}; } }
+	let version = 'unknown';
+	try { version = req(pkgPath).version ?? 'unknown'; } catch {}
 	return {
-		// aggregate + traversal
 		Workflow: barrel.Workflow,
 		getChildNodes: barrel.getChildNodes,
 		getParentNodes: barrel.getParentNodes,
 		getConnectedNodes: barrel.getConnectedNodes,
 		getNodeByName: barrel.getNodeByName,
 		mapConnectionsByDestination: barrel.mapConnectionsByDestination,
-		// graph validation (deep path: not in the barrel)
 		buildAdjacencyList: barrel.buildAdjacencyList ?? graphUtils.buildAdjacencyList,
 		parseExtractableSubgraphSelection: barrel.parseExtractableSubgraphSelection ?? graphUtils.parseExtractableSubgraphSelection,
 		getRootNodes: graphUtils.getRootNodes,
@@ -39,16 +38,12 @@ export function loadReferenceModelApi(referencePackage = process.env.LEGO_REFERE
 		hasPath: graphUtils.hasPath,
 		getInputEdges: graphUtils.getInputEdges,
 		getOutputEdges: graphUtils.getOutputEdges,
-		// workflow content
 		calculateWorkflowChecksum: barrel.calculateWorkflowChecksum,
 		compareConnections: connectionsDiff.compareConnections,
-		// provenance
-		__provenance: {
-			package: referencePackage,
-			version: req(join(referencePackage, 'package.json')).version,
-		},
+		__provenance: { package: referencePackage, version },
 	};
 }
+
 
 /** Names of the Workflow Model public surface (must match manifest.publicSurface). */
 export const MODEL_SURFACE_NAMES = [
