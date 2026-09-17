@@ -1,13 +1,19 @@
 # TASK RESULT: TASK-404-phase3-opening
 
 - **STATUS**: `SUCCESS`
-- **AGENT**: `agent-1` (port owner continuation)
-- **LEGO COMPONENT**: `workflow`, `connection`, `validation`
-- **BRANCH**: `arena/01a0ace4-n8n-rust-v-4`
-- **TIMESTAMP**: `2026-09-17 UTC`
+- **PEKERJA**: `agent-1` (branch `arena/01a0ace4-n8n-rust-v-4`, commit `ebbfa593`)
+- **PERAN SESAAT (ROLE)**: Rust port owner — Workflow/Connection/Validation LEGOs (Phase 3)
+- **RINGKASAN INTI**: Phase 3 dibuka formal lewat `docs/isolation/PHASE-3-OPENING.md`; kedua guard gate dibuat phase-aware dan di-meta-test dua arah. Semantik `disabled` di-porting setia (`get_highest_node` dengan asimetri D-04, `getStartNode` lengkap), `INVALID_CONNECTION_TYPE` ditambahkan (4/4 kode kontrak), fixture `04-disabled-node` + `05-cyclic-invalid` kini dikonsumsi tes Rust, dan conformance tests tidak lagi silent-skip. Rig offline diperluas (indexmap/regex) dan `cargo test` diikat ke gate (Stage 2b).
+- **BUKTI MESIN (EVIDENCE)**:
+  - `cargo test --workspace` (via `tools/rust-offline-rig`) → **45 passed / 0 failed**
+  - `bash tests/integration/run_gate.sh --offline-only` → conformance **21/21**, boundary **PASS**, `RUST CARGO TEST: PASS`, live **NOT RUN** → `INCONCLUSIVE` (exit 2)
+  - `node tools/workflow-reference-manifest.mjs --check` → `PASS (15050 files, root f8da35180669d798…)`
+  - Meta-test guard: record dihapus → `PHASE VIOLATION: Rust introduced during Phase 2`; tes reference dibuang → `Phase 3 open but NO Rust test consumes tests/reference/**`
 
-> Written against ISSUE-018's finding: every row below is a command that actually ran in this
-> session, with its outcome. No operation in this table is asserted without having been executed.
+---
+
+> Format di bawah ditulis sebelum STANDING-WORKER-PROTOCOL; dipertahankan sebagai bukti
+> operasi. Setiap baris adalah perintah yang benar-benar dijalankan pada sesi tersebut.
 
 ---
 

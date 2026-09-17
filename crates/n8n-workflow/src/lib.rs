@@ -47,7 +47,29 @@ pub use ordered::OrderedMap;
 pub use rename::{is_restricted_node_name, WorkflowError};
 pub use traversal::{get_connected_nodes, ConnectionTypeFilter};
 
+use serde::Serialize;
 use serde_json::{json, Map, Value};
+use std::collections::{HashMap, HashSet, VecDeque};
+
+/// Result of `getNodeConnectionIndexes` (`workflow.ts:793-798`). Field names are the wire
+/// names of the reference (`sourceIndex` / `destinationIndex`).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct NodeConnectionIndexes {
+    #[serde(rename = "sourceIndex")]
+    pub source_index: usize,
+    #[serde(rename = "destinationIndex")]
+    pub destination_index: usize,
+}
+
+/// `IConnectedNode` (`interfaces.ts`) — the reference's misspelled field `indicies`
+/// is reproduced verbatim, including the JSON serialization order `name, indicies, depth`
+/// (pinned by the `getParentNodesByDepth` probes).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct IConnectedNode {
+    pub name: String,
+    pub indicies: Vec<usize>,
+    pub depth: u32,
+}
 
 /// The reference keeps settings as an open bag (`IWorkflowSettings` plus unknown keys that are
 /// passed through untouched — language-server additions, `executionOrder`, …), so the port keeps
@@ -359,6 +381,147 @@ impl Workflow {
         }
 
         return_nodes
+    }
+
+    /// Port of `getNodeConnectionIndexes(nodeName, parentNodeName, type = 'main')`
+    /// (`workflow.ts:746-807`). BFS **upward** over the destination map; returns
+    /// `{ sourceIndex, destinationIndex }` where `sourceIndex` is the edge's stored
+    /// source-output index and `destinationIndex` is the edge's *position inside the
+    /// destination slot* — NOT the slot (input) index (see the probe pins in
+    /// `tests/reference/connection/02`: `IF -> B` → `{1, 0}`).
+    pub fn get_node_connection_indexes(
+        &self,
+        node_name: &str,
+        parent_node_name: &str,
+        connection_type: &str,
+    ) -> Option<NodeConnectionIndexes> {
+        // `workflow.ts:750-754` — unknown parent → undefined.
+        if self.get_node(parent_node_name).is_none() {
+            return None;
+        }
+
+        let mut visited_nodes: HashSet<String> = HashSet::new();
+        let mut queue: VecDeque<String> = VecDeque::new();
+        queue.push_back(node_name.to_string());
+
+        while let Some(current_node_name) = queue.pop_front() {
+            if visited_nodes.contains(&current_node_name) {
+                continue;
+            }
+            visited_nodes.insert(current_node_name.clone());
+
+            let Some(type_connections) = self
+                .connections_by_destination_node
+                .get(&current_node_name)
+                .and_then(|outputs| outputs.get(connection_type))
+            else {
+                continue;
+            };
+
+            for slot in type_connections {
+                let Some(connections_by_index) = slot else {
+                    continue;
+                };
+                for (destination_index, connection) in connections_by_index.iter().enumerate() {
+                    if parent_node_name == connection.node {
+                        return Some(NodeConnectionIndexes {
+                            source_index: connection.index,
+                            destination_index,
+                        });
+                    }
+                    if !visited_nodes.contains(&connection.node) {
+                        queue.push_back(connection.node.clone());
+                    }
+                }
+            }
+        }
+
+        None
+    }
+
+    /// Port of `getParentNodesByDepth(nodeName, maxDepth = -1)` → `searchNodesBFS`
+    /// (`workflow.ts:620-685`): BFS by depth levels over the **destination** map, `main` only.
+    /// A node reached again later is NOT re-emitted; the new indices are merged (deduped,
+    /// first-occurrence order) into the **already-emitted** object — pinned by the probe
+    /// `parents by depth of Merge` → `IF` carries `indicies: [1, 0]` at depth 1.
+    /// The source node itself is never emitted.
+    pub fn get_parent_nodes_by_depth(&self, node_name: &str, max_depth: i32) -> Vec<IConnectedNode> {
+        // `visited` mirrors the JS object: name → (emitted depth, merged indices).
+        let mut visited: HashMap<String, (u32, Vec<usize>)> = HashMap::new();
+        let mut emission_order: Vec<String> = Vec::new();
+
+        // JS queue entries carry their own `indicies` AND their own `depth` — a node is
+        // emitted with the depth attached when it was PUSHED (the level of its parent's
+        // expansion), not the loop level at which it is dequeued. A re-visit merges.
+        let mut queue: Vec<(String, Vec<usize>, u32)> = vec![(node_name.to_string(), Vec::new(), 0)];
+
+        let mut depth: i32 = 0;
+        while !queue.is_empty() {
+            if max_depth != -1 && depth > max_depth {
+                break;
+            }
+            depth += 1;
+
+            let to_add = std::mem::take(&mut queue);
+            for (name, indicies, entry_depth) in to_add {
+                if let Some((_, existing)) = visited.get_mut(&name) {
+                    // Merge into the ALREADY-EMITTED object: dedupe(concat), first-occurrence
+                    // order preserved (`dedupe` in the reference is `[...new Set(...)]`).
+                    for index in indicies {
+                        if !existing.contains(&index) {
+                            existing.push(index);
+                        }
+                    }
+                    continue;
+                }
+
+                let is_source = name == node_name;
+                visited.insert(name.clone(), (entry_depth, indicies.clone()));
+                if !is_source {
+                    emission_order.push(name.clone());
+                }
+
+                let Some(lists) = self
+                    .connections_by_destination_node
+                    .get(&name)
+                    .and_then(|outputs| outputs.get("main"))
+                else {
+                    continue;
+                };
+                for slot in lists {
+                    let Some(connections) = slot else { continue };
+                    for connection in connections {
+                        queue.push((connection.node.clone(), vec![connection.index], depth as u32));
+                    }
+                }
+            }
+        }
+
+        emission_order
+            .into_iter()
+            .map(|name| {
+                let (depth, indicies) = &visited[&name];
+                IConnectedNode {
+                    name,
+                    indicies: indicies.clone(),
+                    depth: *depth,
+                }
+            })
+            .collect()
+    }
+
+    /// Port of `getParentMainInputNode(node)` (`workflow.ts:687-743`).
+    ///
+    /// Divergence (needs the node-type registry, CD-05 / Agent 2): the reference resolves the
+    /// node's declared outputs and, when non-`main` outputs exist, climbs from the first
+    /// connected sub-node. The Workflow port owns no registry, so — exactly like the reference
+    /// test harness stub (`tests/reference/harness/connection.js`, every node declares
+    /// `outputs: ['main']`) — every node is treated as having only a `main` output and the
+    /// pinned early-return path applies: the node is its own parent-main-input node.
+    pub fn get_parent_main_input_node(&self, node_name: &str) -> Option<&INode> {
+        // With the stub semantics (`outputs: ['main']`) `nonMainConnectionTypes` is always
+        // empty and the reference returns the node itself (`workflow.ts:742`).
+        self.get_node(node_name)
     }
 
     pub fn get_timezone(&self) -> &str {

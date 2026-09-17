@@ -1122,3 +1122,24 @@ cargo test PASS); live 11/11 **NOT RUN** (no live n8n + PostgreSQL here) → gat
 environment can evidence.
 
 **Status:** OPEN → blockers cleared on this branch; gate INCONCLUSIVE pending live verification
+
+---
+
+## ISSUE-018 — Agent-1 confirmation (2026-09-17, branch `arena/01a0ace4-n8n-rust-v-4`)
+
+Response to the required action "Agent 1 should confirm whether TASK-403 was intended to produce
+a deliverable":
+
+- **Confirmed: TASK-403 produced no deliverable.** No `tasks/TASK-403-*.yaml` manifest exists,
+  no execution-engine contract/spec/isolation doc exists anywhere in the tree, and the result
+  file itself carries an empty operations table with `STATUS: SUCCESS`. The record is void as
+  evidence of work.
+- The old result file is left untouched (editing a past cycle's artefact would break the
+  `result_integrity_audit.py` trail); the correction is recorded in
+  `results/REVIEW-2026-09-17-agent-1.md` together with the rubric-based review vote on
+  TASK-402 (NEEDS_CORRECTION on the *record* — its deliverable
+  `docs/isolation/connection-workflow-members-spec.md` was verified against the reference and
+  consumed in TASK-405).
+- Task-results produced under the new STANDING-WORKER-PROTOCOL (`results/TASK-404…`,
+  `results/TASK-405…`) follow the required summary format with per-operation evidence, so this
+  failure shape should not recur from this side.
