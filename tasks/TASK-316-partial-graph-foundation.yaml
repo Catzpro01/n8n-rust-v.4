@@ -1,0 +1,78 @@
+id: TASK-316-partial-graph-foundation
+agent: arena-worker (session arena/01a0aee7-n8n-rust-v-4)
+lego: workflow
+module: reconstructed-engine
+phase: 2
+
+# Tenth self-assigned task of this session (STANDING-WORKER-PROTOCOL §2 non-blocking).
+# dynamic_task_pool still unreachable (Supabase -> curl HTTP 000; api.github.com -> 200), so no pool
+# read and no vote — recorded here rather than skipped silently.
+
+trigger: >
+  Partial execution ("Execute step" / "Execute to node" in the editor UI) is driven by
+  `runPartialWorkflow2` (workflow-execute.ts:197-317), which is built entirely on a second graph
+  representation: `DirectedGraph`, plus `filterDisabledNodes` and `findSubgraph`. None of it existed
+  in the reconstruction, and rule 5 requires the UI's functions to work against the reconstructed
+  backend. This task lays that foundation — the remaining steps (findStartNodes, cleanRunData,
+  handleCycles, recreateNodeExecutionStack, findTriggerForPartialExecution, rewireGraph) build on it
+  and are the next slice.
+
+allowed_paths:
+  - packages/reconstructed-engine/**
+  - contracts/execution-engine.contract.md
+  - tasks/TASK-316-partial-graph-foundation.yaml
+  - results/TASK-316-partial-graph-foundation.md
+  - docs/isolation/evidence/**        # rewritten by npm run verify, tracked by design
+
+forbidden_paths:
+  - reference/n8n/**                  # read-only; gate G04 re-verifies 15050 files
+  - crates/**
+  - apps/**
+  - packages/workflow-lego/src/**
+  - packages/editor-ui/**             # rule 5: the UI stays untouched
+
+operations:
+  - name: port_DirectedGraph
+    args:
+      file: packages/reconstructed-engine/partial.mjs
+      reference: "partial-execution-utils/directed-graph.ts:39-566"
+      note: "identity-based semantics kept verbatim (connection.to === node, nodes.get(name) === node, assert.ok guards)"
+  - name: port_filterDisabledNodes
+    args: { reference: "partial-execution-utils/filter-disabled-nodes.ts:5-18" }
+  - name: port_findSubgraph
+    args: { reference: "partial-execution-utils/find-subgraph.ts:6-120" }
+  - name: extend_contract
+    args:
+      guarantees: [G26]
+      surface: "§2 partialGraphModule block (exports, class methods, statics, deliberatelyOmitted)"
+  - name: extend_conformance_scan
+    args:
+      detail: "partial.mjs added to the citation scan; three partial-execution reference files registered"
+
+verification:
+  port_equivalence: >
+    partial-equivalence.test.mjs runs every fixture through BOTH the port and the real n8n-core 2.9.1
+    implementation and compares: class surface, fromNodesAndConnections, fromWorkflow (real Workflow
+    instances), direct children/parents, getChildren, getParentConnections, depthFirstSearch (every
+    node pair), getStronglyConnectedComponents (Tarjan), removeNode (3 option variants x every node
+    x every fixture), filterDisabledNodes, and findSubgraph (> 50 destination/trigger pairs asserted).
+  engine_suite: "npm run engine:test -> 100 tests, 100 pass, 0 skipped, exit 0 (66 unit + 4 graph + 14 real engine + 8 partial-graph + 8 contract)"
+  negative_controls:
+    - "filterDisabledNodes without skipConnectionFn -> not ok 7 (7/8); restored -> 8/8"
+    - "findSubgraph following non-main parents -> not ok 8 (7/8); restored -> 8/8"
+    - "contract declaring a smaller partial surface -> not ok 3 (7/8); restored -> 8/8"
+  findings:
+    - "findSubgraph/destination/trigger MUST come from the same graph instance — both the reference and the port look nodes up by object identity and assert they exist; my first fixture built three separate graphs and the port threw exactly where the reference would"
+    - "the ported class surface matches the real DirectedGraph exactly except toWorkflow, which builds a Workflow instance (Workflow LEGO territory) and is declared deliberatelyOmitted"
+  central_harness: "contract_conformance.mjs -> 22/22 exit 0"
+  offline_gate: "run_gate.sh --offline-only -> stages 1-3 PASS (22/22, AUDIT PASS, 100/100), live NOT RUN -> INCONCLUSIVE"
+  lego_gate: "npm run verify -> 11/11 PASS, BEHAVIOR CHANGE: NONE DETECTED"
+  rust_guard: "npm run rust:guard -> exit 0"
+  legacy_demo: "node packages/reconstructed-engine/test-run.mjs -> exit 0"
+
+merge_condition:
+  - engine_suite_pass
+  - port_equivalence_pass
+  - negative_controls_pass
+  - no_reference_change
+  - no_ui_change

@@ -47,6 +47,7 @@ function stripComments(source) {
 
 const runnerSource = readFileSync(join(PKG, 'runner.mjs'), 'utf8');
 const graphSource = readFileSync(join(PKG, 'graph.mjs'), 'utf8');
+const partialSource = readFileSync(join(PKG, 'partial.mjs'), 'utf8');
 
 test('contract: the document exists and carries every required section', () => {
 	assert.ok(existsSync(CONTRACT), 'contracts/execution-engine.contract.md is missing');
@@ -93,6 +94,43 @@ test('contract §2: the exported surface matches the implementation exactly', ()
 		Object.getOwnPropertyDescriptor(proto, 'executionOrder')?.get !== undefined,
 		'executionOrder must stay an accessor',
 	);
+});
+
+test('contract §2: the partial-graph module surface matches partial.mjs', { timeout: 30000 }, async () => {
+	const declared = contractBlock('SURFACE').partialGraphModule;
+	assert.ok(declared, 'the contract must declare the partial-graph module surface');
+
+	const actual = await import('../partial.mjs');
+
+	// exports
+	assert.deepEqual(
+		Object.keys(actual).sort(),
+		[...declared.exports].sort(),
+		'contract §2 partialGraphModule.exports drifted from partial.mjs',
+	);
+
+	// class surface: the port is allowed to omit only what the contract says it omits
+	const actualMethods = Object.getOwnPropertyNames(actual.DirectedGraph.prototype).filter(
+		(name) => name !== 'constructor',
+	);
+	const actualStatics = Object.getOwnPropertyNames(actual.DirectedGraph).filter(
+		(name) => !['length', 'name', 'prototype'].includes(name),
+	);
+	assert.deepEqual(
+		actualMethods.sort(),
+		[...declared.directedGraphMethods].sort(),
+		'contract §2 directedGraphMethods drifted from the implementation',
+	);
+	assert.deepEqual(
+		actualStatics.sort(),
+		[...declared.directedGraphStatics].sort(),
+		'contract §2 directedGraphStatics drifted from the implementation',
+	);
+
+	// what the contract says is omitted really is
+	for (const name of declared.deliberatelyOmitted) {
+		assert.equal(actual.DirectedGraph.prototype[name], undefined, `${name} must stay unimplemented`);
+	}
 });
 
 test('contract §3: the result shape matches what runWorkflow actually returns', async () => {
@@ -181,10 +219,20 @@ test('contract §8: every provenance citation points at real lines in reference/
 		'run-execution-data-factory.ts': 'packages/workflow/src/run-execution-data-factory.ts',
 		'base-execute-context.ts':
 			'packages/core/src/execution-engine/node-execution-context/base-execute-context.ts',
+		'directed-graph.ts':
+			'packages/core/src/execution-engine/partial-execution-utils/directed-graph.ts',
+		'filter-disabled-nodes.ts':
+			'packages/core/src/execution-engine/partial-execution-utils/filter-disabled-nodes.ts',
+		'find-subgraph.ts':
+			'packages/core/src/execution-engine/partial-execution-utils/find-subgraph.ts',
 	};
 
 	const citation = /([a-z-]+\.ts):(\d+)(?:-(\d+))?/g;
-	const sources = { 'runner.mjs': runnerSource, 'graph.mjs': graphSource };
+	const sources = {
+		'runner.mjs': runnerSource,
+		'graph.mjs': graphSource,
+		'partial.mjs': partialSource,
+	};
 	const lineCounts = new Map();
 	const unknown = [];
 	const outOfRange = [];
