@@ -100,6 +100,7 @@ asserts that confinement.
 | `TASK-412-phase3-node-parameter-issues` | node (field-type validation + issues engine) | `contracts/node.contract.md` §12 ✅ | `docs/isolation/node.md` §5 ✅ | `packages/node-lego/test/parameter-issues.test.mjs` 8/8 ✅ | `tools/node-lego-gate.mjs` 7/7 ✅ | **SUBMITTED_FOR_REVIEW** (concurrent landing — consolidated into TASK-413, ISSUE-026) |
 | `TASK-413-phase3-node-parameter-issues` | node (field-type validation + issues engine, full surface) | `contracts/node.contract.md` §12 ✅ | `docs/isolation/node.md` §5 ✅ | `packages/node-lego/test/node-model.test.mjs` 74/74 ✅ + `parameter-issues.test.mjs` 8/8 ✅ (N19/N20/N21/N22 = 1107 new differential comparisons) | `tools/node-lego-gate.mjs` 7/7 ✅ (`N05` differential 1422 agree / 0 diverge) | **SUBMITTED_FOR_REVIEW** |
 | `TASK-414-phase3-node-filter-execution` | node (filter execution, webhook paths, cron options) | `contracts/node.contract.md` §12 ✅ | `docs/isolation/node.md` §5 ✅ | `packages/node-lego/test/filter-execution.test.mjs` 11/11 ✅ (N23/N24 = 181 new differential comparisons) | `tools/node-lego-gate.mjs` 7/7 ✅ (`N05` differential 1609 agree / 0 diverge) | **SUBMITTED_FOR_REVIEW** |
+| `TASK-415-phase3-validation-lego` | validation (LEGO 04) | `contracts/validation.contract.md` ✅ | `docs/isolation/validation.md` ✅ | `packages/validation-lego/test/conformance.test.mjs` 20/20 ✅ (Golden cases A/B/C/D, parity with n8n-workflow, 2 negative controls) | `contract_conformance` 42/42 ✅ · `boundary_audit` PASS ✅ | **VERIFIED** |
 
 | Phase 3 gate | Result |
 | :--- | :--- |
