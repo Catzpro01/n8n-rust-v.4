@@ -1,9 +1,9 @@
 {
-	"generatedAt": "2026-09-17T15:34:25.252Z",
+	"generatedAt": "2026-09-17T15:34:48.634Z",
 	"lego": "execution",
 	"phase": "phase-3-reconstruction",
 	"language": "JavaScript (Node.js ESM)",
-	"rustImplementation": "NOT ALLOWED / NOT STARTED",
+	"rustImplementation": "NONE via this LEGO (JavaScript track); Phase-3 port track confined to crates/** + apps/**",
 	"package": "packages/execution-engine",
 	"contract": "contracts/execution.contract.md",
 	"reference": {
@@ -35,14 +35,14 @@
 			"title": "Rust confinement: Rust only under crates/** + apps/**, this package contributes none",
 			"status": "PASS",
 			"detail": "23 Rust files repo-wide, all inside crates/**+apps/**; workspace digest a8dbef89767c8157040f61c4477bd1b6 (24 files); package contributes 0",
-			"ms": 68
+			"ms": 106
 		},
 		{
 			"id": "E04",
 			"title": "reference/n8n tree still matches the pinned hashes",
 			"status": "PASS",
 			"detail": "Reference integrity check: PASS (15050 files, root f8da35180669d798…)",
-			"ms": 482
+			"ms": 600
 		},
 		{
 			"id": "E05",
@@ -58,7 +58,7 @@
 			"requirement": "packages/execution-engine/test/02-node-context-data-proxy.test.mjs",
 			"status": "PASS",
 			"detail": "7 pass / 0 fail",
-			"ms": 112
+			"ms": 143
 		},
 		{
 			"id": "E07",
@@ -66,14 +66,14 @@
 			"requirement": "packages/execution-engine/test/03-error-retry.test.mjs",
 			"status": "PASS",
 			"detail": "11 pass / 0 fail",
-			"ms": 129
+			"ms": 166
 		},
 		{
 			"id": "E08",
 			"title": "public surface is documented in contracts/execution.contract.md",
 			"status": "PASS",
 			"detail": "48 exported symbols documented",
-			"ms": 0
+			"ms": 1
 		}
 	],
 	"totals": {

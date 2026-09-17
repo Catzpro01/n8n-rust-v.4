@@ -209,7 +209,7 @@ const report = {
 	lego: 'execution',
 	phase: 'phase-3-reconstruction',
 	language: 'JavaScript (Node.js ESM)',
-	rustImplementation: 'NOT ALLOWED / NOT STARTED',
+	rustImplementation: 'NONE via this LEGO (JavaScript track); Phase-3 port track confined to crates/** + apps/**',
 	package: 'packages/execution-engine',
 	contract: 'contracts/execution.contract.md',
 	reference: {
