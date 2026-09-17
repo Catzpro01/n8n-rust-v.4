@@ -130,6 +130,14 @@ else:
         problems.append(f"inputs changed since {recorded[:8]} — re-run: npm run verify")
     if git.get("dirtyInputs"):
         problems.append(f"uncommitted changes in gate inputs: {git['dirtyInputs'][:3]}")
+    # dirtyInputs is what the tree looked like when the report was WRITTEN. Check the tree as
+    # it is NOW too, or an edit made after the run is accepted as fresh evidence.
+    now_dirty = subprocess.run(
+        ["git", "status", "--porcelain", "--", *paths], capture_output=True, text=True
+    ).stdout.strip()
+    if now_dirty:
+        first = [ln.strip() for ln in now_dirty.splitlines()[:3]]
+        problems.append(f"gate inputs have uncommitted changes now: {first}")
 
 if problems:
     print("STALE/FAILED (" + "; ".join(problems) + ")")
