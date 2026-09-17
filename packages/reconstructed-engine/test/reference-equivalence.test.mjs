@@ -102,7 +102,7 @@ async function loadReference() {
 	);
 
 	referenceApi = {
-		async run(json) {
+		async run(json, { additionalData: addExtra = {} } = {}) {
 			const registry = {
 				getByNameAndVersion(type, version) {
 					const entry = resolveEntry(type);
@@ -119,22 +119,36 @@ async function loadReference() {
 				nodeTypes: registry,
 				settings: json.settings ?? { executionOrder: 'v1' },
 			});
-			const execute = new core.WorkflowExecute(additionalData, 'manual');
-			const run = await execute.run({ workflow, startNode: workflow.getStartNode() });
-			return run.data.resultData;
+			const execute = new core.WorkflowExecute({ ...additionalData, ...addExtra }, 'manual');
+			// pinData belongs on run(), not on the Workflow (workflow-execute.ts:123-130, :182)
+			const run = await execute.run({
+				workflow,
+				startNode: workflow.getStartNode(),
+				pinData: json.pinData,
+			});
+			return { resultData: run.data.resultData, status: run.status };
 		},
 	};
 	return referenceApi;
 }
 
 /* ---------- reconstructed side: identical node behaviour -------------- */
-function reconstructedRun(json) {
+function reconstructedRun(json, { options = {} } = {}) {
 	const engine = new WorkflowExecutionEngine(json);
 	engine.registerNodeType('n8n-nodes-base.manualTrigger', async () => [{ json: {} }]);
 	engine.registerNodeType('n8n-nodes-base.set', async () => [{ json: { status: 'ok', count: 42 } }]);
 	engine.registerNodeType('n8n-nodes-base.noOp', async (_n, items) => items);
-	return engine.runWorkflow();
+	// Limit v1 keeps the first `maxItems` items — the fixture uses maxItems: 0 to produce an
+	// empty output deterministically, which is what the alwaysOutputData case needs.
+	engine.registerNodeType('n8n-nodes-base.limit', async (_n, items) =>
+		items.slice(0, Number(_n.parameters?.maxItems ?? items.length)),
+	);
+	return engine.runWorkflow(null, [{}], options);
 }
+
+/** Payload-only view — both engines decorate items with pairedItem (:1736). */
+const payloadOf = (resultData, node, runIndex = 0) =>
+	(resultData.runData?.[node]?.[runIndex]?.data?.main?.[0] ?? []).map((i) => i.json);
 
 /** Flatten both engines into the same comparable shape. */
 function shape(resultData) {
@@ -216,7 +230,7 @@ const FANOUT = {
 };
 
 test('EQUIVALENCE linear: Manual Trigger → Set → NoOp matches the reference engine', { timeout: 120000, skip: skipReason }, async () => {
-	const reference = shape(await (await loadReference()).run(LINEAR));
+	const reference = shape((await (await loadReference()).run(LINEAR)).resultData);
 	const reconstructed = shape((await reconstructedRun(LINEAR)).resultData);
 
 	assert.deepEqual(reconstructed.order, reference.order);
@@ -227,7 +241,7 @@ test('EQUIVALENCE linear: Manual Trigger → Set → NoOp matches the reference 
 });
 
 test('EQUIVALENCE fan-out (v1): top-left-first ordering matches the reference engine', { timeout: 120000, skip: skipReason }, async () => {
-	const reference = shape(await (await loadReference()).run(FANOUT));
+	const reference = shape((await (await loadReference()).run(FANOUT)).resultData);
 	const reconstructed = shape((await reconstructedRun(FANOUT)).resultData);
 
 	assert.deepEqual(
@@ -241,10 +255,107 @@ test('EQUIVALENCE fan-out (v1): top-left-first ordering matches the reference en
 
 test('EQUIVALENCE fan-out (v0): FIFO ordering matches the reference engine', { timeout: 120000, skip: skipReason }, async () => {
 	const json = { ...FANOUT, id: 'eq-fanout-v0', settings: { executionOrder: 'v0' } };
-	const reference = shape(await (await loadReference()).run(json));
+	const reference = shape((await (await loadReference()).run(json)).resultData);
 	const reconstructed = shape((await reconstructedRun(json)).resultData);
 
 	assert.deepEqual(reconstructed.order, reference.order, 'workflow-execute.ts:417 — v0 pushes (FIFO)');
 	assert.deepEqual(reconstructed.itemCounts, reference.itemCounts);
-	assert.notDeepEqual(reference.order, shape(await (await loadReference()).run(FANOUT)).order, 'v0 and v1 really do differ, so the comparison is meaningful');
+	assert.notDeepEqual(reference.order, shape((await (await loadReference()).run(FANOUT)).resultData).order, 'v0 and v1 really do differ, so the comparison is meaningful');
+});
+
+/* ------------------------------------------------------------------ *
+ * pin data, alwaysOutputData, timeout, pairedItem — vs the real engine
+ * ------------------------------------------------------------------ */
+
+const PINNED = {
+	id: 'eq-pin',
+	name: 'Equivalence — pin data',
+	nodes: [manualTrigger('t', 'Manual Trigger', [0, 0]), setNode('s', 'Set', [200, 0]), noOp('n', 'After', [400, 0])],
+	connections: {
+		'Manual Trigger': { main: [[edge('Set')]] },
+		Set: { main: [[edge('After')]] },
+	},
+	pinData: { Set: [{ json: { pinned: true } }] },
+};
+
+test('EQUIVALENCE pinData: the pinned node is not executed and its pinned output flows on', { timeout: 120000, skip: skipReason }, async () => {
+	const api = await loadReference();
+	const reference = (await api.run(PINNED)).resultData;
+	const reconstructed = (await reconstructedRun(PINNED)).resultData;
+
+	assert.deepEqual(payloadOf(reference, 'Set'), [{ pinned: true }], 'sanity: the reference really used the pin');
+	assert.deepEqual(payloadOf(reconstructed, 'Set'), payloadOf(reference, 'Set'));
+	assert.deepEqual(payloadOf(reconstructed, 'After'), payloadOf(reference, 'After'));
+	assert.deepEqual(shape(reconstructed).order, shape(reference).order);
+	assert.equal(reconstructed.runData.Set[0].executionStatus, 'success');
+	assert.equal(reference.runData.Set[0].executionStatus, 'success');
+});
+
+const ALWAYS_OUTPUT = (alwaysOutputData) => ({
+	id: 'eq-always',
+	name: 'Equivalence — alwaysOutputData',
+	nodes: [
+		manualTrigger('t', 'Manual Trigger', [0, 0]),
+		{
+			id: 'l',
+			name: 'Lim',
+			type: 'n8n-nodes-base.limit',
+			typeVersion: 1,
+			position: [200, 0],
+			parameters: { maxItems: 0 }, // deterministic empty output
+			...(alwaysOutputData ? { alwaysOutputData: true } : {}),
+		},
+		setNode('a', 'After', [400, 0]),
+	],
+	connections: {
+		'Manual Trigger': { main: [[edge('Lim')]] },
+		Lim: { main: [[edge('After')]] },
+	},
+});
+
+test('EQUIVALENCE alwaysOutputData: empty output emits one empty paired item and the branch continues', { timeout: 120000, skip: skipReason }, async () => {
+	const api = await loadReference();
+	const withFlag = ALWAYS_OUTPUT(true);
+
+	const refRun = await api.run(withFlag);
+	const myRun = await reconstructedRun(withFlag);
+
+	assert.deepEqual(shape(myRun.resultData).order, shape(refRun.resultData).order);
+	assert.deepEqual(shape(myRun.resultData).order, ['Manual Trigger', 'Lim', 'After']);
+	// the reference emits exactly [{ json: {}, pairedItem: [{ item: 0, input: 0 }] }]
+	assert.deepEqual(myRun.resultData.runData.Lim[0].data.main[0], refRun.resultData.runData.Lim[0].data.main[0]);
+
+	const withoutFlag = ALWAYS_OUTPUT(false);
+	const refNo = await api.run(withoutFlag);
+	const myNo = await reconstructedRun(withoutFlag);
+	assert.deepEqual(shape(myNo.resultData).order, shape(refNo.resultData).order);
+	assert.deepEqual(shape(myNo.resultData).order, ['Manual Trigger', 'Lim'], 'without the flag the branch ends');
+});
+
+test('EQUIVALENCE timeout: an elapsed executionTimeoutTimestamp cancels the run with no node executed', { timeout: 120000, skip: skipReason }, async () => {
+	const api = await loadReference();
+	const deadline = { executionTimeoutTimestamp: Date.now() - 1 };
+
+	const refRun = await api.run(LINEAR, { additionalData: deadline });
+	const myRun = await reconstructedRun(LINEAR, { options: deadline });
+
+	assert.equal(refRun.status, 'canceled');
+	assert.equal(myRun.status, refRun.status);
+	assert.equal(myRun.timedOut, true);
+	assert.deepEqual(Object.keys(myRun.resultData.runData), Object.keys(refRun.resultData.runData));
+	assert.deepEqual(shape(myRun.resultData).order, shape(refRun.resultData).order);
+});
+
+test('EQUIVALENCE pairedItem: output items are decorated the same way as the reference', { timeout: 120000, skip: skipReason }, async () => {
+	const api = await loadReference();
+	const refRun = (await api.run(LINEAR)).resultData;
+	const myRun = (await reconstructedRun(LINEAR)).resultData;
+
+	for (const node of ['Manual Trigger', 'Set', 'NoOp']) {
+		assert.deepEqual(
+			(myRun.runData[node][0].data.main[0] ?? []).map((i) => i.pairedItem),
+			(refRun.runData[node][0].data.main[0] ?? []).map((i) => i.pairedItem),
+			`pairedItem differs on "${node}"`,
+		);
+	}
 });

@@ -15,6 +15,8 @@ import { WorkflowExecutionEngine, mapConnectionsByDestination } from '../runner.
 
 const item = (json) => ({ json });
 const conn = (node, index = 0) => ({ node, type: 'main', index });
+/** Output items carry `pairedItem` like n8n does (:1736), so compare the payload by default. */
+const payload = (items) => (items ?? []).map((i) => i.json);
 const taskOf = (result, name, runIndex = 0) => result.resultData.runData[name]?.[runIndex];
 
 const linear = () => ({
@@ -50,8 +52,8 @@ test('linear chain: every node runs once, in order, items flow through', { timeo
 		result.executionLog.map((e) => e.node),
 		['Manual Trigger', 'Code Node', 'Transform Output'],
 	);
-	assert.deepEqual(result.data['Transform Output'], [
-		item({ final: 'PASS', processedItems: 1, data: { start: true, coded: true } }),
+	assert.deepEqual(payload(result.data['Transform Output']), [
+		{ final: 'PASS', processedItems: 1, data: { start: true, coded: true } },
 	]);
 });
 
@@ -74,7 +76,9 @@ test('runData entry has the ITaskData shape (interfaces.ts:2675-2691)', { timeou
 	assert.equal(task.executionStatus, 'success');
 	assert.equal(task.executionIndex, 0);
 	assert.deepEqual(task.source, [null], 'start node has no source (:170)');
-	assert.deepEqual(task.data.main, [[item({ a: 1 }), item({ a: 2 })]]);
+	assert.deepEqual(payload(task.data.main[0]), [{ a: 1 }, { a: 2 }]);
+	// one input item -> every output item pairs to it (:2589-2617)
+	assert.deepEqual(task.data.main[0].map((i) => i.pairedItem), [{ item: 0 }, { item: 0 }]);
 	assert.equal(typeof task.executionTime, 'number');
 
 	// The downstream node records where its input came from (ISourceData, interfaces.ts:2693).
@@ -108,8 +112,8 @@ test('unregistered node type = passthrough (items unchanged)', { timeout: 5000 }
 
 	const result = await engine.runWorkflow();
 
-	assert.deepEqual(result.data['Code Node'], [item({ keep: 'me' })]);
-	assert.deepEqual(result.data['Transform Output'], [item({ keep: 'me' })]);
+	assert.deepEqual(payload(result.data['Code Node']), [{ keep: 'me' }]);
+	assert.deepEqual(payload(result.data['Transform Output']), [{ keep: 'me' }]);
 });
 
 test('fan-out: one output reaches two downstream nodes', { timeout: 5000 }, async () => {
@@ -125,8 +129,8 @@ test('fan-out: one output reaches two downstream nodes', { timeout: 5000 }, asyn
 
 	const result = await engine.runWorkflow();
 
-	assert.deepEqual(result.data.B, [item({ v: 1 })]);
-	assert.deepEqual(result.data.C, [item({ v: 1 })]);
+	assert.deepEqual(payload(result.data.B), [{ v: 1 }]);
+	assert.deepEqual(payload(result.data.C), [{ v: 1 }]);
 });
 
 test('CONFORMANCE fan-in: a 2-input node runs ONCE with both inputs (:405-560)', { timeout: 5000 }, async () => {
@@ -196,7 +200,7 @@ test('CONFORMANCE fan-in: missing branch is filled with [] once the stack drains
 	assert.equal(result.status, 'success');
 	assert.equal(result.resultData.runData.False, undefined, 'the untaken branch never runs (:2013-2019)');
 	assert.equal(result.executionLog.filter((e) => e.node === 'Merge').length, 1);
-	assert.deepEqual(result.data.Merge, [item({ input0: 1, input1: 0 })]);
+	assert.deepEqual(payload(result.data.Merge), [{ input0: 1, input1: 0 }]);
 });
 
 test('CONFORMANCE error: node error is recorded and the run stops with status error (:1823-1900, :2389)', { timeout: 5000 }, async () => {
@@ -254,7 +258,7 @@ test('CONFORMANCE continueOnFail: input passes through and the run continues (:1
 	assert.equal(result.status, 'success', 'continueOnFail keeps the run alive');
 	assert.equal(taskOf(result, 'Flaky').executionStatus, 'error', 'the error is still recorded');
 	assert.equal(taskOf(result, 'Flaky').error.message, '503');
-	assert.deepEqual(result.data.After, [item({ v: 42 })], 'the INPUT of the failed node is passed on');
+	assert.deepEqual(payload(result.data.After), [{ v: 42 }], 'the INPUT of the failed node is passed on');
 });
 
 test('CONFORMANCE onError=continueRegularOutput behaves like continueOnFail (:1843-1846)', { timeout: 5000 }, async () => {
@@ -273,7 +277,7 @@ test('CONFORMANCE onError=continueRegularOutput behaves like continueOnFail (:18
 
 	assert.equal(result.status, 'success');
 	assert.equal(taskOf(result, 'Flaky').executionStatus, 'error');
-	assert.deepEqual(result.data.After, [item({ v: 7 })]);
+	assert.deepEqual(payload(result.data.After), [{ v: 7 }]);
 });
 
 test('onError=stopAndError does NOT continue (:1861-1893)', { timeout: 5000 }, async () => {
@@ -354,7 +358,7 @@ test('explicit start node beats trigger auto-detection', { timeout: 5000 }, asyn
 
 	assert.equal(result.executionLog.length, 1);
 	assert.equal(result.executionLog[0].node, 'X');
-	assert.deepEqual(result.data.X, [item({ seeded: true })]);
+	assert.deepEqual(payload(result.data.X), [{ seeded: true }]);
 });
 
 test('execution order: v1 (default) is LIFO, v0 is FIFO (:417)', { timeout: 5000 }, async () => {
@@ -554,4 +558,219 @@ test('getParentNodes returns ALL ancestors, deepest-first, without looping on cy
 	assert.deepEqual(parents, ['If', 'True', 'Q'], 'ancestors, not just the direct predecessor');
 	assert.deepEqual(engine.getParentNodes('If'), ['True', 'Q', 'Merge'], 'cycle-safe: terminates');
 	assert.deepEqual(engine.getParentNodes('NoSuchNode'), []);
+});
+
+/* ------------------------------------------------------------------ *
+ * execution timeout (workflow-execute.ts:1486-1496, :2387-2389)
+ * ------------------------------------------------------------------ */
+
+test('TIMEOUT: a deadline that already passed cancels the run before any node runs', { timeout: 5000 }, async () => {
+	const engine = new WorkflowExecutionEngine(linear());
+	let called = 0;
+	engine.registerNodeType('n8n-nodes-base.manualTrigger', async () => {
+		called += 1;
+		return [item({ start: true })];
+	});
+
+	const result = await engine.runWorkflow(null, [{}], { executionTimeoutTimestamp: Date.now() - 1 });
+
+	assert.equal(result.status, 'canceled');
+	assert.equal(result.timedOut, true);
+	assert.equal(result.finished, false);
+	assert.equal(called, 0, 'the deadline is checked before the first node runs (:1486-1492)');
+	assert.deepEqual(result.executionLog, []);
+});
+
+test('TIMEOUT: a node that outlives the deadline cancels the run after it, keeping its runData', { timeout: 5000 }, async () => {
+	const engine = new WorkflowExecutionEngine(linear());
+	engine.registerNodeType('n8n-nodes-base.manualTrigger', async () => {
+		await new Promise((resolve) => setTimeout(resolve, 30));
+		return [item({ start: true })];
+	});
+
+	const result = await engine.runWorkflow(null, [{}], { executionTimeoutTimestamp: Date.now() + 10 });
+
+	assert.equal(result.status, 'canceled');
+	assert.equal(result.timedOut, true);
+	assert.deepEqual(result.executionLog.map((e) => e.node), ['Manual Trigger'], 'the slow node still recorded');
+	assert.equal(result.resultData.runData['Code Node'], undefined, 'the next node never starts');
+});
+
+test('no deadline set means no cancellation', { timeout: 5000 }, async () => {
+	const engine = new WorkflowExecutionEngine(linear());
+	engine.registerNodeType('n8n-nodes-base.manualTrigger', async () => [item({ start: true })]);
+
+	const result = await engine.runWorkflow();
+
+	assert.equal(result.status, 'success');
+	assert.equal(result.timedOut, false);
+});
+
+/* ------------------------------------------------------------------ *
+ * pin data (workflow-execute.ts:1632-1637)
+ * ------------------------------------------------------------------ */
+
+test('PIN DATA: a pinned node is not executed and its pinned output flows downstream', { timeout: 5000 }, async () => {
+	const engine = new WorkflowExecutionEngine({
+		...linear(),
+		pinData: { 'Code Node': [item({ pinned: true })] },
+	});
+	let triggerCalls = 0;
+	let codeCalls = 0;
+	let setCalls = 0;
+	engine.registerNodeType('n8n-nodes-base.manualTrigger', async () => {
+		triggerCalls += 1;
+		return [item({ start: true })];
+	});
+	engine.registerNodeType('n8n-nodes-base.code', async () => {
+		codeCalls += 1;
+		return [item({ computed: true })];
+	});
+	engine.registerNodeType('n8n-nodes-base.set', async (_n, items) => {
+		setCalls += 1;
+		return items;
+	});
+
+	const result = await engine.runWorkflow();
+
+	assert.equal(triggerCalls, 1);
+	assert.equal(codeCalls, 0, 'the pinned node handler is never called (:1634-1636)');
+	assert.equal(setCalls, 1, 'downstream nodes still run');
+	assert.deepEqual(payload(result.data['Code Node']), [{ pinned: true }]);
+	assert.deepEqual(payload(result.data['Transform Output']), [{ pinned: true }]);
+	assert.equal(taskOf(result, 'Code Node').executionStatus, 'success');
+});
+
+test('PIN DATA: a disabled node ignores its pin data (:1634)', { timeout: 5000 }, async () => {
+	const wf = linear();
+	wf.nodes[1].disabled = true;
+	const engine = new WorkflowExecutionEngine({ ...wf, pinData: { 'Code Node': [item({ pinned: true })] } });
+	let codeCalls = 0;
+	engine.registerNodeType('n8n-nodes-base.manualTrigger', async () => [item({ start: true })]);
+	engine.registerNodeType('n8n-nodes-base.code', async () => {
+		codeCalls += 1;
+		return [item({ computed: true })];
+	});
+
+	const result = await engine.runWorkflow();
+
+	assert.equal(codeCalls, 1, 'a disabled node falls through to the handler');
+	assert.deepEqual(payload(result.data['Code Node']), [{ computed: true }]);
+});
+
+test('PIN DATA can also be passed per run, overriding the workflow definition', { timeout: 5000 }, async () => {
+	const engine = new WorkflowExecutionEngine({ ...linear(), pinData: { 'Code Node': [item({ from: 'definition' })] } });
+	engine.registerNodeType('n8n-nodes-base.manualTrigger', async () => [item({ start: true })]);
+	engine.registerNodeType('n8n-nodes-base.code', async () => [item({ computed: true })]);
+
+	const result = await engine.runWorkflow(null, [{}], { pinData: { 'Code Node': [item({ from: 'options' })] } });
+
+	assert.deepEqual(payload(result.data['Code Node']), [{ from: 'options' }]);
+});
+
+/* ------------------------------------------------------------------ *
+ * alwaysOutputData (workflow-execute.ts:1746-1765)
+ * ------------------------------------------------------------------ */
+
+test('alwaysOutputData emits one empty paired item so the branch continues', { timeout: 5000 }, async () => {
+	const wf = linear();
+	wf.nodes[1].alwaysOutputData = true;
+	const engine = new WorkflowExecutionEngine(wf);
+	engine.registerNodeType('n8n-nodes-base.manualTrigger', async () => [item({ a: 1 }), item({ a: 2 })]);
+	engine.registerNodeType('n8n-nodes-base.code', async () => []); // drops everything
+
+	const result = await engine.runWorkflow();
+
+	assert.deepEqual(
+		result.executionLog.map((e) => e.node),
+		['Manual Trigger', 'Code Node', 'Transform Output'],
+		'the branch does not end on empty output',
+	);
+	const out = result.data['Code Node'];
+	assert.equal(out.length, 1);
+	assert.deepEqual(out[0].json, {});
+	assert.deepEqual(out[0].pairedItem, [
+		{ item: 0, input: 0 },
+		{ item: 1, input: 0 },
+	]);
+});
+
+test('without alwaysOutputData the branch ends on empty output', { timeout: 5000 }, async () => {
+	const engine = new WorkflowExecutionEngine(linear());
+	engine.registerNodeType('n8n-nodes-base.manualTrigger', async () => [item({ a: 1 })]);
+	engine.registerNodeType('n8n-nodes-base.code', async () => []);
+
+	const result = await engine.runWorkflow();
+
+	assert.deepEqual(result.executionLog.map((e) => e.node), ['Manual Trigger', 'Code Node']);
+	assert.equal(result.status, 'success');
+});
+
+test('lastNodeExecuted follows the last node that produced data, not the last one visited', { timeout: 5000 }, async () => {
+	const engine = new WorkflowExecutionEngine(linear());
+	engine.registerNodeType('n8n-nodes-base.manualTrigger', async () => [item({ a: 1 })]);
+	engine.registerNodeType('n8n-nodes-base.code', async () => []); // ends its branch, emits nothing
+
+	const result = await engine.runWorkflow();
+
+	assert.equal(result.resultData.lastNodeExecuted, 'Manual Trigger', 'workflow-execute.ts:1739');
+});
+
+/* ------------------------------------------------------------------ *
+ * pairedItem auto-fix (workflow-execute.ts:2581-2641)
+ * ------------------------------------------------------------------ */
+
+const pairedRun = async (inputItems, outputItems, preset) => {
+	const engine = new WorkflowExecutionEngine({
+		nodes: [
+			{ name: 'T', type: 'n8n-nodes-base.manualTrigger' },
+			{ name: 'N', type: 'n8n-nodes-base.set' },
+		],
+		connections: { T: { main: [[conn('N')]] } },
+	});
+	engine.registerNodeType('n8n-nodes-base.manualTrigger', async () => inputItems);
+	engine.registerNodeType('n8n-nodes-base.set', async (_n, items) =>
+		outputItems === 'passthrough' ? items : outputItems.map((json, i) => (preset ? preset(json, i) : { json })),
+	);
+	const result = await engine.runWorkflow();
+	return result.data.N.map((i) => i.pairedItem);
+};
+
+test('pairedItem: one input item pairs every output item to {item:0} (:2589-2617)', { timeout: 5000 }, async () => {
+	assert.deepEqual(await pairedRun([item({ a: 1 })], [{ x: 1 }, { x: 2 }]), [{ item: 0 }, { item: 0 }]);
+});
+
+test('pairedItem: equal input/output counts pair by index (:2619-2627)', { timeout: 5000 }, async () => {
+	assert.deepEqual(await pairedRun([item({ a: 1 }), item({ a: 2 }), item({ a: 3 })], [{ x: 1 }, { x: 2 }, { x: 3 }]), [
+		{ item: 0 },
+		{ item: 1 },
+		{ item: 2 },
+	]);
+});
+
+test('pairedItem: many inputs aggregated into one output pair to {item:0} (:2629-2636)', { timeout: 5000 }, async () => {
+	assert.deepEqual(await pairedRun([item({ a: 1 }), item({ a: 2 })], [{ x: 1 }]), [{ item: 0 }]);
+});
+
+test('pairedItem: an ambiguous mapping is left untouched (:2637-2640)', { timeout: 5000 }, async () => {
+	// 2 inputs -> 3 outputs: not 1:1, not single-input, not a single output
+	assert.deepEqual(await pairedRun([item({ a: 1 }), item({ a: 2 })], [{ x: 1 }, { x: 2 }, { x: 3 }]), [
+		undefined,
+		undefined,
+		undefined,
+	]);
+});
+
+test('pairedItem: a node that sets its own is never overwritten', { timeout: 5000 }, async () => {
+	const engine = new WorkflowExecutionEngine({
+		nodes: [{ name: 'N', type: 'n8n-nodes-base.set' }],
+		connections: {},
+	});
+	engine.registerNodeType('n8n-nodes-base.set', async () => [
+		{ json: { x: 1 }, pairedItem: { item: 7, input: 1 } },
+	]);
+
+	const result = await engine.runWorkflow('N', [{ a: 1 }]);
+
+	assert.deepEqual(result.data.N[0].pairedItem, { item: 7, input: 1 });
 });

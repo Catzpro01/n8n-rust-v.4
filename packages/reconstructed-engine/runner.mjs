@@ -303,6 +303,55 @@ export class WorkflowExecutionEngine {
 	}
 
 	/**
+	 * `workflow-execute.ts:2581-2641` — 1:1 port.
+	 *
+	 * Output items normally carry `pairedItem` so the UI can link an output item back to the
+	 * input item it came from. Nodes that do not set it get it auto-fixed where the mapping is
+	 * unambiguous: one input item → `{item:0}`, equal input/output counts → `{item:index}`,
+	 * many inputs aggregated into one output → `{item:0}`. In every other case the reference
+	 * leaves the items untouched (`break checkOutputData`).
+	 */
+	assignPairedItems(nodeSuccessData, executionData) {
+		if (nodeSuccessData?.length) {
+			const isSingleInputAndOutput =
+				executionData.data.main.length === 1 && executionData.data.main[0]?.length === 1;
+
+			const isSameNumberOfItems =
+				nodeSuccessData.length === 1 &&
+				executionData.data.main.length === 1 &&
+				executionData.data.main[0]?.length === nodeSuccessData[0].length;
+
+			// Multiple inputs → single output (e.g., aggregating items into one)
+			const isSingleOutput =
+				nodeSuccessData.length === 1 &&
+				nodeSuccessData[0]?.length === 1 &&
+				executionData.data.main.length === 1 &&
+				(executionData.data.main[0]?.length ?? 0) > 1;
+
+			checkOutputData: for (const outputData of nodeSuccessData) {
+				if (outputData === null) {
+					continue;
+				}
+				for (const [index, item] of outputData.entries()) {
+					if (item.pairedItem === undefined) {
+						if (isSingleInputAndOutput) {
+							item.pairedItem = { item: 0 };
+						} else if (isSameNumberOfItems) {
+							item.pairedItem = { item: index };
+						} else if (isSingleOutput) {
+							item.pairedItem = { item: 0 };
+						} else {
+							break checkOutputData;
+						}
+					}
+				}
+			}
+		}
+
+		return nodeSuccessData ?? null;
+	}
+
+	/**
 	 * Execute the workflow.
 	 *
 	 * @param {string|null} startNodeName
@@ -312,7 +361,14 @@ export class WorkflowExecutionEngine {
 	 *          when the run stopped on a node error. `data` and `executionLog` are kept as
 	 *          flat compatibility views of the same information.
 	 */
-	async runWorkflow(startNodeName = null, initialData = [{}]) {
+	async runWorkflow(startNodeName = null, initialData = [{}], options = {}) {
+		/**
+		 * `options.executionTimeoutTimestamp` — `IWorkflowExecutionData`-style deadline, checked at
+		 * the top of every loop iteration (workflow-execute.ts:1486-1496).
+		 * `options.pinData` — overrides `definition.pinData` (workflow-execute.ts:1632-1637).
+		 */
+		const executionTimeoutTimestamp = options.executionTimeoutTimestamp;
+		const pinData = options.pinData ?? this.definition.pinData;
 		const startName = this.findStartNode(startNodeName);
 		const startNode = startName ? this.nodes.get(startName) : undefined;
 		if (!startNode) {
@@ -337,9 +393,20 @@ export class WorkflowExecutionEngine {
 		let executionError;
 		let lastNodeExecuted;
 		let stopped = false;
+		let timedOut = false;
 
 		for (;;) {
 			while (stack.length > 0) {
+				/** workflow-execute.ts:1486-1496 — timeout is checked once per node, not per item. */
+				if (
+					executionTimeoutTimestamp !== undefined &&
+					Date.now() >= executionTimeoutTimestamp
+				) {
+					timedOut = true;
+					stopped = true;
+					break;
+				}
+
 				const executionData = stack.shift();
 				const node = executionData?.node;
 				if (!node) continue;
@@ -355,7 +422,28 @@ export class WorkflowExecutionEngine {
 				}
 				executionCounts.set(node.name, alreadyRun + 1);
 				const runIndex = alreadyRun;
-				lastNodeExecuted = node.name;
+
+				/**
+				 * `workflow-execute.ts:1517-1552` — before a node runs, every INPUT item is
+				 * re-stamped with its position in this node's input:
+				 * `pairedItem: { item: itemIndex, input: inputIndex || undefined }`.
+				 * Note the reference really does write `input: undefined` for input 0
+				 * (`0 || undefined`), which is why a passthrough node hands that shape on.
+				 * The `sourceOverwrite` branch (:1530-1541) belongs to AI tool executions and is
+				 * not reconstructed.
+				 */
+				const reStamped = {};
+				for (const connectionType of Object.keys(executionData.data ?? {})) {
+					reStamped[connectionType] = (executionData.data[connectionType] ?? []).map((input, inputIndex) =>
+						input === null
+							? input
+							: input.map((item, itemIndex) => ({
+									...item,
+									pairedItem: { item: itemIndex, input: inputIndex || undefined },
+								})),
+					);
+				}
+				executionData.data = reStamped;
 
 				const inputData = executionData.data ?? { main: [] };
 				const items = inputData.main?.[0] ?? [];
@@ -374,15 +462,20 @@ export class WorkflowExecutionEngine {
 				executionError = undefined;
 
 				try {
-					const produced = handler
-						? await handler(node, items, {
-								inputData: inputData.main ?? [],
-								source: taskData.source,
-								runIndex,
-							})
-						: items; // unregistered node type: passthrough
-					/** INodeExecutionData[][] — one entry per output index. */
-					nodeSuccessData = [produced ?? []];
+					if (pinData && !node.disabled && pinData[node.name] !== undefined) {
+						/** workflow-execute.ts:1632-1637 — pinned output replaces the node run. */
+						nodeSuccessData = [pinData[node.name]]; // always the zeroth runIndex
+					} else {
+						const produced = handler
+							? await handler(node, items, {
+									inputData: inputData.main ?? [],
+									source: taskData.source,
+									runIndex,
+								})
+							: items; // unregistered node type: passthrough
+						/** INodeExecutionData[][] — one entry per output index. */
+						nodeSuccessData = [produced ?? []];
+					}
 				} catch (error) {
 					executionError = {
 						name: error?.name,
@@ -393,11 +486,26 @@ export class WorkflowExecutionEngine {
 					};
 				}
 
+				/** workflow-execute.ts:1736 — decorate output items before anything else reads them. */
+				nodeSuccessData = this.assignPairedItems(nodeSuccessData, executionData);
+
+				/** workflow-execute.ts:1742-1767 — a node with no output can still emit one item. */
+				if (!nodeSuccessData?.[0]?.[0] && node.alwaysOutputData === true) {
+					const pairedItem = [];
+					(inputData.main ?? []).forEach((inputItems, inputIndex) => {
+						if (!inputItems) return;
+						inputItems.forEach((_item, itemIndex) => pairedItem.push({ item: itemIndex, input: inputIndex }));
+					});
+					nodeSuccessData ??= [];
+					nodeSuccessData[0] = [{ json: {}, pairedItem }];
+				}
+
 				taskData.executionTime = Date.now() - startTime;
 				taskData.executionStatus = 'success';
 
 				if (executionError !== undefined) {
-					/** workflow-execute.ts:1824-1900 */
+					/** workflow-execute.ts:1778, 1824-1900 */
+					lastNodeExecuted = node.name;
 					taskData.error = executionError;
 					taskData.executionStatus = 'error';
 
@@ -426,7 +534,8 @@ export class WorkflowExecutionEngine {
 					}
 				}
 
-				/** workflow-execute.ts:1918-1945 */
+				/** workflow-execute.ts:1739, 1918-1945 */
+				if (nodeSuccessData?.[0]?.[0]) lastNodeExecuted = node.name;
 				taskData.data = { main: nodeSuccessData };
 				(runData[node.name] ??= []).push(taskData);
 				executionLog.push({
@@ -506,8 +615,8 @@ export class WorkflowExecutionEngine {
 			if (!this.releaseWaitingNodes(ctx)) break;
 		}
 
-		/** workflow-execute.ts:2383-2400 */
-		const status = executionError !== undefined ? 'error' : 'success';
+		/** workflow-execute.ts:2383-2400 — 'canceled' takes precedence, then 'error', then 'success'. */
+		const status = timedOut ? 'canceled' : executionError !== undefined ? 'error' : 'success';
 
 		// Flat compatibility view: last run of each node, first output slot.
 		const data = {};
@@ -518,6 +627,8 @@ export class WorkflowExecutionEngine {
 		return {
 			status,
 			finished: status === 'success',
+			/** true when the run stopped because executionTimeoutTimestamp passed (:1489-1490). */
+			timedOut,
 			/** true when the safety net had to drop arrivals — the graph contains a cycle. */
 			cyclic: cycleSkips.length > 0,
 			cycleSkips,
