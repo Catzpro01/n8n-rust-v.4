@@ -1,0 +1,34 @@
+id: TASK-435-phase3-execution-recovery-service
+agent: arena-worker
+lego: execution
+module: execution-recovery
+phase: 3
+title: "Execution LEGO: Execution recovery service, crash deactivation, and artificial task data"
+status: SUBMITTED_FOR_REVIEW
+objective: "Reconstruct ExecutionRecoveryService, ARTIFICIAL_TASK_DATA, NodeCrashedError, and WorkflowCrashedError 1:1 against n8n 2.9.4 CLI reference."
+acceptance:
+  - "NodeCrashedError and WorkflowCrashedError match reference error hierarchy and properties"
+  - "ARTIFICIAL_TASK_DATA provides frozen synthetic task data for recovered events"
+  - "ExecutionRecoveryService: follower guard prevents non-leader nodes from executing recovery"
+  - "ExecutionRecoveryService: amendWithoutLogs marks execution as crashed when no log messages are present"
+  - "ExecutionRecoveryService: filters out completed executions with existing data (success, error, canceled)"
+  - "ExecutionRecoveryService: recovers dataless success execution and populates empty resultData and crashed status"
+  - "ExecutionRecoveryService: marks in-progress execution as crashed with NodeCrashedError and WorkflowCrashedError when last node did not finish"
+  - "ExecutionRecoveryService: sets taskData executionStatus to success with ARTIFICIAL_TASK_DATA when last node finished"
+  - "ExecutionRecoveryService: runs workflowExecuteAfter lifecycle hooks and broadcasts executionRecovered via push"
+  - "ExecutionRecoveryService: autoDeactivateWorkflowsIfNeeded deactivates workflow when last N executions are crashed"
+  - "ExecutionRecoveryService: notifies project admin/owner or instance owner via userManagementMailer on auto-deactivation"
+  - "ExecutionRecoveryService: marks running/new executions of auto-deactivated workflow as crashed"
+  - "execution-engine gate passes 17/17 with 0 runtime dependencies and import closed"
+  - "all 14 verify:all gates pass"
+allowed_paths:
+  - packages/execution-engine/**
+  - tools/execution-engine-gate.mjs
+  - contracts/execution.contract.md
+  - docs/isolation/execution.md
+  - docs/isolation/LEGO-MASTER-MAP.md
+  - docs/isolation/evidence/execution-engine-gate.json
+  - docs/isolation/execution-verification.md
+  - tasks/TASK-435-phase3-execution-recovery-service.yaml
+  - results/TASK-435-phase3-execution-recovery-service.md
+forbidden_paths: [reference/n8n/**, crates/**, apps/**]

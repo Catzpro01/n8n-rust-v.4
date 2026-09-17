@@ -79,6 +79,8 @@ retry/error policy. Everything the loop consumes from other LEGOs is injected
 | `DEFAULT_SAVE_CONFIG`, `toSaveSettings` | save-settings.mjs | execution save settings resolution against global and per-workflow policies |
 | `FailedRunFactory`, `generateFailedExecutionFromError` | failed-run-factory.mjs | structured failed execution run data creation for pre-execution failures and permission blocks |
 | `executeErrorWorkflow`, `saveExecutionProgress` | error-workflow.mjs | error workflow execution dispatching and per-node execution progress database persistence |
+| `ExecutionRecoveryService`, `ARTIFICIAL_TASK_DATA` | execution-recovery.mjs | truncated/crashed execution recovery from event logs, artificial task data synthesis, and workflow auto-deactivation |
+| `NodeCrashedError`, `WorkflowCrashedError` | errors.mjs | crash errors indicating OOM or abnormal termination during node or workflow execution |
 
 ## 5. Loop invariants (pinned to source lines)
 

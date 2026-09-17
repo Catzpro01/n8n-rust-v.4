@@ -383,6 +383,26 @@ export class SystemShutdownExecutionCancelledError extends ExecutionCancelledErr
 	}
 }
 
+/** Node crashed error — mirrors `NodeCrashedError` (reference/n8n/packages/cli/src/errors/node-crashed.error.ts). */
+export class NodeCrashedError extends NodeOperationError {
+	constructor(node) {
+		super(node, 'Node crashed, possible out-of-memory issue', {
+			message: 'Execution stopped at this node',
+			description:
+				"n8n may have run out of memory while running this execution. More context and tips on how to avoid this <a href='https://docs.n8n.io/hosting/scaling/memory-errors/' target='_blank'>in the docs</a>",
+		});
+		this.name = 'NodeCrashedError';
+	}
+}
+
+/** Workflow crashed error — mirrors `WorkflowCrashedError` (reference/n8n/packages/cli/src/errors/workflow-crashed.error.ts). */
+export class WorkflowCrashedError extends OperationalError {
+	constructor(message = 'Workflow did not finish, possible out-of-memory issue', options = {}) {
+		super(message, options);
+		this.name = 'WorkflowCrashedError';
+	}
+}
+
 /**
  * `ExecutionBaseError` is a plain object in run data (see execution-data contract
  * §1 `error?: ExecutionError`). Spread-safe serialisation, never the class itself.

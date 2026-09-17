@@ -35,6 +35,7 @@ export {
 	ManualExecutionCancelledError,
 	MaxStalledCountError,
 	NodeApiError,
+	NodeCrashedError,
 	NodeOperationError,
 	OperationalError,
 	SubworkflowOperationError,
@@ -44,6 +45,7 @@ export {
 	UnexpectedError,
 	UserError,
 	WorkflowActivationError,
+	WorkflowCrashedError,
 	WorkflowDeactivationError,
 	errorMessageOf,
 	isSoftFailure,
@@ -109,3 +111,5 @@ export {
 export { DEFAULT_SAVE_CONFIG, toSaveSettings } from './save-settings.mjs';
 export { FailedRunFactory, generateFailedExecutionFromError } from './failed-run-factory.mjs';
 export { executeErrorWorkflow, saveExecutionProgress } from './error-workflow.mjs';
+export { ARTIFICIAL_TASK_DATA, ExecutionRecoveryService } from './execution-recovery.mjs';
+

@@ -246,6 +246,12 @@ gate('E16', 'execution lifecycle & error workflow (executeErrorWorkflow, toSaveS
 	'packages/execution-engine/test/12-execution-lifecycle.test.mjs',
 );
 
+/* E17 — execution recovery service ---------------------------------------- */
+gate('E17', 'execution recovery & crash deactivation (ExecutionRecoveryService)', () =>
+	runNodeTest('test/13-execution-recovery.test.mjs', PKG),
+	'packages/execution-engine/test/13-execution-recovery.test.mjs',
+);
+
 /* ---------------- evidence + human-readable report ----------------------- */
 const totals = {
 	gates: results.length,
@@ -316,6 +322,10 @@ const report = {
 		'TASK-434-phase3-execution-lifecycle-and-error-workflow': {
 			status: results.find((entry) => entry.id === 'E16')?.status === 'PASS' ? 'IMPLEMENTED' : 'FAILED',
 			surface: ['toSaveSettings', 'DEFAULT_SAVE_CONFIG', 'FailedRunFactory', 'generateFailedExecutionFromError', 'executeErrorWorkflow', 'saveExecutionProgress'],
+		},
+		'TASK-435-phase3-execution-recovery-service': {
+			status: results.find((entry) => entry.id === 'E17')?.status === 'PASS' ? 'IMPLEMENTED' : 'FAILED',
+			surface: ['ExecutionRecoveryService', 'ARTIFICIAL_TASK_DATA', 'NodeCrashedError', 'WorkflowCrashedError'],
 		},
 	},
 };
