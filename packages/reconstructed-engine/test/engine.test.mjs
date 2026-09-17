@@ -769,14 +769,26 @@ test('without alwaysOutputData the branch ends on empty output', { timeout: 5000
 	assert.equal(result.status, 'success');
 });
 
-test('lastNodeExecuted follows the last node that produced data, not the last one visited', { timeout: 5000 }, async () => {
+/**
+ * `workflow-execute.ts:1738-1741` is `if (nodeSuccessData) lastNodeExecuted = node` — ANY non-null
+ * output counts, including an output with ZERO items. Verified against the real engine (n8n-core
+ * 2.9.1): Trigger → Limit(maxItems 0) → NoOp gives `runData.Lim[0].data.main === [[]]`,
+ * `lastNodeExecuted === 'Lim'`, and NoOp never runs.
+ */
+test('lastNodeExecuted is the last node that returned output, even when it emitted zero items', { timeout: 5000 }, async () => {
 	const engine = new WorkflowExecutionEngine(linear());
 	engine.registerNodeType('n8n-nodes-base.manualTrigger', async () => [item({ a: 1 })]);
 	engine.registerNodeType('n8n-nodes-base.code', async () => []); // ends its branch, emits nothing
 
 	const result = await engine.runWorkflow();
 
-	assert.equal(result.resultData.lastNodeExecuted, 'Manual Trigger', 'workflow-execute.ts:1739');
+	assert.deepEqual(result.resultData.runData['Code Node'][0].data.main, [[]]);
+	assert.equal(result.resultData.lastNodeExecuted, 'Code Node', 'workflow-execute.ts:1738-1741');
+	assert.equal(
+		result.resultData.runData['Transform Output'],
+		undefined,
+		'an empty output still ends the branch',
+	);
 });
 
 /* ------------------------------------------------------------------ *
@@ -836,4 +848,241 @@ test('pairedItem: a node that sets its own is never overwritten', { timeout: 500
 	const result = await engine.runWorkflow('N', [{ a: 1 }]);
 
 	assert.deepEqual(result.data.N[0].pairedItem, { item: 7, input: 1 });
+});
+
+/* ------------------------------------------------------------------ *
+ * retryOnFail (workflow-execute.ts:1600-1630, :1670-1692)
+ * ------------------------------------------------------------------ */
+
+const retryFixture = (nodeExtra = {}) => ({
+	nodes: [
+		{ name: 'Manual Trigger', type: 'n8n-nodes-base.manualTrigger', parameters: {} },
+		{ name: 'Flaky', type: 'n8n-nodes-base.flaky', parameters: {}, ...nodeExtra },
+	],
+	connections: { 'Manual Trigger': { main: [[conn('Flaky')]] } },
+});
+
+/** `flaky` counts its calls and throws for the first `failTimes` of them. */
+const flakyEngine = (nodeExtra, { failTimes = Infinity, failSoft = false } = {}) => {
+	const engine = new WorkflowExecutionEngine(retryFixture(nodeExtra));
+	let calls = 0;
+	engine.registerNodeType('n8n-nodes-base.manualTrigger', async () => [item({ v: 1 })]);
+	engine.registerNodeType('n8n-nodes-base.flaky', async () => {
+		calls += 1;
+		if (calls <= failTimes) {
+			if (failSoft) return [item({ error: `soft ${calls}` })];
+			throw new Error(`boom ${calls}`);
+		}
+		return [item({ ok: true, attempt: calls })];
+	});
+	return { engine, calls: () => calls };
+};
+
+test('CONFORMANCE retryOnFail: maxTries is clamped to [2, 5] with a default of 3 (:1600-1604)', { timeout: 20000 }, async () => {
+	for (const [maxTries, expected] of [[1, 2], [2, 2], [3, 3], [undefined, 3], [10, 5]]) {
+		const { engine, calls } = flakyEngine(
+			{ retryOnFail: true, maxTries, waitBetweenTries: 1 },
+			{ failTimes: Infinity },
+		);
+		const result = await engine.runWorkflow();
+		assert.equal(calls(), expected, `maxTries=${maxTries} -> ${expected} attempts`);
+		assert.equal(result.status, 'error');
+		assert.equal(result.resultData.error.message, `boom ${expected}`);
+	}
+});
+
+test('CONFORMANCE retryOnFail: a retry that finally succeeds is a success (:1615-1630)', { timeout: 10000 }, async () => {
+	const { engine, calls } = flakyEngine(
+		{ retryOnFail: true, maxTries: 3, waitBetweenTries: 1 },
+		{ failTimes: 2 },
+	);
+	const result = await engine.runWorkflow();
+
+	assert.equal(calls(), 3);
+	assert.equal(result.status, 'success');
+	assert.equal(result.resultData.error, undefined);
+	assert.deepEqual(payload(taskOf(result, 'Flaky').data.main[0]), [{ ok: true, attempt: 3 }]);
+	assert.equal(taskOf(result, 'Flaky').error, undefined, 'the earlier attempts leave no error behind');
+});
+
+test('CONFORMANCE retryOnFail defaults to a single attempt when not set (:1601)', { timeout: 5000 }, async () => {
+	const { engine, calls } = flakyEngine({}, { failTimes: Infinity });
+	const result = await engine.runWorkflow();
+
+	assert.equal(calls(), 1);
+	assert.equal(result.status, 'error');
+});
+
+test('CONFORMANCE retryOnFail: waitBetweenTries 0 means 1000 ms, not "no wait" (:1607-1613)', { timeout: 10000 }, async () => {
+	const { engine } = flakyEngine({ retryOnFail: true, maxTries: 2, waitBetweenTries: 0 }, { failTimes: Infinity });
+	const started = Date.now();
+	await engine.runWorkflow();
+	const elapsed = Date.now() - started;
+
+	// `Math.min(5000, Math.max(0, node.waitBetweenTries || 1000))` — `0 || 1000` is 1000.
+	assert.ok(elapsed >= 900, `expected at least one 1000 ms wait, got ${elapsed} ms`);
+});
+
+test('CONFORMANCE retryOnFail: a soft failure (json.error) is retried, then counted as success (:1670-1692)', { timeout: 10000 }, async () => {
+	const { engine, calls } = flakyEngine(
+		{ retryOnFail: true, maxTries: 3, waitBetweenTries: 1 },
+		{ failTimes: Infinity, failSoft: true },
+	);
+	const result = await engine.runWorkflow();
+
+	assert.equal(calls(), 3, 'the soft-failure loop spends the same try budget');
+	assert.equal(result.status, 'success', 'a soft failure is not an executionError');
+	assert.equal(result.resultData.error, undefined);
+	assert.deepEqual(payload(taskOf(result, 'Flaky').data.main[0]), [{ error: 'soft 3' }]);
+});
+
+/* ------------------------------------------------------------------ *
+ * onError: continueErrorOutput (workflow-execute.ts:1720, :2463-2562)
+ * ------------------------------------------------------------------ */
+
+const splitFixture = () => ({
+	nodes: [
+		{ name: 'Manual Trigger', type: 'n8n-nodes-base.manualTrigger', parameters: {} },
+		{ name: 'Split', type: 'n8n-nodes-base.split', parameters: {}, onError: 'continueErrorOutput' },
+		{ name: 'Ok', type: 'n8n-nodes-base.noOp', parameters: {} },
+		{ name: 'Err', type: 'n8n-nodes-base.noOp', parameters: {} },
+	],
+	connections: {
+		'Manual Trigger': { main: [[conn('Split')]] },
+		Split: { main: [[conn('Ok')], [conn('Err')]] },
+	},
+});
+
+const splitEngine = (outputItems, inputItems = [item({ v: 1 })]) => {
+	const engine = new WorkflowExecutionEngine(splitFixture());
+	engine.registerNodeType('n8n-nodes-base.manualTrigger', async () => inputItems);
+	engine.registerNodeType(
+		'n8n-nodes-base.split',
+		async () => outputItems,
+		{ inputs: ['main'], outputs: ['main'] }, // one declared output + the appended error output
+	);
+	engine.registerNodeType('n8n-nodes-base.noOp', async (_n, items) => items);
+	return engine;
+};
+
+test('CONFORMANCE continueErrorOutput: failed items move to the LAST main output (:2463-2562)', { timeout: 5000 }, async () => {
+	// The node stamps pairedItem itself, like n8n's Set node does: handleNodeErrorOutput runs at
+	// :1721, BEFORE assignPairedItems (:1736), so only node-provided pairedItem can be used here.
+	const engine = splitEngine([
+		{ json: { error: 'boom' }, pairedItem: { item: 0 } },
+		{ json: { ok: 1 }, pairedItem: { item: 0 } },
+	]);
+	const result = await engine.runWorkflow();
+
+	const task = taskOf(result, 'Split');
+	assert.deepEqual(payload(task.data.main[0]), [{ ok: 1 }], 'clean items stay on output 0');
+	assert.deepEqual(payload(task.data.main[1]), [{ v: 1, error: 'boom' }], 'error items land on output 1');
+	assert.deepEqual(payload(taskOf(result, 'Ok').data.main[0]), [{ ok: 1 }]);
+	assert.deepEqual(payload(taskOf(result, 'Err').data.main[0]), [{ v: 1, error: 'boom' }]);
+	assert.equal(result.status, 'success');
+});
+
+test('CONFORMANCE continueErrorOutput: the three error-detection rules and nothing more (:2515-2523)', { timeout: 5000 }, async () => {
+	const engine = splitEngine([
+		{ json: { error: 'a' }, error: { message: 'item.error wins' } }, // rule 1
+		item({ error: 'b' }), // rule 2: `error` is the only key
+		item({ error: 'c', message: 'with a message' }), // rule 3: error + message only
+		item({ error: 'd', other: 1 }), // NOT an error: two keys but not error+message
+		item({ ok: 1 }), // NOT an error
+	]);
+	const result = await engine.runWorkflow();
+	const task = taskOf(result, 'Split');
+
+	assert.deepEqual(payload(task.data.main[0]), [{ error: 'd', other: 1 }, { ok: 1 }]);
+	assert.equal(task.data.main[1].length, 3);
+});
+
+test('CONFORMANCE continueErrorOutput: a routed item inherits its source item json (:2534-2556)', { timeout: 5000 }, async () => {
+	const engine = splitEngine(
+		[{ json: { error: 'boom' }, pairedItem: { item: 0 } }],
+		[item({ keep: 'me', n: 7 })],
+	);
+	const result = await engine.runWorkflow();
+
+	assert.deepEqual(payload(taskOf(result, 'Split').data.main[1]), [{ keep: 'me', n: 7, error: 'boom' }]);
+});
+
+test('CONFORMANCE continueErrorOutput: an error item without pairedItem is routed unchanged (:2525-2533)', { timeout: 5000 }, async () => {
+	const engine = splitEngine([item({ error: 'boom' })], [item({ keep: 'me' })]);
+	const result = await engine.runWorkflow();
+
+	assert.deepEqual(payload(taskOf(result, 'Split').data.main[1]), [{ error: 'boom' }]);
+});
+
+test('CONFORMANCE continueErrorOutput: without a declared output there is no error output to route to (node-helpers.ts:1140-1196)', { timeout: 5000 }, async () => {
+	const engine = new WorkflowExecutionEngine(splitFixture());
+	engine.registerNodeType('n8n-nodes-base.manualTrigger', async () => [item({ v: 1 })]);
+	// no description registered -> `if (!nodeTypeData) return []`
+	engine.registerNodeType('n8n-nodes-base.split', async () => [item({ error: 'boom' }), item({ ok: 1 })]);
+	engine.registerNodeType('n8n-nodes-base.noOp', async (_n, items) => items);
+
+	const node = engine.nodes.get('Split');
+	assert.equal(engine.mainOutputCount(node), 0, 'the reference counts 0 main outputs here');
+
+	const result = await engine.runWorkflow();
+	assert.deepEqual(payload(taskOf(result, 'Split').data.main[0]), [{ error: 'boom' }, { ok: 1 }]);
+});
+
+test('CONFORMANCE a THROWN error with continueErrorOutput passes the INPUT to output 0 (:1854-1860)', { timeout: 5000 }, async () => {
+	// Output 0 carries no connection here (only the error output does), exactly like the
+	// real-engine probe: the passed-through input reaches nothing, so `executionError` is still
+	// set when the run ends and the status is 'error'.
+	const engine = new WorkflowExecutionEngine({
+		nodes: splitFixture().nodes,
+		connections: {
+			'Manual Trigger': { main: [[conn('Split')]] },
+			Split: { main: [[], [conn('Err')]] },
+		},
+	});
+	engine.registerNodeType('n8n-nodes-base.manualTrigger', async () => [item({ v: 1 })]);
+	engine.registerNodeType(
+		'n8n-nodes-base.split',
+		async () => {
+			throw new Error('kaboom');
+		},
+		{ inputs: ['main'], outputs: ['main'] },
+	);
+	engine.registerNodeType('n8n-nodes-base.noOp', async (_n, items) => items);
+
+	const result = await engine.runWorkflow();
+
+	assert.equal(result.status, 'error', 'executionError is still set at the end of the run');
+	assert.equal(result.resultData.error.message, 'kaboom');
+	assert.deepEqual(payload(taskOf(result, 'Split').data.main[0]), [{ v: 1 }], 'the input is passed through');
+	assert.equal(result.resultData.runData.Err, undefined, 'output 1 is empty, so the error branch never runs');
+});
+
+/* ------------------------------------------------------------------ *
+ * inline item errors (workflow-execute.ts:1898-1917)
+ * ------------------------------------------------------------------ */
+
+const inlineErrorEngine = (outputItems) => {
+	const engine = new WorkflowExecutionEngine(retryFixture());
+	engine.registerNodeType('n8n-nodes-base.manualTrigger', async () => [item({ v: 1 })]);
+	engine.registerNodeType('n8n-nodes-base.flaky', async () => outputItems);
+	return engine;
+};
+
+test('CONFORMANCE inline $error/$json collapses into item.error (:1898-1910)', { timeout: 5000 }, async () => {
+	const engine = inlineErrorEngine([{ json: { $error: { message: 'dollar-boom' }, $json: { a: 1 } } }]);
+	const result = await engine.runWorkflow();
+
+	const [out] = taskOf(result, 'Flaky').data.main[0];
+	assert.equal(out.error.message, 'dollar-boom');
+	assert.deepEqual(out.json, { error: 'dollar-boom' });
+	assert.equal(result.status, 'success', 'an inline error is not an executionError');
+});
+
+test('CONFORMANCE an item already carrying .error gets json replaced by { error: message } (:1912-1915)', { timeout: 5000 }, async () => {
+	const engine = inlineErrorEngine([{ json: { anything: 1 }, error: { message: 'carried' } }]);
+	const result = await engine.runWorkflow();
+
+	const [out] = taskOf(result, 'Flaky').data.main[0];
+	assert.deepEqual(out.json, { error: 'carried' });
+	assert.equal(out.error.message, 'carried');
 });

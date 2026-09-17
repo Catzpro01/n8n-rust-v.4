@@ -139,8 +139,37 @@ async function loadReference() {
 function reconstructedRun(json, { options = {} } = {}) {
 	const engine = new WorkflowExecutionEngine(json);
 	engine.registerNodeType('n8n-nodes-base.manualTrigger', async () => [{ json: {} }]);
-	engine.registerNodeType('n8n-nodes-base.set', async () => [{ json: { status: 'ok', count: 42 } }]);
+	// Set v3.4 in `manual` mode with `includeOtherFields: false`: one item per input item, built
+	// from the assignment list, with `pairedItem` stamped by the node itself. The fixtures only
+	// use constant values, so no expression evaluation is needed to match the real node.
+	engine.registerNodeType(
+		'n8n-nodes-base.set',
+		async (node, items) => {
+			const json = {};
+			for (const assignment of node.parameters?.assignments?.assignments ?? []) {
+				json[assignment.name] =
+					assignment.type === 'object'
+						? JSON.parse(assignment.value)
+						: assignment.type === 'number'
+							? Number(assignment.value)
+							: assignment.value;
+			}
+			return (items.length ? items : [{ json: {} }]).map((input, index) => ({
+				json: { ...json },
+				pairedItem: { item: index },
+			}));
+		},
+		{ inputs: ['main'], outputs: ['main'] }, // the real Set node declares one main output
+	);
 	engine.registerNodeType('n8n-nodes-base.noOp', async (_n, items) => items);
+	// Stop and Error v1 throws the configured message and declares `outputs: []`.
+	engine.registerNodeType(
+		'n8n-nodes-base.stopAndError',
+		async (node) => {
+			throw new Error(node.parameters?.errorMessage ?? 'An error occurred!');
+		},
+		{ inputs: ['main'], outputs: [] },
+	);
 	// Limit v1 keeps the first `maxItems` items — the fixture uses maxItems: 0 to produce an
 	// empty output deterministically, which is what the alwaysOutputData case needs.
 	engine.registerNodeType('n8n-nodes-base.limit', async (_n, items) =>
@@ -399,4 +428,164 @@ test('EQUIVALENCE pairedItem: output items are decorated the same way as the ref
 			`pairedItem differs on "${node}"`,
 		);
 	}
+});
+
+/* ------------------------------------------------------------------ *
+ * node error handling — vs the real engine
+ * ------------------------------------------------------------------ */
+
+const stopAndError = (name, extra = {}) => ({
+	id: name,
+	name,
+	type: 'n8n-nodes-base.stopAndError',
+	typeVersion: 1,
+	position: [200, 0],
+	parameters: { errorType: 'errorMessage', errorMessage: 'kaboom' },
+	...extra,
+});
+
+const setWith = (id, name, position, assignments, extra = {}) => ({
+	id,
+	name,
+	type: 'n8n-nodes-base.set',
+	typeVersion: 3.4,
+	position,
+	parameters: {
+		mode: 'manual',
+		includeOtherFields: false,
+		options: {},
+		assignments: { assignments: assignments.map((a, i) => ({ id: `${id}${i}`, ...a })) },
+	},
+	...extra,
+});
+
+/** Outputs of one run of one node, payload-only, one entry per output index. */
+const outputsOf = (resultData, node, runIndex = 0) =>
+	(resultData.runData?.[node]?.[runIndex]?.data?.main ?? []).map((output) =>
+		(output ?? []).map((i) => i.json),
+	);
+
+const RETRY = {
+	id: 'eq-retry',
+	name: 'Equivalence — retryOnFail',
+	nodes: [
+		manualTrigger('t', 'Manual Trigger', [0, 0]),
+		stopAndError('Boom', { retryOnFail: true, maxTries: 3, waitBetweenTries: 200 }),
+		noOp('n', 'After', [400, 0]),
+	],
+	connections: {
+		'Manual Trigger': { main: [[edge('Boom')]] },
+		Boom: { main: [[edge('After')]] },
+	},
+};
+
+test('EQUIVALENCE retryOnFail: the same retry budget, the same wait, the same failure', { timeout: 120000, skip: skipReason }, async () => {
+	const api = await loadReference();
+
+	const refStarted = Date.now();
+	const reference = await api.run(RETRY);
+	const refMs = Date.now() - refStarted;
+
+	const recStarted = Date.now();
+	const reconstructed = await reconstructedRun(RETRY);
+	const recMs = Date.now() - recStarted;
+
+	assert.equal(reference.status, 'error', 'sanity: the reference really failed');
+	assert.equal(reconstructed.status, reference.status);
+	assert.equal(reconstructed.resultData.error.message, reference.resultData.error.message);
+	assert.deepEqual(shape(reconstructed.resultData).order, shape(reference.resultData).order);
+	assert.equal(reconstructed.resultData.runData.After, undefined, 'nothing runs after the failure');
+
+	// maxTries 3 means 3 attempts and 2 waits of 200 ms on BOTH sides (:1600-1613). The elapsed
+	// time is the observable proof that the retry loop ran the same number of times.
+	assert.ok(refMs >= 380, `reference waited twice, took ${refMs} ms`);
+	assert.ok(recMs >= 380, `reconstruction waited twice, took ${recMs} ms`);
+	assert.ok(
+		Math.abs(recMs - refMs) < 250,
+		`reconstruction ${recMs} ms vs reference ${refMs} ms — the wait budget must match`,
+	);
+});
+
+const CONTINUE_REGULAR = {
+	...RETRY,
+	id: 'eq-continue-regular',
+	name: 'Equivalence — continueRegularOutput',
+	nodes: [
+		manualTrigger('t', 'Manual Trigger', [0, 0]),
+		stopAndError('Boom', { onError: 'continueRegularOutput' }),
+		noOp('n', 'After', [400, 0]),
+	],
+};
+
+test('EQUIVALENCE onError=continueRegularOutput: the input passes through and the run succeeds', { timeout: 120000, skip: skipReason }, async () => {
+	const api = await loadReference();
+	const reference = await api.run(CONTINUE_REGULAR);
+	const reconstructed = await reconstructedRun(CONTINUE_REGULAR);
+
+	assert.equal(reference.status, 'success', 'sanity: the reference kept going');
+	assert.equal(reconstructed.status, reference.status);
+	assert.equal(reconstructed.resultData.error, reference.resultData.error ?? undefined);
+	assert.deepEqual(shape(reconstructed.resultData).order, shape(reference.resultData).order);
+	assert.equal(reconstructed.resultData.runData.Boom[0].executionStatus, 'error');
+	assert.equal(
+		reconstructed.resultData.runData.Boom[0].error.message,
+		reference.resultData.runData.Boom[0].error.message,
+	);
+	assert.deepEqual(payloadOf(reconstructed.resultData, 'After'), payloadOf(reference.resultData, 'After'));
+});
+
+const ERROR_OUTPUT = {
+	id: 'eq-error-output',
+	name: 'Equivalence — continueErrorOutput',
+	nodes: [
+		manualTrigger('t', 'Manual Trigger', [0, 0]),
+		setWith('s', 'Splitter', [200, 0], [{ name: 'error', value: 'soft-boom', type: 'string' }], {
+			onError: 'continueErrorOutput',
+		}),
+		noOp('ok', 'Ok', [400, -100]),
+		noOp('err', 'Err', [400, 100]),
+	],
+	connections: {
+		'Manual Trigger': { main: [[edge('Splitter')]] },
+		Splitter: { main: [[edge('Ok')], [edge('Err')]] },
+	},
+};
+
+test('EQUIVALENCE onError=continueErrorOutput: failed items are routed to the error output', { timeout: 120000, skip: skipReason }, async () => {
+	const api = await loadReference();
+	const reference = await api.run(ERROR_OUTPUT);
+	const reconstructed = await reconstructedRun(ERROR_OUTPUT);
+
+	assert.deepEqual(outputsOf(reference.resultData, 'Splitter'), [[], [{ error: 'soft-boom' }]], 'sanity: the reference routed the item');
+	assert.deepEqual(outputsOf(reconstructed.resultData, 'Splitter'), outputsOf(reference.resultData, 'Splitter'));
+	assert.deepEqual(shape(reconstructed.resultData).order, shape(reference.resultData).order);
+	assert.deepEqual(payloadOf(reconstructed.resultData, 'Err'), payloadOf(reference.resultData, 'Err'));
+	assert.equal(reconstructed.resultData.runData.Ok, undefined, 'the success output stayed empty');
+});
+
+const DOLLAR_ERROR = {
+	id: 'eq-dollar-error',
+	name: 'Equivalence — inline $error',
+	nodes: [
+		manualTrigger('t', 'Manual Trigger', [0, 0]),
+		setWith('d', 'Dollar', [200, 0], [
+			{ name: '$error', value: '{"message":"dollar-boom"}', type: 'object' },
+			{ name: '$json', value: '{"a":1}', type: 'object' },
+		]),
+	],
+	connections: { 'Manual Trigger': { main: [[edge('Dollar')]] } },
+};
+
+test('EQUIVALENCE inline $error/$json collapses into item.error on both engines', { timeout: 120000, skip: skipReason }, async () => {
+	const api = await loadReference();
+	const reference = await api.run(DOLLAR_ERROR);
+	const reconstructed = await reconstructedRun(DOLLAR_ERROR);
+
+	assert.deepEqual(payloadOf(reference.resultData, 'Dollar'), [{ error: 'dollar-boom' }], 'sanity: the reference collapsed it');
+	assert.deepEqual(payloadOf(reconstructed.resultData, 'Dollar'), payloadOf(reference.resultData, 'Dollar'));
+	assert.equal(
+		reconstructed.resultData.runData.Dollar[0].data.main[0][0].error.message,
+		reference.resultData.runData.Dollar[0].data.main[0][0].error.message,
+	);
+	assert.equal(reconstructed.status, reference.status);
 });

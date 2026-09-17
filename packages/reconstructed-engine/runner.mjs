@@ -13,22 +13,34 @@
  *                waitingExecution until every slot has data, then is enqueued exactly ONCE
  *     :417       enqueueFn = executionOrder === 'v1' ? 'unshift' : 'push'
  *     :387-403   prepareWaitingToExecution(): one `null` per input slot
+ *     :1600-1630 retryOnFail: maxTries = min(5, max(2, maxTries || 3)),
+ *                waitBetweenTries = min(5000, max(0, waitBetweenTries || 1000)) — note `||`,
+ *                so an explicit 0 means 1000 ms, not "no wait"
+ *     :1670-1692 a node that did not throw but returned `json.error` on its first item is
+ *                retried the same number of times ("soft" failure)
+ *     :1720-1722 onError === 'continueErrorOutput' → handleNodeErrorOutput()
+ *     :1736-1741 assignPairedItems, then `if (nodeSuccessData) lastNodeExecuted = node`
  *     :1823-1900 error path: taskData.executionStatus = 'error' + taskData.error;
  *                continueOnFail / onError ∈ {continueRegularOutput, continueErrorOutput} passes the
  *                INPUT through and keeps going, otherwise runData.push + stack.unshift + break
+ *     :1898-1917 per-item error reporting: `json.$error` + `json.$json` collapse into
+ *                `item.error` + `json = { error: message }`
  *     :1918-1945 success path: taskData.data = { main: nodeSuccessData }; runData[name].push(taskData)
  *     :2079-2130 stack drained but waiting nodes remain → run them with [] for the missing inputs
  *     :2383-2400 final status: 'error' when executionError is set, otherwise 'success'
+ *     :2463-2562 handleNodeErrorOutput(): items carrying an error move to the LAST main output
  *   reference/n8n/packages/workflow/src/common/map-connections-by-destination.ts:5-49
  *   reference/n8n/packages/workflow/src/interfaces.ts:2675-2691  ITaskStartedData / ITaskData
  *   reference/n8n/packages/workflow/src/execution-status.ts:1-11 ExecutionStatusList
+ *   reference/n8n/packages/workflow/src/node-helpers.ts:1140-1196 getNodeOutputs(): with
+ *                onError === 'continueErrorOutput' an `error` main output is appended
  *
  * Deliberately NOT reconstructed (named so nobody assumes it is there):
- *   - expressions `{{ … }}`, credentials, wait/resume (`waitTill`), sub-workflows and
- *     AI/routing nodes. Pin data, execution timeout and static `requiredInputs` are reconstructed;
- *     expression-valued `requiredInputs` remains owned by the Expression LEGO.
- *   - Full loop-node semantics. Cycles are legal in n8n workflows, so the local execution bound is
- *     only a fail-safe until loop nodes and their reset data are reconstructed end-to-end.
+ *   - expressions `{{ … }}`, credentials, wait/resume (`waitTill`), sub-workflows, AI/routing
+ *     nodes, and dynamically computed (`{{ }}`) node `outputs`.
+ *   - Cycle REJECTION. n8n refuses cyclic graphs at validation time (Validation LEGO —
+ *     contracts/validation.contract.md §CycleDetection). This engine still needs a local
+ *     safety net so a graph that slipped through cannot hang the process: see maxExecutionsFor().
  */
 
 import { getConnectedNodes, getParentNodes } from './graph.mjs';
@@ -36,24 +48,6 @@ import { getConnectedNodes, getParentNodes } from './graph.mjs';
 export { getConnectedNodes, getParentNodes };
 
 const MAIN = 'main';
-
-// `constants.ts:53-59` — the exact fallback order used by `Workflow#__getStartNode`.
-const STARTING_NODE_TYPES = [
-	'n8n-nodes-base.manualTrigger',
-	'n8n-nodes-base.executeWorkflowTrigger',
-	'n8n-nodes-base.errorTrigger',
-	'n8n-nodes-base.evaluationTrigger',
-	'n8n-nodes-base.formTrigger',
-];
-const MANUAL_CHAT_TRIGGER_LANGCHAIN_NODE_TYPE = '@n8n/n8n-nodes-langchain.manualChatTrigger';
-
-/** Standalone counterpart of n8n-workflow's ApplicationError; intentionally not exported. */
-class ApplicationError extends Error {
-	constructor(message) {
-		super(message);
-		this.name = 'ApplicationError';
-	}
-}
 
 /**
  * 1:1 port of `common/map-connections-by-destination.ts:5-49`.
@@ -90,6 +84,9 @@ export function mapConnectionsByDestination(connections) {
 }
 
 /** Loose compatibility shim for the start payload: wrap plain objects as n8n items. */
+/** `await sleep(ms)` — the same helper the reference uses between retries. */
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 function normalizeItems(list) {
 	return (list ?? []).map((entry) =>
 		entry && typeof entry === 'object' && 'json' in entry ? entry : { json: entry },
@@ -118,15 +115,19 @@ export class WorkflowExecutionEngine {
 	 *
 	 * @param {string} typeName
 	 * @param {Function} handler `(node, items, ctx) => items[]`
-	 * @param {object} [description] the parts of the n8n node type the engine needs:
-	 *   `requiredInputs` (`number | number[]`, interfaces.ts:2355), `inputs` (input type list,
-	 *   used for its `.length`), `trigger` / `poll` (presence marks a start node), and `name`
-	 *   (used to exclude the manual-chat trigger). Without an input description the engine falls
-	 *   back to the number of connected input slots.
+	 * @param {object} [description] the parts of the n8n node type description the engine needs:
+	 *   `requiredInputs` (`number | number[]`, interfaces.ts:2355) and `inputs` (input type list,
+	 *   used for its `.length`). Without a description the engine falls back to the number of
+	 *   connected input slots.
 	 */
-	registerNodeType(typeName, handler, description = {}) {
+	registerNodeType(typeName, handler, description = null) {
 		this.nodeTypes.set(typeName, handler);
-		this.nodeTypeDescriptions.set(typeName, description ?? {});
+		// Only a description that was actually handed over is recorded: "registered without a
+		// description" has to stay indistinguishable from "unknown node type", because
+		// `node-helpers.ts:1146-1148` treats a missing nodeTypeData as "no outputs at all".
+		if (description !== null && description !== undefined) {
+			this.nodeTypeDescriptions.set(typeName, description);
+		}
 	}
 
 	/** `workflow-execute.ts:421-423` — number of input SLOTS, not number of incoming edges. */
@@ -311,40 +312,14 @@ export class WorkflowExecutionEngine {
 		return false;
 	}
 
-	/**
-	 * Start-node selection. An explicit start name is the `WorkflowExecute.run()` input and wins
-	 * unchanged (`workflow-execute.ts:123-138`). With no explicit start, this is the no-destination
-	 * branch of `Workflow#getStartNode` / `#__getStartNode` (`workflow.ts:817-860,867-889`):
-	 * one enabled node wins; then the first enabled trigger/poll node; then the exact ordered list
-	 * in `STARTING_NODE_TYPES`. There is deliberately no "first arbitrary node" fallback.
-	 */
+	/** Start node: explicit argument wins, else the n8n-ish trigger heuristic. */
 	findStartNode(startNodeName) {
 		if (startNodeName) return startNodeName;
-
-		const nodeNames = [...this.nodes.keys()];
-		if (nodeNames.length === 1) {
-			const onlyNode = this.nodes.get(nodeNames[0]);
-			if (onlyNode && !onlyNode.disabled) return onlyNode.name; // workflow.ts:822-827
+		for (const [name, node] of this.nodes.entries()) {
+			const type = node.type ?? '';
+			if (type.includes('trigger') || type.includes('Manual') || type.includes('Start')) return name;
 		}
-
-		for (const nodeName of nodeNames) {
-			const node = this.nodes.get(nodeName);
-			const nodeType = this.nodeTypeDescriptions.get(node?.type) ?? {};
-			if ((nodeType.name ?? node?.type) === MANUAL_CHAT_TRIGGER_LANGCHAIN_NODE_TYPE) continue;
-			if (nodeType.trigger !== undefined || nodeType.poll !== undefined) {
-				if (node?.disabled === true) continue;
-				return nodeName;
-			}
-		}
-
-		const sortedNodes = [...this.nodes.values()].sort(
-			(a, b) => STARTING_NODE_TYPES.indexOf(a.type) - STARTING_NODE_TYPES.indexOf(b.type),
-		);
-		for (const node of sortedNodes) {
-			if (STARTING_NODE_TYPES.includes(node.type) && node.disabled !== true) return node.name;
-		}
-
-		return undefined;
+		return this.nodes.keys().next().value;
 	}
 
 	/**
@@ -397,6 +372,98 @@ export class WorkflowExecutionEngine {
 	}
 
 	/**
+	 * `node-helpers.ts:1140-1196` (`getNodeOutputs`) + the `getConnectionTypes(...).filter(main)`
+	 * step at `workflow-execute.ts:2469-2473`, reduced to the count this engine needs.
+	 *
+	 * Two reference details are load-bearing here:
+	 *   - the outputs come from the node TYPE description, not from `node.outputs`;
+	 *   - when `node.onError === 'continueErrorOutput'` the reference APPENDS an
+	 *     `{ category: 'error', type: 'main' }` output — that is what gives an ordinary
+	 *     single-output node its second, error, output.
+	 * A node type with no registered description yields 0 main outputs, exactly like the
+	 * reference's `if (!nodeTypeData) return []`. Dynamically computed outputs
+	 * (`outputs: '={{ … }}'`) are not reconstructed — the Expression LEGO owns those.
+	 */
+	mainOutputCount(node) {
+		const description = this.nodeTypeDescriptions.get(node.type);
+		if (!description) return 0; // node-helpers.ts:1146-1148 — `if (!nodeTypeData) return []`
+		let outputs = Array.isArray(description.outputs) ? description.outputs : [];
+		if (node.onError === 'continueErrorOutput') {
+			outputs = [...outputs, { category: 'error', type: MAIN, displayName: 'Error' }];
+		}
+		return outputs.filter((output) => (typeof output === 'string' ? output : output?.type) === MAIN).length;
+	}
+
+	/**
+	 * `workflow-execute.ts:2463-2562` — 1:1 port.
+	 *
+	 * When a node has `onError: 'continueErrorOutput'`, items that carry an error are pulled off
+	 * every regular output and collected on the LAST main output (the error output). An item
+	 * counts as failed when it has `item.error`, or `json.error` as its only key, or
+	 * `json.error` + `json.message` as its only two keys — those exact three rules, no more.
+	 *
+	 * The reference enriches a routed item with the json of its source item via
+	 * `dataProxy.$getPairedItem(sourceData.previousNode, sourceData, pairedItemData)`. Because the
+	 * destination passed in IS the direct parent, `$getPairedItem` always takes its first branch
+	 * (`workflow-data-proxy.ts:960-985`) and returns `outputData[pairedItem.item]` of that parent —
+	 * which is precisely the item sitting in this node's input slot. So resolving it from
+	 * `executionData.data.main[input][item]` is equivalent, and the Expression LEGO's data proxy is
+	 * not needed. The two reference fallbacks (no source, no usable pairedItem) push the item
+	 * unchanged; a pairedItem pointing outside the input does the same.
+	 */
+	handleNodeErrorOutput(node, nodeSuccessData, executionData) {
+		const mainOutputCount = this.mainOutputCount(node);
+		const errorItems = [];
+
+		// Every output except the last one (the error output) is inspected.
+		for (let outputIndex = 0; outputIndex < mainOutputCount - 1; outputIndex++) {
+			const successItems = [];
+			const items = nodeSuccessData[outputIndex]?.length ? nodeSuccessData[outputIndex] : [];
+
+			while (items.length) {
+				const item = items.shift();
+				if (item === undefined) continue;
+
+				let errorData;
+				if (item.error) {
+					errorData = item.error;
+				} else if (item.json.error && Object.keys(item.json).length === 1) {
+					errorData = item.json.error;
+				} else if (item.json.error && item.json.message && Object.keys(item.json).length === 2) {
+					errorData = item.json.error;
+				}
+
+				if (errorData) {
+					const pairedItemData =
+						item.pairedItem && typeof item.pairedItem === 'object'
+							? Array.isArray(item.pairedItem)
+								? item.pairedItem[0]
+								: item.pairedItem
+							: undefined;
+
+					const sourceItems =
+						pairedItemData === undefined
+							? undefined
+							: executionData.data?.main?.[pairedItemData.input || 0];
+					const sourceItem = sourceItems?.[pairedItemData?.item];
+
+					if (executionData.source === null || pairedItemData === undefined || sourceItem === undefined) {
+						errorItems.push(item);
+					} else {
+						errorItems.push({ ...item, json: { ...sourceItem.json, ...item.json } });
+					}
+				} else {
+					successItems.push(item);
+				}
+			}
+
+			nodeSuccessData[outputIndex] = successItems;
+		}
+
+		nodeSuccessData[mainOutputCount - 1] = errorItems;
+	}
+
+	/**
 	 * Execute the workflow.
 	 *
 	 * @param {string|null} startNodeName
@@ -417,7 +484,7 @@ export class WorkflowExecutionEngine {
 		const startName = this.findStartNode(startNodeName);
 		const startNode = startName ? this.nodes.get(startName) : undefined;
 		if (!startNode) {
-			throw new ApplicationError('No node to start the workflow from could be found');
+			throw new Error('No nodes found in workflow definition');
 		}
 
 		/** workflow-execute.ts:157-171 */
@@ -506,41 +573,86 @@ export class WorkflowExecutionEngine {
 				let nodeSuccessData = null;
 				executionError = undefined;
 
-				try {
-					if (node.disabled === true) {
-						/**
-						 * `workflow-execute.ts:909-920,1199-1201` — disabled nodes never invoke
-						 * their implementation. They pass through the first main input, or return no
-						 * data when that input is absent/null. This check intentionally precedes pinData.
-						 */
-						const firstMainInput = inputData.main?.[0];
-						nodeSuccessData = firstMainInput == null ? null : [firstMainInput];
-					} else if (pinData && pinData[node.name] !== undefined) {
-						/** workflow-execute.ts:1632-1637 — pinned output replaces the node run. */
-						nodeSuccessData = [pinData[node.name]]; // always the zeroth runIndex
-					} else {
-						const produced = handler
-							? await handler(node, items, {
-									inputData: inputData.main ?? [],
-									source: taskData.source,
-									runIndex,
-								})
-							: items; // unregistered node type: passthrough
-						/** INodeExecutionData[][] — one entry per output index. */
-						nodeSuccessData = [produced ?? []];
+				/**
+				 * `workflow-execute.ts:1600-1613` — the retry budget of this node.
+				 * `maxTries` is clamped to [2, 5] and `waitBetweenTries` to [0, 5000], and both
+				 * use `||`, so an explicit `0` wait becomes 1000 ms (verified against the real
+				 * engine: maxTries 1 → 2 attempts, 10 → 5 attempts, wait 0 → 1000 ms).
+				 */
+				let maxTries = 1;
+				let waitBetweenTries = 0;
+				if (node.retryOnFail === true) {
+					maxTries = Math.min(5, Math.max(2, node.maxTries || 3));
+					waitBetweenTries = Math.min(5000, Math.max(0, node.waitBetweenTries || 1000));
+				}
+
+				/** One attempt — pin data first (`:1632-1637`), otherwise the registered handler. */
+				const runNodeOnce = async () => {
+					if (pinData && !node.disabled && pinData[node.name] !== undefined) {
+						return [pinData[node.name]]; // always the zeroth runIndex
 					}
-				} catch (error) {
-					executionError = {
-						name: error?.name,
-						message: error?.message,
-						description: error?.description,
-						node: node.name,
-						stack: error?.stack,
-					};
+					const produced = handler
+						? await handler(node, items, {
+								inputData: inputData.main ?? [],
+								source: taskData.source,
+								runIndex,
+							})
+						: items; // unregistered node type: passthrough
+					/** INodeExecutionData[][] — one entry per output index. */
+					return [produced ?? []];
+				};
+
+				/** `workflow-execute.ts:1615-1810` — the try/retry loop. */
+				for (let tryIndex = 0; tryIndex < maxTries; tryIndex++) {
+					try {
+						if (tryIndex !== 0) {
+							// :1618-1619 — the previous attempt's error is cleared before a retry.
+							executionError = undefined;
+							if (waitBetweenTries !== 0) await sleep(waitBetweenTries);
+						}
+
+						nodeSuccessData = await runNodeOnce();
+
+						/**
+						 * `:1670-1692` — a node that did not throw but reported a failure on its
+						 * first item (`json.error !== undefined`) is retried just the same, until
+						 * the try budget is spent; it is then treated as a SUCCESS.
+						 */
+						let nodeFailed = nodeSuccessData?.[0]?.[0]?.json?.error !== undefined;
+						while (nodeFailed && tryIndex !== maxTries - 1) {
+							await sleep(waitBetweenTries);
+							nodeSuccessData = await runNodeOnce();
+							nodeFailed = nodeSuccessData?.[0]?.[0]?.json?.error !== undefined;
+							tryIndex++;
+						}
+
+						/** `:1720-1722` — split failed items onto the error output. */
+						if (nodeSuccessData && node.onError === 'continueErrorOutput') {
+							this.handleNodeErrorOutput(node, nodeSuccessData, executionData);
+						}
+
+						break;
+					} catch (error) {
+						executionError = {
+							name: error?.name,
+							message: error?.message,
+							description: error?.description,
+							node: node.name,
+							stack: error?.stack,
+						};
+					}
 				}
 
 				/** workflow-execute.ts:1736 — decorate output items before anything else reads them. */
 				nodeSuccessData = this.assignPairedItems(nodeSuccessData, executionData);
+
+				/**
+				 * `workflow-execute.ts:1738-1741` — `if (nodeSuccessData)`: ANY non-null output makes
+				 * this node `lastNodeExecuted`, including an output of zero items. Checked against
+				 * the real engine — a Limit node with `maxItems: 0` emits `data = [[]]` and still
+				 * becomes `lastNodeExecuted`.
+				 */
+				if (nodeSuccessData) lastNodeExecuted = node.name;
 
 				/** workflow-execute.ts:1742-1767 — a node with no output can still emit one item. */
 				if (!nodeSuccessData?.[0]?.[0] && node.alwaysOutputData === true) {
@@ -587,8 +699,29 @@ export class WorkflowExecutionEngine {
 					}
 				}
 
-				/** workflow-execute.ts:1739, 1918-1945 */
-				if (nodeSuccessData?.[0]?.[0]) lastNodeExecuted = node.name;
+				/**
+				 * `workflow-execute.ts:1898-1917` — per-item error reporting on the regular output.
+				 * Nodes that report a failure inline (`json.$error` + `json.$json`) get collapsed
+				 * into `item.error` + `json = { error: message }`; an item that already carries
+				 * `error` gets its json replaced by `{ error: message }` too. The UI reads
+				 * `item.error`, so this runs even on a fully successful node.
+				 */
+				for (const execution of nodeSuccessData ?? []) {
+					for (const lineResult of execution ?? []) {
+						if (
+							lineResult.json !== undefined &&
+							lineResult.json.$error !== undefined &&
+							lineResult.json.$json !== undefined
+						) {
+							lineResult.error = lineResult.json.$error;
+							lineResult.json = { error: lineResult.json.$error.message };
+						} else if (lineResult.error !== undefined) {
+							lineResult.json = { error: lineResult.error.message };
+						}
+					}
+				}
+
+				/** workflow-execute.ts:1918-1945 */
 				taskData.data = { main: nodeSuccessData };
 				(runData[node.name] ??= []).push(taskData);
 				executionLog.push({
