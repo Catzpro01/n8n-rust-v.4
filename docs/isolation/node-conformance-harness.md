@@ -208,16 +208,27 @@ const OPTIONS_ISSUES_CASES: usize = 6;  // options/multiOptions required + lenie
     `options` and empty-array for `multiOptions`, but `undefined` sails through both;
     values are NEVER cross-checked against the declared options list. Do not "harden"
     either side in the port.
+18. **Nested-issue scoping asymmetry** (WG-27): non-fixed `collection` children keep the
+    ANCESTOR basePath (`node-helpers.ts:1505-1513`) — required checks and display keys
+    never read the nested `coll.*` values, so a filled nested required field STILL flags
+    (issue keyed by child name, no prefix). `fixedCollection` instead descends:
+    basePath `<name>.<option>[<i>]`, issues still keyed by the child name only. A port
+    that "fixes" collection scoping diverges from the oracle.
+19. **fixedCollection count limits** (WG-28): `minRequiredFields`/`maxAllowedFields`
+    emit byte-exact `At least N field(s) (is|are) required.` / `At most N field(s)
+    (is|are) allowed.` keyed by the fixedCollection name; unset options (`undefined`)
+    are skipped entirely — no count validation, no child validation.
 
 ## 5. Acceptance wiring (brief §4, gate 1)
 
 `n8n-node-model` is **RUST IMPLEMENTED-verified for the Node LEGO when**:
 
-1. This harness reproduces all 175 entries (19 frozen-port golden cases + 38 wave-2 pure
+1. This harness reproduces all 186 entries (19 frozen-port golden cases + 38 wave-2 pure
    helper cases + 24 wave-3 parameter-issues/filter cases + 27 wave-4 operator-matrix
    cases + 9 wave-5 nested-parameter cases + 18 wave-6 RLC/resourceMapper cases + 23
-   wave-7 IO/conditions/features cases + 10 wave-8 display-path/options cases + 7 serde
-   samples) green under `tools/rust-offline-rig/run.sh test` (offline).
+   wave-7 IO/conditions/features cases + 10 wave-8 display-path/options cases + 11
+   wave-9 nested-issues cases + 7 serde samples) green under
+   `tools/rust-offline-rig/run.sh test` (offline).
 2. The 6 frozen ports exist with the exact snake_cased names listed in brief §3
    (`get_node_parameters`, `get_node_inputs`, `get_node_outputs`, `get_connection_types`,
    `rename_form_fields`, `apply_access_patterns`) and crate exports match contract §11.

@@ -753,6 +753,74 @@ const optionsIssuesCases = [
   optionsIssuesCase("options-invalid-value-lenient", optionsRequiredProps, { opt: "bogus" }),
 ];
 
+/* ---------------- Wave 9: nested required-issues (collection / fixedCollection) ----- */
+
+function nestedIssuesCase(name, properties, parameters) {
+  const node = { id: "w27", name: "W27 Node", type: "noop", typeVersion: 1, position: [0, 0], parameters };
+  return { name, properties, node, expect: helpers.getNodeParametersIssues(properties, node, null) };
+}
+
+const propsColl27 = [
+  { displayName: "Coll", name: "coll", type: "collection", default: {}, options: [
+    { displayName: "Inner Required", name: "inner", type: "string", default: "", required: true },
+    { displayName: "Inner Optional", name: "opt", type: "string", default: "" },
+  ] },
+];
+const propsCollHidden27 = [
+  { displayName: "Coll", name: "coll", type: "collection", default: {}, options: [
+    { displayName: "Inner Required", name: "inner", type: "string", default: "", required: true, displayOptions: { show: { mode: ["b"] } } },
+    { displayName: "Mode", name: "mode", type: "options", options: [ { name: "A", value: "a" }, { name: "B", value: "b" } ], default: "a" },
+  ] },
+];
+const propsFC27 = [
+  { displayName: "Fixed", name: "fixed", type: "fixedCollection", default: {}, options: [
+    { name: "opts", displayName: "Opts", values: [ { displayName: "Inner", name: "inn", type: "string", default: "", required: true } ] },
+  ] },
+];
+const propsFCM27 = [
+  { displayName: "Fixed", name: "fixed", type: "fixedCollection", typeOptions: { multipleValues: true }, default: {}, options: [
+    { name: "opts", displayName: "Opts", values: [ { displayName: "Inner", name: "inn", type: "string", default: "", required: true } ] },
+  ] },
+];
+// n8n@2.9.4 model (node-helpers.ts:1505-1513): non-fixed `collection` children are pushed
+// with the ANCESTOR basePath — neither displayOptions keys nor required values ever read
+// the nested `coll.*` scope. fixedCollection instead descends (basePath "<name>.opts[i]").
+const nestedRequiredCases = [
+  nestedIssuesCase("coll-empty-inner", propsColl27, { coll: { inner: "" } }),
+  // QUIRK-PIN: even a filled nested value flags, because the child is resolved at the
+  // ancestor scope where "inner" does not exist. Must never silently disappear.
+  nestedIssuesCase("coll-filled-inner-still-flags", propsColl27, { coll: { inner: "ok" } }),
+  nestedIssuesCase("coll-hidden-at-root-scope", propsCollHidden27, { coll: { mode: "a", inner: "" } }),
+  // coll.mode="b" is invisible at the ancestor scope → the child stays hidden → no issue.
+  nestedIssuesCase("coll-mode-nested-invisible", propsCollHidden27, { coll: { mode: "b", inner: "" } }),
+  nestedIssuesCase("fc-single-empty", propsFC27, { fixed: { opts: { inn: "" } } }),
+  nestedIssuesCase("fc-multi-partial", propsFCM27, { fixed: { opts: [ { inn: "ok" }, {} ] } }),
+];
+
+const propsMinMax = [
+  { displayName: "Fixed", name: "fixed", type: "fixedCollection", typeOptions: { multipleValues: true, minRequiredFields: 2, maxAllowedFields: 3 }, default: {}, options: [
+    { name: "opts", displayName: "Opts", values: [ { displayName: "Inner", name: "inn", type: "string", default: "" } ] },
+  ] },
+];
+const propsMin1 = [
+  { displayName: "Fixed", name: "fixed", type: "fixedCollection", typeOptions: { multipleValues: true, minRequiredFields: 1 }, default: {}, options: [
+    { name: "opts", displayName: "Opts", values: [ { displayName: "Inner", name: "inn", type: "string", default: "" } ] },
+  ] },
+];
+const propsTwoOptions = [
+  { displayName: "Fixed", name: "fixed", type: "fixedCollection", default: {}, options: [
+    { name: "opts", displayName: "Opts", values: [ { displayName: "Inner", name: "inn", type: "string", default: "", required: true } ] },
+    { name: "other", displayName: "Other", values: [ { displayName: "X", name: "x", type: "string", default: "", required: true } ] },
+  ] },
+];
+const fcFieldCountCases = [
+  nestedIssuesCase("below-min", propsMinMax, { fixed: { opts: [ { inn: "a" } ] } }),
+  nestedIssuesCase("above-max", propsMinMax, { fixed: { opts: [ { inn: "a" }, { inn: "b" }, { inn: "c" }, { inn: "d" } ] } }),
+  nestedIssuesCase("within-bounds", propsMinMax, { fixed: { opts: [ { inn: "a" }, { inn: "b" } ] } }),
+  nestedIssuesCase("min1-singular", propsMin1, { fixed: { opts: [] } }),
+  nestedIssuesCase("unset-option-skipped", propsTwoOptions, { fixed: { opts: { inn: "ok" } } }),
+];
+
 /* ---------------- Regression tripwire: results must equal the VERIFIED goldens ------ */
 /* (docs/isolation/node-golden-cases.md — values frozen by VERIFIED-BY-EXECUTION)      */
 
@@ -867,6 +935,21 @@ assertGolden("W26 options-issues", optionsIssuesCases.map((c) => c.expect), [
   { parameters: { multi: ['Parameter "Multi" is required.'] } },
   null, null, null,
 ]);
+assertGolden("W27 nested-required", nestedRequiredCases.map((c) => c.expect), [
+  { parameters: { inner: ['Parameter "Inner Required" is required.'] } },
+  { parameters: { inner: ['Parameter "Inner Required" is required.'] } }, // QUIRK-PIN: filled nested value still flags
+  null,
+  null,
+  { parameters: { inn: ['Parameter "Inner" is required.'] } },
+  { parameters: { inn: ['Parameter "Inner" is required.'] } },
+]);
+assertGolden("W28 fc-field-counts", fcFieldCountCases.map((c) => c.expect), [
+  { parameters: { fixed: ["At least 2 fields are required."] } },
+  { parameters: { fixed: ["At most 3 fields are allowed."] } },
+  null,
+  { parameters: { fixed: ["At least 1 field is required."] } },
+  null,
+]);
 
 if (trip.length) {
   console.error("REFERENCE DRIFT vs docs/isolation/node-golden-cases.md:");
@@ -976,6 +1059,10 @@ const fixtures = {
         `displayParameterPath:${displayParameterPathCases.length}`,
         `optionsIssues:${optionsIssuesCases.length}`,
       ].join(", "),
+      wave9NestedIssues: [
+        `nestedRequiredIssues:${nestedRequiredCases.length}`,
+        `fixedCollectionFieldCounts:${fcFieldCountCases.length}`,
+      ].join(", "),
     },
   },
   applyAccessPatterns: { cases: applyAccessPatternsCases },
@@ -1020,6 +1107,8 @@ const fixtures = {
   getNodeFeatures: { cases: nodeFeaturesCases },
   displayParameterPath: { cases: displayParameterPathCases },
   optionsIssues: { cases: optionsIssuesCases },
+  nestedRequiredIssues: { cases: nestedRequiredCases },
+  fixedCollectionFieldCounts: { cases: fcFieldCountCases },
   serdeConformance,
 };
 

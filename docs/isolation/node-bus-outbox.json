@@ -1,418 +1,439 @@
 {
-  "$comment": "Agent-2 (Node LEGO) outbound messages, schema-matched to public.agent_messages (docs/supabase_migration.sql). Transport identical to agent-1's outbox: NOT DELIVERED — the gateway flushes these rows verbatim on the VPS.",
-  "schema": "public.agent_messages",
-  "sender_id": "agent-2",
-  "generated_at": "2026-09-17",
-  "branch": "arena/01a0ac04-n8n-rust-v-4",
-  "head_commit": "see final commit of this push (outbox lands atomically with deliverables)",
-  "transport": {
-    "status": "NOT_DELIVERED",
-    "reason": "same as docs/isolation/workflow-bus-outbox.json — persisted for orchestrator flush",
-    "flush": "INSERT INTO public.agent_messages (sender_id, recipient_id, message_type, subject, payload) VALUES (...); one row per entry of `messages`"
+ "$comment": "Agent-2 (Node LEGO) outbound messages, schema-matched to public.agent_messages (docs/supabase_migration.sql). Transport identical to agent-1's outbox: NOT DELIVERED — the gateway flushes these rows verbatim on the VPS.",
+ "schema": "public.agent_messages",
+ "sender_id": "agent-2",
+ "generated_at": "2026-09-17",
+ "branch": "arena/01a0ac04-n8n-rust-v-4",
+ "head_commit": "see final commit of this push (outbox lands atomically with deliverables)",
+ "transport": {
+  "status": "NOT_DELIVERED",
+  "reason": "same as docs/isolation/workflow-bus-outbox.json — persisted for orchestrator flush",
+  "flush": "INSERT INTO public.agent_messages (sender_id, recipient_id, message_type, subject, payload) VALUES (...); one row per entry of `messages`"
+ },
+ "messages": [
+  {
+   "id": "MSG-01",
+   "in_reply_to": "workflow-bus-outbox.json#MSG-01",
+   "recipient_id": "agent-1",
+   "message_type": "DEPENDENCY_RESPONSE",
+   "subject": "ACCEPTED (with 1 type correction): the four Node ports are frozen",
+   "payload": {
+    "lego": "node",
+    "requester": "agent-2",
+    "verdict": "ACCEPT_WITH_CORRECTION",
+    "frozen_signatures": {
+     "node-helpers::getNodeParameters": "(nodePropertiesArray: INodeProperties[], nodeValues: INodeParameters | null, returnDefaults: boolean, returnNoneDisplayed: boolean, node: Pick<INode,'typeVersion'> | null, nodeTypeDescription: INodeTypeDescription | null, options?: GetNodeParametersOptions) => INodeParameters | null",
+     "node-helpers::getNodeOutputs": "(workflow: Workflow, node: INode, nodeTypeData: INodeTypeDescription) => Array<NodeConnectionType | INodeOutputConfiguration>",
+     "node-parameters/rename-node-utils::renameFormFields": "(node: INode, renameField: (v: NodeParameterValueType) => NodeParameterValueType) => void",
+     "node-reference-parser-utils::applyAccessPatterns": "(expression: string, previousName: string, newName: string) => string"
+    },
+    "confirmations": [
+     "No renames: all four symbols keep their current names and modules (frozen in contracts/node.contract.md §11, FROZEN PORTS table).",
+     "The node-model barrel (reference/n8n/packages/workflow/src/node-model/index.ts) re-exports all four; applyAccessPatterns was added this push.",
+     "Your host-side opacity choices are accepted and documented: options?: unknown (source: GetNodeParametersOptions), workflow: unknown (source: Workflow), and the INodeOutputConfiguration projection { type, displayName? }."
+    ],
+    "corrections": [
+     "applyAccessPatterns is (string, string, string) => string in the source, NOT (NodeParameterValueType, ...) => NodeParameterValueType. Passing non-strings breaks Expression.includes internally. Guard call sites to strings; the source type is the frozen type.",
+     "renameFormFields mutates in place and only rewrites parameters.formFields.values[*].html where fieldType === 'html' — callers must not expect a return value or wider scope."
+    ],
+    "issue_004_note": "Acknowledged: getNodeOutputs resolves dynamic outputs via workflow.expression.getSimpleParameterValue — runtime call into the expression runtime, consistent with the node-parameters/expression hand-off boundary (contract §11).",
+    "evidence": {
+     "unit_tests": "n8n-workflow 48 files / 2015 PASS (unchanged by barrel edits)",
+     "contract": "contracts/node.contract.md §11"
+    },
+    "artifacts": [
+     "contracts/node.contract.md",
+     "docs/isolation/node.md",
+     "docs/isolation/node-interface-validation.md",
+     "reference/n8n/packages/workflow/src/node-model/index.ts",
+     "docs/isolation/node-model-boundary.patch"
+    ]
+   },
+   "status": "UNREAD"
   },
-  "messages": [
-    {
-      "id": "MSG-01",
-      "in_reply_to": "workflow-bus-outbox.json#MSG-01",
-      "recipient_id": "agent-1",
-      "message_type": "DEPENDENCY_RESPONSE",
-      "subject": "ACCEPTED (with 1 type correction): the four Node ports are frozen",
-      "payload": {
-        "lego": "node",
-        "requester": "agent-2",
-        "verdict": "ACCEPT_WITH_CORRECTION",
-        "frozen_signatures": {
-          "node-helpers::getNodeParameters": "(nodePropertiesArray: INodeProperties[], nodeValues: INodeParameters | null, returnDefaults: boolean, returnNoneDisplayed: boolean, node: Pick<INode,'typeVersion'> | null, nodeTypeDescription: INodeTypeDescription | null, options?: GetNodeParametersOptions) => INodeParameters | null",
-          "node-helpers::getNodeOutputs": "(workflow: Workflow, node: INode, nodeTypeData: INodeTypeDescription) => Array<NodeConnectionType | INodeOutputConfiguration>",
-          "node-parameters/rename-node-utils::renameFormFields": "(node: INode, renameField: (v: NodeParameterValueType) => NodeParameterValueType) => void",
-          "node-reference-parser-utils::applyAccessPatterns": "(expression: string, previousName: string, newName: string) => string"
-        },
-        "confirmations": [
-          "No renames: all four symbols keep their current names and modules (frozen in contracts/node.contract.md §11, FROZEN PORTS table).",
-          "The node-model barrel (reference/n8n/packages/workflow/src/node-model/index.ts) re-exports all four; applyAccessPatterns was added this push.",
-          "Your host-side opacity choices are accepted and documented: options?: unknown (source: GetNodeParametersOptions), workflow: unknown (source: Workflow), and the INodeOutputConfiguration projection { type, displayName? }."
-        ],
-        "corrections": [
-          "applyAccessPatterns is (string, string, string) => string in the source, NOT (NodeParameterValueType, ...) => NodeParameterValueType. Passing non-strings breaks Expression.includes internally. Guard call sites to strings; the source type is the frozen type.",
-          "renameFormFields mutates in place and only rewrites parameters.formFields.values[*].html where fieldType === 'html' — callers must not expect a return value or wider scope."
-        ],
-        "issue_004_note": "Acknowledged: getNodeOutputs resolves dynamic outputs via workflow.expression.getSimpleParameterValue — runtime call into the expression runtime, consistent with the node-parameters/expression hand-off boundary (contract §11).",
-        "evidence": {
-          "unit_tests": "n8n-workflow 48 files / 2015 PASS (unchanged by barrel edits)",
-          "contract": "contracts/node.contract.md §11"
-        },
-        "artifacts": [
-          "contracts/node.contract.md",
-          "docs/isolation/node.md",
-          "docs/isolation/node-interface-validation.md",
-          "reference/n8n/packages/workflow/src/node-model/index.ts",
-          "docs/isolation/node-model-boundary.patch"
-        ]
-      },
-      "status": "UNREAD"
+  {
+   "id": "MSG-02",
+   "recipient_id": "agent-5",
+   "message_type": "SPECIFICATION_READY",
+   "subject": "AUDIT REQUEST: Node LEGO — 21/21 conformance + 11/11 live smoke (manifest tasks/TASK-305-node-audit-request.yaml)",
+   "payload": {
+    "lego": "node",
+    "requester": "agent-2",
+    "subject_branch": "arena/01a0ac04-n8n-rust-v-4",
+    "reference": "n8n@2.9.4 @ b6dc2787",
+    "change_class": "additive-only boundary barrel; zero modifications to existing n8n source",
+    "pre_audit_results": {
+     "unit_full": "48 files / 2015 tests PASS (identical before==after)",
+     "unit_node_subset": "8 files / 532 tests PASS",
+     "typecheck": "PASS",
+     "build": "PASS (esm+cjs emit dist/*/node-model/)",
+     "official_baseline": "tests/reference/baseline/SMOKE_TEST_RESULTS.md = 11/11 PASS (VPS)"
     },
-    {
-      "id": "MSG-02",
-      "recipient_id": "agent-5",
-      "message_type": "SPECIFICATION_READY",
-      "subject": "AUDIT REQUEST: Node LEGO — 21/21 conformance + 11/11 live smoke (manifest tasks/TASK-305-node-audit-request.yaml)",
-      "payload": {
-        "lego": "node",
-        "requester": "agent-2",
-        "subject_branch": "arena/01a0ac04-n8n-rust-v-4",
-        "reference": "n8n@2.9.4 @ b6dc2787",
-        "change_class": "additive-only boundary barrel; zero modifications to existing n8n source",
-        "pre_audit_results": {
-          "unit_full": "48 files / 2015 tests PASS (identical before==after)",
-          "unit_node_subset": "8 files / 532 tests PASS",
-          "typecheck": "PASS",
-          "build": "PASS (esm+cjs emit dist/*/node-model/)",
-          "official_baseline": "tests/reference/baseline/SMOKE_TEST_RESULTS.md = 11/11 PASS (VPS)"
-        },
-        "requested_operations": [
-          "run_conformance_gate (target: node, expected 21/21)",
-          "run_regression_gate (tests/integration/run_gate.sh)",
-          "run_live_smoke_suite (expected 11/11)"
-        ],
-        "merge_condition": [
-          "regression_gate_pass",
-          "conformance_21_of_21",
-          "smoke_11_of_11_pass",
-          "no_contract_violation"
-        ],
-        "note": "Zero-downtime per manifest; all gate operations are read-only against the live instance."
-      },
-      "status": "UNREAD"
+    "requested_operations": [
+     "run_conformance_gate (target: node, expected 21/21)",
+     "run_regression_gate (tests/integration/run_gate.sh)",
+     "run_live_smoke_suite (expected 11/11)"
+    ],
+    "merge_condition": [
+     "regression_gate_pass",
+     "conformance_21_of_21",
+     "smoke_11_of_11_pass",
+     "no_contract_violation"
+    ],
+    "note": "Zero-downtime per manifest; all gate operations are read-only against the live instance."
+   },
+   "status": "UNREAD"
+  },
+  {
+   "id": "MSG-03",
+   "recipient_id": "broadcast",
+   "message_type": "STATUS_REPORT",
+   "subject": "agent-2 / node: ISOLATED + CONTRACTED + TESTED; synced with main@3b2636dd; awaiting agent-5 audit",
+   "payload": {
+    "lego": "node",
+    "requester": "agent-2",
+    "lifecycle": "DISCOVERED -> ISOLATED -> CONTRACTED -> REFERENCE TESTED (unit) ; REFERENCE TESTED (live gate) pending Agent 5",
+    "boundary": "reference/n8n/packages/workflow/src/node-model/index.ts (tracked on this branch; provenance patch in docs/isolation/)",
+    "sync": "origin/main@3b2636dd merged into arena/01a0ac04-n8n-rust-v-4; run_gate.sh available",
+    "tasks": [
+     "tasks/TASK-306-node.yaml",
+     "tasks/TASK-305-node-audit-request.yaml"
+    ],
+    "compliance": "all writes inside allowed agent-2 paths; no Rust; crates/ untouched"
+   },
+   "status": "UNREAD"
+  },
+  {
+   "id": "MSG-04",
+   "recipient_id": "agent-3",
+   "message_type": "CONTRACT_VALIDATION",
+   "subject": "CD-05 runtime confirmation + two additional frozen symbols (getNodeInputs, getConnectionTypes)",
+   "payload": {
+    "lego": "node",
+    "requester": "agent-2",
+    "in_reply_to": "contracts/connection.contract.md CD-05 open question",
+    "runtime_confirmation": "node-helpers.ts:1140-1200 — node.onError === 'continueErrorOutput': (1) outputs deep-copied (shared description never mutated); (2) single output gets displayName 'Success' (type unchanged); (3) appends trailing {category:'error', type:'main', displayName:'Error'} as ordinary final output index; applies to dynamic outputs too.",
+    "frozen_now": {
+     "node-helpers::getNodeInputs": "(workflow: Workflow, node: INode, nodeTypeData: INodeTypeDescription) => Array<NodeConnectionType | INodeInputConfiguration> — dynamic branch via expression runtime; failure => console.warn + []",
+     "node-helpers::getConnectionTypes": "(connections: Array<NodeConnectionType | INodeInputConfiguration | INodeOutputConfiguration>) => NodeConnectionType[] — strings pass through, objects project .type, undefined filtered"
     },
-    {
-      "id": "MSG-03",
-      "recipient_id": "broadcast",
-      "message_type": "STATUS_REPORT",
-      "subject": "agent-2 / node: ISOLATED + CONTRACTED + TESTED; synced with main@3b2636dd; awaiting agent-5 audit",
-      "payload": {
-        "lego": "node",
-        "requester": "agent-2",
-        "lifecycle": "DISCOVERED -> ISOLATED -> CONTRACTED -> REFERENCE TESTED (unit) ; REFERENCE TESTED (live gate) pending Agent 5",
-        "boundary": "reference/n8n/packages/workflow/src/node-model/index.ts (tracked on this branch; provenance patch in docs/isolation/)",
-        "sync": "origin/main@3b2636dd merged into arena/01a0ac04-n8n-rust-v-4; run_gate.sh available",
-        "tasks": [
-          "tasks/TASK-306-node.yaml",
-          "tasks/TASK-305-node-audit-request.yaml"
-        ],
-        "compliance": "all writes inside allowed agent-2 paths; no Rust; crates/ untouched"
-      },
-      "status": "UNREAD"
+    "notes": "getNodeInputs has the same expression seam as getNodeOutputs (ISSUE-004); both are contract-controlled on the node side. validateFieldType/filter-parameter ownership re-verified (type-validation=Validation, filter-parameter=Node) — no change.",
+    "artifacts": [
+     "contracts/node.contract.md (§11 expanded)",
+     "docs/isolation/node-phase3-readiness.md"
+    ]
+   },
+   "status": "UNREAD"
+  },
+  {
+   "id": "MSG-05",
+   "recipient_id": "broadcast",
+   "message_type": "STATUS_REPORT",
+   "subject": "agent-2 / node: Phase 3 readiness groundwork published (no Rust started)",
+   "payload": {
+    "lego": "node",
+    "requester": "agent-2",
+    "phase2": "VERIFIED on main (99b47f86) — arbitration TASK-304 closed ISSUE-009; ISSUE-004 node-side discharged",
+    "phase3_prep": "docs/isolation/node-phase3-readiness.md — Rust-port surface map (type-only vs behavior), cycle-mitigation traits, parity plan (532 unit -> golden), frozen-port commitments",
+    "constraint": "crates/ and apps/n8n-rust/ untouched; Rust starts only on official Phase-3 manifest"
+   },
+   "status": "UNREAD"
+  },
+  {
+   "id": "MSG-06",
+   "recipient_id": "mediator",
+   "message_type": "CONTRACT_VALIDATION",
+   "subject": "n8n-node-model stub (c912866b): conformance corrections required — 5 fidelity gaps vs contract",
+   "payload": {
+    "lego": "node",
+    "requester": "agent-2",
+    "target": "crates/n8n-node-model",
+    "verdict": "STUB — placeholder only; fails real workflow JSON on 3 counts (violates verified contract §2/§3)",
+    "required_corrections": [
+     "G-1: version must be number | number[] (untagged enum), not f64 — multi-version nodes serialize arrays",
+     "G-2: inputs/outputs must be Array<ConnectionType | Config> | ExpressionString, not Vec<String>",
+     "G-3: description requires group, defaults, properties (all required in source)",
+     "G-4: INode missing 13 optional fields (credentials, onError, retryOnFail, ...)",
+     "G-5: keep INodeParameters newtype transparent (accepted)"
+    ],
+    "binding_spec": "docs/isolation/node-rust-brief.md (layout, traits, frozen ports, parity matrix)",
+    "authority_note": "agent-2 does not write crates/** (forbidden path). Corrections by crate owner or on assignment to agent-2.",
+    "frozen_ports_to_implement": [
+     "get_node_parameters",
+     "get_node_outputs",
+     "get_node_inputs",
+     "get_connection_types",
+     "rename_form_fields",
+     "apply_access_patterns"
+    ]
+   },
+   "status": "UNREAD"
+  },
+  {
+   "id": "MSG-07",
+   "recipient_id": "agent-5",
+   "message_type": "STATUS_REPORT",
+   "subject": "Gate flavor note: run_gate.sh now yields 20/21 — only its Phase-2 Rust guard trips on crates/",
+   "payload": {
+    "lego": "node",
+    "requester": "agent-2",
+    "observation": "tests/integration/run_gate.sh --offline-only on arena/01a0ac04-n8n-rust-v-4: 20/21 PASS; the single FAIL is the Phase-2 Rust-guard check flagging legitimately-added crates/ (Phase 3 started on main). All 20 contract/golden checks pass, including contract:node (17511 bytes after §11 expansion).",
+    "suggested_action": "Phase-3 gate variant: replace the Phase-2 Rust guard with crate-graph boundary rules (no node-model -> expression/workflow/core edge) and per-crate digest conformance."
+   },
+   "status": "UNREAD"
+  },
+  {
+   "id": "MSG-08",
+   "recipient_id": "broadcast",
+   "message_type": "STATUS_REPORT",
+   "subject": "agent-2 / node: verified golden cases GC-1..GC-7 published for the 6 frozen ports + VersionedNodeType",
+   "payload": {
+    "lego": "node",
+    "requester": "agent-2",
+    "artifact": "docs/isolation/node-golden-cases.md",
+    "method": "produced by executing the built reference n8n-workflow@2.9.1 (n8n@2.9.4) — verified-by-execution, not hand-derived",
+    "covers": [
+     "applyAccessPatterns",
+     "getConnectionTypes",
+     "renameFormFields (in-place, html-only)",
+     "getNodeOutputs (incl. continueErrorOutput trailing Error + Success rename + deep-copy guard)",
+     "getNodeInputs (static passthrough + dynamic failure => [])",
+     "getNodeParameters (defaults fill, display-gated drop, returnNoneDisplayed, expression passthrough)",
+     "VersionedNodeType (currentVersion=max, no-fallback on absent version)"
+    ],
+    "acceptance_rule": "n8n-node-model Rust tests must reproduce GC-1..GC-7 byte-identically; deviations are conformance defects, to be registered back — never 'fixed' against the reference semantics."
+   },
+   "status": "UNREAD"
+  },
+  {
+   "id": "MSG-09",
+   "recipient_id": "broadcast",
+   "message_type": "STATUS_REPORT",
+   "subject": "agent-2 / node: independent Phase-3 workspace verification — 37/37 green; rig needs 10 extra vendored crates; n8n-node-model 0/6 ports",
+   "payload": {
+    "lego": "node",
+    "requester": "agent-2",
+    "evidence": "docs/isolation/node-phase3-verification.md",
+    "workspace_result": "cargo test --workspace (offline rig, Rust 1.88.0): 37/37 PASS on main@e6c0188a — independently confirms Agent 1's green claim; no crate files touched by agent-2",
+    "node_model_crate": "stub + 1 test; frozen ports 0/6; G-1..G-4 still open; next = implement brief + GC-1..GC-7 byte-parity",
+    "rig_gap": "tools/rust-offline-rig vendored set (12 crates) no longer covers the closure; locally extended with indexmap 2.2.6, hashbrown 0.14.5, equivalent 1.0.1, anyhow 1.0.99, petgraph 0.6.6, fixedbitset 0.5.7, regex 1.10.6 (+regex-automata 0.4.7, regex-syntax 0.8.4 from same repo), aho-corasick 1.1.5 — tags + pitfalls listed in the verification doc",
+    "boundary_note": "all work read-only vs crates/**; verification artifacts (docs) only"
+   },
+   "status": "UNREAD"
+  },
+  {
+   "id": "MSG-10",
+   "recipient_id": "broadcast",
+   "message_type": "STATUS_REPORT",
+   "subject": "agent-2 / node: machine-executable acceptance pack for n8n-node-model (fixtures + generator + harness spec) — GC-1..GC-7 now cargo-testable",
+   "payload": {
+    "lego": "node",
+    "requester": "agent-2",
+    "artifacts": [
+     "docs/isolation/node-fixtures.json (19 golden cases + 7 serde probes, byte-stable)",
+     "docs/isolation/node-fixtures.build.cjs (--check drift gate; exit 3 = regression tripwire vs frozen goldens)",
+     "docs/isolation/node-conformance-harness.md (required crate-side tests/reference_fixtures.rs layout, case-count constants, port shapes, acceptance wiring)"
+    ],
+    "purpose": "parity for crates/n8n-node-model becomes machine-checkable before implementation — mirrors workflow's build-fixtures.mjs + reference_fixtures.rs architecture; candidate tasks/TASK-*.yaml for the crate owner's Phase-3 assignment",
+    "boundary_note": "all artifacts inside agent-2 write set (docs/isolation/node*); crates/** untouched; optional integration move to tests/reference/node-rust/ is an orchestrator step",
+    "new_verified_semantics": "continueErrorOutput overwrites displayName to 'Success' even on existing config objects; pinned in harness spec §4.1 and fixtures case single-main-config-continue-error-output",
+    "status_of_crate": "still stub (65 LoC, 1 test, 0/6 frozen ports) — brief G-1..G-4 + this pack define acceptance"
+   },
+   "status": "UNREAD"
+  },
+  {
+   "id": "MSG-11",
+   "recipient_id": "broadcast",
+   "message_type": "STATUS_REPORT",
+   "subject": "agent-2 / node: acceptance pack wave 2 — 38 additional execution-verified cases (64 total); 3 new reference semantics pinned",
+   "payload": {
+    "lego": "node",
+    "requester": "agent-2",
+    "change": "node-fixtures.json extended 19 -> 57 golden + 7 serde = 64 entries; categories resolveRelativePath, hasDotNotationBannedChar, mergeNodeProperties, makeNodeName, makeDescription, isDefaultNodeName, isTriggerNode, displayParameter, assertParamIsType (WG-1..WG-9 in node-golden-cases.md; harness constants updated; --check byte-stable)",
+    "new_pinned_semantics": [
+     "isINodePropertyOptions guard requires BOTH name AND value in every option; option with value+action but no name makes makeNodeName silently skip the action branch (verified: 'Send chat' fallback instead of 'Send Message')",
+     "DOT_NOTATION_BANNED_CHARS covers space, dot, leading digit, dash, underscore — names with spaces require $node[\"Name\"] bracket access",
+     "assertParamIs* error messages are byte-exact templates: Parameter \"<name>\" is not <tsType> — part of the cross-LEGO error surface"
+    ],
+    "boundary_note": "pure spec/golden-evidence work; crates/** untouched; all files under docs/isolation/node*",
+    "for_crate_owner": "harness spec §3 port-shape table now covers all 16 categories; malformed-option and space-name cases are mandatory guard-rails, not optional extras"
+   },
+   "status": "UNREAD"
+  },
+  {
+   "id": "MSG-12",
+   "recipient_id": "mediator",
+   "message_type": "STATUS_REPORT",
+   "subject": "agent-2 / node: ISSUE-011 ACK — barrel relocation accepted; branch healed; reference-integrity proof + discipline hardened",
+   "payload": {
+    "lego": "node",
+    "requester": "agent-2",
+    "acknowledgement": "Merged main@a445a9ab. The relocation of my Phase-2 barrel to docs/isolation/node-barrel.ts is correct and accepted — git recognized it as rename (100% similarity). My review miss: additive/unwired still breaks provenance on a hash-pinned tree. Agent 1's workflow-reference-manifest.mjs caught what per-edge boundary audits cannot; endorsing that check as canonical for reference/**",
+    "integrity_proof": "on my branch post-merge: git diff origin/main HEAD -- reference/ === EMPTY (0 lines); zero tracked files under packages/workflow/src/node-model/ — tracked reference tree byte-identical to main/pinned. FS-level manifest --check runs on the pristine VPS clone; agent-local workspace carries untracked pnpm build output, documented below",
+    "hardening": [
+     "node-fixtures.build.cjs no longer assumes an in-tree dist (NODE_FIXTURES_DIST env -> in-tree -> /tmp); dist moved OUT of reference/n8n/** to /tmp in agent workspace",
+     "contracts/node.contract.md header updated to canonical barrel location + ISSUE-011 note",
+     "node.md + node-model-boundary.patch carry 'historical record, do not re-apply' banners"
+    ],
+    "pending_no_action_possible": "My CD-05 contract additions (getNodeInputs/getConnectionTypes freeze rows + continueErrorOutput semantics block) and MSG-04..MSG-11 exist only on arena/01a0ac04-n8n-rust-v-4 — main still shows MSG-01..03. Flush/merge to main is orchestrator-side (Rule 7); cross-citation already landed: connection-workflow-members-spec.md CD-05 §5 consumes my frozen ports",
+    "for_agent3": "connection-workflow-members-spec.md §5 — the future ai_tool-outputs fixture needs a node-type registry; mapped to crate-side NodeTypeRegistry + DynamicIoEvaluator traits in node-rust-brief.md (crate still stub, 0/6 ports, owner assignment pending)"
+   },
+   "status": "UNREAD"
+  },
+  {
+   "id": "MSG-13",
+   "recipient_id": "broadcast",
+   "message_type": "STATUS_REPORT",
+   "subject": "agent-2 / node: acceptance pack wave 3 — parameter-issues deep dive + filter-parameter suite (64 -> 88 entries); two-tier filter behavior pinned",
+   "payload": {
+    "lego": "node",
+    "requester": "agent-2",
+    "change": "WG-10..WG-13 added (24 cases): getNodeParametersIssues(6), executeFilterCondition(9 verdicts + 2 conversion-error FilterErrors), validateFilterParameter(4 leniency pins), executeFilter(3); node-fixtures.json now 81 golden + 7 serde; --check byte-stable; harness spec constants/ports/semantics updated",
+    "new_pinned_semantics": [
+     "Issue-early exits: getNodeParametersIssues returns null for disabled nodes, pinned nodes, and required-but-display-hidden params; message currency byte-exact 'Parameter \"{displayName}\" is required.'",
+     "Two-tier filter behavior: validation lenient ({} for type-mismatch/unknown-op) vs runtime FilterError 'Conversion error: the string ... [condition 0, item 0]' — unknown operator at runtime yields false, never throws"
+    ],
+    "boundary_note": "pure spec/golden-evidence growth; crates/** untouched; all under docs/isolation/node*",
+    "state": "crate still stub 0/6 ports; main@a445a9ab absorbed; ISSUE-011 closed and ACKed (MSG-12)"
+   },
+   "status": "UNREAD"
+  },
+  {
+   "id": "MSG-14",
+   "recipient_id": "broadcast",
+   "message_type": "STATUS_REPORT",
+   "subject": "agent-2 / node: acceptance pack wave 4 — full filter operator-matrix sweep (88 -> 115 entries); four matrix invariants pinned",
+   "payload": {
+    "lego": "node",
+    "requester": "agent-2",
+    "change": "WG-14 filterOperatorMatrix (26 verdicts over 7 lanes + 1 throw-case), enumerated against the verbatim switch at filter-parameter.ts:238-405; node-fixtures.json now 108 golden + 7 serde = 115 entries; --check byte-stable; harness spec constants + port row + pin #11 added",
+    "new_pinned_semantics": [
+     "regex/notRegex are EXEMPT from ignoreCase lowercasing (right pattern compared verbatim, /pattern/flags supported)",
+     "rightValue parses as rightType ?? operator.type — array ops without rightType throw 'Conversion error ... can't be converted to an array [condition 0, item 0]'; production operator defs always carry rightType",
+     "exists/notExists resolve pre-switch (any type lane); dateTime ms-equality + null-guard -> false; number boundaries strict vs inclusive gte/lte"
+    ],
+    "alignment_note": "deliverables remain seam-shaped per the autonomous-pipeline directive (contracts/*.contract.md + docs/isolation/node-barrel.ts as the Module-02 surface; acceptance pack feeds both the TS packages/node-lego seam and the Rust crates/n8n-node-model port)",
+    "boundary_note": "docs/isolation/node* only; crates/** untouched (stub 0/6); main@a445a9ab absorbed"
+   },
+   "status": "UNREAD"
+  },
+  {
+   "id": "MSG-15",
+   "recipient_id": "broadcast",
+   "message_type": "STATUS_REPORT",
+   "subject": "agent-2 / node: acceptance pack wave 5 — nested getNodeParameters shapes (115 -> 124 entries); collection/fixedCollection asymmetry pinned",
+   "payload": {
+    "lego": "node",
+    "requester": "agent-2",
+    "change": "WG-15 getNodeParametersNested (9): collection vs fixedCollection default-materialization matrix; fixtures.json now 117 golden + 7 serde = 124 entries (61.3 KB); --check byte-stable; harness constants + pin #12 added",
+    "key_finding": "asymmetry verified by execution: plain collection NEVER fills inner defaults; fixedCollection fills inner defaults ONLY inside populated members; empty containers materialize as {key:{}}; hidden nested dropped at parent level — a naive one-size merge in Rust breaks parity",
+    "boundary_note": "docs/isolation/node* only; crates/** untouched (stub 0/6); main@a445a9ab absorbed, watchdog siklus 6-7 aligns with seam directives already embodied in these artifacts"
+   },
+   "status": "UNREAD"
+  },
+  {
+   "id": "MSG-16",
+   "recipient_id": "mediator",
+   "message_type": "CONTRACT_VALIDATION",
+   "subject": "agent-2: STANDING-WORKER-PROTOCOL absorbed — TAHAP-2 rubric votes (403 APPROVED, 402 APPROVED) + results/ boundary question + TASK_ID allocation request",
+   "payload": {
+    "lego": "node",
+    "requester": "agent-2",
+    "protocol_ack": "5-step cycle + 3-rubric written review + zero-protest rule read (b809399b) and folded into this worker's cycle",
+    "tahap2_reviews": {
+     "TASK-403-execution-engine-spec (agent-1/workflow)": {
+      "vote": "APPROVED",
+      "rubric_1_paths": "PASS — change set confined to crates/n8n-workflow/**, tests/reference/workflow-rust/**, tools/rust-offline-rig; single cross-crate note: +5-line deserialize test landed in crates/n8n-node-model (additive, green, behavior-neutral — acknowledged, flagged for future cross-crate discipline)",
+      "rubric_2_oracle": "PASS — 35-reference-fixture acceptance; I INDEPENDENTLY replicated full workspace green 37/37 on the same tree via the offline rig (docs/isolation/node-phase3-verification.md) — strongest available oracle confirmation",
+      "rubric_3_evidence": "PASS with note — substantive deliverable is undeniable (code+fixtures+green), but results/TASK-403-execution-engine-spec.md shell holds EMPTY pipeline/logs tables; recommend making machine evidence mandatory in results files going forward"
+     },
+     "TASK-402-connection-spec (agent-3/connection)": {
+      "vote": "APPROVED",
+      "rubric_1_paths": "PASS — docs/isolation/connection-workflow-members-spec.md + tests/reference/connection/0[1-5] movement within connection-owned surface",
+      "rubric_2_oracle": "PASS by spot-anchor — two source anchors independently checked: getNodeConnectionIndexes returns destinationIndex as slot position (workflow.ts:787-800 ✓); STARTING_NODE_TYPES 5-entry list + indexOf sort note (constants.ts:53-60 ✓)",
+      "rubric_3_evidence": "PASS with note — tangible spec + fixture dirs; results shell likewise holds empty logs; same recommendation"
+     }
     },
-    {
-      "id": "MSG-04",
-      "recipient_id": "agent-3",
-      "message_type": "CONTRACT_VALIDATION",
-      "subject": "CD-05 runtime confirmation + two additional frozen symbols (getNodeInputs, getConnectionTypes)",
-      "payload": {
-        "lego": "node",
-        "requester": "agent-2",
-        "in_reply_to": "contracts/connection.contract.md CD-05 open question",
-        "runtime_confirmation": "node-helpers.ts:1140-1200 — node.onError === 'continueErrorOutput': (1) outputs deep-copied (shared description never mutated); (2) single output gets displayName 'Success' (type unchanged); (3) appends trailing {category:'error', type:'main', displayName:'Error'} as ordinary final output index; applies to dynamic outputs too.",
-        "frozen_now": {
-          "node-helpers::getNodeInputs": "(workflow: Workflow, node: INode, nodeTypeData: INodeTypeDescription) => Array<NodeConnectionType | INodeInputConfiguration> — dynamic branch via expression runtime; failure => console.warn + []",
-          "node-helpers::getConnectionTypes": "(connections: Array<NodeConnectionType | INodeInputConfiguration | INodeOutputConfiguration>) => NodeConnectionType[] — strings pass through, objects project .type, undefined filtered"
-        },
-        "notes": "getNodeInputs has the same expression seam as getNodeOutputs (ISSUE-004); both are contract-controlled on the node side. validateFieldType/filter-parameter ownership re-verified (type-validation=Validation, filter-parameter=Node) — no change.",
-        "artifacts": [
-          "contracts/node.contract.md (§11 expanded)",
-          "docs/isolation/node-phase3-readiness.md"
-        ]
-      },
-      "status": "UNREAD"
-    },
-    {
-      "id": "MSG-05",
-      "recipient_id": "broadcast",
-      "message_type": "STATUS_REPORT",
-      "subject": "agent-2 / node: Phase 3 readiness groundwork published (no Rust started)",
-      "payload": {
-        "lego": "node",
-        "requester": "agent-2",
-        "phase2": "VERIFIED on main (99b47f86) — arbitration TASK-304 closed ISSUE-009; ISSUE-004 node-side discharged",
-        "phase3_prep": "docs/isolation/node-phase3-readiness.md — Rust-port surface map (type-only vs behavior), cycle-mitigation traits, parity plan (532 unit -> golden), frozen-port commitments",
-        "constraint": "crates/ and apps/n8n-rust/ untouched; Rust starts only on official Phase-3 manifest"
-      },
-      "status": "UNREAD"
-    },
-    {
-      "id": "MSG-06",
-      "recipient_id": "mediator",
-      "message_type": "CONTRACT_VALIDATION",
-      "subject": "n8n-node-model stub (c912866b): conformance corrections required — 5 fidelity gaps vs contract",
-      "payload": {
-        "lego": "node",
-        "requester": "agent-2",
-        "target": "crates/n8n-node-model",
-        "verdict": "STUB — placeholder only; fails real workflow JSON on 3 counts (violates verified contract §2/§3)",
-        "required_corrections": [
-          "G-1: version must be number | number[] (untagged enum), not f64 — multi-version nodes serialize arrays",
-          "G-2: inputs/outputs must be Array<ConnectionType | Config> | ExpressionString, not Vec<String>",
-          "G-3: description requires group, defaults, properties (all required in source)",
-          "G-4: INode missing 13 optional fields (credentials, onError, retryOnFail, ...)",
-          "G-5: keep INodeParameters newtype transparent (accepted)"
-        ],
-        "binding_spec": "docs/isolation/node-rust-brief.md (layout, traits, frozen ports, parity matrix)",
-        "authority_note": "agent-2 does not write crates/** (forbidden path). Corrections by crate owner or on assignment to agent-2.",
-        "frozen_ports_to_implement": [
-          "get_node_parameters",
-          "get_node_outputs",
-          "get_node_inputs",
-          "get_connection_types",
-          "rename_form_fields",
-          "apply_access_patterns"
-        ]
-      },
-      "status": "UNREAD"
-    },
-    {
-      "id": "MSG-07",
-      "recipient_id": "agent-5",
-      "message_type": "STATUS_REPORT",
-      "subject": "Gate flavor note: run_gate.sh now yields 20/21 — only its Phase-2 Rust guard trips on crates/",
-      "payload": {
-        "lego": "node",
-        "requester": "agent-2",
-        "observation": "tests/integration/run_gate.sh --offline-only on arena/01a0ac04-n8n-rust-v-4: 20/21 PASS; the single FAIL is the Phase-2 Rust-guard check flagging legitimately-added crates/ (Phase 3 started on main). All 20 contract/golden checks pass, including contract:node (17511 bytes after §11 expansion).",
-        "suggested_action": "Phase-3 gate variant: replace the Phase-2 Rust guard with crate-graph boundary rules (no node-model -> expression/workflow/core edge) and per-crate digest conformance."
-      },
-      "status": "UNREAD"
-    },
-    {
-      "id": "MSG-08",
-      "recipient_id": "broadcast",
-      "message_type": "STATUS_REPORT",
-      "subject": "agent-2 / node: verified golden cases GC-1..GC-7 published for the 6 frozen ports + VersionedNodeType",
-      "payload": {
-        "lego": "node",
-        "requester": "agent-2",
-        "artifact": "docs/isolation/node-golden-cases.md",
-        "method": "produced by executing the built reference n8n-workflow@2.9.1 (n8n@2.9.4) — verified-by-execution, not hand-derived",
-        "covers": [
-          "applyAccessPatterns", "getConnectionTypes", "renameFormFields (in-place, html-only)",
-          "getNodeOutputs (incl. continueErrorOutput trailing Error + Success rename + deep-copy guard)",
-          "getNodeInputs (static passthrough + dynamic failure => [])",
-          "getNodeParameters (defaults fill, display-gated drop, returnNoneDisplayed, expression passthrough)",
-          "VersionedNodeType (currentVersion=max, no-fallback on absent version)"
-        ],
-        "acceptance_rule": "n8n-node-model Rust tests must reproduce GC-1..GC-7 byte-identically; deviations are conformance defects, to be registered back — never 'fixed' against the reference semantics."
-      },
-      "status": "UNREAD"
-    },
-    {
-      "id": "MSG-09",
-      "recipient_id": "broadcast",
-      "message_type": "STATUS_REPORT",
-      "subject": "agent-2 / node: independent Phase-3 workspace verification — 37/37 green; rig needs 10 extra vendored crates; n8n-node-model 0/6 ports",
-      "payload": {
-        "lego": "node",
-        "requester": "agent-2",
-        "evidence": "docs/isolation/node-phase3-verification.md",
-        "workspace_result": "cargo test --workspace (offline rig, Rust 1.88.0): 37/37 PASS on main@e6c0188a — independently confirms Agent 1's green claim; no crate files touched by agent-2",
-        "node_model_crate": "stub + 1 test; frozen ports 0/6; G-1..G-4 still open; next = implement brief + GC-1..GC-7 byte-parity",
-        "rig_gap": "tools/rust-offline-rig vendored set (12 crates) no longer covers the closure; locally extended with indexmap 2.2.6, hashbrown 0.14.5, equivalent 1.0.1, anyhow 1.0.99, petgraph 0.6.6, fixedbitset 0.5.7, regex 1.10.6 (+regex-automata 0.4.7, regex-syntax 0.8.4 from same repo), aho-corasick 1.1.5 — tags + pitfalls listed in the verification doc",
-        "boundary_note": "all work read-only vs crates/**; verification artifacts (docs) only"
-      },
-      "status": "UNREAD"
-    },
-    {
-      "id": "MSG-10",
-      "recipient_id": "broadcast",
-      "message_type": "STATUS_REPORT",
-      "subject": "agent-2 / node: machine-executable acceptance pack for n8n-node-model (fixtures + generator + harness spec) — GC-1..GC-7 now cargo-testable",
-      "payload": {
-        "lego": "node",
-        "requester": "agent-2",
-        "artifacts": [
-          "docs/isolation/node-fixtures.json (19 golden cases + 7 serde probes, byte-stable)",
-          "docs/isolation/node-fixtures.build.cjs (--check drift gate; exit 3 = regression tripwire vs frozen goldens)",
-          "docs/isolation/node-conformance-harness.md (required crate-side tests/reference_fixtures.rs layout, case-count constants, port shapes, acceptance wiring)"
-        ],
-        "purpose": "parity for crates/n8n-node-model becomes machine-checkable before implementation — mirrors workflow's build-fixtures.mjs + reference_fixtures.rs architecture; candidate tasks/TASK-*.yaml for the crate owner's Phase-3 assignment",
-        "boundary_note": "all artifacts inside agent-2 write set (docs/isolation/node*); crates/** untouched; optional integration move to tests/reference/node-rust/ is an orchestrator step",
-        "new_verified_semantics": "continueErrorOutput overwrites displayName to 'Success' even on existing config objects; pinned in harness spec §4.1 and fixtures case single-main-config-continue-error-output",
-        "status_of_crate": "still stub (65 LoC, 1 test, 0/6 frozen ports) — brief G-1..G-4 + this pack define acceptance"
-      },
-      "status": "UNREAD"
-    },
-    {
-      "id": "MSG-11",
-      "recipient_id": "broadcast",
-      "message_type": "STATUS_REPORT",
-      "subject": "agent-2 / node: acceptance pack wave 2 — 38 additional execution-verified cases (64 total); 3 new reference semantics pinned",
-      "payload": {
-        "lego": "node",
-        "requester": "agent-2",
-        "change": "node-fixtures.json extended 19 -> 57 golden + 7 serde = 64 entries; categories resolveRelativePath, hasDotNotationBannedChar, mergeNodeProperties, makeNodeName, makeDescription, isDefaultNodeName, isTriggerNode, displayParameter, assertParamIsType (WG-1..WG-9 in node-golden-cases.md; harness constants updated; --check byte-stable)",
-        "new_pinned_semantics": [
-          "isINodePropertyOptions guard requires BOTH name AND value in every option; option with value+action but no name makes makeNodeName silently skip the action branch (verified: 'Send chat' fallback instead of 'Send Message')",
-          "DOT_NOTATION_BANNED_CHARS covers space, dot, leading digit, dash, underscore — names with spaces require $node[\"Name\"] bracket access",
-          "assertParamIs* error messages are byte-exact templates: Parameter \"<name>\" is not <tsType> — part of the cross-LEGO error surface"
-        ],
-        "boundary_note": "pure spec/golden-evidence work; crates/** untouched; all files under docs/isolation/node*",
-        "for_crate_owner": "harness spec §3 port-shape table now covers all 16 categories; malformed-option and space-name cases are mandatory guard-rails, not optional extras"
-      },
-      "status": "UNREAD"
-    },
-    {
-      "id": "MSG-12",
-      "recipient_id": "mediator",
-      "message_type": "STATUS_REPORT",
-      "subject": "agent-2 / node: ISSUE-011 ACK — barrel relocation accepted; branch healed; reference-integrity proof + discipline hardened",
-      "payload": {
-        "lego": "node",
-        "requester": "agent-2",
-        "acknowledgement": "Merged main@a445a9ab. The relocation of my Phase-2 barrel to docs/isolation/node-barrel.ts is correct and accepted — git recognized it as rename (100% similarity). My review miss: additive/unwired still breaks provenance on a hash-pinned tree. Agent 1's workflow-reference-manifest.mjs caught what per-edge boundary audits cannot; endorsing that check as canonical for reference/**",
-        "integrity_proof": "on my branch post-merge: git diff origin/main HEAD -- reference/ === EMPTY (0 lines); zero tracked files under packages/workflow/src/node-model/ — tracked reference tree byte-identical to main/pinned. FS-level manifest --check runs on the pristine VPS clone; agent-local workspace carries untracked pnpm build output, documented below",
-        "hardening": [
-          "node-fixtures.build.cjs no longer assumes an in-tree dist (NODE_FIXTURES_DIST env -> in-tree -> /tmp); dist moved OUT of reference/n8n/** to /tmp in agent workspace",
-          "contracts/node.contract.md header updated to canonical barrel location + ISSUE-011 note",
-          "node.md + node-model-boundary.patch carry 'historical record, do not re-apply' banners"
-        ],
-        "pending_no_action_possible": "My CD-05 contract additions (getNodeInputs/getConnectionTypes freeze rows + continueErrorOutput semantics block) and MSG-04..MSG-11 exist only on arena/01a0ac04-n8n-rust-v-4 — main still shows MSG-01..03. Flush/merge to main is orchestrator-side (Rule 7); cross-citation already landed: connection-workflow-members-spec.md CD-05 §5 consumes my frozen ports",
-        "for_agent3": "connection-workflow-members-spec.md §5 — the future ai_tool-outputs fixture needs a node-type registry; mapped to crate-side NodeTypeRegistry + DynamicIoEvaluator traits in node-rust-brief.md (crate still stub, 0/6 ports, owner assignment pending)"
-      },
-      "status": "UNREAD"
-    },
-    {
-      "id": "MSG-13",
-      "recipient_id": "broadcast",
-      "message_type": "STATUS_REPORT",
-      "subject": "agent-2 / node: acceptance pack wave 3 — parameter-issues deep dive + filter-parameter suite (64 -> 88 entries); two-tier filter behavior pinned",
-      "payload": {
-        "lego": "node",
-        "requester": "agent-2",
-        "change": "WG-10..WG-13 added (24 cases): getNodeParametersIssues(6), executeFilterCondition(9 verdicts + 2 conversion-error FilterErrors), validateFilterParameter(4 leniency pins), executeFilter(3); node-fixtures.json now 81 golden + 7 serde; --check byte-stable; harness spec constants/ports/semantics updated",
-        "new_pinned_semantics": [
-          "Issue-early exits: getNodeParametersIssues returns null for disabled nodes, pinned nodes, and required-but-display-hidden params; message currency byte-exact 'Parameter \"{displayName}\" is required.'",
-          "Two-tier filter behavior: validation lenient ({} for type-mismatch/unknown-op) vs runtime FilterError 'Conversion error: the string ... [condition 0, item 0]' — unknown operator at runtime yields false, never throws"
-        ],
-        "boundary_note": "pure spec/golden-evidence growth; crates/** untouched; all under docs/isolation/node*",
-        "state": "crate still stub 0/6 ports; main@a445a9ab absorbed; ISSUE-011 closed and ACKed (MSG-12)"
-      },
-      "status": "UNREAD"
-    },
-    {
-      "id": "MSG-14",
-      "recipient_id": "broadcast",
-      "message_type": "STATUS_REPORT",
-      "subject": "agent-2 / node: acceptance pack wave 4 — full filter operator-matrix sweep (88 -> 115 entries); four matrix invariants pinned",
-      "payload": {
-        "lego": "node",
-        "requester": "agent-2",
-        "change": "WG-14 filterOperatorMatrix (26 verdicts over 7 lanes + 1 throw-case), enumerated against the verbatim switch at filter-parameter.ts:238-405; node-fixtures.json now 108 golden + 7 serde = 115 entries; --check byte-stable; harness spec constants + port row + pin #11 added",
-        "new_pinned_semantics": [
-          "regex/notRegex are EXEMPT from ignoreCase lowercasing (right pattern compared verbatim, /pattern/flags supported)",
-          "rightValue parses as rightType ?? operator.type — array ops without rightType throw 'Conversion error ... can't be converted to an array [condition 0, item 0]'; production operator defs always carry rightType",
-          "exists/notExists resolve pre-switch (any type lane); dateTime ms-equality + null-guard -> false; number boundaries strict vs inclusive gte/lte"
-        ],
-        "alignment_note": "deliverables remain seam-shaped per the autonomous-pipeline directive (contracts/*.contract.md + docs/isolation/node-barrel.ts as the Module-02 surface; acceptance pack feeds both the TS packages/node-lego seam and the Rust crates/n8n-node-model port)",
-        "boundary_note": "docs/isolation/node* only; crates/** untouched (stub 0/6); main@a445a9ab absorbed"
-      },
-      "status": "UNREAD"
-    },
-    {
-      "id": "MSG-15",
-      "recipient_id": "broadcast",
-      "message_type": "STATUS_REPORT",
-      "subject": "agent-2 / node: acceptance pack wave 5 — nested getNodeParameters shapes (115 -> 124 entries); collection/fixedCollection asymmetry pinned",
-      "payload": {
-        "lego": "node",
-        "requester": "agent-2",
-        "change": "WG-15 getNodeParametersNested (9): collection vs fixedCollection default-materialization matrix; fixtures.json now 117 golden + 7 serde = 124 entries (61.3 KB); --check byte-stable; harness constants + pin #12 added",
-        "key_finding": "asymmetry verified by execution: plain collection NEVER fills inner defaults; fixedCollection fills inner defaults ONLY inside populated members; empty containers materialize as {key:{}}; hidden nested dropped at parent level — a naive one-size merge in Rust breaks parity",
-        "boundary_note": "docs/isolation/node* only; crates/** untouched (stub 0/6); main@a445a9ab absorbed, watchdog siklus 6-7 aligns with seam directives already embodied in these artifacts"
-      },
-      "status": "UNREAD"
-    },
-    {
-      "id": "MSG-16",
-      "recipient_id": "mediator",
-      "message_type": "CONTRACT_VALIDATION",
-      "subject": "agent-2: STANDING-WORKER-PROTOCOL absorbed — TAHAP-2 rubric votes (403 APPROVED, 402 APPROVED) + results/ boundary question + TASK_ID allocation request",
-      "payload": {
-        "lego": "node",
-        "requester": "agent-2",
-        "protocol_ack": "5-step cycle + 3-rubric written review + zero-protest rule read (b809399b) and folded into this worker's cycle",
-        "tahap2_reviews": {
-          "TASK-403-execution-engine-spec (agent-1/workflow)": {
-            "vote": "APPROVED",
-            "rubric_1_paths": "PASS — change set confined to crates/n8n-workflow/**, tests/reference/workflow-rust/**, tools/rust-offline-rig; single cross-crate note: +5-line deserialize test landed in crates/n8n-node-model (additive, green, behavior-neutral — acknowledged, flagged for future cross-crate discipline)",
-            "rubric_2_oracle": "PASS — 35-reference-fixture acceptance; I INDEPENDENTLY replicated full workspace green 37/37 on the same tree via the offline rig (docs/isolation/node-phase3-verification.md) — strongest available oracle confirmation",
-            "rubric_3_evidence": "PASS with note — substantive deliverable is undeniable (code+fixtures+green), but results/TASK-403-execution-engine-spec.md shell holds EMPTY pipeline/logs tables; recommend making machine evidence mandatory in results files going forward"
-          },
-          "TASK-402-connection-spec (agent-3/connection)": {
-            "vote": "APPROVED",
-            "rubric_1_paths": "PASS — docs/isolation/connection-workflow-members-spec.md + tests/reference/connection/0[1-5] movement within connection-owned surface",
-            "rubric_2_oracle": "PASS by spot-anchor — two source anchors independently checked: getNodeConnectionIndexes returns destinationIndex as slot position (workflow.ts:787-800 ✓); STARTING_NODE_TYPES 5-entry list + indexOf sort note (constants.ts:53-60 ✓)",
-            "rubric_3_evidence": "PASS with note — tangible spec + fixture dirs; results shell likewise holds empty logs; same recommendation"
-          }
-        },
-        "tahap3_feedback_check": "no observable peer feedback on my submitted work this cycle (bus outbox is the only channel I can read; last peer activity ACKed separately) — if any NEEDS_CORRECTION exists in the DB, please surface so the zero-protest loop can start",
-        "own_deliverables_ledger": "docs/isolation/node-results.md mirrors TAHAP-1 structure for the node acceptance pack (124 entries) INSIDE my allowed_paths — results/ itself is outside my declared allowed_paths, so I do not write results/<TASK_ID>.md without an explicit allowance",
-        "request": "allocate the Phase-3 TASK_ID governing the node-model spec/acceptance-pack stream (402/403 family) so my results file lands at the canonical name, or confirm universal results/ write for own-task summaries"
-      },
-      "status": "UNREAD"
-    },
-    {
-      "id": "MSG-17",
-      "recipient_id": "broadcast",
-      "message_type": "STATUS_REPORT",
-      "subject": "agent-2 / node: acceptance pack wave 6 — resourceLocator + resourceMapper issues & defaults (124 -> 142 entries); ledger updated",
-      "payload": {
-        "lego": "node",
-        "requester": "agent-2",
-        "change": "WG-16..WG-19 (18 cases): isValidResourceLocatorParameterValue(8), resourceLocatorIssues(5), rlcDefaults(1), resourceMapperIssues(4); fixtures.json now 135 golden + 7 serde = 142 entries (77.5 KB); --check byte-stable; docs/isolation/node-results.md ledger brought current",
-        "new_pinned_semantics": [
-          "RLC guard accepts ALL numbers incl. 0 and checks .value only — __rl/mode belong to a different gate (WG-17 non-RLC-shape falls into the generic required branch)",
-          "mode.validation regex failures emit the mode's custom errorMessage verbatim; ={{…}} expressions bypass RLC + resourceMapper validation; unknown mode validation is silently SKIPPED",
-          "RLC object default gets __rl:true planted by get_node_parameters; resourceMapper required-field issues emit an EMPTY-ARRAY parent key plus key.field entry — serde must not drop empty arrays"
-        ],
-        "protocol_note": "TAHAP-1 ledger updated inside agent-2 boundary; TASK_ID allocation + results/ write permission still open from MSG-16",
-        "boundary_note": "docs/isolation/node* only; crates/** untouched (stub 0/6); main@b809399b absorbed"
-      },
-      "status": "UNREAD"
-    },
-    {
-      "id": "MSG-18",
-      "recipient_id": "broadcast",
-      "message_type": "STATUS_REPORT",
-      "subject": "agent-2 / node: acceptance pack wave 7 — IO-type acceptance, checkConditions dialect, node features (142 -> 165 entries)",
-      "payload": {
-        "lego": "node",
-        "requester": "agent-2",
-        "change": "WG-20..WG-24 (23 cases): nodeAcceptsInputType(5), nodeHasOutputType(3), isSubNodeType(3), checkConditions(8), getNodeFeatures(4); fixtures.json now 158 golden + 7 serde = 165 entries (83.3 KB); --check byte-stable; ledger current; harness constants + pins #14/#15",
-        "new_pinned_semantics": [
-          "IO-type matching asymmetry: plain strings (incl. expression strings) match by == OR substring includes() — config objects exact .type only",
-          "checkConditions _cnd dialect: 12 keys; EMPTY actualValues answers true ONLY for 'not'; conditions .some / _cnd .every; non-_cnd fallback = actual.contains value",
-          "getNodeFeatures projection: undefined def -> {}; feature = check_conditions(def['@version'], [version])"
-        ],
-        "rules_note": "re-checked rule sources per request: no rule commits newer than b809399b on main (protocol absorbed last cycle); working per 5-step cycle",
-        "boundary_note": "docs/isolation/node* only; crates/** untouched (stub 0/6); main@b809399b absorbed"
-      },
-      "status": "UNREAD"
-    },
-    {
-      "id": "MSG-19",
-      "recipient_id": "broadcast",
-      "message_type": "STATUS_REPORT",
-      "subject": "agent-2 / node: acceptance pack wave 8 — displayParameterPath scoping + options required-issues (165 -> 175 entries)",
-      "payload": {
-        "lego": "node",
-        "requester": "agent-2",
-        "change": "WG-25 displayParameterPath(4) + WG-26 optionsIssues(6); fixtures.json now 168 golden + 7 serde = 175 entries (90.3 KB); --check byte-stable; harness constants + pins #16/#17; ledger current",
-        "new_pinned_semantics": [
-          "displayParameterPath evaluates flat show/hide keys on LOCAL get(values,path) scope only — parameters-root values serve $parameter refs exclusively; no flat-key root fallback",
-          "required multiOptions with UNDEFINED value passes validation (skips both empty branches); out-of-list option values are never cross-checked — WG-12-style leniency on options too"
-        ],
-        "rules_note": "re-read rule sources per instruction: nothing newer than b809399b on main; working per 5-step cycle (ledger + rubric reviews + zero-protest standing)",
-        "boundary_note": "docs/isolation/node* only; crates/** untouched (stub 0/6)"
-      },
-      "status": "UNREAD"
-    }
-  ]
+    "tahap3_feedback_check": "no observable peer feedback on my submitted work this cycle (bus outbox is the only channel I can read; last peer activity ACKed separately) — if any NEEDS_CORRECTION exists in the DB, please surface so the zero-protest loop can start",
+    "own_deliverables_ledger": "docs/isolation/node-results.md mirrors TAHAP-1 structure for the node acceptance pack (124 entries) INSIDE my allowed_paths — results/ itself is outside my declared allowed_paths, so I do not write results/<TASK_ID>.md without an explicit allowance",
+    "request": "allocate the Phase-3 TASK_ID governing the node-model spec/acceptance-pack stream (402/403 family) so my results file lands at the canonical name, or confirm universal results/ write for own-task summaries"
+   },
+   "status": "UNREAD"
+  },
+  {
+   "id": "MSG-17",
+   "recipient_id": "broadcast",
+   "message_type": "STATUS_REPORT",
+   "subject": "agent-2 / node: acceptance pack wave 6 — resourceLocator + resourceMapper issues & defaults (124 -> 142 entries); ledger updated",
+   "payload": {
+    "lego": "node",
+    "requester": "agent-2",
+    "change": "WG-16..WG-19 (18 cases): isValidResourceLocatorParameterValue(8), resourceLocatorIssues(5), rlcDefaults(1), resourceMapperIssues(4); fixtures.json now 135 golden + 7 serde = 142 entries (77.5 KB); --check byte-stable; docs/isolation/node-results.md ledger brought current",
+    "new_pinned_semantics": [
+     "RLC guard accepts ALL numbers incl. 0 and checks .value only — __rl/mode belong to a different gate (WG-17 non-RLC-shape falls into the generic required branch)",
+     "mode.validation regex failures emit the mode's custom errorMessage verbatim; ={{…}} expressions bypass RLC + resourceMapper validation; unknown mode validation is silently SKIPPED",
+     "RLC object default gets __rl:true planted by get_node_parameters; resourceMapper required-field issues emit an EMPTY-ARRAY parent key plus key.field entry — serde must not drop empty arrays"
+    ],
+    "protocol_note": "TAHAP-1 ledger updated inside agent-2 boundary; TASK_ID allocation + results/ write permission still open from MSG-16",
+    "boundary_note": "docs/isolation/node* only; crates/** untouched (stub 0/6); main@b809399b absorbed"
+   },
+   "status": "UNREAD"
+  },
+  {
+   "id": "MSG-18",
+   "recipient_id": "broadcast",
+   "message_type": "STATUS_REPORT",
+   "subject": "agent-2 / node: acceptance pack wave 7 — IO-type acceptance, checkConditions dialect, node features (142 -> 165 entries)",
+   "payload": {
+    "lego": "node",
+    "requester": "agent-2",
+    "change": "WG-20..WG-24 (23 cases): nodeAcceptsInputType(5), nodeHasOutputType(3), isSubNodeType(3), checkConditions(8), getNodeFeatures(4); fixtures.json now 158 golden + 7 serde = 165 entries (83.3 KB); --check byte-stable; ledger current; harness constants + pins #14/#15",
+    "new_pinned_semantics": [
+     "IO-type matching asymmetry: plain strings (incl. expression strings) match by == OR substring includes() — config objects exact .type only",
+     "checkConditions _cnd dialect: 12 keys; EMPTY actualValues answers true ONLY for 'not'; conditions .some / _cnd .every; non-_cnd fallback = actual.contains value",
+     "getNodeFeatures projection: undefined def -> {}; feature = check_conditions(def['@version'], [version])"
+    ],
+    "rules_note": "re-checked rule sources per request: no rule commits newer than b809399b on main (protocol absorbed last cycle); working per 5-step cycle",
+    "boundary_note": "docs/isolation/node* only; crates/** untouched (stub 0/6); main@b809399b absorbed"
+   },
+   "status": "UNREAD"
+  },
+  {
+   "id": "MSG-19",
+   "recipient_id": "broadcast",
+   "message_type": "STATUS_REPORT",
+   "subject": "agent-2 / node: acceptance pack wave 8 — displayParameterPath scoping + options required-issues (165 -> 175 entries)",
+   "payload": {
+    "lego": "node",
+    "requester": "agent-2",
+    "change": "WG-25 displayParameterPath(4) + WG-26 optionsIssues(6); fixtures.json now 168 golden + 7 serde = 175 entries (90.3 KB); --check byte-stable; harness constants + pins #16/#17; ledger current",
+    "new_pinned_semantics": [
+     "displayParameterPath evaluates flat show/hide keys on LOCAL get(values,path) scope only — parameters-root values serve $parameter refs exclusively; no flat-key root fallback",
+     "required multiOptions with UNDEFINED value passes validation (skips both empty branches); out-of-list option values are never cross-checked — WG-12-style leniency on options too"
+    ],
+    "rules_note": "re-read rule sources per instruction: nothing newer than b809399b on main; working per 5-step cycle (ledger + rubric reviews + zero-protest standing)",
+    "boundary_note": "docs/isolation/node* only; crates/** untouched (stub 0/6)"
+   },
+   "status": "UNREAD"
+  },
+  {
+   "id": "MSG-20",
+   "recipient_id": "broadcast",
+   "message_type": "STATUS_REPORT",
+   "subject": "agent-2 / node: wave 9 — nested required-issues quirks pinned (175 -> 186 entries); protocol v2 adopted; results/AGENT2-W9.md written",
+   "payload": {
+    "lego": "node",
+    "requester": "agent-2",
+    "change": "WG-27 nestedRequiredIssues(6) + WG-28 fixedCollectionFieldCounts(5); fixtures.json now 179 golden + 7 serde = 186 entries (104,775 B); --check byte-stable; harness pins #18/#19; ledger + golden-doc wave-9 section; protocol-mandated summary at results/AGENT2-W9.md",
+    "new_pinned_semantics": [
+     "non-fixed collection children keep ANCESTOR basePath (node-helpers.ts:1505-1513): required checks + displayOptions never read nested coll.* — a FILLED nested required field STILL flags (QUIRK-PIN; port must not 'repair' it)",
+     "fixedCollection descends (basePath <name>.<option>[i]); min/max field counts emit byte-exact 'At least N field(s) (is|are) required.' / 'At most N field(s) (is|are) allowed.' keyed by collection name; unset options skipped entirely"
+    ],
+    "protocol_v2": "main merged (d9960c04, head 0af2f152): non-blocking cycle adopted — executed + summarized + submitted (results/) without waiting; no peer results pending review; votes on TASK-402/403 already cast (singular, anti-double-vote respected)",
+    "open": "MSG-16 asks still open: (1) node TASK_ID allocation, (2) results/ write policy for standing wave work — root results/AGENT2-W9.md assumed; correct me if a DB task id must be used",
+    "boundary_note": "docs/isolation/node* + results/ only; crates/** + reference/** untouched (stub 0/6)"
+   },
+   "status": "UNREAD"
+  }
+ ]
 }

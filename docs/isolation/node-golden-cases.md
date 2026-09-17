@@ -330,6 +330,26 @@ required multiOptions `[]` → exact message · `['one']` → `null` ·
 plain-empty branches — accepted!) · **out-of-list `'bogus'` → `null`** (value never
 cross-checked against the options list — leniency surface consistent with WG-12).
 
+## Wave 9 — nested required-issues (WG-27/WG-28)
+
+### WG-27 non-fixed `collection` vs `fixedCollection` scoping (getNodeParametersIssues)
+
+| Case | Expected | Pin |
+|---|---|---|
+| `coll.empty-inner` | `{inner:['Parameter "Inner Required" is required.']}` | issue keyed by CHILD name (no `coll.` prefix) |
+| `coll.filled-inner` | **same issue (!)** | QUIRK-PIN (`node-helpers.ts:1505-1513`): non-fixed `collection` children are pushed with the ANCESTOR basePath — the nested `coll.inner` value is never consulted, so a filled inner STILL flags. Never "repair" this in the port. |
+| `coll.inner` hidden via `show:{mode:['b']}`, `coll.mode='a'` | `null` | display keys also resolve at the ancestor scope → hidden when no root `mode` |
+| `coll.inner` shown-rule, `coll.mode='b'` | `null` | **nested `coll.mode` is invisible at the ancestor scope** — the child stays hidden → no issue (the "shown" arm is only reachable via an ancestor-level `mode`) |
+| `fixed.single empty inner` | `{inn:['Parameter "Inner" is required.']}` | fixedCollection DESCENDS: basePath becomes `<name>.<option>` — value read inside the nested scope; still keyed by child name |
+| `fixed.multipleValues [ok,{}]` | `{inn:['Parameter "Inner" is required.']}` | per-element descent `basePath <name>.opts[i]`; missing required flags once |
+
+### WG-28 fixedCollection field-count limits
+
+`minRequiredFields`/`maxAllowedFields` (`typeOptions`) produce byte-exact messages keyed
+by the fixedCollection NAME: `At least 2 fields are required.` · `At most 3 fields are
+allowed.` · singular variant `At least 1 field is required.` · within bounds → `null` ·
+**unset option (`undefined`) is skipped entirely** (no count, no child check).
+
 ### Reproduction
 
 ```bash
@@ -351,8 +371,8 @@ fixtures power `docs/isolation/node-conformance-harness.md`. Dist resolution ord
 ### Parity acceptance rule for `n8n-node-model` (Phase 3)
 
 The crate's unit tests MUST reproduce GC-1..GC-7, WG-1..WG-9, WG-10..WG-13, WG-14, WG-15,
-WG-16..WG-19, WG-20..WG-24, and WG-25/WG-26 byte-identically (JSON equality after
-serialization) — 168 golden cases in `docs/isolation/node-fixtures.json`, plus the 7
-`serdeConformance` round-trip probes (see `node-conformance-harness.md` §5 for the binding
-acceptance gate). Any deviation is a conformance defect (register it as MSG back to
-agent-2/mediator, do not "fix" semantics).
+WG-16..WG-19, WG-20..WG-24, WG-25/WG-26, and WG-27/WG-28 byte-identically (JSON equality
+after serialization) — 179 golden cases in `docs/isolation/node-fixtures.json`, plus the
+7 `serdeConformance` round-trip probes (see `node-conformance-harness.md` §5 for the
+binding acceptance gate). Any deviation is a conformance defect (register it as MSG back
+to agent-2/mediator, do not "fix" semantics).

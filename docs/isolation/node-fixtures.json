@@ -12,7 +12,8 @@
       "wave5NestedParameters": "getNodeParametersNested:9",
       "wave6RlcRm": "isValidResourceLocatorParameterValue:8, resourceLocatorIssues:5, rlcDefaults:1, resourceMapperIssues:4",
       "wave7IoConditions": "nodeAcceptsInputType:5, nodeHasOutputType:3, isSubNodeType:3, checkConditions:8, getNodeFeatures:4",
-      "wave8DisplayPath": "displayParameterPath:4, optionsIssues:6"
+      "wave8DisplayPath": "displayParameterPath:4, optionsIssues:6",
+      "wave9NestedIssues": "nestedRequiredIssues:6, fixedCollectionFieldCounts:5"
     }
   },
   "applyAccessPatterns": {
@@ -3702,6 +3703,618 @@
           ],
           "parameters": {
             "opt": "bogus"
+          }
+        },
+        "expect": null
+      }
+    ]
+  },
+  "nestedRequiredIssues": {
+    "cases": [
+      {
+        "name": "coll-empty-inner",
+        "properties": [
+          {
+            "displayName": "Coll",
+            "name": "coll",
+            "type": "collection",
+            "default": {},
+            "options": [
+              {
+                "displayName": "Inner Required",
+                "name": "inner",
+                "type": "string",
+                "default": "",
+                "required": true
+              },
+              {
+                "displayName": "Inner Optional",
+                "name": "opt",
+                "type": "string",
+                "default": ""
+              }
+            ]
+          }
+        ],
+        "node": {
+          "id": "w27",
+          "name": "W27 Node",
+          "type": "noop",
+          "typeVersion": 1,
+          "position": [
+            0,
+            0
+          ],
+          "parameters": {
+            "coll": {
+              "inner": ""
+            }
+          }
+        },
+        "expect": {
+          "parameters": {
+            "inner": [
+              "Parameter \"Inner Required\" is required."
+            ]
+          }
+        }
+      },
+      {
+        "name": "coll-filled-inner-still-flags",
+        "properties": [
+          {
+            "displayName": "Coll",
+            "name": "coll",
+            "type": "collection",
+            "default": {},
+            "options": [
+              {
+                "displayName": "Inner Required",
+                "name": "inner",
+                "type": "string",
+                "default": "",
+                "required": true
+              },
+              {
+                "displayName": "Inner Optional",
+                "name": "opt",
+                "type": "string",
+                "default": ""
+              }
+            ]
+          }
+        ],
+        "node": {
+          "id": "w27",
+          "name": "W27 Node",
+          "type": "noop",
+          "typeVersion": 1,
+          "position": [
+            0,
+            0
+          ],
+          "parameters": {
+            "coll": {
+              "inner": "ok"
+            }
+          }
+        },
+        "expect": {
+          "parameters": {
+            "inner": [
+              "Parameter \"Inner Required\" is required."
+            ]
+          }
+        }
+      },
+      {
+        "name": "coll-hidden-at-root-scope",
+        "properties": [
+          {
+            "displayName": "Coll",
+            "name": "coll",
+            "type": "collection",
+            "default": {},
+            "options": [
+              {
+                "displayName": "Inner Required",
+                "name": "inner",
+                "type": "string",
+                "default": "",
+                "required": true,
+                "displayOptions": {
+                  "show": {
+                    "mode": [
+                      "b"
+                    ]
+                  }
+                }
+              },
+              {
+                "displayName": "Mode",
+                "name": "mode",
+                "type": "options",
+                "options": [
+                  {
+                    "name": "A",
+                    "value": "a"
+                  },
+                  {
+                    "name": "B",
+                    "value": "b"
+                  }
+                ],
+                "default": "a"
+              }
+            ]
+          }
+        ],
+        "node": {
+          "id": "w27",
+          "name": "W27 Node",
+          "type": "noop",
+          "typeVersion": 1,
+          "position": [
+            0,
+            0
+          ],
+          "parameters": {
+            "coll": {
+              "mode": "a",
+              "inner": ""
+            }
+          }
+        },
+        "expect": null
+      },
+      {
+        "name": "coll-mode-nested-invisible",
+        "properties": [
+          {
+            "displayName": "Coll",
+            "name": "coll",
+            "type": "collection",
+            "default": {},
+            "options": [
+              {
+                "displayName": "Inner Required",
+                "name": "inner",
+                "type": "string",
+                "default": "",
+                "required": true,
+                "displayOptions": {
+                  "show": {
+                    "mode": [
+                      "b"
+                    ]
+                  }
+                }
+              },
+              {
+                "displayName": "Mode",
+                "name": "mode",
+                "type": "options",
+                "options": [
+                  {
+                    "name": "A",
+                    "value": "a"
+                  },
+                  {
+                    "name": "B",
+                    "value": "b"
+                  }
+                ],
+                "default": "a"
+              }
+            ]
+          }
+        ],
+        "node": {
+          "id": "w27",
+          "name": "W27 Node",
+          "type": "noop",
+          "typeVersion": 1,
+          "position": [
+            0,
+            0
+          ],
+          "parameters": {
+            "coll": {
+              "mode": "b",
+              "inner": ""
+            }
+          }
+        },
+        "expect": null
+      },
+      {
+        "name": "fc-single-empty",
+        "properties": [
+          {
+            "displayName": "Fixed",
+            "name": "fixed",
+            "type": "fixedCollection",
+            "default": {},
+            "options": [
+              {
+                "name": "opts",
+                "displayName": "Opts",
+                "values": [
+                  {
+                    "displayName": "Inner",
+                    "name": "inn",
+                    "type": "string",
+                    "default": "",
+                    "required": true
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "node": {
+          "id": "w27",
+          "name": "W27 Node",
+          "type": "noop",
+          "typeVersion": 1,
+          "position": [
+            0,
+            0
+          ],
+          "parameters": {
+            "fixed": {
+              "opts": {
+                "inn": ""
+              }
+            }
+          }
+        },
+        "expect": {
+          "parameters": {
+            "inn": [
+              "Parameter \"Inner\" is required."
+            ]
+          }
+        }
+      },
+      {
+        "name": "fc-multi-partial",
+        "properties": [
+          {
+            "displayName": "Fixed",
+            "name": "fixed",
+            "type": "fixedCollection",
+            "typeOptions": {
+              "multipleValues": true
+            },
+            "default": {},
+            "options": [
+              {
+                "name": "opts",
+                "displayName": "Opts",
+                "values": [
+                  {
+                    "displayName": "Inner",
+                    "name": "inn",
+                    "type": "string",
+                    "default": "",
+                    "required": true
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "node": {
+          "id": "w27",
+          "name": "W27 Node",
+          "type": "noop",
+          "typeVersion": 1,
+          "position": [
+            0,
+            0
+          ],
+          "parameters": {
+            "fixed": {
+              "opts": [
+                {
+                  "inn": "ok"
+                },
+                {}
+              ]
+            }
+          }
+        },
+        "expect": {
+          "parameters": {
+            "inn": [
+              "Parameter \"Inner\" is required."
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "fixedCollectionFieldCounts": {
+    "cases": [
+      {
+        "name": "below-min",
+        "properties": [
+          {
+            "displayName": "Fixed",
+            "name": "fixed",
+            "type": "fixedCollection",
+            "typeOptions": {
+              "multipleValues": true,
+              "minRequiredFields": 2,
+              "maxAllowedFields": 3
+            },
+            "default": {},
+            "options": [
+              {
+                "name": "opts",
+                "displayName": "Opts",
+                "values": [
+                  {
+                    "displayName": "Inner",
+                    "name": "inn",
+                    "type": "string",
+                    "default": ""
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "node": {
+          "id": "w27",
+          "name": "W27 Node",
+          "type": "noop",
+          "typeVersion": 1,
+          "position": [
+            0,
+            0
+          ],
+          "parameters": {
+            "fixed": {
+              "opts": [
+                {
+                  "inn": "a"
+                }
+              ]
+            }
+          }
+        },
+        "expect": {
+          "parameters": {
+            "fixed": [
+              "At least 2 fields are required."
+            ]
+          }
+        }
+      },
+      {
+        "name": "above-max",
+        "properties": [
+          {
+            "displayName": "Fixed",
+            "name": "fixed",
+            "type": "fixedCollection",
+            "typeOptions": {
+              "multipleValues": true,
+              "minRequiredFields": 2,
+              "maxAllowedFields": 3
+            },
+            "default": {},
+            "options": [
+              {
+                "name": "opts",
+                "displayName": "Opts",
+                "values": [
+                  {
+                    "displayName": "Inner",
+                    "name": "inn",
+                    "type": "string",
+                    "default": ""
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "node": {
+          "id": "w27",
+          "name": "W27 Node",
+          "type": "noop",
+          "typeVersion": 1,
+          "position": [
+            0,
+            0
+          ],
+          "parameters": {
+            "fixed": {
+              "opts": [
+                {
+                  "inn": "a"
+                },
+                {
+                  "inn": "b"
+                },
+                {
+                  "inn": "c"
+                },
+                {
+                  "inn": "d"
+                }
+              ]
+            }
+          }
+        },
+        "expect": {
+          "parameters": {
+            "fixed": [
+              "At most 3 fields are allowed."
+            ]
+          }
+        }
+      },
+      {
+        "name": "within-bounds",
+        "properties": [
+          {
+            "displayName": "Fixed",
+            "name": "fixed",
+            "type": "fixedCollection",
+            "typeOptions": {
+              "multipleValues": true,
+              "minRequiredFields": 2,
+              "maxAllowedFields": 3
+            },
+            "default": {},
+            "options": [
+              {
+                "name": "opts",
+                "displayName": "Opts",
+                "values": [
+                  {
+                    "displayName": "Inner",
+                    "name": "inn",
+                    "type": "string",
+                    "default": ""
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "node": {
+          "id": "w27",
+          "name": "W27 Node",
+          "type": "noop",
+          "typeVersion": 1,
+          "position": [
+            0,
+            0
+          ],
+          "parameters": {
+            "fixed": {
+              "opts": [
+                {
+                  "inn": "a"
+                },
+                {
+                  "inn": "b"
+                }
+              ]
+            }
+          }
+        },
+        "expect": null
+      },
+      {
+        "name": "min1-singular",
+        "properties": [
+          {
+            "displayName": "Fixed",
+            "name": "fixed",
+            "type": "fixedCollection",
+            "typeOptions": {
+              "multipleValues": true,
+              "minRequiredFields": 1
+            },
+            "default": {},
+            "options": [
+              {
+                "name": "opts",
+                "displayName": "Opts",
+                "values": [
+                  {
+                    "displayName": "Inner",
+                    "name": "inn",
+                    "type": "string",
+                    "default": ""
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "node": {
+          "id": "w27",
+          "name": "W27 Node",
+          "type": "noop",
+          "typeVersion": 1,
+          "position": [
+            0,
+            0
+          ],
+          "parameters": {
+            "fixed": {
+              "opts": []
+            }
+          }
+        },
+        "expect": {
+          "parameters": {
+            "fixed": [
+              "At least 1 field is required."
+            ]
+          }
+        }
+      },
+      {
+        "name": "unset-option-skipped",
+        "properties": [
+          {
+            "displayName": "Fixed",
+            "name": "fixed",
+            "type": "fixedCollection",
+            "default": {},
+            "options": [
+              {
+                "name": "opts",
+                "displayName": "Opts",
+                "values": [
+                  {
+                    "displayName": "Inner",
+                    "name": "inn",
+                    "type": "string",
+                    "default": "",
+                    "required": true
+                  }
+                ]
+              },
+              {
+                "name": "other",
+                "displayName": "Other",
+                "values": [
+                  {
+                    "displayName": "X",
+                    "name": "x",
+                    "type": "string",
+                    "default": "",
+                    "required": true
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "node": {
+          "id": "w27",
+          "name": "W27 Node",
+          "type": "noop",
+          "typeVersion": 1,
+          "position": [
+            0,
+            0
+          ],
+          "parameters": {
+            "fixed": {
+              "opts": {
+                "inn": "ok"
+              }
+            }
           }
         },
         "expect": null
