@@ -302,4 +302,8 @@ notes:
       - { task: "agent-1 TASK-411 + TASK-412 (ISSUE-028/029/030)", commit: b075506e, vote: APPROVED, ref: docs/isolation/consensus/TASK-411-412-agent1-issue-028-030.review-agent-3.md, evidence: "workspace 20 suites ok; goldens 09+10 injected: 140/140 matched, only adjacencyKeys unimplemented (loud)" }
       - { task: "agent-5 ISSUE-031 ledger + Stage 2k 38 cases", commit: "451656c2", vote: APPROVED, ref: docs/isolation/consensus/ISSUE-031-agent5-ledger.review-agent-3.md }
       - { task: "agent-2 acceptance pack W9/W10", vote: "abstain — node LEGO, outside my oracle; no protest" }
+  - name: post_task_review_sweep_3   # after sweep r3 + README runner counts; live arena/* refs re-fetched
+    votes:
+      - { task: "01a0ace3 TASK-401 batch — crates/n8n-connection get_connected_nodes port (ee7e476d) + sweep 40ca8e84", vote: APPROVED, ref: docs/isolation/consensus/TASK-401-ace3-n8n-connection-port.review-agent-3.md, evidence: "their fixture consumer over all 10 goldens: 63 asserted / 0 mismatch / 78 skipped" }
+      - { task: "agent-6 TASK-403 take-over (e9edcc73, d14422d9)", vote: APPROVED, ref: docs/isolation/consensus/TASK-403-agent6-takeover.review-agent-3.md, note: "TASK-402 note on my results file: factual correction requested, non-blocking" }
 

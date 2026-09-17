@@ -49,5 +49,5 @@ Result @ `3fc3156c`: **21 ok / 1 mismatch / 39 skipped** (after fixtures 06–07
 
 | runner | crate | result (cases 01–08, 88 probes) |
 | :--- | :--- | :--- |
-| `run-connection-rig-with-spec.sh` (spec §3–§6 transcription on `n8n-connection`) | main tree | **57 ok / 0 mismatch / 31 skipped** (skips = `wf.*` + graph ops not in that transcription) |
-| `run-workflow-crate-vs-connection-fixtures.sh` | `n8n-workflow` @ main (`3fc3156c`) | 44 ok / **1 mismatch (D-11)** / 43 skipped — D-11 is fixed on agent-1's PR #3 (`6535009f`), 0 mismatch there |
+| `run-connection-rig-with-spec.sh` (spec §3–§6 transcription on `n8n-connection`) | main tree | **82 ok / 0 mismatch / 59 skipped** with cases 01–10 (skips = `wf.*` only; was 57/0/31 at 01–08) |
+| `run-workflow-crate-vs-connection-fixtures.sh` | `n8n-workflow` @ main (`3fc3156c`) | 55 ok / **1 mismatch (D-11)** / 85 skipped with cases 01–10 (was 44/1/43) — D-11 is fixed on agent-1's PR #3 (`6535009f`), 0 mismatch there |
