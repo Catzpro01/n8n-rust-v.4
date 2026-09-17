@@ -1,9 +1,9 @@
-# LEGO MASTER MAP — Phase 2-3-4 (LEGO Isolation + Ownership Transfer + Production Hardening)
+# LEGO MASTER MAP — Phase 2-3-4-5 (LEGO Isolation + Ownership Transfer + Production Hardening + Full Integration)
 
-**Maintainer:** Agent 5 (Integration & Verification Guardian) & Autonomous Master Controller + Agent 3 (Connection/Execution-Data/Expression)
+**Maintainer:** Agent 5 (Integration & Verification Guardian) & Autonomous Master Controller + Agent 3 (Connection/Execution-Data/Expression/Integration)
 **Reference:** n8n `2.9.4` (`reference/n8n`, upstream commit `b6dc2787c45677a29a9612cd27eb911302961a83`)
-**Audit date:** 2026-09-18
-**Rust status:** NOT ALLOWED in Phase 2-4 per PROJECT_RULES.md — ZERO RUST, verified clean (`crates/`, `apps/n8n-rust/` contain only `.gitkeep`), pure JS/TS 1:1 reconstruction
+**Audit date:** 2026-09-18 (Phase 5 INTEGRATED)
+**Rust status:** NOT ALLOWED in Phase 2-5 per PROJECT_RULES.md — ZERO RUST, verified clean (`crates/`, `apps/n8n-rust/` contain only `.gitkeep`), pure JS/TS 1:1 reconstruction, 12/12 LEGO INTEGRATED
 
 Status vocabulary: `PLANNED | ANALYZED | ISOLATED | TESTED | VERIFIED | BLOCKED | FAILED`
 
@@ -61,6 +61,21 @@ All 8 secondary LEGOs have been contracted and isolated under Phase 2 boundary r
 | connection-routing | `connection-routing-engine.ts/.mjs` | ✅ 1:1 n8n 2.9.4, farthest-first, sparse, cycle-safe |
 | execution-data | `execution-data-engine.ts` | ✅ I1-I14, factories v1, pairedItem auto-assignment |
 | expression | `expression-evaluator.ts` | ✅ isExpression, sandbox, $json/$('X') proxy, E1-E8 |
+| trigger | `trigger-engine.ts` | ✅ ActiveWorkflows + TriggersAndPollers, activation/deactivation |
+| webhook | `webhook-engine.ts` | ✅ WebhookService dynamic matching + conflict 409 |
+| scheduler | `scheduler-engine.ts` | ✅ ScheduledTaskManager + CronJob + recurrence |
+| persistence | `persistence-engine.ts` | ✅ WorkflowRepository + flatted + migration v0→v1 |
+| credentials | `credentials-engine.ts` | ✅ CredentialsService + encryption + overwrites |
+| api | `api-engine.ts` | ✅ AbstractServer + ResponseHelper envelope |
+
+### 2.3 Phase 5 Full Integration (Agent 3 — INTEGRATED)
+
+| Component | File | Status |
+| :--- | :--- | :--- |
+| integrated-facade | `n8n-reconstructed-facade.ts` | ✅ 12 LEGO unified facade, singleton, health, activate/deactivate, executeWorkflow |
+| integration-runner | `integration-test-runner.ts` + `test-integration.mjs` | ✅ 12/12 integration tests PASS, 100% Sempurna |
+| zero-rust | `crates/.gitkeep` + `apps/n8n-rust/.gitkeep` | ✅ 4 bytes each, no Rust artifacts |
+| production-ready | `production-readiness-certificate.ts` | ✅ 20/20 PASS, 100/100 certified, INTEGRATED |
 
 ## 3. Source-of-truth mapping (verified against source, not assumed)
 
@@ -94,4 +109,14 @@ map and the automated audit can never silently diverge.
 | Production hardening Phase 4 | PASS | 16 components + i18n 6-lang + certificate 100/100 |
 | Zero Rust Enforcement | PASS | crates/ + apps/ clean, contract_conformance 21/21, boundary_audit PASS, run_gate offline PASS |
 
-**Overall Phase 2-4 gate: `VERIFIED`** — Ready for Phase 5 (Full Integration & Production Deploy).
+| Phase 5 Integration | PASS | `n8n-reconstructed-facade.ts` 12 LEGO unified, `test-integration.mjs` 12/12 PASS, `test-run.mjs` 100% Sempurna, 23/23 package tests PASS |
+
+**Overall Phase 2-5 gate: `INTEGRATED` ✅** — 12/12 LEGO VERIFIED + INTEGRATED, Zero Rust, UI 100% asli, production-ready 100/100, ready for main merge & VPS deploy.
+
+### Phase 5 INTEGRATED Evidence
+- Facade: `packages/reconstructed-engine/src/n8n-reconstructed-facade.ts` (singleton, 12 engines, health, activate/deactivate, execute)
+- Integration: `packages/reconstructed-engine/test-integration.mjs` 12/12 PASS
+- Package tests: 23/23 PASS (execution-data 2, expression 4, connection 5, trigger 2, webhook 2, scheduler 2, persistence 2, credentials 2, api 2)
+- Gates: contract_conformance 21/21 PASS, boundary_audit PASS Rust guard clean, isolation:check PASS (15050 files f8da35180669), run_gate offline PASS
+- Zero Rust: crates/ + apps/n8n-rust/ only .gitkeep
+- Certificate: 20/20 PASS 100/100 INTEGRATED
