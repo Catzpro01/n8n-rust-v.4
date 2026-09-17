@@ -1070,3 +1070,65 @@ destroy their work. Agent 5 documents and reassigns; it does not fix other agent
 - Gagalnya jangkauan ke `gqctxugkxekdqxsaqrum.supabase.co` (TLS handshake 000 dari environment terisolasi) resmi dimitigasi dengan sistem **Local SQLite Bus & Mirror Pool** di `/home/fern/arena/bus.db`.
 - Antrean task, konsensus suara, dan review multi-agen dijalankan secara lokal di VPS dengan latensi ultra-rendah (< 2ms), lalu disinkronkan secara asinkron ke Supabase via orchestrator bridge.
 
+
+---
+
+## ISSUE-023 — DUA HUB LOKALISASI & DUA DISPOSISI RUST DI SATU REPOSITORI (PR #19 vs PR #21)
+
+**Detected by:** Agent 5 (detection & verification only)
+**Affected:** PR #19 (`arena/01a0b105`, lini lokalisasi Phase 4C–4F) · PR #21 (`arena/01a0b104`, integrasi Phase 2–5)
+**Type:** Integration / merge coordination (bukan bug)
+**Severity:** MEDIUM — bisa merge, tetapi butuh satu langkah mekanis + dua keputusan orchestrator
+**Status:** OPEN (terverifikasi dengan simulasi mesin)
+
+### Yang ditemukan
+
+Dua cabang tumbuh bersamaan dan menyentuh berkas yang sama tanpa saling melihat:
+
+| Berkas | PR #19 (branch ini) | PR #21 |
+| :--- | :--- | :--- |
+| `packages/workflow-lego/src/backend-localization-service.ts` | disalin dari `main` apa adanya (9 kunci) | **+634/−33** → 27 kunci × 6 locale (`param.*`, `validation.*`, `connection.*`, `execution.started/finished`, …) |
+| `packages/workflow-lego/src/index.ts` | blok promosi aditif (4C/4E/4F) | +25 (promosi hub 4B) |
+| `docs/isolation/localization.md` | dokumen 4C–4F (status, mutasi M1–M12, §4.4) | dokumen hub 4B (+128) — **add/add conflict** |
+| `package.json` | `localization:*` (7 skrip) | `i18n:check` — **tidak bertabrakan** |
+| Rust | `crates/**` + `Cargo.toml` **diarsipkan** ke `legacy/rust-port/` (reversible, rename-preserving) | `crates/**` disunting (7 berkas `n8n-workflow/src`), `crates/`+`apps/` disebut hanya `.gitkeep` |
+
+`contract_conformance` karenanya berbeda arti: **22/22** di cabang ini (termasuk cek baru "Rust legacy archive is documented and inert") vs **21/21** di PR #21.
+
+### Hasil verifikasi mesin (bukan opini)
+
+`node tools/localization-hub-diff.mjs --their-ref 7fba8a6d --base d357e6e5` → `docs/isolation/evidence/localization-hub-diff.json`:
+
+```text
+locales            6 ours / 6 theirs
+keys               35 ours / 27 theirs / 11 shared
+value pairs        66 identical / 0 divergent      <- TIDAK ada konflik teks
+file collisions    README.md, docs/isolation/localization.md, package.json,
+                   packages/workflow-lego/src/backend-localization-service.ts,
+                   packages/workflow-lego/src/index.ts,
+                   tests/reference/baseline/SMOKE_TEST_RESULTS.md
+script collisions  — (i18n:check vs localization:* tidak bentrok)
+verdict            COMPATIBLE
+```
+
+Simulasi merge (worktree bersih + berkas 4B milik PR #21) → `docs/isolation/evidence/merge-simulation-pr21.json`:
+
+| Keadaan | Tes cabang ini | Gate cabang ini |
+| :--- | :--- | :--- |
+| A. Phase 4F apa adanya | 76/77 | 13/15 (G1, G8) |
+| B. setelah hardening Phase 4G | 78/79 | 14/16 (G1, G8 — sebab sama) |
+| C. B + resep promosi (12 runtime + 6 type) | **79/79** | **16/16 PASS** |
+
+Sisa pekerjaan setelah merge karena itu **mekanis dan sudah terbukti**: tambahkan 8 runtime + 6 type symbol dari 4B yang baru ke blok promosi `src/index.ts` (daftar lengkap di evidence). Tidak ada satu pun nilai terjemahan yang perlu direkonsiliasi: 66 pasangan (kunci, locale) identik byte-per-byte.
+
+### Mengapa ini dilaporkan, bukan "diperbaiki" sepihak
+
+1. `backend-localization-service.ts` **bukan milik lini ini** — Phase 4F/4G tidak boleh menyuntingnya (dijaga `allowed_paths`/`forbidden_paths` TASK-415/416). Perubahan 27-kunci adalah keputusan pemilik 4B.
+2. Dua disposisi Rust (arsip `legacy/rust-port/` vs `.gitkeep`) mengubah arti `contract_conformance` dan hanya orchestrator yang boleh memutuskan mana yang jadi `main`.
+3. `docs/isolation/localization.md` adalah **add/add conflict**; dokumen gabungan harus memuat kedua isi (hub 4B + lini 4C–4F), jadi keputusan editorial, bukan penggabungan otomatis.
+
+### Rekomendasi (untuk orchestrator)
+
+* Merge urutan: hub 4B dulu (PR #21 atau setara) → lalu cabang ini, karena lini 4C–4F sudah tahan-superset (gate G15) dan hanya butuh langkah C.
+* Jalankan `node tools/localization-hub-diff.mjs --their-ref <rev> --base <rev> --check` **sebelum** merge kedua cabang: exit 1 hanya bila ada teks yang benar-benar berbeda atau nama skrip bentrok.
+* Pilih satu disposisi Rust dan satukan cek `contract_conformance` (22 vs 21) agar arti "PASS" sama di semua cabang.

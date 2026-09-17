@@ -1,6 +1,6 @@
 {
   "gate": "phase-4c-native-localization",
-  "generatedAt": "2026-09-17T20:50:06.986Z",
+  "generatedAt": "2026-09-17T21:00:21.961Z",
   "node": "v22.22.3",
   "modules": [
     "packages/workflow-lego/src/settings-localization-adapter.ts (phase 4A)",
@@ -9,7 +9,8 @@
     "packages/workflow-lego/src/localization-envelope.ts (phase 4E)",
     "packages/workflow-lego/src/localization-vocabulary.ts (phase 4F)",
     "packages/workflow-lego/src/execution-log-record.ts (phase 4F)",
-    "packages/workflow-lego/src/api-error-response.ts (phase 4F)"
+    "packages/workflow-lego/src/api-error-response.ts (phase 4F)",
+    "packages/workflow-lego/src/localization-vocabulary.ts (phase 4G: catalogue ownership)"
   ],
   "localizationTestFiles": [
     "packages/workflow-lego/test/06-localization-runtime.test.ts",
@@ -71,6 +72,7 @@
     "buildExecutionLogRecord",
     "buildHealthResponse",
     "buildRunEnvelope",
+    "catalogueOverlaps",
     "createEnvelopeRuntime",
     "createLocalizationRuntime",
     "createProductRuntime",
@@ -106,6 +108,7 @@
     "type ApiErrorResponseInput",
     "type ApiHealthResponse",
     "type ApiSuccessResponse",
+    "type CatalogueOverlap",
     "type DictionaryParityReport",
     "type DictionaryPort",
     "type Direction",
@@ -126,22 +129,23 @@
     "type RunMode",
     "type RunSummaryParts",
     "type SettingsStatePort",
-    "type SupportedLocale"
+    "type SupportedLocale",
+    "withoutCatalogueOwnedKeys"
   ],
   "suite": {
     "command": "node --test packages/workflow-lego/test/{06,07,08}-*.test.ts",
-    "tests": 77,
-    "pass": 77,
+    "tests": 79,
+    "pass": 79,
     "fail": 0,
     "exitCode": 0,
-    "durationMs": 627
+    "durationMs": 549
   },
   "checks": [
     {
       "id": "G1",
       "name": "localization test suites pass (4C runtime + 4E envelope + 4F run path)",
       "ok": true,
-      "detail": "77/77 PASS in 627ms"
+      "detail": "79/79 PASS in 549ms"
     },
     {
       "id": "G2",
@@ -183,7 +187,7 @@
       "id": "G8",
       "name": "Phase 4D: index.ts re-exports every runtime symbol of the localization line",
       "ok": true,
-      "detail": "57 runtime + 26 type symbols promoted"
+      "detail": "59 runtime + 27 type symbols promoted"
     },
     {
       "id": "G9",
@@ -226,6 +230,12 @@
       "name": "product vocabulary: parity, no key collisions, run-path modules stay in-package",
       "ok": true,
       "detail": "12 product keys x 6 locales, 3 modules checked"
+    },
+    {
+      "id": "G15",
+      "name": "catalogue ownership: a superset 4B keeps its keys, divergence is reported",
+      "ok": true,
+      "detail": "0 overlaps with the current 4B, rule proven against a grown catalogue"
     }
   ],
   "verdict": "PASS",

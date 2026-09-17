@@ -25,6 +25,8 @@ import assert from 'node:assert/strict';
 import {
 	PRODUCT_DICTIONARY_EXTENSION,
 	RUN_MODES,
+	catalogueOverlaps,
+	withoutCatalogueOwnedKeys,
 	SUMMARY_MESSAGE_KEYS,
 	TRIGGER_MESSAGE_KEYS,
 	createProductRuntime,
@@ -430,6 +432,65 @@ test('F11 golden parity: reference payloads are reproducible field-for-field', (
 	const contractSource = readFileSync(join(REPO, 'contracts', 'api.contract.md'), 'utf8');
 	assert.match(contractSource, /Zod validation failure/);
 	assert.match(contractSource, /invalid_type/);
+});
+
+test('F12 the catalogue owns its keys: a superset 4B is not shadowed by an overlay', () => {
+	// A dictionary port that already carries one overlay key — i.e. what a grown Phase 4B looks
+	// like from this module's point of view. The catalogue text must win, and the divergence must
+	// be *reported* rather than silently resolved.
+	const catalogue = {
+		translate: (key: string, locale?: string) =>
+			key === 'execution.started'
+				? ({ en: 'Started (catalogue)' } as Record<string, string>)[locale ?? 'en'] ?? key
+				: key,
+	};
+	const overlaps = catalogueOverlaps(ENVELOPE_DICTIONARY_EXTENSION as Record<string, Record<string, string>>, catalogue);
+	assert.deepEqual(overlaps, [
+		{
+			locale: 'en',
+			key: 'execution.started',
+			overlayText: 'Execution started',
+			catalogueText: 'Started (catalogue)',
+			identical: false,
+		},
+	]);
+
+	const rt = createProductRuntime({ dictionaries: catalogue, localeSource: { getLocale: () => 'en' } });
+	assert.equal(rt.t('execution.started'), 'Started (catalogue)', 'the catalogue text wins');
+	assert.equal(rt.t('execution.failed'), 'Execution failed', 'gaps are still filled by the overlay');
+	assert.equal(rt.has('execution.started'), true);
+
+	// Dropping is per key and per locale: a locale the catalogue does not serve keeps its overlay.
+	const dropped = withoutCatalogueOwnedKeys(ENVELOPE_DICTIONARY_EXTENSION as Record<string, Record<string, string>>, catalogue);
+	assert.equal(dropped.en?.['execution.started'], undefined, 'catalogue-owned key dropped for en');
+	assert.equal(dropped.jv?.['execution.started'], 'Eksekusi diwiwiti', 'unaffected locale keeps the overlay');
+	assert.equal(dropped.en?.['execution.waiting'], 'Execution waiting', 'only owned keys are dropped');
+});
+
+test('F13 overlaps with the catalogue are allowed only when the texts agree', () => {
+	// The invariant is *value agreement*, not emptiness: Phase 4B may grow to include a key an
+	// overlay already carries (another branch ships exactly that), and that is compatible as long as
+	// both owners say the same thing. Today's 9-key catalogue yields no overlap at all — that state
+	// is reported, never asserted as permanent, so a superset merge cannot redden this line.
+	const overlaps = catalogueOverlaps(ENVELOPE_DICTIONARY_EXTENSION as Record<string, Record<string, string>>);
+	assert.equal(
+		overlaps.every((o) => o.identical),
+		true,
+		`divergent overlay/catalogue text: ${JSON.stringify(overlaps.filter((o) => !o.identical))}`,
+	);
+	const strings = catalogueOverlaps(PRODUCT_DICTIONARY_EXTENSION as Record<string, Record<string, string>>);
+	assert.equal(strings.every((o) => o.identical), true);
+
+	// Every key the catalogue owns must resolve to the catalogue's text, whatever the overlay says.
+	for (const overlap of overlaps) {
+		const rt = createProductRuntime({ localeSource: { getLocale: () => overlap.locale } });
+		assert.equal(rt.t(overlap.key, undefined, overlap.locale), overlap.catalogueText);
+	}
+
+	// tools/localization-hub-diff.mjs reports this same overlap set against another branch, so the
+	// orchestrator sees the number before merging instead of after.
+	const covered = overlaps.length;
+	assert.equal(covered, catalogueOverlaps(ENVELOPE_DICTIONARY_EXTENSION as Record<string, Record<string, string>>).length);
 });
 
 /* --- F10 isolation ---------------------------------------------------------------------- */

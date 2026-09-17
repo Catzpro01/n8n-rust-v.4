@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Agent 5 — full integration gate.
 #   Stage 1 (offline, always runnable): contract conformance + boundary audit
-#   Stage 2d (offline, optional): Phase 4C–4F native localization gate
+#   Stage 2d (offline, optional): Phase 4C–4G native localization gate
 #   Stage 3 (live, needs running n8n + PostgreSQL): 11/11 regression gate
 # Exit 0 only if every executed stage passes AND the live stage was actually executed,
 # unless --offline-only is given (then live is reported as NOT RUN and the gate is INCONCLUSIVE).
@@ -16,7 +16,7 @@ node tests/compatibility/contract_conformance.mjs || fail=1
 echo; echo "######## STAGE 2: BOUNDARY & DEPENDENCY AUDIT (offline) ########"
 python3 tests/integration/boundary_audit.py || fail=1
 
-echo; echo "######## STAGE 2d: NATIVE LOCALIZATION GATE (offline, Phase 4C–4F) ########"
+echo; echo "######## STAGE 2d: NATIVE LOCALIZATION GATE (offline, Phase 4C–4G) ########"
 if [ -f tools/localization-gate.mjs ]; then
   node tools/localization-gate.mjs --quiet || fail=1
 else

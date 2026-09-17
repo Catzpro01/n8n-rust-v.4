@@ -471,6 +471,31 @@ check('G14', 'product vocabulary: parity, no key collisions, run-path modules st
 	return `${keys.length} product keys x ${SUPPORTED_LOCALE_CODES.length} locales, ${Object.keys(phase4fModules).length} modules checked`;
 });
 
+/* --- G15: catalogue ownership / superset tolerance --------------------------------------- */
+
+check('G15', 'catalogue ownership: a superset 4B keeps its keys, divergence is reported', () => {
+	const envelopeOverlay = envelopeModule.ENVELOPE_DICTIONARY_EXTENSION;
+	const real = vocabularyModule.catalogueOverlaps(envelopeOverlay);
+	assert(
+		real.every((o) => o.identical),
+		`overlay/catalogue divergence: ${JSON.stringify(real.filter((o) => !o.identical))}`,
+	);
+
+	// Prove the rule (and this check) can go red, with a catalogue that already owns an overlay key.
+	const grown = {
+		translate: (key, locale) => (key === 'execution.started' ? { en: 'Started (catalogue)' }[locale] ?? key : key),
+	};
+	const overlaps = vocabularyModule.catalogueOverlaps(envelopeOverlay, grown);
+	assert(
+		overlaps.length === 1 && overlaps[0].key === 'execution.started' && overlaps[0].identical === false,
+		`grown-catalogue overlap not reported: ${JSON.stringify(overlaps)}`,
+	);
+	const runtime = vocabularyModule.createProductRuntime({ dictionaries: grown, localeSource: { getLocale: () => 'en' } });
+	assert(runtime.t('execution.started') === 'Started (catalogue)', 'the catalogue must win, not the overlay');
+	assert(runtime.t('execution.failed') !== 'execution.failed', 'gaps are still filled');
+	return `${real.length} overlaps with the current 4B, rule proven against a grown catalogue`;
+});
+
 /* --- evidence + verdict ----------------------------------------------------------------- */
 const failed = checks.filter((c) => !c.ok);
 const record = {
@@ -485,6 +510,7 @@ const record = {
 		'packages/workflow-lego/src/localization-vocabulary.ts (phase 4F)',
 		'packages/workflow-lego/src/execution-log-record.ts (phase 4F)',
 		'packages/workflow-lego/src/api-error-response.ts (phase 4F)',
+		'packages/workflow-lego/src/localization-vocabulary.ts (phase 4G: catalogue ownership)',
 	],
 	localizationTestFiles: [
 		'packages/workflow-lego/test/06-localization-runtime.test.ts',

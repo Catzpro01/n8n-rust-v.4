@@ -1,0 +1,88 @@
+id: TASK-416-localization-hub-reconciliation
+agent: agent-5
+lego: localization
+module: localization
+phase: 4g
+
+# Phase 4G — merge intelligence between two branches that grew independently: this line (4C–4F) and
+# the parallel 27-key Phase 4B hub (PR #21). Additive + defensive: the catalogue-ownership rule makes
+# a SUPERSET 4B safe (no overlay shadowing, divergence reported), and a reusable diff tool quantifies
+# the merge for the orchestrator. No counterpart file is edited from here, no Rust, no UI, no merge.
+
+allowed_paths:
+  - packages/workflow-lego/src/localization-vocabulary.ts   # catalogueOverlaps/withoutCatalogueOwnedKeys + filtered factory
+  - packages/workflow-lego/src/index.ts                     # additive: promote the two helpers + type
+  - packages/workflow-lego/test/08-localization-run-path.test.ts   # F12/F13
+  - tools/localization-gate.mjs                             # G15 (+ G8 list)
+  - tools/localization-hub-diff.mjs                         # new: cross-branch diff
+  - contracts/localization.contract.md                      # §3 rows · §10 row · §11.11
+  - docs/isolation/localization.md                          # phase table, evidence rows, M13/M14, §4.5, §5
+  - docs/isolation/CROSS-AGENT-ISSUES.md                    # ISSUE-023 (detection only)
+  - docs/isolation/evidence/localization-gate.json
+  - docs/isolation/evidence/localization-hub-diff.json
+  - docs/isolation/evidence/merge-simulation-pr21.json
+  - tests/integration/run_gate.sh                         # stage 2d label: Phase 4C–4G
+  - README.md
+  - package.json
+  - tasks/TASK-416-localization-hub-reconciliation.yaml
+  - results/TASK-416-localization-hub-reconciliation.md
+
+forbidden_paths:
+  - crates/**
+  - apps/**
+  - reference/n8n/**
+  - tests/reference/**                                            # the golden/baseline is read-only
+  - packages/workflow-lego/src/backend-localization-service.ts    # owned by the Phase 4B line — inspected, never edited
+  - packages/workflow-lego/src/settings-localization-adapter.ts   # UI-owned, not promoted
+  - packages/workflow-lego/src/localization-envelope.ts           # 4E overlay: read-only for 4G
+
+requires:
+  - packages/workflow-lego/src/backend-localization-service.ts
+  - docs/isolation/CROSS-AGENT-ISSUES.md
+  - contracts/localization.contract.md
+
+subject_branch: arena/01a0b105-n8n-rust-v-4
+base: 1dcb96b5                     # Phase 4F tip
+counterpart_ref: 7fba8a6d1887de570c9a3515ca11a7587c04c8a7   # PR #21 head (arena/01a0b104), fetched locally
+
+operations:
+  - name: write_file
+    args: { path: tools/localization-hub-diff.mjs, kind: tooling }
+  - name: edit_file
+    args: { path: packages/workflow-lego/src/localization-vocabulary.ts, change: "catalogueOverlaps() + withoutCatalogueOwnedKeys() + createProductRuntime() drops catalogue-owned overlay keys" }
+  - name: edit_file
+    args: { path: packages/workflow-lego/test/08-localization-run-path.test.ts, change: "F12 (catalogue wins, divergence reported), F13 rewritten to the value-agreement invariant" }
+  - name: edit_file
+    args: { path: tools/localization-gate.mjs, change: "new G15 (rule against the live catalogue + a grown stub)" }
+  - name: run_tool
+    args: { cmd: "node tools/localization-hub-diff.mjs --their-ref 7fba8a6d --base d357e6e5", expect: "VERDICT COMPATIBLE — 35 vs 27 keys, 66 identical / 0 divergent, 6 file collisions, 0 script collisions" }
+  - name: run_simulation
+    args: { cmd: "clean git worktree + counterpart 4B hub", expect: "A 76/77 + 13/15 -> B 78/79 + 14/16 -> C 79/79 + 16/16 (promotion recipe applied)" }
+  - name: run_tests
+    args: { cmd: "node --test packages/workflow-lego/test/{06,07,08}-*.test.ts", expect: "79/79 PASS" }
+  - name: run_gate
+    args: { cmd: "node tools/localization-gate.mjs", expect: "16/16 PASS" }
+  - name: mutation_test
+    args:
+      mutations: 2
+      expect: "M13 overlay shadowing -> G15 red; M14 unpromoted helper -> G8 red; restore -> green"
+
+verification:
+  module_tests: 79/79 PASS (L1–L13, E1–E10, F1–F13)
+  localization_gate: 16/16 PASS (G1–G15)
+  cross_branch_verdict: COMPATIBLE (0 divergent value pairs across 66 overlaps)
+  merge_simulation: 79/79 + 16/16 PASS after promoting 12 runtime + 6 type symbols (recipe recorded)
+  contract_conformance: 22/22 PASS
+  boundary_audit: PASS
+  isolation_checks: boundary PASS · kernel PASS · port-surface PASS · reference 15050 / f8da35180669
+  rust_added: none
+  reference_modified: none
+  catalogue_4b_modified: none (inspected and diffed only)
+  counterpart_files_edited: none
+
+merge_condition:
+  - localization_gate_pass
+  - no_contract_violation
+  - no_reference_modification
+  - frozen_4b_catalogue_untouched
+  - hub_diff_verdict_compatible

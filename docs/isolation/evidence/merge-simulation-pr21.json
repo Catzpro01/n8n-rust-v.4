@@ -1,0 +1,64 @@
+{
+	"tool": "merge-simulation",
+	"generatedAt": "2026-09-18",
+	"theirRef": "7fba8a6d1887de570c9a3515ca11a7587c04c8a7",
+	"theirBranch": "arena/01a0b104-n8n-rust-v-4 (PR #21)",
+	"ourRef": "1dcb96b5",
+	"subject": "Adopt PR #21's Phase 4B hub (27 keys x 6 locales, +634/-33 in backend-localization-service.ts) into this branch's tree, then run this branch's own tests and gate.",
+	"method": "git worktree --detach HEAD (clean checkout of the commit under test) + copy the counterpart backend-localization-service.ts over it; the branch's own test files, gate and modules are copied in from the working tree so the simulation measures the MERGED state, not a stale commit.",
+	"states": [
+		{
+			"state": "A — branch as shipped in Phase 4F (unfiltered overlays)",
+			"tests": "77 total / 76 pass / 1 fail",
+			"gate": "13/15 checks",
+			"failing": [
+				"G1 <= test L13 (index.ts does not re-export the grown 4B surface)",
+				"G8 (src/index.ts does not re-export runtime symbol \"BASE_LOCALE_MESSAGES\")"
+			],
+			"note": "The overlap itself caused no failure in state A either: the 2 shared keys carry identical text in all 6 locales, so the overlay shadowing them was invisible."
+		},
+		{
+			"state": "B — after Phase 4G hardening (catalogue owns its keys + value-agreement invariant)",
+			"tests": "79 total / 78 pass / 1 fail",
+			"gate": "14/16 checks",
+			"failing": [
+				"G1 <= test L13 (same cause)",
+				"G8 (same cause)"
+			],
+			"note": "G15 now reports 12 overlaps (2 keys x 6 locales) and passes because every pair is byte-identical; the previous strict test F13 ('no overlap at all') was rewritten to the value-agreement invariant, which is what made this state merge-clean instead of red."
+		},
+		{
+			"state": "C — state B + the mechanical promotion recipe (12 runtime + 6 type names added to src/index.ts)",
+			"tests": "79 total / 79 pass / 0 fail",
+			"gate": "16/16 checks PASS",
+			"failing": [],
+			"note": "Two lines that each grew independently are fully compatible after one mechanical change: extend the promotion block. No value had to be reconciled — 66 overlapping (key, locale) pairs, 0 divergent."
+		}
+	],
+	"promotionRecipe": {
+		"runtimeSymbols": [
+			"BASE_LOCALE_MESSAGES",
+			"BROWSER_STORAGE_KEYS",
+			"LEGACY_LOCALE_ALIASES",
+			"NATIVE_NUMBER_FORMATS",
+			"isRtl",
+			"isTranslatableKey",
+			"matchLocale",
+			"resolveAcceptLanguage"
+		],
+		"typeNames": [
+			"LocaleMessages",
+			"LocaleParityReport",
+			"LocalizationPersistencePort",
+			"MessageValue",
+			"NumberFormats",
+			"TranslateOptions"
+		],
+		"where": "packages/workflow-lego/src/index.ts, export block from './backend-localization-service'",
+		"verifiedBy": "state C above"
+	},
+	"notMeasured": [
+		"The counterpart gate (tools/localization-hub-check.mjs, 'i18n:check') could not be executed in this sandbox: its loader compiles TypeScript with the pinned `typescript` from packages/workflow-lego/node_modules, which is absent here (no registry access). This branch's gate needs no dependencies (Node type stripping), which is why it can run offline.",
+		"Live verification (docker/VPS) remains unavailable in this sandbox."
+	]
+}

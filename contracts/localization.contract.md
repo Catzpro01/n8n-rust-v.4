@@ -5,10 +5,10 @@
 | Owner | Agent 5 (integration), Phase 4C continuation of the Phase 4A/4B line |
 | LEGO | `localization` — locale resolution, direction, interpolation, engine status messages |
 | Reference | n8n 2.9.4 (`reference/n8n`) for **boundary discipline only**: no runtime behavior of the reference is replaced or re-interpreted here |
-| Implementation | `packages/workflow-lego/src/localization-runtime.ts` (4C) + `localization-envelope.ts` (4E) + `localization-vocabulary.ts` / `execution-log-record.ts` / `api-error-response.ts` (4F), with `settings-localization-adapter.ts` (4A) and `backend-localization-service.ts` (4B) as injected collaborators |
+| Implementation | `packages/workflow-lego/src/localization-runtime.ts` (4C) + `localization-envelope.ts` (4E) + `localization-vocabulary.ts` / `execution-log-record.ts` / `api-error-response.ts` (4F/4G), with `settings-localization-adapter.ts` (4A) and `backend-localization-service.ts` (4B) as injected collaborators |
 | Blueprint | `docs/isolation/localization.md` |
-| Tests | `06-localization-runtime.test.ts` (33) + `07-localization-envelope.test.ts` (17) + `08-localization-run-path.test.ts` (27) — **77/77 PASS** |
-| Gate / evidence | `tools/localization-gate.mjs` → `docs/isolation/evidence/localization-gate.json` — **15/15 PASS** |
+| Tests | `06-localization-runtime.test.ts` (33) + `07-localization-envelope.test.ts` (17) + `08-localization-run-path.test.ts` (29) — **79/79 PASS** |
+| Gate / evidence | `tools/localization-gate.mjs` → `docs/isolation/evidence/localization-gate.json` — **16/16 PASS**; cross-branch intel via `tools/localization-hub-diff.mjs` → `localization-hub-diff.json` |
 | Surface | promoted in Phase 4D/4E/4F: `src/index.ts` re-exports 57 runtime + 26 type symbols (`LocalizationRuntime`, `LOCALE_CATALOG`, `buildRunEnvelope`, `buildExecutionLogRecord`, `buildApiErrorResponse`, …) |
 | Runnable view | `node tools/localization-inspect.mjs [--lang … --key …] [--envelope] [--record] [--api-error <code>]` |
 | Status | **TESTED** (no reference path touched, UI untouched) |
@@ -64,6 +64,8 @@ execution fail because of a translation**.
 | `buildApiErrorResponse(input, runtime?)` | `{ statusCode, body, localized }` with `body = { code, message, hint?, meta?, stacktrace? }` per `contracts/api.contract.md` §3 — known code → localized envelope, unknown string → `{ code: 0 }`, numeric code → passed through (`{ code: 401, message: rawMessage }` reproduces the reference login payload byte-for-byte) |
 | `buildApiSuccessResponse(data, statusCode?)` | `{ statusCode, body: { data } }` — the reference success wrapper, nothing added |
 | `buildHealthResponse(state, runtime?, locale?)` | `{ statusCode: 200 \| 503, body: { status: 'ok' \| 'error', label } }` — the machine field stays untranslated |
+| `catalogueOverlaps(overlay, dictionaryPort?, locales?)` | `Array<{ locale, key, overlayText, catalogueText, identical }>` — every key an overlay defines that the catalogue also owns; `identical` is the compatibility verdict |
+| `withoutCatalogueOwnedKeys(overlay, dictionaryPort?, locales?)` | the overlay minus the keys the catalogue owns (the catalogue is the owner of its keys) |
 
 ## 4. Responsibilities
 
@@ -208,6 +210,7 @@ No filesystem, database or network access at any point; the object is a plain in
 | Health endpoint | `runtime.t('api.health.ok')` |
 | CLI / worker bootstrap | `fromEnvironment(env)` / `fromConstant(code)` / `firstResolvingSource(...)` |
 | Evidence tooling | `tools/localization-gate.mjs` (imports the module directly; `--json` for CI) |
+| Cross-branch merge intel | `tools/localization-hub-diff.mjs --their-ref <rev> [--base <rev>] [--check]` → `docs/isolation/evidence/localization-hub-diff.json` |
 | Execution logger (records) | `buildExecutionLogRecord(input, runtime)` / `formatExecutionLogLine(record)` |
 | Run-path re-render | `relocalizeNodeLine(nodeRun, runtime, locale)` — view a stored run in another locale |
 | API router (error) | `buildApiErrorResponse(input, runtime)` / `HTTP_STATUS_BY_ERROR_CODE` |
@@ -253,7 +256,18 @@ No filesystem, database or network access at any point; the object is a plain in
    testable. The 4B catalogue and the 4E overlay are never mutated, and product keys may not collide
    with keys of either earlier phase. Asserted by test 08 (F10) and gate check G14; the vocabulary
    parity rules of §11.2 apply to `PRODUCT_DICTIONARY_EXTENSION` unchanged (test 08 F1/F2, gate G14).
-10. **One summary, one truth.** Run summaries are produced by `runSummary()` only — no caller
+11. **Catalogue ownership and superset tolerance (Phase 4G).** The Phase 4B catalogue owns its keys:
+   an overlay entry the catalogue also defines is dropped by `createProductRuntime()` instead of
+   shadowing it, so a catalogue that *grows* (another branch ships 27 keys where this line was built
+   against 9) keeps its own text. An overlap is **compatible only when both texts are byte-identical**;
+   `catalogueOverlaps()` reports every overlap with both texts and `identical: true/false`, gate check
+   G15 asserts the rule against the live catalogue and against a deliberately grown stub, and test 08
+   F12/F13 pin it. Divergence is *reported for reconciliation*, never resolved by silently preferring
+   one owner — the merge decision belongs to a human/orchestrator, not to a lookup order.
+   Cross-branch verification: `tools/localization-hub-diff.mjs` compares this line's composed
+   vocabulary against another revision's hub and emits key sets, overlaps, file- and script-level
+   collisions and the mechanical surface gap (`docs/isolation/evidence/localization-hub-diff.json`).
+12. **One summary, one truth.** Run summaries are produced by `runSummary()` only — no caller
    concatenates its own "finished in …" string — and the record's `localized` block is the 4E
    envelope verbatim, so a re-rendered line (`relocalizeNodeLine()`) and the stored line cannot
    disagree. Asserted by test 08 (F5/F6).

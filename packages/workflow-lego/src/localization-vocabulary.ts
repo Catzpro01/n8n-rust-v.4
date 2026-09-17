@@ -22,9 +22,11 @@
 
 import {
 	FALLBACK_LOCALE,
+	SUPPORTED_LOCALE_CODES,
 	createLocalizationRuntime,
 	hasUnfilledPlaceholder,
 	mergeOverlays,
+	type DictionaryPort,
 	type LocalizationOptions,
 	type LocalizationRuntime,
 } from './localization-runtime.ts';
@@ -134,24 +136,106 @@ export function productKeys(locale: string = FALLBACK_LOCALE): readonly string[]
 }
 
 /* ------------------------------------------------------------------------------------------------------------------ *
+ * Catalogue ownership — a superset 4B must not be shadowed by an older overlay
+ * ------------------------------------------------------------------------------------------------------------------ */
+
+/**
+ * True when the catalogue itself provides this key for this locale. The Phase 4B `translate()`
+ * contract echoes an unknown key back, and an empty string is not a translation, so both count as
+ * "not provided" — the same rule the runtime's own lookup applies.
+ */
+function isProvidedBy(dictionaryPort: DictionaryPort, key: string, locale: string): boolean {
+	const value = dictionaryPort.translate(key, locale);
+	return typeof value === 'string' && value.trim() !== '' && value !== key;
+}
+
+/** One key that both an overlay and the catalogue define, with both texts. */
+export interface CatalogueOverlap {
+	readonly locale: string;
+	readonly key: string;
+	readonly overlayText: string;
+	readonly catalogueText: string;
+	/** `true` when both owners carry byte-identical text — the only compatible overlap. */
+	readonly identical: boolean;
+}
+
+/**
+ * Report every key an overlay defines that the catalogue also owns.
+ *
+ * This exists because the catalogue may legitimately grow (Phase 4B is allowed to add keys), and a
+ * grown catalogue must not be silently shadowed by an overlay written against a smaller one. An
+ * overlap is **compatible** only when both texts are byte-identical; anything else has to be
+ * reconciled by a human before merge — `tools/localization-hub-diff.mjs` reports exactly that
+ * against another branch.
+ */
+export function catalogueOverlaps(
+	overlay: Record<string, Record<string, string>>,
+	dictionaryPort: DictionaryPort = NativeLocalizationService,
+	locales: readonly string[] = SUPPORTED_LOCALE_CODES,
+): CatalogueOverlap[] {
+	const overlaps: CatalogueOverlap[] = [];
+	for (const locale of locales) {
+		for (const [key, overlayText] of Object.entries(overlay[locale] ?? {})) {
+			if (!isProvidedBy(dictionaryPort, key, locale)) continue;
+			const catalogueText = dictionaryPort.translate(key, locale);
+			overlaps.push({ locale, key, overlayText, catalogueText, identical: catalogueText === overlayText });
+		}
+	}
+	return overlaps;
+}
+
+/**
+ * Drop overlay entries the catalogue already owns — the catalogue owns its keys, and overlays exist
+ * to fill gaps, not to shadow. Without this, a Phase 4B that grows to include a key would still be
+ * overruled by an older overlay at lookup time, and the two owners would disagree invisibly.
+ * Divergence is *reported* by `catalogueOverlaps()`, never resolved by guessing here.
+ */
+export function withoutCatalogueOwnedKeys(
+	overlay: Record<string, Record<string, string>>,
+	dictionaryPort: DictionaryPort = NativeLocalizationService,
+	locales: readonly string[] = SUPPORTED_LOCALE_CODES,
+): Record<string, Record<string, string>> {
+	const filtered: Record<string, Record<string, string>> = {};
+	for (const [locale, keys] of Object.entries(overlay)) {
+		const inCatalogue = locales.includes(locale);
+		const kept: Record<string, string> = {};
+		for (const [key, value] of Object.entries(keys)) {
+			if (inCatalogue && isProvidedBy(dictionaryPort, key, locale)) continue;
+			kept[key] = value;
+		}
+		if (Object.keys(kept).length > 0) filtered[locale] = kept;
+	}
+	return filtered;
+}
+
+/* ------------------------------------------------------------------------------------------------------------------ *
  * Runtime factory + helpers
  * ------------------------------------------------------------------------------------------------------------------ */
 
 /**
  * The runtime used by the Phase 4F run path: Phase 4B product catalogue + Phase 4E engine/API
- * vocabulary + this file's product strings. Later overlays win, so a caller can still override.
+ * vocabulary + this file's product strings.
+ *
+ * The catalogue owns its keys: an overlay entry the catalogue also defines is dropped
+ * (`withoutCatalogueOwnedKeys()`) instead of shadowing it, so a Phase 4B expansion keeps its own
+ * text and `catalogueOverlaps()` can still report the overlap for review. Later overlays win among
+ * themselves, so a caller's `overlay` still overrides the shipped overlays.
  *
  * Composed explicitly (never through module-level mutable state): the 4E vocabulary is imported,
  * not looked up, so two runtimes can hold different overlays without influencing each other.
  */
 export function createProductRuntime(options: LocalizationOptions = {}): LocalizationRuntime {
+	const dictionaries = options.dictionaries ?? NativeLocalizationService;
 	return createLocalizationRuntime({
-		dictionaries: NativeLocalizationService,
+		dictionaries,
 		...options,
-		overlay: mergeOverlays(
-			ENVELOPE_DICTIONARY_EXTENSION as Record<string, Record<string, string>>,
-			PRODUCT_DICTIONARY_EXTENSION as Record<string, Record<string, string>>,
-			options.overlay,
+		overlay: withoutCatalogueOwnedKeys(
+			mergeOverlays(
+				ENVELOPE_DICTIONARY_EXTENSION as Record<string, Record<string, string>>,
+				PRODUCT_DICTIONARY_EXTENSION as Record<string, Record<string, string>>,
+				options.overlay,
+			),
+			dictionaries,
 		),
 	});
 }

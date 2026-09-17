@@ -18,6 +18,7 @@
 		"workflow-lego:build": "npm --prefix packages/workflow-lego run build",
 		"workflow-lego:test": "bash scripts/run-lego-tests.sh",
 		"localization:record": "node tools/localization-inspect.mjs --record",
-		"localization:api": "node tools/localization-inspect.mjs --api-error"
+		"localization:api": "node tools/localization-inspect.mjs --api-error",
+		"localization:hub-diff": "node tools/localization-hub-diff.mjs"
 	}
 }

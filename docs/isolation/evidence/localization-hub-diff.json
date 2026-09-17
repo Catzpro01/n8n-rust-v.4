@@ -1,0 +1,145 @@
+{
+	"tool": "localization-hub-diff",
+	"generatedAt": "2026-09-17T20:59:24.476Z",
+	"theirRef": "FETCH_HEAD",
+	"ourRef": "HEAD",
+	"baseRef": "d357e6e5",
+	"locales": {
+		"ours": [
+			"ar",
+			"en",
+			"id",
+			"jv",
+			"ru",
+			"zh"
+		],
+		"theirs": [
+			"ar",
+			"en",
+			"id",
+			"jv",
+			"ru",
+			"zh"
+		]
+	},
+	"keys": {
+		"ours": {
+			"total": 35,
+			"perLocale": {
+				"ar": 35,
+				"en": 35,
+				"id": 35,
+				"jv": 35,
+				"ru": 35,
+				"zh": 35
+			}
+		},
+		"theirs": {
+			"total": 27,
+			"perLocale": {
+				"ar": 27,
+				"en": 27,
+				"id": 27,
+				"jv": 27,
+				"ru": 27,
+				"zh": 27
+			}
+		},
+		"onlyOurs": [
+			"api.error.badRequest",
+			"api.error.conflict",
+			"api.error.internal",
+			"api.error.notFound",
+			"api.error.unauthorized",
+			"api.health.ok",
+			"api.hint.credentials",
+			"api.hint.payload",
+			"api.hint.permission",
+			"api.hint.retry",
+			"execution.cancelled",
+			"execution.failed",
+			"execution.summary.cancelled",
+			"execution.summary.error",
+			"execution.summary.ok",
+			"execution.trigger.manual",
+			"execution.trigger.schedule",
+			"execution.trigger.webhook",
+			"execution.waiting",
+			"node.status.disabled",
+			"node.status.skipped",
+			"run.duration",
+			"run.items",
+			"run.nodes"
+		],
+		"onlyTheirs": [
+			"banner.update.suppressed",
+			"canvas.protected",
+			"connection.invalid",
+			"connection.valid",
+			"credential.sanitized",
+			"error.natural",
+			"param.above_max",
+			"param.below_min",
+			"param.invalid_number",
+			"param.required",
+			"system.healthy",
+			"system.recovered",
+			"validation.cycle",
+			"validation.dangling",
+			"workflow.active",
+			"workflow.inactive"
+		],
+		"shared": [
+			"add.step",
+			"execute.workflow",
+			"execution.finished",
+			"execution.started",
+			"node.error",
+			"node.success",
+			"save.workflow",
+			"settings.language",
+			"settings.personal",
+			"settings.title",
+			"test.step"
+		]
+	},
+	"overlaps": {
+		"identicalPairs": 66,
+		"conflicts": []
+	},
+	"surfaceGap": {
+		"unpromotedRuntimeSymbols": [
+			"BASE_LOCALE_MESSAGES",
+			"BROWSER_STORAGE_KEYS",
+			"LEGACY_LOCALE_ALIASES",
+			"NATIVE_NUMBER_FORMATS",
+			"isRtl",
+			"isTranslatableKey",
+			"matchLocale",
+			"resolveAcceptLanguage"
+		],
+		"unpromotedTypeNames": [
+			"LocaleMessages",
+			"LocaleParityReport",
+			"LocalizationPersistencePort",
+			"MessageValue",
+			"NumberFormats",
+			"TranslateOptions"
+		]
+	},
+	"fileCollisions": [
+		"README.md",
+		"docs/isolation/localization.md",
+		"package.json",
+		"packages/workflow-lego/src/backend-localization-service.ts",
+		"packages/workflow-lego/src/index.ts",
+		"tests/reference/baseline/SMOKE_TEST_RESULTS.md"
+	],
+	"scriptCollisions": [],
+	"verdict": "COMPATIBLE",
+	"notes": [
+		"A superset catalogue is compatible by design: overlays fill gaps, the catalogue owns its keys.",
+		"`unpromotedRuntimeSymbols` is mechanical work, not a conflict — add them to the src/index.ts export block.",
+		"fileCollisions lists files both branches changed: those need a human merge."
+	]
+}

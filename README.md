@@ -16,7 +16,7 @@ is a Rust replacement attempted.
 | REFERENCE RUNTIME (baseline 11/11 smoke test) | ✅ |
 | **WORKFLOW ISOLATION (LEGO 01)** | **✅ VERIFIED — see [`docs/isolation/workflow.md`](docs/isolation/workflow.md)** |
 | NODE MODEL (LEGO 02) · CONNECTION (03) · VALIDATION (04) | ⏸ next |
-| **NATIVE LOCALIZATION (4A–4F)** | **✅ TESTED — 77/77 tests, 15/15 gate, see [`docs/isolation/localization.md`](docs/isolation/localization.md)** |
+| **NATIVE LOCALIZATION (4A–4G)** | **✅ TESTED — 79/79 tests, 16/16 gate, merge-tested vs the parallel 4B hub, see [`docs/isolation/localization.md`](docs/isolation/localization.md)** |
 | RUST IMPLEMENTATION | ⏸ not started (Phase-3 track archived — see `legacy/rust-port/`) |
 
 “Isolated” means the TypeScript component now has an enforced boundary and a
@@ -46,8 +46,9 @@ npm run verify                            # 11 gates; writes docs/isolation/evid
 
 npm run verify:fast                       # same, without the live engine checks
 npm run isolation:check                   # boundary + kernel + port + reference-integrity only
-npm run localization:test                 # Phase 4C/4E/4F, 77 tests, runs with no build step
-npm run localization:gate                 # 15 checks; writes docs/isolation/evidence/localization-gate.json
+npm run localization:test                 # Phase 4C/4E/4F, 79 tests, runs with no build step
+npm run localization:gate                 # 16 checks; writes docs/isolation/evidence/localization-gate.json
+npm run localization:hub-diff -- --their-ref <rev>   # cross-branch localization hub diff (Phase 4G)
 npm run localization:inspect -- --lang jv # runnable view of the promoted surface
 npm run localization:record -- --lang id  # persisted execution record (Phase 4F)
 npm run localization:api -- --lang ru --api-error unauthorized   # localized HTTP payload (Phase 4F)
