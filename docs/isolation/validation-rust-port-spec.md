@@ -4,6 +4,7 @@
 |---|---|
 | Author | Agent 4 (LEGO `validation`) — spec only; `crates/**` is outside Agent 4 allowed_paths |
 | Implementation & `cargo test` | **Orchestrator / central Implementer**, after the n8n anatomy reconstruction docs are 100% complete (Orchestrator decision 2026-09-17, Option B — Agent 4 `forbidden_paths: crates/**, apps/**` stands) |
+| TS seam to replace | `packages/validation-lego/src/validation-surface.ts` (rules part: `src/rules/workflow-rules.ts`) |
 | Normative sources (priority) | n8n 2.9.4 source › `contracts/validation.contract.md` (§4.4, §7, §11.7–11.9) › TS oracle `tests/reference/agent-4/validation/workflow-rules.ts` › fixtures `tests/reference/agent-4/validation/fixtures/D*.json` |
 | Supersedes | `validation-rust-port-review.md` §2 (kept as history; findings F1–F7 map to the requirements below) |
 | Status of current crate (main @ 06412afb) | NON-CONFORMANT — see §9 gap table |

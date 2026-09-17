@@ -10,6 +10,9 @@
 
 ## 1. Boundary
 
+> **Package:** `packages/validation-lego/` (seam `src/validation-surface.ts`, manifest `manifest/ownership.json`). Reference sources bound 1:1; rules capability in `src/rules/`.
+
+
 | | Path | Lines | Role |
 |---|---|---|---|
 | ALLOWED (owned) | `reference/n8n/packages/workflow/src/schemas.ts` | 499 | zod runtime schemas mirroring `interfaces.ts` types |

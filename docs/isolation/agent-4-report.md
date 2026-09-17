@@ -95,6 +95,14 @@ were documented instead of forced apart:
 - `webhook_entity` and `credentials_entity` live in `@n8n/db` (Persistence infra) while their semantics belong to Webhook/Credentials.
 - Some API controllers touch repositories directly (`SettingsRepository`, `WorkflowRepository`).
 
+## 5a. Seam package (core directive, 2026-09-17)
+
+`packages/validation-lego/` — module 04 in the decoupled-directory layout, sibling of `packages/workflow-lego`.
+Reference sources are bound **1:1 by identity** to the pinned runtime (no algorithm rewritten); `src/rules/` holds
+the ISSUE-003 Option A capability (moved from `tests/reference/agent-4/validation/workflow-rules.ts`, which is now a
+re-export shim). Seam: `src/validation-surface.ts`. 11 package gates pass (boundary sha256 pin + import closure,
+surface parity by identity, equivalence over 229+352+1125 recorded fixtures + D01–D14).
+
 ## 6. Tests
 
 `tests/reference/agent-4/` (TypeScript, `node --test`, Node ≥ 22.6, no build, no extra deps).
