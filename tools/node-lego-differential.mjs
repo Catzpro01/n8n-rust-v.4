@@ -88,6 +88,12 @@ const REF = {
 	tryToParseUrl: reference.tryToParseUrl,
 	tryToParseJwt: reference.tryToParseJwt,
 	tryToParseJsonToFormFields: reference.tryToParseJsonToFormFields,
+	extractReferencesInNodeExpressions: reference.extractReferencesInNodeExpressions,
+	hasDotNotationBannedChar: reference.hasDotNotationBannedChar,
+	backslashEscape: reference.backslashEscape,
+	dollarEscape: reference.dollarEscape,
+	applyAccessPatterns: reference.applyAccessPatterns,
+	OperationalError: reference.OperationalError,
 	validateFilterParameter: reference.validateFilterParameter,
 	executeFilter: reference.executeFilter,
 	executeFilterCondition: reference.executeFilterCondition,
@@ -117,6 +123,21 @@ const REF = {
 	validateNodeParameters: reference.validateNodeParameters,
 };
 
+/**
+ * The three lodash helpers the node-reference parser imports are re-exported by this LEGO but
+ * are NOT part of the published `n8n-workflow` surface (upstream gets them from `lodash`), so
+ * they are compared against lodash itself instead of the package build.
+ */
+const PORT_ONLY_SURFACE = ['cloneDeep', 'mapValues', 'escapeRegExp'];
+
+let lodash;
+try {
+	lodash = requireFromWorkflowLego('lodash');
+} catch (error) {
+	console.error(`[HARNESS-ERROR] lodash unavailable (oracle for the DELTA-01 helpers): ${error.message}`);
+	process.exit(2);
+}
+
 /* `renameFormFields` is not part of the published surface (internal to workflow.ts);
  * `getPropertyValues` is private in the reference module. Both are marked NOT-DIFFABLE. */
 const NOT_DIFFABLE = new Set(['renameFormFields', 'getPropertyValues']);
@@ -140,6 +161,8 @@ const EXAMINED_SURFACE = [
 	'getNodeParametersIssues', 'getParameterIssues', 'mergeIssues', 'getContext',
 	'executeFilter', 'executeFilterCondition', 'arrayContainsValue', 'getNodeWebhookPath',
 	'getNodeWebhookUrl', 'cronNodeOptions',
+	'extractReferencesInNodeExpressions', 'hasDotNotationBannedChar', 'backslashEscape',
+	'dollarEscape', 'applyAccessPatterns', 'OperationalError',
 ];
 
 /* --- comparison ------------------------------------------------------------ */
@@ -552,7 +575,7 @@ scenario('N14', 'getToolDescriptionForNode / getUpdatedToolDescription / getSubw
 
 /* --- N15: surface parity ------------------------------------------------- */
 scenario('N15', 'exported surface', (api, capture) => {
-	for (const name of EXAMINED_SURFACE) {
+	for (const name of EXAMINED_SURFACE.filter((n) => !PORT_ONLY_SURFACE.includes(n))) {
 		capture(`surface ${name}`, typeof api[name]);
 	}
 	capture('NOT-DIFFABLE renameFormFields', typeof api.renameFormFields);
@@ -1149,9 +1172,225 @@ scenario('N24', 'getNodeWebhookPath / getNodeWebhookUrl / cronNodeOptions', (api
 	capture('cronNodeOptions mode values', api.cronNodeOptions[0].values[0].options.map((option) => option.value));
 });
 
+
+/* --- N25: node-reference parser + lodash helpers + OperationalError ------- */
+scenario('N25', 'extractReferencesInNodeExpressions / access patterns / lodash helpers', (api, capture) => {
+	const node = (name, expressions, extra = {}) => ({
+		name,
+		type: 'n8n-nodes-base.set',
+		parameters: Object.fromEntries(expressions.map((expression, i) => [`p${i}`, `={{ ${expression} }}`])),
+		...extra,
+	});
+	// The three lodash helpers are port-only: on the REF side fall back to lodash itself, so the
+	// comparison *is* port-vs-lodash.
+	const portClone = (value) => (typeof api.cloneDeep === 'function' ? api.cloneDeep(value) : lodash.cloneDeep(value));
+	const portMapValues = (object, iteratee) =>
+		typeof api.mapValues === 'function' ? api.mapValues(object, iteratee) : lodash.mapValues(object, iteratee);
+	const portEscapeRegExp = (value) =>
+		typeof api.escapeRegExp === 'function' ? api.escapeRegExp(value) : lodash.escapeRegExp(value);
+
+	const run = (nodes, nodeNames, startNodeName, graphInputNodeNames) =>
+		safe(() => {
+			const result = api.extractReferencesInNodeExpressions(
+				nodes,
+				nodeNames,
+				startNodeName,
+				graphInputNodeNames,
+			);
+			return { nodes: result.nodes, variables: [...result.variables.entries()] };
+		});
+
+	capture('oracle: extract used expressions', run(
+		[node('B', ['$("A").item.json.myField']), node('C', ['$("A").first().json.myField.anotherField'])],
+		['A', 'B', 'C'], 'Start'));
+	capture('oracle: metadata functions', run(
+		[node('B', ['$("A").isExecuted ? 1 : 2']), node('C', ['someFunction($("D").params["resource"])'])],
+		['A', 'B', 'C', 'D'], 'Start'));
+	capture('oracle: standalone node reference', run([node('B', ['$("D")'])], ['B', 'D'], 'Start', ['B']));
+	capture('oracle: reference to non-existent node', run([node('B', ['$("E").item.json.x'])], ['B'], 'Start', ['B']));
+	capture('oracle: invalid node reference', run([node('B', ['$("A").item.json["x"]'])], ['A', 'B'], 'Start', ['B']));
+	capture('oracle: new fields on the node', run([node('B', ['$("A").item.json.foo.bar()'])], ['A', 'B'], 'Start', ['B']));
+	capture('oracle: $json only for graph inputs', run(
+		[node('B', ['$json.a.b']), node('C', ['$json.c.d'])], ['A', 'B', 'C'], 'Start', ['B']));
+	capture('oracle: complex $json case for first node', run(
+		[{ ...node('B', []), parameters: { p0: '={{ $json.a.b?.[0].c }}' } }], ['A', 'B'], 'Start', ['B']));
+	capture('oracle: different accessor patterns', run(
+		[node('B', [`$node['A'].json.x`, `$node.A.json.y`, '$items("A", 0)[0].json.z'])],
+		['A', 'B'], 'Start'));
+	capture('oracle: simple name clashes', run(
+		[node('B', ['$("A").item.json.myField']), node('C', ['$("D").item.json.myField']), node('E', ['$("F").item.json.myField'])],
+		['A', 'B', 'C', 'D', 'E', 'F'], 'Start'));
+	capture('oracle: complex name clashes', run(
+		[
+			node('F', ['$("A").item.json.myField']),
+			node('B', ['$("A").item.json.Node_Name_With_Gap_myField']),
+			node('C', ['$("D").item.json.Node_Name_With_Gap_myField']),
+			node('E', ['$("Node_Name_With_Gap").item.json.myField']),
+		],
+		['A', 'B', 'C', 'D', 'E', 'F', 'Node_Name_With_Gap'], 'Start'));
+	capture('oracle: code node', run(
+		[{
+			parameters: { jsCode: "for (const item of $input.all()) {\n  item.json.myNewField = $('DebugHelper').first().json.uid;\n}\n\nreturn $input.all();" },
+			type: 'n8n-nodes-base.code', typeVersion: 2, position: [660, 0],
+			id: 'c9de02d0-982a-4f8c-9af7-93f63795aa9b', name: 'Code',
+		}],
+		['DebugHelper', 'Code'], 'Start'));
+	capture('oracle: assignments format of Set node', run(
+		[{
+			parameters: {
+				assignments: {
+					assignments: [
+						{ id: 'cf8bd6cb-f28a-4a73-b141-02e5c22cfe74', name: 'ghApiBaseUrl', value: '={{ $("A").item.json.x.y.z }}', type: 'string' },
+					],
+				},
+				options: {},
+			},
+			type: 'n8n-nodes-base.set', typeVersion: 3.4, position: [80, 80],
+			id: '6e2fd284-2aba-4dee-8921-18be9a291484', name: 'Params',
+		}],
+		['A', 'Params'], 'Start'));
+	capture('oracle: unexpected code after the data accessor', run(
+		[node('A', ['$("B").all()[0].json.first_node_variable'])], ['A', 'B'], 'Start'));
+	capture('oracle: carry over unrelated properties', run(
+		[{ parameters: { a: 3, b: { c: 4, d: true }, d: 'hello', e: "={{ $('goodbye').item.json.f }}" }, name: 'A' }],
+		['A', 'goodbye'], 'Start'));
+	capture('oracle: splitOut constant fields', run(
+		[{ parameters: { fieldToSplitOut: 'foo,bar' }, type: 'n8n-nodes-base.splitOut', typeVersion: 1, position: [200, 200], id: 'splitOutNodeId', name: 'A' }],
+		['A', 'B'], 'Start', ['A']));
+	capture('splitOut expression throws', run(
+		[{ parameters: { fieldToSplitOut: '={{ $json.a }}' }, type: 'n8n-nodes-base.splitOut', name: 'A' }],
+		['A', 'B'], 'Start', ['A']));
+	capture('oracle: multiple expressions, different nodes', run(
+		[node('B', ['$("A").item.json.x + $("C").item.json.y'])], ['A', 'B', 'C'], 'Start'));
+	capture('oracle: first/last/all/items together', run(
+		[node('B', ['$("A").first().json.a + $("A").last().json.b + $("A").all()[0].json.c + $("A").items(0).json.d'])],
+		['A', 'B'], 'Start'));
+	capture('oracle: itemMatching examples', run(
+		[node('B', ['$("A").itemMatching(20).json.x', '$("A").itemMatching(2).json.y'])], ['A', 'B'], 'Start'));
+	capture('oracle: complex itemMatching untouched', run(
+		[node('B', ['$("A").itemMatching($("C").item.json.idx).json.x'])], ['A', 'B', 'C'], 'Start'));
+	capture('oracle: spaces and special characters in node names', run(
+		[node('B', ['$("Node Name!").item.json.x'])], ['Node Name!', 'B'], 'Start'));
+	capture('oracle: custom start node name', run(
+		[node('B', ['$("A").item.json.x'])], ['A', 'B'], 'CustomStart'));
+	capture('throws: start name clash', run([node('Start', ['$("A").item.json.x'])], ['A', 'Start'], 'Start'));
+	capture('throws: subgraph name not in nodeNames', run([node('Z', ['$("A").item.json.x'])], ['A'], 'Start'));
+	capture('empty subgraph', run([], ['A'], 'Start'));
+	capture('expression not starting with = is untouched', run(
+		[{ name: 'A', type: 't', parameters: { p0: 'plain string $("B").item.json.x' } }], ['A', 'B'], 'Start'));
+
+	// helpers
+	['abc', 'a b', '1abc', 'Né', 'Node.Name', 'Node-Name', '', 'a_b$1'].forEach((name, index) => {
+		capture(`hasDotNotationBannedChar [${index}]`, api.hasDotNotationBannedChar(name));
+	});
+	['a.b*c', 'plain', '[x]', '$name', 'a|b', ''].forEach((name, index) => {
+		capture(`backslashEscape [${index}]`, api.backslashEscape(name));
+		capture(`dollarEscape [${index}]`, api.dollarEscape(name));
+		// oracle is lodash itself (the reference imports `lodash/escapeRegExp`)
+		capture(`escapeRegExp [${index}]`, portEscapeRegExp(name));
+	});
+	[
+		['$node["oldName"].data', 'oldName', 'newName'],
+		['$node.oldName.data', 'oldName', 'new.Name'],
+		['$node.oldName.data', 'oldName', 'New Name'],
+		['$node.oldName.method()', 'oldName', 'New Name'],
+		['$node["someOtherName"].data', 'oldName', 'newName'],
+		['$node["oldName"].data + $node["oldName"].info', 'oldName', 'newName'],
+		['$items("oldName", 0)', 'oldName', 'newName'],
+		["$items('oldName', 0)", 'oldName', 'newName'],
+		["$('oldName')", 'oldName', 'newName'],
+		['$("oldName")', 'oldName', 'newName'],
+		['noMatchHere', 'oldName', 'newName'],
+		['$node.old$Name.data', 'old$Name', 'new$Name'],
+		// $-sequences in the new name must survive replace()'s substitution syntax
+		['$("oldName")', 'oldName', 'new$1Name'],
+		['$node["oldName"].data', 'oldName', 'a$&b'],
+		['$items("oldName", 0)', 'oldName', 'x$`y'],
+		['$node.oldName.data', 'oldName', "$'tail"],
+	].forEach(([expression, previousName, newName], index) => {
+		capture(`applyAccessPatterns [${index}]`, api.applyAccessPatterns(expression, previousName, newName));
+	});
+
+	// lodash subset + OperationalError surface
+	// port-only helpers — oracle is lodash, not the n8n-workflow build
+	// every capture below is total (no throwing getters) so a broken clone reports a DIVERGE.
+	// A Date-prototype object without the internal [[DateValue]] slot passes `instanceof Date`
+	// but throws on every Date method, so the probes use slot-safe accessors + try/catch.
+	const slotTime = (value) => { try { return Date.prototype.getTime.call(value); } catch { return null; } };
+	const describeDate = (value) => ({
+		isDate: value instanceof Date,
+		time: slotTime(value),
+		tag: Object.prototype.toString.call(value),
+	});
+	capture('cloneDeep keeps Date', (() => {
+		const source = { d: new Date(1000) };
+		const port = portClone(source);
+		const oracle = lodash.cloneDeep(source);
+		return {
+			port: describeDate(port.d),
+			matchesLodash: slotTime(port.d) === oracle.d.getTime(),
+		};
+	})());
+	capture('cloneDeep keeps RegExp', (() => {
+		const copy = portClone({ r: /ab/gi });
+		const value = copy.r;
+		return {
+			source: value instanceof RegExp ? value.source : null,
+			flags: value instanceof RegExp ? value.flags : null,
+			isRegExp: value instanceof RegExp,
+		};
+	})());
+	capture('cloneDeep keeps Map/Set', (() => {
+		const copy = portClone({ m: new Map([['k', 1]]), s: new Set([1, 2]) });
+		return {
+			mapSize: copy.m instanceof Map ? copy.m.size : null,
+			setSize: copy.s instanceof Set ? copy.s.size : null,
+			isMap: copy.m instanceof Map,
+			isSet: copy.s instanceof Set,
+		};
+	})());
+	capture('cloneDeep cycle', (() => { const source = { a: 1 }; source.self = source; const copy = portClone(source); return { a: copy.a, selfIsCopy: copy.self === copy }; })());
+	capture('cloneDeep prototype', Object.getPrototypeOf(portClone({ a: 1 })) === Object.prototype);
+	capture('mapValues', {
+		port: portMapValues({ a: 1, b: 2 }, (value) => value * 2),
+		lodash: lodash.mapValues({ a: 1, b: 2 }, (value) => value * 2),
+	});
+	capture('mapValues keys order preserved', Object.keys(portMapValues({ z: 1, a: 2 }, (value) => value)));
+	capture('cloneDeep vs lodash on a mixed structure', (() => {
+		const source = {
+			date: new Date(12345), regex: /ab/gi, map: new Map([['k', { n: 1 }]]), set: new Set([1, { x: 2 }]),
+			array: [1, { y: 2 }], nested: { z: { w: 3 } }, text: 'text',
+		};
+		source.self = source;
+		const canonical = (value) => ({
+			date: slotTime(value.date) ?? `<no Date slot: ${Object.prototype.toString.call(value.date)}>`,
+			regex: value.regex instanceof RegExp ? `${value.regex.source}/${value.regex.flags}` : '<not a RegExp>',
+			mapSize: value.map instanceof Map ? value.map.size : null,
+			mapValue: value.map instanceof Map ? value.map.get('k').n : null,
+			setSize: value.set instanceof Set ? value.set.size : null,
+			array: value.array, nested: value.nested, text: value.text,
+			selfIsSelf: value.self === value,
+		});
+		return { port: canonical(portClone(source)), lodash: canonical(lodash.cloneDeep(source)) };
+	})());
+	capture('OperationalError surface', (() => {
+		const error = new api.OperationalError('boom', { extra: { k: 1 } });
+		return { name: error.name, level: error.level, message: error.message, extra: error.extra, tags: error.tags };
+	})());
+	capture('OperationalError level override', new api.OperationalError('x', { level: 'info' }).level);
+	capture('extractReferences throws OperationalError class', (() => {
+		try {
+			api.extractReferencesInNodeExpressions([node('Start', [])], ['Start'], 'Start');
+			return 'no throw';
+		} catch (error) {
+			return { name: error.name, level: error.level, ctor: error.constructor.name };
+		}
+	})());
+});
+
 /* --- report -------------------------------------------------------------- */
 // values are allowed too (e.g. `cronNodeOptions`) — only presence matters here
-const missing = EXAMINED_SURFACE.filter((name) => !(name in port));
+const missing = [...EXAMINED_SURFACE, ...PORT_ONLY_SURFACE].filter((name) => !(name in port));
 if (missing.length) {
 	harnessErrors++;
 	console.error(`[HARNESS-ERROR] port exports missing: ${missing.join(', ')}`);

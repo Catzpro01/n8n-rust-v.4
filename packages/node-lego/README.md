@@ -22,33 +22,37 @@ package makes that surface runnable.
 | `src/parameter-utils.mjs` | `resolveRelativePath`, `getParameterValueByPath`, `renameFormFields`, the value guards |
 | `src/parameter-type-validation.mjs` | `validateNodeParameters` + `assertParamIs*` (whole reference file) |
 | `src/properties.mjs` | `mergeNodeProperties`, `getVersionedNodeType`, naming (`makeNodeName`, `makeDescription`, `isDefaultNodeName`), tool detection (`isTool`, `isToolType`, `isHitlToolType`), `getToolDescriptionForNode`, `getSubworkflowId`, property guards |
-| `src/errors.mjs` | validation-boundary `NodeOperationError` + the `@n8n/errors` `ApplicationError` (see ISSUE-024) |
-| `src/lodash-lite.mjs` | DELTA-01: the `lodash/{get,isEqual,isObject}` subset |
+| `src/errors.mjs` | validation-boundary `NodeOperationError` + `OperationalError` + the `@n8n/errors` `ApplicationError` (see ISSUE-024) |
+| `src/node-reference-parser.mjs` | `node-reference-parser-utils.ts` (whole file): `hasDotNotationBannedChar`, `backslashEscape`, `dollarEscape`, `applyAccessPatterns`, `extractReferencesInNodeExpressions` + the private expression/candidate parsers |
+| `src/lodash-lite.mjs` | DELTA-01: the `lodash/{get,isEqual,isObject,escapeRegExp,mapValues,cloneDeep}` subset (`cloneDeep` ≠ the reference `deepCopy`: it keeps `Date`/`RegExp`/`Map`/`Set`/cycles) |
 
-**Not owned** (explicitly out of scope, contract §12.2 item 7): the filter-parameter EXECUTION
-half (`executeFilter`, `executeFilterCondition`, `arrayContainsValue`), `getNodeWebhookPath`/`Url`,
-`cronNodeOptions`, the `jsonrepair`-backed `repairJSON` recovery, the node-reference parser and
-workflow validation.
+**Not owned** (explicitly out of scope, contract §12.2 item 8): the `jsonrepair`-backed
+`repairJSON` recovery and workflow validation (`validateWorkflow` and friends). Everything else
+in `node-helpers.ts` L1-1949, `node-parameters/filter-parameter.ts` and
+`node-reference-parser-utils.ts` is reconstructed.
 
 ## Verify
 
 ```bash
-npm test                 # 93 tests (node:test), no install step
+npm test                 # 116 tests (node:test), no install step
 node ../../tools/node-lego-differential.mjs   # needs: npm install in packages/workflow-lego
 node ../../tools/node-lego-gate.mjs           # gates N01…N07
 ```
 
-The differential runs 22 scenario groups twice — against this package and against the
+The differential runs 25 scenario groups twice — against this package and against the
 **published `n8n-workflow@2.9.1` build** (the version the pinned commit ships, a declared
 devDependency of `packages/workflow-lego`) — and compares values, thrown class names/messages
-and error field shapes: **1422 agree / 0 diverge** (2 NOT-DIFFABLE surfaces:
+and error field shapes: **1695 agree / 0 diverge** (2 NOT-DIFFABLE surfaces:
 `renameFormFields`, private `getPropertyValues`). A divergence is a bug in the port.
+`cloneDeep`/`mapValues`/`escapeRegExp` are not re-exported by the published build, so those are
+compared against the reference build's own bundled `lodash` instead.
 Date-times are compared with the reference's own luxon injected as the DELTA-04 factory, so the
 format cascade is identical on both sides; the built-in dependency-free factory is what ships.
 
 Falsifiability: injecting a behavioral mutation (e.g. dropping the `checkConditions`
-empty-actual-values rule or `deepCopy`'s `toJSON` handling) produces a `DIVERGE` — the
-harness is not vacuous.
+empty-actual-values rule, `deepCopy`'s `toJSON` handling, `applyAccessPatterns`' `$`-escaping,
+the `itemMatching` access-pattern order, or `cloneDeep`'s `Date` branch) produces one or more
+`DIVERGE` lines — the harness is not vacuous.
 
 ## Boundaries
 

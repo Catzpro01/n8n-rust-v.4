@@ -186,3 +186,21 @@ export class NodeOperationError extends ApplicationError {
 		);
 	}
 }
+
+/**
+ * Mirrors the reference's `OperationalError` (`errors/base/operational.error.ts` + `base.error.ts`)
+ * in the subset the node-reference parser raises. Same pinned quirk as `ApplicationError`:
+ * `name` stays `'Error'`; the level defaults to `'warning'` (an OperationalError signals a
+ * transient/expected condition, not a failure), `tags` default to `{}` and `extra` is passed
+ * through. Used by `extractReferencesInNodeExpressions` for its three input-invariant throws
+ * and the Split Out expression rejection (DELTA-02 boundary-local error model).
+ */
+export class OperationalError extends Error {
+	constructor(message, options = {}) {
+		const { level, tags = {}, extra, ...rest } = options;
+		super(message, rest);
+		this.level = level ?? 'warning';
+		this.tags = tags;
+		this.extra = extra;
+	}
+}

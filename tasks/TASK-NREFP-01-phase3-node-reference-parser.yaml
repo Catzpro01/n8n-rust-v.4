@@ -1,0 +1,126 @@
+id: TASK-NREFP-01-phase3-node-reference-parser
+agent: arena-worker
+lego: node
+module: node-reference-parser
+phase: 3
+title: "Node LEGO: node-reference parser — hasDotNotationBannedChar/backslashEscape/dollarEscape/applyAccessPatterns/extractReferencesInNodeExpressions + OperationalError + the lodash subset they pull in (ref: node-reference-parser-utils.ts L1-643, errors/base/operational.error.ts)"
+status: VERIFIED
+
+# Context: TASK-414 closed `node-helpers.ts` L1-1949 and `filter-parameter.ts`, and
+# TASK-413 closed the parameter-issues engine. The remaining runnable Node Model surface was
+# `node-reference-parser-utils.ts` (643 ln) — the helper the editor and the frontend call to
+# rewrite node names inside `$node[...]` / `$("...")` accessors after a rename, which also
+# carries the only `OperationalError` use in the Node Model boundary.
+#
+# Reference (read-only, line-cited in the module docblock):
+# - reference/n8n/packages/workflow/src/node-reference-parser-utils.ts (whole file)
+#     hasDotNotationBannedChar L16, backslashEscape L17, dollarEscape L30, applyAccessPatterns
+#     L42, extractReferencesInNodeExpressions L491-643, plus the private helpers
+#     (LazyRegExp, ACCESS_PATTERNS, parseExpressionMapping, extractExpressionCandidate,
+#     resolveDuplicates, applyExtractMappingToNode, applyCanonicalMapping)
+# - reference/n8n/packages/workflow/src/errors/base/operational.error.ts (+ base.error.ts)
+#     the class hierarchy this file throws through
+# - Oracle: reference/n8n/packages/workflow/test/node-reference-parser-utils.test.ts (788 ln)
+#
+# Sanctioned deltas exercised by this task (contract §12.2):
+# - DELTA-01: `escapeRegExp`, `mapValues` and `cloneDeep` are added to `lodash-lite.mjs`.
+#   `cloneDeep` is deliberately NOT the reference `deepCopy` (which is `toJSON`-first): lodash's
+#   semantics (Date/RegExp/Map/Set/cycles preserved) are what this call site relies on, and the
+#   differential compares the port against the reference build's own bundled lodash.
+# - DELTA-02: `OperationalError` joins the boundary-local error model (level `'warning'`,
+#   `tags {}`), sharing the DELTA-03 quirk that the base constructor never sets `name`.
+
+allowed_paths:
+  - tasks/TASK-NREFP-01-phase3-node-reference-parser.yaml
+  - results/TASK-NREFP-01-phase3-node-reference-parser.md
+  - packages/node-lego/**
+  - tools/node-lego-differential.mjs
+  - tools/node-lego-gate.mjs
+  - contracts/node.contract.md
+  - docs/isolation/node.md
+  - docs/isolation/evidence/node-lego-gate.json
+  - docs/isolation/LEGO-MASTER-MAP.md
+  - README.md
+
+forbidden_paths:
+  - reference/n8n/**
+  - crates/**
+  - apps/**
+  - packages/frontend/**
+  - packages/workflow-lego/**
+  - packages/trigger-lego/**
+  - packages/webhook-lego/**
+  - packages/scheduler-lego/**
+  - packages/persistence-lego/**
+  - packages/connection-lego/**
+  - packages/expression-lego/**
+  - packages/reconstructed-engine/**
+  - packages/execution-engine/**
+
+requires:
+  - reference/n8n/packages/workflow/src/node-reference-parser-utils.ts
+  - reference/n8n/packages/workflow/src/errors/base/operational.error.ts
+  - reference/n8n/packages/workflow/test/node-reference-parser-utils.test.ts
+  - packages/node-lego/src/lodash-lite.mjs
+  - packages/node-lego/src/errors.mjs
+
+source_modification: read-only-reference   # no file under reference/n8n/** is touched
+
+operations:
+  - name: read_reference
+    args: { path: reference/n8n/packages/workflow/src/node-reference-parser-utils.ts, lines: "1-643" }
+  - name: read_reference
+    args: { path: reference/n8n/packages/workflow/src/errors/base/operational.error.ts }
+  - name: write_file
+    args: { path: packages/node-lego/src/node-reference-parser.mjs }
+  - name: edit_file
+    args: { path: packages/node-lego/src/lodash-lite.mjs }
+  - name: edit_file
+    args: { path: packages/node-lego/src/errors.mjs }
+  - name: edit_file
+    args: { path: packages/node-lego/src/index.mjs }
+  - name: write_file
+    args: { path: packages/node-lego/test/node-reference-parser.test.mjs }
+  - name: edit_file
+    args: { path: tools/node-lego-differential.mjs }
+  - name: edit_file
+    args: { path: tools/node-lego-gate.mjs }
+  - name: run_shell
+    args: { cmd: "node --test packages/node-lego/test/*.test.mjs", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "node tools/node-lego-differential.mjs", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "node tools/node-lego-gate.mjs", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "npm run verify:all", expect_exit: 0 }
+  - name: write_file
+    args: { path: results/TASK-NREFP-01-phase3-node-reference-parser.md }
+
+acceptance:
+  - `hasDotNotationBannedChar` reproduces the pinned banned-character set incl. the
+    `_`-is-banned and leading-digit quirks, and the `Né` case staying allowed
+  - `backslashEscape`/`dollarEscape`/`escapeRegExp` are 1:1 with the lodash semantics the
+    reference depends on (`escapeRegExp` oracle-compared against the reference build's lodash)
+  - `applyAccessPatterns` rewrites every accessor form (dot notation, `$node["..."]`, `$("...")`,
+    `$items("...")`, metadata functions) and survives `$`-sequences in the new name
+    (`$1`, `$&`, `` $` ``, `$'`) — the four `$`-in-replacement fixtures were added to `N25`
+    after the falsifiability probe showed the first version of the group could not catch a
+    dropped `dollarEscape`
+  - `extractReferencesInNodeExpressions` reproduces every oracle case: basic extraction,
+    metadata functions, standalone/missing/invalid references left untouched, `$json` only for
+    graph-input nodes, all accessor patterns, simple + complex name clashes, Code node `jsCode`
+    parsed without the `=` prefix, Set-node assignments, Split Out `fieldToSplitOut`
+  - the two internal invariants throw `OperationalError` with the reference message and the
+    pinned DELTA-03/DELTA-02 surface (`name === 'Error'`, `level === 'warning'`, `tags {}`)
+  - differential vs the published `n8n-workflow@2.9.1` build: **0 divergences** across 1695
+    comparisons (N25 = 80 new) incl. the port-only lodash helpers compared through the
+    reference build's bundled lodash; falsifiability probe re-run with three mutations
+    (dropped `dollarEscape`, reordered `ITEM_TO_DATA_ACCESSORS`, disabled `cloneDeep` `Date`
+    branch) — each produced DIVERGE lines (4 / 1 / 2)
+  - gate `N01`…`N07` PASS (N02 19 source files, N03 116 tests, N05 1695/0, N07 96 symbols);
+    `npm run verify:all` exit 0
+  - no file under reference/, crates/, apps/, the frontend or a peer package is touched
+
+merge_condition:
+  - regression_gate_pass
+  - no_contract_violation
