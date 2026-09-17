@@ -1,0 +1,15 @@
+{
+  "id": "ref-tryToParseBoolean-12",
+  "fn": "tryToParseBoolean",
+  "input": {
+    "args": [
+      "https://n8n.io"
+    ]
+  },
+  "expected": {
+    "throws": {
+      "name": "ApplicationError",
+      "message": "Failed to parse value as boolean"
+    }
+  }
+}

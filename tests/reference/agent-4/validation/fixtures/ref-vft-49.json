@@ -1,0 +1,18 @@
+{
+  "id": "ref-vft-49",
+  "fn": "validateFieldType",
+  "input": {
+    "args": [
+      "f",
+      [],
+      "object",
+      {
+        "strict": true
+      }
+    ]
+  },
+  "expected": {
+    "valid": false,
+    "errorMessage": "'f' expects a object but we got array"
+  }
+}

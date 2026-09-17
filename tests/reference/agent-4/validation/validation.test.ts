@@ -194,3 +194,17 @@ test('golden E: INodeSchema (real n8n-workflow 2.9.4) — parity anchor for node
 		assert.equal(w.INodesSchema.safeParse(wf.nodes).success, true, d);
 	}
 });
+
+test('reference fixtures: 229 recorded validateFieldType/tryToParse* results still match the live n8n-workflow 2.9.4 runtime', { skip: hasRuntime ? false : 'N8N_RUNTIME not found' }, () => {
+	const w = n8nRequire('n8n-workflow');
+	const dir = resolve(here, 'validation', 'fixtures');
+	const enc = (v: any): any => v === undefined ? undefined : v && typeof v === 'object' && typeof v.toISO === 'function' && 'zoneName' in v ? { $luxon: v.toISO() } : Array.isArray(v) ? v.map(enc) : v && typeof v === 'object' ? Object.fromEntries(Object.entries(v).filter(([, x]) => x !== undefined).map(([k, x]) => [k, enc(x)])) : v;
+	const files = readdirSync(dir).filter((f) => f.startsWith('ref-') && f !== 'ref-index.json');
+	assert.equal(files.length, 229);
+	for (const f of files) {
+		const fx = JSON.parse(readFileSync(resolve(dir, f), 'utf8'));
+		const args = fx.input.args.map((a: any) => a && typeof a === 'object' && a.$undefined ? undefined : a);
+		let actual: any; try { actual = enc(w[fx.fn](...args)); } catch (e: any) { actual = { throws: { name: e.constructor.name, message: e.message } }; }
+		assert.deepEqual(actual, fx.expected, f);
+	}
+});

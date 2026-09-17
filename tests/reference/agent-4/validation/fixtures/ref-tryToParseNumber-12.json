@@ -1,0 +1,15 @@
+{
+  "id": "ref-tryToParseNumber-12",
+  "fn": "tryToParseNumber",
+  "input": {
+    "args": [
+      "https://n8n.io"
+    ]
+  },
+  "expected": {
+    "throws": {
+      "name": "ApplicationError",
+      "message": "Failed to parse value to number"
+    }
+  }
+}

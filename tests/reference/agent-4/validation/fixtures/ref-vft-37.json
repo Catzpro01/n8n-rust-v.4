@@ -1,0 +1,27 @@
+{
+  "id": "ref-vft-37",
+  "fn": "validateFieldType",
+  "input": {
+    "args": [
+      "f",
+      "x",
+      "options",
+      {
+        "valueOptions": [
+          {
+            "name": "a",
+            "value": "a"
+          },
+          {
+            "name": "b",
+            "value": "b"
+          }
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "valid": false,
+    "errorMessage": "'f' expects one of the following values: [a, b] but we got 'x'"
+  }
+}

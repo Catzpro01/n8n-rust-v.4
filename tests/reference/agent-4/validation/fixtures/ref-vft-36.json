@@ -1,0 +1,15 @@
+{
+  "id": "ref-vft-36",
+  "fn": "validateFieldType",
+  "input": {
+    "args": [
+      "f",
+      "23h",
+      "time"
+    ]
+  },
+  "expected": {
+    "valid": false,
+    "errorMessage": "'f' expects time (hh:mm:(:ss)) but we got '23h'."
+  }
+}

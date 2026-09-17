@@ -1,0 +1,15 @@
+{
+  "id": "ref-vft-51",
+  "fn": "validateFieldType",
+  "input": {
+    "args": [
+      "f",
+      "nope",
+      "object"
+    ]
+  },
+  "expected": {
+    "valid": false,
+    "errorMessage": "'f' expects a object but we got 'nope'"
+  }
+}

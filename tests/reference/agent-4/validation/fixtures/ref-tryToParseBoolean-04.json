@@ -1,0 +1,10 @@
+{
+  "id": "ref-tryToParseBoolean-04",
+  "fn": "tryToParseBoolean",
+  "input": {
+    "args": [
+      null
+    ]
+  },
+  "expected": false
+}

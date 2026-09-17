@@ -1,0 +1,15 @@
+{
+  "id": "ref-vft-58",
+  "fn": "validateFieldType",
+  "input": {
+    "args": [
+      "f",
+      "5",
+      "url"
+    ]
+  },
+  "expected": {
+    "valid": true,
+    "newValue": "https://5"
+  }
+}

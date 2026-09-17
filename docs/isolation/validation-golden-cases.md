@@ -5,6 +5,8 @@ Format: **INPUT → EXPECTED OUTPUT / ERROR / SIDE EFFECT**. Source of truth: `p
 live check against the installed `n8n-workflow` 2.9.4 (`node_modules/n8n-workflow`) on 2026-09-17.
 No side effects exist in this LEGO (pure functions) unless stated.
 
+> **Machine-readable reference corpus (added 2026-09-17):** `tests/reference/agent-4/validation/fixtures/ref-*.json` — **229 cases recorded from the real `n8n-workflow` 2.9.4 runtime** by `gen-reference-fixtures.mjs` (61 × `validateFieldType`, 168 × `tryToParse{Number,String,AlphanumericString,Boolean,DateTime,Time,Array,Object,Url,Jwt}` over a shared 17-value input matrix). Expectations are *recorded, not hand-written*; `validation.test.ts` #14 re-executes all 229 against the live runtime on every run (anti-drift). Encoding: luxon `DateTime` → `{ $luxon: iso }`, thrown → `{ throws: { name, message } }`, `undefined` arg → `{ $undefined: true }`. Excluded on purpose: `tryToParseDateTime('23:59')` — resolves to *today* at 23:59 (wall-clock dependent; behaviour noted in §B). Any port of `type-validation.ts` is accepted when it reproduces 229/229.
+
 ## A. `validateFieldType(fieldName, value, type, options?)`
 
 | # | INPUT | EXPECTED OUTPUT | ERROR |
