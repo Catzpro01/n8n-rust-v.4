@@ -1,0 +1,128 @@
+id: TASK-411-phase3-node-parameter-resolution
+agent: arena-worker
+lego: node
+module: node-parameter-resolution
+phase: 3
+title: "Node LEGO: parameter resolution — getNodeParameters, dependency ordering, utils.deepCopy, isExpression and the ApplicationError surface (ref: node-helpers.ts L542-1056, utils.ts L53-87, expressions/expression-helpers.ts L1-10, @n8n/errors application.error.ts)"
+status: SUBMITTED_FOR_REVIEW
+
+# Context: TASK-409 landed the Node Model helper surface but deliberately left the
+# parameter-ISSUES engine and the parameter RESOLVER out (contract §12.2). `getNodeParameters`
+# is the single most-used NodeHelpers entry point — the editor renders every node with it and
+# the workflow-validation path resolves defaults through it — and it was still only reachable
+# through the pinned reference tree. This task reconstructs it (plus everything it needs that
+# was still missing: `utils.deepCopy`, `isExpression` and the `@n8n/errors` ApplicationError
+# the resolve-order guard throws).
+#
+# Reference (read-only, line-cited in the module docblocks):
+# - reference/n8n/packages/workflow/src/node-helpers.ts L542-575 (getParameterDependencies),
+#   L577-656 (getParameterResolveOrder + max-iterations guard), L592-598 (GetNodeParametersOptions),
+#   L658-1056 (getNodeParameters)
+# - reference/n8n/packages/workflow/src/utils.ts L53-87 (deepCopy — the copy the Node Model uses;
+#   NOT lodash cloneDeep, which the reference does not import here)
+# - reference/n8n/packages/workflow/src/expressions/expression-helpers.ts L1-10 (isExpression)
+# - reference/n8n/packages/@n8n/errors/src/application.error.ts (ApplicationError: never sets `name`)
+# - Oracle: test/node-helpers.test.ts `describe('getNodeParameters')` L34-3466 (the
+#   noneDisplayed × returnDefaults output matrix) and
+#   `describe('getNodeParameters - noDataExpression handling')` L6321-6524
+# - Differential target: the published `n8n-workflow@2.9.1` build (declared devDependency of
+#   `packages/workflow-lego`), scenario groups N16, N17, N18
+
+allowed_paths:
+  - tasks/TASK-411-phase3-node-parameter-resolution.yaml
+  - results/TASK-411-phase3-node-parameter-resolution.md
+  - packages/node-lego/**
+  - tools/node-lego-differential.mjs
+  - tools/node-lego-gate.mjs
+  - contracts/node.contract.md
+  - docs/isolation/node.md
+  - docs/isolation/evidence/node-lego-gate.json
+  - docs/isolation/LEGO-MASTER-MAP.md
+  - README.md
+
+forbidden_paths:
+  - reference/n8n/**
+  - crates/**
+  - apps/**
+  - packages/frontend/**
+  - packages/trigger-lego/**
+  - packages/webhook-lego/**
+  - packages/scheduler-lego/**
+  - packages/connection-lego/**
+  - packages/expression-lego/**
+  - packages/reconstructed-engine/**
+  - packages/execution-engine/**
+
+requires:
+  - reference/n8n/packages/workflow/src/node-helpers.ts
+  - reference/n8n/packages/workflow/src/utils.ts
+  - reference/n8n/packages/workflow/test/node-helpers.test.ts
+  - packages/node-lego/src/display.mjs
+  - packages/node-lego/src/parameter-utils.mjs
+
+source_modification: read-only-reference   # no file under reference/n8n/** is touched
+
+operations:
+  - name: read_reference
+    args: { path: reference/n8n/packages/workflow/src/node-helpers.ts, lines: "505-1056" }
+  - name: read_reference
+    args: { path: reference/n8n/packages/workflow/src/utils.ts, lines: "53-87" }
+  - name: write_file
+    args: { path: packages/node-lego/src/deep-copy.mjs }
+  - name: write_file
+    args: { path: packages/node-lego/src/expression-helpers.mjs }
+  - name: write_file
+    args: { path: packages/node-lego/src/parameter-resolution.mjs }
+  - name: edit_file
+    args: { path: packages/node-lego/src/errors.mjs }
+  - name: edit_file
+    args: { path: packages/node-lego/src/lodash-lite.mjs }
+  - name: edit_file
+    args: { path: packages/node-lego/src/connection-io.mjs }
+  - name: edit_file
+    args: { path: packages/node-lego/src/index.mjs }
+  - name: edit_file
+    args: { path: packages/node-lego/test/node-model.test.mjs }
+  - name: edit_file
+    args: { path: tools/node-lego-differential.mjs }
+  - name: run_shell
+    args: { cmd: "node --test packages/node-lego/test/*.test.mjs", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "node tools/node-lego-differential.mjs", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "node tools/node-lego-gate.mjs", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "npm run verify:all", expect_exit: 0 }
+  - name: write_file
+    args: { path: results/TASK-411-phase3-node-parameter-resolution.md }
+
+acceptance:
+  - `getNodeParameters` reproduces the reference's four-way behaviour contract:
+    `returnDefaults` adds defaults, `returnNoneDisplayed` keeps parameters whose
+    `displayOptions` do not match, the display-check pass runs first unless the caller passes
+    `dataIsResolved`, and `onlySimpleTypes` stops at the top level
+  - the documented quirks are reproduced bug-for-bug and covered by the differential:
+    `boolean`/`number`/`options` keep `false`/`0`; `resourceLocator` defaults become
+    `{ __rl: true, … }`; duplicate parameter names are re-checked individually; `noDataExpression`
+    strips the leading `=` only on the `returnDefaults` path; a collection never materialises
+    child defaults without values; a fixedCollection that only holds default values is preserved
+    while one holding hidden non-default values is dropped; an empty single-value fixedCollection
+    returns the input values unchanged; a non-array fixedCollection element is iterated with
+    `for…of`
+  - dependency ordering is reproduced, including the pinned cycle behaviour (the
+    unresolved-dependency `continue` only advances the dependency loop, so cycles terminate with
+    both parameters resolved) and the `ApplicationError('Could not resolve parameter
+    dependencies. Max iterations reached!…')` guard
+  - `deepCopy` reproduces `utils.ts` verbatim: primitives/functions returned as-is,
+    `toJSON`-first (a `Date` becomes its ISO string), cycle-safe through the `WeakMap`,
+    plain-object clones; `getNodeOutputs` now uses it instead of lodash `cloneDeep`
+  - `isExpression` reproduces the predicate; `ApplicationError` reproduces the reference surface
+    including the quirk that `name` stays `'Error'` while `level` defaults to `'error'`
+  - differential vs the published `n8n-workflow@2.9.1` build: **0 divergences** across ≥300
+    comparisons (N16 56, N17 11, N18 9 new), with the falsifiability probe re-run
+  - gate `N01`…`N07` PASS; `verify:all` exit 0; conformance 42/42; boundary PASS
+  - no file under reference/, crates/, apps/, frontend or the peer packages is touched
+
+merge_condition:
+  - regression_gate_pass
+  - no_contract_violation

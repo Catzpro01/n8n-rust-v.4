@@ -14,7 +14,7 @@ actually be compiled and tested here instead of only on the VPS.
    rustc binary + driver), `@rustbin/rust-std-1.88.0-x86_64-unknown-linux-gnu` (libstd,
    merged into the rustc sysroot — the rustc package alone has no `libstd`) and
    `@rustbin/cargo-1.88.0-x86_64-unknown-linux-gnu`.
-2. **Crates from git.** The 12 crates in the workspace dependency closure
+2. **Crates from git.** The 15 repos (19 vendored crates incl. subdir members) in the workspace dependency closure — TASK-RIG-REPAIR-01 / ISSUE-025 added indexmap 2.2.6, equivalent 1.0.2, hashbrown 0.14.5, regex 1.10.6 (+ regex-automata 0.4.7 / regex-syntax 0.8.4 from the same tag's subdirs) and aho-corasick 1.1.3
    (`serde`, `serde_derive`, `serde_json`, `thiserror`, `thiserror-impl`, `syn`,
    `proc-macro2`, `quote`, `itoa`, `ryu`, `memchr`, `unicode-ident`) are cloned at pinned
    upstream tags, because crate downloads are blocked.
@@ -45,6 +45,7 @@ review.
 | Date | Command | Result |
 | :--- | :--- | :--- |
 | 2026-09-17 | `run.sh check` on `crates/**` @ `014471e6` (Phase-3 workspace) | **PASS** — `Finished dev profile … in 6.26s`, 12 vendored deps compiled, 5 workspace crates checked |
+| 2026-09-18 | `run.sh check` + `run.sh test` post ISSUE-025 repair (RIG-REPAIR-01 + RIG-VENDOR-01 staleness hardening) | **PASS** — 19 vendored deps, 7/7 crates checked; `cargo test --workspace` **37 passed / 0 failed** (2+2+2+1+4+19 unit, 2 conformance, 5 fixtures); re-runs report `vendor up to date` |
 
 ## Caveats
 

@@ -22,3 +22,16 @@ G06–G10 lane only.
 connection 52/52 · Trigger gate 5/5 · Webhook gate 5/5 · Scheduler gate 6/6 · Node gate 7/7 ·
 activation differential 43/0 · engine differential 84/0 · node differential 234/0 · conformance 42/42 ·
 boundary PASS · reference pin 15050 files `f8da35180669d798…`.
+
+## Sweep 2 (same day, post TASK-RIG-REPAIR-01) — TASK-410 + TASK-411
+
+| Result (owner) | Claim | Fresh re-run on merged tree | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-410-phase3-persistence-lego.md` | persistence storage ports, gate 6/6 | **Persistence gate 6/6** on merged tree; wired into `verify:all` (real exit 0) | **APPROVE** |
+| `TASK-411-phase3-node-parameter-resolution.md` | node-lego 45 → 58 tests | **58/58** fresh, node differential now **315 agree / 0 diverge (2 NOT-DIFFABLE)**, Node gate **7/7** | **APPROVE** |
+
+## Sweep 3 (same day, post TASK-DGRAPH-01 merge) — TASK-413
+
+| Result (owner) | Claim | Fresh re-run on merged tree | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-413-phase3-node-parameter-issues.md` | node-lego 13 → 16 modules, 58 → 82 tests, differential vs published build | **82/82** fresh, **1422 agree / 0 diverge (2 NOT-DIFFABLE)**, Node gate **7/7** | **APPROVE** |

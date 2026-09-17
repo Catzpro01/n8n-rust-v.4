@@ -1,0 +1,70 @@
+{
+  "family": "disabled-graph",
+  "fixture": "tests/reference/04-disabled-node/workflow.json",
+  "description": "D-01..D-05 probes over the disabled-node surface of n8n-workflow 2.9.1: Workflow.getHighestNode (workflow.ts :495-562) and Workflow.getStartNode/__getStartNode (:817-883). Probes define INPUTS only; expected.json is the OBSERVED runtime snapshot (UPDATE=1).",
+  "scopeWarning": "Plain traversal (graph-utils.ts) has NO disabled concept (ISSUE-015 correction). Only getHighestNode (:498 strict 'disabled === false' self-test, :553 loose 'disabled !== true' parent fallback) and getStartNode (:824 '!node.disabled', :839/:853 'disabled === true -> continue') are behavioural. Do not 'fix' traversal to filter disabled nodes.",
+  "probes": {
+    "D-01_getHighestNode_midChainDisabled": {
+      "reference": "workflow.ts :495-562 over the fixture workflow",
+      "fixtureNodes": true,
+      "edges": [["Manual Trigger", "Skipped Step"], ["Skipped Step", "Set Output"]],
+      "calls": [
+        { "method": "getHighestNode", "args": ["Set Output"] },
+        { "method": "getHighestNode", "args": ["Skipped Step"] }
+      ]
+    },
+    "D-02_getHighestNode_disabledParentFallback": {
+      "reference": "workflow.ts :553 (parent fallback 'disabled !== true')",
+      "nodes": [
+        { "name": "A", "type": "n8n-nodes-base.code", "typeVersion": 2 },
+        { "name": "B", "type": "n8n-nodes-base.code", "typeVersion": 2, "disabled": true },
+        { "name": "C", "type": "n8n-nodes-base.code", "typeVersion": 2 }
+      ],
+      "edges": [["A", "B"], ["B", "C"]],
+      "calls": [
+        { "method": "getHighestNode", "args": ["C"] },
+        { "method": "getHighestNode", "args": ["B"] },
+        { "method": "getHighestNode", "args": ["A"] }
+      ]
+    },
+    "D-03_getStartNode_disabledTrigger": {
+      "reference": "workflow.ts :824, :839, :853 (ISSUE-017 probe shape)",
+      "nodes": [
+        { "name": "Manual Trigger", "type": "n8n-nodes-base.manualTrigger", "typeVersion": 1, "disabled": true },
+        { "name": "Code", "type": "n8n-nodes-base.code", "typeVersion": 2 }
+      ],
+      "edges": [["Manual Trigger", "Code"]],
+      "calls": [
+        { "method": "getStartNode" },
+        { "method": "getStartNode", "args": ["Code"] }
+      ]
+    },
+    "D-04_getHighestNode_omittedKeyAsymmetry": {
+      "reference": "workflow.ts :498 (self: 'undefined === false' -> NOT pushed) vs :553 (parent: 'undefined !== true' -> included)",
+      "nodes": [
+        { "name": "X", "type": "n8n-nodes-base.code", "typeVersion": 2 },
+        { "name": "Y", "type": "n8n-nodes-base.code", "typeVersion": 2 },
+        { "name": "Z", "type": "n8n-nodes-base.code", "typeVersion": 2 },
+        { "name": "W", "type": "n8n-nodes-base.code", "typeVersion": 2 },
+        { "name": "V", "type": "n8n-nodes-base.code", "typeVersion": 2 }
+      ],
+      "edges": [["Y", "Z"], ["W", "V"]],
+      "calls": [
+        { "method": "getHighestNode", "args": ["X"] },
+        { "method": "getHighestNode", "args": ["Z"] },
+        { "method": "getHighestNode", "args": ["V"] }
+      ]
+    },
+    "D-05_getStartNode_startingOrderAndChatSkip": {
+      "reference": "workflow.ts :833-855 (MANUAL_CHAT_TRIGGER skip, STARTING_NODE_TYPES order)",
+      "nodes": [
+        { "name": "Chat", "type": "@n8n/n8n-nodes-langchain.manualChatTrigger", "typeVersion": 1 },
+        { "name": "Form", "type": "n8n-nodes-base.formTrigger", "typeVersion": 1 }
+      ],
+      "edges": [],
+      "calls": [
+        { "method": "getStartNode" }
+      ]
+    }
+  }
+}

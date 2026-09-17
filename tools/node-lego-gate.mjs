@@ -4,7 +4,7 @@
  *
  *   N01  zero runtime dependencies
  *   N02  source boundary import-closed (relative + node: only)
- *   N03  node-model conformance suite (45 tests)
+ *   N03  node-model conformance suite (82 tests)
  *   N04  reference tree pinned (workflow-reference-manifest --check)
  *   N05  differential vs the published reference build: 0 divergences
  *   N06  formal contract + isolation doc present
@@ -43,7 +43,7 @@ await gate('N01', 'zero runtime dependencies', () => {
 	return '0 dependencies';
 });
 
-await gate('N02', 'source boundary is import-closed', () => {
+await await gate('N02', 'source boundary is import-closed', () => {
 	const files = walk(join(pkg, 'src')).filter((file) => file.endsWith('.mjs'));
 	for (const file of files) {
 		for (const match of readFileSync(file, 'utf8').matchAll(/from\s+['"]([^'"]+)['"]/g)) {
@@ -53,11 +53,11 @@ await gate('N02', 'source boundary is import-closed', () => {
 	return `${files.length} source files, no cross-LEGO imports`;
 });
 
-await gate('N03', 'node-model conformance suite', () => {
+await await gate('N03', 'node-model conformance suite', () => {
 	const out = run(['--test', 'test/*.test.mjs'], pkg);
 	const pass = /^# pass (\d+)$/m.exec(out)?.[1];
 	const fail = /^# fail (\d+)$/m.exec(out)?.[1];
-	if (pass !== '45' || fail !== '0') throw new Error(`${pass} pass / ${fail} fail`);
+	if (pass !== '82' || fail !== '0') throw new Error(`${pass} pass / ${fail} fail`);
 	return `${pass} pass / 0 fail`;
 });
 
@@ -96,7 +96,7 @@ await gate('N07', 'every exported symbol is documented in the contract', async (
 
 const report = {
 	generatedAt: new Date().toISOString(),
-	task: 'TASK-409-phase3-node-lego',
+	task: 'TASK-413-phase3-node-parameter-issues',
 	reference: 'n8n 2.9.4',
 	totals: { passed: gates.filter((g) => g.status === 'PASS').length, gates: gates.length },
 	gates,

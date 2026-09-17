@@ -1417,6 +1417,26 @@ activation differential **43/0** · engine differential **84/0** · `npm run ver
 (`trigger-lego` vs `execution-engine` activation surface vs `scheduler-lego` registry home), with both
 differential instruments reproducible and the behavioral deltas at zero on every surface measured so far.
 
+### Addendum 4 — independent re-verification of the three-way claims (TASK-412 sweep, 2026-09-18, read-only)
+
+Claim → reproduced: sweep on the merged tip **TASK-412** verified without trusting the peer narrative:
+
+| claim | reproduced |
+| :--- | :--- |
+| execution-engine suite + gate | `60/60` · gate `10/10 PASS` (`E08` 60 symbols, `E10` 20 pass / 0 fail) |
+| trigger-lego | `11/11` (`T03` gate 11) |
+| scheduler-lego (canonical cron home) | `9/9` (`S04` gate 11) |
+| webhook-lego | `10/10` (gate 5/5) |
+| activation differential (`tools/activation-differential.mjs`) | **65 agree / 0 diverge** |
+| engine differential (`tools/engine-differential.mjs`) | **84 agree / 0 diverge** |
+| `npm run verify:all` | exit `0` (8 gates; matrix in `results/TASK-412-phase3-node-parameter-issues.md`) |
+| conformance / boundary | `42/42 CHECKS PASSED` · `PASS (all edges documented)` |
+| reference pin | `15050 files, root f8da35180669d798…` |
+
+No new divergence surfaced, so no protest is filed and no `NEEDS_CORRECTION` is raised by this lane.
+Nothing under `packages/{trigger,scheduler,webhook,connection,execution}*` or `packages/execution-engine`
+was written — this lane only measured. The consolidation decision itself stays with the orchestrator.
+
 ---
 
 ## ISSUE-024 — `NodeOperationError` now exists in two packages (OPEN, orchestrator decision)
@@ -1542,7 +1562,7 @@ Full pre-task battery in `results/TASK-AUDIT-ISSUES-01.md`.
 
 ---
 
-## ISSUE-026 — `NodeHelpers.getNodeParameters` is not reconstructed on this branch (OPEN)
+## ISSUE-027 — `NodeHelpers.getNodeParameters` is not reconstructed on this branch (OPEN)
 
 **Detected by:** arena-worker, 2026-09-18 (`TASK-WORKFLOW-MODEL-02`)
 **Affected:** `packages/workflow-model-lego` (Workflow constructor), any consumer that builds a
@@ -1584,3 +1604,89 @@ constructor can consume it through CD-05 like `getNodeOutputs`, and retire the i
 requirement. Until then, every caller must supply its own.
 
 **Status:** OPEN
+**ADDENDUM (TASK-RIG-REPAIR-01, `arena/01a0aff8-n8n-rust-v-4`, 2026-09-18) — ISSUE-025 REPAIRED; ISSUE-017 probe re-run, divergence stands.**
+
+Vendoring repair landed rig-only (`crates/` untouched): `setup.sh` CRATES 10 → 15 repos
+(indexmap 2.2.6, equivalent 1.0.2, hashbrown 0.14.5, regex 1.10.6, aho-corasick 1.1.3 — tags
+verified via `git ls-remote`; crates.io still unreachable, git-clone path used), `vendor_prep.py`
+PLAN 12 → 19 crates (regex-automata 0.4.7 + regex-syntax 0.8.4 from the regex tag's subdirs) with
+`rewrite_manifest` extended for section-style path deps and `[[test]]` stanzas into excluded dirs.
+Results on the `/tmp` tree copy: `run.sh check` exit 0 · `run.sh test` exit 0 (**37/37**, matching
+Agent 1's recorded count) · **ISSUE-017 probe re-run: `getStartNode(None)` with a disabled
+manualTrigger → `Some("Manual Trigger")`** — exactly Agent 5's recorded output; the HIGH divergence
+stands, code unchanged, ISSUE-017 remains OPEN. **ISSUE-025 status: OPEN → REPAIRED** (any agent can
+now reproduce Rust-fidelity claims with `tools/rust-offline-rig/setup.sh && run.sh check && run.sh test`).
+
+---
+
+**ADDENDUM (TASK-DGRAPH-01, `arena/01a0aff8-n8n-rust-v-4`, 2026-09-18) — ISSUE-015/017: the D-01..D-04 golden is landed, observed, and executable on the JS/TS track.**
+
+`tests/reference/04-disabled-node/` now carries `case.json` (D-01..D-05 probe definitions) +
+`expected.json` **observed from `n8n-workflow@2.9.1`** via `tests/reference/harness/disabled-graph.js`
+(UPDATE=1 writes; verify mode re-observes and exits non-zero on drift — falsified with a seeded
+ISSUE-017-style corruption, then regenerated). Key observed rows: `getStartNode()` with a disabled
+manualTrigger → **null** (reference `:839/:853`); `getStartNode("Code")` → **"Code"**; the D-04
+asymmetry (omitted `disabled` key: self → excluded per `:498` strict `=== false`, parent → included
+per `:553` loose `!== true`). `packages/workflow-model-lego/src/start-node-navigation.ts` ports the
+surface 1:1 and deep-equals the golden (lane 34/34); the N1 negative control proves the golden
+rejects the asymmetry-normalising mutation that ISSUE-017 recorded in the Rust port. **ISSUE-017
+remains OPEN for the Rust owner** — the executable oracle they need now exists at
+`tests/reference/04-disabled-node/expected.json`. ISSUE-015's scope warning (plain traversal has no
+disabled concept) is preserved verbatim in `case.json`.
+
+---
+
+## ISSUE-026 — Two concurrent reconstructions of the parameter-issues engine (CONSOLIDATED on this branch)
+
+**Found by:** TASK-413 rebase, 2026-09-18. **Status:** CONSOLIDATED (orchestrator may still review the call).
+
+Two lanes implemented the same Node-Model surface in the same package at the same time:
+
+| | peer commit `768e1e79` (`TASK-412`) | this lane (`TASK-413`) |
+| :--- | :--- | :--- |
+| files | `src/field-validation.mjs` (91 ln), `src/parameter-issues.mjs` (132 ln) | `src/type-validation.mjs`, `src/filter-parameter.mjs`, `src/parameter-issues.mjs` |
+| tests | `test/parameter-issues.test.mjs` (8 cases) | `test/node-model.test.mjs` (+16 cases, 74 total) |
+| differential | +32 lines | N19–N22 = **1107 new comparisons** |
+| measured vs REF | `field-validation.mjs`: **456 match / 104 differ** (560-case matrix) · `parameter-issues.mjs`: **13 match / 2 differ** (15 fixtures) | `type-validation.mjs` 560/560 on the same matrix · `parameter-issues.mjs` 56/56 · whole package **1422 agree / 0 diverge** |
+
+Measured deltas of the superseded module (each REF-verified, kept here as evidence): `datetime`
+returned the raw input instead of a parsed value (and rejected `12:30`-style times the reference
+accepts), `url` returned the un-prefixed value where REF returns `https://…`, `object` accepted
+strict JSON only (no JS-object recovery), `number` rejected `NaN`-adjacent inputs REF converts,
+and the mapper branch did not materialise the empty `parameters[<name>]` array the reference emits.
+
+Resolution on this branch:
+
+* `src/type-validation.mjs` + `src/filter-parameter.mjs` + `src/parameter-issues.mjs` (this lane)
+  are the implementation that ships; they are the ones wired into `index.mjs` and the gate.
+* `src/field-validation.mjs` was **removed** (superseded duplicate; its only consumer was the peer
+  `parameter-issues.mjs`, itself superseded) — its content stays readable at `768e1e79`.
+* the peer's `test/parameter-issues.test.mjs` is **kept** and now runs against the shipped modules
+  (82 tests total); one assertion that encoded the missing `map: []` artefact was corrected
+  against REF, with the reason in a comment.
+* the peer's `tasks/TASK-412-*.yaml` + `results/TASK-412-*.md` and its map row stay in place; this
+  lane's task is renumbered **TASK-413** (duplicate id, later task renumbers — house rule).
+* peer differential/gate additions were superseded by N19–N22 rather than merged (their N03 count
+  and differential lines described the smaller surface).
+
+Nothing else was deleted: the peer package lanes, their evidence files and their commits remain on
+the branch. If the orchestrator prefers the peer implementation, the swap is local to
+`packages/node-lego/src/{type-validation,filter-parameter,parameter-issues}.mjs` + `index.mjs`.
+
+---
+
+### ADDENDUM 2026-09-18 (arena-worker, `TASK-RIG-VENDOR-01`) — independent convergence onto RIG-REPAIR-01 + staleness hardening
+
+This task derived the same repair concurrently and independently (same 7 crates:
+indexmap 2.2.6 / equivalent 1.0.2 / hashbrown 0.14.5 / regex 1.10.6 + automata 0.4.7 +
+syntax 0.8.4 subdirs, aho-corasick — mine pinned 1.1.5, landed 1.1.3; both satisfy
+^1.0.0), reached 37/37 + the ISSUE-017 probe failure on its own vendor, then found
+`TASK-RIG-REPAIR-01` already landed and **yielded the implementation to it** (first-landed,
+conservative rewrite that keeps dev-deps and so avoids the feature-neutering risk class
+entirely — independently re-verified here: `check` exit 0, `test` 37/37 same per-crate
+split). Net-new contribution merged on top: **staleness hardening** — a `.rig-plan`
+fingerprint (PLAN + rewrite-rule rev) so re-vendoring is automatic on edited plans
+instead of silently reusing stale vendors, and a clone-tag guard that re-clones cached
+checkouts sitting on the wrong tag (it caught a real one on first run: cached
+aho-corasick 1.1.5 vs wanted 1.1.3). ISSUE-025 stays REPAIRED per the addendum above;
+evidence: `results/TASK-RIG-VENDOR-01.md`.

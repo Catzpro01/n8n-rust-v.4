@@ -78,7 +78,7 @@ ports:
     provider: "none on this branch"
     resolution: >
       Still a required injected port. It is not reconstructed in packages/node-lego (which exports
-      getNodeOutputs but not getNodeParameters) nor anywhere else. Recorded as ISSUE-026; the
+      getNodeOutputs but not getNodeParameters) nor anywhere else. Recorded as ISSUE-027; the
       conformance suite injects an identity stand-in and then PROVES by falsification that none of
       the 14 probe expectations depend on it.
 
@@ -91,7 +91,7 @@ acceptance:
   - "no regression anywhere on the branch"
 
 verification:
-  workflow_model_lego: "44 tests / 44 pass / 0 fail (was 26; +14 wf.* probes, +1 coverage assertion, +3 controls)"
+  workflow_model_lego: "package 52/52 (conformance.test.mjs 44/44 — was 26, +14 wf.* probes, +1 coverage assertion, +3 controls; disabled-graph.test.mjs 8/8 from TASK-DGRAPH-01)"
   tsc_strict: "tsc -p tsconfig.json -> exit 0"
   phase3_conformance: "42/42 CHECKS PASSED"
   boundary_audit: "AUDIT RESULT: PASS (all edges documented)"
@@ -110,6 +110,14 @@ notes:
   - "One invocation error of mine is corrected here for the record: tests/reference/harness/run.js filters on suite names (execution-data | expression | connection), not on a JSON path. Passing the fixtures path selects zero suites and prints 0 PASS / 0 FAIL / 0 UNKNOWN, which is not a failure signal."
   - "packages/reconstructed-engine has no package.json by design; it is driven by the root script `npm run reconstructed-engine:test`. `npm --prefix packages/reconstructed-engine test` exits 254 with ENOENT and is not a valid check."
 
+merge_note: >
+  Concurrent peer TASK-DGRAPH-01 (`dbe9a75f`) landed `src/start-node-navigation.ts` covering
+  getHighestNode / __getStartNode / getStartNode as pure functions. Reconciled by delegation, not
+  duplication: the three class methods here now call those functions, and
+  `src/node-type-constants.ts` re-exports their two constants instead of redefining them. The
+  traversal exists once on the branch. Both suites are green together (52/52).
+
 id_note: >
   Lane-scoped ID, continuing TASK-WORKFLOW-MODEL-01. Sequential numbers remain unusable on this
-  branch: peers took TASK-406..TASK-409 while task 01 was in flight.
+  branch: peers took TASK-406..TASK-409 while task 01 was in flight. ISSUE-026 was likewise taken
+  by a peer while this task was in flight, so the getNodeParameters gap is recorded as ISSUE-027.

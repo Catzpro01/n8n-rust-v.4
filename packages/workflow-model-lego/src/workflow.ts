@@ -9,9 +9,14 @@ import {
 import { applyAccessPatterns } from './node-reference-utils';
 import { ApplicationError, UserError } from './errors';
 import { resolveNodeHelpersPort } from './node-port';
-import { MANUAL_CHAT_TRIGGER_LANGCHAIN_NODE_TYPE, STARTING_NODE_TYPES } from './node-type-constants';
 import { dedupe } from './utils';
 import * as ObservableObject from './observable-object';
+import {
+	getHighestNode as highestNode,
+	__getStartNode as resolveStartNodeOf,
+	getStartNode as resolveStartNode,
+	type NodeTypesLike,
+} from './start-node-navigation';
 import { NodeConnectionTypes } from './interfaces';
 import type {
 	GraphPort,
@@ -447,77 +452,16 @@ export class Workflow {
 		nodeConnectionIndex?: number,
 		checkedNodes?: string[],
 	): string[] {
-		const currentHighest: string[] = [];
-		if (this.nodes[nodeName].disabled === false) {
-			// If the current node is not disabled itself is the highest
-			currentHighest.push(nodeName);
-		}
-
-		if (!this.connectionsByDestinationNode.hasOwnProperty(nodeName)) {
-			// Node does not have incoming connections
-			return currentHighest;
-		}
-
-		if (!this.connectionsByDestinationNode[nodeName].hasOwnProperty(NodeConnectionTypes.Main)) {
-			// Node does not have incoming connections of given type
-			return currentHighest;
-		}
-
-		checkedNodes = checkedNodes || [];
-
-		if (checkedNodes.includes(nodeName)) {
-			// Node got checked already before
-			return currentHighest;
-		}
-
-		checkedNodes.push(nodeName);
-
-		const returnNodes: string[] = [];
-		let addNodes: string[];
-
-		let connectionsByIndex: IConnection[] | null;
-		for (
-			let connectionIndex = 0;
-			connectionIndex <
-			this.connectionsByDestinationNode[nodeName][NodeConnectionTypes.Main].length;
-			connectionIndex++
-		) {
-			if (nodeConnectionIndex !== undefined && nodeConnectionIndex !== connectionIndex) {
-				// If a connection-index is given ignore all other ones
-				continue;
-			}
-			connectionsByIndex =
-				this.connectionsByDestinationNode[nodeName][NodeConnectionTypes.Main][connectionIndex];
-
-			connectionsByIndex?.forEach((connection) => {
-				if (checkedNodes!.includes(connection.node)) {
-					// Node got checked already before
-					return;
-				}
-
-				// Ignore connections for nodes that don't exist in this workflow
-				if (!(connection.node in this.nodes)) return;
-
-				addNodes = this.getHighestNode(connection.node, undefined, checkedNodes);
-
-				if (addNodes.length === 0) {
-					// The checked node does not have any further parents so add it
-					// if it is not disabled
-					if (this.nodes[connection.node].disabled !== true) {
-						addNodes = [connection.node];
-					}
-				}
-
-				addNodes.forEach((name) => {
-					// Only add if node is not on the list already anyway
-					if (returnNodes.indexOf(name) === -1) {
-						returnNodes.push(name);
-					}
-				});
-			});
-		}
-
-		return returnNodes;
+		// Single source of truth: the pure port in `./start-node-navigation` (landed by
+		// TASK-DGRAPH-01). The class method is the reference's aggregate entry point; the
+		// traversal itself exists exactly once on this branch.
+		return highestNode(
+			this.nodes,
+			this.connectionsByDestinationNode,
+			nodeName,
+			nodeConnectionIndex,
+			checkedNodes,
+		);
 	}
 
 	/**
@@ -757,49 +701,7 @@ export class Workflow {
 	 * `includes` filter is what actually decides. Reproduced as written.
 	 */
 	__getStartNode(nodeNames: string[]): INode | undefined {
-		// Check if there are any trigger or poll nodes and then return the first one
-		let node: INode;
-		let nodeType: ReturnType<INodeTypes['getByNameAndVersion']>;
-
-		if (nodeNames.length === 1) {
-			node = this.nodes[nodeNames[0]];
-			if (node && !node.disabled) {
-				return node;
-			}
-		}
-
-		for (const nodeName of nodeNames) {
-			node = this.nodes[nodeName];
-			nodeType = this.nodeTypes.getByNameAndVersion(node.type, node.typeVersion);
-
-			// TODO: Identify later differently
-			if (nodeType?.description && (nodeType.description as { name?: string }).name === MANUAL_CHAT_TRIGGER_LANGCHAIN_NODE_TYPE) {
-				continue;
-			}
-
-			if (nodeType && ((nodeType as { trigger?: unknown }).trigger !== undefined || (nodeType as { poll?: unknown }).poll !== undefined)) {
-				if (node.disabled === true) {
-					continue;
-				}
-				return node;
-			}
-		}
-
-		const sortedNodeNames = Object.values(this.nodes)
-			.sort((a, b) => STARTING_NODE_TYPES.indexOf(a.type) - STARTING_NODE_TYPES.indexOf(b.type))
-			.map((n) => n.name);
-
-		for (const nodeName of sortedNodeNames) {
-			node = this.nodes[nodeName];
-			if (STARTING_NODE_TYPES.includes(node.type as (typeof STARTING_NODE_TYPES)[number])) {
-				if (node.disabled === true) {
-					continue;
-				}
-				return node;
-			}
-		}
-
-		return undefined;
+		return resolveStartNodeOf(this.nodes, this.nodeTypes as unknown as NodeTypesLike, nodeNames);
 	}
 
 	/**
@@ -807,27 +709,11 @@ export class Workflow {
 	 * 1:1 from `workflow.ts:866-890`.
 	 */
 	getStartNode(destinationNode?: string): INode | undefined {
-		if (destinationNode) {
-			// Find the highest parent nodes of the given one
-			const nodeNames = this.getHighestNode(destinationNode);
-
-			if (nodeNames.length === 0) {
-				// If no parent nodes have been found then only the destination-node
-				// is in the tree so add that one
-				nodeNames.push(destinationNode);
-			}
-
-			// Check which node to return as start node
-			const node = this.__getStartNode(nodeNames);
-			if (node !== undefined) {
-				return node;
-			}
-
-			// If none of the above did find anything simply return the
-			// first parent node in the list
-			return this.nodes[nodeNames[0]];
-		}
-
-		return this.__getStartNode(Object.keys(this.nodes));
+		return resolveStartNode(
+			this.nodes,
+			this.connectionsByDestinationNode,
+			this.nodeTypes as unknown as NodeTypesLike,
+			destinationNode,
+		);
 	}
 }

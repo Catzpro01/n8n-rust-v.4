@@ -39,8 +39,61 @@ try {
 
 const port = await import(join(REPO, 'packages/node-lego/src/index.mjs'));
 
+/**
+ * DELTA-04: the port has no `luxon` dependency — `tryToParseDateTime`/`validateFieldType`
+ * take an injected factory. Injecting the reference's own luxon here keeps the date-time
+ * cascade bit-for-bit comparable (both sides then return a luxon `DateTime`).
+ */
+let dateTimeFactory;
+try {
+	const { DateTime } = requireFromWorkflowLego('luxon');
+	dateTimeFactory = {
+		isDateTime: (value) => DateTime.isDateTime(value),
+		fromJSDate: (value, options) => DateTime.fromJSDate(value, options),
+		fromISO: (value, options) => DateTime.fromISO(value, options),
+		fromHTTP: (value, options) => DateTime.fromHTTP(value, options),
+		fromRFC2822: (value, options) => DateTime.fromRFC2822(value, options),
+		fromSQL: (value, options) => DateTime.fromSQL(value, options),
+		fromMillis: (value, options) => DateTime.fromMillis(value, options),
+	};
+} catch (error) {
+	console.error(`[HARNESS-ERROR] luxon unavailable (needed for DELTA-04 injection): ${error.message}`);
+	process.exit(2);
+}
+
+/** Normalises a value for comparison: luxon DateTime -> its ISO string. */
+const norm = (value) => {
+	try {
+		if (dateTimeFactory.isDateTime(value)) return { dateTime: value.toISO() };
+	} catch {
+		/* not a DateTime */
+	}
+	return value;
+};
+
 const REF = {
 	...reference.NodeHelpers,
+	validateFieldType: reference.validateFieldType,
+	getValueDescription: reference.getValueDescription,
+	jsonParse: reference.jsonParse,
+	tryToParseNumber: reference.tryToParseNumber,
+	tryToParseString: reference.tryToParseString,
+	tryToParseAlphanumericString: reference.tryToParseAlphanumericString,
+	tryToParseBoolean: reference.tryToParseBoolean,
+	tryToParseDateTime: reference.tryToParseDateTime,
+	tryToParseTime: reference.tryToParseTime,
+	tryToParseArray: reference.tryToParseArray,
+	tryToParseObject: reference.tryToParseObject,
+	tryToParseBinary: reference.tryToParseBinary,
+	tryToParseUrl: reference.tryToParseUrl,
+	tryToParseJwt: reference.tryToParseJwt,
+	tryToParseJsonToFormFields: reference.tryToParseJsonToFormFields,
+	validateFilterParameter: reference.validateFilterParameter,
+	FilterError: reference.FilterError,
+	deepCopy: reference.deepCopy,
+	isExpression: reference.isExpression,
+	ApplicationError: reference.ApplicationError,
+	NodeOperationError: reference.NodeOperationError,
 	validateNodeCredentials: reference.validateNodeCredentials,
 	isNodeConnected: reference.isNodeConnected,
 	isTriggerLikeNode: reference.isTriggerLikeNode,
@@ -76,6 +129,12 @@ const EXAMINED_SURFACE = [
 	'isNodeParameterValue', 'isNodeParameters', 'isValidNodeParameterValueType',
 	'assertIsValidNodeParameterValueType', 'assertParamIsNumber', 'assertParamIsString', 'assertParamIsBoolean',
 	'assertParamIsOfAnyTypes', 'assertParamIsArray', 'validateNodeParameters',
+	'getNodeParameters', 'deepCopy', 'isExpression', 'ApplicationError', 'NodeOperationError',
+	'validateFieldType', 'getValueDescription', 'jsonParse', 'tryToParseNumber', 'tryToParseString',
+	'tryToParseAlphanumericString', 'tryToParseBoolean', 'tryToParseDateTime', 'tryToParseTime',
+	'tryToParseArray', 'tryToParseObject', 'tryToParseBinary', 'tryToParseUrl', 'tryToParseJwt',
+	'tryToParseJsonToFormFields', 'validateFilterParameter', 'FilterError',
+	'getNodeParametersIssues', 'getParameterIssues', 'mergeIssues', 'getContext',
 ];
 
 /* --- comparison ------------------------------------------------------------ */
@@ -493,6 +552,460 @@ scenario('N15', 'exported surface', (api, capture) => {
 	}
 	capture('NOT-DIFFABLE renameFormFields', typeof api.renameFormFields);
 	capture('NOT-DIFFABLE getPropertyValues', typeof api.getPropertyValues);
+});
+
+/* --- N16/N17: getNodeParameters (parameter resolution) ------------------- */
+const paramNode = { typeVersion: 1 };
+
+const PARAM_FIXTURES = {
+	'plain values': {
+		nodePropertiesArray: [
+			{ name: 'string1', displayName: 'String 1', type: 'string', default: '' },
+			{ name: 'string2', displayName: 'String 2', type: 'string', default: 'default string 2' },
+			{ name: 'number1', displayName: 'Number 1', type: 'number', default: 10 },
+			{ name: 'boolean1', displayName: 'Boolean 1', type: 'boolean', default: false },
+			{ name: 'options1', displayName: 'Options 1', type: 'options', default: 'a', options: [{ name: 'A', value: 'a' }] },
+		],
+		nodeValues: { number1: 0, boolean1: false, string1: 'hello' },
+	},
+	'show match': {
+		nodePropertiesArray: [
+			{ name: 'mode', displayName: 'Mode', type: 'options', default: 'a', options: [{ name: 'A', value: 'a' }, { name: 'B', value: 'b' }] },
+			{ name: 'child', displayName: 'Child', type: 'string', default: 'x', displayOptions: { show: { mode: ['b'] } } },
+		],
+		nodeValues: { mode: 'b' },
+	},
+	'show mismatch with value': {
+		nodePropertiesArray: [
+			{ name: 'mode', displayName: 'Mode', type: 'options', default: 'a', options: [{ name: 'A', value: 'a' }] },
+			{ name: 'child', displayName: 'Child', type: 'string', default: 'x', displayOptions: { show: { mode: ['b'] } } },
+		],
+		nodeValues: { mode: 'a', child: 'hidden but set' },
+	},
+	'duplicate names': {
+		nodePropertiesArray: [
+			{ name: 'resource', displayName: 'Resource', type: 'options', default: 'r1', options: [{ name: 'R1', value: 'r1' }] },
+			{ name: 'value', displayName: 'V1', type: 'string', default: 'd1', displayOptions: { show: { resource: ['r1'] } } },
+			{ name: 'value', displayName: 'V2', type: 'string', default: 'd2', displayOptions: { show: { resource: ['r2'] } } },
+		],
+		nodeValues: { resource: 'r2', value: 'user value' },
+	},
+	'noDataExpression': {
+		nodePropertiesArray: [
+			{ name: 'code', displayName: 'Code', type: 'string', default: '', noDataExpression: true },
+			{ name: 'keep', displayName: 'Keep', type: 'string', default: '' },
+		],
+		nodeValues: { code: '={{ 1 + 1 }}', keep: '=not stripped' },
+	},
+	'resourceLocator default': {
+		nodePropertiesArray: [{ name: 'rl', displayName: 'RL', type: 'resourceLocator', default: { mode: 'list', value: 'v' } }],
+		nodeValues: {},
+	},
+	'collection multipleValues': {
+		nodePropertiesArray: [
+			{ name: 'col', displayName: 'Col', type: 'collection', default: [], typeOptions: { multipleValues: true }, options: [{ name: 'a', displayName: 'A', type: 'string', default: '' }] },
+		],
+		nodeValues: { col: [{ a: 'x' }] },
+	},
+	'collection single': {
+		nodePropertiesArray: [
+			{ name: 'col', displayName: 'Col', type: 'collection', default: {}, options: [{ name: 'a', displayName: 'A', type: 'string', default: 'da' }, { name: 'b', displayName: 'B', type: 'string', default: 'db' }] },
+		],
+		nodeValues: { col: { b: 'user' } },
+	},
+	'fixedCollection multipleValues': {
+		nodePropertiesArray: [
+			{ name: 'fc', displayName: 'FC', type: 'fixedCollection', default: {}, typeOptions: { multipleValues: true }, options: [{ name: 'item', displayName: 'Item', values: [{ name: 'v', displayName: 'V', type: 'string', default: '' }] }] },
+		],
+		nodeValues: { fc: { item: [{ v: 'one' }, { v: 'two' }] } },
+	},
+	'fixedCollection default-only values': {
+		nodePropertiesArray: [
+			{ name: 'fc', displayName: 'FC', type: 'fixedCollection', default: {}, typeOptions: { multipleValues: false }, options: [{ name: 'item', displayName: 'Item', values: [{ name: 'v', displayName: 'V', type: 'string', default: 'dv' }] }] },
+		],
+		nodeValues: { fc: { item: { v: 'dv' } } },
+	},
+	'fixedCollection empty value': {
+		nodePropertiesArray: [
+			{ name: 'fc', displayName: 'FC', type: 'fixedCollection', default: {}, typeOptions: { multipleValues: false }, options: [{ name: 'item', displayName: 'Item', values: [{ name: 'v', displayName: 'V', type: 'string', default: 'dv' }] }] },
+		],
+		nodeValues: { fc: {} },
+	},
+	'fixedCollection hidden fields': {
+		nodePropertiesArray: [
+			{
+				name: 'fc', displayName: 'FC', type: 'fixedCollection', default: {}, typeOptions: { multipleValues: false },
+				options: [{ name: 'item', displayName: 'Item', values: [
+					{ name: 'mode', displayName: 'Mode', type: 'options', default: 'a', options: [{ name: 'A', value: 'a' }] },
+					{ name: 'child', displayName: 'Child', type: 'string', default: '', displayOptions: { show: { mode: ['b'] } } },
+				] }],
+			},
+		],
+		nodeValues: { fc: { item: { mode: 'a', child: 'typed but hidden' } } },
+	},
+	'null values': { nodePropertiesArray: [{ name: 'a', displayName: 'A', type: 'string', default: 'da' }], nodeValues: null },
+	'root-prefixed rule': {
+		nodePropertiesArray: [
+			{ name: 'top', displayName: 'Top', type: 'string', default: 'dt' },
+			{ name: 'child', displayName: 'Child', type: 'string', default: 'dc', displayOptions: { show: { '/top': ['dt'] } } },
+		],
+		nodeValues: { child: 'kept?' },
+	},
+};
+
+function runParameters(api, fixture, returnDefaults, returnNoneDisplayed, options = undefined) {
+	try {
+		return api.getNodeParameters(fixture.nodePropertiesArray, fixture.nodeValues, returnDefaults, returnNoneDisplayed, paramNode, null, options);
+	} catch (error) {
+		return { thrown: error.name, message: error.message };
+	}
+}
+
+scenario('N16', 'getNodeParameters matrix (defaults × noneDisplayed)', (api, capture) => {
+	for (const [name, fixture] of Object.entries(PARAM_FIXTURES)) {
+		for (const returnDefaults of [false, true]) {
+			for (const returnNoneDisplayed of [false, true]) {
+				capture(`${name} [d=${returnDefaults} n=${returnNoneDisplayed}]`, runParameters(api, fixture, returnDefaults, returnNoneDisplayed));
+			}
+		}
+	}
+});
+
+scenario('N17', 'getNodeParameters edge cases', (api, capture) => {
+	capture('mutual dependency guard', runParameters(api, {
+		nodePropertiesArray: [
+			{ name: 'a', displayName: 'A', type: 'string', default: '', displayOptions: { show: { b: ['x'] } } },
+			{ name: 'b', displayName: 'B', type: 'string', default: '', displayOptions: { show: { a: ['x'] } } },
+		],
+		nodeValues: { a: '1', b: '2' },
+	}, true, false));
+	capture('self dependency guard', runParameters(api, {
+		nodePropertiesArray: [{ name: 'a', displayName: 'A', type: 'string', default: '', displayOptions: { show: { a: ['x'] } } }],
+		nodeValues: { a: 'x' },
+	}, false, false));
+	capture('unknown fixedCollection option', runParameters(api, {
+		nodePropertiesArray: [
+			{ name: 'fc', displayName: 'FC', type: 'fixedCollection', default: {}, typeOptions: { multipleValues: true }, options: [{ name: 'known', displayName: 'K', values: [{ name: 'v', displayName: 'V', type: 'string', default: '' }] }] },
+		],
+		nodeValues: { fc: { unknown: [{ v: '1' }] } },
+	}, false, false));
+	capture('Date value through deepCopy', runParameters(api, {
+		nodePropertiesArray: [{ name: 'd', displayName: 'D', type: 'dateTime', default: new Date(0) }],
+		nodeValues: { d: new Date(1000) },
+	}, true, false));
+	capture('onlySimpleTypes + dataIsResolved', runParameters(api, {
+		nodePropertiesArray: [
+			{ name: 'col', displayName: 'Col', type: 'collection', default: {}, options: [{ name: 'a', displayName: 'A', type: 'string', default: 'da' }] },
+			{ name: 'plain', displayName: 'P', type: 'string', default: 'dp' },
+		],
+		nodeValues: { col: { a: 'x' }, plain: 'y' },
+	}, false, false, { onlySimpleTypes: true, dataIsResolved: true }));
+	capture('parentType=collection keeps defaults', runParameters(api, {
+		nodePropertiesArray: [{ name: 'a', displayName: 'A', type: 'string', default: 'da' }],
+		nodeValues: { a: 'da' },
+	}, false, false, { parentType: 'collection', dataIsResolved: true }));
+	capture('noDataExpression on a number', runParameters(api, {
+		nodePropertiesArray: [{ name: 'n', displayName: 'N', type: 'number', default: 1, noDataExpression: true }],
+		nodeValues: { n: 5 },
+	}, false, false));
+	capture('collection with empty object value', runParameters(api, {
+		nodePropertiesArray: [
+			{ name: 'col', displayName: 'Col', type: 'collection', default: {}, options: [{ name: 'a', displayName: 'A', type: 'string', default: 'da' }, { name: 'b', displayName: 'B', type: 'string', default: 'db' }] },
+		],
+		nodeValues: { col: {} },
+	}, true, false));
+	capture('fixedCollection element not an array', runParameters(api, {
+		nodePropertiesArray: [
+			{ name: 'fc', displayName: 'FC', type: 'fixedCollection', default: {}, typeOptions: { multipleValues: true }, options: [{ name: 'item', displayName: 'Item', values: [{ name: 'v', displayName: 'V', type: 'string', default: '' }] }] },
+		],
+		nodeValues: { fc: { item: 'not-an-array' } },
+	}, false, false));
+	capture('collection defaults', runParameters(api, {
+		nodePropertiesArray: [{ name: 'col', displayName: 'Col', type: 'collection', default: {}, options: [{ name: 'a', displayName: 'A', type: 'string', default: 'da' }] }],
+		nodeValues: {},
+	}, true, false));
+	capture('hidden parameter with defaults', runParameters(api, {
+		nodePropertiesArray: [
+			{ name: 'mode', displayName: 'Mode', type: 'options', default: 'a', options: [{ name: 'A', value: 'a' }] },
+			{ name: 'child', displayName: 'Child', type: 'string', default: 'dc', displayOptions: { show: { mode: ['b'] } } },
+		],
+		nodeValues: { mode: 'a' },
+	}, true, false));
+});
+
+/* --- N18: deepCopy / isExpression / error classes ------------------------ */
+scenario('N18', 'deepCopy / isExpression / error surface', (api, capture) => {
+	capture('deepCopy(Date)', api.deepCopy(new Date(0)));
+	capture('deepCopy primitives', ['a', 1, true, null, undefined].map((value) => api.deepCopy(value)));
+	capture('deepCopy function identity', typeof api.deepCopy(() => 1));
+	capture('deepCopy cycle', (() => { const source = { a: 1 }; source.self = source; const copy = api.deepCopy(source); return { a: copy.a, selfIsCopy: copy.self === copy, isSameRef: copy === source }; })());
+	capture('deepCopy nested array', api.deepCopy({ a: [1, { b: 2 }] }));
+	capture('deepCopy prototype is a plain object', Object.getPrototypeOf(api.deepCopy({ a: 1 })) === Object.prototype);
+	capture('isExpression matrix', ['=', '=1+1', 'x', '', 1, null, undefined].map((value) => api.isExpression(value)));
+	capture('ApplicationError surface', (() => { const error = new api.ApplicationError('boom', { extra: { k: 1 } }); return { name: error.name, level: error.level, extra: error.extra, tags: error.tags }; })());
+	capture('NodeOperationError surface', (() => { const error = new api.NodeOperationError({ name: 'N', type: 't' }, 'x', { level: 'info' }); return { name: error.name, level: error.level, messages: error.messages, context: error.context }; })());
+});
+
+
+/* --- N19: validateFieldType (field-type validation) ---------------------- */
+scenario('N19', 'validateFieldType matrix', (api, capture) => {
+	const types = [
+		'string', 'string-alphanumeric', 'number', 'boolean', 'dateTime', 'time', 'binary',
+		'object', 'array', 'options', 'url', 'jwt', 'form-fields', 'not-a-type',
+	];
+	const values = [
+		null, undefined, '', 'text', 'abc123', '123abc', 5, -0.5, '5', '5.5', '0', '1',
+		'true', 'FALSE', true, false, [], [1, 'a'], '["a"]', {}, { a: 1 }, '{"a":1}',
+		"{'a':1}", '{a:1}', 'not json', '2024-01-02T03:04:05Z', '2024-01-02',
+		'Tue, 01 Jan 2019 00:00:00 GMT', '01 Jan 2019 00:00:00 +0000', '2019-01-01 00:00:00',
+		'not a date', '12:30', '12:30:45', '1:2', 'https://a.example.com/x', 'a.example.com',
+		'ftp://h/p', 'javascript:alert(1)', 'eyJhbGciOiJIUzI1NiJ9.eyJhIjoxfQ.sig', 'a.b.c',
+		{ mimeType: 'text/plain', data: 'x' }, { mimeType: 'text/plain' },
+		[{ fieldLabel: 'A', fieldType: 'text' }], 'BADKEY',
+	];
+	let index = 0;
+	for (const type of types) {
+		for (const value of values) {
+			index++;
+			capture(
+				`validateFieldType [${index}] ${type}`,
+				norm(api.validateFieldType('field', value, type, { dateTimeFactory })),
+			);
+		}
+	}
+
+	const optionCases = [
+		[{ strict: true }, 'number', '5'],
+		[{ strict: true }, 'boolean', 1],
+		[{ strict: true }, 'object', []],
+		[{ strict: true }, 'object', () => 1],
+		[{ parseStrings: true }, 'string', 42],
+		[{ parseStrings: true }, 'string', { a: 1 }],
+		[{ valueOptions: [{ value: 'a' }, { value: 'b' }] }, 'options', 'c'],
+		[{ valueOptions: [{ value: 'a' }] }, 'options', 'a'],
+	];
+	optionCases.forEach(([options, type, value], caseIndex) => {
+		capture(
+			`validateFieldType options [${caseIndex}] ${type}`,
+			norm(api.validateFieldType('field', value, type, { ...options, dateTimeFactory })),
+		);
+	});
+});
+
+/* --- N20: type parsers + jsonParse -------------------------------------- */
+scenario('N20', 'tryToParse* helpers / getValueDescription / jsonParse', (api, capture) => {
+	const parserValues = [
+		null, undefined, '', 'text', 'abc123', '123abc', 5, '5', '5.5', '0', '1', 'true', 'FALSE',
+		true, false, [], [1, 'a'], '["a"]', "['a','b']", {}, { a: 1 }, '{"a":1}', "{'a':1}",
+		'{a:1}', 'not json', new Date(1000), '2024-01-02T03:04:05Z', 'not a date',
+		'12:30:45', 'a.example.com', 'a.b.c', { mimeType: 'text/plain', data: 'x' },
+	];
+	const parsers = [
+		'tryToParseNumber', 'tryToParseString', 'tryToParseAlphanumericString', 'tryToParseBoolean',
+		'tryToParseTime', 'tryToParseArray', 'tryToParseObject', 'tryToParseBinary',
+		'tryToParseUrl', 'tryToParseJwt', 'tryToParseJsonToFormFields',
+	];
+	for (const name of parsers) {
+		parserValues.forEach((value, index) => {
+			capture(`${name} [${index}]`, safe(() => norm(api[name](value))));
+		});
+	}
+	parserValues.forEach((value, index) => {
+		capture(`getValueDescription [${index}]`, safe(() => api.getValueDescription(value)));
+	});
+
+	capture('jsonParse strict object', safe(() => api.jsonParse('{"a":1}')));
+	capture('jsonParse strict array', safe(() => api.jsonParse('[1,2]')));
+	capture('jsonParse relaxed single quotes', safe(() => api.jsonParse("{'a':'b'}", { acceptJSObject: true })));
+	capture('jsonParse relaxed unquoted keys', safe(() => api.jsonParse('{a: 1, b: "x"}', { acceptJSObject: true })));
+	capture('jsonParse invalid without options', safe(() => api.jsonParse('{a: 1}')));
+	capture('jsonParse invalid with errorMessage', safe(() => api.jsonParse('{a: 1}', { errorMessage: 'bad json' })));
+	capture('jsonParse invalid with fallbackValue', safe(() => api.jsonParse('{a: 1}', { fallbackValue: { fallback: true } })));
+	capture('jsonParse invalid with fallback thunk', safe(() => api.jsonParse('{a: 1}', { fallbackValue: () => ['f'] })));
+});
+
+/* --- N21: filter-parameter validation ----------------------------------- */
+scenario('N21', 'validateFilterParameter / FilterError', (api, capture) => {
+	const condition = (type, left, right, extra = {}) => ({
+		operator: { type, operation: 'equals', ...extra },
+		leftValue: left,
+		rightValue: right,
+	});
+	const filterValue = (conditions, options = {}) => ({
+		options: { caseSensitive: true, leftValue: '', typeValidation: 'strict', version: 2, ...options },
+		conditions,
+		combinator: 'and',
+	});
+	const filters = [
+		filterValue([condition('string', 'a', 'b')]),
+		filterValue([condition('number', 'not a number', 1)]),
+		filterValue([condition('number', 'x', 'y')]),
+		filterValue([condition('boolean', 'maybe', 'perhaps')]),
+		filterValue([condition('number', '', 1)], { version: 3 }),
+		filterValue([condition('number', [], 1)], { version: 3 }),
+		filterValue([condition('string', 'a', 'b')], { typeValidation: 'loose' }),
+		filterValue([condition('any', undefined, undefined)]),
+		filterValue([condition('string', '=expr', 'b')]),
+		filterValue([condition('dateTime', 'not a date', 'x')]),
+		filterValue([], {}),
+	];
+	filters.forEach((value, index) => {
+		capture(
+			`validateFilterParameter [${index}]`,
+			safe(() => api.validateFilterParameter({ name: 'filters' }, value)),
+		);
+	});
+	capture('FilterError surface', (() => {
+		const error = new api.FilterError('broken comparison', 'try something else');
+		return { name: error.name, level: error.level, message: error.message, description: error.description };
+	})());
+});
+
+/* --- N22: parameter issues engine --------------------------------------- */
+scenario('N22', 'getNodeParametersIssues / getParameterIssues / mergeIssues / getContext', (api, capture) => {
+	const node = (parameters, extra = {}) => ({ name: 'Node', type: 'n8n-nodes-base.test', parameters, ...extra });
+	const issues = (properties, parameters, extra) =>
+		safe(() => api.getNodeParametersIssues(properties, node(parameters, extra), null));
+	const req = (name, displayName, type, extra = {}) => ({ name, displayName, type, required: true, ...extra });
+
+	capture('required string empty', issues([req('a', 'A', 'string')], { a: '' }));
+	capture('required string undefined', issues([req('a', 'A', 'string')], {}));
+	capture('required string present', issues([req('a', 'A', 'string')], { a: 'x' }));
+	capture('required string zero', issues([req('n', 'N', 'string')], { n: 0 }));
+	capture('required multiOptions empty', issues([req('m', 'M', 'multiOptions')], { m: [] }));
+	capture('required multiOptions filled', issues([req('m', 'M', 'multiOptions')], { m: ['a'] }));
+	capture('required multiOptions multipleValues', issues(
+		[req('m', 'M', 'string', { typeOptions: { multipleValues: true } })], { m: ['a', ''] }));
+	capture('required dateTime empty', issues([req('d', 'D', 'dateTime')], { d: '' }));
+	capture('required options empty', issues([req('o', 'O', 'options', { options: [{ name: 'A', value: 'a' }] })], { o: '' }));
+	capture('required options invalid', issues([req('o', 'O', 'options', { options: [{ name: 'A', value: 'a' }] })], { o: 'z' }));
+	capture('required resourceLocator empty', issues(
+		[req('r', 'R', 'resourceLocator')], { r: { __rl: true, value: '', mode: 'list' } }));
+	capture('required resourceLocator zero', issues(
+		[req('r', 'R', 'resourceLocator')], { r: { __rl: true, value: 0, mode: 'list' } }));
+	capture('required workflowSelector empty', issues([req('w', 'W', 'workflowSelector')], { w: { value: '' } }));
+	capture('disabled node', issues([req('a', 'A', 'string')], { a: '' }, { disabled: true }));
+	capture('pindata node', safe(() => api.getNodeParametersIssues(
+		[req('a', 'A', 'string')], node({ a: '' }), null, ['Node'])));
+	capture('hidden required', issues(
+		[{ ...req('b', 'B', 'string'), displayOptions: { show: { mode: ['b'] } } },
+			{ name: 'mode', displayName: 'Mode', type: 'options', default: 'a', options: [{ name: 'A', value: 'a' }] }],
+		{ mode: 'a' }));
+	capture('resourceLocator regex mismatch', issues(
+		[{ name: 'r', displayName: 'R', type: 'resourceLocator', required: true, default: {}, modes: [
+			{ name: 'list', type: 'list', validation: [{ type: 'regex', properties: { regex: '^abc$', errorMessage: 'must be abc' } }] }] }],
+		{ r: { __rl: true, value: 'zzz', mode: 'list' } }));
+	capture('resourceLocator regex match', issues(
+		[{ name: 'r', displayName: 'R', type: 'resourceLocator', required: true, default: {}, modes: [
+			{ name: 'list', type: 'list', validation: [{ type: 'regex', properties: { regex: '^abc$', errorMessage: 'must be abc' } }] }] }],
+		{ r: { __rl: true, value: 'abc', mode: 'list' } }));
+	capture('resourceLocator expression value', issues(
+		[{ name: 'r', displayName: 'R', type: 'resourceLocator', required: true, default: {}, modes: [
+			{ name: 'list', type: 'list', validation: [{ type: 'regex', properties: { regex: '^abc$', errorMessage: 'must be abc' } }] }] }],
+		{ r: { __rl: true, value: '={{ $json.id }}', mode: 'list' } }));
+	capture('resourceLocator unknown mode', issues(
+		[{ name: 'r', displayName: 'R', type: 'resourceLocator', required: true, default: {}, modes: [
+			{ name: 'list', type: 'list', validation: [{ type: 'regex', properties: { regex: '^abc$', errorMessage: 'must be abc' } }] }] }],
+		{ r: { __rl: true, value: 'zzz', mode: 'nope' } }));
+	capture('resourceLocator non-rl value', issues(
+		[{ name: 'r', displayName: 'R', type: 'resourceLocator', required: true, default: {} }], { r: 'plain' }));
+
+	const mapperProps = (extra = {}) => ({
+		name: 'map', displayName: 'Map', type: 'resourceMapper', default: {}, ...extra,
+	});
+	capture('resourceMapper autoMapInputData', issues(
+		[mapperProps()], { map: { mappingMode: 'autoMapInputData', schema: [{ id: 'a', required: true }], value: null } }));
+	capture('resourceMapper required field missing', issues(
+		[mapperProps()], { map: { mappingMode: 'defineBelow', schema: [{ id: 'a', displayName: 'A', required: true }], value: null } }));
+	capture('resourceMapper required skipped for non-add', issues(
+		[mapperProps({ typeOptions: { resourceMapper: { mode: 'update', fieldWords: { singular: 'column' } } } })],
+		{ map: { mappingMode: 'defineBelow', schema: [{ id: 'a', displayName: 'A', required: true }], value: null } }));
+	capture('resourceMapper required field missing in add mode', issues(
+		[mapperProps({ typeOptions: { resourceMapper: { mode: 'add' } } })],
+		{ map: { mappingMode: 'defineBelow', schema: [{ id: 'a', displayName: 'A', required: true }], value: null } }));
+	capture('resourceMapper required field words', issues(
+		[mapperProps({ typeOptions: { resourceMapper: { mode: 'add', fieldWords: { singular: 'column' } } } })],
+		{ map: { mappingMode: 'defineBelow', schema: [{ id: 'a', displayName: 'A', required: true }], value: null } }));
+	capture('resourceMapper field type error', issues(
+		[mapperProps()], { map: { mappingMode: 'defineBelow', schema: [{ id: 'n', displayName: 'N', type: 'number', required: false }], value: { n: 'abc' } } }));
+	capture('resourceMapper expression value skips validation', issues(
+		[mapperProps()], { map: { mappingMode: 'defineBelow', schema: [{ id: 'n', displayName: 'N', type: 'number' }], value: { n: '={{ 1 }}' } } }));
+
+	capture('filter parameter invalid types (pinned dead-code quirk)', issues(
+		[{ name: 'f', displayName: 'F', type: 'filter', required: true, default: {} }],
+		{ f: { options: { typeValidation: 'strict', version: 2 }, combinator: 'and', conditions: [
+			{ operator: { type: 'number', operation: 'equals' }, leftValue: 'nope', rightValue: 'also nope' }] } }));
+
+	capture('validateType number invalid', issues([{ name: 'n', displayName: 'N', type: 'number', validateType: 'number' }], { n: 'abc' }));
+	capture('validateType number valid', issues([{ name: 'n', displayName: 'N', type: 'number', validateType: 'number' }], { n: '5' }));
+	capture('validateType expression skips', issues([{ name: 'n', displayName: 'N', type: 'number', validateType: 'number' }], { n: '={{ 1 + 1 }}' }));
+	capture('validateType options invalid', issues(
+		[{ name: 'o', displayName: 'O', type: 'options', validateType: 'options', options: [{ name: 'A', value: 'a' }] }], { o: 'z' }));
+	capture('validateType boolean invalid', issues([{ name: 'b', displayName: 'B', type: 'boolean', validateType: 'boolean' }], { b: 'maybe' }));
+	capture('validateType array invalid', issues([{ name: 'a', displayName: 'A', type: 'array', validateType: 'array' }], { a: 'not json' }));
+	capture('validateType url invalid', issues([{ name: 'u', displayName: 'U', type: 'string', validateType: 'url' }], { u: 'javascript:alert(1)' }));
+	capture('validateType jwt invalid', issues([{ name: 'j', displayName: 'J', type: 'string', validateType: 'jwt' }], { j: 'a.b.c' }));
+	capture('validateType time invalid', issues([{ name: 't', displayName: 'T', type: 'string', validateType: 'time' }], { t: '1:2' }));
+	capture('validateType dateTime invalid', issues([{ name: 'd', displayName: 'D', type: 'dateTime', validateType: 'dateTime' }], { d: 'not a date' }));
+	capture('validateType string-alphanumeric invalid', issues(
+		[{ name: 's', displayName: 'S', type: 'string', validateType: 'string-alphanumeric' }], { s: '1abc' }));
+	capture('validateType form-fields invalid', issues(
+		[{ name: 'ff', displayName: 'FF', type: 'form-fields', validateType: 'form-fields' }], { ff: 'not json' }));
+
+	capture('collection child required', issues(
+		[{ name: 'col', displayName: 'Col', type: 'collection', default: {}, options: [req('a', 'A', 'string')] }],
+		{ col: { a: '' } }));
+	capture('collection child missing entirely', issues(
+		[{ name: 'col', displayName: 'Col', type: 'collection', default: {}, options: [req('a', 'A', 'string')] }], {}));
+	capture('fixedCollection min fields', issues(
+		[{ name: 'fc', displayName: 'FC', type: 'fixedCollection', default: {}, typeOptions: { multipleValues: true, minRequiredFields: 2 }, options: [{ name: 'item', displayName: 'Item', values: [{ name: 'v', displayName: 'V', type: 'string' }] }] }],
+		{ fc: { item: [{ v: 'x' }] } }));
+	capture('fixedCollection max fields', issues(
+		[{ name: 'fc', displayName: 'FC', type: 'fixedCollection', default: {}, typeOptions: { multipleValues: true, maxAllowedFields: 1 }, options: [{ name: 'item', displayName: 'Item', values: [{ name: 'v', displayName: 'V', type: 'string' }] }] }],
+		{ fc: { item: [{ v: 'x' }, { v: 'y' }] } }));
+	capture('fixedCollection min fields one', issues(
+		[{ name: 'fc', displayName: 'FC', type: 'fixedCollection', default: {}, typeOptions: { multipleValues: true, minRequiredFields: 1 }, options: [{ name: 'item', displayName: 'Item', values: [{ name: 'v', displayName: 'V', type: 'string' }] }] }],
+		{}));
+	capture('fixedCollection multiple values child required', issues(
+		[{ name: 'fc', displayName: 'FC', type: 'fixedCollection', default: {}, typeOptions: { multipleValues: true }, options: [{ name: 'item', displayName: 'Item', values: [req('v', 'V', 'string')] }] }],
+		{ fc: { item: [{ v: '' }, { v: 'ok' }] } }));
+	capture('fixedCollection single value child required', issues(
+		[{ name: 'fc', displayName: 'FC', type: 'fixedCollection', default: {}, options: [{ name: 'item', displayName: 'Item', values: [req('v', 'V', 'string')] }] }],
+		{ fc: { item: { v: '' } } }));
+
+	capture('mergeIssues merges all supported keys', (() => {
+		const destination = { parameters: { a: ['one'] } };
+		api.mergeIssues(destination, {
+			execution: true, typeUnknown: true,
+			parameters: { a: ['two'], b: ['b1'] },
+			credentials: { cred: ['c1'] },
+			ignoredKey: ['nope'],
+		});
+		return destination;
+	})());
+	capture('mergeIssues null source', (() => {
+		const destination = { parameters: { a: ['one'] } };
+		api.mergeIssues(destination, null);
+		return destination;
+	})());
+	capture('mergeIssues falsey flags ignored', (() => {
+		const destination = {};
+		api.mergeIssues(destination, { execution: false, typeUnknown: false, parameters: {} });
+		return destination;
+	})());
+
+	const context = (executionData) => ({ executionData });
+	capture('getContext flow', safe(() => api.getContext(context({ contextData: {} }), 'flow')));
+	capture('getContext node', safe(() => api.getContext(context({ contextData: {} }), 'node', { name: 'N' })));
+	capture('getContext node twice is the same object', safe(() => {
+		const run = context({ contextData: {} });
+		return api.getContext(run, 'node', { name: 'N' }) === api.getContext(run, 'node', { name: 'N' });
+	}));
+	capture('getContext node without node', safe(() => api.getContext(context({ contextData: {} }), 'node')));
+	capture('getContext unknown type', safe(() => api.getContext(context({ contextData: {} }), 'nope')));
+	capture('getContext missing executionData', safe(() => api.getContext({}, 'flow')));
+	capture('getParameterIssues direct', safe(() => api.getParameterIssues(
+		req('a', 'A', 'string'), {}, '', node({ a: '' }), null)));
 });
 
 /* --- report -------------------------------------------------------------- */

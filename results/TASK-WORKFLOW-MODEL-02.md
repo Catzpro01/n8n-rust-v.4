@@ -18,15 +18,16 @@ landing in `src/utils.ts`, `src/node-type-constants.ts` and `src/interfaces.ts`.
 members the **14 `wf.*` probes** of `tests/reference/connection/01..04` — which
 `contracts/connection.contract.md` §7 assigned to this LEGO and `packages/connection-lego` had
 never claimed — are now asserted here against the values recorded from the real n8n 2.9.4
-runtime; the suite went from 26 to **44 tests / 44 pass / 0 fail**, and `tsc -p tsconfig.json`
-exits 0 under `strict`. Port CD-05 was re-cut for this: `getNodeOutputs` is resolved from
+runtime; `test/conformance.test.mjs` went from 26 to **44 tests / 44 pass / 0 fail**, the package
+as a whole reports **52/52** (the peer's `disabled-graph.test.mjs` 8 included), and
+`tsc -p tsconfig.json` exits 0 under `strict`. Port CD-05 was re-cut for this: `getNodeOutputs` is resolved from
 `packages/node-lego/src/index.mjs` through the new `src/node-port.ts`, and the constructor
 parameter `nodeParametersPort` became `nodeHelpersPort` (old name kept as a deprecated alias).
 Two things that would otherwise have been silently wrong are pinned by evidence rather than by
 reading: the reference passes `nodeType.description` and **not** the node type (verified by an
 observed call — `getNodeOutputs` fired once for `Tool` with `outputs: ["main"]`), and the 14/14
 result is proven insensitive to `getNodeParameters`, which is still not reconstructed anywhere on
-this branch (filed as **ISSUE-026**).
+this branch (filed as **ISSUE-027**).
 
 ---
 
@@ -34,8 +35,8 @@ this branch (filed as **ISSUE-026**).
 
 ```
 $ npm --prefix packages/workflow-model-lego test
-# tests 44
-# pass 44
+# tests 52          # conformance.test.mjs 44 + disabled-graph.test.mjs 8
+# pass 52
 # fail 0
 TEST_EXIT=0
 
@@ -90,6 +91,29 @@ byte-identical, so the acceptance set is not being satisfied by the stand-in.
 
 ---
 
+## Merge reconciliation with TASK-DGRAPH-01 (peer commit `dbe9a75f`)
+
+While this task was in flight a peer landed `src/start-node-navigation.ts` — the same
+`getHighestNode` / `__getStartNode` / `getStartNode` port, as standalone pure functions over
+`(nodes, connectionsByDestinationNode, nodeTypes)`, with its own 8-test `disabled-graph.test.mjs`.
+Both sides were kept, but not as two copies of the traversal:
+
+- `index.ts` exports both modules; the only real conflict was additive.
+- `src/node-type-constants.ts` now **re-exports** `STARTING_NODE_TYPES` and
+  `MANUAL_CHAT_TRIGGER_LANGCHAIN_NODE_TYPE` from `start-node-navigation` instead of redefining
+  them (two `export *` over the same name is an ambiguous export, and the table would have existed
+  twice).
+- The three class methods in `src/workflow.ts` now **delegate** to those pure functions, so the
+  traversal exists exactly once on the branch. `getHighestNode`, `__getStartNode` and `getStartNode`
+  are thin aggregate entry points over the peer's implementation.
+
+That makes the two verifications cross-check each other: the peer's functions were validated
+against their own D-01..D-05 goldens, and now also drive the 14 `wf.*` probes asserted here. After
+the merge the package is 52/52 and `tsc --strict` is clean.
+
+The peer also took the ISSUE number `ISSUE-026` (parameter-issues consolidation); the
+`getNodeParameters` gap recorded below was renumbered to **ISSUE-027**.
+
 ## Corrections this task makes to earlier claims
 
 1. **`getNodeOutputs` argument.** The first draft of `getParentMainInputNode` passed `nodeType`.
@@ -109,7 +133,7 @@ byte-identical, so the acceptance set is not being satisfied by the stand-in.
 
 ## Known gaps (not hidden)
 
-- **ISSUE-026** — `NodeHelpers.getNodeParameters` is not reconstructed on this branch. The
+- **ISSUE-027** — `NodeHelpers.getNodeParameters` is not reconstructed on this branch. The
   Workflow constructor requires it whenever a node type resolves; until it exists, every caller
   must inject it. The 14 golden probes do not read `node.parameters`, which is proven above rather
   than asserted.

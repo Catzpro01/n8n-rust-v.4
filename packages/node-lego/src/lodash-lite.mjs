@@ -1,6 +1,7 @@
 /**
- * lodash-lite — the dependency-free replacements for the three lodash helpers the
- * Node Model reference uses (`lodash/get`, `lodash/isEqual`, `lodash/cloneDeep`).
+ * lodash-lite — the dependency-free replacements for the two lodash helpers the Node
+ * Model reference imports (`lodash/get`, `lodash/isEqual`; `deepCopy` is the reference's
+ * own `utils.ts` helper and is reconstructed verbatim in `deep-copy.mjs`).
  *
  * This is an explicit, documented delta (`README.md` §Deltas): the reference imports
  * lodash; a LEGO package must stay dependency-free (gate `N01`), so the subset the
@@ -67,13 +68,10 @@ export function isEqual(a, b) {
 	return aKeys.every((key) => Object.hasOwn(b, key) && isEqual(a[key], b[key]));
 }
 
-/** `cloneDeep(value)` for JSON-shaped values; Dates and arrays keep their type. */
-export function cloneDeep(value) {
-	if (value === null || typeof value !== 'object') return value;
-	if (value instanceof Date) return new Date(value.getTime());
-	if (Array.isArray(value)) return value.map((entry) => cloneDeep(entry));
-
-	const result = {};
-	for (const [key, entry] of Object.entries(value)) result[key] = cloneDeep(entry);
-	return result;
+/**
+ * lodash `isObject` — the reference's `type-validation.ts` uses it for the `object` field
+ * type check. Same verdicts: objects, arrays and functions are objects, `null` is not.
+ */
+export function isObject(value) {
+	return value !== null && (typeof value === 'object' || typeof value === 'function');
 }

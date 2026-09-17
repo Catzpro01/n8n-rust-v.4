@@ -8,6 +8,23 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+	ApplicationError,
+	FilterError,
+	defaultDateTimeFactory,
+	getContext,
+	getNodeParametersIssues,
+	getParameterIssues,
+	getValueDescription,
+	jsonParse,
+	mergeIssues,
+	tryToParseArray,
+	tryToParseBoolean,
+	tryToParseJwt,
+	tryToParseNumber,
+	tryToParseObject,
+	tryToParseUrl,
+	validateFieldType,
+	validateFilterParameter,
 	NodeConnectionTypes,
 	NodeOperationError,
 	assertIsValidNodeParameterValueType,
@@ -17,7 +34,7 @@ import {
 	assertParamIsOfAnyTypes,
 	assertParamIsString,
 	checkConditions,
-	cloneDeep,
+	deepCopy,
 	displayParameter,
 	displayParameterPath,
 	get,
@@ -25,6 +42,7 @@ import {
 	getNodeFeatures,
 	getNodeInputs,
 	getNodeOutputs,
+	getNodeParameters,
 	getParameterValueByPath,
 	getPropertyValues,
 	getSubworkflowId,
@@ -44,6 +62,8 @@ import {
 	isSubNodeType,
 	isTool,
 	isToolType,
+	isEqual,
+	isExpression,
 	isTriggerLikeNode,
 	isTriggerNode,
 	makeDescription,
@@ -625,12 +645,654 @@ test('get/toPath: lodash path grammar used by node parameters', () => {
 	assert.equal(get({ a: { b: null } }, 'a.b.c', 'D'), 'D');
 });
 
-test('cloneDeep/isEqual: JSON-shaped values (documented delta)', () => {
-	const source = { a: [1, { b: 2 }], when: new Date(0) };
-	const copy = cloneDeep(source);
+test('isEqual: JSON-shaped values (documented delta)', () => {
+	const source = { a: [1, { b: 2 }] };
+	assert.equal(isEqual(source, { a: [1, { b: 2 }] }), true);
+	assert.equal(isEqual({ a: 1 }, { a: 2 }), false);
+	assert.equal(getConnectionTypes([{ type: NodeConnectionTypes.Main }])[0], 'main');
+});
+
+test('deepCopy: verbatim utils.ts semantics (L53-87)', () => {
+	const source = { a: [1, { b: 2 }] };
+	const copy = deepCopy(source);
 	assert.notEqual(copy, source);
 	assert.notEqual(copy.a, source.a);
 	assert.deepEqual(copy, source);
-	assert.ok(copy.when instanceof Date);
-	assert.equal(getConnectionTypes([{ type: NodeConnectionTypes.Main }])[0], 'main');
+
+	// primitives, null and functions are returned as-is
+	assert.equal(deepCopy('x'), 'x');
+	assert.equal(deepCopy(null), null);
+	const fn = () => 1;
+	assert.equal(deepCopy(fn), fn);
+
+	// objects with toJSON are replaced by their toJSON() result (a Date becomes a string)
+	assert.equal(deepCopy(new Date(0)), '1970-01-01T00:00:00.000Z');
+
+	// cycles are preserved through the WeakMap
+	const cyclic = { a: 1 };
+	cyclic.self = cyclic;
+	const cyclicCopy = deepCopy(cyclic);
+	assert.equal(cyclicCopy.self, cyclicCopy);
+	assert.equal(cyclicCopy.a, 1);
+
+	// the clone is a plain object
+	assert.equal(Object.getPrototypeOf(deepCopy(Object.create({ marker: true }))), Object.prototype);
+});
+
+test('isExpression: only strings starting with "=" (expression-helpers.ts L1-10)', () => {
+	assert.equal(isExpression('='), true);
+	assert.equal(isExpression('={{ 1 + 1 }}'), true);
+	assert.equal(isExpression('x'), false);
+	assert.equal(isExpression(''), false);
+	assert.equal(isExpression(1), false);
+	assert.equal(isExpression(null), false);
+	assert.equal(isExpression(undefined), false);
+});
+
+test('ApplicationError: reference surface (name stays "Error", level "error")', () => {
+	const error = new ApplicationError('boom', { extra: { k: 1 } });
+	assert.equal(error.name, 'Error');
+	assert.equal(error.message, 'boom');
+	assert.equal(error.level, 'error');
+	assert.deepEqual(error.extra, { k: 1 });
+	assert.deepEqual(error.tags, {});
+});
+
+/* --- parameter resolution (node-helpers.test.ts `getNodeParameters`) ------- */
+
+const PARAM_NODE = { typeVersion: 1 };
+const resolveParams = (nodePropertiesArray, nodeValues, returnDefaults, returnNoneDisplayed, options) =>
+	getNodeParameters(nodePropertiesArray, nodeValues, returnDefaults, returnNoneDisplayed, PARAM_NODE, null, options);
+
+test('getNodeParameters: plain values, defaults and none-displayed matrix (oracle L53-334)', () => {
+	const nodePropertiesArray = [
+		{ name: 'string1', displayName: 'String 1', type: 'string', default: '' },
+		{ name: 'string2', displayName: 'String 2', type: 'string', default: 'default string 2' },
+		{ name: 'number1', displayName: 'Number 1', type: 'number', default: 10 },
+		{ name: 'boolean1', displayName: 'Boolean 1', type: 'boolean', default: false },
+	];
+	const nodeValues = { string1: 'hello', number1: 0, boolean1: false };
+
+	// without defaults only values differing from their default survive: number1 (0 vs 10) stays,
+	// boolean1 (false === default) is dropped
+	assert.deepEqual(resolveParams(nodePropertiesArray, nodeValues, false, false), {
+		string1: 'hello',
+		number1: 0,
+	});
+	assert.deepEqual(resolveParams(nodePropertiesArray, { string1: 'hello' }, false, false), { string1: 'hello' });
+	// with defaults everything appears, false/0 keeping their real value (L790-800)
+	assert.deepEqual(resolveParams(nodePropertiesArray, { string1: 'hello' }, true, false), {
+		string1: 'hello',
+		string2: 'default string 2',
+		number1: 10,
+		boolean1: false,
+	});
+	// null values resolve to an empty result instead of throwing (oracle L3466)
+	assert.deepEqual(resolveParams(nodePropertiesArray, null, true, false), {});
+});
+
+test('getNodeParameters: displayOptions show match/mismatch + returnNoneDisplayed (oracle L335-619)', () => {
+	const nodePropertiesArray = [
+		{ name: 'mode', displayName: 'Mode', type: 'options', default: 'a', options: [{ name: 'A', value: 'a' }, { name: 'B', value: 'b' }] },
+		{ name: 'child', displayName: 'Child', type: 'string', default: 'x', displayOptions: { show: { mode: ['b'] } } },
+	];
+	assert.deepEqual(resolveParams(nodePropertiesArray, { mode: 'b' }, true, false), { mode: 'b', child: 'x' });
+	assert.deepEqual(resolveParams(nodePropertiesArray, { mode: 'a' }, true, false), { mode: 'a' });
+	// without defaults a value equal to its default is dropped as well
+	assert.deepEqual(resolveParams(nodePropertiesArray, { mode: 'a', child: 'hidden but set' }, false, false), {});
+	// returnNoneDisplayed keeps the hidden parameter (and drops the default-valued one)
+	assert.deepEqual(resolveParams(nodePropertiesArray, { mode: 'a', child: 'hidden but set' }, false, true), {
+		child: 'hidden but set',
+	});
+});
+
+test('getNodeParameters: duplicate parameter names are re-checked individually (L726-737)', () => {
+	const nodePropertiesArray = [
+		{ name: 'resource', displayName: 'Resource', type: 'options', default: 'r1', options: [{ name: 'R1', value: 'r1' }] },
+		{ name: 'value', displayName: 'V1', type: 'string', default: 'd1', displayOptions: { show: { resource: ['r1'] } } },
+		{ name: 'value', displayName: 'V2', type: 'string', default: 'd2', displayOptions: { show: { resource: ['r2'] } } },
+	];
+	assert.deepEqual(resolveParams(nodePropertiesArray, { resource: 'r2', value: 'user value' }, false, false), {
+		resource: 'r2',
+		value: 'user value',
+	});
+	assert.deepEqual(resolveParams(nodePropertiesArray, { resource: 'r1' }, true, false), {
+		resource: 'r1',
+		value: 'd1',
+	});
+});
+
+test('getNodeParameters: noDataExpression strips the expression prefix (oracle L6321-6524)', () => {
+	const nodePropertiesArray = [
+		{ name: 'code', displayName: 'Code', type: 'string', default: '', noDataExpression: true },
+		{ name: 'keep', displayName: 'Keep', type: 'string', default: '' },
+	];
+	// pinned quirk: the strip runs after the returnDefaults branch, so it only applies there
+	assert.deepEqual(resolveParams(nodePropertiesArray, { code: '={{ 1 + 1 }}', keep: '=not stripped' }, true, false), {
+		code: '{{ 1 + 1 }}',
+		keep: '=not stripped',
+	});
+	assert.deepEqual(resolveParams(nodePropertiesArray, { code: '={{ 1 + 1 }}', keep: '=not stripped' }, false, false), {
+		code: '={{ 1 + 1 }}',
+		keep: '=not stripped',
+	});
+	// non-string values are left alone
+	assert.deepEqual(
+		resolveParams([{ name: 'n', displayName: 'N', type: 'number', default: 1, noDataExpression: true }], { n: 5 }, false, false),
+		{ n: 5 },
+	);
+});
+
+test('getNodeParameters: resourceLocator defaults get the __rl marker (L781-790)', () => {
+	assert.deepEqual(
+		resolveParams([{ name: 'rl', displayName: 'RL', type: 'resourceLocator', default: { mode: 'list', value: 'v' } }], {}, true, false),
+		{ rl: { __rl: true, mode: 'list', value: 'v' } },
+	);
+	assert.deepEqual(
+		resolveParams([{ name: 'rl', displayName: 'RL', type: 'resourceLocator', default: { mode: 'list', value: 'v' } }], {}, false, false),
+		{},
+	);
+});
+
+test('getNodeParameters: collection with multipleValues and single collections (L820-876)', () => {
+	const multi = [
+		{
+			name: 'col', displayName: 'Col', type: 'collection', default: [], typeOptions: { multipleValues: true },
+			options: [{ name: 'a', displayName: 'A', type: 'string', default: '' }],
+		},
+	];
+	assert.deepEqual(resolveParams(multi, { col: [{ a: 'x' }] }, false, false), { col: [{ a: 'x' }] });
+	// nothing set: with defaults an empty array is returned even when the default is not an array (L829-838)
+	assert.deepEqual(resolveParams(multi, {}, true, false), { col: [] });
+
+	const single = [
+		{
+			name: 'col', displayName: 'Col', type: 'collection', default: {},
+			options: [
+				{ name: 'a', displayName: 'A', type: 'string', default: 'da' },
+				{ name: 'b', displayName: 'B', type: 'string', default: 'db' },
+			],
+		},
+	];
+	// inside a collection a value equal to its default is still returned (L805-807)
+	assert.deepEqual(resolveParams(single, { col: { b: 'user' } }, false, false), { col: { b: 'user' } });
+	assert.deepEqual(resolveParams(single, { col: { a: 'da' } }, false, false), { col: { a: 'da' } });
+	// without values the collection default itself is returned — child defaults are NOT materialised
+	assert.deepEqual(resolveParams(single, {}, true, false), { col: {} });
+	// and an explicitly empty collection stays empty even with returnDefaults: inside a collection a
+	// `undefined` child is skipped (L703-708), so child defaults are never invented
+	assert.deepEqual(resolveParams(single, { col: {} }, true, false), { col: {} });
+	assert.deepEqual(resolveParams(single, { col: { a: 'da' } }, true, false), { col: { a: 'da' } });
+});
+
+test('getNodeParameters: fixedCollection multipleValues keeps every item (oracle L620-726)', () => {
+	const nodePropertiesArray = [
+		{
+			name: 'fc', displayName: 'FC', type: 'fixedCollection', default: {}, typeOptions: { multipleValues: true },
+			options: [{ name: 'item', displayName: 'Item', values: [{ name: 'v', displayName: 'V', type: 'string', default: '' }] }],
+		},
+	];
+	assert.deepEqual(resolveParams(nodePropertiesArray, { fc: { item: [{ v: 'one' }, { v: 'two' }] } }, false, false), {
+		fc: { item: [{ v: 'one' }, { v: 'two' }] },
+	});
+	assert.throws(() => resolveParams(nodePropertiesArray, { fc: { unknown: [{ v: '1' }] } }, false, false), {
+		name: 'Error',
+		message: 'Could not find property option',
+	});
+	// pinned quirk: a non-array element is iterated with `for…of`, so a *string* yields one empty
+	// object per character instead of being rejected (L905-916 guards the outer value only)
+	const perCharacter = Array.from({ length: 'not-an-array'.length }, () => ({}));
+	assert.deepEqual(resolveParams(nodePropertiesArray, { fc: { item: 'not-an-array' } }, false, false), {
+		fc: { item: perCharacter },
+	});
+});
+
+test('getNodeParameters: fixedCollection single-value GitHub cases (L903-1030)', () => {
+	const nodePropertiesArray = [
+		{
+			name: 'fc', displayName: 'FC', type: 'fixedCollection', default: {}, typeOptions: { multipleValues: false },
+			options: [{
+				name: 'item', displayName: 'Item',
+				values: [
+					{ name: 'mode', displayName: 'Mode', type: 'options', default: 'a', options: [{ name: 'A', value: 'a' }] },
+					{ name: 'child', displayName: 'Child', type: 'string', default: '', displayOptions: { show: { mode: ['b'] } } },
+				],
+			}],
+		},
+	];
+	// hidden field with a non-default value: the whole collection is dropped (test case, L1000-1030)
+	assert.deepEqual(resolveParams(nodePropertiesArray, { fc: { item: { mode: 'a', child: 'typed but hidden' } } }, false, false), {});
+	// explicitly added item that only holds defaults is preserved (GitHub case, L966-997)
+	const defaultsOnly = [
+		{
+			name: 'fc', displayName: 'FC', type: 'fixedCollection', default: {}, typeOptions: { multipleValues: false },
+			options: [{ name: 'item', displayName: 'Item', values: [{ name: 'v', displayName: 'V', type: 'string', default: 'dv' }] }],
+		},
+	];
+	assert.deepEqual(resolveParams(defaultsOnly, { fc: { item: { v: 'dv' } } }, false, false), { fc: { item: {} } });
+	// an empty object value short-circuits the whole resolution and returns the values back (L880-887)
+	assert.deepEqual(resolveParams(defaultsOnly, { fc: {} }, false, false), { fc: {} });
+});
+
+test('getNodeParameters: dependency cycles terminate (resolve-order quirk, L577-656)', () => {
+	const nodePropertiesArray = [
+		{ name: 'a', displayName: 'A', type: 'string', default: '', displayOptions: { show: { b: ['x'] } } },
+		{ name: 'b', displayName: 'B', type: 'string', default: '', displayOptions: { show: { a: ['x'] } } },
+	];
+	// Pinned quirk: the `continue` statements inside the dependency loop only advance that loop,
+	// so an unresolved parameter is re-queued AND resolved anyway — a cycle terminates instead of
+	// hanging or throwing, and both parameters come back when none-displayed values are requested.
+	assert.deepEqual(resolveParams(nodePropertiesArray, { a: '1', b: '2' }, true, false), {});
+	assert.deepEqual(resolveParams(nodePropertiesArray, { a: '1', b: '2' }, false, true), { a: '1', b: '2' });
+	// the max-iterations guard itself is only reachable when the queue keeps growing (L627-652)
+});
+
+test('getNodeParameters: unknown fixedCollection option throws the reference error (L913-919)', () => {
+	const nodePropertiesArray = [
+		{
+			name: 'fc', displayName: 'FC', type: 'fixedCollection', default: {}, typeOptions: { multipleValues: true },
+			options: [{ name: 'known', displayName: 'K', values: [{ name: 'v', displayName: 'V', type: 'string', default: '' }] }],
+		},
+	];
+	assert.throws(() => resolveParams(nodePropertiesArray, { fc: { unknown: [{ v: '1' }] } }, false, false), {
+		name: 'Error',
+		message: 'Could not find property option',
+	});
+});
+
+/* =========================================================================
+ * Slice 3 — field-type validation, filter-parameter validation and the
+ * parameter-issues engine.
+ * Oracles: test/type-validation.test.ts (`Type Validation` L11),
+ *          test/node-helpers.test.ts (`getParameterIssues` L3683,
+ *          `getParameterIssues, required parameters validation` L4270),
+ *          test/filter-parameter.test.ts (`FilterParameter` L32).
+ * ======================================================================= */
+
+test('validateFieldType: alphanumeric strings reject leading numbers (oracle type-validation.test.ts L13/L23)', () => {
+	assert.deepEqual(validateFieldType('field', 'abc_1', 'string-alphanumeric'), { valid: true, newValue: 'abc_1' });
+	assert.deepEqual(validateFieldType('field', '1abc', 'string-alphanumeric'), {
+		valid: false,
+		errorMessage: 'Value is not a valid alphanumeric string, only letters, numbers and underscore allowed',
+	});
+	assert.equal(validateFieldType('field', 'a-b', 'string-alphanumeric').valid, false);
+});
+
+test('validateFieldType: dateTime uses the injected factory and rejects invalid dates (DELTA-04; oracle L45/L122)', () => {
+	// default (dependency-free) factory — see contract DELTA-04 for the luxon delta
+	const iso = validateFieldType('field', '2024-01-02T03:04:05Z', 'dateTime');
+	assert.equal(iso.valid, true);
+	assert.equal(iso.newValue.toISO(), '2024-01-02T03:04:05.000Z');
+	assert.equal(validateFieldType('field', new Date(1000), 'dateTime').newValue.toMillis(), 1000);
+	assert.equal(validateFieldType('field', '2019-01-01 00:00:00', 'dateTime').valid, true);
+	assert.equal(validateFieldType('field', 'Tue, 01 Jan 2019 00:00:00 GMT', 'dateTime').valid, true);
+
+	const invalid = validateFieldType('field', 'not a date', 'dateTime');
+	assert.equal(invalid.valid, false);
+	assert.equal(
+		invalid.errorMessage,
+		`'field' expects a dateTime but we got 'not a date' <br/><br/> Consider using <a href="https://moment.github.io/luxon/api-docs/index.html#datetimefromformat" target="_blank"><code>DateTime.fromFormat</code></a> to work with custom date formats.`,
+	);
+
+	// an injected factory is what the differential injects (the reference's own luxon)
+	const seen = [];
+	const spyFactory = {
+		isDateTime: (value) => defaultDateTimeFactory.isDateTime(value),
+		fromJSDate: (...args) => (seen.push('fromJSDate'), defaultDateTimeFactory.fromJSDate(...args)),
+		fromISO: (...args) => (seen.push('fromISO'), defaultDateTimeFactory.fromISO(...args)),
+		fromHTTP: (...args) => (seen.push('fromHTTP'), defaultDateTimeFactory.fromHTTP(...args)),
+		fromRFC2822: (...args) => (seen.push('fromRFC2822'), defaultDateTimeFactory.fromRFC2822(...args)),
+		fromSQL: (...args) => (seen.push('fromSQL'), defaultDateTimeFactory.fromSQL(...args)),
+		fromMillis: (...args) => (seen.push('fromMillis'), defaultDateTimeFactory.fromMillis(...args)),
+	};
+	validateFieldType('field', '2024-01-02', 'dateTime', { dateTimeFactory: spyFactory });
+	assert.deepEqual(seen, ['fromISO']);
+	seen.length = 0;
+	validateFieldType('field', 'zzz', 'dateTime', { dateTimeFactory: spyFactory });
+	assert.deepEqual(seen, ['fromISO', 'fromHTTP', 'fromRFC2822', 'fromSQL', 'fromMillis']);
+});
+
+test('validateFieldType: booleans and numbers (oracle L140/L158/L165)', () => {
+	assert.deepEqual(validateFieldType('field', true, 'boolean'), { valid: true, newValue: true });
+	assert.deepEqual(validateFieldType('field', 'FALSE', 'boolean'), { valid: true, newValue: false });
+	assert.deepEqual(validateFieldType('field', 1, 'boolean'), { valid: true, newValue: true });
+	assert.deepEqual(validateFieldType('field', 'maybe', 'boolean'), {
+		valid: false,
+		errorMessage: "'field' expects a boolean but we got 'maybe'",
+	});
+	assert.deepEqual(validateFieldType('field', '', 'boolean'), {
+		valid: false,
+		errorMessage: "'field' expects a boolean but we got ''",
+	});
+
+	assert.deepEqual(validateFieldType('field', '5', 'number'), { valid: true, newValue: 5 });
+	assert.deepEqual(validateFieldType('field', '5.5', 'number'), { valid: true, newValue: 5.5 });
+	// pinned quirk: Number('') === 0, so an empty string is a valid number
+	assert.deepEqual(validateFieldType('field', '', 'number'), { valid: true, newValue: 0 });
+	assert.deepEqual(validateFieldType('field', 'abc', 'number'), {
+		valid: false,
+		errorMessage: "'field' expects a number but we got 'abc'",
+	});
+	// strict mode refuses to convert
+	assert.deepEqual(validateFieldType('field', '5', 'number', { strict: true }), {
+		valid: false,
+		errorMessage: "'field' expects a number but we got '5'",
+	});
+	// parseStrings only affects the `string` type
+	assert.deepEqual(validateFieldType('field', 'abc', 'string'), { valid: true, newValue: 'abc' });
+	assert.deepEqual(validateFieldType('field', 42, 'string', { parseStrings: true }), { valid: true, newValue: '42' });
+});
+
+test('validateFieldType: objects, arrays and the tolerant JS-object adapter (DELTA-05; oracle L187/L224)', () => {
+	assert.deepEqual(validateFieldType('field', '{"a":1}', 'object'), { valid: true, newValue: { a: 1 } });
+	assert.deepEqual(validateFieldType('field', "{'a':1}", 'object'), { valid: true, newValue: { a: 1 } });
+	assert.deepEqual(validateFieldType('field', '{a: 1, b: "x"}', 'object'), { valid: true, newValue: { a: 1, b: 'x' } });
+	assert.deepEqual(validateFieldType('field', 'not json', 'object'), {
+		valid: false,
+		errorMessage: "'field' expects a object but we got 'not json'",
+	});
+	assert.deepEqual(validateFieldType('field', [1, 2], 'object', { strict: true }), {
+		valid: false,
+		errorMessage: "'field' expects a object but we got array",
+	});
+
+	assert.deepEqual(validateFieldType('field', '[1,2]', 'array'), { valid: true, newValue: [1, 2] });
+	assert.deepEqual(validateFieldType('field', "['a','b']", 'array'), { valid: true, newValue: ['a', 'b'] });
+	assert.equal(validateFieldType('field', '[1,2', 'array').valid, false);
+	assert.equal(validateFieldType('field', '{"a":1}', 'array').valid, false);
+});
+
+test('validateFieldType: options, time, url, jwt, binary and null (oracle L254/L273/L378/L414)', () => {
+	const valueOptions = [{ name: 'A', value: 'a' }, { name: 'B', value: 'b' }];
+	assert.deepEqual(validateFieldType('field', 'a', 'options', { valueOptions }), { valid: true, newValue: 'a' });
+	assert.deepEqual(validateFieldType('field', 'c', 'options', { valueOptions }), {
+		valid: false,
+		errorMessage: "'field' expects one of the following values: [a, b] but we got 'c'",
+	});
+
+	assert.deepEqual(validateFieldType('field', '12:30:45', 'time'), { valid: true, newValue: '12:30:45' });
+	assert.deepEqual(validateFieldType('field', '1:2', 'time'), {
+		valid: false,
+		errorMessage: "'field' expects time (hh:mm:(:ss)) but we got '1:2'.",
+	});
+
+	// tryToParseUrl adds https:// when the value carries no scheme
+	assert.deepEqual(validateFieldType('field', 'a.example.com', 'url'), { valid: true, newValue: 'https://a.example.com' });
+	assert.equal(validateFieldType('field', 'javascript:alert(1)', 'url').valid, false);
+	assert.deepEqual(validateFieldType('field', 'a.b.c', 'jwt'), { valid: true, newValue: 'a.b.c' });
+	assert.equal(validateFieldType('field', 'nope', 'jwt').valid, false);
+
+	assert.deepEqual(validateFieldType('field', { mimeType: 'text/plain', data: 'x' }, 'binary'), {
+		valid: true,
+		newValue: { mimeType: 'text/plain', data: 'x' },
+	});
+	assert.equal(validateFieldType('field', { mimeType: 'text/plain' }, 'binary').valid, false);
+	assert.equal(validateFieldType('field', [], 'binary').valid, false);
+
+	for (const type of ['string', 'number', 'boolean', 'object', 'array', 'binary', 'dateTime']) {
+		assert.deepEqual(validateFieldType('field', null, type), { valid: true });
+		assert.deepEqual(validateFieldType('field', undefined, type), { valid: true });
+	}
+	// unknown types pass through untouched
+	const passthrough = { a: 1 };
+	assert.deepEqual(validateFieldType('field', passthrough, 'not-a-type'), { valid: true, newValue: passthrough });
+});
+
+test('getValueDescription + the parse helpers keep the reference wording (oracle L323)', () => {
+	assert.equal(getValueDescription(null), "'null'");
+	assert.equal(getValueDescription([1, 2]), 'array');
+	assert.equal(getValueDescription({ a: 1 }), 'object');
+	assert.equal(getValueDescription('x'), "'x'");
+	assert.equal(getValueDescription(5), "'5'");
+	assert.equal(getValueDescription(undefined), "'undefined'");
+
+	assert.deepEqual(tryToParseNumber('5'), 5);
+	assert.throws(() => tryToParseNumber('abc'), { message: 'Failed to parse value to number' });
+	assert.deepEqual(tryToParseBoolean('TRUE'), true);
+	assert.throws(() => tryToParseBoolean('maybe'), { message: 'Failed to parse value as boolean' });
+	assert.deepEqual(tryToParseArray("['a']"), ['a']);
+	assert.deepEqual(tryToParseObject('{a: 1}'), { a: 1 });
+	assert.deepEqual(tryToParseUrl('example.com'), 'https://example.com');
+	assert.deepEqual(tryToParseJwt('a.b.c'), 'a.b.c');
+});
+
+test('jsonParse: strict first, then the injected/relaxed object recovery (DELTA-05)', () => {
+	assert.deepEqual(jsonParse('{"a":1}'), { a: 1 });
+	assert.deepEqual(jsonParse("{'a':'b'}", { acceptJSObject: true }), { a: 'b' });
+	assert.deepEqual(jsonParse('{a: 1, b: "x"}', { acceptJSObject: true }), { a: 1, b: 'x' });
+	assert.deepEqual(jsonParse('{"a":1,}', { acceptJSObject: true }), { a: 1 });
+	assert.throws(() => jsonParse('{a: 1}'), SyntaxError);
+	assert.throws(() => jsonParse('{a: 1}', { errorMessage: 'bad json' }), { message: 'bad json' });
+	assert.deepEqual(jsonParse('{a: 1}', { fallbackValue: { f: true } }), { f: true });
+	assert.deepEqual(jsonParse('{a: 1}', { fallbackValue: () => ['f'] }), ['f']);
+	// the adapter itself is injectable (the differential injects the reference's esprima path)
+	assert.deepEqual(jsonParse('{a: 1}', { acceptJSObject: true, parseJSObject: () => ({ injected: true }) }), {
+		injected: true,
+	});
+	assert.throws(() => jsonParse('{a: 1}', { acceptJSObject: true, parseJSObject: () => { throw new Error('nope'); } }), SyntaxError);
+});
+
+test('validateFilterParameter returns {} for every input (pinned dead-code quirk, L427-450)', () => {
+	const condition = (type, left, right, extra = {}) => ({
+		operator: { type, operation: 'equals', ...extra },
+		leftValue: left,
+		rightValue: right,
+	});
+	const filterValue = (conditions, options = {}) => ({
+		options: { caseSensitive: true, leftValue: '', typeValidation: 'strict', version: 2, ...options },
+		conditions,
+		combinator: 'and',
+	});
+	// `parseFilterConditionValues` RETURNS `{ ok: false, error }` — it never throws, so the
+	// `catch (error) { if (error instanceof FilterError) ... }` block is unreachable and the
+	// function is a no-op. Fixing it would throw a TypeError (see contract §12.2.6).
+	assert.deepEqual(validateFilterParameter({ name: 'filters' }, filterValue([condition('number', 'nope', 'also nope')])), {});
+	assert.deepEqual(validateFilterParameter({ name: 'filters' }, filterValue([condition('boolean', 'maybe', 'perhaps')])), {});
+	assert.deepEqual(validateFilterParameter({ name: 'filters' }, filterValue([condition('string', 'a', 'b')], { typeValidation: 'loose' })), {});
+	assert.deepEqual(validateFilterParameter({ name: 'filters' }, filterValue([])), {});
+});
+
+test('FilterError keeps the ApplicationError surface: name stays Error, level is warning (DELTA-03)', () => {
+	const error = new FilterError('broken comparison', 'try something else');
+	assert.equal(error.name, 'Error');
+	assert.equal(error.level, 'warning');
+	assert.equal(error.message, 'broken comparison');
+	assert.equal(error.description, 'try something else');
+	assert.ok(error instanceof ApplicationError);
+});
+
+test('getNodeParametersIssues: required parameters (oracle node-helpers.test.ts L4270)', () => {
+	const node = (parameters, extra = {}) => ({ name: 'Node', type: 'n8n-nodes-base.test', parameters, ...extra });
+	const required = (name, displayName, type, extra = {}) => ({ name, displayName, type, required: true, ...extra });
+	const issues = (properties, parameters, extra) =>
+		getNodeParametersIssues(properties, node(parameters, extra), null);
+
+	assert.deepEqual(issues([required('a', 'A', 'string')], {}), {
+		parameters: { a: ['Parameter "A" is required.'] },
+	});
+	assert.deepEqual(issues([required('a', 'A', 'string')], { a: 'x' }), null);
+	assert.deepEqual(issues([required('m', 'M', 'multiOptions')], { m: [] }), {
+		parameters: { m: ['Parameter "M" is required.'] },
+	});
+	assert.deepEqual(issues([required('d', 'D', 'dateTime')], { d: '' }), {
+		parameters: { d: ['Parameter "D" is required.'] },
+	});
+	assert.deepEqual(issues([required('r', 'R', 'resourceLocator')], { r: { __rl: true, value: '', mode: 'list' } }), {
+		parameters: { r: ['Parameter "R" is required.'] },
+	});
+	// a numeric zero resource-locator value is accepted
+	assert.equal(issues([required('r', 'R', 'resourceLocator')], { r: { __rl: true, value: 0, mode: 'list' } }), null);
+	// multipleValues loops the single values of the array
+	assert.deepEqual(
+		issues([required('m', 'M', 'string', { typeOptions: { multipleValues: true } })], { m: ['a', ''] }),
+		{ parameters: { m: ['Parameter "M" is required.'] } },
+	);
+});
+
+test('getNodeParametersIssues: disabled / pinned nodes are never validated (L1202-1225)', () => {
+	const properties = [{ name: 'a', displayName: 'A', type: 'string', required: true }];
+	const node = { name: 'Node', type: 't', parameters: { a: '' } };
+	assert.equal(getNodeParametersIssues(properties, { ...node, disabled: true }, null), null);
+	assert.equal(getNodeParametersIssues(properties, node, null, ['Node']), null);
+	assert.deepEqual(getNodeParametersIssues(properties, node, null), { parameters: { a: ['Parameter "A" is required.'] } });
+});
+
+test('getParameterIssues: display gating, resource locator regex and unknown mode (L1389-1470)', () => {
+	const hidden = {
+		name: 'b', displayName: 'B', type: 'string', required: true,
+		displayOptions: { show: { mode: ['b'] } },
+	};
+	const mode = { name: 'mode', displayName: 'Mode', type: 'options', default: 'a', options: [{ name: 'A', value: 'a' }] };
+	const node = { name: 'Node', type: 't', parameters: {} };
+	assert.deepEqual(getParameterIssues(hidden, { mode: 'a' }, '', node, null), {});
+	assert.deepEqual(
+		getParameterIssues({ ...hidden, displayOptions: { show: { mode: ['a'] } } }, { mode: 'a' }, '', node, null),
+		{ parameters: { b: ['Parameter "B" is required.'] } },
+	);
+
+	const locator = {
+		name: 'r', displayName: 'R', type: 'resourceLocator', required: true, default: {},
+		modes: [{ name: 'list', type: 'list', validation: [{ type: 'regex', properties: { regex: '^abc$', errorMessage: 'must be abc' } }] }],
+	};
+	assert.deepEqual(getParameterIssues(locator, { r: { __rl: true, value: 'zzz', mode: 'list' } }, '', node, null), {
+		parameters: { r: ['must be abc'] },
+	});
+	// expressions are not regex-validated
+	assert.deepEqual(getParameterIssues(locator, { r: { __rl: true, value: '={{ $json.id }}', mode: 'list' } }, '', node, null), {});
+	// an unknown mode skips validation entirely
+	assert.deepEqual(getParameterIssues(locator, { r: { __rl: true, value: 'zzz', mode: 'nope' } }, '', node, null), {});
+});
+
+test('getParameterIssues: resourceMapper, filter and validateType branches (L1471-1512)', () => {
+	const node = { name: 'Node', type: 't', parameters: {} };
+	const mapper = { name: 'map', displayName: 'Map', type: 'resourceMapper', default: {} };
+	assert.deepEqual(getParameterIssues(mapper, {
+		map: { mappingMode: 'autoMapInputData', schema: [{ id: 'a', required: true }], value: null },
+	}, '', node, null), {});
+	// required fields are only checked in `mode: 'add'` — every other mode sets skipRequiredCheck (L1476)
+	assert.deepEqual(getParameterIssues(mapper, {
+		map: { mappingMode: 'defineBelow', schema: [{ id: 'a', displayName: 'A', required: true }], value: null },
+	}, '', node, null), {});
+	const addMapper = { ...mapper, typeOptions: { resourceMapper: { mode: 'add' } } };
+	// pinned: the mapper branch initialises `parameters[<name>]` before spreading the field
+	// issues, so an empty array for the parameter itself stays next to the per-field keys
+	assert.deepEqual(getParameterIssues(addMapper, {
+		map: { mappingMode: 'defineBelow', schema: [{ id: 'a', displayName: 'A', required: true }], value: null },
+	}, '', node, null), { parameters: { map: [], 'map.a': ['Field "a" is required'] } });
+	assert.deepEqual(getParameterIssues(
+		{ ...mapper, typeOptions: { resourceMapper: { mode: 'add', fieldWords: { singular: 'column' } } } },
+		{ map: { mappingMode: 'defineBelow', schema: [{ id: 'a', displayName: 'A', required: true }], value: null } },
+		'', node, null,
+	), { parameters: { map: [], 'map.a': ['Column "a" is required'] } });
+	assert.deepEqual(getParameterIssues(mapper, {
+		map: { mappingMode: 'defineBelow', schema: [{ id: 'n', displayName: 'N', type: 'number' }], value: { n: 'abc' } },
+	}, '', node, null), { parameters: { map: [], 'map.n': ["'n' expects a number but we got 'abc'"] } });
+	assert.deepEqual(getParameterIssues(mapper, {
+		map: { mappingMode: 'defineBelow', schema: [{ id: 'n', displayName: 'N', type: 'number' }], value: { n: '={{ 1 }}' } },
+	}, '', node, null), {});
+
+	const filter = { name: 'f', displayName: 'F', type: 'filter', required: true, default: {} };
+	assert.deepEqual(getParameterIssues(filter, {
+		f: { options: { typeValidation: 'strict', version: 2 }, combinator: 'and', conditions: [
+			{ operator: { type: 'number', operation: 'equals' }, leftValue: 'nope', rightValue: 'also nope' }] },
+	}, '', node, null), {});
+
+	assert.deepEqual(getParameterIssues({ name: 'n', displayName: 'N', type: 'number', validateType: 'number' }, { n: 'abc' }, '', node, null), {
+		parameters: { n: ["'n' expects a number but we got 'abc'"] },
+	});
+	// expressions skip validateType
+	assert.deepEqual(getParameterIssues({ name: 'n', displayName: 'N', type: 'number', validateType: 'number' }, { n: '={{ 1 }}' }, '', node, null), {});
+	assert.deepEqual(getParameterIssues({ name: 'a', displayName: 'A', type: 'array', validateType: 'array' }, { a: 'not json' }, '', node, null), {
+		parameters: { a: ["'a' expects a array but we got 'not json'"] },
+	});
+});
+
+test('getParameterIssues: collection and fixedCollection children (L1513-1574)', () => {
+	const node = { name: 'Node', type: 't', parameters: {} };
+	const child = { name: 'a', displayName: 'A', type: 'string', required: true };
+	assert.deepEqual(
+		getParameterIssues({ name: 'col', displayName: 'Col', type: 'collection', default: {}, options: [child] }, { col: { a: '' } }, '', node, null),
+		// a collection child keeps the *current* path (empty here), so no `col.` prefix (L1513)
+		{ parameters: { a: ['Parameter "A" is required.'] } },
+	);
+	// a missing collection value is checked against the un-prefixed path
+	assert.deepEqual(
+		getParameterIssues({ name: 'col', displayName: 'Col', type: 'collection', default: {}, options: [child] }, {}, '', node, null),
+		{ parameters: { a: ['Parameter "A" is required.'] } },
+	);
+
+	const fixed = (typeOptions) => ({
+		name: 'fc', displayName: 'FC', type: 'fixedCollection', default: {}, typeOptions,
+		options: [{ name: 'item', displayName: 'Item', values: [{ name: 'v', displayName: 'V', type: 'string', required: true }] }],
+	});
+	assert.deepEqual(getParameterIssues(fixed({ multipleValues: true, minRequiredFields: 2 }), { fc: { item: [{ v: 'x' }] } }, '', node, null), {
+		parameters: { fc: ['At least 2 fields are required.'] },
+	});
+	assert.deepEqual(getParameterIssues(fixed({ multipleValues: true, minRequiredFields: 1 }), {}, '', node, null), {
+		parameters: { fc: ['At least 1 field is required.'] },
+	});
+	assert.deepEqual(getParameterIssues(fixed({ multipleValues: true, maxAllowedFields: 1 }), { fc: { item: [{ v: 'x' }, { v: 'y' }] } }, '', node, null), {
+		parameters: { fc: ['At most 1 field is allowed.'] },
+	});
+	// pinned: issue keys are the *parameter* names, not their paths — the editor resolves the
+	// path from the node description. Two broken items therefore collapse into one key.
+	assert.deepEqual(getParameterIssues(fixed({ multipleValues: true }), { fc: { item: [{ v: '' }, { v: 'ok' }] } }, '', node, null), {
+		parameters: { v: ['Parameter "V" is required.'] },
+	});
+	assert.deepEqual(getParameterIssues(fixed({ multipleValues: true }), { fc: { item: [{ v: '' }, { v: '' }] } }, '', node, null), {
+		parameters: { v: ['Parameter "V" is required.', 'Parameter "V" is required.'] },
+	});
+	assert.deepEqual(getParameterIssues(fixed(undefined), { fc: { item: { v: '' } } }, '', node, null), {
+		parameters: { v: ['Parameter "V" is required.'] },
+	});
+});
+
+test('mergeIssues merges parameters/credentials/execution/typeUnknown and ignores everything else (L1600-1635)', () => {
+	const destination = { parameters: { a: ['one'] } };
+	mergeIssues(destination, {
+		execution: true,
+		typeUnknown: true,
+		parameters: { a: ['two'], b: ['b1'] },
+		credentials: { cred: ['c1'] },
+		ignoredKey: ['nope'],
+	});
+	assert.deepEqual(destination, {
+		parameters: { a: ['one', 'two'], b: ['b1'] },
+		credentials: { cred: ['c1'] },
+		execution: true,
+		typeUnknown: true,
+	});
+
+	const untouched = { parameters: { a: ['one'] } };
+	mergeIssues(untouched, null);
+	assert.deepEqual(untouched, { parameters: { a: ['one'] } });
+
+	// a defined (even empty) object property still materialises on the destination
+	const falsey = {};
+	mergeIssues(falsey, { execution: false, typeUnknown: false, parameters: {} });
+	assert.deepEqual(falsey, { parameters: {} });
+
+	const flagsOnly = {};
+	mergeIssues(flagsOnly, { execution: false, typeUnknown: false });
+	assert.deepEqual(flagsOnly, {});
+});
+
+test('getContext: flow/node keys, lazily created objects and the three errors (L505-538)', () => {
+	const run = { executionData: { contextData: {} } };
+	assert.deepEqual(getContext(run, 'flow'), {});
+	assert.equal(getContext(run, 'node', { name: 'N' }), getContext(run, 'node', { name: 'N' }));
+	assert.deepEqual(Object.keys(run.executionData.contextData), ['flow', 'node:N']);
+
+	assert.throws(() => getContext({}, 'flow'), { name: 'Error', message: '`executionData` is not initialized' });
+	assert.throws(() => getContext(run, 'node'), {
+		message: 'The request data of context type "node" the node parameter has to be set!',
+	});
+	assert.throws(() => getContext(run, 'nope'), {
+		message: 'Unknown context type. Only `flow` and `node` are supported.',
+	});
+	try {
+		getContext(run, 'nope');
+	} catch (error) {
+		assert.deepEqual(error.extra, { contextType: 'nope' });
+	}
 });

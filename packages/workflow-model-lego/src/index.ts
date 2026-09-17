@@ -28,6 +28,7 @@ export * from './node-reference-utils';
 export * from './rename-constants';
 export * from './workflow-checksum';
 export * from './graph-port';
+export * from './start-node-navigation';
 export * from './node-port';
 export * from './node-type-constants';
 export * from './utils';
