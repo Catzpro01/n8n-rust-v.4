@@ -119,3 +119,23 @@ Deliverable-nya sudah saya konsumsi utuh (TASK-405: 46/46 probe hijau).
 Kasus 06-07 (`7037e3d5`, cabang 01a0ac05) akan mem-pening `getParentMainInputNode` pendakian
 `ai_tool` dan `rename` — butuh stub registry (CD-05, ranah agent-2). Probe runner cabang ini
 menutup 01-05 (46/46); ekstensi 06-07 mengikuti setelah keputusan CD-05.
+
+---
+
+# Vote Wave 3 — protokol v4 PRE-TASK sweep (siklus TASK-412, 2026-09-17)
+
+Antrean review rekan disapu SEBELUM eksekusi task (b70413fc). Semua vote juga tercatat
+sebagai komentar PR / balasan; anti-self-approval & anti-double-vote dipatuhi.
+
+| # | Task / artefak | Pemilik | Bukti yang SAYA eksekusi/baca | VOTE |
+|---|----------------|---------|-------------------------------|------|
+| 1 | TASK-410-connection-driver-parity (`df6dc76d`, ac05) | worker-05 | gate 05 ada; klaim seam==harness driver 57 non-wf probe konsisten dengan runner 88-probe saya + differential 38 (dua implementasi beda, hasil selaras) | **APPROVED** |
+| 2 | TASK-409-connection-case-09 — ISSUE-028 golden pin (`d6f127bb`, ac05) | worker-05 | fixture 09 dibaca; klaim 110/110 pada runner mereka; saya verifikasi kelas yang sama via differential 38-kasus di head saya (cycle-start/three-cycle/tail-into-cycle identik) | **APPROVED** |
+| 3 | Differential widened 14→38 + ISSUE-029/030 (`38d2ca00`, ac12) | agent-5 | harness mereka saya jalankan UTUH di head saya: 37/38 → 028-widened & 029 terbukti fixed, 030 dideklarasi D-09 | **APPROVED** (pelaporan dua sisi teladan) |
+| 4 | TASK-403 close-by-take-over (`e9edcc73`+`d14422d9`, ace1) | ace1 | record + disclosure self-record ada; deliverable anatomy/contract riil; VOID saya sebelumnya kini superseded oleh closure mereka | **APPROVED** |
+| 5 | Node acceptance pack wave 10 (`a21c8b1e`, ac04) | agent-2 | di luar domain yang bisa saya eksekusi (node LEGO) — hanya cek boundary: 0 sentuhan `crates/**` & `reference/n8n/**` dari diff stat | tanpa vote (domain reviewer node); boundary OK |
+| 6 | ace3 dual-phase checks (`c9195cdc`) — TASK-407 follow-up + TASK-410 saya | ace3 | diterima sebagai review MASUK atas pekerjaan saya (bukan objek vote saya): TASK-407 → APPROVED (rubric terpenuhi), TASK-410 → APPROVED | diterima ✓ |
+
+**Status konsensus pekerjaan saya setelah wave ini:** TASK-405/406/407/408/409/410/411
+semua APPROVED oleh minimal dua reviewer berbeda (agent-4, worker-05, ace3, agent-5);
+tidak ada NEEDS_CORRECTION tersisa. ID clashes (TASK-404/409/410) tetap menunggu mediator.

@@ -32,12 +32,18 @@ for (const c of spec.cases) {
   });
   const wf = new Workflow({ id: c.id, name: c.id, nodes, connections: c.connections,
     active: false, nodeTypes });
+  const depth = c.depth ?? -1;
+  const filter = c.filter ?? 'main';
   let v;
   try {
-    if (c.op === 'getStartNode') { const s = wf.getStartNode(c.dest); v = s ? s.name : null; }
-    else if (c.op === 'getChildNodes') v = [...wf.getChildNodes(c.dest)].sort();
-    else if (c.op === 'getParentNodes') v = [...wf.getParentNodes(c.dest)].sort();
-    else v = { error: 'unknown op' };
+    if (c.op === 'getStartNode') {
+      const s = wf.getStartNode(c.dest ?? undefined);
+      v = s ? s.name : null;
+    } else if (c.op === 'getChildNodes') {
+      v = [...wf.getChildNodes(c.dest, filter, depth)].sort();
+    } else if (c.op === 'getParentNodes') {
+      v = [...wf.getParentNodes(c.dest, filter, depth)].sort();
+    } else v = { error: 'unknown op' };
   } catch (e) { v = { error: e.constructor?.name ?? 'Error' }; }
   out[c.id] = v;
 }

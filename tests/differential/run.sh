@@ -10,6 +10,12 @@
 #
 # crates/ is never modified: the port-side test is copied into the offline rig's
 # build directory, which run.sh recreates from scratch on every invocation.
+#
+# CRASH HANDLING. A Rust stack overflow aborts the process and cannot be caught, so a
+# single crashing case would otherwise hide every case behind it. The port streams one
+# answer per line and the driver re-runs it with DIFF_SKIP set to the ids that have
+# already crashed, until the list completes. Each crashed case is reported as its own
+# divergence (`<crash: ...>`) rather than as a harness error.
 set -uo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -56,39 +62,83 @@ export PATH="$RIG/rust/package/rustc/bin:$RIG/cargo/package/cargo/bin:$PATH"
 export CARGO_HOME="${CARGO_HOME:-$RIG/cargo-home}"
 export CARGO_TARGET_DIR="$RIG/target"
 
-port_raw="$(cd "$BUILD" && cargo test --offline -p n8n-workflow \
-  --test zz_differential -- --nocapture 2>&1)"
-port_rc=$?
-if [ $port_rc -ne 0 ] && ! printf '%s' "$port_raw" | grep -q PORT_JSON_BEGIN; then
-  # A crash IS a divergence result, not a harness error: the engine answered every
-  # case. Report it as such rather than exiting silently.
-  echo "  PORT ABORTED before emitting answers (exit $port_rc):"
-  printf '%s\n' "$port_raw" | grep -E "overflow|panic|CASE|fatal" | tail -6 | sed 's/^/      /'
-  echo
-  echo "RESULT: the Rust port could not complete the case list; the engine completed all of it"
-  echo "DIFFERENTIAL: FAIL"
-  exit 1
-fi
+answers="$(mktemp)"; crashes="$(mktemp)"
+trap 'rm -f "$answers" "$crashes"' EXIT
+skip=""
 
-port="$(printf '%s\n' "$port_raw" | sed -n '/PORT_JSON_BEGIN/,/PORT_JSON_END/p' \
-        | sed '1d;$d')"
-[ -n "$port" ] || { echo "  port produced no JSON"; echo "DIFFERENTIAL: FAIL"; exit 1; }
+# Re-run the port, skipping already-crashed cases, until it reaches PORT_DONE.
+for attempt in $(seq 1 40); do
+  raw="$(cd "$BUILD" && DIFF_SKIP="$skip" cargo test --offline -p n8n-workflow \
+         --test zz_differential -- --nocapture 2>&1)"
+  printf '%s\n' "$raw" | grep '^PORT_CASE ' >> "$answers"
+  if printf '%s\n' "$raw" | grep -q '^PORT_DONE'; then
+    break
+  fi
+  # Last announced case is the one that killed the process.
+  culprit="$(printf '%s\n' "$raw" | grep '^PORT_ENTER ' | tail -1 | awk '{print $2}')"
+  reason="$(printf '%s\n' "$raw" | grep -Eio 'has overflowed its stack|panicked at.*' \
+            | head -1 | cut -c1-80)"
+  [ -n "$culprit" ] || { echo "  port produced no output at all:"; \
+      printf '%s\n' "$raw" | tail -15 | sed 's/^/      /'; \
+      echo "DIFFERENTIAL: FAIL"; exit 1; }
+  echo "$culprit|${reason:-aborted}" >> "$crashes"
+  echo "  PORT ABORTED on case '$culprit' (${reason:-aborted}) — retrying past it"
+  skip="${skip:+$skip,}$culprit"
+done
+echo
 
-ENGINE_JSON="$engine" PORT_JSON="$port" python3 - <<'PY'
+# contract-declared deviations (D-09 workflow-LEGO, ISSUE-030): reported, not fatal.
+DECLARED_DEVIATIONS='{"unknown-node-start": "D-09 (workflow-LEGO) contracts/workflow.contract.md - engine TypeError is an incidental unguarded deref; port returns None by decision (ISSUE-030)"}'
+ENGINE_JSON="$engine" ANSWERS="$answers" CRASHES="$crashes" DECLARED_DEVIATIONS="$DECLARED_DEVIATIONS" python3 - <<'PY'
 import json, os, sys
 e = json.loads(os.environ["ENGINE_JSON"])
-p = json.loads(os.environ["PORT_JSON"])
-bad = 0
-for k in sorted(set(e) | set(p)):
-    if k.startswith("_"):
+
+p = {}
+for line in open(os.environ["ANSWERS"]):
+    if not line.startswith("PORT_CASE "):
         continue
-    ev, pv = e.get(k, "<missing>"), p.get(k, "<missing>")
-    if ev != pv:
-        bad += 1
-        print(f"  DIVERGENCE {k}\n      engine: {json.dumps(ev)}\n      port  : {json.dumps(pv)}")
+    _, cid, payload = line.rstrip("\n").split(" ", 2)
+    p[cid] = json.loads(payload)
+
+crashes = {}
+for line in open(os.environ["CRASHES"]):
+    cid, _, reason = line.rstrip("\n").partition("|")
+    crashes[cid] = reason
+
+# Deviations the WORKFLOW CONTRACT explicitly declares (never silent). A divergence on
+# one of these cases is reported separately and is not gate-fatal; anything undeclared
+# still is. Keep in lockstep with contracts/workflow.contract.md (D-09 = ISSUE-030).
+DECLARED_DEVIATIONS = json.loads(os.environ.get("DECLARED_DEVIATIONS") or "{}")
+
+bad, declared_hits = 0, []
+for k in sorted(k for k in set(e) | set(p) | set(crashes) if not k.startswith("_")):
+    ev = e.get(k, "<missing>")
+    if k in crashes:
+        pv = f"<crash: {crashes[k]}>"
+    else:
+        pv = p.get(k, "<missing>")
+    if k in crashes or ev != pv:
+        if k in DECLARED_DEVIATIONS and k not in crashes:
+            declared_hits.append(k)
+            print(f"  DECLARED DEVIATION {k} -> {DECLARED_DEVIATIONS[k]}")
+            print(f"      engine: {json.dumps(ev)}")
+            print(f"      port  : {json.dumps(pv)}")
+        else:
+            bad += 1
+            print(f"  DIVERGENCE {k}")
+            print(f"      engine: {json.dumps(ev)}")
+            print(f"      port  : {pv if k in crashes else json.dumps(pv)}")
+
 total = len([k for k in e if not k.startswith("_")])
 print(f"\nRESULT: {total - bad}/{total} cases identical between the real n8n 2.9.4 "
-      f"engine and the Rust port, {bad} divergence(s)")
-print("DIFFERENTIAL: FAIL" if bad else "DIFFERENTIAL: PASS")
+      f"engine and the Rust port; {bad} undeclared divergence(s), "
+      f"{len(declared_hits)} declared deviation(s) {sorted(declared_hits)}"
+      + (f", {len(crashes)} process abort(s)" if crashes else ""))
+if bad:
+    print("DIFFERENTIAL: FAIL")
+elif declared_hits:
+    print("DIFFERENTIAL: PASS (with declared deviations - contract refs above)")
+else:
+    print("DIFFERENTIAL: PASS")
 sys.exit(1 if bad else 0)
 PY

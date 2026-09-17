@@ -75,7 +75,7 @@ if [ "$differential" = "SKIPPED" ]; then
   echo "DIFFERENTIAL 2k : SKIPPED (not a PASS) — install: mkdir -p /tmp/expr-rig"
   echo "                  && cd /tmp/expr-rig && npm init -y && npm install n8n-workflow@2.9.1 n8n-core@2.9.1"
 else
-  echo "DIFFERENTIAL 2k : $differential (port vs real engine, 14 cases)"
+  echo "DIFFERENTIAL 2k : $differential (port vs real engine, 38 cases; declared deviations reported, not fatal)"
 fi
 echo "LIVE 11/11     : $live"
 if [ $fail -ne 0 ]; then
