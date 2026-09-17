@@ -38,9 +38,14 @@ tools/rust-offline-rig/run.sh test       # cargo test  --workspace
 tools/rust-offline-rig/run.sh fmt        # any other cargo subcommand
 ```
 
-`run.sh` copies `Cargo.toml` + `crates/` into `$RUST_RIG/build/repo` and runs cargo
-there, so `Cargo.lock`, `target/` and any generated file stay out of the tree under
-review.
+`run.sh` auto-detects the Rust workspace, copies `Cargo.toml` + `crates/` into
+`$RUST_RIG/build/repo`, and runs cargo there, so `Cargo.lock`, `target/` and any
+generated file stay out of the tree under review. Discovery order is:
+
+1. `RUST_LEGACY=/path/to/workspace` when set explicitly.
+2. `legacy/rust-port/` when the ZERO-RUST archive is present.
+3. Repository root (`Cargo.toml` + `crates/`) on Phase-3 branches that still carry
+   the active Rust workspace.
 
 ## Status
 
