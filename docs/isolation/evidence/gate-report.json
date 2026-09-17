@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-17T12:42:51.169Z",
+  "generatedAt": "2026-09-17T20:26:05.512Z",
   "lego": "workflow",
   "phase": "phase-2-isolation",
   "reference": {
@@ -12,54 +12,14 @@
       "Ownership is declared here and enforced by tools/workflow-boundary-map.mjs (drift gate)."
     ]
   },
-  "runtime": "/home/user/n8n-rust-v.4/.runtime/node_modules",
-  "behaviorChange": "NONE DETECTED",
-  "digestEvidence": {
-    "corpus": {
-      "workflows": [
-        "tests/reference/01-empty-workflow/workflow",
-        "tests/reference/02-one-node/workflow",
-        "tests/reference/03-linear/workflow",
-        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/ai-news-digest",
-        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/daily-weather-report",
-        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/email-summary",
-        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/extract-from-file",
-        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/google-sheets-processing",
-        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/invoice-pipeline",
-        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/lead-qualification",
-        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/multi-agent-research",
-        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/rag-assistant",
-        "ai-workflow-builder.ee/evaluations/fixtures/reference-workflows/youtube-auto-chapters",
-        "workflow-sdk/test-fixtures/committed-workflows/0",
-        "workflow-sdk/test-fixtures/committed-workflows/1",
-        "workflow-sdk/test-fixtures/committed-workflows/2",
-        "workflow-sdk/test-fixtures/committed-workflows/3",
-        "workflow-sdk/test-fixtures/committed-workflows/4"
-      ],
-      "workflowCount": 18,
-      "sectionCount": 14,
-      "hashAlgorithm": "sha256/32",
-      "rawDigestsLocation": "temporary — recompute with: node tools/model-digest-runner.cjs --source reference|isolated [--mode reference|strict]"
-    },
-    "verdict": {
-      "beforeVsAfter": "NONE DETECTED",
-      "strictPortIndependence": "NO HIDDEN COUPLING"
-    },
-    "beforeVsAfter": {
-      "identical": 252,
-      "differing": 0
-    },
-    "strictVsBefore": {
-      "identical": 218,
-      "differingPortDependent": 34,
-      "differingUndeclared": 0
-    }
-  },
+  "runtime": null,
+  "behaviorChange": "ISOLATION FAILED",
+  "digestEvidence": null,
   "rustImplementation": "NOT STARTED",
   "totals": {
-    "gates": 11,
-    "passed": 11,
-    "failed": 0
+    "gates": 10,
+    "passed": 5,
+    "failed": 5
   },
   "gates": [
     {
@@ -67,77 +27,70 @@
       "title": "boundary drift gate (owned files, crossings, inbound edges)",
       "status": "PASS",
       "detail": "src files scanned         : 104\nLEGO owned files          : 10\ncompile closure           : 103\noutbound crossings        : 21\nundeclared crossings      : 0\ninbound edges             : 9\nmonorepo import sites     : 6318 root + 5 subpath\n\nBoundary check: PASS (no drift vs packages/workflow-lego/manifest/boundary.expectations.json)",
-      "ms": 227
+      "ms": 250
     },
     {
       "id": "G02",
       "title": "kernel snapshot conformance (constants/vocabulary vs reference)",
       "status": "PASS",
       "detail": "Kernel snapshot check: PASS (snapshots match the pinned reference source)",
-      "ms": 31
+      "ms": 37
     },
     {
       "id": "G03",
       "title": "port surface matches the imports of the owned sources",
       "status": "PASS",
       "detail": "Required port surface (from actual imports in owned files):\n\n@lego/ports/checksum-digest  [value]\n   symbols : jsSHA\n   used by : workflow-checksum (jssha)\n@lego/ports/config  [value]\n   symbols : getGlobalState\n   used by : workflow (./global-state)\n@lego/ports/constants  [value]\n   symbols : MANUAL_CHAT_TRIGGER_LANGCHAIN_NODE_TYPE, NODES_WITH_RENAMABLE_CONTENT, NODES_WITH_RENAMABLE_FORM_HTML_CONTENT, NODES_WITH_RENAMEABLE_TOPLEVEL_HTML_CONTENT, STARTING_NODE_TYPES\n   used by : workflow (./constants)\n@lego/ports/errors  [value]\n   symbols : ApplicationError, UserError\n   used by : workflow (./errors), workflow (@n8n/errors)\n@lego/ports/expression-runtime  [value]\n   symbols : Expression\n   used by : workflow (./expression)\n@lego/ports/node-model  [value]\n   symbols : * as NodeHelpers\n   u",
-      "ms": 204
+      "ms": 268
     },
     {
       "id": "G04",
       "title": "reference tree byte-identical to the pinned hashes",
       "status": "PASS",
       "detail": "Reference integrity check: PASS (15050 files, root f8da35180669d798…)",
-      "ms": 369
+      "ms": 430
     },
     {
       "id": "G05",
       "title": "isolation extraction (pure import rewrites only)",
       "status": "PASS",
       "detail": "isolated unit written to packages/workflow-lego/.extract\n  owned files copied : 10\n  port rewrites      : 25 across 10 files\n    @lego/ports/checksum-digest : 1\n    @lego/ports/config : 1\n    @lego/ports/constants : 1\n    @lego/ports/errors : 2\n    @lego/ports/expression-runtime : 1\n    @lego/ports/node-model : 1\n    @lego/ports/node-reference : 1\n    @lego/ports/node-rename : 1\n    @lego/ports/observable-object : 1\n    @lego/ports/utils : 2\n    @lego/ports/vocabulary : 13",
-      "ms": 236
+      "ms": 281
     },
     {
       "id": "G06",
       "title": "TypeScript build PASS (isolated unit, ports only)",
-      "status": "PASS",
-      "detail": "tsc -p .extract/tsconfig.json → 0 errors",
-      "ms": 1826
+      "status": "FAIL",
+      "detail": "typescript missing — run: npm install (packages/workflow-lego)",
+      "ms": 0
     },
     {
       "id": "G07",
       "title": "TypeScript build PASS (versioned boundary/ports/facade)",
-      "status": "PASS",
-      "detail": "tsc --noEmit → 0 errors",
-      "ms": 1002
+      "status": "FAIL",
+      "detail": "/home/user/n8n-rust-v.4/packages/workflow-lego/node_modules/.bin/tsc --noEmit -p /home/user/n8n-rust-v.4/packages/workflow-lego/tsconfig.json exited null",
+      "ms": 1
     },
     {
       "id": "G08",
       "title": "unit tests PASS (boundary, extraction, equivalence, strict isolation, surface)",
-      "status": "PASS",
-      "detail": "# cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 11708.056862",
-      "ms": 11737
+      "status": "FAIL",
+      "detail": "/usr/local/bin/node --test test/*.test.mjs exited 1\ngo/test/05-surface-parity.test.mjs:40:1'\n  failureType: 'testCodeFailure'\n  error: |-\n    Cannot find module '/home/user/n8n-rust-v.4/packages/workflow-lego/.extract/dist/model-api.js'\n    Require stack:\n    - /home/user/n8n-rust-v.4/packages/workflow-lego/test/05-surface-parity.test.mjs\n  code: 'MODULE_NOT_FOUND'\n  stack: |-\n    Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\n    defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\n    resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\n    Function._load (node:internal/modules/cjs/loader:1216:25)\n    wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    Module.require (node:internal/modules/cjs/loader:1527:12)\n    require (node:internal",
+      "ms": 2066
     },
     {
       "id": "G09",
       "title": "BEFORE vs AFTER digest: BEHAVIOR CHANGE NONE",
-      "status": "PASS",
-      "detail": "252 section comparisons across 18 workflows — 0 differences · strict: 218 identical, 34 in declared port sections",
-      "ms": 2190
+      "status": "FAIL",
+      "detail": "/usr/local/bin/node /home/user/n8n-rust-v.4/tools/model-digest-runner.cjs --source reference --mode reference --out /tmp/lego-gate-Jh5kMS/before.json exited 1\n\nTypeError [ERR_INVALID_ARG_VALUE]: The argument 'filename' must be a file URL object, file URL string, or absolute path string. Received 'n8n-workflow/package.json'\n    at createRequire (node:internal/modules/cjs/loader:1988:13)\n    at loadReferenceModelApi (file:///home/user/n8n-rust-v.4/tools/reference-model-api.mjs:21:14)\n    at /home/user/n8n-rust-v.4/tools/model-digest-runner.cjs:33:9 {\n  code: 'ERR_INVALID_ARG_VALUE'\n}",
+      "ms": 41
     },
     {
       "id": "G10",
       "title": "strict port mode: no hidden coupling to the reference runtime",
-      "status": "PASS",
-      "detail": "# cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 1470.989151",
-      "ms": 1501
-    },
-    {
-      "id": "G11",
-      "title": "live verification: workflow load / save / 1-node / linear / webhook / execution record",
-      "status": "PASS",
-      "detail": "7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS",
-      "ms": 4196
+      "status": "FAIL",
+      "detail": "/usr/local/bin/node --test test/04-strict-isolation.test.mjs exited 1\n4-strict-isolation.test.mjs:53:1\n    ModuleJob.run (node:internal/modules/esm/module_job:343:25)\n    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)\n  ...\n# Subtest: declared port seams really are seams (answers change when the port changes)\nnot ok 3 - declared port seams really are seams (answers change when the port changes)\n  ---\n  duration_ms: 0.111894\n  type: 'test'\n  location: '/home/user/n8n-rust-v.4/packages/workflow-lego/test/04-strict-isolation.test.mjs:79:1'\n  failureType: 'hookFailed'\n  error: 'isolated unit not built — run `npm run build`'\n  code: 'ERR_ASSERTION'\n  name: 'AssertionError'\n  expected: true\n  actual: false\n  operator: '=='\n  stack: |-\n    TestContext.<anonymous> ",
+      "ms": 95
     }
   ]
 }
