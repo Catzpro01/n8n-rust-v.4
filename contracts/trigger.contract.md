@@ -103,3 +103,11 @@ Golden: activate → `{active:true, triggerCount:1}`, `GET /rest/active-workflow
 - Multi-main: triggers/pollers only on leader; webhooks on all mains (see webhook contract).
 - Disabled nodes are never registered.
 - `emit` must be safe after `remove` (guarded: emit after close is dropped).
+
+## Phase-3 instance leadership coordination (TASK-422)
+
+`ActiveWorkflowCoordinator` consumes Workflow Persistence, activation, ActiveWorkflows teardown,
+error-reporting, and retry ports. It reproduces leader/follower permission rules, always-populated
+startup/leadership webhooks, leader-only in-memory triggers and pollers, bounded activation batches,
+a concurrent-sweep lock, active-version error context, authorization no-retry behavior, leader
+takeover activation, and stepdown/shutdown teardown.

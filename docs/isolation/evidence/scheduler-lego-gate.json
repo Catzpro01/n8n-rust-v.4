@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-17T18:58:33.255Z",
+  "generatedAt": "2026-09-17T19:01:03.374Z",
   "task": "TASK-408-phase3-scheduler-lego",
   "reference": "n8n 2.9.4",
   "totals": {
@@ -29,7 +29,7 @@
       "id": "S04",
       "name": "trigger consumer suite remains green",
       "status": "PASS",
-      "detail": "11 pass / 0 fail"
+      "detail": "19 pass / 0 fail"
     },
     {
       "id": "S05",

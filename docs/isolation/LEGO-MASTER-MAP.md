@@ -107,6 +107,7 @@ asserts that confinement.
 | `TASK-419-phase3-scheduler-timer-adapter` | scheduler runtime | `contracts/scheduler.contract.md` ✅ | `docs/isolation/scheduler.md` ✅ | `packages/scheduler-lego/test/*.test.mjs` 16/16 ✅ (7 native timer cases) | `tools/scheduler-lego-gate.mjs` 6/6 ✅ · Trigger regression 11/11 ✅ | **VERIFIED** |
 | `TASK-420-phase3-webhook-http-server` | webhook HTTP runtime | `contracts/webhook.contract.md` ✅ | `docs/isolation/webhook.md` ✅ | `packages/webhook-lego/test/*.test.mjs` 16/16 ✅ (6 real-socket transport cases) | `tools/webhook-lego-gate.mjs` 5/5 ✅ | **VERIFIED** |
 | `TASK-421-phase3-waiting-webhooks` | webhook waiting resume | `contracts/webhook.contract.md` ✅ | `docs/isolation/webhook.md` ✅ | `packages/webhook-lego/test/*.test.mjs` 24/24 ✅ (8 waiting-resume cases) | `tools/webhook-lego-gate.mjs` 5/5 ✅ | **VERIFIED** |
+| `TASK-422-phase3-active-workflow-coordinator` | trigger leadership runtime | `contracts/trigger.contract.md` ✅ | `docs/isolation/trigger.md` ✅ | `packages/trigger-lego/test/*.test.mjs` 19/19 ✅ (8 leadership cases) | `tools/trigger-lego-gate.mjs` 5/5 ✅ · Scheduler consumer 19/19 ✅ | **SUBMITTED_FOR_REVIEW** |
 
 | Phase 3 gate | Result |
 | :--- | :--- |
@@ -122,4 +123,4 @@ holds 35 cases in 5 groups; `checksum` (8) + `toJSON` (6) + `rename` (6) are cov
 **Next Phase 3 work:** caveat C1 (11/11 live smoke on the VPS + PostgreSQL), the remaining frozen
 Workflow surface (`getStartNode`, `getHighestNode`, `getNodeConnectionIndexes`,
 `getParentMainInputNode`, `getParentNodesByDepth`), and the remaining runtime around the activation
-LEGO (instance leadership and distributed activation coordination) — see `docs/isolation/execution.md` §7.
+LEGO (distributed pub/sub transport and waiting-form rendering) — see `docs/isolation/execution.md` §7.

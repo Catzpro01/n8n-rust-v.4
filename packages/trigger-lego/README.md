@@ -26,3 +26,10 @@ node tools/trigger-lego-gate.mjs
 ```
 
 The scheduler adapter intentionally does not parse or execute cron itself; that belongs to the Scheduler LEGO.
+
+## Instance leadership (TASK-422)
+
+`ActiveWorkflowCoordinator` closes distributed activation coordination behind explicit ports. It
+batches active workflow startup, prevents concurrent sweeps, populates webhook rows during init and
+leadership changes on every main, restricts in-memory triggers/pollers to the leader, reports
+activation errors using active-version data, controls retries, and tears down on stepdown/shutdown.

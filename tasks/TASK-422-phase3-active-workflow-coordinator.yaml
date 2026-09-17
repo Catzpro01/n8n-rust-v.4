@@ -1,0 +1,25 @@
+id: TASK-422-phase3-active-workflow-coordinator
+agent: arena-worker
+lego: trigger
+module: active-workflow-coordinator
+phase: 3
+title: "Trigger LEGO: instance leadership and distributed activation coordination"
+status: SUBMITTED_FOR_REVIEW
+objective: "Coordinate persisted active workflows with leader-owned triggers/pollers and durable webhook registration."
+acceptance:
+  - "reference leader/follower permission matrix"
+  - "bounded batches and concurrent sweep suppression"
+  - "takeover activation and stepdown/shutdown teardown"
+  - "active-version failure context and authorization no-retry"
+  - "trigger suite 19/19; trigger gate 5/5; scheduler consumer gate 6/6"
+allowed_paths:
+  - packages/trigger-lego/**
+  - tools/trigger-lego-gate.mjs
+  - tools/scheduler-lego-gate.mjs
+  - contracts/trigger.contract.md
+  - docs/isolation/LEGO-MASTER-MAP.md
+  - docs/isolation/evidence/trigger-lego-gate.json
+  - docs/isolation/evidence/scheduler-lego-gate.json
+  - tasks/TASK-422-phase3-active-workflow-coordinator.yaml
+  - results/TASK-422-phase3-active-workflow-coordinator.md
+forbidden_paths: [reference/n8n/**, crates/**, apps/**]

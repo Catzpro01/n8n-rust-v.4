@@ -1,4 +1,5 @@
 export { ActiveWorkflows } from './active-workflows.mjs';
+export { ActiveWorkflowCoordinator } from './active-workflow-coordinator.mjs';
 export { toCronExpression } from '../../scheduler-lego/src/cron.mjs';
 export { ScheduledTaskManager } from './scheduled-task-manager.mjs';
 export { TriggersAndPollers } from './triggers-and-pollers.mjs';
