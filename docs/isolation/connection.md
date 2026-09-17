@@ -263,7 +263,7 @@ Phase 5 shipped `packages/reconstructed-engine/src/n8n-reconstructed-facade.ts` 
 production entry point ("12 LEGO unified"), but connection was only *decorative* there: the file
 carried its own `class InternalConnectionEngine` with a hand-written `mapConnectionsByDestination`,
 and the value it computed was never used — `executeWorkflow()` returned results in **declaration
-order**, and the integration suite tested a `TestFacade` clone rather than the facade itself.
+order**. (The integration suite also ran a `TestFacade` clone instead of the facade; that was fixed in `PHASE5-INTEGRATION-SUITE` — `test-integration.mjs` now drives the production facade and its scenario 03 pins the connection order.)
 
 ### 13.1 What changed
 

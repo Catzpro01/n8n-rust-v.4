@@ -1,0 +1,30 @@
+# PHASE5-INTEGRATION-SUITE — the integration suite must test the shipped facade
+# Trigger: `packages/reconstructed-engine/test-integration.mjs` declared
+#   `N8nReconstructedFacade` but never used it: it defined an inline `TestFacade` copy and ran the 12
+#   scenarios against that copy, so "12/12 integration PASS" said nothing about the artifact that
+#   ships. The same class of problem as the connection duplicate removed in
+#   PHASE5-CONNECTION-INTEGRATION.
+phase: 5
+lego: integration (engine facade)
+agent: agent-3 (Arena session arena/01a0b104-n8n-rust-v-4)
+
+allowed_paths:
+  - packages/reconstructed-engine/test-integration.mjs
+  - packages/reconstructed-engine/test-run.mjs
+  - docs/isolation/connection.md
+  - results/PHASE5-CONNECTION-INTEGRATION.md
+  - tasks/PHASE5-INTEGRATION-SUITE.yaml
+  - results/PHASE5-INTEGRATION-SUITE.md
+
+forbidden_paths:
+  - reference/n8n/**
+  - crates/**
+  - apps/**
+
+oracle:
+  - none needed (the suite asserts the facade's own contract)
+
+tests:
+  - integration_suite   # node packages/reconstructed-engine/test-integration.mjs → 12/12 with the real facade
+  - connection_check    # npm run connection:check → C01..C08 unchanged (1,258 calls)
+  - isolation_gate      # npm run verify → 12/12 PASS
