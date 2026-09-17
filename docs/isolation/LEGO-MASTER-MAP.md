@@ -52,15 +52,34 @@ map and the automated audit can never silently diverge.
 | Execution Data (support) | `run-execution-data/**`, `run-execution-data-factory.ts`, `execution-context.ts` | — |
 | Shared types | `interfaces.ts`, `schemas.ts`, `types.d.ts` | 3452 + … |
 
-## 4. Gate summary
+## 4. Phase 6 LEGOs — QUEUE · EVENTS · REALTIME (Agent 3, branch `arena/01a0b16c-n8n-rust-v-4`)
+
+Three subsystems that the anatomy had documented (11-queue, 14-events, 16-realtime) but that
+had **no contract, no blueprint, no package and no engine on any branch**:
+
+| LEGO | Owner | Contract | Isolation doc | Package | Tests | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| Queue | Agent 3 | `contracts/queue.contract.md` ✅ | `docs/isolation/queue.md` ✅ | `packages/queue-lego` | `node --test` 17/17 ✅ | **VERIFIED** (POOL-009) |
+| Events | Agent 3 | `contracts/events.contract.md` ✅ | `docs/isolation/events.md` ✅ | `packages/events-lego` | `node --test` 14/14 ✅ | **VERIFIED** (POOL-010) |
+| Realtime | Agent 3 | `contracts/realtime.contract.md` ✅ | `docs/isolation/realtime.md` ✅ | `packages/realtime-lego` | `node --test` 14/14 ✅ | **VERIFIED** (POOL-011) |
+
+Engines: `packages/reconstructed-engine/src/{queue,events,realtime}-engine.ts` (+ shared
+`emitter.ts`). Invariants: `Q1..Q14`, `E1..E12`, `R1..R13` — each one machine-checked against
+the pinned reference (`b6dc2787…`, n8n 2.9.4) by the package tests and by
+`tools/phase6-isolation-gate.mjs` (G01..G07).
+
+## 5. Gate summary
 
 | Gate | Result | Evidence |
 | :--- | :--- | :--- |
-| Contracts present | PASS (12/12) | `contract_conformance.mjs` + extended contracts |
+| Contracts present | PASS (15/15) | `contract_conformance.mjs` + extended contracts + queue/events/realtime |
 | Golden fixtures conform to contracts | PASS (21/21) | `contract_conformance.mjs` |
 | Cross-LEGO edges all documented | PASS | `boundary_audit.py` |
-| No premature Rust | PASS | both harnesses (crates/ and apps/ clean) |
-| Isolation docs complete | PASS (12/12) | all LEGOs have complete isolation blueprints |
-| 11/11 live smoke re-run | PASS (11/11) | verified live on VPS host `157.10.160.95` |
+| No premature Rust | PASS | `crates/` + `apps/` clean; Phase-3 Rust archived read-only under `docs/archive/phase3-rust/` |
+| Isolation docs complete | PASS (15/15) | all LEGOs have complete isolation blueprints |
+| Live smoke re-run | PASS (11/11) | `npm run verify` G11 live verification on this checkout |
+| Phase 6 LEGOs (queue/events/realtime) | PASS (7/7) | `tools/phase6-isolation-gate.mjs` → `docs/isolation/evidence/phase6-gate.json` |
 
-**Overall Phase 2 gate: `VERIFIED`** — Ready for Phase 3 (Reference Test & Rust Contract Implementation).
+**Overall gate: `VERIFIED`** — the 18 anatomy subsystems now have 15 contracted LEGOs; queue,
+events and realtime moved `DISCOVERED → VERIFIED` in phase 6 without touching the Vue bundle
+and without introducing Rust (rule §1).

@@ -11,6 +11,10 @@
     "isolation:check": "node tools/workflow-boundary-map.mjs --check && node tools/workflow-kernel-conformance.mjs --check && node tools/workflow-port-surface.mjs --check && node tools/workflow-reference-manifest.mjs --check",
     "isolation:extract": "node tools/workflow-isolation-extract.mjs",
     "workflow-lego:build": "npm --prefix packages/workflow-lego run build",
-    "workflow-lego:test": "bash scripts/run-lego-tests.sh"
+    "workflow-lego:test": "bash scripts/run-lego-tests.sh",
+    "phase6:verify": "node tools/phase6-isolation-gate.mjs",
+    "queue:test": "npm --prefix packages/queue-lego test",
+    "events:test": "npm --prefix packages/events-lego test",
+    "realtime:test": "npm --prefix packages/realtime-lego test"
   }
 }

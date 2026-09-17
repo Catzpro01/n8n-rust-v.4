@@ -15,8 +15,9 @@ is a Rust replacement attempted.
 | REFERENCE SOURCE (`reference/n8n/`, n8n 2.9.4) | ✅ |
 | REFERENCE RUNTIME (baseline 11/11 smoke test) | ✅ |
 | **WORKFLOW ISOLATION (LEGO 01)** | **✅ VERIFIED — see [`docs/isolation/workflow.md`](docs/isolation/workflow.md)** |
-| NODE MODEL (LEGO 02) · CONNECTION (03) · VALIDATION (04) | ⏸ next |
-| RUST IMPLEMENTATION | ⏸ not started |
+| NODE MODEL (LEGO 02) · CONNECTION (03) · VALIDATION (04) | ✅ verified (agent 2/3/4 lanes) |
+| **PHASE 6: QUEUE · EVENTS · REALTIME** | **✅ VERIFIED — [`contracts/queue.contract.md`](contracts/queue.contract.md), [`events`](contracts/events.contract.md), [`realtime`](contracts/realtime.contract.md)** |
+| RUST IMPLEMENTATION | ⏸ not started — forbidden in phases 2-6 (`PROJECT_RULES.md` §1) |
 
 “Isolated” means the TypeScript component now has an enforced boundary and a
 contract. It does **not** mean it was replaced by Rust.

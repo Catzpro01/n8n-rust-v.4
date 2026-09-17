@@ -1,0 +1,33 @@
+{
+	"lego": "realtime",
+	"owner": "agent-3",
+	"phase": 6,
+	"task": "POOL-011",
+	"reference": {
+		"upstreamCommit": "b6dc2787c45677a29a9612cd27eb911302961a83",
+		"version": "2.9.4",
+		"owns": [
+			"reference/n8n/packages/cli/src/push/**",
+			"reference/n8n/packages/@n8n/api-types/src/push/**"
+		],
+		"doesNotOwn": [
+			"reference/n8n/packages/cli/src/scaling/**",
+			"reference/n8n/packages/cli/src/events/**",
+			"reference/n8n/packages/frontend/**"
+		]
+	},
+	"implemented": {
+		"engine": "packages/reconstructed-engine/src/realtime-engine.ts",
+		"package": "packages/realtime-lego",
+		"tests": [
+			"packages/realtime-lego/test/01-boundary.test.mjs",
+			"packages/realtime-lego/test/02-push.test.mjs"
+		]
+	},
+	"ports": {
+		"consumed": ["@lego/queue", "@lego/events", "@lego/credentials"],
+		"provided": ["P-PUSH-SERVICE", "P-PUSH-BACKENDS", "P-PUSH-ORIGIN"]
+	},
+	"zeroRust": true,
+	"frontendUntouched": true
+}

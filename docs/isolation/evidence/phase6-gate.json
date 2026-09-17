@@ -1,0 +1,73 @@
+{
+  "generatedAt": "2026-09-17T22:22:32.682Z",
+  "phase": 6,
+  "legos": [
+    "queue",
+    "events",
+    "realtime"
+  ],
+  "reference": {
+    "version": "2.9.4",
+    "upstreamCommit": "b6dc2787c45677a29a9612cd27eb911302961a83"
+  },
+  "result": "PASS",
+  "gateSummary": "7/7",
+  "gates": [
+    {
+      "id": "G01",
+      "title": "contracts, isolation blueprints and manifests present",
+      "requirement": "each LEGO owns a contract, an isolation blueprint, a package and a manifest",
+      "status": "PASS",
+      "detail": "18 artefacts + 3 manifests",
+      "ms": 1
+    },
+    {
+      "id": "G02",
+      "title": "QUEUE — frozen constants byte-exact in reference + reconstruction",
+      "requirement": "vectors: constants, command classification, guard/error strings",
+      "status": "PASS",
+      "detail": "channels, command sets, stalled-job policy and error strings verified",
+      "ms": 1
+    },
+    {
+      "id": "G03",
+      "title": "EVENTS — catalogues match the reference event maps key-for-key",
+      "requirement": "event catalogues must be byte-identical to n8n 2.9.4 maps",
+      "status": "PASS",
+      "detail": "93 relay + 1 queue-metrics + 14 ai names verified (93 relay entries in the engine)",
+      "ms": 2
+    },
+    {
+      "id": "G04",
+      "title": "REALTIME — SSE/WS/push wire contract byte-exact",
+      "requirement": "wire-level strings and guards must match the reference push subsystem",
+      "status": "PASS",
+      "detail": "SSE handshake/frames, WS liveness, config default and relay guard verified",
+      "ms": 0
+    },
+    {
+      "id": "G05",
+      "title": "package tests (queue / events / realtime)",
+      "requirement": "every LEGO package must pass its node --test suite",
+      "status": "PASS",
+      "detail": "queue 17/17, events 14/14, realtime 14/14",
+      "ms": 2159
+    },
+    {
+      "id": "G06",
+      "title": "ZERO RUST — crates/ and apps/ hold no Rust artifacts",
+      "requirement": "PROJECT_RULES.md §1 — reconstruction is JS/TS only",
+      "status": "PASS",
+      "detail": "crates/ + apps/ clean; Phase-3 Rust archived read-only (24 files under docs/archive/phase3-rust)",
+      "ms": 1
+    },
+    {
+      "id": "G07",
+      "title": "reference integrity — owned subsystem trees unchanged at 2.9.4",
+      "requirement": "the mirror must stay pinned; mirroring the wrong source invalidates the LEGO",
+      "status": "PASS",
+      "detail": "2.9.4 · scaling 21/b16360db83d3 · events 12/813313cda09a · eventbus 17/69e349590eb9 · push 11/f5511e10044d",
+      "ms": 4
+    }
+  ]
+}

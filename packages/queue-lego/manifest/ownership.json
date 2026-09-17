@@ -1,0 +1,39 @@
+{
+	"lego": "queue",
+	"owner": "agent-3",
+	"phase": 6,
+	"task": "POOL-009",
+	"reference": {
+		"upstreamCommit": "b6dc2787c45677a29a9612cd27eb911302961a83",
+		"version": "2.9.4",
+		"owns": [
+			"reference/n8n/packages/cli/src/scaling/constants.ts",
+			"reference/n8n/packages/cli/src/scaling/scaling.types.ts",
+			"reference/n8n/packages/cli/src/scaling/scaling.service.ts",
+			"reference/n8n/packages/cli/src/scaling/job-processor.ts",
+			"reference/n8n/packages/cli/src/scaling/worker-server.ts",
+			"reference/n8n/packages/cli/src/scaling/worker-status.service.ee.ts",
+			"reference/n8n/packages/cli/src/scaling/redis/**",
+			"reference/n8n/packages/cli/src/scaling/pubsub/**"
+		],
+		"doesNotOwn": [
+			"reference/n8n/packages/cli/src/executions/**",
+			"reference/n8n/packages/cli/src/push/**",
+			"reference/n8n/packages/cli/src/events/**"
+		]
+	},
+	"implemented": {
+		"engine": "packages/reconstructed-engine/src/queue-engine.ts",
+		"package": "packages/queue-lego",
+		"tests": [
+			"packages/queue-lego/test/01-boundary.test.mjs",
+			"packages/queue-lego/test/02-scaling.test.mjs"
+		]
+	},
+	"ports": {
+		"consumed": ["@lego/events", "@lego/persistence", "@lego/realtime", "@lego/execution"],
+		"provided": ["P-QUEUE-SCALING", "P-QUEUE-PUBSUB", "P-QUEUE-STATUS"]
+	},
+	"zeroRust": true,
+	"frontendUntouched": true
+}
