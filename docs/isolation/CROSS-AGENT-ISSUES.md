@@ -1476,6 +1476,24 @@ all 16 scenarios, no fix required. Falsifiability control: unsorted-key patch in
 ISSUE-023 asked for is complete. **Status: OPEN (ownership decision = orchestrator) — behavioral
 deltas at zero on all measured surfaces; both instruments reproducible.**
 
+**ADDENDUM 4 (TASK-UTILS-02, 2026-09-18) — the duplicated surface grows by the cancellation chain.**
+
+Closing the last three deferred `utils.ts` symbols (`sleep`, `sleepWithAbort`, `updateDisplayOptions`)
+required the class `sleepWithAbort` rejects with (`utils.ts` L244/L252 →
+`errors/execution-cancelled.error.ts`), so `packages/node-lego/src/errors.mjs` now also carries
+`ExecutionBaseError` → `ExecutionCancelledError` → `ManualExecutionCancelledError` — the same three
+classes `packages/execution-engine/src/errors.mjs` already defines. The node-side copies are
+boundary-local under DELTA-02 and are **measured**, not asserted: differential `N28` reproduces the
+published build's own-key order key-for-key (`level, tags, extra, description, cause,
+errorResponse, timestamp, context, lineNumber, functionality, name, reason`), the message/level/
+`reason`/`extra` values, the `ExecutionBaseError` cause rules and `toJSON`, all agreeing (1822/0).
+
+So the consolidation decision now covers **six** classes in two packages: `ApplicationError`,
+`NodeOperationError`, `OperationalError` (pre-existing) plus `ExecutionBaseError`,
+`ExecutionCancelledError`, `ManualExecutionCancelledError` (this slice). Options A/B above are
+unchanged; Option A's swap stays mechanical because the boundary relies only on `name`/`level`/
+`reason`/`extra` being observable, never on class identity across packages.
+
 ---
 
 ---
