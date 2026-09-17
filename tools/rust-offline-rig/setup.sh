@@ -86,15 +86,24 @@ echo "cargo  $("$RIG/cargo/package/cargo/bin/cargo" --version)"
 for spec in "${CRATES[@]}"; do
   repo="${spec%:*}"; tag="${spec#*:}"
   name="$(basename "$repo")"
-  if [ -d "$RIG/vendorsrc/$name" ]; then echo "have   $name"; continue; fi
+  # Tag guard (TASK-RIG-VENDOR-01): a cached clone is only reused when it sits
+  # on the wanted tag — otherwise a stale checkout would be vendored silently
+  # under a version it does not contain. Undeterminable counts as stale.
+  if [ -d "$RIG/vendorsrc/$name" ]; then
+    actual="$(git -C "$RIG/vendorsrc/$name" tag --points-at HEAD 2>/dev/null | head -n 1)"
+    if [ "$actual" = "$tag" ]; then echo "have   $name @ $tag"; continue; fi
+    echo "stale  $name (has '${actual:-unknown}', want '$tag') — re-cloning"
+    rm -rf "$RIG/vendorsrc/$name"
+  fi
   echo "clone  $repo @ $tag"
   git clone -q --depth 1 --branch "$tag" "https://github.com/$repo" "$RIG/vendorsrc/$name"
 done
 
 # --- 3. vendor dir ------------------------------------------------------------
-if [ ! -d "$RIG/vendor" ] || [ -z "$(ls -A "$RIG/vendor" 2>/dev/null)" ]; then
-  python3 "$HERE/vendor_prep.py" "$RIG/vendorsrc" "$RIG/vendor"
-fi
+# Always invoked: vendor_prep.py skips the rebuild itself when the existing
+# vendor dir already matches PLAN (see the .rig-plan fingerprint), so PLAN
+# edits take effect on old rigs without manual wipes (TASK-RIG-VENDOR-01).
+python3 "$HERE/vendor_prep.py" "$RIG/vendorsrc" "$RIG/vendor"
 
 echo
 echo "ready. next: tools/rust-offline-rig/run.sh check   (or: run.sh test)"

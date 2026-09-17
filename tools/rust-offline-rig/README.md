@@ -45,6 +45,7 @@ review.
 | Date | Command | Result |
 | :--- | :--- | :--- |
 | 2026-09-17 | `run.sh check` on `crates/**` @ `014471e6` (Phase-3 workspace) | **PASS** — `Finished dev profile … in 6.26s`, 12 vendored deps compiled, 5 workspace crates checked |
+| 2026-09-18 | `run.sh check` + `run.sh test` post ISSUE-025 repair (RIG-REPAIR-01 + RIG-VENDOR-01 staleness hardening) | **PASS** — 19 vendored deps, 7/7 crates checked; `cargo test --workspace` **37 passed / 0 failed** (2+2+2+1+4+19 unit, 2 conformance, 5 fixtures); re-runs report `vendor up to date` |
 
 ## Caveats
 

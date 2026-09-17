@@ -1,0 +1,74 @@
+id: TASK-RIG-VENDOR-01
+agent: arena-worker
+lego: integration
+module: test-infrastructure
+phase: 3
+title: "Repair rust-offline-rig vendoring so cargo check/test reproduce on this branch (ISSUE-025)"
+status: SUBMITTED_FOR_REVIEW
+# submitted 2026-09-18 by arena-worker: results/TASK-RIG-VENDOR-01.md present,
+# rig re-run green (check 7/7, test 37/0), verify:all exit 0. Converged with
+# peer TASK-RIG-REPAIR-01 (landed first): peer core kept + independently
+# verified, this task contributes the staleness hardening. Review verdict
+# itself is NOT recorded here (no self-approval).
+
+# Context: TASK-AUDIT-ISSUES-01 filed ISSUE-025 — the rig as-shipped cannot
+# resolve the workspace (`indexmap =2.2.6` + `regex 1.10` unvendored), so no
+# cargo claim reproduces on this branch. Agent 5 repaired this on main (+8
+# crates); that repair never landed here. This task ports the repair: extend
+# vendor_prep.py PLAN, re-run setup + check + test, record exact tallies.
+# Test-infra ONLY: the rig operates on a /tmp copy of the tree; crates/**,
+# reference/**, and every other repo path stay byte-identical. Any probe code
+# (e.g. ISSUE-017 re-verification) lives in /tmp, never in the repo.
+
+allowed_paths:
+  - tasks/TASK-RIG-VENDOR-01.yaml
+  - tools/rust-offline-rig/vendor_prep.py
+  - tools/rust-offline-rig/README.md
+  - tools/rust-offline-rig/setup.sh
+  - tools/rust-offline-rig/run.sh
+  - results/TASK-RIG-VENDOR-01.md
+  - docs/isolation/CROSS-AGENT-ISSUES.md  # shared log: ONLY if fixed — single ISSUE-025 resolution addendum (append-only)
+
+forbidden_paths:
+  - reference/n8n/**
+  - crates/**
+  - apps/**
+  - packages/frontend/**
+  - packages/**
+  - tools/**  # except tools/rust-offline-rig/** above
+  - tests/**
+  - contracts/**
+  - docs/**  # except the single ledger addendum above
+
+requires: []
+
+source_modification: test-infra-only  # rig scripts + docs; the Rust code under test is never touched
+
+operations:
+  - name: git_status
+  - name: run_shell
+    args: { cmd: "tools/rust-offline-rig/run.sh check", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "tools/rust-offline-rig/run.sh test", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "npm run verify:all", expect_exit: 0 }
+  - name: run_shell
+    args: { cmd: "git diff --stat -- crates/ reference/", expect_exit: 0 }
+  - name: write_file
+    args: { path: results/TASK-RIG-VENDOR-01.md }
+
+acceptance:
+  - `run.sh check` compiles the full workspace offline (exit 0)
+  - `run.sh test` runs the full suite offline (exit 0) with the exact per-crate
+    tally recorded in the results file (no "about N tests" rounding)
+  - vendored set stays minimal + pinned; README documents any behavior change
+  - ISSUE-017 execution probe re-attempted against the /tmp tree copy (probe
+    code in /tmp only); outcome recorded either way, never committed
+  - `git diff -- crates/ reference/` empty at commit time; gate-evidence churn
+    reverted; results file has a non-empty operations table (T1 clean)
+  - ledger touched ONLY for the ISSUE-025 resolution addendum, and only if the
+    rig genuinely runs end-to-end (no premature close)
+
+merge_condition:
+  - regression_gate_pass
+  - no_contract_violation

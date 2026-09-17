@@ -1630,3 +1630,21 @@ Resolution on this branch:
 Nothing else was deleted: the peer package lanes, their evidence files and their commits remain on
 the branch. If the orchestrator prefers the peer implementation, the swap is local to
 `packages/node-lego/src/{type-validation,filter-parameter,parameter-issues}.mjs` + `index.mjs`.
+
+---
+
+### ADDENDUM 2026-09-18 (arena-worker, `TASK-RIG-VENDOR-01`) — independent convergence onto RIG-REPAIR-01 + staleness hardening
+
+This task derived the same repair concurrently and independently (same 7 crates:
+indexmap 2.2.6 / equivalent 1.0.2 / hashbrown 0.14.5 / regex 1.10.6 + automata 0.4.7 +
+syntax 0.8.4 subdirs, aho-corasick — mine pinned 1.1.5, landed 1.1.3; both satisfy
+^1.0.0), reached 37/37 + the ISSUE-017 probe failure on its own vendor, then found
+`TASK-RIG-REPAIR-01` already landed and **yielded the implementation to it** (first-landed,
+conservative rewrite that keeps dev-deps and so avoids the feature-neutering risk class
+entirely — independently re-verified here: `check` exit 0, `test` 37/37 same per-crate
+split). Net-new contribution merged on top: **staleness hardening** — a `.rig-plan`
+fingerprint (PLAN + rewrite-rule rev) so re-vendoring is automatic on edited plans
+instead of silently reusing stale vendors, and a clone-tag guard that re-clones cached
+checkouts sitting on the wrong tag (it caught a real one on first run: cached
+aho-corasick 1.1.5 vs wanted 1.1.3). ISSUE-025 stays REPAIRED per the addendum above;
+evidence: `results/TASK-RIG-VENDOR-01.md`.

@@ -47,6 +47,11 @@ PLAN = [
 
 DEP_VER = {name: ver for _, name, ver in PLAN}
 
+# Bump when the rewrite rules change: it is part of the .rig-plan fingerprint
+# (TASK-RIG-VENDOR-01), so rule edits re-vendor instead of silently reusing
+# output produced by older rules.
+REWRITE_REV = 1
+
 EXCLUDE = [
     ".git", "tests", "benches", "fuzz", "examples", "test_suite", ".github",
     "node_modules", "target", "rust-toolchain.toml", "rust-toolchain",
@@ -149,6 +154,17 @@ def main(argv):
     if len(argv) != 3:
         raise SystemExit(__doc__.strip().splitlines()[-1])
     src, dst = argv[1], argv[2]
+    # Staleness gate (single source of truth = PLAN + REWRITE_REV): an existing
+    # vendor dir is only reused when built from exactly this plan, so PLAN edits
+    # take effect on old rigs (e.g. pre-repair 12-crate vendors) without manual
+    # wipes (TASK-RIG-VENDOR-01).
+    fingerprint = f"rev={REWRITE_REV}\n" + "\n".join(
+        f"{subdir}@{name}@{version}" for subdir, name, version in PLAN
+    )
+    marker = os.path.join(dst, ".rig-plan")
+    if os.path.isfile(marker) and open(marker, encoding="utf-8").read() == fingerprint:
+        print(f"vendor up to date ({len(PLAN)} crates)")
+        return
     if os.path.isdir(dst):
         shutil.rmtree(dst)
     os.makedirs(dst)
@@ -161,6 +177,8 @@ def main(argv):
         print(f"{name} {version}")
         for line in rewrite_manifest(os.path.join(crate_dst, "Cargo.toml"), name, version):
             print(line)
+    with open(marker, "w", encoding="utf-8") as fh:
+        fh.write(fingerprint)
     print(f"vendored {len(PLAN)} crates into {dst}")
 
 
