@@ -1,17 +1,41 @@
 /**
  * Reconstructed n8n Workflow Execution Engine (Node.js/ESM)
  * Mengadaptasi logika eksekusi DAG, state data flow, dan node handler 1:1 n8n v2.9.4.
+ *
+ * Locale enforcement happens at this backend boundary.  The engine keeps
+ * machine-facing execution fields canonical and adds localized human-facing
+ * status text to the response.
  */
 
+import {
+  UniversalLocaleEnforcer,
+  normalizeSupportedLocale,
+} from './localization.mjs';
+
 export class WorkflowExecutionEngine {
-  constructor(workflowDefinition) {
+  constructor(workflowDefinition = {}, options = {}) {
+    const definition = workflowDefinition ?? {};
+    const requestedLocale =
+      options.activeLocale ??
+      options.locale ??
+      definition.activeLocale ??
+      process.env.N8N_LOCALE ??
+      'id';
+
+    this.localeEnforcer = new UniversalLocaleEnforcer({
+      locale: normalizeSupportedLocale(requestedLocale),
+      translations: options.translations,
+    });
+    this.activeLocale = this.localeEnforcer.getLocale();
     this.nodes = new Map();
-    this.connections = workflowDefinition.connections || {};
+    this.connections = definition.connections || {};
     this.nodeTypes = new Map();
-    
-    // Inisialisasi node registry
-    for (const node of workflowDefinition.nodes || []) {
-      this.nodes.set(node.name, node);
+
+    // Inisialisasi node registry.  Node objects are retained as execution
+    // definitions; the locale layer only copies response data and never edits
+    // these machine values.
+    for (const node of definition.nodes || []) {
+      if (node && typeof node.name === 'string') this.nodes.set(node.name, node);
     }
   }
 
@@ -19,7 +43,30 @@ export class WorkflowExecutionEngine {
     this.nodeTypes.set(typeName, handler);
   }
 
-  async runWorkflow(startNodeName = null, initialData = [{}]) {
+  setLocale(locale) {
+    this.activeLocale = this.localeEnforcer.setLocale(locale);
+    return this.activeLocale;
+  }
+
+  getLocale() {
+    return this.activeLocale;
+  }
+
+  /** API response interceptor for workflow, chat and execution payloads. */
+  interceptApiResponse(payload, locale = this.activeLocale) {
+    return this.localeEnforcer.enforceExecutionResponse(payload, locale);
+  }
+
+  /** Register built-in/community human-facing catalog entries at load time. */
+  registerNodeTranslations(locale, translations) {
+    this.localeEnforcer.registerTranslations(locale, translations);
+  }
+
+  async runWorkflow(startNodeName = null, initialData = [{}], options = {}) {
+    if (options?.locale !== undefined || options?.activeLocale !== undefined) {
+      this.setLocale(options.activeLocale ?? options.locale);
+    }
+    const locale = this.activeLocale;
     const executionData = new Map(); // nodeName -> Array of items [{ json: { ... } }]
     const visited = new Set();
     const executionLog = [];
@@ -28,7 +75,10 @@ export class WorkflowExecutionEngine {
     let currentNodeName = startNodeName;
     if (!currentNodeName) {
       for (const [name, node] of this.nodes.entries()) {
-        if (node.type.includes('trigger') || node.type.includes('Manual') || node.type.includes('Start')) {
+        if (
+          typeof node.type === 'string' &&
+          (node.type.includes('trigger') || node.type.includes('Manual') || node.type.includes('Start'))
+        ) {
           currentNodeName = name;
           break;
         }
@@ -41,11 +91,14 @@ export class WorkflowExecutionEngine {
     }
 
     if (!currentNodeName) {
-      throw new Error("No nodes found in workflow definition");
+      throw new Error('No nodes found in workflow definition');
     }
 
     // Queue antrean eksekusi berbasis DAG BFS
-    const queue = [{ nodeName: currentNodeName, inputData: initialData.map(d => ({ json: d })) }];
+    const queue = [{
+      nodeName: currentNodeName,
+      inputData: (Array.isArray(initialData) ? initialData : [initialData]).map((data) => ({ json: data })),
+    }];
 
     while (queue.length > 0) {
       const { nodeName, inputData } = queue.shift();
@@ -74,7 +127,7 @@ export class WorkflowExecutionEngine {
         inputCount: inputData.length,
         outputCount: outputData.length,
         durationMs,
-        status: "success"
+        status: 'success',
       });
 
       // Cari koneksi output ke node berikutnya
@@ -89,11 +142,21 @@ export class WorkflowExecutionEngine {
       }
     }
 
-    return {
-      status: "COMPLETED",
+    const response = {
+      status: 'COMPLETED',
       finished: true,
       executionLog,
-      data: Object.fromEntries(executionData.entries())
+      data: Object.fromEntries(executionData.entries()),
     };
+
+    // The interceptor is deliberately last: all workflow data has already
+    // been produced, and the sanitizer can preserve machine fields while
+    // translating only human-facing response fields.
+    return this.localeEnforcer.enforceExecutionResponse(response, locale);
   }
+}
+
+/** Standalone interceptor for API handlers that do not own an engine instance. */
+export function interceptApiResponse(payload, locale = 'id') {
+  return new UniversalLocaleEnforcer({ locale }).enforceExecutionResponse(payload);
 }

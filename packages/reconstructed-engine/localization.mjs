@@ -1,44 +1,23 @@
-// Backend Native Localization Hub
-//
-// This module is deliberately independent from the frontend.  It is the single
-// locale authority used by backend response adapters and by the reconstructed
-// execution engine.  A translation is only applied to a known human-facing
-// message/key; arbitrary workflow data is never guessed or rewritten here.
-
-export type SupportedLocale = 'id' | 'jv' | 'ar' | 'zh' | 'ru' | 'en';
-export type LocaleInput = SupportedLocale | string | null | undefined;
-export type TranslationParameters = Readonly<Record<string, string | number | boolean | null | undefined>>;
-
-export interface LocaleMetadata {
-  code: SupportedLocale;
-  name: string;
-  nativeName: string;
-  direction: 'ltr' | 'rtl';
-}
-
-export interface LocaleRequestLike {
-  activeLocale?: unknown;
-  locale?: unknown;
-  language?: unknown;
-  headers?: Record<string, unknown>;
-}
-
-export const SUPPORTED_LOCALE_CODES = ['id', 'jv', 'ar', 'zh', 'ru', 'en'] as const;
-
-export const SUPPORTED_LOCALES: Record<SupportedLocale, LocaleMetadata> = {
-  id: { code: 'id', name: 'Indonesian', nativeName: 'Bahasa Indonesia', direction: 'ltr' },
-  jv: { code: 'jv', name: 'Javanese', nativeName: 'Basa Jawa', direction: 'ltr' },
-  ar: { code: 'ar', name: 'Arabic', nativeName: 'العربية', direction: 'rtl' },
-  zh: { code: 'zh', name: 'Chinese', nativeName: '中文 (简体)', direction: 'ltr' },
-  ru: { code: 'ru', name: 'Russian', nativeName: 'Русский', direction: 'ltr' },
-  en: { code: 'en', name: 'English', nativeName: 'English (US)', direction: 'ltr' },
-};
-
 /**
- * These keys are a hard boundary.  Their values are identifiers, schemas or
- * data-flow instructions and must survive localization byte-for-byte.
+ * Native backend localization primitives for the reconstructed engine.
+ *
+ * This is the runtime companion to workflow-lego/src/backend-localization-service.ts.
+ * It intentionally localizes only known human-facing fields and never mutates the
+ * caller's workflow or execution data.
  */
-export const PROTECTED_MACHINE_KEYS = [
+
+export const SUPPORTED_LOCALE_CODES = Object.freeze(['id', 'jv', 'ar', 'zh', 'ru', 'en']);
+
+export const SUPPORTED_LOCALES = Object.freeze({
+  id: Object.freeze({ code: 'id', name: 'Indonesian', nativeName: 'Bahasa Indonesia', direction: 'ltr' }),
+  jv: Object.freeze({ code: 'jv', name: 'Javanese', nativeName: 'Basa Jawa', direction: 'ltr' }),
+  ar: Object.freeze({ code: 'ar', name: 'Arabic', nativeName: 'العربية', direction: 'rtl' }),
+  zh: Object.freeze({ code: 'zh', name: 'Chinese', nativeName: '中文 (简体)', direction: 'ltr' }),
+  ru: Object.freeze({ code: 'ru', name: 'Russian', nativeName: 'Русский', direction: 'ltr' }),
+  en: Object.freeze({ code: 'en', name: 'English', nativeName: 'English (US)', direction: 'ltr' }),
+});
+
+export const PROTECTED_MACHINE_KEYS = Object.freeze([
   'name',
   'type',
   'value',
@@ -46,24 +25,81 @@ export const PROTECTED_MACHINE_KEYS = [
   'outputs',
   'routing',
   'requestRules',
-] as const;
+]);
 
-const PROTECTED_MACHINE_KEY_SET = new Set<string>(
-  PROTECTED_MACHINE_KEYS.map((key) => key.toLowerCase()),
-);
+const PROTECTED_MACHINE_KEY_SET = new Set(PROTECTED_MACHINE_KEYS.map((key) => key.toLowerCase()));
+export const HUMAN_FACING_KEYS = Object.freeze([
+  'label',
+  'displayName',
+  'description',
+  'placeholder',
+  'hint',
+  'title',
+  'message',
+  'text',
+  'summary',
+  'statusText',
+  'errorMessage',
+  'successMessage',
+  'failureMessage',
+  'helpText',
+  'tooltip',
+  'buttonLabel',
+  'labelText',
+  'caption',
+  'ariaLabel',
+  'header',
+  'subheader',
+  'emptyState',
+  'optionLabel',
+  'inputLabel',
+  'send',
+  'newSession',
+  'session',
+  'input',
+  'inputPlaceholder',
+  'zoomIn',
+  'zoomOut',
+  'fitView',
+  'cancel',
+  'confirm',
+  'close',
+  'back',
+  'next',
+  'loading',
+  'retry',
+  'parameter',
+  'parameters',
+  'option',
+  'options',
+  'subtitle',
+  'workspace',
+]);
+const HUMAN_FACING_KEY_SET = new Set(HUMAN_FACING_KEYS.map((key) => key.toLowerCase()));
+const NON_LOCALIZABLE_KEYS = new Set([
+  'node',
+  'id',
+  'uuid',
+  'key',
+  'index',
+  'inputcount',
+  'outputcount',
+  'durationms',
+  'data',
+  'json',
+  'parameters',
+  'staticdata',
+  'pindata',
+  'connections',
+  'credentials',
+  'binary',
+  'expression',
+  'status',
+]);
+const TRANSLATION_KEY_FIELDS = new Set(['i18nkey', 'translationkey', 'localekey']);
 
-export function isProtectedMachineKey(key: string): boolean {
-  return PROTECTED_MACHINE_KEY_SET.has(key.toLowerCase());
-}
-
-/**
- * The catalog is intentionally key based.  It covers the backend messages that
- * can be emitted by the reconstructed engine, settings bridge, node surfaces,
- * chat hub and canvas.  Unknown text is returned unchanged instead of being
- * sent through an unsafe best-effort translator.
- */
-export const NATIVE_DICTIONARIES: Record<SupportedLocale, Readonly<Record<string, string>>> = {
-  id: {
+export const NATIVE_DICTIONARIES = Object.freeze({
+  id: Object.freeze({
     'execute.workflow': 'Jalankan alur kerja',
     'test.step': 'Uji langkah',
     'save.workflow': 'Simpan alur kerja',
@@ -104,8 +140,8 @@ export const NATIVE_DICTIONARIES: Record<SupportedLocale, Readonly<Record<string
     'common.next': 'Berikutnya',
     'common.loading': 'Memuat',
     'common.retry': 'Coba lagi',
-  },
-  jv: {
+  }),
+  jv: Object.freeze({
     'execute.workflow': 'Lakokake alur kerja',
     'test.step': 'Jajal jangkah',
     'save.workflow': 'Simpen alur kerja',
@@ -146,8 +182,8 @@ export const NATIVE_DICTIONARIES: Record<SupportedLocale, Readonly<Record<string
     'common.next': 'Sabanjure',
     'common.loading': 'Muat',
     'common.retry': 'Coba maneh',
-  },
-  ar: {
+  }),
+  ar: Object.freeze({
     'execute.workflow': 'تشغيل سير العمل',
     'test.step': 'اختبار الخطوة',
     'save.workflow': 'حفظ سير العمل',
@@ -188,8 +224,8 @@ export const NATIVE_DICTIONARIES: Record<SupportedLocale, Readonly<Record<string
     'common.next': 'التالي',
     'common.loading': 'جار التحميل',
     'common.retry': 'إعادة المحاولة',
-  },
-  zh: {
+  }),
+  zh: Object.freeze({
     'execute.workflow': '执行工作流',
     'test.step': '测试步骤',
     'save.workflow': '保存工作流',
@@ -230,8 +266,8 @@ export const NATIVE_DICTIONARIES: Record<SupportedLocale, Readonly<Record<string
     'common.next': '下一步',
     'common.loading': '加载中',
     'common.retry': '重试',
-  },
-  ru: {
+  }),
+  ru: Object.freeze({
     'execute.workflow': 'Запустить процесс',
     'test.step': 'Проверить шаг',
     'save.workflow': 'Сохранить процесс',
@@ -272,8 +308,8 @@ export const NATIVE_DICTIONARIES: Record<SupportedLocale, Readonly<Record<string
     'common.next': 'Далее',
     'common.loading': 'Загрузка',
     'common.retry': 'Повторить',
-  },
-  en: {
+  }),
+  en: Object.freeze({
     'execute.workflow': 'Execute workflow',
     'test.step': 'Test step',
     'save.workflow': 'Save workflow',
@@ -314,10 +350,10 @@ export const NATIVE_DICTIONARIES: Record<SupportedLocale, Readonly<Record<string
     'common.next': 'Next',
     'common.loading': 'Loading',
     'common.retry': 'Retry',
-  },
-};
+  }),
+});
 
-const LOCALE_ALIASES: Readonly<Record<string, SupportedLocale>> = {
+const LOCALE_ALIASES = {
   id: 'id', 'id-id': 'id',
   jv: 'jv', 'jv-id': 'jv',
   ar: 'ar', 'ar-sa': 'ar', 'ar-eg': 'ar',
@@ -326,7 +362,7 @@ const LOCALE_ALIASES: Readonly<Record<string, SupportedLocale>> = {
   en: 'en', 'en-us': 'en', 'en-gb': 'en',
 };
 
-const STATUS_ALIASES: Readonly<Record<string, string>> = {
+const STATUS_ALIASES = {
   success: 'execution.success',
   succeeded: 'execution.success',
   completed: 'execution.completed',
@@ -341,32 +377,40 @@ const STATUS_ALIASES: Readonly<Record<string, string>> = {
   error: 'execution.error',
 };
 
-function interpolate(template: string, parameters?: TranslationParameters): string {
-  if (!parameters) return template;
-  return template.replace(/\{([A-Za-z0-9_.-]+)\}/g, (placeholder, key: string) => {
-    const value = parameters[key];
-    return value === undefined || value === null ? placeholder : String(value);
-  });
+function normalizeLocale(locale, fallback = 'id') {
+  if (typeof locale !== 'string') return fallback;
+  const normalized = locale.trim().toLowerCase().replaceAll('_', '-');
+  return LOCALE_ALIASES[normalized] ?? LOCALE_ALIASES[normalized.split('-')[0]] ?? fallback;
 }
 
-function trimPreservingWhitespace(value: string): { leading: string; body: string; trailing: string } {
-  const match = /^(\s*)([\s\S]*?)(\s*)$/.exec(value);
-  return {
-    leading: match?.[1] ?? '',
-    body: match?.[2] ?? value,
-    trailing: match?.[3] ?? '',
-  };
+export function isProtectedMachineKey(key) {
+  return typeof key === 'string' && PROTECTED_MACHINE_KEY_SET.has(key.toLowerCase());
 }
 
-function dictionaryHasKey(key: string): boolean {
-  return SUPPORTED_LOCALE_CODES.some((locale) => Object.prototype.hasOwnProperty.call(NATIVE_DICTIONARIES[locale], key));
+const protectedKey = isProtectedMachineKey;
+
+function copyWithoutLocalization(value, seen = new WeakMap()) {
+  if (value === null || typeof value !== 'object') return value;
+  if (seen.has(value)) return seen.get(value);
+  if (value instanceof Date) return new Date(value.getTime());
+  if (value instanceof RegExp) return new RegExp(value.source, value.flags);
+
+  if (Array.isArray(value)) {
+    const copy = [];
+    seen.set(value, copy);
+    for (const item of value) copy.push(copyWithoutLocalization(item, seen));
+    return copy;
+  }
+
+  const copy = {};
+  seen.set(value, copy);
+  for (const [key, child] of Object.entries(value)) copy[key] = copyWithoutLocalization(child, seen);
+  return copy;
 }
 
-function findKeyForText(text: string): string | undefined {
+function findKeyForText(text) {
   const normalized = text.toLocaleLowerCase();
-  const statusKey = STATUS_ALIASES[normalized];
-  if (statusKey) return statusKey;
-
+  if (STATUS_ALIASES[normalized]) return STATUS_ALIASES[normalized];
   for (const locale of SUPPORTED_LOCALE_CODES) {
     for (const [key, value] of Object.entries(NATIVE_DICTIONARIES[locale])) {
       if (value.toLocaleLowerCase() === normalized) return key;
@@ -375,153 +419,141 @@ function findKeyForText(text: string): string | undefined {
   return undefined;
 }
 
-function validLocale(value: LocaleInput): value is string {
-  return typeof value === 'string' && Boolean(LOCALE_ALIASES[value.trim().toLocaleLowerCase()]);
+function translateText(text, locale = 'id', overrides = {}) {
+  if (typeof text !== 'string' || text.length === 0) return text;
+  const match = /^(\s*)([\s\S]*?)(\s*)$/.exec(text);
+  const leading = match?.[1] ?? '';
+  const body = match?.[2] ?? text;
+  const trailing = match?.[3] ?? '';
+  const key = Object.hasOwn(NATIVE_DICTIONARIES[normalizeLocale(locale)], body)
+    ? body
+    : findKeyForText(body);
+  if (key && overrides[key] !== undefined) return `${leading}${overrides[key]}${trailing}`;
+  if (!key) return text;
+  return `${leading}${NATIVE_DICTIONARIES[normalizeLocale(locale)][key] ?? NATIVE_DICTIONARIES.en[key] ?? body}${trailing}`;
 }
 
-export class NativeLocalizationService {
-  private static activeLocale: SupportedLocale = 'id';
-
-  public static normalizeLocale(locale: LocaleInput, fallback: SupportedLocale = this.activeLocale): SupportedLocale {
-    if (typeof locale !== 'string') return fallback;
-    const normalized = LOCALE_ALIASES[locale.trim().toLocaleLowerCase()];
-    if (normalized) return normalized;
-    const base = locale.trim().toLocaleLowerCase().split(/[-_]/)[0];
-    return LOCALE_ALIASES[base] ?? fallback;
+export class UniversalLocaleEnforcer {
+  constructor(options = {}) {
+    this.locale = normalizeLocale(options.locale, 'id');
+    this.translations = {};
+    for (const locale of SUPPORTED_LOCALE_CODES) {
+      this.translations[locale] = { ...(options.translations?.[locale] ?? {}) };
+    }
   }
 
-  public static isSupportedLocale(locale: LocaleInput): locale is SupportedLocale {
-    return validLocale(locale);
+  getLocale() {
+    return this.locale;
   }
 
-  public static setLocale(locale: LocaleInput): SupportedLocale {
-    if (this.isSupportedLocale(locale)) this.activeLocale = this.normalizeLocale(locale);
-    return this.activeLocale;
+  setLocale(locale) {
+    this.locale = normalizeLocale(locale, this.locale);
+    return this.locale;
   }
 
-  public static getLocale(): SupportedLocale {
-    return this.activeLocale;
-  }
-
-  public static getActiveLocale(): SupportedLocale {
-    return this.getLocale();
-  }
-
-  public static getSupportedLocales(): LocaleMetadata[] {
+  getSupportedLocales() {
     return SUPPORTED_LOCALE_CODES.map((code) => ({ ...SUPPORTED_LOCALES[code] }));
   }
 
-  public static resolveLocaleFromRequest(
-    request: LocaleRequestLike | null | undefined,
-    fallback: SupportedLocale = this.activeLocale,
-  ): SupportedLocale {
-    const headers = request?.headers ?? {};
-    const caseInsensitiveHeader = (name: string): unknown => {
-      const entry = Object.entries(headers).find(([key]) => key.toLowerCase() === name);
-      return entry?.[1];
-    };
-    const headerLocale =
-      caseInsensitiveHeader('x-locale') ??
-      caseInsensitiveHeader('x-n8n-locale') ??
-      caseInsensitiveHeader('accept-language');
-    const candidates = [request?.activeLocale, request?.locale, request?.language, headerLocale];
-    for (const candidate of candidates) {
-      if (typeof candidate !== 'string') continue;
-      const firstLanguage = candidate.split(',')[0]?.trim();
-      if (firstLanguage && this.isSupportedLocale(firstLanguage)) return this.normalizeLocale(firstLanguage, fallback);
+  registerTranslations(locale, translations) {
+    const target = normalizeLocale(locale, this.locale);
+    this.translations[target] = { ...this.translations[target], ...translations };
+  }
+
+  translate(key, locale = this.locale) {
+    const target = normalizeLocale(locale, this.locale);
+    return this.translations[target][key] ?? NATIVE_DICTIONARIES[target][key] ?? NATIVE_DICTIONARIES.en[key] ?? key;
+  }
+
+  translateText(text, locale = this.locale) {
+    const target = normalizeLocale(locale, this.locale);
+    if (Object.hasOwn(this.translations[target], text)) return this.translations[target][text];
+    const customKey = Object.entries(this.translations[target]).find(([, value]) => value === text)?.[0];
+    if (customKey) return this.translate(customKey, target);
+    const key = findKeyForText(String(text));
+    if (key && this.translations[target][key] !== undefined) return this.translations[target][key];
+    return translateText(text, target, this.translations[target]);
+  }
+
+  enforce(payload, locale = this.locale) {
+    const target = normalizeLocale(locale, this.locale);
+    return this.#walk(payload, undefined, target, new WeakMap());
+  }
+
+  enforceExecutionLog(log, locale = this.locale) {
+    const target = normalizeLocale(locale, this.locale);
+    if (Array.isArray(log)) return log.map((entry) => this.enforceExecutionLog(entry, target));
+    const localized = this.enforce(log, target);
+    if (localized && typeof localized === 'object' && !Array.isArray(localized) && typeof localized.status === 'string') {
+      localized.statusText = this.translateStatus(localized.status, target);
     }
-    return fallback;
+    return localized;
   }
 
-  public static translate(
-    key: string,
-    locale?: LocaleInput,
-    parameters?: TranslationParameters,
-  ): string {
-    const target = this.normalizeLocale(locale);
-    const template = NATIVE_DICTIONARIES[target][key] ?? NATIVE_DICTIONARIES.en[key] ?? key;
-    return interpolate(template, parameters);
-  }
-
-  public static translateText(text: string, locale?: LocaleInput): string {
-    if (!text) return text;
-    const { leading, body, trailing } = trimPreservingWhitespace(text);
-    const target = this.normalizeLocale(locale);
-    const key = dictionaryHasKey(body) ? body : findKeyForText(body);
-    if (!key) return text;
-    return `${leading}${this.translate(key, target)}${trailing}`;
-  }
-
-  public static hasTranslation(key: string): boolean {
-    return dictionaryHasKey(key);
-  }
-
-  public static getDictionary(locale?: LocaleInput): Readonly<Record<string, string>> {
-    return NATIVE_DICTIONARIES[this.normalizeLocale(locale)];
-  }
-
-  public static withLocale<T>(locale: LocaleInput, operation: () => T): T {
-    const previous = this.activeLocale;
-    this.setLocale(locale);
-    try {
-      return operation();
-    } finally {
-      this.activeLocale = previous;
+  enforceExecutionResponse(payload, locale = this.locale) {
+    const target = normalizeLocale(locale, this.locale);
+    const localized = this.enforce(payload, target);
+    if (!localized || typeof localized !== 'object' || Array.isArray(localized)) return localized;
+    if (Array.isArray(localized.executionLog)) localized.executionLog = this.enforceExecutionLog(localized.executionLog, target);
+    if (typeof localized.status === 'string' && localized.statusText === undefined) {
+      localized.statusText = this.translateStatus(localized.status, target);
     }
+    return localized;
+  }
+
+  enforceChatSession(session, locale = this.locale) {
+    return this.enforce(session, locale);
+  }
+
+  enforceNodeDescription(node, locale = this.locale) {
+    return this.enforce(node, locale);
+  }
+
+  translateStatus(status, locale = this.locale) {
+    const key = STATUS_ALIASES[String(status).toLocaleLowerCase()];
+    return key ? this.translate(key, locale) : this.translateText(status, locale);
+  }
+
+  #walk(value, parentKey, locale, seen) {
+    if (typeof value === 'string') {
+      return HUMAN_FACING_KEY_SET.has(String(parentKey).toLowerCase()) ? this.translateText(value, locale) : value;
+    }
+    if (value === null || typeof value !== 'object') return value;
+    if (protectedKey(parentKey) || NON_LOCALIZABLE_KEYS.has(String(parentKey).toLowerCase())) {
+      return copyWithoutLocalization(value);
+    }
+    if (seen.has(value)) return seen.get(value);
+
+    if (Array.isArray(value)) {
+      const copy = [];
+      seen.set(value, copy);
+      for (const item of value) copy.push(this.#walk(item, parentKey, locale, seen));
+      return copy;
+    }
+
+    const copy = {};
+    seen.set(value, copy);
+    for (const [key, child] of Object.entries(value)) {
+      if (protectedKey(key) || NON_LOCALIZABLE_KEYS.has(key.toLowerCase())) {
+        copy[key] = copyWithoutLocalization(child);
+      } else if (TRANSLATION_KEY_FIELDS.has(key.toLowerCase()) && typeof child === 'string') {
+        copy[key] = this.translate(child, locale);
+      } else {
+        copy[key] = this.#walk(child, key, locale, seen);
+      }
+    }
+    return copy;
   }
 }
 
-/** Instance form used by request-scoped backend adapters. */
-export class BackendLocalizationService {
-  private activeLocale: SupportedLocale;
-  private readonly registeredTranslations: Partial<Record<SupportedLocale, Readonly<Record<string, string>>>> = {};
-
-  public constructor(locale?: LocaleInput) {
-    this.activeLocale = NativeLocalizationService.normalizeLocale(locale, NativeLocalizationService.getLocale());
-  }
-
-  public setLocale(locale: LocaleInput): SupportedLocale {
-    this.activeLocale = NativeLocalizationService.normalizeLocale(locale, this.activeLocale);
-    return this.activeLocale;
-  }
-
-  public getLocale(): SupportedLocale {
-    return this.activeLocale;
-  }
-
-  public getSupportedLocales(): LocaleMetadata[] {
-    return NativeLocalizationService.getSupportedLocales();
-  }
-
-  /** Register a catalog emitted by a built-in or community node loader. */
-  public registerTranslations(
-    locale: LocaleInput,
-    translations: Readonly<Record<string, string>>,
-  ): void {
-    const target = NativeLocalizationService.normalizeLocale(locale, this.activeLocale);
-    this.registeredTranslations[target] = {
-      ...(this.registeredTranslations[target] ?? {}),
-      ...translations,
-    };
-  }
-
-  public translate(key: string, parameters?: TranslationParameters): string {
-    const registered = this.registeredTranslations[this.activeLocale]?.[key];
-    const template = registered ?? NativeLocalizationService.translate(key, this.activeLocale);
-    if (!parameters) return template;
-    return template.replace(/\{([A-Za-z0-9_.-]+)\}/g, (placeholder, parameter: string) => {
-      const value = parameters[parameter];
-      return value === undefined || value === null ? placeholder : String(value);
-    });
-  }
-
-  public translateText(text: string): string {
-    const registered = this.registeredTranslations[this.activeLocale] ?? {};
-    if (Object.prototype.hasOwnProperty.call(registered, text)) return registered[text];
-    const registeredKey = Object.entries(registered).find(([, value]) => value === text)?.[0];
-    if (registeredKey) return this.translate(registeredKey);
-    return NativeLocalizationService.translateText(text, this.activeLocale);
-  }
+export function createUniversalLocaleEnforcer(options = {}) {
+  return new UniversalLocaleEnforcer(options);
 }
 
-export const DEFAULT_LOCALE: SupportedLocale = 'id';
+export function interceptLocalizedResponse(payload, locale = 'id') {
+  return new UniversalLocaleEnforcer({ locale }).enforceExecutionResponse(payload);
+}
+
+export function normalizeSupportedLocale(locale, fallback = 'id') {
+  return normalizeLocale(locale, fallback);
+}

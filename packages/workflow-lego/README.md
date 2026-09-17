@@ -52,8 +52,25 @@ npm run verify      # full 11-gate verification (from the repository root: npm r
 4. `tools/model-digest.mjs` runs the same 14-section fingerprint against the reference runtime and the isolated unit — 252 comparisons over 18 real workflows, currently 0 differences.
 5. `src/adapters/strict` reruns the model with no engine at all: port-independent behavior must stay identical, which proves there is no hidden coupling.
 
+## Backend localization boundary
+
+`src/backend-localization-service.ts` is the native locale hub for `id`, `jv`,
+`ar`, `zh`, `ru`, and `en`. `src/universal-locale-enforcer.ts` is a pure API
+boundary adapter: it returns a copied payload, translates only known
+human-facing fields, and never rewrites the protected machine keys
+`name`, `type`, `value`, `inputs`, `outputs`, `routing`, or `requestRules`.
+
+The reconstructed runtime uses the equivalent ESM adapter in
+`packages/reconstructed-engine/localization.mjs`; `WorkflowExecutionEngine`
+localizes execution logs at the final response boundary while keeping canonical
+machine statuses and adding localized `statusText`. Built-in or community node
+loaders can register their human-facing catalogs with
+`registerTranslations(...)` before a response is emitted.
+
 ## Not done (deliberately)
 
 - No Rust code.
 - No changes to `reference/n8n/**` (hash-verified).
 - Node Model / Connection / Validation are still the reference implementations, consumed through ports.
+- Full node catalog extraction remains the responsibility of the Node Model LEGO;
+  this LEGO provides the backend locale contract and enforcement seam.

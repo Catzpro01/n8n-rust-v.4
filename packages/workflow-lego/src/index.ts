@@ -40,6 +40,33 @@ export type {
 export { NODE_CONNECTION_TYPES, STARTING_NODE_TYPES, DEFAULT_TIMEZONE } from './kernel/snapshots';
 
 /** Provenance of the isolation layer itself. */
+export {
+	BackendLocalizationService,
+	DEFAULT_LOCALE,
+	NATIVE_DICTIONARIES,
+	NativeLocalizationService,
+	PROTECTED_MACHINE_KEYS,
+	SUPPORTED_LOCALE_CODES,
+	isProtectedMachineKey,
+	SUPPORTED_LOCALES,
+	type LocaleInput,
+	type LocaleMetadata,
+	type LocaleRequestLike,
+	type SupportedLocale,
+	type TranslationParameters,
+} from './backend-localization-service';
+export {
+	HUMAN_FACING_KEYS,
+	UniversalLocaleEnforcer,
+	createUniversalLocaleEnforcer,
+	enforceLocale,
+	interceptLocalizedResponse,
+	type ChatSessionPayload,
+	type ExecutionLogEntry,
+	type LocaleEnforcerOptions,
+} from './universal-locale-enforcer';
+export { SettingsLocalizationAdapter, type LanguageCode, type LocalizationSettingsState } from './settings-localization-adapter';
+
 export const LEGO_PROVENANCE = {
 	lego: 'workflow',
 	phase: 'phase-2-isolation',
