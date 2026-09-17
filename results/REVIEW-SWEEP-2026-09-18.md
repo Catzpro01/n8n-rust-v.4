@@ -190,3 +190,13 @@ Also re-confirmed this cycle: full **live** gate 10/10 (G09 digest 252×18 = 0 d
 | :--- | :--- | :--- | :--- |
 | `TASK-WORKFLOW-MODEL-03.md` | 6 remaining members 1:1, aggregate complete (27-vs-27 `comm`), 51-comparison differential 0 diverge, `this.name` defect caught + fixed, 61/61, isolation 11/11 | package **61 pass / 0 fail**; `tsc` 0; differential test + ran-guard **pass** (51 asserted inside, 4 negatives green); independent method-set `comm`: every reference member present, sole additive symbol the lane's own `resolveNodeHelpersPort`; error surface live-checked (`name="Error"`, `ctor=ApplicationError`, `level="info"`, `shouldReport=false`); isolation gate **11/11** after `setup-reference-runtime.sh` (`.runtime` is gitignored — env-only, same as peer `351ee0a8`) | **APPROVE** |
 | `TASK-418-phase3-api-lego.md` | api-lego 12/12 (golden + negatives), gate 6/6 | **12 pass / 0 fail**; API gate **6/6**; negatives + `api.golden.json` parity wiring present; `verify:all` real exit 0 on this tip | **APPROVE** |
+
+## Sweep 14 (2026-09-18, on `fa3a1264`) — TASK-WORKFLOW-MODEL-04 + TASK-419
+
+Dual-phase review sweep per STANDING-WORKER-PROTOCOL. Both tasks re-verified fresh on merged tree.
+
+| Result (owner) | Claim | Fresh re-run on merged tree (this sweep) | Verdict |
+| :--- | :--- | :--- | :--- |
+| `TASK-WORKFLOW-MODEL-04.md` | 13/13 property parity with reference (expression property wired via expression-port.ts, Option C loud failure mode), package 66/66 tests | package **66 pass / 0 fail** (`expression-property.test.mjs` 5/5, `conformance.test.mjs` 46/46, `disabled-graph.test.mjs` 8/8, `static-data-queries.test.mjs` 7/7); 13/13 reference instance properties verified matching; `workflow.expression instanceof Expression` verified; Option C actionable failure on missing dependency verified; `verify:all` 14 lanes real exit 0 | **APPROVE** |
+| `TASK-419-phase3-scheduler-timer-adapter.md` | native cron timer adapter (`CronTimerAdapter`, `createCronTimerJob`), 16/16 scheduler tests, 11/11 trigger regression, 6/6 gate | scheduler **16 pass / 0 fail**; trigger consumer suite **11 pass / 0 fail**; Scheduler gate **6/6 PASS**; zero runtime dependencies verified | **APPROVE** |
+

@@ -4,7 +4,7 @@ lego: scheduler
 module: native-cron-timer-adapter
 phase: 3
 title: "Scheduler LEGO: native cron timer adapter"
-status: SUBMITTED_FOR_REVIEW
+status: VERIFIED
 objective: "Close the injected-only createJob boundary so ScheduledTaskManager can drive real Node timers without a cron dependency."
 acceptance:
   - "zero runtime dependencies"
