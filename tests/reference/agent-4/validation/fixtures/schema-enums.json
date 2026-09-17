@@ -1,0 +1,52 @@
+{
+  "source": "n8n-workflow 2.9.4 runtime",
+  "enums": {
+    "FieldTypeSchema": [
+      "boolean",
+      "number",
+      "string",
+      "string-alphanumeric",
+      "dateTime",
+      "time",
+      "array",
+      "object",
+      "options",
+      "url",
+      "jwt",
+      "form-fields"
+    ],
+    "NodeConnectionTypeSchema": [
+      "ai_agent",
+      "ai_chain",
+      "ai_document",
+      "ai_embedding",
+      "ai_languageModel",
+      "ai_memory",
+      "ai_outputParser",
+      "ai_retriever",
+      "ai_reranker",
+      "ai_textSplitter",
+      "ai_tool",
+      "ai_vectorStore",
+      "main"
+    ],
+    "OnErrorSchema": [
+      "continueErrorOutput",
+      "continueRegularOutput",
+      "stopWorkflow"
+    ],
+    "FilterOperatorTypeSchema": [
+      "string",
+      "number",
+      "boolean",
+      "array",
+      "object",
+      "dateTime",
+      "any"
+    ],
+    "FilterTypeCombinatorSchema": [
+      "and",
+      "or"
+    ]
+  }
+}

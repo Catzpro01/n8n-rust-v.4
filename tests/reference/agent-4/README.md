@@ -22,6 +22,7 @@ tests/reference/agent-4/
 ├── validation/gen-fixtures.ts          writes validation/fixtures/D*.json — language-neutral parity oracle for any port (Rust)
 ├── validation/gen-reference-fixtures.mjs records validation/fixtures/ref-*.json (229) from the real n8n-workflow runtime — type-validation parity corpus
 ├── validation/gen-guard-fixtures.mjs     records validation/fixtures/guard-*.json (352) — type-guards parity corpus (21 TypeErrors are real behaviour)
+├── validation/gen-schema-fixtures.mjs    records validation/fixtures/schema-cases.jsonl (1125) + schema-enums.json (5 frozen vocabularies) — schemas.ts parity corpus
 └── live/                            11-step smoke harness + baselines (see live/README.md)
 ```
 

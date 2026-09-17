@@ -223,3 +223,21 @@ test('guard fixtures: 352 recorded type-guard results (incl. 21 TypeErrors) stil
 	}
 	assert.equal(throws, 21, 'three item-guards × seven non-object inputs');
 });
+
+test('schema fixtures: 1125 recorded zod results + 5 frozen enums still match the live runtime; NODE_CONNECTION_TYPES == NodeConnectionTypeSchema', { skip: hasRuntime ? false : 'N8N_RUNTIME not found' }, () => {
+	const w = n8nRequire('n8n-workflow');
+	const dir = resolve(here, 'validation', 'fixtures');
+	const lines = readFileSync(resolve(dir, 'schema-cases.jsonl'), 'utf8').trim().split('\n');
+	assert.equal(lines.length, 1125);
+	for (const line of lines) {
+		const fx = JSON.parse(line);
+		const v = fx.input.value && typeof fx.input.value === 'object' && fx.input.value.$undefined ? undefined : fx.input.value;
+		const r = w[fx.schema].safeParse(v);
+		const actual = r.success ? { success: true, data: r.data === undefined ? { $undefined: true } : r.data } : { success: false, issues: r.error.issues.map((i: any) => ({ path: i.path, code: i.code })) };
+		assert.deepEqual(actual, fx.expected, fx.id);
+	}
+	const enums = JSON.parse(readFileSync(resolve(dir, 'schema-enums.json'), 'utf8')).enums;
+	assert.deepEqual([...enums.NodeConnectionTypeSchema].sort(), [...rules.NODE_CONNECTION_TYPES].sort(), 'workflow-rules whitelist must equal the runtime enum');
+	assert.deepEqual(enums.FieldTypeSchema, ['boolean', 'number', 'string', 'string-alphanumeric', 'dateTime', 'time', 'array', 'object', 'options', 'url', 'jwt', 'form-fields']);
+	assert.deepEqual(enums.OnErrorSchema, ['continueErrorOutput', 'continueRegularOutput', 'stopWorkflow']);
+});

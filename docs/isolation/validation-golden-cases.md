@@ -55,6 +55,8 @@ No side effects exist in this LEGO (pure functions) unless stated.
 
 ## C. Type guards & schemas
 
+> **Recorded schema corpus:** `fixtures/schema-cases.jsonl` — all **45** barrel-public zod schemas × 25-value input matrix = **1125 cases** (`gen-schema-fixtures.mjs`, re-executed by `validation.test.ts` #16), plus `fixtures/schema-enums.json` with the five frozen vocabularies pulled from the runtime: `FieldTypeSchema` (12), `NodeConnectionTypeSchema` (13 — asserted equal to `NODE_CONNECTION_TYPES` in `workflow-rules.ts` / spec §2), `OnErrorSchema` (3), `FilterOperatorTypeSchema` (7), `FilterTypeCombinatorSchema` (2). Observations for ports: `GenericValueSchema` and `NodeParameterValueTypeSchema` accept every matrix value (including `null`/`undefined`) — they are *shape-permissive by design*; 5 schemas strip unknown keys on success (zod default) — parse output ≠ input, so never use `.parse` output for persistence.
+
 > **Recorded corpus:** `fixtures/guard-*.json` — 11 public guards × 32-value input matrix = **352 cases** from the live runtime (`gen-guard-fixtures.mjs`; re-executed by `validation.test.ts` #15). Notable: **21 cases throw** (`isINodeProperties` / `isINodePropertyOptions` / `isINodePropertyCollection` on the 7 non-object inputs) — see `validation.md` §3.2 correction. `isResourceLocatorValue` checks key *presence* only (`'__rl' in value && 'mode' in value && 'value' in value`, type-guards.ts:17): `{__rl:false, mode, value}` → **true**, `{mode, value}` → false, `{__rl:true}` alone → false; `isFilterValue` accepts any string combinator (`xor` → true, structural only); `isBinaryValue` needs `mimeType` **and** (`data` or `id`).
 
 | # | INPUT | EXPECTED OUTPUT |
