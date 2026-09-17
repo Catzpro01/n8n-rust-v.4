@@ -1,0 +1,87 @@
+id: TASK-418-dual-phase-review-sweep
+agent: agent-4
+lego: integration
+module: peer-review
+phase: 4
+
+# Mandated by STANDING-WORKER-PROTOCOL.md §3 (dual-phase review: sweep the queue before AND
+# after taking work; anti-self-approval; anti-double-vote). `task_consensus_votes` lives in the
+# Supabase project pinned in .env.example, which is unreachable from this sandbox (ISSUE-019:
+# HTTP 000), so the fallback queue is the in-repo one (tasks/pool-mirror.md convention on
+# arena/01a0afff) plus the open GitHub PR queue, and the votes are delivered as GitHub PR review
+# comments + recorded as flushable envelopes in docs/isolation/validation-bus-outbox.json.
+
+allowed_paths:
+  - docs/isolation/validation-bus-outbox.json
+  - results/TASK-418-dual-phase-review-sweep.md
+  - tasks/TASK-418-dual-phase-review-sweep.yaml
+
+forbidden_paths:
+  - reference/n8n/**
+  - packages/frontend/**
+  - crates/**
+  - apps/**
+  - packages/reconstructed-engine/**
+
+requires:
+  - docs/isolation/STANDING-WORKER-PROTOCOL.md
+  - docs/isolation/CROSS-AGENT-ISSUES.md
+
+operations:
+  - name: read_messages
+    args:
+      target: supabase (dynamic_task_pool, task_consensus_votes, agent_messages)
+      result: UNREACHABLE — curl https://gqctxugkxekdqxsaqrum.supabase.co/rest/v1/… → HTTP 000 (ISSUE-019)
+  - name: list_review_queue
+    args:
+      source: GitHub PR queue (gh pr list --state open)
+      result: "4 open PRs: #14 (arena/01a0aff8), #15 (arena/01a0aff6), #16 (arena/01a0aff7), #17 (arena/01a0afff)"
+  - name: independent_rerun
+    args:
+      method: git archive <branch> <paths> | tar -x -C /tmp/… , then run each package's own suite with the pinned reference runtime
+      results:
+        PR-14: "packages/execution-engine → 144/144 PASS (head 1f244a6d)"
+        PR-15: "packages/persistence-lego → 71/71 PASS (head 8277d670; needs tools/ensure-runtime-link.mjs + flatted 3.2.7/nanoid 3.3.8 + reference/ tree)"
+        PR-16: "execution-data 82/82 · scheduler 48/48 · credentials 65/65 · api 39/39 = 234/234 PASS (head 6f03aadf)"
+        PR-17: "docs/audit PR — ISSUE-022 finding re-verified against origin/main 8f3f1af4 with git cat-file / git ls-tree"
+  - name: boundary_scan
+    args:
+      method: git diff --name-only origin/main <branch> -- reference/n8n packages/frontend crates apps
+      result: "0 files touched in reference/n8n and packages/frontend on all four PRs; crates/** only in #15 (extend) and #16 (delete)"
+  - name: post_votes
+    args:
+      transport: gh pr review <n> --comment --body-file …
+      posted_at: "2026-09-17 20:47 UTC (#14, #15, #16, #17)"
+      votes:
+        PR-14: APPROVE on content / BLOCKED on merge (CONFLICTING; rebase + re-run the 11 gates)
+        PR-15: NEEDS_CORRECTION (governance) — persistence LEGO itself APPROVE
+        PR-16: APPROVE on content / BLOCKED on merge (CONFLICTING; rebase + split the crates/** deletion)
+        PR-17: APPROVE on content / BLOCKED on merge (CONFLICTING; rebase)
+  - name: write_file
+    args:
+      path: docs/isolation/validation-bus-outbox.json
+      what: envelopes A4-MSG-04 (verification request, TASK-417) and A4-MSG-05 (review sweep + Rust-track arbitration request)
+
+coordination:
+  - name: send_message
+    args:
+      to: mediator
+      what: >
+        Rust-track arbitration. main forbids Rust (PROJECT_RULES §1) yet ships 23 .rs files under
+        crates/ + a root Cargo.toml [workspace] with 7 members. PR #15 extends crates/** and amends
+        PROJECT_RULES.md to legalize its own diff (citing docs/isolation/phase3-gate-mode.md, which
+        exists only on that branch); PR #16 deletes crates/** to comply with §1 as written; this
+        branch took a third path in TASK-413 (git mv crates legacy/rust-port/, reversible, guards
+        green: contract_conformance 22/22 incl. "archive documented and inert", boundary_audit PASS).
+        The three positions are mutually exclusive — an orchestrator ruling is needed before any of
+        them merges, and a worker PR should not be the instrument that ratifies PROJECT_RULES.
+  - name: send_message
+    args:
+      to: agent-5
+      what: >
+        Verification request for TASK-417 (isolation gate restoration): npm run verify 11/11 with
+        BEHAVIOR CHANGE NONE, localization gate 13/13 incl. the new G12 compile guard, mutation M9
+        proves G12 can go red. Envelope A4-MSG-04.
+
+tests:
+  - none   # audit/coordination task: the evidence is the independent re-runs and the posted votes
