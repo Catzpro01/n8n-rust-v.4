@@ -29,12 +29,12 @@ All 8 secondary LEGOs have been contracted and isolated under Phase 2 boundary r
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | Execution Data | Agent 3 | `contracts/execution-data.contract.md` ✅ | `docs/isolation/execution-data.md` ✅ | 7 golden test suites ✅ + execution-data-lego 2/2 + engine I1-I14 ✅ | **VERIFIED** (Phase 4-12) |
 | Expression | Agent 3 | `contracts/expression.contract.md` ✅ | `docs/isolation/expression.md` ✅ | 6 golden test suites ✅ + expression-lego 4/4 + evaluator E1-E8 ✅ | **VERIFIED** (Phase 4-12) |
-| Trigger | Agent 4 | `contracts/trigger.contract.md` ✅ | `docs/isolation/trigger.md` ✅ | golden fixture + lifecycle test ✅ | **ISOLATED** |
-| Webhook | Agent 4 | `contracts/webhook.contract.md` ✅ | `docs/isolation/webhook.md` ✅ | golden fixture + routing test ✅ + sanitizer active | **ISOLATED** |
-| Scheduler | Agent 4 | `contracts/scheduler.contract.md` ✅ | `docs/isolation/scheduler.md` ✅ | golden fixture + scheduler test ✅ | **ISOLATED** |
-| Persistence | Agent 4 | `contracts/persistence.contract.md` ✅ | `docs/isolation/persistence.md` ✅ | golden fixture + persistence test ✅ + schema guard | **ISOLATED** |
-| Credentials | Agent 4 | `contracts/credentials.contract.md` ✅ | `docs/isolation/credentials.md` ✅ | golden fixture + credentials test ✅ + encryption guard | **ISOLATED** |
-| API | Agent 4 | `contracts/api.contract.md` ✅ | `docs/isolation/api.md` ✅ | golden fixture + envelope test ✅ | **ISOLATED** |
+| Trigger | Agent 3+4 | `contracts/trigger.contract.md` ✅ | `docs/isolation/trigger.md` ✅ | trigger-lego 2/2 + engine ActiveWorkflows + activation/deactivation ✅ | **VERIFIED** (Phase 4-14) |
+| Webhook | Agent 3+4 | `contracts/webhook.contract.md` ✅ | `docs/isolation/webhook.md` ✅ | webhook-lego 2/2 + engine WebhookService dynamic matching + conflict ✅ | **VERIFIED** (Phase 4-14) |
+| Scheduler | Agent 3+4 | `contracts/scheduler.contract.md` ✅ | `docs/isolation/scheduler.md` ✅ | scheduler-lego 2/2 + engine ScheduledTaskManager + CronJob ✅ | **VERIFIED** (Phase 4-14) |
+| Persistence | Agent 3+4 | `contracts/persistence.contract.md` ✅ | `docs/isolation/persistence.md` ✅ | persistence-lego 2/2 + engine WorkflowRepository + flatted + migration ✅ | **VERIFIED** (Phase 4-14) |
+| Credentials | Agent 3+4 | `contracts/credentials.contract.md` ✅ | `docs/isolation/credentials.md` ✅ | credentials-lego 2/2 + engine CredentialsService + encryption + overwrites ✅ | **VERIFIED** (Phase 4-14) |
+| API | Agent 3+4 | `contracts/api.contract.md` ✅ | `docs/isolation/api.md` ✅ | api-lego 2/2 + engine AbstractServer + ResponseHelper + envelope ✅ | **VERIFIED** (Phase 4-14) |
 
 ### 2.1 Phase 3 Ownership Transfer (Agent 3)
 
@@ -90,6 +90,8 @@ map and the automated audit can never silently diverge.
 | 11/11 live smoke re-run | PASS (11/11) | verified live on VPS host `157.10.160.95`, merged evidence 2026-09-18 |
 | Connection LEGO Phase 3 | PASS | `packages/connection-lego/` 5/5, runner upgraded, P-CONNECTION-GRAPH |
 | Execution Data + Expression VERIFIED | PASS | 2/2 + 4/4 + engines I1-I14 + E1-E8, test-run 100% Sempurna |
-| Production hardening Phase 4 | PASS | 10 components + i18n 6-lang + certificate 100/100 |
+| Extended LEGOs (Trigger/Webhook/Scheduler/Persistence/Credentials/API) VERIFIED | PASS | 6 legos 12/12 tests PASS + 6 engines (trigger, webhook, scheduler, persistence, credentials, api) |
+| Production hardening Phase 4 | PASS | 16 components + i18n 6-lang + certificate 100/100 |
+| Zero Rust Enforcement | PASS | crates/ + apps/ clean, contract_conformance 21/21, boundary_audit PASS, run_gate offline PASS |
 
 **Overall Phase 2-4 gate: `VERIFIED`** — Ready for Phase 5 (Full Integration & Production Deploy).
