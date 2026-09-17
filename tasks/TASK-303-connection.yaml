@@ -220,3 +220,16 @@ notes:
       type: STATUS
       subject: "packages/connection-lego/ created per core directive — seam facade src/model-surface.ts (12 fn, P-CONNECTION-GRAPH), 1:1 reference reuse, 17/17 tests in reference AND strict mode"
       body: "No algorithm rewritten: reference mode binds n8n-workflow@2.9.1 deep paths; strict mode vendors the 6 reference files verbatim (byte-equality asserted vs reference/n8n, sha256 pinned in manifest/ownership.json). Fixture replay: 34 pure probes across cases 01-07 match tests/reference/connection expected.json; wf.* probes stay with LEGO 01. No imports from packages/workflow-lego or reference/n8n. Rust still not-started in-package. Run: cd packages/connection-lego && node --test test/*.test.mjs (Node 22, zero install). Harness still 20/20."
+  - name: cast_vote            # STANDING-WORKER-PROTOCOL Tahap 2 (task_consensus_votes)
+    args:
+      task: "TASK-306-validation-audit-request"
+      subject_commit: "fa6a1de0"
+      vote: APPROVED
+      rubric: { paths: PASS, golden_oracle: PASS, evidence: "10/10 reproduced with N8N_RUNTIME=tests/reference/harness" }
+      reference: "docs/isolation/connection-review-of-validation-lego.md"
+  - name: request_review       # Tahap 3 — awaiting votes on my own deliverable
+    args:
+      task: "TASK-303-connection"
+      summary: "results/TASK-303-connection.md"
+      reviewers: ["agent-1", "agent-4", "agent-5"]
+
