@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-17T17:19:40.709Z",
+  "generatedAt": "2026-09-17T17:28:03.841Z",
   "lego": "workflow",
   "phase": "phase-2-isolation",
   "reference": {
@@ -67,7 +67,7 @@
       "title": "boundary drift gate (owned files, crossings, inbound edges)",
       "status": "PASS",
       "detail": "src files scanned         : 104\nLEGO owned files          : 10\ncompile closure           : 103\noutbound crossings        : 21\nundeclared crossings      : 0\ninbound edges             : 9\nmonorepo import sites     : 6318 root + 5 subpath\n\nBoundary check: PASS (no drift vs packages/workflow-lego/manifest/boundary.expectations.json)",
-      "ms": 218
+      "ms": 608
     },
     {
       "id": "G02",
@@ -81,63 +81,63 @@
       "title": "port surface matches the imports of the owned sources",
       "status": "PASS",
       "detail": "Required port surface (from actual imports in owned files):\n\n@lego/ports/checksum-digest  [value]\n   symbols : jsSHA\n   used by : workflow-checksum (jssha)\n@lego/ports/config  [value]\n   symbols : getGlobalState\n   used by : workflow (./global-state)\n@lego/ports/constants  [value]\n   symbols : MANUAL_CHAT_TRIGGER_LANGCHAIN_NODE_TYPE, NODES_WITH_RENAMABLE_CONTENT, NODES_WITH_RENAMABLE_FORM_HTML_CONTENT, NODES_WITH_RENAMEABLE_TOPLEVEL_HTML_CONTENT, STARTING_NODE_TYPES\n   used by : workflow (./constants)\n@lego/ports/errors  [value]\n   symbols : ApplicationError, UserError\n   used by : workflow (./errors), workflow (@n8n/errors)\n@lego/ports/expression-runtime  [value]\n   symbols : Expression\n   used by : workflow (./expression)\n@lego/ports/node-model  [value]\n   symbols : * as NodeHelpers\n   u",
-      "ms": 212
+      "ms": 236
     },
     {
       "id": "G04",
       "title": "reference tree byte-identical to the pinned hashes",
       "status": "PASS",
       "detail": "Reference integrity check: PASS (15050 files, root f8da35180669d798…)",
-      "ms": 335
+      "ms": 376
     },
     {
       "id": "G05",
       "title": "isolation extraction (pure import rewrites only)",
       "status": "PASS",
       "detail": "isolated unit written to packages/workflow-lego/.extract\n  owned files copied : 10\n  port rewrites      : 25 across 10 files\n    @lego/ports/checksum-digest : 1\n    @lego/ports/config : 1\n    @lego/ports/constants : 1\n    @lego/ports/errors : 2\n    @lego/ports/expression-runtime : 1\n    @lego/ports/node-model : 1\n    @lego/ports/node-reference : 1\n    @lego/ports/node-rename : 1\n    @lego/ports/observable-object : 1\n    @lego/ports/utils : 2\n    @lego/ports/vocabulary : 13",
-      "ms": 207
+      "ms": 325
     },
     {
       "id": "G06",
       "title": "TypeScript build PASS (isolated unit, ports only)",
       "status": "PASS",
       "detail": "tsc -p .extract/tsconfig.json → 0 errors",
-      "ms": 1406
+      "ms": 2672
     },
     {
       "id": "G07",
       "title": "TypeScript build PASS (versioned boundary/ports/facade)",
       "status": "PASS",
       "detail": "tsc --noEmit → 0 errors",
-      "ms": 947
+      "ms": 993
     },
     {
       "id": "G08",
       "title": "unit tests PASS (boundary, extraction, equivalence, strict isolation, surface)",
       "status": "PASS",
-      "detail": "# cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 10982.193865",
-      "ms": 11012
+      "detail": "# cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 10605.97261",
+      "ms": 10633
     },
     {
       "id": "G09",
       "title": "BEFORE vs AFTER digest: BEHAVIOR CHANGE NONE",
       "status": "PASS",
       "detail": "252 section comparisons across 18 workflows — 0 differences · strict: 218 identical, 34 in declared port sections",
-      "ms": 2385
+      "ms": 2361
     },
     {
       "id": "G10",
       "title": "strict port mode: no hidden coupling to the reference runtime",
       "status": "PASS",
-      "detail": "# cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 1496.492009",
-      "ms": 1531
+      "detail": "# cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 1395.26138",
+      "ms": 1426
     },
     {
       "id": "G11",
       "title": "live verification: workflow load / save / 1-node / linear / webhook / execution record",
       "status": "PASS",
       "detail": "7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS",
-      "ms": 3146
+      "ms": 4337
     }
   ]
 }
