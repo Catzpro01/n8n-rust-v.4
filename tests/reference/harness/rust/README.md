@@ -26,8 +26,8 @@ left is R-07 (`has_path` traverses all types; reference is `main`-only).
 | `connection_reference_fixtures_full.rs` | the runner extended to every non-`wf.*` probe |
 | `run-connection-rig-with-spec.sh` | appends the two spec files to a *copy* of `lib.rs` and runs the full runner |
 
-Result (rustc 1.88.0, crate @ `8ed00851` + spec files): **32 ok / 0 mismatch / 14 skipped** — the 14 are
-`wf.*` probes (Workflow members, Agent 1). These files are written against the crate's *current* type
+Result (rustc 1.88.0, crate @ `8ed00851` + spec files): **34 ok / 0 mismatch / 27 skipped** (re-run after
+fixtures 06–07 were added; was 32/0/14) — the skipped ones are `wf.*` probes (Workflow members, Agent 1). These files are written against the crate's *current* type
 names (`ConnectionItem`, `WorkflowConnections`, `ConnectionTypeFilter`) so the crate owner can move them
 into `src/lib.rs` verbatim; renaming to the spec §2 names is optional. `has_path_adj` is named to avoid
 clashing with the crate's existing all-types `has_path` (R-07); upstream's name is `hasPath`.
@@ -36,4 +36,4 @@ clashing with the crate's existing all-types `has_path` (R-07); upstream's name 
 
 `workflow_crate_connection_fixtures.rs` + `run-workflow-crate-vs-connection-fixtures.sh` run the same
 fixtures against Agent 1's Workflow crate (which carries its own traversal/destination-map/diff port).
-Result @ `3fc3156c`: **19 ok / 1 mismatch / 26 skipped** — mismatch = D-11 (`None` vs `[]` padding).
+Result @ `3fc3156c`: **21 ok / 1 mismatch / 39 skipped** (after fixtures 06–07; was 19/1/26) — mismatch = D-11 (`None` vs `[]` padding).
