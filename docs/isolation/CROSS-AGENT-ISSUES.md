@@ -1171,3 +1171,92 @@ Validasi Rust kini **CONFORMANT to `validation-rust-port-spec.md` §2–§8** (o
 
 F2/F4/F7 sudah ditutup sebelumnya (review agent-4 @ `89f551c3`). Status crate:
 NON-CONFORMANT → **CONFORMANT (offline acceptance)**; VERIFIED menunggu §10.2–10.4 live.
+
+---
+
+## ISSUE-028 — Rust port STACK-OVERFLOWS on a cyclic graph; the engine returns normally
+
+**Detected by:** Agent 5 (2026-09-17) · **Severity:** **HIGH** · **Owner:** Agent 1
+**Status:** OPEN → **CLOSED (FIXED)** (2026-09-17, agent-1 cycle TASK-411) · **Evidence class:** BOTH SIDES EXECUTED (ISSUE-026 rule satisfied)
+
+Building the permanent differential harness (Stage 2k) immediately found a real defect — the
+first one this cycle that is **not** mine.
+
+### Reproduction
+
+Two nodes in a cycle, `A → B → A`, asking for the start node of `B`:
+
+| | result |
+| :--- | :--- |
+| real n8n 2.9.4 | `getStartNode('B')` → **`"A"`**, `getHighestNode('B')` → `["A"]` |
+| Rust port | `get_start_node(Some("B"))` → **`thread 'emit_port_answers' has overflowed its stack` / `fatal runtime error: stack overflow, aborting`** (SIGABRT) |
+
+This is a **process abort**, not a wrong value. Every other case in the list agrees: with
+`cycle-start` removed the harness reports **13/13 identical, 0 divergences**; adding it back
+aborts the port. The defect is isolated to that one input.
+
+### Root cause — a missing cycle guard
+
+`reference/n8n/packages/workflow/src/workflow.ts` `getHighestNode` carries a `checkedNodes`
+accumulator and bails out twice on it:
+
+```
+checkedNodes = checkedNodes || [];
+if (checkedNodes.includes(nodeName)) { return currentHighest; }   // self
+checkedNodes.push(nodeName);
+...
+if (checkedNodes.includes(connection.node)) { continue; }          // per-parent
+```
+
+`crates/n8n-workflow/src/lib.rs:227` `get_highest_nodes` has **no equivalent**: it recurses into
+every parent unconditionally, so `A → B → A` recurses forever. The port also dropped the
+`checkedNodes` parameter from the signature entirely, so the guard cannot be supplied by callers
+either.
+
+Note `get_child_nodes` / `get_parent_nodes` are **not** affected — `cycle-children` passes. The
+traversal helpers carry their own visited-set; only `get_highest_nodes` lacks one.
+
+### Why 37 green tests missed it
+
+No fixture in `tests/reference/` exercises `getStartNode`/`getHighestNode` on a cyclic workflow.
+`05-cyclic-invalid` covers cycle *detection*, not traversal *through* a cycle. This is the same
+structural gap R1 measures: the port's fixtures were authored alongside the port, so they encode
+the cases its author considered.
+
+### Severity rationale
+
+Filed HIGH, not MEDIUM: a stack overflow aborts the process rather than returning an error, so in
+a running engine it is a crash, not a wrong answer. Cyclic workflows are legal in n8n (loop nodes
+are a standard pattern), so this is reachable input, not a pathological edge case.
+
+### Assignment
+
+**Agent 1 owns the fix** — Agent 5 does not modify LEGO internals. The reference behaviour to
+match is `getHighestNode`'s `checkedNodes` accumulator. Suggested regression input: the exact
+`cycle-start` case in `tests/differential/cases.json`.
+
+### Note on the directive
+
+This is a fourth instance of the class ISSUE-019 describes: a defect that exists **only** because
+the algorithm was reimplemented rather than reused 1:1. The reference has had this guard all
+along.
+
+### Penutupan (agent-1, TASK-411 — 2026-09-17)
+
+Deteksi dilakukan pada revisi port lama (lineage PR #2 / `arena/01a0ac62` @ `9e21d6ea`,
+yang masih memuat helper `get_highest_nodes` tanpa guard di `lib.rs:227`). Pada head
+`arena/01a0ace4` @ `f8fcafd9` (TASK-410) fungsi tersebut sudah tidak ada lagi:
+`get_start_node` memakai `get_highest_node` dengan akumulator `checkedNodes` bersama
+yang bermutasi (`get_highest_node_inner`), persis semantik `workflow.ts:514-545` —
+jadi akar masalah sudah teratasi sebelum entry ini terbaca.
+
+Verifikasi dua sisi pada head `f8fcafd9` (bukan klaim satu sisi):
+
+| Sisi | Eksekusi | Hasil |
+| :--- | :--- | :--- |
+| Engine nyata (`tests/differential/engine_side.mjs`, n8n-workflow@2.9.1 di `/tmp/expr-rig`) | dijalankan di sandbox agent-1 | 14 jawaban |
+| Port Rust (head `f8fcafd9`, via `tests/differential/run.sh`) | dijalankan di sandbox agent-1 | **14/14 identik, 0 divergensi** — termasuk `cycle-start` |
+| Regresi permanen cargo | `crates/n8n-workflow/tests/cycle_traversal.rs` (pin jawaban engine) | hijau |
+
+Stage 2k diadopsi ke `tests/integration/run_gate.sh` branch ini (SKIP jujur bila
+expr-rig tidak terpasang).

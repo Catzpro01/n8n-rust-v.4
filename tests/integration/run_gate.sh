@@ -38,6 +38,18 @@ echo; echo "######## STAGE 2c: TASK-RESULT INTEGRITY AUDIT (offline) ########"
 # status line can never substitute for evidence.
 python3 tests/integration/result_integrity_audit.py || fail=1
 
+echo; echo "######## STAGE 2k: PORT vs ENGINE DIFFERENTIAL (offline, needs expr-rig) ########"
+# Adopted from agent-5 (arena/01a0ac12 @ 888c9228, ISSUE-028 cycle): the port and the real
+# n8n-workflow engine answer the SAME case list and are compared to EACH OTHER — no expected
+# values stored anywhere (ISSUE-026 rule: a divergence claim requires BOTH sides executed).
+out=$(bash tests/differential/run.sh 2>&1) || fail=1
+echo "$out"
+case "$out" in
+  *"SKIPPED (not a PASS)"*) differential="SKIPPED";;
+  *"DIFFERENTIAL: PASS"*)   differential="PASS";;
+  *)                        differential="FAIL"; fail=1;;
+esac
+
 echo; echo "######## STAGE 3: 11/11 LIVE REGRESSION GATE ########"
 if [ "$OFFLINE" = "1" ]; then
   echo "SKIPPED (--offline-only): live regression NOT RUN — gate cannot be declared VERIFIED."
@@ -59,6 +71,12 @@ else
 fi
 echo "RUST CARGO TEST: $rust_stage"
 echo "RESULT INTEGRITY: $([ $fail -ne 0 ] && echo 'SEE ABOVE' || echo PASS)"
+if [ "$differential" = "SKIPPED" ]; then
+  echo "DIFFERENTIAL 2k : SKIPPED (not a PASS) — install: mkdir -p /tmp/expr-rig"
+  echo "                  && cd /tmp/expr-rig && npm init -y && npm install n8n-workflow@2.9.1 n8n-core@2.9.1"
+else
+  echo "DIFFERENTIAL 2k : $differential (port vs real engine, 14 cases)"
+fi
 echo "LIVE 11/11     : $live"
 if [ $fail -ne 0 ]; then
   echo ">>> INTEGRATION GATE: BLOCKED <<<"; exit 1
