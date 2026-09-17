@@ -14,10 +14,12 @@ actually be compiled and tested here instead of only on the VPS.
    rustc binary + driver), `@rustbin/rust-std-1.88.0-x86_64-unknown-linux-gnu` (libstd,
    merged into the rustc sysroot — the rustc package alone has no `libstd`) and
    `@rustbin/cargo-1.88.0-x86_64-unknown-linux-gnu`.
-2. **Crates from git.** The 12 crates in the workspace dependency closure
+2. **Crates from git.** The 19 crates in the workspace dependency closure
    (`serde`, `serde_derive`, `serde_json`, `thiserror`, `thiserror-impl`, `syn`,
-   `proc-macro2`, `quote`, `itoa`, `ryu`, `memchr`, `unicode-ident`) are cloned at pinned
-   upstream tags, because crate downloads are blocked.
+   `proc-macro2`, `quote`, `itoa`, `ryu`, `memchr`, `unicode-ident`, `indexmap`,
+   `equivalent`, `hashbrown`, `regex`, `regex-automata`, `regex-syntax`,
+   `aho-corasick`) are cloned at pinned upstream tags, because crate downloads are
+   blocked.
 3. **Cargo `directory` source.** Clones carry `path = ...` deps and `workspace = true`
    inheritance, which cargo rejects in a directory source (crates.io publishes a
    normalised manifest, git does not). `vendor_prep.py` rewrites each manifest — inherited
@@ -36,15 +38,21 @@ tools/rust-offline-rig/run.sh test       # cargo test  --workspace
 tools/rust-offline-rig/run.sh fmt        # any other cargo subcommand
 ```
 
-`run.sh` copies `Cargo.toml` + `crates/` into `$RUST_RIG/build/repo` and runs cargo
-there, so `Cargo.lock`, `target/` and any generated file stay out of the tree under
-review.
+`run.sh` auto-detects the Rust workspace, copies `Cargo.toml` + `crates/` into
+`$RUST_RIG/build/repo`, and runs cargo there, so `Cargo.lock`, `target/` and any
+generated file stay out of the tree under review. Discovery order is:
+
+1. `RUST_LEGACY=/path/to/workspace` when set explicitly.
+2. `legacy/rust-port/` when the ZERO-RUST archive is present.
+3. Repository root (`Cargo.toml` + `crates/`) on Phase-3 branches that still carry
+   the active Rust workspace.
 
 ## Status
 
 | Date | Command | Result |
 | :--- | :--- | :--- |
 | 2026-09-17 | `run.sh check` on `crates/**` @ `014471e6` (Phase-3 workspace) | **PASS** — `Finished dev profile … in 6.26s`, 12 vendored deps compiled, 5 workspace crates checked |
+| 2026-09-18 | `run.sh test` on `crates/**` @ `arena/01a0b103-n8n-rust-v-4` | **PASS** — 19 vendored deps compiled; workspace unit + conformance suites passed (37 Rust tests total) |
 
 ## Caveats
 

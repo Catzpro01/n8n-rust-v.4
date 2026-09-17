@@ -18,17 +18,35 @@ MODE="${1:-check}"; shift || true
 
 [ -d "$RIG/vendor" ] || { echo "rig missing: run tools/rust-offline-rig/setup.sh first" >&2; exit 2; }
 
+# Source workspace discovery:
+#   1. RUST_LEGACY=/path/to/workspace explicitly overrides everything.
+#   2. legacy/rust-port is preferred when the ZERO-RUST archive is present.
+#   3. Fall back to the active repository root for Phase-3 branches that still
+#      carry Cargo.toml + crates/ at top level.
+if [ -n "${RUST_LEGACY:-}" ]; then
+  SOURCE="$RUST_LEGACY"
+elif [ -f "$REPO/legacy/rust-port/Cargo.toml" ] && [ -d "$REPO/legacy/rust-port/crates" ]; then
+  SOURCE="$REPO/legacy/rust-port"
+elif [ -f "$REPO/Cargo.toml" ] && [ -d "$REPO/crates" ]; then
+  SOURCE="$REPO"
+else
+  echo "no Rust workspace found: expected RUST_LEGACY, legacy/rust-port, or root Cargo.toml + crates/" >&2
+  exit 2
+fi
+[ -f "$SOURCE/Cargo.toml" ] || { echo "missing Cargo.toml under $SOURCE" >&2; exit 2; }
+[ -d "$SOURCE/crates" ] || { echo "missing crates/ under $SOURCE" >&2; exit 2; }
+
 BUILD="$RIG/build/repo"
 rm -rf "$BUILD"
 mkdir -p "$BUILD/.cargo"
-cp -a "$REPO/Cargo.toml" "$BUILD/"
-cp -a "$REPO/crates" "$BUILD/"
+cp -a "$SOURCE/Cargo.toml" "$BUILD/"
+cp -a "$SOURCE/crates" "$BUILD/"
 # integration tests read the reference fixtures/goldens relative to the manifest dir
 if [ -d "$REPO/tests/reference" ]; then
   mkdir -p "$BUILD/tests"
   cp -a "$REPO/tests/reference" "$BUILD/tests/"
 fi
-[ -f "$REPO/Cargo.lock" ] && cp -a "$REPO/Cargo.lock" "$BUILD/"
+[ -f "$SOURCE/Cargo.lock" ] && cp -a "$SOURCE/Cargo.lock" "$BUILD/"
 
 cat > "$BUILD/.cargo/config.toml" <<EOF
 [source.crates-io]

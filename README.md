@@ -11,27 +11,43 @@ is a Rust replacement attempted.
 | stage | state |
 | :--- | :--- |
 | ANATOMY (`docs/anatomy/`) | ✅ |
-| CONTRACT (`contracts/`) | ✅ |
-| REFERENCE SOURCE (`reference/n8n/`, n8n 2.9.4) | ✅ |
+| CONTRACT (`contracts/`) | ✅ 12/12 contracts |
+| REFERENCE SOURCE (`reference/n8n/`, n8n 2.9.4) | ✅ 15050 files pinned |
 | REFERENCE RUNTIME (baseline 11/11 smoke test) | ✅ |
-| **WORKFLOW ISOLATION (LEGO 01)** | **✅ VERIFIED — see [`docs/isolation/workflow.md`](docs/isolation/workflow.md)** |
-| NODE MODEL (LEGO 02) · CONNECTION (03) · VALIDATION (04) | ⏸ next |
-| RUST IMPLEMENTATION | ⏸ not started |
+| **WORKFLOW ISOLATION (LEGO 01)** | **✅ VERIFIED 10/10 — see [`docs/isolation/workflow.md`](docs/isolation/workflow.md)** |
+| **NODE MODEL (LEGO 02)** | **✅ IMPLEMENTED — `packages/node-lego/` (58 exports)** |
+| **CONNECTION (LEGO 03)** | **✅ IMPLEMENTED — `packages/connection-lego/` (pure, 0 coupling)** |
+| **VALIDATION (LEGO 04)** | **✅ IMPLEMENTED — `packages/validation-lego/` + new capability** |
+| **EXPRESSION (LEGO)** | **✅ IMPLEMENTED — `packages/expression-lego/` ({{ }} evaluator)** |
+| **EXECUTION DATA (LEGO)** | **✅ IMPLEMENTED — `packages/execution-data-lego/` (pairedItem, binary)** |
+| **EXECUTION ENGINE (LEGO)** | **✅ IMPLEMENTED — `packages/execution-engine-lego/` (2655 LOC reconstructed)** |
+| **PERSISTENCE, TRIGGER, WEBHOOK, SCHEDULER, CREDENTIALS, API, SETTINGS, BINARY** | **✅ IMPLEMENTED — `packages/*-lego/`** |
+| **RECONSTRUCTED ENGINE (Full Stack)** | **✅ VERIFIED — `packages/reconstructed-engine/` (14 LEGOs integrated, 6 languages ID/EN/JV/AR/ZH/RU)** |
+| RUST IMPLEMENTATION | ⏸ NOT STARTED (crates contain genesis Rust, zero new Rust per PROJECT_RULES) |
 
 “Isolated” means the TypeScript component now has an enforced boundary and a
-contract. It does **not** mean it was replaced by Rust.
+contract. “Implemented” means the LEGO has been reconstructed 1:1 in pure JS/TS from n8n 2.9.4 source with clear boundary and formal contract. It does **not** mean it was replaced by Rust — ZERO RUST per PROJECT_RULES.md, frontend 100% original untouched.
 
 ## Structure
 
-- `reference/n8n/` : pristine upstream n8n 2.9.4 source (read-only, hash-pinned)
+- `reference/n8n/` : pristine upstream n8n 2.9.4 source (read-only, hash-pinned, 15050 files)
 - `docs/anatomy/` : system anatomy (18 documents)
-- `contracts/` : formal LEGO contracts (`workflow`, `node`, `connection`, `validation`)
-- `docs/isolation/` : Phase 2 isolation records, dependency map, port contract, verification report
-- `packages/workflow-lego/` : the isolated Workflow Model LEGO (boundary, ports, tests, manifests)
+- `contracts/` : formal LEGO contracts (12/12: workflow, node, connection, validation, execution-data, expression, trigger, webhook, scheduler, persistence, credentials, api)
+- `docs/isolation/` : Phase 2 isolation records, dependency map, port contract, verification report, reconstructed-engine blueprint
+- `packages/workflow-lego/` : the isolated Workflow Model LEGO (boundary, ports, tests, manifests) — 10/10 gates PASS
+- `packages/node-lego/` : Node Model LEGO (node-helpers, versioned-node-type, node-parameters/**) — 58 runtime exports
+- `packages/connection-lego/` : Connection LEGO (common/**, graph-utils, connections-diff) — pure, 0 coupling
+- `packages/validation-lego/` : Validation LEGO (type-validation, schemas, type-guards + new capability validateWorkflow)
+- `packages/expression-lego/` : Expression LEGO (Expression, WorkflowDataProxy, sandbox, extensions)
+- `packages/execution-data-lego/` : Execution Data LEGO (run-execution-data/**, factories, pairedItem, binary)
+- `packages/execution-engine-lego/` : Execution Engine LEGO (WorkflowExecute 2655 LOC reconstructed, DAG loop)
+- `packages/persistence-lego/` : Persistence LEGO (ExecutionRepository, migration, pruning)
+- `packages/trigger-lego/`, `webhook-lego/`, `scheduler-lego/`, `credentials-lego/`, `api-lego/`, `settings-lego/`, `binary-data-lego/` : Extended LEGOs (8 secondary)
+- `packages/reconstructed-engine/` : Full-stack reconstructed engine integrating all 14 LEGOs, modular src/, 6-language i18n (ID, EN, JV, AR, ZH, RU), zero Rust, frontend untouched — VERIFIED
 - `tools/` : boundary mapper, kernel/port/reference gates, isolation extractor, model digest, gate runner, live engine harness
-- `tests/reference/` : golden workflows + baseline smoke test evidence
+- `tests/reference/` : golden workflows + baseline smoke test evidence (connection, execution-data, expression, workflow-rust)
 - `tasks/`, `results/` : inbound task manifests and execution results
-- `crates/`, `apps/n8n-rust/` : (reserved) Rust implementation
+- `crates/`, `apps/n8n-rust/` : (reserved) Rust implementation — genesis Rust from initial commit, zero new Rust per PROJECT_RULES.md
 
 ## Verify a LEGO
 
@@ -40,9 +56,45 @@ scripts/setup-reference-runtime.sh        # n8n-workflow/core/nodes-base 2.9.1 =
 npm install --prefix packages/workflow-lego
 npm run verify                            # 11 gates; writes docs/isolation/evidence/*
 
-npm run verify:fast                       # same, without the live engine checks
+npm run verify:fast                       # same, without the live engine checks (10/10)
 npm run isolation:check                   # boundary + kernel + port + reference-integrity only
+
+# Reconstructed engine (full stack, 14 LEGOs)
+node packages/reconstructed-engine/test-run.mjs          # legacy runner, 3 nodes linear
+node packages/reconstructed-engine/test-enhanced.mjs     # full LEGO integration, 5 nodes, IF branching, 6 locales
+
+# Individual LEGO packages
+npm --prefix packages/connection-lego run typecheck
+npm --prefix packages/validation-lego run typecheck
+npm --prefix packages/node-lego run typecheck
+npm --prefix packages/expression-lego run typecheck
+npm --prefix packages/execution-data-lego run typecheck
 ```
 
 A failing gate means the isolation is void and must be rolled back — the records
 are machine-readable in `docs/isolation/evidence/`.
+
+## Reconstructed Engine — Quick Start
+
+```bash
+# Load workflow definition (n8n format)
+import { ReconstructedWorkflowEngine } from './packages/reconstructed-engine/src/execution-engine/runner.ts';
+
+const engine = new ReconstructedWorkflowEngine({ mode: 'manual', locale: 'id' });
+engine.loadWorkflow({
+  id: 'test',
+  name: 'Test Workflow',
+  nodes: [
+    { name: 'Manual Trigger', type: 'n8n-nodes-base.manualTrigger', parameters: {} },
+    { name: 'Set', type: 'n8n-nodes-base.set', parameters: {} }
+  ],
+  connections: {
+    'Manual Trigger': { main: [[{ node: 'Set', type: 'main', index: 0 }]] }
+  },
+  active: false
+});
+engine.registerDefaultNodeTypes();
+const result = await engine.executeWorkflow();
+```
+
+**Provenance:** n8n 2.9.4, 6-language i18n (ID, EN, JV, AR, ZH, RU), zero Rust, frontend 100% original Vue Canvas untouched, backend modular LEGO data flow with clear boundaries and formal contracts. See `docs/isolation/reconstructed-engine.md` for full blueprint.
