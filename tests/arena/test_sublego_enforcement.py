@@ -30,20 +30,22 @@ completed_dir = queue_root / "completed"
 for d in [incoming_dir, completed_dir]:
     d.mkdir(parents=True, exist_ok=True)
 
-# Determine authoritative commit SHA dynamically
-CURRENT_SHA = os.environ.get("GITHUB_SHA")
-if not CURRENT_SHA:
+# Determine authoritative commit SHA dynamically (Distinguishing PR_HEAD_SHA vs CI_MERGE_SHA)
+PR_HEAD_SHA = os.environ.get("PR_HEAD_SHA")
+if not PR_HEAD_SHA:
+    PR_HEAD_SHA = os.environ.get("GITHUB_SHA")
+if not PR_HEAD_SHA:
     try:
-        CURRENT_SHA = subprocess.check_output(
+        PR_HEAD_SHA = subprocess.check_output(
             ["git", "rev-parse", "HEAD"],
             cwd=str(repo_root),
             stderr=subprocess.DEVNULL
         ).decode("utf-8").strip()
     except Exception:
-        CURRENT_SHA = "HEAD"
+        PR_HEAD_SHA = "HEAD"
 
 print("===================================================================")
-print(f">>> RUNNING ARENA ISOLATION SUITE (SHA: {CURRENT_SHA[:8]}, Mode: Portable) <<<")
+print(f">>> RUNNING ARENA ISOLATION SUITE (PR_HEAD_SHA: {PR_HEAD_SHA[:8]}, Portable) <<<")
 print("===================================================================")
 
 dispatcher = TaskDispatcher(repo_root=repo_root, queue_dir=queue_root)
@@ -85,7 +87,6 @@ except ValueError as e:
 # GATE 3: Fail-Closed Unknown Sub-LEGO in Executor Logic
 # -------------------------------------------------------------------------
 print("\n>>> GATE 3: Fail-Closed Unknown Sub-LEGO in Executor Logic <<<")
-# Directly verify StructuredExecutor / rule loader fails-closed on unknown sublego
 from cli import load_sublego_rules
 try:
     load_sublego_rules("nonexistent.sublego.foo", repo_root)
@@ -102,25 +103,25 @@ except SecurityViolation as e:
     print(f"[PASS] Empty Sub-LEGO strictly rejected: {e}")
 
 # -------------------------------------------------------------------------
-# GATE 4: Authoritative Git SHA Manifest Resolution (Generic/Dynamic SHA)
+# GATE 4: Authoritative Git SHA Manifest Resolution (PR_HEAD_SHA)
 # -------------------------------------------------------------------------
-print(f"\n>>> GATE 4: Authoritative Git SHA Manifest Resolution (SHA: {CURRENT_SHA[:8]}) <<<")
-# 4A. Valid task in repo at CURRENT_SHA
-m1 = dispatcher.load_task_manifest("TASK-WFL-GRAPH-01", commit_sha=CURRENT_SHA)
-assert m1 is not None, f"Failed to load manifest at CURRENT_SHA: {CURRENT_SHA}"
+print(f"\n>>> GATE 4: Authoritative Git SHA Manifest Resolution (SHA: {PR_HEAD_SHA[:8]}) <<<")
+# 4A. Valid task in repo at PR_HEAD_SHA
+m1 = dispatcher.load_task_manifest("TASK-WFL-GRAPH-01", commit_sha=PR_HEAD_SHA)
+assert m1 is not None, f"Failed to load manifest at PR_HEAD_SHA: {PR_HEAD_SHA}"
 assert m1.get("agent") == "agent-01"
 assert m1.get("sublego") == "workflow.graph"
-print(f"[PASS] Loaded manifest at CURRENT_SHA: agent={m1.get('agent')}, sublego={m1.get('sublego')}")
+print(f"[PASS] Loaded manifest at PR_HEAD_SHA: agent={m1.get('agent')}, sublego={m1.get('sublego')}")
 
-# 4B. Fail-Closed: nonexistent task at CURRENT_SHA returns None (never falls back)
-m_none = dispatcher.load_task_manifest("NONEXISTENT-TASK-999", commit_sha=CURRENT_SHA)
+# 4B. Fail-Closed: nonexistent task at Git SHA returns None (never falls back)
+m_none = dispatcher.load_task_manifest("NONEXISTENT-TASK-999", commit_sha=PR_HEAD_SHA)
 assert m_none is None
 print("[PASS] Nonexistent task at Git SHA returns None (Strict Fail-Closed, zero fallback)")
 
 # -------------------------------------------------------------------------
-# GATE 5: Semantic Argument & Jail Sandbox Tests
+# GATE 5: Semantic Argument & Defense-in-Depth Command Reconciliation
 # -------------------------------------------------------------------------
-print("\n>>> GATE 5: Semantic Argument & Jail Sandbox Verification <<<")
+print("\n>>> GATE 5: Semantic Argument & Defense-in-Depth Verification <<<")
 with tempfile.TemporaryDirectory() as temp_ws:
     temp_ws_path = Path(temp_ws)
     ex = StructuredExecutor(temp_ws_path, ["crates/n8n-workflow/**"], [])
@@ -135,31 +136,48 @@ with tempfile.TemporaryDirectory() as temp_ws:
     assert not res_path["success"], "Path traversal argument must be rejected!"
     print("[PASS] Rejected path traversal argument")
 
+# 5B. Defense-in-depth: supplied command mismatching manifest command must be rejected
+try:
+    dispatcher.dispatch_execution_job(
+        agent_id="agent-01",
+        task_id="TASK-WFL-GRAPH-01",
+        sublego_id="workflow.graph",
+        command=["cargo", "test", "--workspace"], # Manifest specifies ["cargo", "check"]!
+        commit_sha=PR_HEAD_SHA
+    )
+    print("[FAIL] Command deviating from manifest must be rejected!")
+    sys.exit(1)
+except ValueError as e:
+    print(f"[PASS] Defense-in-depth rejected command mismatch: {e}")
+
 # -------------------------------------------------------------------------
-# GATE 6: Integration Queue & Host Daemon Check (if running)
+# GATE 6A: Dispatch Queue Verification (Universal across CI & VPS)
 # -------------------------------------------------------------------------
-print("\n>>> GATE 6: Dispatch Queue Verification <<<")
+print("\n>>> GATE 6A: Dispatch Queue Verification (Universal) <<<")
 job1_id = dispatcher.dispatch_execution_job(
     agent_id="agent-01",
     task_id="TASK-WFL-GRAPH-01",
     sublego_id="workflow.graph",
     command=["cargo", "check"],
-    commit_sha=CURRENT_SHA
+    commit_sha=PR_HEAD_SHA
 )
 job2_id = dispatcher.dispatch_execution_job(
     agent_id="agent-04",
     task_id="TASK-EXP-EVAL-01",
     sublego_id="expression.evaluator",
     command=["cargo", "test", "-p", "n8n-expression"],
-    commit_sha=CURRENT_SHA
+    commit_sha=PR_HEAD_SHA
 )
 assert (incoming_dir / job1_id).exists()
 assert (incoming_dir / job2_id).exists()
-print(f"[PASS] Successfully enqueued verified jobs into queue: {job1_id}, {job2_id}")
+print(f"[PASS] [GATE 6A] Enqueued verified jobs into incoming queue: {job1_id}, {job2_id}")
 
-# If executed directly on VPS with running executor daemon, verify completion
+# -------------------------------------------------------------------------
+# GATE 6B: VPS Host Executor E2E (Active Host Daemon Verification)
+# -------------------------------------------------------------------------
+print("\n>>> GATE 6B: VPS Host Executor E2E (Host Daemon Check) <<<")
 if Path("/srv/arena/runtime/executor.pid").exists():
-    print("Detected running Arena Executor daemon on VPS. Verifying actual job execution...")
+    print("Detected running Arena Executor daemon on VPS host. Monitoring actual execution...")
     start = time.time()
     j1_ok, j2_ok = False, False
     while time.time() - start < 90:
@@ -179,12 +197,14 @@ if Path("/srv/arena/runtime/executor.pid").exists():
             break
         time.sleep(2)
     assert j1_ok and j2_ok, "Daemon failed to complete jobs!"
-    print("[PASS] VPS Host Daemon executed both 2-agent jobs with exit_code=0")
+    print("[PASS] [GATE 6B] VPS Host Daemon executed both 2-agent jobs with exit_code=0")
+else:
+    print("[INFO] [GATE 6B SKIPPED] Host daemon not present in this runner environment (Normal for GitHub CI).")
 
 # Clean up temp queue if used
 if temp_queue_dir:
     temp_queue_dir.cleanup()
 
 print("\n===================================================================")
-print(">>> ALL 6 GATES VERIFIED 100% (PORTABLE, DETERMINISTIC, FAIL-CLOSED) <<<")
+print(">>> ALL GATES PASSED (PORTABLE, DETERMINISTIC, DEFENSE-IN-DEPTH) <<<")
 print("===================================================================")

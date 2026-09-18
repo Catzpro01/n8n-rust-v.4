@@ -60,4 +60,7 @@ jobs:
         run: pip install pyyaml
 
       - name: Run 6-Gate Sub-LEGO Isolation & Security Test Suite
+        env:
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          CI_MERGE_SHA: ${{ github.sha }}
         run: python3 tests/arena/test_sublego_enforcement.py

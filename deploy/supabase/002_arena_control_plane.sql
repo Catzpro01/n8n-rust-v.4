@@ -183,3 +183,40 @@ BEGIN
     RETURN jsonb_build_object('released', true, 'status', 'RELEASED');
 END;
 $$;
+-- ==============================================================================
+-- P0 SECURITY: RLS ENFORCEMENT & PRIVILEGE LOCKDOWN
+-- Prevent public/anon/authenticated access to control plane tables & RPCs.
+-- Backend Bridge uses service_role key directly (bypassing RLS safely).
+-- ==============================================================================
+
+-- 1. Enable RLS on all control plane tables
+ALTER TABLE public.agents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.task_leases ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.lego_locks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.heartbeats ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.execution_runs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.task_events ENABLE ROW LEVEL SECURITY;
+
+-- 2. Revoke all privileges on control plane tables from public, anon, and authenticated
+REVOKE ALL ON TABLE public.agents FROM anon, authenticated, public;
+REVOKE ALL ON TABLE public.task_leases FROM anon, authenticated, public;
+REVOKE ALL ON TABLE public.lego_locks FROM anon, authenticated, public;
+REVOKE ALL ON TABLE public.heartbeats FROM anon, authenticated, public;
+REVOKE ALL ON TABLE public.execution_runs FROM anon, authenticated, public;
+REVOKE ALL ON TABLE public.task_events FROM anon, authenticated, public;
+
+-- Explicitly grant full permissions to service_role ONLY
+GRANT ALL ON TABLE public.agents TO service_role;
+GRANT ALL ON TABLE public.task_leases TO service_role;
+GRANT ALL ON TABLE public.lego_locks TO service_role;
+GRANT ALL ON TABLE public.heartbeats TO service_role;
+GRANT ALL ON TABLE public.execution_runs TO service_role;
+GRANT ALL ON TABLE public.task_events TO service_role;
+
+-- 3. Revoke EXECUTE on stored procedures from public, anon, and authenticated
+REVOKE EXECUTE ON FUNCTION public.acquire_lego_lock(TEXT, TEXT, TEXT, TEXT, INTEGER) FROM anon, authenticated, public;
+REVOKE EXECUTE ON FUNCTION public.release_lego_lock(TEXT, TEXT, TEXT) FROM anon, authenticated, public;
+
+-- Explicitly grant EXECUTE to service_role ONLY
+GRANT EXECUTE ON FUNCTION public.acquire_lego_lock(TEXT, TEXT, TEXT, TEXT, INTEGER) TO service_role;
+GRANT EXECUTE ON FUNCTION public.release_lego_lock(TEXT, TEXT, TEXT) TO service_role;

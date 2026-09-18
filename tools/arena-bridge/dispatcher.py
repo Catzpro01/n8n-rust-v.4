@@ -101,10 +101,30 @@ class TaskDispatcher:
     def dispatch_execution_job(self, agent_id: str, task_id: str, sublego_id: str, command: list[str], cwd: str = ".", commit_sha: str = None) -> str:
         """
         Enqueues an execution job for Arena Executor daemon.
-        Validates ownership strictly before enqueuing (fail-closed).
+        Defense-in-depth:
+        1. Validates ownership of Sub-LEGO.
+        2. Re-verifies manifest at commit_sha to ensure supplied agent, sublego, and command match exactly.
         """
+        # 1. Ownership validation
         if not self.validate_agent_task(agent_id, sublego_id):
             raise ValueError(f"Security Rejection: Agent '{agent_id}' is not the authorized owner of Sub-LEGO '{sublego_id}'")
+
+        # 2. Defense-in-depth manifest reconciliation
+        manifest = self.load_task_manifest(task_id, commit_sha=commit_sha)
+        if manifest:
+            m_agent = manifest.get("agent")
+            m_sublego = manifest.get("sublego")
+            m_cmd = manifest.get("command")
+
+            if m_agent and m_agent != agent_id:
+                raise ValueError(f"Contract Rejection: Dispatcher agent '{agent_id}' does not match manifest agent '{m_agent}'")
+            if m_sublego and m_sublego != sublego_id:
+                raise ValueError(f"Contract Rejection: Dispatcher sublego '{sublego_id}' does not match manifest sublego '{m_sublego}'")
+            if m_cmd and m_cmd != command:
+                raise ValueError(f"Contract Rejection: Supplied command '{command}' deviates from manifest command '{m_cmd}'")
+        elif commit_sha:
+            # If commit_sha was specified but manifest could not be loaded -> reject
+            raise ValueError(f"Security Rejection: Task manifest '{task_id}' could not be verified at commit '{commit_sha}'")
 
         self.queue_incoming.mkdir(parents=True, exist_ok=True)
         job_id = f"{int(time.time()*1000)}_{agent_id}_{task_id}.json"
