@@ -94,19 +94,32 @@ agent-01 ⇄ agent-04 yang sudah diratifikasi.
 
 ## 4. Bukti Verifikasi
 
-- ⚠️ **TOOLCHAIN BLOCKER**: sandbox sesi ini **tidak punya `cargo`/`rustc`
-  dan tanpa akses jaringan** (rustup/apt gagal). `cargo test -p
-  n8n-expression` HARUS dijalankan oleh executor/CI yang memiliki toolchain
-  Rust. Kode ditulis dengan review statis menyeluruh (borrow, arity,
-  types) dan semantik setiap test dicocokkan manual terhadap implementasi.
-- Gate offline yang tersedia dijalankan di sandbox:
+- ✅ **`cargo test` TERJALANKAN NYATA di sandbox** via `tools/rust-offline-rig`
+  (toolchain rustc/cargo 1.88.0 dari npm + 24 crates vendored dari git;
+  diperbaiki komit `b15528a2`):
+  - `run.sh test` → **`n8n_expression`: 37/37 PASS** (5 regresi pilot +
+    32 kontrak/bahasa di `lib.rs`/`extensions.rs`/`sandbox.rs`).
+  - `run.sh test` keseluruhan workspace → **SEMUA PASS**:
+    `n8n_common` 0, `n8n_connection` 2, `n8n_execution_data` 3,
+    `n8n_expression` 37, `n8n_node_model` 1, `n8n_validation` 4,
+    `n8n_workflow` 53 unit + conformance 2 + **`graph_expression_integration`
+    1 (E2E + benchmark)** + `reference_fixtures` 5 + `trigger_lifecycle` 3.
+  - `run.sh check --all-targets` → **0 warning**.
+  - Benchmark integrasi: **67.25 µs / evaluasi node penuh** (10.000
+    evaluasi, debug build) — memenuhi gate < 100 µs dan target sub-milidetik.
+- Gate offline non-Rust:
   - `node tests/compatibility/contract_conformance.mjs` → **20/21 PASS**
     (1 FAIL = guard usang "Phase 2: no Rust" — PRE-EXISTING di HEAD, Phase 3
     secara resmi ACTIVE per PROJECT_RULES §0.1; milik agent-05).
   - `python3 tests/integration/boundary_audit.py` → temuan yang sama
     (PRE-EXISTING, guard usang yang sama).
-- Perilaku sandbox-blanking diverifikasi silang via Node.js mimic
-  (`"a 'xx' b"` → `"a      b"`, posisi stabil ✓).
+
+### Cara menjalankan ulang verifikasi
+```bash
+tools/rust-offline-rig/setup.sh            # sekali per sandbox (~2 menit)
+tools/rust-offline-rig/run.sh test -p n8n-expression
+tools/rust-offline-rig/run.sh check
+```
 
 ## 5. Sisa Gap Kontrak (untuk koordinasi lintas-LEGO, BUKAN blocker task ini)
 
@@ -122,10 +135,12 @@ Butuh perluasan trait `EvaluationContext` (milik ratifikasi agent-01/agent-03):
 
 ## 6. Petunjuk Sesi Penerus
 
-1. Jalankan `cargo test -p n8n-expression` di lingkungan bertoolchain.
-   Daftar test: 5 pilot + 16 kontrak/bahasa di `lib.rs`, 7 di
-   `extensions.rs`, 6 di `sandbox.rs`.
-2. Bila ada kegagalan kecil (format pesan error/posisi), perbaiki DI
-   `crates/n8n-expression/src/**` saja — jangan menyentuh crate lain.
+1. Verifikasi ulang cepat: `tools/rust-offline-rig/run.sh test -p n8n-expression`
+   (rig sudah berfungsi penuh; 37 test hijau per sesi ini).
+2. Bila perlu perbaikan, lakukan DI `crates/n8n-expression/src/**` saja —
+   jangan menyentuh crate lain tanpa kontrak formal.
 3. PR harus membiarkan guard stale Phase-2 di gate offline apa adanya
    (owned oleh agent-05); dokumenkan di deskripsi PR.
+4. Optimasi berikutnya yang layak: AST cache (parse-sekali-evaluasi-banyak)
+   — benchmark saat ini 67 µs/evaluasi; meng-cache AST bisa memangkas
+   sebagian besar waktu parse.
