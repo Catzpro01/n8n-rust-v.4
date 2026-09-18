@@ -11,6 +11,11 @@
     "isolation:check": "node tools/workflow-boundary-map.mjs --check && node tools/workflow-kernel-conformance.mjs --check && node tools/workflow-port-surface.mjs --check && node tools/workflow-reference-manifest.mjs --check",
     "isolation:extract": "node tools/workflow-isolation-extract.mjs",
     "workflow-lego:build": "npm --prefix packages/workflow-lego run build",
-    "workflow-lego:test": "bash scripts/run-lego-tests.sh"
+    "workflow-lego:test": "bash scripts/run-lego-tests.sh",
+    "localization:gate": "node tools/localization-leak-gate.mjs",
+    "localization:test": "node --test \"tests/agent-5/*.test.mjs\"",
+    "localization:mutation": "node tests/agent-5/mutation-check.mjs",
+    "agent5:verify": "npm run localization:gate && npm run localization:test && npm run localization:mutation",
+    "agent5:bus": "node scripts/flush-agent-bus.mjs"
   }
 }

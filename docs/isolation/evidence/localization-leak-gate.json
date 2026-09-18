@@ -1,0 +1,189 @@
+{
+  "gate": "localization-leak-gate",
+  "agent": "agent-5",
+  "lego": "persistence",
+  "task": "TASK-LANG-B5",
+  "generated_at": "2026-09-18T01:23:06.246Z",
+  "branch": "arena/01a0b206-n8n-rust-v-4",
+  "head_commit": "4e580118",
+  "node": "v22.22.3",
+  "reference": {
+    "n8n": "2.9.4",
+    "upstream_commit": "b6dc2787c45677a29a9612cd27eb911302961a83",
+    "english_source": "reference/n8n/packages/frontend/@n8n/i18n/src/locales/en.json",
+    "english_source_sha256": "1367f71aacc45ca656b88a058564637965967d672fd3b14b70cacf3793d5bef4",
+    "status_vocabulary": "reference/n8n/packages/workflow/src/execution-status.ts"
+  },
+  "summary": {
+    "checks": 11,
+    "passed": 11,
+    "failed": 0,
+    "verdict": "PASS",
+    "warnings": 8,
+    "keys": 48,
+    "locales": 6,
+    "strings": 288
+  },
+  "checks": [
+    {
+      "id": "G00",
+      "name": "localization modules load on Node",
+      "severity": "block",
+      "status": "PASS",
+      "modules": 4
+    },
+    {
+      "id": "G01",
+      "name": "every reconstructed JS/TS file parses",
+      "severity": "block",
+      "status": "PASS",
+      "filesChecked": 61,
+      "typeStripped": 33,
+      "failed": []
+    },
+    {
+      "id": "G09",
+      "name": "zero Rust inside the JS/TS reconstruction",
+      "severity": "block",
+      "status": "PASS",
+      "filesScanned": 61,
+      "rustFiles": [],
+      "offenders": []
+    },
+    {
+      "id": "G02",
+      "name": "six-locale dictionary parity",
+      "severity": "block",
+      "status": "PASS",
+      "canonicalKeys": 48,
+      "locales": 6,
+      "problems": []
+    },
+    {
+      "id": "G03",
+      "name": "interpolation placeholder parity",
+      "severity": "block",
+      "status": "PASS",
+      "problems": []
+    },
+    {
+      "id": "G04",
+      "name": "no foreign script inside a locale string",
+      "severity": "block",
+      "status": "PASS",
+      "problems": []
+    },
+    {
+      "id": "G05",
+      "name": "ar = Arabic, zh = Han, ru = Cyrillic",
+      "severity": "block",
+      "status": "PASS",
+      "problems": []
+    },
+    {
+      "id": "G06",
+      "name": "no untranslated English fallback in ar/zh/ru",
+      "severity": "block",
+      "status": "PASS",
+      "problems": []
+    },
+    {
+      "id": "G07",
+      "name": "full render records zero translation misses",
+      "severity": "block",
+      "status": "PASS",
+      "keysRendered": 288,
+      "problems": []
+    },
+    {
+      "id": "G08",
+      "name": "all four locale surfaces expose the same codes",
+      "severity": "block",
+      "status": "PASS",
+      "surfaces": {
+        "persistence": "ar,en,id,jv,ru,zh",
+        "native": "ar,en,id,jv,ru,zh",
+        "enforcer": "ar,en,id,jv,ru,zh",
+        "settings": "ar,en,id,jv,ru,zh"
+      },
+      "distinct": [
+        "ar,en,id,jv,ru,zh"
+      ]
+    },
+    {
+      "id": "G10",
+      "name": "preference round-trips through storage",
+      "severity": "block",
+      "status": "PASS",
+      "problems": []
+    }
+  ],
+  "warnings": [
+    {
+      "id": "W01",
+      "level": "info",
+      "locale": "ar",
+      "message": "duplicate value \"خطأ\" for execution.status.error and executionsList.modes.error"
+    },
+    {
+      "id": "W01",
+      "level": "info",
+      "locale": "zh",
+      "message": "duplicate value \"错误\" for execution.status.error and executionsList.modes.error"
+    },
+    {
+      "id": "W02",
+      "level": "info",
+      "locale": "id",
+      "message": "\"executionsList.status\" is identical to the English source (loanword — acceptable)"
+    },
+    {
+      "id": "W02",
+      "level": "info",
+      "locale": "id",
+      "message": "\"executionsList.modes.manual\" is identical to the English source (loanword — acceptable)"
+    },
+    {
+      "id": "W02",
+      "level": "info",
+      "locale": "id",
+      "message": "\"executionsList.modes.webhook\" is identical to the English source (loanword — acceptable)"
+    },
+    {
+      "id": "W02",
+      "level": "info",
+      "locale": "jv",
+      "message": "\"executionsList.status\" is identical to the English source (loanword — acceptable)"
+    },
+    {
+      "id": "W02",
+      "level": "info",
+      "locale": "jv",
+      "message": "\"executionsList.modes.manual\" is identical to the English source (loanword — acceptable)"
+    },
+    {
+      "id": "W02",
+      "level": "info",
+      "locale": "jv",
+      "message": "\"executionsList.modes.webhook\" is identical to the English source (loanword — acceptable)"
+    }
+  ],
+  "sample": {
+    "status_running": {
+      "id": "Berjalan",
+      "en": "Running",
+      "jv": "Mlaku",
+      "ar": "قيد التشغيل",
+      "zh": "运行中",
+      "ru": "Выполняется"
+    },
+    "pruned": {
+      "id": "Data eksekusi dibersihkan",
+      "en": "Execution data pruned",
+      "jv": "Data eksekusi diresiki",
+      "ar": "تم تنظيف بيانات التنفيذ",
+      "zh": "执行数据已清理",
+      "ru": "Данные выполнений очищены"
+    }
+  }
+}

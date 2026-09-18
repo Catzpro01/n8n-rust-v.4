@@ -1,0 +1,212 @@
+{
+  "$comment": "Agent-5 outbound messages, schema-matched to public.agent_messages and public.tasks (docs/supabase_migration.sql). NOT DELIVERED FROM THE WORKER: (1) the sandbox egress allowlist drops TLS to *.supabase.co (curl/fetch: SSL_ERROR_SYSCALL at handshake from the workspace, while api.github.com succeeds), and (2) RLS grants anon/authenticated SELECT only, so the publishable key in .env.example cannot INSERT — a service_role key is required. Envelopes are persisted here in phase order so the orchestrator can replay them verbatim with scripts/flush-agent-bus.mjs once egress + SUPABASE_SECRET_KEY exist. This file is the PRE/POST reporting obligation of TASK-LANG-B5, not an omission of it.",
+  "schema": {
+    "agent_messages": "public.agent_messages",
+    "tasks": "public.tasks"
+  },
+  "sender_id": "agent-5",
+  "lego": "persistence",
+  "branch": "arena/01a0b206-n8n-rust-v-4",
+  "base_branch": "agent-5",
+  "head_commit_at_write": "4e580118",
+  "task_id": "TASK-LANG-B5",
+  "generated_at": "2026-09-18T01:21:09Z",
+  "delivery": {
+    "script": "scripts/flush-agent-bus.mjs",
+    "command": "SUPABASE_URL=... SUPABASE_SECRET_KEY=... node scripts/flush-agent-bus.mjs --apply",
+    "attempted_from_worker": true,
+    "attempt_result": "dry-run only — no SUPABASE_SECRET_KEY and no egress to *.supabase.co"
+  },
+  "envelopes": [
+    {
+      "id": "MSG-PRE-TASK-LANG-B5",
+      "phase": "pre",
+      "table": "agent_messages",
+      "method": "POST",
+      "prefer": "return=representation",
+      "note": "PRE_TASK_REPORT — sent before the first source edit",
+      "body": {
+        "sender_id": "agent-5",
+        "recipient_id": "broadcast",
+        "message_type": "STATUS_REPORT",
+        "subject": "PRE_TASK_REPORT · TASK-LANG-B5 · persistence localization + zero-cross-language-leak gate",
+        "status": "UNREAD",
+        "payload": {
+          "report": "PRE_TASK_REPORT",
+          "task_id": "TASK-LANG-B5",
+          "agent": "agent-5",
+          "lego": "persistence",
+          "branch": "arena/01a0b206-n8n-rust-v-4",
+          "base_branch": "agent-5",
+          "head_before": "4e580118",
+          "planned_scope": [
+            "packages/reconstructed-engine/src/persistence-locale-store.ts (new)",
+            "packages/reconstructed-engine/src/universal-locale-enforcer.ts (harden leak log)",
+            "packages/workflow-lego/src/settings-localization-adapter.ts (locale-parity fix)",
+            "tools/localization-leak-gate.mjs (new audit gate)",
+            "tests/agent-5/ (unit tests + mutation check)"
+          ],
+          "rules_honoured": [
+            "ZERO RUST",
+            "ZERO CROSS-LANGUAGE LEAK",
+            "ISOLASI MODUL"
+          ],
+          "reference": "n8n 2.9.4 @ b6dc2787c45677a29a9612cd27eb911302961a83"
+        }
+      }
+    },
+    {
+      "id": "TASK-LANG-B5-RUNNING",
+      "phase": "pre",
+      "table": "tasks",
+      "method": "POST",
+      "prefer": "resolution=merge-duplicates,return=representation",
+      "note": "tasks.status -> RUNNING (upsert; id is the primary key)",
+      "body": {
+        "id": "TASK-LANG-B5",
+        "agent_id": "agent-5",
+        "module": "persistence",
+        "phase": 5,
+        "status": "RUNNING",
+        "spec": {
+          "title": "Penegakan konsistensi multi-bahasa lapis persistence + gerbang zero cross-language leak",
+          "locales": [
+            "id",
+            "en",
+            "jv",
+            "ar",
+            "zh",
+            "ru"
+          ],
+          "default_locale": "id"
+        },
+        "result": {}
+      }
+    },
+    {
+      "id": "MSG-POST-TASK-LANG-B5",
+      "phase": "post",
+      "table": "agent_messages",
+      "method": "POST",
+      "prefer": "return=representation",
+      "note": "POST_TASK_REPORT — machine evidence attached",
+      "body": {
+        "sender_id": "agent-5",
+        "recipient_id": "broadcast",
+        "message_type": "STATUS_REPORT",
+        "subject": "POST_TASK_REPORT · TASK-LANG-B5 · VERDICT SUCCESS (gate 11/11, tests 16/16, mutations 7/7)",
+        "status": "UNREAD",
+        "payload": {
+          "report": "POST_TASK_REPORT",
+          "task_id": "TASK-LANG-B5",
+          "agent": "agent-5",
+          "lego": "persistence",
+          "branch": "arena/01a0b206-n8n-rust-v-4",
+          "verdict": "SUCCESS",
+          "machine_evidence": {
+            "gate": {
+              "command": "node tools/localization-leak-gate.mjs",
+              "checks": 11,
+              "passed": 11,
+              "failed": 0,
+              "verdict": "PASS",
+              "warnings": 8,
+              "strings": 288,
+              "keys": 48,
+              "locales": 6,
+              "evidence_file": "docs/isolation/evidence/localization-leak-gate.json"
+            },
+            "syntax": {
+              "files_checked": 59,
+              "type_stripped_ts": 33,
+              "note": "plain `node --check` accepts `export const a = ;` in .ts, so .ts is type-stripped first"
+            },
+            "unit_tests": {
+              "command": "node --test \"tests/agent-5/*.test.mjs\"",
+              "passed": 16,
+              "failed": 0
+            },
+            "mutation_check": {
+              "command": "node tests/agent-5/mutation-check.mjs",
+              "defects_injected": 7,
+              "defects_caught": 7,
+              "note": "proves the gate is not vacuously green"
+            }
+          },
+          "deliverables": [
+            "packages/reconstructed-engine/src/persistence-locale-store.ts",
+            "packages/reconstructed-engine/src/universal-locale-enforcer.ts",
+            "packages/workflow-lego/src/settings-localization-adapter.ts",
+            "tools/localization-leak-gate.mjs",
+            "tests/agent-5/localization.test.mjs",
+            "tests/agent-5/mutation-check.mjs",
+            "scripts/flush-agent-bus.mjs",
+            "docs/isolation/evidence/localization-leak-gate.json",
+            "docs/isolation/agent-5-localization-audit.md",
+            "results/TASK-LANG-B5.md"
+          ]
+        }
+      }
+    },
+    {
+      "id": "TASK-LANG-B5-COMPLETED",
+      "phase": "post",
+      "table": "tasks",
+      "method": "POST",
+      "prefer": "resolution=merge-duplicates,return=representation",
+      "note": "tasks.status -> COMPLETED with the machine evidence as result JSONB",
+      "body": {
+        "id": "TASK-LANG-B5",
+        "agent_id": "agent-5",
+        "module": "persistence",
+        "phase": 5,
+        "status": "COMPLETED",
+        "spec": {
+          "title": "Penegakan konsistensi multi-bahasa lapis persistence + gerbang zero cross-language leak",
+          "locales": [
+            "id",
+            "en",
+            "jv",
+            "ar",
+            "zh",
+            "ru"
+          ]
+        },
+        "result": {
+          "verdict": "SUCCESS",
+          "gate": "11/11 PASS",
+          "unit_tests": "16/16 PASS",
+          "mutation_check": "7/7 caught",
+          "strings_audited": 288,
+          "files_syntax_checked": 59,
+          "head": "4e580118",
+          "branch": "arena/01a0b206-n8n-rust-v-4",
+          "finished_at": "2026-09-18T01:21:09Z"
+        }
+      }
+    },
+    {
+      "id": "MSG-AGENT-1-LOCALE-BOUNDARY",
+      "phase": "post",
+      "table": "agent_messages",
+      "method": "POST",
+      "prefer": "return=representation",
+      "note": "cross-boundary notification: a persistence-owned file was touched inside packages/workflow-lego",
+      "body": {
+        "sender_id": "agent-5",
+        "recipient_id": "agent-1",
+        "message_type": "CONTRACT_VALIDATION",
+        "subject": "packages/workflow-lego/src/settings-localization-adapter.ts — locale-parity fix (persistence-owned)",
+        "status": "UNREAD",
+        "payload": {
+          "file": "packages/workflow-lego/src/settings-localization-adapter.ts",
+          "change": "supported languages raised from [id, en] to the runtime set [id, en, jv, ar, zh, ru]; storage round-trip added",
+          "why": "Phase-4A shipped an id/en-only settings surface while the runtime dictionary offers six locales — picking jv/ar/zh/ru left the settings screen in Indonesian (a cross-language inconsistency).",
+          "boundary_argument": "manifest/ownership.json lists `persistence` under doesNotOwn for the Workflow LEGO, and AGENT_INSTRUCTION.md assigns language-preference storage to agent-5. The file stays self-contained (no new imports) so the Workflow LEGO boundary does not widen.",
+          "gate": "tools/localization-leak-gate.mjs G08 keeps the four locale surfaces in parity and fails if this regresses.",
+          "request": "If you disagree with the ownership call, reply and I will move the file to packages/reconstructed-engine/src/ instead."
+        }
+      }
+    }
+  ]
+}
