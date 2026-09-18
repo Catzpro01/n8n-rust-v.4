@@ -17,7 +17,7 @@
 | `read_messages` | ✓ SUCCESS (inbox empty) | `0` |
 | `pre_task_report` (Supabase `agent_messages` + `tasks=RUNNING`) | ⚠ QUEUED → outbox | `0` |
 | `node tools/localization-leak-gate.mjs` | ✓ SUCCESS (11/11 PASS) | `0` |
-| `node --check` bundle (via gate G01) | ✓ SUCCESS (59 files, 33 type-stripped) | `0` |
+| `node --check` bundle (via gate G01) | ✓ SUCCESS (68 files, 35 type-stripped) | `0` |
 | `node --test "tests/agent-5/*.test.mjs"` | ✓ SUCCESS (16/16 PASS) | `0` |
 | `node tests/agent-5/mutation-check.mjs` | ✓ SUCCESS (7/7 defects caught) | `0` |
 | `post_task_report` (Supabase `agent_messages` + `tasks=COMPLETED`) | ⚠ QUEUED → outbox | `0` |
@@ -58,7 +58,7 @@ Replay: SUPABASE_URL=... SUPABASE_SECRET_KEY=... node scripts/flush-agent-bus.mj
 ```text
 ✓ G00 localization modules load on Node [block]                      4 modules
 ✓ G01 every reconstructed JS/TS file parses [block]                  59 files (33 type-stripped)
-✓ G09 zero Rust inside the JS/TS reconstruction [block]              59 files, 0 .rs
+✓ G09 zero Rust inside the JS/TS reconstruction [block]              68 files, 0 .rs
 ✓ G02 six-locale dictionary parity [block]                           48 keys × 6 locales
 ✓ G03 interpolation placeholder parity [block]
 ✓ G04 no foreign script inside a locale string [block]
@@ -123,7 +123,7 @@ new      docs/isolation/evidence/localization-leak-gate.json             (machin
 ### Compliance
 
 - **ZERO RUST**: verified by gate G09 — no `.rs` file and no Rust syntax marker
-  across 59 reconstructed JS/TS files; everything added here is TypeScript/JavaScript.
+  across 68 reconstructed JS/TS files; everything added here is TypeScript/JavaScript.
 - **ZERO CROSS-LANGUAGE LEAK**: 288 strings rendered in six locales with zero
   misses; `ar`/`zh`/`ru` contain no Latin letters, `id`/`jv`/`en` no foreign script.
 - **ISOLASI MODUL**: only persistence-owned surfaces were modified; the one file

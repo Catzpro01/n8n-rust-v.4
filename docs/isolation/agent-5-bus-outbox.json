@@ -117,9 +117,9 @@
               "evidence_file": "docs/isolation/evidence/localization-leak-gate.json"
             },
             "syntax": {
-              "files_checked": 59,
-              "type_stripped_ts": 33,
-              "note": "plain `node --check` accepts `export const a = ;` in .ts, so .ts is type-stripped first"
+              "files_checked": 68,
+              "type_stripped_ts": 35,
+              "note": "plain `node --check` accepts `export const a = ;` in .ts, so .ts is type-stripped first; 68 files include the merged agent-3/agent-4 expression LEGO"
             },
             "unit_tests": {
               "command": "node --test \"tests/agent-5/*.test.mjs\"",
@@ -178,7 +178,7 @@
           "unit_tests": "16/16 PASS",
           "mutation_check": "7/7 caught",
           "strings_audited": 288,
-          "files_syntax_checked": 59,
+          "files_syntax_checked": 68,
           "head": "4e580118",
           "branch": "arena/01a0b206-n8n-rust-v-4",
           "finished_at": "2026-09-18T01:21:09Z"

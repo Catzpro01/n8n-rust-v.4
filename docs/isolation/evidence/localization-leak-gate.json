@@ -3,9 +3,9 @@
   "agent": "agent-5",
   "lego": "persistence",
   "task": "TASK-LANG-B5",
-  "generated_at": "2026-09-18T01:23:06.246Z",
+  "generated_at": "2026-09-18T01:25:02.065Z",
   "branch": "arena/01a0b206-n8n-rust-v-4",
-  "head_commit": "4e580118",
+  "head_commit": "688af9df",
   "node": "v22.22.3",
   "reference": {
     "n8n": "2.9.4",
@@ -37,8 +37,8 @@
       "name": "every reconstructed JS/TS file parses",
       "severity": "block",
       "status": "PASS",
-      "filesChecked": 61,
-      "typeStripped": 33,
+      "filesChecked": 68,
+      "typeStripped": 35,
       "failed": []
     },
     {
@@ -46,7 +46,7 @@
       "name": "zero Rust inside the JS/TS reconstruction",
       "severity": "block",
       "status": "PASS",
-      "filesScanned": 61,
+      "filesScanned": 68,
       "rustFiles": [],
       "offenders": []
     },

@@ -44,7 +44,7 @@ notices are marked `reconstruction:agent-5/persistence`.
 | F1 | `SettingsLocalizationAdapter` offered only `id` + `en` while `NativeLocalizationService` offered six locales. Selecting Javanese/Arabic/Chinese/Russian in the backend left the settings screen in Indonesian — a genuine cross-language inconsistency. | high | fixed — `SUPPORTED_LANGUAGES` now carries all six; gate `G08` fails if the surfaces drift apart |
 | F2 | `UniversalLocaleEnforcer.cleanText()` returned the **English source string** when a translation was missing, with no record — the exact leak the rule forbids, undetectable. | high | fixed — every miss is pushed to a leak log exposed via `leaks()` / `hasLeaks()`; the gate renders all 288 strings and fails on any miss (`G07`) |
 | F3 | The gate enumerated sources with `git ls-files`, so a **new, untracked file escaped both the syntax check and the Rust scan**. | high | fixed — inventory = filesystem walk ∪ index; found by the mutation harness (M05 flipped the wrong check) |
-| F4 | `node --check file.ts` is **not** a syntax gate for TypeScript: it exits `0` on `export const a = ;`. | high | fixed — `.ts` is type-stripped with `module.stripTypeScriptTypes()` and the emitted ESM is checked (33 of 59 files) |
+| F4 | `node --check file.ts` is **not** a syntax gate for TypeScript: it exits `0` on `export const a = ;`. | high | fixed — `.ts` is type-stripped with `module.stripTypeScriptTypes()` and the emitted ESM is checked (35 of 68 files) |
 | F5 | A `reference/` substring filter also excluded our own golden corpus `tests/reference/**` (16 files). | medium | fixed — only the read-only upstream tree `reference/**` is excluded |
 | F6 | `خطأ` / `错误` are used for both `execution.status.error` and `executionsList.modes.error`. | info | accepted — legitimate homonyms; reported as warning `W01`, not a failure |
 
@@ -53,7 +53,7 @@ notices are marked `reconstruction:agent-5/persistence`.
 ```
 $ node tools/localization-leak-gate.mjs
 ✓ G00 localization modules load on Node                      4 modules
-✓ G01 every reconstructed JS/TS file parses                  59 files (33 type-stripped)
+✓ G01 every reconstructed JS/TS file parses                  68 files (35 type-stripped)
 ✓ G02 six-locale dictionary parity                           48 keys × 6 locales
 ✓ G03 interpolation placeholder parity                       {count} identical everywhere
 ✓ G04 no foreign script inside a locale string               no Latin in ar/zh/ru, no Han/Cyrillic/Arabic in id/jv/en
@@ -70,7 +70,7 @@ LOCALIZATION GATE: 11/11 PASS · 0 FAIL · 8 warning(s) · 288 strings · VERDIC
 `G09` is the ZERO-RUST check: eight Rust markers (`fn` declarations, `#![`,
 `#[derive(`, `let mut`, Rust return arrows, `impl` blocks, `println!`,
 `use crate::`) plus a `.rs` file scan over `packages/`, `tools/`, `tests/`,
-`apps/`, `scripts/`.
+`apps/`, `scripts/` — including the agent-3/agent-4 expression LEGO merged into this branch.
 
 ### The gate is not vacuously green
 
