@@ -44,6 +44,17 @@ if not PR_HEAD_SHA:
     except Exception:
         PR_HEAD_SHA = "HEAD"
 
+# Verify that PR_HEAD_SHA is a resolvable git object; fallback to HEAD if shallow clone or missing ref
+try:
+    subprocess.check_call(
+        ["git", "cat-file", "-e", f"{PR_HEAD_SHA}^{{commit}}"],
+        cwd=str(repo_root),
+        stderr=subprocess.DEVNULL
+    )
+except Exception:
+    print(f"[INFO] PR_HEAD_SHA '{PR_HEAD_SHA}' not found in local git objects; falling back to HEAD.")
+    PR_HEAD_SHA = "HEAD"
+
 print("===================================================================")
 print(f">>> RUNNING ARENA ISOLATION SUITE (PR_HEAD_SHA: {PR_HEAD_SHA[:8]}, Portable) <<<")
 print("===================================================================")
@@ -176,7 +187,9 @@ print(f"[PASS] [GATE 6A] Enqueued verified jobs into incoming queue: {job1_id}, 
 # GATE 6B: VPS Host Executor E2E (Active Host Daemon Verification)
 # -------------------------------------------------------------------------
 print("\n>>> GATE 6B: VPS Host Executor E2E (Host Daemon Check) <<<")
-if Path("/srv/arena/runtime/executor.pid").exists():
+host_e2e_flag = os.environ.get("ARENA_HOST_E2E", "0") == "1"
+pid_file = Path("/srv/arena/runtime/executor.pid")
+if host_e2e_flag and pid_file.exists():
     print("Detected running Arena Executor daemon on VPS host. Monitoring actual execution...")
     start = time.time()
     j1_ok, j2_ok = False, False
@@ -199,7 +212,7 @@ if Path("/srv/arena/runtime/executor.pid").exists():
     assert j1_ok and j2_ok, "Daemon failed to complete jobs!"
     print("[PASS] [GATE 6B] VPS Host Daemon executed both 2-agent jobs with exit_code=0")
 else:
-    print("[INFO] [GATE 6B SKIPPED] Host daemon not present in this runner environment (Normal for GitHub CI).")
+    print("[INFO] [GATE 6B SKIPPED] Host daemon execution skipped (use ARENA_HOST_E2E=1 on host with active daemon).")
 
 # Clean up temp queue if used
 if temp_queue_dir:

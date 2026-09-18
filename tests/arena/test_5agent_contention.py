@@ -25,6 +25,15 @@ if not PR_HEAD_SHA:
     except Exception:
         PR_HEAD_SHA = "HEAD"
 
+try:
+    subprocess.check_call(
+        ["git", "cat-file", "-e", f"{PR_HEAD_SHA}^{{commit}}"],
+        cwd=str(repo_root),
+        stderr=subprocess.DEVNULL
+    )
+except Exception:
+    PR_HEAD_SHA = "HEAD"
+
 print("===================================================================")
 print(f">>> 5-AGENT CONTENTION & CHAOS SIMULATION SUITE (SHA: {PR_HEAD_SHA[:8]}) <<<")
 print("===================================================================")
