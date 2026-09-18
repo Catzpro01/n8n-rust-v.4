@@ -8,18 +8,25 @@ is a Rust replacement attempted.
 
 ## Project status
 
-| stage | state |
+| Stage | State |
 | :--- | :--- |
-| ANATOMY (`docs/anatomy/`) | ✅ |
-| CONTRACT (`contracts/`) | ✅ |
-| REFERENCE SOURCE (`reference/n8n/`, n8n 2.9.4) | ✅ |
-| REFERENCE RUNTIME (baseline 11/11 smoke test) | ✅ |
-| **WORKFLOW ISOLATION (LEGO 01)** | **✅ VERIFIED — see [`docs/isolation/workflow.md`](docs/isolation/workflow.md)** |
-| NODE MODEL (LEGO 02) · CONNECTION (03) · VALIDATION (04) | ⏸ next |
-| RUST IMPLEMENTATION | ⏸ not started |
+| ANATOMY (`docs/anatomy/`) | ✅ Completed |
+| CONTRACT (`contracts/`) | ✅ Completed |
+| REFERENCE SOURCE (`reference/n8n/`, n8n 2.9.4) | ✅ Completed |
+| REFERENCE RUNTIME (baseline 11/11 smoke test) | ✅ Completed |
+| WORKFLOW ISOLATION & LEGOS (01–04) | ✅ VERIFIED |
+| **CURRENT PHASE** | **🚀 PHASE 3 — RUST RUNTIME (ACTIVE)** |
+| RUST IMPLEMENTATION (8 Workspace Crates) | ✅ **ACTIVE** (`crates/` compiled & passing all tests) |
 
-“Isolated” means the TypeScript component now has an enforced boundary and a
-contract. It does **not** mean it was replaced by Rust.
+## Governance & Single Source of Truth (P0 Constitution)
+
+Proyek ini berada di bawah tata kelola arsitektur tunggal (P0 Governance):
+1. **Fase Resmi: PHASE 3 — RUST RUNTIME (ACTIVE)**. Fase isolasi Phase 2 telah selesai dan terverifikasi. Seluruh pengembangan runtime saat ini berada di Phase 3.
+2. **Status Rust: ACTIVE**. Status Rust bukan lagi "not started" atau "reserved". Cargo workspace mendefinisikan dan mengompilasi 8 crates aktif (`n8n-common`, `n8n-workflow`, `n8n-connection`, `n8n-validation`, `n8n-node-model`, `n8n-execution-data`, `n8n-expression`, `n8n-nodes-rust`).
+3. **Single Source of Truth**: Branch `main` adalah satu-satunya acuan kebenaran mutlak bagi semua agen. Dilarang melakukan rollback ke zero-Rust atau mengklaim fase sebelum Phase 3.
+4. **Compatibility Baseline (n8n v2.9.4)**: Perilaku referensi n8n v2.9.4 dan kontrak formal dipertahankan penuh sebagai standar keabsahan perilaku engine.
+5. **LEGO = Development Boundary, Bukan Runtime Overhead**: Pembagian LEGO hanya berfungsi sebagai batas modul dan pemisahan tugas saat isolasi/pengembangan. Pada hot-path runtime, engine tidak memecah eksekusi menjadi lapisan serialisasi JSON / IPC antar-crate yang berat, melainkan menggunakan representasi Runtime IR terpadu dengan alokasi minimal/zero-copy.
+6. **Feature & Node Freeze**: Penambahan node baru dibekukan sementara hingga arsitektur Kernel Runtime IR (P1: `ExecutionContext`, `ExecutionFrame`, `NodeExecutor`, Data Plane) dibakukan.
 
 ## Structure
 
@@ -31,9 +38,17 @@ contract. It does **not** mean it was replaced by Rust.
 - `tools/` : boundary mapper, kernel/port/reference gates, isolation extractor, model digest, gate runner, live engine harness
 - `tests/reference/` : golden workflows + baseline smoke test evidence
 - `tasks/`, `results/` : inbound task manifests and execution results
-- `crates/`, `apps/n8n-rust/` : (reserved) Rust implementation
+- `crates/` : active Rust implementation workspace (8 member crates)
+- `apps/n8n-rust/` : application entry point & runner
 
-## Verify a LEGO
+## Verify Rust Workspace
+
+```bash
+cargo check --workspace
+cargo test --workspace
+```
+
+## Verify a Reference LEGO
 
 ```bash
 scripts/setup-reference-runtime.sh        # n8n-workflow/core/nodes-base 2.9.1 == the n8n 2.9.4 dependency set

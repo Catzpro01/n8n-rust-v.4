@@ -1,6 +1,6 @@
 ﻿# LEGO Parallel Rules & Multi-Agent Governance
 
-## 1. The 10 Core Rules
+## 1. The 10 Core Rules (Phase 3 Active)
 ```text
 ┌─────────────────────────────────────┐
 │          LEGO PARALLEL RULE         │
@@ -17,6 +17,13 @@
 │10. Main must always remain runnable │
 └─────────────────────────────────────┘
 ```
+
+## 1.1 Governance & Architecture Invariants (P0 Constitution)
+1. **CURRENT PHASE: PHASE 3 — RUST RUNTIME (ACTIVE)**.
+2. **SINGLE SOURCE OF TRUTH**: Branch `main` adalah satu-satunya referensi kebenaran resmi.
+3. **COMPATIBILITY BASELINE**: Seluruh kontrak formal n8n 2.9.4 dipertahankan penuh sebagai acuan conformance.
+4. **LEGO = DEVELOPMENT BOUNDARY, BUKAN RUNTIME OVERHEAD**: LEGO memisahkan kepemilikan dan isolasi saat development. Pada runtime execution, hot-path dilarang menggunakan serialisasi/IPC berlapis antar-crate; runtime menggunakan unified minimal/zero-copy data plane.
+5. **FEATURE & NODE FREEZE**: Pembuatan node baru dibekukan sementara hingga Kernel Runtime IR (P1) selesai.
 
 ## 2. Agent Assignments
 | Agent | LEGO Assignment | Target Scope | Assigned Contract |
@@ -41,8 +48,7 @@ allowed_paths:
 forbidden_paths:
   - reference/n8n/packages/core/**
   - reference/n8n/packages/cli/**
-  - crates/**
-  - apps/**
+  # NOTE Phase 3: crates/** and apps/** are actively maintained workspace paths in Phase 3
 
 requires:
   - contracts/workflow.contract.md

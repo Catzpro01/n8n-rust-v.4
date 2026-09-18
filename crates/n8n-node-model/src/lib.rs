@@ -38,6 +38,8 @@ pub struct NodeTypeDescription {
     pub version: f64,
     pub inputs: Vec<String>,
     pub outputs: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub translation: Option<serde_json::Value>,
 }
 
 #[cfg(test)]

@@ -1,9 +1,11 @@
-# LEGO MASTER MAP — Phase 2 (LEGO Isolation)
+# LEGO MASTER MAP — Phase 3 (Rust Runtime Active)
 
-**Maintainer:** Agent 5 (Integration & Verification Guardian) & Autonomous Master Controller
+**Maintainer:** Architecture & Governance Guardian (P0 Constitution)
 **Reference:** n8n `2.9.4` (`reference/n8n`, upstream commit `b6dc2787c45677a29a9612cd27eb911302961a83`)
-**Audit date:** 2026-09-17
-**Rust status:** NOT ALLOWED in Phase 2 — verified clean (`crates/`, `apps/n8n-rust/` contain only `.gitkeep`)
+**Audit date:** 2026-09-18
+**Current Phase:** PHASE 3 — RUST RUNTIME (ACTIVE)
+**Rust status:** ACTIVE in Phase 3 — Workspace with 8 crates compiled & verified (`crates/n8n-*`)
+**Architecture Note:** LEGO boundaries serve as modular development & contract boundaries. The runtime hot-path utilizes unified Kernel Runtime IR with minimal/zero-copy, avoiding layered serialization overhead.
 
 Status vocabulary: `PLANNED | ANALYZED | ISOLATED | TESTED | VERIFIED | BLOCKED | FAILED`
 
@@ -63,4 +65,4 @@ map and the automated audit can never silently diverge.
 | Isolation docs complete | PASS (12/12) | all LEGOs have complete isolation blueprints |
 | 11/11 live smoke re-run | PASS (11/11) | verified live on VPS host `157.10.160.95` |
 
-**Overall Phase 2 gate: `VERIFIED`** — Ready for Phase 3 (Reference Test & Rust Contract Implementation).
+**Overall Phase 2 gate: `VERIFIED`** — Phase 3 (Rust Runtime Implementation & Conformance) is now **ACTIVE**.
