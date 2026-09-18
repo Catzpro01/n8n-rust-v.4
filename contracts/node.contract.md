@@ -1,3 +1,10 @@
+
+## 🚨 ARSITEKTUR EKSEKUSI: RUST NATIVE ENGINE (`crates/n8n-nodes-rust/`)
+Seluruh node resmi n8n wajib mengimplementasikan trait Rust `N8nNode`:
+- **Trait**: `crates/n8n-nodes-rust/src/traits.rs`
+- **Output Data**: `Vec<Vec<INodeExecutionData>>`
+- **Metadata**: Diekspor ke format JSON `NodeTypeDescription` yang cocok 100% dengan Canvas n8n.
+
 # Node Model Contract
 
 **Reference:** n8n `2.9.4` (`n8n@2.9.4`, commit `b6dc2787c45677a29a9612cd27eb911302961a83`)
