@@ -1,0 +1,9 @@
+id: TASK-WFL-GRAPH-01
+agent: agent-01
+lego: workflow
+sublego: workflow.graph
+branch: arena/agent-01/TASK-WFL-GRAPH-01
+command:
+  - cargo
+  - check
+timeout_sec: 120

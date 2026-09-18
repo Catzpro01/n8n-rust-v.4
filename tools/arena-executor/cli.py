@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Arena Executor Worker Daemon
+Arena Executor Worker Daemon (Strict Fail-Closed Sub-LEGO Isolation)
 Listens on /srv/arena/runtime/queue/incoming/, executes tasks via StructuredExecutor,
 records results to /srv/arena/runtime/queue/completed/, and syncs execution_runs to Supabase.
 """
@@ -18,6 +18,7 @@ sys.path.insert(0, str(repo_root / "tools" / "arena-executor"))
 sys.path.insert(0, str(repo_root / "tools" / "arena-bridge"))
 
 from executor import StructuredExecutor
+from fs_guard import SecurityViolation
 try:
     from supabase_adapter import SupabaseAdapter
 except (ImportError, ValueError):
@@ -31,20 +32,35 @@ def handle_signal(signum, frame):
     RUNNING = False
 
 def load_sublego_rules(sublego_id: str, repo_dir: Path) -> tuple[list[str], list[str]]:
+    """
+    STRICT FAIL-CLOSED Sub-LEGO Rule Loader.
+    NEVER defaults to ["**"]. If sublego_id is missing, unknown, or registry invalid,
+    raises SecurityViolation immediately.
+    """
+    if not sublego_id:
+        raise SecurityViolation("Missing sublego_id in execution job (fail-closed)")
+
     sublego_yaml = repo_dir / ".arena" / "registry" / "sublego.yaml"
     if not sublego_yaml.exists():
-        return ["**"], [".env*", ".git/**"]
+        raise SecurityViolation(f"Registry file not found at {sublego_yaml} (fail-closed)")
+
     try:
         with open(sublego_yaml, "r") as f:
             data = yaml.safe_load(f)
             for item in data.get("sublegos", []):
                 if item.get("id") == sublego_id:
-                    allowed = item.get("allowed_paths", ["**"])
+                    allowed = item.get("allowed_paths")
                     forbidden = item.get("forbidden_paths", [".env*", ".git/**"])
+                    if not allowed or not isinstance(allowed, list):
+                        raise SecurityViolation(f"Sub-LEGO '{sublego_id}' defines no valid allowed_paths (fail-closed)")
                     return allowed, forbidden
+    except SecurityViolation:
+        raise
     except Exception as e:
-        print(f"[ArenaExecutor] Warning loading sublego {sublego_id}: {e}")
-    return ["**"], [".env*", ".git/**"]
+        raise SecurityViolation(f"Registry corruption or error reading sublego.yaml: {e}")
+
+    # If sublego_id was not matched in the registry: STRICT REJECT
+    raise SecurityViolation(f"Unknown Sub-LEGO '{sublego_id}' not found in registry (fail-closed)")
 
 def process_job(job_file: Path, incoming_dir: Path, processing_dir: Path, completed_dir: Path,
                 workspaces_root: Path, repo_dir: Path, supabase):
@@ -73,16 +89,33 @@ def process_job(job_file: Path, incoming_dir: Path, processing_dir: Path, comple
     cwd_rel = job.get("cwd", ".")
     timeout_sec = job.get("timeout_sec", 120)
 
-    print(f"[ArenaExecutor] [START] Job {task_id} for {agent_id} in {cwd_rel}: {' '.join(command_argv)}")
+    print(f"[ArenaExecutor] [START] Job {task_id} for {agent_id} (Sub-LEGO: {sublego_id}): {' '.join(command_argv)}")
 
     ws_path = workspaces_root / agent_id
     if not ws_path.exists():
         ws_path.mkdir(parents=True, exist_ok=True)
 
-    allowed_paths, forbidden_paths = load_sublego_rules(sublego_id, repo_dir)
-    structured_ex = StructuredExecutor(ws_path, allowed_paths, forbidden_paths)
-
-    exec_res = structured_ex.execute_command(command_argv, cwd_rel=cwd_rel, timeout_sec=timeout_sec)
+    try:
+        # 1. Strictly load sublego rules (fail-closed)
+        allowed_paths, forbidden_paths = load_sublego_rules(sublego_id, repo_dir)
+        structured_ex = StructuredExecutor(ws_path, allowed_paths, forbidden_paths)
+        exec_res = structured_ex.execute_command(command_argv, cwd_rel=cwd_rel, timeout_sec=timeout_sec)
+    except SecurityViolation as sec_err:
+        print(f"[ArenaExecutor] [SECURITY REJECT] Job {task_id}: {sec_err}")
+        exec_res = {
+            "success": False,
+            "exit_code": -1,
+            "error": f"Security Violation: {str(sec_err)}",
+            "command_hash": "rejected"
+        }
+    except Exception as err:
+        print(f"[ArenaExecutor] [ERROR] Job {task_id}: {err}")
+        exec_res = {
+            "success": False,
+            "exit_code": -1,
+            "error": f"System error: {str(err)}",
+            "command_hash": "error"
+        }
 
     # Prepare job completion report
     report = {
@@ -136,7 +169,7 @@ def main():
     pid_file.write_text(str(os.getpid()))
 
     supabase = SupabaseAdapter() if SupabaseAdapter else None
-    print(f"[ArenaExecutor] Worker Daemon active. PID={os.getpid()}, WorkspaceRoot={workspaces_root}")
+    print(f"[ArenaExecutor] Worker Daemon active (Fail-Closed Sub-LEGO). PID={os.getpid()}, WorkspaceRoot={workspaces_root}")
 
     try:
         while RUNNING:

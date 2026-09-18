@@ -1,0 +1,11 @@
+id: TASK-EXP-EVAL-01
+agent: agent-04
+lego: expression
+sublego: expression.evaluator
+branch: arena/agent-04/TASK-EXP-EVAL-01
+command:
+  - cargo
+  - test
+  - -p
+  - n8n-expression
+timeout_sec: 120
