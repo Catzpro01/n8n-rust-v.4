@@ -1,0 +1,180 @@
+legos:
+  - id: workflow
+    name: Workflow Core DAG & Execution Graph
+    status: active
+    contract: contracts/workflow.contract.md
+    owner: agent-01
+    current_implementation: rust
+    available_implementations: [reference, rust]
+    allowed_paths: [crates/n8n-workflow/**, packages/workflow-lego/**]
+    forbidden_paths: [reference/n8n/**]
+    dependencies: [node, connection, validation]
+    public_inputs: [workflow_json, pin_data]
+    public_outputs: [runtime_graph, checksum]
+    tests: [cargo test -p n8n-workflow]
+    migration_status: RUST_KERNEL_ACTIVE
+
+  - id: node
+    name: Node Model & Native Node Executors
+    status: active
+    contract: contracts/node.contract.md
+    owner: agent-02
+    current_implementation: rust
+    available_implementations: [reference, rust]
+    allowed_paths: [crates/n8n-node-model/**, crates/n8n-nodes-rust/**]
+    forbidden_paths: [reference/n8n/**, crates/n8n-workflow/**]
+    dependencies: [common]
+    public_inputs: [item_buffer, node_parameters]
+    public_outputs: [item_buffer]
+    tests: [cargo test -p n8n-nodes-rust]
+    migration_status: RUST_NATIVE_ACTIVE
+
+  - id: connection
+    name: Connection & Pin Routing
+    status: active
+    contract: contracts/connection.contract.md
+    owner: agent-03
+    current_implementation: rust
+    available_implementations: [reference, rust]
+    allowed_paths: [crates/n8n-connection/**]
+    forbidden_paths: [reference/n8n/**]
+    dependencies: [common]
+    public_inputs: [raw_connections_map]
+    public_outputs: [destination_inverted_map, connected_node_list]
+    tests: [cargo test -p n8n-connection]
+    migration_status: RUST_VERIFIED
+
+  - id: validation
+    name: Graph & Schema Validation
+    status: active
+    contract: contracts/validation.contract.md
+    owner: agent-05
+    current_implementation: rust
+    available_implementations: [reference, rust]
+    allowed_paths: [crates/n8n-validation/**]
+    forbidden_paths: [reference/n8n/**]
+    dependencies: [workflow, node]
+    public_inputs: [workflow_definition]
+    public_outputs: [validation_report]
+    tests: [cargo test -p n8n-validation]
+    migration_status: RUST_VERIFIED
+
+  - id: execution_data
+    name: Execution Data Plane & ItemBuffer
+    status: active
+    contract: contracts/execution-data.contract.md
+    owner: agent-04
+    current_implementation: rust
+    available_implementations: [reference, rust]
+    allowed_paths: [crates/n8n-execution-data/**]
+    forbidden_paths: [reference/n8n/**]
+    dependencies: [common]
+    public_inputs: [raw_items]
+    public_outputs: [item_buffer]
+    tests: [cargo test -p n8n-execution-data]
+    migration_status: RUST_VERIFIED
+
+  - id: expression
+    name: Expression Engine & Sandboxing
+    status: active
+    contract: contracts/expression.contract.md
+    owner: agent-04
+    current_implementation: rust
+    available_implementations: [reference, rust]
+    allowed_paths: [crates/n8n-expression/**]
+    forbidden_paths: [reference/n8n/**]
+    dependencies: [common]
+    public_inputs: [expression_string, data_context]
+    public_outputs: [resolved_value]
+    tests: [cargo test -p n8n-expression]
+    migration_status: RUST_ACTIVE
+
+  - id: trigger
+    name: Trigger Lifecycle Engine
+    status: active
+    contract: contracts/trigger.contract.md
+    owner: agent-01
+    current_implementation: reference
+    available_implementations: [reference, rust]
+    allowed_paths: [crates/n8n-workflow/src/**]
+    forbidden_paths: [reference/n8n/**]
+    dependencies: [workflow]
+    public_inputs: [trigger_node_config]
+    public_outputs: [activation_handle]
+    tests: [cargo test -p n8n-workflow]
+    migration_status: REFERENCE_PHASE2_ISOLATED
+
+  - id: webhook
+    name: Webhook Routing & Dispatch
+    status: active
+    contract: contracts/webhook.contract.md
+    owner: agent-03
+    current_implementation: reference
+    available_implementations: [reference, rust]
+    allowed_paths: [crates/n8n-workflow/src/**]
+    forbidden_paths: [reference/n8n/**]
+    dependencies: [workflow]
+    public_inputs: [http_request_envelope]
+    public_outputs: [workflow_execution_event]
+    tests: [cargo test -p n8n-workflow]
+    migration_status: REFERENCE_PHASE2_ISOLATED
+
+  - id: scheduler
+    name: Workflow Timer & Cron Scheduler
+    status: active
+    contract: contracts/scheduler.contract.md
+    owner: agent-03
+    current_implementation: reference
+    available_implementations: [reference, rust]
+    allowed_paths: [crates/n8n-workflow/src/**]
+    forbidden_paths: [reference/n8n/**]
+    dependencies: [workflow]
+    public_inputs: [cron_expression]
+    public_outputs: [scheduled_tick_event]
+    tests: [cargo test -p n8n-workflow]
+    migration_status: REFERENCE_PHASE2_ISOLATED
+
+  - id: persistence
+    name: Execution History & State Storage
+    status: active
+    contract: contracts/persistence.contract.md
+    owner: agent-05
+    current_implementation: reference
+    available_implementations: [reference, rust]
+    allowed_paths: [crates/n8n-common/src/**]
+    forbidden_paths: [reference/n8n/**]
+    dependencies: [common]
+    public_inputs: [execution_snapshot]
+    public_outputs: [persisted_id]
+    tests: [cargo test -p n8n-common]
+    migration_status: REFERENCE_PHASE2_ISOLATED
+
+  - id: credentials
+    name: Credential Vault & Resolution
+    status: active
+    contract: contracts/credentials.contract.md
+    owner: agent-02
+    current_implementation: reference
+    available_implementations: [reference, rust]
+    allowed_paths: [crates/n8n-workflow/src/runtime/context.rs]
+    forbidden_paths: [reference/n8n/**]
+    dependencies: [common]
+    public_inputs: [credential_id, secret_type]
+    public_outputs: [decrypted_credentials]
+    tests: [cargo test -p n8n-workflow]
+    migration_status: REFERENCE_PHASE2_ISOLATED
+
+  - id: api
+    name: REST & GraphQL Control Plane API
+    status: active
+    contract: contracts/api.contract.md
+    owner: agent-05
+    current_implementation: reference
+    available_implementations: [reference, rust]
+    allowed_paths: [crates/n8n-common/**]
+    forbidden_paths: [reference/n8n/**]
+    dependencies: [common]
+    public_inputs: [api_request]
+    public_outputs: [standard_envelope]
+    tests: [cargo test -p n8n-common]
+    migration_status: REFERENCE_PHASE2_ISOLATED

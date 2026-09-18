@@ -1,0 +1,16 @@
+path_policy:
+  enforce_strict_ownership: true
+  fail_closed_on_unassigned: true
+  global_read_only_paths:
+    - reference/**
+    - contracts/**
+    - .arena/policies/**
+    - Cargo.lock
+  global_forbidden_paths:
+    - .env
+    - .env.*
+    - /etc/**
+    - /root/**
+    - /home/fern/.ssh/**
+    - /srv/arena/workspaces/*/.git/**
+  allowed_workspace_root: "/srv/arena/workspaces"

@@ -1,0 +1,19 @@
+roles:
+  arena_worker:
+    can_execute_class_a: true
+    can_execute_class_b: true
+    can_execute_class_c: false
+    can_execute_class_d: false
+    direct_push_to_main: false
+    can_create_pr: true
+
+  arena_bridge:
+    can_manage_leases: true
+    can_manage_locks: true
+    can_dispatch_tasks: true
+    can_read_supabase_secret: true
+    can_read_github_app_token: true
+
+  lead_admin:
+    can_approve_class_c: true
+    can_execute_class_d: true

@@ -1,34 +1,40 @@
-# AGENT 1 INSTRUCTION PROMPT (MODULE: WORKFLOW)
-Branch Dasar: `agent-1` | Workspace: `/home/fern/arena/workspaces/agent-1`
-Skuad: Skuad A (Lead): Workflow Engine, Canvas DAG & Navigation
+# PETUNJUK OPERASIONAL ARENA AGENT (PHASE 3 RUST RUNTIME)
 
-## 🚨 PROTOKOL WAJIB: CABANG ARENA & PEWARISAN KONTEKS (ZERO-REREAD HANDOVER)
-1. **Pembuatan Branch Cabang Arena**:
-   - Setiap kali mulai mengerjakan task baru atau sesi baru, buat branch cabang dari `agent-1`:
-     `./switch_arena_branch.sh <task_id_atau_nama_pekerjaan>`
-     (Branch otomatis bernama: `arena-agent-1-<nama>`)
-   - Seluruh pekerjaan kode, dokumen, dan commit dilakukan di branch `arena-*` tersebut.
-2. **Kewajiban Memelihara `my_progress.md`**:
-   - File `my_progress.md` adalah dokumen hidup pewarisan konteks tercepat.
-   - Setiap ada fungsi selesai, error yang ditemukan, atau keputusan teknis yang diambil, catat langsung di `my_progress.md`.
-3. **Pewarisan Konteks Singkat untuk Sesi Baru (Anti Baca Ulang Kode)**:
-   - Jika sesi terputus atau agen baru menggantikan, agen baru **DILARANG membaca ulang seluruh isi codebase**.
-   - Agen baru cukup membaca `my_progress.md` (< 50 baris) untuk langsung tahu:
-     - Apa tugasnya
-     - Apa yang sudah selesai
-     - File mana yang sedang dikerjakan
-     - Masalah/error apa yang sedang dihadapi
-     - Langkah spesifik berikutnya yang harus dieksekusi.
+## Status Proyek Resmi:
+- **CURRENT_PHASE**: `PHASE_3_RUST_RUNTIME` (ACTIVE)
+- **Status Rust**: ACTIVE (Workspace 8 crates di `crates/` aktif dan tervalidasi).
+- **Source of Truth**: 
+  - Kode & Kontrak: GitHub `main` dan `contracts/`
+  - Registry & Task: `.arena/registry/` dan `.arena/tasks/`
+  - Kemajuan & Bukti: `.arena/progress/`
+  - Koordinasi & Lock: Supabase (via Arena Bridge backend)
 
-## Protokol Komunikasi & Status Supabase:
-1. SEBELUM mengeksekusi task:
-   - Update tabel `agent_status`: `state = 'WORKING'`, `current_task = '<TASK_ID>'`.
-   - Update tabel `tasks`: `status = 'RUNNING'`.
-   - Update `my_progress.md` dengan Task ID dan objektif sesi.
-2. SESUDAH tuntas:
-   - Jalankan uji verifikasi (Level 1 Contract test / syntax check).
-   - Update `my_progress.md` dengan bukti hasil pengujian.
-   - Commit & push perubahan ke remote branch `arena-agent-1-*`.
-   - Update tabel `tasks`: `status = 'COMPLETED'`.
-   - Update tabel `agent_status`: `state = 'IDLE'`, `current_task = null`.
+---
 
+## 1. Aturan Dasar Pengembangan (Fail-Closed)
+1. **Dilarang Direct Push ke `main`**: Seluruh pekerjaan dilakukan di branch terisolasi: `arena/<agent-id>/<task-id>`.
+2. **Kepatuhan Terhadap LEGO & Sub-LEGO Registry**:
+   - Agen hanya boleh memodifikasi file di dalam `allowed_paths` milik sub-LEGO yang ditugaskan.
+   - Modifikasi di luar kepemilikan (`forbidden_paths`) otomatis ditolak oleh executor.
+3. **Penyimpanan Status Berkelanjutan (Durable Handoff)**:
+   - Catat kemajuan, bukti pengujian, dan riwayat di `.arena/progress/<agent-id>-<task-id>.md`.
+   - Agen pengganti atau sesi baru cukup membaca berkas progress tersebut untuk melanjutkan pekerjaan tanpa membaca ulang seluruh codebase.
+4. **Keamanan Kredensial**:
+   - Agen dilarang mengakses kredensial `SUPABASE_SERVICE_ROLE_KEY` atau master token.
+   - Semua operasi database dan eksekusi dilayani secara terkendali melalui Arena Bridge & Executor.
+
+---
+
+## 2. Siklus Hidup Tugas (Sessionless Lifecycle):
+1. **Claim & Lock**: Dapatkan tugas dari `.arena/tasks/<task-id>.yaml`. Bridge mencatat *lease* dan *lock* di Supabase.
+2. **Workspace & Branch**: Pindah ke workspace terisolasi `/srv/arena/workspaces/<agent-id>` dan checkout branch `arena/<agent-id>/<task-id>`.
+3. **Eksekusi & Uji Mandiri**:
+   - Ubah kode sesuai kontrak interface n8n 2.9.4.
+   - Jalankan `cargo check` dan `cargo test` atau conformance test terkait.
+4. **Catat Progress & Commit**:
+   - Tulis log eksekusi dan hasil test ke `.arena/progress/<agent-id>-<task-id>.md`.
+   - Commit dengan format terstruktur: `feat(<lego>): <deskripsi tugas>`.
+5. **Push & Buat PR**:
+   - Push branch `arena/<agent-id>/<task-id>` ke remote GitHub.
+   - Buka Pull Request ke `main`.
+   - Setelah lolos CI checks, rilis lock melalui Bridge.

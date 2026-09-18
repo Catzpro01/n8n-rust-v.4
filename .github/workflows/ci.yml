@@ -1,0 +1,77 @@
+name: Arena CI Conformance & Safety Gates
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  rust-gates:
+    name: Rust Workspace Build & Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Cargo Check (All 8 Crates)
+        run: cargo check --workspace
+
+      - name: Cargo Test (Workspace Unit & Conformance Tests)
+        run: cargo test --workspace
+
+  sublego-governance-audit:
+    name: Sub-LEGO Boundary & Ownership Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install PyYAML
+        run: pip install pyyaml
+
+      - name: Run Sub-LEGO Ownership Audit
+        run: python3 tools/sublego-audit/audit.py
+
+  arena-isolation-gates:
+    name: Arena Sub-LEGO Isolation & Security Enforcement Gates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install PyYAML
+        run: pip install pyyaml
+
+      - name: Run 6-Gate Sub-LEGO Isolation & Security Test Suite
+        env:
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          CI_MERGE_SHA: ${{ github.sha }}
+        run: python3 tests/arena/test_sublego_enforcement.py
+
+      - name: Run 5-Agent Contention & Chaos Isolation Suite
+        env:
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: python3 tests/arena/test_5agent_contention.py

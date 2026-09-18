@@ -1,0 +1,10 @@
+sensitive_patterns:
+  - "*.key"
+  - "*.pem"
+  - "*.id_ed25519"
+  - "*.id_rsa"
+  - ".env"
+  - ".env.*"
+  - "*.secret"
+  - "*token*"
+  - "/etc/arena/*"

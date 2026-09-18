@@ -1,0 +1,236 @@
+sublegos:
+  # Agent 01 Sub-LEGOs
+  - id: workflow.graph
+    parent_lego: workflow
+    owner: agent-01
+    contract: contracts/workflow.contract.md
+    allowed_paths: [crates/n8n-workflow/src/runtime/ir.rs, crates/n8n-workflow/src/lib.rs]
+    forbidden_paths: [reference/n8n/**]
+    dependencies: [connection.graph]
+    test_paths: [crates/n8n-workflow/src/runtime/ir.rs]
+    implementation: rust
+    status: active
+
+  - id: workflow.traversal
+    parent_lego: workflow
+    owner: agent-01
+    contract: contracts/workflow.contract.md
+    allowed_paths: [crates/n8n-workflow/src/traversal.rs]
+    forbidden_paths: [reference/n8n/**]
+    dependencies: [workflow.graph]
+    test_paths: [crates/n8n-workflow/src/traversal.rs]
+    implementation: rust
+    status: verified
+
+  - id: workflow.diff
+    parent_lego: workflow
+    owner: agent-01
+    contract: contracts/workflow.contract.md
+    allowed_paths: [crates/n8n-workflow/src/diff.rs]
+    forbidden_paths: [reference/n8n/**]
+    dependencies: []
+    test_paths: [crates/n8n-workflow/src/diff.rs]
+    implementation: rust
+    status: verified
+
+  - id: trigger.lifecycle
+    parent_lego: trigger
+    owner: agent-01
+    contract: contracts/trigger.contract.md
+    allowed_paths: [crates/n8n-workflow/src/**]
+    forbidden_paths: [reference/n8n/**]
+    dependencies: [workflow.graph]
+    test_paths: [crates/n8n-workflow/src/lib.rs]
+    implementation: reference
+    status: active
+
+  # Agent 02 Sub-LEGOs
+  - id: node.model
+    parent_lego: node
+    owner: agent-02
+    contract: contracts/node.contract.md
+    allowed_paths: [crates/n8n-node-model/src/**]
+    forbidden_paths: [reference/n8n/**]
+    dependencies: []
+    test_paths: [crates/n8n-node-model/src/lib.rs]
+    implementation: rust
+    status: verified
+
+  - id: node.parameters
+    parent_lego: node
+    owner: agent-02
+    contract: contracts/node.contract.md
+    allowed_paths: [crates/n8n-node-model/src/lib.rs]
+    forbidden_paths: [reference/n8n/**]
+    dependencies: [node.model]
+    test_paths: [crates/n8n-node-model/src/lib.rs]
+    implementation: rust
+    status: verified
+
+  - id: node.native_executor
+    parent_lego: node
+    owner: agent-02
+    contract: contracts/node.contract.md
+    allowed_paths: [crates/n8n-nodes-rust/src/**]
+    forbidden_paths: [reference/n8n/**, crates/n8n-workflow/**]
+    dependencies: [execution_data.buffer]
+    test_paths: [crates/n8n-nodes-rust/src/lib.rs]
+    implementation: rust
+    status: active
+
+  - id: credentials.resolver
+    parent_lego: credentials
+    owner: agent-02
+    contract: contracts/credentials.contract.md
+    allowed_paths: [crates/n8n-workflow/src/runtime/context.rs]
+    forbidden_paths: [reference/n8n/**]
+    dependencies: []
+    test_paths: [crates/n8n-workflow/src/runtime/context.rs]
+    implementation: rust
+    status: active
+
+  # Agent 03 Sub-LEGOs
+  - id: connection.graph
+    parent_lego: connection
+    owner: agent-03
+    contract: contracts/connection.contract.md
+    allowed_paths: [crates/n8n-connection/src/**]
+    forbidden_paths: [reference/n8n/**]
+    dependencies: []
+    test_paths: [crates/n8n-connection/src/lib.rs]
+    implementation: rust
+    status: verified
+
+  - id: connection.router
+    parent_lego: connection
+    owner: agent-03
+    contract: contracts/connection.contract.md
+    allowed_paths: [crates/n8n-workflow/src/connections.rs]
+    forbidden_paths: [reference/n8n/**]
+    dependencies: [connection.graph]
+    test_paths: [crates/n8n-workflow/src/connections.rs]
+    implementation: rust
+    status: verified
+
+  - id: webhook.router
+    parent_lego: webhook
+    owner: agent-03
+    contract: contracts/webhook.contract.md
+    allowed_paths: [crates/n8n-workflow/src/**]
+    forbidden_paths: [reference/n8n/**]
+    dependencies: [workflow.graph]
+    test_paths: [crates/n8n-workflow/src/lib.rs]
+    implementation: reference
+    status: active
+
+  - id: scheduler.engine
+    parent_lego: scheduler
+    owner: agent-03
+    contract: contracts/scheduler.contract.md
+    allowed_paths: [crates/n8n-workflow/src/**]
+    forbidden_paths: [reference/n8n/**]
+    dependencies: [workflow.graph]
+    test_paths: [crates/n8n-workflow/src/lib.rs]
+    implementation: reference
+    status: active
+
+  # Agent 04 Sub-LEGOs
+  - id: expression.compiler
+    parent_lego: expression
+    owner: agent-04
+    contract: contracts/expression.contract.md
+    allowed_paths: [crates/n8n-expression/src/**]
+    forbidden_paths: [reference/n8n/**]
+    dependencies: []
+    test_paths: [crates/n8n-expression/src/lib.rs]
+    implementation: rust
+    status: active
+
+  - id: expression.evaluator
+    parent_lego: expression
+    owner: agent-04
+    contract: contracts/expression.contract.md
+    allowed_paths: [crates/n8n-expression/src/**]
+    forbidden_paths: [reference/n8n/**]
+    dependencies: [expression.compiler]
+    test_paths: [crates/n8n-expression/src/lib.rs]
+    implementation: rust
+    status: active
+
+  - id: execution_data.buffer
+    parent_lego: execution_data
+    owner: agent-04
+    contract: contracts/execution-data.contract.md
+    allowed_paths: [crates/n8n-execution-data/src/**]
+    forbidden_paths: [reference/n8n/**]
+    dependencies: []
+    test_paths: [crates/n8n-execution-data/src/lib.rs]
+    implementation: rust
+    status: verified
+
+  # Agent 05 Sub-LEGOs
+  - id: validation.cycle
+    parent_lego: validation
+    owner: agent-05
+    contract: contracts/validation.contract.md
+    allowed_paths: [crates/n8n-validation/src/**]
+    forbidden_paths: [reference/n8n/**]
+    dependencies: []
+    test_paths: [crates/n8n-validation/src/lib.rs]
+    implementation: rust
+    status: verified
+
+  - id: validation.uniqueness
+    parent_lego: validation
+    owner: agent-05
+    contract: contracts/validation.contract.md
+    allowed_paths: [crates/n8n-validation/src/**]
+    forbidden_paths: [reference/n8n/**]
+    dependencies: []
+    test_paths: [crates/n8n-validation/src/lib.rs]
+    implementation: rust
+    status: verified
+
+  - id: validation.dangling
+    parent_lego: validation
+    owner: agent-05
+    contract: contracts/validation.contract.md
+    allowed_paths: [crates/n8n-validation/src/**]
+    forbidden_paths: [reference/n8n/**]
+    dependencies: []
+    test_paths: [crates/n8n-validation/src/lib.rs]
+    implementation: rust
+    status: verified
+
+  - id: persistence.snapshot
+    parent_lego: persistence
+    owner: agent-05
+    contract: contracts/persistence.contract.md
+    allowed_paths: [crates/n8n-common/src/**]
+    forbidden_paths: [reference/n8n/**]
+    dependencies: []
+    test_paths: [crates/n8n-common/src/lib.rs]
+    implementation: reference
+    status: active
+
+  - id: api.envelope
+    parent_lego: api
+    owner: agent-05
+    contract: contracts/api.contract.md
+    allowed_paths: [crates/n8n-common/src/**]
+    forbidden_paths: [reference/n8n/**]
+    dependencies: []
+    test_paths: [crates/n8n-common/src/lib.rs]
+    implementation: reference
+    status: active
+
+  - id: integration.gates
+    parent_lego: validation
+    owner: agent-05
+    contract: contracts/validation.contract.md
+    allowed_paths: [tests/**, tools/**]
+    forbidden_paths: [reference/n8n/**]
+    dependencies: []
+    test_paths: [tests/conformance.rs]
+    implementation: rust
+    status: verified

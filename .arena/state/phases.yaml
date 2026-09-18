@@ -1,0 +1,19 @@
+phases:
+  - id: PHASE_1_ANATOMY
+    name: System Anatomy & Behavioral Profiling
+    status: completed
+  - id: PHASE_2_LEGO_ISOLATION
+    name: LEGO Boundary & Contract Isolation
+    status: completed
+    verification: "11/11 Live Smoke Gate Verified"
+  - id: PHASE_3_RUST_RUNTIME
+    name: Rust Runtime Core & Native Node Execution
+    status: active
+    target_environment: "VPS 2 GB RAM / 2 CPU"
+    crates_count: 8
+  - id: PHASE_4_FULL_WORKFLOW_CONFORMANCE
+    name: Full Conformance against n8n 2.9.4 golden fixtures
+    status: planned
+  - id: PHASE_5_PERFORMANCE_BENCHMARK
+    name: Sub-millisecond & 90% Memory Reduction Validation
+    status: planned

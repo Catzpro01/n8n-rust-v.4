@@ -20,9 +20,9 @@
 
 ---
 
-## Pembagian Skuad 20 Agen:
-- **Skuad A (Agent 1 - 4)**: Workflow Core & Visual Canvas Navigation
-- **Skuad B (Agent 5 - 8)**: Rust Native Nodes & Engine Specialists (`crates/n8n-nodes-rust/`)
-- **Skuad C (Agent 9 - 12)**: Connection Graph, Webhook & AI Agent Hub
-- **Skuad D (Agent 13 - 16)**: Expression Sandbox & Execution Data Pipeline
-- **Skuad E (Agent 17 - 20)**: Contract Governance, Zero Leak & Release Gatekeeper
+## Pembagian 5 Agen Arena Resmi (Control Plane Alignment):
+- **agent-01**: Workflow Core DAG, Graph Lowering & Trigger Lifecycle (`workflow`, `trigger`)
+- **agent-02**: Node Model, Lifecycle Traits, Native Node Executors & Credentials (`node`, `credentials`)
+- **agent-03**: Connection Graph, Routing Engine, Webhook & Scheduler (`connection`, `webhook`, `scheduler`)
+- **agent-04**: Expression Engine, Sandbox & Execution Data Plane / ItemBuffer (`expression`, `execution_data`)
+- **agent-05**: Validation Engine, Persistence, API Envelope & Integration Guardian (`validation`, `persistence`, `api`)
