@@ -23,7 +23,7 @@ jobs:
       - name: Cargo Check (All 8 Crates)
         run: cargo check --workspace
 
-      - name: Cargo Test (38 Conformance & Conformance Tests)
+      - name: Cargo Test (Workspace Unit & Conformance Tests)
         run: cargo test --workspace
 
   sublego-governance-audit:
@@ -43,3 +43,21 @@ jobs:
 
       - name: Run Sub-LEGO Ownership Audit
         run: python3 tools/sublego-audit/audit.py
+
+  arena-isolation-gates:
+    name: Arena Sub-LEGO Isolation & Security Enforcement Gates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install PyYAML
+        run: pip install pyyaml
+
+      - name: Run 6-Gate Sub-LEGO Isolation & Security Test Suite
+        run: python3 tests/arena/test_sublego_enforcement.py

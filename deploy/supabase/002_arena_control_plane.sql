@@ -137,3 +137,49 @@ BEGIN
     END IF;
 END;
 $$;
+-- ==============================================================================
+-- P0-6 Extended: OWNER-AWARE LOCK RELEASE STORED PROCEDURE
+-- ==============================================================================
+CREATE OR REPLACE FUNCTION public.release_lego_lock(
+    p_resource_id TEXT,
+    p_owner_agent TEXT,
+    p_task_id TEXT DEFAULT NULL
+) RETURNS JSONB
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_current_lock RECORD;
+BEGIN
+    SELECT * INTO v_current_lock
+    FROM public.lego_locks
+    WHERE resource_id = p_resource_id
+    FOR UPDATE;
+
+    IF NOT FOUND THEN
+        RETURN jsonb_build_object('released', true, 'status', 'NOT_FOUND');
+    END IF;
+
+    -- Enforce ownership: only the owner agent can release the lock
+    IF v_current_lock.owner_agent != p_owner_agent THEN
+        RETURN jsonb_build_object(
+            'released', false,
+            'error', 'UNAUTHORIZED_OWNER_MISMATCH',
+            'current_owner', v_current_lock.owner_agent
+        );
+    END IF;
+
+    -- If task_id is provided, verify it matches
+    IF p_task_id IS NOT NULL AND v_current_lock.task_id != p_task_id THEN
+        RETURN jsonb_build_object(
+            'released', false,
+            'error', 'TASK_ID_MISMATCH',
+            'current_task', v_current_lock.task_id
+        );
+    END IF;
+
+    DELETE FROM public.lego_locks
+    WHERE resource_id = p_resource_id;
+
+    RETURN jsonb_build_object('released', true, 'status', 'RELEASED');
+END;
+$$;

@@ -64,13 +64,26 @@ class SupabaseAdapter:
         print(f"[SupabaseAdapter] Failed to acquire lock for '{resource_id}': status={status}, res={res}")
         return False
 
-    def release_lock(self, resource_id: str, agent_id: str) -> bool:
+    def release_lock(self, resource_id: str, agent_id: str, task_id: str = None) -> bool:
         """
-        Releases an active lego_lock if owned by the agent.
+        Owner-aware atomic lock release using public.release_lego_lock RPC.
+        Enforces ownership: only owner_agent can release their lock.
         """
+        rpc_payload = {
+            "p_resource_id": resource_id,
+            "p_owner_agent": agent_id,
+            "p_task_id": task_id
+        }
+        status, res = self._req("rpc/release_lego_lock", rpc_payload, method="POST")
+        if status == 200 and isinstance(res, dict) and res.get("released") is True:
+            return True
+
+        # Direct owner-verified delete fallback if RPC not yet migrated in Supabase instance
         endpoint = f"lego_locks?resource_id=eq.{resource_id}&owner_agent=eq.{agent_id}"
-        status, _ = self._req(endpoint, method="DELETE")
-        return status in (200, 204)
+        if task_id:
+            endpoint += f"&task_id=eq.{task_id}"
+        del_st, _ = self._req(endpoint, method="DELETE")
+        return del_st in (200, 204)
 
     def record_heartbeat(self, agent_id: str, status: str = "WORKING", task_id: str = None) -> bool:
         """

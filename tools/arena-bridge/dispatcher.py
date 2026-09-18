@@ -1,5 +1,6 @@
 import json
 import time
+import subprocess
 import yaml
 from pathlib import Path
 try:
@@ -15,14 +16,35 @@ class TaskDispatcher:
         self.tasks_dir = REPO_ROOT / ".arena/tasks"
         self.queue_incoming = Path("/srv/arena/runtime/queue/incoming")
 
-    def load_task_manifest(self, task_id: str) -> dict:
+    def load_task_manifest(self, task_id: str, commit_sha: str = None) -> dict:
         """
-        Loads authoritative task manifest from .arena/tasks/<task_id>.yaml (or .json).
-        Fail-closed: returns None if missing or invalid.
+        Loads authoritative task manifest.
+        If commit_sha is provided, verifies and loads the manifest directly from Git at commit_sha,
+        guaranteeing that GitHub is the single source of truth rather than local working tree drift.
         """
+        manifest_rel_yaml = f".arena/tasks/{task_id}.yaml"
+        manifest_rel_json = f".arena/tasks/{task_id}.json"
+
+        # 1. If commit_sha is provided, read directly from Git object database
+        if commit_sha:
+            for rel_path in [manifest_rel_yaml, manifest_rel_json]:
+                try:
+                    raw_content = subprocess.check_output(
+                        ["git", "show", f"{commit_sha}:{rel_path}"],
+                        cwd=str(self.repo_root),
+                        stderr=subprocess.DEVNULL
+                    ).decode("utf-8")
+                    if rel_path.endswith(".yaml"):
+                        return yaml.safe_load(raw_content)
+                    else:
+                        return json.loads(raw_content)
+                except Exception:
+                    continue
+
+        # 2. Fallback to repository working directory
         if not self.tasks_dir.exists():
             return None
-        
+
         yaml_path = self.tasks_dir / f"{task_id}.yaml"
         json_path = self.tasks_dir / f"{task_id}.json"
 
@@ -70,7 +92,7 @@ class TaskDispatcher:
 
         return True
 
-    def dispatch_execution_job(self, agent_id: str, task_id: str, sublego_id: str, command: list[str], cwd: str = ".") -> str:
+    def dispatch_execution_job(self, agent_id: str, task_id: str, sublego_id: str, command: list[str], cwd: str = ".", commit_sha: str = None) -> str:
         """
         Enqueues an execution job for Arena Executor daemon.
         Validates ownership strictly before enqueuing (fail-closed).
@@ -89,6 +111,7 @@ class TaskDispatcher:
             "sublego_id": sublego_id,
             "command": command,
             "cwd": cwd,
+            "commit_sha": commit_sha,
             "enqueued_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         }
 
@@ -98,5 +121,5 @@ class TaskDispatcher:
             json.dump(payload, f, indent=2)
         tmp_file.rename(job_file)
 
-        print(f"[TaskDispatcher] Enqueued verified execution job {job_id} for {agent_id} (Sub-LEGO: {sublego_id})")
+        print(f"[TaskDispatcher] Enqueued verified execution job {job_id} for {agent_id} (Sub-LEGO: {sublego_id}, Commit: {commit_sha})")
         return job_id

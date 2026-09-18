@@ -51,14 +51,17 @@ class ArenaWebhookHandler(BaseHTTPRequestHandler):
         if event_type in ("pull_request", "push"):
             branch = ""
             action = ""
+            head_sha = ""
             if event_type == "pull_request":
                 pr = payload.get("pull_request", {})
                 action = payload.get("action", "")
                 branch = pr.get("head", {}).get("ref", "")
+                head_sha = pr.get("head", {}).get("sha", "")
             else:
                 ref = payload.get("ref", "")
                 branch = ref.replace("refs/heads/", "")
                 action = "push"
+                head_sha = payload.get("after") or payload.get("head_commit", {}).get("id", "")
 
             # Authoritative Branch Pattern: arena/<agent-id>/<task-id>
             m = re.match(r"^arena/([^/]+)/([^/]+)$", branch)
@@ -71,17 +74,17 @@ class ArenaWebhookHandler(BaseHTTPRequestHandler):
                 return
 
             agent_id, task_id = m.group(1), m.group(2)
-            print(f"[ArenaBridge] Processing {event_type} ({action}) for agent: {agent_id}, task: {task_id}")
+            print(f"[ArenaBridge] Processing {event_type} ({action}) for agent: {agent_id}, task: {task_id}, sha: {head_sha[:8]}")
 
             if action in ("opened", "synchronize", "push"):
-                # 1. Authoritative Task Manifest Resolution
-                task_manifest = dispatcher.load_task_manifest(task_id)
+                # 1. Authoritative Task Manifest Resolution bound to Git head SHA
+                task_manifest = dispatcher.load_task_manifest(task_id, commit_sha=head_sha)
                 if not task_manifest:
-                    print(f"[ArenaBridge] REJECT: Task manifest not found for task_id '{task_id}' (fail-closed)")
+                    print(f"[ArenaBridge] REJECT: Task manifest not found for task_id '{task_id}' at {head_sha[:8]} (fail-closed)")
                     self.send_response(422)
                     self.send_header("Content-Type", "application/json")
                     self.end_headers()
-                    self.wfile.write(b'{"error": "Task manifest not found in .arena/tasks (fail-closed)"}')
+                    self.wfile.write(b'{"error": "Task manifest not found in .arena/tasks at commit SHA (fail-closed)"}')
                     return
 
                 manifest_agent = task_manifest.get("agent")
@@ -107,10 +110,10 @@ class ArenaWebhookHandler(BaseHTTPRequestHandler):
                     self.wfile.write(b'{"error": "Agent does not own Sub-LEGO (fail-closed)"}')
                     return
 
-                # 3. Acquire Distributed Locks: Task Lease + Sub-LEGO Resource Lock
+                # 3. Dual Distributed Locking with Strict Atomic Check & Rollback
                 supabase.record_heartbeat(agent_id, status="WORKING", task_id=task_id)
                 
-                # Lock Sub-LEGO resource
+                # Step 3A: Lock Sub-LEGO resource
                 sublego_lock_ok = supabase.acquire_lock(
                     resource_id=sublego_id,
                     resource_type="sublego",
@@ -118,52 +121,66 @@ class ArenaWebhookHandler(BaseHTTPRequestHandler):
                     task_id=task_id
                 )
                 if not sublego_lock_ok:
-                    print(f"[ArenaBridge] REJECT: Sub-LEGO '{sublego_id}' lock acquisition failed")
+                    print(f"[ArenaBridge] REJECT: Sub-LEGO '{sublego_id}' lock acquisition failed (fail-closed)")
                     self.send_response(409)
                     self.send_header("Content-Type", "application/json")
                     self.end_headers()
-                    self.wfile.write(b'{"error": "Sub-LEGO lock conflict or failure (fail-closed)"}')
+                    self.wfile.write(b'{"error": "Sub-LEGO lock conflict or rejection (fail-closed)"}')
                     return
 
-                # Lock Task Lease
+                # Step 3B: Lock Task Lease (MUST strictly check task_lock_ok!)
                 task_lock_ok = supabase.acquire_lock(
                     resource_id=f"task:{task_id}",
                     resource_type="task",
                     agent_id=agent_id,
                     task_id=task_id
                 )
+                if not task_lock_ok:
+                    print(f"[ArenaBridge] REJECT: Task lease lock failed. Rolling back Sub-LEGO lock for '{sublego_id}'")
+                    # ROLLBACK Sub-LEGO lock immediately to prevent dangling lock!
+                    supabase.release_lock(sublego_id, agent_id=agent_id, task_id=task_id)
+                    self.send_response(409)
+                    self.send_header("Content-Type", "application/json")
+                    self.end_headers()
+                    self.wfile.write(b'{"error": "Task lease lock conflict or rejection; Sub-LEGO lock rolled back (fail-closed)"}')
+                    return
 
-                # 4. Dispatch Job to Arena Executor Queue
+                # 4. Dispatch Job to Arena Executor Queue (with Rollback on Exception)
                 try:
                     job_id = dispatcher.dispatch_execution_job(
                         agent_id=agent_id,
                         task_id=task_id,
                         sublego_id=sublego_id,
-                        command=command
+                        command=command,
+                        commit_sha=head_sha
                     )
                     dispatch_result.update({
                         "agent_id": agent_id,
                         "task_id": task_id,
                         "sublego_id": sublego_id,
                         "lego": parent_lego,
+                        "commit_sha": head_sha,
                         "action": "enqueued_for_execution",
                         "job_id": job_id
                     })
                 except Exception as e:
-                    print(f"[ArenaBridge] Dispatch error: {e}")
+                    print(f"[ArenaBridge] Dispatch error: {e}. Initiating dual lock rollback!")
+                    # ROLLBACK both locks on dispatch error!
+                    supabase.release_lock(f"task:{task_id}", agent_id=agent_id, task_id=task_id)
+                    supabase.release_lock(sublego_id, agent_id=agent_id, task_id=task_id)
                     self.send_response(500)
                     self.send_header("Content-Type", "application/json")
                     self.end_headers()
-                    self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
+                    self.wfile.write(json.dumps({"error": f"Dispatch error: {str(e)}; locks rolled back"}).encode("utf-8"))
                     return
 
             elif action == "closed":
-                # Release Sub-LEGO lock & task lock
-                task_manifest = dispatcher.load_task_manifest(task_id)
+                # Owner-aware release of Sub-LEGO and task locks
+                task_manifest = dispatcher.load_task_manifest(task_id, commit_sha=head_sha)
                 sublego_id = task_manifest.get("sublego") if task_manifest else ""
                 if sublego_id:
-                    supabase.release_lock(sublego_id, agent_id=agent_id)
-                supabase.release_lock(f"task:{task_id}", agent_id=agent_id)
+                    supabase.release_lock(sublego_id, agent_id=agent_id, task_id=task_id)
+                supabase.release_lock(f"task:{task_id}", agent_id=agent_id, task_id=task_id)
                 supabase.record_heartbeat(agent_id, status="IDLE", task_id=None)
                 dispatch_result.update({"agent_id": agent_id, "task_id": task_id, "action": "locks_released"})
 
