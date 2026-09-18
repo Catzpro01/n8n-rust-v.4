@@ -1,0 +1,13 @@
+{
+  "name": "@lego/expression",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Expression evaluator LEGO (Agent 4) — 1:1 JavaScript port of n8n@2.9.4 Expression / WorkflowDataProxy. ZERO Rust.",
+  "license": "SEE LICENSE IN reference/n8n/LICENSE.md",
+  "type": "commonjs",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "node --test test/expression.test.js",
+    "check": "node --check src/index.js && node --check src/errors.js && node --check src/data-proxy.js && node --check src/expression.js && node --check test/expression.test.js"
+  }
+}
