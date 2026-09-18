@@ -11,6 +11,17 @@ try:
 except (ImportError, ValueError):
     from fs_guard import FilesystemGuard, SecurityViolation
 
+# Dangerous flags that can be used to redirect compiler/build output outside sandbox
+DANGEROUS_FLAGS = {
+    "--manifest-path",
+    "--target-dir",
+    "--out-dir",
+    "--config",
+    "-C",
+    "--emit",
+    "--remap-path-prefix"
+}
+
 class StructuredExecutor:
     def __init__(self, workspace_root: Path, allowed_paths: list[str], forbidden_paths: list[str]):
         self.workspace_root = workspace_root.resolve()
@@ -23,73 +34,96 @@ class StructuredExecutor:
         """
         repo_root = Path(__file__).resolve().parent.parent.parent
         policy_file = repo_root / ".arena" / "policies" / "execution.yaml"
-        allowed = []
-        if policy_file.exists():
-            try:
-                with open(policy_file, "r") as f:
-                    data = yaml.safe_load(f)
-                    classes = data.get("execution_policy", {}).get("classes", {})
-                    # Add CLASS_A and CLASS_B allowed commands
-                    for cmd in classes.get("CLASS_A", {}).get("allowed_commands", []):
-                        allowed.append(cmd)
-                    for cmd in classes.get("CLASS_B", {}).get("allowed_commands", []):
-                        allowed.append(cmd)
-            except Exception as e:
-                print(f"[Executor] Warning: Failed to parse execution.yaml: {e}")
 
-        # Safe fallback baseline if policy file is missing
-        if not allowed:
-            allowed = [
-                ["git", "status", "*"],
-                ["git", "diff", "*"],
-                ["cargo", "check", "*"],
-                ["cargo", "test", "*"],
-                ["cargo", "build", "*"],
+        if not policy_file.exists():
+            return [
+                ["cargo", "check"],
+                ["cargo", "check", "--workspace"],
+                ["cargo", "test"],
+                ["cargo", "test", "-p", "*"],
                 ["cargo", "fmt", "--check"],
-                ["cargo", "clippy", "*"],
-                ["npm", "test"]
+                ["cargo", "clippy"],
+                ["git", "status", "--short"],
+                ["git", "diff"],
+                ["git", "log", "-n", "10", "--oneline"]
             ]
-        return allowed
 
-    def _clean_environment(self) -> dict:
-        """
-        P0-1 Fix: Constructs a sanitized, minimal environment.
-        Strictly strips all secrets, tokens, Supabase keys, and backend credentials.
-        """
-        tmp_dir = self.workspace_root / ".tmp"
-        tmp_dir.mkdir(parents=True, exist_ok=True)
-
-        return {
-            "PATH": os.environ.get("PATH", "/usr/local/bin:/usr/bin:/bin:/home/fern/.cargo/bin"),
-            "HOME": str(self.workspace_root),
-            "USER": "arena-worker",
-            "LANG": "C.UTF-8",
-            "CARGO_HOME": os.path.expanduser("~/.cargo"),
-            "RUSTUP_HOME": os.path.expanduser("~/.rustup"),
-            "TMPDIR": str(tmp_dir),
-            "ARENA_WORKSPACE": str(self.workspace_root),
-        }
+        try:
+            with open(policy_file, "r") as f:
+                data = yaml.safe_load(f)
+            classes = data.get("execution_policy", {}).get("classes", {})
+            allowed = []
+            for cls_key in ["CLASS_A", "CLASS_B"]:
+                cmds = classes.get(cls_key, {}).get("allowed_commands", [])
+                allowed.extend(cmds)
+            return allowed
+        except Exception as e:
+            print(f"[StructuredExecutor] Warning loading policy file: {e}")
+            return [["cargo", "check"], ["cargo", "check", "--workspace"], ["cargo", "test"]]
 
     def _is_command_allowed(self, argv: list[str]) -> bool:
         """
-        P0-4 Fix: Strict allowlist pattern match against execution policy.
+        Verifies command matches allowlist AND inspects arguments for dangerous escape flags.
         """
         if not argv:
             return False
 
+        # 1. Semantic check: reject any dangerous compiler redirect / path injection flags
+        for arg in argv:
+            for flag in DANGEROUS_FLAGS:
+                if arg == flag or arg.startswith(flag + "="):
+                    print(f"[StructuredExecutor] Rejected command containing dangerous argument: {arg}")
+                    return False
+
+        # 2. Check each argument if it looks like a filesystem path - ensure it cannot traverse outside
+        for arg in argv[1:]:
+            if "/" in arg or "\\" in arg:
+                if arg.startswith("-"):
+                    continue
+                try:
+                    self.guard.validate_path(arg, is_write=False)
+                except SecurityViolation as e:
+                    print(f"[StructuredExecutor] Path violation in argument '{arg}': {e}")
+                    return False
+
+        # 3. Match against allowlisted command templates
         for pattern in self.execution_policy:
             if len(argv) < len(pattern):
                 continue
+            
             matched = True
             for i, p_token in enumerate(pattern):
-                if p_token == "*":
-                    continue
                 if not fnmatch.fnmatch(argv[i], p_token):
                     matched = False
                     break
+            
+            # If template ends with wildcards or exact match
             if matched:
-                return True
+                if len(argv) == len(pattern) or pattern[-1] == "*":
+                    return True
+
         return False
+
+    def _clean_environment(self) -> dict:
+        """
+        Enforces strict zero-leak environment jail.
+        """
+        ALLOWED_ENV_VARS = {
+            "PATH",
+            "HOME",
+            "USER",
+            "LANG",
+            "CARGO_HOME",
+            "RUSTUP_HOME",
+            "TMPDIR"
+        }
+        cleaned = {k: v for k, v in os.environ.items() if k in ALLOWED_ENV_VARS}
+        cleaned["ARENA_WORKSPACE"] = str(self.workspace_root)
+        cleaned.pop("SUPABASE_KEY", None)
+        cleaned.pop("SUPABASE_SERVICE_ROLE_KEY", None)
+        cleaned.pop("GITHUB_TOKEN", None)
+        cleaned.pop("GITHUB_WEBHOOK_SECRET", None)
+        return cleaned
 
     def execute_command(self, argv: list[str], cwd_rel: str = ".", timeout_sec: int = 300) -> dict:
         """
@@ -97,19 +131,19 @@ class StructuredExecutor:
         """
         target_cwd = self.guard.validate_path(cwd_rel, is_write=False)
 
-        # 1. Strict Allowlist Check (P0-4)
+        # 1. Strict Allowlist & Semantic Argument Check
         if not self._is_command_allowed(argv):
             return {
                 "success": False,
                 "exit_code": -1,
-                "error": f"Security Violation: Command '{' '.join(argv)}' is not in execution policy allowlist (CLASS_A/CLASS_B)."
+                "error": f"Security Violation: Command '{' '.join(argv)}' is rejected by execution policy or contains dangerous arguments."
             }
 
-        # 2. Sanitized Environment (P0-1)
+        # 2. Prepare Environment
         clean_env = self._clean_environment()
-        cmd_hash = hashlib.sha256(" ".join(argv).encode()).hexdigest()[:16]
-        start_time = time.time()
+        cmd_hash = hashlib.sha256(" ".join(argv).encode()).hexdigest()[:12]
 
+        start_time = time.time()
         try:
             proc = subprocess.run(
                 argv,
@@ -139,19 +173,6 @@ class StructuredExecutor:
             return {
                 "success": False,
                 "exit_code": -1,
-                "error": str(e),
+                "error": f"Execution error: {str(e)}",
                 "command_hash": cmd_hash
             }
-
-    def write_file(self, rel_path: str, content: str) -> dict:
-        target = self.guard.validate_path(rel_path, is_write=True)
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(content, encoding="utf-8")
-        return {"success": True, "path": str(target.relative_to(self.workspace_root))}
-
-    def delete_file(self, rel_path: str) -> dict:
-        target = self.guard.validate_path(rel_path, is_write=True)
-        if target.exists() and target.is_file():
-            target.unlink()
-            return {"success": True, "deleted": str(target.relative_to(self.workspace_root))}
-        return {"success": False, "error": "File not found or is a directory"}

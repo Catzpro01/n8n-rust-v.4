@@ -21,7 +21,7 @@ class ArenaWebhookHandler(BaseHTTPRequestHandler):
         content_length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(content_length)
 
-        # P0-2 Fix: Fail-closed signature verification (Missing signature is strictly rejected with 401)
+        # Fail-closed signature check
         sig_header = self.headers.get("X-Hub-Signature-256")
         if not sig_header:
             self.send_response(401)
@@ -38,16 +38,14 @@ class ArenaWebhookHandler(BaseHTTPRequestHandler):
             self.wfile.write(b'{"error": "Invalid X-Hub-Signature-256 signature"}')
             return
 
-        # Parse JSON payload
         try:
             payload = json.loads(body.decode("utf-8")) if body else {}
         except Exception:
             payload = {}
 
         event_type = self.headers.get("X-GitHub-Event", "ping")
-        print(f"[ArenaBridge] Processing event: {event_type}")
+        print(f"[ArenaBridge] Incoming event: {event_type}")
 
-        # P0-3 Fix: Real Dispatch and Coordination via Supabase & TaskDispatcher
         dispatch_result = {"event": event_type, "status": "processed"}
 
         if event_type == "pull_request":
@@ -56,20 +54,37 @@ class ArenaWebhookHandler(BaseHTTPRequestHandler):
             branch = pr.get("head", {}).get("ref", "")
             pr_num = pr.get("number")
 
-            # Expected format: arena/<agent-id>/<task-id>
+            # Match arena branch: arena/<agent-id>/<task-id>
             m = re.match(r"^arena/([^/]+)/([^/]+)$", branch)
             if m:
                 agent_id, task_id = m.group(1), m.group(2)
-                print(f"[ArenaBridge] Webhook PR #{pr_num} ({action}) for agent: {agent_id}, task: {task_id}")
+                sublego_id = task_id.split("-")[0] if "-" in task_id else task_id
+                print(f"[ArenaBridge] PR #{pr_num} ({action}) for agent: {agent_id}, task: {task_id}")
 
                 if action in ("opened", "synchronize"):
-                    # Record heartbeat & acquire task lease in Supabase
+                    # 1. Update heartbeat & lock in Supabase (fail-closed)
                     supabase.record_heartbeat(agent_id, status="WORKING", task_id=task_id)
-                    supabase.acquire_lock(f"task:{task_id}", "task", agent_id, task_id)
-                    dispatch_result.update({"agent_id": agent_id, "task_id": task_id, "action": "lease_acquired"})
+                    lock_ok = supabase.acquire_lock(f"task:{task_id}", "task", agent_id, task_id)
+                    
+                    if not lock_ok:
+                        dispatch_result.update({"status": "rejected", "reason": "Failed to acquire lock (fail-closed)"})
+                    else:
+                        # 2. Real Dispatch to Arena Executor Queue: run verification
+                        job_id = dispatcher.dispatch_execution_job(
+                            agent_id=agent_id,
+                            task_id=task_id,
+                            sublego_id=sublego_id,
+                            command=["cargo", "check", "--workspace"]
+                        )
+                        dispatch_result.update({
+                            "agent_id": agent_id,
+                            "task_id": task_id,
+                            "action": "enqueued_for_execution",
+                            "job_id": job_id
+                        })
+
                 elif action == "closed":
-                    # Release lock if closed or merged
-                    supabase.release_lock(f"task:{task_id}")
+                    supabase.release_lock(f"task:{task_id}", agent_id=agent_id)
                     supabase.record_heartbeat(agent_id, status="IDLE", task_id=None)
                     dispatch_result.update({"agent_id": agent_id, "task_id": task_id, "action": "lock_released"})
 
@@ -79,8 +94,21 @@ class ArenaWebhookHandler(BaseHTTPRequestHandler):
             m = re.match(r"^refs/heads/arena/([^/]+)/([^/]+)$", ref)
             if m:
                 agent_id, task_id = m.group(1), m.group(2)
+                sublego_id = task_id.split("-")[0] if "-" in task_id else task_id
                 supabase.record_heartbeat(agent_id, status="WORKING", task_id=task_id)
-                dispatch_result.update({"agent_id": agent_id, "task_id": task_id, "commit": head_commit})
+                # Dispatch test job
+                job_id = dispatcher.dispatch_execution_job(
+                    agent_id=agent_id,
+                    task_id=task_id,
+                    sublego_id=sublego_id,
+                    command=["cargo", "check", "--workspace"]
+                )
+                dispatch_result.update({
+                    "agent_id": agent_id,
+                    "task_id": task_id,
+                    "commit": head_commit,
+                    "job_id": job_id
+                })
 
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
@@ -95,7 +123,7 @@ class ArenaWebhookHandler(BaseHTTPRequestHandler):
 
 def run_server():
     server = HTTPServer(("127.0.0.1", PORT), ArenaWebhookHandler)
-    print(f"[ArenaBridge] Running on http://127.0.0.1:{PORT}")
+    print(f"[ArenaBridge] Server running on http://127.0.0.1:{PORT}")
     server.serve_forever()
 
 if __name__ == "__main__":
