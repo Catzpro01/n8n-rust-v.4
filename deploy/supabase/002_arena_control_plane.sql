@@ -220,3 +220,57 @@ REVOKE EXECUTE ON FUNCTION public.release_lego_lock(TEXT, TEXT, TEXT) FROM anon,
 -- Explicitly grant EXECUTE to service_role ONLY
 GRANT EXECUTE ON FUNCTION public.acquire_lego_lock(TEXT, TEXT, TEXT, TEXT, INTEGER) TO service_role;
 GRANT EXECUTE ON FUNCTION public.release_lego_lock(TEXT, TEXT, TEXT) TO service_role;
+-- ==============================================================================
+-- P0 ADDENDUM: WEBHOOK IDEMPOTENCY & LEASE REAPER PROCEDURE
+-- ==============================================================================
+
+-- 1. Table: processed_webhook_deliveries (Replay Attack & Duplicate Webhook Prevention)
+CREATE TABLE IF NOT EXISTS public.processed_webhook_deliveries (
+    delivery_id TEXT PRIMARY KEY,
+    event_type TEXT NOT NULL,
+    received_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    status TEXT NOT NULL DEFAULT 'PROCESSED'
+);
+
+ALTER TABLE public.processed_webhook_deliveries ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.processed_webhook_deliveries FROM anon, authenticated, public;
+GRANT ALL ON TABLE public.processed_webhook_deliveries TO service_role;
+
+-- 2. Stored Procedure: reap_expired_leases
+-- Releases expired lego_locks and task_leases when an agent crashes or disconnects.
+CREATE OR REPLACE FUNCTION public.reap_expired_leases()
+RETURNS JSONB
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_now TIMESTAMPTZ := NOW();
+    v_reaped_locks INTEGER := 0;
+    v_reaped_tasks INTEGER := 0;
+BEGIN
+    -- Delete expired lego locks
+    WITH deleted_locks AS (
+        DELETE FROM public.lego_locks
+        WHERE lease_until < v_now
+        RETURNING resource_id
+    )
+    SELECT COUNT(*) INTO v_reaped_locks FROM deleted_locks;
+
+    -- Delete expired task leases
+    WITH deleted_tasks AS (
+        DELETE FROM public.task_leases
+        WHERE lease_until < v_now
+        RETURNING task_id
+    )
+    SELECT COUNT(*) INTO v_reaped_tasks FROM deleted_tasks;
+
+    RETURN jsonb_build_object(
+        'success', true,
+        'reaped_locks_count', v_reaped_locks,
+        'reaped_tasks_count', v_reaped_tasks,
+        'timestamp', v_now
+    );
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.reap_expired_leases() FROM anon, authenticated, public;
+GRANT EXECUTE ON FUNCTION public.reap_expired_leases() TO service_role;

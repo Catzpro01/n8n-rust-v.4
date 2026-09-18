@@ -45,6 +45,25 @@ class SupabaseAdapter:
         except Exception as e:
             return 0, {"error": str(e)}
 
+    def check_and_record_delivery(self, delivery_id: str, event_type: str) -> bool:
+        """
+        P0 Replay Protection: Ensures each GitHub X-GitHub-Delivery is processed exactly once.
+        Returns True if newly recorded, False if already processed (replay).
+        """
+        if not delivery_id:
+            return True # If header absent, pass through but warn
+        
+        payload = {
+            "delivery_id": delivery_id,
+            "event_type": event_type
+        }
+        # Attempt insert. If conflict, status will be 409
+        status, res = self._req("processed_webhook_deliveries", payload, method="POST")
+        if status in (200, 201, 204):
+            return True
+        print(f"[SupabaseAdapter] Webhook replay detected for delivery '{delivery_id}' (status={status})")
+        return False
+
     def acquire_lock(self, resource_id: str, resource_type: str, agent_id: str, task_id: str, duration_sec: int = 3600) -> bool:
         """
         Atomic lock acquisition using public.acquire_lego_lock RPC (FOR UPDATE).
@@ -81,6 +100,13 @@ class SupabaseAdapter:
 
         print(f"[SupabaseAdapter] Failed to release lock for '{resource_id}': status={status}, res={res}")
         return False
+
+    def reap_expired_leases(self) -> dict:
+        """
+        Releases any expired lego_locks or task_leases for crashed agents.
+        """
+        status, res = self._req("rpc/reap_expired_leases", {}, method="POST")
+        return res if status == 200 else {"success": False, "error": res}
 
     def record_heartbeat(self, agent_id: str, status: str = "WORKING", task_id: str = None) -> bool:
         """

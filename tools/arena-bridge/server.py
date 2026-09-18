@@ -21,7 +21,7 @@ class ArenaWebhookHandler(BaseHTTPRequestHandler):
         content_length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(content_length)
 
-        # Fail-closed signature check
+        # 1. Fail-closed signature check
         sig_header = self.headers.get("X-Hub-Signature-256")
         if not sig_header:
             self.send_response(401)
@@ -38,15 +38,33 @@ class ArenaWebhookHandler(BaseHTTPRequestHandler):
             self.wfile.write(b'{"error": "Invalid X-Hub-Signature-256 signature"}')
             return
 
+        event_type = self.headers.get("X-GitHub-Event", "ping")
+
+        # 2. P0 Webhook Idempotency & Replay Protection
+        delivery_id = self.headers.get("X-GitHub-Delivery")
+        if delivery_id:
+            is_new = supabase.check_and_record_delivery(delivery_id, event_type)
+            if not is_new:
+                print(f"[ArenaBridge] Webhook replay rejected for delivery: {delivery_id}")
+                self.send_response(409)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(b'{"error": "Duplicate webhook delivery rejected (idempotency)"}')
+                return
+
+        # 3. Periodic Lease Reaper Check on each incoming event
+        try:
+            supabase.reap_expired_leases()
+        except Exception as e:
+            print(f"[ArenaBridge] Reaper notice: {e}")
+
         try:
             payload = json.loads(body.decode("utf-8")) if body else {}
         except Exception:
             payload = {}
 
-        event_type = self.headers.get("X-GitHub-Event", "ping")
-        print(f"[ArenaBridge] Incoming event: {event_type}")
-
-        dispatch_result = {"event": event_type, "status": "processed"}
+        print(f"[ArenaBridge] Incoming verified event: {event_type} (Delivery: {delivery_id})")
+        dispatch_result = {"event": event_type, "delivery_id": delivery_id, "status": "processed"}
 
         if event_type in ("pull_request", "push"):
             branch = ""
@@ -77,7 +95,7 @@ class ArenaWebhookHandler(BaseHTTPRequestHandler):
             print(f"[ArenaBridge] Processing {event_type} ({action}) for agent: {agent_id}, task: {task_id}, sha: {head_sha[:8]}")
 
             if action in ("opened", "synchronize", "push"):
-                # 1. Authoritative Task Manifest Resolution bound to Git head SHA
+                # Authoritative Task Manifest Resolution bound to Git head SHA
                 task_manifest = dispatcher.load_task_manifest(task_id, commit_sha=head_sha)
                 if not task_manifest:
                     print(f"[ArenaBridge] REJECT: Task manifest not found for task_id '{task_id}' at {head_sha[:8]} (fail-closed)")
@@ -101,7 +119,7 @@ class ArenaWebhookHandler(BaseHTTPRequestHandler):
                     self.wfile.write(b'{"error": "Agent mismatch with task manifest (fail-closed)"}')
                     return
 
-                # 2. Strict Sub-LEGO Ownership Validation
+                # Strict Sub-LEGO Ownership Validation
                 if not dispatcher.validate_agent_task(agent_id, sublego_id):
                     print(f"[ArenaBridge] REJECT: Agent '{agent_id}' does not own Sub-LEGO '{sublego_id}'")
                     self.send_response(403)
@@ -110,7 +128,7 @@ class ArenaWebhookHandler(BaseHTTPRequestHandler):
                     self.wfile.write(b'{"error": "Agent does not own Sub-LEGO (fail-closed)"}')
                     return
 
-                # 3. Dual Distributed Locking with Strict Atomic Check & Rollback
+                # Dual Distributed Locking with Strict Atomic Check & Rollback
                 supabase.record_heartbeat(agent_id, status="WORKING", task_id=task_id)
                 
                 # Step 3A: Lock Sub-LEGO resource
@@ -128,7 +146,7 @@ class ArenaWebhookHandler(BaseHTTPRequestHandler):
                     self.wfile.write(b'{"error": "Sub-LEGO lock conflict or rejection (fail-closed)"}')
                     return
 
-                # Step 3B: Lock Task Lease (MUST strictly check task_lock_ok!)
+                # Step 3B: Lock Task Lease
                 task_lock_ok = supabase.acquire_lock(
                     resource_id=f"task:{task_id}",
                     resource_type="task",
@@ -137,7 +155,6 @@ class ArenaWebhookHandler(BaseHTTPRequestHandler):
                 )
                 if not task_lock_ok:
                     print(f"[ArenaBridge] REJECT: Task lease lock failed. Rolling back Sub-LEGO lock for '{sublego_id}'")
-                    # ROLLBACK Sub-LEGO lock immediately to prevent dangling lock!
                     supabase.release_lock(sublego_id, agent_id=agent_id, task_id=task_id)
                     self.send_response(409)
                     self.send_header("Content-Type", "application/json")
@@ -145,7 +162,7 @@ class ArenaWebhookHandler(BaseHTTPRequestHandler):
                     self.wfile.write(b'{"error": "Task lease lock conflict or rejection; Sub-LEGO lock rolled back (fail-closed)"}')
                     return
 
-                # 4. Dispatch Job to Arena Executor Queue (with Rollback on Exception)
+                # Dispatch Job to Arena Executor Queue
                 try:
                     job_id = dispatcher.dispatch_execution_job(
                         agent_id=agent_id,
@@ -165,7 +182,6 @@ class ArenaWebhookHandler(BaseHTTPRequestHandler):
                     })
                 except Exception as e:
                     print(f"[ArenaBridge] Dispatch error: {e}. Initiating dual lock rollback!")
-                    # ROLLBACK both locks on dispatch error!
                     supabase.release_lock(f"task:{task_id}", agent_id=agent_id, task_id=task_id)
                     supabase.release_lock(sublego_id, agent_id=agent_id, task_id=task_id)
                     self.send_response(500)
@@ -175,7 +191,6 @@ class ArenaWebhookHandler(BaseHTTPRequestHandler):
                     return
 
             elif action == "closed":
-                # Owner-aware release of Sub-LEGO and task locks
                 task_manifest = dispatcher.load_task_manifest(task_id, commit_sha=head_sha)
                 sublego_id = task_manifest.get("sublego") if task_manifest else ""
                 if sublego_id:
