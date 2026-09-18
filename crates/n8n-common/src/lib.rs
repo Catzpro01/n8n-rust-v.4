@@ -1,6 +1,11 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+pub mod expression_contract;
+pub use expression_contract::{
+    EvaluationContext, ExpressionError, ExpressionEvaluator, ExpressionRef, SimpleEvaluationContext,
+};
+
 pub type IDataObject = serde_json::Map<String, serde_json::Value>;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
