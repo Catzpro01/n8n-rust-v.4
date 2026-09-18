@@ -204,6 +204,7 @@ dependencies = [
  "n8n-common",
  "n8n-connection",
  "n8n-execution-data",
+ "n8n-expression",
  "n8n-node-model",
  "n8n-validation",
  "serde",
