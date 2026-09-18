@@ -9,23 +9,25 @@ except (ImportError, ValueError):
     from config import REPO_ROOT
 
 class TaskDispatcher:
-    def __init__(self):
-        self.repo_root = REPO_ROOT
-        self.lego_registry_path = REPO_ROOT / ".arena/registry/lego.yaml"
-        self.sublego_registry_path = REPO_ROOT / ".arena/registry/sublego.yaml"
-        self.tasks_dir = REPO_ROOT / ".arena/tasks"
-        self.queue_incoming = Path("/srv/arena/runtime/queue/incoming")
+    def __init__(self, repo_root: Path = None, queue_dir: Path = None):
+        self.repo_root = (repo_root or REPO_ROOT).resolve()
+        self.lego_registry_path = self.repo_root / ".arena/registry/lego.yaml"
+        self.sublego_registry_path = self.repo_root / ".arena/registry/sublego.yaml"
+        self.tasks_dir = self.repo_root / ".arena/tasks"
+        self.queue_incoming = (queue_dir or Path("/srv/arena/runtime/queue")).resolve() / "incoming"
 
     def load_task_manifest(self, task_id: str, commit_sha: str = None) -> dict:
         """
         Loads authoritative task manifest.
-        If commit_sha is provided, verifies and loads the manifest directly from Git at commit_sha,
-        guaranteeing that GitHub is the single source of truth rather than local working tree drift.
+        STRICT SOURCE OF TRUTH:
+        - When commit_sha is provided (Webhook / Production mode): Reads strictly from Git tree at commit_sha.
+          ZERO working-tree fallback: if commit_sha does not contain the manifest, fails immediately.
+        - When commit_sha is None (Local dev/test mode only): Reads from local .arena/tasks/.
         """
         manifest_rel_yaml = f".arena/tasks/{task_id}.yaml"
         manifest_rel_json = f".arena/tasks/{task_id}.json"
 
-        # 1. If commit_sha is provided, read directly from Git object database
+        # 1. Authoritative Webhook Mode: Git Object Database at commit_sha ONLY
         if commit_sha:
             for rel_path in [manifest_rel_yaml, manifest_rel_json]:
                 try:
@@ -40,8 +42,12 @@ class TaskDispatcher:
                         return json.loads(raw_content)
                 except Exception:
                     continue
+            
+            # FAIL-CLOSED: strictly no fallback to working tree in production webhook mode
+            print(f"[TaskDispatcher] REJECT: Task manifest '{task_id}' not found in Git commit '{commit_sha}' (fail-closed)")
+            return None
 
-        # 2. Fallback to repository working directory
+        # 2. Local development/test mode only (when commit_sha is explicitly None)
         if not self.tasks_dir.exists():
             return None
 

@@ -11,7 +11,7 @@ except (ImportError, ValueError):
 class SupabaseAdapter:
     """
     Unified Supabase state coordinator strictly bound to 002_arena_control_plane.sql.
-    Operates in strict FAIL-CLOSED mode: no unsafe fallback, no merge-duplicates.
+    Operates in strict FAIL-CLOSED mode: single RPC path, zero unsafe fallbacks.
     """
     def __init__(self):
         self.url = SUPABASE_URL.rstrip("/")
@@ -66,8 +66,9 @@ class SupabaseAdapter:
 
     def release_lock(self, resource_id: str, agent_id: str, task_id: str = None) -> bool:
         """
-        Owner-aware atomic lock release using public.release_lego_lock RPC.
-        Enforces ownership: only owner_agent can release their lock.
+        Owner-aware atomic lock release using public.release_lego_lock RPC ONLY.
+        Strict single authoritative path: no REST DELETE fallback.
+        Fail-closed: returns False on any error or rejection.
         """
         rpc_payload = {
             "p_resource_id": resource_id,
@@ -78,12 +79,8 @@ class SupabaseAdapter:
         if status == 200 and isinstance(res, dict) and res.get("released") is True:
             return True
 
-        # Direct owner-verified delete fallback if RPC not yet migrated in Supabase instance
-        endpoint = f"lego_locks?resource_id=eq.{resource_id}&owner_agent=eq.{agent_id}"
-        if task_id:
-            endpoint += f"&task_id=eq.{task_id}"
-        del_st, _ = self._req(endpoint, method="DELETE")
-        return del_st in (200, 204)
+        print(f"[SupabaseAdapter] Failed to release lock for '{resource_id}': status={status}, res={res}")
+        return False
 
     def record_heartbeat(self, agent_id: str, status: str = "WORKING", task_id: str = None) -> bool:
         """
