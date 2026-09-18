@@ -1,0 +1,21 @@
+[Unit]
+Description=Arena Bridge - GitHub Webhook & Supabase State Coordinator
+After=network.target nginx.service
+
+[Service]
+Type=simple
+User=fern
+Group=fern
+WorkingDirectory=/home/fern/arena/repo
+ExecStart=/usr/bin/python3 -m tools.arena-bridge.server
+Restart=always
+RestartSec=5
+EnvironmentFile=-/home/fern/arena/.env
+Environment=PYTHONUNBUFFERED=1
+Environment=ARENA_BRIDGE_PORT=9000
+PrivateTmp=yes
+ProtectSystem=full
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

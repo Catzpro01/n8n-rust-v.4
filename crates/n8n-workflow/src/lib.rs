@@ -34,6 +34,7 @@ pub mod diff;
 pub mod ordered;
 pub mod rename;
 pub mod traversal;
+pub mod runtime;
 
 pub use checksum::calculate_workflow_checksum;
 pub use connections::{

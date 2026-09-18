@@ -199,9 +199,11 @@ dependencies = [
 name = "n8n-workflow"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "indexmap",
  "n8n-common",
  "n8n-connection",
+ "n8n-execution-data",
  "n8n-node-model",
  "n8n-validation",
  "serde",

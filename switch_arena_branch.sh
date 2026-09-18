@@ -1,6 +1,5 @@
-#!/bin/bash
-SESSION_NAME=${1:-"session-$(date +%s)"}
-NEW_BRANCH="arena-agent-1-$SESSION_NAME"
-git checkout -b "$NEW_BRANCH" 2>/dev/null || git checkout "$NEW_BRANCH"
-echo "[ARENA] Switched to branch: $NEW_BRANCH"
-echo "[ARENA] Silakan catat progres kerja Anda di my_progress.md"
+#!/usr/bin/env bash
+# Legacy wrapper for scripts/arena/switch_branch.sh
+AGENT="${ARENA_AGENT_ID:-agent-01}"
+TASK="${1:-session-$(date +%s)}"
+exec "$(dirname "$0")/scripts/arena/switch_branch.sh" "$AGENT" "$TASK"

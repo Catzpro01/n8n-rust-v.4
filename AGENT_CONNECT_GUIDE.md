@@ -1,74 +1,54 @@
-# 🚀 PANDUAN KONEKSI ARENA AGENT KE SUPABASE & WORKSPACE
+# PANDUAN KONEKSI & EKSEKUSI ARENA AGENT (LEAST PRIVILEGE)
 
-Dokumen ini adalah panduan teknis bagi Agen AI Arena untuk terhubung, mengambil tugas, dan melaporkan kemajuan.
-
----
-
-## 1. Kredensial & Endpoint Lingkungan (.env)
-
-Seluruh kredensial telah tersedia di berkas `.env` pada direktori kerja masing-masing agen (`/home/fern/arena/workspaces/agent-X/.env`):
-- `SUPABASE_URL`: Endpoint kluster Supabase
-- `SUPABASE_KEY`: Service role API key
-- `REPO_URL`: URL repositori n8n-rust-v.4
+Dokumen ini adalah panduan teknis bagi Arena AI Agent (agent-01 s/d agent-05) untuk beroperasi dalam lingkungan terisolasi tanpa memerlukan kredensial backend berpriveleged tinggi.
 
 ---
 
-## 2. Alur Kerja Standar Agen (Lifecycle Protocol)
+## 1. Prinsip Keamanan Kredensial (Zero Secret Exposure)
+- Agen **TIDAK DIBEKALI** `SUPABASE_SERVICE_ROLE_KEY` atau GitHub Admin PAT.
+- Koordinasi distributed lease, lock status, dan event dispatch ditangani secara eksklusif oleh **Arena Bridge & Executor** yang berjalan di server VPS host.
+- Agen bekerja secara deterministik di workspace masing-masing (`/srv/arena/workspaces/<agent-id>`).
 
-### Langkah 1: Membaca Task PENDING
+---
+
+## 2. Alur Eksekusi Agen
+
+### Langkah 1: Membaca Penugasan Tugas (Task Manifest)
+Daftar tugas resmi tersimpan secara persisten di repository:
+`.arena/tasks/<TASK_ID>.yaml`
+
+Agen memeriksa manifest tugas untuk mengetahui:
+- Target LEGO & Sub-LEGO
+- Batasan direktori: `allowed_paths` vs `forbidden_paths`
+- Kontrak yang harus dipatuhi: `contracts/<contract>.contract.md`
+- Perintah pengujian yang harus dijalankan (`cargo test -p ...`)
+
+### Langkah 2: Menyiapkan Branch Kerja
+Gunakan skrip isolasi cabang di workspace:
 ```bash
-curl -s -X GET "${SUPABASE_URL}/rest/v1/tasks?status=eq.PENDING&agent_id=eq.<AGENT_ID>&limit=1" \
-  -H "apikey: ${SUPABASE_KEY}" \
-  -H "Authorization: Bearer ${SUPABASE_KEY}"
+./scripts/arena/switch_branch.sh <agent-id> <task-id>
+```
+Skrip ini akan membuat/checkout cabang: `arena/<agent-id>/<task-id>`.
+
+### Langkah 3: Eksekusi Perubahan
+- Lakukan modifikasi kode HANYA pada path yang diizinkan (`allowed_paths`).
+- Jika mencoba mengubah file di luar kepemilikan, executor akan menolak operasi (fail-closed).
+- Catat milestone teknis pada berkas progress:
+  `.arena/progress/<agent-id>-<task-id>.md`
+
+### Langkah 4: Verifikasi & Conformance Gate
+Jalankan pengujian wajib sebelum commit:
+```bash
+cargo check --workspace
+cargo test -p <target-crate>
 ```
 
-### Langkah 2: Klaim Task & Update Status
-Sebelum mulai coding, agen wajib mengklaim task:
-1. Update `agent_status`:
-   ```bash
-   curl -s -X PATCH "${SUPABASE_URL}/rest/v1/agent_status?agent_id=eq.<AGENT_ID>" \
-     -H "apikey: ${SUPABASE_KEY}" \
-     -H "Authorization: Bearer ${SUPABASE_KEY}" \
-     -H "Content-Type: application/json" \
-     -d '{"state": "WORKING", "current_task": "<TASK_ID>"}'
-   ```
-2. Update `tasks`:
-   ```bash
-   curl -s -X PATCH "${SUPABASE_URL}/rest/v1/tasks?id=eq.<TASK_ID>" \
-     -H "apikey: ${SUPABASE_KEY}" \
-     -H "Authorization: Bearer ${SUPABASE_KEY}" \
-     -H "Content-Type: application/json" \
-     -d '{"status": "RUNNING"}'
-   ```
-
-### Langkah 3: Eksekusi Kode di Workspace Terisolasi
-- Pindah ke direktori workspace: `cd /home/fern/arena/workspaces/<AGENT_ID>`
-- Buat cabang arena baru: `./switch_arena_branch.sh <TASK_ID>`
-- Perbarui `my_progress.md` dengan ringkasan objektif sesi.
-- Kerjakan modifikasi kode hanya pada modul yang ditugaskan.
-- Jalankan uji verifikasi mandiri (`npm test` / `node --check`).
-
-### Langkah 4: Selesai & Lapor Tuntas
-1. Catat hasil uji verifikasi di `my_progress.md`.
-2. Commit dan push ke branch arena:
+### Langkah 5: Commit, Push, dan Pull Request
+1. Commit perubahan terstruktur:
    ```bash
    git add .
-   git commit -m "feat(<AGENT_ID>): complete <TASK_ID>"
-   git push origin HEAD
+   git commit -m "feat(<sublego>): complete <task-id>"
+   git push origin arena/<agent-id>/<task-id>
    ```
-3. Update `tasks` ke `COMPLETED`:
-   ```bash
-   curl -s -X PATCH "${SUPABASE_URL}/rest/v1/tasks?id=eq.<TASK_ID>" \
-     -H "apikey: ${SUPABASE_KEY}" \
-     -H "Authorization: Bearer ${SUPABASE_KEY}" \
-     -H "Content-Type: application/json" \
-     -d '{"status": "COMPLETED"}'
-   ```
-4. Kembalikan `agent_status` ke `IDLE`:
-   ```bash
-   curl -s -X PATCH "${SUPABASE_URL}/rest/v1/agent_status?agent_id=eq.<AGENT_ID>" \
-     -H "apikey: ${SUPABASE_KEY}" \
-     -H "Authorization: Bearer ${SUPABASE_KEY}" \
-     -H "Content-Type: application/json" \
-     -d '{"state": "IDLE", "current_task": null}'
-   ```
+2. Buka Pull Request ke `main` di GitHub.
+3. CI Actions akan menjalankan verifikasi otomatis sebelum PR dapat digabungkan.

@@ -1,0 +1,50 @@
+execution_policy:
+  classes:
+    CLASS_A:
+      description: "Read-only inspection & non-modifying build checks"
+      approval_required: false
+      allowed_commands:
+        - ["git", "status", "--short"]
+        - ["git", "diff"]
+        - ["git", "log", "-n", "10", "--oneline"]
+        - ["cargo", "check"]
+        - ["cargo", "check", "--workspace"]
+        - ["cargo", "test"]
+        - ["cargo", "fmt", "--check"]
+        - ["cargo", "clippy"]
+
+    CLASS_B:
+      description: "Scoped workspace modifications within allowed_paths"
+      approval_required: false
+      allowed_commands:
+        - ["cargo", "build"]
+        - ["cargo", "test", "-p", "*"]
+        - ["npm", "test"]
+      allowed_fs_ops:
+        - write
+        - delete
+        - rename
+        - mkdir
+
+    CLASS_C:
+      description: "Governance, Contract & Workspace Structure Changes"
+      approval_required: true
+      review_required: "Lead Engineer / Agent 05 Consensus"
+      restricted_paths:
+        - "contracts/**"
+        - "Cargo.toml"
+        - ".arena/registry/**"
+        - ".arena/policies/**"
+
+    CLASS_D:
+      description: "Host System, Credential & Deployment Operations"
+      approval_required: true
+      human_admin_only: true
+      forbidden_for_agents: true
+      patterns:
+        - "sudo *"
+        - "systemctl *"
+        - "ufw *"
+        - "apt *"
+        - "rm -rf /"
+        - "curl *supabase*secret*"

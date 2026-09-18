@@ -9,6 +9,8 @@ n8n-common = { path = "../n8n-common" }
 n8n-connection = { path = "../n8n-connection" }
 n8n-node-model = { path = "../n8n-node-model" }
 n8n-validation = { path = "../n8n-validation" }
+n8n-execution-data = { path = "../n8n-execution-data" }
+async-trait = "0.1" 
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true

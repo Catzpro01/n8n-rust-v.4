@@ -1,0 +1,77 @@
+sublegos:
+  - id: workflow.graph
+    parent_lego: workflow
+    owner: agent-01
+    contract: contracts/workflow.contract.md
+    allowed_paths:
+      - crates/n8n-workflow/src/runtime/ir.rs
+      - crates/n8n-workflow/src/lib.rs
+    forbidden_paths:
+      - crates/n8n-workflow/src/checksum.rs
+      - reference/n8n/**
+    dependencies:
+      - connection.graph
+    test_paths:
+      - crates/n8n-workflow/src/runtime/ir.rs
+    implementation: rust
+    status: active
+
+  - id: workflow.diff
+    parent_lego: workflow
+    owner: agent-01
+    contract: contracts/workflow.contract.md
+    allowed_paths:
+      - crates/n8n-workflow/src/diff.rs
+    forbidden_paths:
+      - reference/n8n/**
+    dependencies: []
+    test_paths:
+      - crates/n8n-workflow/src/diff.rs
+    implementation: rust
+    status: verified
+
+  - id: node.native_executor
+    parent_lego: node
+    owner: agent-02
+    contract: contracts/node.contract.md
+    allowed_paths:
+      - crates/n8n-nodes-rust/src/nodes/**
+      - crates/n8n-nodes-rust/src/traits.rs
+      - crates/n8n-nodes-rust/src/registry.rs
+    forbidden_paths:
+      - reference/n8n/**
+      - crates/n8n-workflow/**
+    dependencies:
+      - execution_data.buffer
+    test_paths:
+      - crates/n8n-nodes-rust/src/lib.rs
+    implementation: rust
+    status: active
+
+  - id: execution_data.buffer
+    parent_lego: execution_data
+    owner: agent-04
+    contract: contracts/execution-data.contract.md
+    allowed_paths:
+      - crates/n8n-execution-data/src/lib.rs
+    forbidden_paths:
+      - reference/n8n/**
+    dependencies: []
+    test_paths:
+      - crates/n8n-execution-data/src/lib.rs
+    implementation: rust
+    status: verified
+
+  - id: validation.cycle
+    parent_lego: validation
+    owner: agent-05
+    contract: contracts/validation.contract.md
+    allowed_paths:
+      - crates/n8n-validation/src/lib.rs
+    forbidden_paths:
+      - reference/n8n/**
+    dependencies: []
+    test_paths:
+      - crates/n8n-validation/src/lib.rs
+    implementation: rust
+    status: verified

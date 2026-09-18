@@ -1,0 +1,18 @@
+project:
+  name: n8n-rust-v.4
+  current_phase: PHASE_3_RUST_RUNTIME
+  status: active
+  target_architecture: hybrid-rust-native
+  reference_version: "2.9.4"
+  source_of_truth:
+    code: github/main
+    contracts: contracts/
+    registry: .arena/registry/
+    tasks: .arena/tasks/
+    progress: .arena/progress/
+    coordination: supabase
+  agent_namespace:
+    count: 5
+    prefix: agent-
+    pattern: "agent-01..agent-05"
+  branch_convention: "arena/<agent-id>/<task-id>"
