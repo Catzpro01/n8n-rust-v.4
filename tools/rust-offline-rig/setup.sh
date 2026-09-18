@@ -18,18 +18,37 @@ RUST_VERSION="1.88.0"
 NPM_HOST="https://registry.npmjs.org"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# target -> crate tags: the 12 crates the workspace dependency closure needs
+# <vendor-dir>:<owner>/<repo>:<tag> — the crates the workspace dependency closure needs.
+#
+#   * `syn` twice: async-trait 0.1.92 requires syn 3 while serde_derive/thiserror-impl are still
+#     on syn 2, and a directory source has to carry every version the resolution picks.
+#   * `regex`, `regex-automata`, `regex-syntax` all come from the `rust-lang/regex` workspace.
+#   * `vendor_prep.py` maps each of these directory names onto a crate name + version (PLAN).
+#
+# Not vendored: tokio and its ~20-crate closure (a dev-dependency of `n8n-nodes-rust` only),
+# so `run.sh` leaves that member out of the workspace it builds.
 CRATES=(
-  "serde-rs/serde:v1.0.219"
-  "serde-rs/json:v1.0.140"
-  "dtolnay/thiserror:1.0.69"
-  "dtolnay/syn:2.0.100"
-  "dtolnay/proc-macro2:1.0.92"
-  "dtolnay/quote:1.0.37"
-  "dtolnay/itoa:1.0.14"
-  "dtolnay/ryu:1.0.18"
-  "BurntSushi/memchr:2.7.4"
-  "dtolnay/unicode-ident:1.0.14"
+  "serde-1.0.229:serde-rs/serde:v1.0.229"
+  "json-1.0.151:serde-rs/json:v1.0.151"
+  "zmij:dtolnay/zmij:1.0.23"
+  "thiserror:dtolnay/thiserror:1.0.69"
+  "syn-2.0.119:dtolnay/syn:2.0.119"
+  "syn-3.0.6:dtolnay/syn:3.0.6"
+  "proc-macro2-1.0.107:dtolnay/proc-macro2:1.0.107"
+  "quote-1.0.47:dtolnay/quote:1.0.47"
+  "itoa-1.0.18:dtolnay/itoa:1.0.18"
+  "ryu:dtolnay/ryu:1.0.18"
+  "memchr-2.8.3:BurntSushi/memchr:2.8.3"
+  "unicode-ident-1.0.26:dtolnay/unicode-ident:1.0.26"
+  "indexmap:indexmap-rs/indexmap:2.2.6"
+  "hashbrown:rust-lang/hashbrown:v0.14.5"
+  "equivalent:indexmap-rs/equivalent:v1.0.2"
+  "async-trait:dtolnay/async-trait:0.1.92"
+  "anyhow-1.0.104:dtolnay/anyhow:1.0.104"
+  "regex:rust-lang/regex:1.13.1"
+  "regex-automata-0.4.18:rust-lang/regex:regex-automata-0.4.18"
+  "regex-syntax-0.8.11:rust-lang/regex:regex-syntax-0.8.11"
+  "aho-corasick:BurntSushi/aho-corasick:1.1.5"
 )
 
 mkdir -p "$RIG/dl" "$RIG/vendorsrc"
@@ -77,15 +96,17 @@ echo "cargo  $("$RIG/cargo/package/cargo/bin/cargo" --version)"
 
 # --- 2. crate sources ---------------------------------------------------------
 for spec in "${CRATES[@]}"; do
-  repo="${spec%:*}"; tag="${spec#*:}"
-  name="$(basename "$repo")"
+  name="${spec%%:*}"
+  rest="${spec#*:}"
+  repo="${rest%:*}"
+  tag="${rest#*:}"
   if [ -d "$RIG/vendorsrc/$name" ]; then echo "have   $name"; continue; fi
-  echo "clone  $repo @ $tag"
+  echo "clone  $name  ($repo @ $tag)"
   git clone -q --depth 1 --branch "$tag" "https://github.com/$repo" "$RIG/vendorsrc/$name"
 done
 
 # --- 3. vendor dir ------------------------------------------------------------
-if [ ! -d "$RIG/vendor" ] || [ -z "$(ls -A "$RIG/vendor" 2>/dev/null)" ]; then
+if [ ! -d "$RIG/vendor" ] || [ -z "$(ls -A "$RIG/vendor" 2>/dev/null)" ] || [ "${RIG_REVENDOR:-0}" = "1" ]; then
   python3 "$HERE/vendor_prep.py" "$RIG/vendorsrc" "$RIG/vendor"
 fi
 

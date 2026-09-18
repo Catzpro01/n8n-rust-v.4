@@ -39,6 +39,7 @@ Proyek ini berada di bawah tata kelola arsitektur tunggal (P0 Governance):
 - `tests/reference/` : golden workflows + baseline smoke test evidence
 - `tasks/`, `results/` : inbound task manifests and execution results
 - `crates/` : active Rust implementation workspace (8 member crates)
+- `docs/isolation/trigger-rust-port.md` : `trigger.lifecycle` port record (symbol map, divergences, evidence)
 - `apps/n8n-rust/` : application entry point & runner
 
 ## Verify Rust Workspace
@@ -46,6 +47,15 @@ Proyek ini berada di bawah tata kelola arsitektur tunggal (P0 Governance):
 ```bash
 cargo check --workspace
 cargo test --workspace
+```
+
+Without registry access (sandbox / review boxes) the offline rig builds the same crates
+against the exact `Cargo.lock` versions; `n8n-nodes-rust` stays with the CI runner because
+its `tokio` dev-dependency closure is not vendored:
+
+```bash
+tools/rust-offline-rig/setup.sh     # toolchain from npm + vendored crates from git
+tools/rust-offline-rig/run.sh test
 ```
 
 ## Verify a Reference LEGO

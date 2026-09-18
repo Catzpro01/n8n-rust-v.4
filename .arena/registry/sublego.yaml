@@ -40,9 +40,9 @@ sublegos:
     allowed_paths: [crates/n8n-workflow/src/**]
     forbidden_paths: [reference/n8n/**]
     dependencies: [workflow.graph]
-    test_paths: [crates/n8n-workflow/src/lib.rs]
-    implementation: reference
-    status: active
+    test_paths: [crates/n8n-workflow/src/trigger.rs, crates/n8n-workflow/tests/trigger_lifecycle.rs]
+    implementation: rust
+    status: verified
 
   # Agent 02 Sub-LEGOs
   - id: node.model

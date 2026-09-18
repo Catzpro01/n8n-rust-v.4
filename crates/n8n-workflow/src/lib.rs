@@ -36,6 +36,7 @@ pub mod rename;
 pub mod traversal;
 pub mod runtime;
 pub mod graph;
+pub mod trigger;
 
 pub use checksum::calculate_workflow_checksum;
 pub use connections::{
@@ -50,6 +51,17 @@ pub use traversal::{get_connected_nodes, ConnectionTypeFilter};
 pub use graph::{
     detect_cycles, evaluate_node_parameters, extract_expressions, find_orphan_nodes, is_reachable,
     validate_dag, GraphValidationError,
+};
+pub use trigger::{
+    ActivationErrorsService, ActivationMode, ActivationOutcome,
+    ActivationPolicy, ActivationReport, ActivationStatus, ActiveWorkflow, ActiveWorkflows,
+    CloseError, CloseFunction, CronContext, ErrorLevel, ExecutionMode, ExecutionRequest,
+    ExecutionSource, InMemoryPollScheduler, NodeTypeCapabilities, NodeTypeResolver, PollResponse,
+    PollRunner, PollScheduler, RemovalReport, StaticNodeTypeRegistry, TriggerActivationManager,
+    TriggerCount, TriggerError, TriggerErrorEvent, TriggerResponse, TriggerRunner,
+    WorkflowActivationError, WorkflowDeactivationError, ACTIVATION_FAILURE_PREFIX,
+    ALREADY_ACTIVE_ERROR, NO_TRIGGER_NODE_ERROR, POLLING_INTERVAL_TOO_SHORT_ERROR, STARTING_NODES,
+    TRIGGER_COUNT_EXCLUDED_NODES,
 };
 
 use serde_json::{json, Map, Value};

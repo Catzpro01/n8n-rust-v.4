@@ -14,15 +14,19 @@ actually be compiled and tested here instead of only on the VPS.
    rustc binary + driver), `@rustbin/rust-std-1.88.0-x86_64-unknown-linux-gnu` (libstd,
    merged into the rustc sysroot — the rustc package alone has no `libstd`) and
    `@rustbin/cargo-1.88.0-x86_64-unknown-linux-gnu`.
-2. **Crates from git.** The 12 crates in the workspace dependency closure
-   (`serde`, `serde_derive`, `serde_json`, `thiserror`, `thiserror-impl`, `syn`,
-   `proc-macro2`, `quote`, `itoa`, `ryu`, `memchr`, `unicode-ident`) are cloned at pinned
-   upstream tags, because crate downloads are blocked.
+2. **Crates from git.** The 24 crates in the workspace dependency closure are cloned at the
+   tags `Cargo.lock` resolves to (`serde`/`serde_derive`/`serde_core` 1.0.229, `serde_json`
+   1.0.151, `zmij` 1.0.23, `thiserror` 1.0.69, `syn` 2.0.119 **and** 3.0.6, `proc-macro2`,
+   `quote`, `itoa`, `ryu`, `memchr`, `unicode-ident`, `indexmap`, `hashbrown`, `equivalent`,
+   `async-trait`, `anyhow`, `regex`/`regex-automata`/`regex-syntax`, `aho-corasick`), because
+   crate downloads are blocked.
 3. **Cargo `directory` source.** Clones carry `path = ...` deps and `workspace = true`
    inheritance, which cargo rejects in a directory source (crates.io publishes a
    normalised manifest, git does not). `vendor_prep.py` rewrites each manifest — inherited
-   dependencies get explicit versions, path keys are stripped, `[workspace]`/`[patch.*]`
-   tables are dropped — and writes a `.cargo-checksum.json` per crate.
+   dependencies get the version from the crate's own `[workspace.dependencies]`, path keys
+   are stripped, `[workspace]`/`[patch.*]`/`[dev-dependencies]` tables are dropped, features
+   that only referenced a dropped dev-dependency are emptied — and writes a
+   `.cargo-checksum.json` per crate.
 
 Everything lands in `$RUST_RIG` (default `/tmp/rust-rig`), **outside the repository**:
 the rig is a build environment, not a source artefact, and nothing from it is committed.
@@ -30,21 +34,34 @@ the rig is a build environment, not a source artefact, and nothing from it is co
 ## Usage
 
 ```bash
-tools/rust-offline-rig/setup.sh          # ~15 s on first run (≈175 MB of npm tarballs + clones)
+tools/rust-offline-rig/setup.sh          # ~1 min on first run (npm tarballs + ~1 GB of clones)
 tools/rust-offline-rig/run.sh check      # cargo check --workspace --all-targets
 tools/rust-offline-rig/run.sh test       # cargo test  --workspace
 tools/rust-offline-rig/run.sh fmt        # any other cargo subcommand
+RIG_REVENDOR=1 tools/rust-offline-rig/setup.sh   # re-run vendor_prep.py after a PLAN edit
 ```
 
-`run.sh` copies `Cargo.toml` + `crates/` into `$RUST_RIG/build/repo` and runs cargo
-there, so `Cargo.lock`, `target/` and any generated file stay out of the tree under
-review.
+`run.sh` copies `Cargo.toml` + `crates/` + `tests/reference/` into `$RUST_RIG/build/repo`
+and runs cargo there, so `target/` and any generated file stay out of the tree under
+review. The lock *is* copied — with its `checksum` lines removed, since a directory source
+made of git checkouts cannot reproduce crates.io tarball hashes — so the rig resolves the
+same versions CI does.
+
+`n8n-nodes-rust` is left out of the copied workspace manifest (`EXCLUDE_MEMBERS` in
+`run.sh`, `RIG_INCLUDE_ALL=1` to override): its `tokio` dev-dependency drags in ~20 further
+crates, several of them target-gated, that `setup.sh` does not vendor. Everything else,
+including all of `crates/n8n-workflow`'s integration tests, is built and run.
 
 ## Status
 
 | Date | Command | Result |
 | :--- | :--- | :--- |
 | 2026-09-17 | `run.sh check` on `crates/**` @ `014471e6` (Phase-3 workspace) | **PASS** — `Finished dev profile … in 6.26s`, 12 vendored deps compiled, 5 workspace crates checked |
+| 2026-09-18 | `run.sh check` + `run.sh test` on the Phase-3 workspace | **PASS** — 24 vendored deps @ the `Cargo.lock` versions, 7 of 8 crates, **79 tests green** (`n8n-workflow` 52 unit + 3 integration suites) |
+
+The 2026-09-18 run replaced the previous vendor set: the older `PLAN` stopped one crate
+short of the closure (`regex`/`indexmap` were missing, `syn` was a single version), so
+`cargo check --workspace --all-targets` could not build `n8n-workflow` at all.
 
 ## Caveats
 
@@ -54,7 +71,10 @@ review.
   code, not about the exact dependency versions the VPS will resolve. Run `cargo check`
   / `cargo test` on the VPS (real registry) before merging anything that depends on it.
 * **Rewritten manifests.** Vendored manifests are not the upstream ones (see step 3).
-  If a crate is added or upgraded, extend `PLAN` in `vendor_prep.py`.
+  If a crate is added or upgraded, extend `PLAN` in `vendor_prep.py` *and* `CRATES` in
+  `setup.sh`, then re-run with `RIG_REVENDOR=1`.
+* **Not the full workspace.** `n8n-nodes-rust` (and only that crate) is compiled by the CI
+  runner with the real registry, not here.
 * **No rustup.** `rust-toolchain.toml` files are dropped from vendored crates, and
   toolchain selection env vars (`RUSTUP_TOOLCHAIN`) have no effect here.
 * **Ephemeral.** `/tmp` is outside the snapshot, so the rig can disappear between
