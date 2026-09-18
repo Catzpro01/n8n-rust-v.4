@@ -35,6 +35,7 @@ pub mod ordered;
 pub mod rename;
 pub mod traversal;
 pub mod runtime;
+pub mod graph;
 
 pub use checksum::calculate_workflow_checksum;
 pub use connections::{
@@ -46,6 +47,10 @@ pub use n8n_node_model::{INode, INodeParameters};
 pub use ordered::OrderedMap;
 pub use rename::{is_restricted_node_name, WorkflowError};
 pub use traversal::{get_connected_nodes, ConnectionTypeFilter};
+pub use graph::{
+    detect_cycles, evaluate_node_parameters, extract_expressions, find_orphan_nodes, is_reachable,
+    validate_dag, GraphValidationError,
+};
 
 use serde_json::{json, Map, Value};
 
@@ -339,6 +344,26 @@ impl Workflow {
             value.get("staticData").cloned(),
             value.get("pinData").cloned(),
         ))
+    }
+
+    /// Validates that the workflow graph is a valid DAG without cycles.
+    pub fn validate_dag(&self) -> Result<(), GraphValidationError> {
+        graph::validate_dag(self)
+    }
+
+    /// Extracts all expression references from all nodes in the workflow.
+    pub fn extract_expressions(&self) -> Vec<n8n_common::expression_contract::ExpressionRef> {
+        graph::extract_expressions(self)
+    }
+
+    /// Evaluates all expressions in a given node's parameters using the provided evaluator.
+    pub fn evaluate_node_parameters(
+        &self,
+        node_name: &str,
+        evaluator: &dyn n8n_common::expression_contract::ExpressionEvaluator,
+        context: &dyn n8n_common::expression_contract::EvaluationContext,
+    ) -> Result<Value, n8n_common::expression_contract::ExpressionError> {
+        graph::evaluate_node_parameters(self, node_name, evaluator, context)
     }
 
     pub fn to_wire(&self) -> Value {
