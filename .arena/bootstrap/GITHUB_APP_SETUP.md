@@ -10,7 +10,8 @@ Daftarkan GitHub App di: `https://github.com/settings/apps/new`
 - **Homepage URL**: `https://github.com/Catzpro01/n8n-rust-v.4`
 - **Webhook**:
   - **Active**: Checked
-  - **Webhook URL**: `http://157.10.160.95/github/webhook`
+  - **Webhook URL (Production HTTPS)**: `https://<YOUR_DOMAIN>/github/webhook`
+  *(Catatan Keamanan: Gunakan Nginx dengan sertifikat TLS/SSL. Transport HTTP plain `http://157.10.160.95/github/webhook` hanya diizinkan untuk staging/development lokal terisolasi).*
   - **Webhook secret**: Simpan nilai acak (32+ karakter) dan simpan di `/home/fern/arena/.env` sebagai `GITHUB_WEBHOOK_SECRET`.
 
 ---
@@ -49,3 +50,26 @@ Daftarkan GitHub App di: `https://github.com/settings/apps/new`
    sudo chown fern:fern /etc/arena/github_app.pem
    ```
 3. Catat `GITHUB_APP_ID` dan `GITHUB_APP_INSTALLATION_ID` ke file `/home/fern/arena/.env`.
+
+---
+
+## 5. Rekomendasi Konfigurasi Nginx TLS Reverse Proxy (HTTPS)
+Pasang sertifikat SSL (misal: Let's Encrypt / Certbot) pada Nginx host:
+```nginx
+server {
+    listen 443 ssl http2;
+    server_name arena.yourdomain.com;
+
+    ssl_certificate /etc/letsencrypt/live/arena.yourdomain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/arena.yourdomain.com/privkey.pem;
+
+    location /github/webhook {
+        proxy_pass http://127.0.0.1:9000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_read_timeout 60s;
+    }
+}
+```

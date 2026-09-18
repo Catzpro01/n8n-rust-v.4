@@ -87,3 +87,53 @@ CREATE INDEX IF NOT EXISTS idx_task_leases_agent ON public.task_leases(agent_id,
 CREATE INDEX IF NOT EXISTS idx_lego_locks_owner ON public.lego_locks(owner_agent, lease_until);
 CREATE INDEX IF NOT EXISTS idx_heartbeats_agent ON public.heartbeats(agent_id, timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_execution_runs_task ON public.execution_runs(task_id, started_at DESC);
+
+-- ==============================================================================
+-- P0-6: ATOMIC LOCK ACQUISITION STORED PROCEDURE
+-- ==============================================================================
+CREATE OR REPLACE FUNCTION public.acquire_lego_lock(
+    p_resource_id TEXT,
+    p_resource_type TEXT,
+    p_owner_agent TEXT,
+    p_task_id TEXT,
+    p_ttl_seconds INTEGER DEFAULT 3600
+) RETURNS JSONB
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_now TIMESTAMPTZ := NOW();
+    v_lease_until TIMESTAMPTZ := v_now + (p_ttl_seconds || ' seconds')::INTERVAL;
+    v_current_lock RECORD;
+BEGIN
+    SELECT * INTO v_current_lock
+    FROM public.lego_locks
+    WHERE resource_id = p_resource_id
+    FOR UPDATE;
+
+    IF FOUND THEN
+        -- If lock is active and owned by another agent -> reject!
+        IF v_current_lock.lease_until > v_now AND v_current_lock.owner_agent != p_owner_agent THEN
+            RETURN jsonb_build_object(
+                'acquired', false,
+                'error', 'LOCKED_BY_OTHER_AGENT',
+                'owner', v_current_lock.owner_agent,
+                'lease_until', v_current_lock.lease_until
+            );
+        END IF;
+
+        UPDATE public.lego_locks
+        SET owner_agent = p_owner_agent,
+            task_id = p_task_id,
+            acquired_at = v_now,
+            lease_until = v_lease_until
+        WHERE resource_id = p_resource_id;
+
+        RETURN jsonb_build_object('acquired', true, 'action', 'renewed', 'lease_until', v_lease_until);
+    ELSE
+        INSERT INTO public.lego_locks (resource_id, resource_type, owner_agent, task_id, acquired_at, lease_until)
+        VALUES (p_resource_id, p_resource_type, p_owner_agent, p_task_id, v_now, v_lease_until);
+
+        RETURN jsonb_build_object('acquired', true, 'action', 'acquired', 'lease_until', v_lease_until);
+    END IF;
+END;
+$$;

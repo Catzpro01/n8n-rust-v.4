@@ -6,16 +6,18 @@ agents:
       - workflow.graph
       - workflow.traversal
       - workflow.diff
+      - trigger.lifecycle
     workspace: "/srv/arena/workspaces/agent-01"
     status: idle
 
   - id: agent-02
-    name: "Agent 02 (Node Model & Built-in Nodes)"
+    name: "Agent 02 (Node Model & Native Executors)"
     primary_lego: node
     allowed_sublegos:
       - node.model
       - node.parameters
       - node.native_executor
+      - credentials.resolver
     workspace: "/srv/arena/workspaces/agent-02"
     status: idle
 
@@ -25,6 +27,8 @@ agents:
     allowed_sublegos:
       - connection.graph
       - connection.router
+      - webhook.router
+      - scheduler.engine
     workspace: "/srv/arena/workspaces/agent-03"
     status: idle
 
@@ -45,6 +49,8 @@ agents:
       - validation.cycle
       - validation.uniqueness
       - validation.dangling
+      - persistence.snapshot
+      - api.envelope
       - integration.gates
     workspace: "/srv/arena/workspaces/agent-05"
     status: idle

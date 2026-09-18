@@ -103,10 +103,32 @@ mod tests {
         let mut frame = ExecutionFrame::new(0, &inputs, 1);
         assert_eq!(frame.main_input().unwrap().len(), 1);
 
-        frame.push_output(0, DataRecord::new(json!({"val": 20})));
+        frame.push_output(0, DataRecord::new(json!({"val": 20}))).unwrap();
         let outputs = frame.take_outputs();
         assert_eq!(outputs.len(), 1);
         assert_eq!(outputs[0].len(), 1);
         assert_eq!(outputs[0].get(0).unwrap().json["val"], 20);
+    }
+
+    #[test]
+    fn test_execution_frame_memory_governor_backpressure() {
+        let inputs = vec![];
+        let budget = std::sync::Arc::new(MemoryBudget::new(150));
+        let mut frame = ExecutionFrame::new(0, &inputs, 1).with_memory_budget(budget);
+
+        // First item fits
+        let res1 = frame.push_output(0, DataRecord::new(json!({"a": 1})));
+        assert!(res1.is_ok());
+
+        // Second large item triggers MemoryBudgetExceeded backpressure
+        let res2 = frame.push_output(0, DataRecord::new(json!({"large_payload": "overflow_test_overflow_test_overflow"})));
+        assert!(res2.is_err());
+        match res2.unwrap_err() {
+            ExecutionError::MemoryBudgetExceeded { limit, attempted } => {
+                assert_eq!(limit, 150);
+                assert!(attempted > 50);
+            }
+            other => panic!("Expected MemoryBudgetExceeded, got: {:?}", other),
+        }
     }
 }

@@ -23,3 +23,4 @@ packages/workflow-lego/.extract/
 reference/**/dist/
 reference/**/.turbo/
 reference/**/coverage/
+__pycache__/

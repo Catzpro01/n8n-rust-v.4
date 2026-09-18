@@ -2,11 +2,21 @@ use n8n_common::{BinaryDataMap, INodeExecutionData};
 use serde_json::Value;
 use std::sync::Arc;
 
+/// Minimal-copy, shared-ownership data record using Arc<Value> pointers
 #[derive(Debug, Clone, PartialEq)]
 pub struct DataRecord {
     pub json: Arc<Value>,
     pub binary: Option<Arc<BinaryDataMap>>,
     pub paired_item: Option<u32>,
+}
+
+fn estimate_json_bytes(val: &Value) -> usize {
+    match val {
+        Value::Null | Value::Bool(_) | Value::Number(_) => 16,
+        Value::String(s) => s.len() + 24,
+        Value::Array(arr) => arr.iter().map(estimate_json_bytes).sum::<usize>() + 24,
+        Value::Object(map) => map.iter().map(|(k, v)| k.len() + estimate_json_bytes(v) + 32).sum::<usize>() + 48,
+    }
 }
 
 impl DataRecord {
@@ -24,6 +34,10 @@ impl DataRecord {
             binary: None,
             paired_item: None,
         }
+    }
+
+    pub fn estimated_bytes(&self) -> usize {
+        std::mem::size_of::<Self>() + estimate_json_bytes(&self.json)
     }
 
     pub fn to_node_execution_data(&self) -> INodeExecutionData {
@@ -52,7 +66,7 @@ impl DataRecord {
     }
 }
 
-/// Zero/Minimal-copy batch item buffer for the runtime execution hot-path
+/// Minimal-copy batch item buffer with memory measurement
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct ItemBuffer {
     items: Vec<DataRecord>,
@@ -109,11 +123,15 @@ impl ItemBuffer {
         self.items.iter()
     }
 
-    /// Shallow clone: clones only Arc pointers without duplicating JSON heap memory
     pub fn shallow_clone(&self) -> Self {
         Self {
             items: self.items.clone(),
         }
+    }
+
+    /// Calculates actual allocated byte footprint in memory for budget governor
+    pub fn estimated_bytes(&self) -> usize {
+        self.items.iter().map(|r| r.estimated_bytes()).sum::<usize>() + std::mem::size_of::<Self>()
     }
 }
 
@@ -197,10 +215,11 @@ mod tests {
         assert_eq!(buf.len(), 2);
         assert_eq!(buf.get(0).unwrap().json["count"], 42);
 
-        // Test shallow clone
         let cloned_buf = buf.shallow_clone();
         assert_eq!(cloned_buf.len(), 2);
-        // Verify underlying Arc points to identical memory
         assert!(Arc::ptr_eq(&buf.get(0).unwrap().json, &cloned_buf.get(0).unwrap().json));
+
+        // Test memory estimation
+        assert!(buf.estimated_bytes() > 50);
     }
 }
