@@ -67,6 +67,39 @@ machine statuses and adding localized `statusText`. Built-in or community node
 loaders can register their human-facing catalogs with
 `registerTranslations(...)` before a response is emitted.
 
+## Built-in node catalog (Node Model LEGO — Agent 2)
+
+`src/node-catalog-localization.ts` (ESM twin:
+`packages/reconstructed-engine/node-catalog.mjs`) carries the native
+metadata of the 15 core built-in node types (labels, descriptions, and the
+primary parameter display names) for `id`, `jv`, `ar`, `zh`, `ru`, `en`.
+The English source text is pinned to the n8n 2.9.4 reference
+(`n8n-nodes-base/dist/types/nodes.json`); non-English catalogs additionally
+register the English source text as a value alias so payloads still carrying
+source values are localized.
+
+Contract:
+
+- registration goes through the Agent 1 seam
+  (`registerBuiltInNodeCatalog(service)`); the engine registers the catalog
+  automatically at construction, and user-supplied translations win on
+  key conflicts;
+- only human-facing fields are translated; the seven protected machine tokens
+  (`name`, `type`, `value`, `inputs`, `outputs`, `routing`, `requestRules`),
+  `parameters`, `connections`, and all workflow data subtrees stay
+  byte-identical;
+- `localizeNodeMetadata(node, locale)` is pure: it returns a copy with
+  `label`/`description` filled from the catalog and never mutates the input;
+- unknown node types are returned unchanged — no guessing;
+- community packages register namespaced catalogs
+  (`community.<package>.<alias>.label`, `...description`,
+  `...parameters.<name>`) through
+  `registerCommunityNodeCatalog(service, locale, packageName, nodes)`;
+- execution responses gain an additive `nodeLabel` field for known built-in
+  node types; user-chosen node names are never translated;
+- `test/06-node-catalog.test.mjs` guards key/value drift between the TS
+  boundary and the ESM runtime catalog.
+
 ## Not done (deliberately)
 
 - No Rust code.

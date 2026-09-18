@@ -11,6 +11,14 @@ import {
   UniversalLocaleEnforcer,
   normalizeSupportedLocale,
 } from './localization.mjs';
+import {
+  registerBuiltInNodeCatalog,
+  localizeNodeMetadata,
+  nodeAliasOf,
+  getNodeCatalogEntry,
+} from './node-catalog.mjs';
+
+export { registerBuiltInNodeCatalog, localizeNodeMetadata, nodeAliasOf, getNodeCatalogEntry };
 
 export class WorkflowExecutionEngine {
   constructor(workflowDefinition = {}, options = {}) {
@@ -24,8 +32,13 @@ export class WorkflowExecutionEngine {
 
     this.localeEnforcer = new UniversalLocaleEnforcer({
       locale: normalizeSupportedLocale(requestedLocale),
-      translations: options.translations,
     });
+    // The built-in node catalog is a default: user-supplied translations are
+    // registered afterwards so they win on key conflicts.
+    registerBuiltInNodeCatalog(this.localeEnforcer);
+    for (const [locale, catalog] of Object.entries(options.translations ?? {})) {
+      if (catalog && typeof catalog === 'object') this.localeEnforcer.registerTranslations(locale, catalog);
+    }
     this.activeLocale = this.localeEnforcer.getLocale();
     this.nodes = new Map();
     this.connections = definition.connections || {};
@@ -60,6 +73,11 @@ export class WorkflowExecutionEngine {
   /** Register built-in/community human-facing catalog entries at load time. */
   registerNodeTranslations(locale, translations) {
     this.localeEnforcer.registerTranslations(locale, translations);
+  }
+
+  /** Pure node-metadata localizer backed by the registered catalog. */
+  localizeNodeMetadata(node, locale = this.activeLocale) {
+    return localizeNodeMetadata(node, locale, this.localeEnforcer);
   }
 
   async runWorkflow(startNodeName = null, initialData = [{}], options = {}) {
@@ -121,14 +139,21 @@ export class WorkflowExecutionEngine {
       executionData.set(nodeName, outputData);
       visited.add(nodeName);
 
-      executionLog.push({
+      const logEntry = {
         node: nodeName,
         type: node.type,
         inputCount: inputData.length,
         outputCount: outputData.length,
         durationMs,
         status: 'success',
-      });
+      };
+      // Additive human-facing surface: the node type's native label when the
+      // type is a known built-in core node. User-chosen node names stay as-is.
+      const alias = nodeAliasOf(node.type);
+      if (alias && getNodeCatalogEntry(alias, locale)) {
+        logEntry.nodeLabel = this.localeEnforcer.translate(`node.${alias}.label`, locale);
+      }
+      executionLog.push(logEntry);
 
       // Cari koneksi output ke node berikutnya
       const nodeConns = this.connections[nodeName];

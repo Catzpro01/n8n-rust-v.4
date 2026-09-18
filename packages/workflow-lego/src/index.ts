@@ -66,6 +66,24 @@ export {
 	type LocaleEnforcerOptions,
 } from './universal-locale-enforcer';
 export { SettingsLocalizationAdapter, type LanguageCode, type LocalizationSettingsState } from './settings-localization-adapter';
+export {
+	BUILTIN_NODE_ALIASES,
+	BUILTIN_NODE_CATALOG,
+	BUILTIN_NODE_CATALOG_KEYS,
+	BUILTIN_NODE_PREFIX,
+	createCommunityNodeCatalog,
+	getNodeCatalogEntry,
+	localizeNodeMetadata,
+	nodeAliasOf,
+	registerBuiltInNodeCatalog,
+	registerCommunityNodeCatalog,
+	type BuiltinNodeAlias,
+	type CommunityNodeMeta,
+	type NodeCatalogEntry,
+	type NodeMetadataLike,
+	type TextTranslator,
+	type TranslationRegistrar,
+} from './node-catalog-localization';
 
 export const LEGO_PROVENANCE = {
 	lego: 'workflow',
