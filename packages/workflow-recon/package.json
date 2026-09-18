@@ -1,0 +1,21 @@
+{
+  "name": "@lego/workflow-recon",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Workflow Model LEGO reconstructed in TypeScript (Phase 3). 1:1 with n8n 2.9.4 graph semantics; verified differentially against n8n-workflow@2.9.1. No Rust.",
+  "license": "SEE LICENSE IN reference/n8n/LICENSE.md",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "node --test \"test/*.test.ts\"",
+    "test:golden": "node --test \"test/02-disabled-golden.test.ts\"",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "record:golden": "node tools/record-disabled-golden.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "~5.9.2"
+  }
+}

@@ -1,0 +1,121 @@
+{
+  "id": "wf-disabled-node",
+  "name": "Disabled Node Mid Chain",
+  "nodes": [
+    {
+      "id": "node-1",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [220, 300],
+      "parameters": {},
+      "disabled": true
+    },
+    {
+      "id": "node-2",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [220, 520],
+      "parameters": {}
+    },
+    {
+      "id": "node-3",
+      "name": "Code",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 400],
+      "parameters": {
+        "jsCode": "return [{ json: { status: 'ok' } }];"
+      }
+    },
+    {
+      "id": "node-4",
+      "name": "Disabled Filter",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [660, 300],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [],
+          "combinator": "and"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "id": "node-5",
+      "name": "Set",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [880, 300],
+      "parameters": {
+        "assignments": { "assignments": [] },
+        "options": {}
+      },
+      "disabled": false
+    },
+    {
+      "id": "node-6",
+      "name": "NoOp",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [660, 520],
+      "parameters": {}
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Disabled Filter",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "NoOp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Disabled Filter": {
+      "main": [
+        [
+          {
+            "node": "Set",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

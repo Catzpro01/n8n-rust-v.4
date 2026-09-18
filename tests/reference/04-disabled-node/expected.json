@@ -1,0 +1,523 @@
+{
+  "meta": {
+    "case": "04-disabled-node",
+    "generator": "packages/workflow-recon/tools/record-disabled-golden.mjs",
+    "recordedAt": "2026-09-18T00:15:33.162Z",
+    "oracle": {
+      "package": "n8n-workflow",
+      "version": "2.9.1",
+      "nodeDescriptions": "n8n-nodes-base@2.9.1",
+      "registryMode": "real-node-classes"
+    },
+    "provenance": "Recorded output of the pinned reference runtime. Never hand-written and never edited to make a test pass — regenerate with `npm run record:golden` in packages/workflow-recon."
+  },
+  "workflow": "workflow.json",
+  "nodeTypeIndex": {
+    "n8n-nodes-base.manualTrigger": {
+      "versions": [
+        1
+      ],
+      "trigger": true,
+      "poll": false,
+      "descriptionName": "manualTrigger",
+      "classFile": "dist/nodes/ManualTrigger/ManualTrigger.node.js"
+    },
+    "n8n-nodes-base.scheduleTrigger": {
+      "versions": [
+        1,
+        1.1,
+        1.2,
+        1.3
+      ],
+      "trigger": true,
+      "poll": false,
+      "descriptionName": "scheduleTrigger",
+      "classFile": "dist/nodes/Schedule/ScheduleTrigger.node.js"
+    },
+    "n8n-nodes-base.code": {
+      "versions": [
+        1,
+        2
+      ],
+      "trigger": false,
+      "poll": false,
+      "descriptionName": "code",
+      "classFile": "dist/nodes/Code/Code.node.js"
+    },
+    "n8n-nodes-base.filter": {
+      "versions": [
+        1,
+        2,
+        2.1,
+        2.2,
+        2.3
+      ],
+      "trigger": false,
+      "poll": false,
+      "descriptionName": "filter",
+      "classFile": "dist/nodes/Filter/Filter.node.js"
+    },
+    "n8n-nodes-base.set": {
+      "versions": [
+        1,
+        2,
+        3,
+        3.1,
+        3.2,
+        3.3,
+        3.4
+      ],
+      "trigger": false,
+      "poll": false,
+      "descriptionName": "set",
+      "classFile": "dist/nodes/Set/Set.node.js"
+    },
+    "n8n-nodes-base.noOp": {
+      "versions": [
+        1
+      ],
+      "trigger": false,
+      "poll": false,
+      "descriptionName": "noOp",
+      "classFile": "dist/nodes/NoOp/NoOp.node.js"
+    }
+  },
+  "calls": {
+    "connectionsByDestinationNode": {
+      "Code": {
+        "main": [
+          [
+            {
+              "node": "Manual Trigger",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Schedule Trigger",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Disabled Filter": {
+        "main": [
+          [
+            {
+              "node": "Code",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "NoOp": {
+        "main": [
+          [
+            {
+              "node": "Code",
+              "type": "main",
+              "index": 1
+            }
+          ]
+        ]
+      },
+      "Set": {
+        "main": [
+          [
+            {
+              "node": "Disabled Filter",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "getHighestNode(Manual Trigger)": [],
+    "getParentNodes(Manual Trigger)": [],
+    "getChildNodes(Manual Trigger)": [
+      "NoOp",
+      "Set",
+      "Disabled Filter",
+      "Code"
+    ],
+    "getStartNode(Manual Trigger)": "Manual Trigger",
+    "getParentNodes(Manual Trigger,main,-1)": [],
+    "getChildNodes(Manual Trigger,main,-1)": [
+      "NoOp",
+      "Set",
+      "Disabled Filter",
+      "Code"
+    ],
+    "getParentNodes(Manual Trigger,main,0)": [],
+    "getChildNodes(Manual Trigger,main,0)": [],
+    "getParentNodes(Manual Trigger,main,1)": [],
+    "getChildNodes(Manual Trigger,main,1)": [
+      "Code"
+    ],
+    "getParentNodes(Manual Trigger,main,2)": [],
+    "getChildNodes(Manual Trigger,main,2)": [
+      "NoOp",
+      "Disabled Filter",
+      "Code"
+    ],
+    "getParentNodes(Manual Trigger,ALL)": [],
+    "getParentNodesByDepth(Manual Trigger)": [],
+    "getHighestNode(Schedule Trigger)": [],
+    "getParentNodes(Schedule Trigger)": [],
+    "getChildNodes(Schedule Trigger)": [
+      "NoOp",
+      "Set",
+      "Disabled Filter",
+      "Code"
+    ],
+    "getStartNode(Schedule Trigger)": "Schedule Trigger",
+    "getParentNodes(Schedule Trigger,main,-1)": [],
+    "getChildNodes(Schedule Trigger,main,-1)": [
+      "NoOp",
+      "Set",
+      "Disabled Filter",
+      "Code"
+    ],
+    "getParentNodes(Schedule Trigger,main,0)": [],
+    "getChildNodes(Schedule Trigger,main,0)": [],
+    "getParentNodes(Schedule Trigger,main,1)": [],
+    "getChildNodes(Schedule Trigger,main,1)": [
+      "Code"
+    ],
+    "getParentNodes(Schedule Trigger,main,2)": [],
+    "getChildNodes(Schedule Trigger,main,2)": [
+      "NoOp",
+      "Disabled Filter",
+      "Code"
+    ],
+    "getParentNodes(Schedule Trigger,ALL)": [],
+    "getParentNodesByDepth(Schedule Trigger)": [],
+    "getHighestNode(Code)": [
+      "Schedule Trigger"
+    ],
+    "getParentNodes(Code)": [
+      "Schedule Trigger",
+      "Manual Trigger"
+    ],
+    "getChildNodes(Code)": [
+      "NoOp",
+      "Set",
+      "Disabled Filter"
+    ],
+    "getStartNode(Code)": "Schedule Trigger",
+    "getParentNodes(Code,main,-1)": [
+      "Schedule Trigger",
+      "Manual Trigger"
+    ],
+    "getChildNodes(Code,main,-1)": [
+      "NoOp",
+      "Set",
+      "Disabled Filter"
+    ],
+    "getParentNodes(Code,main,0)": [],
+    "getChildNodes(Code,main,0)": [],
+    "getParentNodes(Code,main,1)": [
+      "Schedule Trigger",
+      "Manual Trigger"
+    ],
+    "getChildNodes(Code,main,1)": [
+      "NoOp",
+      "Disabled Filter"
+    ],
+    "getParentNodes(Code,main,2)": [
+      "Schedule Trigger",
+      "Manual Trigger"
+    ],
+    "getChildNodes(Code,main,2)": [
+      "NoOp",
+      "Set",
+      "Disabled Filter"
+    ],
+    "getParentNodes(Code,ALL)": [
+      "Schedule Trigger",
+      "Manual Trigger"
+    ],
+    "getParentNodesByDepth(Code)": [
+      {
+        "name": "Manual Trigger",
+        "indicies": [
+          0
+        ],
+        "depth": 1
+      },
+      {
+        "name": "Schedule Trigger",
+        "indicies": [
+          0
+        ],
+        "depth": 1
+      }
+    ],
+    "getHighestNode(Disabled Filter)": [
+      "Schedule Trigger"
+    ],
+    "getParentNodes(Disabled Filter)": [
+      "Schedule Trigger",
+      "Manual Trigger",
+      "Code"
+    ],
+    "getChildNodes(Disabled Filter)": [
+      "Set"
+    ],
+    "getStartNode(Disabled Filter)": "Schedule Trigger",
+    "getParentNodes(Disabled Filter,main,-1)": [
+      "Schedule Trigger",
+      "Manual Trigger",
+      "Code"
+    ],
+    "getChildNodes(Disabled Filter,main,-1)": [
+      "Set"
+    ],
+    "getParentNodes(Disabled Filter,main,0)": [],
+    "getChildNodes(Disabled Filter,main,0)": [],
+    "getParentNodes(Disabled Filter,main,1)": [
+      "Code"
+    ],
+    "getChildNodes(Disabled Filter,main,1)": [
+      "Set"
+    ],
+    "getParentNodes(Disabled Filter,main,2)": [
+      "Schedule Trigger",
+      "Manual Trigger",
+      "Code"
+    ],
+    "getChildNodes(Disabled Filter,main,2)": [
+      "Set"
+    ],
+    "getParentNodes(Disabled Filter,ALL)": [
+      "Schedule Trigger",
+      "Manual Trigger",
+      "Code"
+    ],
+    "getParentNodesByDepth(Disabled Filter)": [
+      {
+        "name": "Code",
+        "indicies": [
+          0
+        ],
+        "depth": 1
+      },
+      {
+        "name": "Manual Trigger",
+        "indicies": [
+          0
+        ],
+        "depth": 2
+      },
+      {
+        "name": "Schedule Trigger",
+        "indicies": [
+          0
+        ],
+        "depth": 2
+      }
+    ],
+    "getHighestNode(Set)": [
+      "Schedule Trigger"
+    ],
+    "getParentNodes(Set)": [
+      "Schedule Trigger",
+      "Manual Trigger",
+      "Code",
+      "Disabled Filter"
+    ],
+    "getChildNodes(Set)": [],
+    "getStartNode(Set)": "Schedule Trigger",
+    "getParentNodes(Set,main,-1)": [
+      "Schedule Trigger",
+      "Manual Trigger",
+      "Code",
+      "Disabled Filter"
+    ],
+    "getChildNodes(Set,main,-1)": [],
+    "getParentNodes(Set,main,0)": [],
+    "getChildNodes(Set,main,0)": [],
+    "getParentNodes(Set,main,1)": [
+      "Disabled Filter"
+    ],
+    "getChildNodes(Set,main,1)": [],
+    "getParentNodes(Set,main,2)": [
+      "Code",
+      "Disabled Filter"
+    ],
+    "getChildNodes(Set,main,2)": [],
+    "getParentNodes(Set,ALL)": [
+      "Schedule Trigger",
+      "Manual Trigger",
+      "Code",
+      "Disabled Filter"
+    ],
+    "getParentNodesByDepth(Set)": [
+      {
+        "name": "Disabled Filter",
+        "indicies": [
+          0
+        ],
+        "depth": 1
+      },
+      {
+        "name": "Code",
+        "indicies": [
+          0
+        ],
+        "depth": 2
+      },
+      {
+        "name": "Manual Trigger",
+        "indicies": [
+          0
+        ],
+        "depth": 3
+      },
+      {
+        "name": "Schedule Trigger",
+        "indicies": [
+          0
+        ],
+        "depth": 3
+      }
+    ],
+    "getHighestNode(NoOp)": [
+      "Schedule Trigger"
+    ],
+    "getParentNodes(NoOp)": [
+      "Schedule Trigger",
+      "Manual Trigger",
+      "Code"
+    ],
+    "getChildNodes(NoOp)": [],
+    "getStartNode(NoOp)": "Schedule Trigger",
+    "getParentNodes(NoOp,main,-1)": [
+      "Schedule Trigger",
+      "Manual Trigger",
+      "Code"
+    ],
+    "getChildNodes(NoOp,main,-1)": [],
+    "getParentNodes(NoOp,main,0)": [],
+    "getChildNodes(NoOp,main,0)": [],
+    "getParentNodes(NoOp,main,1)": [
+      "Code"
+    ],
+    "getChildNodes(NoOp,main,1)": [],
+    "getParentNodes(NoOp,main,2)": [
+      "Schedule Trigger",
+      "Manual Trigger",
+      "Code"
+    ],
+    "getChildNodes(NoOp,main,2)": [],
+    "getParentNodes(NoOp,ALL)": [
+      "Schedule Trigger",
+      "Manual Trigger",
+      "Code"
+    ],
+    "getParentNodesByDepth(NoOp)": [
+      {
+        "name": "Code",
+        "indicies": [
+          1
+        ],
+        "depth": 1
+      },
+      {
+        "name": "Manual Trigger",
+        "indicies": [
+          0
+        ],
+        "depth": 2
+      },
+      {
+        "name": "Schedule Trigger",
+        "indicies": [
+          0
+        ],
+        "depth": 2
+      }
+    ],
+    "getStartNode()": "Schedule Trigger",
+    "getTriggerNodes()": [
+      "Schedule Trigger"
+    ],
+    "getPollNodes()": [],
+    "getNodeConnectionIndexes(Code,Schedule Trigger)": {
+      "sourceIndex": 0,
+      "destinationIndex": 1
+    },
+    "getNodeConnectionIndexes(Code,Manual Trigger)": {
+      "sourceIndex": 0,
+      "destinationIndex": 0
+    },
+    "getNodeConnectionIndexes(Disabled Filter,Schedule Trigger)": {
+      "sourceIndex": 0,
+      "destinationIndex": 1
+    },
+    "getNodeConnectionIndexes(Disabled Filter,Manual Trigger)": {
+      "sourceIndex": 0,
+      "destinationIndex": 0
+    },
+    "getNodeConnectionIndexes(Disabled Filter,Code)": {
+      "sourceIndex": 0,
+      "destinationIndex": 0
+    },
+    "getNodeConnectionIndexes(Set,Schedule Trigger)": {
+      "sourceIndex": 0,
+      "destinationIndex": 1
+    },
+    "getNodeConnectionIndexes(Set,Manual Trigger)": {
+      "sourceIndex": 0,
+      "destinationIndex": 0
+    },
+    "getNodeConnectionIndexes(Set,Code)": {
+      "sourceIndex": 0,
+      "destinationIndex": 0
+    },
+    "getNodeConnectionIndexes(Set,Disabled Filter)": {
+      "sourceIndex": 0,
+      "destinationIndex": 0
+    },
+    "getNodeConnectionIndexes(NoOp,Schedule Trigger)": {
+      "sourceIndex": 0,
+      "destinationIndex": 1
+    },
+    "getNodeConnectionIndexes(NoOp,Manual Trigger)": {
+      "sourceIndex": 0,
+      "destinationIndex": 0
+    },
+    "getNodeConnectionIndexes(NoOp,Code)": {
+      "sourceIndex": 1,
+      "destinationIndex": 0
+    },
+    "getConnectionsBetweenNodes(Manual Trigger|Schedule Trigger,rest)": [
+      [
+        {
+          "node": "Manual Trigger",
+          "index": 0,
+          "type": "main"
+        },
+        {
+          "node": "Code",
+          "type": "main",
+          "index": 0
+        }
+      ],
+      [
+        {
+          "node": "Schedule Trigger",
+          "index": 0,
+          "type": "main"
+        },
+        {
+          "node": "Code",
+          "type": "main",
+          "index": 0
+        }
+      ]
+    ]
+  }
+}

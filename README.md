@@ -28,6 +28,7 @@ contract. It does **not** mean it was replaced by Rust.
 - `contracts/` : formal LEGO contracts (`workflow`, `node`, `connection`, `validation`)
 - `docs/isolation/` : Phase 2 isolation records, dependency map, port contract, verification report
 - `packages/workflow-lego/` : the isolated Workflow Model LEGO (boundary, ports, tests, manifests)
+- `packages/workflow-recon/` : the Workflow Model LEGO reconstructed in TypeScript (Phase 3 graph surface; golden `tests/reference/04-disabled-node/`, see `docs/isolation/workflow-disabled-fidelity.md`)
 - `tools/` : boundary mapper, kernel/port/reference gates, isolation extractor, model digest, gate runner, live engine harness
 - `tests/reference/` : golden workflows + baseline smoke test evidence
 - `tasks/`, `results/` : inbound task manifests and execution results

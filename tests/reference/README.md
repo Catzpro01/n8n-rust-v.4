@@ -4,6 +4,9 @@ Kumpulan workflow referensi standar untuk menguji kepatuhan validator dan engine
 1. `01-empty-workflow`: Validasi workflow kosong.
 2. `02-one-node`: Validasi satu node trigger tanpa koneksi.
 3. `03-linear`: Validasi alur linear sederhana (Trigger -> Code).
+4. `04-disabled-node`: Perilaku flag `disabled` pada traversal graph & pemilihan start node
+   (ISSUE-015 / ISSUE-017). `expected.json` direkam dari `n8n-workflow@2.9.1` —
+   lihat `04-disabled-node/README.md`.
 
 ---
 

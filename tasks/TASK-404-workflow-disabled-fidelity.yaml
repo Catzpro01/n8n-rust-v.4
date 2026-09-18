@@ -1,0 +1,95 @@
+id: TASK-404-workflow-disabled-fidelity
+agent: agent-1
+lego: workflow
+module: workflow
+phase: 3
+
+# Workflow LEGO — `disabled` fidelity (closes the *evidence* half of ISSUE-015 and
+# ISSUE-017; the Rust half stays with the port owner).
+#
+# Taken from the standing worker protocol: the pool (`dynamic_task_pool` on
+# Supabase) is unreachable from this sandbox — TLS handshake fails:
+#   curl -v https://gqctxugkxekdqxsaqrum.supabase.co/  -> SSL_ERROR_SYSCALL
+# so the task was selected from the highest-severity OPEN item in
+# docs/isolation/CROSS-AGENT-ISSUES.md that the Workflow owner is allowed to act on.
+
+allowed_paths:
+  - packages/workflow-recon/**
+  - tests/reference/04-disabled-node/**
+  - tests/reference/README.md
+  - docs/isolation/workflow-disabled-fidelity.md
+  - docs/isolation/CROSS-AGENT-ISSUES.md
+  - tasks/**
+  - results/**
+  - package.json
+  - README.md
+
+forbidden_paths:
+  - crates/**                     # PROJECT_RULES.md rule 1 — ZERO RUST
+  - apps/**                       # idem
+  - reference/n8n/**              # golden reference is read-only
+  - packages/workflow-lego/**     # Agent 1's Phase-2 isolation LEGO — untouched
+  - packages/reconstructed-engine/**
+
+requires:
+  - contracts/workflow.contract.md
+  - reference/n8n/packages/workflow/src/workflow.ts
+  - reference/n8n/packages/workflow/src/common/get-connected-nodes.ts
+  - scripts/setup-reference-runtime.sh
+
+operations:
+  - name: read_reference
+    args:
+      path: reference/n8n/packages/workflow/src/workflow.ts
+      lines: "282, 487-570, 812-885"
+  - name: install_reference_runtime
+    args:
+      script: scripts/setup-reference-runtime.sh
+      result: "n8n-workflow 2.9.1 / n8n-core 2.9.1 / n8n-nodes-base 2.9.1"
+  - name: write_files
+    args:
+      paths:
+        - packages/workflow-recon/**            # reconstruction + oracle wiring + tests
+        - tests/reference/04-disabled-node/**   # fixture + RECORDED expected.json
+        - docs/isolation/workflow-disabled-fidelity.md
+  - name: record_golden
+    args:
+      cmd: "npm --prefix packages/workflow-recon run record:golden"
+      expect: "101 calls recorded from n8n-workflow@2.9.1"
+  - name: run_tests
+    args:
+      cmd: "npm --prefix packages/workflow-recon test"
+      expect: "18 pass / 0 fail / 0 skipped"
+  - name: run_tests_offline
+    args:
+      cmd: "npm --prefix packages/workflow-recon run test:golden   # with .runtime removed"
+      expect: "7 pass / 0 fail"
+  - name: typecheck
+    args:
+      cmd: "npm --prefix packages/workflow-recon run typecheck"
+      expect: "tsc --noEmit exit 0"
+  - name: run_regression_gate
+    args:
+      script: tests/integration/run_gate.sh --offline-only
+      note: >
+        Pre-existing BLOCKED: the Phase-2 Rust guard fails on 22 Rust artifacts
+        under crates/ (Stage 1 20/21, Stage 2 FAIL) — unchanged by this task and
+        not this task's to resolve (see docs/isolation/workflow-disabled-fidelity.md §7).
+
+deliverables:
+  - packages/workflow-recon/                        # TypeScript reconstruction of the Workflow graph surface
+  - tests/reference/04-disabled-node/               # fixture + expected.json recorded from the oracle
+  - docs/isolation/workflow-disabled-fidelity.md    # semantics, evidence, and the ISSUE-015 correction
+
+verification:
+  parity_tests: "18/18 (4 golden fixtures + 6 synthetic cases vs live n8n-workflow@2.9.1)"
+  golden_replay: "7/7 offline, no runtime installed"
+  typecheck: "tsc --noEmit exit 0 (strict, erasableSyntaxOnly)"
+  recorded_calls: 101
+  reference_diff: "none — reference/n8n untouched"
+
+merge_condition:
+  - workflow_recon_tests_pass
+  - golden_recorded_from_oracle
+  - no_contract_violation
+  - reference_tree_unmodified
