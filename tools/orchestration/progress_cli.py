@@ -209,13 +209,18 @@ def main():
             "success": True,
             "snapshot_id": snap.snapshot_id,
             "calculated_at": snap.calculated_at,
+            "project_scope_status": snap.project_scope_status,
+            "registered_scope_progress": snap.registered_scope_progress,
             "project_progress": snap.project_progress,
             "main_commit_sha": snap.main_commit_sha,
+            "registered_task_count": snap.registered_task_count,
+            "project_scope_task_count": snap.project_scope_task_count,
             "done_count": snap.done_count,
             "queued_count": snap.queued_count,
             "in_progress_count": snap.in_progress_count,
             "stale_count": snap.stale_count,
             "blocked_count": snap.blocked_count,
+            "inconsistent_count": snap.inconsistent_count,
         }, indent=2))
     elif args.command == "task":
         matches = [t for t in tasks if t.task_key == args.task_key]
@@ -243,6 +248,7 @@ def main():
             "milestone": m_res.milestone,
             "name": m_res.name,
             "progress": m_res.progress,
+            "decomposition_status": m_res.decomposition_status,
             "total_weight": m_res.total_weight,
             "completed_weight": m_res.completed_weight,
             "task_counts": m_res.task_counts,

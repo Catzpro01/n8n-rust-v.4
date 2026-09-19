@@ -15,6 +15,7 @@ VALID_STATUSES = {
     "DONE",
     "FAILED",
     "STALE",
+    "INCONSISTENT",
 }
 
 STATUS_IN_PROGRESS_GROUP = {
@@ -99,13 +100,17 @@ class MilestoneProgressResult:
     progress: float
     total_weight: float
     completed_weight: float
+    decomposition_status: str  # COMPLETE, PARTIAL, NOT_STARTED
     task_counts: Dict[str, int]
     tasks: List[TaskProgressResult] = field(default_factory=list)
 
 
 @dataclass
 class ProjectProgressResult:
-    project_progress: float
+    project_scope_status: str  # COMPLETE or INCOMPLETE
+    registered_scope_progress: float
+    project_scope_progress: Optional[float]  # None if PROJECT_SCOPE is INCOMPLETE
+    project_progress: float  # Returns registered_scope_progress for backward compatibility
     total_weight: float
     completed_weight: float
     done_count: int
@@ -113,9 +118,13 @@ class ProjectProgressResult:
     queued_count: int
     blocked_count: int
     stale_count: int
+    inconsistent_count: int
+    registered_task_count: int
+    project_scope_task_count: Optional[int]
     milestones: List[MilestoneProgressResult]
     tasks: List[TaskProgressResult]
     reconciliation_discrepancies: List[Dict[str, Any]] = field(default_factory=list)
+    optional_analytical_milestone_weighted_progress: Optional[float] = None
 
 
 @dataclass
@@ -123,13 +132,18 @@ class ProgressSnapshot:
     snapshot_id: str
     calculated_at: str
     main_commit_sha: str
+    project_scope_status: str
+    registered_scope_progress: float
     project_progress: float
-    milestone_progress: List[Dict[str, Any]]
+    registered_task_count: int
+    project_scope_task_count: Optional[int]
     done_count: int
     in_progress_count: int
     queued_count: int
     blocked_count: int
     stale_count: int
+    inconsistent_count: int
+    milestone_progress: List[Dict[str, Any]]
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
@@ -140,16 +154,22 @@ class ProgressEngine:
     - Specialization != Agent != Branch != Workspace
     - Never calculates progress based on LOC, commit count, file count, or diff size.
     - Only status DONE with valid, fresh, verified evidence contributes to progress (100%).
+    - Explicitly separates REGISTERED_TASK_SCOPE from canonical PROJECT_SCOPE.
+    - If PROJECT_SCOPE is incomplete, displays 'PROJECT SCOPE: INCOMPLETE' and does not claim project completion.
+    - Single Canonical Project Progress Formula:
+        project_progress = sum(weight of DONE tasks) / sum(weight of all tasks in canonical PROJECT_SCOPE) * 100
     - Read-only calculations (concurrency safe).
     """
 
-    def __init__(self, canonical_model: str = "task_weighted"):
+    def __init__(self, canonical_model: str = "task_weighted", expected_project_task_count: Optional[int] = None):
         """
         canonical_model:
-          - 'task_weighted': Canonical model where overall progress is sum(done_weight) / sum(total_weight) * 100
-          - 'milestone_weighted': Progress aggregated by explicit milestone weights.
+          - 'task_weighted': Canonical model (single source of truth for project progress)
+          - 'milestone_weighted': Optional analytical view for reporting only.
+        expected_project_task_count: Expected total tasks in full project scope (if fully decomposed).
         """
         self.canonical_model = canonical_model
+        self.expected_project_task_count = expected_project_task_count
         self.events_bus: List[Dict[str, Any]] = []
 
     def verify_task_evidence(
@@ -208,7 +228,6 @@ class ProgressEngine:
 
         # 5. Git Main presence check (if git_commits_on_main provided)
         if git_commits_on_main is not None:
-            # Either current_commit_sha or merge_commit_sha must be on main
             target_shas = {task.current_commit_sha}
             if task.merge_commit_sha:
                 target_shas.add(task.merge_commit_sha)
@@ -217,6 +236,20 @@ class ProgressEngine:
                 return False, notes
 
         return True, ["Evidence verified and valid"]
+
+    def determine_milestone_decomposition_status(self, milestone_id: str, tasks_in_milestone: List[TaskEvidence]) -> str:
+        """
+        Assesses whether a milestone has sufficient task decomposition for real implementation.
+        - NOT_STARTED: 0 tasks registered
+        - PARTIAL: 1-2 placeholder or initial tasks, but real production implementation requires full breakdown.
+        - COMPLETE: Comprehensive multi-component task decomposition.
+        """
+        count = len(tasks_in_milestone)
+        if count == 0:
+            return "NOT_STARTED"
+        elif count <= 2:
+            return "PARTIAL"
+        return "COMPLETE"
 
     def calculate_milestone_progress(
         self,
@@ -239,6 +272,7 @@ class ProgressEngine:
             "queued": 0,
             "blocked": 0,
             "stale": 0,
+            "inconsistent": 0,
         }
 
         task_results: List[TaskProgressResult] = []
@@ -254,7 +288,7 @@ class ProgressEngine:
                     completed_weight += t.progress_weight
                     task_counts["done"] += 1
                 else:
-                    # Inconsistent / stale DONE claim
+                    task_counts["inconsistent"] += 1
                     task_counts["stale"] += 1
             elif t.status in STATUS_IN_PROGRESS_GROUP:
                 task_counts["in_progress"] += 1
@@ -278,7 +312,7 @@ class ProgressEngine:
                 task_key=t.task_key,
                 milestone=t.milestone,
                 specialization=t.specialization,
-                status=t.status,
+                status=t.status if (t.status != "DONE" or is_valid_done) else "INCONSISTENT",
                 progress=progress_val,
                 progress_weight=t.progress_weight,
                 evidence_commit_sha=t.current_commit_sha,
@@ -287,6 +321,7 @@ class ProgressEngine:
             ))
 
         pct = round((completed_weight / total_weight) * 100.0, 2) if total_weight > 0 else 0.0
+        decomp_status = self.determine_milestone_decomposition_status(milestone_id, m_tasks)
 
         return MilestoneProgressResult(
             milestone=milestone_id,
@@ -294,6 +329,7 @@ class ProgressEngine:
             progress=pct,
             total_weight=round(total_weight, 2),
             completed_weight=round(completed_weight, 2),
+            decomposition_status=decomp_status,
             task_counts=task_counts,
             tasks=task_results,
         )
@@ -304,9 +340,12 @@ class ProgressEngine:
         git_commits_on_main: Optional[Set[str]] = None,
         milestones_dict: Optional[Dict[str, str]] = None,
         milestone_weights: Optional[Dict[str, float]] = None,
+        is_project_scope_complete: bool = False,
     ) -> ProjectProgressResult:
         """
-        Calculates the canonical overall project progress.
+        Calculates the canonical project progress with strict reality check:
+        - registered_scope_progress: Progress calculated from currently registered task set.
+        - project_scope_progress: None if project scope is INCOMPLETE, or percentage if complete.
         """
         m_dict = milestones_dict or CANONICAL_MILESTONES
         milestone_results: List[MilestoneProgressResult] = []
@@ -314,13 +353,14 @@ class ProgressEngine:
         discrepancies: List[Dict[str, Any]] = []
 
         total_done_weight = 0.0
-        total_project_weight = 0.0
+        total_registered_weight = 0.0
 
         done_count = 0
         in_progress_count = 0
         queued_count = 0
         blocked_count = 0
         stale_count = 0
+        inconsistent_count = 0
 
         # Calculate per milestone
         for m_id, m_name in m_dict.items():
@@ -328,7 +368,7 @@ class ProgressEngine:
             milestone_results.append(m_res)
             all_task_results.extend(m_res.tasks)
 
-            total_project_weight += m_res.total_weight
+            total_registered_weight += m_res.total_weight
             total_done_weight += m_res.completed_weight
 
             done_count += m_res.task_counts["done"]
@@ -336,10 +376,11 @@ class ProgressEngine:
             queued_count += m_res.task_counts["queued"]
             blocked_count += m_res.task_counts["blocked"]
             stale_count += m_res.task_counts["stale"]
+            inconsistent_count += m_res.task_counts["inconsistent"]
 
             # Record discrepancies
             for tr in m_res.tasks:
-                if tr.status == "DONE" and not tr.is_evidence_valid:
+                if tr.status == "INCONSISTENT" or (tr.status == "DONE" and not tr.is_evidence_valid):
                     discrepancies.append({
                         "task_key": tr.task_key,
                         "milestone": tr.milestone,
@@ -348,36 +389,56 @@ class ProgressEngine:
                         "notes": tr.evidence_notes,
                     })
 
-        # Canonical project progress calculation
-        if self.canonical_model == "milestone_weighted" and milestone_weights:
-            # Weighted milestones formula
+        # Calculate Registered Scope Progress
+        registered_scope_progress = (
+            round((total_done_weight / total_registered_weight) * 100.0, 2)
+            if total_registered_weight > 0
+            else 0.0
+        )
+
+        # Check project scope completeness
+        any_partial = any(m.decomposition_status == "PARTIAL" for m in milestone_results)
+        any_not_started = any(m.decomposition_status == "NOT_STARTED" for m in milestone_results)
+        scope_status = "COMPLETE" if (is_project_scope_complete and not any_partial and not any_not_started) else "INCOMPLETE"
+
+        project_scope_progress: Optional[float] = None
+        if scope_status == "COMPLETE":
+            project_scope_progress = registered_scope_progress
+
+        # Optional Analytical View: Milestone-Weighted
+        optional_milestone_weighted: Optional[float] = None
+        if milestone_weights:
             sum_m_progress_times_weight = 0.0
             sum_m_weights = 0.0
             for m_res in milestone_results:
                 mw = milestone_weights.get(m_res.milestone, 1.0)
                 sum_m_progress_times_weight += m_res.progress * mw
                 sum_m_weights += mw
-            project_progress = round(sum_m_progress_times_weight / sum_m_weights, 2) if sum_m_weights > 0 else 0.0
-        else:
-            # Canonical Task-Weighted formula
-            project_progress = (
-                round((total_done_weight / total_project_weight) * 100.0, 2)
-                if total_project_weight > 0
+            optional_milestone_weighted = (
+                round(sum_m_progress_times_weight / sum_m_weights, 2)
+                if sum_m_weights > 0
                 else 0.0
             )
 
         return ProjectProgressResult(
-            project_progress=project_progress,
-            total_weight=round(total_project_weight, 2),
+            project_scope_status=scope_status,
+            registered_scope_progress=registered_scope_progress,
+            project_scope_progress=project_scope_progress,
+            project_progress=registered_scope_progress,  # Preserved for backward compatibility
+            total_weight=round(total_registered_weight, 2),
             completed_weight=round(total_done_weight, 2),
             done_count=done_count,
             in_progress_count=in_progress_count,
             queued_count=queued_count,
             blocked_count=blocked_count,
             stale_count=stale_count,
+            inconsistent_count=inconsistent_count,
+            registered_task_count=len(tasks),
+            project_scope_task_count=self.expected_project_task_count,
             milestones=milestone_results,
             tasks=all_task_results,
             reconciliation_discrepancies=discrepancies,
+            optional_analytical_milestone_weighted_progress=optional_milestone_weighted,
         )
 
     def create_snapshot(
@@ -386,11 +447,12 @@ class ProgressEngine:
         main_commit_sha: str,
         git_commits_on_main: Optional[Set[str]] = None,
         metadata: Optional[Dict[str, Any]] = None,
+        is_project_scope_complete: bool = False,
     ) -> ProgressSnapshot:
         """
         Creates a frozen, timestamped snapshot of project progress.
         """
-        res = self.calculate_project_progress(tasks, git_commits_on_main)
+        res = self.calculate_project_progress(tasks, git_commits_on_main, is_project_scope_complete=is_project_scope_complete)
         now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
         snapshot_id = f"snap-{int(datetime.datetime.now(datetime.timezone.utc).timestamp())}"
 
@@ -401,6 +463,7 @@ class ProgressEngine:
                 "progress": m.progress,
                 "total_weight": m.total_weight,
                 "completed_weight": m.completed_weight,
+                "decomposition_status": m.decomposition_status,
                 "task_counts": m.task_counts,
             }
             for m in res.milestones
@@ -410,13 +473,18 @@ class ProgressEngine:
             snapshot_id=snapshot_id,
             calculated_at=now_iso,
             main_commit_sha=main_commit_sha,
+            project_scope_status=res.project_scope_status,
+            registered_scope_progress=res.registered_scope_progress,
             project_progress=res.project_progress,
-            milestone_progress=m_progress_json,
+            registered_task_count=res.registered_task_count,
+            project_scope_task_count=res.project_scope_task_count,
             done_count=res.done_count,
             in_progress_count=res.in_progress_count,
             queued_count=res.queued_count,
             blocked_count=res.blocked_count,
             stale_count=res.stale_count,
+            inconsistent_count=res.inconsistent_count,
+            milestone_progress=m_progress_json,
             metadata=metadata or {},
         )
 
@@ -427,7 +495,8 @@ class ProgressEngine:
             "source": "PROGRESS_ENGINE",
             "payload": {
                 "snapshot_id": snapshot_id,
-                "project_progress": res.project_progress,
+                "project_scope_status": res.project_scope_status,
+                "registered_scope_progress": res.registered_scope_progress,
                 "main_commit_sha": main_commit_sha,
                 "calculated_at": now_iso,
             },
@@ -440,27 +509,35 @@ class ProgressEngine:
         self,
         tasks: List[TaskEvidence],
         git_commits_on_main: Optional[Set[str]] = None,
+        is_project_scope_complete: bool = False,
     ) -> Dict[str, Any]:
         """
         Produces the canonical machine-readable JSON structure.
         """
-        res = self.calculate_project_progress(tasks, git_commits_on_main)
+        res = self.calculate_project_progress(tasks, git_commits_on_main, is_project_scope_complete=is_project_scope_complete)
         return {
+            "project_scope_status": res.project_scope_status,
+            "registered_scope_progress": res.registered_scope_progress,
+            "project_scope_progress": res.project_scope_progress,
             "project_progress": res.project_progress,
-            "total_weight": res.total_weight,
+            "total_registered_weight": res.total_weight,
             "completed_weight": res.completed_weight,
+            "registered_task_count": res.registered_task_count,
+            "project_scope_task_count": res.project_scope_task_count,
             "counts": {
                 "done": res.done_count,
                 "in_progress": res.in_progress_count,
                 "queued": res.queued_count,
                 "blocked": res.blocked_count,
                 "stale": res.stale_count,
+                "inconsistent": res.inconsistent_count,
             },
             "milestones": [
                 {
                     "milestone": m.milestone,
                     "name": m.name,
                     "progress": m.progress,
+                    "decomposition_status": m.decomposition_status,
                     "total_weight": m.total_weight,
                     "completed_weight": m.completed_weight,
                     "task_counts": m.task_counts,
@@ -480,34 +557,40 @@ class ProgressEngine:
                 for t in res.tasks
             ],
             "discrepancies": res.reconciliation_discrepancies,
+            "optional_analytical_milestone_weighted_progress": res.optional_analytical_milestone_weighted_progress,
         }
 
     def format_text_dashboard(
         self,
         tasks: List[TaskEvidence],
         git_commits_on_main: Optional[Set[str]] = None,
+        is_project_scope_complete: bool = False,
     ) -> str:
         """
-        Produces human-readable terminal dashboard.
+        Produces human-readable terminal dashboard with strict Reality Check.
         """
-        res = self.calculate_project_progress(tasks, git_commits_on_main)
+        res = self.calculate_project_progress(tasks, git_commits_on_main, is_project_scope_complete=is_project_scope_complete)
         lines = [
             "============================================================",
-            "ARENA MILESTONE-BASED PROGRESS DASHBOARD",
+            "ARENA MILESTONE-BASED PROGRESS DASHBOARD (REALITY CHECK)",
             "============================================================",
-            f"PROJECT: n8n-rust-v4",
-            f"Overall: {res.project_progress}%\n",
-            f"DONE: {res.done_count}",
-            f"IN_PROGRESS: {res.in_progress_count}",
-            f"QUEUED: {res.queued_count}",
-            f"BLOCKED: {res.blocked_count}",
-            f"STALE: {res.stale_count}\n",
-            "MILESTONES:",
+            "PROJECT: n8n-rust-v4",
+            f"PROJECT SCOPE: {res.project_scope_status}",
+            f"REGISTERED TASK SCOPE PROGRESS : {res.registered_scope_progress}%",
+            f"PROJECT COMPLETION PROGRESS    : " + (f"{res.project_scope_progress}%" if res.project_scope_progress is not None else "NOT AVAILABLE (Awaiting Full Project Decomposition)"),
+            "",
+            f"TASK COUNTS (REGISTERED SCOPE: {res.registered_task_count} tasks):",
+            f"  DONE: {res.done_count}",
+            f"  IN_PROGRESS: {res.in_progress_count}",
+            f"  QUEUED: {res.queued_count}",
+            f"  BLOCKED: {res.blocked_count}",
+            f"  STALE: {res.stale_count}",
+            f"  INCONSISTENT: {res.inconsistent_count}",
+            "",
+            "DECOMPOSITION STATUS PER MILESTONE:",
         ]
 
         for m in res.milestones:
-            if m.total_weight > 0 or m.progress > 0:
-                lines.append(f"{m.milestone} {m.name}")
-                lines.append(f"Progress: {m.progress}% ({m.completed_weight}/{m.total_weight} weight)\n")
+            lines.append(f"  {m.milestone:4} {m.name:22} : [{m.decomposition_status}] {m.progress}% registered progress ({m.completed_weight}/{m.total_weight} weight)")
 
         return "\n".join(lines)

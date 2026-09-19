@@ -108,21 +108,26 @@ class TestMilestoneProgressEngine(unittest.TestCase):
         self.assertEqual(res.total_weight, 4.0)
 
     # --------------------------------------------------------------------------
-    # Test F: Weighted Milestones
+    # Test F: Weighted Milestones (Optional Analytical View)
     # --------------------------------------------------------------------------
     def test_f_weighted_milestones(self):
-        engine_mw = ProgressEngine(canonical_model="milestone_weighted")
+        engine_mw = ProgressEngine(canonical_model="task_weighted")
         tasks = [
             self._make_valid_done_task("task-m1", "M1", weight=1.0),
             TaskEvidence(task_key="task-m2", specialization="execution-engine", milestone="M2", status="QUEUED", progress_weight=1.0),
         ]
         # M1 progress is 100%, M2 progress is 0%
-        # Milestone weights: M1 = 2.0, M2 = 1.0 (others default 1.0 or empty)
+        # Milestone weights: M1 = 2.0, M2 = 1.0
         m_weights = {"M1": 2.0, "M2": 1.0}
         custom_dict = {"M1": "Runtime Kernel", "M2": "Execution Engine"}
         res = engine_mw.calculate_project_progress(tasks=tasks, milestones_dict=custom_dict, milestone_weights=m_weights)
-        # (100.0 * 2.0 + 0.0 * 1.0) / (2.0 + 1.0) = 200 / 3 = 66.67%
-        self.assertEqual(res.project_progress, 66.67)
+        
+        # Single Canonical formula is Task-Weighted: 1.0 / 2.0 = 50.0%
+        self.assertEqual(res.project_progress, 50.0)
+        self.assertEqual(res.registered_scope_progress, 50.0)
+        
+        # Optional Analytical View: (100.0 * 2.0 + 0.0 * 1.0) / (2.0 + 1.0) = 200 / 3 = 66.67%
+        self.assertEqual(res.optional_analytical_milestone_weighted_progress, 66.67)
 
     # --------------------------------------------------------------------------
     # Test G: IN_PROGRESS tidak dihitung sebagai DONE

@@ -68,18 +68,36 @@ Hanya 10 status berikut yang diakui oleh Progress Engine:
 
 ---
 
-## 5. Formula Perhitungan Progress Kanonik
+## 5. Formula Perhitungan Progress Kanonik & Reality Check
 
-### A. Progress Milestone
+### A. Reality Check: Pembedaan Scope
+Sistem membedakan secara tegas tiga tingkat cakupan:
+1. `REGISTERED_TASK_SCOPE`: Kumpulan task yang saat ini telah terdaftar di database.
+2. `PROJECT_SCOPE`: Seluruh ruang lingkup dekomposisi pekerjaan n8n-rust yang sesungguhnya.
+3. `MILESTONE_SCOPE`: Kumpulan task dalam satu milestone spesifik.
+
+> [!IMPORTANT]
+> **Reality Check Mutlak**:
+> Jika dekomposisi task proyek belum lengkap, kemajuan dari task yang terdaftar **DILARANG KERAS** disebut sebagai persentase penyelesaian proyek (*Project Completion*).
+> Dashboard wajib menampilkan:
+> ```text
+> PROJECT SCOPE: INCOMPLETE
+> REGISTERED TASK SCOPE PROGRESS: XX%
+> PROJECT COMPLETION PROGRESS   : NOT AVAILABLE (Awaiting Full Project Decomposition)
+> ```
+
+### B. Progress Milestone
 $$\text{milestone\_progress}(m) = \frac{\sum_{t \in \text{Tasks}(m), \text{status}(t) = \text{DONE}} \text{weight}(t)}{\sum_{t \in \text{Tasks}(m)} \text{weight}(t)} \times 100$$
 *(Jika $\sum \text{weight}(t) = 0$, maka progress milestone bernilai $0.0\%$).*
 
-### B. Overall Project Progress (Canonical Model: Task-Weighted)
-Sistem menetapkan **Task-Weighted Project Progress** sebagai model kanonik tunggal:
-$$\text{project\_progress} = \frac{\sum_{t \in \text{AllTasks}, \text{status}(t) = \text{DONE}} \text{weight}(t)}{\sum_{t \in \text{AllTasks}} \text{weight}(t)} \times 100$$
+### C. Single Canonical Formula: Task-Weighted Project Progress
+Sistem menetapkan **Task-Weighted Model** sebagai SATU-SATUNYA formula kanonik proyek:
+$$\text{project\_progress} = \frac{\sum_{t \in \text{PROJECT\_SCOPE}, \text{status}(t) = \text{DONE}} \text{weight}(t)}{\sum_{t \in \text{PROJECT\_SCOPE}} \text{weight}(t)} \times 100$$
 
-**Rasional Pemilihan Model Kanonik**:
-Model ini menjamin keadilan proporsional langsung: setiap unit pekerjaan bernilai sama di seluruh repositori tanpa distorsi dari pembagian jumlah task antar milestone.
+Jika `PROJECT_SCOPE` belum terdekomposisi penuh, formula ini diterapkan pada task yang telah terdaftar dan dilabeli sebagai **Registered Task Scope Progress**:
+$$\text{registered\_scope\_progress} = \frac{\sum_{t \in \text{REGISTERED\_SCOPE}, \text{status}(t) = \text{DONE}} \text{weight}(t)}{\sum_{t \in \text{REGISTERED\_SCOPE}} \text{weight}(t)} \times 100$$
+
+*Catatan*: Model agregasi berbasis bobot milestone (Weighted Milestones) HANYA berlaku sebagai **OPTIONAL ANALYTICAL VIEW** untuk keperluan pelaporan ringkas tingkat tinggi, dan **BUKAN** formula resmi progress proyek.
 
 ---
 
@@ -93,6 +111,7 @@ Sebuah task hanya diakui sebagai `DONE` jika memenuhi seluruh bukti nyata beriku
    Jika commit berubah setelah validasi dijalankan, maka status validasi otomatis menjadi `STALE`, dan task tidak boleh dihitung sebagai `DONE`.
 5. Semua butir `acceptance_criteria` terverifikasi.
 6. Kode GitHub eksis dan commit terverifikasi di branch `main`. Keberadaan file kode semata di repo **TIDAK PERNAH** membuktikan task selesai tanpa verifikasi acceptance criteria.
+7. **Status INCONSISTENT**: Jika database mencatat status `DONE` tetapi bukti Git atau hasil validasi tidak cocok, task ditandai sebagai `INCONSISTENT` pada laporan audit, dikecualikan dari bobot `DONE`, dan tidak boleh mengubah riwayat secara diam-diam.
 
 ---
 
