@@ -12,6 +12,7 @@ Headers:
 """
 
 import sys
+import os
 import json
 import argparse
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -102,12 +103,16 @@ class GatewayHTTPRequestHandler(BaseHTTPRequestHandler):
         # Suppress standard logging to prevent noise
         pass
 
-def run_server(host: str = "127.0.0.1", port: int = 8787):
+def run_server(host: Optional[str] = None, port: Optional[int] = None):
     global gateway_instance
     gateway_instance = CapabilityGateway()
-    server_address = (host, port)
+
+    bind_host = host or os.environ.get("GATEWAY_HOST", "0.0.0.0")
+    bind_port = int(port or os.environ.get("GATEWAY_PORT", 8787))
+
+    server_address = (bind_host, bind_port)
     httpd = HTTPServer(server_address, GatewayHTTPRequestHandler)
-    print(f"Arena Manager Capability Gateway v1.7 listening on http://{host}:{port}")
+    print(f"Arena Manager Capability Gateway v1.7 listening on http://{bind_host}:{bind_port}", flush=True)
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
@@ -116,7 +121,7 @@ def run_server(host: str = "127.0.0.1", port: int = 8787):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run Arena Manager Capability Gateway Daemon")
-    parser.add_argument("--host", default="127.0.0.1", help="Host address to bind")
-    parser.add_argument("--port", type=int, default=8787, help="Port to bind")
+    parser.add_argument("--host", default=None, help="Host address to bind (defaults to GATEWAY_HOST or 0.0.0.0)")
+    parser.add_argument("--port", type=int, default=None, help="Port to bind (defaults to GATEWAY_PORT or 8787)")
     args = parser.parse_args()
     run_server(host=args.host, port=args.port)

@@ -164,6 +164,12 @@ class TestCapabilityGateway(unittest.TestCase):
 
     def test_audit_logging_integrity(self):
         """Audit log must record operations cleanly and without credentials."""
+        # Ensure at least one invocation is recorded
+        self.gateway.invoke(
+            caller_id="arena-manager",
+            capability="laptop.status",
+            bearer_token=self.manager_token
+        )
         recent = self.gateway.audit.read_recent(10)
         self.assertGreater(len(recent), 0)
         latest = recent[-1]

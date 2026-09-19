@@ -30,10 +30,10 @@ class CapabilityGateway:
         self.auth = GatewayAuth()
         self._lock = threading.Lock()
 
-        # Initialize providers with vault & sanitizer
+        # Initialize providers with vault & sanitizer & repo_root
         self.github = GitHubProvider(self.vault, self.sanitizer, repo_root=self.repo_root)
-        self.supabase = SupabaseProvider(self.vault, self.sanitizer)
-        self.telegram = TelegramProvider(self.vault, self.sanitizer)
+        self.supabase = SupabaseProvider(self.vault, self.sanitizer, repo_root=self.repo_root)
+        self.telegram = TelegramProvider(self.vault, self.sanitizer, log_dir=self.repo_root / ".arena" / "logs")
         self.laptop = LaptopProvider(self.vault, self.sanitizer, repo_root=self.repo_root)
 
         # Map capability names to methods
@@ -54,7 +54,7 @@ class CapabilityGateway:
             "github.get_ci": self.github.get_ci,
             "github.commit_and_push": self.github.commit_and_push,
 
-            # Supabase capabilities
+            # Supabase Control Plane capabilities
             "supabase.read_table": self.supabase.read_table,
             "supabase.write_table": self.supabase.write_table,
             "supabase.rpc": self.supabase.rpc,
@@ -65,6 +65,14 @@ class CapabilityGateway:
             "supabase.update_task_state": self.supabase.update_task_state,
             "supabase.record_event": self.supabase.record_event,
             "supabase.get_project_state": self.supabase.get_project_state,
+
+            # Supabase Schema & Migration capabilities
+            "supabase.create_migration": self.supabase.create_migration,
+            "supabase.read_migration": self.supabase.read_migration,
+            "supabase.migration_status": self.supabase.migration_status,
+            "supabase.apply_migration": self.supabase.apply_migration,
+            "supabase.schema_upgrade": self.supabase.schema_upgrade,
+            "supabase.rollback_migration": self.supabase.rollback_migration,
 
             # Telegram capabilities
             "telegram.send_message": self.telegram.send_message,
@@ -111,11 +119,9 @@ class CapabilityGateway:
         """
         params = params or {}
         start_time = time.time()
-        target = str(params.get("table") or params.get("branch") or params.get("path") or params.get("command") or "")
+        target = str(params.get("table") or params.get("branch") or params.get("path") or params.get("command") or params.get("name") or "")
 
         # 1. Authentication Check
-        # Fallback to local default if called within same host context and no token passed
-        # BUT validate role strictly if token is provided.
         if bearer_token:
             is_auth, auth_err, role = self.auth.authenticate(caller_id, bearer_token)
             if not is_auth:
@@ -138,7 +144,6 @@ class CapabilityGateway:
                     "authorized": False
                 }
         else:
-            # Token required for remote/CLI calls
             return {
                 "ok": False,
                 "error": "AUTHENTICATION_REQUIRED: Gateway bearer token must be provided",

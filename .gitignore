@@ -31,3 +31,7 @@ __pycache__/
 .arena/dispatch/
 .arena/results/
 .arena/processed/
+.arena/logs/
+.arena/gateway_tokens.json
+.arena/state/*.db
+

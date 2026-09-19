@@ -21,6 +21,11 @@ MANAGER_ONLY_CAPABILITIES = {
     "github.merge_pr",
     "supabase.create_task",
     "supabase.update_task_state",
+    "supabase.write_table",
+    "supabase.create_migration",
+    "supabase.apply_migration",
+    "supabase.schema_upgrade",
+    "supabase.rollback_migration",
     "telegram.send_message",
     "telegram.render_dashboard",
 }
@@ -62,7 +67,7 @@ class PolicyEngine:
         if "delete_repo" in cap or "transfer_repo" in cap:
             return False, "POLICY_VIOLATION: Repository deletion/transfer is strictly prohibited"
 
-        # 4. Worker Role Fencing
+        # 4. Worker Role Fencing (Manager vs Worker Separation)
         if role == "worker" or caller_id.startswith("arena-agent-") or caller_id.startswith("worker-"):
             if cap in MANAGER_ONLY_CAPABILITIES:
                 return False, f"POLICY_VIOLATION: Worker agent '{caller_id}' cannot execute manager-only capability '{cap}'"
