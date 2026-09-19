@@ -210,6 +210,53 @@ class ControlPlaneClient:
         }
         return self._request("agents", data=payload, method="POST")
 
+    def register_dynamic_agent(
+        self,
+        agent_key: str,
+        specialization_id: str,
+        capabilities: Optional[Dict[str, Any]] = None,
+        hostname: Optional[str] = None,
+        platform_name: Optional[str] = None,
+        workspace_root: Optional[str] = None,
+        worker_version: str = "1.0.0",
+        execution_backend: str = "local_laptop",
+        resource_capacity: Optional[Dict[str, Any]] = None
+    ) -> Tuple[int, Any]:
+        return self.rpc("register_dynamic_agent", {
+            "p_agent_key": agent_key,
+            "p_specialization_id": specialization_id,
+            "p_capabilities": capabilities or {},
+            "p_hostname": hostname,
+            "p_platform": platform_name,
+            "p_workspace_root": workspace_root,
+            "p_worker_version": worker_version,
+            "p_execution_backend": execution_backend,
+            "p_resource_capacity": resource_capacity or {"cpu_count": 4, "memory_gb": 8, "build_slots": 1, "test_slots": 2}
+        })
+
+    def agent_heartbeat_proof(
+        self,
+        agent_id: str,
+        worker_state: Optional[str] = None,
+        current_task_id: Optional[str] = None,
+        active_build_slots: Optional[int] = None,
+        active_test_slots: Optional[int] = None,
+        resource_capacity: Optional[Dict[str, Any]] = None,
+        worker_version: Optional[str] = None
+    ) -> Tuple[int, Any]:
+        return self.rpc("agent_heartbeat", {
+            "p_agent_id": agent_id,
+            "p_worker_state": worker_state,
+            "p_current_task_id": current_task_id,
+            "p_active_build_slots": active_build_slots,
+            "p_active_test_slots": active_test_slots,
+            "p_resource_capacity": resource_capacity,
+            "p_worker_version": worker_version
+        })
+
+    def drain_agent(self, agent_id: str) -> Tuple[int, Any]:
+        return self.rpc("drain_agent", {"p_agent_id": agent_id})
+
     # --------------------------------------------------------------------------
     # Recovery Plane RPCs
     # --------------------------------------------------------------------------
@@ -273,4 +320,4 @@ class ControlPlaneClient:
         })
 
     def get_latest_progress_snapshot(self) -> Tuple[int, Any]:
-        return self.rpc("get_latest_progress_snapshot", {})
+        return self.rpc("get_latest_progress_snapshot", {})

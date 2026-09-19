@@ -29,6 +29,8 @@ if str(WORKSPACE_ROOT) not in sys.path:
 from tools.orchestration.control_plane import ControlPlaneClient
 from tools.orchestration.task_manifest_catalog import CANONICAL_TASKS
 from tools.orchestration.boundary_guard import TaskBoundaryGuard
+from tools.orchestration.arena_adapter import ArenaAdapter, DisabledArenaAdapter
+from tools.orchestration.file_transport import AtomicFileTransport
 
 # Configure logging
 LOG_DIR = WORKSPACE_ROOT / ".arena" / "worker_logs"
@@ -44,13 +46,16 @@ class PersistentWorkerProcess:
         client: Optional[ControlPlaneClient] = None,
         heartbeat_interval: int = 5,
         poll_interval: int = 3,
-        auto_claim: bool = False
+        auto_claim: bool = False,
+        arena_adapter: Optional[ArenaAdapter] = None
     ):
         self.agent_key = agent_key
         self.client = client or ControlPlaneClient()
         self.heartbeat_interval = heartbeat_interval
         self.poll_interval = poll_interval
         self.auto_claim = auto_claim
+        self.arena_adapter = arena_adapter or DisabledArenaAdapter()
+        self.transport = AtomicFileTransport(repo_root=WORKSPACE_ROOT)
         self.running = False
 
         self.pid = os.getpid()
