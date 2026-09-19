@@ -1,16 +1,20 @@
-import os
+﻿import os
 from pathlib import Path
 
-REPO_ROOT = Path("/home/fern/arena/repo")
-ARENA_ROOT = Path("/srv/arena")
-WORKSPACES_ROOT = ARENA_ROOT / "workspaces"
-LOGS_DIR = ARENA_ROOT / "logs"
+# Dynamically resolve paths relative to the current repository
+REPO_ROOT = Path(__file__).resolve().parents[2]
+ARENA_ROOT = REPO_ROOT / ".arena"
+WORKSPACES_ROOT = REPO_ROOT.parent / "workspaces"
+LOGS_DIR = REPO_ROOT / ".system_logs"
 
-# Load backend secrets only (never exposed to agent workspaces)
-ENV_FILE = Path("/home/fern/arena/.env")
+WORKSPACES_ROOT.mkdir(exist_ok=True)
+LOGS_DIR.mkdir(exist_ok=True)
+
+# Load secrets from project .env
+ENV_FILE = REPO_ROOT / ".env"
 env_config = {}
 if ENV_FILE.exists():
-    with open(ENV_FILE, "r") as f:
+    with open(ENV_FILE, "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if line and not line.startswith("#") and "=" in line:

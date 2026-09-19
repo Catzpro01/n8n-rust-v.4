@@ -1,0 +1,48 @@
+﻿name: Level 0 & Level 1 Validation (Laptop Build Worker)
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [ opened, synchronize, reopened ]
+  push:
+    branches:
+      - 'runtime-kernel/*'
+      - 'execution-engine/*'
+      - 'data-plane/*'
+      - 'node-system/*'
+      - 'expression-engine/*'
+      - 'workflow-compatibility/*'
+      - 'verification/*'
+      - 'performance/*'
+      - 'security-sandbox/*'
+      - 'infrastructure-orchestration/*'
+
+jobs:
+  validate:
+    name: Level 0 (Check & Format) + Level 1 (Affected Tests)
+    runs-on: [ self-hosted, windows, x64, rust-build, n8n-rust ]
+    # Security gate: Reject untrusted external fork PRs from executing on laptop host
+    if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Level 0 - Verify Formatting
+        run: cargo fmt --all -- --check
+
+      - name: Level 0 - Workspace Syntax & Type Check
+        run: cargo check --workspace
+
+      - name: Level 1 - Affected Crate Unit Tests
+        run: cargo test -p n8n-workflow
+
+      - name: Report Build & Test Status to Supabase
+        if: always()
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python tools/orchestration/report_ci_status.py --suite validation --status ${{ job.status }} --sha $env:COMMIT_SHA

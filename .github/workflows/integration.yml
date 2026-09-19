@@ -1,0 +1,35 @@
+﻿name: Level 2 Integration & Conformance Suite (Laptop Worker)
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [ opened, synchronize, reopened ]
+
+jobs:
+  integration:
+    name: Level 2 Workspace & Node Conformance Tests
+    runs-on: [ self-hosted, windows, x64, rust-build, n8n-rust ]
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Level 2 - Full Rust Workspace Tests
+        run: cargo test --workspace
+
+      - name: Level 2 - Localization & Catalog Tests
+        run: node --test packages/reconstructed-engine/localization.test.mjs packages/reconstructed-engine/node-catalog.test.mjs
+
+      - name: Level 2 - Execution LEGO Conformance Tests
+        run: node --experimental-strip-types --test packages/execution-lego/test/02-runtime.test.mjs packages/execution-lego/test/03-context-recovery.test.mjs
+
+      - name: Report Integration Status to Supabase
+        if: always()
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python tools/orchestration/report_ci_status.py --suite integration --status ${{ job.status }} --sha $env:COMMIT_SHA

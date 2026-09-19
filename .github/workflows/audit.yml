@@ -1,0 +1,33 @@
+﻿name: Architectural & Contract Conformance Audit (Laptop Worker)
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [ opened, synchronize, reopened ]
+
+jobs:
+  audit:
+    name: Architecture, Contract & Scope Audit
+    runs-on: [ self-hosted, windows, x64, rust-build, n8n-rust ]
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Architecture & Scope Conformance Audit
+        env:
+          PR_BASE_REF: ${{ github.base_ref }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          python tools/orchestration/audit_runner.py --base origin/main --head $env:PR_HEAD_SHA
+
+      - name: Report Audit Status to Supabase
+        if: always()
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          python tools/orchestration/report_ci_status.py --suite audit --status ${{ job.status }} --sha $env:COMMIT_SHA
