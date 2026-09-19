@@ -40,7 +40,8 @@ class TestSchedulerAndBoundaryGuard(unittest.TestCase):
                 "status": "QUEUED",
                 "dependencies": [],
                 "exclusive_files": ["crates/shared.rs"],
-                "progress_weight": 1.0
+                "progress_weight": 1.0,
+                "version": 1
             },
             {
                 "task_key": "test/task-b",
@@ -49,7 +50,8 @@ class TestSchedulerAndBoundaryGuard(unittest.TestCase):
                 "status": "QUEUED",
                 "dependencies": [],
                 "exclusive_files": ["crates/shared.rs"],
-                "progress_weight": 1.0
+                "progress_weight": 1.0,
+                "version": 1
             }
         ]
         sched = DynamicTaskScheduler(tasks=tasks)
@@ -84,6 +86,62 @@ class TestSchedulerAndBoundaryGuard(unittest.TestCase):
             for f in ex_list:
                 self.assertNotIn(f, all_exclusive, f"File conflict detected across parallel workers: {f}")
                 all_exclusive.append(f)
+
+    def test_atomic_claim_and_versioning(self):
+        """Validates optimistic concurrency control on task claims."""
+        task_key = "runtime-kernel/m1-frame"
+        t = self.scheduler.get_task(task_key)
+        initial_version = t["version"]
+
+        # 1. Attempt to claim with wrong version should fail
+        success = self.scheduler.atomic_claim(task_key, "agent-1", initial_version - 1)
+        self.assertFalse(success)
+        self.assertEqual(self.scheduler.get_task(task_key)["status"], "QUEUED")
+
+        # 2. Claim with correct version should succeed
+        success = self.scheduler.atomic_claim(task_key, "agent-1", initial_version)
+        self.assertTrue(success)
+        t_after = self.scheduler.get_task(task_key)
+        self.assertEqual(t_after["status"], "CLAIMED")
+        self.assertEqual(t_after["version"], initial_version + 1)
+        self.assertEqual(t_after["assigned_agent_id"], "agent-1")
+
+        # 3. Second agent attempting to claim the already-claimed task should fail
+        success = self.scheduler.atomic_claim(task_key, "agent-2", initial_version + 1)
+        self.assertFalse(success)
+
+    def test_lease_expiry_and_reclaim(self):
+        """Validates that expired leases transition to RECLAIMABLE and can be reclaimed."""
+        task_key = "runtime-kernel/m1-frame"
+        
+        # Dispatch with a 10-second lease
+        t = self.scheduler.dispatch_next_task("agent-1", "runtime-kernel", lease_duration=10.0)
+        self.assertIsNotNone(t)
+        self.assertEqual(t["task_key"], task_key)
+        self.assertEqual(t["status"], "CLAIMED")
+        self.assertEqual(t["assigned_agent_id"], "agent-1")
+
+        # Advance time by 5 seconds (lease still valid)
+        self.scheduler.advance_time(5.0)
+        t_current = self.scheduler.get_task(task_key)
+        self.assertEqual(t_current["status"], "CLAIMED")
+
+        # Advance time by another 6 seconds (11 seconds total) -> Lease EXPIRED
+        self.scheduler.advance_time(6.0)
+        t_expired = self.scheduler.get_task(task_key)
+        self.assertEqual(t_expired["status"], "RECLAIMABLE")
+        self.assertIsNone(t_expired["assigned_agent_id"])
+
+        # Agent 2 should now be able to reclaim this task
+        # RECLAIMABLE tasks are prioritized in get_ready_tasks
+        ready = self.scheduler.get_ready_tasks(specialization="runtime-kernel")
+        self.assertTrue(any(x["task_key"] == task_key for x in ready))
+
+        t2 = self.scheduler.dispatch_next_task("agent-2", "runtime-kernel", lease_duration=3600.0)
+        self.assertIsNotNone(t2)
+        self.assertEqual(t2["task_key"], task_key)
+        self.assertEqual(t2["status"], "CLAIMED")
+        self.assertEqual(t2["assigned_agent_id"], "agent-2")
 
     def test_boundary_guard_valid_files(self):
         """Task boundary guard allows modifications inside allowed_files."""
