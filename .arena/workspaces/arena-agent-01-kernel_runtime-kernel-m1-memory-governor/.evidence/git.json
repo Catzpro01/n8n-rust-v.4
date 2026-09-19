@@ -1,0 +1,10 @@
+{
+  "evidence_type": "git",
+  "worker_id": "arena-agent-01-kernel",
+  "task_key": "runtime-kernel/m1-memory-governor",
+  "recorded_at": 1789849095.9466164,
+  "data": {
+    "commit_sha": "5f2966ab6294b3cfeb3e9fec370467526252bc0a",
+    "branch": "runtime-kernel/m1-memory-governor"
+  }
+}

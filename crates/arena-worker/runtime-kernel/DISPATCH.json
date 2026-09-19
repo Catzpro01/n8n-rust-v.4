@@ -1,0 +1,18 @@
+{
+  "worker_id": "arena-agent-01-kernel",
+  "task_id": "d8071905-fbcd-4b59-9786-bea9d693de6c",
+  "task_key": "runtime-kernel/m1-error-propagation",
+  "branch_name": "runtime-kernel/m1-error-propagation",
+  "base_commit_sha": "d40134f064160095df898bb741879c2e8972b645",
+  "allowed_files": [
+    "crates/n8n-workflow/src/runtime/error.rs"
+  ],
+  "acceptance_criteria": [
+    "Node errors captured cleanly without panicking",
+    "Formats error output according to n8n standard schema"
+  ],
+  "lease_expires_at": "2026-09-19T18:56:17.177562+00:00",
+  "dispatch_id": "65dfda73-851b-48b6-9986-586b177bfe7b",
+  "created_at": 1789843580.5693502,
+  "protocol_version": "1"
+}

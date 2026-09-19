@@ -1,0 +1,20 @@
+{
+  "worker_id": "arena-agent-03-dataplane",
+  "task_key": "data-plane/m3-binary-stream",
+  "branch_name": "data-plane/m3-m3-binary-stream",
+  "base_commit_sha": "7fdc225bce06d58de9d86c2ff1ef393bb4393ad1",
+  "state": "COMPLETED",
+  "health": "HEALTHY",
+  "created_at": 1789852507.3943596,
+  "last_active_at": 1789852510.0457914,
+  "fingerprint": {
+    "os": "Windows",
+    "os_release": "10",
+    "architecture": "AMD64",
+    "python_version": "3.10.0",
+    "timestamp": 1789852507.4674737,
+    "cargo_version": "cargo 1.98.1 (797e8a9bc 2026-08-05)",
+    "git_version": "git version 2.50.0.windows.1",
+    "hash": "87d624e04f0972a3"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "evidence_type": "files",
+  "worker_id": "arena-agent-02-engine",
+  "task_key": "execution-engine/m2-scheduler",
+  "recorded_at": 1789852501.2237742,
+  "data": {
+    "files": [
+      "crates/n8n-workflow/src/runtime/scheduler.rs"
+    ]
+  }
+}

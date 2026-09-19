@@ -1,0 +1,10 @@
+{
+  "evidence_type": "git",
+  "worker_id": "arena-agent-03-dataplane",
+  "task_key": "data-plane/m3-binary-stream",
+  "recorded_at": 1789852510.0036483,
+  "data": {
+    "commit_sha": "09e0a649421160258c63d88e59fc113af44fa899",
+    "branch": "data-plane/m3-m3-binary-stream"
+  }
+}

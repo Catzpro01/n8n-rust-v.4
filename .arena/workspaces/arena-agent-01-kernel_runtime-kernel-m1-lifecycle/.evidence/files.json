@@ -1,0 +1,11 @@
+{
+  "evidence_type": "files",
+  "worker_id": "arena-agent-01-kernel",
+  "task_key": "runtime-kernel/m1-lifecycle",
+  "recorded_at": 1789847308.266478,
+  "data": {
+    "files": [
+      "crates/n8n-workflow/src/runtime/lifecycle.rs"
+    ]
+  }
+}

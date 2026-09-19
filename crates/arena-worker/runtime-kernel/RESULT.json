@@ -1,0 +1,22 @@
+{
+  "dispatch_id": "65dfda73-851b-48b6-9986-586b177bfe7b",
+  "task_id": "d8071905-fbcd-4b59-9786-bea9d693de6c",
+  "worker_id": "arena-agent-01-kernel",
+  "agent_session_id": "session-canary-s1",
+  "status": "SUCCESS",
+  "commit_sha": "8e7db32ebbf7691b093a68bf89744fecf1633eb8",
+  "branch_name": "runtime-kernel/m1-error-propagation",
+  "files_modified": [
+    "crates/n8n-workflow/src/runtime/error.rs"
+  ],
+  "test_evidence": {
+    "tests_passed": true,
+    "test_suite": "cargo_test_package n8n-workflow",
+    "exit_code": 0
+  },
+  "error_code": null,
+  "error_message": null,
+  "started_at": 1789843647.1342394,
+  "completed_at": 1789843647.1342394,
+  "protocol_version": "1"
+}

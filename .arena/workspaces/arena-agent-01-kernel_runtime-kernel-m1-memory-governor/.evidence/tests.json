@@ -1,0 +1,14 @@
+{
+  "evidence_type": "tests",
+  "worker_id": "arena-agent-01-kernel",
+  "task_key": "runtime-kernel/m1-memory-governor",
+  "recorded_at": 1789849094.7378771,
+  "data": {
+    "suite": "cargo-test-n8n-workflow",
+    "command": "cargo test -p n8n-workflow",
+    "passed": 70,
+    "failed": 0,
+    "skipped": 0,
+    "status": "PASSED"
+  }
+}

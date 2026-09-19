@@ -14,12 +14,18 @@ Headers:
 import sys
 import json
 import argparse
+from pathlib import Path
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from typing import Optional
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 from tools.gateway.gateway import CapabilityGateway
 
 gateway_instance: Optional[CapabilityGateway] = None
+
 
 class GatewayHTTPRequestHandler(BaseHTTPRequestHandler):
     def _send_json(self, status_code: int, payload: dict):

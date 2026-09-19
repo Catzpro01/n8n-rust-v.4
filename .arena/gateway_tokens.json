@@ -1,0 +1,14 @@
+{
+  "tokens": {
+    "manager": {
+      "token": "agm_c43e46864ca79bfbaf937cb584b3eb6583dc4a974e5a97f8",
+      "role": "manager",
+      "allowed_prefix": "arena-manager"
+    },
+    "worker": {
+      "token": "agw_cfbc08f179b1ab8550be6352f01e735c71a03c0fdeaaca1b",
+      "role": "worker",
+      "allowed_prefix": "arena-agent-"
+    }
+  }
+}

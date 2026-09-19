@@ -1,0 +1,14 @@
+{
+  "evidence_type": "tests",
+  "worker_id": "arena-agent-03-dataplane",
+  "task_key": "data-plane/m3-binary-stream",
+  "recorded_at": 1789852509.2074437,
+  "data": {
+    "suite": "cargo-test-n8n-execution-data",
+    "command": "cargo test -p n8n-execution-data",
+    "passed": 21,
+    "failed": 0,
+    "skipped": 0,
+    "status": "PASSED"
+  }
+}

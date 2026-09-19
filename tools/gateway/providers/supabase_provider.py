@@ -25,8 +25,9 @@ class SupabaseProvider:
 
     def _request(self, endpoint: str, method: str = "GET", data: Optional[Dict[str, Any]] = None, is_rpc: bool = False) -> Any:
         base_url, key = self._get_creds()
-        prefix = "rpc" if is_rpc else "rest/v1"
+        prefix = "rest/v1/rpc" if is_rpc else "rest/v1"
         url = f"{base_url}/{prefix}/{endpoint.lstrip('/')}"
+
 
         headers = {
             "apikey": key,

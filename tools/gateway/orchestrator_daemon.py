@@ -12,16 +12,22 @@ Coordinates:
 """
 
 import time
+import sys
 import json
 import logging
 import threading
 from pathlib import Path
 from typing import Dict, Any, Optional, List
 
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
 from tools.gateway.gateway import CapabilityGateway
 from tools.gateway.auth import GatewayAuth
 
 logger = logging.getLogger("PersistentOrchestrator")
+
 
 class PersistentOrchestratorDaemon:
     def __init__(self, interval_seconds: int = 10, gateway: Optional[CapabilityGateway] = None):
@@ -132,6 +138,23 @@ class PersistentOrchestratorDaemon:
         self.stats["state"] = "STOPPED"
         print("Persistent Manager Orchestrator Daemon stopped.")
 
+    def run_forever(self):
+        """Runs the orchestration cycle directly on the main thread (for independent OS process)."""
+        self.is_running = True
+        self.stats["state"] = "RUNNING"
+        print(f"Persistent Manager Orchestrator Daemon running in foreground loop (interval={self.interval}s)...", flush=True)
+        while self.is_running:
+            try:
+                self.tick()
+                time.sleep(self.interval)
+            except KeyboardInterrupt:
+                break
+            except Exception as e:
+                print(f"Orchestrator loop error: {e}", flush=True)
+                time.sleep(self.interval)
+        self.stats["state"] = "STOPPED"
+        print("Persistent Manager Orchestrator Daemon loop terminated.", flush=True)
+
     def get_status(self) -> Dict[str, Any]:
         return {
             "service": "persistent-orchestrator-daemon",
@@ -142,9 +165,5 @@ class PersistentOrchestratorDaemon:
 
 if __name__ == "__main__":
     daemon = PersistentOrchestratorDaemon(interval_seconds=10)
-    daemon.start()
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        daemon.stop()
+    daemon.run_forever()
+

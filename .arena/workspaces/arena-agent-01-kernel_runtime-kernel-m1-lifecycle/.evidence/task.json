@@ -1,0 +1,23 @@
+{
+  "evidence_type": "task",
+  "worker_id": "arena-agent-01-kernel",
+  "task_key": "runtime-kernel/m1-lifecycle",
+  "recorded_at": 1789847308.0569637,
+  "data": {
+    "worker_id": "arena-agent-01-kernel",
+    "task_id": "fd1ccff0-ea1e-4d83-ace0-f75ea794780f",
+    "task_key": "runtime-kernel/m1-lifecycle",
+    "branch_name": "runtime-kernel/m1-lifecycle",
+    "base_commit_sha": "9d2a27be4892c1b5e555090cc6e058435b17425c",
+    "allowed_files": [
+      "crates/n8n-workflow/src/runtime/lifecycle.rs"
+    ],
+    "acceptance_criteria": [
+      "Emits lifecycle events with high-resolution timestamps"
+    ],
+    "lease_expires_at": "2026-09-19T19:58:24.651621+00:00",
+    "dispatch_id": "cb45adb8-3950-4f20-b6b1-1dcf69c0f58f",
+    "created_at": 1789847305.6512325,
+    "protocol_version": "1"
+  }
+}

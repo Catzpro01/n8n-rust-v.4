@@ -1,0 +1,24 @@
+{
+  "evidence_type": "task",
+  "worker_id": "arena-agent-02-engine",
+  "task_key": "execution-engine/m2-scheduler",
+  "recorded_at": 1789852500.7948136,
+  "data": {
+    "worker_id": "arena-agent-02-engine",
+    "task_id": "5bcd29d6-ae43-4236-bedb-fbca8335407b",
+    "task_key": "execution-engine/m2-scheduler",
+    "branch_name": "execution-engine/m2-m2-scheduler",
+    "base_commit_sha": "7fdc225bce06d58de9d86c2ff1ef393bb4393ad1",
+    "allowed_files": [
+      "crates/n8n-workflow/src/runtime/scheduler.rs"
+    ],
+    "acceptance_criteria": [
+      "Nodes wait until all incoming dependency edges succeed",
+      "Enforces concurrency slots limits"
+    ],
+    "lease_expires_at": "2026-09-20T12:00:00Z",
+    "dispatch_id": "disp-m2-1789852500",
+    "created_at": 1789852500.2515705,
+    "protocol_version": "1"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "evidence_type": "files",
+  "worker_id": "arena-agent-03-dataplane",
+  "task_key": "data-plane/m3-binary-stream",
+  "recorded_at": 1789852508.2358513,
+  "data": {
+    "files": [
+      "crates/n8n-execution-data/src/binary.rs"
+    ]
+  }
+}

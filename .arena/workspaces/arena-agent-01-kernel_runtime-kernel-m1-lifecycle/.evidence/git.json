@@ -1,0 +1,10 @@
+{
+  "evidence_type": "git",
+  "worker_id": "arena-agent-01-kernel",
+  "task_key": "runtime-kernel/m1-lifecycle",
+  "recorded_at": 1789847314.3525593,
+  "data": {
+    "commit_sha": "be24a65e2095e72fe4dc8755525d535c346263ab",
+    "branch": "runtime-kernel/m1-lifecycle"
+  }
+}

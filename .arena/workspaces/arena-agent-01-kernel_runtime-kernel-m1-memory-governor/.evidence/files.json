@@ -1,0 +1,11 @@
+{
+  "evidence_type": "files",
+  "worker_id": "arena-agent-01-kernel",
+  "task_key": "runtime-kernel/m1-memory-governor",
+  "recorded_at": 1789849092.1828072,
+  "data": {
+    "files": [
+      "crates/n8n-workflow/src/runtime/memory.rs"
+    ]
+  }
+}

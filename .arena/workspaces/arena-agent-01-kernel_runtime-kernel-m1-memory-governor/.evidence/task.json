@@ -1,0 +1,24 @@
+{
+  "evidence_type": "task",
+  "worker_id": "arena-agent-01-kernel",
+  "task_key": "runtime-kernel/m1-memory-governor",
+  "recorded_at": 1789849092.0458791,
+  "data": {
+    "worker_id": "arena-agent-01-kernel",
+    "task_id": "36ee9019-6724-42cd-9b9f-b53111f7c318",
+    "task_key": "runtime-kernel/m1-memory-governor",
+    "branch_name": "runtime-kernel/m1-memory-governor",
+    "base_commit_sha": "be24a65e2095e72fe4dc8755525d535c346263ab",
+    "allowed_files": [
+      "crates/n8n-workflow/src/runtime/memory.rs"
+    ],
+    "acceptance_criteria": [
+      "Triggers backpressure at 85% budget",
+      "Aborts frame creation if memory ceiling is breached"
+    ],
+    "lease_expires_at": "2026-09-19T20:28:07.580171+00:00",
+    "dispatch_id": "c0767702-194b-423b-8aee-c06043e82e5f",
+    "created_at": 1789849088.5789206,
+    "protocol_version": "1"
+  }
+}

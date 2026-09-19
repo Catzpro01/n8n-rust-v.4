@@ -1,0 +1,14 @@
+{
+  "evidence_type": "tests",
+  "worker_id": "arena-agent-01-kernel",
+  "task_key": "runtime-kernel/m1-lifecycle",
+  "recorded_at": 1789847313.063612,
+  "data": {
+    "suite": "cargo-test-n8n-workflow",
+    "command": "cargo test -p n8n-workflow",
+    "passed": 70,
+    "failed": 0,
+    "skipped": 0,
+    "status": "PASSED"
+  }
+}

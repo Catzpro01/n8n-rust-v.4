@@ -1,0 +1,20 @@
+{
+  "worker_id": "arena-agent-01-kernel",
+  "task_key": "runtime-kernel/m1-memory-governor",
+  "branch_name": "runtime-kernel/m1-memory-governor",
+  "base_commit_sha": "be24a65e2095e72fe4dc8755525d535c346263ab",
+  "state": "COMPLETED",
+  "health": "HEALTHY",
+  "created_at": 1789849091.9451418,
+  "last_active_at": 1789849095.9967334,
+  "fingerprint": {
+    "os": "Windows",
+    "os_release": "10",
+    "architecture": "AMD64",
+    "python_version": "3.10.0",
+    "timestamp": 1789849091.9706075,
+    "cargo_version": "cargo 1.98.1 (797e8a9bc 2026-08-05)",
+    "git_version": "git version 2.50.0.windows.1",
+    "hash": "87d624e04f0972a3"
+  }
+}

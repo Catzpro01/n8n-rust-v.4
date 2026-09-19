@@ -1,0 +1,24 @@
+{
+  "evidence_type": "task",
+  "worker_id": "arena-agent-03-dataplane",
+  "task_key": "data-plane/m3-binary-stream",
+  "recorded_at": 1789852507.6701965,
+  "data": {
+    "worker_id": "arena-agent-03-dataplane",
+    "task_id": "ea6f65fd-ada7-4832-b3f0-723a16c70f1d",
+    "task_key": "data-plane/m3-binary-stream",
+    "branch_name": "data-plane/m3-m3-binary-stream",
+    "base_commit_sha": "7fdc225bce06d58de9d86c2ff1ef393bb4393ad1",
+    "allowed_files": [
+      "crates/n8n-execution-data/src/binary.rs"
+    ],
+    "acceptance_criteria": [
+      "Streams >50MB files in fixed 64KB chunks",
+      "RAM consumption stays below 5MB during 100MB streaming"
+    ],
+    "lease_expires_at": "2026-09-20T12:00:00Z",
+    "dispatch_id": "disp-m3-1789852500",
+    "created_at": 1789852500.2515705,
+    "protocol_version": "1"
+  }
+}

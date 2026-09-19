@@ -1,0 +1,5 @@
+[project]
+id = "gqctxugkxekdqxsaqrum"
+
+[functions.gateway]
+verify_jwt = false
