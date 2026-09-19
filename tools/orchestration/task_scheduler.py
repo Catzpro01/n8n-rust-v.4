@@ -91,20 +91,33 @@ class DynamicTaskScheduler:
 
             ready.append(t)
 
-        # Sort: RECLAIMABLE first, then milestone order, then weight desc
-        ready.sort(key=lambda x: (0 if x.get("status") == "RECLAIMABLE" else 1, int(x["milestone"][1:]), -x["progress_weight"]))
+        # Sort by:
+        # 1. Status: RECLAIMABLE first (0), then QUEUED (1)
+        # 2. Priority integer (lower is higher priority, default 100)
+        # 3. Progress weight desc (higher weight first)
+        # 4. Milestone order
+        ready.sort(key=lambda x: (
+            0 if x.get("status") == "RECLAIMABLE" else 1,
+            x.get("priority", 100),
+            -x.get("progress_weight", 1.0),
+            int(x["milestone"][1:]) if x["milestone"].startswith("M") and x["milestone"][1:].isdigit() else 99
+        ))
         return ready
 
-    def dispatch_next_task(self, agent_id: str, specialization: str) -> Optional[dict]:
+    def dispatch_next_task(self, agent_id: str, specialization: str, allow_cross_domain: bool = False) -> Optional[dict]:
         """
         Atomically selects and claims the highest-priority eligible ready task for an agent.
+        If allow_cross_domain is True and no task matches specialization, falls back to any eligible task.
         """
         ready = self.get_ready_tasks(specialization=specialization)
+        if not ready and allow_cross_domain:
+            ready = self.get_ready_tasks(specialization=None)
+
         if not ready:
-            # Optionally check cross-domain if allowed, otherwise return None
             return None
 
         chosen = ready[0]
         k = chosen["task_key"]
         self.set_task_status(k, "CLAIMED", agent_id=agent_id)
         return self.tasks[k]
+
