@@ -24,3 +24,7 @@ reference/**/dist/
 reference/**/.turbo/
 reference/**/coverage/
 __pycache__/
+
+# arena orchestration runtime
+.arena/run/
+.arena/worker_logs/
