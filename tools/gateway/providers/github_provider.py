@@ -132,7 +132,7 @@ class GitHubProvider:
     def write_file(self, params: Dict[str, Any]) -> Dict[str, Any]:
         path = params.get("path")
         content = params.get("content", "")
-        branch = params.get("branch") or "arena-agent"
+        branch = params.get("branch") or "arena-manager"
         message = params.get("message") or f"chore(manager): update {path}"
         if not path:
             raise ValueError("Parameter 'path' is required")
@@ -164,7 +164,7 @@ class GitHubProvider:
 
     def delete_file(self, params: Dict[str, Any]) -> Dict[str, Any]:
         path = params.get("path")
-        branch = params.get("branch") or "arena-agent"
+        branch = params.get("branch") or "arena-manager"
         message = params.get("message") or f"chore(manager): delete {path}"
         if not path:
             raise ValueError("Parameter 'path' is required")
@@ -272,7 +272,7 @@ class GitHubProvider:
     def commit_and_push(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Local git commit and push wrapper using injected credentials."""
         token = self._get_token()
-        branch = params.get("branch") or "arena-agent"
+        branch = params.get("branch") or "arena-manager"
         message = params.get("message") or "chore(manager): operational update"
         files = params.get("files") or []
 

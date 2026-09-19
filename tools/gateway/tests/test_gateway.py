@@ -3,7 +3,7 @@ Automated Test Suite for Capability Gateway (v1.7).
 Verifies:
 1. Secret isolation (Vault never exposes credentials directly to Arena Manager).
 2. Sanitizer catches tokens, PATs, JWTs, and exact secrets.
-3. PolicyEngine strictly protects 'main', 'master', and 'arena-agent' branches.
+3. PolicyEngine strictly protects 'main', 'master', 'arena-manager', and 'arena-agent' branches.
 4. PolicyEngine blocks access to protected credential files (.env, keys).
 5. PolicyEngine fences worker agents from manager capabilities.
 6. Gateway Authentication enforces valid bearer tokens and prevents role spoofing.
@@ -99,8 +99,8 @@ class TestCapabilityGateway(unittest.TestCase):
         self.assertTrue(res["authenticated"])
 
     def test_policy_protected_branches(self):
-        """Policy engine must prevent deletion of main and arena-agent branches."""
-        for branch in ["main", "origin/main", "master", "arena-agent", "origin/arena-agent"]:
+        """Policy engine must prevent deletion of main, arena-manager, and legacy arena-agent branches."""
+        for branch in ["main", "origin/main", "master", "arena-manager", "origin/arena-manager", "arena-agent", "origin/arena-agent"]:
             res = self.gateway.invoke(
                 caller_id="arena-manager",
                 capability="github.delete_branch",

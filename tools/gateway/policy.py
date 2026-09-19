@@ -6,7 +6,7 @@ independent of LLM hallucination or agent error.
 
 from typing import Tuple, Dict, Any
 
-PROTECTED_BRANCHES = {"main", "master", "arena-agent"}
+PROTECTED_BRANCHES = {"main", "master", "arena-manager", "arena-agent"}
 PROTECTED_FILES = {
     ".env", ".env.local", ".env.production",
     ".credentials", ".credentials_rsaparams", ".credentials_migrated",

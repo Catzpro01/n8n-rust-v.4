@@ -4,7 +4,13 @@ Panduan operasional resmi untuk **Arena Manager** beroperasi secara otonom tanpa
 
 ---
 
-## 1. Posisi Arsitektur
+## 1. Posisi Arsitektur & Topologi Branch
+
+### Branch Topology:
+- **`main`**: Integration branch tunggal, production & single source of truth.
+- **`arena-manager`**: Permanent Manager source branch & orchestrator identity (ACTIVE).
+- **`arena-agent`**: Legacy Manager branch (DEPRECATED / PRESERVED for compatibility).
+- **`arena/<workspace-id>-n8n-rust-v-4`**: Temporary workspace runtime branch yang di-generate otomatis oleh platform Arena.
 
 Saat sistem selesai diprovisi oleh Antigravity:
 - **Antigravity**: OFFLINE / Debugging only.

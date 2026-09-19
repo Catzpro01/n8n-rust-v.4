@@ -62,7 +62,7 @@ Antigravity bertindak **HANYA** sebagai infrastruktur *provisioning & debugging*
 * `github.list_branches`: Mendapatkan daftar seluruh branch pada repository.
 * `github.get_branch`: Memeriksa detail branch tertentu dan commit SHA terakhirnya.
 * `github.create_branch`: Membuat branch baru (misal branch isolasi untuk worker).
-* `github.delete_branch`: Menghapus branch fitur/worker yang sudah selesai (Manager only; `main`, `master`, `arena-agent` dilindungi mutlak).
+* `github.delete_branch`: Menghapus branch fitur/worker yang sudah selesai (Manager only; `main`, `master`, `arena-manager` dilindungi mutlak, `arena-agent` legacy protected).
 * `github.read_file`: Membaca isi file di remote GitHub (file sensitif seperti `.env` diblokir).
 * `github.write_file`: Menulis file ke remote GitHub.
 * `github.delete_file`: Menghapus file dari remote repository.
