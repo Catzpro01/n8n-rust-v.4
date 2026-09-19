@@ -58,7 +58,10 @@ fn dfs_cycle(
     path.push(current.to_string());
 
     if let Some(outputs) = workflow.connections_by_source_node.get(current) {
-        for slot in outputs.values().flat_map(|s| s.iter().filter_map(|x| x.as_ref())) {
+        for slot in outputs
+            .values()
+            .flat_map(|s| s.iter().filter_map(|x| x.as_ref()))
+        {
             for conn in slot {
                 let next = &conn.node;
                 if !visited.contains(next) {
@@ -90,7 +93,10 @@ pub fn find_orphan_nodes(workflow: &Workflow) -> Vec<String> {
     // Scan outgoing connections
     for (src, outputs) in workflow.connections_by_source_node.iter() {
         let mut has_outgoing = false;
-        for slot in outputs.values().flat_map(|s| s.iter().filter_map(|x| x.as_ref())) {
+        for slot in outputs
+            .values()
+            .flat_map(|s| s.iter().filter_map(|x| x.as_ref()))
+        {
             for conn in slot {
                 has_outgoing = true;
                 connected_nodes.insert(conn.node.clone());
@@ -125,7 +131,10 @@ pub fn is_reachable(workflow: &Workflow, source: &str, target: &str) -> bool {
         }
 
         if let Some(outputs) = workflow.connections_by_source_node.get(&curr) {
-            for slot in outputs.values().flat_map(|s| s.iter().filter_map(|x| x.as_ref())) {
+            for slot in outputs
+                .values()
+                .flat_map(|s| s.iter().filter_map(|x| x.as_ref()))
+            {
                 for conn in slot {
                     if !visited.contains(&conn.node) {
                         visited.insert(conn.node.clone());
@@ -264,7 +273,16 @@ mod tests {
         }))
         .unwrap();
 
-        let wf = Workflow::new(None, None, vec![n1, n2, n3], connections, true, None, None, None);
+        let wf = Workflow::new(
+            None,
+            None,
+            vec![n1, n2, n3],
+            connections,
+            true,
+            None,
+            None,
+            None,
+        );
 
         assert!(validate_dag(&wf).is_ok());
         assert!(is_reachable(&wf, "Start", "End"));
@@ -283,7 +301,16 @@ mod tests {
         }))
         .unwrap();
 
-        let wf = Workflow::new(None, None, vec![n1, n2], connections, true, None, None, None);
+        let wf = Workflow::new(
+            None,
+            None,
+            vec![n1, n2],
+            connections,
+            true,
+            None,
+            None,
+            None,
+        );
 
         let err = validate_dag(&wf).unwrap_err();
         match err {
@@ -297,15 +324,27 @@ mod tests {
 
     #[test]
     fn test_extract_expressions() {
-        let n1 = make_node("Node1", json!({
-            "plain": "Just text",
-            "expr": "={{ $json.id }}",
-            "nested": {
-                "arr": ["Hello {{ $json.name }}!", 42]
-            }
-        }));
+        let n1 = make_node(
+            "Node1",
+            json!({
+                "plain": "Just text",
+                "expr": "={{ $json.id }}",
+                "nested": {
+                    "arr": ["Hello {{ $json.name }}!", 42]
+                }
+            }),
+        );
 
-        let wf = Workflow::new(None, None, vec![n1], Connections::new(), true, None, None, None);
+        let wf = Workflow::new(
+            None,
+            None,
+            vec![n1],
+            Connections::new(),
+            true,
+            None,
+            None,
+            None,
+        );
         let refs = extract_expressions(&wf);
 
         assert_eq!(refs.len(), 2);

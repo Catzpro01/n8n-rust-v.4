@@ -254,7 +254,10 @@ mod tests {
             "={{ $items('Alpha') }}"
         );
         // Not an accessor, and the name only appears as text: untouched.
-        assert_eq!(apply_access_patterns("prefix A suffix", "A", "Alpha"), "prefix A suffix");
+        assert_eq!(
+            apply_access_patterns("prefix A suffix", "A", "Alpha"),
+            "prefix A suffix"
+        );
         // Name reused by a different accessor form.
         assert_eq!(
             apply_access_patterns("={{ $('AA').x + $('A').y }}", "A", "Alpha"),

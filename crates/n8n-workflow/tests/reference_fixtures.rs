@@ -171,7 +171,10 @@ fn aggregate_shape_matches_the_reference() {
             "wf-dup" => Workflow::new(
                 Some("wf-dup".into()),
                 Some("Duplicate".into()),
-                vec![node("A"), node_with("A", json!({"parameters": {"second": true}}))],
+                vec![
+                    node("A"),
+                    node_with("A", json!({"parameters": {"second": true}})),
+                ],
                 Connections::new(),
                 false,
                 None,
@@ -207,21 +210,36 @@ fn aggregate_shape_matches_the_reference() {
             "connectionsByDestinationNode for `{id}`"
         );
         assert_eq!(workflow.settings, case["settings"], "settings for `{id}`");
-        assert_eq!(workflow.static_data, case["staticData"], "staticData for `{id}`");
+        assert_eq!(
+            workflow.static_data, case["staticData"],
+            "staticData for `{id}`"
+        );
         assert_eq!(
             workflow.pin_data.clone().unwrap_or(Value::Null),
             case["pinData"],
             "pinData for `{id}`"
         );
-        assert_eq!(json!(workflow.get_timezone()), case["timezone"], "timezone for `{id}`");
+        assert_eq!(
+            json!(workflow.get_timezone()),
+            case["timezone"],
+            "timezone for `{id}`"
+        );
         assert_eq!(json!(workflow.active), case["active"], "active for `{id}`");
         assert_eq!(
-            workflow.id.clone().map(Value::String).unwrap_or(Value::Null),
+            workflow
+                .id
+                .clone()
+                .map(Value::String)
+                .unwrap_or(Value::Null),
             case["id"],
             "id for `{id}`"
         );
         assert_eq!(
-            workflow.name.clone().map(Value::String).unwrap_or(Value::Null),
+            workflow
+                .name
+                .clone()
+                .map(Value::String)
+                .unwrap_or(Value::Null),
             case["name"],
             "name for `{id}`"
         );
@@ -246,12 +264,22 @@ fn rename_node_matches_the_reference_including_d08() {
                     .rename_node("D", restricted)
                     .expect_err("restricted name must be rejected");
                 assert_eq!(outcome["threw"], json!(true), "`{id}` must throw");
-                assert_eq!(json!(error.error_name()), outcome["errorName"], "error name `{id}`");
-                assert_eq!(json!(error.to_string()), outcome["message"], "message `{id}`");
+                assert_eq!(
+                    json!(error.error_name()),
+                    outcome["errorName"],
+                    "error name `{id}`"
+                );
+                assert_eq!(
+                    json!(error.to_string()),
+                    outcome["message"],
+                    "message `{id}`"
+                );
             }
             "collision-overwrites" => {
                 let mut workflow = chain();
-                workflow.rename_node("D", "C").expect("collisions are not guarded");
+                workflow
+                    .rename_node("D", "C")
+                    .expect("collisions are not guarded");
                 let mut node_names = workflow.node_keys();
                 node_names.sort();
                 assert_eq!(json!(node_names), outcome["nodeNames"], "nodeNames");
@@ -262,7 +290,11 @@ fn rename_node_matches_the_reference_including_d08() {
                 );
                 let mut source_keys = workflow.connections_by_source_node.key_names();
                 source_keys.sort();
-                assert_eq!(json!(source_keys), outcome["cStillHasItsEdges"], "source keys");
+                assert_eq!(
+                    json!(source_keys),
+                    outcome["cStillHasItsEdges"],
+                    "source keys"
+                );
             }
             "d-08-stale-destination-index" => {
                 let mut workflow = chain();
@@ -274,7 +306,11 @@ fn rename_node_matches_the_reference_including_d08() {
 
                 let mut destination_keys = workflow.connections_by_destination_node.key_names();
                 destination_keys.sort();
-                assert_eq!(json!(destination_keys), outcome["destinationKeys"], "destinationKeys");
+                assert_eq!(
+                    json!(destination_keys),
+                    outcome["destinationKeys"],
+                    "destinationKeys"
+                );
 
                 assert_eq!(
                     json!(workflow.get_child_nodes("A", ConnectionTypeFilter::main(), -1)),
@@ -330,8 +366,14 @@ fn rename_node_matches_the_reference_including_d08() {
                 );
                 workflow.rename_node("A", "Alpha").expect("rename");
                 let parameters = &workflow.get_node("B").expect("B").parameters.0;
-                assert_eq!(parameters["value"], outcome["value"], "expression rewritten");
-                assert_eq!(parameters["plain"], outcome["plain"], "plain string untouched");
+                assert_eq!(
+                    parameters["value"], outcome["value"],
+                    "expression rewritten"
+                );
+                assert_eq!(
+                    parameters["plain"], outcome["plain"],
+                    "plain string untouched"
+                );
             }
             other => panic!("unknown rename case `{other}`"),
         }

@@ -54,7 +54,7 @@ impl RuntimeGraph {
                 node_type: node.node_type.clone(),
                 type_version: node.type_version,
                 parameters: Arc::new(serde_json::to_value(&node.parameters).unwrap_or(Value::Null)),
-                input_ports: 1, // Default main input
+                input_ports: 1,  // Default main input
                 output_ports: 1, // Default main output
                 disabled: node.disabled.unwrap_or(false),
             });
@@ -69,7 +69,9 @@ impl RuntimeGraph {
             if let Some(&src_idx) = node_indices.get(source_name) {
                 for (_conn_type, output_slots) in outputs.iter() {
                     for (slot_idx, slot) in output_slots.iter().enumerate() {
-                        let Some(connections) = slot else { continue; };
+                        let Some(connections) = slot else {
+                            continue;
+                        };
                         for conn in connections {
                             if let Some(&tgt_idx) = node_indices.get(&conn.node) {
                                 let edge = RuntimeEdge {
@@ -130,10 +132,16 @@ impl RuntimeGraph {
     }
 
     pub fn outgoing(&self, idx: NodeIndex) -> &[RuntimeEdge] {
-        self.outgoing_edges.get(idx as usize).map(|v| v.as_slice()).unwrap_or(&[])
+        self.outgoing_edges
+            .get(idx as usize)
+            .map(|v| v.as_slice())
+            .unwrap_or(&[])
     }
 
     pub fn incoming(&self, idx: NodeIndex) -> &[RuntimeEdge] {
-        self.incoming_edges.get(idx as usize).map(|v| v.as_slice()).unwrap_or(&[])
+        self.incoming_edges
+            .get(idx as usize)
+            .map(|v| v.as_slice())
+            .unwrap_or(&[])
     }
 }

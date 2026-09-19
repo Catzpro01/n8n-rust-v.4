@@ -15,7 +15,12 @@ fn estimate_json_bytes(val: &Value) -> usize {
         Value::Null | Value::Bool(_) | Value::Number(_) => 16,
         Value::String(s) => s.len() + 24,
         Value::Array(arr) => arr.iter().map(estimate_json_bytes).sum::<usize>() + 24,
-        Value::Object(map) => map.iter().map(|(k, v)| k.len() + estimate_json_bytes(v) + 32).sum::<usize>() + 48,
+        Value::Object(map) => {
+            map.iter()
+                .map(|(k, v)| k.len() + estimate_json_bytes(v) + 32)
+                .sum::<usize>()
+                + 48
+        }
     }
 }
 
@@ -53,7 +58,8 @@ impl DataRecord {
             if let Some(i) = v.as_u64() {
                 Some(i as u32)
             } else if let Some(obj) = v.as_object() {
-                obj.get("item").and_then(|item| item.as_u64().map(|i| i as u32))
+                obj.get("item")
+                    .and_then(|item| item.as_u64().map(|i| i as u32))
             } else {
                 None
             }
@@ -78,7 +84,9 @@ impl ItemBuffer {
     }
 
     pub fn with_capacity(capacity: usize) -> Self {
-        Self { items: Vec::with_capacity(capacity) }
+        Self {
+            items: Vec::with_capacity(capacity),
+        }
     }
 
     pub fn from_records(items: Vec<DataRecord>) -> Self {
@@ -91,12 +99,18 @@ impl ItemBuffer {
     }
 
     pub fn from_execution_data(data: Vec<INodeExecutionData>) -> Self {
-        let items = data.into_iter().map(DataRecord::from_node_execution_data).collect();
+        let items = data
+            .into_iter()
+            .map(DataRecord::from_node_execution_data)
+            .collect();
         Self { items }
     }
 
     pub fn to_execution_data(&self) -> Vec<INodeExecutionData> {
-        self.items.iter().map(|r| r.to_node_execution_data()).collect()
+        self.items
+            .iter()
+            .map(|r| r.to_node_execution_data())
+            .collect()
     }
 
     pub fn len(&self) -> usize {
@@ -131,7 +145,11 @@ impl ItemBuffer {
 
     /// Calculates actual allocated byte footprint in memory for budget governor
     pub fn estimated_bytes(&self) -> usize {
-        self.items.iter().map(|r| r.estimated_bytes()).sum::<usize>() + std::mem::size_of::<Self>()
+        self.items
+            .iter()
+            .map(|r| r.estimated_bytes())
+            .sum::<usize>()
+            + std::mem::size_of::<Self>()
     }
 }
 
@@ -217,7 +235,10 @@ mod tests {
 
         let cloned_buf = buf.shallow_clone();
         assert_eq!(cloned_buf.len(), 2);
-        assert!(Arc::ptr_eq(&buf.get(0).unwrap().json, &cloned_buf.get(0).unwrap().json));
+        assert!(Arc::ptr_eq(
+            &buf.get(0).unwrap().json,
+            &cloned_buf.get(0).unwrap().json
+        ));
 
         // Test memory estimation
         assert!(buf.estimated_bytes() > 50);

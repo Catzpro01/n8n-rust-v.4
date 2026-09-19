@@ -241,20 +241,62 @@ fn tokenize(input: &str) -> Result<Vec<Token>, ExpressionError> {
         }
 
         match ch {
-            '+' => { tokens.push(Token::Plus(i)); i += 1; }
-            '-' => { tokens.push(Token::Minus(i)); i += 1; }
-            '*' => { tokens.push(Token::Star(i)); i += 1; }
-            '/' => { tokens.push(Token::Slash(i)); i += 1; }
-            '%' => { tokens.push(Token::Percent(i)); i += 1; }
-            '?' => { tokens.push(Token::Question(i)); i += 1; }
-            ':' => { tokens.push(Token::Colon(i)); i += 1; }
-            ',' => { tokens.push(Token::Comma(i)); i += 1; }
-            '(' => { tokens.push(Token::LParen(i)); i += 1; }
-            ')' => { tokens.push(Token::RParen(i)); i += 1; }
-            '[' => { tokens.push(Token::LBracket(i)); i += 1; }
-            ']' => { tokens.push(Token::RBracket(i)); i += 1; }
-            '{' => { tokens.push(Token::LBrace(i)); i += 1; }
-            '}' => { tokens.push(Token::RBrace(i)); i += 1; }
+            '+' => {
+                tokens.push(Token::Plus(i));
+                i += 1;
+            }
+            '-' => {
+                tokens.push(Token::Minus(i));
+                i += 1;
+            }
+            '*' => {
+                tokens.push(Token::Star(i));
+                i += 1;
+            }
+            '/' => {
+                tokens.push(Token::Slash(i));
+                i += 1;
+            }
+            '%' => {
+                tokens.push(Token::Percent(i));
+                i += 1;
+            }
+            '?' => {
+                tokens.push(Token::Question(i));
+                i += 1;
+            }
+            ':' => {
+                tokens.push(Token::Colon(i));
+                i += 1;
+            }
+            ',' => {
+                tokens.push(Token::Comma(i));
+                i += 1;
+            }
+            '(' => {
+                tokens.push(Token::LParen(i));
+                i += 1;
+            }
+            ')' => {
+                tokens.push(Token::RParen(i));
+                i += 1;
+            }
+            '[' => {
+                tokens.push(Token::LBracket(i));
+                i += 1;
+            }
+            ']' => {
+                tokens.push(Token::RBracket(i));
+                i += 1;
+            }
+            '{' => {
+                tokens.push(Token::LBrace(i));
+                i += 1;
+            }
+            '}' => {
+                tokens.push(Token::RBrace(i));
+                i += 1;
+            }
             '.' if i + 1 < chars.len() && chars[i + 1].is_ascii_digit() => {
                 // Leading-dot number literal (".5").
                 let start_pos = i;
@@ -270,28 +312,48 @@ fn tokenize(input: &str) -> Result<Vec<Token>, ExpressionError> {
                 tokens.push(Token::Number(val, start_pos));
                 i = j;
             }
-            '.' => { tokens.push(Token::Dot(i)); i += 1; }
+            '.' => {
+                tokens.push(Token::Dot(i));
+                i += 1;
+            }
             '=' if i + 1 < chars.len() && chars[i + 1] == '=' => {
                 tokens.push(Token::EqEq(i));
                 // '===' is accepted and behaves identically (strict
                 // structural equality on JSON values — no JS coercion).
-                i += if i + 2 < chars.len() && chars[i + 2] == '=' { 3 } else { 2 };
+                i += if i + 2 < chars.len() && chars[i + 2] == '=' {
+                    3
+                } else {
+                    2
+                };
             }
             '!' if i + 1 < chars.len() && chars[i + 1] == '=' => {
                 tokens.push(Token::BangEq(i));
-                i += if i + 2 < chars.len() && chars[i + 2] == '=' { 3 } else { 2 };
+                i += if i + 2 < chars.len() && chars[i + 2] == '=' {
+                    3
+                } else {
+                    2
+                };
             }
-            '!' => { tokens.push(Token::Bang(i)); i += 1; }
+            '!' => {
+                tokens.push(Token::Bang(i));
+                i += 1;
+            }
             '<' if i + 1 < chars.len() && chars[i + 1] == '=' => {
                 tokens.push(Token::Lte(i));
                 i += 2;
             }
-            '<' => { tokens.push(Token::Lt(i)); i += 1; }
+            '<' => {
+                tokens.push(Token::Lt(i));
+                i += 1;
+            }
             '>' if i + 1 < chars.len() && chars[i + 1] == '=' => {
                 tokens.push(Token::Gte(i));
                 i += 2;
             }
-            '>' => { tokens.push(Token::Gt(i)); i += 1; }
+            '>' => {
+                tokens.push(Token::Gt(i));
+                i += 1;
+            }
             '&' if i + 1 < chars.len() && chars[i + 1] == '&' => {
                 tokens.push(Token::And(i));
                 i += 2;
@@ -311,16 +373,46 @@ fn tokenize(input: &str) -> Result<Vec<Token>, ExpressionError> {
                     if c == '\\' && i + 1 < chars.len() {
                         let esc = chars[i + 1];
                         match esc {
-                            'n' => { s.push('\n'); i += 2; }
-                            't' => { s.push('\t'); i += 2; }
-                            'r' => { s.push('\r'); i += 2; }
-                            '0' => { s.push('\0'); i += 2; }
-                            'b' => { s.push('\u{0008}'); i += 2; }
-                            'f' => { s.push('\u{000C}'); i += 2; }
-                            '\\' => { s.push('\\'); i += 2; }
-                            '\'' => { s.push('\''); i += 2; }
-                            '"' => { s.push('"'); i += 2; }
-                            '/' => { s.push('/'); i += 2; }
+                            'n' => {
+                                s.push('\n');
+                                i += 2;
+                            }
+                            't' => {
+                                s.push('\t');
+                                i += 2;
+                            }
+                            'r' => {
+                                s.push('\r');
+                                i += 2;
+                            }
+                            '0' => {
+                                s.push('\0');
+                                i += 2;
+                            }
+                            'b' => {
+                                s.push('\u{0008}');
+                                i += 2;
+                            }
+                            'f' => {
+                                s.push('\u{000C}');
+                                i += 2;
+                            }
+                            '\\' => {
+                                s.push('\\');
+                                i += 2;
+                            }
+                            '\'' => {
+                                s.push('\'');
+                                i += 2;
+                            }
+                            '"' => {
+                                s.push('"');
+                                i += 2;
+                            }
+                            '/' => {
+                                s.push('/');
+                                i += 2;
+                            }
                             'u' if i + 6 <= chars.len() => {
                                 let hex: String = chars[i + 2..i + 6].iter().collect();
                                 let code = u32::from_str_radix(&hex, 16).map_err(|_| {
@@ -330,18 +422,26 @@ fn tokenize(input: &str) -> Result<Vec<Token>, ExpressionError> {
                                     }
                                 })?;
                                 match char::from_u32(code) {
-                                    Some(uc) => { s.push(uc); i += 6; }
+                                    Some(uc) => {
+                                        s.push(uc);
+                                        i += 6;
+                                    }
                                     None => {
                                         return Err(ExpressionError::SyntaxError {
                                             pos: i,
-                                            message: format!("Invalid unicode code point '\\u{hex}'"),
+                                            message: format!(
+                                                "Invalid unicode code point '\\u{hex}'"
+                                            ),
                                         })
                                     }
                                 }
                             }
                             // Unknown escape: keep the escaped character
                             // literally (JS-compatible: "\q" === "q").
-                            other => { s.push(other); i += 2; }
+                            other => {
+                                s.push(other);
+                                i += 2;
+                            }
                         }
                     } else if c == quote {
                         closed = true;
@@ -368,7 +468,11 @@ fn tokenize(input: &str) -> Result<Vec<Token>, ExpressionError> {
                     if chars[i].is_ascii_digit() {
                         num_str.push(chars[i]);
                         i += 1;
-                    } else if chars[i] == '.' && !seen_dot && i + 1 < chars.len() && chars[i + 1].is_ascii_digit() {
+                    } else if chars[i] == '.'
+                        && !seen_dot
+                        && i + 1 < chars.len()
+                        && chars[i + 1].is_ascii_digit()
+                    {
                         seen_dot = true;
                         num_str.push('.');
                         i += 1;
@@ -403,7 +507,9 @@ fn tokenize(input: &str) -> Result<Vec<Token>, ExpressionError> {
             ch if ch.is_alphabetic() || ch == '$' || ch == '_' => {
                 let start_pos = i;
                 let mut ident = String::new();
-                while i < chars.len() && (chars[i].is_alphanumeric() || chars[i] == '$' || chars[i] == '_') {
+                while i < chars.len()
+                    && (chars[i].is_alphanumeric() || chars[i] == '$' || chars[i] == '_')
+                {
                     ident.push(chars[i]);
                     i += 1;
                 }
@@ -433,7 +539,11 @@ struct TokenParser {
 
 impl TokenParser {
     fn new(tokens: Vec<Token>) -> Self {
-        Self { tokens, cursor: 0, depth: 0 }
+        Self {
+            tokens,
+            cursor: 0,
+            depth: 0,
+        }
     }
 
     fn peek(&self) -> Option<&Token> {
@@ -455,9 +565,9 @@ impl TokenParser {
     }
 
     fn current_pos(&self) -> usize {
-        self.peek().map(|t| t.pos()).unwrap_or_else(|| {
-            self.tokens.last().map(|t| t.pos() + 1).unwrap_or(0)
-        })
+        self.peek()
+            .map(|t| t.pos())
+            .unwrap_or_else(|| self.tokens.last().map(|t| t.pos() + 1).unwrap_or(0))
     }
 
     /// Enters one level of potentially recursive descent. Fail-closed when
@@ -669,7 +779,9 @@ impl TokenParser {
                     Ok(ExprAst::Literal(Value::Number((n as i64).into())))
                 } else {
                     Ok(ExprAst::Literal(
-                        serde_json::Number::from_f64(n).map(Value::Number).unwrap_or(Value::Null),
+                        serde_json::Number::from_f64(n)
+                            .map(Value::Number)
+                            .unwrap_or(Value::Null),
                     ))
                 }
             }
@@ -723,9 +835,7 @@ impl TokenParser {
                         other => {
                             return Err(ExpressionError::SyntaxError {
                                 pos: self.current_pos(),
-                                message: format!(
-                                    "Expected ':' after object key, found: {other:?}"
-                                ),
+                                message: format!("Expected ':' after object key, found: {other:?}"),
                             })
                         }
                     }
@@ -768,17 +878,25 @@ impl TokenParser {
                         self.advance();
                         let node_name = match self.advance() {
                             Some(Token::String(s, _)) => s,
-                            other => return Err(ExpressionError::SyntaxError {
-                                pos: self.current_pos(),
-                                message: format!("Expected string node name in $node[...], found: {other:?}"),
-                            }),
+                            other => {
+                                return Err(ExpressionError::SyntaxError {
+                                    pos: self.current_pos(),
+                                    message: format!(
+                                        "Expected string node name in $node[...], found: {other:?}"
+                                    ),
+                                })
+                            }
                         };
                         match self.advance() {
                             Some(Token::RBracket(_)) => {}
-                            other => return Err(ExpressionError::SyntaxError {
-                                pos: self.current_pos(),
-                                message: format!("Expected ']' after node name, found: {other:?}"),
-                            }),
+                            other => {
+                                return Err(ExpressionError::SyntaxError {
+                                    pos: self.current_pos(),
+                                    message: format!(
+                                        "Expected ']' after node name, found: {other:?}"
+                                    ),
+                                })
+                            }
                         }
                         Ok(ExprAst::NodeLookup {
                             node_name,
@@ -798,19 +916,25 @@ impl TokenParser {
                         self.advance();
                         let node_name = match self.advance() {
                             Some(Token::String(s, _)) => s,
-                            other => return Err(ExpressionError::SyntaxError {
-                                pos: self.current_pos(),
-                                message: format!(
+                            other => {
+                                return Err(ExpressionError::SyntaxError {
+                                    pos: self.current_pos(),
+                                    message: format!(
                                     "Expected string node name in $('Node Name'), found: {other:?}"
                                 ),
-                            }),
+                                })
+                            }
                         };
                         match self.advance() {
                             Some(Token::RParen(_)) => {}
-                            other => return Err(ExpressionError::SyntaxError {
-                                pos: self.current_pos(),
-                                message: format!("Expected ')' after node name, found: {other:?}"),
-                            }),
+                            other => {
+                                return Err(ExpressionError::SyntaxError {
+                                    pos: self.current_pos(),
+                                    message: format!(
+                                        "Expected ')' after node name, found: {other:?}"
+                                    ),
+                                })
+                            }
                         }
                         Ok(ExprAst::NodeHandle(node_name))
                     } else {
@@ -827,14 +951,18 @@ impl TokenParser {
                             Some(Token::Ident(var_name, _)) => Ok(ExprAst::Variable(var_name)),
                             other => Err(ExpressionError::SyntaxError {
                                 pos: self.current_pos(),
-                                message: format!("Expected variable name after $vars., found: {other:?}"),
+                                message: format!(
+                                    "Expected variable name after $vars., found: {other:?}"
+                                ),
                             }),
                         }
                     } else {
                         Ok(ExprAst::Variable(ident.clone()))
                     }
                 }
-                name if is_extended_function(name) && matches!(self.peek(), Some(Token::LParen(_))) => {
+                name if is_extended_function(name)
+                    && matches!(self.peek(), Some(Token::LParen(_))) =>
+                {
                     let args = self.parse_call_args()?;
                     Ok(ExprAst::FunctionCall {
                         name: name.to_string(),
@@ -863,7 +991,10 @@ fn attach_field(expr: ExprAst, name: String) -> ExprAst {
             path.push(PathSegment::Field(name));
             ExprAst::JsonPath(path)
         }
-        ExprAst::NodeLookup { node_name, mut path } => {
+        ExprAst::NodeLookup {
+            node_name,
+            mut path,
+        } => {
             path.push(PathSegment::Field(name));
             ExprAst::NodeLookup { node_name, path }
         }
@@ -890,7 +1021,13 @@ fn attach_index(expr: ExprAst, index: ExprAst) -> ExprAst {
             path.push(s);
             ExprAst::JsonPath(path)
         }
-        (ExprAst::NodeLookup { node_name, mut path }, Some(s)) => {
+        (
+            ExprAst::NodeLookup {
+                node_name,
+                mut path,
+            },
+            Some(s),
+        ) => {
             path.push(s);
             ExprAst::NodeLookup { node_name, path }
         }

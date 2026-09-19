@@ -84,17 +84,18 @@ impl StandardExpressionEvaluator {
                 }),
 
             ExprAst::JsonPath(path) => {
-                let root = context
-                    .get_json()
-                    .ok_or_else(|| ExpressionError::UnresolvedReference {
-                        path: "$json".to_string(),
-                    })?;
+                let root =
+                    context
+                        .get_json()
+                        .ok_or_else(|| ExpressionError::UnresolvedReference {
+                            path: "$json".to_string(),
+                        })?;
                 navigate_path(root, path, "$json").map(RuntimeValue::Json)
             }
 
-            ExprAst::NodeLookup { node_name, path } => {
-                self.eval_node_lookup(node_name, path, context).map(RuntimeValue::Json)
-            }
+            ExprAst::NodeLookup { node_name, path } => self
+                .eval_node_lookup(node_name, path, context)
+                .map(RuntimeValue::Json),
 
             ExprAst::NodeHandle(node_name) => Ok(RuntimeValue::NodeRef(node_name.clone())),
 
@@ -118,9 +119,7 @@ impl StandardExpressionEvaluator {
                     BinaryOperator::And if !js_truthy(l_val) => {
                         Ok(RuntimeValue::Json(l_val.clone()))
                     }
-                    BinaryOperator::Or if js_truthy(l_val) => {
-                        Ok(RuntimeValue::Json(l_val.clone()))
-                    }
+                    BinaryOperator::Or if js_truthy(l_val) => Ok(RuntimeValue::Json(l_val.clone())),
                     _ => {
                         let r_val = self.eval_runtime(right, context)?;
                         let r_val = r_val.as_value()?;
@@ -151,7 +150,11 @@ impl StandardExpressionEvaluator {
                 Ok(RuntimeValue::Json(Value::String(out)))
             }
 
-            ExprAst::Ternary { cond, then_expr, else_expr } => {
+            ExprAst::Ternary {
+                cond,
+                then_expr,
+                else_expr,
+            } => {
                 let cond_val = self.eval_runtime(cond, context)?;
                 let cond_val = cond_val.as_value()?;
                 if js_truthy(cond_val) {
@@ -182,12 +185,10 @@ impl StandardExpressionEvaluator {
             ExprAst::GetProperty { object, property } => {
                 let obj = self.eval_runtime(object, context)?;
                 match obj {
-                    RuntimeValue::NodeRef(name) => {
-                        self.node_property(&name, property, context).map(RuntimeValue::Json)
-                    }
-                    RuntimeValue::Json(v) => {
-                        get_property(&v, property).map(RuntimeValue::Json)
-                    }
+                    RuntimeValue::NodeRef(name) => self
+                        .node_property(&name, property, context)
+                        .map(RuntimeValue::Json),
+                    RuntimeValue::Json(v) => get_property(&v, property).map(RuntimeValue::Json),
                 }
             }
 
@@ -239,20 +240,22 @@ impl StandardExpressionEvaluator {
         path: &[PathSegment],
         context: &dyn EvaluationContext,
     ) -> Result<Value, ExpressionError> {
-        let outputs = context
-            .get_node_output(node_name)
-            .ok_or_else(|| ExpressionError::NodeNotFound {
-                node_name: node_name.to_string(),
-            })?;
+        let outputs =
+            context
+                .get_node_output(node_name)
+                .ok_or_else(|| ExpressionError::NodeNotFound {
+                    node_name: node_name.to_string(),
+                })?;
 
         let item_idx = context.get_item_index();
-        let item = outputs.get(item_idx).or_else(|| outputs.first()).ok_or_else(|| {
-            ExpressionError::IndexOutOfBounds {
+        let item = outputs
+            .get(item_idx)
+            .or_else(|| outputs.first())
+            .ok_or_else(|| ExpressionError::IndexOutOfBounds {
                 node_name: node_name.to_string(),
                 index: item_idx,
                 total: outputs.len(),
-            }
-        })?;
+            })?;
 
         // Skip a leading `json` segment (`$node['X'].json.field`).
         let effective_path = if let Some(PathSegment::Field(f)) = path.first() {
@@ -276,23 +279,24 @@ impl StandardExpressionEvaluator {
         property: &str,
         context: &dyn EvaluationContext,
     ) -> Result<Value, ExpressionError> {
-        let outputs = context
-            .get_node_output(node_name)
-            .ok_or_else(|| ExpressionError::NodeNotFound {
-                node_name: node_name.to_string(),
-            })?;
+        let outputs =
+            context
+                .get_node_output(node_name)
+                .ok_or_else(|| ExpressionError::NodeNotFound {
+                    node_name: node_name.to_string(),
+                })?;
 
         match property {
             "isExecuted" => Ok(Value::Bool(true)),
             "json" | "item" => {
                 let item_idx = context.get_item_index();
-                let item =
-                    outputs.get(item_idx).or_else(|| outputs.first()).ok_or_else(|| {
-                        ExpressionError::IndexOutOfBounds {
-                            node_name: node_name.to_string(),
-                            index: item_idx,
-                            total: outputs.len(),
-                        }
+                let item = outputs
+                    .get(item_idx)
+                    .or_else(|| outputs.first())
+                    .ok_or_else(|| ExpressionError::IndexOutOfBounds {
+                        node_name: node_name.to_string(),
+                        index: item_idx,
+                        total: outputs.len(),
                     })?;
                 if property == "item" {
                     Ok(item.clone())
@@ -322,11 +326,12 @@ impl StandardExpressionEvaluator {
         args: &[Value],
         context: &dyn EvaluationContext,
     ) -> Result<Value, ExpressionError> {
-        let outputs = context
-            .get_node_output(node_name)
-            .ok_or_else(|| ExpressionError::NodeNotFound {
-                node_name: node_name.to_string(),
-            })?;
+        let outputs =
+            context
+                .get_node_output(node_name)
+                .ok_or_else(|| ExpressionError::NodeNotFound {
+                    node_name: node_name.to_string(),
+                })?;
 
         if !args.is_empty() {
             return Err(ExpressionError::TypeError {
@@ -336,16 +341,22 @@ impl StandardExpressionEvaluator {
         }
 
         match method {
-            "first" => outputs.first().cloned().ok_or(ExpressionError::IndexOutOfBounds {
-                node_name: node_name.to_string(),
-                index: 0,
-                total: 0,
-            }),
-            "last" => outputs.last().cloned().ok_or(ExpressionError::IndexOutOfBounds {
-                node_name: node_name.to_string(),
-                index: 0,
-                total: 0,
-            }),
+            "first" => outputs
+                .first()
+                .cloned()
+                .ok_or(ExpressionError::IndexOutOfBounds {
+                    node_name: node_name.to_string(),
+                    index: 0,
+                    total: 0,
+                }),
+            "last" => outputs
+                .last()
+                .cloned()
+                .ok_or(ExpressionError::IndexOutOfBounds {
+                    node_name: node_name.to_string(),
+                    index: 0,
+                    total: 0,
+                }),
             "all" => Ok(Value::Array(outputs.to_vec())),
             other => Err(ExpressionError::TypeError {
                 expected: format!("known method on node handle $('{node_name}')"),
@@ -377,15 +388,14 @@ impl ExpressionEvaluator for StandardExpressionEvaluator {
 /// `.property` on a resolved JSON value (generic, non-path expressions).
 fn get_property(value: &Value, property: &str) -> Result<Value, ExpressionError> {
     match value {
-        Value::Object(map) => map
-            .get(property)
-            .cloned()
-            .ok_or_else(|| ExpressionError::UnresolvedReference {
-                path: format!(".{property}"),
-            }),
-        Value::Array(arr) if property == "length" => {
-            Ok(Value::Number((arr.len() as i64).into()))
+        Value::Object(map) => {
+            map.get(property)
+                .cloned()
+                .ok_or_else(|| ExpressionError::UnresolvedReference {
+                    path: format!(".{property}"),
+                })
         }
+        Value::Array(arr) if property == "length" => Ok(Value::Number((arr.len() as i64).into())),
         Value::String(s) if property == "length" => {
             Ok(Value::Number((s.encode_utf16().count() as i64).into()))
         }
@@ -399,9 +409,11 @@ fn get_property(value: &Value, property: &str) -> Result<Value, ExpressionError>
 fn get_index(value: &Value, index: &Value) -> Result<Value, ExpressionError> {
     match (value, index) {
         (Value::Array(arr), Value::Number(n)) => {
-            let idx = n.as_u64().ok_or_else(|| ExpressionError::UnresolvedReference {
-                path: format!("[{n}]"),
-            })? as usize;
+            let idx = n
+                .as_u64()
+                .ok_or_else(|| ExpressionError::UnresolvedReference {
+                    path: format!("[{n}]"),
+                })? as usize;
             arr.get(idx)
                 .cloned()
                 .ok_or_else(|| ExpressionError::UnresolvedReference {
@@ -416,9 +428,11 @@ fn get_index(value: &Value, index: &Value) -> Result<Value, ExpressionError> {
                 })
         }
         (Value::String(s), Value::Number(n)) => {
-            let idx = n.as_u64().ok_or_else(|| ExpressionError::UnresolvedReference {
-                path: format!("[{n}]"),
-            })? as usize;
+            let idx = n
+                .as_u64()
+                .ok_or_else(|| ExpressionError::UnresolvedReference {
+                    path: format!("[{n}]"),
+                })? as usize;
             s.chars()
                 .nth(idx)
                 .map(|c| Value::String(c.to_string()))
@@ -483,11 +497,11 @@ fn navigate_path(
                 traversed.push_str(&format!(".{f}"));
                 match current {
                     Value::Object(map) => {
-                        current = map.get(f).ok_or_else(|| {
-                            ExpressionError::UnresolvedReference {
-                                path: traversed.clone(),
-                            }
-                        })?;
+                        current =
+                            map.get(f)
+                                .ok_or_else(|| ExpressionError::UnresolvedReference {
+                                    path: traversed.clone(),
+                                })?;
                     }
                     // JS surface: `.length` is available on arrays and
                     // strings even through plain property access.
@@ -508,11 +522,11 @@ fn navigate_path(
                 traversed.push_str(&format!("[{idx}]"));
                 match current {
                     Value::Array(arr) => {
-                        current = arr.get(*idx).ok_or_else(|| {
-                            ExpressionError::UnresolvedReference {
-                                path: traversed.clone(),
-                            }
-                        })?;
+                        current =
+                            arr.get(*idx)
+                                .ok_or_else(|| ExpressionError::UnresolvedReference {
+                                    path: traversed.clone(),
+                                })?;
                     }
                     Value::String(s) => {
                         let ch = s.chars().nth(*idx).ok_or_else(|| {

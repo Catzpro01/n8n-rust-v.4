@@ -90,18 +90,22 @@ fn f64_to_value(f: f64) -> Result<Value, ExpressionError> {
     if f.is_nan() || f.is_infinite() {
         return Err(ExpressionError::TypeError {
             expected: "finite number".into(),
-            actual: if f.is_nan() { "NaN".into() } else { "Infinity".into() },
+            actual: if f.is_nan() {
+                "NaN".into()
+            } else {
+                "Infinity".into()
+            },
         });
     }
     if f.fract() == 0.0 && f >= i64::MIN as f64 && f <= i64::MAX as f64 {
         Ok(Value::Number((f as i64).into()))
     } else {
-        serde_json::Number::from_f64(f).map(Value::Number).ok_or_else(|| {
-            ExpressionError::TypeError {
+        serde_json::Number::from_f64(f)
+            .map(Value::Number)
+            .ok_or_else(|| ExpressionError::TypeError {
                 expected: "finite float".into(),
                 actual: format!("{f}"),
-            }
-        })
+            })
     }
 }
 
@@ -142,7 +146,10 @@ fn arg_f64(name: &str, args: &[Value], idx: usize) -> Result<f64, ExpressionErro
         .and_then(as_f64)
         .ok_or_else(|| ExpressionError::TypeError {
             expected: format!("number argument {idx} for method '{name}'"),
-            actual: args.get(idx).map(js_stringify).unwrap_or_else(|| "<missing>".into()),
+            actual: args
+                .get(idx)
+                .map(js_stringify)
+                .unwrap_or_else(|| "<missing>".into()),
         })
 }
 
@@ -233,13 +240,13 @@ fn call_string_method(s: &str, name: &str, args: &[Value]) -> Result<Value, Expr
         "split" => {
             let out: Vec<Value> = match args.first() {
                 None => vec![Value::String(s.to_string())],
-                Some(Value::String(sep)) if sep.is_empty() => s
-                    .chars()
-                    .map(|c| Value::String(c.to_string()))
-                    .collect(),
-                Some(Value::String(sep)) => {
-                    s.split(sep.as_str()).map(|p| Value::String(p.to_string())).collect()
+                Some(Value::String(sep)) if sep.is_empty() => {
+                    s.chars().map(|c| Value::String(c.to_string())).collect()
                 }
+                Some(Value::String(sep)) => s
+                    .split(sep.as_str())
+                    .map(|p| Value::String(p.to_string()))
+                    .collect(),
                 Some(other) => {
                     return Err(ExpressionError::TypeError {
                         expected: "string separator for method 'split'".into(),
@@ -278,17 +285,23 @@ fn call_string_method(s: &str, name: &str, args: &[Value]) -> Result<Value, Expr
             let len = chars.len();
             let start = match args.first() {
                 None => 0,
-                Some(v) => slice_index(as_f64(v).ok_or_else(|| ExpressionError::TypeError {
-                    expected: "number start index for method 'slice'".into(),
-                    actual: js_stringify(v),
-                })? as i64, len),
+                Some(v) => slice_index(
+                    as_f64(v).ok_or_else(|| ExpressionError::TypeError {
+                        expected: "number start index for method 'slice'".into(),
+                        actual: js_stringify(v),
+                    })? as i64,
+                    len,
+                ),
             };
             let end = match args.get(1) {
                 None => len,
-                Some(v) => slice_index(as_f64(v).ok_or_else(|| ExpressionError::TypeError {
-                    expected: "number end index for method 'slice'".into(),
-                    actual: js_stringify(v),
-                })? as i64, len),
+                Some(v) => slice_index(
+                    as_f64(v).ok_or_else(|| ExpressionError::TypeError {
+                        expected: "number end index for method 'slice'".into(),
+                        actual: js_stringify(v),
+                    })? as i64,
+                    len,
+                ),
             };
             let out: String = if start >= end {
                 String::new()
@@ -448,17 +461,23 @@ fn call_array_method(arr: &[Value], name: &str, args: &[Value]) -> Result<Value,
             let len = arr.len();
             let start = match args.first() {
                 None => 0,
-                Some(v) => slice_index(as_f64(v).ok_or_else(|| ExpressionError::TypeError {
-                    expected: "number start index for method 'slice'".into(),
-                    actual: js_stringify(v),
-                })? as i64, len),
+                Some(v) => slice_index(
+                    as_f64(v).ok_or_else(|| ExpressionError::TypeError {
+                        expected: "number start index for method 'slice'".into(),
+                        actual: js_stringify(v),
+                    })? as i64,
+                    len,
+                ),
             };
             let end = match args.get(1) {
                 None => len,
-                Some(v) => slice_index(as_f64(v).ok_or_else(|| ExpressionError::TypeError {
-                    expected: "number end index for method 'slice'".into(),
-                    actual: js_stringify(v),
-                })? as i64, len),
+                Some(v) => slice_index(
+                    as_f64(v).ok_or_else(|| ExpressionError::TypeError {
+                        expected: "number end index for method 'slice'".into(),
+                        actual: js_stringify(v),
+                    })? as i64,
+                    len,
+                ),
             };
             if start >= end {
                 Ok(Value::Array(vec![]))
@@ -478,13 +497,19 @@ fn call_array_method(arr: &[Value], name: &str, args: &[Value]) -> Result<Value,
                 }
             };
             Ok(Value::String(
-                arr.iter().map(js_array_element_string).collect::<Vec<_>>().join(&sep),
+                arr.iter()
+                    .map(js_array_element_string)
+                    .collect::<Vec<_>>()
+                    .join(&sep),
             ))
         }
         "push" => {
             // Immutable runtime: returns a NEW array with the element
             // appended (upstream JS mutates and returns the new length).
-            let item = args.first().cloned().ok_or_else(|| arity_error(name, "1 argument", 0))?;
+            let item = args
+                .first()
+                .cloned()
+                .ok_or_else(|| arity_error(name, "1 argument", 0))?;
             let mut out = arr.to_vec();
             out.push(item);
             Ok(Value::Array(out))
@@ -512,10 +537,8 @@ fn call_array_method(arr: &[Value], name: &str, args: &[Value]) -> Result<Value,
         }
         "sort" => {
             // JS default sort orders by string comparison of elements.
-            let mut keyed: Vec<(String, Value)> = arr
-                .iter()
-                .map(|v| (js_stringify(v), v.clone()))
-                .collect();
+            let mut keyed: Vec<(String, Value)> =
+                arr.iter().map(|v| (js_stringify(v), v.clone())).collect();
             keyed.sort_by(|a, b| a.0.cmp(&b.0));
             let mut out: Vec<Value> = keyed.into_iter().map(|(_, v)| v).collect();
             match args.first() {
@@ -548,11 +571,15 @@ fn call_array_method(arr: &[Value], name: &str, args: &[Value]) -> Result<Value,
             Ok(Value::Array(out))
         }
         "contains" => {
-            let needle = args.first().ok_or_else(|| arity_error(name, "1 argument", 0))?;
+            let needle = args
+                .first()
+                .ok_or_else(|| arity_error(name, "1 argument", 0))?;
             Ok(Value::Bool(arr.contains(needle)))
         }
         "indexOf" => {
-            let needle = args.first().ok_or_else(|| arity_error(name, "1 argument", 0))?;
+            let needle = args
+                .first()
+                .ok_or_else(|| arity_error(name, "1 argument", 0))?;
             match arr.iter().position(|v| v == needle) {
                 Some(i) => Ok(Value::Number((i as i64).into())),
                 None => Ok(Value::Number((-1).into())),
@@ -619,7 +646,10 @@ fn call_array_method(arr: &[Value], name: &str, args: &[Value]) -> Result<Value,
         "compact" => {
             no_args(name)?;
             Ok(Value::Array(
-                arr.iter().filter(|v| !matches!(v, Value::Null)).cloned().collect(),
+                arr.iter()
+                    .filter(|v| !matches!(v, Value::Null))
+                    .cloned()
+                    .collect(),
             ))
         }
         other => Err(unknown_method("array", other)),
@@ -858,7 +888,10 @@ fn percent_decode(s: &str) -> String {
 
 /// Returns `true` when `name` is a callable extended function.
 pub fn is_extended_function(name: &str) -> bool {
-    matches!(name, "$if" | "$min" | "$max" | "$average" | "$avg" | "$not" | "$ifEmpty")
+    matches!(
+        name,
+        "$if" | "$min" | "$max" | "$average" | "$avg" | "$not" | "$ifEmpty"
+    )
 }
 
 /// Evaluates an n8n extended function against already-evaluated arguments.
@@ -867,9 +900,17 @@ pub fn eval_extended_function(name: &str, args: &[Value]) -> Result<Value, Expre
     match name {
         "$if" => {
             if args.len() != 3 {
-                return Err(arity_error(name, "3 arguments (condition, whenTrue, whenFalse)", args.len()));
+                return Err(arity_error(
+                    name,
+                    "3 arguments (condition, whenTrue, whenFalse)",
+                    args.len(),
+                ));
             }
-            Ok(if js_truthy(&args[0]) { args[1].clone() } else { args[2].clone() })
+            Ok(if js_truthy(&args[0]) {
+                args[1].clone()
+            } else {
+                args[2].clone()
+            })
         }
         "$not" => {
             if args.len() != 1 {
@@ -879,9 +920,17 @@ pub fn eval_extended_function(name: &str, args: &[Value]) -> Result<Value, Expre
         }
         "$ifEmpty" => {
             if args.len() != 2 {
-                return Err(arity_error(name, "2 arguments (value, fallback)", args.len()));
+                return Err(arity_error(
+                    name,
+                    "2 arguments (value, fallback)",
+                    args.len(),
+                ));
             }
-            Ok(if is_empty_value(&args[0]) { args[1].clone() } else { args[0].clone() })
+            Ok(if is_empty_value(&args[0]) {
+                args[1].clone()
+            } else {
+                args[0].clone()
+            })
         }
         "$min" | "$max" | "$average" | "$avg" => {
             let nums = collect_numbers(name, args)?;
@@ -943,28 +992,70 @@ mod tests {
         assert_eq!(call(json!("hello world"), "length", vec![]), json!(11));
         assert_eq!(call(json!(""), "isEmpty", vec![]), json!(true));
         assert_eq!(call(json!("xy"), "isNotEmpty", vec![]), json!(true));
-        assert_eq!(call(json!("a;b;;c"), "split", vec![json!(";")]), json!(["a", "b", "", "c"]));
-        assert_eq!(call(json!("abc"), "split", vec![json!("")]), json!(["a", "b", "c"]));
-        assert_eq!(call(json!("hello"), "contains", vec![json!("ell")]), json!(true));
-        assert_eq!(call(json!("hello"), "startsWith", vec![json!("he")]), json!(true));
-        assert_eq!(call(json!("hello"), "endsWith", vec![json!("lo")]), json!(true));
-        assert_eq!(call(json!("aaa"), "replace", vec![json!("a"), json!("b")]), json!("baa"));
-        assert_eq!(call(json!("aaa"), "replaceAll", vec![json!("a"), json!("b")]), json!("bbb"));
-        assert_eq!(call(json!("hello"), "slice", vec![json!(1), json!(3)]), json!("el"));
+        assert_eq!(
+            call(json!("a;b;;c"), "split", vec![json!(";")]),
+            json!(["a", "b", "", "c"])
+        );
+        assert_eq!(
+            call(json!("abc"), "split", vec![json!("")]),
+            json!(["a", "b", "c"])
+        );
+        assert_eq!(
+            call(json!("hello"), "contains", vec![json!("ell")]),
+            json!(true)
+        );
+        assert_eq!(
+            call(json!("hello"), "startsWith", vec![json!("he")]),
+            json!(true)
+        );
+        assert_eq!(
+            call(json!("hello"), "endsWith", vec![json!("lo")]),
+            json!(true)
+        );
+        assert_eq!(
+            call(json!("aaa"), "replace", vec![json!("a"), json!("b")]),
+            json!("baa")
+        );
+        assert_eq!(
+            call(json!("aaa"), "replaceAll", vec![json!("a"), json!("b")]),
+            json!("bbb")
+        );
+        assert_eq!(
+            call(json!("hello"), "slice", vec![json!(1), json!(3)]),
+            json!("el")
+        );
         assert_eq!(call(json!("hello"), "slice", vec![json!(-2)]), json!("lo"));
-        assert_eq!(call(json!("hello"), "substring", vec![json!(3), json!(1)]), json!("el"));
+        assert_eq!(
+            call(json!("hello"), "substring", vec![json!(3), json!(1)]),
+            json!("el")
+        );
         assert_eq!(call(json!("hello"), "charAt", vec![json!(1)]), json!("e"));
         assert_eq!(call(json!("hello"), "charAt", vec![json!(99)]), json!(""));
-        assert_eq!(call(json!("hello world"), "indexOf", vec![json!("o")]), json!(4));
+        assert_eq!(
+            call(json!("hello world"), "indexOf", vec![json!("o")]),
+            json!(4)
+        );
         assert_eq!(call(json!("hello"), "indexOf", vec![json!("z")]), json!(-1));
-        assert_eq!(call(json!("5"), "padStart", vec![json!(3), json!("0")]), json!("005"));
-        assert_eq!(call(json!("5"), "padEnd", vec![json!(3), json!("0")]), json!("500"));
+        assert_eq!(
+            call(json!("5"), "padStart", vec![json!(3), json!("0")]),
+            json!("005")
+        );
+        assert_eq!(
+            call(json!("5"), "padEnd", vec![json!(3), json!("0")]),
+            json!("500")
+        );
         assert_eq!(call(json!("ab"), "repeat", vec![json!(3)]), json!("ababab"));
         assert_eq!(call(json!("42"), "toNumber", vec![]), json!(42));
         assert_eq!(call(json!("true"), "toBoolean", vec![]), json!(true));
         assert_eq!(call(json!("anything"), "toBoolean", vec![]), json!(false));
-        assert_eq!(call(json!("a b&c"), "urlEncode", vec![]), json!("a%20b%26c"));
-        assert_eq!(call(json!("a%20b%26c"), "urlDecode", vec![]), json!("a b&c"));
+        assert_eq!(
+            call(json!("a b&c"), "urlEncode", vec![]),
+            json!("a%20b%26c")
+        );
+        assert_eq!(
+            call(json!("a%20b%26c"), "urlDecode", vec![]),
+            json!("a b&c")
+        );
     }
 
     #[test]
@@ -980,18 +1071,40 @@ mod tests {
         assert_eq!(call(arr.clone(), "min", vec![]), json!(1));
         assert_eq!(call(arr.clone(), "max", vec![]), json!(3));
         assert_eq!(call(arr.clone(), "join", vec![json!("-")]), json!("3-1-2"));
-        assert_eq!(call(json!([1, 2, 2, 3, 1]), "unique", vec![]), json!([1, 2, 3]));
-        assert_eq!(call(json!([1, 2]), "push", vec![json!(3)]), json!([1, 2, 3]));
-        assert_eq!(call(json!([1]), "concat", vec![json!([2, 3])]), json!([1, 2, 3]));
-        assert_eq!(call(json!([1, null, 2, null]), "compact", vec![]), json!([1, 2]));
         assert_eq!(
-            call(json!([{"id": 1}, {"id": 2}, {"x": 0}]), "pluck", vec![json!("id")]),
+            call(json!([1, 2, 2, 3, 1]), "unique", vec![]),
+            json!([1, 2, 3])
+        );
+        assert_eq!(
+            call(json!([1, 2]), "push", vec![json!(3)]),
+            json!([1, 2, 3])
+        );
+        assert_eq!(
+            call(json!([1]), "concat", vec![json!([2, 3])]),
+            json!([1, 2, 3])
+        );
+        assert_eq!(
+            call(json!([1, null, 2, null]), "compact", vec![]),
+            json!([1, 2])
+        );
+        assert_eq!(
+            call(
+                json!([{"id": 1}, {"id": 2}, {"x": 0}]),
+                "pluck",
+                vec![json!("id")]
+            ),
             json!([1, 2, null])
         );
         // JS default sort is lexicographic on stringified elements.
         assert_eq!(call(json!([10, 9, 1]), "sort", vec![]), json!([1, 10, 9]));
-        assert_eq!(call(json!([1, 2, 3]), "contains", vec![json!(2)]), json!(true));
-        assert_eq!(call(json!(["a", "b"]), "indexOf", vec![json!("b")]), json!(1));
+        assert_eq!(
+            call(json!([1, 2, 3]), "contains", vec![json!(2)]),
+            json!(true)
+        );
+        assert_eq!(
+            call(json!(["a", "b"]), "indexOf", vec![json!("b")]),
+            json!(1)
+        );
     }
 
     #[test]
@@ -1016,7 +1129,10 @@ mod tests {
     fn object_and_null_extensions() {
         assert_eq!(call(json!({}), "isEmpty", vec![]), json!(true));
         assert_eq!(call(json!({"a": 1}), "length", vec![]), json!(1));
-        assert_eq!(call(json!({"a": 1}), "toString", vec![]), json!("[object Object]"));
+        assert_eq!(
+            call(json!({"a": 1}), "toString", vec![]),
+            json!("[object Object]")
+        );
         assert_eq!(call(Value::Null, "isEmpty", vec![]), json!(true));
         assert_eq!(call(Value::Null, "isNotEmpty", vec![]), json!(false));
     }
@@ -1044,10 +1160,22 @@ mod tests {
             eval_extended_function("$if", &[json!(0), json!("y"), json!("n")]).unwrap(),
             json!("n")
         );
-        assert_eq!(eval_extended_function("$min", &[json!(4), json!(2), json!(9)]).unwrap(), json!(2));
-        assert_eq!(eval_extended_function("$max", &[json!([4, 2, 9])]).unwrap(), json!(9));
-        assert_eq!(eval_extended_function("$average", &[json!([2, 4])]).unwrap(), json!(3));
-        assert_eq!(eval_extended_function("$not", &[json!(false)]).unwrap(), json!(true));
+        assert_eq!(
+            eval_extended_function("$min", &[json!(4), json!(2), json!(9)]).unwrap(),
+            json!(2)
+        );
+        assert_eq!(
+            eval_extended_function("$max", &[json!([4, 2, 9])]).unwrap(),
+            json!(9)
+        );
+        assert_eq!(
+            eval_extended_function("$average", &[json!([2, 4])]).unwrap(),
+            json!(3)
+        );
+        assert_eq!(
+            eval_extended_function("$not", &[json!(false)]).unwrap(),
+            json!(true)
+        );
         assert_eq!(
             eval_extended_function("$ifEmpty", &[json!(""), json!("fallback")]).unwrap(),
             json!("fallback")
@@ -1067,6 +1195,9 @@ mod tests {
         assert_eq!(js_stringify(&json!(45)), "45");
         assert_eq!(js_stringify(&json!(2.6)), "2.6");
         assert_eq!(js_stringify(&json!({"a": 1})), "[object Object]");
-        assert_eq!(js_stringify(&json!([1, "a", null, {"x": 1}])), "1,a,,[object Object]");
+        assert_eq!(
+            js_stringify(&json!([1, "a", null, {"x": 1}])),
+            "1,a,,[object Object]"
+        );
     }
 }

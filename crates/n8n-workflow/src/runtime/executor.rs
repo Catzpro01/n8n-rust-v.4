@@ -8,9 +8,9 @@ use n8n_node_model::NodeTypeDescription;
 pub trait NodeExecutor: Send + Sync {
     fn name(&self) -> &str;
     fn description(&self) -> NodeTypeDescription;
-    async fn execute<'a>(
+    async fn execute(
         &self,
-        ctx: &'a ExecutionContext,
-        frame: &'a mut ExecutionFrame<'a>,
+        ctx: &ExecutionContext,
+        frame: &mut ExecutionFrame<'_>,
     ) -> Result<(), ExecutionError>;
 }

@@ -59,7 +59,9 @@ pub fn detect_cycles(
             for slot in list {
                 if let Some(items) = slot {
                     for item in items {
-                        adj.entry(src.as_str()).or_default().push(item.node.as_str());
+                        adj.entry(src.as_str())
+                            .or_default()
+                            .push(item.node.as_str());
                     }
                 }
             }
@@ -131,19 +133,25 @@ mod tests {
         let nodes = vec!["A".to_string(), "B".to_string(), "C".to_string()];
         let mut conns = WorkflowConnections::new();
         let mut a_outs = IndexMap::new();
-        a_outs.insert("main".into(), vec![Some(vec![n8n_connection::ConnectionItem {
-            node: "B".into(),
-            connection_type: "main".into(),
-            index: 0,
-        }])]);
+        a_outs.insert(
+            "main".into(),
+            vec![Some(vec![n8n_connection::ConnectionItem {
+                node: "B".into(),
+                connection_type: "main".into(),
+                index: 0,
+            }])],
+        );
         conns.insert("A".into(), a_outs);
 
         let mut b_outs = IndexMap::new();
-        b_outs.insert("main".into(), vec![Some(vec![n8n_connection::ConnectionItem {
-            node: "C".into(),
-            connection_type: "main".into(),
-            index: 0,
-        }])]);
+        b_outs.insert(
+            "main".into(),
+            vec![Some(vec![n8n_connection::ConnectionItem {
+                node: "C".into(),
+                connection_type: "main".into(),
+                index: 0,
+            }])],
+        );
         conns.insert("B".into(), b_outs);
 
         assert!(detect_cycles(&nodes, &conns).is_ok());
@@ -153,21 +161,27 @@ mod tests {
     fn test_cycle_detection_fail() {
         let nodes = vec!["A".to_string(), "B".to_string()];
         let mut conns = WorkflowConnections::new();
-        
+
         let mut a_outs = IndexMap::new();
-        a_outs.insert("main".into(), vec![Some(vec![n8n_connection::ConnectionItem {
-            node: "B".into(),
-            connection_type: "main".into(),
-            index: 0,
-        }])]);
+        a_outs.insert(
+            "main".into(),
+            vec![Some(vec![n8n_connection::ConnectionItem {
+                node: "B".into(),
+                connection_type: "main".into(),
+                index: 0,
+            }])],
+        );
         conns.insert("A".into(), a_outs);
 
         let mut b_outs = IndexMap::new();
-        b_outs.insert("main".into(), vec![Some(vec![n8n_connection::ConnectionItem {
-            node: "A".into(),
-            connection_type: "main".into(),
-            index: 0,
-        }])]);
+        b_outs.insert(
+            "main".into(),
+            vec![Some(vec![n8n_connection::ConnectionItem {
+                node: "A".into(),
+                connection_type: "main".into(),
+                index: 0,
+            }])],
+        );
         conns.insert("B".into(), b_outs);
 
         assert!(detect_cycles(&nodes, &conns).is_err());

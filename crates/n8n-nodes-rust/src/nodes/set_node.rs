@@ -1,4 +1,6 @@
-use crate::traits::{INodeExecutionData, N8nNode, NodeExecutionContext, NodeExecutionError, NodeTypeDescription};
+use crate::traits::{
+    INodeExecutionData, N8nNode, NodeExecutionContext, NodeExecutionError, NodeTypeDescription,
+};
 use async_trait::async_trait;
 use serde_json::json;
 
@@ -24,7 +26,11 @@ impl N8nNode for SetNode {
         input_data: Vec<INodeExecutionData>,
     ) -> Result<Vec<Vec<INodeExecutionData>>, NodeExecutionError> {
         let mut output_items = Vec::with_capacity(input_data.len());
-        let assignments = context.parameters.get("values").cloned().unwrap_or(json!({}));
+        let assignments = context
+            .parameters
+            .get("values")
+            .cloned()
+            .unwrap_or(json!({}));
 
         for mut item in input_data {
             if let Some(obj) = item.json.as_object_mut() {

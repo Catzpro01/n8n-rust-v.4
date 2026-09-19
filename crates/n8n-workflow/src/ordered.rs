@@ -23,7 +23,9 @@ pub struct OrderedMap<V> {
 
 impl<V> OrderedMap<V> {
     pub fn new() -> Self {
-        Self { entries: Vec::new() }
+        Self {
+            entries: Vec::new(),
+        }
     }
 
     pub fn len(&self) -> usize {

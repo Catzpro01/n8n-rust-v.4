@@ -9,8 +9,8 @@
 use n8n_common::INodeExecutionData;
 use n8n_workflow::{
     ActivationMode, ActivationPolicy, ActivationStatus, Connections, ExecutionMode,
-    ExecutionSource, InMemoryPollScheduler, INode, NodeTypeCapabilities, PollRunner,
-    StaticNodeTypeRegistry, TriggerActivationManager, TriggerRunner, TriggerResponse, Workflow,
+    ExecutionSource, INode, InMemoryPollScheduler, NodeTypeCapabilities, PollRunner,
+    StaticNodeTypeRegistry, TriggerActivationManager, TriggerResponse, TriggerRunner, Workflow,
     NO_TRIGGER_NODE_ERROR,
 };
 use serde_json::{json, Value};
@@ -79,7 +79,10 @@ impl TriggerRunner for ScheduleTriggerRunner {
         activation: ActivationMode,
     ) -> Result<Option<TriggerResponse>, String> {
         // The activation mode is what the trigger node sees (threaded through by the manager).
-        assert!(matches!(activation, ActivationMode::Activate | ActivationMode::Init));
+        assert!(matches!(
+            activation,
+            ActivationMode::Activate | ActivationMode::Init
+        ));
         assert_eq!(mode, ExecutionMode::Trigger);
         let closed = Arc::clone(&self.closed);
         Ok(Some(
@@ -176,7 +179,10 @@ fn trigger_scheduler_golden_replays_against_the_rust_lifecycle() {
         .expect("activation succeeds");
     assert_eq!(outcome.status, ActivationStatus::Activated);
     // `countTriggers(...)` → `updateWorkflowTriggerCount`: exactly the golden's triggerCount.
-    assert_eq!(outcome.trigger_count, activate["triggerCount"].as_u64().unwrap() as usize);
+    assert_eq!(
+        outcome.trigger_count,
+        activate["triggerCount"].as_u64().unwrap() as usize
+    );
     assert_eq!(outcome.triggers, 1);
     assert!(manager.is_active(WORKFLOW_ID));
 
@@ -184,7 +190,9 @@ fn trigger_scheduler_golden_replays_against_the_rust_lifecycle() {
     let list = &cases["activeWorkflowsList"]["expected"];
     assert_eq!(list["status"], json!(200));
     assert!(list["containsId"].as_bool().unwrap());
-    assert!(manager.all_active_workflows().contains(&WORKFLOW_ID.to_string()));
+    assert!(manager
+        .all_active_workflows()
+        .contains(&WORKFLOW_ID.to_string()));
 
     // --- POST /activate again ------------------------------------------------------------
     let again = &cases["activateAlreadyActive"]["expected"];
@@ -245,13 +253,18 @@ fn trigger_scheduler_golden_replays_against_the_rust_lifecycle() {
     assert_eq!(inactive["status"], json!(200));
     assert_eq!(inactive["body"]["active"], json!(false));
     let repeat = manager.remove(WORKFLOW_ID);
-    assert!(!repeat.removed, "already inactive → still HTTP 200 for the caller");
+    assert!(
+        !repeat.removed,
+        "already inactive → still HTTP 200 for the caller"
+    );
     assert!(!repeat.warnings.is_empty(), "the reference logs a warning");
 
     // --- GET /rest/active-workflows (after deactivate) -----------------------------------
     let after = &cases["activeWorkflowsAfterDeactivate"]["expected"];
     assert_eq!(after["containsId"], json!(false));
-    assert!(!manager.all_active_workflows().contains(&WORKFLOW_ID.to_string()));
+    assert!(!manager
+        .all_active_workflows()
+        .contains(&WORKFLOW_ID.to_string()));
 }
 
 #[test]

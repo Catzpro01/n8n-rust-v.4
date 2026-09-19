@@ -31,11 +31,11 @@
 pub mod checksum;
 pub mod connections;
 pub mod diff;
+pub mod graph;
 pub mod ordered;
 pub mod rename;
-pub mod traversal;
 pub mod runtime;
-pub mod graph;
+pub mod traversal;
 pub mod trigger;
 
 pub use checksum::calculate_workflow_checksum;
@@ -43,24 +43,24 @@ pub use connections::{
     map_connections_by_destination, Connection, Connections, NodeOutputs, OutputLists,
 };
 pub use diff::{compare_connections, ConnectionsDiff};
+pub use graph::{
+    detect_cycles, evaluate_node_parameters, extract_expressions, find_orphan_nodes, is_reachable,
+    validate_dag, GraphValidationError,
+};
 pub use n8n_common::IDataObject;
 pub use n8n_node_model::{INode, INodeParameters};
 pub use ordered::OrderedMap;
 pub use rename::{is_restricted_node_name, WorkflowError};
 pub use traversal::{get_connected_nodes, ConnectionTypeFilter};
-pub use graph::{
-    detect_cycles, evaluate_node_parameters, extract_expressions, find_orphan_nodes, is_reachable,
-    validate_dag, GraphValidationError,
-};
 pub use trigger::{
-    ActivationErrorsService, ActivationMode, ActivationOutcome,
-    ActivationPolicy, ActivationReport, ActivationStatus, ActiveWorkflow, ActiveWorkflows,
-    CloseError, CloseFunction, CronContext, ErrorLevel, ExecutionMode, ExecutionRequest,
-    ExecutionSource, InMemoryPollScheduler, NodeTypeCapabilities, NodeTypeResolver, PollResponse,
-    PollRunner, PollScheduler, RemovalReport, StaticNodeTypeRegistry, TriggerActivationManager,
-    TriggerCount, TriggerError, TriggerErrorEvent, TriggerResponse, TriggerRunner,
-    WorkflowActivationError, WorkflowDeactivationError, ACTIVATION_FAILURE_PREFIX,
-    ALREADY_ACTIVE_ERROR, NO_TRIGGER_NODE_ERROR, POLLING_INTERVAL_TOO_SHORT_ERROR, STARTING_NODES,
+    ActivationErrorsService, ActivationMode, ActivationOutcome, ActivationPolicy, ActivationReport,
+    ActivationStatus, ActiveWorkflow, ActiveWorkflows, CloseError, CloseFunction, CronContext,
+    ErrorLevel, ExecutionMode, ExecutionRequest, ExecutionSource, InMemoryPollScheduler,
+    NodeTypeCapabilities, NodeTypeResolver, PollResponse, PollRunner, PollScheduler, RemovalReport,
+    StaticNodeTypeRegistry, TriggerActivationManager, TriggerCount, TriggerError,
+    TriggerErrorEvent, TriggerResponse, TriggerRunner, WorkflowActivationError,
+    WorkflowDeactivationError, ACTIVATION_FAILURE_PREFIX, ALREADY_ACTIVE_ERROR,
+    NO_TRIGGER_NODE_ERROR, POLLING_INTERVAL_TOO_SHORT_ERROR, STARTING_NODES,
     TRIGGER_COUNT_EXCLUDED_NODES,
 };
 
@@ -183,7 +183,12 @@ impl Workflow {
         self.nodes.len()
     }
 
-    pub fn get_child_nodes(&self, node_name: &str, filter: ConnectionTypeFilter, depth: i32) -> Vec<String> {
+    pub fn get_child_nodes(
+        &self,
+        node_name: &str,
+        filter: ConnectionTypeFilter,
+        depth: i32,
+    ) -> Vec<String> {
         get_connected_nodes(
             &self.connections_by_source_node,
             node_name,
@@ -194,7 +199,12 @@ impl Workflow {
     }
 
     /// Uses the **derived** destination map — which `rename_node` does not refresh (D-08).
-    pub fn get_parent_nodes(&self, node_name: &str, filter: ConnectionTypeFilter, depth: i32) -> Vec<String> {
+    pub fn get_parent_nodes(
+        &self,
+        node_name: &str,
+        filter: ConnectionTypeFilter,
+        depth: i32,
+    ) -> Vec<String> {
         get_connected_nodes(
             &self.connections_by_destination_node,
             node_name,
@@ -296,8 +306,12 @@ impl Workflow {
 
         // Update the expressions which reference the node with its old name.
         for node in self.nodes.values_mut() {
-            let parameters =
-                rename::rename_node_in_parameter_value(&node.parameters.0, current_name, new_name, false);
+            let parameters = rename::rename_node_in_parameter_value(
+                &node.parameters.0,
+                current_name,
+                new_name,
+                false,
+            );
             node.parameters = INodeParameters(parameters);
             rename::rename_node_extra_content(node, current_name, new_name);
         }
@@ -348,10 +362,16 @@ impl Workflow {
 
         Ok(Workflow::new(
             value.get("id").and_then(Value::as_str).map(str::to_string),
-            value.get("name").and_then(Value::as_str).map(str::to_string),
+            value
+                .get("name")
+                .and_then(Value::as_str)
+                .map(str::to_string),
             nodes,
             connections,
-            value.get("active").and_then(Value::as_bool).unwrap_or(false),
+            value
+                .get("active")
+                .and_then(Value::as_bool)
+                .unwrap_or(false),
             value.get("settings").cloned(),
             value.get("staticData").cloned(),
             value.get("pinData").cloned(),
@@ -471,7 +491,10 @@ mod tests {
         assert_eq!(workflow.node_count(), 1);
         let a = workflow.get_node("A").expect("A");
         assert_eq!(a.extra.get("webhookId"), Some(&json!("kept-too")));
-        assert_eq!(workflow.to_wire()["nodes"][0]["parameters"]["keep"], json!(true));
+        assert_eq!(
+            workflow.to_wire()["nodes"][0]["parameters"]["keep"],
+            json!(true)
+        );
 
         // The Phase-3 skeleton deserialised `nodes` as a map; n8n wires an array.
         let bad = json!({"nodes": {"A": {"id": "id-A", "name": "A"}}});

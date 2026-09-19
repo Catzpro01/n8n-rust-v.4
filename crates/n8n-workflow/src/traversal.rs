@@ -113,7 +113,9 @@ pub fn get_connected_nodes(
                 // JS iterates the collected nodes back to front (see `for (i = addNodes.length; i--; )`)
                 // and unshifts each, removing a previous occurrence so the order stays "nearest first".
                 for parent_node_name in add_nodes.iter().rev() {
-                    if let Some(position) = return_nodes.iter().position(|name| name == parent_node_name)
+                    if let Some(position) = return_nodes
+                        .iter()
+                        .position(|name| name == parent_node_name)
                     {
                         return_nodes.remove(position);
                     }
@@ -178,7 +180,9 @@ mod tests {
     #[test]
     fn depth_limits_the_walk() {
         let graph = graph();
-        assert!(get_connected_nodes(&graph, "A", &ConnectionTypeFilter::main(), 0, None).is_empty());
+        assert!(
+            get_connected_nodes(&graph, "A", &ConnectionTypeFilter::main(), 0, None).is_empty()
+        );
         assert_eq!(
             get_connected_nodes(&graph, "A", &ConnectionTypeFilter::main(), 1, None),
             vec!["B"]
@@ -205,7 +209,9 @@ mod tests {
     #[test]
     fn leaf_and_unknown_nodes_return_nothing() {
         let graph = graph();
-        assert!(get_connected_nodes(&graph, "D", &ConnectionTypeFilter::main(), -1, None).is_empty());
+        assert!(
+            get_connected_nodes(&graph, "D", &ConnectionTypeFilter::main(), -1, None).is_empty()
+        );
         assert!(
             get_connected_nodes(&graph, "ZZZ", &ConnectionTypeFilter::main(), -1, None).is_empty()
         );

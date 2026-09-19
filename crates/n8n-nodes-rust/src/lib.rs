@@ -24,8 +24,13 @@ mod tests {
             parameters: params,
         };
 
-        let input = vec![INodeExecutionData::from_json(json!({"id": 100, "name": "Item A"}))];
-        let result = node.execute(&ctx, input).await.expect("Execution should succeed");
+        let input = vec![INodeExecutionData::from_json(
+            json!({"id": 100, "name": "Item A"}),
+        )];
+        let result = node
+            .execute(&ctx, input)
+            .await
+            .expect("Execution should succeed");
 
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].len(), 1);
@@ -52,7 +57,10 @@ mod tests {
             INodeExecutionData::from_json(json!({"id": 3, "passed": true})),
         ];
 
-        let result = node.execute(&ctx, input).await.expect("Execution should succeed");
+        let result = node
+            .execute(&ctx, input)
+            .await
+            .expect("Execution should succeed");
         assert_eq!(result.len(), 2);
         assert_eq!(result[0].len(), 2); // true: id 1 and 3
         assert_eq!(result[1].len(), 1); // false: id 2

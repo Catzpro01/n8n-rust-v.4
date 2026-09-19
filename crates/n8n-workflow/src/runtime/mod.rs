@@ -3,12 +3,19 @@ pub mod error;
 pub mod executor;
 pub mod frame;
 pub mod ir;
+pub mod runner;
 
-pub use context::{CredentialsProvider, ExecutionContext, InMemoryCredentialsProvider, MemoryBudget};
+pub use context::{
+    CredentialsProvider, ExecutionContext, InMemoryCredentialsProvider, MemoryBudget,
+};
 pub use error::ExecutionError;
 pub use executor::NodeExecutor;
 pub use frame::ExecutionFrame;
 pub use ir::{NodeIndex, PortIndex, RuntimeEdge, RuntimeGraph, RuntimeNode};
+pub use runner::{
+    NodeExecutorRegistry, PassThroughExecutor, SetNodeExecutor, WorkflowExecutionResult,
+    WorkflowRunner,
+};
 
 #[cfg(test)]
 mod tests {
@@ -103,7 +110,9 @@ mod tests {
         let mut frame = ExecutionFrame::new(0, &inputs, 1);
         assert_eq!(frame.main_input().unwrap().len(), 1);
 
-        frame.push_output(0, DataRecord::new(json!({"val": 20}))).unwrap();
+        frame
+            .push_output(0, DataRecord::new(json!({"val": 20})))
+            .unwrap();
         let outputs = frame.take_outputs();
         assert_eq!(outputs.len(), 1);
         assert_eq!(outputs[0].len(), 1);
@@ -121,7 +130,10 @@ mod tests {
         assert!(res1.is_ok());
 
         // Second large item triggers MemoryBudgetExceeded backpressure
-        let res2 = frame.push_output(0, DataRecord::new(json!({"large_payload": "overflow_test_overflow_test_overflow"})));
+        let res2 = frame.push_output(
+            0,
+            DataRecord::new(json!({"large_payload": "overflow_test_overflow_test_overflow"})),
+        );
         assert!(res2.is_err());
         match res2.unwrap_err() {
             ExecutionError::MemoryBudgetExceeded { limit, attempted } => {

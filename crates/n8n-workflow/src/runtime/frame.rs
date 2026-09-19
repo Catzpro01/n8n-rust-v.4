@@ -2,6 +2,7 @@ use crate::runtime::context::MemoryBudget;
 use crate::runtime::error::ExecutionError;
 use crate::runtime::ir::NodeIndex;
 use n8n_execution_data::{DataRecord, ItemBuffer};
+use serde_json::Value;
 use std::sync::Arc;
 
 /// Dynamic execution frame passed to a node during execution with memory governor integration
@@ -12,6 +13,7 @@ pub struct ExecutionFrame<'a> {
     pub item_cursor: usize,
     pub iteration_idx: u32,
     pub memory_budget: Option<Arc<MemoryBudget>>,
+    pub parameters: Option<Arc<Value>>,
 }
 
 impl<'a> ExecutionFrame<'a> {
@@ -27,12 +29,22 @@ impl<'a> ExecutionFrame<'a> {
             item_cursor: 0,
             iteration_idx: 0,
             memory_budget: None,
+            parameters: None,
         }
     }
 
     pub fn with_memory_budget(mut self, budget: Arc<MemoryBudget>) -> Self {
         self.memory_budget = Some(budget);
         self
+    }
+
+    pub fn with_parameters(mut self, parameters: Arc<Value>) -> Self {
+        self.parameters = Some(parameters);
+        self
+    }
+
+    pub fn parameters(&self) -> Option<&Value> {
+        self.parameters.as_deref()
     }
 
     pub fn input(&self, port: usize) -> Option<&ItemBuffer> {

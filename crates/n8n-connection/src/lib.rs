@@ -83,13 +83,8 @@ fn get_connected_nodes_internal(
 
     let next_depth = if depth > 0 { depth - 1 } else { -1 };
     for next_node in &direct_nodes {
-        let mut sub_nodes = get_connected_nodes_internal(
-            connections,
-            next_node,
-            filter,
-            next_depth,
-            checked_nodes,
-        );
+        let mut sub_nodes =
+            get_connected_nodes_internal(connections, next_node, filter, next_depth, checked_nodes);
         for sub in sub_nodes.drain(..) {
             if !recursive_nodes.contains(&sub) && !direct_nodes.contains(&sub) {
                 recursive_nodes.push(sub);
@@ -241,4 +236,3 @@ mod tests {
         );
     }
 }
-

@@ -1,4 +1,6 @@
-use crate::traits::{INodeExecutionData, N8nNode, NodeExecutionContext, NodeExecutionError, NodeTypeDescription};
+use crate::traits::{
+    INodeExecutionData, N8nNode, NodeExecutionContext, NodeExecutionError, NodeTypeDescription,
+};
 use async_trait::async_trait;
 
 pub struct IfNode;

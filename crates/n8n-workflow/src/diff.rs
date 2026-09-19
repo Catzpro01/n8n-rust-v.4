@@ -39,7 +39,12 @@ pub struct ConnectionsDiff {
 
 fn collect_slot(slot: Option<&Vec<Connection>>) -> Vec<(String, DiffValue)> {
     let mut entries: Vec<(String, DiffValue)> = Vec::new();
-    for (index, connection) in slot.map(|list| list.as_slice()).unwrap_or(&[]).iter().enumerate() {
+    for (index, connection) in slot
+        .map(|list| list.as_slice())
+        .unwrap_or(&[])
+        .iter()
+        .enumerate()
+    {
         let key = serde_json::to_string(connection).unwrap_or_default();
         let value = DiffValue {
             index,
@@ -54,12 +59,7 @@ fn collect_slot(slot: Option<&Vec<Connection>>) -> Vec<(String, DiffValue)> {
     entries
 }
 
-fn push(
-    target: &mut ConnectionsDiffMap,
-    node_name: &str,
-    input_name: &str,
-    entry: DiffEntry,
-) {
+fn push(target: &mut ConnectionsDiffMap, node_name: &str, input_name: &str, entry: DiffEntry) {
     let node = target.entry_or_insert_default(node_name);
     let input = node.entry_or_insert_default(input_name);
     input.push(entry);

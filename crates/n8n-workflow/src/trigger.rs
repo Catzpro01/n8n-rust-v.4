@@ -156,7 +156,12 @@ pub struct NodeTypeCapabilities {
 }
 
 impl NodeTypeCapabilities {
-    pub fn new(description_name: impl Into<String>, trigger: bool, poll: bool, webhook: bool) -> Self {
+    pub fn new(
+        description_name: impl Into<String>,
+        trigger: bool,
+        poll: bool,
+        webhook: bool,
+    ) -> Self {
         Self {
             description_name: description_name.into(),
             trigger,
@@ -238,11 +243,7 @@ impl NodeTypeResolver for StaticNodeTypeRegistry {
 impl Workflow {
     /// Port of `queryNodes`: walk nodes in `Object.keys` order, skip `disabled === true`,
     /// skip unknown node types, keep the ones satisfying `check`.
-    pub fn query_nodes<F>(
-        &self,
-        resolver: &dyn NodeTypeResolver,
-        check: F,
-    ) -> Vec<&INode>
+    pub fn query_nodes<F>(&self, resolver: &dyn NodeTypeResolver, check: F) -> Vec<&INode>
     where
         F: Fn(&NodeTypeCapabilities) -> bool,
     {
@@ -779,7 +780,9 @@ impl ActiveWorkflows {
                 Ok(Some(response)) => trigger_responses.push(response),
                 Ok(None) => {}
                 Err(cause) => {
-                    return Err(WorkflowActivationError::activation_failed(&node.name, cause));
+                    return Err(WorkflowActivationError::activation_failed(
+                        &node.name, cause,
+                    ));
                 }
             }
         }
@@ -839,7 +842,9 @@ impl ActiveWorkflows {
                 }
                 // Both reach the caller the same way the reference wraps them: a
                 // `WorkflowActivationError` naming the node and quoting the cause.
-                return Err(WorkflowActivationError::activation_failed(&node.name, cause));
+                return Err(WorkflowActivationError::activation_failed(
+                    &node.name, cause,
+                ));
             }
 
             let timezone = workflow.get_timezone().to_string();
@@ -886,9 +891,9 @@ impl ActiveWorkflows {
         };
 
         let Some(mut entry) = self.workflows.shift_remove(workflow_id) else {
-            report
-                .warnings
-                .push(format!("Cannot deactivate already inactive workflow ID \"{workflow_id}\""));
+            report.warnings.push(format!(
+                "Cannot deactivate already inactive workflow ID \"{workflow_id}\""
+            ));
             return report;
         };
         report.removed = true;
@@ -904,11 +909,9 @@ impl ActiveWorkflows {
                     Ok(()) => report.closed_triggers += 1,
                     Err(error) => {
                         report.closed_triggers += 1;
-                        report.warnings.push(close_warning(
-                            workflow_id,
-                            &response.node,
-                            &error,
-                        ));
+                        report
+                            .warnings
+                            .push(close_warning(workflow_id, &response.node, &error));
                     }
                 }
             }
@@ -1209,8 +1212,7 @@ impl TriggerActivationManager {
         }
 
         if !workflow.has_trigger_like_node(self.resolver.as_ref()) {
-            let error = WorkflowActivationError::no_trigger_node()
-                .with_workflow_id(workflow_id);
+            let error = WorkflowActivationError::no_trigger_node().with_workflow_id(workflow_id);
             self.errors.register(workflow_id, error.message.clone());
             return Err(TriggerError::Activation(error));
         }
@@ -1236,7 +1238,8 @@ impl TriggerActivationManager {
                     .get(workflow_id)
                     .copied()
                     .unwrap_or_else(|| workflow.get_webhook_nodes(self.resolver.as_ref()).len());
-                let trigger_count = workflow.count_triggers(self.resolver.as_ref(), unique_webhooks);
+                let trigger_count =
+                    workflow.count_triggers(self.resolver.as_ref(), unique_webhooks);
 
                 Ok(ActivationOutcome {
                     workflow_id: workflow_id.to_string(),
@@ -1250,7 +1253,8 @@ impl TriggerActivationManager {
             Err(error) => {
                 self.errors.register(workflow_id, error.message.clone());
                 // Contract §7: triggers already started for this workflow are closed again.
-                self.active.remove_with_scheduler(workflow_id, self.scheduler.as_mut());
+                self.active
+                    .remove_with_scheduler(workflow_id, self.scheduler.as_mut());
                 Err(TriggerError::Activation(error))
             }
         }
@@ -1348,13 +1352,12 @@ impl TriggerActivationManager {
         };
         let (activation, mode) = (entry.activation, entry.mode);
 
-        match self
-            .poll_runner
-            .run_poll(workflow, node, mode, activation)
-        {
-            Ok(Some(data)) => Ok(self
-                .active
-                .emit(&workflow_id, &node.name, data, ExecutionSource::Poll)),
+        match self.poll_runner.run_poll(workflow, node, mode, activation) {
+            Ok(Some(data)) => {
+                Ok(self
+                    .active
+                    .emit(&workflow_id, &node.name, data, ExecutionSource::Poll))
+            }
             Ok(None) => Ok(false),
             Err(cause) => {
                 self.emit_error(&workflow_id, Some(&node.name), cause.clone());
@@ -1403,13 +1406,34 @@ mod tests {
 
     fn registry() -> StaticNodeTypeRegistry {
         let mut registry = StaticNodeTypeRegistry::new();
-        registry.register("n8n-nodes-base.scheduleTrigger", NodeTypeCapabilities::trigger_only("scheduleTrigger"));
-        registry.register("n8n-nodes-base.manualTrigger", NodeTypeCapabilities::trigger_only("manualTrigger"));
-        registry.register("n8n-nodes-base.webhook", NodeTypeCapabilities::webhook_only("webhook"));
-        registry.register("n8n-nodes-base.executeWorkflowTrigger", NodeTypeCapabilities::trigger_only("executeWorkflowTrigger"));
-        registry.register("n8n-nodes-base.errorTrigger", NodeTypeCapabilities::trigger_only("errorTrigger"));
-        registry.register("n8n-nodes-base.poll", NodeTypeCapabilities::poll_only("poll"));
-        registry.register("n8n-nodes-base.set", NodeTypeCapabilities::new("set", false, false, false));
+        registry.register(
+            "n8n-nodes-base.scheduleTrigger",
+            NodeTypeCapabilities::trigger_only("scheduleTrigger"),
+        );
+        registry.register(
+            "n8n-nodes-base.manualTrigger",
+            NodeTypeCapabilities::trigger_only("manualTrigger"),
+        );
+        registry.register(
+            "n8n-nodes-base.webhook",
+            NodeTypeCapabilities::webhook_only("webhook"),
+        );
+        registry.register(
+            "n8n-nodes-base.executeWorkflowTrigger",
+            NodeTypeCapabilities::trigger_only("executeWorkflowTrigger"),
+        );
+        registry.register(
+            "n8n-nodes-base.errorTrigger",
+            NodeTypeCapabilities::trigger_only("errorTrigger"),
+        );
+        registry.register(
+            "n8n-nodes-base.poll",
+            NodeTypeCapabilities::poll_only("poll"),
+        );
+        registry.register(
+            "n8n-nodes-base.set",
+            NodeTypeCapabilities::new("set", false, false, false),
+        );
         registry
     }
 
@@ -1473,7 +1497,10 @@ mod tests {
             if self.fail_for.as_deref() == Some(node.name.as_str()) {
                 return Err(format!("trigger \"{}\" is broken", node.name));
             }
-            self.started.lock().expect("started").push(node.name.clone());
+            self.started
+                .lock()
+                .expect("started")
+                .push(node.name.clone());
             if self.returns_nothing {
                 return Ok(None);
             }
@@ -1494,7 +1521,9 @@ mod tests {
                     _ => Ok(()),
                 }
             });
-            Ok(Some(TriggerResponse::new(&node.name, &node.node_type).with_close(close)))
+            Ok(Some(
+                TriggerResponse::new(&node.name, &node.node_type).with_close(close),
+            ))
         }
     }
 
@@ -1505,7 +1534,10 @@ mod tests {
     }
 
     impl FakePollRunner {
-        fn new(crons: Vec<&str>, result: Result<Option<Vec<Vec<INodeExecutionData>>>, String>) -> Self {
+        fn new(
+            crons: Vec<&str>,
+            result: Result<Option<Vec<Vec<INodeExecutionData>>>, String>,
+        ) -> Self {
             Self {
                 crons: crons.into_iter().map(str::to_string).collect(),
                 result,
@@ -1650,7 +1682,10 @@ mod tests {
     #[test]
     fn activation_without_a_trigger_node_records_the_contract_error_string() {
         let workflow = workflow(vec![node("Set", "n8n-nodes-base.set")]);
-        let mut manager = harness(FakeTriggerRunner::new(), FakePollRunner::new(vec![], Ok(None)));
+        let mut manager = harness(
+            FakeTriggerRunner::new(),
+            FakePollRunner::new(vec![], Ok(None)),
+        );
 
         let error = manager
             .add("wf-1", &workflow, ActivationMode::Activate)
@@ -1674,7 +1709,10 @@ mod tests {
     #[test]
     fn activation_is_idempotent_at_the_http_surface() {
         let workflow = workflow(vec![node("Schedule", "n8n-nodes-base.scheduleTrigger")]);
-        let mut manager = harness(FakeTriggerRunner::new(), FakePollRunner::new(vec![], Ok(None)));
+        let mut manager = harness(
+            FakeTriggerRunner::new(),
+            FakePollRunner::new(vec![], Ok(None)),
+        );
 
         manager
             .add("wf-1", &workflow, ActivationMode::Activate)
@@ -1722,10 +1760,15 @@ mod tests {
 
     #[test]
     fn a_successful_activation_clears_a_previous_activation_error() {
-        let mut manager = harness(FakeTriggerRunner::new(), FakePollRunner::new(vec![], Ok(None)));
+        let mut manager = harness(
+            FakeTriggerRunner::new(),
+            FakePollRunner::new(vec![], Ok(None)),
+        );
 
         let no_trigger = workflow(vec![node("Set", "n8n-nodes-base.set")]);
-        manager.add("wf-1", &no_trigger, ActivationMode::Activate).unwrap_err();
+        manager
+            .add("wf-1", &no_trigger, ActivationMode::Activate)
+            .unwrap_err();
         assert!(manager.activation_error("wf-1").is_some());
 
         let with_trigger = workflow(vec![node("Schedule", "n8n-nodes-base.scheduleTrigger")]);
@@ -1812,7 +1855,10 @@ mod tests {
         );
         match &error {
             TriggerError::Activation(error) => {
-                assert_eq!(error.cause.as_deref(), Some(POLLING_INTERVAL_TOO_SHORT_ERROR));
+                assert_eq!(
+                    error.cause.as_deref(),
+                    Some(POLLING_INTERVAL_TOO_SHORT_ERROR)
+                );
                 assert_eq!(error.node.as_deref(), Some("Poller"));
             }
             other => panic!("expected an activation error, got {other:?}"),
@@ -1894,7 +1940,10 @@ mod tests {
 
     #[test]
     fn remove_of_an_unknown_workflow_is_silent() {
-        let mut manager = harness(FakeTriggerRunner::new(), FakePollRunner::new(vec![], Ok(None)));
+        let mut manager = harness(
+            FakeTriggerRunner::new(),
+            FakePollRunner::new(vec![], Ok(None)),
+        );
 
         let report = manager.remove("nope");
 
@@ -1959,8 +2008,12 @@ mod tests {
         second.id = Some("wf-2".into());
         let runner = FakeTriggerRunner::new();
         let mut manager = harness(runner, FakePollRunner::new(vec![], Ok(None)));
-        manager.add("wf-1", &first, ActivationMode::Init).expect("wf-1");
-        manager.add("wf-2", &second, ActivationMode::Init).expect("wf-2");
+        manager
+            .add("wf-1", &first, ActivationMode::Init)
+            .expect("wf-1");
+        manager
+            .add("wf-2", &second, ActivationMode::Init)
+            .expect("wf-2");
 
         let reports = manager.remove_all();
 
@@ -1974,7 +2027,10 @@ mod tests {
     #[test]
     fn emit_turns_into_a_trigger_mode_execution_request() {
         let workflow = workflow(vec![node("Schedule", "n8n-nodes-base.scheduleTrigger")]);
-        let mut manager = harness(FakeTriggerRunner::new(), FakePollRunner::new(vec![], Ok(None)));
+        let mut manager = harness(
+            FakeTriggerRunner::new(),
+            FakePollRunner::new(vec![], Ok(None)),
+        );
         manager
             .add("wf-1", &workflow, ActivationMode::Activate)
             .expect("activation succeeds");
@@ -2000,7 +2056,10 @@ mod tests {
     #[test]
     fn emit_after_remove_is_dropped() {
         let workflow = workflow(vec![node("Schedule", "n8n-nodes-base.scheduleTrigger")]);
-        let mut manager = harness(FakeTriggerRunner::new(), FakePollRunner::new(vec![], Ok(None)));
+        let mut manager = harness(
+            FakeTriggerRunner::new(),
+            FakePollRunner::new(vec![], Ok(None)),
+        );
         manager
             .add("wf-1", &workflow, ActivationMode::Activate)
             .expect("activation succeeds");
@@ -2020,30 +2079,48 @@ mod tests {
     #[test]
     fn manual_mode_resolves_the_manual_trigger_response_on_the_first_emit() {
         let workflow = workflow(vec![node("Schedule", "n8n-nodes-base.scheduleTrigger")]);
-        let mut manager = harness(FakeTriggerRunner::new(), FakePollRunner::new(vec![], Ok(None)));
+        let mut manager = harness(
+            FakeTriggerRunner::new(),
+            FakePollRunner::new(vec![], Ok(None)),
+        );
         manager
             .add("wf-1", &workflow, ActivationMode::Manual)
             .expect("manual activation");
 
-        assert!(manager.emit("wf-1", "Schedule", vec![vec![item(json!(1))]], ExecutionSource::Trigger));
-        assert!(manager.emit("wf-1", "Schedule", vec![vec![item(json!(2))]], ExecutionSource::Trigger));
+        assert!(manager.emit(
+            "wf-1",
+            "Schedule",
+            vec![vec![item(json!(1))]],
+            ExecutionSource::Trigger
+        ));
+        assert!(manager.emit(
+            "wf-1",
+            "Schedule",
+            vec![vec![item(json!(2))]],
+            ExecutionSource::Trigger
+        ));
 
         let executions = manager.take_pending_executions();
         assert_eq!(executions.len(), 2);
         assert_eq!(executions[0].mode, ExecutionMode::Manual);
         // Only the first emission is the manual response; later ones are `internal`.
         assert_eq!(executions[1].mode, ExecutionMode::Internal);
-        assert!(manager
-            .active
-            .get("wf-1")
-            .expect("still active")
-            .manual_resolved);
+        assert!(
+            manager
+                .active
+                .get("wf-1")
+                .expect("still active")
+                .manual_resolved
+        );
     }
 
     #[test]
     fn emit_error_deactivates_the_workflow_and_records_the_error() {
         let workflow = workflow(vec![node("Schedule", "n8n-nodes-base.scheduleTrigger")]);
-        let mut manager = harness(FakeTriggerRunner::new(), FakePollRunner::new(vec![], Ok(None)));
+        let mut manager = harness(
+            FakeTriggerRunner::new(),
+            FakePollRunner::new(vec![], Ok(None)),
+        );
         manager
             .add("wf-1", &workflow, ActivationMode::Activate)
             .expect("activation succeeds");

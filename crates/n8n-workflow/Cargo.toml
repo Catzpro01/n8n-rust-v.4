@@ -18,3 +18,4 @@ indexmap.workspace = true
 
 [dev-dependencies]
 n8n-expression = { path = "../n8n-expression" }
+tokio = { version = "1.0", features = ["rt", "macros"] }
