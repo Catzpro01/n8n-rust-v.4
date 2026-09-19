@@ -121,7 +121,9 @@ BEGIN
     IF v_agent.status != 'AVAILABLE' AND v_agent.status != 'CLAIMING' THEN
         RETURN jsonb_build_object('success', false, 'error', 'AGENT_NOT_AVAILABLE', 'agent_status', v_agent.status);
     END IF;
-    IF v_task.specialization_id != v_agent.specialization_id THEN
+    -- Specialization validation: matches specialization_id OR agent has general/all capability or task domain capability
+    IF v_task.specialization_id != v_agent.specialization_id 
+       AND NOT (v_agent.capabilities ? 'all' OR v_agent.capabilities ? 'cross_domain' OR v_agent.capabilities ? v_task.specialization_id::text) THEN
         RETURN jsonb_build_object('success', false, 'error', 'SPECIALIZATION_MISMATCH');
     END IF;
 
@@ -204,6 +206,13 @@ BEGIN
 
         -- Release any exclusive locks held by this abandoned task
         DELETE FROM public.locks WHERE task_id = v_t.id;
+
+        -- Unassign and mark previous agent OFFLINE if still assigned
+        IF v_t.assigned_agent_id IS NOT NULL THEN
+            UPDATE public.agents
+            SET status = 'OFFLINE', current_task_id = NULL, version = version + 1, updated_at = v_now
+            WHERE id = v_t.assigned_agent_id;
+        END IF;
 
         -- Record handover state transition
         INSERT INTO public.task_state_transitions (
@@ -291,7 +300,9 @@ BEGIN
         RETURN jsonb_build_object('success', false, 'error', 'AGENT_NOT_AVAILABLE', 'agent_status', v_agent.status);
     END IF;
 
-    IF v_task.specialization_id != v_agent.specialization_id THEN
+    -- Specialization validation: matches specialization_id OR agent has general/all capability or task domain capability
+    IF v_task.specialization_id != v_agent.specialization_id 
+       AND NOT (v_agent.capabilities ? 'all' OR v_agent.capabilities ? 'cross_domain' OR v_agent.capabilities ? v_task.specialization_id::text) THEN
         RETURN jsonb_build_object('success', false, 'error', 'SPECIALIZATION_MISMATCH');
     END IF;
 
