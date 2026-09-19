@@ -53,6 +53,17 @@ CREATE TABLE IF NOT EXISTS public.agents (
 );
 
 -- 4. TASKS (Lifecycle authority for temporary task branches)
+-- Conditional schema migration: Replace legacy tasks table (PK 'id TEXT' or having 'module' column) if it exists
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_schema = 'public' AND table_name = 'tasks' AND (data_type = 'text' AND column_name = 'id' OR column_name = 'module')
+    ) THEN
+        DROP TABLE IF EXISTS public.tasks CASCADE;
+    END IF;
+END $$;
+
 CREATE TABLE IF NOT EXISTS public.tasks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     task_key TEXT NOT NULL UNIQUE,
@@ -69,8 +80,8 @@ CREATE TABLE IF NOT EXISTS public.tasks (
         'BLOCKED', 'FAILED', 'STALE', 'BACKLOG', 'CANCELLED'
     )),
     assigned_agent_id UUID REFERENCES public.agents(id) ON DELETE SET NULL,
-    base_commit TEXT NOT NULL,
-    branch_name TEXT NOT NULL,
+    base_commit TEXT NOT NULL DEFAULT 'main',
+    branch_name TEXT NOT NULL DEFAULT '',
     pr_number INTEGER,
     current_commit_sha TEXT,
     merge_commit_sha TEXT,

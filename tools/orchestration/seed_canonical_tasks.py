@@ -50,8 +50,15 @@ def seed_tasks():
     print(f"[OK] Canonical database schema verified. HTTP {status}", flush=True)
     head_sha = get_git_head_sha()
 
+    # 1.1 Fetch specialization UUIDs
+    st_spec, spec_rows = client._request("specializations?select=id,slug", method="GET")
+    if st_spec != 200 or not isinstance(spec_rows, list):
+        print(f"[ERROR] Failed to fetch specializations. HTTP {st_spec}: {spec_rows}", flush=True)
+        return False
+    spec_map = {row["slug"]: row["id"] for row in spec_rows}
+
     # 2. Register/Update Tasks
-    print(f"[*] Registering {len(CANONICAL_TASKS)} canonical tasks...")
+    print(f"[*] Registering {len(CANONICAL_TASKS)} canonical tasks...", flush=True)
     success_count = 0
     fail_count = 0
 
@@ -59,6 +66,12 @@ def seed_tasks():
         task_key = t["task_key"]
         milestone = t["milestone"]
         specialization = t["specialization"]
+        spec_uuid = spec_map.get(specialization)
+        if not spec_uuid:
+            print(f"[ERROR] Specialization slug '{specialization}' not found in database specializations table!", flush=True)
+            fail_count += 1
+            continue
+
         weight = t["progress_weight"]
         val_lvl = t["validation_level"]
         title = t["title"]
@@ -78,27 +91,28 @@ def seed_tasks():
             initial_status = "QUEUED"
             commit_sha = None
 
+        branch_slug = task_key.split("/")[-1]
+        branch_name = f"{specialization}/{milestone.lower()}-{branch_slug}"
+
         payload = {
             "task_key": task_key,
             "title": title,
             "description": desc,
-            "specialization_id": specialization,
-            "milestone_id": milestone,
+            "specialization_id": spec_uuid,
+            "milestone": milestone,
             "status": initial_status,
+            "base_commit": head_sha,
+            "branch_name": branch_name,
             "progress_weight": weight,
             "validation_level": val_lvl,
-            "dependencies": deps,
-            "allowed_files": allowed_f,
-            "exclusive_files": exclusive_f,
-            "shared_read_files": shared_f,
             "acceptance_criteria": criteria,
             "current_commit_sha": commit_sha,
         }
 
         # Check if task already exists
         check_status, existing = client._request(f"tasks?task_key=eq.{task_key}&select=id,version,status", method="GET")
+        task_id = None
         if check_status == 200 and isinstance(existing, list) and len(existing) > 0:
-            # Update metadata without overwriting active OCC version or state if already progressed
             existing_task = existing[0]
             task_id = existing_task["id"]
             update_payload = {
@@ -106,26 +120,31 @@ def seed_tasks():
                 "description": desc,
                 "progress_weight": weight,
                 "validation_level": val_lvl,
-                "dependencies": deps,
-                "allowed_files": allowed_f,
-                "exclusive_files": exclusive_f,
-                "shared_read_files": shared_f,
                 "acceptance_criteria": criteria,
             }
             up_status, up_res = client._request(f"tasks?id=eq.{task_id}", data=update_payload, method="PATCH")
             if up_status in (200, 204):
                 success_count += 1
             else:
-                print(f"[WARN] Failed to update task '{task_key}': {up_res}")
+                print(f"[WARN] Failed to update task '{task_key}': {up_res}", flush=True)
                 fail_count += 1
         else:
             # Insert new task
             ins_status, ins_res = client._request("tasks", data=payload, method="POST")
             if ins_status in (200, 201):
                 success_count += 1
+                if isinstance(ins_res, list) and len(ins_res) > 0:
+                    task_id = ins_res[0].get("id")
             else:
-                print(f"[WARN] Failed to insert task '{task_key}': {ins_res}")
+                print(f"[WARN] Failed to insert task '{task_key}': {ins_res}", flush=True)
                 fail_count += 1
+
+        # Populate task_files for resource boundary locks if task_id available
+        if task_id:
+            for ef in exclusive_f:
+                client._request("task_files", data={"task_id": task_id, "file_path": ef, "access_mode": "exclusive"}, method="POST")
+            for sf in shared_f:
+                client._request("task_files", data={"task_id": task_id, "file_path": sf, "access_mode": "shared-read"}, method="POST")
 
     print(f"\n[RESULT] Task Seeding Completed: {success_count} succeeded, {fail_count} failed.")
     return fail_count == 0
