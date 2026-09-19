@@ -15,19 +15,30 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- 1. SPECIALIZATIONS (Permanent domain categories)
+-- 1. MILESTONES (High-level architectural delivery increments)
+CREATE TABLE IF NOT EXISTS public.milestones (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    weight NUMERIC(5, 2) NOT NULL DEFAULT 1.00 CHECK (weight > 0),
+    status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'COMPLETED', 'PLANNED', 'DEPRECATED')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 2. SPECIALIZATIONS (Permanent domain categories)
 CREATE TABLE IF NOT EXISTS public.specializations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     slug TEXT NOT NULL UNIQUE,
     name TEXT NOT NULL,
     description TEXT NOT NULL,
-    milestone TEXT NOT NULL DEFAULT 'M1',
+    milestone TEXT NOT NULL DEFAULT 'M1' REFERENCES public.milestones(id) ON UPDATE CASCADE,
     status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'INACTIVE', 'DEPRECATED')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- 2. AGENTS (Workers belonging to a specialization)
+-- 3. AGENTS (Workers belonging to a specialization)
 CREATE TABLE IF NOT EXISTS public.agents (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     agent_key TEXT NOT NULL UNIQUE,
@@ -41,21 +52,21 @@ CREATE TABLE IF NOT EXISTS public.agents (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- 3. TASKS (Lifecycle authority for temporary task branches)
+-- 4. TASKS (Lifecycle authority for temporary task branches)
 CREATE TABLE IF NOT EXISTS public.tasks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     task_key TEXT NOT NULL UNIQUE,
     title TEXT NOT NULL,
     description TEXT,
     specialization_id UUID NOT NULL REFERENCES public.specializations(id) ON DELETE RESTRICT,
-    milestone TEXT NOT NULL DEFAULT 'M1',
+    milestone TEXT NOT NULL DEFAULT 'M1' REFERENCES public.milestones(id) ON UPDATE CASCADE,
     priority INTEGER NOT NULL DEFAULT 100,
     status TEXT NOT NULL DEFAULT 'QUEUED' CHECK (status IN (
-        'BACKLOG', 'QUEUED', 'CLAIMED', 'WORKING', 'PR_OPEN',
+        'QUEUED', 'CLAIMED', 'IN_PROGRESS', 'WORKING', 'PR_OPEN',
         'BUILDING', 'BUILD_FAILED', 'TESTING', 'TEST_FAILED',
         'AUDITING', 'AUDIT_FAILED', 'READY_TO_MERGE', 'MERGING',
-        'MERGED', 'POST_MERGE_VERIFY', 'CLEANUP', 'COMPLETED',
-        'BLOCKED', 'CANCELLED'
+        'MERGED', 'POST_MERGE_VERIFY', 'CLEANUP', 'DONE', 'COMPLETED',
+        'BLOCKED', 'FAILED', 'STALE', 'BACKLOG', 'CANCELLED'
     )),
     assigned_agent_id UUID REFERENCES public.agents(id) ON DELETE SET NULL,
     base_commit TEXT NOT NULL,
@@ -63,6 +74,9 @@ CREATE TABLE IF NOT EXISTS public.tasks (
     pr_number INTEGER,
     current_commit_sha TEXT,
     merge_commit_sha TEXT,
+    progress_weight NUMERIC(5, 2) NOT NULL DEFAULT 1.00 CHECK (progress_weight > 0),
+    validation_level TEXT NOT NULL DEFAULT 'L1' CHECK (validation_level IN ('L0', 'L1', 'L2', 'L3')),
+    acceptance_criteria JSONB NOT NULL DEFAULT '[]'::jsonb,
     version BIGINT NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     claimed_at TIMESTAMPTZ,
@@ -178,16 +192,34 @@ CREATE TABLE IF NOT EXISTS public.task_state_transitions (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- 11. PROGRESS SNAPSHOTS (Periodic and event-driven progress point-in-time state)
+CREATE TABLE IF NOT EXISTS public.progress_snapshots (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    calculated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    main_commit_sha TEXT NOT NULL,
+    project_progress NUMERIC(5, 2) NOT NULL CHECK (project_progress >= 0.0 AND project_progress <= 100.0),
+    milestone_progress JSONB NOT NULL DEFAULT '{}'::jsonb,
+    done_count INTEGER NOT NULL DEFAULT 0,
+    in_progress_count INTEGER NOT NULL DEFAULT 0,
+    queued_count INTEGER NOT NULL DEFAULT 0,
+    blocked_count INTEGER NOT NULL DEFAULT 0,
+    stale_count INTEGER NOT NULL DEFAULT 0,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- INDEXES
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON public.tasks(status);
 CREATE INDEX IF NOT EXISTS idx_tasks_agent ON public.tasks(assigned_agent_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_branch ON public.tasks(branch_name);
+CREATE INDEX IF NOT EXISTS idx_tasks_milestone ON public.tasks(milestone);
 CREATE INDEX IF NOT EXISTS idx_agents_status ON public.agents(status);
 CREATE INDEX IF NOT EXISTS idx_locks_expires ON public.locks(expires_at);
 CREATE INDEX IF NOT EXISTS idx_locks_resource ON public.locks(resource);
 CREATE INDEX IF NOT EXISTS idx_test_results_task_commit ON public.test_results(task_id, commit_sha);
 CREATE INDEX IF NOT EXISTS idx_audit_results_task_commit ON public.audit_results(task_id, commit_sha);
 CREATE INDEX IF NOT EXISTS idx_transitions_task ON public.task_state_transitions(task_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_snapshots_calculated_at ON public.progress_snapshots(calculated_at DESC);
 -- ==============================================================================
 -- ATOMIC STATE TRANSITION STORED PROCEDURES (RPCs)
 -- ==============================================================================
@@ -578,7 +610,7 @@ DECLARE
 BEGIN
     SELECT * INTO v_task FROM public.tasks WHERE id = p_task_id FOR UPDATE;
     IF NOT FOUND THEN RETURN jsonb_build_object('success', false, 'error', 'TASK_NOT_FOUND'); END IF;
-    IF v_task.status = 'COMPLETED' THEN RETURN jsonb_build_object('success', true, 'action', 'ALREADY_COMPLETED', 'status', 'COMPLETED'); END IF;
+    IF v_task.status IN ('DONE', 'COMPLETED') THEN RETURN jsonb_build_object('success', true, 'action', 'ALREADY_COMPLETED', 'status', 'DONE'); END IF;
     IF v_task.status != 'CLEANUP' THEN RETURN jsonb_build_object('success', false, 'error', 'INVALID_STATE', 'current_status', v_task.status); END IF;
     IF v_task.version != p_expected_version THEN RETURN jsonb_build_object('success', false, 'error', 'VERSION_CONFLICT', 'current_version', v_task.version); END IF;
 
@@ -588,15 +620,15 @@ BEGIN
     END IF;
 
     v_new_version := v_task.version + 1;
-    UPDATE public.tasks SET status = 'COMPLETED', completed_at = NOW(), deleted_at = NOW(), version = v_new_version, updated_at = NOW() WHERE id = p_task_id;
+    UPDATE public.tasks SET status = 'DONE', completed_at = NOW(), version = v_new_version, updated_at = NOW() WHERE id = p_task_id;
 
     INSERT INTO public.task_state_transitions (
         task_id, from_status, to_status, actor_type, actor_id, expected_version, resulting_version, reason
     ) VALUES (
-        p_task_id, 'CLEANUP', 'COMPLETED', 'CLEANUP_WORKER', 'cleanup_runner', p_expected_version, v_new_version, 'Cleanup completed'
+        p_task_id, 'CLEANUP', 'DONE', 'CLEANUP_WORKER', 'cleanup_runner', p_expected_version, v_new_version, 'Cleanup completed, task verified DONE'
     );
 
-    RETURN jsonb_build_object('success', true, 'status', 'COMPLETED', 'version', v_new_version);
+    RETURN jsonb_build_object('success', true, 'status', 'DONE', 'version', v_new_version);
 END;
 $$;
 
@@ -678,19 +710,296 @@ BEGIN
 END;
 $$;
 
--- SEED 10 SPECIALIZATIONS
+-- ==============================================================================
+-- PROGRESS ENGINE STORED PROCEDURES (RPCs)
+-- ==============================================================================
+
+-- RPC 14: GET PROJECT PROGRESS
+CREATE OR REPLACE FUNCTION public.get_project_progress()
+RETURNS JSONB
+LANGUAGE plpgsql
+STABLE
+AS $$
+DECLARE
+    v_total_weight NUMERIC(10, 2) := 0;
+    v_done_weight NUMERIC(10, 2) := 0;
+    v_project_progress NUMERIC(5, 2) := 0.0;
+    v_done_count INTEGER := 0;
+    v_in_progress_count INTEGER := 0;
+    v_queued_count INTEGER := 0;
+    v_blocked_count INTEGER := 0;
+    v_stale_count INTEGER := 0;
+    v_milestones JSONB := '[]'::jsonb;
+    v_tasks JSONB := '[]'::jsonb;
+BEGIN
+    SELECT 
+        COALESCE(SUM(progress_weight), 0),
+        COALESCE(SUM(CASE WHEN status = 'DONE' THEN progress_weight ELSE 0 END), 0),
+        COUNT(CASE WHEN status = 'DONE' THEN 1 END),
+        COUNT(CASE WHEN status IN ('IN_PROGRESS', 'WORKING', 'CLAIMED', 'READY_TO_MERGE', 'MERGED', 'POST_MERGE_VERIFY') THEN 1 END),
+        COUNT(CASE WHEN status IN ('QUEUED', 'BACKLOG') THEN 1 END),
+        COUNT(CASE WHEN status = 'BLOCKED' THEN 1 END),
+        COUNT(CASE WHEN status = 'STALE' THEN 1 END)
+    INTO 
+        v_total_weight, v_done_weight,
+        v_done_count, v_in_progress_count, v_queued_count, v_blocked_count, v_stale_count
+    FROM public.tasks
+    WHERE deleted_at IS NULL;
+
+    IF v_total_weight > 0 THEN
+        v_project_progress := ROUND((v_done_weight / v_total_weight) * 100.0, 2);
+    ELSE
+        v_project_progress := 0.0;
+    END IF;
+
+    SELECT COALESCE(jsonb_agg(m_agg), '[]'::jsonb) INTO v_milestones
+    FROM (
+        SELECT 
+            m.id AS milestone,
+            m.name,
+            m.weight AS milestone_weight,
+            COALESCE(SUM(t.progress_weight), 0) AS total_weight,
+            COALESCE(SUM(CASE WHEN t.status = 'DONE' THEN t.progress_weight ELSE 0 END), 0) AS completed_weight,
+            CASE 
+                WHEN COALESCE(SUM(t.progress_weight), 0) > 0 
+                THEN ROUND((COALESCE(SUM(CASE WHEN t.status = 'DONE' THEN t.progress_weight ELSE 0 END), 0) / SUM(t.progress_weight)) * 100.0, 2)
+                ELSE 0.0
+            END AS progress,
+            jsonb_build_object(
+                'done', COUNT(CASE WHEN t.status = 'DONE' THEN 1 END),
+                'in_progress', COUNT(CASE WHEN t.status IN ('IN_PROGRESS', 'WORKING', 'CLAIMED', 'READY_TO_MERGE', 'MERGED', 'POST_MERGE_VERIFY') THEN 1 END),
+                'queued', COUNT(CASE WHEN t.status IN ('QUEUED', 'BACKLOG') THEN 1 END),
+                'blocked', COUNT(CASE WHEN t.status = 'BLOCKED' THEN 1 END),
+                'stale', COUNT(CASE WHEN t.status = 'STALE' THEN 1 END)
+            ) AS task_counts
+        FROM public.milestones m
+        LEFT JOIN public.tasks t ON t.milestone = m.id AND t.deleted_at IS NULL
+        GROUP BY m.id, m.name, m.weight
+        ORDER BY m.id
+    ) m_agg;
+
+    SELECT COALESCE(jsonb_agg(t_item), '[]'::jsonb) INTO v_tasks
+    FROM (
+        SELECT 
+            t.task_key,
+            t.milestone,
+            t.status,
+            t.progress_weight,
+            CASE WHEN t.status = 'DONE' THEN 100.0 ELSE 0.0 END AS progress,
+            t.current_commit_sha AS evidence_commit_sha,
+            s.slug AS specialization
+        FROM public.tasks t
+        JOIN public.specializations s ON t.specialization_id = s.id
+        WHERE t.deleted_at IS NULL
+        ORDER BY t.milestone, t.task_key
+    ) t_item;
+
+    RETURN jsonb_build_object(
+        'project_progress', v_project_progress,
+        'total_weight', v_total_weight,
+        'completed_weight', v_done_weight,
+        'done_count', v_done_count,
+        'in_progress_count', v_in_progress_count,
+        'queued_count', v_queued_count,
+        'blocked_count', v_blocked_count,
+        'stale_count', v_stale_count,
+        'milestones', v_milestones,
+        'tasks', v_tasks
+    );
+END;
+$$;
+
+-- RPC 15: GET MILESTONE PROGRESS
+CREATE OR REPLACE FUNCTION public.get_milestone_progress(p_milestone TEXT)
+RETURNS JSONB
+LANGUAGE plpgsql
+STABLE
+AS $$
+DECLARE
+    v_result JSONB;
+BEGIN
+    SELECT jsonb_build_object(
+        'milestone', p_milestone,
+        'total_weight', COALESCE(SUM(t.progress_weight), 0),
+        'completed_weight', COALESCE(SUM(CASE WHEN t.status = 'DONE' THEN t.progress_weight ELSE 0 END), 0),
+        'progress', CASE 
+            WHEN COALESCE(SUM(t.progress_weight), 0) > 0 
+            THEN ROUND((COALESCE(SUM(CASE WHEN t.status = 'DONE' THEN t.progress_weight ELSE 0 END), 0) / SUM(t.progress_weight)) * 100.0, 2)
+            ELSE 0.0
+        END,
+        'task_counts', jsonb_build_object(
+            'done', COUNT(CASE WHEN t.status = 'DONE' THEN 1 END),
+            'in_progress', COUNT(CASE WHEN t.status IN ('IN_PROGRESS', 'WORKING', 'CLAIMED', 'READY_TO_MERGE', 'MERGED', 'POST_MERGE_VERIFY') THEN 1 END),
+            'queued', COUNT(CASE WHEN t.status IN ('QUEUED', 'BACKLOG') THEN 1 END),
+            'blocked', COUNT(CASE WHEN t.status = 'BLOCKED' THEN 1 END),
+            'stale', COUNT(CASE WHEN t.status = 'STALE' THEN 1 END)
+        )
+    ) INTO v_result
+    FROM public.tasks t
+    WHERE t.milestone = p_milestone AND t.deleted_at IS NULL;
+
+    RETURN v_result;
+END;
+$$;
+
+-- RPC 16: GET TASK PROGRESS
+CREATE OR REPLACE FUNCTION public.get_task_progress(p_task_key TEXT)
+RETURNS JSONB
+LANGUAGE plpgsql
+STABLE
+AS $$
+DECLARE
+    v_task RECORD;
+BEGIN
+    SELECT t.*, s.slug as specialization_slug
+    INTO v_task
+    FROM public.tasks t
+    JOIN public.specializations s ON t.specialization_id = s.id
+    WHERE t.task_key = p_task_key AND t.deleted_at IS NULL;
+
+    IF NOT FOUND THEN
+        RETURN jsonb_build_object('success', false, 'error', 'TASK_NOT_FOUND');
+    END IF;
+
+    RETURN jsonb_build_object(
+        'success', true,
+        'task_key', v_task.task_key,
+        'specialization', v_task.specialization_slug,
+        'milestone', v_task.milestone,
+        'status', v_task.status,
+        'progress_weight', v_task.progress_weight,
+        'progress', CASE WHEN v_task.status = 'DONE' THEN 100.0 ELSE 0.0 END,
+        'validation_level', v_task.validation_level,
+        'current_commit_sha', v_task.current_commit_sha,
+        'acceptance_criteria', v_task.acceptance_criteria,
+        'timestamps', jsonb_build_object(
+            'created_at', v_task.created_at,
+            'claimed_at', v_task.claimed_at,
+            'completed_at', v_task.completed_at,
+            'updated_at', v_task.updated_at
+        )
+    );
+END;
+$$;
+
+-- RPC 17: RECORD PROGRESS SNAPSHOT
+CREATE OR REPLACE FUNCTION public.record_progress_snapshot(
+    p_main_commit_sha TEXT,
+    p_metadata JSONB DEFAULT '{}'::jsonb
+) RETURNS JSONB
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_proj JSONB;
+    v_snapshot_id UUID := gen_random_uuid();
+    v_now TIMESTAMPTZ := NOW();
+BEGIN
+    v_proj := public.get_project_progress();
+
+    INSERT INTO public.progress_snapshots (
+        id, calculated_at, main_commit_sha, project_progress,
+        milestone_progress, done_count, in_progress_count,
+        queued_count, blocked_count, stale_count, metadata, created_at
+    ) VALUES (
+        v_snapshot_id, v_now, p_main_commit_sha,
+        (v_proj->>'project_progress')::NUMERIC,
+        v_proj->'milestones',
+        (v_proj->>'done_count')::INTEGER,
+        (v_proj->>'in_progress_count')::INTEGER,
+        (v_proj->>'queued_count')::INTEGER,
+        (v_proj->>'blocked_count')::INTEGER,
+        (v_proj->>'stale_count')::INTEGER,
+        p_metadata, v_now
+    );
+
+    INSERT INTO public.events (
+        event_id, event_type, source, payload, processed_at, created_at
+    ) VALUES (
+        'evt-snapshot-' || v_snapshot_id, 'PROGRESS_UPDATED', 'PROGRESS_ENGINE',
+        jsonb_build_object(
+            'snapshot_id', v_snapshot_id,
+            'project_progress', v_proj->>'project_progress',
+            'main_commit_sha', p_main_commit_sha
+        ),
+        v_now, v_now
+    );
+
+    RETURN jsonb_build_object(
+        'success', true,
+        'snapshot_id', v_snapshot_id,
+        'project_progress', v_proj->>'project_progress',
+        'calculated_at', v_now
+    );
+END;
+$$;
+
+-- RPC 18: GET LATEST PROGRESS SNAPSHOT
+CREATE OR REPLACE FUNCTION public.get_latest_progress_snapshot()
+RETURNS JSONB
+LANGUAGE plpgsql
+STABLE
+AS $$
+DECLARE
+    v_row RECORD;
+BEGIN
+    SELECT * INTO v_row
+    FROM public.progress_snapshots
+    ORDER BY calculated_at DESC
+    LIMIT 1;
+
+    IF NOT FOUND THEN
+        RETURN jsonb_build_object('success', false, 'error', 'NO_SNAPSHOT_FOUND');
+    END IF;
+
+    RETURN jsonb_build_object(
+        'success', true,
+        'snapshot_id', v_row.id,
+        'calculated_at', v_row.calculated_at,
+        'main_commit_sha', v_row.main_commit_sha,
+        'project_progress', v_row.project_progress,
+        'milestone_progress', v_row.milestone_progress,
+        'done_count', v_row.done_count,
+        'in_progress_count', v_row.in_progress_count,
+        'queued_count', v_row.queued_count,
+        'blocked_count', v_row.blocked_count,
+        'stale_count', v_row.stale_count,
+        'metadata', v_row.metadata
+    );
+END;
+$$;
+
+-- SEED 10 MILESTONES
+INSERT INTO public.milestones (id, name, description, weight)
+VALUES
+    ('M1', 'Runtime Kernel', 'Core runtime execution frames, DAG runner, memory governor', 1.00),
+    ('M2', 'Execution Engine', 'Task scheduler, lifecycle coordination, flow dispatch', 1.00),
+    ('M3', 'Data Plane', 'ItemBuffer, zero-copy payload streaming, memory limits', 1.00),
+    ('M4', 'Memory', 'Heap budget manager, spill-to-disk, backpressure', 1.00),
+    ('M5', 'Node System', 'Node trait adapters, native node implementations', 1.00),
+    ('M6', 'Workflow Model', 'Workflow graph model, connections lowering, validation', 1.00),
+    ('M7', 'Expression Engine', 'Sandboxed expression evaluator, AST parser, JS compat', 1.00),
+    ('M8', 'Validation', 'DAG integrity checks, cycle detection, structure bounds', 1.00),
+    ('M9', 'Integration', 'Cross-crate conformance tests, golden replay suite', 1.00),
+    ('M10', 'Security', 'Execution sandbox, memory boundary protection, security policies', 1.00)
+ON CONFLICT (id) DO UPDATE SET
+    name = EXCLUDED.name,
+    description = EXCLUDED.description,
+    weight = EXCLUDED.weight,
+    updated_at = NOW();
+
+-- SEED 10 FROZEN SPECIALIZATIONS
 INSERT INTO public.specializations (slug, name, description, milestone)
 VALUES
     ('runtime-kernel', 'Runtime Kernel', 'Core runtime architecture, WorkflowRunner, execution frames, memory governor', 'M1'),
-    ('execution-engine', 'Execution Engine', 'State machine, scheduler, lifecycle coordination, flow dispatch', 'M1'),
-    ('data-plane', 'Data Plane', 'Minimal-copy ItemBuffer, DataRecord, binary streaming, zero-GC buffers', 'M1'),
-    ('node-system', 'Node System', 'Node parameter forms, trait adapters, native node implementations', 'M1'),
-    ('expression-engine', 'Expression Engine', 'AST parser, sandboxed evaluator, JavaScript syntax compatibility', 'M1'),
-    ('workflow-compatibility', 'Workflow Compatibility', 'n8n workflow lowering, connections inversion, graph conversion', 'M1'),
-    ('verification', 'Verification & Testing', 'Conformance testing, golden fixtures, regression prevention', 'M1'),
-    ('performance', 'Performance & Benchmarking', 'Latency optimization, memory limits, benchmarks, cache utilization', 'M1'),
-    ('security-sandbox', 'Security & Sandbox', 'Prototype pollution guard, memory isolation, execution policies', 'M1'),
-    ('infrastructure-orchestration', 'Infrastructure & Orchestration', 'Control plane, GitHub Actions, self-hosted worker, state transitions', 'M1')
+    ('execution-engine', 'Execution Engine', 'State machine, scheduler, lifecycle coordination, flow dispatch', 'M2'),
+    ('data-plane', 'Data Plane', 'Minimal-copy ItemBuffer, DataRecord, binary streaming, zero-GC buffers', 'M3'),
+    ('memory', 'Memory Management', 'Memory budget, spill-to-disk, backpressure, atomic heap governor', 'M4'),
+    ('node-system', 'Node System', 'Node parameter forms, trait adapters, native node implementations', 'M5'),
+    ('workflow-model', 'Workflow Model', 'Workflow JSON deserialization, connections graph, node metadata', 'M6'),
+    ('expression-engine', 'Expression Engine', 'AST parser, sandboxed evaluator, JavaScript syntax compatibility', 'M7'),
+    ('validation', 'Validation & Integrity', 'DAG cycle detection, uniqueness, dangling connection validation', 'M8'),
+    ('integration', 'Integration & Conformance', 'Cross-crate conformance tests, golden replay, reference parity', 'M9'),
+    ('security', 'Security & Sandbox', 'Prototype pollution guard, memory isolation, execution policies', 'M10')
 ON CONFLICT (slug) DO UPDATE SET
     name = EXCLUDED.name,
     description = EXCLUDED.description,
@@ -698,6 +1007,7 @@ ON CONFLICT (slug) DO UPDATE SET
     updated_at = NOW();
 
 -- RLS LOCKDOWN
+ALTER TABLE public.milestones ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.specializations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.agents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tasks ENABLE ROW LEVEL SECURITY;
@@ -708,6 +1018,7 @@ ALTER TABLE public.test_results ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_results ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.task_state_transitions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.progress_snapshots ENABLE ROW LEVEL SECURITY;
 
 REVOKE ALL ON ALL TABLES IN SCHEMA public FROM anon, authenticated, public;
 REVOKE ALL ON ALL FUNCTIONS IN SCHEMA public FROM anon, authenticated, public;

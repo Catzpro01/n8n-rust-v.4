@@ -1,4 +1,4 @@
-﻿import os
+import os
 import re
 import subprocess
 from pathlib import Path
@@ -9,13 +9,13 @@ VALID_SPECIALIZATIONS = {
     "runtime-kernel",
     "execution-engine",
     "data-plane",
+    "memory",
     "node-system",
+    "workflow-model",
     "expression-engine",
-    "workflow-compatibility",
-    "verification",
-    "performance",
-    "security-sandbox",
-    "infrastructure-orchestration"
+    "validation",
+    "integration",
+    "security"
 }
 
 BRANCH_REGEX = re.compile(r"^([a-z0-9\-]+)/([a-z0-9]+)-([a-z0-9\-]+)$")

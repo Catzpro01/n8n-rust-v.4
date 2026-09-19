@@ -209,3 +209,24 @@ class ControlPlaneClient:
             "capabilities": capabilities or {}
         }
         return self._request("agents", data=payload, method="POST")
+
+    # --------------------------------------------------------------------------
+    # Progress Engine RPCs
+    # --------------------------------------------------------------------------
+    def get_project_progress(self) -> Tuple[int, Any]:
+        return self.rpc("get_project_progress", {})
+
+    def get_milestone_progress(self, milestone: str) -> Tuple[int, Any]:
+        return self.rpc("get_milestone_progress", {"p_milestone": milestone})
+
+    def get_task_progress(self, task_key: str) -> Tuple[int, Any]:
+        return self.rpc("get_task_progress", {"p_task_key": task_key})
+
+    def record_progress_snapshot(self, main_commit_sha: str, metadata: Optional[Dict[str, Any]] = None) -> Tuple[int, Any]:
+        return self.rpc("record_progress_snapshot", {
+            "p_main_commit_sha": main_commit_sha,
+            "p_metadata": metadata or {}
+        })
+
+    def get_latest_progress_snapshot(self) -> Tuple[int, Any]:
+        return self.rpc("get_latest_progress_snapshot", {})
