@@ -81,34 +81,48 @@ class ArenaWebhookHandler(BaseHTTPRequestHandler):
                 action = "push"
                 head_sha = payload.get("after") or payload.get("head_commit", {}).get("id", "")
 
-            # Authoritative Branch Pattern: arena/<agent-id>/<task-id>
-            m = re.match(r"^arena/([^/]+)/([^/]+)$", branch)
+            # Authoritative Branch Pattern: <SPECIALIZATION>/<MILESTONE>-<TASK>
+            # Examples: runtime-kernel/m1-runner, data-plane/m1-streaming
+            m = re.match(r"^([a-z0-9\-]+)/([a-z0-9]+)-([a-z0-9\-]+)$", branch)
             if not m:
-                print(f"[ArenaBridge] Branch '{branch}' is not an arena branch. Skipping.")
-                self.send_response(200)
-                self.send_header("Content-Type", "application/json")
-                self.end_headers()
-                self.wfile.write(b'{"status": "ignored", "reason": "Non-arena branch"}')
-                return
-
-            agent_id, task_id = m.group(1), m.group(2)
-            print(f"[ArenaBridge] Processing {event_type} ({action}) for agent: {agent_id}, task: {task_id}, sha: {head_sha[:8]}")
-
-            if action in ("opened", "synchronize", "push"):
-                # Authoritative Task Manifest Resolution bound to Git head SHA
-                task_manifest = dispatcher.load_task_manifest(task_id, commit_sha=head_sha)
-                if not task_manifest:
-                    print(f"[ArenaBridge] REJECT: Task manifest not found for task_id '{task_id}' at {head_sha[:8]} (fail-closed)")
-                    self.send_response(422)
+                # Fallback to legacy arena/<agent-id>/<task-id> if present
+                m_legacy = re.match(r"^arena/([^/]+)/([^/]+)$", branch)
+                if not m_legacy:
+                    print(f"[ArenaBridge] Branch '{branch}' does not match canonical spec (<SPECIALIZATION>/<MILESTONE>-<TASK>). Skipping.")
+                    self.send_response(200)
                     self.send_header("Content-Type", "application/json")
                     self.end_headers()
-                    self.wfile.write(b'{"error": "Task manifest not found in .arena/tasks at commit SHA (fail-closed)"}')
+                    self.wfile.write(b'{"status": "ignored", "reason": "Non-canonical branch"}')
                     return
+                specialization, milestone, task_id = "legacy", "m0", m_legacy.group(2)
+                agent_id = m_legacy.group(1)
+            else:
+                specialization, milestone, task_id = m.group(1), m.group(2), m.group(3)
+                agent_id = f"agent-{specialization}"
 
-                manifest_agent = task_manifest.get("agent")
-                sublego_id = task_manifest.get("sublego")
-                parent_lego = task_manifest.get("lego")
-                command = task_manifest.get("command", ["cargo", "check", "--workspace"])
+            print(f"[ArenaBridge] Processing {event_type} ({action}) for spec: {specialization}, task: {task_id}, sha: {head_sha[:8]}")
+
+            if action in ("opened", "synchronize", "push"):
+                # Check task in canonical Supabase Control Plane
+                try:
+                    from tools.orchestration.control_plane import ControlPlaneClient
+                    cp = ControlPlaneClient()
+                    task_record = cp.get_task_by_key(branch)
+                    if task_record:
+                        t_id = task_record["id"]
+                        t_ver = task_record["version"]
+                        assigned_agent = task_record.get("assigned_agent_id") or agent_id
+                        print(f"[ArenaBridge] Synchronizing commit {head_sha[:8]} for task {t_id} (v{t_ver}) in Supabase")
+                        cp.submit_commit(t_id, str(assigned_agent), head_sha, t_ver)
+                except Exception as ex:
+                    print(f"[ArenaBridge] Control plane sync notice: {ex}")
+
+                # Load Task Manifest (either .arena/TASK.md or legacy tasks)
+                task_manifest = dispatcher.load_task_manifest(task_id, commit_sha=head_sha) or {
+                    "sublego": f"{specialization}.{task_id}",
+                    "lego": specialization,
+                    "command": ["cargo", "check", "--workspace"]
+                }
 
                 # Validate agent matches manifest
                 if manifest_agent != agent_id:

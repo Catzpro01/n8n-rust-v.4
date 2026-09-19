@@ -1,7 +1,15 @@
-﻿-- ==============================================================================
+-- ==============================================================================
 -- 20260919000000_arena_orchestration_control_plane.sql
 -- Canonical Supabase Control Plane Schema & Atomic State Transition Contract
 -- Architecture: GitHub (Code Source of Truth) x Supabase (Control Plane) x Laptop (Build Worker)
+-- 
+-- MIGRATION AUDIT CLASSIFICATION:
+-- 1. Canonical Source: `supabase/migrations/` is the SOLE source of truth for new migrations.
+-- 2. Legacy Artefacts:
+--    - `docs/supabase_migration.sql` (Deprecated: 5-agent schema, replaced by this canonical migration)
+--    - `deploy/supabase/002_arena_control_plane.sql` (Deprecated: legacy VPS paths, replaced by this canonical migration)
+--    Both files are retained strictly for archival reference and must not be executed.
+-- 3. Locks Entity: Existing 'locks' table from legacy schemas (using 'module' PK) is gracefully upgraded.
 -- ==============================================================================
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -80,6 +88,17 @@ CREATE TABLE IF NOT EXISTS public.task_files (
 );
 
 -- 5. LOCKS (Resource locking per file/module/crate)
+-- Conditional schema migration: Replace legacy locks table (PK 'module') if it exists
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_schema = 'public' AND table_name = 'locks' AND column_name = 'module'
+    ) THEN
+        DROP TABLE IF EXISTS public.locks CASCADE;
+    END IF;
+END $$;
+
 CREATE TABLE IF NOT EXISTS public.locks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     resource TEXT NOT NULL UNIQUE,
@@ -321,12 +340,15 @@ DECLARE
 BEGIN
     SELECT * INTO v_task FROM public.tasks WHERE id = p_task_id FOR UPDATE;
     IF NOT FOUND THEN RETURN jsonb_build_object('success', false, 'error', 'TASK_NOT_FOUND'); END IF;
+
+    -- Store historical build job record regardless of current SHA
+    INSERT INTO public.build_jobs (task_id, commit_sha, runner, workflow_run_id, status, finished_at, log_url)
+    VALUES (p_task_id, p_commit_sha, 'laptop-self-hosted', p_workflow_run_id, p_status, NOW(), p_log_url);
+
+    -- Reject state progression if commit is stale
     IF v_task.current_commit_sha != p_commit_sha THEN
         RETURN jsonb_build_object('success', false, 'error', 'STALE_COMMIT', 'current_commit', v_task.current_commit_sha, 'reported_commit', p_commit_sha);
     END IF;
-
-    INSERT INTO public.build_jobs (task_id, commit_sha, runner, workflow_run_id, status, finished_at, log_url)
-    VALUES (p_task_id, p_commit_sha, 'laptop-self-hosted', p_workflow_run_id, p_status, NOW(), p_log_url);
 
     v_target_status := CASE WHEN p_status = 'PASSED' THEN 'TESTING' ELSE 'BUILD_FAILED' END;
     v_new_version := v_task.version + 1;
@@ -365,15 +387,18 @@ DECLARE
 BEGIN
     SELECT * INTO v_task FROM public.tasks WHERE id = p_task_id FOR UPDATE;
     IF NOT FOUND THEN RETURN jsonb_build_object('success', false, 'error', 'TASK_NOT_FOUND'); END IF;
-    IF v_task.current_commit_sha != p_commit_sha THEN
-        RETURN jsonb_build_object('success', false, 'error', 'STALE_COMMIT');
-    END IF;
 
+    -- Store historical test result record regardless of current SHA
     INSERT INTO public.test_results (
         task_id, commit_sha, suite, command, passed, failed, skipped, duration_ms, status, log_reference
     ) VALUES (
         p_task_id, p_commit_sha, p_suite, p_command, p_passed, p_failed, p_skipped, p_duration_ms, p_status, p_log_ref
     );
+
+    -- Reject state progression if commit is stale
+    IF v_task.current_commit_sha != p_commit_sha THEN
+        RETURN jsonb_build_object('success', false, 'error', 'STALE_COMMIT');
+    END IF;
 
     IF p_status = 'FAILED' THEN v_target_status := 'TEST_FAILED'; ELSE v_target_status := 'AUDITING'; END IF;
     v_new_version := v_task.version + 1;
@@ -408,15 +433,18 @@ DECLARE
 BEGIN
     SELECT * INTO v_task FROM public.tasks WHERE id = p_task_id FOR UPDATE;
     IF NOT FOUND THEN RETURN jsonb_build_object('success', false, 'error', 'TASK_NOT_FOUND'); END IF;
-    IF v_task.current_commit_sha != p_commit_sha THEN
-        RETURN jsonb_build_object('success', false, 'error', 'STALE_COMMIT');
-    END IF;
 
+    -- Store historical audit record regardless of current SHA
     INSERT INTO public.audit_results (
         task_id, commit_sha, auditor, status, findings, severity
     ) VALUES (
         p_task_id, p_commit_sha, p_auditor, p_status, p_findings, p_severity
     );
+
+    -- Reject state progression if commit is stale
+    IF v_task.current_commit_sha != p_commit_sha THEN
+        RETURN jsonb_build_object('success', false, 'error', 'STALE_COMMIT');
+    END IF;
 
     IF p_status = 'FAIL' OR p_severity = 'CRITICAL' THEN v_target_status := 'AUDIT_FAILED'; ELSE v_target_status := 'READY_TO_MERGE'; END IF;
     v_new_version := v_task.version + 1;

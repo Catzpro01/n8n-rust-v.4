@@ -1,4 +1,4 @@
-﻿import json
+import json
 import urllib.request
 import urllib.error
 from pathlib import Path
@@ -192,3 +192,20 @@ class ControlPlaneClient:
         if status == 200 and isinstance(res, list) and len(res) > 0:
             return res[0]
         return None
+
+    def heartbeat_agent(self, agent_id: str, status: Optional[str] = None, task_id: Optional[str] = None) -> Tuple[int, Any]:
+        data = {"last_heartbeat": "NOW()"}
+        if status:
+            data["status"] = status
+        if task_id is not None:
+            data["current_task_id"] = task_id
+        return self._request(f"agents?id=eq.{agent_id}", data=data, method="PATCH")
+
+    def register_agent(self, agent_key: str, specialization_id: str, capabilities: Optional[Dict[str, Any]] = None) -> Tuple[int, Any]:
+        payload = {
+            "agent_key": agent_key,
+            "specialization_id": specialization_id,
+            "status": "AVAILABLE",
+            "capabilities": capabilities or {}
+        }
+        return self._request("agents", data=payload, method="POST")
