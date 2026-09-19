@@ -68,7 +68,7 @@ class DynamicTaskScheduler:
     def get_ready_tasks(self, specialization: Optional[str] = None) -> List[dict]:
         """
         Returns all tasks that:
-        1. Are currently QUEUED
+        1. Are currently QUEUED or RECLAIMABLE
         2. Have 100% satisfied dependencies (DONE / COMPLETED)
         3. Do NOT collide with currently active exclusive files
         4. Match the requested specialization (if provided)
@@ -77,7 +77,7 @@ class DynamicTaskScheduler:
         ready = []
 
         for k, t in self.tasks.items():
-            if t.get("status") != "QUEUED":
+            if t.get("status") not in {"QUEUED", "RECLAIMABLE"}:
                 continue
             if specialization and t.get("specialization") != specialization:
                 continue
@@ -91,8 +91,8 @@ class DynamicTaskScheduler:
 
             ready.append(t)
 
-        # Sort by milestone order then weight desc
-        ready.sort(key=lambda x: (int(x["milestone"][1:]), -x["progress_weight"]))
+        # Sort: RECLAIMABLE first, then milestone order, then weight desc
+        ready.sort(key=lambda x: (0 if x.get("status") == "RECLAIMABLE" else 1, int(x["milestone"][1:]), -x["progress_weight"]))
         return ready
 
     def dispatch_next_task(self, agent_id: str, specialization: str) -> Optional[dict]:

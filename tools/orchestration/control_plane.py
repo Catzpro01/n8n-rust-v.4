@@ -211,6 +211,50 @@ class ControlPlaneClient:
         return self._request("agents", data=payload, method="POST")
 
     # --------------------------------------------------------------------------
+    # Recovery Plane RPCs
+    # --------------------------------------------------------------------------
+    def reclaim_task(self, task_id: str, new_agent_id: str, expected_version: int, lease_seconds: int = 600) -> Tuple[int, Any]:
+        return self.rpc("reclaim_task", {
+            "p_task_id": task_id,
+            "p_new_agent_id": new_agent_id,
+            "p_expected_version": expected_version,
+            "p_lease_seconds": lease_seconds
+        })
+
+    def create_agent_checkpoint(
+        self,
+        task_id: str,
+        agent_id: str,
+        checkpoint_type: str,
+        description: str,
+        current_commit_sha: str,
+        branch_name: str,
+        files_changed: Optional[list] = None,
+        completed_work: Optional[str] = None,
+        remaining_work: Optional[str] = None,
+        test_status: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None
+    ) -> Tuple[int, Any]:
+        return self.rpc("create_agent_checkpoint", {
+            "p_task_id": task_id,
+            "p_agent_id": agent_id,
+            "p_checkpoint_type": checkpoint_type,
+            "p_description": description,
+            "p_current_commit_sha": current_commit_sha,
+            "p_branch_name": branch_name,
+            "p_files_changed": files_changed or [],
+            "p_completed_work": completed_work,
+            "p_remaining_work": remaining_work,
+            "p_test_status": test_status,
+            "p_metadata": metadata or {}
+        })
+
+    def get_task_recovery_context(self, task_id: str) -> Tuple[int, Any]:
+        return self.rpc("get_task_recovery_context", {
+            "p_task_id": task_id
+        })
+
+    # --------------------------------------------------------------------------
     # Progress Engine RPCs
     # --------------------------------------------------------------------------
     def get_project_progress(self) -> Tuple[int, Any]:
@@ -229,4 +273,4 @@ class ControlPlaneClient:
         })
 
     def get_latest_progress_snapshot(self) -> Tuple[int, Any]:
-        return self.rpc("get_latest_progress_snapshot", {})
+        return self.rpc("get_latest_progress_snapshot", {})
