@@ -97,7 +97,8 @@ class TaskProgressResult:
 class MilestoneProgressResult:
     milestone: str
     name: str
-    progress: float
+    progress: float  # Registered task scope progress percentage
+    actual_completion: Optional[float]  # None if decomposition_status != COMPLETE
     total_weight: float
     completed_weight: float
     decomposition_status: str  # COMPLETE, PARTIAL, NOT_STARTED
@@ -322,11 +323,13 @@ class ProgressEngine:
 
         pct = round((completed_weight / total_weight) * 100.0, 2) if total_weight > 0 else 0.0
         decomp_status = self.determine_milestone_decomposition_status(milestone_id, m_tasks)
+        actual_comp = pct if decomp_status == "COMPLETE" else None
 
         return MilestoneProgressResult(
             milestone=milestone_id,
             name=milestone_name,
             progress=pct,
+            actual_completion=actual_comp,
             total_weight=round(total_weight, 2),
             completed_weight=round(completed_weight, 2),
             decomposition_status=decomp_status,
@@ -591,6 +594,7 @@ class ProgressEngine:
         ]
 
         for m in res.milestones:
-            lines.append(f"  {m.milestone:4} {m.name:22} : [{m.decomposition_status}] {m.progress}% registered progress ({m.completed_weight}/{m.total_weight} weight)")
+            actual_str = f"{m.actual_completion}%" if m.actual_completion is not None else "NOT AVAILABLE (Scope Incomplete/Partial)"
+            lines.append(f"  {m.milestone:4} {m.name:22} : Scope: {m.decomposition_status:7} | Registered: {m.progress:5.1f}% ({m.completed_weight:.1f}/{m.total_weight:.1f} wt) | Actual Completion: {actual_str}")
 
         return "\n".join(lines)
