@@ -1,0 +1,16 @@
+{
+	"name": "@lego/queue",
+	"version": "0.1.0",
+	"private": true,
+	"description": "QUEUE LEGO — n8n 2.9.4 queue mode (scaling service, job processor, pubsub command bus, worker status). Rust NOT STARTED.",
+	"license": "SEE LICENSE IN reference/n8n/LICENSE.md",
+	"type": "module",
+	"scripts": {
+		"test": "node --test test/*.test.mjs",
+		"gate": "node ../../tools/queue-isolation-gate.mjs"
+	},
+	"devDependencies": {
+		"@types/node": "^22.10.0",
+		"typescript": "~5.9.2"
+	}
+}

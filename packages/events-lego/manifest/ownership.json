@@ -1,0 +1,38 @@
+{
+	"lego": "events",
+	"owner": "agent-3",
+	"phase": 6,
+	"task": "POOL-010",
+	"reference": {
+		"upstreamCommit": "b6dc2787c45677a29a9612cd27eb911302961a83",
+		"version": "2.9.4",
+		"owns": [
+			"reference/n8n/packages/cli/src/events/event.service.ts",
+			"reference/n8n/packages/cli/src/events/events.controller.ts",
+			"reference/n8n/packages/cli/src/events/maps/**",
+			"reference/n8n/packages/cli/src/events/relays/event-relay.ts",
+			"reference/n8n/packages/cli/src/events/relays/log-streaming.event-relay.ts",
+			"reference/n8n/packages/cli/src/events/relays/workflow-failure-notification.event-relay.ts",
+			"reference/n8n/packages/cli/src/eventbus/**"
+		],
+		"doesNotOwn": [
+			"reference/n8n/packages/cli/src/events/relays/telemetry.event-relay.ts",
+			"reference/n8n/packages/cli/src/modules/log-streaming.ee/**",
+			"reference/n8n/packages/cli/src/scaling/**"
+		]
+	},
+	"implemented": {
+		"engine": "packages/reconstructed-engine/src/events-engine.ts",
+		"package": "packages/events-lego",
+		"tests": [
+			"packages/events-lego/test/01-boundary.test.mjs",
+			"packages/events-lego/test/02-eventbus.test.mjs"
+		]
+	},
+	"ports": {
+		"consumed": ["@lego/queue", "@lego/realtime", "@lego/persistence"],
+		"provided": ["P-EVENTS-SERVICE", "P-EVENTS-BUS", "P-EVENTS-RELAYS"]
+	},
+	"zeroRust": true,
+	"frontendUntouched": true
+}

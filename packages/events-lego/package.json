@@ -1,0 +1,16 @@
+{
+	"name": "@lego/events",
+	"version": "0.1.0",
+	"private": true,
+	"description": "EVENTS LEGO — n8n 2.9.4 event service, message event bus and log-streaming/failure relays. Rust NOT STARTED.",
+	"license": "SEE LICENSE IN reference/n8n/LICENSE.md",
+	"type": "module",
+	"scripts": {
+		"test": "node --test test/*.test.mjs",
+		"gate": "node ../../tools/events-isolation-gate.mjs"
+	},
+	"devDependencies": {
+		"@types/node": "^22.10.0",
+		"typescript": "~5.9.2"
+	}
+}

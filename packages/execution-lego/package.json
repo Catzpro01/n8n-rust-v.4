@@ -1,0 +1,16 @@
+{
+	"name": "@lego/execution",
+	"version": "0.1.0",
+	"private": true,
+	"description": "EXECUTION LEGO — n8n 2.9.4 execution runtime (active executions, workflow activation, execution context hooks, crash recovery). Rust NOT STARTED.",
+	"license": "SEE LICENSE IN reference/n8n/LICENSE.md",
+	"type": "module",
+	"scripts": {
+		"test": "node --test test/*.test.mjs",
+		"gate": "node ../../tools/execution-isolation-gate.mjs"
+	},
+	"devDependencies": {
+		"@types/node": "^22.10.0",
+		"typescript": "~5.9.2"
+	}
+}

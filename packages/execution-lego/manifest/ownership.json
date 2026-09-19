@@ -1,0 +1,42 @@
+{
+	"lego": "execution",
+	"owner": "agent-3",
+	"phase": 7,
+	"task": "POOL-012",
+	"reference": {
+		"upstreamCommit": "b6dc2787c45677a29a9612cd27eb911302961a83",
+		"version": "2.9.4",
+		"owns": [
+			"reference/n8n/packages/cli/src/active-executions.ts",
+			"reference/n8n/packages/cli/src/active-workflow-manager.ts",
+			"reference/n8n/packages/cli/src/executions/execution-recovery.service.ts",
+			"reference/n8n/packages/core/src/execution-engine/active-workflows.ts",
+			"reference/n8n/packages/core/src/execution-engine/execution-context.service.ts",
+			"reference/n8n/packages/core/src/execution-engine/execution-context-hook-registry.service.ts",
+			"reference/n8n/packages/cli/src/errors/execution-not-found-error.ts",
+			"reference/n8n/packages/cli/src/errors/execution-already-resuming.error.ts",
+			"reference/n8n/packages/cli/src/errors/node-crashed.error.ts",
+			"reference/n8n/packages/cli/src/errors/workflow-crashed.error.ts"
+		],
+		"doesNotOwn": [
+			"reference/n8n/packages/cli/src/scaling/**",
+			"reference/n8n/packages/core/src/execution-engine/workflow-execute.ts",
+			"reference/n8n/packages/core/src/execution-engine/partial-execution-utils/**",
+			"reference/n8n/packages/cli/src/push/**"
+		]
+	},
+	"implemented": {
+		"engine": "packages/reconstructed-engine/src/execution-engine.ts",
+		"package": "packages/execution-lego",
+		"tests": [
+			"packages/execution-lego/test/01-boundary.test.mjs",
+			"packages/execution-lego/test/02-runtime.test.mjs"
+		]
+	},
+	"ports": {
+		"consumed": ["@lego/persistence", "@lego/queue", "@lego/events", "@lego/realtime"],
+		"provided": ["P-EXECUTION-REGISTRY", "P-EXECUTION-ACTIVATION", "P-EXECUTION-CONTEXT", "P-EXECUTION-RECOVERY"]
+	},
+	"zeroRust": true,
+	"frontendUntouched": true
+}

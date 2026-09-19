@@ -1,0 +1,77 @@
+{
+  "generatedAt": "2026-09-17T22:34:57.744Z",
+  "phase": 7,
+  "lego": "execution",
+  "reference": {
+    "version": "2.9.4",
+    "upstreamCommit": "b6dc2787c45677a29a9612cd27eb911302961a83"
+  },
+  "result": "PASS",
+  "gateSummary": "8/8",
+  "gates": [
+    {
+      "id": "H01",
+      "title": "contract, isolation blueprint and manifest present",
+      "requirement": "a LEGO without contract, blueprint, package, manifest and gate does not exist",
+      "status": "PASS",
+      "detail": "8 artefacts + manifest (10 owned sources)",
+      "ms": 0
+    },
+    {
+      "id": "H02",
+      "title": "EXECUTION — error surface byte-exact in reference and reconstruction",
+      "requirement": "error messages are part of the API contract of an execution runtime",
+      "status": "PASS",
+      "detail": "10 error messages + 5 level heuristics",
+      "ms": 1
+    },
+    {
+      "id": "H03",
+      "title": "EXECUTION — lifecycle log lines and timing constants byte-exact",
+      "requirement": "the runtime is observable through its log lines and its delays",
+      "status": "PASS",
+      "detail": "14 lifecycle literals + 2 timings",
+      "ms": 1
+    },
+    {
+      "id": "H04",
+      "title": "EXECUTION — recovery semantics (task data, events, defaults)",
+      "requirement": "recovery is the only thing that repairs a crashed deployment; it must match 1:1",
+      "status": "PASS",
+      "detail": "events + ARTIFICIAL_TASK_DATA + 5 recovery literals + 2 config defaults",
+      "ms": 1
+    },
+    {
+      "id": "H05",
+      "title": "package tests (execution)",
+      "requirement": "the LEGO must pass its own node --test suite",
+      "status": "PASS",
+      "detail": "execution 32/32",
+      "ms": 414
+    },
+    {
+      "id": "H06",
+      "title": "ZERO RUST — crates/ and apps/ hold no artifacts",
+      "requirement": "PROJECT_RULES.md §1 — reconstruction is JS/TS only",
+      "status": "PASS",
+      "detail": "crates/ + apps/ + packages/execution-lego clean",
+      "ms": 1
+    },
+    {
+      "id": "H07",
+      "title": "reference integrity — owned subsystem trees unchanged at 2.9.4",
+      "requirement": "the mirror must stay pinned; mirroring the wrong source invalidates the LEGO",
+      "status": "PASS",
+      "detail": "2.9.4 · cli 1252/92422d731d61 · core/execution-engine 128/c22c079afa52 · workflow/errors 28/b9c8efc37fb5 · config 41/82ec73f70254",
+      "ms": 48
+    },
+    {
+      "id": "H08",
+      "title": "drift audit — queue recovery defaults equal the @n8n/config defaults",
+      "requirement": "POOL-012 back-fill: the Phase-6 pin used the reference test fixture instead of the config defaults",
+      "status": "PASS",
+      "detail": "{ interval: 180, batchSize: 100 } — engine, reference config and queue test agree",
+      "ms": 1
+    }
+  ]
+}
