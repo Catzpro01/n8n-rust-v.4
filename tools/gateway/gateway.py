@@ -1,11 +1,11 @@
 """
 Capability Gateway Core.
-The single unified entry point for Arena Manager and agents to invoke capabilities.
-Manages Policy Enforcement, Secret Isolation, Provider Routing, Output Sanitization,
-and Audit Logging.
+Unified entry point with token authentication, policy enforcement,
+secret isolation, output sanitization, and thread-safe audit logging.
 """
 
 import time
+import threading
 from pathlib import Path
 from typing import Dict, Any, Optional, List
 
@@ -13,6 +13,7 @@ from tools.gateway.vault import SecretVault
 from tools.gateway.sanitizer import Sanitizer
 from tools.gateway.policy import PolicyEngine
 from tools.gateway.audit import AuditLogger
+from tools.gateway.auth import GatewayAuth
 
 from tools.gateway.providers.github_provider import GitHubProvider
 from tools.gateway.providers.supabase_provider import SupabaseProvider
@@ -26,6 +27,8 @@ class CapabilityGateway:
         self.sanitizer = Sanitizer(self.vault.get_known_secret_values())
         self.policy = PolicyEngine()
         self.audit = AuditLogger(sanitizer=self.sanitizer)
+        self.auth = GatewayAuth()
+        self._lock = threading.Lock()
 
         # Initialize providers with vault & sanitizer
         self.github = GitHubProvider(self.vault, self.sanitizer, repo_root=self.repo_root)
@@ -93,96 +96,146 @@ class CapabilityGateway:
             "capabilities": catalog
         }
 
-    def invoke(self, caller_id: str, capability: str, params: Optional[Dict[str, Any]] = None, task_id: Optional[str] = None) -> Dict[str, Any]:
+    def invoke(
+        self,
+        caller_id: str,
+        capability: str,
+        params: Optional[Dict[str, Any]] = None,
+        task_id: Optional[str] = None,
+        bearer_token: Optional[str] = None
+    ) -> Dict[str, Any]:
         """
         Executes a capability on behalf of caller_id.
-        Enforces policy, runs the provider method, sanitizes the result, and logs the action.
+        Enforces authentication, policy, executes provider method,
+        sanitizes results, and audits execution in a thread-safe manner.
         """
         params = params or {}
         start_time = time.time()
         target = str(params.get("table") or params.get("branch") or params.get("path") or params.get("command") or "")
 
-        # 1. Policy Authorization Check
-        authorized, reason = self.policy.evaluate(caller_id, capability, params)
-        if not authorized:
-            duration_ms = (time.time() - start_time) * 1000
-            self.audit.record(
-                caller_id=caller_id,
-                capability=capability,
-                target=target,
-                authorization="DENIED",
-                status="FAILED",
-                duration_ms=duration_ms,
-                task_id=task_id,
-                error=reason
-            )
+        # 1. Authentication Check
+        # Fallback to local default if called within same host context and no token passed
+        # BUT validate role strictly if token is provided.
+        if bearer_token:
+            is_auth, auth_err, role = self.auth.authenticate(caller_id, bearer_token)
+            if not is_auth:
+                duration_ms = (time.time() - start_time) * 1000
+                with self._lock:
+                    self.audit.record(
+                        caller_id=caller_id,
+                        capability=capability,
+                        target=target,
+                        authorization="UNAUTHENTICATED",
+                        status="FAILED",
+                        duration_ms=duration_ms,
+                        task_id=task_id,
+                        error=auth_err
+                    )
+                return {
+                    "ok": False,
+                    "error": auth_err,
+                    "authenticated": False,
+                    "authorized": False
+                }
+        else:
+            # Token required for remote/CLI calls
             return {
                 "ok": False,
-                "error": reason,
+                "error": "AUTHENTICATION_REQUIRED: Gateway bearer token must be provided",
+                "authenticated": False,
                 "authorized": False
             }
 
-        # 2. Check handler existence
+        # 2. Policy Authorization Check
+        authorized, reason = self.policy.evaluate(caller_id, role, capability, params)
+        if not authorized:
+            duration_ms = (time.time() - start_time) * 1000
+            with self._lock:
+                self.audit.record(
+                    caller_id=caller_id,
+                    capability=capability,
+                    target=target,
+                    authorization="DENIED",
+                    status="FAILED",
+                    duration_ms=duration_ms,
+                    task_id=task_id,
+                    error=reason
+                )
+            return {
+                "ok": False,
+                "error": reason,
+                "authenticated": True,
+                "authorized": False
+            }
+
+        # 3. Check handler existence
         handler = self._handlers.get(capability.lower().strip())
         if not handler:
             err = f"Capability '{capability}' is unknown or not supported"
             duration_ms = (time.time() - start_time) * 1000
-            self.audit.record(
-                caller_id=caller_id,
-                capability=capability,
-                target=target,
-                authorization="AUTHORIZED",
-                status="FAILED",
-                duration_ms=duration_ms,
-                task_id=task_id,
-                error=err
-            )
+            with self._lock:
+                self.audit.record(
+                    caller_id=caller_id,
+                    capability=capability,
+                    target=target,
+                    authorization="AUTHORIZED",
+                    status="FAILED",
+                    duration_ms=duration_ms,
+                    task_id=task_id,
+                    error=err
+                )
             return {
                 "ok": False,
                 "error": err,
+                "authenticated": True,
                 "authorized": True
             }
 
-        # 3. Execution & Error Capture
+        # 4. Execution & Error Capture
         try:
             raw_result = handler(params)
             duration_ms = (time.time() - start_time) * 1000
 
-            # 4. Deep recursive sanitization
+            # 5. Deep recursive sanitization
             sanitized_result = self.sanitizer.sanitize(raw_result)
 
-            self.audit.record(
-                caller_id=caller_id,
-                capability=capability,
-                target=target,
-                authorization="AUTHORIZED",
-                status="SUCCESS",
-                duration_ms=duration_ms,
-                task_id=task_id,
-                details={"result_summary": "ok" if isinstance(sanitized_result, dict) and sanitized_result.get("ok") else "data"}
-            )
+            with self._lock:
+                self.audit.record(
+                    caller_id=caller_id,
+                    capability=capability,
+                    target=target,
+                    authorization="AUTHORIZED",
+                    status="SUCCESS",
+                    duration_ms=duration_ms,
+                    task_id=task_id,
+                    details={"result_summary": "ok" if isinstance(sanitized_result, dict) and sanitized_result.get("ok") else "data"}
+                )
 
             return {
                 "ok": True,
                 "result": sanitized_result,
+                "authenticated": True,
+                "authorized": True,
                 "duration_ms": round(duration_ms, 2)
             }
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
             err_msg = self.sanitizer.sanitize_string(str(e))
-            self.audit.record(
-                caller_id=caller_id,
-                capability=capability,
-                target=target,
-                authorization="AUTHORIZED",
-                status="ERROR",
-                duration_ms=duration_ms,
-                task_id=task_id,
-                error=err_msg
-            )
+            with self._lock:
+                self.audit.record(
+                    caller_id=caller_id,
+                    capability=capability,
+                    target=target,
+                    authorization="AUTHORIZED",
+                    status="ERROR",
+                    duration_ms=duration_ms,
+                    task_id=task_id,
+                    error=err_msg
+                )
             return {
                 "ok": False,
                 "error": err_msg,
+                "authenticated": True,
                 "authorized": True,
                 "duration_ms": round(duration_ms, 2)
             }

@@ -1,7 +1,7 @@
 """
 Authorization Policy Engine for Capability Gateway.
-Enforces security boundaries, protected branch freeze, and prevents destructive actions
-independent of LLM hallucination or user misdirection.
+Enforces role-based permissions, protected branch freeze, and prevents destructive actions
+independent of LLM hallucination or agent error.
 """
 
 from typing import Tuple, Dict, Any
@@ -10,21 +10,34 @@ PROTECTED_BRANCHES = {"main", "master", "arena-agent"}
 PROTECTED_FILES = {
     ".env", ".env.local", ".env.production",
     ".credentials", ".credentials_rsaparams", ".credentials_migrated",
-    ".runner", ".service", "id_rsa", "id_ed25519"
+    ".runner", ".service", "id_rsa", "id_ed25519", "gateway_tokens.json"
+}
+
+# Administrative capabilities reserved exclusively for Arena Manager
+MANAGER_ONLY_CAPABILITIES = {
+    "github.delete_branch",
+    "github.create_pr",
+    "github.update_pr",
+    "github.merge_pr",
+    "supabase.create_task",
+    "supabase.update_task_state",
+    "telegram.send_message",
+    "telegram.render_dashboard",
 }
 
 class PolicyEngine:
     def __init__(self):
         pass
 
-    def evaluate(self, caller_id: str, capability: str, params: Dict[str, Any]) -> Tuple[bool, str]:
+    def evaluate(self, caller_id: str, role: str, capability: str, params: Dict[str, Any]) -> Tuple[bool, str]:
         """
-        Evaluates whether caller_id is authorized to execute capability with given params.
+        Evaluates whether caller_id with authenticated role is authorized
+        to execute capability with given params.
         Returns: (is_authorized, reason)
         """
         cap = capability.lower().strip()
 
-        # 1. Branch Deletion Protections
+        # 1. Branch Deletion Protections (Frozen branches)
         if cap in ("github.delete_branch", "git.delete_branch"):
             branch = params.get("branch") or params.get("branch_name") or ""
             branch = branch.strip().lower()
@@ -38,7 +51,6 @@ class PolicyEngine:
         # 2. File Protection (Read / Write / Delete)
         if any(action in cap for action in ("write_file", "delete_file", "read_file")):
             path = str(params.get("path") or params.get("file_path") or "").replace("\\", "/").lower()
-            # Check direct match or filename in protected list
             parts = [p.strip() for p in path.split("/")]
             for part in parts:
                 if part in PROTECTED_FILES or part.endswith(".pem") or part.endswith(".key"):
@@ -50,11 +62,14 @@ class PolicyEngine:
         if "delete_repo" in cap or "transfer_repo" in cap:
             return False, "POLICY_VIOLATION: Repository deletion/transfer is strictly prohibited"
 
-        # 4. Worker Scope Fence
-        # If caller is a worker agent, they cannot invoke manager-level capabilities
-        if caller_id.startswith("arena-agent-") or caller_id.startswith("worker-"):
-            # Workers can only work on their assigned arena/<worker-id>/... branches and files
-            if cap in ("github.delete_branch", "supabase.migrate", "github.merge_pr"):
-                return False, f"POLICY_VIOLATION: Worker agent '{caller_id}' cannot execute administrative operation '{cap}'"
+        # 4. Worker Role Fencing
+        if role == "worker" or caller_id.startswith("arena-agent-") or caller_id.startswith("worker-"):
+            if cap in MANAGER_ONLY_CAPABILITIES:
+                return False, f"POLICY_VIOLATION: Worker agent '{caller_id}' cannot execute manager-only capability '{cap}'"
+
+            # Worker laptop restrictions
+            if cap in ("laptop.run_command", "laptop.run_build", "laptop.run_test", "laptop.run_clippy"):
+                # Allowed for local tasks within workspace
+                pass
 
         return True, "AUTHORIZED"

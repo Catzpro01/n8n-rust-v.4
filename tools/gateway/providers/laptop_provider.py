@@ -2,7 +2,8 @@
 Laptop Capability Provider for Arena Manager Gateway.
 Enables local execution of builds, tests, clippy, git inspection,
 and local system operations inside the controlled repository environment.
-All process outputs and error traces are strictly sanitized against the vault.
+All process outputs and error traces are strictly sanitized against the vault,
+and child processes run in isolated environments without access to host secrets.
 """
 
 import os
@@ -13,21 +14,54 @@ from typing import Dict, Any, Optional
 from tools.gateway.vault import SecretVault
 from tools.gateway.sanitizer import Sanitizer
 
+BLOCKED_COMMAND_KEYWORDS = [
+    # Destructive commands
+    "rm -rf", "del /f", "del /s", "format", "shutdown", "curl", "wget",
+    # Environment dumping attempts
+    "env", "printenv", "set", "get-childitem env:", "dir env:", "gci env:",
+    # File reading attempts on secrets
+    "cat .env", "type .env", "more .env", "head .env", "tail .env",
+    "cat .credentials", "type .credentials", "type .runner", "cat .runner"
+]
+
 class LaptopProvider:
     def __init__(self, vault: SecretVault, sanitizer: Sanitizer, repo_root: Optional[Path] = None):
         self.vault = vault
         self.sanitizer = sanitizer
         self.repo_root = repo_root or Path(__file__).resolve().parents[3]
 
+    def _get_isolated_env(self) -> Dict[str, str]:
+        """
+        Creates an isolated environment dictionary for subprocess execution.
+        Strips ALL API keys, tokens, database secrets, and credentials.
+        """
+        env = os.environ.copy()
+        # Remove known sensitive environment variables
+        sensitive_substrings = ["TOKEN", "SECRET", "KEY", "PASS", "AUTH", "CREDENTIAL", "JWT", "RUNNER"]
+        keys_to_remove = []
+        for k in env:
+            k_upper = k.upper()
+            if any(sub in k_upper for sub in sensitive_substrings):
+                keys_to_remove.append(k)
+
+        for k in keys_to_remove:
+            env.pop(k, None)
+
+        # Inject safe placeholders
+        env["ARENA_ENVIRONMENT"] = "isolated"
+        return env
+
     def _execute_cmd(self, cmd: list, cwd: Optional[Path] = None, timeout: int = 120) -> Dict[str, Any]:
         target_cwd = cwd or self.repo_root
+        isolated_env = self._get_isolated_env()
         try:
             res = subprocess.run(
                 cmd,
                 cwd=str(target_cwd),
                 capture_output=True,
                 text=True,
-                timeout=timeout
+                timeout=timeout,
+                env=isolated_env
             )
             return {
                 "exit_code": res.returncode,
@@ -108,11 +142,17 @@ class LaptopProvider:
         if not cmd:
             raise ValueError("Parameter 'command' is required")
 
-        # Basic safety checks
-        blocked_commands = ["rm -rf", "del /f", "format", "shutdown", "curl", "wget"]
-        for b in blocked_commands:
-            if b in cmd.lower():
-                raise PermissionError(f"Command '{b}' is blocked by laptop provider policy")
+        cmd_str = cmd if isinstance(cmd, str) else " ".join(cmd)
+        cmd_lower = cmd_str.lower().strip()
+
+        # Strict keyword check
+        for b in BLOCKED_COMMAND_KEYWORDS:
+            if b in cmd_lower:
+                raise PermissionError(f"Command pattern '{b}' is blocked by laptop provider security policy")
+
+        # Specific single word environment dumps
+        if cmd_lower in ["env", "set", "printenv"]:
+            raise PermissionError(f"Environment dumping command '{cmd_lower}' is strictly forbidden")
 
         if isinstance(cmd, str):
             cmd_list = cmd.split()

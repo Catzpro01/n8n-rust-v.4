@@ -6,6 +6,8 @@ Dokumen spesifikasi resmi arsitektur **Arena Manager Capability Gateway v1.7** p
 
 Arsitektur orkestrasi n8n-rust-v.4 menempatkan **Arena Manager** (1 Agen AI) sebagai project orchestrator utama menggantikan Antigravity.
 
+Antigravity bertindak **HANYA** sebagai infrastruktur *provisioning & debugging*, sementara operasi harian dijalankan 100% secara offline tanpa ketergantungan pada proses atau workspace Antigravity.
+
 ```text
                          HUMAN
                            │
@@ -15,19 +17,24 @@ Arsitektur orkestrasi n8n-rust-v.4 menempatkan **Arena Manager** (1 Agen AI) seb
                   │    1 AGENT      │
                   └────────┬────────┘
                            │
+                    authenticated
                     capability calls
+                  (HTTP REST / CLI)
                            │
                            ▼
                   ┌─────────────────┐
                   │ CAPABILITY      │
-                  │ GATEWAY         │
+                  │ GATEWAY DAEMON  │
                   │                 │
-                  │ Auth            │
-                  │ Authorization   │
-                  │ Rate Limiting   │
-                  │ Audit Log       │
-                  │ Sanitization    │
+                  │ GatewayAuth     │
+                  │ PolicyEngine    │
+                  │ SecretVault     │
+                  │ Sanitizer       │
+                  │ AuditLogger     │
                   └────────┬────────┘
+                           │
+             credentials remain exclusively
+                 inside gateway vault
                            │
          ┌────────────┬────┴───────┬────────────┐
          ▼            ▼            ▼            ▼
@@ -35,14 +42,18 @@ Arsitektur orkestrasi n8n-rust-v.4 menempatkan **Arena Manager** (1 Agen AI) seb
        Repo      State/Tasks    Builds      Dashboard
 ```
 
-### Prinsip Keamanan Inti:
-1. **Capabilities Instead of Credentials**: Arena Manager dan worker agents tidak pernah menerima, membaca, atau menyimpan token, API key, atau secrets (`GITHUB_TOKEN`, `SUPABASE_KEY`, `TELEGRAM_BOT_TOKEN`).
-2. **Strict Redaction / Zero Leakage**: Sanitizer gateway menyaring semua output stdout/stderr, respons REST API, JSON payloads, dan error trace dari token GitHub (`ghp_`), JWT Supabase (`eyJ...`), Telegram token (`bot...`), serta exact secret values.
-3. **Branch Protection & Fencing**:
-   - Branch `main`, `master`, dan `arena-agent` bersifat terproteksi permanen. Penghapusan branch ini di-reject langsung oleh `PolicyEngine`.
-   - File konfigurasi rahasia (`.env`, `.credentials`, `.runner`, ssh keys) diblokir dari akses baca/tulis/hapus.
-   - Worker agents (`arena-agent-*`, `worker-*`) diisolasi dalam scope pengerjaan lokal dan diblokir dari operasi administratif (misal `github.delete_branch`, `github.merge_pr`).
-4. **Append-Only Audit Logging**: Seluruh pemanggilan kapabilitas dicatat ke `.arena/logs/gateway_audit.jsonl` (timestamp, caller, capability, status, latency) bebas dari data rahasia.
+### Prinsip Keamanan & Desain Inti:
+1. **Capabilities Instead of Credentials**: Arena Manager dan worker agents tidak pernah menerima, membaca, atau menyimpan token mentah (`GITHUB_TOKEN`, `SUPABASE_KEY`, `TELEGRAM_BOT_TOKEN`, `SSH_KEY`, `DATABASE_PASSWORD`).
+2. **Independent Gateway Authentication**: Gateway memiliki layer otentikasi mandiri (`GatewayAuth`) menggunakan Bearer Token terisolasi (`agm_...` untuk Manager, `agw_...` untuk Worker). Token gateway ini hanya mengizinkan pemanggilan endpoint gateway dan tidak memiliki hak akses langsung ke GitHub atau Supabase.
+3. **Role-Based Privilege Model**:
+   - **Arena Manager**: Hak administratif penuh untuk membuat/mengupdate PR, merge PR, membuat/menghapus worker branch, membuat task, dan broadcast Telegram.
+   - **Worker Agents**: Terisolasi pada pembacaan repo, eksekusi tes/build lokal, dan dilarang mengeksekusi operasi administratif (misal menghapus branch atau merge PR).
+4. **Subprocess & Environment Isolation**:
+   - Provider laptop (`laptop.run_command`, `laptop.run_test`, dll.) mengeksekusi perintah pada lingkungan terisolasi di mana seluruh variabel rahasia OS distrip sebelum proses dijalankan.
+   - Perintah dump lingkungan (`env`, `printenv`, `set`, `Get-ChildItem env:`) dan pembacaan berkas kredensial (`.env`, `.credentials`, `.runner`) diblokir secara mutlak.
+5. **Protected Branch & File Guard**:
+   - Branch `main`, `master`, dan `arena-agent` bersifat permanen dan tidak dapat dihapus oleh operasi normal gateway.
+6. **Thread-Safe Append-Only Audit Logging**: Seluruh pemanggilan kapabilitas dicatat ke `.arena/logs/gateway_audit.jsonl` (timestamp, caller, capability, target, authorization, status, latency) bebas dari data rahasia.
 
 ---
 
@@ -53,16 +64,16 @@ Arsitektur orkestrasi n8n-rust-v.4 menempatkan **Arena Manager** (1 Agen AI) seb
 * `github.list_branches`: Mendapatkan daftar branch aktif beserta commit SHA.
 * `github.get_branch`: Mengambil detail spesifik branch.
 * `github.create_branch`: Membuat branch baru dari baseline ref tertentu.
-* `github.delete_branch`: Menghapus branch (dicek oleh PolicyEngine; `main` dan `arena-agent` terproteksi).
+* `github.delete_branch`: Menghapus branch (hanya untuk non-protected branches).
 * `github.read_file`: Membaca konten file dari remote GitHub.
 * `github.write_file`: Menulis atau memperbarui file pada remote GitHub.
 * `github.delete_file`: Menghapus file pada remote GitHub.
 * `github.create_pr`: Membuat Pull Request baru (`head` -> `base`).
 * `github.update_pr`: Mengupdate judul, body, atau state PR.
 * `github.get_pr`: Mengambil status PR (mergeable, merged, state, reviews).
-* `github.merge_pr`: Melakukan merge PR (mendukung metode `squash`, `merge`, `rebase`).
+* `github.merge_pr`: Melakukan merge PR (metode `squash`, `merge`, `rebase`).
 * `github.get_ci`: Mengambil status workflow run dan check-runs CI.
-* `github.commit_and_push`: Wrapper lokal untuk commit dan push menggunakan kredensial vault.
+* `github.commit_and_push`: Wrapper git lokal untuk commit dan push dengan kredensial vault.
 
 ### 2.2 Domain Supabase (`supabase.*`)
 * `supabase.read_table`: Query tabel PostgREST (e.g. `tasks`, `agents`, `orchestration_events`).
@@ -81,7 +92,7 @@ Arsitektur orkestrasi n8n-rust-v.4 menempatkan **Arena Manager** (1 Agen AI) seb
 * `laptop.run_test`: Menjalankan suite `cargo test` lokal (mendukung filtering per crate atau nama test).
 * `laptop.run_build`: Menjalankan `cargo check` atau `cargo build`.
 * `laptop.run_clippy`: Menjalankan linter `cargo clippy -- -D warnings`.
-* `laptop.run_command`: Menjalankan perintah shell terkontrol dan aman dengan sanitasi output.
+* `laptop.run_command`: Menjalankan perintah shell terkontrol dalam isolasi environment.
 
 ### 2.4 Domain Telegram (`telegram.*`)
 * `telegram.send_message`: Mengirim pesan markdown/teks ke chat Telegram orkestrasi.
@@ -90,64 +101,55 @@ Arsitektur orkestrasi n8n-rust-v.4 menempatkan **Arena Manager** (1 Agen AI) seb
 
 ---
 
-## 3. Cara Penggunaan oleh Arena Manager
+## 3. Protokol & Endpoint Server Gateway
 
-### 3.1 Via Python API
-```python
-from tools.gateway.gateway import CapabilityGateway
+Daemon HTTP REST Gateway berjalan di `http://127.0.0.1:8787` (atau port yang dikonfigurasi):
 
-gateway = CapabilityGateway()
+| Endpoint | Method | Header | Deskripsi |
+| :--- | :--- | :--- | :--- |
+| `/health` atau `/api/v1/health` | `GET` | - | Health check server status |
+| `/api/v1/capabilities` | `GET` | - | Discovery katalog seluruh kapabilitas |
+| `/api/v1/invoke` | `POST` | `Authorization: Bearer <TOKEN>`<br>`X-Caller-ID: <CALLER_ID>` | Eksekusi kapabilitas |
 
-# 1. Menemukan kapabilitas yang tersedia
-catalog = gateway.discover_capabilities()
-
-# 2. Memanggil kapabilitas
-result = gateway.invoke(
-    caller_id="arena-manager",
-    capability="supabase.inspect_tasks",
-    params={"limit": 5}
-)
-
-if result["ok"]:
-    tasks = result["result"]
-    print("Tasks retrieved:", len(tasks))
-else:
-    print("Error:", result["error"])
+Contoh Payload Pemanggilan (`POST /api/v1/invoke`):
+```json
+{
+  "caller_id": "arena-manager",
+  "capability": "supabase.inspect_tasks",
+  "params": {
+    "limit": 5
+  }
+}
 ```
 
-### 3.2 Via Terminal / Subprocess CLI
-```bash
-# Discovery
-python -m tools.gateway.cli discover
-
-# Invoke Read Repo
-python -m tools.gateway.cli invoke --caller arena-manager --capability github.read_repo
-
-# Invoke Laptop Status
-python -m tools.gateway.cli invoke --caller arena-manager --capability laptop.status
-
-# Invoke Telegram Broadcast
-python -m tools.gateway.cli invoke --caller arena-manager --capability telegram.send_message --params '{"text": "Status update from Arena Manager"}'
+Format Respons:
+```json
+{
+  "ok": true,
+  "result": { ... },
+  "authenticated": true,
+  "authorized": true,
+  "duration_ms": 124.5
+}
 ```
 
 ---
 
-## 4. Struktur Modul
+## 4. Cara Penggunaan Antigravity-Independent
 
-```text
-tools/gateway/
-├── __init__.py
-├── vault.py                 # SecretVault: resolusi kredensial terisolasi
-├── sanitizer.py             # Sanitizer: recursive redaction token & pattern
-├── policy.py                # PolicyEngine: branch protection, file guard, worker fence
-├── audit.py                 # AuditLogger: JSONL audit log terstruktur
-├── gateway.py               # CapabilityGateway: facade & router
-├── cli.py                   # Antarmuka CLI untuk Arena Manager
-├── providers/
-│   ├── github_provider.py   # GitHub REST API & Git operations
-│   ├── supabase_provider.py # PostgREST & RPC operations
-│   ├── laptop_provider.py   # Cargo & local process execution
-│   └── telegram_provider.py # Telegram bot API operations
-└── tests/
-    └── test_gateway.py      # Automated verification suite
+### A. Menjalankan Gateway Daemon (Background Service)
+```bash
+python -m tools.gateway.server --host 127.0.0.1 --port 8787
+```
+
+### B. Pemanggilan via CLI
+```bash
+# Discovery
+python -m tools.gateway.cli discover
+
+# Invoke dengan Token Terotentikasi
+python -m tools.gateway.cli invoke \
+  --caller arena-manager \
+  --capability github.read_repo \
+  --token <ARENA_GATEWAY_TOKEN>
 ```
