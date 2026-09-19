@@ -15,7 +15,7 @@
 
 | Milestone | Domain Spesialisasi | Crates / Target Paths | Jumlah Task | Total Bobot | Scope Status |
 | :--- | :--- | :--- | :---: | :---: | :---: |
-| **M1: Runtime Kernel** | `runtime-kernel` | `crates/n8n-workflow/src/runtime/**` | 7 | 12.0 | **COMPLETE** |
+| **M1: Runtime Kernel** | `runtime-kernel` | `crates/n8n-workflow/src/runtime/**` | 7 | 11.0 | **COMPLETE** |
 | **M2: Execution Engine** | `execution-engine` | `crates/n8n-workflow/src/runtime/executor.rs` | 5 | 9.0 | **COMPLETE** |
 | **M3: Data Plane** | `data-plane` | `crates/n8n-execution-data/**` | 5 | 10.0 | **COMPLETE** |
 | **M4: Memory** | `memory` | `crates/n8n-workflow/src/runtime/memory.rs` | 4 | 8.0 | **COMPLETE** |
@@ -25,7 +25,7 @@
 | **M8: Validation** | `validation` | `crates/n8n-validation/**` | 4 | 4.0 | **COMPLETE** |
 | **M9: Integration** | `integration` | `tests/**`, `packages/reconstructed-engine/**` | 4 | 9.0 | **COMPLETE** |
 | **M10: Security** | `security` | `tools/arena-executor/fs_guard.py` | 4 | 5.0 | **COMPLETE** |
-| **TOTAL** | **10 Domains** | **Seluruh Repositori** | **47 Tasks** | **86.0 Wt** | **BASELINE READY** |
+| **TOTAL** | **10 Domains** | **Seluruh Repositori** | **49 Tasks** | **85.0 Wt** | **BASELINE READY** |
 
 ---
 
