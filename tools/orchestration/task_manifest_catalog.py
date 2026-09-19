@@ -1,5 +1,5 @@
 """
-Canonical 47-Task Manifest Catalog for n8n-rust-v.4 (Milestones M1–M10).
+Canonical 49-Task Manifest Catalog for n8n-rust-v.4 (Milestones M1–M10).
 Defines complete metadata for every decomposed task:
 - task_key
 - specialization
@@ -19,7 +19,7 @@ from typing import Any, Dict, List
 
 CANONICAL_TASKS: List[Dict[str, Any]] = [
     # ==========================================================================
-    # MILESTONE 1: RUNTIME KERNEL (7 tasks | 12.0 weight)
+    # MILESTONE 1: RUNTIME KERNEL (7 tasks | 11.0 weight)
     # ==========================================================================
     {
         "task_key": "runtime-kernel/m1-runner",

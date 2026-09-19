@@ -68,7 +68,7 @@ class DynamicTaskScheduler:
     def get_ready_tasks(self, specialization: Optional[str] = None) -> List[dict]:
         """
         Returns all tasks that:
-        1. Are currently QUEUED
+        1. Are currently QUEUED or RECLAIMABLE
         2. Have 100% satisfied dependencies (DONE / COMPLETED)
         3. Do NOT collide with currently active exclusive files
         4. Match the requested specialization (if provided)
@@ -77,7 +77,7 @@ class DynamicTaskScheduler:
         ready = []
 
         for k, t in self.tasks.items():
-            if t.get("status") != "QUEUED":
+            if t.get("status") not in {"QUEUED", "RECLAIMABLE"}:
                 continue
             if specialization and t.get("specialization") != specialization:
                 continue
@@ -91,20 +91,33 @@ class DynamicTaskScheduler:
 
             ready.append(t)
 
-        # Sort by milestone order then weight desc
-        ready.sort(key=lambda x: (int(x["milestone"][1:]), -x["progress_weight"]))
+        # Sort by:
+        # 1. Status: RECLAIMABLE first (0), then QUEUED (1)
+        # 2. Priority integer (lower is higher priority, default 100)
+        # 3. Progress weight desc (higher weight first)
+        # 4. Milestone order
+        ready.sort(key=lambda x: (
+            0 if x.get("status") == "RECLAIMABLE" else 1,
+            x.get("priority", 100),
+            -x.get("progress_weight", 1.0),
+            int(x["milestone"][1:]) if x["milestone"].startswith("M") and x["milestone"][1:].isdigit() else 99
+        ))
         return ready
 
-    def dispatch_next_task(self, agent_id: str, specialization: str) -> Optional[dict]:
+    def dispatch_next_task(self, agent_id: str, specialization: str, allow_cross_domain: bool = False) -> Optional[dict]:
         """
         Atomically selects and claims the highest-priority eligible ready task for an agent.
+        If allow_cross_domain is True and no task matches specialization, falls back to any eligible task.
         """
         ready = self.get_ready_tasks(specialization=specialization)
+        if not ready and allow_cross_domain:
+            ready = self.get_ready_tasks(specialization=None)
+
         if not ready:
-            # Optionally check cross-domain if allowed, otherwise return None
             return None
 
         chosen = ready[0]
         k = chosen["task_key"]
         self.set_task_status(k, "CLAIMED", agent_id=agent_id)
         return self.tasks[k]
+

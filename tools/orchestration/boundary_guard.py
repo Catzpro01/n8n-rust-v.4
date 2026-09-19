@@ -54,8 +54,10 @@ class TaskBoundaryGuard:
         violations = []
         for mf in modified_files:
             clean_mf = mf.replace("\\", "/")
-            # Also allow files under tests/ if task specifically is integration/validation,
-            # otherwise strictly require exact match or allowed subtree
+            # Progress evidence documentation is always permissible across all tasks
+            if clean_mf.startswith(".arena/progress/") and clean_mf.endswith(".md"):
+                continue
+
             matched = False
             for allowed_pattern in allowed:
                 if clean_mf == allowed_pattern or clean_mf.startswith(allowed_pattern.rstrip("/*") + "/"):

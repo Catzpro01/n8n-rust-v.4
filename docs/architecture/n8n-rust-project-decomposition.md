@@ -2,7 +2,8 @@
 
 ## 0. Dokumen Otoritas & Tujuan
 - **Repositori**: `Catzpro01/n8n-rust-v.4`
-- **Tujuan**: Menggantikan estimasi sembarang dengan **Dekomposisi Arsitektur Konkret (47 Task)** yang berasal langsung dari kebutuhan teknis modul Rust dan LEGO conformance repositori ini.
+- **Tujuan**: Menggantikan estimasi sembarang dengan **Dekomposisi Arsitektur Konkret (49 Task)** yang berasal langsung dari kebutuhan teknis modul Rust dan LEGO conformance repositori ini.
+  *(Catatan Eksplisit: Sebelumnya tertulis 47 task, namun tambahan `m5-06-webhook-node` dan `m5-07-manual-trigger-node` menyebabkan header menjadi stale. Keduanya kini merupakan bagian resmi dari canonical manifest dengan total 49 task dan weight 85.0).*
 - **Aturan Mutlak**:
   - `SPECIALIZATION ≠ AGENT ≠ BRANCH ≠ WORKSPACE`.
   - Format branch per task: `<SPECIALIZATION>/<MILESTONE>-<TASK>`.
@@ -289,8 +290,8 @@ Target: `tools/arena-executor/fs_guard.py`, security sandbox
 
 ## 3. Integrasi ke Progress Engine & Kontrak Baseline
 
-Setelah seluruh 47 task ini didaftarkan ke Control Plane:
-1. `PROJECT_SCOPE_TASK_COUNT`: **47 tasks**
+Setelah seluruh 49 task ini didaftarkan ke Control Plane:
+1. `PROJECT_SCOPE_TASK_COUNT`: **49 tasks**
 2. `TOTAL_PROJECT_WEIGHT`: **86.0 weight points**
 3. `PROJECT_SCOPE`: Berubah dari `INCOMPLETE` menjadi **`COMPLETE`**
 4. Status Progress Proyek Aktual:

@@ -210,6 +210,97 @@ class ControlPlaneClient:
         }
         return self._request("agents", data=payload, method="POST")
 
+    def register_dynamic_agent(
+        self,
+        agent_key: str,
+        specialization_id: str,
+        capabilities: Optional[Dict[str, Any]] = None,
+        hostname: Optional[str] = None,
+        platform_name: Optional[str] = None,
+        workspace_root: Optional[str] = None,
+        worker_version: str = "1.0.0",
+        execution_backend: str = "local_laptop",
+        resource_capacity: Optional[Dict[str, Any]] = None
+    ) -> Tuple[int, Any]:
+        return self.rpc("register_dynamic_agent", {
+            "p_agent_key": agent_key,
+            "p_specialization_id": specialization_id,
+            "p_capabilities": capabilities or {},
+            "p_hostname": hostname,
+            "p_platform": platform_name,
+            "p_workspace_root": workspace_root,
+            "p_worker_version": worker_version,
+            "p_execution_backend": execution_backend,
+            "p_resource_capacity": resource_capacity or {"cpu_count": 4, "memory_gb": 8, "build_slots": 1, "test_slots": 2}
+        })
+
+    def agent_heartbeat_proof(
+        self,
+        agent_id: str,
+        worker_state: Optional[str] = None,
+        current_task_id: Optional[str] = None,
+        active_build_slots: Optional[int] = None,
+        active_test_slots: Optional[int] = None,
+        resource_capacity: Optional[Dict[str, Any]] = None,
+        worker_version: Optional[str] = None
+    ) -> Tuple[int, Any]:
+        return self.rpc("agent_heartbeat", {
+            "p_agent_id": agent_id,
+            "p_worker_state": worker_state,
+            "p_current_task_id": current_task_id,
+            "p_active_build_slots": active_build_slots,
+            "p_active_test_slots": active_test_slots,
+            "p_resource_capacity": resource_capacity,
+            "p_worker_version": worker_version
+        })
+
+    def drain_agent(self, agent_id: str) -> Tuple[int, Any]:
+        return self.rpc("drain_agent", {"p_agent_id": agent_id})
+
+    # --------------------------------------------------------------------------
+    # Recovery Plane RPCs
+    # --------------------------------------------------------------------------
+    def reclaim_task(self, task_id: str, new_agent_id: str, expected_version: int, lease_seconds: int = 600) -> Tuple[int, Any]:
+        return self.rpc("reclaim_task", {
+            "p_task_id": task_id,
+            "p_new_agent_id": new_agent_id,
+            "p_expected_version": expected_version,
+            "p_lease_seconds": lease_seconds
+        })
+
+    def create_agent_checkpoint(
+        self,
+        task_id: str,
+        agent_id: str,
+        checkpoint_type: str,
+        description: str,
+        current_commit_sha: str,
+        branch_name: str,
+        files_changed: Optional[list] = None,
+        completed_work: Optional[str] = None,
+        remaining_work: Optional[str] = None,
+        test_status: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None
+    ) -> Tuple[int, Any]:
+        return self.rpc("create_agent_checkpoint", {
+            "p_task_id": task_id,
+            "p_agent_id": agent_id,
+            "p_checkpoint_type": checkpoint_type,
+            "p_description": description,
+            "p_current_commit_sha": current_commit_sha,
+            "p_branch_name": branch_name,
+            "p_files_changed": files_changed or [],
+            "p_completed_work": completed_work,
+            "p_remaining_work": remaining_work,
+            "p_test_status": test_status,
+            "p_metadata": metadata or {}
+        })
+
+    def get_task_recovery_context(self, task_id: str) -> Tuple[int, Any]:
+        return self.rpc("get_task_recovery_context", {
+            "p_task_id": task_id
+        })
+
     # --------------------------------------------------------------------------
     # Progress Engine RPCs
     # --------------------------------------------------------------------------
