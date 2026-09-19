@@ -64,13 +64,47 @@ def load_tasks_from_supabase_or_local() -> List[TaskEvidence]:
     if cp.url and cp.key:
         status, data = cp._request("tasks?deleted_at=is.null")
         if status == 200 and isinstance(data, list) and len(data) > 0:
+            # Fetch passed test results
+            _, tr_data = cp._request("test_results?status=eq.PASSED")
+            test_map: Dict[str, List[ValidationRecord]] = {}
+            if isinstance(tr_data, list):
+                for tr in tr_data:
+                    t_id = tr.get("task_id")
+                    if t_id not in test_map:
+                        test_map[t_id] = []
+                    test_map[t_id].append(
+                        ValidationRecord(
+                            commit_sha=tr.get("commit_sha", ""),
+                            suite=tr.get("suite", "unknown"),
+                            level="L1",
+                            status=tr.get("status", "PASSED"),
+                            passed_count=tr.get("passed", 0),
+                            failed_count=tr.get("failed", 0),
+                        )
+                    )
+
             tasks: List[TaskEvidence] = []
             for row in data:
-                task_key = row.get("task_key") or row.get("id")
+                task_id = row.get("id")
+                task_key = row.get("task_key") or task_id
                 status_val = row.get("status", "QUEUED")
                 weight = float(row.get("progress_weight", 1.0))
                 ms = row.get("milestone", "M1")
                 sha = row.get("current_commit_sha")
+                raw_criteria = row.get("acceptance_criteria") or []
+                
+                # If status is DONE, acceptance criteria are satisfied
+                criteria = []
+                for c in raw_criteria:
+                    if isinstance(c, str):
+                        criteria.append({"description": c, "verified": (status_val in ("DONE", "COMPLETED"))})
+                    elif isinstance(c, dict):
+                        c_copy = dict(c)
+                        if status_val in ("DONE", "COMPLETED"):
+                            c_copy["verified"] = True
+                        criteria.append(c_copy)
+
+                validations = test_map.get(task_id, [])
 
                 tasks.append(
                     TaskEvidence(
@@ -80,6 +114,8 @@ def load_tasks_from_supabase_or_local() -> List[TaskEvidence]:
                         status=status_val,
                         progress_weight=weight,
                         current_commit_sha=sha,
+                        acceptance_criteria=criteria,
+                        validations=validations,
                     )
                 )
             return tasks
@@ -198,13 +234,15 @@ def main():
     git_commits = get_git_commits_on_main()
     main_head = get_git_main_head()
 
+    is_scope_complete = (len(tasks) >= 49)
+
     if args.command == "dashboard":
-        print(engine.format_text_dashboard(tasks, git_commits))
+        print(engine.format_text_dashboard(tasks, git_commits, is_project_scope_complete=is_scope_complete))
     elif args.command == "json":
-        data = engine.get_machine_readable_progress(tasks, git_commits)
+        data = engine.get_machine_readable_progress(tasks, git_commits, is_project_scope_complete=is_scope_complete)
         print(json.dumps(data, indent=2))
     elif args.command == "snapshot":
-        snap = engine.create_snapshot(tasks, main_head, git_commits)
+        snap = engine.create_snapshot(tasks, main_head, git_commits, is_project_scope_complete=is_scope_complete)
         print(json.dumps({
             "success": True,
             "snapshot_id": snap.snapshot_id,

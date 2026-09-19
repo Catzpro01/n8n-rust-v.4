@@ -126,13 +126,10 @@ def evaluate_arena_gate() -> bool:
             if st not in (200, 204):
                 missing_tables.append(tbl)
         
-        # Check canonical RPCs
-        missing_rpcs = []
-        for rpc in CANONICAL_RPCS:
-            st, _ = cp.rpc(rpc, {})
-            # Stored procedure exists if not 404 (may return 400 for missing args, but NOT 404)
-            if st == 404:
-                missing_rpcs.append(rpc)
+        # Check canonical RPCs via OpenAPI spec
+        st_spec, spec_json = cp._request("", method="GET")
+        exposed_paths = set(spec_json.get("paths", {}).keys()) if st_spec == 200 else set()
+        missing_rpcs = [rpc for rpc in CANONICAL_RPCS if f"/rpc/{rpc}" not in exposed_paths]
 
         if missing_tables or missing_rpcs:
             err_msg = f"Missing {len(missing_tables)} tables ({missing_tables[:3]}...) and {len(missing_rpcs)} RPCs ({missing_rpcs[:3]}...)"
