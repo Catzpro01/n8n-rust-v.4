@@ -1,0 +1,26 @@
+# Reverse proxy for the n8n-ts TypeScript baseline (Phase TS-1).
+# Install as /etc/caddy/Caddyfile, then: sudo systemctl reload caddy
+# Caddy obtains and renews the Let's Encrypt certificate automatically (port 80 + 443 must be open).
+
+n8n.kentutmambu.my.id {
+	encode zstd gzip
+
+	# never proxy the raw API key or oversized bodies upstream by accident
+	request_body {
+		max_size 2MB
+	}
+
+	reverse_proxy 127.0.0.1:5678 {
+		header_up Host {host}
+		header_up X-Forwarded-Proto {scheme}
+		header_up X-Real-IP {remote_host}
+		health_uri /healthz
+		health_interval 30s
+		health_timeout 5s
+	}
+
+	log {
+		output file /var/log/caddy/n8n-ts.log
+		format json
+	}
+}
