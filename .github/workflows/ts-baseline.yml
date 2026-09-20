@@ -1,0 +1,109 @@
+name: TS Baseline Build & Test (Cloud Runner)
+
+# TypeScript LEGO baseline — manager-owned CI. Rust workflows (self-hosted)
+# tidak tersentuh. Berjalan di ubuntu cloud agar tidak membebani laptop runner.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches:
+      - 'arena/**'
+
+jobs:
+  ts-baseline:
+    name: Build, test runtime nyata, boundary audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/n8n-ts/package-lock.json
+
+      - name: Install deps (apps/n8n-ts)
+        run: npm --prefix apps/n8n-ts ci
+
+      - name: Typecheck + build
+        run: |
+          npm --prefix apps/n8n-ts run typecheck
+          npm --prefix apps/n8n-ts run build
+
+      - name: Worker 4 — adapter test
+        run: node --test packages/reconstructed-engine/ts-runtime-adapter.test.mjs
+
+      - name: Worker 3 — runtime tests (nyata)
+        run: node tests/runtime/run-all.mjs
+
+      - name: Worker 3 — integration smoke
+        run: node --test tests/integration/ts-baseline-smoke.test.mjs
+
+      - name: Worker 2 — doctor (install valid, server berhenti)
+        run: bash scripts/doctor.sh
+
+      - name: Worker 2 — start/stop idempoten + doctor require-running
+        run: |
+          bash scripts/start.sh --node
+          bash scripts/doctor.sh --require-running
+          bash scripts/stop.sh
+          bash scripts/stop.sh
+
+      - name: Manager — forbidden paths audit (Rust + reference utuh)
+        run: |
+          BASE="$(git rev-parse --verify origin/main 2>/dev/null || git rev-parse --verify main)"
+          echo "base=$BASE"
+          CHANGED="$(git diff --name-only "$BASE"...HEAD -- crates apps/n8n-rust reference/n8n || true)"
+          if [ -n "$CHANGED" ]; then
+            echo "::error::forbidden paths berubah:"; echo "$CHANGED"; exit 1
+          fi
+          echo "forbidden paths: bersih"
+
+      - name: Manager — worker boundary audit (satu file = satu pemilik)
+        run: |
+          BASE="$(git rev-parse --verify origin/main 2>/dev/null || git rev-parse --verify main)"
+          python3 - "$BASE" <<'EOF'
+          import subprocess, sys
+          base = sys.argv[1]
+          out = subprocess.run(["git","diff","--name-only",f"{base}...HEAD"],
+                               capture_output=True, text=True).stdout.splitlines()
+          # prefix -> pemilik; file manager-owned didaftar eksplisit
+          owners = {
+            "apps/n8n-ts/": "worker-1",
+            "deploy/docker/": "worker-2",
+            "scripts/install.sh": "worker-2", "scripts/start.sh": "worker-2",
+            "scripts/stop.sh": "worker-2", "scripts/upgrade.sh": "worker-2",
+            "scripts/rollback.sh": "worker-2", "scripts/doctor.sh": "worker-2",
+            ".env.example": "worker-2",
+            "tests/runtime/": "worker-3",
+            "tests/integration/ts-baseline-smoke.test.mjs": "worker-3",
+            "packages/reconstructed-engine/ts-runtime-adapter.mjs": "worker-4",
+            "packages/reconstructed-engine/ts-runtime-adapter.test.mjs": "worker-4",
+            "packages/reconstructed-engine/LEGO-BASELINE-AUDIT.md": "worker-4",
+          }
+          manager_owned = {
+            "contracts/ts-baseline-runtime.contract.md",
+            "tasks/TS-BASELINE-MANAGER.md", "tasks/TS-BASELINE-WORKER-1-RUNTIME.md",
+            "tasks/TS-BASELINE-WORKER-2-PACKAGING.md", "tasks/TS-BASELINE-WORKER-3-TESTING.md",
+            "tasks/TS-BASELINE-WORKER-4-LEGO.md",
+            "package.json", ".gitignore", ".dockerignore", "README.md",
+            ".github/workflows/ts-baseline.yml",
+            "docs/TS-BASELINE.md", "results/TS-BASELINE-GATES.md",
+          }
+          bad = []
+          for f in out:
+            if f in manager_owned: continue
+            hit = [o for p,o in owners.items() if f.startswith(p) or f==p]
+            if len(hit) != 1: bad.append(f)
+          if bad:
+            print("::error::file di luar boundary worker/manajer:"); print("\n".join(bad)); sys.exit(1)
+          print(f"boundary: bersih ({len(out)} file)")
+          EOF
+
+      - name: Docker build (smoke)
+        run: docker build -f deploy/docker/Dockerfile -t n8n-ts-baseline:ci .

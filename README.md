@@ -71,3 +71,16 @@ npm run isolation:check                   # boundary + kernel + port + reference
 
 A failing gate means the isolation is void and must be rolled back — the records
 are machine-readable in `docs/isolation/evidence/`.
+
+## TypeScript baseline runtime (usable track)
+
+Track terpisah yang membuat LEGO TypeScript bisa dipakai hari ini
+(install → start → deploy VPS) sementara Rust tetap beku di track ini:
+
+```bash
+bash scripts/install.sh && bash scripts/start.sh && bash scripts/doctor.sh
+npm run ts:test   # adapter (14) + runtime nyata (44) + integrasi (3)
+```
+
+Kontrak: `contracts/ts-baseline-runtime.contract.md` ·
+Panduan: `docs/TS-BASELINE.md` · Bukti gate: `results/TS-BASELINE-GATES.md`.

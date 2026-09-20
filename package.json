@@ -11,6 +11,16 @@
     "isolation:check": "node tools/workflow-boundary-map.mjs --check && node tools/workflow-kernel-conformance.mjs --check && node tools/workflow-port-surface.mjs --check && node tools/workflow-reference-manifest.mjs --check",
     "isolation:extract": "node tools/workflow-isolation-extract.mjs",
     "workflow-lego:build": "npm --prefix packages/workflow-lego run build",
-    "workflow-lego:test": "bash scripts/run-lego-tests.sh"
+    "workflow-lego:test": "bash scripts/run-lego-tests.sh",
+    "ts:install": "bash scripts/install.sh",
+    "ts:build": "npm --prefix apps/n8n-ts run build",
+    "ts:typecheck": "npm --prefix apps/n8n-ts run typecheck",
+    "ts:start": "bash scripts/start.sh",
+    "ts:stop": "bash scripts/stop.sh",
+    "ts:doctor": "bash scripts/doctor.sh",
+    "ts:test:adapter": "node --test packages/reconstructed-engine/ts-runtime-adapter.test.mjs",
+    "ts:test:runtime": "node tests/runtime/run-all.mjs",
+    "ts:test:integration": "node --test tests/integration/ts-baseline-smoke.test.mjs",
+    "ts:test": "npm run ts:test:adapter && npm run ts:test:runtime && npm run ts:test:integration"
   }
 }

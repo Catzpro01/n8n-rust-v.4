@@ -1,0 +1,14 @@
+# Konteks build deploy/docker/Dockerfile (manager-owned).
+.git
+.arena
+.runtime
+.runtime-ts
+target
+node_modules
+apps/n8n-ts/node_modules
+apps/n8n-ts/dist
+packages/*/node_modules
+reference
+crates/target
+*.log
+.env
