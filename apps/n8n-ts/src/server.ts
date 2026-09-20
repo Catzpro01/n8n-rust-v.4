@@ -6,7 +6,7 @@
  * Selain itu: 404 JSON (baseline tidak punya SPA).
  */
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
-import { formatConfigLine, loadConfig } from './config.js';
+import { dotenvLoadedFiles, formatConfigLine, loadConfig } from './config.js';
 import {
   sendMethodNotAllowed,
   sendNotFound,
@@ -21,6 +21,8 @@ const RUN_PATH = '/api/v1/workflows/run';
 async function main(): Promise<void> {
   const config = loadConfig();
   setLogLevel(config.logLevel);
+  const dotenvFiles = dotenvLoadedFiles();
+  logger.debug(`dotenv loaded: ${dotenvFiles.length > 0 ? dotenvFiles.join(', ') : '(none)'}`);
 
   const server = createServer((req, res) => {
     void dispatch(req, res, config.version, config.bodyLimitBytes, config.executionTimeoutMs, config.defaultLocale)

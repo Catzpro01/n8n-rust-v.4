@@ -132,8 +132,15 @@ function loadVersion(): string {
   return DEFAULTS.version;
 }
 
+let lastDotenvLoaded: string[] = [];
+
+/** File .env yang dimuat pada loadConfig terakhir (untuk log setelah level aktif). */
+export function dotenvLoadedFiles(): string[] {
+  return lastDotenvLoaded;
+}
+
 export function loadConfig(): BaselineConfig {
-  const dotenvLoaded = loadDotenvFiles();
+  lastDotenvLoaded = loadDotenvFiles();
   const config: BaselineConfig = {
     host: process.env.HOST?.trim() || DEFAULTS.host,
     port: parsePort(process.env.PORT),
@@ -156,7 +163,8 @@ export function loadConfig(): BaselineConfig {
     nodeEnv: process.env.NODE_ENV?.trim() || DEFAULTS.nodeEnv,
     version: loadVersion(),
   };
-  logger.debug(`dotenv loaded: ${dotenvLoaded.length > 0 ? dotenvLoaded.join(', ') : '(none)'}`);
+  // Catatan: JANGAN log di sini — level log belum aktif (masih default info).
+  // server.ts mencetak dotenvLoadedFiles() setelah setLogLevel().
   return config;
 }
 

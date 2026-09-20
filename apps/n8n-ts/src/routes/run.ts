@@ -42,10 +42,15 @@ export async function handleRun(
     return;
   }
 
-  // 3. Parse JSON.
+  // 3. Parse JSON. Body kosong = bukan JSON valid (kontrak §3 → MALFORMED_JSON).
+  if (body.raw.trim() === '') {
+    sendFail(res, 400, 'Invalid JSON body', 'MALFORMED_JSON');
+    logLine(req, 400, started, 0);
+    return;
+  }
   let parsed: unknown;
   try {
-    parsed = body.raw.trim() === '' ? null : (JSON.parse(body.raw) as unknown);
+    parsed = JSON.parse(body.raw) as unknown;
   } catch {
     sendFail(res, 400, 'Invalid JSON body', 'MALFORMED_JSON');
     logLine(req, 400, started, 0);
