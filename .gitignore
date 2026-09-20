@@ -31,3 +31,7 @@ __pycache__/
 .arena/dispatch/
 .arena/results/
 .arena/processed/
+
+# n8n-ts runtime pid/logs
+run/
+apps/n8n-ts/run/

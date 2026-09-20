@@ -1,0 +1,21 @@
+{
+  "name": "n8n-ts-baseline",
+  "version": "0.4.0",
+  "private": true,
+  "description": "TypeScript LEGO baseline runtime — Node.js HTTP server over reconstructed-engine (pre-Rust migration).",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "src/server.mjs",
+  "scripts": {
+    "start": "node src/server.mjs",
+    "start:fg": "node src/server.mjs",
+    "doctor": "node src/doctor-check.mjs",
+    "test": "node --test ../../tests/runtime/*.test.mjs"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^22.10.0"
+  }
+}
