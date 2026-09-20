@@ -21,7 +21,7 @@ export class WorkflowRunError extends Error {
 }
 
 /** Failure codes this module can produce (contract §4 pre-execution subset). */
-export const RUN_ERROR_CODES = Object.freeze(['EMPTY_WORKFLOW', 'INVALID_WORKFLOW']);
+export const RUN_ERROR_CODES = Object.freeze(['VALIDATION_ERROR', 'EMPTY_WORKFLOW', 'INVALID_WORKFLOW']);
 
 /** Warning codes this module can produce. */
 export const VALIDATION_WARNING_CODES = Object.freeze([
@@ -57,7 +57,7 @@ export function validateWorkflowDefinition(definition, opts = {}) {
   if (!isPlainObject(definition)) {
     return {
       ok: false,
-      errors: [error('INVALID_WORKFLOW', 'workflow definition must be a JSON object', 'workflow')],
+      errors: [error('VALIDATION_ERROR', 'workflow definition must be a JSON object', 'workflow')],
       warnings,
       normalized: null,
     };
@@ -66,7 +66,7 @@ export function validateWorkflowDefinition(definition, opts = {}) {
   if (!Array.isArray(definition.nodes)) {
     return {
       ok: false,
-      errors: [error('INVALID_WORKFLOW', 'workflow.nodes must be an array', 'workflow.nodes')],
+      errors: [error('VALIDATION_ERROR', 'workflow.nodes must be an array', 'workflow.nodes')],
       warnings,
       normalized: null,
     };

@@ -30,16 +30,16 @@ test('valid definition passes and returns a normalized copy', () => {
   assert.equal(original.nodes[0].parameters && typeof original.nodes[0].parameters, 'object');
 });
 
-test('non-object definition is INVALID_WORKFLOW', () => {
+test('non-object definition is VALIDATION_ERROR (missing/typed field)', () => {
   const result = validateWorkflowDefinition(null);
   assert.equal(result.ok, false);
-  assert.equal(result.errors[0].code, 'INVALID_WORKFLOW');
+  assert.equal(result.errors[0].code, 'VALIDATION_ERROR');
 });
 
-test('missing nodes array is INVALID_WORKFLOW', () => {
+test('missing nodes array is VALIDATION_ERROR (missing/typed field)', () => {
   const result = validateWorkflowDefinition({ name: 'x' });
   assert.equal(result.ok, false);
-  assert.equal(result.errors[0].code, 'INVALID_WORKFLOW');
+  assert.equal(result.errors[0].code, 'VALIDATION_ERROR');
   assert.equal(result.errors[0].path, 'workflow.nodes');
 });
 
@@ -63,6 +63,7 @@ test('duplicate node names and bad node shapes are INVALID_WORKFLOW', () => {
   assert.match(messages, /duplicate node name "A"/);
   assert.match(messages, /needs a non-empty string "name"/);
   assert.match(messages, /needs a non-empty string "type"/);
+  assert.ok(result.errors.every((entry) => entry.code === 'INVALID_WORKFLOW'));
 });
 
 test('unknown node types and dangling connections become warnings, not errors', () => {
