@@ -210,9 +210,11 @@ class SupabaseProvider:
         if not agent_id:
             raise ValueError("Parameter 'agent_id' is required")
 
+        # Do not force 'AVAILABLE' if status is not specified or None.
+        # Passing None preserves the current database agent status (e.g. WORKING).
         rpc_args = {
             "p_agent_id": agent_id,
-            "p_worker_state": params.get("status", "AVAILABLE"),
+            "p_worker_state": params.get("status") or params.get("worker_state"),
             "p_current_task_id": params.get("current_task_id"),
             "p_active_build_slots": params.get("active_build_slots", 0),
             "p_active_test_slots": params.get("active_test_slots", 0),
@@ -220,6 +222,7 @@ class SupabaseProvider:
         }
         res = self._request("agent_heartbeat", method="POST", data=rpc_args, is_rpc=True)
         return self.sanitizer.sanitize(res)
+
 
     def reap_expired_leases(self, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Reaps expired task leases and marks timed out tasks as STALE / RECLAIMABLE."""

@@ -91,12 +91,14 @@ class AutonomousFleetSupervisor:
             agent_id = cfg["agent_id"]
 
             try:
+                # Do not force 'AVAILABLE' blindly. If supervisor has no claimed_task in local memory,
+                # pass worker_state=None so the database preserves any active WORKING lease.
                 res = self.gateway.invoke(
                     caller_id=agent_key,
                     capability="supabase.worker_heartbeat",
                     params={
                         "agent_id": agent_id,
-                        "worker_state": "AVAILABLE" if not state["claimed_task"] else "WORKING",
+                        "worker_state": "WORKING" if state["claimed_task"] else None,
                         "current_task_id": state["claimed_task"]
                     },
                     bearer_token=self.worker_token
@@ -104,10 +106,14 @@ class AutonomousFleetSupervisor:
                 if res.get("ok"):
                     state["last_heartbeat"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
                     state["heartbeat_count"] += 1
-                    state["status"] = "AVAILABLE" if not state["claimed_task"] else "WORKING"
+                    # Update local state reflecting the server status
+                    server_status = res.get("result", {}).get("status")
+                    if server_status:
+                        state["status"] = server_status
                 else:
                     state["status"] = "HEARTBEAT_FAILED"
                     logger.warning(f"Worker {agent_key} heartbeat failed: {res.get('error')}")
+
             except Exception as e:
                 state["status"] = "ERROR"
                 logger.error(f"Error pulsing heartbeat for {agent_key}: {e}")
