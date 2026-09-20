@@ -1,0 +1,39 @@
+id: TASK-W3-TESTING
+worker: worker-03
+title: "Worker 3: Runtime Quality & Smoke Gates"
+scope: "tests/runtime/**, tests/integration/**"
+
+allowed_paths:
+  - tests/runtime/**
+  - tests/integration/**
+  - tests/fixtures/**
+
+forbidden_paths:
+  - apps/**
+  - deploy/**
+  - packages/**
+  - crates/**
+  - reference/**
+
+requires:
+  - contracts/ts-runtime.contract.md
+
+deliverables:
+  - tests/runtime/smoke.test.mjs
+  - tests/fixtures/workflows/**
+
+test_cases:
+  - health_probe_verification
+  - workflow_execution_flow
+  - malformed_request_rejection
+  - empty_workflow_rejection
+  - unknown_node_graceful_handling
+  - auth_token_enforcement
+  - process_restart_persistence
+  - regression_gate_compatibility
+
+merge_conditions:
+  - 8_of_8_smoke_tests_pass
+  - real_runtime_tested
+  - zero_mock_pass
+  - boundary_enforced

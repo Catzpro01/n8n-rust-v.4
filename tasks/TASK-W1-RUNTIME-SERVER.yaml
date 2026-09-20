@@ -1,0 +1,35 @@
+id: TASK-W1-RUNTIME-SERVER
+worker: worker-01
+title: "Worker 1: TypeScript Runtime Server Host"
+scope: "apps/n8n-ts/**"
+
+allowed_paths:
+  - apps/n8n-ts/**
+
+forbidden_paths:
+  - deploy/**
+  - scripts/**
+  - tests/**
+  - packages/**
+  - crates/**
+  - reference/**
+
+requires:
+  - contracts/ts-runtime.contract.md
+
+deliverables:
+  - apps/n8n-ts/package.json
+  - apps/n8n-ts/src/server.mjs
+  - apps/n8n-ts/src/config.mjs
+  - apps/n8n-ts/src/auth.mjs
+  - apps/n8n-ts/src/node-registry.mjs
+  - apps/n8n-ts/src/routes/health.mjs
+  - apps/n8n-ts/src/routes/landing.mjs
+  - apps/n8n-ts/src/routes/workflow.mjs
+
+merge_conditions:
+  - node_http_native
+  - deep_healthz_check
+  - workflow_run_dev_api
+  - no_second_engine
+  - boundary_enforced

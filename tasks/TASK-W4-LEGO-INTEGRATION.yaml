@@ -1,0 +1,31 @@
+id: TASK-W4-LEGO-INTEGRATION
+worker: worker-04
+title: "Worker 4: LEGO & Reconstructed Engine Integration"
+scope: "packages/workflow-lego/**, packages/execution-lego/**, packages/reconstructed-engine/**"
+
+allowed_paths:
+  - packages/reconstructed-engine/**
+  - packages/workflow-lego/**
+  - packages/execution-lego/**
+
+forbidden_paths:
+  - apps/**
+  - deploy/**
+  - scripts/**
+  - tests/**
+  - crates/**
+  - reference/**
+
+requires:
+  - contracts/ts-runtime.contract.md
+
+deliverables:
+  - packages/reconstructed-engine/runner.mjs
+  - packages/reconstructed-engine/node-catalog.mjs
+  - packages/reconstructed-engine/localization.mjs
+
+merge_conditions:
+  - zero_second_engine
+  - existing_engine_reused
+  - isolation_gates_green
+  - boundary_enforced
