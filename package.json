@@ -11,6 +11,12 @@
     "isolation:check": "node tools/workflow-boundary-map.mjs --check && node tools/workflow-kernel-conformance.mjs --check && node tools/workflow-port-surface.mjs --check && node tools/workflow-reference-manifest.mjs --check",
     "isolation:extract": "node tools/workflow-isolation-extract.mjs",
     "workflow-lego:build": "npm --prefix packages/workflow-lego run build",
-    "workflow-lego:test": "bash scripts/run-lego-tests.sh"
+    "workflow-lego:test": "bash scripts/run-lego-tests.sh",
+    "runtime:start": "node apps/n8n-ts/src/server.ts",
+    "runtime:dev": "node --watch apps/n8n-ts/src/server.ts",
+    "runtime:typecheck": "npm --prefix apps/n8n-ts run typecheck",
+    "runtime:test": "node --test tests/runtime/",
+    "runtime:gate": "bash tests/integration/runtime_gate.sh",
+    "runtime:smoke": "node tests/runtime/helpers/smoke.mjs"
   }
 }

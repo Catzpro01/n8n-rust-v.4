@@ -31,3 +31,9 @@ __pycache__/
 .arena/dispatch/
 .arena/results/
 .arena/processed/
+
+# typescript runtime (apps/n8n-ts) generated state
+data/
+logs/
+state/
+apps/n8n-ts/.tsbuildinfo
