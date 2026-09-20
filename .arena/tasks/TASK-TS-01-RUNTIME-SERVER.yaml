@@ -1,21 +1,26 @@
-id: TASK-W1-RUNTIME-SERVER
+id: TASK-TS-01-RUNTIME-SERVER
+agent: agent-01
 worker: worker-01
 title: "Worker 1: TypeScript Runtime Server Host"
-scope: "apps/n8n-ts/**"
+branch: runtime-server/ts-baseline-host
+pr_target: main
 
 allowed_paths:
   - apps/n8n-ts/**
 
 forbidden_paths:
+  - crates/**
+  - apps/n8n-rust/**
+  - reference/n8n/**
   - deploy/**
   - scripts/**
   - tests/**
   - packages/**
-  - crates/**
-  - reference/**
 
-requires:
-  - contracts/ts-runtime.contract.md
+dependencies:
+  - TASK-TS-04-LEGO-INTEGRATION
+
+contract: contracts/ts-runtime.contract.md
 
 deliverables:
   - apps/n8n-ts/package.json
@@ -27,9 +32,9 @@ deliverables:
   - apps/n8n-ts/src/routes/landing.mjs
   - apps/n8n-ts/src/routes/workflow.mjs
 
-merge_conditions:
-  - node_http_native
-  - deep_healthz_check
-  - workflow_run_dev_api
-  - no_second_engine
-  - boundary_enforced
+acceptance_criteria:
+  - native_node_http
+  - endpoints_get_root_and_healthz
+  - dev_runtime_api_workflows_run
+  - n8n_auth_token_enforcement
+  - zero_second_engine

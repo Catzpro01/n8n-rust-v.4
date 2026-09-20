@@ -1,0 +1,35 @@
+id: TASK-TS-05-DEPLOYMENT
+agent: agent-05
+worker: worker-05
+title: "Worker 5: Deployment, VPS & GitHub Actions Automation"
+branch: deployment/ts-baseline-vps
+pr_target: main
+
+allowed_paths:
+  - .github/workflows/**
+  - deploy/systemd/**
+  - deploy/vps/**
+
+forbidden_paths:
+  - crates/**
+  - apps/**
+  - reference/n8n/**
+  - packages/**
+
+dependencies:
+  - TASK-TS-01-RUNTIME-SERVER
+  - TASK-TS-02-PACKAGING
+  - TASK-TS-03-TESTING
+
+contract: contracts/ts-runtime.contract.md
+
+deliverables:
+  - .github/workflows/vps-deploy-ts.yml
+  - deploy/systemd/n8n-ts.service
+  - deploy/vps/deploy.sh
+
+acceptance_criteria:
+  - vps_runtime_runner_targeted
+  - systemd_service_configured
+  - live_domain_n8n_kentutmambu_verified
+  - zero_disturbance_existing_services
