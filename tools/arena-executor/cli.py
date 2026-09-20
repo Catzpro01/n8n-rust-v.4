@@ -94,6 +94,13 @@ def process_job(job_file: Path, incoming_dir: Path, processing_dir: Path, comple
     ws_path = workspaces_root / agent_id
     if not ws_path.exists():
         ws_path.mkdir(parents=True, exist_ok=True)
+    if not (ws_path / ".git").exists():
+        try:
+            import subprocess
+            subprocess.run(["git", "init"], cwd=str(ws_path), capture_output=True)
+        except Exception:
+            pass
+
 
     try:
         # 1. Strictly load sublego rules (fail-closed)

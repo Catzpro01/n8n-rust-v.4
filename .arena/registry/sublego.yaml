@@ -234,3 +234,16 @@ sublegos:
     test_paths: [tests/conformance.rs]
     implementation: rust
     status: verified
+
+  # Arena Manager Sub-LEGOs
+  - id: manager.control
+    parent_lego: manager
+    owner: agent-manager
+    contract: contracts/workflow.contract.md
+    allowed_paths: [crates/**, .arena/**, packages/**]
+    forbidden_paths: [reference/n8n/**, .env*]
+    dependencies: []
+    test_paths: []
+    implementation: rust
+    status: active
+
