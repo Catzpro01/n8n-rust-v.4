@@ -18,6 +18,7 @@ export type ReadinessReport = {
 
 export async function readinessReport(app: App): Promise<ReadinessReport> {
   const checks: Record<string, unknown> = {
+    pid: process.pid,
     shuttingDown: app.shuttingDown,
     engine: { package: app.engine.package, version: app.engine.version, registry: app.engine.registryVersion },
     nodeTypes: app.nodeTypes.length,

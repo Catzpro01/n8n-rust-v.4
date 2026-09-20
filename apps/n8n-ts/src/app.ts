@@ -10,7 +10,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { RuntimeConfig } from './config.ts';
 import { createLogger, type Logger } from './logger.ts';
 import { Router } from './http/router.ts';
-import { corsHeaders, sendEmpty, sendError, sendJson, sendText } from './http/respond.ts';
+import { attachResponseHeaders, corsHeaders, sendEmpty, sendError, sendJson, sendText } from './http/respond.ts';
 import { methodNotAllowed, notFound, notReady, unauthorized } from './http/errors.ts';
 import { WorkflowStore } from './store/workflow-store.ts';
 import { ExecutionStore } from './store/execution-store.ts';
@@ -96,8 +96,10 @@ export async function handleRequest(app: App, request: IncomingMessage, response
   const method = (request.method ?? 'GET').toUpperCase();
   const url = new URL(request.url ?? '/', `http://${request.headers.host ?? 'localhost'}`);
   const path = url.pathname;
-  const headers = path.startsWith('/api/') ? corsHeaders(app.config) : {};
-  const meta = { requestId, config: app.config, extraHeaders: headers };
+  // CORS applies to every /api/* response (including errors and preflight) —
+  // attached once here so no individual writer can forget it.
+  attachResponseHeaders(response, path.startsWith('/api/') ? corsHeaders(app.config) : {});
+  const meta = { requestId, config: app.config };
 
   try {
     if (method === 'OPTIONS' && path.startsWith('/api/')) {

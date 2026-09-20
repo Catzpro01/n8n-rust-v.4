@@ -66,6 +66,8 @@ export function preflight(
   if (!validation.ok) {
     const first = validation.errors[0] as { code: string; message: string };
     if (first.code === 'EMPTY_WORKFLOW') throw emptyWorkflow({ errors: validation.errors });
+    // contract §4: missing/typed fields are 400, structurally wrong content is 422
+    if (first.code === 'VALIDATION_ERROR') throw validationError(first.message, { errors: validation.errors });
     throw invalidWorkflow(first.message, { errors: validation.errors });
   }
 

@@ -4,6 +4,10 @@
  *   success → `{ data }`, error → `{ code, message, details?, requestId }`,
  *   every response carries `X-Request-Id` and `X-Content-Type-Options`.
  *
+ * Per-request headers that depend on the *request* (CORS) are attached to the
+ * response object once by the pipeline and merged here, so every writer —
+ * including the error path — emits them.
+ *
  * `X-Frame-Options` is deliberately never set: the console is embedded in a
  * proxied preview iframe.
  */
@@ -17,12 +21,20 @@ export type ResponseMeta = {
   extraHeaders?: Record<string, string>;
 };
 
-function baseHeaders(meta: ResponseMeta): Record<string, string> {
+const requestHeaders = new WeakMap<ServerResponse, Record<string, string>>();
+
+/** Attach headers that must appear on every response of this request. */
+export function attachResponseHeaders(response: ServerResponse, headers: Record<string, string>): void {
+  if (Object.keys(headers).length > 0) requestHeaders.set(response, headers);
+}
+
+function baseHeaders(response: ServerResponse, meta: ResponseMeta): Record<string, string> {
   return {
     'x-request-id': meta.requestId,
     'x-content-type-options': 'nosniff',
     'referrer-policy': 'no-referrer',
     'x-n8n-ts-contract': '1.0.0',
+    ...(requestHeaders.get(response) ?? {}),
     ...(meta.extraHeaders ?? {}),
   };
 }
@@ -38,15 +50,10 @@ export function corsHeaders(config: RuntimeConfig): Record<string, string> {
   };
 }
 
-export function sendJson(
-  response: ServerResponse,
-  status: number,
-  payload: unknown,
-  meta: ResponseMeta,
-): void {
+export function sendJson(response: ServerResponse, status: number, payload: unknown, meta: ResponseMeta): void {
   const body = Buffer.from(JSON.stringify(payload ?? null), 'utf8');
   response.writeHead(status, {
-    ...baseHeaders(meta),
+    ...baseHeaders(response, meta),
     'content-type': 'application/json; charset=utf-8',
     'content-length': String(body.byteLength),
   });
@@ -66,7 +73,7 @@ export function sendText(
 ): void {
   const buffer = Buffer.from(body, 'utf8');
   response.writeHead(status, {
-    ...baseHeaders(meta),
+    ...baseHeaders(response, meta),
     'content-type': `${contentType}; charset=utf-8`,
     'content-length': String(buffer.byteLength),
   });
@@ -74,7 +81,7 @@ export function sendText(
 }
 
 export function sendEmpty(response: ServerResponse, status: number, meta: ResponseMeta): void {
-  response.writeHead(status, { ...baseHeaders(meta), 'content-length': '0' });
+  response.writeHead(status, { ...baseHeaders(response, meta), 'content-length': '0' });
   response.end();
 }
 
@@ -92,11 +99,15 @@ export function sendError(response: ServerResponse, error: unknown, meta: Respon
   };
   if (httpError.details !== undefined) body.details = httpError.details;
   if (meta.config.env !== 'production' && error instanceof Error && error.stack && httpError.status >= 500) {
-    body.details = { ...(typeof httpError.details === 'object' && httpError.details !== null ? httpError.details : {}), stack: error.stack };
+    const current = typeof httpError.details === 'object' && httpError.details !== null ? httpError.details : {};
+    body.details = { ...current, stack: error.stack };
   }
+  let effectiveMeta = meta;
   if (httpError.status === 405 && httpError.details && typeof httpError.details === 'object') {
     const allowed = (httpError.details as { allowed?: string[] }).allowed;
-    if (Array.isArray(allowed)) meta = { ...meta, extraHeaders: { ...(meta.extraHeaders ?? {}), allow: allowed.join(', ') } };
+    if (Array.isArray(allowed)) {
+      effectiveMeta = { ...meta, extraHeaders: { ...(meta.extraHeaders ?? {}), allow: allowed.join(', ') } };
+    }
   }
-  sendJson(response, httpError.status, body, meta);
+  sendJson(response, httpError.status, body, effectiveMeta);
 }

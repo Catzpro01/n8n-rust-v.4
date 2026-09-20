@@ -66,18 +66,35 @@ export class Router {
 
   match(method: string, pathname: string): RouteMatch | null {
     const parts = pathname.split('/').filter((segment) => segment !== '');
-    const allowed = new Set<string>();
-    let pathMatched = false;
+    const verb = method.toUpperCase();
+    const staticMatches: { route: Route; params: RouteParams }[] = [];
+    const parameterisedMatches: { route: Route; params: RouteParams }[] = [];
 
     for (const route of this.#routes) {
       const params = matchSegments(route.segments, parts);
       if (params === null) continue;
-      pathMatched = true;
-      allowed.add(route.method);
-      if (route.method === method.toUpperCase()) return { kind: 'match', handler: route.handler, params };
+      const bucket = route.segments.some((segment) => segment.startsWith(':')) ? parameterisedMatches : staticMatches;
+      bucket.push({ route, params });
     }
 
-    if (pathMatched) return { kind: 'method-not-allowed', allowed: [...allowed].sort() };
+    // Static paths win over parameterised ones: `GET /api/v1/workflows/run` must
+    // report 405 for the reserved "run" action instead of being read as a
+    // workflow whose id happens to be "run".
+    const staticHit = staticMatches.find((entry) => entry.route.method === verb);
+    if (staticHit) return { kind: 'match', handler: staticHit.route.handler, params: staticHit.params };
+
+    if (staticMatches.length === 0) {
+      const parameterisedHit = parameterisedMatches.find((entry) => entry.route.method === verb);
+      if (parameterisedHit) {
+        return { kind: 'match', handler: parameterisedHit.route.handler, params: parameterisedHit.params };
+      }
+    }
+
+    // When a static path matched, only its methods belong in Allow — the
+    // parameterised routes describe a different resource.
+    const source = staticMatches.length > 0 ? staticMatches : parameterisedMatches;
+    const allowed = [...new Set(source.map((entry) => entry.route.method))].sort();
+    if (allowed.length > 0) return { kind: 'method-not-allowed', allowed };
     return null;
   }
 }
