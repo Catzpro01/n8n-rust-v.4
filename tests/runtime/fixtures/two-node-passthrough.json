@@ -1,0 +1,12 @@
+{
+  "workflow": {
+    "nodes": [
+      { "name": "First", "type": "custom.unknownType", "parameters": {} },
+      { "name": "Second", "type": "n8n-nodes-base.noOp", "parameters": {} }
+    ],
+    "connections": {
+      "First": { "main": [[{ "node": "Second", "type": "main", "index": 0 }]] }
+    }
+  },
+  "input": [{ "echo": "me" }]
+}

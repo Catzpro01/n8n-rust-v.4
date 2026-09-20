@@ -1,0 +1,7 @@
+{
+  "workflow": {
+    "nodes": [{ "name": "Only", "type": "n8n-nodes-base.noOp", "parameters": {} }],
+    "connections": {}
+  },
+  "startNode": "Ghost"
+}

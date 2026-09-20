@@ -1,0 +1,14 @@
+{
+  "workflow": {
+    "nodes": [
+      { "name": "Start", "type": "n8n-nodes-base.manualTrigger", "parameters": {} },
+      { "name": "Step", "type": "n8n-nodes-base.set", "parameters": {} },
+      { "name": "End", "type": "n8n-nodes-base.noOp", "parameters": {} }
+    ],
+    "connections": {
+      "Start": { "main": [[{ "node": "Step", "type": "main", "index": 0 }]] },
+      "Step": { "main": [[{ "node": "End", "type": "main", "index": 0 }]] }
+    }
+  },
+  "input": [{ "hello": "world" }]
+}

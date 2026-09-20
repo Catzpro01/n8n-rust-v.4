@@ -1,0 +1,6 @@
+{
+  "workflow": {
+    "nodes": [{ "name": "Start", "type": "n8n-nodes-base.manualTrigger", "parameters": {} }],
+    "connections": {}
+  }
+}
