@@ -1,0 +1,24 @@
+{
+  "name": "@n8n-ts/runtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "n8n TypeScript baseline runtime — zero-dependency node:http server over the reconstructed-execution LEGO. Baseline before the one-by-one Rust migration.",
+  "license": "SEE LICENSE IN reference/n8n/LICENSE.md",
+  "main": "src/server.ts",
+  "scripts": {
+    "start": "node src/server.ts",
+    "dev": "node --watch src/server.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --test test/*.test.mjs",
+    "lego:test": "npm --prefix ../../packages/reconstructed-engine test"
+  },
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "~5.9.2"
+  }
+}
