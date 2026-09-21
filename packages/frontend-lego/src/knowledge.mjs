@@ -64,6 +64,115 @@ export const REFERENCE_FILES = Object.freeze({
 });
 
 /**
+ * The master project specification — the durable memory of this repository.
+ *
+ * This is **not retrieval context**. The pack above is what an agent loads to *work* in this
+ * repository, and it is budget-enforced so it never becomes a document you read in full. The
+ * master set is what an agent (or a person) reads to *understand the project*: what n8n LEGO
+ * is, which domains exist, how AI is supposed to work, what is published, what is blocked,
+ * what comes next.
+ *
+ * It is deliberately excluded from `packFiles()`: a task that needs the specification loads
+ * `productContextFor()` on purpose, so no ordinary task pays for it in bytes or in attention.
+ * Its own budget is separate and enforced by `test/30-master-plan.test.mjs`.
+ *
+ * Ownership rule: documents that describe backend declarations are *consumption views*; the
+ * declarations themselves live in the agent-2 owned registry and lock, and this tree never
+ * restates a generated fact as if it were the source.
+ */
+export const MASTER_PLAN_BUDGET = 256 * 1024;
+
+/** No single master document may exceed this — a specification nobody can read is not one. */
+export const MASTER_PLAN_MAX_FILE = 32 * 1024;
+
+export const MASTER_PLAN_FILES = Object.freeze({
+  project: '.ai/master/PROJECT_MASTER_PLAN.md',
+  coreLego: '.ai/master/CORE_LEGO_ARCHITECTURE.md',
+  status: '.ai/master/CURRENT_STATUS.md',
+  blockers: '.ai/master/KNOWN_BLOCKERS.md',
+  decisions: '.ai/master/PROJECT_DECISIONS.md',
+  workforce: '.ai/master/PROJECT_WORKFORCE_ORCHESTRATION.md',
+  aiLego: '.ai/master/AI_AGENT_LEGO_MASTER_PLAN.md',
+  aiRuntime: '.ai/master/AI_RUNTIME_AND_PROVIDER_PLAN.md',
+  providers: '.ai/master/PROVIDER_TAXONOMY.md',
+  context: '.ai/master/CONTEXT_SESSION_MEMORY_PLAN.md',
+  tokens: '.ai/master/TOKEN_USAGE_AND_RESOURCE_PLAN.md',
+  memoryGraph: '.ai/master/MEMORY_GRAPH_OBSIDIAN_PLAN.md',
+  skills: '.ai/master/SKILL_AND_CAPABILITY_PLAN.md',
+  agents: '.ai/master/AGENT_MACHINE_PLAN.md',
+  workspace: '.ai/master/WORKSPACE_AND_EXTERNAL_ACTION_PLAN.md',
+  mcp: '.ai/master/MCP_AND_RUNTIME_ADAPTER_PLAN.md',
+  nodeCreator: '.ai/master/NODE_CREATOR_PLAN.md',
+  translation: '.ai/master/TRANSLATION_PLAN.md',
+  security: '.ai/master/SECURITY_AND_APPROVAL_MODEL.md',
+  scenarios: '.ai/master/REFERENCE_AGENT_SCENARIOS.md',
+  phases: '.ai/master/IMPLEMENTATION_PHASES.md',
+  experience: '.ai/master/AI_UI_EXPERIENCE_MASTER_PLAN.md',
+  matrix: '.ai/master/AI_FRONTEND_CONTRACT_MATRIX.md',
+  disclosure: '.ai/master/AI_UX_PROGRESSIVE_DISCLOSURE.md',
+  states: '.ai/master/AI_UI_STATES_AND_FLOWS.md',
+  accessibility: '.ai/master/AI_ACCESSIBILITY_AND_LOCALIZATION.md',
+  uiPhases: '.ai/master/AI_UI_IMPLEMENTATION_PHASES.md',
+});
+
+/** The master documents, sorted, for the budget check and for docs. */
+export function masterPlanFiles() {
+  return Object.freeze(Object.values(MASTER_PLAN_FILES).sort());
+}
+
+/**
+ * Product tasks → the master document to read. Separate from `TASK_INDEX` on purpose: a
+ * task that changes a contract reads the pack, a task that designs a surface reads the
+ * specification, and neither should silently pull the other in.
+ */
+export const PRODUCT_TASK_INDEX = Object.freeze({
+  project: Object.freeze({ document: 'project', alsoRead: Object.freeze(['coreLego', 'status']), question: 'What is this project, who owns what, and which domains exist?' }),
+  'core-lego': Object.freeze({ document: 'coreLego', alsoRead: Object.freeze(['project']), question: 'What does a core LEGO domain promise, and what may the frontend consume from it?' }),
+  status: Object.freeze({ document: 'status', alsoRead: Object.freeze(['blockers']), question: 'What is the state of the branches, the gates and the readiness?' }),
+  blockers: Object.freeze({ document: 'blockers', alsoRead: Object.freeze(['status']), question: 'What is blocked, what is the evidence, and who owns each blocker?' }),
+  decisions: Object.freeze({ document: 'decisions', alsoRead: Object.freeze(['status']), question: 'What has been decided, by whom, and what may not be reopened silently?' }),
+  workforce: Object.freeze({ document: 'workforce', alsoRead: Object.freeze(['project']), question: 'How is the development workforce organised, and what does a worker own?' }),
+  'ai-lego': Object.freeze({ document: 'aiLego', alsoRead: Object.freeze(['aiRuntime']), question: 'Which AI/Agent LEGO exist, which are published, and which are pending?' }),
+  runtimes: Object.freeze({ document: 'aiRuntime', alsoRead: Object.freeze(['providers']), question: 'How is a runtime or a provider declared, reached and replaced?' }),
+  providers: Object.freeze({ document: 'providers', alsoRead: Object.freeze(['aiRuntime']), question: 'Which provider kind is this, and what may a vendor name never be used for?' }),
+  context: Object.freeze({ document: 'context', alsoRead: Object.freeze(['tokens']), question: 'How do conversation, session, context window, memory and execution differ?' }),
+  tokens: Object.freeze({ document: 'tokens', alsoRead: Object.freeze(['context']), question: 'Which count is which, and where must a number be reported rather than estimated?' }),
+  memory: Object.freeze({ document: 'memoryGraph', alsoRead: Object.freeze(['context']), question: 'How does the memory graph relate to Obsidian, retrieval and context?' }),
+  skills: Object.freeze({ document: 'skills', alsoRead: Object.freeze(['aiLego']), question: 'How do skills and capabilities differ, and where does authority live?' }),
+  agents: Object.freeze({ document: 'agents', alsoRead: Object.freeze(['security']), question: 'What is the Agent Machine, and what is published versus still a target?' }),
+  workspace: Object.freeze({ document: 'workspace', alsoRead: Object.freeze(['security']), question: 'What may an external action touch, and what is its scope?' }),
+  mcp: Object.freeze({ document: 'mcp', alsoRead: Object.freeze(['providers']), question: 'How does MCP fit without becoming internal architecture or a tool dump?' }),
+  'node-creator': Object.freeze({ document: 'nodeCreator', alsoRead: Object.freeze(['workspace']), question: 'How is a node created, validated and installed, and what is gated?' }),
+  translation: Object.freeze({ document: 'translation', alsoRead: Object.freeze(['accessibility']), question: 'What is the status of translation, and which locales and rules apply?' }),
+  security: Object.freeze({ document: 'security', alsoRead: Object.freeze(['agents']), question: 'Which security invariants and approval rules hold everywhere?' }),
+  scenarios: Object.freeze({ document: 'scenarios', alsoRead: Object.freeze(['agents']), question: 'What does an end-to-end agent run look like, contract-compatibly?' }),
+  phases: Object.freeze({ document: 'phases', alsoRead: Object.freeze(['project']), question: 'Which phase is this work in, and what is the order?' }),
+  'ai-surface': Object.freeze({ document: 'experience', alsoRead: Object.freeze(['matrix']), question: 'What is this surface, where does it live, what does it show first?' }),
+  'ai-contract': Object.freeze({ document: 'matrix', alsoRead: Object.freeze(['experience']), question: 'Which canonical contract and vocabulary does this surface consume?' }),
+  'ai-disclosure': Object.freeze({ document: 'disclosure', alsoRead: Object.freeze(['states']), question: 'What is visible at each level, and what must never be rendered?' }),
+  'ai-state': Object.freeze({ document: 'states', alsoRead: Object.freeze(['disclosure']), question: 'Which states must this surface render, and what does it do when it cannot answer?' }),
+  'ai-accessibility': Object.freeze({ document: 'accessibility', alsoRead: Object.freeze(['states']), question: 'How does this behave in Arabic, by keyboard, and without colour?' }),
+  'ai-phase': Object.freeze({ document: 'uiPhases', alsoRead: Object.freeze(['experience', 'matrix']), question: 'When is this built, what does it depend on, and what proves it?' }),
+});
+
+/**
+ * Resolve a product task to the master document(s) it needs, cheapest first.
+ *
+ * @param {{ kind?: string }} task
+ */
+export function productContextFor(task = {}) {
+  const kind = typeof task.kind === 'string' ? task.kind : 'project';
+  const entry = PRODUCT_TASK_INDEX[kind] ?? PRODUCT_TASK_INDEX.project;
+  const files = [MASTER_PLAN_FILES[entry.document], ...entry.alsoRead.map((key) => MASTER_PLAN_FILES[key])];
+  return Object.freeze({
+    kind: PRODUCT_TASK_INDEX[kind] ? kind : 'project',
+    question: entry.question,
+    files: Object.freeze([...new Set(files)]),
+    budget: MASTER_PLAN_BUDGET,
+  });
+}
+
+/**
  * Task shapes → the files to load, in order. `unknown` is the honest default: when
  * a task does not match a known shape, load the constitution and the domain card and
  * stop, rather than guessing at more.

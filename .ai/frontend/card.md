@@ -55,8 +55,8 @@ event vocabulary, the bounded work trace and the delegation tree; `knowledge.mjs
 
 | Thing | Value |
 | ----- | ----- |
-| Architecture tests | 265 across 29 suites (4 backend comparisons skip until it lands; `N8N_BACKEND_LEGO_ROOT` runs them for real) |
-| Architecture rules | 24, as data (`frontend.conformance()`), mirrored in contract §19.16 |
+| Architecture tests | 281 across 30 suites (4 backend comparisons skip until it lands; `N8N_BACKEND_LEGO_ROOT` runs them for real) |
+| Architecture rules | 26, as data (`frontend.conformance()`), mirrored in contract §19.16 |
 | Surfaces / hooks / units | 12 / 15 (`1.1.0`) / 19 in a 3-level hierarchy |
 | Boot payload | 18,126 B JSON / 24,168 B base64, budget **32 KB**, byte-pinned to P2.5 |
 | Browser-visible delta | the one `<meta>` tag (24,268 B on the served page) |
@@ -108,7 +108,7 @@ vocabulary that enforces it and the suite that proves it, and
 ## Evidence commands
 
 ```bash
-npm run frontend-lego:test                          # 265 tests, the architecture surface
+npm run frontend-lego:test                          # 281 tests, the architecture surface
 node --test apps/n8n-lego/test/*.test.mjs           # app-side boundary, boot tag, backend alignment
 node apps/n8n-lego/scripts/capture-frontend-evidence.mjs   # 47-check evidence JSON
 python3 tools/sublego-audit/audit.py                # nested-LEGO + agent boundary audit

@@ -25,11 +25,17 @@ raise it, do not work around it.
 
 ## 2. What is out of scope until explicitly assigned
 
-Translation, Hermes, Search, Accessibility implementation, Theme implementation,
-AI Assistant, Node Registry, Workflow/Execution/Auth/Credentials features,
-six-language translation features, microservices, a dynamic plugin loader, an
-autonomous AI editing system. Architecture work *prepares* for these; it never
-implements them.
+Hermes, Search, Accessibility implementation, Theme implementation, AI Assistant,
+Node Registry, Workflow/Execution/Auth/Credentials features, microservices, a
+dynamic plugin loader, an autonomous AI editing system. Architecture work
+*prepares* for these; it never implements them.
+
+**Universal Translation is no longer on this list.** It is an official AI/Agent
+LEGO target (`.ai/master/TRANSLATION_PLAN.md`, decision A-2), it is still
+unimplemented, and it is still blocked on a publishing contract (XA-14) — a target
+is not a licence to build. The same applies to the other fourteen official
+AI/Agent LEGO: `.ai/master/AI_AGENT_LEGO_MASTER_PLAN.md` records which are
+published, which are `contract-only`, and which are `publicationPending`.
 
 ## 3. The LEGO rules
 
