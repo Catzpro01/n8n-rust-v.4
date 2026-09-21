@@ -80,6 +80,23 @@ Notes:
 - The tarball vendors the editor UI, so a VPS install needs no npm registry; the
   npm package resolves it from the registry as a normal dependency.
 
+Per-channel checklist:
+
+1. ✅ Versioning: single source of truth `apps/n8n-lego/package.json`; reference
+   version (`2.9.4`) and node catalog version (`2.9.1`) recorded in
+   `version --json` and in `/rest/settings.versionCli`.
+2. ✅ `npm pack` sanity: `files` = `bin/ src/ scripts/ data/ vendor/ README
+   LICENSE` — 43 files, 88 kB; no `node_modules/` and no extracted catalog.
+3. ✅ Installer hardening: non-root user, `N8N_LEGO_USER_FOLDER=/var/lib/n8n-lego`,
+   systemd `Restart=always`, journald log format.
+4. ⏳ Upgrade path: keep `workflows.json`/`executions.json` schema additive; the
+   `roundtrip` test in §4 guards it.
+5. ✅ Docker: multi-stage (install UI + catalog at build time so the container
+   starts without network access).
+6. ⏳ Offline install (VPS without registry access): ship a prebuilt tarball with
+   `node_modules/n8n-editor-ui` and the catalog included (measured: UI 152 MB
+   unpacked, catalog 7.8 MB → tar.gz ≈ 40 MB).
+
 **P2.5 — Frontend LEGO foundation (2026-09-21).** The frontend is now a declared LEGO:
 `packages/frontend-lego` holds the framework-neutral contract (envelopes, errors, message
 slots, capability registry, extension points) and `apps/n8n-lego` publishes it as a boot
@@ -157,6 +174,11 @@ Rules for §3.2:
 | REST smoke (boot → setup → workflow → run → execution) | `apps/n8n-lego/test/rest.test.mjs` | ⏳ |
 | UI smoke (headless: `/`, `/rest/settings`, `/rest/types/nodes.json`) | — | ⏳ |
 | Registry/architecture audit | `python3 tools/sublego-audit/audit.py` | ✅ (unchanged by this work) |
+| Backend LEGO isolation (P2.6/P2.7) | `npm run lego:arch` | ✅ 0 violations, 9 rules |
+| Isolation gate selftest (P2.6/P2.7) | `npm run lego:arch:selftest` | ✅ 19/19 planted violations detected |
+| Capability conformance (P2.6) | `npm run lego:capabilities` | ✅ 23 REST features, wire == registry |
+| Scale-out readiness (P2.7) | `npm run lego:scaleout` | ✅ 10 findings, all declared/owned (2 blockers named) |
+| Everything above, one command | `npm run lego:gate` | ✅ 77/77 tests |
 
 ## 5. Order of work
 
@@ -167,3 +189,18 @@ Rules for §3.2:
 5. ⏳ §3.2 rename, once CI can verify the Rust build.
 6. ⏳ Resume the Rust port on top of the working app (Phase 3 continues with a
    green app as the behavioural baseline).
+
+### Architecture track (parallel to the application track)
+
+* ✅ **P2** compatibility contract layer — `docs/n8n-lego/FRONTEND_COMPATIBILITY.md` §10
+* ✅ **P2.6** backend LEGO foundation — `docs/n8n-lego/BACKEND_LEGO.md`
+  (domain registry, ownership, contract versioning, error contract, isolation
+  gate, reference template). No feature and no Rust: it is the socket system
+  the P3+ domains plug into. Integration notes:
+  `docs/n8n-lego/LEGO_INTEGRATION_NOTES.md`.
+* ✅ **P2.7** LEGO lifecycle certification — nested LEGO (parent → child →
+  grandchild), independent sub-LEGO upgrade, implementation replacement,
+  contract compatibility model and the upgrade lifecycle, plus a scale-out
+  readiness audit that names the two remaining blockers instead of claiming
+  readiness. Same document: `docs/n8n-lego/BACKEND_LEGO.md` §13–§18.
+* ⏳ **P3+** domain carve-outs, each owned per `src/lego/manifest/domains.json`.

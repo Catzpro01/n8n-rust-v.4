@@ -23,11 +23,10 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 #   * `syn` twice: async-trait 0.1.92 requires syn 3 while serde_derive/thiserror-impl are still
 #     on syn 2, and a directory source has to carry every version the resolution picks.
 #   * `regex`, `regex-automata`, `regex-syntax` all come from the `rust-lang/regex` workspace.
-#   * `tokio-1.53.1` covers both `tokio` and `tokio-macros`: the workspace's tokio dev-dependency
-#     is `features = ["rt", "macros"]`, whose closure is exactly `pin-project-lite` (non-optional)
-#     + `tokio-macros` (`macros = ["tokio-macros"]`). tokio's other optional deps (`mio`, `bytes`,
-#     `socket2`, …) are declared but never enabled, so cargo never resolves them.
 #   * `vendor_prep.py` maps each of these directory names onto a crate name + version (PLAN).
+#
+# Not vendored: tokio and its ~20-crate closure (a dev-dependency of `n8n-nodes-rust` only),
+# so `run.sh` leaves that member out of the workspace it builds.
 CRATES=(
   "serde-1.0.229:serde-rs/serde:v1.0.229"
   "json-1.0.151:serde-rs/json:v1.0.151"
@@ -50,8 +49,6 @@ CRATES=(
   "regex-automata-0.4.18:rust-lang/regex:regex-automata-0.4.18"
   "regex-syntax-0.8.11:rust-lang/regex:regex-syntax-0.8.11"
   "aho-corasick:BurntSushi/aho-corasick:1.1.5"
-  "tokio-1.53.1:tokio-rs/tokio:tokio-1.53.1"
-  "pin-project-lite:taiki-e/pin-project-lite:v0.2.17"
 )
 
 mkdir -p "$RIG/dl" "$RIG/vendorsrc"
