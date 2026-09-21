@@ -457,7 +457,8 @@
       "references": [
         "arena/01a0c521 @ 6f7b66da domains.json -> no translation domain or capability",
         "arena/01a0c521 @ 6f7b66da contracts/contract-lock.json -> no translation row",
-        "packages/frontend-lego/src/i18n.mjs -> SUPPORTED_LOCALES is the only locale declaration"
+        "packages/frontend-lego/src/i18n.mjs -> SUPPORTED_LOCALES is the only locale declaration",
+        "arena/01a0c521 @ 6f7b66da domains.json -> legacy.unresolvedOwnership.why still states the project decided NOT to build a Translation LEGO or language packs; that assumption is superseded by .ai/master/PROJECT_DECISIONS.md and is not policy until the manager rules (this row)"
       ]
     },
     {

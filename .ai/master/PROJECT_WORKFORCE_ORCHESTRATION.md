@@ -71,13 +71,23 @@ documented.
 7. **Commit** on the assigned branch with an honest message, push it, and **report** what was added,
    what remains open, and which authoritative source owns each unresolved question.
 
-## 6. Build/test gate
+## 6. Build/test gate (a controlled capability boundary)
 
-Trusted build/test execution is a **controlled capability boundary**, not unrestricted shell access:
-allowed operations are the declared build/test/format/check commands; the workspace boundary is the
-repository inside the sandbox; authentication is the environment's, never a payload; secrets are kept
-outside agent-visible payloads wherever possible; execution is auditable. A worker reports gate
-results, never gate credentials.
+Trusted execution is a **capability**, not a shell. What the gate exposes, and what it does not:
+
+| Concern | Rule |
+| :--- | :--- |
+| gate health | a gate that cannot run is reported as *not run* — never as passed (`KNOWN_BLOCKERS.md B-10`) |
+| allowed operations | the declared build / test / format / check commands and the project's gate scripts — nothing else |
+| workspace boundary | the repository inside the sandbox; no path outside it, and no unrestricted host filesystem |
+| authentication boundary | the environment's own authentication; a credential is never carried inside a task, a prompt or a payload |
+| secret sanitization | credentials stay outside agent-visible payloads wherever possible; a gate result reports outcomes, never secrets |
+| manager / worker policy | a worker may request the declared operations; changing the gate's policy is a manager decision |
+| remote execution | an explicit lifecycle (requested -> running -> finished/failed -> collected); only artifacts and results return |
+| audit | every execution is attributable: who asked, which branch, which command, which result |
+
+A worker reports **gate results**, never gate credentials, and never edits the gate to make a run
+green.
 
 ## 7. Handover between agents
 

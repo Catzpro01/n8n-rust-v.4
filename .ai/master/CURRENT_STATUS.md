@@ -23,7 +23,7 @@ registry wins and this file is a defect.
 | capabilities | **82**, of which **62** publish `operations[]` | `domains.json` |
 | contract rows | **14** (incl. `ai.foundation@1.0.0`, manager) | `contract-lock.json` |
 | AI contract set | `ai.foundation@1.0.0`, status `contract-only`, 11 `ai.*` capabilities, 5 provider kinds, 26 event types | `manifest/ai-foundation.json` |
-| official AI/Agent LEGO | **15** — 9 published, 6 `publicationPending` | `AI_AGENT_LEGO_MASTER_PLAN.md` |
+| official AI/Agent LEGO | **15** — 2 published, 6 declared `contract-only`, 2 partial (gated), 5 `publicationPending` | `AI_AGENT_LEGO_MASTER_PLAN.md` §1, `PROJECT_MASTER_PLAN.md` §4 |
 | frontend vocabulary lock | 38 canonical sets + 22 local sets, provenance-pinned | `packages/frontend-lego/src/vocabulary.mjs` |
 | seam | 7 declared sources, 7 forbidden sources, 13 inputs, 16-field identity | `src/seam.mjs`, `CORE_LEGO_ARCHITECTURE.md` |
 | operation outcomes | 12, never collapsed | `src/negotiation.mjs` |

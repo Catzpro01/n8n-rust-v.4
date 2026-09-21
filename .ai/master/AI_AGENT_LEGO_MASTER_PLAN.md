@@ -14,11 +14,11 @@ domain.
 | :-- | :--- | :--- | :--- | :--- | :--- |
 | 1 | **AI Foundation** | **published** — `ai.foundation@1.0.0`, status `contract-only`, 11 capabilities | domain `ai-foundation` | all AI surfaces | — |
 | 2 | **Capability** | **published** — registry + `lego.interaction`, `lego.negotiation` | `lego.domain-registry@1.1.0` | Capabilities list, source labels | — |
-| 3 | **Context & Session** | **published** — `ai.context`, `ai.agent-session` | `ai-foundation` | context chip, session line | — |
-| 4 | **Agent Event & Work Trace** | **published** — `ai.agent-events`, 26 types / 7 namespaces | `ai-foundation` | Trace tab, status bar | — |
-| 5 | **Artifact** | **published** — `ai.artifact`, 8 kinds, 4 retention classes | `ai-foundation` | Files tab | — |
-| 6 | **Approval** | **published** — `ai.approval`, fail-closed | `ai-foundation` | approval card, trace rows | — |
-| 7 | **Runtime Adapter** | **published** — `ai.agent-runtime` + `runtimeMetadata` | `ai-foundation` | runtime line in agent detail | — |
+| 3 | **Context & Session** | **contract-only** — declared as `ai.context` + `ai.agent-session` | `ai-foundation` | context chip, session line | — |
+| 4 | **Agent Event & Work Trace** | **contract-only** — declared as `ai.agent-events`, 26 types / 7 namespaces | `ai-foundation` | Trace tab, status bar | — |
+| 5 | **Artifact** | **contract-only** — declared as `ai.artifact`, 8 kinds, 4 retention classes | `ai-foundation` | Files tab | — |
+| 6 | **Approval** | **contract-only** — declared as `ai.approval`, fail-closed | `ai-foundation` | approval card, trace rows | — |
+| 7 | **Runtime Adapter** | **contract-only** — declared as `ai.agent-runtime` + `runtimeMetadata` | `ai-foundation` | runtime line in agent detail | — |
 | 8 | **Workspace** | **partially published** — domain `workspace` exists (`planned`, contract `0.0.0`, `projects` unsupported) | domain `workspace` | workspace view (gated) | **XA-13** |
 | 9 | **Node Creator** | **partially published** — `node-registry@0.1.0` (catalog resolve/describe/list, icons) | domain `node-registry` | node editor; `Create with AI` gated | **XA-15** |
 | 10 | **Skill** | `publicationPending` | — (no capability, no contract) | Skills chip/list | **XA-11** |
@@ -28,8 +28,11 @@ domain.
 | 14 | **Universal Translation** | `publicationPending` (no domain, no capability) | — | language control, `Translate response` | **XA-14** |
 | 15 | **Agent Machine** | **contract-only**: `ai.agent-runtime` + `ai.agent-delegation` contracts exist; **no runtime is built** | `ai-foundation` | agent tree, agent detail | — |
 
-**9 published, 1 partially published ×2, 1 contract-only, 6 `publicationPending`.** No LEGO in this
-table is implemented by this branch, and "published" never means "running".
+**2 published (AI Foundation, Capability), 6 declared `contract-only`, 2 partially published and
+gated (Workspace XA-13, Node Creator XA-15), 5 `publicationPending`.** No LEGO in this table is
+implemented by this branch, and "published" never means "running": a lock row or a registry entry is
+a *contract*, and the `ai.*` family is explicitly `contract-only` — implementation behind it is
+forbidden until its phase.
 
 ## 2. Reconciliation rules (the hard part)
 

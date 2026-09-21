@@ -345,9 +345,9 @@ between local modules, no model call anywhere in this package.**
 
 ## 21. Master project documentation (durable memory)
 
-The repository — not the chat — is now the memory of the project. `.ai/master/` holds **27 documents**
-(174 KB of a 256 KB budget, largest 21 KB of a 32 KB per-file cap), deliberately **outside** the
-retrieval pack: they are loaded on purpose through `productContextFor({ kind })` (27 product tasks),
+The repository — not the chat — is now the memory of the project. `.ai/master/` holds **28 documents**
+(186 KB of a 256 KB budget, largest 21 KB of a 32 KB per-file cap), deliberately **outside** the
+retrieval pack: they are loaded on purpose through `productContextFor({ kind })` (28 product tasks),
 so no ordinary task pays for them in bytes or attention. `test/30-master-plan.test.mjs` enforces the
 budgets, the reachability of every document, the fifteen official AI/Agent LEGO, and that **every
 decision id a document names exists in the register**.
@@ -362,14 +362,31 @@ decision id a document names exists in the register**.
 | edges of the system | `MCP_AND_RUNTIME_ADAPTER_PLAN.md`, `NODE_CREATOR_PLAN.md`, `TRANSLATION_PLAN.md` |
 | examples and safety | `REFERENCE_AGENT_SCENARIOS.md`, `SECURITY_AND_APPROVAL_MODEL.md` |
 | how the project is built | `PROJECT_WORKFORCE_ORCHESTRATION.md` |
+| where it runs, at what cost | `PLATFORM_AND_DEPLOYMENT_STRATEGY.md` |
 | the AI product (frontend) | `AI_UI_EXPERIENCE_MASTER_PLAN.md`, `AI_FRONTEND_CONTRACT_MATRIX.md`, `AI_UX_PROGRESSIVE_DISCLOSURE.md`, `AI_UI_STATES_AND_FLOWS.md`, `AI_ACCESSIBILITY_AND_LOCALIZATION.md`, `AI_UI_IMPLEMENTATION_PHASES.md` |
 
 Corrections and decisions recorded in the same change: the project has **26 core LEGO domains** (the
 registry is the count, not prose); **Universal Translation is an official LEGO target** and the old
 "out of scope" assumption is superseded (`.ai/constitution.md` updated, XA-14 keeps it unpublished);
+the superseded assumption is still present *inside* agent-2's registry — `domains.json →
+legacy.unresolvedOwnership.why` argues the i18n routes from "an explicit standing decision NOT to
+build a Translation LEGO", so that text is recorded as stale evidence in XA-14 and B-9 rather than
+quietly overwritten in a file this branch does not own;
 the AI Workspace binds to the existing `workspace` domain instead of a duplicate; and the scale-out
 blockers (`src/store.mjs` execution-id allocation, local JSON system of record, missing shared
-persistence) are recorded as **NOT READY** rather than rounded up. **No runtime, contract, test
+persistence) are recorded as **NOT READY** rather than rounded up. The reading test is documented in
+the plan itself: thirty questions a new agent must be able to answer from this tree alone, each one
+pointing at the document and section that answers it (`PROJECT_MASTER_PLAN.md §11`). A question that
+cannot be answered there is a documentation defect, not a reason to read a chat.
+
+Two claims were corrected against the registry rather than left as prose. The 26-domain table is now a
+**generated projection** of `domains.json` at `6f7b66da` (id, status, contract version, phase, in
+registry order); the earlier hand-written table had drifted on status (`settings`, `auth`,
+`credentials`, `storage`) and on phase, and the corrected table is the one under test. The publication
+state of the fifteen official AI/Agent LEGO is stated with the artifact that carries it, and the count
+is **2 published, 6 declared `contract-only`, 2 partially published and gated, 5
+`publicationPending`** — an earlier "9 published" summary counted contracts as if they were
+implementations. **No runtime, contract, test
 expectation or boot payload was changed by this section** — it is documentation, a register extension
 and one new gate.
 
