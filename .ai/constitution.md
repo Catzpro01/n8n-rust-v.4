@@ -30,6 +30,8 @@ Then run the test tier it selects, then `npm run lego:gate`.
 | L1 | `.ai/domains/<id>.md` | what one LEGO owns and may call |
 | L2 | `.ai/contracts.md` | the contract, its version, its lock row |
 | L2 | `.ai/communication.md` | CALL/EVENT/STREAM/BATCH, envelope, cancellation, backpressure |
+| L0 | `.ai/master/PROJECT_MASTER_PLAN.md` | what this project is and which document is canonical |
+| L1 | `.ai/master/AI_AGENT_LEGO_MASTER_PLAN.md` | the 15 official AI/Agent LEGO |
 | L2 | `.ai/capabilities.md` | the operation vocabulary and surface aliases |
 | L3 | `.ai/ai-foundation.md` | provider/runtime taxonomy, MCP boundary, zero-install |
 | L3 | `.ai/recipes/<id>.md` | how to perform a specific change |
@@ -44,3 +46,4 @@ Then run the test tier it selects, then `npm run lego:gate`.
 - Allowances remaining: see `.ai/index.md`. They may shrink, never grow.
 - A capability declares its operations; never infer them from a route.
 - The AI Foundation is `contract-only` — no inference, no runtime, no MCP.
+- Start at `.ai/master/PROJECT_MASTER_PLAN.md`; it names the canonical document for every subject.

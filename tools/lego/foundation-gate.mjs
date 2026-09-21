@@ -24,7 +24,7 @@
  *
  * Owner: manager. Pure Node, no dependencies.
  */
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -152,6 +152,8 @@ export function runFoundationGate(registry = loadRegistry({ reload: true })) {
   violations.push(...checkCapabilityContracts(registry));
   violations.push(...checkSurfaceAliases(registry));
   violations.push(...checkAiFoundation());
+  violations.push(...checkErrorCodePublication(registry));
+  violations.push(...checkAiLegoSet(registry));
   violations.push(...checkNodeContract());
   violations.push(...checkContractSecurity(registry));
   return violations;
@@ -278,6 +280,112 @@ function checkCapabilityContracts(registry) {
             'A capability cannot be more trusted than the LEGO that provides it.');
         }
       }
+    }
+  }
+  return problems;
+}
+
+/**
+ * F16 — every error code a LEGO throws must be published (closes XA-5).
+ *
+ * The gap this closes was found by Agent 1, not by us: the foundation modules
+ * raised eleven `lego.*` codes that `errors.contract.json` never declared. A
+ * consumer branching on a code it cannot look up is branching on a private
+ * implementation detail, and the moment that code is renamed the consumer
+ * breaks with no contract change to point at.
+ *
+ * Scanning source rather than trusting a list is deliberate: a hand-kept list
+ * of "codes we throw" drifts the first time someone adds a throw.
+ */
+function checkErrorCodePublication(registry) {
+  const problems = [];
+  const published = new Set((registry.errorContract?.codes ?? []).map((entry) => entry.code));
+  const namespaces = new Set(registry.domains.map((domain) => domain.errorNamespace).filter(Boolean));
+  const legoDir = join(APP_ROOT, 'src', 'lego');
+  if (!existsSync(legoDir)) return problems;
+
+  for (const entry of readdirSync(legoDir, { withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith('.mjs')) continue;
+    const source = readFileSync(join(legoDir, entry.name), 'utf8');
+    for (const match of source.matchAll(/'([a-z][a-z0-9-]*\.[a-z][a-z0-9_]*)'/g)) {
+      const code = match[1];
+      const namespace = code.split('.')[0];
+      // Only consider strings that are plausibly error codes: a declared
+      // namespace plus a snake_case remainder.
+      //
+      // An earlier version also required an underscore, as a cheap way to skip
+      // dotted identifiers like `lego.domain-registry`. That silently excluded
+      // single-word codes — `lego.cancelled` among them, which is the most
+      // frequently raised code in the foundation. The filter now excludes
+      // kebab-case (used for capability ids) instead, which is the actual
+      // distinguishing feature.
+      if (!namespaces.has(namespace)) continue;
+      const suffix = code.slice(namespace.length + 1);
+      if (!/^[a-z][a-z0-9_]*$/.test(suffix)) continue;
+      if (published.has(code)) continue;
+      problems.push({
+        rule: 'F16 error-code-unpublished',
+        where: `src/lego/${entry.name}`,
+        message: `raises '${code}', which contracts/errors.contract.json does not publish`,
+        fix: 'Publish the code (adding one is a MINOR change) or stop raising it. A consumer cannot branch on a code it cannot look up.',
+      });
+    }
+  }
+  return problems;
+}
+
+/**
+ * F17 — the official AI/Agent LEGO set may not fork a second vocabulary.
+ *
+ * `manifest/ai-lego-set.json` names fifteen official LEGO, and two of those
+ * names — `workspace` and `capability` — already exist in the core manifest as
+ * a domain and as the negotiation mechanism respectively. That overlap is
+ * correct: the AI Workspace IS the workspace domain, extended. What must never
+ * happen is the overlap going undeclared, because then the same word carries
+ * two meanings in two registries and the divergence is only discovered when
+ * someone implements the wrong one.
+ *
+ * The rule is therefore narrow and mechanical: if an official LEGO's id matches
+ * a core domain id, or shadows one behind an `ai-` prefix, it must declare
+ * `reconciles` naming the real domain. Prose in a document is not sufficient —
+ * a document cannot fail a build.
+ */
+function checkAiLegoSet(registry) {
+  const problems = [];
+  const push = (message, fix) => problems.push({
+    rule: 'F17 ai-set-reconciliation', where: 'manifest/ai-lego-set.json', message, fix,
+  });
+  // The selftest injects a mutated set; the real run reads the manifest. Both
+  // go through the identical checker, which is the only way the selftest proves
+  // anything about the real one.
+  const file = join(APP_ROOT, 'src', 'lego', 'manifest', 'ai-lego-set.json');
+  let set = registry.aiLegoSet;
+  if (!set) {
+    if (!existsSync(file)) return problems;
+    set = JSON.parse(readFileSync(file, 'utf8'));
+  }
+  const domainIds = new Set(registry.domains.map((domain) => domain.id));
+  const agentIds = new Set(Object.keys(registry.agents ?? {}));
+
+  for (const lego of set.lego ?? []) {
+    const collides = domainIds.has(lego.id);
+    const shadowed = lego.id.startsWith('ai-') ? lego.id.slice(3) : null;
+
+    if (collides && !lego.reconciles) {
+      push(`'${lego.id}' has the same id as a core domain but declares no 'reconciles'`,
+        "Add a `reconciles` block naming the core domain and stating that they are the same unit. Two registries meaning different things by one word is the failure this prevents.");
+    }
+    if (lego.reconciles && !domainIds.has(lego.reconciles.coreDomain)) {
+      push(`'${lego.id}' reconciles to '${lego.reconciles.coreDomain}', which is not a declared domain`,
+        'Name a domain that exists in manifest/domains.json.');
+    }
+    if (!collides && shadowed && domainIds.has(shadowed) && !lego.reconciles) {
+      push(`'${lego.id}' shadows core domain '${shadowed}' behind an 'ai-' prefix`,
+        `Reconcile with '${shadowed}' rather than creating a parallel AI-prefixed unit.`);
+    }
+    if (lego.owner && !agentIds.has(lego.owner)) {
+      push(`'${lego.id}' is owned by '${lego.owner}', which is not a declared agent`,
+        'Ownership that resolves to nobody is ownership by nobody.');
     }
   }
   return problems;
@@ -546,6 +654,26 @@ export const FOUNDATION_CASES = Object.freeze([
     },
   },
   {
+    name: 'a raised error code that the error contract does not publish',
+    rule: 'F16 error-code-unpublished',
+    mutate: (registry) => {
+      registry.errorContract = {
+        ...registry.errorContract,
+        codes: registry.errorContract.codes.filter((entry) => entry.code !== 'lego.cancelled'),
+      };
+    },
+  },
+  {
+    name: 'an AI LEGO colliding with a core domain without reconciling',
+    rule: 'F17 ai-set-reconciliation',
+    mutateSet: (set) => { delete set.lego.find((lego) => lego.id === 'workspace').reconciles; },
+  },
+  {
+    name: 'an AI LEGO owned by an agent that does not exist',
+    rule: 'F17 ai-set-reconciliation',
+    mutateSet: (set) => { set.lego.find((lego) => lego.id === 'skill').owner = 'agent-99'; },
+  },
+  {
     name: 'a surface alias pointing at a domain that does not exist',
     rule: 'F14 surface-alias',
     mutate: (registry) => { registry.surfaceAliases.aliases[0].canonical = 'no-such-domain'; },
@@ -572,10 +700,13 @@ export const FOUNDATION_CASES = Object.freeze([
 
 function cloneForFoundation(registry) {
   const domains = JSON.parse(JSON.stringify(registry.domains));
+  const setFile = join(APP_ROOT, 'src', 'lego', 'manifest', 'ai-lego-set.json');
   return {
     ...registry,
     domains,
+    aiLegoSet: existsSync(setFile) ? JSON.parse(readFileSync(setFile, 'utf8')) : undefined,
     surfaceAliases: JSON.parse(JSON.stringify(registry.surfaceAliases ?? { aliases: [] })),
+    errorContract: JSON.parse(JSON.stringify(registry.errorContract ?? { codes: [] })),
     byId: new Map(domains.map((domain) => [domain.id, domain])),
   };
 }
@@ -586,7 +717,8 @@ export function runFoundationSelftest() {
   const results = [];
   for (const testCase of FOUNDATION_CASES) {
     const registry = cloneForFoundation(base);
-    testCase.mutate(registry);
+    if (testCase.mutate) testCase.mutate(registry);
+    if (testCase.mutateSet) testCase.mutateSet(registry.aiLegoSet);
     const violations = runFoundationGate(registry);
     results.push({
       name: testCase.name,

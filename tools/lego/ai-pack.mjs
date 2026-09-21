@@ -69,6 +69,8 @@ Then run the test tier it selects, then \`npm run lego:gate\`.
 | L1 | \`.ai/domains/<id>.md\` | what one LEGO owns and may call |
 | L2 | \`.ai/contracts.md\` | the contract, its version, its lock row |
 | L2 | \`.ai/communication.md\` | CALL/EVENT/STREAM/BATCH, envelope, cancellation, backpressure |
+| L0 | \`.ai/master/PROJECT_MASTER_PLAN.md\` | what this project is and which document is canonical |
+| L1 | \`.ai/master/AI_AGENT_LEGO_MASTER_PLAN.md\` | the 15 official AI/Agent LEGO |
 | L2 | \`.ai/capabilities.md\` | the operation vocabulary and surface aliases |
 | L3 | \`.ai/ai-foundation.md\` | provider/runtime taxonomy, MCP boundary, zero-install |
 | L3 | \`.ai/recipes/<id>.md\` | how to perform a specific change |
@@ -83,6 +85,7 @@ Then run the test tier it selects, then \`npm run lego:gate\`.
 - Allowances remaining: see \`.ai/index.md\`. They may shrink, never grow.
 - A capability declares its operations; never infer them from a route.
 - The AI Foundation is \`contract-only\` — no inference, no runtime, no MCP.
+- Start at \`.ai/master/PROJECT_MASTER_PLAN.md\`; it names the canonical document for every subject.
 `;
 }
 
@@ -941,6 +944,907 @@ ${ai.rustPolicy.rule} ${ai.rustPolicy.prohibition}
 `;
 }
 
+
+/* ------------------------------------------------------- master plan (P2.11) */
+
+function readManifest(name) {
+  const file = join(REPO_ROOT, 'apps', 'n8n-lego', 'src', 'lego', 'manifest', name);
+  return existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : null;
+}
+
+function readDecisions() {
+  const file = join(REPO_ROOT, 'docs', 'n8n-lego', 'decisions', 'cross-agent-decisions.backend.json');
+  return existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : null;
+}
+
+const STATUS_MARK = {
+  implemented: 'IMPLEMENTED',
+  'contract-only': 'CONTRACT-ONLY',
+  planned: 'PLANNED',
+  blocked: 'BLOCKED',
+  deferred: 'DEFERRED',
+};
+
+function projectMasterPlan() {
+  const set = readManifest('ai-lego-set.json');
+  const ai = readManifest('ai-foundation.json');
+  if (!set || !ai) return null;
+  const registry = loadRegistry({ reload: true });
+  return `${BANNER}
+# Project master plan — n8n LEGO
+
+**Canonical for:** what this project is, which documents are authoritative, and what is true today.
+
+## What n8n LEGO is
+
+A contract-first reconstruction of n8n whose stable contracts live **above** the
+implementation language. JavaScript is the active backend. Rust is an
+implementation choice behind the same contracts, never a second architecture.
+
+The repository is designed so that a future agent can continue from the files
+alone, without conversation history. Every claim below is generated from an
+authoritative declaration.
+
+## Which document is canonical for which subject
+
+| Subject | Canonical document | Generated from |
+| --- | --- | --- |
+| Project overview, status honesty | \`.ai/master/PROJECT_MASTER_PLAN.md\` | \`manifest/ai-lego-set.json\` |
+| The 15 official AI/Agent LEGO | \`.ai/master/AI_AGENT_LEGO_MASTER_PLAN.md\` | \`manifest/ai-lego-set.json\` |
+| Providers, runtimes, transports, MCP | \`.ai/master/AI_RUNTIME_AND_PROVIDER_PLAN.md\` | \`manifest/ai-foundation.json\` |
+| Phase roadmap | \`.ai/master/IMPLEMENTATION_PHASES.md\` | \`manifest/ai-lego-set.json\` |
+| Decisions and open arbitration | \`.ai/master/PROJECT_DECISIONS.md\` | ADRs + \`cross-agent-decisions.backend.json\` |
+| Contract status matrix | \`.ai/master/AI_CONTRACT_MATRIX.md\` | manifests + \`contract-lock.json\` |
+| The ${registry.domains.length} core domains, strangler, nesting | \`.ai/master/CORE_LEGO_ARCHITECTURE.md\` | \`manifest/domains.json\` |
+| Development workforce, control planes | \`.ai/master/PROJECT_WORKFORCE_ORCHESTRATION.md\` | \`manifest/project-governance.json\` |
+| End-to-end scenario walkthroughs | \`.ai/master/REFERENCE_AGENT_SCENARIOS.md\` | \`manifest/reference-scenarios.json\` |
+| **What is true today** | \`.ai/master/CURRENT_STATUS.md\` | all manifests |
+| What is blocking progress | \`.ai/master/KNOWN_BLOCKERS.md\` | \`manifest/project-governance.json\` |
+| Backend LEGO boundaries | \`.ai/index.md\`, \`.ai/domains/*\` | \`manifest/domains.json\` |
+| Communication semantics | \`.ai/communication.md\` | source modules |
+| Capability + operation vocabulary | \`.ai/capabilities.md\` | \`manifest/domains.json\` |
+| Scale-out honesty | \`.ai/scale-out.md\` | \`manifest/domains.json\` |
+| Narrative architecture | \`docs/n8n-lego/BACKEND_LEGO.md\` | hand-written prose |
+
+Everything under \`.ai/\` is generated. Editing it by hand is pointless — the
+next \`npm run lego:ai\` overwrites it.
+
+## Where to find the answer
+
+A new agent should be able to answer all of these from \`.ai/master/\` alone. If
+one of them cannot be answered from the listed document, that is a documentation
+defect and should be reported as one.
+
+| Question | Answered in |
+| --- | --- |
+| What is n8n LEGO? | \`PROJECT_MASTER_PLAN.md\` |
+| What are the ${registry.domains.length} core domains? | \`CORE_LEGO_ARCHITECTURE.md\` |
+| What are the 15 official AI/Agent LEGO? | \`AI_AGENT_LEGO_MASTER_PLAN.md\` |
+| What is implemented vs contract-only? | \`CURRENT_STATUS.md\`, \`AI_CONTRACT_MATRIX.md\` |
+| How does Assistant differ from Copilot? | \`AI_AGENT_LEGO_MASTER_PLAN.md\` (experiences) |
+| What is Agent Machine? | \`AI_AGENT_LEGO_MASTER_PLAN.md\` (LEGO 3) |
+| How do Skill and Capability differ? | \`AI_AGENT_LEGO_MASTER_PLAN.md\` (LEGO 2, 9) |
+| How do Memory and Context differ? | \`AI_AGENT_LEGO_MASTER_PLAN.md\` (LEGO 4, 6) |
+| How does the system write files? | \`AI_AGENT_LEGO_MASTER_PLAN.md\` (external action model) |
+| How does MCP fit? | \`AI_RUNTIME_AND_PROVIDER_PLAN.md\` |
+| How do Hermes / Claude Code / Gemini CLI fit? | \`AI_RUNTIME_AND_PROVIDER_PLAN.md\` |
+| How does token accounting work? | \`REFERENCE_AGENT_SCENARIOS.md\` (context rollover) |
+| How does context rollover work? | \`REFERENCE_AGENT_SCENARIOS.md\` (context rollover) |
+| How does Memory Graph reach Obsidian? | \`REFERENCE_AGENT_SCENARIOS.md\` (memory/Obsidian) |
+| How do permissions and approvals work? | \`AI_AGENT_LEGO_MASTER_PLAN.md\` (security invariants) |
+| What is a Workspace? | \`AI_AGENT_LEGO_MASTER_PLAN.md\` (LEGO 5) |
+| What is the Rust strategy? | \`PROJECT_MASTER_PLAN.md\`, ADR-0005 |
+| How does the Manager/Worker system work? | \`PROJECT_WORKFORCE_ORCHESTRATION.md\` |
+| What does GitHub / Supabase / the VPS gate control? | \`PROJECT_WORKFORCE_ORCHESTRATION.md\` |
+| What are the current blockers? | \`KNOWN_BLOCKERS.md\` |
+| What must never be done? | \`PROJECT_WORKFORCE_ORCHESTRATION.md\` (principles), \`.ai/constitution.md\` |
+| What comes next? | \`IMPLEMENTATION_PHASES.md\` |
+
+## Backend today
+
+| | |
+| --- | --- |
+| Domains registered | ${registry.domains.length} |
+| Locked public contracts | ${registry.contractLock.contracts.length} |
+| Declared capabilities | ${registry.domains.reduce((sum, domain) => sum + (domain.capabilities ?? []).length, 0)} |
+| Published error codes | ${registry.errorContract.codes.length} |
+| Temporary boundary allowances | ${registry.allowances.length} |
+| Official AI/Agent LEGO | ${set.lego.length} |
+
+## The three AI experiences
+
+${set.experiences.rule}
+
+${set.experiences.items.map((item) => `### ${item.id}
+
+- **Owner:** \`${item.owner}\` · **Kind:** ${item.kind}
+- **Summary:** ${item.summary}
+- **Scope progression:** ${item.scopes.join(' -> ')}
+${item.modes ? `- **Modes:** ${item.modes.join(', ')}\n` : ''}${item.examples ? `- **Examples:** ${item.examples.join(', ')}\n` : ''}${item.mustRespect ? `- **Must respect:** ${item.mustRespect.join(', ')}\n` : ''}${item.note ? `- **Note:** ${item.note}\n` : ''}- **Backend contracts:** ${item.backendContracts.map((c) => `\`${c}\``).join(', ')}`).join('\n\n')}
+
+## Concept kinds — what counts as what
+
+${Object.entries(set.conceptKinds).map(([kind, meaning]) => `- **${kind}** — ${meaning}`).join('\n')}
+
+## Performance rules
+
+${set.performanceRules.map((rule) => `- ${rule}`).join('\n')}
+
+## Security invariants
+
+${set.securityInvariants.map((rule) => `- ${rule}`).join('\n')}
+
+## Deployment modes
+
+| Mode | Summary | Inference |
+| --- | --- | --- |
+${Object.entries(set.deploymentModes).filter(([key]) => key !== 'rule').map(([key, value]) => `| \`${key}\` | ${value.summary} | ${value.inference} |`).join('\n')}
+
+> ${set.deploymentModes.rule}
+
+## Rust strategy
+
+${set.rustStrategy.rule}
+
+**Measured candidates** (n8n-controlled, hot, long-lived): ${set.rustStrategy.candidates.map((c) => `\`${c}\``).join(', ')}.
+${set.rustStrategy.candidateRule}
+
+**Never rewritten**: ${set.rustStrategy.neverRewrite.join(', ')}.
+${set.rustStrategy.neverRewriteReason}
+
+${set.rustStrategy.contractRule}
+
+## What is NOT true today
+
+These statements are false and must not be claimed:
+
+${set.currentLimits.map((limit) => `- ${limit}`).join('\n')}
+`;
+}
+
+function aiLegoMasterPlan() {
+  const set = readManifest('ai-lego-set.json');
+  if (!set) return null;
+  const legoCard = (lego) => {
+    const rows = [
+      ['Index', `${lego.index} of 15`],
+      ['Owner', `\`${lego.owner}\``],
+      ['Status', `**${STATUS_MARK[lego.status] ?? lego.status}**`],
+      ['Phase', lego.phase],
+      ['Contracts', (lego.contracts ?? []).map((c) => `\`${c}\``).join(', ') || '_none yet_'],
+      ['Versioning', lego.versioning],
+      ['Depends on', (lego.dependsOn ?? []).map((d) => `\`${d}\``).join(', ') || '_nothing — leaf_'],
+      ['Interaction', (lego.interaction ?? []).map((i) => `\`${i}\``).join(', ')],
+      ['Permissions', (lego.permissions ?? []).map((p) => `\`${p}\``).join(', ') || '_none_'],
+      ['Resource profile', `\`${lego.resourceProfile}\``],
+    ];
+    const extras = [];
+    if (lego.definition) extras.push(`**Definition:** ${lego.definition}`);
+    if (lego.distinction) extras.push(`**Distinction:** ${lego.distinction}`);
+    if (lego.disclosureLevels) {
+      extras.push(`**Progressive disclosure:**\n\n${Object.entries(lego.disclosureLevels).map(([level, meaning]) => `- \`${level}\` — ${meaning}`).join('\n')}\n\n> ${lego.disclosureRule}`);
+    }
+    if (lego.graph) {
+      extras.push(`**Memory graph:**\n\n- Nodes: ${lego.graph.nodes.map((n) => `\`${n}\``).join(', ')}\n- Edges: ${lego.graph.edges.map((e) => `\`${e}\``).join(', ')}`);
+    }
+    if (lego.retention) extras.push(`**Retention classes:** ${lego.retention.map((r) => `\`${r}\``).join(' < ')}`);
+    if (lego.loadRule) extras.push(`> ${lego.loadRule}`);
+    if (lego.providerNote) extras.push(`> ${lego.providerNote}`);
+    if (lego.kinds) extras.push(`**Kinds:** ${lego.kinds.map((k) => `\`${k}\``).join(', ')}`);
+    if (lego.contains) extras.push(`**Contains:** ${lego.contains.join(', ')}`);
+    if (lego.scopingRule) extras.push(`> ${lego.scopingRule}`);
+    if (lego.scopes) extras.push(`**Scopes:** ${lego.scopes.map((s) => `\`${s}\``).join(' > ')}`);
+    if (lego.continuationPackage) extras.push(`**Continuation package:** ${lego.continuationPackage.map((f) => `\`${f}\``).join(', ')}`);
+    if (lego.rolloverRule) extras.push(`> ${lego.rolloverRule}`);
+    if (lego.locales) extras.push(`**Planned locales:** ${lego.locales.map((l) => `\`${l}\``).join(', ')} (RTL: ${lego.rtl.join(', ')})`);
+    if (lego.localeNote) extras.push(`> ${lego.localeNote}`);
+    if (lego.strategies) extras.push(`**Strategies:** ${lego.strategies.map((s) => `\`${s}\``).join(', ')}`);
+    if (lego.rustRule) extras.push(`> ${lego.rustRule}`);
+    if (lego.registryFields) extras.push(`**Registry fields:** ${lego.registryFields.map((f) => `\`${f}\``).join(', ')}`);
+    if (lego.interactionClasses) extras.push(`**Interaction classes:** ${lego.interactionClasses.map((c) => `\`${c}\``).join(', ')} — ${lego.classRule}`);
+    if (lego.objects) extras.push(`**MCP objects:** ${lego.objects.map((o) => `\`${o}\``).join(', ')}`);
+    if (lego.boundaryRule) extras.push(`> ${lego.boundaryRule}`);
+    if (lego.internalRule) extras.push(`> ${lego.internalRule}`);
+    if (lego.discoveryRule) extras.push(`> ${lego.discoveryRule}`);
+    if (lego.exampleRuntimes) extras.push(`**Example runtimes:** ${lego.exampleRuntimes.join(', ')}`);
+    if (lego.noRewriteRule) extras.push(`> ${lego.noRewriteRule}`);
+    if (lego.graphExample) extras.push(`**Delegation graph example:** ${lego.graphExample.join(' -> ')}`);
+    if (lego.authorityRule) extras.push(`> ${lego.authorityRule}`);
+    if (lego.kinds === undefined && lego.metadata) extras.push(`**Metadata:** ${lego.metadata.map((m) => `\`${m}\``).join(', ')}`);
+    if (lego.referenceRule) extras.push(`> ${lego.referenceRule}`);
+    if (lego.requiresApproval) extras.push(`**Requires approval:** ${lego.requiresApproval.map((a) => `\`${a}\``).join(', ')}`);
+    if (lego.failClosedRule) extras.push(`> ${lego.failClosedRule}`);
+    if (lego.eventFields) extras.push(`**Event fields:** ${lego.eventFields.map((f) => `\`${f}\``).join(', ')} (${lego.eventCount} types)`);
+    if (lego.privacyRule) extras.push(`> ${lego.privacyRule}`);
+    if (lego.sources) extras.push(`**Sources:** ${lego.sources.map((s) => `\`${s}\``).join(' vs ')}`);
+    if (lego.honestyRule) extras.push(`> ${lego.honestyRule}`);
+    if (lego.uiRule) extras.push(`**UI rule:** ${lego.uiRule}${lego.uiOwner ? ` (${lego.uiOwner})` : ''}`);
+
+    return `## ${lego.index}. ${lego.title}
+
+> ${lego.mission}
+
+| | |
+| --- | --- |
+${rows.map(([key, value]) => `| ${key} | ${value} |`).join('\n')}
+
+**Scope:** ${(lego.scope ?? []).join(', ')}
+
+**NOT in scope:** ${(lego.nonScope ?? []).join(', ')}
+
+**Lifecycle:** ${(lego.lifecycle ?? []).map((state) => `\`${state}\``).join(' -> ')}
+
+**Operations:** ${(lego.operations ?? []).map((op) => `\`${op}\``).join(', ') || '_none declared_'}
+
+**Replacement boundary:** ${lego.replacementBoundary}
+
+**Degradation:** ${(lego.degradation ?? []).map((d) => `\`${d}\``).join(', ')}
+
+**Observability:** ${lego.observability}
+
+**Tests:** ${(lego.tests ?? []).map((t) => `\`${t}\``).join(', ')}
+
+**Future stages:** ${(lego.futureStages ?? []).join(' · ')}
+${extras.length ? `\n${extras.join('\n\n')}\n` : ''}`;
+  };
+
+  return `${BANNER}
+# AI/Agent LEGO master plan — the fifteen official LEGO
+
+**Canonical for:** the official AI/Agent LEGO set, their boundaries and their roadmap.
+
+> ${set.setRule}
+
+## Status at a glance
+
+| # | LEGO | Owner | Status | Phase |
+| --- | --- | --- | --- | --- |
+${set.lego.map((lego) => `| ${lego.index} | **${lego.title}** | \`${lego.owner}\` | ${STATUS_MARK[lego.status] ?? lego.status} | ${lego.phase} |`).join('\n')}
+
+## Canonical architecture chain
+
+\`\`\`
+${set.architecture.chain.join('\n  -> ')}
+\`\`\`
+
+${set.architecture.rule}
+
+${set.architecture.policyNote}
+
+## Dependency graph
+
+\`\`\`
+${set.lego.map((lego) => `${lego.id.padEnd(18)} -> ${(lego.dependsOn ?? []).join(', ') || '(leaf)'}`).join('\n')}
+\`\`\`
+
+## External action model
+
+${set.externalActionModel.rule}
+
+| Capability | Side effects | Workspace-scoped | Approval |
+| --- | --- | --- | --- |
+${set.externalActionModel.examples.map((e) => `| \`${e.capability}\` | ${e.sideEffects} | ${e.workspaceScoped ? 'yes' : 'no'} | ${e.approval ?? '—'} |`).join('\n')}
+
+**${set.externalActionModel.status}**
+
+---
+
+${set.lego.map(legoCard).join('\n---\n\n')}
+`;
+}
+
+function aiRuntimeProviderPlan() {
+  const ai = readManifest('ai-foundation.json');
+  const set = readManifest('ai-lego-set.json');
+  if (!ai || !set) return null;
+  return `${BANNER}
+# AI runtime and provider plan
+
+**Canonical for:** provider taxonomy, runtime kinds, transport routing and the MCP boundary.
+
+## Five concepts, never conflated
+
+${Object.entries(ai.taxonomy.concepts).map(([name, meaning]) => `- **${name}** — ${meaning}`).join('\n')}
+
+\`\`\`
+${ai.taxonomy.layering}
+\`\`\`
+
+**Anti-pattern:** ${ai.taxonomy.antiPattern}
+
+## Provider kinds
+
+| Kind | Contract | Supplies | Examples |
+| --- | --- | --- | --- |
+${Object.entries(ai.providerKinds).map(([kind, value]) => `| \`${kind}\` | \`${value.contract}\` | ${value.summary} | ${value.examples.join(', ')} |`).join('\n')}
+
+> ${ai.vendorRule}
+
+### Named examples and their planes
+
+| Example | Plane | Kind | Status |
+| --- | --- | --- | --- |
+| 9Router | Model plane | model gateway | not implemented |
+| Composio | Tool plane | tool/app gateway | not implemented |
+| GitHub | Code plane | **native** application provider | not implemented |
+| Hermes / Claude Code / Gemini CLI / OpenClaw / Antigravity | Agent plane | external agent runtime | not implemented |
+| MiroFish | Simulation plane | simulation runtime | not implemented |
+
+Two rules that follow: **GitHub is never forced through Composio** — a native
+application provider and a gateway-reached one are two bindings of one
+capability set. And **MCP never becomes the internal business architecture**.
+
+## Transport routing
+
+| When | Transport | Mechanism |
+| --- | --- | --- |
+${ai.transportRouting.ladder.map((step) => `| ${step.when} | \`${step.transport}\` | ${step.mechanism} |`).join('\n')}
+
+${ai.transportRouting.prohibition}
+
+${ai.transportRouting.carryRule}
+
+## MCP boundary
+
+\`\`\`
+${ai.mcp.boundary}
+\`\`\`
+
+- ${ai.mcp.rule}
+- ${ai.mcp.internalRule}
+- ${ai.mcp.mappingRule}
+- ${ai.mcp.exportRule}
+
+**${ai.mcp.notBuilt}**
+
+## Runtime adapter lifecycle
+
+\`\`\`
+${(set.lego.find((lego) => lego.id === 'runtime-adapter')?.lifecycle ?? []).join(' -> ')}
+\`\`\`
+
+${set.lego.find((lego) => lego.id === 'runtime-adapter')?.noRewriteRule ?? ''}
+
+## Resource profiles
+
+| Profile | Meaning |
+| --- | --- |
+${Object.entries(ai.resourceProfiles.profiles).map(([name, meaning]) => `| \`${name}\` | ${meaning} |`).join('\n')}
+
+Runtime registry tracks: ${ai.resourceProfiles.dimensions.map((d) => `\`${d}\``).join(', ')}.
+
+${ai.resourceProfiles.noLocalInstallRule}
+
+## Zero-install
+
+\`\`\`
+${Object.entries(ai.zeroInstall.state).map(([key, value]) => `${key.padEnd(16)} ${value}`).join('\n')}
+\`\`\`
+
+Reported as: ${ai.zeroInstall.reportedAs}
+
+> ${ai.zeroInstall.honestyRule}
+`;
+}
+
+function implementationPhases() {
+  const set = readManifest('ai-lego-set.json');
+  if (!set) return null;
+  const phases = Object.entries(set.phases).filter(([key]) => key !== 'rule');
+  return `${BANNER}
+# Implementation phases
+
+**Canonical for:** what is built when, and in what order.
+
+> ${set.phases.rule}
+
+| Phase | Title | Status | Delivers |
+| --- | --- | --- | --- |
+${phases.map(([key, value]) => `| **${key}** | ${value.title} | ${value.status} | ${value.delivers.join(', ')} |`).join('\n')}
+
+## LEGO by phase
+
+${phases.map(([key, value]) => {
+    const members = set.lego.filter((lego) => lego.phase === key);
+    return `### Phase ${key} — ${value.title} (${value.status})
+
+${members.length === 0 ? '_No official LEGO is introduced in this phase; it delivers implementation for LEGO declared earlier._' : members.map((lego) => `- **${lego.title}** (\`${lego.owner}\`, ${STATUS_MARK[lego.status] ?? lego.status}) — ${lego.futureStages.join(' · ')}`).join('\n')}`;
+  }).join('\n\n')}
+
+## What must not happen
+
+- No phase silently skips contract compatibility.
+- No phase begins by implementing a feature domain that a prior phase only declared.
+- No phase adds a vendor dependency to a provider-neutral contract.
+- Phase F (measured optimisation) may not start before there is something to measure.
+
+## Current limits
+
+${set.currentLimits.map((limit) => `- ${limit}`).join('\n')}
+`;
+}
+
+function projectDecisions() {
+  const decisions = readDecisions();
+  const adrDir = join(REPO_ROOT, 'docs', 'architecture', 'adr');
+  const adrs = existsSync(adrDir)
+    ? readdirSync(adrDir).filter((name) => name.endsWith('.md')).sort()
+    : [];
+  const adrRows = adrs.map((name) => {
+    const first = readFileSync(join(adrDir, name), 'utf8').split('\n').find((line) => line.startsWith('# ')) ?? name;
+    return `| [\`${name.replace('.md', '')}\`](../../docs/architecture/adr/${name}) | ${first.replace(/^#\s*/, '')} |`;
+  });
+  if (!decisions) return null;
+  return `${BANNER}
+# Project decisions and open arbitration
+
+**Canonical for:** what has been decided, and what is still waiting on the manager.
+
+## Architecture decision records
+
+| ADR | Decision |
+| --- | --- |
+${adrRows.join('\n')}
+
+## Cross-agent arbitration
+
+Agent 1 maintains the frontend side of this record on \`${decisions.agent1Baseline.branch}\`
+at \`${decisions.agent1Baseline.commit.slice(0, 8)}\`. Both sides use the same \`XA-*\` ids.
+
+**Inspection:** ${decisions.agent1Baseline.inspected}
+
+**Finding:** ${decisions.agent1Baseline.finding}
+
+### Items
+
+${decisions.items.map((item) => `#### ${item.id} — ${item.question}
+
+- **Assigned to:** \`${item.assignedTo}\`
+- **Status:** ${item.status}
+${item.findingConfirmed ? `- **Finding confirmed:** ${item.findingConfirmed}\n` : ''}${item.resolution ? `- **Resolution:** ${item.resolution}\n` : ''}${item.beyondTheAsk ? `- **Beyond the ask:** ${item.beyondTheAsk}\n` : ''}${item.durability ? `- **Durability:** ${item.durability}\n` : ''}${item.backendPosition ? `- **Backend position:** ${item.backendPosition}\n` : ''}${item.whyNotResolvedHere ? `- **Why not resolved here:** ${item.whyNotResolvedHere}\n` : ''}${item.optionsForManager ? `- **Options:**\n${item.optionsForManager.map((option) => `  - ${option}`).join('\n')}\n` : ''}${item.backendRecommendation ? `- **Backend recommendation:** ${item.backendRecommendation}\n` : ''}${item.blocks ? `- **Blocks:** ${item.blocks}` : ''}`).join('\n\n')}
+
+### New proposals raised by the backend
+
+${decisions.newProposalsFromBackend.map((item) => `#### ${item.id} — ${item.subject}
+
+- **Status:** ${item.status}
+- **Detail:** ${item.detail}
+- **Question:** ${item.question}
+${item.backendReading ? `- **Backend reading:** ${item.backendReading}\n` : ''}${item.risk ? `- **Risk:** ${item.risk}\n` : ''}- **Blocks:** ${item.blocks}`).join('\n\n')}
+
+## Alignment rules
+
+${decisions.alignmentRules.map((rule) => `- ${rule}`).join('\n')}
+`;
+}
+
+function readGovernance() {
+  return readManifest('project-governance.json');
+}
+
+function readScenarios() {
+  return readManifest('reference-scenarios.json');
+}
+
+/**
+ * Core LEGO architecture — the 26 current domains, generated from the manifest.
+ *
+ * This exists because the domain count has drifted in prose before. Generating
+ * it means the number is whatever the manifest says and cannot be stale.
+ */
+function coreLegoArchitecture() {
+  const registry = loadRegistry({ reload: true });
+  const manifest = JSON.parse(readFileSync(MANIFEST_FILE, 'utf8'));
+  const set = readManifest('ai-lego-set.json');
+  const byTier = new Map();
+  for (const domain of registry.domains) {
+    const tier = domain.tier ?? 'unclassified';
+    if (!byTier.has(tier)) byTier.set(tier, []);
+    byTier.get(tier).push(domain);
+  }
+  const aliasRows = (registry.surfaceAliases?.aliases ?? [])
+    .map((alias) => `| \`${alias.surface}\` | \`${alias.canonical}\` | ${alias.why ?? ''} |`);
+
+  return `${BANNER}
+# Core LEGO architecture
+
+**Canonical for:** the current core domains, the strangler boundary and the nesting rule.
+
+The repository declares **${registry.domains.length} core LEGO domains**. That number is
+generated from \`manifest/domains.json\` on every build — if a document elsewhere
+states a different count, that document is stale and this one is right.
+
+## The ${registry.domains.length} domains
+
+| # | Domain | Owner | Tier | Status | Error namespace |
+| --- | --- | --- | --- | --- | --- |
+${registry.domains.map((domain, index) => `| ${index + 1} | \`${domain.id}\` | \`${domain.owner}\` | ${domain.tier ?? '—'} | ${domain.status} | \`${domain.errorNamespace ?? '—'}\` |`).join('\n')}
+
+## By tier
+
+${[...byTier.entries()].map(([tier, domains]) => `- **${tier}** (${domains.length}) — ${domains.map((domain) => `\`${domain.id}\``).join(', ')}`).join('\n')}
+
+## What a LEGO must declare
+
+Every domain declares one responsibility boundary, one owner, a public contract
+and a contract version, plus capabilities, operations, permissions, interaction
+classes, dependencies, forbidden dependencies, lifecycle, availability,
+criticality, trust, transport, degradation, migration state, replacement
+strategy, resource profile, tests and evidence.
+
+A LEGO may be replaced internally without forcing consumers to rewrite. **The
+contract is the seam** — that is the entire point of the decomposition.
+
+## Kinds of thing
+
+The vocabulary below is kept distinct on purpose. Most architectural confusion
+in this project has come from collapsing two of these into one word.
+
+| Kind | Meaning |
+| --- | --- |
+${Object.entries(set?.conceptKinds ?? {}).map(([kind, meaning]) => `| \`${kind}\` | ${meaning} |`).join('\n')}
+
+## Strangler boundary
+
+The legacy REST aggregate is a temporary boundary, not the future architecture:
+
+\`\`\`
+legacy REST -> compatibility boundary -> target LEGO contract -> target LEGO implementation
+\`\`\`
+
+Each carve-out picks one route family, gives the contract to the target domain,
+publishes and locks it, mounts the new surface ahead of legacy routing, deletes
+the legacy handler, and lets the architecture gate verify that the aggregate
+actually shrank.
+
+- Never create a "misc" domain to make ownership look complete.
+- Never add new business logic to legacy.
+- The legacy aggregate must shrink over time, and a gate must be able to see it.
+
+## Nesting
+
+${manifest.nesting.rules.map((rule) => `- ${rule}`).join('\n')}
+
+Maximum depth: **${manifest.nesting.maxDepth}**.
+
+## Surface aliases
+
+${registry.surfaceAliases?.rule ?? ''}
+
+| Surface word | Canonical domain | Why |
+| --- | --- | --- |
+${aliasRows.join('\n')}
+
+> An alias creates no capability, no contract and no ownership. Ownership never
+> resolves through an alias.
+`;
+}
+
+/**
+ * Workforce orchestration — how the project is built, as opposed to what it does.
+ */
+function workforceOrchestration() {
+  const governance = readGovernance();
+  if (!governance) return null;
+  const planes = Object.entries(governance.controlPlanes).filter(([key]) => key !== 'rule');
+  return `${BANNER}
+# Project workforce and orchestration
+
+**Canonical for:** how the development workforce is governed, and which control
+plane owns which state.
+
+> ${governance.twoWorldsRule}
+
+## Two worlds
+
+${Object.entries(governance.worlds).map(([id, world]) => `### ${id}
+
+- **Summary:** ${world.summary}
+- **Members:** ${world.members.join(', ')}
+- **Governed by:** ${world.governedBy}
+- **Trust:** ${world.trust}`).join('\n\n')}
+
+## Manager authority
+
+${governance.roles.manager.authority.map((item) => `- ${item}`).join('\n')}
+
+## Worker authority
+
+${governance.roles.worker.authority.map((item) => `- ${item}`).join('\n')}
+
+### A worker may not
+
+${governance.roles.worker.mayNot.map((item) => `- ${item}`).join('\n')}
+
+> ${governance.roles.authorityRule}
+
+## The worker loop
+
+${governance.workerLoop.map((step, index) => `${index + 1}. ${step}`).join('\n')}
+
+> ${governance.workerLoopRule}
+
+## Job and task model
+
+Shape: **${governance.jobTaskModel.shape}**
+
+Task fields: ${governance.jobTaskModel.taskFields.map((field) => `\`${field}\``).join(', ')}
+
+${governance.jobTaskModel.rules.map((rule) => `- ${rule}`).join('\n')}
+
+**Status:** ${governance.jobTaskModel.status}
+
+## Control planes
+
+> ${governance.controlPlanes.rule}
+
+${planes.map(([id, plane]) => `### ${id} — ${plane.kind}
+
+- **Authoritative for:** ${plane.authoritativeFor.length ? plane.authoritativeFor.join(', ') : '_nothing_'}
+${plane.mayNotHold ? `- **May not hold:** ${plane.mayNotHold.join(', ')}\n` : ''}${plane.mustDeclare ? `- **Must declare:** ${plane.mustDeclare.join(', ')}\n` : ''}- **Rule:** ${plane.rule}
+- **Status:** ${plane.status}`).join('\n\n')}
+
+## Permanent decision principles
+
+${governance.decisionPrinciples.map((principle, index) => `${index + 1}. ${principle}`).join('\n')}
+`;
+}
+
+/**
+ * Current status + blockers. The document a new agent reads first to find out
+ * what is actually true today.
+ */
+function currentStatus() {
+  const registry = loadRegistry({ reload: true });
+  const set = readManifest('ai-lego-set.json');
+  const governance = readGovernance();
+  const decisions = readDecisions();
+  if (!set || !governance) return null;
+
+  const capabilities = registry.domains.flatMap((domain) => domain.capabilities ?? []);
+  const operations = capabilities.reduce((total, capability) => total + (capability.operations?.length ?? 0), 0);
+  const counts = { implemented: 0, 'contract-only': 0, planned: 0, blocked: 0, deferred: 0 };
+  for (const lego of set.lego) counts[lego.status] = (counts[lego.status] ?? 0) + 1;
+
+  const openItems = (decisions?.items ?? []).filter((item) => /OPEN/i.test(item.status));
+  const proposals = decisions?.newProposalsFromBackend ?? [];
+
+  return `${BANNER}
+# Current status
+
+**Canonical for:** what is true in this repository right now.
+
+Every number below is generated. If it disagrees with prose elsewhere, this
+document is right and the prose is stale.
+
+## Baselines
+
+| | |
+| --- | --- |
+| Protected main baseline | \`cb71dbb201d635b15b49933764c2c2336e745809\` |
+| Agent 1 branch | \`${decisions?.agent1Baseline.branch ?? '—'}\` |
+| Agent 1 head (inspected, not merged) | \`${decisions?.agent1Baseline.commit ?? '—'}\` |
+| Agent 2 branch | \`arena/01a0c521-n8n-rust-v-4\` |
+| Current phase | ${set.phase} |
+
+## Counts
+
+| | |
+| --- | --- |
+| Core LEGO domains | **${registry.domains.length}** |
+| Locked contracts | ${registry.contractLock.contracts.length} |
+| Declared capabilities | ${capabilities.length} |
+| Declared operations | ${operations} |
+| Published error codes | ${registry.errorContract.codes.length} |
+| Official AI/Agent LEGO | ${set.lego.length} |
+
+## The ${set.lego.length} AI/Agent LEGO by status
+
+${Object.entries(counts).filter(([, count]) => count > 0).map(([status, count]) => `- **${STATUS_MARK[status] ?? status}** — ${count}: ${set.lego.filter((lego) => lego.status === status).map((lego) => lego.title).join(', ')}`).join('\n')}
+
+## Gates
+
+| Gate | Command |
+| --- | --- |
+| Architecture | \`npm run lego:arch\` |
+| Architecture selftest | \`npm run lego:arch:selftest\` |
+| Foundation | \`npm run lego:foundation\` |
+| Foundation selftest | \`npm run lego:foundation:selftest\` |
+| Capability conformance | \`npm run lego:capabilities\` |
+| Scale-out honesty | \`npm run lego:scaleout\` |
+| \`.ai\` freshness | \`npm run lego:ai:check\` |
+| Tests | \`npm run lego:test\` |
+| All of the above | \`npm run lego:gate\` |
+
+## What is NOT true
+
+${set.currentLimits.map((limit) => `- ${limit}`).join('\n')}
+
+## Scale-out readiness
+
+**NOT READY.** ${governance.blockers.filter((blocker) => blocker.severity === 'class-A' && blocker.status === 'open').length} class-A blocker(s) remain open. See \`KNOWN_BLOCKERS.md\`.
+
+## Open arbitration
+
+${openItems.length + proposals.length} item(s) await the manager: ${[...openItems.map((item) => item.id), ...proposals.map((item) => item.id)].join(', ') || '_none_'}.
+
+See \`PROJECT_DECISIONS.md\` for the full text of each.
+`;
+}
+
+function knownBlockers() {
+  const governance = readGovernance();
+  if (!governance) return null;
+  const order = { 'class-A': 0, 'class-B': 1, 'class-C': 2, governance: 3, environmental: 4 };
+  const blockers = [...governance.blockers].sort((a, b) => (order[a.severity] ?? 9) - (order[b.severity] ?? 9));
+  return `${BANNER}
+# Known blockers
+
+**Canonical for:** what is currently preventing progress, and who owns it.
+
+> ${governance.blockerRule}
+
+${blockers.map((blocker) => `## ${blocker.id} — ${blocker.title}
+
+| | |
+| --- | --- |
+| Severity | **${blocker.severity}** |
+| Status | **${blocker.status}** |
+| Owner | \`${blocker.owner}\` |
+${blocker.where ? `| Where | \`${blocker.where}\` |\n` : ''}${blocker.phase ? `| Scheduled | ${blocker.phase} |\n` : ''}${blocker.reference ? `| Reference | ${blocker.reference} |\n` : ''}
+**Consequence:** ${blocker.consequence}
+${blocker.resolutionBoundary ? `\n**Resolution boundary:** ${blocker.resolutionBoundary}\n` : ''}`).join('\n')}
+`;
+}
+
+function referenceScenarios() {
+  const scenarios = readScenarios();
+  if (!scenarios) return null;
+  const render = (scenario) => {
+    const lines = [`## ${scenario.title}`, ''];
+    if (scenario.request) lines.push(`> "${scenario.request}"`, '');
+    if (scenario.steps) lines.push('**Flow:**', '', scenario.steps.map((step, index) => `${index + 1}. ${step}`).join('\n'), '');
+    if (scenario.graph) {
+      // Draw the elbow on the last child. A tree whose final branch is a tee
+      // reads as truncated, which is the opposite of what a complete graph
+      // should communicate.
+      const children = scenario.graph.children;
+      const drawn = children.map((child, index) => {
+        const last = index === children.length - 1;
+        const stem = last ? '└──' : '├──';
+        const gutter = last ? '    ' : '│   ';
+        const grandchildren = child === 'builder' ? (scenario.graph.builderChildren ?? []) : [];
+        const nested = grandchildren.map((grandchild, position) =>
+          `${gutter}${position === grandchildren.length - 1 ? '└──' : '├──'} ${grandchild}`);
+        return [`${stem} ${child}`, ...nested].join('\n');
+      });
+      lines.push('**Agent graph:**', '', '```', scenario.graph.root, ...drawn, '```', '');
+    }
+    if (scenario.chain) lines.push(`**Chain:** ${scenario.chain.map((link) => `\`${link}\``).join(' -> ')}`, '');
+    if (scenario.lego) lines.push(`**LEGO traversed:** ${scenario.lego.map((id) => `\`${id}\``).join(', ')}`, '');
+    if (scenario.capabilities) lines.push(`**Capabilities:** ${scenario.capabilities.map((id) => `\`${id}\``).join(', ')}`, '');
+    if (scenario.skills) lines.push(`**Skills:** ${scenario.skills.join(', ')}`, '');
+    if (scenario.subAgents) lines.push(`**Sub-agents:** ${scenario.subAgents.join(', ')}`, '');
+    if (scenario.approvalPoints) lines.push(`**Approval points:** ${scenario.approvalPoints.join('; ')}`, '');
+    if (scenario.experience) lines.push(`**Experience:** \`${scenario.experience}\``, '');
+    if (scenario.modeNote) lines.push(`> ${scenario.modeNote}`, '');
+    if (scenario.contextProgression) lines.push(`**Context progression:** ${scenario.contextProgression.join(' -> ')}`, '');
+    if (scenario.shared) lines.push(`**Shared across branches:** ${scenario.shared.join(', ')}`, '');
+    if (scenario.joinRule) lines.push(`> ${scenario.joinRule}`, '');
+    if (scenario.artifacts) lines.push(`**Artifacts:** ${scenario.artifacts.join(', ')}`, '');
+    if (scenario.strategySelection) lines.push(`**Strategy selection:** ${scenario.strategySelection}`, '', `> ${scenario.strategyRule}`, '');
+    if (scenario.externalExamples) lines.push(`**External runtimes:** ${scenario.externalExamples.join(', ')}`, '');
+    if (scenario.n8nRetains) lines.push(`**n8n retains:** ${scenario.n8nRetains.join(', ')}`, '');
+    if (scenario.adapterOperations) lines.push(`**Adapter operations:** ${scenario.adapterOperations.map((op) => `\`${op}\``).join(', ')}`, '');
+    if (scenario.lockInRule) lines.push(`> ${scenario.lockInRule}`, '');
+    if (scenario.sourceOfTruth) lines.push(`**Source of truth:** ${scenario.sourceOfTruth} · **Projection:** ${scenario.projection}`, '');
+    if (scenario.retrievalRule) lines.push(`> ${scenario.retrievalRule}`, '');
+    if (scenario.tokenKinds) {
+      lines.push('**Token accounting:**', '', '| Kind | Meaning |', '| --- | --- |',
+        ...Object.entries(scenario.tokenKinds).map(([kind, meaning]) => `| \`${kind}\` | ${meaning} |`), '');
+      const example = scenario.tokenExample;
+      lines.push(`Example — message **${example.message}**, model input **${example.modelInput}**, output **${example.output}**. ${example.note}`, '');
+    }
+    if (scenario.rolloverRule) lines.push(`> ${scenario.rolloverRule}`, '');
+    if (scenario.failureRule) lines.push(`> ${scenario.failureRule}`, '');
+    if (scenario.invariantsExercised) lines.push('**Invariants exercised:**', '', scenario.invariantsExercised.map((item) => `- ${item}`).join('\n'), '');
+    lines.push(`**Status:** ${scenario.status}`, '');
+    return lines.join('\n');
+  };
+  return `${BANNER}
+# Reference agent scenarios
+
+**Canonical for:** end-to-end walkthroughs proving the declared architecture can
+express real requests.
+
+> ${scenarios.purpose}
+
+> ${scenarios.rule}
+
+**None of these scenarios executes today.** Each is a contract walkthrough.
+
+${scenarios.scenarios.map(render).join('\n---\n\n')}`;
+}
+
+function aiContractMatrix() {
+  const set = readManifest('ai-lego-set.json');
+  const ai = readManifest('ai-foundation.json');
+  if (!set || !ai) return null;
+  const registry = loadRegistry({ reload: true });
+  const locked = new Map(registry.contractLock.contracts.map((row) => [row.id, row]));
+  const declaredCapabilities = new Map();
+  for (const domain of registry.domains) {
+    for (const capability of domain.capabilities ?? []) declaredCapabilities.set(capability.id, { domain, capability });
+  }
+
+  const rows = [];
+  for (const lego of set.lego) {
+    if ((lego.contracts ?? []).length === 0) {
+      rows.push(`| **${lego.title}** | _none yet_ | — | ${STATUS_MARK[lego.status]} | ${lego.versioning} | ${(lego.tests ?? []).length ? 'planned' : 'none'} |`);
+      continue;
+    }
+    for (const contract of lego.contracts) {
+      const lock = locked.get(contract);
+      const capability = declaredCapabilities.get(contract);
+      // A test entry is either a real path or a planned description; only
+      // shorten the former, otherwise 'planned: loop, fan-out/fan-in' gets
+      // sliced at the slash and reads as a different sentence.
+      const tests = (lego.tests ?? [])
+        .map((entry) => (entry.startsWith('test/') ? `\`${entry.split('/').pop()}\`` : entry))
+        .join('; ') || 'none';
+      // The lock row for the AI contracts is `ai.foundation`, which publishes
+      // the module as one surface. An individual `ai.*` id is a declared
+      // capability within it, not a missing lock row.
+      const lockState = lock
+        ? `locked @ ${lock.version}`
+        : (capability ? `declared in \`${capability.domain.id}\`` : '**publicationPending**');
+      rows.push(`| **${lego.title}** | \`${contract}\` | ${lockState} | ${STATUS_MARK[lego.status]} | ${lego.versioning} | ${tests} |`);
+    }
+  }
+
+  const pending = set.lego.filter((lego) => String(lego.versioning).includes('publicationPending'));
+
+  return `${BANNER}
+# AI contract matrix
+
+**Canonical for:** which AI contract exists, is locked, is declared, or is still pending publication.
+
+## Matrix
+
+| LEGO | Contract | Lock state | LEGO status | Versioning | Tests |
+| --- | --- | --- | --- | --- | --- |
+${rows.join('\n')}
+
+## Publication pending
+
+A \`publicationPending\` entry means the concept is declared but **no contract
+version has been assigned**. No version is invented and no name is silently
+changed; the owner and the decision reference are recorded instead.
+
+${pending.length === 0 ? '_None._' : pending.map((lego) => `- **${lego.title}** (\`${lego.owner}\`) — ${lego.versioning}. Tracked for phase ${lego.phase}.`).join('\n')}
+
+## Locked AI contracts
+
+| Contract | Version | Owner | Status |
+| --- | --- | --- | --- |
+${registry.contractLock.contracts.filter((row) => row.id.startsWith('ai.')).map((row) => `| \`${row.id}\` | ${row.version} | \`${row.owner}\` | ${row.status} |`).join('\n') || '| _none_ | | | |'}
+
+## Operation coverage
+
+| Contract | Operations | Interaction classes |
+| --- | --- | --- |
+${['ai.model-gateway', 'ai.tool-gateway', 'ai.agent-runtime'].map((id) => {
+    const section = [ai.modelGateway, ai.toolGateway, ai.agentRuntime].find((entry) => entry.contract === id);
+    const ops = section?.operations ?? section?.lifecycle ?? [];
+    return `| \`${id}\` | ${ops.length} | ${[...new Set(ops.map((op) => op.interaction))].join(', ')} |`;
+  }).join('\n')}
+
+## Honest status
+
+${set.currentLimits.map((limit) => `- ${limit}`).join('\n')}
+`;
+}
+
 function adrIndex() {
   const dir = join(REPO_ROOT, 'docs', 'architecture', 'adr');
   let rows = [];
@@ -987,6 +1891,24 @@ export function generate() {
   files.set('legacy-rest.md', legacyRestDoc());
   const aiDoc = aiFoundationDoc();
   if (aiDoc) files.set('ai-foundation.md', aiDoc);
+  // Master plans (P2.11) — generated so the repository remembers the
+  // architecture without relying on conversation history.
+  for (const [name, builder] of [
+    ['PROJECT_MASTER_PLAN.md', projectMasterPlan],
+    ['AI_AGENT_LEGO_MASTER_PLAN.md', aiLegoMasterPlan],
+    ['AI_RUNTIME_AND_PROVIDER_PLAN.md', aiRuntimeProviderPlan],
+    ['IMPLEMENTATION_PHASES.md', implementationPhases],
+    ['PROJECT_DECISIONS.md', projectDecisions],
+    ['AI_CONTRACT_MATRIX.md', aiContractMatrix],
+    ['CORE_LEGO_ARCHITECTURE.md', coreLegoArchitecture],
+    ['PROJECT_WORKFORCE_ORCHESTRATION.md', workforceOrchestration],
+    ['REFERENCE_AGENT_SCENARIOS.md', referenceScenarios],
+    ['CURRENT_STATUS.md', currentStatus],
+    ['KNOWN_BLOCKERS.md', knownBlockers],
+  ]) {
+    const content = builder();
+    if (content) files.set(`master/${name}`, content);
+  }
 
   for (const domain of registry.domains) {
     files.set(`domains/${domain.id}.md`, domainCard(domain, registry, graph));

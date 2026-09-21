@@ -850,9 +850,17 @@ replaced — the exact operation this architecture exists to make safe.
 
 Each of the **71 capabilities** now declares operations, interaction classes,
 permissions, lifecycle, availability, criticality, trust, transport, migration
-state, degradation, resources and replacement policy. Each of the **173
+state, degradation, resources and replacement policy. Each of the **139
 operations** declares its own name, interaction class, permission, idempotency
 and status.
+
+> **Count correction (P2.11).** This section and `evidence/backend-lego-p210.json`
+> previously said 173 operations. The manifest has always declared 139 — 82
+> capabilities, 62 of which declare operations. The 173 figure was an arithmetic
+> error in the prose, not a change in the data: `manifest/domains.json` is
+> byte-identical to its P2.10 state. The count is now generated into
+> `.ai/master/CURRENT_STATUS.md` rather than written by hand, which is the only
+> durable fix for a number that drifted because a human maintained it.
 
 The operations are grounded in routes and module exports that genuinely exist.
 Where a feature does not exist, the capability declares `[]` and keeps an honest
@@ -1007,4 +1015,135 @@ foundation 1.0 model    node --test apps/n8n-lego/test/lego-foundation-model.tes
 P0/P1/P2 + all suites   node --test apps/n8n-lego/test/*.test.mjs        → 344/344
 everything              npm run lego:gate
 clean clone + browser   see .github/workflows/n8n-lego.yml clean-clone job
+```
+
+## 43. The repository as project memory (P2.11)
+
+This phase wrote no feature. It answered a different question: **what does a new
+agent read to understand this project, when the conversation that produced it is
+gone?**
+
+Until now the answer was "the chat". That is not a durable answer, and it fails
+in a specific way — not by losing information, but by losing *authority*. A fact
+stated in conversation has no owner, no version and nothing that fails when it
+becomes false.
+
+### 43.1 Three new declarations
+
+| Manifest | Declares |
+| :--- | :--- |
+| `manifest/ai-lego-set.json` | the fifteen official AI/Agent LEGO, six phases, three experiences, the external action model, deployment modes, security invariants, the Rust strategy and the current limits |
+| `manifest/project-governance.json` | manager/worker authority, the job/task model, control planes, twenty-five decision principles and six blockers |
+| `manifest/reference-scenarios.json` | seven end-to-end contract walkthroughs |
+
+Eleven documents under `.ai/master/` are generated from them. None is
+hand-written, and hand-writing one is not merely discouraged: `writeAll` deletes
+`.ai/` before writing, so an edited file disappears on the next
+`npm run lego:ai`, and `lego:ai:check` turns staleness into a build failure.
+
+### 43.2 Why generated, and the evidence that settled it
+
+The argument for generating architecture documentation is usually theoretical.
+This phase produced the concrete case while it was being written.
+
+The repository asserted **173 operations** — in `BACKEND_LEGO.md`, in `ADR-0010`
+and in the P2.10 evidence file. The manifest had declared **139** the whole time:
+82 capabilities, 62 of which declare operations. Nothing had regressed;
+`manifest/domains.json` is byte-identical to its state at `6f7b66da`. A human had
+done the arithmetic once, written the result in three places, and every later
+reader took the agreement between those three places as corroboration.
+
+That is the failure mode in full. A hand-maintained number is eventually wrong,
+and copies of it make the error look verified. The same fate was already circling
+the domain count, which had been described in prose as 25 against a manifest
+declaring 26.
+
+Better proofreading does not fix this. Removing the opportunity does: the counts
+are now computed from the manifests at generation time, so they are either right
+or the build is red. The 173 figure is corrected in all four places **with a note
+recording what it was and why it changed** — an evidence file whose numbers
+silently change is not evidence.
+
+### 43.3 The tests found real defects in my own declaration
+
+The new suite (`test/lego-ai-set.test.mjs`, 37 tests) was written before the
+manifest was finished, and it immediately rejected four things I had written:
+
+- nine of fifteen LEGO had no `lifecycle` field;
+- `skill` and `mcp-adapter` carried free prose where the vocabulary word is
+  `publicationPending`;
+- **Agent Machine (phase B) depends on Approval (phase C)** — a roadmap that
+  cannot run in its own stated order.
+
+The third is the interesting one, because the fix was not to move a phase. The
+dependency is real and the ordering is deliberate: Agent Machine can ship in B
+*because approval fails closed*. With no Approval LEGO present, any action whose
+approval requirement is unknown or destructive is refused. So the edge is now a
+**declared exception** that must state its justification, its degradation and the
+phase that closes it. The test does not forbid forward edges; it forbids
+*undeclared* ones, because the dangerous version is the one nobody noticed.
+
+### 43.4 F17 — the no-second-vocabulary rule, made mechanical
+
+Two of the fifteen official LEGO share a name with something that already exists:
+`workspace` is a core domain, and `capability` is the existing negotiation
+mechanism. That overlap is correct — the AI Workspace *is* the workspace domain,
+extended. What must never happen is the overlap going undeclared, because then
+one word means two things in two registries and the divergence surfaces only when
+someone implements the wrong one.
+
+`F17 ai-set-reconciliation` fails the build when an official LEGO collides with,
+or shadows behind an `ai-` prefix, a core domain without declaring `reconciles`.
+Prose in a document cannot fail a build; a gate rule can. Two selftest fixtures
+prove it fires — the foundation selftest is now **15/15**.
+
+### 43.5 Blockers are asserted, not described
+
+A status document that reports its own health tends to improve over time for
+reasons unrelated to the system. So the class-A storage blockers are pinned by a
+test: closing `BL-1` or `BL-2` fails the suite. Closing one now costs a
+deliberate edit to an assertion instead of a quiet status flip in prose.
+
+The same applies to the honesty claims. A test requires that only Capability is
+`implemented`, and that `currentLimits` still says the AI runtime, model
+inference and scale-out are not. All of this was verified by falsification:
+closing a blocker, marking Agent Machine implemented and fabricating
+`ai.memory@1.0.0` produced exactly four failures, after which the tree was
+restored and re-verified.
+
+### 43.6 A pinned version was the wrong assertion
+
+`lego-foundation.test.mjs` pinned `ERROR_CONTRACT_VERSION` to exactly `1.0.0`.
+When XA-5 published eleven new `lego.*` codes — a legitimate MINOR bump under the
+contract's own rules — that test failed. The test was wrong, not the change: a
+pinned exact version makes every compatible addition look like a regression, and
+trains the reader to edit the assertion rather than think about it. It now
+asserts the real invariant, the MAJOR version, which is the number a consumer
+actually depends on.
+
+### 43.7 What this phase did not do
+
+No feature domain was implemented. No runtime module was touched. The only
+executable changes are the generators in `ai-pack.mjs`, rule F17 in
+`foundation-gate.mjs`, and two test files. Fourteen of the fifteen AI/Agent LEGO
+remain `contract-only` or `planned`, and every generated page says so.
+
+Supabase and the VPS execution gate are declared in the project plan but have no
+client, schema, endpoint or credential in this tree. They are recorded as
+**NOT VERIFIED**, and a test enforces that wording, because the plan describing
+them is not evidence that they exist here.
+
+## 44. Verification (P2.11)
+
+```
+architecture gate       node tools/lego/architecture-gate.mjs            → OK (26 domains, 14 contracts)
+gate selftest           node tools/lego/architecture-gate.mjs --selftest → 26/26 detected
+foundation gate         node tools/lego/foundation-gate.mjs              → OK (26 LEGOs, F1–F17)
+foundation selftest     node tools/lego/foundation-gate.mjs --selftest   → 15/15 detected
+capability conformance  node tools/lego/capability-conformance.mjs       → OK (23 features, 82 capabilities)
+scale-out readiness     node tools/lego/scale-out-readiness.mjs          → OK — still NOT scale-out ready
+AI pack freshness       node tools/lego/ai-pack.mjs --check              → OK (63 generated files)
+AI LEGO set invariants  node --test apps/n8n-lego/test/lego-ai-set.test.mjs → 37/37
+all suites              node --test apps/n8n-lego/test/*.test.mjs        → 381/381
+everything              npm run lego:gate
 ```

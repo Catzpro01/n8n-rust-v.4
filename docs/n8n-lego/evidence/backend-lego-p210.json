@@ -50,7 +50,8 @@
     "before": "{id, status} only"
   },
   "operationVocabulary": {
-    "total": 173,
+    "total": 139,
+    "correctedInP211": "This field read 173 when written. The manifest declared 139 then and declares 139 now (82 capabilities, 62 of which declare operations); manifest/domains.json is byte-identical to its P2.10 state, so this was an arithmetic error in the evidence, not a regression. Corrected in place with this note rather than silently, because an evidence file whose numbers change without explanation is not evidence. The count is now generated into .ai/master/CURRENT_STATUS.md.",
     "grounding": "Derived from real routes in src/rest/routes.mjs and real module exports. Capabilities with no implementation declare [] and keep an honest status rather than being given invented operations.",
     "fieldsPerOperation": ["name", "interaction", "permission", "idempotent", "status", "backpressure (streams only)", "backpressureReason (streams only)"]
   },

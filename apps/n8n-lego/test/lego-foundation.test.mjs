@@ -175,7 +175,14 @@ test('every temporary allowance is owned and has a deadline', () => {
 /* --------------------------------------------------------- §4 error contract */
 
 test('error codes are stable machine-readable identifiers', () => {
-  assert.equal(ERROR_CONTRACT_VERSION, '1.0.0');
+  // The invariant is COMPATIBILITY, not a frozen string. Publishing a new code
+  // is a MINOR bump under the contract's own rules, and pinning the exact
+  // version made every such addition look like a regression — which trains the
+  // reader to edit the assertion rather than think about it. What must never
+  // change silently is the MAJOR: that is the number a consumer depends on.
+  assert.match(ERROR_CONTRACT_VERSION, /^\d+\.\d+\.\d+$/);
+  assert.equal(ERROR_CONTRACT_VERSION.split('.')[0], '1',
+    'a MAJOR bump means codes were removed or re-statused — consumers must be migrated deliberately');
   for (const required of [
     'credential.not_found',
     'workflow.not_found',

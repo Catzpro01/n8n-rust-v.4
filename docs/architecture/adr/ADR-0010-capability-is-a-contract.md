@@ -48,7 +48,7 @@ contract.
 
 ## Consequences
 
-- 71 capabilities and 173 operations are now declared, all grounded in routes or
+- 71 capabilities and 139 operations are now declared, all grounded in routes or
   module exports that genuinely exist. Capabilities with no implementation
   declare `[]` operations and keep an honest status.
 - Six gate rules (F10–F15) enforce this, and the foundation gate gained its own
@@ -59,3 +59,5 @@ contract.
   policy and a reason.
 - A capability may never claim more trust than the LEGO that owns it, and never
   more availability than its status justifies.
+
+> **Correction (P2.11).** The operation count above read 173 when this ADR was written. The manifest declared 139 then and declares 139 now; the figure was an arithmetic error in the prose, not a change to the data. Superseded numbers are corrected in place and noted rather than removed, because an ADR whose numbers silently change is not a record.
