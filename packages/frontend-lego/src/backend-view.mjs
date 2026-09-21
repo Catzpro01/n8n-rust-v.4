@@ -15,9 +15,15 @@
  */
 import { NO_CAPABILITY, capabilityOf } from './surface-capability.mjs';
 import { compatibilityOf } from './versions.mjs';
+import { vocabularyOf } from './vocabulary.mjs';
 
-/** How the frontend sees a backend capability. */
-export const BACKEND_STATES = Object.freeze(['available', 'partial', 'unsupported', 'unknown']);
+/**
+ * How the frontend sees a backend capability — the canonical implementation-status
+ * vocabulary (`lego.domain-registry` v1.1.0), plus `unknown` for the honest answer
+ * when the app handed over no usable status. `available` is spelled `implemented`
+ * here because the backend vocabulary says what it has *done*, not what it *offers*.
+ */
+export const BACKEND_STATES = vocabularyOf('instanceImplementation').values;
 
 /**
  * @param {object} init
@@ -68,7 +74,7 @@ export function backendAvailabilityFrom({
     const declared = surface.backend ?? {};
     const override = overrides[capability] ?? {};
     const gaps = byOwner.get(capability) ?? [];
-    const declaredStatus = declared.status === 'unsupported' ? 'unsupported' : 'available';
+    const declaredStatus = declared.status === 'unsupported' ? 'unsupported' : 'implemented';
     const status = override.status ?? (gaps.length > 0 ? 'partial' : declaredStatus);
 
     capabilities[capability] = Object.freeze({
@@ -76,7 +82,7 @@ export function backendAvailabilityFrom({
       owner: override.owner ?? gaps[0]?.owner ?? capability,
       contract: override.contract ?? declared.contract ?? null,
       contractVersion: override.contractVersion
-        ?? (override.contract && contractVersion ? compatibilityOf(contractVersion, override.contractVersion ?? contractVersion).state === 'compatible' ? override.contractVersion : null : null),
+        ?? (override.contract && contractVersion ? compatibilityOf(contractVersion, override.contractVersion ?? contractVersion).satisfied ? override.contractVersion : null : null),
       operations: Object.freeze([...(override.operations ?? [])]),
       /** Why the frontend believes this — declared facts only, no probing. */
       reasons: Object.freeze([
@@ -121,7 +127,7 @@ export function describeBackendView() {
     rules: Object.freeze([
       'The backend registry stays the source of truth; this view is derived from declarations the app hands over.',
       'Nothing is probed: a fact is only here because a declaration said so, and `source` names which one.',
-      'A capability answered 501 in part is `partial`, never `available`.',
+      'A capability answered 501 in part is `partial`, never `implemented`.',
       'A migration gate is its own flag: "present but not migrated" is never read as available.',
       `A surface bound to no backend capability reports "${NO_CAPABILITY}" and is frontend-only.`,
     ]),

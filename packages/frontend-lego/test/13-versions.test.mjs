@@ -10,11 +10,13 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import {
+  CHANGE_KINDS,
   COMPATIBILITY,
   RANGE_EXAMPLES,
   VersionError,
   bump,
   compareVersions,
+  classifyChange,
   compatibilityOf,
   describeVersions,
   isRange,
@@ -26,6 +28,7 @@ import {
   satisfiesRange,
 } from '../src/versions.mjs';
 import { PACKAGE_ROOT } from '../src/manifests.mjs';
+import { vocabularyOf } from '../src/vocabulary.mjs';
 import { RANGE_EXAMPLES as SUBLEGO_RANGES, satisfies } from '../src/sublegos.mjs';
 
 test('a version is three numbers and nothing else', () => {
@@ -67,19 +70,38 @@ test('ranges stay small and unambiguous', () => {
   assert.equal(satisfiesRange('nonsense', '*'), false);
 });
 
-test('contract compatibility names the mismatch instead of returning a boolean', () => {
-  assert.deepEqual(compatibilityOf('1.0.0', '1.0.0'), { state: 'compatible', detail: 'required 1.0.0, offered 1.0.0 — exact match' });
+test('compatibility speaks the canonical change kinds, never a second dialect', () => {
+  const same = compatibilityOf('1.0.0', '1.0.0');
+  assert.equal(same.kind, 'unchanged');
+  assert.equal(same.satisfied, true);
+  assert.deepEqual(compatibilityOf('1.0.0', '1.0.0').kind, classifyChange('1.0.0', '1.0.0').kind);
+
   const additive = compatibilityOf('1.0.0', '1.4.0');
-  assert.equal(additive.state, 'compatible');
-  assert.match(additive.detail, /additive newer minor/);
+  assert.equal(additive.kind, 'compatible');
+  assert.equal(additive.move, 'minor');
+  assert.equal(additive.satisfied, true, 'a provider ahead on the minor is compatible');
+
   const behind = compatibilityOf('1.4.0', '1.2.0');
-  assert.equal(behind.state, 'minor-ahead');
-  assert.match(behind.detail, /the provider is behind/);
+  assert.equal(behind.kind, 'downgrade');
+  assert.equal(behind.satisfied, false, 'a downgrade never satisfies a requirement');
+
   const breaking = compatibilityOf('1.9.0', '2.0.0');
-  assert.equal(breaking.state, 'major-mismatch');
-  assert.match(breaking.detail, /different major version/);
-  assert.equal(compatibilityOf('1.0', '1.0.0').state, 'invalid');
-  assert.deepEqual(COMPATIBILITY, ['compatible', 'minor-ahead', 'major-mismatch', 'invalid']);
+  assert.equal(breaking.kind, 'breaking');
+  assert.equal(breaking.move, 'major');
+  assert.equal(breaking.satisfied, false);
+
+  const migration = compatibilityOf('1.0.0', '1.1.0', { migrations: ['1.1.0'] });
+  assert.equal(migration.kind, 'migration-required');
+  assert.equal(compatibilityOf('0.2.0', '0.3.0').kind, 'breaking', '0.x is provisional: a minor may break');
+
+  const invalid = compatibilityOf('1.0', '1.0.0');
+  assert.equal(invalid.kind, 'invalid');
+  assert.equal(invalid.satisfied, false, 'a requirement nobody can compare is not satisfied');
+  assert.equal(invalid.comparable, false);
+  assert.deepEqual(COMPATIBILITY, ['unchanged', 'compatible', 'migration-required', 'breaking', 'downgrade', 'invalid']);
+  assert.deepEqual(CHANGE_KINDS, ['unchanged', 'compatible', 'migration-required', 'breaking', 'downgrade']);
+  // The change kinds are quoted from the backend foundation, not invented here.
+  assert.deepEqual(vocabularyOf('changeKind').values, CHANGE_KINDS);
 });
 
 test('bump moves one part and resets the ones below it', () => {
@@ -113,6 +135,8 @@ test('the vocabulary is published as data', () => {
   const model = describeVersions();
   assert.equal(model.rangeExamples.length, 5);
   assert.deepEqual(model.compatibility, COMPATIBILITY);
+  assert.deepEqual(model.changeKinds, CHANGE_KINDS);
+  assert.deepEqual(model.moves, ['none', 'patch', 'minor', 'major']);
   assert.match(model.rules.join(' '), /major difference is never compatible/);
   assert.ok(isRange('~1.2.0'));
   assert.equal(isRange('~1.2'), false, 'a partial range is not one of the declared shapes');

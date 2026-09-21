@@ -1,0 +1,132 @@
+{
+  "recordVersion": "1.0.0",
+  "owner": "agent-01 (frontend + compatibility)",
+  "description": "Machine-readable record of the cross-agent questions this phase had to answer. A question is RESOLVED only when an existing declaration already answers it; otherwise it is recorded with the arbiter it needs, the evidence gathered, and what the frontend does meanwhile. Nothing here is a silent choice: every unresolved row names who has to decide and what is blocked until they do.",
+  "sourceOfTruth": {
+    "backendFoundation": {
+      "repository": "Catzpro01/n8n-rust-v.4",
+      "branch": "arena/01a0c521-n8n-rust-v-4",
+      "commit": "aef6b606",
+      "readOn": "2026-09-22",
+      "files": [
+        "apps/n8n-lego/src/lego/manifest/domains.json",
+        "apps/n8n-lego/src/lego/manifest/foundation.json",
+        "apps/n8n-lego/src/lego/registry.mjs",
+        "apps/n8n-lego/src/lego/negotiation.mjs",
+        "apps/n8n-lego/src/lego/interaction.mjs",
+        "apps/n8n-lego/src/lego/compat.mjs",
+        "apps/n8n-lego/src/lego/contracts/contract-lock.json",
+        "apps/n8n-lego/src/lego/contracts/errors.contract.json"
+      ]
+    }
+  },
+  "decisions": [
+    {
+      "id": "XA-1",
+      "question": "Is the backend identity `executions` or `execution`?",
+      "status": "resolved",
+      "resolution": "`execution` is the canonical backend identity: arena/01a0c521 declares domain `execution` with capabilities `execution.run-manual`, `execution.history`, `execution.partial`, `execution.queue`. There is no `executions` domain. The frontend's `executions` is a UI *surface* id (a route group: /home/executions) and its `backend.capability` field already points at `execution`, so no second identity exists.",
+      "evidence": [
+        "packages/frontend-lego/manifest/surfaces.json → surfaces[executions].backend.capability = \"execution\"",
+        "arena/01a0c521 domains.json → execution.* capabilities"
+      ],
+      "frontendBehaviour": "The frontend never treats a surface id as a capability id: capability ids are normalised and compared as `<domain>.<name>` (vocabulary.mjs), and a surface whose backend binding is `none` has no capability at all.",
+      "arbiter": null
+    },
+    {
+      "id": "XA-2",
+      "question": "Does the backend publish capability operations yet?",
+      "status": "open-for-agent-2",
+      "resolution": null,
+      "finding": "No. Every capability in arena/01a0c521's domains.json declares `{ id, status }` (plus optional `phase`/`restFeature`); no domain or capability declares an `operations` list, and the contract lock has no row for an operation surface.",
+      "evidence": [
+        "arena/01a0c521 domains.json → 71 capabilities, 0 with an `operations` field",
+        "arena/01a0c521 contract-lock.json → 13 contracts, none declaring operations"
+      ],
+      "frontendBehaviour": "Fail closed and say so: `negotiateOperation()` answers `operation-unpublished` with `exists: null` when a capability publishes no operation list, instead of assuming the operation exists. Backend-advertised operations are first-class the moment the backend publishes them (`backend-view` carries `operations` per capability already).",
+      "arbiter": "agent-2 publishes `operations[]` per capability (or states that operations stay frontend-declared until P3)",
+      "blocks": "nothing in the frontend; a UI cannot verify a backend operation until the backend lists it"
+    },
+    {
+      "id": "XA-3",
+      "question": "Who owns the 501 unsupported-feature map?",
+      "status": "resolved",
+      "resolution": "agent-01, as part of the `compatibility` domain. arena/01a0c521's contract lock already lists contract `compat.http` (owner `agent-1`, domain `compatibility`, version 1.0.0) whose surface includes `src/compat/capability.mjs` — the file the map lives in — with consumers `auth, settings, legacy-rest, runtime-host, agent-1/frontend`. apps/n8n-lego/src/compat/capability.mjs is byte-identical on both branches.",
+      "evidence": [
+        "arena/01a0c521 contract-lock.json → compat.http (owner agent-1)",
+        "git diff main..arena/01a0c521 -- apps/n8n-lego/src/compat/capability.mjs → no change"
+      ],
+      "frontendBehaviour": "The map stays the application-side registry of known-but-unimplemented features; the frontend consumes it as *data* through `backendAvailabilityFrom({ unsupportedFeatures })` and tags each derived fact with `source: 'compat-unsupported-map'`. It is never imported by the frontend package.",
+      "arbiter": null
+    },
+    {
+      "id": "XA-4",
+      "question": "Does `.ai/index/contracts.json` name a contract owner?",
+      "status": "resolved",
+      "resolution": "Yes, now. The file is frontend-generated (it does not exist on arena/01a0c521), and its entries previously said `owner: \"unknown\"`. Every row now names a real owner, and a row without one fails test/12.",
+      "evidence": [
+        ".ai/index/contracts.json → every entry has a non-empty owner",
+        "packages/frontend-lego/test/12-knowledge.test.mjs → owner is required"
+      ],
+      "frontendBehaviour": "The frontend contract catalog distinguishes `own` (agent-01), `foreign` (the owning domain's agent) and `legacy` (superseded in place) rows.",
+      "arbiter": null
+    },
+    {
+      "id": "XA-5",
+      "question": "Are the `lego.*` error codes named by the backend degradation vocabulary published?",
+      "status": "open-for-agent-2",
+      "resolution": null,
+      "finding": "Partially. The canonical degradation states name codes (`lego.capability_unavailable`, `lego.version_incompatible`, `lego.dependency_disabled`, `lego.migration_required`) but arena/01a0c521's errors.contract.json publishes 24 domain-namespaced codes and none of the `lego.*` ones; its rule says a code's namespace must equal a domain's declared `errorNamespace`.",
+      "evidence": [
+        "arena/01a0c521 interaction.mjs → DEGRADATION_STATES actions name lego.* codes",
+        "arena/01a0c521 contracts/errors.contract.json → 24 codes, none namespaced `lego`"
+      ],
+      "frontendBehaviour": "The frontend quotes the canonical degradation *action* verbatim in the verdict (`degradation.action`) and does not invent a code of its own; its own `frontend.*` codes stay where they are, and an unmapped backend code renders through the message-key model.",
+      "arbiter": "agent-2 publishes the `lego.*` codes (or removes the code names from the degradation actions)",
+      "blocks": "nothing; the UI shows the action and the reason"
+    },
+    {
+      "id": "XA-6",
+      "question": "Who owns the AI vocabulary — the frontend or the AI Foundation LEGO?",
+      "status": "open-for-manager",
+      "resolution": null,
+      "finding": "No AI domain exists in arena/01a0c521's registry, so nothing backend-side owns it. The frontend declares the six UI-visible capability identities (ai-assistant, ai-copilot, ai-agent-node, agent-machine, execution-ai-mode, agent-work-trace) as `declared`-only entries, and the 26-name event vocabulary in agent-events.mjs, exactly as it declares `translation` before the Translation LEGO exists.",
+      "evidence": [
+        "packages/frontend-lego/manifest/capabilities.json → 6 AI entries, `status: \"declared\"`, no entry path",
+        "arena/01a0c521 domains.json → no AI/agent domain"
+      ],
+      "frontendBehaviour": "The frontend implements no inference, holds no provider client and names no vendor in a field. When the AI Foundation LEGO publishes its registry entries, the frontend adopts those ids or records a collision through `capabilityCollisions()` — it will not keep a competing identity silently.",
+      "arbiter": "manager: confirm that the frontend holds these declared ids until the AI Foundation LEGO publishes its own, or assign them to the AI Foundation LEGO now",
+      "blocks": "nothing in the frontend; a future AI Foundation LEGO must reconcile its ids with these"
+    },
+    {
+      "id": "XA-7",
+      "question": "Which side owns `transport.targets` (`in-process-js`, `in-process-rust`, `wasm`, `worker`, `remote-api`)?",
+      "status": "open-for-agent-2",
+      "resolution": null,
+      "finding": "The values are declared in arena/01a0c521's `manifest/foundation.json` (`transport.targets`) and enforced by its foundation tooling, but no contract-lock row names them, so there is no version to quote.",
+      "evidence": [
+        "arena/01a0c521 manifest/foundation.json → transport.targets (5 values)",
+        "arena/01a0c521 contract-lock.json → no row for the foundation manifest"
+      ],
+      "frontendBehaviour": "The lock records the values with `contract: null` and a `publicationPending` note; the frontend treats them as bindings a declaration may carry and never as a second interaction vocabulary.",
+      "arbiter": "agent-2 adds a contract-lock row (or folds the targets into `lego.interaction`)",
+      "blocks": "nothing; the frontend does not select a binding"
+    }
+  ],
+  "rules": [
+    "A resolved row cites an existing declaration; an open row names its arbiter and what is blocked.",
+    "The frontend never picks a new shared word to end an open question — it fails closed and records the question.",
+    "A finding stays in the record after it is fixed, so the reasoning survives the fix.",
+    "The record is checked by tests: the lock is compared against the backend modules when they are present (test/29), and every open row states what the frontend does meanwhile."
+  ],
+  "alignment": {
+    "test": "packages/frontend-lego/test/29-alignment.test.mjs",
+    "how": "The lock quotes values with provenance (contract id, version, owner, file, symbol). The test imports the backend module and compares the values when the file is present on the branch, and skips with a stated reason when it is not. The comparison itself is exercised (a renamed, a missing and an invented term must all be reported), so a pass means the check ran.",
+    "whenItRunsFully": "after the backend foundation (apps/n8n-lego/src/lego/**, Agent 2) is on this branch",
+    "quotedCommit": {
+      "branch": "arena/01a0c521-n8n-rust-v-4",
+      "commit": "aef6b606"
+    }
+  }
+}

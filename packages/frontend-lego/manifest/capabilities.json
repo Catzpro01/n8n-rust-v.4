@@ -1,15 +1,15 @@
 {
   "catalogVersion": "1.0.0",
-  "description": "The frontend capability catalog: what the frontend LEGO can offer beyond the pinned editor UI, and how the UI must behave when it is absent. Every entry here is DECLARED \u2014 declared is not installed, installed is not loaded, loaded is not active. P2.8-F implements no capability and registers none: this file exists so the identity, criticality, trust level, activation mode and fallback of a future capability are agreed before its code is written.",
+  "description": "The frontend capability catalog: what the frontend LEGO can offer beyond the pinned editor UI, and how the UI must behave when it is absent. Every entry here is DECLARED — declared is not installed, installed is not loaded, loaded is not active. P2.8-F implements no capability and registers none: this file exists so the identity, criticality, trust level, activation mode and fallback of a future capability are agreed before its code is written. P2.10 declares the AI foundation's frontend-visible capabilities (AI Assistant, Copilot, Agent node, Agent Machine, Execution AI mode, Agent Work Trace) in the same form, so an installation with no model and no runtime is a declared state rather than an error.",
   "notes": [
     "An entry describes a capability, never an implementation: metadata only, no render/mount/load functions, no inline code.",
     "`entry` is a module path so the runtime can stay lazy. A capability that is not installed yet declares none.",
-    "`criticality: core` may not declare a fallback \u2014 a missing core capability must stay visible.",
+    "`criticality: core` may not declare a fallback — a missing core capability must stay visible.",
     "`trust` is inherited by nesting: a sub-LEGO inside a `feature` capability is a feature, never core.",
-    "Backend-bound capabilities are NOT re-declared here. The surface catalog already binds a surface to its backend capability and contract (manifest/surfaces.json); duplicating those ids here would create a second source of truth (contract \u00a712).",
+    "Backend-bound capabilities are NOT re-declared here. The surface catalog already binds a surface to its backend capability and contract (manifest/surfaces.json); duplicating those ids here would create a second source of truth (contract §12).",
     "Features this instance cannot serve are answered by the compatibility layer's unsupported map (apps/n8n-lego/src/compat/capability.mjs), which is the backend-side registry. This catalog never duplicates it.",
-    "Locales are declared once, in src/i18n.mjs. The official set is id, en, ar, zh, ru, jv; the legacy micro-frontend.contract.md set (id/en/es/fr/de/ja) is superseded \u2014 see contracts/frontend.contract.md \u00a716.1.",
-    "Official locales (id, en, ar, zh, ru, jv) and the translation fallback chain are already owned and tested by contracts/localization.contract.md \u2014 the frontend declares readiness for that contract, it does not restate it."
+    "Locales are declared once, in src/i18n.mjs. The official set is id, en, ar, zh, ru, jv; the legacy micro-frontend.contract.md set (id/en/es/fr/de/ja) is superseded — see contracts/frontend.contract.md §16.1.",
+    "Official locales (id, en, ar, zh, ru, jv) and the translation fallback chain are already owned and tested by contracts/localization.contract.md — the frontend declares readiness for that contract, it does not restate it."
   ],
   "capabilities": [
     {
@@ -53,7 +53,259 @@
       ],
       "phase": "P2.9",
       "owner": "agent-01",
-      "notes": "Declared so the eleven translatable surfaces, the RTL rule and the fallback behaviour are agreed before the Translation LEGO exists. It is not installed, not loaded and not registered \u2014 the boot payload must not mention it. The locale set and the fallback chain are owned by contracts/localization.contract.md (agent-9 lineage, TESTED); this frontend never redefines them."
+      "notes": "Declared so the eleven translatable surfaces, the RTL rule and the fallback behaviour are agreed before the Translation LEGO exists. It is not installed, not loaded and not registered — the boot payload must not mention it. The locale set and the fallback chain are owned by contracts/localization.contract.md (agent-9 lineage, TESTED); this frontend never redefines them."
+    },
+    {
+      "id": "ai-assistant",
+      "lego": "ai-foundation",
+      "title": "AI Assistant (in-product conversational help)",
+      "status": "declared",
+      "activation": "lazy",
+      "criticality": "optional",
+      "trust": "feature",
+      "lifecycle": "available",
+      "surfaces": [
+        "dialogs",
+        "navigation"
+      ],
+      "contracts": [
+        "contracts/frontend.contract.md"
+      ],
+      "operations": [
+        "assistant.ask",
+        "assistant.cancel"
+      ],
+      "interactions": {
+        "assistant.ask": "stream",
+        "assistant.cancel": "call"
+      },
+      "permissions": [
+        "inference:invoke"
+      ],
+      "requirements": {
+        "memoryMb": 128,
+        "requiresNetwork": true
+      },
+      "degradation": {
+        "fallback": "hide-assistant",
+        "detail": "without an inference provider the assistant entry point is not rendered; the editor is unaffected"
+      },
+      "tests": [
+        "packages/frontend-lego/test/26-ai-contracts.test.mjs"
+      ],
+      "phase": "P2.10",
+      "owner": "agent-01",
+      "notes": "Declared so the UI vocabulary for an AI assistant exists before the AI Foundation LEGO does. The frontend implements no inference and no provider client; `assistant.ask` is a semantic operation, not an endpoint, and the stream interaction is what a token-by-token answer means here. It attaches to no extension point yet: no AI hook is declared, and attaching to a neighbour surface's hook is exactly what the ownership rule refuses."
+    },
+    {
+      "id": "ai-copilot",
+      "lego": "ai-foundation",
+      "title": "AI Copilot (workflow authoring assistance)",
+      "status": "declared",
+      "activation": "lazy",
+      "criticality": "optional",
+      "trust": "feature",
+      "lifecycle": "available",
+      "surfaces": [
+        "workflow-editor",
+        "node-picker"
+      ],
+      "contracts": [
+        "contracts/frontend.contract.md"
+      ],
+      "extensionPoints": [],
+      "operations": [
+        "copilot.suggest",
+        "copilot.apply"
+      ],
+      "interactions": {
+        "copilot.suggest": "call",
+        "copilot.apply": "call"
+      },
+      "permissions": [
+        "inference:invoke",
+        "workflow:write"
+      ],
+      "requirements": {
+        "memoryMb": 128,
+        "requiresNetwork": true
+      },
+      "degradation": {
+        "fallback": "hide-copilot",
+        "detail": "without the capability the editor behaves exactly as it does today; no suggestion is faked"
+      },
+      "tests": [
+        "packages/frontend-lego/test/26-ai-contracts.test.mjs"
+      ],
+      "phase": "P2.10",
+      "owner": "agent-01",
+      "notes": "An edit the copilot proposes is still an ordinary workflow operation, applied through the workflow capability — the copilot never gets a private write path."
+    },
+    {
+      "id": "ai-agent-node",
+      "lego": "ai-foundation",
+      "title": "AI Agent node (a workflow step that delegates to an agent)",
+      "status": "declared",
+      "activation": "lazy",
+      "criticality": "optional",
+      "trust": "feature",
+      "lifecycle": "available",
+      "surfaces": [
+        "node-picker",
+        "workflow-editor"
+      ],
+      "contracts": [
+        "contracts/frontend.contract.md"
+      ],
+      "extensionPoints": [],
+      "operations": [
+        "agent.delegate"
+      ],
+      "interactions": {
+        "agent.delegate": "call"
+      },
+      "permissions": [
+        "agent:delegate"
+      ],
+      "requirements": {
+        "memoryMb": 64,
+        "requiresNetwork": true
+      },
+      "degradation": {
+        "fallback": "hide-node-type",
+        "detail": "without an agent runtime the node type is not offered in the palette; existing workflows that use it report it through the error model"
+      },
+      "tests": [
+        "packages/frontend-lego/test/26-ai-contracts.test.mjs"
+      ],
+      "phase": "P2.10",
+      "owner": "agent-01",
+      "notes": "Declared as a node capability, never as a runtime: the node delegates, it does not become the agent machine."
+    },
+    {
+      "id": "agent-machine",
+      "lego": "agent-machine",
+      "title": "Agent Machine (runtime that executes delegated tasks)",
+      "status": "declared",
+      "activation": "manual",
+      "criticality": "optional",
+      "trust": "feature",
+      "lifecycle": "available",
+      "surfaces": [
+        "executions"
+      ],
+      "contracts": [
+        "contracts/frontend.contract.md"
+      ],
+      "extensionPoints": [],
+      "operations": [
+        "agent.run",
+        "agent.cancel"
+      ],
+      "interactions": {
+        "agent.run": "call",
+        "agent.cancel": "call"
+      },
+      "permissions": [
+        "agent:run"
+      ],
+      "requirements": {
+        "memoryMb": 256,
+        "requiresNetwork": true
+      },
+      "degradation": {
+        "fallback": "native-execution",
+        "detail": "executions run exactly as they do today; the UI simply has no agent runtime to offer"
+      },
+      "tests": [
+        "packages/frontend-lego/test/26-ai-contracts.test.mjs"
+      ],
+      "phase": "P2.10",
+      "owner": "agent-01",
+      "notes": "The frontend learns about the machine through declared capabilities and agent events, never by calling it directly. A local, remote or simulated runtime is the same contract with a different locality."
+    },
+    {
+      "id": "execution-ai-mode",
+      "lego": "ai-foundation",
+      "title": "Execution AI mode (an execution that is partially agentic)",
+      "status": "declared",
+      "activation": "manual",
+      "criticality": "optional",
+      "trust": "feature",
+      "lifecycle": "available",
+      "surfaces": [
+        "executions"
+      ],
+      "contracts": [
+        "contracts/frontend.contract.md"
+      ],
+      "extensionPoints": [],
+      "operations": [
+        "execution.escalate"
+      ],
+      "interactions": {
+        "execution.escalate": "call"
+      },
+      "permissions": [
+        "execution:escalate"
+      ],
+      "requirements": {
+        "memoryMb": 64,
+        "requiresNetwork": true
+      },
+      "degradation": {
+        "fallback": "native-execution-status",
+        "detail": "the execution page shows the ordinary status; nothing claims an agent was involved"
+      },
+      "tests": [
+        "packages/frontend-lego/test/26-ai-contracts.test.mjs"
+      ],
+      "phase": "P2.10",
+      "owner": "agent-01",
+      "notes": "A marker on an execution, not a second execution contract: the execution contract itself stays owned by the execution domain."
+    },
+    {
+      "id": "agent-work-trace",
+      "lego": "ai-foundation",
+      "title": "Agent Work Trace (operational timeline of delegated work)",
+      "status": "declared",
+      "activation": "lazy",
+      "criticality": "optional",
+      "trust": "feature",
+      "lifecycle": "available",
+      "surfaces": [
+        "executions",
+        "notifications"
+      ],
+      "contracts": [
+        "contracts/frontend.contract.md"
+      ],
+      "extensionPoints": [],
+      "operations": [
+        "trace.list",
+        "trace.subscribe"
+      ],
+      "interactions": {
+        "trace.list": "call",
+        "trace.subscribe": "stream"
+      },
+      "permissions": [
+        "agent:observe"
+      ],
+      "requirements": {
+        "memoryMb": 64,
+        "requiresNetwork": false
+      },
+      "degradation": {
+        "fallback": "hide-trace",
+        "detail": "without the capability the execution page shows the ordinary log; no timeline is invented"
+      },
+      "tests": [
+        "packages/frontend-lego/test/27-agent-events.test.mjs"
+      ],
+      "phase": "P2.10",
+      "owner": "agent-01",
+      "notes": "The trace renders operational events, decisions, approvals, artifacts and state transitions. It carries summaries and references; a payload or a chain-of-thought has no field to live in."
     }
   ]
 }

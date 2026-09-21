@@ -21,6 +21,29 @@ import {
   packFiles,
 } from '../src/knowledge.mjs';
 import { PACKAGE_ROOT, loadManifests } from '../src/manifests.mjs';
+import { AVAILABILITY_STATES, DEGRADATION_SITUATIONS, OPERATION_STATES } from '../src/negotiation.mjs';
+import { INTERACTION_CLASSES } from '../src/interactions.mjs';
+import { TRANSPORT_KINDS } from '../src/transport.mjs';
+import { SUPPORTED_LOCALES, directionOf } from '../src/i18n.mjs';
+import {
+  AI_CAPABILITIES,
+  MCP_CONNECTION_STATES,
+  PROVIDER_KINDS,
+  RUNTIME_KINDS,
+} from '../src/agents.mjs';
+import { SUMMARY_LIMIT, TRACE_LIMIT } from '../src/agent-events.mjs';
+import {
+  CAPABILITY_IDENTITY_FIELDS,
+  SEAM_FORBIDDEN,
+  SEAM_INPUTS,
+  SEAM_SOURCES,
+} from '../src/seam.mjs';
+import {
+  BUDGET_FIELDS,
+  COST_CLASSES,
+  DEVICE_PROFILES,
+  REQUIREMENT_FIELDS,
+} from '../src/profiles.mjs';
 
 const REPO_ROOT = join(PACKAGE_ROOT, '..', '..');
 const read = (relative) => readFileSync(join(REPO_ROOT, relative), 'utf8');
@@ -185,4 +208,43 @@ test('the constitution keeps the hard stops an agent must not talk itself out of
   const decisions = read(REFERENCE_FILES.decisions);
   assert.match(decisions, /D22 —/, 'the superseded micro-frontend decision is recorded');
   assert.match(read(REFERENCE_FILES.dependencies), /micro-frontend\.contract\.md/);
+});
+
+test('the generated blocks of the capability index are checked against the modules they summarize', () => {
+  // The index is generated data: a block that drifts from the module it summarizes is
+  // the exact failure this pack exists to avoid. Regenerating means copying these
+  // values, not writing new prose.
+  const index = JSON.parse(read(REFERENCE_FILES.capabilities));
+
+  assert.deepEqual(index.negotiation.availabilityStates, AVAILABILITY_STATES, 'availability states drifted from negotiation.mjs');
+  assert.deepEqual(index.negotiation.operationStates, OPERATION_STATES, 'operation outcomes drifted from negotiation.mjs');
+  assert.deepEqual(
+    index.negotiation.degradationSituations.map((row) => [row.situation, row.state]),
+    DEGRADATION_SITUATIONS.map((row) => [row.situation, row.state]),
+    'degradation situations drifted from negotiation.mjs',
+  );
+  assert.deepEqual(index.delivery.interactionClasses, INTERACTION_CLASSES, 'interaction classes drifted from interactions.mjs');
+  assert.deepEqual(index.delivery.transports, TRANSPORT_KINDS, 'transport kinds drifted from transport.mjs');
+
+  assert.deepEqual(index.localization.localeSet.map((entry) => entry.code), SUPPORTED_LOCALES, 'locale set drifted from i18n.mjs');
+  for (const entry of index.localization.localeSet) {
+    assert.equal(entry.direction, directionOf(entry.code), `${entry.code} direction drifted`);
+  }
+
+  assert.deepEqual(index.ai.capabilities, AI_CAPABILITIES.map((capability) => capability.id), 'AI capabilities drifted from agents.mjs');
+  assert.deepEqual(index.ai.providerKinds, PROVIDER_KINDS, 'provider kinds drifted from agents.mjs');
+  assert.deepEqual(index.ai.runtimeKinds, RUNTIME_KINDS, 'runtime kinds drifted from agents.mjs');
+  assert.deepEqual(index.ai.mcpStates, MCP_CONNECTION_STATES, 'MCP states drifted from agents.mjs');
+  assert.equal(index.ai.trace.limit, TRACE_LIMIT, 'trace bound drifted from agent-events.mjs');
+  assert.equal(index.ai.trace.summaryLimit, SUMMARY_LIMIT, 'summary limit drifted from agent-events.mjs');
+
+  assert.deepEqual(index.seam.inputs.map((input) => input.id), SEAM_INPUTS.map((input) => input.id), 'seam inputs drifted from seam.mjs');
+  assert.deepEqual(index.seam.sources, SEAM_SOURCES.map((source) => source.id), 'seam sources drifted from seam.mjs');
+  assert.deepEqual(index.seam.forbidden, SEAM_FORBIDDEN.map((entry) => entry.id), 'forbidden sources drifted from seam.mjs');
+  assert.deepEqual(index.seam.identityFields, CAPABILITY_IDENTITY_FIELDS, 'identity fields drifted from seam.mjs');
+
+  assert.deepEqual(index.vocabularies.deviceProfiles, DEVICE_PROFILES.map((profile) => profile.id), 'profiles drifted from profiles.mjs');
+  assert.deepEqual(index.vocabularies.requirementFields, REQUIREMENT_FIELDS, 'requirement fields drifted from profiles.mjs');
+  assert.deepEqual(index.vocabularies.budgetFields, BUDGET_FIELDS, 'budget fields drifted from profiles.mjs');
+  assert.deepEqual(index.vocabularies.costClasses, COST_CLASSES, 'cost classes drifted from profiles.mjs');
 });

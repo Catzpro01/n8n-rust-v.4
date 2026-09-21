@@ -271,7 +271,8 @@ test('upgrade: a compatible version moves one unit and leaves every sibling byte
   // The patch a package would ship: same public boundary, new patch version.
   const outcome = catalog.upgrade('workflow-editor.node-panel', { version: '1.1.0' });
 
-  assert.equal(outcome.kind, 'minor');
+  assert.equal(outcome.kind, 'compatible', 'the change kind is the canonical vocabulary');
+  assert.equal(outcome.move, 'minor', 'the granularity is a separate field');
   assert.deepEqual(outcome.changed, ['workflow-editor.node-panel']);
   assert.ok(outcome.unchanged.includes('workflow-editor.canvas'));
   assert.ok(outcome.unchanged.includes('workflow-editor.parameter-panel'));
@@ -294,7 +295,8 @@ test('upgrade: a compatible version moves one unit and leaves every sibling byte
 test('upgrade: a breaking move is refused while a dependent pins the previous major', () => {
   const catalog = registry();
   const evaluation = catalog.validateUpgrade('workflow-editor.node-panel', '2.0.0');
-  assert.equal(evaluation.kind, 'major');
+  assert.equal(evaluation.kind, 'breaking');
+  assert.equal(evaluation.move, 'major');
   assert.equal(evaluation.breaking, true);
   assert.deepEqual(evaluation.affected, ['workflow-editor.parameter-panel']);
   assert.match(evaluation.affectedDetail[0].range, /^\^1\./);
@@ -319,7 +321,8 @@ test('upgrade: with the dependent\'s acknowledgment the break is explicit and bo
 
   const outcome = catalog.upgrade('workflow-editor.node-panel', { version: '2.0.0' }, { acknowledge: ['workflow-editor.parameter-panel'] });
 
-  assert.equal(outcome.kind, 'major');
+  assert.equal(outcome.kind, 'breaking');
+  assert.equal(outcome.move, 'major');
   assert.deepEqual([...outcome.changed].sort(), ['workflow-editor.node-panel', 'workflow-editor.parameter-panel']);
   assert.deepEqual(outcome.acknowledged, ['workflow-editor.parameter-panel']);
 

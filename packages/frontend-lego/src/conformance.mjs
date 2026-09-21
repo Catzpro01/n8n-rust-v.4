@@ -10,7 +10,10 @@
  */
 import { CAPABILITY_STATES, CRITICALITY, TRUST_LEVELS } from './lifecycle.mjs';
 import { ACTIVATION_MODES } from './registry.mjs';
-import { AVAILABILITY_STATES, DEGRADATION_SITUATIONS } from './negotiation.mjs';
+import { AVAILABILITY_STATES, DEGRADATION_SITUATIONS, OPERATION_STATES } from './negotiation.mjs';
+import { VOCABULARIES, vocabularyConflicts } from './vocabulary.mjs';
+import { AI_CAPABILITIES, MCP_CONNECTION_STATES, PROVIDER_KINDS, RUNTIME_KINDS } from './agents.mjs';
+import { AGENT_EVENT_TYPES, DELEGATION_FIELDS, TRACE_FIELDS } from './agent-events.mjs';
 import { BACKEND_STATES } from './backend-view.mjs';
 import { TRANSPORT_KINDS } from './transport.mjs';
 import { EVENT_NAMES } from './observability.mjs';
@@ -19,6 +22,7 @@ import { DEVICE_PROFILES, SUPPORT_STATES } from './profiles.mjs';
 import { TEST_TIERS } from './impact.mjs';
 import { CONTEXT_LEVELS } from './knowledge.mjs';
 import { SUB_LEGO_STATUSES, MAX_DEPTH } from './sublegos.mjs';
+import { CAPABILITY_IDENTITY_FIELDS, SEAM_FORBIDDEN, SEAM_INPUTS, consumeInput } from './seam.mjs';
 
 /**
  * What an extension point is, as a shape: hooks are surface-owned, additive and
@@ -152,6 +156,55 @@ export const ARCHITECTURE_RULES = Object.freeze([
     enforcedBy: '23-degradation.test.mjs',
   }),
   Object.freeze({
+    id: 'A18',
+    statement: 'A shared vocabulary is quoted from the contract that owns it, with its version; the frontend adds a word only where it declares the reason.',
+    vocabulary: Object.freeze(VOCABULARIES.map((set) => set.id)),
+    contract: '§19.9',
+    enforcedBy: '24-vocabulary.test.mjs',
+  }),
+  Object.freeze({
+    id: 'A19',
+    statement: 'An operation is negotiable by name and is answered with the reason it cannot run — an unpublished operation is never assumed to exist.',
+    vocabulary: OPERATION_STATES,
+    contract: '§19.10',
+    enforcedBy: '25-operations.test.mjs',
+  }),
+  Object.freeze({
+    id: 'A20',
+    statement: 'AI is a declared capability vocabulary, never model inference: provider, runtime and tool types stay distinct and a missing model is a valid installation.',
+    vocabulary: Object.freeze([...PROVIDER_KINDS, ...RUNTIME_KINDS, ...AI_CAPABILITIES.map((entry) => entry.id)]),
+    contract: '§19.11',
+    enforcedBy: '26-ai-contracts.test.mjs',
+  }),
+  Object.freeze({
+    id: 'A21',
+    statement: 'Agent events are transport-neutral, payload-free and bounded: a large result is referenced, never embedded in the trace.',
+    vocabulary: AGENT_EVENT_TYPES,
+    contract: '§19.12',
+    enforcedBy: '27-agent-events.test.mjs',
+  }),
+  Object.freeze({
+    id: 'A22',
+    statement: 'A delegation tree never grants authority: a child holds exactly the permissions it was given, and a trace row carries the fields it declares and no others.',
+    vocabulary: Object.freeze([...DELEGATION_FIELDS, ...TRACE_FIELDS]),
+    contract: '§19.12',
+    enforcedBy: '27-agent-events.test.mjs',
+  }),
+  Object.freeze({
+    id: 'A23',
+    statement: 'The seam is closed: the frontend consumes declared inputs from declared sources, and an implementation file, a route table, a port or a credential store is refused by name.',
+    vocabulary: Object.freeze(SEAM_INPUTS.map((input) => input.id)),
+    contract: '§19.14',
+    enforcedBy: '28-seam.test.mjs',
+  }),
+  Object.freeze({
+    id: 'A24',
+    statement: 'One capability identity, sixteen declared fields, on both sides: an undeclared field is null and a capability the caller was not granted is not described at all.',
+    vocabulary: CAPABILITY_IDENTITY_FIELDS,
+    contract: '§19.15',
+    enforcedBy: '28-seam.test.mjs',
+  }),
+  Object.freeze({
     id: 'A16',
     statement: 'An extension point is owned by a surface: a capability may only add to the hooks of the surfaces it occupies, never to a neighbour’s.',
     vocabulary: EXTENSION_POINT_SHAPES,
@@ -242,7 +295,45 @@ export function checkConformance(frontend) {
 
   // A17 — the degradation vocabulary is complete, and a real verdict carries a reason.
   const sampleVerdict = frontend.negotiate({ capabilityId: frontend.availability()[0]?.id ?? 'settings' });
-  record('A17', DEGRADATION_SITUATIONS.length === 7 && sampleVerdict.reasons.length > 0 && typeof sampleVerdict.migrationRequired === 'boolean', `${DEGRADATION_SITUATIONS.length} situations, sample state "${sampleVerdict.state}"`);
+  record('A17', DEGRADATION_SITUATIONS.length === 8 && sampleVerdict.reasons.length > 0 && typeof sampleVerdict.migrationRequired === 'boolean', `${DEGRADATION_SITUATIONS.length} situations, sample state "${sampleVerdict.state}"`);
+
+  // A18 — every canonical vocabulary is pinned with provenance, and the lock has no conflict.
+  const conflicts = vocabularyConflicts();
+  record('A18', VOCABULARIES.length >= 6 && conflicts.ok && VOCABULARIES.every((set) => set.provenance.file.length > 0), `${VOCABULARIES.length} shared vocabularies, ${conflicts.conflicts.length} conflicts`);
+
+  // A19 — an operation answer names the reason, and an unpublished list fails closed.
+  const operationVerdict = frontend.negotiateOperation({ capabilityId: frontend.availability()[0]?.id ?? 'settings', operation: 'settings.read' });
+  record('A19', OPERATION_STATES.includes(operationVerdict.state) && Array.isArray(operationVerdict.reasons), `sample operation state "${operationVerdict.state}"`);
+
+  // A20 — the AI vocabulary is declared, and none of it claims an implementation.
+  const declaredCapabilities = frontend.manifests.capabilities;
+  const declaredIds = new Set(declaredCapabilities.map((capability) => capability.id));
+  const aiAgreesWithManifest = AI_CAPABILITIES.every((entry) => declaredIds.has(entry.id)
+    && declaredCapabilities.find((capability) => capability.id === entry.id).status === 'declared');
+  record('A20', AI_CAPABILITIES.length === 6 && aiAgreesWithManifest && PROVIDER_KINDS.length === 3 && RUNTIME_KINDS.length === 2, `${AI_CAPABILITIES.length} AI capabilities (declared in the manifest: ${aiAgreesWithManifest}), ${PROVIDER_KINDS.length} provider kinds, ${RUNTIME_KINDS.length} runtime kinds`);
+
+  // A21 — the event vocabulary is a closed list, and no event carries a payload field.
+  record('A21', AGENT_EVENT_TYPES.length >= 25 && !AGENT_EVENT_TYPES.includes('payload') && MCP_CONNECTION_STATES.length === 4, `${AGENT_EVENT_TYPES.length} agent event types, ${MCP_CONNECTION_STATES.length} connection states`);
+
+  // A22 — a trace row is a declared shape, and delegation carries no inheritance.
+  const trace = frontend.describeAgents().trace;
+  record('A22', TRACE_FIELDS.includes('payloadRef') && DELEGATION_FIELDS.includes('parentAgentId') && trace.inheritsPermissions === false, `${TRACE_FIELDS.length} trace fields, ${DELEGATION_FIELDS.length} delegation fields`);
+
+  // A23 — the seam is closed: a declared input from a declared source, a refusal for
+  // anything else, and an input nobody declared refused with it.
+  const allowedInput = consumeInput({ input: 'capability-id', source: 'manifest' });
+  const forbiddenSource = consumeInput({ input: 'capability-id', source: 'implementation-file' });
+  const undeclaredInput = consumeInput({ input: 'chain-of-thought', source: 'manifest' });
+  record('A23', SEAM_INPUTS.length === 13 && SEAM_FORBIDDEN.length >= 5
+    && allowedInput.allowed && !forbiddenSource.allowed && !undeclaredInput.allowed,
+  `${SEAM_INPUTS.length} declared inputs, ${SEAM_FORBIDDEN.length} forbidden sources`);
+
+  // A24 — one identity shape, filled for a capability that is declared here.
+  const identity = frontend.capabilityIdentity(declaredCapabilities[0], { origin: 'frontend-declared' });
+  record('A24', CAPABILITY_IDENTITY_FIELDS.every((field) => field in identity)
+    && Object.keys(identity).length === CAPABILITY_IDENTITY_FIELDS.length + 1
+    && identity.origin === 'frontend-declared',
+  `${Object.keys(identity).length} fields for "${identity.id}", origin ${identity.origin}`);
 
   // A13 — the frontend/backend view is derived, with sources.
   const featureAvailability = frontend.featureAvailability();

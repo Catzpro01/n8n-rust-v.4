@@ -1,6 +1,6 @@
 {
   "kind": "p25-frontend-boundary",
-  "generatedAt": "2026-09-21T21:11:17.611Z",
+  "generatedAt": "2026-09-21T22:00:18.615Z",
   "phase": "P2.5",
   "method": "node apps/n8n-lego/scripts/capture-frontend-evidence.mjs (live in-process instance, HTTP level); the browser gate tests/e2e/frontend-boundary.mjs captures the same boundary from inside a real page in CI (docs/n8n-lego/FRONTEND_LEGO.md §6)",
   "baseline": "cb71dbb2",
@@ -106,7 +106,12 @@
     {
       "name": "declared capability catalog is validated but not registered",
       "verdict": "PASS",
-      "detail": "1 declared, 0 registered"
+      "detail": "7 declared, 0 registered"
+    },
+    {
+      "name": "nothing declared is installed: the six AI capabilities load no code",
+      "verdict": "PASS",
+      "detail": "0 of 7 installed, 7 carry no entry path"
     },
     {
       "name": "the declared capability is available, not installed",
@@ -151,12 +156,12 @@
     {
       "name": "the LEGO cold-imports and assembles within a small budget",
       "verdict": "PASS",
-      "detail": "40.9 ms for import + 12 surfaces + 15 hooks + 19 units"
+      "detail": "74.1 ms for import + 12 surfaces + 15 hooks + 19 units"
     },
     {
       "name": "assembling the descriptor stays inside a small memory budget",
       "verdict": "PASS",
-      "detail": "2275 KB of heap for catalogs + both registries"
+      "detail": "3267 KB of heap for catalogs + both registries"
     },
     {
       "name": "the package still has no runtime dependency",
@@ -164,7 +169,7 @@
       "detail": "dependencies={}"
     },
     {
-      "name": "17 architecture rules pass on a live assembly",
+      "name": "24 architecture rules pass on a live assembly",
       "verdict": "PASS",
       "detail": "all pass"
     },
@@ -191,12 +196,12 @@
     {
       "name": "a declared-but-not-installed capability degrades instead of pretending",
       "verdict": "PASS",
-      "detail": "state=degraded fallback=declared-behaviour"
+      "detail": "state=optional-absent fallback=native-behavior"
     },
     {
       "name": "placement grants nothing: the refusal leaks no capability metadata",
       "verdict": "PASS",
-      "detail": "state=unavailable identity=null"
+      "detail": "state=capability-unavailable identity=null"
     },
     {
       "name": "a migration gate is its own state, never availability",
@@ -207,11 +212,46 @@
       "name": "required permissions are declared and reported, never inferred",
       "verdict": "PASS",
       "detail": "requiredPermissions=[\"audit:read\"]"
+    },
+    {
+      "name": "one capability identity, sixteen fields, projected from a declaration",
+      "verdict": "PASS",
+      "detail": "17 fields for ai-assistant"
+    },
+    {
+      "name": "the seam is closed: declared inputs from declared sources only",
+      "verdict": "PASS",
+      "detail": "\"operations\" may not be consumed from \"implementatio…"
+    },
+    {
+      "name": "a model-less installation is a valid state, not a broken one",
+      "verdict": "PASS",
+      "detail": "2 layers available, inference unavailable, 3 configurable later"
+    },
+    {
+      "name": "a runtime is chosen from the declared budget, never assumed local",
+      "verdict": "PASS",
+      "detail": "preference=[sim] local-shell reachable=false"
+    },
+    {
+      "name": "MCP is an interoperability layer: four states, no transport",
+      "verdict": "PASS",
+      "detail": "role=interoperability-layer state=permission-required label=\"Permission required\""
+    },
+    {
+      "name": "the work trace is bounded, ordered and reference-only",
+      "verdict": "PASS",
+      "detail": "rows=2 dropped=1"
+    },
+    {
+      "name": "AI and agent vocabulary never becomes browser boot payload",
+      "verdict": "PASS",
+      "detail": "7 declared capabilities, none of their metadata in the descriptor"
     }
   ],
   "summary": {
-    "checks": 39,
-    "passed": 39,
+    "checks": 47,
+    "passed": 47,
     "failed": 0
   },
   "bootDescriptor": {
@@ -484,7 +524,7 @@
     ],
     "capabilities": [],
     "bytes": 18126,
-    "importMs": 40.9,
-    "heapKb": 2275
+    "importMs": 74.1,
+    "heapKb": 3267
   }
 }

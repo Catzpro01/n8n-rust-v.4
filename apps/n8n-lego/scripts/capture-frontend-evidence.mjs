@@ -31,10 +31,16 @@ import { startServer } from '../src/server.mjs';
 import { createUi } from '../src/ui.mjs';
 import {
   FRONTEND_BOOT_META_NAME,
+  capabilityIdentity,
+  consumeInput,
   contextFor,
   createRestClient,
+  createWorkTrace,
+  describeInstallation,
   extractBootPayload,
+  mcpRelationship,
   packFiles,
+  suitableRuntimes,
   validateBootPayload,
 } from '../../../packages/frontend-lego/index.mjs';
 
@@ -145,7 +151,11 @@ check('boot descriptor stays inside its budget', Math.ceil((payloadBytes * 4) / 
 const frontend = started.frontend;
 const availability = frontend.availability();
 
-check('declared capability catalog is validated but not registered', availability.length === 1 && frontend.registry.list().length === 0, `${availability.length} declared, ${frontend.registry.list().length} registered`);
+// `translation` plus the six AI capabilities Agent 1 declares as contracts-only: the
+// catalog is data the browser can read, and none of it is registered or loaded.
+check('declared capability catalog is validated but not registered', availability.length === 7 && frontend.registry.list().length === 0, `${availability.length} declared, ${frontend.registry.list().length} registered`);
+const installed = availability.filter((entry) => entry.installed === true);
+check('nothing declared is installed: the six AI capabilities load no code', installed.length === 0 && availability.every((entry) => entry.entry === null), `${installed.length} of ${availability.length} installed, ${availability.filter((entry) => entry.entry === null).length} carry no entry path`);
 check('the declared capability is available, not installed', availability[0].lifecycle === 'available' && availability[0].installed === false && availability[0].activation === 'lazy', `${availability[0].id}: ${availability[0].lifecycle}/installed=${availability[0].installed}`);
 check('its absence has a declared, non-fatal fallback', availability[0].degradation.behavior === 'fallback' && availability[0].degradation.fallback === 'fallback-locale', availability[0].degradation.detail);
 check('device support is decided per profile, with a reason', availability[0].support.length === 6 && availability[0].support.every((entry) => ['supported', 'degraded', 'remote', 'unsupported'].includes(entry.state)), availability[0].support.map((entry) => `${entry.profile}:${entry.state}`).join(' '));
@@ -235,15 +245,15 @@ try {
 check('an interaction no transport can carry is refused by name', refused?.code === 'frontend.transport.unsupported', refused ? `${refused.code}: ${refused.message.slice(0, 60)}…` : 'accepted (would be a silent fallback)');
 
 const verdict = liveFrontend.negotiate({ capabilityId: 'translation', unitId: 'settings.localization.rtl' });
-check('a declared-but-not-installed capability degrades instead of pretending', verdict.state === 'degraded' && verdict.degradation.behavior === 'degrade', `state=${verdict.state} fallback=${verdict.degradation.fallback}`);
+check('a declared-but-not-installed capability degrades instead of pretending', verdict.state === 'optional-absent' && verdict.degradation.usable === false && verdict.degradation.fallback === 'native-behavior', `state=${verdict.state} fallback=${verdict.degradation.fallback}`);
 const ungranted = liveFrontend.negotiate({ capabilityId: 'workflow', unitId: 'settings.localization.rtl' });
-check('placement grants nothing: the refusal leaks no capability metadata', ungranted.state === 'unavailable' && ungranted.identity === null && /placement never grants/.test(ungranted.reasons[0]), `state=${ungranted.state} identity=${ungranted.identity}`);
+check('placement grants nothing: the refusal leaks no capability metadata', ungranted.state === 'capability-unavailable' && ungranted.identity === null && /placement never grants/.test(ungranted.reasons[0]), `state=${ungranted.state} identity=${ungranted.identity}`);
 
 // The two situations that must never read as "available": a migration gate, and a
 // consumer that has to be allowed to do something before it may ask.
 const gated = createFrontendLego({
   app: { name: 'n8n-lego', version: '0.1.0' },
-  backend: { capabilities: { workflow: { status: 'available', owner: 'workflow', migration: { required: true, from: 'v1', to: 'v2' } } } },
+  backend: { capabilities: { workflow: { status: 'implemented', owner: 'workflow', migration: { required: true, from: 'v1', to: 'v2' } } } },
 });
 const gatedVerdict = gated.negotiate({ capabilityId: 'workflow', unitId: 'workflow-editor.canvas' });
 check('a migration gate is its own state, never availability', gatedVerdict.state === 'migration-required' && gatedVerdict.migrationRequired === true && gatedVerdict.degradation.behavior === 'fallback', `state=${gatedVerdict.state} fallback=${gatedVerdict.degradation.fallback}`);
@@ -256,6 +266,41 @@ permitted.register({
 });
 const permissionVerdict = permitted.negotiate({ capabilityId: 'audit-log' });
 check('required permissions are declared and reported, never inferred', JSON.stringify(permissionVerdict.requiredPermissions) === '["audit:read"]', `requiredPermissions=${JSON.stringify(permissionVerdict.requiredPermissions)}`);
+
+/* ----------------------------------------- the seam, and the AI declaration line */
+
+const declared = liveFrontend.availability();
+const declaredIdentity = capabilityIdentity(liveFrontend.manifests.capabilities.find((entry) => entry.id === 'ai-assistant'), { origin: 'frontend-declared' });
+check('one capability identity, sixteen fields, projected from a declaration', Object.keys(declaredIdentity).length === 17 && declaredIdentity.id === 'ai-assistant' && declaredIdentity.origin === 'frontend-declared', `${Object.keys(declaredIdentity).length} fields for ${declaredIdentity.id}`);
+
+const seamAllowed = consumeInput({ input: 'operations', source: 'advertisement' });
+const seamForbidden = consumeInput({ input: 'operations', source: 'implementation-file' });
+const seamUnknown = consumeInput({ input: 'chain-of-thought', source: 'manifest' });
+check('the seam is closed: declared inputs from declared sources only', seamAllowed.allowed && !seamForbidden.allowed && !seamUnknown.allowed, `${seamForbidden.reason.slice(0, 52)}…`);
+
+const installation = describeInstallation();
+const availableLayers = Object.values(installation.layers).filter((layer) => layer === 'available').length;
+check('a model-less installation is a valid state, not a broken one', installation.valid === true && installation.zeroInstall === true && installation.layers.inference === 'unavailable' && installation.configurable.length === 3, `${availableLayers} layers available, inference unavailable, ${installation.configurable.length} configurable later`);
+
+const picked = suitableRuntimes({ profile: 'remote-only', runtimes: [
+  { id: 'local-shell', kind: 'agent-runtime', locality: 'local' },
+  { id: 'sim', kind: 'simulation-runtime', locality: 'remote' },
+] });
+const localShell = picked.candidates.find((entry) => entry.id === 'local-shell');
+check('a runtime is chosen from the declared budget, never assumed local', picked.preference[0] === 'sim' && localShell.reachable === false, `preference=[${picked.preference.join(',')}] local-shell reachable=${localShell.reachable}`);
+
+const mcp = mcpRelationship({ id: 'some-server', objects: ['tool', 'resource'], state: 'permission-required' });
+check('MCP is an interoperability layer: four states, no transport', mcp.role === 'interoperability-layer' && mcp.state === 'permission-required' && mcp.label === 'Permission required' && !('transport' in mcp), `role=${mcp.role} state=${mcp.state} label="${mcp.label}"`);
+
+const trace = createWorkTrace({ limit: 2 });
+trace.append({ timestamp: 2, eventType: 'tool.completed', agentId: 'a1', summary: 'workflow.inspect', payloadRef: 'artifacts/run-1.json' });
+trace.append({ timestamp: 1, eventType: 'agent.created', agentId: 'a1' });
+trace.append({ timestamp: 3, eventType: 'agent.completed', agentId: 'a1', status: 'success' });
+const traceText = JSON.stringify(trace.entries());
+check('the work trace is bounded, ordered and reference-only', trace.stats().dropped === 1 && trace.entries()[0].timestamp === 2 && !traceText.includes('"payload"') && traceText.includes('artifacts/run-1.json'), `rows=${trace.stats().rows} dropped=${trace.stats().dropped}`);
+
+const bootText = JSON.stringify(payload);
+check('AI and agent vocabulary never becomes browser boot payload', !bootText.includes('agent.created') && !bootText.includes('model-gateway') && !bootText.includes('assistant.ask'), `${declared.length} declared capabilities, none of their metadata in the descriptor`);
 
 /* ---------------------------------------------------------------- the record */
 const evidence = {

@@ -31,7 +31,11 @@
     "./transport": "./src/transport.mjs",
     "./observability": "./src/observability.mjs",
     "./conformance": "./src/conformance.mjs",
-    "./interactions": "./src/interactions.mjs"
+    "./interactions": "./src/interactions.mjs",
+    "./agents": "./src/agents.mjs",
+    "./agent-events": "./src/agent-events.mjs",
+    "./vocabulary": "./src/vocabulary.mjs",
+    "./seam": "./src/seam.mjs"
   },
   "files": [
     "index.mjs",

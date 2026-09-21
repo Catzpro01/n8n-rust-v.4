@@ -1,9 +1,12 @@
 /**
  * Device profiles — where a capability can run, and how well.
  *
- * A profile is a declared budget (memory, input, network, execution model), not a
- * platform check. Nothing in the core UI may branch on "is this Android?"; code
- * asks `resolveSupport(profileId, capability)` and gets one of four answers.
+ * A profile is a declared budget (memory, storage, CPU, network, battery, latency,
+ * cost, input, execution model), not a platform check. Nothing in the core UI may
+ * branch on "is this Android?"; code asks `resolveSupport(profileId, capability)` and
+ * gets one of four answers. Resource-aware never means resource-assuming: a capability
+ * declares what it needs, and a profile that cannot host it locally may still reach it
+ * remotely — "everything runs locally" is not a requirement the frontend may impose.
  *
  * Framework-neutral and browser-safe: no framework import, no `node:*` import.
  */
@@ -19,39 +22,56 @@ export const DEVICE_PROFILES = Object.freeze([
   Object.freeze({
     id: 'desktop',
     title: 'Desktop browser',
-    budget: Object.freeze({ memoryMb: 8192, storageMb: 2048, input: 'pointer', alwaysOnline: true, executionModel: 'local' }),
+    budget: Object.freeze({ memoryMb: 8192, storageMb: 2048, cpuCores: 8, input: 'pointer', alwaysOnline: true, meteredNetwork: false, onBattery: false, latencyBudgetMs: 120, executionModel: 'local' }),
   }),
   Object.freeze({
     id: 'laptop',
     title: 'Laptop browser',
-    budget: Object.freeze({ memoryMb: 4096, storageMb: 1024, input: 'pointer', alwaysOnline: true, executionModel: 'local' }),
+    budget: Object.freeze({ memoryMb: 4096, storageMb: 1024, cpuCores: 4, input: 'pointer', alwaysOnline: true, meteredNetwork: false, onBattery: true, latencyBudgetMs: 150, executionModel: 'local' }),
   }),
   Object.freeze({
     id: 'low-memory',
     title: 'Low-memory browser / old device',
-    budget: Object.freeze({ memoryMb: 1024, storageMb: 256, input: 'pointer', alwaysOnline: false, executionModel: 'local' }),
+    budget: Object.freeze({ memoryMb: 1024, storageMb: 256, cpuCores: 2, input: 'pointer', alwaysOnline: false, meteredNetwork: true, onBattery: true, latencyBudgetMs: 250, executionModel: 'local' }),
   }),
   Object.freeze({
     id: 'android',
     title: 'Android browser',
-    budget: Object.freeze({ memoryMb: 2048, storageMb: 256, input: 'touch', alwaysOnline: false, executionModel: 'local' }),
+    budget: Object.freeze({ memoryMb: 2048, storageMb: 256, cpuCores: 4, input: 'touch', alwaysOnline: false, meteredNetwork: true, onBattery: true, latencyBudgetMs: 300, executionModel: 'local' }),
   }),
   Object.freeze({
     id: 'termux-companion',
     title: 'Termux companion UI',
-    budget: Object.freeze({ memoryMb: 512, storageMb: 128, input: 'touch', alwaysOnline: false, executionModel: 'local' }),
+    budget: Object.freeze({ memoryMb: 512, storageMb: 128, cpuCores: 2, input: 'touch', alwaysOnline: false, meteredNetwork: true, onBattery: true, latencyBudgetMs: 500, executionModel: 'local' }),
   }),
   Object.freeze({
     id: 'remote-only',
     title: 'Remote-only thin client',
-    budget: Object.freeze({ memoryMb: 256, storageMb: 32, input: 'pointer', alwaysOnline: true, executionModel: 'server-only' }),
+    budget: Object.freeze({ memoryMb: 256, storageMb: 32, cpuCores: 1, input: 'pointer', alwaysOnline: true, meteredNetwork: false, onBattery: false, latencyBudgetMs: 900, executionModel: 'server-only' }),
   }),
 ]);
 
 const PROFILE_BY_ID = new Map(DEVICE_PROFILES.map((profile) => [profile.id, profile]));
 
-/** Requirements a capability (or sub-LEGO) may declare. All optional. */
-export const REQUIREMENT_FIELDS = Object.freeze(['memoryMb', 'storageMb', 'requiresLocalExecution', 'requiresNetwork', 'heavy', 'input']);
+/** What a capability may declare it costs to run. Declared, never discovered from a bill. */
+export const COST_CLASSES = Object.freeze(['free', 'metered', 'paid']);
+
+/** The budget a profile declares. Documented as data so a reader can see the whole contract. */
+export const BUDGET_FIELDS = Object.freeze(['memoryMb', 'storageMb', 'cpuCores', 'input', 'alwaysOnline', 'meteredNetwork', 'onBattery', 'latencyBudgetMs', 'executionModel']);
+
+/** Requirements a capability, a runtime or a sub-LEGO may declare. All optional. */
+export const REQUIREMENT_FIELDS = Object.freeze([
+  'memoryMb',
+  'storageMb',
+  'cpuCores',
+  'requiresLocalExecution',
+  'requiresNetwork',
+  'heavy',
+  'batteryHeavy',
+  'costClass',
+  'maxLatencyMs',
+  'input',
+]);
 
 export class ProfileError extends Error {
   constructor(message, { profileId } = {}) {
@@ -103,6 +123,18 @@ export function resolveSupport(profileId, capability = {}) {
   if (requirements.storageMb && requirements.storageMb > budget.storageMb) {
     return answer('degraded', `wants ${requirements.storageMb} MB of storage, profile has ${budget.storageMb} MB`);
   }
+  if (requirements.cpuCores && requirements.cpuCores > budget.cpuCores) {
+    return answer('degraded', `declares ${requirements.cpuCores} cores of local work, profile budget is ${budget.cpuCores} — expected to be lazy, chunked or remote`);
+  }
+  if (requirements.batteryHeavy === true && budget.onBattery === true) {
+    return answer('degraded', 'declared battery-heavy on a battery-powered profile — decide before draining it, or run it remotely');
+  }
+  if (requirements.costClass && requirements.costClass !== 'free' && budget.meteredNetwork === true) {
+    return answer('degraded', `declared ${requirements.costClass} on a metered connection — the UI must ask before spending`);
+  }
+  if (requirements.maxLatencyMs && requirements.maxLatencyMs < budget.latencyBudgetMs) {
+    return answer('degraded', `expects up to ${requirements.maxLatencyMs} ms of latency, this profile expects up to ${budget.latencyBudgetMs} ms`);
+  }
   if (requirements.input === 'pointer' && budget.input === 'touch') {
     return answer('degraded', 'built for pointer input; a touch profile needs the reduced interaction');
   }
@@ -126,7 +158,13 @@ export function describeProfiles() {
   return Object.freeze({
     states: SUPPORT_STATES,
     requirementFields: REQUIREMENT_FIELDS,
+    budgetFields: BUDGET_FIELDS,
+    costClasses: COST_CLASSES,
     profiles: DEVICE_PROFILES,
-    rule: 'Core UI branches on support state, never on platform identity.',
+    rules: Object.freeze([
+      'Core UI branches on support state, never on platform identity.',
+      'Resource-aware never means resource-assuming: a profile that cannot host a capability locally may still reach it remotely.',
+      'A declared cost is asked about before it is spent; a declared battery cost is decided before it is drained.',
+    ]),
   });
 }

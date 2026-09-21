@@ -92,3 +92,18 @@ Format: **decision** — why — *rules out*.
   legacy module names are mapped to current units for traceability. *Rules out*
   silently adopting a conflicting locale set or a framework migration nobody asked
   for — and keeps the history available for the Manager to overrule.
+- **D23 — A shared word is quoted, never re-invented.** `src/vocabulary.mjs` pins each concept the
+  backend foundation owns with its contract id, version, owner, file and symbol; a local word
+  declares what it maps to, and an undeclared one fails `vocabularyConflicts()`.
+  `test/29-alignment.test.mjs` compares the lock against the backend modules, skipping with a
+  stated reason while they are absent. *Rules out* two dialects for "why can this not run", and a
+  rename dressed up as alignment.
+- **D24 — The seam is closed: declarations cross, implementations do not.** `src/seam.mjs` lists
+  the 13 inputs the frontend may consume and the sources each may come from; an implementation
+  file, a route table, a port, a credential store, a model output or a rendered screen is refused
+  by name, and both sides project a capability into the same 16 fields. *Rules out* inferring a
+  capability from a module, and two identity shapes.
+- **D25 — AI is declared, not implemented.** Six AI capabilities are declared with no entry path;
+  provider, runtime and tool types stay distinct; a model-less installation is valid and the UI
+  says which layer is absent. *Rules out* shipping an inference client, a vendor field or a
+  chain-of-thought store while the contracts are still being agreed.

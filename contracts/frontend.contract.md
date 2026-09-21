@@ -522,33 +522,206 @@ list) are unchanged; this rule only closes who may reach the hook at all.
 
 ### 19.8 Degradation situations and required permissions
 
-Seven situations are declared data (`DEGRADATION_SITUATIONS`), and each one produces a
-verdict with a state, at least one reason and a declared behaviour — never a silent
-"available":
+Eight situations are declared data (`DEGRADATION_SITUATIONS`), and each one produces a verdict with
+a **canonical** degradation state, at least one reason and a declared action — never a silent
+"available". The states are quoted from `lego.interaction@1.0.0` (§19.9), so the frontend never
+answers with a word the backend foundation does not use:
 
-| Situation | State | Trigger |
-| :--- | :--- | :--- |
-| unavailable | `unavailable` | nothing declares or advertises the capability |
-| disabled | `disabled` | a declared lifecycle state of `disabled` |
-| unsupported | `unavailable` | the instance does not implement the capability |
-| incompatible | `version-mismatch` | a required version differs in its major component |
-| degraded | `degraded` | the instance is partial, or a required operation is missing |
-| not installed | `degraded` | the frontend declares the capability but has not installed it |
-| migration-required | `migration-required` | a declared migration gate has not run |
+| Situation | Canonical state | What the consumer does | Trigger |
+| :--- | :--- | :--- | :--- |
+| available | `available` | proceed | declared or advertised, nothing blocks it |
+| unavailable | `capability-unavailable` | fail with `lego.capability_unavailable` | nothing declares or advertises the capability |
+| disabled | `dependency-disabled` | fail with `lego.dependency_disabled` | a declared lifecycle state of `disabled` |
+| unsupported | `feature-unsupported` | answer 501 through the compatibility layer | the instance does not implement the capability |
+| incompatible | `version-incompatible` | fail with `lego.version_incompatible`, never adapt silently | the offered version cannot satisfy the requirement |
+| degraded | `degraded` | proceed with reduced guarantees | the instance is partial, or an operation is missing |
+| not installed | `optional-absent` | skip the optional path — this is not an error | the frontend declares the capability and has not installed it |
+| migration-required | `migration-required` | fail with `lego.migration_required` and name the migration | a declared migration gate has not run |
 
-`unsupported`/`unavailable`/`version-mismatch`/`disabled`/`migration-required` carry
-`degradation = { behavior: 'fallback', fallback: 'native-behavior' }`; `degraded` carries
-`{ behavior: 'degrade', fallback: 'declared-behaviour' }`. The behaviour is a declaration the
-surface renders, not a decision it improvises.
+A verdict carries `degradation = { state, usable, action, behavior, fallback }`: `state`, `usable`
+and `action` are the canonical instruction, `behavior`/`fallback` are the rendering instruction
+derived from it. The surface renders the declaration; it does not improvise one.
 
 **Required permissions** are declared data too: a capability may list `permissions` as
 `<domain>:<action>` names, the verdict reports them as `requiredPermissions`, and a consumer is
-told what it must be allowed to do before it asks. A permission is a name, never a credential —
-no token, key or cookie is representable in the declaration, and an undeclared or malformed
-permission is refused at registration. Permissions are never inferred from a route, a menu entry
-or a nested position.
+told what it must be allowed to do before it asks. A permission is a name, never a credential — no
+token, key or cookie is representable, and an undeclared or malformed permission is refused at
+registration. Permissions are never inferred from a route, a menu entry or a nested position.
 
-### 19.9 Rule block (machine-readable)
+### 19.9 Shared vocabulary — quoted, never re-invented
+
+The frontend and the backend LEGO foundation are separate packages with separate owners, and they
+speak about the same things. `packages/frontend-lego/src/vocabulary.mjs` therefore **pins** the
+vocabulary the backend foundation already publishes, with provenance (contract id, version, owner,
+file, symbol), and `A18` fails when the lock grows a term nobody declared:
+
+| Shared concept | Contract (owner) | Where it is declared | The frontend uses |
+| :--- | :--- | :--- | :--- |
+| Degradation / availability | `lego.interaction@1.0.0` (agent-2) | `src/lego/interaction.mjs` → `DEGRADATION_STATES` | all 8 values, verbatim, as the verdict `state` |
+| LEGO lifecycle | `lego.negotiation@1.0.0` (agent-2) | `src/lego/negotiation.mjs` → `LIFECYCLE_STATES` | 7 of the 11 values; the frontend's `available` means canonical `declared` and is declared as such |
+| Version change kind | `lego.contract-compat@1.0.0` (manager) | `src/lego/compat.mjs` → `CHANGE_KINDS` | `classifyChange`, `compatibilityOf(...).kind`, upgrade `kind` |
+| Interaction class | `lego.interaction@1.0.0` (agent-2) | `CALL/EVENT/STREAM/BATCH` | the four classes, unchanged |
+| Capability status | `lego.domain-registry@1.1.0` (manager) | `src/lego/registry.mjs` → `DOMAIN_STATUS` | `implemented`/`partial`/`unsupported`; `unknown` is declared as a frontend extension |
+| Transport target | foundation manifest (owner: manager) | `manifest/foundation.json` → `transport.targets` | named as bindings a declaration may carry; **no contract-lock row yet** (recorded for agent-2) |
+
+A frontend-local vocabulary (`surfaceStatus`, `unitStatus`, `frontendCapabilityDeclaration`,
+`capabilityLifecycle`, `instanceImplementation`, `operationOutcome`) declares what it maps to, and
+declares each value the canonical vocabulary does not have **with its reason**. A value with no
+reason fails `vocabularyConflicts()`. Local spellings are mapped rather than renamed where the
+spelling travels in the browser contract (`unitStatus` rides in the pinned boot payload) — a
+renaming for style would change a browser contract for nothing.
+
+Two boundaries stay explicit:
+
+- **The frontend never imports the backend implementation.** The lock quotes names and versions;
+  a comparison against the live modules is a *tooling* concern (an alignment test that runs when
+  the backend foundation is present on the branch).
+- **A collision is reported, never merged.** `capabilityCollisions()` returns each capability id
+  that appears under more than one origin (`frontend-registered`, `frontend-declared`,
+  `backend-advertised`), with both origins named.
+
+### 19.10 Operation negotiation
+
+A capability is not one switch. The UI has to answer "can *this* operation run, and if not, why
+not?" — and a missing permission is something a user can fix, an incompatible version is something
+an operator can fix, an unpublished operation is something nobody can fix yet, and a capability the
+caller was never granted is not its business at all. `negotiateOperation()` answers with one
+declared outcome (`OPERATION_STATES`) and a reason list:
+
+| Outcome | Means | Canonical degradation |
+| :--- | :--- | :--- |
+| `available` | the operation exists and may run | `available` |
+| `degraded` | the capability serves with reduced guarantees | `degraded` |
+| `capability-unavailable` | nothing declares or advertises the capability | `capability-unavailable` |
+| `optional-absent` | declared, not installed: the optional path is skipped | `optional-absent` |
+| `version-incompatible` | the offered version cannot satisfy the requirement | `version-incompatible` |
+| `dependency-disabled` | administratively switched off | `dependency-disabled` |
+| `migration-required` | present, gated by a declared migration | `migration-required` |
+| `feature-unsupported` | the capability is here and does not offer this operation (501) | `feature-unsupported` |
+| `operation-denied` | the caller was not granted the capability on its surface | — (no metadata is disclosed) |
+| `operation-unpublished` | the provider publishes no operation list: **fail closed**, `exists: null` | — |
+| `permission-missing` | a declared requirement the caller does not hold | — |
+| `permission-unknown` | the caller requires a permission the capability never declares | — |
+
+Precedence is declared (`OPERATION_PRECEDENCE`) and tested, so the same question always gets the
+same answer. Operations are semantic (`workflow.inspect`, `workflow.patch`, `workflow.validate`,
+`workflow.execute`), never endpoints: the interaction class is declared per operation, and the
+transport is chosen by the host (§19.2).
+
+### 19.11 AI foundation boundary (contracts only, no inference)
+
+The frontend **declares** the AI vocabulary and implements none of it: no model call, no provider
+client, no vendor field, no chain-of-thought. `src/agents.mjs` owns the declaration side, and the
+six capabilities (`ai-assistant`, `ai-copilot`, `ai-agent-node`, `agent-machine`,
+`execution-ai-mode`, `agent-work-trace`) are declared in `manifest/capabilities.json` with status
+`declared` — declared, not installed, exactly like `translation`.
+
+- **Provider ≠ runtime ≠ tool.** `PROVIDER_KINDS` distinguishes a `model-gateway`, a
+  `tool-app-gateway` and an `application-provider`; `RUNTIME_KINDS` separates an `agent-runtime`
+  from a `simulation-runtime`, so a simulation can never be reported as real work. Vendor names
+  (9Router, Composio, GitHub, Hermes, Claude Code, Gemini CLI, Antigravity, OpenClaw, DeepSeek
+  Harness, MiroFish) are **examples in documentation**, never fields in a declaration.
+- **Zero-install is valid.** `describeInstallation()` reports the layers separately — `core`,
+  `aiFoundation`, `inference`, `agentRuntime`, `simulationRuntime`, `toolGateway`, `modelProvider`,
+  `mcp` — and an installation with no model, no runtime and no MCP provider is a supported state
+  with a message and a list of what can be configured later. It is never rendered as broken.
+- **Resource-aware, never resource-assuming.** `suitableRuntimes()` derives an answer from the
+  declared device budget and each runtime's declared requirements: real runtimes before
+  simulation, local before remote, and "install every runtime locally" is never a requirement.
+- **Declaration validation is fail-closed.** `validateRuntimeDeclaration` /
+  `validateProviderDeclaration` refuse an unknown kind, an unknown locality, an undeclared field
+  and every credential-shaped key.
+- **Model and provider identity** appear only through `RUNTIME_IDENTITY_FIELDS` (session, agent,
+  parent agent, task, execution, model, provider) and only when a runtime exposes them.
+
+### 19.12 The universal agent event contract and the work trace
+
+`src/agent-events.mjs` is the frontend view of a transport-neutral event model — 26 types in 7
+namespaces (`agent.*`, `context.*`, `tool.*`, `decision.*`, `approval.*`, `artifact.*`,
+`runtime.*`). Any runtime that can map its own names into this vocabulary can drive the same UI;
+the product's names live in a **mapping declaration** (`createEventNormalizer`), and an unmapped
+event is refused rather than dropped.
+
+- **No payloads, ever.** A trace row carries `summary` (≤ 280 characters) and references
+  (`payloadRef`, `artifactRef`, `decisionRef`). There is no `payload` field; `payload`, `body`,
+  `content`, `messages`, `transcript`, `reasoning`, `chainOfThought` and every credential-shaped
+  key are refused *by name* when they appear.
+- **Bounded by declaration.** `createWorkTrace({ limit })` defaults to 200 rows; at capacity the
+  oldest row is dropped and `dropped` counts it. Ordering is by `(timestamp, sequence)`, so a row
+  that arrives late lands where the timeline says it belongs.
+- **Delivery is declared, not transported.** Each namespace declares which interaction classes may
+  carry it (`EVENT_DELIVERY` over `call`/`event`/`stream`/`batch`). No event names a transport, so
+  the same contract works in-process, over a socket or from a future worker.
+- **Delegation records authority, it does not distribute it.** `buildDelegationTree()` derives the
+  tree from events and gives every node `effectivePermissions === grants` with `inherited: false`:
+  a child holds exactly what it was granted, and a cycle or an unknown parent is reported as a
+  problem instead of being repaired silently.
+
+### 19.13 The MCP boundary
+
+MCP is an **interoperability layer**, never the Agent Machine. The frontend may represent a
+`client-capability`, a `server-capability`, a `tool`, a `resource`, a `prompt`, a `connection`, its
+`authorization` and its `availability` — and renders exactly four connection words:
+`connected`, `unavailable`, `permission-required`, `capability-unsupported`. Transport details never
+reach a business contract: `mcpRelationship()` returns a role, a state, a label and the objects it
+exposes, and refuses an undeclared object.
+
+### 19.14 The seam is closed
+
+Two owners, two packages, one vocabulary: what may cross between them is a **declared list**
+(`SEAM_INPUTS` in `src/seam.mjs`), and nothing outside it may be inferred. The list is closed on
+both axes — an input, and the sources that input may be read from:
+
+| Input | May be consumed from | Fixed by |
+| :--- | :--- | :--- |
+| `capability-id` | manifest, declaration, advertisement | `lego.domain-registry` (manager) |
+| `capability-status` | manifest, declaration, advertisement | `capabilityStatus` vocabulary |
+| `version` | manifest, declaration, advertisement | `lego.contract-compat` (manager) |
+| `operations` | manifest, declaration, advertisement | `operationOutcome` vocabulary |
+| `permissions` | manifest, declaration, advertisement | declared names, never credentials |
+| `lifecycle` | manifest, declaration, advertisement | `lego.negotiation` (agent-2) |
+| `availability` | declaration, advertisement, compatibility layer | `lego.interaction` (agent-2) |
+| `degradation` | declaration, compatibility layer | `lego.interaction` (agent-2) |
+| `interaction-class` | manifest, declaration | `lego.interaction` (agent-2) |
+| `transport-capability` | manifest, boot payload | foundation manifest (publication pending) |
+| `error-code` | compatibility layer, manifest | `lego.error-contract` (manager) |
+| `locale-set` | locale registry | `localization.contract` (agent-9) |
+| `observability-metadata` | observability buffer | this contract |
+
+A source that is never legal is refused by name (`SEAM_FORBIDDEN`): an **implementation file**, a
+**module path**, a **route table**, a **port**, a **credential store**, a **model output** and a
+**rendered screen**. `consumeInput({ input, source })` answers with a verdict and a reason, and
+`requireInput` turns the refusal into `frontend.seam.unknown-input` or
+`frontend.seam.forbidden-source` — the frontend does not get to guess where a fact came from. An
+input the list does not declare is refused too: a chain of thought is not an input, it is a
+forbidden one.
+
+### 19.15 One capability identity
+
+Both sides describe a capability in the same sixteen fields (`CAPABILITY_IDENTITY_FIELDS`), whatever
+declared it — a catalog entry, a live registration or an instance advertisement:
+
+`id`, `lego`, `owner`, `contractVersion`, `operations`, `permissions`, `lifecycle`, `status`,
+`availability`, `criticality`, `trust`, `interaction`, `migration`, `degradation`, `surfaces`,
+`requirements`.
+
+`capabilityIdentity(entry, { origin, support })` projects a declaration into that shape. An
+undeclared field is `null` — never inherited from a parent, a neighbour or a default — and
+`availability` is filled only when a negotiation actually answered it, because availability is a
+verdict rather than a property. Normalisation is declared and narrow: trim and lower-case, nothing
+else, and an id that does not match the grammar is refused (`frontend.seam.invalid-capability-id`)
+instead of being transliterated. Provenance is recorded *next to* the identity (`origin`, one of
+`frontend-registered`, `frontend-declared`, `backend-advertised`), so an id that appears under two
+origins is reported by `detectCollisions()` and never merged into one meaning. A capability the
+caller was not granted is not described at all (§19.1) — the identity is not a back door into
+metadata the caller may not see.
+
+### 19.16 Rule block (machine-readable)
+
+The rule list below is generated from `ARCHITECTURE_RULES` in
+`packages/frontend-lego/src/conformance.mjs`. `test/19-conformance.test.mjs` parses this block and
+fails when an id, a statement or a citation drifts from the code, so the document and the
+enforcement cannot disagree.
 
 ```json
 [
@@ -647,6 +820,48 @@ or a nested position.
     "statement": "Every degradation situation (unavailable, disabled, unsupported, incompatible, degraded, not installed, migration-required) is a declared state with a reason and a fallback — never silent availability.",
     "contract": "§19.8",
     "enforcedBy": "23-degradation.test.mjs"
+  },
+  {
+    "id": "A18",
+    "statement": "A shared vocabulary is quoted from the contract that owns it, with its version; the frontend adds a word only where it declares the reason.",
+    "contract": "§19.9",
+    "enforcedBy": "24-vocabulary.test.mjs"
+  },
+  {
+    "id": "A19",
+    "statement": "An operation is negotiable by name and is answered with the reason it cannot run — an unpublished operation is never assumed to exist.",
+    "contract": "§19.10",
+    "enforcedBy": "25-operations.test.mjs"
+  },
+  {
+    "id": "A20",
+    "statement": "AI is a declared capability vocabulary, never model inference: provider, runtime and tool types stay distinct and a missing model is a valid installation.",
+    "contract": "§19.11",
+    "enforcedBy": "26-ai-contracts.test.mjs"
+  },
+  {
+    "id": "A21",
+    "statement": "Agent events are transport-neutral, payload-free and bounded: a large result is referenced, never embedded in the trace.",
+    "contract": "§19.12",
+    "enforcedBy": "27-agent-events.test.mjs"
+  },
+  {
+    "id": "A22",
+    "statement": "A delegation tree never grants authority: a child holds exactly the permissions it was given, and a trace row carries the fields it declares and no others.",
+    "contract": "§19.12",
+    "enforcedBy": "27-agent-events.test.mjs"
+  },
+  {
+    "id": "A23",
+    "statement": "The seam is closed: the frontend consumes declared inputs from declared sources, and an implementation file, a route table, a port or a credential store is refused by name.",
+    "contract": "§19.14",
+    "enforcedBy": "28-seam.test.mjs"
+  },
+  {
+    "id": "A24",
+    "statement": "One capability identity, sixteen declared fields, on both sides: an undeclared field is null and a capability the caller was not granted is not described at all.",
+    "contract": "§19.15",
+    "enforcedBy": "28-seam.test.mjs"
   },
   {
     "id": "A16",

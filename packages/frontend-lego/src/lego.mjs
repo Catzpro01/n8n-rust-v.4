@@ -12,6 +12,8 @@
  * difference between a boundary and a new coupling.
  */
 import { createAdapter, CURRENT_ADAPTER_ID } from './adapters/index.mjs';
+import { describeAgents } from './agents.mjs';
+import { describeAgentEvents } from './agent-events.mjs';
 import { backendAvailabilityFrom } from './backend-view.mjs';
 import { checkConformance } from './conformance.mjs';
 import { describeInteractions, resolveInteraction } from './interactions.mjs';
@@ -26,6 +28,8 @@ import { DEVICE_PROFILES, resolveSupport } from './profiles.mjs';
 import { createFrontendRegistry, validateCapability } from './registry.mjs';
 import { createSubLegoRegistry } from './sublegos.mjs';
 import { createOperationGateway, defineLocalTransport } from './transport.mjs';
+import { describeVocabulary, detectCollisions, vocabularyConflicts } from './vocabulary.mjs';
+import { capabilityIdentity, consumeInput, describeSeam } from './seam.mjs';
 
 /**
  * @param {object} init
@@ -196,6 +200,8 @@ export function createFrontendLego({
       declaredCapabilities: manifests.capabilities.length,
       backendCapabilities: Object.keys(backendView.capabilities).length,
       transports: gateway.describe().implemented.length,
+      aiCapabilities: describeAgents().capabilities.length,
+      agentEventTypes: describeAgentEvents().eventTypes.length,
       events: events.stats().emitted,
       adapter: adapter.id,
       framework: adapter.framework,
@@ -235,6 +241,11 @@ export function createFrontendLego({
     /** Capability discovery and access decisions (placement grants nothing). */
     negotiate: (request) => negotiator.negotiate(request),
     /**
+     * Can this operation run, and if not, why not? `operation-unpublished` means the
+     * provider declared no operation list — the frontend refuses rather than assumes.
+     */
+    negotiateOperation: (request) => negotiator.negotiateOperation(request),
+    /**
      * Discovery: an unknown capability answers `null` instead of throwing; for a
      * verdict with reasons, `negotiate()` is the call (it never throws).
      */
@@ -252,6 +263,31 @@ export function createFrontendLego({
     /** What the frontend offers per surface, against what the backend advertises. */
     featureAvailability: () => negotiator.featureAvailability(),
     localeReadiness: (options = {}) => negotiator.localeReadiness({ directionOf, ...options }),
+    /** The shared vocabulary this package quotes from the backend foundation, with provenance. */
+    describeVocabulary,
+    /** The lock's self-audit: a local word that competes with a shared one is a conflict. */
+    vocabularyConflicts: () => vocabularyConflicts(),
+    /** Capability ids that appear under more than one origin — reported, never merged. */
+    capabilityCollisions: () => detectCollisions([
+      ...[...registry.list()].map((capability) => ({ id: capability.id, origin: 'frontend-registered' })),
+      ...manifests.capabilities.map((capability) => ({ id: capability.id, origin: 'frontend-declared' })),
+      ...Object.keys(backendView.capabilities).map((id) => ({ id, origin: 'backend-advertised' })),
+    ]),
+    /**
+     * The AI vocabulary: declared capabilities, provider/runtime/tool kinds, the MCP
+     * boundary and the trace contract. Nothing here calls a model.
+     */
+    describeAgents,
+    /** The universal agent event vocabulary and the bounded work-trace contract. */
+    describeAgentEvents,
+    /**
+     * The seam: the closed list of inputs this LEGO may consume, the sources each may
+     * come from, and the one identity shape a capability is projected into. `consumeInput`
+     * is the fail-closed check; nothing here reads a backend file.
+     */
+    describeSeam,
+    capabilityIdentity,
+    consumeInput,
     /**
      * Transport-neutral delivery. `invoke` picks the cheapest capable transport
      * that can carry the operation's declared interaction class.

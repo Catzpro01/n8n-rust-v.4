@@ -29,7 +29,7 @@
 
 import { CAPABILITY_STATES, CRITICALITY, TRUST_LEVELS, degradationFor, trustInherited, trustRank } from './lifecycle.mjs';
 import { capabilityOf } from './surface-capability.mjs';
-import { compareVersions } from './versions.mjs';
+import { classifyChange, compareVersions } from './versions.mjs';
 import { RANGE_EXAMPLES, RANGE_PATTERN, SEMVER_PATTERN, satisfiesRange } from './versions.mjs';
 import { REQUIREMENT_FIELDS } from './profiles.mjs';
 
@@ -590,22 +590,24 @@ export function createSubLegoRegistry({
   /**
    * Evaluates an upgrade before applying it.
    *
-   * @returns {{ ok, kind, breaking, affected, affectedDetail, unchanged, errors }}
+   * `kind` is the canonical change classification (unchanged | compatible |
+   * migration-required | breaking | downgrade) — the same words the backend
+   * foundation uses, so an upgrade report never grows a second dialect. `move`
+   * carries the granularity a human wants to read (patch | minor | major), which is a
+   * different question and therefore a different field.
+   *
+   * @returns {{ ok, kind, move, breaking, affected, affectedDetail, unchanged, errors }}
    */
   function validateUpgrade(id, nextVersion) {
     const entry = entries.get(id);
-    if (!entry) return { ok: false, kind: 'same', breaking: false, affected: [], affectedDetail: [], unchanged: [], errors: [`"${id}" is not a registered sub-LEGO`] };
+    const rejected = (errors) => ({ ok: false, kind: 'invalid', move: 'none', breaking: false, affected: [], affectedDetail: [], unchanged: [], errors });
+    if (!entry) return rejected([`"${id}" is not a registered sub-LEGO`]);
     if (!SEMVER_PATTERN.test(String(nextVersion ?? ''))) {
-      return { ok: false, kind: 'same', breaking: false, affected: [], affectedDetail: [], unchanged: [], errors: [`"${nextVersion}" is not a semver version`] };
+      return rejected([`"${nextVersion}" is not a semver version`]);
     }
-    const [currentMajor, currentMinor] = entry.version.split('.').map(Number);
-    const [nextMajor, nextMinor] = nextVersion.split('.').map(Number);
-    const kind = nextMajor > currentMajor ? 'major'
-      : nextMajor < currentMajor ? 'downgrade'
-        : nextMinor > currentMinor ? 'minor'
-          : nextMinor < currentMinor ? 'downgrade'
-            : nextVersion === entry.version ? 'same' : 'patch';
-    const breaking = kind === 'major' || kind === 'downgrade';
+    const change = classifyChange(entry.version, nextVersion);
+    const kind = change.kind;
+    const breaking = kind === 'breaking' || kind === 'downgrade';
 
     const affectedDetail = [];
     for (const dependent of dependentsOf(id)) {
@@ -626,6 +628,7 @@ export function createSubLegoRegistry({
     return {
       ok: errors.length === 0,
       kind,
+      move: change.move,
       breaking,
       affected,
       affectedDetail,
@@ -766,6 +769,7 @@ export function createSubLegoRegistry({
     });
     return Object.freeze({
       kind: evaluation.kind,
+      move: evaluation.move,
       changed: Object.freeze(changed),
       unchanged: Object.freeze(unchanged),
       acknowledged: Object.freeze([...acknowledge].filter((value) => evaluation.affected.includes(value))),
