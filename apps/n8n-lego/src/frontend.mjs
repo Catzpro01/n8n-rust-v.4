@@ -90,6 +90,11 @@ export async function loadFrontend({ config, logger }) {
       // checks); only their identity, version and ports travel to the browser.
       subLegos: lego.subLegos,
       registry: lego.registry,
+      // P2.8-F maturity surface: what this frontend can offer (declared, never
+      // installed), what a change would touch, and what it would cost to verify.
+      availability: lego.availability,
+      impactOf: lego.impactOf,
+      planChange: lego.planChange,
       register: lego.register,
       warnings: lego.warnings,
       describe: () => ({ available: true, path: FRONTEND_PATH, editorVersion: editorVersion(), ...lego.describe() }),

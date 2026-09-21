@@ -49,6 +49,7 @@ export {
   MESSAGE_KEY_GRAMMAR,
   MESSAGE_SLOTS,
   SUPPORTED_LOCALES,
+  translationCoverage,
   buildMessageKey,
   createMessageCatalog,
   createTranslator,
@@ -67,12 +68,72 @@ export {
 } from './src/i18n.mjs';
 
 export {
+  ACTIVATION_MODES,
   CAPABILITY_SCHEMA,
   CAPABILITY_STATUSES,
   RegistryError,
   createFrontendRegistry,
   validateCapability,
 } from './src/registry.mjs';
+
+export {
+  CAPABILITY_STATES,
+  CRITICALITY,
+  LifecycleError,
+  RUNNABLE_STATES,
+  STATE_TRANSITIONS,
+  TRUST_LEVELS,
+  TRUST_RULES,
+  canTransition,
+  createLifecycle,
+  degradationFor,
+  describeLifecycle,
+  describeTrust,
+  isRunnable,
+  mayPerform,
+  trustInherited,
+  trustRank,
+} from './src/lifecycle.mjs';
+
+export {
+  ENVELOPE_FIELDS,
+  EnvelopeError,
+  TRANSPORTS,
+  createOperationContext,
+  describeEnvelope,
+  nextCorrelationId,
+  observationRecord,
+} from './src/envelope.mjs';
+
+export {
+  DEVICE_PROFILES,
+  ProfileError,
+  REQUIREMENT_FIELDS,
+  SUPPORT_STATES,
+  describeProfiles,
+  getProfile,
+  resolveSupport,
+  supportMatrix,
+} from './src/profiles.mjs';
+
+export {
+  ImpactError,
+  OWN_CONTRACTS,
+  TEST_TIERS,
+  TIER_SUITES,
+  createImpactGraph,
+  describeTestMap,
+} from './src/impact.mjs';
+
+export {
+  CONTEXT_LEVELS,
+  PACK_ROOT,
+  REFERENCE_FILES,
+  TASK_INDEX,
+  contextFor,
+  describePack,
+  packFiles,
+} from './src/knowledge.mjs';
 
 export {
   FRONTEND_BOOT_GLOBAL,
@@ -89,8 +150,18 @@ export {
 
 export { createRestClient, createStateStore, STATE_STATUSES } from './src/client.mjs';
 
-export { MANIFEST_DIR, MANIFEST_FILES, PACKAGE_ROOT, extensionPointIds, loadManifests, subLegoIds, surfaceIds } from './src/manifests.mjs';
 export {
+  MANIFEST_DIR,
+  MANIFEST_FILES,
+  PACKAGE_ROOT,
+  declaredCapabilityIds,
+  extensionPointIds,
+  loadManifests,
+  subLegoIds,
+  surfaceIds,
+} from './src/manifests.mjs';
+export {
+  MAX_DEPTH,
   RANGE_EXAMPLES,
   SUB_LEGO_SCHEMA,
   SUB_LEGO_STATUSES,

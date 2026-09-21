@@ -1,0 +1,94 @@
+# Decision cards
+
+What was decided, why, and what it rules out. A decision that is not written down
+gets re-litigated by the next agent — these are the ones that would cost the most
+to rediscover.
+
+Format: **decision** — why — *rules out*.
+
+## Foundation (P2.5)
+
+- **D1 — The stock editor bundle is served untouched; the frontend LEGO contributes
+  one additive `<meta>` tag.** The UI must not depend on this LEGO to render, so the
+  LEGO cannot be allowed to rewrite markup or styles. *Rules out* injecting scripts
+  into the bundle or a build-time patch of `n8n-editor-ui`.
+- **D2 — Fail-soft load, fail-closed validation.** A missing or broken LEGO degrades
+  to "stock UI without a descriptor". An invalid declaration stops the descriptor —
+  a half-true descriptor is worse than none. *Rules out* registering a capability
+  whose declaration failed validation, or silently skipping a broken manifest entry.
+- **D3 — The boot payload is delivered twice from one source**: the `<meta>` tag on
+  `index.html` (already fetched, `no-store`) and `GET /rest/frontend/bootstrap` for
+  tooling. *Rules out* a second endpoint the UI has to call before it can render.
+- **D4 — Only `src/adapters/**` may name the framework.** A test enforces it.
+  *Rules out* framework types leaking into contracts, registries or surfaces — the
+  reason a future framework swap stays possible.
+- **D5 — Surfaces are the registry's vocabulary.** A capability may only attach to a
+  declared surface; the surface names the backend capability and contract behind it.
+  *Rules out* capabilities that exist nowhere in the UI and a second source of truth
+  for backend ids.
+- **D6 — No capability is registered at boot.** The registry exists and its contents
+  are empty: P2.5 implemented no feature. *Rules out* looking "done" by declaring
+  things that do not exist.
+
+## Nested layer (P2.5.1)
+
+- **D7 — A sub-LEGO exists only with an independently meaningful contract, owner,
+  dependency boundary, test boundary or upgrade path.** 19 units today; a component,
+  button, icon or helper is private detail. *Rules out* per-component LEGO sprawl.
+- **D8 — The public boundary is a port** (`ui:<area>:<name>`). Anything else is
+  private by default, and a dependency on something unpublished is refused *by name*.
+  *Rules out* sibling imports of internals and "just this once" coupling.
+- **D9 — A port may not share an id with an extension point.** A hook is *where you
+  attach*; a port is *what you may couple to*. *Rules out* one identifier with two
+  meanings.
+- **D10 — Upgrade = a new manifest entry for one unit, applied atomically.** Minor
+  and patch moves leave every sibling byte-identical; a major move is refused while a
+  dependent pins the previous major, and proceeds only with a named acknowledgement
+  recorded as `acknowledgedUpgrades`. *Rules out* partial upgrades, silent breaking
+  changes, downgrades and coupled units.
+- **D11 — `capability` per unit is validated against its surface**, with the
+  `none` sentinel normalised to `null`. *Rules out* two places drifting apart.
+
+## Maturity (P2.8-F)
+
+- **D12 — Availability, installation, loading and activation are separate states**
+  (`available → installed → loaded → active → idle | unloaded | disabled`), and only
+  the last three may serve a request. *Rules out* treating "declared in a catalog" as
+  "running".
+- **D13 — The declared capability catalog is validated but never registered.**
+  `manifest/capabilities.json` declares `translation` (lazy, optional, feature trust,
+  fallback locale); the boot payload must not mention it. *Rules out* a catalog that
+  quietly becomes a feature claim — and keeps the payload byte-identical to P2.5.
+- **D14 — Criticality decides degradation, and `core` may not declare a fallback.**
+  A missing core capability is a broken instance, not a degraded one. *Rules out*
+  hiding a broken instance behind a fallback that makes it look healthy.
+- **D15 — Trust is inherited, never promoted by nesting.** A unit under a `feature`
+  capability is a feature and may only be lowered. *Rules out* gaining core
+  privileges by being wrapped in the right parent.
+- **D16 — Depth is bounded at domain → feature → sub-feature**, refused by name
+  beyond that. *Rules out* a hierarchy that is really a folder tree.
+- **D17 — Device support is a declared budget, not a platform check.** Six profiles,
+  four states (`supported | degraded | remote | unsupported`); a thin client reaches
+  what it cannot run locally. *Rules out* `if (isAndroid)` branching in core UI.
+- **D18 — The operation envelope is semantic and local-free.** Identity, contract
+  version, correlation id, authorization *context* (never a credential), deadline,
+  cancellation, idempotency; `toTransportHints()` is empty for local execution.
+  *Rules out* a payload tax on in-process calls and tokens in a frontend context.
+- **D19 — Risk is blast radius; arbitration is consent.** `riskOf` escalates on
+  dependents, foreign contracts and extension/untrusted authorship; adding a unit is
+  low risk but always requires arbitration. *Rules out* using risk as the only gate,
+  and using "small diff" as an argument for skipping tests.
+- **D20 — Own contracts vs foreign contracts.** `contracts/frontend*.contract.md`
+  belong to this LEGO; every surface backend contract belongs to another. Only
+  *foreign* contracts escalate risk. *Rules out* the degenerate model where every
+  change is "high" because every unit declares the frontend contract.
+- **D21 — The `.ai/` pack is drift-checked, not trusted.** Indexes are generated from
+  the manifests and a test fails with the exact difference when they age; each file
+  has a size budget. *Rules out* a knowledge pack that rots into fiction and prompts
+  that grow into "read the whole pack".
+- **D22 — `contracts/micro-frontend.contract.md` (Web Components, `id/en/es/fr/de/ja`)
+  is marked superseded, not deleted.** The Vue reference and the TESTED
+  `contracts/localization.contract.md` (`id, en, ar, zh, ru, jv`) govern instead; the
+  legacy module names are mapped to current units for traceability. *Rules out*
+  silently adopting a conflicting locale set or a framework migration nobody asked
+  for — and keeps the history available for the Manager to overrule.

@@ -1,6 +1,6 @@
 {
   "kind": "p25-frontend-boundary",
-  "generatedAt": "2026-09-21T19:40:58.211Z",
+  "generatedAt": "2026-09-21T20:27:04.769Z",
   "phase": "P2.5",
   "method": "node apps/n8n-lego/scripts/capture-frontend-evidence.mjs (live in-process instance, HTTP level); the browser gate tests/e2e/frontend-boundary.mjs captures the same boundary from inside a real page in CI (docs/n8n-lego/FRONTEND_LEGO.md §6)",
   "baseline": "cb71dbb2",
@@ -102,11 +102,56 @@
       "name": "boot descriptor stays inside its budget",
       "verdict": "PASS",
       "detail": "18126 bytes JSON → 24168 bytes base64"
+    },
+    {
+      "name": "declared capability catalog is validated but not registered",
+      "verdict": "PASS",
+      "detail": "1 declared, 0 registered"
+    },
+    {
+      "name": "the declared capability is available, not installed",
+      "verdict": "PASS",
+      "detail": "translation: available/installed=false"
+    },
+    {
+      "name": "its absence has a declared, non-fatal fallback",
+      "verdict": "PASS",
+      "detail": "without the Translation LEGO a surface renders through the fallback chain owned by contracts/localization.contract.md (locale dictionary -> en -> the raw key); an unknown key never throws"
+    },
+    {
+      "name": "device support is decided per profile, with a reason",
+      "verdict": "PASS",
+      "detail": "desktop:supported laptop:supported low-memory:supported android:supported termux-companion:supported remote-only:supported"
+    },
+    {
+      "name": "impact: a dependent escalates the test tier",
+      "verdict": "PASS",
+      "detail": "risk=high dependents=workflow-editor.execution-panel"
+    },
+    {
+      "name": "impact: a private root change stays low risk",
+      "verdict": "PASS",
+      "detail": "risk=low tiers=fast-contract,boundary,browser"
+    },
+    {
+      "name": "dry-run plan names the foreign contract and its owner",
+      "verdict": "PASS",
+      "detail": "contracts/settings.contract.md->settings"
+    },
+    {
+      "name": ".ai pack answers a task shape with the smallest file set",
+      "verdict": "PASS",
+      "detail": "3 of 10 files"
+    },
+    {
+      "name": "boot payload is byte-identical to the P2.5 baseline",
+      "verdict": "PASS",
+      "detail": "18126 bytes vs pinned P2.5 baseline 18126"
     }
   ],
   "summary": {
-    "checks": 18,
-    "passed": 18,
+    "checks": 27,
+    "passed": 27,
     "failed": 0
   },
   "bootDescriptor": {

@@ -1120,3 +1120,38 @@ Klaim "79–80 passed" pada handover 2026-09-18 karena itu **tidak dapat direpro
 - **Permintaan ke agent-05**: (a) konfirmasi kepemilikan `tools/**` untuk perubahan test-infra ini;
   (b) tinjau gate G06–G10 `workflow-isolation-gate.mjs` agar phase-aware (saat ini menolak keberadaan artefak Rust padahal
   `PROJECT_RULES.md` menyatakan Phase 3 ACTIVE) — di luar cakupan sesi ini.
+
+---
+
+## ISSUE-024 — NESTED SUB-LEGO LAYER INSIDE `ui-frontend` (declaration-only, no code path added)
+
+**Pelapor:** sesi agent-01 lanjutan (`arena/01a0c53e-n8n-rust-v-4`, P2.5 nested sub-LEGO increment)
+**Terdampak:** Frontend LEGO (`ui-frontend`), Manager/Integrator (aturan upgrade & hierarki), agent-05 (audit)
+**Status:** DELIVERED (semua deklarasi, 21 test hijau) — menunggu countersign pemilik area
+**Severity:** LOW (aditif; tidak ada berkas di luar `ui-frontend` yang berubah selain 3 hook di manifest milik LEGO ini)
+
+### 1. Apa yang ditambahkan
+Hierarki 19 unit tiga level (`settings → settings.localization → settings.localization.rtl`,
+`workflow-editor → {canvas,node-panel,parameter-panel,execution-panel}`) dengan owner, versi, port publik,
+area privat, dependensi, jalur test, dan kebijakan upgrade. Batasnya **port** (`ui:<area>:<nama>`):
+dependensi ke apa pun selain port publik ditolak *dengan nama*, cycle ditolak, port tidak boleh berbagi id
+dengan extension point. Upgrade dijamin atomik: minor/patch hanya mengubah unit itu (saudara di-assert
+byte-identik), major ditolak selama dependen mem-pin major lama dan hanya lanjut dengan
+`{ acknowledge: [...] }` yang dicatat sebagai `acknowledgedUpgrades` pada dependen.
+
+### 2. Dampak ke area lain (yang perlu diketahui)
+- **Boot payload** kini membawa array `subLegos` (identity/parent/version/status/owner/surface/ports saja;
+  tidak ada area privat, jalur test, atau capability). Budget 24 KB → **32 KB base64** dinaikkan secara sadar
+  dan ukurannya direkam sebagai bukti; payload 18.1 KB JSON → 24.2 KB base64.
+- **Kontrak baru**: `contracts/frontend-sub-lego.contract.md` (normatif untuk hierarki).
+- **Extension points**: 15 (tadinya 13) — `ui:search:provider`, `ui:accessibility:annotate`
+  (`attributes-only` + whitelist; teks/layout/struktur dilarang), `ui:document:format`.
+- **Berkas milik owner lain tidak disentuh**: `crates/**`, `apps/n8n-ts/**`, `tools/**`, `.arena/**`,
+  `reference/**` tidak berubah.
+
+### 3. Yang diminta dari pemilik area
+1. **Manager/Integrator**: konfirmasi aturan upgrade (acknowledgement bernama untuk breaking move) sebagai
+   aturan lintas-LEGO, bukan hanya konvensi internal `ui-frontend`.
+2. **agent-05**: `python3 tools/sublego-audit/audit.py` tetap `AUDIT PASSED` (12 LEGO / 20 Sub-LEGO / 5 Agent)
+   karena registry `.arena` tidak disentuh; mohon konfirmasi bahwa paket `packages/frontend-lego`
+   **belum** perlu didaftarkan di `.arena/registry/lego.yaml` (keputusan D10).

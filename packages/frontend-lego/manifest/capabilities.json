@@ -1,0 +1,59 @@
+{
+  "catalogVersion": "1.0.0",
+  "description": "The frontend capability catalog: what the frontend LEGO can offer beyond the pinned editor UI, and how the UI must behave when it is absent. Every entry here is DECLARED \u2014 declared is not installed, installed is not loaded, loaded is not active. P2.8-F implements no capability and registers none: this file exists so the identity, criticality, trust level, activation mode and fallback of a future capability are agreed before its code is written.",
+  "notes": [
+    "An entry describes a capability, never an implementation: metadata only, no render/mount/load functions, no inline code.",
+    "`entry` is a module path so the runtime can stay lazy. A capability that is not installed yet declares none.",
+    "`criticality: core` may not declare a fallback \u2014 a missing core capability must stay visible.",
+    "`trust` is inherited by nesting: a sub-LEGO inside a `feature` capability is a feature, never core.",
+    "Backend-bound capabilities are NOT re-declared here. The surface catalog already binds a surface to its backend capability and contract (manifest/surfaces.json); duplicating those ids here would create a second source of truth (contract \u00a712).",
+    "Features this instance cannot serve are answered by the compatibility layer's unsupported map (apps/n8n-lego/src/compat/capability.mjs), which is the backend-side registry. This catalog never duplicates it.",
+    "Locales are declared once, in src/i18n.mjs. The official set is id, en, ar, zh, ru, jv; the legacy micro-frontend.contract.md set (id/en/es/fr/de/ja) is superseded \u2014 see contracts/frontend.contract.md \u00a716.1.",
+    "Official locales (id, en, ar, zh, ru, jv) and the translation fallback chain are already owned and tested by contracts/localization.contract.md \u2014 the frontend declares readiness for that contract, it does not restate it."
+  ],
+  "capabilities": [
+    {
+      "id": "translation",
+      "lego": "translation",
+      "title": "Translation and locale switching",
+      "status": "declared",
+      "activation": "lazy",
+      "criticality": "optional",
+      "trust": "feature",
+      "lifecycle": "available",
+      "surfaces": [
+        "navigation",
+        "dashboard",
+        "settings",
+        "workflow-editor",
+        "node-picker",
+        "dialogs",
+        "notifications",
+        "error-surfaces"
+      ],
+      "contracts": [
+        "contracts/frontend.contract.md",
+        "contracts/localization.contract.md"
+      ],
+      "extensionPoints": [
+        "ui:message:catalog",
+        "ui:locale:switch"
+      ],
+      "messages": "translation",
+      "requirements": {
+        "memoryMb": 16,
+        "requiresNetwork": false
+      },
+      "degradation": {
+        "fallback": "fallback-locale",
+        "detail": "without the Translation LEGO a surface renders through the fallback chain owned by contracts/localization.contract.md (locale dictionary -> en -> the raw key); an unknown key never throws"
+      },
+      "tests": [
+        "packages/translation-lego/test/*.test.mjs"
+      ],
+      "phase": "P2.9",
+      "owner": "agent-01",
+      "notes": "Declared so the eleven translatable surfaces, the RTL rule and the fallback behaviour are agreed before the Translation LEGO exists. It is not installed, not loaded and not registered \u2014 the boot payload must not mention it. The locale set and the fallback chain are owned by contracts/localization.contract.md (agent-9 lineage, TESTED); this frontend never redefines them."
+    }
+  ]
+}
