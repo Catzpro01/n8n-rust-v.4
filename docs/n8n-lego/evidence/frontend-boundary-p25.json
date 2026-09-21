@@ -1,6 +1,6 @@
 {
   "kind": "p25-frontend-boundary",
-  "generatedAt": "2026-09-21T20:36:26.396Z",
+  "generatedAt": "2026-09-21T21:07:28.138Z",
   "phase": "P2.5",
   "method": "node apps/n8n-lego/scripts/capture-frontend-evidence.mjs (live in-process instance, HTTP level); the browser gate tests/e2e/frontend-boundary.mjs captures the same boundary from inside a real page in CI (docs/n8n-lego/FRONTEND_LEGO.md §6)",
   "baseline": "cb71dbb2",
@@ -151,22 +151,57 @@
     {
       "name": "the LEGO cold-imports and assembles within a small budget",
       "verdict": "PASS",
-      "detail": "30.7 ms for import + 12 surfaces + 15 hooks + 19 units"
+      "detail": "40.3 ms for import + 12 surfaces + 15 hooks + 19 units"
     },
     {
       "name": "assembling the descriptor stays inside a small memory budget",
       "verdict": "PASS",
-      "detail": "1843 KB of heap for catalogs + both registries"
+      "detail": "2269 KB of heap for catalogs + both registries"
     },
     {
       "name": "the package still has no runtime dependency",
       "verdict": "PASS",
       "detail": "dependencies={}"
+    },
+    {
+      "name": "16 architecture rules pass on a live assembly",
+      "verdict": "PASS",
+      "detail": "all pass"
+    },
+    {
+      "name": "direction is locale metadata: ar RTL, the rest LTR",
+      "verdict": "PASS",
+      "detail": "{\"id\":\"ltr\",\"en\":\"ltr\",\"ar\":\"rtl\",\"zh\":\"ltr\",\"ru\":\"ltr\",\"jv\":\"ltr\"}"
+    },
+    {
+      "name": "four interaction classes are declared",
+      "verdict": "PASS",
+      "detail": "call,event,stream,batch"
+    },
+    {
+      "name": "a same-process call is direct, unserialized and never routed through an event bus",
+      "verdict": "PASS",
+      "detail": "transport=local:direct serialization=none"
+    },
+    {
+      "name": "an interaction no transport can carry is refused by name",
+      "verdict": "PASS",
+      "detail": "frontend.transport.unsupported: no transport can carry \"execution.watch\" for capability \"exe…"
+    },
+    {
+      "name": "a declared-but-not-installed capability degrades instead of pretending",
+      "verdict": "PASS",
+      "detail": "state=degraded fallback=declared-behaviour"
+    },
+    {
+      "name": "placement grants nothing: the refusal leaks no capability metadata",
+      "verdict": "PASS",
+      "detail": "state=unavailable identity=null"
     }
   ],
   "summary": {
-    "checks": 30,
-    "passed": 30,
+    "checks": 37,
+    "passed": 37,
     "failed": 0
   },
   "bootDescriptor": {
@@ -439,7 +474,7 @@
     ],
     "capabilities": [],
     "bytes": 18126,
-    "importMs": 30.7,
-    "heapKb": 1843
+    "importMs": 40.3,
+    "heapKb": 2269
   }
 }

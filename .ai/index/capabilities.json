@@ -25,20 +25,70 @@
         "behavior": "fallback",
         "fallback": "fallback-locale"
       },
-      "coordination": "Locales, dictionaries and the fallback chain are owned by contracts/localization.contract.md (agent-9 lineage). This LEGO prepares the surfaces; it does not own the dictionaries."
+      "coordination": "Locales, dictionaries and the fallback chain are owned by contracts/localization.contract.md (agent-9 lineage). This LEGO prepares the surfaces; it does not own the dictionaries.",
+      "operations": []
     }
   ],
   "registered": [],
   "vocabularies": {
-    "activation": ["eager", "lazy", "manual"],
-    "lifecycle": ["available", "installed", "loaded", "active", "idle", "unloaded", "disabled"],
-    "runnableStates": ["loaded", "active", "idle"],
-    "criticality": ["core", "optional", "enhancement"],
-    "trust": ["core", "feature", "extension", "untrusted"],
-    "support": ["supported", "degraded", "remote", "unsupported"],
-    "status": ["declared", "available", "partial", "unsupported"],
-    "deviceProfiles": ["desktop", "laptop", "low-memory", "android", "termux-companion", "remote-only"],
-    "requirementFields": ["memoryMb", "storageMb", "requiresLocalExecution", "requiresNetwork", "heavy", "input"]
+    "activation": [
+      "eager",
+      "lazy",
+      "manual"
+    ],
+    "lifecycle": [
+      "available",
+      "installed",
+      "loaded",
+      "active",
+      "idle",
+      "unloaded",
+      "disabled"
+    ],
+    "runnableStates": [
+      "loaded",
+      "active",
+      "idle"
+    ],
+    "criticality": [
+      "core",
+      "optional",
+      "enhancement"
+    ],
+    "trust": [
+      "core",
+      "feature",
+      "extension",
+      "untrusted"
+    ],
+    "support": [
+      "supported",
+      "degraded",
+      "remote",
+      "unsupported"
+    ],
+    "status": [
+      "declared",
+      "available",
+      "partial",
+      "unsupported"
+    ],
+    "deviceProfiles": [
+      "desktop",
+      "laptop",
+      "low-memory",
+      "android",
+      "termux-companion",
+      "remote-only"
+    ],
+    "requirementFields": [
+      "memoryMb",
+      "storageMb",
+      "requiresLocalExecution",
+      "requiresNetwork",
+      "heavy",
+      "input"
+    ]
   },
   "rules": [
     "A capability attaches only to a surface declared in manifest/surfaces.json.",
@@ -47,5 +97,128 @@
     "trust is inherited; a unit nested under a feature capability is a feature and may only be lowered.",
     "Backend-bound capabilities are not re-declared here: the surface catalog already binds a surface to its backend capability and contract.",
     "A feature this instance cannot serve is answered by the compatibility layer's unsupported map (apps/n8n-lego/src/compat/capability.mjs) — never duplicated here."
-  ]
+  ],
+  "negotiation": {
+    "states": [
+      "available",
+      "degraded",
+      "version-mismatch",
+      "unavailable",
+      "unsupported",
+      "disabled"
+    ],
+    "origins": [
+      "frontend-registered",
+      "frontend-declared",
+      "backend-advertised"
+    ],
+    "rules": [
+      "Placement grants nothing: access comes from the unit's own surface binding or from a capability that declares that surface.",
+      "A consumer that was not granted a capability is not handed its metadata.",
+      "An operation name is <domain>.<name> — the same grammar the envelope enforces.",
+      "Frontend readiness and backend availability are separate declarations and are shown side by side (featureAvailability)."
+    ]
+  },
+  "delivery": {
+    "transports": [
+      "local",
+      "rest",
+      "event",
+      "stream",
+      "ipc",
+      "remote"
+    ],
+    "implemented": [
+      "local"
+    ],
+    "interactionClasses": [
+      "call",
+      "event",
+      "stream",
+      "batch"
+    ],
+    "interactionTransports": {
+      "call": [
+        "local",
+        "rest",
+        "ipc",
+        "remote"
+      ],
+      "event": [
+        "local",
+        "event",
+        "ipc",
+        "remote"
+      ],
+      "stream": [
+        "local",
+        "stream",
+        "ipc",
+        "remote"
+      ],
+      "batch": [
+        "local",
+        "rest",
+        "ipc",
+        "remote"
+      ]
+    },
+    "rules": [
+      "Business contracts name operations and their interaction class, never transports.",
+      "The cheapest capable transport wins; same-process calls are direct with no serialization.",
+      "No HTTP between local modules; an operation no transport can carry is refused by name.",
+      "A caller may not reshape an operation: the declared class wins."
+    ]
+  },
+  "localization": {
+    "localeSet": [
+      {
+        "code": "id",
+        "direction": "ltr",
+        "fallback": false
+      },
+      {
+        "code": "en",
+        "direction": "ltr",
+        "fallback": true
+      },
+      {
+        "code": "ar",
+        "direction": "rtl",
+        "fallback": false
+      },
+      {
+        "code": "zh",
+        "direction": "ltr",
+        "fallback": false
+      },
+      {
+        "code": "ru",
+        "direction": "ltr",
+        "fallback": false
+      },
+      {
+        "code": "jv",
+        "direction": "ltr",
+        "fallback": false
+      }
+    ],
+    "fallback": "en",
+    "rtl": [
+      "ar"
+    ],
+    "ownedByFrontend": [
+      "locale identity",
+      "direction metadata",
+      "message keys",
+      "fallback chain",
+      "plural categories (contract)"
+    ],
+    "notOwnedByFrontend": [
+      "dictionaries",
+      "translation content",
+      "loading strategy",
+      "translation runtime"
+    ]
+  }
 }

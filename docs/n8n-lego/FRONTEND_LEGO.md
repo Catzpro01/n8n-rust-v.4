@@ -175,7 +175,7 @@ Everything above is additive: nothing the pinned UI calls changed shape or statu
 
 | Gate | Command | What it proves |
 | :--- | :--- | :--- |
-| Contract + architecture (123 tests) | `npm run frontend-lego:test` | doc↔code agreement, registry fail-closed, error model, i18n structure, sub-LEGO hierarchy/ownership/upgrade, capability lifecycle/criticality/trust, envelope, impact + test map, device profiles, `.ai/` pack drift, framework/backend isolation |
+| Contract + architecture (196 tests, 22 suites) | `npm run frontend-lego:test` | doc↔code agreement, registry fail-closed, error model, i18n structure, sub-LEGO hierarchy/ownership/upgrade, capability lifecycle/criticality/trust, envelope, impact + test map, device profiles, `.ai/` pack drift, framework/backend isolation |
 | App boundary (11 tests) | `N8N_LEGO_CATALOG_DIR=… node --test apps/n8n-lego/test/*.test.mjs` | descriptor served + auth-guarded, meta tag == endpoint payload, **UI byte-identical apart from the tag**, 501 → machine-readable error, fail-soft load |
 | Browser gate | `node tests/e2e/frontend-boundary.mjs <url>` | the boundary in a real page: tag present, payload valid, sessions work, stock shell still renders, no page errors, no leaked bridge global |
 | P0/P2 regression | `node tests/e2e/lego-smoke.mjs <url> --mode=create\|verify`, `node tests/e2e/settings-compat.mjs <url>` | nothing user-visible changed |
@@ -186,12 +186,15 @@ Evidence is regenerated — not hand-written — with
 node apps/n8n-lego/scripts/capture-frontend-evidence.mjs      # → docs/n8n-lego/evidence/frontend-boundary-p25.json
 ```
 
-which starts the app in-process, signs the owner in and records **25 checks** at HTTP level — including
+which starts the app in-process, signs the owner in and records **37 checks** at HTTP level — including
 `PASS: hierarchy is walkable in declaration order`, `PASS: private areas never reach the payload`,
 `PASS: UI byte-identical apart from the additive tag — delta=24268 bytes (the tag only)` and, from P2.8-F,
 `PASS: declared capability catalog is validated but not registered — 1 declared, 0 registered`,
 `PASS: impact: a private root change stays low risk — risk=low tiers=fast-contract,boundary,browser` and
-`PASS: boot payload is byte-identical to the P2.5 baseline — 18126 bytes vs pinned P2.5 baseline 18126`.
+`PASS: boot payload is byte-identical to the P2.5 baseline — 18126 bytes vs pinned P2.5 baseline 18126`,
+`PASS: 16 architecture rules pass on a live assembly`, `PASS: direction is locale metadata: ar RTL, the rest LTR`,
+`PASS: a same-process call is direct, unserialized and never routed through an event bus` and
+`PASS: placement grants nothing: the refusal leaks no capability metadata`.
 
 CI: the frontend LEGO suite runs in the `gate` job; the browser gate runs in `clean-clone` after the
 P2 gate. Workflow path filters include `packages/frontend-lego/**` and `contracts/frontend.contract.md`,
@@ -273,6 +276,36 @@ Two deliberate properties worth stating:
   lifecycle states) and not implemented — no dynamic import, no service worker, no plugin runtime. A loader is
   a later task with its own justification, and the pack records it as such (`.ai/cards/decisions.md` D12/D13).
 
+## 10. Hardening layer (compatibility and parity foundation)
+
+`contracts/frontend.contract.md` §19 is normative, and the rules are data: `src/conformance.mjs`
+declares 16 rules, each naming the vocabulary that enforces it and the suite that proves it, and
+`frontend.conformance()` checks them against a live assembly (contract test `test/19` requires the
+document's JSON block to carry the same ids).
+
+| Concern | Where it lives | What enforces it |
+| :--- | :--- | :--- |
+| One version vocabulary (parse, compare, ranges, compatibility states) | `src/versions.mjs` | `test/13` — a major difference is never compatible; compatibility is a state with a detail |
+| Placement grants nothing (own surface binding or declared surface) | `src/negotiation.mjs` | `test/14`, `test/21` — an ungranted consumer gets no metadata |
+| Frontend readiness ≠ backend availability (derived, never probed, source-tagged) | `src/backend-view.mjs`, `src/surface-capability.mjs` | `test/14` — every answer carries its `source` |
+| Transport neutrality (cheapest capable transport; direct local call) | `src/transport.mjs` | `test/15` — an operation no transport can carry is refused by name |
+| Interaction classes (`call`, `event`, `stream`, `batch`) declared per operation | `src/interactions.mjs` | `test/20` — a class no transport can carry is refused; a caller cannot reshape an operation |
+| Replacement safety (same contract, same version, consumers untouched) | `src/sublegos.mjs` (`replace`) | `test/16` — a version move or a contract change is refused atomically |
+| Boundary observability (closed vocabulary, payload-free, bounded, never throwing) | `src/observability.mjs` | `test/17` |
+| Selective test plans that never replace CI | `src/impact.mjs` | `test/18` — every tier names its reason, skipped tiers are listed, the caveat travels with the plan |
+| Trust, private internals, hook ownership, credential-free envelopes | `src/sublegos.mjs`, `src/registry.mjs`, `src/envelope.mjs` | `test/21` — fail closed on unknown fields, unknown owners and foreign hooks |
+| Localization boundary (identity, direction, keys, fallback, plural contract) | `src/i18n.mjs` | `test/22` — `ar` is RTL, the rest LTR; no dictionaries in the package |
+
+Two properties worth stating explicitly:
+
+* **The hardening layer adds zero bytes to the browser.** The boot payload is still byte-identical to the
+  P2.5 baseline. Locale identity travels; plural categories, negotiation rules and observability events do
+  not — they are reachable from the module and recorded in the `.ai/` pack.
+* **Contracts are not duplicated.** The frontend keeps its own UI registry, but a capability it names refers
+  to a backend capability by id; where a backend capability is advertised without a frontend declaration,
+  the difference is visible (`featureAvailability`, `origin`). Nothing in this package is a second backend
+  registry, and nothing here probes the backend.
+
 ### How to use it when you touch the frontend
 
 ```bash
@@ -280,6 +313,11 @@ Two deliberate properties worth stating:
 node -e "import('./packages/frontend-lego/index.mjs').then(m=>{
   const l=m.createFrontendLego({app:{name:'n8n-lego',version:'0.1.0'}});
   console.log(JSON.stringify(l.planChange({target:'settings.localization'}),null,1));})"
+
+# do the architecture rules still hold on this assembly?
+node -e "import('./packages/frontend-lego/index.mjs').then(m=>{
+  const l=m.createFrontendLego({app:{name:'n8n-lego',version:'0.1.0'}});
+  console.log(JSON.stringify(l.conformance(),null,1));})"
 
 # what can this frontend offer, and what happens when it is absent?
 node -e "import('./packages/frontend-lego/index.mjs').then(m=>{
