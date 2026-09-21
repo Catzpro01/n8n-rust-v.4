@@ -89,6 +89,20 @@ jobs:
       - name: The 501 capability contract matches the LEGO registry
         run: node tools/lego/capability-conformance.mjs
 
+      - name: Foundation 1.0 profiles are declared and coherent
+        # Every LEGO must describe itself in the foundation vocabulary: tier,
+        # trust, capabilities, data owner, state class, failure boundary and
+        # resources. Also enforces the lightweight security checks — no secret
+        # in a public contract, no external endpoint without the network
+        # capability, no untrusted code left in-process.
+        run: node tools/lego/foundation-gate.mjs
+
+      - name: The AI knowledge pack is not stale
+        # .ai/ is GENERATED from the manifest so it cannot drift into being
+        # confidently wrong. If the manifest moved and the pack did not, this
+        # fails rather than letting an agent read stale architecture.
+        run: node tools/lego/ai-pack.mjs --check
+
       - name: Scale-out readiness (no undeclared process-local coupling)
         # P2.7 implements no worker/scaling infrastructure. This only asserts
         # that new contract-first LEGO code is process-agnostic and that every
@@ -101,6 +115,8 @@ jobs:
         run: |
           node tools/lego/architecture-gate.mjs --json > architecture-gate.json || true
           node tools/lego/scale-out-readiness.mjs --json > scale-out-readiness.json || true
+          node tools/lego/foundation-gate.mjs --json > foundation-gate.json || true
+          node tools/lego/impact-graph.mjs --json > impact-graph.json || true
 
       - name: Upload the architecture report
         if: always()
@@ -110,6 +126,8 @@ jobs:
           path: |
             architecture-gate.json
             scale-out-readiness.json
+            foundation-gate.json
+            impact-graph.json
           if-no-files-found: ignore
           retention-days: 7
 

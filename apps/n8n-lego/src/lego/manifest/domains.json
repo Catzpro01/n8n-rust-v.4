@@ -1,6 +1,6 @@
 {
-  "manifestVersion": "1.1.0",
-  "phase": "P2.7",
+  "manifestVersion": "1.2.0",
+  "phase": "P2.8-B",
   "updated": "2026-09-22",
   "description": "Backend LEGO registry: the single machine-readable source of truth for backend domain boundaries, ownership, public contracts, declared dependencies and capabilities. Supports hierarchical LEGO (parent -> sub-LEGO -> sub-sub-LEGO) via the `parent` field: a nested entry is a domain like any other, so ownership, contracts, versioning and the dependency gate work identically at every level. Validated by apps/n8n-lego/src/lego/registry.mjs and enforced by tools/lego/architecture-gate.mjs.",
   "root": "apps/n8n-lego",
@@ -129,7 +129,26 @@
           "status": "implemented"
         }
       ],
-      "notes": "Shared kernel. Only cross-domain primitives may live here: process configuration and structured logging. It is a graph leaf \u2014 it must never import a domain."
+      "notes": "Shared kernel. Only cross-domain primitives may live here: process configuration and structured logging. It is a graph leaf \u2014 it must never import a domain.",
+      "tier": "domain",
+      "dataOwner": "none",
+      "stateOwner": "runtime",
+      "trust": "core",
+      "capabilities_granted": [
+        "env"
+      ],
+      "communication": [
+        "call"
+      ],
+      "failureBoundary": "in-process-safe",
+      "resources": {
+        "cpu": "low",
+        "memory": "tiny",
+        "disk": "none",
+        "network": false,
+        "concurrency": "parallel-safe",
+        "startup": "instant"
+      }
     },
     {
       "id": "lego-foundation",
@@ -182,7 +201,24 @@
           "status": "implemented"
         }
       ],
-      "notes": "The socket system itself: domain registry, machine-readable error codes and the contract lock. Pure data + pure functions; may not depend on any domain."
+      "notes": "The socket system itself: domain registry, machine-readable error codes and the contract lock. Pure data + pure functions; may not depend on any domain.",
+      "tier": "domain",
+      "dataOwner": "none",
+      "stateOwner": "none",
+      "trust": "core",
+      "capabilities_granted": [],
+      "communication": [
+        "call"
+      ],
+      "failureBoundary": "in-process-safe",
+      "resources": {
+        "cpu": "none",
+        "memory": "tiny",
+        "disk": "none",
+        "network": false,
+        "concurrency": "parallel-safe",
+        "startup": "instant"
+      }
     },
     {
       "id": "compatibility",
@@ -262,7 +298,24 @@
           "phase": "deferred"
         }
       ],
-      "notes": "Translates route semantics, auth context, envelopes, errors and capability state. Business logic is forbidden here \u2014 it translates, it does not decide."
+      "notes": "Translates route semantics, auth context, envelopes, errors and capability state. Business logic is forbidden here \u2014 it translates, it does not decide.",
+      "tier": "domain",
+      "dataOwner": "none",
+      "stateOwner": "runtime",
+      "trust": "core",
+      "capabilities_granted": [],
+      "communication": [
+        "call"
+      ],
+      "failureBoundary": "in-process-safe",
+      "resources": {
+        "cpu": "low",
+        "memory": "low",
+        "disk": "none",
+        "network": false,
+        "concurrency": "parallel-safe",
+        "startup": "instant"
+      }
     },
     {
       "id": "auth",
@@ -345,7 +398,26 @@
           "restFeature": "security-settings"
         }
       ],
-      "notes": "No public contract module exists yet: src/auth.mjs is implementation. P5 must publish src/auth/contract/ before any other domain may consume it (see allowances A1, A2)."
+      "notes": "No public contract module exists yet: src/auth.mjs is implementation. P5 must publish src/auth/contract/ before any other domain may consume it (see allowances A1, A2).",
+      "tier": "domain",
+      "dataOwner": "auth",
+      "stateOwner": "persistent",
+      "trust": "core",
+      "capabilities_granted": [
+        "secrets"
+      ],
+      "communication": [
+        "call"
+      ],
+      "failureBoundary": "in-process-safe",
+      "resources": {
+        "cpu": "low",
+        "memory": "low",
+        "disk": "none",
+        "network": false,
+        "concurrency": "parallel-safe",
+        "startup": "instant"
+      }
     },
     {
       "id": "credentials",
@@ -402,7 +474,27 @@
           "phase": "deferred"
         }
       ],
-      "notes": "CRUD currently lives in the legacy aggregate (legacy-rest). Carve-out target: P5."
+      "notes": "CRUD currently lives in the legacy aggregate (legacy-rest). Carve-out target: P5.",
+      "tier": "domain",
+      "dataOwner": "credentials",
+      "stateOwner": "persistent",
+      "trust": "core",
+      "capabilities_granted": [
+        "secrets",
+        "network"
+      ],
+      "communication": [
+        "call"
+      ],
+      "failureBoundary": "in-process-safe",
+      "resources": {
+        "cpu": "low",
+        "memory": "low",
+        "disk": "none",
+        "network": true,
+        "concurrency": "parallel-safe",
+        "startup": "fast"
+      }
     },
     {
       "id": "workflow",
@@ -455,7 +547,25 @@
           "phase": "deferred"
         }
       ],
-      "notes": "Only the checksum primitive is carved out. CRUD stays in legacy-rest until P3. Workflow may consume the execution contract, never execution internals."
+      "notes": "Only the checksum primitive is carved out. CRUD stays in legacy-rest until P3. Workflow may consume the execution contract, never execution internals.",
+      "tier": "domain",
+      "dataOwner": "workflow",
+      "stateOwner": "persistent",
+      "trust": "core",
+      "capabilities_granted": [],
+      "communication": [
+        "call",
+        "event"
+      ],
+      "failureBoundary": "in-process-safe",
+      "resources": {
+        "cpu": "low",
+        "memory": "low",
+        "disk": "none",
+        "network": false,
+        "concurrency": "parallel-safe",
+        "startup": "instant"
+      }
     },
     {
       "id": "execution",
@@ -504,7 +614,28 @@
           "status": "deferred"
         }
       ],
-      "notes": "src/engine.mjs is the implementation. It must not depend on workflow (direction: workflow -> execution contract)."
+      "notes": "src/engine.mjs is the implementation. It must not depend on workflow (direction: workflow -> execution contract).",
+      "tier": "domain",
+      "dataOwner": "execution",
+      "stateOwner": "persistent",
+      "trust": "core",
+      "capabilities_granted": [
+        "network"
+      ],
+      "communication": [
+        "call",
+        "event",
+        "stream"
+      ],
+      "failureBoundary": "worker-isolated",
+      "resources": {
+        "cpu": "high",
+        "memory": "medium",
+        "disk": "low",
+        "network": true,
+        "concurrency": "parallel-safe",
+        "startup": "fast"
+      }
     },
     {
       "id": "node-registry",
@@ -555,7 +686,26 @@
           "restFeature": "community-node-type-detail"
         }
       ],
-      "notes": "Node internals must never reach into the credential persistence implementation \u2014 declared as a hard direction rule."
+      "notes": "Node internals must never reach into the credential persistence implementation \u2014 declared as a hard direction rule.",
+      "tier": "domain",
+      "dataOwner": "node-registry",
+      "stateOwner": "cache",
+      "trust": "core",
+      "capabilities_granted": [
+        "filesystem"
+      ],
+      "communication": [
+        "call"
+      ],
+      "failureBoundary": "in-process-safe",
+      "resources": {
+        "cpu": "low",
+        "memory": "medium",
+        "disk": "low",
+        "network": false,
+        "concurrency": "parallel-safe",
+        "startup": "slow"
+      }
     },
     {
       "id": "dynamic-parameters",
@@ -589,7 +739,26 @@
           "restFeature": "dynamic-parameters"
         }
       ],
-      "notes": "Answers 501 today via the compatibility capability registry."
+      "notes": "Answers 501 today via the compatibility capability registry.",
+      "tier": "domain",
+      "dataOwner": "none",
+      "stateOwner": "cache",
+      "trust": "core",
+      "capabilities_granted": [
+        "network"
+      ],
+      "communication": [
+        "call"
+      ],
+      "failureBoundary": "in-process-safe",
+      "resources": {
+        "cpu": "low",
+        "memory": "low",
+        "disk": "none",
+        "network": true,
+        "concurrency": "parallel-safe",
+        "startup": "fast"
+      }
     },
     {
       "id": "webhook",
@@ -626,7 +795,27 @@
           "status": "planned"
         }
       ],
-      "notes": "Ownership is provisional; Manager must confirm webhook stays with Agent 2 (workflow/execution) rather than Agent 6 (runtime)."
+      "notes": "Ownership is provisional; Manager must confirm webhook stays with Agent 2 (workflow/execution) rather than Agent 6 (runtime).",
+      "tier": "domain",
+      "dataOwner": "none",
+      "stateOwner": "runtime",
+      "trust": "core",
+      "capabilities_granted": [
+        "network"
+      ],
+      "communication": [
+        "call",
+        "event"
+      ],
+      "failureBoundary": "in-process-safe",
+      "resources": {
+        "cpu": "low",
+        "memory": "low",
+        "disk": "none",
+        "network": true,
+        "concurrency": "parallel-safe",
+        "startup": "instant"
+      }
     },
     {
       "id": "storage",
@@ -670,7 +859,27 @@
           "status": "deferred"
         }
       ],
-      "notes": "Hard direction rule: storage internals must never depend on a consuming domain. SQLite/Postgres work is explicitly out of scope until its own phase."
+      "notes": "Hard direction rule: storage internals must never depend on a consuming domain. SQLite/Postgres work is explicitly out of scope until its own phase.",
+      "tier": "domain",
+      "dataOwner": "none",
+      "stateOwner": "persistent",
+      "trust": "core",
+      "capabilities_granted": [
+        "filesystem"
+      ],
+      "communication": [
+        "call",
+        "batch"
+      ],
+      "failureBoundary": "in-process-safe",
+      "resources": {
+        "cpu": "low",
+        "memory": "low",
+        "disk": "low",
+        "network": false,
+        "concurrency": "parallel-safe",
+        "startup": "fast"
+      }
     },
     {
       "id": "worker",
@@ -708,7 +917,30 @@
           "status": "deferred"
         }
       ],
-      "notes": "Queue mode and scaling are deferred; today only the 501 capability exists."
+      "notes": "Queue mode and scaling are deferred; today only the 501 capability exists.",
+      "tier": "domain",
+      "dataOwner": "none",
+      "stateOwner": "runtime",
+      "trust": "core",
+      "capabilities_granted": [
+        "network",
+        "subprocess"
+      ],
+      "communication": [
+        "call",
+        "event",
+        "stream",
+        "batch"
+      ],
+      "failureBoundary": "worker-isolated",
+      "resources": {
+        "cpu": "medium",
+        "memory": "medium",
+        "disk": "none",
+        "network": true,
+        "concurrency": "parallel-safe",
+        "startup": "slow"
+      }
     },
     {
       "id": "realtime",
@@ -744,7 +976,27 @@
           "status": "implemented"
         }
       ],
-      "notes": "Transport only: it broadcasts what the composition root hands it and knows nothing about execution internals."
+      "notes": "Transport only: it broadcasts what the composition root hands it and knows nothing about execution internals.",
+      "tier": "domain",
+      "dataOwner": "none",
+      "stateOwner": "runtime",
+      "trust": "core",
+      "capabilities_granted": [
+        "network"
+      ],
+      "communication": [
+        "event",
+        "stream"
+      ],
+      "failureBoundary": "in-process-safe",
+      "resources": {
+        "cpu": "low",
+        "memory": "low",
+        "disk": "none",
+        "network": true,
+        "concurrency": "parallel-safe",
+        "startup": "instant"
+      }
     },
     {
       "id": "settings",
@@ -782,7 +1034,24 @@
           "status": "implemented"
         }
       ],
-      "notes": "Ownership provisional: the payload is the editor boot contract (Agent 1), but its inputs come from many domains. Manager arbitration item."
+      "notes": "Ownership provisional: the payload is the editor boot contract (Agent 1), but its inputs come from many domains. Manager arbitration item.",
+      "tier": "domain",
+      "dataOwner": "none",
+      "stateOwner": "derived",
+      "trust": "core",
+      "capabilities_granted": [],
+      "communication": [
+        "call"
+      ],
+      "failureBoundary": "in-process-safe",
+      "resources": {
+        "cpu": "none",
+        "memory": "tiny",
+        "disk": "none",
+        "network": false,
+        "concurrency": "parallel-safe",
+        "startup": "instant"
+      }
     },
     {
       "id": "editor-ui-host",
@@ -820,7 +1089,26 @@
           "status": "implemented"
         }
       ],
-      "notes": "Serves the never-patched n8n-editor-ui bundle. Backend domains must not reach into it."
+      "notes": "Serves the never-patched n8n-editor-ui bundle. Backend domains must not reach into it.",
+      "tier": "domain",
+      "dataOwner": "none",
+      "stateOwner": "cache",
+      "trust": "core",
+      "capabilities_granted": [
+        "filesystem"
+      ],
+      "communication": [
+        "call"
+      ],
+      "failureBoundary": "in-process-safe",
+      "resources": {
+        "cpu": "low",
+        "memory": "medium",
+        "disk": "low",
+        "network": false,
+        "concurrency": "parallel-safe",
+        "startup": "fast"
+      }
     },
     {
       "id": "workspace",
@@ -858,7 +1146,24 @@
           "restFeature": "workspace-projects"
         }
       ],
-      "notes": "Provisional ownership \u2014 projects touch auth (sharing) and workflow (resources). Manager arbitration item."
+      "notes": "Provisional ownership \u2014 projects touch auth (sharing) and workflow (resources). Manager arbitration item.",
+      "tier": "domain",
+      "dataOwner": "workspace",
+      "stateOwner": "persistent",
+      "trust": "core",
+      "capabilities_granted": [],
+      "communication": [
+        "call"
+      ],
+      "failureBoundary": "in-process-safe",
+      "resources": {
+        "cpu": "low",
+        "memory": "low",
+        "disk": "none",
+        "network": false,
+        "concurrency": "parallel-safe",
+        "startup": "instant"
+      }
     },
     {
       "id": "observability",
@@ -895,7 +1200,27 @@
           "id": "observability.insights",
           "status": "deferred"
         }
-      ]
+      ],
+      "tier": "domain",
+      "dataOwner": "none",
+      "stateOwner": "runtime",
+      "trust": "core",
+      "capabilities_granted": [
+        "network"
+      ],
+      "communication": [
+        "event",
+        "stream"
+      ],
+      "failureBoundary": "in-process-safe",
+      "resources": {
+        "cpu": "low",
+        "memory": "low",
+        "disk": "none",
+        "network": true,
+        "concurrency": "parallel-safe",
+        "startup": "fast"
+      }
     },
     {
       "id": "data-tables",
@@ -928,7 +1253,25 @@
           "restFeature": "data-tables",
           "phase": "deferred"
         }
-      ]
+      ],
+      "tier": "domain",
+      "dataOwner": "data-tables",
+      "stateOwner": "persistent",
+      "trust": "core",
+      "capabilities_granted": [],
+      "communication": [
+        "call",
+        "batch"
+      ],
+      "failureBoundary": "in-process-safe",
+      "resources": {
+        "cpu": "low",
+        "memory": "medium",
+        "disk": "none",
+        "network": false,
+        "concurrency": "parallel-safe",
+        "startup": "fast"
+      }
     },
     {
       "id": "legacy-rest",
@@ -985,7 +1328,24 @@
           "status": "legacy"
         }
       ],
-      "notes": "Custodian, not owner: Agent 1 keeps it compiling; each carve-out belongs to the target domain listed in legacy.migrationTargets. The file list is frozen - no new files may enter this zone."
+      "notes": "Custodian, not owner: Agent 1 keeps it compiling; each carve-out belongs to the target domain listed in legacy.migrationTargets. The file list is frozen - no new files may enter this zone.",
+      "tier": "domain",
+      "dataOwner": "none",
+      "stateOwner": "runtime",
+      "trust": "core",
+      "capabilities_granted": [],
+      "communication": [
+        "call"
+      ],
+      "failureBoundary": "in-process-safe",
+      "resources": {
+        "cpu": "low",
+        "memory": "low",
+        "disk": "none",
+        "network": false,
+        "concurrency": "parallel-safe",
+        "startup": "instant"
+      }
     },
     {
       "id": "runtime-host",
@@ -1031,7 +1391,28 @@
           "status": "implemented"
         }
       ],
-      "notes": "The only place allowed to wire domains together. It may import implementations (that is what a composition root does) but nothing may import it back."
+      "notes": "The only place allowed to wire domains together. It may import implementations (that is what a composition root does) but nothing may import it back.",
+      "tier": "domain",
+      "dataOwner": "none",
+      "stateOwner": "runtime",
+      "trust": "core",
+      "capabilities_granted": [
+        "network",
+        "filesystem",
+        "env"
+      ],
+      "communication": [
+        "call"
+      ],
+      "failureBoundary": "in-process-safe",
+      "resources": {
+        "cpu": "low",
+        "memory": "medium",
+        "disk": "none",
+        "network": true,
+        "concurrency": "parallel-safe",
+        "startup": "fast"
+      }
     },
     {
       "id": "reference-lego",
@@ -1078,6 +1459,23 @@
       "requires": {
         "reference-lego.validation": "^1.0.0",
         "reference-lego.repository": "^1.0.0"
+      },
+      "tier": "domain",
+      "dataOwner": "none",
+      "stateOwner": "runtime",
+      "trust": "core",
+      "capabilities_granted": [],
+      "communication": [
+        "call"
+      ],
+      "failureBoundary": "in-process-safe",
+      "resources": {
+        "cpu": "none",
+        "memory": "tiny",
+        "disk": "none",
+        "network": false,
+        "concurrency": "parallel-safe",
+        "startup": "instant"
       }
     },
     {
@@ -1125,6 +1523,23 @@
       "notes": "The 'B' of the P2.7 upgrade proof: went 1.0.0 -> 1.1.0 (additive) while its sibling reference-lego.repository stayed at 1.0.0 and the parent stayed at 1.0.0. Forbidden from its sibling on purpose, so the sibling-internal fixture has a rule to violate.",
       "requires": {
         "reference-lego.validation.schema": "^1.0.0"
+      },
+      "tier": "feature",
+      "dataOwner": "none",
+      "stateOwner": "none",
+      "trust": "core",
+      "capabilities_granted": [],
+      "communication": [
+        "call"
+      ],
+      "failureBoundary": "in-process-safe",
+      "resources": {
+        "cpu": "none",
+        "memory": "tiny",
+        "disk": "none",
+        "network": false,
+        "concurrency": "parallel-safe",
+        "startup": "instant"
       }
     },
     {
@@ -1178,7 +1593,24 @@
         "default": "strict",
         "note": "Two interchangeable JS implementations behind one contract \u2014 the seam a future Rust implementation would use. No Rust exists."
       },
-      "notes": "Depth-3 entry proving the registry supports parent -> child -> grandchild with ownership, contracts and dependency rules working identically at every level."
+      "notes": "Depth-3 entry proving the registry supports parent -> child -> grandchild with ownership, contracts and dependency rules working identically at every level.",
+      "tier": "sub",
+      "dataOwner": "none",
+      "stateOwner": "none",
+      "trust": "core",
+      "capabilities_granted": [],
+      "communication": [
+        "call"
+      ],
+      "failureBoundary": "in-process-safe",
+      "resources": {
+        "cpu": "none",
+        "memory": "tiny",
+        "disk": "none",
+        "network": false,
+        "concurrency": "parallel-safe",
+        "startup": "instant"
+      }
     },
     {
       "id": "reference-lego.repository",
@@ -1221,7 +1653,24 @@
           "status": "template"
         }
       ],
-      "notes": "The 'A/C' of the P2.7 upgrade proof: must stay at 1.0.0, untouched, while its sibling validation upgrades."
+      "notes": "The 'A/C' of the P2.7 upgrade proof: must stay at 1.0.0, untouched, while its sibling validation upgrades.",
+      "tier": "feature",
+      "dataOwner": "reference-lego",
+      "stateOwner": "runtime",
+      "trust": "core",
+      "capabilities_granted": [],
+      "communication": [
+        "call"
+      ],
+      "failureBoundary": "in-process-safe",
+      "resources": {
+        "cpu": "none",
+        "memory": "tiny",
+        "disk": "none",
+        "network": false,
+        "concurrency": "parallel-safe",
+        "startup": "instant"
+      }
     }
   ],
   "allowances": [
@@ -1425,5 +1874,12 @@
         "resolution": "Move the path into the injected config when the execution contract is published, so the engine has no environment dependency of its own."
       }
     ]
+  },
+  "foundation": {
+    "version": "1.0.0",
+    "vocabulary": "manifest/foundation.json",
+    "nodeContract": "manifest/node-contract.json",
+    "schemaStrategy": "manifest/contract-schema.json",
+    "note": "Foundation 1.0 fields (tier, dataOwner, stateOwner, trust, resources, communication, failureBoundary) are declared per domain below and validated by validateRegistry + tools/lego/foundation-gate.mjs."
   }
 }

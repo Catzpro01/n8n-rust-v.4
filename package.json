@@ -2,7 +2,7 @@
   "name": "n8n-rust-v4",
   "version": "0.4.0",
   "private": true,
-  "description": "n8n 2.9.4 anatomy \u2192 contract \u2192 reference runtime \u2192 LEGO isolation \u2192 (later) Rust replacement",
+  "description": "n8n 2.9.4 anatomy → contract → reference runtime → LEGO isolation → (later) Rust replacement",
   "scripts": {
     "setup:reference": "bash scripts/setup-reference-runtime.sh",
     "verify": "node tools/workflow-isolation-gate.mjs",
@@ -28,9 +28,14 @@
     "lego:arch:selftest": "node tools/lego/architecture-gate.mjs --selftest",
     "lego:capabilities": "node tools/lego/capability-conformance.mjs",
     "lego:scaleout": "node tools/lego/scale-out-readiness.mjs",
-    "lego:gate": "npm run lego:arch && npm run lego:arch:selftest && npm run lego:capabilities && npm run lego:scaleout && npm run lego:test",
+    "lego:gate": "npm run lego:arch && npm run lego:arch:selftest && npm run lego:foundation && npm run lego:capabilities && npm run lego:scaleout && npm run lego:ai:check && npm run lego:test",
     "lego:pack": "bash scripts/release.sh --npm-only",
     "start": "npm run lego:start",
-    "lego:smoke": "node tests/e2e/lego-smoke.mjs"
+    "lego:smoke": "node tests/e2e/lego-smoke.mjs",
+    "lego:foundation": "node tools/lego/foundation-gate.mjs",
+    "lego:impact": "node tools/lego/impact-graph.mjs",
+    "lego:plan": "node tools/lego/impact-graph.mjs --plan",
+    "lego:ai": "node tools/lego/ai-pack.mjs",
+    "lego:ai:check": "node tools/lego/ai-pack.mjs --check"
   }
 }

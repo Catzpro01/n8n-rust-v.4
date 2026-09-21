@@ -568,7 +568,148 @@ The architecturally important property already holds: **no LEGO may reach
 another LEGO's persistence internals**, enforced by R2/R4 today. That is what
 makes a future process split a deployment change rather than a redesign.
 
-## 17. What P2.6/P2.7 did NOT do
+# Foundation 1.0 (P2.8-B)
+
+P2.6 answered *what are the boundaries?* P2.7 answered *do they survive change?*
+P2.8-B answers **in what vocabulary does a LEGO describe itself?** — and turns
+the answer into data that gates and AI agents read from one place.
+
+Nothing below implements a feature domain. Nothing below touches Rust.
+
+## 19. The definitive LEGO model
+
+A LEGO declares fifteen attributes (`foundation.json` → `legoModel.attributes`):
+identity, parent, public contract, private implementation, owner, data owner,
+state owner, capabilities, dependencies, version, lifecycle, tests, resources,
+trust, upgrade policy.
+
+**Not every function is a LEGO.** The granularity test is explicit: *if it has no
+independent contract, no independent owner and no independent lifecycle, it is a
+function — not a LEGO.* This matters because the failure mode of a component
+architecture is not too few components, it is a thousand of them.
+
+Three tiers only — **Domain → Feature → Sub-LEGO**, depth capped at 3, exceptions
+require Manager approval. Enforced by `MAX_NESTING_DEPTH` and gate rule R6.
+
+## 20. The communication model — exactly four modes
+
+| Mode | What it is | Use when |
+| --- | --- | --- |
+| `call` | synchronous direct contract call, typed objects, no serialization | **the default** — everything, unless another mode is justified |
+| `event` | asynchronous notification that something happened | state changes others may care about; never request/response |
+| `stream` | ordered flow with backpressure | execution output, logs, chat/AI tokens, large result sets |
+| `batch` | many operations in one call | amortising per-call overhead |
+
+Two rules carry most of the weight: **no HTTP between local LEGOs**, and **no
+message bus for appearance**. Internal HTTP between two objects in one process is
+the most expensive possible way to call a function — it buys the *look* of
+separation while the actual isolation comes from the boundary gate, which costs
+nothing at runtime. See ADR-0004.
+
+## 21. Transport neutrality and the envelope
+
+The same logical contract binds to five targets: in-process JS, in-process Rust,
+WASM, worker, remote API. Adding a binding must never change the contract's
+operations, error codes or semantics. `execute(request)` must never become
+inherently `HTTP POST /execute`.
+
+The envelope carries ten fields — `legoId`, `operation`, `contractVersion`,
+`requestId`, `correlationId`, `traceId`, `actor`, `deadline`, `signal`,
+`idempotencyKey` — and is **zero-cost on direct calls**: a plain object passed by
+reference, serialized only at a worker or remote boundary.
+
+Contract shapes are described with a **JSON Schema subset** (ADR-0002), not
+TypeScript, because a Rust binding cannot read TypeScript. No code generator is
+built in this phase.
+
+## 22. Trust, capability, failure boundary
+
+Trust levels are `core` → `verified` → `community` → `untrusted`. The six security
+capabilities — network, filesystem, subprocess, secrets, native, env — are
+**granted separately**. Trust never implies a capability; `untrusted` gets none by
+default, and a grant beyond a level's default needs a written justification in
+the manifest (gate rule F4).
+
+Failure boundaries are `in-process-safe`, `sandboxed`, `worker-isolated`. A
+community or untrusted LEGO left `in-process-safe` is a gate failure (F6): the
+whole point is that untrusted code cannot take down the trusted core.
+
+A sub-LEGO may never claim more trust than the LEGO containing it.
+
+## 23. Activation, resources, portability, devices
+
+Activation is `available → loaded → active → idle → unloaded → disabled`, with a
+transition table that is actually enforced (`canTransition`). **Nothing is forced
+into RAM** — that is what makes a 24-node catalog viable on a phone.
+
+Resource profiles (cpu, memory, disk, network, concurrency, startup) are
+**metadata, not a scheduler**. Portability profiles (`portable`,
+`network-required`, `filesystem-required`, `process-required`, `native-required`,
+`server-only`, `remote-capable`) let a node stay in the catalog on Android/Termux
+by executing remotely instead of vanishing. Device classes include
+`android-termux` and `low-end-vps` as first-class targets.
+
+## 24. Node Contract and the twelve creation routes
+
+`node-contract.json` defines what a node *is* — identity, manifest, parameters,
+I/O, credentials, execution, events, errors, capabilities, portability, runtime
+requirements, resources, trust — **without implementing a Node Registry**.
+
+The identity rule is the load-bearing one: **`type` + `typeVersion` never change
+because the implementation, runtime or language changed.** A workflow referencing
+`n8n-nodes-base.httpRequest@4` keeps working whether JS serves it today or a
+prebuilt Rust artifact serves it later.
+
+All twelve routes are *defined only*: `no-code-api`, `declarative`, `openapi`,
+`visual-builder`, `transform-formula`, `workflow-as-node`, `javascript`,
+`python`, `wasm`, `rust`, `remote`, `community`. Only `javascript` and
+`community` are marked `supported-today` — because only they already worked.
+`rust` is `defined-not-implemented`.
+
+The decision model is eight ordered rules, executable as
+`decideCreationRoute(facts)`, which returns **the rule that fired** so a
+recommendation can always be explained. An existing community node always wins
+(D1): zero implementation and zero maintenance beat any rewrite.
+
+`isRustJustified()` enforces four hard constraints — material measured benefit,
+prebuilt artifacts for every platform, unchanged contract and node identity, no
+impact on JS compatibility — and the JS implementation is retained permanently as
+the fallback. "It is Rust" is explicitly not a reason. See ADR-0005.
+
+## 25. The AI knowledge pack — generated, never hand-written
+
+`.ai/` holds 47 generated files: the constitution, glossary, LEGO index, 24
+domain cards, contract index, capability index, six decision cards, ten recipes,
+migration cookbook, compatibility matrix, node routes, impact graph and ADR
+index.
+
+Every byte is generated by `tools/lego/ai-pack.mjs` from the manifest, the
+contract lock and the foundation vocabulary — **the same data the gates
+enforce**. `--check` runs in CI and fails when the pack is stale. A hand-written
+architecture guide is a second registry, and a second registry always drifts;
+this one is either correct or the build is red. See ADR-0003.
+
+Context levels let an agent read the *smallest sufficient* thing: L0 constitution
+(under 70 lines) → L1 domain card → L2 contract card → L3 recipe → L4 source.
+
+Impact analysis and test selection are real tools, not prose:
+
+```
+node tools/lego/impact-graph.mjs --target storage        # blast radius 10
+node tools/lego/impact-graph.mjs --plan --target auth --change "add scope check"
+node tools/lego/impact-graph.mjs --changed src/settings/routes.mjs
+```
+
+Test selection escalates conservatively across six tiers (fast → contract →
+boundary → integration → e2e → full): unowned files, manifest edits, public
+surface edits, dependents, blast radius ≥ 5 and the editor-UI compatibility path
+all push the tier up. A gate that under-tests to look fast is worse than no gate.
+
+Plan mode is advisory and **never applies anything** — it reports contracts
+affected, dependencies, tests required, resource impact, security impact, risk
+and the rollback condition.
+
+## 26. What P2.6/P2.7/P2.8-B did NOT do
 
 No workflow, execution, auth, credentials, node-registry, dynamic-parameter,
 storage, webhook or worker feature. No SQLite/Postgres migration, no queues, no
@@ -577,21 +718,31 @@ optimisation, no backend rewrite. No HTTP microservice was created to
 "prove" isolation — LEGO-to-LEGO stays in-process behind contracts, which is
 exactly what lets a future worker wrap the *same* logical contract.
 
+P2.8-B added **definitions, not implementations**. No Node Registry, no node
+loader, no sandbox, no scheduler, no feature-flag platform, no code generator, no
+replay infrastructure, no checkpointing, no distributed transactions, no second
+registry. The twelve creation routes are described; none is built. The Chat
+Contract reserves a slot for Hermes as an optional future provider and nothing
+depends on it.
+
 The one new runtime behaviour is *zero*: the foundation modules are data + pure
 functions, the nested reference tree is a template that is never mounted
 (`lego.json: "mounted": false`, asserted by a test), and `src/server.mjs` is
 unchanged — so P0/P1/P2 behaviour is bit-for-bit what it was at `cb71dbb2`.
 
-## 18. Verification
+## 27. Verification
 
 ```
-architecture gate      node tools/lego/architecture-gate.mjs            → OK (0 violations, 9 rules)
-gate selftest          node tools/lego/architecture-gate.mjs --selftest → 19/19 detected
-capability conformance node tools/lego/capability-conformance.mjs       → OK (23 features)
-scale-out readiness    node tools/lego/scale-out-readiness.mjs          → OK (10 declared exceptions)
-foundation contracts   node --test apps/n8n-lego/test/lego-foundation.test.mjs → 24/24
-lifecycle certification node --test apps/n8n-lego/test/lego-lifecycle.test.mjs → 28/28
-P0/P1/P2 + all suites  node --test apps/n8n-lego/test/*.test.mjs        → 77/77
-everything             npm run lego:gate
-clean clone + browser  see .github/workflows/n8n-lego.yml clean-clone job
+architecture gate       node tools/lego/architecture-gate.mjs            → OK (0 violations, 9 rules)
+gate selftest           node tools/lego/architecture-gate.mjs --selftest → 19/19 detected
+foundation gate         node tools/lego/foundation-gate.mjs              → OK (24 LEGOs, 9 rules F1–F9)
+capability conformance  node tools/lego/capability-conformance.mjs       → OK (23 features)
+scale-out readiness     node tools/lego/scale-out-readiness.mjs          → OK (10 declared exceptions)
+AI pack freshness       node tools/lego/ai-pack.mjs --check              → OK (47 generated files)
+foundation contracts    node --test apps/n8n-lego/test/lego-foundation.test.mjs       → 24/24
+lifecycle certification node --test apps/n8n-lego/test/lego-lifecycle.test.mjs        → 28/28
+foundation 1.0 model    node --test apps/n8n-lego/test/lego-foundation-model.test.mjs → 85/85
+P0/P1/P2 + all suites   node --test apps/n8n-lego/test/*.test.mjs        → 162/162
+everything              npm run lego:gate
+clean clone + browser   see .github/workflows/n8n-lego.yml clean-clone job
 ```

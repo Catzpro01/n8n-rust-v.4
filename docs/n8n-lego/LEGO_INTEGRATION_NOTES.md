@@ -218,3 +218,74 @@ real violations — **19/19 detected** (11 source fixtures, 7 registry fixtures,
 * Contract compatibility is checked between the registry, the lock and declared
   `requires` ranges. It does not introspect runtime call sites — a consumer that
   never declares `requires` is not version-checked.
+
+---
+
+## D. P2.8-B — Foundation 1.0
+
+### D.1 What changed for an integrator
+
+Every LEGO now declares a **Foundation 1.0 profile** in `domains.json`
+(manifest v1.2.0): `tier`, `trust`, `capabilities_granted`, `communication`,
+`dataOwner`, `stateOwner`, `failureBoundary`, `resources`. A new domain without
+these fails `tools/lego/foundation-gate.mjs` (rule F2), so the profile is not
+optional paperwork — it is an admission requirement.
+
+Three new manifest data files hold the vocabulary itself:
+
+| File | Holds |
+| --- | --- |
+| `manifest/foundation.json` | communication modes, transport, envelope, operation semantics, trust, runtimes, portability, resources, activation, failure boundaries, state, replay, checkpoint, caching, observability, audit, rollout, devices, minimal core, offline readiness, chat contract, security gate, glossary |
+| `manifest/node-contract.json` | the Node Contract descriptor, the 12 creation routes, the decision model, the node lifecycle, package isolation, the compatibility matrix |
+| `manifest/contract-schema.json` | the language-neutral schema strategy |
+
+`src/lego/foundation.mjs` is the reader plus the executable rules
+(`decideCreationRoute`, `isRustJustified`, `isCapabilityAllowed`,
+`canTransition`). It is data and pure functions — importing it starts nothing.
+
+### D.2 New commands
+
+```
+npm run lego:foundation                 # F1-F9 profile + security gate
+npm run lego:ai                         # regenerate .ai/
+npm run lego:ai:check                   # fail if .ai/ is stale (runs in CI)
+npm run lego:impact -- --target <id>    # what depends on this?
+npm run lego:plan -- --target <id> --change "<what>"
+node tools/lego/impact-graph.mjs --changed <files>   # which tests to run
+```
+
+`npm run lego:gate` now chains: arch → arch:selftest → **foundation** →
+capabilities → scaleout → **ai:check** → test.
+
+### D.3 The `.ai/` folder is generated — do not hand-edit it
+
+All 47 files under `.ai/` come from `tools/lego/ai-pack.mjs`, derived from the
+manifest, the contract lock and the foundation vocabulary. Editing one by hand
+will be reverted by the next generation and will fail `--check` in the meantime.
+If something in `.ai/` is wrong, the *manifest* is wrong. See ADR-0003.
+
+After any manifest change: `npm run lego:ai`.
+
+### D.4 Ownership and escalation unchanged
+
+P2.8-B added no owners and resolved no arbitration. The 9 Manager items from
+§C.2 are still open, A1/A2/A3 are still `state: "open"`, and the two
+`src/store.mjs` scale-out blockers are still blocking, still owned by Agent 5,
+still scheduled for P8. ADR-0006 records *why* they were not quietly fixed or
+quietly annotated away.
+
+### D.5 Additional deferred debt
+
+* The Foundation profiles are **declarations**. Nothing measures whether a
+  domain actually stays inside its declared resource class or capability set at
+  runtime — that needs a runtime that does not exist yet.
+* Two of the eight security detections (`unsafe-runtime-capability`,
+  `unrestricted-resource-access`) are named but not implemented, for the same
+  reason. `foundation.json → securityGate` states this explicitly rather than
+  implying eight are live.
+* F8/F9 are textual probes over public contract files. They catch the obvious
+  and honest mistakes, not a determined one.
+* Contract schemas are optional until a contract gains a second binding. Today
+  none has one, so none ships a schema.
+* The impact graph reads declared `dependsOn`, so its accuracy is exactly the
+  accuracy of the manifest — which R1–R9 enforce against the real import graph.
