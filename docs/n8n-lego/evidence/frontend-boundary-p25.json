@@ -1,6 +1,6 @@
 {
   "kind": "p25-frontend-boundary",
-  "generatedAt": "2026-09-21T22:00:18.615Z",
+  "generatedAt": "2026-09-21T22:13:52.051Z",
   "phase": "P2.5",
   "method": "node apps/n8n-lego/scripts/capture-frontend-evidence.mjs (live in-process instance, HTTP level); the browser gate tests/e2e/frontend-boundary.mjs captures the same boundary from inside a real page in CI (docs/n8n-lego/FRONTEND_LEGO.md §6)",
   "baseline": "cb71dbb2",
@@ -156,12 +156,12 @@
     {
       "name": "the LEGO cold-imports and assembles within a small budget",
       "verdict": "PASS",
-      "detail": "74.1 ms for import + 12 surfaces + 15 hooks + 19 units"
+      "detail": "46.2 ms for import + 12 surfaces + 15 hooks + 19 units"
     },
     {
       "name": "assembling the descriptor stays inside a small memory budget",
       "verdict": "PASS",
-      "detail": "3267 KB of heap for catalogs + both registries"
+      "detail": "3507 KB of heap for catalogs + both registries"
     },
     {
       "name": "the package still has no runtime dependency",
@@ -169,7 +169,7 @@
       "detail": "dependencies={}"
     },
     {
-      "name": "24 architecture rules pass on a live assembly",
+      "name": "26 architecture rules pass on a live assembly",
       "verdict": "PASS",
       "detail": "all pass"
     },
@@ -244,14 +244,29 @@
       "detail": "rows=2 dropped=1"
     },
     {
+      "name": "every shared word is quoted with provenance, and an unpublished file is recorded, not invented",
+      "verdict": "PASS",
+      "detail": "38 quoted sets, 5 pending publication, 10 decisions recorded"
+    },
+    {
+      "name": "a declared permission is a declared word, and the provider kinds are the canonical ones",
+      "verdict": "PASS",
+      "detail": "7 declared permissions, 3 provider kinds, all canonical"
+    },
+    {
+      "name": "the seam publishes its own closed list, so a reviewer can check it without either implementation",
+      "verdict": "PASS",
+      "detail": "13 inputs, 7 forbidden sources, 16 identity fields"
+    },
+    {
       "name": "AI and agent vocabulary never becomes browser boot payload",
       "verdict": "PASS",
       "detail": "7 declared capabilities, none of their metadata in the descriptor"
     }
   ],
   "summary": {
-    "checks": 47,
-    "passed": 47,
+    "checks": 50,
+    "passed": 50,
     "failed": 0
   },
   "bootDescriptor": {
@@ -524,7 +539,7 @@
     ],
     "capabilities": [],
     "bytes": 18126,
-    "importMs": 74.1,
-    "heapKb": 3267
+    "importMs": 46.2,
+    "heapKb": 3507
   }
 }

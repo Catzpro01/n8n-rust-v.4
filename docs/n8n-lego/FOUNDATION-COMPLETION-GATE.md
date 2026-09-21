@@ -4,7 +4,8 @@ The last frontend-side gate before Agents 3–6, the AI Foundation, the Copilot,
 and external agent integrations. Contracts and vocabulary only: no feature, no model, no
 adapter, no UI. Every claim below is backed by a command in [§20](#20-readiness-evidence).
 
-Phase commit: `88be36a8` on top of the parent `561d2225`.
+Phase commit: `58e0c2dd` on top of the parent `561d2225`; follow-up commit (this change) on the
+same branch, aligned against the backend foundation at P2.10 (`6f7b66da`).
 
 ---
 
@@ -16,9 +17,10 @@ nowhere else: no merge, no `main` write, no branch reset. The canonical session 
 
 ## 2. HEAD
 
-`88be36a8` ("frontend-lego: the foundation completion gate — closed seam, canonical vocabulary,
-AI contracts"), parent `561d2225`. It carries every file listed in §20; `main` at `cb71dbb2` is
-untouched.
+`58e0c2dd` ("frontend-lego: the foundation completion gate — closed seam, canonical vocabulary,
+AI contracts"), parent `561d2225`, plus the follow-up commit that carries this alignment work
+(`frontend-lego: align the vocabulary lock with P2.10 and enforce its publication`). Between them
+they carry every file listed in §20; `main` at `cb71dbb2` is untouched.
 
 ## 3. Relationship to `main`
 
@@ -32,17 +34,31 @@ through `git show origin/a2:<path>` and never written.
 
 ## 4. Shared vocabulary decisions
 
-One word, one meaning, on both sides. `packages/frontend-lego/src/vocabulary.mjs` pins **13**
-vocabulary sets:
+One word, one meaning, on both sides. `packages/frontend-lego/src/vocabulary.mjs` pins **60**
+vocabulary sets — **38 canonical + 22 local** — re-quoted against the backend foundation at
+`arena/01a0c521-n8n-rust-v-4 @ 6f7b66da` (P2.10):
 
-- **6 quoted from the backend foundation** with contract id, version, owner, file and symbol:
+- **33 quoted from a published contract** with contract id, version, owner, file and declaration:
   `degradation` (8, `lego.interaction@1.0.0`), `lifecycle` (11, `lego.negotiation@1.0.0`),
   `changeKind` (5, `lego.contract-compat@1.0.0`), `interaction` (4, `lego.interaction@1.0.0`),
-  `capabilityStatus` (7, `lego.domain-registry@1.1.0`), `transportTarget` (5, quoted from the
-  foundation manifest — **no contract-lock row exists yet**, recorded as XA-7).
-- **7 declared locally** with a total mapping into the canonical set and a reason for every value
-  the canonical set does not have: `surfaceStatus`, `unitStatus`, `instanceImplementation`,
-  `frontendCapabilityDeclaration`, `capabilityLifecycle`, `versionFit`, `operationOutcome`.
+  `capabilityStatus` (8 incl. the new `contract-only`, `lego.domain-registry@1.1.0`), the
+  `ai.foundation@1.0.0` vocabulary (kinds, localities, session states, 26 event types, envelope /
+  session / delegation / budget fields, scopes, risks, approval states, side effects, artifact
+  kinds and retention, resource dimensions and profiles, MCP concepts, zero-install states,
+  transport kinds), the 22 permissions the published `ai.*` operations require, and the
+  application-provider trio.
+- **5 quoted from a file no contract row publishes** (`manifest/foundation.json`: trust levels,
+  transport bindings, resource and device fields) — each carries a structured
+  `publicationPending` record naming the owner (`manager`), the domain (`lego-foundation`) and
+  the decision that asks for a row (`XA-9`) instead of borrowing the closest-sounding contract.
+- **22 declared locally** with a total mapping into the canonical set and a reason for every value
+  the canonical set does not have — including the two view vocabularies (`runtimeLocalityView`
+  collapses three canonical localities into "runs here"; `mcpObjectView` names what the UI shows)
+  and `frontendCapabilityPermission`, whose four AI words map onto published `ai:*` names and
+  whose two non-AI words carry their reasons (XA-8).
+- **5 declared overlaps**: a spelling shared by two canonical sets is allowed only when the two
+  share a declared subject (`sessionId`, `status`) or when the overlap is declared with its
+  reason (`available`, `degraded`, `migration-required`, `server`, `remote`).
 
 Decisions taken, all machine-checked:
 
@@ -62,6 +78,17 @@ Decisions taken, all machine-checked:
 - A capability id that appears under two origins is **reported**, never merged:
   `capabilityCollisions()` returns the id with both origins (`frontend-registered`,
   `frontend-declared`, `backend-advertised`).
+- Every quoted value was **verified against the P2.10 tree**, not just recorded: `test/29` reads
+  each declaration (module export or JSON path) and compares it, and also compares the quoted
+  *semantics* (the eight degradation actions, the callable lifecycle states). Pointed at the
+  unpacked backend tree it answers **38/38 sets, 0 drift, 0 skips**.
+- The verification found and fixed four real defects in the first draft of the lock: a set that
+  quoted the AI profile keys under a resource-class name (removed as mis-quoted), an
+  `aiPermission` set that had read only the vocabulary file (8 names) instead of the 22 the
+  published operations require, a `zeroInstall` state set that kept duplicate values, and three
+  provider-kind words that duplicated canonical terms — those were **renamed** to the canonical
+  `model-provider` / `tool-provider` / `application-provider` because nothing pinned depends on
+  the spelling.
 
 ## 5. Seam
 
@@ -162,7 +189,7 @@ a `decisionRef`; it is not a permission either.
 
 ## 11. Provider / runtime / tool model
 
-Three **provider** kinds (`model-gateway`, `tool-app-gateway`, `application-provider`) and two
+Three **provider** kinds (`model-provider`, `tool-provider`, `application-provider`) and two
 **runtime** kinds (`agent-runtime`, `simulation-runtime`), with `local`/`remote` locality — kept
 distinct, validated fail-closed (`validateProviderDeclaration`, `validateRuntimeDeclaration`),
 and never written with a vendor name or an endpoint. Consequences the contract states plainly:
@@ -242,20 +269,22 @@ Fail-closed, in one place per question:
 
 ## 17. `.ai`
 
-The pack (81,254 B total, budget 80 KB → 666 B headroom) now answers the AI question:
+The pack (81,715 B total, budget 80 KB → 205 B headroom — the seam and permission facts were
+paid for by moving the eight degradation triggers back to `negotiation.mjs`) now answers the AI question:
 `.ai/index/capabilities.json` carries the declared entries plus generated `vocabularies`,
 `negotiation`, `delivery`, `localization`, `ai` and `seam` blocks, and **every one of those
 blocks is drift-checked** against the module it summarizes (`test/12`). The frontend card names
 every module the package ships (including the three new ones) inside its 8,192 B budget, the
 glossary now defines the seam, the capability identity, the degradation and operation
-vocabularies, zero-install, MCP, the work trace and delegation, and three decisions (D23–D25)
-record why the vocabulary is quoted, why the seam is closed, and why AI is declared rather than
-implemented. A stale block is a red test, not a comment.
+vocabularies, zero-install, MCP, the work trace and delegation, and four decisions (D23–D26)
+record why the vocabulary is quoted, why the seam is closed, why AI is declared rather than
+implemented, and that a quoted word records its publication. A stale block is a red test, not a
+comment.
 
 ## 18. Tests
 
-`264` frontend architecture tests across `29` suites, `36/36` app tests, `47/47` evidence checks,
-`24/24` conformance checks, the sub-LEGO audit PASSED, `verify:fast` at its unchanged 5/10
+`265` frontend architecture tests across `29` suites, `36/36` app tests, `50/50` evidence checks,
+`26/26` conformance checks, the sub-LEGO audit PASSED, `verify:fast` at its unchanged 5/10
 baseline (G06–G10 need `packages/workflow-lego/node_modules`). New this phase:
 
 | Suite | What it proves |
@@ -265,24 +294,28 @@ baseline (G06–G10 need `packages/workflow-lego/node_modules`). New this phase:
 | `26-ai-contracts.test.mjs` | declared-not-installed, no inference or vendor field, kinds stay distinct, fail-closed validators, zero-install, budget-derived runtime selection, MCP without transport, identity vs chain of thought, no boot-payload leak |
 | `27-agent-events.test.mjs` | closed event vocabulary, delivery classes, refusals, mapping and unmapped refusal, ordering, bound with drop counting, delegation without inheritance, cycles reported, approvals as gates |
 | `28-seam.test.mjs` | the closed input list, forbidden sources, one 16-field identity on both sides, normalisation and refusal, no secret/transcript/transport in the seam |
-| `29-alignment.test.mjs` | the lock against the backend modules, skipping with a stated reason while they are absent, and the comparison itself proven to fail on a renamed, missing or invented term |
+| `29-alignment.test.mjs` | the lock against the backend tree: every quoted value and the quoted semantics, a pending publication that must name a recorded decision, the contract-lock rows, and the comparison itself proven to fail on a renamed, missing or invented term. Skips (4 tests) only while the backend is absent; with `N8N_BACKEND_LEGO_ROOT` pointed at the other agent's tree it runs for real (**7/7, 0 skips**) |
 
 ## 19. Manager decisions
 
-Seven cross-agent rows are recorded machine-readably in
+Ten cross-agent rows are recorded machine-readably in
 `docs/n8n-lego/decisions/cross-agent-decisions.json`, each with evidence, arbiter and what is
-blocked. Four are **resolved from declarations**: XA-1 (the canonical backend identity is
-`execution`, the UI surface `executions` binds to it — verified: the registry has no
-`executions` domain), XA-3 (the 501 feature map is owned by the `compatibility` domain,
+blocked. Six are **resolved from declarations** — against P2.10 (`6f7b66da`) where it answers
+them: XA-1 (the canonical backend identity is `execution`; the registry now also publishes the
+alias `executions → execution` with `/rest/executions` as the surface origin), XA-2 (**operations
+are published**: 62 of 82 capabilities carry `{ name, interaction, permission, idempotent,
+status }`), XA-3 (the 501 feature map is owned by the `compatibility` domain,
 `compat.http@1.0.0`, agent-1 — the file is byte-identical on both branches), XA-4 (owner field),
-and the phase's own vocabulary questions (§4). Three need someone else:
+XA-6 (**the manager owns the AI vocabulary**: `ai.foundation@1.0.0`, domain `ai-foundation`,
+`contract-only`), XA-7 (`transportRouting.kinds` = `in-process`/`worker`/`remote`/`mcp`). Four
+need someone else:
 
 | Row | Question | Arbiter | What the frontend does meanwhile |
 | :--- | :--- | :--- | :--- |
-| XA-2 | Does the backend publish capability operations? | agent-2 (or Manager) | answers `operation-unpublished`, `exists: null`, fails closed |
-| XA-5 | Which contract publishes the `lego.*` degradation codes? | agent-2 | renders the declared action; does not invent a code |
-| XA-6 | Who owns the AI vocabulary — the frontend or the AI Foundation LEGO? | Manager | holds the six declared ids; a future AI LEGO must reconcile, not fork |
-| XA-7 | Which side owns `transport.targets`? | agent-2 | names bindings only; selects nothing |
+| XA-5 | Which contract publishes the `lego.*` degradation codes? | agent-2 | renders the declared action verbatim; does not invent a code |
+| XA-8 | Which permission namespace do AI capabilities use? | Manager | keeps its own words, declares the mapping into `ai:*`, and fails closed on an undeclared permission |
+| XA-9 | Which contract publishes `manifest/foundation.json`? | Manager | quotes the values with a structured `publicationPending` record — no invented version |
+| XA-10 | `ai:app:*` or `app:github:*` for an application provider? | Manager | keeps both sets separate and never treats them as interchangeable |
 
 No new shared word was chosen to close a question: an open row stays open.
 
@@ -290,10 +323,11 @@ No new shared word was chosen to close a question: an open row stays open.
 
 | Command | Result |
 | :--- | :--- |
-| `node --test packages/frontend-lego/test/*.test.mjs` | 264 tests, 261 pass, **3 skipped** (alignment comparisons), 0 fail |
+| `node --test packages/frontend-lego/test/*.test.mjs` | 265 tests, 261 pass, **4 skipped** (backend comparisons absent), 0 fail |
 | `node --test apps/n8n-lego/test/*.test.mjs` | 36/36 pass |
-| `node apps/n8n-lego/scripts/capture-frontend-evidence.mjs` | **47/47 PASS**, boot payload byte-identical at 18,126 B |
-| `frontend.conformance()` (via `test/19`) | 24 rules, 24 live checks, all pass |
+| `N8N_BACKEND_LEGO_ROOT=/tmp/a2/apps/n8n-lego/src/lego node --test packages/frontend-lego/test/29-alignment.test.mjs` | **7/7 pass, 0 skipped** — 38 canonical sets compared against the P2.10 tree, 0 drift, plus the quoted semantics |
+| `node apps/n8n-lego/scripts/capture-frontend-evidence.mjs` | **50/50 PASS**, boot payload byte-identical at 18,126 B |
+| `frontend.conformance()` (via `test/19`) | 26 rules, 26 live checks, all pass (A25: a quoted word carries its provenance, and an unpublished file is recorded; A26: a declared permission is a declared word) |
 | `python3 tools/sublego-audit/audit.py` | AUDIT PASSED (12 LEGOs, 20 Sub-LEGOs, 5 Agents) |
 | `npm run verify:fast` | 5/10 — the unchanged baseline; G06–G10 require `packages/workflow-lego/node_modules` |
 | `git show origin/a2:apps/n8n-lego/src/compat/capability.mjs \| diff - apps/n8n-lego/src/compat/capability.mjs` | identical — the app side of the compatibility boundary did not fork |
@@ -307,7 +341,7 @@ between local modules, no model call anywhere in this package.**
 | Gate | State |
 | :--- | :--- |
 | One canonical capability identity, collisions detectable | ✅ `seam.mjs` (16 fields + provenance), `detectCollisions`, rule A24 |
-| No frontend/backend vocabulary conflict left unexplained | ✅ 6 quoted + 7 declared-with-mapping sets, `vocabularyConflicts()` |
+| No frontend/backend vocabulary conflict left unexplained | ✅ 38 canonical + 22 local sets, 5 declared overlaps, `vocabularyConflicts()` |
 | Operation outcomes distinguishable, never collapsed | ✅ 12 outcomes, declared precedence, rule A19 |
 | AI contracts declared, zero implementation | ✅ 6 capabilities, no entry path, rule A20 |
 | Event vocabulary transport-neutral and closed | ✅ 26 types / 7 namespaces, rule A21 |
@@ -317,7 +351,7 @@ between local modules, no model call anywhere in this package.**
 | MCP represented without transport | ✅ 8 objects, 4 states, no transport field |
 | Zero-install valid, resource-aware without local runtimes | ✅ `describeInstallation`, budget-derived selection |
 | Localization boundary unchanged and canonical | ✅ `id/en/ar/zh/ru/jv`, `ar` RTL, dictionaries outside |
-| Fail-closed on every unknown | ✅ 24 rules, suites 21/25/26/27/28 |
+| Fail-closed on every unknown | ✅ 26 rules, suites 21/24/25/26/27/28/29 |
 | Boot payload budget preserved | ✅ 18,126 B, AI vocabulary absent from it |
 | `.ai` knowledge backed by manifests/contracts | ✅ generated blocks, drift-checked |
 | Every cross-agent question recorded with an arbiter | ✅ decision record, 4 resolved / 3 assigned |

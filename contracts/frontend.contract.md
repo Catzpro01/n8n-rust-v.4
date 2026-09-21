@@ -616,8 +616,8 @@ six capabilities (`ai-assistant`, `ai-copilot`, `ai-agent-node`, `agent-machine`
 `execution-ai-mode`, `agent-work-trace`) are declared in `manifest/capabilities.json` with status
 `declared` — declared, not installed, exactly like `translation`.
 
-- **Provider ≠ runtime ≠ tool.** `PROVIDER_KINDS` distinguishes a `model-gateway`, a
-  `tool-app-gateway` and an `application-provider`; `RUNTIME_KINDS` separates an `agent-runtime`
+- **Provider ≠ runtime ≠ tool.** `PROVIDER_KINDS` distinguishes a `model-provider`, a
+  `tool-provider` and an `application-provider` (the manager's `ai.foundation` words); `RUNTIME_KINDS` separates an `agent-runtime`
   from a `simulation-runtime`, so a simulation can never be reported as real work. Vendor names
   (9Router, Composio, GitHub, Hermes, Claude Code, Gemini CLI, Antigravity, OpenClaw, DeepSeek
   Harness, MiroFish) are **examples in documentation**, never fields in a declaration.
@@ -864,6 +864,18 @@ enforcement cannot disagree.
     "enforcedBy": "28-seam.test.mjs"
   },
   {
+    "id": "A25",
+    "statement": "A shared word is quoted from the declaration that owns it, with a contract, a version and an owner; a file no contract publishes is recorded as pending, with the decision that asks for one.",
+    "contract": "§19.17",
+    "enforcedBy": "29-alignment.test.mjs"
+  },
+  {
+    "id": "A26",
+    "statement": "Where a canonical word exists the frontend uses it or maps to it: provider and runtime kinds are the canonical terms, and every permission a declared capability requires is a declared permission word.",
+    "contract": "§19.17",
+    "enforcedBy": "24-vocabulary.test.mjs"
+  },
+  {
     "id": "A16",
     "statement": "An extension point is owned by a surface: a capability may only add to the hooks of the surfaces it occupies, never to a neighbour’s.",
     "contract": "§19.7",
@@ -871,3 +883,30 @@ enforcement cannot disagree.
   }
 ]
 ```
+
+### 19.17 Vocabulary publication and canonical words
+
+Two rules keep the lock (§19.9) from drifting into a second vocabulary of its own.
+
+**A quoted word carries a publication.** A canonical set names the contract, the version,
+the owner, the file and the declaration it read. Where no contract-lock row publishes the
+file, the set does not borrow the closest-sounding contract: it carries a
+`publicationPending` record with the owner, the domain, what exactly is unpublished and
+the id of the decision that asks for a row (`XA-9` is the current one). Counts are
+asserted, not described: `29-alignment.test.mjs` reads the quoted declaration and compares
+the values — and the quoted *semantics* (the degradation actions, the callable lifecycle
+states) — against the backend tree, and refuses a pending record that does not point at a
+recorded decision. The comparison can be run before the backend is merged: unpack the
+other agent's tree and point `N8N_BACKEND_LEGO_ROOT` at its `.../src/lego`, and a missing
+file becomes a failure instead of a skip.
+
+**A word the frontend shares is the canonical word, or a declared view of it.** Where the
+canonical set has the word, the frontend uses it (the provider and runtime kinds are the
+manager's `ai.foundation` words). Where the frontend keeps its own word — because it rides
+a pinned browser contract or answers a UI question the canonical set does not ask — the
+lock declares what it maps to, and a word that maps to nothing carries the reason it
+exists. Two vocabularies may share a spelling only when they share a *subject*
+(`sessionId` is one field in an envelope and in a session record) or when the overlap is
+declared with its reason (`available` is a lifecycle state and an availability). A
+permission a declared capability requires must be a declared permission word — an
+invented synonym fails the live conformance check, it does not pass silently.

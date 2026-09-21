@@ -72,7 +72,7 @@ test('the frontend implements no inference: no model call, no provider client, n
 });
 
 test('a provider, a runtime and a tool are different kinds of object', () => {
-  assert.deepEqual(PROVIDER_KINDS, ['model-gateway', 'tool-app-gateway', 'application-provider']);
+  assert.deepEqual(PROVIDER_KINDS, ['model-provider', 'tool-provider', 'application-provider']);
   assert.deepEqual(RUNTIME_KINDS, ['agent-runtime', 'simulation-runtime']);
   assert.deepEqual(RUNTIME_LOCALITY, ['local', 'remote']);
   // A runtime kind is never a provider kind, and vice versa.
@@ -109,10 +109,10 @@ test('a runtime or provider declaration is validated fail-closed', () => {
   const credential = validateRuntimeDeclaration({ id: 'x', kind: 'agent-runtime', locality: 'local', secret: 'a' });
   assert.match(credential.errors.join(' '), /credential material/);
 
-  assert.equal(validateProviderDeclaration({ id: 'model-gateway-1', kind: 'model-gateway' }).ok, true);
+  assert.equal(validateProviderDeclaration({ id: 'model-provider-1', kind: 'model-provider' }).ok, true);
   assert.equal(validateProviderDeclaration({ id: 'p', kind: 'agent-runtime' }).ok, false, 'a runtime is not a provider kind');
-  assert.equal(validateProviderDeclaration({ id: 'p', kind: 'model-gateway', apiKey: 'k' }).ok, false);
-  assert.equal(validateProviderDeclaration({ id: 'p', kind: 'model-gateway', model: 'gpt-x' }).ok, false, 'the vendor model name is not a provider field');
+  assert.equal(validateProviderDeclaration({ id: 'p', kind: 'model-provider', apiKey: 'k' }).ok, false);
+  assert.equal(validateProviderDeclaration({ id: 'p', kind: 'model-provider', model: 'gpt-x' }).ok, false, 'the vendor model name is not a provider field');
 });
 
 test('zero-install is a valid installation, and it says which layer is absent', () => {
@@ -123,12 +123,12 @@ test('zero-install is a valid installation, and it says which layer is absent', 
   assert.deepEqual(bare.layers.aiFoundation, 'available');
   assert.deepEqual(bare.layers.inference, 'unavailable');
   assert.match(bare.message, /no model or agent runtime is configured yet/);
-  assert.deepEqual(bare.configurable, ['model-gateway', 'agent-runtime', 'tool-app-gateway']);
+  assert.deepEqual(bare.configurable, ['model-provider', 'agent-runtime', 'tool-provider']);
 
   const wired = describeInstallation({
     inference: true,
     runtimes: [{ id: 'remote', kind: 'agent-runtime', locality: 'remote' }],
-    providers: [{ id: 'gw', kind: 'model-gateway' }],
+    providers: [{ id: 'gw', kind: 'model-provider' }],
     mcp: [{ id: 'gh', state: 'connected' }],
   });
   assert.equal(wired.zeroInstall, false);
@@ -223,7 +223,7 @@ test('AI metadata never becomes browser boot payload', () => {
     assert.equal(payload.includes(`"${capability.id}","title"`), false, `${capability.id} metadata is not in the boot payload`);
   }
   assert.equal(payload.includes('agent.created'), false, 'the event vocabulary is not in the boot payload');
-  assert.equal(payload.includes('model-gateway'), false, 'the provider kinds are not in the boot payload');
+  assert.equal(payload.includes('model-provider'), false, 'the provider kinds are not in the boot payload');
   assert.deepEqual(frontend.bootPayload.capabilities, [], 'nothing claims to be installed');
   // The catalogs stay queryable in-process, which is where a UI asks for them.
   assert.equal(frontend.describe().aiCapabilities, 6);

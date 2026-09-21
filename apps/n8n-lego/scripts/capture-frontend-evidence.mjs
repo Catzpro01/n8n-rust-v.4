@@ -37,6 +37,8 @@ import {
   createRestClient,
   createWorkTrace,
   describeInstallation,
+  describeSeam,
+  describeVocabulary,
   extractBootPayload,
   mcpRelationship,
   packFiles,
@@ -299,8 +301,34 @@ trace.append({ timestamp: 3, eventType: 'agent.completed', agentId: 'a1', status
 const traceText = JSON.stringify(trace.entries());
 check('the work trace is bounded, ordered and reference-only', trace.stats().dropped === 1 && trace.entries()[0].timestamp === 2 && !traceText.includes('"payload"') && traceText.includes('artifacts/run-1.json'), `rows=${trace.stats().rows} dropped=${trace.stats().dropped}`);
 
+const vocabulary = describeVocabulary();
+const canonicalSets = vocabulary.canonical;
+const pendingSets = canonicalSets.filter((set) => set.contract === null);
+const decisionsOnDisk = JSON.parse(readFileSync(join(REPO_ROOT, 'docs', 'n8n-lego', 'decisions', 'cross-agent-decisions.json'), 'utf8'));
+const recordedDecisions = new Set(decisionsOnDisk.decisions.map((decision) => decision.id));
+const provenanceComplete = canonicalSets.every((set) => (set.contract && set.contract.id && set.contract.version && set.contract.owner)
+  || (set.publicationPending && set.publicationPending.owner && set.publicationPending.domain
+    && set.publicationPending.what.length > 40 && recordedDecisions.has(set.publicationPending.decision)));
+check('every shared word is quoted with provenance, and an unpublished file is recorded, not invented',
+  canonicalSets.length >= 6 && pendingSets.length >= 1 && provenanceComplete,
+  `${canonicalSets.length} quoted sets, ${pendingSets.length} pending publication, ${recordedDecisions.size} decisions recorded`);
+
+const declaredPermissions = liveFrontend.manifests.capabilities.flatMap((capability) => capability.permissions ?? []);
+const permissionWords = vocabulary.local.find((set) => set.id === 'frontendCapabilityPermission').values;
+const kindWords = vocabulary.local.find((set) => set.id === 'providerKind').values;
+const canonicalKinds = vocabulary.canonical.find((set) => set.id === 'aiKind').values;
+check('a declared permission is a declared word, and the provider kinds are the canonical ones',
+  declaredPermissions.every((permission) => permissionWords.includes(permission))
+  && kindWords.every((kind) => canonicalKinds.includes(kind)),
+  `${declaredPermissions.length} declared permissions, ${kindWords.length} provider kinds, all canonical`);
+
+const seamDescription = describeSeam();
+check('the seam publishes its own closed list, so a reviewer can check it without either implementation',
+  seamDescription.inputs.length === 13 && seamDescription.forbidden.length >= 5 && seamDescription.identityFields.length === 16,
+  `${seamDescription.inputs.length} inputs, ${seamDescription.forbidden.length} forbidden sources, ${seamDescription.identityFields.length} identity fields`);
+
 const bootText = JSON.stringify(payload);
-check('AI and agent vocabulary never becomes browser boot payload', !bootText.includes('agent.created') && !bootText.includes('model-gateway') && !bootText.includes('assistant.ask'), `${declared.length} declared capabilities, none of their metadata in the descriptor`);
+check('AI and agent vocabulary never becomes browser boot payload', !bootText.includes('agent.created') && !bootText.includes('model-provider') && !bootText.includes('assistant.ask'), `${declared.length} declared capabilities, none of their metadata in the descriptor`);
 
 /* ---------------------------------------------------------------- the record */
 const evidence = {
