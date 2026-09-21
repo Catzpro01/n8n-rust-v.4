@@ -836,7 +836,123 @@ Seven export-analyzer fixtures now pin the behaviour (selftest 19 → 26). R7 wa
 verified to still catch genuine drift afterwards by deliberately removing a
 promised export and confirming the gate fired.
 
-## 34. What P2.6/P2.7/P2.8-B/P2.9 did NOT do
+# Capability contracts and the AI Foundation (P2.10)
+
+## 36. A capability is a contract, not a name
+
+Until P2.10 a capability was `{id, status}`. That says a feature exists and
+nothing a consumer can negotiate against, so consumers inferred the rest:
+operations from route existence, permissions from implementation, lifecycle from
+file presence, transport from the fact that something answered over HTTP.
+
+Every one of those inferences breaks silently when an implementation is
+replaced — the exact operation this architecture exists to make safe.
+
+Each of the **71 capabilities** now declares operations, interaction classes,
+permissions, lifecycle, availability, criticality, trust, transport, migration
+state, degradation, resources and replacement policy. Each of the **173
+operations** declares its own name, interaction class, permission, idempotency
+and status.
+
+The operations are grounded in routes and module exports that genuinely exist.
+Where a feature does not exist, the capability declares `[]` and keeps an honest
+status — inventing operations to fill a table would make the registry describe a
+system nobody has written. See ADR-0010.
+
+## 37. Surface aliases: UI vocabulary is not capability identity
+
+The editor says `executions`; the architecture says `execution`. The tempting
+fix is a second capability to match the UI, which duplicates ownership for a
+grammatical difference.
+
+Instead `surfaceAliases` maps a surface word to exactly one canonical domain and
+creates no capability, no contract and no ownership. Five aliases are declared;
+`projects → workspace` is a genuine rename rather than a plural, which is
+exactly why it must be declared rather than guessed.
+
+F14 rejects an alias pointing at a missing domain, two aliases claiming one
+word, and — the dangerous case — a surface word that is *also* a real domain id
+pointing somewhere else, which would make resolution order-dependent.
+
+## 38. One authoritative 501 source
+
+`compat/capability.mjs` remains the runtime mechanism; the registry remains
+authoritative for ownership. `capability-conformance.mjs` binds them, and a test
+now additionally requires that a capability answering 501 never reports
+availability `available`. The frontend may derive a read model; it may not keep
+a second copy that can drift.
+
+## 39. The AI Foundation — contracts only
+
+`manifest/ai-foundation.json` plus `ai-foundation.mjs` declare vocabulary for a
+future AI Foundation. **Nothing is implemented**: no inference, no agent loop, no
+gateway client, no MCP server or client, no network call, no new dependency. A
+test asserts the module contains exactly one file read — its own manifest — and
+none of `fetch`, `child_process`, `WebSocket` or a socket API.
+
+The whole point is sequencing. The normal path is that one vendor's SDK arrives
+first and its shape becomes the internal model; every later provider is then
+bent to fit a competitor's abstractions. Writing the neutral contract first
+makes the first adapter an implementation rather than a definition. See ADR-0009.
+
+Five concepts are kept deliberately separate:
+
+```
+capability     WHAT the system can do    (owned by a LEGO, stable)
+implementation HOW it is realised        (JS or Rust, swappable)
+provider       WHERE it comes from       (model / tool / application)
+transport      HOW bytes move            (in-process / worker / remote / mcp)
+runtime        WHERE an agent executes   (agent / simulation runtime)
+```
+
+A capability named `composio.github.repo.read` fuses three of them into one
+identifier: the same logical capability reached natively becomes a *different*
+capability with a different name. F15 enforces neutrality mechanically — a
+vendor name may appear only inside an `examples` array, never in an id, a
+structural key or a default.
+
+Eleven contracts are declared: model gateway, tool gateway, application
+provider, agent runtime, session, delegation, events, decision, approval,
+artifact, context.
+
+Three choices worth stating:
+
+- **Approval is fail-closed.** An unknown action requires approval. The
+  tempting implementation is `list.includes(action)`, which returns false for
+  anything new — so a newly added destructive action would need no approval
+  until someone extended the list. That fails open exactly when a new capability
+  appears. Read-only must be *proven*, not assumed.
+- **Delegation never propagates authority.** A child gets only what is
+  explicitly granted, and only what the parent holds. Otherwise one delegation
+  chain quietly ends in an agent holding every permission.
+- **Zero-install is a valid state.** Foundation ready, no provider configured,
+  reported honestly as `capability-unavailable`. The system never fakes
+  inference: a fake answer is worse than no answer, because the user cannot tell
+  it is fake.
+
+MCP is an edge adapter. No internal LEGO may call another over MCP, and MCP maps
+*onto* the tool gateway rather than defining it — so if MCP changes, one adapter
+changes.
+
+## 40. Gate hardening (F10–F15) and a foundation selftest
+
+Six rules were added to the existing foundation gate rather than to a parallel
+checker: F10 capability-contract, F11 operation-declaration, F12
+interaction-validity, F13 backpressure-declared, F14 surface-alias, F15
+ai-vendor-neutral.
+
+The foundation gate also gained its own selftest — 11 fixtures plus a negative
+control — on the same principle as the architecture selftest: a gate nobody has
+watched fail is a decoration.
+
+Writing F13 immediately caught five stream operations with no backpressure
+policy, including the editor push stream. Each now declares a policy *and a
+recorded reason*: token streams `block` (dropping corrupts output, buffering
+exhausts memory), agent progress `coalesce` (only the latest state matters),
+editor push and event subscribers `drop-oldest` (a slow browser must not grow
+the server heap).
+
+## 41. What none of these phases did
 
 No workflow, execution, auth, credentials, node-registry, dynamic-parameter,
 storage, webhook or worker feature. No SQLite/Postgres migration, no queues, no
@@ -844,6 +960,12 @@ scaling, no microservices, no Rust, no JS→Rust port, no speculative
 optimisation, no backend rewrite. No HTTP microservice was created to
 "prove" isolation — LEGO-to-LEGO stays in-process behind contracts, which is
 exactly what lets a future worker wrap the *same* logical contract.
+
+P2.10 added capability contracts and the AI Foundation vocabulary. It did NOT
+implement any AI feature: no inference, no agent loop, no model or tool gateway
+client, no MCP server or client, no vendor SDK, no new dependency, no network
+call and no daemon. No feature domain was implemented and no existing runtime
+file was modified. `ai-foundation.mjs` reads exactly one file — its own manifest.
 
 P2.9 added the communication foundation and retired two allowances. It did NOT
 implement any feature domain: no Workflow, Execution, Auth, Credentials, Node
@@ -865,21 +987,24 @@ functions, the nested reference tree is a template that is never mounted
 (`lego.json: "mounted": false`, asserted by a test), and `src/server.mjs` is
 unchanged — so P0/P1/P2 behaviour is bit-for-bit what it was at `cb71dbb2`.
 
-## 35. Verification
+## 42. Verification
 
 ```
-architecture gate       node tools/lego/architecture-gate.mjs            → OK (0 violations, 9 rules, 25 domains)
+architecture gate       node tools/lego/architecture-gate.mjs            → OK (0 violations, 9 rules, 26 domains)
 gate selftest           node tools/lego/architecture-gate.mjs --selftest → 26/26 detected
-foundation gate         node tools/lego/foundation-gate.mjs              → OK (25 LEGOs, F1–F9)
+foundation gate         node tools/lego/foundation-gate.mjs              → OK (26 LEGOs, F1–F15)
+foundation selftest     node tools/lego/foundation-gate.mjs --selftest   → 12/12 detected
 capability conformance  node tools/lego/capability-conformance.mjs       → OK (23 features, 71 capabilities)
 scale-out readiness     node tools/lego/scale-out-readiness.mjs          → OK (10 declared exceptions)
-AI pack freshness       node tools/lego/ai-pack.mjs --check              → OK (50 generated files)
+AI pack freshness       node tools/lego/ai-pack.mjs --check              → OK (52 generated files)
+capability contracts    node --test apps/n8n-lego/test/lego-capability-contract.test.mjs → 33/33
+AI foundation contracts node --test apps/n8n-lego/test/lego-ai-foundation.test.mjs    → 54/54
 boundary regression     node --test apps/n8n-lego/test/lego-boundary.test.mjs         → 22/22
 communication model     node --test apps/n8n-lego/test/lego-communication.test.mjs    → 65/65
 foundation contracts    node --test apps/n8n-lego/test/lego-foundation.test.mjs       → 24/24
 lifecycle certification node --test apps/n8n-lego/test/lego-lifecycle.test.mjs        → 28/28
 foundation 1.0 model    node --test apps/n8n-lego/test/lego-foundation-model.test.mjs → 93/93
-P0/P1/P2 + all suites   node --test apps/n8n-lego/test/*.test.mjs        → 257/257
+P0/P1/P2 + all suites   node --test apps/n8n-lego/test/*.test.mjs        → 344/344
 everything              npm run lego:gate
 clean clone + browser   see .github/workflows/n8n-lego.yml clean-clone job
 ```

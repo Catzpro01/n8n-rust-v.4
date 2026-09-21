@@ -30,11 +30,25 @@ const MANIFEST_PATH = resolve(HERE, 'manifest', 'domains.json');
 const ERRORS_CONTRACT_PATH = resolve(HERE, 'contracts', 'errors.contract.json');
 const CONTRACT_LOCK_PATH = resolve(HERE, 'contracts', 'contract-lock.json');
 
-/** Implementation-status vocabulary a domain/capability may declare. */
+/**
+ * Implementation-status vocabulary a domain/capability may declare.
+ *
+ * `contract-only` (P2.10) is deliberately distinct from `planned`:
+ *
+ *   planned        we intend to build this; no contract is fixed yet
+ *   contract-only  the CONTRACT is fixed and testable; no implementation exists
+ *
+ * The distinction matters because the two make different promises. A
+ * `contract-only` capability can be gate-checked, negotiated against and
+ * implemented by a third party without further design; a `planned` one cannot.
+ * Collapsing them would either overstate `planned` or understate the AI
+ * Foundation contracts, and a consumer could not tell which it was looking at.
+ */
 export const DOMAIN_STATUS = Object.freeze([
   'implemented',
   'partial',
   'planned',
+  'contract-only',
   'legacy',
   'unsupported',
   'deferred',
@@ -84,6 +98,11 @@ export function loadRegistry({ reload = false } = {}) {
     agents: manifest.agents,
     allowances: manifest.allowances ?? [],
     legacy: manifest.legacy ?? { files: [] },
+    // Surface aliases (P2.10): external/UI vocabulary -> canonical domain id.
+    // Exposed so the gate can prove the mapping is total and unambiguous
+    // rather than leaving each consumer to guess that "executions" means
+    // `execution`.
+    surfaceAliases: manifest.surfaceAliases ?? { aliases: [] },
     byId,
   });
   return cached;

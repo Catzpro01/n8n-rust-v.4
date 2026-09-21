@@ -149,9 +149,236 @@ export function runFoundationGate(registry = loadRegistry({ reload: true })) {
     }
   }
 
+  violations.push(...checkCapabilityContracts(registry));
+  violations.push(...checkSurfaceAliases(registry));
+  violations.push(...checkAiFoundation());
   violations.push(...checkNodeContract());
   violations.push(...checkContractSecurity(registry));
   return violations;
+}
+
+/**
+ * F10–F13 — a capability must be a complete contract, not a name and a status.
+ *
+ * Before P2.10 a capability entry was `{id, status}`. That is enough to say a
+ * feature exists and nowhere near enough for a consumer to negotiate with it:
+ * it cannot tell what operations exist, what permission each needs, whether an
+ * operation is idempotent, or which interaction class to expect. Consumers
+ * filled the gap by inferring — operations from route existence, permissions
+ * from implementation, lifecycle from file presence — and every one of those
+ * inferences silently breaks when the implementation is replaced, which is
+ * exactly what the architecture exists to allow.
+ */
+function checkCapabilityContracts(registry) {
+  const problems = [];
+  const push = (rule, where, message, fix) => problems.push({ rule, where, message, fix });
+  const REQUIRED = ['operations', 'interaction', 'permissions', 'lifecycle', 'availability',
+    'criticality', 'trust', 'transport', 'migrationState', 'degradation', 'replacement'];
+  const LIFECYCLE = new Set(['declared', 'active', 'idle', 'degraded', 'deprecated', 'disabled', 'failed']);
+  const AVAILABILITY = new Set(FOUNDATION.degradation?.states
+    ?? ['available', 'degraded', 'capability-unavailable', 'optional-absent',
+      'version-incompatible', 'permission-denied', 'migration-required', 'disabled', 'failed']);
+  const TRANSPORTS = new Set(['in-process', 'worker', 'remote', 'mcp']);
+  const seenOperations = new Map();
+
+  for (const domain of registry.domains) {
+    for (const capability of domain.capabilities ?? []) {
+      const where = `capability '${capability.id}'`;
+
+      for (const field of REQUIRED) {
+        if (capability[field] === undefined) {
+          push('F10 capability-contract', where, `missing required field '${field}'`,
+            'A capability is a contract. Declare it in src/lego/manifest/domains.json.');
+        }
+      }
+      if (capability.operations === undefined) continue;
+
+      if (!Array.isArray(capability.operations)) {
+        push('F10 capability-contract', where, 'operations must be an array', 'Use [] when none are declared yet.');
+        continue;
+      }
+
+      // F11 — operations must be explicit and well-formed. No inference.
+      const names = new Set();
+      for (const operation of capability.operations) {
+        const opWhere = `${where} operation '${operation.name ?? '(unnamed)'}'`;
+        for (const field of ['name', 'interaction', 'permission', 'idempotent', 'status']) {
+          if (operation[field] === undefined) {
+            push('F11 operation-declaration', opWhere, `missing '${field}'`,
+              'An operation declares its own name, interaction class, permission, idempotency and status.');
+          }
+        }
+        if (names.has(operation.name)) {
+          push('F11 operation-declaration', opWhere, 'duplicate operation name within the capability',
+            'Operation names are unique per capability.');
+        }
+        names.add(operation.name);
+
+        if (operation.interaction !== undefined && !COMMUNICATION_MODES.includes(operation.interaction)) {
+          push('F12 interaction-validity', opWhere,
+            `interaction '${operation.interaction}' is not one of ${COMMUNICATION_MODES.join(', ')}`,
+            'There are exactly four interaction classes and no fifth may be added.');
+        }
+        if (operation.interaction !== undefined && !(capability.interaction ?? []).includes(operation.interaction)) {
+          push('F12 interaction-validity', opWhere,
+            `uses interaction '${operation.interaction}' which the capability does not advertise`,
+            'The capability must advertise every interaction class its operations use.');
+        }
+        // A STREAM with no bounded policy is an unbounded buffer with extra steps.
+        if (operation.interaction === 'stream' && operation.backpressure === undefined
+            && capability.backpressure === undefined && operation.status !== 'unsupported'
+            && operation.status !== 'planned') {
+          push('F13 backpressure-declared', opWhere,
+            'a stream operation declares no backpressure policy',
+            'Declare buffer, drop, drop-oldest, coalesce, block, reject or terminate. An undeclared policy means unbounded buffering.');
+        }
+        if (operation.permission !== undefined && typeof operation.permission !== 'string') {
+          push('F11 operation-declaration', opWhere, 'permission must be a string', 'Use a namespaced permission.');
+        }
+        const globalName = `${capability.id}.${operation.name}`;
+        if (seenOperations.has(globalName)) {
+          push('F11 operation-declaration', opWhere, 'duplicate fully-qualified operation id',
+            'capability.operation must be globally unique.');
+        }
+        seenOperations.set(globalName, capability.id);
+      }
+
+      if (capability.lifecycle !== undefined && !LIFECYCLE.has(capability.lifecycle)) {
+        push('F10 capability-contract', where, `lifecycle '${capability.lifecycle}' is not a declared state`,
+          `Use one of ${[...LIFECYCLE].join(', ')}.`);
+      }
+      if (capability.availability !== undefined && !AVAILABILITY.has(capability.availability)) {
+        push('F10 capability-contract', where, `availability '${capability.availability}' is not a declared degradation state`,
+          'Use a declared degradation state so a consumer can branch on it.');
+      }
+      if (capability.transport !== undefined) {
+        const { requires, supports } = capability.transport;
+        if (requires !== undefined && !TRANSPORTS.has(requires)) {
+          push('F10 capability-contract', where, `transport.requires '${requires}' is unknown`,
+            `Use one of ${[...TRANSPORTS].join(', ')}.`);
+        }
+        for (const transport of supports ?? []) {
+          if (!TRANSPORTS.has(transport)) {
+            push('F10 capability-contract', where, `transport.supports '${transport}' is unknown`,
+              `Use one of ${[...TRANSPORTS].join(', ')}.`);
+          }
+        }
+        if (requires !== undefined && supports !== undefined && !supports.includes(requires)) {
+          push('F10 capability-contract', where,
+            `transport.requires '${requires}' is not in transport.supports`,
+            'A capability must support the transport it requires.');
+        }
+      }
+      // A capability may not claim more trust than the LEGO that owns it.
+      if (capability.trust !== undefined && domain.trust !== undefined) {
+        const rank = (id) => FOUNDATION.trust.levels[id]?.rank ?? 99;
+        if (rank(capability.trust) < rank(domain.trust)) {
+          push('F10 capability-contract', where,
+            `claims trust '${capability.trust}', higher than its owning domain '${domain.id}' ('${domain.trust}')`,
+            'A capability cannot be more trusted than the LEGO that provides it.');
+        }
+      }
+    }
+  }
+  return problems;
+}
+
+/**
+ * F14 — surface aliases must resolve deterministically.
+ *
+ * UI vocabulary and capability identity are allowed to differ ("executions" vs
+ * `execution`). What is not allowed is for the mapping to be ambiguous or
+ * guessed, because then two components resolve the same word differently.
+ */
+function checkSurfaceAliases(registry) {
+  const problems = [];
+  const push = (message, fix) => problems.push({ rule: 'F14 surface-alias', where: 'manifest.surfaceAliases', message, fix });
+  const aliases = registry.surfaceAliases?.aliases;
+  if (!aliases) return problems;
+
+  const domainIds = new Set(registry.domains.map((domain) => domain.id));
+  const seen = new Set();
+  for (const alias of aliases) {
+    if (!alias.surface || !alias.canonical) {
+      push(`alias ${JSON.stringify(alias)} is missing 'surface' or 'canonical'`, 'Both are required.');
+      continue;
+    }
+    if (seen.has(alias.surface)) {
+      push(`surface word '${alias.surface}' is aliased twice`, 'A surface word resolves to exactly one canonical id.');
+    }
+    seen.add(alias.surface);
+    if (!domainIds.has(alias.canonical)) {
+      push(`alias '${alias.surface}' points at unknown domain '${alias.canonical}'`,
+        'An alias must resolve to a real domain.');
+    }
+    // The dangerous case: a surface word that is ALSO a real domain id but
+    // points somewhere else. Resolution order would then decide the answer.
+    if (domainIds.has(alias.surface) && alias.surface !== alias.canonical) {
+      push(`surface word '${alias.surface}' is itself a domain id but aliases to '${alias.canonical}'`,
+        'This makes resolution order-dependent. Rename the surface word or drop the alias.');
+    }
+  }
+  return problems;
+}
+
+/**
+ * F15 — the AI Foundation stays contract-only and vendor-neutral.
+ *
+ * The specific risk this guards is a vendor name leaking out of an `examples`
+ * array and into an id, a required field or a default. Once that happens the
+ * contract is no longer provider-neutral and every other provider must be bent
+ * to fit the first one's shape.
+ */
+function checkAiFoundation() {
+  const problems = [];
+  const push = (message, fix) => problems.push({ rule: 'F15 ai-vendor-neutral', where: 'manifest/ai-foundation.json', message, fix });
+  const file = join(APP_ROOT, 'src', 'lego', 'manifest', 'ai-foundation.json');
+  if (!existsSync(file)) return problems;
+  const ai = JSON.parse(readFileSync(file, 'utf8'));
+
+  const VENDORS = ['9router', 'composio', 'hermes', 'claude', 'gemini', 'antigravity',
+    'openclaw', 'deepseek', 'mirofish', 'openai', 'anthropic'];
+
+  // Vendor names are permitted ONLY inside an `examples` array or free prose.
+  // They are forbidden in any structural position: ids, keys, defaults.
+  const walk = (node, path, insideExamples) => {
+    if (Array.isArray(node)) {
+      node.forEach((item, index) => walk(item, `${path}[${index}]`, insideExamples));
+      return;
+    }
+    if (node && typeof node === 'object') {
+      for (const [key, value] of Object.entries(node)) {
+        const lowerKey = key.toLowerCase();
+        for (const vendor of VENDORS) {
+          if (lowerKey.includes(vendor)) {
+            push(`vendor '${vendor}' appears as an object KEY at ${path}.${key}`,
+              'Vendor names belong in an examples array, never in a structural key.');
+          }
+        }
+        walk(value, `${path}.${key}`, insideExamples || key === 'examples');
+      }
+      return;
+    }
+    if (typeof node !== 'string') return;
+    // Structural string positions: ids, contract names, enum-ish fields.
+    const structural = /\.(id|contract|name|kind|type|default|permission|transport)$/.test(path)
+      || /\.(ids|contracts|kinds|types|operations|concepts)\[/.test(path);
+    if (!structural || insideExamples) return;
+    const lower = node.toLowerCase();
+    for (const vendor of VENDORS) {
+      if (lower.includes(vendor)) {
+        push(`vendor '${vendor}' appears in a structural field at ${path} ('${node}')`,
+          'A contract must not name a vendor in an id, contract, kind or default.');
+      }
+    }
+  };
+  walk(ai, 'ai', false);
+
+  if (ai.status !== 'contract-only') {
+    push(`status is '${ai.status}', expected 'contract-only'`,
+      'While no implementation exists, the manifest must say so.');
+  }
+  return problems;
 }
 
 /** F7 — every declared creation route must carry the metadata the AI decision needs. */
@@ -255,8 +482,141 @@ function checkContractSecurity(registry) {
   return problems;
 }
 
+export { getDomain };
+
+/* ------------------------------------------------------------- selftest */
+
+/**
+ * Foundation gate fixtures.
+ *
+ * The architecture gate has had a selftest since P2.6 on the principle that a
+ * gate nobody has watched fail is a decoration. The foundation gate did not,
+ * and P2.10 added six rules (F10–F15) to it — so it gets the same treatment.
+ *
+ * Each fixture mutates a clone of the real registry to plant exactly one
+ * violation and requires that rule to fire. The negative control requires that
+ * a pristine registry raises nothing, which is what stops a rule from being
+ * "detected" simply because the gate fails on everything.
+ */
+export const FOUNDATION_CASES = Object.freeze([
+  {
+    name: 'a capability with no operations field',
+    rule: 'F10 capability-contract',
+    mutate: (registry) => { delete registry.byId.get('settings').capabilities[0].operations; },
+  },
+  {
+    name: 'a capability whose transport is unknown',
+    rule: 'F10 capability-contract',
+    mutate: (registry) => { registry.byId.get('settings').capabilities[0].transport = { requires: 'carrier-pigeon', supports: ['carrier-pigeon'] }; },
+  },
+  {
+    name: 'a capability requiring a transport it does not support',
+    rule: 'F10 capability-contract',
+    mutate: (registry) => { registry.byId.get('settings').capabilities[0].transport = { requires: 'remote', supports: ['in-process'] }; },
+  },
+  {
+    name: 'an operation missing its permission',
+    rule: 'F11 operation-declaration',
+    mutate: (registry) => { delete registry.byId.get('settings').capabilities[0].operations[0].permission; },
+  },
+  {
+    name: 'two operations with the same name in one capability',
+    rule: 'F11 operation-declaration',
+    mutate: (registry) => {
+      const capability = registry.byId.get('settings').capabilities[0];
+      capability.operations.push({ ...capability.operations[0] });
+    },
+  },
+  {
+    name: 'an operation using a fifth interaction class',
+    rule: 'F12 interaction-validity',
+    mutate: (registry) => { registry.byId.get('settings').capabilities[0].operations[0].interaction = 'rpc'; },
+  },
+  {
+    name: 'an operation using a class its capability does not advertise',
+    rule: 'F12 interaction-validity',
+    mutate: (registry) => { registry.byId.get('settings').capabilities[0].operations[0].interaction = 'batch'; },
+  },
+  {
+    name: 'a stream operation with no backpressure policy',
+    rule: 'F13 backpressure-declared',
+    mutate: (registry) => {
+      const capability = registry.byId.get('realtime').capabilities[0];
+      for (const operation of capability.operations) delete operation.backpressure;
+    },
+  },
+  {
+    name: 'a surface alias pointing at a domain that does not exist',
+    rule: 'F14 surface-alias',
+    mutate: (registry) => { registry.surfaceAliases.aliases[0].canonical = 'no-such-domain'; },
+  },
+  {
+    name: 'two aliases claiming the same surface word',
+    rule: 'F14 surface-alias',
+    mutate: (registry) => {
+      const [first] = registry.surfaceAliases.aliases;
+      registry.surfaceAliases.aliases.push({ ...first, canonical: 'workflow' });
+    },
+  },
+  {
+    name: 'a capability more trusted than the LEGO that owns it',
+    rule: 'F10 capability-contract',
+    mutate: (registry) => {
+      const domain = registry.byId.get('reference-lego');
+      domain.trust = 'community';
+      domain.failureBoundary = 'sandboxed';
+      domain.capabilities[0].trust = 'core';
+    },
+  },
+]);
+
+function cloneForFoundation(registry) {
+  const domains = JSON.parse(JSON.stringify(registry.domains));
+  return {
+    ...registry,
+    domains,
+    surfaceAliases: JSON.parse(JSON.stringify(registry.surfaceAliases ?? { aliases: [] })),
+    byId: new Map(domains.map((domain) => [domain.id, domain])),
+  };
+}
+
+/** Runs the foundation fixtures plus a negative control. */
+export function runFoundationSelftest() {
+  const base = loadRegistry({ reload: true });
+  const results = [];
+  for (const testCase of FOUNDATION_CASES) {
+    const registry = cloneForFoundation(base);
+    testCase.mutate(registry);
+    const violations = runFoundationGate(registry);
+    results.push({
+      name: testCase.name,
+      expectedRule: testCase.rule,
+      detected: violations.some((violation) => violation.rule === testCase.rule),
+      saw: [...new Set(violations.map((violation) => violation.rule))],
+    });
+  }
+  const clean = runFoundationGate(cloneForFoundation(base));
+  results.push({
+    name: 'negative control: the real registry raises nothing',
+    expectedRule: '(none)',
+    detected: clean.length === 0,
+    saw: [...new Set(clean.map((violation) => violation.rule))],
+  });
+  return results;
+}
+
 const isCli = process.argv[1]?.endsWith('foundation-gate.mjs');
-if (isCli) {
+if (isCli && process.argv.includes('--selftest')) {
+  const results = runFoundationSelftest();
+  let passed = 0;
+  for (const result of results) {
+    if (result.detected) passed += 1;
+    process.stdout.write(`${result.detected ? 'PASS' : 'FAIL'}  ${result.name} (expects ${result.expectedRule})\n`);
+    if (!result.detected) process.stdout.write(`      saw: ${result.saw.join(', ') || '(nothing)'}\n`);
+  }
+  process.stdout.write(`\nfoundation selftest: ${passed}/${results.length} checks passed\n`);
+  process.exit(passed === results.length ? 0 : 1);
+} else if (isCli) {
   const registry = loadRegistry({ reload: true });
   const violations = runFoundationGate(registry);
   if (process.argv.includes('--json')) {
@@ -274,5 +634,3 @@ if (isCli) {
   }
   process.exit(violations.length === 0 ? 0 : 1);
 }
-
-export { getDomain };

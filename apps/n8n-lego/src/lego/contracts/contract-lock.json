@@ -1,5 +1,5 @@
 {
-  "lockVersion": "1.3.0",
+  "lockVersion": "1.4.0",
   "owner": "manager",
   "description": "Contract versioning lock. One row per PUBLIC contract: what it is, who owns it, which version is published, what its consumers are, and where its contract tests live. The architecture gate fails when a published contract's surface changes without its version changing. Intentionally tiny: this is not semver-as-a-framework, it is a change alarm.",
   "policy": {
@@ -485,6 +485,50 @@
         "apps/n8n-lego/test/lego-communication.test.mjs"
       ],
       "notes": "Capability discovery and the lifecycle state machine. Nesting never grants access: reaching a nested LEGO requires an explicit declaration naming that child."
+    },
+    {
+      "id": "ai.foundation",
+      "owner": "manager",
+      "domain": "ai-foundation",
+      "version": "1.0.0",
+      "status": "contract-only",
+      "surface": [
+        "src/lego/ai-foundation.mjs"
+      ],
+      "exports": {
+        "src/lego/ai-foundation.mjs": [
+          "AGENT_EVENT_TYPES",
+          "AGENT_SESSION_STATES",
+          "AI_CONCEPTS",
+          "AI_FOUNDATION",
+          "AI_FOUNDATION_VERSION",
+          "AI_RESOURCE_PROFILES",
+          "AI_TRANSPORTS",
+          "ARTIFACT_KINDS",
+          "ARTIFACT_RETENTION",
+          "CONTEXT_SCOPES",
+          "PROVIDER_KINDS",
+          "RISK_LEVELS",
+          "RUNTIME_LOCALITIES",
+          "TOOL_SIDE_EFFECTS",
+          "checkDelegationGrant",
+          "describeProviderKind",
+          "isZeroInstallState",
+          "listAiContracts",
+          "operationsFor",
+          "requiresApproval",
+          "transportCanCarry"
+        ]
+      },
+      "consumers": [
+        "a future AI Foundation implementation",
+        "external agent runtimes",
+        "MCP adapters"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-ai-foundation.test.mjs"
+      ],
+      "notes": "Provider-neutral AI vocabulary. CONTRACT ONLY: no inference, no agent loop, no gateway client, no MCP server or client, no network call, no new dependency. Vendor names appear only as examples of provider kinds, never in an id, a required field or a default."
     }
   ]
 }

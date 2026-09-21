@@ -89,6 +89,14 @@ jobs:
       - name: The 501 capability contract matches the LEGO registry
         run: node tools/lego/capability-conformance.mjs
 
+      - name: The foundation gate provably detects incomplete contracts
+        # Same principle as the architecture selftest: a gate nobody has watched
+        # fail is a decoration. Plants a capability with no operations, an
+        # unknown transport, a fifth interaction class, an undeclared stream
+        # policy and an ambiguous surface alias, and requires each to be caught
+        # — plus a negative control on the real registry.
+        run: node tools/lego/foundation-gate.mjs --selftest
+
       - name: Foundation 1.0 profiles are declared and coherent
         # Every LEGO must describe itself in the foundation vocabulary: tier,
         # trust, capabilities, data owner, state class, failure boundary and

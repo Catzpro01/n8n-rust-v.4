@@ -1,5 +1,5 @@
 {
-  "manifestVersion": "1.2.0",
+  "manifestVersion": "1.3.0",
   "phase": "P2.8-B",
   "updated": "2026-09-22",
   "description": "Backend LEGO registry: the single machine-readable source of truth for backend domain boundaries, ownership, public contracts, declared dependencies and capabilities. Supports hierarchical LEGO (parent -> sub-LEGO -> sub-sub-LEGO) via the `parent` field: a nested entry is a domain like any other, so ownership, contracts, versioning and the dependency gate work identically at every level. Validated by apps/n8n-lego/src/lego/registry.mjs and enforced by tools/lego/architecture-gate.mjs.",
@@ -71,7 +71,8 @@
         "reference-lego",
         "reference-lego.validation",
         "reference-lego.validation.schema",
-        "reference-lego.repository"
+        "reference-lego.repository",
+        "ai-foundation"
       ]
     }
   },
@@ -112,7 +113,8 @@
         "editor-ui-host",
         "workspace",
         "observability",
-        "data-tables"
+        "data-tables",
+        "ai-foundation"
       ],
       "contract": {
         "id": "kernel.platform",
@@ -124,11 +126,73 @@
       "capabilities": [
         {
           "id": "kernel.config",
-          "status": "implemented"
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "read",
+              "interaction": "call",
+              "permission": "kernel:read",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "kernel:read"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "critical",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "low"
         },
         {
           "id": "kernel.logging",
-          "status": "implemented"
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "write",
+              "interaction": "event",
+              "permission": "kernel:log",
+              "idempotent": false,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "event"
+          ],
+          "permissions": [
+            "kernel:log"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "critical",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "low"
         }
       ],
       "notes": "Shared kernel. Only cross-domain primitives may live here: process configuration and structured logging. It is a graph leaf \u2014 it must never import a domain.",
@@ -195,27 +259,281 @@
       "capabilities": [
         {
           "id": "lego.domain-registry",
-          "status": "implemented"
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "load",
+              "interaction": "call",
+              "permission": "lego:read",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "validate",
+              "interaction": "call",
+              "permission": "lego:read",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "describe",
+              "interaction": "call",
+              "permission": "lego:read",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "lego:read"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "critical",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "none"
         },
         {
           "id": "lego.error-contract",
-          "status": "implemented"
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "describe",
+              "interaction": "call",
+              "permission": "lego:read",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "lego:read"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "standard",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "none"
         },
         {
           "id": "lego.contract-versioning",
-          "status": "implemented"
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "satisfies",
+              "interaction": "call",
+              "permission": "lego:read",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "lock",
+              "interaction": "call",
+              "permission": "lego:admin",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "lego:admin",
+            "lego:read"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "standard",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "none"
         },
         {
           "id": "lego.operation-envelope",
-          "status": "implemented"
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "create",
+              "interaction": "call",
+              "permission": "lego:read",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "derive",
+              "interaction": "call",
+              "permission": "lego:read",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "serialize",
+              "interaction": "call",
+              "permission": "lego:read",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "lego:read"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "standard",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "none"
         },
         {
           "id": "lego.interaction-model",
-          "status": "implemented"
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "call",
+              "interaction": "call",
+              "permission": "lego:invoke",
+              "idempotent": false,
+              "status": "implemented"
+            },
+            {
+              "name": "emit",
+              "interaction": "event",
+              "permission": "lego:invoke",
+              "idempotent": false,
+              "status": "implemented"
+            },
+            {
+              "name": "stream",
+              "interaction": "stream",
+              "permission": "lego:invoke",
+              "idempotent": false,
+              "status": "implemented",
+              "backpressure": "block",
+              "backpressureReason": "The generic stream primitive blocks by default: a producer faster than its consumer should be slowed, not buffered. A caller that wants a lossy policy chooses one explicitly."
+            },
+            {
+              "name": "batch",
+              "interaction": "batch",
+              "permission": "lego:invoke",
+              "idempotent": false,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "batch",
+            "call",
+            "event",
+            "stream"
+          ],
+          "permissions": [
+            "lego:invoke"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "standard",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "none"
         },
         {
           "id": "lego.capability-negotiation",
-          "status": "implemented"
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "negotiate",
+              "interaction": "call",
+              "permission": "lego:read",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "discover",
+              "interaction": "call",
+              "permission": "lego:read",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "lego:read"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "standard",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "none"
         }
       ],
       "notes": "The socket system itself: domain registry, machine-readable error codes and the contract lock. Pure data + pure functions; may not depend on any domain.",
@@ -234,6 +552,705 @@
       "resources": {
         "cpu": "none",
         "memory": "tiny",
+        "disk": "none",
+        "network": false,
+        "concurrency": "parallel-safe",
+        "startup": "instant"
+      }
+    },
+    {
+      "id": "ai-foundation",
+      "title": "AI Foundation contracts (provider-neutral, contract-only)",
+      "owner": "manager",
+      "kind": "governance",
+      "status": "contract-only",
+      "phase": "P2.10",
+      "errorNamespace": "ai",
+      "paths": [
+        "src/lego/ai-foundation.mjs",
+        "src/lego/manifest/ai-foundation.json"
+      ],
+      "public": [
+        "src/lego/ai-foundation.mjs"
+      ],
+      "dependsOn": [],
+      "mustNotDependOn": [
+        "compatibility",
+        "auth",
+        "credentials",
+        "workflow",
+        "execution",
+        "node-registry",
+        "storage",
+        "legacy-rest",
+        "runtime-host",
+        "worker",
+        "realtime",
+        "webhook",
+        "settings",
+        "workspace",
+        "data-tables",
+        "dynamic-parameters",
+        "observability",
+        "editor-ui-host",
+        "auth.identity"
+      ],
+      "contract": {
+        "id": "ai.foundation",
+        "version": "1.0.0",
+        "tests": [
+          "test/lego-ai-foundation.test.mjs"
+        ]
+      },
+      "capabilities": [
+        {
+          "id": "ai.model-gateway",
+          "status": "contract-only",
+          "operations": [
+            {
+              "name": "models.list",
+              "interaction": "call",
+              "permission": "ai:model:read",
+              "idempotent": true,
+              "status": "contract-only"
+            },
+            {
+              "name": "model.describe",
+              "interaction": "call",
+              "permission": "ai:model:read",
+              "idempotent": true,
+              "status": "contract-only"
+            },
+            {
+              "name": "generate",
+              "interaction": "call",
+              "permission": "ai:model:invoke",
+              "idempotent": false,
+              "status": "contract-only"
+            },
+            {
+              "name": "stream",
+              "interaction": "stream",
+              "permission": "ai:model:invoke",
+              "idempotent": false,
+              "status": "contract-only",
+              "backpressure": "block",
+              "backpressureReason": "Token streams block. Dropping tokens would corrupt the output, and buffering an unbounded generation is how a low-end device runs out of memory."
+            },
+            {
+              "name": "embed",
+              "interaction": "batch",
+              "permission": "ai:model:invoke",
+              "idempotent": true,
+              "status": "contract-only"
+            },
+            {
+              "name": "countTokens",
+              "interaction": "call",
+              "permission": "ai:model:read",
+              "idempotent": true,
+              "status": "contract-only"
+            }
+          ],
+          "interaction": [
+            "batch",
+            "call",
+            "stream"
+          ],
+          "permissions": [
+            "ai:model:invoke",
+            "ai:model:read"
+          ],
+          "lifecycle": "declared",
+          "availability": "optional-absent",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote",
+              "mcp"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "optional-absent",
+          "replacement": "contract-preserving",
+          "resources": "low"
+        },
+        {
+          "id": "ai.tool-gateway",
+          "status": "contract-only",
+          "operations": [
+            {
+              "name": "tools.list",
+              "interaction": "call",
+              "permission": "ai:tool:read",
+              "idempotent": true,
+              "status": "contract-only"
+            },
+            {
+              "name": "tool.describe",
+              "interaction": "call",
+              "permission": "ai:tool:read",
+              "idempotent": true,
+              "status": "contract-only"
+            },
+            {
+              "name": "tool.call",
+              "interaction": "call",
+              "permission": "ai:tool:invoke",
+              "idempotent": false,
+              "status": "contract-only"
+            },
+            {
+              "name": "resources.list",
+              "interaction": "call",
+              "permission": "ai:tool:read",
+              "idempotent": true,
+              "status": "contract-only"
+            },
+            {
+              "name": "resource.read",
+              "interaction": "call",
+              "permission": "ai:tool:read",
+              "idempotent": true,
+              "status": "contract-only"
+            },
+            {
+              "name": "prompts.list",
+              "interaction": "call",
+              "permission": "ai:tool:read",
+              "idempotent": true,
+              "status": "contract-only"
+            },
+            {
+              "name": "prompt.get",
+              "interaction": "call",
+              "permission": "ai:tool:read",
+              "idempotent": true,
+              "status": "contract-only"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "ai:tool:invoke",
+            "ai:tool:read"
+          ],
+          "lifecycle": "declared",
+          "availability": "optional-absent",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote",
+              "mcp"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "optional-absent",
+          "replacement": "contract-preserving",
+          "resources": "low"
+        },
+        {
+          "id": "ai.agent-runtime",
+          "status": "contract-only",
+          "operations": [
+            {
+              "name": "create",
+              "interaction": "call",
+              "permission": "ai:agent:create",
+              "idempotent": false,
+              "status": "contract-only"
+            },
+            {
+              "name": "start",
+              "interaction": "call",
+              "permission": "ai:agent:invoke",
+              "idempotent": false,
+              "status": "contract-only"
+            },
+            {
+              "name": "send",
+              "interaction": "call",
+              "permission": "ai:agent:invoke",
+              "idempotent": false,
+              "status": "contract-only"
+            },
+            {
+              "name": "pause",
+              "interaction": "call",
+              "permission": "ai:agent:control",
+              "idempotent": true,
+              "status": "contract-only"
+            },
+            {
+              "name": "resume",
+              "interaction": "call",
+              "permission": "ai:agent:control",
+              "idempotent": true,
+              "status": "contract-only"
+            },
+            {
+              "name": "cancel",
+              "interaction": "call",
+              "permission": "ai:agent:control",
+              "idempotent": true,
+              "status": "contract-only"
+            },
+            {
+              "name": "status",
+              "interaction": "call",
+              "permission": "ai:agent:read",
+              "idempotent": true,
+              "status": "contract-only"
+            },
+            {
+              "name": "stream",
+              "interaction": "stream",
+              "permission": "ai:agent:read",
+              "idempotent": false,
+              "status": "contract-only",
+              "backpressure": "coalesce",
+              "backpressureReason": "Agent progress updates coalesce: only the latest state matters, and a slow consumer should see current progress rather than a replay of every intermediate step."
+            },
+            {
+              "name": "artifact",
+              "interaction": "call",
+              "permission": "ai:agent:read",
+              "idempotent": true,
+              "status": "contract-only"
+            },
+            {
+              "name": "close",
+              "interaction": "call",
+              "permission": "ai:agent:control",
+              "idempotent": true,
+              "status": "contract-only"
+            }
+          ],
+          "interaction": [
+            "call",
+            "stream"
+          ],
+          "permissions": [
+            "ai:agent:control",
+            "ai:agent:create",
+            "ai:agent:invoke",
+            "ai:agent:read"
+          ],
+          "lifecycle": "declared",
+          "availability": "optional-absent",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote",
+              "mcp"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "optional-absent",
+          "replacement": "contract-preserving",
+          "resources": "low"
+        },
+        {
+          "id": "ai.application-provider",
+          "status": "contract-only",
+          "operations": [
+            {
+              "name": "describe",
+              "interaction": "call",
+              "permission": "ai:app:read",
+              "idempotent": true,
+              "status": "contract-only"
+            },
+            {
+              "name": "invoke",
+              "interaction": "call",
+              "permission": "ai:app:invoke",
+              "idempotent": false,
+              "status": "contract-only"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "ai:app:invoke",
+            "ai:app:read"
+          ],
+          "lifecycle": "declared",
+          "availability": "optional-absent",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote",
+              "mcp"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "optional-absent",
+          "replacement": "contract-preserving",
+          "resources": "low"
+        },
+        {
+          "id": "ai.agent-session",
+          "status": "contract-only",
+          "operations": [
+            {
+              "name": "create",
+              "interaction": "call",
+              "permission": "ai:agent:create",
+              "idempotent": false,
+              "status": "contract-only"
+            },
+            {
+              "name": "status",
+              "interaction": "call",
+              "permission": "ai:agent:read",
+              "idempotent": true,
+              "status": "contract-only"
+            },
+            {
+              "name": "close",
+              "interaction": "call",
+              "permission": "ai:agent:control",
+              "idempotent": true,
+              "status": "contract-only"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "ai:agent:control",
+            "ai:agent:create",
+            "ai:agent:read"
+          ],
+          "lifecycle": "declared",
+          "availability": "optional-absent",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote",
+              "mcp"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "optional-absent",
+          "replacement": "contract-preserving",
+          "resources": "low"
+        },
+        {
+          "id": "ai.agent-delegation",
+          "status": "contract-only",
+          "operations": [
+            {
+              "name": "delegate",
+              "interaction": "call",
+              "permission": "ai:agent:delegate",
+              "idempotent": false,
+              "status": "contract-only"
+            },
+            {
+              "name": "status",
+              "interaction": "call",
+              "permission": "ai:agent:read",
+              "idempotent": true,
+              "status": "contract-only"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "ai:agent:delegate",
+            "ai:agent:read"
+          ],
+          "lifecycle": "declared",
+          "availability": "optional-absent",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote",
+              "mcp"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "optional-absent",
+          "replacement": "contract-preserving",
+          "resources": "low"
+        },
+        {
+          "id": "ai.agent-events",
+          "status": "contract-only",
+          "operations": [
+            {
+              "name": "subscribe",
+              "interaction": "stream",
+              "permission": "ai:event:read",
+              "idempotent": false,
+              "status": "contract-only",
+              "backpressure": "drop-oldest",
+              "backpressureReason": "Event subscribers get drop-oldest: recent events are more useful than stale ones, and an event stream must never stall the agent producing it."
+            },
+            {
+              "name": "emit",
+              "interaction": "event",
+              "permission": "ai:event:write",
+              "idempotent": false,
+              "status": "contract-only"
+            }
+          ],
+          "interaction": [
+            "event",
+            "stream"
+          ],
+          "permissions": [
+            "ai:event:read",
+            "ai:event:write"
+          ],
+          "lifecycle": "declared",
+          "availability": "optional-absent",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote",
+              "mcp"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "optional-absent",
+          "replacement": "contract-preserving",
+          "resources": "low"
+        },
+        {
+          "id": "ai.decision",
+          "status": "contract-only",
+          "operations": [
+            {
+              "name": "record",
+              "interaction": "call",
+              "permission": "ai:decision:write",
+              "idempotent": false,
+              "status": "contract-only"
+            },
+            {
+              "name": "inspect",
+              "interaction": "call",
+              "permission": "ai:decision:read",
+              "idempotent": true,
+              "status": "contract-only"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "ai:decision:read",
+            "ai:decision:write"
+          ],
+          "lifecycle": "declared",
+          "availability": "optional-absent",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote",
+              "mcp"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "optional-absent",
+          "replacement": "contract-preserving",
+          "resources": "low"
+        },
+        {
+          "id": "ai.approval",
+          "status": "contract-only",
+          "operations": [
+            {
+              "name": "request",
+              "interaction": "call",
+              "permission": "ai:approval:request",
+              "idempotent": false,
+              "status": "contract-only"
+            },
+            {
+              "name": "resolve",
+              "interaction": "call",
+              "permission": "ai:approval:resolve",
+              "idempotent": false,
+              "status": "contract-only"
+            },
+            {
+              "name": "inspect",
+              "interaction": "call",
+              "permission": "ai:approval:read",
+              "idempotent": true,
+              "status": "contract-only"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "ai:approval:read",
+            "ai:approval:request",
+            "ai:approval:resolve"
+          ],
+          "lifecycle": "declared",
+          "availability": "optional-absent",
+          "criticality": "critical",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote",
+              "mcp"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "optional-absent",
+          "replacement": "contract-preserving",
+          "resources": "low"
+        },
+        {
+          "id": "ai.artifact",
+          "status": "contract-only",
+          "operations": [
+            {
+              "name": "create",
+              "interaction": "call",
+              "permission": "ai:artifact:write",
+              "idempotent": false,
+              "status": "contract-only"
+            },
+            {
+              "name": "read",
+              "interaction": "call",
+              "permission": "ai:artifact:read",
+              "idempotent": true,
+              "status": "contract-only"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "ai:artifact:read",
+            "ai:artifact:write"
+          ],
+          "lifecycle": "declared",
+          "availability": "optional-absent",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote",
+              "mcp"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "optional-absent",
+          "replacement": "contract-preserving",
+          "resources": "low"
+        },
+        {
+          "id": "ai.context",
+          "status": "contract-only",
+          "operations": [
+            {
+              "name": "load",
+              "interaction": "call",
+              "permission": "ai:context:read",
+              "idempotent": true,
+              "status": "contract-only"
+            },
+            {
+              "name": "compact",
+              "interaction": "call",
+              "permission": "ai:context:write",
+              "idempotent": false,
+              "status": "contract-only"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "ai:context:read",
+            "ai:context:write"
+          ],
+          "lifecycle": "declared",
+          "availability": "optional-absent",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote",
+              "mcp"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "optional-absent",
+          "replacement": "contract-preserving",
+          "resources": "low"
+        }
+      ],
+      "notes": "Contract-only. Declares vocabulary for a future AI Foundation: provider/runtime taxonomy, model and tool gateways, application providers, agent lifecycle, session, delegation, events, decision, approval, artifact and context. NOTHING is implemented: no inference, no agent loop, no gateway client, no MCP server or client, no network call, no new dependency. Owned by manager because these contracts are cross-domain and must not be owned by whoever writes the first adapter. A dependency-free leaf: the AI Foundation must never become a prerequisite for the backend booting.",
+      "tier": "domain",
+      "dataOwner": "none",
+      "stateOwner": "none",
+      "trust": "core",
+      "capabilities_granted": [],
+      "communication": [
+        "call",
+        "event",
+        "stream",
+        "batch"
+      ],
+      "failureBoundary": "in-process-safe",
+      "resources": {
+        "cpu": "low",
+        "memory": "low",
         "disk": "none",
         "network": false,
         "concurrency": "parallel-safe",
@@ -278,45 +1295,301 @@
       "capabilities": [
         {
           "id": "compat.route",
-          "status": "implemented"
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "match",
+              "interaction": "call",
+              "permission": "compat:read",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "compat:read"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "critical",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "low"
         },
         {
           "id": "compat.response-envelope",
-          "status": "implemented"
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "wrap",
+              "interaction": "call",
+              "permission": "compat:read",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "compat:read"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "critical",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "low"
         },
         {
           "id": "compat.error-shape",
-          "status": "implemented"
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "wrap",
+              "interaction": "call",
+              "permission": "compat:read",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "compat:read"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "critical",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "low"
         },
         {
           "id": "compat.auth-context",
-          "status": "implemented"
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "resolve",
+              "interaction": "call",
+              "permission": "compat:read",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "compat:read"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "critical",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "low"
         },
         {
           "id": "compat.scopes",
-          "status": "implemented"
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "resolve",
+              "interaction": "call",
+              "permission": "compat:read",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "compat:read"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "standard",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "low"
         },
         {
           "id": "compat.capability-registry",
-          "status": "implemented"
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "resolve",
+              "interaction": "call",
+              "permission": "compat:read",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "list",
+              "interaction": "call",
+              "permission": "compat:read",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "compat:read"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "standard",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "low"
         },
         {
           "id": "compat.breaking-changes-report",
           "status": "unsupported",
           "restFeature": "breaking-changes",
-          "phase": "P6"
+          "phase": "P6",
+          "operations": [],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [],
+          "lifecycle": "declared",
+          "availability": "capability-unavailable",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "capability-unavailable",
+          "replacement": "contract-preserving",
+          "resources": "low"
         },
         {
           "id": "compat.insights",
           "status": "deferred",
           "restFeature": "insights",
-          "phase": "deferred"
+          "phase": "deferred",
+          "operations": [],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [],
+          "lifecycle": "declared",
+          "availability": "capability-unavailable",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "capability-unavailable",
+          "replacement": "contract-preserving",
+          "resources": "low"
         },
         {
           "id": "compat.license-management",
           "status": "deferred",
           "restFeature": "license-management",
-          "phase": "deferred"
+          "phase": "deferred",
+          "operations": [],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [],
+          "lifecycle": "declared",
+          "availability": "capability-unavailable",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "capability-unavailable",
+          "replacement": "contract-preserving",
+          "resources": "low"
         }
       ],
       "notes": "Translates route semantics, auth context, envelopes, errors and capability state. Business logic is forbidden here \u2014 it translates, it does not decide.",
@@ -368,52 +1641,299 @@
       "capabilities": [
         {
           "id": "auth.session",
-          "status": "implemented"
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "session",
+              "interaction": "call",
+              "permission": "auth:session",
+              "idempotent": false,
+              "status": "implemented"
+            },
+            {
+              "name": "logout",
+              "interaction": "call",
+              "permission": "auth:session",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "auth:session"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "critical",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "low"
         },
         {
           "id": "auth.owner-setup",
-          "status": "implemented"
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "setup",
+              "interaction": "call",
+              "permission": "auth:admin",
+              "idempotent": false,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "auth:admin"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "critical",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "low"
         },
         {
           "id": "auth.public-user",
-          "status": "implemented"
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "identity",
+              "interaction": "call",
+              "permission": "auth:read",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "auth:read"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "standard",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "low"
         },
         {
           "id": "auth.user-management",
           "status": "unsupported",
-          "restFeature": "user-management"
+          "restFeature": "user-management",
+          "operations": [],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [],
+          "lifecycle": "declared",
+          "availability": "capability-unavailable",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "capability-unavailable",
+          "replacement": "contract-preserving",
+          "resources": "low"
         },
         {
           "id": "auth.api-keys",
           "status": "unsupported",
-          "restFeature": "api-keys"
+          "restFeature": "api-keys",
+          "operations": [],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [],
+          "lifecycle": "declared",
+          "availability": "capability-unavailable",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "capability-unavailable",
+          "replacement": "contract-preserving",
+          "resources": "low"
         },
         {
           "id": "auth.mfa",
           "status": "unsupported",
-          "restFeature": "mfa"
+          "restFeature": "mfa",
+          "operations": [],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [],
+          "lifecycle": "declared",
+          "availability": "capability-unavailable",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "capability-unavailable",
+          "replacement": "contract-preserving",
+          "resources": "low"
         },
         {
           "id": "auth.sso",
           "status": "deferred",
           "restFeature": "sso",
-          "phase": "deferred"
+          "phase": "deferred",
+          "operations": [],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [],
+          "lifecycle": "declared",
+          "availability": "capability-unavailable",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "capability-unavailable",
+          "replacement": "contract-preserving",
+          "resources": "low"
         },
         {
           "id": "auth.ldap",
           "status": "deferred",
           "restFeature": "ldap",
-          "phase": "deferred"
+          "phase": "deferred",
+          "operations": [],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [],
+          "lifecycle": "declared",
+          "availability": "capability-unavailable",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "capability-unavailable",
+          "replacement": "contract-preserving",
+          "resources": "low"
         },
         {
           "id": "auth.personalization-survey",
           "status": "unsupported",
-          "restFeature": "personalization-survey"
+          "restFeature": "personalization-survey",
+          "operations": [],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [],
+          "lifecycle": "declared",
+          "availability": "capability-unavailable",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "capability-unavailable",
+          "replacement": "contract-preserving",
+          "resources": "low"
         },
         {
           "id": "auth.security-settings",
           "status": "unsupported",
-          "restFeature": "security-settings"
+          "restFeature": "security-settings",
+          "operations": [],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [],
+          "lifecycle": "declared",
+          "availability": "capability-unavailable",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "capability-unavailable",
+          "replacement": "contract-preserving",
+          "resources": "low"
         }
       ],
       "notes": "Session mechanics, password hashing, token signing and owner creation stay private in src/auth.mjs. The read-only identity projection other LEGOs need is published by the nested sub-LEGO 'auth.identity' (src/auth/contract), which is a dependency-free leaf \u2014 that is what retired allowances A1/A2 in P2.9 without creating a compatibility <-> auth cycle.",
@@ -480,7 +2000,45 @@
       "capabilities": [
         {
           "id": "auth.identity-projection",
-          "status": "implemented"
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "identity",
+              "interaction": "call",
+              "permission": "auth:read",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "hasOwner",
+              "interaction": "call",
+              "permission": "auth:read",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "auth:read"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "standard",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "none"
         }
       ],
       "notes": "Deliberately a dependency-free LEAF exposing exactly two pure read-only functions: toPublicUser (projection) and hasOwner (boolean). It holds no authority: nothing here can create a session, verify a password or mint a token. Being a leaf is what lets the compatibility layer depend on it without a cycle back into auth's HTTP adapter. Surface pinned by test/lego-boundary.test.mjs.",
@@ -530,31 +2088,175 @@
       "capabilities": [
         {
           "id": "credentials.crud",
-          "status": "legacy"
+          "status": "legacy",
+          "operations": [
+            {
+              "name": "inspect",
+              "interaction": "call",
+              "permission": "credential:read",
+              "idempotent": true,
+              "status": "legacy"
+            },
+            {
+              "name": "create",
+              "interaction": "call",
+              "permission": "credential:write",
+              "idempotent": false,
+              "status": "legacy"
+            },
+            {
+              "name": "update",
+              "interaction": "call",
+              "permission": "credential:write",
+              "idempotent": false,
+              "status": "legacy"
+            },
+            {
+              "name": "delete",
+              "interaction": "call",
+              "permission": "credential:write",
+              "idempotent": false,
+              "status": "legacy"
+            },
+            {
+              "name": "test",
+              "interaction": "call",
+              "permission": "credential:read",
+              "idempotent": false,
+              "status": "legacy"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "credential:read",
+            "credential:write"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "standard",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "strangler-pending",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "low"
         },
         {
           "id": "credentials.oauth1-flow",
           "status": "unsupported",
           "restFeature": "oauth1-flow",
-          "phase": "P5+"
+          "phase": "P5+",
+          "operations": [],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [],
+          "lifecycle": "declared",
+          "availability": "capability-unavailable",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "capability-unavailable",
+          "replacement": "contract-preserving",
+          "resources": "low"
         },
         {
           "id": "credentials.oauth2-flow",
           "status": "unsupported",
           "restFeature": "oauth2-flow",
-          "phase": "P5+"
+          "phase": "P5+",
+          "operations": [],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [],
+          "lifecycle": "declared",
+          "availability": "capability-unavailable",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "capability-unavailable",
+          "replacement": "contract-preserving",
+          "resources": "low"
         },
         {
           "id": "credentials.external-secrets",
           "status": "deferred",
           "restFeature": "external-secrets",
-          "phase": "deferred"
+          "phase": "deferred",
+          "operations": [],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [],
+          "lifecycle": "declared",
+          "availability": "capability-unavailable",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "capability-unavailable",
+          "replacement": "contract-preserving",
+          "resources": "low"
         },
         {
           "id": "credentials.resolvers",
           "status": "deferred",
           "restFeature": "credential-resolvers",
-          "phase": "deferred"
+          "phase": "deferred",
+          "operations": [],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [],
+          "lifecycle": "declared",
+          "availability": "capability-unavailable",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "capability-unavailable",
+          "replacement": "contract-preserving",
+          "resources": "low"
         }
       ],
       "notes": "CRUD currently lives in the legacy aggregate (legacy-rest). Carve-out target: P5.",
@@ -612,22 +2314,169 @@
       "capabilities": [
         {
           "id": "workflow.checksum",
-          "status": "implemented"
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "checksum",
+              "interaction": "call",
+              "permission": "workflow:read",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "workflow:read"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "standard",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "low"
         },
         {
           "id": "workflow.crud",
-          "status": "legacy"
+          "status": "legacy",
+          "operations": [
+            {
+              "name": "inspect",
+              "interaction": "call",
+              "permission": "workflow:read",
+              "idempotent": true,
+              "status": "legacy"
+            },
+            {
+              "name": "create",
+              "interaction": "call",
+              "permission": "workflow:write",
+              "idempotent": false,
+              "status": "legacy"
+            },
+            {
+              "name": "update",
+              "interaction": "call",
+              "permission": "workflow:write",
+              "idempotent": false,
+              "status": "legacy"
+            },
+            {
+              "name": "delete",
+              "interaction": "call",
+              "permission": "workflow:write",
+              "idempotent": false,
+              "status": "legacy"
+            },
+            {
+              "name": "activate",
+              "interaction": "call",
+              "permission": "workflow:write",
+              "idempotent": false,
+              "status": "legacy"
+            },
+            {
+              "name": "deactivate",
+              "interaction": "call",
+              "permission": "workflow:write",
+              "idempotent": false,
+              "status": "legacy"
+            },
+            {
+              "name": "archive",
+              "interaction": "call",
+              "permission": "workflow:write",
+              "idempotent": false,
+              "status": "legacy"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "workflow:read",
+            "workflow:write"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "standard",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "strangler-pending",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "low"
         },
         {
           "id": "workflow.history",
           "status": "unsupported",
-          "restFeature": "workflow-history"
+          "restFeature": "workflow-history",
+          "operations": [],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [],
+          "lifecycle": "declared",
+          "availability": "capability-unavailable",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "capability-unavailable",
+          "replacement": "contract-preserving",
+          "resources": "low"
         },
         {
           "id": "workflow.source-control",
           "status": "deferred",
           "restFeature": "source-control",
-          "phase": "deferred"
+          "phase": "deferred",
+          "operations": [],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [],
+          "lifecycle": "declared",
+          "availability": "capability-unavailable",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "capability-unavailable",
+          "replacement": "contract-preserving",
+          "resources": "low"
         }
       ],
       "notes": "Only the checksum primitive is carved out. CRUD stays in legacy-rest until P3. Workflow may consume the execution contract, never execution internals.",
@@ -682,19 +2531,173 @@
       "capabilities": [
         {
           "id": "execution.run-manual",
-          "status": "implemented"
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "start",
+              "interaction": "call",
+              "permission": "workflow:execute",
+              "idempotent": false,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "workflow:execute"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "standard",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "high"
         },
         {
           "id": "execution.history",
-          "status": "legacy"
+          "status": "legacy",
+          "operations": [
+            {
+              "name": "inspect",
+              "interaction": "call",
+              "permission": "execution:read",
+              "idempotent": true,
+              "status": "legacy"
+            },
+            {
+              "name": "list",
+              "interaction": "call",
+              "permission": "execution:read",
+              "idempotent": true,
+              "status": "legacy"
+            },
+            {
+              "name": "cancel",
+              "interaction": "call",
+              "permission": "execution:write",
+              "idempotent": true,
+              "status": "legacy"
+            },
+            {
+              "name": "delete",
+              "interaction": "call",
+              "permission": "execution:write",
+              "idempotent": false,
+              "status": "legacy"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "execution:read",
+            "execution:write"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "standard",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "strangler-pending",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "high"
         },
         {
           "id": "execution.partial",
-          "status": "planned"
+          "status": "planned",
+          "operations": [
+            {
+              "name": "start",
+              "interaction": "call",
+              "permission": "workflow:execute",
+              "idempotent": false,
+              "status": "planned"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "workflow:execute"
+          ],
+          "lifecycle": "declared",
+          "availability": "optional-absent",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "optional-absent",
+          "replacement": "contract-preserving",
+          "resources": "high"
         },
         {
           "id": "execution.queue",
-          "status": "deferred"
+          "status": "deferred",
+          "operations": [
+            {
+              "name": "start",
+              "interaction": "call",
+              "permission": "workflow:execute",
+              "idempotent": false,
+              "status": "planned"
+            },
+            {
+              "name": "cancel",
+              "interaction": "call",
+              "permission": "execution:write",
+              "idempotent": true,
+              "status": "planned"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "execution:write",
+            "workflow:execute"
+          ],
+          "lifecycle": "declared",
+          "availability": "capability-unavailable",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "capability-unavailable",
+          "replacement": "contract-preserving",
+          "resources": "high"
         }
       ],
       "notes": "src/engine.mjs is the implementation. It must not depend on workflow (direction: workflow -> execution contract).",
@@ -752,21 +2755,139 @@
       "capabilities": [
         {
           "id": "node-registry.catalog",
-          "status": "implemented"
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "resolve",
+              "interaction": "call",
+              "permission": "node:read",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "describe",
+              "interaction": "call",
+              "permission": "node:read",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "list",
+              "interaction": "call",
+              "permission": "node:read",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "node:read"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "standard",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "low"
         },
         {
           "id": "node-registry.icons",
-          "status": "implemented"
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "read",
+              "interaction": "call",
+              "permission": "node:read",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "node:read"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "standard",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "low"
         },
         {
           "id": "node-registry.community-packages",
           "status": "unsupported",
-          "restFeature": "community-packages"
+          "restFeature": "community-packages",
+          "operations": [],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [],
+          "lifecycle": "declared",
+          "availability": "capability-unavailable",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "capability-unavailable",
+          "replacement": "contract-preserving",
+          "resources": "low"
         },
         {
           "id": "node-registry.community-node-type-detail",
           "status": "unsupported",
-          "restFeature": "community-node-type-detail"
+          "restFeature": "community-node-type-detail",
+          "operations": [],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [],
+          "lifecycle": "declared",
+          "availability": "capability-unavailable",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "capability-unavailable",
+          "replacement": "contract-preserving",
+          "resources": "low"
         }
       ],
       "notes": "Node internals must never reach into the credential persistence implementation \u2014 declared as a hard direction rule.",
@@ -819,7 +2940,38 @@
         {
           "id": "dynamic-parameters.resolve",
           "status": "unsupported",
-          "restFeature": "dynamic-parameters"
+          "restFeature": "dynamic-parameters",
+          "operations": [
+            {
+              "name": "resolve",
+              "interaction": "call",
+              "permission": "node:read",
+              "idempotent": false,
+              "status": "unsupported"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "node:read"
+          ],
+          "lifecycle": "declared",
+          "availability": "capability-unavailable",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "capability-unavailable",
+          "replacement": "contract-preserving",
+          "resources": "low"
         }
       ],
       "notes": "Answers 501 today via the compatibility capability registry.",
@@ -871,11 +3023,80 @@
       "capabilities": [
         {
           "id": "webhook.ingress",
-          "status": "planned"
+          "status": "planned",
+          "operations": [
+            {
+              "name": "receive",
+              "interaction": "call",
+              "permission": "webhook:receive",
+              "idempotent": false,
+              "status": "planned"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "webhook:receive"
+          ],
+          "lifecycle": "declared",
+          "availability": "optional-absent",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "optional-absent",
+          "replacement": "contract-preserving",
+          "resources": "low"
         },
         {
           "id": "webhook.trigger-activation",
-          "status": "planned"
+          "status": "planned",
+          "operations": [
+            {
+              "name": "activate",
+              "interaction": "call",
+              "permission": "workflow:write",
+              "idempotent": false,
+              "status": "planned"
+            },
+            {
+              "name": "deactivate",
+              "interaction": "call",
+              "permission": "workflow:write",
+              "idempotent": false,
+              "status": "planned"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "workflow:write"
+          ],
+          "lifecycle": "declared",
+          "availability": "optional-absent",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "optional-absent",
+          "replacement": "contract-preserving",
+          "resources": "low"
         }
       ],
       "notes": "Ownership is provisional; Manager must confirm webhook stays with Agent 2 (workflow/execution) rather than Agent 6 (runtime).",
@@ -935,11 +3156,96 @@
       "capabilities": [
         {
           "id": "storage.json-collections",
-          "status": "implemented"
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "read",
+              "interaction": "call",
+              "permission": "storage:read",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "write",
+              "interaction": "call",
+              "permission": "storage:write",
+              "idempotent": false,
+              "status": "implemented"
+            },
+            {
+              "name": "list",
+              "interaction": "call",
+              "permission": "storage:read",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "storage:read",
+            "storage:write"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "critical",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "low"
         },
         {
           "id": "storage.sql-backend",
-          "status": "deferred"
+          "status": "deferred",
+          "operations": [
+            {
+              "name": "read",
+              "interaction": "call",
+              "permission": "storage:read",
+              "idempotent": true,
+              "status": "planned"
+            },
+            {
+              "name": "write",
+              "interaction": "call",
+              "permission": "storage:write",
+              "idempotent": false,
+              "status": "planned"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "storage:read",
+            "storage:write"
+          ],
+          "lifecycle": "declared",
+          "availability": "capability-unavailable",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "capability-unavailable",
+          "replacement": "contract-preserving",
+          "resources": "low"
         }
       ],
       "notes": "Hard direction rule: storage internals must never depend on a consuming domain. SQLite/Postgres work is explicitly out of scope until its own phase.",
@@ -993,11 +3299,88 @@
           "id": "worker.orchestration",
           "status": "unsupported",
           "restFeature": "orchestration",
-          "phase": "P11"
+          "phase": "P11",
+          "operations": [
+            {
+              "name": "start",
+              "interaction": "call",
+              "permission": "worker:admin",
+              "idempotent": false,
+              "status": "unsupported"
+            },
+            {
+              "name": "cancel",
+              "interaction": "call",
+              "permission": "worker:admin",
+              "idempotent": true,
+              "status": "unsupported"
+            },
+            {
+              "name": "status",
+              "interaction": "call",
+              "permission": "worker:read",
+              "idempotent": true,
+              "status": "unsupported"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "worker:admin",
+            "worker:read"
+          ],
+          "lifecycle": "declared",
+          "availability": "capability-unavailable",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "capability-unavailable",
+          "replacement": "contract-preserving",
+          "resources": "medium"
         },
         {
           "id": "worker.queue-mode",
-          "status": "deferred"
+          "status": "deferred",
+          "operations": [
+            {
+              "name": "start",
+              "interaction": "call",
+              "permission": "worker:admin",
+              "idempotent": false,
+              "status": "planned"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "worker:admin"
+          ],
+          "lifecycle": "declared",
+          "availability": "capability-unavailable",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "capability-unavailable",
+          "replacement": "contract-preserving",
+          "resources": "medium"
         }
       ],
       "notes": "Queue mode and scaling are deferred; today only the 501 capability exists.",
@@ -1056,7 +3439,48 @@
       "capabilities": [
         {
           "id": "realtime.push",
-          "status": "implemented"
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "subscribe",
+              "interaction": "stream",
+              "permission": "realtime:subscribe",
+              "idempotent": false,
+              "status": "implemented",
+              "backpressure": "drop-oldest",
+              "backpressureReason": "Editor push is live UI state. A disconnected or slow browser must not be able to grow the server heap, and the newest state supersedes the old."
+            },
+            {
+              "name": "publish",
+              "interaction": "event",
+              "permission": "realtime:publish",
+              "idempotent": false,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "event",
+            "stream"
+          ],
+          "permissions": [
+            "realtime:publish",
+            "realtime:subscribe"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "standard",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "low"
         }
       ],
       "notes": "Transport only: it broadcasts what the composition root hands it and knows nothing about execution internals.",
@@ -1114,7 +3538,38 @@
       "capabilities": [
         {
           "id": "settings.frontend-settings",
-          "status": "implemented"
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "read",
+              "interaction": "call",
+              "permission": "settings:read",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "settings:read"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "critical",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "none"
         }
       ],
       "notes": "Ownership provisional: the payload is the editor boot contract (Agent 1), but its inputs come from many domains. Manager arbitration item.",
@@ -1172,7 +3627,38 @@
       "capabilities": [
         {
           "id": "editor-ui.static-host",
-          "status": "implemented"
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "serve",
+              "interaction": "call",
+              "permission": "ui:read",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "ui:read"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "standard",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "low"
         }
       ],
       "notes": "Serves the never-patched n8n-editor-ui bundle. Backend domains must not reach into it.",
@@ -1224,12 +3710,71 @@
       "capabilities": [
         {
           "id": "workspace.personal-project",
-          "status": "legacy"
+          "status": "legacy",
+          "operations": [
+            {
+              "name": "inspect",
+              "interaction": "call",
+              "permission": "workspace:read",
+              "idempotent": true,
+              "status": "legacy"
+            },
+            {
+              "name": "list",
+              "interaction": "call",
+              "permission": "workspace:read",
+              "idempotent": true,
+              "status": "legacy"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "workspace:read"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "standard",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "strangler-pending",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "low"
         },
         {
           "id": "workspace.projects",
           "status": "unsupported",
-          "restFeature": "workspace-projects"
+          "restFeature": "workspace-projects",
+          "operations": [],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [],
+          "lifecycle": "declared",
+          "availability": "capability-unavailable",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "capability-unavailable",
+          "replacement": "contract-preserving",
+          "resources": "low"
         }
       ],
       "notes": "Provisional ownership \u2014 projects touch auth (sharing) and workflow (resources). Manager arbitration item.",
@@ -1280,11 +3825,62 @@
           "id": "observability.log-streaming",
           "status": "deferred",
           "restFeature": "log-streaming",
-          "phase": "deferred"
+          "phase": "deferred",
+          "operations": [
+            {
+              "name": "stream",
+              "interaction": "stream",
+              "permission": "observability:read",
+              "idempotent": false,
+              "status": "planned"
+            }
+          ],
+          "interaction": [
+            "stream"
+          ],
+          "permissions": [
+            "observability:read"
+          ],
+          "lifecycle": "declared",
+          "availability": "capability-unavailable",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "capability-unavailable",
+          "replacement": "contract-preserving",
+          "resources": "low"
         },
         {
           "id": "observability.insights",
-          "status": "deferred"
+          "status": "deferred",
+          "operations": [],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [],
+          "lifecycle": "declared",
+          "availability": "capability-unavailable",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "capability-unavailable",
+          "replacement": "contract-preserving",
+          "resources": "low"
         }
       ],
       "tier": "domain",
@@ -1337,7 +3933,46 @@
           "id": "data-tables.crud",
           "status": "deferred",
           "restFeature": "data-tables",
-          "phase": "deferred"
+          "phase": "deferred",
+          "operations": [
+            {
+              "name": "read",
+              "interaction": "call",
+              "permission": "data-table:read",
+              "idempotent": true,
+              "status": "planned"
+            },
+            {
+              "name": "write",
+              "interaction": "call",
+              "permission": "data-table:write",
+              "idempotent": false,
+              "status": "planned"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "data-table:read",
+            "data-table:write"
+          ],
+          "lifecycle": "declared",
+          "availability": "capability-unavailable",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "capability-unavailable",
+          "replacement": "contract-preserving",
+          "resources": "low"
         }
       ],
       "tier": "domain",
@@ -1395,23 +4030,236 @@
       "capabilities": [
         {
           "id": "legacy.workflow-crud",
-          "status": "legacy"
+          "status": "legacy",
+          "operations": [
+            {
+              "name": "inspect",
+              "interaction": "call",
+              "permission": "workflow:read",
+              "idempotent": true,
+              "status": "legacy"
+            },
+            {
+              "name": "create",
+              "interaction": "call",
+              "permission": "workflow:write",
+              "idempotent": false,
+              "status": "legacy"
+            },
+            {
+              "name": "update",
+              "interaction": "call",
+              "permission": "workflow:write",
+              "idempotent": false,
+              "status": "legacy"
+            },
+            {
+              "name": "delete",
+              "interaction": "call",
+              "permission": "workflow:write",
+              "idempotent": false,
+              "status": "legacy"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "workflow:read",
+            "workflow:write"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "standard",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "strangler-pending",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "low"
         },
         {
           "id": "legacy.execution-history",
-          "status": "legacy"
+          "status": "legacy",
+          "operations": [
+            {
+              "name": "inspect",
+              "interaction": "call",
+              "permission": "execution:read",
+              "idempotent": true,
+              "status": "legacy"
+            },
+            {
+              "name": "list",
+              "interaction": "call",
+              "permission": "execution:read",
+              "idempotent": true,
+              "status": "legacy"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "execution:read"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "standard",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "strangler-pending",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "low"
         },
         {
           "id": "legacy.credentials-crud",
-          "status": "legacy"
+          "status": "legacy",
+          "operations": [
+            {
+              "name": "inspect",
+              "interaction": "call",
+              "permission": "credential:read",
+              "idempotent": true,
+              "status": "legacy"
+            },
+            {
+              "name": "create",
+              "interaction": "call",
+              "permission": "credential:write",
+              "idempotent": false,
+              "status": "legacy"
+            },
+            {
+              "name": "update",
+              "interaction": "call",
+              "permission": "credential:write",
+              "idempotent": false,
+              "status": "legacy"
+            },
+            {
+              "name": "delete",
+              "interaction": "call",
+              "permission": "credential:write",
+              "idempotent": false,
+              "status": "legacy"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "credential:read",
+            "credential:write"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "standard",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "strangler-pending",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "low"
         },
         {
           "id": "legacy.projects",
-          "status": "legacy"
+          "status": "legacy",
+          "operations": [
+            {
+              "name": "list",
+              "interaction": "call",
+              "permission": "workspace:read",
+              "idempotent": true,
+              "status": "legacy"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "workspace:read"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "standard",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "strangler-pending",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "low"
         },
         {
           "id": "legacy.node-types",
-          "status": "legacy"
+          "status": "legacy",
+          "operations": [
+            {
+              "name": "list",
+              "interaction": "call",
+              "permission": "node:read",
+              "idempotent": true,
+              "status": "legacy"
+            },
+            {
+              "name": "describe",
+              "interaction": "call",
+              "permission": "node:read",
+              "idempotent": true,
+              "status": "legacy"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "node:read"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "standard",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "strangler-pending",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "low"
         }
       ],
       "notes": "Custodian, not owner: Agent 1 keeps it compiling; each carve-out belongs to the target domain listed in legacy.migrationTargets. The file list is frozen - no new files may enter this zone.",
@@ -1470,11 +4318,80 @@
       "capabilities": [
         {
           "id": "runtime.http-server",
-          "status": "implemented"
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "start",
+              "interaction": "call",
+              "permission": "runtime:admin",
+              "idempotent": false,
+              "status": "implemented"
+            },
+            {
+              "name": "stop",
+              "interaction": "call",
+              "permission": "runtime:admin",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "runtime:admin"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "critical",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "low"
         },
         {
           "id": "runtime.cli",
-          "status": "implemented"
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "start",
+              "interaction": "call",
+              "permission": "runtime:admin",
+              "idempotent": false,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "runtime:admin"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "standard",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "low"
         }
       ],
       "notes": "The only place allowed to wire domains together. It may import implementations (that is what a composition root does) but nothing may import it back.",
@@ -1538,7 +4455,38 @@
       "capabilities": [
         {
           "id": "reference.echo",
-          "status": "template"
+          "status": "template",
+          "operations": [
+            {
+              "name": "echo",
+              "interaction": "call",
+              "permission": "reference:invoke",
+              "idempotent": true,
+              "status": "template"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "reference:invoke"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "none"
         }
       ],
       "notes": "Copy-me template showing contract / internal / capability / dependency / ownership / tests. Deliberately not mounted on any route.",
@@ -1603,7 +4551,38 @@
       "capabilities": [
         {
           "id": "reference.validate",
-          "status": "template"
+          "status": "template",
+          "operations": [
+            {
+              "name": "validate",
+              "interaction": "call",
+              "permission": "reference:invoke",
+              "idempotent": true,
+              "status": "template"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "reference:invoke"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "none"
         }
       ],
       "notes": "The 'B' of the P2.7 upgrade proof: went 1.0.0 -> 1.1.0 (additive) while its sibling reference-lego.repository stayed at 1.0.0 and the parent stayed at 1.0.0. Forbidden from its sibling on purpose, so the sibling-internal fixture has a rule to violate.",
@@ -1664,7 +4643,38 @@
       "capabilities": [
         {
           "id": "reference.validate.schema",
-          "status": "template"
+          "status": "template",
+          "operations": [
+            {
+              "name": "validate",
+              "interaction": "call",
+              "permission": "reference:invoke",
+              "idempotent": true,
+              "status": "template"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "reference:invoke"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "none"
         }
       ],
       "implementations": {
@@ -1736,7 +4746,45 @@
       "capabilities": [
         {
           "id": "reference.repository",
-          "status": "template"
+          "status": "template",
+          "operations": [
+            {
+              "name": "read",
+              "interaction": "call",
+              "permission": "reference:invoke",
+              "idempotent": true,
+              "status": "template"
+            },
+            {
+              "name": "write",
+              "interaction": "call",
+              "permission": "reference:invoke",
+              "idempotent": false,
+              "status": "template"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "reference:invoke"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "none"
         }
       ],
       "notes": "The 'A/C' of the P2.7 upgrade proof: must stay at 1.0.0, untouched, while its sibling validation upgrades.",
@@ -2114,5 +5162,52 @@
       "resolution": "agent-3's auth domain published the dependency-free nested leaf 'auth.identity' (src/auth/contract/index.mjs) exposing exactly toPublicUser + hasOwner; compatibility and settings now depend on that leaf. Modelling it as a leaf rather than widening 'auth' is what avoids a compatibility <-> auth cycle.",
       "guard": "test/lego-boundary.test.mjs asserts the auth contract surface is exactly [toPublicUser, hasOwner] and that no file outside src/auth/ imports src/auth.mjs."
     }
-  ]
+  ],
+  "surfaceAliases": {
+    "rule": "A surface alias maps an external/UI vocabulary word to ONE canonical capability-owning domain. It creates no capability, no contract and no ownership. If two words mean genuinely different things they must be different capabilities, not aliases.",
+    "why": "The editor says \"executions\" (a collection of records); the architecture says \"execution\" (the capability of running a workflow). Creating a second capability to match UI plurality would duplicate ownership for a grammatical difference. Aliasing keeps one owner and one contract while the mapping stays deterministic.",
+    "aliases": [
+      {
+        "surface": "executions",
+        "canonical": "execution",
+        "kind": "domain",
+        "surfaceOrigin": "editor REST namespace /rest/executions",
+        "note": "Plural UI collection of execution records; the singular capability owns running and inspecting them."
+      },
+      {
+        "surface": "workflows",
+        "canonical": "workflow",
+        "kind": "domain",
+        "surfaceOrigin": "editor REST namespace /rest/workflows",
+        "note": "Plural collection; singular capability owns the workflow entity."
+      },
+      {
+        "surface": "credentials",
+        "canonical": "credentials",
+        "kind": "domain",
+        "surfaceOrigin": "editor REST namespace /rest/credentials",
+        "note": "Already plural in both vocabularies; recorded so the map is total rather than selective."
+      },
+      {
+        "surface": "projects",
+        "canonical": "workspace",
+        "kind": "domain",
+        "surfaceOrigin": "editor REST namespace /rest/projects",
+        "note": "The UI word is \"project\"; the architecture calls the domain workspace. This is a genuine rename, not a plural, which is exactly why it must be declared rather than guessed."
+      },
+      {
+        "surface": "node-types",
+        "canonical": "node-registry",
+        "kind": "domain",
+        "surfaceOrigin": "editor REST namespace /rest/node-types and /rest/types",
+        "note": "UI speaks of node types; the domain owns the registry that resolves them."
+      }
+    ],
+    "constraints": [
+      "Every alias must resolve to an existing domain id.",
+      "No alias may collide with a real domain id (that would make resolution ambiguous).",
+      "No two aliases may share a surface word.",
+      "An alias is a read-model convenience for consumers; the backend never resolves ownership through it."
+    ]
+  }
 }

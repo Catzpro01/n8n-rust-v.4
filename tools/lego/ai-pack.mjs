@@ -69,6 +69,8 @@ Then run the test tier it selects, then \`npm run lego:gate\`.
 | L1 | \`.ai/domains/<id>.md\` | what one LEGO owns and may call |
 | L2 | \`.ai/contracts.md\` | the contract, its version, its lock row |
 | L2 | \`.ai/communication.md\` | CALL/EVENT/STREAM/BATCH, envelope, cancellation, backpressure |
+| L2 | \`.ai/capabilities.md\` | the operation vocabulary and surface aliases |
+| L3 | \`.ai/ai-foundation.md\` | provider/runtime taxonomy, MCP boundary, zero-install |
 | L3 | \`.ai/recipes/<id>.md\` | how to perform a specific change |
 | L4 | the source | only when L0–L3 are insufficient |
 
@@ -79,6 +81,8 @@ Then run the test tier it selects, then \`npm run lego:gate\`.
 - Feature domains (Workflow, Execution, Auth, Node Registry, Storage) are **declared, not implemented**.
 - The legacy REST aggregate is frozen and may only shrink — see \`.ai/legacy-rest.md\`.
 - Allowances remaining: see \`.ai/index.md\`. They may shrink, never grow.
+- A capability declares its operations; never infer them from a route.
+- The AI Foundation is \`contract-only\` — no inference, no runtime, no MCP.
 `;
 }
 
@@ -186,6 +190,25 @@ function capabilityIndex(registry) {
   }
   const rows = [...byCapability.entries()].sort().map(([capability, owners]) => `| \`${capability}\` | ${owners.map((owner) => `\`${owner}\``).join(', ')} |`);
 
+  // Operation vocabulary. This is the part a consumer actually negotiates
+  // against, and the reason it is generated rather than written: a hand-kept
+  // copy would drift from the manifest within one phase.
+  const operationRows = [];
+  for (const domain of registry.domains) {
+    for (const capability of domain.capabilities ?? []) {
+      if (typeof capability === 'string') continue;
+      for (const operation of capability.operations ?? []) {
+        operationRows.push(
+          `| \`${capability.id}.${operation.name}\` | \`${domain.id}\` | ${operation.interaction}`
+          + `${operation.backpressure ? ` (${operation.backpressure})` : ''} | \`${operation.permission}\` `
+          + `| ${operation.idempotent ? 'yes' : 'no'} | ${operation.status} |`);
+      }
+    }
+  }
+
+  const aliasRows = (registry.surfaceAliases?.aliases ?? []).map(
+    (alias) => `| \`${alias.surface}\` | \`${alias.canonical}\` | ${alias.note} |`);
+
   const trustRows = Object.entries(FOUNDATION.trust.levels).map(
     ([level, meta]) => `| \`${level}\` | ${meta.rank} | ${(FOUNDATION.trust.defaultGrants[level] ?? []).map((grant) => `\`${grant}\``).join(', ') || '_none_'} | ${meta.summary} |`,
   );
@@ -198,6 +221,24 @@ function capabilityIndex(registry) {
 | Capability | Provided by |
 | --- | --- |
 ${rows.join('\n')}
+
+## Operation vocabulary
+
+Operations are **declared**, never inferred from route existence. A consumer reads
+this table instead of guessing from a URL shape.
+
+| Operation | LEGO | Interaction | Permission | Idempotent | Status |
+| --- | --- | --- | --- | --- | --- |
+${operationRows.join('\n')}
+
+## Surface aliases
+
+UI vocabulary is not capability identity, but the mapping must be deterministic.
+An alias creates no capability, no contract and no ownership.
+
+| Surface word | Canonical LEGO | Note |
+| --- | --- | --- |
+${aliasRows.join('\n')}
 
 ## Security capabilities and trust
 
@@ -754,6 +795,152 @@ a rejected transition does not mutate state.
 `;
 }
 
+function aiFoundationDoc() {
+  const file = join(REPO_ROOT, 'apps', 'n8n-lego', 'src', 'lego', 'manifest', 'ai-foundation.json');
+  if (!existsSync(file)) return null;
+  const ai = JSON.parse(readFileSync(file, 'utf8'));
+  const taxonomy = ai.taxonomy;
+  return `${BANNER}
+# AI Foundation — contracts only
+
+> **Status: \`${ai.status}\`.** ${ai.notImplemented.join(' ')}
+
+## The five concepts, kept separate
+
+Conflating any two of these is what makes an integration unreplaceable.
+
+${Object.entries(taxonomy.concepts).map(([name, meaning]) => `- **${name}** — ${meaning}`).join('\n')}
+
+\`\`\`
+${taxonomy.layering}
+\`\`\`
+
+**Anti-pattern:** ${taxonomy.antiPattern}
+
+## Provider kinds
+
+| Kind | Contract | What it supplies | Examples |
+| --- | --- | --- | --- |
+${Object.entries(ai.providerKinds).map(([kind, value]) => `| \`${kind}\` | \`${value.contract}\` | ${value.summary} | ${value.examples.join(', ')} |`).join('\n')}
+
+> ${ai.vendorRule}
+
+## Operations
+
+### \`${ai.modelGateway.contract}\`
+
+| Operation | Interaction | Permission | Idempotent |
+| --- | --- | --- | --- |
+${ai.modelGateway.operations.map((op) => `| \`${op.name}\` | ${op.interaction}${op.backpressure ? ` (${op.backpressure})` : ''} | \`${op.permission}\` | ${op.idempotent} |`).join('\n')}
+
+${ai.modelGateway.modelMetadata.rule}
+
+### \`${ai.toolGateway.contract}\`
+
+| Operation | Interaction | Permission | Idempotent |
+| --- | --- | --- | --- |
+${ai.toolGateway.operations.map((op) => `| \`${op.name}\` | ${op.interaction} | \`${op.permission}\` | ${op.idempotent} |`).join('\n')}
+
+${ai.toolGateway.toolMetadata.rule}
+
+### \`${ai.agentRuntime.contract}\`
+
+| Operation | Interaction | Permission | Idempotent |
+| --- | --- | --- | --- |
+${ai.agentRuntime.lifecycle.map((op) => `| \`${op.name}\` | ${op.interaction}${op.backpressure ? ` (${op.backpressure})` : ''} | \`${op.permission}\` | ${op.idempotent} |`).join('\n')}
+
+${ai.agentRuntime.runtimeMetadata.rule}
+
+## Application providers
+
+${ai.applicationProvider.firstClassRule}
+
+Example decomposition for \`${ai.applicationProvider.exampleCapabilities.application}\`:
+
+| Capability | Permission | Side effects |
+| --- | --- | --- |
+${ai.applicationProvider.exampleCapabilities.capabilities.map((c) => `| \`${c.id}\` | \`${c.permission}\` | ${c.sideEffects} |`).join('\n')}
+
+## Session, delegation, events
+
+**Session** \`${ai.agentSession.contract}\` — ${ai.agentSession.sizeRule}
+
+States: ${ai.agentSession.states.map((s) => `\`${s}\``).join(', ')}
+References: ${ai.agentSession.references.map((r) => `\`${r}\``).join(', ')}
+
+**Delegation** \`${ai.delegation.contract}\` — ${ai.delegation.authorityRule}
+
+${ai.delegation.budget.rule}
+
+**Events** \`${ai.events.contract}\`
+
+${ai.events.privacyRule}
+
+${ai.events.types.map((t) => `\`${t}\``).join(', ')}
+
+## Decision and approval
+
+${ai.decision.privacyRule}
+
+**${ai.approval.failClosedRule}**
+
+Actions requiring approval: ${ai.approval.actionsRequiringApproval.map((a) => `\`${a}\``).join(', ')}
+
+## Artifacts and context
+
+${ai.artifact.storageRule}
+
+Context scopes: ${ai.context.scopes.map((s) => `\`${s}\``).join(' > ')}
+
+${ai.context.selectiveLoadRule}
+
+## Resources and zero-install
+
+| Profile | Meaning |
+| --- | --- |
+${Object.entries(ai.resourceProfiles.profiles).map(([name, meaning]) => `| \`${name}\` | ${meaning} |`).join('\n')}
+
+${ai.resourceProfiles.noLocalInstallRule}
+
+### Zero-install is a valid state
+
+\`\`\`
+${Object.entries(ai.zeroInstall.state).map(([k, v]) => `${k.padEnd(16)} ${v}`).join('\n')}
+\`\`\`
+
+Reported as: ${ai.zeroInstall.reportedAs}
+
+> ${ai.zeroInstall.honestyRule}
+
+## MCP boundary
+
+\`\`\`
+${ai.mcp.boundary}
+\`\`\`
+
+- ${ai.mcp.rule}
+- ${ai.mcp.internalRule}
+- ${ai.mcp.mappingRule}
+- ${ai.mcp.exportRule}
+
+**${ai.mcp.notBuilt}**
+
+## Transport routing
+
+| When | Transport | Mechanism |
+| --- | --- | --- |
+${ai.transportRouting.ladder.map((step) => `| ${step.when} | \`${step.transport}\` | ${step.mechanism} |`).join('\n')}
+
+${ai.transportRouting.prohibition}
+
+${ai.transportRouting.carryRule}
+
+## Rust
+
+${ai.rustPolicy.rule} ${ai.rustPolicy.prohibition}
+`;
+}
+
 function adrIndex() {
   const dir = join(REPO_ROOT, 'docs', 'architecture', 'adr');
   let rows = [];
@@ -798,6 +985,8 @@ export function generate() {
   files.set('adr-index.md', adrIndex());
   files.set('communication.md', communicationDoc());
   files.set('legacy-rest.md', legacyRestDoc());
+  const aiDoc = aiFoundationDoc();
+  if (aiDoc) files.set('ai-foundation.md', aiDoc);
 
   for (const domain of registry.domains) {
     files.set(`domains/${domain.id}.md`, domainCard(domain, registry, graph));

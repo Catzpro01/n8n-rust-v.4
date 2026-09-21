@@ -13,5 +13,7 @@ Architecture decisions. Each records the decision, the reason, the alternatives 
 | [`ADR-0006-scale-out-honesty`](../docs/architecture/adr/ADR-0006-scale-out-honesty.md) | ADR-0006 — Scale-out blockers stay visible and owned rather than being quietly fixed or quietly hidden |
 | [`ADR-0007-four-interaction-classes`](../docs/architecture/adr/ADR-0007-four-interaction-classes.md) | ADR-0007 — Four interaction classes, one local dispatcher, zero transports |
 | [`ADR-0008-narrow-contract-over-wider-allowlist`](../docs/architecture/adr/ADR-0008-narrow-contract-over-wider-allowlist.md) | ADR-0008 — Retire an allowance with a narrow contract; never widen the allowlist |
+| [`ADR-0009-ai-contracts-before-adapters`](../docs/architecture/adr/ADR-0009-ai-contracts-before-adapters.md) | ADR-0009 — Provider-neutral AI contracts are written before any adapter |
+| [`ADR-0010-capability-is-a-contract`](../docs/architecture/adr/ADR-0010-capability-is-a-contract.md) | ADR-0010 — A capability is a contract, not a name and a status |
 
 New ADRs go in `docs/architecture/adr/` and this index regenerates.
