@@ -121,3 +121,22 @@ Still open from the foundation gate and kept visible: **XA-5** (`lego.*` degrada
 5. **No transport in a business contract.** A surface shows *what* an operation does; the transport
    is chosen by cost and eligibility (local → event → stream → rest → ipc → remote), never named in
    the contract, and never downgraded silently (a `stream` request is never served as a `call`).
+
+## 6. Artifact storage and retention (what a surface may say)
+
+The artifact contract is `ai.artifact` (**contract-only**). The frontend quotes it, never invents it:
+
+| Field group | Declared |
+| :--- | :--- |
+| identity and metadata | `artifactId`, `kind`, `size`, `mime`, `createdAt`, `owner`, `checksum` |
+| retention | one of `ephemeral`, `session`, `retained`, `pinned` |
+| location | `storageRef` — opaque; resolved by the backend, never rendered as a path or credential |
+
+Kinds (8, declared): `patch`, `diff`, `log`, `report`, `screenshot`, `file`, `model-output`,
+`simulation-result`.
+
+Rules: the UI renders the declared `retention` value and names no class of its own (a product-level
+vocabulary such as temporary / task / project / durable is a *request*); `storageRef` is opaque and
+never resolved by the UI; when a reference cannot be resolved the surface renders
+`artifact-unavailable` and keeps metadata visible rather than fabricating content. Events, context
+and memory carry **references**, never payloads.
