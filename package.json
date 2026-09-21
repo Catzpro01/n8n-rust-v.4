@@ -17,6 +17,12 @@
     "runtime:typecheck": "npm --prefix apps/n8n-ts run typecheck",
     "runtime:test": "node --test tests/runtime/",
     "runtime:gate": "bash tests/integration/runtime_gate.sh",
-    "runtime:smoke": "node tests/runtime/helpers/smoke.mjs"
+    "runtime:smoke": "node tests/runtime/helpers/smoke.mjs",
+    "lego:install": "npm --prefix apps/n8n-lego install && node scripts/fetch-n8n-catalog.mjs && node scripts/fetch-n8n-roles.mjs",
+    "lego:start": "node apps/n8n-lego/src/server.mjs",
+    "lego:dev": "node --watch apps/n8n-lego/src/server.mjs",
+    "lego:doctor": "node apps/n8n-lego/bin/n8n-lego.mjs doctor",
+    "lego:catalog": "node scripts/fetch-n8n-catalog.mjs && node scripts/fetch-n8n-roles.mjs",
+    "lego:test": "node --test apps/n8n-lego/test/"
   }
 }

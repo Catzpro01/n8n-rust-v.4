@@ -1,0 +1,26 @@
+{
+  "name": "n8n-lego",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "n8n lego — workflow automation app: the real n8n editor UI (n8n-editor-ui) served by the LEGO execution engine.",
+  "license": "SEE LICENSE IN reference/n8n/LICENSE.md",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "main": "src/server.mjs",
+  "bin": {
+    "n8n-lego": "bin/n8n-lego.mjs"
+  },
+  "scripts": {
+    "start": "node src/server.mjs",
+    "dev": "node --watch src/server.mjs",
+    "catalog": "node ../../scripts/fetch-n8n-catalog.mjs",
+    "test": "node --test test/*.test.mjs",
+    "doctor": "node src/doctor.mjs"
+  },
+  "dependencies": {
+    "n8n-editor-ui": "2.9.4"
+  },
+  "optionalDependencies": {}
+}
