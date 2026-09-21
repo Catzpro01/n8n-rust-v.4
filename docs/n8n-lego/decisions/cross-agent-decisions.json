@@ -1,7 +1,7 @@
 {
-  "recordVersion": "1.0.0",
+  "recordVersion": "1.1.0",
   "owner": "agent-01 (frontend + compatibility)",
-  "description": "Machine-readable record of the cross-agent questions this phase had to answer. A question is RESOLVED only when an existing declaration already answers it; otherwise it is recorded with the arbiter it needs, the evidence gathered, and what the frontend does meanwhile. Nothing here is a silent choice: every unresolved row names who has to decide and what is blocked until they do.",
+  "description": "Machine-readable open-decision register. A question is RESOLVED only when an existing declaration already answers it; otherwise it is recorded with the arbiter it needs, the evidence gathered, the current interpretation and what is blocked until it is decided. Every row carries owner, affected domains, current interpretation, decision required, blocking level, date and references, so a future agent can continue without the historical chat. Nothing here is a silent choice.",
   "sourceOfTruth": {
     "backendFoundation": {
       "repository": "Catzpro01/n8n-rust-v.4",
@@ -34,7 +34,20 @@
         "arena/01a0c521 domains.json → execution.* capabilities"
       ],
       "frontendBehaviour": "The frontend never treats a surface id as a capability id: capability ids are normalised and compared as `<domain>.<name>` (vocabulary.mjs), and a surface whose backend binding is `none` has no capability at all.",
-      "arbiter": null
+      "arbiter": null,
+      "owner": "agent-2",
+      "affectedDomains": [
+        "execution",
+        "frontend"
+      ],
+      "currentInterpretation": "`execution` is the canonical backend identity: arena/01a0c521 declares domain `execution` with capabilities `execution.run-manual`, `execution.history`, `execution.partial`, `execution.queue`. There is no `executions` domain. The frontend's `executions` is a UI *surface* id (a route group: /home/executions) and its `backend.capability` field already points at `execution`, so no second identity exists.",
+      "decisionRequired": null,
+      "blockingLevel": "none",
+      "date": "2026-09-22",
+      "references": [
+        "packages/frontend-lego/manifest/surfaces.json → surfaces[executions].backend.capability = \"execution\"",
+        "arena/01a0c521 domains.json → execution.* capabilities"
+      ]
     },
     {
       "id": "XA-2",
@@ -52,7 +65,21 @@
         "packages/frontend-lego/src/backend-view.mjs"
       ],
       "arbiter": null,
-      "blocks": "nothing; a capability without a published list is refused by name, never guessed"
+      "blocks": "nothing; a capability without a published list is refused by name, never guessed",
+      "owner": "agent-2",
+      "affectedDomains": [
+        "lego.domain-registry",
+        "frontend"
+      ],
+      "currentInterpretation": "Yes, as of P2.10 (`6f7b66da`). 62 of the 82 capabilities in domains.json publish an `operations[]` list; each operation is `{ name, interaction, permission, idempotent, status }` with semantic names (`models.list`, `generate`, `tool.call`, `workflow.inspect`), published by the `lego.domain-registry@1.1.0` row. The frontend consumes the list verbatim and treats a published operation as first-class.",
+      "decisionRequired": null,
+      "blockingLevel": "none",
+      "date": "2026-09-22",
+      "references": [
+        "arena/01a0c521 @ 6f7b66da domains.json -> 82 capabilities, 62 with a non-empty `operations` list",
+        "a published operation carries its interaction class, so the frontend never infers one (lego.interaction@1.0.0)",
+        "packages/frontend-lego/test/29-alignment.test.mjs -> the aiPermission set is extracted from those operations and compared"
+      ]
     },
     {
       "id": "XA-3",
@@ -64,7 +91,20 @@
         "git diff main..arena/01a0c521 -- apps/n8n-lego/src/compat/capability.mjs → no change"
       ],
       "frontendBehaviour": "The map stays the application-side registry of known-but-unimplemented features; the frontend consumes it as *data* through `backendAvailabilityFrom({ unsupportedFeatures })` and tags each derived fact with `source: 'compat-unsupported-map'`. It is never imported by the frontend package.",
-      "arbiter": null
+      "arbiter": null,
+      "owner": "agent-2",
+      "affectedDomains": [
+        "compatibility",
+        "frontend"
+      ],
+      "currentInterpretation": "agent-01, as part of the `compatibility` domain. arena/01a0c521's contract lock already lists contract `compat.http` (owner `agent-1`, domain `compatibility`, version 1.0.0) whose surface includes `src/compat/capability.mjs` — the file the map lives in — with consumers `auth, settings, legacy-rest, runtime-host, agent-1/frontend`. apps/n8n-lego/src/compat/capability.mjs is byte-identical on both branches.",
+      "decisionRequired": null,
+      "blockingLevel": "none",
+      "date": "2026-09-22",
+      "references": [
+        "arena/01a0c521 contract-lock.json → compat.http (owner agent-1)",
+        "git diff main..arena/01a0c521 -- apps/n8n-lego/src/compat/capability.mjs → no change"
+      ]
     },
     {
       "id": "XA-4",
@@ -76,7 +116,19 @@
         "packages/frontend-lego/test/12-knowledge.test.mjs → owner is required"
       ],
       "frontendBehaviour": "The frontend contract catalog distinguishes `own` (agent-01), `foreign` (the owning domain's agent) and `legacy` (superseded in place) rows.",
-      "arbiter": null
+      "arbiter": null,
+      "owner": "agent-2",
+      "affectedDomains": [
+        "lego.domain-registry"
+      ],
+      "currentInterpretation": "Yes, now. The file is frontend-generated (it does not exist on arena/01a0c521), and its entries previously said `owner: \"unknown\"`. Every row now names a real owner, and a row without one fails test/12.",
+      "decisionRequired": null,
+      "blockingLevel": "none",
+      "date": "2026-09-22",
+      "references": [
+        ".ai/index/contracts.json → every entry has a non-empty owner",
+        "packages/frontend-lego/test/12-knowledge.test.mjs → owner is required"
+      ]
     },
     {
       "id": "XA-5",
@@ -91,7 +143,21 @@
       ],
       "frontendBehaviour": "The frontend quotes the canonical degradation *action* verbatim in the verdict (`degradation.action`) and does not invent a code of its own; its own `frontend.*` codes stay where they are, and an unmapped backend code renders through the message-key model.",
       "arbiter": "agent-2 publishes the `lego.*` codes (or removes the code names from the degradation actions)",
-      "blocks": "nothing; the UI shows the action and the reason"
+      "blocks": "nothing; the UI shows the action and the reason",
+      "owner": "agent-2",
+      "affectedDomains": [
+        "lego.interaction",
+        "frontend"
+      ],
+      "currentInterpretation": "The frontend quotes the canonical degradation *action* verbatim in the verdict (`degradation.action`) and does not invent a code of its own; its own `frontend.*` codes stay where they are, and an unmapped backend code renders through the message-key model.",
+      "decisionRequired": "agent-2 publishes the `lego.*` codes (or removes the code names from the degradation actions)",
+      "blockingLevel": "low",
+      "date": "2026-09-22",
+      "references": [
+        "arena/01a0c521 @ 6f7b66da interaction.mjs -> DEGRADATION_STATES actions name lego.* codes",
+        "arena/01a0c521 @ 6f7b66da domains.json + contracts/errors.contract.json -> no `lego` namespace, no lego.* code",
+        "the lock quotes the action strings verbatim (vocabulary.mjs degradation.actions) and test/29 asserts them against the module"
+      ]
     },
     {
       "id": "XA-6",
@@ -111,7 +177,22 @@
         "packages/frontend-lego/src/vocabulary.mjs"
       ],
       "arbiter": null,
-      "blocks": "nothing; XA-8 carries the remaining namespace question"
+      "blocks": "nothing; XA-8 carries the remaining namespace question",
+      "owner": "manager",
+      "affectedDomains": [
+        "ai-foundation",
+        "frontend"
+      ],
+      "currentInterpretation": "The manager owns it, as of P2.10: contract `ai.foundation@1.0.0` (domain `ai-foundation`, owner `manager`, status `contract-only`) declares the taxonomy, five provider kinds, eleven `ai.*` capability contracts, the 26 agent-event types, the trace/delegation/approval/artifact/context fields and the transport ladder. The frontend holds no competing vocabulary: its six UI capability ids (ai-assistant, ai-copilot, ai-agent-node, agent-machine, execution-ai-mode, agent-work-trace) are UI identities that collide with none of the eleven `ai.*` contracts, and every shared word is quoted from `ai.foundation` instead of re-invented.",
+      "decisionRequired": null,
+      "blockingLevel": "none",
+      "date": "2026-09-22",
+      "references": [
+        "arena/01a0c521 @ 6f7b66da contract-lock.json -> `ai.foundation 1.0.0 manager`",
+        "arena/01a0c521 @ 6f7b66da ai-foundation.json -> providerKinds/events/types/transportRouting.kinds quoted by vocabulary.mjs",
+        "the frontend event set and the backend event set are the same 26 names (extracted and compared)",
+        "the frontend provider-kind words were renamed to the canonical model-provider/tool-provider/application-provider rather than mapped, because they ride no pinned payload"
+      ]
     },
     {
       "id": "XA-7",
@@ -129,7 +210,21 @@
         "packages/frontend-lego/src/vocabulary.mjs"
       ],
       "arbiter": null,
-      "blocks": "nothing; the binding targets are consumed as data with a pending-publication record"
+      "blocks": "nothing; the binding targets are consumed as data with a pending-publication record",
+      "owner": "manager",
+      "affectedDomains": [
+        "ai-foundation",
+        "frontend"
+      ],
+      "currentInterpretation": "The manager publishes the transport kinds inside `ai.foundation@1.0.0`: `transportRouting.kinds` = [in-process, worker, remote, mcp] plus a five-rung ladder. The frontend quotes that set as `transportKind` and maps its gateway mechanism names into it. The separate *binding targets* remain unpublished, which is now XA-9.",
+      "decisionRequired": null,
+      "blockingLevel": "none",
+      "date": "2026-09-22",
+      "references": [
+        "arena/01a0c521 @ 6f7b66da ai-foundation.json -> transportRouting.kinds (4) and ladder (5 rungs)",
+        "arena/01a0c521 @ 6f7b66da manifest/foundation.json -> transport.targets (5 bindings), still in no contract-lock row",
+        "vocabulary.mjs -> `transportKind` (pinned) and `transportTarget` (publicationPending, decision XA-9)"
+      ]
     },
     {
       "id": "XA-8",
@@ -148,7 +243,21 @@
         "packages/frontend-lego/manifest/capabilities.json"
       ],
       "arbiter": "manager: choose whether the frontend capability declarations adopt the published `ai:*` names, whether the AI domain publishes the frontend words, or whether a namespace rule is declared for non-AI domains (workflow, execution)",
-      "blocks": "nothing in the frontend; the UI shows the grant it needs and the negotiation verdict names the permission the operation requires"
+      "blocks": "nothing in the frontend; the UI shows the grant it needs and the negotiation verdict names the permission the operation requires",
+      "owner": "manager",
+      "affectedDomains": [
+        "ai-foundation",
+        "frontend"
+      ],
+      "currentInterpretation": "Nothing is renamed silently. The lock declares the mapping (`inference:invoke -> ai:model:invoke`, `agent:run -> ai:agent:invoke`, `agent:observe -> ai:agent:read`, `agent:delegate -> ai:agent:delegate`), each unmapped word carries the reason it exists, and the frontend refuses an undeclared permission word instead of accepting it as a synonym.",
+      "decisionRequired": "manager: choose whether the frontend capability declarations adopt the published `ai:*` names, whether the AI domain publishes the frontend words, or whether a namespace rule is declared for non-AI domains (workflow, execution)",
+      "blockingLevel": "low",
+      "date": "2026-09-22",
+      "references": [
+        "arena/01a0c521 @ 6f7b66da domains.json -> ai-foundation capabilities publish 22 `ai:*` operation permissions",
+        "packages/frontend-lego/manifest/capabilities.json -> 6 `frontend:*`-style permission words across the AI capabilities",
+        "vocabulary.mjs -> local set `frontendCapabilityPermission`, four values mapped into `aiPermission`, two declared with reasons"
+      ]
     },
     {
       "id": "XA-9",
@@ -168,7 +277,22 @@
         "packages/frontend-lego/test/29-alignment.test.mjs"
       ],
       "arbiter": "manager: publish a lock row for the foundation manifest (its own `lego.foundation@1.0.0`, an extension of `kernel.platform`, or an explicit statement that it is data of `lego.domain-registry`)",
-      "blocks": "nothing; the values are consumed as declarations with a pending-publication record"
+      "blocks": "nothing; the values are consumed as declarations with a pending-publication record",
+      "owner": "manager",
+      "affectedDomains": [
+        "lego-foundation",
+        "frontend"
+      ],
+      "currentInterpretation": "The five sets are still quoted (values verified against the file) but with `contract: null` and a structured `publicationPending` record: no invented version, no silent assumption that the file is owned by the contract whose name sounds closest.",
+      "decisionRequired": "manager: publish a lock row for the foundation manifest (its own `lego.foundation@1.0.0`, an extension of `kernel.platform`, or an explicit statement that it is data of `lego.domain-registry`)",
+      "blockingLevel": "low",
+      "date": "2026-09-22",
+      "references": [
+        "arena/01a0c521 @ 6f7b66da contract-lock.json -> no row lists `src/lego/manifest/foundation.json`",
+        "arena/01a0c521 @ 6f7b66da domains.json -> foundation.vocabulary = \"manifest/foundation.json\"",
+        "vocabulary.mjs -> five sets (trustLevel, transportTarget, aiResourceField, deviceProfileField, deviceClass) carry `publicationPending` with this decision id",
+        "packages/frontend-lego/test/29-alignment.test.mjs -> a pending record must name its owner, its domain and a recorded decision"
+      ]
     },
     {
       "id": "XA-10",
@@ -187,7 +311,250 @@
         "packages/frontend-lego/src/agents.mjs"
       ],
       "arbiter": "manager: state whether the application provider keeps two namespaces (generic operation grant plus per-application grant) or one",
-      "blocks": "nothing; the two sets stay separate until the manager decides"
+      "blocks": "nothing; the two sets stay separate until the manager decides",
+      "owner": "manager",
+      "affectedDomains": [
+        "ai-foundation",
+        "frontend"
+      ],
+      "currentInterpretation": "The frontend negotiates on the published operation permissions and renders application permission names as vocabulary only; it never treats `ai:app:*` and `app:<application>:*` as interchangeable, and the UI shows which one an operation actually requires.",
+      "decisionRequired": "manager: state whether the application provider keeps two namespaces (generic operation grant plus per-application grant) or one",
+      "blockingLevel": "low",
+      "date": "2026-09-22",
+      "references": [
+        "arena/01a0c521 @ 6f7b66da domains.json -> ai.application-provider operations require `ai:app:*`",
+        "arena/01a0c521 @ 6f7b66da ai-foundation.json -> applicationProvider.exampleCapabilities uses `app:github:*`",
+        "vocabulary.mjs -> `aiPermission` (published operations) and `applicationPermission` (application vocabulary) are separate sets on purpose"
+      ]
+    },
+    {
+      "id": "XA-11",
+      "question": "Which contract publishes a skill - and is a skill a backend concept at all?",
+      "status": "open-for-manager",
+      "resolution": null,
+      "finding": "P2.10 publishes 82 capabilities and 14 contract rows, and none of them is a skill: there is no capability id containing `skill`, no `ai.skill` contract row, and `ai-foundation.json` has no skill vocabulary. The frontend capability `ai-skill` is declared only. The Skills surface therefore has no canonical source of truth.",
+      "evidence": [
+        "arena/01a0c521 @ 6f7b66da domains.json -> 82 capabilities, none named skill",
+        "arena/01a0c521 @ 6f7b66da ai-foundation.json -> taxonomy and contracts, no skill concept",
+        "arena/01a0c521 @ 6f7b66da contracts/contract-lock.json -> 14 rows, no ai.skill",
+        "packages/frontend-lego/manifest/capabilities.json -> frontend capability declared, no implementation"
+      ],
+      "frontendBehaviour": "The Skills surface renders presentation names only (`Skills 3 active`), requests no skill state, stores none and sends none; while the concept is unpublished it renders `capability-unavailable` with the reason instead of mock data.",
+      "informedBy": [
+        ".ai/master/AI_FRONTEND_CONTRACT_MATRIX.md",
+        ".ai/master/AI_UI_IMPLEMENTATION_PHASES.md"
+      ],
+      "arbiter": "manager: publish `ai.skill` (id, version, procedure, capability refs, validators, token budget) or state that a skill is a frontend presentation concept only",
+      "blocks": "P7 (Skills surface): the chip renders presentation-only until a contract exists",
+      "owner": "manager",
+      "affectedDomains": [
+        "ai-foundation",
+        "frontend"
+      ],
+      "currentInterpretation": "The Skills surface renders presentation names only (`Skills 3 active`), requests no skill state, stores none and sends none; while the concept is unpublished it renders `capability-unavailable` with the reason instead of mock data.",
+      "decisionRequired": "manager: publish `ai.skill` (id, version, procedure, capability refs, validators, token budget) or state that a skill is a frontend presentation concept only",
+      "blockingLevel": "phase",
+      "date": "2026-09-22",
+      "references": [
+        "arena/01a0c521 @ 6f7b66da domains.json -> 82 capabilities, none named skill",
+        "arena/01a0c521 @ 6f7b66da ai-foundation.json -> taxonomy and contracts, no skill concept",
+        "arena/01a0c521 @ 6f7b66da contracts/contract-lock.json -> 14 rows, no ai.skill",
+        "packages/frontend-lego/manifest/capabilities.json -> frontend capability declared, no implementation"
+      ]
+    },
+    {
+      "id": "XA-12",
+      "question": "Is there a durable memory store, or is memory only loaded context?",
+      "status": "open-for-manager",
+      "resolution": null,
+      "finding": "`ai-foundation.json` publishes the context contract (scopes, selective load, compaction) and nothing about memory: no `ai.memory` capability id, no memory fields in the contract lock. The honest sources for a Memory surface today are loaded context (`ai.context`), decisions (`ai.decision`) and artifacts (`ai.artifact`).",
+      "evidence": [
+        "arena/01a0c521 @ 6f7b66da ai-foundation.json -> context block (scopes, selectiveLoadRule, compactionRule), no memory concept",
+        "arena/01a0c521 @ 6f7b66da domains.json -> no capability named memory",
+        "arena/01a0c521 @ 6f7b66da contracts/contract-lock.json -> no ai.memory row"
+      ],
+      "frontendBehaviour": "`Memory 12 relevant` counts only what is loaded plus decisions and artifacts, and says so in advanced details; no store, no embeddings and no vector search are read, and the memory graph stays a level-3 view.",
+      "informedBy": [
+        ".ai/master/AI_FRONTEND_CONTRACT_MATRIX.md",
+        ".ai/master/AI_UX_PROGRESSIVE_DISCLOSURE.md"
+      ],
+      "arbiter": "manager: publish `ai.memory` (entry kinds, relevance source, retention) or declare that memory is not a backend concept",
+      "blocks": "P7 (memory list and `Open Memory Graph`): specified but gated",
+      "owner": "manager",
+      "affectedDomains": [
+        "ai-foundation",
+        "frontend"
+      ],
+      "currentInterpretation": "`Memory 12 relevant` counts only what is loaded plus decisions and artifacts, and says so in advanced details; no store, no embeddings and no vector search are read, and the memory graph stays a level-3 view.",
+      "decisionRequired": "manager: publish `ai.memory` (entry kinds, relevance source, retention) or declare that memory is not a backend concept",
+      "blockingLevel": "phase",
+      "date": "2026-09-22",
+      "references": [
+        "arena/01a0c521 @ 6f7b66da ai-foundation.json -> context block (scopes, selectiveLoadRule, compactionRule), no memory concept",
+        "arena/01a0c521 @ 6f7b66da domains.json -> no capability named memory",
+        "arena/01a0c521 @ 6f7b66da contracts/contract-lock.json -> no ai.memory row"
+      ]
+    },
+    {
+      "id": "XA-13",
+      "question": "What does an agent workspace mean, and which contract publishes it?",
+      "status": "open-for-manager",
+      "resolution": null,
+      "finding": "domains.json declares the `workspace` domain (agent-2, status planned, contract `workspace@0.0.0`) and marks `workspace.projects` unsupported; agent-scoped sandbox semantics (workspace id, scope, runtime binding, terminal state) are published nowhere, and no contract-lock row covers the domain.",
+      "evidence": [
+        "arena/01a0c521 @ 6f7b66da domains.json -> workspace domain planned, contract 0.0.0, workspace.projects unsupported",
+        "arena/01a0c521 @ 6f7b66da contracts/contract-lock.json -> no workspace row",
+        "arena/01a0c521 @ 6f7b66da ai-foundation.json -> deployment shapes and resource profiles exist, no workspace concept"
+      ],
+      "frontendBehaviour": "The workspace view renders only when a declaration exists; otherwise it renders `feature-unsupported` with the reason. It never shows a host path, a shell, or an unrestricted filesystem, and it states its scope explicitly (`Workspace - <name>`).",
+      "informedBy": [
+        ".ai/master/AI_UI_EXPERIENCE_MASTER_PLAN.md",
+        ".ai/master/AI_UI_STATES_AND_FLOWS.md"
+      ],
+      "arbiter": "manager with agent-2: publish agent-scoped workspace semantics or keep the surface unsupported",
+      "blocks": "P8 (workspace view): no tree, terminal state or runtime binding until published",
+      "owner": "manager",
+      "affectedDomains": [
+        "workspace",
+        "frontend"
+      ],
+      "currentInterpretation": "The workspace view renders only when a declaration exists; otherwise it renders `feature-unsupported` with the reason. It never shows a host path, a shell, or an unrestricted filesystem, and it states its scope explicitly (`Workspace - <name>`).",
+      "decisionRequired": "manager with agent-2: publish agent-scoped workspace semantics or keep the surface unsupported",
+      "blockingLevel": "phase",
+      "date": "2026-09-22",
+      "references": [
+        "arena/01a0c521 @ 6f7b66da domains.json -> workspace domain planned, contract 0.0.0, workspace.projects unsupported",
+        "arena/01a0c521 @ 6f7b66da contracts/contract-lock.json -> no workspace row",
+        "arena/01a0c521 @ 6f7b66da ai-foundation.json -> deployment shapes and resource profiles exist, no workspace concept"
+      ]
+    },
+    {
+      "id": "XA-14",
+      "question": "Which capability owns request and response translation?",
+      "status": "open-for-manager",
+      "resolution": null,
+      "finding": "There is no `translation` domain or capability in domains.json and no translation row in the contract lock; the only locale declaration is the frontend's own `SUPPORTED_LOCALES` (id, en, ar, zh, ru, jv). The frontend capability `translation` is declared, and nothing is published behind it.",
+      "evidence": [
+        "arena/01a0c521 @ 6f7b66da domains.json -> no translation domain or capability",
+        "arena/01a0c521 @ 6f7b66da contracts/contract-lock.json -> no translation row",
+        "packages/frontend-lego/src/i18n.mjs -> SUPPORTED_LOCALES is the only locale declaration"
+      ],
+      "frontendBehaviour": "The language control renders the declared locale set and sets a response-language preference on the request; `Translate response` stays absent while XA-14 is open, and no dictionary is carried inside a contract.",
+      "informedBy": [
+        ".ai/master/AI_ACCESSIBILITY_AND_LOCALIZATION.md"
+      ],
+      "arbiter": "manager: publish a translation capability (language pairs, provider mapping) or declare response language a frontend preference with no backend contract",
+      "blocks": "P9 (translation control): the `Translate response` action stays absent",
+      "owner": "manager",
+      "affectedDomains": [
+        "translation",
+        "frontend"
+      ],
+      "currentInterpretation": "The language control renders the declared locale set and sets a response-language preference on the request; `Translate response` stays absent while XA-14 is open, and no dictionary is carried inside a contract.",
+      "decisionRequired": "manager: publish a translation capability (language pairs, provider mapping) or declare response language a frontend preference with no backend contract",
+      "blockingLevel": "phase",
+      "date": "2026-09-22",
+      "references": [
+        "arena/01a0c521 @ 6f7b66da domains.json -> no translation domain or capability",
+        "arena/01a0c521 @ 6f7b66da contracts/contract-lock.json -> no translation row",
+        "packages/frontend-lego/src/i18n.mjs -> SUPPORTED_LOCALES is the only locale declaration"
+      ]
+    },
+    {
+      "id": "XA-15",
+      "question": "Which capability drafts and validates a node created with AI?",
+      "status": "open-for-manager",
+      "resolution": null,
+      "finding": "`node-registry@0.1.0` publishes catalog resolve/describe/list and icons.read; no contract publishes drafting or AI-assisted validation of a node, and the only published validation path is the workflow domain's `validate` operation.",
+      "evidence": [
+        "arena/01a0c521 @ 6f7b66da domains.json -> node-registry 0.1.0 operations resolve, describe, list; icons.read",
+        "arena/01a0c521 @ 6f7b66da domains.json -> workflow domain operations include validate",
+        "arena/01a0c521 @ 6f7b66da contracts/contract-lock.json -> no node-drafting row"
+      ],
+      "frontendBehaviour": "The six-step flow (Describe, Draft, Validate, Test, Preview, Install) is specified but gated: validation reuses the published workflow operations where available, and no AI-generated node is installed without a validated preview.",
+      "informedBy": [
+        ".ai/master/AI_UI_IMPLEMENTATION_PHASES.md"
+      ],
+      "arbiter": "manager: publish a node-drafting capability (draft, validate, preview, install) or scope Create with AI to composing declared node contracts",
+      "blocks": "P9 (Create with AI): the flow stays specified and gated",
+      "owner": "manager",
+      "affectedDomains": [
+        "node-registry",
+        "frontend"
+      ],
+      "currentInterpretation": "The six-step flow (Describe, Draft, Validate, Test, Preview, Install) is specified but gated: validation reuses the published workflow operations where available, and no AI-generated node is installed without a validated preview.",
+      "decisionRequired": "manager: publish a node-drafting capability (draft, validate, preview, install) or scope Create with AI to composing declared node contracts",
+      "blockingLevel": "phase",
+      "date": "2026-09-22",
+      "references": [
+        "arena/01a0c521 @ 6f7b66da domains.json -> node-registry 0.1.0 operations resolve, describe, list; icons.read",
+        "arena/01a0c521 @ 6f7b66da domains.json -> workflow domain operations include validate",
+        "arena/01a0c521 @ 6f7b66da contracts/contract-lock.json -> no node-drafting row"
+      ]
+    },
+    {
+      "id": "XA-16",
+      "question": "Does MCP need a capability of its own, or only the published vocabulary block?",
+      "status": "open-for-manager",
+      "resolution": null,
+      "finding": "`ai-foundation.json` publishes the mcp block (roles, concepts, mappingRule onto the tool gateway, exportRule, notBuilt) but no `ai.mcp-adapter` capability id exists in domains.json and no contract-lock row covers it; tools are invoked through the tool gateway.",
+      "evidence": [
+        "arena/01a0c521 @ 6f7b66da ai-foundation.json -> mcp.concepts, roles, mappingRule, exportRule, notBuilt",
+        "arena/01a0c521 @ 6f7b66da domains.json -> no mcp capability id",
+        "arena/01a0c521 @ 6f7b66da contracts/contract-lock.json -> no mcp row"
+      ],
+      "frontendBehaviour": "MCP is presented capability-first (`github.search - MCP`), advanced details show the relationship state, and tools are invoked only through the tool gateway operations; the UI never lists every tool of every server.",
+      "informedBy": [
+        ".ai/master/AI_UX_PROGRESSIVE_DISCLOSURE.md"
+      ],
+      "arbiter": "manager: publish `ai.mcp-adapter` or declare MCP an edge adapter of the tool gateway with no capability of its own",
+      "blocks": "P8 (MCP advanced details): only vocabulary and relationship state are renderable",
+      "owner": "manager",
+      "affectedDomains": [
+        "ai-foundation",
+        "frontend"
+      ],
+      "currentInterpretation": "MCP is presented capability-first (`github.search - MCP`), advanced details show the relationship state, and tools are invoked only through the tool gateway operations; the UI never lists every tool of every server.",
+      "decisionRequired": "manager: publish `ai.mcp-adapter` or declare MCP an edge adapter of the tool gateway with no capability of its own",
+      "blockingLevel": "phase",
+      "date": "2026-09-22",
+      "references": [
+        "arena/01a0c521 @ 6f7b66da ai-foundation.json -> mcp.concepts, roles, mappingRule, exportRule, notBuilt",
+        "arena/01a0c521 @ 6f7b66da domains.json -> no mcp capability id",
+        "arena/01a0c521 @ 6f7b66da contracts/contract-lock.json -> no mcp row"
+      ]
+    },
+    {
+      "id": "XA-17",
+      "question": "Which contract publishes token and cost usage - per call, per run, per session?",
+      "status": "open-for-manager",
+      "resolution": null,
+      "finding": "`ai.model-gateway.countTokens` is published and the contract states that a missing cost is unknown, never zero; there is no `ai.usage` capability and no usage row in the contract lock. Per-run usage for agents is not published: delegation budgets are limits (`maxTokens`, `maxToolCalls`, `maxDurationMs`, `maxChildren`), not consumption.",
+      "evidence": [
+        "arena/01a0c521 @ 6f7b66da ai-foundation.json -> modelGateway.countTokens; missing cost is unknown, never zero",
+        "arena/01a0c521 @ 6f7b66da ai-foundation.json -> delegation budget fields are limits, not usage",
+        "arena/01a0c521 @ 6f7b66da contracts/contract-lock.json -> no ai.usage row"
+      ],
+      "frontendBehaviour": "Per-message chips show a count only when it is reported and label anything derived as `estimated`; per-run and per-session totals are shown only when derivable from reported values, and are never fabricated.",
+      "informedBy": [
+        ".ai/master/AI_UI_STATES_AND_FLOWS.md"
+      ],
+      "arbiter": "manager: publish `ai.usage` (message, context, output, total, source) or declare usage a frontend projection of model-gateway counters",
+      "blocks": "P9 (usage view): session and run totals stay estimate-only",
+      "owner": "manager",
+      "affectedDomains": [
+        "ai-foundation",
+        "frontend"
+      ],
+      "currentInterpretation": "Per-message chips show a count only when it is reported and label anything derived as `estimated`; per-run and per-session totals are shown only when derivable from reported values, and are never fabricated.",
+      "decisionRequired": "manager: publish `ai.usage` (message, context, output, total, source) or declare usage a frontend projection of model-gateway counters",
+      "blockingLevel": "phase",
+      "date": "2026-09-22",
+      "references": [
+        "arena/01a0c521 @ 6f7b66da ai-foundation.json -> modelGateway.countTokens; missing cost is unknown, never zero",
+        "arena/01a0c521 @ 6f7b66da ai-foundation.json -> delegation budget fields are limits, not usage",
+        "arena/01a0c521 @ 6f7b66da contracts/contract-lock.json -> no ai.usage row"
+      ]
     }
   ],
   "rules": [
@@ -195,7 +562,9 @@
     "The frontend never picks a new shared word to end an open question — it fails closed and records the question.",
     "A finding stays in the record after it is fixed, so the reasoning survives the fix.",
     "The record is checked by tests: the lock is compared against the backend modules when they are present (test/29), and every open row states what the frontend does meanwhile.",
-    "A vocabulary quoted from a file with no publishing contract carries a structured `publicationPending` record naming the owner, the domain and a recorded decision - a free-text note is not enough, and an invented contract row is worse."
+    "A vocabulary quoted from a file with no publishing contract carries a structured `publicationPending` record naming the owner, the domain and a recorded decision - a free-text note is not enough, and an invented contract row is worse.",
+    "Every row names its owner, its affected domains, its current interpretation, the decision it requires, its blocking level and its references - a row without those is incomplete.",
+    "A superseded row is kept with a pointer to what replaced it; deleting history is not allowed."
   ],
   "alignment": {
     "test": "packages/frontend-lego/test/29-alignment.test.mjs",

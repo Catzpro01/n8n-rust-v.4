@@ -269,8 +269,8 @@ Fail-closed, in one place per question:
 
 ## 17. `.ai`
 
-The pack (81,715 B total, budget 80 KB → 205 B headroom — the seam and permission facts were
-paid for by moving the eight degradation triggers back to `negotiation.mjs`) now answers the AI question:
+The pack (81,678 B total, budget 80 KB → 242 B headroom — the master pointer paid for itself by
+compressing the entry point) now answers the AI question:
 `.ai/index/capabilities.json` carries the declared entries plus generated `vocabularies`,
 `negotiation`, `delivery`, `localization`, `ai` and `seam` blocks, and **every one of those
 blocks is drift-checked** against the module it summarizes (`test/12`). The frontend card names
@@ -283,7 +283,7 @@ comment.
 
 ## 18. Tests
 
-`265` frontend architecture tests across `29` suites, `36/36` app tests, `50/50` evidence checks,
+`281` frontend architecture tests across `30` suites, `36/36` app tests, `50/50` evidence checks,
 `26/26` conformance checks, the sub-LEGO audit PASSED, `verify:fast` at its unchanged 5/10
 baseline (G06–G10 need `packages/workflow-lego/node_modules`). New this phase:
 
@@ -319,11 +319,18 @@ need someone else:
 
 No new shared word was chosen to close a question: an open row stays open.
 
+**Seven further Manager-owned rows were recorded by the master documentation set (§21)**: XA-11
+(publish `ai.skill`), XA-12 (`ai.memory`), XA-13 (agent-scoped workspace semantics), XA-14
+(translation capability), XA-15 (node drafting and validation), XA-16 (`ai.mcp-adapter`), XA-17
+(`ai.usage`). Each names its arbiter, its evidence, the current interpretation — what the frontend
+does meanwhile — and the phase it blocks. The register is versioned (`recordVersion 1.1.0`) and every
+row carries owner, affected domains, decision required, blocking level, date and references.
+
 ## 20. Readiness evidence
 
 | Command | Result |
 | :--- | :--- |
-| `node --test packages/frontend-lego/test/*.test.mjs` | 265 tests, 261 pass, **4 skipped** (backend comparisons absent), 0 fail |
+| `node --test packages/frontend-lego/test/*.test.mjs` | 281 tests, 277 pass, **4 skipped** (backend comparisons absent), 0 fail |
 | `node --test apps/n8n-lego/test/*.test.mjs` | 36/36 pass |
 | `N8N_BACKEND_LEGO_ROOT=/tmp/a2/apps/n8n-lego/src/lego node --test packages/frontend-lego/test/29-alignment.test.mjs` | **7/7 pass, 0 skipped** — 38 canonical sets compared against the P2.10 tree, 0 drift, plus the quoted semantics |
 | `node apps/n8n-lego/scripts/capture-frontend-evidence.mjs` | **50/50 PASS**, boot payload byte-identical at 18,126 B |
@@ -335,6 +342,36 @@ No new shared word was chosen to close a question: an open row stays open.
 
 **No merge, no `main` write, no feature implementation, no second backend registry, no HTTP
 between local modules, no model call anywhere in this package.**
+
+## 21. Master project documentation (durable memory)
+
+The repository — not the chat — is now the memory of the project. `.ai/master/` holds **27 documents**
+(174 KB of a 256 KB budget, largest 21 KB of a 32 KB per-file cap), deliberately **outside** the
+retrieval pack: they are loaded on purpose through `productContextFor({ kind })` (27 product tasks),
+so no ordinary task pays for them in bytes or attention. `test/30-master-plan.test.mjs` enforces the
+budgets, the reachability of every document, the fifteen official AI/Agent LEGO, and that **every
+decision id a document names exists in the register**.
+
+| Area | Documents |
+| :--- | :--- |
+| project, ownership, phases | `PROJECT_MASTER_PLAN.md`, `CORE_LEGO_ARCHITECTURE.md`, `IMPLEMENTATION_PHASES.md` |
+| current facts | `CURRENT_STATUS.md`, `KNOWN_BLOCKERS.md`, `PROJECT_DECISIONS.md` |
+| AI/Agent LEGO | `AI_AGENT_LEGO_MASTER_PLAN.md`, `AI_RUNTIME_AND_PROVIDER_PLAN.md`, `PROVIDER_TAXONOMY.md` |
+| context, tokens, memory | `CONTEXT_SESSION_MEMORY_PLAN.md`, `TOKEN_USAGE_AND_RESOURCE_PLAN.md`, `MEMORY_GRAPH_OBSIDIAN_PLAN.md` |
+| skills, agents, actions | `SKILL_AND_CAPABILITY_PLAN.md`, `AGENT_MACHINE_PLAN.md`, `WORKSPACE_AND_EXTERNAL_ACTION_PLAN.md` |
+| edges of the system | `MCP_AND_RUNTIME_ADAPTER_PLAN.md`, `NODE_CREATOR_PLAN.md`, `TRANSLATION_PLAN.md` |
+| examples and safety | `REFERENCE_AGENT_SCENARIOS.md`, `SECURITY_AND_APPROVAL_MODEL.md` |
+| how the project is built | `PROJECT_WORKFORCE_ORCHESTRATION.md` |
+| the AI product (frontend) | `AI_UI_EXPERIENCE_MASTER_PLAN.md`, `AI_FRONTEND_CONTRACT_MATRIX.md`, `AI_UX_PROGRESSIVE_DISCLOSURE.md`, `AI_UI_STATES_AND_FLOWS.md`, `AI_ACCESSIBILITY_AND_LOCALIZATION.md`, `AI_UI_IMPLEMENTATION_PHASES.md` |
+
+Corrections and decisions recorded in the same change: the project has **26 core LEGO domains** (the
+registry is the count, not prose); **Universal Translation is an official LEGO target** and the old
+"out of scope" assumption is superseded (`.ai/constitution.md` updated, XA-14 keeps it unpublished);
+the AI Workspace binds to the existing `workspace` domain instead of a duplicate; and the scale-out
+blockers (`src/store.mjs` execution-id allocation, local JSON system of record, missing shared
+persistence) are recorded as **NOT READY** rather than rounded up. **No runtime, contract, test
+expectation or boot payload was changed by this section** — it is documentation, a register extension
+and one new gate.
 
 ### Gate checklist (§24)
 
@@ -355,4 +392,4 @@ between local modules, no model call anywhere in this package.**
 | Boot payload budget preserved | ✅ 18,126 B, AI vocabulary absent from it |
 | `.ai` knowledge backed by manifests/contracts | ✅ generated blocks, drift-checked |
 | Every cross-agent question recorded with an arbiter | ✅ decision record, 4 resolved / 3 assigned |
-| Report | ✅ this document, 20 items |
+| Report | ✅ this document, 20 phase items + §21 (master documentation) |

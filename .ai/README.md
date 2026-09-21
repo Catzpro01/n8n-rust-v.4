@@ -1,13 +1,15 @@
 # `.ai/` — the machine-readable architecture pack
 
 This directory is how an AI agent (or a new human) understands this repository
-**without reading the source**. It is deliberately small: a pack that needs to be
-read in full has failed, because the point is to retrieve *only* the context a task
-needs.
+**without reading the source**. It is deliberately small: a pack read in full has
+failed — retrieve only what a task needs.
 
-The pack is written for the **frontend LEGO** (`ui-frontend`) and lives at the
-repository root so other domains can add their own subdirectory (`backend/`,
-`translation/`, …) without restructuring anything.
+The pack is written for the **frontend LEGO** (`ui-frontend`); other domains may add
+their own subdirectory (`backend/`, `translation/`, …).
+
+`.ai/master/` is **not part of this pack**: it holds the master project memory
+(domains, AI/Agent LEGO, context, tokens, agents, security, phases, status,
+blockers), loaded on purpose through `productContextFor()` and budgeted separately.
 
 ## Context levels — load only what the task needs
 
@@ -26,35 +28,27 @@ Rules of retrieval:
 3. A task that changes or consumes a contract adds L2 for **that contract only**.
 4. A task with a known shape (add a unit, change a hook, upgrade a version, run the
    gates) adds the single recipe it matches.
-5. Open L4 source only when the answer is genuinely implementation detail.
+5. Open L4 source only when the answer is implementation detail.
 6. Never load the whole pack, and never paste it into a prompt wholesale.
 
 ## What is here
 
 ```
 .ai/
-  README.md              this file (L0 entry point, level table, retrieval rules)
-  constitution.md        L0 — hard rules, ownership, boundaries, forbidden work
-  frontend/
-    card.md              L1 — the frontend domain card: modules, boot, surfaces, budgets
-    glossary.md          vocabulary: LEGO, sub-LEGO, surface, port, hook, capability, state…
-  index/
-    capabilities.json    machine-readable capability index (declared, criticality, trust, activation)
-    contracts.json       machine-readable contract index (owner, version, consumers, status)
-    units.json           machine-readable sub-LEGO index (hierarchy, ports, tests, versions)
-  cards/
-    decisions.md         decision cards: what was decided, why, what it rules out
-    recipes.md           L3 task recipes with exact commands
-  maps/
-    dependencies.md      dependency and impact maps (unit → deps, surface → backend, capability → units)
+  README.md  constitution.md            this file; L0 hard rules and forbiddens
+  frontend/  card.md  glossary.md       L1 domain card; vocabulary
+  index/     capabilities.json  contracts.json  units.json
+  cards/     decisions.md  recipes.md   decisions; L3 task recipes with commands
+  maps/      dependencies.md            dependency and impact maps
 ```
+
 
 ## Keeping the pack true
 
-The packs in `index/` are **checked against the manifests** by
-`packages/frontend-lego/test/12-knowledge.test.mjs`. If a unit, capability or
-contract changes and the index is not updated, that test fails with the exact
-difference — the pack cannot silently rot into fiction.
+The indexes in `index/` are **checked against the manifests** by
+`packages/frontend-lego/test/12-knowledge.test.mjs`: if a unit, capability or contract
+changes and the index is not updated, that test fails with the exact difference. The
+master set has its own gate, `test/30-master-plan.test.mjs`.
 
-The pack is metadata. It never carries implementation, and no runtime code reads it
-at boot: the browser receives the boot descriptor and nothing else.
+The pack is metadata: no runtime reads it at boot, and the browser receives the boot
+descriptor and nothing else.
