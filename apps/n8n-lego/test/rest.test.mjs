@@ -208,9 +208,15 @@ test('workflow CRUD + manual execution', async () => {
   assert.equal((await api('GET', '/rest/workflows')).json.count, 0);
 });
 
-test('unknown /rest endpoint answers instead of hanging (todo fallback)', async () => {
-  const { status } = await api('GET', '/rest/definitely-not-implemented');
-  assert.equal(status, 200, 'the todo fallback keeps the editor rendering');
+test('unknown /rest endpoint answers with explicit unsupported semantics', async () => {
+  const { status, json } = await api('GET', '/rest/definitely-not-implemented');
+  // P2: the fake `200 {"data":null}` success is gone — an unimplemented
+  // capability is a distinguishable 501 with a machine-readable code.
+  assert.equal(status, 501, 'an unimplemented endpoint never fakes a success');
+  assert.equal(json.data, undefined, 'the envelope is an error, not {data:null}');
+  assert.equal(json.code, 'unsupported');
+  assert.equal(json.meta.feature, 'endpoint-not-implemented');
+  assert.ok(typeof json.message === 'string' && json.message.length > 0);
 });
 
 test('unauthenticated /rest writes are rejected', async () => {

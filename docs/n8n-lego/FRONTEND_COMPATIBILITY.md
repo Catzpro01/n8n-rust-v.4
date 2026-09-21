@@ -1,4 +1,4 @@
-# n8n editor UI compatibility inventory (Phase 1)
+# n8n editor UI compatibility — inventory (Phase 1) + contract layer (Phase 2)
 
 **Question this document answers**
 
@@ -6,11 +6,14 @@
 > menus/features appear. Why exactly, and which endpoints/contracts must the backend
 > provide so the UI shows and works as close to stock n8n as possible?
 
-**Scope of this document (Phase 1):** inventory + boundary design only. No endpoint was
-implemented, no UI file was touched, no Rust, no storage change. Every "missing" item below
-is a *finding with an owner and a phase*, not an instruction to implement it now.
+**Status:** Phase 1 (inventory, §1–§9) delivered the findings; **Phase 2 (§10)
+implemented the Compatibility Contract Layer** — the findings R1, R2 and R7 are
+fixed and R3/R5 now answer with explicit unsupported semantics instead of a fake
+success. §1–§9 below are preserved as the P1 evidence trail, with P2 outcomes
+annotated into the findings table (§6).
 
-**Baseline:** commit `812bed72` (P0 PASS). Pinned frontend: `n8n-editor-ui@2.9.4`,
+**Baseline:** commit `812bed72` (P0 PASS), Phase 1 merged at `93078360`, Phase 2 on
+this branch. Pinned frontend: `n8n-editor-ui@2.9.4`,
 catalog `n8n-nodes-base@2.9.1`, reference source `reference/n8n` (n8n `2.9.4`).
 
 ---
@@ -274,13 +277,13 @@ listed here so Phase 2+ has the contract list; each row names the client module 
 
 | # | Finding | Owning LEGO | Phase | Status of finding |
 | :--- | :--- | :--- | :--- | :--- |
-| R1 | `PublicUser.globalScopes` missing → 0 settings entries, all rbac routes redirect | auth (compat envelope) | P2 | measured |
-| R2 | `hideUsagePage: true` deviates from upstream default `false` | compatibility | P2 | measured (source + settings payload) |
-| R3 | 11 settings screens have no endpoints behind them | auth / node-registry / compatibility | P5–P6 (+ distinguishable "not licensed" for enterprise) | source-derived |
-| R4 | `/rest/projects/:id` stub; project resources missing | workspace | P3 | measured (stub log) |
-| R5 | workflow history endpoints absent → history viewer empty | workflow | P3 | source-derived + P0 log |
-| R6 | queue/enterprise/AI entries are hidden by flags that match stock community | — | none | measured |
-| R7 | catch-all `200 {}` for unknown `/rest/*` | compatibility | P2 | measured |
+| R1 | `PublicUser.globalScopes` missing → 0 settings entries, all rbac routes redirect | auth (compat envelope) | P2 | **FIXED in P2** (§10.2; evidence `evidence/settings-visibility-p2.json`) |
+| R2 | `hideUsagePage: true` deviates from upstream default `false` | compatibility | P2 | **FIXED in P2** (§10.3; configurable, default false) |
+| R3 | 11 settings screens have no endpoints behind them | auth / node-registry / compatibility | P5–P6 (+ distinguishable "not licensed" for enterprise) | pages render since P2; their backends answer **501 unsupported** (§10.5) until the owning phase |
+| R4 | `/rest/projects/:id` stub; project resources missing | workspace | P3 | unchanged, now an explicit **501** (§10.5) |
+| R5 | workflow history endpoints absent → history viewer empty | workflow | P3 | unchanged, now an explicit **501** (§10.5) |
+| R6 | queue/enterprise/AI entries are hidden by flags that match stock community | — | none | measured — **kept honest in P2** (no flag was forced on) |
+| R7 | catch-all `200 {}` for unknown `/rest/*` | compatibility | P2 | **FIXED in P2** (§10.5; 501 `{code:'unsupported'}`) |
 
 **Phase 1 gate check**
 
@@ -330,3 +333,161 @@ history, dynamic parameters, credential encryption, storage abstraction, Rust, U
 CI changes, or any refactor of `src/rest/routes.mjs`. Phase 1 delivers the inventory, the
 boundary and the owners; Phase 2 starts with the compatibility layer (R1/R2/R7 are its
 first three contract tests).
+
+---
+
+## 10. Phase 2 — Compatibility Contract Layer (implemented)
+
+§1–§9 are the Phase 1 inventory. This section is the Phase 2 build: the boundary it
+proposed, now running. Everything below is measured on the pinned UI
+(`tests/e2e/settings-compat.mjs`, evidence `evidence/settings-visibility-p2.json`)
+and the contract tests (`apps/n8n-lego/test/compat.contract.test.mjs`).
+
+### 10.1 The boundary is real now (P2-A, P2-G)
+
+```
+n8n-editor-ui@2.9.4 (npm, prebuilt dist, never patched)   ← Principle 1 holds
+        │  HTTP + WebSocket, only the documented n8n surface
+        ▼
+src/compat/  — THE COMPATIBILITY LAYER
+        │  route.mjs        one router; mounts domain modules; `:param` capture; `public` flag contract
+        │  response.mjs     the JSON envelopes ({data}, bare {count,data}, error shape) + readBody
+        │  error.mjs        HttpError + status semantics (incl. 501 unsupported)
+        │  auth-context.mjs requireUser + PublicUser shape (adds globalScopes, mfaAuthenticated)
+        │  scopes.mjs       the permission model (roles.json) + getGlobalScopes(user)
+        │  capability.mjs   the capability registry + the unsupported handler (501)
+        ▼
+domain modules (single process — Principle 3)
+        src/auth/routes.mjs       AUTH LEGO        login/logout, owner setup, me, users, roles
+        src/settings/             SETTINGS LEGO    GET /rest/settings (+ frontend-settings.mjs)
+        src/rest/routes.mjs       LEGACY AGGREGATE catalog, workflows, executions, credentials,
+                                   projects, license, misc — peeled off per domain in P3+
+        src/compat/capability.mjs COMPATIBILITY/UNSUPPORTED owner of every unowned /rest/* path
+```
+
+Request flow: `compat router → domain handler`; router misses go to the capability
+handler. No business logic moved into `src/compat/`; it owns shape, scope exposure
+and the unsupported contract only. `src/rest/routes.mjs` keeps the not-yet-split
+domains with an explicit header marking each one's target phase — the file is no
+longer "everything", it is a queue with owners.
+
+### 10.2 PublicUser.globalScopes (P2-B) — R1 fixed
+
+| | before (measured P1) | after (measured P2) |
+| :--- | :--- | :--- |
+| `GET/POST /rest/login`, `POST /rest/owner/setup`, `GET /rest/me` | no `globalScopes` field | `globalScopes: string[121]` for the owner, `mfaAuthenticated: false` — the same options upstream passes (`withScopes: true`) |
+| `PATCH /rest/me`, `PATCH /rest/me/settings`, `GET /rest/users` | (same omission) | **no** scopes — mirrors upstream (`users.controller.listUsers` serializes without scopes) |
+| source of the value | — | computed per login from the extracted permission model: `getGlobalScopes(user)` = scopes of the user's global role in `data/roles.json` (`@n8n/permissions`), `[]` for an unknown role — exactly upstream `getGlobalScopes()`. Never `ALL_SCOPES`; RBAC is not bypassed |
+
+Proof it is computed, not hardcoded: a `global:member` user logs in and receives
+exactly the 25 member scopes (no `user:create`, `user:delete`…) — contract test
+"a limited user gets exactly their role scopes". Alongside, the roles extraction
+was fixed for an upstream alias (`GLOBAL_ADMIN_SCOPES = GLOBAL_OWNER_SCOPES.concat()`
+no longer extracts as 0 scopes; `scripts/fetch-n8n-roles.mjs` resolves `.concat()`
+aliases; `data/roles.json` regenerated).
+
+Measured chain end to end: login response carries `globalScopes` (121) →
+`init.ts` seeds `RBACStore.setGlobalScopes` → scope-gated routes pass their
+guards in the real browser (§10.6).
+
+### 10.3 Settings visibility + hideUsagePage (P2-C, P2-D) — R2 fixed
+
+* `hideUsagePage` is a config value again — `N8N_LEGO_HIDE_USAGE_PAGE` /
+  `N8N_HIDE_USAGE_PAGE`, default **false** (upstream `@n8n/config` default,
+  `index.ts:196`). It was hardcoded `true`.
+* No other flag moved. Queue mode stays off (Workers hidden), AI off, community
+  nodes stay off: the upstream default `N8N_COMMUNITY_PACKAGES_ENABLED=true` was
+  verified and consciously **not** adopted — the community-packages backend does
+  not exist, so the flag would advertise a capability this instance cannot honor
+  (it now answers 501, §10.5). This closes §8 question 1.
+* Menus that are now visible are scope-available; where their backend is not
+  implemented the page renders and the endpoint says so (§10.5) — that is a
+  documented deferred state, not a fake implementation.
+
+Measured (`evidence/settings-visibility-p2.json`), stock community set:
+
+| sidebar | before | after |
+| :--- | :--- | :--- |
+| settings entries | `Personal` only | `Usage and plan, Personal, Users, Project roles, n8n API, External Secrets, Environments, SSO, Security & policies, LDAP, Log Streaming, Migration Report` |
+| still hidden (correct) | — | `Workers` (queue mode), `AI Usage`, `Credential resolvers`, `Community nodes` (flag off) |
+| `/settings` redirect | `/settings/personal` | `/settings/usage` (guard reads `hideUsagePage`) |
+| `/settings/users` direct nav | redirected to `/home` | renders (owner has `user:create`,`user:update`) |
+| `/settings/community-nodes` | redirected to `/home` | still redirects to `/home` — flag-gated, same as stock |
+
+### 10.4 Unsupported endpoint semantics (P2-E)
+
+| kind | semantics | example |
+| :--- | :--- | :--- |
+| feature implemented, data empty | **200** with the real (empty) payload | `GET /rest/variables` → `{data: []}`; `GET /rest/workflows` → `{count: 0, data: []}` |
+| capability not implemented | **501** `{message, code: 'unsupported', meta: {feature, owner, phase}}` | `GET /rest/workflow-history/…` → 501 `meta.feature: workflow-history` |
+| not authenticated | **401** `{message: 'Unauthorized'}` | any protected path without a session — evaluated *before* the capability handler |
+| authenticated, not allowed | **403** | e.g. duplicate owner setup |
+| entity missing | **404** `{message}` | `GET /rest/workflows/nope` |
+| crash | **500** `{message: 'Internal server error'}` | unchanged |
+
+501 follows upstream's own `NotImplementedError`
+(`cli/src/errors/response-errors/not-implemented.error.ts`, status 501); the
+editor's REST client surfaces `message`, tooling can branch on `code`/`meta`.
+The old fallback — GET `200 {"data":null}` / writes `200 {"data":true}` — is
+gone, including for never-seen paths (`meta.feature: 'endpoint-not-implemented'`).
+
+### 10.5 The unsupported handler is one mechanism (P2-F)
+
+`src/compat/capability.mjs` holds the runtime side of the §5 endpoint map: a
+registry of known-but-unimplemented namespaces
+(`UNSUPPORTED_FEATURES`, longest-prefix match) and the catch-all
+`createUnsupportedHandler`. Every miss is answered 501 and logged once per path
+as `[rest:unsupported]` with `{method, path, feature, owner, phase}` — the log
+keeps the precise-backlog property the `[rest:todo]` line had. Domain modules
+can also use `unsupportedFeature('<name>')` as an explicit placeholder route
+handler instead of ever writing a stub.
+
+Known missing endpoints now answering 501 (owner → phase), all matched to the
+UI's own client modules in §5.2:
+
+* `workflow-history/*` (workflow, P3), `projects/:id` + project resources (workspace, P3)
+* `users` admin, `api-keys*`, `settings/security`, `me/password`, `me/survey`, `mfa/*` (auth, P5)
+* `oauth1|oauth2-credential/*` (credentials, P5+), `credential-resolvers`, `external-secrets`, `secret-providers` (credentials, deferred)
+* `community-packages*`, `community-node-types/:t` (node-registry, P6), `breaking-changes/*` (compatibility, P6)
+* `dynamic-node-parameters/*` (dynamic-parameters, P7)
+* `sso/*`, `ldap/*`, `log-streaming/*`, `source-control/*`, `licenses`/`license/*` ops, `insights`, `data-tables` (deferred)
+* `orchestration/*` (worker, P11)
+
+Measured in the browser: the n8n-API settings page calls `GET /rest/api-keys`
+and `GET /rest/api-keys/scopes` and receives **501** (evidence file); the canvas
+and the project card fetch `workflow-history/…version/:id` and `GET
+/rest/projects/:id` and receive **501** (smoke's "acknowledged" list).
+
+### 10.6 P2 measured results
+
+```
+unit + contract   node --test apps/n8n-lego/test/*.test.mjs   → 25/25 PASS
+                  (13 P2 contract tests added: globalScopes owner/member,
+                   roles-model fidelity, envelope parity, settings inputs,
+                   unsupported semantics incl. writes and auth ordering)
+browser gate      node tests/e2e/settings-compat.mjs <url>    → 12/12 PASS
+                  (login → globalScopes=121 → /settings → usage → 12 sidebar
+                   entries → /settings/users renders → /settings/community-nodes
+                   redirects home → /settings/api renders with 501 backend →
+                   workflow-history 501 contract → no page errors)
+P0 regression     lego-smoke --mode=create                    → 9/9 PASS
+                  restart → lego-smoke --mode=verify          → 5/5 PASS
+                  (smoke now fails on any 5xx except 501, which it lists as
+                   acknowledged unsupported capability hits)
+```
+
+### 10.7 Next-phase boundaries (unchanged, now backed by 501s instead of stubs)
+
+P2 closes only the contract layer. Nothing below was implemented here, and each
+item surfaces today as a named 501 capability rather than a silent success:
+
+* **P3** workspace/workflow split (project detail + project resources, workflow
+  history), continued `src/rest/routes.mjs` peel
+* **P5** auth administration (users, API keys, security settings, password, MFA) —
+  the Users/API/Security settings pages render since P2 and wait on these
+* **P6** node-registry services (community packages, breaking-changes report);
+  revisit `communityNodesEnabled` once community-packages exists
+* **P7** dynamic parameters
+* enterprise capabilities (SSO, LDAP, log streaming, external secrets, source
+  control, license ops) stay deferred behind the 501 contract — never faked
+* **P11** worker/orchestration with queue mode

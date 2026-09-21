@@ -1,10 +1,17 @@
 /**
- * `GET /rest/settings` — the single object the editor reads on boot.
+ * SETTINGS LEGO — `GET /rest/settings`, the single object the editor reads on
+ * boot.
  *
  * Field set mirrors `FrontendSettings` from `@n8n/api-types` (n8n 2.9.4,
  * `packages/@n8n/api-types/src/frontend-settings.ts`). The editor indexes into
  * this object without defensive checks, so every documented field is present —
  * an absent key surfaces as a blank page rather than a network error.
+ *
+ * Feature flags here must describe this instance truthfully: a flag set just to
+ * make a menu appear advertises a capability the backend does not have (the
+ * compatibility layer then answers its endpoints with the explicit 501
+ * "unsupported" semantics). Community defaults follow upstream
+ * (`@n8n/config`): `hideUsagePage` defaults to false, enterprise features off.
  */
 
 const ENDPOINT_FORM = 'form';
@@ -157,7 +164,9 @@ export function buildFrontendSettings(config, { hasOwner = false, requestOrigin 
     deployment: { type: 'n8n-lego' },
     allowedModules: { builtIn: ['*'], external: [] },
     enterprise: enterpriseSettings(),
-    hideUsagePage: true,
+    // Upstream default is false (`@n8n/config` N8N_HIDE_USAGE_PAGE): community
+    // n8n shows "Usage and plan". It is configurable, never hardcoded.
+    hideUsagePage: config.hideUsagePage,
     license: {
       planName: 'n8n lego (community)',
       consumerId: config.instanceId,

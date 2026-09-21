@@ -148,12 +148,17 @@ const browser = await puppeteer.launch({
 const page = await browser.newPage();
 const restCalls = [];
 const iconFailures = [];
+const unsupportedCalls = [];
 
 page.on('response', (response) => {
   const url = new URL(response.url());
   if (url.pathname.startsWith('/rest/')) {
     restCalls.push(`${response.request().method()} ${url.pathname} ${response.status()}`);
-    if (response.status() >= 500) problems.push(`HTTP ${response.status()} ${response.request().method()} ${url.pathname}`);
+    // P2 contract: 501 is the compatibility layer's explicit "capability not
+    // implemented" (docs/n8n-lego/FRONTEND_COMPATIBILITY.md §P2) — a described
+    // state, recorded but not a crash. Any other 5xx is a real server failure.
+    if (response.status() === 501) unsupportedCalls.push(`${response.request().method()} ${url.pathname}`);
+    else if (response.status() >= 500) problems.push(`HTTP ${response.status()} ${response.request().method()} ${url.pathname}`);
   }
   if (url.pathname.startsWith('/icons/') && response.status() >= 400) iconFailures.push(`${response.status()} ${url.pathname}`);
 });
@@ -408,9 +413,14 @@ await browser.close();
 
 // ------------------------------------------------------------------- veredict
 const failed = steps.filter((s) => s.verdict === 'FAIL').length;
-const serverErrors = restCalls.filter((c) => / 5\d\d$/.test(c));
+// 501 = acknowledged unsupported capability (P2 contract); all other 5xx fail.
+const serverErrors = restCalls.filter((c) => / 5\d\d$/.test(c) && !/ 501$/.test(c));
 console.log('\n--- rest calls (non-2xx) ---');
 [...new Set(restCalls.filter((c) => !/ 2\d\d$/.test(c)))].forEach((c) => console.log(`  ${c}`));
+if (unsupportedCalls.length) {
+  console.log('--- unsupported capabilities hit (P2 contract, acknowledged) ---');
+  [...new Set(unsupportedCalls)].forEach((c) => console.log(`  ${c}`));
+}
 console.log('--- problems ---');
 [...new Set(problems)].forEach((p) => console.log(`  ${p}`));
 console.log(`\nSMOKE ${mode}: ${steps.length - failed}/${steps.length} steps passed`);

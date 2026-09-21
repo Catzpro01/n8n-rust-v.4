@@ -1,39 +1,35 @@
 /**
- * n8n lego REST surface — the endpoints the real n8n editor calls.
+ * n8n lego REST surface — LEGACY AGGREGATE.
  *
- * Route names and payload shapes follow n8n 2.9.4
- * (`packages/cli/src/workflows/workflows.controller.ts`,
- * `packages/cli/src/executions/executions.controller.ts`,
- * `packages/cli/src/auth/auth.controller.ts`, …) so the stock editor UI works
- * unmodified. Anything not implemented yet is answered by the `/rest/*` catch-all,
- * which logs `[rest:todo]` — that log is the backlog.
+ * Route ownership is split by domain (see `src/compat/route.mjs` for the
+ * boundary). As of P2 the AUTH (`src/auth/`) and SETTINGS (`src/settings/`)
+ * LEGOs have their own modules; everything below remains in this single
+ * aggregate and is peeled off domain by domain in later phases:
+ *
+ *   node-registry               /rest/types/*, /rest/node-*
+ *   workflow LEGO        (P3)   /rest/workflows/*, /rest/active-workflows, tags
+ *   execution LEGO       (P3)   /rest/executions/*
+ *   workspace LEGO       (P3)   /rest/projects/* (incl. personalProject scopes)
+ *   credentials LEGO     (P5)   /rest/credentials/*
+ *   compatibility-owned         /rest/license, cosmetic/bootstrap endpoints
+ *
+ * Rules for anything staying here: no new business logic — the compatibility
+ * layer owns envelope (`src/compat/response.mjs`), errors
+ * (`src/compat/error.mjs`) and the auth context (`src/compat/auth-context.mjs`).
+ * Unimplemented `/rest/*` paths never fall through to a fake success: the
+ * capability handler (`src/compat/capability.mjs`) answers them with an
+ * explicit 501 "unsupported".
  */
 import { randomUUID } from 'node:crypto';
-import { HttpError, badRequest, forbidden, notFound, sendBare, sendData, sendJson, unauthorized } from './router.mjs';
-import { buildFrontendSettings } from './settings.mjs';
-import {
-  authenticate,
-  clearSessionCookieHeader,
-  createOwner,
-  createSession,
-  currentUser,
-  hasOwner,
-  toPublicUser,
-} from '../auth.mjs';
+import { HttpError, badRequest, notFound } from '../compat/error.mjs';
+import { sendBare, sendData, sendJson } from '../compat/response.mjs';
+import { requireUser } from '../compat/auth-context.mjs';
 import { loadCatalog, findNodeType } from '../catalog.mjs';
 import { calculateWorkflowChecksum } from '../checksum.mjs';
-import { APP_ROOT } from '../config.mjs';
-import { readFileSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
 
 const WORKFLOW_NAME_DEFAULT = 'My workflow';
 
 /* ------------------------------------------------------------------ helpers */
-
-function requireUser(ctx) {
-  if (!ctx.user) throw unauthorized();
-  return ctx.user;
-}
 
 function parseFilter(raw) {
   if (typeof raw !== 'string' || raw.trim() === '') return {};
@@ -52,11 +48,6 @@ function toPositiveInt(value, fallback) {
 
 function emptyWorkflow(name = WORKFLOW_NAME_DEFAULT) {
   return { name, nodes: [], connections: {}, settings: {}, pinData: {} };
-}
-
-/** Strips secrets from the stored user record and adds the fields the editor reads. */
-function publicUser(user) {
-  return toPublicUser(user);
 }
 
 function workflowSummary(workflow, { includeNodes = false } = {}) {
@@ -139,131 +130,10 @@ function executionSummary(execution) {
   };
 }
 
-function buildSettingsContext(store) {
-  // The editor shows the owner-setup screen while `showSetupOnFirstLoad` is true,
-  // so it has to reflect whether an owner account exists yet.
-  return { hasOwner: hasOwner(store) };
-}
-
-/** Origin as seen by the browser — honours proxy headers, falls back to Host. */
-function requestOrigin(req, config) {
-  const host = req.headers['x-forwarded-host'] ?? req.headers.host;
-  if (typeof host !== 'string' || host === '') return null;
-  const proto = req.headers['x-forwarded-proto'] ?? config.protocol;
-  return `${String(proto).split(',')[0]}://${host.split(',')[0]}`;
-}
-
 /* -------------------------------------------------------------------- routes */
 
 export function buildRoutes({ engine, logger, push }) {
   return [
-    /* -------------------------------------------------- settings / bootstrap */
-    {
-      method: 'GET',
-      path: '/rest/settings',
-      public: true,
-      handler: (ctx) => {
-        sendData(
-          ctx.res,
-          buildFrontendSettings(ctx.config, {
-            ...buildSettingsContext(ctx.store),
-            requestOrigin: requestOrigin(ctx.req, ctx.config),
-          }),
-        );
-      },
-    },
-
-    /* ------------------------------------------------------------------ auth */
-    {
-      method: 'GET',
-      path: '/rest/login',
-      public: true,
-      handler: (ctx) => {
-        if (!ctx.user) throw unauthorized();
-        sendData(ctx.res, publicUser(ctx.user));
-      },
-    },
-    {
-      method: 'POST',
-      path: '/rest/login',
-      public: true,
-      handler: (ctx) => {
-        const { email, emailOrLdapLoginId, password } = ctx.body ?? {};
-        const login = email ?? emailOrLdapLoginId;
-        if (!login || !password) throw badRequest('Email and password are required');
-        const user = authenticate(ctx.store, login, password);
-        if (!user) throw unauthorized();
-        const { cookie } = createSession(user, ctx.config);
-        sendData(ctx.res, publicUser(user), { headers: { 'set-cookie': cookie } });
-      },
-    },
-    {
-      method: 'POST',
-      path: '/rest/logout',
-      public: true,
-      handler: (ctx) => {
-        sendData(ctx.res, { loggedOut: true }, { headers: { 'set-cookie': clearSessionCookieHeader() } });
-      },
-    },
-    {
-      method: 'POST',
-      path: '/rest/owner/setup',
-      public: true,
-      handler: (ctx) => {
-        if (hasOwner(ctx.store)) throw forbidden('Instance owner already exists');
-        const { email, firstName, lastName, password } = ctx.body ?? {};
-        if (!email || !password) throw badRequest('Email and password are required');
-        const user = createOwner(ctx.store, { email, firstName, lastName, password });
-        const { cookie } = createSession(user, ctx.config);
-        logger.info('owner account created', { email: user.email });
-        sendData(ctx.res, publicUser(user), { headers: { 'set-cookie': cookie } });
-      },
-    },
-    {
-      method: 'POST',
-      path: '/rest/owner/dismiss-banner',
-      handler: (ctx) => {
-        sendData(ctx.res, true);
-      },
-    },
-
-    /* -------------------------------------------------------------- me/users */
-    {
-      method: ['GET', 'PATCH'],
-      path: '/rest/me',
-      handler: (ctx) => {
-        const user = requireUser(ctx);
-        if (ctx.method === 'PATCH') {
-          const patch = {};
-          for (const key of ['firstName', 'lastName', 'email']) {
-            if (typeof ctx.body?.[key] === 'string') patch[key] = ctx.body[key];
-          }
-          if (typeof patch.email === 'string') patch.email = patch.email.toLowerCase();
-          const updated = ctx.store.users.update(user.id, patch);
-          return sendData(ctx.res, publicUser(updated));
-        }
-        return sendData(ctx.res, publicUser(user));
-      },
-    },
-    {
-      method: 'PATCH',
-      path: '/rest/me/settings',
-      handler: (ctx) => {
-        const user = requireUser(ctx);
-        const updated = ctx.store.users.update(user.id, { settings: { ...(user.settings ?? {}), ...(ctx.body ?? {}) } });
-        sendData(ctx.res, publicUser(updated));
-      },
-    },
-    {
-      method: 'GET',
-      path: '/rest/users',
-      handler: (ctx) => {
-        requireUser(ctx);
-        const users = ctx.store.users.all().map(publicUser);
-        sendData(ctx.res, { count: users.length, items: users });
-      },
-    },
-
     /* ------------------------------------------------------- node type catalog */
     {
       method: 'GET',
@@ -830,6 +700,9 @@ export function buildRoutes({ engine, logger, push }) {
       path: '/rest/variables',
       handler: (ctx) => {
         requireUser(ctx);
+        // Community edition: the variables feature exists but the enterprise
+        // limit is 0 — an implemented feature with no data, so 200 [] is the
+        // honest answer (not an unsupported stub).
         sendData(ctx.res, []);
       },
     },
@@ -862,28 +735,6 @@ export function buildRoutes({ engine, logger, push }) {
       handler: (ctx) => {
         const user = requireUser(ctx);
         sendData(ctx.res, [personalProject(user)]);
-      },
-    },
-
-    /* ------------------------------------------------------------------- roles */
-    {
-      method: 'GET',
-      path: '/rest/roles',
-      handler: (ctx) => {
-        requireUser(ctx);
-        sendData(ctx.res, loadRoles(ctx.config));
-      },
-    },
-    {
-      method: 'GET',
-      path: '/rest/roles/:slug',
-      handler: (ctx) => {
-        requireUser(ctx);
-        const roles = loadRoles(ctx.config);
-        const all = [...roles.global, ...roles.project, ...roles.credential, ...roles.workflow];
-        const role = all.find((candidate) => candidate.slug === ctx.params.slug);
-        if (!role) throw notFound('Role not found');
-        sendData(ctx.res, { ...role, usedByUsers: 1 });
       },
     },
 
@@ -929,36 +780,6 @@ export function buildRoutes({ engine, logger, push }) {
       handler: (ctx) => sendData(ctx.res, []),
     },
   ];
-}
-
-/**
- * Role → scope map, extracted from the pinned n8n source by
- * `scripts/fetch-n8n-roles.mjs`. Falls back to a minimal owner role so the editor
- * still renders when the extraction has not been run.
- */
-let rolesCache = null;
-function loadRoles(config) {
-  if (rolesCache) return rolesCache;
-  // The extracted copy (per install) wins; the package ships the same file so a
-  // fresh `npm install -g` renders the editor correctly even before any fetch.
-  const candidates = [join(config.catalogDir, 'roles.json'), join(APP_ROOT, 'data', 'roles.json')];
-  for (const file of candidates) {
-    if (existsSync(file)) {
-      rolesCache = JSON.parse(readFileSync(file, 'utf8'));
-      return rolesCache;
-    }
-  }
-  const owner = {
-    slug: 'global:owner',
-    displayName: 'Owner',
-    description: 'Owner',
-    scopes: ['workflow:create', 'workflow:read', 'workflow:update', 'workflow:delete', 'workflow:list', 'credential:create', 'credential:read', 'credential:update', 'credential:delete', 'credential:list', 'user:read', 'user:list', 'user:create', 'user:changeRole', 'execution:read', 'execution:list', 'tag:create', 'tag:read', 'tag:update', 'tag:delete', 'project:create', 'project:read', 'project:update', 'project:delete', 'project:list'],
-    licensed: false,
-    systemRole: true,
-    roleType: 'global',
-  };
-  rolesCache = { global: [owner], project: [], credential: [], workflow: [] };
-  return rolesCache;
 }
 
 /**
@@ -1018,27 +839,6 @@ function personalProject(user) {
     updatedAt: user.updatedAt ?? new Date().toISOString(),
     role: 'project:personalOwner',
     scopes: PROJECT_SCOPES,
-  };
-}
-
-/**
- * Fallback for unimplemented `/rest/*` calls: answer with a benign envelope and
- * log the miss, so the editor keeps rendering and the gap is visible in the log.
- */
-export function createTodoHandler(logger) {
-  const seen = new Set();
-  return (ctx) => {
-    const key = `${ctx.method} ${ctx.path}`;
-    if (!seen.has(key)) {
-      seen.add(key);
-      logger.warn('[rest:todo] not implemented yet — returning an empty response', {
-        method: ctx.method,
-        path: ctx.path,
-        query: Object.keys(ctx.query ?? {}).length > 0 ? ctx.query : undefined,
-      });
-    }
-    if (ctx.method === 'GET') return sendData(ctx.res, null);
-    return sendData(ctx.res, true);
   };
 }
 

@@ -3,8 +3,9 @@
  *
  *   node apps/n8n-lego/src/server.mjs        (or: n8n-lego start)
  *
- * Boot order: config → logger → store → engine → REST routes → static UI → /push.
- * Request pipeline: base path → CORS → session → route → JSON envelope → log.
+ * Boot order: config → logger → store → engine → compat router (domains) → static UI → /push.
+ * Request pipeline: base path → CORS → session → compat route → domain handler →
+ * normalized JSON envelope → log. Unsupported `/rest/*` paths get an explicit 501.
  *
  * Exit codes: 78 invalid configuration (EX_CONFIG), 1 fatal boot error,
  * 0 clean shutdown.
@@ -16,8 +17,13 @@ import { createStore, seedExecutionCounter } from './store.mjs';
 import { createEngine } from './engine.mjs';
 import { createUi } from './ui.mjs';
 import { createPushServer } from './push.mjs';
-import { createRouter, HttpError, readBody, sendError, sendJson } from './rest/router.mjs';
-import { buildRoutes, createTodoHandler } from './rest/routes.mjs';
+import { createRouter } from './compat/route.mjs';
+import { HttpError } from './compat/error.mjs';
+import { readBody, sendError, sendJson } from './compat/response.mjs';
+import { createUnsupportedHandler } from './compat/capability.mjs';
+import { authRoutes } from './auth/routes.mjs';
+import { settingsRoutes } from './settings/routes.mjs';
+import { buildRoutes } from './rest/routes.mjs';
 import { catalogPresent, loadCatalog } from './catalog.mjs';
 import { createOwner, currentUser, hasOwner } from './auth.mjs';
 
@@ -47,8 +53,16 @@ export async function startServer({ env = process.env } = {}) {
   const engine = createEngine(config, logger);
   const ui = createUi({ config, logger });
   const push = createPushServer({ config, logger });
-  const router = createRouter(buildRoutes({ engine, logger, push }));
-  const todo = createTodoHandler(logger);
+  // Compatibility boundary: one router mounts the domain modules (auth,
+  // settings, the legacy aggregate). Any `/rest/*` path without an owner is
+  // answered by the capability handler with the explicit 501 "unsupported"
+  // semantics — never a fake `200 {}` (docs/n8n-lego/FRONTEND_COMPATIBILITY.md).
+  const router = createRouter([
+    ...settingsRoutes(),
+    ...authRoutes({ logger }),
+    ...buildRoutes({ engine, logger, push }),
+  ]);
+  const unsupported = createUnsupportedHandler(logger);
 
   // Execution ids continue after the highest one already stored.
   const highestExecutionId = store.executions.all().reduce((max, item) => Math.max(max, Number(item.id) || 0), 0);
@@ -213,7 +227,7 @@ export async function startServer({ env = process.env } = {}) {
         ctx.params = match.params;
         await match.handler(ctx);
       } else {
-        todo(ctx);
+        unsupported(ctx);
       }
       logAccess(req, res, pathname, started, ctx.user?.email);
     } catch (error) {

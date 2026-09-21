@@ -13,7 +13,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { APP_ROOT, REPO_ROOT } from './config.mjs';
-import { HttpError, badRequest } from './rest/router.mjs';
+import { HttpError, badRequest } from './compat/error.mjs';
 
 /**
  * The engine is a sibling package in the repository and a vendored copy inside the
