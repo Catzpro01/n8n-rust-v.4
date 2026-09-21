@@ -58,8 +58,54 @@ mkdir -p "$OUT_DIR"
 say "checks"
 node -e "const [a,b]=process.versions.node.split('.').map(Number); if (a<22 || (a===22 && b<18)) { console.error('node >= 22.18 required, found '+process.versions.node); process.exit(1); }"
 [ -f "$ENGINE_DIR/index.mjs" ] || { echo "engine missing: $ENGINE_DIR/index.mjs" >&2; exit 1; }
-( cd "$APP_DIR" && node --test "test/*.test.mjs" >/dev/null ) || { echo "app tests failed" >&2; exit 1; }
-echo "  ok  node $(node -p process.versions.node), engine present, tests pass"
+echo "  ok  node $(node -p process.versions.node), engine present"
+
+# The app ships `data/roles.json` because npm/Docker/tarball installs have no
+# reference checkout to extract it from. It is a generated file, so a clean clone
+# must be able to reproduce it byte for byte: the generator reads the pinned n8n
+# source under reference/ (tracked) and never the network.
+say "bundled data (roles.json) is reproducible"
+BUNDLED_ROLES="$APP_DIR/data/roles.json"
+ROLES_CHECK_DIR="$OUT_DIR/.roles-check"
+rm -rf "$ROLES_CHECK_DIR"
+node "$APP_DIR/scripts/fetch-n8n-roles.mjs" --dir "$ROLES_CHECK_DIR" >/dev/null \
+  || { echo "cannot regenerate roles.json from reference/n8n" >&2; exit 1; }
+GENERATED_ROLES="$ROLES_CHECK_DIR/roles.json"
+if [ ! -f "$BUNDLED_ROLES" ]; then
+  echo "  missing $BUNDLED_ROLES — regenerate it: node apps/n8n-lego/scripts/fetch-n8n-roles.mjs --dir apps/n8n-lego/data" >&2
+  exit 1
+fi
+if ! diff -q "$GENERATED_ROLES" "$BUNDLED_ROLES" >/dev/null; then
+  echo "  $BUNDLED_ROLES is out of date — regenerate it: node apps/n8n-lego/scripts/fetch-n8n-roles.mjs --dir apps/n8n-lego/data" >&2
+  exit 1
+fi
+echo "  ok  data/roles.json matches reference/n8n"
+
+# --------------------------------------------------------------- catalog for tests
+# The REST suite asserts the node catalog. A developer checkout usually has one in
+# <repo>/data/n8n-lego/catalog; a clean clone does not, so fetch the pinned catalog
+# into the output directory (same documented fetch the app does on first boot).
+say "test catalog"
+if [ -n "${N8N_LEGO_CATALOG_DIR:-}" ] && [ -f "$N8N_LEGO_CATALOG_DIR/nodes.json" ]; then
+  TEST_CATALOG="$N8N_LEGO_CATALOG_DIR"
+  echo "  using N8N_LEGO_CATALOG_DIR=$TEST_CATALOG"
+elif [ -f "$REPO_ROOT/data/n8n-lego/catalog/nodes.json" ]; then
+  TEST_CATALOG="$REPO_ROOT/data/n8n-lego/catalog"
+  echo "  using the checkout catalog ($TEST_CATALOG)"
+else
+  TEST_CATALOG="$OUT_DIR/.test-catalog"
+  if [ ! -f "$TEST_CATALOG/nodes.json" ]; then
+    echo "  fetching the pinned catalog into $TEST_CATALOG"
+    node "$APP_DIR/scripts/fetch-n8n-catalog.mjs" --dir "$TEST_CATALOG" >/dev/null \
+      || { echo "catalog fetch failed — set N8N_LEGO_CATALOG_DIR to an existing catalog to run offline" >&2; exit 1; }
+    node "$APP_DIR/scripts/fetch-n8n-roles.mjs" --dir "$TEST_CATALOG" >/dev/null || true
+  fi
+  echo "  using the freshly fetched catalog ($TEST_CATALOG)"
+fi
+
+( cd "$APP_DIR" && N8N_LEGO_CATALOG_DIR="$TEST_CATALOG" node --test "test/*.test.mjs" >/dev/null ) \
+  || { echo "app tests failed" >&2; exit 1; }
+echo "  ok  app tests pass"
 
 # ------------------------------------------------------------- vendor the engine
 say "vendoring the reconstructed engine into the package"

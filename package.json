@@ -19,11 +19,13 @@
     "runtime:gate": "bash tests/integration/runtime_gate.sh",
     "runtime:smoke": "node tests/runtime/helpers/smoke.mjs",
     "lego:install": "npm --prefix apps/n8n-lego install && node apps/n8n-lego/bin/n8n-lego.mjs catalog",
-    "lego:start": "node apps/n8n-lego/src/server.mjs",
+    "lego:start": "node apps/n8n-lego/bin/n8n-lego.mjs start",
     "lego:dev": "node --watch apps/n8n-lego/src/server.mjs",
     "lego:doctor": "node apps/n8n-lego/bin/n8n-lego.mjs doctor",
     "lego:catalog": "node apps/n8n-lego/bin/n8n-lego.mjs catalog",
     "lego:test": "node --test \"apps/n8n-lego/test/*.test.mjs\"",
-    "lego:pack": "bash scripts/release.sh --npm-only"
+    "lego:pack": "bash scripts/release.sh --npm-only",
+    "start": "npm run lego:start",
+    "lego:smoke": "node tests/e2e/lego-smoke.mjs"
   }
 }

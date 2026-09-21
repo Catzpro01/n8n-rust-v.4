@@ -25,6 +25,14 @@ npm run lego:doctor       # check node, UI bundle, catalog, port
 npm run lego:test         # REST smoke suite (boots a real server)
 ```
 
+Browser smoke test against a running instance (real n8n UI, Chromium via puppeteer):
+
+```bash
+npm --prefix tests/e2e install                       # once; downloads Chromium
+npm run lego:smoke -- http://localhost:5678                  # create → add node → save → execute → inspect
+npm run lego:smoke -- http://localhost:5678 --mode=verify    # restart the server first: the workflow must survive
+```
+
 All three channels, plus proxy/systemd notes: [`docs/n8n-lego/INSTALL.md`](../../docs/n8n-lego/INSTALL.md).
 Build every artifact at once with `bash scripts/release.sh`.
 
