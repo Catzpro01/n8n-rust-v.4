@@ -58,38 +58,41 @@ Rules that follow from this table:
 
 ## 3. The 26 current core LEGO domains
 
-Verified against `domains.json` at `6f7b66da` (26 domains, 82 capabilities, 62 with published
-operations). Status distribution: **8 implemented, 5 partial, 7 planned, 1 contract-only, 1 legacy,
-4 template**.
+This table is a **projection, not a source**: it restates `domains.json` at `6f7b66da` (Agent 2's
+registry) — the id, status, contract version and phase of each domain, in registry order. The registry
+is authoritative; when the two disagree, this document is wrong. Status distribution at that commit:
+**8 implemented, 5 partial, 7 planned, 1 contract-only, 1 legacy, 4 template**, over 82 capabilities
+(62 of them with operations published). A `0.0.0` contract version means *not published*: planned
+domains have no consumable surface yet.
 
-| # | Domain | Status | Phase |
+| # | Domain | Status (contract version) | Phase |
 | :-- | :--- | :--- | :--- |
-| 1 | `platform-kernel` | implemented | P2 |
-| 2 | `lego-foundation` | implemented | P2 |
-| 3 | `ai-foundation` | **contract-only** | P2.10 |
-| 4 | `compatibility` | implemented | P2 |
-| 5 | `settings` | partial | P2 |
-| 6 | `editor-ui-host` | implemented | P2 |
-| 7 | `legacy-rest` | **legacy** (must shrink) | P3–P7 |
-| 8 | `workflow` | partial | P3 |
-| 9 | `execution` | partial | P3 |
-| 10 | `webhook` | planned | P4 |
-| 11 | `workspace` | **planned** (contract `0.0.0`) | P3 |
-| 12 | `auth` | implemented | P2 |
-| 13 | `credentials` | partial | P2 |
-| 14 | `auth.identity` | implemented | P2 |
-| 15 | `node-registry` | partial (`0.1.0`) | P6 |
-| 16 | `dynamic-parameters` | planned | P6 |
-| 17 | `storage` | implemented | P3 |
-| 18 | `data-tables` | planned | P6 |
-| 19 | `runtime-host` | implemented | P7 |
-| 20 | `realtime` | implemented | P7 |
-| 21 | `worker` | planned | P7 |
-| 22 | `observability` | planned | P7 |
-| 23 | `reference-lego` | template | — |
-| 24 | `reference-lego.validation` | template | — |
-| 25 | `reference-lego.validation.schema` | template | — |
-| 26 | `reference-lego.repository` | template | — |
+| 1 | `platform-kernel` | implemented (`1.0.0`) | P0 |
+| 2 | `lego-foundation` | implemented (`1.1.0`) | P2.6 |
+| 3 | `ai-foundation` | contract-only (`1.0.0`) | P2.10 |
+| 4 | `compatibility` | implemented (`1.0.0`) | P2 |
+| 5 | `auth` | partial (`0.1.0`) | P5 |
+| 6 | `auth.identity` | implemented (`1.0.0`) | P2.9 |
+| 7 | `credentials` | planned (`0.0.0` — not published) | P5 |
+| 8 | `workflow` | partial (`0.1.0`) | P3 |
+| 9 | `execution` | partial (`0.1.0`) | P3 |
+| 10 | `node-registry` | partial (`0.1.0`) | P6 |
+| 11 | `dynamic-parameters` | planned (`0.0.0` — not published) | P7 |
+| 12 | `webhook` | planned (`0.0.0` — not published) | P4 |
+| 13 | `storage` | partial (`0.1.0`) | P8 |
+| 14 | `worker` | planned (`0.0.0` — not published) | P11 |
+| 15 | `realtime` | implemented (`0.1.0`) | P0 |
+| 16 | `settings` | implemented (`1.0.0`) | P2 |
+| 17 | `editor-ui-host` | implemented (`1.0.0`) | P0 |
+| 18 | `workspace` | planned (`0.0.0` — not published) | P3 |
+| 19 | `observability` | planned (`0.0.0` — not published) | deferred |
+| 20 | `data-tables` | planned (`0.0.0` — not published) | deferred |
+| 21 | `legacy-rest` | legacy (`0.1.0`) | P3-P7 |
+| 22 | `runtime-host` | implemented (`1.0.0`) | P0 |
+| 23 | `reference-lego` | template (`1.1.0`) | P2.6 |
+| 24 | `reference-lego.validation` | template (`1.1.0`) | P2.7 |
+| 25 | `reference-lego.validation.schema` | template (`1.0.0`) | P2.7 |
+| 26 | `reference-lego.repository` | template (`1.0.0`) | P2.7 |
 
 The count is **26**. Earlier prose said 25; that count is obsolete and the registry is the source of
 truth (recorded in `PROJECT_DECISIONS.md`).
@@ -101,13 +104,33 @@ Official targets, listed with their current publication state (details and recon
 Context & Session, Universal Translation, Node Creator, Capability, MCP Adapter, Runtime Adapter,
 Artifact, Approval, Agent Event & Work Trace, Token & Usage.
 
-**9 are published** (`ai.foundation@1.0.0` and the domains it contracts), **6 are
-`publicationPending`** with a recorded decision and a Manager arbiter: Skill (XA-11), Memory
-(XA-12), Universal Translation (XA-14), MCP Adapter (XA-16), Token & Usage (XA-17), Node Creator's
-AI drafting (XA-15). Two reconciliation rules apply: an official LEGO may be a top-level domain or a
-legitimate nested domain, but **never a duplicate of an existing core domain** — so the AI Workspace
-concept binds to the existing `workspace` domain (XA-13), not to a new `ai-workspace`; and Capability
-binds to the existing capability/registry/negotiation infrastructure, not a parallel vocabulary.
+| Official LEGO | Where it is declared today (evidence at `6f7b66da`) | State |
+| :--- | :--- | :--- |
+| AI Foundation | `contracts/contract-lock.json` row `ai.foundation` | published contract (1.0.0, Manager) |
+| Capability | lock rows `lego.domain-registry`, `lego.negotiation`, `lego.envelope`, `lego.interaction`; ADR-0010 | published infrastructure |
+| Context & Session | `ai-foundation.json` -> `context` (`ai.context`) | contract-only |
+| Agent Machine | `ai-foundation.json` -> `agentSession`, `delegation` | contract-only |
+| Artifact | `ai-foundation.json` -> `artifact` | contract-only |
+| Approval | `ai-foundation.json` -> `approval` (fail-closed) | contract-only |
+| Agent Event & Work Trace | `ai-foundation.json` -> `events` (26 types) plus `lego.envelope` | contract-only |
+| Runtime Adapter | `ai-foundation.json` -> `agentRuntime` | contract-only |
+| MCP Adapter | `ai-foundation.json` -> `mcp` (an edge interop boundary) | interop declared; a real transport stays XA-16 |
+| Node Creator | `manifest/node-contract.json`; no drafting capability in the registry | AI drafting `publicationPending` (XA-15) |
+| Workspace | registry domain `workspace` (contract `0.0.0`; both capabilities legacy/unsupported) | planned (XA-13) |
+| Skill | absent from the registry and the lock | `publicationPending` (XA-11) |
+| Memory | absent; `ai.context` covers the window, not memory | `publicationPending` (XA-12) |
+| Universal Translation | absent from the registry (the old "out of scope" note is superseded) | `publicationPending` (XA-14) |
+| Token & Usage | no `ai.usage` row; `modelGateway.countTokens` and delegation budgets only | `publicationPending` (XA-17) |
+
+Nothing in this table claims a runtime exists. *Published* means a contract in the lock or a registry
+entry; *contract-only* means the contract is declared while any implementation behind it is
+prohibited until its phase; `publicationPending` means only a decision exists, and the decision is the
+Manager's, not this document's.
+
+Two reconciliation rules apply: an official LEGO may be a top-level domain or a legitimate nested
+domain, but **never a duplicate of an existing core domain** — so the AI Workspace concept binds to
+the existing `workspace` domain (XA-13), not to a new `ai-workspace`; and Capability binds to the
+existing capability/registry/negotiation infrastructure, not a parallel vocabulary.
 
 ## 5. Document map
 
@@ -154,3 +177,78 @@ translation engine) · invent backend vocabulary or versions · create a second 
 difference · store chain-of-thought · add internal HTTP between local LEGO · claim scale-out
 readiness while the declared blockers stand · rewrite external runtimes in Rust · paste the whole
 memory or vault into context.
+
+## 9. AI Foundation: what it is — and what it is not
+
+AI Foundation is the **shared AI substrate**: one set of contracts for AI identity, model abstraction,
+capability resolution, context binding, policy, session integration, resource accounting, the event
+interface, provider selection and lifecycle. It is deliberately none of the following:
+
+| It is not | Because |
+| :--- | :--- |
+| the agent loop | the loop belongs to a runtime behind `ai.agent-runtime` |
+| a model vendor | models arrive through the `ai.model-gateway` contract, from a provider |
+| MCP itself | MCP is an edge interop adapter that maps onto the tool gateway |
+| an external agent runtime | external runtimes stay external and replaceable |
+| a filesystem implementation | filesystem access is a capability inside a workspace scope |
+| a terminal implementation | terminal/process execution is a capability, not substrate |
+| a memory database | memory is **XA-12** (unpublished); context is not memory |
+
+**One** AI Foundation supports AI Assistant, AI Copilot, AI Node, Agent Machine, the Execution AI mode
+and every external runtime adapter. There must not be a separate AI engine per experience.
+
+## 10. Responsibilities: who owns what in this project
+
+| Agent | Owns | Must not |
+| :--- | :--- | :--- |
+| **agent-2** (backend) | core LEGO, backend contracts, the registry/dependency graph, capability and operation vocabulary, AI Foundation, Agent Machine/Context/Session/Memory/Workspace contracts, provider and runtime taxonomy, security model, project governance, the workforce backend model, the implementation roadmap | create a competing frontend vocabulary |
+| **agent-1** (frontend, this branch) | AI Assistant, AI Copilot, AI Node, the Execution AI mode, the AI status bar, token UI, context/session UI, skill UI, memory UI, agent tree, work trace, artifact UI, approval UI, capability UI, MCP UI, runtime UI, workspace UI, Node Creator UI, translation UI, accessibility, localization, responsive behaviour, the beginner/advanced experience — plus the durable project memory in `.ai/master/` | resolve a manager-owned question, invent backend vocabulary, or restate a generated declaration as its own source |
+| **manager** | cross-domain ownership, open vocabulary conflicts, permission-namespace conflicts, contract publication ownership, project-level roadmap changes, integration order, protected-branch decisions, cross-agent conflicts, external-runtime policy, workforce governance | — (the manager is the arbiter of last resort) |
+
+The machine-readable form of "who decides what is still open" is
+`docs/n8n-lego/decisions/cross-agent-decisions.json`: every row carries owner, affected domains,
+current interpretation, decision required, blocking level, date and references.
+
+## 11. Reading test — thirty questions a new agent must answer from this tree
+
+If any row cannot be answered from the named document, the documentation is incomplete and that is a
+defect in `.ai/master/`, not a reason to read the chat.
+
+| # | Question | Where the answer is |
+| :-- | :--- | :--- |
+| 1 | What is n8n LEGO? | `PROJECT_MASTER_PLAN.md §1` |
+| 2 | What are the 26 current core domains? | `PROJECT_MASTER_PLAN.md §3`, `CORE_LEGO_ARCHITECTURE.md §1` |
+| 3 | What are the 15 official AI/Agent LEGO? | `AI_AGENT_LEGO_MASTER_PLAN.md §1` |
+| 4 | What is implemented? | `CURRENT_STATUS.md §2`, `CORE_LEGO_ARCHITECTURE.md §3` |
+| 5 | What is contract-only? | `CURRENT_STATUS.md §2`, `AI_AGENT_LEGO_MASTER_PLAN.md §1` |
+| 6 | How does AI Assistant differ from Copilot? | `AI_UI_EXPERIENCE_MASTER_PLAN.md §1` |
+| 7 | What is Agent Machine? | `AGENT_MACHINE_PLAN.md §1` |
+| 8 | How do Skills and Capabilities differ? | `SKILL_AND_CAPABILITY_PLAN.md §1` |
+| 9 | How do Memory and Context differ? | `CONTEXT_SESSION_MEMORY_PLAN.md §1`, `MEMORY_GRAPH_OBSIDIAN_PLAN.md §5` |
+| 10 | How does the system write files and create projects? | `WORKSPACE_AND_EXTERNAL_ACTION_PLAN.md §2-3` |
+| 11 | How does MCP fit? | `MCP_AND_RUNTIME_ADAPTER_PLAN.md §1` |
+| 12 | How do Hermes / Claude / Gemini / OpenClaw fit? | `PROVIDER_TAXONOMY.md §1-2`, `AI_RUNTIME_AND_PROVIDER_PLAN.md §3` |
+| 13 | How does token accounting work? | `TOKEN_USAGE_AND_RESOURCE_PLAN.md §1` |
+| 14 | How does context rollover work? | `CONTEXT_SESSION_MEMORY_PLAN.md §4` |
+| 15 | How does the Memory Graph connect to Obsidian? | `MEMORY_GRAPH_OBSIDIAN_PLAN.md §1` |
+| 16 | How does Agent Machine interact with workflows? | `AGENT_MACHINE_PLAN.md §1` |
+| 17 | How do permissions and approvals work? | `SECURITY_AND_APPROVAL_MODEL.md §1-3` |
+| 18 | What can an agent execute? | `WORKSPACE_AND_EXTERNAL_ACTION_PLAN.md §2` |
+| 19 | What is a Workspace? | `WORKSPACE_AND_EXTERNAL_ACTION_PLAN.md §1` |
+| 20 | How are Artifacts stored? | `AI_FRONTEND_CONTRACT_MATRIX.md §2` (opaque `storageRef`, retention classes) |
+| 21 | How is Work Trace represented? | `AGENT_MACHINE_PLAN.md §5`, `AI_UX_PROGRESSIVE_DISCLOSURE.md §2` |
+| 22 | What is the resource-aware strategy? | `PLATFORM_AND_DEPLOYMENT_STRATEGY.md §1-2`, `AI_RUNTIME_AND_PROVIDER_PLAN.md §5` |
+| 23 | What is the Rust strategy? | `PLATFORM_AND_DEPLOYMENT_STRATEGY.md §6` |
+| 24 | How does the Arena Manager/Worker system work? | `PROJECT_WORKFORCE_ORCHESTRATION.md §1-5` |
+| 25 | What does GitHub control? | `PROJECT_WORKFORCE_ORCHESTRATION.md §2` |
+| 26 | What does the control plane (Supabase) control? | `PROJECT_WORKFORCE_ORCHESTRATION.md §2`, `KNOWN_BLOCKERS.md B-12` |
+| 27 | What does the VPS/test gate control? | `PROJECT_WORKFORCE_ORCHESTRATION.md §6` |
+| 28 | What are the current blockers? | `KNOWN_BLOCKERS.md §1-3` |
+| 29 | What must never be done? | `PROJECT_MASTER_PLAN.md §8`, `PLATFORM_AND_DEPLOYMENT_STRATEGY.md §9`, `SECURITY_AND_APPROVAL_MODEL.md §1, §6` |
+| 30 | What comes next? | `IMPLEMENTATION_PHASES.md §1-2`, `CURRENT_STATUS.md §5` |
+
+## See also
+
+- `PLATFORM_AND_DEPLOYMENT_STRATEGY.md` — deployment modes, low-resource strategy, Rust policy.
+- `CURRENT_STATUS.md` — the verified numbers behind every claim here.
+
