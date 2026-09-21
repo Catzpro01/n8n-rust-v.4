@@ -1070,3 +1070,53 @@ destroy their work. Agent 5 documents and reassigns; it does not fix other agent
 - Gagalnya jangkauan ke `gqctxugkxekdqxsaqrum.supabase.co` (TLS handshake 000 dari environment terisolasi) resmi dimitigasi dengan sistem **Local SQLite Bus & Mirror Pool** di `/home/fern/arena/bus.db`.
 - Antrean task, konsensus suara, dan review multi-agen dijalankan secara lokal di VPS dengan latensi ultra-rendah (< 2ms), lalu disinkronkan secara asinkron ke Supabase via orchestrator bridge.
 
+
+---
+
+## ISSUE-023 — RUST OFFLINE RIG MATI: TOKIO DEV-DEPENDENCY (2026-09-21)
+
+**Pelapor:** sesi agent-01 lanjutan (`arena/01a0c53e-n8n-rust-v-4`, base `cb71dbb2`)
+**Terdampak:** Rust Offline Rig (`tools/rust-offline-rig/**`, registry `integration.gates` — agent-05), Agent 1 (Workflow), Agent 2 (Node), Agent 4 (Expression), semua verifikasi Phase 3
+**Status:** FIXED (test infrastructure only — menunggu countersign agent-05)
+**Severity:** HIGH (blokir total: tidak ada perubahan Rust yang dapat diverifikasi di sandbox)
+
+### 1. Gejala
+`cb71dbb2` menambahkan dev-dependency `tokio` (`features = ["rt", "macros"]`) pada `crates/n8n-workflow`
+(`tests/runtime_runner_test.rs`) dan pada `crates/n8n-nodes-rust`. Tidak satu pun crate di vendor directory memenuhinya, sehingga
+**setiap** invokasi cargo (termasuk `cargo check`) gagal — bukan hanya crate yang memakai tokio:
+
+```
+$ bash tools/rust-offline-rig/run.sh test
+rig: excluded workspace members: n8n-nodes-rust
+error: no matching package named `tokio` found
+location searched: directory source `/tmp/rust-rig/vendor`
+required by package `n8n-workflow v0.1.0`
+```
+
+Klaim "79–80 passed" pada handover 2026-09-18 karena itu **tidak dapat direproduksi** pada `cb71dbb2`.
+
+### 2. Perbaikan (tanpa menyentuh `crates/**`)
+- `setup.sh`: +`tokio-1.53.1` (`tokio-rs/tokio` @ `tokio-1.53.1`) dan +`pin-project-lite` (`v0.2.17`) → 27 crate.
+  Closure yang dibutuhkan hanya `pin-project-lite` + `tokio-macros`; dependency opsional tokio tidak di-resolve karena fiturnya
+  tidak diaktifkan.
+- `vendor_prep.py`: `PLAN` +3; tabel `[lints]` dan `[workspace.*]` kini dibuang (tadinya memicu
+  `FATAL: manifest still has workspace/path remnants`); dev-dependency target-scoped
+  (`[target.'cfg(unix)'.dev-dependencies]`) ikut dibuang; pruning fitur tidak lagi salah mengosongkan fitur yang mereferensikan
+  dependency opsional (`dep:foo`, `foo/feature`) atau nama yang juga dideklarasikan sebagai dependency (cargo menolak
+  `optional dependency io-uring is not included in any feature`).
+- `run.sh`: `EXCLUDE_MEMBERS` dikosongkan (semua 8 member dibangun); `LOCK_DRIFT=("tokio-macros")` — 2.7.2 tidak punya tag git,
+  jadi blok lock-nya dilepas dan cargo me-resolve 2.7.1 dari tag `tokio-1.53.1`.
+
+### 3. Bukti mesin
+- `bash tools/rust-offline-rig/run.sh check` → `Finished dev profile … in 11.93s`, 8/8 crate + `--all-targets`.
+- `bash tools/rust-offline-rig/run.sh test` → **151 passed / 0 failed** (21 suite), termasuk `runtime_runner_test.rs` 4/4 dan
+  `n8n-nodes-rust` 2/2 yang sebelumnya tidak pernah dieksekusi di sandbox.
+- `python3 tools/sublego-audit/audit.py` → AUDIT PASSED.
+
+### 4. Catatan / sisa risiko
+- **Drift versi**: `tokio-macros` 2.7.1 (rig) vs `2.7.2` (`Cargo.lock`). VPS/CI dengan registry asli tetap acuan.
+- Berkas yang diubah: `tools/rust-offline-rig/{setup.sh,run.sh,vendor_prep.py,README.md}`, `docs/isolation/CROSS-AGENT-ISSUES.md`,
+  `my_progress.md`. Tidak ada berkas di `crates/**` atau `packages/**` yang disentuh.
+- **Permintaan ke agent-05**: (a) konfirmasi kepemilikan `tools/**` untuk perubahan test-infra ini;
+  (b) tinjau gate G06–G10 `workflow-isolation-gate.mjs` agar phase-aware (saat ini menolak keberadaan artefak Rust padahal
+  `PROJECT_RULES.md` menyatakan Phase 3 ACTIVE) — di luar cakupan sesi ini.

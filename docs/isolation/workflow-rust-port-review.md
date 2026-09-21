@@ -213,6 +213,12 @@ reachable — and it now works end-to-end:
 the repository) and `tools/rust-offline-rig/run.sh check|test` runs cargo on a copy of the tree so no
 `Cargo.lock`, `target/` or generated file lands in the repository.
 
+> **Status update 2026-09-21** — the table above is the rig as of `014471e6` (12 crates, the versions that
+> tag resolved to). It now vendors **27 crates** (`tokio` 1.53.1 / `tokio-macros` / `pin-project-lite` were
+> added when `cb71dbb2` introduced the `#[tokio::test]` suites) and builds **all 8 workspace members**, not 7.
+> `tools/rust-offline-rig/README.md` holds the current crate list, status and caveats; see
+> `docs/isolation/CROSS-AGENT-ISSUES.md` ISSUE-023 for the change record.
+
 **Result — the Phase-3 workspace compiles** (this was "nothing has been compiled anywhere" before):
 
 ```text
