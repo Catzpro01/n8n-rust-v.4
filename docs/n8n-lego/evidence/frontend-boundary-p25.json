@@ -1,6 +1,6 @@
 {
   "kind": "p25-frontend-boundary",
-  "generatedAt": "2026-09-21T20:27:04.769Z",
+  "generatedAt": "2026-09-21T20:36:26.396Z",
   "phase": "P2.5",
   "method": "node apps/n8n-lego/scripts/capture-frontend-evidence.mjs (live in-process instance, HTTP level); the browser gate tests/e2e/frontend-boundary.mjs captures the same boundary from inside a real page in CI (docs/n8n-lego/FRONTEND_LEGO.md §6)",
   "baseline": "cb71dbb2",
@@ -147,11 +147,26 @@
       "name": "boot payload is byte-identical to the P2.5 baseline",
       "verdict": "PASS",
       "detail": "18126 bytes vs pinned P2.5 baseline 18126"
+    },
+    {
+      "name": "the LEGO cold-imports and assembles within a small budget",
+      "verdict": "PASS",
+      "detail": "30.7 ms for import + 12 surfaces + 15 hooks + 19 units"
+    },
+    {
+      "name": "assembling the descriptor stays inside a small memory budget",
+      "verdict": "PASS",
+      "detail": "1843 KB of heap for catalogs + both registries"
+    },
+    {
+      "name": "the package still has no runtime dependency",
+      "verdict": "PASS",
+      "detail": "dependencies={}"
     }
   ],
   "summary": {
-    "checks": 27,
-    "passed": 27,
+    "checks": 30,
+    "passed": 30,
     "failed": 0
   },
   "bootDescriptor": {
@@ -423,6 +438,8 @@
       "unknown"
     ],
     "capabilities": [],
-    "bytes": 18126
+    "bytes": 18126,
+    "importMs": 30.7,
+    "heapKb": 1843
   }
 }
