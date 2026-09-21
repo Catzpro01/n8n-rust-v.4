@@ -41,7 +41,8 @@ test('a well-formed capability registers and is listed deterministically', () =>
   const registered = value.register(translationCapability());
   assert.equal(registered.id, 'translation');
   assert.deepEqual(registered.surfaces, ['navigation', 'settings', 'error-surfaces']);
-  value.register(translationCapability({ id: 'accessibility', surfaces: ['settings'], messages: 'accessibility' }));
+  // Same hook set, so the same surfaces: a capability may only extend its own surfaces' hooks.
+  value.register(translationCapability({ id: 'accessibility', messages: 'accessibility' }));
   assert.deepEqual(value.list().map((capability) => capability.id), ['accessibility', 'translation'], 'sorted by id');
   assert.equal(value.get('translation').title, 'Translation');
   assert.equal(value.has('nope'), false);

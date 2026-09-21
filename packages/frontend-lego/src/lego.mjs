@@ -12,14 +12,20 @@
  * difference between a boundary and a new coupling.
  */
 import { createAdapter, CURRENT_ADAPTER_ID } from './adapters/index.mjs';
+import { backendAvailabilityFrom } from './backend-view.mjs';
+import { checkConformance } from './conformance.mjs';
+import { describeInteractions, resolveInteraction } from './interactions.mjs';
 import { CONTRACT_VERSION } from './contract.mjs';
 import { createImpactGraph } from './impact.mjs';
-import { unmappedMessageSlots } from './i18n.mjs';
+import { SUPPORTED_LOCALES, directionOf, unmappedMessageSlots } from './i18n.mjs';
 import { loadManifests } from './manifests.mjs';
 import { degradationFor } from './lifecycle.mjs';
+import { createCapabilityNegotiator } from './negotiation.mjs';
+import { createObservability } from './observability.mjs';
 import { DEVICE_PROFILES, resolveSupport } from './profiles.mjs';
 import { createFrontendRegistry, validateCapability } from './registry.mjs';
 import { createSubLegoRegistry } from './sublegos.mjs';
+import { createOperationGateway, defineLocalTransport } from './transport.mjs';
 
 /**
  * @param {object} init
@@ -27,16 +33,34 @@ import { createSubLegoRegistry } from './sublegos.mjs';
  * @param {{ basePath?: string, restEndpoint?: string }} [init.ui]
  * @param {string} [init.adapterId] adapter to use (defaults to the current implementation)
  * @param {Array<object>} [init.capabilities] capabilities to register at boot
+ * @param {object} [init.backend]           what the backend advertises, as data the app
+ *        hands over: `{ capabilities: { id: { status, owner, contractVersion, operations } } }`
+ *        (built by `backendAvailabilityFrom` from the surface catalog + compat layer)
+ * @param {object} [init.observability]     an existing observability instance; one is
+ *        created by default so boundary events are always inspectable
  * @param {{ warn?: Function, info?: Function }} [init.logger]
  */
-export function createFrontendLego({ app, ui = {}, adapterId = CURRENT_ADAPTER_ID, capabilities = [], logger = {} } = {}) {
+export function createFrontendLego({
+  app,
+  ui = {},
+  adapterId = CURRENT_ADAPTER_ID,
+  capabilities = [],
+  backend = null,
+  observability = null,
+  logger = {},
+} = {}) {
   if (!app?.name || !app?.version) throw new Error('createFrontendLego needs { app: { name, version } }');
 
   const manifests = loadManifests();
+  // Boundary observability exists by default so lifecycle/upgrade/rejection events
+  // are inspectable without wiring anything; it stays a bounded in-memory buffer.
+  const events = observability ?? createObservability();
   const registry = createFrontendRegistry({
     surfaces: manifests.surfaces,
     extensionPoints: manifests.extensionPoints,
+    owners: manifests.owners,
     capabilities,
+    observability: events,
   });
   // The hierarchy below this LEGO. Fail-closed: a sub-LEGO that breaks the
   // hierarchy, publishes no boundary or depends on a private area stops the boot
@@ -47,6 +71,7 @@ export function createFrontendLego({ app, ui = {}, adapterId = CURRENT_ADAPTER_I
     surfaces: manifests.surfaces,
     extensionPoints: manifests.extensionPoints,
     catalogVersion: manifests.subLegoCatalog.catalogVersion ?? null,
+    observability: events,
   });
 
   /**
@@ -83,6 +108,8 @@ export function createFrontendLego({ app, ui = {}, adapterId = CURRENT_ADAPTER_I
       lifecycle: declaration.lifecycle ?? 'available',
       criticality: declaration.criticality ?? 'optional',
       trust: declaration.trust ?? 'feature',
+      /** Who owns the capability: explicit, and validated against manifest/sub-legos.json. */
+      owner: declaration.owner ?? null,
       surfaces: Object.freeze([...(declaration.surfaces ?? [])]),
       entry: declaration.entry ?? null,
       requirements: Object.freeze({ ...(declaration.requirements ?? {}) }),
@@ -95,6 +122,40 @@ export function createFrontendLego({ app, ui = {}, adapterId = CURRENT_ADAPTER_I
       installed: false,
     })));
   }
+
+  /**
+   * The backend view: derived from declarations the app hands over, never probed.
+   * When the app passes nothing, the surface catalog alone answers — which is the
+   * honest default in a checkout with no compatibility layer running.
+   */
+  const backendView = backend?.capabilities
+    ? backend
+    : backendAvailabilityFrom({ surfaces: manifests.surfaces, unsupportedFeatures: backend?.unsupportedFeatures ?? [] });
+
+  const negotiator = createCapabilityNegotiator({
+    registry,
+    subLegos,
+    surfaces: manifests.surfaces,
+    declared: manifests.capabilities,
+    backend: backendView,
+    contractVersion: CONTRACT_VERSION,
+    // Locale identity belongs to the frontend contract: the declared locale set,
+    // extended (never replaced) by anything the surface catalog adds.
+    locales: [...new Set([
+      ...SUPPORTED_LOCALES.map((locale) => locale.code),
+      ...((manifests.surfaceCatalog.locales ?? []).map?.((locale) => locale.code ?? locale) ?? []),
+    ])],
+  });
+
+  /**
+   * Operation delivery with no transport assumption. The local transport is a
+   * direct in-process call (no serialization); REST is the boundary that already
+   * exists. Nothing else is wired, and nothing is routed implicitly.
+   */
+  const localHandlers = {};
+  const localTransport = defineLocalTransport({ handlers: localHandlers });
+  const extraTransports = [];
+  const gateway = createOperationGateway({ transports: [localTransport], observability: events });
 
   const impact = createImpactGraph({
     subLegos,
@@ -133,6 +194,9 @@ export function createFrontendLego({ app, ui = {}, adapterId = CURRENT_ADAPTER_I
       extensionPoints: manifests.extensionPoints.length,
       capabilities: registry.list().length,
       declaredCapabilities: manifests.capabilities.length,
+      backendCapabilities: Object.keys(backendView.capabilities).length,
+      transports: gateway.describe().implemented.length,
+      events: events.stats().emitted,
       adapter: adapter.id,
       framework: adapter.framework,
       bundle: adapter.bundle,
@@ -141,7 +205,7 @@ export function createFrontendLego({ app, ui = {}, adapterId = CURRENT_ADAPTER_I
     });
   }
 
-  return Object.freeze({
+  const assembly = {
     contractVersion: CONTRACT_VERSION,
     manifests,
     registry,
@@ -165,6 +229,68 @@ export function createFrontendLego({ app, ui = {}, adapterId = CURRENT_ADAPTER_I
     impactOf: (target, options) => impact.impactOf(target, options),
     /** The dry-run plan for a change, before anything is touched. */
     planChange: (request) => impact.planChange(request),
+    conformance: () => checkConformance(assembly),
+    /** Boundary events: capability, unit, lifecycle, upgrade, operation. */
+    observability: events,
+    /** Capability discovery and access decisions (placement grants nothing). */
+    negotiate: (request) => negotiator.negotiate(request),
+    /**
+     * Discovery: an unknown capability answers `null` instead of throwing; for a
+     * verdict with reasons, `negotiate()` is the call (it never throws).
+     */
+    describeCapability: (id) => {
+      try {
+        return negotiator.describe(id);
+      } catch (error) {
+        if (error?.code === 'frontend.capability.unknown') return null;
+        throw error;
+      }
+    },
+    mayUse: (unitId, capabilityId) => negotiator.mayUse(unitId, capabilityId),
+    requireUse: (unitId, capabilityId) => negotiator.requireUse(unitId, capabilityId),
+    grantOf: (unitId) => negotiator.grantOf(unitId),
+    /** What the frontend offers per surface, against what the backend advertises. */
+    featureAvailability: () => negotiator.featureAvailability(),
+    localeReadiness: (options = {}) => negotiator.localeReadiness({ directionOf, ...options }),
+    /**
+     * Transport-neutral delivery. `invoke` picks the cheapest capable transport
+     * that can carry the operation's declared interaction class.
+     */
+    // `async` on purpose: a refused interaction must surface as a rejected call,
+    // exactly like a refused transport, so every caller handles one shape.
+    invoke: async (request = {}) => {
+      const declared = registry.interactionOf(request.capability, request.operation);
+      const interaction = resolveInteraction({
+        declared: declared.interaction,
+        requested: request.interaction ?? null,
+        operation: request.operation,
+      });
+      return gateway.invoke({ ...request, interaction });
+    },
+    /** The declared interaction class of an operation (`declared: false` = default call). */
+    interactionOf: (capability, operation) => registry.interactionOf(capability, operation),
+    /** The interaction model as data. */
+    describeInteractions,
+    describeTransports: () => gateway.describe(),
+    selectTransport: (request) => gateway.select(request),
+    /**
+     * Attaches an in-process operation handler. This is how a same-process LEGO
+     * becomes reachable without inventing an HTTP hop.
+     */
+    registerOperation: (operation, handler) => {
+      if (typeof operation !== 'string' || typeof handler !== 'function') {
+        throw new Error('registerOperation(operation, handler) needs a name and a function');
+      }
+      localHandlers[operation] = handler;
+      return true;
+    },
+    /** Registers another transport (already-implemented ones join selection by cost). */
+    registerTransport: (transport) => {
+      extraTransports.push(transport);
+      return true;
+    },
     describe,
-  });
+  };
+  // Frozen last: `conformance()` reads the assembly it belongs to.
+  return Object.freeze(assembly);
 }

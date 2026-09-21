@@ -34,6 +34,35 @@ export const SUPPORTED_LOCALES = Object.freeze([
 
 export const FALLBACK_LOCALE = 'en';
 
+/**
+ * Plural categories, in CLDR vocabulary. The *categories* are contract here; the
+ * per-language selection rules are data the future Translation LEGO supplies —
+ * this package deliberately contains no grammar tables and no plural logic.
+ */
+export const PLURAL_CATEGORIES = Object.freeze(['zero', 'one', 'two', 'few', 'many', 'other']);
+
+/** The plural key for a category: `node-picker.nodes-selected.one`. */
+export function pluralKey(key, category) {
+  if (!PLURAL_CATEGORIES.includes(category)) {
+    throw new Error(`unknown plural category "${category}" (one of ${PLURAL_CATEGORIES.join(', ')})`);
+  }
+  return `${key}.${category}`;
+}
+
+/**
+ * Builds the plural selector from caller-supplied rules. With no rules the safe
+ * default is `one`/`other`, which is the correct English-like behaviour and never
+ * pretends to know a language it was not given rules for.
+ */
+export function createPluralSelector({ rules = {} } = {}) {
+  return function selectCategory(count, locale = FALLBACK_LOCALE) {
+    const resolved = resolveLocale(locale);
+    const rule = rules[resolved];
+    if (typeof rule === 'function') return rule(count);
+    return count === 1 ? 'one' : 'other';
+  };
+}
+
 const LOCALE_BY_CODE = new Map(SUPPORTED_LOCALES.map((locale) => [locale.code, locale]));
 
 /** True when the locale code is part of the contract. */
@@ -177,8 +206,9 @@ export function createMessageCatalog({ locale, namespace, entries, meta } = {}) 
  *
  * @param {{ locale?: string, catalogs?: Array<object>, fallbackLocale?: string }} init
  */
-export function createTranslator({ locale = FALLBACK_LOCALE, catalogs = [], fallbackLocale = FALLBACK_LOCALE } = {}) {
+export function createTranslator({ locale = FALLBACK_LOCALE, catalogs = [], fallbackLocale = FALLBACK_LOCALE, pluralRules = {} } = {}) {
   const activeLocale = resolveLocale(locale, { defaultLocale: fallbackLocale });
+  const pluralSelector = createPluralSelector({ rules: pluralRules });
   const index = new Map(); // locale -> Map(key -> text)
   for (const catalog of catalogs) {
     const normalized = catalog?.entries ? catalog : createMessageCatalog(catalog);
@@ -211,6 +241,17 @@ export function createTranslator({ locale = FALLBACK_LOCALE, catalogs = [], fall
     fallbackLocale: resolveLocale(fallbackLocale),
     t,
     has,
+    /**
+     * Plural lookup: `<key>.<category>` first, then `<key>.other`, then the key
+     * itself — and a missing key is still returned verbatim rather than thrown.
+     */
+    tn(key, count, params = {}) {
+      const category = pluralSelector(count, activeLocale);
+      const plural = lookup(pluralKey(key, category), activeLocale) ?? lookup(pluralKey(key, category), resolveLocale(fallbackLocale));
+      const other = plural ?? lookup(pluralKey(key, 'other'), activeLocale) ?? lookup(pluralKey(key, 'other'), resolveLocale(fallbackLocale));
+      return substitute(other ?? t(key, params), { ...params, count });
+    },
+    pluralCategory: (count) => pluralSelector(count, activeLocale),
     /** Additive, immutable: returns a new translator with the extra catalog. */
     withCatalog(catalog) {
       return createTranslator({ locale: activeLocale, catalogs: [...catalogs, catalog], fallbackLocale });
@@ -250,6 +291,25 @@ export function describeLocales() {
     dictionaries: 'none — the Translation LEGO supplies catalogs through the ui:message:catalog extension point',
   });
 }
+
+/**
+ * The localization contract as data — for `.ai/` cards, docs and tests.
+ *
+ * Deliberately *not* part of the boot payload: the browser carries locale identity
+ * (code, direction, fallback) and nothing else, so a page load does not pay for
+ * documentation. The plural categories are contract vocabulary, not content.
+ */
+export function describeLocalizationContract() {
+  return Object.freeze({
+    locales: SUPPORTED_LOCALES.map((locale) => ({ code: locale.code, direction: locale.direction, fallback: locale.code === FALLBACK_LOCALE })),
+    fallback: FALLBACK_LOCALE,
+    pluralCategories: PLURAL_CATEGORIES,
+    pluralRules: 'supplied by the Translation LEGO (data), selected through createPluralSelector (contract)',
+    ownedByFrontend: Object.freeze(['locale identity', 'direction metadata', 'message keys', 'fallback chain', 'plural categories (contract)']),
+    notOwnedByFrontend: Object.freeze(['dictionaries', 'translation content', 'loading strategy', 'translation runtime']),
+  });
+}
+
 
 
 /** Message-slot model as exposed to the boot payload. */

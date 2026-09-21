@@ -17,6 +17,7 @@
  * Framework-neutral and browser-safe: no framework import, no `node:*` import.
  */
 import { isValidMessageKey } from './i18n.mjs';
+import { INTERACTION_CLASSES, isInteractionClass, normaliseInteraction } from './interactions.mjs';
 import { CAPABILITY_STATES, CRITICALITY, TRUST_LEVELS, degradationFor } from './lifecycle.mjs';
 import { REQUIREMENT_FIELDS } from './profiles.mjs';
 
@@ -32,8 +33,52 @@ export const CAPABILITY_SCHEMA = Object.freeze({
     'extensionPoints', 'routes', 'backendCapabilities', 'messages', 'phase', 'notes',
     // maturity fields (P2.8-F)
     'activation', 'entry', 'criticality', 'trust', 'requirements', 'lifecycle', 'degradation',
+    // what a consumer may ask for by name (empty = no operation contract published yet)
+    'operations',
+    // ...and, per operation, what kind of interaction it is (call/event/stream/batch)
+    'interactions',
+    // who owns the capability (validated against the owners declared in the manifests)
+    'owner',
   ]),
 });
+
+/** Operations are named `<domain>.<name>` — the same grammar the envelope enforces. */
+const OPERATION_PATTERN = /^[a-z][a-z0-9-]*(?:\.[a-z][a-z0-9-]*)+$/;
+
+/**
+ * The operation names a capability publishes. An operation may be a plain string
+ * (a call) or `{ name, interaction }`; the declaration shape is normalised here so
+ * the rest of the system sees one form.
+ */
+export function operationsOf(capability) {
+  return [...new Set((capability.operations ?? []).map((entry) => normaliseInteraction(entry).operation))];
+}
+
+/**
+ * The declared interaction class per operation. Inline declarations are folded in
+ * so both spellings agree; `interactions` may not restate a different class for an
+ * operation it has already declared inline.
+ */
+export function interactionsOf(capability) {
+  const declared = {};
+  for (const entry of capability.operations ?? []) {
+    const normalised = normaliseInteraction(entry);
+    if (typeof entry === 'object' && entry !== null && entry.interaction !== undefined) {
+      declared[normalised.operation] = normalised.interaction;
+    }
+  }
+  for (const [operation, interaction] of Object.entries(capability.interactions ?? {})) {
+    // Fail closed on disagreement rather than letting the last write win.
+    if (declared[operation] !== undefined && declared[operation] !== interaction) {
+      throw new RegistryError(
+        `"${capability.id ?? '(anonymous)'}" declares operation "${operation}" as "${declared[operation]}" and also as "${interaction}"`,
+        { id: capability.id, errors: ['contradictory interaction declaration'] },
+      );
+    }
+    declared[operation] = interaction;
+  }
+  return declared;
+}
 
 /** Keys that would smuggle implementation code into a registry of metadata. */
 const CODE_LIKE_KEYS = Object.freeze(['load', 'render', 'mount', 'install', 'activate', 'handler', 'component']);
@@ -68,12 +113,20 @@ export function validateCapability(capability, catalog = {}) {
   const surfaces = new Set((catalog.surfaces ?? []).map((surface) => surface.id));
   const extensionPoints = new Set((catalog.extensionPoints ?? []).map((point) => point.id));
   const knownNamespaces = new Set(catalog.knownNamespaces ?? []);
+  const knownOwners = new Set(Object.keys(catalog.owners ?? {}));
 
   if (capability === null || typeof capability !== 'object') {
     return { ok: false, errors: ['capability must be an object'] };
   }
   for (const field of CAPABILITY_SCHEMA.required) {
     if (capability[field] === undefined || capability[field] === null) errors.push(`missing required field "${field}"`);
+  }
+  // Fail closed on unknown fields: a key nobody defined is either a typo or a second
+  // source of truth (an owner restated, a capability renamed), and both are worse
+  // than a refusal. The schema above is the whole vocabulary.
+  const knownFields = new Set([...CAPABILITY_SCHEMA.required, ...CAPABILITY_SCHEMA.optional]);
+  for (const key of Object.keys(capability)) {
+    if (!knownFields.has(key)) errors.push(`unknown field "${key}" (known: ${[...knownFields].join(', ')})`);
   }
   if (typeof capability.id !== 'string' || !ID_PATTERN.test(capability.id)) {
     errors.push('"id" must be kebab-case (e.g. "translation")');
@@ -91,8 +144,19 @@ export function validateCapability(capability, catalog = {}) {
     if (!surfaces.has(surface)) errors.push(`unknown surface "${surface}" (declare it in manifest/surfaces.json first)`);
   }
 
+  // Hooks are owned by a surface. A capability may extend the hooks of the surfaces
+  // it occupies — and only those: reaching a hook on somebody else's surface is the
+  // decoration-free version of patching an implementation you do not own.
+  const pointOwner = new Map((catalog.extensionPoints ?? []).map((point) => [point.id, point.surface ?? null]));
   for (const point of asArray(capability.extensionPoints)) {
-    if (!extensionPoints.has(point)) errors.push(`unknown extension point "${point}" (declare it in manifest/extension-points.json first)`);
+    if (!extensionPoints.has(point)) {
+      errors.push(`unknown extension point "${point}" (declare it in manifest/extension-points.json first)`);
+      continue;
+    }
+    const owner = pointOwner.get(point) ?? null;
+    if (owner !== null && declaredSurfaces.length > 0 && !declaredSurfaces.includes(owner)) {
+      errors.push(`extension point "${point}" belongs to surface "${owner}", which this capability does not occupy (it declares: ${declaredSurfaces.join(', ')}) — an extension may only add to its own surface's hooks`);
+    }
   }
 
   const contracts = asArray(capability.contracts);
@@ -121,6 +185,16 @@ export function validateCapability(capability, catalog = {}) {
     }
   }
 
+  // Ownership is explicit and checked: a capability nobody owns has no escalation
+  // path when something breaks, and a free-text owner is a claim, not an owner.
+  if (capability.owner !== undefined && capability.owner !== null) {
+    if (typeof capability.owner !== 'string' || !/^(agent-\d{2}|manager)$/.test(capability.owner)) {
+      errors.push(`"owner" must be an agent id (e.g. "agent-01") or "manager"`);
+    } else if (knownOwners.size > 0 && !knownOwners.has(capability.owner)) {
+      errors.push(`unknown owner "${capability.owner}" (declared owners: ${[...knownOwners].join(', ')})`);
+    }
+  }
+
   const activation = capability.activation ?? 'eager';
   if (!ACTIVATION_MODES.includes(activation)) errors.push(`"activation" must be one of ${ACTIVATION_MODES.join(', ')}`);
   // A declared capability has no code to lazy-load yet, so it owes no entry. The
@@ -131,6 +205,54 @@ export function validateCapability(capability, catalog = {}) {
   }
   if (capability.entry !== undefined && capability.entry !== null && (typeof capability.entry !== 'string' || !/\.(mjs|js|cjs|ts)$/.test(capability.entry))) {
     errors.push('"entry" must be a module path (e.g. "./features/x/index.mjs")');
+  }
+
+  if (capability.operations !== undefined) {
+    if (!Array.isArray(capability.operations)) {
+      errors.push('"operations" must be an array of semantic operation names');
+    } else {
+      for (const entry of capability.operations) {
+        let operation = entry;
+        // An operation may declare its interaction class inline. Anything else
+        // (a route, a handler, a function) is implementation, not a declaration.
+        if (entry !== null && typeof entry === 'object' && !Array.isArray(entry)) {
+          const normalised = normaliseInteraction(entry);
+          operation = normalised.operation;
+          if (entry.interaction !== undefined && !isInteractionClass(entry.interaction)) {
+            errors.push(`operation "${entry.name}" declares interaction "${entry.interaction}" (one of ${INTERACTION_CLASSES.join(', ')})`);
+          }
+          for (const key of Object.keys(entry)) {
+            if (!['name', 'interaction'].includes(key)) errors.push(`operation "${entry.name}" may declare only "name" and "interaction" (got "${key}")`);
+          }
+        }
+        if (typeof operation !== 'string' || !OPERATION_PATTERN.test(operation)) {
+          errors.push(`operation "${operation}" must look like "<domain>.<name>" (kebab-case, at least one dot)`);
+        }
+      }
+      const names = capability.operations.map((entry) => normaliseInteraction(entry).operation);
+      if (new Set(names).size !== names.length) errors.push('"operations" must not repeat an operation');
+    }
+  }
+
+  if (capability.interactions !== undefined) {
+    if (capability.interactions === null || typeof capability.interactions !== 'object' || Array.isArray(capability.interactions)) {
+      errors.push('"interactions" must be an object mapping operation → interaction class');
+    } else {
+      const inline = {};
+      for (const entry of capability.operations ?? []) {
+        if (entry !== null && typeof entry === 'object' && !Array.isArray(entry) && entry.interaction !== undefined) {
+          inline[entry.name] = entry.interaction;
+        }
+      }
+      for (const [operation, interaction] of Object.entries(capability.interactions)) {
+        if (!isInteractionClass(interaction)) {
+          errors.push(`"${operation}" declares interaction "${interaction}" (one of ${INTERACTION_CLASSES.join(', ')})`);
+        }
+        if (inline[operation] !== undefined && inline[operation] !== interaction) {
+          errors.push(`operation "${operation}" is declared as "${inline[operation]}" inline and as "${interaction}" in "interactions" — one class per operation`);
+        }
+      }
+    }
   }
 
   const criticality = capability.criticality ?? 'optional';
@@ -178,7 +300,7 @@ export function validateCapability(capability, catalog = {}) {
  *
  * @param {{ surfaces?: Array<object>, extensionPoints?: Array<object>, capabilities?: Array<object> }} init
  */
-export function createFrontendRegistry({ surfaces = [], extensionPoints = [], capabilities = [] } = {}) {
+export function createFrontendRegistry({ surfaces = [], extensionPoints = [], owners = {}, capabilities = [], observability = null } = {}) {
   if (surfaces.length === 0) throw new RegistryError('the surface catalog is empty — the registry has no vocabulary', { errors: ['surfaces must not be empty'] });
   if (extensionPoints.length === 0) throw new RegistryError('the extension-point catalog is empty', { errors: ['extensionPoints must not be empty'] });
 
@@ -204,6 +326,9 @@ export function createFrontendRegistry({ surfaces = [], extensionPoints = [], ca
   const catalog = {
     surfaces,
     extensionPoints,
+    // The owner vocabulary comes from the manifests; an empty map means "not handed
+    // over", in which case only the owner-id shape is checked.
+    owners,
     knownNamespaces: [],
   };
 
@@ -212,10 +337,18 @@ export function createFrontendRegistry({ surfaces = [], extensionPoints = [], ca
     // Duplicate ids are checked first: it is the clearest diagnosis, and every
     // later check would also reject the second registration for a side reason.
     if (typeof id === 'string' && registered.has(id)) {
+      observability?.tryEmit('frontend.capability.rejected', { capability: id, code: 'frontend.registry.invalid-capability', reason: 'duplicate id' });
       throw new RegistryError(`capability "${id}" is already registered`, { id, errors: ['duplicate id'] });
     }
     const { ok, errors } = validateCapability(capability, catalog);
-    if (!ok) throw new RegistryError(`capability "${id ?? '(anonymous)'}" is not registrable: ${errors.join('; ')}`, { id, errors });
+    if (!ok) {
+      observability?.tryEmit('frontend.capability.rejected', {
+        capability: typeof id === 'string' ? id : null,
+        code: 'frontend.registry.invalid-capability',
+        reason: errors.join('; '),
+      });
+      throw new RegistryError(`capability "${id ?? '(anonymous)'}" is not registrable: ${errors.join('; ')}`, { id, errors });
+    }
     // A message namespace belongs to exactly one capability: two LEGOs writing
     // into the same namespace make collisions invisible until runtime. The
     // collision check itself lives in validateCapability.
@@ -241,13 +374,48 @@ export function createFrontendRegistry({ surfaces = [], extensionPoints = [], ca
       trust: capability.trust ?? 'feature',
       lifecycle: capability.lifecycle ?? 'available',
       requirements: Object.freeze({ ...(capability.requirements ?? {}) }),
+      owner: capability.owner ?? null,
+      operations: Object.freeze(operationsOf(capability)),
+      interactions: Object.freeze(interactionsOf(capability)),
       degradation: capability.degradation ? Object.freeze({ ...capability.degradation }) : null,
     });
     registered.set(normalized.id, normalized);
+    observability?.tryEmit('frontend.capability.registered', {
+      capability: normalized.id,
+      lego: normalized.lego,
+      activation: normalized.activation,
+      criticality: normalized.criticality,
+      trust: normalized.trust,
+      operations: normalized.operations.length,
+      interactions: Object.keys(normalized.interactions).length,
+    });
+    if (normalized.criticality !== 'core' && normalized.degradation) {
+      observability?.tryEmit('frontend.capability.degraded', {
+        capability: normalized.id,
+        behavior: normalized.degradation.behavior ?? null,
+      });
+    }
     return normalized;
   }
 
   for (const capability of capabilities) register(capability);
+
+  /**
+   * The interaction class of an operation, or the default when nothing is declared.
+   * Returned with `declared` so a caller can tell a decision from a fallback.
+   */
+  function interactionOf(capabilityId, operation) {
+    const capability = registered.get(capabilityId);
+    if (!capability) return Object.freeze({ capability: capabilityId, operation, interaction: null, declared: false, known: false });
+    const declared = capability.interactions[operation] ?? null;
+    return Object.freeze({
+      capability: capabilityId,
+      operation,
+      interaction: declared ?? 'call',
+      declared: declared !== null,
+      known: capability.operations.includes(operation),
+    });
+  }
 
   /** Deterministic order: declaration order within a status, ties broken by id. */
   function list({ surface, extensionPoint } = {}) {
@@ -307,6 +475,9 @@ export function createFrontendRegistry({ surfaces = [], extensionPoints = [], ca
       criticality: capability.criticality,
       trust: capability.trust,
       surfaces: capability.surfaces,
+      owner: capability.owner,
+      operations: capability.operations,
+      interactions: capability.interactions,
       degradation: degradationFor(capability),
     })));
   }
@@ -328,6 +499,8 @@ export function createFrontendRegistry({ surfaces = [], extensionPoints = [], ca
     get: (id) => registered.get(id) ?? null,
     list,
     resolveRoute,
+    /** The interaction class of an operation, with `declared` telling a decision from a default. */
+    interactionOf,
     surface: (id) => surfaceById.get(id) ?? null,
     extensionPoint: (id) => pointById.get(id) ?? null,
     descriptor,

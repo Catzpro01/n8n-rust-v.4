@@ -23,7 +23,15 @@
     "./manifest/extension-points.json": "./manifest/extension-points.json",
     "./manifest/ownership.json": "./manifest/ownership.json",
     "./manifest/sub-legos.json": "./manifest/sub-legos.json",
-    "./manifest/capabilities.json": "./manifest/capabilities.json"
+    "./manifest/capabilities.json": "./manifest/capabilities.json",
+    "./versions": "./src/versions.mjs",
+    "./surface-capability": "./src/surface-capability.mjs",
+    "./negotiation": "./src/negotiation.mjs",
+    "./backend-view": "./src/backend-view.mjs",
+    "./transport": "./src/transport.mjs",
+    "./observability": "./src/observability.mjs",
+    "./conformance": "./src/conformance.mjs",
+    "./interactions": "./src/interactions.mjs"
   },
   "files": [
     "index.mjs",
