@@ -89,7 +89,20 @@ export {
 
 export { createRestClient, createStateStore, STATE_STATUSES } from './src/client.mjs';
 
-export { MANIFEST_DIR, MANIFEST_FILES, PACKAGE_ROOT, extensionPointIds, loadManifests, surfaceIds } from './src/manifests.mjs';
+export { MANIFEST_DIR, MANIFEST_FILES, PACKAGE_ROOT, extensionPointIds, loadManifests, subLegoIds, surfaceIds } from './src/manifests.mjs';
+export {
+  RANGE_EXAMPLES,
+  SUB_LEGO_SCHEMA,
+  SUB_LEGO_STATUSES,
+  SubLegoError,
+  SubLegoUpgradeError,
+  UPGRADE_POLICIES,
+  createSubLegoRegistry,
+  depthOf,
+  parentIdOf,
+  satisfies,
+  validateSubLego,
+} from './src/sublegos.mjs';
 
 export { ADAPTER, CONVENTIONS, createVueAdapter } from './src/adapters/vue.mjs';
 export { ADAPTERS, CURRENT_ADAPTER, CURRENT_ADAPTER_ID, createAdapter } from './src/adapters/index.mjs';

@@ -78,11 +78,12 @@ export const CONVENTIONS = Object.freeze([
 /**
  * Creates the adapter for the current implementation.
  *
- * @param {{ registry: object, app: { name: string, version: string, referenceVersion?: string }, ui?: { basePath: string, restEndpoint: string } }} init
+ * @param {{ registry: object, subLegos?: object, app: { name: string, version: string, referenceVersion?: string }, ui?: { basePath: string, restEndpoint: string } }} init
  */
-export function createVueAdapter({ registry, app, ui = { basePath: '/', restEndpoint: 'rest' } }) {
+export function createVueAdapter({ registry, subLegos = null, app, ui = { basePath: '/', restEndpoint: 'rest' } }) {
   const bootPayload = buildBootPayload({
     registry,
+    subLegos,
     app,
     ui: {
       editorPackage: ADAPTER.bundle,

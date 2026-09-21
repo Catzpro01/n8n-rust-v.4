@@ -90,8 +90,9 @@ pinned bundle, `reference/n8n/**`, every backend domain implementation, and the 
 | Output | Shape |
 | :--- | :--- |
 | Frontend contract descriptor | `CONTRACT_VERSION`, envelopes, list shapes, status semantics, session rules, route conventions, events, versioning rules (`src/contract.mjs`) |
-| Boot payload | `buildBootPayload()` → `{ contractVersion, app, ui, contract, locales, messageSlots, errorKinds, errorCodes, surfaces, extensionPoints, capabilities }` |
+| Boot payload | `buildBootPayload()` → `{ contractVersion, app, ui, contract, locales, messageSlots, errorKinds, errorCodes, surfaces, subLegos, extensionPoints, capabilities }` |
 | Capability registry | `register(capability)` / `list()` / `get(id)` / `resolveRoute(path)` / `descriptor()` — validated, deterministic, duplicate-safe |
+| Sub-LEGO registry | hierarchical units below this LEGO — `childrenOf` / `descendantsOf` / `resolvePort(id, port)` / `dependentsOf(id)` / `upgrade(id, patch, { acknowledge })`; rules in [`frontend-sub-lego.contract.md`](frontend-sub-lego.contract.md) |
 | Error model | `normalizeError(input)` → `FrontendError { kind, status, code, messageKey, params, retryable, meta }`; `toDisplayModel()` → `{ messageKey, fallbackText, severity, actions }` |
 | i18n structure | 6-locale metadata model (+`direction`), 13 message slots, key grammar, catalog/translator with the backend's deterministic fallback chain |
 | Framework-neutral client | `createRestClient()` — envelope unwrap, list shapes, error normalization, state model (`idle/loading/ready/empty/error`), pagination semantics |
@@ -214,9 +215,26 @@ insertion point list, not a feature list.
 | `ui:theme:tokens` | all | `{ tokens }` | override-named | Theme LEGO |
 | `ui:command:register` | navigation | `{ id, titleKey, run }` | append | Search LEGO |
 | `ui:assistant:panel` | workflow-editor | `{ id, mount, context }` | append | AI Assistant LEGO |
+| `ui:search:provider` | navigation | `{ id, titleKey, kind, query, rank? }` | append | Search LEGO |
+| `ui:accessibility:annotate` | error-surfaces | `{ surface, selector, attributes, labelKey }` — whitelisted attributes only (`aria-*`, `role`, `tabindex`, `lang`, `dir`); never text, layout or node structure | wrap (attributes only) | Accessibility LEGO |
+| `ui:document:format` | workflow-editor | `{ id, titleKey, mime, direction, parse?\|serialize? }` | append | Import / Export LEGO |
 
-Every hook declares `payload`, `additive`, `mutates`, `requiresCapability`, `consumers`, `status: 'declared'`.
-A capability that attaches to a hook must name it in its registration, so the boundary stays explicit.
+Fifteen hooks, seven declared future consumers (Translation, Accessibility, Theme, Search, AI Assistant,
+Notification, Import/Export). Every hook declares `payload`, `additive`, `mutates`, `requiresCapability`,
+`consumers`, `status: 'declared'`. A capability that attaches to a hook must name it in its registration, so the
+boundary stays explicit.
+
+Hooks are attachment points for future capabilities; a **port** (§ sub-LEGO contract) is a contract another unit may
+depend on. The two share the `ui:<area>:<name>` grammar but must not share an id — the registry refuses a collision,
+so "where I attach" and "what I may couple to" cannot be confused.
+
+### 11.1 Nested units
+
+The units *inside* this LEGO (dashboard, settings and its children, the workflow-editor panels, node picker,
+credentials, executions, notifications, dialogs, error surfaces, auth, navigation) are declared in
+`manifest/sub-legos.json` and published in the boot payload as `subLegos`. Their rules — what may be a unit, the
+hierarchy, the public/private boundary, ownership and the upgrade guarantee — are normative in
+[`frontend-sub-lego.contract.md`](frontend-sub-lego.contract.md).
 
 ## 12. Translation readiness (structure only)
 
@@ -259,8 +277,8 @@ the meta tag — the stock editor must never depend on the descriptor to render.
 
 ## 15. Data / state ownership
 
-- Owns: surface catalog, extension-point catalog, capability registry, message-slot structure, locale metadata,
-  error-code vocabulary, contract descriptor. All of it is static declaration data.
+- Owns: surface catalog, extension-point catalog, capability registry, sub-LEGO hierarchy, message-slot structure,
+  locale metadata, error-code vocabulary, contract descriptor. All of it is static declaration data.
 - Owns no user data, no session state, no workflow/execution/credential state.
 - Reads no store directly; all data arrives through `/rest/*`.
 
@@ -279,6 +297,30 @@ the meta tag — the stock editor must never depend on the descriptor to render.
 | I9 | `501 {code:'unsupported'}` from a real endpoint becomes a machine-readable `unsupported` error in the client | `apps/n8n-lego/test/frontend.boundary.test.mjs` |
 | I10 | The boundary is visible in a real browser page, and the UI still renders (unchanged) | `tests/e2e/frontend-boundary.mjs` |
 | I11 | P0/P2 behavior is not regressed | `tests/e2e/lego-smoke.mjs`, `tests/e2e/settings-compat.mjs`, `apps/n8n-lego/test/*.test.mjs` |
+
+## 16.1 Shared vocabulary with the backend LEGO (P2.6 / P2.7) — and one open arbitration
+
+P2.6 owns the backend LEGO foundation. This contract does **not** define a second backend registry; it consumes
+what the compatibility layer already publishes and pins the shared vocabulary:
+
+| Shared concept | Where it is defined | What the frontend does |
+| :--- | :--- | :--- |
+| Capability availability | `apps/n8n-lego/src/compat/capability.mjs` (`UNSUPPORTED_FEATURES`) → `501 { code:'unsupported', meta:{ feature, owner, phase } }` | maps `meta.feature` to a message key; never inspects backend modules |
+| Error codes | `contracts/api.contract.md` §4 taxonomy, surfaced through `code` + HTTP status | `normalizeError()` turns code + status into `kind` + `messageKey`; **the machine-readable code is the identity, the sentence is not** |
+| Envelopes / list shapes | `contracts/api.contract.md`, §9 of this document | `createRestClient()` unwraps `{ data }` / `{ count, results, estimated }` / `{ count, data }` |
+| Contract versions | `CONTRACT_VERSION` (this LEGO, `MAJOR.MINOR`) and the backend contract's own version string in the boot payload (`app.referenceVersion`) | major mismatch ⇒ the boot payload is refused (`validateBootPayload`) |
+| Ownership | `manifest/ownership.json` + the owner table in `manifest/sub-legos.json` | a unit's owner is declarative data; no cross-domain change happens implicitly |
+| Frontend/backend boundary | this document §2, `frontend-sub-lego.contract.md` §3 | frontend → contract → compatibility layer; a frontend module importing a backend implementation is a defect |
+
+**Open arbitration item (Manager/Integrator).** `contracts/micro-frontend.contract.md` (LEGO 13, "CONTRACT
+SPECIFIED") declares a Web-Components decomposition (`<n8n-canvas>`, `<n8n-node-settings>`, `<n8n-expression-editor>`,
+`<n8n-i18n-provider>`, `<n8n-app-shell>`) and a six-language set `id, en, es, fr, de, ja`. P2.5 declares the
+reference implementation as the pinned Vue bundle (`n8n-editor-ui@2.9.4`, adapter `vue`) and the locale set
+`id, en, ar, zh, ru, jv` per the phase brief. The two documents are **not** reconciled here: P2.5 neither implements
+Web Components nor changes a contract owned by another phase. The difference must be resolved by the
+Manager/Integrator (which locale set is authoritative, and whether the Web-Components decomposition remains the
+target). Until then, `frontend.contract.md` + this document describe what is implemented, and
+`micro-frontend.contract.md` remains an unimplemented specification — no code may assume either set is final.
 
 ## 17. Compatibility requirements (pinned UI)
 

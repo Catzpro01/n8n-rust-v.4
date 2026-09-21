@@ -1,0 +1,675 @@
+{
+  "catalogVersion": "1.0.0",
+  "description": "The hierarchical sub-LEGO registry of the frontend LEGO. It answers one question per UI area: who owns it, what may somebody else depend on, what is private, what version it is, where its tests live, and whether it can be upgraded without its siblings changing. Every entry is DECLARED — P2.5 implements no feature. See contracts/frontend-sub-lego.contract.md for the rules that make these declarations enforceable.",
+  "notes": [
+    "A component, button, icon or helper is NOT a sub-LEGO — it is internal implementation detail of whichever unit owns it.",
+    "A unit becomes a sub-LEGO when it has an independently meaningful contract, ownership, dependency boundary, test boundary, or upgrade path.",
+    "`public.ports` is the ONLY surface another unit may depend on; anything not listed is private by default.",
+    "`internals` names the private area of the unit. Nothing outside the unit may import it, and it is never published in the boot descriptor.",
+    "`surface` links the unit to a declared UI surface in manifest/surfaces.json — backend capability, endpoints and status are read from there, never restated here.",
+    "`capability` names the backend capability the unit consumes; it must equal the one declared by its surface (manifest/surfaces.json) — the surface stays the single source of truth."
+  ],
+  "owners": {
+    "agent-01": "Frontend LEGO (ui-frontend) — this package",
+    "agent-02": "Backend LEGO foundation (P2.6/P2.7)",
+    "agent-03": "Execution & trigger domains",
+    "agent-04": "Workflow graph domain",
+    "agent-05": "Cross-cutting gates",
+    "manager": "Manager / Integrator arbitration"
+  },
+  "upgradePolicies": {
+    "independent": "May be upgraded on its own whenever the new version satisfies every dependent's declared range.",
+    "acknowledged": "May be upgraded on its own, but a breaking change must be acknowledged by each dependent that pins the previous major.",
+    "coupled": "Upgrading requires a coordinated release with the listed units (declare the coupled ids in `upgrade.coupledWith`)."
+  },
+  "subLegos": [
+    {
+      "id": "auth",
+      "parentId": null,
+      "title": "Auth surface (sign in, owner setup, sign out)",
+      "owner": "agent-01",
+      "version": "1.0.0",
+      "surface": "auth",
+      "contract": "contracts/frontend.contract.md",
+      "public": {
+        "ports": [
+          "ui:auth:session-view"
+        ],
+        "contracts": [
+          "contracts/frontend.contract.md"
+        ]
+      },
+      "internals": [
+        "src/sub-legos/auth/**"
+      ],
+      "status": "declared",
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "upgrade": {
+        "policy": "independent",
+        "compatibleWith": "1.x"
+      },
+      "capability": "auth"
+    },
+    {
+      "id": "navigation",
+      "parentId": null,
+      "title": "Navigation (main sidebar, breadcrumbs, route identity)",
+      "owner": "agent-01",
+      "version": "1.0.0",
+      "surface": "navigation",
+      "contract": "contracts/frontend.contract.md",
+      "public": {
+        "ports": [
+          "ui:nav:contribution"
+        ],
+        "contracts": [
+          "contracts/frontend.contract.md"
+        ]
+      },
+      "internals": [
+        "src/sub-legos/navigation/**"
+      ],
+      "status": "declared",
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "upgrade": {
+        "policy": "independent",
+        "compatibleWith": "1.x"
+      },
+      "capability": "settings"
+    },
+    {
+      "id": "dashboard",
+      "parentId": null,
+      "title": "Dashboard / overview (workflow list, empty states, pagination)",
+      "owner": "agent-01",
+      "version": "1.0.0",
+      "surface": "dashboard",
+      "contract": "contracts/frontend.contract.md",
+      "public": {
+        "ports": [
+          "ui:dashboard:list-source",
+          "ui:dashboard:empty-state"
+        ],
+        "contracts": [
+          "contracts/frontend.contract.md"
+        ]
+      },
+      "internals": [
+        "src/sub-legos/dashboard/**"
+      ],
+      "status": "declared",
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "upgrade": {
+        "policy": "independent",
+        "compatibleWith": "1.x"
+      },
+      "capability": "workflow"
+    },
+    {
+      "id": "settings",
+      "parentId": null,
+      "title": "Settings pages (personal, users, security, API, usage)",
+      "owner": "agent-01",
+      "version": "1.0.0",
+      "surface": "settings",
+      "contract": "contracts/frontend.contract.md",
+      "public": {
+        "ports": [
+          "ui:settings:shell",
+          "ui:settings:page"
+        ],
+        "contracts": [
+          "contracts/frontend.contract.md"
+        ]
+      },
+      "internals": [
+        "src/sub-legos/settings/**"
+      ],
+      "status": "declared",
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "upgrade": {
+        "policy": "independent",
+        "compatibleWith": "1.x"
+      },
+      "capability": "settings"
+    },
+    {
+      "id": "settings.general",
+      "parentId": "settings",
+      "title": "Settings — general / personal page",
+      "owner": "agent-01",
+      "version": "1.0.0",
+      "surface": "settings",
+      "contract": "contracts/frontend.contract.md",
+      "public": {
+        "ports": [
+          "ui:settings:general:field"
+        ],
+        "contracts": [
+          "contracts/frontend.contract.md"
+        ]
+      },
+      "internals": [
+        "src/sub-legos/settings/general/**"
+      ],
+      "dependsOn": [
+        {
+          "subLego": "settings",
+          "port": "ui:settings:shell",
+          "versionRange": "^1.0.0"
+        }
+      ],
+      "status": "declared",
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "upgrade": {
+        "policy": "independent",
+        "compatibleWith": "1.x"
+      },
+      "capability": "settings"
+    },
+    {
+      "id": "settings.security",
+      "parentId": "settings",
+      "title": "Settings — security page (MFA, personal tokens)",
+      "owner": "agent-01",
+      "version": "1.0.0",
+      "surface": "settings",
+      "contract": "contracts/frontend.contract.md",
+      "public": {
+        "ports": [
+          "ui:settings:security:policy"
+        ],
+        "contracts": [
+          "contracts/frontend.contract.md"
+        ]
+      },
+      "internals": [
+        "src/sub-legos/settings/security/**"
+      ],
+      "dependsOn": [
+        {
+          "subLego": "settings",
+          "port": "ui:settings:shell",
+          "versionRange": "^1.0.0"
+        }
+      ],
+      "status": "declared",
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "upgrade": {
+        "policy": "independent",
+        "compatibleWith": "1.x"
+      },
+      "capability": "settings"
+    },
+    {
+      "id": "settings.localization",
+      "parentId": "settings",
+      "title": "Settings — localization section (the Translation LEGO's host surface)",
+      "owner": "agent-01",
+      "version": "1.0.0",
+      "surface": "settings",
+      "contract": "contracts/frontend.contract.md",
+      "public": {
+        "ports": [
+          "ui:settings:localization:pack-list",
+          "ui:locale:direction"
+        ],
+        "contracts": [
+          "contracts/frontend.contract.md",
+          "contracts/localization.contract.md"
+        ]
+      },
+      "internals": [
+        "src/sub-legos/settings/localization/**"
+      ],
+      "dependsOn": [
+        {
+          "subLego": "settings",
+          "port": "ui:settings:shell",
+          "versionRange": "^1.0.0"
+        }
+      ],
+      "status": "declared",
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "upgrade": {
+        "policy": "acknowledged",
+        "compatibleWith": "1.x"
+      },
+      "capability": "settings"
+    },
+    {
+      "id": "settings.localization.rtl",
+      "parentId": "settings.localization",
+      "title": "Settings — localization: right-to-left direction handling (Arabic)",
+      "owner": "agent-01",
+      "version": "1.0.0",
+      "surface": "settings",
+      "contract": "contracts/frontend.contract.md",
+      "public": {
+        "ports": [
+          "ui:locale:direction:resolve"
+        ],
+        "contracts": [
+          "contracts/frontend.contract.md",
+          "contracts/localization.contract.md"
+        ]
+      },
+      "internals": [
+        "src/sub-legos/settings/localization/rtl/**"
+      ],
+      "dependsOn": [
+        {
+          "subLego": "settings.localization",
+          "port": "ui:locale:direction",
+          "versionRange": "^1.0.0"
+        }
+      ],
+      "status": "declared",
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "upgrade": {
+        "policy": "acknowledged",
+        "compatibleWith": "1.x"
+      },
+      "capability": "settings"
+    },
+    {
+      "id": "workflow-editor",
+      "parentId": null,
+      "title": "Workflow editor (the reference canvas experience)",
+      "owner": "agent-01",
+      "version": "1.0.0",
+      "surface": "workflow-editor",
+      "contract": "contracts/frontend.contract.md",
+      "public": {
+        "ports": [
+          "ui:editor:panel",
+          "ui:editor:command"
+        ],
+        "contracts": [
+          "contracts/frontend.contract.md"
+        ]
+      },
+      "internals": [
+        "src/sub-legos/workflow-editor/**"
+      ],
+      "status": "declared",
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "upgrade": {
+        "policy": "independent",
+        "compatibleWith": "1.x"
+      },
+      "capability": "workflow"
+    },
+    {
+      "id": "workflow-editor.canvas",
+      "parentId": "workflow-editor",
+      "title": "Workflow editor — canvas (nodes, edges, zoom/pan, selection)",
+      "owner": "agent-01",
+      "version": "1.0.0",
+      "surface": "workflow-editor",
+      "contract": "contracts/frontend.contract.md",
+      "public": {
+        "ports": [
+          "ui:canvas:selection",
+          "ui:canvas:overlay"
+        ],
+        "contracts": [
+          "contracts/frontend.contract.md"
+        ]
+      },
+      "internals": [
+        "src/sub-legos/workflow-editor/canvas/**"
+      ],
+      "dependsOn": [
+        {
+          "subLego": "workflow-editor",
+          "port": "ui:editor:panel",
+          "versionRange": "^1.0.0"
+        }
+      ],
+      "status": "declared",
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "upgrade": {
+        "policy": "independent",
+        "compatibleWith": "1.x"
+      },
+      "capability": "workflow"
+    },
+    {
+      "id": "workflow-editor.node-panel",
+      "parentId": "workflow-editor",
+      "title": "Workflow editor — node panel (selected node, its actions and status)",
+      "owner": "agent-01",
+      "version": "1.0.0",
+      "surface": "workflow-editor",
+      "contract": "contracts/frontend.contract.md",
+      "public": {
+        "ports": [
+          "ui:panel:selection",
+          "ui:panel:parameters"
+        ],
+        "contracts": [
+          "contracts/frontend.contract.md"
+        ]
+      },
+      "internals": [
+        "src/sub-legos/workflow-editor/node-panel/**"
+      ],
+      "dependsOn": [
+        {
+          "subLego": "workflow-editor",
+          "port": "ui:editor:panel",
+          "versionRange": "^1.0.0"
+        }
+      ],
+      "status": "declared",
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "upgrade": {
+        "policy": "acknowledged",
+        "compatibleWith": "1.x"
+      },
+      "capability": "workflow"
+    },
+    {
+      "id": "workflow-editor.parameter-panel",
+      "parentId": "workflow-editor",
+      "title": "Workflow editor — parameter panel (schema-driven node forms)",
+      "owner": "agent-01",
+      "version": "1.0.0",
+      "surface": "workflow-editor",
+      "contract": "contracts/frontend.contract.md",
+      "public": {
+        "ports": [
+          "ui:panel:parameter-form"
+        ],
+        "contracts": [
+          "contracts/frontend.contract.md"
+        ]
+      },
+      "internals": [
+        "src/sub-legos/workflow-editor/parameter-panel/**"
+      ],
+      "dependsOn": [
+        {
+          "subLego": "workflow-editor",
+          "port": "ui:editor:panel",
+          "versionRange": "^1.0.0"
+        },
+        {
+          "subLego": "workflow-editor.node-panel",
+          "port": "ui:panel:selection",
+          "versionRange": "^1.0.0"
+        }
+      ],
+      "status": "declared",
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "upgrade": {
+        "policy": "independent",
+        "compatibleWith": "1.x"
+      },
+      "capability": "workflow"
+    },
+    {
+      "id": "workflow-editor.execution-panel",
+      "parentId": "workflow-editor",
+      "title": "Workflow editor — execution panel (run data, execution errors)",
+      "owner": "agent-01",
+      "version": "1.0.0",
+      "surface": "workflow-editor",
+      "contract": "contracts/frontend.contract.md",
+      "public": {
+        "ports": [
+          "ui:panel:execution-data"
+        ],
+        "contracts": [
+          "contracts/frontend.contract.md"
+        ]
+      },
+      "internals": [
+        "src/sub-legos/workflow-editor/execution-panel/**"
+      ],
+      "dependsOn": [
+        {
+          "subLego": "workflow-editor",
+          "port": "ui:editor:panel",
+          "versionRange": "^1.0.0"
+        },
+        {
+          "subLego": "workflow-editor.canvas",
+          "port": "ui:canvas:selection",
+          "versionRange": "^1.0.0"
+        }
+      ],
+      "status": "declared",
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "upgrade": {
+        "policy": "independent",
+        "compatibleWith": "1.x"
+      },
+      "capability": "workflow"
+    },
+    {
+      "id": "node-picker",
+      "parentId": null,
+      "title": "Node picker / node menu (search, categories, node descriptions)",
+      "owner": "agent-01",
+      "version": "1.0.0",
+      "surface": "node-picker",
+      "contract": "contracts/frontend.contract.md",
+      "public": {
+        "ports": [
+          "ui:picker:item-source"
+        ],
+        "contracts": [
+          "contracts/frontend.contract.md"
+        ]
+      },
+      "internals": [
+        "src/sub-legos/node-picker/**"
+      ],
+      "status": "declared",
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "upgrade": {
+        "policy": "independent",
+        "compatibleWith": "1.x"
+      },
+      "capability": "node-registry"
+    },
+    {
+      "id": "credentials",
+      "parentId": null,
+      "title": "Credentials pages and credential dialogs",
+      "owner": "agent-01",
+      "version": "1.0.0",
+      "surface": "credentials",
+      "contract": "contracts/frontend.contract.md",
+      "public": {
+        "ports": [
+          "ui:credential:form-binding"
+        ],
+        "contracts": [
+          "contracts/frontend.contract.md"
+        ]
+      },
+      "internals": [
+        "src/sub-legos/credentials/**"
+      ],
+      "dependsOn": [
+        {
+          "subLego": "dialogs",
+          "port": "ui:dialog:component",
+          "versionRange": "^1.0.0"
+        }
+      ],
+      "status": "declared",
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "upgrade": {
+        "policy": "independent",
+        "compatibleWith": "1.x"
+      },
+      "capability": "credentials"
+    },
+    {
+      "id": "executions",
+      "parentId": null,
+      "title": "Executions list and detail",
+      "owner": "agent-01",
+      "version": "1.0.0",
+      "surface": "executions",
+      "contract": "contracts/frontend.contract.md",
+      "public": {
+        "ports": [
+          "ui:execution:list-source",
+          "ui:execution:error-view"
+        ],
+        "contracts": [
+          "contracts/frontend.contract.md"
+        ]
+      },
+      "internals": [
+        "src/sub-legos/executions/**"
+      ],
+      "dependsOn": [
+        {
+          "subLego": "error-surfaces",
+          "port": "ui:error:strip",
+          "versionRange": "^1.0.0"
+        }
+      ],
+      "status": "declared",
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "upgrade": {
+        "policy": "independent",
+        "compatibleWith": "1.x"
+      },
+      "capability": "execution"
+    },
+    {
+      "id": "notifications",
+      "parentId": null,
+      "title": "Notifications channel (toasts, system messages)",
+      "owner": "agent-01",
+      "version": "1.0.0",
+      "surface": "notifications",
+      "contract": "contracts/frontend.contract.md",
+      "public": {
+        "ports": [
+          "ui:notification:enqueue"
+        ],
+        "contracts": [
+          "contracts/frontend.contract.md"
+        ]
+      },
+      "internals": [
+        "src/sub-legos/notifications/**"
+      ],
+      "status": "declared",
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "upgrade": {
+        "policy": "acknowledged",
+        "compatibleWith": "1.x"
+      },
+      "capability": "push"
+    },
+    {
+      "id": "dialogs",
+      "parentId": null,
+      "title": "Dialog host (modal shell, forms, confirmations)",
+      "owner": "agent-01",
+      "version": "1.0.0",
+      "surface": "dialogs",
+      "contract": "contracts/frontend.contract.md",
+      "public": {
+        "ports": [
+          "ui:dialog:component"
+        ],
+        "contracts": [
+          "contracts/frontend.contract.md"
+        ]
+      },
+      "internals": [
+        "src/sub-legos/dialogs/**"
+      ],
+      "status": "declared",
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "upgrade": {
+        "policy": "acknowledged",
+        "compatibleWith": "1.x"
+      },
+      "capability": null
+    },
+    {
+      "id": "error-surfaces",
+      "parentId": null,
+      "title": "Error surfaces (inline errors, error pages, machine-readable codes)",
+      "owner": "agent-01",
+      "version": "1.0.0",
+      "surface": "error-surfaces",
+      "contract": "contracts/frontend.contract.md",
+      "public": {
+        "ports": [
+          "ui:error:strip",
+          "ui:error:message-binding"
+        ],
+        "contracts": [
+          "contracts/frontend.contract.md"
+        ]
+      },
+      "internals": [
+        "src/sub-legos/error-surfaces/**"
+      ],
+      "dependsOn": [
+        {
+          "subLego": "notifications",
+          "port": "ui:notification:enqueue",
+          "versionRange": "^1.0.0"
+        }
+      ],
+      "status": "declared",
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "upgrade": {
+        "policy": "independent",
+        "compatibleWith": "1.x"
+      },
+      "capability": "compatibility"
+    }
+  ]
+}

@@ -86,7 +86,9 @@ slots, capability registry, extension points) and `apps/n8n-lego` publishes it a
 `<meta>` tag plus `GET /rest/frontend/bootstrap`. The pinned editor bundle is untouched
 (byte-identical apart from that one tag, asserted by test) and the release script vendors
 the LEGO into `vendor/frontend-lego` next to the engine. Architecture and migration notes:
-`docs/n8n-lego/FRONTEND_LEGO.md`; contract: `contracts/frontend.contract.md`.
+`docs/n8n-lego/FRONTEND_LEGO.md`; contract: `contracts/frontend.contract.md`. The LEGO also declares its
+**nested units** (`manifest/sub-legos.json`, 19 units three levels deep) with a public/private boundary and an
+upgrade rule that is enforced, not promised: `contracts/frontend-sub-lego.contract.md`.
 
 Per-channel checklist:
 

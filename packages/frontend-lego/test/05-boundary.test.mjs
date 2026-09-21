@@ -37,7 +37,7 @@ const PACKAGE_FILES = walk(SRC_DIR).concat([join(PACKAGE_ROOT, 'index.mjs')]);
 const rel = (path) => relative(PACKAGE_ROOT, path).split(sep).join('/');
 
 /** Browser-safe modules: the contract surface a future implementation consumes. */
-const BROWSER_SAFE = ['contract.mjs', 'errors.mjs', 'i18n.mjs', 'registry.mjs', 'boot.mjs', 'client.mjs'];
+const BROWSER_SAFE = ['contract.mjs', 'errors.mjs', 'i18n.mjs', 'registry.mjs', 'boot.mjs', 'client.mjs', 'sublegos.mjs'];
 
 test('F2 — contract modules are browser-safe (no node: imports)', () => {
   for (const file of PACKAGE_FILES) {
