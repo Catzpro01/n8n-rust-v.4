@@ -1,5 +1,5 @@
 {
-  "recordVersion": "1.1.0",
+  "recordVersion": "1.1.1",
   "owner": "agent-01 (frontend + compatibility)",
   "description": "Machine-readable open-decision register. A question is RESOLVED only when an existing declaration already answers it; otherwise it is recorded with the arbiter it needs, the evidence gathered, the current interpretation and what is blocked until it is decided. Every row carries owner, affected domains, current interpretation, decision required, blocking level, date and references, so a future agent can continue without the historical chat. Nothing here is a silent choice.",
   "sourceOfTruth": {
@@ -133,8 +133,8 @@
     {
       "id": "XA-5",
       "question": "Are the `lego.*` error codes named by the backend degradation vocabulary published?",
-      "status": "open-for-agent-2",
-      "resolution": null,
+      "status": "resolved",
+      "resolution": "RESOLVED by agent-2 in P2.11 (`464c1216`, F16 error-code publication). All eleven `lego.*` codes raised by the frontend foundation (interaction, envelope, negotiation) are now published in `contracts/errors.contract.json` v1.1.0 (24 -> 35 codes). Each code also carries `retryable` plus a `retryRationale`. Durability: gate rule F16 scans `src/lego/*.mjs` for raised codes in declared namespaces and fails on any unpublished one, with a selftest fixture.",
       "finding": "Still unpublished at P2.10. The canonical degradation states name four `lego.*` codes (`lego.capability_unavailable`, `lego.version_incompatible`, `lego.dependency_disabled`, `lego.migration_required`) in their `action` strings, but neither domains.json nor errors.contract.json declares a `lego` namespace: the 24 published codes stay domain-namespaced, and the registry rule still says a code's namespace must equal a domain's declared `errorNamespace`.",
       "evidence": [
         "arena/01a0c521 @ 6f7b66da interaction.mjs -> DEGRADATION_STATES actions name lego.* codes",
@@ -142,7 +142,7 @@
         "the lock quotes the action strings verbatim (vocabulary.mjs degradation.actions) and test/29 asserts them against the module"
       ],
       "frontendBehaviour": "The frontend quotes the canonical degradation *action* verbatim in the verdict (`degradation.action`) and does not invent a code of its own; its own `frontend.*` codes stay where they are, and an unmapped backend code renders through the message-key model.",
-      "arbiter": "agent-2 publishes the `lego.*` codes (or removes the code names from the degradation actions)",
+      "arbiter": null,
       "blocks": "nothing; the UI shows the action and the reason",
       "owner": "agent-2",
       "affectedDomains": [
@@ -157,7 +157,8 @@
         "arena/01a0c521 @ 6f7b66da interaction.mjs -> DEGRADATION_STATES actions name lego.* codes",
         "arena/01a0c521 @ 6f7b66da domains.json + contracts/errors.contract.json -> no `lego` namespace, no lego.* code",
         "the lock quotes the action strings verbatim (vocabulary.mjs degradation.actions) and test/29 asserts them against the module"
-      ]
+      ],
+      "verifiedOn": "2026-09-22 by agent-1 in the merged tree"
     },
     {
       "id": "XA-6",
@@ -328,7 +329,7 @@
       ]
     },
     {
-      "id": "XA-11",
+      "id": "XA-20",
       "question": "Which contract publishes a skill - and is a skill a backend concept at all?",
       "status": "open-for-manager",
       "resolution": null,
@@ -363,7 +364,7 @@
       ]
     },
     {
-      "id": "XA-12",
+      "id": "XA-21",
       "question": "Is there a durable memory store, or is memory only loaded context?",
       "status": "open-for-manager",
       "resolution": null,
@@ -396,7 +397,7 @@
       ]
     },
     {
-      "id": "XA-13",
+      "id": "XA-22",
       "question": "What does an agent workspace mean, and which contract publishes it?",
       "status": "open-for-manager",
       "resolution": null,
@@ -429,7 +430,7 @@
       ]
     },
     {
-      "id": "XA-14",
+      "id": "XA-23",
       "question": "Which capability owns request and response translation?",
       "status": "open-for-manager",
       "resolution": null,
@@ -439,7 +440,7 @@
         "arena/01a0c521 @ 6f7b66da contracts/contract-lock.json -> no translation row",
         "packages/frontend-lego/src/i18n.mjs -> SUPPORTED_LOCALES is the only locale declaration"
       ],
-      "frontendBehaviour": "The language control renders the declared locale set and sets a response-language preference on the request; `Translate response` stays absent while XA-14 is open, and no dictionary is carried inside a contract.",
+      "frontendBehaviour": "The language control renders the declared locale set and sets a response-language preference on the request; `Translate response` stays absent while XA-23 is open, and no dictionary is carried inside a contract.",
       "informedBy": [
         ".ai/master/AI_ACCESSIBILITY_AND_LOCALIZATION.md"
       ],
@@ -450,7 +451,7 @@
         "translation",
         "frontend"
       ],
-      "currentInterpretation": "The language control renders the declared locale set and sets a response-language preference on the request; `Translate response` stays absent while XA-14 is open, and no dictionary is carried inside a contract.",
+      "currentInterpretation": "The language control renders the declared locale set and sets a response-language preference on the request; `Translate response` stays absent while XA-23 is open, and no dictionary is carried inside a contract.",
       "decisionRequired": "manager: publish a translation capability (language pairs, provider mapping) or declare response language a frontend preference with no backend contract",
       "blockingLevel": "phase",
       "date": "2026-09-22",
@@ -557,7 +558,7 @@
         "arena/01a0c521 @ 6f7b66da contracts/contract-lock.json -> no ai.usage row"
       ]
     },
-{
+    {
       "id": "XA-18",
       "question": "Which contract publishes the external action families - filesystem, terminal/process, project, browser and git?",
       "status": "open-for-manager",
@@ -594,7 +595,7 @@
         "WORKSPACE_AND_EXTERNAL_ACTION_PLAN.md section 2 names the families as a request; section 3 states the boundary rules"
       ]
     },
-{
+    {
       "id": "XA-19",
       "question": "Which domain owns the app-side frontend mount - `src/frontend.mjs` and the descriptor route `src/frontend/routes.mjs`?",
       "status": "open-for-manager",
@@ -648,5 +649,33 @@
       "how": "git archive <commit> | tar -x -C /tmp/a2; N8N_BACKEND_LEGO_ROOT=/tmp/a2/apps/n8n-lego/src/lego node --test packages/frontend-lego/test/29-alignment.test.mjs",
       "result": "38 canonical sets compared, 0 drift, 4 skipped tests become 0"
     }
+  },
+  "renumbering": {
+    "why": "Both agents allocated ids independently and the ranges collided at XA-11..XA-14. XA-1..XA-10 already agree on both sides; agent-2 published XA-11..XA-14 first in the generated PROJECT_DECISIONS.md (XA-11 ownership of the fifteen AI/Agent LEGO, XA-12 MCP capability export list, XA-13 translation locale baseline, XA-14 ownership of the master documentation set), so the frontend rows moved: skill XA-11 to XA-20, memory XA-12 to XA-21, workspace XA-13 to XA-22, translation capability XA-14 to XA-23.",
+    "map": {
+      "XA-11": "XA-20",
+      "XA-12": "XA-21",
+      "XA-13": "XA-22",
+      "XA-14": "XA-23"
+    },
+    "unchanged": [
+      "XA-1",
+      "XA-2",
+      "XA-3",
+      "XA-4",
+      "XA-5",
+      "XA-6",
+      "XA-7",
+      "XA-8",
+      "XA-9",
+      "XA-10",
+      "XA-15",
+      "XA-16",
+      "XA-17",
+      "XA-18",
+      "XA-19"
+    ],
+    "nextFreeId": "XA-24",
+    "note": "Related but distinct: agent-2 XA-13 asks who owns the translation locale baseline; frontend XA-23 asks which capability owns request and response translation. Both stay open."
   }
 }

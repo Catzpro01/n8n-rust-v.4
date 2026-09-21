@@ -108,7 +108,7 @@ semantics with `aria-expanded`, `aria-level` and `aria-selected`.
   UI.
 - **`Translate response`** is an explicit, per-message action (advanced), and when translation is
   performed the message is labelled with the target language and how it was produced. Until
-  **XA-14** is published, the frontend capability `translation` stays `declared` and the action is
+  **XA-23** is published, the frontend capability `translation` stays `declared` and the action is
   absent rather than faked.
 - **A model answer in the wrong language is not a localization failure** — it is content; the UI
   offers `Translate response` rather than silently switching the interface language.

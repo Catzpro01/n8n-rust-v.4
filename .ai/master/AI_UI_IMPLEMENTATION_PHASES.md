@@ -18,14 +18,14 @@ Everything below builds *on* it and adds no new foundation.
 P3 skeleton ──┬─► P4 Assistant (GLOBAL)
               ├─► P5 Copilot chat + context/session
               │        ├─► P6 trace · agents · approvals · artifacts
-              │        │        ├─► P7 skills · memory                    (waits for XA-11, XA-12)
-              │        │        └─► P8 MCP · runtimes · workspace        (waits for XA-16, XA-13)
-              │        └───────────────────────────────────────────► P9 node creator · translation · usage (waits for XA-15, XA-14, XA-17)
+              │        │        ├─► P7 skills · memory                    (waits for XA-20, XA-21)
+              │        │        └─► P8 MCP · runtimes · workspace        (waits for XA-16, XA-22)
+              │        └───────────────────────────────────────────► P9 node creator · translation · usage (waits for XA-15, XA-23, XA-17)
               └───────────────────────────────────────────────────► P10 hardening (a11y · performance · mobile · i18n · evidence)
 ```
 
 A phase may start when its dependencies are *published*, not when they are merely planned. While a
-dependency is `publicationPending` (XA-11 … XA-17), the surface renders its state as
+dependency is `publicationPending` (XA-20 … XA-17), the surface renders its state as
 `capability-unavailable` / `feature-unsupported` with the reason — never a mock.
 
 ## 2. Common definition of done (applies to every phase)
@@ -108,7 +108,7 @@ reports partial state; artifacts render no payload inline.
 **Exit gate.** One full delegated run is reconstructable from the Trace tab alone, with references
 instead of payloads.
 
-### P7 — Skills and memory *(waits for XA-11, XA-12)*
+### P7 — Skills and memory *(waits for XA-20, XA-21)*
 
 **Delivers.** `Skills n active` → skill list → skill detail (procedure, capabilities, validators,
 references, token budget, version), and `Memory n relevant` → relevant items by kind → `Open Memory
@@ -123,7 +123,7 @@ already loaded; the graph is L3-only and paged.
 
 **Exit gate.** The chips render truthful counts or an honest "not published" state.
 
-### P8 — MCP, runtimes, workspace *(waits for XA-16, XA-13)*
+### P8 — MCP, runtimes, workspace *(waits for XA-16, XA-22)*
 
 **Delivers.** Capability-first MCP presentation (`github.search — MCP`) with lazy advanced details
 (server, transport, health, tools loaded, availability), the runtime line in agent detail
@@ -140,7 +140,7 @@ ever shown.
 **Exit gate.** An external runtime is optional in every flow: local-only and remote-only instances
 both render complete, non-degraded surfaces.
 
-### P9 — Node creator, translation, token & usage *(waits for XA-15, XA-14, XA-17)*
+### P9 — Node creator, translation, token & usage *(waits for XA-15, XA-23, XA-17)*
 
 **Delivers.** `Create with AI` (Describe → Draft → Validate → Test → Preview → Install) with the
 seven creation methods as peers (Visual, Declarative, OpenAPI, Script, Subworkflow, Native,
@@ -152,7 +152,7 @@ is *reported*.
 
 **Tests.** The AI flow never bypasses `workflow.validate`; Rust/WASM is never the default;
 `source: estimated` is visibly different from `reported`; a translation action is absent while
-XA-14 is open.
+XA-23 is open.
 
 **Exit gate.** Creating a node with AI produces a validated draft and an installable preview, or
 explains which declared step is missing.
@@ -185,4 +185,4 @@ and on a phone — with the editor unaffected when AI is absent.
 - No AI surface that can block the workflow editor.
 
 Each of these maps to a hard stop in the brief: if a phase appears to need one of them, it stops and
-goes to the manager as a decision record, like XA-11 … XA-18.
+goes to the manager as a decision record, like XA-20 … XA-18.

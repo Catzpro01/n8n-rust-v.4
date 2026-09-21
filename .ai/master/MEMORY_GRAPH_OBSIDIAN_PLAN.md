@@ -1,6 +1,6 @@
 # Memory graph and Obsidian projection
 
-**Status:** planning (**XA-12**: no `ai.memory` capability is published — this document specifies a
+**Status:** planning (**XA-21**: no `ai.memory` capability is published — this document specifies a
 target, not a runtime). **Canonical owners:** manager for the memory contract; agent-01 for how the
 frontend would consume it. No vault, database or Obsidian instance is created by this repository.
 
@@ -55,7 +55,7 @@ window.
 
 ## 6. Publication path
 
-1. Manager publishes a memory contract (entry kinds, relevance source, retention, edges) — XA-12.
+1. Manager publishes a memory contract (entry kinds, relevance source, retention, edges) — XA-21.
 2. The frontend declares a memory view over that contract (count, list, graph, retrieval action).
 3. The Obsidian adapter is authored as a provider implementation of the memory interface — an
    adapter, never a contract.

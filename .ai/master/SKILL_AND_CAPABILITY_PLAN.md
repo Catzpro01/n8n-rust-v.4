@@ -1,7 +1,7 @@
 # Skills and capabilities
 
 **Status:** planning. **Capability: published** (`lego.domain-registry@1.1.0`, `lego.interaction`,
-`lego.negotiation`, `ai.foundation` taxonomy). **Skill: XA-11 — `publicationPending`**
+`lego.negotiation`, `ai.foundation` taxonomy). **Skill: XA-20 — `publicationPending`**
 (no capability, no contract, no vocabulary exists at P2.10).
 
 ---
@@ -11,7 +11,7 @@
 | Concept | Question | Shape |
 | :--- | :--- | :--- |
 | **Capability** | *what can be done* | a declared, versioned contract with operations, permissions, interaction classes |
-| **Skill** *(XA-11)* | *how the job should be done* | knowledge + rules + procedure + capability map + validators |
+| **Skill** *(XA-20)* | *how the job should be done* | knowledge + rules + procedure + capability map + validators |
 | **Agent Machine** | *who/what orchestrates the job* | a runtime executing a delegated task |
 | **Workspace** | *where the action occurs* | a scoped place with a boundary |
 | **Approval** | *whether the action is allowed* | a human gate with risk and reason |
@@ -58,7 +58,7 @@ which version is active) would become a permission boundary nobody reviews. Keep
 means: capability grants stay with the caller, approvals stay with the action, and a skill can be
 updated or replaced without changing what the system is allowed to do.
 
-## 5. Frontend behaviour while XA-11 is open
+## 5. Frontend behaviour while XA-20 is open
 
 The Skills surface is specified and **gated**: the chip renders a presentation-only count or
 `capability-unavailable` with the reason; no skill state is requested, stored or sent to the backend;

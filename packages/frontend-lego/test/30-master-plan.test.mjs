@@ -184,8 +184,20 @@ test('the registers stay open, evidenced and reconciled', () => {
     assert.ok((row.evidence ?? []).length >= 2, `${row.id} cites evidence`);
     assert.ok(row.owner && row.affectedDomains?.length && row.blockingLevel && row.date, `${row.id} carries the required fields`);
   }
+  // Two registers, one id space: the frontend record (`decisions`) and agent-2's generated
+  // record (`items` = XA-1..XA-10 arbitrations, `newProposalsFromBackend` = XA-11..XA-14).
   const recorded = new Set(frontend.decisions.map((row) => row.id));
   for (const row of backend.decisions ?? backend.rows ?? []) recorded.add(row.id);
+  for (const row of backend.items ?? []) {
+    const id = /XA-\d+/.exec(row.id ?? row.title ?? '');
+    if (id) recorded.add(id[0]);
+  }
+  for (const row of backend.newProposalsFromBackend ?? []) {
+    const id = /XA-\d+/.exec(row.id ?? row.title ?? '');
+    if (id) recorded.add(id[0]);
+  }
+  assert.ok(recorded.size >= 19, `${recorded.size} decision ids are registered`);
+  assert.deepEqual(frontend.renumbering.map, { 'XA-11': 'XA-20', 'XA-12': 'XA-21', 'XA-13': 'XA-22', 'XA-14': 'XA-23' }, 'the id collision is resolved by a recorded map');
   const named = new Set();
   for (const file of MASTER) for (const match of read(file).matchAll(/XA-\d+/g)) named.add(match[0]);
   assert.ok(named.size >= 8, `${named.size} decision ids are named across the specification`);

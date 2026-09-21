@@ -1,7 +1,7 @@
 # Workspace and external actions
 
 **Status:** planning. **Published:** domain `workspace` exists (`planned`, contract `0.0.0`,
-`workspace.projects` **unsupported**); agent-scoped sandbox semantics are **XA-13**.
+`workspace.projects` **unsupported**); agent-scoped sandbox semantics are **XA-22**.
 **Nothing in this document is an implementation.**
 
 ---
@@ -25,7 +25,7 @@ declares no `filesystem.*`, `terminal.*`, `process.*`, `browser.*` or `git.*` ca
 
 | Family | Requested actions | Publication today |
 | :--- | :--- | :--- |
-| filesystem | `read`, `write`, `patch`, `list`, `move`, `delete` | not published — XA-18; agent-scoped scope is XA-13 |
+| filesystem | `read`, `write`, `patch`, `list`, `move`, `delete` | not published — XA-18; agent-scoped scope is XA-22 |
 | terminal / process | `execute`, `start`, `stop`, `status` | not published — XA-18 |
 | project | `create`, `open`, `scaffold`, `build`, `test`, `preview`, `archive` | not published — XA-18 |
 | browser | `open`, `inspect` | not published — XA-18 |
