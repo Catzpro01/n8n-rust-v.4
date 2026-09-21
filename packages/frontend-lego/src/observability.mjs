@@ -43,8 +43,31 @@ export const FRONTEND_EVENTS = Object.freeze({
   // operations
   OPERATION_COMPLETED: 'frontend.operation.completed',
   OPERATION_REJECTED: 'frontend.operation.rejected',
+  /** An operation was answered with a reason it cannot run (permission, version, migration…). */
+  OPERATION_REFUSED: 'frontend.operation.refused',
+  // lifecycle of what the frontend knows about the backend
+  MIGRATION_REQUIRED: 'frontend.migration.required',
+  /** A shared vocabulary drifted from the contract that owns it. */
+  VOCABULARY_DRIFT_DETECTED: 'frontend.vocabulary.drift-detected',
+  // AI boundary — operational facts only, never a transcript
+  AGENT_EVENT: 'frontend.agent.event',
+  DELEGATION_CHANGED: 'frontend.agent.delegation-changed',
+  APPROVAL_DECIDED: 'frontend.agent.approval-decided',
+  ARTIFACT_REFERENCED: 'frontend.agent.artifact-referenced',
+  RUNTIME_CONNECTED: 'frontend.agent.runtime-connected',
+  RUNTIME_UNAVAILABLE: 'frontend.agent.runtime-unavailable',
   // knowledge pack
   PACK_DRIFT_DETECTED: 'frontend.pack.drift-detected',
+});
+
+/** What each event family is about — the vocabulary grouped, so a consumer can subscribe by family. */
+export const EVENT_FAMILIES = Object.freeze({
+  'capability + lifecycle': Object.freeze(['frontend.capability.registered', 'frontend.capability.rejected', 'frontend.capability.disabled', 'frontend.capability.degraded', 'frontend.lifecycle.transition']),
+  'negotiation + contracts': Object.freeze(['frontend.negotiation.decided', 'frontend.contract.mismatch', 'frontend.migration.required', 'frontend.vocabulary.drift-detected']),
+  units: Object.freeze(['frontend.unit.registered', 'frontend.unit.rejected', 'frontend.upgrade.applied', 'frontend.upgrade.rejected', 'frontend.upgrade.downgrade-rejected', 'frontend.replacement.applied', 'frontend.replacement.rejected']),
+  operations: Object.freeze(['frontend.operation.completed', 'frontend.operation.rejected', 'frontend.operation.refused']),
+  'agent boundary': Object.freeze(['frontend.agent.event', 'frontend.agent.delegation-changed', 'frontend.agent.approval-decided', 'frontend.agent.artifact-referenced', 'frontend.agent.runtime-connected', 'frontend.agent.runtime-unavailable']),
+  'knowledge pack': Object.freeze(['frontend.pack.drift-detected']),
 });
 
 export const EVENT_NAMES = Object.freeze(Object.values(FRONTEND_EVENTS));
@@ -53,7 +76,7 @@ export const EVENT_NAMES = Object.freeze(Object.values(FRONTEND_EVENTS));
 export const EVENT_FIELDS = Object.freeze(['id', 'at', 'sequence', 'lego', 'subLego', 'capability', 'operation', 'details']);
 
 /** Fields that must never appear in an event: they belong to the session, not to telemetry. */
-const FORBIDDEN_KEYS = Object.freeze(['payload', 'body', 'token', 'authorization', 'subject', 'scopes', 'cookie', 'password', 'secret', 'content']);
+const FORBIDDEN_KEYS = Object.freeze(['payload', 'body', 'token', 'authorization', 'subject', 'scopes', 'cookie', 'password', 'secret', 'content', 'messages', 'transcript', 'reasoning', 'chainOfThought']);
 
 export class ObservabilityError extends Error {
   constructor(message, { eventId, errors } = {}) {
@@ -166,11 +189,14 @@ export function createBufferSink() {
 export function describeObservability() {
   return Object.freeze({
     events: Object.freeze(Object.entries(FRONTEND_EVENTS).map(([constant, id]) => Object.freeze({ constant, id }))),
+    families: EVENT_FAMILIES,
     fields: EVENT_FIELDS,
     forbiddenFields: FORBIDDEN_KEYS,
     rules: Object.freeze([
-      'Boundary level only: capability, unit, operation, lifecycle — never per component.',
-      'Semantic identity in, no payloads, no subjects, no scopes out.',
+      'Boundary level only: capability, unit, operation, lifecycle, agent — never per component.',
+      'Semantic identity in, no payloads, no subjects, no scopes out — and no transcript, reasoning or credential material.',
+      'An agent event carries its identity and outcome; the trace row carries the detail, by reference.',
+      'A vocabulary drift is itself an event: two dialects for one concept must be visible, not silent.',
       'An undeclared event id is refused, so the stream cannot silently gain a new shape.',
       'A throwing sink is counted and ignored: observability never breaks the UI.',
       'The default sink is a bounded in-memory buffer; nothing is sent anywhere.',

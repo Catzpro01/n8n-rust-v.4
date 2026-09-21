@@ -16,6 +16,7 @@ import {
 } from '../src/negotiation.mjs';
 import { backendAvailabilityFrom, describeBackendView } from '../src/backend-view.mjs';
 import { createFrontendRegistry } from '../src/registry.mjs';
+import { vocabularyOf } from '../src/vocabulary.mjs';
 import { createSubLegoRegistry } from '../src/sublegos.mjs';
 import { capabilityOf, backendCapabilitiesOf, surfacesOfCapability } from '../src/surface-capability.mjs';
 import { loadManifests } from '../src/manifests.mjs';
@@ -109,14 +110,19 @@ test('placement grants nothing: access comes from the surface or an explicit dec
 test('negotiation returns a verdict, never a bare boolean', () => {
   const { negotiator } = translation;
   const verdict = negotiator.negotiate({ capabilityId: 'translation' });
-  assert.equal(verdict.state, 'degraded', 'declared but not installed is a degradation, not availability');
-  assert.equal(verdict.ok, true, 'degraded still means the UI may proceed with the declared fallback');
-  assert.equal(verdict.degraded, true);
+  assert.equal(verdict.state, 'optional-absent', 'declared but not installed skips the optional path');
+  assert.equal(verdict.ok, false, 'the optional path is skipped, and the verdict never pretends otherwise');
+  assert.equal(verdict.degraded, false);
   assert.equal(verdict.identity, 'translation@1.0.0');
   assert.equal(verdict.origin, 'frontend-declared');
   assert.match(verdict.reasons.join(' '), /declared but not installed/);
-  assert.deepEqual(verdict.degradation, { behavior: 'degrade', fallback: 'declared-behaviour' });
-  assert.deepEqual(AVAILABILITY_STATES, ['available', 'degraded', 'version-mismatch', 'unavailable', 'unsupported', 'disabled', 'migration-required']);
+  assert.equal(verdict.degradation.state, 'optional-absent');
+  assert.equal(verdict.degradation.usable, false);
+  assert.equal(verdict.degradation.action, 'skip the optional path; this is not an error');
+  assert.deepEqual(verdict.degradation.behavior, 'fallback');
+  // The states are the canonical degradation vocabulary, quoted from the backend foundation.
+  assert.deepEqual(AVAILABILITY_STATES, vocabularyOf('degradation').values);
+  assert.deepEqual(AVAILABILITY_STATES, ['available', 'degraded', 'capability-unavailable', 'optional-absent', 'version-incompatible', 'dependency-disabled', 'migration-required', 'feature-unsupported']);
   assert.deepEqual(verdict.requiredPermissions, [], 'nothing is required by default, and the verdict says so');
   assert.equal(verdict.migrationRequired, false);
 });
@@ -124,7 +130,7 @@ test('negotiation returns a verdict, never a bare boolean', () => {
 test('an ungranted consumer is not told whether the capability would have worked', () => {
   const { negotiator } = translation;
   const verdict = negotiator.negotiate({ capabilityId: 'workflow', unitId: 'settings.localization.rtl' });
-  assert.equal(verdict.state, 'unavailable');
+  assert.equal(verdict.state, 'capability-unavailable');
   assert.equal(verdict.ok, false);
   assert.equal(verdict.capability, null, 'no metadata leaks to a consumer that may not use it');
   assert.equal(verdict.identity, null);
@@ -168,17 +174,19 @@ test('operations are negotiated by name, and a missing operation degrades', () =
 });
 
 test('a version mismatch is named, not swallowed', () => {
-  const mismatched = assembly({ backendOverrides: { settings: { status: 'available', contractVersion: '2.0.0', owner: 'settings' } } });
+  const mismatched = assembly({ backendOverrides: { settings: { status: 'implemented', contractVersion: '2.0.0', owner: 'settings' } } });
   const verdict = mismatched.negotiator.negotiate({ capabilityId: 'settings', requireVersion: '1.0.0' });
-  assert.equal(verdict.state, 'version-mismatch');
+  assert.equal(verdict.state, 'version-incompatible');
   assert.equal(verdict.ok, false);
-  assert.equal(verdict.compatibility.state, 'major-mismatch');
-  assert.match(verdict.reasons.join(' '), /different major version/);
+  assert.equal(verdict.compatibility.kind, 'breaking', 'a 2.0.0 provider breaks a 1.0.0 consumer');
+  assert.equal(verdict.compatibility.satisfied, false);
+  assert.match(verdict.reasons.join(' '), /major 1 → 2/);
 
-  const additive = assembly({ backendOverrides: { settings: { status: 'available', contractVersion: '1.4.0', owner: 'settings' } } });
+  const additive = assembly({ backendOverrides: { settings: { status: 'implemented', contractVersion: '1.4.0', owner: 'settings' } } });
   const fine = additive.negotiator.negotiate({ capabilityId: 'settings', requireVersion: '1.0.0' });
   assert.equal(fine.state, 'available');
-  assert.equal(fine.compatibility.state, 'compatible');
+  assert.equal(fine.compatibility.kind, 'compatible');
+  assert.equal(fine.compatibility.move, 'minor');
 });
 
 test('feature availability shows the frontend declaration beside the backend reality', () => {
@@ -199,7 +207,7 @@ test('feature availability shows the frontend declaration beside the backend rea
   // Overrides are keyed by capability id (the surface's backend binding), not by surface id.
   const disabled = assembly({ backendOverrides: { execution: { status: 'unsupported', owner: 'execution' } } });
   const executions = disabled.negotiator.featureAvailability().find((entry) => entry.surface === 'executions');
-  assert.equal(executions.state, 'unsupported');
+  assert.equal(executions.state, 'feature-unsupported');
   assert.match(executions.reasons.join(' '), /does not implement/);
 });
 
@@ -217,7 +225,11 @@ test('the backend view states where each fact came from, and never probes', () =
   assert.deepEqual(workflow.endpoints, [], 'nothing is probed: an empty list is the honest answer');
   const model = describeBackendView();
   assert.match(model.rules.join(' '), /never probed|Nothing is probed/);
-  assert.deepEqual(model.states, ['available', 'partial', 'unsupported', 'unknown']);
+  assert.deepEqual(model.states, ['implemented', 'partial', 'unsupported', 'unknown']);
+  for (const state of ['implemented', 'partial', 'unsupported']) {
+    assert.ok(vocabularyOf('capabilityStatus').values.includes(state), `"${state}" is a canonical status word`);
+  }
+  assert.equal(vocabularyOf('capabilityStatus').values.includes('unknown'), false, 'unknown is the frontend honest answer, declared as an extension');
 });
 
 test('locale readiness is declared readiness, not a translation implementation', () => {

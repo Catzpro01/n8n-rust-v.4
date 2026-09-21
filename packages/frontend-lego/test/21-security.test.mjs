@@ -158,12 +158,12 @@ test('a capability is declared, not discovered: unknown use fails closed', () =>
   const verdict = frontend.negotiate({ capabilityId: 'settings-only', unitId: 'workflow-editor.canvas' });
   assert.equal(verdict.capability, null, 'an ungranted consumer is not told what the capability is');
   assert.equal(verdict.contractVersion, null);
-  assert.equal(verdict.state, 'unavailable');
+  assert.equal(verdict.state, 'capability-unavailable');
   assert.equal(verdict.degradation.fallback, 'native-behavior', 'and the UI is told what to do instead');
 
   // A capability nobody declared is unavailable for everyone, including a declared unit.
   assert.equal(frontend.describeCapability('no-such-capability'), null, 'discovery answers null for the unknown');
-  assert.equal(frontend.negotiate({ capabilityId: 'no-such-capability', unitId: 'settings' }).state, 'unavailable');
+  assert.equal(frontend.negotiate({ capabilityId: 'no-such-capability', unitId: 'settings' }).state, 'capability-unavailable');
 });
 
 test('an unsupported feature is refused by the backend map, and never silently served', () => {
@@ -180,9 +180,9 @@ test('an unsupported feature is refused by the backend map, and never silently s
   const overridden = lego({ backend: { capabilities: { workflow: { status: 'unsupported', owner: 'workflow' } } } });
   assert.equal(overridden.describe().backendCapabilities, 1);
   const verdict = overridden.negotiate({ capabilityId: 'workflow', unitId: 'workflow-editor.canvas' });
-  assert.equal(verdict.state, 'unavailable', 'the frontend reports what it can actually use');
+  assert.equal(verdict.state, 'feature-unsupported', 'the frontend reports what it can actually use');
   assert.match(verdict.reasons.join(' '), /does not implement "workflow"/);
-  assert.equal(verdict.degradation.fallback, 'native-behavior');
+  assert.equal(verdict.degradation.action, 'answer 501 through the compatibility layer');
 });
 
 test('no credential material enters an envelope, and none reaches a transport', async () => {

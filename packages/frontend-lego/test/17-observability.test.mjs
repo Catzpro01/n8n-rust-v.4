@@ -87,7 +87,12 @@ test('the buffer is bounded and a broken sink never breaks the caller', () => {
   const wired = createObservability({ sink: buffer.sink });
   wired.emit(FRONTEND_EVENTS.UPGRADE_APPLIED, { subLego: 'settings.general', from: '1.0.0', to: '1.0.1' });
   assert.equal(buffer.events().length, 1);
-  assert.equal(describeObservability().rules.length, 5);
+  assert.equal(describeObservability().rules.length, 7);
+  assert.equal(Object.keys(describeObservability().families).length, 6, 'the vocabulary is grouped by family');
+  for (const family of Object.values(describeObservability().families)) {
+    for (const id of family) assert.ok(EVENT_NAMES.includes(id), `${id} is a declared event`);
+  }
+  assert.deepEqual(Object.values(describeObservability().families).flat().sort(), [...EVENT_NAMES].sort(), 'every event belongs to exactly one family');
 });
 
 test('the registries emit as they actually work', () => {

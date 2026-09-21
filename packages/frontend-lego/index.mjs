@@ -276,3 +276,77 @@ export { ADAPTER, CONVENTIONS, createVueAdapter } from './src/adapters/vue.mjs';
 export { ADAPTERS, CURRENT_ADAPTER, CURRENT_ADAPTER_ID, createAdapter } from './src/adapters/index.mjs';
 
 export { createFrontendLego } from './src/lego.mjs';
+
+export {
+  AGENT_EVENT_TYPES,
+  DELEGATION_FIELDS,
+  EVENT_DELIVERY,
+  EVENT_GROUPS,
+  EVENT_STATUSES,
+  SUMMARY_LIMIT,
+  TERMINAL_STATUSES,
+  TRACE_FIELDS,
+  TRACE_LIMIT,
+  AgentEventError,
+  buildDelegationTree,
+  createEventNormalizer,
+  createWorkTrace,
+  deliveryClassesFor,
+  describeAgentEvents,
+  isAgentEventType,
+  validateTraceEvent,
+} from './src/agent-events.mjs';
+
+export {
+  AI_CAPABILITIES,
+  MCP_CONNECTION_STATES,
+  MCP_OBJECTS,
+  PROVIDER_KINDS,
+  RUNTIME_DECLARATION_FIELDS,
+  RUNTIME_IDENTITY_FIELDS,
+  RUNTIME_KINDS,
+  RUNTIME_LOCALITY,
+  AgentContractError,
+  describeAgents,
+  describeInstallation,
+  mcpRelationship,
+  suitableRuntimes,
+  validateProviderDeclaration,
+  validateRuntimeDeclaration,
+} from './src/agents.mjs';
+
+export {
+  CAPABILITY_ID_PATTERN,
+  LOCAL_VOCABULARIES,
+  QUOTED_FROM,
+  VOCABULARIES,
+  VocabularyError,
+  assertTerm,
+  compareVocabulary,
+  describeVocabulary,
+  detectCollisions,
+  isDeclaredTerm,
+  normaliseCapabilityId,
+  vocabularyConflicts,
+  vocabularyDrift,
+  vocabularyOf,
+} from './src/vocabulary.mjs';
+
+export {
+  CHANGE_KINDS,
+  VERSION_MOVES,
+  classifyChange,
+} from './src/versions.mjs';
+
+export {
+  CAPABILITY_IDENTITY_FIELDS,
+  IDENTITY_PROVENANCE_FIELDS,
+  SEAM_FORBIDDEN,
+  SEAM_INPUTS,
+  SEAM_SOURCES,
+  SeamError,
+  capabilityIdentity,
+  consumeInput,
+  describeSeam,
+  requireInput,
+} from './src/seam.mjs';

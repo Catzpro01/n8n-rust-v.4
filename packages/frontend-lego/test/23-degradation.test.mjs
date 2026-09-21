@@ -15,6 +15,7 @@ import {
   createCapabilityNegotiator,
 } from '../src/negotiation.mjs';
 import { backendAvailabilityFrom } from '../src/backend-view.mjs';
+import { vocabularyOf } from '../src/vocabulary.mjs';
 import { createFrontendRegistry } from '../src/registry.mjs';
 import { createSubLegoRegistry } from '../src/sublegos.mjs';
 import { loadManifests } from '../src/manifests.mjs';
@@ -52,7 +53,9 @@ function assembly({ capabilities = [], overrides = {}, declared = manifests.capa
 
 test('every degradation situation is a declared row with a state and a fallback', () => {
   const situations = DEGRADATION_SITUATIONS.map((row) => row.situation);
-  assert.deepEqual(situations, ['unavailable', 'disabled', 'unsupported', 'incompatible', 'degraded', 'not-installed', 'migration-required']);
+  assert.deepEqual(situations, ['available', 'unavailable', 'disabled', 'unsupported', 'incompatible', 'degraded', 'not-installed', 'migration-required']);
+  // Every canonical degradation state is reachable, and the table never invents one.
+  assert.deepEqual([...new Set(DEGRADATION_SITUATIONS.map((row) => row.state))].sort(), [...vocabularyOf('degradation').values].sort());
   for (const row of DEGRADATION_SITUATIONS) {
     assert.ok(AVAILABILITY_STATES.includes(row.state), `${row.situation} maps to a declared state`);
     assert.ok(row.trigger.length > 20, `${row.situation} says what triggers it`);
@@ -62,11 +65,12 @@ test('every degradation situation is a declared row with a state and a fallback'
 test('unavailable: a capability nobody declares is reported, not assumed', () => {
   const { negotiator } = assembly();
   const verdict = negotiator.negotiate({ capabilityId: 'no-such-capability' });
-  assert.equal(verdict.state, 'unavailable');
+  assert.equal(verdict.state, 'capability-unavailable');
   assert.equal(verdict.ok, false);
   assert.equal(verdict.capability, null);
   assert.match(verdict.reasons.join(' '), /is not declared by this frontend/);
-  assert.deepEqual(verdict.degradation, { behavior: 'fallback', fallback: 'native-behavior' });
+  assert.equal(verdict.degradation.usable, false);
+  assert.equal(verdict.degradation.behavior, 'fallback');
 });
 
 test('disabled: an administrative switch is a state, not an empty result set', () => {
@@ -74,9 +78,9 @@ test('disabled: an administrative switch is a state, not an empty result set', (
     declared: [{ id: 'search', lego: 'search', title: 'Search', status: 'available', lifecycle: 'disabled', surfaces: ['node-picker'], contracts: ['contracts/frontend.contract.md'], tests: [TEST_REF] }],
   });
   const verdict = negotiator.negotiate({ capabilityId: 'search' });
-  assert.equal(verdict.state, 'disabled');
+  assert.equal(verdict.state, 'dependency-disabled');
   assert.equal(verdict.ok, false);
-  assert.equal(verdict.degradation.fallback, 'native-behavior');
+  assert.equal(verdict.degradation.action, 'fail with lego.dependency_disabled');
   assert.match(verdict.reasons.join(' '), /administratively disabled/);
   // And the surface view says the same thing for a capability a surface actually
   // binds, so the two answers cannot disagree.
@@ -84,38 +88,40 @@ test('disabled: an administrative switch is a state, not an empty result set', (
     declared: [{ id: 'settings', lego: 'settings', title: 'Settings', status: 'available', lifecycle: 'disabled', surfaces: ['navigation', 'settings'], contracts: ['contracts/frontend.contract.md'], tests: [TEST_REF] }],
   });
   const surface = bound.negotiator.featureAvailability().find((entry) => entry.capability === 'settings');
-  assert.equal(surface.state, 'disabled');
+  assert.equal(surface.state, 'dependency-disabled');
   assert.match(surface.reasons.join(' '), /disabled/);
-  assert.equal(bound.negotiator.negotiate({ capabilityId: 'settings' }).state, 'disabled');
+  assert.equal(bound.negotiator.negotiate({ capabilityId: 'settings' }).state, 'dependency-disabled');
 });
 
 test('unsupported: the instance does not implement it, and the UI is told to fall back', () => {
   const { negotiator } = assembly({ overrides: { workflow: { status: 'unsupported', owner: 'workflow' } } });
   const verdict = negotiator.negotiate({ capabilityId: 'workflow', unitId: 'workflow-editor.canvas' });
-  assert.equal(verdict.state, 'unavailable');
+  assert.equal(verdict.state, 'feature-unsupported');
   assert.match(verdict.reasons.join(' '), /does not implement "workflow"/);
-  assert.equal(verdict.degradation.behavior, 'fallback');
+  assert.equal(verdict.degradation.action, 'answer 501 through the compatibility layer');
   const surface = negotiator.featureAvailability().find((entry) => entry.capability === 'workflow');
-  assert.equal(surface.state, 'unsupported');
+  assert.equal(surface.state, 'feature-unsupported');
   assert.equal(surface.source, 'override', 'and the view says where the fact came from');
 });
 
 test('incompatible: a major difference is named, with the compatibility state attached', () => {
-  const { negotiator } = assembly({ overrides: { settings: { status: 'available', contractVersion: '2.0.0', owner: 'settings' } } });
+  const { negotiator } = assembly({ overrides: { settings: { status: 'implemented', contractVersion: '2.0.0', owner: 'settings' } } });
   const verdict = negotiator.negotiate({ capabilityId: 'settings', requireVersion: '1.0.0' });
-  assert.equal(verdict.state, 'version-mismatch');
+  assert.equal(verdict.state, 'version-incompatible');
   assert.equal(verdict.ok, false);
-  assert.equal(verdict.compatibility.state, 'major-mismatch');
-  assert.match(verdict.reasons.join(' '), /different major version/);
-  assert.equal(verdict.degradation.fallback, 'native-behavior');
+  assert.equal(verdict.compatibility.kind, 'breaking');
+  assert.equal(verdict.compatibility.satisfied, false);
+  assert.match(verdict.reasons.join(' '), /major 1 → 2/);
+  assert.equal(verdict.degradation.action, 'fail with lego.version_incompatible — never silently adapt');
 });
 
 test('degraded: a partial backend, or a missing required operation, is not available', () => {
   const partial = assembly({ overrides: { settings: { status: 'partial', owner: 'settings' } } });
   const partialVerdict = partial.negotiator.negotiate({ capabilityId: 'settings' });
   assert.equal(partialVerdict.state, 'degraded');
-  assert.equal(partialVerdict.ok, true, 'degraded still lets the UI proceed with the declared fallback');
-  assert.deepEqual(partialVerdict.degradation, { behavior: 'degrade', fallback: 'declared-behaviour' });
+  assert.equal(partialVerdict.ok, true, 'degraded still lets the UI proceed');
+  assert.equal(partialVerdict.degradation.usable, true);
+  assert.equal(partialVerdict.degradation.action, 'proceed with reduced guarantees; the provider declares what is reduced');
 
   const withOperations = assembly({
     capabilities: [{
@@ -134,7 +140,7 @@ test('degraded: a partial backend, or a missing required operation, is not avail
 test('not-installed: a declared capability degrades instead of pretending to exist', () => {
   const { negotiator } = assembly();
   const verdict = negotiator.negotiate({ capabilityId: 'translation' });
-  assert.equal(verdict.state, 'degraded');
+  assert.equal(verdict.state, 'optional-absent', 'the optional path is skipped, and the UI is not told the editor is broken');
   assert.match(verdict.reasons.join(' '), /declared but not installed/);
   assert.equal(verdict.capability.installed, false);
   // The readiness answer names it too, so a surface does not have to guess.
@@ -143,7 +149,7 @@ test('not-installed: a declared capability degrades instead of pretending to exi
 
 test('migration-required: present, gated, and never reported as available', () => {
   const { negotiator } = assembly({
-    overrides: { workflow: { status: 'available', owner: 'workflow', migration: { required: true, from: 'v1', to: 'v2', detail: 'run the workflow migration' } } },
+    overrides: { workflow: { status: 'implemented', owner: 'workflow', migration: { required: true, from: 'v1', to: 'v2', detail: 'run the workflow migration' } } },
   });
   const verdict = negotiator.negotiate({ capabilityId: 'workflow', unitId: 'workflow-editor.canvas' });
   assert.equal(verdict.state, 'migration-required');
@@ -151,7 +157,8 @@ test('migration-required: present, gated, and never reported as available', () =
   assert.equal(verdict.migrationRequired, true);
   assert.match(verdict.reasons.join(' '), /requires a migration/);
   assert.match(verdict.reasons.join(' '), /run the workflow migration/);
-  assert.deepEqual(verdict.degradation, { behavior: 'fallback', fallback: 'native-behavior' });
+  assert.equal(verdict.degradation.action, 'fail with lego.migration_required and name the migration');
+  assert.equal(verdict.degradation.usable, false);
 
   const surface = negotiator.featureAvailability().find((entry) => entry.capability === 'workflow');
   assert.equal(surface.state, 'migration-required');
