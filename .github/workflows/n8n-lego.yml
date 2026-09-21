@@ -26,6 +26,8 @@ on:
     types: [opened, synchronize, reopened]
     paths:
       - 'apps/n8n-lego/**'
+      - 'packages/frontend-lego/**'
+      - 'contracts/frontend.contract.md'
       - 'tests/e2e/**'
       - 'scripts/release.sh'
       - 'package.json'
@@ -34,6 +36,8 @@ on:
     branches: [main]
     paths:
       - 'apps/n8n-lego/**'
+      - 'packages/frontend-lego/**'
+      - 'contracts/frontend.contract.md'
       - 'tests/e2e/**'
       - 'scripts/release.sh'
       - 'package.json'
@@ -81,6 +85,9 @@ jobs:
           node "$APP_DIR/scripts/fetch-n8n-roles.mjs" --dir "$RUNNER_TEMP/catalog"
           test -f "$APP_DIR/data/roles.json"
           node -e "const roles=require('./' + process.env.APP_DIR + '/data/roles.json'); console.log('bundled roles.json present:', Object.keys(roles).length, 'groups')"
+
+      - name: Frontend LEGO contract + architecture tests (P2.5)
+        run: node --test packages/frontend-lego/test/*.test.mjs
 
       - name: Unit + REST contract integration tests
         env:
@@ -191,6 +198,13 @@ jobs:
           LEGO_P2_EVIDENCE: ${{ runner.temp }}/settings-visibility-p2.json
           LEGO_P2_SHOTS: ${{ runner.temp }}/p2-shots
         run: node tests/e2e/settings-compat.mjs "$LEGO_URL"
+
+      - name: P2.5 browser gate — frontend boundary, boot descriptor, stock UI intact
+        working-directory: ${{ runner.temp }}/clean-clone
+        env:
+          LEGO_P25_EVIDENCE: ${{ runner.temp }}/frontend-boundary-p25.json
+          LEGO_P25_SHOTS: ${{ runner.temp }}/p25-shots
+        run: node tests/e2e/frontend-boundary.mjs "$LEGO_URL"
 
       - name: Restart the instance on the same data directory
         run: |

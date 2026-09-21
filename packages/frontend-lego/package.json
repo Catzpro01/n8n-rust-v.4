@@ -1,0 +1,31 @@
+{
+  "name": "@lego/frontend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "FRONTEND LEGO (P2.5) — framework-neutral frontend contract, capability registry, extension points, error boundary and translation readiness for the stock n8n editor UI. Vue stays the reference implementation; the backend never learns it exists.",
+  "license": "SEE LICENSE IN ../../reference/n8n/LICENSE.md",
+  "type": "module",
+  "exports": {
+    ".": "./index.mjs",
+    "./contract": "./src/contract.mjs",
+    "./errors": "./src/errors.mjs",
+    "./i18n": "./src/i18n.mjs",
+    "./registry": "./src/registry.mjs",
+    "./boot": "./src/boot.mjs",
+    "./client": "./src/client.mjs",
+    "./manifest/surfaces.json": "./manifest/surfaces.json",
+    "./manifest/extension-points.json": "./manifest/extension-points.json",
+    "./manifest/ownership.json": "./manifest/ownership.json"
+  },
+  "files": [
+    "index.mjs",
+    "src/",
+    "manifest/"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=22.18.0"
+  }
+}

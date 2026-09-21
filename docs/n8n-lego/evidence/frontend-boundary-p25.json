@@ -1,0 +1,206 @@
+{
+  "kind": "p25-frontend-boundary",
+  "generatedAt": "2026-09-21T19:06:20.327Z",
+  "phase": "P2.5",
+  "method": "live instance (HTTP/contract level) — apps/n8n-lego/test/frontend.boundary.test.mjs; the browser gate tests/e2e/frontend-boundary.mjs captures the same boundary from inside a real page (docs/n8n-lego/FRONTEND_LEGO.md §6)",
+  "baseline": "cb71dbb2",
+  "editorUi": {
+    "editorPackage": "n8n-editor-ui",
+    "editorVersion": "2.9.4",
+    "framework": "Vue 3",
+    "frameworkIsolated": true,
+    "basePath": "/",
+    "restEndpoint": "rest"
+  },
+  "checks": [
+    {
+      "name": "GET /rest/frontend/bootstrap is auth-guarded",
+      "verdict": "PASS",
+      "detail": "status=401"
+    },
+    {
+      "name": "descriptor served in the {data} envelope",
+      "verdict": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "name": "payload validates against the contract",
+      "verdict": "PASS",
+      "detail": "contractVersion=1.0.0"
+    },
+    {
+      "name": "12 surfaces declared",
+      "verdict": "PASS",
+      "detail": "auth,navigation,dashboard,settings,workflow-editor,node-picker,credentials,executions,webhooks,notifications,dialogs,error-surfaces"
+    },
+    {
+      "name": "12 extension points declared",
+      "verdict": "PASS",
+      "detail": "ui:nav:item,ui:settings:section,ui:form:field,ui:node:menu-item,ui:dialog:render,ui:notification:render,ui:error:render,ui:message:catalog,ui:locale:switch,ui:theme:tokens,ui:command:register,ui:assistant:panel"
+    },
+    {
+      "name": "no capability registered in P2.5",
+      "verdict": "PASS",
+      "detail": "capabilities=[]"
+    },
+    {
+      "name": "six locales with Arabic RTL",
+      "verdict": "PASS",
+      "detail": "id,en,ar,zh,ru,jv"
+    },
+    {
+      "name": "error vocabulary published",
+      "verdict": "PASS",
+      "detail": "codes=11 kinds=10"
+    },
+    {
+      "name": "boot meta tag present on index.html",
+      "verdict": "PASS",
+      "detail": "<meta name=\"n8n-lego:frontend-bootstrap\">"
+    },
+    {
+      "name": "meta tag and endpoint carry the same descriptor",
+      "verdict": "PASS",
+      "detail": "byte-equal JSON"
+    },
+    {
+      "name": "stock UI still templated (title + config tag)",
+      "verdict": "PASS",
+      "detail": "title/config tag intact"
+    },
+    {
+      "name": "no unrendered template leftovers",
+      "verdict": "PASS",
+      "detail": "BASE_PATH resolved"
+    },
+    {
+      "name": "UI byte-identical apart from the additive tag",
+      "verdict": "PASS",
+      "detail": "delta=19004 bytes (the tag)"
+    },
+    {
+      "name": "501 capability becomes a machine-readable error",
+      "verdict": "PASS",
+      "detail": "kind=unsupported feature=api-keys key=backend-errors.capability-unsupported"
+    }
+  ],
+  "bootDescriptor": {
+    "contractVersion": "1.0.0",
+    "surfaces": [
+      {
+        "id": "auth",
+        "status": "present",
+        "backend": "auth"
+      },
+      {
+        "id": "navigation",
+        "status": "present",
+        "backend": "settings"
+      },
+      {
+        "id": "dashboard",
+        "status": "partial",
+        "backend": "workflow"
+      },
+      {
+        "id": "settings",
+        "status": "partial",
+        "backend": "settings"
+      },
+      {
+        "id": "workflow-editor",
+        "status": "present",
+        "backend": "workflow"
+      },
+      {
+        "id": "node-picker",
+        "status": "partial",
+        "backend": "node-registry"
+      },
+      {
+        "id": "credentials",
+        "status": "partial",
+        "backend": "credentials"
+      },
+      {
+        "id": "executions",
+        "status": "partial",
+        "backend": "execution"
+      },
+      {
+        "id": "webhooks",
+        "status": "partial",
+        "backend": "webhook"
+      },
+      {
+        "id": "notifications",
+        "status": "present",
+        "backend": "push"
+      },
+      {
+        "id": "dialogs",
+        "status": "present",
+        "backend": "none"
+      },
+      {
+        "id": "error-surfaces",
+        "status": "present",
+        "backend": "compatibility"
+      }
+    ],
+    "extensionPoints": [
+      "ui:nav:item",
+      "ui:settings:section",
+      "ui:form:field",
+      "ui:node:menu-item",
+      "ui:dialog:render",
+      "ui:notification:render",
+      "ui:error:render",
+      "ui:message:catalog",
+      "ui:locale:switch",
+      "ui:theme:tokens",
+      "ui:command:register",
+      "ui:assistant:panel"
+    ],
+    "messageSlots": [
+      "navigation",
+      "settings",
+      "dashboard",
+      "node-menu",
+      "node-descriptions",
+      "forms",
+      "dialogs",
+      "notifications",
+      "validation-errors",
+      "backend-errors",
+      "execution-errors",
+      "empty-states",
+      "system-messages"
+    ],
+    "locales": [
+      "id",
+      "en",
+      "ar",
+      "zh",
+      "ru",
+      "jv"
+    ],
+    "rtl": [
+      "ar"
+    ],
+    "errorCodes": [
+      "frontend.network.unreachable",
+      "frontend.request.aborted",
+      "frontend.session.expired",
+      "frontend.permission.denied",
+      "frontend.resource.missing",
+      "frontend.resource.conflict",
+      "frontend.request.invalid",
+      "frontend.validation.failed",
+      "frontend.capability.unsupported",
+      "frontend.server.error",
+      "frontend.error.unknown"
+    ],
+    "capabilities": []
+  }
+}
