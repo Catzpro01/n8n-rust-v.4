@@ -24,30 +24,58 @@ authoritative declaration.
 | Decisions and open arbitration | `.ai/master/PROJECT_DECISIONS.md` | ADRs + `cross-agent-decisions.backend.json` |
 | Contract status matrix | `.ai/master/AI_CONTRACT_MATRIX.md` | manifests + `contract-lock.json` |
 | The 26 core domains, strangler, nesting | `.ai/master/CORE_LEGO_ARCHITECTURE.md` | `manifest/domains.json` |
-| Development workflow (engineering operations, **not product architecture**) | `.ai/master/PROJECT_WORKFORCE_ORCHESTRATION.md` | `manifest/project-governance.json` |
+| Development workforce, control planes | `.ai/master/PROJECT_WORKFORCE_ORCHESTRATION.md` | `docs/engineering-operations/workforce-governance.json` (**not** product architecture) |
 | End-to-end scenario walkthroughs | `.ai/master/REFERENCE_AGENT_SCENARIOS.md` | `manifest/reference-scenarios.json` |
 | **What is true today** | `.ai/master/CURRENT_STATUS.md` | all manifests |
-| What is blocking progress | `.ai/master/KNOWN_BLOCKERS.md` | `manifest/project-governance.json` |
+| What is blocking progress | `.ai/master/KNOWN_BLOCKERS.md` | `docs/engineering-operations/workforce-governance.json` |
+| Frontend AI architecture, UI experiences | `.ai/master/AI_UI_EXPERIENCE_MASTER_PLAN.md` | curated (agent-1) |
+| AI UI states and flows | `.ai/master/AI_UI_STATES_AND_FLOWS.md` | curated (agent-1) |
+| Context, session and memory | `.ai/master/CONTEXT_SESSION_MEMORY_PLAN.md` | curated (agent-1) |
+| Token and resource model | `.ai/master/TOKEN_USAGE_AND_RESOURCE_PLAN.md` | curated (agent-1) |
+| Skills and capabilities | `.ai/master/SKILL_AND_CAPABILITY_PLAN.md` | curated (agent-1) |
+| Agent Machine | `.ai/master/AGENT_MACHINE_PLAN.md` | curated (agent-1) |
+| Workspace and external actions | `.ai/master/WORKSPACE_AND_EXTERNAL_ACTION_PLAN.md` | curated (agent-1) |
+| MCP and runtime adapters | `.ai/master/MCP_AND_RUNTIME_ADAPTER_PLAN.md` | curated (agent-1) |
+| Node Creator | `.ai/master/NODE_CREATOR_PLAN.md` | curated (agent-1) |
+| Translation | `.ai/master/TRANSLATION_PLAN.md` | curated (agent-1) |
+| Provider taxonomy | `.ai/master/PROVIDER_TAXONOMY.md` | curated (agent-1) |
+| Security and approval | `.ai/master/SECURITY_AND_APPROVAL_MODEL.md` | curated (agent-1) |
+| Memory graph and Obsidian | `.ai/master/MEMORY_GRAPH_OBSIDIAN_PLAN.md` | curated (agent-1) |
+| Accessibility and localization | `.ai/master/AI_ACCESSIBILITY_AND_LOCALIZATION.md` | curated (agent-1) |
+| Platform and deployment strategy | `.ai/master/PLATFORM_AND_DEPLOYMENT_STRATEGY.md` | curated (agent-1) |
+| Frontend AI contract matrix | `.ai/master/AI_FRONTEND_CONTRACT_MATRIX.md` | curated (agent-1) |
 | Backend LEGO boundaries | `.ai/index.md`, `.ai/domains/*` | `manifest/domains.json` |
 | Communication semantics | `.ai/communication.md` | source modules |
 | Capability + operation vocabulary | `.ai/capabilities.md` | `manifest/domains.json` |
 | Scale-out honesty | `.ai/scale-out.md` | `manifest/domains.json` |
 | Narrative architecture | `docs/n8n-lego/BACKEND_LEGO.md` | hand-written prose |
-| **Frontend AI architecture** | `.ai/master/AI_UI_EXPERIENCE_MASTER_PLAN.md` | hand-written (agent-1) |
-| Frontend UI states and flows | `.ai/master/AI_UI_STATES_AND_FLOWS.md` | hand-written (agent-1) |
-| Frontend progressive disclosure | `.ai/master/AI_UX_PROGRESSIVE_DISCLOSURE.md` | hand-written (agent-1) |
-| Frontend accessibility and localization | `.ai/master/AI_ACCESSIBILITY_AND_LOCALIZATION.md` | hand-written (agent-1) |
-| Frontend contract matrix | `.ai/master/AI_FRONTEND_CONTRACT_MATRIX.md` | hand-written (agent-1) |
-| Frontend phase plan | `.ai/master/AI_UI_IMPLEMENTATION_PHASES.md` | hand-written (agent-1) |
-| Frontend status, gates and blockers | `.ai/master/FRONTEND_STATUS.md` | hand-written (agent-1) |
-| Platform, deployment and resource strategy | `.ai/master/PLATFORM_AND_DEPLOYMENT_STRATEGY.md` | hand-written |
-| Frontend open decisions (XA-*) | `docs/n8n-lego/decisions/cross-agent-decisions.json` | hand-written (agent-1) |
 
-Everything under `.ai/` **backend** space is generated. Editing it by hand is pointless — the
-next `npm run lego:ai` overwrites it. The agent-1 frontend documents listed above are
-hand-written and owned by the frontend branch; the generator preserves them and reports them
-as neither generated nor orphaned. `.ai/frontend/`, `.ai/cards/`, `.ai/index/`, `.ai/maps/`
-and `.ai/README.md` belong to that pack as well.
+## Generated vs curated
+
+`.ai/` holds two kinds of file and the difference matters. The named counters —
+the same ones `npm run lego:ai` prints — are:
+
+| Counter | Count |
+| --- | --- |
+| Generated pack | 63 |
+| Curated | 37 |
+| **Total `.ai`** | **100** |
+| `.ai/master` (top level, canonical) | 29 |
+| `.ai/master/frontend` (consumption views) | 10 |
+| Retrieval pack (`packFiles()`, budget-enforced) | 10 |
+
+- **Generated** (most of the tree, including the master documents listed above
+  as manifest-derived). Editing one by hand is pointless — the next
+  `npm run lego:ai` overwrites it. Their numbers cannot drift.
+- **Curated** (37 files, owner `agent-1`): frontend/UX planning documents; no backend manifest derives them.
+  These are preserved across regeneration and ignored by `--check`. They are
+  hand-maintained, so they *can* drift — that is the honest cost of keeping
+  documents whose subject has no authoritative declaration behind it.
+
+`.ai/master/frontend/` holds agent-1's consumption views of ten subjects that
+also have a canonical generated document one level up. Each is headed with a
+pointer to its canonical counterpart. **Where a number disagrees, the generated
+document wins.**
 
 ## Where to find the answer
 
@@ -79,14 +107,6 @@ defect and should be reported as one.
 | What are the current blockers? | `KNOWN_BLOCKERS.md` |
 | What must never be done? | `PROJECT_WORKFORCE_ORCHESTRATION.md` (principles), `.ai/constitution.md` |
 | What comes next? | `IMPLEMENTATION_PHASES.md` |
-| How does AI Assistant differ from Copilot and AI Node? | `AI_UI_EXPERIENCE_MASTER_PLAN.md` (agent-1) |
-| Which states must every AI surface render? | `AI_UI_STATES_AND_FLOWS.md` (agent-1) |
-| What is visible at each disclosure level, and what is never rendered? | `AI_UX_PROGRESSIVE_DISCLOSURE.md` (agent-1) |
-| How are accessibility, RTL and the six locales handled? | `AI_ACCESSIBILITY_AND_LOCALIZATION.md` (agent-1) |
-| Which contracts do the frontend AI surfaces consume? | `AI_FRONTEND_CONTRACT_MATRIX.md` (agent-1) |
-| When is each frontend surface built? | `AI_UI_IMPLEMENTATION_PHASES.md` (agent-1) |
-| How does the product run on a small device, and when may Rust be used? | `PLATFORM_AND_DEPLOYMENT_STRATEGY.md` (agent-1) |
-| What is the frontend gate status and what blocks it? | `FRONTEND_STATUS.md` (agent-1) |
 
 ## Backend today
 

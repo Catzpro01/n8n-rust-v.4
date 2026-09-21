@@ -5,12 +5,20 @@
 
 > A blocker is closed by evidence, never by a report deadline. Downgrading a blocker to make a status document look complete is the specific failure this register exists to prevent.
 
+> **Plane.** A `product` blocker constrains the n8n LEGO product itself. An
+> `engineering-operations` blocker constrains how this repository is *built* —
+> the development workforce, its control planes and its arbitration. The latter
+> is not product architecture and never becomes a product requirement, a LEGO
+> domain or a runtime dependency; it is recorded here only so that it is owned
+> and visible. See `docs/engineering-operations/workforce-governance.json`.
+
 ## BL-1 — Execution id allocation is process-local
 
 | | |
 | --- | --- |
 | Severity | **class-A** |
 | Status | **open** |
+| Plane | **product** |
 | Owner | `agent-5` |
 | Where | `apps/n8n-lego/src/store.mjs` |
 | Scheduled | P8 |
@@ -25,6 +33,7 @@
 | --- | --- |
 | Severity | **class-A** |
 | Status | **open** |
+| Plane | **product** |
 | Owner | `agent-5` |
 | Where | `apps/n8n-lego/src/store.mjs` |
 | Scheduled | P8 |
@@ -39,6 +48,7 @@
 | --- | --- |
 | Severity | **governance** |
 | Status | **open** |
+| Plane | **engineering-operations** |
 | Owner | `manager` |
 | Reference | docs/n8n-lego/decisions/cross-agent-decisions.backend.json |
 
@@ -50,6 +60,7 @@
 | --- | --- |
 | Severity | **governance** |
 | Status | **open** |
+| Plane | **engineering-operations** |
 | Owner | `manager` |
 | Reference | XA-13 |
 
@@ -61,6 +72,7 @@
 | --- | --- |
 | Severity | **governance** |
 | Status | **open** |
+| Plane | **engineering-operations** |
 | Owner | `manager` |
 
 **Consequence:** The Supabase control plane and the VPS execution gate are declared in the project plan but have no schema, client, endpoint or credential in this tree. Their operational status cannot be asserted from here.
@@ -71,6 +83,7 @@
 | --- | --- |
 | Severity | **environmental** |
 | Status | **open — CI-only, not a code defect** |
+| Plane | **product** |
 | Owner | `agent-1` |
 | Where | `tests/e2e` |
 

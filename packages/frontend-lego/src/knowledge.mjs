@@ -80,45 +80,53 @@ export const REFERENCE_FILES = Object.freeze({
  * declarations themselves live in the agent-2 owned registry and lock, and this tree never
  * restates a generated fact as if it were the source.
  */
-export const MASTER_PLAN_BUDGET = 512 * 1024;
+export const MASTER_PLAN_BUDGET = 256 * 1024;
 
 /** No single master document may exceed this — a specification nobody can read is not one. */
 export const MASTER_PLAN_MAX_FILE = 32 * 1024;
 
+/**
+ * The master documents this package reads.
+ *
+ * Ten of these resolve to `.ai/master/frontend/` rather than `.ai/master/` directly. Those ten
+ * subjects have a *generated* canonical document at `.ai/master/<NAME>.md`, derived from the
+ * backend manifests by `tools/lego/ai-pack.mjs`; the copy under `frontend/` is the hand-written
+ * frontend consumption view of the same subject, kept because it carries design reasoning the
+ * generator does not produce. Each view opens by naming its canonical sibling, and the rule is
+ * recorded there: where the two disagree on a number, the generated document wins. The frontend
+ * reads the view; the manifest tests (`apps/n8n-lego/test/lego-ai-set.test.mjs`) guard the
+ * canonical document. The remaining eighteen subjects have no generated counterpart and are
+ * read straight from `.ai/master/`.
+ */
 export const MASTER_PLAN_FILES = Object.freeze({
-  // Generated from Agent 2's manifests (tools/lego/ai-pack.mjs) — canonical for backend facts.
-  project: '.ai/master/PROJECT_MASTER_PLAN.md',
-  coreLego: '.ai/master/CORE_LEGO_ARCHITECTURE.md',
-  aiLego: '.ai/master/AI_AGENT_LEGO_MASTER_PLAN.md',
-  aiRuntime: '.ai/master/AI_RUNTIME_AND_PROVIDER_PLAN.md',
-  aiContractMatrix: '.ai/master/AI_CONTRACT_MATRIX.md',
-  status: '.ai/master/CURRENT_STATUS.md',
-  blockers: '.ai/master/KNOWN_BLOCKERS.md',
-  decisions: '.ai/master/PROJECT_DECISIONS.md',
-  phases: '.ai/master/IMPLEMENTATION_PHASES.md',
-  scenarios: '.ai/master/REFERENCE_AGENT_SCENARIOS.md',
-  workforce: '.ai/master/PROJECT_WORKFORCE_ORCHESTRATION.md',
-  // Hand-written by agent-1 (frontend): the consumption views and the frontend record.
-  frontendStatus: '.ai/master/FRONTEND_STATUS.md',
-  frontendConstitution: '.ai/master/FRONTEND_CONSTITUTION.md',
-  experience: '.ai/master/AI_UI_EXPERIENCE_MASTER_PLAN.md',
-  states: '.ai/master/AI_UI_STATES_AND_FLOWS.md',
-  disclosure: '.ai/master/AI_UX_PROGRESSIVE_DISCLOSURE.md',
-  accessibility: '.ai/master/AI_ACCESSIBILITY_AND_LOCALIZATION.md',
-  matrix: '.ai/master/AI_FRONTEND_CONTRACT_MATRIX.md',
-  uiPhases: '.ai/master/AI_UI_IMPLEMENTATION_PHASES.md',
-  agents: '.ai/master/AGENT_MACHINE_PLAN.md',
+  project: '.ai/master/frontend/PROJECT_MASTER_PLAN.md',
+  coreLego: '.ai/master/frontend/CORE_LEGO_ARCHITECTURE.md',
+  status: '.ai/master/frontend/CURRENT_STATUS.md',
+  blockers: '.ai/master/frontend/KNOWN_BLOCKERS.md',
+  decisions: '.ai/master/frontend/PROJECT_DECISIONS.md',
+  workforce: '.ai/master/frontend/PROJECT_WORKFORCE_ORCHESTRATION.md',
+  deployment: '.ai/master/PLATFORM_AND_DEPLOYMENT_STRATEGY.md',
+  aiLego: '.ai/master/frontend/AI_AGENT_LEGO_MASTER_PLAN.md',
+  aiRuntime: '.ai/master/frontend/AI_RUNTIME_AND_PROVIDER_PLAN.md',
+  providers: '.ai/master/PROVIDER_TAXONOMY.md',
   context: '.ai/master/CONTEXT_SESSION_MEMORY_PLAN.md',
   tokens: '.ai/master/TOKEN_USAGE_AND_RESOURCE_PLAN.md',
   memoryGraph: '.ai/master/MEMORY_GRAPH_OBSIDIAN_PLAN.md',
   skills: '.ai/master/SKILL_AND_CAPABILITY_PLAN.md',
+  agents: '.ai/master/AGENT_MACHINE_PLAN.md',
   workspace: '.ai/master/WORKSPACE_AND_EXTERNAL_ACTION_PLAN.md',
   mcp: '.ai/master/MCP_AND_RUNTIME_ADAPTER_PLAN.md',
   nodeCreator: '.ai/master/NODE_CREATOR_PLAN.md',
   translation: '.ai/master/TRANSLATION_PLAN.md',
-  providers: '.ai/master/PROVIDER_TAXONOMY.md',
   security: '.ai/master/SECURITY_AND_APPROVAL_MODEL.md',
-  platform: '.ai/master/PLATFORM_AND_DEPLOYMENT_STRATEGY.md',
+  scenarios: '.ai/master/frontend/REFERENCE_AGENT_SCENARIOS.md',
+  phases: '.ai/master/frontend/IMPLEMENTATION_PHASES.md',
+  experience: '.ai/master/AI_UI_EXPERIENCE_MASTER_PLAN.md',
+  matrix: '.ai/master/AI_FRONTEND_CONTRACT_MATRIX.md',
+  disclosure: '.ai/master/AI_UX_PROGRESSIVE_DISCLOSURE.md',
+  states: '.ai/master/AI_UI_STATES_AND_FLOWS.md',
+  accessibility: '.ai/master/AI_ACCESSIBILITY_AND_LOCALIZATION.md',
+  uiPhases: '.ai/master/AI_UI_IMPLEMENTATION_PHASES.md',
 });
 
 /** The master documents, sorted, for the budget check and for docs. */
@@ -138,6 +146,7 @@ export const PRODUCT_TASK_INDEX = Object.freeze({
   blockers: Object.freeze({ document: 'blockers', alsoRead: Object.freeze(['status']), question: 'What is blocked, what is the evidence, and who owns each blocker?' }),
   decisions: Object.freeze({ document: 'decisions', alsoRead: Object.freeze(['status']), question: 'What has been decided, by whom, and what may not be reopened silently?' }),
   workforce: Object.freeze({ document: 'workforce', alsoRead: Object.freeze(['project']), question: 'How is the development workforce organised, and what does a worker own?' }),
+  deployment: Object.freeze({ document: 'deployment', alsoRead: Object.freeze(['aiRuntime']), question: 'How does the product run on a small device, on a phone, offline or in the cloud — and when may Rust be used?' }),
   'ai-lego': Object.freeze({ document: 'aiLego', alsoRead: Object.freeze(['aiRuntime']), question: 'Which AI/Agent LEGO exist, which are published, and which are pending?' }),
   runtimes: Object.freeze({ document: 'aiRuntime', alsoRead: Object.freeze(['providers']), question: 'How is a runtime or a provider declared, reached and replaced?' }),
   providers: Object.freeze({ document: 'providers', alsoRead: Object.freeze(['aiRuntime']), question: 'Which provider kind is this, and what may a vendor name never be used for?' }),
@@ -159,11 +168,6 @@ export const PRODUCT_TASK_INDEX = Object.freeze({
   'ai-state': Object.freeze({ document: 'states', alsoRead: Object.freeze(['disclosure']), question: 'Which states must this surface render, and what does it do when it cannot answer?' }),
   'ai-accessibility': Object.freeze({ document: 'accessibility', alsoRead: Object.freeze(['states']), question: 'How does this behave in Arabic, by keyboard, and without colour?' }),
   'ai-phase': Object.freeze({ document: 'uiPhases', alsoRead: Object.freeze(['experience', 'matrix']), question: 'When is this built, what does it depend on, and what proves it?' }),
-  'ai-contract-matrix': Object.freeze({ document: 'aiContractMatrix', alsoRead: Object.freeze(['status']), question: 'Which contract is at which version, and what may a consumer rely on today?' }),
-  'engineering-operations': Object.freeze({ document: 'workforce', alsoRead: Object.freeze(['project']), question: 'How is the development workflow governed - and why is none of it product architecture?' }),
-  'frontend-status': Object.freeze({ document: 'frontendStatus', alsoRead: Object.freeze(['status', 'blockers']), question: 'What has the frontend branch verified, and what blocks it?' }),
-  'frontend-rules': Object.freeze({ document: 'frontendConstitution', alsoRead: Object.freeze(['frontendStatus']), question: 'Which frontend rules are hard stops, and why?' }),
-  'platform-strategy': Object.freeze({ document: 'platform', alsoRead: Object.freeze(['aiRuntime']), question: 'How does the product run on a small device, on a phone, offline or in the cloud - and when may Rust be used?' }),
 });
 
 /**

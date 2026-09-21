@@ -194,10 +194,7 @@ test('the pack never carries implementation, and the runtime never carries the p
 });
 
 test('the constitution keeps the hard stops an agent must not talk itself out of', () => {
-  const constitution = read('.ai/master/FRONTEND_CONSTITUTION.md');
-  const backendConstitution = read(`${PACK_ROOT}/constitution.md`);
-  assert.match(backendConstitution, /No internal HTTP without a real process boundary/, 'the generated backend L0 keeps the local-dispatch rule');
-  assert.match(backendConstitution, /Never break n8n editor-UI compatibility/, 'and the compatibility rule');
+  const constitution = read(`${PACK_ROOT}/constitution.md`);
   for (const rule of [
     /Rust is LOCKED/,
     /no React, no Svelte, no Web\s+Components/i,

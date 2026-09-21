@@ -53,11 +53,6 @@ Ten rules. If a change violates one, it is wrong regardless of how well it works
 9. **A contract change needs a version decision, a migration declaration, tests and controlled activation.** In that order.
 10. **Declare, do not assume.** Capabilities, data ownership, state class, resources and trust are declared in the manifest or they do not exist.
 
-**Universal Translation is an official AI/Agent LEGO target.** An earlier "out of scope" note
-about translation is superseded: the legacy i18n ownership question is recorded as an open
-decision, not as a prohibition. See \`.ai/master/TRANSLATION_PLAN.md\` (frontend consumption view)
-and the frontend register \`docs/n8n-lego/decisions/cross-agent-decisions.json\` (XA-14).
-
 ## Before you change anything
 
 \`\`\`
@@ -88,9 +83,28 @@ Then run the test tier it selects, then \`npm run lego:gate\`.
 - Feature domains (Workflow, Execution, Auth, Node Registry, Storage) are **declared, not implemented**.
 - The legacy REST aggregate is frozen and may only shrink — see \`.ai/legacy-rest.md\`.
 - Allowances remaining: see \`.ai/index.md\`. They may shrink, never grow.
-- A capability declares its operations; never infer them from a route.
-- The AI Foundation is \`contract-only\` — no inference, no runtime, no MCP.
+- A capability declares its operations; never infer them from a route. The AI Foundation is \`contract-only\`: no inference, no runtime, no MCP.
 - Start at \`.ai/master/PROJECT_MASTER_PLAN.md\`; it names the canonical document for every subject.
+
+## Hard stops — mis-specified if a task seems to need breaking one; raise it
+
+- **Rust is LOCKED.** No migration, no Rust edits outside an explicitly assigned Rust task.
+- **Vue stays the reference implementation and the stock editor UI is not redesigned.** No React, no Svelte, no Web Components, no second framework; \`n8n-editor-ui@2.9.4\` renders exactly as before, the frontend LEGO adding descriptor metadata and never markup or styles.
+- **Dependencies point inward:** component -> frontend contract -> compatibility -> public backend contract. Neither side imports the other's internals.
+- **No HTTP between local LEGO.** **Never push to \`main\`** — branch, then open a pull request.
+- **Declared ≠ installed ≠ loaded ≠ active.** Registering metadata never loads implementation code.
+- **Unknown or destructive operations fail closed.** Delegation and nesting grant no authority.
+
+## Ownership
+
+| Area | Owner |
+| --- | --- |
+| Frontend architecture, compatibility boundary, UI capability registry, frontend gates | agent-01 |
+| LEGO foundation, capability registry, error codes, manifests, \`.ai/\` generation | agent-02 |
+| Workflow / Execution / Auth / Credentials / Node Registry / Storage / Rust | their own agents |
+| Integration gates (\`tests/integration/\`, \`tests/compatibility/\`) | agent-05, read-only for others |
+
+Shared files change minimally and the change is recorded. Capability ids, error codes and contract versions crossing the frontend/backend line are **coordinated**: an ambiguous shared contract stops for arbitration rather than being invented twice.
 `;
 }
 
@@ -1001,30 +1015,58 @@ authoritative declaration.
 | Decisions and open arbitration | \`.ai/master/PROJECT_DECISIONS.md\` | ADRs + \`cross-agent-decisions.backend.json\` |
 | Contract status matrix | \`.ai/master/AI_CONTRACT_MATRIX.md\` | manifests + \`contract-lock.json\` |
 | The ${registry.domains.length} core domains, strangler, nesting | \`.ai/master/CORE_LEGO_ARCHITECTURE.md\` | \`manifest/domains.json\` |
-| Development workflow (engineering operations, **not product architecture**) | \`.ai/master/PROJECT_WORKFORCE_ORCHESTRATION.md\` | \`manifest/project-governance.json\` |
+| Development workforce, control planes | \`.ai/master/PROJECT_WORKFORCE_ORCHESTRATION.md\` | \`docs/engineering-operations/workforce-governance.json\` (**not** product architecture) |
 | End-to-end scenario walkthroughs | \`.ai/master/REFERENCE_AGENT_SCENARIOS.md\` | \`manifest/reference-scenarios.json\` |
 | **What is true today** | \`.ai/master/CURRENT_STATUS.md\` | all manifests |
-| What is blocking progress | \`.ai/master/KNOWN_BLOCKERS.md\` | \`manifest/project-governance.json\` |
+| What is blocking progress | \`.ai/master/KNOWN_BLOCKERS.md\` | \`docs/engineering-operations/workforce-governance.json\` |
+| Frontend AI architecture, UI experiences | \`.ai/master/AI_UI_EXPERIENCE_MASTER_PLAN.md\` | curated (agent-1) |
+| AI UI states and flows | \`.ai/master/AI_UI_STATES_AND_FLOWS.md\` | curated (agent-1) |
+| Context, session and memory | \`.ai/master/CONTEXT_SESSION_MEMORY_PLAN.md\` | curated (agent-1) |
+| Token and resource model | \`.ai/master/TOKEN_USAGE_AND_RESOURCE_PLAN.md\` | curated (agent-1) |
+| Skills and capabilities | \`.ai/master/SKILL_AND_CAPABILITY_PLAN.md\` | curated (agent-1) |
+| Agent Machine | \`.ai/master/AGENT_MACHINE_PLAN.md\` | curated (agent-1) |
+| Workspace and external actions | \`.ai/master/WORKSPACE_AND_EXTERNAL_ACTION_PLAN.md\` | curated (agent-1) |
+| MCP and runtime adapters | \`.ai/master/MCP_AND_RUNTIME_ADAPTER_PLAN.md\` | curated (agent-1) |
+| Node Creator | \`.ai/master/NODE_CREATOR_PLAN.md\` | curated (agent-1) |
+| Translation | \`.ai/master/TRANSLATION_PLAN.md\` | curated (agent-1) |
+| Provider taxonomy | \`.ai/master/PROVIDER_TAXONOMY.md\` | curated (agent-1) |
+| Security and approval | \`.ai/master/SECURITY_AND_APPROVAL_MODEL.md\` | curated (agent-1) |
+| Memory graph and Obsidian | \`.ai/master/MEMORY_GRAPH_OBSIDIAN_PLAN.md\` | curated (agent-1) |
+| Accessibility and localization | \`.ai/master/AI_ACCESSIBILITY_AND_LOCALIZATION.md\` | curated (agent-1) |
+| Platform and deployment strategy | \`.ai/master/PLATFORM_AND_DEPLOYMENT_STRATEGY.md\` | curated (agent-1) |
+| Frontend AI contract matrix | \`.ai/master/AI_FRONTEND_CONTRACT_MATRIX.md\` | curated (agent-1) |
 | Backend LEGO boundaries | \`.ai/index.md\`, \`.ai/domains/*\` | \`manifest/domains.json\` |
 | Communication semantics | \`.ai/communication.md\` | source modules |
 | Capability + operation vocabulary | \`.ai/capabilities.md\` | \`manifest/domains.json\` |
 | Scale-out honesty | \`.ai/scale-out.md\` | \`manifest/domains.json\` |
 | Narrative architecture | \`docs/n8n-lego/BACKEND_LEGO.md\` | hand-written prose |
-| **Frontend AI architecture** | \`.ai/master/AI_UI_EXPERIENCE_MASTER_PLAN.md\` | hand-written (agent-1) |
-| Frontend UI states and flows | \`.ai/master/AI_UI_STATES_AND_FLOWS.md\` | hand-written (agent-1) |
-| Frontend progressive disclosure | \`.ai/master/AI_UX_PROGRESSIVE_DISCLOSURE.md\` | hand-written (agent-1) |
-| Frontend accessibility and localization | \`.ai/master/AI_ACCESSIBILITY_AND_LOCALIZATION.md\` | hand-written (agent-1) |
-| Frontend contract matrix | \`.ai/master/AI_FRONTEND_CONTRACT_MATRIX.md\` | hand-written (agent-1) |
-| Frontend phase plan | \`.ai/master/AI_UI_IMPLEMENTATION_PHASES.md\` | hand-written (agent-1) |
-| Frontend status, gates and blockers | \`.ai/master/FRONTEND_STATUS.md\` | hand-written (agent-1) |
-| Platform, deployment and resource strategy | \`.ai/master/PLATFORM_AND_DEPLOYMENT_STRATEGY.md\` | hand-written |
-| Frontend open decisions (XA-*) | \`docs/n8n-lego/decisions/cross-agent-decisions.json\` | hand-written (agent-1) |
 
-Everything under \`.ai/\` **backend** space is generated. Editing it by hand is pointless — the
-next \`npm run lego:ai\` overwrites it. The agent-1 frontend documents listed above are
-hand-written and owned by the frontend branch; the generator preserves them and reports them
-as neither generated nor orphaned. \`.ai/frontend/\`, \`.ai/cards/\`, \`.ai/index/\`, \`.ai/maps/\`
-and \`.ai/README.md\` belong to that pack as well.
+## Generated vs curated
+
+\`.ai/\` holds two kinds of file and the difference matters. The named counters —
+the same ones \`npm run lego:ai\` prints — are:
+
+| Counter | Count |
+| --- | --- |
+| Generated pack | @@GENERATED_COUNT@@ |
+| Curated | ${CURATED.files.length} |
+| **Total \`.ai\`** | **@@TOTAL_COUNT@@** |
+| \`.ai/master\` (top level, canonical) | 29 |
+| \`.ai/master/frontend\` (consumption views) | 10 |
+| Retrieval pack (\`packFiles()\`, budget-enforced) | 10 |
+
+- **Generated** (most of the tree, including the master documents listed above
+  as manifest-derived). Editing one by hand is pointless — the next
+  \`npm run lego:ai\` overwrites it. Their numbers cannot drift.
+- **Curated** (${CURATED.files.length} files, owner \`${CURATED.owner}\`): ${CURATED.reason}.
+  These are preserved across regeneration and ignored by \`--check\`. They are
+  hand-maintained, so they *can* drift — that is the honest cost of keeping
+  documents whose subject has no authoritative declaration behind it.
+
+\`.ai/master/frontend/\` holds agent-1's consumption views of ten subjects that
+also have a canonical generated document one level up. Each is headed with a
+pointer to its canonical counterpart. **Where a number disagrees, the generated
+document wins.**
 
 ## Where to find the answer
 
@@ -1056,14 +1098,6 @@ defect and should be reported as one.
 | What are the current blockers? | \`KNOWN_BLOCKERS.md\` |
 | What must never be done? | \`PROJECT_WORKFORCE_ORCHESTRATION.md\` (principles), \`.ai/constitution.md\` |
 | What comes next? | \`IMPLEMENTATION_PHASES.md\` |
-| How does AI Assistant differ from Copilot and AI Node? | \`AI_UI_EXPERIENCE_MASTER_PLAN.md\` (agent-1) |
-| Which states must every AI surface render? | \`AI_UI_STATES_AND_FLOWS.md\` (agent-1) |
-| What is visible at each disclosure level, and what is never rendered? | \`AI_UX_PROGRESSIVE_DISCLOSURE.md\` (agent-1) |
-| How are accessibility, RTL and the six locales handled? | \`AI_ACCESSIBILITY_AND_LOCALIZATION.md\` (agent-1) |
-| Which contracts do the frontend AI surfaces consume? | \`AI_FRONTEND_CONTRACT_MATRIX.md\` (agent-1) |
-| When is each frontend surface built? | \`AI_UI_IMPLEMENTATION_PHASES.md\` (agent-1) |
-| How does the product run on a small device, and when may Rust be used? | \`PLATFORM_AND_DEPLOYMENT_STRATEGY.md\` (agent-1) |
-| What is the frontend gate status and what blocks it? | \`FRONTEND_STATUS.md\` (agent-1) |
 
 ## Backend today
 
@@ -1413,10 +1447,15 @@ ${adrRows.join('\n')}
 
 ## Cross-agent arbitration
 
-Agent 1 maintains the frontend side of this record on \`${decisions.agent1Baseline.branch}\`
-at \`${decisions.agent1Baseline.commit.slice(0, 8)}\`. Both sides use the same \`XA-*\` ids.
+Agent 1 maintains the frontend side of this record on \`${decisions.agent1Baseline.branch}\`.
+Both sides use the same \`XA-*\` ids.
 
-**Inspection:** ${decisions.agent1Baseline.inspected}
+**Current repository state:** \`${decisions.agent1Baseline.currentRepositoryState}\` — the frontend
+branch has been reconciled into this one from its tip \`${decisions.agent1Baseline.reconciledFromCommit}\`.
+
+**Historical evidence commit:** \`${decisions.agent1Baseline.historicalEvidenceCommit.slice(0, 8)}\` —
+${decisions.agent1Baseline.historicalEvidenceNote}. Kept as the evidence the original finding was
+made against; it is not the current state.
 
 **Finding:** ${decisions.agent1Baseline.finding}
 
@@ -1443,8 +1482,18 @@ ${decisions.alignmentRules.map((rule) => `- ${rule}`).join('\n')}
 `;
 }
 
+/**
+ * Workforce governance is ENGINEERING OPERATIONS, not product architecture.
+ *
+ * It deliberately lives outside `src/lego/manifest/` — the manager ruled in the
+ * P2.11 reconciliation that the Arena manager/worker model must never become a
+ * product domain, AI LEGO or runtime dependency. Reading it from `docs/` rather
+ * than the product manifest directory is what keeps that boundary physical
+ * instead of merely stated.
+ */
 function readGovernance() {
-  return readManifest('project-governance.json');
+  const file = join(REPO_ROOT, 'docs', 'engineering-operations', 'workforce-governance.json');
+  return existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : null;
 }
 
 function readScenarios() {
@@ -1553,14 +1602,7 @@ function workforceOrchestration() {
   if (!governance) return null;
   const planes = Object.entries(governance.controlPlanes).filter(([key]) => key !== 'rule');
   return `${BANNER}
-# Development workflow and engineering operations
-
-**This is NOT product architecture.** It describes how the *development* workforce and its
-control planes are governed while building n8n LEGO. Nothing in this document is an n8n LEGO
-domain, an AI/Agent LEGO, a runtime dependency, a product capability or a product control
-plane, and no product manifest (\`domains.json\`, \`ai-lego-set.json\`, \`ai-foundation.json\`,
-\`contract-lock.json\`) may reference it. Arena, the manager/worker task routing, the control
-plane and the VPS gate exist to build the project; they are not part of what it builds.
+# Project workforce and orchestration
 
 **Canonical for:** how the development workforce is governed, and which control
 plane owns which state.
@@ -1655,9 +1697,15 @@ document is right and the prose is stale.
 | --- | --- |
 | Protected main baseline | \`cb71dbb201d635b15b49933764c2c2336e745809\` |
 | Agent 1 branch | \`${decisions?.agent1Baseline.branch ?? '—'}\` |
-| Agent 1 head (inspected, not merged) | \`${decisions?.agent1Baseline.commit ?? '—'}\` |
 | Agent 2 branch | \`arena/01a0c521-n8n-rust-v-4\` |
+| **Current repository state** | \`${decisions?.agent1Baseline.currentRepositoryState ?? '—'}\` (reconciled) |
+| Reconciled from agent-1 tip | \`${decisions?.agent1Baseline.reconciledFromCommit ?? '—'}\` |
+| Historical evidence commit (P2.11 finding) | \`${decisions?.agent1Baseline.historicalEvidenceCommit ?? '—'}\` |
 | Current phase | ${set.phase} |
+
+A historical evidence commit is the state a past finding was verified against. It
+is kept deliberately and is **not** rewritten to look current — the current state
+is the row marked as such.
 
 ## Counts
 
@@ -1716,12 +1764,20 @@ function knownBlockers() {
 
 > ${governance.blockerRule}
 
+> **Plane.** A \`product\` blocker constrains the n8n LEGO product itself. An
+> \`engineering-operations\` blocker constrains how this repository is *built* —
+> the development workforce, its control planes and its arbitration. The latter
+> is not product architecture and never becomes a product requirement, a LEGO
+> domain or a runtime dependency; it is recorded here only so that it is owned
+> and visible. See \`docs/engineering-operations/workforce-governance.json\`.
+
 ${blockers.map((blocker) => `## ${blocker.id} — ${blocker.title}
 
 | | |
 | --- | --- |
 | Severity | **${blocker.severity}** |
 | Status | **${blocker.status}** |
+| Plane | **${blocker.plane ?? 'product'}** |
 | Owner | \`${blocker.owner}\` |
 ${blocker.where ? `| Where | \`${blocker.where}\` |\n` : ''}${blocker.phase ? `| Scheduled | ${blocker.phase} |\n` : ''}${blocker.reference ? `| Reference | ${blocker.reference} |\n` : ''}
 **Consequence:** ${blocker.consequence}
@@ -1948,65 +2004,106 @@ export function generate() {
   for (const [id, recipe] of Object.entries(RECIPES)) {
     files.set(`recipes/${id}.md`, recipeDoc(id, recipe));
   }
+
+  // The master plan states the .ai counters. They can only be known once every
+  // generated file exists, and the master plan is itself one of them — so the
+  // builders emit placeholders and the true totals are substituted here. This
+  // is why the published counts cannot drift from the tree that carries them.
+  const generatedCount = files.size;
+  const totalCount = generatedCount + CURATED.files.length;
+  for (const [name, content] of files) {
+    if (!content.includes('@@GENERATED_COUNT@@') && !content.includes('@@TOTAL_COUNT@@')) continue;
+    files.set(name, content
+      .replaceAll('@@GENERATED_COUNT@@', String(generatedCount))
+      .replaceAll('@@TOTAL_COUNT@@', String(totalCount)));
+  }
   return files;
 }
 
 /**
- * Agent-1 owns these paths inside `.ai/` (the frontend retrieval pack). This generator
- * must neither delete them nor report them as orphans: they are the frontend branch's
- * own generated/curated context, and `.ai/master/` owns the project memory they point at.
+ * Curated documents — hand-maintained, and NOT deleted by regeneration.
+ *
+ * WHY THIS EXISTS (P2.11 reconciliation): `.ai/master/` is written by two
+ * agents. agent-2 generates the documents whose content is derived from the
+ * manifests; agent-01 hand-writes the frontend/UX plans, which have no manifest
+ * to derive from because the frontend's source of truth is a Vue bundle and a
+ * set of UX decisions, not a registry.
+ *
+ * Before this list, `writeAll` deleted all of `.ai/` and `check()` reported
+ * every unrecognised file as `(orphaned)` — so regenerating the backend pack
+ * silently destroyed eighteen frontend documents. That is not a merge conflict
+ * anyone would notice: the build stays green and the documents simply stop
+ * existing.
+ *
+ * A curated file is preserved on write and ignored by the freshness check. It
+ * is NOT generated, so it can drift — which is the honest trade: the alternative
+ * is either deleting another agent's work or inventing a generator for content
+ * that has no authoritative declaration behind it.
  */
-const FRONTEND_OWNED = [
-  'README.md',
-  'frontend/',
-  'cards/',
-  'index/',
-  'maps/',
-  // Hand-written agent-1 documents that live beside the generated ones. The generated
-  // PROJECT_MASTER_PLAN lists them as canonical for their subject; this generator owns the
-  // other master files and must leave these alone.
-  'master/FRONTEND_STATUS.md',
-  'master/AI_UI_EXPERIENCE_MASTER_PLAN.md',
-  'master/AI_UI_STATES_AND_FLOWS.md',
-  'master/AI_UI_IMPLEMENTATION_PHASES.md',
-  'master/AI_UX_PROGRESSIVE_DISCLOSURE.md',
-  'master/AI_ACCESSIBILITY_AND_LOCALIZATION.md',
-  'master/AI_FRONTEND_CONTRACT_MATRIX.md',
-  'master/AGENT_MACHINE_PLAN.md',
-  'master/CONTEXT_SESSION_MEMORY_PLAN.md',
-  'master/TOKEN_USAGE_AND_RESOURCE_PLAN.md',
-  'master/MEMORY_GRAPH_OBSIDIAN_PLAN.md',
-  'master/SKILL_AND_CAPABILITY_PLAN.md',
-  'master/WORKSPACE_AND_EXTERNAL_ACTION_PLAN.md',
-  'master/MCP_AND_RUNTIME_ADAPTER_PLAN.md',
-  'master/NODE_CREATOR_PLAN.md',
-  'master/TRANSLATION_PLAN.md',
-  'master/SECURITY_AND_APPROVAL_MODEL.md',
-  'master/PLATFORM_AND_DEPLOYMENT_STRATEGY.md',
-  'master/PROVIDER_TAXONOMY.md',
-  'master/FRONTEND_CONSTITUTION.md',
-];
+const CURATED = Object.freeze({
+  owner: 'agent-1',
+  reason: 'frontend/UX planning documents; no backend manifest derives them',
+  files: Object.freeze([
+    'README.md',
+    'cards/decisions.md',
+    'cards/recipes.md',
+    'frontend/card.md',
+    'frontend/glossary.md',
+    'index/capabilities.json',
+    'index/contracts.json',
+    'index/units.json',
+    'maps/dependencies.md',
+    'master/AGENT_MACHINE_PLAN.md',
+    'master/AI_ACCESSIBILITY_AND_LOCALIZATION.md',
+    'master/AI_FRONTEND_CONTRACT_MATRIX.md',
+    'master/AI_UI_EXPERIENCE_MASTER_PLAN.md',
+    'master/AI_UI_IMPLEMENTATION_PHASES.md',
+    'master/AI_UI_STATES_AND_FLOWS.md',
+    'master/AI_UX_PROGRESSIVE_DISCLOSURE.md',
+    'master/CONTEXT_SESSION_MEMORY_PLAN.md',
+    'master/MCP_AND_RUNTIME_ADAPTER_PLAN.md',
+    'master/MEMORY_GRAPH_OBSIDIAN_PLAN.md',
+    'master/NODE_CREATOR_PLAN.md',
+    'master/PLATFORM_AND_DEPLOYMENT_STRATEGY.md',
+    'master/PROVIDER_TAXONOMY.md',
+    'master/SECURITY_AND_APPROVAL_MODEL.md',
+    'master/SKILL_AND_CAPABILITY_PLAN.md',
+    'master/TOKEN_USAGE_AND_RESOURCE_PLAN.md',
+    'master/TRANSLATION_PLAN.md',
+    'master/WORKSPACE_AND_EXTERNAL_ACTION_PLAN.md',
+    // Frontend consumption views of subjects that ALSO have a canonical
+    // generated document one directory up. Preserved rather than deleted: each
+    // carries frontend reasoning no manifest derives, and each is headed with a
+    // pointer to the canonical file so a reader cannot mistake it for authority.
+    'master/frontend/AI_AGENT_LEGO_MASTER_PLAN.md',
+    'master/frontend/AI_RUNTIME_AND_PROVIDER_PLAN.md',
+    'master/frontend/CORE_LEGO_ARCHITECTURE.md',
+    'master/frontend/CURRENT_STATUS.md',
+    'master/frontend/IMPLEMENTATION_PHASES.md',
+    'master/frontend/KNOWN_BLOCKERS.md',
+    'master/frontend/PROJECT_DECISIONS.md',
+    'master/frontend/PROJECT_MASTER_PLAN.md',
+    'master/frontend/PROJECT_WORKFORCE_ORCHESTRATION.md',
+    'master/frontend/REFERENCE_AGENT_SCENARIOS.md',
+  ]),
+});
 
-function isFrontendOwned(relativePath) {
-  return FRONTEND_OWNED.some((prefix) => relativePath === prefix || relativePath.startsWith(prefix));
-}
+const isCurated = (relativePath) => CURATED.files.includes(relativePath);
 
 function writeAll(files) {
-  if (existsSync(AI_ROOT)) {
-    const prune = (dir, prefix = '') => {
-      for (const entry of readdirSync(dir, { withFileTypes: true })) {
-        const relativePath = prefix ? `${prefix}/${entry.name}` : entry.name;
-        const absolute = join(dir, entry.name);
-        if (isFrontendOwned(relativePath)) continue;
-        if (entry.isDirectory()) {
-          prune(absolute, relativePath);
-          if (readdirSync(absolute).length === 0) rmSync(absolute, { recursive: true, force: true });
-        } else {
-          rmSync(absolute, { force: true });
-        }
-      }
-    };
-    prune(AI_ROOT);
+  // Preserve curated documents across the wipe. Reading them into memory first
+  // is deliberate: a partial-delete walk would be one bug away from removing a
+  // file it meant to keep.
+  const preserved = new Map();
+  for (const relativePath of CURATED.files) {
+    const absolute = join(AI_ROOT, relativePath);
+    if (existsSync(absolute)) preserved.set(relativePath, readFileSync(absolute));
+  }
+  if (existsSync(AI_ROOT)) rmSync(AI_ROOT, { recursive: true });
+  for (const [relativePath, content] of preserved) {
+    const absolute = join(AI_ROOT, relativePath);
+    mkdirSync(dirname(absolute), { recursive: true });
+    writeFileSync(absolute, content);
   }
   for (const [relativePath, content] of files) {
     const absolute = join(AI_ROOT, relativePath);
@@ -2027,9 +2124,8 @@ function check(files) {
     if (!existsSync(dir)) return;
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
       const relativePath = prefix ? `${prefix}/${entry.name}` : entry.name;
-      if (isFrontendOwned(relativePath)) continue;
       if (entry.isDirectory()) walk(join(dir, entry.name), relativePath);
-      else if (!expected.has(relativePath)) stale.push(`${relativePath} (orphaned)`);
+      else if (!expected.has(relativePath) && !isCurated(relativePath)) stale.push(`${relativePath} (orphaned)`);
     }
   };
   walk(AI_ROOT);
@@ -2042,12 +2138,18 @@ if (isCli) {
   if (process.argv.includes('--check')) {
     const stale = check(files);
     if (stale.length === 0) {
-      process.stdout.write(`OK — .ai/ is in sync with the manifest (${files.size} files).\n`);
+      process.stdout.write(
+        'OK — .ai/ is in sync with the manifest. '
+        + `Generated pack: ${files.size}; curated: ${CURATED.files.length}; total .ai: ${files.size + CURATED.files.length}.\n`,
+      );
       process.exit(0);
     }
     process.stdout.write(`.ai/ is stale — run \`npm run lego:ai\`:\n${stale.map((entry) => `  - ${entry}`).join('\n')}\n`);
     process.exit(1);
   }
   writeAll(files);
-  process.stdout.write(`Generated ${files.size} file(s) into .ai/\n`);
+  process.stdout.write(
+    `Generated pack: ${files.size}; curated: ${CURATED.files.length} (owner ${CURATED.owner}, preserved); `
+    + `total .ai: ${files.size + CURATED.files.length}.\n`,
+  );
 }

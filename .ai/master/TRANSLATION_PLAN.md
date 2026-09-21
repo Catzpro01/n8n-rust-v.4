@@ -2,7 +2,7 @@
 
 **Status:** planning + a recorded decision change. **Publication state:** `publicationPending` —
 there is **no translation domain and no translation capability** at P2.10; the frontend capability
-`translation` is `declared` only. **Owner to publish:** manager (**XA-23**).
+`translation` is `declared` only. **Owner to publish:** manager (**XA-14**).
 
 ---
 
@@ -35,14 +35,14 @@ Translation must **not** be forced into `credentials`, `node-registry` or `workf
 legacy REST aggregate currently owns two i18n route families. `domains.json` records those families
 under `legacy-rest.unresolvedOwnership` (`/rest/credential-translation`,
 `/rest/node-translation-headers` — constant empty objects, no business logic), and the frontend treats
-them as **stubs**, never as a working feature. The ownership decision belongs to the manager (XA-23),
+them as **stubs**, never as a working feature. The ownership decision belongs to the manager (XA-14),
 together with the question of whether translation is its own domain or a nested LEGO.
 
 ## 5. Frontend behaviour
 
 - Compact control only: `Language · Bahasa Indonesia`, `Response language: Auto`, and an optional
   per-message `Translate response`. **No permanent translation panel.**
-- While XA-23 is open: the locale control works (it is the interface's own declaration), the
+- While XA-14 is open: the locale control works (it is the interface's own declaration), the
   translation *action* is **absent**, and no surface claims to have translated anything.
 - When a translation is performed (after publication), the message is labelled with the target
   language and how it was produced; the UI does not silently switch the interface language.

@@ -45,15 +45,15 @@ surface ships.
 | Copilot · More rows | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Context chip & panel | ✓ | ✓ | ✓ | ✓ (no session) | ✓ | ✓ | — | ✓ | ✓ |
 | Session line | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — | ✓ | ✓ |
-| Skills | ✓ | ✓ | ✓ | ✓ (XA-20) | ✓ | ✓ | ✓ (skill action) | ✓ | ✓ |
-| Memory | ✓ | ✓ | ✓ | ✓ (XA-21) | ✓ | ✓ | — | ✓ | ✓ |
+| Skills | ✓ | ✓ | ✓ | ✓ (XA-11) | ✓ | ✓ | ✓ (skill action) | ✓ | ✓ |
+| Memory | ✓ | ✓ | ✓ | ✓ (XA-12) | ✓ | ✓ | — | ✓ | ✓ |
 | Capabilities | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ (permission) | ✓ (write action) | ✓ | ✓ |
 | Approval | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | MCP | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ (`permission-required`) | — | ✓ | ✓ |
 | Runtime | ✓ | ✓ | ✓ | ✓ (none connected) | ✓ | ✓ | — | ✓ | ✓ |
-| Workspace | ✓ | ✓ | ✓ | ✓ (XA-22) | ✓ | ✓ | ✓ (destructive ops) | ✓ | ✓ |
+| Workspace | ✓ | ✓ | ✓ | ✓ (XA-13) | ✓ | ✓ | ✓ (destructive ops) | ✓ | ✓ |
 | Node creator | ✓ | ✓ | ✓ | ✓ (XA-15) | ✓ | ✓ | ✓ (install) | ✓ | ✓ |
-| Translation | ✓ | ✓ | ✓ | ✓ (XA-23) | ✓ | ✓ | — | ✓ | ✓ |
+| Translation | ✓ | ✓ | ✓ | ✓ (XA-14) | ✓ | ✓ | — | ✓ | ✓ |
 | Token & usage | ✓ | ✓ | ✓ | ✓ (`estimated`) | — | — | — | ✓ | ✓ |
 | Status bar | ✓ (idle) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ (blocked) | ✓ | ✓ |
 

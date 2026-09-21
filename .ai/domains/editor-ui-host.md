@@ -22,6 +22,7 @@
 
 - `src/ui.mjs`
 - `src/frontend.mjs`
+- `src/frontend`
 
 ## Public contract surface
 
@@ -29,11 +30,11 @@ _none — this LEGO has no public surface yet; do not import from it._
 
 ## May call
 
-`platform-kernel`
+`platform-kernel`, `compatibility`
 
 ## Must never call
 
-`workflow`, `execution`, `auth`, `storage`, `legacy-rest`, `compatibility`, `node-registry`
+`workflow`, `execution`, `auth`, `storage`, `legacy-rest`, `node-registry`
 
 
 ## Who breaks if this changes
