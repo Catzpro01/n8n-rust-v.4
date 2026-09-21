@@ -491,3 +491,30 @@ item surfaces today as a named 501 capability rather than a silent success:
 * enterprise capabilities (SSO, LDAP, log streaming, external secrets, source
   control, license ops) stay deferred behind the 501 contract — never faked
 * **P11** worker/orchestration with queue mode
+
+---
+
+## 11. Phase 2.6 — where the backend boundary moved (pointer)
+
+P2 (§10) built the compatibility layer. **P2.6** formalized its position as *the*
+controlled boundary and built the backend LEGO foundation behind it:
+domain/capability registry, ownership model, public/private contract rules,
+dependency direction, shared-kernel rule, legacy strangler boundary,
+machine-readable error contract, contract versioning and a mechanical isolation
+gate.
+
+Nothing in §1–§10 changed: no route, no envelope, no status, no payload. The
+compat layer's own runtime files are byte-identical to `cb71dbb2`.
+
+Two additions matter to anyone reading this document:
+
+* `src/compat/` now has a declared `mustNotDependOn` list (`workflow`,
+  `execution`, `storage`, `node-registry`, `credentials`, `legacy-rest`), gate-
+  enforced — the mechanism that stops the boundary becoming the new monolith.
+* The `501 {code:'unsupported', meta:{feature, owner, phase}}` contract from
+  §10.4/§10.5 is now checked against the architecture registry by
+  `tools/lego/capability-conformance.mjs`, so the owner and phase the editor
+  sees can never drift from the owner and phase the architecture declares.
+
+Read next: `docs/n8n-lego/BACKEND_LEGO.md` (the foundation) and
+`docs/n8n-lego/LEGO_INTEGRATION_NOTES.md` (what each agent must consume).

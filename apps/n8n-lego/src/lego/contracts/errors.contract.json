@@ -1,0 +1,58 @@
+{
+  "contractId": "lego.error-contract",
+  "version": "1.0.0",
+  "owner": "manager",
+  "description": "Machine-readable backend error identity. A code is a stable, language-independent identifier the frontend maps to presentation; the backend never ships display language beyond a developer-facing English message. Codes are `<namespace>.<reason>`, namespaces come from the domain registry (domains[].errorNamespace).",
+  "rules": [
+    "A code is stable once published. Renaming or removing a code is a BREAKING change (see contract-lock.json).",
+    "A code's namespace must equal an errorNamespace declared in manifest/domains.json.",
+    "`status` is the HTTP status the compatibility layer emits for the code.",
+    "Message text is developer-facing English only. Localisation is the frontend's job (future Translation LEGO) and must key off `code`, never off the message string.",
+    "Adding a new code is a MINOR change; changing an existing code's `status` is BREAKING."
+  ],
+  "statusSemantics": {
+    "400": "the request itself is malformed",
+    "401": "not authenticated",
+    "403": "authenticated but not allowed",
+    "404": "the addressed entity does not exist",
+    "409": "state conflict (checksum/version mismatch)",
+    "413": "payload too large",
+    "500": "unexpected server failure",
+    "501": "the capability is known but not implemented on this instance"
+  },
+  "codes": [
+    { "code": "auth.unauthorized", "status": 401, "summary": "No valid session for a protected route." },
+    { "code": "auth.forbidden", "status": 403, "summary": "Authenticated but the required scope is missing." },
+    { "code": "auth.invalid_credentials", "status": 401, "summary": "Login rejected." },
+    { "code": "auth.owner_already_exists", "status": 403, "summary": "Owner setup attempted on an instance that already has an owner." },
+    { "code": "auth.user_not_found", "status": 404, "summary": "The addressed user does not exist." },
+
+    { "code": "credential.not_found", "status": 404, "summary": "The addressed credential does not exist." },
+    { "code": "credential.type_unknown", "status": 400, "summary": "The credential type is not in the registry." },
+
+    { "code": "workflow.not_found", "status": 404, "summary": "The addressed workflow does not exist." },
+    { "code": "workflow.invalid", "status": 400, "summary": "The workflow payload failed validation." },
+    { "code": "workflow.checksum_mismatch", "status": 409, "summary": "The workflow changed since it was loaded." },
+
+    { "code": "execution.not_found", "status": 404, "summary": "The addressed execution does not exist." },
+    { "code": "execution.failed", "status": 500, "summary": "The run ended in an unhandled engine failure." },
+    { "code": "execution.timeout", "status": 500, "summary": "The run exceeded its time budget." },
+
+    { "code": "node.not_found", "status": 404, "summary": "The addressed node type/version is not in the catalog." },
+    { "code": "node.catalog_unavailable", "status": 500, "summary": "The node catalog could not be read." },
+
+    { "code": "storage.not_found", "status": 404, "summary": "The addressed record does not exist." },
+    { "code": "storage.conflict", "status": 409, "summary": "Concurrent write conflict." },
+    { "code": "storage.unavailable", "status": 500, "summary": "The persistence backend could not be reached." },
+
+    { "code": "webhook.not_registered", "status": 404, "summary": "No workflow is listening on that webhook path." },
+
+    { "code": "workspace.project_not_found", "status": 404, "summary": "The addressed project does not exist." },
+
+    { "code": "compat.bad_request", "status": 400, "summary": "Malformed request (body, query or params)." },
+    { "code": "compat.payload_too_large", "status": 413, "summary": "The request body exceeded the configured limit." },
+    { "code": "compat.internal_error", "status": 500, "summary": "Unexpected server failure." },
+
+    { "code": "unsupported", "status": 501, "summary": "The capability is known but not implemented on this instance. `meta.feature`, `meta.owner` and `meta.phase` identify it. Kept namespace-free for backward compatibility with the P2 contract." }
+  ]
+}

@@ -1,0 +1,215 @@
+{
+  "lockVersion": "1.0.0",
+  "owner": "manager",
+  "description": "Contract versioning lock. One row per PUBLIC contract: what it is, who owns it, which version is published, what its consumers are, and where its contract tests live. The architecture gate fails when a published contract's surface changes without its version changing. Intentionally tiny: this is not semver-as-a-framework, it is a change alarm.",
+  "policy": {
+    "scheme": "major.minor.patch",
+    "breaking": [
+      "removing or renaming an export",
+      "removing or renaming an error code, or changing an existing code's HTTP status",
+      "changing the meaning or required shape of a request/response field",
+      "narrowing accepted input or widening required output",
+      "moving a file out of the declared public surface"
+    ],
+    "minor": [
+      "adding an export",
+      "adding an optional field",
+      "adding a new error code",
+      "adding a capability"
+    ],
+    "patch": [
+      "documentation",
+      "internal implementation changes with no surface change"
+    ],
+    "rule": "A BREAKING change requires: major bump here, a note in docs/n8n-lego/BACKEND_LEGO.md \u00a7Contract changelog, and sign-off from every consumer listed below.",
+    "preRelease": "Contracts at 0.x are provisional: they may break with a minor bump, but the bump is still mandatory."
+  },
+  "contracts": [
+    {
+      "id": "compat.http",
+      "owner": "agent-1",
+      "domain": "compatibility",
+      "version": "1.0.0",
+      "status": "stable",
+      "surface": [
+        "src/compat/route.mjs",
+        "src/compat/response.mjs",
+        "src/compat/error.mjs",
+        "src/compat/auth-context.mjs",
+        "src/compat/scopes.mjs",
+        "src/compat/capability.mjs"
+      ],
+      "exports": {
+        "src/compat/route.mjs": [
+          "createRouter"
+        ],
+        "src/compat/response.mjs": [
+          "sendJson",
+          "sendData",
+          "sendBare",
+          "sendError",
+          "readBody"
+        ],
+        "src/compat/error.mjs": [
+          "HttpError",
+          "unauthorized",
+          "forbidden",
+          "notFound",
+          "badRequest",
+          "unsupported"
+        ],
+        "src/compat/auth-context.mjs": [
+          "publicUser",
+          "requireUser"
+        ],
+        "src/compat/scopes.mjs": [
+          "loadRoles",
+          "resetRolesCache",
+          "getGlobalScopes"
+        ],
+        "src/compat/capability.mjs": [
+          "UNSUPPORTED_FEATURES",
+          "resolveUnsupportedFeature",
+          "unsupportedFeature",
+          "createUnsupportedHandler"
+        ]
+      },
+      "consumers": [
+        "auth",
+        "settings",
+        "legacy-rest",
+        "runtime-host",
+        "agent-1/frontend"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/compat.contract.test.mjs"
+      ]
+    },
+    {
+      "id": "lego.error-contract",
+      "owner": "manager",
+      "domain": "lego-foundation",
+      "version": "1.0.0",
+      "status": "stable",
+      "surface": [
+        "src/lego/contracts/errors.contract.json",
+        "src/lego/errors.mjs"
+      ],
+      "exports": {
+        "src/lego/errors.mjs": [
+          "ERROR_CODES",
+          "ERROR_CONTRACT_VERSION",
+          "errorCode",
+          "isErrorCode",
+          "statusForCode",
+          "assertErrorCode",
+          "codesForNamespace"
+        ]
+      },
+      "consumers": [
+        "every backend domain",
+        "agent-1/frontend"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-foundation.test.mjs"
+      ]
+    },
+    {
+      "id": "lego.domain-registry",
+      "owner": "manager",
+      "domain": "lego-foundation",
+      "version": "1.0.0",
+      "status": "stable",
+      "surface": [
+        "src/lego/manifest/domains.json",
+        "src/lego/registry.mjs"
+      ],
+      "exports": {
+        "src/lego/registry.mjs": [
+          "DOMAIN_STATUS",
+          "DOMAIN_KINDS",
+          "MANIFEST_FILE",
+          "ERRORS_CONTRACT_FILE",
+          "CONTRACT_LOCK_FILE",
+          "loadRegistry",
+          "getDomain",
+          "domainForPath",
+          "isPublicPath",
+          "isDependencyAllowed",
+          "listCapabilities",
+          "getCapability",
+          "validateRegistry"
+        ]
+      },
+      "consumers": [
+        "tools/lego/architecture-gate.mjs",
+        "manager",
+        "all agents"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-foundation.test.mjs"
+      ]
+    },
+    {
+      "id": "kernel.platform",
+      "owner": "manager",
+      "domain": "platform-kernel",
+      "version": "1.0.0",
+      "status": "stable",
+      "surface": [
+        "src/config.mjs",
+        "src/logger.mjs"
+      ],
+      "exports": {
+        "src/config.mjs": [
+          "APP_NAME",
+          "APP_ID",
+          "VERSION",
+          "REFERENCE_VERSION",
+          "REPO_ROOT",
+          "APP_ROOT",
+          "defaultDataDir",
+          "defaultCatalogDir",
+          "ConfigError",
+          "readEnv",
+          "loadConfig",
+          "describeConfig"
+        ],
+        "src/logger.mjs": [
+          "createLogger"
+        ]
+      },
+      "consumers": [
+        "every backend domain"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/rest.test.mjs"
+      ]
+    },
+    {
+      "id": "reference.lego",
+      "owner": "manager",
+      "domain": "reference-lego",
+      "version": "1.0.0",
+      "status": "template",
+      "surface": [
+        "src/reference-lego/contract/index.mjs"
+      ],
+      "exports": {
+        "src/reference-lego/contract/index.mjs": [
+          "REFERENCE_CAPABILITY",
+          "REFERENCE_CONTRACT_VERSION",
+          "REFERENCE_ERRORS",
+          "ReferenceError",
+          "createReferenceLego"
+        ]
+      },
+      "consumers": [
+        "P3+ agents (as a template)"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-foundation.test.mjs"
+      ]
+    }
+  ]
+}

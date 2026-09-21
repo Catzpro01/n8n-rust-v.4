@@ -4,8 +4,13 @@ name: n8n-lego Gate
 # runtime). It answers one question: does `git clone → start → n8n UI → create
 # workflow → edit → save → execute → inspect → restart` still work?
 #
-#   gate                unit + REST/contract integration tests, then the release
-#                       package (npm tarball + offline tarball + checksums)
+#   architecture        backend LEGO isolation gate: domain boundaries,
+#                       dependency direction, public/private surfaces, frozen
+#                       legacy zone, contract versions — plus the selftest that
+#                       proves the gate still catches real violations (P2.6)
+#   gate                unit + REST/contract integration tests (incl. the P2.6
+#                       foundation contract tests), then the release package
+#                       (npm tarball + offline tarball + checksums)
 #   clean-clone         git clone → install → start → /healthz → real n8n UI,
 #                       browser smoke (owner setup → create workflow → canvas →
 #                       add node → save → execute → execution result) → P2 gate
@@ -27,6 +32,7 @@ on:
     paths:
       - 'apps/n8n-lego/**'
       - 'tests/e2e/**'
+      - 'tools/lego/**'
       - 'scripts/release.sh'
       - 'package.json'
       - '.github/workflows/n8n-lego.yml'
@@ -35,6 +41,7 @@ on:
     paths:
       - 'apps/n8n-lego/**'
       - 'tests/e2e/**'
+      - 'tools/lego/**'
       - 'scripts/release.sh'
       - 'package.json'
       - '.github/workflows/n8n-lego.yml'
@@ -52,6 +59,48 @@ env:
   LEGO_URL: http://127.0.0.1:6200
 
 jobs:
+  architecture:
+    name: Backend LEGO architecture gate (P2.6)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.18'
+
+      # No install: the gate is pure Node with zero dependencies, so a boundary
+      # violation is reported in seconds instead of after a full bootstrap.
+      - name: Domain boundaries, dependency direction, contract versions
+        run: node tools/lego/architecture-gate.mjs
+
+      - name: The gate provably detects forbidden dependencies
+        # A gate nobody has seen fail proves nothing: this plants real
+        # violations (storage->workflow internals, execution->workflow
+        # internals, node->credential/storage persistence, undeclared imports,
+        # internal-path reach, legacy-zone growth, unowned files) in a throwaway
+        # tree and requires each to be caught, plus a negative control.
+        run: node tools/lego/architecture-gate.mjs --selftest
+
+      - name: The 501 capability contract matches the LEGO registry
+        run: node tools/lego/capability-conformance.mjs
+
+      - name: Machine-readable report for the integration record
+        if: always()
+        run: node tools/lego/architecture-gate.mjs --json > architecture-gate.json || true
+
+      - name: Upload the architecture report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: n8n-lego-architecture-gate
+          path: architecture-gate.json
+          if-no-files-found: ignore
+          retention-days: 7
+
   gate:
     name: Unit + integration tests and release package
     runs-on: ubuntu-latest

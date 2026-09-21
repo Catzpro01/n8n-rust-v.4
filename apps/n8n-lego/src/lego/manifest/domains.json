@@ -1,0 +1,1135 @@
+{
+  "manifestVersion": "1.0.0",
+  "phase": "P2.6",
+  "updated": "2026-09-22",
+  "description": "Backend LEGO registry: the single machine-readable source of truth for backend domain boundaries, ownership, public contracts, declared dependencies and capabilities. Validated by apps/n8n-lego/src/lego/registry.mjs and enforced by tools/lego/architecture-gate.mjs.",
+  "root": "apps/n8n-lego",
+  "scan": {
+    "include": [
+      "src",
+      "bin"
+    ],
+    "extensions": [
+      ".mjs"
+    ]
+  },
+  "agents": {
+    "agent-1": {
+      "role": "Frontend + Compatibility",
+      "domains": [
+        "compatibility",
+        "settings",
+        "editor-ui-host",
+        "legacy-rest"
+      ]
+    },
+    "agent-2": {
+      "role": "Workflow + Execution",
+      "domains": [
+        "workflow",
+        "execution",
+        "webhook",
+        "workspace"
+      ]
+    },
+    "agent-3": {
+      "role": "Auth + Credentials",
+      "domains": [
+        "auth",
+        "credentials"
+      ]
+    },
+    "agent-4": {
+      "role": "Node Registry + Dynamic Parameters",
+      "domains": [
+        "node-registry",
+        "dynamic-parameters"
+      ]
+    },
+    "agent-5": {
+      "role": "Storage + Isolation + Upgrade",
+      "domains": [
+        "storage",
+        "data-tables"
+      ]
+    },
+    "agent-6": {
+      "role": "Runtime + Scaling + Deployment",
+      "domains": [
+        "runtime-host",
+        "realtime",
+        "worker",
+        "observability"
+      ]
+    },
+    "manager": {
+      "role": "Cross-domain contract governance + integration",
+      "domains": [
+        "platform-kernel",
+        "lego-foundation",
+        "reference-lego"
+      ]
+    }
+  },
+  "domains": [
+    {
+      "id": "platform-kernel",
+      "title": "Platform kernel (shared primitives)",
+      "owner": "manager",
+      "kind": "kernel",
+      "status": "implemented",
+      "phase": "P0",
+      "errorNamespace": "config",
+      "paths": [
+        "src/config.mjs",
+        "src/logger.mjs"
+      ],
+      "public": [
+        "src/config.mjs",
+        "src/logger.mjs"
+      ],
+      "dependsOn": [],
+      "mustNotDependOn": [
+        "compatibility",
+        "auth",
+        "credentials",
+        "workflow",
+        "execution",
+        "node-registry",
+        "dynamic-parameters",
+        "webhook",
+        "storage",
+        "worker",
+        "realtime",
+        "settings",
+        "legacy-rest",
+        "runtime-host",
+        "editor-ui-host",
+        "workspace",
+        "observability",
+        "data-tables"
+      ],
+      "contract": {
+        "version": "1.0.0",
+        "tests": [
+          "test/rest.test.mjs"
+        ]
+      },
+      "capabilities": [
+        {
+          "id": "kernel.config",
+          "status": "implemented"
+        },
+        {
+          "id": "kernel.logging",
+          "status": "implemented"
+        }
+      ],
+      "notes": "Shared kernel. Only cross-domain primitives may live here: process configuration and structured logging. It is a graph leaf \u2014 it must never import a domain."
+    },
+    {
+      "id": "lego-foundation",
+      "title": "Backend LEGO foundation (registry, error contract, versioning)",
+      "owner": "manager",
+      "kind": "governance",
+      "status": "implemented",
+      "phase": "P2.6",
+      "errorNamespace": "lego",
+      "paths": [
+        "src/lego"
+      ],
+      "public": [
+        "src/lego/registry.mjs",
+        "src/lego/errors.mjs",
+        "src/lego/contracts",
+        "src/lego/manifest"
+      ],
+      "dependsOn": [],
+      "mustNotDependOn": [
+        "compatibility",
+        "auth",
+        "credentials",
+        "workflow",
+        "execution",
+        "node-registry",
+        "storage",
+        "legacy-rest",
+        "runtime-host"
+      ],
+      "contract": {
+        "version": "1.0.0",
+        "tests": [
+          "test/lego-foundation.test.mjs"
+        ]
+      },
+      "capabilities": [
+        {
+          "id": "lego.domain-registry",
+          "status": "implemented"
+        },
+        {
+          "id": "lego.error-contract",
+          "status": "implemented"
+        },
+        {
+          "id": "lego.contract-versioning",
+          "status": "implemented"
+        }
+      ],
+      "notes": "The socket system itself: domain registry, machine-readable error codes and the contract lock. Pure data + pure functions; may not depend on any domain."
+    },
+    {
+      "id": "compatibility",
+      "title": "Compatibility layer (frontend <-> backend boundary)",
+      "owner": "agent-1",
+      "kind": "boundary",
+      "status": "implemented",
+      "phase": "P2",
+      "errorNamespace": "compat",
+      "paths": [
+        "src/compat"
+      ],
+      "public": [
+        "src/compat"
+      ],
+      "dependsOn": [
+        "platform-kernel",
+        "lego-foundation"
+      ],
+      "mustNotDependOn": [
+        "workflow",
+        "execution",
+        "storage",
+        "node-registry",
+        "credentials",
+        "worker",
+        "legacy-rest"
+      ],
+      "contract": {
+        "version": "1.0.0",
+        "tests": [
+          "test/compat.contract.test.mjs"
+        ]
+      },
+      "capabilities": [
+        {
+          "id": "compat.route",
+          "status": "implemented"
+        },
+        {
+          "id": "compat.response-envelope",
+          "status": "implemented"
+        },
+        {
+          "id": "compat.error-shape",
+          "status": "implemented"
+        },
+        {
+          "id": "compat.auth-context",
+          "status": "implemented"
+        },
+        {
+          "id": "compat.scopes",
+          "status": "implemented"
+        },
+        {
+          "id": "compat.capability-registry",
+          "status": "implemented"
+        },
+        {
+          "id": "compat.breaking-changes-report",
+          "status": "unsupported",
+          "restFeature": "breaking-changes",
+          "phase": "P6"
+        },
+        {
+          "id": "compat.insights",
+          "status": "deferred",
+          "restFeature": "insights",
+          "phase": "deferred"
+        },
+        {
+          "id": "compat.license-management",
+          "status": "deferred",
+          "restFeature": "license-management",
+          "phase": "deferred"
+        }
+      ],
+      "notes": "Translates route semantics, auth context, envelopes, errors and capability state. Business logic is forbidden here \u2014 it translates, it does not decide."
+    },
+    {
+      "id": "auth",
+      "title": "Auth (session, accounts, permission model)",
+      "owner": "agent-3",
+      "kind": "domain",
+      "status": "partial",
+      "phase": "P5",
+      "errorNamespace": "auth",
+      "paths": [
+        "src/auth",
+        "src/auth.mjs"
+      ],
+      "public": [],
+      "dependsOn": [
+        "platform-kernel",
+        "compatibility"
+      ],
+      "mustNotDependOn": [
+        "workflow",
+        "execution",
+        "legacy-rest",
+        "node-registry",
+        "worker"
+      ],
+      "contract": {
+        "version": "0.1.0",
+        "tests": [
+          "test/compat.contract.test.mjs"
+        ]
+      },
+      "capabilities": [
+        {
+          "id": "auth.session",
+          "status": "implemented"
+        },
+        {
+          "id": "auth.owner-setup",
+          "status": "implemented"
+        },
+        {
+          "id": "auth.public-user",
+          "status": "implemented"
+        },
+        {
+          "id": "auth.user-management",
+          "status": "unsupported",
+          "restFeature": "user-management"
+        },
+        {
+          "id": "auth.api-keys",
+          "status": "unsupported",
+          "restFeature": "api-keys"
+        },
+        {
+          "id": "auth.mfa",
+          "status": "unsupported",
+          "restFeature": "mfa"
+        },
+        {
+          "id": "auth.sso",
+          "status": "deferred",
+          "restFeature": "sso",
+          "phase": "deferred"
+        },
+        {
+          "id": "auth.ldap",
+          "status": "deferred",
+          "restFeature": "ldap",
+          "phase": "deferred"
+        },
+        {
+          "id": "auth.personalization-survey",
+          "status": "unsupported",
+          "restFeature": "personalization-survey"
+        },
+        {
+          "id": "auth.security-settings",
+          "status": "unsupported",
+          "restFeature": "security-settings"
+        }
+      ],
+      "notes": "No public contract module exists yet: src/auth.mjs is implementation. P5 must publish src/auth/contract/ before any other domain may consume it (see allowances A1, A2)."
+    },
+    {
+      "id": "credentials",
+      "title": "Credentials",
+      "owner": "agent-3",
+      "kind": "domain",
+      "status": "planned",
+      "phase": "P5",
+      "errorNamespace": "credential",
+      "paths": [],
+      "public": [],
+      "dependsOn": [
+        "platform-kernel",
+        "compatibility",
+        "storage"
+      ],
+      "mustNotDependOn": [
+        "workflow",
+        "execution",
+        "legacy-rest",
+        "worker"
+      ],
+      "contract": {
+        "version": "0.0.0",
+        "tests": []
+      },
+      "capabilities": [
+        {
+          "id": "credentials.crud",
+          "status": "legacy"
+        },
+        {
+          "id": "credentials.oauth1-flow",
+          "status": "unsupported",
+          "restFeature": "oauth1-flow",
+          "phase": "P5+"
+        },
+        {
+          "id": "credentials.oauth2-flow",
+          "status": "unsupported",
+          "restFeature": "oauth2-flow",
+          "phase": "P5+"
+        },
+        {
+          "id": "credentials.external-secrets",
+          "status": "deferred",
+          "restFeature": "external-secrets",
+          "phase": "deferred"
+        },
+        {
+          "id": "credentials.resolvers",
+          "status": "deferred",
+          "restFeature": "credential-resolvers",
+          "phase": "deferred"
+        }
+      ],
+      "notes": "CRUD currently lives in the legacy aggregate (legacy-rest). Carve-out target: P5."
+    },
+    {
+      "id": "workflow",
+      "title": "Workflow",
+      "owner": "agent-2",
+      "kind": "domain",
+      "status": "partial",
+      "phase": "P3",
+      "errorNamespace": "workflow",
+      "paths": [
+        "src/checksum.mjs"
+      ],
+      "public": [],
+      "dependsOn": [
+        "platform-kernel",
+        "compatibility",
+        "execution",
+        "storage"
+      ],
+      "mustNotDependOn": [
+        "legacy-rest",
+        "auth",
+        "worker",
+        "runtime-host"
+      ],
+      "contract": {
+        "version": "0.1.0",
+        "tests": [
+          "test/rest.test.mjs"
+        ]
+      },
+      "capabilities": [
+        {
+          "id": "workflow.checksum",
+          "status": "implemented"
+        },
+        {
+          "id": "workflow.crud",
+          "status": "legacy"
+        },
+        {
+          "id": "workflow.history",
+          "status": "unsupported",
+          "restFeature": "workflow-history"
+        },
+        {
+          "id": "workflow.source-control",
+          "status": "deferred",
+          "restFeature": "source-control",
+          "phase": "deferred"
+        }
+      ],
+      "notes": "Only the checksum primitive is carved out. CRUD stays in legacy-rest until P3. Workflow may consume the execution contract, never execution internals."
+    },
+    {
+      "id": "execution",
+      "title": "Execution",
+      "owner": "agent-2",
+      "kind": "domain",
+      "status": "partial",
+      "phase": "P3",
+      "errorNamespace": "execution",
+      "paths": [
+        "src/engine.mjs"
+      ],
+      "public": [],
+      "dependsOn": [
+        "platform-kernel",
+        "compatibility",
+        "storage"
+      ],
+      "mustNotDependOn": [
+        "workflow",
+        "legacy-rest",
+        "auth",
+        "runtime-host"
+      ],
+      "contract": {
+        "version": "0.1.0",
+        "tests": [
+          "test/rest.test.mjs"
+        ]
+      },
+      "capabilities": [
+        {
+          "id": "execution.run-manual",
+          "status": "implemented"
+        },
+        {
+          "id": "execution.history",
+          "status": "legacy"
+        },
+        {
+          "id": "execution.partial",
+          "status": "planned"
+        },
+        {
+          "id": "execution.queue",
+          "status": "deferred"
+        }
+      ],
+      "notes": "src/engine.mjs is the implementation. It must not depend on workflow (direction: workflow -> execution contract)."
+    },
+    {
+      "id": "node-registry",
+      "title": "Node registry",
+      "owner": "agent-4",
+      "kind": "domain",
+      "status": "partial",
+      "phase": "P6",
+      "errorNamespace": "node",
+      "paths": [
+        "src/catalog.mjs"
+      ],
+      "public": [],
+      "dependsOn": [
+        "platform-kernel"
+      ],
+      "mustNotDependOn": [
+        "credentials",
+        "workflow",
+        "execution",
+        "legacy-rest",
+        "auth",
+        "storage"
+      ],
+      "contract": {
+        "version": "0.1.0",
+        "tests": [
+          "test/rest.test.mjs"
+        ]
+      },
+      "capabilities": [
+        {
+          "id": "node-registry.catalog",
+          "status": "implemented"
+        },
+        {
+          "id": "node-registry.icons",
+          "status": "implemented"
+        },
+        {
+          "id": "node-registry.community-packages",
+          "status": "unsupported",
+          "restFeature": "community-packages"
+        },
+        {
+          "id": "node-registry.community-node-type-detail",
+          "status": "unsupported",
+          "restFeature": "community-node-type-detail"
+        }
+      ],
+      "notes": "Node internals must never reach into the credential persistence implementation \u2014 declared as a hard direction rule."
+    },
+    {
+      "id": "dynamic-parameters",
+      "title": "Dynamic node parameters",
+      "owner": "agent-4",
+      "kind": "domain",
+      "status": "planned",
+      "phase": "P7",
+      "errorNamespace": "dynamic-parameters",
+      "paths": [],
+      "public": [],
+      "dependsOn": [
+        "platform-kernel",
+        "compatibility",
+        "node-registry",
+        "credentials"
+      ],
+      "mustNotDependOn": [
+        "workflow",
+        "legacy-rest",
+        "storage"
+      ],
+      "contract": {
+        "version": "0.0.0",
+        "tests": []
+      },
+      "capabilities": [
+        {
+          "id": "dynamic-parameters.resolve",
+          "status": "unsupported",
+          "restFeature": "dynamic-parameters"
+        }
+      ],
+      "notes": "Answers 501 today via the compatibility capability registry."
+    },
+    {
+      "id": "webhook",
+      "title": "Webhook / trigger ingress",
+      "owner": "agent-2",
+      "kind": "domain",
+      "status": "planned",
+      "phase": "P4",
+      "errorNamespace": "webhook",
+      "paths": [],
+      "public": [],
+      "dependsOn": [
+        "platform-kernel",
+        "compatibility",
+        "execution",
+        "workflow"
+      ],
+      "mustNotDependOn": [
+        "legacy-rest",
+        "storage",
+        "auth"
+      ],
+      "contract": {
+        "version": "0.0.0",
+        "tests": []
+      },
+      "capabilities": [
+        {
+          "id": "webhook.ingress",
+          "status": "planned"
+        },
+        {
+          "id": "webhook.trigger-activation",
+          "status": "planned"
+        }
+      ],
+      "notes": "Ownership is provisional; Manager must confirm webhook stays with Agent 2 (workflow/execution) rather than Agent 6 (runtime)."
+    },
+    {
+      "id": "storage",
+      "title": "Storage / persistence",
+      "owner": "agent-5",
+      "kind": "domain",
+      "status": "partial",
+      "phase": "P8",
+      "errorNamespace": "storage",
+      "paths": [
+        "src/store.mjs"
+      ],
+      "public": [],
+      "dependsOn": [
+        "platform-kernel"
+      ],
+      "mustNotDependOn": [
+        "workflow",
+        "execution",
+        "auth",
+        "credentials",
+        "legacy-rest",
+        "compatibility",
+        "node-registry",
+        "worker",
+        "runtime-host"
+      ],
+      "contract": {
+        "version": "0.1.0",
+        "tests": [
+          "test/rest.test.mjs"
+        ]
+      },
+      "capabilities": [
+        {
+          "id": "storage.json-collections",
+          "status": "implemented"
+        },
+        {
+          "id": "storage.sql-backend",
+          "status": "deferred"
+        }
+      ],
+      "notes": "Hard direction rule: storage internals must never depend on a consuming domain. SQLite/Postgres work is explicitly out of scope until its own phase."
+    },
+    {
+      "id": "worker",
+      "title": "Worker / orchestration / scaling",
+      "owner": "agent-6",
+      "kind": "domain",
+      "status": "planned",
+      "phase": "P11",
+      "errorNamespace": "worker",
+      "paths": [],
+      "public": [],
+      "dependsOn": [
+        "platform-kernel",
+        "compatibility",
+        "execution"
+      ],
+      "mustNotDependOn": [
+        "legacy-rest",
+        "workflow",
+        "auth"
+      ],
+      "contract": {
+        "version": "0.0.0",
+        "tests": []
+      },
+      "capabilities": [
+        {
+          "id": "worker.orchestration",
+          "status": "unsupported",
+          "restFeature": "orchestration",
+          "phase": "P11"
+        },
+        {
+          "id": "worker.queue-mode",
+          "status": "deferred"
+        }
+      ],
+      "notes": "Queue mode and scaling are deferred; today only the 501 capability exists."
+    },
+    {
+      "id": "realtime",
+      "title": "Realtime push channel",
+      "owner": "agent-6",
+      "kind": "domain",
+      "status": "implemented",
+      "phase": "P0",
+      "errorNamespace": "realtime",
+      "paths": [
+        "src/push.mjs"
+      ],
+      "public": [],
+      "dependsOn": [
+        "platform-kernel"
+      ],
+      "mustNotDependOn": [
+        "workflow",
+        "execution",
+        "legacy-rest",
+        "storage",
+        "auth"
+      ],
+      "contract": {
+        "version": "0.1.0",
+        "tests": [
+          "test/rest.test.mjs"
+        ]
+      },
+      "capabilities": [
+        {
+          "id": "realtime.push",
+          "status": "implemented"
+        }
+      ],
+      "notes": "Transport only: it broadcasts what the composition root hands it and knows nothing about execution internals."
+    },
+    {
+      "id": "settings",
+      "title": "Instance settings (frontend boot payload)",
+      "owner": "agent-1",
+      "kind": "domain",
+      "status": "implemented",
+      "phase": "P2",
+      "errorNamespace": "settings",
+      "paths": [
+        "src/settings"
+      ],
+      "public": [],
+      "dependsOn": [
+        "platform-kernel",
+        "compatibility",
+        "auth"
+      ],
+      "mustNotDependOn": [
+        "workflow",
+        "execution",
+        "legacy-rest",
+        "storage",
+        "worker"
+      ],
+      "contract": {
+        "version": "1.0.0",
+        "tests": [
+          "test/compat.contract.test.mjs"
+        ]
+      },
+      "capabilities": [
+        {
+          "id": "settings.frontend-settings",
+          "status": "implemented"
+        }
+      ],
+      "notes": "Ownership provisional: the payload is the editor boot contract (Agent 1), but its inputs come from many domains. Manager arbitration item."
+    },
+    {
+      "id": "editor-ui-host",
+      "title": "Editor UI host (pinned n8n bundle)",
+      "owner": "agent-1",
+      "kind": "domain",
+      "status": "implemented",
+      "phase": "P0",
+      "errorNamespace": "ui",
+      "paths": [
+        "src/ui.mjs"
+      ],
+      "public": [],
+      "dependsOn": [
+        "platform-kernel"
+      ],
+      "mustNotDependOn": [
+        "workflow",
+        "execution",
+        "auth",
+        "storage",
+        "legacy-rest",
+        "compatibility",
+        "node-registry"
+      ],
+      "contract": {
+        "version": "1.0.0",
+        "tests": [
+          "test/rest.test.mjs"
+        ]
+      },
+      "capabilities": [
+        {
+          "id": "editor-ui.static-host",
+          "status": "implemented"
+        }
+      ],
+      "notes": "Serves the never-patched n8n-editor-ui bundle. Backend domains must not reach into it."
+    },
+    {
+      "id": "workspace",
+      "title": "Workspace / projects",
+      "owner": "agent-2",
+      "kind": "domain",
+      "status": "planned",
+      "phase": "P3",
+      "errorNamespace": "workspace",
+      "paths": [],
+      "public": [],
+      "dependsOn": [
+        "platform-kernel",
+        "compatibility",
+        "auth",
+        "storage"
+      ],
+      "mustNotDependOn": [
+        "legacy-rest",
+        "execution",
+        "worker"
+      ],
+      "contract": {
+        "version": "0.0.0",
+        "tests": []
+      },
+      "capabilities": [
+        {
+          "id": "workspace.personal-project",
+          "status": "legacy"
+        },
+        {
+          "id": "workspace.projects",
+          "status": "unsupported",
+          "restFeature": "workspace-projects"
+        }
+      ],
+      "notes": "Provisional ownership \u2014 projects touch auth (sharing) and workflow (resources). Manager arbitration item."
+    },
+    {
+      "id": "observability",
+      "title": "Observability (logs, insights, streaming)",
+      "owner": "agent-6",
+      "kind": "domain",
+      "status": "planned",
+      "phase": "deferred",
+      "errorNamespace": "observability",
+      "paths": [],
+      "public": [],
+      "dependsOn": [
+        "platform-kernel",
+        "compatibility"
+      ],
+      "mustNotDependOn": [
+        "workflow",
+        "execution",
+        "storage",
+        "legacy-rest"
+      ],
+      "contract": {
+        "version": "0.0.0",
+        "tests": []
+      },
+      "capabilities": [
+        {
+          "id": "observability.log-streaming",
+          "status": "deferred",
+          "restFeature": "log-streaming",
+          "phase": "deferred"
+        },
+        {
+          "id": "observability.insights",
+          "status": "deferred"
+        }
+      ]
+    },
+    {
+      "id": "data-tables",
+      "title": "Data tables",
+      "owner": "agent-5",
+      "kind": "domain",
+      "status": "planned",
+      "phase": "deferred",
+      "errorNamespace": "data-table",
+      "paths": [],
+      "public": [],
+      "dependsOn": [
+        "platform-kernel",
+        "compatibility",
+        "storage"
+      ],
+      "mustNotDependOn": [
+        "workflow",
+        "execution",
+        "legacy-rest"
+      ],
+      "contract": {
+        "version": "0.0.0",
+        "tests": []
+      },
+      "capabilities": [
+        {
+          "id": "data-tables.crud",
+          "status": "deferred",
+          "restFeature": "data-tables",
+          "phase": "deferred"
+        }
+      ]
+    },
+    {
+      "id": "legacy-rest",
+      "title": "Legacy REST aggregate (strangler zone)",
+      "owner": "agent-1",
+      "kind": "legacy",
+      "status": "legacy",
+      "phase": "P3-P7",
+      "errorNamespace": "legacy",
+      "paths": [
+        "src/rest"
+      ],
+      "public": [],
+      "dependsOn": [
+        "platform-kernel",
+        "compatibility",
+        "node-registry",
+        "workflow",
+        "execution",
+        "storage",
+        "credentials",
+        "workspace"
+      ],
+      "mustNotDependOn": [
+        "runtime-host",
+        "editor-ui-host",
+        "worker"
+      ],
+      "contract": {
+        "version": "0.1.0",
+        "tests": [
+          "test/rest.test.mjs"
+        ]
+      },
+      "capabilities": [
+        {
+          "id": "legacy.workflow-crud",
+          "status": "legacy"
+        },
+        {
+          "id": "legacy.execution-history",
+          "status": "legacy"
+        },
+        {
+          "id": "legacy.credentials-crud",
+          "status": "legacy"
+        },
+        {
+          "id": "legacy.projects",
+          "status": "legacy"
+        },
+        {
+          "id": "legacy.node-types",
+          "status": "legacy"
+        }
+      ],
+      "notes": "Custodian, not owner: Agent 1 keeps it compiling; each carve-out belongs to the target domain listed in legacy.migrationTargets. The file list is frozen - no new files may enter this zone."
+    },
+    {
+      "id": "runtime-host",
+      "title": "Runtime host (composition root + CLI)",
+      "owner": "agent-6",
+      "kind": "composition-root",
+      "status": "implemented",
+      "phase": "P0",
+      "errorNamespace": "runtime",
+      "paths": [
+        "src/server.mjs",
+        "bin"
+      ],
+      "public": [],
+      "compositionRoot": true,
+      "dependsOn": [
+        "platform-kernel",
+        "lego-foundation",
+        "compatibility",
+        "auth",
+        "settings",
+        "legacy-rest",
+        "node-registry",
+        "execution",
+        "storage",
+        "realtime",
+        "editor-ui-host"
+      ],
+      "mustNotDependOn": [],
+      "contract": {
+        "version": "1.0.0",
+        "tests": [
+          "test/rest.test.mjs"
+        ]
+      },
+      "capabilities": [
+        {
+          "id": "runtime.http-server",
+          "status": "implemented"
+        },
+        {
+          "id": "runtime.cli",
+          "status": "implemented"
+        }
+      ],
+      "notes": "The only place allowed to wire domains together. It may import implementations (that is what a composition root does) but nothing may import it back."
+    },
+    {
+      "id": "reference-lego",
+      "title": "Reference LEGO (template, not a feature)",
+      "owner": "manager",
+      "kind": "template",
+      "status": "template",
+      "phase": "P2.6",
+      "errorNamespace": "reference",
+      "paths": [
+        "src/reference-lego"
+      ],
+      "public": [
+        "src/reference-lego/contract"
+      ],
+      "dependsOn": [
+        "platform-kernel",
+        "lego-foundation"
+      ],
+      "mustNotDependOn": [
+        "compatibility",
+        "workflow",
+        "execution",
+        "auth",
+        "storage",
+        "legacy-rest",
+        "runtime-host"
+      ],
+      "contract": {
+        "version": "1.0.0",
+        "tests": [
+          "test/lego-foundation.test.mjs"
+        ]
+      },
+      "capabilities": [
+        {
+          "id": "reference.echo",
+          "status": "template"
+        }
+      ],
+      "notes": "Copy-me template showing contract / internal / capability / dependency / ownership / tests. Deliberately not mounted on any route."
+    }
+  ],
+  "allowances": [
+    {
+      "id": "A1",
+      "from": "compatibility",
+      "file": "src/compat/auth-context.mjs",
+      "imports": "src/auth.mjs",
+      "to": "auth",
+      "kind": "internal-import",
+      "reason": "PublicUser serialization needs toPublicUser() before the auth domain publishes a contract module.",
+      "resolutionOwner": "agent-3",
+      "resolveBy": "P5",
+      "resolution": "Publish src/auth/contract/index.mjs exporting toPublicUser and re-point this import."
+    },
+    {
+      "id": "A2",
+      "from": "settings",
+      "file": "src/settings/routes.mjs",
+      "imports": "src/auth.mjs",
+      "to": "auth",
+      "kind": "internal-import",
+      "reason": "showSetupOnFirstLoad needs hasOwner(store); the auth domain has no contract module yet.",
+      "resolutionOwner": "agent-3",
+      "resolveBy": "P5",
+      "resolution": "Expose hasOwner through the auth contract and consume it from there."
+    },
+    {
+      "id": "A3",
+      "from": "execution",
+      "file": "src/engine.mjs",
+      "imports": "src/store.mjs",
+      "to": "storage",
+      "kind": "internal-import",
+      "reason": "Execution ids come from the storage counter; the storage domain has no contract module yet.",
+      "resolutionOwner": "agent-5",
+      "resolveBy": "P8",
+      "resolution": "Publish src/storage/contract/index.mjs (id allocation + collection ports) and consume that."
+    }
+  ],
+  "legacy": {
+    "zone": "legacy-rest",
+    "custodian": "agent-1",
+    "frozen": true,
+    "files": [
+      "src/rest/routes.mjs"
+    ],
+    "allowInternalImports": true,
+    "rules": [
+      "No new file may be added to the legacy zone: the file list above is frozen and checked by the architecture gate.",
+      "No new business logic in the zone; only carve-outs leave it.",
+      "The zone may import domain internals (temporarily); new domains may not.",
+      "Nothing may import the legacy zone except the composition root."
+    ],
+    "migrationTargets": {
+      "/rest/workflows": "workflow",
+      "/rest/active-workflows": "workflow",
+      "/rest/tags": "workflow",
+      "/rest/executions": "execution",
+      "/rest/credentials": "credentials",
+      "/rest/projects": "workspace",
+      "/rest/types": "node-registry",
+      "/rest/node-types": "node-registry",
+      "/rest/license": "compatibility"
+    }
+  }
+}

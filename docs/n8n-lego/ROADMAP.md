@@ -139,6 +139,10 @@ Rules for §3.2:
 | REST smoke (boot → setup → workflow → run → execution) | `apps/n8n-lego/test/rest.test.mjs` | ⏳ |
 | UI smoke (headless: `/`, `/rest/settings`, `/rest/types/nodes.json`) | — | ⏳ |
 | Registry/architecture audit | `python3 tools/sublego-audit/audit.py` | ✅ (unchanged by this work) |
+| Backend LEGO isolation (P2.6) | `npm run lego:arch` | ✅ 0 violations |
+| Isolation gate selftest (P2.6) | `npm run lego:arch:selftest` | ✅ 8/8 planted violations detected |
+| Capability conformance (P2.6) | `npm run lego:capabilities` | ✅ 23 REST features, wire == registry |
+| Everything above, one command | `npm run lego:gate` | ✅ |
 
 ## 5. Order of work
 
@@ -149,3 +153,13 @@ Rules for §3.2:
 5. ⏳ §3.2 rename, once CI can verify the Rust build.
 6. ⏳ Resume the Rust port on top of the working app (Phase 3 continues with a
    green app as the behavioural baseline).
+
+### Architecture track (parallel to the application track)
+
+* ✅ **P2** compatibility contract layer — `docs/n8n-lego/FRONTEND_COMPATIBILITY.md` §10
+* ✅ **P2.6** backend LEGO foundation — `docs/n8n-lego/BACKEND_LEGO.md`
+  (domain registry, ownership, contract versioning, error contract, isolation
+  gate, reference template). No feature and no Rust: it is the socket system
+  the P3+ domains plug into. Integration notes:
+  `docs/n8n-lego/LEGO_INTEGRATION_NOTES.md`.
+* ⏳ **P3+** domain carve-outs, each owned per `src/lego/manifest/domains.json`.

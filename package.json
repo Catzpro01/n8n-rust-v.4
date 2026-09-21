@@ -24,6 +24,10 @@
     "lego:doctor": "node apps/n8n-lego/bin/n8n-lego.mjs doctor",
     "lego:catalog": "node apps/n8n-lego/bin/n8n-lego.mjs catalog",
     "lego:test": "node --test \"apps/n8n-lego/test/*.test.mjs\"",
+    "lego:arch": "node tools/lego/architecture-gate.mjs",
+    "lego:arch:selftest": "node tools/lego/architecture-gate.mjs --selftest",
+    "lego:capabilities": "node tools/lego/capability-conformance.mjs",
+    "lego:gate": "npm run lego:arch && npm run lego:arch:selftest && npm run lego:capabilities && npm run lego:test",
     "lego:pack": "bash scripts/release.sh --npm-only",
     "start": "npm run lego:start",
     "lego:smoke": "node tests/e2e/lego-smoke.mjs"
