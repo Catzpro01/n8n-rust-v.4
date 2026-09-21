@@ -567,6 +567,9 @@ export const VOCABULARIES = Object.freeze([
       'ai.model-gateway', 'ai.tool-gateway', 'ai.agent-runtime', 'ai.application-provider',
       'ai.agent-session', 'ai.agent-delegation', 'ai.agent-events', 'ai.decision',
       'ai.approval', 'ai.artifact', 'ai.context',
+      // Added by backend P2.12. `ai.skill` is the only one of these whose status
+      // is `implemented` — the skill registry. The rest remain contract-only.
+      'ai.skill',
     ]),
     provenance: Object.freeze({
       contract: Object.freeze({ id: 'lego.domain-registry', version: '1.1.0', owner: 'manager' }),
@@ -594,6 +597,10 @@ export const VOCABULARIES = Object.freeze([
       'ai:approval:request', 'ai:approval:resolve', 'ai:approval:read',
       'ai:artifact:read', 'ai:artifact:write',
       'ai:context:read', 'ai:context:write',
+      // Backend P2.12, the skill registry. Both are read-shaped: there is
+      // deliberately no `ai:skill:execute`, because execution is not a skill
+      // operation and no permission may imply that it is.
+      'ai:skill:read', 'ai:skill:select',
     ]),
     provenance: Object.freeze({
       contract: Object.freeze({ id: 'lego.domain-registry', version: '1.1.0', owner: 'manager' }),

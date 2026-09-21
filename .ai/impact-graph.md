@@ -6,8 +6,8 @@
 | LEGO | Depends on | Depended on by |
 | --- | --- | --- |
 | `platform-kernel` | — | `compatibility`, `auth`, `credentials`, `workflow`, `execution`, `node-registry`, `dynamic-parameters`, `webhook`, `storage`, `worker`, `realtime`, `settings`, `editor-ui-host`, `workspace`, `observability`, `data-tables`, `legacy-rest`, `runtime-host`, `reference-lego` |
-| `lego-foundation` | — | `compatibility`, `runtime-host`, `reference-lego`, `reference-lego.validation`, `reference-lego.repository` |
-| `ai-foundation` | — | — |
+| `lego-foundation` | — | `ai-foundation`, `compatibility`, `runtime-host`, `reference-lego`, `reference-lego.validation`, `reference-lego.repository` |
+| `ai-foundation` | `lego-foundation` | — |
 | `compatibility` | `platform-kernel`, `lego-foundation`, `auth.identity` | `auth`, `credentials`, `workflow`, `execution`, `dynamic-parameters`, `webhook`, `worker`, `settings`, `editor-ui-host`, `workspace`, `observability`, `data-tables`, `legacy-rest`, `runtime-host` |
 | `auth` | `platform-kernel`, `compatibility` | `workspace`, `runtime-host` |
 | `auth.identity` | — | `compatibility`, `settings` |

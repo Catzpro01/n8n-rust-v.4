@@ -7,7 +7,7 @@
 | --- | --- |
 | Owner | `manager` |
 | Kind / tier | `governance` / `domain` |
-| Status | `contract-only` (phase `P2.10`) |
+| Status | `partial` (phase `P2.10`) |
 | Parent | _root_ |
 | Contract | `ai.foundation` v1.0.0 |
 | Error namespace | `ai` |
@@ -22,14 +22,17 @@
 
 - `src/lego/ai-foundation.mjs`
 - `src/lego/manifest/ai-foundation.json`
+- `src/lego/skill.mjs`
+- `src/lego/manifest/skill.json`
 
 ## Public contract surface
 
 - `src/lego/ai-foundation.mjs`
+- `src/lego/skill.mjs`
 
 ## May call
 
-_none_
+`lego-foundation`
 
 ## Must never call
 

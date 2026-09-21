@@ -1,6 +1,6 @@
 {
   "contractId": "lego.error-contract",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "owner": "manager",
   "description": "Machine-readable backend error identity. A code is a stable, language-independent identifier the frontend maps to presentation; the backend never ships display language beyond a developer-facing English message. Codes are `<namespace>.<reason>`, namespaces come from the domain registry (domains[].errorNamespace).",
   "rules": [
@@ -164,6 +164,13 @@
       "summary": "The consumer requires a contract version the provider does not satisfy.",
       "retryable": false,
       "retryRationale": "Requires a migration or a version bump."
+    },
+    {
+      "code": "lego.contract_violation",
+      "status": 400,
+      "summary": "A declaration does not satisfy the contract it claims to implement — a missing required field, a malformed id, an unknown enum value or a duplicate registration.",
+      "retryable": false,
+      "retryRationale": "The declaration itself is wrong. The identical call will fail identically until the declaration is corrected."
     },
     {
       "code": "node.catalog_unavailable",

@@ -1,0 +1,103 @@
+{
+  "phase": "P2.12",
+  "subject": "Skill LEGO backend — registry, contract, lifecycle, lazy discovery",
+  "baseCommit": "c1f8ca21",
+  "baseCommitRole": "historicalEvidenceCommit — the state this work started from. Not necessarily the current repository state.",
+  "recorded": "2026-09-22",
+
+  "step0_recordConsistency": {
+    "defectFound": "The generated status documents read docs/n8n-lego/decisions/cross-agent-decisions.backend.json, which is agent-2's partial side of the register and lists only the rows agent-2 raised or closed. CURRENT_STATUS.md therefore published '7 item(s) await the manager: XA-8 .. XA-14' while the reconciled register held eleven open rows, XA-8 .. XA-18. PROJECT_DECISIONS.md never named XA-15..XA-18 at all.",
+    "fix": "Decision counts now come from the reconciled register cross-agent-decisions.json. PROJECT_DECISIONS.md gained a generated table of every open row; the master index names the reconciled register as the source of counts.",
+    "historicalEvidencePreserved": "The backend register is still read for agent-2's narrative sections and its agent1Baseline block. No historical evidence was rewritten.",
+    "regressionTest": "the status documents publish the decision counts the reconciled register actually holds",
+    "currentTruth": { "resolved": 7, "open": 11, "allOpenOwnedBy": "manager", "openIds": ["XA-8","XA-9","XA-10","XA-11","XA-12","XA-13","XA-14","XA-15","XA-16","XA-17","XA-18"] }
+  },
+
+  "contract": {
+    "id": "ai.skill",
+    "version": "1.0.0",
+    "owner": "manager",
+    "declaredAs": "a capability of the existing ai-foundation domain",
+    "whyNotATopLevelDomain": "XA-11 ('which contract publishes a skill, and is a skill a backend concept at all?') is open-for-manager. Declaring ai.skill inside ai-foundation means that if the manager rules skills belong elsewhere, a contract moves rather than a domain being deleted. It also avoids the ai-skill duplicate domain F17 exists to catch.",
+    "manifest": "apps/n8n-lego/src/lego/manifest/skill.json",
+    "module": "apps/n8n-lego/src/lego/skill.mjs"
+  },
+
+  "operations": ["skill.list", "skill.resolve", "skill.describe", "skill.validate-selection"],
+  "noExecuteOperation": "There is no skill.execute and no ai:skill:execute permission. Execution is not a skill operation, so no operation or permission may imply it. Asserted by test.",
+
+  "lifecycle": {
+    "states": ["registered", "available", "selected", "loaded", "active", "released"],
+    "transitions": { "registered": ["available"], "available": ["selected","released"], "selected": ["loaded","released"], "loaded": ["active","released"], "active": ["released"], "released": [] },
+    "enforcement": "Every illegal transition is tested exhaustively — for each state, every target not in its transition list must throw lego.interaction_mismatch, and the state must not move.",
+    "noAuthority": "No transition grants, checks or carries a permission. `active` means selected-and-loaded, not permitted-to-run."
+  },
+
+  "authorityBoundary": {
+    "rule": "A skill DECLARES requiredCapabilities; the capability system remains the sole authority on access.",
+    "implementation": "validateSelection asks the LEGO registry whether a capability is DECLARED. It never asks, and cannot answer, whether the caller is PERMITTED.",
+    "grantsRefused": "A declaration carrying grants, grantedCapabilities, permissions, credentials or authority is refused with lego.access_denied — refused rather than ignored, so an author cannot believe the grant took effect.",
+    "everyVerdictSaysSo": "validateSelection returns grantsAuthority:false and describe() returns granted:false on every capability-map row."
+  },
+
+  "failClosed": {
+    "unknownCapability": "A skill requiring an undeclared capability registers and lists, but availability is capability-unavailable and validateSelection returns selectable:false naming the capability. Never assumed available.",
+    "unknownIsDestructive": "isDestructiveCapability returns true for an unknown capability — the safe default for an unknown effect is the most restrictive one.",
+    "throwingValidator": "A custom validator that throws fails closed and never counts as a pass. A validator returning a truthy non-true value also does not pass (=== true, not truthiness)."
+  },
+
+  "lazyDiscovery": {
+    "guarantee": "register, list, resolve, describe, validateSelection and availabilityOf never invoke a skill's body loader. Only load() may.",
+    "proof": "The registry counts loader invocations; the test asserts loadCount stays 0 across all discovery calls and becomes 1 after load(). The card is also asserted not to contain L2/L3 text."
+  },
+
+  "counts": {
+    "domains": 26,
+    "domainsUnchanged": true,
+    "aiLego": 15,
+    "capabilities": { "before": 82, "after": 83, "added": ["ai.skill"] },
+    "operations": { "before": 139, "after": 143, "added": 4 },
+    "errorCodes": { "before": 35, "after": 36, "added": ["lego.contract_violation"], "contractVersion": "1.1.0 -> 1.2.0", "changeKind": "MINOR — a code was added, none removed or redefined" }
+  },
+
+  "deliberateAssertionEdits": [
+    { "test": "only Capability is implemented; the AI runtime is not claimed", "change": "implemented is now ['skill','capability']", "why": "The skill registry genuinely is implemented. The test's own comment requires this to cost a deliberate edit rather than a quiet status flip.", "compensatingControl": "The edit adds a named list of runtime LEGO (agent-machine, memory, workspace, mcp-adapter, runtime-adapter, node-creator, translation, token-usage, ai-foundation) that must NOT be implemented, so the guarantee is now concrete rather than relying on the list staying short." },
+    { "test": "the AI foundation is registered as contract-only and manager-owned", "change": "domain status contract-only -> partial; ai.skill exempted", "why": "One capability is implemented and eleven are not. Keeping 'contract-only' would have been a false claim.", "compensatingControl": "The exemption is a named allow-list of exactly one id, and the four runtime capabilities are asserted contract-only by name. Implementing a second capability fails here." },
+    { "test": "the AI foundation is a dependency-free leaf", "change": "dependsOn [] -> ['lego-foundation']", "why": "The skill registry must read the capability registry to answer whether a required capability is declared. The alternative — a second copy of the capability list — is the drift this architecture exists to prevent.", "compensatingControl": "Replaced the empty-list proxy with direct assertions of the original intent: no cycle (lego-foundation must not depend on ai-foundation) and not a boot prerequisite (src/server.mjs imports neither ai-foundation nor lego/skill)." }
+  ],
+
+  "negativeTestEvidence": [
+    { "falsification": "illegal lifecycle transition", "injected": "replaced the transition guard with `if (false)`", "result": "FAILED as required — 'every illegal transition is refused' and 'a skill cannot reach active without a loaded body'", "restored": true },
+    { "falsification": "unknown capability", "injected": "removed the capability-unavailable reason so selection fails open", "result": "FAILED as required — 'an unknown capability fails closed'", "restored": true },
+    { "falsification": "stale decision count", "injected": "reinstated the old '7 item(s) await the manager: XA-8 .. XA-14' line in CURRENT_STATUS.md", "result": "FAILED as required — 'the status documents publish the decision counts the reconciled register actually holds'", "restored": true }
+  ],
+
+  "defectsFoundByOwnTests": [
+    "transition(id,'released') left the loaded body in memory, so a released skill still held its L2/L3 text. Fixed in skill.mjs — release drops the body from whichever state it is reached.",
+    "An early draft hardcoded destructive capability ids (workspace.filesystem, workspace.terminal, workspace.git, workspace.browser) that do not exist in this tree, so the trust rule protected nothing and F16 flagged them as unpublished error codes. Replaced with derivation from declared permissions."
+  ],
+
+  "gates": {
+    "architecture": "OK — 26 domains",
+    "architectureSelftest": "26/26",
+    "foundation": "OK",
+    "foundationSelftest": "15/15 (F1-F17)",
+    "capabilityConformance": "OK",
+    "scaleOut": "OK — every finding declared and owned; verdict still NOT scale-out ready, 3 blocking exceptions in src/store.mjs, none weakened",
+    "aiPack": "OK — generated pack 63; curated 37; total .ai 100",
+    "backendTests": "432/432",
+    "frontendTests": "283/283",
+    "bootPayload": "/rest/settings 200 with 74 keys, unchanged against the P2.11 baseline apart from the per-instance id; unknown route still 401"
+  },
+
+  "notImplemented": [
+    "executing a skill's procedure — nothing in skill.mjs runs anything",
+    "Agent Machine, agent loop or any binding to one",
+    "Memory runtime", "Workspace executor", "MCP runtime", "Runtime Adapter",
+    "Node Creator runtime", "Translation runtime", "model inference or any provider",
+    "token or context optimizer", "Rust — no file under crates/ was touched",
+    "persistence for the registry — in-memory and process-local by design, so it inherits none of the src/store.mjs scale-out blockers"
+  ],
+
+  "openDecisionsUnchanged": "XA-11 (is a skill a backend concept at all?) and XA-8 (AI permission namespace) both remain open-for-manager. P2.12 deliberately did not settle either; a test asserts XA-11 is still open."
+}

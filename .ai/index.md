@@ -6,8 +6,8 @@
 | LEGO | Owner | Tier | Status | Contract | Blast radius |
 | --- | --- | --- | --- | --- | --- |
 | `platform-kernel` | `manager` | domain | implemented | `kernel.platform` v1.0.0 | 19 |
-| `lego-foundation` | `manager` | domain | implemented | `lego.domain-registry` v1.1.0 | 18 |
-| `ai-foundation` | `manager` | domain | contract-only | `ai.foundation` v1.0.0 | 0 |
+| `lego-foundation` | `manager` | domain | implemented | `lego.domain-registry` v1.1.0 | 19 |
+| `ai-foundation` | `manager` | domain | partial | `ai.foundation` v1.0.0 | 0 |
 | `compatibility` | `agent-1` | domain | implemented | `compat.http` v1.0.0 | 14 |
 | `auth` | `agent-3` | domain | partial | — | 4 |
 | `auth.identity` | `agent-3` | feature | implemented | `auth.identity` v1.0.0 | 15 |
