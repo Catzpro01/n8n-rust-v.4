@@ -307,3 +307,20 @@ Rules:
 - Mode changes presentation only — never behaviour, permissions, budgets or approvals.
 - The default stays simple. A feature that only makes sense in advanced mode is still documented in
   both, with the advanced description naming the declaration it reads.
+
+## 13. AI Foundation — what it is, and what it is not
+
+One AI Foundation serves **AI Assistant, AI Copilot, AI Node, Agent Machine, the Execution AI mode
+and every external runtime adapter**. There is never a separate AI engine per experience.
+
+| It is not | Because |
+| :--- | :--- |
+| the agent loop | the loop belongs to a runtime behind `ai.agent-runtime` |
+| a model vendor | models arrive through `ai.model-gateway`, from a provider |
+| MCP itself | MCP is an edge interop adapter mapped onto the tool gateway |
+| an external agent runtime | external runtimes stay external and replaceable |
+| a filesystem or terminal implementation | those are workspace-scoped capabilities |
+| a memory database | memory is its own LEGO (`XA-12`); context is not memory |
+
+The frontend consumes the AI Foundation's declarations and renders their state. It never assumes an
+implementation exists behind them: the whole `ai.*` family is **contract-only**.

@@ -593,6 +593,38 @@
         "arena/01a0c521 @ 6f7b66da ai-foundation.json -> toolGateway.sideEffects is required on every tool; an unknown value is treated as destructive",
         "WORKSPACE_AND_EXTERNAL_ACTION_PLAN.md section 2 names the families as a request; section 3 states the boundary rules"
       ]
+    },
+{
+      "id": "XA-19",
+      "question": "Which domain owns the app-side frontend mount - `src/frontend.mjs` and the descriptor route `src/frontend/routes.mjs`?",
+      "status": "open-for-manager",
+      "resolution": null,
+      "finding": "During the P2.11 merge the architecture gate reported both files as unowned (R1). Claiming both under `editor-ui-host` produced an R2 forbidden-direction finding (it must not depend on `compatibility`), so the reconciliation split them: the loader (`src/frontend.mjs`, no compat import) stays with `editor-ui-host`, and the REST route family (`src/frontend/routes.mjs`, which imports the compat response/error helpers) joins `compatibility`, the wire boundary. The split is recorded in `domains.json` (paths + a note) and keeps the gate green.",
+      "evidence": [
+        "tools/lego/architecture-gate.mjs -> R1 unowned-file for src/frontend.mjs and src/frontend/routes.mjs (before the merge decision)",
+        "tools/lego/architecture-gate.mjs -> R2 forbidden-direction for editor-ui-host -> compatibility via ../compat/response.mjs and ../compat/error.mjs when both were claimed by editor-ui-host",
+        "apps/n8n-lego/src/lego/manifest/domains.json -> editor-ui-host.paths = [src/ui.mjs, src/frontend.mjs]; compatibility.paths = [src/compat, src/frontend/routes.mjs]"
+      ],
+      "frontendBehaviour": "Unchanged: the descriptor is served at `GET /rest/frontend/bootstrap` and by the additive boot meta tag; no UI depends on which domain owns the mount files.",
+      "informedBy": "the P2.11 reconciliation report (agent-1) and docs/n8n-lego/BACKEND_LEGO.md",
+      "arbiter": "manager (domain ownership)",
+      "blocks": [
+        "any future move or split of the frontend descriptor endpoint",
+        "the ownership statement stays a reconciliation decision until the manager confirms it"
+      ],
+      "owner": "agent-01 (frontend + compatibility)",
+      "affectedDomains": [
+        "editor-ui-host",
+        "compatibility"
+      ],
+      "currentInterpretation": "The loader belongs to the UI host; the REST route family belongs to the wire boundary. Both are registry-declared, so the architecture gate has an owner for every file.",
+      "decisionRequired": "manager: confirm the split, or assign both files to one domain/contract and declare the dependency explicitly",
+      "blockingLevel": "low",
+      "date": "2026-09-22",
+      "references": [
+        "git show origin/a2:apps/n8n-lego/src/server.mjs -> the composition root mounts ...frontendRoutes({ frontend })",
+        "apps/n8n-lego/test/frontend.boundary.test.mjs -> the descriptor contract the split must preserve"
+      ]
     }
   ],
   "rules": [

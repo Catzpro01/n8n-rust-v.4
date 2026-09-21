@@ -1,0 +1,123 @@
+{
+  "recordVersion": "1.0.0",
+  "owner": "agent-2",
+  "description": "Agent 2's side of the cross-agent arbitration record. Agent 1 maintains the frontend side at docs/n8n-lego/decisions/cross-agent-decisions.json on branch arena/01a0c53e-n8n-rust-v-4. Both records use the same XA-* ids. This file records what the BACKEND did about each item; it never resolves an item assigned to the manager.",
+  "readOn": "2026-09-22",
+  "agent1Baseline": {
+    "branch": "arena/01a0c53e-n8n-rust-v-4",
+    "commit": "bdd0f1d2d6c8d7bc1c1ff3d881ddc2b3bd93713d",
+    "inspected": "read-only via git fetch; NOT merged, NOT cherry-picked",
+    "finding": "Agent 1's vocabulary lock consumes backend vocabulary and does not define a competing one. Its .ai/index/capabilities.json quotes backend values with provenance, carries publicationPending records where the backend has not published, and refuses undeclared words rather than accepting synonyms."
+  },
+  "items": [
+    {
+      "id": "XA-5",
+      "question": "Are the `lego.*` error codes named by the backend degradation vocabulary published?",
+      "assignedTo": "agent-2",
+      "status": "RESOLVED by agent-2 in P2.11",
+      "findingConfirmed": "Yes. Verified independently in this tree: interaction.mjs, envelope.mjs and negotiation.mjs raised eleven `lego.*` codes; contracts/errors.contract.json published none of them, though `lego` was already a declared errorNamespace of the lego-foundation domain.",
+      "resolution": "All eleven codes are now published in contracts/errors.contract.json (v1.0.0 -> v1.1.0, 24 -> 35 codes): lego.cancelled, lego.deadline_exceeded, lego.backpressure, lego.unavailable, lego.capability_unavailable, lego.operation_unsupported, lego.interaction_mismatch, lego.access_denied, lego.version_incompatible, lego.dependency_disabled, lego.migration_required.",
+      "beyondTheAsk": "Each published code also carries `retryable` plus a `retryRationale`, because the actionable question for a caller is not what failed but whether the identical call could succeed later. lego.cancelled is deliberate and not retryable; lego.deadline_exceeded is environmental and retryable. Without the distinction a caller must parse a message string.",
+      "durability": "A new gate rule F16 error-code-unpublished scans src/lego/*.mjs for raised codes in declared namespaces and fails if any is unpublished, so this cannot regress. A selftest fixture proves F16 fires.",
+      "frontendImpact": "Agent 1 may now map these codes instead of rendering the action string verbatim. No frontend change is required — the action strings are unchanged.",
+      "versioning": "Adding codes is a MINOR change under the error contract's own rules. No existing code changed status."
+    },
+    {
+      "id": "XA-8",
+      "question": "Which permission namespace do AI capabilities use?",
+      "assignedTo": "manager",
+      "status": "OPEN — not resolved unilaterally",
+      "backendPosition": "The backend publishes 22 `ai:*` operation permissions. Agent 1 declares six frontend capability permissions, four of which map cleanly (inference:invoke -> ai:model:invoke, agent:run -> ai:agent:invoke, agent:observe -> ai:agent:read, agent:delegate -> ai:agent:delegate) and two of which (workflow:write, execution:escalate) name grants owned by NON-AI domains.",
+      "whyNotResolvedHere": "The two unmapped words are the substance of the question. `workflow:write` and `execution:escalate` belong to the workflow and execution domains, which are agent-2's domains by ownership but whose permission namespace affects every consumer. Choosing a rule here would set a permission convention for domains beyond the AI set without the manager's agreement.",
+      "optionsForManager": [
+        "A: frontend capability declarations adopt the published `ai:*` names, and non-AI grants keep their domain namespace (workflow:write stays workflow:write).",
+        "B: the AI domain additionally publishes the frontend words as aliases (adds a synonym set, which the architecture generally avoids).",
+        "C: declare a global namespace rule: <domain>:<resource>:<action> for all domains, and migrate `ai:*` to match."
+      ],
+      "backendRecommendation": "Option A. It requires no synonyms, keeps each grant owned by the domain that enforces it, and is the only option that does not rename a published permission.",
+      "blocks": "nothing — both sides quote their own names and neither treats them as interchangeable."
+    },
+    {
+      "id": "XA-9",
+      "question": "Which contract publishes `manifest/foundation.json`?",
+      "assignedTo": "manager",
+      "status": "OPEN — not resolved unilaterally",
+      "findingConfirmed": "Yes. No lock row lists src/lego/manifest/foundation.json. It sits inside the manager-owned lego-foundation public paths and is named by domains.json itself, but lego.domain-registry@1.1.0 publishes manifest/domains.json and registry.mjs only.",
+      "whyNotResolvedHere": "Publishing it is a contract-lock decision about a manager-owned file. The backend could add a row unilaterally, but which row is exactly the question: its own lego.foundation@1.0.0, an extension of kernel.platform, or an explicit statement that it is data of lego.domain-registry. Picking one would answer the manager's question on the manager's behalf.",
+      "optionsForManager": [
+        "A: publish `lego.foundation@1.0.0` naming manifest/foundation.json (and arguably node-contract.json, contract-schema.json, ai-foundation.json, ai-lego-set.json, which have the same status).",
+        "B: extend lego.domain-registry to declare the manifest directory as its data.",
+        "C: state that foundation.json is internal data of the registry and must not be quoted by consumers — which would invalidate Agent 1's five quoted sets."
+      ],
+      "backendRecommendation": "Option A, extended to all five manifest files. Four more files acquired the same ambiguity in P2.10/P2.11 (ai-foundation.json, ai-lego-set.json), so resolving only foundation.json would leave the same gap open.",
+      "blocks": "nothing — Agent 1 consumes the values with a publicationPending record."
+    },
+    {
+      "id": "XA-10",
+      "question": "How are application-provider permissions named?",
+      "assignedTo": "manager",
+      "status": "OPEN — not resolved unilaterally",
+      "findingConfirmed": "Yes. ai.application-provider operations require `ai:app:read` / `ai:app:invoke`, while the illustrative GitHub decomposition inside the same contract uses `app:github:read|write|receive`.",
+      "backendPosition": "The two namespaces answer different questions and the backend believes both are needed: `ai:app:*` is the grant to use the application-provider MECHANISM at all, while `app:<application>:*` is the grant to perform a specific action on a specific application. Collapsing them would mean either one grant that unlocks every application, or a mechanism grant that must be re-declared per application.",
+      "whyNotResolvedHere": "This sets a convention for every future application provider, not just GitHub. The manager asked; the backend states a position rather than deciding.",
+      "optionsForManager": [
+        "A: keep both namespaces with an explicit rule that `ai:app:*` grants mechanism access and `app:<application>:*` grants action access, and both are required.",
+        "B: one namespace only — `app:<application>:<action>` — and drop `ai:app:*` from the operations.",
+        "C: one namespace only — `ai:app:<application>:<action>`."
+      ],
+      "backendRecommendation": "Option A, made explicit. It is what both sides already do; what is missing is the stated rule that the two are ANDed rather than alternatives.",
+      "blocks": "nothing — the two sets stay separate."
+    }
+  ],
+  "newProposalsFromBackend": [
+    {
+      "id": "XA-11",
+      "raisedBy": "agent-2",
+      "status": "open-for-manager",
+      "subject": "Ownership of the fifteen official AI/Agent LEGO",
+      "detail": "P2.11 registers the fifteen official AI/Agent LEGO as an authoritative declaration (manifest/ai-lego-set.json). Twelve are provisionally owner=manager because they are shared cross-domain contracts; node-creator is provisionally agent-4 (it neighbours the node registry) and the three AI experiences are agent-1 (they are UI surfaces).",
+      "question": "Confirm or reassign. In particular: does agent-4 accept node-creator, and does the manager intend to hold twelve AI LEGO long-term or delegate Skill / Memory / Workspace to a new agent?",
+      "risk": "Leaving twelve LEGO on manager is honest today but will bottleneck phase B if it is still true when implementation starts.",
+      "blocks": "nothing in P2.11 — all fifteen are contract-only or planned."
+    },
+    {
+      "id": "XA-12",
+      "raisedBy": "agent-2",
+      "status": "open-for-manager",
+      "subject": "MCP capability export list",
+      "detail": "The MCP boundary rule requires capabilities to be exported explicitly and individually, and forbids an export-everything switch. The export list is currently EMPTY and no capability is exported.",
+      "question": "Which capabilities, if any, may ever be exported over MCP to an external client?",
+      "risk": "Deciding this late, under delivery pressure, is how an export-everything switch gets added.",
+      "blocks": "nothing — MCP is contract-only and unimplemented."
+    },
+    {
+      "id": "XA-13",
+      "raisedBy": "agent-2",
+      "status": "open-for-manager",
+      "subject": "Translation locale baseline ownership",
+      "detail": "Universal Translation is now an official LEGO with a planned locale baseline of id, en, ar, zh, ru, jv (ar is RTL). The standing project rule from earlier phases was 'do not build Translation LEGO or language packs'.",
+      "question": "The rule and the official LEGO set now point in different directions. Confirm that Translation is promoted to an official LEGO for phase D, and that the earlier prohibition applied only to premature implementation.",
+      "backendReading": "P2.11 treats it as declared-but-not-built, which satisfies both readings. Recorded rather than assumed.",
+      "blocks": "nothing — Translation is planned, with no contract version and no code."
+    },
+    {
+      "id": "XA-14",
+      "subject": "Ownership of the master documentation set and its manifests",
+      "status": "OPEN — raised by agent-2, for the manager",
+      "detail": "P2.11 added three authoritative manifests (ai-lego-set.json, project-governance.json, reference-scenarios.json) and eleven generated documents under .ai/master/. They describe the WHOLE project, including domains owned by agent-1 and agents 3-6, but they currently live on agent-2's branch and are edited only by agent-2.",
+      "question": "Who may edit these manifests, and what happens when another agent's domain facts change?",
+      "backendReading": "A document that describes everyone and is writable by one agent is either a bottleneck or a place where other agents' facts go stale. The generated form helps — the domain table is derived from manifest/domains.json, so domain changes flow through automatically — but the AI set's owners, phases and statuses are hand-declared and will rot without a route for other agents to change them.",
+      "backendRecommendation": "Declare the master manifests manager-owned, with agents proposing changes to their own rows. agent-2 maintains the generators; the manager arbitrates content. This mirrors how the contract lock already works.",
+      "risk": "If left unowned, the plausible outcome is a second master plan appearing on another branch — the exact duplication F17 exists to prevent, one level up.",
+      "blocks": "Nothing immediately. It blocks phase B planning once more than one agent needs to update the set."
+    }
+  ],
+  "alignmentRules": [
+    "The backend is authoritative for capability identity, operations, permissions on backend capabilities, interaction classes, transports, error codes and degradation states.",
+    "The frontend is authoritative for UI surfaces, rendering, locale presentation and its own frontend.* error codes.",
+    "A frontend declaration quotes backend vocabulary with provenance; it never redefines it.",
+    "If either side needs a concept the other owns, it records a proposal with an owner and an arbitration row. It does not add the concept silently.",
+    "A value not published by an authoritative contract is marked publicationPending with an owner and a decision id. No invented version, no silent rename."
+  ],
+  "p211Note": "XA-5 was closed in this phase and is recorded above. The operation-count correction (173 -> 139) is not an XA item: it was an internal arithmetic error in agent-2's own prose, found by generating the number instead of writing it, and corrected in place with provenance. It is recorded here only because Agent 1's documents may have quoted 173 from the backend; if so, that figure should be corrected to 139."
+}

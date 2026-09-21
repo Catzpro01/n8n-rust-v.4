@@ -55,7 +55,7 @@ export async function startServer({ env = process.env } = {}) {
   const engine = createEngine(config, logger);
   // Frontend LEGO (P2.5): fail-soft — an unavailable descriptor never blocks the
   // editor, it only means the UI is served without extension metadata.
-  const frontend = await loadFrontend({ config, logger });
+  const frontend = await loadFrontend({ config, logger, env });
   logger.info('frontend contract', frontend.describe());
   const ui = createUi({ config, logger, frontend });
   const push = createPushServer({ config, logger });

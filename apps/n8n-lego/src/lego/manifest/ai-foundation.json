@@ -1,0 +1,296 @@
+{
+  "version": "1.0.0",
+  "phase": "P2.10",
+  "owner": "manager",
+  "status": "contract-only",
+  "description": "Provider-neutral contracts for a future AI Foundation. This file declares vocabulary and shapes ONLY. No inference, no agent runtime, no gateway and no vendor integration is implemented anywhere in this repository.",
+  "notImplemented": [
+    "No LLM inference of any kind.",
+    "No model gateway client. 9Router is named only as an example of a provider kind.",
+    "No tool gateway client. Composio is named only as an example of a provider kind.",
+    "No agent runtime. Hermes, Claude Code, Gemini CLI, Antigravity, OpenClaw, DeepSeek Harness and MiroFish are named only as examples of runtime kinds.",
+    "No MCP server and no MCP client.",
+    "No network call, no daemon, no background process and no new dependency."
+  ],
+  "vendorRule": "A vendor name may appear in this file ONLY inside an `examples` array, and only as an illustration of a provider kind. No vendor may appear in an id, a required field, a code path or a default. If a vendor name is ever needed to make a contract work, the contract is wrong.",
+
+  "taxonomy": {
+    "rule": "These five concepts are deliberately distinct. Conflating them is the single most common way an AI integration becomes unreplaceable, because it welds a capability to one vendor's transport.",
+    "concepts": {
+      "capability": "WHAT the system can do. Owned by a LEGO. Stable. Example: `agent.session`.",
+      "implementation": "HOW a capability is realised. Swappable. Example: a JS implementation or a Rust implementation.",
+      "provider": "WHERE an implementation is sourced from. Example kinds: model-provider, tool-provider, application-provider.",
+      "transport": "HOW bytes move. Example: in-process, worker, http, mcp.",
+      "runtime": "WHERE an agent or system executes. Example kinds: agent-runtime, simulation-runtime."
+    },
+    "layering": "capability -> contract -> operations -> interaction -> implementation -> provider -> transport -> runtime",
+    "antiPattern": "Declaring `composio.github.repo.read` as a capability. That fuses capability (repo read), provider (Composio) and application (GitHub) into one identifier that cannot be replaced without a rename."
+  },
+
+  "providerKinds": {
+    "model-provider": {
+      "summary": "Supplies inference. Text, embeddings, possibly tool-calling.",
+      "contract": "ai.model-gateway",
+      "examples": ["a hosted model gateway such as 9Router", "a direct vendor API", "a local model server"],
+      "required": ["providerId", "kind", "availability", "transport", "models"]
+    },
+    "tool-provider": {
+      "summary": "Supplies callable tools and readable resources to an agent.",
+      "contract": "ai.tool-gateway",
+      "examples": ["a tool/app gateway such as Composio", "a local tool pack", "an MCP server"],
+      "required": ["providerId", "kind", "availability", "transport", "tools"]
+    },
+    "application-provider": {
+      "summary": "An external application exposed as capabilities. Independent of whichever gateway reaches it.",
+      "contract": "ai.application-provider",
+      "examples": ["GitHub", "an issue tracker", "a chat platform"],
+      "required": ["providerId", "kind", "availability", "transport", "capabilities"]
+    },
+    "agent-runtime": {
+      "summary": "Executes an agent session. Owns the agent loop, not the model.",
+      "contract": "ai.agent-runtime",
+      "examples": ["Hermes", "Claude Code", "Gemini CLI", "Antigravity", "OpenClaw", "a DeepSeek harness"],
+      "required": ["runtimeId", "kind", "availability", "transport", "locality", "supports"]
+    },
+    "simulation-runtime": {
+      "summary": "Executes a scenario or simulation rather than a task-directed agent.",
+      "contract": "ai.agent-runtime",
+      "examples": ["MiroFish"],
+      "required": ["runtimeId", "kind", "availability", "transport", "locality", "supports"]
+    }
+  },
+
+  "modelGateway": {
+    "contract": "ai.model-gateway",
+    "rule": "Provider-neutral. An implementation maps these operations onto whatever the provider actually speaks.",
+    "operations": [
+      { "name": "models.list", "interaction": "call", "permission": "ai:model:read", "idempotent": true },
+      { "name": "model.describe", "interaction": "call", "permission": "ai:model:read", "idempotent": true },
+      { "name": "generate", "interaction": "call", "permission": "ai:model:invoke", "idempotent": false },
+      { "name": "stream", "interaction": "stream", "permission": "ai:model:invoke", "idempotent": false, "backpressure": "block" },
+      { "name": "embed", "interaction": "batch", "permission": "ai:model:invoke", "idempotent": true },
+      { "name": "countTokens", "interaction": "call", "permission": "ai:model:read", "idempotent": true }
+    ],
+    "modelMetadata": {
+      "required": ["modelId", "provider", "availability"],
+      "optional": ["contextSize", "maxOutput", "streaming", "toolCalling", "embedding", "modalities", "costPerInputToken", "costPerOutputToken", "latencyProfile", "region"],
+      "rule": "Cost and latency are OPTIONAL and may be absent or stale. A consumer must treat a missing value as unknown, never as zero. A router that reads absent cost as free will always pick the unpriced model."
+    },
+    "streamRule": "`stream` must declare a backpressure policy. `block` is the default because a token stream a consumer cannot keep up with should slow the producer, not accumulate in memory."
+  },
+
+  "toolGateway": {
+    "contract": "ai.tool-gateway",
+    "rule": "Tool-shaped, not vendor-shaped. MCP is one possible transport adapter, never the internal model.",
+    "operations": [
+      { "name": "tools.list", "interaction": "call", "permission": "ai:tool:read", "idempotent": true },
+      { "name": "tool.describe", "interaction": "call", "permission": "ai:tool:read", "idempotent": true },
+      { "name": "tool.call", "interaction": "call", "permission": "ai:tool:invoke", "idempotent": false },
+      { "name": "resources.list", "interaction": "call", "permission": "ai:tool:read", "idempotent": true },
+      { "name": "resource.read", "interaction": "call", "permission": "ai:tool:read", "idempotent": true },
+      { "name": "prompts.list", "interaction": "call", "permission": "ai:tool:read", "idempotent": true },
+      { "name": "prompt.get", "interaction": "call", "permission": "ai:tool:read", "idempotent": true }
+    ],
+    "toolMetadata": {
+      "required": ["toolId", "provider", "inputSchema", "sideEffects", "availability"],
+      "optional": ["outputSchema", "description", "riskClass", "requiresApproval", "rateLimit"],
+      "rule": "`sideEffects` is REQUIRED and one of read-only | writes | destructive | external. It drives the approval contract. A tool that does not declare its side effects must be treated as destructive, because the safe default for an unknown effect is the most restrictive one."
+    }
+  },
+
+  "applicationProvider": {
+    "contract": "ai.application-provider",
+    "rule": "An application is modelled by its capabilities, independent of the path used to reach it. The same application may be reachable natively AND through a tool gateway; both are providers of the same capabilities.",
+    "firstClassRule": "A native integration must never be forced through a gateway. GitHub access via a direct native provider and GitHub access via a tool gateway are two provider bindings of ONE capability set, and the native path must remain available with no gateway configured.",
+    "exampleCapabilities": {
+      "application": "github",
+      "note": "Illustrative capability decomposition. No GitHub client is implemented here.",
+      "capabilities": [
+        { "id": "repo.read", "permission": "app:github:read", "sideEffects": "read-only" },
+        { "id": "repo.write", "permission": "app:github:write", "sideEffects": "writes" },
+        { "id": "branch.read", "permission": "app:github:read", "sideEffects": "read-only" },
+        { "id": "branch.create", "permission": "app:github:write", "sideEffects": "writes" },
+        { "id": "commit.create", "permission": "app:github:write", "sideEffects": "writes" },
+        { "id": "pr.read", "permission": "app:github:read", "sideEffects": "read-only" },
+        { "id": "pr.create", "permission": "app:github:write", "sideEffects": "writes" },
+        { "id": "issue.read", "permission": "app:github:read", "sideEffects": "read-only" },
+        { "id": "issue.create", "permission": "app:github:write", "sideEffects": "writes" },
+        { "id": "actions.read", "permission": "app:github:read", "sideEffects": "read-only" },
+        { "id": "webhook.receive", "permission": "app:github:receive", "sideEffects": "read-only" }
+      ]
+    }
+  },
+
+  "agentRuntime": {
+    "contract": "ai.agent-runtime",
+    "rule": "A runtime-neutral agent lifecycle that an external runtime can satisfy without any core change. This is the contract Hermes, Claude Code, Gemini CLI and others could implement; none is implemented here.",
+    "lifecycle": [
+      { "name": "create", "interaction": "call", "permission": "ai:agent:create", "idempotent": false },
+      { "name": "start", "interaction": "call", "permission": "ai:agent:invoke", "idempotent": false },
+      { "name": "send", "interaction": "call", "permission": "ai:agent:invoke", "idempotent": false },
+      { "name": "pause", "interaction": "call", "permission": "ai:agent:control", "idempotent": true },
+      { "name": "resume", "interaction": "call", "permission": "ai:agent:control", "idempotent": true },
+      { "name": "cancel", "interaction": "call", "permission": "ai:agent:control", "idempotent": true },
+      { "name": "status", "interaction": "call", "permission": "ai:agent:read", "idempotent": true },
+      { "name": "stream", "interaction": "stream", "permission": "ai:agent:read", "idempotent": false, "backpressure": "coalesce" },
+      { "name": "artifact", "interaction": "call", "permission": "ai:agent:read", "idempotent": true },
+      { "name": "close", "interaction": "call", "permission": "ai:agent:control", "idempotent": true }
+    ],
+    "runtimeMetadata": {
+      "required": ["runtimeId", "kind", "version", "availability", "transport", "locality", "supports"],
+      "optional": ["capabilities", "resourceProfile", "region", "maxConcurrentSessions"],
+      "locality": ["in-process", "local-process", "local-network", "remote"],
+      "supports": {
+        "session": "boolean — can it hold a multi-turn session",
+        "background": "boolean — can it keep working after the caller disconnects",
+        "stream": "boolean — can it emit incremental output",
+        "cancellation": "boolean — can it actually stop, or only be abandoned",
+        "delegation": "boolean — can it spawn child agents"
+      },
+      "rule": "`supports.cancellation: false` is a legitimate, declarable answer. A runtime that cannot stop must say so, because the alternative is a cancel that silently does nothing while the caller believes work stopped."
+    },
+    "pauseRule": "pause/resume are optional. A runtime that cannot pause declares it and answers `lego.operation_unsupported` rather than faking a pause by buffering output."
+  },
+
+  "agentSession": {
+    "contract": "ai.agent-session",
+    "rule": "Session state is identity plus references. Transcripts, contexts and artifacts are referenced, never inlined, so session state stays small enough to persist cheaply and to survive a storage backend change.",
+    "fields": ["sessionId", "agentId", "parentSessionId", "taskId", "workflowId", "executionId", "runtimeId", "status", "createdAt", "updatedAt"],
+    "references": ["contextRef", "artifactRef", "traceRef"],
+    "states": ["created", "running", "waiting", "paused", "completed", "failed", "cancelled"],
+    "sizeRule": "A session record must remain bounded. Storing a transcript inside it would make session size grow without limit and would put model output into the same row as control state — see the artifact contract."
+  },
+
+  "delegation": {
+    "contract": "ai.agent-delegation",
+    "rule": "Delegation is a graph edge with an explicit, NARROWED authority grant.",
+    "fields": ["delegationId", "parentSessionId", "childSessionId", "task", "grantedCapabilities", "budget", "deadline", "status"],
+    "authorityRule": "A child receives only capabilities explicitly listed in `grantedCapabilities`, and that list must be a SUBSET of the parent's. Parent authority never propagates automatically. Automatic propagation means one delegation chain quietly ends in an agent holding every permission in the system.",
+    "budget": { "fields": ["maxTokens", "maxToolCalls", "maxDurationMs", "maxChildren"], "rule": "A budget is required. An unbudgeted delegation can recurse until a resource limit stops it, which on a low-end device means the device stops." },
+    "deadlineRule": "A child deadline is clamped to the parent's, exactly as the operation envelope already clamps derived deadlines."
+  },
+
+  "events": {
+    "contract": "ai.agent-events",
+    "rule": "One authoritative event vocabulary. Events are small, structured and reference-based.",
+    "envelope": {
+      "required": ["eventId", "timestamp", "type", "sessionId", "scope"],
+      "optional": ["agentId", "parentId", "taskId", "status", "durationMs", "summary", "references"],
+      "rule": "`summary` is a short operational string. `references` point at artifacts, contexts and traces."
+    },
+    "privacyRule": "No event may carry hidden chain-of-thought, raw prompts, credentials or full model output. An event says what happened and where the detail lives. Reasoning traces are not an audit format and storing them creates a liability with no operational benefit.",
+    "sizeRule": "Events are capped and reference-based. Large payloads go to the artifact contract.",
+    "types": [
+      "agent.created", "agent.started", "agent.waiting", "agent.paused", "agent.resumed",
+      "agent.delegated", "agent.completed", "agent.failed", "agent.cancelled",
+      "context.loaded", "context.compacted",
+      "tool.requested", "tool.started", "tool.completed", "tool.failed",
+      "decision.created", "decision.approved", "decision.rejected",
+      "approval.requested", "approval.granted", "approval.denied",
+      "artifact.created", "artifact.updated",
+      "runtime.connected", "runtime.disconnected", "runtime.unavailable"
+    ]
+  },
+
+  "decision": {
+    "contract": "ai.decision",
+    "rule": "An auditable operational rationale, not a reasoning transcript.",
+    "fields": ["decisionId", "timestamp", "agentId", "taskId", "selectedOption", "alternativeRefs", "reasonSummary", "evidenceRefs", "risk", "approvalState"],
+    "risk": ["low", "medium", "high", "critical"],
+    "approvalState": ["not-required", "pending", "granted", "denied"],
+    "privacyRule": "`reasonSummary` is a concise operational justification. Private chain-of-thought must NOT be stored. The auditable question is what was chosen and on what evidence, not what the model internally considered."
+  },
+
+  "approval": {
+    "contract": "ai.approval",
+    "rule": "Fail-closed. An action requiring approval does not proceed on timeout, on error, or on a missing approver.",
+    "fields": ["approvalId", "action", "actor", "risk", "requestedAt", "resolvedAt", "decision", "reason"],
+    "decision": ["granted", "denied", "expired"],
+    "failClosedRule": "An expired or unanswered approval is a DENY. Defaulting to allow would make the safety layer disappear exactly when the system is under stress or unattended.",
+    "actionsRequiringApproval": [
+      "execute workflow", "modify credential", "change system setting", "delete resource",
+      "push code", "merge pull request", "send external message"
+    ],
+    "notBuilt": "No approval UI, no approval store and no enforcement middleware exists. This declares the shape a future safety layer must satisfy."
+  },
+
+  "artifact": {
+    "contract": "ai.artifact",
+    "rule": "Reference-based. Large data never travels inside an event or a session record.",
+    "fields": ["artifactId", "kind", "size", "mime", "createdAt", "owner", "storageRef", "checksum", "retention"],
+    "kinds": ["patch", "diff", "log", "report", "screenshot", "file", "model-output", "simulation-result"],
+    "retention": ["ephemeral", "session", "retained", "pinned"],
+    "storageRule": "`storageRef` is an opaque reference resolved by the storage domain. The AI contracts must not know whether it is a local file, SQLite row or object store — that is exactly the abstraction the storage domain owns."
+  },
+
+  "context": {
+    "contract": "ai.context",
+    "rule": "Hierarchical and selectively loadable. An agent loads the narrowest scope that answers its question.",
+    "scopes": ["GLOBAL", "WORKFLOW", "NODE", "EXECUTION", "EVENT", "AGENT", "TASK"],
+    "fields": ["contextId", "scope", "parent", "snapshot", "version", "source", "dependencies", "size", "checksum"],
+    "selectiveLoadRule": "There is no mandatory load-everything context. Requiring the whole instance as context makes cost scale with instance size instead of task size, which fails first on exactly the low-end devices this project targets.",
+    "compactionRule": "Compaction must emit `context.compacted` and preserve the checksum chain, so a later reader can tell that what it is reading is a reduction rather than the original."
+  },
+
+  "resourceProfiles": {
+    "rule": "Resource metadata describes requirements. It is not a scheduler and grants no enforcement.",
+    "dimensions": ["cpu", "memory", "disk", "network", "latency", "locality", "startupCost", "estimatedCost", "availability"],
+    "profiles": {
+      "low-resource": "Runs on a phone, a Termux session or a 1GB VPS. No GPU, no persistent daemon, minimal memory.",
+      "standard": "A normal laptop or small server.",
+      "high-resource": "Needs substantial CPU or memory; not assumable on a user device.",
+      "remote": "Executes elsewhere. Local cost is a network call; availability becomes a real failure mode."
+    },
+    "deploymentShapes": ["n8n only", "n8n + remote model", "n8n + remote agent", "n8n + local runtime", "mixed local and remote"],
+    "noLocalInstallRule": "No external runtime may become a local installation requirement. Every AI provider is optional and remotely satisfiable, because requiring a local agent runtime would exclude the low-end targets the foundation explicitly supports."
+  },
+
+  "zeroInstall": {
+    "rule": "AI Foundation present with NO provider configured is a VALID, fully supported system state — not an error and not a degraded install.",
+    "state": {
+      "aiFoundation": "ready",
+      "modelProvider": "not-configured",
+      "toolProvider": "not-configured",
+      "agentRuntime": "not-configured"
+    },
+    "reportedAs": "capability-unavailable with reason 'no inference provider configured'",
+    "honestyRule": "The system must never fake inference, never return a canned completion and never pretend a provider exists. It reports that the foundation is ready and no provider is connected. A fake answer is worse than no answer, because the user cannot tell it is fake.",
+    "why": "This is what allows a provider such as a model gateway to be connected later as configuration rather than as an architectural change."
+  },
+
+  "mcp": {
+    "rule": "MCP is an interoperability ADAPTER at the edge. It must never become the internal application architecture.",
+    "boundary": "external world <-> MCP adapter <-> LEGO capability contract <-> implementation",
+    "roles": {
+      "mcp-server": "Exposes selected n8n capabilities to external MCP clients. An explicit export list, never the whole registry.",
+      "mcp-client": "Consumes an external MCP server as a tool-provider implementation."
+    },
+    "concepts": ["server", "client", "tool", "resource", "prompt", "connection", "authorization", "capability"],
+    "internalRule": "No internal LEGO may call another LEGO over MCP. Internal communication stays CALL/EVENT/STREAM/BATCH over the local dispatcher, as ADR-0004 requires.",
+    "mappingRule": "MCP concepts map ONTO the tool gateway contract; the tool gateway is not defined in MCP terms. If MCP changes, one adapter changes.",
+    "exportRule": "Capabilities are exported explicitly and individually. There is no export-everything switch, because the set of capabilities safe to hand to an external client is never the full set.",
+    "notBuilt": "No MCP server, client, adapter or dependency exists in this repository."
+  },
+
+  "transportRouting": {
+    "rule": "Transport is selected by locality, never by habit. The business contract does not change when the transport does.",
+    "ladder": [
+      { "when": "same process", "transport": "in-process", "mechanism": "direct dispatcher" },
+      { "when": "local event", "transport": "in-process", "mechanism": "event dispatcher" },
+      { "when": "process boundary", "transport": "worker", "mechanism": "IPC / worker adapter" },
+      { "when": "remote service", "transport": "remote", "mechanism": "HTTP or a provider-defined protocol" },
+      { "when": "external interoperability", "transport": "mcp", "mechanism": "MCP adapter" }
+    ],
+    "kinds": ["in-process", "worker", "remote", "mcp"],
+    "prohibition": "Never force every call through HTTP. An HTTP hop between two objects in one process is the most expensive available way to call a function.",
+    "carryRule": "A transport advertises which interaction classes it can carry. The OPERATION owns its interaction class; a transport that cannot carry it is simply not eligible. A transport must never silently downgrade a STREAM to a CALL — the caller asked for incremental output and would instead wait for a single late response."
+  },
+
+  "rustPolicy": {
+    "rule": "Rust remains an implementation choice beneath these contracts, exactly as ADR-0005 states.",
+    "appliesTo": "Any AI Foundation component may later have a JS implementation and a Rust implementation under the same contract, selected by configuration.",
+    "justification": ["memory", "cpu", "latency", "concurrency", "startup", "operational simplicity"],
+    "prohibition": "No Rust is written in this phase. Rust is never chosen merely to demonstrate that Rust exists, and must never require a compiler on an end-user device.",
+    "contractPreservation": "A Rust implementation must satisfy the identical contract, operations and interaction classes. If it needs a different contract, it is a different capability and must be justified as one."
+  }
+}
