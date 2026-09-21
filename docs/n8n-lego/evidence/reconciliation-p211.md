@@ -17,6 +17,7 @@ tree, not summarised from a chat message. Byte-for-byte traceability: `git diff 
 | Reconciliation commit 2 | `4934aae7` | the documents and the workflow union instead of picking a side |
 | Reconciliation commit 3 | `dc0442f2` | the id collision, XA-5 closed, this record |
 | Reconciliation commit 4 | `de61abeb` | the executable reader test (30 questions) |
+| Head after this record | `cbb60720` | bookkeeping commits: the pinned numbers and the suite counts |
 
 **There is no merge base.** `git merge-base 8c299609 464c1216` is empty: agent-2's branch
 `arena/01a0c521-n8n-rust-v-4` is a separate history (352 commits, root `f4ac0763` "chore: initial
