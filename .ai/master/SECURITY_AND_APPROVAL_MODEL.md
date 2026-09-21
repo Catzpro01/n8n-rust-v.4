@@ -55,7 +55,7 @@ terminal/process (`execute`, `start`, `stop`, `status`), project (`create`, `ope
 `build`, `test`, `preview`, `archive`), browser (`open`, `inspect`), git (`status`, `diff`, `commit`,
 `branch`, `push`), GitHub (`search`, `create_pr`). **None of them is unrestricted by default**, and
 none of them exists in this frontend branch as an implementation: they are declared capability names,
-several of them `publicationPending` (XA-8, XA-13, XA-15).
+several of them `publicationPending` (XA-8, XA-22, XA-15).
 
 ## 5. Observability layers stay separate
 

@@ -1,6 +1,6 @@
 {
   "kind": "p25-frontend-boundary",
-  "generatedAt": "2026-09-21T23:09:02.419Z",
+  "generatedAt": "2026-09-21T23:11:36.850Z",
   "phase": "P2.5",
   "method": "node apps/n8n-lego/scripts/capture-frontend-evidence.mjs (live in-process instance, HTTP level); the browser gate tests/e2e/frontend-boundary.mjs captures the same boundary from inside a real page in CI (docs/n8n-lego/FRONTEND_LEGO.md §6)",
   "baseline": "cb71dbb2",
@@ -156,12 +156,12 @@
     {
       "name": "the LEGO cold-imports and assembles within a small budget",
       "verdict": "PASS",
-      "detail": "53.1 ms for import + 12 surfaces + 15 hooks + 19 units"
+      "detail": "55.1 ms for import + 12 surfaces + 15 hooks + 19 units"
     },
     {
       "name": "assembling the descriptor stays inside a small memory budget",
       "verdict": "PASS",
-      "detail": "3516 KB of heap for catalogs + both registries"
+      "detail": "3550 KB of heap for catalogs + both registries"
     },
     {
       "name": "the package still has no runtime dependency",
@@ -539,7 +539,7 @@
     ],
     "capabilities": [],
     "bytes": 18126,
-    "importMs": 53.1,
-    "heapKb": 3516
+    "importMs": 55.1,
+    "heapKb": 3550
   }
 }

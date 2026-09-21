@@ -25,15 +25,15 @@ vocabulary — never as a silent alias of a backend contract.
 | Copilot trace | `ai.agent-events` (in `ai.foundation@1.0.0`) | `agentEventType` (26), `agentEventEnvelopeField`, `traceField` | `subscribe`, `emit` | payload bodies (only `payloadRef`), reasoning |
 | Copilot agents | `ai.agent-runtime`, `ai.agent-delegation` | `runtimeLocality`, `delegationField`, `delegationBudgetField`, `delegationNodeField` | `create`, `start`, `send`, `pause`, `resume`, `cancel`, `status`, `stream`, `artifact`, `close`, `delegate` | another agent's private context; inherited permissions (there are none) |
 | Copilot files | `ai.artifact` | `artifactKind`, `artifactRetention`, `decisionApprovalState` | `create`, `read` | artifact content inline as state; `storageRef` internals vs credential material |
-| Skills | **XA-11 pending** (`ai.skill`) | frontend presentation set (below) | none until published | a skill's private reasoning; a validator's internals |
-| Memory | **XA-12 pending** (`ai.memory`); today `ai.context` + `ai.artifact` + `ai.decision` | `contextScope`, `artifactKind`, `decisionRisk` | `context.load`, `artifact.read`, `decision.inspect` | the whole memory store; embeddings or vectors |
+| Skills | **XA-20 pending** (`ai.skill`) | frontend presentation set (below) | none until published | a skill's private reasoning; a validator's internals |
+| Memory | **XA-21 pending** (`ai.memory`); today `ai.context` + `ai.artifact` + `ai.decision` | `contextScope`, `artifactKind`, `decisionRisk` | `context.load`, `artifact.read`, `decision.inspect` | the whole memory store; embeddings or vectors |
 | Capabilities | `lego.domain-registry@1.1.0` (manager) + `ai.foundation` taxonomy | `capabilityStatus`, `capabilityCriticality`, `capabilityMigrationState`, `lifecycle`, `interaction`, `transportKind`, `aiPermission` | per capability `operations[]` | an operation's HTTP route; a module path; a port |
 | Context & Session | `ai.context`, `ai.agent-session` | `contextScope`, `agentSessionState`, `zeroInstallLayerState` | `context.load`, `context.compact`, session `create`/`status`/`close` | the raw window; the model's tokenizer internals |
 | Approval | `ai.approval` | `decisionApprovalState`, `approvalDecision` | `request`, `resolve`, `inspect` | who voted beyond the declared actor field |
 | MCP | `ai.foundation@1.0.0` mcp block (**XA-16** pending for a capability of its own) | `mcpConcept`, `mcpObjectView`, `mcpConnectionState` | `tools.list`, `tool.describe`, `tool.call` (through the tool gateway) | transport internals; a server's full tool dump |
-| Runtime & workspace | `ai.agent-runtime`; workspace is the `workspace` domain (planned, contract `0.0.0`) + **XA-13** pending | `runtimeLocalityView`, `providerKind`, `runtimeKind`, `delegationNodeField` | runtime lifecycle `status`; workspace `inspect`/`list` when available | the host filesystem beyond the declared workspace; a shell |
+| Runtime & workspace | `ai.agent-runtime`; workspace is the `workspace` domain (planned, contract `0.0.0`) + **XA-22** pending | `runtimeLocalityView`, `providerKind`, `runtimeKind`, `delegationNodeField` | runtime lifecycle `status`; workspace `inspect`/`list` when available | the host filesystem beyond the declared workspace; a shell |
 | Node creator | `node-registry@0.1.0` (agent-4) + `workflow.crud`; AI drafting **XA-15** pending | `capabilityStatus`, `interaction` (the backend `manifest/node-contract.json` is named by `domains.json.foundation` but published by no contract row — recorded with XA-9) | `resolve`, `describe`, `list`, `workflow.inspect`/`patch`/`validate` | node source code; a package's private files |
-| Translation | **XA-14 pending** (no translation domain/capability) | the declared locale set (`src/i18n.mjs` → `SUPPORTED_LOCALES`: `id`, `en`, `ar`, `zh`, `ru`, `jv`) + frontend capability `translation` | none until published | dictionaries inside a contract; a second contract |
+| Translation | **XA-23 pending** (no translation domain/capability) | the declared locale set (`src/i18n.mjs` → `SUPPORTED_LOCALES`: `id`, `en`, `ar`, `zh`, `ru`, `jv`) + frontend capability `translation` | none until published | dictionaries inside a contract; a second contract |
 | Token & usage | **XA-17 pending** (`ai.usage`); today `ai.model-gateway.countTokens` + declared costs | `resourceDimension`, `resourceProfile`, and the presentation usage fields in §2 | `countTokens`, `model.describe` | a token count nobody reported (it is `estimated` or absent) |
 | Status bar | a projection of the surfaces above | `agentSessionState`, `degradation`, `operationOutcome` | none (it renders state) | anything not already in a declaration |
 
@@ -76,12 +76,12 @@ presentation name exists, it is a *view* with a declared mapping in the lock (`m
 | :--- | :--- | :--- |
 | `Agent: Working` / `Agents 5` | session status + child count | `agentSessionState`, `delegationNodeField.children` |
 | `Context 61%`, `12.4k / 32k` | context budget | `ai.context` (`used`, `budget`) |
-| `Skills 3 active` | active skill procedures | **XA-11** (no canonical set yet) |
-| `Memory 12 relevant` | loaded context entries + decisions + artifacts | `ai.context` + `ai.decision` + `ai.artifact`; **XA-12** for a persistent store |
+| `Skills 3 active` | active skill procedures | **XA-20** (no canonical set yet) |
+| `Memory 12 relevant` | loaded context entries + decisions + artifacts | `ai.context` + `ai.decision` + `ai.artifact`; **XA-21** for a persistent store |
 | `Capabilities 7` | declared capability list with source label | `capabilityStatus` + `providerKind`/`runtimeKind` |
 | `— MCP`, `— Runtime`, `— Remote` | the source of a capability | `runtimeLocalityView`, `mcpObjectView` |
 | `Runtime · Hermes · Remote · Connected` | runtime identity + locality + availability | `ai.agent-runtime` `runtimeMetadata` (a vendor name is data, never a field) |
-| `Workspace · project-name` | where work happens | `workspace` domain (**XA-13** for agent-scoped sandboxes) |
+| `Workspace · project-name` | where work happens | `workspace` domain (**XA-22** for agent-scoped sandboxes) |
 | `Language · Bahasa Indonesia` | response language | the declared locale set + the `translation` capability |
 | `Execution AI` | a Copilot mode | `contextScope: EXECUTION`; no capability of its own beyond a declared mode |
 
@@ -93,10 +93,10 @@ presentation name but must not send the proposed word to the backend as if it ex
 
 | Decision | Proposed vocabulary | Owner to decide | Why it is needed | What the frontend does meanwhile |
 | :--- | :--- | :--- | :--- | :--- |
-| **XA-11** | `ai.skill` (skill id, version, procedure summary, capability refs, validators, token budget) | manager | the Skills surface has no canonical set; inventing one would be a second vocabulary | renders presentation names only; no skill state is sent to the backend |
-| **XA-12** | `ai.memory` (relevant entries with kind, reference, recency) | manager | "Memory" is currently only *loaded context*; a durable store is not modelled | shows loaded context, decisions and artifacts, and says so |
-| **XA-13** | agent-scoped workspace semantics (`workspaceId`, scope, runtime binding) | manager | `workspace.projects` is `unsupported` and the domain contract is `0.0.0`; the plan forbids implying host access | shows workspace only when the declaration exists; otherwise `feature-unsupported` |
-| **XA-14** | `translation@…` capability (request/response language pairs) | manager | the frontend capability `translation` is `declared`; no backend domain publishes translation | language control renders the locale set; the capability stays `declared` |
+| **XA-20** | `ai.skill` (skill id, version, procedure summary, capability refs, validators, token budget) | manager | the Skills surface has no canonical set; inventing one would be a second vocabulary | renders presentation names only; no skill state is sent to the backend |
+| **XA-21** | `ai.memory` (relevant entries with kind, reference, recency) | manager | "Memory" is currently only *loaded context*; a durable store is not modelled | shows loaded context, decisions and artifacts, and says so |
+| **XA-22** | agent-scoped workspace semantics (`workspaceId`, scope, runtime binding) | manager | `workspace.projects` is `unsupported` and the domain contract is `0.0.0`; the plan forbids implying host access | shows workspace only when the declaration exists; otherwise `feature-unsupported` |
+| **XA-23** | `translation@…` capability (request/response language pairs) | manager | the frontend capability `translation` is `declared`; no backend domain publishes translation | language control renders the locale set; the capability stays `declared` |
 | **XA-15** | node drafting/validation capability (draft → validate → preview) | manager | `Create with AI` needs a declared draft/validate step, not a frontend invention | the flow is specified but gated; validation reuses `workflow.validate` where available |
 | **XA-16** | `ai.mcp-adapter` (client/server capability, tool/resource/prompt exposure) | manager | MCP has a vocabulary block and a mapping rule but no capability of its own | shows MCP concepts and connection states; calls tools through the tool gateway |
 | **XA-17** | `ai.usage` (per-call/session usage with `source: reported \| estimated`) | manager | per-message and per-run cost must be honest; there is no usage capability today | shows `countTokens` results and declared costs, labelled `estimated` |

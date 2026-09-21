@@ -2,7 +2,7 @@
 
 **Status:** specification. **Canonical contracts:** `ai.context`, `ai.agent-session`
 (`ai.foundation@1.0.0`, manager). **Frontend owner:** agent-01 for the UI half.
-Memory as a *store* is **XA-12** (`publicationPending`); everything below is planning for the
+Memory as a *store* is **XA-21** (`publicationPending`); everything below is planning for the
 published parts plus the frontend's rendering of them.
 
 ---
@@ -74,7 +74,7 @@ relationships, project knowledge — retrieved **by relevance**, never dumped.
 Publication state: no `ai.memory` capability exists at P2.10; the honest sources today are
 `ai.context` (what is loaded), `ai.decision` (what was chosen, with evidence) and `ai.artifact` (what
 was produced). The frontend therefore renders `Memory 12 relevant` as a *count of what is loaded plus
-the decisions and artifacts in scope*, says so in advanced details, and waits for **XA-12** before
+the decisions and artifacts in scope*, says so in advanced details, and waits for **XA-21** before
 claiming a store. The graph view belongs to `MEMORY_GRAPH_OBSIDIAN_PLAN.md`.
 
 ## 6. What must never happen
