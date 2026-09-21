@@ -139,10 +139,11 @@ Rules for §3.2:
 | REST smoke (boot → setup → workflow → run → execution) | `apps/n8n-lego/test/rest.test.mjs` | ⏳ |
 | UI smoke (headless: `/`, `/rest/settings`, `/rest/types/nodes.json`) | — | ⏳ |
 | Registry/architecture audit | `python3 tools/sublego-audit/audit.py` | ✅ (unchanged by this work) |
-| Backend LEGO isolation (P2.6) | `npm run lego:arch` | ✅ 0 violations |
-| Isolation gate selftest (P2.6) | `npm run lego:arch:selftest` | ✅ 8/8 planted violations detected |
+| Backend LEGO isolation (P2.6/P2.7) | `npm run lego:arch` | ✅ 0 violations, 9 rules |
+| Isolation gate selftest (P2.6/P2.7) | `npm run lego:arch:selftest` | ✅ 19/19 planted violations detected |
 | Capability conformance (P2.6) | `npm run lego:capabilities` | ✅ 23 REST features, wire == registry |
-| Everything above, one command | `npm run lego:gate` | ✅ |
+| Scale-out readiness (P2.7) | `npm run lego:scaleout` | ✅ 10 findings, all declared/owned (2 blockers named) |
+| Everything above, one command | `npm run lego:gate` | ✅ 77/77 tests |
 
 ## 5. Order of work
 
@@ -162,4 +163,9 @@ Rules for §3.2:
   gate, reference template). No feature and no Rust: it is the socket system
   the P3+ domains plug into. Integration notes:
   `docs/n8n-lego/LEGO_INTEGRATION_NOTES.md`.
+* ✅ **P2.7** LEGO lifecycle certification — nested LEGO (parent → child →
+  grandchild), independent sub-LEGO upgrade, implementation replacement,
+  contract compatibility model and the upgrade lifecycle, plus a scale-out
+  readiness audit that names the two remaining blockers instead of claiming
+  readiness. Same document: `docs/n8n-lego/BACKEND_LEGO.md` §13–§18.
 * ⏳ **P3+** domain carve-outs, each owned per `src/lego/manifest/domains.json`.

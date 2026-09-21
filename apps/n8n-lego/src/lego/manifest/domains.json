@@ -1,8 +1,8 @@
 {
-  "manifestVersion": "1.0.0",
-  "phase": "P2.6",
+  "manifestVersion": "1.1.0",
+  "phase": "P2.7",
   "updated": "2026-09-22",
-  "description": "Backend LEGO registry: the single machine-readable source of truth for backend domain boundaries, ownership, public contracts, declared dependencies and capabilities. Validated by apps/n8n-lego/src/lego/registry.mjs and enforced by tools/lego/architecture-gate.mjs.",
+  "description": "Backend LEGO registry: the single machine-readable source of truth for backend domain boundaries, ownership, public contracts, declared dependencies and capabilities. Supports hierarchical LEGO (parent -> sub-LEGO -> sub-sub-LEGO) via the `parent` field: a nested entry is a domain like any other, so ownership, contracts, versioning and the dependency gate work identically at every level. Validated by apps/n8n-lego/src/lego/registry.mjs and enforced by tools/lego/architecture-gate.mjs.",
   "root": "apps/n8n-lego",
   "scan": {
     "include": [
@@ -67,7 +67,10 @@
       "domains": [
         "platform-kernel",
         "lego-foundation",
-        "reference-lego"
+        "reference-lego",
+        "reference-lego.validation",
+        "reference-lego.validation.schema",
+        "reference-lego.repository"
       ]
     }
   },
@@ -110,6 +113,7 @@
         "data-tables"
       ],
       "contract": {
+        "id": "kernel.platform",
         "version": "1.0.0",
         "tests": [
           "test/rest.test.mjs"
@@ -157,10 +161,12 @@
         "runtime-host"
       ],
       "contract": {
-        "version": "1.0.0",
+        "id": "lego.domain-registry",
+        "version": "1.1.0",
         "tests": [
           "test/lego-foundation.test.mjs"
-        ]
+        ],
+        "previousVersion": "1.0.0"
       },
       "capabilities": [
         {
@@ -206,6 +212,7 @@
         "legacy-rest"
       ],
       "contract": {
+        "id": "compat.http",
         "version": "1.0.0",
         "tests": [
           "test/compat.contract.test.mjs"
@@ -1054,10 +1061,12 @@
         "runtime-host"
       ],
       "contract": {
-        "version": "1.0.0",
+        "id": "reference.lego",
+        "version": "1.1.0",
         "tests": [
           "test/lego-foundation.test.mjs"
-        ]
+        ],
+        "previousVersion": "1.0.0"
       },
       "capabilities": [
         {
@@ -1065,7 +1074,154 @@
           "status": "template"
         }
       ],
-      "notes": "Copy-me template showing contract / internal / capability / dependency / ownership / tests. Deliberately not mounted on any route."
+      "notes": "Copy-me template showing contract / internal / capability / dependency / ownership / tests. Deliberately not mounted on any route.",
+      "requires": {
+        "reference-lego.validation": "^1.0.0",
+        "reference-lego.repository": "^1.0.0"
+      }
+    },
+    {
+      "id": "reference-lego.validation",
+      "title": "Reference sub-LEGO: validation (template)",
+      "parent": "reference-lego",
+      "owner": "manager",
+      "kind": "template",
+      "status": "template",
+      "phase": "P2.7",
+      "errorNamespace": "reference-validation",
+      "paths": [
+        "src/reference-lego/sub/validation"
+      ],
+      "public": [
+        "src/reference-lego/sub/validation/contract"
+      ],
+      "dependsOn": [
+        "lego-foundation"
+      ],
+      "mustNotDependOn": [
+        "compatibility",
+        "workflow",
+        "execution",
+        "auth",
+        "storage",
+        "legacy-rest",
+        "runtime-host",
+        "reference-lego.repository"
+      ],
+      "contract": {
+        "id": "reference.validation",
+        "version": "1.1.0",
+        "previousVersion": "1.0.0",
+        "tests": [
+          "test/lego-lifecycle.test.mjs"
+        ]
+      },
+      "capabilities": [
+        {
+          "id": "reference.validate",
+          "status": "template"
+        }
+      ],
+      "notes": "The 'B' of the P2.7 upgrade proof: went 1.0.0 -> 1.1.0 (additive) while its sibling reference-lego.repository stayed at 1.0.0 and the parent stayed at 1.0.0. Forbidden from its sibling on purpose, so the sibling-internal fixture has a rule to violate.",
+      "requires": {
+        "reference-lego.validation.schema": "^1.0.0"
+      }
+    },
+    {
+      "id": "reference-lego.validation.schema",
+      "title": "Reference sub-sub-LEGO: schema (template, depth 3)",
+      "parent": "reference-lego.validation",
+      "owner": "manager",
+      "kind": "template",
+      "status": "template",
+      "phase": "P2.7",
+      "errorNamespace": "reference-schema",
+      "paths": [
+        "src/reference-lego/sub/validation/sub/schema"
+      ],
+      "public": [
+        "src/reference-lego/sub/validation/sub/schema/contract"
+      ],
+      "dependsOn": [],
+      "mustNotDependOn": [
+        "compatibility",
+        "workflow",
+        "execution",
+        "auth",
+        "storage",
+        "legacy-rest",
+        "runtime-host",
+        "reference-lego.repository"
+      ],
+      "contract": {
+        "id": "reference.validation.schema",
+        "version": "1.0.0",
+        "tests": [
+          "test/lego-lifecycle.test.mjs"
+        ]
+      },
+      "capabilities": [
+        {
+          "id": "reference.validate.schema",
+          "status": "template"
+        }
+      ],
+      "implementations": {
+        "contract": "reference.validation.schema",
+        "operations": [
+          "check"
+        ],
+        "available": [
+          "strict",
+          "table"
+        ],
+        "default": "strict",
+        "note": "Two interchangeable JS implementations behind one contract \u2014 the seam a future Rust implementation would use. No Rust exists."
+      },
+      "notes": "Depth-3 entry proving the registry supports parent -> child -> grandchild with ownership, contracts and dependency rules working identically at every level."
+    },
+    {
+      "id": "reference-lego.repository",
+      "title": "Reference sub-LEGO: repository (template)",
+      "parent": "reference-lego",
+      "owner": "manager",
+      "kind": "template",
+      "status": "template",
+      "phase": "P2.7",
+      "errorNamespace": "reference-repository",
+      "paths": [
+        "src/reference-lego/sub/repository"
+      ],
+      "public": [
+        "src/reference-lego/sub/repository/contract"
+      ],
+      "dependsOn": [
+        "lego-foundation"
+      ],
+      "mustNotDependOn": [
+        "compatibility",
+        "workflow",
+        "execution",
+        "auth",
+        "storage",
+        "legacy-rest",
+        "runtime-host",
+        "reference-lego.validation"
+      ],
+      "contract": {
+        "id": "reference.repository",
+        "version": "1.0.0",
+        "tests": [
+          "test/lego-lifecycle.test.mjs"
+        ]
+      },
+      "capabilities": [
+        {
+          "id": "reference.repository",
+          "status": "template"
+        }
+      ],
+      "notes": "The 'A/C' of the P2.7 upgrade proof: must stay at 1.0.0, untouched, while its sibling validation upgrades."
     }
   ],
   "allowances": [
@@ -1079,7 +1235,10 @@
       "reason": "PublicUser serialization needs toPublicUser() before the auth domain publishes a contract module.",
       "resolutionOwner": "agent-3",
       "resolveBy": "P5",
-      "resolution": "Publish src/auth/contract/index.mjs exporting toPublicUser and re-point this import."
+      "resolution": "Publish src/auth/contract/index.mjs exporting toPublicUser and re-point this import.",
+      "state": "open",
+      "reviewedAt": "2026-09-22 (P2.7)",
+      "reviewNote": "P2.7: still present and exercised. Unchanged by P2.7 \u2014 auth has published no contract module yet."
     },
     {
       "id": "A2",
@@ -1091,7 +1250,10 @@
       "reason": "showSetupOnFirstLoad needs hasOwner(store); the auth domain has no contract module yet.",
       "resolutionOwner": "agent-3",
       "resolveBy": "P5",
-      "resolution": "Expose hasOwner through the auth contract and consume it from there."
+      "resolution": "Expose hasOwner through the auth contract and consume it from there.",
+      "state": "open",
+      "reviewedAt": "2026-09-22 (P2.7)",
+      "reviewNote": "P2.7: still present and exercised. Unchanged by P2.7."
     },
     {
       "id": "A3",
@@ -1103,7 +1265,10 @@
       "reason": "Execution ids come from the storage counter; the storage domain has no contract module yet.",
       "resolutionOwner": "agent-5",
       "resolveBy": "P8",
-      "resolution": "Publish src/storage/contract/index.mjs (id allocation + collection ports) and consume that."
+      "resolution": "Publish src/storage/contract/index.mjs (id allocation + collection ports) and consume that.",
+      "state": "open",
+      "reviewedAt": "2026-09-22 (P2.7)",
+      "reviewNote": "P2.7: still present and exercised. This is also the seam behind the two blocking scale-out findings \u2014 publishing the storage contract retires A3 and unblocks multi-process execution together."
     }
   ],
   "legacy": {
@@ -1131,5 +1296,134 @@
       "/rest/node-types": "node-registry",
       "/rest/license": "compatibility"
     }
+  },
+  "nesting": {
+    "field": "parent",
+    "maxDepth": 3,
+    "rules": [
+      "A sub-LEGO is a full registry entry with `parent` set to its parent's id. It declares its own owner, contract version, dependencies, capabilities and tests.",
+      "Nest only where the split is justified by a real boundary. Depth is capped at 3 (parent -> child -> grandchild) to prevent decorative hierarchies.",
+      "A sub-LEGO's paths must live inside its parent's paths \u2014 a child cannot own code outside its parent.",
+      "A sub-LEGO inherits nothing implicitly: dependencies and forbidden directions are declared per entry.",
+      "A parent may reach its own children's public contracts without declaring a dependency (composition inside one domain); reaching a child's internals is still forbidden.",
+      "An outside consumer may depend on a sub-LEGO's public contract only if it declares that sub-LEGO in dependsOn. Sibling-internal reach (A.sub -> B.sub internal) is always forbidden.",
+      "A sub-LEGO may be owned by a different agent than its parent; ownership remains single-writer at every level."
+    ]
+  },
+  "scaleOut": {
+    "principle": "A LEGO contract must not assume it is the only process. P2.7 implements no worker, queue or scaling infrastructure \u2014 it only checks, and records, whether the logical contracts could survive being moved into a second process. Checked by tools/lego/scale-out-readiness.mjs.",
+    "rules": [
+      "New LEGO code (contract-first domains, the foundation, templates) must be process-agnostic: no module-global mutable state, no process-local id allocation, no direct filesystem or env access. Findings there fail the build outright.",
+      "Existing code may have findings, but every one must be declared here with a domain, an owner, a severity and a resolution plan. Undeclared findings fail.",
+      "An exception that no longer matches anything is stale and fails \u2014 the list shrinks, it does not rot.",
+      "A construct that matches a pattern but is genuinely process-safe may be justified in place with `// @scale-out-safe: <reason>`; the reason is reviewed like code.",
+      "No LEGO may reach another LEGO's database/persistence internals, in one process or many. That is already enforced by the dependency gate (R2/R4), which is what makes a future process split a deployment change rather than a redesign."
+    ],
+    "blockingForScaleOut": [
+      "src/store.mjs S2 (in-memory execution id counter)",
+      "src/store.mjs S3 (local JSON files as the system of record)"
+    ],
+    "exceptions": [
+      {
+        "file": "src/store.mjs",
+        "probe": "S2",
+        "domain": "storage",
+        "owner": "agent-5",
+        "resolveBy": "P8",
+        "severity": "blocking",
+        "reason": "newExecutionId() hands out ids from a module-scope counter seeded at boot. Two processes would issue the same execution ids.",
+        "resolution": "Move id allocation behind the storage contract (a durable sequence). This is the single hardest blocker to multi-process execution."
+      },
+      {
+        "file": "src/store.mjs",
+        "probe": "S3",
+        "domain": "storage",
+        "owner": "agent-5",
+        "resolveBy": "P8",
+        "severity": "blocking",
+        "reason": "The system of record is JSON files on local disk, written with writeFileSync + renameSync. A second worker on another host sees none of it.",
+        "resolution": "Keep the collection contract, replace the backend with a shared store. The contract shape already allows it; only the implementation is local."
+      },
+      {
+        "file": "src/store.mjs",
+        "probe": "S1",
+        "domain": "storage",
+        "owner": "agent-5",
+        "resolveBy": "P8",
+        "severity": "blocking",
+        "reason": "Module-scope counter state (same construct as S2).",
+        "resolution": "Removed together with S2 when id allocation moves behind the contract."
+      },
+      {
+        "file": "src/catalog.mjs",
+        "probe": "S1",
+        "domain": "node-registry",
+        "owner": "agent-4",
+        "resolveBy": "P6",
+        "severity": "benign",
+        "reason": "Module-scope memoization of the immutable node catalog read from disk at boot.",
+        "resolution": "Harmless per process (every worker would load the identical pinned catalog), but should become an injected, explicitly-scoped cache when the node registry is carved out."
+      },
+      {
+        "file": "src/compat/scopes.mjs",
+        "probe": "S1",
+        "domain": "compatibility",
+        "owner": "agent-1",
+        "resolveBy": "P5",
+        "severity": "benign",
+        "reason": "Module-scope roles cache (roles.json is static and ships with the package); resetRolesCache() already exists for tests.",
+        "resolution": "Same as the catalog: identical in every process. Fold into an injected registry when the auth contract is published."
+      },
+      {
+        "file": "src/config.mjs",
+        "probe": "S4",
+        "domain": "platform-kernel",
+        "owner": "manager",
+        "resolveBy": "-",
+        "severity": "accepted",
+        "reason": "The kernel reads process.env \u2014 that is its job: it is the adapter that turns the environment into an injected config object.",
+        "resolution": "Accepted permanently. Config is read once at the edge and injected everywhere else, which is exactly the property that keeps domains process-agnostic."
+      },
+      {
+        "file": "src/config.mjs",
+        "probe": "S3",
+        "domain": "platform-kernel",
+        "owner": "manager",
+        "resolveBy": "-",
+        "severity": "accepted",
+        "reason": "Writes the instance identity file (.instance.json) once at first boot.",
+        "resolution": "Accepted for single-node. A multi-node deployment must provision the instance secret externally instead; documented rather than solved here."
+      },
+      {
+        "file": "src/server.mjs",
+        "probe": "S4",
+        "domain": "runtime-host",
+        "owner": "agent-6",
+        "resolveBy": "-",
+        "severity": "accepted",
+        "reason": "The composition root reads process.env to build the config it injects.",
+        "resolution": "Accepted: this is the correct place for it. Nothing downstream of the composition root reads the environment."
+      },
+      {
+        "file": "bin/n8n-lego.mjs",
+        "probe": "S4",
+        "domain": "runtime-host",
+        "owner": "agent-6",
+        "resolveBy": "-",
+        "severity": "accepted",
+        "reason": "The CLI reads the environment to construct the runtime.",
+        "resolution": "Accepted: same reason as the composition root."
+      },
+      {
+        "file": "src/engine.mjs",
+        "probe": "S4",
+        "domain": "execution",
+        "owner": "agent-2",
+        "resolveBy": "P4",
+        "severity": "should-fix",
+        "reason": "The engine resolves its implementation path from N8N_LEGO_ENGINE_PATH directly instead of receiving it in config.",
+        "resolution": "Move the path into the injected config when the execution contract is published, so the engine has no environment dependency of its own."
+      }
+    ]
   }
 }

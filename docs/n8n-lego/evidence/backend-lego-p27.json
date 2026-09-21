@@ -1,0 +1,77 @@
+{
+  "phase": "P2.7 (on P2.6)",
+  "recorded": "2026-09-22",
+  "baseline": "main@cb71dbb2",
+  "p26Commit": "0028da4a",
+  "registry": {
+    "manifestVersion": "1.1.0",
+    "domains": 24,
+    "nested": 3,
+    "maxDepth": 3,
+    "agents": 7,
+    "capabilities": 67,
+    "lockedContracts": 9,
+    "allowances": 3
+  },
+  "architectureGate": {
+    "ok": true,
+    "rules": 9,
+    "newInP27": "R9 version-incompatible (registry/lock drift, unsatisfied consumer requires, undeclared breaking change, downgrade)"
+  },
+  "gateSelftest": {
+    "sourceFixtures": 11,
+    "registryFixtures": 7,
+    "negativeControl": true,
+    "detected": 18,
+    "total": 18,
+    "nestedFixtures": 4
+  },
+  "certification": {
+    "nestedLego": "parent -> child -> grandchild (depth 3) in the reference template",
+    "subLegoUpgrade": "reference.validation 1.0.0 -> 1.1.0; sibling repository 1.0.0 and parent reference.lego 1.0.0 unmoved; parent requires ^1.0.0 still satisfied",
+    "implementationReplacement": "reference.validation.schema: strict vs table, identical across 8 input shapes, consumer blind to the swap",
+    "compatibilityModel": "compatible | breaking | migration-required | downgrade | unchanged; ranges ^ ~ >= exact *; 0.x provisional",
+    "upgradeLifecycle": "planUpgrade(): compatibility-check -> migration -> tests -> activation"
+  },
+  "scaleOut": {
+    "ok": true,
+    "findings": 11,
+    "declaredExceptions": 10,
+    "bySeverity": {
+      "blocking": 3,
+      "benign": 2,
+      "accepted": 4,
+      "should-fix": 1
+    },
+    "blockers": [
+      "src/store.mjs S2 (in-memory execution id counter)",
+      "src/store.mjs S3 (local JSON files as the system of record)"
+    ],
+    "verdict": "NOT scale-out ready: 2 blocking findings in src/store.mjs (storage, agent-5, P8). No new LEGO code introduces process-local coupling."
+  },
+  "capabilityConformance": {
+    "ok": true,
+    "restFeatures": 23
+  },
+  "tests": {
+    "legoFoundation": "24/24",
+    "legoLifecycle": "28/28",
+    "allUnitSuites": "77/77",
+    "restE2E": "8/8",
+    "restartRegression": "3/3",
+    "syntaxProbe": "all .mjs parse",
+    "packaging": "npm pack 44 files incl. nested reference tree"
+  },
+  "runtimeImpact": {
+    "existingRuntimeFilesChanged": 0,
+    "routesAdded": 0,
+    "note": "src/server.mjs, src/compat/, src/auth/, src/settings/, src/rest/, src/store.mjs, src/engine.mjs byte-identical to cb71dbb2; the nested reference tree is never mounted"
+  },
+  "rust": {
+    "implemented": false,
+    "filesTouched": 0
+  },
+  "notVerifiedHere": [
+    "browser gates tests/e2e/lego-smoke.mjs and tests/e2e/settings-compat.mjs — puppeteer Chromium download is blocked in this sandbox; both run unchanged in the CI clean-clone job"
+  ]
+}

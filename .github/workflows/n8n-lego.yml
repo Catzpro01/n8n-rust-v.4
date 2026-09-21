@@ -6,8 +6,9 @@ name: n8n-lego Gate
 #
 #   architecture        backend LEGO isolation gate: domain boundaries,
 #                       dependency direction, public/private surfaces, frozen
-#                       legacy zone, contract versions — plus the selftest that
-#                       proves the gate still catches real violations (P2.6)
+#                       legacy zone, contract versions, nested (sub-)LEGO rules
+#                       and scale-out readiness — plus the selftest that proves
+#                       the gate still catches real violations (P2.6 + P2.7)
 #   gate                unit + REST/contract integration tests (incl. the P2.6
 #                       foundation contract tests), then the release package
 #                       (npm tarball + offline tarball + checksums)
@@ -88,16 +89,27 @@ jobs:
       - name: The 501 capability contract matches the LEGO registry
         run: node tools/lego/capability-conformance.mjs
 
-      - name: Machine-readable report for the integration record
+      - name: Scale-out readiness (no undeclared process-local coupling)
+        # P2.7 implements no worker/scaling infrastructure. This only asserts
+        # that new contract-first LEGO code is process-agnostic and that every
+        # finding in existing code is a declared, owned exception in the
+        # manifest — so the list can shrink but never grow silently.
+        run: node tools/lego/scale-out-readiness.mjs
+
+      - name: Machine-readable reports for the integration record
         if: always()
-        run: node tools/lego/architecture-gate.mjs --json > architecture-gate.json || true
+        run: |
+          node tools/lego/architecture-gate.mjs --json > architecture-gate.json || true
+          node tools/lego/scale-out-readiness.mjs --json > scale-out-readiness.json || true
 
       - name: Upload the architecture report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: n8n-lego-architecture-gate
-          path: architecture-gate.json
+          path: |
+            architecture-gate.json
+            scale-out-readiness.json
           if-no-files-found: ignore
           retention-days: 7
 

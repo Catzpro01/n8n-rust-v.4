@@ -1,7 +1,14 @@
-# Backend LEGO foundation (P2.6)
+# Backend LEGO foundation (P2.6) + lifecycle certification (P2.7)
 
-Status: **implemented**, enforced by `node tools/lego/architecture-gate.mjs`.
+Status: **implemented and certified**, enforced by `npm run lego:gate`.
 Baseline: `main` at `cb71dbb2` (P2 compatibility contract layer, merged, CI green).
+
+* **P2.6** built the socket system: domain boundaries, ownership, contracts,
+  error identity, versioning, the legacy boundary and a mechanical isolation gate.
+* **P2.7** certifies that the architecture survives *change*: nested LEGO
+  (§13), independent sub-LEGO upgrade (§14), implementation replacement (§15),
+  contract compatibility decisions (§14), and scale-out readiness (§16) — with
+  an honest statement of what is **not** yet ready.
 
 P2.6 builds the **socket system**, not the bricks. No workflow, execution, auth,
 credentials, node-registry, dynamic-parameter, storage or worker feature was
@@ -19,6 +26,10 @@ domains developable in parallel without hidden coupling:
 | capability conformance check | `tools/lego/capability-conformance.mjs` |
 | reference LEGO template | `apps/n8n-lego/src/reference-lego/` |
 | foundation contract tests | `apps/n8n-lego/test/lego-foundation.test.mjs` (24 tests) |
+| contract compatibility model (P2.7) | `apps/n8n-lego/src/lego/compat.mjs` |
+| nested reference LEGO (P2.7) | `apps/n8n-lego/src/reference-lego/sub/**` |
+| scale-out readiness check (P2.7) | `tools/lego/scale-out-readiness.mjs` |
+| lifecycle certification tests (P2.7) | `apps/n8n-lego/test/lego-lifecycle.test.mjs` (28 tests) |
 
 ---
 
@@ -35,7 +46,8 @@ LEGO
 ├── capability      one or more capability ids with a declared status
 ├── dependencies    an explicit dependsOn / mustNotDependOn list
 ├── ownership       exactly one owning agent
-└── version         a contract version + what counts as a breaking change
+├── version         a contract version + what counts as a breaking change
+└── sub-LEGO        zero or more child LEGOs, each with all of the above (P2.7)
 ```
 
 All seven are recorded as data in `src/lego/manifest/domains.json`, so a human
@@ -218,13 +230,15 @@ The controlled boundary, rather than a big-bang refactor:
   | `/rest/license` | `compatibility` | — |
 
 Temporary allowances (the three internal imports that exist today, each with an
-owner and a deadline — rule **R8** deletes them automatically when they heal):
+owner, a deadline and an explicit `state` — rule **R8** deletes them
+automatically when they heal). **All three are still `open` after P2.7**;
+reviewed 2026-09-22 and none were hidden or quietly widened:
 
-| id | import | owner | by | resolution |
-| :--- | :--- | :--- | :--- | :--- |
-| A1 | `src/compat/auth-context.mjs` → `src/auth.mjs` | agent-3 | P5 | publish `toPublicUser` via an auth contract module |
-| A2 | `src/settings/routes.mjs` → `src/auth.mjs` | agent-3 | P5 | publish `hasOwner` via the auth contract |
-| A3 | `src/engine.mjs` → `src/store.mjs` | agent-5 | P8 | publish a storage contract (id allocation + collection ports) |
+| id | import | owner | by | state | resolution |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| A1 | `src/compat/auth-context.mjs` → `src/auth.mjs` | agent-3 | P5 | **open** | publish `toPublicUser` via an auth contract module |
+| A2 | `src/settings/routes.mjs` → `src/auth.mjs` | agent-3 | P5 | **open** | publish `hasOwner` via the auth contract |
+| A3 | `src/engine.mjs` → `src/store.mjs` | agent-5 | P8 | **open** | publish a storage contract (id allocation + collection ports) — the same work that clears the two blocking scale-out findings (§16) |
 
 ## 8. Error contract
 
@@ -280,8 +294,14 @@ Rule **R7** of the gate diffs the declared exports against the real exported
 symbols, so a contract cannot drift silently: adding `foo` to a locked contract
 file fails the build until the lock and version are updated.
 
-Locked contracts today: `compat.http` (1.0.0), `lego.error-contract` (1.0.0),
-`lego.domain-registry` (1.0.0), `kernel.platform` (1.0.0), `reference.lego` (1.0.0).
+Locked contracts today (9): `compat.http` (1.0.0), `lego.error-contract` (1.0.0),
+`lego.domain-registry` (1.1.0), `lego.contract-compat` (1.0.0),
+`kernel.platform` (1.0.0), `reference.lego` (1.1.0),
+`reference.validation` (1.1.0), `reference.validation.schema` (1.0.0),
+`reference.repository` (1.0.0).
+
+A domain that publishes several contracts names its **primary** one
+(`contract.id`), so R9 can compare the registry and the lock without ambiguity.
 
 ### Contract changelog
 
@@ -292,6 +312,12 @@ Locked contracts today: `compat.http` (1.0.0), `lego.error-contract` (1.0.0),
 | 2026-09-22 | `lego.error-contract` | 1.0.0 | initial publication |
 | 2026-09-22 | `lego.domain-registry` | 1.0.0 | initial publication |
 | 2026-09-22 | `reference.lego` | 1.0.0 | initial publication (template) |
+| 2026-09-22 | `lego.domain-registry` | 1.1.0 | P2.7: added hierarchy accessors (`getChildren`/`getDescendants`/`getAncestors`/`lineage`/`nestingDepth`/`rootOf`/`isWithin`/`tree`, `MAX_NESTING_DEPTH`) — additive, 1.0.0 consumers unaffected |
+| 2026-09-22 | `lego.contract-compat` | 1.0.0 | P2.7: initial publication (version ranges, change classification, upgrade planning, replacement safety) |
+| 2026-09-22 | `reference.lego` | 1.1.0 | P2.7: added `createReferenceTree` + `REFERENCE_SUBLEGOS` — additive; the parent's own operations unchanged |
+| 2026-09-22 | `reference.validation` | 1.1.0 | P2.7: added `explain()` and the optional `strict` input — additive; **the demonstration that a child bump does not move its parent or siblings** |
+| 2026-09-22 | `reference.validation.schema` | 1.0.0 | P2.7: initial publication (two interchangeable implementations) |
+| 2026-09-22 | `reference.repository` | 1.0.0 | P2.7: initial publication (the sibling that must stay untouched) |
 
 ## 10. Ownership model
 
@@ -335,15 +361,25 @@ node tools/lego/capability-conformance.mjs        # compat table vs registry
 | R6 `registry-invalid` | ownership collisions, cycles, missing metadata |
 | R7 `contract-drift` | exports changed without a contract version bump |
 | R8 `stale-allowance` | a temporary allowance no import uses any more |
+| R9 `version-incompatible` | registry/lock version drift, a consumer requirement the provider no longer satisfies, an undeclared breaking change, a version going backwards (P2.7) |
 
 Every violation prints the rule, file, line, the specific reason and a fix.
 Runtime ≈ 250 ms, zero dependencies, pure Node — it runs in every CI job.
 
-**The gate is proven, not asserted.** `--selftest` plants seven real violations
-in a throwaway copy of the tree (including the three patterns P2.6 names:
-storage→workflow internals, execution→workflow internals, node→credential/storage
-persistence) and requires each to be caught, plus a negative control that a
-*correct* file raises nothing. It currently reports 8/8.
+**The gate is proven, not asserted.** `--selftest` runs 19 fixtures and requires
+every one to be caught:
+
+* **11 source fixtures** planted in a throwaway copy of the tree — the three
+  patterns P2.6 names (storage→workflow internals, execution→workflow internals,
+  node→credential/storage persistence), undeclared imports, internal-path reach,
+  legacy-zone growth, unowned files, **plus four nested-LEGO cases** (sibling
+  sub-LEGO internal reach, outside consumer importing a sub-LEGO internal, an
+  undeclared sibling dependency, a grandchild escaping its ancestor's prohibition).
+* **7 registry fixtures** that mutate an in-memory copy of the registry —
+  an unsatisfied consumer requirement, registry/lock version drift, a breaking
+  bump with no changelog, a version going backwards, a sub-LEGO owning a path
+  outside its parent, a parent cycle, two agents claiming one sub-LEGO.
+* **1 negative control**: a *correct* file must raise nothing.
 
 ## 12. Reference LEGO
 
@@ -353,10 +389,21 @@ asserted by a test so it can never quietly become a feature).
 
 ```
 src/reference-lego/
-├── contract/index.mjs   PUBLIC  capability id, contract version, error identity, port factory
-├── internal/store.mjs   PRIVATE cross-domain import of this fails the gate
-├── lego.json            domain card: owner, capability, dependencies, tests
-└── README.md            the six-step recipe for building a real LEGO from it
+├── contract/index.mjs          PUBLIC  capability id, version, error identity, port factory,
+│                                       and createReferenceTree() composing the sub-LEGOs
+├── internal/store.mjs          PRIVATE cross-domain import of this fails the gate
+├── sub/
+│   ├── validation/             sub-LEGO @1.1.0  ← the one that was upgraded alone
+│   │   ├── contract/index.mjs  PUBLIC
+│   │   ├── internal/rules.mjs  PRIVATE
+│   │   └── sub/schema/         sub-sub-LEGO @1.0.0 (depth 3)
+│   │       ├── contract/index.mjs         PUBLIC — selects the implementation
+│   │       └── internal/strict-checker.mjs
+│   │           internal/table-checker.mjs PRIVATE — two interchangeable impls
+│   └── repository/             sub-LEGO @1.0.0  ← the sibling that stayed untouched
+│       └── contract/index.mjs  PUBLIC
+├── lego.json                   domain card: owner, capability, dependencies, tests
+└── README.md                   the six-step recipe for building a real LEGO from it
 ```
 
 It demonstrates: contract-only imports, dependency injection (a LEGO never
@@ -364,22 +411,187 @@ fetches its own collaborators — the composition root supplies them), errors as
 contract codes rather than HTTP statuses, a frozen behaviour-only port, and the
 internal boundary that makes the implementation replaceable.
 
-## 13. What P2.6 did NOT do
+## 13. Nested LEGO (P2.7)
+
+A sub-LEGO is **a full registry entry with a `parent`** — not a lesser thing.
+Ownership, contracts, versioning, capabilities, tests and the dependency gate
+work identically at every level, which is the only way the hierarchy stays
+honest instead of decorative.
+
+```json
+{
+  "id": "reference-lego.validation",
+  "parent": "reference-lego",
+  "owner": "manager",
+  "paths":  ["src/reference-lego/sub/validation"],
+  "public": ["src/reference-lego/sub/validation/contract"],
+  "requires": { "reference-lego.validation.schema": "^1.0.0" },
+  "contract": { "id": "reference.validation", "version": "1.1.0", "previousVersion": "1.0.0" }
+}
+```
+
+Rules (`manifest.nesting`, enforced by `validateRegistry` + the gate):
+
+* **Depth is capped at 3** (parent → child → grandchild). Deeper trees are
+  decoration; the cap makes that a build failure rather than a code review.
+* A child's `paths` must live **inside** its parent's paths. A sub-LEGO cannot
+  own code its parent does not.
+* **Nothing is inherited implicitly.** Each entry declares its own dependencies.
+* A **parent may compose its own descendants' public contracts** without a
+  `dependsOn` entry (`rule: parent-child`) — but reaching a child's `internal/`
+  fails even for the parent. Being the parent grants composition, not x-ray vision.
+* **Siblings are separate LEGOs.** `A.sub → B.sub` needs an explicit declaration,
+  and reaching `B.sub`'s internals is always forbidden.
+* **A child cannot escape its parent's prohibition.** If `reference-lego` must
+  not depend on `storage`, neither may its grandchild — otherwise a domain could
+  evade its own rule by pushing the import one level down.
+* **Depending on a parent does not grant its children.** Each sub-LEGO contract
+  is consumed explicitly, or the hierarchy leaks.
+* A sub-LEGO **may be owned by a different agent** than its parent; ownership
+  stays single-writer at every level.
+
+Accessors: `getChildren`, `getDescendants`, `getAncestors`, `lineage`,
+`nestingDepth`, `rootOf`, `isWithin`, `tree` (`lego.domain-registry` v1.1.0).
+
+The worked example is the reference template (§12), which now nests:
+
+```
+reference-lego                     v1.0.0   parent
+├── reference-lego.validation      v1.1.0   ← upgraded alone
+│   └── …validation.schema         v1.0.0   depth 3, two implementations
+└── reference-lego.repository      v1.0.0   ← untouched sibling
+```
+
+## 14. Contract compatibility and the upgrade lifecycle (P2.7)
+
+`src/lego/compat.mjs` (`lego.contract-compat` v1.0.0) is the decision procedure.
+It is deliberately small: no resolver, no lockfile solver — just the questions
+the registry actually asks.
+
+**Ranges:** `1.2.3` exact · `^1.2.3` same major · `~1.2.3` same major.minor ·
+`>=1.2.3` · `*`.
+`^` on a **0.x** version is strict (`^0.2.1` rejects `0.3.0`) because P2.6
+declared 0.x contracts provisional — a 0.x minor is allowed to break, so
+consumers must be told.
+
+**Change kinds:** `unchanged` · `compatible` · `migration-required` ·
+`breaking` · `downgrade`. Migration points are **declared**
+(`migrations: ["1.1.0"]` in the lock), never inferred from a diff.
+
+**The lifecycle**, returned as data by `planUpgrade()` so a future P9 upgrade
+system can execute it and a test can assert it today:
+
+```
+v1 → compatibility-check → migration (if required) → tests → activation
+```
+
+`tests` is always `required`. `activation` is `blocked` whenever any declared
+consumer's `requires` range stops being satisfied — that is what makes a
+breaking change impossible to ship quietly.
+
+### The parent/sub-LEGO bump rule
+
+> A parent does **not** version-bump because a child changed compatibly. It
+> bumps only when its **own parent-facing surface** moves.
+
+Held by the fixtures and asserted by a test: `reference.validation` went
+`1.0.0 → 1.1.0` (added `explain()` and an optional `strict` flag — additive
+only), while `reference.repository` stayed `1.0.0`, `…validation.schema` stayed
+`1.0.0`, and the parent `reference.lego` contract stayed `1.0.0`. The parent
+declares `requires: {"reference-lego.validation": "^1.0.0"}`, and `1.1.0`
+satisfies it, so nothing upstream had to move.
+
+A **breaking** child change that surfaces through the parent *does* force a
+parent major bump.
+
+## 15. Implementation replacement (P2.7)
+
+```
+public contract  reference.validation.schema@1.0.0
+├── implementation A  internal/strict-checker.mjs  (hand-written branches)
+└── implementation B  internal/table-checker.mjs   (rule table)
+```
+
+Both satisfy `SCHEMA_OPERATIONS`. The consumer holds the **contract**, never a
+concrete checker, so the swap is invisible: a test drives both through eight
+input shapes and asserts identical output, then swaps the implementation
+underneath the *consumer* and asserts the consumer's own behaviour and version
+are unchanged.
+
+`canReplaceImplementation()` makes safety decidable rather than a matter of
+opinion — it refuses a replacement with a different contract id, an
+unsatisfying version, or a missing operation.
+
+This is the exact seam a future Rust implementation would use: same contract,
+same operations, different internals. **No Rust exists; the point is that the
+seam is tested.**
+
+## 16. Scale-out readiness (P2.7)
+
+P2.7 implements **no** worker, queue or scaling infrastructure. It asks one
+checkable question: *if this LEGO moved into a second process tomorrow, would
+its contract still hold?*
+
+`tools/lego/scale-out-readiness.mjs` probes for the properties that break that
+promise — `S1` module-global mutable state, `S2` process-local id allocation,
+`S3` local filesystem state, `S4` direct `process.env` reads.
+
+Two standards, deliberately unequal:
+
+* **New LEGO code** (foundation, templates, future contract-first domains):
+  findings **fail the build**. New contracts are process-agnostic from day one.
+* **Existing code**: findings must be **declared, owned and dated** in
+  `manifest.scaleOut.exceptions`. Undeclared findings fail; stale exceptions
+  fail too, so the list can shrink but never rot.
+* A construct that matches a probe but is genuinely safe can be justified in
+  place with `// @scale-out-safe: <reason>` — a reviewable claim, not a mute.
+
+### Honest status: the backend is NOT scale-out ready
+
+Ten findings, all declared. The **blockers** (severity `blocking`, owner
+Agent 5, phase P8) are both in `src/store.mjs`:
+
+| # | finding | why it blocks |
+| :--- | :--- | :--- |
+| S2 | `newExecutionId()` allocates from a module-scope counter | two processes would issue colliding execution ids |
+| S3 | local JSON files are the system of record | a second worker on another host sees none of it |
+
+`benign` (identical in every process, tidy up on carve-out): the catalog cache
+(`src/catalog.mjs`) and the roles cache (`src/compat/scopes.mjs`).
+`should-fix`: `src/engine.mjs` reads `N8N_LEGO_ENGINE_PATH` directly instead of
+receiving it in config (Agent 2, P4).
+`accepted` permanently: `src/config.mjs`, `src/server.mjs` and `bin/` read the
+environment — that is precisely their job as the edge that injects config, and
+it is *why* the domains downstream stay process-agnostic.
+
+The architecturally important property already holds: **no LEGO may reach
+another LEGO's persistence internals**, enforced by R2/R4 today. That is what
+makes a future process split a deployment change rather than a redesign.
+
+## 17. What P2.6/P2.7 did NOT do
 
 No workflow, execution, auth, credentials, node-registry, dynamic-parameter,
 storage, webhook or worker feature. No SQLite/Postgres migration, no queues, no
 scaling, no microservices, no Rust, no JS→Rust port, no speculative
-optimisation, no backend rewrite. The one new runtime behaviour is *zero*: the
-foundation modules are data + pure functions, and `src/server.mjs` is unchanged,
-so P0/P1/P2 behaviour is bit-for-bit what it was at `cb71dbb2`.
+optimisation, no backend rewrite. No HTTP microservice was created to
+"prove" isolation — LEGO-to-LEGO stays in-process behind contracts, which is
+exactly what lets a future worker wrap the *same* logical contract.
 
-## 14. Verification
+The one new runtime behaviour is *zero*: the foundation modules are data + pure
+functions, the nested reference tree is a template that is never mounted
+(`lego.json: "mounted": false`, asserted by a test), and `src/server.mjs` is
+unchanged — so P0/P1/P2 behaviour is bit-for-bit what it was at `cb71dbb2`.
+
+## 18. Verification
 
 ```
-architecture gate      node tools/lego/architecture-gate.mjs            → OK (0 violations)
-gate selftest          node tools/lego/architecture-gate.mjs --selftest → 8/8 detected
+architecture gate      node tools/lego/architecture-gate.mjs            → OK (0 violations, 9 rules)
+gate selftest          node tools/lego/architecture-gate.mjs --selftest → 19/19 detected
 capability conformance node tools/lego/capability-conformance.mjs       → OK (23 features)
+scale-out readiness    node tools/lego/scale-out-readiness.mjs          → OK (10 declared exceptions)
 foundation contracts   node --test apps/n8n-lego/test/lego-foundation.test.mjs → 24/24
-P0/P1/P2 regression    node --test apps/n8n-lego/test/*.test.mjs        → 49/49
+lifecycle certification node --test apps/n8n-lego/test/lego-lifecycle.test.mjs → 28/28
+P0/P1/P2 + all suites  node --test apps/n8n-lego/test/*.test.mjs        → 77/77
+everything             npm run lego:gate
 clean clone + browser  see .github/workflows/n8n-lego.yml clean-clone job
 ```

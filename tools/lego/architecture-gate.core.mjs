@@ -16,6 +16,9 @@
  *   R6 registry-invalid       the manifest violates its own structural rules
  *   R7 contract-drift         public exports changed without a version bump
  *   R8 stale-allowance        a temporary allowance no import uses any more
+ *   R9 version-incompatible   registry/lock version drift, a declared consumer
+ *                             requirement the provider no longer satisfies, or
+ *                             an undeclared breaking change (P2.7)
  *
  * Owner: manager (cross-domain contract governance). Pure Node, no deps.
  */
@@ -29,7 +32,10 @@ import {
   domainForPath,
   isPublicPath,
   isDependencyAllowed,
+  getDomain,
+  getAncestors,
 } from '../../apps/n8n-lego/src/lego/registry.mjs';
+import { classifyChange, satisfies } from '../../apps/n8n-lego/src/lego/compat.mjs';
 
 export const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const DEFAULT_APP_ROOT = join(REPO_ROOT, 'apps', 'n8n-lego');
@@ -204,6 +210,7 @@ export function runGate({ registry = loadRegistry({ reload: true }), appRoot = D
   }
 
   violations.push(...checkContractDrift(registry, appRoot));
+  violations.push(...checkVersionCompatibility(registry));
   return violations;
 }
 
@@ -248,6 +255,116 @@ export function checkContractDrift(registry, appRoot = DEFAULT_APP_ROOT) {
       }
     }
   }
+  return problems;
+}
+
+/**
+ * R9 — contract version compatibility (P2.7).
+ *
+ * Three ways versions go wrong once LEGOs nest, all of them silent without a
+ * check:
+ *
+ *   a) the registry entry and the contract lock disagree about a version,
+ *   b) a consumer declares `requires` that the provider's current version no
+ *      longer satisfies,
+ *   c) a contract moved from its recorded `previousVersion` in a way the
+ *      compatibility model classifies as breaking, without the major bump and
+ *      the changelog entry the policy demands.
+ */
+function lockRowsFor(registry, domainId) {
+  return (registry.contractLock?.contracts ?? []).filter((contract) => contract.domain === domainId);
+}
+
+export function checkVersionCompatibility(registry) {
+  const problems = [];
+  const lockByDomain = new Map();
+  for (const contract of registry.contractLock?.contracts ?? []) {
+    lockByDomain.set(contract.domain, contract);
+
+    // (a) registry vs lock — only for the domain's PRIMARY contract. A domain
+    // may publish several contracts (lego-foundation publishes three), so the
+    // entry names which one its `contract.version` refers to.
+    const domain = getDomain(contract.domain, registry);
+    const isPrimary = domain?.contract?.id
+      ? domain.contract.id === contract.id
+      : lockRowsFor(registry, contract.domain).length === 1;
+    if (isPrimary && domain?.contract?.version && domain.contract.version !== contract.version) {
+      problems.push({
+        rule: 'R9 version-incompatible',
+        file: 'src/lego/contracts/contract-lock.json',
+        line: 0,
+        message: `contract '${contract.id}' is locked at ${contract.version} but domain '${domain.id}' declares ${domain.contract.version}`,
+        fix: 'The registry and the contract lock must agree — update whichever is stale.',
+      });
+    }
+
+    // (c) undeclared breaking change
+    if (contract.previousVersion) {
+      const change = classifyChange(contract.previousVersion, contract.version, { migrations: contract.migrations ?? [] });
+      if (change.kind === 'breaking' && !(contract.changelog ?? []).length) {
+        problems.push({
+          rule: 'R9 version-incompatible',
+          file: 'src/lego/contracts/contract-lock.json',
+          line: 0,
+          message: `contract '${contract.id}' ${contract.previousVersion} -> ${contract.version} is breaking (${change.reason}) with no changelog entry`,
+          fix: `A breaking change needs a changelog entry and sign-off from ${(contract.consumers ?? []).join(', ') || 'its consumers'}.`,
+        });
+      }
+      if (change.kind === 'downgrade') {
+        problems.push({
+          rule: 'R9 version-incompatible',
+          file: 'src/lego/contracts/contract-lock.json',
+          line: 0,
+          message: `contract '${contract.id}' went backwards: ${contract.previousVersion} -> ${contract.version}`,
+          fix: 'A contract version must never decrease.',
+        });
+      }
+    }
+  }
+
+  // (b) declared consumer requirements
+  for (const domain of registry.domains) {
+    for (const [providerId, range] of Object.entries(domain.requires ?? {})) {
+      const provider = getDomain(providerId, registry);
+      if (!provider) {
+        problems.push({
+          rule: 'R9 version-incompatible',
+          file: 'src/lego/manifest/domains.json',
+          line: 0,
+          message: `'${domain.id}' requires unknown LEGO '${providerId}'`,
+          fix: 'Reference a registered LEGO id.',
+        });
+        continue;
+      }
+      const actual = provider.contract?.version;
+      const verdict = satisfies(actual, range);
+      if (!verdict.satisfied) {
+        problems.push({
+          rule: 'R9 version-incompatible',
+          file: 'src/lego/manifest/domains.json',
+          line: 0,
+          message: `'${domain.id}' requires '${providerId}' ${range} but it publishes ${actual}: ${verdict.reason}`,
+          fix: `Either widen '${domain.id}'.requires after verifying compatibility, or hold '${providerId}' at a satisfying version.`,
+        });
+      }
+    }
+  }
+
+  // A sub-LEGO whose ancestor chain is broken cannot be reasoned about at all.
+  for (const domain of registry.domains) {
+    if (!domain.parent) continue;
+    const ancestors = getAncestors(domain.id, registry);
+    if (ancestors.length === 0) {
+      problems.push({
+        rule: 'R9 version-incompatible',
+        file: 'src/lego/manifest/domains.json',
+        line: 0,
+        message: `sub-LEGO '${domain.id}' declares parent '${domain.parent}' but the chain does not resolve`,
+        fix: 'Fix the parent reference so the hierarchy is a valid tree.',
+      });
+    }
+  }
+
   return problems;
 }
 

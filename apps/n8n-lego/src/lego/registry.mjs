@@ -15,6 +15,11 @@
  *     "is this import allowed?".
  *
  * It describes boundaries. It does not implement any domain.
+ *
+ * P2.7 adds hierarchy: an entry may declare `parent`, making it a sub-LEGO.
+ * A sub-LEGO is a full registry entry — same ownership, contract, versioning
+ * and dependency rules — so every mechanism works identically at every level
+ * (`children`, `descendants`, `ancestors`, `lineage`, `nestingDepth`).
  */
 import { readFileSync } from 'node:fs';
 import { dirname, resolve, sep } from 'node:path';
@@ -55,6 +60,10 @@ function readJson(path) {
   return JSON.parse(readFileSync(path, 'utf8'));
 }
 
+// @scale-out-safe: immutable memoization of three static JSON files that ship
+// with the package. Every process computes an identical value, nothing mutates
+// the cached object (it is frozen), and `reload` exists for tests. No shared
+// state crosses a process boundary.
 let cached = null;
 
 /**
@@ -83,6 +92,81 @@ export function loadRegistry({ reload = false } = {}) {
 /** @returns {object|undefined} */
 export function getDomain(id, registry = loadRegistry()) {
   return registry.byId.get(id);
+}
+
+/* ------------------------------------------------------------ nesting (P2.7) */
+
+/** Maximum parent -> child -> grandchild depth the registry permits. */
+export const MAX_NESTING_DEPTH = 3;
+
+/** Direct children of a LEGO, in declaration order. */
+export function getChildren(id, registry = loadRegistry()) {
+  return registry.domains.filter((domain) => domain.parent === id);
+}
+
+/** Every descendant, depth-first. */
+export function getDescendants(id, registry = loadRegistry()) {
+  const out = [];
+  for (const child of getChildren(id, registry)) {
+    out.push(child, ...getDescendants(child.id, registry));
+  }
+  return out;
+}
+
+/** Ancestors from the immediate parent up to the root. */
+export function getAncestors(id, registry = loadRegistry()) {
+  const out = [];
+  let current = getDomain(id, registry);
+  const guard = new Set([id]);
+  while (current?.parent) {
+    const parent = getDomain(current.parent, registry);
+    if (!parent || guard.has(parent.id)) break; // malformed; validateRegistry reports it
+    guard.add(parent.id);
+    out.push(parent);
+    current = parent;
+  }
+  return out;
+}
+
+/**
+ * The chain from root to `id`, e.g.
+ * `['reference-lego', 'reference-lego.validation', 'reference-lego.validation.schema']`.
+ *
+ * Ids are dotted by convention (`parent.child`), which keeps them readable, but
+ * the hierarchy is defined by the `parent` field — never by parsing the id.
+ */
+export function lineage(id, registry = loadRegistry()) {
+  return [...getAncestors(id, registry).map((domain) => domain.id).reverse(), id];
+}
+
+/** 1 for a root LEGO, 2 for a child, 3 for a grandchild. */
+export function nestingDepth(id, registry = loadRegistry()) {
+  return getAncestors(id, registry).length + 1;
+}
+
+/** The root LEGO an entry ultimately belongs to. */
+export function rootOf(id, registry = loadRegistry()) {
+  const ancestors = getAncestors(id, registry);
+  return ancestors.length > 0 ? ancestors[ancestors.length - 1] : getDomain(id, registry);
+}
+
+/** True when `maybeAncestorId` is `id` itself or any ancestor of it. */
+export function isWithin(id, maybeAncestorId, registry = loadRegistry()) {
+  if (id === maybeAncestorId) return true;
+  return getAncestors(id, registry).some((domain) => domain.id === maybeAncestorId);
+}
+
+/** The whole tree as nested nodes, for reports and docs. */
+export function tree(registry = loadRegistry()) {
+  const build = (domain) => ({
+    id: domain.id,
+    owner: domain.owner,
+    kind: domain.kind,
+    status: domain.status,
+    version: domain.contract?.version ?? null,
+    children: getChildren(domain.id, registry).map(build),
+  });
+  return registry.domains.filter((domain) => !domain.parent).map(build);
 }
 
 /**
@@ -124,13 +208,51 @@ export function isDependencyAllowed(fromId, toId, registry = loadRegistry()) {
   const to = getDomain(toId, registry);
   if (!from) return { allowed: false, reason: `unknown domain '${fromId}'`, rule: 'unknown-domain' };
   if (!to) return { allowed: false, reason: `unknown domain '${toId}'`, rule: 'unknown-domain' };
+
+  // An explicit prohibition always wins, at any level of the hierarchy: it is
+  // the one statement an owner makes that nothing else may override.
   if ((from.mustNotDependOn ?? []).includes(toId)) {
     return { allowed: false, reason: `'${fromId}' explicitly must not depend on '${toId}'`, rule: 'forbidden-direction' };
   }
-  if (!(from.dependsOn ?? []).includes(toId)) {
-    return { allowed: false, reason: `'${fromId}' does not declare a dependency on '${toId}'`, rule: 'undeclared-dependency' };
+  // An ancestor's prohibition binds its descendants — otherwise a domain could
+  // evade its own rule by pushing the import down into a sub-LEGO.
+  for (const ancestor of getAncestors(fromId, registry)) {
+    if ((ancestor.mustNotDependOn ?? []).includes(toId) && !isWithin(toId, ancestor.id, registry)) {
+      return {
+        allowed: false,
+        reason: `'${ancestor.id}' (ancestor of '${fromId}') must not depend on '${toId}'; a sub-LEGO cannot escape its parent's prohibition`,
+        rule: 'forbidden-direction',
+      };
+    }
   }
-  return { allowed: true, reason: 'declared dependency', rule: 'declared' };
+
+  // Composition inside one LEGO: a parent may use its own descendants' public
+  // contracts, and a sub-LEGO may use its parent's, without a dependsOn entry.
+  // Reaching *internals* is still blocked — that is rule R4 in the gate, which
+  // is evaluated independently of this direction check.
+  if (isWithin(toId, fromId, registry)) {
+    return { allowed: true, reason: `'${toId}' is a sub-LEGO of '${fromId}'`, rule: 'parent-child' };
+  }
+  if (isWithin(fromId, toId, registry)) {
+    return { allowed: true, reason: `'${fromId}' is a sub-LEGO of '${toId}'`, rule: 'child-parent' };
+  }
+
+  if ((from.dependsOn ?? []).includes(toId)) {
+    return { allowed: true, reason: 'declared dependency', rule: 'declared' };
+  }
+
+  // A declared dependency on a parent does NOT grant access to its children:
+  // each sub-LEGO contract is consumed explicitly, or the hierarchy would leak.
+  const targetRoot = rootOf(toId, registry);
+  if (targetRoot && targetRoot.id !== toId && (from.dependsOn ?? []).includes(targetRoot.id)) {
+    return {
+      allowed: false,
+      reason: `'${fromId}' depends on '${targetRoot.id}' but not on its sub-LEGO '${toId}' — declare the sub-LEGO contract explicitly`,
+      rule: 'undeclared-dependency',
+    };
+  }
+
+  return { allowed: false, reason: `'${fromId}' does not declare a dependency on '${toId}'`, rule: 'undeclared-dependency' };
 }
 
 /** Flat list of every declared capability with its domain and owner. */
@@ -209,6 +331,27 @@ export function validateRegistry(registry = loadRegistry()) {
       if (!registry.byId.has(dep)) errors.push(`${where}: mustNotDependOn unknown domain '${dep}'`);
     }
 
+    // --- nesting (P2.7) ---
+    if (domain.parent !== undefined) {
+      const parent = registry.byId.get(domain.parent);
+      if (!parent) {
+        errors.push(`${where}: parent '${domain.parent}' is not a registered LEGO`);
+      } else {
+        if (domain.parent === domain.id) errors.push(`${where}: cannot be its own parent`);
+        // A child's code must live inside its parent's code.
+        for (const owned of domain.paths ?? []) {
+          const inside = (parent.paths ?? []).some((parentPath) => owned === parentPath || owned.startsWith(`${parentPath}/`));
+          if (!inside) {
+            errors.push(`${where}: path '${owned}' is outside its parent '${parent.id}' — a sub-LEGO cannot own code its parent does not`);
+          }
+        }
+        // A child must not be forbidden from its own parent, and vice versa.
+        if ((domain.mustNotDependOn ?? []).includes(parent.id)) {
+          errors.push(`${where}: cannot declare its own parent '${parent.id}' as forbidden`);
+        }
+      }
+    }
+
     for (const capability of domain.capabilities ?? []) {
       if (capabilityIds.has(capability.id)) {
         errors.push(`capability '${capability.id}' declared by both '${capabilityIds.get(capability.id)}' and '${domain.id}'`);
@@ -234,6 +377,31 @@ export function validateRegistry(registry = loadRegistry()) {
       errors.push(`ownership mismatch for '${domain.id}': domain.owner='${domain.owner}', agents map says '${claimed.get(domain.id) ?? 'nobody'}'`);
     }
   }
+
+  // Parent/child hierarchy must be a forest of bounded depth, not a graph.
+  for (const domain of registry.domains) {
+    const seen = new Set([domain.id]);
+    let current = domain;
+    let depth = 1;
+    while (current?.parent) {
+      if (seen.has(current.parent)) {
+        errors.push(`parent cycle involving '${domain.id}' -> '${current.parent}'`);
+        break;
+      }
+      seen.add(current.parent);
+      current = registry.byId.get(current.parent);
+      if (!current) break;
+      depth += 1;
+    }
+    if (depth > MAX_NESTING_DEPTH) {
+      errors.push(
+        `'${domain.id}' nests ${depth} levels deep; the limit is ${MAX_NESTING_DEPTH} (parent -> child -> grandchild). Deeper hierarchies are decorative, not structural.`,
+      );
+    }
+  }
+
+  // A sub-LEGO's owner must be a declared agent, and the agents map must claim
+  // it exactly like a root LEGO — ownership is single-writer at every level.
 
   // Dependency cycles between domains are rejected outright.
   for (const cycle of findCycles(registry)) {

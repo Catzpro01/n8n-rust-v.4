@@ -1,5 +1,5 @@
 {
-  "lockVersion": "1.0.0",
+  "lockVersion": "1.1.0",
   "owner": "manager",
   "description": "Contract versioning lock. One row per PUBLIC contract: what it is, who owns it, which version is published, what its consumers are, and where its contract tests live. The architecture gate fails when a published contract's surface changes without its version changing. Intentionally tiny: this is not semver-as-a-framework, it is a change alarm.",
   "policy": {
@@ -22,7 +22,27 @@
       "internal implementation changes with no surface change"
     ],
     "rule": "A BREAKING change requires: major bump here, a note in docs/n8n-lego/BACKEND_LEGO.md \u00a7Contract changelog, and sign-off from every consumer listed below.",
-    "preRelease": "Contracts at 0.x are provisional: they may break with a minor bump, but the bump is still mandatory."
+    "preRelease": "Contracts at 0.x are provisional: they may break with a minor bump, but the bump is still mandatory.",
+    "compatibilityModel": {
+      "module": "src/lego/compat.mjs",
+      "kinds": [
+        "unchanged",
+        "compatible",
+        "migration-required",
+        "breaking",
+        "downgrade"
+      ],
+      "ranges": [
+        "1.2.3 exact",
+        "^1.2.3 same major (0.x: same minor)",
+        "~1.2.3 same major.minor",
+        ">=1.2.3",
+        "*"
+      ],
+      "note": "0.x contracts are provisional: ^0.2.1 does NOT accept 0.3.0, because a 0.x minor is allowed to break. Consumers of a 0.x contract must be told about every minor."
+    },
+    "parentChildRule": "A parent contract does NOT version-bump because a sub-LEGO changed compatibly. It bumps only when its own parent-facing surface moves. Example held by the fixtures: reference.validation 1.0.0 -> 1.1.0 (additive) leaves reference.lego at 1.0.0 and reference.repository at 1.0.0. A BREAKING child change that surfaces through the parent does force a parent major bump.",
+    "migrations": "A contract may declare `migrations: [\"1.3.0\"]` \u2014 versions that need a data/state migration even though they are semver-compatible. Migration points are declared, never inferred."
   },
   "contracts": [
     {
@@ -118,7 +138,7 @@
       "id": "lego.domain-registry",
       "owner": "manager",
       "domain": "lego-foundation",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "status": "stable",
       "surface": [
         "src/lego/manifest/domains.json",
@@ -133,6 +153,15 @@
           "CONTRACT_LOCK_FILE",
           "loadRegistry",
           "getDomain",
+          "MAX_NESTING_DEPTH",
+          "getChildren",
+          "getDescendants",
+          "getAncestors",
+          "lineage",
+          "nestingDepth",
+          "rootOf",
+          "isWithin",
+          "tree",
           "domainForPath",
           "isPublicPath",
           "isDependencyAllowed",
@@ -148,6 +177,9 @@
       ],
       "tests": [
         "apps/n8n-lego/test/lego-foundation.test.mjs"
+      ],
+      "changelog": [
+        "1.1.0 (P2.7): added hierarchy accessors (getChildren/getDescendants/getAncestors/lineage/nestingDepth/rootOf/isWithin/tree, MAX_NESTING_DEPTH) \u2014 additive, every 1.0.0 consumer unaffected."
       ]
     },
     {
@@ -190,7 +222,7 @@
       "id": "reference.lego",
       "owner": "manager",
       "domain": "reference-lego",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "status": "template",
       "surface": [
         "src/reference-lego/contract/index.mjs"
@@ -199,9 +231,11 @@
         "src/reference-lego/contract/index.mjs": [
           "REFERENCE_CAPABILITY",
           "REFERENCE_CONTRACT_VERSION",
+          "REFERENCE_SUBLEGOS",
           "REFERENCE_ERRORS",
           "ReferenceError",
-          "createReferenceLego"
+          "createReferenceLego",
+          "createReferenceTree"
         ]
       },
       "consumers": [
@@ -209,6 +243,122 @@
       ],
       "tests": [
         "apps/n8n-lego/test/lego-foundation.test.mjs"
+      ],
+      "changelog": [
+        "1.1.0 (P2.7): added createReferenceTree + REFERENCE_SUBLEGOS (composition of the nested sub-LEGOs) \u2014 additive. The parent's own operations are unchanged."
+      ]
+    },
+    {
+      "id": "lego.contract-compat",
+      "owner": "manager",
+      "domain": "lego-foundation",
+      "version": "1.0.0",
+      "status": "stable",
+      "surface": [
+        "src/lego/compat.mjs"
+      ],
+      "exports": {
+        "src/lego/compat.mjs": [
+          "parseVersion",
+          "compareVersions",
+          "formatVersion",
+          "CHANGE_KINDS",
+          "classifyChange",
+          "satisfies",
+          "planUpgrade",
+          "canReplaceImplementation"
+        ]
+      },
+      "consumers": [
+        "tools/lego/architecture-gate.core.mjs",
+        "manager",
+        "all agents",
+        "agent-1/frontend"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-lifecycle.test.mjs"
+      ]
+    },
+    {
+      "id": "reference.validation",
+      "owner": "manager",
+      "domain": "reference-lego.validation",
+      "version": "1.1.0",
+      "previousVersion": "1.0.0",
+      "status": "template",
+      "surface": [
+        "src/reference-lego/sub/validation/contract/index.mjs"
+      ],
+      "exports": {
+        "src/reference-lego/sub/validation/contract/index.mjs": [
+          "VALIDATION_CAPABILITY",
+          "VALIDATION_CONTRACT_VERSION",
+          "VALIDATION_OPERATIONS",
+          "ValidationError",
+          "createValidationLego"
+        ]
+      },
+      "consumers": [
+        "reference-lego"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-lifecycle.test.mjs"
+      ],
+      "changelog": [
+        "1.1.0 (P2.7): added explain() and the optional `strict` option \u2014 additive, so ^1.0.0 consumers are unaffected and the parent contract did not move."
+      ]
+    },
+    {
+      "id": "reference.validation.schema",
+      "owner": "manager",
+      "domain": "reference-lego.validation.schema",
+      "version": "1.0.0",
+      "status": "template",
+      "surface": [
+        "src/reference-lego/sub/validation/sub/schema/contract/index.mjs"
+      ],
+      "exports": {
+        "src/reference-lego/sub/validation/sub/schema/contract/index.mjs": [
+          "SCHEMA_CAPABILITY",
+          "SCHEMA_CONTRACT_VERSION",
+          "SCHEMA_OPERATIONS",
+          "SCHEMA_IMPLEMENTATIONS",
+          "createSchemaChecker"
+        ]
+      },
+      "consumers": [
+        "reference-lego.validation"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-lifecycle.test.mjs"
+      ],
+      "implementations": [
+        "strict",
+        "table"
+      ]
+    },
+    {
+      "id": "reference.repository",
+      "owner": "manager",
+      "domain": "reference-lego.repository",
+      "version": "1.0.0",
+      "status": "template",
+      "surface": [
+        "src/reference-lego/sub/repository/contract/index.mjs"
+      ],
+      "exports": {
+        "src/reference-lego/sub/repository/contract/index.mjs": [
+          "REPOSITORY_CAPABILITY",
+          "REPOSITORY_CONTRACT_VERSION",
+          "REPOSITORY_OPERATIONS",
+          "createRepositoryLego"
+        ]
+      },
+      "consumers": [
+        "reference-lego"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-lifecycle.test.mjs"
       ]
     }
   ]

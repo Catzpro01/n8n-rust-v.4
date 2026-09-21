@@ -20,12 +20,34 @@
  */
 import { assertErrorCode } from '../../lego/errors.mjs';
 import { createReferenceStore } from '../internal/store.mjs';
+// Composition inside one LEGO: the parent uses its own sub-LEGOs through their
+// PUBLIC contracts. Reaching into `sub/*/internal/` would fail the gate even
+// for the parent — being the parent grants composition, not x-ray vision.
+import { createValidationLego, VALIDATION_CONTRACT_VERSION } from '../sub/validation/contract/index.mjs';
+import { createRepositoryLego, REPOSITORY_CONTRACT_VERSION } from '../sub/repository/contract/index.mjs';
 
 /** Capability identity — must match the id registered in src/lego/manifest/domains.json. */
 export const REFERENCE_CAPABILITY = 'reference.echo';
 
-/** Contract version — must match the row in src/lego/contracts/contract-lock.json. */
+/**
+ * Contract version — must match the row in src/lego/contracts/contract-lock.json.
+ *
+ * Still 1.0.0 after `reference.validation` went 1.0.0 -> 1.1.0. That is the
+ * P2.7 parent/sub-LEGO lifecycle rule: a parent does NOT bump because a child
+ * changed compatibly, only if its own parent-facing surface moves. Asserted by
+ * "a compatible sub-LEGO upgrade does not move the parent contract".
+ */
 export const REFERENCE_CONTRACT_VERSION = '1.0.0';
+
+/**
+ * The sub-LEGO versions this parent composes. Observable so a test — and a
+ * future upgrade tool — can see which children are wired in without reaching
+ * into any of them.
+ */
+export const REFERENCE_SUBLEGOS = Object.freeze({
+  'reference.validation': VALIDATION_CONTRACT_VERSION,
+  'reference.repository': REPOSITORY_CONTRACT_VERSION,
+});
 
 /**
  * Error identity this contract can raise. Codes come from the shared error
@@ -94,6 +116,50 @@ export function createReferenceLego({ logger } = {}) {
 
     has(key) {
       return store.read(key) !== undefined;
+    },
+  });
+}
+
+/**
+ * Composes the whole nested LEGO: parent + its sub-LEGOs, each behind its own
+ * public contract.
+ *
+ * Every collaborator is injectable. That is what makes the hierarchy testable
+ * (swap a child for a double), upgradeable (swap a child for a new version) and
+ * scale-out ready (nothing is process-global or filesystem-bound).
+ *
+ * @param {{ validation?: object, repository?: object, logger?: object }} [deps]
+ */
+export function createReferenceTree({ validation, repository, logger } = {}) {
+  const parent = createReferenceLego({ logger });
+  const validator = validation ?? createValidationLego({ logger });
+  const store = repository ?? createRepositoryLego();
+
+  return Object.freeze({
+    capability: REFERENCE_CAPABILITY,
+    version: REFERENCE_CONTRACT_VERSION,
+    /** Which child contract versions are actually wired in, for diagnostics. */
+    composition: Object.freeze({
+      'reference.validation': validator.version,
+      'reference.repository': store.version,
+    }),
+
+    /**
+     * The parent-facing operation. Its signature and behaviour are what
+     * `reference.lego@1.0.0` promises — unchanged by the validation upgrade.
+     */
+    store(record) {
+      const result = validator.validate(record);
+      if (!result.valid) {
+        return { stored: false, issues: result.issues };
+      }
+      store.save(record);
+      parent.put({ key: record.id, value: record });
+      return { stored: true, issues: [] };
+    },
+
+    read(id) {
+      return store.load(id);
     },
   });
 }
