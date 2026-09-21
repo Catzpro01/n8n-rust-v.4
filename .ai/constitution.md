@@ -29,6 +29,7 @@ Then run the test tier it selects, then `npm run lego:gate`.
 | L0 | `.ai/constitution.md` | always |
 | L1 | `.ai/domains/<id>.md` | what one LEGO owns and may call |
 | L2 | `.ai/contracts.md` | the contract, its version, its lock row |
+| L2 | `.ai/communication.md` | CALL/EVENT/STREAM/BATCH, envelope, cancellation, backpressure |
 | L3 | `.ai/recipes/<id>.md` | how to perform a specific change |
 | L4 | the source | only when L0–L3 are insufficient |
 
@@ -37,3 +38,5 @@ Then run the test tier it selects, then `npm run lego:gate`.
 - The backend is **not scale-out ready**. See `.ai/scale-out.md`. Do not claim otherwise.
 - Rust is **locked**. JavaScript is the active backend.
 - Feature domains (Workflow, Execution, Auth, Node Registry, Storage) are **declared, not implemented**.
+- The legacy REST aggregate is frozen and may only shrink — see `.ai/legacy-rest.md`.
+- Allowances remaining: see `.ai/index.md`. They may shrink, never grow.

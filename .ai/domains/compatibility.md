@@ -28,7 +28,7 @@
 
 ## May call
 
-`platform-kernel`, `lego-foundation`
+`platform-kernel`, `lego-foundation`, `auth.identity`
 
 ## Must never call
 

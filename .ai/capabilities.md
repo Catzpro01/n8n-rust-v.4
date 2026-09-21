@@ -6,6 +6,7 @@
 | Capability | Provided by |
 | --- | --- |
 | `auth.api-keys` | `auth` |
+| `auth.identity-projection` | `auth.identity` |
 | `auth.ldap` | `auth` |
 | `auth.mfa` | `auth` |
 | `auth.owner-setup` | `auth` |
@@ -43,9 +44,12 @@
 | `legacy.node-types` | `legacy-rest` |
 | `legacy.projects` | `legacy-rest` |
 | `legacy.workflow-crud` | `legacy-rest` |
+| `lego.capability-negotiation` | `lego-foundation` |
 | `lego.contract-versioning` | `lego-foundation` |
 | `lego.domain-registry` | `lego-foundation` |
 | `lego.error-contract` | `lego-foundation` |
+| `lego.interaction-model` | `lego-foundation` |
+| `lego.operation-envelope` | `lego-foundation` |
 | `node-registry.catalog` | `node-registry` |
 | `node-registry.community-node-type-detail` | `node-registry` |
 | `node-registry.community-packages` | `node-registry` |

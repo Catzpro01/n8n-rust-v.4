@@ -709,7 +709,134 @@ Plan mode is advisory and **never applies anything** — it reports contracts
 affected, dependencies, tests required, resource impact, security impact, risk
 and the rollback condition.
 
-## 26. What P2.6/P2.7/P2.8-B did NOT do
+# Communication foundation (P2.9)
+
+P2.8-B declared the vocabulary. P2.9 makes the communication model executable
+and retires two of the three boundary allowances.
+
+## 28. The four interaction classes
+
+`src/lego/interaction.mjs` implements CALL, EVENT, STREAM and BATCH as
+**semantics, not transports**. The module contains no transport at all — a
+worker or remote adapter registers the same provider shape with a different
+`transport` field, and no consumer changes.
+
+| Class | Semantics | Local mechanism |
+| --- | --- | --- |
+| `call` | synchronous request/response — the default | direct function call |
+| `event` | fire-and-forget notification | in-process emitter |
+| `stream` | ordered incremental output with backpressure | async iterator |
+| `batch` | many operations in one call | grouped local call |
+
+Escalation ladder: direct call → EVENT → STREAM → BATCH → IPC (only across a
+process) → HTTP (only across a network boundary).
+
+**Why a dispatcher rather than direct imports?** A direct import makes the
+*consumer* pick the implementation, which kills the replacement story — you
+cannot swap JS for Rust, or in-process for worker, without editing every caller.
+The dispatcher is one `Map.get()` and a function call, and it is what makes
+ADR-0001 and ADR-0005 mechanically possible instead of aspirational. A test
+proves it: `replacing an implementation leaves the consumer untouched`.
+
+EVENT deliberately never throws at the emitter and never awaits handlers. One
+slow or broken audit listener must not be able to stall an execution.
+
+## 29. The operation envelope
+
+`src/lego/envelope.mjs`. Ten fields plus `scope`: identity, correlation, trace,
+actor, deadline, cancellation, idempotency.
+
+The design constraint is cost. A workflow running 400 nodes creates 400
+envelopes, so it is a frozen plain object with no clock call unless a deadline
+was requested. An expensive envelope would simply be skipped by callers, and the
+architecture would lose its identity and cancellation story exactly where it
+matters most.
+
+`deriveEnvelope()` propagates correlation and **clamps a child deadline to its
+parent's** — a child that outlives its caller is the orphaned-work bug the
+architecture forbids, so the clamp is not advisory.
+
+`serializeEnvelope()` drops the `AbortSignal` and sets `cancellable: false`. A
+worker binding must establish its own cancellation channel rather than pretend a
+signal survived serialization.
+
+**No secrets in the envelope**, asserted by test.
+
+## 30. Cancellation and backpressure
+
+Cancellation is explicit, propagating, idempotent and testable. A deliberate
+cancel raises `lego.cancelled` (not retryable); a passed deadline raises
+`lego.deadline_exceeded` (retryable). That distinction is the actionable part —
+collapsing them into one boolean throws away the only useful information.
+
+Backpressure is **mandatory to declare** on STREAM operations, because an
+undeclared policy means "buffer without limit", which is how a process dies
+slowly. Seven policies: `buffer`, `drop`, `drop-oldest`, `coalesce`, `block`,
+`reject`, `terminate`.
+
+## 31. Capability negotiation, lifecycle, degradation
+
+`src/lego/negotiation.mjs`. `negotiate({ consumer, capability, requires,
+operations })` answers in one call: may I, does it speak my version, does it
+have what I need, is it alive. Failures are distinct codes because they are
+differently actionable — `lego.access_denied` is an architecture bug in the
+caller, `lego.dependency_disabled` is an operational state,
+`lego.version_incompatible` is a migration.
+
+**Nesting grants nothing.** Reaching a nested LEGO requires a declaration naming
+that child. This is enforced here as well as in the import gate, because the
+import gate only sees static imports — negotiation is where a dynamic lookup
+would otherwise slip past.
+
+Eleven lifecycle states (`declared` … `deprecated`); only `active`, `idle`,
+`degraded` and `deprecated` are callable. Illegal transitions throw and do not
+mutate state. Eight degradation states, each naming the action — there is no
+silent fallback, because a fallback nobody declared is a bug nobody can find.
+
+## 32. A1/A2 retired, A3 narrowed
+
+**A1 and A2 are deleted, not marked resolved.** Both existed only because the
+auth domain published nothing, so compatibility and settings imported
+`src/auth.mjs` internals. Both needed exactly two small read-only functions.
+
+The fix is `auth.identity` (`src/auth/contract/index.mjs`), a **dependency-free
+nested leaf** owned by agent-3 exposing only `toPublicUser` and `hasOwner`. It
+holds no authority: no session creation, no password verification, no token
+minting — asserted by test.
+
+Modelling it as a *leaf* rather than widening the `auth` domain is what avoids a
+cycle: `auth/routes.mjs` depends on compatibility, so a `compatibility → auth`
+edge would have been circular. The gate caught this immediately, which is the
+gate doing its job.
+
+**A3 is narrowed, not retired.** `src/engine.mjs` imports exactly
+`newExecutionId` from `src/store.mjs`. Unlike A1/A2 this is not a pure read-only
+projection — it mutates a process-local counter, and that counter *is* scale-out
+blocker S2. Publishing a storage contract that merely re-exported it would
+retire the allowance while preserving the blocker: a greener gate and an
+identically unsafe system. Retiring A3 correctly is agent-5's durable
+id-allocation work in P8.
+
+`test/lego-boundary.test.mjs` pins all of this: the auth surface is exactly two
+functions, no file outside `src/auth/` imports `src/auth.mjs`, A3 stays bounded
+to one symbol in one file, and the allowance count may not grow.
+
+## 33. Gate hardening
+
+Two real gaps in the R7 export analyzer were found and fixed. Both failed
+*silently in the unsafe direction* — the analyzer under-reported exports, so a
+valid contract looked like it had lost a symbol:
+
+- `export { a } from './x.mjs'` — the contract-facade pattern, which is the
+  recommended way to publish a narrow surface. A negative lookahead was
+  excluding it.
+- `export async function* s()` — the natural shape of a STREAM operation.
+
+Seven export-analyzer fixtures now pin the behaviour (selftest 19 → 26). R7 was
+verified to still catch genuine drift afterwards by deliberately removing a
+promised export and confirming the gate fired.
+
+## 34. What P2.6/P2.7/P2.8-B/P2.9 did NOT do
 
 No workflow, execution, auth, credentials, node-registry, dynamic-parameter,
 storage, webhook or worker feature. No SQLite/Postgres migration, no queues, no
@@ -717,6 +844,14 @@ scaling, no microservices, no Rust, no JS→Rust port, no speculative
 optimisation, no backend rewrite. No HTTP microservice was created to
 "prove" isolation — LEGO-to-LEGO stays in-process behind contracts, which is
 exactly what lets a future worker wrap the *same* logical contract.
+
+P2.9 added the communication foundation and retired two allowances. It did NOT
+implement any feature domain: no Workflow, Execution, Auth, Credentials, Node
+Registry, Dynamic Parameters or Storage feature, no storage rewrite, no worker
+or scaling system, no microservice decomposition, no Rust, no Translation, no
+Hermes, no AI assistant. The interaction module contains **no transport**: no
+HTTP, no IPC, no message broker, no queue, no scheduler and no background loop.
+`auth.identity` is a two-function re-export, not an auth implementation.
 
 P2.8-B added **definitions, not implementations**. No Node Registry, no node
 loader, no sandbox, no scheduler, no feature-flag platform, no code generator, no
@@ -730,19 +865,21 @@ functions, the nested reference tree is a template that is never mounted
 (`lego.json: "mounted": false`, asserted by a test), and `src/server.mjs` is
 unchanged — so P0/P1/P2 behaviour is bit-for-bit what it was at `cb71dbb2`.
 
-## 27. Verification
+## 35. Verification
 
 ```
-architecture gate       node tools/lego/architecture-gate.mjs            → OK (0 violations, 9 rules)
-gate selftest           node tools/lego/architecture-gate.mjs --selftest → 19/19 detected
-foundation gate         node tools/lego/foundation-gate.mjs              → OK (24 LEGOs, 9 rules F1–F9)
-capability conformance  node tools/lego/capability-conformance.mjs       → OK (23 features)
+architecture gate       node tools/lego/architecture-gate.mjs            → OK (0 violations, 9 rules, 25 domains)
+gate selftest           node tools/lego/architecture-gate.mjs --selftest → 26/26 detected
+foundation gate         node tools/lego/foundation-gate.mjs              → OK (25 LEGOs, F1–F9)
+capability conformance  node tools/lego/capability-conformance.mjs       → OK (23 features, 71 capabilities)
 scale-out readiness     node tools/lego/scale-out-readiness.mjs          → OK (10 declared exceptions)
-AI pack freshness       node tools/lego/ai-pack.mjs --check              → OK (47 generated files)
+AI pack freshness       node tools/lego/ai-pack.mjs --check              → OK (50 generated files)
+boundary regression     node --test apps/n8n-lego/test/lego-boundary.test.mjs         → 22/22
+communication model     node --test apps/n8n-lego/test/lego-communication.test.mjs    → 65/65
 foundation contracts    node --test apps/n8n-lego/test/lego-foundation.test.mjs       → 24/24
 lifecycle certification node --test apps/n8n-lego/test/lego-lifecycle.test.mjs        → 28/28
-foundation 1.0 model    node --test apps/n8n-lego/test/lego-foundation-model.test.mjs → 85/85
-P0/P1/P2 + all suites   node --test apps/n8n-lego/test/*.test.mjs        → 162/162
+foundation 1.0 model    node --test apps/n8n-lego/test/lego-foundation-model.test.mjs → 93/93
+P0/P1/P2 + all suites   node --test apps/n8n-lego/test/*.test.mjs        → 257/257
 everything              npm run lego:gate
 clean clone + browser   see .github/workflows/n8n-lego.yml clean-clone job
 ```

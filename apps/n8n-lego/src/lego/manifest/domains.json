@@ -36,7 +36,8 @@
       "role": "Auth + Credentials",
       "domains": [
         "auth",
-        "credentials"
+        "credentials",
+        "auth.identity"
       ]
     },
     "agent-4": {
@@ -95,6 +96,7 @@
       "mustNotDependOn": [
         "compatibility",
         "auth",
+        "auth.identity",
         "credentials",
         "workflow",
         "execution",
@@ -165,7 +167,10 @@
         "src/lego/registry.mjs",
         "src/lego/errors.mjs",
         "src/lego/contracts",
-        "src/lego/manifest"
+        "src/lego/manifest",
+        "src/lego/envelope.mjs",
+        "src/lego/interaction.mjs",
+        "src/lego/negotiation.mjs"
       ],
       "dependsOn": [],
       "mustNotDependOn": [
@@ -199,6 +204,18 @@
         {
           "id": "lego.contract-versioning",
           "status": "implemented"
+        },
+        {
+          "id": "lego.operation-envelope",
+          "status": "implemented"
+        },
+        {
+          "id": "lego.interaction-model",
+          "status": "implemented"
+        },
+        {
+          "id": "lego.capability-negotiation",
+          "status": "implemented"
         }
       ],
       "notes": "The socket system itself: domain registry, machine-readable error codes and the contract lock. Pure data + pure functions; may not depend on any domain.",
@@ -208,7 +225,10 @@
       "trust": "core",
       "capabilities_granted": [],
       "communication": [
-        "call"
+        "call",
+        "event",
+        "stream",
+        "batch"
       ],
       "failureBoundary": "in-process-safe",
       "resources": {
@@ -236,7 +256,8 @@
       ],
       "dependsOn": [
         "platform-kernel",
-        "lego-foundation"
+        "lego-foundation",
+        "auth.identity"
       ],
       "mustNotDependOn": [
         "workflow",
@@ -315,6 +336,9 @@
         "network": false,
         "concurrency": "parallel-safe",
         "startup": "instant"
+      },
+      "requires": {
+        "auth.identity": "^1.0.0"
       }
     },
     {
@@ -341,12 +365,6 @@
         "node-registry",
         "worker"
       ],
-      "contract": {
-        "version": "0.1.0",
-        "tests": [
-          "test/compat.contract.test.mjs"
-        ]
-      },
       "capabilities": [
         {
           "id": "auth.session",
@@ -398,7 +416,7 @@
           "restFeature": "security-settings"
         }
       ],
-      "notes": "No public contract module exists yet: src/auth.mjs is implementation. P5 must publish src/auth/contract/ before any other domain may consume it (see allowances A1, A2).",
+      "notes": "Session mechanics, password hashing, token signing and owner creation stay private in src/auth.mjs. The read-only identity projection other LEGOs need is published by the nested sub-LEGO 'auth.identity' (src/auth/contract), which is a dependency-free leaf \u2014 that is what retired allowances A1/A2 in P2.9 without creating a compatibility <-> auth cycle.",
       "tier": "domain",
       "dataOwner": "auth",
       "stateOwner": "persistent",
@@ -413,6 +431,71 @@
       "resources": {
         "cpu": "low",
         "memory": "low",
+        "disk": "none",
+        "network": false,
+        "concurrency": "parallel-safe",
+        "startup": "instant"
+      },
+      "contract": {
+        "version": "0.1.0",
+        "tests": [
+          "test/compat.contract.test.mjs"
+        ]
+      }
+    },
+    {
+      "id": "auth.identity",
+      "title": "Auth identity projection (read-only)",
+      "parent": "auth",
+      "owner": "agent-3",
+      "kind": "domain",
+      "status": "implemented",
+      "phase": "P2.9",
+      "errorNamespace": "auth-identity",
+      "paths": [
+        "src/auth/contract"
+      ],
+      "public": [
+        "src/auth/contract"
+      ],
+      "dependsOn": [],
+      "mustNotDependOn": [
+        "compatibility",
+        "settings",
+        "workflow",
+        "execution",
+        "legacy-rest",
+        "node-registry",
+        "worker",
+        "storage",
+        "credentials"
+      ],
+      "contract": {
+        "id": "auth.identity",
+        "version": "1.0.0",
+        "tests": [
+          "test/lego-boundary.test.mjs"
+        ]
+      },
+      "capabilities": [
+        {
+          "id": "auth.identity-projection",
+          "status": "implemented"
+        }
+      ],
+      "notes": "Deliberately a dependency-free LEAF exposing exactly two pure read-only functions: toPublicUser (projection) and hasOwner (boolean). It holds no authority: nothing here can create a session, verify a password or mint a token. Being a leaf is what lets the compatibility layer depend on it without a cycle back into auth's HTTP adapter. Surface pinned by test/lego-boundary.test.mjs.",
+      "tier": "feature",
+      "dataOwner": "none",
+      "stateOwner": "none",
+      "trust": "core",
+      "capabilities_granted": [],
+      "communication": [
+        "call"
+      ],
+      "failureBoundary": "in-process-safe",
+      "resources": {
+        "cpu": "none",
+        "memory": "tiny",
         "disk": "none",
         "network": false,
         "concurrency": "parallel-safe",
@@ -1013,7 +1096,7 @@
       "dependsOn": [
         "platform-kernel",
         "compatibility",
-        "auth"
+        "auth.identity"
       ],
       "mustNotDependOn": [
         "workflow",
@@ -1051,6 +1134,9 @@
         "network": false,
         "concurrency": "parallel-safe",
         "startup": "instant"
+      },
+      "requires": {
+        "auth.identity": "^1.0.0"
       }
     },
     {
@@ -1675,36 +1761,6 @@
   ],
   "allowances": [
     {
-      "id": "A1",
-      "from": "compatibility",
-      "file": "src/compat/auth-context.mjs",
-      "imports": "src/auth.mjs",
-      "to": "auth",
-      "kind": "internal-import",
-      "reason": "PublicUser serialization needs toPublicUser() before the auth domain publishes a contract module.",
-      "resolutionOwner": "agent-3",
-      "resolveBy": "P5",
-      "resolution": "Publish src/auth/contract/index.mjs exporting toPublicUser and re-point this import.",
-      "state": "open",
-      "reviewedAt": "2026-09-22 (P2.7)",
-      "reviewNote": "P2.7: still present and exercised. Unchanged by P2.7 \u2014 auth has published no contract module yet."
-    },
-    {
-      "id": "A2",
-      "from": "settings",
-      "file": "src/settings/routes.mjs",
-      "imports": "src/auth.mjs",
-      "to": "auth",
-      "kind": "internal-import",
-      "reason": "showSetupOnFirstLoad needs hasOwner(store); the auth domain has no contract module yet.",
-      "resolutionOwner": "agent-3",
-      "resolveBy": "P5",
-      "resolution": "Expose hasOwner through the auth contract and consume it from there.",
-      "state": "open",
-      "reviewedAt": "2026-09-22 (P2.7)",
-      "reviewNote": "P2.7: still present and exercised. Unchanged by P2.7."
-    },
-    {
       "id": "A3",
       "from": "execution",
       "file": "src/engine.mjs",
@@ -1716,8 +1772,18 @@
       "resolveBy": "P8",
       "resolution": "Publish src/storage/contract/index.mjs (id allocation + collection ports) and consume that.",
       "state": "open",
-      "reviewedAt": "2026-09-22 (P2.7)",
-      "reviewNote": "P2.7: still present and exercised. This is also the seam behind the two blocking scale-out findings \u2014 publishing the storage contract retires A3 and unblocks multi-process execution together."
+      "reviewedAt": "2026-09-22 (P2.9)",
+      "reviewNote": "P2.9: NARROWED, not removed. The import is exactly one symbol (newExecutionId) in exactly one file (src/engine.mjs). It cannot be retired the way A1/A2 were, because unlike toPublicUser/hasOwner this is not a pure read-only projection \u2014 it mutates a process-local counter, and that counter IS scale-out blocker S2. Publishing a storage contract that merely re-exports newExecutionId would retire the allowance while preserving the blocker, i.e. it would make the gate greener and the architecture no safer. Retiring A3 correctly requires agent-5 to design durable id allocation (P8). Guarded by test/lego-boundary.test.mjs: the allowance may not grow beyond this one symbol in this one file.",
+      "narrowedTo": {
+        "file": "src/engine.mjs",
+        "symbols": [
+          "newExecutionId"
+        ],
+        "maxImporters": 1
+      },
+      "blocks": [
+        "scale-out S2 (process-local execution-id counter)"
+      ]
     }
   ],
   "legacy": {
@@ -1732,7 +1798,10 @@
       "No new file may be added to the legacy zone: the file list above is frozen and checked by the architecture gate.",
       "No new business logic in the zone; only carve-outs leave it.",
       "The zone may import domain internals (temporarily); new domains may not.",
-      "Nothing may import the legacy zone except the composition root."
+      "Nothing may import the legacy zone except the composition root.",
+      "The aggregate may only shrink. test/lego-boundary.test.mjs pins its line count at its P2.7 high-water mark of 845.",
+      "New LEGO functionality must NOT be added here. A new capability gets its own domain with its own contract, and the compatibility layer routes to it \u2014 that is the strangler path, and it is the only one.",
+      "A route family with no legitimate owner is recorded in legacy.unresolvedOwnership and escalated, never assigned to a convenient domain to make the map look finished."
     ],
     "migrationTargets": {
       "/rest/workflows": "workflow",
@@ -1743,7 +1812,72 @@
       "/rest/projects": "workspace",
       "/rest/types": "node-registry",
       "/rest/node-types": "node-registry",
-      "/rest/license": "compatibility"
+      "/rest/community-node-types": "node-registry",
+      "/rest/license": "compatibility",
+      "/rest/banners": "compatibility",
+      "/rest/ctas": "compatibility",
+      "/rest/env-feature-flags": "compatibility",
+      "/rest/module-settings": "settings",
+      "/rest/versions": "compatibility",
+      "/rest/third-party-licenses": "compatibility",
+      "/rest/events": "observability"
+    },
+    "unresolvedOwnership": [
+      {
+        "routes": [
+          "/rest/credential-translation",
+          "/rest/node-translation-headers"
+        ],
+        "families": [
+          "credential-translation",
+          "node-translation-headers"
+        ],
+        "currentBehaviour": "constant empty object; no business logic",
+        "why": "These are i18n surfaces. The project has an explicit standing decision NOT to build a Translation LEGO or language packs, so there is no domain that legitimately owns them. Assigning them to node-registry or credentials would manufacture ownership to make a map look complete, and would put i18n responsibility inside domains that have no i18n mandate.",
+        "escalatedTo": "manager",
+        "question": "Who owns editor-facing i18n surfaces while Translation remains out of scope \u2014 compatibility as a permanent stub custodian, or a future Translation LEGO?"
+      },
+      {
+        "routes": [
+          "/rest/variables"
+        ],
+        "families": [
+          "variables"
+        ],
+        "currentBehaviour": "constant empty array",
+        "why": "Environment variables are an enterprise feature spanning workspace scoping, storage and RBAC. No current domain has a mandate, and the three plausible owners (workspace, storage, settings) each own only part.",
+        "escalatedTo": "manager",
+        "question": "Does 'variables' become a workspace-scoped storage feature (agent-5 + agent-2) or stay a compatibility stub until an enterprise phase?"
+      }
+    ],
+    "stubFamilies": {
+      "note": "These families return constants and contain NO business logic. They are compatibility stubs that keep the editor booting, not features living in the wrong place. Carving them out would move a one-line constant into a new file and call it architecture; they are listed so the distinction stays visible and so nobody mistakes the line count for un-migrated domain logic.",
+      "families": [
+        "banners",
+        "community-node-types",
+        "credential-translation",
+        "ctas",
+        "env-feature-flags",
+        "events",
+        "module-settings",
+        "node-translation-headers",
+        "third-party-licenses",
+        "variables",
+        "versions"
+      ],
+      "rule": "A stub family may only leave the legacy zone when the owning domain implements it for real. Until then it stays here and MUST NOT grow beyond returning a constant."
+    },
+    "strangler": {
+      "path": "legacy REST -> compatibility boundary -> backend LEGO contracts",
+      "carveOutProcedure": [
+        "1. Pick one route family from migrationTargets.",
+        "2. The TARGET domain (not agent-1) implements it behind its own contract.",
+        "3. Register the contract surface in contract-lock.json.",
+        "4. src/server.mjs mounts the new domain's routes BEFORE the legacy router.",
+        "5. Delete the handlers from src/rest/routes.mjs \u2014 the line count must drop.",
+        "6. Re-run npm run lego:gate; the boundary test proves the aggregate shrank."
+      ],
+      "antiPattern": "Do not create a second aggregate. Three route families in one new 'misc' LEGO is the same mistake with a newer filename."
     }
   },
   "nesting": {
@@ -1873,7 +2007,96 @@
         "reason": "The engine resolves its implementation path from N8N_LEGO_ENGINE_PATH directly instead of receiving it in config.",
         "resolution": "Move the path into the injected config when the execution contract is published, so the engine has no environment dependency of its own."
       }
-    ]
+    ],
+    "verdict": "NOT scale-out ready. Two class-A blockers remain in src/store.mjs. P2.9 did not change this.",
+    "classification": {
+      "legend": {
+        "A": "must be fixed before multi-process / multi-instance execution",
+        "B": "safe local implementation; correct as-is for a single process",
+        "C": "architecture-ready but implementation pending",
+        "D": "later optimization; no correctness impact"
+      },
+      "findings": [
+        {
+          "class": "A",
+          "file": "src/store.mjs",
+          "probe": "S2",
+          "finding": "execution ids come from a process-local in-memory counter",
+          "consequence": "two processes allocate the same execution id; history silently corrupts",
+          "owner": "agent-5",
+          "phase": "P8",
+          "boundary": "Retiring this is the SAME work as retiring allowance A3. The seam is a storage contract that owns durable id allocation; src/engine.mjs then consumes the contract instead of the module.",
+          "notSolvedHere": "Designing durable id allocation is agent-5's storage implementation, explicitly out of scope for P2.9."
+        },
+        {
+          "class": "A",
+          "file": "src/store.mjs",
+          "probe": "S3",
+          "finding": "local JSON on disk is the system of record",
+          "consequence": "a second instance cannot see the first instance's data",
+          "owner": "agent-5",
+          "phase": "P8",
+          "boundary": "The storage contract must abstract the collection ports so local JSON -> SQLite -> Postgres is an implementation swap, not a consumer rewrite.",
+          "notSolvedHere": "Storage engine selection and migration is P8."
+        },
+        {
+          "class": "B",
+          "file": "src/catalog.mjs",
+          "probe": "S1",
+          "finding": "module-level cache of the node catalog",
+          "consequence": "none: the catalog is immutable, derived and identical in every process",
+          "owner": "agent-4",
+          "phase": "-"
+        },
+        {
+          "class": "B",
+          "file": "src/compat/scopes.mjs",
+          "probe": "S1",
+          "finding": "module-level roles cache",
+          "consequence": "none: roles are read-only reference data loaded from a shipped file",
+          "owner": "agent-1",
+          "phase": "-"
+        },
+        {
+          "class": "C",
+          "file": "src/lego/interaction.mjs",
+          "probe": "-",
+          "finding": "the provider registry is process-local by design",
+          "consequence": "none today; a worker or remote adapter registers the same provider shape with transport!=in-process",
+          "owner": "agent-2",
+          "phase": "P11",
+          "note": "This is the intended seam for cross-process communication: the contract does not change, only the binding."
+        },
+        {
+          "class": "C",
+          "file": "src/lego/envelope.mjs",
+          "probe": "-",
+          "finding": "cancellation uses an in-process AbortSignal",
+          "consequence": "none today; serializeEnvelope already drops the signal and flags cancellable:false at a boundary",
+          "owner": "agent-2",
+          "phase": "P11",
+          "note": "A worker binding must supply its own cancellation channel. The envelope already says so explicitly rather than pretending the signal survived."
+        },
+        {
+          "class": "C",
+          "file": "src/engine.mjs",
+          "probe": "S4",
+          "finding": "direct process.env read",
+          "consequence": "configuration should arrive through the kernel config contract",
+          "owner": "agent-2",
+          "phase": "P4"
+        },
+        {
+          "class": "D",
+          "file": "src/config.mjs / src/server.mjs / bin/n8n-lego.mjs",
+          "probe": "S3/S4",
+          "finding": "environment and path reads at the composition root",
+          "consequence": "none: the edge is exactly where configuration SHOULD be read",
+          "owner": "agent-6",
+          "phase": "-"
+        }
+      ]
+    }
   },
   "foundation": {
     "version": "1.0.0",
@@ -1881,5 +2104,15 @@
     "nodeContract": "manifest/node-contract.json",
     "schemaStrategy": "manifest/contract-schema.json",
     "note": "Foundation 1.0 fields (tier, dataOwner, stateOwner, trust, resources, communication, failureBoundary) are declared per domain below and validated by validateRegistry + tools/lego/foundation-gate.mjs."
-  }
+  },
+  "retiredAllowances": [
+    {
+      "id": "A1+A2",
+      "state": "retired",
+      "retiredAt": "2026-09-22 (P2.9)",
+      "was": "compatibility + settings imported src/auth.mjs internals (toPublicUser, hasOwner)",
+      "resolution": "agent-3's auth domain published the dependency-free nested leaf 'auth.identity' (src/auth/contract/index.mjs) exposing exactly toPublicUser + hasOwner; compatibility and settings now depend on that leaf. Modelling it as a leaf rather than widening 'auth' is what avoids a compatibility <-> auth cycle.",
+      "guard": "test/lego-boundary.test.mjs asserts the auth contract surface is exactly [toPublicUser, hasOwner] and that no file outside src/auth/ imports src/auth.mjs."
+    }
+  ]
 }

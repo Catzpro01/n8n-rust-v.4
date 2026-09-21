@@ -34,7 +34,7 @@ _none_
 
 ## Must never call
 
-`compatibility`, `auth`, `credentials`, `workflow`, `execution`, `node-registry`, `dynamic-parameters`, `webhook`, `storage`, `worker`, `realtime`, `settings`, `legacy-rest`, `runtime-host`, `editor-ui-host`, `workspace`, `observability`, `data-tables`
+`compatibility`, `auth`, `auth.identity`, `credentials`, `workflow`, `execution`, `node-registry`, `dynamic-parameters`, `webhook`, `storage`, `worker`, `realtime`, `settings`, `legacy-rest`, `runtime-host`, `editor-ui-host`, `workspace`, `observability`, `data-tables`
 
 
 ## Who breaks if this changes

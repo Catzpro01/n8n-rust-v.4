@@ -7,7 +7,7 @@
  * `PublicUser` envelope, which upstream returns where the editor seeds its
  * RBAC store (`app/init.ts`: `RBACStore.setGlobalScopes(user.globalScopes)`).
  */
-import { toPublicUser } from '../auth.mjs';
+import { toPublicUser } from '../auth/contract/index.mjs';
 import { getGlobalScopes } from './scopes.mjs';
 import { unauthorized } from './error.mjs';
 

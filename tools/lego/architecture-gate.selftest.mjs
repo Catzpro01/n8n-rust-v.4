@@ -20,7 +20,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 
 import { loadRegistry } from '../../apps/n8n-lego/src/lego/registry.mjs';
-import { runGate } from './architecture-gate.core.mjs';
+import { listExports, runGate } from './architecture-gate.core.mjs';
 
 /**
  * Each case is a file planted at `file`, containing `source`, that MUST produce
@@ -268,4 +268,72 @@ export function runRegistrySelftest() {
     }
   }
   return results;
+}
+
+/**
+ * Export-analyzer fixtures.
+ *
+ * R7 (contract drift) is only as good as `listExports`. Two real gaps were
+ * found in P2.9 and fixed, and both were the kind that fail *silently in the
+ * unsafe direction* — the analyzer under-reports exports, so a contract looks
+ * like it lost a symbol it still has:
+ *
+ *   - `export { a } from './x.mjs'` — a contract facade re-exporting its
+ *     domain's internals, which is the recommended way to publish a narrow
+ *     public surface.
+ *   - `export async function* s()` — the natural shape of a STREAM operation.
+ *
+ * These fixtures pin both so the analyzer cannot quietly regress and start
+ * telling authors their contracts are drifting when they are not.
+ */
+export const EXPORT_CASES = Object.freeze([
+  {
+    name: 'plain function export is detected',
+    source: 'export function alpha() {}',
+    expect: ['alpha'],
+  },
+  {
+    name: 'async function export is detected',
+    source: 'export async function beta() {}',
+    expect: ['beta'],
+  },
+  {
+    name: 'generator export is detected',
+    source: 'export function* gamma() {}',
+    expect: ['gamma'],
+  },
+  {
+    name: 'async generator export is detected (STREAM operations use this shape)',
+    source: 'export async function* delta() { yield 1; }',
+    expect: ['delta'],
+  },
+  {
+    name: 'const, class and braced exports are detected',
+    source: 'export const epsilon = 1;\nexport class Zeta {}\nconst eta = 2;\nexport { eta };',
+    expect: ['epsilon', 'Zeta', 'eta'],
+  },
+  {
+    name: 're-export is detected (contract facade pattern)',
+    source: "export { theta, iota } from '../internal/impl.mjs';",
+    expect: ['theta', 'iota'],
+  },
+  {
+    name: 'renamed re-export reports the PUBLIC name, not the internal one',
+    source: "export { internalName as publicName } from '../internal/impl.mjs';",
+    expect: ['publicName'],
+  },
+]);
+
+/** Runs the export-analyzer fixtures. */
+export function runExportSelftest() {
+  return EXPORT_CASES.map((testCase) => {
+    const actual = listExports(testCase.source);
+    const detected = testCase.expect.every((name) => actual.includes(name));
+    return {
+      name: `export analyzer: ${testCase.name}`,
+      expectedRule: testCase.expect.join(', '),
+      detected,
+      saw: actual,
+    };
+  });
 }

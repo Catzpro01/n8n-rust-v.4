@@ -162,6 +162,12 @@ jobs:
           node -e "const roles=require('./' + process.env.APP_DIR + '/data/roles.json'); console.log('bundled roles.json present:', Object.keys(roles).length, 'groups')"
 
       - name: Unit + REST contract integration tests
+        # The glob covers every suite, including the P2.9 additions:
+        #   lego-boundary.test.mjs      surfaces are upper bounds; the allowance
+        #                               count may shrink but never grow
+        #   lego-communication.test.mjs CALL/EVENT/STREAM/BATCH semantics,
+        #                               cancellation, deadlines, backpressure,
+        #                               lifecycle and capability negotiation
         env:
           N8N_LEGO_CATALOG_DIR: ${{ runner.temp }}/catalog
           N8N_LEGO_USER_FOLDER: ${{ runner.temp }}/unit-data

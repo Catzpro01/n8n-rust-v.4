@@ -68,6 +68,7 @@ Then run the test tier it selects, then \`npm run lego:gate\`.
 | L0 | \`.ai/constitution.md\` | always |
 | L1 | \`.ai/domains/<id>.md\` | what one LEGO owns and may call |
 | L2 | \`.ai/contracts.md\` | the contract, its version, its lock row |
+| L2 | \`.ai/communication.md\` | CALL/EVENT/STREAM/BATCH, envelope, cancellation, backpressure |
 | L3 | \`.ai/recipes/<id>.md\` | how to perform a specific change |
 | L4 | the source | only when L0–L3 are insufficient |
 
@@ -76,6 +77,8 @@ Then run the test tier it selects, then \`npm run lego:gate\`.
 - The backend is **not scale-out ready**. See \`.ai/scale-out.md\`. Do not claim otherwise.
 - Rust is **locked**. JavaScript is the active backend.
 - Feature domains (Workflow, Execution, Auth, Node Registry, Storage) are **declared, not implemented**.
+- The legacy REST aggregate is frozen and may only shrink — see \`.ai/legacy-rest.md\`.
+- Allowances remaining: see \`.ai/index.md\`. They may shrink, never grow.
 `;
 }
 
@@ -341,7 +344,7 @@ function scaleOutDoc() {
   return `${BANNER}
 # Scale-out status — honest
 
-> **The backend is NOT scale-out ready.** P2.8-B did not change this and does not claim to.
+> **${scaleOut.verdict ?? "The backend is NOT scale-out ready."}**
 
 ${scaleOut.principle ?? ''}
 
@@ -352,6 +355,16 @@ ${(scaleOut.rules ?? []).map((rule) => `- ${rule}`).join('\n')}
 ## Blockers
 
 ${(scaleOut.blockingForScaleOut ?? []).map((blocker) => `- **${blocker.file ?? blocker.id ?? 'blocker'}** — ${blocker.reason ?? blocker.note ?? JSON.stringify(blocker)}${blocker.owner ? ` _(owner: ${blocker.owner}, phase ${blocker.phase ?? '?'})_` : ''}`).join('\n')}
+
+## Classification (A/B/C/D)
+
+${scaleOut.classification ? Object.entries(scaleOut.classification.legend).map(([cls, meaning]) => `- **${cls}** — ${meaning}`).join('\n') : ''}
+
+| Class | File | Finding | Owner | Phase |
+| --- | --- | --- | --- | --- |
+${(scaleOut.classification?.findings ?? []).map((finding) => `| **${finding.class}** | \`${finding.file}\` | ${finding.finding} | ${finding.owner} | ${finding.phase} |`).join('\n')}
+
+${(scaleOut.classification?.findings ?? []).filter((finding) => finding.class === 'A').map((finding) => `### Class A blocker — \`${finding.file}\` (${finding.probe})\n\n- **Consequence:** ${finding.consequence}\n- **Owner:** ${finding.owner}, phase ${finding.phase}\n- **Contract boundary:** ${finding.boundary}\n- **Not solved here:** ${finding.notSolvedHere}`).join('\n\n')}
 
 ## Declared exceptions
 
@@ -601,6 +614,146 @@ Every migration must be revertible by selecting the previous implementation. If 
 `;
 }
 
+function legacyRestDoc() {
+  const manifest = JSON.parse(readFileSync(MANIFEST_FILE, 'utf8'));
+  const legacy = manifest.legacy ?? {};
+  const owned = Object.entries(legacy.migrationTargets ?? {});
+  return `${BANNER}
+# Legacy REST strangler
+
+The legacy aggregate is \`${(legacy.files ?? []).join(', ')}\`, custodian \`${legacy.custodian}\`.
+It is **frozen**: it may shrink, never grow.
+
+\`\`\`
+${legacy.strangler?.path ?? ''}
+\`\`\`
+
+## Route families with an owner
+
+| Route family | Migrates to |
+| --- | --- |
+${owned.map(([route, target]) => `| \`${route}\` | \`${target}\` |`).join('\n')}
+
+## Ownership NOT resolved
+
+These are escalated rather than assigned. Assigning a family to a convenient
+domain to complete the map would be manufacturing ownership.
+
+${(legacy.unresolvedOwnership ?? []).map((item) => `### ${item.families.join(', ')}\n\n- **Routes:** ${item.routes.map((route) => `\`${route}\``).join(', ')}\n- **Today:** ${item.currentBehaviour}\n- **Why unresolved:** ${item.why}\n- **Escalated to:** ${item.escalatedTo}\n- **Question:** ${item.question}`).join('\n\n')}
+
+## Stub families
+
+${legacy.stubFamilies?.note ?? ''}
+
+${(legacy.stubFamilies?.families ?? []).map((family) => `\`${family}\``).join(', ')}
+
+> ${legacy.stubFamilies?.rule ?? ''}
+
+## How to carve one out
+
+${(legacy.strangler?.carveOutProcedure ?? []).map((step) => `${step}`).join('\n')}
+
+**Anti-pattern:** ${legacy.strangler?.antiPattern ?? ''}
+
+## Rules
+
+${(legacy.rules ?? []).map((rule) => `- ${rule}`).join('\n')}
+`;
+}
+
+function communicationDoc() {
+  return `${BANNER}
+# Communication model
+
+**The central rule: the contract does not change when the transport does.**
+
+## The four interaction classes
+
+| Class | Semantics | Local mechanism | Across a process |
+| --- | --- | --- | --- |
+| \`CALL\` | synchronous request/response — **the default** | direct function call via local dispatch | IPC / remote adapter |
+| \`EVENT\` | fire-and-forget notification | lightweight in-process emitter | serialized message |
+| \`STREAM\` | ordered incremental output with backpressure | async iterator | framed channel |
+| \`BATCH\` | many operations in one call | grouped local call | one serialized round trip |
+
+These are **semantics, not transports**. Nothing here is an HTTP endpoint.
+
+## Escalation ladder — use the lightest thing that satisfies the contract
+
+\`\`\`
+same process      -> direct contract call / local dispatch
+async notification -> EVENT
+incremental output -> STREAM
+many operations    -> BATCH
+different process  -> explicit IPC / local transport adapter
+remote service     -> HTTP or another explicit transport adapter
+\`\`\`
+
+No internal HTTP between local LEGOs (ADR-0004). No message bus merely because
+events exist. Local calls do not serialize.
+
+## Operation envelope
+
+\`createEnvelope({ legoId, operation, ... })\` carries identity, correlation,
+actor/scope, deadline, cancellation and idempotency. It is a frozen plain object
+— cheap enough to create on every call, which is the point: an expensive
+envelope would be skipped exactly where it matters.
+
+\`deriveEnvelope(parent, spec)\` propagates correlation and **clamps the child
+deadline to the parent's**, so a child can never outlive its caller.
+
+\`serializeEnvelope()\` drops the AbortSignal at a process boundary and sets
+\`cancellable: false\` — the far side must establish its own cancellation
+channel rather than assume one survived the trip.
+
+**No secrets in the envelope.** Ever.
+
+## Cancellation
+
+Explicit, propagating, idempotent and testable. \`throwIfCancelled(envelope)\`
+is the check a long-running operation makes between units of work. A deliberate
+cancellation raises \`lego.cancelled\` (not retryable); a passed deadline raises
+\`lego.deadline_exceeded\` (retryable) — the distinction is the actionable part.
+
+A cancelled parent cancels its children. A cancelled STREAM stops the producer
+and runs its \`onCancel\` hook.
+
+## Backpressure
+
+Declaring a policy is **mandatory** for STREAM operations, because an undeclared
+policy means "buffer without limit", which is how a process dies slowly.
+
+${Object.entries({ buffer: 'queue to the high-water mark', drop: 'discard the newest', 'drop-oldest': 'discard the oldest — for live state', coalesce: 'merge pending items — for progress', block: 'await the consumer', reject: 'raise lego.backpressure', terminate: 'end the stream' }).map(([policy, meaning]) => `- \`${policy}\` — ${meaning}`).join('\n')}
+
+## Graceful degradation
+
+No hidden fallbacks. Every state names what the consumer should do:
+\`available\`, \`degraded\`, \`capability-unavailable\`, \`optional-absent\`,
+\`version-incompatible\`, \`dependency-disabled\`, \`migration-required\`,
+\`feature-unsupported\`.
+
+A version mismatch **never silently adapts**.
+
+## Capability negotiation
+
+\`negotiate({ consumer, capability, requires, operations })\` answers in one
+call: may I access it, does it speak my version, does it have the operations I
+need, is it alive right now. Failures are distinct codes — \`lego.access_denied\`
+is an architecture bug, \`lego.dependency_disabled\` is an operational state,
+\`lego.version_incompatible\` is a migration.
+
+**Nesting grants nothing.** Reaching a nested LEGO requires a declaration naming
+that child; being allowed to depend on its parent is not enough.
+
+## Lifecycle
+
+\`declared -> available -> installed -> loaded -> active -> idle -> unloaded\`,
+plus \`disabled\`, \`failed\`, \`degraded\`, \`deprecated\`. Only \`active\`,
+\`idle\`, \`degraded\` and \`deprecated\` are callable. Illegal transitions throw;
+a rejected transition does not mutate state.
+`;
+}
+
 function adrIndex() {
   const dir = join(REPO_ROOT, 'docs', 'architecture', 'adr');
   let rows = [];
@@ -643,6 +796,8 @@ export function generate() {
   files.set('impact-graph.md', impactGraphDoc(registry, graph));
   files.set('scale-out.md', scaleOutDoc());
   files.set('adr-index.md', adrIndex());
+  files.set('communication.md', communicationDoc());
+  files.set('legacy-rest.md', legacyRestDoc());
 
   for (const domain of registry.domains) {
     files.set(`domains/${domain.id}.md`, domainCard(domain, registry, graph));

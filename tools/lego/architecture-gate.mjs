@@ -13,12 +13,12 @@
  */
 import { loadRegistry } from '../../apps/n8n-lego/src/lego/registry.mjs';
 import { runGate, formatReport } from './architecture-gate.core.mjs';
-import { runSelftest, runNegativeControl, runRegistrySelftest } from './architecture-gate.selftest.mjs';
+import { runSelftest, runNegativeControl, runRegistrySelftest, runExportSelftest } from './architecture-gate.selftest.mjs';
 
 const args = process.argv.slice(2);
 
 if (args.includes('--selftest')) {
-  const results = [...runSelftest(), ...runRegistrySelftest()];
+  const results = [...runSelftest(), ...runRegistrySelftest(), ...runExportSelftest()];
   for (const result of results) {
     process.stdout.write(`${result.detected ? 'PASS' : 'FAIL'}  ${result.name} (expects ${result.expectedRule})\n`);
   }

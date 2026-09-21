@@ -35,10 +35,13 @@ _none — this LEGO has no public surface yet; do not import from it._
 
 `workflow`, `execution`, `legacy-rest`, `node-registry`, `worker`
 
+## Sub-LEGOs
+
+- `auth.identity`
 
 ## Who breaks if this changes
 
-- Direct dependents: `settings`, `workspace`, `runtime-host`
+- Direct dependents: `workspace`, `runtime-host`
 - Transitive: `legacy-rest`
 - **Blast radius: 4** (risk: high)
 

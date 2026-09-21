@@ -28,7 +28,7 @@ _none — this LEGO has no public surface yet; do not import from it._
 
 ## May call
 
-`platform-kernel`, `compatibility`, `auth`
+`platform-kernel`, `compatibility`, `auth.identity`
 
 ## Must never call
 

@@ -9,7 +9,7 @@
  * unsupported semantics until implemented (see `src/compat/capability.mjs`).
  */
 import { sendData } from '../compat/response.mjs';
-import { hasOwner } from '../auth.mjs';
+import { hasOwner } from '../auth/contract/index.mjs';
 import { buildFrontendSettings } from './frontend-settings.mjs';
 
 function buildSettingsContext(store) {

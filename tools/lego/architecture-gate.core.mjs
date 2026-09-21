@@ -371,7 +371,10 @@ export function checkVersionCompatibility(registry) {
 export function listExports(source) {
   const names = [];
   const patterns = [
-    /export\s+(?:async\s+)?function\s+([A-Za-z0-9_$]+)/g,
+    // `function`, `async function`, `function*` and `async function*`.
+    // Generators matter: a STREAM contract operation is naturally an async
+    // generator, so missing the `*` made every stream export look like drift.
+    /export\s+(?:async\s+)?function\s*\*?\s+([A-Za-z0-9_$]+)/g,
     /export\s+class\s+([A-Za-z0-9_$]+)/g,
     /export\s+(?:const|let|var)\s+([A-Za-z0-9_$]+)/g,
   ];
@@ -379,7 +382,13 @@ export function listExports(source) {
     let match;
     while ((match = re.exec(source)) !== null) names.push(match[1]);
   }
-  const braced = /export\s*\{([^}]*)\}(?!\s*from)/g;
+  // Braced exports, INCLUDING re-exports (`export { a, b } from './x.mjs'`).
+  // A contract facade that re-exports its domain's internals is a legitimate and
+  // desirable pattern — it is how a domain publishes a narrow public surface
+  // without moving the implementation. Treating a re-export as "not an export"
+  // made such a facade look like contract drift, which pushed authors toward
+  // either copying code or widening an allowance. Both are worse.
+  const braced = /export\s*\{([^}]*)\}/g;
   let match;
   while ((match = braced.exec(source)) !== null) {
     for (const part of match[1].split(',')) {

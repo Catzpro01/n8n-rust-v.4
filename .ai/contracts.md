@@ -14,6 +14,10 @@ Locked public contracts. A version here is a promise; changing it is an architec
 | `6` | 1.1.0 | 1.0.0 | `?` | `?` |
 | `7` | 1.0.0 | — | `?` | `?` |
 | `8` | 1.0.0 | — | `?` | `?` |
+| `9` | 1.0.0 | — | `?` | `?` |
+| `10` | 1.0.0 | — | `?` | `?` |
+| `11` | 1.0.0 | — | `?` | `?` |
+| `12` | 1.0.0 | — | `?` | `?` |
 
 ## Version rules
 

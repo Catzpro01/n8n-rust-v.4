@@ -1,5 +1,5 @@
 {
-  "lockVersion": "1.1.0",
+  "lockVersion": "1.3.0",
   "owner": "manager",
   "description": "Contract versioning lock. One row per PUBLIC contract: what it is, who owns it, which version is published, what its consumers are, and where its contract tests live. The architecture gate fails when a published contract's surface changes without its version changing. Intentionally tiny: this is not semver-as-a-framework, it is a change alarm.",
   "policy": {
@@ -360,6 +360,131 @@
       "tests": [
         "apps/n8n-lego/test/lego-lifecycle.test.mjs"
       ]
+    },
+    {
+      "id": "auth.identity",
+      "owner": "agent-3",
+      "domain": "auth.identity",
+      "version": "1.0.0",
+      "status": "stable",
+      "surface": [
+        "src/auth/contract/index.mjs"
+      ],
+      "exports": {
+        "src/auth/contract/index.mjs": [
+          "toPublicUser",
+          "hasOwner"
+        ]
+      },
+      "consumers": [
+        "compatibility",
+        "settings"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-boundary.test.mjs"
+      ],
+      "notes": "Read-only identity projection. Holds NO authority: no session creation, no password verification, no token minting. Introduced in P2.9 to retire allowances A1/A2. Adding an export is a contract change requiring a version decision; the surface is pinned by test/lego-boundary.test.mjs."
+    },
+    {
+      "id": "lego.envelope",
+      "owner": "agent-2",
+      "domain": "lego-foundation",
+      "version": "1.0.0",
+      "status": "stable",
+      "surface": [
+        "src/lego/envelope.mjs"
+      ],
+      "exports": {
+        "src/lego/envelope.mjs": [
+          "ENVELOPE_FIELDS",
+          "CancellationError",
+          "createEnvelope",
+          "deriveEnvelope",
+          "remainingMs",
+          "isCancelled",
+          "throwIfCancelled",
+          "createCancellableScope",
+          "serializeEnvelope",
+          "deserializeEnvelope",
+          "boundaryRecord"
+        ]
+      },
+      "consumers": [
+        "all backend LEGO"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-communication.test.mjs"
+      ],
+      "notes": "Operation context: identity, correlation, actor/scope, deadline, cancellation, idempotency. Zero serialization on direct calls; serializeEnvelope drops the AbortSignal at a process boundary and flags cancellable:false."
+    },
+    {
+      "id": "lego.interaction",
+      "owner": "agent-2",
+      "domain": "lego-foundation",
+      "version": "1.0.0",
+      "status": "stable",
+      "surface": [
+        "src/lego/interaction.mjs"
+      ],
+      "exports": {
+        "src/lego/interaction.mjs": [
+          "INTERACTION_CLASSES",
+          "BACKPRESSURE_POLICIES",
+          "BackpressureError",
+          "UnavailableError",
+          "registerProvider",
+          "getProvider",
+          "listProviders",
+          "resetProviders",
+          "call",
+          "subscribe",
+          "emit",
+          "resetSubscribers",
+          "stream",
+          "applyBackpressure",
+          "batch",
+          "DEGRADATION_STATES",
+          "degradationFor"
+        ]
+      },
+      "consumers": [
+        "all backend LEGO"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-communication.test.mjs"
+      ],
+      "notes": "CALL/EVENT/STREAM/BATCH as transport-neutral semantics plus local dispatch. Contains no transport: a worker or remote adapter registers the same provider shape and consumers do not change."
+    },
+    {
+      "id": "lego.negotiation",
+      "owner": "agent-2",
+      "domain": "lego-foundation",
+      "version": "1.0.0",
+      "status": "stable",
+      "surface": [
+        "src/lego/negotiation.mjs"
+      ],
+      "exports": {
+        "src/lego/negotiation.mjs": [
+          "LIFECYCLE_STATES",
+          "LIFECYCLE_TRANSITIONS",
+          "canTransitionLifecycle",
+          "isCallable",
+          "setLifecycleState",
+          "getLifecycleState",
+          "resetLifecycleStates",
+          "describeCapability",
+          "negotiate",
+          "discoverFor"
+        ]
+      },
+      "consumers": [
+        "all backend LEGO"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-communication.test.mjs"
+      ],
+      "notes": "Capability discovery and the lifecycle state machine. Nesting never grants access: reaching a nested LEGO requires an explicit declaration naming that child."
     }
   ]
 }

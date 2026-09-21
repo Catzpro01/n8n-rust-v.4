@@ -11,5 +11,7 @@ Architecture decisions. Each records the decision, the reason, the alternatives 
 | [`ADR-0004-no-internal-http`](../docs/architecture/adr/ADR-0004-no-internal-http.md) | ADR-0004 — Direct in-process calls are the default; no internal HTTP without a real process boundary |
 | [`ADR-0005-rust-is-a-choice`](../docs/architecture/adr/ADR-0005-rust-is-a-choice.md) | ADR-0005 — Rust is an implementation choice, permanently subordinate to the contract |
 | [`ADR-0006-scale-out-honesty`](../docs/architecture/adr/ADR-0006-scale-out-honesty.md) | ADR-0006 — Scale-out blockers stay visible and owned rather than being quietly fixed or quietly hidden |
+| [`ADR-0007-four-interaction-classes`](../docs/architecture/adr/ADR-0007-four-interaction-classes.md) | ADR-0007 — Four interaction classes, one local dispatcher, zero transports |
+| [`ADR-0008-narrow-contract-over-wider-allowlist`](../docs/architecture/adr/ADR-0008-narrow-contract-over-wider-allowlist.md) | ADR-0008 — Retire an allowance with a narrow contract; never widen the allowlist |
 
 New ADRs go in `docs/architecture/adr/` and this index regenerates.

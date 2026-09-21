@@ -13,7 +13,7 @@
 | Error namespace | `lego` |
 | Trust | `core` |
 | Capabilities | _none_ |
-| Communication | `call` |
+| Communication | `call`, `event`, `stream`, `batch` |
 | Data owner | `none` |
 | State class | `none` |
 | Failure boundary | `in-process-safe` |
@@ -28,6 +28,9 @@
 - `src/lego/errors.mjs`
 - `src/lego/contracts`
 - `src/lego/manifest`
+- `src/lego/envelope.mjs`
+- `src/lego/interaction.mjs`
+- `src/lego/negotiation.mjs`
 
 ## May call
 
