@@ -17,6 +17,7 @@ export const MANIFEST_FILES = Object.freeze({
   surfaces: 'surfaces.json',
   extensionPoints: 'extension-points.json',
   subLegos: 'sub-legos.json',
+  capabilities: 'capabilities.json',
 });
 
 function readManifest(fileName) {
@@ -32,13 +33,15 @@ function readManifest(fileName) {
  * Loads and freezes the catalogs (ownership, surfaces, hooks, sub-LEGOs).
  *
  * @returns {{ ownership: object, surfaces: object[], surfaceCatalog: object, extensionPoints: object[],
- *             extensionCatalog: object, subLegos: object[], subLegoCatalog: object, owners: object }}
+ *             extensionCatalog: object, subLegos: object[], subLegoCatalog: object, owners: object,
+ *             capabilities: object[], capabilityCatalog: object }}
  */
 export function loadManifests() {
   const ownership = readManifest(MANIFEST_FILES.ownership);
   const surfaceCatalog = readManifest(MANIFEST_FILES.surfaces);
   const extensionCatalog = readManifest(MANIFEST_FILES.extensionPoints);
   const subLegoCatalog = readManifest(MANIFEST_FILES.subLegos);
+  const capabilityCatalog = readManifest(MANIFEST_FILES.capabilities);
 
   if (!Array.isArray(surfaceCatalog.surfaces) || surfaceCatalog.surfaces.length === 0) {
     throw new Error('manifest/surfaces.json declares no surfaces');
@@ -49,15 +52,22 @@ export function loadManifests() {
   if (!Array.isArray(subLegoCatalog.subLegos) || subLegoCatalog.subLegos.length === 0) {
     throw new Error('manifest/sub-legos.json declares no sub-LEGOs');
   }
+  // An empty capability catalog is a valid, honest state: it means this frontend
+  // offers nothing beyond the stock UI. A missing catalog is not (see below).
+  if (!Array.isArray(capabilityCatalog.capabilities)) {
+    throw new Error('manifest/capabilities.json must declare a capabilities array (it may be empty)');
+  }
 
   return Object.freeze({
     ownership: Object.freeze(ownership),
     surfaceCatalog: Object.freeze(surfaceCatalog),
     extensionCatalog: Object.freeze(extensionCatalog),
     subLegoCatalog: Object.freeze(subLegoCatalog),
+    capabilityCatalog: Object.freeze(capabilityCatalog),
     surfaces: Object.freeze(surfaceCatalog.surfaces.map((surface) => Object.freeze({ ...surface }))),
     extensionPoints: Object.freeze(extensionCatalog.extensionPoints.map((point) => Object.freeze({ ...point }))),
     subLegos: Object.freeze(subLegoCatalog.subLegos.map((entry) => Object.freeze({ ...entry }))),
+    capabilities: Object.freeze(capabilityCatalog.capabilities.map((entry) => Object.freeze({ ...entry }))),
     owners: Object.freeze({ ...(subLegoCatalog.owners ?? {}) }),
     futureConsumers: Object.freeze(extensionCatalog.futureConsumers ?? []),
   });
@@ -76,4 +86,9 @@ export function subLegoIds(manifests = loadManifests()) {
 /** Extension-point ids, in catalog order. */
 export function extensionPointIds(manifests = loadManifests()) {
   return manifests.extensionPoints.map((point) => point.id);
+}
+
+/** Declared capability ids, in catalog order (declared — not installed, not loaded). */
+export function declaredCapabilityIds(manifests = loadManifests()) {
+  return manifests.capabilities.map((entry) => entry.id);
 }

@@ -11,7 +11,9 @@
  *   - the boot `<meta>` tag on index.html is byte-equal to the endpoint payload;
  *   - the served UI is byte-identical apart from that one additive tag;
  *   - the sub-LEGO hierarchy is published without its private areas;
- *   - a real 501 capability answer becomes a machine-readable client error.
+ *   - a real 501 capability answer becomes a machine-readable client error;
+ *   - the P2.8-F maturity layer is present in the *running app* while the payload
+ *     stays byte-identical (declared capabilities, impact graph, plan, profiles, pack).
  *
  * The browser-side view of the same boundary is captured in CI by
  * `tests/e2e/frontend-boundary.mjs`. This script is the local, dependency-free
@@ -26,8 +28,10 @@ import { startServer } from '../src/server.mjs';
 import { createUi } from '../src/ui.mjs';
 import {
   FRONTEND_BOOT_META_NAME,
+  contextFor,
   createRestClient,
   extractBootPayload,
+  packFiles,
   validateBootPayload,
 } from '../../../packages/frontend-lego/index.mjs';
 
@@ -132,6 +136,36 @@ check('501 capability becomes a machine-readable error', unsupported.error?.kind
 
 const payloadBytes = JSON.stringify(payload).length;
 check('boot descriptor stays inside its budget', Math.ceil((payloadBytes * 4) / 3) < 32 * 1024, `${payloadBytes} bytes JSON → ${Math.ceil((payloadBytes * 4) / 3)} bytes base64`);
+
+/* ------------------------------------------- P2.8-F maturity, from the live app */
+
+const frontend = started.frontend;
+const availability = frontend.availability();
+
+check('declared capability catalog is validated but not registered', availability.length === 1 && frontend.registry.list().length === 0, `${availability.length} declared, ${frontend.registry.list().length} registered`);
+check('the declared capability is available, not installed', availability[0].lifecycle === 'available' && availability[0].installed === false && availability[0].activation === 'lazy', `${availability[0].id}: ${availability[0].lifecycle}/installed=${availability[0].installed}`);
+check('its absence has a declared, non-fatal fallback', availability[0].degradation.behavior === 'fallback' && availability[0].degradation.fallback === 'fallback-locale', availability[0].degradation.detail);
+check('device support is decided per profile, with a reason', availability[0].support.length === 6 && availability[0].support.every((entry) => ['supported', 'degraded', 'remote', 'unsupported'].includes(entry.state)), availability[0].support.map((entry) => `${entry.profile}:${entry.state}`).join(' '));
+
+const dependent = frontend.impactOf('workflow-editor.canvas');
+const privateChange = frontend.impactOf('node-picker');
+check('impact: a dependent escalates the test tier', dependent.risk === 'high' && dependent.dependents.includes('workflow-editor.execution-panel') && dependent.recommendedTests.full.length > 0, `risk=${dependent.risk} dependents=${dependent.dependents.join(',')}`);
+check('impact: a private root change stays low risk', privateChange.risk === 'low' && privateChange.recommendedTests.integration.length === 0, `risk=${privateChange.risk} tiers=${Object.keys(privateChange.recommendedTests).filter((tier) => privateChange.recommendedTests[tier].length > 0).join(',')}`);
+
+const plan = frontend.planChange({ target: 'settings', kind: 'surface' });
+check('dry-run plan names the foreign contract and its owner', plan.foreignContracts.length > 0 && plan.foreignContracts.every((entry) => typeof entry.owner === 'string' && entry.owner.length > 0), plan.foreignContracts.map((entry) => `${entry.contract}->${entry.owner}`).join(' '));
+
+const retrieval = contextFor({ kind: 'upgrade-unit' });
+check('.ai pack answers a task shape with the smallest file set', retrieval.level === 'L3' && retrieval.files.length === 3 && retrieval.files.every((file) => file.length > 0) && packFiles().length > retrieval.files.length, `${retrieval.files.length} of ${packFiles().length} files`);
+
+/**
+ * The P2.5 payload size, pinned. The maturity layer (P2.8-F) is deliberately
+ * invisible to the browser: if this number moves, somebody either added something
+ * to what every page load carries — which then needs its own justification — or
+ * removed something a consumer relies on.
+ */
+const P25_PAYLOAD_BYTES = 18126;
+check('boot payload is byte-identical to the P2.5 baseline', payloadBytes === P25_PAYLOAD_BYTES, `${payloadBytes} bytes vs pinned P2.5 baseline ${P25_PAYLOAD_BYTES}`);
 
 /* ---------------------------------------------------------------- the record */
 const evidence = {

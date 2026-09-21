@@ -297,6 +297,15 @@ the meta tag — the stock editor must never depend on the descriptor to render.
 | I9 | `501 {code:'unsupported'}` from a real endpoint becomes a machine-readable `unsupported` error in the client | `apps/n8n-lego/test/frontend.boundary.test.mjs` |
 | I10 | The boundary is visible in a real browser page, and the UI still renders (unchanged) | `tests/e2e/frontend-boundary.mjs` |
 | I11 | P0/P2 behavior is not regressed | `tests/e2e/lego-smoke.mjs`, `tests/e2e/settings-compat.mjs`, `apps/n8n-lego/test/*.test.mjs` |
+| I12 | The lifecycle vocabulary is closed: only `loaded`/`active`/`idle` may serve, and every unlisted transition is refused | `…/07-lifecycle.test.mjs` |
+| I13 | `core` may not declare a fallback; unknown criticality degrades as `fail-loud` | `…/07-lifecycle.test.mjs`, `…/11-registry-maturity.test.mjs` |
+| I14 | Trust is inherited and never promoted by nesting; each level's permissions are published as data | `…/07-lifecycle.test.mjs` |
+| I15 | The envelope carries an authorization *context*, never a credential; a command needs an idempotency key; local execution serializes nothing | `…/08-envelope.test.mjs` |
+| I16 | The observation record is boundary-level and payload-free (no subject, no scopes) | `…/08-envelope.test.mjs` |
+| I17 | Impact and risk come from declaration data; a foreign contract or a dependent escalates to the full tier, a private root change does not | `…/09-impact.test.mjs` |
+| I18 | Device support is a declared budget: over budget is `unsupported`, a thin client is `remote`, and no support state lacks a reason | `…/10-profiles.test.mjs` |
+| I19 | The declared capability catalog is validated but never registered: the boot payload's capability list stays empty | `…/11-registry-maturity.test.mjs`, `apps/n8n-lego/test/frontend.boundary.test.mjs` |
+| I20 | The `.ai/` pack agrees with the manifests, stays inside its size budgets, and never carries implementation | `…/12-knowledge.test.mjs` |
 
 ## 16.1 Shared vocabulary with the backend LEGO (P2.6 / P2.7) — and one open arbitration
 
@@ -312,15 +321,23 @@ what the compatibility layer already publishes and pins the shared vocabulary:
 | Ownership | `manifest/ownership.json` + the owner table in `manifest/sub-legos.json` | a unit's owner is declarative data; no cross-domain change happens implicitly |
 | Frontend/backend boundary | this document §2, `frontend-sub-lego.contract.md` §3 | frontend → contract → compatibility layer; a frontend module importing a backend implementation is a defect |
 
-**Open arbitration item (Manager/Integrator).** `contracts/micro-frontend.contract.md` (LEGO 13, "CONTRACT
-SPECIFIED") declares a Web-Components decomposition (`<n8n-canvas>`, `<n8n-node-settings>`, `<n8n-expression-editor>`,
-`<n8n-i18n-provider>`, `<n8n-app-shell>`) and a six-language set `id, en, es, fr, de, ja`. P2.5 declares the
-reference implementation as the pinned Vue bundle (`n8n-editor-ui@2.9.4`, adapter `vue`) and the locale set
-`id, en, ar, zh, ru, jv` per the phase brief. The two documents are **not** reconciled here: P2.5 neither implements
-Web Components nor changes a contract owned by another phase. The difference must be resolved by the
-Manager/Integrator (which locale set is authoritative, and whether the Web-Components decomposition remains the
-target). Until then, `frontend.contract.md` + this document describe what is implemented, and
-`micro-frontend.contract.md` remains an unimplemented specification — no code may assume either set is final.
+**Legacy spec — resolved by marking superseded (P2.8-F), still Manager-confirmable.** `contracts/micro-frontend.contract.md`
+(LEGO 13, "CONTRACT SPECIFIED") declares a Web-Components decomposition (`<n8n-canvas>`, `<n8n-node-settings>`,
+`<n8n-expression-editor>`, `<n8n-i18n-provider>`, `<n8n-app-shell>`) and a six-language set `id, en, es, fr, de, ja`.
+It is now marked **SUPERSEDED** in place (the original text is kept below a banner), on two grounds that do not depend
+on this document's authority:
+
+1. **Locales.** The authoritative set is owned by `contracts/localization.contract.md` (agent-9 lineage, **TESTED**):
+   `id, en, ar, zh, ru, jv`, with Arabic as the only RTL locale. The frontend mirrors that set and never redefines it;
+   the legacy `id/en/es/fr/de/ja` list is wrong, not alternative.
+2. **Mechanism.** The reference implementation is the pinned Vue bundle (`n8n-editor-ui@2.9.4`, adapter `vue`); no
+   custom elements are used, and replacing the UI is out of scope. The legacy *decomposition* survives as nested
+   sub-LEGO units — the module-to-unit mapping is recorded in `.ai/maps/dependencies.md` §6.
+
+What remains a Manager decision is bookkeeping, not architecture: whether the superseded file stays in `contracts/`
+(marked), is archived, or is deleted, and whether the Web-Components direction is revived as a new task. Recorded as
+`.ai/cards/decisions.md` **D22** and `docs/isolation/CROSS-AGENT-ISSUES.md` **ISSUE-024**. Until the Manager answers,
+no code may assume the legacy spec governs anything.
 
 ## 17. Compatibility requirements (pinned UI)
 
@@ -329,3 +346,87 @@ target). Until then, `frontend.contract.md` + this document describe what is imp
 - No new `/rest/*` path may shadow an endpoint the UI calls; the discovery endpoint is new and never called by the UI.
 - Error envelopes, status codes and the 501 capability contract stay as specified by api.contract §3/§7 and the P2 layer.
 - Removing or renaming anything in §2–§12 requires a major contract version and a Manager/Integrator decision.
+
+## 18. Maturity model (P2.8-F) — declared, enforced, not built
+
+The foundation is hardened by *declaration and enforcement*, not by features. Everything in this section is data with a
+validator and a test; nothing here loads code, and the browser payload is byte-identical to what P2.5 shipped.
+
+### 18.1 Availability is not activation
+
+```
+available ──▶ installed ──▶ loaded ──▶ active ──▶ idle
+     ▲            │            │          │         │
+     └── disabled ◀────────────┴──────────┴─────────┴──▶ unloaded
+```
+
+- Only `loaded`, `active` and `idle` may serve a request (`RUNNABLE_STATES`); every transition outside the table is
+  refused by name with the allowed set in the message (`frontend.lifecycle.invalid-transition`).
+- `activation` is `eager | lazy | manual`. A non-eager capability must name an `entry` module path **once it is
+  installable** (`status !== 'declared'`); a declared capability owes none, because no code exists yet.
+- Registering a capability never loads it, and the registry refuses any declaration containing implementation
+  (`load`, `render`, `mount`, `install`, `activate`, `handler`, `component`) — metadata must not require code.
+
+### 18.2 Criticality, degradation and trust
+
+| Criticality | Absence means | Behaviour |
+| :--- | :--- | :--- |
+| `core` | the instance is broken | `fail-loud`, and a fallback declaration is **refused** |
+| `optional` | normal | `fallback` to the declared behaviour (e.g. `fallback-locale`) |
+| `enhancement` | nothing to report | `continue` |
+
+```text
+core (0) > feature (1) > extension (2) > untrusted (3)      # lower rank = more trusted
+```
+
+A child unit or capability may be **less** trusted than its parent, never more; an unknown trust level is refused
+rather than treated as trusted. `mayPerform(level, action)` answers what a level may do (`own-routes`, `read-session`,
+`call-declared-endpoints`, `attach-hooks`, `render-own-subtree`, …), so a policy question has one answer in one place.
+
+### 18.3 Device profiles
+
+Six declared budgets: `desktop`, `laptop`, `low-memory`, `android`, `termux-companion`, `remote-only`. A capability
+declares `requirements` (`memoryMb`, `storageMb`, `requiresLocalExecution`, `requiresNetwork`, `heavy`, `input`) and
+receives one of four answers — `supported`, `degraded`, `remote`, `unsupported` — each with a reason. Core UI never
+branches on platform identity; it branches on the support state. A `remote-only` profile reaches what it cannot run
+locally instead of dropping it.
+
+### 18.4 The operation envelope
+
+One semantic context per boundary crossing: `capability`, `operation` (`<domain>.<name>`), `contractVersion`,
+`correlationId`, `authorization` (`{ subject, scopes }`), `deadlineMs`, `cancellation` (`AbortSignal`), `idempotencyKey`.
+
+- The authorization field is a **context, never a credential**: `token`, `password`, `apiKey`, `cookie`, `jwt`, … are
+  refused by name.
+- A `command` operation without an idempotency key is refused — a retry that duplicates work is a defect, not bad luck.
+- `toTransportHints()` is empty for `local` and `none`: a local call pays no metadata tax.
+- `observationRecord()` emits boundary-level observability (identity, outcome, duration, error code) and deliberately
+  omits the subject and the scope list.
+
+### 18.5 Impact graph, selective tests and the dry-run plan
+
+`impactOf(target)` answers "if this changes, what must be tested?" from declaration data: ancestors, descendants,
+dependents, surfaces, contracts, risk and the recommended test set per tier
+(`fast-contract → boundary → browser → integration → full`).
+
+- **Risk is blast radius**: a dependent, a **foreign** contract (owned by another LEGO), or extension/untrusted
+  authorship ⇒ `high`; a nested unit ⇒ `medium`; a private root ⇒ `low`.
+- **Arbitration is consent**: adding a unit is `low` risk but always `requiresArbitration`, because the hierarchy is
+  shared.
+- `planChange()` returns the dry-run plan — target, owner, sub-LEGO identity, files, contracts affected (with their
+  owners), dependencies, test impact, risk, and whom to arbitrate with — as JSON, before anything is touched.
+
+### 18.6 Stable identities and the `.ai/` pack
+
+- Observability identity is `capability:operation@contractVersion`, plus the unit id and the capability id. Boundary
+  level only — no per-component tracing.
+- The `.ai/` pack carries L0 constitution → L1 frontend card → L2 contract card → L3 task recipe → L4 source, with
+  `contextFor({ kind })` returning the smallest file set for a task shape. Indexes are generated from the manifests and
+  a test fails with the exact difference when they age; every file has a size budget.
+
+### 18.7 What P2.8-F deliberately does not do
+
+No loader, no dynamic module resolution, no service worker, no daemon, no runtime dependency, no framework change, no
+UI change, no feature. Lazy activation is **permitted by the model** (activation mode + entry + lifecycle + states) and
+is not implemented — a loader is a later, separately-justified task. The boot payload grew by **zero bytes**; the
+maturity layer is visible to tooling and to the registry, not to the browser.

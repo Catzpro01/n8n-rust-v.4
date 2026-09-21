@@ -13,9 +13,12 @@
  */
 import { createAdapter, CURRENT_ADAPTER_ID } from './adapters/index.mjs';
 import { CONTRACT_VERSION } from './contract.mjs';
+import { createImpactGraph } from './impact.mjs';
 import { unmappedMessageSlots } from './i18n.mjs';
 import { loadManifests } from './manifests.mjs';
-import { createFrontendRegistry } from './registry.mjs';
+import { degradationFor } from './lifecycle.mjs';
+import { DEVICE_PROFILES, resolveSupport } from './profiles.mjs';
+import { createFrontendRegistry, validateCapability } from './registry.mjs';
 import { createSubLegoRegistry } from './sublegos.mjs';
 
 /**
@@ -46,6 +49,64 @@ export function createFrontendLego({ app, ui = {}, adapterId = CURRENT_ADAPTER_I
     catalogVersion: manifests.subLegoCatalog.catalogVersion ?? null,
   });
 
+  /**
+   * The declared capability catalog is validated but NOT registered. Declaring a
+   * capability is how its identity, criticality, trust level and fallback are
+   * agreed; registering it would claim it is installed, and the boot payload
+   * would carry metadata for something that does not exist. Availability is
+   * reported through `availability()` instead — in-process, never on the wire.
+   */
+  const declaredErrors = [];
+  const namespaceOwner = new Map();
+  for (const declaration of manifests.capabilities) {
+    const { ok, errors } = validateCapability(declaration, {
+      surfaces: manifests.surfaces,
+      extensionPoints: manifests.extensionPoints,
+      // One capability, one message namespace — enforced across declarations too.
+      knownNamespaces: [...namespaceOwner.keys()],
+    });
+    if (!ok) declaredErrors.push(...errors.map((error) => `declared capability "${declaration.id}": ${error}`));
+    if (typeof declaration.messages === 'string') namespaceOwner.set(declaration.messages, declaration.id);
+  }
+  if (declaredErrors.length > 0) {
+    throw new Error(`manifest/capabilities.json is invalid — ${declaredErrors.join('; ')}`);
+  }
+
+  /** The frontend capability declarations, with their degradation contract. */
+  function availability() {
+    return Object.freeze(manifests.capabilities.map((declaration) => Object.freeze({
+      id: declaration.id,
+      lego: declaration.lego,
+      title: declaration.title,
+      status: declaration.status ?? 'declared',
+      activation: declaration.activation ?? 'eager',
+      lifecycle: declaration.lifecycle ?? 'available',
+      criticality: declaration.criticality ?? 'optional',
+      trust: declaration.trust ?? 'feature',
+      surfaces: Object.freeze([...(declaration.surfaces ?? [])]),
+      entry: declaration.entry ?? null,
+      requirements: Object.freeze({ ...(declaration.requirements ?? {}) }),
+      degradation: degradationFor(declaration),
+      /** Where it will run: the declared budget decided per device profile. */
+      support: Object.freeze(DEVICE_PROFILES.map((profile) => Object.freeze({
+        profile: profile.id,
+        state: resolveSupport(profile.id, declaration).state,
+      }))),
+      installed: false,
+    })));
+  }
+
+  const impact = createImpactGraph({
+    subLegos,
+    capabilities: registry,
+    surfaces: manifests.surfaces,
+    contractOwners: Object.freeze(Object.fromEntries(
+      manifests.surfaces
+        .filter((surface) => surface.backend?.contract && !['contracts/frontend.contract.md', 'contracts/frontend-sub-lego.contract.md'].includes(surface.backend.contract))
+        .map((surface) => [surface.backend.contract, surface.backend.capability ?? 'another LEGO']),
+    )),
+  });
+
   const createAdapterFor = createAdapter(adapterId);
   const adapter = createAdapterFor({
     registry,
@@ -71,6 +132,7 @@ export function createFrontendLego({ app, ui = {}, adapterId = CURRENT_ADAPTER_I
       subLegoDepth: Math.max(0, ...subLegos.list().map((entry) => subLegos.depthOf(entry.id))),
       extensionPoints: manifests.extensionPoints.length,
       capabilities: registry.list().length,
+      declaredCapabilities: manifests.capabilities.length,
       adapter: adapter.id,
       framework: adapter.framework,
       bundle: adapter.bundle,
@@ -94,6 +156,15 @@ export function createFrontendLego({ app, ui = {}, adapterId = CURRENT_ADAPTER_I
     register: (capability) => registry.register(capability),
     /** Registers a sub-LEGO after boot (the unit is validated against the hierarchy). */
     registerSubLego: (entry) => subLegos.register(entry),
+    /**
+     * What this frontend can offer, what it may not be trusted to do, and what
+     * happens when it is absent. Declared only — nothing here is installed.
+     */
+    availability,
+    /** "If this unit changes, what must be tested?" — see src/impact.mjs. */
+    impactOf: (target, options) => impact.impactOf(target, options),
+    /** The dry-run plan for a change, before anything is touched. */
+    planChange: (request) => impact.planChange(request),
     describe,
   });
 }

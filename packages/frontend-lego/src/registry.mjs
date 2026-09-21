@@ -17,14 +17,26 @@
  * Framework-neutral and browser-safe: no framework import, no `node:*` import.
  */
 import { isValidMessageKey } from './i18n.mjs';
+import { CAPABILITY_STATES, CRITICALITY, TRUST_LEVELS, degradationFor } from './lifecycle.mjs';
+import { REQUIREMENT_FIELDS } from './profiles.mjs';
+
+/** How a capability reaches the runtime. `eager` is the exception, not the rule. */
+export const ACTIVATION_MODES = Object.freeze(['eager', 'lazy', 'manual']);
 
 export const CAPABILITY_STATUSES = Object.freeze(['declared', 'available', 'partial', 'unsupported']);
 
 /** Fields a capability descriptor must provide (shape, not content). */
 export const CAPABILITY_SCHEMA = Object.freeze({
   required: Object.freeze(['id', 'lego', 'title', 'surfaces', 'contracts', 'tests', 'status']),
-  optional: Object.freeze(['extensionPoints', 'routes', 'backendCapabilities', 'messages', 'phase', 'notes']),
+  optional: Object.freeze([
+    'extensionPoints', 'routes', 'backendCapabilities', 'messages', 'phase', 'notes',
+    // maturity fields (P2.8-F)
+    'activation', 'entry', 'criticality', 'trust', 'requirements', 'lifecycle', 'degradation',
+  ]),
 });
+
+/** Keys that would smuggle implementation code into a registry of metadata. */
+const CODE_LIKE_KEYS = Object.freeze(['load', 'render', 'mount', 'install', 'activate', 'handler', 'component']);
 
 const ID_PATTERN = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 
@@ -101,6 +113,54 @@ export function validateCapability(capability, catalog = {}) {
     if (typeof route !== 'string' || !route.startsWith('/')) errors.push(`route "${route}" must start with "/"`);
   }
 
+  // A registry of metadata: implementation is referenced by path, never carried
+  // inline. This is what keeps "installed" from meaning "loaded".
+  for (const key of CODE_LIKE_KEYS) {
+    if (capability[key] !== undefined) {
+      errors.push(`"${key}" carries implementation into the registry — reference it through "entry" (metadata must not require loading code)`);
+    }
+  }
+
+  const activation = capability.activation ?? 'eager';
+  if (!ACTIVATION_MODES.includes(activation)) errors.push(`"activation" must be one of ${ACTIVATION_MODES.join(', ')}`);
+  // A declared capability has no code to lazy-load yet, so it owes no entry. The
+  // moment it is installable, a non-eager activation must say where its code is.
+  const installable = (capability.status ?? 'declared') !== 'declared';
+  if (activation !== 'eager' && installable && (typeof capability.entry !== 'string' || !/\.(mjs|js|cjs|ts)$/.test(capability.entry))) {
+    errors.push(`activation "${activation}" needs an "entry" module path (e.g. "./features/x/index.mjs")`);
+  }
+  if (capability.entry !== undefined && capability.entry !== null && (typeof capability.entry !== 'string' || !/\.(mjs|js|cjs|ts)$/.test(capability.entry))) {
+    errors.push('"entry" must be a module path (e.g. "./features/x/index.mjs")');
+  }
+
+  const criticality = capability.criticality ?? 'optional';
+  if (!CRITICALITY.includes(criticality)) errors.push(`"criticality" must be one of ${CRITICALITY.join(', ')}`);
+  if (criticality === 'core' && capability.degradation?.fallback) {
+    // A core capability with a fallback is a capability whose absence has been
+    // hidden — that is how a broken instance starts looking healthy.
+    errors.push('a "core" capability may not declare a fallback — its absence must stay visible');
+  }
+
+  const trust = capability.trust ?? 'feature';
+  if (!TRUST_LEVELS.includes(trust)) errors.push(`"trust" must be one of ${TRUST_LEVELS.join(', ')}`);
+
+  const lifecycle = capability.lifecycle ?? 'available';
+  if (!CAPABILITY_STATES.includes(lifecycle)) errors.push(`"lifecycle" must be a capability state (one of ${CAPABILITY_STATES.join(', ')})`);
+
+  if (capability.requirements !== undefined) {
+    if (capability.requirements === null || typeof capability.requirements !== 'object' || Array.isArray(capability.requirements)) {
+      errors.push('"requirements" must be an object');
+    } else {
+      for (const key of Object.keys(capability.requirements)) {
+        if (!REQUIREMENT_FIELDS.includes(key)) errors.push(`unknown requirement "${key}" (one of ${REQUIREMENT_FIELDS.join(', ')})`);
+      }
+      for (const key of ['memoryMb', 'storageMb']) {
+        const value = capability.requirements[key];
+        if (value !== undefined && (!Number.isFinite(value) || value <= 0)) errors.push(`requirement "${key}" must be a positive number`);
+      }
+    }
+  }
+
   if (capability.messages !== undefined) {
     if (typeof capability.messages !== 'string' || !ID_PATTERN.test(capability.messages)) {
       errors.push('"messages" must be a namespace (kebab-case)');
@@ -174,6 +234,14 @@ export function createFrontendRegistry({ surfaces = [], extensionPoints = [], ca
       messages: capability.messages ?? null,
       tests: Object.freeze([...asArray(capability.tests)]),
       notes: capability.notes ?? null,
+      // maturity (P2.8-F): how it activates, how much it matters, who wrote it
+      activation: capability.activation ?? 'eager',
+      entry: capability.entry ?? null,
+      criticality: capability.criticality ?? 'optional',
+      trust: capability.trust ?? 'feature',
+      lifecycle: capability.lifecycle ?? 'available',
+      requirements: Object.freeze({ ...(capability.requirements ?? {}) }),
+      degradation: capability.degradation ? Object.freeze({ ...capability.degradation }) : null,
     });
     registered.set(normalized.id, normalized);
     return normalized;
@@ -225,10 +293,34 @@ export function createFrontendRegistry({ surfaces = [], extensionPoints = [], ca
     });
   }
 
+  /**
+   * Availability (declared + resolvable) is not activation (loaded + running).
+   * This projection answers the first without touching the second.
+   */
+  function availability() {
+    return Object.freeze(list().map((capability) => Object.freeze({
+      id: capability.id,
+      status: capability.status,
+      activation: capability.activation,
+      entry: capability.entry,
+      lifecycle: capability.lifecycle,
+      criticality: capability.criticality,
+      trust: capability.trust,
+      surfaces: capability.surfaces,
+      degradation: degradationFor(capability),
+    })));
+  }
+
+
   return {
     surfaces: Object.freeze([...surfaces]),
     extensionPoints: Object.freeze([...extensionPoints]),
     register,
+    availability,
+    degradationOf: (id) => {
+      const capability = registered.get(id);
+      return capability ? degradationFor(capability) : null;
+    },
     registerAll(values) {
       return values.map(register);
     },

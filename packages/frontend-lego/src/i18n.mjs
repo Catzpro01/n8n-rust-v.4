@@ -251,7 +251,37 @@ export function describeLocales() {
   });
 }
 
+
 /** Message-slot model as exposed to the boot payload. */
+/**
+ * Translation coverage: which surface the catalog can reach, and which it cannot.
+ * A surface nobody can translate is a surface where strings will be hard-coded.
+ *
+ * @param {Array<{ id: string, messageSlots?: string[] }>} surfaces
+ */
+export function translationCoverage(surfaces = []) {
+  const slotIds = MESSAGE_SLOTS.map((slot) => slot.id);
+  const declared = new Set(slotIds);
+  const ownerOf = new Map();
+  for (const slot of MESSAGE_SLOTS) {
+    for (const surface of slot.surfaces ?? []) {
+      if (!ownerOf.has(surface)) ownerOf.set(surface, []);
+      ownerOf.get(surface).push(slot.id);
+    }
+  }
+  const report = surfaces.map((surface) => {
+    const slots = [...new Set([...(surface.messageSlots ?? []), ...(ownerOf.get(surface.id) ?? [])])].sort();
+    return Object.freeze({ id: surface.id, slots: Object.freeze(slots), covered: slots.length > 0 && slots.every((slot) => declared.has(slot)) });
+  });
+  const used = new Set(report.flatMap((entry) => entry.slots));
+  return Object.freeze({
+    slots: Object.freeze(slotIds),
+    surfaces: Object.freeze(report),
+    uncoveredSurfaces: Object.freeze(report.filter((entry) => !entry.covered).map((entry) => entry.id)),
+    orphanSlots: Object.freeze(slotIds.filter((slot) => !used.has(slot))),
+  });
+}
+
 export function describeMessageSlots() {
   return Object.freeze(MESSAGE_SLOTS.map((slot) => Object.freeze({ id: slot.id, title: slot.title, surfaces: slot.surfaces })));
 }

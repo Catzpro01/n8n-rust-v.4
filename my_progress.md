@@ -9,13 +9,74 @@
 - **Assigned Module**: workflow (`workflow.graph`, `workflow.traversal`, `workflow.diff`, `trigger.lifecycle`) — sesi ini mengerjakan
   **test infrastructure** (`tools/rust-offline-rig/**`, registry `integration.gates` milik agent-05) karena tanpa itu seluruh
   verifikasi Rust Phase 3 mustahil dijalankan di sandbox.
-- **Current Task ID**: **P2.5 — Frontend LEGO Foundation** (owner Agent 1: frontend contract, capability registry,
-  UI compatibility, frontend regression gates). Tugas rig Rust di bawah sudah **SELESAI** (lihat Lampiran A).
-- **Last Updated**: 2026-09-21 (P2.5)
+- **Current Task ID**: **P2.8-F — Frontend Foundation Maturity** (owner Agent 1; lanjutan dari P2.5). P2.5
+  (kontrak + registry + boot descriptor + lapisan sub-LEGO) **SELESAI, hijau, dan terdorong** di branch ini;
+  increment P2.8-F ada di commit setelah `917bbd95`. Tugas rig Rust di bawah sudah **SELESAI** (lihat Lampiran A).
+- **Last Updated**: 2026-09-22 (P2.8-F)
 
 ---
 
-## 🧱 P2.5 — FRONTEND LEGO FOUNDATION (tugas saat ini, SELESAI + terverifikasi)
+## 🧠 P2.8-F — FRONTEND FOUNDATION MATURITY (tugas saat ini, SELESAI + terverifikasi)
+
+**Tujuan:** mengeraskan fondasi frontend (lifecycle, trust, degradasi, profil perangkat, impact/test map,
+pak knowledge) **tanpa satu pun fitur baru** dan **tanpa menambah satu byte pun** ke apa yang diterima browser.
+
+### Yang dibuat
+
+| # | Deliverable | Lokasi |
+| :- | :--- | :--- |
+| 1 | **Lifecycle + criticality + trust + degradasi** — state `available → installed → loaded → active \| idle \| unloaded \| disabled` (hanya `loaded/active/idle` boleh melayani), `core` **dilarang** punya fallback, trust diwarisi (anak tidak boleh lebih dipercaya dari induk), `mayPerform()` per level | `packages/frontend-lego/src/lifecycle.mjs` |
+| 2 | **Envelope semantik** — capability/operation/contractVersion/correlationId/authorization-context/deadline/cancellation/idempotency; **kredensial ditolak dengan nama**; command wajib `idempotencyKey`; `toTransportHints()` kosong untuk eksekusi lokal; `observationRecord()` tanpa subject/scopes | `src/envelope.mjs` |
+| 3 | **Profil perangkat** — 6 profil (desktop/laptop/low-memory/android/termux-companion/remote-only) × 4 status (`supported/degraded/remote/unsupported`), tiap jawaban membawa alasan; tidak ada cabang pada identitas platform | `src/profiles.mjs` |
+| 4 | **Impact graph + selective test map + dry-run plan** — risk = radius ledakan (dependen atau kontrak **asing** ⇒ `high`), arbitration = persetujuan (unit baru ⇒ `low` tapi wajib arbitrase), tier `fast-contract → boundary → browser → integration → full` | `src/impact.mjs` |
+| 5 | **Katalog capability (deklaratif)** — `translation` (lazy, optional, feature, fallback locale), **divalidasi tapi tidak diregistrasi**; `capabilities: []` di payload adalah buktinya | `manifest/capabilities.json`, `src/registry.mjs` |
+| 6 | **Pak pengetahuan `.ai/` (L0–L4)** — konstitusi, kartu domain frontend, glosarium, indeks capability/kontrak/unit (JSON), kartu keputusan, resep tugas, peta dependensi; `contextFor({kind})` mengembalikan set file terkecil; indeks dicek terhadap manifest | `.ai/**`, `src/knowledge.mjs` |
+| 7 | **Kontrak §18 (maturity) + invariant I12–I20**; §16.1 kini menyatakan spec legacy **superseded** | `contracts/frontend.contract.md` |
+| 8 | **Spec legacy ditandai**, bukan dihapus: banner SUPERSEDED + tabel pengganti + 2 koreksi (locale `id,en,ar,zh,ru,jv`; bukan Web Components) | `contracts/micro-frontend.contract.md`, `docs/isolation/CROSS-AGENT-ISSUES.md` (ISSUE-024) |
+
+### Bukti (semua dijalankan di sesi ini)
+
+| Gate | Perintah | Hasil |
+| :--- | :--- | :--- |
+| Suite paket frontend | `node --test packages/frontend-lego/test/*.test.mjs` | **123/123 PASS** (12 suite; sebelumnya 78, +45) |
+| Suite aplikasi (boundary + REST + compat) | `node --test apps/n8n-lego/test/*.test.mjs` | **36/36 PASS** |
+| Bukti boundary (HTTP, dari app yang berjalan) | `node apps/n8n-lego/scripts/capture-frontend-evidence.mjs` | **25/25 PASS** → `docs/n8n-lego/evidence/frontend-boundary-p25.json` |
+| Audit sub-LEGO | `python3 tools/sublego-audit/audit.py` | **AUDIT PASSED** (12 LEGO / 20 Sub-LEGO / 5 Agent) |
+| Gate isolasi | `npm run verify:fast` | **5/10 = baseline** (G06–G10 blocked, lingkungan offline; artefak ditulis-ulang lalu di-revert) |
+| Browser/E2E | `node tests/e2e/frontend-boundary.mjs` | **CI saja** (sandbox tanpa Chromium/egress) |
+
+Dua angka yang paling penting: **payload boot byte-identik dengan baseline P2.5 (18.126 B JSON → 24.168 B base64,
+delta tag 24.268 B)** dan **`capabilities: []`** — lapisan maturity terlihat oleh tooling & registry, tidak oleh browser.
+
+### Keputusan P2.8-F (lanjutan D9–D17)
+
+- **D18** Envelope semantik, bebas biaya untuk eksekusi lokal; authorization = konteks, bukan kredensial.
+- **D19** Risk = radius ledakan; arbitrase = persetujuan (dua sumbu berbeda).
+- **D20** Kontrak milik sendiri vs kontrak asing (`contracts/*frontend*.contract.md` = milik sendiri; semua kontrak
+  backend di `surfaces[].backend.contract` = asing ⇒ eskalasi).
+- **D21** Pak `.ai/` dicek-terhadap-manifest dan dibatasi ukurannya; tidak pernah dimuat borongan.
+- **D22** `micro-frontend.contract.md` ditandai **superseded** (bukan dihapus); locale resmi milik
+  `contracts/localization.contract.md` (TESTED, agent-9 lineage); dekomposisi legacy dipetakan ke unit sekarang.
+- **D23** Katalog capability **tidak** diregistrasi dan payload boot tidak berubah — bukti bahwa "declared ≠ installed".
+
+### Berkas shared yang disentuh (minimal, terdokumentasi)
+
+`contracts/frontend.contract.md` (aditif: §16.1 diperjelas, §18 baru, I12–I20), `contracts/micro-frontend.contract.md`
+(banner superseded), `docs/n8n-lego/FRONTEND_LEGO.md` (angka + §9), `docs/n8n-lego/ROADMAP.md` (1 paragraf),
+`docs/isolation/CROSS-AGENT-ISSUES.md` (ISSUE-024), `packages/frontend-lego/package.json` (subpath exports),
+`apps/n8n-lego/src/frontend.mjs` (mengekspos `availability/impactOf/planChange`), eviden script. **Tidak ada** berkas
+agent-05 (`tests/integration/**`, `tests/compatibility/**`, `.arena/**`), tidak ada Rust, tidak ada UI yang berubah.
+
+### Batasan yang jujur
+
+- Belum ada **loader**: lazy activation hanya *diizinkan model* (activation mode + `entry` + state), belum diimplementasikan.
+- Pak `.ai/` dihitung in-process; belum ada job CI tersendiri (drift-nya dijaga `test/12`).
+- `availability()` melaporkan satu capability yang **belum dipasang**; tidak ada perilaku runtime yang bisa diamati.
+- Browser gate tetap CI-only di sandbox ini.
+
+---
+
+## 🧱 P2.5 — FRONTEND LEGO FOUNDATION (SELESAI + terverifikasi)
 
 **Tujuan:** memisahkan *kontrak* frontend dari *implementasi* Vue tanpa mengubah tampilan/perilaku UI n8n.
 Fondasi saja — **tidak ada** fitur (tidak ada terjemahan, tidak ada redesign, tidak ada migrasi framework).

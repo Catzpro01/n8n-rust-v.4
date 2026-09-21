@@ -27,13 +27,27 @@
  * Framework-neutral and browser-safe: no framework import, no `node:*` import.
  */
 
+import { CAPABILITY_STATES, CRITICALITY, TRUST_LEVELS, degradationFor, trustInherited, trustRank } from './lifecycle.mjs';
+import { REQUIREMENT_FIELDS } from './profiles.mjs';
+
 export const SUB_LEGO_STATUSES = Object.freeze(['declared', 'available', 'partial', 'unsupported']);
+
+/**
+ * Three levels: domain → feature → meaningful sub-feature. Deeper nesting stops
+ * being a boundary and starts being a folder tree, so it is refused by name
+ * rather than discouraged in a document.
+ */
+export const MAX_DEPTH = 2;
 export const UPGRADE_POLICIES = Object.freeze(['independent', 'acknowledged', 'coupled']);
 
 /** Fields a sub-LEGO descriptor must provide (shape, not content). */
 export const SUB_LEGO_SCHEMA = Object.freeze({
   required: Object.freeze(['id', 'title', 'owner', 'version', 'contract', 'public', 'internals', 'tests', 'status', 'upgrade']),
-  optional: Object.freeze(['parentId', 'surface', 'dependsOn', 'notes']),
+  optional: Object.freeze([
+    'parentId', 'surface', 'dependsOn', 'notes',
+    // maturity fields (P2.8-F)
+    'trust', 'criticality', 'lifecycle', 'requirements', 'degradation',
+  ]),
 });
 
 /** Version ranges a sub-LEGO may declare. Deliberately small and unambiguous. */
@@ -147,6 +161,11 @@ function normalise(entry) {
       versionRange: dependency.versionRange ?? '*',
     }))),
     status: entry.status,
+    trust: entry.trust ?? 'feature',
+    criticality: entry.criticality ?? 'optional',
+    lifecycle: entry.lifecycle ?? 'available',
+    requirements: Object.freeze({ ...(entry.requirements ?? {}) }),
+    degradation: entry.degradation ? Object.freeze({ ...entry.degradation }) : null,
     tests: Object.freeze([...asArray(entry.tests)]),
     upgrade: Object.freeze({
       policy: entry.upgrade?.policy ?? 'independent',
@@ -181,6 +200,7 @@ export function validateSubLego(entry, catalog = {}) {
 
   const id = entry.id;
   const idIsUsable = typeof id === 'string' && id.length > 0;
+  const derivedParent = idIsUsable ? parentIdOf(id) : null;
   if (!idIsUsable) {
     errors.push('"id" must be a dotted identifier (e.g. "settings.localization")');
   } else {
@@ -189,7 +209,6 @@ export function validateSubLego(entry, catalog = {}) {
     }
     // The parent is derived from the id; declaring a different one is a lie the
     // hierarchy would silently accept, so it is an error rather than a fixup.
-    const derivedParent = parentIdOf(id);
     if (entry.parentId !== undefined && entry.parentId !== null && entry.parentId !== derivedParent) {
       errors.push(`"parentId" must be the id prefix ("${derivedParent}"), not "${entry.parentId}"`);
     }
@@ -297,6 +316,39 @@ export function validateSubLego(entry, catalog = {}) {
 
   if (!SUB_LEGO_STATUSES.includes(entry.status)) errors.push(`"status" must be one of ${SUB_LEGO_STATUSES.join(', ')}`);
 
+  // Maturity: bounded depth, inherited trust, declared criticality and state.
+  if (idIsUsable && depthOf(id) > MAX_DEPTH) {
+    errors.push(`"${id}" is ${depthOf(id) + 1} levels deep — the hierarchy is bounded at ${MAX_DEPTH + 1} (domain -> feature -> sub-feature)`);
+  }
+
+  const trust = entry.trust ?? (derivedParent === null ? 'feature' : null);
+  if (trust !== null && !TRUST_LEVELS.includes(trust)) errors.push(`"trust" must be one of ${TRUST_LEVELS.join(', ')}`);
+  // A child may be less trusted than its parent, never more: a feature cannot
+  // promote itself to core by nesting under one.
+  const parentTrust = catalog.trustOf instanceof Map && derivedParent ? catalog.trustOf.get(derivedParent) ?? null : null;
+  if (trust !== null && parentTrust && !trustInherited(parentTrust, trust)) {
+    errors.push(`"trust": "${trust}" is more trusted than its parent "${derivedParent}" (${parentTrust}) — a child may not be promoted by nesting`);
+  }
+
+  const criticality = entry.criticality ?? 'optional';
+  if (!CRITICALITY.includes(criticality)) errors.push(`"criticality" must be one of ${CRITICALITY.join(', ')}`);
+  if (criticality === 'core' && entry.degradation?.fallback) {
+    errors.push('a "core" unit may not declare a fallback — its absence must stay visible');
+  }
+
+  const lifecycleState = entry.lifecycle ?? 'available';
+  if (!CAPABILITY_STATES.includes(lifecycleState)) errors.push(`"lifecycle" must be one of ${CAPABILITY_STATES.join(', ')}`);
+
+  if (entry.requirements !== undefined) {
+    if (entry.requirements === null || typeof entry.requirements !== 'object' || Array.isArray(entry.requirements)) {
+      errors.push('"requirements" must be an object');
+    } else {
+      for (const key of Object.keys(entry.requirements)) {
+        if (!REQUIREMENT_FIELDS.includes(key)) errors.push(`unknown requirement "${key}" (one of ${REQUIREMENT_FIELDS.join(', ')})`);
+      }
+    }
+  }
+
   const policy = entry.upgrade?.policy;
   if (!UPGRADE_POLICIES.includes(policy)) errors.push(`"upgrade.policy" must be one of ${UPGRADE_POLICIES.join(', ')}`);
   const compatibleWith = entry.upgrade?.compatibleWith;
@@ -343,6 +395,7 @@ export function createSubLegoRegistry({ subLegos = [], owners = {}, surfaces = [
       owners: ownerIds,
       surfaces: surfaceIds,
       surfaceCapabilities,
+      trustOf: new Map([...entries.values()].map((value) => [value.id, value.trust])),
       declaredCapabilities,
       extensionPoints: hookIds,
       known: new Set(entries.keys()),
@@ -365,11 +418,31 @@ export function createSubLegoRegistry({ subLegos = [], owners = {}, surfaces = [
    * published port, and the dependency graph is acyclic. Runs after every
    * mutation, and rolls the mutation back when it is not.
    */
-  function resolveAll() {
+  function detectCycles(map = entries) {
+    const problems = [];
+    const state = new Map();
+    const walk = (id, trail) => {
+      const current = state.get(id);
+      if (current === 'done') return;
+      if (current === 'visiting') {
+        problems.push(`sub-LEGO dependency cycle: ${[...trail, id].join(' -> ')}`);
+        return;
+      }
+      state.set(id, 'visiting');
+      for (const dependency of map.get(id).dependsOn) {
+        if (map.has(dependency.subLego)) walk(dependency.subLego, [...trail, id]);
+      }
+      state.set(id, 'done');
+    };
+    for (const id of map.keys()) walk(id, []);
+    return [...new Set(problems)];
+  }
+
+  function resolveAll(map = entries) {
     const errors = [];
-    for (const entry of entries.values()) {
+    for (const entry of map.values()) {
       for (const dependency of entry.dependsOn) {
-        const target = entries.get(dependency.subLego);
+        const target = map.get(dependency.subLego);
         if (!target) {
           errors.push(`"${entry.id}" depends on "${dependency.subLego}", which is not a declared sub-LEGO`);
           continue;
@@ -384,25 +457,17 @@ export function createSubLegoRegistry({ subLegos = [], owners = {}, surfaces = [
         }
       }
     }
-    const state = new Map();
-    const walk = (id, trail) => {
-      const current = state.get(id);
-      if (current === 'done') return;
-      if (current === 'visiting') {
-        errors.push(`sub-LEGO dependency cycle: ${[...trail, id].join(' -> ')}`);
-        return;
-      }
-      state.set(id, 'visiting');
-      for (const dependency of entries.get(id).dependsOn) {
-        if (entries.has(dependency.subLego)) walk(dependency.subLego, [...trail, id]);
-      }
-      state.set(id, 'done');
-    };
-    for (const id of entries.keys()) walk(id, []);
+    errors.push(...detectCycles(map));
     return [...new Set(errors)];
   }
 
   function add(entry, { resolve = true } = {}) {
+    if (typeof entry?.id === 'string' && !entries.has(entry.id) && entry.trust === undefined) {
+      // Trust is inherited rather than chosen: a unit nested under a `feature`
+      // unit is a feature by default, and may only be lowered explicitly.
+      const parent = entries.get(parentIdOf(entry.id));
+      if (parent) entry = { ...entry, trust: parent.trust };
+    }
     if (typeof entry?.id === 'string' && entries.has(entry.id)) {
       // Checked before anything else: it is the clearest diagnosis, and every
       // later check would also reject the second declaration for a side reason.
@@ -563,29 +628,32 @@ export function createSubLegoRegistry({ subLegos = [], owners = {}, surfaces = [
       );
     }
 
-    const previousPorts = entry.public.ports;
-    const normalised = normalise(next);
-    const { ok, errors } = validate(normalised);
-    if (!ok) throw new SubLegoError(`sub-LEGO "${id}" upgrade is not registrable: ${errors.join('; ')}`, { id, errors });
-
-    for (const port of previousPorts) {
-      if (portOwners.get(port) === id) portOwners.delete(port);
-    }
-    for (const port of normalised.public.ports) portOwners.set(port, id);
-    entries.set(id, normalised);
-
+    // An upgrade is atomic: every change is built and validated off to the side,
+    // then committed in one step. There is no moment where the hierarchy is half
+    // upgraded, and a refused upgrade leaves the catalog exactly as it was.
+    const candidate = new Map(entries);
+    const candidatePorts = new Map(portOwners);
     const changed = [id];
+
+    const normalised = normalise(next);
+    candidate.set(id, normalised);
+    for (const port of entry.public.ports) {
+      if (candidatePorts.get(port) === id) candidatePorts.delete(port);
+    }
+    for (const port of normalised.public.ports) candidatePorts.set(port, id);
+
     for (const dependentId of acknowledge) {
       if (!evaluation.affected.includes(dependentId)) continue;
-      const dependent = entries.get(dependentId);
+      const dependent = candidate.get(dependentId);
       const adopted = dependent.dependsOn.map((dependency) => (
         dependency.subLego === id && !satisfies(normalised.version, dependency.versionRange)
           ? { ...dependency, versionRange: `^${normalised.version}` }
           : dependency
       ));
-      entries.set(dependentId, Object.freeze({
+      candidate.set(dependentId, Object.freeze({
         ...dependent,
         dependsOn: Object.freeze(adopted.map((dependency) => Object.freeze({ ...dependency }))),
+        // The acknowledgment is recorded on the unit that carries the risk.
         acknowledgedUpgrades: Object.freeze([
           ...dependent.acknowledgedUpgrades,
           Object.freeze({ subLego: id, to: normalised.version }),
@@ -593,6 +661,47 @@ export function createSubLegoRegistry({ subLegos = [], owners = {}, surfaces = [
       }));
       changed.push(dependentId);
     }
+
+    const problems = [];
+    for (const changedId of changed) {
+      const { ok, errors } = validateSubLego(candidate.get(changedId), {
+        owners: ownerIds,
+        surfaces: surfaceIds,
+        surfaceCapabilities,
+        declaredCapabilities,
+        extensionPoints: hookIds,
+        known: new Set(candidate.keys()),
+        portOwners: candidatePorts,
+        trustOf: new Map([...candidate.values()].map((value) => [value.id, value.trust])),
+        resolveDependencies: false,
+      });
+      if (!ok) problems.push(...errors.map((error) => `${changedId}: ${error}`));
+    }
+    for (const [candidateId, value] of candidate) {
+      for (const dependency of value.dependsOn) {
+        const target = candidate.get(dependency.subLego);
+        if (!target) {
+          problems.push(`${candidateId}: depends on undeclared "${dependency.subLego}"`);
+          continue;
+        }
+        if (candidatePorts.get(dependency.port) !== dependency.subLego) {
+          problems.push(`${candidateId}: "${dependency.port}" is not published by "${dependency.subLego}" in the upgraded catalog`);
+        }
+      }
+    }
+    problems.push(...detectCycles(candidate));
+    if (problems.length > 0) {
+      throw new SubLegoError(
+        `sub-LEGO "${id}" upgrade would leave the catalog inconsistent — nothing was applied (${[...new Set(problems)].join('; ')})`,
+        { id, errors: [...new Set(problems)] },
+      );
+    }
+
+    // Commit: swap the validated state in, in one step.
+    entries.clear();
+    for (const [key, value] of candidate) entries.set(key, value);
+    portOwners.clear();
+    for (const [key, value] of candidatePorts) portOwners.set(key, value);
 
     const unchanged = [...entries.keys()].filter((other) => !changed.includes(other)).sort();
     return Object.freeze({
@@ -609,7 +718,12 @@ export function createSubLegoRegistry({ subLegos = [], owners = {}, surfaces = [
       catalogVersion,
       subLegos: Object.freeze([...entries.values()]
         .sort((a, b) => a.id.localeCompare(b.id))
-        .map((entry) => Object.freeze({ ...entry }))),
+        .map((entry) => Object.freeze({
+          ...entry,
+          // Derived, never declared twice: the backend capability behind the unit's
+          // surface. `null` means the surface is frontend-only (e.g. dialogs).
+          capability: entry.surface ? surfaceCapabilities.get(entry.surface) ?? null : null,
+        }))),
       owners: Object.freeze({ ...owners }),
       ports: Object.freeze([...portOwners.entries()].map(([port, owner]) => Object.freeze({ port, owner }))),
     });
@@ -622,6 +736,9 @@ export function createSubLegoRegistry({ subLegos = [], owners = {}, surfaces = [
   function toBootView() {
     return Object.freeze([...entries.values()]
       .sort((a, b) => a.id.localeCompare(b.id))
+      // Lean on purpose: identity, hierarchy and published ports. Trust, criticality
+      // and lifecycle are policy the runtime enforces, and the backend capability is
+      // a join from `surface` — none of them belong in what the browser receives.
       .map((entry) => Object.freeze({
         id: entry.id,
         parentId: entry.parentId,
@@ -655,6 +772,22 @@ export function createSubLegoRegistry({ subLegos = [], owners = {}, surfaces = [
     dependentsOf,
     dependentsOn,
     resolvePort,
+    availability: () => Object.freeze([...entries.values()]
+      .sort((a, b) => a.id.localeCompare(b.id))
+      .map((entry) => Object.freeze({
+        id: entry.id,
+        status: entry.status,
+        lifecycle: entry.lifecycle,
+        trust: entry.trust,
+        criticality: entry.criticality,
+        degradation: degradationFor(entry),
+      }))),
+    trustOf: (id) => entries.get(id)?.trust ?? null,
+    criticalityOf: (id) => entries.get(id)?.criticality ?? null,
+    degradationOf: (id) => {
+      const entry = entries.get(id);
+      return entry ? degradationFor(entry) : null;
+    },
     publicPortsOf: (id) => {
       const entry = entries.get(id);
       if (!entry) throw new SubLegoError(`"${id}" is not a registered sub-LEGO`, { id, errors: ['unknown unit'] });

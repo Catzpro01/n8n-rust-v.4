@@ -90,6 +90,14 @@ the LEGO into `vendor/frontend-lego` next to the engine. Architecture and migrat
 **nested units** (`manifest/sub-legos.json`, 19 units three levels deep) with a public/private boundary and an
 upgrade rule that is enforced, not promised: `contracts/frontend-sub-lego.contract.md`.
 
+**P2.8-F — frontend foundation maturity (2026-09-22).** No feature: the foundation is hardened by declaration
+and enforcement. Capability lifecycle (`available → installed → loaded → active | idle | unloaded | disabled`),
+criticality and degradation rules, trust tiers, device profiles, the semantic operation envelope, an impact
+graph with a selective test map and a dry-run plan model, and a drift-checked `.ai/` knowledge pack (L0–L4).
+The declared capability catalog is validated but never registered, and the boot payload is **byte-identical**
+to the P2.5 baseline — the maturity layer is visible to tooling and to the registry, not to the browser.
+Contract: `contracts/frontend.contract.md` §18; decisions: `.ai/cards/decisions.md`.
+
 Per-channel checklist:
 
 1. ✅ Versioning: single source of truth `apps/n8n-lego/package.json`; reference

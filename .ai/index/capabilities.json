@@ -1,0 +1,51 @@
+{
+  "description": "The frontend capability index: one entry per DECLARED capability, plus the vocabularies the registry enforces. Declared is not installed, installed is not loaded, loaded is not active — nothing in this file is running, and the boot payload must not mention any of it. The source of truth is packages/frontend-lego/manifest/capabilities.json; this index is verified against it by packages/frontend-lego/test/12-knowledge.test.mjs.",
+  "declared": [
+    {
+      "id": "translation",
+      "lego": "translation",
+      "title": "Translation and locale switching",
+      "status": "declared",
+      "activation": "lazy",
+      "criticality": "optional",
+      "trust": "feature",
+      "lifecycle": "available",
+      "installed": false,
+      "surfaces": [
+        "navigation",
+        "dashboard",
+        "settings",
+        "workflow-editor",
+        "node-picker",
+        "dialogs",
+        "notifications",
+        "error-surfaces"
+      ],
+      "degradation": {
+        "behavior": "fallback",
+        "fallback": "fallback-locale"
+      },
+      "coordination": "Locales, dictionaries and the fallback chain are owned by contracts/localization.contract.md (agent-9 lineage). This LEGO prepares the surfaces; it does not own the dictionaries."
+    }
+  ],
+  "registered": [],
+  "vocabularies": {
+    "activation": ["eager", "lazy", "manual"],
+    "lifecycle": ["available", "installed", "loaded", "active", "idle", "unloaded", "disabled"],
+    "runnableStates": ["loaded", "active", "idle"],
+    "criticality": ["core", "optional", "enhancement"],
+    "trust": ["core", "feature", "extension", "untrusted"],
+    "support": ["supported", "degraded", "remote", "unsupported"],
+    "status": ["declared", "available", "partial", "unsupported"],
+    "deviceProfiles": ["desktop", "laptop", "low-memory", "android", "termux-companion", "remote-only"],
+    "requirementFields": ["memoryMb", "storageMb", "requiresLocalExecution", "requiresNetwork", "heavy", "input"]
+  },
+  "rules": [
+    "A capability attaches only to a surface declared in manifest/surfaces.json.",
+    "activation lazy|manual must name an `entry` module path once the capability is installable; a declared capability owes none.",
+    "criticality core may not declare a fallback: a missing core capability must be visible.",
+    "trust is inherited; a unit nested under a feature capability is a feature and may only be lowered.",
+    "Backend-bound capabilities are not re-declared here: the surface catalog already binds a surface to its backend capability and contract.",
+    "A feature this instance cannot serve is answered by the compatibility layer's unsupported map (apps/n8n-lego/src/compat/capability.mjs) — never duplicated here."
+  ]
+}

@@ -180,7 +180,11 @@ test('the boot payload publishes the sub-LEGO hierarchy, not its internals', () 
   assert.ok(published.length >= 12, 'the declared units are published');
   assert.ok(published.some((entry) => entry.parentId !== null), 'at least one nested unit');
   for (const entry of published) {
+    // Identity, hierarchy and published ports — nothing about behaviour or contents.
     assert.deepEqual(Object.keys(entry).sort(), ['id', 'owner', 'parentId', 'ports', 'status', 'surface', 'version']);
+    for (const excluded of ['internals', 'tests', 'entry', 'trust', 'criticality', 'lifecycle', 'capability', 'dependsOn']) {
+      assert.equal(excluded in entry, false, `${excluded} must not travel to the browser`);
+    }
   }
 });
 

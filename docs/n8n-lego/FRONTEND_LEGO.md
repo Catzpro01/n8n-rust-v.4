@@ -175,7 +175,7 @@ Everything above is additive: nothing the pinned UI calls changed shape or statu
 
 | Gate | Command | What it proves |
 | :--- | :--- | :--- |
-| Contract + architecture (78 tests) | `npm run frontend-lego:test` | doc↔code agreement, registry fail-closed, error model, i18n structure, sub-LEGO hierarchy/ownership/upgrade, framework/backend isolation |
+| Contract + architecture (123 tests) | `npm run frontend-lego:test` | doc↔code agreement, registry fail-closed, error model, i18n structure, sub-LEGO hierarchy/ownership/upgrade, capability lifecycle/criticality/trust, envelope, impact + test map, device profiles, `.ai/` pack drift, framework/backend isolation |
 | App boundary (11 tests) | `N8N_LEGO_CATALOG_DIR=… node --test apps/n8n-lego/test/*.test.mjs` | descriptor served + auth-guarded, meta tag == endpoint payload, **UI byte-identical apart from the tag**, 501 → machine-readable error, fail-soft load |
 | Browser gate | `node tests/e2e/frontend-boundary.mjs <url>` | the boundary in a real page: tag present, payload valid, sessions work, stock shell still renders, no page errors, no leaked bridge global |
 | P0/P2 regression | `node tests/e2e/lego-smoke.mjs <url> --mode=create\|verify`, `node tests/e2e/settings-compat.mjs <url>` | nothing user-visible changed |
@@ -186,9 +186,12 @@ Evidence is regenerated — not hand-written — with
 node apps/n8n-lego/scripts/capture-frontend-evidence.mjs      # → docs/n8n-lego/evidence/frontend-boundary-p25.json
 ```
 
-which starts the app in-process, signs the owner in and records the 18 checks above at HTTP level (including
-`PASS: hierarchy is walkable in declaration order`, `PASS: private areas never reach the payload` and
-`PASS: UI byte-identical apart from the additive tag — delta=24268 bytes (the tag only)`).
+which starts the app in-process, signs the owner in and records **25 checks** at HTTP level — including
+`PASS: hierarchy is walkable in declaration order`, `PASS: private areas never reach the payload`,
+`PASS: UI byte-identical apart from the additive tag — delta=24268 bytes (the tag only)` and, from P2.8-F,
+`PASS: declared capability catalog is validated but not registered — 1 declared, 0 registered`,
+`PASS: impact: a private root change stays low risk — risk=low tiers=fast-contract,boundary,browser` and
+`PASS: boot payload is byte-identical to the P2.5 baseline — 18126 bytes vs pinned P2.5 baseline 18126`.
 
 CI: the frontend LEGO suite runs in the `gate` job; the browser gate runs in `clean-clone` after the
 P2 gate. Workflow path filters include `packages/frontend-lego/**` and `contracts/frontend.contract.md`,
@@ -208,12 +211,14 @@ so the gates cannot be bypassed by touching only the new package.
    (the `packages/*-lego` convention). It is **not** added to `.arena/registry/lego.yaml` in P2.5 —
    that registry is agent-05's and the audit tool validates it bidirectionally; registering
    `ui-frontend` should be a Manager/Integrator decision, not a side effect of this phase.
-5. **One open arbitration item.** `contracts/micro-frontend.contract.md` (LEGO 13, "CONTRACT SPECIFIED")
-   declares a Web-Components decomposition and a locale set `id, en, es, fr, de, ja`. This phase
-   implements none of that and changes none of it: the reference implementation stays the pinned Vue
-   bundle, and the locale set is `id, en, ar, zh, ru, jv` per the P2.5 brief. The difference is recorded in
-   `contracts/frontend.contract.md` §16.1 and needs a Manager/Integrator decision — which set is
-   authoritative, and whether the Web-Components decomposition is still the target.
+5. **Legacy micro-frontend spec — resolved by marking, still confirmable.** `contracts/micro-frontend.contract.md`
+   (LEGO 13) declared a Web-Components decomposition and the locale set `id, en, es, fr, de, ja`. As of
+   P2.8-F it carries a **SUPERSEDED** banner (original text kept below it): the locale set is owned and tested
+   by `contracts/localization.contract.md` (`id, en, ar, zh, ru, jv`, Arabic RTL) and the reference
+   implementation stays the pinned Vue bundle. The legacy *decomposition* survives as nested units — mapping in
+   `.ai/maps/dependencies.md` §6. What remains for the Manager is bookkeeping (keep marked / archive / delete,
+   and whether to revive the Web-Components direction as a new task): `.ai/cards/decisions.md` **D22**,
+   `contracts/frontend.contract.md` §16.1, `docs/isolation/CROSS-AGENT-ISSUES.md` **ISSUE-024**.
 6. **Shared files touched (minimal, documented)**: root `package.json` (one test script),
    `.github/workflows/n8n-lego.yml` (path filters + two steps), `scripts/release.sh` (vendor the
    frontend LEGO into the tarball beside the engine), `contracts/frontend.contract.md` (new),
@@ -231,6 +236,53 @@ so the gates cannot be bypassed by touching only the new package.
   rule*, not a micro-frontend runtime.
 * `ui:theme:tokens`, `ui:command:register`, `ui:assistant:panel` are contracts for features that are
   not scheduled; they are declared because the catalog must be able to represent them.
-* No localization: English fallback text ships for error kinds (labelled as temporary).
+* No localization: English fallback text ships for error kinds (labelled as temporary). The declared
+  `translation` capability records what must happen when the Translation LEGO is absent (fallback chain owned by
+  `contracts/localization.contract.md`), but no dictionaries are shipped from this LEGO.
+* The capability catalog declares **one** capability and installs none — by design. Availability tooling
+  (`availability()`, device support, degradation) describes what *would* happen; nothing is loaded, so nothing
+  can be observed running.
+* Impact/risk and the `.ai/` pack are computed in-process from declarations. They are not a CI job of their own
+  yet: the pack is drift-checked by `test/12`, and the selective test map is advice a human or agent follows
+  (the CI jobs still run the full frontend set).
 * The browser gate runs in CI only (this sandbox has no Chromium); locally the HTTP/contract-level
   boundary is covered by the app suite.
+
+## 9. Maturity layer (P2.8-F) — declared, enforced, invisible to the browser
+
+`contracts/frontend.contract.md` §18 is normative; this is what it means in practice.
+
+| Concern | Where it lives | What enforces it |
+| :--- | :--- | :--- |
+| Capability lifecycle (`available → installed → loaded → active | idle | unloaded | disabled`) | `src/lifecycle.mjs` | `test/07`, `test/11` — only `loaded/active/idle` serve; unlisted transitions refused by name |
+| Criticality + degradation (`core` may not have a fallback) | `src/lifecycle.mjs` | `test/07`, `test/11` |
+| Trust tiers with inheritance (never promoted by nesting) | `src/lifecycle.mjs`, `src/sublegos.mjs` | `test/07`, `test/06` |
+| Device profiles and `supported/degraded/remote/unsupported` | `src/profiles.mjs` | `test/10` — every answer carries a reason |
+| Semantic operation envelope (no credentials, no local payload tax) | `src/envelope.mjs` | `test/08` |
+| Impact graph, selective test map, dry-run plan | `src/impact.mjs` | `test/09` — risk = blast radius, arbitration = consent |
+| Declared capability catalog (validated, never registered) | `manifest/capabilities.json` | `test/11`, evidence check `1 declared, 0 registered` |
+| `.ai/` knowledge pack (L0–L4, drift-checked, size-budgeted) | `.ai/**`, `src/knowledge.mjs` | `test/12` — indexes compared against the manifests |
+
+Two deliberate properties worth stating:
+
+* **The maturity layer adds zero bytes to what the browser receives.** The boot payload is byte-identical to
+  the P2.5 baseline (18,126 bytes JSON → 24,168 base64), asserted by the evidence script against that pinned
+  number. Policy (trust, criticality, lifecycle) and the backend capability of a unit stay in the in-process
+  descriptor; the browser gets identity, hierarchy and published ports.
+* **Nothing here is a loader.** Lazy activation is *permitted* by the model (activation mode, entry path,
+  lifecycle states) and not implemented — no dynamic import, no service worker, no plugin runtime. A loader is
+  a later task with its own justification, and the pack records it as such (`.ai/cards/decisions.md` D12/D13).
+
+### How to use it when you touch the frontend
+
+```bash
+# what would this change touch, and what must be tested?
+node -e "import('./packages/frontend-lego/index.mjs').then(m=>{
+  const l=m.createFrontendLego({app:{name:'n8n-lego',version:'0.1.0'}});
+  console.log(JSON.stringify(l.planChange({target:'settings.localization'}),null,1));})"
+
+# what can this frontend offer, and what happens when it is absent?
+node -e "import('./packages/frontend-lego/index.mjs').then(m=>{
+  const l=m.createFrontendLego({app:{name:'n8n-lego',version:'0.1.0'}});
+  console.log(JSON.stringify(l.availability(),null,1));})"
+```
