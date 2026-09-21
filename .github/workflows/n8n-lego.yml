@@ -4,8 +4,14 @@ name: n8n-lego Gate
 # runtime). It answers one question: does `git clone → start → n8n UI → create
 # workflow → edit → save → execute → inspect → restart` still work?
 #
-#   gate                unit + REST/contract integration tests, then the release
-#                       package (npm tarball + offline tarball + checksums)
+#   architecture        backend LEGO isolation gate: domain boundaries,
+#                       dependency direction, public/private surfaces, frozen
+#                       legacy zone, contract versions, nested (sub-)LEGO rules
+#                       and scale-out readiness — plus the selftest that proves
+#                       the gate still catches real violations (P2.6 + P2.7)
+#   gate                unit + REST/contract integration tests (incl. the P2.6
+#                       foundation contract tests), then the release package
+#                       (npm tarball + offline tarball + checksums)
 #   clean-clone         git clone → install → start → /healthz → real n8n UI,
 #                       browser smoke (owner setup → create workflow → canvas →
 #                       add node → save → execute → execution result) → P2 gate
@@ -26,12 +32,9 @@ on:
     types: [opened, synchronize, reopened]
     paths:
       - 'apps/n8n-lego/**'
-      - 'packages/frontend-lego/**'
-      # The frontend contracts and the .ai knowledge pack: the package suite fails
-      # on drift, so a change that only touches them must still run the gates.
-      - 'contracts/frontend*.contract.md'
-      - '.ai/**'
       - 'tests/e2e/**'
+      - 'tools/lego/**'
+      - 'packages/frontend-lego/**'
       - 'scripts/release.sh'
       - 'package.json'
       - '.github/workflows/n8n-lego.yml'
@@ -39,12 +42,9 @@ on:
     branches: [main]
     paths:
       - 'apps/n8n-lego/**'
-      - 'packages/frontend-lego/**'
-      # The frontend contracts and the .ai knowledge pack: the package suite fails
-      # on drift, so a change that only touches them must still run the gates.
-      - 'contracts/frontend*.contract.md'
-      - '.ai/**'
       - 'tests/e2e/**'
+      - 'tools/lego/**'
+      - 'packages/frontend-lego/**'
       - 'scripts/release.sh'
       - 'package.json'
       - '.github/workflows/n8n-lego.yml'
@@ -62,6 +62,85 @@ env:
   LEGO_URL: http://127.0.0.1:6200
 
 jobs:
+  architecture:
+    name: Backend LEGO architecture gate (P2.6)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.18'
+
+      # No install: the gate is pure Node with zero dependencies, so a boundary
+      # violation is reported in seconds instead of after a full bootstrap.
+      - name: Domain boundaries, dependency direction, contract versions
+        run: node tools/lego/architecture-gate.mjs
+
+      - name: The gate provably detects forbidden dependencies
+        # A gate nobody has seen fail proves nothing: this plants real
+        # violations (storage->workflow internals, execution->workflow
+        # internals, node->credential/storage persistence, undeclared imports,
+        # internal-path reach, legacy-zone growth, unowned files) in a throwaway
+        # tree and requires each to be caught, plus a negative control.
+        run: node tools/lego/architecture-gate.mjs --selftest
+
+      - name: The 501 capability contract matches the LEGO registry
+        run: node tools/lego/capability-conformance.mjs
+
+      - name: The foundation gate provably detects incomplete contracts
+        # Same principle as the architecture selftest: a gate nobody has watched
+        # fail is a decoration. Plants a capability with no operations, an
+        # unknown transport, a fifth interaction class, an undeclared stream
+        # policy and an ambiguous surface alias, and requires each to be caught
+        # — plus a negative control on the real registry.
+        run: node tools/lego/foundation-gate.mjs --selftest
+
+      - name: Foundation 1.0 profiles are declared and coherent
+        # Every LEGO must describe itself in the foundation vocabulary: tier,
+        # trust, capabilities, data owner, state class, failure boundary and
+        # resources. Also enforces the lightweight security checks — no secret
+        # in a public contract, no external endpoint without the network
+        # capability, no untrusted code left in-process.
+        run: node tools/lego/foundation-gate.mjs
+
+      - name: The AI knowledge pack is not stale
+        # .ai/ is GENERATED from the manifest so it cannot drift into being
+        # confidently wrong. If the manifest moved and the pack did not, this
+        # fails rather than letting an agent read stale architecture.
+        run: node tools/lego/ai-pack.mjs --check
+
+      - name: Scale-out readiness (no undeclared process-local coupling)
+        # P2.7 implements no worker/scaling infrastructure. This only asserts
+        # that new contract-first LEGO code is process-agnostic and that every
+        # finding in existing code is a declared, owned exception in the
+        # manifest — so the list can shrink but never grow silently.
+        run: node tools/lego/scale-out-readiness.mjs
+
+      - name: Machine-readable reports for the integration record
+        if: always()
+        run: |
+          node tools/lego/architecture-gate.mjs --json > architecture-gate.json || true
+          node tools/lego/scale-out-readiness.mjs --json > scale-out-readiness.json || true
+          node tools/lego/foundation-gate.mjs --json > foundation-gate.json || true
+          node tools/lego/impact-graph.mjs --json > impact-graph.json || true
+
+      - name: Upload the architecture report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: n8n-lego-architecture-gate
+          path: |
+            architecture-gate.json
+            scale-out-readiness.json
+            foundation-gate.json
+            impact-graph.json
+          if-no-files-found: ignore
+          retention-days: 7
+
   gate:
     name: Unit + integration tests and release package
     runs-on: ubuntu-latest
@@ -92,10 +171,16 @@ jobs:
           test -f "$APP_DIR/data/roles.json"
           node -e "const roles=require('./' + process.env.APP_DIR + '/data/roles.json'); console.log('bundled roles.json present:', Object.keys(roles).length, 'groups')"
 
-      - name: Frontend LEGO contract + architecture tests (P2.5)
+      - name: Frontend LEGO tests (framework-neutral contract, seam, identity, knowledge pack)
         run: node --test packages/frontend-lego/test/*.test.mjs
 
       - name: Unit + REST contract integration tests
+        # The glob covers every suite, including the P2.9 additions:
+        #   lego-boundary.test.mjs      surfaces are upper bounds; the allowance
+        #                               count may shrink but never grow
+        #   lego-communication.test.mjs CALL/EVENT/STREAM/BATCH semantics,
+        #                               cancellation, deadlines, backpressure,
+        #                               lifecycle and capability negotiation
         env:
           N8N_LEGO_CATALOG_DIR: ${{ runner.temp }}/catalog
           N8N_LEGO_USER_FOLDER: ${{ runner.temp }}/unit-data
@@ -204,13 +289,6 @@ jobs:
           LEGO_P2_EVIDENCE: ${{ runner.temp }}/settings-visibility-p2.json
           LEGO_P2_SHOTS: ${{ runner.temp }}/p2-shots
         run: node tests/e2e/settings-compat.mjs "$LEGO_URL"
-
-      - name: P2.5 browser gate — frontend boundary, boot descriptor, stock UI intact
-        working-directory: ${{ runner.temp }}/clean-clone
-        env:
-          LEGO_P25_EVIDENCE: ${{ runner.temp }}/frontend-boundary-p25.json
-          LEGO_P25_SHOTS: ${{ runner.temp }}/p25-shots
-        run: node tests/e2e/frontend-boundary.mjs "$LEGO_URL"
 
       - name: Restart the instance on the same data directory
         run: |

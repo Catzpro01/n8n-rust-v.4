@@ -5,15 +5,14 @@ Cargo requires a directory source to hold self-contained, path-free manifests. G
 clones do not: they carry `path = ...` dependencies and `workspace = true`
 inheritance (crates.io publishes a normalised manifest, a clone does not). This
 rewrites each manifest in place: inherited deps get explicit versions, `path` keys
-are stripped, `[workspace*]` / `[patch.*]` / `[dev-dependencies*]` / `[lints]` tables
-are dropped, and a `.cargo-checksum.json` is written so cargo treats the directory as a
-registry replacement.
+are stripped, `[workspace]` / `[patch.*]` tables are dropped, and a
+`.cargo-checksum.json` is written so cargo treats the directory as a registry
+replacement.
 
 Dev-dependencies are dropped as well, and any `[features]` entry that only pointed at a
 dropped dev-dependency is emptied: cargo parses the features table of *vendored* crates
 too, so syn\'s `test = ["syn-test-suite/all-features"]` fails the whole build even though
-nothing in the workspace asks for that feature. (`[lints] workspace = true` is dropped for
-the same reason — a standalone manifest has no workspace to inherit lint levels from.)
+nothing in the workspace asks for that feature.
 
 Usage: vendor_prep.py <src-dir> <dst-dir>
 """
@@ -51,12 +50,6 @@ PLAN = [
     ("regex-automata-0.4.18/regex-automata", "regex-automata", "0.4.18"),
     ("regex-syntax-0.8.11/regex-syntax", "regex-syntax", "0.8.11"),
     ("aho-corasick", "aho-corasick", "1.1.5"),
-    # tokio's `rt` + `macros` closure. `tokio`'s own dev-dependency set (tokio-test,
-    # mockall, proptest, …) is not part of it: cargo ignores the dev-dependencies of a
-    # crate that is only a dependency, so only these two are ever resolved.
-    ("tokio-1.53.1/tokio", "tokio", "1.53.1"),
-    ("tokio-1.53.1/tokio-macros", "tokio-macros", "2.7.1"),
-    ("pin-project-lite", "pin-project-lite", "0.2.17"),
 ]
 # Fallback versions for `workspace = true` deps whose workspace manifest cannot be read. The
 # authoritative source is `[workspace.dependencies]` of the crate's own repository (see
@@ -89,47 +82,33 @@ DOTTED = re.compile(r"^([A-Za-z0-9_.-]+)\.workspace\s*=\s*true$")
 
 
 DEV_SECTION = re.compile(r"^\[dev-dependencies(?:\.([^\]]+))?\]$")
-# A `dev-dependencies` component anywhere in a table header: `[dev-dependencies]`,
-# `[dev-dependencies.foo]`, `[target.'cfg(unix)'.dev-dependencies]`, …
-DEV_IN_NAME = re.compile(r"(?:^|\.)dev-dependencies(?:\.|$)")
 
 
 def collect_external_dev_deps(path):
-    """Dev-dependency names that are dropped and *not* declared anywhere else.
+    """Dev-dependency names that are *not* part of the vendored set.
 
-    Those tables are dropped from the manifest, so any [features] entry that references
-    them would leave cargo with a dangling feature (syn's `test` feature is the canonical
-    example). A name only counts when the crate does not also declare it as a dependency:
-    tokio has both a `libc` dev-dependency and an optional `libc` dependency, and a feature
-    list may only refer to the latter. Names that are vendored (serde_derive, …) are kept
+    Those are dropped from the manifest, so any [features] entry that references
+    them would leave cargo with a dangling feature (syn's `test` feature is the
+    canonical example). Names that are vendored (serde_derive, …) are kept
     because the corresponding [dependencies] entry survives.
     """
-    dev, declared = set(), set()
-
-    def names_in(section):
-        """Crate names declared by a table header and its body."""
-        return [section.split(".")[-1].strip("\"'")] if section.count(".") and not section.endswith("dependencies") else []
-
-    dev_names, declared_names, in_dev, in_dep = set(), set(), False, False
+    names, in_dev = set(), False
     for line in open(path, encoding="utf-8").read().split("\n"):
         stripped = line.strip()
         header = SECTION.match(stripped)
         if header:
-            section = header.group(1)
-            in_dev = bool(DEV_IN_NAME.search(section))
-            in_dep = not in_dev and "dependencies" in section
-            for name in names_in(section):
-                (dev_names if in_dev else declared_names).add(name)
+            in_dev = stripped.startswith("[dev-dependencies")
+            dotted = DEV_SECTION.match(stripped)
+            if dotted and dotted.group(1):
+                names.add(dotted.group(1))
             continue
-        if not stripped or stripped.startswith("#") or "=" not in stripped:
-            continue
-        if in_dev or in_dep:
+        if in_dev and "=" in stripped and not stripped.startswith("#"):
             key = stripped.split("=")[0].strip().strip('"')
             if "package = " in stripped:
                 key = stripped.split("package = ")[1].split(",")[0].strip().strip('"')
             if key:
-                (dev_names if in_dev else declared_names).add(key)
-    return {n for n in dev_names if n not in declared_names and n not in ALL_CRATES}
+                names.add(key)
+    return {n for n in names if n not in ALL_CRATES}
 
 
 def workspace_dep_versions(repo_root):
@@ -183,11 +162,9 @@ def rewrite_manifest(path, name, version, workspace_deps=None):
         if header:
             section = header.group(1)
             drop_section = (
-                section == "lints"
-                or section == "workspace"
-                or section.startswith("workspace.")
+                section == "workspace"
                 or section.startswith("patch.")
-                or bool(DEV_IN_NAME.search(section))
+                or section.startswith("dev-dependencies")
             )
             in_features = section == "features"
             if drop_section:
@@ -199,12 +176,8 @@ def rewrite_manifest(path, name, version, workspace_deps=None):
             continue
         if in_features and "=" in stripped and "[" in stripped:
             key, _, rest = stripped.partition("=")
-            # `dep:foo`, `foo/feature` and `foo?/feature` all name a dependency that is
-            # still declared (only the dev-dependency tables were dropped), so they are not
-            # evidence of a dangling feature — a bare `foo` is.
-            refs = [r.split("/")[0].rstrip("?") for r in re.findall(r'"([^"/]+)', rest)]
-            refs = [r for r in refs if not r.startswith("dep:")]
-            if any(r in dev_deps for r in refs):
+            refs = re.findall(r'"([^"/]+)', rest)
+            if any(r.lstrip("dep:") in dev_deps for r in refs):
                 report.append(f"  - feature {key.strip()} referenced a dropped dev-dependency")
                 out.append(f"{key.strip()} = []")
                 continue
