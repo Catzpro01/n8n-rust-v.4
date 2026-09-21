@@ -1,0 +1,654 @@
+{
+  "catalogVersion": "1.0.0",
+  "description": "Generated from manifest/sub-legos.json. Declared hierarchy only — no unit is installed, loaded or active. A component, button, icon or helper is not a unit. `implementation` names what implements the unit today (derived default) and is replaceable without moving the contract or the version.",
+  "counts": {
+    "units": 19,
+    "roots": 11,
+    "ports": 27,
+    "dependencies": 13,
+    "owners": 1
+  },
+  "maxDepth": 2,
+  "units": [
+    {
+      "id": "auth",
+      "parentId": null,
+      "owner": "agent-01",
+      "surface": "auth",
+      "capability": "auth",
+      "version": "1.0.0",
+      "status": "declared",
+      "trust": "feature",
+      "criticality": "optional",
+      "lifecycle": "available",
+      "ports": [
+        "ui:auth:session-view"
+      ],
+      "internals": [
+        "src/sub-legos/auth/**"
+      ],
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "dependsOn": [],
+      "upgradePolicy": "independent",
+      "implementation": {
+        "id": "auth",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+    },
+    {
+      "id": "navigation",
+      "parentId": null,
+      "owner": "agent-01",
+      "surface": "navigation",
+      "capability": "settings",
+      "version": "1.0.0",
+      "status": "declared",
+      "trust": "feature",
+      "criticality": "optional",
+      "lifecycle": "available",
+      "ports": [
+        "ui:nav:contribution"
+      ],
+      "internals": [
+        "src/sub-legos/navigation/**"
+      ],
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "dependsOn": [],
+      "upgradePolicy": "independent",
+      "implementation": {
+        "id": "navigation",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+    },
+    {
+      "id": "dashboard",
+      "parentId": null,
+      "owner": "agent-01",
+      "surface": "dashboard",
+      "capability": "workflow",
+      "version": "1.0.0",
+      "status": "declared",
+      "trust": "feature",
+      "criticality": "optional",
+      "lifecycle": "available",
+      "ports": [
+        "ui:dashboard:list-source",
+        "ui:dashboard:empty-state"
+      ],
+      "internals": [
+        "src/sub-legos/dashboard/**"
+      ],
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "dependsOn": [],
+      "upgradePolicy": "independent",
+      "implementation": {
+        "id": "dashboard",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+    },
+    {
+      "id": "settings",
+      "parentId": null,
+      "owner": "agent-01",
+      "surface": "settings",
+      "capability": "settings",
+      "version": "1.0.0",
+      "status": "declared",
+      "trust": "feature",
+      "criticality": "optional",
+      "lifecycle": "available",
+      "ports": [
+        "ui:settings:shell",
+        "ui:settings:page"
+      ],
+      "internals": [
+        "src/sub-legos/settings/**"
+      ],
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "dependsOn": [],
+      "upgradePolicy": "independent",
+      "implementation": {
+        "id": "settings",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+    },
+    {
+      "id": "settings.general",
+      "parentId": "settings",
+      "owner": "agent-01",
+      "surface": "settings",
+      "capability": "settings",
+      "version": "1.0.0",
+      "status": "declared",
+      "trust": "feature",
+      "criticality": "optional",
+      "lifecycle": "available",
+      "ports": [
+        "ui:settings:general:field"
+      ],
+      "internals": [
+        "src/sub-legos/settings/general/**"
+      ],
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "dependsOn": [
+        "settings#ui:settings:shell@^1.0.0"
+      ],
+      "upgradePolicy": "independent",
+      "implementation": {
+        "id": "settings.general",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+    },
+    {
+      "id": "settings.security",
+      "parentId": "settings",
+      "owner": "agent-01",
+      "surface": "settings",
+      "capability": "settings",
+      "version": "1.0.0",
+      "status": "declared",
+      "trust": "feature",
+      "criticality": "optional",
+      "lifecycle": "available",
+      "ports": [
+        "ui:settings:security:policy"
+      ],
+      "internals": [
+        "src/sub-legos/settings/security/**"
+      ],
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "dependsOn": [
+        "settings#ui:settings:shell@^1.0.0"
+      ],
+      "upgradePolicy": "independent",
+      "implementation": {
+        "id": "settings.security",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+    },
+    {
+      "id": "settings.localization",
+      "parentId": "settings",
+      "owner": "agent-01",
+      "surface": "settings",
+      "capability": "settings",
+      "version": "1.0.0",
+      "status": "declared",
+      "trust": "feature",
+      "criticality": "optional",
+      "lifecycle": "available",
+      "ports": [
+        "ui:settings:localization:pack-list",
+        "ui:locale:direction"
+      ],
+      "internals": [
+        "src/sub-legos/settings/localization/**"
+      ],
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "dependsOn": [
+        "settings#ui:settings:shell@^1.0.0"
+      ],
+      "upgradePolicy": "acknowledged",
+      "implementation": {
+        "id": "settings.localization",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+    },
+    {
+      "id": "settings.localization.rtl",
+      "parentId": "settings.localization",
+      "owner": "agent-01",
+      "surface": "settings",
+      "capability": "settings",
+      "version": "1.0.0",
+      "status": "declared",
+      "trust": "feature",
+      "criticality": "optional",
+      "lifecycle": "available",
+      "ports": [
+        "ui:locale:direction:resolve"
+      ],
+      "internals": [
+        "src/sub-legos/settings/localization/rtl/**"
+      ],
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "dependsOn": [
+        "settings.localization#ui:locale:direction@^1.0.0"
+      ],
+      "upgradePolicy": "acknowledged",
+      "implementation": {
+        "id": "settings.localization.rtl",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+    },
+    {
+      "id": "workflow-editor",
+      "parentId": null,
+      "owner": "agent-01",
+      "surface": "workflow-editor",
+      "capability": "workflow",
+      "version": "1.0.0",
+      "status": "declared",
+      "trust": "feature",
+      "criticality": "optional",
+      "lifecycle": "available",
+      "ports": [
+        "ui:editor:panel",
+        "ui:editor:command"
+      ],
+      "internals": [
+        "src/sub-legos/workflow-editor/**"
+      ],
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "dependsOn": [],
+      "upgradePolicy": "independent",
+      "implementation": {
+        "id": "workflow-editor",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+    },
+    {
+      "id": "workflow-editor.canvas",
+      "parentId": "workflow-editor",
+      "owner": "agent-01",
+      "surface": "workflow-editor",
+      "capability": "workflow",
+      "version": "1.0.0",
+      "status": "declared",
+      "trust": "feature",
+      "criticality": "optional",
+      "lifecycle": "available",
+      "ports": [
+        "ui:canvas:selection",
+        "ui:canvas:overlay"
+      ],
+      "internals": [
+        "src/sub-legos/workflow-editor/canvas/**"
+      ],
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "dependsOn": [
+        "workflow-editor#ui:editor:panel@^1.0.0"
+      ],
+      "upgradePolicy": "independent",
+      "implementation": {
+        "id": "workflow-editor.canvas",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+    },
+    {
+      "id": "workflow-editor.node-panel",
+      "parentId": "workflow-editor",
+      "owner": "agent-01",
+      "surface": "workflow-editor",
+      "capability": "workflow",
+      "version": "1.0.0",
+      "status": "declared",
+      "trust": "feature",
+      "criticality": "optional",
+      "lifecycle": "available",
+      "ports": [
+        "ui:panel:selection",
+        "ui:panel:parameters"
+      ],
+      "internals": [
+        "src/sub-legos/workflow-editor/node-panel/**"
+      ],
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "dependsOn": [
+        "workflow-editor#ui:editor:panel@^1.0.0"
+      ],
+      "upgradePolicy": "acknowledged",
+      "implementation": {
+        "id": "workflow-editor.node-panel",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+    },
+    {
+      "id": "workflow-editor.parameter-panel",
+      "parentId": "workflow-editor",
+      "owner": "agent-01",
+      "surface": "workflow-editor",
+      "capability": "workflow",
+      "version": "1.0.0",
+      "status": "declared",
+      "trust": "feature",
+      "criticality": "optional",
+      "lifecycle": "available",
+      "ports": [
+        "ui:panel:parameter-form"
+      ],
+      "internals": [
+        "src/sub-legos/workflow-editor/parameter-panel/**"
+      ],
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "dependsOn": [
+        "workflow-editor#ui:editor:panel@^1.0.0",
+        "workflow-editor.node-panel#ui:panel:selection@^1.0.0"
+      ],
+      "upgradePolicy": "independent",
+      "implementation": {
+        "id": "workflow-editor.parameter-panel",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+    },
+    {
+      "id": "workflow-editor.execution-panel",
+      "parentId": "workflow-editor",
+      "owner": "agent-01",
+      "surface": "workflow-editor",
+      "capability": "workflow",
+      "version": "1.0.0",
+      "status": "declared",
+      "trust": "feature",
+      "criticality": "optional",
+      "lifecycle": "available",
+      "ports": [
+        "ui:panel:execution-data"
+      ],
+      "internals": [
+        "src/sub-legos/workflow-editor/execution-panel/**"
+      ],
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "dependsOn": [
+        "workflow-editor#ui:editor:panel@^1.0.0",
+        "workflow-editor.canvas#ui:canvas:selection@^1.0.0"
+      ],
+      "upgradePolicy": "independent",
+      "implementation": {
+        "id": "workflow-editor.execution-panel",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+    },
+    {
+      "id": "node-picker",
+      "parentId": null,
+      "owner": "agent-01",
+      "surface": "node-picker",
+      "capability": "node-registry",
+      "version": "1.0.0",
+      "status": "declared",
+      "trust": "feature",
+      "criticality": "optional",
+      "lifecycle": "available",
+      "ports": [
+        "ui:picker:item-source"
+      ],
+      "internals": [
+        "src/sub-legos/node-picker/**"
+      ],
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "dependsOn": [],
+      "upgradePolicy": "independent",
+      "implementation": {
+        "id": "node-picker",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+    },
+    {
+      "id": "credentials",
+      "parentId": null,
+      "owner": "agent-01",
+      "surface": "credentials",
+      "capability": "credentials",
+      "version": "1.0.0",
+      "status": "declared",
+      "trust": "feature",
+      "criticality": "optional",
+      "lifecycle": "available",
+      "ports": [
+        "ui:credential:form-binding"
+      ],
+      "internals": [
+        "src/sub-legos/credentials/**"
+      ],
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "dependsOn": [
+        "dialogs#ui:dialog:component@^1.0.0"
+      ],
+      "upgradePolicy": "independent",
+      "implementation": {
+        "id": "credentials",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+    },
+    {
+      "id": "executions",
+      "parentId": null,
+      "owner": "agent-01",
+      "surface": "executions",
+      "capability": "execution",
+      "version": "1.0.0",
+      "status": "declared",
+      "trust": "feature",
+      "criticality": "optional",
+      "lifecycle": "available",
+      "ports": [
+        "ui:execution:list-source",
+        "ui:execution:error-view"
+      ],
+      "internals": [
+        "src/sub-legos/executions/**"
+      ],
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "dependsOn": [
+        "error-surfaces#ui:error:strip@^1.0.0"
+      ],
+      "upgradePolicy": "independent",
+      "implementation": {
+        "id": "executions",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+    },
+    {
+      "id": "notifications",
+      "parentId": null,
+      "owner": "agent-01",
+      "surface": "notifications",
+      "capability": "push",
+      "version": "1.0.0",
+      "status": "declared",
+      "trust": "feature",
+      "criticality": "optional",
+      "lifecycle": "available",
+      "ports": [
+        "ui:notification:enqueue"
+      ],
+      "internals": [
+        "src/sub-legos/notifications/**"
+      ],
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "dependsOn": [],
+      "upgradePolicy": "acknowledged",
+      "implementation": {
+        "id": "notifications",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+    },
+    {
+      "id": "dialogs",
+      "parentId": null,
+      "owner": "agent-01",
+      "surface": "dialogs",
+      "capability": null,
+      "version": "1.0.0",
+      "status": "declared",
+      "trust": "feature",
+      "criticality": "optional",
+      "lifecycle": "available",
+      "ports": [
+        "ui:dialog:component"
+      ],
+      "internals": [
+        "src/sub-legos/dialogs/**"
+      ],
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "dependsOn": [],
+      "upgradePolicy": "acknowledged",
+      "implementation": {
+        "id": "dialogs",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+    },
+    {
+      "id": "error-surfaces",
+      "parentId": null,
+      "owner": "agent-01",
+      "surface": "error-surfaces",
+      "capability": "compatibility",
+      "version": "1.0.0",
+      "status": "declared",
+      "trust": "feature",
+      "criticality": "optional",
+      "lifecycle": "available",
+      "ports": [
+        "ui:error:strip",
+        "ui:error:message-binding"
+      ],
+      "internals": [
+        "src/sub-legos/error-surfaces/**"
+      ],
+      "tests": [
+        "packages/frontend-lego/test/06-sublegos.test.mjs"
+      ],
+      "dependsOn": [
+        "notifications#ui:notification:enqueue@^1.0.0"
+      ],
+      "upgradePolicy": "independent",
+      "implementation": {
+        "id": "error-surfaces",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+    }
+  ],
+  "interactionClasses": [
+    "call",
+    "event",
+    "stream",
+    "batch"
+  ],
+  "compatibilityStates": [
+    "compatible",
+    "minor-ahead",
+    "major-mismatch",
+    "invalid"
+  ],
+  "upgradeRecipe": {
+    "compatible": "subLegos.upgrade(id, { version }) — consumers keep their declared ranges",
+    "breaking": "refused by validateUpgrade before anything moves; the catalog is unchanged",
+    "downgrade": "refused with frontend.upgrade.downgrade-rejected",
+    "replacement": "subLegos.replace(id, { id, kind, language }) — same contract, same version, consumers byte-identical",
+    "nested": "the same operations work at any depth; a child inherits its parent's trust and may never raise it"
+  }
+}

@@ -1,26 +1,33 @@
 {
   "version": "1.0.0",
+  "scopeBoundary": "ENGINEERING OPERATIONS / DEVELOPMENT WORKFLOW — NOT n8n LEGO product architecture. This file was moved out of apps/n8n-lego/src/lego/manifest/ in P2.11 reconciliation because the manager ruled that the Arena manager/worker model, its control planes and its task routing must never become product domains, AI LEGO, runtime dependencies or product capabilities. Nothing here may be referenced by manifest/domains.json, manifest/ai-lego-set.json or any product contract. A test enforces the separation.",
   "phase": "P2.11",
   "owner": "manager",
   "status": "contract-only",
   "description": "Authoritative declaration of the DEVELOPMENT workforce that builds n8n LEGO, the control planes it uses, and the project's permanent decision principles. This is deliberately a separate file from ai-lego-set.json because it describes a different world: the agents that build the product, not the agents the product runs.",
   "twoWorldsRule": "Product/runtime agents and development workforce agents are NOT the same architecture. They share concepts (capability, workspace, approval, delegation) but differ in ownership, trust, deployment and lifecycle. A change to one is not automatically a change to the other, and neither may import the other's authority model.",
-
   "worlds": {
     "product-runtime": {
       "summary": "Agents executing user workloads inside n8n.",
-      "members": ["Agent Machine", "AI Node", "runtime adapters (Hermes, Claude Code, Gemini CLI, OpenClaw)"],
+      "members": [
+        "Agent Machine",
+        "AI Node",
+        "runtime adapters (Hermes, Claude Code, Gemini CLI, OpenClaw)"
+      ],
       "governedBy": "manifest/ai-lego-set.json + manifest/ai-foundation.json",
       "trust": "declared per provider/runtime; external runtimes are never automatically trusted"
     },
     "development-workforce": {
       "summary": "Agents building the n8n LEGO repository itself.",
-      "members": ["Arena manager/orchestrator", "Arena workers", "agent-1 .. agent-6"],
+      "members": [
+        "Arena manager/orchestrator",
+        "Arena workers",
+        "agent-1 .. agent-6"
+      ],
       "governedBy": "this file + manifest/domains.json ownership + docs/LEGO_PARALLEL_RULES.md",
       "trust": "bounded by branch, assigned task and domain ownership"
     }
   },
-
   "roles": {
     "manager": {
       "authority": [
@@ -57,7 +64,6 @@
     },
     "authorityRule": "A worker nested under a manager does NOT inherit manager authority. This is the same invariant as Agent Machine delegation: nesting grants nothing, and every grant is explicit. Applying one rule to product agents and the opposite rule to development agents would mean the project does not actually believe the rule."
   },
-
   "workerLoop": [
     "enter the assigned branch",
     "read repository state",
@@ -71,10 +77,21 @@
     "report status"
   ],
   "workerLoopRule": "A worker must be able to complete this loop from the repository alone. Requiring a human to re-explain project context to every new worker is a documentation defect, not a workflow.",
-
   "jobTaskModel": {
     "shape": "Job contains Tasks.",
-    "taskFields": ["taskId", "jobId", "owner", "status", "scope", "dependencies", "blockers", "evidence", "branch", "expectedOutputs", "validationGate"],
+    "taskFields": [
+      "taskId",
+      "jobId",
+      "owner",
+      "status",
+      "scope",
+      "dependencies",
+      "blockers",
+      "evidence",
+      "branch",
+      "expectedOutputs",
+      "validationGate"
+    ],
     "rules": [
       "Moving a task to another job is an explicit state change, never a silent reinterpretation.",
       "A broad task may nominate a lead/orchestrator only where the manager protocol allows it.",
@@ -82,26 +99,55 @@
     ],
     "status": "contract-only — this repository declares the model; no task runtime is implemented here."
   },
-
   "controlPlanes": {
     "rule": "Exactly one source of truth per kind of state. A second authoritative store for the same state is the defect, not the redundancy.",
     "github": {
       "kind": "code plane",
-      "authoritativeFor": ["repository state", "branches", "commits", "pull requests", "code review", "source artifacts", "implementation history"],
+      "authoritativeFor": [
+        "repository state",
+        "branches",
+        "commits",
+        "pull requests",
+        "code review",
+        "source artifacts",
+        "implementation history"
+      ],
       "rule": "GitHub is the source of truth for code. No second authoritative code registry may exist in Supabase, Obsidian, chat, agent memory or local notes.",
       "status": "active"
     },
     "supabase": {
       "kind": "control plane",
-      "authoritativeFor": ["job/task state", "agent coordination", "worker state", "task claims", "orchestration metadata", "evidence references"],
-      "mayNotHold": ["code", "git history", "a second copy of the repository"],
+      "authoritativeFor": [
+        "job/task state",
+        "agent coordination",
+        "worker state",
+        "task claims",
+        "orchestration metadata",
+        "evidence references"
+      ],
+      "mayNotHold": [
+        "code",
+        "git history",
+        "a second copy of the repository"
+      ],
       "rule": "Control-plane state only. Evidence is referenced, never duplicated.",
       "status": "NOT VERIFIED from this repository — no Supabase schema, client or credential exists in this tree. Any claim that a Supabase control path is operational must come from the manager, not from this file."
     },
     "vpsGate": {
       "kind": "execution gate",
-      "authoritativeFor": ["trusted build/test execution"],
-      "mustDeclare": ["gate health", "allowed operations", "workspace boundaries", "authentication boundary", "audit", "secret sanitization", "manager/worker policy", "remote execution lifecycle"],
+      "authoritativeFor": [
+        "trusted build/test execution"
+      ],
+      "mustDeclare": [
+        "gate health",
+        "allowed operations",
+        "workspace boundaries",
+        "authentication boundary",
+        "audit",
+        "secret sanitization",
+        "manager/worker policy",
+        "remote execution lifecycle"
+      ],
       "rule": "The gate is a controlled capability boundary, NOT unrestricted shell access. It may expose capabilities without exposing raw secrets; credentials stay outside agent-visible payloads.",
       "status": "NOT VERIFIED from this repository — no gate client or endpoint is declared in this tree."
     },
@@ -112,7 +158,6 @@
       "status": "contract-only"
     }
   },
-
   "decisionPrinciples": [
     "Contract before implementation.",
     "One owner per responsibility.",
@@ -140,7 +185,6 @@
     "A failed negative test is useful evidence.",
     "Replaceable implementations must preserve contracts."
   ],
-
   "blockers": [
     {
       "id": "BL-1",
@@ -151,7 +195,8 @@
       "phase": "P8",
       "consequence": "Two processes allocate the same execution id. Multi-process operation is unsafe.",
       "resolutionBoundary": "storage contract -> durable identity allocation",
-      "status": "open"
+      "status": "open",
+      "plane": "product"
     },
     {
       "id": "BL-2",
@@ -162,7 +207,8 @@
       "phase": "P8",
       "consequence": "No shared persistence, so no second instance can serve the same data.",
       "resolutionBoundary": "storage contract -> shared persistence implementation (local -> SQLite -> Postgres or another shared backend), with no consumer change",
-      "status": "open"
+      "status": "open",
+      "plane": "product"
     },
     {
       "id": "BL-3",
@@ -171,7 +217,8 @@
       "where": "tests/e2e",
       "owner": "agent-1",
       "consequence": "Puppeteer cannot download Chromium here, so the browser gate is CI-only. Local runs prove nothing about the editor UI.",
-      "status": "open — CI-only, not a code defect"
+      "status": "open — CI-only, not a code defect",
+      "plane": "product"
     },
     {
       "id": "BL-4",
@@ -180,7 +227,8 @@
       "owner": "manager",
       "consequence": "XA-8, XA-9, XA-10, XA-11, XA-12 and XA-13 remain unresolved. Agent 1 and Agent 2 are aligned today by convention plus publicationPending records, not by a decision.",
       "reference": "docs/n8n-lego/decisions/cross-agent-decisions.backend.json",
-      "status": "open"
+      "status": "open",
+      "plane": "engineering-operations"
     },
     {
       "id": "BL-5",
@@ -189,7 +237,8 @@
       "owner": "manager",
       "consequence": "Translation is now an official LEGO target, but the legacy i18n route is still served by the legacy aggregate and has no declared owner. It must not be forced into credentials, node-registry or workflow merely to satisfy legacy routing.",
       "reference": "XA-13",
-      "status": "open"
+      "status": "open",
+      "plane": "engineering-operations"
     },
     {
       "id": "BL-6",
@@ -197,7 +246,8 @@
       "severity": "governance",
       "owner": "manager",
       "consequence": "The Supabase control plane and the VPS execution gate are declared in the project plan but have no schema, client, endpoint or credential in this tree. Their operational status cannot be asserted from here.",
-      "status": "open"
+      "status": "open",
+      "plane": "engineering-operations"
     }
   ],
   "blockerRule": "A blocker is closed by evidence, never by a report deadline. Downgrading a blocker to make a status document look complete is the specific failure this register exists to prevent."

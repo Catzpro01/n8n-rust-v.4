@@ -16,6 +16,8 @@ import { createLogger } from './logger.mjs';
 import { createStore, seedExecutionCounter } from './store.mjs';
 import { createEngine } from './engine.mjs';
 import { createUi } from './ui.mjs';
+import { loadFrontend } from './frontend.mjs';
+import { frontendRoutes } from './frontend/routes.mjs';
 import { createPushServer } from './push.mjs';
 import { createRouter } from './compat/route.mjs';
 import { HttpError } from './compat/error.mjs';
@@ -51,7 +53,11 @@ export async function startServer({ env = process.env } = {}) {
 
   const store = createStore(config);
   const engine = createEngine(config, logger);
-  const ui = createUi({ config, logger });
+  // Frontend LEGO (P2.5): fail-soft — an unavailable descriptor never blocks the
+  // editor, it only means the UI is served without extension metadata.
+  const frontend = await loadFrontend({ config, logger });
+  logger.info('frontend contract', frontend.describe());
+  const ui = createUi({ config, logger, frontend });
   const push = createPushServer({ config, logger });
   // Compatibility boundary: one router mounts the domain modules (auth,
   // settings, the legacy aggregate). Any `/rest/*` path without an owner is
@@ -59,6 +65,7 @@ export async function startServer({ env = process.env } = {}) {
   // semantics — never a fake `200 {}` (docs/n8n-lego/FRONTEND_COMPATIBILITY.md).
   const router = createRouter([
     ...settingsRoutes(),
+    ...frontendRoutes({ frontend }),
     ...authRoutes({ logger }),
     ...buildRoutes({ engine, logger, push }),
   ]);
@@ -297,7 +304,7 @@ export async function startServer({ env = process.env } = {}) {
     logger.error('unhandled promise rejection', { cause: reason instanceof Error ? reason.message : String(reason) });
   });
 
-  return { server, config, logger, store, engine, push, ui };
+  return { server, config, logger, store, engine, push, ui, frontend };
 }
 
 function safeUrl(req, config) {

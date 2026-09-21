@@ -24,18 +24,48 @@ authoritative declaration.
 | Decisions and open arbitration | `.ai/master/PROJECT_DECISIONS.md` | ADRs + `cross-agent-decisions.backend.json` |
 | Contract status matrix | `.ai/master/AI_CONTRACT_MATRIX.md` | manifests + `contract-lock.json` |
 | The 26 core domains, strangler, nesting | `.ai/master/CORE_LEGO_ARCHITECTURE.md` | `manifest/domains.json` |
-| Development workforce, control planes | `.ai/master/PROJECT_WORKFORCE_ORCHESTRATION.md` | `manifest/project-governance.json` |
+| Development workforce, control planes | `.ai/master/PROJECT_WORKFORCE_ORCHESTRATION.md` | `docs/engineering-operations/workforce-governance.json` (**not** product architecture) |
 | End-to-end scenario walkthroughs | `.ai/master/REFERENCE_AGENT_SCENARIOS.md` | `manifest/reference-scenarios.json` |
 | **What is true today** | `.ai/master/CURRENT_STATUS.md` | all manifests |
-| What is blocking progress | `.ai/master/KNOWN_BLOCKERS.md` | `manifest/project-governance.json` |
+| What is blocking progress | `.ai/master/KNOWN_BLOCKERS.md` | `docs/engineering-operations/workforce-governance.json` |
+| Frontend AI architecture, UI experiences | `.ai/master/AI_UI_EXPERIENCE_MASTER_PLAN.md` | curated (agent-1) |
+| AI UI states and flows | `.ai/master/AI_UI_STATES_AND_FLOWS.md` | curated (agent-1) |
+| Context, session and memory | `.ai/master/CONTEXT_SESSION_MEMORY_PLAN.md` | curated (agent-1) |
+| Token and resource model | `.ai/master/TOKEN_USAGE_AND_RESOURCE_PLAN.md` | curated (agent-1) |
+| Skills and capabilities | `.ai/master/SKILL_AND_CAPABILITY_PLAN.md` | curated (agent-1) |
+| Agent Machine | `.ai/master/AGENT_MACHINE_PLAN.md` | curated (agent-1) |
+| Workspace and external actions | `.ai/master/WORKSPACE_AND_EXTERNAL_ACTION_PLAN.md` | curated (agent-1) |
+| MCP and runtime adapters | `.ai/master/MCP_AND_RUNTIME_ADAPTER_PLAN.md` | curated (agent-1) |
+| Node Creator | `.ai/master/NODE_CREATOR_PLAN.md` | curated (agent-1) |
+| Translation | `.ai/master/TRANSLATION_PLAN.md` | curated (agent-1) |
+| Provider taxonomy | `.ai/master/PROVIDER_TAXONOMY.md` | curated (agent-1) |
+| Security and approval | `.ai/master/SECURITY_AND_APPROVAL_MODEL.md` | curated (agent-1) |
+| Memory graph and Obsidian | `.ai/master/MEMORY_GRAPH_OBSIDIAN_PLAN.md` | curated (agent-1) |
+| Accessibility and localization | `.ai/master/AI_ACCESSIBILITY_AND_LOCALIZATION.md` | curated (agent-1) |
+| Platform and deployment strategy | `.ai/master/PLATFORM_AND_DEPLOYMENT_STRATEGY.md` | curated (agent-1) |
+| Frontend AI contract matrix | `.ai/master/AI_FRONTEND_CONTRACT_MATRIX.md` | curated (agent-1) |
 | Backend LEGO boundaries | `.ai/index.md`, `.ai/domains/*` | `manifest/domains.json` |
 | Communication semantics | `.ai/communication.md` | source modules |
 | Capability + operation vocabulary | `.ai/capabilities.md` | `manifest/domains.json` |
 | Scale-out honesty | `.ai/scale-out.md` | `manifest/domains.json` |
 | Narrative architecture | `docs/n8n-lego/BACKEND_LEGO.md` | hand-written prose |
 
-Everything under `.ai/` is generated. Editing it by hand is pointless — the
-next `npm run lego:ai` overwrites it.
+## Generated vs curated
+
+`.ai/` holds two kinds of file and the difference matters:
+
+- **Generated** (most of the tree, including the master documents listed above
+  as manifest-derived). Editing one by hand is pointless — the next
+  `npm run lego:ai` overwrites it. Their numbers cannot drift.
+- **Curated** (37 files, owner `agent-1`): frontend/UX planning documents; no backend manifest derives them.
+  These are preserved across regeneration and ignored by `--check`. They are
+  hand-maintained, so they *can* drift — that is the honest cost of keeping
+  documents whose subject has no authoritative declaration behind it.
+
+`.ai/master/frontend/` holds agent-1's consumption views of ten subjects that
+also have a canonical generated document one level up. Each is headed with a
+pointer to its canonical counterpart. **Where a number disagrees, the generated
+document wins.**
 
 ## Where to find the answer
 

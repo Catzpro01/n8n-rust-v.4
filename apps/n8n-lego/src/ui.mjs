@@ -53,7 +53,7 @@ const FALLBACK_ICON = Buffer.from(
   'utf8',
 );
 
-export function createUi({ config, logger }) {
+export function createUi({ config, logger, frontend = null }) {
   const distDir = resolve(config.editorDist);
   const available = existsSync(join(distDir, 'index.html'));
   const cache = new Map();
@@ -61,6 +61,12 @@ export function createUi({ config, logger }) {
   // The editor computes `restUrl = window.BASE_PATH + restEndpoint`, so the meta
   // tag carries the bare segment ('rest') — never a path or a full URL.
   const restEndpoint = config.restEndpoint;
+
+  // Frontend LEGO (P2.5): additive boot descriptor — one `<meta>` tag, the same
+  // JSON `GET /rest/frontend/bootstrap` answers. The stock bundle never reads it
+  // and nothing else in the document changes; when the LEGO is unavailable the
+  // tag is simply absent and the UI renders exactly as before.
+  const bootMetaTag = typeof frontend?.metaTag === 'string' ? frontend.metaTag : '';
 
   const configTags = [
     `<meta name="n8n:config:rest-endpoint" content="${base64(restEndpoint)}">`,
@@ -82,7 +88,7 @@ export function createUi({ config, logger }) {
     out = out.split('%CONFIG_TAGS%').join(configTags);
     out = out.split('{{REST_ENDPOINT}}').join(restEndpoint);
     if (fileName.endsWith('index.html')) {
-      out = out.replace('</title>', `</title><meta name="application-name" content="${config.appName}">`);
+      out = out.replace('</title>', `</title><meta name="application-name" content="${config.appName}">${bootMetaTag}`);
       out = out.replace(/<title>.*?<\/title>/, `<title>${config.appName} — Workflow Automation</title>`);
     }
     return out;
@@ -147,6 +153,7 @@ export function createUi({ config, logger }) {
     available,
     serveIcon,
     distDir,
+    bootMetaTagPresent: bootMetaTag.length > 0,
     /** @param {string} pathname already stripped of the base path */
     serve(req, res, pathname) {
       if (!available) {

@@ -1070,3 +1070,88 @@ destroy their work. Agent 5 documents and reassigns; it does not fix other agent
 - Gagalnya jangkauan ke `gqctxugkxekdqxsaqrum.supabase.co` (TLS handshake 000 dari environment terisolasi) resmi dimitigasi dengan sistem **Local SQLite Bus & Mirror Pool** di `/home/fern/arena/bus.db`.
 - Antrean task, konsensus suara, dan review multi-agen dijalankan secara lokal di VPS dengan latensi ultra-rendah (< 2ms), lalu disinkronkan secara asinkron ke Supabase via orchestrator bridge.
 
+
+---
+
+## ISSUE-023 — RUST OFFLINE RIG MATI: TOKIO DEV-DEPENDENCY (2026-09-21)
+
+**Pelapor:** sesi agent-01 lanjutan (`arena/01a0c53e-n8n-rust-v-4`, base `cb71dbb2`)
+**Terdampak:** Rust Offline Rig (`tools/rust-offline-rig/**`, registry `integration.gates` — agent-05), Agent 1 (Workflow), Agent 2 (Node), Agent 4 (Expression), semua verifikasi Phase 3
+**Status:** FIXED (test infrastructure only — menunggu countersign agent-05)
+**Severity:** HIGH (blokir total: tidak ada perubahan Rust yang dapat diverifikasi di sandbox)
+
+### 1. Gejala
+`cb71dbb2` menambahkan dev-dependency `tokio` (`features = ["rt", "macros"]`) pada `crates/n8n-workflow`
+(`tests/runtime_runner_test.rs`) dan pada `crates/n8n-nodes-rust`. Tidak satu pun crate di vendor directory memenuhinya, sehingga
+**setiap** invokasi cargo (termasuk `cargo check`) gagal — bukan hanya crate yang memakai tokio:
+
+```
+$ bash tools/rust-offline-rig/run.sh test
+rig: excluded workspace members: n8n-nodes-rust
+error: no matching package named `tokio` found
+location searched: directory source `/tmp/rust-rig/vendor`
+required by package `n8n-workflow v0.1.0`
+```
+
+Klaim "79–80 passed" pada handover 2026-09-18 karena itu **tidak dapat direproduksi** pada `cb71dbb2`.
+
+### 2. Perbaikan (tanpa menyentuh `crates/**`)
+- `setup.sh`: +`tokio-1.53.1` (`tokio-rs/tokio` @ `tokio-1.53.1`) dan +`pin-project-lite` (`v0.2.17`) → 27 crate.
+  Closure yang dibutuhkan hanya `pin-project-lite` + `tokio-macros`; dependency opsional tokio tidak di-resolve karena fiturnya
+  tidak diaktifkan.
+- `vendor_prep.py`: `PLAN` +3; tabel `[lints]` dan `[workspace.*]` kini dibuang (tadinya memicu
+  `FATAL: manifest still has workspace/path remnants`); dev-dependency target-scoped
+  (`[target.'cfg(unix)'.dev-dependencies]`) ikut dibuang; pruning fitur tidak lagi salah mengosongkan fitur yang mereferensikan
+  dependency opsional (`dep:foo`, `foo/feature`) atau nama yang juga dideklarasikan sebagai dependency (cargo menolak
+  `optional dependency io-uring is not included in any feature`).
+- `run.sh`: `EXCLUDE_MEMBERS` dikosongkan (semua 8 member dibangun); `LOCK_DRIFT=("tokio-macros")` — 2.7.2 tidak punya tag git,
+  jadi blok lock-nya dilepas dan cargo me-resolve 2.7.1 dari tag `tokio-1.53.1`.
+
+### 3. Bukti mesin
+- `bash tools/rust-offline-rig/run.sh check` → `Finished dev profile … in 11.93s`, 8/8 crate + `--all-targets`.
+- `bash tools/rust-offline-rig/run.sh test` → **151 passed / 0 failed** (21 suite), termasuk `runtime_runner_test.rs` 4/4 dan
+  `n8n-nodes-rust` 2/2 yang sebelumnya tidak pernah dieksekusi di sandbox.
+- `python3 tools/sublego-audit/audit.py` → AUDIT PASSED.
+
+### 4. Catatan / sisa risiko
+- **Drift versi**: `tokio-macros` 2.7.1 (rig) vs `2.7.2` (`Cargo.lock`). VPS/CI dengan registry asli tetap acuan.
+- Berkas yang diubah: `tools/rust-offline-rig/{setup.sh,run.sh,vendor_prep.py,README.md}`, `docs/isolation/CROSS-AGENT-ISSUES.md`,
+  `my_progress.md`. Tidak ada berkas di `crates/**` atau `packages/**` yang disentuh.
+- **Permintaan ke agent-05**: (a) konfirmasi kepemilikan `tools/**` untuk perubahan test-infra ini;
+  (b) tinjau gate G06–G10 `workflow-isolation-gate.mjs` agar phase-aware (saat ini menolak keberadaan artefak Rust padahal
+  `PROJECT_RULES.md` menyatakan Phase 3 ACTIVE) — di luar cakupan sesi ini.
+
+---
+
+## ISSUE-024 — NESTED SUB-LEGO LAYER INSIDE `ui-frontend` (declaration-only, no code path added)
+
+**Pelapor:** sesi agent-01 lanjutan (`arena/01a0c53e-n8n-rust-v-4`, P2.5 nested sub-LEGO increment)
+**Terdampak:** Frontend LEGO (`ui-frontend`), Manager/Integrator (aturan upgrade & hierarki), agent-05 (audit)
+**Status:** DELIVERED (semua deklarasi, 21 test hijau) — menunggu countersign pemilik area
+**Severity:** LOW (aditif; tidak ada berkas di luar `ui-frontend` yang berubah selain 3 hook di manifest milik LEGO ini)
+
+### 1. Apa yang ditambahkan
+Hierarki 19 unit tiga level (`settings → settings.localization → settings.localization.rtl`,
+`workflow-editor → {canvas,node-panel,parameter-panel,execution-panel}`) dengan owner, versi, port publik,
+area privat, dependensi, jalur test, dan kebijakan upgrade. Batasnya **port** (`ui:<area>:<nama>`):
+dependensi ke apa pun selain port publik ditolak *dengan nama*, cycle ditolak, port tidak boleh berbagi id
+dengan extension point. Upgrade dijamin atomik: minor/patch hanya mengubah unit itu (saudara di-assert
+byte-identik), major ditolak selama dependen mem-pin major lama dan hanya lanjut dengan
+`{ acknowledge: [...] }` yang dicatat sebagai `acknowledgedUpgrades` pada dependen.
+
+### 2. Dampak ke area lain (yang perlu diketahui)
+- **Boot payload** kini membawa array `subLegos` (identity/parent/version/status/owner/surface/ports saja;
+  tidak ada area privat, jalur test, atau capability). Budget 24 KB → **32 KB base64** dinaikkan secara sadar
+  dan ukurannya direkam sebagai bukti; payload 18.1 KB JSON → 24.2 KB base64.
+- **Kontrak baru**: `contracts/frontend-sub-lego.contract.md` (normatif untuk hierarki).
+- **Extension points**: 15 (tadinya 13) — `ui:search:provider`, `ui:accessibility:annotate`
+  (`attributes-only` + whitelist; teks/layout/struktur dilarang), `ui:document:format`.
+- **Berkas milik owner lain tidak disentuh**: `crates/**`, `apps/n8n-ts/**`, `tools/**`, `.arena/**`,
+  `reference/**` tidak berubah.
+
+### 3. Yang diminta dari pemilik area
+1. **Manager/Integrator**: konfirmasi aturan upgrade (acknowledgement bernama untuk breaking move) sebagai
+   aturan lintas-LEGO, bukan hanya konvensi internal `ui-frontend`.
+2. **agent-05**: `python3 tools/sublego-audit/audit.py` tetap `AUDIT PASSED` (12 LEGO / 20 Sub-LEGO / 5 Agent)
+   karena registry `.arena` tidak disentuh; mohon konfirmasi bahwa paket `packages/frontend-lego`
+   **belum** perlu didaftarkan di `.arena/registry/lego.yaml` (keputusan D10).

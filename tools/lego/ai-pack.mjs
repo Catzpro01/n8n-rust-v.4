@@ -83,9 +83,28 @@ Then run the test tier it selects, then \`npm run lego:gate\`.
 - Feature domains (Workflow, Execution, Auth, Node Registry, Storage) are **declared, not implemented**.
 - The legacy REST aggregate is frozen and may only shrink — see \`.ai/legacy-rest.md\`.
 - Allowances remaining: see \`.ai/index.md\`. They may shrink, never grow.
-- A capability declares its operations; never infer them from a route.
-- The AI Foundation is \`contract-only\` — no inference, no runtime, no MCP.
+- A capability declares its operations; never infer them from a route. The AI Foundation is \`contract-only\`: no inference, no runtime, no MCP.
 - Start at \`.ai/master/PROJECT_MASTER_PLAN.md\`; it names the canonical document for every subject.
+
+## Hard stops — mis-specified if a task seems to need breaking one; raise it
+
+- **Rust is LOCKED.** No migration, no Rust edits outside an explicitly assigned Rust task.
+- **Vue stays the reference implementation and the stock editor UI is not redesigned.** No React, no Svelte, no Web Components, no second framework; \`n8n-editor-ui@2.9.4\` renders exactly as before, the frontend LEGO adding descriptor metadata and never markup or styles.
+- **Dependencies point inward:** component -> frontend contract -> compatibility -> public backend contract. Neither side imports the other's internals.
+- **No HTTP between local LEGO.** **Never push to \`main\`** — branch, then open a pull request.
+- **Declared ≠ installed ≠ loaded ≠ active.** Registering metadata never loads implementation code.
+- **Unknown or destructive operations fail closed.** Delegation and nesting grant no authority.
+
+## Ownership
+
+| Area | Owner |
+| --- | --- |
+| Frontend architecture, compatibility boundary, UI capability registry, frontend gates | agent-01 |
+| LEGO foundation, capability registry, error codes, manifests, \`.ai/\` generation | agent-02 |
+| Workflow / Execution / Auth / Credentials / Node Registry / Storage / Rust | their own agents |
+| Integration gates (\`tests/integration/\`, \`tests/compatibility/\`) | agent-05, read-only for others |
+
+Shared files change minimally and the change is recorded. Capability ids, error codes and contract versions crossing the frontend/backend line are **coordinated**: an ambiguous shared contract stops for arbitration rather than being invented twice.
 `;
 }
 
@@ -996,18 +1015,48 @@ authoritative declaration.
 | Decisions and open arbitration | \`.ai/master/PROJECT_DECISIONS.md\` | ADRs + \`cross-agent-decisions.backend.json\` |
 | Contract status matrix | \`.ai/master/AI_CONTRACT_MATRIX.md\` | manifests + \`contract-lock.json\` |
 | The ${registry.domains.length} core domains, strangler, nesting | \`.ai/master/CORE_LEGO_ARCHITECTURE.md\` | \`manifest/domains.json\` |
-| Development workforce, control planes | \`.ai/master/PROJECT_WORKFORCE_ORCHESTRATION.md\` | \`manifest/project-governance.json\` |
+| Development workforce, control planes | \`.ai/master/PROJECT_WORKFORCE_ORCHESTRATION.md\` | \`docs/engineering-operations/workforce-governance.json\` (**not** product architecture) |
 | End-to-end scenario walkthroughs | \`.ai/master/REFERENCE_AGENT_SCENARIOS.md\` | \`manifest/reference-scenarios.json\` |
 | **What is true today** | \`.ai/master/CURRENT_STATUS.md\` | all manifests |
-| What is blocking progress | \`.ai/master/KNOWN_BLOCKERS.md\` | \`manifest/project-governance.json\` |
+| What is blocking progress | \`.ai/master/KNOWN_BLOCKERS.md\` | \`docs/engineering-operations/workforce-governance.json\` |
+| Frontend AI architecture, UI experiences | \`.ai/master/AI_UI_EXPERIENCE_MASTER_PLAN.md\` | curated (agent-1) |
+| AI UI states and flows | \`.ai/master/AI_UI_STATES_AND_FLOWS.md\` | curated (agent-1) |
+| Context, session and memory | \`.ai/master/CONTEXT_SESSION_MEMORY_PLAN.md\` | curated (agent-1) |
+| Token and resource model | \`.ai/master/TOKEN_USAGE_AND_RESOURCE_PLAN.md\` | curated (agent-1) |
+| Skills and capabilities | \`.ai/master/SKILL_AND_CAPABILITY_PLAN.md\` | curated (agent-1) |
+| Agent Machine | \`.ai/master/AGENT_MACHINE_PLAN.md\` | curated (agent-1) |
+| Workspace and external actions | \`.ai/master/WORKSPACE_AND_EXTERNAL_ACTION_PLAN.md\` | curated (agent-1) |
+| MCP and runtime adapters | \`.ai/master/MCP_AND_RUNTIME_ADAPTER_PLAN.md\` | curated (agent-1) |
+| Node Creator | \`.ai/master/NODE_CREATOR_PLAN.md\` | curated (agent-1) |
+| Translation | \`.ai/master/TRANSLATION_PLAN.md\` | curated (agent-1) |
+| Provider taxonomy | \`.ai/master/PROVIDER_TAXONOMY.md\` | curated (agent-1) |
+| Security and approval | \`.ai/master/SECURITY_AND_APPROVAL_MODEL.md\` | curated (agent-1) |
+| Memory graph and Obsidian | \`.ai/master/MEMORY_GRAPH_OBSIDIAN_PLAN.md\` | curated (agent-1) |
+| Accessibility and localization | \`.ai/master/AI_ACCESSIBILITY_AND_LOCALIZATION.md\` | curated (agent-1) |
+| Platform and deployment strategy | \`.ai/master/PLATFORM_AND_DEPLOYMENT_STRATEGY.md\` | curated (agent-1) |
+| Frontend AI contract matrix | \`.ai/master/AI_FRONTEND_CONTRACT_MATRIX.md\` | curated (agent-1) |
 | Backend LEGO boundaries | \`.ai/index.md\`, \`.ai/domains/*\` | \`manifest/domains.json\` |
 | Communication semantics | \`.ai/communication.md\` | source modules |
 | Capability + operation vocabulary | \`.ai/capabilities.md\` | \`manifest/domains.json\` |
 | Scale-out honesty | \`.ai/scale-out.md\` | \`manifest/domains.json\` |
 | Narrative architecture | \`docs/n8n-lego/BACKEND_LEGO.md\` | hand-written prose |
 
-Everything under \`.ai/\` is generated. Editing it by hand is pointless — the
-next \`npm run lego:ai\` overwrites it.
+## Generated vs curated
+
+\`.ai/\` holds two kinds of file and the difference matters:
+
+- **Generated** (most of the tree, including the master documents listed above
+  as manifest-derived). Editing one by hand is pointless — the next
+  \`npm run lego:ai\` overwrites it. Their numbers cannot drift.
+- **Curated** (${CURATED.files.length} files, owner \`${CURATED.owner}\`): ${CURATED.reason}.
+  These are preserved across regeneration and ignored by \`--check\`. They are
+  hand-maintained, so they *can* drift — that is the honest cost of keeping
+  documents whose subject has no authoritative declaration behind it.
+
+\`.ai/master/frontend/\` holds agent-1's consumption views of ten subjects that
+also have a canonical generated document one level up. Each is headed with a
+pointer to its canonical counterpart. **Where a number disagrees, the generated
+document wins.**
 
 ## Where to find the answer
 
@@ -1418,8 +1467,18 @@ ${decisions.alignmentRules.map((rule) => `- ${rule}`).join('\n')}
 `;
 }
 
+/**
+ * Workforce governance is ENGINEERING OPERATIONS, not product architecture.
+ *
+ * It deliberately lives outside `src/lego/manifest/` — the manager ruled in the
+ * P2.11 reconciliation that the Arena manager/worker model must never become a
+ * product domain, AI LEGO or runtime dependency. Reading it from `docs/` rather
+ * than the product manifest directory is what keeps that boundary physical
+ * instead of merely stated.
+ */
 function readGovernance() {
-  return readManifest('project-governance.json');
+  const file = join(REPO_ROOT, 'docs', 'engineering-operations', 'workforce-governance.json');
+  return existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : null;
 }
 
 function readScenarios() {
@@ -1919,8 +1978,91 @@ export function generate() {
   return files;
 }
 
+/**
+ * Curated documents — hand-maintained, and NOT deleted by regeneration.
+ *
+ * WHY THIS EXISTS (P2.11 reconciliation): `.ai/master/` is written by two
+ * agents. agent-2 generates the documents whose content is derived from the
+ * manifests; agent-01 hand-writes the frontend/UX plans, which have no manifest
+ * to derive from because the frontend's source of truth is a Vue bundle and a
+ * set of UX decisions, not a registry.
+ *
+ * Before this list, `writeAll` deleted all of `.ai/` and `check()` reported
+ * every unrecognised file as `(orphaned)` — so regenerating the backend pack
+ * silently destroyed eighteen frontend documents. That is not a merge conflict
+ * anyone would notice: the build stays green and the documents simply stop
+ * existing.
+ *
+ * A curated file is preserved on write and ignored by the freshness check. It
+ * is NOT generated, so it can drift — which is the honest trade: the alternative
+ * is either deleting another agent's work or inventing a generator for content
+ * that has no authoritative declaration behind it.
+ */
+const CURATED = Object.freeze({
+  owner: 'agent-1',
+  reason: 'frontend/UX planning documents; no backend manifest derives them',
+  files: Object.freeze([
+    'README.md',
+    'cards/decisions.md',
+    'cards/recipes.md',
+    'frontend/card.md',
+    'frontend/glossary.md',
+    'index/capabilities.json',
+    'index/contracts.json',
+    'index/units.json',
+    'maps/dependencies.md',
+    'master/AGENT_MACHINE_PLAN.md',
+    'master/AI_ACCESSIBILITY_AND_LOCALIZATION.md',
+    'master/AI_FRONTEND_CONTRACT_MATRIX.md',
+    'master/AI_UI_EXPERIENCE_MASTER_PLAN.md',
+    'master/AI_UI_IMPLEMENTATION_PHASES.md',
+    'master/AI_UI_STATES_AND_FLOWS.md',
+    'master/AI_UX_PROGRESSIVE_DISCLOSURE.md',
+    'master/CONTEXT_SESSION_MEMORY_PLAN.md',
+    'master/MCP_AND_RUNTIME_ADAPTER_PLAN.md',
+    'master/MEMORY_GRAPH_OBSIDIAN_PLAN.md',
+    'master/NODE_CREATOR_PLAN.md',
+    'master/PLATFORM_AND_DEPLOYMENT_STRATEGY.md',
+    'master/PROVIDER_TAXONOMY.md',
+    'master/SECURITY_AND_APPROVAL_MODEL.md',
+    'master/SKILL_AND_CAPABILITY_PLAN.md',
+    'master/TOKEN_USAGE_AND_RESOURCE_PLAN.md',
+    'master/TRANSLATION_PLAN.md',
+    'master/WORKSPACE_AND_EXTERNAL_ACTION_PLAN.md',
+    // Frontend consumption views of subjects that ALSO have a canonical
+    // generated document one directory up. Preserved rather than deleted: each
+    // carries frontend reasoning no manifest derives, and each is headed with a
+    // pointer to the canonical file so a reader cannot mistake it for authority.
+    'master/frontend/AI_AGENT_LEGO_MASTER_PLAN.md',
+    'master/frontend/AI_RUNTIME_AND_PROVIDER_PLAN.md',
+    'master/frontend/CORE_LEGO_ARCHITECTURE.md',
+    'master/frontend/CURRENT_STATUS.md',
+    'master/frontend/IMPLEMENTATION_PHASES.md',
+    'master/frontend/KNOWN_BLOCKERS.md',
+    'master/frontend/PROJECT_DECISIONS.md',
+    'master/frontend/PROJECT_MASTER_PLAN.md',
+    'master/frontend/PROJECT_WORKFORCE_ORCHESTRATION.md',
+    'master/frontend/REFERENCE_AGENT_SCENARIOS.md',
+  ]),
+});
+
+const isCurated = (relativePath) => CURATED.files.includes(relativePath);
+
 function writeAll(files) {
+  // Preserve curated documents across the wipe. Reading them into memory first
+  // is deliberate: a partial-delete walk would be one bug away from removing a
+  // file it meant to keep.
+  const preserved = new Map();
+  for (const relativePath of CURATED.files) {
+    const absolute = join(AI_ROOT, relativePath);
+    if (existsSync(absolute)) preserved.set(relativePath, readFileSync(absolute));
+  }
   if (existsSync(AI_ROOT)) rmSync(AI_ROOT, { recursive: true });
+  for (const [relativePath, content] of preserved) {
+    const absolute = join(AI_ROOT, relativePath);
+    mkdirSync(dirname(absolute), { recursive: true });
+    writeFileSync(absolute, content);
+  }
   for (const [relativePath, content] of files) {
     const absolute = join(AI_ROOT, relativePath);
     mkdirSync(dirname(absolute), { recursive: true });
@@ -1941,7 +2083,7 @@ function check(files) {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
       const relativePath = prefix ? `${prefix}/${entry.name}` : entry.name;
       if (entry.isDirectory()) walk(join(dir, entry.name), relativePath);
-      else if (!expected.has(relativePath)) stale.push(`${relativePath} (orphaned)`);
+      else if (!expected.has(relativePath) && !isCurated(relativePath)) stale.push(`${relativePath} (orphaned)`);
     }
   };
   walk(AI_ROOT);
@@ -1961,5 +2103,7 @@ if (isCli) {
     process.exit(1);
   }
   writeAll(files);
-  process.stdout.write(`Generated ${files.size} file(s) into .ai/\n`);
+  process.stdout.write(
+    `Generated ${files.size} file(s) into .ai/ (${CURATED.files.length} curated ${CURATED.owner} file(s) preserved)\n`,
+  );
 }

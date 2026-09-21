@@ -1,0 +1,198 @@
+{
+  "catalogVersion": "1.0.0",
+  "description": "Every user-facing surface of the frontend, with the backend capability and contract behind it. This is the registry's vocabulary: a capability may only attach to a surface declared here. Status is honest: 'present' (implemented), 'partial' (implemented with declared 501 gaps), 'unsupported' (renders, backend not implemented).",
+  "surfaces": [
+    {
+      "id": "auth",
+      "title": "Sign-in, owner setup and session screens",
+      "kind": "page",
+      "routes": ["/signin", "/setup", "/signout"],
+      "messageSlots": ["forms", "validation-errors", "backend-errors", "system-messages"],
+      "backend": {
+        "capability": "auth",
+        "contract": "contracts/api.contract.md",
+        "endpoints": ["/rest/login", "/rest/logout", "/rest/owner/setup", "/rest/settings"],
+        "status": "present"
+      },
+      "extensionPoints": [],
+      "status": "present",
+      "notes": "Owned by the auth LEGO (P2). The frontend contract only consumes its envelopes and session rules."
+    },
+    {
+      "id": "navigation",
+      "title": "Application shell — header, main sidebar, settings sidebar, breadcrumbs",
+      "kind": "panel",
+      "routes": ["/home", "/settings"],
+      "messageSlots": ["navigation", "settings", "system-messages"],
+      "backend": {
+        "capability": "settings",
+        "contract": "contracts/settings.contract.md",
+        "endpoints": ["/rest/settings", "/rest/login", "/rest/roles"],
+        "status": "present"
+      },
+      "extensionPoints": ["ui:nav:item", "ui:settings:section", "ui:command:register"],
+      "status": "present",
+      "notes": "Entry visibility is scope- and flag-driven (P2 §10.3); the frontend must never hide a surface to fake capability."
+    },
+    {
+      "id": "dashboard",
+      "title": "Home — workflow list/overview",
+      "kind": "page",
+      "routes": ["/home", "/home/workflows"],
+      "messageSlots": ["dashboard", "empty-states", "notifications"],
+      "backend": {
+        "capability": "workflow",
+        "contract": "contracts/workflow.contract.md",
+        "endpoints": ["/rest/workflows", "/rest/projects/my-projects", "/rest/projects/personal", "/rest/executions"],
+        "status": "present"
+      },
+      "extensionPoints": ["ui:notification:render", "ui:error:render"],
+      "status": "partial",
+      "notes": "Insights/data-table widgets on this surface are unimplemented backend capabilities and answer 501 (compatibility layer), never a fake empty payload."
+    },
+    {
+      "id": "settings",
+      "title": "Settings pages (personal, users, API, security, usage, …)",
+      "kind": "page",
+      "routes": ["/settings", "/settings/:page"],
+      "messageSlots": ["settings", "forms", "validation-errors", "backend-errors", "empty-states"],
+      "backend": {
+        "capability": "settings",
+        "contract": "contracts/settings.contract.md",
+        "endpoints": ["/rest/settings", "/rest/module-settings", "/rest/license", "/rest/users", "/rest/api-keys"],
+        "status": "partial"
+      },
+      "extensionPoints": ["ui:settings:section", "ui:form:field", "ui:error:render"],
+      "status": "partial",
+      "notes": "P2 made the pages reachable and honest: reachable pages whose backend is not implemented answer 501 {code:'unsupported'} with owner/phase metadata."
+    },
+    {
+      "id": "workflow-editor",
+      "title": "Workflow canvas (nodes, connections, panel)",
+      "kind": "page",
+      "routes": ["/workflow/:id", "/workflow/new"],
+      "messageSlots": ["forms", "node-menu", "node-descriptions", "dialogs", "validation-errors", "execution-errors", "notifications"],
+      "backend": {
+        "capability": "workflow",
+        "contract": "contracts/workflow.contract.md",
+        "endpoints": ["/rest/workflows/:id", "/rest/workflows/:id/run", "/rest/workflows/:id/activate", "/rest/credentials/for-workflow"],
+        "status": "present"
+      },
+      "extensionPoints": ["ui:node:menu-item", "ui:dialog:render", "ui:assistant:panel", "ui:error:render"],
+      "status": "present",
+      "notes": "The canvas is the reference surface for interaction contracts: save/run/execute-step must keep the P0-verified behavior."
+    },
+    {
+      "id": "node-picker",
+      "title": "Node creator / node menu (palette, search, descriptions)",
+      "kind": "overlay",
+      "routes": [],
+      "messageSlots": ["node-menu", "node-descriptions", "empty-states"],
+      "backend": {
+        "capability": "node-registry",
+        "contract": "contracts/node.contract.md",
+        "endpoints": ["/rest/types/nodes.json", "/types/nodes.json", "/icons/*"],
+        "status": "present"
+      },
+      "extensionPoints": ["ui:node:menu-item", "ui:command:register"],
+      "status": "partial",
+      "notes": "Community nodes / dynamic parameters behind this surface are unimplemented capabilities (501 with owner 'node-registry'/'dynamic-parameters'); the stock palette itself is complete (483 node types)."
+    },
+    {
+      "id": "credentials",
+      "title": "Credentials list, credential editor and credential modal",
+      "kind": "page",
+      "routes": ["/home/credentials", "/home/credentials/:id"],
+      "messageSlots": ["forms", "validation-errors", "dialogs", "backend-errors", "empty-states"],
+      "backend": {
+        "capability": "credentials",
+        "contract": "contracts/credentials.contract.md",
+        "endpoints": ["/rest/credentials", "/rest/credentials/:id", "/rest/credentials/test", "/rest/credential-types"],
+        "status": "present"
+      },
+      "extensionPoints": ["ui:dialog:render", "ui:form:field", "ui:error:render"],
+      "status": "partial",
+      "notes": "OAuth1/OAuth2 flows and credential resolvers are unimplemented capabilities (501)."
+    },
+    {
+      "id": "executions",
+      "title": "Execution list, execution detail and execution errors",
+      "kind": "page",
+      "routes": ["/home/executions", "/home/executions/:id"],
+      "messageSlots": ["execution-errors", "notifications", "empty-states", "validation-errors"],
+      "backend": {
+        "capability": "execution",
+        "contract": "contracts/execution.contract.md",
+        "endpoints": ["/rest/executions", "/rest/executions/:id", "/rest/executions/:id/retry"],
+        "status": "present"
+      },
+      "extensionPoints": ["ui:error:render", "ui:notification:render"],
+      "status": "partial",
+      "notes": "Error text from the engine arrives through the error model: code first, message as fallback (translation-ready)."
+    },
+    {
+      "id": "webhooks",
+      "title": "Webhook and form endpoints (triggers, test URLs, activation state)",
+      "kind": "channel",
+      "routes": [],
+      "messageSlots": ["notifications", "system-messages", "validation-errors"],
+      "backend": {
+        "capability": "webhook",
+        "contract": "contracts/webhook.contract.md",
+        "endpoints": ["/rest/workflows/:id/activate", "/rest/active-workflows"],
+        "status": "partial"
+      },
+      "extensionPoints": ["ui:notification:render"],
+      "status": "partial",
+      "notes": "Endpoint URLs are published in settings; trigger routing itself is tracked by the webhook/scheduler roadmap items and is not part of the frontend boundary."
+    },
+    {
+      "id": "notifications",
+      "title": "Toasts, banners, push-driven updates and system messages",
+      "kind": "channel",
+      "routes": [],
+      "messageSlots": ["notifications", "system-messages"],
+      "backend": {
+        "capability": "push",
+        "contract": "contracts/realtime.contract.md",
+        "endpoints": ["/rest/push"],
+        "status": "present"
+      },
+      "extensionPoints": ["ui:notification:render", "ui:message:catalog"],
+      "status": "present",
+      "notes": "Push event names and payload keys are contract data (contract.mjs EVENTS); the frontend never invents its own channel."
+    },
+    {
+      "id": "dialogs",
+      "title": "Modals and overlays (workflow settings, credential modal, confirmations)",
+      "kind": "overlay",
+      "routes": [],
+      "messageSlots": ["dialogs", "forms", "validation-errors", "system-messages"],
+      "backend": {
+        "capability": "none",
+        "contract": null,
+        "endpoints": [],
+        "status": "present"
+      },
+      "extensionPoints": ["ui:dialog:render"],
+      "status": "present",
+      "notes": "Frontend-owned surface: dialogs carry no backend capability of their own, they render data whose capability belongs to another surface."
+    },
+    {
+      "id": "error-surfaces",
+      "title": "Error presentation — page-level errors, toasts, node/execution errors, unsupported capability notices",
+      "kind": "inline",
+      "routes": [],
+      "messageSlots": ["backend-errors", "validation-errors", "execution-errors", "empty-states", "system-messages"],
+      "backend": {
+        "capability": "compatibility",
+        "contract": "contracts/api.contract.md",
+        "endpoints": [],
+        "status": "present"
+      },
+      "extensionPoints": ["ui:error:render", "ui:notification:render"],
+      "status": "present",
+      "notes": "The single place where a backend error code becomes a displayable message; today the fallback text, later the localized one."
+    }
+  ]
+}

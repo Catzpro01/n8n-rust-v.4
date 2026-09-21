@@ -23,6 +23,7 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_DIR="$REPO_ROOT/apps/n8n-lego"
 ENGINE_DIR="$REPO_ROOT/packages/reconstructed-engine"
+FRONTEND_DIR="$REPO_ROOT/packages/frontend-lego"
 
 OUT_DIR="$REPO_ROOT/dist"
 NPM_ONLY=0
@@ -116,6 +117,16 @@ for file in index.mjs runner.mjs node-registry.mjs validation.mjs node-catalog.m
 done
 [ -d "$ENGINE_DIR/src" ] && cp -R "$ENGINE_DIR/src" "$APP_DIR/vendor/reconstructed-engine/src"
 du -sh "$APP_DIR/vendor/reconstructed-engine" | awk '{print "  ok  vendored "$1}'
+
+# Frontend LEGO (P2.5): the app resolves `packages/frontend-lego` in a checkout
+# and the vendored copy in an installed tarball (src/frontend.mjs resolution for
+# the boot descriptor). The catalogs ship with it — they are the contract.
+say "vendoring the frontend LEGO into the package"
+rm -rf "$APP_DIR/vendor/frontend-lego"
+mkdir -p "$APP_DIR/vendor/frontend-lego"
+cp "$FRONTEND_DIR/index.mjs" "$FRONTEND_DIR/package.json" "$APP_DIR/vendor/frontend-lego/"
+cp -R "$FRONTEND_DIR/src" "$FRONTEND_DIR/manifest" "$APP_DIR/vendor/frontend-lego/"
+du -sh "$APP_DIR/vendor/frontend-lego" | awk '{ print "  ok  vendored "$1 }'
 
 # ------------------------------------------------------------------ npm package
 say "npm package"
