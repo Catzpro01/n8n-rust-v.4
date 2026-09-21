@@ -1,6 +1,6 @@
 {
   "catalogVersion": "1.0.0",
-  "description": "Generated from manifest/sub-legos.json. Declared hierarchy only \u2014 no unit is installed, loaded or active. A component, button, icon or helper is not a unit.",
+  "description": "Generated from manifest/sub-legos.json. Declared hierarchy only — no unit is installed, loaded or active. A component, button, icon or helper is not a unit. `implementation` names what implements the unit today (derived default) and is replaceable without moving the contract or the version.",
   "counts": {
     "units": 19,
     "roots": 11,
@@ -31,7 +31,15 @@
         "packages/frontend-lego/test/06-sublegos.test.mjs"
       ],
       "dependsOn": [],
-      "upgradePolicy": "independent"
+      "upgradePolicy": "independent",
+      "implementation": {
+        "id": "auth",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
     },
     {
       "id": "navigation",
@@ -54,7 +62,15 @@
         "packages/frontend-lego/test/06-sublegos.test.mjs"
       ],
       "dependsOn": [],
-      "upgradePolicy": "independent"
+      "upgradePolicy": "independent",
+      "implementation": {
+        "id": "navigation",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
     },
     {
       "id": "dashboard",
@@ -78,7 +94,15 @@
         "packages/frontend-lego/test/06-sublegos.test.mjs"
       ],
       "dependsOn": [],
-      "upgradePolicy": "independent"
+      "upgradePolicy": "independent",
+      "implementation": {
+        "id": "dashboard",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
     },
     {
       "id": "settings",
@@ -102,7 +126,15 @@
         "packages/frontend-lego/test/06-sublegos.test.mjs"
       ],
       "dependsOn": [],
-      "upgradePolicy": "independent"
+      "upgradePolicy": "independent",
+      "implementation": {
+        "id": "settings",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
     },
     {
       "id": "settings.general",
@@ -127,7 +159,15 @@
       "dependsOn": [
         "settings#ui:settings:shell@^1.0.0"
       ],
-      "upgradePolicy": "independent"
+      "upgradePolicy": "independent",
+      "implementation": {
+        "id": "settings.general",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
     },
     {
       "id": "settings.security",
@@ -152,7 +192,15 @@
       "dependsOn": [
         "settings#ui:settings:shell@^1.0.0"
       ],
-      "upgradePolicy": "independent"
+      "upgradePolicy": "independent",
+      "implementation": {
+        "id": "settings.security",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
     },
     {
       "id": "settings.localization",
@@ -178,7 +226,15 @@
       "dependsOn": [
         "settings#ui:settings:shell@^1.0.0"
       ],
-      "upgradePolicy": "acknowledged"
+      "upgradePolicy": "acknowledged",
+      "implementation": {
+        "id": "settings.localization",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
     },
     {
       "id": "settings.localization.rtl",
@@ -203,7 +259,15 @@
       "dependsOn": [
         "settings.localization#ui:locale:direction@^1.0.0"
       ],
-      "upgradePolicy": "acknowledged"
+      "upgradePolicy": "acknowledged",
+      "implementation": {
+        "id": "settings.localization.rtl",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
     },
     {
       "id": "workflow-editor",
@@ -227,7 +291,15 @@
         "packages/frontend-lego/test/06-sublegos.test.mjs"
       ],
       "dependsOn": [],
-      "upgradePolicy": "independent"
+      "upgradePolicy": "independent",
+      "implementation": {
+        "id": "workflow-editor",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
     },
     {
       "id": "workflow-editor.canvas",
@@ -253,7 +325,15 @@
       "dependsOn": [
         "workflow-editor#ui:editor:panel@^1.0.0"
       ],
-      "upgradePolicy": "independent"
+      "upgradePolicy": "independent",
+      "implementation": {
+        "id": "workflow-editor.canvas",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
     },
     {
       "id": "workflow-editor.node-panel",
@@ -279,7 +359,15 @@
       "dependsOn": [
         "workflow-editor#ui:editor:panel@^1.0.0"
       ],
-      "upgradePolicy": "acknowledged"
+      "upgradePolicy": "acknowledged",
+      "implementation": {
+        "id": "workflow-editor.node-panel",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
     },
     {
       "id": "workflow-editor.parameter-panel",
@@ -305,7 +393,15 @@
         "workflow-editor#ui:editor:panel@^1.0.0",
         "workflow-editor.node-panel#ui:panel:selection@^1.0.0"
       ],
-      "upgradePolicy": "independent"
+      "upgradePolicy": "independent",
+      "implementation": {
+        "id": "workflow-editor.parameter-panel",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
     },
     {
       "id": "workflow-editor.execution-panel",
@@ -331,7 +427,15 @@
         "workflow-editor#ui:editor:panel@^1.0.0",
         "workflow-editor.canvas#ui:canvas:selection@^1.0.0"
       ],
-      "upgradePolicy": "independent"
+      "upgradePolicy": "independent",
+      "implementation": {
+        "id": "workflow-editor.execution-panel",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
     },
     {
       "id": "node-picker",
@@ -354,7 +458,15 @@
         "packages/frontend-lego/test/06-sublegos.test.mjs"
       ],
       "dependsOn": [],
-      "upgradePolicy": "independent"
+      "upgradePolicy": "independent",
+      "implementation": {
+        "id": "node-picker",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
     },
     {
       "id": "credentials",
@@ -379,7 +491,15 @@
       "dependsOn": [
         "dialogs#ui:dialog:component@^1.0.0"
       ],
-      "upgradePolicy": "independent"
+      "upgradePolicy": "independent",
+      "implementation": {
+        "id": "credentials",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
     },
     {
       "id": "executions",
@@ -405,7 +525,15 @@
       "dependsOn": [
         "error-surfaces#ui:error:strip@^1.0.0"
       ],
-      "upgradePolicy": "independent"
+      "upgradePolicy": "independent",
+      "implementation": {
+        "id": "executions",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
     },
     {
       "id": "notifications",
@@ -428,7 +556,15 @@
         "packages/frontend-lego/test/06-sublegos.test.mjs"
       ],
       "dependsOn": [],
-      "upgradePolicy": "acknowledged"
+      "upgradePolicy": "acknowledged",
+      "implementation": {
+        "id": "notifications",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
     },
     {
       "id": "dialogs",
@@ -451,7 +587,15 @@
         "packages/frontend-lego/test/06-sublegos.test.mjs"
       ],
       "dependsOn": [],
-      "upgradePolicy": "acknowledged"
+      "upgradePolicy": "acknowledged",
+      "implementation": {
+        "id": "dialogs",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
     },
     {
       "id": "error-surfaces",
@@ -477,7 +621,34 @@
       "dependsOn": [
         "notifications#ui:notification:enqueue@^1.0.0"
       ],
-      "upgradePolicy": "independent"
+      "upgradePolicy": "independent",
+      "implementation": {
+        "id": "error-surfaces",
+        "kind": "reference",
+        "contract": "contracts/frontend.contract.md",
+        "status": "declared",
+        "language": null
+      },
+      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
     }
-  ]
+  ],
+  "interactionClasses": [
+    "call",
+    "event",
+    "stream",
+    "batch"
+  ],
+  "compatibilityStates": [
+    "compatible",
+    "minor-ahead",
+    "major-mismatch",
+    "invalid"
+  ],
+  "upgradeRecipe": {
+    "compatible": "subLegos.upgrade(id, { version }) — consumers keep their declared ranges",
+    "breaking": "refused by validateUpgrade before anything moves; the catalog is unchanged",
+    "downgrade": "refused with frontend.upgrade.downgrade-rejected",
+    "replacement": "subLegos.replace(id, { id, kind, language }) — same contract, same version, consumers byte-identical",
+    "nested": "the same operations work at any depth; a child inherits its parent's trust and may never raise it"
+  }
 }

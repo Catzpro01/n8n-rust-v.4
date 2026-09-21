@@ -430,3 +430,195 @@ No loader, no dynamic module resolution, no service worker, no daemon, no runtim
 UI change, no feature. Lazy activation is **permitted by the model** (activation mode + entry + lifecycle + states) and
 is not implemented — a loader is a later, separately-justified task. The boot payload grew by **zero bytes**; the
 maturity layer is visible to tooling and to the registry, not to the browser.
+
+## 19. Hardening rules (compatibility and parity foundation) — machine-readable
+
+The rules below are **data, not prose**. They live in
+`packages/frontend-lego/src/conformance.mjs` and are checked against a live assembly by
+`frontend.conformance()`. The JSON block at the end of this section is the same list, so a
+reader, a test and the contract document cannot drift apart: `test/19-conformance.test.mjs`
+parses the block and requires the ids to match exactly.
+
+Each rule names the runtime vocabulary that enforces it (`vocabulary`, in the module) and the
+suite that proves it (`enforcedBy`). A rule whose suite has been deleted, or whose id is
+missing from this document, fails the conformance test.
+
+### 19.1 Capability access — placement grants nothing
+
+A unit may use a capability only because (a) the unit's own surface binds that capability, or
+(b) the capability explicitly declares that surface. **Nesting never grants access**: a child
+does not inherit what its parent may reach. A consumer that was not granted a capability is
+not told whether it exists, what version it is, or how it would have behaved — the refusal
+names the unit, the capability and the reason, and nothing else. Fail closed, always.
+
+Capability discovery reports the **origin** of what it finds — `frontend-registered`,
+`frontend-declared` or `backend-advertised` — because a backend capability name that collides
+with a frontend one is a vocabulary conflict, not a synonym. Lifecycle reasons apply only to
+frontend-origin capabilities.
+
+### 19.2 Transport neutrality
+
+A business contract names **operations**, never transports. The kinds are declared —
+`local`, `rest`, `event`, `stream`, `ipc`, `remote` — with declared relative costs, and the
+cheapest capable transport wins. For same-process work that is a direct call with
+serialization `none`: **no HTTP between local modules**, and no envelope is serialized for a
+local hop. An operation no transport can carry is refused by name (`NoTransportError`), not
+routed somewhere slower. Transports that are declared but not implemented are listed as such
+and are never selected. The existing REST client remains the backend compatibility boundary;
+it is not a transport this LEGO imposes on local work.
+
+### 19.3 One version vocabulary
+
+`versions.mjs` is the only place versions are parsed, compared, ranged or classified. Rules:
+a major difference is never compatible (`major-mismatch`); a compatible variant is reported as
+a state (`compatible`, `minor-ahead`, `major-mismatch`, `invalid`) with a human-readable
+detail — never as a bare boolean; an unparseable version is `invalid`, never assumed;
+`^`-ranges are major-bounded and `~`-ranges are minor-bounded. Declarations elsewhere
+(unit manifests, capability manifests, the contract version) are checked against this module.
+
+### 19.4 Replacement and upgrade safety
+
+`registry.replace(unitId, { id, kind, language })` swaps **what implements** a unit while
+keeping its contract, its version and every consumer's declaration byte-identical. Refused:
+a replacement whose contract differs from the unit's, one that would move the version, and a
+no-op replacement. A refusal is atomic — the catalog is untouched. Both outcomes are
+observable (`frontend.replacement.applied` / `frontend.replacement.rejected`).
+
+Replacement and upgrade are distinct operations: upgrading a unit does not undo its
+replacement, and a downgrade remains refused. Every unit's implementation identity is
+derived when not declared: `{ id, kind: 'reference', contract: <the unit's contract>,
+status: 'declared', language: null }`.
+
+### 19.5 Boundary observability
+
+Events are emitted at the architecture boundary — capability registered/rejected/degraded,
+unit registered/rejected, lifecycle transition, contract mismatch, upgrade applied/rejected,
+downgrade rejected, replacement applied/rejected, operation completed/rejected, negotiation
+decided. The vocabulary is **closed**: an undeclared event id is refused. Events are
+**payload-free** — `payload`, `token`, `authorization`, `subject`, `scopes`, `cookie`,
+`password`, `secret` and `content` are rejected by name, because they belong to the session,
+not to telemetry. The buffer is bounded (default 200) and a throwing sink is counted and
+swallowed; telemetry never breaks a user flow. This is a vocabulary and a buffer, not a
+telemetry framework.
+
+### 19.6 Frontend readiness vs backend availability
+
+The frontend never probes the backend. What the backend advertises is derived from
+declarations — `override`, `compat-unsupported-map`, or the surface catalog — and every
+answer carries its `source`, so an inferred state is never mistaken for a measured one.
+Backend states are `available`, `partial`, `unsupported`, `unknown`; `unknown` means "not
+declared", not "broken". Readiness (frontend) and availability (backend) are reported side by
+side; neither is allowed to silently stand in for the other.
+
+### 19.7 Extension points are surface-owned
+
+An extension point belongs to the **surface** that declares it. A capability may add to the
+hooks of the surfaces it occupies — `manifest/extension-points.json` is the authority — and
+claiming a hook on a surface the capability does not occupy is refused at registration with
+the owning surface named. This is what makes "an extension may not patch an implementation it
+does not own" checkable instead of aspirational. The upstream hook rules (additive
+declarations, `mutates: 'attributes-only'`, an attribute whitelist and a non-empty `never`
+list) are unchanged; this rule only closes who may reach the hook at all.
+
+### 19.8 Rule block (machine-readable)
+
+```json
+[
+  {
+    "id": "A1",
+    "statement": "A capability is declared, installed, loaded and active as four different states; only loaded, active or idle may serve.",
+    "contract": "§18.1",
+    "enforcedBy": "07-lifecycle.test.mjs"
+  },
+  {
+    "id": "A2",
+    "statement": "Criticality decides degradation, and a core capability may not declare a fallback.",
+    "contract": "§18.2",
+    "enforcedBy": "07-lifecycle.test.mjs"
+  },
+  {
+    "id": "A3",
+    "statement": "Trust is inherited and never promoted by nesting; an unknown trust level is refused.",
+    "contract": "§18.2",
+    "enforcedBy": "07-lifecycle.test.mjs"
+  },
+  {
+    "id": "A4",
+    "statement": "Placement grants no capability: access comes from a unit’s own surface binding or from a capability that declares that surface.",
+    "contract": "§19.1",
+    "enforcedBy": "14-negotiation.test.mjs"
+  },
+  {
+    "id": "A5",
+    "statement": "Business contracts name operations, never transports; the cheapest capable transport wins and nothing is routed implicitly.",
+    "contract": "§19.2",
+    "enforcedBy": "15-transport.test.mjs"
+  },
+  {
+    "id": "A6",
+    "statement": "One version vocabulary: a major difference is never compatible, and compatibility is reported as a state rather than a boolean.",
+    "contract": "§19.3",
+    "enforcedBy": "13-versions.test.mjs"
+  },
+  {
+    "id": "A7",
+    "statement": "An implementation may be replaced behind its contract without moving the contract, the version or any consumer.",
+    "contract": "§19.4",
+    "enforcedBy": "16-replacement.test.mjs"
+  },
+  {
+    "id": "A8",
+    "statement": "Nested units are hierarchical, bounded at three levels, and a unit may only consume another unit’s published ports.",
+    "contract": "§19.4",
+    "enforcedBy": "06-sublegos.test.mjs"
+  },
+  {
+    "id": "A9",
+    "statement": "Degradation is explicit and machine-readable: availability, support and criticality are declared, never improvised per surface.",
+    "contract": "§18.3",
+    "enforcedBy": "10-profiles.test.mjs"
+  },
+  {
+    "id": "A10",
+    "statement": "Observability is boundary level and payload free: no payload, token, subject or scope may enter an event.",
+    "contract": "§19.5",
+    "enforcedBy": "17-observability.test.mjs"
+  },
+  {
+    "id": "A11",
+    "statement": "Selective test tiers reduce iteration cost; the full set still runs in CI and is never replaced by a green selective run.",
+    "contract": "§18.5",
+    "enforcedBy": "18-impact-plan.test.mjs"
+  },
+  {
+    "id": "A12",
+    "statement": "The knowledge pack is machine-derived, drift-checked and small enough to retrieve by level rather than read in full.",
+    "contract": "§18.6",
+    "enforcedBy": "12-knowledge.test.mjs"
+  },
+  {
+    "id": "A13",
+    "statement": "Frontend readiness and backend availability are separate declarations, shown side by side; the frontend never probes the backend.",
+    "contract": "§19.6",
+    "enforcedBy": "14-negotiation.test.mjs"
+  },
+  {
+    "id": "A14",
+    "statement": "A registration may reference implementation by path only: code and framework detail stay out of the metadata registries.",
+    "contract": "§18.1",
+    "enforcedBy": "11-registry-maturity.test.mjs"
+  },
+  {
+    "id": "A15",
+    "statement": "Device support is a declared budget, never a platform check; a thin client reaches what it cannot run locally.",
+    "contract": "§18.3",
+    "enforcedBy": "10-profiles.test.mjs"
+  },
+  {
+    "id": "A16",
+    "statement": "An extension point is owned by a surface: a capability may only add to the hooks of the surfaces it occupies, never to a neighbour’s.",
+    "contract": "§19.7",
+    "enforcedBy": "21-security.test.mjs"
+  }
+]
+```

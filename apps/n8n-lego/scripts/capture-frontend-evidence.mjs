@@ -194,6 +194,51 @@ check('assembling the descriptor stays inside a small memory budget', cost.kb < 
 const packageJson = JSON.parse(readFileSync(join(REPO_ROOT, 'packages', 'frontend-lego', 'package.json'), 'utf8'));
 check('the package still has no runtime dependency', Object.keys(packageJson.dependencies ?? {}).length === 0, `dependencies=${JSON.stringify(packageJson.dependencies ?? {})}`);
 
+/* --------------------------- architecture rules, checked against the live LEGO */
+// The rules are data (`src/conformance.mjs`); this records the same answer at the
+// application boundary, so a CI reader sees it without running the package suite.
+const LEGO_ROOT = join(REPO_ROOT, 'packages', 'frontend-lego');
+const LEGO_SRC = pathToFileURL(join(LEGO_ROOT, 'src')).href;
+const { createFrontendLego } = await import(pathToFileURL(join(LEGO_ROOT, 'index.mjs')).href);
+const { checkConformance, ARCHITECTURE_RULES } = await import(`${LEGO_SRC}/conformance.mjs`);
+const { createOperationGateway, defineLocalTransport, defineTransport } = await import(`${LEGO_SRC}/transport.mjs`);
+const { INTERACTION_CLASSES } = await import(`${LEGO_SRC}/interactions.mjs`);
+const { SUPPORTED_LOCALES } = await import(`${LEGO_SRC}/i18n.mjs`);
+
+const liveFrontend = createFrontendLego({ app: { name: 'n8n-lego', version: '0.1.0' } });
+const conformance = checkConformance(liveFrontend);
+check(`${ARCHITECTURE_RULES.length} architecture rules pass on a live assembly`, conformance.ok, conformance.checks.filter((entry) => entry.state !== 'pass').map((entry) => entry.ruleId).join(',') || 'all pass');
+
+const directions = Object.fromEntries(SUPPORTED_LOCALES.map((locale) => [locale.code, locale.direction]));
+check('direction is locale metadata: ar RTL, the rest LTR', directions.ar === 'rtl' && Object.entries(directions).filter(([, direction]) => direction === 'rtl').length === 1, JSON.stringify(directions));
+
+check('four interaction classes are declared', INTERACTION_CLASSES.join(',') === 'call,event,stream,batch', INTERACTION_CLASSES.join(','));
+
+// Delivery: a same-process operation is a direct call with no serialization, and a
+// call is never carried by a fire-and-forget transport.
+const delivered = [];
+const gateway = createOperationGateway({
+  transports: [
+    defineTransport({ id: 'event:bus', kind: 'event', cost: 0, invoke: async () => { delivered.push('event'); return null; } }),
+    defineLocalTransport({ handlers: { 'workflow.list': async () => { delivered.push('local'); return []; } } }),
+  ],
+});
+const delivery = await gateway.invoke({ capability: 'workflow', operation: 'workflow.list', interaction: 'call' });
+check('a same-process call is direct, unserialized and never routed through an event bus', delivery.transport === 'local:direct' && delivery.serialization === 'none' && !delivered.includes('event'), `transport=${delivery.transport} serialization=${delivery.serialization}`);
+
+let refused = null;
+try {
+  await gateway.invoke({ capability: 'execution', operation: 'execution.watch', interaction: 'stream' });
+} catch (error) {
+  refused = error;
+}
+check('an interaction no transport can carry is refused by name', refused?.code === 'frontend.transport.unsupported', refused ? `${refused.code}: ${refused.message.slice(0, 60)}…` : 'accepted (would be a silent fallback)');
+
+const verdict = liveFrontend.negotiate({ capabilityId: 'translation', unitId: 'settings.localization.rtl' });
+check('a declared-but-not-installed capability degrades instead of pretending', verdict.state === 'degraded' && verdict.degradation.behavior === 'degrade', `state=${verdict.state} fallback=${verdict.degradation.fallback}`);
+const ungranted = liveFrontend.negotiate({ capabilityId: 'workflow', unitId: 'settings.localization.rtl' });
+check('placement grants nothing: the refusal leaks no capability metadata', ungranted.state === 'unavailable' && ungranted.identity === null && /placement never grants/.test(ungranted.reasons[0]), `state=${ungranted.state} identity=${ungranted.identity}`);
+
 /* ---------------------------------------------------------------- the record */
 const evidence = {
   kind: 'p25-frontend-boundary',

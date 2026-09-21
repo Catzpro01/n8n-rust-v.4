@@ -25,22 +25,35 @@ packages/frontend-lego/
     sub-legos.json          19 nested units: hierarchy, owners, ports, tests, upgrade policy
     ownership.json          who owns which area
     capabilities.json       declared (not installed) frontend capabilities
-  src/
-    contract.mjs            contract version, boot payload keys, published vocabulary
-    registry.mjs            capability registry: fail-closed validation, availability vs activation
-    sublegos.mjs            nested registry: hierarchy, ports, depth bound, atomic upgrades
+  src/                     one module per concern, no utils dumping ground
+    contract.mjs            contract version, boot payload keys, vocabulary
+    versions.mjs            the ONE version vocabulary: parse, compare, ranges, compatibility
+    surface-capability.mjs  surface → backend-capability join (`none` → null)
+    registry.mjs            capability registry: fail-closed validation, availability ≠ activation
+    sublegos.mjs            nested registry: hierarchy, ports, depth bound, upgrades, replacement
     lifecycle.mjs           capability states, criticality, trust levels, degradation
-    envelope.mjs            the operation envelope: identity, deadline, cancellation, idempotency
-    impact.mjs              impact graph, selective test map, dry-run plan
+    negotiation.mjs         discovery, access decisions, version alignment, degradation verdicts
+    backend-view.mjs        what the backend advertises, derived (never probed)
+    envelope.mjs            operation envelope: identity, deadline, cancellation, idempotency
+    transport.mjs           transport-neutral delivery: direct local call, no HTTP between modules
+    interactions.mjs        the four classes (call/event/stream/batch) and which transports carry each
+    conformance.mjs         architecture rules as data, checked against a live assembly
+    observability.mjs       boundary events + bounded buffer (not a telemetry framework)
+    impact.mjs              impact graph, selective test map, runnable dry-run plan
     profiles.mjs            device profiles and the four support states
-    i18n.mjs                locales, message slots, translation coverage
-    errors.mjs              semantic error codes and kinds
-    boot.mjs                boot descriptor + the additive <meta> tag
-    client.mjs              REST client, state store
+    i18n.mjs                locale identity, direction, message keys, fallback, plural contract
+    errors.mjs              semantic error codes and their message keys
+    boot.mjs                boot descriptor + the additive `<meta>` tag
+    client.mjs              REST client, state store (the boundary, not a transport)
     manifests.mjs           catalog loading (the only Node-only module)
+    knowledge.mjs           the `.ai/` pack index and the task → context-level lookup
+    lego.mjs                the assembly: catalogs → registries → adapter + the app-facing surface
     adapters/               the framework adapter boundary (the current one is Vue)
   test/                     01-contract 02-registry 03-errors 04-client 05-boundary 06-sublegos
                             07-lifecycle 08-envelope 09-impact 10-profiles 11-registry-maturity
+                            12-knowledge 13-versions 14-negotiation 15-transport
+                            16-replacement 17-observability 18-impact-plan 19-conformance
+                            20-interactions
 ```
 
 ## Boot flow
@@ -61,40 +74,58 @@ packages/frontend-lego/
 
 | Thing | Value |
 | ----- | ----- |
+| Architecture tests | 196 across 22 suites |
 | Surfaces | 12 (`manifest/surfaces.json`) |
 | Extension hooks | 15, version `1.1.0`, 7 declared future consumers |
 | Sub-LEGO units | 19 in a 3-level hierarchy (11 roots, max depth 2) |
 | Boot payload | ~19 KB JSON / ~26 KB base64, budget **32 KB** (test-enforced) |
+| Transaction layers | 20 modules, zero runtime dependencies |
 | Browser-visible delta | the one `<meta>` tag (24,268 B on the served page) |
 | Runtime dependencies | none |
 | Locales | `id, en, ar, zh, ru, jv`; Arabic is RTL |
 | Message slots | 13 |
 | Declared capabilities | 1 (`translation`), installed: 0 |
 
-## Rules the card wants you to remember without reading the code
+## Rules worth remembering (the full list is data)
 
-- A capability attaches only to a surface declared in `surfaces.json` (fail-closed).
-- Registration is metadata: `activation: 'lazy' | 'manual'` must name an `entry`
-  module path once the capability is installable — and registering it still does not
-  load it.
-- Trust is inherited: a unit nested under a `feature` capability is a feature and
-  may only be *lowered*, never promoted by nesting.
-- `criticality: 'core'` may not declare a fallback — absence must stay visible.
-- Device support is one of `supported | degraded | remote | unsupported`, decided
-  from declared budgets; core code never branches on platform identity.
-- Impact and test selection come from declaration data (`impactOf`, `planChange`),
-  never from reading source: a private change gets a private test set.
-- The framework name appears only in `src/adapters/` — a test enforces that.
+`frontend.conformance()` checks all 16 rules against a live assembly; each rule names the
+vocabulary that enforces it and the suite that proves it, and `contracts/frontend.contract.md`
+§19.8 mirrors the same list as JSON. The rules that matter most day to day:
+
+- A capability attaches only to a declared surface (fail-closed); operations are named
+  `<domain>.<name>`, the grammar the envelope also uses.
+- Registration is metadata: `activation: 'lazy' | 'manual'` needs an `entry` path once a
+  capability is installable, and registering it still does not load it.
+- Trust is inherited and may only be *lowered* by nesting; `core` may not declare a fallback.
+- Device support comes from declared budgets (`supported | degraded | remote | unsupported`);
+  core code never branches on platform identity.
+- Impact and test selection come from declaration data: a plan names its tiers, its skipped
+  tiers and its caveat, and never replaces full CI.
+- The framework name appears only in `src/adapters/`.
+- **Placement grants nothing** — access is the unit's own surface binding or a capability that
+  declares that surface; a parent's access is inherited by nobody (`test/14`).
+- **Contracts name operations, never transports**; the cheapest capable transport wins, and a
+  call no transport can carry is refused by name (`test/15`).
+- **One version vocabulary**, and **implementation is replaceable while contracts are not**
+  (`versions.mjs`, `subLegos.replace`, `test/16`).
+- **Interactions** (`call`/`event`/`stream`/`batch`) are declared per operation and decide
+  which transports are capable; a caller may not reshape one (`test/20`).
+- **Hooks are surface-owned** and owners are checked against the manifests (`test/21`).
+- **Localization boundary**: locale identity, direction (`ar` RTL, rest LTR), keys, fallback and
+  the plural *contract* live here — dictionaries do not (`test/22`).
+- Events are boundary-level and payload-free: no `payload`, `token`, `authorization`, `subject`
+  or `scopes` may enter the stream (`observability.mjs`, `test/17`).
 
 ## Evidence commands
 
 ```bash
-npm run frontend-lego:test                                     # 114 tests, the architecture surface
+npm run frontend-lego:test                                     # 196 tests, the architecture surface
 node --test apps/n8n-lego/test/*.test.mjs                      # app-side boundary + boot tag
-node apps/n8n-lego/scripts/capture-frontend-evidence.mjs       # 18-check evidence JSON
+node apps/n8n-lego/scripts/capture-frontend-evidence.mjs       # 31-check evidence JSON
 python3 tools/sublego-audit/audit.py                           # nested-LEGO + agent boundary audit
 npm run verify:fast                                            # repo-wide fast gate
 ```
 
-The browser gate (`tests/e2e/frontend-boundary.mjs`) needs Chromium and
-`n8n-editor-ui`; it runs in CI, not in a bare checkout.
+The browser gate (`tests/e2e/frontend-boundary.mjs`) needs Chromium and `n8n-editor-ui`; it
+runs in CI, not in a bare checkout. The architecture rules are also data: `frontend.conformance()`
+checks all 16 against a live assembly, and `contracts/frontend.contract.md` §19 mirrors them.
