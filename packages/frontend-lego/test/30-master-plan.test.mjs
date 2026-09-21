@@ -174,6 +174,52 @@ test('one canonical document per subject, and every product task resolves to one
   assert.equal(productContextFor({ kind: 'ai-everything' }).kind, 'project', 'an unknown task fails closed');
 });
 
+test('every question a new agent must answer resolves to a document that answers it', () => {
+  // The reader test from the master plan: 30 questions, each with the task shape a reader
+  // would use and a phrase the answering document must contain. A question that resolves to
+  // documents which do not actually answer it fails here.
+  const questions = [
+    ['What is n8n LEGO?', 'project', 'LEGO'],
+    ['Which 26 core domains exist?', 'core-lego', '26'],
+    ['Which 15 AI/Agent LEGO exist?', 'ai-lego', '15'],
+    ['What is implemented, declared, contract-only or planned?', 'status', 'contract-only'],
+    ['How do AI Assistant, AI Copilot and AI Node differ?', 'ai-surface', 'Copilot'],
+    ['What is the Agent Machine?', 'agents', 'Agent Machine'],
+    ['Can one agent work on concurrent tasks?', 'agents', 'task'],
+    ['Can several sessions run in parallel?', 'context', 'session'],
+    ['What is the difference between Skill and Capability?', 'skills', 'Capability'],
+    ['What is the difference between Memory and Context?', 'context', 'Memory'],
+    ['Where do files and projects live?', 'workspace', 'workspace'],
+    ['What is a Workspace?', 'workspace', 'Workspace'],
+    ['How does MCP fit in?', 'mcp', 'MCP'],
+    ['How are external runtimes reached?', 'runtimes', 'runtime'],
+    ['How are tokens and cost accounted for?', 'tokens', 'token'],
+    ['What happens on context rollover?', 'context', 'rollover'],
+    ['How do the Memory Graph and Obsidian relate?', 'memory', 'Obsidian'],
+    ['How does the Agent Machine relate to workflows?', 'agents', 'workflow'],
+    ['Who approves what?', 'security', 'approval'],
+    ['What is an Artifact?', 'ai-lego', 'artifact'],
+    ['What is a Work Trace?', 'ai-lego', 'trace'],
+    ['How are resources routed on a small device?', 'platform-strategy', 'device'],
+    ['What is the Rust strategy?', 'platform-strategy', 'Rust'],
+    ['What is currently blocking progress?', 'blockers', 'blocker'],
+    ['Where is the product boundary?', 'project', 'product'],
+    ['What must never be done?', 'frontend-rules', 'Rust is LOCKED'],
+    ['What comes next?', 'phases', 'phase'],
+    ['What are the failure states?', 'ai-state', 'state'],
+    ['How is the AI UI extended?', 'ai-contract-matrix', 'contract'],
+    ['What is the state of translation?', 'translation', 'translation'],
+  ];
+  const unanswered = [];
+  for (const [question, kind, anchor] of questions) {
+    const resolved = productContextFor({ kind });
+    assert.equal(resolved.kind, kind, `${question} must resolve to its own task shape, never fall back`);
+    const answered = resolved.files.some((file) => read(file).toLowerCase().includes(anchor.toLowerCase()));
+    if (!answered) unanswered.push(`${question} (kind ${kind}, expected "${anchor}")`);
+  }
+  assert.deepEqual(unanswered, [], `unanswered questions:\n  ${unanswered.join('\n  ')}`);
+});
+
 test('the registers stay open, evidenced and reconciled', () => {
   const frontend = readJson('docs/n8n-lego/decisions/cross-agent-decisions.json');
   const backend = readJson('docs/n8n-lego/decisions/cross-agent-decisions.backend.json');
