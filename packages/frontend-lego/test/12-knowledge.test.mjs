@@ -91,6 +91,11 @@ test('the unit index matches the sub-LEGO manifest, unit for unit', () => {
     assert.equal(entry.trust, unit.trust ?? 'feature', `${unit.id} trust`);
     assert.equal(entry.criticality, unit.criticality ?? 'optional', `${unit.id} criticality`);
     assert.equal(entry.lifecycle, unit.lifecycle ?? 'available', `${unit.id} lifecycle`);
+    // The backend capability is derived from the surface, in the descriptor and in
+    // the pack alike — a second declaration would be a second source of truth.
+    const surface = manifests.surfaces.find((value) => value.id === unit.surface);
+    const capability = surface?.backend?.capability;
+    assert.equal(entry.capability ?? null, capability === 'none' ? null : capability ?? null, `${unit.id} capability`);
   }
   assert.deepEqual(index.counts, {
     units: manifests.subLegos.length,
