@@ -239,6 +239,24 @@ check('a declared-but-not-installed capability degrades instead of pretending', 
 const ungranted = liveFrontend.negotiate({ capabilityId: 'workflow', unitId: 'settings.localization.rtl' });
 check('placement grants nothing: the refusal leaks no capability metadata', ungranted.state === 'unavailable' && ungranted.identity === null && /placement never grants/.test(ungranted.reasons[0]), `state=${ungranted.state} identity=${ungranted.identity}`);
 
+// The two situations that must never read as "available": a migration gate, and a
+// consumer that has to be allowed to do something before it may ask.
+const gated = createFrontendLego({
+  app: { name: 'n8n-lego', version: '0.1.0' },
+  backend: { capabilities: { workflow: { status: 'available', owner: 'workflow', migration: { required: true, from: 'v1', to: 'v2' } } } },
+});
+const gatedVerdict = gated.negotiate({ capabilityId: 'workflow', unitId: 'workflow-editor.canvas' });
+check('a migration gate is its own state, never availability', gatedVerdict.state === 'migration-required' && gatedVerdict.migrationRequired === true && gatedVerdict.degradation.behavior === 'fallback', `state=${gatedVerdict.state} fallback=${gatedVerdict.degradation.fallback}`);
+
+const permitted = createFrontendLego({ app: { name: 'n8n-lego', version: '0.1.0' } });
+permitted.register({
+  id: 'audit-log', lego: 'settings', title: 'Audit log', status: 'available', surfaces: ['settings'],
+  contracts: ['contracts/frontend.contract.md'], tests: ['packages/frontend-lego/test/23-degradation.test.mjs'],
+  operations: ['audit.list'], permissions: ['audit:read'], activation: 'lazy', entry: './features/audit/index.mjs',
+});
+const permissionVerdict = permitted.negotiate({ capabilityId: 'audit-log' });
+check('required permissions are declared and reported, never inferred', JSON.stringify(permissionVerdict.requiredPermissions) === '["audit:read"]', `requiredPermissions=${JSON.stringify(permissionVerdict.requiredPermissions)}`);
+
 /* ---------------------------------------------------------------- the record */
 const evidence = {
   kind: 'p25-frontend-boundary',

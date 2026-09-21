@@ -174,6 +174,7 @@ export {
 
 export {
   CAPABILITY_ORIGINS,
+  DEGRADATION_SITUATIONS,
   describeNegotiation,
 } from './src/negotiation.mjs';
 

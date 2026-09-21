@@ -116,7 +116,9 @@ test('negotiation returns a verdict, never a bare boolean', () => {
   assert.equal(verdict.origin, 'frontend-declared');
   assert.match(verdict.reasons.join(' '), /declared but not installed/);
   assert.deepEqual(verdict.degradation, { behavior: 'degrade', fallback: 'declared-behaviour' });
-  assert.deepEqual(AVAILABILITY_STATES, ['available', 'degraded', 'version-mismatch', 'unavailable', 'unsupported', 'disabled']);
+  assert.deepEqual(AVAILABILITY_STATES, ['available', 'degraded', 'version-mismatch', 'unavailable', 'unsupported', 'disabled', 'migration-required']);
+  assert.deepEqual(verdict.requiredPermissions, [], 'nothing is required by default, and the verdict says so');
+  assert.equal(verdict.migrationRequired, false);
 });
 
 test('an ungranted consumer is not told whether the capability would have worked', () => {

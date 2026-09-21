@@ -28,6 +28,22 @@ export const AVAILABILITY_STATES = Object.freeze([
   'unavailable',
   'unsupported',
   'disabled',
+  /** Present, but it may not serve until a declared migration has run. */
+  'migration-required',
+]);
+
+/**
+ * The situations the frontend must survive, and the verdict each one produces.
+ * Data, not prose — `test/23` walks this table and asserts every row.
+ */
+export const DEGRADATION_SITUATIONS = Object.freeze([
+  Object.freeze({ situation: 'unavailable', state: 'unavailable', trigger: 'the capability is not declared or advertised at all' }),
+  Object.freeze({ situation: 'disabled', state: 'disabled', trigger: 'a declared lifecycle state of "disabled"' }),
+  Object.freeze({ situation: 'unsupported', state: 'unavailable', trigger: 'the instance does not implement the capability' }),
+  Object.freeze({ situation: 'incompatible', state: 'version-mismatch', trigger: 'a required version differs in its major component' }),
+  Object.freeze({ situation: 'degraded', state: 'degraded', trigger: 'the instance implements the capability partially, or a required operation is missing' }),
+  Object.freeze({ situation: 'not-installed', state: 'degraded', trigger: 'the frontend declares the capability but has not installed it' }),
+  Object.freeze({ situation: 'migration-required', state: 'migration-required', trigger: 'a declared migration gate has not run' }),
 ]);
 
 /** Origins of a capability answer. A backend name collision is not a synonym. */
@@ -202,6 +218,9 @@ export function createCapabilityNegotiator({
       contracts: Object.freeze([...asArray(entry.contracts)]),
       surfaces: Object.freeze([...surfacesFor(capabilityId, entry)]),
       operations: Object.freeze([...asArray(entry.operations)]),
+      /** What a consumer must be allowed to do — declared, never inferred from a route. */
+      permissions: Object.freeze([...asArray(entry.permissions)]),
+      migration: entry.migration ? Object.freeze({ required: entry.migration.required === true, ...entry.migration }) : null,
       requirements: Object.freeze({ ...(entry.requirements ?? {}) }),
       degradation: entry.degradation ? Object.freeze({ ...entry.degradation }) : null,
     });
@@ -239,7 +258,12 @@ export function createCapabilityNegotiator({
     const reasons = [];
     let state = 'available';
 
-    if (description.origin === 'backend-advertised') {
+    // A declared migration gate outranks availability: the capability is present but
+    // may not serve, and pretending otherwise is exactly the silent fallback we refuse.
+    if (description.migration?.required === true) {
+      state = 'migration-required';
+      reasons.push(`"${capabilityId}" is declared but requires a migration before it can serve${description.migration.detail ? `: ${description.migration.detail}` : ''}`);
+    } else if (description.origin === 'backend-advertised') {
       if (description.status === 'unsupported') {
         state = 'unavailable';
         reasons.push(`the instance does not implement "${capabilityId}"`);
@@ -267,10 +291,12 @@ export function createCapabilityNegotiator({
     if (requireVersion !== null) {
       compatibility = compatibilityOf(requireVersion, description.contractVersion);
       if (compatibility.state === 'major-mismatch') {
-        state = 'version-mismatch';
+        // A version mismatch is a fact even when migration is also pending; report the
+        // more specific blocker, and say so.
+        if (state !== 'migration-required') state = 'version-mismatch';
         reasons.push(compatibility.detail);
       } else if (compatibility.state === 'invalid') {
-        state = 'version-mismatch';
+        if (state !== 'migration-required') state = 'version-mismatch';
         reasons.push(`"${capabilityId}" does not declare a usable version (${compatibility.detail})`);
       }
     }
@@ -312,11 +338,14 @@ export function createCapabilityNegotiator({
       origin: known ? description.origin : null,
       contractVersion: known ? description.contractVersion : null,
       compatibility,
+      /** What the consumer has to be allowed to do; empty when nothing is required. */
+      requiredPermissions: Object.freeze([...(description?.permissions ?? [])]),
+      migrationRequired: description?.migration?.required === true,
       grantedOperations: Object.freeze([...grantedOperations]),
       missingOperations: Object.freeze([...missingOperations]),
       reasons: Object.freeze([...reasons]),
       /** What the UI is expected to do — declared, never improvised per surface. */
-      degradation: state === 'unsupported' || state === 'unavailable' || state === 'version-mismatch' || state === 'disabled'
+      degradation: state === 'unsupported' || state === 'unavailable' || state === 'version-mismatch' || state === 'disabled' || state === 'migration-required'
         ? Object.freeze({ behavior: 'fallback', fallback: 'native-behavior' })
         : state === 'available'
           ? Object.freeze({ behavior: 'proceed', fallback: null })
@@ -347,6 +376,10 @@ export function createCapabilityNegotiator({
       } else if (backendEntry.status === 'partial') {
         state = 'degraded';
         reasons.push(`the instance implements "${capability}" partially`);
+      }
+      if (backendEntry?.migration?.required === true && state !== 'unsupported') {
+        state = 'migration-required';
+        reasons.push(`"${capability}" requires a migration before it can serve`);
       }
       if (declaredEntry && (declaredEntry.lifecycle === 'disabled')) {
         state = 'disabled';
@@ -406,6 +439,7 @@ export function createCapabilityNegotiator({
     /** Data for docs, `.ai/` cards and the observability vocabulary. */
     describeModel: () => Object.freeze({
       states: AVAILABILITY_STATES,
+      situations: DEGRADATION_SITUATIONS,
       origins: CAPABILITY_ORIGINS,
       rules: Object.freeze([
         'Placement grants nothing: a capability is usable only where its own surface binds it or the capability declares that surface.',

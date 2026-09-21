@@ -520,7 +520,35 @@ does not own" checkable instead of aspirational. The upstream hook rules (additi
 declarations, `mutates: 'attributes-only'`, an attribute whitelist and a non-empty `never`
 list) are unchanged; this rule only closes who may reach the hook at all.
 
-### 19.8 Rule block (machine-readable)
+### 19.8 Degradation situations and required permissions
+
+Seven situations are declared data (`DEGRADATION_SITUATIONS`), and each one produces a
+verdict with a state, at least one reason and a declared behaviour — never a silent
+"available":
+
+| Situation | State | Trigger |
+| :--- | :--- | :--- |
+| unavailable | `unavailable` | nothing declares or advertises the capability |
+| disabled | `disabled` | a declared lifecycle state of `disabled` |
+| unsupported | `unavailable` | the instance does not implement the capability |
+| incompatible | `version-mismatch` | a required version differs in its major component |
+| degraded | `degraded` | the instance is partial, or a required operation is missing |
+| not installed | `degraded` | the frontend declares the capability but has not installed it |
+| migration-required | `migration-required` | a declared migration gate has not run |
+
+`unsupported`/`unavailable`/`version-mismatch`/`disabled`/`migration-required` carry
+`degradation = { behavior: 'fallback', fallback: 'native-behavior' }`; `degraded` carries
+`{ behavior: 'degrade', fallback: 'declared-behaviour' }`. The behaviour is a declaration the
+surface renders, not a decision it improvises.
+
+**Required permissions** are declared data too: a capability may list `permissions` as
+`<domain>:<action>` names, the verdict reports them as `requiredPermissions`, and a consumer is
+told what it must be allowed to do before it asks. A permission is a name, never a credential —
+no token, key or cookie is representable in the declaration, and an undeclared or malformed
+permission is refused at registration. Permissions are never inferred from a route, a menu entry
+or a nested position.
+
+### 19.9 Rule block (machine-readable)
 
 ```json
 [
@@ -613,6 +641,12 @@ list) are unchanged; this rule only closes who may reach the hook at all.
     "statement": "Device support is a declared budget, never a platform check; a thin client reaches what it cannot run locally.",
     "contract": "§18.3",
     "enforcedBy": "10-profiles.test.mjs"
+  },
+  {
+    "id": "A17",
+    "statement": "Every degradation situation (unavailable, disabled, unsupported, incompatible, degraded, not installed, migration-required) is a declared state with a reason and a fallback — never silent availability.",
+    "contract": "§19.8",
+    "enforcedBy": "23-degradation.test.mjs"
   },
   {
     "id": "A16",
