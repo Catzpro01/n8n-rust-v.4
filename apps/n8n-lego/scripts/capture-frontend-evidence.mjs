@@ -19,10 +19,13 @@
  * `tests/e2e/frontend-boundary.mjs`. This script is the local, dependency-free
  * counterpart committed so the evidence can be regenerated, not just trusted.
  */
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import { execFileSync } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
 
 import { startServer } from '../src/server.mjs';
 import { createUi } from '../src/ui.mjs';
@@ -167,6 +170,30 @@ check('.ai pack answers a task shape with the smallest file set', retrieval.leve
 const P25_PAYLOAD_BYTES = 18126;
 check('boot payload is byte-identical to the P2.5 baseline', payloadBytes === P25_PAYLOAD_BYTES, `${payloadBytes} bytes vs pinned P2.5 baseline ${P25_PAYLOAD_BYTES}`);
 
+/* ------------------------------------ performance: what this costs to boot (P2.8-F) */
+
+const probe = `
+const t0 = process.hrtime.bigint();
+const before = process.memoryUsage().heapUsed;
+const mod = await import(${JSON.stringify(pathToFileURL(join(REPO_ROOT, 'packages', 'frontend-lego', 'index.mjs')).href)});
+const lego = mod.createFrontendLego({ app: { name: 'n8n-lego', version: '0.1.0' } });
+const ms = Number(process.hrtime.bigint() - t0) / 1e6;
+const kb = (process.memoryUsage().heapUsed - before) / 1024;
+console.log(JSON.stringify({
+  ms: Math.round(ms * 10) / 10,
+  kb: Math.round(kb),
+  units: lego.bootPayload.subLegos.length,
+  surfaces: lego.bootPayload.surfaces.length,
+  hooks: lego.bootPayload.extensionPoints.length,
+}));
+`;
+const cost = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', probe], { encoding: 'utf8' }));
+check('the LEGO cold-imports and assembles within a small budget', cost.ms < 250, `${cost.ms} ms for import + ${cost.surfaces} surfaces + ${cost.hooks} hooks + ${cost.units} units`);
+check('assembling the descriptor stays inside a small memory budget', cost.kb < 4096, `${cost.kb} KB of heap for catalogs + both registries`);
+
+const packageJson = JSON.parse(readFileSync(join(REPO_ROOT, 'packages', 'frontend-lego', 'package.json'), 'utf8'));
+check('the package still has no runtime dependency', Object.keys(packageJson.dependencies ?? {}).length === 0, `dependencies=${JSON.stringify(packageJson.dependencies ?? {})}`);
+
 /* ---------------------------------------------------------------- the record */
 const evidence = {
   kind: 'p25-frontend-boundary',
@@ -194,6 +221,8 @@ const evidence = {
     errorKinds: payload.errorKinds,
     capabilities: payload.capabilities,
     bytes: payloadBytes,
+    importMs: cost.ms,
+    heapKb: cost.kb,
   },
 };
 writeFileSync(OUT, `${JSON.stringify(evidence, null, 2)}\n`, 'utf8');
