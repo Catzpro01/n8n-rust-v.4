@@ -33,13 +33,31 @@ function parseArgs(argv) {
   return args;
 }
 
-/** `export const NAME: Scope[] = ['a', 'b'];` -> { NAME: ['a','b'] } */
+/**
+ * `export const NAME: Scope[] = ['a', 'b'];` -> { NAME: ['a','b'] }
+ * Aliases built from another array also resolve —
+ * `export const X = Y.concat();` (e.g. GLOBAL_ADMIN_SCOPES = GLOBAL_OWNER_SCOPES.concat())
+ * — because they name the *same* scope set and silently degrading them to []
+ * would hide permissions the extraction is supposed to prove.
+ */
 function extractScopeArrays(source) {
   const out = {};
   const pattern = /export const ([A-Z_0-9]+)(?::\s*[^=]+)?\s*=\s*\[([\s\S]*?)\];/g;
   for (const match of source.matchAll(pattern)) {
     const [, name, body] = match;
     out[name] = [...body.matchAll(/'([^']+)'|"([^"]+)"/g)].map((m) => m[1] ?? m[2]);
+  }
+  const concatPattern = /export const ([A-Z_0-9]+)(?::\s*[^=]+)?\s*=\s*([A-Z_0-9]+)\.concat\(([\s\S]*?)\);/g;
+  let progress = true;
+  for (let pass = 0; pass < 3 && progress; pass += 1) {
+    progress = false;
+    for (const match of source.matchAll(concatPattern)) {
+      const [, name, base, extra] = match;
+      if (out[name] || !out[base]) continue;
+      const added = [...extra.matchAll(/'([^']+)'|"([^"]+)"/g)].map((m) => m[1] ?? m[2]);
+      out[name] = [...out[base], ...added];
+      progress = true;
+    }
   }
   return out;
 }

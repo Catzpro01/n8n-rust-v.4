@@ -194,6 +194,12 @@ export function loadConfig(env = process.env) {
     telemetryDisabled: bool(env, 'DIAGNOSTICS_ENABLED', false) === false,
     versionNotificationsEnabled: bool(env, 'VERSION_NOTIFICATIONS_ENABLED', false),
     communityNodesEnabled: bool(env, 'COMMUNITY_NODES_ENABLED', false),
+    /**
+     * Whether the "Usage and plan" settings page is hidden. Upstream default is
+     * false (`@n8n/config` N8N_HIDE_USAGE_PAGE) — a community instance shows it.
+     * `N8N_HIDE_USAGE_PAGE` works too (legacy alias), the namespaced form wins.
+     */
+    hideUsagePage: bool(env, 'HIDE_USAGE_PAGE', false),
   };
 }
 
