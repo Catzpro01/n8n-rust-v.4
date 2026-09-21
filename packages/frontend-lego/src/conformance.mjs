@@ -23,6 +23,7 @@ import { TEST_TIERS } from './impact.mjs';
 import { CONTEXT_LEVELS } from './knowledge.mjs';
 import { SUB_LEGO_STATUSES, MAX_DEPTH } from './sublegos.mjs';
 import { CAPABILITY_IDENTITY_FIELDS, SEAM_FORBIDDEN, SEAM_INPUTS, consumeInput } from './seam.mjs';
+import { SKILL_AFFORDANCES, SKILL_FORBIDDEN_IMPLICATIONS, SKILL_LIFECYCLE } from './skills.mjs';
 
 /**
  * What an extension point is, as a shape: hooks are surface-owned, additive and
@@ -230,6 +231,13 @@ export const ARCHITECTURE_RULES = Object.freeze([
     contract: '§19.7',
     enforcedBy: '21-security.test.mjs',
   }),
+  Object.freeze({
+    id: 'A27',
+    statement: 'Skill discovery renders six quoted states and nothing else: no single boolean, no select/load/execute affordance, no fallback capability, and no skill that implies a permission, an authority, a tool, a filesystem, a terminal or a model.',
+    vocabulary: Object.freeze([...SKILL_LIFECYCLE, ...SKILL_FORBIDDEN_IMPLICATIONS, ...SKILL_AFFORDANCES.allowed]),
+    contract: '§19.18',
+    enforcedBy: '31-skills.test.mjs',
+  }),
 ]);
 
 const RULES_BY_ID = new Map(ARCHITECTURE_RULES.map((rule) => [rule.id, rule]));
@@ -377,6 +385,19 @@ export function checkConformance(frontend) {
     && localVocabulary('runtimeKind').every((kind) => RUNTIME_KINDS.includes(kind));
   record('A26', permissionsDeclared && kindsAreCanonical,
   `${declaredPermissions.length} declared permissions, ${PROVIDER_KINDS.length} provider kinds, ${RUNTIME_KINDS.length} runtime kinds`);
+
+  // A27 — discovery only: six states, no execution affordance, no invented capability.
+  const skillCatalog = frontend.skills;
+  const skillStates = skillCatalog.lifecycle.map((state) => state.state);
+  const noAffordance = Object.entries(skillCatalog.discovery)
+    .filter(([name]) => ['select', 'load', 'execute', 'tools'].includes(name))
+    .every(([, allowed]) => allowed === false);
+  const noFallback = skillCatalog.contract.published ? true : skillCatalog.unsupported !== null
+    && skillCatalog.entries.every((entry) => entry.availability !== 'available');
+  record('A27', skillStates.length === 6 && new Set(skillStates).size === 6
+    && skillCatalog.lifecycle.every((state) => state.executing === false && state.grants === null)
+    && noAffordance && noFallback,
+  `${skillStates.length} states, ${skillCatalog.entries.length} declared skills, contract ${skillCatalog.contract.published ? 'published' : 'unpublished'}`);
 
   // A13 — the frontend/backend view is derived, with sources.
   const featureAvailability = frontend.featureAvailability();

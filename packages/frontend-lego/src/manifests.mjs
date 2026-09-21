@@ -18,6 +18,7 @@ export const MANIFEST_FILES = Object.freeze({
   extensionPoints: 'extension-points.json',
   subLegos: 'sub-legos.json',
   capabilities: 'capabilities.json',
+  skills: 'skills.json',
 });
 
 function readManifest(fileName) {
@@ -42,6 +43,7 @@ export function loadManifests() {
   const extensionCatalog = readManifest(MANIFEST_FILES.extensionPoints);
   const subLegoCatalog = readManifest(MANIFEST_FILES.subLegos);
   const capabilityCatalog = readManifest(MANIFEST_FILES.capabilities);
+  const skillCatalog = readManifest(MANIFEST_FILES.skills);
 
   if (!Array.isArray(surfaceCatalog.surfaces) || surfaceCatalog.surfaces.length === 0) {
     throw new Error('manifest/surfaces.json declares no surfaces');
@@ -57,6 +59,15 @@ export function loadManifests() {
   if (!Array.isArray(capabilityCatalog.capabilities)) {
     throw new Error('manifest/capabilities.json must declare a capabilities array (it may be empty)');
   }
+  // The Skill catalog ships empty while `ai.skill` is unpublished, so emptiness is the
+  // expected state here — a *missing* array is still refused, because "nothing declared"
+  // and "the declaration is broken" must not render the same way.
+  if (!Array.isArray(skillCatalog.skills)) {
+    throw new Error('manifest/skills.json must declare a skills array (it may be empty)');
+  }
+  if (typeof skillCatalog.contract !== 'string' || skillCatalog.contract.length === 0) {
+    throw new Error('manifest/skills.json must name the contract it consumes (ai.skill)');
+  }
 
   return Object.freeze({
     ownership: Object.freeze(ownership),
@@ -64,13 +75,24 @@ export function loadManifests() {
     extensionCatalog: Object.freeze(extensionCatalog),
     subLegoCatalog: Object.freeze(subLegoCatalog),
     capabilityCatalog: Object.freeze(capabilityCatalog),
+    skillCatalog: Object.freeze(skillCatalog),
     surfaces: Object.freeze(surfaceCatalog.surfaces.map((surface) => Object.freeze({ ...surface }))),
     extensionPoints: Object.freeze(extensionCatalog.extensionPoints.map((point) => Object.freeze({ ...point }))),
     subLegos: Object.freeze(subLegoCatalog.subLegos.map((entry) => Object.freeze({ ...entry }))),
     capabilities: Object.freeze(capabilityCatalog.capabilities.map((entry) => Object.freeze({ ...entry }))),
+    skills: Object.freeze(skillCatalog.skills.map((entry) => Object.freeze({ ...entry }))),
     owners: Object.freeze({ ...(subLegoCatalog.owners ?? {}) }),
     futureConsumers: Object.freeze(extensionCatalog.futureConsumers ?? []),
   });
+}
+
+/**
+ * The Skill surface declaration — what this frontend consumes, and how the UI behaves
+ * while the contract is unpublished. Validated by the Skill module, not by the registry:
+ * a skill is not a capability and must not be registerable as one.
+ */
+export function skillSurface(manifests = loadManifests()) {
+  return manifests.skillCatalog;
 }
 
 /** Surface ids, in catalog order. */

@@ -626,7 +626,8 @@
     "The record is checked by tests: the lock is compared against the backend modules when they are present (test/29), and every open row states what the frontend does meanwhile.",
     "A vocabulary quoted from a file with no publishing contract carries a structured `publicationPending` record naming the owner, the domain and a recorded decision - a free-text note is not enough, and an invented contract row is worse.",
     "Every row names its owner, its affected domains, its current interpretation, the decision it requires, its blocking level and its references - a row without those is incomplete.",
-    "A superseded row is kept with a pointer to what replaced it; deleting history is not allowed."
+    "A superseded row is kept with a pointer to what replaced it; deleting history is not allowed.",
+    "A decision id is only half an address: the register it lives in is the other half. Where two registers reuse a spelling, the collision is recorded (see `numbering`) instead of one side being silently renumbered."
   ],
   "alignment": {
     "test": "packages/frontend-lego/test/29-alignment.test.mjs",
@@ -640,5 +641,11 @@
       "how": "git archive <commit> | tar -x -C /tmp/a2; N8N_BACKEND_LEGO_ROOT=/tmp/a2/apps/n8n-lego/src/lego node --test packages/frontend-lego/test/29-alignment.test.mjs",
       "result": "38 canonical sets compared, 0 drift, 4 skipped tests become 0"
     }
+  },
+  "numbering": {
+    "series": "XA-n in this register is the canonical series; it is owned by agent-01 and is the one a test may rely on",
+    "collision": "Agent 2's imported register (docs/n8n-lego/decisions/cross-agent-decisions.backend.json) carries its own proposal ids in `newProposalsFromBackend`, and manifest/ai-lego-set.json cites those proposal ids. The two series reuse the same XA-11.. spellings for different subjects, so a citation is only resolvable together with the file it comes from.",
+    "resolution": "Neither series is renumbered: this register keeps XA-11 = the skill publication question, and agent-2's file keeps its proposal ids. Every frontend citation of XA-11 here means the skill question; a citation of XA-11 inside ai-lego-set.json means agent-2's AI-LEGO ownership proposal.",
+    "rule": "A decision id is only half an address: the register it lives in is the other half. An id that collides across registers is recorded here rather than silently renumbered."
   }
 }

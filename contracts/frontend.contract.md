@@ -880,6 +880,12 @@ enforcement cannot disagree.
     "statement": "An extension point is owned by a surface: a capability may only add to the hooks of the surfaces it occupies, never to a neighbour’s.",
     "contract": "§19.7",
     "enforcedBy": "21-security.test.mjs"
+  },
+  {
+    "id": "A27",
+    "statement": "Skill discovery renders six quoted states and nothing else: no single boolean, no select/load/execute affordance, no fallback capability, and no skill that implies a permission, an authority, a tool, a filesystem, a terminal or a model.",
+    "contract": "§19.18",
+    "enforcedBy": "31-skills.test.mjs"
   }
 ]
 ```
@@ -910,3 +916,47 @@ exists. Two vocabularies may share a spelling only when they share a *subject*
 declared with its reason (`available` is a lifecycle state and an availability). A
 permission a declared capability requires must be a declared permission word — an
 invented synonym fails the live conformance check, it does not pass silently.
+
+### 19.18 The Skill surface — discovery, six states, no execution
+
+A **skill** is procedural knowledge: how a task is done. It is not a capability (what can be
+done) and not an agent (who does it), and it never becomes one by being displayed. The
+frontend consumes the Skill vocabulary the backend publishes and renders it; it does not
+restate it, and it adds no seventh state.
+
+**Six states, never a boolean.** `registered`, `available`, `selected`, `loaded`, `active` and
+`released` are six different facts, quoted from `manifest/ai-lego-set.json`
+(`lego#id=skill.lifecycle`) through the vocabulary lock (`§19.9`), which records that
+`ai.skill` has no contract-lock row yet (`§19.17`, decision `XA-11`). The UI may not collapse
+them: a skill that is `loaded` has material in context, one that is `active` is in use, and
+neither has executed anything. `skillState()` returns one row per state with `executing: false`
+and `grants: null` for all six — a skill state is never an entitlement.
+
+**Discovery only.** Listing, search, filter and detail read declarations. Selecting, loading,
+releasing and executing are operations of `ai.skill` (`register`, `list`, `describe`, `select`,
+`load`, `release`), and no UI affordance may offer them while the contract is unpublished. A
+skill card at the deepest disclosure level reports every declared operation as `offered: false`
+— naming an operation is not offering it.
+
+**The unsupported answer is canonical, not empty.** With no published contract the surface
+reports `optional-absent` for the catalog (an empty skill list is not an error) and answers a
+request for a specific skill with `capability-unavailable` and `lego.capability_unavailable`
+(`§19.8`), naming the unpublished contract and the decision that owes it. No fallback
+capability is substituted, no execution control is shown and no tool list is rendered. A
+published contract that cannot be compared (no version, or a requirement that is not
+semver) is reported as `feature-unsupported`; an unmet required capability as
+`capability-unavailable`; a capability declared but not serviceable here as
+`dependency-disabled`.
+
+**A skill implies no authority.** The declared permissions (`ai:skill:read`, `ai:skill:select`)
+are requirements of backend operations; they are never a grant the UI holds and never a control
+it renders. A skill entry that carries `permissions`, `grants`, `authority`, `tools`,
+`filesystem`, `terminal`, `model`, `entry`, `load` or `execute` is refused by name, with the
+reason (`validateSkillInstance`). Tool access belongs to the capability contract behind the
+skill, and nothing here reaches a model.
+
+**The declaration is handed over, never read.** The frontend receives the quoted declaration as
+data (`createFrontendLego({ skills })`), exactly like the backend capability view (`§19.6`); it
+never reads the backend tree (`§5`, `§19.14`). `manifest/skills.json` declares the surface and
+ships an empty skill list while `ai.skill` is unpublished — reporting "nothing is declared" and
+"the declaration is broken" as different states (`§19.8`).
