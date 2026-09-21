@@ -136,10 +136,10 @@ No document in the merged tree claims 25 domains or 173 operations.
 
 | Gate | Result |
 | :--- | :--- |
-| `node --test packages/frontend-lego/test/*.test.mjs` | **275 / 275 pass, 0 fail, 0 skipped** (30 suites) |
+| `node --test packages/frontend-lego/test/*.test.mjs` | **276 / 276 pass, 0 fail, 0 skipped** (30 suites) |
 | `node --test apps/n8n-lego/test/*.test.mjs` (`npm run lego:gate`) | **392 / 392 pass, 0 fail** |
 | `test/29-alignment` against `464c1216` (`N8N_BACKEND_LEGO_ROOT`) | **7 / 7**, 0 skipped, no vocabulary drift |
-| `test/30-master-plan` | 10 / 10 — union, budget, canonical counts, no retired claim, boundary, reader test, registers |
+| `test/30-master-plan` | 11 / 11 — union, budget, canonical counts, no retired claim, boundary, reader test (30 questions, resolved task shape, answering document), registers |
 | `node apps/n8n-lego/scripts/capture-frontend-evidence.mjs` | **50 / 50 PASS** |
 | `python3 tools/sublego-audit/audit.py` | AUDIT PASSED — 100% bidirectional, 12 LEGOs / 20 Sub-LEGOs / 5 Agents |
 | `npm run lego:arch` (+selftest), `lego:foundation`, `lego:capabilities`, `lego:scaleout` | OK — boundary, foundation, capability table, scale-out findings all declared/owned |
