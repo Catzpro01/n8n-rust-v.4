@@ -1,0 +1,48 @@
+# systemd unit for n8n lego.
+#
+# TEMPLATE: `install.sh` substitutes
+#   __USER__      service account          __INSTALL_DIR__  installed app tree
+#   __DATA_DIR__  data directory           __PORT__         listen port
+# and installs the result as /etc/systemd/system/n8n-lego.service
+#
+# Install / manage:
+#   sudo bash install.sh --systemd
+#   sudo systemctl status n8n-lego
+#   sudo journalctl -u n8n-lego -f
+[Unit]
+Description=n8n lego — workflow automation
+Documentation=file://__INSTALL_DIR__/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__USER__
+Group=__USER__
+WorkingDirectory=__INSTALL_DIR__
+ExecStart=/usr/bin/env node __INSTALL_DIR__/bin/n8n-lego.mjs start --no-fetch
+Restart=always
+RestartSec=3
+TimeoutStopSec=30
+KillSignal=SIGTERM
+KillMode=mixed
+
+Environment=NODE_ENV=production
+Environment=N8N_LEGO_PORT=__PORT__
+Environment=N8N_LEGO_USER_FOLDER=__DATA_DIR__
+Environment=N8N_LEGO_HOST=0.0.0.0
+Environment=N8N_LEGO_ENV=production
+
+# Hardening: the app only ever writes inside its data directory.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=__DATA_DIR__
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=n8n-lego
+
+[Install]
+WantedBy=multi-user.target
