@@ -8,7 +8,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 import {
@@ -140,6 +140,19 @@ test('the contract index names real files and real owners', () => {
   const legacy = index.contracts.find((entry) => entry.role === 'legacy');
   assert.equal(legacy.path, 'contracts/micro-frontend.contract.md');
   assert.match(index.rules.join(' '), /superseded/);
+});
+
+test('the frontend card names every module the package ships — no undocumented surface', () => {
+  const card = read(REFERENCE_FILES.card);
+  const modules = readdirSync(join(PACKAGE_ROOT, 'src'))
+    .filter((file) => file.endsWith('.mjs'))
+    .map((file) => file);
+  for (const file of modules) {
+    assert.ok(card.includes(file), `${file} is named in .ai/frontend/card.md`);
+  }
+  // Adapters are a directory, and the card must still point at it.
+  assert.ok(readdirSync(join(PACKAGE_ROOT, 'src', 'adapters')).length > 0);
+  assert.match(card, /adapters\/\s+the framework adapter boundary/);
 });
 
 test('the pack never carries implementation, and the runtime never carries the pack', () => {

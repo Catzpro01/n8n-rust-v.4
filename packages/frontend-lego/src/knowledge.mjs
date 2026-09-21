@@ -53,6 +53,7 @@ export const CONTEXT_LEVELS = Object.freeze([
 
 /** Reference material that is useful but not part of the level ladder. */
 export const REFERENCE_FILES = Object.freeze({
+  card: '.ai/frontend/card.md',
   glossary: '.ai/frontend/glossary.md',
   decisions: '.ai/cards/decisions.md',
   dependencies: '.ai/maps/dependencies.md',

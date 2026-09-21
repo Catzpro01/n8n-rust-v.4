@@ -28,6 +28,9 @@
  */
 
 import { CAPABILITY_STATES, CRITICALITY, TRUST_LEVELS, degradationFor, trustInherited, trustRank } from './lifecycle.mjs';
+import { capabilityOf } from './surface-capability.mjs';
+import { compareVersions } from './versions.mjs';
+import { RANGE_EXAMPLES, RANGE_PATTERN, SEMVER_PATTERN, satisfiesRange } from './versions.mjs';
 import { REQUIREMENT_FIELDS } from './profiles.mjs';
 
 export const SUB_LEGO_STATUSES = Object.freeze(['declared', 'available', 'partial', 'unsupported']);
@@ -50,13 +53,11 @@ export const SUB_LEGO_SCHEMA = Object.freeze({
   ]),
 });
 
-/** Version ranges a sub-LEGO may declare. Deliberately small and unambiguous. */
-export const RANGE_EXAMPLES = Object.freeze(['1.x', '^1.0.0', '~1.2.0', '>=1.2.0 <2.0.0', '*']);
-
 const SEGMENT_PATTERN = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 const PORT_PATTERN = /^ui:[a-z][a-z0-9-]*(?::[a-z][a-z0-9-]*)+$/;
-const SEMVER_PATTERN = /^\d+\.\d+\.\d+$/;
-const RANGE_PATTERN = /^(\*|x|\d+\.(x|\*|\d+)(\.(x|\*|\d+))?|[\^~]\d+\.\d+\.\d+|[<>]=?\d+\.\d+\.\d+)(\s+[<>]=?\d+\.\d+\.\d+)?$/;
+
+/** Re-exported so a unit declaration and a contract compare versions the same way. */
+export { RANGE_EXAMPLES };
 
 /** Raised for any declaration the registry refuses. Carries every problem found. */
 export class SubLegoError extends Error {
@@ -64,6 +65,17 @@ export class SubLegoError extends Error {
     super(message);
     this.name = 'SubLegoError';
     this.code = 'frontend.registry.invalid-sub-lego';
+    this.subLegoId = id ?? null;
+    this.errors = Object.freeze([...(errors ?? [])]);
+  }
+}
+
+/** Raised when an implementation replacement is refused (contract change, version move, no-op). */
+export class SubLegoReplacementError extends Error {
+  constructor(message, { id, errors } = {}) {
+    super(message);
+    this.name = 'SubLegoReplacementError';
+    this.code = 'frontend.registry.replacement-blocked';
     this.subLegoId = id ?? null;
     this.errors = Object.freeze([...(errors ?? [])]);
   }
@@ -82,6 +94,15 @@ export class SubLegoUpgradeError extends Error {
   }
 }
 
+/** -1 | 0 | 1 without throwing, for deciding which event a refusal deserves. */
+function comparisonSign(left, right) {
+  try {
+    return compareVersions(left, right);
+  } catch {
+    return 0;
+  }
+}
+
 function asArray(value) {
   if (value === undefined || value === null) return [];
   return Array.isArray(value) ? value : [value];
@@ -97,47 +118,32 @@ export function depthOf(id) {
   return id.split('.').length - 1;
 }
 
-function compare(left, right) {
-  const a = left.split('.').map(Number);
-  const b = right.split('.').map(Number);
-  for (let index = 0; index < 3; index += 1) {
-    if (a[index] !== b[index]) return a[index] > b[index] ? 1 : -1;
-  }
-  return 0;
-}
-
 /**
  * Evaluates a declared range against a concrete version.
  *
- * `^1.2.0` and `1.x` mean "same major"; `~1.2.0` and `1.2.x` mean "same minor";
- * `>=`/`<` compare directly. Anything else is not a range this vocabulary allows
- * and is rejected at registration time.
+ * Kept as a named export for the unit declarations that call it, but the logic
+ * lives in `versions.mjs`: units and contracts must not disagree about what
+ * "compatible" means.
  */
 export function satisfies(version, range) {
-  if (!SEMVER_PATTERN.test(String(version ?? ''))) return false;
-  const [major, minor, patch] = version.split('.').map(Number);
-  const spec = String(range ?? '').trim();
-  if (spec === '' || spec === '*' || spec === 'x') return true;
-  for (const clause of spec.split(/\s+/)) {
-    let ok = false;
-    if (clause.startsWith('^')) {
-      ok = major === Number(clause.slice(1).split('.')[0]);
-    } else if (clause.startsWith('~')) {
-      const parts = clause.slice(1).split('.');
-      ok = major === Number(parts[0]) && minor === Number(parts[1]);
-    } else if (clause.startsWith('>=')) ok = compare(version, clause.slice(2)) >= 0;
-    else if (clause.startsWith('<=')) ok = compare(version, clause.slice(2)) <= 0;
-    else if (clause.startsWith('>')) ok = compare(version, clause.slice(1)) > 0;
-    else if (clause.startsWith('<')) ok = compare(version, clause.slice(1)) < 0;
-    else {
-      const parts = clause.split('.');
-      ok = Number(parts[0]) === major;
-      if (ok && parts[1] !== undefined && !/^[x*]$/.test(parts[1])) ok = Number(parts[1]) === minor;
-      if (ok && parts[2] !== undefined && !/^[x*]$/.test(parts[2])) ok = Number(parts[2]) === patch;
-    }
-    if (!ok) return false;
-  }
-  return true;
+  return satisfiesRange(version, range);
+}
+
+/**
+ * The implementation behind a unit. Derived by default — a unit with no declared
+ * implementation runs whatever the branch ships — and replaceable without touching
+ * the contract, which is what makes A -> B visible instead of implicit.
+ */
+function implementationOf(entry) {
+  const declared = entry.implementation ?? {};
+  return Object.freeze({
+    id: declared.id ?? entry.id,
+    kind: declared.kind ?? 'reference',
+    contract: declared.contract ?? entry.contract ?? null,
+    status: declared.status ?? 'declared',
+    language: declared.language ?? null,
+    notes: declared.notes ?? null,
+  });
 }
 
 function normalise(entry) {
@@ -161,6 +167,7 @@ function normalise(entry) {
       versionRange: dependency.versionRange ?? '*',
     }))),
     status: entry.status,
+    implementation: implementationOf(entry),
     trust: entry.trust ?? 'feature',
     criticality: entry.criticality ?? 'optional',
     lifecycle: entry.lifecycle ?? 'available',
@@ -336,6 +343,24 @@ export function validateSubLego(entry, catalog = {}) {
     errors.push('a "core" unit may not declare a fallback — its absence must stay visible');
   }
 
+  if (entry.implementation !== undefined) {
+    if (entry.implementation === null || typeof entry.implementation !== 'object' || Array.isArray(entry.implementation)) {
+      errors.push('"implementation" must be an object ({ id, kind, contract, status })');
+    } else {
+      const implementation = implementationOf(entry);
+      if (typeof implementation.id !== 'string' || implementation.id.length === 0) errors.push('"implementation.id" must be a non-empty string');
+      if (typeof implementation.contract !== 'string' || implementation.contract.length === 0) {
+        errors.push('"implementation.contract" must name the contract the implementation answers to');
+      } else if (entry.contract && implementation.contract !== entry.contract) {
+        // The point of replacement: the contract outlives the implementation.
+        errors.push(`"implementation.contract" (${implementation.contract}) must be the unit's own contract (${entry.contract}) — an implementation may not answer to a different contract`);
+      }
+      if (!['reference', 'native', 'wrapped', 'declared'].includes(implementation.kind)) {
+        errors.push('"implementation.kind" must be one of reference, native, wrapped, declared');
+      }
+    }
+  }
+
   const lifecycleState = entry.lifecycle ?? 'available';
   if (!CAPABILITY_STATES.includes(lifecycleState)) errors.push(`"lifecycle" must be one of ${CAPABILITY_STATES.join(', ')}`);
 
@@ -372,18 +397,23 @@ export function validateSubLego(entry, catalog = {}) {
  * @param {Array<object>} [init.extensionPoints] declared hooks (ports and hooks must not collide)
  * @param {string} [init.catalogVersion]
  */
-export function createSubLegoRegistry({ subLegos = [], owners = {}, surfaces = [], extensionPoints = [], catalogVersion = null } = {}) {
+export function createSubLegoRegistry({
+  subLegos = [],
+  owners = {},
+  surfaces = [],
+  extensionPoints = [],
+  catalogVersion = null,
+  /** Optional boundary event sink (src/observability.mjs). Absent = silent. */
+  observability = null,
+} = {}) {
   if (subLegos.length === 0) throw new SubLegoError('the sub-LEGO catalog is empty — there is no hierarchy to enforce', { errors: ['subLegos must not be empty'] });
 
   const ownerIds = new Set(Object.keys(owners));
   const surfaceIds = new Set(surfaces.map((surface) => surface.id));
-  // `none` is the surfaces catalog's sentinel for "this surface consumes no backend
-  // capability"; a sub-LEGO expresses that as null instead of a capability named
-  // "none", and the validator keeps the two spellings equivalent.
-  const capabilityOf = (surface) => {
-    const capability = surface.backend?.capability ?? null;
-    return capability === 'none' ? null : capability;
-  };
+  // `none` is the surfaces catalog's sentinel ("this surface consumes no backend
+  // capability"); a sub-LEGO expresses the same thing as null. The join lives in
+  // surface-capability.mjs so the registry, the negotiator and this module cannot
+  // drift apart on it.
   const surfaceCapabilities = new Map(surfaces.map((surface) => [surface.id, capabilityOf(surface)]));
   const declaredCapabilities = new Set(surfaces.map(capabilityOf).filter(Boolean));
   const hookIds = new Set(extensionPoints.map((point) => point.id));
@@ -471,6 +501,7 @@ export function createSubLegoRegistry({ subLegos = [], owners = {}, surfaces = [
     if (typeof entry?.id === 'string' && entries.has(entry.id)) {
       // Checked before anything else: it is the clearest diagnosis, and every
       // later check would also reject the second declaration for a side reason.
+      observability?.tryEmit('frontend.unit.rejected', { subLego: entry.id, reason: 'duplicate id' });
       throw new SubLegoError(`sub-LEGO "${entry.id}" is already registered`, { id: entry.id, errors: ['duplicate id'] });
     }
     assertStructure(entry);
@@ -478,6 +509,14 @@ export function createSubLegoRegistry({ subLegos = [], owners = {}, surfaces = [
     const claimed = normalised.public.ports;
     for (const port of claimed) portOwners.set(port, normalised.id);
     entries.set(normalised.id, normalised);
+    observability?.tryEmit('frontend.unit.registered', {
+      subLego: normalised.id,
+      parentId: normalised.parentId,
+      surface: normalised.surface,
+      trust: normalised.trust,
+      lifecycle: normalised.lifecycle,
+    });
+    observability?.tryEmit('frontend.lifecycle.transition', { subLego: normalised.id, from: null, to: normalised.lifecycle });
     if (!resolve) return normalised;
     const errors = resolveAll();
     if (errors.length > 0) {
@@ -485,6 +524,7 @@ export function createSubLegoRegistry({ subLegos = [], owners = {}, surfaces = [
       for (const port of claimed) {
         if (portOwners.get(port) === normalised.id) portOwners.delete(port);
       }
+      observability?.tryEmit('frontend.unit.rejected', { subLego: normalised.id, reason: errors.join('; ') });
       throw new SubLegoError(`sub-LEGO "${normalised.id}" is not registrable: ${errors.join('; ')}`, { id: normalised.id, errors });
     }
     return normalised;
@@ -614,10 +654,23 @@ export function createSubLegoRegistry({ subLegos = [], owners = {}, surfaces = [
 
     const evaluation = validateUpgrade(id, next.version);
     if (evaluation.errors.length > 0) {
+      const downgrade = comparisonSign(next.version, entry.version) < 0;
+      observability?.tryEmit(downgrade ? 'frontend.upgrade.downgrade-rejected' : 'frontend.upgrade.rejected', {
+        subLego: id,
+        from: entry.version,
+        to: next.version,
+        reason: evaluation.errors.join('; '),
+      });
       throw new SubLegoUpgradeError(`sub-LEGO "${id}" upgrade is blocked: ${evaluation.errors.join('; ')}`, { id, affected: evaluation.affected, errors: evaluation.errors });
     }
     const unacknowledged = evaluation.affected.filter((dependent) => !acknowledge.includes(dependent));
     if (unacknowledged.length > 0) {
+      observability?.tryEmit('frontend.upgrade.rejected', {
+        subLego: id,
+        from: entry.version,
+        to: next.version,
+        reason: `unacknowledged dependents: ${unacknowledged.join(', ')}`,
+      });
       const detail = evaluation.affectedDetail
         .filter((value) => unacknowledged.includes(value.dependent))
         .map((value) => `${value.dependent} pins ${value.port} at "${value.range}"`)
@@ -704,12 +757,109 @@ export function createSubLegoRegistry({ subLegos = [], owners = {}, surfaces = [
     for (const [key, value] of candidatePorts) portOwners.set(key, value);
 
     const unchanged = [...entries.keys()].filter((other) => !changed.includes(other)).sort();
+    observability?.tryEmit('frontend.upgrade.applied', {
+      subLego: id,
+      from: entry.version,
+      to: normalised.version,
+      kind: evaluation.kind,
+      changed: changed.length,
+    });
     return Object.freeze({
       kind: evaluation.kind,
       changed: Object.freeze(changed),
       unchanged: Object.freeze(unchanged),
       acknowledged: Object.freeze([...acknowledge].filter((value) => evaluation.affected.includes(value))),
     });
+  }
+
+  /**
+   * Replaces the implementation behind a unit, keeping its contract.
+   *
+   * This is the operation the architecture exists for: implementation A and
+   * implementation B are interchangeable to every consumer as long as the contract
+   * does not move. The contract is therefore *fixed* here — a replacement that wants
+   * a different contract is an upgrade (or a new unit), not a replacement — and the
+   * version does not move either, because nothing a consumer depends on changed.
+   *
+   * @param {string} id
+   * @param {{ id?: string, kind?: string, language?: string|null, notes?: string|null, version?: string }} implementation
+   */
+  function replace(id, implementation = {}) {
+    const entry = entries.get(id);
+    if (!entry) throw new SubLegoError(`"${id}" is not a registered sub-LEGO`, { id, errors: ['unknown unit'] });
+
+    const errors = [];
+    if (implementation === null || typeof implementation !== 'object' || Array.isArray(implementation)) {
+      errors.push('the replacement must describe an implementation object');
+    }
+
+    const replaced = errors.length === 0
+      ? Object.freeze({
+        ...entry,
+        implementation: implementationOf({
+          ...entry,
+          contract: entry.contract,
+          implementation: { ...entry.implementation, ...implementation, contract: entry.contract },
+        }),
+      })
+      : entry;
+
+    if (errors.length === 0) {
+      if (implementation.version !== undefined && implementation.version !== entry.version) {
+        errors.push('a replacement must not change the version — change the contract and call upgrade() instead');
+      }
+      if (replaced.implementation.id === entry.implementation.id && replaced.implementation.kind === entry.implementation.kind) {
+        errors.push(`"${id}" is already implemented by ${entry.implementation.id} (${entry.implementation.kind})`);
+      }
+      // Atomic like an upgrade: validate the candidate, then commit in one step, so a
+      // refused replacement leaves nothing half-swapped.
+      const { ok, errors: validationErrors } = validateSubLego(replaced, {
+        owners: ownerIds,
+        surfaces: surfaceIds,
+        surfaceCapabilities,
+        declaredCapabilities,
+        extensionPoints: hookIds,
+        known: new Set(entries.keys()),
+        portOwners,
+        trustOf: new Map([...entries.values()].map((value) => [value.id, value.trust])),
+        resolveDependencies: false,
+      });
+      if (!ok) errors.push(...validationErrors.map((error) => `replacement: ${error}`));
+      // A replacement may not quietly move a published port: consumers depend on the
+      // port, and the port is part of the contract.
+      for (const [otherId, value] of entries) {
+        for (const dependency of value.dependsOn) {
+          if (dependency.subLego === id && !replaced.public.ports.includes(dependency.port)) {
+            errors.push(`${otherId} depends on "${dependency.port}", which the replacement does not publish`);
+          }
+        }
+      }
+    }
+
+    if (errors.length > 0) {
+      observability?.tryEmit('frontend.replacement.rejected', { subLego: id, errors: errors.join('; ') });
+      throw new SubLegoReplacementError(`sub-LEGO "${id}" replacement is refused — nothing was applied (${errors.join('; ')})`, { id, errors });
+    }
+
+    entries.set(id, replaced);
+    const result = Object.freeze({
+      kind: 'replacement',
+      unit: id,
+      from: entry.implementation,
+      to: replaced.implementation,
+      version: entry.version,
+      contract: entry.contract,
+      /** Everybody else, unchanged — that is the point of replacing behind a contract. */
+      unchanged: Object.freeze([...entries.keys()].filter((other) => other !== id).sort()),
+      consumers: Object.freeze(dependentsOf(id).map((value) => value.id)),
+    });
+    observability?.tryEmit('frontend.replacement.applied', {
+      subLego: id,
+      from: entry.implementation.id,
+      to: replaced.implementation.id,
+      kind: replaced.implementation.kind,
+    });
+    return result;
   }
 
   /** Full descriptor (tooling, tests, documentation generators). */
@@ -754,6 +904,8 @@ export function createSubLegoRegistry({ subLegos = [], owners = {}, surfaces = [
     catalogVersion,
     owners: Object.freeze({ ...owners }),
     register: add,
+    replace,
+    implementationOf: (id) => entries.get(id)?.implementation ?? null,
     registerAll(values) {
       return values.map(add);
     },

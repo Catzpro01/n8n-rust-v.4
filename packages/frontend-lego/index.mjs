@@ -48,11 +48,15 @@ export {
   FALLBACK_LOCALE,
   MESSAGE_KEY_GRAMMAR,
   MESSAGE_SLOTS,
+  PLURAL_CATEGORIES,
   SUPPORTED_LOCALES,
+  createPluralSelector,
+  pluralKey,
   translationCoverage,
   buildMessageKey,
   createMessageCatalog,
   createTranslator,
+  describeLocalizationContract,
   describeLocales,
   describeMessageSlots,
   directionOf,
@@ -119,11 +123,102 @@ export {
 export {
   ImpactError,
   OWN_CONTRACTS,
+  SELECTIVE_CAVEAT,
   TEST_TIERS,
   TIER_SUITES,
+  commandFor,
   createImpactGraph,
   describeTestMap,
+  requiresInstance,
 } from './src/impact.mjs';
+
+export {
+  DEFAULT_INTERACTION,
+  INTERACTION_CLASSES,
+  INTERACTIONS,
+  INTERACTION_TRANSPORTS,
+  InteractionError,
+  canCarry as canCarryInteraction,
+  defineInteraction,
+  describeInteractions,
+  interactionOf,
+  isInteractionClass,
+  normaliseInteraction,
+  resolveInteraction,
+  transportsFor,
+} from './src/interactions.mjs';
+
+export {
+  COMPATIBILITY,
+  RANGE_EXAMPLES as VERSION_RANGE_EXAMPLES,
+  VersionError,
+  bump,
+  compareVersions,
+  compatibilityOf,
+  describeVersions,
+  isRange,
+  isVersion,
+  majorOf,
+  minorOf,
+  parseVersion,
+  sameMajor,
+  satisfiesRange,
+} from './src/versions.mjs';
+
+export {
+  NO_CAPABILITY,
+  backendCapabilitiesOf,
+  capabilityOf,
+  surfacesOfCapability,
+} from './src/surface-capability.mjs';
+
+export {
+  CAPABILITY_ORIGINS,
+  describeNegotiation,
+} from './src/negotiation.mjs';
+
+export {
+  AVAILABILITY_STATES,
+  CapabilityNotGrantedError,
+  NegotiationError,
+  createCapabilityNegotiator,
+} from './src/negotiation.mjs';
+
+export {
+  BACKEND_STATES,
+  backendAvailabilityFrom,
+  describeBackendView,
+} from './src/backend-view.mjs';
+
+export {
+  NoTransportError,
+  SERIALIZATION,
+  TRANSPORT_COSTS,
+  TRANSPORT_KINDS,
+  TransportError,
+  createOperationGateway,
+  declaredFutureTransports,
+  defineLocalTransport,
+  defineTransport,
+  describeTransports,
+} from './src/transport.mjs';
+
+export {
+  EVENT_FIELDS,
+  EVENT_NAMES,
+  FRONTEND_EVENTS,
+  ObservabilityError,
+  createBufferSink,
+  createObservability,
+  describeObservability,
+} from './src/observability.mjs';
+
+export {
+  ARCHITECTURE_RULES,
+  CONFORMANCE_STATES,
+  checkConformance,
+  describeConformance,
+} from './src/conformance.mjs';
 
 export {
   CONTEXT_LEVELS,
@@ -164,6 +259,7 @@ export {
   MAX_DEPTH,
   RANGE_EXAMPLES,
   SUB_LEGO_SCHEMA,
+  SubLegoReplacementError,
   SUB_LEGO_STATUSES,
   SubLegoError,
   SubLegoUpgradeError,

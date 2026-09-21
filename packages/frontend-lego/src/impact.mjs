@@ -44,6 +44,35 @@ export const OWN_CONTRACTS = Object.freeze([
   'contracts/frontend-sub-lego.contract.md',
 ]);
 
+/**
+ * Said out loud, in the model itself: selective tiers make local iteration faster.
+ * They do not replace the full set, and a green selective run is not evidence that
+ * unrelated areas are unaffected.
+ */
+export const SELECTIVE_CAVEAT = Object.freeze({
+  caveat: 'Selective tiers reduce iteration time locally and in review. The full frontend set still runs in CI — a green selective run is not a substitute for it.',
+  fullRunAlways: Object.freeze([...TIER_SUITES.full]),
+});
+
+/** How a declared suite is actually run. Kept here so a plan is copy-pasteable. */
+export function commandFor(suite, { url = '<instance-url>' } = {}) {
+  if (typeof suite !== 'string' || suite.length === 0) throw new ImpactError(`"${suite}" is not a suite reference`, { target: suite });
+  if (suite.startsWith('npm ') || suite.startsWith('node ')) return suite;
+  if (suite.startsWith('tests/e2e/')) {
+    // Browser suites need a running instance; the URL is not guessed.
+    return `node ${suite} ${url}`;
+  }
+  if (suite.endsWith('.mjs') || suite.endsWith('.test.mjs')) return `node --test ${suite}`;
+  if (suite.endsWith('.py')) return `python3 ${suite}`;
+  if (suite.endsWith('.sh')) return `bash ${suite}`;
+  return suite;
+}
+
+/** True when a suite cannot run without a live instance/browser. */
+export function requiresInstance(suite) {
+  return typeof suite === 'string' && suite.startsWith('tests/e2e/');
+}
+
 export class ImpactError extends Error {
   constructor(message, { target } = {}) {
     super(message);
@@ -52,6 +81,23 @@ export class ImpactError extends Error {
     this.target = target ?? null;
   }
 }
+
+/** Why a tier is in the plan. A tier nobody can justify is a tier nobody will trust. */
+const TIER_REASONS = Object.freeze({
+  'fast-contract': (impact) => `the contract surface plus ${impact.tests.length} declared suite(s) of the target`,
+  boundary: (impact) => (impact.descendants.length > 0 || impact.ancestors.length > 0
+    ? 'the unit sits inside a hierarchy, so the hierarchy rules are exercised'
+    : 'the unit is a root: the boundary tier still checks the catalog it is declared in'),
+  browser: (impact) => (impact.surfaces.length > 0
+    ? `the change reaches surface(s) ${impact.surfaces.join(', ')} that the browser gate inspects`
+    : 'no surface is touched, so the browser tier is out of scope'),
+  integration: (impact) => (impact.risk === 'high'
+    ? `blast radius is non-empty (dependents: ${impact.dependents.length || 'none'}, foreign contracts: ${impact.foreignContracts.length || 'none'})`
+    : 'low blast radius: the integration tier is not required'),
+  full: (impact) => (impact.risk === 'high'
+    ? 'risk is high — the full frontend set and CI gates apply'
+    : 'risk is not high: run the full set in CI as usual'),
+});
 
 function closureOf(start, next) {
   const seen = new Set();
@@ -228,6 +274,8 @@ export function createImpactGraph({
       contracts: Object.freeze(resolved.contracts),
       foreignContracts: Object.freeze(resolved.foreign),
       tests: Object.freeze([...new Set(resolved.tests)]),
+      /** The suites the unit declares; each one is runnable with `commandFor`. */
+      declaredTests: Object.freeze([...new Set(resolved.tests)]),
       risk,
       escalateToFull: risk === 'high',
       recommendedTests: recommendedTests(resolved, { risk }),
@@ -270,6 +318,21 @@ export function createImpactGraph({
         dependsOn: resolved.entry.dependsOn.map((dependency) => `${dependency.subLego}#${dependency.port}@${dependency.versionRange}`),
       }) : null,
       files: Object.freeze([...new Set(files)].sort()),
+      /** Copy-pasteable commands per tier, with the reason each tier is included. */
+      selectiveTestPlan: Object.freeze({
+        target: impact.target,
+        risk: impact.risk,
+        tiers: Object.freeze(TEST_TIERS.map((tier) => Object.freeze({
+          tier,
+          commands: Object.freeze(impact.recommendedTests[tier].map((suite) => commandFor(suite))),
+          requiresInstance: impact.recommendedTests[tier].some((suite) => requiresInstance(suite)),
+          reason: TIER_REASONS[tier](impact),
+        }))),
+        /** Tiers with nothing to run are named, so an empty tier is not mistaken for a pass. */
+        skipped: Object.freeze(TEST_TIERS.filter((tier) => impact.recommendedTests[tier].length === 0)),
+        caveat: SELECTIVE_CAVEAT.caveat,
+        fullRunAlways: SELECTIVE_CAVEAT.fullRunAlways,
+      }),
       contractsAffected: impact.contracts,
       foreignContracts: impact.foreignContracts,
       dependencies: impact.dependents,
