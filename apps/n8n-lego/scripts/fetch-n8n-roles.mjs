@@ -12,15 +12,21 @@
  *
  * Output: <dir>/roles.json — shaped like `AllRolesMap` from `@n8n/permissions`.
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+import { defaultCatalogDir } from '../src/config.mjs';
+
+/** apps/n8n-lego/scripts -> apps/n8n-lego */
+const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+/** The role definitions only exist in the reference checkout, not in an npm install. */
+const REPO_ROOT = resolve(PACKAGE_ROOT, '..', '..');
 const PERMISSIONS_SRC = join(REPO_ROOT, 'reference', 'n8n', 'packages', '@n8n', 'permissions', 'src');
+const BUNDLED = join(PACKAGE_ROOT, 'data', 'roles.json');
 
 function parseArgs(argv) {
-  const args = { dir: join(REPO_ROOT, 'data', 'n8n-lego', 'catalog') };
+  const args = { dir: defaultCatalogDir() };
   for (let i = 0; i < argv.length; i += 1) {
     if (argv[i] === '--dir') args.dir = resolve(argv[++i]);
   }
@@ -76,6 +82,17 @@ function main() {
   const args = parseArgs(process.argv.slice(2));
   const scopesDir = join(PERMISSIONS_SRC, 'roles', 'scopes');
   if (!existsSync(scopesDir)) {
+    // Global install: the reference checkout is not shipped, so fall back to the
+    // roles.json generated from it (same file, kept in the package).
+    if (existsSync(BUNDLED)) {
+      mkdirSync(args.dir, { recursive: true });
+      const target = join(args.dir, 'roles.json');
+      copyFileSync(BUNDLED, target);
+      process.stdout.write(
+        `reference source not found (${scopesDir}) — installed the bundled roles.json to ${target}\n`,
+      );
+      return;
+    }
     process.stderr.write(`reference source not found: ${scopesDir}\n`);
     process.exit(1);
   }

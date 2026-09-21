@@ -10,6 +10,7 @@
  * or the wrong port is worse than one that does not come up at all.
  */
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomBytes } from 'node:crypto';
@@ -21,6 +22,24 @@ export const REFERENCE_VERSION = '2.9.4';
 
 /** apps/n8n-lego/src/config.mjs -> <repo root> */
 export const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
+/** apps/n8n-lego/src/config.mjs -> the package itself (== apps/n8n-lego) */
+export const APP_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+
+/**
+ * Default data directory, n8n-style: `~/.n8n-lego`, overridable with
+ * `N8N_LEGO_USER_FOLDER` / `N8N_USER_FOLDER`. A globally installed package must
+ * never write inside its own (read-only, shared) install directory.
+ */
+export function defaultDataDir(env = process.env) {
+  const configured = readEnv(env, 'USER_FOLDER');
+  return configured === undefined ? join(homedir(), '.n8n-lego') : dir(configured);
+}
+
+/** Where the node catalog and the extracted icons live. */
+export function defaultCatalogDir(env = process.env) {
+  const configured = readEnv(env, 'CATALOG_DIR');
+  return configured === undefined ? join(defaultDataDir(env), 'catalog') : dir(configured);
+}
 
 export class ConfigError extends Error {
   constructor(message) {
@@ -108,14 +127,16 @@ function instanceIdentity(dataDir) {
 }
 
 export function loadConfig(env = process.env) {
-  const dataDir = dir(str(env, 'USER_FOLDER', './data/n8n-lego'));
+  const dataDir = defaultDataDir(env);
   mkdirSync(dataDir, { recursive: true });
 
   const identity = instanceIdentity(dataDir);
   const protocol = oneOf(env, 'PROTOCOL', 'http', ['http', 'https']);
   const host = str(env, 'HOST', '0.0.0.0');
   const port = int(env, 'PORT', 5678, { min: 0, max: 65535 });
-  const editorDist = resolve(REPO_ROOT, 'apps', 'n8n-lego', 'node_modules', 'n8n-editor-ui', 'dist');
+  // Resolved from the package, not the repo: the same code must work when the
+  // app is installed globally with `npm install -g n8n-lego`.
+  const editorDist = dir(str(env, 'EDITOR_DIST', join(APP_ROOT, 'node_modules', 'n8n-editor-ui', 'dist')));
 
   return {
     appName: APP_NAME,
@@ -136,7 +157,7 @@ export function loadConfig(env = process.env) {
     dataDir,
     storage: oneOf(env, 'STORAGE', 'file', ['file', 'memory']),
     editorDist,
-    catalogDir: dir(str(env, 'CATALOG_DIR', './data/n8n-lego/catalog')),
+    catalogDir: defaultCatalogDir(env),
 
     instanceId: identity.instanceId,
     secret: identity.secret,

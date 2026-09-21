@@ -22,6 +22,7 @@ import {
 } from '../auth.mjs';
 import { loadCatalog, findNodeType } from '../catalog.mjs';
 import { calculateWorkflowChecksum } from '../checksum.mjs';
+import { APP_ROOT } from '../config.mjs';
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -938,10 +939,14 @@ export function buildRoutes({ engine, logger, push }) {
 let rolesCache = null;
 function loadRoles(config) {
   if (rolesCache) return rolesCache;
-  const file = join(config.catalogDir, 'roles.json');
-  if (existsSync(file)) {
-    rolesCache = JSON.parse(readFileSync(file, 'utf8'));
-    return rolesCache;
+  // The extracted copy (per install) wins; the package ships the same file so a
+  // fresh `npm install -g` renders the editor correctly even before any fetch.
+  const candidates = [join(config.catalogDir, 'roles.json'), join(APP_ROOT, 'data', 'roles.json')];
+  for (const file of candidates) {
+    if (existsSync(file)) {
+      rolesCache = JSON.parse(readFileSync(file, 'utf8'));
+      return rolesCache;
+    }
   }
   const owner = {
     slug: 'global:owner',

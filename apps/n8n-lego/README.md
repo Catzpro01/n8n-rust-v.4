@@ -4,8 +4,16 @@ Workflow automation you can install like n8n: the **real n8n editor UI**
 (`n8n-editor-ui` 2.9.4) served by the **LEGO execution engine**.
 
 ```bash
-npm install -g n8n-lego   # (packaging in progress — see docs/n8n-lego/ROADMAP.md)
-n8n-lego start            # -> http://localhost:5678
+npm install -g n8n-lego   # Node >= 22.18
+n8n-lego start            # -> http://localhost:5678  (fetches the catalog on first boot)
+n8n-lego doctor           # check node, UI bundle, catalog, icons, port
+```
+
+Docker and the VPS tarball do the same job:
+
+```bash
+docker run -d -p 5678:5678 -v n8n-lego-data:/home/node/.n8n-lego n8n-lego
+# or, on a VPS:  tar -xzf n8n-lego-<version>.tar.gz && sudo bash install.sh --systemd
 ```
 
 From a checkout:
@@ -14,7 +22,11 @@ From a checkout:
 npm run lego:install      # editor UI bundle + node catalog (483 node types)
 npm run lego:start        # http://localhost:5678
 npm run lego:doctor       # check node, UI bundle, catalog, port
+npm run lego:test         # REST smoke suite (boots a real server)
 ```
+
+All three channels, plus proxy/systemd notes: [`docs/n8n-lego/INSTALL.md`](../../docs/n8n-lego/INSTALL.md).
+Build every artifact at once with `bash scripts/release.sh`.
 
 First boot shows n8n's own **owner-setup screen** — create the account in the
 browser, exactly like upstream n8n.
@@ -44,7 +56,7 @@ engine and translates its output into n8n's `resultData.runData` shape.
 | `N8N_LEGO_PORT` / `N8N_PORT` | `5678` | same default port as n8n |
 | `N8N_LEGO_HOST` / `N8N_HOST` | `0.0.0.0` | |
 | `N8N_LEGO_PATH` / `N8N_PATH` | `/` | serve under a sub-path |
-| `N8N_LEGO_USER_FOLDER` / `N8N_USER_FOLDER` | `./data/n8n-lego` | workflows, executions, users, instance secret |
+| `N8N_LEGO_USER_FOLDER` / `N8N_USER_FOLDER` | `~/.n8n-lego` | workflows, executions, users, catalog, instance secret |
 | `N8N_LEGO_OWNER_EMAIL` / `_PASSWORD` | *(unset)* | skip the setup screen and create the owner at boot |
 | `N8N_LEGO_STORAGE` | `file` | `memory` for throwaway runs |
 | `N8N_LEGO_EXECUTION_TIMEOUT` | `300000` | ms |

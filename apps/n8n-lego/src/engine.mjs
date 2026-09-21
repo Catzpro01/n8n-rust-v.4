@@ -9,7 +9,35 @@
  * keyed by node name, while the engine returns a flat `data` map. Converting here
  * keeps the engine clean and the UI happy.
  */
-import {
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { APP_ROOT, REPO_ROOT } from './config.mjs';
+import { HttpError, badRequest } from './rest/router.mjs';
+
+/**
+ * The engine is a sibling package in the repository and a vendored copy inside the
+ * published npm tarball (`vendor/reconstructed-engine`, produced by
+ * `scripts/release.sh`), so it is resolved at runtime instead of with a fixed
+ * relative specifier. The repository path stays first: a checkout always runs the
+ * engine it ships with.
+ */
+const ENGINE_CANDIDATES = [
+  process.env.N8N_LEGO_ENGINE_PATH ? join(process.env.N8N_LEGO_ENGINE_PATH, 'index.mjs') : null,
+  join(REPO_ROOT, 'packages', 'reconstructed-engine', 'index.mjs'),
+  join(APP_ROOT, 'vendor', 'reconstructed-engine', 'index.mjs'),
+  join(APP_ROOT, 'node_modules', '@lego', 'reconstructed-engine', 'index.mjs'),
+].filter((candidate) => candidate !== null);
+
+export const ENGINE_PATH = ENGINE_CANDIDATES.find((candidate) => existsSync(candidate));
+if (!ENGINE_PATH) {
+  throw new Error(
+    `reconstructed engine not found — looked in:\n  ${ENGINE_CANDIDATES.join('\n  ')}\n` +
+      'set N8N_LEGO_ENGINE_PATH to the directory containing index.mjs',
+  );
+}
+
+const {
   ENGINE_PACKAGE,
   ENGINE_VERSION,
   NODE_REGISTRY_VERSION,
@@ -17,8 +45,7 @@ import {
   listNodeTypes,
   runWorkflowDefinition,
   validateWorkflowDefinition,
-} from '../../../packages/reconstructed-engine/index.mjs';
-import { HttpError, badRequest } from './rest/router.mjs';
+} = await import(pathToFileURL(ENGINE_PATH).href);
 import { newExecutionId } from './store.mjs';
 
 export const engineMetadata = Object.freeze({

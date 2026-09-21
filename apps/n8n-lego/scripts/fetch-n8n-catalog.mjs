@@ -28,7 +28,9 @@ import { gunzipSync } from 'node:zlib';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+import { defaultCatalogDir, defaultDataDir, readEnv } from '../src/config.mjs';
+
+const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DEFAULT_VERSION = '2.9.1';
 const WANTED = {
   'package/dist/types/nodes.json': 'nodes.json',
@@ -41,11 +43,14 @@ const isIcon = (name) =>
   name.startsWith('package/dist/nodes/') && ICON_EXTENSIONS.some((extension) => name.endsWith(extension));
 
 function parseArgs(argv) {
-  const args = { version: DEFAULT_VERSION, dir: join(REPO_ROOT, 'data', 'n8n-lego', 'catalog'), force: false };
+  // Same resolution the app itself uses: `<user folder>/catalog`, so a globally
+  // installed package writes to `~/.n8n-lego` and never into the package.
+  const args = { version: DEFAULT_VERSION, dir: defaultCatalogDir(), force: false };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--version') args.version = argv[++i];
     else if (arg === '--dir') args.dir = resolve(argv[++i]);
+    else if (arg === '--data-dir') args.dataDir = resolve(argv[++i]);
     else if (arg === '--force') args.force = true;
     else if (arg === '-h' || arg === '--help') {
       process.stdout.write(
@@ -94,7 +99,8 @@ async function main() {
   }
 
   const tarballUrl = `https://registry.npmjs.org/n8n-nodes-base/-/n8n-nodes-base-${args.version}.tgz`;
-  const tmpDir = join(REPO_ROOT, 'data', '.cache');
+  const dataDir = args.dataDir ?? defaultDataDir(readEnv(process.env, 'USER_FOLDER') === undefined ? {} : process.env);
+  const tmpDir = join(dataDir, '.cache');
   mkdirSync(tmpDir, { recursive: true });
   mkdirSync(targetDir, { recursive: true });
   const tmpFile = join(tmpDir, `n8n-nodes-base-${args.version}.tgz`);

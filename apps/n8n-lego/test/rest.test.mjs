@@ -8,7 +8,20 @@
  */
 import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { startServer } from '../src/server.mjs';
+
+/**
+ * The catalog (node types, icons, roles) is fetched per install, not committed —
+ * `npm run lego:catalog` writes it into the user folder. The smoke test therefore
+ * points the server at the checkout's copy and keeps every other file it writes
+ * inside a throwaway directory.
+ */
+const REPO_CATALOG = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'data', 'n8n-lego', 'catalog');
+const USER_FOLDER = mkdtempSync(join(tmpdir(), 'n8n-lego-test-'));
 
 let base;
 let running;
@@ -25,6 +38,8 @@ before(async () => {
       N8N_LEGO_STORAGE: 'memory',
       N8N_LEGO_LOG_LEVEL: 'error',
       N8N_LEGO_PROTOCOL: 'http',
+      N8N_LEGO_USER_FOLDER: USER_FOLDER,
+      N8N_LEGO_CATALOG_DIR: process.env.N8N_LEGO_CATALOG_DIR ?? REPO_CATALOG,
     },
   });
   running = server;
@@ -34,7 +49,8 @@ before(async () => {
 
 after(async () => {
   // Close the listener so the test process exits instead of hanging.
-  if (running) await new Promise((resolve) => running.close(() => resolve()));
+  if (running) await new Promise((done) => running.close(() => done()));
+  rmSync(USER_FOLDER, { recursive: true, force: true });
 });
 
 async function api(method, path, body, { withCookie = true } = {}) {

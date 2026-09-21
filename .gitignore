@@ -37,3 +37,6 @@ data/
 logs/
 state/
 apps/n8n-ts/.tsbuildinfo
+
+# release artifacts (scripts/release.sh)
+dist/
