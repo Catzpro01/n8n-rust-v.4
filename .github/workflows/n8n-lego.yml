@@ -8,8 +8,9 @@ name: n8n-lego Gate
 #                       package (npm tarball + offline tarball + checksums)
 #   clean-clone         git clone → install → start → /healthz → real n8n UI,
 #                       browser smoke (owner setup → create workflow → canvas →
-#                       add node → save → execute → execution result) → restart →
-#                       verify that the workflow survived
+#                       add node → save → execute → execution result) → P2 gate
+#                       (settings visibility, route guards, 501 unsupported
+#                       semantics) → restart → verify that the workflow survived
 #   windows-portability self-hosted Windows worker: syntax/metadata probe only.
 #                       The runtime is Linux-only (apps/n8n-lego/package.json
 #                       "os": ["linux"]), so the Linux runtime tests stay on
@@ -184,6 +185,13 @@ jobs:
           LEGO_SMOKE_SHOTS: ${{ runner.temp }}/shots
         run: node tests/e2e/lego-smoke.mjs "$LEGO_URL" --mode=create
 
+      - name: P2 browser gate — settings visibility, route guards, unsupported semantics
+        working-directory: ${{ runner.temp }}/clean-clone
+        env:
+          LEGO_P2_EVIDENCE: ${{ runner.temp }}/settings-visibility-p2.json
+          LEGO_P2_SHOTS: ${{ runner.temp }}/p2-shots
+        run: node tests/e2e/settings-compat.mjs "$LEGO_URL"
+
       - name: Restart the instance on the same data directory
         run: |
           set -euo pipefail
@@ -216,9 +224,11 @@ jobs:
           name: n8n-lego-clean-clone-evidence
           path: |
             ${{ runner.temp }}/shots
+            ${{ runner.temp }}/p2-shots
             ${{ runner.temp }}/lego-start.log
             ${{ runner.temp }}/lego-restart.log
             ${{ runner.temp }}/smoke-state.json
+            ${{ runner.temp }}/settings-visibility-p2.json
           if-no-files-found: ignore
           retention-days: 7
 
