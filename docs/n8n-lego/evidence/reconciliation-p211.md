@@ -19,13 +19,14 @@ tree, not summarised from a chat message. Byte-for-byte traceability: `git diff 
 | Reconciliation commit 4 | `de61abeb` | the executable reader test (30 questions) |
 
 **There is no merge base.** `git merge-base 8c299609 464c1216` is empty: agent-2's branch
-`arena/01a0c521-n8n-rust-v-4` is a separate history (352 commits, root `f4e6edef`… see §7) that
-does not share an ancestor with `main` (`cb71dbb2`). The reconciliation is therefore a **reviewed
+`arena/01a0c521-n8n-rust-v-4` is a separate history (352 commits, root `f4ac0763` "chore: initial
+repository structure for n8n-rust-v.4 and Arena Gateway") that does not share an ancestor with
+`main` (`cb71dbb2`). The reconciliation is therefore a **reviewed
 file-level import**, not a git merge — and it is not a cherry-pick, because the two trees disagree
 about files that both changed.
 
-Scale: `git diff --shortstat 8c299609 <head>` → 150+ files changed, ~27.9k insertions, ~1.5k
-deletions; 119 files added, 31 modified.
+Scale, measured at `de61abeb` (this record's parent): `git diff --shortstat 8c299609 de61abeb`
+→ **161 files changed, 28,204 insertions, 1,526 deletions**; **120 files added, 41 modified**.
 
 ## 2. Files merged (from `464c1216`)
 
