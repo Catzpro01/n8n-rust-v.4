@@ -5,10 +5,76 @@
 - **Assigned Module**: workflow (`workflow.graph`, `workflow.traversal`, `workflow.diff`, `trigger.lifecycle`) — sesi ini mengerjakan
   **test infrastructure** (`tools/rust-offline-rig/**`, registry `integration.gates` milik agent-05) karena tanpa itu seluruh
   verifikasi Rust Phase 3 mustahil dijalankan di sandbox.
-- **Current Task ID**: pemulihan Rust offline rig pasca-`cb71dbb2` (tokio dev-dependency) + verifikasi regresi workspace
-- **Last Updated**: 2026-09-21
+- **Current Task ID**: **P2.5 — Frontend LEGO Foundation** (owner Agent 1: frontend contract, capability registry,
+  UI compatibility, frontend regression gates). Tugas rig Rust di bawah sudah **SELESAI** (lihat Lampiran A).
+- **Last Updated**: 2026-09-21 (P2.5)
 
 ---
+
+## 🧱 P2.5 — FRONTEND LEGO FOUNDATION (tugas saat ini, SELESAI + terverifikasi)
+
+**Tujuan:** memisahkan *kontrak* frontend dari *implementasi* Vue tanpa mengubah tampilan/perilaku UI n8n.
+Fondasi saja — **tidak ada** fitur (tidak ada terjemahan, tidak ada redesign, tidak ada migrasi framework).
+
+### Apa yang dibuat (deliverable)
+
+| # | Deliverable | Lokasi |
+| :- | :--- | :--- |
+| 1 | **Kontrak frontend (normatif)** — boundary F1–F8, error model §8 (kode mesin `backend-errors.*` + 10 kind + semantik status 200/400/401/403/404/409/422/500/501/503), bentuk list §9, extension point §11, 13 slot pesan + 6 locale §12, versioning §13, invariant I1–I11 | `contracts/frontend.contract.md` |
+| 2 | **LEGO package** `@lego/frontend` — contract/envelope, error model, i18n structure, capability registry, boot payload, REST client + state model, adapter Vue | `packages/frontend-lego/` (`src/*.mjs`, `manifest/*.json`, `index.mjs`, `package.json`) |
+| 3 | **Wiring app** — resolusi paket + fail-soft, endpoint penemuan, injeksi meta tag | `apps/n8n-lego/src/frontend.mjs`, `src/frontend/routes.mjs`, `src/ui.mjs`, `src/server.mjs` |
+| 4 | **Test kontrak/arsitektur** 55 test (5 suite) | `packages/frontend-lego/test/01..05-*.test.mjs` |
+| 5 | **Test boundary app** 9 test (in-process, HTTP nyata) | `apps/n8n-lego/test/frontend.boundary.test.mjs` |
+| 6 | **Browser gate P2.5** | `tests/e2e/frontend-boundary.mjs` (+ step CI) |
+| 7 | **Dokumentasi arsitektur + migrasi** | `docs/n8n-lego/FRONTEND_LEGO.md` |
+| 8 | **Bukti** | `docs/n8n-lego/evidence/frontend-boundary-p25.json` (14/14 pemeriksaan) |
+
+### Angka verifikasi (dijalankan di sesi ini)
+
+| Gate | Perintah | Hasil |
+| :--- | :--- | :--- |
+| Kontrak + arsitektur | `npm run frontend-lego:test` | **55/55 PASS** |
+| App (P2 contract + P2.5 boundary) | `N8N_LEGO_CATALOG_DIR=… npm run lego:test` | **34/34 PASS** (25 lama + 9 baru) |
+| UI tidak berubah (byte-identik selain tag) | test boundary app (test 5) | **PASS** — selisih hanya tag 19 KB yang bersifat aditif |
+| Instance terpasang (tarball, tanpa repo) | `tar -xzf dist/*.tar.gz` → start → curl | **200** bootstrap, tag muncul **1×**, resolusi ke `vendor/frontend-lego/index.mjs` |
+| LEGO tidak tersedia (fail-soft) | rename `vendor/frontend-lego` → start | UI **tetap 200**, tag **0×**, endpoint → **501 `{code:'unsupported', meta:{feature:'frontend-bootstrap', owner:'ui-frontend'}}`** |
+| Release | `bash scripts/release.sh --no-docker` | artifact + `vendor/frontend-lego` ikut ter-vendor (224K/136K) |
+| Audit repo | `python3 tools/sublego-audit/audit.py` | **AUDIT PASSED** (12 LEGO / 21 Sub-LEGO) |
+| Isolation gate | `npm run verify:fast` | **5/10 = baseline** (G06–G10 tetap blocked; tanpa regresi baru) |
+| Browser/E2E | `node tests/e2e/frontend-boundary.mjs` | **CI saja** (sandbox tanpa Chromium/egress) — P0/P2 smoke juga CI-only |
+
+### Keputusan penting (jangan diubah tanpa alasan)
+
+- **D9** P2.5 mendaftarkan **0 capability** — registry ada, isinya kosong; agent-05 boleh memakainya untuk uji "fail-closed".
+- **D10** `packages/frontend-lego` **tidak** ditambahkan ke `.arena/registry/lego.yaml` (milik agent-05, audit bidirectional);
+  pendaftaran `ui-frontend` = keputusan Manager/Integrator, bukan efek samping phase ini.
+- **D11** boot payload dikirim lewat **meta tag di `index.html`** (satu dokumen yang sudah di-fetch, `no-store`), bukan endpoint
+  kedua yang harus dipanggil UI. Budget ≤24 KB base64 ditegakkan test (sekarang ~19 KB).
+- **D12** hanya `src/adapters/**` yang boleh menyebut framework; test 05 memaksa aturan ini (dan melarang `Vue` di modul non-adapter).
+- **D13** shared file yang disentuh: root `package.json` (1 script), `.github/workflows/n8n-lego.yml` (path filter + 2 step),
+  `scripts/release.sh` (vendoring), `docs/n8n-lego/ROADMAP.md` (1 baris), `contracts/frontend.contract.md` (baru). Tidak ada file shared lain.
+
+### Batas phase (HARD STOP) & titik integrasi P2.6
+
+- **Tidak** dijalankan: Translation LEGO, penggantian Vue, migrasi React/Svelte/Web Components, implementasi fitur
+  Workflow/Execution/Auth/Credentials/Node Registry, Rust, microservices, redesign. Bundle `n8n-editor-ui@2.9.4` **tidak dipatch**.
+- **P2.6 (backend) / Integrator**: (a) endpoint baru `GET /rest/frontend/bootstrap` — aditif, auth-guarded, tidak pernah dipanggil UI lama;
+  (b) meta tag `n8n-lego:frontend-bootstrap` pada `index.html` harus tetap aditif bila template dokumen berubah;
+  (c) kosakata error (`frontend.*` + `backend-errors.*`) kini data kontrak — kode baru ⇒ extend `contracts/frontend.contract.md` §8;
+  (d) `packages/frontend-lego/manifest/ownership.json` adalah deskriptor diri LEGO (konvensi `packages/*-lego`).
+- **P2.6-BE**: metode HTTP, bentuk envelope, dan status code yang dipakai client ada di `src/contract.mjs` + §9 kontrak —
+  jangan tambahkan bentuk respons baru tanpa memperbarui kontrak (test 01 akan gagal bila dokumen tidak sinkron).
+
+### Langkah pertama untuk sesi penerus (frontend)
+
+1. `npm run frontend-lego:test` (**harus 55/55**) lalu `N8N_LEGO_CATALOG_DIR=<catalog> npm run lego:test` (**34/34**).
+2. Kalau menyentuh UI/contract: jalankan `node tests/e2e/frontend-boundary.mjs <url>` di CI (lokal tanpa Chromium).
+3. Phase berikutnya (setelah izin Manager): Translation LEGO memakai `ui:message:catalog` + `ui:locale:switch` +
+   slot pesan yang sudah dideklarasikan; **jangan** mulai tanpa kontrak terpisah.
+
+---
+
+## 📎 Lampiran A — Sesi rig Rust offline (SELESAI, arsip)
 
 ## 🎯 1. Ringkasan Tugas Sesi Ini (Mission Objective)
 

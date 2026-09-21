@@ -80,6 +80,14 @@ Notes:
 - The tarball vendors the editor UI, so a VPS install needs no npm registry; the
   npm package resolves it from the registry as a normal dependency.
 
+**P2.5 — Frontend LEGO foundation (2026-09-21).** The frontend is now a declared LEGO:
+`packages/frontend-lego` holds the framework-neutral contract (envelopes, errors, message
+slots, capability registry, extension points) and `apps/n8n-lego` publishes it as a boot
+`<meta>` tag plus `GET /rest/frontend/bootstrap`. The pinned editor bundle is untouched
+(byte-identical apart from that one tag, asserted by test) and the release script vendors
+the LEGO into `vendor/frontend-lego` next to the engine. Architecture and migration notes:
+`docs/n8n-lego/FRONTEND_LEGO.md`; contract: `contracts/frontend.contract.md`.
+
 Per-channel checklist:
 
 1. ✅ Versioning: single source of truth `apps/n8n-lego/package.json`; reference
