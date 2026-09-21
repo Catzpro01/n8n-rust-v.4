@@ -1,0 +1,35 @@
+{
+  "catalogVersion": "1.0.0",
+  "description": "The frontend's Skill surface: what discovery may render about a skill, and what it must never become. A Skill is procedural knowledge (how) - not a capability (what) and not an agent (who). This catalog ships EMPTY on purpose: `ai.skill` has no contract-lock row, the backend declaration carries `versioning: publicationPending`, and a frontend that listed skills anyway would be inventing both the skills and the contract that defines them. What the UI renders in that state is the canonical unsupported answer.",
+  "contract": "ai.skill",
+  "declarationSource": {
+    "file": "apps/n8n-lego/src/lego/manifest/ai-lego-set.json",
+    "path": "lego#id=skill",
+    "owner": "manager",
+    "decision": "XA-11"
+  },
+  "publicationPending": {
+    "owner": "manager",
+    "domain": "ai-lego-set",
+    "decision": "XA-11",
+    "what": "manifest/ai-lego-set.json declares ai.skill (the Skill LEGO, status `planned`) with its lifecycle, operations, operation permissions and disclosure levels, but no contract-lock row publishes ai.skill and the declaration itself says `versioning: publicationPending`, so the frontend has no contract version to bind to"
+  },
+  "discovery": {
+    "listing": true,
+    "search": true,
+    "filter": true,
+    "detail": true,
+    "select": false,
+    "load": false,
+    "execute": false,
+    "tools": false
+  },
+  "rules": [
+    "Discovery only: listing, search, filter and detail read declarations. Nothing here selects, loads or executes a skill.",
+    "The six lifecycle states are six facts. No boolean `enabled` is derived from them, and none of them is an execution state.",
+    "A skill carries neither a permission nor an authority: the declared operation permissions are requirements of a backend operation, never a grant the UI holds.",
+    "With `ai.skill` unpublished the canonical unsupported state is rendered: no fallback capability, no execution control and no tool list.",
+    "Skill entries are supplied to the runtime by the application (or declared here once a contract exists); this package never reads the backend tree."
+  ],
+  "skills": []
+}

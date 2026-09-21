@@ -253,6 +253,7 @@ export {
   declaredCapabilityIds,
   extensionPointIds,
   loadManifests,
+  skillSurface,
   subLegoIds,
   surfaceIds,
 } from './src/manifests.mjs';
@@ -331,6 +332,40 @@ export {
   vocabularyDrift,
   vocabularyOf,
 } from './src/vocabulary.mjs';
+
+/**
+ * The Skill surface (P2.12): discovery and state presentation over the skill vocabulary the
+ * backend declares. A skill is procedural knowledge — it is not a capability, not an agent,
+ * and it never implies a permission, a tool or a model. Every word quoted here lives in the
+ * vocabulary lock; the surface declares no vocabulary of its own.
+ */
+export {
+  SKILL_AFFORDANCES,
+  SKILL_CONTRACT_ID,
+  SKILL_DECLARATION_FIELDS,
+  SKILL_DECLARATION_SOURCE,
+  SKILL_DEGRADATION_STATES,
+  SKILL_DISCLOSURE_LEVELS,
+  SKILL_FORBIDDEN_FIELDS,
+  SKILL_FORBIDDEN_IMPLICATIONS,
+  SKILL_IDENTITY_FIELDS,
+  SKILL_INSTANCE_FIELDS,
+  SKILL_LIFECYCLE,
+  SKILL_OPERATIONS,
+  SKILL_PERMISSIONS,
+  SKILL_QUOTED_VOCABULARIES,
+  SKILL_STATUSES,
+  SkillDeclarationError,
+  createSkillCatalog,
+  describeSkills,
+  searchSkills,
+  skillDetail,
+  skillLifecycle,
+  skillState,
+  skillUnsupported,
+  validateSkillDeclaration,
+  validateSkillInstance,
+} from './src/skills.mjs';
 
 export {
   CHANGE_KINDS,

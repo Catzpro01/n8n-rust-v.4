@@ -53,6 +53,23 @@ const FOUNDATION_MANIFEST_PUBLICATION = Object.freeze({
 });
 
 /**
+ * `apps/n8n-lego/src/lego/manifest/ai-lego-set.json` declares the Skill LEGO — its six
+ * lifecycle states, its operations, the permissions those operations require, its
+ * disclosure levels and its status — but the file is named by no domain in
+ * `domains.json`, no contract-lock row publishes `ai.skill`, and the declaration itself
+ * carries `versioning: publicationPending`. So every Skill word is quoted with no
+ * contract version and the record that asks for one: `XA-11` ("which contract publishes a
+ * skill — and is a skill a backend concept at all?"). A skill is consumed, never invented:
+ * the frontend renders these values and adds no seventh state and no extra operation.
+ */
+const SKILL_MANIFEST_PUBLICATION = Object.freeze({
+  owner: 'manager',
+  domain: 'ai-lego-set',
+  decision: 'XA-11',
+  what: 'manifest/ai-lego-set.json declares `ai.skill` (the Skill LEGO, status `planned`) with its lifecycle, operations, operation permissions and disclosure levels, but no contract-lock row publishes `ai.skill` and the declaration itself says `versioning: publicationPending`, so these values have no pinned contract version',
+});
+
+/**
  * The canonical vocabularies. `values` is the complete set; `provenance` names the
  * contract (id/version/owner) and the exact declaration the values were read from
  * (`kind` + `file` + `path`/`symbol`), so a reviewer can check the quote instead of
@@ -630,6 +647,89 @@ export const VOCABULARIES = Object.freeze([
       read: 'unique',
     }),
   }),
+  /**
+   * The Skill vocabulary. A Skill is *how* a task is done (procedure plus a capability
+   * map); a capability is *what* can be done; the Agent Machine is *who* does it. The
+   * six states below are the frontend's whole state model for a skill, and they are six
+   * facts rather than one flag: `registered` ≠ `available` ≠ `selected` ≠ `loaded` ≠
+   * `active` ≠ `released`. Three of the six do not exist in the canonical `lifecycle`
+   * set, which is exactly why this set is quoted separately instead of borrowed.
+   */
+  Object.freeze({
+    id: 'skillLifecycle',
+    question: 'Which of the six skill states is this skill in — known, offered, chosen, in context, in use or let go?',
+    about: 'state',
+    values: Object.freeze(['registered', 'available', 'selected', 'loaded', 'active', 'released']),
+    provenance: Object.freeze({
+      contract: null,
+      kind: 'json',
+      file: 'apps/n8n-lego/src/lego/manifest/ai-lego-set.json',
+      path: 'lego#id=skill.lifecycle',
+      read: 'values',
+      note: '`available`, `loaded` and `active` are the canonical `lifecycle` words for the same facts; `registered`, `selected` and `released` exist only in the skill declaration, so the two sets may not be merged into one',
+    }),
+    publicationPending: SKILL_MANIFEST_PUBLICATION,
+  }),
+  Object.freeze({
+    id: 'skillOperation',
+    question: 'Which operation does a skill declare — and which of them may a UI ever offer?',
+    about: 'operation',
+    values: Object.freeze(['register', 'list', 'describe', 'select', 'load', 'release']),
+    provenance: Object.freeze({
+      contract: null,
+      kind: 'json',
+      file: 'apps/n8n-lego/src/lego/manifest/ai-lego-set.json',
+      path: 'lego#id=skill.operations',
+      read: 'values',
+      note: 'a skill operation is a backend operation of `ai.skill`; discovery may name them, and the UI offers none of them while the contract is unpublished',
+    }),
+    publicationPending: SKILL_MANIFEST_PUBLICATION,
+  }),
+  Object.freeze({
+    id: 'skillDisclosureLevel',
+    question: 'How much of a skill is disclosed — identity, card, procedure or deep knowledge?',
+    about: 'disclosure',
+    values: Object.freeze(['L0', 'L1', 'L2', 'L3']),
+    provenance: Object.freeze({
+      contract: null,
+      kind: 'json',
+      file: 'apps/n8n-lego/src/lego/manifest/ai-lego-set.json',
+      path: 'lego#id=skill.disclosureLevels',
+      read: 'keys',
+      note: 'selection happens on L0/L1 and loading deeper is a separate decision; the frontend shows the level a caller asked for and never loads L2/L3 by itself',
+    }),
+    publicationPending: SKILL_MANIFEST_PUBLICATION,
+  }),
+  Object.freeze({
+    id: 'skillPermission',
+    question: 'Which permissions does a skill operation require?',
+    about: 'permission',
+    values: Object.freeze(['ai:skill:read', 'ai:skill:select']),
+    provenance: Object.freeze({
+      contract: null,
+      kind: 'json',
+      file: 'apps/n8n-lego/src/lego/manifest/ai-lego-set.json',
+      path: 'lego#id=skill.permissions',
+      read: 'values',
+      note: 'these are requirements of the declared operations, never grants a skill holds and never a UI affordance',
+    }),
+    publicationPending: SKILL_MANIFEST_PUBLICATION,
+  }),
+  Object.freeze({
+    id: 'aiLegoStatus',
+    question: 'How mature is an AI/Agent LEGO in the official set?',
+    about: 'status',
+    values: Object.freeze(['implemented', 'contract-only', 'planned', 'blocked', 'deferred']),
+    provenance: Object.freeze({
+      contract: null,
+      kind: 'json',
+      file: 'apps/n8n-lego/src/lego/manifest/ai-lego-set.json',
+      path: 'statusVocabulary',
+      read: 'keys',
+      note: 'the AI set spells maturity with five words; the registry publishes eight for capabilities (`capabilityStatus`), so the two sets are quoted separately — `blocked` exists only here',
+    }),
+    publicationPending: SKILL_MANIFEST_PUBLICATION,
+  }),
 ]);
 
 /**
@@ -1189,6 +1289,21 @@ export const DECLARED_OVERLAPS = Object.freeze([
     vocabularies: Object.freeze(['resourceProfile', 'transportKind']),
     values: Object.freeze({
       remote: 'a resource class that is satisfied elsewhere, and a transport kind that moves bytes over a link; the remote resource class implies the remote transport, not the reverse',
+    }),
+  }),
+  Object.freeze({
+    vocabularies: Object.freeze(['degradation', 'skillLifecycle']),
+    values: Object.freeze({
+      available: 'the canonical availability word ("this may serve a caller") and the skill state "this is offered for selection" — one spelling about two subjects, both quoted, neither re-defined',
+    }),
+  }),
+  Object.freeze({
+    vocabularies: Object.freeze(['aiLegoStatus', 'capabilityStatus']),
+    values: Object.freeze({
+      implemented: 'the same word about the same fact read from two declarations: the AI set spells a LEGO\'s maturity, the registry spells a capability\'s maturity',
+      'contract-only': 'the contract is fixed and testable, no implementation exists — one status in the AI set, one in the registry',
+      planned: 'intended, no contract fixed yet — one status word in both declarations',
+      deferred: 'deliberately postponed in both declarations, for the same reason',
     }),
   }),
 ]);

@@ -27,7 +27,7 @@ packages/frontend-lego/
     contract.mjs versions.mjs surface-capability.mjs registry.mjs sublegos.mjs lifecycle.mjs
     negotiation.mjs vocabulary.mjs seam.mjs backend-view.mjs envelope.mjs transport.mjs
     interactions.mjs conformance.mjs observability.mjs impact.mjs profiles.mjs i18n.mjs
-    errors.mjs boot.mjs client.mjs manifests.mjs knowledge.mjs agents.mjs agent-events.mjs lego.mjs
+    errors.mjs boot.mjs client.mjs manifests.mjs knowledge.mjs agents.mjs agent-events.mjs skills.mjs lego.mjs
     adapters/ the framework adapter boundary (currently Vue; the only framework-aware code)
   test/                     01-contract … 23-degradation, 24-vocabulary, 25-operations,
                             26-ai-contracts, 27-agent-events, 28-seam, 29-alignment
@@ -38,7 +38,8 @@ operation answers; `vocabulary.mjs` the shared vocabulary lock; `seam.mjs` the c
 input list and the one capability identity; `agents.mjs` the AI capability/provider/
 runtime kinds, the MCP boundary and the installation layers; `agent-events.mjs` the agent
 event vocabulary, the bounded work trace and the delegation tree; `knowledge.mjs` the
-`.ai/` pack index.
+`.ai/` pack index; `skills.mjs` skill discovery: six quoted states, never one boolean,
+and no select/load/execute (`test/31`).
 
 ## Boot flow
 
