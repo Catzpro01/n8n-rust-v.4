@@ -281,3 +281,29 @@ unknowns. `AI_UI_IMPLEMENTATION_PHASES.md` turns that into ordered work.
 | negotiation | `packages/frontend-lego/src/negotiation.mjs` (12 operation outcomes) |
 | decisions awaiting an owner | `docs/n8n-lego/decisions/cross-agent-decisions.json` — **XA-5, XA-8, XA-9, XA-10** (open from the foundation gate) and **XA-11 … XA-17** (proposed by this plan) |
 | rule enforcement | `contracts/frontend.contract.md` §19.9–§19.17, `src/conformance.mjs` (26 rules), `test/30-master-plan.test.mjs` |
+
+## 12. Beginner mode and advanced mode
+
+One product, two depths — the *same* declarations, never two implementations. Beginner is the
+default; advanced is an opt-in that reveals what is already there.
+
+| | Beginner (default) | Advanced (opt-in) |
+| :--- | :--- | :--- |
+| language | plain, no contract names, no identifiers | the project's own vocabulary, with provenance |
+| what is visible | what is happening, whether it needs a decision, what changed | tokens, context %, session, skills, capabilities, MCP, runtime, permissions, agent tree, work trace, artifacts |
+| configuration | none required; declared defaults | per-surface expansion, filters, deep links |
+| failure wording | "this is not available yet, and here is what still works" | the declared outcome (`capability-unavailable`, `operation-unpublished`, ...) and its owner |
+| switching | one control, remembered per user, never modal | the same control; switching creates no hidden state |
+
+Rules:
+
+- Advanced detail is the progressive disclosure of `AI_UX_PROGRESSIVE_DISCLOSURE.md`, not a second
+  screen: nothing is computed only for advanced users, and beginners are never denied information
+  they need in order to act.
+- A beginner never sees a raw identifier, a vendor name used as a capability, or a count presented as
+  exact when its source is `estimated`.
+- An advanced user sees no more than the declaration allows: the advanced view may show *that* a
+  capability is missing, never an invented implementation detail behind it.
+- Mode changes presentation only — never behaviour, permissions, budgets or approvals.
+- The default stays simple. A feature that only makes sense in advanced mode is still documented in
+  both, with the advanced description naming the declaration it reads.
