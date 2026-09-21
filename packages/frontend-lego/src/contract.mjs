@@ -180,6 +180,7 @@ export const BOOT_PAYLOAD_KEYS = Object.freeze([
   'errorKinds',
   'errorCodes',
   'surfaces',
+  'subLegos',
   'extensionPoints',
   'capabilities',
 ]);

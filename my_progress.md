@@ -1,7 +1,11 @@
 # 📋 ARENA AGENT PROGRESS & HANDOVER
 
 - **Agent ID**: agent-01 (workflow) — sesi lanjutan
-- **Session branch**: `arena/01a0c53e-n8n-rust-v-4` (base `cb71dbb2` = `main`, "n8n-lego: P2 compatibility contract layer (#42)")
+- **Session branch**: `arena/01a0c53e-n8n-rust-v-4` (base `cb71dbb2` = `main`, "n8n-lego: P2 compatibility contract layer (#42)").
+  **Catatan branch:** brief P2.5 menyebut `arena/01a0c4f9-n8n-rust-v-4` (ada di remote pada `439629b5`, tree-nya **identik**
+  dengan `cb71dbb2` = P2 baseline). Sesi ini terkunci ke `arena/01a0c53e-n8n-rust-v-4`, jadi pekerjaan P2.5 ada di branch ini
+  (PR #43). Pindah ke branch yang ditugaskan = `git cherry-pick` dua commit P2.5 (`f8bdee00` + commit nested di bawah);
+  keduanya menyentuh file yang sama sekali belum ada di `cb71dbb2`, jadi konflik diperkirakan nihil kecuali `my_progress.md`.
 - **Assigned Module**: workflow (`workflow.graph`, `workflow.traversal`, `workflow.diff`, `trigger.lifecycle`) — sesi ini mengerjakan
   **test infrastructure** (`tools/rust-offline-rig/**`, registry `integration.gates` milik agent-05) karena tanpa itu seluruh
   verifikasi Rust Phase 3 mustahil dijalankan di sandbox.
@@ -23,23 +27,27 @@ Fondasi saja — **tidak ada** fitur (tidak ada terjemahan, tidak ada redesign, 
 | 1 | **Kontrak frontend (normatif)** — boundary F1–F8, error model §8 (kode mesin `backend-errors.*` + 10 kind + semantik status 200/400/401/403/404/409/422/500/501/503), bentuk list §9, extension point §11, 13 slot pesan + 6 locale §12, versioning §13, invariant I1–I11 | `contracts/frontend.contract.md` |
 | 2 | **LEGO package** `@lego/frontend` — contract/envelope, error model, i18n structure, capability registry, boot payload, REST client + state model, adapter Vue | `packages/frontend-lego/` (`src/*.mjs`, `manifest/*.json`, `index.mjs`, `package.json`) |
 | 3 | **Wiring app** — resolusi paket + fail-soft, endpoint penemuan, injeksi meta tag | `apps/n8n-lego/src/frontend.mjs`, `src/frontend/routes.mjs`, `src/ui.mjs`, `src/server.mjs` |
-| 4 | **Test kontrak/arsitektur** 55 test (5 suite) | `packages/frontend-lego/test/01..05-*.test.mjs` |
-| 5 | **Test boundary app** 9 test (in-process, HTTP nyata) | `apps/n8n-lego/test/frontend.boundary.test.mjs` |
+| 4 | **Test kontrak/arsitektur** 78 test (6 suite) | `packages/frontend-lego/test/01..06-*.test.mjs` |
+| 5 | **Test boundary app** 11 test (in-process, HTTP nyata) | `apps/n8n-lego/test/frontend.boundary.test.mjs` |
 | 6 | **Browser gate P2.5** | `tests/e2e/frontend-boundary.mjs` (+ step CI) |
 | 7 | **Dokumentasi arsitektur + migrasi** | `docs/n8n-lego/FRONTEND_LEGO.md` |
-| 8 | **Bukti** | `docs/n8n-lego/evidence/frontend-boundary-p25.json` (14/14 pemeriksaan) |
+| 8 | **Bukti (dapat diregenerasi)** | `docs/n8n-lego/evidence/frontend-boundary-p25.json` (18/18 pemeriksaan, via `node apps/n8n-lego/scripts/capture-frontend-evidence.mjs`) |
+| 9 | **Sub-LEGO bertingkat (layer baru)** — 19 unit 3 level, owner/versi/port publik/area privat/dependency/policy upgrade, registry fail-closed + uji upgrade | `packages/frontend-lego/manifest/sub-legos.json`, `src/sublegos.mjs`, `test/06-sublegos.test.mjs` |
+| 10 | **Kontrak sub-LEGO (normatif)** — kapan sesuatu jadi sub-LEGO, hierarki, public/private, ownership, aturan upgrade | `contracts/frontend-sub-lego.contract.md` |
+| 11 | **Extension point tambahan** — Search (`ui:search:provider`), Accessibility (`ui:accessibility:annotate`, atribut whitelist saja), Import/Export (`ui:document:format`); total 15 hook / 7 calon konsumen | `packages/frontend-lego/manifest/extension-points.json` |
 
 ### Angka verifikasi (dijalankan di sesi ini)
 
 | Gate | Perintah | Hasil |
 | :--- | :--- | :--- |
-| Kontrak + arsitektur | `npm run frontend-lego:test` | **55/55 PASS** |
-| App (P2 contract + P2.5 boundary) | `N8N_LEGO_CATALOG_DIR=… npm run lego:test` | **34/34 PASS** (25 lama + 9 baru) |
-| UI tidak berubah (byte-identik selain tag) | test boundary app (test 5) | **PASS** — selisih hanya tag 19 KB yang bersifat aditif |
+| Kontrak + arsitektur | `npm run frontend-lego:test` | **78/78 PASS** |
+| App (P2 contract + P2.5 boundary) | `node --test "apps/n8n-lego/test/*.test.mjs"` (catalog lokal di `data/n8n-lego/catalog`) | **36/36 PASS** (25 lama + 11 boundary) |
+| UI tidak berubah (byte-identik selain tag) | test boundary app + evidence | **PASS** — `delta=24268 bytes (the tag only)` |
+| Uji upgrade sub-LEGO (baru) | `node --test packages/frontend-lego/test/06-sublegos.test.mjs` | **PASS** — upgrade minor satu unit: semua sibling **byte-identik**; upgrade major ditolak selama dependen mem-pin major lama, lolos hanya dengan `acknowledge` eksplisit |
 | Instance terpasang (tarball, tanpa repo) | `tar -xzf dist/*.tar.gz` → start → curl | **200** bootstrap, tag muncul **1×**, resolusi ke `vendor/frontend-lego/index.mjs` |
 | LEGO tidak tersedia (fail-soft) | rename `vendor/frontend-lego` → start | UI **tetap 200**, tag **0×**, endpoint → **501 `{code:'unsupported', meta:{feature:'frontend-bootstrap', owner:'ui-frontend'}}`** |
 | Release | `bash scripts/release.sh --no-docker` | artifact + `vendor/frontend-lego` ikut ter-vendor (224K/136K) |
-| Audit repo | `python3 tools/sublego-audit/audit.py` | **AUDIT PASSED** (12 LEGO / 21 Sub-LEGO) |
+| Audit repo | `python3 tools/sublego-audit/audit.py` | **AUDIT PASSED** (12 LEGO / 20 Sub-LEGO — registry `.arena` tidak disentuh) |
 | Isolation gate | `npm run verify:fast` | **5/10 = baseline** (G06–G10 tetap blocked; tanpa regresi baru) |
 | Browser/E2E | `node tests/e2e/frontend-boundary.mjs` | **CI saja** (sandbox tanpa Chromium/egress) — P0/P2 smoke juga CI-only |
 
@@ -51,8 +59,28 @@ Fondasi saja — **tidak ada** fitur (tidak ada terjemahan, tidak ada redesign, 
 - **D11** boot payload dikirim lewat **meta tag di `index.html`** (satu dokumen yang sudah di-fetch, `no-store`), bukan endpoint
   kedua yang harus dipanggil UI. Budget ≤24 KB base64 ditegakkan test (sekarang ~19 KB).
 - **D12** hanya `src/adapters/**` yang boleh menyebut framework; test 05 memaksa aturan ini (dan melarang `Vue` di modul non-adapter).
+- **D14** **Sub-LEGO hanya untuk unit yang layak**: komponen/tombol/ikon/helper adalah detail privat, bukan LEGO.
+  Sebuah unit ada kalau punya kontrak, owner, batas test, dan jalur upgrade sendiri — 19 unit hari ini, semuanya
+  `status: declared` (tidak ada yang diimplementasikan).
+- **D15** Batas publik = **port** (`ui:<area>:<nama>`); dependensi ke apa pun selain port publik ditolak **dengan nama**
+  (`"credentials" reaches into the private internals of "dialogs": …`), cycle ditolak, dan port tidak boleh berbagi id
+  dengan extension point (dua hal berbeda: tempat menempel vs yang boleh di-couple).
+- **D16** Upgrade = **manifest entry baru untuk satu unit** (mekanisme asli, bukan test double). Minor/patch: hanya unit itu
+  yang berubah. Major: ditolak selama dependen mem-pin major lama, dan hanya lanjut dengan `{ acknowledge: [...] }` yang
+  dicatat di dependen sebagai `acknowledgedUpgrades`. Downgrade dan unit `coupled` ditolak.
+- **D17** `capability` per unit divalidasi terhadap surface-nya (surface tetap sumber tunggal; sentinel `none` di
+  `surfaces.json` dinormalkan jadi `null`), sehingga dua tempat tidak bisa berbeda diam-diam.
 - **D13** shared file yang disentuh: root `package.json` (1 script), `.github/workflows/n8n-lego.yml` (path filter + 2 step),
-  `scripts/release.sh` (vendoring), `docs/n8n-lego/ROADMAP.md` (1 baris), `contracts/frontend.contract.md` (baru). Tidak ada file shared lain.
+  `scripts/release.sh` (vendoring), `docs/n8n-lego/ROADMAP.md` (1 baris), `contracts/frontend.contract.md` (baru),
+  dan pada increment nested: `contracts/frontend.contract.md` §4/§11/§11.1/§16.1 (aditif), `manifest/extension-points.json`
+  (+3 hook). Tidak ada file shared lain. Root `package.json`, workflow CI, dan `release.sh` **tidak** berubah lagi.
+
+### Arbitrase yang menunggu Manager/Integrator (jangan diputuskan sepihak)
+
+`contracts/micro-frontend.contract.md` (LEGO 13, "CONTRACT SPECIFIED") mendeklarasikan dekomposisi **Web Components** dan
+himpunan bahasa `id, en, es, fr, de, ja`. P2.5 **tidak** mengimplementasikan maupun mengubahnya: implementasi referensi
+tetap bundle Vue yang di-pin, dan himpunan locale adalah `id, en, ar, zh, ru, jv` sesuai brief. Perbedaan ini dicatat di
+`contracts/frontend.contract.md` §16.1 sebagai item arbitrase (mana yang otoritatif; apakah Web Components masih target).
 
 ### Batas phase (HARD STOP) & titik integrasi P2.6
 

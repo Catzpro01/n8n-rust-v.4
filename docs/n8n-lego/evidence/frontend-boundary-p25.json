@@ -1,8 +1,8 @@
 {
   "kind": "p25-frontend-boundary",
-  "generatedAt": "2026-09-21T19:06:20.327Z",
+  "generatedAt": "2026-09-21T19:40:58.211Z",
   "phase": "P2.5",
-  "method": "live instance (HTTP/contract level) — apps/n8n-lego/test/frontend.boundary.test.mjs; the browser gate tests/e2e/frontend-boundary.mjs captures the same boundary from inside a real page (docs/n8n-lego/FRONTEND_LEGO.md §6)",
+  "method": "node apps/n8n-lego/scripts/capture-frontend-evidence.mjs (live in-process instance, HTTP level); the browser gate tests/e2e/frontend-boundary.mjs captures the same boundary from inside a real page in CI (docs/n8n-lego/FRONTEND_LEGO.md §6)",
   "baseline": "cb71dbb2",
   "editorUi": {
     "editorPackage": "n8n-editor-ui",
@@ -29,17 +29,32 @@
       "detail": "contractVersion=1.0.0"
     },
     {
-      "name": "12 surfaces declared",
+      "name": "12 UI surfaces declared",
       "verdict": "PASS",
       "detail": "auth,navigation,dashboard,settings,workflow-editor,node-picker,credentials,executions,webhooks,notifications,dialogs,error-surfaces"
     },
     {
-      "name": "12 extension points declared",
+      "name": "15 extension points declared",
       "verdict": "PASS",
-      "detail": "ui:nav:item,ui:settings:section,ui:form:field,ui:node:menu-item,ui:dialog:render,ui:notification:render,ui:error:render,ui:message:catalog,ui:locale:switch,ui:theme:tokens,ui:command:register,ui:assistant:panel"
+      "detail": "ui:nav:item,ui:settings:section,ui:form:field,ui:node:menu-item,ui:dialog:render,ui:notification:render,ui:error:render,ui:message:catalog,ui:locale:switch,ui:theme:tokens,ui:command:register,ui:assistant:panel,ui:search:provider,ui:accessibility:annotate,ui:document:format"
     },
     {
-      "name": "no capability registered in P2.5",
+      "name": "19 nested units declared, 3 levels deep",
+      "verdict": "PASS",
+      "detail": "19 units"
+    },
+    {
+      "name": "hierarchy is walkable in declaration order",
+      "verdict": "PASS",
+      "detail": "every parent published before its children"
+    },
+    {
+      "name": "private areas never reach the payload",
+      "verdict": "PASS",
+      "detail": "identity/version/ports only"
+    },
+    {
+      "name": "no capability claims to be shipped",
       "verdict": "PASS",
       "detail": "capabilities=[]"
     },
@@ -49,9 +64,9 @@
       "detail": "id,en,ar,zh,ru,jv"
     },
     {
-      "name": "error vocabulary published",
+      "name": "13 message slots declared",
       "verdict": "PASS",
-      "detail": "codes=11 kinds=10"
+      "detail": "13 slots"
     },
     {
       "name": "boot meta tag present on index.html",
@@ -76,14 +91,24 @@
     {
       "name": "UI byte-identical apart from the additive tag",
       "verdict": "PASS",
-      "detail": "delta=19004 bytes (the tag)"
+      "detail": "delta=24268 bytes (the tag only)"
     },
     {
       "name": "501 capability becomes a machine-readable error",
       "verdict": "PASS",
       "detail": "kind=unsupported feature=api-keys key=backend-errors.capability-unsupported"
+    },
+    {
+      "name": "boot descriptor stays inside its budget",
+      "verdict": "PASS",
+      "detail": "18126 bytes JSON → 24168 bytes base64"
     }
   ],
+  "summary": {
+    "checks": 18,
+    "passed": 18,
+    "failed": 0
+  },
   "bootDescriptor": {
     "contractVersion": "1.0.0",
     "surfaces": [
@@ -148,6 +173,142 @@
         "backend": "compatibility"
       }
     ],
+    "subLegos": [
+      {
+        "id": "auth",
+        "parentId": null,
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      },
+      {
+        "id": "credentials",
+        "parentId": null,
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      },
+      {
+        "id": "dashboard",
+        "parentId": null,
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      },
+      {
+        "id": "dialogs",
+        "parentId": null,
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      },
+      {
+        "id": "error-surfaces",
+        "parentId": null,
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      },
+      {
+        "id": "executions",
+        "parentId": null,
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      },
+      {
+        "id": "navigation",
+        "parentId": null,
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      },
+      {
+        "id": "node-picker",
+        "parentId": null,
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      },
+      {
+        "id": "notifications",
+        "parentId": null,
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      },
+      {
+        "id": "settings",
+        "parentId": null,
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      },
+      {
+        "id": "settings.general",
+        "parentId": "settings",
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      },
+      {
+        "id": "settings.localization",
+        "parentId": "settings",
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      },
+      {
+        "id": "settings.localization.rtl",
+        "parentId": "settings.localization",
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      },
+      {
+        "id": "settings.security",
+        "parentId": "settings",
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      },
+      {
+        "id": "workflow-editor",
+        "parentId": null,
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      },
+      {
+        "id": "workflow-editor.canvas",
+        "parentId": "workflow-editor",
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      },
+      {
+        "id": "workflow-editor.execution-panel",
+        "parentId": "workflow-editor",
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      },
+      {
+        "id": "workflow-editor.node-panel",
+        "parentId": "workflow-editor",
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      },
+      {
+        "id": "workflow-editor.parameter-panel",
+        "parentId": "workflow-editor",
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      }
+    ],
+    "subLegoDepth": 2,
     "extensionPoints": [
       "ui:nav:item",
       "ui:settings:section",
@@ -160,7 +321,10 @@
       "ui:locale:switch",
       "ui:theme:tokens",
       "ui:command:register",
-      "ui:assistant:panel"
+      "ui:assistant:panel",
+      "ui:search:provider",
+      "ui:accessibility:annotate",
+      "ui:document:format"
     ],
     "messageSlots": [
       "navigation",
@@ -201,6 +365,19 @@
       "frontend.server.error",
       "frontend.error.unknown"
     ],
-    "capabilities": []
+    "errorKinds": [
+      "network",
+      "auth",
+      "forbidden",
+      "not-found",
+      "conflict",
+      "validation",
+      "unsupported",
+      "server",
+      "aborted",
+      "unknown"
+    ],
+    "capabilities": [],
+    "bytes": 18126
   }
 }

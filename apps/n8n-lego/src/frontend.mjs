@@ -46,6 +46,7 @@ function unavailable(reason) {
     reason,
     bootPayload: null,
     metaTag: '',
+    subLegos: null,
     register: () => {
       throw new Error(`the frontend LEGO is not available (${reason})`);
     },
@@ -85,6 +86,10 @@ export async function loadFrontend({ config, logger }) {
       path: FRONTEND_PATH,
       bootPayload: lego.bootPayload,
       metaTag: lego.metaTag,
+      // The nested units stay queryable in-process (hierarchy walks, upgrade
+      // checks); only their identity, version and ports travel to the browser.
+      subLegos: lego.subLegos,
+      registry: lego.registry,
       register: lego.register,
       warnings: lego.warnings,
       describe: () => ({ available: true, path: FRONTEND_PATH, editorVersion: editorVersion(), ...lego.describe() }),

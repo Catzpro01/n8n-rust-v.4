@@ -43,8 +43,11 @@
       "packages/frontend-lego/test/04-i18n.test.mjs",
       "packages/frontend-lego/test/05-boundary.test.mjs",
       "apps/n8n-lego/test/frontend.boundary.test.mjs",
-      "tests/e2e/frontend-boundary.mjs"
-    ]
+      "tests/e2e/frontend-boundary.mjs",
+      "packages/frontend-lego/test/06-sublegos.test.mjs"
+    ],
+    "subLegoCatalog": "packages/frontend-lego/manifest/sub-legos.json",
+    "subLegoContract": "contracts/frontend-sub-lego.contract.md"
   },
   "ports": {
     "consumed": [
@@ -60,7 +63,9 @@
       "P-FRONTEND-CAPABILITY-REGISTRY",
       "P-FRONTEND-EXTENSION-POINTS",
       "P-FRONTEND-ERROR-MODEL",
-      "P-FRONTEND-MESSAGE-SLOTS"
+      "P-FRONTEND-MESSAGE-SLOTS",
+      "P-FRONTEND-SUB-LEGO-REGISTRY",
+      "P-FRONTEND-SUB-LEGO-UPGRADE"
     ]
   },
   "invariants": [
@@ -69,7 +74,10 @@
     "Contract modules are framework-neutral; Vue is named only under src/adapters/**.",
     "No frontend-LEGO module imports a backend implementation module.",
     "Every backend error is mapped to a stable machine-readable code before any display text exists.",
-    "No translation dictionary or translated string ships in P2.5 — only the structure that will hold one."
+    "No translation dictionary or translated string ships in P2.5 — only the structure that will hold one.",
+    "A unit inside this LEGO may only consume a published port of another unit; a private-internals dependency is refused by name.",
+    "Upgrading one unit leaves every unrelated unit byte-identical; a breaking upgrade requires the affected dependents to acknowledge it.",
+    "A component, button, icon or helper is never a sub-LEGO — only a unit with a contract, owner, test and upgrade path is."
   ],
   "zeroRust": true,
   "referenceFrontendUntouched": true,

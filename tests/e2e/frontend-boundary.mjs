@@ -171,6 +171,20 @@ if (boot.payload) {
   report('extensions have declared insertion points', missingHooks.length === 0, missingHooks.length === 0 ? `${hooks.size} hooks` : `missing: ${missingHooks.join(', ')}`);
 
   report('no frontend capability claims to be shipped', Array.isArray(boot.payload.capabilities) && boot.payload.capabilities.length === 0, `capabilities=${(boot.payload.capabilities ?? []).length}`);
+
+  const units = boot.payload.subLegos ?? [];
+  const nested = units.filter((unit) => unit.parentId !== null);
+  const deepest = units.find((unit) => unit.id === 'settings.localization.rtl');
+  report(
+    'the nested units are published with their hierarchy',
+    units.length >= 15 && nested.length >= 6 && deepest?.parentId === 'settings.localization',
+    `${units.length} units, ${nested.length} nested, depth example settings.localization.rtl`,
+  );
+  report(
+    'private areas never reach the browser',
+    JSON.stringify(units).includes('src/sub-legos') === false && JSON.stringify(units).includes('internals') === false,
+    'no internals or test paths in the payload',
+  );
   report('the locale model carries the six locales and Arabic RTL', (boot.payload.locales?.supported?.length ?? 0) === 6 && (boot.payload.locales?.rtl ?? []).includes('ar'), (boot.payload.locales?.supported ?? []).map((locale) => locale.code).join(','));
 }
 

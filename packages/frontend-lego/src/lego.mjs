@@ -16,6 +16,7 @@ import { CONTRACT_VERSION } from './contract.mjs';
 import { unmappedMessageSlots } from './i18n.mjs';
 import { loadManifests } from './manifests.mjs';
 import { createFrontendRegistry } from './registry.mjs';
+import { createSubLegoRegistry } from './sublegos.mjs';
 
 /**
  * @param {object} init
@@ -34,10 +35,21 @@ export function createFrontendLego({ app, ui = {}, adapterId = CURRENT_ADAPTER_I
     extensionPoints: manifests.extensionPoints,
     capabilities,
   });
+  // The hierarchy below this LEGO. Fail-closed: a sub-LEGO that breaks the
+  // hierarchy, publishes no boundary or depends on a private area stops the boot
+  // (fail-soft at the app level, which then serves the stock editor).
+  const subLegos = createSubLegoRegistry({
+    subLegos: manifests.subLegos,
+    owners: manifests.owners,
+    surfaces: manifests.surfaces,
+    extensionPoints: manifests.extensionPoints,
+    catalogVersion: manifests.subLegoCatalog.catalogVersion ?? null,
+  });
 
   const createAdapterFor = createAdapter(adapterId);
   const adapter = createAdapterFor({
     registry,
+    subLegos,
     app,
     ui: { basePath: ui.basePath ?? '/', restEndpoint: ui.restEndpoint ?? 'rest' },
   });
@@ -55,6 +67,8 @@ export function createFrontendLego({ app, ui = {}, adapterId = CURRENT_ADAPTER_I
     return Object.freeze({
       contractVersion: CONTRACT_VERSION,
       surfaces: manifests.surfaces.length,
+      subLegos: subLegos.list().length,
+      subLegoDepth: Math.max(0, ...subLegos.list().map((entry) => subLegos.depthOf(entry.id))),
       extensionPoints: manifests.extensionPoints.length,
       capabilities: registry.list().length,
       adapter: adapter.id,
@@ -69,6 +83,7 @@ export function createFrontendLego({ app, ui = {}, adapterId = CURRENT_ADAPTER_I
     contractVersion: CONTRACT_VERSION,
     manifests,
     registry,
+    subLegos,
     adapter,
     warnings: Object.freeze(warnings),
     /** The descriptor the browser (and tooling) receives. */
@@ -77,6 +92,8 @@ export function createFrontendLego({ app, ui = {}, adapterId = CURRENT_ADAPTER_I
     metaTag: adapter.metaTag,
     /** Registers a capability after boot (used by tests and by late LEGO wiring). */
     register: (capability) => registry.register(capability),
+    /** Registers a sub-LEGO after boot (the unit is validated against the hierarchy). */
+    registerSubLego: (entry) => subLegos.register(entry),
     describe,
   });
 }

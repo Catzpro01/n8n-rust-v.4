@@ -1,5 +1,5 @@
 {
-  "catalogVersion": "1.0.0",
+  "catalogVersion": "1.1.0",
   "description": "Insertion points a future frontend feature LEGO may attach to. Declared, not implemented: nothing registers on them in P2.5. The rules in every entry are enforced by the registry — a capability may only name hooks declared here, and may only mutate what it declares.",
   "rules": [
     "Additive by default: a hook appends to a list or wraps a rendering it owns; it never replaces a stock surface.",
@@ -16,7 +16,9 @@
       "surface": "navigation",
       "additive": "append",
       "mutates": "own-subtree",
-      "requiresCapability": ["navigation"],
+      "requiresCapability": [
+        "navigation"
+      ],
       "payload": {
         "id": "string (kebab-case, unique)",
         "route": "string (application route, must start with '/')",
@@ -25,7 +27,11 @@
         "order": "number (optional)",
         "scope": "string (optional, n8n global scope guarding visibility)"
       },
-      "consumers": ["search", "translation", "feature-legos"],
+      "consumers": [
+        "search",
+        "translation",
+        "feature-legos"
+      ],
       "status": "declared"
     },
     {
@@ -34,7 +40,9 @@
       "surface": "settings",
       "additive": "append",
       "mutates": "own-subtree",
-      "requiresCapability": ["settings"],
+      "requiresCapability": [
+        "settings"
+      ],
       "payload": {
         "id": "string (kebab-case, unique)",
         "route": "string (must start with '/settings')",
@@ -42,7 +50,10 @@
         "scope": "string (optional, required global scope)",
         "order": "number (optional)"
       },
-      "consumers": ["translation", "feature-legos"],
+      "consumers": [
+        "translation",
+        "feature-legos"
+      ],
       "status": "declared"
     },
     {
@@ -51,13 +62,19 @@
       "surface": "settings",
       "additive": "append",
       "mutates": "own-subtree",
-      "requiresCapability": ["settings"],
+      "requiresCapability": [
+        "settings"
+      ],
       "payload": {
         "id": "string (kebab-case, unique)",
         "field": "string (parameter/field name it annotates)",
         "decorate": "function(field) -> void (additive decoration only)"
       },
-      "consumers": ["accessibility", "translation", "dynamic-form"],
+      "consumers": [
+        "accessibility",
+        "translation",
+        "dynamic-form"
+      ],
       "status": "declared"
     },
     {
@@ -66,14 +83,19 @@
       "surface": "workflow-editor",
       "additive": "append",
       "mutates": "own-subtree",
-      "requiresCapability": ["workflow-editor"],
+      "requiresCapability": [
+        "workflow-editor"
+      ],
       "payload": {
         "id": "string (kebab-case, unique)",
         "labelKey": "message key (<slot>.<name>)",
         "appliesTo": "string ('node' | 'selection' | 'canvas' | a node type name)",
         "run": "function(context) -> void | Promise<void> (must not mutate foreign state)"
       },
-      "consumers": ["ai-assistant", "node-legos"],
+      "consumers": [
+        "ai-assistant",
+        "node-legos"
+      ],
       "status": "declared"
     },
     {
@@ -82,13 +104,17 @@
       "surface": "dialogs",
       "additive": "append",
       "mutates": "own-subtree",
-      "requiresCapability": ["dialogs"],
+      "requiresCapability": [
+        "dialogs"
+      ],
       "payload": {
         "id": "string (kebab-case, unique)",
         "dialog": "string (dialog kind it handles)",
         "render": "function(ctx) -> void (owns the subtree it mounts)"
       },
-      "consumers": ["feature-legos"],
+      "consumers": [
+        "feature-legos"
+      ],
       "status": "declared"
     },
     {
@@ -97,13 +123,19 @@
       "surface": "notifications",
       "additive": "wrap",
       "mutates": "own-subtree",
-      "requiresCapability": ["notifications"],
+      "requiresCapability": [
+        "notifications"
+      ],
       "payload": {
         "id": "string (kebab-case, unique)",
         "kind": "string ('info' | 'success' | 'warning' | 'error' | push event name)",
         "render": "function(notification, next) -> void (may wrap the default rendering via next)"
       },
-      "consumers": ["notification", "translation", "accessibility"],
+      "consumers": [
+        "notification",
+        "translation",
+        "accessibility"
+      ],
       "status": "declared"
     },
     {
@@ -112,13 +144,19 @@
       "surface": "error-surfaces",
       "additive": "wrap",
       "mutates": "own-subtree",
-      "requiresCapability": ["error-surfaces"],
+      "requiresCapability": [
+        "error-surfaces"
+      ],
       "payload": {
         "id": "string (kebab-case, unique)",
         "kinds": "string[] (FrontendError kinds this handler covers, e.g. ['unsupported','validation'])",
         "render": "function(frontendError, next) -> void (may wrap the default rendering via next)"
       },
-      "consumers": ["translation", "accessibility", "notification"],
+      "consumers": [
+        "translation",
+        "accessibility",
+        "notification"
+      ],
       "status": "declared"
     },
     {
@@ -127,12 +165,16 @@
       "surface": "error-surfaces",
       "additive": "append",
       "mutates": "none",
-      "requiresCapability": ["error-surfaces"],
+      "requiresCapability": [
+        "error-surfaces"
+      ],
       "payload": {
         "namespace": "string (the registering capability's message namespace)",
         "catalog": "createMessageCatalog({ locale, namespace, entries }) — every key must be <slot>.<name> with a slot from MESSAGE_SLOTS"
       },
-      "consumers": ["translation"],
+      "consumers": [
+        "translation"
+      ],
       "status": "declared"
     },
     {
@@ -141,12 +183,17 @@
       "surface": "navigation",
       "additive": "read",
       "mutates": "none",
-      "requiresCapability": ["navigation"],
+      "requiresCapability": [
+        "navigation"
+      ],
       "payload": {
         "locale": "string (supported locale code; resolveLocale normalizes BCP-47 tags)",
         "direction": "'ltr' | 'rtl' (ar is rtl — direction metadata comes from the locale model, never from the component)"
       },
-      "consumers": ["translation", "accessibility"],
+      "consumers": [
+        "translation",
+        "accessibility"
+      ],
       "status": "declared"
     },
     {
@@ -155,11 +202,15 @@
       "surface": "navigation",
       "additive": "override-named",
       "mutates": "own-subtree",
-      "requiresCapability": ["navigation"],
+      "requiresCapability": [
+        "navigation"
+      ],
       "payload": {
         "tokens": "Record<string, string> (named design tokens only; no selector-level patching of the stock bundle)"
       },
-      "consumers": ["theme"],
+      "consumers": [
+        "theme"
+      ],
       "status": "declared"
     },
     {
@@ -168,14 +219,18 @@
       "surface": "navigation",
       "additive": "append",
       "mutates": "none",
-      "requiresCapability": ["navigation"],
+      "requiresCapability": [
+        "navigation"
+      ],
       "payload": {
         "id": "string (kebab-case, unique)",
         "titleKey": "message key (<slot>.<name>)",
         "keywords": "string[] (optional)",
         "run": "function(context) -> void | Promise<void>"
       },
-      "consumers": ["search"],
+      "consumers": [
+        "search"
+      ],
       "status": "declared"
     },
     {
@@ -184,22 +239,166 @@
       "surface": "workflow-editor",
       "additive": "append",
       "mutates": "own-subtree",
-      "requiresCapability": ["workflow-editor"],
+      "requiresCapability": [
+        "workflow-editor"
+      ],
       "payload": {
         "id": "string (kebab-case, unique)",
         "mount": "function(container, context) -> void (receives its own container element)",
         "context": "object (read-only view of the workflow/selection)"
       },
-      "consumers": ["ai-assistant"],
+      "consumers": [
+        "ai-assistant"
+      ],
+      "status": "declared"
+    },
+    {
+      "id": "ui:search:provider",
+      "title": "Search result provider",
+      "surface": "navigation",
+      "additive": "append",
+      "mutates": "none",
+      "requiresCapability": [
+        "navigation"
+      ],
+      "payload": {
+        "id": "string (kebab-case, unique)",
+        "titleKey": "message key (<slot>.<name>)",
+        "kind": "string (workflow | node | command | credential | …)",
+        "query": "function(query, context) -> Promise<SearchResult[]>",
+        "rank": "number (optional — results merge by rank, then id)"
+      },
+      "consumers": [
+        "search"
+      ],
+      "status": "declared"
+    },
+    {
+      "id": "ui:accessibility:annotate",
+      "title": "Accessibility annotation",
+      "surface": "error-surfaces",
+      "additive": "wrap",
+      "mutates": "attributes-only",
+      "requiresCapability": [
+        "error-surfaces"
+      ],
+      "payload": {
+        "surface": "declared surface id",
+        "selector": "string (element inside that surface's own subtree)",
+        "attributes": "Record<string, string> (aria-* / role / tabindex only)",
+        "labelKey": "message key (<slot>.<name>) for accessible names"
+      },
+      "consumers": [
+        "accessibility"
+      ],
+      "status": "declared",
+      "attributeWhitelist": [
+        "aria-*",
+        "role",
+        "tabindex",
+        "lang",
+        "dir"
+      ],
+      "never": [
+        "text content",
+        "styles or layout",
+        "removing or reordering nodes",
+        "another extension or surface subtree"
+      ]
+    },
+    {
+      "id": "ui:document:format",
+      "title": "Document format handler (import / export)",
+      "surface": "workflow-editor",
+      "additive": "append",
+      "mutates": "none",
+      "requiresCapability": [
+        "workflow-editor"
+      ],
+      "payload": {
+        "id": "string (kebab-case, unique)",
+        "titleKey": "message key (<slot>.<name>)",
+        "mime": "string (e.g. application/json)",
+        "direction": "import | export | both",
+        "parse": "function(text, context) -> Promise<Document> (import only)",
+        "serialize": "function(document, context) -> Promise<string> (export only)"
+      },
+      "consumers": [
+        "import-export"
+      ],
       "status": "declared"
     }
   ],
   "futureConsumers": [
-    { "id": "translation", "title": "Translation LEGO", "hooks": ["ui:message:catalog", "ui:locale:switch", "ui:error:render", "ui:nav:item", "ui:settings:section", "ui:notification:render"], "status": "not-implemented" },
-    { "id": "accessibility", "title": "Accessibility LEGO", "hooks": ["ui:error:render", "ui:notification:render", "ui:form:field", "ui:locale:switch"], "status": "not-implemented" },
-    { "id": "theme", "title": "Theme LEGO", "hooks": ["ui:theme:tokens"], "status": "not-implemented" },
-    { "id": "search", "title": "Search LEGO", "hooks": ["ui:command:register", "ui:nav:item"], "status": "not-implemented" },
-    { "id": "ai-assistant", "title": "AI Assistant LEGO", "hooks": ["ui:assistant:panel", "ui:node:menu-item"], "status": "not-implemented" },
-    { "id": "notification", "title": "Notification LEGO", "hooks": ["ui:notification:render", "ui:error:render"], "status": "not-implemented" }
+    {
+      "id": "translation",
+      "title": "Translation LEGO",
+      "hooks": [
+        "ui:message:catalog",
+        "ui:locale:switch",
+        "ui:error:render",
+        "ui:nav:item",
+        "ui:settings:section",
+        "ui:notification:render"
+      ],
+      "status": "not-implemented"
+    },
+    {
+      "id": "accessibility",
+      "title": "Accessibility LEGO",
+      "hooks": [
+        "ui:accessibility:annotate",
+        "ui:error:render",
+        "ui:notification:render",
+        "ui:form:field"
+      ],
+      "status": "not-implemented"
+    },
+    {
+      "id": "theme",
+      "title": "Theme LEGO",
+      "hooks": [
+        "ui:theme:tokens"
+      ],
+      "status": "not-implemented"
+    },
+    {
+      "id": "search",
+      "title": "Search LEGO",
+      "hooks": [
+        "ui:search:provider",
+        "ui:command:register",
+        "ui:nav:item"
+      ],
+      "status": "not-implemented"
+    },
+    {
+      "id": "ai-assistant",
+      "title": "AI Assistant LEGO",
+      "hooks": [
+        "ui:assistant:panel",
+        "ui:node:menu-item"
+      ],
+      "status": "not-implemented"
+    },
+    {
+      "id": "notification",
+      "title": "Notification LEGO",
+      "hooks": [
+        "ui:notification:render",
+        "ui:error:render"
+      ],
+      "status": "not-implemented"
+    },
+    {
+      "id": "import-export",
+      "title": "Import / Export LEGO",
+      "hooks": [
+        "ui:document:format",
+        "ui:dialog:render",
+        "ui:notification:render"
+      ],
+      "status": "not-implemented"
+    }
   ]
 }

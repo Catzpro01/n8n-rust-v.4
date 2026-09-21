@@ -31,7 +31,7 @@ export const FRONTEND_BOOT_GLOBAL = '__N8N_LEGO_FRONTEND__';
  * @param {{ name: string, version: string, referenceVersion?: string }} init.app
  * @param {{ editorPackage: string, editorVersion: string, framework: string, frameworkIsolated: boolean, basePath: string, restEndpoint: string }} init.ui
  */
-export function buildBootPayload({ registry, app, ui }) {
+export function buildBootPayload({ registry, subLegos = null, app, ui }) {
   const descriptor = registry.descriptor();
   const payload = {
     contractVersion: CONTRACT_VERSION,
@@ -54,6 +54,7 @@ export function buildBootPayload({ registry, app, ui }) {
     errorKinds: [...ERROR_KINDS],
     errorCodes: Object.values(ERROR_CODES),
     surfaces: descriptor.surfaces,
+    subLegos: subLegos ? subLegos.toBootView() : [],
     extensionPoints: descriptor.extensionPoints,
     capabilities: descriptor.capabilities,
   };

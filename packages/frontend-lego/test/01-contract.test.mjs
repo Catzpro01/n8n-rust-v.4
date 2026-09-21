@@ -125,7 +125,17 @@ test('the extension-point catalog matches the contract document row for row', ()
     assert.match(point.id, /^ui:[a-z-]+:[a-z-]+$/, `${point.id} must be namespaced ui:<area>:<name>`);
     assert.ok(CONTRACT_DOC.includes(`\`${point.id}\``), `extension point ${point.id} missing from the contract document`);
     assert.ok(['append', 'wrap', 'replace-own', 'read', 'override-named'].includes(point.additive), `${point.id} has an unknown additive mode`);
-    assert.ok(['none', 'own-subtree'].includes(point.mutates), `${point.id} may only mutate its own subtree or nothing`);
+    assert.ok(['none', 'own-subtree', 'attributes-only'].includes(point.mutates), `${point.id} may only mutate its own subtree, attributes, or nothing`);
+    if (point.mutates === 'attributes-only') {
+      // An annotation hook touches a surface it does not own, so the vocabulary it
+      // may use is enumerated — and text, layout and node structure stay off limits
+      // for everyone but the surface itself.
+      assert.ok(Array.isArray(point.attributeWhitelist) && point.attributeWhitelist.length > 0, `${point.id} must enumerate the attributes it may set`);
+      for (const attribute of point.attributeWhitelist) {
+        assert.match(attribute, /^(aria-\*|role|tabindex|lang|dir|title|alt)$/, `${point.id} may not set "${attribute}"`);
+      }
+      assert.ok(Array.isArray(point.never) && point.never.length >= 3, `${point.id} must state what it never touches`);
+    }
     assert.ok(point.status === 'declared', `${point.id} is not implemented in P2.5 — status must stay "declared"`);
   }
   const docs = manifests.extensionPoints.filter((point) => point.id === 'ui:message:catalog' || point.id === 'ui:locale:switch');
@@ -155,10 +165,23 @@ test('the boot payload exposes exactly the declared fields, in order', () => {
 
 test('the boot payload stays inside its size budget', () => {
   // The descriptor rides in the served index.html (no-store, so it is re-fetched
-  // on every document load). Budget: 24 KB base64 — enough for the full catalog,
-  // small enough that it cannot quietly become a second application bundle.
+  // on every document load). Budget: 32 KB base64 — enough for the full catalogs
+  // (12 surfaces, 15 hooks, 19 sub-LEGOs), small enough that it cannot quietly
+  // become a second application bundle.
   const encoded = Buffer.from(JSON.stringify(lego.bootPayload), 'utf8').toString('base64').length;
-  assert.ok(encoded < 24 * 1024, `boot descriptor is ${encoded} bytes base64 — over budget, trim it or raise the budget deliberately`);
+  assert.ok(encoded < 32 * 1024, `boot descriptor is ${encoded} bytes base64 — over budget, trim it or raise the budget deliberately`);
+});
+
+test('the boot payload publishes the sub-LEGO hierarchy, not its internals', () => {
+  const keys = Object.keys(lego.bootPayload);
+  assert.ok(keys.includes('subLegos'), 'the hierarchy travels with the descriptor');
+  assert.deepEqual(keys.indexOf('surfaces') < keys.indexOf('subLegos'), true, 'surfaces come first (stable field order)');
+  const published = lego.bootPayload.subLegos;
+  assert.ok(published.length >= 12, 'the declared units are published');
+  assert.ok(published.some((entry) => entry.parentId !== null), 'at least one nested unit');
+  for (const entry of published) {
+    assert.deepEqual(Object.keys(entry).sort(), ['id', 'owner', 'parentId', 'ports', 'status', 'surface', 'version']);
+  }
 });
 
 test('the locale model declares the six locales, Arabic RTL, and no dictionary', () => {

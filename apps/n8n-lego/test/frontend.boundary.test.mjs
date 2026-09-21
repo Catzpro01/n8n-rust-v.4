@@ -122,6 +122,28 @@ test('the frontend LEGO is present and loaded by the app', () => {
   assert.equal(description.editorVersion, '2.9.4');
 });
 
+test('the descriptor carries the sub-LEGO hierarchy, never its internals', () => {
+  const description = started.frontend.describe();
+  assert.equal(description.subLegos, 19, 'the declared units are published');
+  assert.ok(description.subLegoDepth >= 2, 'at least three levels (settings.localization.rtl)');
+
+  const published = started.frontend.subLegos.toBootView();
+  const byId = new Map(published.map((entry) => [entry.id, entry]));
+  assert.equal(byId.get('settings.localization.rtl').parentId, 'settings.localization');
+  assert.deepEqual(byId.get('workflow-editor.node-panel').ports, ['ui:panel:selection', 'ui:panel:parameters']);
+
+  // A parent is always published before its children (the hierarchy is walkable
+  // in one pass without a lookup table).
+  const seen = new Set();
+  for (const entry of published) {
+    if (entry.parentId !== null) assert.ok(seen.has(entry.parentId), `${entry.id} came before its parent`);
+    seen.add(entry.id);
+  }
+  const serialized = JSON.stringify(published);
+  assert.equal(serialized.includes('src/sub-legos'), false, 'private areas are never published');
+  assert.equal(serialized.includes('internals'), false);
+});
+
 test('GET /rest/frontend/bootstrap requires a session', async () => {
   const anonymous = await api('/rest/frontend/bootstrap', { headers: { cookie: '' } });
   assert.equal(anonymous.status, 401);
@@ -147,6 +169,8 @@ test('GET /rest/frontend/bootstrap answers the descriptor in the standard envelo
     assert.ok(payload.surfaces.some((surface) => surface.id === id), `surface ${id} must be discoverable`);
   }
   assert.ok(payload.extensionPoints.some((point) => point.id === 'ui:message:catalog'), 'the Translation LEGO insertion point must be discoverable');
+  assert.equal(payload.subLegos.length, 19, 'the nested units are discoverable over HTTP, not only in-process');
+  assert.ok(payload.subLegos.some((unit) => unit.id === 'settings.localization' && unit.parentId === 'settings'), 'the translation host unit is declared');
   assert.deepEqual(payload.locales.rtl, ['ar']);
   assert.ok(payload.errorCodes.includes('frontend.capability.unsupported'));
   assert.equal(payload.ui.frameworkIsolated, true);
@@ -228,6 +252,15 @@ test('the descriptor is deterministic across requests (no per-request state)', a
   const second = await api('/rest/frontend/bootstrap');
   assert.equal(JSON.stringify(first.body), JSON.stringify(second.body));
   assert.equal(decodeBootPayload(JSON.stringify(first.body.data) && Buffer.from(JSON.stringify(first.body.data)).toString('base64')).contractVersion, '1.0.0');
+});
+
+test('the app loads the LEGO through its entry point only', async () => {
+  const { FRONTEND_PATH } = await import('../src/frontend.mjs');
+  const source = (await import('node:fs')).readFileSync(FRONTEND_PATH, 'utf8');
+  assert.match(FRONTEND_PATH, /frontend-lego\/index\.mjs$/);
+  const specifiers = [...source.matchAll(/from\s+['"]([^'"]+)['"]/g)].map((match) => match[1]);
+  assert.ok(specifiers.length > 0);
+  for (const specifier of specifiers) assert.match(specifier, /^\.\/src\//);
 });
 
 test('the frontend LEGO introduces no backend coupling', async () => {
