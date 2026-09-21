@@ -27,7 +27,10 @@ on:
     paths:
       - 'apps/n8n-lego/**'
       - 'packages/frontend-lego/**'
-      - 'contracts/frontend.contract.md'
+      # The frontend contracts and the .ai knowledge pack: the package suite fails
+      # on drift, so a change that only touches them must still run the gates.
+      - 'contracts/frontend*.contract.md'
+      - '.ai/**'
       - 'tests/e2e/**'
       - 'scripts/release.sh'
       - 'package.json'
@@ -37,7 +40,10 @@ on:
     paths:
       - 'apps/n8n-lego/**'
       - 'packages/frontend-lego/**'
-      - 'contracts/frontend.contract.md'
+      # The frontend contracts and the .ai knowledge pack: the package suite fails
+      # on drift, so a change that only touches them must still run the gates.
+      - 'contracts/frontend*.contract.md'
+      - '.ai/**'
       - 'tests/e2e/**'
       - 'scripts/release.sh'
       - 'package.json'
