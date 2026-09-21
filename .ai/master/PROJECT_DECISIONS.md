@@ -21,10 +21,15 @@
 
 ## Cross-agent arbitration
 
-Agent 1 maintains the frontend side of this record on `arena/01a0c53e-n8n-rust-v-4`
-at `bdd0f1d2`. Both sides use the same `XA-*` ids.
+Agent 1 maintains the frontend side of this record on `arena/01a0c53e-n8n-rust-v-4`.
+Both sides use the same `XA-*` ids.
 
-**Inspection:** read-only via git fetch; NOT merged, NOT cherry-picked
+**Current repository state:** `c1eca8cc` — the frontend
+branch has been reconciled into this one from its tip `8c299609`.
+
+**Historical evidence commit:** `bdd0f1d2` —
+read-only via git fetch; NOT merged, NOT cherry-picked. Kept as the evidence the original finding was
+made against; it is not the current state.
 
 **Finding:** Agent 1's vocabulary lock consumes backend vocabulary and does not define a competing one. Its .ai/index/capabilities.json quotes backend values with provenance, carries publicationPending records where the backend has not published, and refuses undeclared words rather than accepting synonyms.
 

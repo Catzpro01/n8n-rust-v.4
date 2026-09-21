@@ -161,7 +161,7 @@ Run: `N8N_LEGO_CATALOG_DIR=/tmp/p26-catalog npm run lego:gate`
 | Foundation selftest | **15/15** (F1–F17) |
 | Capability conformance | **OK** — 23 REST features vs 82 capabilities |
 | Scale-out readiness | **OK** — every finding declared and owned; still **NOT READY** |
-| `.ai` sync | **OK** — 63 files |
+| `.ai` sync | **OK** — generated pack 63; curated 37; total `.ai` 100 |
 | Backend suite | **397 / 397** |
 | Frontend LEGO suite | **283 / 283** |
 
@@ -193,12 +193,16 @@ engineering-operations plane and do not gate the product.
 
 ## 10. Open decision IDs
 
-18 recorded, **12 open**: **XA-5** (open-for-agent-2 — `lego.*` codes vs the frontend degradation
-vocabulary), and **XA-8, XA-9, XA-10, XA-11, XA-12, XA-13, XA-14, XA-15, XA-16, XA-17, XA-18** — all
-`open-for-manager`. They cover the AI permission namespace, who publishes `foundation.json`,
-application-provider permission naming, skill/memory/workspace ownership, translation ownership, the
-AI node-drafting capability, whether MCP needs its own capability, token/cost publication, and the
-external-action families. Register: `docs/n8n-lego/decisions/cross-agent-decisions.json`.
+18 recorded, **7 resolved, 11 open**. All 11 open are `open-for-manager`: **XA-8, XA-9, XA-10,
+XA-11, XA-12, XA-13, XA-14, XA-15, XA-16, XA-17, XA-18**. They cover the AI permission namespace, who
+publishes `foundation.json`, application-provider permission naming, skill/memory/workspace
+ownership, translation ownership, the AI node-drafting capability, whether MCP needs its own
+capability, token/cost publication, and the external-action families. Register:
+`docs/n8n-lego/decisions/cross-agent-decisions.json`.
+
+**XA-5 is resolved** (see §12). The earlier version of this report listed it as open, which
+contradicted the claim elsewhere that F16 had closed it. The contradiction is removed: the codes were
+verified as genuinely published, and the register now says `resolved`.
 
 ---
 
@@ -218,3 +222,129 @@ external-action families. Register: `docs/n8n-lego/decisions/cross-agent-decisio
 - **No frontend rewrite.** Agent-1's architecture was adopted, not reinterpreted.
 - **`main` untouched.** All work is on `arena/01a0c521-n8n-rust-v-4`. No merge to `main` was made or
   attempted, per the standing instruction.
+
+---
+
+## 12. Final record-consistency cleanup (follow-up to `c1eca8cc`)
+
+Documentation and state consistency only. No runtime code was added.
+
+### 12.1 XA-5 — verified, then closed
+
+The register said `open-for-agent-2` while the report claimed F16 had closed it. The two could not
+both be right, so the backend declarations were checked directly rather than assumed:
+
+| Check | Result |
+| --- | --- |
+| `errors.contract.json` version | **1.1.0**, 35 codes |
+| Codes in the `lego` namespace | **11** |
+| The four codes named in the original finding | all four **published** |
+| Registry rule (namespace must equal a declared `errorNamespace`) | satisfied — `lego-foundation` declares `errorNamespace: "lego"` |
+| F16 enforcement | live — deleting `lego.capability_unavailable` made the foundation gate report `F16 error-code-unpublished`; restoring it returned the gate to OK |
+
+The four codes are `lego.capability_unavailable`, `lego.version_incompatible`,
+`lego.dependency_disabled`, `lego.migration_required`. All eleven: the four above plus
+`lego.access_denied`, `lego.backpressure`, `lego.cancelled`, `lego.deadline_exceeded`,
+`lego.interaction_mismatch`, `lego.operation_unsupported`, `lego.unavailable`.
+
+XA-5 is therefore **`resolved`**, with the exact declaration recorded in the register and
+`resolvedIn: c1eca8cc`. The original P2.10 finding is **kept**, renamed to `historicalFinding` with
+its evidence under `historicalEvidenceCommit: 6f7b66da` — it explains why XA-5 existed and is not
+rewritten to look current.
+
+A new test (`XA-5 is only recorded as resolved while the lego.* codes are really published`) fails if
+the register claims `resolved` while any of the four codes is unpublished or the `lego` namespace is
+undeclared. Falsified: removing `lego.migration_required` produced
+*"XA-5 is marked resolved but 'lego.migration_required' is not published"*.
+
+### 12.2 Named `.ai` counters
+
+`in sync = 63 files` was ambiguous — 63 is the generated pack, not the total. The counters are now
+named, computed from the tree, and identical in the generator, the `--check` output and the master
+index:
+
+| Counter | Count |
+| --- | --- |
+| Generated pack | **63** |
+| Curated (owner agent-1) | **37** |
+| **Total `.ai`** | **100** |
+| `.ai/master` (top level, canonical) | 29 |
+| `.ai/master/frontend` (consumption views) | 10 |
+| Retrieval pack (`packFiles()`, budget-enforced) | 10 |
+
+`npm run lego:ai` prints `Generated pack: 63; curated: 37 (owner agent-1, preserved); total .ai: 100.`
+and `--check` prints the same three counters. The master index publishes the table above; because the
+index is itself generated, the builders emit placeholders that are substituted once every file
+exists, so the published numbers cannot drift from the tree that carries them. A test
+(`the published .ai counters equal the tree they describe`) compares each published counter against a
+filesystem walk. Falsified: publishing 64 instead of 63 fails it.
+
+### 12.3 Historical evidence vs current state
+
+Historical commits are kept as evidence and explicitly labelled, never rewritten:
+
+| Field | Meaning | Value |
+| --- | --- | --- |
+| `currentRepositoryState` | the reconciled state now | **`c1eca8cc`** |
+| `reconciledFromCommit` | agent-1 tip that was merged | `8c299609` |
+| `historicalEvidenceCommit` (XA-5, P2.11 evidence) | what the finding was verified against | `6f7b66da` |
+| `historicalEvidenceCommit` (agent-1 baseline) | read-only inspection before reconciliation | `bdd0f1d2` |
+| Protected main baseline | untouched | `cb71dbb2` |
+
+`CURRENT_STATUS.md` previously carried the row *"Agent 1 head (inspected, not merged) `bdd0f1d2`"*,
+which became misleading once the branch was merged. Its baselines table now separates the current
+state from the historical evidence commit and says so in prose. `backend-lego-p210.json` and
+`backend-lego-p211.json` gained a `baseCommitRole` field naming their `baseCommit` as a historical
+evidence commit, alongside `currentRepositoryState`.
+
+### 12.4 Canonical counts, verified from the current tree
+
+| Fact | Required | Read from tree |
+| --- | --- | --- |
+| Core domains | 26 | **26** |
+| AI LEGO | 15 | **15** |
+| Capabilities | 82 | **82** |
+| Operations | 139 | **139** |
+| Error codes | 35 | **35** (contract 1.1.0) |
+| Locked contracts | 14 | **14** |
+| Foundation rules | F1–F17 | **F1–F17** |
+| Scale-out | NOT READY | **NOT READY** — 3 exceptions marked `blocking`, all in `src/store.mjs`, covering 2 distinct class-A root causes (S1 is the same module-scope construct as S2) |
+
+No stale `25 domains` or `173 operations` claim survives. The only occurrences of 173 are corrective
+text explicitly stating the figure was wrong (the ten frontend views saying *"the count is 139 (not
+173)"*, and the P2.11 evidence recording it as an arithmetic error in prose). A test asserts this
+across the whole `.ai/` tree.
+
+### 12.5 Product scope
+
+Searched the product surface — `manifest/`, `src/lego/contracts/`, `contracts/`, and the canonical
+`.ai/master/*.md` — for Arena Agent, Arena Manager, Arena Worker, Arena Bridge, Supabase development
+control plane and development workforce gateway.
+
+**Product manifests and contracts: zero hits.** The remaining mentions are confined to
+`PROJECT_WORKFORCE_ORCHESTRATION.md`, which is the engineering-operations document and opens by
+stating that product/runtime agents and development-workforce agents are not the same architecture
+and neither may import the other's authority model, and to BL-6.
+
+BL-6 concerns the unverified Supabase/VPS control planes. Its `plane` was recorded in the data but
+not rendered, so a reader of `KNOWN_BLOCKERS.md` could not tell it was non-product. The blockers
+document now renders a **Plane** row for every blocker and explains the distinction: BL-1/2/3 are
+`product`, BL-4/5/6 are `engineering-operations`. Governance data stays outside the product manifest
+tree at `docs/engineering-operations/workforce-governance.json`.
+
+### 12.6 Required final statement
+
+- **No AI runtime implemented.** No Agent Machine runtime, Memory runtime, Skill runtime, Workspace
+  executor, MCP runtime, Runtime Adapter, Node Creator runtime, Translation runtime, inference
+  provider, or token/context optimizer was written. This cleanup changed documents, a decision
+  record, generator text and tests only.
+- **Rust untouched.** No file under `crates/` was modified.
+- **Scale-out NOT READY.** Three `blocking` exceptions remain in `src/store.mjs` — the process-local
+  execution-id counter (S1/S2) and local JSON as the system of record (S3) — recorded as blockers
+  BL-1, BL-2 and BL-3. No blocker was weakened, and the manifest verdict still reads *"NOT
+  scale-out ready"*.
+- **`main` untouched** — still `cb71dbb2`.
+- **Reconciliation complete** at `c1eca8cc`, with this cleanup as a follow-up commit.
+- **Decision register consistent with current code** — XA-5 resolved and machine-checked against the
+  contract; report and register agree; 7 resolved, 11 open.
+- **`.ai` counts explicitly named** — generated pack 63, curated 37, total 100, and asserted by test.

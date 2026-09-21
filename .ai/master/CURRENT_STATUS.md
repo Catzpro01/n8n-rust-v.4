@@ -12,9 +12,15 @@ document is right and the prose is stale.
 | --- | --- |
 | Protected main baseline | `cb71dbb201d635b15b49933764c2c2336e745809` |
 | Agent 1 branch | `arena/01a0c53e-n8n-rust-v-4` |
-| Agent 1 head (inspected, not merged) | `bdd0f1d2d6c8d7bc1c1ff3d881ddc2b3bd93713d` |
 | Agent 2 branch | `arena/01a0c521-n8n-rust-v-4` |
+| **Current repository state** | `c1eca8cc` (reconciled) |
+| Reconciled from agent-1 tip | `8c299609` |
+| Historical evidence commit (P2.11 finding) | `bdd0f1d2d6c8d7bc1c1ff3d881ddc2b3bd93713d` |
 | Current phase | P2.11 |
+
+A historical evidence commit is the state a past finding was verified against. It
+is kept deliberately and is **not** rewritten to look current — the current state
+is the row marked as such.
 
 ## Counts
 

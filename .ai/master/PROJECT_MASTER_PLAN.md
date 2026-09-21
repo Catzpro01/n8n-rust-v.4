@@ -52,7 +52,17 @@ authoritative declaration.
 
 ## Generated vs curated
 
-`.ai/` holds two kinds of file and the difference matters:
+`.ai/` holds two kinds of file and the difference matters. The named counters —
+the same ones `npm run lego:ai` prints — are:
+
+| Counter | Count |
+| --- | --- |
+| Generated pack | 63 |
+| Curated | 37 |
+| **Total `.ai`** | **100** |
+| `.ai/master` (top level, canonical) | 29 |
+| `.ai/master/frontend` (consumption views) | 10 |
+| Retrieval pack (`packFiles()`, budget-enforced) | 10 |
 
 - **Generated** (most of the tree, including the master documents listed above
   as manifest-derived). Editing one by hand is pointless — the next

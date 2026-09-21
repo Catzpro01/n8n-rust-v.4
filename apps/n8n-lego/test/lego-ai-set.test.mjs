@@ -625,3 +625,82 @@ test('no stale 173-operation or 25-domain claim survives anywhere in .ai/', () =
   walk(aiRoot);
   assert.deepEqual(offenders, []);
 });
+
+test('the published .ai counters equal the tree they describe', () => {
+  // P2.11 final cleanup. "in sync = 63 files" was ambiguous: 63 is the generated
+  // pack, not the total, and a reader had no way to tell which number they were
+  // being given. The counters are now named and computed from the tree, so this
+  // test is what stops the published table becoming a remembered figure.
+  const aiRoot = resolve(HERE, '..', '..', '..', '.ai');
+  const walk = (dir, prefix = '') => {
+    const out = [];
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) out.push(...walk(join(dir, entry.name), rel));
+      else out.push(rel);
+    }
+    return out;
+  };
+  const onDisk = walk(aiRoot);
+
+  const source = readFileSync(resolve(HERE, '..', '..', '..', 'tools', 'lego', 'ai-pack.mjs'), 'utf8');
+  const block = source.slice(source.indexOf('const CURATED = Object.freeze({'));
+  const curated = [...block.slice(0, block.indexOf('});')).matchAll(/'([^']+\.(?:md|json))'/g)].map((m) => m[1]);
+
+  for (const file of curated) {
+    assert.ok(onDisk.includes(file), `curated file '${file}' is declared but missing from .ai/`);
+  }
+  const generated = onDisk.filter((file) => !curated.includes(file));
+
+  const index = readFileSync(join(aiRoot, 'master', 'PROJECT_MASTER_PLAN.md'), 'utf8');
+  // Parse the published counter table by splitting rows, not by building a
+  // regex per label: the labels contain backticks and asterisks, and escaping
+  // them into a constructed RegExp is how this test would quietly stop matching.
+  const counters = new Map();
+  for (const line of index.split('\n')) {
+    const cells = line.split('|').map((part) => part.trim());
+    if (cells.length !== 4) continue;
+    const value = Number(cells[2].replaceAll('*', ''));
+    if (Number.isNaN(value)) continue;
+    counters.set(cells[1].replaceAll('*', '').replaceAll('`', ''), value);
+  }
+  const cell = (label) => {
+    assert.ok(counters.has(label), `the master index publishes no '${label}' counter`);
+    return counters.get(label);
+  };
+  assert.equal(cell('Generated pack'), generated.length, 'the published generated count is wrong');
+  assert.equal(cell('Curated'), curated.length, 'the published curated count is wrong');
+  assert.equal(cell('Total .ai'), onDisk.length, 'the published total is wrong');
+  assert.equal(generated.length + curated.length, onDisk.length, 'every .ai file is generated or curated');
+
+  const masterTop = onDisk.filter((f) => f.startsWith('master/') && f.split('/').length === 2);
+  const views = onDisk.filter((f) => f.startsWith('master/frontend/'));
+  assert.equal(cell('.ai/master (top level, canonical)'), masterTop.length);
+  assert.equal(cell('.ai/master/frontend (consumption views)'), views.length);
+});
+
+test('XA-5 is only recorded as resolved while the lego.* codes are really published', () => {
+  // The decision register and the contract must not be able to disagree. If
+  // someone unpublishes a code, this fails rather than leaving a register that
+  // claims a closed issue.
+  const root = resolve(HERE, '..', '..', '..');
+  const register = JSON.parse(readFileSync(join(root, 'docs', 'n8n-lego', 'decisions', 'cross-agent-decisions.json'), 'utf8'));
+  const xa5 = register.decisions.find((entry) => entry.id === 'XA-5');
+  assert.ok(xa5, 'XA-5 must stay in the register as history even once resolved');
+  if (xa5.status !== 'resolved') return;
+
+  const contract = JSON.parse(readFileSync(join(HERE, '..', 'src', 'lego', 'contracts', 'errors.contract.json'), 'utf8'));
+  const published = new Set(contract.codes.map((entry) => entry.code));
+  for (const code of ['lego.capability_unavailable', 'lego.version_incompatible',
+    'lego.dependency_disabled', 'lego.migration_required']) {
+    assert.ok(published.has(code), `XA-5 is marked resolved but '${code}' is not published`);
+  }
+  const domains = JSON.parse(readFileSync(join(HERE, '..', 'src', 'lego', 'manifest', 'domains.json'), 'utf8'));
+  assert.ok(
+    domains.domains.some((domain) => domain.errorNamespace === 'lego'),
+    'XA-5 is marked resolved but no domain declares the `lego` error namespace',
+  );
+  assert.ok(xa5.historicalFinding, 'the original P2.10 finding must be kept, not overwritten');
+  assert.ok(xa5.historicalEvidenceCommit, 'the historical evidence commit must stay recorded');
+  assert.ok(xa5.currentRepositoryState, 'a resolved decision must name the state it was verified against');
+});

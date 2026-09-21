@@ -133,16 +133,10 @@
     {
       "id": "XA-5",
       "question": "Are the `lego.*` error codes named by the backend degradation vocabulary published?",
-      "status": "open-for-agent-2",
-      "resolution": null,
-      "finding": "Still unpublished at P2.10. The canonical degradation states name four `lego.*` codes (`lego.capability_unavailable`, `lego.version_incompatible`, `lego.dependency_disabled`, `lego.migration_required`) in their `action` strings, but neither domains.json nor errors.contract.json declares a `lego` namespace: the 24 published codes stay domain-namespaced, and the registry rule still says a code's namespace must equal a domain's declared `errorNamespace`.",
-      "evidence": [
-        "arena/01a0c521 @ 6f7b66da interaction.mjs -> DEGRADATION_STATES actions name lego.* codes",
-        "arena/01a0c521 @ 6f7b66da domains.json + contracts/errors.contract.json -> no `lego` namespace, no lego.* code",
-        "the lock quotes the action strings verbatim (vocabulary.mjs degradation.actions) and test/29 asserts them against the module"
-      ],
+      "status": "resolved",
+      "resolution": "Resolved by publishing the codes, not by removing the names. `contracts/errors.contract.json` went 1.0.0 -> 1.1.0 (a MINOR change: codes were added, none removed or redefined) and now publishes 35 codes, of which 11 are in the `lego` namespace: lego.access_denied, lego.backpressure, lego.cancelled, lego.capability_unavailable, lego.deadline_exceeded, lego.dependency_disabled, lego.interaction_mismatch, lego.migration_required, lego.operation_unsupported, lego.unavailable, lego.version_incompatible. Each carries `retryable` and a `retryRationale`. The registry rule that a code's namespace must equal a domain's declared `errorNamespace` is satisfied: domain `lego-foundation` declares `errorNamespace: \"lego\"`. All four codes named in the original finding (lego.capability_unavailable, lego.version_incompatible, lego.dependency_disabled, lego.migration_required) are published, so the degradation actions in interaction.mjs no longer name a code a consumer cannot look up.",
       "frontendBehaviour": "The frontend quotes the canonical degradation *action* verbatim in the verdict (`degradation.action`) and does not invent a code of its own; its own `frontend.*` codes stay where they are, and an unmapped backend code renders through the message-key model.",
-      "arbiter": "agent-2 publishes the `lego.*` codes (or removes the code names from the degradation actions)",
+      "arbiter": null,
       "blocks": "nothing; the UI shows the action and the reason",
       "owner": "agent-2",
       "affectedDomains": [
@@ -150,13 +144,43 @@
         "frontend"
       ],
       "currentInterpretation": "The frontend quotes the canonical degradation *action* verbatim in the verdict (`degradation.action`) and does not invent a code of its own; its own `frontend.*` codes stay where they are, and an unmapped backend code renders through the message-key model.",
-      "decisionRequired": "agent-2 publishes the `lego.*` codes (or removes the code names from the degradation actions)",
-      "blockingLevel": "low",
+      "decisionRequired": null,
+      "blockingLevel": "none",
       "date": "2026-09-22",
       "references": [
         "arena/01a0c521 @ 6f7b66da interaction.mjs -> DEGRADATION_STATES actions name lego.* codes",
         "arena/01a0c521 @ 6f7b66da domains.json + contracts/errors.contract.json -> no `lego` namespace, no lego.* code",
+        "the lock quotes the action strings verbatim (vocabulary.mjs degradation.actions) and test/29 asserts them against the module",
+        "apps/n8n-lego/src/lego/contracts/errors.contract.json @ c1eca8cc -> version 1.1.0, 35 codes, 11 in the `lego` namespace",
+        "apps/n8n-lego/src/lego/manifest/domains.json @ c1eca8cc -> domain `lego-foundation` declares errorNamespace \"lego\"",
+        "tools/lego/foundation-gate.mjs -> rule F16 `checkErrorCodePublication` scans src/lego/*.mjs and fails on any raised code the contract does not publish",
+        "falsification 2026-09-22: deleting lego.capability_unavailable from the contract made F16 report `error-code-unpublished`; restoring it returned the gate to OK, so the rule is live and not vacuous"
+      ],
+      "historicalFinding": "Still unpublished at P2.10. The canonical degradation states name four `lego.*` codes (`lego.capability_unavailable`, `lego.version_incompatible`, `lego.dependency_disabled`, `lego.migration_required`) in their `action` strings, but neither domains.json nor errors.contract.json declares a `lego` namespace: the 24 published codes stay domain-namespaced, and the registry rule still says a code's namespace must equal a domain's declared `errorNamespace`.",
+      "historicalEvidenceCommit": "6f7b66da",
+      "historicalEvidence": [
+        "arena/01a0c521 @ 6f7b66da interaction.mjs -> DEGRADATION_STATES actions name lego.* codes",
+        "arena/01a0c521 @ 6f7b66da domains.json + contracts/errors.contract.json -> no `lego` namespace, no lego.* code",
         "the lock quotes the action strings verbatim (vocabulary.mjs degradation.actions) and test/29 asserts them against the module"
+      ],
+      "currentRepositoryState": "c1eca8cc",
+      "currentEvidence": [
+        "apps/n8n-lego/src/lego/contracts/errors.contract.json @ c1eca8cc -> version 1.1.0, 35 codes, 11 in the `lego` namespace",
+        "apps/n8n-lego/src/lego/manifest/domains.json @ c1eca8cc -> domain `lego-foundation` declares errorNamespace \"lego\"",
+        "tools/lego/foundation-gate.mjs -> rule F16 `checkErrorCodePublication` scans src/lego/*.mjs and fails on any raised code the contract does not publish",
+        "falsification 2026-09-22: deleting lego.capability_unavailable from the contract made F16 report `error-code-unpublished`; restoring it returned the gate to OK, so the rule is live and not vacuous"
+      ],
+      "enforcedBy": "F16 error-code-unpublished (foundation gate); foundation selftest 15/15",
+      "resolvedIn": "c1eca8cc",
+      "resolvedDate": "2026-09-22",
+      "evidence": [
+        "HISTORICAL (@ 6f7b66da, why XA-5 existed): arena/01a0c521 @ 6f7b66da interaction.mjs -> DEGRADATION_STATES actions name lego.* codes",
+        "HISTORICAL (@ 6f7b66da, why XA-5 existed): arena/01a0c521 @ 6f7b66da domains.json + contracts/errors.contract.json -> no `lego` namespace, no lego.* code",
+        "HISTORICAL (@ 6f7b66da, why XA-5 existed): the lock quotes the action strings verbatim (vocabulary.mjs degradation.actions) and test/29 asserts them against the module",
+        "CURRENT (@ c1eca8cc): apps/n8n-lego/src/lego/contracts/errors.contract.json @ c1eca8cc -> version 1.1.0, 35 codes, 11 in the `lego` namespace",
+        "CURRENT (@ c1eca8cc): apps/n8n-lego/src/lego/manifest/domains.json @ c1eca8cc -> domain `lego-foundation` declares errorNamespace \"lego\"",
+        "CURRENT (@ c1eca8cc): tools/lego/foundation-gate.mjs -> rule F16 `checkErrorCodePublication` scans src/lego/*.mjs and fails on any raised code the contract does not publish",
+        "CURRENT (@ c1eca8cc): falsification 2026-09-22: deleting lego.capability_unavailable from the contract made F16 report `error-code-unpublished`; restoring it returned the gate to OK, so the rule is live and not vacuous"
       ]
     },
     {
@@ -557,7 +581,7 @@
         "arena/01a0c521 @ 6f7b66da contracts/contract-lock.json -> no ai.usage row"
       ]
     },
-{
+    {
       "id": "XA-18",
       "question": "Which contract publishes the external action families - filesystem, terminal/process, project, browser and git?",
       "status": "open-for-manager",

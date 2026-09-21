@@ -1043,7 +1043,17 @@ authoritative declaration.
 
 ## Generated vs curated
 
-\`.ai/\` holds two kinds of file and the difference matters:
+\`.ai/\` holds two kinds of file and the difference matters. The named counters —
+the same ones \`npm run lego:ai\` prints — are:
+
+| Counter | Count |
+| --- | --- |
+| Generated pack | @@GENERATED_COUNT@@ |
+| Curated | ${CURATED.files.length} |
+| **Total \`.ai\`** | **@@TOTAL_COUNT@@** |
+| \`.ai/master\` (top level, canonical) | 29 |
+| \`.ai/master/frontend\` (consumption views) | 10 |
+| Retrieval pack (\`packFiles()\`, budget-enforced) | 10 |
 
 - **Generated** (most of the tree, including the master documents listed above
   as manifest-derived). Editing one by hand is pointless — the next
@@ -1437,10 +1447,15 @@ ${adrRows.join('\n')}
 
 ## Cross-agent arbitration
 
-Agent 1 maintains the frontend side of this record on \`${decisions.agent1Baseline.branch}\`
-at \`${decisions.agent1Baseline.commit.slice(0, 8)}\`. Both sides use the same \`XA-*\` ids.
+Agent 1 maintains the frontend side of this record on \`${decisions.agent1Baseline.branch}\`.
+Both sides use the same \`XA-*\` ids.
 
-**Inspection:** ${decisions.agent1Baseline.inspected}
+**Current repository state:** \`${decisions.agent1Baseline.currentRepositoryState}\` — the frontend
+branch has been reconciled into this one from its tip \`${decisions.agent1Baseline.reconciledFromCommit}\`.
+
+**Historical evidence commit:** \`${decisions.agent1Baseline.historicalEvidenceCommit.slice(0, 8)}\` —
+${decisions.agent1Baseline.historicalEvidenceNote}. Kept as the evidence the original finding was
+made against; it is not the current state.
 
 **Finding:** ${decisions.agent1Baseline.finding}
 
@@ -1682,9 +1697,15 @@ document is right and the prose is stale.
 | --- | --- |
 | Protected main baseline | \`cb71dbb201d635b15b49933764c2c2336e745809\` |
 | Agent 1 branch | \`${decisions?.agent1Baseline.branch ?? '—'}\` |
-| Agent 1 head (inspected, not merged) | \`${decisions?.agent1Baseline.commit ?? '—'}\` |
 | Agent 2 branch | \`arena/01a0c521-n8n-rust-v-4\` |
+| **Current repository state** | \`${decisions?.agent1Baseline.currentRepositoryState ?? '—'}\` (reconciled) |
+| Reconciled from agent-1 tip | \`${decisions?.agent1Baseline.reconciledFromCommit ?? '—'}\` |
+| Historical evidence commit (P2.11 finding) | \`${decisions?.agent1Baseline.historicalEvidenceCommit ?? '—'}\` |
 | Current phase | ${set.phase} |
+
+A historical evidence commit is the state a past finding was verified against. It
+is kept deliberately and is **not** rewritten to look current — the current state
+is the row marked as such.
 
 ## Counts
 
@@ -1743,12 +1764,20 @@ function knownBlockers() {
 
 > ${governance.blockerRule}
 
+> **Plane.** A \`product\` blocker constrains the n8n LEGO product itself. An
+> \`engineering-operations\` blocker constrains how this repository is *built* —
+> the development workforce, its control planes and its arbitration. The latter
+> is not product architecture and never becomes a product requirement, a LEGO
+> domain or a runtime dependency; it is recorded here only so that it is owned
+> and visible. See \`docs/engineering-operations/workforce-governance.json\`.
+
 ${blockers.map((blocker) => `## ${blocker.id} — ${blocker.title}
 
 | | |
 | --- | --- |
 | Severity | **${blocker.severity}** |
 | Status | **${blocker.status}** |
+| Plane | **${blocker.plane ?? 'product'}** |
 | Owner | \`${blocker.owner}\` |
 ${blocker.where ? `| Where | \`${blocker.where}\` |\n` : ''}${blocker.phase ? `| Scheduled | ${blocker.phase} |\n` : ''}${blocker.reference ? `| Reference | ${blocker.reference} |\n` : ''}
 **Consequence:** ${blocker.consequence}
@@ -1975,6 +2004,19 @@ export function generate() {
   for (const [id, recipe] of Object.entries(RECIPES)) {
     files.set(`recipes/${id}.md`, recipeDoc(id, recipe));
   }
+
+  // The master plan states the .ai counters. They can only be known once every
+  // generated file exists, and the master plan is itself one of them — so the
+  // builders emit placeholders and the true totals are substituted here. This
+  // is why the published counts cannot drift from the tree that carries them.
+  const generatedCount = files.size;
+  const totalCount = generatedCount + CURATED.files.length;
+  for (const [name, content] of files) {
+    if (!content.includes('@@GENERATED_COUNT@@') && !content.includes('@@TOTAL_COUNT@@')) continue;
+    files.set(name, content
+      .replaceAll('@@GENERATED_COUNT@@', String(generatedCount))
+      .replaceAll('@@TOTAL_COUNT@@', String(totalCount)));
+  }
   return files;
 }
 
@@ -2096,7 +2138,10 @@ if (isCli) {
   if (process.argv.includes('--check')) {
     const stale = check(files);
     if (stale.length === 0) {
-      process.stdout.write(`OK — .ai/ is in sync with the manifest (${files.size} files).\n`);
+      process.stdout.write(
+        'OK — .ai/ is in sync with the manifest. '
+        + `Generated pack: ${files.size}; curated: ${CURATED.files.length}; total .ai: ${files.size + CURATED.files.length}.\n`,
+      );
       process.exit(0);
     }
     process.stdout.write(`.ai/ is stale — run \`npm run lego:ai\`:\n${stale.map((entry) => `  - ${entry}`).join('\n')}\n`);
@@ -2104,6 +2149,7 @@ if (isCli) {
   }
   writeAll(files);
   process.stdout.write(
-    `Generated ${files.size} file(s) into .ai/ (${CURATED.files.length} curated ${CURATED.owner} file(s) preserved)\n`,
+    `Generated pack: ${files.size}; curated: ${CURATED.files.length} (owner ${CURATED.owner}, preserved); `
+    + `total .ai: ${files.size + CURATED.files.length}.\n`,
   );
 }
