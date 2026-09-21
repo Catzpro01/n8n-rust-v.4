@@ -58,8 +58,9 @@ registry wins and this file is a defect.
 
 ## 5. This change
 
-Adds the master documentation set (`.ai/master/`, **28 documents**, 193,138 B of a 262,144 B budget,
-largest 23,141 B of a 32,768 B per-file cap) with its own gate (`test/30-master-plan.test.mjs`, now
+Adds the master documentation set (`.ai/master/`, **28 documents**, ≈190 KB of a 262,144 B budget (≈228 KB of headroom), largest document ≈23 KB of a
+32,768 B per-file cap — the exact bytes and both limits are asserted by `test/30-master-plan.test.mjs`,
+which is the authority; the figures here are rounded on purpose so they cannot drift) with its own gate (`test/30-master-plan.test.mjs`, now
 18 tests), the 26-domain correction — the domain table is a **generated projection** of `domains.json`
 @ `6f7b66da`, not prose — the platform/deployment strategy (four deployment modes, low-resource and
 Termux viability, STREAM backpressure, the Rust-by-measurement rule), the recorded decision that

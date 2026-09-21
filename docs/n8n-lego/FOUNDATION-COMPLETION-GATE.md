@@ -346,7 +346,7 @@ between local modules, no model call anywhere in this package.**
 ## 21. Master project documentation (durable memory)
 
 The repository — not the chat — is now the memory of the project. `.ai/master/` holds **28 documents**
-(193,138 B of a 262,144 B budget, largest 23,141 B of a 32,768 B per-file cap), deliberately **outside** the
+(≈190 KB of a 262,144 B budget, largest document ≈23 KB of a 32,768 B per-file cap; the exact bytes are asserted by `test/30-master-plan.test.mjs`, which is the authority), deliberately **outside** the
 retrieval pack: they are loaded on purpose through `productContextFor({ kind })` (28 product tasks),
 so no ordinary task pays for them in bytes or attention. `test/30-master-plan.test.mjs` enforces the
 budgets, the reachability of every document, the fifteen official AI/Agent LEGO, and that **every

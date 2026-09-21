@@ -103,3 +103,29 @@ lifecycle · resource profile · security boundary · degradation behaviour · t
 tests) · architecture gate · evidence · documentation · cross-agent reconciliation. Until every box is
 ticked, the frontend renders the honest state — `capability-unavailable`,
 `feature-unsupported` or `optional-absent` — instead of a mock.
+
+## 7. Artifact storage and retention (what the UI may say)
+
+The artifact contract is `ai.artifact` (Agent 2, **contract-only**). Its declared surface, quoted —
+never invented — by the frontend:
+
+| Field group | Declared |
+| :--- | :--- |
+| identity and metadata | `artifactId`, `kind`, `size`, `mime`, `createdAt`, `owner`, `checksum` |
+| retention | `retention`, one of **`ephemeral`, `session`, `retained`, `pinned`** |
+| location | `storageRef` — **opaque**, resolved only by the backend |
+
+Kinds (8, declared): `patch`, `diff`, `log`, `report`, `screenshot`, `file`, `model-output`,
+`simulation-result`.
+
+Rules the frontend obeys:
+
+- The UI renders the declared `retention` value and **names no class of its own**. A product-level
+  vocabulary such as temporary / task / project / durable is a *request*, not a declared class; if a
+  surface genuinely needs the extra granularity, the manager decides it rather than the UI inventing a
+  fifth name (compare XA-18 for the same pattern).
+- `storageRef` is opaque: no credential, no vendor field, no host path is ever rendered from it, and
+  the UI never resolves it itself. Large objects live outside hot memory; events and context carry
+  references, not payloads.
+- When a reference cannot be resolved, the surface renders `artifact-unavailable` with the reason and
+  keeps the artifact's metadata visible rather than fabricating content.
