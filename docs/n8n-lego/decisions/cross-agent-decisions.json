@@ -556,6 +556,43 @@
         "arena/01a0c521 @ 6f7b66da ai-foundation.json -> delegation budget fields are limits, not usage",
         "arena/01a0c521 @ 6f7b66da contracts/contract-lock.json -> no ai.usage row"
       ]
+    },
+{
+      "id": "XA-18",
+      "question": "Which contract publishes the external action families - filesystem, terminal/process, project, browser and git?",
+      "status": "open-for-manager",
+      "resolution": null,
+      "finding": "The registry publishes what may be asked of the backend, not what an agent may do to a host: at P2.10 no local-execution capability exists and `workspace` is planned with contract `0.0.0`. The plan therefore keeps the action families as a request, renders every action surface unavailable, and escalates ownership instead of naming ids nobody publishes.",
+      "evidence": [
+        "arena/01a0c521 @ 6f7b66da domains.json -> 82 capabilities; none match filesystem.*, terminal.*, process.*, browser.* or git.* (only workspace.projects and legacy.projects contain \"project\")",
+        "arena/01a0c521 @ 6f7b66da contracts/contract-lock.json -> no row for filesystem, terminal, a workspace sandbox or an execution boundary",
+        "arena/01a0c521 @ 6f7b66da ai-foundation.json -> toolGateway is contract-only and routes external tools; mcp is an edge adapter; neither declares a local filesystem or terminal capability",
+        "packages/frontend-lego/manifest/capabilities.json -> the six declared frontend AI capabilities invoke no action family"
+      ],
+      "frontendBehaviour": "Every external-action surface renders `capability-unavailable` (a workspace view renders `feature-unsupported`) with the reason until a family is published; the UI names an action only from a declaration, never from the plan document, and no surface implies host access.",
+      "informedBy": "WORKSPACE_AND_EXTERNAL_ACTION_PLAN.md section 2 (the families are a request, not ids) and section 3 (the boundary rules)",
+      "arbiter": "manager with agent-2 (capability publication)",
+      "blocks": [
+        "the workspace view",
+        "filesystem and terminal actions",
+        "git and github actions performed by an agent",
+        "the website-creation scenario's action steps"
+      ],
+      "owner": "agent-01 (frontend + compatibility)",
+      "affectedDomains": [
+        "workspace",
+        "ai-foundation",
+        "legacy-rest"
+      ],
+      "currentInterpretation": "The families are documented as the frontend's request, not as published ids: the registry declares no local-execution capability and `workspace` is planned with contract `0.0.0`, so a workspace renders unsupported and an action is never invoked.",
+      "decisionRequired": "manager with agent-2: either publish the owning contract(s) and their capability ids (filesystem, terminal/process, project, browser, git), or declare that external actions happen only through the tool gateway - in which case the workspace view stays unsupported",
+      "blockingLevel": "phase",
+      "date": "2026-09-22",
+      "references": [
+        "arena/01a0c521 @ 6f7b66da domains.json -> workspace planned, contract 0.0.0, workspace.projects unsupported",
+        "arena/01a0c521 @ 6f7b66da ai-foundation.json -> toolGateway.sideEffects is required on every tool; an unknown value is treated as destructive",
+        "WORKSPACE_AND_EXTERNAL_ACTION_PLAN.md section 2 names the families as a request; section 3 states the boundary rules"
+      ]
     }
   ],
   "rules": [

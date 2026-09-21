@@ -58,14 +58,14 @@ registry wins and this file is a defect.
 
 ## 5. This change
 
-Adds the master documentation set (`.ai/master/`, **28 documents**, 191,496 B of a 262,144 B budget,
-largest 23,053 B of a 32,768 B per-file cap) with its own gate (`test/30-master-plan.test.mjs`, now
+Adds the master documentation set (`.ai/master/`, **28 documents**, 193,138 B of a 262,144 B budget,
+largest 23,141 B of a 32,768 B per-file cap) with its own gate (`test/30-master-plan.test.mjs`, now
 18 tests), the 26-domain correction — the domain table is a **generated projection** of `domains.json`
 @ `6f7b66da`, not prose — the platform/deployment strategy (four deployment modes, low-resource and
 Termux viability, STREAM backpressure, the Rust-by-measurement rule), the recorded decision that
 Universal Translation is an official LEGO target, the corrected fifteen-LEGO publication counts
 (2 published, 6 declared `contract-only`, 2 partial and gated, 5 `publicationPending`), the extended
-open-decision register (`recordVersion 1.1.0`, 17 rows), the thirty-question **reading test** a new
+open-decision register (`recordVersion 1.1.0`, 18 rows), the thirty-question **reading test** a new
 agent must be able to satisfy from this tree alone, and the blocker/status registers. It changes **no**
 runtime, **no** contract and **no** boot payload: the boot descriptor is byte-identical at 18,126 B,
 the retrieval pack is unchanged at 81,678 B (242 B headroom), and the only test expectation added is

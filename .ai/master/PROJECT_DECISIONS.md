@@ -2,7 +2,7 @@
 
 **Status:** record (append-only). **Owner:** agent-01 for the frontend questions; manager for the
 questions marked Manager; agent-2 for backend questions. **Machine-readable source:**
-`docs/n8n-lego/decisions/cross-agent-decisions.json` (17 rows: XA-1 … XA-17) and
+`docs/n8n-lego/decisions/cross-agent-decisions.json` (18 rows: XA-1 … XA-18) and
 `.ai/cards/decisions.md` (frontend delivery decisions D1 … D26). This document explains how to read
 them, records the decisions the project addendum settled, and states what may never be silently
 superseded.
@@ -61,6 +61,7 @@ a future agent is most likely to trip over:
 | XA-9 | manager | which contract publishes `manifest/foundation.json` (trust, resources, device profiles, transport targets) |
 | XA-10 | manager | `ai:app:*` vs `app:<application>:*` for an application provider |
 | XA-11 … XA-17 | manager | publishing Skill, Memory, Workspace semantics, Translation, node drafting, MCP adapter capability and Token & Usage |
+| XA-18 | manager (with agent-2) | which contract publishes the external action families — filesystem, terminal/process, project, browser, git — since the registry publishes none of them and `workspace` is planned |
 
 Full text, evidence and current interpretation: `docs/n8n-lego/decisions/cross-agent-decisions.json`
 (the register is the source; this table is a map).
