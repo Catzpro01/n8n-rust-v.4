@@ -19,10 +19,12 @@ RIG="${RUST_RIG:-/tmp/rust-rig}"
 REPO="${REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 MODE="${1:-check}"; shift || true
 
-# Workspace members whose dependency closure is not vendored. `n8n-nodes-rust` pulls tokio
-# (dev-dependency, ~20 further crates incl. target-gated ones) which `setup.sh` deliberately
-# leaves out; the VPS / CI build it with a real registry. Set RIG_INCLUDE_ALL=1 to try anyway.
-EXCLUDE_MEMBERS=("n8n-nodes-rust")
+# Workspace members whose dependency closure is not vendored. Historically `n8n-nodes-rust`
+# was excluded because its tokio dev-dep closure was not vendored; now tokio +
+# tokio-macros + pin-project-lite are vendored (minimal rt,macros features) so the full
+# workspace can be built offline. Keep the mechanism for future large closures.
+# Set RIG_INCLUDE_ALL=1 to bypass any exclusion, or populate EXCLUDE_MEMBERS as needed.
+EXCLUDE_MEMBERS=()
 
 [ -d "$RIG/vendor" ] || { echo "rig missing: run tools/rust-offline-rig/setup.sh first" >&2; exit 2; }
 
@@ -50,8 +52,18 @@ fi
 # The lock pins the resolutions, so the rig builds the same versions CI does. Its `checksum`
 # entries have to go: a directory source made of git checkouts cannot reproduce crates.io
 # tarball checksums, and cargo refuses a package whose locked checksum it cannot verify.
+# Additionally, tokio-macros 2.7.2 is in Cargo.lock but only 2.7.1 is available via git tag
+# (no 2.7.2 tag exists); we rewrite the lock to 2.7.1 which satisfies tokio's ~2.7.0 requirement.
 if [ -f "$REPO/Cargo.lock" ]; then
   sed '/^checksum = /d' "$REPO/Cargo.lock" > "$BUILD/Cargo.lock"
+  python3 - "$BUILD/Cargo.lock" <<'PYEOF'
+import sys
+path = sys.argv[1]
+text = open(path, encoding='utf-8').read()
+text = text.replace('name = "tokio-macros"\nversion = "2.7.2"', 'name = "tokio-macros"\nversion = "2.7.1"')
+text = text.replace('tokio-macros 2.7.2', 'tokio-macros 2.7.1')
+open(path, 'w', encoding='utf-8').write(text)
+PYEOF
 fi
 
 cat > "$BUILD/.cargo/config.toml" <<EOF

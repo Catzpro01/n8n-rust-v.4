@@ -49,6 +49,8 @@ CRATES=(
   "regex-automata-0.4.18:rust-lang/regex:regex-automata-0.4.18"
   "regex-syntax-0.8.11:rust-lang/regex:regex-syntax-0.8.11"
   "aho-corasick:BurntSushi/aho-corasick:1.1.5"
+  "tokio-1.53.1:tokio-rs/tokio:tokio-1.53.1"
+  "pin-project-lite-0.2.17:taiki-e/pin-project-lite:v0.2.17"
 )
 
 mkdir -p "$RIG/dl" "$RIG/vendorsrc"

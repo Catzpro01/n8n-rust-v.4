@@ -50,6 +50,9 @@ PLAN = [
     ("regex-automata-0.4.18/regex-automata", "regex-automata", "0.4.18"),
     ("regex-syntax-0.8.11/regex-syntax", "regex-syntax", "0.8.11"),
     ("aho-corasick", "aho-corasick", "1.1.5"),
+    ("tokio-1.53.1/tokio", "tokio", "1.53.1"),
+    ("tokio-1.53.1/tokio-macros", "tokio-macros", "2.7.1"),
+    ("pin-project-lite-0.2.17", "pin-project-lite", "0.2.17"),
 ]
 # Fallback versions for `workspace = true` deps whose workspace manifest cannot be read. The
 # authoritative source is `[workspace.dependencies]` of the crate's own repository (see
