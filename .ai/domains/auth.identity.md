@@ -38,8 +38,8 @@ _none_
 ## Who breaks if this changes
 
 - Direct dependents: `compatibility`, `settings`
-- Transitive: `auth`, `credentials`, `workflow`, `execution`, `dynamic-parameters`, `webhook`, `worker`, `workspace`, `observability`, `data-tables`, `legacy-rest`, `runtime-host`
-- **Blast radius: 14** (risk: high)
+- Transitive: `auth`, `credentials`, `workflow`, `execution`, `dynamic-parameters`, `webhook`, `worker`, `editor-ui-host`, `workspace`, `observability`, `data-tables`, `legacy-rest`, `runtime-host`
+- **Blast radius: 15** (risk: high)
 
 ## Resources
 

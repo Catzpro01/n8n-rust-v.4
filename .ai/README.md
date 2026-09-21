@@ -52,16 +52,3 @@ master set has its own gate, `test/30-master-plan.test.mjs`.
 
 The pack is metadata: no runtime reads it at boot, and the browser receives the boot
 descriptor and nothing else.
-
-## Who owns which memory
-
-| Owner | Owns | Never |
-| :--- | :--- | :--- |
-| **agent-2** (backend) | the manifests, contracts and gates under `apps/n8n-lego`, and the generated `.ai/` space (`.ai/master/*` backend documents, `.ai/domains/*`, `.ai/index.md`, …) | a competing frontend vocabulary |
-| **agent-1** (frontend, this pack) | `packages/frontend-lego`, the frontend AI UI specification (`.ai/master/AI_*.md`, `FRONTEND_STATUS.md`), this pack (`.ai/frontend`, `.ai/cards`, `.ai/index`, `.ai/maps`, this README) and the frontend register `docs/n8n-lego/decisions/cross-agent-decisions.json` | restating a generated declaration as its own source, or resolving a manager-owned question |
-| **manager** | cross-domain ownership, vocabulary and permission-namespace conflicts, contract publication, roadmap order, protected branches, external-runtime policy, development-workforce governance | — |
-
-Generated backend documents are canonical for backend facts; the frontend documents are canonical
-for everything a user sees. The development-workforce material
-(`.ai/master/PROJECT_WORKFORCE_ORCHESTRATION.md`) is **engineering operations**: it is not product
-architecture, not a LEGO, not a runtime dependency, and no product manifest may reference it.

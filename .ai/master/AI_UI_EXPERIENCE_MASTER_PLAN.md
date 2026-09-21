@@ -64,12 +64,12 @@ version for it.
 | # | LEGO | What it is | Backend status | Frontend surface | Disclosure |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | 1 | **AI Foundation** | the contract layer: kinds, events, sessions, approvals, artifacts, context, transport ladder | **published** `ai.foundation@1.0.0` (manager, `contract-only`) | everything below | background |
-| 2 | **Skill** | a named procedure with capabilities, validators, references and a token budget | `publicationPending` — **XA-20** (`ai.skill` proposed, manager) | chip → Skills list → detail | L1 → L2 → L3 |
+| 2 | **Skill** | a named procedure with capabilities, validators, references and a token budget | `publicationPending` — **XA-11** (`ai.skill` proposed, manager) | chip → Skills list → detail | L1 → L2 → L3 |
 | 3 | **Agent Machine** | the runtime that executes delegated tasks | **partially published**: `ai.agent-runtime` (contract), `ai.agent-delegation`, `ai.agent-session`; the Rust machine is not built and is out of scope here | agent tree, agent detail | L1 → L3 |
-| 4 | **Memory** | what the run remembers beyond the window: decisions, tasks, artifacts, references | `publicationPending` — **XA-21** (`ai.memory` proposed, manager); today the honest source is `ai.context` (what is loaded) + `ai.artifact` + `ai.decision` | chip → Relevant memory → `Open Memory Graph` | L1 → L2 → L3 |
-| 5 | **Workspace** | where an agent works outside the chat: project, tree, terminal state | domain exists (`workspace`, agent-2, **planned**, contract `0.0.0`, `workspace.projects` **unsupported**) — per-agent sandbox semantics are `publicationPending` — **XA-22** | workspace view inside agent detail | L2 → L3 |
+| 4 | **Memory** | what the run remembers beyond the window: decisions, tasks, artifacts, references | `publicationPending` — **XA-12** (`ai.memory` proposed, manager); today the honest source is `ai.context` (what is loaded) + `ai.artifact` + `ai.decision` | chip → Relevant memory → `Open Memory Graph` | L1 → L2 → L3 |
+| 5 | **Workspace** | where an agent works outside the chat: project, tree, terminal state | domain exists (`workspace`, agent-2, **planned**, contract `0.0.0`, `workspace.projects` **unsupported**) — per-agent sandbox semantics are `publicationPending` — **XA-13** | workspace view inside agent detail | L2 → L3 |
 | 6 | **Context & Session** | the window, its budget, its rollover; the session that carries continuity | **published** `ai.context` + `ai.agent-session` | header chip `Context 61%`, session line | L1 → L2 |
-| 7 | **Universal Translation** | response language, request/response translation | `publicationPending` — **XA-23** (no translation domain or capability; the frontend capability `translation` is `declared`) | compact language control | L1 → L3 |
+| 7 | **Universal Translation** | response language, request/response translation | `publicationPending` — **XA-14** (no translation domain or capability; the frontend capability `translation` is `declared`) | compact language control | L1 → L3 |
 | 8 | **Node Creator** | node catalog and creating a node, with or without AI | **published** `node-registry@0.1.0` (`catalog` resolve/describe/list, `icons.read`); AI drafting is `publicationPending` — **XA-15** | node editor + `Create with AI` | L1 → L2 |
 | 9 | **Capability** | the identity/status/operations/permissions vocabulary every LEGO publishes | **published** `lego.domain-registry@1.1.0` + the `ai.foundation` taxonomy (capability → contract → operations → interaction → implementation → provider → transport → runtime) | Capabilities list, source labels | L1 → L2 |
 | 10 | **MCP Adapter** | interoperability at the edge: server/client roles, tools, resources, prompts | vocabulary **published** in `ai.foundation` (`mcp.*`, mapping rule: MCP concepts map *onto* the tool gateway); a capability of its own is `publicationPending` — **XA-16** (`ai.mcp-adapter` proposed, manager) | capability first, `— MCP` suffix; advanced details | L1 → L3 |
@@ -279,7 +279,7 @@ unknowns. `AI_UI_IMPLEMENTATION_PHASES.md` turns that into ordered work.
 | seam & identity | `packages/frontend-lego/src/seam.mjs` (13 inputs, 7 forbidden sources, 16 identity fields) |
 | AI declaration | `packages/frontend-lego/src/agents.mjs`, `src/agent-events.mjs`, `manifest/capabilities.json` |
 | negotiation | `packages/frontend-lego/src/negotiation.mjs` (12 operation outcomes) |
-| decisions awaiting an owner | `docs/n8n-lego/decisions/cross-agent-decisions.json` — **XA-5, XA-8, XA-9, XA-10** (open from the foundation gate), **XA-20 … XA-17** (proposed by this plan) and **XA-18** (the external action families, from `WORKSPACE_AND_EXTERNAL_ACTION_PLAN.md`) |
+| decisions awaiting an owner | `docs/n8n-lego/decisions/cross-agent-decisions.json` — **XA-5, XA-8, XA-9, XA-10** (open from the foundation gate), **XA-11 … XA-17** (proposed by this plan) and **XA-18** (the external action families, from `WORKSPACE_AND_EXTERNAL_ACTION_PLAN.md`) |
 | rule enforcement | `contracts/frontend.contract.md` §19.9–§19.17, `src/conformance.mjs` (26 rules), `test/30-master-plan.test.mjs` |
 
 ## 12. Beginner mode and advanced mode
@@ -307,20 +307,3 @@ Rules:
 - Mode changes presentation only — never behaviour, permissions, budgets or approvals.
 - The default stays simple. A feature that only makes sense in advanced mode is still documented in
   both, with the advanced description naming the declaration it reads.
-
-## 13. AI Foundation — what it is, and what it is not
-
-One AI Foundation serves **AI Assistant, AI Copilot, AI Node, Agent Machine, the Execution AI mode
-and every external runtime adapter**. There is never a separate AI engine per experience.
-
-| It is not | Because |
-| :--- | :--- |
-| the agent loop | the loop belongs to a runtime behind `ai.agent-runtime` |
-| a model vendor | models arrive through `ai.model-gateway`, from a provider |
-| MCP itself | MCP is an edge interop adapter mapped onto the tool gateway |
-| an external agent runtime | external runtimes stay external and replaceable |
-| a filesystem or terminal implementation | those are workspace-scoped capabilities |
-| a memory database | memory is its own LEGO (`XA-21`); context is not memory |
-
-The frontend consumes the AI Foundation's declarations and renders their state. It never assumes an
-implementation exists behind them: the whole `ai.*` family is **contract-only**.

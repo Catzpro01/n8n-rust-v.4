@@ -21,25 +21,14 @@ import { APP_ROOT, REFERENCE_VERSION, REPO_ROOT } from './config.mjs';
  * inside the published tarballs (`vendor/frontend-lego`, produced by
  * `scripts/release.sh`) — the same resolution order the execution engine uses.
  */
-/**
- * Resolution order, computed from an **injected** environment (the composition root reads
- * `process.env` once and passes it in — a domain never reaches for the process environment).
- */
-export function frontendCandidates(env = {}) {
-  return [
-    env.N8N_LEGO_FRONTEND_PATH ? join(env.N8N_LEGO_FRONTEND_PATH, 'index.mjs') : null,
-    join(REPO_ROOT, 'packages', 'frontend-lego', 'index.mjs'),
-    join(APP_ROOT, 'vendor', 'frontend-lego', 'index.mjs'),
-    join(APP_ROOT, 'node_modules', '@lego', 'frontend', 'index.mjs'),
-  ].filter((candidate) => typeof candidate === 'string');
-}
+const FRONTEND_CANDIDATES = [
+  process.env.N8N_LEGO_FRONTEND_PATH ? join(process.env.N8N_LEGO_FRONTEND_PATH, 'index.mjs') : null,
+  join(REPO_ROOT, 'packages', 'frontend-lego', 'index.mjs'),
+  join(APP_ROOT, 'vendor', 'frontend-lego', 'index.mjs'),
+  join(APP_ROOT, 'node_modules', '@lego', 'frontend', 'index.mjs'),
+].filter((candidate) => typeof candidate === 'string');
 
-/** The first candidate that exists, given an environment (empty by default). */
-export function frontendPath(env = {}) {
-  return frontendCandidates(env).find((candidate) => existsSync(candidate)) ?? null;
-}
-
-export const FRONTEND_PATH = frontendPath();
+export const FRONTEND_PATH = FRONTEND_CANDIDATES.find((candidate) => existsSync(candidate)) ?? null;
 
 /** The pinned editor bundle's version, read from the installed package. */
 export function editorVersion() {
@@ -71,11 +60,10 @@ function unavailable(reason) {
  * @param {{ config: object, logger: object }} init
  * @returns {Promise<{ available: boolean, bootPayload: object|null, metaTag: string, register: Function, describe: Function }>}
  */
-export async function loadFrontend({ config, logger, env = null }) {
-  const resolved = env ? frontendPath(env) : FRONTEND_PATH;
-  if (!resolved) {
+export async function loadFrontend({ config, logger }) {
+  if (!FRONTEND_PATH) {
     logger.warn('frontend LEGO not found — serving the editor UI without the boot descriptor', {
-      lookedIn: frontendCandidates(env ?? {}),
+      lookedIn: FRONTEND_CANDIDATES,
     });
     return unavailable('frontend-lego-not-found');
   }
@@ -83,7 +71,7 @@ export async function loadFrontend({ config, logger, env = null }) {
   try {
     // Resolved at runtime, like the engine: a checkout runs the package it ships
     // with, an installed tarball runs the vendored copy.
-    const module = await import(pathToFileURL(resolved).href);
+    const module = await import(pathToFileURL(FRONTEND_PATH).href);
     const lego = module.createFrontendLego({
       app: {
         name: config.appName,

@@ -319,8 +319,8 @@ need someone else:
 
 No new shared word was chosen to close a question: an open row stays open.
 
-**Seven further Manager-owned rows were recorded by the master documentation set (§21)**: XA-20
-(publish `ai.skill`), XA-21 (`ai.memory`), XA-22 (agent-scoped workspace semantics), XA-23
+**Seven further Manager-owned rows were recorded by the master documentation set (§21)**: XA-11
+(publish `ai.skill`), XA-12 (`ai.memory`), XA-13 (agent-scoped workspace semantics), XA-14
 (translation capability), XA-15 (node drafting and validation), XA-16 (`ai.mcp-adapter`), XA-17
 (`ai.usage`). Each names its arbiter, its evidence, the current interpretation — what the frontend
 does meanwhile — and the phase it blocks. The register is versioned (`recordVersion 1.1.0`) and every
@@ -367,10 +367,10 @@ decision id a document names exists in the register**.
 
 Corrections and decisions recorded in the same change: the project has **26 core LEGO domains** (the
 registry is the count, not prose); **Universal Translation is an official LEGO target** and the old
-"out of scope" assumption is superseded (`.ai/constitution.md` updated, XA-23 keeps it unpublished);
+"out of scope" assumption is superseded (`.ai/constitution.md` updated, XA-14 keeps it unpublished);
 the superseded assumption is still present *inside* agent-2's registry — `domains.json →
 legacy.unresolvedOwnership.why` argues the i18n routes from "an explicit standing decision NOT to
-build a Translation LEGO", so that text is recorded as stale evidence in XA-23 and B-9 rather than
+build a Translation LEGO", so that text is recorded as stale evidence in XA-14 and B-9 rather than
 quietly overwritten in a file this branch does not own;
 the AI Workspace binds to the existing `workspace` domain instead of a duplicate; and the scale-out
 blockers (`src/store.mjs` execution-id allocation, local JSON system of record, missing shared

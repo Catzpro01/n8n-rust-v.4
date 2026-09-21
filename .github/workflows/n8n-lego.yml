@@ -34,7 +34,6 @@ on:
       - 'apps/n8n-lego/**'
       - 'tests/e2e/**'
       - 'tools/lego/**'
-      - 'packages/frontend-lego/**'
       - 'scripts/release.sh'
       - 'package.json'
       - '.github/workflows/n8n-lego.yml'
@@ -44,7 +43,6 @@ on:
       - 'apps/n8n-lego/**'
       - 'tests/e2e/**'
       - 'tools/lego/**'
-      - 'packages/frontend-lego/**'
       - 'scripts/release.sh'
       - 'package.json'
       - '.github/workflows/n8n-lego.yml'
@@ -171,7 +169,10 @@ jobs:
           test -f "$APP_DIR/data/roles.json"
           node -e "const roles=require('./' + process.env.APP_DIR + '/data/roles.json'); console.log('bundled roles.json present:', Object.keys(roles).length, 'groups')"
 
-      - name: Frontend LEGO tests (framework-neutral contract, seam, identity, knowledge pack)
+      - name: Frontend LEGO contract + architecture tests (P2.5, agent-1)
+        # Reconciled in P2.11: agent-1's frontend LEGO ships 30 suites that the
+        # backend gate never ran. Kept as its own step so a frontend failure is
+        # attributable on sight rather than buried in the backend glob.
         run: node --test packages/frontend-lego/test/*.test.mjs
 
       - name: Unit + REST contract integration tests

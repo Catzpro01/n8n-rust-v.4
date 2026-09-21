@@ -5,9 +5,13 @@
   "readOn": "2026-09-22",
   "agent1Baseline": {
     "branch": "arena/01a0c53e-n8n-rust-v-4",
-    "commit": "bdd0f1d2d6c8d7bc1c1ff3d881ddc2b3bd93713d",
-    "inspected": "read-only via git fetch; NOT merged, NOT cherry-picked",
-    "finding": "Agent 1's vocabulary lock consumes backend vocabulary and does not define a competing one. Its .ai/index/capabilities.json quotes backend values with provenance, carries publicationPending records where the backend has not published, and refuses undeclared words rather than accepting synonyms."
+    "finding": "Agent 1's vocabulary lock consumes backend vocabulary and does not define a competing one. Its .ai/index/capabilities.json quotes backend values with provenance, carries publicationPending records where the backend has not published, and refuses undeclared words rather than accepting synonyms.",
+    "historicalEvidenceCommit": "bdd0f1d2d6c8d7bc1c1ff3d881ddc2b3bd93713d",
+    "historicalEvidenceNote": "read-only via git fetch; NOT merged, NOT cherry-picked",
+    "reconciledFromCommit": "8c299609",
+    "reconciledIntoCommit": "c1eca8cc",
+    "currentRepositoryState": "c1eca8cc",
+    "note": "The historical commit is kept because it is the evidence the P2.11 finding was made against. It is NOT the current state: the frontend branch was later reconciled into this one from its real tip 8c299609."
   },
   "items": [
     {

@@ -36,7 +36,7 @@
  * built on, applied to the planning layer.
  */
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -49,7 +49,13 @@ const read = (dir, name) => JSON.parse(readFileSync(join(dir, name), 'utf8'));
 
 const AI_SET = read(MANIFEST_DIR, 'ai-lego-set.json');
 const DOMAINS = read(MANIFEST_DIR, 'domains.json');
-const GOVERNANCE = read(MANIFEST_DIR, 'project-governance.json');
+// Workforce governance is ENGINEERING OPERATIONS, not product architecture, so
+// it deliberately lives outside the product manifest directory. See the
+// scope-boundary tests below.
+const REPO_ROOT = resolve(HERE, '..', '..', '..');
+const GOVERNANCE = JSON.parse(
+  readFileSync(join(REPO_ROOT, 'docs', 'engineering-operations', 'workforce-governance.json'), 'utf8'),
+);
 const SCENARIOS = read(MANIFEST_DIR, 'reference-scenarios.json');
 const LOCK = read(CONTRACTS_DIR, 'contract-lock.json');
 
@@ -505,4 +511,196 @@ test('the core architecture document reports the manifest domain count', () => {
   for (const domain of DOMAINS.domains) {
     assert.ok(core.includes(`\`${domain.id}\``), `domain '${domain.id}' is missing from the core document`);
   }
+});
+
+/* --------------------------------------------- P2.11 reconciliation boundary */
+
+test('no development-workforce concept leaks into product architecture', () => {
+  // The manager's ruling: Arena manager/worker, Supabase and the VPS gate are
+  // ENGINEERING OPERATIONS. They must never become product domains, AI LEGO,
+  // runtime dependencies or product capabilities. Checking the manifests by
+  // substring is crude but exactly right here — the failure mode is a workforce
+  // word appearing in a product declaration at all.
+  const forbidden = [/\barena\b/i, /\bsupabase\b/i, /arena[- ]bridge/i, /workforce/i];
+  const productManifests = {
+    'domains.json': DOMAINS,
+    'ai-lego-set.json': AI_SET,
+    'reference-scenarios.json': SCENARIOS,
+    'contract-lock.json': LOCK,
+  };
+  for (const [name, manifest] of Object.entries(productManifests)) {
+    const text = JSON.stringify(manifest);
+    for (const pattern of forbidden) {
+      assert.ok(!pattern.test(text), `${name} mentions ${pattern} — workforce tooling is not product architecture`);
+    }
+  }
+});
+
+test('workforce governance lives outside the product manifest directory', () => {
+  // Physical separation, not merely a stated intention: if the file were inside
+  // src/lego/manifest/ the next reader would reasonably treat it as product
+  // architecture regardless of what its prose said.
+  assert.ok(
+    !existsSync(join(MANIFEST_DIR, 'project-governance.json')),
+    'workforce governance must not sit in the product manifest directory',
+  );
+  assert.match(GOVERNANCE.scopeBoundary, /NOT n8n LEGO product architecture/);
+  // Every blocker states which plane it belongs to, so a process blocker can
+  // never be mistaken for a product one.
+  for (const blocker of GOVERNANCE.blockers) {
+    assert.ok(['product', 'engineering-operations'].includes(blocker.plane),
+      `blocker ${blocker.id} does not declare its plane`);
+  }
+  // The class-A storage blockers are product blockers; that is what makes them
+  // block a product readiness claim.
+  for (const id of ['BL-1', 'BL-2']) {
+    assert.equal(GOVERNANCE.blockers.find((blocker) => blocker.id === id).plane, 'product');
+  }
+});
+
+test('regeneration preserves curated agent-1 documents instead of deleting them', () => {
+  // The reconciliation's sharpest hazard: `npm run lego:ai` wipes `.ai/` before
+  // writing, so before the curated list existed it silently destroyed 27
+  // hand-written frontend documents — with a green build, because nothing
+  // asserted their existence. This test is that assertion.
+  const aiRoot = resolve(HERE, '..', '..', '..', '.ai');
+  const curatedSamples = [
+    'master/AI_UI_EXPERIENCE_MASTER_PLAN.md',
+    'master/AI_UI_STATES_AND_FLOWS.md',
+    'master/SKILL_AND_CAPABILITY_PLAN.md',
+    'master/AGENT_MACHINE_PLAN.md',
+    'master/SECURITY_AND_APPROVAL_MODEL.md',
+    'master/PROVIDER_TAXONOMY.md',
+    'master/frontend/CURRENT_STATUS.md',
+    'index/capabilities.json',
+    'frontend/glossary.md',
+  ];
+  for (const relative of curatedSamples) {
+    assert.ok(existsSync(join(aiRoot, relative)), `curated document '${relative}' is missing`);
+  }
+  // A frontend consumption view must point at its canonical counterpart, or a
+  // reader will treat a P2.10-era number as current.
+  const view = readFileSync(join(aiRoot, 'master', 'frontend', 'CURRENT_STATUS.md'), 'utf8');
+  assert.match(view, /not the canonical document/i);
+  assert.match(view, /\.\.\/CURRENT_STATUS\.md/);
+});
+
+test('every canonical master subject resolves to a document that exists', () => {
+  // The acceptance criterion is that the index names ONE canonical document per
+  // major subject. Verifying the links resolve is what stops the index becoming
+  // a list of aspirations.
+  const masterDir = resolve(HERE, '..', '..', '..', '.ai', 'master');
+  const subjects = [
+    'CORE_LEGO_ARCHITECTURE.md', 'AI_AGENT_LEGO_MASTER_PLAN.md', 'AI_RUNTIME_AND_PROVIDER_PLAN.md',
+    'AI_UI_EXPERIENCE_MASTER_PLAN.md', 'CONTEXT_SESSION_MEMORY_PLAN.md', 'TOKEN_USAGE_AND_RESOURCE_PLAN.md',
+    'SKILL_AND_CAPABILITY_PLAN.md', 'AGENT_MACHINE_PLAN.md', 'WORKSPACE_AND_EXTERNAL_ACTION_PLAN.md',
+    'MCP_AND_RUNTIME_ADAPTER_PLAN.md', 'NODE_CREATOR_PLAN.md', 'TRANSLATION_PLAN.md',
+    'SECURITY_AND_APPROVAL_MODEL.md', 'CURRENT_STATUS.md', 'KNOWN_BLOCKERS.md',
+    'PROJECT_DECISIONS.md', 'REFERENCE_AGENT_SCENARIOS.md', 'PROVIDER_TAXONOMY.md',
+  ];
+  const index = readFileSync(join(masterDir, 'PROJECT_MASTER_PLAN.md'), 'utf8');
+  for (const subject of subjects) {
+    assert.ok(existsSync(join(masterDir, subject)), `canonical document '${subject}' does not exist`);
+    assert.ok(index.includes(subject), `the master index does not name '${subject}'`);
+  }
+});
+
+test('no stale 173-operation or 25-domain claim survives anywhere in .ai/', () => {
+  // Both numbers were wrong in prose at some point. Asserting their absence
+  // across the whole generated+curated tree is cheaper than trusting review.
+  const aiRoot = resolve(HERE, '..', '..', '..', '.ai');
+  const offenders = [];
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) { walk(full); continue; }
+      if (!/\.(md|json)$/.test(entry.name)) continue;
+      const body = readFileSync(full, 'utf8');
+      // Allow the correction notes, which necessarily quote the old figure.
+      const stripped = body.replace(/[^\n]*\b(previously|was|correct|error|not 173|stale)\b[^\n]*/gi, '');
+      if (/\b173 operations?\b/.test(stripped)) offenders.push(`${full} (173)`);
+      if (/\b25 (core )?(domains|LEGO)\b/.test(stripped)) offenders.push(`${full} (25 domains)`);
+    }
+  };
+  walk(aiRoot);
+  assert.deepEqual(offenders, []);
+});
+
+test('the published .ai counters equal the tree they describe', () => {
+  // P2.11 final cleanup. "in sync = 63 files" was ambiguous: 63 is the generated
+  // pack, not the total, and a reader had no way to tell which number they were
+  // being given. The counters are now named and computed from the tree, so this
+  // test is what stops the published table becoming a remembered figure.
+  const aiRoot = resolve(HERE, '..', '..', '..', '.ai');
+  const walk = (dir, prefix = '') => {
+    const out = [];
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) out.push(...walk(join(dir, entry.name), rel));
+      else out.push(rel);
+    }
+    return out;
+  };
+  const onDisk = walk(aiRoot);
+
+  const source = readFileSync(resolve(HERE, '..', '..', '..', 'tools', 'lego', 'ai-pack.mjs'), 'utf8');
+  const block = source.slice(source.indexOf('const CURATED = Object.freeze({'));
+  const curated = [...block.slice(0, block.indexOf('});')).matchAll(/'([^']+\.(?:md|json))'/g)].map((m) => m[1]);
+
+  for (const file of curated) {
+    assert.ok(onDisk.includes(file), `curated file '${file}' is declared but missing from .ai/`);
+  }
+  const generated = onDisk.filter((file) => !curated.includes(file));
+
+  const index = readFileSync(join(aiRoot, 'master', 'PROJECT_MASTER_PLAN.md'), 'utf8');
+  // Parse the published counter table by splitting rows, not by building a
+  // regex per label: the labels contain backticks and asterisks, and escaping
+  // them into a constructed RegExp is how this test would quietly stop matching.
+  const counters = new Map();
+  for (const line of index.split('\n')) {
+    const cells = line.split('|').map((part) => part.trim());
+    if (cells.length !== 4) continue;
+    const value = Number(cells[2].replaceAll('*', ''));
+    if (Number.isNaN(value)) continue;
+    counters.set(cells[1].replaceAll('*', '').replaceAll('`', ''), value);
+  }
+  const cell = (label) => {
+    assert.ok(counters.has(label), `the master index publishes no '${label}' counter`);
+    return counters.get(label);
+  };
+  assert.equal(cell('Generated pack'), generated.length, 'the published generated count is wrong');
+  assert.equal(cell('Curated'), curated.length, 'the published curated count is wrong');
+  assert.equal(cell('Total .ai'), onDisk.length, 'the published total is wrong');
+  assert.equal(generated.length + curated.length, onDisk.length, 'every .ai file is generated or curated');
+
+  const masterTop = onDisk.filter((f) => f.startsWith('master/') && f.split('/').length === 2);
+  const views = onDisk.filter((f) => f.startsWith('master/frontend/'));
+  assert.equal(cell('.ai/master (top level, canonical)'), masterTop.length);
+  assert.equal(cell('.ai/master/frontend (consumption views)'), views.length);
+});
+
+test('XA-5 is only recorded as resolved while the lego.* codes are really published', () => {
+  // The decision register and the contract must not be able to disagree. If
+  // someone unpublishes a code, this fails rather than leaving a register that
+  // claims a closed issue.
+  const root = resolve(HERE, '..', '..', '..');
+  const register = JSON.parse(readFileSync(join(root, 'docs', 'n8n-lego', 'decisions', 'cross-agent-decisions.json'), 'utf8'));
+  const xa5 = register.decisions.find((entry) => entry.id === 'XA-5');
+  assert.ok(xa5, 'XA-5 must stay in the register as history even once resolved');
+  if (xa5.status !== 'resolved') return;
+
+  const contract = JSON.parse(readFileSync(join(HERE, '..', 'src', 'lego', 'contracts', 'errors.contract.json'), 'utf8'));
+  const published = new Set(contract.codes.map((entry) => entry.code));
+  for (const code of ['lego.capability_unavailable', 'lego.version_incompatible',
+    'lego.dependency_disabled', 'lego.migration_required']) {
+    assert.ok(published.has(code), `XA-5 is marked resolved but '${code}' is not published`);
+  }
+  const domains = JSON.parse(readFileSync(join(HERE, '..', 'src', 'lego', 'manifest', 'domains.json'), 'utf8'));
+  assert.ok(
+    domains.domains.some((domain) => domain.errorNamespace === 'lego'),
+    'XA-5 is marked resolved but no domain declares the `lego` error namespace',
+  );
+  assert.ok(xa5.historicalFinding, 'the original P2.10 finding must be kept, not overwritten');
+  assert.ok(xa5.historicalEvidenceCommit, 'the historical evidence commit must stay recorded');
+  assert.ok(xa5.currentRepositoryState, 'a resolved decision must name the state it was verified against');
 });

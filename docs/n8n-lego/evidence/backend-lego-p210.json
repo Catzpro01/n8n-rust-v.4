@@ -3,37 +3,75 @@
   "title": "Foundation Completion Gate — capability contracts, operation vocabulary, AI Foundation contracts",
   "date": "2026-09-22",
   "baseCommit": "aef6b606",
+  "baseCommitRole": "historicalEvidenceCommit — the state this evidence was captured against. Not the current repository state.",
+  "currentRepositoryState": "c1eca8cc",
   "branch": "arena/01a0c521-n8n-rust-v-4",
   "relationshipToMain": {
     "mainBaseline": "cb71dbb201d635b15b49933764c2c2336e745809",
-    "behind": 1, "ahead": 6,
+    "behind": 1,
+    "ahead": 6,
     "reVerified": "Yes, at the start of this phase. `git diff HEAD origin/main` shows the main side as deletions of our work plus two files: one import line each in compat/auth-context.mjs and settings/routes.mjs, and a package.json description/scripts difference. The branch tree is a strict superset.",
     "action": "none — no reset, no force-update, no merge, no discarded commits"
   },
   "gates": {
-    "architecture": { "result": "OK", "domains": 26, "allowances": 1, "contracts": 14, "violations": 0 },
+    "architecture": {
+      "result": "OK",
+      "domains": 26,
+      "allowances": 1,
+      "contracts": 14,
+      "violations": 0
+    },
     "architectureSelftest": "26/26",
-    "foundation": { "result": "OK", "legos": 26, "rules": "F1-F15" },
-    "foundationSelftest": { "result": "12/12", "note": "NEW — 11 fixtures + negative control; the foundation gate had no selftest before" },
-    "capabilityConformance": { "result": "OK", "features": 23, "capabilities": 82 },
-    "scaleOut": { "result": "OK", "verdict": "NOT scale-out ready — 2 class-A blockers remain in src/store.mjs, agent-5, P8" },
-    "aiPackFreshness": { "result": "OK", "generatedFiles": 52 }
+    "foundation": {
+      "result": "OK",
+      "legos": 26,
+      "rules": "F1-F15"
+    },
+    "foundationSelftest": {
+      "result": "12/12",
+      "note": "NEW — 11 fixtures + negative control; the foundation gate had no selftest before"
+    },
+    "capabilityConformance": {
+      "result": "OK",
+      "features": 23,
+      "capabilities": 82
+    },
+    "scaleOut": {
+      "result": "OK",
+      "verdict": "NOT scale-out ready — 2 class-A blockers remain in src/store.mjs, agent-5, P8"
+    },
+    "aiPackFreshness": {
+      "result": "OK",
+      "generatedFiles": 52
+    }
   },
   "tests": {
     "command": "cd apps/n8n-lego && N8N_LEGO_CATALOG_DIR=/tmp/p26-catalog node --test test/*.test.mjs",
-    "total": 344, "pass": 344, "fail": 0,
+    "total": 344,
+    "pass": 344,
+    "fail": 0,
     "previousBaseline": 257,
     "new": {
       "lego-capability-contract.test.mjs": 33,
       "lego-ai-foundation.test.mjs": 54
     },
     "preserved": {
-      "p0-p2 compat + rest": 25, "lego-foundation": 24, "lego-lifecycle": 28,
-      "lego-foundation-model": 93, "lego-boundary": 22, "lego-communication": 65
+      "p0-p2 compat + rest": 25,
+      "lego-foundation": 24,
+      "lego-lifecycle": 28,
+      "lego-foundation-model": 93,
+      "lego-boundary": 22,
+      "lego-communication": 65
     }
   },
-  "liveRegression": { "rest": "9/9", "restart": "3/3" },
-  "packageVerification": { "files": 54, "size": "122.5 kB" },
+  "liveRegression": {
+    "rest": "9/9",
+    "restart": "3/3"
+  },
+  "packageVerification": {
+    "files": 54,
+    "size": "122.5 kB"
+  },
   "invariants": {
     "rustFilesChanged": 0,
     "existingRuntimeFilesChanged": 0,
@@ -46,14 +84,37 @@
     "total": 82,
     "backendFeature": 71,
     "aiContractOnly": 11,
-    "fieldsPerCapability": ["id", "status", "operations", "interaction", "permissions", "lifecycle", "availability", "criticality", "trust", "transport", "migrationState", "degradation", "replacement", "resources"],
+    "fieldsPerCapability": [
+      "id",
+      "status",
+      "operations",
+      "interaction",
+      "permissions",
+      "lifecycle",
+      "availability",
+      "criticality",
+      "trust",
+      "transport",
+      "migrationState",
+      "degradation",
+      "replacement",
+      "resources"
+    ],
     "before": "{id, status} only"
   },
   "operationVocabulary": {
     "total": 139,
     "correctedInP211": "This field read 173 when written. The manifest declared 139 then and declares 139 now (82 capabilities, 62 of which declare operations); manifest/domains.json is byte-identical to its P2.10 state, so this was an arithmetic error in the evidence, not a regression. Corrected in place with this note rather than silently, because an evidence file whose numbers change without explanation is not evidence. The count is now generated into .ai/master/CURRENT_STATUS.md.",
     "grounding": "Derived from real routes in src/rest/routes.mjs and real module exports. Capabilities with no implementation declare [] and keep an honest status rather than being given invented operations.",
-    "fieldsPerOperation": ["name", "interaction", "permission", "idempotent", "status", "backpressure (streams only)", "backpressureReason (streams only)"]
+    "fieldsPerOperation": [
+      "name",
+      "interaction",
+      "permission",
+      "idempotent",
+      "status",
+      "backpressure (streams only)",
+      "backpressureReason (streams only)"
+    ]
   },
   "executionVsExecutions": {
     "resolution": "surface alias, not a duplicate capability",
@@ -66,9 +127,27 @@
     "status": "contract-only",
     "owner": "manager",
     "dependsOn": [],
-    "contracts": ["ai.model-gateway", "ai.tool-gateway", "ai.application-provider", "ai.agent-runtime", "ai.agent-session", "ai.agent-delegation", "ai.agent-events", "ai.decision", "ai.approval", "ai.artifact", "ai.context"],
+    "contracts": [
+      "ai.model-gateway",
+      "ai.tool-gateway",
+      "ai.application-provider",
+      "ai.agent-runtime",
+      "ai.agent-session",
+      "ai.agent-delegation",
+      "ai.agent-events",
+      "ai.decision",
+      "ai.approval",
+      "ai.artifact",
+      "ai.context"
+    ],
     "eventTypes": 26,
-    "providerKinds": ["model-provider", "tool-provider", "application-provider", "agent-runtime", "simulation-runtime"],
+    "providerKinds": [
+      "model-provider",
+      "tool-provider",
+      "application-provider",
+      "agent-runtime",
+      "simulation-runtime"
+    ],
     "notImplemented": "No inference, no agent loop, no gateway client, no MCP server or client, no vendor SDK, no network call, no daemon, no new dependency. A test asserts exactly one file read (its own manifest) and no fetch/child_process/WebSocket/socket API.",
     "vendorNeutrality": "F15 enforces that vendor names appear only inside `examples` arrays. Verified by deliberately leaking '9router' into a contract id and confirming the gate fired.",
     "failClosedFixed": "requiresApproval() was initially written as list.includes(), which fails OPEN for unknown actions. Caught by my own test run before commit and corrected: unknown => requires approval; read-only must be proven."
@@ -90,11 +169,20 @@
     "a secret scan banned the substring 'secret', which would have forced credentials.external-secrets to be misnamed — replaced with secret-bearing FIELD names and credential-shaped literals"
   ],
   "scaleOut": {
-    "classification": { "A": 2, "B": 2, "C": 3, "D": 1 },
+    "classification": {
+      "A": 2,
+      "B": 2,
+      "C": 3,
+      "D": 1
+    },
     "verdict": "NOT scale-out ready. Unchanged by this phase and not claimed otherwise.",
     "classA": "src/store.mjs S2 (process-local execution id counter) and S3 (local JSON as system of record), both agent-5 / P8"
   },
-  "allowances": { "A1": "retired (P2.9)", "A2": "retired (P2.9)", "A3": "narrowed and bounded — 1 symbol, 1 file, tied to scale-out S2, agent-5/P8" },
+  "allowances": {
+    "A1": "retired (P2.9)",
+    "A2": "retired (P2.9)",
+    "A3": "narrowed and bounded — 1 symbol, 1 file, tied to scale-out S2, agent-5/P8"
+  },
   "managerArbitration": [
     "i18n route ownership (credential-translation, node-translation-headers)",
     "variables ownership — workspace-scoped storage feature or permanent compatibility stub",

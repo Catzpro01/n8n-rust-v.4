@@ -62,6 +62,7 @@ A LEGO contract must not assume it is the only process. P2.7 implements no worke
 - `src/server.mjs` — The composition root reads process.env to build the config it injects. 
 - `bin/n8n-lego.mjs` — The CLI reads the environment to construct the runtime. 
 - `src/engine.mjs` — The engine resolves its implementation path from N8N_LEGO_ENGINE_PATH directly instead of receiving it in config. 
+- `src/frontend.mjs` — Reads N8N_LEGO_FRONTEND_PATH directly to resolve where the frontend LEGO package lives, instead of receiving the path in the injected config. Found by the scale-out gate during the P2.11 reconciliation, when agent-1's frontend host was merged in. 
 
 ## Future contract solution
 

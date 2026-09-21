@@ -14,11 +14,6 @@ Ten rules. If a change violates one, it is wrong regardless of how well it works
 9. **A contract change needs a version decision, a migration declaration, tests and controlled activation.** In that order.
 10. **Declare, do not assume.** Capabilities, data ownership, state class, resources and trust are declared in the manifest or they do not exist.
 
-**Universal Translation is an official AI/Agent LEGO target.** An earlier "out of scope" note
-about translation is superseded: the legacy i18n ownership question is recorded as an open
-decision, not as a prohibition. See `.ai/master/TRANSLATION_PLAN.md` (frontend consumption view)
-and the frontend register `docs/n8n-lego/decisions/cross-agent-decisions.json` (XA-14).
-
 ## Before you change anything
 
 ```
@@ -49,6 +44,25 @@ Then run the test tier it selects, then `npm run lego:gate`.
 - Feature domains (Workflow, Execution, Auth, Node Registry, Storage) are **declared, not implemented**.
 - The legacy REST aggregate is frozen and may only shrink — see `.ai/legacy-rest.md`.
 - Allowances remaining: see `.ai/index.md`. They may shrink, never grow.
-- A capability declares its operations; never infer them from a route.
-- The AI Foundation is `contract-only` — no inference, no runtime, no MCP.
+- A capability declares its operations; never infer them from a route. The AI Foundation is `contract-only`: no inference, no runtime, no MCP.
 - Start at `.ai/master/PROJECT_MASTER_PLAN.md`; it names the canonical document for every subject.
+
+## Hard stops — mis-specified if a task seems to need breaking one; raise it
+
+- **Rust is LOCKED.** No migration, no Rust edits outside an explicitly assigned Rust task.
+- **Vue stays the reference implementation and the stock editor UI is not redesigned.** No React, no Svelte, no Web Components, no second framework; `n8n-editor-ui@2.9.4` renders exactly as before, the frontend LEGO adding descriptor metadata and never markup or styles.
+- **Dependencies point inward:** component -> frontend contract -> compatibility -> public backend contract. Neither side imports the other's internals.
+- **No HTTP between local LEGO.** **Never push to `main`** — branch, then open a pull request.
+- **Declared ≠ installed ≠ loaded ≠ active.** Registering metadata never loads implementation code.
+- **Unknown or destructive operations fail closed.** Delegation and nesting grant no authority.
+
+## Ownership
+
+| Area | Owner |
+| --- | --- |
+| Frontend architecture, compatibility boundary, UI capability registry, frontend gates | agent-01 |
+| LEGO foundation, capability registry, error codes, manifests, `.ai/` generation | agent-02 |
+| Workflow / Execution / Auth / Credentials / Node Registry / Storage / Rust | their own agents |
+| Integration gates (`tests/integration/`, `tests/compatibility/`) | agent-05, read-only for others |
+
+Shared files change minimally and the change is recorded. Capability ids, error codes and contract versions crossing the frontend/backend line are **coordinated**: an ambiguous shared contract stops for arbitration rather than being invented twice.
