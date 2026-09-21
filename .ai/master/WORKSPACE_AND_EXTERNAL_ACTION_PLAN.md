@@ -18,16 +18,22 @@ terminal state, file tree (paged). Otherwise the surface renders `feature-unsupp
 
 ## 2. External actions
 
-The declared action families (documentation-level names; publication status per row):
+What the AI is supposed to be able to do outside the chat — and the honest publication state of each
+family. **These names are the frontend's request, not published ids**: at `6f7b66da` the registry
+declares no `filesystem.*`, `terminal.*`, `process.*`, `browser.*` or `git.*` capability, and the
+`workspace` domain is `planned` with contract `0.0.0`. **XA-18** records that gap with the manager.
 
-| Family | Actions | Publication |
+| Family | Requested actions | Publication today |
 | :--- | :--- | :--- |
-| filesystem | `read`, `write`, `patch`, `list`, `move`, `delete` | capability names; XA-13 for agent-scoped scope |
-| terminal / process | `execute`, `start`, `stop`, `status` | as above |
-| project | `create`, `open`, `scaffold`, `build`, `test`, `preview`, `archive` | as above |
-| browser | `open`, `inspect` | as above |
-| git | `status`, `diff`, `commit`, `branch`, `push` | as above |
-| github | `search`, `create_pr` | `ai.application-provider` (published) |
+| filesystem | `read`, `write`, `patch`, `list`, `move`, `delete` | not published — XA-18; agent-scoped scope is XA-13 |
+| terminal / process | `execute`, `start`, `stop`, `status` | not published — XA-18 |
+| project | `create`, `open`, `scaffold`, `build`, `test`, `preview`, `archive` | not published — XA-18 |
+| browser | `open`, `inspect` | not published — XA-18 |
+| git | `status`, `diff`, `commit`, `branch`, `push` | not published — XA-18 |
+| github | `search`, `create_pr` | example capabilities of `ai.application-provider` (contract-only); no `github.*` capability id in the registry, and the `app:github:*` vs `ai:app:*` permission names are XA-10 |
+
+Until a family is published, its surface renders `capability-unavailable` with the reason and names no
+action. The UI never calls an action the backend has not declared.
 
 Every action passes, in order: **identity -> capability -> permission -> policy -> workspace scope ->
 approval (where required) -> resource budget -> audit/event recording**.

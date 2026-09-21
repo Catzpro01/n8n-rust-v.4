@@ -185,4 +185,4 @@ and on a phone — with the editor unaffected when AI is absent.
 - No AI surface that can block the workflow editor.
 
 Each of these maps to a hard stop in the brief: if a phase appears to need one of them, it stops and
-goes to the manager as a decision record, like XA-11 … XA-17.
+goes to the manager as a decision record, like XA-11 … XA-18.
