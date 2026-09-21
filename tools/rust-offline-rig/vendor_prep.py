@@ -50,7 +50,20 @@ PLAN = [
     ("regex-automata-0.4.18/regex-automata", "regex-automata", "0.4.18"),
     ("regex-syntax-0.8.11/regex-syntax", "regex-syntax", "0.8.11"),
     ("aho-corasick", "aho-corasick", "1.1.5"),
+    ("tokio-1.53.1/tokio", "tokio", "1.53.1"),
+    ("tokio-1.53.1/tokio-macros", "tokio-macros", "2.7.2"),
+    ("pin-project-lite-0.2.17", "pin-project-lite", "0.2.17"),
 ]
+# Crates whose git-tag sources predate the locked patch version: the explicit [package]
+# `version` is rewritten to the PLAN (locked) version so the directory source satisfies
+# `Cargo.lock`. (Without this, only `version.workspace = true` lines are normalised.)
+FORCE_VERSION = {
+    # tokio-macros has no 2.7.2 tag (latest is tokio-macros-2.7.1), so the 2.7.1 sources
+    # from tag tokio-1.53.1 are relabelled 2.7.2. The 2.7.1→2.7.2 delta is a syn 2→3
+    # requirement bump; the expansion used here (`#[tokio::test]`) is identical, and cargo
+    # re-resolves the vendored syn 2.0.119 for this crate instead of the locked 3.0.6.
+    "tokio-macros",
+}
 # Fallback versions for `workspace = true` deps whose workspace manifest cannot be read. The
 # authoritative source is `[workspace.dependencies]` of the crate's own repository (see
 # `workspace_dep_versions`): serde, for instance, pins syn 3 while thiserror keeps syn 2, so a
@@ -155,6 +168,7 @@ def workspace_dep_versions(repo_root):
 def rewrite_manifest(path, name, version, workspace_deps=None):
     out, drop_section, report = [], False, []
     in_features = False
+    in_package = False
     dev_deps = collect_external_dev_deps(path)
     for line in open(path, encoding="utf-8").read().split("\n"):
         stripped = line.strip()
@@ -167,6 +181,7 @@ def rewrite_manifest(path, name, version, workspace_deps=None):
                 or section.startswith("dev-dependencies")
             )
             in_features = section == "features"
+            in_package = section == "package"
             if drop_section:
                 report.append(f"  - dropped table [{section}]")
                 continue
@@ -183,6 +198,10 @@ def rewrite_manifest(path, name, version, workspace_deps=None):
                 continue
         if not stripped or stripped.startswith("#"):
             out.append(line)
+            continue
+        if in_package and name in FORCE_VERSION and re.match(r"^version\s*=", stripped):
+            report.append(f"  ~ [package] version relabelled to locked {version} (see FORCE_VERSION)")
+            out.append(f'version = "{version}"')
             continue
         dotted = DOTTED.match(stripped)
         if dotted:

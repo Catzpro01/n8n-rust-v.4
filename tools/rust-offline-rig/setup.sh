@@ -25,8 +25,10 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 #   * `regex`, `regex-automata`, `regex-syntax` all come from the `rust-lang/regex` workspace.
 #   * `vendor_prep.py` maps each of these directory names onto a crate name + version (PLAN).
 #
-# Not vendored: tokio and its ~20-crate closure (a dev-dependency of `n8n-nodes-rust` only),
-# so `run.sh` leaves that member out of the workspace it builds.
+# Not vendored: nothing — since PR #41 both tokio consumers (`n8n-workflow` tests and
+# `n8n-nodes-rust` dev-deps) request only features `rt` + `macros`, whose closure is just
+# tokio + tokio-macros + pin-project-lite (the old "~20 crates" estimate assumed default
+# features). `run.sh` therefore builds the full workspace with no exclusions.
 CRATES=(
   "serde-1.0.229:serde-rs/serde:v1.0.229"
   "json-1.0.151:serde-rs/json:v1.0.151"
@@ -49,6 +51,8 @@ CRATES=(
   "regex-automata-0.4.18:rust-lang/regex:regex-automata-0.4.18"
   "regex-syntax-0.8.11:rust-lang/regex:regex-syntax-0.8.11"
   "aho-corasick:BurntSushi/aho-corasick:1.1.5"
+  "tokio-1.53.1:tokio-rs/tokio:tokio-1.53.1"
+  "pin-project-lite-0.2.17:taiki-e/pin-project-lite:v0.2.17"
 )
 
 mkdir -p "$RIG/dl" "$RIG/vendorsrc"

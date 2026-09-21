@@ -19,10 +19,11 @@ RIG="${RUST_RIG:-/tmp/rust-rig}"
 REPO="${REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 MODE="${1:-check}"; shift || true
 
-# Workspace members whose dependency closure is not vendored. `n8n-nodes-rust` pulls tokio
-# (dev-dependency, ~20 further crates incl. target-gated ones) which `setup.sh` deliberately
-# leaves out; the VPS / CI build it with a real registry. Set RIG_INCLUDE_ALL=1 to try anyway.
-EXCLUDE_MEMBERS=("n8n-nodes-rust")
+# Workspace members whose dependency closure is not vendored (empty: since PR #41 the rig
+# vendors the whole locked closure, tokio included — its `rt`+`macros` feature set pulls only
+# pin-project-lite and tokio-macros. Kept as a mechanism for future heavy dev-deps; the
+# exclusion branch below is skipped when the list is empty).
+EXCLUDE_MEMBERS=()
 
 [ -d "$RIG/vendor" ] || { echo "rig missing: run tools/rust-offline-rig/setup.sh first" >&2; exit 2; }
 

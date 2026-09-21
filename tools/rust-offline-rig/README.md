@@ -58,6 +58,7 @@ including all of `crates/n8n-workflow`'s integration tests, is built and run.
 | :--- | :--- | :--- |
 | 2026-09-17 | `run.sh check` on `crates/**` @ `014471e6` (Phase-3 workspace) | **PASS** — `Finished dev profile … in 6.26s`, 12 vendored deps compiled, 5 workspace crates checked |
 | 2026-09-18 | `run.sh check` + `run.sh test` on the Phase-3 workspace | **PASS** — 24 vendored deps @ the `Cargo.lock` versions, 7 of 8 crates, **79 tests green** (`n8n-workflow` 52 unit + 3 integration suites) |
+| 2026-09-21 | `run.sh check` + `run.sh test` @ `9307836` (PR #41) | **PASS** — 27 vendored deps, full 8 crates, **151 passed, 0 failed** (incl. 4 new tokio `runtime_runner` tests; `n8n-nodes-rust` built in-rig for the first time) |
 
 The 2026-09-18 run replaced the previous vendor set: the older `PLAN` stopped one crate
 short of the closure (`regex`/`indexmap` were missing, `syn` was a single version), so
@@ -73,8 +74,11 @@ short of the closure (`regex`/`indexmap` were missing, `syn` was a single versio
 * **Rewritten manifests.** Vendored manifests are not the upstream ones (see step 3).
   If a crate is added or upgraded, extend `PLAN` in `vendor_prep.py` *and* `CRATES` in
   `setup.sh`, then re-run with `RIG_REVENDOR=1`.
-* **Not the full workspace.** `n8n-nodes-rust` (and only that crate) is compiled by the CI
-  runner with the real registry, not here.
+* **tokio-macros relabel.** Upstream has no `tokio-macros-2.7.2` tag, so the 2.7.1
+  sources from tag `tokio-1.53.1` are relabelled to the locked 2.7.2 (`FORCE_VERSION` in
+  `vendor_prep.py`). The delta is a syn 2→3 requirement bump; cargo re-resolves the
+  vendored syn 2.0.119 for this crate instead of the locked 3.0.6. Macro expansion
+  (`#[tokio::test]`) is unaffected.
 * **No rustup.** `rust-toolchain.toml` files are dropped from vendored crates, and
   toolchain selection env vars (`RUSTUP_TOOLCHAIN`) have no effect here.
 * **Ephemeral.** `/tmp` is outside the snapshot, so the rig can disappear between
