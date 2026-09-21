@@ -10,7 +10,7 @@
  */
 import { CAPABILITY_STATES, CRITICALITY, TRUST_LEVELS } from './lifecycle.mjs';
 import { ACTIVATION_MODES } from './registry.mjs';
-import { AVAILABILITY_STATES } from './negotiation.mjs';
+import { AVAILABILITY_STATES, DEGRADATION_SITUATIONS } from './negotiation.mjs';
 import { BACKEND_STATES } from './backend-view.mjs';
 import { TRANSPORT_KINDS } from './transport.mjs';
 import { EVENT_NAMES } from './observability.mjs';
@@ -145,6 +145,13 @@ export const ARCHITECTURE_RULES = Object.freeze([
     enforcedBy: '10-profiles.test.mjs',
   }),
   Object.freeze({
+    id: 'A17',
+    statement: 'Every degradation situation (unavailable, disabled, unsupported, incompatible, degraded, not installed, migration-required) is a declared state with a reason and a fallback — never silent availability.',
+    vocabulary: DEGRADATION_SITUATIONS.map((row) => row.situation),
+    contract: '§19.8',
+    enforcedBy: '23-degradation.test.mjs',
+  }),
+  Object.freeze({
     id: 'A16',
     statement: 'An extension point is owned by a surface: a capability may only add to the hooks of the surfaces it occupies, never to a neighbour’s.',
     vocabulary: EXTENSION_POINT_SHAPES,
@@ -232,6 +239,10 @@ export function checkConformance(frontend) {
   const respectsOwnership = capabilities.every((capability) => capability.extensionPoints
     .every((hook) => !hookSurface.has(hook) || capability.surfaces.includes(hookSurface.get(hook))));
   record('A16', ownedHooks && respectsOwnership, `${hooks.length} hooks across ${new Set(hooks.map((point) => point.surface)).size} surfaces`);
+
+  // A17 — the degradation vocabulary is complete, and a real verdict carries a reason.
+  const sampleVerdict = frontend.negotiate({ capabilityId: frontend.availability()[0]?.id ?? 'settings' });
+  record('A17', DEGRADATION_SITUATIONS.length === 7 && sampleVerdict.reasons.length > 0 && typeof sampleVerdict.migrationRequired === 'boolean', `${DEGRADATION_SITUATIONS.length} situations, sample state "${sampleVerdict.state}"`);
 
   // A13 — the frontend/backend view is derived, with sources.
   const featureAvailability = frontend.featureAvailability();

@@ -105,7 +105,8 @@
       "version-mismatch",
       "unavailable",
       "unsupported",
-      "disabled"
+      "disabled",
+      "migration-required"
     ],
     "origins": [
       "frontend-registered",
@@ -117,7 +118,52 @@
       "A consumer that was not granted a capability is not handed its metadata.",
       "An operation name is <domain>.<name> — the same grammar the envelope enforces.",
       "Frontend readiness and backend availability are separate declarations and are shown side by side (featureAvailability)."
-    ]
+    ],
+    "degradationSituations": [
+      {
+        "situation": "unavailable",
+        "state": "unavailable",
+        "trigger": "the capability is not declared or advertised at all"
+      },
+      {
+        "situation": "disabled",
+        "state": "disabled",
+        "trigger": "a declared lifecycle state of \"disabled\""
+      },
+      {
+        "situation": "unsupported",
+        "state": "unavailable",
+        "trigger": "the instance does not implement the capability"
+      },
+      {
+        "situation": "incompatible",
+        "state": "version-mismatch",
+        "trigger": "a required version differs in its major component"
+      },
+      {
+        "situation": "degraded",
+        "state": "degraded",
+        "trigger": "the instance implements the capability partially, or a required operation is missing"
+      },
+      {
+        "situation": "not-installed",
+        "state": "degraded",
+        "trigger": "the frontend declares the capability but has not installed it"
+      },
+      {
+        "situation": "migration-required",
+        "state": "migration-required",
+        "trigger": "a declared migration gate has not run"
+      }
+    ],
+    "permissions": {
+      "declaredAs": "<domain>:<action> names on the capability",
+      "reportedAs": "verdict.requiredPermissions (describe().permissions)",
+      "rules": [
+        "A permission is a name, never a credential — no token, key or cookie is representable.",
+        "Permissions are never inferred from routes, menus or nesting, and a malformed one is refused at registration."
+      ]
+    }
   },
   "delivery": {
     "transports": [

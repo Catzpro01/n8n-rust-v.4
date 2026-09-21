@@ -39,11 +39,21 @@ export const CAPABILITY_SCHEMA = Object.freeze({
     'interactions',
     // who owns the capability (validated against the owners declared in the manifests)
     'owner',
+    // what a consumer must be allowed to do before it may use the capability
+    'permissions',
+    // a declared migration gate: the capability exists but cannot serve until migrated
+    'migration',
   ]),
 });
 
 /** Operations are named `<domain>.<name>` — the same grammar the envelope enforces. */
 const OPERATION_PATTERN = /^[a-z][a-z0-9-]*(?:\.[a-z][a-z0-9-]*)+$/;
+
+/** A permission is `<domain>:<action>` — a verb, never a credential. */
+const PERMISSION_PATTERN = /^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*$/;
+
+/** Keys a migration declaration may carry; anything else is a second source of truth. */
+const MIGRATION_FIELDS = Object.freeze(['required', 'from', 'to', 'detail']);
 
 /**
  * The operation names a capability publishes. An operation may be a plain string
@@ -192,6 +202,37 @@ export function validateCapability(capability, catalog = {}) {
       errors.push(`"owner" must be an agent id (e.g. "agent-01") or "manager"`);
     } else if (knownOwners.size > 0 && !knownOwners.has(capability.owner)) {
       errors.push(`unknown owner "${capability.owner}" (declared owners: ${[...knownOwners].join(', ')})`);
+    }
+  }
+
+  // Required permissions are declared data: a consumer is told what it must be
+  // allowed to do, and the declaration never carries the credential itself.
+  if (capability.permissions !== undefined) {
+    if (!Array.isArray(capability.permissions)) {
+      errors.push('"permissions" must be an array of "<domain>:<action>" strings');
+    } else {
+      for (const permission of capability.permissions) {
+        if (typeof permission !== 'string' || !PERMISSION_PATTERN.test(permission)) {
+          errors.push(`permission "${permission}" must look like "<domain>:<action>"`);
+        }
+      }
+      if (new Set(capability.permissions).size !== capability.permissions.length) errors.push('"permissions" must not repeat a permission');
+    }
+  }
+
+  // A migration gate is a declared fact: the capability exists, but a consumer may
+  // not use it until the migration has happened. Declaring it keeps the UI from
+  // treating "present but not migrated" as available.
+  if (capability.migration !== undefined) {
+    if (capability.migration === null || typeof capability.migration !== 'object' || Array.isArray(capability.migration)) {
+      errors.push('"migration" must be an object ({ required, from, to, detail })');
+    } else {
+      for (const key of Object.keys(capability.migration)) {
+        if (!MIGRATION_FIELDS.includes(key)) errors.push(`unknown migration field "${key}" (one of ${MIGRATION_FIELDS.join(', ')})`);
+      }
+      if (capability.migration.required !== undefined && typeof capability.migration.required !== 'boolean') {
+        errors.push('"migration.required" must be a boolean');
+      }
     }
   }
 
@@ -375,6 +416,8 @@ export function createFrontendRegistry({ surfaces = [], extensionPoints = [], ow
       lifecycle: capability.lifecycle ?? 'available',
       requirements: Object.freeze({ ...(capability.requirements ?? {}) }),
       owner: capability.owner ?? null,
+      permissions: Object.freeze([...(capability.permissions ?? [])]),
+      migration: capability.migration ? Object.freeze({ required: capability.migration.required === true, ...capability.migration }) : null,
       operations: Object.freeze(operationsOf(capability)),
       interactions: Object.freeze(interactionsOf(capability)),
       degradation: capability.degradation ? Object.freeze({ ...capability.degradation }) : null,
@@ -476,6 +519,8 @@ export function createFrontendRegistry({ surfaces = [], extensionPoints = [], ow
       trust: capability.trust,
       surfaces: capability.surfaces,
       owner: capability.owner,
+      permissions: capability.permissions,
+      migration: capability.migration,
       operations: capability.operations,
       interactions: capability.interactions,
       degradation: degradationFor(capability),
