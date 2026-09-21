@@ -31,6 +31,11 @@ import { CAPABILITY_IDENTITY_FIELDS, SEAM_FORBIDDEN, SEAM_INPUTS, consumeInput }
  */
 const EXTENSION_POINT_SHAPES = Object.freeze(['surface-owned', 'additive-only', 'declared-hook']);
 
+/** What a quoted word must carry, and what an unquoted one must declare instead. */
+const VOCABULARY_PROVENANCE_FIELDS = Object.freeze(['contract', 'version', 'owner', 'file', 'declaration']);
+const VOCABULARY_PUBLICATION_FIELDS = Object.freeze(['owner', 'domain', 'decision', 'what']);
+const VOCABULARY_LOCAL_FIELDS = Object.freeze(['mapsTo', 'reason', 'subject', 'declaredOverlap']);
+
 /** What a check returns when it cannot run. */
 export const CONFORMANCE_STATES = Object.freeze(['pass', 'fail', 'structural']);
 
@@ -205,6 +210,20 @@ export const ARCHITECTURE_RULES = Object.freeze([
     enforcedBy: '28-seam.test.mjs',
   }),
   Object.freeze({
+    id: 'A25',
+    statement: 'A shared word is quoted from the declaration that owns it, with a contract, a version and an owner; a file no contract publishes is recorded as pending, with the decision that asks for one.',
+    vocabulary: Object.freeze([...VOCABULARY_PROVENANCE_FIELDS, ...VOCABULARY_PUBLICATION_FIELDS]),
+    contract: '§19.17',
+    enforcedBy: '29-alignment.test.mjs',
+  }),
+  Object.freeze({
+    id: 'A26',
+    statement: 'Where a canonical word exists the frontend uses it or maps to it: provider and runtime kinds are the canonical terms, and every permission a declared capability requires is a declared permission word.',
+    vocabulary: VOCABULARY_LOCAL_FIELDS,
+    contract: '§19.17',
+    enforcedBy: '24-vocabulary.test.mjs',
+  }),
+  Object.freeze({
     id: 'A16',
     statement: 'An extension point is owned by a surface: a capability may only add to the hooks of the surfaces it occupies, never to a neighbour’s.',
     vocabulary: EXTENSION_POINT_SHAPES,
@@ -334,6 +353,30 @@ export function checkConformance(frontend) {
     && Object.keys(identity).length === CAPABILITY_IDENTITY_FIELDS.length + 1
     && identity.origin === 'frontend-declared',
   `${Object.keys(identity).length} fields for "${identity.id}", origin ${identity.origin}`);
+
+  // A25 — a quoted word carries its provenance; an unpublished file is recorded, not
+  // given an invented contract; and the lock has no undeclared local word.
+  const describedVocabulary = frontend.describeVocabulary();
+  const publicationPending = describedVocabulary.canonical.filter((set) => set.contract === null);
+  const pendingRecorded = publicationPending.every((set) => set.publicationPending
+    && VOCABULARY_PUBLICATION_FIELDS.every((field) => typeof set.publicationPending[field] === 'string' && set.publicationPending[field].length > 0)
+    && set.publicationPending.what.length > 40);
+  const localVocabularyDeclared = describedVocabulary.local.every((set) => set.mapsTo === null
+    || describedVocabulary.canonical.some((canonical) => canonical.id === set.mapsTo));
+  record('A25', describedVocabulary.canonical.length >= 6 && publicationPending.length >= 1 && pendingRecorded
+    && localVocabularyDeclared
+    && conflicts.ok,
+  `${describedVocabulary.canonical.length} quoted sets, ${describedVocabulary.local.length} local, ${publicationPending.length} pending publication`);
+
+  // A26 — the frontend speaks the canonical kind words, and a permission it declares is
+  // a declared permission word (never an invented synonym).
+  const localVocabulary = (id) => describedVocabulary.local.find((set) => set.id === id)?.values ?? [];
+  const declaredPermissions = frontend.manifests.capabilities.flatMap((capability) => capability.permissions ?? []);
+  const permissionsDeclared = declaredPermissions.every((permission) => localVocabulary('frontendCapabilityPermission').includes(permission));
+  const kindsAreCanonical = localVocabulary('providerKind').every((kind) => PROVIDER_KINDS.includes(kind))
+    && localVocabulary('runtimeKind').every((kind) => RUNTIME_KINDS.includes(kind));
+  record('A26', permissionsDeclared && kindsAreCanonical,
+  `${declaredPermissions.length} declared permissions, ${PROVIDER_KINDS.length} provider kinds, ${RUNTIME_KINDS.length} runtime kinds`);
 
   // A13 — the frontend/backend view is derived, with sources.
   const featureAvailability = frontend.featureAvailability();

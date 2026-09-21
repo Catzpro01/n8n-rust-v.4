@@ -47,8 +47,20 @@ test('every shared vocabulary is quoted with provenance, not re-invented', () =>
     assert.ok(set.values.length > 0, `${set.id} declares values`);
     assert.ok(set.question.length > 20, `${set.id} says which question it answers`);
     assert.ok(set.provenance.file.startsWith('apps/n8n-lego/src/lego/'), `${set.id} quotes the backend foundation`);
-    assert.ok(set.provenance.symbol.length > 0, `${set.id} names the declaration it read`);
+    assert.ok((set.provenance.symbol ?? set.provenance.path).length > 0, `${set.id} names the declaration it read`);
     assert.equal(new Set(set.values).size, set.values.length, `${set.id} has no duplicate term`);
+  }
+  // A vocabulary whose file no contract publishes must say so, and must ask for one:
+  // no invented contract id, no silent assumption that the closest-sounding row owns it.
+  const decisions = new Set(DECISIONS.decisions.map((decision) => decision.id));
+  const pending = VOCABULARIES.filter((set) => set.provenance.contract === null);
+  assert.ok(pending.length >= 1, `${pending.length} vocabularies whose publication is pending`);
+  for (const set of pending) {
+    const record = set.publicationPending;
+    assert.ok(record && typeof record === 'object', `${set.id} carries a structured publication record`);
+    assert.ok(record.owner.length > 0 && record.domain.length > 0, `${set.id} names the owner and the domain`);
+    assert.ok(record.what.length > 40, `${set.id} says exactly what is unpublished`);
+    assert.ok(decisions.has(record.decision), `${set.id} points at a recorded decision (${record.decision})`);
   }
   // The lock is data a reader can check without opening either implementation.
   const described = describeVocabulary();
@@ -105,9 +117,12 @@ test('a renamed-for-style vocabulary is declared rather than silently changed', 
   // `unitStatus` rides in the pinned boot payload; renaming it would change a browser
   // contract for a naming reason. The lock records the mapping instead.
   const unit = vocabularyOf('unitStatus');
-  assert.deepEqual(unit.mirror, { declared: 'planned', available: 'implemented', partial: 'partial', unsupported: 'unsupported' });
+  // `declared` maps to `contract-only`, not to `planned`: P2.10 gave the backend the exact
+  // word for "the contract is fixed and gate-checked, only the implementation is missing",
+  // which is what a declared unit is.
+  assert.deepEqual(unit.mirror, { declared: 'contract-only', available: 'implemented', partial: 'partial', unsupported: 'unsupported' });
   assert.equal(unit.extra.length, 2, 'both extra spellings carry a reason');
-  for (const entry of unit.extra) assert.match(entry.reason, /canonical `(planned|implemented)`/);
+  for (const entry of unit.extra) assert.match(entry.reason, /canonical `(contract-only|implemented)`/);
 });
 
 test('an undeclared term is refused, and an unknown vocabulary is never skipped', () => {

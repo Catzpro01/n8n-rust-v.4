@@ -37,6 +37,9 @@ frontend conversation — inventing vocabulary is how two agents end up disagree
 | **Model / tool / application provider** | Three provider kinds: inference, tools through a gateway, and an application reachable directly (GitHub is first-class without a gateway). |
 | **MCP** | An interoperability layer for tools, resources and prompts — not the Agent Machine, never a transport in a business contract. States: connected, unavailable, permission-required, capability-unsupported. |
 | **Work trace** | A bounded agent timeline: 26 event types in 7 namespaces, 18 row fields, 200 rows, 280-character summaries. References artifacts and approvals; stores no payload and no chain of thought. |
+| **contract-only** | Canonical status for “contract fixed and gate-checked, implementation missing” — what a catalog calls `declared`. |
+| **Publication pending** | A word quoted from a file no contract row publishes: owner, domain and the decision that asks for one (`XA-9`), never an invented version. |
+| **Canonical word** | The word the owning contract declares; a local word maps to it (`inference:invoke → ai:model:invoke`) or carries a reason. |
 | **Delegation** | A child agent's parentage, task, runtime and session — recorded, granting nothing: a nested agent holds exactly the permissions it was given. |
 | **Fail-soft / fail-closed** | Fail-soft: a broken LEGO must not stop the stock UI. Fail-closed: an invalid declaration stops the descriptor rather than shipping a half-truth. |
 | **Impact graph** | "If this changes, what must be tested?" — answered from declaration data, not by reading source. |

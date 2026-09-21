@@ -31,7 +31,7 @@
 import { DEVICE_PROFILES, REQUIREMENT_FIELDS, resolveSupport } from './profiles.mjs';
 
 /** Kinds of provider the frontend may be told about. Vendor names are examples, never fields. */
-export const PROVIDER_KINDS = Object.freeze(['model-gateway', 'tool-app-gateway', 'application-provider']);
+export const PROVIDER_KINDS = Object.freeze(['model-provider', 'tool-provider', 'application-provider']);
 
 /**
  * Kinds of runtime. `agent-runtime` does real work; `simulation-runtime` produces
@@ -210,8 +210,8 @@ export function describeInstallation({ inference = false, runtimes = [], mcp = [
     inference: inference ? 'available' : 'unavailable',
     agentRuntime: agentRuntimes.length > 0 ? 'available' : 'unavailable',
     simulationRuntime: simulated.length > 0 ? 'available' : 'unavailable',
-    toolGateway: providers.some((provider) => provider.kind === 'tool-app-gateway') ? 'available' : 'unavailable',
-    modelProvider: providers.some((provider) => provider.kind === 'model-gateway') ? 'available' : 'unavailable',
+    toolGateway: providers.some((provider) => provider.kind === 'tool-provider') ? 'available' : 'unavailable',
+    modelProvider: providers.some((provider) => provider.kind === 'model-provider') ? 'available' : 'unavailable',
     mcp: connected.length > 0 ? 'connected' : mcp.length > 0 ? 'declared' : 'absent',
   });
   return Object.freeze({
@@ -224,7 +224,7 @@ export function describeInstallation({ inference = false, runtimes = [], mcp = [
       ? null
       : 'The editor and the AI foundation are installed; no model or agent runtime is configured yet. Add a provider when you want inference.',
     /** What a user could configure next — declared order, no vendor named. */
-    configurable: Object.freeze(inference ? [] : ['model-gateway', 'agent-runtime', 'tool-app-gateway']),
+    configurable: Object.freeze(inference ? [] : ['model-provider', 'agent-runtime', 'tool-provider']),
   });
 }
 

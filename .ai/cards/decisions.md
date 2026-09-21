@@ -107,3 +107,7 @@ Format: **decision** — why — *rules out*.
   provider, runtime and tool types stay distinct; a model-less installation is valid and the UI
   says which layer is absent. *Rules out* shipping an inference client, a vendor field or a
   chain-of-thought store while the contracts are still being agreed.
+- **D26 — a quoted word records its publication.** A canonical vocabulary names its contract,
+  version, owner and declaration; a file no contract row publishes is declared *pending* with
+  the decision that asks for one (`XA-9`). Verified against the backend tree at `6f7b66da`:
+  38 sets, 0 drift. *Rules out* a second dialect, an invented version and a silent rename.

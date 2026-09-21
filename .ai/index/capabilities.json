@@ -301,46 +301,39 @@
       "frontend-declared",
       "backend-advertised"
     ],
+    "triggers": "negotiation.mjs -> DEGRADATION_SITUATIONS (one row per situation; the prose stays in the module)",
     "degradationSituations": [
       {
         "situation": "available",
-        "state": "available",
-        "trigger": "the capability is declared or advertised and nothing blocks it"
+        "state": "available"
       },
       {
         "situation": "unavailable",
-        "state": "capability-unavailable",
-        "trigger": "the capability is not declared or advertised at all"
+        "state": "capability-unavailable"
       },
       {
         "situation": "disabled",
-        "state": "dependency-disabled",
-        "trigger": "a declared lifecycle state of \"disabled\""
+        "state": "dependency-disabled"
       },
       {
         "situation": "unsupported",
-        "state": "feature-unsupported",
-        "trigger": "the instance does not implement the capability (the compatibility layer answers 501)"
+        "state": "feature-unsupported"
       },
       {
         "situation": "incompatible",
-        "state": "version-incompatible",
-        "trigger": "a required version cannot be satisfied by what is offered"
+        "state": "version-incompatible"
       },
       {
         "situation": "degraded",
-        "state": "degraded",
-        "trigger": "the instance implements the capability partially, or an operation is missing"
+        "state": "degraded"
       },
       {
         "situation": "not-installed",
-        "state": "optional-absent",
-        "trigger": "the frontend declares the capability but has not installed it"
+        "state": "optional-absent"
       },
       {
         "situation": "migration-required",
-        "state": "migration-required",
-        "trigger": "a declared migration gate has not run"
+        "state": "migration-required"
       }
     ],
     "rules": "packages/frontend-lego/src/negotiation.mjs → describeNegotiation().rules"
@@ -495,8 +488,8 @@
       "agent-work-trace"
     ],
     "providerKinds": [
-      "model-gateway",
-      "tool-app-gateway",
+      "model-provider",
+      "tool-provider",
       "application-provider"
     ],
     "runtimeKinds": [
@@ -538,10 +531,13 @@
         "chainOfThought"
       ]
     },
-    "runtimeSelection": "derived from the declared device budget (src/profiles.mjs): real before simulated, local before remote; nothing requires every runtime locally"
+    "runtimeSelection": "derived from the declared device budget (src/profiles.mjs): real before simulated, local before remote; no runtime is required locally"
   },
   "seam": {
     "note": "What the frontend may consume from the other side of the seam, and the one identity every capability is projected into (src/seam.mjs).",
+    "identityFields": 16,
+    "forbiddenSources": 7,
+    "publicationPending": "a quoted word whose file no contract row publishes names owner, domain and decision (XA-9)",
     "inputs": [
       {
         "id": "capability-id",
