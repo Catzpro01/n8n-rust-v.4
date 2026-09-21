@@ -233,6 +233,48 @@ test('the context/session/token documents carry the invariant and the honesty ru
   assert.match(tokens, /never fabricate|not shown at all|fabricated number/, 'fabrication is forbidden');
 });
 
+test('the reader test exists: thirty questions, each pointing at a document that is here', () => {
+  const project = read(MASTER_PLAN_FILES.project);
+  const start = project.indexOf('## 11. Reading test');
+  assert.ok(start > 0, 'the master plan carries the reading test');
+  const section = project.slice(start, project.indexOf('## See also', start));
+  const rows = [...section.matchAll(/^\| (\d+) \| (.+?) \| (.+?) \|$/gm)];
+  assert.ok(rows.length >= 30, `the reading test lists ${rows.length} questions`);
+  assert.deepEqual(
+    rows.map((row) => Number(row[1])),
+    rows.map((_, index) => index + 1),
+    'the questions are numbered 1..N with no gap',
+  );
+  for (const [, number, question, target] of rows) {
+    assert.match(question.trim(), /\?$/, `question ${number} is a question`);
+    const files = [...target.matchAll(/`([^`]+)`/g)]
+      .map((match) => /([A-Z0-9_]+\.md)/.exec(match[1]))
+      .filter(Boolean)
+      .map((match) => match[1]);
+    assert.ok(files.length >= 1, `question ${number} points at a document`);
+    for (const file of files) {
+      assert.ok(MASTER.some((candidate) => candidate.endsWith('/' + file)), `question ${number} points at ${file}, which exists`);
+    }
+  }
+  const addressed = new Set();
+  for (const { body } of allDocs()) {
+    for (const match of body.matchAll(/XA-\d+/g)) addressed.add(match[0]);
+  }
+  assert.ok(addressed.size >= 17, `${addressed.size} decision ids are named across the specification`);
+});
+
+test('no master document repeats a retired count or restates generated data as its own source', () => {
+  for (const { file, body } of allDocs()) {
+    assert.equal(/\b25\s+(core\s+)?(LEGO\s+)?domains?\b/i.test(body), false, `${file} does not claim 25 domains`);
+    assert.equal(/\b25\s+core\s+LEGO\b/i.test(body), false, `${file} does not claim 25 core LEGO`);
+  }
+  const project = read(MASTER_PLAN_FILES.project);
+  assert.match(project, /projection, not a source/, 'the domain table says it is a projection');
+  assert.match(project, /domains\.json/, 'and names the registry it projects');
+  const status = read(MASTER_PLAN_FILES.status);
+  assert.match(status, /registry wins/, 'the status document submits to the registry');
+});
+
 test('every document is cross-referenced, and every decision it names is recorded', () => {
   for (const { file, body } of allDocs()) {
     const others = MASTER.filter((candidate) => candidate !== file)

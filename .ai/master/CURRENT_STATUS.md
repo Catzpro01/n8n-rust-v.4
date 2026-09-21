@@ -12,7 +12,7 @@ registry wins and this file is a defect.
 | Ref | Commit | Notes |
 | :--- | :--- | :--- |
 | `main` (protected) | `cb71dbb201d635b15b49933764c2c2336e745809` | never modified, never force-pushed |
-| agent-1 branch `arena/01a0c53e-n8n-rust-v-4` | `83afdddd` (master documentation) + this correction, on top of `bdd0f1d2` | frontend + compatibility + project memory |
+| agent-1 branch `arena/01a0c53e-n8n-rust-v-4` | `396cd499` (platform/deployment strategy, registry-verified tables) on top of `b11dbc9e` <- `83afdddd` <- `bdd0f1d2` | frontend + compatibility + project memory |
 | agent-2 branch `arena/01a0c521-n8n-rust-v-4` | `6f7b66daec9b90c33cc13ab5e7538ef931174c09` | P2.10 — capability contracts, operation vocabulary, AI Foundation contracts |
 
 ## 2. The architecture as declared today
@@ -37,7 +37,7 @@ registry wins and this file is a defect.
 
 | Gate | Result |
 | :--- | :--- |
-| `node --test packages/frontend-lego/test/*.test.mjs` | **281 tests across 30 suites: 277 pass, 4 skip** (backend comparisons absent), **0 fail** |
+| `node --test packages/frontend-lego/test/*.test.mjs` | **283 tests across 30 suites: 279 pass, 4 skip** (backend comparisons absent), **0 fail** |
 | `node --test apps/n8n-lego/test/*.test.mjs` | 36/36 |
 | `node apps/n8n-lego/scripts/capture-frontend-evidence.mjs` | 50/50 PASS |
 | `N8N_BACKEND_LEGO_ROOT=<P2.10 tree> node --test .../test/29-alignment.test.mjs` | 7/7, 0 skipped — every canonical set compared against the backend, zero drift |
@@ -58,16 +58,22 @@ registry wins and this file is a defect.
 
 ## 5. This change
 
-Adds the master documentation set (`.ai/master/`, 27 documents, 174 KB of a 256 KB budget) with its
-own gate (`test/30-master-plan.test.mjs`), the 26-domain correction, the recorded decision that
-Universal Translation is an official LEGO target, the extended open-decision register
-(`recordVersion 1.1.0`, 17 rows) and the blocker/status registers. It changes **no** runtime, **no**
-contract and **no** boot payload: the boot descriptor is byte-identical at 18,126 B, the vocabulary
-lock is untouched, and the only test expectation added is test/30 itself.
+Adds the master documentation set (`.ai/master/`, **28 documents**, 191,496 B of a 262,144 B budget,
+largest 23,053 B of a 32,768 B per-file cap) with its own gate (`test/30-master-plan.test.mjs`, now
+18 tests), the 26-domain correction — the domain table is a **generated projection** of `domains.json`
+@ `6f7b66da`, not prose — the platform/deployment strategy (four deployment modes, low-resource and
+Termux viability, STREAM backpressure, the Rust-by-measurement rule), the recorded decision that
+Universal Translation is an official LEGO target, the corrected fifteen-LEGO publication counts
+(2 published, 6 declared `contract-only`, 2 partial and gated, 5 `publicationPending`), the extended
+open-decision register (`recordVersion 1.1.0`, 17 rows), the thirty-question **reading test** a new
+agent must be able to satisfy from this tree alone, and the blocker/status registers. It changes **no**
+runtime, **no** contract and **no** boot payload: the boot descriptor is byte-identical at 18,126 B,
+the retrieval pack is unchanged at 81,678 B (242 B headroom), and the only test expectation added is
+test/30 itself.
 
-Verified after the change: frontend **281 / 277 / 0 fail / 4 skip** across 30 suites; app **36/36**;
-`test/29` against the P2.10 tree **7/7, 0 skipped**; evidence **50/50** (JSON regenerated);
-sub-LEGO audit **PASSED**; `verify:fast` **5/10** (the unchanged baseline, B-10).
+Verified after the change: frontend **283 / 279 / 0 fail / 4 skip** across 30 suites (test/30
+**18/18**); app **36/36**; `test/29` against the P2.10 tree **7/7, 0 skipped**; evidence **50/50**
+(JSON regenerated); sub-LEGO audit **PASSED**; `verify:fast` **5/10** (the unchanged baseline, B-10).
 
 ## 6. What a new agent should read, in order
 
