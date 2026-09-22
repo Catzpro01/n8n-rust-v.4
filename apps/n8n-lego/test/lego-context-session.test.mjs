@@ -1,5 +1,6 @@
 /** P2.13 backend Context & Session contract and lifecycle tests. */
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import {
@@ -73,6 +74,9 @@ test('session states and context manager states are explicit, not booleans', () 
   assert.deepEqual(CONTEXT_MANAGER_STATES, ['NORMAL', 'PREPARE', 'ROLLOVER']);
   assert.deepEqual(AGENT_SESSION_TRANSITIONS.created, ['running', 'waiting', 'cancelled']);
   assert.deepEqual(AGENT_SESSION_TRANSITIONS.completed, []);
+  const foundation = JSON.parse(readFileSync(new URL('../src/lego/manifest/ai-foundation.json', import.meta.url), 'utf8'));
+  assert.deepEqual(foundation.agentSession.transitions, AGENT_SESSION_TRANSITIONS,
+    'the implementation transition table must have a declarative backend source');
 });
 
 test('context creation validates scope, parent references, snapshot identity and checksum lineage', () => {
@@ -115,6 +119,21 @@ test('session state is bounded identity plus references, never transcript data',
   assert.equal('artifactRef' in session, true);
   assert.equal('traceRef' in session, true);
   assert.throws(() => m.createSession({ sessionId: 'session-2', agentId: 'agent-2', transcript: 'raw conversation' }), /not allowed|unbounded/);
+});
+
+test('close implements explicit completion, failure and cancellation semantics', () => {
+  const completed = runningSession();
+  assert.equal(completed.m.closeSession(completed.session.sessionId).status, 'completed');
+  assert.equal(completed.m.closeSession(completed.session.sessionId).status, 'completed', 'same terminal close is idempotent');
+  assert.throws(() => completed.m.closeSession(completed.session.sessionId, { status: 'cancelled' }), /already closed/);
+
+  const cancelled = manager();
+  const cancelledSession = cancelled.createSession({ sessionId: 'cancel-me', agentId: 'agent-1' });
+  assert.equal(cancelled.closeSession(cancelledSession.sessionId, { status: 'cancelled' }).status, 'cancelled');
+
+  const failed = runningSession();
+  assert.equal(failed.m.closeSession(failed.session.sessionId, { status: 'failed' }).status, 'failed');
+  assert.throws(() => failed.m.closeSession(failed.session.sessionId, { status: 'running' }), /not terminal|already closed/);
 });
 
 test('compaction creates an explicitly descended bounded snapshot', () => {

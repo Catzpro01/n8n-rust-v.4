@@ -668,9 +668,9 @@
         "constraints",
         "decisions",
         "activeEntities",
-        "toolState",
+        "toolStateReferences",
         "artifacts",
-        "refs",
+        "importantReferences",
         "errors",
         "unresolvedQuestions",
         "compressedHistory"

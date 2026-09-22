@@ -448,7 +448,35 @@
       "Memory persistence",
       "provider integration",
       "capability grants"
-    ]
+    ],
+    "transitions": {
+      "created": [
+        "running",
+        "waiting",
+        "cancelled"
+      ],
+      "running": [
+        "waiting",
+        "paused",
+        "completed",
+        "failed",
+        "cancelled"
+      ],
+      "waiting": [
+        "running",
+        "paused",
+        "completed",
+        "failed",
+        "cancelled"
+      ],
+      "paused": [
+        "running",
+        "cancelled"
+      ],
+      "completed": [],
+      "failed": [],
+      "cancelled": []
+    }
   },
   "delegation": {
     "contract": "ai.agent-delegation",

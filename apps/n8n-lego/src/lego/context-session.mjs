@@ -32,6 +32,16 @@ export const CONTEXT_OPERATIONS = Object.freeze([
   'load', 'compact', 'rollover', 'rehydrate', 'verify',
 ]);
 
+const SESSION_TRANSITIONS = Object.freeze({
+  created: Object.freeze(['running', 'waiting', 'cancelled']),
+  running: Object.freeze(['waiting', 'paused', 'completed', 'failed', 'cancelled']),
+  waiting: Object.freeze(['running', 'paused', 'completed', 'failed', 'cancelled']),
+  paused: Object.freeze(['running', 'cancelled']),
+  completed: Object.freeze([]),
+  failed: Object.freeze([]),
+  cancelled: Object.freeze([]),
+});
+
 export const AGENT_SESSION_CONTRACT = Object.freeze({
   id: 'ai.agent-session',
   version: '1.0.0',
@@ -48,15 +58,7 @@ export const AGENT_SESSION_CONTRACT = Object.freeze({
 export const AGENT_SESSION_CONTRACT_VERSION = AGENT_SESSION_CONTRACT.version;
 export const AGENT_SESSION_STATES = AGENT_SESSION_CONTRACT.states;
 export const AGENT_SESSION_OPERATIONS = Object.freeze(['create', 'status', 'close']);
-export const AGENT_SESSION_TRANSITIONS = Object.freeze({
-  created: Object.freeze(['running', 'waiting', 'cancelled']),
-  running: Object.freeze(['waiting', 'paused', 'completed', 'failed', 'cancelled']),
-  waiting: Object.freeze(['running', 'paused', 'completed', 'failed', 'cancelled']),
-  paused: Object.freeze(['running', 'cancelled']),
-  completed: Object.freeze([]),
-  failed: Object.freeze([]),
-  cancelled: Object.freeze([]),
-});
+export const AGENT_SESSION_TRANSITIONS = SESSION_TRANSITIONS;
 
 export const CONTEXT_MANAGER_STATES = Object.freeze(['NORMAL', 'PREPARE', 'ROLLOVER']);
 export const CONTINUATION_PACKAGE_VERSION = '1.0.0';
@@ -555,6 +557,31 @@ function makeManager(options = {}) {
     return publicSession(record);
   }
 
+  /**
+   * Closes a bounded session with an explicit terminal outcome. Cancellation and
+   * failure are outcomes, not hidden execution behavior; a repeated close with
+   * the same outcome is idempotent, while changing a terminal outcome fails.
+   */
+  function closeSession(sessionId, options = {}) {
+    assertPlainObject(options, 'close');
+    assertAllowedFields(options, new Set(['status']), 'close');
+    const record = sessions.get(sessionId);
+    if (!record) fail(`session '${sessionId}' does not exist`);
+    const status = options.status ?? 'completed';
+    if (!['completed', 'failed', 'cancelled'].includes(status)) {
+      fail(`close status '${status}' is not terminal`, { allowed: ['completed', 'failed', 'cancelled'] });
+    }
+    if (['completed', 'failed', 'cancelled'].includes(record.status)) {
+      if (record.status !== status) {
+        invalidTransition(`session '${sessionId}' is already closed as ${record.status}`, {
+          sessionId, from: record.status, to: status,
+        });
+      }
+      return publicSession(record);
+    }
+    return transitionSession(sessionId, status);
+  }
+
   function buildContinuation(sessionId, input = {}) {
     const session = sessions.get(sessionId);
     if (!session) fail(`session '${sessionId}' does not exist`);
@@ -742,6 +769,7 @@ function makeManager(options = {}) {
     createSession,
     getSession,
     transitionSession,
+    closeSession,
     buildContinuation,
     verifyContinuation: (packageRecord) => verifyContinuationPackage(packageRecord, { limits }),
     rehydrateContinuation,

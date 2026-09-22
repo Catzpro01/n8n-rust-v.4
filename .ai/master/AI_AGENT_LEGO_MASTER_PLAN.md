@@ -351,7 +351,7 @@ Every external action routes through Capability + Policy + Workspace. An agent n
 
 **Scopes:** `GLOBAL` > `WORKFLOW` > `NODE` > `EXECUTION` > `EVENT` > `AGENT` > `TASK`
 
-**Continuation package:** `identity`, `objective`, `plan`, `completedWork`, `unfinishedWork`, `constraints`, `decisions`, `activeEntities`, `toolState`, `artifacts`, `refs`, `errors`, `unresolvedQuestions`, `compressedHistory`
+**Continuation package:** `identity`, `objective`, `plan`, `completedWork`, `unfinishedWork`, `constraints`, `decisions`, `activeEntities`, `toolStateReferences`, `artifacts`, `importantReferences`, `errors`, `unresolvedQuestions`, `compressedHistory`
 
 > Never wait for the exact context limit. Rollover is triggered at a declared threshold, because a rollover attempted at 100% has no room left to write the continuation package — the one operation that makes the rollover survivable.
 
