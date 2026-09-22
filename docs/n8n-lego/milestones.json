@@ -232,13 +232,17 @@
       "reconciliation": {
         "verdict": "RECONCILIATION_FAILED",
         "baseline": "e754c5df35b41b0ff2ac769519f05f056835411c",
-        "conflict": "Agent 1 Context & Session frontend-consumption branch is unavailable for the mandatory two-branch comparison.",
-        "contract": "ai.context@1.0.0 and ai.agent-session@1.0.0 backend contract rows are present on Agent 2; frontend consumption alignment cannot be verified without Agent 1 branch.",
-        "agent": "agent-1",
-        "reason": "The registered ref arena/01a0c6b4-n8n-rust-v-4 is not present locally or in origin refs; only the Agent 2 working ref is available.",
-        "requiredDecision": "Manager must provide or restore the Agent 1 ref, then rerun reconciliation against the same protected baseline before any merge approval.",
-        "blockingTest": "Agent 1 focused Context & Session tests plus cross-agent alignment tests cannot run until the Agent 1 branch/ref is available.",
-        "evidence": "git show-ref / git ls-remote origin: registered Agent 1 ref absent; Agent 2 focused tests and shared gates pass independently."
+        "affected": "ai.context, ai.agent-session, Context & Session frontend vocabulary, operation matrix, publication metadata, generated milestone state",
+        "conflict": "Agent 1 consumes Context & Session as declared-not-locked and treats rollover, rehydrate and verify as unpublished; Agent 2 publishes both 1.0.0 lock rows and declares those three context operations public. This is a contract/governance conflict, not a mechanical merge conflict.",
+        "contract": "ai.context@1.0.0 and ai.agent-session@1.0.0 differ between the branches in publication status and, for ai.context, the public operation set. Agent 1 quotes context operations load/compact and pending publication; Agent 2 locks context operations load/compact/rollover/rehydrate/verify and session operations create/status/close.",
+        "evidence": "Agent 1 commit 6a217227dd5a4ff3f8e4f350db0422937cd8fccf / Draft PR #46; Agent 2 commit fb254f3222010db481e82f156208359c53f5840a / Draft PR #45; protected baseline e754c5df35b41b0ff2ac769519f05f056835411c.",
+        "agent": "agent-1 + agent-2",
+        "agent1Interpretation": "The protected baseline has 15 lock rows and no ai.context or ai.agent-session rows. The frontend must report declared-not-locked, render no published version, quote load/compact plus session create/status/close, and keep rollover/rehydrate/verify pending under XA-20.",
+        "agent2Interpretation": "P2.13 adds two additive 1.0.0 rows under ai-foundation. The backend implementation and lock publish ai.context load/compact/rollover/rehydrate/verify with ai:context:read/write, and ai.agent-session create/status/close with the three declared agent permissions.",
+        "reason": "The peer branch became remotely visible after the original blocked record. Cross-agent execution against Agent 2 backend files now fails on five alignment/publication assertions: contextOperation adds rollover/rehydrate/verify; baseline lock absence assumptions fail; publication metadata remains declared-not-locked; and the full view reports drift.",
+        "requiredDecision": "Manager must resolve XA-20: whether the two rows are published in P2.13 and exactly which rollover, continuation, verification operations and permissions are public. Neither agent may silently choose the larger operation set or preserve the baseline pending interpretation.",
+        "blockingTest": "N8N_BACKEND_LEGO_ROOT=/home/user/n8n-rust-v.4/apps/n8n-lego/src/lego node --test packages/frontend-lego/test/29-alignment.test.mjs packages/frontend-lego/test/32-context-session.test.mjs packages/frontend-lego/test/33-milestones.test.mjs — 68 tests, 63 pass, 5 fail.",
+        "owner": "manager"
       },
       "verificationEvidence": {
         "focusedBackend": {
@@ -321,6 +325,49 @@
         "agent1FocusedAndCrossAlignment": {
           "result": "BLOCKED",
           "failure": "Registered Agent 1 ref arena/01a0c6b4-n8n-rust-v-4 is absent locally and in origin; Agent 1 focused tests and two-branch alignment cannot run. This blocks reconciliation."
+        },
+        "agent1Focused": {
+          "command": "node --test packages/frontend-lego/test/32-context-session.test.mjs packages/frontend-lego/test/33-milestones.test.mjs",
+          "result": "PASS",
+          "tests": 60,
+          "passed": 60,
+          "failed": 0,
+          "skipped": 0,
+          "commit": "6a217227dd5a4ff3f8e4f350db0422937cd8fccf"
+        },
+        "agent1FrontendFull": {
+          "command": "node --test packages/frontend-lego/test/*.test.mjs",
+          "result": "PASS",
+          "tests": 303,
+          "passed": 303,
+          "failed": 0,
+          "skipped": 0,
+          "notes": "Run from a worktree path ending n8n-rust-v.4 so the repository-root assertion is valid. Agent 1 commit reports the same frontend suites and keeps XA-21 separately open."
+        },
+        "crossAgentAlignment": {
+          "command": "N8N_BACKEND_LEGO_ROOT=<agent-2>/apps/n8n-lego/src/lego node --test packages/frontend-lego/test/29-alignment.test.mjs packages/frontend-lego/test/32-context-session.test.mjs packages/frontend-lego/test/33-milestones.test.mjs",
+          "result": "RECONCILIATION_FAILED",
+          "tests": 68,
+          "passed": 63,
+          "failed": 5,
+          "skipped": 0,
+          "failures": [
+            "contextOperation added by backend: rollover, rehydrate, verify",
+            "frontend baseline lock-absence assertion fails against Agent 2 rows",
+            "frontend publication manifest still says declared-not-locked against Agent 2 rows",
+            "quoted vocabulary drift: context operations",
+            "full Context & Session view reports drift"
+          ],
+          "owner": "manager"
+        },
+        "agent1FrontendEvidence": {
+          "command": "node apps/n8n-lego/scripts/capture-frontend-evidence.mjs",
+          "result": "OPEN_MANAGER_REVIEW",
+          "checks": 56,
+          "passed": 52,
+          "failed": 4,
+          "failure": "XA-21 heap pin fails at 4,275 KB against <4,096 KB; three page-level failures are attributed by Agent 1 to missing node_modules/stock UI in its capture environment. Evidence is in Agent 1 commit and docs/n8n-lego/evidence/frontend-boundary-p213-run.json.",
+          "decision": "XA-21"
         }
       }
     },
