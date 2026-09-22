@@ -1,0 +1,575 @@
+{
+  "kind": "p25-frontend-boundary",
+  "generatedAt": "2026-09-22T09:46:53.579Z",
+  "phase": "P2.5",
+  "method": "node apps/n8n-lego/scripts/capture-frontend-evidence.mjs (live in-process instance, HTTP level); the browser gate tests/e2e/frontend-boundary.mjs captures the same boundary from inside a real page in CI (docs/n8n-lego/FRONTEND_LEGO.md §6)",
+  "baseline": "cb71dbb2",
+  "editorUi": {
+    "editorPackage": "n8n-editor-ui",
+    "editorVersion": "2.9.4",
+    "framework": "Vue 3",
+    "frameworkIsolated": true,
+    "basePath": "/",
+    "restEndpoint": "rest"
+  },
+  "checks": [
+    {
+      "name": "GET /rest/frontend/bootstrap is auth-guarded",
+      "verdict": "PASS",
+      "detail": "status=401"
+    },
+    {
+      "name": "descriptor served in the {data} envelope",
+      "verdict": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "name": "payload validates against the contract",
+      "verdict": "PASS",
+      "detail": "contractVersion=1.0.0"
+    },
+    {
+      "name": "12 UI surfaces declared",
+      "verdict": "PASS",
+      "detail": "auth,navigation,dashboard,settings,workflow-editor,node-picker,credentials,executions,webhooks,notifications,dialogs,error-surfaces"
+    },
+    {
+      "name": "15 extension points declared",
+      "verdict": "PASS",
+      "detail": "ui:nav:item,ui:settings:section,ui:form:field,ui:node:menu-item,ui:dialog:render,ui:notification:render,ui:error:render,ui:message:catalog,ui:locale:switch,ui:theme:tokens,ui:command:register,ui:assistant:panel,ui:search:provider,ui:accessibility:annotate,ui:document:format"
+    },
+    {
+      "name": "19 nested units declared, 3 levels deep",
+      "verdict": "PASS",
+      "detail": "19 units"
+    },
+    {
+      "name": "hierarchy is walkable in declaration order",
+      "verdict": "PASS",
+      "detail": "every parent published before its children"
+    },
+    {
+      "name": "private areas never reach the payload",
+      "verdict": "PASS",
+      "detail": "identity/version/ports only"
+    },
+    {
+      "name": "no capability claims to be shipped",
+      "verdict": "PASS",
+      "detail": "capabilities=[]"
+    },
+    {
+      "name": "six locales with Arabic RTL",
+      "verdict": "PASS",
+      "detail": "id,en,ar,zh,ru,jv"
+    },
+    {
+      "name": "13 message slots declared",
+      "verdict": "PASS",
+      "detail": "13 slots"
+    },
+    {
+      "name": "boot meta tag present on index.html",
+      "verdict": "FAIL",
+      "detail": "<meta name=\"n8n-lego:frontend-bootstrap\">"
+    },
+    {
+      "name": "meta tag and endpoint carry the same descriptor",
+      "verdict": "FAIL",
+      "detail": "byte-equal JSON"
+    },
+    {
+      "name": "stock UI still templated (title + config tag)",
+      "verdict": "FAIL",
+      "detail": "title/config tag intact"
+    },
+    {
+      "name": "no unrendered template leftovers",
+      "verdict": "PASS",
+      "detail": "BASE_PATH resolved"
+    },
+    {
+      "name": "UI byte-identical apart from the additive tag",
+      "verdict": "PASS",
+      "detail": "delta=0 bytes (the tag only)"
+    },
+    {
+      "name": "501 capability becomes a machine-readable error",
+      "verdict": "PASS",
+      "detail": "kind=unsupported feature=api-keys key=backend-errors.capability-unsupported"
+    },
+    {
+      "name": "boot descriptor stays inside its budget",
+      "verdict": "PASS",
+      "detail": "18126 bytes JSON → 24168 bytes base64"
+    },
+    {
+      "name": "declared capability catalog is validated but not registered",
+      "verdict": "PASS",
+      "detail": "7 declared, 0 registered"
+    },
+    {
+      "name": "nothing declared is installed: the six AI capabilities load no code",
+      "verdict": "PASS",
+      "detail": "0 of 7 installed, 7 carry no entry path"
+    },
+    {
+      "name": "the declared capability is available, not installed",
+      "verdict": "PASS",
+      "detail": "translation: available/installed=false"
+    },
+    {
+      "name": "its absence has a declared, non-fatal fallback",
+      "verdict": "PASS",
+      "detail": "without the Translation LEGO a surface renders through the fallback chain owned by contracts/localization.contract.md (locale dictionary -> en -> the raw key); an unknown key never throws"
+    },
+    {
+      "name": "device support is decided per profile, with a reason",
+      "verdict": "PASS",
+      "detail": "desktop:supported laptop:supported low-memory:supported android:supported termux-companion:supported remote-only:supported"
+    },
+    {
+      "name": "impact: a dependent escalates the test tier",
+      "verdict": "PASS",
+      "detail": "risk=high dependents=workflow-editor.execution-panel"
+    },
+    {
+      "name": "impact: a private root change stays low risk",
+      "verdict": "PASS",
+      "detail": "risk=low tiers=fast-contract,boundary,browser"
+    },
+    {
+      "name": "dry-run plan names the foreign contract and its owner",
+      "verdict": "PASS",
+      "detail": "contracts/settings.contract.md->settings"
+    },
+    {
+      "name": ".ai pack answers a task shape with the smallest file set",
+      "verdict": "PASS",
+      "detail": "3 of 10 files"
+    },
+    {
+      "name": "boot payload is byte-identical to the P2.5 baseline",
+      "verdict": "PASS",
+      "detail": "18126 bytes vs pinned P2.5 baseline 18126"
+    },
+    {
+      "name": "the LEGO cold-imports and assembles within a small budget",
+      "verdict": "PASS",
+      "detail": "53.1 ms for import + 12 surfaces + 15 hooks + 19 units"
+    },
+    {
+      "name": "assembling the descriptor stays inside a small memory budget",
+      "verdict": "FAIL",
+      "detail": "4444 KB of heap for catalogs + both registries"
+    },
+    {
+      "name": "the package still has no runtime dependency",
+      "verdict": "PASS",
+      "detail": "dependencies={}"
+    },
+    {
+      "name": "28 architecture rules pass on a live assembly",
+      "verdict": "PASS",
+      "detail": "all pass"
+    },
+    {
+      "name": "direction is locale metadata: ar RTL, the rest LTR",
+      "verdict": "PASS",
+      "detail": "{\"id\":\"ltr\",\"en\":\"ltr\",\"ar\":\"rtl\",\"zh\":\"ltr\",\"ru\":\"ltr\",\"jv\":\"ltr\"}"
+    },
+    {
+      "name": "four interaction classes are declared",
+      "verdict": "PASS",
+      "detail": "call,event,stream,batch"
+    },
+    {
+      "name": "a same-process call is direct, unserialized and never routed through an event bus",
+      "verdict": "PASS",
+      "detail": "transport=local:direct serialization=none"
+    },
+    {
+      "name": "an interaction no transport can carry is refused by name",
+      "verdict": "PASS",
+      "detail": "frontend.transport.unsupported: no transport can carry \"execution.watch\" for capability \"exe…"
+    },
+    {
+      "name": "a declared-but-not-installed capability degrades instead of pretending",
+      "verdict": "PASS",
+      "detail": "state=optional-absent fallback=native-behavior"
+    },
+    {
+      "name": "placement grants nothing: the refusal leaks no capability metadata",
+      "verdict": "PASS",
+      "detail": "state=capability-unavailable identity=null"
+    },
+    {
+      "name": "a migration gate is its own state, never availability",
+      "verdict": "PASS",
+      "detail": "state=migration-required fallback=native-behavior"
+    },
+    {
+      "name": "required permissions are declared and reported, never inferred",
+      "verdict": "PASS",
+      "detail": "requiredPermissions=[\"audit:read\"]"
+    },
+    {
+      "name": "skill discovery renders the six quoted states, never one boolean",
+      "verdict": "PASS",
+      "detail": "6 states, none of them an entitlement"
+    },
+    {
+      "name": "discovery never selects, loads, executes or reaches a tool",
+      "verdict": "PASS",
+      "detail": "allowed=[list,search,filter,detail] forbidden=[select,load,release,execute,tools,filesystem,terminal,inference]"
+    },
+    {
+      "name": "the surface quotes the published Skill contract, and an unknown skill still answers canonically",
+      "verdict": "PASS",
+      "detail": "1.0.0 / XA-19 / unknown-skill=capability-unavailable"
+    },
+    {
+      "name": "the four published operations are consumed exactly, and the UI offers none of them",
+      "verdict": "PASS",
+      "detail": "drift=in-sync operations=[skill.list,skill.resolve,skill.describe,skill.validate-selection]"
+    },
+    {
+      "name": "a declaration that moved is reported as drift and never adopted",
+      "verdict": "PASS",
+      "detail": "drift=[operations] published=true version=1.0.0"
+    },
+    {
+      "name": "the skill surface is bound by the same rule the package suite enforces",
+      "verdict": "PASS",
+      "detail": "A27=pass (31-skills.test.mjs)"
+    },
+    {
+      "name": "one capability identity, sixteen fields, projected from a declaration",
+      "verdict": "PASS",
+      "detail": "17 fields for ai-assistant"
+    },
+    {
+      "name": "the seam is closed: declared inputs from declared sources only",
+      "verdict": "PASS",
+      "detail": "\"operations\" may not be consumed from \"implementatio…"
+    },
+    {
+      "name": "a model-less installation is a valid state, not a broken one",
+      "verdict": "PASS",
+      "detail": "2 layers available, inference unavailable, 3 configurable later"
+    },
+    {
+      "name": "a runtime is chosen from the declared budget, never assumed local",
+      "verdict": "PASS",
+      "detail": "preference=[sim] local-shell reachable=false"
+    },
+    {
+      "name": "MCP is an interoperability layer: four states, no transport",
+      "verdict": "PASS",
+      "detail": "role=interoperability-layer state=permission-required label=\"Permission required\""
+    },
+    {
+      "name": "the work trace is bounded, ordered and reference-only",
+      "verdict": "PASS",
+      "detail": "rows=2 dropped=1"
+    },
+    {
+      "name": "every shared word is quoted with provenance, and an unpublished file is recorded, not invented",
+      "verdict": "PASS",
+      "detail": "55 quoted sets, 9 pending publication, 21 decisions recorded"
+    },
+    {
+      "name": "a declared permission is a declared word, and the provider kinds are the canonical ones",
+      "verdict": "PASS",
+      "detail": "7 declared permissions, 3 provider kinds, all canonical"
+    },
+    {
+      "name": "the seam publishes its own closed list, so a reviewer can check it without either implementation",
+      "verdict": "PASS",
+      "detail": "13 inputs, 7 forbidden sources, 16 identity fields"
+    },
+    {
+      "name": "AI and agent vocabulary never becomes browser boot payload",
+      "verdict": "PASS",
+      "detail": "7 declared capabilities, none of their metadata in the descriptor"
+    }
+  ],
+  "summary": {
+    "checks": 56,
+    "passed": 52,
+    "failed": 4
+  },
+  "bootDescriptor": {
+    "contractVersion": "1.0.0",
+    "surfaces": [
+      {
+        "id": "auth",
+        "status": "present",
+        "backend": "auth"
+      },
+      {
+        "id": "navigation",
+        "status": "present",
+        "backend": "settings"
+      },
+      {
+        "id": "dashboard",
+        "status": "partial",
+        "backend": "workflow"
+      },
+      {
+        "id": "settings",
+        "status": "partial",
+        "backend": "settings"
+      },
+      {
+        "id": "workflow-editor",
+        "status": "present",
+        "backend": "workflow"
+      },
+      {
+        "id": "node-picker",
+        "status": "partial",
+        "backend": "node-registry"
+      },
+      {
+        "id": "credentials",
+        "status": "partial",
+        "backend": "credentials"
+      },
+      {
+        "id": "executions",
+        "status": "partial",
+        "backend": "execution"
+      },
+      {
+        "id": "webhooks",
+        "status": "partial",
+        "backend": "webhook"
+      },
+      {
+        "id": "notifications",
+        "status": "present",
+        "backend": "push"
+      },
+      {
+        "id": "dialogs",
+        "status": "present",
+        "backend": "none"
+      },
+      {
+        "id": "error-surfaces",
+        "status": "present",
+        "backend": "compatibility"
+      }
+    ],
+    "subLegos": [
+      {
+        "id": "auth",
+        "parentId": null,
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      },
+      {
+        "id": "credentials",
+        "parentId": null,
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      },
+      {
+        "id": "dashboard",
+        "parentId": null,
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      },
+      {
+        "id": "dialogs",
+        "parentId": null,
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      },
+      {
+        "id": "error-surfaces",
+        "parentId": null,
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      },
+      {
+        "id": "executions",
+        "parentId": null,
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      },
+      {
+        "id": "navigation",
+        "parentId": null,
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      },
+      {
+        "id": "node-picker",
+        "parentId": null,
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      },
+      {
+        "id": "notifications",
+        "parentId": null,
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      },
+      {
+        "id": "settings",
+        "parentId": null,
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      },
+      {
+        "id": "settings.general",
+        "parentId": "settings",
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      },
+      {
+        "id": "settings.localization",
+        "parentId": "settings",
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      },
+      {
+        "id": "settings.localization.rtl",
+        "parentId": "settings.localization",
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      },
+      {
+        "id": "settings.security",
+        "parentId": "settings",
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      },
+      {
+        "id": "workflow-editor",
+        "parentId": null,
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      },
+      {
+        "id": "workflow-editor.canvas",
+        "parentId": "workflow-editor",
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      },
+      {
+        "id": "workflow-editor.execution-panel",
+        "parentId": "workflow-editor",
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      },
+      {
+        "id": "workflow-editor.node-panel",
+        "parentId": "workflow-editor",
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      },
+      {
+        "id": "workflow-editor.parameter-panel",
+        "parentId": "workflow-editor",
+        "version": "1.0.0",
+        "owner": "agent-01",
+        "status": "declared"
+      }
+    ],
+    "subLegoDepth": 2,
+    "extensionPoints": [
+      "ui:nav:item",
+      "ui:settings:section",
+      "ui:form:field",
+      "ui:node:menu-item",
+      "ui:dialog:render",
+      "ui:notification:render",
+      "ui:error:render",
+      "ui:message:catalog",
+      "ui:locale:switch",
+      "ui:theme:tokens",
+      "ui:command:register",
+      "ui:assistant:panel",
+      "ui:search:provider",
+      "ui:accessibility:annotate",
+      "ui:document:format"
+    ],
+    "messageSlots": [
+      "navigation",
+      "settings",
+      "dashboard",
+      "node-menu",
+      "node-descriptions",
+      "forms",
+      "dialogs",
+      "notifications",
+      "validation-errors",
+      "backend-errors",
+      "execution-errors",
+      "empty-states",
+      "system-messages"
+    ],
+    "locales": [
+      "id",
+      "en",
+      "ar",
+      "zh",
+      "ru",
+      "jv"
+    ],
+    "rtl": [
+      "ar"
+    ],
+    "errorCodes": [
+      "frontend.network.unreachable",
+      "frontend.request.aborted",
+      "frontend.session.expired",
+      "frontend.permission.denied",
+      "frontend.resource.missing",
+      "frontend.resource.conflict",
+      "frontend.request.invalid",
+      "frontend.validation.failed",
+      "frontend.capability.unsupported",
+      "frontend.server.error",
+      "frontend.error.unknown"
+    ],
+    "errorKinds": [
+      "network",
+      "auth",
+      "forbidden",
+      "not-found",
+      "conflict",
+      "validation",
+      "unsupported",
+      "server",
+      "aborted",
+      "unknown"
+    ],
+    "capabilities": [],
+    "bytes": 18126,
+    "importMs": 53.1,
+    "heapKb": 4444
+  }
+}

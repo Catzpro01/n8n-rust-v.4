@@ -1,0 +1,94 @@
+{
+  "phase": "P2.9",
+  "title": "Backend foundation hardening — communication model, allowance retirement, strangler ownership",
+  "date": "2026-09-22",
+  "baseCommit": "6ee83b0a",
+  "branch": "arena/01a0c521-n8n-rust-v-4",
+  "relationshipToMain": {
+    "aheadOfOriginMain": 5,
+    "behindOriginMain": 1,
+    "missingCommit": "cb71dbb2 (n8n-lego: P2 compatibility contract layer #42)",
+    "assessment": "Semantically represented. The branch tree is a strict superset of cb71dbb2: only 2 files touch main-side lines (a comment rewrite in the CI workflow and a unicode normalization in package.json description). No sync, reset or force-update performed.",
+    "action": "none — divergence is purely additive"
+  },
+  "gates": {
+    "architecture": { "result": "OK", "domains": 25, "allowances": 1, "contracts": 13, "violations": 0 },
+    "architectureSelftest": { "result": "26/26 detected", "note": "was 19/19; +7 export-analyzer fixtures" },
+    "foundation": { "result": "OK", "legos": 25, "violations": 0 },
+    "capabilityConformance": { "result": "OK", "features": 23, "capabilities": 71 },
+    "scaleOut": { "result": "OK", "verdict": "NOT scale-out ready — 2 class-A blockers remain in src/store.mjs, owned by agent-5 for P8" },
+    "aiPackFreshness": { "result": "OK", "generatedFiles": 50 }
+  },
+  "tests": {
+    "command": "cd apps/n8n-lego && N8N_LEGO_CATALOG_DIR=/tmp/p26-catalog node --test test/*.test.mjs",
+    "total": 257, "pass": 257, "fail": 0,
+    "breakdown": {
+      "p0-p2 compat + rest": 25,
+      "lego-foundation (P2.6)": 24,
+      "lego-lifecycle (P2.7)": 28,
+      "lego-foundation-model (P2.8-B)": 93,
+      "lego-boundary (P2.9)": 22,
+      "lego-communication (P2.9)": 65
+    }
+  },
+  "liveRegression": {
+    "rest": "9/9 (owner setup, globalScopes=121, create workflow, execute execId=1, execution history, 501 unsupported with owner/phase meta, 404, settings, node catalog 483 types)",
+    "restart": "3/3 (login, workflow survived, executions survived)",
+    "note": "settings and auth paths exercised through the NEW auth.identity contract"
+  },
+  "packageVerification": { "files": 52, "size": "107.6 kB" },
+  "invariants": {
+    "rustFilesChanged": 0,
+    "existingRuntimeFilesChanged": 2,
+    "runtimeLinesChanged": 2,
+    "detail": "src/compat/auth-context.mjs and src/settings/routes.mjs — one import line each, re-pointed from src/auth.mjs to the auth.identity contract. No behaviour change.",
+    "serverMjsChanged": 0
+  },
+  "allowances": {
+    "before": ["A1", "A2", "A3"],
+    "after": ["A3"],
+    "A1_A2": "RETIRED and deleted from the manifest. Resolved by publishing auth.identity (src/auth/contract/index.mjs), a dependency-free nested leaf exposing exactly toPublicUser + hasOwner. Modelled as a leaf to avoid a compatibility <-> auth cycle, which the gate caught during the attempt.",
+    "A3": "NARROWED, not retired. Bounded to one symbol (newExecutionId) in one file (src/engine.mjs), max 1 importer, linked to scale-out blocker S2. Deliberately NOT retired: a pass-through storage contract would delete the allowance while preserving the blocker. Correct fix is agent-5 durable id allocation in P8.",
+    "guard": "test/lego-boundary.test.mjs — 22 tests pinning surfaces as upper bounds; allowance count may not grow"
+  },
+  "legacyRest": {
+    "file": "src/rest/routes.mjs",
+    "lines": 845,
+    "lineCountPinned": true,
+    "routes": 53,
+    "families": 20,
+    "ownedFamilies": 17,
+    "unresolvedFamilies": 3,
+    "unresolved": [
+      "credential-translation + node-translation-headers — i18n surfaces with no owner while Translation is out of scope",
+      "variables — enterprise feature spanning workspace/storage/RBAC with no single mandate"
+    ],
+    "note": "All 11 previously-unowned families return constants and contain no business logic. 9 were assigned to real owners; 3 escalated rather than assigned to a convenient domain."
+  },
+  "gateHardening": {
+    "R7 export analyzer": [
+      "re-exports (`export { a } from './x.mjs'`) were excluded by a negative lookahead — this is the contract-facade pattern",
+      "generators (`export async function*`) were missed — this is the natural shape of a STREAM operation"
+    ],
+    "impact": "both failed silently in the UNSAFE direction: a valid contract looked like it had lost an export",
+    "verification": "R7 confirmed to still catch genuine drift after the fix by deliberately removing a promised export"
+  },
+  "newContracts": [
+    "auth.identity v1.0.0 (agent-3) — toPublicUser, hasOwner",
+    "lego.envelope v1.0.0 (agent-2) — operation context, cancellation, deadlines",
+    "lego.interaction v1.0.0 (agent-2) — CALL/EVENT/STREAM/BATCH, backpressure, degradation",
+    "lego.negotiation v1.0.0 (agent-2) — capability discovery, lifecycle state machine"
+  ],
+  "notDone": [
+    "no feature domain implemented — Workflow, Execution, Auth, Credentials, Node Registry, Dynamic Parameters, Storage all untouched",
+    "the interaction module contains NO transport: no HTTP, IPC, broker, queue, scheduler or background loop",
+    "no Rust, no microservice decomposition, no Translation, no Hermes, no AI assistant",
+    "scale-out blockers deliberately not fixed — that is agent-5 storage work for P8"
+  ],
+  "managerArbitration": [
+    "i18n route ownership (credential-translation, node-translation-headers) while Translation stays out of scope",
+    "variables ownership — workspace-scoped storage feature or permanent compatibility stub",
+    "the 9 P2.7 arbitration items remain open",
+    "whether the 2 class-A scale-out blockers pull storage work ahead of P8"
+  ]
+}
