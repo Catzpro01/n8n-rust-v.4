@@ -1483,7 +1483,7 @@ ${Object.entries(current?.verificationEvidence ?? {}).map(([id, evidence]) => `-
 
 - Start/finish evidence is evidence, not a replacement for current state.
 - An agent branch can be implementation-complete without the milestone being complete.
-- P2.13 requires **RECONCILIATION PASS**, **MERGE PASS**, and post-merge verification on protected main before it can become complete.
+- \`${register.currentMilestone}\` requires **RECONCILIATION PASS**, **MERGE PASS**, and post-merge verification on protected main before it can become complete.
 
 ## Manager merge protocol
 

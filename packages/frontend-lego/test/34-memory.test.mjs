@@ -953,3 +953,63 @@ test('the two LEGOs quote different contracts, and neither absorbs the other', (
   assert.equal(notPublished.includes('ai.agent-session.memory'), true);
   assert.equal(notPublished.length > 0, true);
 });
+
+/* ---------------------------------------- 6. the registry view, folded from agent-2's copy */
+
+/**
+ * Agent-2 wrote its own `packages/frontend-lego/test/34-memory.test.mjs` — the same path this suite
+ * owns — so the two branches ADD one file and the Manager has to reconcile them. The reconciliation
+ * rule recorded in `manifest/memory.json#publication.publishedOnPeerBranch.collision` is that the
+ * frontend path keeps the frontend suite: everything below is already proven above, so replacing this
+ * file with a five-test copy would delete real coverage.
+ *
+ * What is NOT already proven above is the REGISTRY view, and that is what was folded in here: the
+ * publishing tree writes Memory in four places and they have to agree — the product manifest, the
+ * capability registry, the contract lock and the contract document. The frontend's own manifest and
+ * vocabulary are checked elsewhere; this is the tree that publishes the contract.
+ *
+ * One thing from the peer copy was deliberately NOT folded in: its assertion that the generated
+ * `.ai/master/AI_CONTRACT_MATRIX.md` says `locked @ 1.0.0` / `IMPLEMENTED`. That value is true only on
+ * a tree whose contract lock carries the `ai.memory` row, and the matrix is generated per tree — the
+ * coupling that holds on both is already asserted above, where the matrix is compared with THIS tree's
+ * lock. A fixed value would make the suite assert one tree's state instead of the coupling.
+ */
+test('the publishing tree registers Memory in four places, and the four agree', { skip }, () => {
+  const manifest = backendJson('manifest/memory.json');
+  const set = backendJson('manifest/ai-lego-set.json');
+  const domains = backendJson('manifest/domains.json');
+  const lock = lockRows();
+
+  // 1. the product manifest: one `memory` LEGO row, implemented, pointing at the suite that proves it.
+  const lego = (set.lego ?? []).find((entry) => entry.id === MEMORY_LEGO_ID);
+  assert.ok(lego, 'ai-lego-set.json carries a memory LEGO row');
+  assert.equal(lego.status, 'implemented', 'the LEGO row says implemented');
+  assert.ok(lego.contracts.includes(MEMORY_CONTRACT_ID), 'the LEGO row names the contract it delivers');
+  assert.equal(lego.versioning, `${MEMORY_CONTRACT_ID}@${MEMORY_DECLARED_VERSION}`, 'and pins the version it claimed');
+  assert.ok(lego.tests.some((entry) => entry.includes('lego-memory.test.mjs')), 'and points at the backend suite that proves it');
+
+  // 2. the capability registry: one `ai.memory` capability under `ai-foundation`, four operations.
+  const capability = (domains.domains ?? [])
+    .find((entry) => entry.id === 'ai-foundation').capabilities
+    .find((entry) => entry.id === MEMORY_CONTRACT_ID);
+  assert.ok(capability, `${MEMORY_CONTRACT_ID} is registered under ai-foundation`);
+  assert.equal(capability.status, 'implemented');
+  assert.deepEqual([...capability.operations].map((operation) => operation.name).sort(), [...MEMORY_OPERATION_IDS].sort(),
+    'exactly the four published operations, and nothing deferred');
+  assert.deepEqual([...capability.permissions].sort(), [...MEMORY_PERMISSIONS].sort(),
+    'and exactly the two published permission words');
+
+  // 3. the contract lock: exactly one row for ai.memory — not two, not zero.
+  const rows = lock.filter((entry) => (entry.id ?? entry.contract) === MEMORY_CONTRACT_ID);
+  assert.equal(rows.length, 1, 'exactly one lock row publishes ai.memory');
+  assert.equal(rows[0].version, MEMORY_DECLARED_VERSION);
+  assert.equal(rows[0].status, 'implemented');
+
+  // 4. the contract document: the graph the surface quotes is the graph it publishes.
+  assert.equal(manifest.graph.nodes.length, MEMORY_GRAPH_NODES.length, 'the graph node count is the quoted one');
+  assert.equal(manifest.graph.edges.length, MEMORY_GRAPH_EDGES.length, 'and so is the edge count');
+  assert.deepEqual([...manifest.graph.nodes], [...MEMORY_GRAPH_NODES]);
+  assert.deepEqual([...manifest.graph.edges], [...MEMORY_GRAPH_EDGES]);
+  // And the tree publishes ONE Memory document: nothing beside it re-states the vocabulary.
+  assert.equal(existsSync(MEMORY_MANIFEST), true);
+});
