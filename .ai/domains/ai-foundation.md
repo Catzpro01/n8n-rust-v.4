@@ -27,6 +27,8 @@
 - `src/lego/context-session.mjs`
 - `src/lego/context.mjs`
 - `src/lego/agent-session.mjs`
+- `src/lego/agent-machine.mjs`
+- `src/lego/manifest/agent-machine.json`
 
 ## Public contract surface
 
@@ -34,6 +36,7 @@
 - `src/lego/skill.mjs`
 - `src/lego/context.mjs`
 - `src/lego/agent-session.mjs`
+- `src/lego/agent-machine.mjs`
 
 ## May call
 

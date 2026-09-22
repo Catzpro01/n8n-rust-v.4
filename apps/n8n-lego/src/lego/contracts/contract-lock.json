@@ -757,6 +757,60 @@
         "apps/n8n-lego/test/lego-workspace.test.mjs"
       ],
       "notes": "P2.15 bounded Workspace: identity, metadata, opaque resource references and logical lifecycle behind an explicit provider seam. No filesystem, terminal, process, credential, model, tool, MCP or runtime authority."
+    },
+    {
+      "id": "ai.agent-machine",
+      "owner": "manager",
+      "domain": "ai-foundation",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/agent-machine.mjs",
+        "src/lego/manifest/agent-machine.json"
+      ],
+      "exports": {
+        "src/lego/agent-machine.mjs": [
+          "AGENT_MACHINE_CONTRACT",
+          "AGENT_MACHINE_CONTRACT_VERSION",
+          "AGENT_MACHINE_EXECUTOR_KINDS",
+          "AGENT_MACHINE_LIFECYCLE",
+          "AGENT_MACHINE_LIFECYCLE_STATES",
+          "AGENT_MACHINE_OPERATIONS",
+          "AGENT_MACHINE_PERMISSIONS",
+          "AGENT_MACHINE_STEP_OUTCOMES",
+          "AGENT_MACHINE_FIELDS",
+          "AGENT_MACHINE_LIMITS",
+          "AgentMachineError",
+          "InMemoryAgentMachineProvider",
+          "createAgentMachineManager",
+          "createAgentMachineProvider",
+          "AGENT_MACHINE_MANIFEST"
+        ]
+      },
+      "operations": [
+        "agentMachine.create",
+        "agentMachine.describe",
+        "agentMachine.start",
+        "agentMachine.step",
+        "agentMachine.pause",
+        "agentMachine.resume",
+        "agentMachine.cancel"
+      ],
+      "permissions": [
+        "ai:agent:create",
+        "ai:agent:invoke",
+        "ai:agent:control",
+        "ai:agent:read"
+      ],
+      "consumers": [
+        "future Agent Machine runtime (contract-only)",
+        "frontend Agent Machine consumer",
+        "Manager reconciliation gate"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-agent-machine.test.mjs"
+      ],
+      "notes": "P2.16 bounded Agent Machine execution foundation: one canonical state machine for machine and task identity, the canonical agent lifecycle, bounded step bookkeeping, first-class budgets, deterministic transitions and a replaceable provider/executor seam. It consumes ai.context, ai.agent-session, ai.memory and ai.workspace by opaque reference only and never redefines them. Seven operations and the four canonical ai:agent:* permissions; no delegate permission, no loop, no inference, no tools, no shell, no filesystem, no process. Waiting is fail-closed: approval resolution is the ai.approval contract's boundary, not this one."
     }
   ]
 }

@@ -478,6 +478,115 @@
       "cancelled": []
     }
   },
+  "agentMachine": {
+    "contract": "ai.agent-machine",
+    "rule": "The bounded execution FOUNDATION of the Agent Machine: one canonical state machine for machine and task identity, lifecycle, step bookkeeping, budgets and deterministic transitions. It is a foundation, not an engine: nothing in P2.16 executes a step, runs a model, calls a tool or delegates. The future full loop (ai.agent-runtime) builds on this contract.",
+    "fields": [
+      "machineId",
+      "taskId",
+      "executorKind",
+      "lifecycle",
+      "sessionReference",
+      "contextReference",
+      "workspaceReference",
+      "budgets",
+      "metadata",
+      "steps",
+      "stepCount",
+      "failure",
+      "version",
+      "createdAt",
+      "updatedAt"
+    ],
+    "executorKinds": [
+      "IN_MEMORY",
+      "EXTERNAL"
+    ],
+    "executorKindRule": "A kind is a declaration, not an authority. The provider must explicitly support the requested kind; the core never infers shell, filesystem, process or remote execution from it.",
+    "referenceRule": "Context, Session, Memory and Workspace are consumed by opaque reference only (contextReference, sessionReference, workspaceReference). Agent Machine never redefines or drives their lifecycles, and Memory is deliberately not referenced at all.",
+    "states": [
+      "created",
+      "running",
+      "waiting",
+      "paused",
+      "completed",
+      "failed",
+      "cancelled"
+    ],
+    "stateRule": "The canonical agent vocabulary, quoted from the AI set and ai.agent-session@1.0.0. waiting is entered only by an approval-required step and left only by cancel: approval resolution belongs to the fail-closed ai.approval contract, not to P2.16.",
+    "transitions": {
+      "created": [
+        "running",
+        "cancelled"
+      ],
+      "running": [
+        "waiting",
+        "paused",
+        "completed",
+        "failed",
+        "cancelled"
+      ],
+      "waiting": [
+        "cancelled"
+      ],
+      "paused": [
+        "running",
+        "cancelled"
+      ],
+      "completed": [],
+      "failed": [],
+      "cancelled": []
+    },
+    "operations": [
+      "agentMachine.create",
+      "agentMachine.describe",
+      "agentMachine.start",
+      "agentMachine.step",
+      "agentMachine.pause",
+      "agentMachine.resume",
+      "agentMachine.cancel"
+    ],
+    "permissions": [
+      "ai:agent:create",
+      "ai:agent:invoke",
+      "ai:agent:control",
+      "ai:agent:read"
+    ],
+    "stepOutcomes": [
+      "succeeded",
+      "failed",
+      "cancelled",
+      "approval-required"
+    ],
+    "budgetDimensions": [
+      "maxSteps",
+      "maxDurationMs",
+      "maxContinuationBytes",
+      "maxReferences"
+    ],
+    "budgetRule": "Budgets are first-class, declared at create, clamped to bounded ceilings and always positive. There is no unlimited mode; exhaustion is a stable error and a stable terminal failure (budget-exhausted).",
+    "concurrencyRule": "Every mutation carries expectedVersion (optimistic concurrency). Stale or duplicate step submissions are deterministic conflicts, never silent reorders.",
+    "providerSeam": "replaceable; InMemoryAgentMachineProvider is the bounded default. The provider stores opaque records only and never receives work to execute.",
+    "implementationStatus": "implemented",
+    "implementationBoundary": [
+      "bounded identity (machineId, taskId)",
+      "explicit lifecycle and deterministic transitions",
+      "bounded step bookkeeping with sequence and identity rules",
+      "first-class execution budgets",
+      "approval reference boundary (fail-closed, no resolution)",
+      "replaceable provider/executor seam"
+    ],
+    "notImplemented": [
+      "the agent loop or any autonomous runtime",
+      "model inference",
+      "tool execution",
+      "delegation and multi-agent orchestration",
+      "parallel execution, fan-out, fan-in",
+      "stream, send, artifact and close operations",
+      "approval request, grant or deny",
+      "shell, filesystem, process or network authority"
+    ]
+  },
   "delegation": {
     "contract": "ai.agent-delegation",
     "rule": "Delegation is a graph edge with an explicit, NARROWED authority grant.",

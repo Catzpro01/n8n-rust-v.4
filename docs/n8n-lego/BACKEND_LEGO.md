@@ -299,12 +299,14 @@ Rule **R7** of the gate diffs the declared exports against the real exported
 symbols, so a contract cannot drift silently: adding `foo` to a locked contract
 file fails the build until the lock and version are updated.
 
-The current contract lock has **17 rows**. The historical foundation set remains:
+The current contract lock has **20 rows**. The historical foundation set remains:
 `compat.http` (1.0.0), `lego.error-contract` (1.0.0), `lego.domain-registry` (1.1.0),
 `lego.contract-compat` (1.0.0), `kernel.platform` (1.0.0), `reference.lego` (1.1.0),
 `reference.validation` (1.1.0), `reference.validation.schema` (1.0.0), and
-`reference.repository` (1.0.0). P2.12 added `ai.skill@1.0.0`; P2.13 adds the smallest
-published Context & Session rows: `ai.context@1.0.0` and `ai.agent-session@1.0.0`.
+`reference.repository` (1.0.0). P2.12 added `ai.skill@1.0.0`; P2.13 added the smallest
+published Context & Session rows: `ai.context@1.0.0` and `ai.agent-session@1.0.0`; P2.14
+added `ai.memory@1.0.0`; P2.15 added `ai.workspace@1.0.0`; P2.16 added the bounded Agent
+Machine execution foundation row `ai.agent-machine@1.0.0`.
 The machine-readable lock is authoritative.
 
 A domain that publishes several contracts names its **primary** one
@@ -328,6 +330,9 @@ A domain that publishes several contracts names its **primary** one
 | 2026-09-22 | `ai.skill` | 1.0.0 | P2.12: published the existing Skill vocabulary; four discovery operations and two permissions; no execution runtime |
 | 2026-09-22 | `ai.context` | 1.0.0 | P2.13: published the established Context vocabulary plus bounded lifecycle/rollover operations; additive initial publication |
 | 2026-09-22 | `ai.agent-session` | 1.0.0 | P2.13: published the established bounded Session vocabulary and lifecycle states; additive initial publication |
+| 2026-09-22 | `ai.memory` | 1.0.0 | P2.14: published the bounded Memory vocabulary — remember/recall/list/forget, scope isolation, checksum verification, provider-replaceable; additive initial publication |
+| 2026-09-22 | `ai.workspace` | 1.0.0 | P2.15: published the bounded Workspace vocabulary — identity, metadata, opaque resource references, logical lifecycle behind a provider seam; additive initial publication |
+| 2026-09-22 | `ai.agent-machine` | 1.0.0 | P2.16: published the bounded Agent Machine execution foundation — machine and task identity, canonical agent lifecycle, bounded step bookkeeping, first-class budgets, deterministic transitions, replaceable provider/executor seam; consumes Context/Session/Memory/Workspace by opaque reference only; additive initial publication |
 
 ## 10. Ownership model
 

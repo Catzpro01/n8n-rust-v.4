@@ -1178,6 +1178,7 @@ export const VOCABULARIES = Object.freeze([
       'ai.model-gateway', 'ai.tool-gateway', 'ai.agent-runtime', 'ai.application-provider',
       'ai.agent-session', 'ai.agent-delegation', 'ai.agent-events', 'ai.decision',
       'ai.approval', 'ai.artifact', 'ai.context', 'ai.skill', 'ai.memory',
+      'ai.agent-machine',
     ]),
     provenance: Object.freeze({
       contract: Object.freeze({ id: 'lego.domain-registry', version: '1.1.0', owner: 'manager' }),
@@ -1185,7 +1186,7 @@ export const VOCABULARIES = Object.freeze([
       file: 'apps/n8n-lego/src/lego/manifest/domains.json',
       path: 'domains#id=ai-foundation.capabilities',
       read: 'id',
-      note: 'thirteen capabilities of the `ai-foundation` domain. `ai.memory` joined the list at P2.14 (`implemented`, four operations) on agent-2`s branch; `ai.skill` joined at the P2.12 finalize. A capability is declared here whether it is contract-only or implemented — the status is a field, not a separate list',
+      note: 'fourteen capabilities of the `ai-foundation` domain. `ai.memory` joined the list at P2.14 (`implemented`, four operations) on agent-2`s branch; `ai.skill` joined at the P2.12 finalize; `ai.agent-machine` joined at P2.16 (`implemented`, seven operations) as the bounded execution foundation. A capability is declared here whether it is contract-only or implemented — the status is a field, not a separate list',
       movedBy: Object.freeze({ commit: '5fbaf934', branch: 'arena/01a0c90d-n8n-rust-v-4', added: Object.freeze(['ai.memory']), previousValues: Object.freeze([
         'ai.model-gateway', 'ai.tool-gateway', 'ai.agent-runtime', 'ai.application-provider',
         'ai.agent-session', 'ai.agent-delegation', 'ai.agent-events', 'ai.decision',
@@ -1427,6 +1428,64 @@ export const VOCABULARIES = Object.freeze([
       file: 'apps/n8n-lego/src/lego/workspace.mjs',
       symbol: 'WORKSPACE_PERMISSIONS',
       read: 'values',
+    }),
+  }),
+  Object.freeze({
+    id: 'agentMachineLifecycle',
+    question: 'What bounded execution state is the Agent Machine in?',
+    about: 'state',
+    values: Object.freeze(['created', 'running', 'waiting', 'paused', 'completed', 'failed', 'cancelled']),
+    provenance: Object.freeze({
+      contract: Object.freeze({ id: 'ai.agent-machine', version: '1.0.0', owner: 'manager' }),
+      kind: 'module',
+      file: 'apps/n8n-lego/src/lego/agent-machine.mjs',
+      symbol: 'AGENT_MACHINE_LIFECYCLE_STATES',
+      read: 'values',
+      note: 'the canonical agent vocabulary, quoted from the P2.16 foundation — the same states ai.agent-session@1.0.0 publishes. waiting is bounded: entered only by an approval-required step and left only by cancel',
+    }),
+  }),
+  Object.freeze({
+    id: 'agentMachineOperation',
+    question: 'Which Agent Machine operation is declared by ai.agent-machine@1.0.0?',
+    about: 'operation',
+    values: Object.freeze([
+      'agentMachine.create', 'agentMachine.describe', 'agentMachine.start',
+      'agentMachine.step', 'agentMachine.pause', 'agentMachine.resume', 'agentMachine.cancel',
+    ]),
+    provenance: Object.freeze({
+      contract: Object.freeze({ id: 'ai.agent-machine', version: '1.0.0', owner: 'manager' }),
+      kind: 'module',
+      file: 'apps/n8n-lego/src/lego/agent-machine.mjs',
+      symbol: 'AGENT_MACHINE_OPERATIONS',
+      read: 'values',
+    }),
+  }),
+  Object.freeze({
+    id: 'agentMachinePermission',
+    question: 'Which permission is declared by ai.agent-machine@1.0.0?',
+    about: 'permission',
+    values: Object.freeze(['ai:agent:create', 'ai:agent:invoke', 'ai:agent:control', 'ai:agent:read']),
+    provenance: Object.freeze({
+      contract: Object.freeze({ id: 'ai.agent-machine', version: '1.0.0', owner: 'manager' }),
+      kind: 'module',
+      file: 'apps/n8n-lego/src/lego/agent-machine.mjs',
+      symbol: 'AGENT_MACHINE_PERMISSIONS',
+      read: 'values',
+      note: 'the four canonical ai:agent:* words; P2.16 publishes no ai:agent:delegate and no execute-style permission — invoke is bounded bookkeeping control, not filesystem, shell, process or credential authority',
+    }),
+  }),
+  Object.freeze({
+    id: 'agentMachineStepOutcome',
+    question: 'What bounded outcome did one reported Agent Machine step have?',
+    about: 'outcome',
+    values: Object.freeze(['succeeded', 'failed', 'cancelled', 'approval-required']),
+    provenance: Object.freeze({
+      contract: Object.freeze({ id: 'ai.agent-machine', version: '1.0.0', owner: 'manager' }),
+      kind: 'module',
+      file: 'apps/n8n-lego/src/lego/agent-machine.mjs',
+      symbol: 'AGENT_MACHINE_STEP_OUTCOMES',
+      read: 'values',
+      note: 'a step outcome is recorded data on the bounded ledger, not an error; `succeeded` ends the machine only when the step is final, and `approval-required` is mandatory to carry an approvalReference (fail-closed)',
     }),
   }),
 ]);
@@ -2256,6 +2315,38 @@ export function vocabularyDrift(observed = {}) {
  * *different* subjects is what needs the declaration below.
  */
 export const DECLARED_OVERLAPS = Object.freeze([
+  Object.freeze({
+    vocabularies: Object.freeze(['agentMachineStepOutcome', 'agentSessionState']),
+    values: Object.freeze({
+      failed: 'a step can report failed work and a session can be in a failed state: one reported outcome, one lifecycle state, both quoted from their own contracts (ai.agent-machine@1.0.0 and ai.agent-session@1.0.0)',
+      cancelled: 'a step can report cancellation and a session can be cancelled: the outcome records the report, the state records where the session is',
+    }),
+  }),
+  Object.freeze({
+    vocabularies: Object.freeze(['agentMachineStepOutcome', 'lifecycle']),
+    values: Object.freeze({
+      failed: 'a step outcome of a reported Agent Machine step and a lifecycle state of a capability: different subjects, one spelling, both quoted',
+    }),
+  }),
+  Object.freeze({
+    vocabularies: Object.freeze(['agentMachineStepOutcome', 'continuationVerification']),
+    values: Object.freeze({
+      failed: 'a step can report failed work and a continuation can fail to survive rollover: an execution report and a verification result, never rendered into each other',
+    }),
+  }),
+  Object.freeze({
+    vocabularies: Object.freeze(['agentMachineLifecycle', 'continuationVerification']),
+    values: Object.freeze({
+      failed: 'the Agent Machine can be in a failed execution state and a continuation can fail verification: a lifecycle state of the machine, a verification result of a context continuation — same spelling, two declared subjects, both quoted',
+    }),
+  }),
+  Object.freeze({
+    vocabularies: Object.freeze(['agentMachineStepOutcome', 'agentMachineLifecycle']),
+    values: Object.freeze({
+      failed: 'one reported step outcome and one machine lifecycle state within the same contract: the outcome records what a step said, the state records where the machine is after it',
+      cancelled: 'a step can report cancellation and the machine can be in the cancelled state: the report and its recorded result, one contract, two declared subjects',
+    }),
+  }),
   Object.freeze({
     vocabularies: Object.freeze(['memoryRetention', 'workspaceKind']),
     values: Object.freeze({

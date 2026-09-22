@@ -320,6 +320,7 @@
       "title": "Agent Machine",
       "owner": "manager",
       "status": "contract-only",
+      "statusNote": "P2.16 implements the bounded execution FOUNDATION of this LEGO as ai.agent-machine@1.0.0 (machine and task identity, canonical agent lifecycle, bounded step bookkeeping, budgets, deterministic transitions, provider/executor seam). The loop, delegation, parallelism and fan-out/fan-in remain contract-only: this LEGO stays contract-only until the runtime is real.",
       "phase": "B",
       "mission": "Own the agent loop: agent and task lifecycle, delegation, parallelism and cancellation.",
       "scope": [
@@ -344,6 +345,7 @@
         "being the AI Foundation"
       ],
       "contracts": [
+        "ai.agent-machine",
         "ai.agent-runtime",
         "ai.agent-delegation"
       ],
@@ -412,9 +414,10 @@
         "dependency-disabled"
       ],
       "observability": "agent.* and tool.* events; no reasoning.",
-      "versioning": "ai.agent-runtime@1.0.0, ai.agent-delegation@1.0.0",
+      "versioning": "ai.agent-machine@1.0.0, ai.agent-runtime@1.0.0, ai.agent-delegation@1.0.0",
       "tests": [
         "test/lego-ai-foundation.test.mjs (contract level)",
+        "test/lego-agent-machine.test.mjs (P2.16 execution foundation)",
         "planned: loop, fan-out/fan-in, cancellation propagation"
       ],
       "futureStages": [
@@ -1717,10 +1720,10 @@
       "closes": "Phase C, when ai.approval is published."
     }
   ],
-  "currentMilestone": "P2.13",
-  "previousCompletedMilestone": "P2.12",
+  "currentMilestone": "P2.16",
+  "previousCompletedMilestone": "P2.15",
   "milestoneRegister": "docs/n8n-lego/milestones.json",
   "protectedBranch": "main",
-  "mainBaseline": "e754c5df35b41b0ff2ac769519f05f056835411c",
-  "statusNote": "P2.13 Context & Session is the current implementation milestone. P2.12 Skill is complete. Protected main remains the P2.12 baseline until Manager reconciliation and merge."
+  "mainBaseline": "7fca2858a0379c4899fb5d87bb18d09a0a17ee2a",
+  "statusNote": "P2.16 Agent Machine / execution foundation is the current implementation milestone. P2.15 Workspace is complete on protected main. Protected main is the final P2.15 governance commit."
 }

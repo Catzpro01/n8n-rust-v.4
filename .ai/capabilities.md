@@ -7,6 +7,7 @@
 | --- | --- |
 | `ai.agent-delegation` | `ai-foundation` |
 | `ai.agent-events` | `ai-foundation` |
+| `ai.agent-machine` | `ai-foundation` |
 | `ai.agent-runtime` | `ai-foundation` |
 | `ai.agent-session` | `ai-foundation` |
 | `ai.application-provider` | `ai-foundation` |
@@ -167,6 +168,13 @@ this table instead of guessing from a URL shape.
 | `ai.memory.memory.recall` | `ai-foundation` | call | `ai:memory:read` | yes | implemented |
 | `ai.memory.memory.list` | `ai-foundation` | call | `ai:memory:read` | yes | implemented |
 | `ai.memory.memory.forget` | `ai-foundation` | call | `ai:memory:write` | yes | implemented |
+| `ai.agent-machine.create` | `ai-foundation` | call | `ai:agent:create` | no | implemented |
+| `ai.agent-machine.describe` | `ai-foundation` | call | `ai:agent:read` | yes | implemented |
+| `ai.agent-machine.start` | `ai-foundation` | call | `ai:agent:invoke` | yes | implemented |
+| `ai.agent-machine.step` | `ai-foundation` | call | `ai:agent:invoke` | no | implemented |
+| `ai.agent-machine.pause` | `ai-foundation` | call | `ai:agent:control` | yes | implemented |
+| `ai.agent-machine.resume` | `ai-foundation` | call | `ai:agent:control` | yes | implemented |
+| `ai.agent-machine.cancel` | `ai-foundation` | call | `ai:agent:control` | yes | implemented |
 | `compat.route.match` | `compatibility` | call | `compat:read` | yes | implemented |
 | `compat.response-envelope.wrap` | `compatibility` | call | `compat:read` | yes | implemented |
 | `compat.error-shape.wrap` | `compatibility` | call | `compat:read` | yes | implemented |

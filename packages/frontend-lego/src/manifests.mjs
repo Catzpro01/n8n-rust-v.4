@@ -22,6 +22,7 @@ export const MANIFEST_FILES = Object.freeze({
   contextSession: 'context-session.json',
   memory: 'memory.json',
   workspace: 'workspace.json',
+  agentMachine: 'agent-machine.json',
 });
 
 function readManifest(fileName) {
@@ -50,6 +51,7 @@ export function loadManifests() {
   const contextSessionCatalog = readManifest(MANIFEST_FILES.contextSession);
   const memoryCatalog = readManifest(MANIFEST_FILES.memory);
   const workspaceCatalog = readManifest(MANIFEST_FILES.workspace);
+  const agentMachineCatalog = readManifest(MANIFEST_FILES.agentMachine);
 
   if (!Array.isArray(surfaceCatalog.surfaces) || surfaceCatalog.surfaces.length === 0) {
     throw new Error('manifest/surfaces.json declares no surfaces');
@@ -104,6 +106,17 @@ export function loadManifests() {
   if (workspaceCatalog.publication?.expected?.version !== '1.0.0') {
     throw new Error('manifest/workspace.json must pin the declared ai.workspace version 1.0.0');
   }
+  // Agent Machine is one frontend consumer of one backend contract. The catalog is metadata
+  // only; machine records are handed over on demand and never created, stepped or cancelled here.
+  if (agentMachineCatalog.lego !== 'agent-machine'
+    || !Array.isArray(agentMachineCatalog.contracts)
+    || agentMachineCatalog.contracts.length !== 1
+    || agentMachineCatalog.contracts[0] !== 'ai.agent-machine') {
+    throw new Error('manifest/agent-machine.json must consume exactly ai.agent-machine for the Agent Machine LEGO');
+  }
+  if (agentMachineCatalog.publication?.expected?.version !== '1.0.0') {
+    throw new Error('manifest/agent-machine.json must pin the declared ai.agent-machine version 1.0.0');
+  }
 
   return Object.freeze({
     ownership: Object.freeze(ownership),
@@ -115,6 +128,7 @@ export function loadManifests() {
     contextSessionCatalog: Object.freeze(contextSessionCatalog),
     memoryCatalog: Object.freeze(memoryCatalog),
     workspaceCatalog: Object.freeze(workspaceCatalog),
+    agentMachineCatalog: Object.freeze(agentMachineCatalog),
     surfaces: Object.freeze(surfaceCatalog.surfaces.map((surface) => Object.freeze({ ...surface }))),
     extensionPoints: Object.freeze(extensionCatalog.extensionPoints.map((point) => Object.freeze({ ...point }))),
     subLegos: Object.freeze(subLegoCatalog.subLegos.map((entry) => Object.freeze({ ...entry }))),
