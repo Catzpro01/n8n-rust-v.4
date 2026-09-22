@@ -10,11 +10,11 @@ document is right and the prose is stale.
 
 | | |
 | --- | --- |
-| Protected main baseline | `67e638ef83028bbc69876e2e768181415c7554fa` |
+| Protected main baseline | `0d9466f19a149f6e30bdee559086b7a28b080cb3` |
 | Agent 1 branch | `arena/01a0c90c-n8n-rust-v-4` |
 | Agent 2 branch | `arena/01a0c90d-n8n-rust-v-4` |
-| **Current milestone** | **P2.14** |
-| Previous completed milestone | **P2.13** |
+| **Current milestone** | **P2.15** |
+| Previous completed milestone | **P2.14** |
 | Current branch state | `arena/01a0c90d-n8n-rust-v-4` (implementation branch; not protected main) |
 | Historical reconciled state | `c1eca8cc` (historical evidence, not current main) |
 | Historical P2.11 evidence commit | `bdd0f1d2d6c8d7bc1c1ff3d881ddc2b3bd93713d` |
@@ -29,27 +29,27 @@ is the row marked as such.
 | | |
 | --- | --- |
 | Core LEGO domains | **26** |
-| Locked contracts | 18 |
-| Declared capabilities | 84 |
-| Declared operations | 150 |
+| Locked contracts | 19 |
+| Declared capabilities | 85 |
+| Declared operations | 154 |
 | Published error codes | 36 |
 | Official AI/Agent LEGO | 15 |
 
 ## Milestone state
 
-- **Current:** `P2.14` — Memory (**in-progress**)
-- **Previous complete:** `P2.13`
-- **Why next:** P2.13 Context & Session foundation
-- **Owns:** ai.memory@1.0.0; bounded memory manager (remember/recall/list/forget); scope-isolated deterministic retrieval with pagination; integrity (sha256 canonical checksum) and size bounds; explicit provider boundary (InMemoryProvider, replaceable); scope isolation and sensitive-data rejection; backend tests and contract locks; frontend contract consumption (quoted vocabulary, publication state, refusals) — no redefinition
-- **Does not implement:** model inference; provider API calls; Agent Machine execution loop; multi-agent runtime; Skill execution; Workspace executor; filesystem/terminal authority; MCP runtime; Runtime Adapter runtime; Node Creator runtime; Translation runtime; token provider integration; external agent runtime integration; Rust implementation; vector search / relevance ranking (deferred); automatic retention policy enforcement
-- **Next:** `P2.15`
-- **Completion gate:** ai.memory@1.0.0 locked and consumed; four operations exactly: memory.remember, memory.recall, memory.list, memory.forget; two permissions exactly: ai:memory:read, ai:memory:write; scope isolation tested and enforced; provider boundary tested via injection; integrity and deterministic ordering tested; frontend consumes the locked contract without redefining it and claims no persistence of its own; no P2.15/P2.16 work leaked; XA-12 handled explicitly (bounded scope), XA-21 pin untouched
+- **Current:** `P2.15` — Workspace (**in-progress**)
+- **Previous complete:** `P2.14`
+- **Why next:** P2.13 Context & Session foundation; P2.14 Memory contract where required
+- **Owns:** workspace-scoped execution boundary contract
+- **Does not implement:** model inference; Agent Machine or autonomous execution loop; filesystem, terminal or arbitrary process authority; MCP, Runtime Adapter, Node Creator or Translation runtime; credentials, secrets or provider implementation; Memory traversal, ranking or retention enforcement; Context or Session semantics; Rust implementation
+- **Next:** `P2.16`
+- **Completion gate:** no duplicate ai-workspace domain; scope and authority boundaries are explicit
 
 ## The 15 AI/Agent LEGO by status
 
-- **IMPLEMENTED** — 3: Skill, Memory, Capability
+- **IMPLEMENTED** — 4: Skill, Memory, Workspace, Capability
 - **CONTRACT-ONLY** — 7: AI Foundation, Agent Machine, MCP Adapter, Runtime Adapter, Artifact, Approval, Agent Event & Work Trace
-- **PLANNED** — 4: Workspace, Universal Translation, Node Creator, Token & Usage
+- **PLANNED** — 3: Universal Translation, Node Creator, Token & Usage
 - **IN-PROGRESS** — 1: Context & Session
 
 ## Gates

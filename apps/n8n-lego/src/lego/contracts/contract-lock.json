@@ -709,6 +709,54 @@
         "apps/n8n-lego/test/lego-memory.test.mjs"
       ],
       "notes": "P2.14 bounded Memory: persistent knowledge that survives context replacement. Four operations only: remember/recall/list/forget. Provider is the persistence boundary (InMemoryProvider default, replaceable). No vector search, no embedding, no model dependency. Integrity via sha256 canonical checksum, isolation by scope namespace, explicit forget semantics."
+    },
+    {
+      "id": "ai.workspace",
+      "owner": "manager",
+      "domain": "workspace",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/workspace.mjs",
+        "src/lego/manifest/workspace.json"
+      ],
+      "exports": {
+        "src/lego/workspace.mjs": [
+          "InMemoryWorkspaceProvider",
+          "WORKSPACE_CONTRACT",
+          "WORKSPACE_CONTRACT_VERSION",
+          "WORKSPACE_FIELDS",
+          "WORKSPACE_KINDS",
+          "WORKSPACE_LIMITS",
+          "WORKSPACE_LIFECYCLE",
+          "WORKSPACE_LIFECYCLE_STATES",
+          "WORKSPACE_OPERATIONS",
+          "WORKSPACE_PERMISSIONS",
+          "WorkspaceError",
+          "createWorkspaceManager",
+          "createWorkspaceProvider",
+          "WORKSPACE_MANIFEST"
+        ]
+      },
+      "operations": [
+        "workspace.create",
+        "workspace.describe",
+        "workspace.mount",
+        "workspace.release"
+      ],
+      "permissions": [
+        "ai:workspace:read",
+        "ai:workspace:create"
+      ],
+      "consumers": [
+        "future Agent Machine (contract-only)",
+        "frontend Workspace consumer",
+        "Manager reconciliation gate"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-workspace.test.mjs"
+      ],
+      "notes": "P2.15 bounded Workspace: identity, metadata, opaque resource references and logical lifecycle behind an explicit provider seam. No filesystem, terminal, process, credential, model, tool, MCP or runtime authority."
     }
   ]
 }

@@ -20,7 +20,8 @@
         "compatibility",
         "settings",
         "editor-ui-host",
-        "legacy-rest"
+        "legacy-rest",
+        "workspace"
       ]
     },
     "agent-2": {
@@ -28,8 +29,7 @@
       "domains": [
         "workflow",
         "execution",
-        "webhook",
-        "workspace"
+        "webhook"
       ]
     },
     "agent-3": {
@@ -3837,30 +3837,96 @@
     },
     {
       "id": "workspace",
-      "title": "Workspace / projects",
-      "owner": "agent-2",
+      "title": "Workspace bounded identity and lifecycle",
+      "owner": "agent-1",
       "kind": "domain",
-      "status": "planned",
-      "phase": "P3",
+      "status": "implemented",
+      "phase": "P2.15",
       "errorNamespace": "workspace",
-      "paths": [],
-      "public": [],
+      "paths": [
+        "src/lego/workspace.mjs",
+        "src/lego/manifest/workspace.json"
+      ],
+      "public": [
+        "src/lego/workspace.mjs"
+      ],
       "dependsOn": [
-        "platform-kernel",
-        "compatibility",
-        "auth",
-        "storage"
+        "platform-kernel"
       ],
       "mustNotDependOn": [
         "legacy-rest",
         "execution",
-        "worker"
+        "worker",
+        "auth",
+        "credentials",
+        "storage"
       ],
       "contract": {
-        "version": "0.0.0",
-        "tests": []
+        "id": "ai.workspace",
+        "version": "1.0.0",
+        "tests": [
+          "apps/n8n-lego/test/lego-workspace.test.mjs"
+        ]
       },
       "capabilities": [
+        {
+          "id": "workspace.boundary",
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "create",
+              "interaction": "call",
+              "permission": "ai:workspace:create",
+              "idempotent": false,
+              "status": "implemented"
+            },
+            {
+              "name": "describe",
+              "interaction": "call",
+              "permission": "ai:workspace:read",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "mount",
+              "interaction": "call",
+              "permission": "ai:workspace:create",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "release",
+              "interaction": "call",
+              "permission": "ai:workspace:create",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "ai:workspace:read",
+            "ai:workspace:create"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "standard",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "low",
+          "contract": "ai.workspace"
+        },
         {
           "id": "workspace.personal-project",
           "status": "legacy",
@@ -3927,13 +3993,14 @@
           "migrationState": "not-started",
           "degradation": "capability-unavailable",
           "replacement": "contract-preserving",
-          "resources": "low"
+          "resources": "low",
+          "phase": "P3"
         }
       ],
-      "notes": "Provisional ownership \u2014 projects touch auth (sharing) and workflow (resources). Manager arbitration item.",
+      "notes": "P2.15 publishes the bounded ai.workspace contract. The implementation owns identity, metadata, opaque references and logical lifecycle only; provider durability and execution authority remain outside this LEGO.",
       "tier": "domain",
       "dataOwner": "workspace",
-      "stateOwner": "persistent",
+      "stateOwner": "runtime",
       "trust": "core",
       "capabilities_granted": [],
       "communication": [

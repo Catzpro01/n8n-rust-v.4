@@ -24,6 +24,7 @@
     "./manifest/ownership.json": "./manifest/ownership.json",
     "./manifest/sub-legos.json": "./manifest/sub-legos.json",
     "./manifest/capabilities.json": "./manifest/capabilities.json",
+    "./manifest/workspace.json": "./manifest/workspace.json",
     "./versions": "./src/versions.mjs",
     "./surface-capability": "./src/surface-capability.mjs",
     "./negotiation": "./src/negotiation.mjs",

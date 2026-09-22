@@ -87,6 +87,7 @@
 | `workflow.crud` | `workflow` |
 | `workflow.history` | `workflow` |
 | `workflow.source-control` | `workflow` |
+| `workspace.boundary` | `workspace` |
 | `workspace.personal-project` | `workspace` |
 | `workspace.projects` | `workspace` |
 
@@ -221,6 +222,10 @@ this table instead of guessing from a URL shape.
 | `realtime.push.publish` | `realtime` | event | `realtime:publish` | no | implemented |
 | `settings.frontend-settings.read` | `settings` | call | `settings:read` | yes | implemented |
 | `editor-ui.static-host.serve` | `editor-ui-host` | call | `ui:read` | yes | implemented |
+| `workspace.boundary.create` | `workspace` | call | `ai:workspace:create` | no | implemented |
+| `workspace.boundary.describe` | `workspace` | call | `ai:workspace:read` | yes | implemented |
+| `workspace.boundary.mount` | `workspace` | call | `ai:workspace:create` | yes | implemented |
+| `workspace.boundary.release` | `workspace` | call | `ai:workspace:create` | yes | implemented |
 | `workspace.personal-project.inspect` | `workspace` | call | `workspace:read` | yes | legacy |
 | `workspace.personal-project.list` | `workspace` | call | `workspace:read` | yes | legacy |
 | `observability.log-streaming.stream` | `observability` | stream | `observability:read` | no | planned |

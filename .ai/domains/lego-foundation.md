@@ -44,8 +44,8 @@ _none_
 ## Who breaks if this changes
 
 - Direct dependents: `ai-foundation`, `compatibility`, `runtime-host`, `reference-lego`, `reference-lego.validation`, `reference-lego.repository`
-- Transitive: `auth`, `credentials`, `workflow`, `execution`, `dynamic-parameters`, `webhook`, `worker`, `settings`, `editor-ui-host`, `workspace`, `observability`, `data-tables`, `legacy-rest`
-- **Blast radius: 19** (risk: high)
+- Transitive: `auth`, `credentials`, `workflow`, `execution`, `dynamic-parameters`, `webhook`, `worker`, `settings`, `editor-ui-host`, `observability`, `data-tables`, `legacy-rest`
+- **Blast radius: 18** (risk: high)
 
 ## Resources
 

@@ -41,6 +41,12 @@ import {
   describeMemory,
   memoryPublication,
 } from './memory.mjs';
+import {
+  describeWorkspace,
+  workspacePublication,
+  workspaceCatalogAudit,
+  checkWorkspaceAlignment,
+} from './workspace.mjs';
 import { createSubLegoRegistry } from './sublegos.mjs';
 import { createOperationGateway, defineLocalTransport } from './transport.mjs';
 import { describeVocabulary, detectCollisions, vocabularyConflicts } from './vocabulary.mjs';
@@ -81,6 +87,8 @@ export function createFrontendLego({
    *  the surface reports `declared-not-locked` and renders no record at all. Nothing here writes,
    *  forgets, traverses or ranks: the four published operations are named as facts. */
   memory: memoryInput = null,
+  /** The Workspace surface's input: `{ contractRows, record }`. No provider or mutation is accepted. */
+  workspace: workspaceInput = null,
   observability = null,
   logger = {},
 } = {}) {
@@ -254,6 +262,20 @@ export function createFrontendLego({
     contract: memoryInput?.contract ?? null,
   });
 
+  /** The Workspace surface is a pure view: exact records and explicit lock-row handoff only. */
+  const buildWorkspaceView = () => describeWorkspace({
+    record: workspaceInput?.record ?? null,
+    contractRows: workspaceInput?.contractRows ?? [],
+    catalog: manifests.workspaceCatalog,
+  });
+  let workspaceView = workspaceInput === null || workspaceInput === undefined
+    ? null
+    : buildWorkspaceView();
+  const workspace = () => (workspaceView ??= buildWorkspaceView());
+  const workspacePublicationState = () => workspacePublication({
+    contractRows: workspaceInput?.contractRows ?? [],
+  });
+
   const skillCatalog = createSkillCatalog({
     surface: manifests.skillCatalog,
     declaration: skillInput?.declaration ?? null,
@@ -328,6 +350,9 @@ export function createFrontendLego({
       memoryKinds: MEMORY_KINDS.length,
       memoryPublished: memoryView?.published ?? memoryPublicationState().published,
       memoryDrift: memoryView?.drift.state ?? 'not-declared',
+      workspacePublished: workspaceView?.publication.published ?? workspacePublicationState().published,
+      workspaceRenderable: workspaceView?.renderable ?? false,
+      workspaceCatalog: workspaceCatalogAudit(manifests.workspaceCatalog).ok,
       events: events.stats().emitted,
       adapter: adapter.id,
       framework: adapter.framework,
@@ -432,6 +457,13 @@ export function createFrontendLego({
       return memory();
     },
     describeMemory,
+    /** Workspace identity/lifecycle rendering; no Workspace operation is invoked here. */
+    get workspace() {
+      return workspace();
+    },
+    describeWorkspace,
+    workspaceCatalogAudit: () => workspaceCatalogAudit(manifests.workspaceCatalog),
+    checkWorkspaceAlignment,
     skillDetail: (skillId, options) => skillDetail(skillCatalog, skillId, options),
     searchSkills: (filters) => searchSkills(skillCatalog, filters),
     /**

@@ -14,7 +14,7 @@
 | **Agent Machine** | `ai.agent-runtime` | declared in `ai-foundation` | CONTRACT-ONLY | ai.agent-runtime@1.0.0, ai.agent-delegation@1.0.0 | `lego-ai-foundation.test.mjs (contract level)`; planned: loop, fan-out/fan-in, cancellation propagation |
 | **Agent Machine** | `ai.agent-delegation` | declared in `ai-foundation` | CONTRACT-ONLY | ai.agent-runtime@1.0.0, ai.agent-delegation@1.0.0 | `lego-ai-foundation.test.mjs (contract level)`; planned: loop, fan-out/fan-in, cancellation propagation |
 | **Memory** | `ai.memory` | locked @ 1.0.0 | IMPLEMENTED | ai.memory@1.0.0 | `lego-memory.test.mjs (create, recall, empty, invalid, duplicate, update, isolation, provider, integrity, forget, ordering, limits)` |
-| **Workspace** | `ai.workspace` | **publicationPending** | PLANNED | publicationPending | planned: scope enforcement, escape attempts, lifecycle |
+| **Workspace** | `ai.workspace` | locked @ 1.0.0 | IMPLEMENTED | ai.workspace@1.0.0 | `lego-workspace.test.mjs` |
 | **Context & Session** | `ai.context` | locked @ 1.0.0 | IN-PROGRESS | ai.context@1.0.0, ai.agent-session@1.0.0 | `lego-context-session.test.mjs`; planned: frontend/backend alignment and full reconciliation |
 | **Context & Session** | `ai.agent-session` | locked @ 1.0.0 | IN-PROGRESS | ai.context@1.0.0, ai.agent-session@1.0.0 | `lego-context-session.test.mjs`; planned: frontend/backend alignment and full reconciliation |
 | **Universal Translation** | `ai.translation` | **publicationPending** | PLANNED | publicationPending | planned: markup preservation, RTL declaration, fallback when absent |
@@ -34,7 +34,6 @@ A `publicationPending` entry means the concept is declared but **no contract
 version has been assigned**. No version is invented and no name is silently
 changed; the owner and the decision reference are recorded instead.
 
-- **Workspace** (`manager`) — publicationPending. Tracked for phase B.
 - **Universal Translation** (`manager`) — publicationPending. Tracked for phase D.
 - **Node Creator** (`agent-4`) — publicationPending. Tracked for phase D.
 - **MCP Adapter** (`manager`) — publicationPending. Tracked for phase C.
@@ -49,6 +48,7 @@ changed; the owner and the decision reference are recorded instead.
 | `ai.agent-session` | 1.0.0 | `manager` | implemented |
 | `ai.skill` | 1.0.0 | `manager` | implemented |
 | `ai.memory` | 1.0.0 | `manager` | implemented |
+| `ai.workspace` | 1.0.0 | `manager` | implemented |
 
 ## Operation coverage
 

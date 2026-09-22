@@ -1377,6 +1377,58 @@ export const VOCABULARIES = Object.freeze([
       rule: 'Three outcomes, never two: `degraded` is not `failed` and must not be rendered as `verified`. Missing state is reported as missing; it is never silently repaired.',
     }),
   }),
+  Object.freeze({
+    id: 'workspaceKind',
+    question: 'Which bounded Workspace kind did the backend declare?',
+    about: 'workspace-kind',
+    values: Object.freeze(['LOCAL', 'CONTAINER', 'REMOTE', 'VPS', 'EPHEMERAL', 'PERSISTENT']),
+    provenance: Object.freeze({
+      contract: Object.freeze({ id: 'ai.workspace', version: '1.0.0', owner: 'manager' }),
+      kind: 'module',
+      file: 'apps/n8n-lego/src/lego/workspace.mjs',
+      symbol: 'WORKSPACE_KINDS',
+      read: 'values',
+    }),
+  }),
+  Object.freeze({
+    id: 'workspaceLifecycle',
+    question: 'What bounded lifecycle state did the backend report for this Workspace?',
+    about: 'state',
+    values: Object.freeze(['declared', 'created', 'mounted', 'active', 'released']),
+    provenance: Object.freeze({
+      contract: Object.freeze({ id: 'ai.workspace', version: '1.0.0', owner: 'manager' }),
+      kind: 'module',
+      file: 'apps/n8n-lego/src/lego/workspace.mjs',
+      symbol: 'WORKSPACE_LIFECYCLE_STATES',
+      read: 'values',
+    }),
+  }),
+  Object.freeze({
+    id: 'workspaceOperation',
+    question: 'Which Workspace operation is declared by ai.workspace@1.0.0?',
+    about: 'operation',
+    values: Object.freeze(['workspace.create', 'workspace.describe', 'workspace.mount', 'workspace.release']),
+    provenance: Object.freeze({
+      contract: Object.freeze({ id: 'ai.workspace', version: '1.0.0', owner: 'manager' }),
+      kind: 'module',
+      file: 'apps/n8n-lego/src/lego/workspace.mjs',
+      symbol: 'WORKSPACE_OPERATIONS',
+      read: 'values',
+    }),
+  }),
+  Object.freeze({
+    id: 'workspacePermission',
+    question: 'Which permission is declared by ai.workspace@1.0.0?',
+    about: 'permission',
+    values: Object.freeze(['ai:workspace:read', 'ai:workspace:create']),
+    provenance: Object.freeze({
+      contract: Object.freeze({ id: 'ai.workspace', version: '1.0.0', owner: 'manager' }),
+      kind: 'module',
+      file: 'apps/n8n-lego/src/lego/workspace.mjs',
+      symbol: 'WORKSPACE_PERMISSIONS',
+      read: 'values',
+    }),
+  }),
 ]);
 
 /**
@@ -2204,6 +2256,12 @@ export function vocabularyDrift(observed = {}) {
  * *different* subjects is what needs the declaration below.
  */
 export const DECLARED_OVERLAPS = Object.freeze([
+  Object.freeze({
+    vocabularies: Object.freeze(['memoryRetention', 'workspaceKind']),
+    values: Object.freeze({
+      EPHEMERAL: 'Memory retention and Workspace kind both use the contract-owned word `EPHEMERAL`, but one describes record lifetime and the other describes a bounded Workspace declaration',
+    }),
+  }),
   Object.freeze({
     vocabularies: Object.freeze(['agentSessionState', 'continuationVerification']),
     values: Object.freeze({
