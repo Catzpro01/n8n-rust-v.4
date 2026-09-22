@@ -1,0 +1,298 @@
+{
+  "contract": "ai.agent-machine",
+  "version": "1.0.0",
+  "owner": "manager",
+  "phase": "P2.16",
+  "status": "implemented",
+  "definition": "Agent Machine is the bounded execution foundation for a controlled agent execution: one canonical contract for machine and task identity, explicit lifecycle, bounded step bookkeeping, first-class budgets, deterministic transitions and a replaceable provider/executor seam. It consumes ai.context, ai.agent-session, ai.memory and ai.workspace by opaque reference only and never redefines them.",
+  "purpose": "Give a future controlled executor one bounded, deterministic state machine to drive, without shipping an autonomous runtime, an agent loop or any execution authority.",
+  "identity": {
+    "field": "machineId",
+    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$",
+    "maxLength": 64,
+    "rule": "Identity is explicit and stable. An unknown identity never resolves to another machine. machineId identifies the execution foundation record; taskId identifies the task the machine executes; both are opaque to the other domain."
+  },
+  "executorKinds": [
+    "IN_MEMORY",
+    "EXTERNAL"
+  ],
+  "executorKindRule": "A kind is a declaration, not an authority. The provider must explicitly support a requested kind; the core never infers shell, filesystem, process, network or remote execution from it. IN_MEMORY is the bounded default; EXTERNAL names a replaceable external executor without selecting one.",
+  "fields": [
+    "machineId",
+    "taskId",
+    "executorKind",
+    "lifecycle",
+    "sessionReference",
+    "contextReference",
+    "workspaceReference",
+    "budgets",
+    "metadata",
+    "steps",
+    "stepCount",
+    "failure",
+    "version",
+    "createdAt",
+    "updatedAt"
+  ],
+  "references": {
+    "sessionReference": {
+      "type": "opaque identifier or null",
+      "maxLength": 128,
+      "contract": "ai.agent-session@1.0.0",
+      "rule": "Names the session the execution belongs to. Agent Machine never creates, mutates or closes the session; Session != Agent Machine."
+    },
+    "contextReference": {
+      "type": "opaque identifier or null",
+      "maxLength": 128,
+      "contract": "ai.context@1.0.0",
+      "rule": "Names the context (or continuation) the execution consumes. Agent Machine never loads, compacts, rolls over or rehydrates context; Context != Agent Machine."
+    },
+    "workspaceReference": {
+      "type": "opaque identifier or null",
+      "maxLength": 128,
+      "contract": "ai.workspace@1.0.0",
+      "rule": "Names the workspace the execution is scoped to. Agent Machine never mounts or releases the workspace and gains no filesystem, terminal or process authority from it; Workspace != Agent Machine."
+    },
+    "memoryBoundary": "Agent Machine does not reference, remember, recall, list or forget Memory. If a future executor needs Memory it calls ai.memory@1.0.0 itself through its own permissions; this contract keeps Memory out of execution bookkeeping."
+  },
+  "metadata": {
+    "type": "JSON object",
+    "maxBytes": 16384,
+    "maxKeys": 32,
+    "maxDepth": 4,
+    "maxKeyLength": 64,
+    "rule": "Metadata is descriptive and bounded. Authority-bearing keys, credentials, secrets, paths, commands, processes, runtimes and provider handles are refused."
+  },
+  "lifecycle": {
+    "states": [
+      "created",
+      "running",
+      "waiting",
+      "paused",
+      "completed",
+      "failed",
+      "cancelled"
+    ],
+    "initial": "created",
+    "terminal": [
+      "completed",
+      "failed",
+      "cancelled"
+    ],
+    "transitions": {
+      "created": ["running", "cancelled"],
+      "running": ["waiting", "paused", "completed", "failed", "cancelled"],
+      "waiting": ["cancelled"],
+      "paused": ["running", "cancelled"],
+      "completed": [],
+      "failed": [],
+      "cancelled": []
+    },
+    "vocabularyRule": "The states are the canonical agent vocabulary already declared by the AI set and published by ai.agent-session@1.0.0; they are quoted, not re-invented. Session lifecycle is NOT Agent Machine lifecycle: a session can be waiting while its execution machine is paused, and closing a session does not move this state machine.",
+    "waitingRule": "waiting is entered only by a step whose outcome is approval-required, and it carries the approvalReference that gates it. P2.16 has no approval resolution: the only exit is cancel. An unresolved approval never advances the machine (fail-closed).",
+    "idempotencyRule": "start, pause, resume and cancel are idempotent when the machine is already in the state the operation establishes; they refuse, never silently re-transition, from any other state. A terminal machine accepts no mutation: cancel on cancelled is a no-op, every other mutation fails closed."
+  },
+  "steps": {
+    "unit": "One step is one bounded, caller-reported execution record. Nothing in this contract executes it: a future executor (in-process or external, behind the provider seam) reports steps, and this contract validates and books them.",
+    "fields": [
+      "stepId",
+      "sequence",
+      "inputReference",
+      "approvalReference",
+      "outcome",
+      "final",
+      "resultReference",
+      "errorReference",
+      "continuation",
+      "recordedAt"
+    ],
+    "outcomes": {
+      "succeeded": "Work reported done. Terminal for the machine only when the step is final.",
+      "failed": "Work reported failed. Terminal; the machine failure records the step and its errorReference.",
+      "cancelled": "Work reported cancelled. Terminal; the same outcome the cancel operation produces.",
+      "approval-required": "The step needs the ai.approval record named by approvalReference. The machine enters waiting. The reference is mandatory (fail-closed): an approval requirement with no reference is invalid input."
+    },
+    "sequencing": "sequence is the caller's expected next position (stepCount + 1). A stale, out-of-order or duplicate stepId is a deterministic conflict, never a silent reorder. Duplicate step submission is therefore impossible, and a stale caller is told so.",
+    "continuation": "A continuation is bounded state carried by a step (maxContinuationBytes). It is the ONLY continuation channel in P2.16; there is no recursive continuation, no hidden background continuation and no unbounded retry."
+  },
+  "budgets": {
+    "dimensions": {
+      "maxSteps": "maximum recorded steps per machine; a step beyond it fails the machine terminally with failure code budget-exhausted",
+      "maxDurationMs": "maximum execution wall-clock from start to any step; a step beyond it fails the machine terminally with failure code budget-exhausted",
+      "maxContinuationBytes": "maximum byte size of one step continuation",
+      "maxReferences": "maximum opaque references per step (input + approval + result + error)"
+    },
+    "rule": "Budgets are first-class, declared at create, clamped to the global ceilings and always positive. There is no unlimited mode: every machine carries a finite budget in every dimension. Exhaustion is a stable error AND a stable terminal state, never a silent extension."
+  },
+  "operations": [
+    {
+      "name": "agentMachine.create",
+      "interaction": "call",
+      "permission": "ai:agent:create",
+      "idempotent": false,
+      "status": "implemented",
+      "input": ["machineId", "taskId", "executorKind", "sessionReference", "contextReference", "workspaceReference", "budgets", "metadata"],
+      "output": "Machine record in lifecycle created with declared budgets",
+      "errors": ["lego.contract_violation", "storage.conflict", "lego.unavailable"],
+      "rule": "Creates one bounded execution identity with explicit budgets and opaque Context/Session/Workspace references. Duplicate identities are refused; the provider must explicitly support the declared executor kind."
+    },
+    {
+      "name": "agentMachine.describe",
+      "interaction": "call",
+      "permission": "ai:agent:read",
+      "idempotent": true,
+      "status": "implemented",
+      "input": ["machineId"],
+      "output": "Machine record or null when the exact identity is not present",
+      "errors": ["lego.contract_violation"],
+      "rule": "Reads only the exact requested identity. Null is an explicit absent result, never a fallback or cross-machine lookup."
+    },
+    {
+      "name": "agentMachine.start",
+      "interaction": "call",
+      "permission": "ai:agent:invoke",
+      "idempotent": true,
+      "status": "implemented",
+      "input": ["machineId", "expectedVersion"],
+      "output": "Machine record in lifecycle running",
+      "errors": ["lego.contract_violation", "storage.not_found", "storage.conflict", "lego.interaction_mismatch"],
+      "rule": "created -> running and stamps startedAt. Idempotent while running. It grants no execution: it only opens the bounded window in which steps may be reported."
+    },
+    {
+      "name": "agentMachine.step",
+      "interaction": "call",
+      "permission": "ai:agent:invoke",
+      "idempotent": false,
+      "status": "implemented",
+      "input": ["machineId", "expectedVersion", "stepId", "sequence", "inputReference", "approvalReference", "result"],
+      "output": "Machine record after recording the step; lifecycle may be running, waiting, completed, failed or cancelled",
+      "errors": ["lego.contract_violation", "storage.not_found", "storage.conflict", "lego.interaction_mismatch"],
+      "rule": "Accepts one bounded step report while running. Enforces sequence, step identity uniqueness, budget and outcome rules deterministically. A legitimate outcome is recorded and returned; a protocol violation is an error. Budget exhaustion is a stable error and a stable terminal failure."
+    },
+    {
+      "name": "agentMachine.pause",
+      "interaction": "call",
+      "permission": "ai:agent:control",
+      "idempotent": true,
+      "status": "implemented",
+      "input": ["machineId", "expectedVersion"],
+      "output": "Machine record in lifecycle paused",
+      "errors": ["lego.contract_violation", "storage.not_found", "storage.conflict", "lego.interaction_mismatch"],
+      "rule": "running -> paused. Idempotent while paused. A waiting machine cannot be paused: it is already bounded by its approval reference."
+    },
+    {
+      "name": "agentMachine.resume",
+      "interaction": "call",
+      "permission": "ai:agent:control",
+      "idempotent": true,
+      "status": "implemented",
+      "input": ["machineId", "expectedVersion"],
+      "output": "Machine record in lifecycle running",
+      "errors": ["lego.contract_violation", "storage.not_found", "storage.conflict", "lego.interaction_mismatch"],
+      "rule": "paused -> running. Idempotent while running. It never leaves waiting: approval resolution is the ai.approval contract's boundary, and fail-closed means the only P2.16 exit from waiting is cancel."
+    },
+    {
+      "name": "agentMachine.cancel",
+      "interaction": "call",
+      "permission": "ai:agent:control",
+      "idempotent": true,
+      "status": "implemented",
+      "input": ["machineId", "expectedVersion"],
+      "output": "Machine record in terminal lifecycle cancelled",
+      "errors": ["lego.contract_violation", "storage.not_found", "storage.conflict", "lego.interaction_mismatch"],
+      "rule": "created, running, waiting or paused -> cancelled. Idempotent when already cancelled; a machine in another terminal outcome cannot be re-cancelled into a different result."
+    }
+  ],
+  "permissions": [
+    "ai:agent:create",
+    "ai:agent:invoke",
+    "ai:agent:control",
+    "ai:agent:read"
+  ],
+  "permissionRule": "The four words are the canonical ai:agent:* vocabulary already declared for the AI set's agent runtime. create covers identity creation, invoke covers start and step (advancing execution state), control covers pause/resume/cancel, read covers describe. There is deliberately no ai:agent:delegate permission in P2.16 (delegation is a later boundary) and no execute-style permission: agentMachine.invoke is bookkeeping control over bounded state, and it grants no filesystem, shell, process, credential, network, MCP or GitHub authority.",
+  "concurrency": {
+    "mechanism": "optimistic: every mutation carries expectedVersion, the machine version the caller last read",
+    "conflictError": "storage.conflict with the actual and expected versions",
+    "guarantees": [
+      "a stale caller is refused, never silently applied",
+      "duplicate step submission is impossible (sequence + stepId uniqueness)",
+      "every version bump happens inside one recorded mutation, so describe always returns a coherent state"
+    ]
+  },
+  "provider": {
+    "interface": ["supports(kind)", "put(record)", "get(machineId)", "list()"],
+    "default": "InMemoryAgentMachineProvider",
+    "replacement": "Any executor/provider may replace the default when it preserves the interface and the explicit supports(kind) answer. The seam is where a future external executor plugs in; the contract does not change.",
+    "semantics": "Provider state is isolated by machineId. The provider stores opaque records only: it never receives a step payload to execute, a command, a path, a credential or a runtime handle. Provider implementation and durability are not part of the Agent Machine contract.",
+    "forbidden": ["shell", "child_process", "Docker", "VPS", "browser", "MCP", "GitHub", "Supabase", "filesystem", "SQLite", "Redis"]
+  },
+  "approvalBoundary": {
+    "contract": "ai.approval",
+    "status": "contract-only declaration (fail-closed)",
+    "rule": "Agent Machine carries approvalReferences only. It never requests, grants, denies or expires an approval, and it never renders an unanswered approval as granted. A step that needs approval records the reference and the machine waits; with no approval resolution in P2.16 the bounded exit is cancel. This is the minimum reference boundary, kept separate from approval execution."
+  },
+  "limits": {
+    "maxMachines": 256,
+    "maxIdentifierLength": 64,
+    "maxReferenceIdLength": 128,
+    "maxMetadataBytes": 16384,
+    "maxMetadataKeys": 32,
+    "maxMetadataDepth": 4,
+    "maxMetadataKeyLength": 64,
+    "maxSteps": 64,
+    "maxDurationMs": 600000,
+    "maxContinuationBytes": 65536,
+    "maxReferences": 8
+  },
+  "isolation": {
+    "mechanism": "exact machineId namespace lookup",
+    "guarantees": [
+      "describing A cannot return B",
+      "a step reported for A cannot touch B",
+      "unknown identities fail closed for mutations",
+      "provider capabilities are never inferred from identity or executor kind"
+    ]
+  },
+  "persistence": "The provider owns storage semantics. The default in-memory provider is process-local and makes no durability claim; Agent Machine does not select or configure persistence.",
+  "notScope": [
+    "the agent loop or any autonomous runtime",
+    "model inference",
+    "tool execution",
+    "delegation, child agents or multi-agent orchestration",
+    "parallel execution, fan-out or fan-in",
+    "stream, send, artifact or close operations (future ai.agent-runtime loop)",
+    "filesystem authority",
+    "terminal or shell authority",
+    "arbitrary process execution",
+    "network execution",
+    "MCP runtime",
+    "Runtime Adapter",
+    "Node Creator",
+    "Translation runtime",
+    "credentials or secrets",
+    "approval request/grant/deny execution",
+    "Memory persistence, traversal or injection",
+    "Context or Session lifecycle semantics",
+    "automatic persistence policy",
+    "unbounded retries or recursive continuation",
+    "frontend or browser storage",
+    "Rust implementation"
+  ],
+  "security": {
+    "failClosed": "Malformed identities, unsupported executor kinds, unknown budget dimensions, oversized metadata or continuations, missing approval references, invalid outcomes, stale versions, duplicate steps and invalid transitions are refused deterministically.",
+    "noAuthorityEscalation": "Operating Agent Machine grants no filesystem, shell, process, credential, GitHub, VPS, network or MCP access. A permission on this contract is a bookkeeping control over bounded state, nothing more.",
+    "secrets": "Credential-shaped keys and values are not accepted by the bounded metadata surface.",
+    "noFakeSuccess": "A failed or cancelled step is recorded as failure or cancellation, never converted into success, and a terminal machine never resumes silently."
+  },
+  "ownership": {
+    "domain": "ai-foundation",
+    "implementationOwner": "agent-1",
+    "governanceOwner": "manager",
+    "aiSetReconciliation": "The official Agent Machine LEGO (ai-lego-set.json, id agent-machine) keeps status contract-only: P2.16 implements its bounded execution FOUNDATION (this contract) and nothing that would claim the loop, delegation or parallel runtime. The future full loop publishes ai.agent-runtime and builds on ai.agent-machine."
+  },
+  "compatibility": {
+    "ui": "The frontend consumes declared identity and lifecycle on demand through its own catalog and renders actual contract states only. It does not redesign or replace stock n8n UI behavior and does not offer execution affordances.",
+    "transport": ["in-process"],
+    "replaceability": "An executor or provider may replace the bounded implementation without changing ai.agent-machine@1.0.0."
+  }
+}

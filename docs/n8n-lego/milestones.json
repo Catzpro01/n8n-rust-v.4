@@ -735,7 +735,7 @@
       "phase": "B",
       "status": "planned",
       "owner": "manager",
-      "backendOwner": "manager-designated later",
+      "backendOwner": "agent-1",
       "frontendOwner": "agent-1",
       "dependencies": [
         "P2.13 Context & Session",
@@ -764,7 +764,10 @@
       "completionCriteria": [
         "dependencies are ready and execution loop is separately scoped"
       ],
-      "startEvidence": null,
+      "startEvidence": {
+        "commit": "7fca2858a0379c4899fb5d87bb18d09a0a17ee2a",
+        "role": "verified P2.15 protected-main baseline and P2.16 implementation start"
+      },
       "finishEvidence": null,
       "currentCommitReference": null,
       "nextMilestone": "P2.17"

@@ -442,7 +442,11 @@ test('the AI foundation is manager-owned, and only published registries are impl
   // P2.14 DELIBERATE EDIT. P2.12 published the Skill registry; P2.13 publishes
   // the bounded Context & Session registries; P2.14 publishes the bounded Memory registry.
   // The explicit allow-list prevents a runtime/provider capability from becoming implemented accidentally.
-  const IMPLEMENTED = new Set(['ai.skill', 'ai.context', 'ai.agent-session', 'ai.memory']);
+  // P2.16 DELIBERATE EDIT. ai.agent-machine joins the allow-list as the bounded execution
+  // FOUNDATION (identity, lifecycle, step bookkeeping, budgets, deterministic transitions,
+  // provider/executor seam). It is not the agent loop: ai.agent-runtime above it stays
+  // contract-only, and the AI set's agent-machine LEGO keeps its contract-only status.
+  const IMPLEMENTED = new Set(['ai.skill', 'ai.context', 'ai.agent-session', 'ai.memory', 'ai.agent-machine']);
   const domain = registry.byId.get('ai-foundation');
   assert.ok(domain, 'ai-foundation must be a registered domain');
   assert.equal(domain.owner, 'manager',

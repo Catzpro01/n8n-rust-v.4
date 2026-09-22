@@ -573,13 +573,16 @@
         "src/lego/manifest/skill.json",
         "src/lego/context-session.mjs",
         "src/lego/context.mjs",
-        "src/lego/agent-session.mjs"
+        "src/lego/agent-session.mjs",
+        "src/lego/agent-machine.mjs",
+        "src/lego/manifest/agent-machine.json"
       ],
       "public": [
         "src/lego/ai-foundation.mjs",
         "src/lego/skill.mjs",
         "src/lego/context.mjs",
-        "src/lego/agent-session.mjs"
+        "src/lego/agent-session.mjs",
+        "src/lego/agent-machine.mjs"
       ],
       "dependsOn": [
         "lego-foundation"
@@ -1383,6 +1386,87 @@
           "replacement": "contract-preserving",
           "resources": "low",
           "notes": "P2.14 bounded memory: persistent knowledge that survives context replacement, scope-isolated, checksum-verified, provider-replaceable. Four operations only: remember/recall/list/forget. No vector search, no auto-embed, no model dependency. Provider is the persistence boundary."
+        },
+        {
+          "id": "ai.agent-machine",
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "create",
+              "interaction": "call",
+              "permission": "ai:agent:create",
+              "idempotent": false,
+              "status": "implemented"
+            },
+            {
+              "name": "describe",
+              "interaction": "call",
+              "permission": "ai:agent:read",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "start",
+              "interaction": "call",
+              "permission": "ai:agent:invoke",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "step",
+              "interaction": "call",
+              "permission": "ai:agent:invoke",
+              "idempotent": false,
+              "status": "implemented"
+            },
+            {
+              "name": "pause",
+              "interaction": "call",
+              "permission": "ai:agent:control",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "resume",
+              "interaction": "call",
+              "permission": "ai:agent:control",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "cancel",
+              "interaction": "call",
+              "permission": "ai:agent:control",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "ai:agent:create",
+            "ai:agent:invoke",
+            "ai:agent:control",
+            "ai:agent:read"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "degraded",
+          "replacement": "contract-preserving",
+          "resources": "low",
+          "notes": "P2.16 bounded execution foundation: machine and task identity, canonical agent lifecycle, bounded step bookkeeping, first-class budgets and deterministic transitions behind a replaceable provider/executor seam. Consumes ai.context, ai.agent-session, ai.memory and ai.workspace by opaque reference only. Seven operations only; no loop, no inference, no tools, no delegation, no shell, no filesystem, no process. The contract-only ai.agent-runtime capability above it remains the declared shape of the future full loop, which builds on this foundation."
         }
       ],
       "notes": "Contract-only. Declares vocabulary for a future AI Foundation: provider/runtime taxonomy, model and tool gateways, application providers, agent lifecycle, session, delegation, events, decision, approval, artifact and context. NOTHING is implemented: no inference, no agent loop, no gateway client, no MCP server or client, no network call, no new dependency. Owned by manager because these contracts are cross-domain and must not be owned by whoever writes the first adapter. A dependency-free leaf: the AI Foundation must never become a prerequisite for the backend booting. P2.12: the Skill registry (src/lego/skill.mjs) reads the capability registry from lego-foundation to answer whether a skill's required capabilities are DECLARED. The direction is deliberate and one-way: the AI Foundation consumes the capability registry, the capability registry knows nothing about AI. This is the dependency that keeps Skill from copying the capability list, which would be the real architectural failure \u2014 two registries disagreeing about what exists. lego-foundation does not depend on ai-foundation, so no cycle is created, and the AI Foundation is still not required for the backend to boot.",
@@ -1406,7 +1490,7 @@
         "concurrency": "parallel-safe",
         "startup": "instant"
       },
-      "statusNote": "P2.13 implements the Context & Session LEGO while preserving the provider-neutral AI Foundation boundary. Skill is complete from P2.12; Context & Session is in-progress until Manager reconciliation and merge. AI runtime, Memory, Workspace execution and Agent Machine remain outside this milestone."
+      "statusNote": "P2.16 implements the Agent Machine execution FOUNDATION (src/lego/agent-machine.mjs, ai.agent-machine@1.0.0): bounded identity, lifecycle, step bookkeeping, budgets, deterministic transitions and a provider/executor seam, consuming Context, Session, Memory and Workspace by opaque reference only. Skill is complete from P2.12; Context & Session from P2.13; Memory from P2.14; Workspace from P2.15. The AI runtime (model inference, agent loop, delegation, parallelism, MCP) remains unimplemented: agent-machine keeps status contract-only in the AI set."
     },
     {
       "id": "compatibility",
