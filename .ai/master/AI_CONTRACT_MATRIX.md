@@ -15,8 +15,8 @@
 | **Agent Machine** | `ai.agent-delegation` | declared in `ai-foundation` | CONTRACT-ONLY | ai.agent-runtime@1.0.0, ai.agent-delegation@1.0.0 | `lego-ai-foundation.test.mjs (contract level)`; planned: loop, fan-out/fan-in, cancellation propagation |
 | **Memory** | `ai.memory` | **publicationPending** | PLANNED | publicationPending | planned: graph integrity, retention, traversal bounds, provider-absent operation |
 | **Workspace** | `ai.workspace` | **publicationPending** | PLANNED | publicationPending | planned: scope enforcement, escape attempts, lifecycle |
-| **Context & Session** | `ai.context` | declared in `ai-foundation` | CONTRACT-ONLY | ai.context@1.0.0, ai.agent-session@1.0.0 | `lego-ai-foundation.test.mjs`; planned: rollover, rehydration fidelity |
-| **Context & Session** | `ai.agent-session` | declared in `ai-foundation` | CONTRACT-ONLY | ai.context@1.0.0, ai.agent-session@1.0.0 | `lego-ai-foundation.test.mjs`; planned: rollover, rehydration fidelity |
+| **Context & Session** | `ai.context` | locked @ 1.0.0 | IN-PROGRESS | ai.context@1.0.0, ai.agent-session@1.0.0 | `lego-context-session.test.mjs`; planned: frontend/backend alignment and full reconciliation |
+| **Context & Session** | `ai.agent-session` | locked @ 1.0.0 | IN-PROGRESS | ai.context@1.0.0, ai.agent-session@1.0.0 | `lego-context-session.test.mjs`; planned: frontend/backend alignment and full reconciliation |
 | **Universal Translation** | `ai.translation` | **publicationPending** | PLANNED | publicationPending | planned: markup preservation, RTL declaration, fallback when absent |
 | **Node Creator** | `node.creator` | **publicationPending** | PLANNED | publicationPending | planned: per-strategy conformance, generated-node validity |
 | **Capability** | `lego.domain-registry` | locked @ 1.1.0 | IMPLEMENTED | lego.domain-registry@1.1.0, lego.negotiation@1.0.0 | `lego-capability-contract.test.mjs`; `lego-communication.test.mjs`; `lego-foundation.test.mjs` |
@@ -46,6 +46,8 @@ changed; the owner and the decision reference are recorded instead.
 | Contract | Version | Owner | Status |
 | --- | --- | --- | --- |
 | `ai.foundation` | 1.0.0 | `manager` | contract-only |
+| `ai.context` | 1.0.0 | `manager` | implemented |
+| `ai.agent-session` | 1.0.0 | `manager` | implemented |
 | `ai.skill` | 1.0.0 | `manager` | implemented |
 
 ## Operation coverage
@@ -58,10 +60,9 @@ changed; the owner and the decision reference are recorded instead.
 
 ## Honest status
 
-- NOT scale-out ready — two class-A storage blockers remain in src/store.mjs (agent-5, P8).
-- The AI runtime is NOT implemented.
-- Model inference is NOT implemented.
-- The MCP runtime is NOT implemented.
-- No vendor adapter is implemented.
-- The Agent Machine runtime is NOT implemented.
-- The frontend browser gate is NOT available locally (CI-only; Chromium cannot be installed in the dev sandbox).
+- AI runtime is NOT implemented: no model inference, provider API calls, Agent Machine loop or multi-agent runtime.
+- Model inference is NOT implemented; no provider API calls are made.
+- Memory persistent store remains NOT IMPLEMENTED; Context is what is loaded now and Memory is what survives replacement.
+- Workspace runtime, MCP runtime, Runtime Adapter runtime, Node Creator runtime and Translation runtime remain NOT IMPLEMENTED.
+- Rust remains NOT STARTED. The backend is NOT scale-out ready; scale-out remains NOT READY.
+- P2.13 is not COMPLETE until Manager reconciliation, merge validation and post-merge verification pass.

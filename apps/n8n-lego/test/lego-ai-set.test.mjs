@@ -287,7 +287,7 @@ test('a fabricated version on an unpublished contract is detected', () => {
 test('status and evidence agree: `implemented` requires real test files, `planned` does not claim them', () => {
   for (const lego of AI_SET.lego) {
     const realTests = lego.tests.filter((entry) => entry.startsWith('test/'));
-    if (lego.status === 'implemented' || lego.status === 'contract-only') {
+    if (lego.status === 'implemented' || lego.status === 'in-progress' || lego.status === 'contract-only') {
       assert.ok(realTests.length > 0, `${lego.id} is '${lego.status}' but names no real test file`);
     }
     if (lego.status === 'planned') {
@@ -300,17 +300,15 @@ test('status and evidence agree: `implemented` requires real test files, `planne
   }
 });
 
-test('only Capability is implemented; the AI runtime is not claimed', () => {
+test('published registries are implemented without claiming the AI runtime', () => {
   // The single most consequential honesty check in the file. If this test ever
   // has to change, someone has claimed a runtime exists — and that claim should
   // cost them a deliberate edit to an assertion, not a quiet status flip.
   //
-  // P2.12 DELIBERATE EDIT. `skill` joins `capability` as implemented. What was
-  // built is the skill REGISTRY — registration, validation, lazy discovery and
-  // a six-state lifecycle over declarative documents. No procedure is executed
-  // and no runtime was added, which the assertions below and the whole of
-  // test/lego-skill.test.mjs exist to hold. Any further id appearing in this
-  // list must cost the same deliberate edit.
+  // P2.13 deliberate edit. The implemented list remains limited to the Skill
+  // and Capability LEGO; Context & Session is explicitly in-progress until
+  // Manager reconciliation and protected-main verification. No AI runtime is
+  // claimed by that foundation work.
   const implemented = AI_SET.lego.filter((lego) => lego.status === 'implemented').map((lego) => lego.id);
   assert.deepEqual(implemented, ['skill', 'capability']);
 
@@ -431,9 +429,9 @@ test('scale-out is not claimed anywhere while class-A blockers are open', () => 
     'something claims scale-out readiness while class-A blockers are open');
 });
 
-test('all twenty-five decision principles are present and unique', () => {
-  assert.equal(GOVERNANCE.decisionPrinciples.length, 25);
-  assert.equal(new Set(GOVERNANCE.decisionPrinciples).size, 25);
+test('all twenty-nine decision principles are present and unique', () => {
+  assert.equal(GOVERNANCE.decisionPrinciples.length, 29);
+  assert.equal(new Set(GOVERNANCE.decisionPrinciples).size, 29);
 });
 
 /* ------------------------------------------------------------------ scenarios */

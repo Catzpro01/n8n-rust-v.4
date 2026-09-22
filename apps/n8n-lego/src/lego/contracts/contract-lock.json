@@ -531,6 +531,92 @@
       "notes": "Provider-neutral AI vocabulary. CONTRACT ONLY: no inference, no agent loop, no gateway client, no MCP server or client, no network call, no new dependency. Vendor names appear only as examples of provider kinds, never in an id, a required field or a default."
     },
     {
+      "id": "ai.context",
+      "owner": "manager",
+      "domain": "ai-foundation",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/context.mjs"
+      ],
+      "exports": {
+        "src/lego/context.mjs": [
+          "CONTEXT_CONTRACT",
+          "CONTEXT_CONTRACT_VERSION",
+          "CONTEXT_SCOPES",
+          "CONTEXT_OPERATIONS",
+          "CONTEXT_MANAGER_STATES",
+          "CONTINUATION_PACKAGE_VERSION",
+          "CONTINUATION_FIELDS",
+          "CONTINUATION_VERIFICATION",
+          "ContextSessionError",
+          "createContextManager",
+          "createContextSessionManager",
+          "verifyContinuationPackage"
+        ]
+      },
+      "operations": [
+        "load",
+        "compact",
+        "rollover",
+        "rehydrate",
+        "verify"
+      ],
+      "permissions": [
+        "ai:context:read",
+        "ai:context:write"
+      ],
+      "consumers": [
+        "future Agent Machine (contract-only)",
+        "frontend Context & Session consumer",
+        "Manager reconciliation gate"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-context-session.test.mjs"
+      ],
+      "notes": "P2.13 smallest additive publication from the already-declared ai.context fields and Context & Session operation vocabulary. The implementation is bounded local state only: no model/provider/runtime dependency, no transcript dump, no Memory store. Contract lock publication does not make P2.13 complete; Manager reconciliation, merge validation and post-merge verification remain required."
+    },
+    {
+      "id": "ai.agent-session",
+      "owner": "manager",
+      "domain": "ai-foundation",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/agent-session.mjs"
+      ],
+      "exports": {
+        "src/lego/agent-session.mjs": [
+          "AGENT_SESSION_CONTRACT",
+          "AGENT_SESSION_CONTRACT_VERSION",
+          "AGENT_SESSION_STATES",
+          "AGENT_SESSION_OPERATIONS",
+          "AGENT_SESSION_TRANSITIONS",
+          "ContextSessionError",
+          "createContextSessionManager"
+        ]
+      },
+      "operations": [
+        "create",
+        "status",
+        "close"
+      ],
+      "permissions": [
+        "ai:agent:control",
+        "ai:agent:create",
+        "ai:agent:read"
+      ],
+      "consumers": [
+        "future Agent Machine (contract-only)",
+        "frontend Context & Session consumer",
+        "Manager reconciliation gate"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-context-session.test.mjs"
+      ],
+      "notes": "P2.13 smallest additive publication from the established ai.agent-session fields and states. A session is bounded identity/control state with references, never an unbounded transcript. The implementation remains provider/runtime-neutral."
+    },
+    {
       "id": "ai.skill",
       "owner": "manager",
       "domain": "ai-foundation",

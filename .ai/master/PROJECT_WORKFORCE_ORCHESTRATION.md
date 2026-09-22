@@ -139,3 +139,19 @@ Task fields: `taskId`, `jobId`, `owner`, `status`, `scope`, `dependencies`, `blo
 23. Do not claim readiness that gates do not support.
 24. A failed negative test is useful evidence.
 25. Replaceable implementations must preserve contracts.
+26. Agent completion is not merge approval.
+27. Reconciliation PASS and MERGE PASS are separate gates.
+28. A milestone is complete only after protected-main post-merge verification.
+29. Contract and architecture conflicts must be reconciled before merge; never silently choose the easier branch.
+
+## Milestone merge and reconciliation protocol
+
+**Canonical register:** `docs/n8n-lego/milestones.json`
+
+> Agent branch completion is not merge approval. The reconciled and post-merge verified state on protected main is the milestone.
+
+1. freeze baseline\n2. verify each branch and evidence\n3. reconcile contracts and dependencies\n4. classify conflicts\n5. run shared alignment and full relevant gates\n6. record reconciliation pass\n7. validate merge candidate against main\n8. merge only after merge pass\n9. rerun post-merge verification\n10. mark milestone complete only after protected-main verification
+
+**Failure state:** `RECONCILIATION_FAILED`
+
+- **mechanical:** Manager may resolve compatible file/path/generated-artifact conflicts.\n- **contract:** Reconcile fields, operations, enums, permissions and errors before merging.\n- **architecture:** Record and decide before merging; do not choose the easier implementation silently.\n- **scope:** Do not merge out-of-scope runtime, Memory, Workspace authority or Rust work merely to clean it up later.

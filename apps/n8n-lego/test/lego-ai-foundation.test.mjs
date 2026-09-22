@@ -438,12 +438,11 @@ test('a transport advertises what it carries and never downgrades a stream', () 
 
 /* ------------------------------------------------- contract-only proof (§14) */
 
-test('the AI foundation is manager-owned, and everything except the skill registry is contract-only', () => {
-  // P2.12 DELIBERATE EDIT. This domain was wholly contract-only until the skill
-  // registry was implemented as capability `ai.skill`. The exemption is written
-  // as a named allow-list of one rather than a loosened rule, so implementing a
-  // second capability fails here and has to be argued for.
-  const IMPLEMENTED = new Set(['ai.skill']);
+test('the AI foundation is manager-owned, and only published registries are implemented', () => {
+  // P2.13 DELIBERATE EDIT. P2.12 published the Skill registry; P2.13 publishes
+  // the bounded Context & Session registries. The explicit allow-list prevents
+  // a runtime/provider capability from becoming implemented accidentally.
+  const IMPLEMENTED = new Set(['ai.skill', 'ai.context', 'ai.agent-session']);
   const domain = registry.byId.get('ai-foundation');
   assert.ok(domain, 'ai-foundation must be a registered domain');
   assert.equal(domain.owner, 'manager',
