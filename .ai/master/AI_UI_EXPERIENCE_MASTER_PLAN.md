@@ -280,7 +280,7 @@ unknowns. `AI_UI_IMPLEMENTATION_PHASES.md` turns that into ordered work.
 | AI declaration | `packages/frontend-lego/src/agents.mjs`, `src/agent-events.mjs`, `manifest/capabilities.json` |
 | negotiation | `packages/frontend-lego/src/negotiation.mjs` (12 operation outcomes) |
 | decisions awaiting an owner | `docs/n8n-lego/decisions/cross-agent-decisions.json` — **XA-5, XA-8, XA-9, XA-10** (open from the foundation gate), **XA-11 … XA-17** (proposed by this plan) and **XA-18** (the external action families, from `WORKSPACE_AND_EXTERNAL_ACTION_PLAN.md`) |
-| rule enforcement | `contracts/frontend.contract.md` §19.9–§19.17, `src/conformance.mjs` (26 rules), `test/30-master-plan.test.mjs` |
+| rule enforcement | `contracts/frontend.contract.md` §19.9–§19.17, `src/conformance.mjs` (27 rules), `test/30-master-plan.test.mjs` |
 
 ## 12. Beginner mode and advanced mode
 

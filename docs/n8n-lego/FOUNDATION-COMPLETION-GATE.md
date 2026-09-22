@@ -339,7 +339,7 @@ row carries owner, affected domains, decision required, blocking level, date and
 | `N8N_BACKEND_LEGO_ROOT=<a path with no backend>` | **fails** (3 tests): a pointed-at tree that does not exist is an error, never a skip |
 | `frontend.conformance()` (via `test/19`) | 27 rules, 27 live checks, all pass (A25: a quoted word carries its provenance, and an unpublished file is recorded; A26: a declared permission is a declared word; A27: Skill discovery renders six quoted states and no execution affordance) |
 | `python3 tools/sublego-audit/audit.py` | AUDIT PASSED (12 LEGOs, 20 Sub-LEGOs, 5 Agents) |
-| `npm run verify:fast` | 5/10 — the unchanged baseline; G06–G10 require `packages/workflow-lego/node_modules` |
+| `npm run verify:fast` | 5/10 bare, **7/10** with `packages/workflow-lego/node_modules` installed (G01–G07); G08–G10 require the live reference runtime (`.runtime/node_modules` or `/home/user/.n8n-live/node_modules`) and are the workflow/Rust track's environment, not the frontend's |
 | `git show origin/a2:apps/n8n-lego/src/compat/capability.mjs \| diff - apps/n8n-lego/src/compat/capability.mjs` | identical — the app side of the compatibility boundary did not fork |
 | Secrets / credential material | not representable: refused by name in declarations, events and the seam |
 
@@ -408,7 +408,7 @@ and one new gate.
 | MCP represented without transport | ✅ 8 objects, 4 states, no transport field |
 | Zero-install valid, resource-aware without local runtimes | ✅ `describeInstallation`, budget-derived selection |
 | Localization boundary unchanged and canonical | ✅ `id/en/ar/zh/ru/jv`, `ar` RTL, dictionaries outside |
-| Fail-closed on every unknown | ✅ 26 rules, suites 21/24/25/26/27/28/29 |
+| Fail-closed on every unknown | ✅ 27 rules, suites 21/24/25/26/27/28/29/31 |
 | Boot payload budget preserved | ✅ 18,126 B, AI vocabulary absent from it |
 | `.ai` knowledge backed by manifests/contracts | ✅ generated blocks, drift-checked |
 | Every cross-agent question recorded with an arbiter | ✅ decision record, 4 resolved / 3 assigned |
