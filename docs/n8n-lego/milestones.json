@@ -733,7 +733,7 @@
       "id": "P2.16",
       "title": "Agent Machine / execution foundation",
       "phase": "B",
-      "status": "planned",
+      "status": "in-progress",
       "owner": "manager",
       "backendOwner": "agent-1",
       "frontendOwner": "agent-1",
@@ -754,9 +754,13 @@
       "deliverables": [
         "Agent Machine contract and execution foundation, subject to dependency readiness"
       ],
-      "implementationBoundary": "P2.13 provides foundations only. It does not implement the Agent Machine loop or multi-agent runtime.",
+      "implementationBoundary": "P2.16 1.1.0 additive contract surface: identity separation, ready/prepare, capability scope, bounded delegation bookkeeping, bounded graph validation, event derivation. It does not implement the agent loop, a production runtime, delegation execution or any P2.17 scope.",
       "testsGates": [
-        "planned after dependency readiness"
+        "npm run lego:arch && npm run lego:arch:selftest",
+        "npm run lego:foundation && npm run lego:foundation:selftest",
+        "npm run lego:capabilities && npm run lego:scaleout",
+        "npm run lego:ai:check",
+        "focused backend/frontend/contract suites + relevant full suites (local debug only; official validation is the Windows self-hosted runner)"
       ],
       "decisionDependencies": [
         "Agent Machine contract and execution ownership"
@@ -769,8 +773,23 @@
         "role": "verified P2.15 protected-main baseline and P2.16 implementation start"
       },
       "finishEvidence": null,
-      "currentCommitReference": null,
-      "nextMilestone": "P2.17"
+      "currentCommitReference": "arena/01a0c9d3-n8n-rust-v-4 (ai.agent-machine@1.1.0 re-derivation on 99f4b015)",
+      "nextMilestone": "P2.17",
+      "nonScope": [
+        "P2.17 Agent Machine Runtime Foundation",
+        "production runtime, model inference, MCP, transport kernel",
+        "merge authority (Manager-only)"
+      ],
+      "reconciliation": {
+        "state": "implementation re-derived from the frozen P2.16 1.1.0 specification after the original local-only commits proved unavailable on GitHub; never recovered byte-for-byte",
+        "contract": "ai.agent-machine@1.1.0 additive over the locked 1.0.0 publication; exactly one lock row",
+        "owner": "agent-1"
+      },
+      "verificationEvidence": {
+        "local": "focused + full backend/frontend suites and all lego gates executed in this workspace (debug evidence)",
+        "official": "PENDING \u2014 official validation only via the installed GitHub Actions self-hosted Windows runner on the PR",
+        "evidencePath": "docs/n8n-lego/evidence/P2.16-1.1.0-RE-DERIVED-EVIDENCE.md"
+      }
     },
     {
       "id": "P2.17+",
