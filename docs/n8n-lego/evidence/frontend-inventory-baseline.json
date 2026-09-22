@@ -1,0 +1,995 @@
+{
+  "capturedAt": "2026-09-21T16:47:26.414Z",
+  "baseUrl": "http://127.0.0.1:6210",
+  "session": "sign in",
+  "version": {
+    "editorUi": "2.9.4",
+    "reference": "2.9.4"
+  },
+  "pages": [
+    {
+      "page": "home",
+      "label": "Overview",
+      "requestedPath": "/home",
+      "landedOn": "/home/workflows",
+      "redirect": true,
+      "rest": [
+        "GET /rest/settings",
+        "GET /rest/login",
+        "GET /rest/module-settings",
+        "GET /rest/projects/my-projects",
+        "GET /rest/projects/personal",
+        "GET /rest/projects/count",
+        "GET /rest/roles",
+        "GET /rest/workflows",
+        "GET /rest/active-workflows",
+        "GET /rest/license"
+      ],
+      "settingsSidebarLabels": [],
+      "ariaLabels": [],
+      "errorBanner": []
+    },
+    {
+      "page": "workflows",
+      "label": "Workflows list",
+      "requestedPath": "/home/workflows",
+      "landedOn": "/home/workflows",
+      "redirect": false,
+      "rest": [
+        "GET /rest/settings",
+        "GET /rest/login",
+        "GET /rest/module-settings",
+        "GET /rest/projects/my-projects",
+        "GET /rest/projects/personal",
+        "GET /rest/projects/count",
+        "GET /rest/roles",
+        "GET /rest/workflows",
+        "GET /rest/active-workflows",
+        "GET /rest/license"
+      ],
+      "settingsSidebarLabels": [],
+      "ariaLabels": [],
+      "errorBanner": []
+    },
+    {
+      "page": "executions",
+      "label": "Executions (personal)",
+      "requestedPath": "/home/executions",
+      "landedOn": "/home/executions",
+      "redirect": false,
+      "rest": [
+        "GET /rest/settings",
+        "GET /rest/login",
+        "GET /rest/module-settings",
+        "GET /rest/projects/my-projects",
+        "GET /rest/projects/personal",
+        "GET /rest/projects/count",
+        "GET /rest/roles",
+        "GET /rest/workflows",
+        "GET /rest/executions"
+      ],
+      "settingsSidebarLabels": [],
+      "ariaLabels": [],
+      "errorBanner": []
+    },
+    {
+      "page": "credentials",
+      "label": "Credentials",
+      "requestedPath": "/home/credentials",
+      "landedOn": "/home/credentials",
+      "redirect": false,
+      "rest": [
+        "GET /rest/settings",
+        "GET /rest/login",
+        "GET /rest/module-settings",
+        "GET /rest/projects/my-projects",
+        "GET /rest/projects/personal",
+        "GET /rest/projects/count",
+        "GET /rest/roles",
+        "GET /rest/credentials"
+      ],
+      "settingsSidebarLabels": [],
+      "ariaLabels": [],
+      "errorBanner": []
+    },
+    {
+      "page": "variables",
+      "label": "Variables",
+      "requestedPath": "/home/variables",
+      "landedOn": "/home/variables",
+      "redirect": false,
+      "rest": [
+        "GET /rest/settings",
+        "GET /rest/login",
+        "GET /rest/module-settings",
+        "GET /rest/projects/my-projects",
+        "GET /rest/projects/personal",
+        "GET /rest/projects/count",
+        "GET /rest/roles",
+        "GET /rest/variables"
+      ],
+      "settingsSidebarLabels": [],
+      "ariaLabels": [],
+      "errorBanner": []
+    },
+    {
+      "page": "projects",
+      "label": "All projects",
+      "requestedPath": "/home/projects",
+      "landedOn": "/home/projects",
+      "redirect": false,
+      "rest": [
+        "GET /rest/settings",
+        "GET /rest/login",
+        "GET /rest/module-settings",
+        "GET /rest/projects/my-projects",
+        "GET /rest/projects/personal",
+        "GET /rest/projects/count",
+        "GET /rest/roles"
+      ],
+      "settingsSidebarLabels": [],
+      "ariaLabels": [],
+      "errorBanner": []
+    },
+    {
+      "page": "shared",
+      "label": "Shared with you",
+      "requestedPath": "/home/shared",
+      "landedOn": "/home/shared",
+      "redirect": false,
+      "rest": [
+        "GET /rest/settings",
+        "GET /rest/login",
+        "GET /rest/module-settings",
+        "GET /rest/projects/my-projects",
+        "GET /rest/projects/personal",
+        "GET /rest/projects/count",
+        "GET /rest/roles"
+      ],
+      "settingsSidebarLabels": [],
+      "ariaLabels": [],
+      "errorBanner": []
+    },
+    {
+      "page": "templates",
+      "label": "Templates",
+      "requestedPath": "/templates",
+      "landedOn": "/templates",
+      "redirect": false,
+      "rest": [
+        "GET /rest/settings",
+        "GET /rest/login",
+        "GET /rest/module-settings",
+        "GET /rest/projects/my-projects",
+        "GET /rest/projects/personal",
+        "GET /rest/projects/count",
+        "GET /rest/roles"
+      ],
+      "settingsSidebarLabels": [],
+      "ariaLabels": [],
+      "errorBanner": []
+    },
+    {
+      "page": "resource-center",
+      "label": "Resource center",
+      "requestedPath": "/resource-center",
+      "landedOn": "/resource-center",
+      "redirect": false,
+      "rest": [
+        "GET /rest/settings",
+        "GET /rest/login",
+        "GET /rest/module-settings",
+        "GET /rest/projects/my-projects",
+        "GET /rest/projects/personal",
+        "GET /rest/projects/count",
+        "GET /rest/roles"
+      ],
+      "settingsSidebarLabels": [],
+      "ariaLabels": [],
+      "errorBanner": []
+    },
+    {
+      "page": "new-workflow",
+      "label": "New workflow (canvas)",
+      "requestedPath": "/workflow/new",
+      "landedOn": "/workflow/z8LX2CTncsUUzLpL?new=true",
+      "redirect": true,
+      "rest": [
+        "GET /rest/settings",
+        "GET /rest/login",
+        "GET /rest/module-settings",
+        "GET /rest/projects/my-projects",
+        "GET /rest/projects/personal",
+        "GET /rest/projects/count",
+        "GET /rest/roles",
+        "GET /rest/active-workflows",
+        "GET /rest/credentials/for-workflow",
+        "GET /rest/workflows/z8LX2CTncsUUzLpL/exists",
+        "GET /rest/workflows/new"
+      ],
+      "settingsSidebarLabels": [],
+      "ariaLabels": [],
+      "errorBanner": []
+    },
+    {
+      "page": "settings-personal",
+      "label": "Settings → Personal",
+      "requestedPath": "/settings/personal",
+      "landedOn": "/settings/personal",
+      "redirect": false,
+      "rest": [
+        "GET /rest/settings",
+        "GET /rest/login",
+        "GET /rest/module-settings",
+        "GET /rest/projects/my-projects",
+        "GET /rest/projects/personal",
+        "GET /rest/projects/count",
+        "GET /rest/roles"
+      ],
+      "settingsSidebarLabels": [
+        "Settings",
+        "Personal",
+        "Version 2.9.4"
+      ],
+      "ariaLabels": [],
+      "errorBanner": []
+    },
+    {
+      "page": "settings-users",
+      "label": "Settings → Users",
+      "requestedPath": "/settings/users",
+      "landedOn": "/home/workflows",
+      "redirect": true,
+      "rest": [
+        "GET /rest/settings",
+        "GET /rest/login",
+        "GET /rest/module-settings",
+        "GET /rest/projects/my-projects",
+        "GET /rest/projects/personal",
+        "GET /rest/projects/count",
+        "GET /rest/roles",
+        "GET /rest/workflows",
+        "GET /rest/active-workflows",
+        "GET /rest/license"
+      ],
+      "settingsSidebarLabels": [],
+      "ariaLabels": [],
+      "errorBanner": []
+    },
+    {
+      "page": "settings-api",
+      "label": "Settings → API",
+      "requestedPath": "/settings/api",
+      "landedOn": "/home/workflows",
+      "redirect": true,
+      "rest": [
+        "GET /rest/settings",
+        "GET /rest/login",
+        "GET /rest/module-settings",
+        "GET /rest/projects/my-projects",
+        "GET /rest/projects/personal",
+        "GET /rest/projects/count",
+        "GET /rest/roles",
+        "GET /rest/workflows",
+        "GET /rest/active-workflows",
+        "GET /rest/license"
+      ],
+      "settingsSidebarLabels": [],
+      "ariaLabels": [],
+      "errorBanner": []
+    },
+    {
+      "page": "settings-security",
+      "label": "Settings → Security",
+      "requestedPath": "/settings/security",
+      "landedOn": "/home/workflows",
+      "redirect": true,
+      "rest": [
+        "GET /rest/settings",
+        "GET /rest/login",
+        "GET /rest/module-settings",
+        "GET /rest/projects/my-projects",
+        "GET /rest/projects/personal",
+        "GET /rest/projects/count",
+        "GET /rest/roles",
+        "GET /rest/workflows",
+        "GET /rest/active-workflows",
+        "GET /rest/license"
+      ],
+      "settingsSidebarLabels": [],
+      "ariaLabels": [],
+      "errorBanner": []
+    },
+    {
+      "page": "settings-community-nodes",
+      "label": "Settings → Community nodes",
+      "requestedPath": "/settings/community-nodes",
+      "landedOn": "/home/workflows",
+      "redirect": true,
+      "rest": [
+        "GET /rest/settings",
+        "GET /rest/login",
+        "GET /rest/module-settings",
+        "GET /rest/projects/my-projects",
+        "GET /rest/projects/personal",
+        "GET /rest/projects/count",
+        "GET /rest/roles",
+        "GET /rest/workflows",
+        "GET /rest/active-workflows",
+        "GET /rest/license"
+      ],
+      "settingsSidebarLabels": [],
+      "ariaLabels": [],
+      "errorBanner": []
+    },
+    {
+      "page": "settings-sso",
+      "label": "Settings → SSO",
+      "requestedPath": "/settings/sso",
+      "landedOn": "/home/workflows",
+      "redirect": true,
+      "rest": [
+        "GET /rest/settings",
+        "GET /rest/login",
+        "GET /rest/module-settings",
+        "GET /rest/projects/my-projects",
+        "GET /rest/projects/personal",
+        "GET /rest/projects/count",
+        "GET /rest/roles",
+        "GET /rest/workflows",
+        "GET /rest/active-workflows",
+        "GET /rest/license"
+      ],
+      "settingsSidebarLabels": [],
+      "ariaLabels": [],
+      "errorBanner": []
+    },
+    {
+      "page": "settings-log-streaming",
+      "label": "Settings → Log streaming",
+      "requestedPath": "/settings/log-streaming",
+      "landedOn": "/home/workflows",
+      "redirect": true,
+      "rest": [
+        "GET /rest/settings",
+        "GET /rest/login",
+        "GET /rest/module-settings",
+        "GET /rest/projects/my-projects",
+        "GET /rest/projects/personal",
+        "GET /rest/projects/count",
+        "GET /rest/roles",
+        "GET /rest/workflows",
+        "GET /rest/active-workflows",
+        "GET /rest/license"
+      ],
+      "settingsSidebarLabels": [],
+      "ariaLabels": [],
+      "errorBanner": []
+    },
+    {
+      "page": "settings-external-secrets",
+      "label": "Settings → External secrets",
+      "requestedPath": "/settings/external-secrets",
+      "landedOn": "/home/workflows",
+      "redirect": true,
+      "rest": [
+        "GET /rest/settings",
+        "GET /rest/login",
+        "GET /rest/module-settings",
+        "GET /rest/projects/my-projects",
+        "GET /rest/projects/personal",
+        "GET /rest/projects/count",
+        "GET /rest/roles",
+        "GET /rest/workflows",
+        "GET /rest/active-workflows",
+        "GET /rest/license"
+      ],
+      "settingsSidebarLabels": [],
+      "ariaLabels": [],
+      "errorBanner": []
+    },
+    {
+      "page": "settings-workers",
+      "label": "Settings → Workers",
+      "requestedPath": "/settings/workers",
+      "landedOn": "/home/workflows",
+      "redirect": true,
+      "rest": [
+        "GET /rest/settings",
+        "GET /rest/login",
+        "GET /rest/module-settings",
+        "GET /rest/projects/my-projects",
+        "GET /rest/projects/personal",
+        "GET /rest/projects/count",
+        "GET /rest/roles",
+        "GET /rest/workflows",
+        "GET /rest/active-workflows",
+        "GET /rest/license"
+      ],
+      "settingsSidebarLabels": [],
+      "ariaLabels": [],
+      "errorBanner": []
+    },
+    {
+      "page": "settings-source-control",
+      "label": "Settings → Source control",
+      "requestedPath": "/settings/environments",
+      "landedOn": "/home/workflows",
+      "redirect": true,
+      "rest": [
+        "GET /rest/settings",
+        "GET /rest/login",
+        "GET /rest/module-settings",
+        "GET /rest/projects/my-projects",
+        "GET /rest/projects/personal",
+        "GET /rest/projects/count",
+        "GET /rest/roles",
+        "GET /rest/workflows",
+        "GET /rest/active-workflows",
+        "GET /rest/license"
+      ],
+      "settingsSidebarLabels": [],
+      "ariaLabels": [],
+      "errorBanner": []
+    },
+    {
+      "page": "settings-usage",
+      "label": "Settings → Usage and plan",
+      "requestedPath": "/settings/usage",
+      "landedOn": "/home/workflows",
+      "redirect": true,
+      "rest": [
+        "GET /rest/settings",
+        "GET /rest/login",
+        "GET /rest/module-settings",
+        "GET /rest/projects/my-projects",
+        "GET /rest/projects/personal",
+        "GET /rest/projects/count",
+        "GET /rest/roles",
+        "GET /rest/workflows",
+        "GET /rest/active-workflows",
+        "GET /rest/license"
+      ],
+      "settingsSidebarLabels": [],
+      "ariaLabels": [],
+      "errorBanner": []
+    }
+  ],
+  "editor": {
+    "rest": [
+      "GET /rest/settings",
+      "GET /rest/login",
+      "GET /rest/module-settings",
+      "GET /rest/projects/my-projects",
+      "GET /rest/projects/personal",
+      "GET /rest/projects/count",
+      "GET /rest/roles",
+      "GET /rest/active-workflows",
+      "GET /rest/credentials/for-workflow",
+      "GET /rest/workflows/fJ6icH2uKWcAdR1k/exists",
+      "GET /rest/workflows/new"
+    ],
+    "palette": {
+      "open": true,
+      "itemCount": 16
+    },
+    "ui": {
+      "addButtonVisible": true,
+      "nodeCreatorOpen": false
+    }
+  },
+  "deep": [
+    {
+      "step": "open the first workflow card",
+      "rest": [],
+      "error": null
+    },
+    {
+      "step": "workflow history button",
+      "rest": [
+        "GET /rest/settings",
+        "GET /rest/login",
+        "GET /rest/module-settings",
+        "GET /rest/projects/my-projects",
+        "GET /rest/projects/personal",
+        "GET /rest/projects/count",
+        "GET /rest/roles",
+        "GET /rest/active-workflows",
+        "GET /rest/credentials/for-workflow",
+        "GET /rest/workflows/5UinWlFWv9MyOfzs/exists",
+        "GET /rest/workflows/new"
+      ],
+      "error": null
+    },
+    {
+      "step": "workflow menu (duplicate/delete)",
+      "rest": [],
+      "error": null
+    },
+    {
+      "step": "canvas universal add (node creator)",
+      "rest": [],
+      "error": null
+    },
+    {
+      "step": "executions tab of the workflow",
+      "rest": [
+        "GET /rest/executions"
+      ],
+      "error": null
+    },
+    {
+      "step": "project card on /home/projects",
+      "rest": [
+        "GET /rest/settings",
+        "GET /rest/login",
+        "GET /rest/module-settings",
+        "GET /rest/projects/my-projects",
+        "GET /rest/projects/personal",
+        "GET /rest/projects/count",
+        "GET /rest/roles"
+      ],
+      "error": null
+    },
+    {
+      "step": "credentials page: open the add-credential modal",
+      "rest": [
+        "GET /rest/settings",
+        "GET /rest/login",
+        "GET /rest/module-settings",
+        "GET /rest/projects/my-projects",
+        "GET /rest/projects/personal",
+        "GET /rest/projects/count",
+        "GET /rest/roles",
+        "GET /rest/credentials",
+        "GET /rest/projects/ba9f7dfdbf526eef"
+      ],
+      "error": null
+    },
+    {
+      "step": "personal settings page controls",
+      "rest": [
+        "GET /rest/settings",
+        "GET /rest/login",
+        "GET /rest/module-settings",
+        "GET /rest/projects/my-projects",
+        "GET /rest/projects/personal",
+        "GET /rest/projects/count",
+        "GET /rest/roles"
+      ],
+      "error": null
+    }
+  ],
+  "endpoints": [
+    {
+      "path": "/rest/settings",
+      "methods": {
+        "GET": [
+          "200"
+        ]
+      },
+      "shapes": {
+        "GET 200": {
+          "top": "object{data}",
+          "data": "object{settingsMode,inE2ETests,isDocker,databaseType,endpointForm,endpointFormTest,endpointFormWaiting,endpointMcp,endpointMcpTest,endpointWebhook,endpointWebhookTest,endpointWebhookWaiting,endpointHealth,saveDataErrorExecution}",
+          "sampleKeys": [
+            "settingsMode",
+            "inE2ETests",
+            "isDocker",
+            "databaseType",
+            "endpointForm",
+            "endpointFormTest",
+            "endpointFormWaiting",
+            "endpointMcp",
+            "endpointMcpTest",
+            "endpointWebhook",
+            "endpointWebhookTest",
+            "endpointWebhookWaiting",
+            "endpointHealth",
+            "saveDataErrorExecution",
+            "saveDataSuccessExecution",
+            "saveManualExecutions"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/rest/login",
+      "methods": {
+        "GET": [
+          "200",
+          "401"
+        ],
+        "POST": [
+          "200"
+        ]
+      },
+      "shapes": {
+        "POST 200": {
+          "top": "object{data}",
+          "data": "object{id,email,firstName,lastName,role,isPending,isOwner,settings,disabled,mfaEnabled,personalizationAnswers,createdAt,updatedAt,signInType}",
+          "sampleKeys": [
+            "id",
+            "email",
+            "firstName",
+            "lastName",
+            "role",
+            "isPending",
+            "isOwner",
+            "settings",
+            "disabled",
+            "mfaEnabled",
+            "personalizationAnswers",
+            "createdAt",
+            "updatedAt",
+            "signInType"
+          ]
+        },
+        "GET 200": {
+          "top": "object{data}",
+          "data": "object{id,email,firstName,lastName,role,isPending,isOwner,settings,disabled,mfaEnabled,personalizationAnswers,createdAt,updatedAt,signInType}",
+          "sampleKeys": [
+            "id",
+            "email",
+            "firstName",
+            "lastName",
+            "role",
+            "isPending",
+            "isOwner",
+            "settings",
+            "disabled",
+            "mfaEnabled",
+            "personalizationAnswers",
+            "createdAt",
+            "updatedAt",
+            "signInType"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/rest/module-settings",
+      "methods": {
+        "GET": [
+          "200"
+        ]
+      },
+      "shapes": {
+        "GET 200": {
+          "top": "object{data}",
+          "data": "object{}",
+          "sampleKeys": []
+        }
+      }
+    },
+    {
+      "path": "/rest/projects/personal",
+      "methods": {
+        "GET": [
+          "200"
+        ]
+      },
+      "shapes": {
+        "GET 200": {
+          "top": "object{data}",
+          "data": "object{id,name,type,icon,createdAt,updatedAt,role,scopes}",
+          "sampleKeys": [
+            "id",
+            "name",
+            "type",
+            "icon",
+            "createdAt",
+            "updatedAt",
+            "role",
+            "scopes"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/rest/projects/my-projects",
+      "methods": {
+        "GET": [
+          "200"
+        ]
+      },
+      "shapes": {
+        "GET 200": {
+          "top": "object{data}",
+          "data": "array(1) of object{id,name,type,icon,createdAt,updatedAt,role,scopes}",
+          "sampleKeys": [
+            "id",
+            "name",
+            "type",
+            "icon",
+            "createdAt",
+            "updatedAt",
+            "role",
+            "scopes"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/rest/projects/count",
+      "methods": {
+        "GET": [
+          "200"
+        ]
+      },
+      "shapes": {
+        "GET 200": {
+          "top": "object{data}",
+          "data": "object{personal,team}",
+          "sampleKeys": [
+            "personal",
+            "team"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/rest/roles",
+      "methods": {
+        "GET": [
+          "200"
+        ]
+      },
+      "shapes": {
+        "GET 200": {
+          "top": "object{data}",
+          "data": "object{global,project,credential,workflow}",
+          "sampleKeys": [
+            "global",
+            "project",
+            "credential",
+            "workflow"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/rest/workflows",
+      "methods": {
+        "GET": [
+          "200"
+        ]
+      },
+      "shapes": {
+        "GET 200": {
+          "top": "object{count,data}",
+          "data": "array(0)",
+          "sampleKeys": []
+        }
+      }
+    },
+    {
+      "path": "/rest/active-workflows",
+      "methods": {
+        "GET": [
+          "200"
+        ]
+      },
+      "shapes": {
+        "GET 200": {
+          "top": "object{data}",
+          "data": "array(0)",
+          "sampleKeys": []
+        }
+      }
+    },
+    {
+      "path": "/rest/license",
+      "methods": {
+        "GET": [
+          "200"
+        ]
+      },
+      "shapes": {
+        "GET 200": {
+          "top": "object{data}",
+          "data": "object{usage,license}",
+          "sampleKeys": [
+            "usage",
+            "license"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/rest/me",
+      "methods": {
+        "GET": [
+          "200"
+        ]
+      },
+      "shapes": {
+        "GET 200": {
+          "top": "object{data}",
+          "data": "object{id,email,firstName,lastName,role,isPending,isOwner,settings,disabled,mfaEnabled,personalizationAnswers,createdAt,updatedAt,signInType}",
+          "sampleKeys": [
+            "id",
+            "email",
+            "firstName",
+            "lastName",
+            "role",
+            "isPending",
+            "isOwner",
+            "settings",
+            "disabled",
+            "mfaEnabled",
+            "personalizationAnswers",
+            "createdAt",
+            "updatedAt",
+            "signInType"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/rest/executions",
+      "methods": {
+        "GET": [
+          "200"
+        ]
+      },
+      "shapes": {
+        "GET 200": {
+          "top": "object{data}",
+          "data": "object{count,estimated,results}",
+          "sampleKeys": [
+            "count",
+            "estimated",
+            "results"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/rest/credentials",
+      "methods": {
+        "GET": [
+          "200"
+        ]
+      },
+      "shapes": {
+        "GET 200": {
+          "top": "object{data}",
+          "data": "array(0)",
+          "sampleKeys": []
+        }
+      }
+    },
+    {
+      "path": "/rest/variables",
+      "methods": {
+        "GET": [
+          "200"
+        ]
+      },
+      "shapes": {
+        "GET 200": {
+          "top": "object{data}",
+          "data": "array(0)",
+          "sampleKeys": []
+        }
+      }
+    },
+    {
+      "path": "/rest/credentials/for-workflow",
+      "methods": {
+        "GET": [
+          "200"
+        ]
+      },
+      "shapes": {
+        "GET 200": {
+          "top": "object{data}",
+          "data": "array(0)",
+          "sampleKeys": []
+        }
+      }
+    },
+    {
+      "path": "/rest/workflows/z8LX2CTncsUUzLpL/exists",
+      "methods": {
+        "GET": [
+          "200"
+        ]
+      },
+      "shapes": {
+        "GET 200": {
+          "top": "object{data}",
+          "data": "object{exists}",
+          "sampleKeys": [
+            "exists"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/rest/workflows/new",
+      "methods": {
+        "GET": [
+          "200"
+        ]
+      },
+      "shapes": {
+        "GET 200": {
+          "top": "object{data}",
+          "data": "object{name,nodes,connections,settings,pinData}",
+          "sampleKeys": [
+            "name",
+            "nodes",
+            "connections",
+            "settings",
+            "pinData"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/rest/workflows/fJ6icH2uKWcAdR1k/exists",
+      "methods": {
+        "GET": [
+          "200"
+        ]
+      },
+      "shapes": {
+        "GET 200": {
+          "top": "object{data}",
+          "data": "object{exists}",
+          "sampleKeys": [
+            "exists"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/rest/workflows/5UinWlFWv9MyOfzs/exists",
+      "methods": {
+        "GET": [
+          "200"
+        ]
+      },
+      "shapes": {
+        "GET 200": {
+          "top": "object{data}",
+          "data": "object{exists}",
+          "sampleKeys": [
+            "exists"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/rest/projects/:id",
+      "methods": {
+        "GET": [
+          "200"
+        ]
+      },
+      "shapes": {
+        "GET 200": {
+          "top": "object{data}",
+          "data": "null",
+          "sampleKeys": []
+        }
+      }
+    }
+  ],
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "TypeError: Cannot read properties of undefined (reading 'sort')",
+    "Failed to fetch template 7639: TypeError: Cannot read properties of undefined (reading 'toString')",
+    "Failed to fetch template 3050: TypeError: Cannot read properties of undefined (reading 'toString')",
+    "Failed to fetch template 4966: TypeError: Cannot read properties of undefined (reading 'toString')",
+    "Failed to fetch template 7177: TypeError: Cannot read properties of undefined (reading 'toString')",
+    "Failed to fetch template 8779: TypeError: Cannot read properties of undefined (reading 'toString')",
+    "Failed to fetch template 3100: TypeError: Cannot read properties of undefined (reading 'toString')",
+    "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+    "Failed to fetch template 8527: TypeError: Cannot read properties of undefined (reading 'toString')",
+    "Failed to fetch template 6270: TypeError: Cannot read properties of undefined (reading 'toString')"
+  ],
+  "pageErrors": []
+}

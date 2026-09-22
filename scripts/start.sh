@@ -1,89 +1,89 @@
 #!/usr/bin/env bash
-# start.sh — start n8n-ts baseline (foreground or background)
-set -euo pipefail
+# Start the TypeScript runtime.
+#
+#   bash scripts/start.sh [--foreground] [--health-timeout N] [--help]
+#
+# Background mode writes a pid file and appends to logs/runtime.log.
+# Foreground mode `exec`s node, so systemd/docker keep signal handling correct.
+set -uo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$ROOT"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/common.sh
+. "$SCRIPT_DIR/lib/common.sh"
 
-# shellcheck disable=SC1091
-[[ -f "$ROOT/.env" ]] && set -a && source "$ROOT/.env" && set +a || true
+FOREGROUND=0
+HEALTH_TIMEOUT=30
 
-HOST="${N8N_TS_HOST:-0.0.0.0}"
-PORT="${N8N_TS_PORT:-${PORT:-5678}}"
-PID_FILE="${N8N_TS_PID_FILE:-run/n8n-ts.pid}"
-LOG_FILE="${N8N_TS_LOG_FILE:-run/n8n-ts.log}"
-SERVER="$ROOT/apps/n8n-ts/src/server.mjs"
-FG=0
+usage() {
+  cat <<EOF
+usage: bash scripts/start.sh [options]
 
-for arg in "$@"; do
-  case "$arg" in
-    --fg|--foreground|-f) FG=1 ;;
-    --help|-h)
-      echo "Usage: $0 [--fg]"
-      echo "  --fg   run in foreground (default: background daemon)"
-      exit 0
-      ;;
+  --foreground            run in the foreground and exec node (for systemd/docker)
+  --health-timeout <sec>  how long to wait for /healthz (default 30)
+  -h, --help              show this help
+EOF
+}
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --foreground) FOREGROUND=1 ;;
+    --health-timeout) shift; HEALTH_TIMEOUT="${1:-30}" ;;
+    -h|--help) usage; exit 0 ;;
+    *) die "unknown option: $1 (try --help)" ;;
   esac
+  shift
 done
 
-log() { printf '[start] %s\n' "$*"; }
-err() { printf '[start] ERROR: %s\n' "$*" >&2; }
+ensure_dirs
+load_env
 
-if [[ ! -f "$SERVER" ]]; then
-  err "server entry missing: $SERVER (run ./scripts/install.sh)"
-  exit 1
+if ! have_cmd node; then die "node is not installed"; fi
+if ! node_version_ok; then die "Node.js $(node -v) is too old — >= ${RUNTIME_MIN_NODE_MAJOR}.${RUNTIME_MIN_NODE_MINOR} required"; fi
+
+PORT="$(runtime_port)"
+
+if [ "$FOREGROUND" -eq 1 ]; then
+  step "Starting runtime in the foreground on port $PORT"
+  exec node "$SERVER_ENTRY"
 fi
 
-mkdir -p "$(dirname "$ROOT/$PID_FILE")"
-mkdir -p "$(dirname "$ROOT/$LOG_FILE")"
-# Allow absolute paths
-if [[ "$PID_FILE" = /* ]]; then PID_PATH="$PID_FILE"; else PID_PATH="$ROOT/$PID_FILE"; fi
-if [[ "$LOG_FILE" = /* ]]; then LOG_PATH="$LOG_FILE"; else LOG_PATH="$ROOT/$LOG_FILE"; fi
-
-if [[ -f "$PID_PATH" ]]; then
-  OLD_PID="$(cat "$PID_PATH" 2>/dev/null || true)"
-  if [[ -n "${OLD_PID:-}" ]] && kill -0 "$OLD_PID" 2>/dev/null; then
-    err "already running (pid $OLD_PID). Use ./scripts/stop.sh first."
-    exit 1
+# --------------------------------------------------------- already running?
+PID_FILE="$(runtime_pid_file)"
+if EXISTING="$(running_pid)"; then
+  if health_ok 3; then
+    ok "runtime already running (pid $EXISTING) on port $PORT — nothing to do"
+    exit 0
   fi
-  rm -f "$PID_PATH"
+  warn "pid $EXISTING is alive but /healthz does not answer — restarting it"
+  bash "$SCRIPT_DIR/stop.sh" --quiet || true
+elif [ -f "$PID_FILE" ]; then
+  warn "removing stale pid file $PID_FILE"
+  rm -f "$PID_FILE"
 fi
 
-export N8N_TS_HOST="$HOST"
-export N8N_TS_PORT="$PORT"
-export NODE_ENV="${NODE_ENV:-production}"
-
-if [[ "$FG" -eq 1 ]]; then
-  log "foreground on ${HOST}:${PORT}"
-  exec node "$SERVER"
-fi
-
-log "background on ${HOST}:${PORT}"
-log "log: $LOG_PATH  pid: $PID_PATH"
-nohup node "$SERVER" >>"$LOG_PATH" 2>&1 &
-echo $! >"$PID_PATH"
-sleep 0.4
-
-if ! kill -0 "$(cat "$PID_PATH")" 2>/dev/null; then
-  err "process exited immediately; see $LOG_PATH"
-  tail -n 40 "$LOG_PATH" >&2 || true
+# ------------------------------------------------------- port availability?
+OWNER="$(port_owner "$PORT")"
+if [ -n "$OWNER" ]; then
+  fail "port $PORT is already in use by: $OWNER"
+  info "set another port in .env (N8N_TS_PORT) or stop the other process"
   exit 1
 fi
 
-# Wait for health
-READY=0
-for i in $(seq 1 30); do
-  if curl -sf "http://127.0.0.1:${PORT}/healthz" >/dev/null 2>&1; then
-    READY=1
-    break
-  fi
-  sleep 0.2
-done
+step "Starting runtime on port $PORT"
+setsid nohup node "$SERVER_ENTRY" >>"$LOG_FILE" 2>&1 </dev/null &
+STARTED_PID=$!
+printf '%s\n' "$STARTED_PID" > "$PID_FILE"
+ok "pid $STARTED_PID written to $PID_FILE"
 
-if [[ "$READY" -ne 1 ]]; then
-  err "server did not become healthy on port $PORT"
-  tail -n 40 "$LOG_PATH" >&2 || true
-  exit 1
+if wait_for_health "$HEALTH_TIMEOUT"; then
+  ok "healthz: $(health_body 3)"
+  info "console : http://127.0.0.1:$PORT/"
+  info "log file: $LOG_FILE"
+  exit 0
 fi
 
-log "ready  pid=$(cat "$PID_PATH")  http://127.0.0.1:${PORT}/healthz"
+fail "runtime did not become healthy within ${HEALTH_TIMEOUT}s"
+info "last log lines:"
+tail_log 20
+info "diagnostics: bash scripts/doctor.sh"
+exit 1

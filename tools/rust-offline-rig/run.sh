@@ -6,8 +6,8 @@
 # vendored crate directory. That keeps build artefacts, Cargo.lock and cargo's
 # target/ directory out of the tree under review.
 #
-# Members listed in EXCLUDE_MEMBERS are dropped from the copied manifest because their
-# dependency closure is not vendored (see setup.sh) — the run covers every other crate.
+# The whole workspace is copied: since `setup.sh` vendors the complete dependency closure,
+# no member has to be dropped (EXCLUDE_MEMBERS is an empty escape hatch for the opposite case).
 #
 # Usage:
 #   tools/rust-offline-rig/run.sh check   # cargo check --workspace --all-targets
@@ -19,10 +19,15 @@ RIG="${RUST_RIG:-/tmp/rust-rig}"
 REPO="${REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 MODE="${1:-check}"; shift || true
 
-# Workspace members whose dependency closure is not vendored. `n8n-nodes-rust` pulls tokio
-# (dev-dependency, ~20 further crates incl. target-gated ones) which `setup.sh` deliberately
-# leaves out; the VPS / CI build it with a real registry. Set RIG_INCLUDE_ALL=1 to try anyway.
-EXCLUDE_MEMBERS=("n8n-nodes-rust")
+# Members are built as-is: `setup.sh` vendors the whole dependency closure of the workspace
+# (including tokio's `rt` + `macros` closure for `n8n-nodes-rust` / `n8n-workflow`).
+EXCLUDE_MEMBERS=()
+
+# Crates whose vendored git-tag version differs from the one in `Cargo.lock`: their lock block
+# is dropped so cargo re-resolves them from the directory source. A tag is the only offline
+# source for a crate, and a published patch release does not always get one — `tokio-macros`
+# 2.7.2 (the locked version) has no tag, the `tokio-1.53.1` tag ships 2.7.1.
+LOCK_DRIFT=("tokio-macros")
 
 [ -d "$RIG/vendor" ] || { echo "rig missing: run tools/rust-offline-rig/setup.sh first" >&2; exit 2; }
 
@@ -31,7 +36,7 @@ rm -rf "$BUILD"
 mkdir -p "$BUILD/.cargo"
 cp -a "$REPO/Cargo.toml" "$BUILD/"
 cp -a "$REPO/crates" "$BUILD/"
-if [ "${RIG_INCLUDE_ALL:-0}" != "1" ] && [ "${#EXCLUDE_MEMBERS[@]}" -gt 0 ]; then
+if [ "${#EXCLUDE_MEMBERS[@]}" -gt 0 ]; then
   python3 - "$BUILD/Cargo.toml" "${EXCLUDE_MEMBERS[@]}" <<'PYEOF'
 import re, sys
 manifest, *excluded = sys.argv[1:]
@@ -47,11 +52,30 @@ if [ -d "$REPO/tests/reference" ]; then
   mkdir -p "$BUILD/tests"
   cp -a "$REPO/tests/reference" "$BUILD/tests/"
 fi
-# The lock pins the resolutions, so the rig builds the same versions CI does. Its `checksum`
-# entries have to go: a directory source made of git checkouts cannot reproduce crates.io
-# tarball checksums, and cargo refuses a package whose locked checksum it cannot verify.
+# The lock pins the resolutions, so the rig builds the same versions CI does, with two edits.
+# `checksum` entries have to go: a directory source made of git checkouts cannot reproduce
+# crates.io tarball checksums, and cargo refuses a package whose locked checksum it cannot
+# verify. And a crate listed in LOCK_DRIFT loses its block, because the version the lock pins
+# is not the one its git tag carries (see LOCK_DRIFT).
 if [ -f "$REPO/Cargo.lock" ]; then
-  sed '/^checksum = /d' "$REPO/Cargo.lock" > "$BUILD/Cargo.lock"
+  python3 - "$REPO/Cargo.lock" "$BUILD/Cargo.lock" "${LOCK_DRIFT[@]}" <<'PYEOF'
+import re, sys
+
+src, dst, *drift = sys.argv[1:]
+text = open(src, encoding="utf-8").read()
+blocks = re.split(r"(?=\[\[package\]\])", text)
+kept, dropped = [], []
+version = re.compile(r'^version = "([^"]+)"', re.M)
+for block in blocks:
+    name = re.search(r'^name = "([^"]+)"', block, re.M)
+    if block.startswith("[[package]]") and name and name.group(1) in drift:
+        dropped.append(name.group(1) + " " + version.search(block).group(1))
+        continue
+    kept.append(block)
+open(dst, "w", encoding="utf-8").write(re.sub(r"^checksum = .*\n", "", "".join(kept), flags=re.M))
+if dropped:
+    print("rig: re-resolving out-of-lock crates: " + ", ".join(dropped))
+PYEOF
 fi
 
 cat > "$BUILD/.cargo/config.toml" <<EOF
@@ -71,8 +95,19 @@ export CARGO_TARGET_DIR="$RIG/target"
 mkdir -p "$CARGO_HOME"
 
 cd "$BUILD"
+# `--workspace` is the default scope, but it must not be forced on a caller who narrowed the
+# selection themselves (`run.sh test -p n8n-expression`): cargo ignores the narrower flag when
+# both are present, so the run would silently test everything.
+for arg in "$@"; do
+  case "$arg" in
+    -p|--package|--exclude|--lib|--bins|--examples|--tests|--test|--benches|--bench|--all)
+      selection=1 ;;
+  esac
+done
+[ "${selection:-0}" = 1 ] || set -- --workspace "$@"
+
 case "$MODE" in
-  check) exec cargo check --offline --workspace --all-targets "$@" ;;
-  test)  exec cargo test  --offline --workspace "$@" ;;
+  check) exec cargo check --offline --all-targets "$@" ;;
+  test)  exec cargo test  --offline "$@" ;;
   *)     exec cargo "$MODE" --offline "$@" ;;
 esac

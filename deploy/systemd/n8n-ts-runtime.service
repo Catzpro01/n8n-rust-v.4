@@ -1,0 +1,41 @@
+# systemd unit for the TypeScript runtime (baseline).
+#
+# This file is a TEMPLATE: scripts/install.sh --systemd substitutes
+#   __REPO__  checkout path      __USER__ / __GROUP__  service account
+#   __DATA_DIR__  runtime data directory
+# and installs the result as /etc/systemd/system/n8n-ts-runtime.service
+#
+# It is additive: the arena control-plane units (arena-bridge, arena-executor)
+# are not touched by this file or by the installer.
+[Unit]
+Description=n8n TypeScript runtime (LEGO baseline)
+Documentation=file://__REPO__/apps/n8n-ts/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__USER__
+Group=__GROUP__
+WorkingDirectory=__REPO__
+EnvironmentFile=-__REPO__/.env
+ExecStart=/usr/bin/env bash __REPO__/scripts/start.sh --foreground
+Restart=always
+RestartSec=3
+TimeoutStopSec=20
+KillSignal=SIGTERM
+KillMode=mixed
+
+# hardening: the runtime only needs its own data dir, logs and state
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=__DATA_DIR__ __REPO__/logs __REPO__/state
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=n8n-ts
+
+[Install]
+WantedBy=multi-user.target

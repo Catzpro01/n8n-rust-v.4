@@ -32,6 +32,18 @@ __pycache__/
 .arena/results/
 .arena/processed/
 
-# n8n-ts runtime pid/logs
-run/
-apps/n8n-ts/run/
+# typescript runtime (apps/n8n-ts) generated state
+data/
+logs/
+state/
+# ...except the app's bundled data: roles.json is a required runtime artifact for
+# npm/Docker/tarball installs (no reference/ checkout there), regenerated
+# deterministically from reference/n8n by apps/n8n-lego/scripts/fetch-n8n-roles.mjs.
+!apps/n8n-lego/data/
+# ...and inside it only the bundled catalog roles file is tracked.
+apps/n8n-lego/data/*
+!apps/n8n-lego/data/roles.json
+apps/n8n-ts/.tsbuildinfo
+
+# release artifacts (scripts/release.sh)
+dist/

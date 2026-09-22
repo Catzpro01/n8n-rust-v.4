@@ -1,0 +1,70 @@
+{
+  "catalogVersion": "1.0.0",
+  "description": "Frontend consumption catalog for the bounded Workspace LEGO. It renders declared Workspace identity and lifecycle only when handed over by the application; it never creates a workspace, calls a provider or implies execution authority.",
+  "lego": "workspace",
+  "phase": "B",
+  "contracts": ["ai.workspace"],
+  "declarationSource": {
+    "contract": {
+      "file": "apps/n8n-lego/src/lego/manifest/workspace.json",
+      "path": "(whole document)",
+      "owner": "manager"
+    },
+    "lego": {
+      "file": "apps/n8n-lego/src/lego/manifest/ai-lego-set.json",
+      "path": "lego#id=workspace",
+      "owner": "manager"
+    },
+    "capability": {
+      "file": "apps/n8n-lego/src/lego/manifest/domains.json",
+      "path": "domains#id=workspace.capabilities[id=workspace.boundary]",
+      "owner": "agent-1"
+    }
+  },
+  "publication": {
+    "status": "declared-not-handed-over",
+    "expected": {
+      "contract": "ai.workspace",
+      "version": "1.0.0",
+      "operations": ["workspace.create", "workspace.describe", "workspace.mount", "workspace.release"],
+      "permissions": ["ai:workspace:read", "ai:workspace:create"]
+    },
+    "note": "The frontend receives contract rows through the application seam. It does not read backend files or claim a publication that was not handed over."
+  },
+  "rendering": {
+    "workspaceIdentity": true,
+    "workspaceKind": true,
+    "workspaceLifecycle": true,
+    "workspaceMetadata": true,
+    "resourceReferences": true,
+    "providerState": false,
+    "filesystemTree": false,
+    "terminalState": false,
+    "processState": false,
+    "executionState": false,
+    "credentialState": false,
+    "fabricatedWorkspace": false,
+    "createAffordance": false,
+    "mountAffordance": false,
+    "releaseAffordance": false,
+    "executeAffordance": false
+  },
+  "rules": [
+    "The frontend may display a Workspace record only when the application hands over that exact record.",
+    "An unknown or malformed Workspace record is refused by name and never widened into a generic project.",
+    "The UI does not redefine the backend lifecycle, limits, permissions or provider semantics.",
+    "A workspace kind is metadata, not evidence that filesystem, terminal, process or remote authority is available.",
+    "Workspace metadata is displayed as descriptive state; it never becomes an action or permission grant.",
+    "No Workspace metadata enters the browser boot payload merely because this catalog exists."
+  ],
+  "notRendered": [
+    "filesystem paths",
+    "terminal commands",
+    "process handles",
+    "provider internals",
+    "credentials or secrets",
+    "execution status",
+    "model output",
+    "autonomous agent state"
+  ]
+}
