@@ -29,9 +29,9 @@ is the row marked as such.
 | | |
 | --- | --- |
 | Core LEGO domains | **26** |
-| Locked contracts | 19 |
-| Declared capabilities | 85 |
-| Declared operations | 154 |
+| Locked contracts | 20 |
+| Declared capabilities | 86 |
+| Declared operations | 161 |
 | Published error codes | 36 |
 | Official AI/Agent LEGO | 15 |
 

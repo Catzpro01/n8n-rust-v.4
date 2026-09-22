@@ -188,8 +188,8 @@ Every external action routes through Capability + Policy + Workspace. An agent n
 | Owner | `manager` |
 | Status | **CONTRACT-ONLY** |
 | Phase | B |
-| Contracts | `ai.agent-runtime`, `ai.agent-delegation` |
-| Versioning | ai.agent-runtime@1.0.0, ai.agent-delegation@1.0.0 |
+| Contracts | `ai.agent-machine`, `ai.agent-runtime`, `ai.agent-delegation` |
+| Versioning | ai.agent-machine@1.0.0, ai.agent-runtime@1.0.0, ai.agent-delegation@1.0.0 |
 | Depends on | `ai-foundation`, `capability`, `context-session`, `approval` |
 | Interaction | `call`, `event`, `stream`, `batch` |
 | Permissions | `ai:agent:create`, `ai:agent:invoke`, `ai:agent:control`, `ai:agent:read`, `ai:agent:delegate` |
@@ -209,7 +209,7 @@ Every external action routes through Capability + Policy + Workspace. An agent n
 
 **Observability:** agent.* and tool.* events; no reasoning.
 
-**Tests:** `test/lego-ai-foundation.test.mjs (contract level)`, `planned: loop, fan-out/fan-in, cancellation propagation`
+**Tests:** `test/lego-ai-foundation.test.mjs (contract level)`, `test/lego-agent-machine.test.mjs (P2.16 execution foundation)`, `planned: loop, fan-out/fan-in, cancellation propagation`
 
 **Future stages:** B: runtime · C: delegation graph · F: measured Rust candidate
 
