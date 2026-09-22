@@ -17,6 +17,21 @@
 > `declared-not-locked`, renders **no version**, keeps the rollover phase machine and the verification
 > results in `PENDING_PUBLICATIONS`, and offers **no operations**. Arbitration: **XA-20**.
 > The rows below marked *HISTORICAL* were written when these contracts were assumed published.
+>
+> **P2.14 UPDATE (2026-09-22, `main @ 67e638ef`).** P2.13 is merged in full (PR #45 backend,
+> PR #46 frontend), so the P2.13 row's `declared-not-locked` and its two `PENDING_PUBLICATIONS`
+> entries are HISTORICAL: both rows are locked on protected main at `efa3da35`
+> (`PROMOTED_PUBLICATIONS` keeps the two promoted word lists). **Memory is published**:
+> `ai.memory@1.0.0` is locked by agent-2 on `arena/01a0c90d-n8n-rust-v-4 @ f11aee01` with four
+> operations (`memory.remember`, `memory.recall`, `memory.list`, `memory.forget`) and two
+> permissions (`ai:memory:read`, `ai:memory:write`), and the frontend consumes it (nine quoted
+> sets, `manifest/memory.json`, `src/memory.mjs`, rule **A29**, `test/34`). It is
+> **declared-not-locked** against protected main, which carries no `ai.memory` row yet.
+> **XA-12 stays `open-for-manager`** for the half the contract defers — relevance-ranked traversal,
+> explicit edge creation (`relate`) and retention-policy enforcement — and none of the three may be
+> implied by the UI. **XA-21**: the descriptor-assembly heap pin is **not edited**; the P2.14 runs
+> measured **3,808–3,875 KB** against the 4,096 KB pin, with the boot payload byte-identical at
+> **18,126 B** because the Memory view is built on demand.
 
 **Status:** specification. **Owner:** agent-01. **Backend authority:** `main @ e754c5df` (P2.12
 complete, P2.13 in progress); written earlier against `arena/01a0c521 @ 6f7b66da` (P2.10), which is
@@ -45,7 +60,7 @@ vocabulary — never as a silent alias of a backend contract.
 | Copilot agents | `ai.agent-runtime`, `ai.agent-delegation` | `runtimeLocality`, `delegationField`, `delegationBudgetField`, `delegationNodeField` | `create`, `start`, `send`, `pause`, `resume`, `cancel`, `status`, `stream`, `artifact`, `close`, `delegate` | another agent's private context; inherited permissions (there are none) |
 | Copilot files | `ai.artifact` | `artifactKind`, `artifactRetention`, `decisionApprovalState` | `create`, `read` | artifact content inline as state; `storageRef` internals vs credential material |
 | Skills | `ai.skill@1.0.0` (locked at P2.12; `XA-11` still decides where it belongs) | `skillField`, `skillOperation`, `skillPermission` | `skill.list`, `skill.resolve`, `skill.describe`, `skill.validate-selection` — **no** `execute`, **no** `ai:skill:execute` | a skill's private reasoning; a validator's internals |
-| Memory | **XA-12 pending** (`ai.memory`); today `ai.context` + `ai.artifact` + `ai.decision` | `contextScope`, `artifactKind`, `decisionRisk` | `context.load`, `artifact.read`, `decision.inspect` | the whole memory store; embeddings or vectors |
+| Memory | **`ai.memory@1.0.0`** (published by agent-2 at P2.14; `XA-12` stays open for the deferred half) | `memoryScope` (5), `memoryKind` (6), `memoryRetention` (5), `memoryField` (13), `memoryLifecycle` (2), `memoryGraphNode` (10), `memoryGraphEdge` (11), `memoryOperation` (4), `memoryPermission` (2) | `memory.remember`, `memory.recall`, `memory.list`, `memory.forget` — **named, never offered**; `traverse`, `relate`, ranking and retention enforcement are future stages | the whole memory store dumped into context; embeddings, vectors or a relevance score; a persistence or provider-connected claim; a write, forget or restore affordance |
 | Capabilities | `lego.domain-registry@1.1.0` (manager) + `ai.foundation` taxonomy | `capabilityStatus`, `capabilityCriticality`, `capabilityMigrationState`, `lifecycle`, `interaction`, `transportKind`, `aiPermission` | per capability `operations[]` | an operation's HTTP route; a module path; a port |
 | **Context & Session (P2.13)** | `ai.context`, `ai.agent-session` — **declared-not-locked** (`XA-20`), both `contract-only` in `domains.json`, both claimed `@1.0.0` in `ai-lego-set.json` | 13 quoted sets — `contextScope` (7), `contextField` (9), `contextLifecycle` (6), `continuationSection` (14), `contextOperationVerb` (5), `contextOperation` (2), `contextPermission` (2), `agentSessionState` (7), `agentSessionField` (10), `agentSessionReference` (3), `agentSessionOperation` (3), `agentSessionPermission` (3), `tokenKind` (3); 10 of them new at P2.13 — + 2 local sets (`continuationAffordance` 6, `contextUsageReport` 4) + **2 `PENDING_PUBLICATIONS` rows** (`contextRolloverPhase`, `continuationVerification`) | **none.** `Continue session` answers `operation-unpublished`, as do the declared verbs `rollover`, `rehydrate`, `verify` — no backend file registers them | the raw window; the model's tokenizer internals; a token count nobody reported; a Memory store; an execution affordance |
 | Approval | `ai.approval` | `decisionApprovalState`, `approvalDecision` | `request`, `resolve`, `inspect` | who voted beyond the declared actor field |
@@ -97,7 +112,7 @@ presentation name exists, it is a *view* with a declared mapping in the lock (`m
 | `Agent: Working` / `Agents 5` | session status + child count | `agentSessionState`, `delegationNodeField.children` |
 | `Context 61%`, `12.4k / 32k` | context budget | `ai.context` (`used`, `budget`) |
 | `Skills 3 active` | active skill procedures | **XA-11** (no canonical set yet) |
-| `Memory 12 relevant` | loaded context entries + decisions + artifacts | `ai.context` + `ai.decision` + `ai.artifact`; **XA-12** for a persistent store |
+| `Memory 12 relevant` | retained records at a declared scope — or the honest absence of a list (`rendered` / `empty` / `not-handed-over` / `refused` are four different things) | `ai.memory` (`memory.list`: scope-filtered, ordered `createdAt` asc then `memoryId` asc, `limit` 1..100 default 50, opaque cursor); no score, no countdown, no durability claim |
 | `Capabilities 7` | declared capability list with source label | `capabilityStatus` + `providerKind`/`runtimeKind` |
 | `— MCP`, `— Runtime`, `— Remote` | the source of a capability | `runtimeLocalityView`, `mcpObjectView` |
 | `Runtime · Hermes · Remote · Connected` | runtime identity + locality + availability | `ai.agent-runtime` `runtimeMetadata` (a vendor name is data, never a field) |
@@ -120,7 +135,7 @@ presentation name but must not send the proposed word to the backend as if it ex
 | Decision | Proposed vocabulary | Owner to decide | Why it is needed | What the frontend does meanwhile |
 | :--- | :--- | :--- | :--- | :--- |
 | **XA-11** | `ai.skill` (skill id, version, procedure summary, capability refs, validators, token budget) | manager | the Skills surface has no canonical set; inventing one would be a second vocabulary | renders presentation names only; no skill state is sent to the backend |
-| **XA-12** | `ai.memory` (relevant entries with kind, reference, recency) | manager | "Memory" is currently only *loaded context*; a durable store is not modelled | shows loaded context, decisions and artifacts, and says so |
+| **XA-12** | `ai.memory` — the bounded surface is now published (`@1.0.0`: four operations, two permissions, provider boundary, scope isolation, checksum integrity) | manager | published at P2.14 by agent-2; what stays open is the deferred half: relevance-ranked traversal, explicit edge creation (`relate`) and retention-policy enforcement | renders the published record shape, the four list states and the persistence boundary; never a score, a countdown, a write affordance or a durability claim, and reports `declared-not-locked` against a tree with no row |
 | **XA-13** | agent-scoped workspace semantics (`workspaceId`, scope, runtime binding) | manager | `workspace.projects` is `unsupported` and the domain contract is `0.0.0`; the plan forbids implying host access | shows workspace only when the declaration exists; otherwise `feature-unsupported` |
 | **XA-14** | `translation@…` capability (request/response language pairs) | manager | the frontend capability `translation` is `declared`; no backend domain publishes translation | language control renders the locale set; the capability stays `declared` |
 | **XA-15** | node drafting/validation capability (draft → validate → preview) | manager | `Create with AI` needs a declared draft/validate step, not a frontend invention | the flow is specified but gated; validation reuses `workflow.validate` where available |
