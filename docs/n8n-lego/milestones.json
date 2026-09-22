@@ -224,44 +224,49 @@
         "role": "P2.12 protected-main baseline and Agent 2 implementation start"
       },
       "finishEvidence": {
-        "reference": "pending Manager reconciliation; agent-2 evidence is branch-local until reconciliation",
-        "role": "not complete until protected-main merge and post-merge verification"
+        "reference": "docs/n8n-lego/evidence/P2.13-agent-2-final-report.md",
+        "role": "Agent 2 branch completion evidence; P2.13 remains in-progress until Manager RECONCILIATION PASS, MERGE PASS, and protected-main post-merge verification"
       },
-      "currentCommitReference": "arena/01a0c6b5-n8n-rust-v-4",
+      "currentCommitReference": "fa18ba768014218144a2427a161765b568b27ee6",
       "nextMilestone": "P2.14",
       "reconciliation": {
-        "verdict": "RECONCILIATION_FAILED",
+        "verdict": "RECONCILIATION_REQUIRED",
         "baseline": "e754c5df35b41b0ff2ac769519f05f056835411c",
-        "affected": "ai.context, ai.agent-session, Context & Session frontend vocabulary, operation matrix, publication metadata, generated milestone state",
-        "conflict": "Agent 1 consumes Context & Session as declared-not-locked and treats rollover, rehydrate and verify as unpublished; Agent 2 publishes both 1.0.0 lock rows and declares those three context operations public. This is a contract/governance conflict, not a mechanical merge conflict.",
-        "contract": "ai.context@1.0.0 and ai.agent-session@1.0.0 differ between the branches in publication status and, for ai.context, the public operation set. Agent 1 quotes context operations load/compact and pending publication; Agent 2 locks context operations load/compact/rollover/rehydrate/verify and session operations create/status/close.",
-        "evidence": "Agent 1 commit 6a217227dd5a4ff3f8e4f350db0422937cd8fccf / Draft PR #46; Agent 2 commit fb254f3222010db481e82f156208359c53f5840a / Draft PR #45; protected baseline e754c5df35b41b0ff2ac769519f05f056835411c.",
+        "affected": "ai.context, ai.agent-session, Context & Session frontend vocabulary, continuation manifest vocabulary, operation matrix, publication metadata, generated milestone state",
+        "conflict": "The backend-owned continuation manifest discrepancy is corrected on Agent 2: canonical toolStateReferences and importantReferences now match CONTINUATION_FIELDS. Agent 1 c5ff5870 still carries the historical frontend registered-difference expectation and must refresh that evidence after fetching fa18ba76; this is peer evidence reconciliation, not a remaining backend implementation defect.",
+        "contract": "ai.context@1.0.0 and ai.agent-session@1.0.0 are locked and consumed with the published operations load/compact/rollover/rehydrate/verify and create/status/close. The manifest now matches the locked continuation vocabulary. XA-20 remains Manager-owned for publication/locking semantics and final merge order.",
+        "evidence": "Agent 2 fa18ba768014218144a2427a161765b568b27ee6 (published on Draft PR #45); Agent 1 c5ff58701607f2ba8c7e69e9d2369b6abf7af254 (Draft PR #46); protected baseline e754c5df35b41b0ff2ac769519f05f056835411c.",
         "agent": "agent-1 + agent-2",
-        "agent1Interpretation": "The protected baseline has 15 lock rows and no ai.context or ai.agent-session rows. The frontend must report declared-not-locked, render no published version, quote load/compact plus session create/status/close, and keep rollover/rehydrate/verify pending under XA-20.",
-        "agent2Interpretation": "P2.13 adds two additive 1.0.0 rows under ai-foundation. The backend implementation and lock publish ai.context load/compact/rollover/rehydrate/verify with ai:context:read/write, and ai.agent-session create/status/close with the three declared agent permissions.",
-        "reason": "The peer branch became remotely visible after the original blocked record. Cross-agent execution against Agent 2 backend files now fails on five alignment/publication assertions: contextOperation adds rollover/rehydrate/verify; baseline lock absence assumptions fail; publication metadata remains declared-not-locked; and the full view reports drift.",
-        "requiredDecision": "Manager must resolve XA-20: whether the two rows are published in P2.13 and exactly which rollover, continuation, verification operations and permissions are public. Neither agent may silently choose the larger operation set or preserve the baseline pending interpretation.",
-        "blockingTest": "N8N_BACKEND_LEGO_ROOT=/home/user/n8n-rust-v.4/apps/n8n-lego/src/lego node --test packages/frontend-lego/test/29-alignment.test.mjs packages/frontend-lego/test/32-context-session.test.mjs packages/frontend-lego/test/33-milestones.test.mjs — 68 tests, 63 pass, 5 fail.",
+        "agent1Interpretation": "Agent 1 consumed Agent 2 publication and reports 363/363 frontend tests and 4,444 KB descriptor heap evidence; its current final report still records the now-corrected backend manifest divergence and needs a peer-side evidence refresh.",
+        "agent2Interpretation": "Agent 2 corrected the backend manifest, made session close semantics executable for completed/failed/cancelled outcomes, added declarative transition coverage, and verified the focused backend surface at 18/18.",
+        "reason": "The final backend correction closes the identified backend-owned vocabulary discrepancy. A correct cross-agent rerun against the Agent 1 tree at c5ff5870 and Agent 2 fa18ba76 is 66/68 because two Agent 1 assertions still expect the historical registered divergence; Agent 1 must fetch/review and refresh its own evidence. No backend implementation item remains dangling.",
+        "requiredDecision": "Manager must still resolve XA-20 publication/locking semantics and perform RECONCILIATION PASS, then MERGE PASS against protected main. XA-21 remains open; its 4,096 KB pin must not be edited.",
+        "blockingTest": "N8N_BACKEND_LEGO_ROOT=/home/user/n8n-rust-v.4/apps/n8n-lego/src/lego node --test packages/frontend-lego/test/29-alignment.test.mjs packages/frontend-lego/test/32-context-session.test.mjs packages/frontend-lego/test/33-milestones.test.mjs — 68 tests, 66 pass, 2 fail; failures are the Agent 1 historical divergence assertions after the backend correction.",
+        "historicalSuperseded": {
+          "preFinalBackendCorrection": "The earlier 68/68 result was before fa18ba76 and is not the final backend-correction rerun.",
+          "originalConflict": "The earlier 63/68 result is superseded by Agent 1 publication adaptation and is not current alignment evidence."
+        },
         "owner": "manager"
       },
       "verificationEvidence": {
         "focusedBackend": {
           "command": "node --test apps/n8n-lego/test/lego-context-session.test.mjs",
           "result": "PASS",
-          "tests": 17,
-          "passed": 17,
+          "tests": 18,
+          "passed": 18,
           "failed": 0,
-          "skipped": 0
+          "skipped": 0,
+          "commit": "fa18ba768014218144a2427a161765b568b27ee6"
         },
         "backendFrontendGate": {
-          "command": "npm run lego:gate",
+          "command": "N8N_LEGO_CATALOG_DIR=data/n8n-lego/catalog npm run lego:gate",
           "result": "PASS",
-          "backendTests": 456,
-          "backendPassed": 456,
+          "backendTests": 457,
+          "backendPassed": 457,
           "frontendTests": 303,
           "frontendPassed": 303,
           "skipped": 0,
-          "notes": "Requires the install-time n8n catalog and n8n-editor-ui dependency; no test was skipped."
+          "notes": "Catalog and n8n-editor-ui dependencies were installed for this run; no test was skipped."
         },
         "architecture": {
           "commands": [
@@ -300,19 +305,23 @@
           "total": 101
         },
         "subLegoAudit": {
-          "command": "/tmp/n8n-p213-venv/bin/python tools/sublego-audit/audit.py",
+          "command": "/tmp/p213-audit-venv/bin/python tools/sublego-audit/audit.py",
           "result": "PASS",
           "legos": 12,
           "subLegos": 21,
           "agents": 5,
-          "notes": "Audit tool summary text says 20 sub-LEGOs although 21 were loaded; exit status was 0."
+          "notes": "The audit exits 0; its summary text says 20 sub-LEGOs although 21 were loaded."
         },
         "bootPayload": {
-          "command": "node apps/n8n-lego/scripts/capture-frontend-evidence.mjs --out <temporary-file>",
-          "result": "PASS",
+          "command": "Agent 1 capture-frontend-evidence.mjs from c5ff5870 with stock UI dependency complete",
+          "result": "PASS_WITH_XA21",
           "checks": 56,
-          "passed": 56,
-          "failed": 0
+          "passed": 55,
+          "failed": 1,
+          "bootPayloadBytes": 18126,
+          "heapKb": 4444,
+          "heapPinKb": 4096,
+          "notes": "The only failed check is the declared XA-21 heap pin. Boot payload is byte-identical to baseline; pin not edited."
         },
         "offlineContractConformance": {
           "command": "node tests/compatibility/contract_conformance.mjs",
@@ -320,11 +329,7 @@
           "checks": 21,
           "passed": 20,
           "failed": 1,
-          "failure": "Phase 2 Rust guard finds pre-existing crates/**/*.rs and Cargo.toml artifacts already present at protected baseline e754c5df35b41b0ff2ac769519f05f056835411c; no Rust files were introduced by P2.13."
-        },
-        "agent1FocusedAndCrossAlignment": {
-          "result": "BLOCKED",
-          "failure": "Registered Agent 1 ref arena/01a0c6b4-n8n-rust-v-4 is absent locally and in origin; Agent 1 focused tests and two-branch alignment cannot run. This blocks reconciliation."
+          "failure": "Pre-existing crates/**/*.rs and Cargo.toml artifacts are present at protected baseline e754c5df35b41b0ff2ac769519f05f056835411c; fa18ba76 introduces no Rust files."
         },
         "agent1Focused": {
           "command": "node --test packages/frontend-lego/test/32-context-session.test.mjs packages/frontend-lego/test/33-milestones.test.mjs",
@@ -333,42 +338,45 @@
           "passed": 60,
           "failed": 0,
           "skipped": 0,
-          "commit": "6a217227dd5a4ff3f8e4f350db0422937cd8fccf"
+          "commit": "c5ff58701607f2ba8c7e69e9d2369b6abf7af254"
         },
         "agent1FrontendFull": {
           "command": "node --test packages/frontend-lego/test/*.test.mjs",
           "result": "PASS",
-          "tests": 303,
-          "passed": 303,
+          "tests": 363,
+          "passed": 363,
           "failed": 0,
           "skipped": 0,
-          "notes": "Run from a worktree path ending n8n-rust-v.4 so the repository-root assertion is valid. Agent 1 commit reports the same frontend suites and keeps XA-21 separately open."
+          "commit": "c5ff58701607f2ba8c7e69e9d2369b6abf7af254",
+          "notes": "Run from Agent 1 final worktree before the backend-owned manifest correction; the correction requires a peer evidence refresh, not a frontend implementation change."
         },
         "crossAgentAlignment": {
-          "command": "N8N_BACKEND_LEGO_ROOT=<agent-2>/apps/n8n-lego/src/lego node --test packages/frontend-lego/test/29-alignment.test.mjs packages/frontend-lego/test/32-context-session.test.mjs packages/frontend-lego/test/33-milestones.test.mjs",
-          "result": "RECONCILIATION_FAILED",
+          "command": "N8N_BACKEND_LEGO_ROOT=/home/user/n8n-rust-v.4/apps/n8n-lego/src/lego node --test packages/frontend-lego/test/29-alignment.test.mjs packages/frontend-lego/test/32-context-session.test.mjs packages/frontend-lego/test/33-milestones.test.mjs",
+          "result": "RECONCILIATION_REQUIRED",
           "tests": 68,
-          "passed": 63,
-          "failed": 5,
+          "passed": 66,
+          "failed": 2,
           "skipped": 0,
+          "commitAgent1": "c5ff58701607f2ba8c7e69e9d2369b6abf7af254",
+          "commitAgent2": "fa18ba768014218144a2427a161765b568b27ee6",
           "failures": [
-            "contextOperation added by backend: rollover, rehydrate, verify",
-            "frontend baseline lock-absence assertion fails against Agent 2 rows",
-            "frontend publication manifest still says declared-not-locked against Agent 2 rows",
-            "quoted vocabulary drift: context operations",
-            "full Context & Session view reports drift"
+            "Agent 1 test 32 expects the historical backend registered-difference record in the vocabulary block after the backend manifest was corrected.",
+            "Agent 1 test 32 expects the same historical divergence in the assembled view."
           ],
-          "owner": "manager"
+          "notes": "The 66/68 result is truthful current post-correction evidence; peer refresh is required before reconciliation can pass."
         },
         "agent1FrontendEvidence": {
           "command": "node apps/n8n-lego/scripts/capture-frontend-evidence.mjs --out <temporary-file>",
-          "result": "OPEN_MANAGER_REVIEW",
+          "result": "OPEN_XA21",
           "checks": 56,
           "passed": 55,
           "failed": 1,
-          "failure": "XA-21 heap pin fails at 4,275 KB against <4,096 KB after installing the app dependency; the three page-level failures in Agent 1 commit evidence were environmental in its original empty-node_modules capture and pass when rerun with the dependency installed.",
+          "bootPayloadBytes": 18126,
+          "heapKb": 4444,
+          "heapPinKb": 4096,
           "decision": "XA-21",
-          "evidence": "/tmp/agent1-boundary-with-deps.json (re-run from Agent 1 branch worktree with apps/n8n-lego/node_modules available)"
+          "commit": "c5ff58701607f2ba8c7e69e9d2369b6abf7af254",
+          "notes": "The final Agent 1 evidence report records 4,444 KB after dependency-complete capture; the threshold remains unchanged."
         }
       }
     },

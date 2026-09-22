@@ -70,6 +70,29 @@ created, running, waiting, paused, completed, failed, cancelled
 
 Invalid transitions fail closed. A session contains references and bounded control state; it does not contain a transcript, raw model output, hidden prompts, private reasoning, credentials, tokens, cookies, or capability grants.
 
+The published session operations are `create`, `status`, and `close`. `close` has one explicit terminal outcome: it defaults to `completed`, and accepts `failed` or `cancelled` when the caller has that outcome. Repeating close with the same terminal outcome is idempotent; attempting to change an already terminal outcome fails as an interaction mismatch. The operation does not execute, cancel, or retry external work — it records bounded lifecycle state only.
+
+The backend transition table is declarative in `manifest/ai-foundation.json` and executable as `AGENT_SESSION_TRANSITIONS`. The allowed transitions are:
+
+```text
+created  -> running | waiting | cancelled
+running  -> waiting | paused | completed | failed | cancelled
+waiting  -> running | paused | completed | failed | cancelled
+paused   -> running | cancelled
+completed, failed, cancelled -> terminal
+```
+
+## Published operation matrix
+
+The contract lock publishes these operation sets and permissions without adding a runtime/provider authority path:
+
+| Contract | Operations | Permissions |
+| --- | --- | --- |
+| `ai.context@1.0.0` | `load`, `compact`, `rollover`, `rehydrate`, `verify` | `ai:context:read`, `ai:context:write` |
+| `ai.agent-session@1.0.0` | `create`, `status`, `close` | `ai:agent:control`, `ai:agent:create`, `ai:agent:read` |
+
+The context manager operations are bounded local state mechanics. `rollover` serializes before the declared threshold reaches the exact limit, creates a compacted descendant, rehydrates a linked child session and exposes `verified`, `degraded`, or `failed`; it never silently repairs missing required state.
+
 ## Context manager state machine
 
 The manager uses the declared lifecycle:
@@ -96,9 +119,9 @@ The package is structured and bounded. It preserves:
 - constraints,
 - decisions,
 - active entities,
-- tool-state references,
+- `toolStateReferences`,
 - artifacts,
-- important references,
+- `importantReferences`,
 - errors,
 - unresolved questions,
 - compressed history.
