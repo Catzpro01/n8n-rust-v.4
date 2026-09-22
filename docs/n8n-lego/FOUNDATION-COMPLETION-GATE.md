@@ -283,8 +283,9 @@ comment.
 
 ## 18. Tests
 
-`281` frontend architecture tests across `30` suites, `36/36` app tests, `50/50` evidence checks,
-`26/26` conformance checks, the sub-LEGO audit PASSED, `verify:fast` at its unchanged 5/10
+`298` frontend architecture tests across `31` suites (one skipped: the Skill drift comparison needs
+a tree that publishes `manifest/skill.json`), `399/399` app tests, `55/55` evidence checks,
+`27/27` conformance checks, the sub-LEGO audit PASSED, `verify:fast` at its unchanged 5/10
 baseline (G06–G10 need `packages/workflow-lego/node_modules`). New this phase:
 
 | Suite | What it proves |
@@ -330,11 +331,13 @@ row carries owner, affected domains, decision required, blocking level, date and
 
 | Command | Result |
 | :--- | :--- |
-| `node --test packages/frontend-lego/test/*.test.mjs` | 281 tests, 277 pass, **4 skipped** (backend comparisons absent), 0 fail |
-| `node --test apps/n8n-lego/test/*.test.mjs` | 36/36 pass |
+| `node --test packages/frontend-lego/test/*.test.mjs` | 298 tests, 297 pass, **1 skipped** (the Skill drift comparison: this tree publishes no `manifest/skill.json`), 0 fail |
+| `N8N_LEGO_CATALOG_DIR=<pinned catalog> node --test apps/n8n-lego/test/*.test.mjs` | 399/399 pass (without the catalog: 396/399 — three node-catalog suites need it) |
 | `N8N_BACKEND_LEGO_ROOT=/tmp/a2/apps/n8n-lego/src/lego node --test packages/frontend-lego/test/29-alignment.test.mjs` | **7/7 pass, 0 skipped** — 38 canonical sets compared against the P2.10 tree, 0 drift, plus the quoted semantics |
-| `node apps/n8n-lego/scripts/capture-frontend-evidence.mjs` | **50/50 PASS**, boot payload byte-identical at 18,126 B |
-| `frontend.conformance()` (via `test/19`) | 26 rules, 26 live checks, all pass (A25: a quoted word carries its provenance, and an unpublished file is recorded; A26: a declared permission is a declared word) |
+| `node apps/n8n-lego/scripts/capture-frontend-evidence.mjs` | **55/55 PASS** (five of them the P2.12 Skill surface: six quoted states, no affordance, the canonical unsupported answer, a drifted declaration reported and not adopted, A27), boot payload byte-identical at 18,126 B |
+| `N8N_BACKEND_LEGO_ROOT=<agent-2 P2.12 tree> node --test test/29-alignment test/31-skills` | **20/20 pass, 0 skipped** — every difference between the quoted vocabulary and the moved declarations is reported and registered (`XA-19`), none adopted |
+| `N8N_BACKEND_LEGO_ROOT=<a path with no backend>` | **fails** (3 tests): a pointed-at tree that does not exist is an error, never a skip |
+| `frontend.conformance()` (via `test/19`) | 27 rules, 27 live checks, all pass (A25: a quoted word carries its provenance, and an unpublished file is recorded; A26: a declared permission is a declared word; A27: Skill discovery renders six quoted states and no execution affordance) |
 | `python3 tools/sublego-audit/audit.py` | AUDIT PASSED (12 LEGOs, 20 Sub-LEGOs, 5 Agents) |
 | `npm run verify:fast` | 5/10 — the unchanged baseline; G06–G10 require `packages/workflow-lego/node_modules` |
 | `git show origin/a2:apps/n8n-lego/src/compat/capability.mjs \| diff - apps/n8n-lego/src/compat/capability.mjs` | identical — the app side of the compatibility boundary did not fork |

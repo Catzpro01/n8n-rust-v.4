@@ -226,6 +226,7 @@ export function createFrontendLego({
       agentEventTypes: describeAgentEvents().eventTypes.length,
       skillStates: skillCatalog.lifecycle.length,
       skillsDeclared: skillCatalog.entries.length,
+      skillDrift: skillCatalog.drift.state,
       events: events.stats().emitted,
       adapter: adapter.id,
       framework: adapter.framework,
