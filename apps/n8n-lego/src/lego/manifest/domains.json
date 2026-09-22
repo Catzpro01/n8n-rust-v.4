@@ -3848,8 +3848,7 @@
         "src/lego/manifest/workspace.json"
       ],
       "public": [
-        "src/lego/workspace.mjs",
-        "src/lego/manifest/workspace.json"
+        "src/lego/workspace.mjs"
       ],
       "dependsOn": [
         "platform-kernel"

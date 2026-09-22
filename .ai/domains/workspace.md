@@ -26,7 +26,6 @@
 ## Public contract surface
 
 - `src/lego/workspace.mjs`
-- `src/lego/manifest/workspace.json`
 
 ## May call
 
