@@ -64,7 +64,7 @@ version for it.
 | # | LEGO | What it is | Backend status | Frontend surface | Disclosure |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | 1 | **AI Foundation** | the contract layer: kinds, events, sessions, approvals, artifacts, context, transport ladder | **published** `ai.foundation@1.0.0` (manager, `contract-only`) | everything below | background |
-| 2 | **Skill** | a named procedure with capabilities, validators, references and a token budget | `publicationPending` — **XA-11** (`ai.skill` proposed, manager) | chip → Skills list → detail | L1 → L2 → L3 |
+| 2 | **Skill** | a named procedure with capabilities, validators, references and a token budget | **published** — `ai.skill@1.0.0` (manager, domain `ai-foundation`, `XA-19` resolved); **XA-11** stays open for where Skill is modelled | chip → Skills list → detail | L1 → L2 → L3 |
 | 3 | **Agent Machine** | the runtime that executes delegated tasks | **partially published**: `ai.agent-runtime` (contract), `ai.agent-delegation`, `ai.agent-session`; the Rust machine is not built and is out of scope here | agent tree, agent detail | L1 → L3 |
 | 4 | **Memory** | what the run remembers beyond the window: decisions, tasks, artifacts, references | `publicationPending` — **XA-12** (`ai.memory` proposed, manager); today the honest source is `ai.context` (what is loaded) + `ai.artifact` + `ai.decision` | chip → Relevant memory → `Open Memory Graph` | L1 → L2 → L3 |
 | 5 | **Workspace** | where an agent works outside the chat: project, tree, terminal state | domain exists (`workspace`, agent-2, **planned**, contract `0.0.0`, `workspace.projects` **unsupported**) — per-agent sandbox semantics are `publicationPending` — **XA-13** | workspace view inside agent detail | L2 → L3 |

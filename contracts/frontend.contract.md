@@ -883,7 +883,7 @@ enforcement cannot disagree.
   },
   {
     "id": "A27",
-    "statement": "Skill discovery renders six quoted states and nothing else: no single boolean, no select/load/execute affordance, no fallback capability, and no skill that implies a permission, an authority, a tool, a filesystem, a terminal or a model.",
+    "statement": "Skill discovery renders six quoted states and the four published operations (skill.list, skill.resolve, skill.describe, skill.validate-selection) and nothing else: no single boolean, no select/load/release/execute affordance, no fallback capability, and no skill that implies a permission, an authority, a tool, a filesystem, a terminal or a model.",
     "contract": "§19.18",
     "enforcedBy": "31-skills.test.mjs"
   }
@@ -926,22 +926,27 @@ restate it, and it adds no seventh state.
 
 **Six states, never a boolean.** `registered`, `available`, `selected`, `loaded`, `active` and
 `released` are six different facts, quoted from `manifest/ai-lego-set.json`
-(`lego#id=skill.lifecycle`) through the vocabulary lock (`§19.9`), which records that
-`ai.skill` has no contract-lock row yet (`§19.17`, decision `XA-11`). The UI may not collapse
+(`lego#id=skill.lifecycle`) through the vocabulary lock (`§19.9`) and published by
+`ai.skill@1.0.0` (owner `manager`, domain `ai-foundation`, `XA-19` resolved in the P2.12
+finalize; `XA-11` stays open only for where Skill is modelled). The UI may not collapse
 them: a skill that is `loaded` has material in context, one that is `active` is in use, and
 neither has executed anything. `skillState()` returns one row per state with `executing: false`
 and `grants: null` for all six — a skill state is never an entitlement.
 
-**Discovery only.** Listing, search, filter and detail read declarations. Selecting, loading,
-releasing and executing are operations of `ai.skill` (`register`, `list`, `describe`, `select`,
-`load`, `release`), and no UI affordance may offer them while the contract is unpublished. A
-skill card at the deepest disclosure level reports every declared operation as `offered: false`
+**Discovery only.** Listing, search, filter, detail and selection *validation* read declarations.
+The contract publishes exactly four caller operations — `skill.list`, `skill.resolve`,
+`skill.describe`, `skill.validate-selection` — and no UI affordance may offer any of them:
+`register`, `select`, `load` and `release` are internal registry lifecycle methods that the
+contract deliberately does not publish (publishing `load` would make lazy discovery a caller's
+concern), and there is no execute operation and no `ai:skill:execute` permission at any layer. A
+skill card at the deepest disclosure level reports every published operation as `offered: false`
 — naming an operation is not offering it.
 
-**The unsupported answer is canonical, not empty.** With no published contract the surface
-reports `optional-absent` for the catalog (an empty skill list is not an error) and answers a
-request for a specific skill with `capability-unavailable` and `lego.capability_unavailable`
-(`§19.8`), naming the unpublished contract and the decision that owes it. No fallback
+**The unsupported answer is canonical, not empty.** With no declaration handed over the surface
+name a published contract without rendering a skill list for it: the catalog reports `available`
+(`optional-absent` when the contract is unpublished) and answers a request for a specific skill
+with `capability-unavailable` and `lego.capability_unavailable` (`§19.8`), naming the contract and
+the decision that owns it. Publication is a contract, not a promise that skills exist. No fallback
 capability is substituted, no execution control is shown and no tool list is rendered. A
 published contract that cannot be compared (no version, or a requirement that is not
 semver) is reported as `feature-unsupported`; an unmet required capability as
@@ -958,16 +963,22 @@ skill, and nothing here reaches a model.
 **A declaration that moved is reported, not adopted.** The application may hand over a declaration
 whose vocabulary has moved past the words this package quotes (agent-2 owns the manifests and moves
 first). `declarationDrift({ declaration, contract })` compares the vocabulary-bearing fields
-(`lifecycle`, `operations`, `permissions`, `disclosureLevels`, `versioning`) and returns `in-sync`,
-`drift` — with, per field, both spellings and both directions — or `not-declared` when nothing was
-handed over. A difference is never resolved here: the surface keeps rendering the words it quotes,
-reports the difference as data, and the reconciliation decides (`XA-19`). A quoted contract without a
-version is named `uncomparable` rather than treated as agreement, and a `versioning` claim of the form
-`<contract>@<major>.<minor>.<patch>` is reported as `declaredVersion` while `published` stays false —
-a claim in a file is not a locked contract (`§19.17`).
+(`lifecycle`, `operations`, `permissions`, `disclosureLevels`, `trustLevels`, `versioning`) and
+returns `in-sync`, `drift` — with, per field, both spellings and both directions — or `not-declared`
+when nothing was handed over. A difference is never resolved here: the surface keeps rendering the
+words it quotes, reports the difference as data, and the reconciliation decides. `XA-19` resolved
+that reconciliation by adopting the implemented shape, so since then **no difference is tolerated**:
+the alignment gate compares the quoted Skill sets against the published declaration exactly, and a new
+difference fails until a new open row is registered (`31-skills.test.mjs` asserts none is left). A
+`versioning` claim of the form `<contract>@<major>.<minor>.<patch>` is reported as `declaredVersion`,
+and the contract is only `published` when a row exists — a claim in a file is not a locked contract
+(`§19.17`).
 
 **The declaration is handed over, never read.** The frontend receives the quoted declaration as
 data (`createFrontendLego({ skills })`), exactly like the backend capability view (`§19.6`); it
-never reads the backend tree (`§5`, `§19.14`). `manifest/skills.json` declares the surface and
-ships an empty skill list while `ai.skill` is unpublished — reporting "nothing is declared" and
-"the declaration is broken" as different states (`§19.8`).
+never reads the backend tree (`§5`, `§19.14`). `manifest/skills.json` declares the surface, quotes
+the lock row it was verified against (`publication`: contract, version, owner, `lockedIn`,
+`decidedBy`) and ships an empty skill list — the catalog of a discovery surface is what it was handed,
+never a starter set. A manifest that claims publication must find the row it names in the contract
+lock; reporting "nothing is declared" and "the declaration is broken" stays two different states
+(`§19.8`).

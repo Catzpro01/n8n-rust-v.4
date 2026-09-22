@@ -31,7 +31,7 @@ its dependencies are **published**, not merely planned.
 | **1** | Contract stabilization | contract ids/versions/owners locked; incompatibilities declared |
 | **2** | Capability and operation vocabulary | capabilities publish `operations[]`; interaction classes and permissions are declared |
 | **3** | AI Foundation contracts | `ai.foundation@1.0.0` published, `contract-only`, zero implementation |
-| **4** | Skill / Memory / Workspace / Context | each published and reconciled with existing domains (XA-11 ... XA-13) |
+| **4** | Skill / Memory / Workspace / Context | each published and reconciled with existing domains — Skill done (`ai.skill@1.0.0`, XA-19 resolved); Memory / Workspace semantics still open (XA-12, XA-13) |
 | **5** | Agent Machine | runtime + delegation + session + events contracts, still contract-first |
 | **6** | Artifact / Approval / Work Trace / Token | durable output, human gates, bounded observation, honest usage |
 | **7** | MCP / Runtime Adapters / provider integrations | edge interoperability without internal transport |
@@ -50,7 +50,7 @@ repository records; everything after them is target.
 12. MCP Adapter · 13. Runtime Adapter · 14. Node Creator · 15. Universal Translation.
 
 This is a roadmap, **not permission to implement everything immediately**. Items 4-7 and 12-15 are
-`publicationPending` today (XA-11 ... XA-17) and therefore blocked on a decision, not on code.
+`publicationPending` today (XA-12 … XA-17 — Skill left that list when `ai.skill@1.0.0` was published) and therefore blocked on a decision, not on code.
 
 ## 3. Frontend phases (the part this branch owns)
 

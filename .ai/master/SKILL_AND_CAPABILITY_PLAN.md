@@ -1,13 +1,16 @@
 # Skills and capabilities
 
-**Status:** planning. **Capability: published** (`lego.domain-registry@1.1.0`, `lego.interaction`,
-`lego.negotiation`, `ai.foundation` taxonomy). **Skill: declared, not locked** — the vocabulary is
-quoted from `manifest/ai-lego-set.json#id=skill` (six lifecycle states, operations, disclosure levels,
-permissions, degradation), `ai.skill` has no contract-lock row (`XA-11`), and the frontend consumes it
-as **discovery and state presentation only** (P2.12: `packages/frontend-lego/src/skills.mjs`,
-`test/31-skills.test.mjs`, contract §19.18). A backend tree that moved past the quoted words is
-reported as drift and registered (**XA-19**) rather than adopted. No skill runtime exists: nothing
-selects, loads, releases or executes a skill, and no skill grants a permission, an authority or a tool.
+**Status:** published. **Capability: published** (`lego.domain-registry@1.1.0`, `lego.interaction`,
+`lego.negotiation`, `ai.foundation` taxonomy). **Skill: published** — `ai.skill@1.0.0` is locked in
+`contracts/contract-lock.json` (owner manager, domain `ai-foundation`, status `implemented`) with four
+caller operations (`skill.list`, `skill.resolve`, `skill.describe`, `skill.validate-selection`), six
+lifecycle states, four disclosure levels, two permission words and no execute operation or permission.
+The frontend consumes exactly that vocabulary as **discovery and state presentation only** (P2.12:
+`packages/frontend-lego/src/skills.mjs`, `test/31-skills.test.mjs`, contract §19.18). The drift this
+planning note used to carry was reconciled by adopting the implemented shape (**XA-19 resolved**);
+`register`/`select`/`load`/`release` stay internal registry lifecycle methods, and `XA-11` remains open
+only for where Skill is modelled. No skill runtime exists: nothing selects, loads, releases or executes
+a skill, and no skill grants a permission, an authority or a tool.
 
 ---
 
@@ -16,7 +19,7 @@ selects, loads, releases or executes a skill, and no skill grants a permission, 
 | Concept | Question | Shape |
 | :--- | :--- | :--- |
 | **Capability** | *what can be done* | a declared, versioned contract with operations, permissions, interaction classes |
-| **Skill** *(XA-11)* | *how the job should be done* | knowledge + rules + procedure + capability map + validators |
+| **Skill** *(XA-19 resolved, XA-11 open for modelling)* | *how the job should be done* | knowledge + rules + procedure + capability map + validators — published as `ai.skill@1.0.0` |
 | **Agent Machine** | *who/what orchestrates the job* | a runtime executing a delegated task |
 | **Workspace** | *where the action occurs* | a scoped place with a boundary |
 | **Approval** | *whether the action is allowed* | a human gate with risk and reason |
@@ -63,12 +66,15 @@ which version is active) would become a permission boundary nobody reviews. Keep
 means: capability grants stay with the caller, approvals stay with the action, and a skill can be
 updated or replaced without changing what the system is allowed to do.
 
-## 5. Frontend behaviour while XA-11 is open
+## 5. Frontend behaviour now that `ai.skill@1.0.0` is published
 
-The Skills surface is specified and **gated**: the chip renders a presentation-only count or
-`capability-unavailable` with the reason; no skill state is requested, stored or sent to the backend;
-no mock data is rendered; and the skill words above are *planning vocabulary* that the frontend must
-not present as a published contract.
+The Skills surface consumes the published vocabulary and renders **discovery and state presentation
+only**: the six lifecycle states stay six independent facts, the four operations are named and none is
+offered, search/filter/detail read handed-over declarations, and a skill always renders through
+`available` / `degraded` / `capability-unavailable` rather than an invented fallback. Nothing is stored
+or sent to the backend. Where no declaration is handed over, the surface answers with the canonical
+unsupported state — publication is a contract, not a promise that skills exist. The chip may render a
+count only from skill entries it was given; a count is never synthesised from the planning list below.
 
 ## See also
 

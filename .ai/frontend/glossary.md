@@ -38,7 +38,7 @@ frontend conversation — inventing vocabulary is how two agents end up disagree
 | **MCP** | An interoperability layer for tools, resources and prompts — not the Agent Machine, never a transport in a business contract. States: connected, unavailable, permission-required, capability-unsupported. |
 | **Work trace** | A bounded agent timeline: 26 event types in 7 namespaces, 18 row fields, 200 rows, 280-character summaries. References artifacts and approvals; stores no payload and no chain of thought. |
 | **contract-only** | Canonical status for “contract fixed and gate-checked, implementation missing” — what a catalog calls `declared`. |
-| **Publication pending** | A word quoted from a file no contract row publishes: owner, domain and the decision that asks for one (`XA-9`, `XA-11`), never an invented version. |
+| **Publication pending** | A word quoted from a file no contract row publishes: owner, domain and the decision that asks for one (`XA-9`, `XA-12`), never an invented version; a published contract replaces the record. |
 | **Canonical word** | The word the owning contract declares; a local word maps to it (`inference:invoke → ai:model:invoke`) or carries a reason. |
 | **Delegation** | A child agent's parentage, task, runtime and session — recorded, granting nothing: a nested agent holds exactly the permissions it was given. |
 | **Fail-soft / fail-closed** | Fail-soft: a broken LEGO must not stop the stock UI. Fail-closed: an invalid declaration stops the descriptor rather than shipping a half-truth. |
@@ -46,4 +46,4 @@ frontend conversation — inventing vocabulary is how two agents end up disagree
 | **Selective test map** | `fast-contract → boundary → browser → integration → full`. Run the smallest valid set; escalate when the graph says so. |
 | **Dry-run plan** | The target, files, contracts, dependencies, test impact and risk of a change, produced before anything is touched. |
 | **Superseded** | A specification kept for traceability that no longer governs work (see `contracts/micro-frontend.contract.md`). |
-| **Skill** | Procedural knowledge (how) — not a capability (what), not an agent (who). Six backend states, never one boolean, and nothing in the UI selects, loads or executes one. |
+| **Skill** | Procedural knowledge (how) — not a capability (what), not an agent (who). `ai.skill@1.0.0`: six states, never one boolean, four operations, none offered, nothing executes. |

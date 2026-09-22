@@ -160,8 +160,9 @@ export function createFrontendLego({
   /**
    * The Skill surface (P2.12): discovery and state presentation only. It is built from
    * the frontend's own surface declaration plus whatever the application hands over —
-   * never by reading a backend file — and it reports the canonical unsupported state
-   * while `ai.skill` is unpublished. Nothing here selects, loads or executes a skill.
+   * never by reading a backend file. It reports the published contract (`ai.skill@1.0.0`) or
+   * the canonical unsupported state when the surface has no publication row. Nothing here
+   * selects, loads or executes a skill.
    */
   const skillCatalog = createSkillCatalog({
     surface: manifests.skillCatalog,

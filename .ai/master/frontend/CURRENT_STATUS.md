@@ -39,7 +39,7 @@ registry wins and this file is a defect.
 | capabilities | **82**, of which **62** publish `operations[]` | `domains.json` |
 | contract rows | **14** (incl. `ai.foundation@1.0.0`, manager) | `contract-lock.json` |
 | AI contract set | `ai.foundation@1.0.0`, status `contract-only`, 11 `ai.*` capabilities, 5 provider kinds, 26 event types | `manifest/ai-foundation.json` |
-| official AI/Agent LEGO | **15** — 2 published, 6 declared `contract-only`, 2 partial (gated), 5 `publicationPending` | `AI_AGENT_LEGO_MASTER_PLAN.md` §1, `PROJECT_MASTER_PLAN.md` §4 |
+| official AI/Agent LEGO | **15** — 3 published (incl. Skill, `ai.skill@1.0.0`), 6 declared `contract-only`, 2 partial (gated), 4 `publicationPending` | `AI_AGENT_LEGO_MASTER_PLAN.md` §1, `PROJECT_MASTER_PLAN.md` §4 |
 | frontend vocabulary lock | 38 canonical sets + 22 local sets, provenance-pinned | `packages/frontend-lego/src/vocabulary.mjs` |
 | seam | 7 declared sources, 7 forbidden sources, 13 inputs, 16-field identity | `src/seam.mjs`, `CORE_LEGO_ARCHITECTURE.md` |
 | operation outcomes | 12, never collapsed | `src/negotiation.mjs` |
@@ -53,10 +53,10 @@ registry wins and this file is a defect.
 
 | Gate | Result |
 | :--- | :--- |
-| `node --test packages/frontend-lego/test/*.test.mjs` | **298 tests across 31 suites: 297 pass, 1 skip** (the Skill drift comparison needs a tree that publishes `manifest/skill.json`), **0 fail** |
+| `node --test packages/frontend-lego/test/*.test.mjs` | **303 tests across 31 suites: 301 pass, 2 skip, 0 fail.** The two skips are the Skill comparisons that need a tree publishing `ai.skill@1.0.0`; on this branch the local backend copy predates the finalize (no lock row), and the alignment test states which sets it deferred instead of reporting a pass it did not perform |
 | `N8N_LEGO_CATALOG_DIR=<pinned catalog> node --test apps/n8n-lego/test/*.test.mjs` | 399/399 (396/399 without the catalog: three node-catalog suites need it) |
-| `node apps/n8n-lego/scripts/capture-frontend-evidence.mjs` | 55/55 PASS (incl. the P2.12 Skill surface) |
-| `N8N_BACKEND_LEGO_ROOT=<agent-2 P2.12 tree> node --test .../test/{29-alignment,31-skills}.test.mjs` | 22/22, 0 skipped — every difference between the quoted vocabulary and the moved declarations is reported and registered (`XA-19`); a path without a backend **fails**, it never skips |
+| `node apps/n8n-lego/scripts/capture-frontend-evidence.mjs` | **56/56 PASS** (incl. the published Skill contract and the four consumed operations); boot payload byte-identical at 18,126 B |
+| `N8N_BACKEND_LEGO_ROOT=<published tree @ `d0a338e4`> node --test .../test/{29-alignment,31-skills}.test.mjs` | **27/27, 0 skipped, Skill drift = 0** — the four operations, six states, disclosure levels, permissions and the lock row agree exactly with `ai.skill@1.0.0`; a path without a backend **fails**, it never skips |
 | `python3 tools/sublego-audit/audit.py` | AUDIT PASSED (12 LEGOs, 20 Sub-LEGOs, 5 Agents) |
 | `npm run verify:fast` | 5/10 with the workspace bare; **7/10** once `packages/workflow-lego/node_modules` is installed (G01–G07 pass, G06/G07 being the two TypeScript builds). G08–G10 need a *live reference runtime* (`.runtime/node_modules` or `/home/user/.n8n-live/node_modules` with `n8n-workflow` + `n8n-core`), which is the workflow/Rust track's environment — `KNOWN_BLOCKERS.md` BL-3. No browser-parity claim is made from this sandbox. |
 
@@ -68,26 +68,32 @@ registry wins and this file is a defect.
 | AI Foundation | **contract-only** — declared, not implemented | `ai.foundation@1.0.0`, status `contract-only` |
 | AI experiences (Assistant, Copilot, AI Node, Execution AI mode) | **specified, not built** | `.ai/master/AI_UI_*` |
 | Agent Machine | **contracts only**, no runtime | `AGENT_MACHINE_PLAN.md` |
-| Multi-process / multi-instance scale-out | **NOT READY** | `KNOWN_BLOCKERS.md` BL-1 (process-local execution ids), BL-2 (local JSON is the system of record), BL-4 (cross-agent vocabulary arbitration, incl. `XA-19`) |
+| Multi-process / multi-instance scale-out | **NOT READY** | `KNOWN_BLOCKERS.md` BL-1 (process-local execution ids), BL-2 (local JSON is the system of record), BL-4 (cross-agent vocabulary arbitration — `XA-19` is resolved, `XA-11` … `XA-18` are not) |
 | Browser/isolation profile gates | **unproven locally** | `KNOWN_BLOCKERS.md` BL-3 — `npm run verify:fast` = 5/10 in the dev sandbox; `tests/e2e/frontend-boundary.mjs` runs in CI |
 | Control plane (jobs/tasks) | **no in-repo activation evidence** — not claimed operational | `KNOWN_BLOCKERS.md` BL-6 |
 
 ## 5. This change
 
-**P2.12 (agent-1, this branch).** The frontend consumes the Skill vocabulary the backend declares
-(`manifest/ai-lego-set.json#id=skill`, quoted through the vocabulary lock) and renders **discovery and
-state presentation only**: six lifecycle states as six facts, progressive disclosure, search/filter/detail,
-the canonical unsupported answer (`capability-unavailable` / `lego.capability_unavailable`, decision
-`XA-11`) while `ai.skill` has no contract-lock row, and a compatibility verdict that names what was
-required, what was offered and whether the two could be compared. A declaration that moved past the
-quote — agent-2's P2.12 tree changed the operation list and claimed `ai.skill@1.0.0` — is **reported as
-drift and registered (`XA-19`)**, never adopted. Files: `src/skills.mjs`, `manifest/skills.json`,
-`test/31-skills.test.mjs` (15 tests), contract §19.18, conformance rule A27.
+**P2.12 finalize (agent-1, this branch).** The backend published `ai.skill@1.0.0` in the contract lock
+(`arena/01a0c521 @ d0a338e4`, owner manager, domain `ai-foundation`, status `implemented`) and `XA-19`
+was resolved by adopting the **implemented** shape. The frontend now consumes exactly that contract:
+the four caller operations (`skill.list`, `skill.resolve`, `skill.describe`, `skill.validate-selection`),
+the six lifecycle states as six independent facts, the four disclosure levels and the two permission
+words. `register`, `select`, `load` and `release` stay internal registry lifecycle methods — `load` is
+deliberately not published, because publishing it would make lazy discovery a caller's concern — and
+there is no `execute` operation and no `ai:skill:execute` permission at any layer. The tolerated
+differences are gone: `REGISTERED_DRIFT` is empty, the four Skill sets now quote the lock row, and a
+difference fails the gate instead of being registered after the fact. `XA-11` stays **open-for-manager**
+for the modelling question (whether Skill belongs under `ai-foundation`). Files: `src/skills.mjs`,
+`src/vocabulary.mjs`, `manifest/skills.json`, `test/29-alignment.test.mjs`, `test/31-skills.test.mjs`
+(19 tests), contract §19.18, conformance rule A27.
 
-Master set measured by `test/30-master-plan.test.mjs` (the authority): **28 documents, 206,832 B of a
-262,144 B budget**, largest `AI_UI_EXPERIENCE_MASTER_PLAN.md` at 23,141 B of a 32,768 B per-file cap.
-Boot payload byte-identical at **18,126 B**; retrieval pack **81,881 B of 80 KB** — 39 B of headroom, so
-this view stays terse on purpose.
+Master set measured by `test/30-master-plan.test.mjs` (the authority): **28 documents, 210,253 B of a
+262,144 B budget**, largest `AI_UI_EXPERIENCE_MASTER_PLAN.md` at 23,212 B of a 32,768 B per-file cap.
+Boot payload byte-identical at **18,126 B**; retrieval pack **81,877 B of 80 KB** — 43 B of headroom, so
+this view stays terse on purpose. Backend counts read from this branch's copy of the tree are still the
+pre-finalize ones (14 contract rows, 82 capabilities); the published tree reports 15 rows, 83
+capabilities and 143 operations.
 
 ## 6. What a new agent should read, in order
 

@@ -21,8 +21,8 @@ beyond one additive `<meta>` tag, and never rewrites the bundle.
 packages/frontend-lego/
   index.mjs                 the public surface (catalogs, registries, lifecycle, impact, adapter)
   manifest/                 surfaces.json 12 UI surfaces + the backend capability behind each
-                            extension-points.json 15 hooks (1.1.0) + 7 declared future consumers
-                            sub-legos.json 19 nested units · ownership.json · capabilities.json
+                            extension-points.json 15 hooks (1.1.0) + 7 future consumers
+                            sub-legos.json 19 units · ownership.json · capabilities.json
   src/                      one module per concern, no utils dumping ground
     contract.mjs versions.mjs surface-capability.mjs registry.mjs sublegos.mjs lifecycle.mjs
     negotiation.mjs vocabulary.mjs seam.mjs backend-view.mjs envelope.mjs transport.mjs
@@ -30,16 +30,16 @@ packages/frontend-lego/
     errors.mjs boot.mjs client.mjs manifests.mjs knowledge.mjs agents.mjs agent-events.mjs skills.mjs lego.mjs
     adapters/ the framework adapter boundary (currently Vue; the only framework-aware code)
   test/                     01-contract … 23-degradation, 24-vocabulary, 25-operations,
-                            26-ai-contracts, 27-agent-events, 28-seam, 29-alignment, 30-master-plan, 31-skills
+                            26-ai-contracts, 27-agent-events, 28-seam, 29-alignment, 30-master, 31-skills
 ```
 
-What the less obvious ones own: `negotiation.mjs` discovery, access, degradation and
+What the odd ones own: `negotiation.mjs` discovery, access, degradation and
 operation answers; `vocabulary.mjs` the shared vocabulary lock; `seam.mjs` the closed
 input list and the one capability identity; `agents.mjs` the AI capability/provider/
 runtime kinds, the MCP boundary and the installation layers; `agent-events.mjs` the agent
-event vocabulary, the bounded work trace and the delegation tree; `knowledge.mjs` the
-`.ai/` pack index; `skills.mjs` skill discovery: six quoted states, never one boolean,
-and no select/load/execute (`test/31`).
+event vocabulary, the work trace and the delegation tree; `knowledge.mjs` the
+`.ai/` pack index; `skills.mjs` consumes `ai.skill@1.0.0`: six states, four
+operations, no execution (`test/31`).
 
 ## Boot flow
 

@@ -133,7 +133,7 @@ Artifact, Approval, Agent Event & Work Trace, Token & Usage.
 | MCP Adapter | `ai-foundation.json` -> `mcp` (an edge interop boundary) | interop declared; a real transport stays XA-16 |
 | Node Creator | `manifest/node-contract.json`; no drafting capability in the registry | AI drafting `publicationPending` (XA-15) |
 | Workspace | registry domain `workspace` (contract `0.0.0`; both capabilities legacy/unsupported) | planned (XA-13) |
-| Skill | absent from the registry and the lock | `publicationPending` (XA-11) |
+| Skill | **published**: `ai.skill@1.0.0` in the lock, `ai.skill` in `domains.json` (4 operations, 2 permissions) | discovery-only surface; XA-11 open for the modelling question, XA-19 resolved |
 | Memory | absent; `ai.context` covers the window, not memory | `publicationPending` (XA-12) |
 | Universal Translation | absent from the registry (the old "out of scope" note is superseded) | `publicationPending` (XA-14) |
 | Token & Usage | no `ai.usage` row; `modelGateway.countTokens` and delegation budgets only | `publicationPending` (XA-17) |

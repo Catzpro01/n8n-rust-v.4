@@ -59,9 +59,9 @@ export function loadManifests() {
   if (!Array.isArray(capabilityCatalog.capabilities)) {
     throw new Error('manifest/capabilities.json must declare a capabilities array (it may be empty)');
   }
-  // The Skill catalog ships empty while `ai.skill` is unpublished, so emptiness is the
-  // expected state here — a *missing* array is still refused, because "nothing declared"
-  // and "the declaration is broken" must not render the same way.
+  // The Skill catalog ships empty (a discovery surface lists what it is handed), so
+  // emptiness is the expected state here — a *missing* array is still refused, because
+  // "nothing declared" and "the declaration is broken" must not render the same way.
   if (!Array.isArray(skillCatalog.skills)) {
     throw new Error('manifest/skills.json must declare a skills array (it may be empty)');
   }

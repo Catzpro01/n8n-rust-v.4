@@ -33,7 +33,7 @@ Trace completed.
 **Capabilities:** filesystem (`read`, `write`, `patch`, `list`), terminal (`execute`), browser
 (`open`, `inspect`), project (`build`, `test`, `preview`), git (`status`, `diff`, `commit`, `branch`,
 `push`), github (`search`, `create_pr`).
-**Skills (XA-11):** web-development, accessibility, SEO, GitHub.
+**Skills (`ai.skill@1.0.0`, XA-19 resolved):** web-development, accessibility, SEO, GitHub — read as declarations; selecting one grants nothing and loading one is an internal backend step.
 **Possible agents:** research, UX, frontend, backend, QA, review — all children of one Main agent,
 each with its own granted capabilities, workspace, artifacts and budget.
 

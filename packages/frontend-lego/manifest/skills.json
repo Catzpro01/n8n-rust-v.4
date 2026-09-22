@@ -1,6 +1,6 @@
 {
-  "catalogVersion": "1.0.0",
-  "description": "The frontend's Skill surface: what discovery may render about a skill, and what it must never become. A Skill is procedural knowledge (how) - not a capability (what) and not an agent (who). This catalog ships EMPTY on purpose: `ai.skill` has no contract-lock row, the backend declaration carries `versioning: publicationPending`, and a frontend that listed skills anyway would be inventing both the skills and the contract that defines them. What the UI renders in that state is the canonical unsupported answer.",
+  "catalogVersion": "1.1.0",
+  "description": "The frontend's Skill surface: what discovery may render about a skill, and what it must never become. A Skill is procedural knowledge (how) - not a capability (what) and not an agent (who). The catalog ships EMPTY on purpose: the contract is published and this consumer is a discovery surface, so it lists nothing it was not handed. What the UI renders with no declaration is the canonical unsupported answer, never a starter set of skills.",
   "contract": "ai.skill",
   "declarationSource": {
     "file": "apps/n8n-lego/src/lego/manifest/ai-lego-set.json",
@@ -8,11 +8,27 @@
     "owner": "manager",
     "decision": "XA-11"
   },
-  "publicationPending": {
+  "publication": {
+    "contract": "ai.skill",
+    "version": "1.0.0",
     "owner": "manager",
-    "domain": "ai-lego-set",
-    "decision": "XA-11",
-    "what": "manifest/ai-lego-set.json declares ai.skill (the Skill LEGO, status `planned`) with its lifecycle, operations, operation permissions and disclosure levels, but no contract-lock row publishes ai.skill and the declaration itself says `versioning: publicationPending`, so the frontend has no contract version to bind to"
+    "domain": "ai-foundation",
+    "status": "implemented",
+    "lockedIn": "apps/n8n-lego/src/lego/contracts/contract-lock.json",
+    "decidedBy": "XA-19",
+    "operations": [
+      "skill.list",
+      "skill.resolve",
+      "skill.describe",
+      "skill.validate-selection"
+    ],
+    "notPublished": [
+      "skill.register",
+      "skill.select",
+      "skill.load",
+      "skill.release"
+    ],
+    "note": "The row this manifest was verified against, not a row this package may read. XA-19 was resolved by adopting the implemented P2.12 shape; register/select/load/release stay internal registry lifecycle methods. There is no execute operation and no ai:skill:execute permission at any layer."
   },
   "discovery": {
     "listing": true,
@@ -25,18 +41,23 @@
     "tools": false
   },
   "rules": [
-    "Discovery only: listing, search, filter and detail read declarations. Nothing here selects, loads or executes a skill.",
+    "Discovery only: listing, search, filter, detail and selection validation read declarations. Nothing here selects, loads or executes a skill.",
     "The six lifecycle states are six facts. No boolean `enabled` is derived from them, and none of them is an execution state.",
     "A skill carries neither a permission nor an authority: the declared operation permissions are requirements of a backend operation, never a grant the UI holds.",
-    "With `ai.skill` unpublished the canonical unsupported state is rendered: no fallback capability, no execution control and no tool list.",
-    "Skill entries are supplied to the runtime by the application (or declared here once a contract exists); this package never reads the backend tree.",
-    "A declaration that moved past the quoted vocabulary is reported (`declarationDrift`, XA-19) and never adopted silently; a version claimed in a file is reported as `declaredVersion` and is still not a publication."
+    "The published operations are exactly four (skill.list, skill.resolve, skill.describe, skill.validate-selection). `load` is not one of them: discovering a skill never pulls its procedure.",
+    "With no declaration handed over, the canonical unsupported state is rendered: no fallback capability, no execution control and no tool list.",
+    "Skill entries are supplied to the runtime by the application; this package never reads the backend tree.",
+    "A declaration that moved past the quoted vocabulary is reported (`declarationDrift`) and never adopted silently; a version claimed in a file is reported as `declaredVersion` and is still not a publication."
   ],
   "skills": [],
   "alignment": {
     "decision": "XA-19",
+    "status": "resolved",
+    "resolvedIn": "P2.12 finalize",
     "register": "docs/n8n-lego/decisions/cross-agent-decisions.json",
-    "test": "packages/frontend-lego/test/31-skills.test.mjs",
-    "rule": "A declaration handed over by the application is compared with the words this package quotes; a difference is reported as data (`declarationDrift`) with both spellings and the owner, and is never resolved by adopting a word this package cannot quote."
+    "package": "docs/n8n-lego/decisions/XA-19-skill-vocabulary-diff.md",
+    "test": "packages/frontend-lego/test/29-alignment.test.mjs",
+    "rule": "A difference between this package's quoted vocabulary and the declaration it consumes is reported as data (`declarationDrift`), registered in the frontend register, and never resolved by adopting a word this package cannot quote. With XA-19 resolved there is no tolerated difference left: the comparison requires exact agreement, and a future difference fails until a new open row is registered.",
+    "openQuestion": "XA-11 remains open-for-manager: whether Skill ultimately belongs under the ai-foundation domain. Locking ai.skill@1.0.0 published the contract; it did not settle where Skill is modelled."
   }
 }
