@@ -320,7 +320,7 @@
       "title": "Agent Machine",
       "owner": "manager",
       "status": "contract-only",
-      "statusNote": "P2.16 implements the bounded execution FOUNDATION of this LEGO as ai.agent-machine@1.0.0 (machine and task identity, canonical agent lifecycle, bounded step bookkeeping, budgets, deterministic transitions, provider/executor seam). The loop, delegation, parallelism and fan-out/fan-in remain contract-only: this LEGO stays contract-only until the runtime is real.",
+      "statusNote": "P2.16 implements the bounded execution FOUNDATION of this LEGO as ai.agent-machine@1.1.0 (machine/agent/task identity, canonical agent lifecycle incl. ready, bounded step bookkeeping, budgets, registry-validated capability scope, bounded delegation bookkeeping, graph validation, event derivation, provider/executor seam). The loop, delegation execution, parallel runtime and fan-out/fan-in scheduling remain contract-only: this LEGO stays contract-only until the runtime is real.",
       "phase": "B",
       "mission": "Own the agent loop: agent and task lifecycle, delegation, parallelism and cancellation.",
       "scope": [
@@ -357,6 +357,7 @@
       ],
       "lifecycle": [
         "created",
+        "ready",
         "running",
         "waiting",
         "paused",
@@ -414,7 +415,7 @@
         "dependency-disabled"
       ],
       "observability": "agent.* and tool.* events; no reasoning.",
-      "versioning": "ai.agent-machine@1.0.0, ai.agent-runtime@1.0.0, ai.agent-delegation@1.0.0",
+      "versioning": "ai.agent-machine@1.1.0, ai.agent-runtime@1.0.0, ai.agent-delegation@1.0.0",
       "tests": [
         "test/lego-ai-foundation.test.mjs (contract level)",
         "test/lego-agent-machine.test.mjs (P2.16 execution foundation)",

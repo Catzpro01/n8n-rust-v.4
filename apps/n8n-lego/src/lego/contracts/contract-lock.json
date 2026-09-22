@@ -762,7 +762,7 @@
       "id": "ai.agent-machine",
       "owner": "manager",
       "domain": "ai-foundation",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "status": "implemented",
       "surface": [
         "src/lego/agent-machine.mjs",
@@ -770,37 +770,48 @@
       ],
       "exports": {
         "src/lego/agent-machine.mjs": [
+          "AGENT_GRAPH_LIMITS",
+          "AGENT_GRAPH_NODE_KINDS",
           "AGENT_MACHINE_CONTRACT",
           "AGENT_MACHINE_CONTRACT_VERSION",
+          "AGENT_MACHINE_EVENT_TYPES",
           "AGENT_MACHINE_EXECUTOR_KINDS",
+          "AGENT_MACHINE_FIELDS",
           "AGENT_MACHINE_LIFECYCLE",
           "AGENT_MACHINE_LIFECYCLE_STATES",
+          "AGENT_MACHINE_LIMITS",
+          "AGENT_MACHINE_MANIFEST",
           "AGENT_MACHINE_OPERATIONS",
+          "AGENT_MACHINE_OPERATION_PERMISSIONS",
           "AGENT_MACHINE_PERMISSIONS",
           "AGENT_MACHINE_STEP_OUTCOMES",
-          "AGENT_MACHINE_FIELDS",
-          "AGENT_MACHINE_LIMITS",
           "AgentMachineError",
           "InMemoryAgentMachineProvider",
+          "agentMachineOperationPermission",
+          "assertAgentMachinePermission",
           "createAgentMachineManager",
           "createAgentMachineProvider",
-          "AGENT_MACHINE_MANIFEST"
+          "deriveAgentMachineEvents",
+          "validateAgentGraph"
         ]
       },
       "operations": [
         "agentMachine.create",
         "agentMachine.describe",
+        "agentMachine.prepare",
         "agentMachine.start",
         "agentMachine.step",
         "agentMachine.pause",
         "agentMachine.resume",
+        "agentMachine.delegate",
         "agentMachine.cancel"
       ],
       "permissions": [
         "ai:agent:create",
         "ai:agent:invoke",
         "ai:agent:control",
-        "ai:agent:read"
+        "ai:agent:read",
+        "ai:agent:delegate"
       ],
       "consumers": [
         "future Agent Machine runtime (contract-only)",
@@ -810,7 +821,11 @@
       "tests": [
         "apps/n8n-lego/test/lego-agent-machine.test.mjs"
       ],
-      "notes": "P2.16 bounded Agent Machine execution foundation: one canonical state machine for machine and task identity, the canonical agent lifecycle, bounded step bookkeeping, first-class budgets, deterministic transitions and a replaceable provider/executor seam. It consumes ai.context, ai.agent-session, ai.memory and ai.workspace by opaque reference only and never redefines them. Seven operations and the four canonical ai:agent:* permissions; no delegate permission, no loop, no inference, no tools, no shell, no filesystem, no process. Waiting is fail-closed: approval resolution is the ai.approval contract's boundary, not this one."
+      "notes": "P2.16 bounded Agent Machine execution foundation (1.0.0) extended additively in 1.1.0: one canonical state machine for machine, agent and task identity, the canonical agent lifecycle plus the machine-level ready state, bounded step bookkeeping, first-class budgets (incl. maxChildren / maxTasksPerAgent), deterministic transitions, a replaceable provider/executor seam, bounded delegation edges with explicit narrowed grants (no permission inheritance), bounded execution graph representation/validation and Universal Agent Event derivation. It consumes ai.context, ai.agent-session, ai.memory and ai.workspace by opaque reference only and never redefines them. Nine operations and the five canonical ai:agent:* permissions; delegation is bookkeeping, never execution. No loop, no inference, no tools, no scheduler, no shell, no filesystem, no process. Waiting is fail-closed: approval resolution is the ai.approval contract's boundary, not this one.",
+      "previousVersion": "1.0.0",
+      "changelog": [
+        "1.1.0 (P2.16): additive. Added agentId identity (distinct from machineId and taskId), capabilityScope (validated against the lego-foundation capability registry; unknown fail closed), bounded delegation edges (agentMachine.delegate + ai:agent:delegate \u2014 explicit narrowed grant, no permission inheritance, bounded budget and deadline clamped to the parent), the ready lifecycle state (agentMachine.prepare; created -> running stays legal, 1.0.0 flows unchanged), bounded execution graph representation/validation (validateAgentGraph: sequential, parallel, conditional, fan-out, fan-in, join, retry; cycles rejected), Universal Agent Event derivation (deriveAgentMachineEvents: agent.created/started/delegated/completed/failed/cancelled), maxChildren and maxTasksPerAgent budget bounds, and operation/permission fail-closed surfaces. The startedAt field the record always carried is now declared in fields. No 1.0.0 operation, state or transition changed meaning."
+      ]
     }
   ]
 }

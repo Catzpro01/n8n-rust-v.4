@@ -480,23 +480,27 @@
   },
   "agentMachine": {
     "contract": "ai.agent-machine",
-    "rule": "The bounded execution FOUNDATION of the Agent Machine: one canonical state machine for machine and task identity, lifecycle, step bookkeeping, budgets and deterministic transitions. It is a foundation, not an engine: nothing in P2.16 executes a step, runs a model, calls a tool or delegates. The future full loop (ai.agent-runtime) builds on this contract.",
+    "rule": "The bounded execution FOUNDATION of the Agent Machine: one canonical state machine for machine, agent and task identity, lifecycle (incl. ready), step bookkeeping, budgets, bounded delegation bookkeeping, bounded graph validation and deterministic transitions. It is a foundation, not an engine: nothing in P2.16 executes a step, runs a model or calls a tool, and delegation is bookkeeping metadata only \u2014 never child execution or permission inheritance. The future full loop (ai.agent-runtime) builds on this contract.",
     "fields": [
       "machineId",
       "taskId",
+      "agentId",
       "executorKind",
       "lifecycle",
       "sessionReference",
       "contextReference",
       "workspaceReference",
+      "capabilityScope",
       "budgets",
       "metadata",
       "steps",
       "stepCount",
+      "delegations",
       "failure",
       "version",
       "createdAt",
-      "updatedAt"
+      "updatedAt",
+      "startedAt"
     ],
     "executorKinds": [
       "IN_MEMORY",
@@ -506,6 +510,7 @@
     "referenceRule": "Context, Session, Memory and Workspace are consumed by opaque reference only (contextReference, sessionReference, workspaceReference). Agent Machine never redefines or drives their lifecycles, and Memory is deliberately not referenced at all.",
     "states": [
       "created",
+      "ready",
       "running",
       "waiting",
       "paused",
@@ -513,9 +518,14 @@
       "failed",
       "cancelled"
     ],
-    "stateRule": "The canonical agent vocabulary, quoted from the AI set and ai.agent-session@1.0.0. waiting is entered only by an approval-required step and left only by cancel: approval resolution belongs to the fail-closed ai.approval contract, not to P2.16.",
+    "stateRule": "The canonical agent vocabulary quoted from the AI set and ai.agent-session@1.0.0, plus the machine-level ready state added by agentMachine.prepare in 1.1.0. waiting is entered only by an approval-required step and left only by cancel: approval resolution belongs to the fail-closed ai.approval contract, not to P2.16.",
     "transitions": {
       "created": [
+        "ready",
+        "running",
+        "cancelled"
+      ],
+      "ready": [
         "running",
         "cancelled"
       ],
@@ -540,17 +550,20 @@
     "operations": [
       "agentMachine.create",
       "agentMachine.describe",
+      "agentMachine.prepare",
       "agentMachine.start",
       "agentMachine.step",
       "agentMachine.pause",
       "agentMachine.resume",
+      "agentMachine.delegate",
       "agentMachine.cancel"
     ],
     "permissions": [
       "ai:agent:create",
       "ai:agent:invoke",
       "ai:agent:control",
-      "ai:agent:read"
+      "ai:agent:read",
+      "ai:agent:delegate"
     ],
     "stepOutcomes": [
       "succeeded",
@@ -562,17 +575,23 @@
       "maxSteps",
       "maxDurationMs",
       "maxContinuationBytes",
-      "maxReferences"
+      "maxReferences",
+      "maxChildren",
+      "maxTasksPerAgent"
     ],
-    "budgetRule": "Budgets are first-class, declared at create, clamped to bounded ceilings and always positive. There is no unlimited mode; exhaustion is a stable error and a stable terminal failure (budget-exhausted).",
+    "budgetRule": "Budgets are first-class, declared at create, clamped to bounded ceilings and always positive. There is no unlimited mode; exhaustion is a stable error and a stable terminal failure (budget-exhausted). maxChildren bounds delegation edges (undeclared = 0) and maxTasksPerAgent bounds machines per agent identity.",
     "concurrencyRule": "Every mutation carries expectedVersion (optimistic concurrency). Stale or duplicate step submissions are deterministic conflicts, never silent reorders.",
     "providerSeam": "replaceable; InMemoryAgentMachineProvider is the bounded default. The provider stores opaque records only and never receives work to execute.",
     "implementationStatus": "implemented",
     "implementationBoundary": [
-      "bounded identity (machineId, taskId)",
-      "explicit lifecycle and deterministic transitions",
+      "bounded identity (machineId, agentId, taskId \u2014 three distinct forms)",
+      "explicit lifecycle (incl. ready via prepare) and deterministic transitions",
       "bounded step bookkeeping with sequence and identity rules",
-      "first-class execution budgets",
+      "first-class execution budgets (incl. maxChildren and maxTasksPerAgent)",
+      "registry-validated capability scope (fail-closed)",
+      "bounded delegation bookkeeping with narrowed, clamped edges (no inheritance)",
+      "bounded execution-graph representation and validation",
+      "deterministic, session-scoped Universal Agent Event derivation",
       "approval reference boundary (fail-closed, no resolution)",
       "replaceable provider/executor seam"
     ],
@@ -580,12 +599,15 @@
       "the agent loop or any autonomous runtime",
       "model inference",
       "tool execution",
-      "delegation and multi-agent orchestration",
-      "parallel execution, fan-out, fan-in",
+      "delegation execution, child-agent spawning or multi-agent runtime orchestration (bookkeeping edges only)",
+      "parallel execution runtime, fan-out or fan-in scheduling (graph representation only)",
       "stream, send, artifact and close operations",
       "approval request, grant or deny",
       "shell, filesystem, process or network authority"
-    ]
+    ],
+    "capabilityScopeRule": "capabilityScope is a bounded list validated against the lego-foundation capability registry; unknown ids, duplicates and overlong lists fail closed. Delegation grants are an explicit narrowed subset of this scope \u2014 never inherited, never widened.",
+    "graphRule": "Execution graphs are bounded representation: sequential, parallel, branch, fan-out, fan-in, join and retry with at most 128 nodes, 16 dependencies per node and 8 retry attempts. Cycles, dangling refs, multi-entry graphs and permission-bearing nodes are rejected. Validation never executes and never mutates the input.",
+    "eventRule": "Six session-scoped derived event types (agent.created/started/delegated/completed/failed/cancelled). Deterministic, sanitized, reference-only: no payload, no secret, no hidden reasoning, no transport emission."
   },
   "delegation": {
     "contract": "ai.agent-delegation",
