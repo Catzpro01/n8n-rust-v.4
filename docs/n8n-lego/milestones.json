@@ -227,7 +227,7 @@
         "reference": "docs/n8n-lego/evidence/P2.13-agent-2-final-report.md",
         "role": "Agent 2 branch completion evidence; P2.13 remains in-progress until Manager RECONCILIATION PASS, MERGE PASS, and protected-main post-merge verification"
       },
-      "currentCommitReference": "abbdca7ec2be56308b0118d08df01c289de0bcb3",
+      "currentCommitReference": "arena/01a0c6b5-n8n-rust-v-4",
       "nextMilestone": "P2.14",
       "reconciliation": {
         "verdict": "RECONCILIATION_REQUIRED",
@@ -235,7 +235,7 @@
         "affected": "ai.context, ai.agent-session, Context & Session frontend vocabulary, continuation manifest vocabulary, operation matrix, publication metadata, generated milestone state",
         "conflict": "The backend-owned continuation manifest discrepancy is corrected on Agent 2: canonical toolStateReferences and importantReferences now match CONTINUATION_FIELDS. Agent 1 c5ff5870 still carries the historical frontend registered-difference expectation and must refresh that evidence after fetching fa18ba76; this is peer evidence reconciliation, not a remaining backend implementation defect.",
         "contract": "ai.context@1.0.0 and ai.agent-session@1.0.0 are locked and consumed with the published operations load/compact/rollover/rehydrate/verify and create/status/close. The manifest now matches the locked continuation vocabulary. XA-20 remains Manager-owned for publication/locking semantics and final merge order.",
-        "evidence": "Agent 2 final tip abbdca7ec2be56308b0118d08df01c289de0bcb3 (backend correction fa18ba768014218144a2427a161765b568b27ee6) (published on Draft PR #45); Agent 1 c5ff58701607f2ba8c7e69e9d2369b6abf7af254 (Draft PR #46); protected baseline e754c5df35b41b0ff2ac769519f05f056835411c.",
+        "evidence": "Agent 2 backend correction fa18ba768014218144a2427a161765b568b27ee6 plus final evidence/docs commits on the assigned Agent 2 branch (published on Draft PR #45); Agent 1 c5ff58701607f2ba8c7e69e9d2369b6abf7af254 (Draft PR #46); protected baseline e754c5df35b41b0ff2ac769519f05f056835411c.",
         "agent": "agent-1 + agent-2",
         "agent1Interpretation": "Agent 1 consumed Agent 2 publication and reports 363/363 frontend tests and 4,444 KB descriptor heap evidence; its current final report still records the now-corrected backend manifest divergence and needs a peer-side evidence refresh.",
         "agent2Interpretation": "Agent 2 corrected the backend manifest, made session close semantics executable for completed/failed/cancelled outcomes, added declarative transition coverage, and verified the focused backend surface at 18/18.",
@@ -358,7 +358,7 @@
           "failed": 2,
           "skipped": 0,
           "commitAgent1": "c5ff58701607f2ba8c7e69e9d2369b6abf7af254",
-          "commitAgent2": "abbdca7ec2be56308b0118d08df01c289de0bcb3",
+          "commitAgent2": "fa18ba768014218144a2427a161765b568b27ee6",
           "failures": [
             "Agent 1 test 32 expects the historical backend registered-difference record in the vocabulary block after the backend manifest was corrected.",
             "Agent 1 test 32 expects the same historical divergence in the assembled view."
