@@ -8,7 +8,7 @@
 | Phase | Title | Status | Delivers |
 | --- | --- | --- | --- |
 | **A** | Contracts / vocabulary / foundation | done | capability contracts, operation vocabulary, AI Foundation contracts, context/session contracts |
-| **B** | Skill / Memory / Workspace / Agent Machine | planned | skill registry, memory graph, LOCAL workspace, agent loop |
+| **B** | Skill / Memory / Workspace / Agent Machine | in-progress | skill registry, memory graph, LOCAL workspace, agent loop |
 | **C** | Artifact / Approval / MCP / Runtime Adapter | planned | artifact store, approval policy, MCP client + export list, runtime conformance harness |
 | **D** | Work Trace / Node Creator / Translation / Token | planned | trace store, node creation strategies, translation contract, usage accounting |
 | **E** | External provider integration | planned | first model provider adapter, first tool provider adapter, first external runtime |
@@ -22,9 +22,9 @@
 - **Context & Session** (`manager`, CONTRACT-ONLY) — A: contracts (DONE) · B: manager · D: verification
 - **Capability** (`manager`, IMPLEMENTED) — A: DONE — 82 capabilities, 139 operations declared
 
-### Phase B — Skill / Memory / Workspace / Agent Machine (planned)
+### Phase B — Skill / Memory / Workspace / Agent Machine (in-progress)
 
-- **Skill** (`manager`, PLANNED) — B: contract + registry · D: authoring · E: skill packs
+- **Skill** (`manager`, IMPLEMENTED) — D: authoring · E: skill packs
 - **Agent Machine** (`manager`, CONTRACT-ONLY) — B: runtime · C: delegation graph · F: measured Rust candidate
 - **Memory** (`manager`, PLANNED) — B: graph contract · D: providers · E: Obsidian adapter
 - **Workspace** (`manager`, PLANNED) — B: LOCAL · C: CONTAINER · E: REMOTE/VPS

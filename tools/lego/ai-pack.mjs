@@ -976,6 +976,34 @@ function readDecisions() {
   return existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : null;
 }
 
+/**
+ * The RECONCILED cross-agent register — the authority for decision counts.
+ *
+ * Two registers exist. `cross-agent-decisions.backend.json` is agent-2's side:
+ * it records what the backend can answer from its own declarations, and it only
+ * ever listed the rows agent-2 raised or closed. `cross-agent-decisions.json` is
+ * the reconciled record carrying every XA row from both agents.
+ *
+ * Before P2.12 the status documents were generated from the backend-only file,
+ * so `CURRENT_STATUS.md` published "7 item(s) await the manager: XA-8 .. XA-14"
+ * while the real open set was eleven rows, XA-8 .. XA-18. That is exactly the
+ * stale-count failure this phase was asked to make impossible, so counts now
+ * come from the reconciled register and a test compares the two.
+ */
+function readReconciledDecisions() {
+  const file = join(REPO_ROOT, 'docs', 'n8n-lego', 'decisions', 'cross-agent-decisions.json');
+  return existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : null;
+}
+
+/** Open rows, in numeric id order, from the reconciled register. */
+function openDecisionRows() {
+  const record = readReconciledDecisions();
+  if (!record) return [];
+  return record.decisions
+    .filter((row) => row.status !== 'resolved')
+    .sort((a, b) => Number(a.id.slice(3)) - Number(b.id.slice(3)));
+}
+
 const STATUS_MARK = {
   implemented: 'IMPLEMENTED',
   'contract-only': 'CONTRACT-ONLY',
@@ -1012,7 +1040,7 @@ authoritative declaration.
 | The 15 official AI/Agent LEGO | \`.ai/master/AI_AGENT_LEGO_MASTER_PLAN.md\` | \`manifest/ai-lego-set.json\` |
 | Providers, runtimes, transports, MCP | \`.ai/master/AI_RUNTIME_AND_PROVIDER_PLAN.md\` | \`manifest/ai-foundation.json\` |
 | Phase roadmap | \`.ai/master/IMPLEMENTATION_PHASES.md\` | \`manifest/ai-lego-set.json\` |
-| Decisions and open arbitration | \`.ai/master/PROJECT_DECISIONS.md\` | ADRs + \`cross-agent-decisions.backend.json\` |
+| Decisions and open arbitration | \`.ai/master/PROJECT_DECISIONS.md\` | ADRs + \`cross-agent-decisions.json\` (reconciled; counts) + \`cross-agent-decisions.backend.json\` (agent-2 narrative) |
 | Contract status matrix | \`.ai/master/AI_CONTRACT_MATRIX.md\` | manifests + \`contract-lock.json\` |
 | The ${registry.domains.length} core domains, strangler, nesting | \`.ai/master/CORE_LEGO_ARCHITECTURE.md\` | \`manifest/domains.json\` |
 | Development workforce, control planes | \`.ai/master/PROJECT_WORKFORCE_ORCHESTRATION.md\` | \`docs/engineering-operations/workforce-governance.json\` (**not** product architecture) |
@@ -1445,6 +1473,21 @@ function projectDecisions() {
 | --- | --- |
 ${adrRows.join('\n')}
 
+## Every open row, from the reconciled register
+
+This table is the complete open set. It is generated from
+\`docs/n8n-lego/decisions/cross-agent-decisions.json\`, the reconciled register that
+carries every \`XA-*\` row from both agents. The narrative sections below are
+agent-2's side only and do not list agent-1's rows — so read this table first if
+you want the count.
+
+| Row | Status | Owner | Question |
+| --- | --- | --- | --- |
+${openDecisionRows().map((row) => `| \`${row.id}\` | ${row.status} | \`${row.owner ?? 'manager'}\` | ${(row.question ?? row.subject ?? '').replace(/\|/g, '\\|')} |`).join('\n')}
+
+**${openDecisionRows().length} open**, ${(readReconciledDecisions()?.decisions ?? []).length - openDecisionRows().length} resolved,
+${(readReconciledDecisions()?.decisions ?? []).length} recorded in total.
+
 ## Cross-agent arbitration
 
 Agent 1 maintains the frontend side of this record on \`${decisions.agent1Baseline.branch}\`.
@@ -1680,8 +1723,9 @@ function currentStatus() {
   const counts = { implemented: 0, 'contract-only': 0, planned: 0, blocked: 0, deferred: 0 };
   for (const lego of set.lego) counts[lego.status] = (counts[lego.status] ?? 0) + 1;
 
-  const openItems = (decisions?.items ?? []).filter((item) => /OPEN/i.test(item.status));
-  const proposals = decisions?.newProposalsFromBackend ?? [];
+  // Counts come from the reconciled register, not agent-2's partial side.
+  const openRows = openDecisionRows();
+  const resolvedCount = (readReconciledDecisions()?.decisions ?? []).length - openRows.length;
 
   return `${BANNER}
 # Current status
@@ -1746,7 +1790,10 @@ ${set.currentLimits.map((limit) => `- ${limit}`).join('\n')}
 
 ## Open arbitration
 
-${openItems.length + proposals.length} item(s) await the manager: ${[...openItems.map((item) => item.id), ...proposals.map((item) => item.id)].join(', ') || '_none_'}.
+${openRows.length} item(s) await the manager: ${openRows.map((row) => row.id).join(', ') || '_none_'}.
+${resolvedCount} row(s) are resolved. Counted from the reconciled register
+\`docs/n8n-lego/decisions/cross-agent-decisions.json\`, which carries every \`XA-*\`
+row from both agents — not from either agent's partial side.
 
 See \`PROJECT_DECISIONS.md\` for the full text of each.
 `;

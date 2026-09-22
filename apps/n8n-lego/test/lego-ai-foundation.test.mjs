@@ -438,23 +438,56 @@ test('a transport advertises what it carries and never downgrades a stream', () 
 
 /* ------------------------------------------------- contract-only proof (§14) */
 
-test('the AI foundation is registered as contract-only and manager-owned', () => {
+test('the AI foundation is manager-owned, and everything except the skill registry is contract-only', () => {
+  // P2.12 DELIBERATE EDIT. This domain was wholly contract-only until the skill
+  // registry was implemented as capability `ai.skill`. The exemption is written
+  // as a named allow-list of one rather than a loosened rule, so implementing a
+  // second capability fails here and has to be argued for.
+  const IMPLEMENTED = new Set(['ai.skill']);
   const domain = registry.byId.get('ai-foundation');
   assert.ok(domain, 'ai-foundation must be a registered domain');
   assert.equal(domain.owner, 'manager',
     'shared cross-domain contracts must be manager-owned, not owned by whoever wrote them first');
-  assert.equal(domain.status, 'contract-only');
+  assert.equal(domain.status, 'partial',
+    'one capability is implemented and the rest are not: the status must say so');
+
   for (const capability of domain.capabilities) {
+    if (IMPLEMENTED.has(capability.id)) {
+      assert.equal(capability.status, 'implemented');
+      assert.equal(capability.lifecycle, 'active');
+      continue;
+    }
     assert.equal(capability.status, 'contract-only', `'${capability.id}' must be contract-only`);
     assert.equal(capability.lifecycle, 'declared');
     assert.equal(capability.availability, 'optional-absent');
   }
+
+  // The runtime capabilities specifically must remain unimplemented.
+  for (const id of ['ai.model-gateway', 'ai.tool-gateway', 'ai.agent-runtime', 'ai.application-provider']) {
+    const capability = domain.capabilities.find((entry) => entry.id === id);
+    assert.equal(capability.status, 'contract-only', `${id} must never be quietly implemented`);
+  }
 });
 
-test('the AI foundation is a dependency-free leaf', () => {
+test('the AI foundation depends only on the capability registry, and never on a feature domain', () => {
+  // P2.12 DELIBERATE EDIT. It was a dependency-free leaf. The skill registry has
+  // to ask the capability registry whether a skill's required capabilities are
+  // DECLARED, and the alternative — keeping a second copy of the capability
+  // list — is the drift this architecture exists to prevent. The edge is
+  // one-way and to the foundation only; the original point of the rule, that
+  // the AI foundation must never become a prerequisite for booting, is asserted
+  // directly below rather than approximated by an empty list.
   const domain = registry.byId.get('ai-foundation');
-  assert.deepEqual(domain.dependsOn, [],
-    'the AI foundation must never become a prerequisite for the backend booting');
+  assert.deepEqual(domain.dependsOn, ['lego-foundation']);
+
+  // No cycle: the capability registry must know nothing about AI.
+  const foundation = registry.byId.get('lego-foundation');
+  assert.equal((foundation.dependsOn ?? []).includes('ai-foundation'), false);
+
+  // Still not a boot prerequisite: nothing on the boot path imports it.
+  const server = readFileSync(join(APP_ROOT, 'src/server.mjs'), 'utf8');
+  assert.equal(server.includes('ai-foundation'), false);
+  assert.equal(server.includes('lego/skill'), false);
 });
 
 test('the AI foundation module performs no I/O beyond reading its own manifest', () => {

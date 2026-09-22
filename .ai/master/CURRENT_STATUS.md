@@ -27,17 +27,17 @@ is the row marked as such.
 | | |
 | --- | --- |
 | Core LEGO domains | **26** |
-| Locked contracts | 14 |
-| Declared capabilities | 82 |
-| Declared operations | 139 |
-| Published error codes | 35 |
+| Locked contracts | 15 |
+| Declared capabilities | 83 |
+| Declared operations | 143 |
+| Published error codes | 36 |
 | Official AI/Agent LEGO | 15 |
 
 ## The 15 AI/Agent LEGO by status
 
-- **IMPLEMENTED** — 1: Capability
+- **IMPLEMENTED** — 2: Skill, Capability
 - **CONTRACT-ONLY** — 8: AI Foundation, Agent Machine, Context & Session, MCP Adapter, Runtime Adapter, Artifact, Approval, Agent Event & Work Trace
-- **PLANNED** — 6: Skill, Memory, Workspace, Universal Translation, Node Creator, Token & Usage
+- **PLANNED** — 5: Memory, Workspace, Universal Translation, Node Creator, Token & Usage
 
 ## Gates
 
@@ -69,6 +69,9 @@ is the row marked as such.
 
 ## Open arbitration
 
-7 item(s) await the manager: XA-8, XA-9, XA-10, XA-11, XA-12, XA-13, XA-14.
+11 item(s) await the manager: XA-8, XA-9, XA-10, XA-11, XA-12, XA-13, XA-14, XA-15, XA-16, XA-17, XA-18.
+8 row(s) are resolved. Counted from the reconciled register
+`docs/n8n-lego/decisions/cross-agent-decisions.json`, which carries every `XA-*`
+row from both agents — not from either agent's partial side.
 
 See `PROJECT_DECISIONS.md` for the full text of each.

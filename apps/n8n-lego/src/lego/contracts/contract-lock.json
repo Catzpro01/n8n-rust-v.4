@@ -21,7 +21,7 @@
       "documentation",
       "internal implementation changes with no surface change"
     ],
-    "rule": "A BREAKING change requires: major bump here, a note in docs/n8n-lego/BACKEND_LEGO.md \u00a7Contract changelog, and sign-off from every consumer listed below.",
+    "rule": "A BREAKING change requires: major bump here, a note in docs/n8n-lego/BACKEND_LEGO.md §Contract changelog, and sign-off from every consumer listed below.",
     "preRelease": "Contracts at 0.x are provisional: they may break with a minor bump, but the bump is still mandatory.",
     "compatibilityModel": {
       "module": "src/lego/compat.mjs",
@@ -42,7 +42,7 @@
       "note": "0.x contracts are provisional: ^0.2.1 does NOT accept 0.3.0, because a 0.x minor is allowed to break. Consumers of a 0.x contract must be told about every minor."
     },
     "parentChildRule": "A parent contract does NOT version-bump because a sub-LEGO changed compatibly. It bumps only when its own parent-facing surface moves. Example held by the fixtures: reference.validation 1.0.0 -> 1.1.0 (additive) leaves reference.lego at 1.0.0 and reference.repository at 1.0.0. A BREAKING child change that surfaces through the parent does force a parent major bump.",
-    "migrations": "A contract may declare `migrations: [\"1.3.0\"]` \u2014 versions that need a data/state migration even though they are semver-compatible. Migration points are declared, never inferred."
+    "migrations": "A contract may declare `migrations: [\"1.3.0\"]` — versions that need a data/state migration even though they are semver-compatible. Migration points are declared, never inferred."
   },
   "contracts": [
     {
@@ -179,7 +179,7 @@
         "apps/n8n-lego/test/lego-foundation.test.mjs"
       ],
       "changelog": [
-        "1.1.0 (P2.7): added hierarchy accessors (getChildren/getDescendants/getAncestors/lineage/nestingDepth/rootOf/isWithin/tree, MAX_NESTING_DEPTH) \u2014 additive, every 1.0.0 consumer unaffected."
+        "1.1.0 (P2.7): added hierarchy accessors (getChildren/getDescendants/getAncestors/lineage/nestingDepth/rootOf/isWithin/tree, MAX_NESTING_DEPTH) — additive, every 1.0.0 consumer unaffected."
       ]
     },
     {
@@ -245,7 +245,7 @@
         "apps/n8n-lego/test/lego-foundation.test.mjs"
       ],
       "changelog": [
-        "1.1.0 (P2.7): added createReferenceTree + REFERENCE_SUBLEGOS (composition of the nested sub-LEGOs) \u2014 additive. The parent's own operations are unchanged."
+        "1.1.0 (P2.7): added createReferenceTree + REFERENCE_SUBLEGOS (composition of the nested sub-LEGOs) — additive. The parent's own operations are unchanged."
       ]
     },
     {
@@ -305,7 +305,7 @@
         "apps/n8n-lego/test/lego-lifecycle.test.mjs"
       ],
       "changelog": [
-        "1.1.0 (P2.7): added explain() and the optional `strict` option \u2014 additive, so ^1.0.0 consumers are unaffected and the parent contract did not move."
+        "1.1.0 (P2.7): added explain() and the optional `strict` option — additive, so ^1.0.0 consumers are unaffected and the parent contract did not move."
       ]
     },
     {
@@ -529,6 +529,50 @@
         "apps/n8n-lego/test/lego-ai-foundation.test.mjs"
       ],
       "notes": "Provider-neutral AI vocabulary. CONTRACT ONLY: no inference, no agent loop, no gateway client, no MCP server or client, no network call, no new dependency. Vendor names appear only as examples of provider kinds, never in an id, a required field or a default."
+    },
+    {
+      "id": "ai.skill",
+      "owner": "manager",
+      "domain": "ai-foundation",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/skill.mjs",
+        "src/lego/manifest/skill.json"
+      ],
+      "exports": {
+        "src/lego/skill.mjs": [
+          "SKILL_CONTRACT",
+          "SKILL_CONTRACT_VERSION",
+          "SKILL_LIFECYCLE",
+          "SKILL_OPERATIONS",
+          "SKILL_TRANSITIONS",
+          "SKILL_TRUST_LEVELS",
+          "SKILL_VALIDATOR_KINDS",
+          "SkillError",
+          "createSkillRegistry",
+          "skillRegistry"
+        ]
+      },
+      "operations": [
+        "skill.list",
+        "skill.resolve",
+        "skill.describe",
+        "skill.validate-selection"
+      ],
+      "permissions": [
+        "ai:skill:read",
+        "ai:skill:select"
+      ],
+      "consumers": [
+        "a future Agent Machine (contract-only)",
+        "frontend skill selection UI",
+        "agent-1/frontend vocabulary lock"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-skill.test.mjs"
+      ],
+      "notes": "Skill = procedural knowledge + rules + procedure + capability map + validators. The REGISTRY is implemented; skills stay declarative documents and nothing executes a procedure. FOUR published operations only. register/select/load/release are internal lifecycle methods of the registry object, deliberately NOT published caller operations: publishing load would make lazy discovery a caller concern, and publishing register would let a caller mutate the vocabulary other consumers negotiate against. There is no execute operation and no ai:skill:execute permission — execution is not a skill operation, so no published name may imply it. A skill DECLARES requiredCapabilities and never grants them; the capability system stays the sole authority. validate-selection checks the DECLARATION, never the caller's authorization. An unknown capability fails closed. Locked in P2.12 finalize by XA-19; XA-11 (whether Skill ultimately belongs under ai-foundation) remains open-for-manager and is a separate architecture decision that this lock does not settle."
     }
   ]
 }

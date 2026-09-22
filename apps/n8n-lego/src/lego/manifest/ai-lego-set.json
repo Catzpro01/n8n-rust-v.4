@@ -238,7 +238,7 @@
       "index": 2,
       "title": "Skill",
       "owner": "manager",
-      "status": "planned",
+      "status": "implemented",
       "phase": "B",
       "mission": "Package knowledge, rules, procedure and a capability map into a selectable, progressively disclosed unit.",
       "definition": "Skill = knowledge + rules + procedure + capability map.",
@@ -279,12 +279,10 @@
       },
       "disclosureRule": "A skill is selected on L0/L1 and only then loaded deeper. Loading every skill's L3 into context is how a context window is exhausted before any work starts.",
       "operations": [
-        "register",
         "list",
+        "resolve",
         "describe",
-        "select",
-        "load",
-        "release"
+        "validate-selection"
       ],
       "interaction": [
         "call"
@@ -304,16 +302,16 @@
         "optional-absent"
       ],
       "observability": "skill selected / loaded / released.",
-      "versioning": "publicationPending",
+      "versioning": "ai.skill@1.0.0",
       "tests": [
-        "planned: skill lifecycle, disclosure levels, capability-map validity"
+        "test/lego-skill.test.mjs"
       ],
       "futureStages": [
-        "B: contract + registry",
         "D: authoring",
         "E: skill packs"
       ],
-      "versioningNote": "No contract version is assigned yet; ai.skill is unpublished."
+      "versioningNote": "Published in P2.12. The REGISTRY is implemented: registration, validation, lazy discovery and the six-state lifecycle are real, tested code declared as capability ai.skill on the ai-foundation domain. Skills remain declarative documents — nothing executes a procedure.",
+      "phaseNote": "Phase B, delivered in repository phase P2.12 — the skill registry only. Memory, Workspace and the agent loop remain planned."
     },
     {
       "id": "agent-machine",
@@ -1622,9 +1620,17 @@
     },
     "B": {
       "title": "Skill / Memory / Workspace / Agent Machine",
-      "status": "planned",
+      "status": "in-progress",
       "delivers": [
         "skill registry",
+        "memory graph",
+        "LOCAL workspace",
+        "agent loop"
+      ],
+      "delivered": [
+        "skill registry (P2.12): registration, validation, lazy discovery, lifecycle"
+      ],
+      "stillPlanned": [
         "memory graph",
         "LOCAL workspace",
         "agent loop"

@@ -8,8 +8,15 @@
 > and is **not** updated by regeneration.
 >
 > Known differences at the time of reconciliation: XA-5 is **closed** (the eleven
-> `lego.*` codes are published; error contract 1.1.0, 35 codes), the operation
-> count is **139** (not 173), and gate rules now run through **F17**.
+> `lego.*` codes are published), the operation count is **not 173**, and gate rules
+> run through **F17**.
+>
+> This banner deliberately names no live totals. Counts move every phase (P2.12
+> published `ai.skill` and added an error code), and a correction notice that
+> hardcodes them goes stale exactly like the text it corrects. For current
+> figures read the generated [`CURRENT_STATUS.md`](../CURRENT_STATUS.md) and
+> [`AI_CONTRACT_MATRIX.md`](../AI_CONTRACT_MATRIX.md), which are derived from
+> the manifests; where this snapshot disagrees with them, they win.
 >
 > It is preserved because it carries frontend reasoning, UX consequences and
 > cross-agent reconciliation notes that no backend manifest derives.
@@ -76,7 +83,7 @@ a future agent is most likely to trip over:
 | XA-8 | manager | permission namespace: published AI operations use `ai:*`; the frontend's six AI capabilities declare five view words (four mapped, two reasoned) |
 | XA-9 | manager | which contract publishes `manifest/foundation.json` (trust, resources, device profiles, transport targets) |
 | XA-10 | manager | `ai:app:*` vs `app:<application>:*` for an application provider |
-| XA-11 … XA-17 | manager | publishing Memory, Workspace semantics, Translation, node drafting, MCP adapter capability and Token & Usage (Skill was published by the P2.12 finalize under resolved `XA-19`; `XA-11` remains open for where Skill is modelled) |
+| XA-11 … XA-17 | manager | publishing Skill, Memory, Workspace semantics, Translation, node drafting, MCP adapter capability and Token & Usage |
 | XA-18 | manager (with agent-2) | which contract publishes the external action families — filesystem, terminal/process, project, browser, git — since the registry publishes none of them and `workspace` is planned |
 
 Full text, evidence and current interpretation: `docs/n8n-lego/decisions/cross-agent-decisions.json`

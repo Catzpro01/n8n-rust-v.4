@@ -8,8 +8,15 @@
 > and is **not** updated by regeneration.
 >
 > Known differences at the time of reconciliation: XA-5 is **closed** (the eleven
-> `lego.*` codes are published; error contract 1.1.0, 35 codes), the operation
-> count is **139** (not 173), and gate rules now run through **F17**.
+> `lego.*` codes are published), the operation count is **not 173**, and gate rules
+> run through **F17**.
+>
+> This banner deliberately names no live totals. Counts move every phase (P2.12
+> published `ai.skill` and added an error code), and a correction notice that
+> hardcodes them goes stale exactly like the text it corrects. For current
+> figures read the generated [`CURRENT_STATUS.md`](../CURRENT_STATUS.md) and
+> [`AI_CONTRACT_MATRIX.md`](../AI_CONTRACT_MATRIX.md), which are derived from
+> the manifests; where this snapshot disagrees with them, they win.
 >
 > It is preserved because it carries frontend reasoning, UX consequences and
 > cross-agent reconciliation notes that no backend manifest derives.
@@ -133,7 +140,7 @@ Artifact, Approval, Agent Event & Work Trace, Token & Usage.
 | MCP Adapter | `ai-foundation.json` -> `mcp` (an edge interop boundary) | interop declared; a real transport stays XA-16 |
 | Node Creator | `manifest/node-contract.json`; no drafting capability in the registry | AI drafting `publicationPending` (XA-15) |
 | Workspace | registry domain `workspace` (contract `0.0.0`; both capabilities legacy/unsupported) | planned (XA-13) |
-| Skill | **published**: `ai.skill@1.0.0` in the lock, `ai.skill` in `domains.json` (4 operations, 2 permissions) | discovery-only surface; XA-11 open for the modelling question, XA-19 resolved |
+| Skill | absent from the registry and the lock | `publicationPending` (XA-11) |
 | Memory | absent; `ai.context` covers the window, not memory | `publicationPending` (XA-12) |
 | Universal Translation | absent from the registry (the old "out of scope" note is superseded) | `publicationPending` (XA-14) |
 | Token & Usage | no `ai.usage` row; `modelGateway.countTokens` and delegation budgets only | `publicationPending` (XA-17) |

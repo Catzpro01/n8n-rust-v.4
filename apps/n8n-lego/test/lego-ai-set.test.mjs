@@ -266,13 +266,22 @@ test('publicationPending never carries an invented version, and a version always
 test('a fabricated version on an unpublished contract is detected', () => {
   // Negative proof for the rule above: the temptation is to write `1.0.0` for a
   // contract nobody has published, because it reads as progress.
+  // The fixture must be a LEGO whose contract really is unpublished. `skill`
+  // was used until P2.12 published ai.skill; using it now would test nothing,
+  // because the version would be honest. `memory` is still contract-less.
   const mutated = clone(AI_SET);
-  const skill = mutated.lego.find((lego) => lego.id === 'skill');
-  skill.versioning = 'ai.skill@1.0.0';
+  const memory = mutated.lego.find((lego) => lego.id === 'memory');
+  assert.equal(memory.versioning, 'publicationPending', 'the fixture must start unpublished');
+  assert.equal(
+    memory.contracts.every((contract) => !lockedContracts.has(contract) && !declaredCapabilities.has(contract)),
+    true,
+    'the fixture LEGO must declare no published contract, or it cannot fabricate one',
+  );
+  memory.versioning = 'ai.memory@1.0.0';
   const offenders = mutated.lego.filter((lego) =>
     lego.contracts.some((contract) => !lockedContracts.has(contract) && !declaredCapabilities.has(contract))
     && lego.versioning !== 'publicationPending');
-  assert.deepEqual(offenders.map((lego) => lego.id), ['skill']);
+  assert.deepEqual(offenders.map((lego) => lego.id), ['memory']);
 });
 
 test('status and evidence agree: `implemented` requires real test files, `planned` does not claim them', () => {
@@ -295,8 +304,28 @@ test('only Capability is implemented; the AI runtime is not claimed', () => {
   // The single most consequential honesty check in the file. If this test ever
   // has to change, someone has claimed a runtime exists — and that claim should
   // cost them a deliberate edit to an assertion, not a quiet status flip.
+  //
+  // P2.12 DELIBERATE EDIT. `skill` joins `capability` as implemented. What was
+  // built is the skill REGISTRY — registration, validation, lazy discovery and
+  // a six-state lifecycle over declarative documents. No procedure is executed
+  // and no runtime was added, which the assertions below and the whole of
+  // test/lego-skill.test.mjs exist to hold. Any further id appearing in this
+  // list must cost the same deliberate edit.
   const implemented = AI_SET.lego.filter((lego) => lego.status === 'implemented').map((lego) => lego.id);
-  assert.deepEqual(implemented, ['capability']);
+  assert.deepEqual(implemented, ['skill', 'capability']);
+
+  // The runtime LEGO specifically must NOT be implemented. Naming them keeps
+  // the guarantee concrete instead of relying on the list above staying short.
+  for (const id of ['agent-machine', 'memory', 'workspace', 'mcp-adapter', 'runtime-adapter',
+    'node-creator', 'translation', 'token-usage', 'ai-foundation']) {
+    const lego = AI_SET.lego.find((entry) => entry.id === id);
+    assert.notEqual(lego.status, 'implemented', `${id} must not be implemented`);
+  }
+
+  // And Skill, being implemented, must still declare that it executes nothing.
+  const skill = AI_SET.lego.find((lego) => lego.id === 'skill');
+  assert.ok(skill.nonScope.includes('executing tools directly'));
+  assert.ok(skill.nonScope.includes('being an agent'));
   const claims = JSON.stringify(AI_SET.currentLimits);
   for (const phrase of ['NOT scale-out ready', 'AI runtime is NOT implemented', 'Model inference is NOT implemented']) {
     assert.ok(claims.includes(phrase), `currentLimits no longer states: ${phrase}`);
@@ -703,4 +732,64 @@ test('XA-5 is only recorded as resolved while the lego.* codes are really publis
   assert.ok(xa5.historicalFinding, 'the original P2.10 finding must be kept, not overwritten');
   assert.ok(xa5.historicalEvidenceCommit, 'the historical evidence commit must stay recorded');
   assert.ok(xa5.currentRepositoryState, 'a resolved decision must name the state it was verified against');
+});
+
+test('the status documents publish the decision counts the reconciled register actually holds', () => {
+  // P2.12 step 0. CURRENT_STATUS.md published "7 item(s) await the manager:
+  // XA-8 .. XA-14" while the reconciled register held eleven open rows,
+  // XA-8 .. XA-18 — because the generator read agent-2's partial register
+  // instead of the reconciled one. A stale count is worse than no count: it
+  // reads as authoritative. This test makes the two disagree loudly.
+  const root = resolve(HERE, '..', '..', '..');
+  const register = JSON.parse(readFileSync(
+    join(root, 'docs', 'n8n-lego', 'decisions', 'cross-agent-decisions.json'), 'utf8'));
+  const open = register.decisions.filter((row) => row.status !== 'resolved');
+  const resolved = register.decisions.filter((row) => row.status === 'resolved');
+  const openIds = open
+    .sort((a, b) => Number(a.id.slice(3)) - Number(b.id.slice(3)))
+    .map((row) => row.id);
+
+  const status = readFileSync(join(root, '.ai', 'master', 'CURRENT_STATUS.md'), 'utf8');
+  const claim = /(\d+) item\(s\) await the manager: ([^.]+)\./.exec(status);
+  assert.ok(claim, 'CURRENT_STATUS.md must publish an open-arbitration count');
+  assert.equal(Number(claim[1]), open.length, 'the published open count is stale');
+  assert.deepEqual(claim[2].split(',').map((id) => id.trim()), openIds, 'the published open ids are stale');
+  const resolvedClaim = /(\d+) row\(s\) are resolved/.exec(status);
+  assert.ok(resolvedClaim, 'CURRENT_STATUS.md must publish a resolved count');
+  assert.equal(Number(resolvedClaim[1]), resolved.length, 'the published resolved count is stale');
+
+  // Every open row must be reachable in the decisions document, including the
+  // rows agent-1 raised — the partial register is why they went missing.
+  const decisions = readFileSync(join(root, '.ai', 'master', 'PROJECT_DECISIONS.md'), 'utf8');
+  for (const id of openIds) {
+    assert.ok(new RegExp(`\`${id}\``).test(decisions), `${id} is open but PROJECT_DECISIONS.md never names it`);
+  }
+  const totals = /\*\*(\d+) open\*\*, (\d+) resolved,\s*\n?(\d+) recorded in total/.exec(decisions);
+  assert.ok(totals, 'PROJECT_DECISIONS.md must publish its totals');
+  assert.deepEqual(
+    [Number(totals[1]), Number(totals[2]), Number(totals[3])],
+    [open.length, resolved.length, register.decisions.length],
+  );
+
+  // The master index must name the register that supplies the counts.
+  const index = readFileSync(join(root, '.ai', 'master', 'PROJECT_MASTER_PLAN.md'), 'utf8');
+  assert.match(index, /cross-agent-decisions\.json.*reconciled/,
+    'the master index must name the reconciled register as the source of decision counts');
+});
+
+test('a decision row is either resolved or owned by somebody who can resolve it', () => {
+  // A row that is open but assigned to nobody never moves. This is the shape
+  // check that keeps the register actionable rather than a list of worries.
+  const root = resolve(HERE, '..', '..', '..');
+  const register = JSON.parse(readFileSync(
+    join(root, 'docs', 'n8n-lego', 'decisions', 'cross-agent-decisions.json'), 'utf8'));
+  for (const row of register.decisions) {
+    assert.match(row.id, /^XA-\d+$/);
+    if (row.status === 'resolved') {
+      assert.ok(row.resolution && row.resolution.length > 40, `${row.id} is resolved but does not say how`);
+    } else {
+      assert.ok(row.owner, `${row.id} is open with no owner`);
+      assert.ok(row.status.startsWith('open-for-'), `${row.id} has an unrecognised status '${row.status}'`);
+    }
+  }
 });

@@ -10,7 +10,7 @@
 | **AI Foundation** | `ai.model-gateway` | declared in `ai-foundation` | CONTRACT-ONLY | ai.model-gateway@1.0.0, ai.tool-gateway@1.0.0, ai.application-provider@1.0.0 | `lego-ai-foundation.test.mjs` |
 | **AI Foundation** | `ai.tool-gateway` | declared in `ai-foundation` | CONTRACT-ONLY | ai.model-gateway@1.0.0, ai.tool-gateway@1.0.0, ai.application-provider@1.0.0 | `lego-ai-foundation.test.mjs` |
 | **AI Foundation** | `ai.application-provider` | declared in `ai-foundation` | CONTRACT-ONLY | ai.model-gateway@1.0.0, ai.tool-gateway@1.0.0, ai.application-provider@1.0.0 | `lego-ai-foundation.test.mjs` |
-| **Skill** | `ai.skill` | **publicationPending** | PLANNED | publicationPending | planned: skill lifecycle, disclosure levels, capability-map validity |
+| **Skill** | `ai.skill` | locked @ 1.0.0 | IMPLEMENTED | ai.skill@1.0.0 | `lego-skill.test.mjs` |
 | **Agent Machine** | `ai.agent-runtime` | declared in `ai-foundation` | CONTRACT-ONLY | ai.agent-runtime@1.0.0, ai.agent-delegation@1.0.0 | `lego-ai-foundation.test.mjs (contract level)`; planned: loop, fan-out/fan-in, cancellation propagation |
 | **Agent Machine** | `ai.agent-delegation` | declared in `ai-foundation` | CONTRACT-ONLY | ai.agent-runtime@1.0.0, ai.agent-delegation@1.0.0 | `lego-ai-foundation.test.mjs (contract level)`; planned: loop, fan-out/fan-in, cancellation propagation |
 | **Memory** | `ai.memory` | **publicationPending** | PLANNED | publicationPending | planned: graph integrity, retention, traversal bounds, provider-absent operation |
@@ -34,7 +34,6 @@ A `publicationPending` entry means the concept is declared but **no contract
 version has been assigned**. No version is invented and no name is silently
 changed; the owner and the decision reference are recorded instead.
 
-- **Skill** (`manager`) — publicationPending. Tracked for phase B.
 - **Memory** (`manager`) — publicationPending. Tracked for phase B.
 - **Workspace** (`manager`) — publicationPending. Tracked for phase B.
 - **Universal Translation** (`manager`) — publicationPending. Tracked for phase D.
@@ -47,6 +46,7 @@ changed; the owner and the decision reference are recorded instead.
 | Contract | Version | Owner | Status |
 | --- | --- | --- | --- |
 | `ai.foundation` | 1.0.0 | `manager` | contract-only |
+| `ai.skill` | 1.0.0 | `manager` | implemented |
 
 ## Operation coverage
 

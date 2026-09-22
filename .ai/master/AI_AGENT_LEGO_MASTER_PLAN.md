@@ -10,7 +10,7 @@
 | # | LEGO | Owner | Status | Phase |
 | --- | --- | --- | --- | --- |
 | 1 | **AI Foundation** | `manager` | CONTRACT-ONLY | A |
-| 2 | **Skill** | `manager` | PLANNED | B |
+| 2 | **Skill** | `manager` | IMPLEMENTED | B |
 | 3 | **Agent Machine** | `manager` | CONTRACT-ONLY | B |
 | 4 | **Memory** | `manager` | PLANNED | B |
 | 5 | **Workspace** | `manager` | PLANNED | B |
@@ -138,10 +138,10 @@ Every external action routes through Capability + Policy + Workspace. An agent n
 | --- | --- |
 | Index | 2 of 15 |
 | Owner | `manager` |
-| Status | **PLANNED** |
+| Status | **IMPLEMENTED** |
 | Phase | B |
 | Contracts | `ai.skill` |
-| Versioning | publicationPending |
+| Versioning | ai.skill@1.0.0 |
 | Depends on | `ai-foundation`, `capability` |
 | Interaction | `call` |
 | Permissions | `ai:skill:read`, `ai:skill:select` |
@@ -153,7 +153,7 @@ Every external action routes through Capability + Policy + Workspace. An agent n
 
 **Lifecycle:** `registered` -> `available` -> `selected` -> `loaded` -> `active` -> `released`
 
-**Operations:** `register`, `list`, `describe`, `select`, `load`, `release`
+**Operations:** `list`, `resolve`, `describe`, `validate-selection`
 
 **Replacement boundary:** A skill's procedure may be rewritten without changing its identity or card.
 
@@ -161,9 +161,9 @@ Every external action routes through Capability + Policy + Workspace. An agent n
 
 **Observability:** skill selected / loaded / released.
 
-**Tests:** `planned: skill lifecycle, disclosure levels, capability-map validity`
+**Tests:** `test/lego-skill.test.mjs`
 
-**Future stages:** B: contract + registry · D: authoring · E: skill packs
+**Future stages:** D: authoring · E: skill packs
 
 **Definition:** Skill = knowledge + rules + procedure + capability map.
 

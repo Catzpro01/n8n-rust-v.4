@@ -19,6 +19,31 @@
 | [`ADR-0010-capability-is-a-contract`](../../docs/architecture/adr/ADR-0010-capability-is-a-contract.md) | ADR-0010 — A capability is a contract, not a name and a status |
 | [`ADR-0011-the-repository-is-the-project-memory`](../../docs/architecture/adr/ADR-0011-the-repository-is-the-project-memory.md) | ADR-0011 — The repository is the project memory, and it is generated |
 
+## Every open row, from the reconciled register
+
+This table is the complete open set. It is generated from
+`docs/n8n-lego/decisions/cross-agent-decisions.json`, the reconciled register that
+carries every `XA-*` row from both agents. The narrative sections below are
+agent-2's side only and do not list agent-1's rows — so read this table first if
+you want the count.
+
+| Row | Status | Owner | Question |
+| --- | --- | --- | --- |
+| `XA-8` | open-for-manager | `manager` | Which permission namespace do AI capabilities use? |
+| `XA-9` | open-for-manager | `manager` | Which contract publishes `manifest/foundation.json`? |
+| `XA-10` | open-for-manager | `manager` | How are application-provider permissions named? |
+| `XA-11` | open-for-manager | `manager` | Which contract publishes a skill - and is a skill a backend concept at all? |
+| `XA-12` | open-for-manager | `manager` | Is there a durable memory store, or is memory only loaded context? |
+| `XA-13` | open-for-manager | `manager` | What does an agent workspace mean, and which contract publishes it? |
+| `XA-14` | open-for-manager | `manager` | Which capability owns request and response translation? |
+| `XA-15` | open-for-manager | `manager` | Which capability drafts and validates a node created with AI? |
+| `XA-16` | open-for-manager | `manager` | Does MCP need a capability of its own, or only the published vocabulary block? |
+| `XA-17` | open-for-manager | `manager` | Which contract publishes token and cost usage - per call, per run, per session? |
+| `XA-18` | open-for-manager | `agent-01 (frontend + compatibility)` | Which contract publishes the external action families - filesystem, terminal/process, project, browser and git? |
+
+**11 open**, 8 resolved,
+19 recorded in total.
+
 ## Cross-agent arbitration
 
 Agent 1 maintains the frontend side of this record on `arena/01a0c53e-n8n-rust-v-4`.

@@ -563,17 +563,22 @@
       "title": "AI Foundation contracts (provider-neutral, contract-only)",
       "owner": "manager",
       "kind": "governance",
-      "status": "contract-only",
+      "status": "partial",
       "phase": "P2.10",
       "errorNamespace": "ai",
       "paths": [
         "src/lego/ai-foundation.mjs",
-        "src/lego/manifest/ai-foundation.json"
+        "src/lego/manifest/ai-foundation.json",
+        "src/lego/skill.mjs",
+        "src/lego/manifest/skill.json"
       ],
       "public": [
-        "src/lego/ai-foundation.mjs"
+        "src/lego/ai-foundation.mjs",
+        "src/lego/skill.mjs"
       ],
-      "dependsOn": [],
+      "dependsOn": [
+        "lego-foundation"
+      ],
       "mustNotDependOn": [
         "compatibility",
         "auth",
@@ -1233,9 +1238,67 @@
           "degradation": "optional-absent",
           "replacement": "contract-preserving",
           "resources": "low"
+        },
+        {
+          "id": "ai.skill",
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "skill.list",
+              "interaction": "call",
+              "permission": "ai:skill:read",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "skill.resolve",
+              "interaction": "call",
+              "permission": "ai:skill:read",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "skill.describe",
+              "interaction": "call",
+              "permission": "ai:skill:read",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "skill.validate-selection",
+              "interaction": "call",
+              "permission": "ai:skill:select",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "ai:skill:read",
+            "ai:skill:select"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "capability-unavailable",
+          "replacement": "contract-preserving",
+          "resources": "low",
+          "notes": "Skill REGISTRY, implemented in P2.12: registration, validation, lazy discovery and lifecycle. Skills are declarative documents; nothing executes a procedure. A skill declares requiredCapabilities and never grants them — the capability system stays the authority. Declared here rather than as a new top-level domain because XA-11 (is a skill a backend concept at all?) is open-for-manager."
         }
       ],
-      "notes": "Contract-only. Declares vocabulary for a future AI Foundation: provider/runtime taxonomy, model and tool gateways, application providers, agent lifecycle, session, delegation, events, decision, approval, artifact and context. NOTHING is implemented: no inference, no agent loop, no gateway client, no MCP server or client, no network call, no new dependency. Owned by manager because these contracts are cross-domain and must not be owned by whoever writes the first adapter. A dependency-free leaf: the AI Foundation must never become a prerequisite for the backend booting.",
+      "notes": "Contract-only. Declares vocabulary for a future AI Foundation: provider/runtime taxonomy, model and tool gateways, application providers, agent lifecycle, session, delegation, events, decision, approval, artifact and context. NOTHING is implemented: no inference, no agent loop, no gateway client, no MCP server or client, no network call, no new dependency. Owned by manager because these contracts are cross-domain and must not be owned by whoever writes the first adapter. A dependency-free leaf: the AI Foundation must never become a prerequisite for the backend booting. P2.12: the Skill registry (src/lego/skill.mjs) reads the capability registry from lego-foundation to answer whether a skill's required capabilities are DECLARED. The direction is deliberate and one-way: the AI Foundation consumes the capability registry, the capability registry knows nothing about AI. This is the dependency that keeps Skill from copying the capability list, which would be the real architectural failure — two registries disagreeing about what exists. lego-foundation does not depend on ai-foundation, so no cycle is created, and the AI Foundation is still not required for the backend to boot.",
       "tier": "domain",
       "dataOwner": "none",
       "stateOwner": "none",
@@ -1255,7 +1318,8 @@
         "network": false,
         "concurrency": "parallel-safe",
         "startup": "instant"
-      }
+      },
+      "statusNote": "Was contract-only through P2.11. P2.12 implemented exactly one capability, ai.skill — the skill registry. The other eleven capabilities remain contract-only: no inference, no agent loop, no gateway client, no MCP, no network call. `partial` is the honest status; keeping `contract-only` would have been a false claim in the safe direction."
     },
     {
       "id": "compatibility",

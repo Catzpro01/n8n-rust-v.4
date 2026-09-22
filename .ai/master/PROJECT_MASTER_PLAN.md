@@ -21,7 +21,7 @@ authoritative declaration.
 | The 15 official AI/Agent LEGO | `.ai/master/AI_AGENT_LEGO_MASTER_PLAN.md` | `manifest/ai-lego-set.json` |
 | Providers, runtimes, transports, MCP | `.ai/master/AI_RUNTIME_AND_PROVIDER_PLAN.md` | `manifest/ai-foundation.json` |
 | Phase roadmap | `.ai/master/IMPLEMENTATION_PHASES.md` | `manifest/ai-lego-set.json` |
-| Decisions and open arbitration | `.ai/master/PROJECT_DECISIONS.md` | ADRs + `cross-agent-decisions.backend.json` |
+| Decisions and open arbitration | `.ai/master/PROJECT_DECISIONS.md` | ADRs + `cross-agent-decisions.json` (reconciled; counts) + `cross-agent-decisions.backend.json` (agent-2 narrative) |
 | Contract status matrix | `.ai/master/AI_CONTRACT_MATRIX.md` | manifests + `contract-lock.json` |
 | The 26 core domains, strangler, nesting | `.ai/master/CORE_LEGO_ARCHITECTURE.md` | `manifest/domains.json` |
 | Development workforce, control planes | `.ai/master/PROJECT_WORKFORCE_ORCHESTRATION.md` | `docs/engineering-operations/workforce-governance.json` (**not** product architecture) |
@@ -113,9 +113,9 @@ defect and should be reported as one.
 | | |
 | --- | --- |
 | Domains registered | 26 |
-| Locked public contracts | 14 |
-| Declared capabilities | 82 |
-| Published error codes | 35 |
+| Locked public contracts | 15 |
+| Declared capabilities | 83 |
+| Published error codes | 36 |
 | Temporary boundary allowances | 1 |
 | Official AI/Agent LEGO | 15 |
 

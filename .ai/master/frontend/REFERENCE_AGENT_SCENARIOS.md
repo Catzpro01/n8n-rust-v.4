@@ -8,8 +8,15 @@
 > and is **not** updated by regeneration.
 >
 > Known differences at the time of reconciliation: XA-5 is **closed** (the eleven
-> `lego.*` codes are published; error contract 1.1.0, 35 codes), the operation
-> count is **139** (not 173), and gate rules now run through **F17**.
+> `lego.*` codes are published), the operation count is **not 173**, and gate rules
+> run through **F17**.
+>
+> This banner deliberately names no live totals. Counts move every phase (P2.12
+> published `ai.skill` and added an error code), and a correction notice that
+> hardcodes them goes stale exactly like the text it corrects. For current
+> figures read the generated [`CURRENT_STATUS.md`](../CURRENT_STATUS.md) and
+> [`AI_CONTRACT_MATRIX.md`](../AI_CONTRACT_MATRIX.md), which are derived from
+> the manifests; where this snapshot disagrees with them, they win.
 >
 > It is preserved because it carries frontend reasoning, UX consequences and
 > cross-agent reconciliation notes that no backend manifest derives.
@@ -33,7 +40,7 @@ Trace completed.
 **Capabilities:** filesystem (`read`, `write`, `patch`, `list`), terminal (`execute`), browser
 (`open`, `inspect`), project (`build`, `test`, `preview`), git (`status`, `diff`, `commit`, `branch`,
 `push`), github (`search`, `create_pr`).
-**Skills (`ai.skill@1.0.0`, XA-19 resolved):** web-development, accessibility, SEO, GitHub — read as declarations; selecting one grants nothing and loading one is an internal backend step.
+**Skills (XA-11):** web-development, accessibility, SEO, GitHub.
 **Possible agents:** research, UX, frontend, backend, QA, review — all children of one Main agent,
 each with its own granted capabilities, workspace, artifacts and budget.
 

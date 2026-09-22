@@ -8,8 +8,15 @@
 > and is **not** updated by regeneration.
 >
 > Known differences at the time of reconciliation: XA-5 is **closed** (the eleven
-> `lego.*` codes are published; error contract 1.1.0, 35 codes), the operation
-> count is **139** (not 173), and gate rules now run through **F17**.
+> `lego.*` codes are published), the operation count is **not 173**, and gate rules
+> run through **F17**.
+>
+> This banner deliberately names no live totals. Counts move every phase (P2.12
+> published `ai.skill` and added an error code), and a correction notice that
+> hardcodes them goes stale exactly like the text it corrects. For current
+> figures read the generated [`CURRENT_STATUS.md`](../CURRENT_STATUS.md) and
+> [`AI_CONTRACT_MATRIX.md`](../AI_CONTRACT_MATRIX.md), which are derived from
+> the manifests; where this snapshot disagrees with them, they win.
 >
 > It is preserved because it carries frontend reasoning, UX consequences and
 > cross-agent reconciliation notes that no backend manifest derives.
@@ -39,7 +46,7 @@ registry wins and this file is a defect.
 | capabilities | **82**, of which **62** publish `operations[]` | `domains.json` |
 | contract rows | **14** (incl. `ai.foundation@1.0.0`, manager) | `contract-lock.json` |
 | AI contract set | `ai.foundation@1.0.0`, status `contract-only`, 11 `ai.*` capabilities, 5 provider kinds, 26 event types | `manifest/ai-foundation.json` |
-| official AI/Agent LEGO | **15** — 3 published (incl. Skill, `ai.skill@1.0.0`), 6 declared `contract-only`, 2 partial (gated), 4 `publicationPending` | `AI_AGENT_LEGO_MASTER_PLAN.md` §1, `PROJECT_MASTER_PLAN.md` §4 |
+| official AI/Agent LEGO | **15** — 2 published, 6 declared `contract-only`, 2 partial (gated), 5 `publicationPending` | `AI_AGENT_LEGO_MASTER_PLAN.md` §1, `PROJECT_MASTER_PLAN.md` §4 |
 | frontend vocabulary lock | 38 canonical sets + 22 local sets, provenance-pinned | `packages/frontend-lego/src/vocabulary.mjs` |
 | seam | 7 declared sources, 7 forbidden sources, 13 inputs, 16-field identity | `src/seam.mjs`, `CORE_LEGO_ARCHITECTURE.md` |
 | operation outcomes | 12, never collapsed | `src/negotiation.mjs` |
@@ -53,12 +60,12 @@ registry wins and this file is a defect.
 
 | Gate | Result |
 | :--- | :--- |
-| `node --test packages/frontend-lego/test/*.test.mjs` | **303 tests across 31 suites: 301 pass, 2 skip, 0 fail.** The two skips are the Skill comparisons that need a tree publishing `ai.skill@1.0.0`; on this branch the local backend copy predates the finalize (no lock row), and the alignment test states which sets it deferred instead of reporting a pass it did not perform |
-| `N8N_LEGO_CATALOG_DIR=<pinned catalog> node --test apps/n8n-lego/test/*.test.mjs` | 399/399 (396/399 without the catalog: three node-catalog suites need it) |
-| `node apps/n8n-lego/scripts/capture-frontend-evidence.mjs` | **56/56 PASS** (incl. the published Skill contract and the four consumed operations); boot payload byte-identical at 18,126 B |
-| `N8N_BACKEND_LEGO_ROOT=<published tree @ `d0a338e4`> node --test .../test/{29-alignment,31-skills}.test.mjs` | **27/27, 0 skipped, Skill drift = 0** — the four operations, six states, disclosure levels, permissions and the lock row agree exactly with `ai.skill@1.0.0`; a path without a backend **fails**, it never skips |
+| `node --test packages/frontend-lego/test/*.test.mjs` | **283 tests across 30 suites: 279 pass, 4 skip** (backend comparisons absent), **0 fail** |
+| `node --test apps/n8n-lego/test/*.test.mjs` | 36/36 |
+| `node apps/n8n-lego/scripts/capture-frontend-evidence.mjs` | 50/50 PASS |
+| `N8N_BACKEND_LEGO_ROOT=<P2.10 tree> node --test .../test/29-alignment.test.mjs` | 7/7, 0 skipped — every canonical set compared against the backend, zero drift |
 | `python3 tools/sublego-audit/audit.py` | AUDIT PASSED (12 LEGOs, 20 Sub-LEGOs, 5 Agents) |
-| `npm run verify:fast` | 5/10 with the workspace bare; **7/10** once `packages/workflow-lego/node_modules` is installed (G01–G07 pass, G06/G07 being the two TypeScript builds). G08–G10 need a *live reference runtime* (`.runtime/node_modules` or `/home/user/.n8n-live/node_modules` with `n8n-workflow` + `n8n-core`), which is the workflow/Rust track's environment — `KNOWN_BLOCKERS.md` BL-3. No browser-parity claim is made from this sandbox. |
+| `npm run verify:fast` | 5/10 — G06-G10 require `packages/workflow-lego/node_modules` (B-10) |
 
 ## 4. Readiness — the honest version
 
@@ -68,32 +75,29 @@ registry wins and this file is a defect.
 | AI Foundation | **contract-only** — declared, not implemented | `ai.foundation@1.0.0`, status `contract-only` |
 | AI experiences (Assistant, Copilot, AI Node, Execution AI mode) | **specified, not built** | `.ai/master/AI_UI_*` |
 | Agent Machine | **contracts only**, no runtime | `AGENT_MACHINE_PLAN.md` |
-| Multi-process / multi-instance scale-out | **NOT READY** | `KNOWN_BLOCKERS.md` BL-1 (process-local execution ids), BL-2 (local JSON is the system of record), BL-4 (cross-agent vocabulary arbitration — `XA-19` is resolved, `XA-11` … `XA-18` are not) |
-| Browser/isolation profile gates | **unproven locally** | `KNOWN_BLOCKERS.md` BL-3 — `npm run verify:fast` = 5/10 in the dev sandbox; `tests/e2e/frontend-boundary.mjs` runs in CI |
-| Control plane (jobs/tasks) | **no in-repo activation evidence** — not claimed operational | `KNOWN_BLOCKERS.md` BL-6 |
+| Multi-process / multi-instance scale-out | **NOT READY** | `KNOWN_BLOCKERS.md §1` (B-1, B-2, B-3) |
+| Browser/isolation profile gates | **unproven locally** | `npm run verify:fast` = 5/10 (B-10) |
+| Control plane (jobs/tasks) | **no in-repo activation evidence** — not claimed operational | B-12 |
 
 ## 5. This change
 
-**P2.12 finalize (agent-1, this branch).** The backend published `ai.skill@1.0.0` in the contract lock
-(`arena/01a0c521 @ d0a338e4`, owner manager, domain `ai-foundation`, status `implemented`) and `XA-19`
-was resolved by adopting the **implemented** shape. The frontend now consumes exactly that contract:
-the four caller operations (`skill.list`, `skill.resolve`, `skill.describe`, `skill.validate-selection`),
-the six lifecycle states as six independent facts, the four disclosure levels and the two permission
-words. `register`, `select`, `load` and `release` stay internal registry lifecycle methods — `load` is
-deliberately not published, because publishing it would make lazy discovery a caller's concern — and
-there is no `execute` operation and no `ai:skill:execute` permission at any layer. The tolerated
-differences are gone: `REGISTERED_DRIFT` is empty, the four Skill sets now quote the lock row, and a
-difference fails the gate instead of being registered after the fact. `XA-11` stays **open-for-manager**
-for the modelling question (whether Skill belongs under `ai-foundation`). Files: `src/skills.mjs`,
-`src/vocabulary.mjs`, `manifest/skills.json`, `test/29-alignment.test.mjs`, `test/31-skills.test.mjs`
-(19 tests), contract §19.18, conformance rule A27.
+Adds the master documentation set (`.ai/master/`, **28 documents**, ≈190 KB of a 262,144 B budget (≈228 KB of headroom), largest document ≈23 KB of a
+32,768 B per-file cap — the exact bytes and both limits are asserted by `test/30-master-plan.test.mjs`,
+which is the authority; the figures here are rounded on purpose so they cannot drift) with its own gate (`test/30-master-plan.test.mjs`, now
+18 tests), the 26-domain correction — the domain table is a **generated projection** of `domains.json`
+@ `6f7b66da`, not prose — the platform/deployment strategy (four deployment modes, low-resource and
+Termux viability, STREAM backpressure, the Rust-by-measurement rule), the recorded decision that
+Universal Translation is an official LEGO target, the corrected fifteen-LEGO publication counts
+(2 published, 6 declared `contract-only`, 2 partial and gated, 5 `publicationPending`), the extended
+open-decision register (`recordVersion 1.1.0`, 18 rows), the thirty-question **reading test** a new
+agent must be able to satisfy from this tree alone, and the blocker/status registers. It changes **no**
+runtime, **no** contract and **no** boot payload: the boot descriptor is byte-identical at 18,126 B,
+the retrieval pack is unchanged at 81,678 B (242 B headroom), and the only test expectation added is
+test/30 itself.
 
-Master set measured by `test/30-master-plan.test.mjs` (the authority): **28 documents, 210,253 B of a
-262,144 B budget**, largest `AI_UI_EXPERIENCE_MASTER_PLAN.md` at 23,212 B of a 32,768 B per-file cap.
-Boot payload byte-identical at **18,126 B**; retrieval pack **81,877 B of 80 KB** — 43 B of headroom, so
-this view stays terse on purpose. Backend counts read from this branch's copy of the tree are still the
-pre-finalize ones (14 contract rows, 82 capabilities); the published tree reports 15 rows, 83
-capabilities and 143 operations.
+Verified after the change: frontend **283 / 279 / 0 fail / 4 skip** across 30 suites (test/30
+**18/18**); app **36/36**; `test/29` against the P2.10 tree **7/7, 0 skipped**; evidence **50/50**
+(JSON regenerated); sub-LEGO audit **PASSED**; `verify:fast` **5/10** (the unchanged baseline, B-10).
 
 ## 6. What a new agent should read, in order
 

@@ -1,5 +1,18 @@
 # Master plan — the frontend AI experience
 
+> **SUPERSEDED IN PART — P2.12 (`ai.skill@1.0.0` is published).** This document was written
+> against the P2.10 backend, when no Skill contract existed. Its `publicationPending` /
+> `XA-11` claims about **Skill** are therefore HISTORICAL: the contract `ai.skill@1.0.0` is now
+> locked in `apps/n8n-lego/src/lego/contracts/contract-lock.json`, owned by `manager`, on the
+> existing `ai-foundation` domain, publishing exactly four operations — `skill.list`,
+> `skill.resolve`, `skill.describe`, `skill.validate-selection`. The canonical, generated
+> statement of what is published is [`AI_CONTRACT_MATRIX.md`](AI_CONTRACT_MATRIX.md) and
+> [`AI_AGENT_LEGO_MASTER_PLAN.md`](AI_AGENT_LEGO_MASTER_PLAN.md); where this document disagrees,
+> they win. The rest of this document — the UX and planning reasoning — stands.
+>
+> Note that **XA-11 itself remains `open-for-manager`**: whether Skill ultimately belongs under
+> `ai-foundation` is a separate architecture decision that publishing the contract did not settle.
+
 **Status:** specification (durable). **Owner:** agent-01 (frontend + compatibility).
 **Backend authority:** Agent 2's AI/LEGO foundation — `ai.foundation@1.0.0`, `lego.domain-registry@1.1.0`,
 `lego.interaction@1.0.0`, `lego.negotiation@1.0.0`, `lego.envelope@1.0.0` on
@@ -64,7 +77,7 @@ version for it.
 | # | LEGO | What it is | Backend status | Frontend surface | Disclosure |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | 1 | **AI Foundation** | the contract layer: kinds, events, sessions, approvals, artifacts, context, transport ladder | **published** `ai.foundation@1.0.0` (manager, `contract-only`) | everything below | background |
-| 2 | **Skill** | a named procedure with capabilities, validators, references and a token budget | **published** — `ai.skill@1.0.0` (manager, domain `ai-foundation`, `XA-19` resolved); **XA-11** stays open for where Skill is modelled | chip → Skills list → detail | L1 → L2 → L3 |
+| 2 | **Skill** | a named procedure with capabilities, validators, references and a token budget | `publicationPending` — **XA-11** (`ai.skill` proposed, manager) | chip → Skills list → detail | L1 → L2 → L3 |
 | 3 | **Agent Machine** | the runtime that executes delegated tasks | **partially published**: `ai.agent-runtime` (contract), `ai.agent-delegation`, `ai.agent-session`; the Rust machine is not built and is out of scope here | agent tree, agent detail | L1 → L3 |
 | 4 | **Memory** | what the run remembers beyond the window: decisions, tasks, artifacts, references | `publicationPending` — **XA-12** (`ai.memory` proposed, manager); today the honest source is `ai.context` (what is loaded) + `ai.artifact` + `ai.decision` | chip → Relevant memory → `Open Memory Graph` | L1 → L2 → L3 |
 | 5 | **Workspace** | where an agent works outside the chat: project, tree, terminal state | domain exists (`workspace`, agent-2, **planned**, contract `0.0.0`, `workspace.projects` **unsupported**) — per-agent sandbox semantics are `publicationPending` — **XA-13** | workspace view inside agent detail | L2 → L3 |
@@ -280,7 +293,7 @@ unknowns. `AI_UI_IMPLEMENTATION_PHASES.md` turns that into ordered work.
 | AI declaration | `packages/frontend-lego/src/agents.mjs`, `src/agent-events.mjs`, `manifest/capabilities.json` |
 | negotiation | `packages/frontend-lego/src/negotiation.mjs` (12 operation outcomes) |
 | decisions awaiting an owner | `docs/n8n-lego/decisions/cross-agent-decisions.json` — **XA-5, XA-8, XA-9, XA-10** (open from the foundation gate), **XA-11 … XA-17** (proposed by this plan) and **XA-18** (the external action families, from `WORKSPACE_AND_EXTERNAL_ACTION_PLAN.md`) |
-| rule enforcement | `contracts/frontend.contract.md` §19.9–§19.17, `src/conformance.mjs` (27 rules), `test/30-master-plan.test.mjs` |
+| rule enforcement | `contracts/frontend.contract.md` §19.9–§19.17, `src/conformance.mjs` (26 rules), `test/30-master-plan.test.mjs` |
 
 ## 12. Beginner mode and advanced mode
 

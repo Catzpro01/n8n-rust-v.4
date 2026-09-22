@@ -13,7 +13,7 @@ states a different count, that document is stale and this one is right.
 | --- | --- | --- | --- | --- | --- |
 | 1 | `platform-kernel` | `manager` | domain | implemented | `config` |
 | 2 | `lego-foundation` | `manager` | domain | implemented | `lego` |
-| 3 | `ai-foundation` | `manager` | domain | contract-only | `ai` |
+| 3 | `ai-foundation` | `manager` | domain | partial | `ai` |
 | 4 | `compatibility` | `agent-1` | domain | implemented | `compat` |
 | 5 | `auth` | `agent-3` | domain | partial | `auth` |
 | 6 | `auth.identity` | `agent-3` | feature | implemented | `auth-identity` |

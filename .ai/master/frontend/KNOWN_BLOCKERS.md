@@ -8,8 +8,15 @@
 > and is **not** updated by regeneration.
 >
 > Known differences at the time of reconciliation: XA-5 is **closed** (the eleven
-> `lego.*` codes are published; error contract 1.1.0, 35 codes), the operation
-> count is **139** (not 173), and gate rules now run through **F17**.
+> `lego.*` codes are published), the operation count is **not 173**, and gate rules
+> run through **F17**.
+>
+> This banner deliberately names no live totals. Counts move every phase (P2.12
+> published `ai.skill` and added an error code), and a correction notice that
+> hardcodes them goes stale exactly like the text it corrects. For current
+> figures read the generated [`CURRENT_STATUS.md`](../CURRENT_STATUS.md) and
+> [`AI_CONTRACT_MATRIX.md`](../AI_CONTRACT_MATRIX.md), which are derived from
+> the manifests; where this snapshot disagrees with them, they win.
 >
 > It is preserved because it carries frontend reasoning, UX consequences and
 > cross-agent reconciliation notes that no backend manifest derives.
@@ -46,7 +53,7 @@ implementing one of these three without the others.
 | B-5 | Permission namespace split (`ai:*` vs the frontend's view words) | published AI operations require `ai:*`; the six frontend AI capabilities declare five view words | no rename until the manager rules | manager (XA-8) |
 | B-6 | `manifest/foundation.json` has no publishing contract | `contract-lock.json` has no row for it; `domains.json → foundation.vocabulary` names it | trust/resource/device/transport-target words carry a `publicationPending` record instead of a pinned version | manager (XA-9) |
 | B-7 | Two application-permission namespaces | `ai:app:*` (operations) vs `app:github:*` (application vocabulary) | both sets stay separate and are never treated as interchangeable | manager (XA-10) |
-| B-8 | Five official AI/Agent LEGO are unpublished | no `memory`, no `translation`, no `ai.usage`, no `ai.mcp-adapter`, no node-drafting capability in `domains.json` or the lock (`ai.skill` was published by the P2.12 finalize) | their UI surfaces are specified and gated: `capability-unavailable` / `feature-unsupported`, never mocks | manager (XA-11 … XA-17) |
+| B-8 | Six official AI/Agent LEGO are unpublished | no `skill`, no `memory`, no `translation`, no `ai.usage`, no `ai.mcp-adapter`, no node-drafting capability in `domains.json` or the lock | their UI surfaces are specified and gated: `capability-unavailable` / `feature-unsupported`, never mocks | manager (XA-11 … XA-17) |
 | B-9 | Legacy i18n ownership is unresolved | `domains.json → legacy.unresolvedOwnership` (the top-level `legacy` block, *not* the `legacy-rest` domain): `/rest/credential-translation`, `/rest/node-translation-headers` are constant empty objects with no business logic; the registry's own `why` still says the project decided **not** to build a Translation LEGO — an assumption superseded by `PROJECT_DECISIONS.md` and XA-14 | translation must not be forced into `credentials`, `node-registry` or `workflow`; the decision belongs to the manager (XA-14), and until it lands the registry rationale above is stale text, not policy | manager + agent-2 |
 
 ## 3. Environment / verification blockers
