@@ -449,8 +449,50 @@
         "boot payload verification: the frontend boot descriptor stays byte-identical (packages/frontend-lego/test/16-replacement.test.mjs, test/01-contract.test.mjs)",
         "every skipped test recorded with its exact reason; an environmental failure is never reported as a code regression"
       ],
+      "gateResults": {
+        "measuredAt": "2026-09-22",
+        "measuredOn": "arena/01a0c6b4-n8n-rust-v-4 @ e9648997, sandbox with empty node_modules",
+        "green": [
+          "npm run lego:arch - 26 domains, 15 locked public contracts on this tree, every backend import respects its declared boundary",
+          "npm run lego:arch:selftest - 26/26",
+          "npm run lego:foundation - 26 LEGOs, 12 node creation routes",
+          "npm run lego:foundation:selftest - 15/15",
+          "npm run lego:capabilities - 23 REST features vs 83 registered capabilities, owners and phases agree",
+          "npm run lego:scaleout - every finding is a declared, owned exception",
+          "npm run lego:ai:check - .ai in sync: 63 generated, 37 curated, 100 total",
+          "npm run frontend-lego:test - 363/363 against this tree AND 363/363 against agent-2's tree fb254f32"
+        ],
+        "notGreen": [
+          {
+            "gate": "npm run lego:test",
+            "result": "436/439",
+            "class": "environmental, pre-existing at e754c5df",
+            "detail": "the three node-catalog REST suites (GET /rest/types/nodes.json, GET /rest/types/node-versions.json, POST /rest/node-types) answer 404 until `npm run lego:catalog` or a network fetch; the 8 MB catalog is not committed"
+          },
+          {
+            "gate": "descriptor assembly heap (capture-frontend-evidence.mjs)",
+            "result": "FAIL, recorded",
+            "class": "real, open as XA-21",
+            "detail": "4,444 KB against a 4,096 KB pin after the P2.13 vocabulary promotion; the pin was not edited"
+          },
+          {
+            "gate": "npm run verify:fast",
+            "result": "5/10 (G06-G10 fail)",
+            "class": "environmental, another track's gates",
+            "detail": "needs packages/workflow-lego/node_modules and the live reference runtime; the run rewrites docs/isolation/*, which is reverted after every run because it is not this milestone's ownership area"
+          }
+        ],
+        "blocked": [
+          {
+            "gate": "python3 tools/sublego-audit/audit.py",
+            "reason": "ModuleNotFoundError: No module named 'yaml' in this sandbox",
+            "rule": "reported as unmeasured, not assumed passing"
+          }
+        ],
+        "skippedTests": "none silently. The frontend suite reports 0 skipped in both trees; test/29's four backend-comparison tests skip only when no backend tree is pointed at, and they run for real here."
+      },
       "decisionDependencies": [
-        "XA-20 OPEN (this milestone): which contract rows and which rollover/continuation/verification vocabulary the manager publishes for Context & Session",
+        "XA-20 OPEN (this milestone): which contract rows and which rollover/continuation/verification vocabulary the manager publishes for Context & Session. agent-2 published both rows on its branch (fb254f32) and agent-1 quotes that publication; the manager still has to rule the canonical spelling (continuationPackage: contract `toolStateReferences`/`importantReferences` vs manifest `toolState`/`refs`), confirm the five context operations as the public surface, confirm the sixth status word `in-progress`, and settle the merge order - agent-1's lock quotes rows that are not on protected main, so both branches must land in one reconciliation or agent-2's first.",
         "XA-12 OPEN and separate: Memory is what survives context replacement, Context is what is loaded now - publishing ai.context must not create or imply a memory store",
         "XA-17 OPEN: which contract publishes token and cost usage - the frontend renders the three quoted token kinds and labels an estimate as an estimate",
         "XA-11 OPEN, unaffected: where Skill is modelled. P2.13 adds no domain and creates no duplicate LEGO",
@@ -509,30 +551,120 @@
         ],
         "rule": "Unit tests passing is not 'ready'. The milestone is complete only when architecture, contract, implementation, consumer alignment, documentation and gates agree - and only after reconciliation and post-merge verification on protected main."
       },
+      "peerPublication": {
+        "observedAt": "2026-09-22",
+        "rule": "A peer's PUBLISHED change is not an assumption this branch may keep ignoring; a peer's UNpublished claim is. Both observations are recorded, neither is averaged, and no gate or pin is edited to make a run green.",
+        "backend": {
+          "agent": "agent-2",
+          "branch": "arena/01a0c6b5-n8n-rust-v-4",
+          "commit": "fb254f32",
+          "visibleOn": "github, read-only",
+          "onProtectedMain": false,
+          "contractLockRows": "15 -> 17",
+          "publishedRows": [
+            "ai.context@1.0.0 (owner manager, status implemented, domain ai-foundation)",
+            "ai.agent-session@1.0.0 (owner manager, status implemented, domain ai-foundation)"
+          ],
+          "publishedVocabulary": {
+            "contextScopes": "GLOBAL, WORKFLOW, NODE, EXECUTION, EVENT, AGENT, TASK (7)",
+            "contextOperations": "load, compact, rollover, rehydrate, verify (5)",
+            "agentSessionOperations": "create, status, close (3)",
+            "contextManagerStates": "NORMAL, PREPARE, ROLLOVER (3)",
+            "continuationSections": "14, spelled toolStateReferences / importantReferences in the locked contract",
+            "continuationVerification": "verified, degraded, failed (3)",
+            "aiLegoStatus": "6 words - agent-2 added `in-progress` to manifest/ai-lego-set.json#statusVocabulary and to packages/frontend-lego/src/vocabulary.mjs on its own branch"
+          },
+          "notPublished": [
+            "ai.context.execute",
+            "ai.context.continue",
+            "ai.agent-session.continue",
+            "ai.agent-session.pause",
+            "ai.agent-session.resume",
+            "ai.agent-session.execute",
+            "ai.memory (P2.14)",
+            "ai.workspace (P2.15)"
+          ],
+          "ownershipNote": "agent-2 edited packages/frontend-lego/src/vocabulary.mjs (agent-1's ownership area) in commit 943b85b5; the edit matches what agent-1 applied independently, so this is a clean Class B merge, and the frontend edit is recorded rather than reverted."
+        },
+        "frontendConsumption": {
+          "agent": "agent-1",
+          "branch": "arena/01a0c6b4-n8n-rust-v-4",
+          "commit": "e9648997",
+          "quotedSets": "53 -> 55",
+          "pendingPublicationRows": "2 -> 0",
+          "promotedRows": "contextRolloverPhase, continuationVerification",
+          "quotedFrom": "the peer publication fb254f32, with protected main e754c5df recorded beside it because the publication is GitHub-visible but not merged",
+          "derivedFromTheLock": [
+            "publication state",
+            "phase publication",
+            "verification publication",
+            "affordance states",
+            "forbidden reasons",
+            "published operation list"
+          ],
+          "manifestPolicy": "packages/frontend-lego/manifest/context-session.json keeps publication.rows EMPTY (only what this tree publishes, so the surface cannot claim a publication it does not carry) and records the peer rows verbatim under publication.publishedOnPeerBranch, plus publication.protectedMain"
+        },
+        "registeredDivergences": [
+          {
+            "id": "backend-internal-spelling",
+            "detail": "manifest/ai-lego-set.json#lego[id=context-session].continuationPackage says [toolState, refs] while the locked ai.context@1.0.0 publishes [toolStateReferences, importantReferences] - on the peer branch exactly as on protected main",
+            "frontendBehaviour": "quotes the locked contract, records the manifest spelling verbatim, reports it as drift data, never averages the two or coins a third spelling",
+            "owner": "agent-2 / manager",
+            "closesWhen": "the manifest is moved to the published spelling - no frontend edit required",
+            "decision": "XA-20"
+          },
+          {
+            "id": "pre-merge-operation-count",
+            "detail": "protected main publishes 2 context operations (load, compact); the peer branch publishes 5 (+ rollover, rehydrate, verify)",
+            "frontendBehaviour": "derives the published operation list from whichever tree it is pointed at",
+            "owner": "manager (merge order)",
+            "closesWhen": "both branches land in one reconciliation, or agent-2's first",
+            "decision": "XA-20"
+          }
+        ],
+        "bothTreeEvidence": {
+          "captureScript": "packages/frontend-lego/scripts/capture-context-session-evidence.mjs (reads the peer tree only through N8N_PEER_BACKEND_LEGO_ROOT, never writes to it, and refuses to run if a focused test file is missing so a smaller count cannot look like a pass)",
+          "evidenceFile": "docs/n8n-lego/evidence/frontend-context-session-p213.json",
+          "focusedThisTree": "102/102 (test/32 46, test/29 8, test/31 19, test/24 10, test/33, test/19)",
+          "focusedPeerTree": "102/102",
+          "fullSuiteThisTree": "363/363",
+          "fullSuitePeerTree": "363/363 via N8N_BACKEND_LEGO_ROOT=<git archive origin/arena/01a0c6b5-n8n-rust-v-4>/apps/n8n-lego/src/lego",
+          "bootPayload": "byte-identical, 18,126 B against the pinned P2.5 baseline",
+          "captureHere": "52/56 (stock UI dependency absent in agent-1's sandbox: three page-level checks cannot run)",
+          "captureDependencyComplete": "55/56 measured by agent-2 running the same script with the stock UI dependency installed; the one failure in both runs is the real heap pin",
+          "heap": "4,444 KB after the promotion, against the 4,096 KB pin - XA-21 open, threshold NOT edited. agent-2's register evidence quotes 4,275 KB and is stale against commit e9648997; re-capture at reconciliation."
+        }
+      },
       "startEvidence": [
         "manager P2.13 brief (2026-09-22): Part A milestone reconciliation + Parts B-L Context & Session",
         "main @ e754c5df: contract-lock.json has 15 rows and no ai.context / ai.agent-session row",
-        "main @ e754c5df: domains.json registers both capabilities as contract-only with 5 operations total"
+        "main @ e754c5df: domains.json registers both capabilities as contract-only with 5 operations total",
+        "agent-2 publication observed on 2026-09-22: origin/arena/01a0c6b5-n8n-rust-v-4 @ fb254f32, contract-lock 17 rows including ai.context@1.0.0 and ai.agent-session@1.0.0",
+        "agent-2 SYNC on PR #45 (commit 9a6edd42): dependency-complete frontend capture 55/56, heap 4,275 KB against the 4,096 KB pin"
       ],
       "finishEvidence": [
+        "docs/n8n-lego/evidence/frontend-context-session-p213.json (agent-1): both-tree runs, quoted-set counts, divergences, scope honesty, environment blockers",
+        "docs/n8n-lego/evidence/frontend-boundary-p213-run.json (agent-1): 52/56 capture in this sandbox, boot payload byte-identical at 18,126 B, heap 4,444 KB",
+        "frontend suite 363/363 against this branch's backend copy AND 363/363 against agent-2's tree fb254f32",
         "pending: docs/n8n-lego/evidence/backend-lego-p213.json (agent-2)",
-        "pending: docs/n8n-lego/evidence/frontend-context-session-p213.json (agent-1)",
-        "pending: the reconciled contract-lock rows and the post-merge gate run on main"
+        "pending: the reconciled contract-lock rows on protected main and the post-merge gate run there"
       ],
-      "verifiedAgainst": "not yet verified as complete - the baseline both agents started from is e754c5df",
+      "verifiedAgainst": "compared against BOTH trees on 2026-09-22: this branch's copy of protected main e754c5df (15 lock rows, no publication) and agent-2's publication fb254f32 (17 lock rows). Not verified as complete - completion needs RECONCILIATION PASS, merge, and a post-merge run on protected main.",
       "currentReference": "agent-1 branch arena/01a0c6b4-n8n-rust-v-4 (frontend side), agent-2 branch arena/01a0c6b5-n8n-rust-v-4 (backend side)",
       "knownLimitations": [
         "the generated .ai/master/CURRENT_STATUS.md still names cb71dbb2... as the protected main baseline and arena/01a0c53e-n8n-rust-v-4 as the agent-1 branch: both are hardcoded or read from agent-2's register inside tools/lego/ai-pack.mjs, which is not agent-1's file to edit (recorded for the manager)",
         "manifest/ai-lego-set.json#phase still says P2.11, so the generated 'Current phase' row is stale until the backend input is updated (agent-2 / manager)",
         "3 backend REST tests fail at the baseline because the 8 MB node catalog is not committed (GET /rest/types/nodes.json, /rest/types/node-versions.json, POST /rest/node-types answer 404 until `npm run lego:catalog` or a network fetch): environmental, pre-existing, not a code regression",
-        "neither ai.context nor ai.agent-session has a contract-lock row on this branch, so the frontend surface reports `declared-not-locked` and renders the rollover phase machine and the verification results as publication-pending (XA-20)",
-        "The frontend evidence capture reports 52/56 on this branch. Three failures are environmental (node_modules is empty in this sandbox, so no stock index.html is served and the three page-level checks cannot run - the B-10 family, PASS at e754c5df where the bundle is installed) and one is real and unresolved: descriptor assembly measures 4,275 KB against a 4,096 KB pin (4,251-4,361 KB across runs; the probe carries about +/-70 KB of noise) that P2.12 had already filled to 3,780 KB. The pin was NOT edited - a gate is not edited to make a run green - so the check is reported FAIL with its measurement and escalated as XA-21 / B-14. docs/n8n-lego/evidence/frontend-boundary-p213-run.json is this run; frontend-boundary-p25.json is left as captured at P2.5 because re-capturing it here would replace three environmental PASS rows with FAILs.",
-        "The Context & Session view is built on demand rather than eagerly at assembly: it is not part of the boot descriptor, and the boot path should not pay for a surface nobody has rendered. A handed-over record is still validated at the boundary (fail-closed is not deferred); only the empty case is lazy. This holds the probe at ~4.25 MB instead of ~4.36 MB and is recorded here because it is a design choice a reconciler should see."
+        "on protected main neither ai.context nor ai.agent-session has a contract-lock row, so a surface built against main reports `declared-not-locked` and renders the rollover phase machine and the verification results as publication-pending. Against agent-2's publication (fb254f32) the SAME code reports published at 1.0.0 with five context operations - the state is derived from the quoted lock, not hardcoded. Both observations are recorded; neither is averaged (XA-20).",
+        "The frontend evidence capture reports 52/56 in agent-1's sandbox: three failures are environmental (node_modules is empty here, so no stock index.html is served and the three page-level B-10 checks cannot run; agent-2 measured the same script at 55/56 with the dependency installed) and one is real and unresolved: descriptor assembly measures 4,444 KB after the P2.13 vocabulary promotion against a 4,096 KB pin (4,275 KB before it; the probe carries about +/-70 KB of noise). The pin was NOT edited - a gate is not edited to make a run green - so the check is reported FAIL with its measurement and escalated as XA-21 / B-14. docs/n8n-lego/evidence/frontend-boundary-p213-run.json is this run; frontend-boundary-p25.json is left as captured at P2.5 because re-capturing it here would replace three environmental PASS rows with FAILs.",
+        "The Context & Session view is built on demand rather than eagerly at assembly: it is not part of the boot descriptor, and the boot path should not pay for a surface nobody has rendered. A handed-over record is still validated at the boundary (fail-closed is not deferred); only the empty case is lazy. This holds the probe at ~4.25 MB instead of ~4.36 MB and is recorded here because it is a design choice a reconciler should see.",
+        "python3 tools/sublego-audit/audit.py cannot run in this sandbox (ModuleNotFoundError: No module named 'yaml'), so the sub-LEGO audit is reported as UNMEASURED here rather than assumed passing; agent-2 reported it passing on its branch. npm run verify:fast reports 5/10 for the same class of reason (the workflow/Rust track's gates need packages/workflow-lego/node_modules and the live reference runtime); that run rewrites docs/isolation/evidence/gate-report.json and docs/isolation/workflow-verification.md, which are another track's files and are reverted after every run.",
+        "npm run lego:test DOES run in this sandbox (an earlier note that it was blocked by `npm ERR! Unknown user config \"install-links\"` applied to a prefixed invocation, not to the gate itself): 436/439, with the three node-catalog REST suites failing for the pre-existing environmental reason already recorded above."
       ],
       "next": "P2.14 (indicative)",
       "statusBySide": {
-        "backend": "in-progress (agent-2, branch arena/01a0c6b5-n8n-rust-v-4)",
-        "frontend": "in-progress (agent-1, branch arena/01a0c6b4-n8n-rust-v-4)",
+        "backend": "in-progress (agent-2, branch arena/01a0c6b5-n8n-rust-v-4 @ fb254f32): both contracts published on its branch, not on protected main",
+        "frontend": "in-progress (agent-1, branch arena/01a0c6b4-n8n-rust-v-4 @ e9648997): quotes the peer publication, 55 quoted sets, 0 pending rows, 363/363 in both trees",
         "milestone": "in-progress - NOT complete until reconciliation PASS, merge and post-merge verification on main"
       }
     },
@@ -851,7 +983,7 @@
     "previousCompletedMilestone": "P2.12",
     "mainBaseline": "e754c5df35b41b0ff2ac769519f05f056835411c",
     "skill": "IMPLEMENTED (ai.skill@1.0.0, registry only, no skill runtime)",
-    "contextSession": "IN PROGRESS (the P2.13 target: declared and registered contract-only, no contract-lock row yet - XA-20)",
+    "contextSession": "IN PROGRESS (the P2.13 target): declared and registered contract-only on protected main e754c5df (15 lock rows, no publication); PUBLISHED on agent-2's branch fb254f32 as ai.context@1.0.0 + ai.agent-session@1.0.0 (17 lock rows, 5 context operations, 3 session operations) and quoted by the frontend lock. Not merged, so both states are recorded side by side - XA-20 open",
     "memory": "PLANNED (P2.14), gated by XA-12",
     "workspace": "PLANNED (P2.15), gated by XA-13 and XA-18",
     "agentMachine": "CONTRACT-ONLY (declared and registered; no runtime, gated by XA-16)",

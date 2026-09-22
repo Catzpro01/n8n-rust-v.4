@@ -297,7 +297,9 @@ skipped and Skill drift = 0**. New this phase:
 | `26-ai-contracts.test.mjs` | declared-not-installed, no inference or vendor field, kinds stay distinct, fail-closed validators, zero-install, budget-derived runtime selection, MCP without transport, identity vs chain of thought, no boot-payload leak |
 | `27-agent-events.test.mjs` | closed event vocabulary, delivery classes, refusals, mapping and unmapped refusal, ordering, bound with drop counting, delegation without inheritance, cycles reported, approvals as gates |
 | `28-seam.test.mjs` | the closed input list, forbidden sources, one 16-field identity on both sides, normalisation and refusal, no secret/transcript/transport in the seam |
-| `29-alignment.test.mjs` | the lock against the backend tree: every quoted value and the quoted semantics, a pending publication that must name a recorded decision, the contract-lock rows, and the comparison itself proven to fail on a renamed, missing or invented term. Skips (4 tests) only while the backend is absent; with `N8N_BACKEND_LEGO_ROOT` pointed at the other agent's tree it runs for real (**7/7, 0 skips**) |
+| `29-alignment.test.mjs` | the lock against the backend tree: every quoted value and the quoted semantics, a pending publication that must name a recorded decision, the contract-lock rows, and the comparison itself proven to fail on a renamed, missing or invented term. Skips (4 tests) only while the backend is absent; with `N8N_BACKEND_LEGO_ROOT` pointed at the other agent's tree it runs for real (**8/8, 0 skips** at P2.13, including the publication comparison against agent-2's `fb254f32`) |
+| `32-context-session.test.mjs` | the Context & Session surface: 46 tests — session identity and state, context scope, usage state, rollover preparation, continuation state, continuity verification, previous/next session relationship, degraded continuation, fail-closed refusals, no fabricated token counts, no Memory-store implication, no execution affordance, and the publication state **derived** from the quoted lock so one code path is truthful against protected main *and* against a tree that publishes |
+| `33-milestones.test.mjs` | the canonical milestone register: statuses, dependencies, boundary statements, evidence rows and the scope-honesty list |
 
 ## 19. Manager decisions
 
@@ -330,6 +332,27 @@ does meanwhile — and the phase it blocks. The register is versioned (`recordVe
 row carries owner, affected domains, decision required, blocking level, date and references.
 
 ## 20. Readiness evidence
+
+### 20.1 P2.13 measurement (2026-09-22, commit `e9648997`) — current
+
+| Command | Result |
+| :--- | :--- |
+| `node --test packages/frontend-lego/test/*.test.mjs` | **363/363 pass, 0 skipped, 0 fail** |
+| `N8N_BACKEND_LEGO_ROOT=<agent-2 tree @ `fb254f32`> node --test packages/frontend-lego/test/*.test.mjs` | **363/363 pass** — the same suite, the same code, pointed at the peer publication; no edit in between |
+| focused set (`32`, `29`, `31`, `24`, `33`, `19`) in both trees | **102/102** each |
+| `N8N_PEER_BACKEND_LEGO_ROOT=<peer tree> node packages/frontend-lego/scripts/capture-context-session-evidence.mjs` | writes `docs/n8n-lego/evidence/frontend-context-session-p213.json`: both-tree runs, 55 quoted sets, 0 pending publication rows, the two registered divergences, scope honesty, environment blockers |
+| `node apps/n8n-lego/scripts/capture-frontend-evidence.mjs` | **52/56** in this sandbox (three page-level checks need the stock UI dependency, absent here) and **55/56** with it installed, measured by agent-2 running the same script. The one failure in both runs is real: descriptor assembly **4,444 KB** against the **4,096 KB** pin → XA-21 open, pin **not** edited. Boot payload byte-identical at **18,126 B** |
+| `npm run lego:test` | **blocked** — `npm ERR! Unknown user config "install-links"`; recorded as environmental, not reported as a code regression and not worked around |
+| vocabulary lock | **55 quoted sets** (53 before the publication), **24 local sets**, **0 pending publication rows** (2 before), **2 promoted rows** (`contextRolloverPhase`, `continuationVerification`), 14 declared overlaps checked |
+
+Scope honesty at P2.13: the frontend renders contract-level state only. **Not implemented anywhere on
+this branch:** model inference, provider calls, the Agent Machine loop, multi-agent runtime, Skill
+execution, a Memory store, a Workspace executor, filesystem/terminal authority, MCP runtime, Runtime
+Adapter runtime, Node Creator/Translation runtime, token provider integration, external agent runtime,
+Rust. The surface renders no token dashboard, no transcript, no fabricated token counts, implies no
+Memory store, and offers no execution affordance.
+
+### 20.2 P2.12 measurement — historical, kept as recorded
 
 | Command | Result |
 | :--- | :--- |

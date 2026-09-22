@@ -29,6 +29,7 @@ GC — so it carries run-to-run noise of roughly ±70 KB.
 | `main @ e754c5df` (re-measured here, fresh probe) | 3,684 | PASS | same tree, no GC: the noise floor |
 | this branch, view built eagerly at assembly | 4,361 / 4,316 | **FAIL** | two runs |
 | this branch, view built on demand (current code) | 4,251 / 4,275 | **FAIL** | ~110 KB recovered; 4,275 KB is the number in the final capture (`frontend-boundary-p213-run.json`) |
+| this branch, after quoting agent-2's publication (`e9648997`) | **4,444** | **FAIL** | +169 KB of quoted source text: `contextRolloverPhase` and `continuationVerification` promoted into the lock with their provenance, `contextOperation` 2 → 5, `aiLegoStatus` 5 → 6, plus the two registered-divergence records. The pin was **not** edited. Agent-2's 4,275 KB figure (SYNC on PR #45) predates this commit and must be re-captured at reconciliation. |
 
 Retained cost per module, measured with `--expose-gc` in one process, current tree against a
 `git archive HEAD` copy of `packages/frontend-lego`:

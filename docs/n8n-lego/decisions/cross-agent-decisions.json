@@ -953,7 +953,10 @@
         "per-module retained cost, measured with --expose-gc in one process, current tree vs a `git archive HEAD` copy: vocabulary.mjs 720 KB vs 632 KB, context-session.mjs +243 KB (new), manifests.mjs 214 KB vs 199 KB, conformance.mjs 1005 KB vs 1018 KB, lego.mjs 174 KB vs 161 KB",
         "packages/frontend-lego/src/context-session.mjs -> 85,930 B; packages/frontend-lego/src/skills.mjs (the P2.12 surface, for scale) -> 40,426 B",
         "packages/frontend-lego/src/lego.mjs -> the Context & Session view is built on demand and eagerly only when the application hands records over, which is what holds the probe at ~4.25 MB instead of ~4.36 MB; the boot descriptor does not contain the view either way",
-        "packages/frontend-lego/src/*.mjs read no backend file at import (provenance is data, verified by grep: the only `apps/n8n-lego/...` strings in src are provenance paths), so agent-2's +708-line ai-foundation.json and its new context-session.mjs do not move the frontend descriptor-assembly measurement; the 4,275 KB is frontend source text and quoted sets, measured with the peer publication not present"
+        "packages/frontend-lego/src/*.mjs read no backend file at import (provenance is data, verified by grep: the only `apps/n8n-lego/...` strings in src are provenance paths), so agent-2's +708-line ai-foundation.json and its new context-session.mjs do not move the frontend descriptor-assembly measurement; the 4,275 KB is frontend source text and quoted sets, measured with the peer publication not present",
+        "2026-09-22 agent-2 (SYNC on PR #45, commit 9a6edd42) ran the same capture with the stock UI dependency installed: 55/56, the only failure being the heap pin at 4,275 KB against 4,096 KB - so three of agent-1's four failures are environmental and one is real.",
+        "2026-09-22 agent-1, after promoting contextRolloverPhase and continuationVerification out of PENDING_PUBLICATIONS (commit e9648997): 4,444 KB, +169 KB of quoted source text. The pin was not edited. agent-2's 4,275 KB figure is stale against this commit and must be re-captured at reconciliation.",
+        "The frontend imports no backend file at import time (packages/frontend-lego/src/* reads manifests only through the assembled surface), so agent-2's +708-line manifest/ai-foundation.json does not move this number; the movement is entirely quoted vocabulary and its provenance notes."
       ],
       "frontendBehaviour": "agent-1 does NOT edit the pin: it lives in the application's evidence script, it is a gate, and editing a gate to make a run green is what the merge protocol forbids. The check is reported FAIL with its measurement in the P2.13 evidence, the Context & Session view is built on demand so the boot path does not materialise a surface nobody has rendered, the surface prose is kept (a refusal that cannot explain itself is not a refusal a reader can act on), and the failure is recorded as B-14 in .ai/master/frontend/KNOWN_BLOCKERS.md and in the P2.13 knownLimitations. No other check regressed: 52/56 with three environmental failures and this one.",
       "informedBy": [
@@ -979,7 +982,8 @@
         "packages/frontend-lego/src/context-session.mjs"
       ],
       "relatedOpenDecision": "None of the vocabulary rows: XA-20 is a publication question and this is a resource-budget question. It intersects B-10 (no installed dependencies in this sandbox), which is why three other checks in the same capture fail for environmental reasons and are reported as such rather than as regressions.",
-      "package": "docs/n8n-lego/decisions/XA-21-assembly-heap-budget.md"
+      "package": "docs/n8n-lego/decisions/XA-21-assembly-heap-budget.md",
+      "recordVersion": "1.0.0"
     }
   ],
   "rules": [

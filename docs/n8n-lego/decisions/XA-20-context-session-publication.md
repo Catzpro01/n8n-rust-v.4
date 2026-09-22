@@ -7,6 +7,15 @@
 `arena/01a0c6b4-n8n-rust-v-4` (the agent-1 frontend branch). Every number below was read from the
 tree, not remembered; §7 shows how to re-measure.
 
+> **2026-09-22 UPDATE — §1–§6 below describe the pre-publication state and are kept as measured.**
+> Agent-2 has since executed **Option A** on `arena/01a0c6b5-n8n-rust-v-4 @ fb254f32`: both lock rows
+> published, five context operations registered, and the phase machine and verification results
+> declared in `manifest/ai-foundation.json`. Agent-1's branch (`e9648997`) now **quotes that
+> publication** — `PENDING_PUBLICATIONS` is empty, 55 quoted sets — and the row stays **open** because
+> the publication is on a peer branch, not on protected main, and because the backend still disagrees
+> with itself about two continuation sections. Read **§9** for the current state and the five items
+> still required from the manager.
+
 The question, in one line: **`ai.context` and `ai.agent-session` are declared at four places and
 locked at none — so which vocabulary is the frontend allowed to render, and what must it keep
 saying "pending" until the manager publishes it?**
@@ -187,6 +196,14 @@ cd packages/frontend-lego && node -e "import('./index.mjs').then(m=>console.log(
 # the gate that fails if the backend publishes what is still pending (or if it drifts)
 npm run frontend-lego:test -- --test-name-pattern "pending vocabulary is promoted"
 node --test packages/frontend-lego/test/29-alignment.test.mjs packages/frontend-lego/test/32-context-session.test.mjs
+
+# the same frontend suite pointed at the PEER tree — the only honest way to compare two branches
+mkdir -p /tmp/peer && git archive origin/arena/01a0c6b5-n8n-rust-v-4 apps/n8n-lego/src/lego | tar -x -C /tmp/peer
+N8N_BACKEND_LEGO_ROOT=/tmp/peer/apps/n8n-lego/src/lego node --test packages/frontend-lego/test/*.test.mjs
+
+# both observations at once: runs, quoted-set counts, divergences, scope honesty
+N8N_PEER_BACKEND_LEGO_ROOT=/tmp/peer/apps/n8n-lego/src/lego \
+  node packages/frontend-lego/scripts/capture-context-session-evidence.mjs
 ```
 
 Under option A the last two commands are the acceptance check: the promotion test must pass with the
@@ -207,3 +224,73 @@ store may be implied), **XA-17** (which contract publishes token usage — the t
 quoted from the reference scenario with that row as their decision), **XA-11** (where Skill is
 modelled — unaffected: P2.13 adds no domain and creates no `ai-context` / `ai-session` top-level
 LEGO).
+
+---
+
+## 9. Update 2026-09-22 — the publication happened on a peer branch
+
+**What agent-2 published** (`arena/01a0c6b5-n8n-rust-v-4 @ fb254f32`, contract-lock 15 → **17 rows**):
+
+| Vocabulary | Published as | Frontend treatment now |
+|---|---|---|
+| `ai.context@1.0.0` | lock row, owner `manager`, status `implemented`, domain `ai-foundation` | quoted; version rendered from the lock, `agreesWithClaim: true` |
+| `ai.agent-session@1.0.0` | lock row, same owner/domain | quoted |
+| 5 context operations | `load, compact, rollover, rehydrate, verify` in `domains.json#capabilities[id=ai.context]` | quoted (2 → **5**); the published list is derived from the lock, not hardcoded |
+| 3 session operations | `create, status, close` (unchanged) | quoted |
+| phase machine | `CONTEXT_MANAGER_STATES = NORMAL, PREPARE, ROLLOVER` in `ai-foundation.json#context` | **promoted** out of `PENDING_PUBLICATIONS` into `contextRolloverPhase` |
+| verification results | `CONTINUATION_VERIFICATION = verified, degraded, failed` | **promoted** into `continuationVerification` |
+| 14 continuation sections | `CONTINUATION_FIELDS` in the locked contract surface | `continuationSection` re-pointed from the AI-set manifest at the contract |
+| 6th status word | `statusVocabulary` gained `in-progress` | `aiLegoStatus` 5 → **6**, adopted with the commit that moved it recorded |
+
+Result: **53 → 55 quoted sets, 2 → 0 pending publication rows.** `PENDING_PUBLICATIONS` is empty, which
+is exactly what §4.4 said pending was for.
+
+**What is still not published, and stays refused:** `ai.context.execute`, `ai.context.continue`,
+`ai.agent-session.continue`, `.pause`, `.resume`, `.execute`, `ai.memory.*`, `ai.agent-runtime.*`.
+`Continue session` therefore still renders `operation-unpublished` in *both* trees — and now names the
+published path it does not trigger (`ai.context.rollover → rehydrate → verify`).
+
+**The two registered divergences** (neither averaged away, neither silently tolerated):
+
+1. **The backend contradicts itself.** Locked `ai.context@1.0.0` publishes
+   `continuationPackage: [toolStateReferences, importantReferences]`;
+   `ai-lego-set.json#lego[id=context-session].continuationPackage` still says `[toolState, refs]` — on
+   the peer branch exactly as on protected main. The frontend quotes the **contract**, records the
+   manifest spelling verbatim as a registered divergence, and reports it as drift data. It closes when
+   the manifest moves to the published spelling: **no frontend edit required.**
+2. **Protected main has 2 context operations; the peer branch has 5.** Visible only while the trees
+   differ. Closes at merge.
+
+**Why the manifest's `publication.rows` is still empty.** `publication.rows` is what *this* tree
+publishes and it feeds the surface (`contract: publication.rows.length > 0 ? publication.rows : null`).
+Filling it from a peer branch would make a surface with no declaration handed over report `published` —
+a fail-closed violation. So the peer rows are recorded verbatim in a separate
+`publication.publishedOnPeerBranch` block, beside `publication.protectedMain`. Both observations,
+neither averaged.
+
+**Measured both ways, one code path, no edit in between:**
+
+| Run | This tree (`e754c5df` backend copy) | Peer tree (`fb254f32`) |
+|---|---|---|
+| focused (test/32, 29, 31, 24, 33, 19) | **102/102** | **102/102** |
+| full frontend suite | **363/363** | **363/363** |
+| `test/32` Context & Session | 46/46 | 46/46 |
+| `test/29` cross-agent alignment | 8/8 | 8/8 |
+
+Evidence: `docs/n8n-lego/evidence/frontend-context-session-p213.json`, produced by
+`packages/frontend-lego/scripts/capture-context-session-evidence.mjs` (which refuses to run if a focused
+test file is missing, so a smaller count cannot look like a pass).
+
+**Still required from the manager (five items, unchanged in substance):**
+
+1. Rule the canonical spelling of the two continuation sections — the recommendation is that the
+   **locked contract wins** over the AI-set manifest, and agent-2 moves the manifest.
+2. Confirm the five context operations as the public surface (and that `execute`/`continue` stay absent).
+3. Confirm `status: implemented` on both rows against the P2.13 boundary (no runtime, no provider calls).
+4. Confirm `AGENT_SESSION_TRANSITIONS` is quoteable by the frontend.
+5. Settle the **merge order**: agent-1's lock quotes rows that are not on protected main, so both
+   branches must land in one reconciliation (or agent-2's first), otherwise main holds a frontend lock
+   quoting a publication that does not exist there.
+
+**Status: still `open-for-manager`.** A worker does not close a manager-owned decision, and quoting a
+peer's publication is not the same as the manager ratifying it. `resolution` stays `null`.
