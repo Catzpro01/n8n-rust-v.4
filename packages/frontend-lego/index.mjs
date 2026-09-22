@@ -469,3 +469,70 @@ export {
   validateRolloverThreshold,
   validateSessionRecord,
 } from './src/context-session.mjs';
+
+/**
+ * The Memory surface (P2.14): the quoted record shape of `ai.memory@1.0.0`, the deterministic
+ * bounded list, the four list states, the provider-boundary persistence statement, the separation
+ * from Context and Session, and the deferred half of the contract named rather than offered. It
+ * renders records; it writes, forgets, traverses and ranks nothing.
+ */
+export {
+  // `MEMORY_DECISION` (XA-12) is already exported by the Context & Session surface above — the two
+  // surfaces name the same decision, and one name for one decision is the point of the vocabulary
+  // lock, so it is deliberately not re-exported here.
+  DEFERRED_MEMORY_OPERATIONS,
+  FORBIDDEN_MEMORY_FIELDS,
+  FORBIDDEN_MEMORY_KEY_PATTERN,
+  MEMORY_AFFORDANCES,
+  MEMORY_CONTRACT_ID,
+  MEMORY_CONTENT_LIMIT_BYTES,
+  MEMORY_DECLARED_VERSION,
+  MEMORY_DECLARATION_SOURCE,
+  MEMORY_ERROR_CODES,
+  MEMORY_FIELDS,
+  MEMORY_GRAPH_EDGES,
+  MEMORY_GRAPH_NODES,
+  MEMORY_KINDS,
+  MEMORY_LEGO_ID,
+  MEMORY_FORBIDDEN_IMPLICATIONS,
+  MEMORY_LIFECYCLE,
+  MEMORY_LIST_LIMIT,
+  MEMORY_LIST_ORDERING,
+  MEMORY_LIST_STATES,
+  MEMORY_ORIGINS,
+  MEMORY_PERSISTENCE_STATES,
+  MEMORY_MODELING_DECISION,
+  MEMORY_OPERATION_IDS,
+  MEMORY_OPERATIONS,
+  MEMORY_PERMISSIONS,
+  MEMORY_PHASE,
+  MEMORY_QUOTED_VOCABULARIES,
+  MEMORY_REFERENCE_FIELDS,
+  MEMORY_REFERENCE_LIMIT,
+  MEMORY_RETENTIONS,
+  MEMORY_SCOPES,
+  MEMORY_SEPARATION,
+  MEMORY_SURFACE_MODULE,
+  MEMORY_UNSUPPORTED_ERROR,
+  MemoryError,
+  assertMemoryIsNotContext,
+  createMemoryView,
+  describeMemory,
+  memoryDrift,
+  memoryKind,
+  memoryKinds,
+  memoryLifecycle,
+  memoryLifecycleState,
+  memoryList,
+  memoryOrigin,
+  memoryPersistence,
+  memoryPublication,
+  memoryRecallResult,
+  memoryRetention,
+  memoryRetentions,
+  memoryScope,
+  memoryScopeLadder,
+  memoryUnsupported,
+  scanForbiddenMemoryKeys,
+  validateMemoryRecord,
+} from './src/memory.mjs';

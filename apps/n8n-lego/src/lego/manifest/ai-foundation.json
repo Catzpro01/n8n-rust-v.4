@@ -394,11 +394,11 @@
         "remote"
       ],
       "supports": {
-        "session": "boolean — can it hold a multi-turn session",
-        "background": "boolean — can it keep working after the caller disconnects",
-        "stream": "boolean — can it emit incremental output",
-        "cancellation": "boolean — can it actually stop, or only be abandoned",
-        "delegation": "boolean — can it spawn child agents"
+        "session": "boolean \u2014 can it hold a multi-turn session",
+        "background": "boolean \u2014 can it keep working after the caller disconnects",
+        "stream": "boolean \u2014 can it emit incremental output",
+        "cancellation": "boolean \u2014 can it actually stop, or only be abandoned",
+        "delegation": "boolean \u2014 can it spawn child agents"
       },
       "rule": "`supports.cancellation: false` is a legitimate, declarable answer. A runtime that cannot stop must say so, because the alternative is a cancel that silently does nothing while the caller believes work stopped."
     },
@@ -433,7 +433,7 @@
       "failed",
       "cancelled"
     ],
-    "sizeRule": "A session record must remain bounded. Storing a transcript inside it would make session size grow without limit and would put model output into the same row as control state — see the artifact contract.",
+    "sizeRule": "A session record must remain bounded. Storing a transcript inside it would make session size grow without limit and would put model output into the same row as control state \u2014 see the artifact contract.",
     "implementationStatus": "in-progress",
     "implementationBoundary": [
       "bounded registry mechanics",
@@ -645,7 +645,7 @@
       "retained",
       "pinned"
     ],
-    "storageRule": "`storageRef` is an opaque reference resolved by the storage domain. The AI contracts must not know whether it is a local file, SQLite row or object store — that is exactly the abstraction the storage domain owns."
+    "storageRule": "`storageRef` is an opaque reference resolved by the storage domain. The AI contracts must not know whether it is a local file, SQLite row or object store \u2014 that is exactly the abstraction the storage domain owns."
   },
   "context": {
     "contract": "ai.context",
@@ -699,6 +699,107 @@
     ],
     "securityRule": "Context state rejects credentials, tokens, secrets, cookies, private model reasoning, raw hidden prompts, arbitrary host paths and unrestricted capability grants. References are preferred over payloads."
   },
+  "memory": {
+    "contract": "ai.memory",
+    "rule": "Persistent knowledge that survives context replacement. Context is what is loaded now; Session tracks continuity; Memory is what is intentionally retained. Loading memory into context is always an explicit, bounded caller choice.",
+    "scopes": [
+      "GLOBAL",
+      "PROJECT",
+      "WORKFLOW",
+      "AGENT",
+      "SESSION"
+    ],
+    "kinds": [
+      "note",
+      "decision",
+      "artifact",
+      "task",
+      "execution",
+      "reference"
+    ],
+    "retentions": [
+      "EPHEMERAL",
+      "WORKING",
+      "IMPORTANT",
+      "DURABLE",
+      "PERMANENT"
+    ],
+    "fields": [
+      "memoryId",
+      "scope",
+      "scopeOwner",
+      "kind",
+      "retention",
+      "content",
+      "references",
+      "provenance",
+      "version",
+      "size",
+      "checksum",
+      "createdAt",
+      "updatedAt"
+    ],
+    "referencesRule": "Each reference declares an id and a graph edge relation from the memory vocabulary; linkage is explicit and never auto-dereferenced.",
+    "graph": {
+      "nodes": [
+        "project",
+        "workflow",
+        "node",
+        "execution",
+        "agent",
+        "session",
+        "decision",
+        "evidence",
+        "artifact",
+        "task"
+      ],
+      "edges": [
+        "depends_on",
+        "caused",
+        "derived_from",
+        "supports",
+        "contradicts",
+        "implements",
+        "belongs_to",
+        "delegated_to",
+        "decided_by",
+        "observed_in",
+        "related_to"
+      ]
+    },
+    "retentionRule": "Retention is an explicit declaration; EPHEMERAL and WORKING are candidates for forgetting, IMPORTANT/DURABLE/PERMANENT persist until an explicit forget.",
+    "loadRule": "Never dump full memory into context. Retrieval is deterministic, scoped, ordered by creation time and bounded by the caller's limit. Relevance ranking is deferred; list returns a deterministic page.",
+    "providerNote": "Obsidian is a Memory Provider / human knowledge interface adapter. It is NOT the internal source of truth, and the memory graph must remain valid with no provider connected.",
+    "implementationStatus": "implemented",
+    "implementationBoundary": [
+      "bounded in-memory provider behind the provider boundary",
+      "memory identity and namespace/scope",
+      "content and reference validation with sensitive rejection",
+      "deterministic checksum and size",
+      "scope-isolated retrieval with deterministic ordering and pagination",
+      "explicit forget semantics",
+      "provider replaceability"
+    ],
+    "notImplemented": [
+      "vector search, embeddings or relevance-ranked traversal",
+      "automatic retention expiry",
+      "automatic memory-to-context injection",
+      "model inference or provider integration",
+      "Agent Machine loop, Workspace or Runtime Adapter runtime",
+      "Rust implementation"
+    ],
+    "operations": [
+      "memory.remember",
+      "memory.recall",
+      "memory.list",
+      "memory.forget"
+    ],
+    "permissions": [
+      "ai:memory:read",
+      "ai:memory:write"
+    ],
+    "securityRule": "Memory content and references reject credentials, secrets, tokens, host paths and transcripts by name and pattern. Checksum mismatches are reported, never silently repaired."
+  },
   "resourceProfiles": {
     "rule": "Resource metadata describes requirements. It is not a scheduler and grants no enforcement.",
     "dimensions": [
@@ -728,7 +829,7 @@
     "noLocalInstallRule": "No external runtime may become a local installation requirement. Every AI provider is optional and remotely satisfiable, because requiring a local agent runtime would exclude the low-end targets the foundation explicitly supports."
   },
   "zeroInstall": {
-    "rule": "AI Foundation present with NO provider configured is a VALID, fully supported system state — not an error and not a degraded install.",
+    "rule": "AI Foundation present with NO provider configured is a VALID, fully supported system state \u2014 not an error and not a degraded install.",
     "state": {
       "aiFoundation": "ready",
       "modelProvider": "not-configured",
@@ -797,7 +898,7 @@
       "mcp"
     ],
     "prohibition": "Never force every call through HTTP. An HTTP hop between two objects in one process is the most expensive available way to call a function.",
-    "carryRule": "A transport advertises which interaction classes it can carry. The OPERATION owns its interaction class; a transport that cannot carry it is simply not eligible. A transport must never silently downgrade a STREAM to a CALL — the caller asked for incremental output and would instead wait for a single late response."
+    "carryRule": "A transport advertises which interaction classes it can carry. The OPERATION owns its interaction class; a transport that cannot carry it is simply not eligible. A transport must never silently downgrade a STREAM to a CALL \u2014 the caller asked for incremental output and would instead wait for a single late response."
   },
   "rustPolicy": {
     "rule": "Rust remains an implementation choice beneath these contracts, exactly as ADR-0005 states.",

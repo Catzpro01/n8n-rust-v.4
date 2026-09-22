@@ -171,10 +171,11 @@
    "ai.agent-session.pause",
    "ai.agent-session.resume",
    "ai.agent-session.execute",
-   "ai.memory.*",
+   "ai.memory.traverse",
+   "ai.memory.relate",
    "ai.agent-runtime.*"
   ],
-  "note": "Published on protected main at efa3da35 via PR #45 (merged by manager). Both ai.context@1.0.0 and ai.agent-session@1.0.0 are locked with status implemented, 5 context operations, 3 session operations, and 5 permissions. The frontend quotes that publication and derives published.",
+  "note": "Published on protected main at efa3da35 via PR #45 (merged by manager). Both ai.context@1.0.0 and ai.agent-session@1.0.0 are locked with status implemented, 5 context operations, 3 session operations, and 5 permissions. The frontend quotes that publication and derives published. P2.14 narrowed the Memory entry: `ai.memory.*` was replaced by the two names that really are unpublished (`ai.memory.traverse`, `ai.memory.relate`), because the bounded `ai.memory` surface — four operations, two permissions — is published and consumed by the Memory catalog (`manifest/memory.json`), which owns that rendering. This surface still renders no memory and never claims the deferred half.",
   "protectedMain": {
    "branch": "main",
    "commit": "efa3da35",

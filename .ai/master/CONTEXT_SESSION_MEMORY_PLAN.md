@@ -7,6 +7,18 @@ for the UI half; **milestone:** P2.13 (canonical row: `docs/n8n-lego/milestones.
 Memory as a *store* is **XA-12** (`publicationPending`); everything below is planning for the
 declared parts plus the frontend's rendering of them.
 
+> **P2.14 UPDATE (2026-09-22, `main @ 67e638ef`).** The publication half of the paragraph above is
+> now historical: `ai.context@1.0.0` and `ai.agent-session@1.0.0` are locked on protected main at
+> `efa3da35` (PR #45), and **Memory is published** — `ai.memory@1.0.0`, locked by agent-2 on
+> `arena/01a0c90d-n8n-rust-v-4 @ f11aee01`, consumed by this frontend at P2.14 (`manifest/memory.json`,
+> `src/memory.mjs`, rule **A29**, `test/34`). Memory is its own LEGO with its own contract: it is
+> **not** a sub-LEGO of `context-session`, Context *references* it and never contains it, and both
+> surfaces refuse the other's payload by name. What XA-12 still owns `open-for-manager` is the
+> deferred half — relevance-ranked traversal, explicit edge creation (`relate`) and retention-policy
+> enforcement — none of which the UI may offer, imply or rank by. The `Memory 12 relevant` counter
+> described below is the **P2.13** state of the UI; the P2.14 surface renders the four list states
+> instead, and never renders a count it was not handed.
+
 ---
 
 ## 1. The permanent invariant

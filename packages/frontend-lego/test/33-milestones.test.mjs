@@ -1,7 +1,10 @@
 /**
- * The canonical milestone register — `docs/n8n-lego/milestones.json` (P2.13, Part A).
+ * The canonical milestone register — `docs/n8n-lego/milestones.json` (P2.13 Part A).
  *
- * Reconciled against main @ efa3da352adcc20ff684f309b38a6fbf15005232 (PR #45 merged).
+ * Reconciled for P2.14 against protected main @ 67e638ef83028bbc69876e2e768181415c7554fa: P2.13
+ * (Context & Session) is complete on protected main through PR #45 and PR #46, and P2.14 (Memory) is
+ * the row in progress. The expectations below follow the register rather than pinning the state the
+ * reconciliation replaced — the milestone moves, the suite reads what it says.
  *
  * The register exists because "what is done?" was being answered from six documents that
  * disagreed. A register that cannot be checked is another document to disagree with, so this
@@ -55,9 +58,11 @@ test('the register is one machine-readable file at the canonical path, owned by 
   assert.equal(typeof REGISTER.purpose, 'string');
   assert.match(REGISTER.purpose, /Granular milestone truth/i);
   assert.equal(REGISTER.protectedBranch, 'main');
-  assert.match(REGISTER.mainBaseline, /^e754c5df/);
-  assert.equal(REGISTER.currentMilestone, 'P2.13');
-  assert.equal(REGISTER.previousCompletedMilestone, 'P2.12');
+  // The baseline is the protected-main commit the in-progress milestone started from; P2.13's own
+  // historical baseline (e754c5df) stays on the P2.13 row instead of being overwritten here.
+  assert.match(REGISTER.mainBaseline, /^67e638ef/);
+  assert.equal(REGISTER.currentMilestone, 'P2.14');
+  assert.equal(REGISTER.previousCompletedMilestone, 'P2.13');
   assert.ok(REGISTER.milestones.length >= 7, `${REGISTER.milestones.length} milestones recorded`);
   assert.ok(REGISTER.agentBranches && typeof REGISTER.agentBranches === 'object');
   assert.ok(REGISTER.strategicRoadmap && typeof REGISTER.strategicRoadmap === 'object');
@@ -100,11 +105,27 @@ test('a status is backed by the evidence that status requires', () => {
       assert.ok(milestone.verificationEvidence && typeof milestone.verificationEvidence === 'object', `${milestone.id}: in-progress carries verificationEvidence`);
     }
   }
-  // P2.13 status in the canonical register:
+  // A finished milestone may not carry an ACTIVE reconciliation verdict: the pre-merge
+  // RECONCILIATION_REQUIRED record is kept, but it is marked as history and names its resolution.
+  for (const milestone of REGISTER.milestones) {
+    if (milestone.status !== 'complete' || !milestone.reconciliation) continue;
+    assert.equal(milestone.reconciliation.historical, true, `${milestone.id} is complete, so its reconciliation block is history`);
+  }
+  // P2.13 in the canonical register: closed on protected main, with its reconciliation history kept.
   const p213 = byId.get('P2.13');
-  assert.equal(p213.status, 'in-progress');
-  assert.equal(p213.reconciliation.verdict, 'RECONCILIATION_REQUIRED');
+  assert.equal(p213.status, 'complete');
+  assert.equal(p213.finishEvidence.protectedMain, '67e638ef83028bbc69876e2e768181415c7554fa');
+  assert.equal(p213.currentCommitReference, '67e638ef83028bbc69876e2e768181415c7554fa');
+  assert.match(p213.finishEvidence.mergeEvidence, /PR #45/, 'the merge evidence names the backend PR');
+  assert.match(p213.finishEvidence.mergeEvidence, /PR #46/, 'and the frontend PR');
+  assert.match(p213.reconciliation.resolution.note, /stay on this row/, 'the historical baseline and branches stay on the completed row');
+  assert.equal(p213.reconciliation.verdict, 'RECONCILIATION_REQUIRED', 'the pre-merge verdict is preserved, not rewritten');
   assert.equal(p213.reconciliation.baseline, 'e754c5df35b41b0ff2ac769519f05f056835411c');
+  // P2.14 in the canonical register: in progress, and claiming no finish evidence.
+  const p214 = byId.get('P2.14');
+  assert.equal(p214.status, 'in-progress');
+  assert.equal(p214.finishEvidence, null, 'an in-progress milestone claims no finish evidence');
+  assert.equal(p214.reconciliation.verdict, 'RECONCILIATION_REQUIRED', 'P2.14 stays reconciliation-required until MERGE PASS');
 });
 
 test('dependencies and decision references resolve: no dangling id anywhere in the register', () => {
@@ -174,11 +195,21 @@ test('the proposal artifact preserves Agent 1 granular ladder proposal as non-ca
   assert.ok(PROPOSAL.contents.authority, 'authority preserved');
 });
 
-test('the baseline block protects main and names both agent branches', () => {
+test('the baseline block protects main and names the branches of the current milestone', () => {
   assert.equal(REGISTER.protectedBranch, 'main');
-  assert.match(REGISTER.mainBaseline, /^e754c5df/);
-  assert.equal(REGISTER.agentBranches.agent1, 'arena/01a0c6b4-n8n-rust-v-4');
-  assert.equal(REGISTER.agentBranches.agent2, 'arena/01a0c6b5-n8n-rust-v-4');
+  // The main baseline and the in-progress milestone's start evidence are the same protected-main
+  // commit: the register cannot disagree with its own row about where P2.14 started.
+  const p214 = byId.get('P2.14');
+  assert.equal(REGISTER.mainBaseline, p214.startEvidence.commit, 'the main baseline is the commit P2.14 started from');
+  assert.match(REGISTER.mainBaseline, /^[0-9a-f]{40}$/);
+  assert.equal(REGISTER.agentBranches.agent1, 'arena/01a0c90c-n8n-rust-v-4');
+  assert.equal(REGISTER.agentBranches.agent2, 'arena/01a0c90d-n8n-rust-v-4');
+  // Moving the top-level block on did not lose P2.13: its baseline and both agent branches stay on
+  // the P2.13 row, which is where a historical milestone's coordinates belong.
+  const p213 = byId.get('P2.13');
+  assert.equal(p213.startEvidence.commit, 'e754c5df35b41b0ff2ac769519f05f056835411c');
+  assert.equal(p213.startEvidence.branch, 'arena/01a0c6b5-n8n-rust-v-4');
+  assert.match(p213.reconciliation.resolution.mergeEvidence, /arena\/01a0c6b4-n8n-rust-v-4/, 'the frontend branch P2.13 shipped from is recorded');
 });
 
 /* ------------------------------------------------------------- 4. merge gate */
@@ -222,10 +253,12 @@ test('the curated status documents agree with the register, and say they derive 
   assert.match(phases, /P2\.13/);
   assert.match(phases, /milestones\.json/, 'the phase document derives from the register');
   assert.match(phases, /Phase [A-F]/, 'and keeps the strategic phases');
-  // A document that says "complete" while the register says in-progress is the exact drift this
-  // register exists to end, so the two are compared rather than trusted.
+  // A document that disagrees with the register about whether a milestone is finished is the exact
+  // drift this register exists to end, so the two are compared rather than trusted. The register now
+  // says P2.13 closed on protected main, so the curated view has to say so — while its own header
+  // keeps naming the baseline it was measured at.
   const registerStatus = byId.get('P2.13').status;
-  assert.equal(/P2\.13[^\n]*\bcomplete\b/i.test(status), registerStatus === 'complete', 'P2.13 is not reported complete while the register says otherwise');
+  assert.equal(/P2\.13[^\n]*\bcomplete\b/i.test(status), registerStatus === 'complete', 'the curated status and the register agree about P2.13');
 });
 
 test('the register is the canonical record, and the docs that predate it say so', () => {

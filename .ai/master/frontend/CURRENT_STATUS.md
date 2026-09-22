@@ -1,4 +1,6 @@
-<!-- Curated (agent-1). Rewritten for P2.13 on 2026-09-22 against main @ e754c5df; not generated, not deleted by `npm run lego:ai`. -->
+<!-- Curated (agent-1). Rewritten for P2.13 on 2026-09-22 against main @ e754c5df; the current/previous
+     milestone rows were corrected at the P2.14 reconciliation against main @ 67e638ef. Not generated,
+     not deleted by `npm run lego:ai`. -->
 > **This is the frontend consumption view, not the canonical document.**
 >
 > For live counts read the generated [`../CURRENT_STATUS.md`](../CURRENT_STATUS.md) and
@@ -23,9 +25,11 @@ the tree at the commit named below, never remembered.
 
 | Ref | Commit | Notes |
 | :--- | :--- | :--- |
-| `main` (protected) | `e754c5df35b41b0ff2ac769519f05f056835411c` | **current baseline** — "Backend LEGO P2.6–P2.12: publish `ai.skill@1.0.0` (#44)". Never modified, never force-pushed, never merged into by an agent. |
-| agent-1 branch | `arena/01a0c6b4-n8n-rust-v-4` | P2.13 frontend: the Context & Session surface, the vocabulary lock additions, the milestone register. Work stays here until the manager reconciles. |
-| agent-2 branch | `arena/01a0c6b5-n8n-rust-v-4` | P2.13 backend side (independent; not read as authority by this branch beyond the merged tree at `e754c5df`). |
+| `main` (protected) | `67e638ef83028bbc69876e2e768181415c7554fa` | **current baseline** — "P2.13 merged in full: `ai.context` and `ai.agent-session` (#45 backend, #46 frontend)". Never modified, never force-pushed, never merged into by an agent. |
+| HISTORICAL `main` | `e754c5df35b41b0ff2ac769519f05f056835411c` | the P2.12 baseline P2.13 was implemented from ("Backend LEGO P2.6–P2.12: publish `ai.skill@1.0.0`", #44). Superseded by `67e638ef`; kept so the P2.13 evidence stays readable. |
+| agent-1 branch | `arena/01a0c90c-n8n-rust-v-4` | **P2.14 frontend:** `ai.memory@1.0.0` consumed as vocabulary and presentation, plus this reconciliation pass. Draft PR #48; no merge by an agent. |
+| agent-2 branch | `arena/01a0c90d-n8n-rust-v-4` | **P2.14 backend:** the `ai.memory@1.0.0` publication (manifest, lock row, capability, provider boundary), pushed and remote-visible at `2dcd8570`. No pull request on that branch at the time of this reconciliation; no merge by an agent. |
+| HISTORICAL agent branches | `arena/01a0c6b4-n8n-rust-v-4` / `arena/01a0c6b5-n8n-rust-v-4` | the P2.13 frontend and backend branches, merged as PR #46 and PR #45. Kept so the P2.13 evidence stays readable. |
 | HISTORICAL `main` | `cb71dbb201d635b15b49933764c2c2336e745809` | the P2.11 reconciliation baseline. Superseded by `e754c5df`; kept so the P2.11 evidence stays readable. |
 | HISTORICAL backend tree | `6f7b66da` | the P2.10 tree the vocabulary lock was first compared against (38 quoted sets then, 53 now). Superseded by `e754c5df`. |
 
@@ -33,10 +37,11 @@ the tree at the commit named below, never remembered.
 
 | Question | Answer | Source |
 | :--- | :--- | :--- |
-| current milestone | **P2.13 — Context & Session + milestone reconciliation**, in progress | `docs/n8n-lego/milestones.json` |
-| previous milestone | **P2.12 — Skill**, complete: `ai.skill@1.0.0` locked, 4 operations, 2 permissions, no Skill runtime; `XA-19` resolved, `XA-11` still open | register + `contract-lock.json` |
-| milestone before that | P2.11 — reconciliation of both agent branches, complete | register |
-| strategic phase | Phase A (contracts) complete; Phase B in progress (Skill delivered, Context & Session in progress, Memory/Workspace/Agent Machine planned). Phases A–F are **not** replaced by the milestone layer | `manifest/ai-lego-set.json#phases` |
+| current milestone | **P2.14 — Memory**, in progress — contract published by agent-2, consumed by the frontend, waiting for the manager's MERGE PASS | `docs/n8n-lego/milestones.json` |
+| previous milestone | **P2.13 — Context & Session**, complete on protected main @ `67e638ef` (PR #45 backend, PR #46 frontend): two contracts consumed as vocabulary and presentation, no runtime (`XA-20`, `XA-21` open) | register + `contract-lock.json` |
+| milestone before that | **P2.12 — Skill**, complete: `ai.skill@1.0.0` locked, 4 operations, 2 permissions, no Skill runtime; `XA-19` resolved, `XA-11` still open | register + `contract-lock.json` |
+| earlier | P2.11 — reconciliation of both agent branches, complete | register |
+| strategic phase | Phase A (contracts) complete; Phase B in progress (Skill and Context & Session delivered, Memory in progress, Workspace/Agent Machine planned). Phases A–F are **not** replaced by the milestone layer | `manifest/ai-lego-set.json#phases` |
 | AI runtime / model inference | **NOT IMPLEMENTED** — no provider client, no inference path, zero-install is valid | `manifest/ai-foundation.json#notImplemented` |
 | Agent Machine runtime | **NOT IMPLEMENTED** — contract-only | `AGENT_MACHINE_PLAN.md` |
 | Memory store | **DOES NOT EXIST** (`XA-12`): Memory is what survives context replacement, Context is what is loaded now | `CONTEXT_SESSION_MEMORY_PLAN.md` |

@@ -892,6 +892,12 @@ enforcement cannot disagree.
     "statement": "Context & Session stays one LEGO with two quoted contracts: conversation, session, context window, memory and execution remain five distinct things, every word is quoted from the backend declaration, an unlocked contract is reported as declared-not-locked, a declared-but-unregistered operation is answered operation-unpublished, no usage figure is fabricated, and no Memory store, no execution affordance and no secret ever appears in a rendered state.",
     "contract": "§19.19",
     "enforcedBy": "32-context-session.test.mjs"
+  },
+  {
+    "id": "A29",
+    "statement": "Memory is its own LEGO with its own quoted contract and never an extension of Context or Session: nine quoted sets describe the record, retrieval is exactly the published deterministic bounded `memory.list`, four list states stay four (rendered / empty / not-handed-over / refused), persistence is behind a provider boundary and is never claimed, the deferred half (traverse, relate, ranking, retention enforcement) is named and refused rather than offered, and no record is fabricated, written, forgotten, restored, embedded or ranked by the surface.",
+    "contract": "§19.20",
+    "enforcedBy": "34-memory.test.mjs"
   }
 ]
 ```
@@ -1122,3 +1128,93 @@ Enforced by `32-context-session.test.mjs` (surface, provenance, lifecycle, rollo
 continuation, verification, degraded and fail-closed states, no fabricated tokens, no
 memory-store claim, no execution affordance, secret refusal) and by the live conformance check
 `A28`.
+
+
+### 19.20 The Memory surface — a different LEGO, quoted words, no writes
+
+Memory is the layer that survives context replacement: decisions, evidence, artifacts, tasks,
+relationships, project knowledge — **retained on purpose**, retrieved within a bound, never dumped.
+It is one LEGO (`memory`, index 4 of the official AI/Agent set, phase B) with one contract,
+`ai.memory@1.0.0`, and it is **not** a sub-LEGO of Context & Session: `§19.19` carries the five
+distinct things, and this section carries the other half of the same invariant.
+
+**The separation, in both directions.** `Context` is loaded now and can be compacted, rolled over and
+replaced; `Memory` was retained deliberately and must still be there afterwards. So a context that
+*references* memory is correct, and a memory record that *contains* a context, a session, a window
+snapshot, a continuation package or a message list is refused by name (`assertMemoryIsNotContext()`,
+`frontend.memory.context-merged`, which reports which concept collapsed). The Context & Session
+surface refuses the mirror image (`frontend.context-session.concepts-merged`). `scopeOwner` may be a
+`sessionId` — that is a namespace, not session state, and the distinction is exactly what keeps a
+forgotten session from taking a memory with it.
+
+**Nine quoted sets, and the words that do not exist.** Everything shared is quoted from the published
+contract with provenance: 5 scopes (`GLOBAL`, `PROJECT`, `WORKFLOW`, `AGENT`, `SESSION`), 6 kinds
+(`note`, `decision`, `artifact`, `task`, `execution`, `reference`), 5 retentions (`EPHEMERAL` …
+`PERMANENT`), 13 fields, 2 lifecycle states (`active`, `forgotten`), 10 graph nodes, 11 graph edges,
+4 published operations (`memory.remember`, `memory.recall`, `memory.list`, `memory.forget`) and 2
+permission words (`ai:memory:read`, `ai:memory:write`). What the contract does **not** publish has no
+set at all: no embedding, no similarity, no relevance score, no retention timer — so a screen cannot
+render them even by accident. `traverse` and `relate` are declared future stages and are named as
+deferred (`DEFERRED_MEMORY_OPERATIONS`) rather than offered. Operation names are rendered exactly as
+published — `memory.remember`, never `ai.memory.remember`: re-qualifying a published name is how a
+consumer invents a second API.
+
+**Retrieval is the published one.** `memory.list` filters by scope, owner, kind and retention, orders
+`createdAt` ascending then `memoryId` ascending, clamps `limit` to 1..100 (default 50) and pages by an
+opaque cursor; `memory.recall` returns a record or `null`, and `null` is the published empty *answer*,
+not an error. The surface reproduces that contract exactly: it re-sorts nothing (there is no ranking
+to sort by), never pages past the bound, and never renders a fourth entry as if it were the fourth
+result. A `null` recall renders as "no record carries that identity", never as a failure.
+
+**Four list states, because three is a lie.** `rendered` (records were handed over and validated),
+`empty` (the backend answered zero matches — an answer, and the surface says exactly that),
+`not-handed-over` (nobody asked, so nothing is claimed) and `refused` (an unknown scope, an undeclared
+kind, an undeclared edge relation, a secret-shaped key or an unbounded body — shown by name). `empty`
+and `not-handed-over` look identical on screen and mean opposite things, and collapsing them is how a
+UI tells a user their memory was erased.
+
+**Persistence is behind a boundary, so it is never claimed.** The public contract is `ai.memory`;
+storage lives behind `MemoryProvider`, whose default is an in-memory map that may be replaced by
+SQLite, a filesystem snapshot or a graph store behind the same interface. So the surface has exactly
+three persistence words — `provider-bound`, `in-memory-only`, `not-declared` — and no "saved", no
+"synced", no green dot for a provider it cannot see, and no durability implied by a record merely
+being on screen. Forgetting is terminal and explicit: nothing expires on its own, so no retention
+word renders as a countdown and no affordance offers `memory.forget`, because a destructive act with
+no undo belongs to a caller that holds `ai:memory:write`, not to a rendered list.
+
+**Read-only, and named.** `memory.remember`, `memory.recall`, `memory.list` and `memory.forget` are
+facts the surface may name and operations it never calls (`operations.offered` is empty). There is no
+search box, no graph result set, no "add memory" and no restore: `graph.traversalPublished` is
+`false`, and the deferred half is rendered as deferred. No record is ever fabricated — an entry
+without `provenance` is rendered as carrying none, never with a guessed author.
+
+**Error codes, declared once** (`MEMORY_ERROR_CODES` in `src/memory.mjs`, so the throw sites, the
+class default and this table cannot drift apart):
+
+| Code | Kind | Fires when |
+| :--- | :--- | :--- |
+| `frontend.memory.invalid` | thrown (`MemoryError` default) | a handed-over value fails its quoted vocabulary or its shape rule (unknown scope/kind/retention, an identity that breaks the published pattern, a relation the edge vocabulary does not declare, a `limit` outside 1..100, a digest that is not 64 lowercase hex characters, a secret-shaped key) |
+| `frontend.memory.invalid-record` | thrown | a memory record is not an object at all |
+| `frontend.memory.context-merged` | thrown | a record carries a context, a session, a window snapshot, a continuation or a message list — memory REFERENCES what it is about, it does not contain it; the message names the concept that collapsed |
+
+And one verdict that is **returned, never thrown**: an unpublished contract answers
+`lego.capability_unavailable` (`MEMORY_UNSUPPORTED_ERROR`) through `memoryUnsupported()` — no fallback
+store, no placeholder record, no model implied. A state a screen renders is not an exception it
+catches, and the difference is asserted in `test/34`.
+
+**Handed over, never read; built on demand.** The declaration arrives as data
+(`createFrontendLego({ memory })`), exactly like the Skill surface (`§19.18`) and Context & Session
+(`§19.19`); this package never reads the backend tree (`§5`, `§19.14`). `memoryDrift()` compares the
+vocabulary-bearing fields of the handed-over declaration with the quoted sets and returns `in-sync`,
+`drift` (both spellings, both directions, per field) or `not-declared`. `manifest/memory.json` ships
+an **empty** `records` array, because a record surface renders what it was handed. The view is
+memoized behind the assembly's `get memory()` and built the first time it is read: this is the third
+AI surface in the package, the boot descriptor stays byte-identical at 18,126 B, and the
+descriptor-assembly heap budget stays the manager's open question (`XA-21`, 4,096 KB pin — measured
+and reported, never edited). `XA-12` is open for exactly the half the contract defers.
+
+Enforced by `34-memory.test.mjs` (manifest, provenance, publication honesty on both trees, separation
+in both directions, the four list states, the published ordering and bounds, scope isolation as the
+contract states it, refusal of secrets and private model material, integrity-envelope honesty, no
+fabricated record, no persistence claim, no deferred operation offered) and by the live conformance
+check `A29`.

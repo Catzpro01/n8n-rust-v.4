@@ -60,6 +60,7 @@ const skillContractRow = () => lockRows().find((row) => (row.id ?? row.contract)
 const MOVED_BY_FINALIZE = Object.freeze(['aiFoundationCapability', 'aiPermission', 'skillOperation']);
 const finalized = skillContractRow() !== null;
 const awaitingFinalize = new Set(finalized ? [] : MOVED_BY_FINALIZE);
+const FINALIZE_SETS = new Set(MOVED_BY_FINALIZE);
 
 /**
  * The P2.13 publication moved five more sets — and it is **GitHub-visible but not on this branch**.
@@ -81,6 +82,41 @@ const contextLockRow = () => lockRows().find((row) => (row.id ?? row.contract) =
 const sessionLockRow = () => lockRows().find((row) => (row.id ?? row.contract) === 'ai.agent-session') ?? null;
 const published213 = contextLockRow() !== null && sessionLockRow() !== null;
 const awaiting213 = new Set(published213 ? [] : MOVED_BY_P213_PUBLICATION);
+const P213_SETS = new Set(MOVED_BY_P213_PUBLICATION);
+
+/**
+ * The P2.14 publication moved a third group: agent-2 published `ai.memory@1.0.0` on
+ * `arena/01a0c90d-n8n-rust-v-4` @ `f11aee01`, which added nine quoted sets and *also* moved two sets
+ * an earlier publication had already moved — `aiFoundationCapability` (`ai.memory` joined the
+ * capability list) and `aiPermission` (the two `ai:memory:*` words). So `aiFoundationCapability` and
+ * `aiPermission` are now moved by BOTH the P2.12 finalize and the P2.14 publication, and a set is
+ * awaited when **any** publication that moved it is absent from the pointed-at tree. The
+ * bookkeeping below is the shape of that fact rather than three independent flags, because three
+ * flags is how one of them ends up checking a tree it never saw.
+ */
+const MOVED_BY_P214_PUBLICATION = Object.freeze([
+  'memoryScope', 'memoryKind', 'memoryRetention', 'memoryField', 'memoryLifecycle',
+  'memoryOperation', 'memoryPermission', 'memoryGraphNode', 'memoryGraphEdge',
+  'aiFoundationCapability', 'aiPermission',
+]);
+const memoryLockRow = () => lockRows().find((row) => (row.id ?? row.contract) === 'ai.memory') ?? null;
+const published214 = memoryLockRow() !== null;
+const P214_SETS = new Set(MOVED_BY_P214_PUBLICATION);
+
+/**
+ * Which publications moved a set. A set with two owners is listed twice, once per publication, and
+ * the comparison waits for both. Anything not listed here is compared against every tree — which is
+ * the normal case and the one that catches an unnoticed backend move.
+ */
+const PUBLICATIONS = Object.freeze([
+  Object.freeze({ id: 'P2.12 finalize', published: finalized, sets: MOVED_BY_FINALIZE, row: () => skillContractRow(), rowId: 'ai.skill' }),
+  Object.freeze({ id: 'P2.13 Context & Session', published: published213, sets: MOVED_BY_P213_PUBLICATION, row: () => contextLockRow(), rowId: 'ai.context' }),
+  Object.freeze({ id: 'P2.14 Memory', published: published214, sets: MOVED_BY_P214_PUBLICATION, row: () => memoryLockRow(), rowId: 'ai.memory' }),
+]);
+/** The publications whose words a set was quoted from and which the pointed-at tree does not carry. */
+const awaitingFor = (setId) => PUBLICATIONS.filter((publication) => !publication.published && publication.sets.includes(setId));
+/** Every `setId@publicationId` pair the tree cannot vouch for, so the bound is exact in both directions. */
+const awaitingPairs = () => PUBLICATIONS.flatMap((publication) => (publication.published ? [] : publication.sets.map((setId) => `${setId}@${publication.id}`))).sort();
 
 /** The declaration a set says it quoted: the exported symbol, or the JSON path. */
 const declarationOf = (set) => `${set.provenance.file}#${set.provenance.symbol ?? set.provenance.path}`;
@@ -202,11 +238,22 @@ test('every shared vocabulary names the contract, the version, the owner and the
     assert.ok(set.provenance.file.length > 0, `${set.id} names the file the values were read from`);
     assert.ok((set.provenance.symbol ?? set.provenance.path).length > 0, `${set.id} names the declaration it read`);
     assert.ok(set.values.length > 0, `${set.id} carries the values`);
-    assert.equal(set.publicationPending, undefined, `${set.id} is published, so it has nothing pending`);
   }
   // A vocabulary with no published contract row must say so, and must ask for one.
   assert.ok(pending.length >= 1, `${pending.length} vocabularies whose publication is pending`);
   const decisions = new Set(DECISIONS.decisions.map((decision) => decision.id));
+  // A vocabulary whose publication is *deferred in part* carries an open-decision record instead of a
+  // pending publication: the contract is locked, and what stays open is a named half of it. The two
+  // keys are different on purpose — `publicationPending` means "no row exists", `openDecision` means
+  // "the row exists and this part of it does not".
+  for (const set of shared) {
+    assert.equal(set.publicationPending, undefined, `${set.id} is published, so it has nothing pending`);
+    if (set.openDecision !== undefined) {
+      assert.equal(typeof set.openDecision, 'object', `${set.id} declares a structured open-decision record`);
+      assert.ok(set.openDecision.what.length > 40, `${set.id} says exactly what stays open`);
+      assert.ok(decisions.has(set.openDecision.decision), `${set.id} points at a recorded decision (${set.openDecision.decision})`);
+    }
+  }
   for (const set of pending) {
     const record = set.publicationPending;
     assert.equal(typeof record, 'object', `${set.id} declares a structured publication record`);
@@ -261,23 +308,23 @@ test('every quoted value is the value the backend declares, in the backend tree 
   const registered = new Set(DECISIONS.decisions.map((decision) => decision.id));
   const awaited = [];
   const awaitedPublication = [];
-  if (!published213) {
-    t.diagnostic(`the pointed-at backend tree predates the P2.13 publication (agent-2 @ ${QUOTED_FROM.publication.commit}: ${CONTRACT_LOCK} publishes no ai.context row): ${MOVED_BY_P213_PUBLICATION.join(', ')} are quoted from that publication and are not compared against this tree — run with N8N_BACKEND_LEGO_ROOT pointed at the peer tree to compare them for real`);
-  }
-  if (!finalized) {
-    t.diagnostic(`the pointed-at backend tree predates the P2.12 finalize (${CONTRACT_LOCK} publishes no ai.skill row): ${MOVED_BY_FINALIZE.join(', ')} are not compared against it — run with N8N_BACKEND_LEGO_ROOT pointed at the tree that publishes ai.skill@1.0.0`);
+  const awaitedMemory = [];
+  const awaitedByPublication = Object.fromEntries(PUBLICATIONS.map((publication) => [publication.id, []]));
+  for (const publication of PUBLICATIONS) {
+    if (!publication.published) {
+      t.diagnostic(`the pointed-at backend tree predates ${publication.id} (${CONTRACT_LOCK} publishes no ${publication.rowId} row): ${publication.sets.join(', ')} are quoted from that publication and are not compared against this tree — run with N8N_BACKEND_LEGO_ROOT pointed at the tree that publishes ${publication.rowId}`);
+    }
   }
   for (const set of VOCABULARIES) {
-    if (awaitingFinalize.has(set.id)) {
-      // The pointed-at tree predates the published row: its declaration still carries the
-      // pre-finalize values, and comparing against it would probe the finalize, not the quote.
-      awaited.push(set.id);
-      continue;
-    }
-    if (awaiting213.has(set.id)) {
-      // Same rule for the P2.13 publication: this tree does not carry it, so comparing would probe
-      // the publication instead of the quote. Not a pass — an announced, bounded non-comparison.
-      awaitedPublication.push(set.id);
+    const awaiting = awaitingFor(set.id);
+    if (awaiting.length > 0) {
+      // The pointed-at tree predates a publication whose words this set quotes, so comparing would
+      // probe the publication instead of the quote. Not a pass — an announced, bounded
+      // non-comparison, and a set moved by two publications waits for both.
+      for (const publication of awaiting) awaitedByPublication[publication.id].push(set.id);
+      if (awaiting.some((publication) => publication.id === 'P2.12 finalize')) awaited.push(set.id);
+      if (awaiting.some((publication) => publication.id === 'P2.13 Context & Session')) awaitedPublication.push(set.id);
+      if (awaiting.some((publication) => publication.id === 'P2.14 Memory')) awaitedMemory.push(set.id);
       continue;
     }
     const observed = await readDeclaration(set);
@@ -300,13 +347,10 @@ test('every quoted value is the value the backend declares, in the backend tree 
       + (registered.size > 0 ? ' — a new difference must be registered before it is accepted' : ''),
     );
   }
-  // The skip is not silent and not open-ended: it happens only for the sets the finalize moved,
-  // and only when the pointed-at lock publishes no `ai.skill` row. The moment it does, every set
-  // is compared and the finalize is part of what is checked.
-  // The P2.13 non-comparison is bounded the same way: exactly the five sets the publication moved,
-  // and only while the pointed-at tree publishes no `ai.context` row. The moment it does, every one
-  // of the five is compared — including the two promoted word lists and the published spelling of
-  // the continuation sections.
+  // The skip is not silent and not open-ended: it happens only for the sets a publication moved,
+  // and only while the pointed-at lock publishes no row for that publication. The moment it does,
+  // every one of its sets is compared. Each bound is asserted in BOTH directions — the awaited set is
+  // exactly the published list, and nothing else is quietly skipped.
   if (!published213) {
     assert.deepEqual([...awaitedPublication].sort(), [...MOVED_BY_P213_PUBLICATION].sort(), 'the sets awaiting the P2.13 publication are the five it moved');
     assert.equal(contextLockRow(), null, 'the pointed-at lock publishes no ai.context row');
@@ -326,6 +370,24 @@ test('every quoted value is the value the backend declares, in the backend tree 
     assert.deepEqual([...awaitingFinalize], [], 'nothing is awaited once the pointed-at tree publishes ai.skill');
     assert.equal(skillContractRow().version, vocabularyOf('skillLifecycle').provenance.contract.version, 'the quoted version is the published one');
   }
+  // The P2.14 bound, and the reason the bookkeeping is a table rather than a flag: two of the sets
+  // `ai.memory@1.0.0` moved had already been moved by the P2.12 finalize, so they wait for both
+  // publications. A tree carrying `ai.memory` compares all eleven; protected main @ 67e638ef carries
+  // neither the row nor the manifest, and the non-comparison is exactly those eleven.
+  if (!published214) {
+    assert.deepEqual([...awaitedMemory].sort(), [...MOVED_BY_P214_PUBLICATION].sort(), 'the sets awaiting the P2.14 publication are the eleven it moved');
+    assert.equal(memoryLockRow(), null, 'the pointed-at lock publishes no ai.memory row');
+    assert.equal(existsSync(join(BACKEND, 'manifest', 'memory.json')), false,
+      'and the pointed-at tree carries no Memory contract manifest — the comparison runs against the tree that does');
+  } else {
+    assert.deepEqual([...awaitedMemory], [], 'nothing is awaited once the pointed-at tree publishes ai.memory');
+    assert.equal(memoryLockRow().version, vocabularyOf('memoryScope').provenance.contract.version, 'the memory sets quote the published version');
+    assert.equal(memoryLockRow().owner, vocabularyOf('memoryField').provenance.contract.owner, 'and the published owner');
+  }
+  // Whatever the tree carries, the awaited pairs are exactly the pairs this file declares — so a
+  // publication nobody recorded cannot silently become a non-comparison.
+  assert.deepEqual(Object.entries(awaitedByPublication).flatMap(([id, sets]) => sets.map((setId) => `${setId}@${id}`)).sort(), awaitingPairs(),
+    'the non-comparisons are exactly the declared set/publication pairs');
 });
 
 test('the quoted semantics — not only the words — are the ones the backend declares', { skip }, async () => {
@@ -358,6 +420,13 @@ test('the quoted contract versions and owners are the ones the contract lock pub
     if (set.provenance.contract.id === 'ai.context' && !published213) {
       // The P2.13 publication is on the peer branch: this tree cannot vouch for the quote yet.
       assert.equal(contextLockRow(), null);
+      continue;
+    }
+    if (set.provenance.contract.id === 'ai.memory' && !published214) {
+      // Same rule for the P2.14 publication: agent-2 locked `ai.memory@1.0.0` on
+      // `arena/01a0c90d-n8n-rust-v-4` @ `f11aee01` and this tree publishes no such row, so it cannot
+      // vouch for the quote — and the comparison is announced rather than reported as agreement.
+      assert.equal(memoryLockRow(), null);
       continue;
     }
     const row = rows.find((entry) => (entry.id ?? entry.contract) === set.provenance.contract.id);

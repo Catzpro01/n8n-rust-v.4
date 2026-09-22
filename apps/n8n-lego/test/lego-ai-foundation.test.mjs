@@ -439,10 +439,10 @@ test('a transport advertises what it carries and never downgrades a stream', () 
 /* ------------------------------------------------- contract-only proof (§14) */
 
 test('the AI foundation is manager-owned, and only published registries are implemented', () => {
-  // P2.13 DELIBERATE EDIT. P2.12 published the Skill registry; P2.13 publishes
-  // the bounded Context & Session registries. The explicit allow-list prevents
-  // a runtime/provider capability from becoming implemented accidentally.
-  const IMPLEMENTED = new Set(['ai.skill', 'ai.context', 'ai.agent-session']);
+  // P2.14 DELIBERATE EDIT. P2.12 published the Skill registry; P2.13 publishes
+  // the bounded Context & Session registries; P2.14 publishes the bounded Memory registry.
+  // The explicit allow-list prevents a runtime/provider capability from becoming implemented accidentally.
+  const IMPLEMENTED = new Set(['ai.skill', 'ai.context', 'ai.agent-session', 'ai.memory']);
   const domain = registry.byId.get('ai-foundation');
   assert.ok(domain, 'ai-foundation must be a registered domain');
   assert.equal(domain.owner, 'manager',

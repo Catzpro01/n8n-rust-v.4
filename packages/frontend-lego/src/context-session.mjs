@@ -53,6 +53,8 @@ import { PENDING_CONTRACT_ROWS, PENDING_PUBLICATIONS, PROMOTED_PUBLICATIONS, pen
 
 export const CONTEXT_CONTRACT_ID = 'ai.context';
 export const SESSION_CONTRACT_ID = 'ai.agent-session';
+/** Memory's own contract, named here only so the separation can state what it is NOT. P2.14 owns it. */
+export const MEMORY_CONTRACT_ID = 'ai.memory';
 /** One LEGO, two contracts. There is no `ai-context` and no `ai-session` LEGO. */
 export const CONTEXT_SESSION_LEGO_ID = 'context-session';
 
@@ -234,51 +236,81 @@ export const ROLLOVER_LIFECYCLE_STATES = Object.freeze(['prepare', 'compacting',
 /* ------------------------------------------------------- the five distinct things */
 
 /**
+ * The Memory concept, derived from what the tree publishes — the P2.14 change to this surface.
+ *
+ * At P2.13 the answer was a flat `exists: false` with "NO STORE EXISTS" underneath it, and that was
+ * true of both trees at the time. It is no longer true of every tree: agent-2 published
+ * `ai.memory@1.0.0` on its P2.14 branch, so a tree that carries that lock row **has** a store — and a
+ * frontend that kept printing "no store exists" against it would be lying in the other direction.
+ *
+ * So the concept is derived: `exists` is `'implemented'` when the row is handed over and `false` when
+ * it is not, and the detail names which LEGO owns the store. What does not change in either case is
+ * the separation: **this surface renders no memory record**. Memory is a different LEGO with a
+ * different contract (`ai.memory`), Context references it and never contains it, and a count rendered
+ * from loaded context plus decisions and artifacts must say that is what it is.
+ */
+export function memoryConcept({ published = false } = {}) {
+  return Object.freeze({
+    id: 'memory',
+    what: 'what survives context replacement',
+    contract: 'ai.memory',
+    exists: published ? 'implemented' : false,
+    decision: MEMORY_DECISION,
+    detail: published
+      ? 'A STORE IS PUBLISHED, and it is a DIFFERENT LEGO: `ai.memory` (P2.14) owns remembered records with their own identity, isolation and provenance behind a provider boundary, and its own surface renders them. This surface still renders NO memory record — Context references memory, it does not contain it, and no embedding or vector search is implied here or there'
+      : 'NO STORE IS PUBLISHED IN THIS TREE. The honest sources here stay loaded context (ai.context), decisions (ai.decision) and artifacts (ai.artifact) — a count rendered from those must say so, and no memory store, embedding or vector search may be implied. The contract itself is declared (`ai.memory` in the AI set, an entry of the `ai-foundation` registry) and the publication decision is XA-12',
+  });
+}
+
+/**
  * The permanent distinction, as data (P2.13 §B1, and the invariant the backend declaration
  * itself carries at `manifest/ai-lego-set.json#lego[id=context-session].distinction`).
  *
- * `exists` answers "is there a store or a runtime behind this word today?" — and for Memory and
- * Execution the honest answer is no: Memory is `XA-12` (planned, P2.14) and the Agent Machine has
- * no runtime. A surface that renders five tabs is not claiming five implementations.
+ * `exists` answers "is there a store or a runtime behind this word today?" — for Execution the
+ * honest answer is still no (the Agent Machine has no runtime), and for Memory it now depends on the
+ * tree: see `memoryConcept()`. A surface that renders five tabs is not claiming five
+ * implementations, and it is not denying one that exists either.
  */
-export const DISTINCT_CONCEPTS = Object.freeze([
-  Object.freeze({
-    id: 'conversation',
-    what: 'the whole exchange a user has; it may contain many sessions and many context windows',
-    contract: null,
-    exists: false,
-    detail: 'not persisted by this LEGO and not a session: nothing here stores a conversation, and a new window is never a new conversation',
-  }),
-  Object.freeze({
-    id: 'session',
-    what: 'bounded state: identity plus references',
-    contract: SESSION_CONTRACT_ID,
-    exists: 'contract-only',
-    detail: 'a session is not an unbounded transcript; it carries contextRef, artifactRef and traceRef and never inlines what they point at',
-  }),
-  Object.freeze({
-    id: 'context-window',
-    what: 'what is loaded now, at one declared scope',
-    contract: CONTEXT_CONTRACT_ID,
-    exists: 'contract-only',
-    detail: 'selectively loaded and bounded; compaction preserves the checksum chain so a later reader can prove what it descended from',
-  }),
-  Object.freeze({
-    id: 'memory',
-    what: 'what survives context replacement',
-    contract: null,
-    exists: false,
-    decision: MEMORY_DECISION,
-    detail: 'NO STORE EXISTS. The honest sources today are loaded context (ai.context), decisions (ai.decision) and artifacts (ai.artifact); a count rendered from those must say so, and no memory store, embedding or vector search may be implied',
-  }),
-  Object.freeze({
-    id: 'execution',
-    what: 'a workflow run and its state',
-    contract: 'execution.*',
-    exists: 'declared',
-    detail: 'execution state is not conversation history: it comes from the execution domain, and no execution affordance is offered from this surface',
-  }),
-]);
+export function distinctConcepts({ memoryPublished = false } = {}) {
+  return Object.freeze([
+    Object.freeze({
+      id: 'conversation',
+      what: 'the whole exchange a user has; it may contain many sessions and many context windows',
+      contract: null,
+      exists: false,
+      detail: 'not persisted by this LEGO and not a session: nothing here stores a conversation, and a new window is never a new conversation',
+    }),
+    Object.freeze({
+      id: 'session',
+      what: 'bounded state: identity plus references',
+      contract: SESSION_CONTRACT_ID,
+      exists: 'contract-only',
+      detail: 'a session is not an unbounded transcript; it carries contextRef, artifactRef and traceRef and never inlines what they point at',
+    }),
+    Object.freeze({
+      id: 'context-window',
+      what: 'what is loaded now, at one declared scope',
+      contract: CONTEXT_CONTRACT_ID,
+      exists: 'contract-only',
+      detail: 'selectively loaded and bounded; compaction preserves the checksum chain so a later reader can prove what it descended from',
+    }),
+    memoryConcept({ published: memoryPublished }),
+    Object.freeze({
+      id: 'execution',
+      what: 'a workflow run and its state',
+      contract: 'execution.*',
+      exists: 'declared',
+      detail: 'execution state is not conversation history: it comes from the execution domain, and no execution affordance is offered from this surface',
+    }),
+  ]);
+}
+
+/**
+ * The five concepts as the *default* tree renders them: no memory lock row handed over. This is the
+ * constant a reader can inspect without building a view, and it is honest about the tree it was
+ * written in rather than about every tree — the view derives the live answer.
+ */
+export const DISTINCT_CONCEPTS = distinctConcepts();
 
 /* ------------------------------------------------------------------- refusals */
 
@@ -395,7 +427,7 @@ export const CONTEXT_SESSION_AFFORDANCES = Object.freeze({
   forbidden: Object.freeze({
     execute: 'no execution affordance: the Agent Machine has no runtime and this surface is not it',
     infer: 'no model inference and no provider call is implied by a context or a session',
-    loadMemory: 'no Memory store exists (XA-12); loaded context, decisions and artifacts may be counted, and must say that is what they are',
+    loadMemory: 'Memory is a different LEGO with its own contract (ai.memory, XA-12) and this surface renders none of it: what may be counted here is loaded context, decisions and artifacts, and it must say that is what it is',
     writeContext: 'context writes are backend operations (ai.context.compact) behind ai:context:write; the UI renders state, it does not mutate it',
     rollOverNow: 'a rollover is a deterministic backend transition at a declared threshold, not a button',
     continueSession: FORBIDDEN_REASONS.continueSession,
@@ -546,7 +578,7 @@ export function assertDistinctConcepts(record = {}) {
     findings.push('"context" carries no contextId: an inlined context body is a transcript by another name, and the window belongs to ai.context');
   }
   if (record.memory !== undefined) {
-    findings.push(`"memory" is refused: no Memory store exists (${MEMORY_DECISION}); what may be rendered is loaded context, decisions and artifacts, named as such`);
+    findings.push(`"memory" is refused: memory is a SEPARATE LEGO (\`ai.memory\`) with its own contract and its own surface (${MEMORY_DECISION}), and a context or session record that carries a memory payload has merged two of the five concepts. Loaded context, decisions and artifacts may be counted and must be named as such`);
   }
   if (record.execution !== undefined && typeof record.execution === 'object' && record.execution !== null) {
     findings.push('"execution" carries an object: execution state comes from the execution domain, never from session or context state');
@@ -1498,7 +1530,21 @@ export function contextSessionPublication({ surface = null, contract = null } = 
   const rows = rowsOf(contract ?? surface?.publication?.rows ?? null);
   const context = contractStateOf(CONTEXT_CONTRACT_ID, CONTEXT_DECLARED_VERSION, rows);
   const session = contractStateOf(SESSION_CONTRACT_ID, SESSION_DECLARED_VERSION, rows);
-  return Object.freeze({ published: context.published && session.published, context, session, rows: Object.freeze(rows) });
+  /**
+   * Whether the tree this surface is handed also publishes Memory. It is **not** part of this
+   * surface's publication: Memory is a different LEGO with a different contract, and P2.13 cannot
+   * become P2.14 by borrowing a row. It is read for one reason only — so the memory concept can say
+   * whether a store exists in this tree instead of asserting that none does anywhere.
+   */
+  const memoryRow = rows.find((entry) => (entry.id ?? entry.contract) === MEMORY_CONTRACT_ID) ?? null;
+  return Object.freeze({
+    published: context.published && session.published,
+    context,
+    session,
+    memoryPublished: memoryRow !== null,
+    memoryRow: memoryRow === null ? null : Object.freeze({ id: MEMORY_CONTRACT_ID, version: memoryRow.version ?? null, status: memoryRow.status ?? 'published' }),
+    rows: Object.freeze(rows),
+  });
 }
 
 export function createContextSessionView({
@@ -1572,8 +1618,21 @@ export function createContextSessionView({
       contractId: CONTEXT_CONTRACT_ID,
     }),
     drift: declarationDrift({ declaration, surface, contract: publication.rows.length > 0 ? publication.rows : null }),
-    /** The five concepts, with what exists behind each — Memory and Agent Machine named as absent. */
-    concepts: DISTINCT_CONCEPTS,
+    /**
+     * The five concepts, with what exists behind each. Memory's row is DERIVED from the lock rows
+     * handed over (P2.14): `implemented` when the tree publishes `ai.memory`, `false` when it does
+     * not — because a surface that kept saying "no store exists" against a tree that publishes one
+     * would be lying in the other direction.
+     */
+    concepts: distinctConcepts({ memoryPublished: publication.memoryPublished }),
+    /** What the tree publishes about Memory, read for the concept above and rendered nowhere. */
+    memoryPublication: Object.freeze({
+      published: publication.memoryPublished,
+      row: publication.memoryRow,
+      detail: publication.memoryPublished
+        ? 'this tree publishes an `ai.memory` contract row: the store exists, it belongs to another LEGO, and this surface renders none of it'
+        : 'this tree publishes no `ai.memory` contract row: no store is published here, and what may be counted is loaded context, decisions and artifacts (XA-12)',
+    }),
     session: Object.freeze({
       record: session,
       validation: sessionValidation,

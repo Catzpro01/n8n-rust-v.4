@@ -20,6 +20,7 @@ export const MANIFEST_FILES = Object.freeze({
   capabilities: 'capabilities.json',
   skills: 'skills.json',
   contextSession: 'context-session.json',
+  memory: 'memory.json',
 });
 
 function readManifest(fileName) {
@@ -46,6 +47,7 @@ export function loadManifests() {
   const capabilityCatalog = readManifest(MANIFEST_FILES.capabilities);
   const skillCatalog = readManifest(MANIFEST_FILES.skills);
   const contextSessionCatalog = readManifest(MANIFEST_FILES.contextSession);
+  const memoryCatalog = readManifest(MANIFEST_FILES.memory);
 
   if (!Array.isArray(surfaceCatalog.surfaces) || surfaceCatalog.surfaces.length === 0) {
     throw new Error('manifest/surfaces.json declares no surfaces');
@@ -81,6 +83,14 @@ export function loadManifests() {
   if (!Array.isArray(contextSessionCatalog.contexts) || !Array.isArray(contextSessionCatalog.sessions)) {
     throw new Error('manifest/context-session.json must declare contexts and sessions arrays (both may be empty)');
   }
+  // Memory consumes ONE contract and is its own LEGO: a catalog that cannot name it, or that
+  // names a second contract, has either lost the boundary or absorbed a neighbour.
+  if (!Array.isArray(memoryCatalog.contracts) || !memoryCatalog.contracts.includes('ai.memory') || memoryCatalog.contracts.length !== 1) {
+    throw new Error('manifest/memory.json must consume exactly ai.memory — Memory is one LEGO with one contract, and it does not absorb Context & Session');
+  }
+  if (!Array.isArray(memoryCatalog.records)) {
+    throw new Error('manifest/memory.json must declare a records array (it may be empty)');
+  }
 
   return Object.freeze({
     ownership: Object.freeze(ownership),
@@ -90,6 +100,7 @@ export function loadManifests() {
     capabilityCatalog: Object.freeze(capabilityCatalog),
     skillCatalog: Object.freeze(skillCatalog),
     contextSessionCatalog: Object.freeze(contextSessionCatalog),
+    memoryCatalog: Object.freeze(memoryCatalog),
     surfaces: Object.freeze(surfaceCatalog.surfaces.map((surface) => Object.freeze({ ...surface }))),
     extensionPoints: Object.freeze(extensionCatalog.extensionPoints.map((point) => Object.freeze({ ...point }))),
     subLegos: Object.freeze(subLegoCatalog.subLegos.map((entry) => Object.freeze({ ...entry }))),
@@ -97,6 +108,7 @@ export function loadManifests() {
     skills: Object.freeze(skillCatalog.skills.map((entry) => Object.freeze({ ...entry }))),
     contexts: Object.freeze(contextSessionCatalog.contexts.map((entry) => Object.freeze({ ...entry }))),
     sessions: Object.freeze(contextSessionCatalog.sessions.map((entry) => Object.freeze({ ...entry }))),
+    records: Object.freeze(memoryCatalog.records.map((entry) => Object.freeze({ ...entry }))),
     owners: Object.freeze({ ...(subLegoCatalog.owners ?? {}) }),
     futureConsumers: Object.freeze(extensionCatalog.futureConsumers ?? []),
   });
@@ -118,6 +130,15 @@ export function skillSurface(manifests = loadManifests()) {
  */
 export function contextSessionSurface(manifests = loadManifests()) {
   return manifests.contextSessionCatalog;
+}
+
+/**
+ * The Memory surface declaration — the one contract it consumes, the publication state it was
+ * verified against, and the rules the UI is held to. Validated by the Memory module: a memory
+ * record is not a context, not a session and not a capability.
+ */
+export function memorySurface(manifests = loadManifests()) {
+  return manifests.memoryCatalog;
 }
 
 /** Surface ids, in catalog order. */

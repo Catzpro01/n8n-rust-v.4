@@ -9,12 +9,12 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 
 | Field | Value |
 | --- | --- |
-| Current milestone | **P2.13** |
-| Previous completed milestone | **P2.12** |
+| Current milestone | **P2.14** |
+| Previous completed milestone | **P2.13** |
 | Protected branch | `main` |
-| Main baseline | `e754c5df35b41b0ff2ac769519f05f056835411c` |
-| Agent 1 branch | `arena/01a0c6b4-n8n-rust-v-4` |
-| Agent 2 branch | `arena/01a0c6b5-n8n-rust-v-4` |
+| Main baseline | `67e638ef83028bbc69876e2e768181415c7554fa` |
+| Agent 1 branch | `arena/01a0c90c-n8n-rust-v-4` |
+| Agent 2 branch | `arena/01a0c90d-n8n-rust-v-4` |
 | Register owner | `manager` |
 
 ## Sequence
@@ -23,56 +23,58 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 | --- | --- | --- | --- | --- |
 | `P2.11` | Reconciliation / foundation cleanup | A | **complete** | P2.12 |
 | `P2.12` | Skill | B | **complete** | P2.13 |
-| `P2.13` | Context & Session | B | **in-progress** | P2.14 |
-| `P2.14` | Memory | B | **planned** | P2.15 |
+| `P2.13` | Context & Session | B | **complete** | P2.14 |
+| `P2.14` | Memory | B | **in-progress** | P2.15 |
 | `P2.15` | Workspace | B | **planned** | P2.16 |
 | `P2.16` | Agent Machine / execution foundation | B | **planned** | P2.17 |
 | `P2.17+` | Later capability ladder | C-F | **planned** | — |
 
-## Current milestone boundary — P2.13
+## Current milestone boundary — P2.14
 
-**Owns:** ai.context@1.0.0; ai.agent-session@1.0.0; bounded context/session registry mechanics; selective context loading; snapshot identity and checksum lineage; explicit session lifecycle; NORMAL -> PREPARE -> ROLLOVER orchestration; structured bounded continuation package; rehydration and verified/degraded/failed continuity results; backend tests and frontend contract consumption
+**Owns:** ai.memory@1.0.0; bounded memory manager (remember/recall/list/forget); scope-isolated deterministic retrieval with pagination; integrity (sha256 canonical checksum) and size bounds; explicit provider boundary (InMemoryProvider, replaceable); scope isolation and sensitive-data rejection; backend tests and contract locks; frontend contract consumption (quoted vocabulary, publication state, refusals) — no redefinition
 
-**Does not own:** model inference; provider API calls; Agent Machine execution loop; multi-agent runtime; Skill execution; Memory persistent store; Workspace executor; filesystem/terminal authority; MCP runtime; Runtime Adapter runtime; Node Creator runtime; Translation runtime; token provider integration; external agent runtime integration; Rust implementation
+**Does not own:** model inference; provider API calls; Agent Machine execution loop; multi-agent runtime; Skill execution; Workspace executor; filesystem/terminal authority; MCP runtime; Runtime Adapter runtime; Node Creator runtime; Translation runtime; token provider integration; external agent runtime integration; Rust implementation; vector search / relevance ranking (deferred); automatic retention policy enforcement
 
-**Dependencies:** P2.12; lego-foundation contract and lifecycle primitives
+**Dependencies:** P2.13 Context & Session foundation
 
-**Required gates:** lego-context-session.test.mjs; frontend Context & Session suite; backend/frontend contract alignment; lego:arch; lego:foundation; lego:capabilities; lego:scaleout; lego:ai:check; sub-LEGO audit; boot payload verification; lego:gate
+**Required gates:** apps/n8n-lego/test/lego-memory.test.mjs; packages/frontend-lego/test/34-memory.test.mjs; packages/frontend-lego/test/29-alignment.test.mjs; lego:arch; lego:arch:selftest; lego:foundation; lego:foundation:selftest; lego:capabilities; lego:scaleout; lego:ai:check; sub-LEGO audit; boot payload verification
 
-**Completion rule:** one Context & Session LEGO with no duplicate domain; locked contracts and exact frontend/backend vocabulary; context/session lifecycle and fail-closed invalid transitions; integrity and security boundaries tested; frontend shows explicit continuation/degraded/failure states without fabricated tokens; authoritative docs regenerated; reconciled protected-main post-merge verification passes
+**Completion rule:** ai.memory@1.0.0 locked and consumed; four operations exactly: memory.remember, memory.recall, memory.list, memory.forget; two permissions exactly: ai:memory:read, ai:memory:write; scope isolation tested and enforced; provider boundary tested via injection; integrity and deterministic ordering tested; frontend consumes the locked contract without redefining it and claims no persistence of its own; no P2.15/P2.16 work leaked; XA-12 handled explicitly (bounded scope), XA-21 pin untouched
 
 ## Reconciliation state
 
 - Verdict: **RECONCILIATION_REQUIRED**
-- Conflict: The backend-owned continuation manifest discrepancy is corrected on Agent 2: canonical toolStateReferences and importantReferences now match CONTINUATION_FIELDS. Agent 1 c5ff5870 still carries the historical frontend registered-difference expectation and must refresh that evidence after fetching fa18ba76; this is peer evidence reconciliation, not a remaining backend implementation defect.
-- Contract: ai.context@1.0.0 and ai.agent-session@1.0.0 are locked and consumed with the published operations load/compact/rollover/rehydrate/verify and create/status/close. The manifest now matches the locked continuation vocabulary. XA-20 remains Manager-owned for publication/locking semantics and final merge order.
+- Conflict: The reconciliation is resolved on this branch, which is now the single P2.14 merge candidate. (1) Both branches ADDed packages/frontend-lego/test/34-memory.test.mjs: the frontend suite is kept and agent-2's unique registry coverage is folded into it as one test; the fixed "locked @ 1.0.0 / IMPLEMENTED" assertion was not carried over, because the .ai matrix is generated per tree and that value is false on a tree whose lock carries no ai.memory row. (2) The backend contribution was consumed byte-identical from the frozen branch (git diff against 2dcd8570 for those paths: empty), while agent-2's sandbox recapture of docs/n8n-lego/evidence/frontend-boundary-p25.json was deliberately not consumed: the pinned protected-main artifact (blob 07f93d8f) is what this branch carries.
+- Contract: ai.memory@1.0.0 is locked exactly once (one contract-lock row, version 1.0.0) with four operations and two permissions, and is quoted verbatim by the frontend. XA-12 remains open-for-manager for the deferred relevance-ranked traversal, edge creation and retention enforcement; the bounded surface does not resolve it and claims no persistence of its own.
 - Agent: `agent-1 + agent-2`
-- Reason: The final backend correction closes the identified backend-owned vocabulary discrepancy. A correct cross-agent rerun against the Agent 1 tree at c5ff5870 and Agent 2 fa18ba76 is 66/68 because two Agent 1 assertions still expect the historical registered divergence; Agent 1 must fetch/review and refresh its own evidence. No backend implementation item remains dangling.
-- Required decision: Manager must still resolve XA-20 publication/locking semantics and perform RECONCILIATION PASS, then MERGE PASS against protected main. XA-21 remains open; its 4,096 KB pin must not be edited.
-- Blocking test: N8N_BACKEND_LEGO_ROOT=/home/user/n8n-rust-v.4/apps/n8n-lego/src/lego node --test packages/frontend-lego/test/29-alignment.test.mjs packages/frontend-lego/test/32-context-session.test.mjs packages/frontend-lego/test/33-milestones.test.mjs — 68 tests, 66 pass, 2 fail; failures are the Agent 1 historical divergence assertions after the backend correction.
+- Reason: No contract value diverges between the branches and no backend item is dangling: the frozen contribution is consumed without modification, so P2.14 arrives on protected main through one merge.
+- Required decision: Manager MERGE PASS on PR #48, which is self-contained: the frozen backend contribution is already consumed, the test/34 collision is resolved, the register is reconciled and the pinned boundary artifact is preserved — so no cross-branch conflict resolution is needed. Regenerate the .ai pack only if the merge itself changes manifests, then verify protected main post-merge. XA-12 and XA-21 are untouched.
+- Blocking test: npm run lego:ai:check, then node --test packages/frontend-lego/test/29-alignment.test.mjs packages/frontend-lego/test/32-context-session.test.mjs packages/frontend-lego/test/33-milestones.test.mjs packages/frontend-lego/test/34-memory.test.mjs apps/n8n-lego/test/lego-memory.test.mjs — all on this branch and again on protected main after the merge.
 
 ## Verification evidence
 
-- **focusedBackend:** PASS — node --test apps/n8n-lego/test/lego-context-session.test.mjs
-- **backendFrontendGate:** PASS — N8N_LEGO_CATALOG_DIR=data/n8n-lego/catalog npm run lego:gate (Catalog and n8n-editor-ui dependencies were installed for this run; no test was skipped.)
-- **architecture:** PASS — npm run lego:arch, npm run lego:arch:selftest
-- **foundation:** PASS — npm run lego:foundation, npm run lego:foundation:selftest
-- **capability:** PASS — npm run lego:capabilities
-- **scaleOut:** PASS_WITH_DECLARED_EXCEPTIONS — npm run lego:scaleout
-- **aiFreshness:** PASS — npm run lego:ai:check
-- **subLegoAudit:** PASS — /tmp/p213-audit-venv/bin/python tools/sublego-audit/audit.py (The audit exits 0; its summary text says 20 sub-LEGOs although 21 were loaded.)
-- **bootPayload:** PASS_WITH_XA21 — Agent 1 capture-frontend-evidence.mjs from c5ff5870 with stock UI dependency complete (The only failed check is the declared XA-21 heap pin. Boot payload is byte-identical to baseline; pin not edited.)
-- **offlineContractConformance:** BLOCKED_BASELINE — node tests/compatibility/contract_conformance.mjs; failure: Pre-existing crates/**/*.rs and Cargo.toml artifacts are present at protected baseline e754c5df35b41b0ff2ac769519f05f056835411c; fa18ba76 introduces no Rust files.
-- **agent1Focused:** PASS — node --test packages/frontend-lego/test/32-context-session.test.mjs packages/frontend-lego/test/33-milestones.test.mjs
-- **agent1FrontendFull:** PASS — node --test packages/frontend-lego/test/*.test.mjs (Run from Agent 1 final worktree before the backend-owned manifest correction; the correction requires a peer evidence refresh, not a frontend implementation change.)
-- **crossAgentAlignment:** RECONCILIATION_REQUIRED — N8N_BACKEND_LEGO_ROOT=/home/user/n8n-rust-v.4/apps/n8n-lego/src/lego node --test packages/frontend-lego/test/29-alignment.test.mjs packages/frontend-lego/test/32-context-session.test.mjs packages/frontend-lego/test/33-milestones.test.mjs (The 66/68 result is truthful current post-correction evidence; peer refresh is required before reconciliation can pass.)
-- **agent1FrontendEvidence:** OPEN_XA21 — node apps/n8n-lego/scripts/capture-frontend-evidence.mjs --out <temporary-file> (The final Agent 1 evidence report records 4,444 KB after dependency-complete capture; the threshold remains unchanged.)
+- **consumption:** PASS — git checkout arena/01a0c90d-n8n-rust-v-4@2dcd8570 -- apps/n8n-lego/src/lego/{manifest/memory.json,memory.mjs,manifest/domains.json,manifest/ai-foundation.json,manifest/ai-lego-set.json,contracts/contract-lock.json} apps/n8n-lego/test/{lego-memory,lego-ai-set,lego-ai-foundation}.test.mjs docs/n8n-lego/evidence/P2.14-agent-2-final-report.md (byte-identical to the frozen tip: git diff against 2dcd8570 for those paths is empty; contract semantics, version and scope unchanged)
+- **focusedBackend:** PASS — node --test apps/n8n-lego/test/lego-memory.test.mjs (run in this tree after consumption instead of against the frozen branch)
+- **focusedFrontend:** PASS — node --test packages/frontend-lego/test/29-alignment.test.mjs packages/frontend-lego/test/32-context-session.test.mjs packages/frontend-lego/test/33-milestones.test.mjs packages/frontend-lego/test/34-memory.test.mjs (the one skip asserts the OTHER tree — a tree that publishes no ai.memory row; the publication comparisons now run for real because this branch consumes the frozen contribution)
+- **frontendFull:** PASS — node --test packages/frontend-lego/test/*.test.mjs
+- **backendSuite:** PASS_WITH_PREEXISTING_FAILURES — npm run lego:test (the three failures are the node-catalog REST suites (types/nodes.json, node-versions, node-types) — the catalog is not committed; the same three fail on a pristine protected-main archive and on the frozen branch); failure: GET /rest/types/nodes.json, GET /rest/types/node-versions.json, POST /rest/node-types
+- **mergedTreeSimulation:** PASS — agent-2 @ 2dcd8570 + this branch, in a scratch tree before consumption (superseded by the consumption commit: the same combined content is now the branch itself, where the suites were re-run green)
+- **contractLock:** —
+- **capabilityRegistry:** —
+- **aiFreshness:** —
+- **architecture:** —
+- **foundation:** —
+- **capabilities:** —
+- **scaleOut:** —
+- **bootPayload:** —
+- **preExistingFailures:** —
+- **subLegoAudit:** —
 
 ## Evidence roles
 
 - Start/finish evidence is evidence, not a replacement for current state.
 - An agent branch can be implementation-complete without the milestone being complete.
-- P2.13 requires **RECONCILIATION PASS**, **MERGE PASS**, and post-merge verification on protected main before it can become complete.
+- `P2.14` requires **RECONCILIATION PASS**, **MERGE PASS**, and post-merge verification on protected main before it can become complete.
 
 ## Manager merge protocol
 

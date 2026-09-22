@@ -267,21 +267,22 @@ test('a fabricated version on an unpublished contract is detected', () => {
   // Negative proof for the rule above: the temptation is to write `1.0.0` for a
   // contract nobody has published, because it reads as progress.
   // The fixture must be a LEGO whose contract really is unpublished. `skill`
-  // was used until P2.12 published ai.skill; using it now would test nothing,
-  // because the version would be honest. `memory` is still contract-less.
+  // was used until P2.12 published ai.skill; `memory` was used until P2.14
+  // published ai.memory. Now that memory is honestly published, the fixture
+  // moves to a LEGO that remains publicationPending (workspace).
   const mutated = clone(AI_SET);
-  const memory = mutated.lego.find((lego) => lego.id === 'memory');
-  assert.equal(memory.versioning, 'publicationPending', 'the fixture must start unpublished');
+  const workspace = mutated.lego.find((lego) => lego.id === 'workspace');
+  assert.equal(workspace.versioning, 'publicationPending', 'the fixture must start unpublished');
   assert.equal(
-    memory.contracts.every((contract) => !lockedContracts.has(contract) && !declaredCapabilities.has(contract)),
+    workspace.contracts.every((contract) => !lockedContracts.has(contract) && !declaredCapabilities.has(contract)),
     true,
     'the fixture LEGO must declare no published contract, or it cannot fabricate one',
   );
-  memory.versioning = 'ai.memory@1.0.0';
+  workspace.versioning = 'ai.workspace@1.0.0';
   const offenders = mutated.lego.filter((lego) =>
     lego.contracts.some((contract) => !lockedContracts.has(contract) && !declaredCapabilities.has(contract))
     && lego.versioning !== 'publicationPending');
-  assert.deepEqual(offenders.map((lego) => lego.id), ['memory']);
+  assert.deepEqual(offenders.map((lego) => lego.id), ['workspace']);
 });
 
 test('status and evidence agree: `implemented` requires real test files, `planned` does not claim them', () => {
@@ -305,16 +306,15 @@ test('published registries are implemented without claiming the AI runtime', () 
   // has to change, someone has claimed a runtime exists — and that claim should
   // cost them a deliberate edit to an assertion, not a quiet status flip.
   //
-  // P2.13 deliberate edit. The implemented list remains limited to the Skill
-  // and Capability LEGO; Context & Session is explicitly in-progress until
-  // Manager reconciliation and protected-main verification. No AI runtime is
-  // claimed by that foundation work.
+  // P2.14 deliberate edit. Skill and Memory are now honestly implemented; Capability
+  // remains implemented as the registry foundation. Context & Session is explicitly
+  // in-progress until Manager reconciliation. No AI runtime is claimed.
   const implemented = AI_SET.lego.filter((lego) => lego.status === 'implemented').map((lego) => lego.id);
-  assert.deepEqual(implemented, ['skill', 'capability']);
+  assert.deepEqual(implemented, ['skill', 'memory', 'capability']);
 
   // The runtime LEGO specifically must NOT be implemented. Naming them keeps
   // the guarantee concrete instead of relying on the list above staying short.
-  for (const id of ['agent-machine', 'memory', 'workspace', 'mcp-adapter', 'runtime-adapter',
+  for (const id of ['agent-machine', 'workspace', 'mcp-adapter', 'runtime-adapter',
     'node-creator', 'translation', 'token-usage', 'ai-foundation']) {
     const lego = AI_SET.lego.find((entry) => entry.id === id);
     assert.notEqual(lego.status, 'implemented', `${id} must not be implemented`);

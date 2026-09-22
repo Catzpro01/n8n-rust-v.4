@@ -34,6 +34,13 @@ import {
   contextSessionPublication,
   describeContextSession,
 } from './context-session.mjs';
+import {
+  MEMORY_KINDS,
+  MEMORY_SCOPES,
+  createMemoryView,
+  describeMemory,
+  memoryPublication,
+} from './memory.mjs';
 import { createSubLegoRegistry } from './sublegos.mjs';
 import { createOperationGateway, defineLocalTransport } from './transport.mjs';
 import { describeVocabulary, detectCollisions, vocabularyConflicts } from './vocabulary.mjs';
@@ -68,6 +75,12 @@ export function createFrontendLego({
    *  `ai.agent-session` has a contract-lock row at the P2.13 baseline (XA-20), so with nothing
    *  handed over the surface reports `declared-not-locked` and renders no state at all. */
   contextSession: contextSessionInput = null,
+  /** The Memory surface's input, handed over as data: `{ declaration, contract, result, record,
+   *  scope, limit, cursor, provider }`. `ai.memory@1.0.0` is published by agent-2 on its P2.14
+   *  branch and locked by no row on protected main @ 67e638ef (XA-12), so with nothing handed over
+   *  the surface reports `declared-not-locked` and renders no record at all. Nothing here writes,
+   *  forgets, traverses or ranks: the four published operations are named as facts. */
+  memory: memoryInput = null,
   observability = null,
   logger = {},
 } = {}) {
@@ -208,6 +221,39 @@ export function createFrontendLego({
     contract: contextSessionInput?.contract ?? null,
   });
 
+  /**
+   * The Memory view (P2.14). Everything is derived from what the application hands over: the three
+   * backend declaration blocks, any published contract-lock rows, and the records to render. With
+   * nothing handed over the view is the canonical pending answer — no record, no list, no
+   * persistence claim, no ranking and no affordance that implies a write.
+   *
+   * Built **on demand**, and eagerly only when the application handed a list or a record over. This
+   * is the third AI surface in the package and the descriptor-assembly heap is the tightest budget
+   * in the project (`XA-21`: 4,096 KB pin, already exceeded at P2.13 — measured and reported, never
+   * edited), so the boot path must not pay for a surface nobody rendered. A handed-over list is
+   * still validated at the boundary: fail-closed is not deferred, only the empty case is.
+   */
+  const buildMemoryView = () => createMemoryView({
+    surface: manifests.memoryCatalog,
+    declaration: memoryInput?.declaration ?? null,
+    contract: memoryInput?.contract ?? null,
+    result: memoryInput?.result ?? null,
+    record: memoryInput?.record ?? null,
+    scope: memoryInput?.scope ?? null,
+    limit: memoryInput?.limit ?? null,
+    cursor: memoryInput?.cursor ?? null,
+    provider: memoryInput?.provider ?? null,
+  });
+  let memoryView = memoryInput === null || memoryInput === undefined
+    ? null
+    : buildMemoryView();
+  const memory = () => (memoryView ??= buildMemoryView());
+  /** Publication state without the view: one contract row and one boolean. */
+  const memoryPublicationState = () => memoryPublication({
+    surface: manifests.memoryCatalog,
+    contract: memoryInput?.contract ?? null,
+  });
+
   const skillCatalog = createSkillCatalog({
     surface: manifests.skillCatalog,
     declaration: skillInput?.declaration ?? null,
@@ -278,6 +324,10 @@ export function createFrontendLego({
       // `not-declared` until a declaration is handed over — which is exactly when the view exists.
       contextSessionPublished: contextSessionView?.published ?? contextSessionPublicationState().published,
       contextSessionDrift: contextSessionView?.drift.state ?? 'not-declared',
+      memoryScopes: MEMORY_SCOPES.length,
+      memoryKinds: MEMORY_KINDS.length,
+      memoryPublished: memoryView?.published ?? memoryPublicationState().published,
+      memoryDrift: memoryView?.drift.state ?? 'not-declared',
       events: events.stats().emitted,
       adapter: adapter.id,
       framework: adapter.framework,
@@ -372,6 +422,16 @@ export function createFrontendLego({
       return contextSession();
     },
     describeContextSession,
+    /**
+     * The Memory surface: the quoted record shape, the deterministic bounded list, the persistence
+     * statement, the separation from Context and Session, and the publication state of `ai.memory`.
+     * It renders records; it never writes, forgets, traverses or ranks one, and it fabricates no
+     * entry, no durability and no similarity figure.
+     */
+    get memory() {
+      return memory();
+    },
+    describeMemory,
     skillDetail: (skillId, options) => skillDetail(skillCatalog, skillId, options),
     searchSkills: (filters) => searchSkills(skillCatalog, filters),
     /**
