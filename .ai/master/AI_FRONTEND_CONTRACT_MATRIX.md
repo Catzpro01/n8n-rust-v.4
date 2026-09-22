@@ -1,5 +1,13 @@
 # AI frontend contract matrix
 
+> **SUPERSEDED IN PART — P2.12.** The row marking **Skills** as `XA-11 pending` is HISTORICAL.
+> `ai.skill@1.0.0` is now locked and published (`manager`, domain `ai-foundation`) with exactly
+> four operations: `skill.list`, `skill.resolve`, `skill.describe`, `skill.validate-selection`,
+> and permissions `ai:skill:read` / `ai:skill:select`. There is no execute operation and no
+> `ai:skill:execute` permission. See the generated [`AI_CONTRACT_MATRIX.md`](AI_CONTRACT_MATRIX.md).
+> **XA-11 remains `open-for-manager`** — publishing the contract did not settle where Skill
+> ultimately belongs.
+
 **Status:** specification. **Owner:** agent-01. **Backend authority:** `arena/01a0c521 @ 6f7b66da`
 (P2.10). **Vocabulary source of truth:** `packages/frontend-lego/src/vocabulary.mjs` — every
 "vocabulary" cell below names a set in that lock, so the words can be checked instead of trusted.

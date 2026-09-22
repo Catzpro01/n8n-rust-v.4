@@ -41,8 +41,8 @@ you want the count.
 | `XA-17` | open-for-manager | `manager` | Which contract publishes token and cost usage - per call, per run, per session? |
 | `XA-18` | open-for-manager | `agent-01 (frontend + compatibility)` | Which contract publishes the external action families - filesystem, terminal/process, project, browser and git? |
 
-**11 open**, 7 resolved,
-18 recorded in total.
+**11 open**, 8 resolved,
+19 recorded in total.
 
 ## Cross-agent arbitration
 

@@ -21,7 +21,7 @@
  * reason.
  */
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -525,4 +525,134 @@ test('the open decisions this touches are recorded, not silently settled', () =>
   const xa11 = register.decisions.find((row) => row.id === 'XA-11');
   assert.equal(xa11.status, 'open-for-manager',
     'P2.12 must not have resolved XA-11 unilaterally');
+});
+
+/* ------------------------------------- P2.12 finalize: the published lock (XA-19) */
+
+const LOCK = JSON.parse(readFileSync(
+  resolve(HERE, '..', 'src', 'lego', 'contracts', 'contract-lock.json'), 'utf8'));
+const LOCKED_SKILL = LOCK.contracts.find((entry) => entry.id === 'ai.skill');
+const CANONICAL_OPERATIONS = ['skill.describe', 'skill.list', 'skill.resolve', 'skill.validate-selection'];
+/** Deliberately NOT published: internal registry lifecycle methods. */
+const INTERNAL_ONLY = ['skill.register', 'skill.select', 'skill.load', 'skill.release'];
+
+test('the contract lock publishes ai.skill@1.0.0 against the existing ai-foundation domain', () => {
+  assert.ok(LOCKED_SKILL, 'ai.skill must be in the contract lock');
+  assert.equal(LOCKED_SKILL.version, '1.0.0');
+  assert.equal(LOCKED_SKILL.owner, 'manager');
+  assert.equal(LOCKED_SKILL.domain, 'ai-foundation', 'no new top-level domain');
+  assert.equal(LOCKED_SKILL.status, 'implemented');
+  assert.equal(LOCKED_SKILL.version, SKILL_CONTRACT_VERSION, 'the lock and the module must agree');
+});
+
+test('the lock publishes exactly the four canonical operations, and none of the internal ones', () => {
+  assert.deepEqual([...LOCKED_SKILL.operations].sort(), CANONICAL_OPERATIONS);
+  assert.deepEqual([...SKILL_OPERATIONS].sort(), CANONICAL_OPERATIONS,
+    'the module must publish the same four');
+  assert.deepEqual([...LOCKED_SKILL.operations].sort(),
+    [...SKILL_CONTRACT.operations.map((operation) => operation.name)].sort(),
+    'the lock and the contract manifest must agree operation for operation');
+
+  for (const internal of INTERNAL_ONLY) {
+    assert.equal(LOCKED_SKILL.operations.includes(internal), false,
+      `${internal} is an internal lifecycle method and must not be published`);
+    assert.equal(SKILL_OPERATIONS.includes(internal), false,
+      `${internal} must not appear in the published operation set`);
+  }
+});
+
+test('no execute operation and no execute permission exists at any layer', () => {
+  // Checked in the lock, the contract manifest, the module surface and the
+  // capability declaration -- one place agreeing is not the guarantee.
+  assert.deepEqual([...LOCKED_SKILL.permissions].sort(), ['ai:skill:read', 'ai:skill:select']);
+  // Assert on the DECLARED surface, not on prose. Several fields legitimately
+  // explain in words that execution is absent ("there is deliberately no
+  // `ai:skill:execute`"); a substring scan would read those denials as the
+  // thing they deny. So enumerate the real name-bearing fields instead.
+  const declaredNames = [
+    ...LOCKED_SKILL.operations,
+    ...LOCKED_SKILL.permissions,
+    ...SKILL_CONTRACT.operations.map((operation) => operation.name),
+    ...SKILL_CONTRACT.operations.map((operation) => operation.permission),
+    ...SKILL_CONTRACT.permissions.map((entry) => (typeof entry === 'string' ? entry : entry.id)),
+  ];
+  for (const name of declaredNames) {
+    assert.equal(/execute/.test(String(name)), false,
+      `no declared operation or permission may mention execution, found '${name}'`);
+  }
+  // ...and the denials themselves must still be on the record.
+  assert.match(SKILL_CONTRACT.permissionNote, /no `?ai:skill:execute`?/i);
+  assert.ok(/no .{0,40}execute/i.test(LOCKED_SKILL.notes),
+    'the lock notes must still record, in words, that execution is deliberately absent');
+  const domains = JSON.parse(readFileSync(
+    resolve(HERE, '..', 'src', 'lego', 'manifest', 'domains.json'), 'utf8'));
+  const capability = domains.domains.flatMap((domain) => domain.capabilities ?? [])
+    .find((entry) => entry.id === 'ai.skill');
+  assert.deepEqual([...capability.permissions].sort(), ['ai:skill:read', 'ai:skill:select']);
+  assert.deepEqual([...capability.operations.map((operation) => operation.name)].sort(), CANONICAL_OPERATIONS);
+  for (const operation of capability.operations) {
+    assert.ok(['ai:skill:read', 'ai:skill:select'].includes(operation.permission));
+  }
+});
+
+test('the locked surface and exports are real', () => {
+  for (const file of LOCKED_SKILL.surface) {
+    assert.ok(existsSync(resolve(HERE, '..', file)), `missing locked surface file '${file}'`);
+  }
+  const source = readFileSync(resolve(HERE, '..', 'src', 'lego', 'skill.mjs'), 'utf8');
+  for (const name of LOCKED_SKILL.exports['src/lego/skill.mjs']) {
+    assert.match(source, new RegExp(`export (const|function|class) ${name}\\b`),
+      `the lock claims export '${name}', which skill.mjs does not export`);
+  }
+});
+
+test('XA-19 may only read resolved while the lock and the declaration actually agree', () => {
+  // The register must not be able to claim a settled vocabulary that the code
+  // contradicts. If the lock, the contract manifest and the module ever
+  // disagree, this fails rather than leaving a resolved row that lies.
+  const register = JSON.parse(readFileSync(
+    resolve(HERE, '..', '..', '..', 'docs', 'n8n-lego', 'decisions', 'cross-agent-decisions.json'), 'utf8'));
+  const xa19 = register.decisions.find((row) => row.id === 'XA-19');
+  assert.ok(xa19, 'XA-19 must be recorded');
+  if (xa19.status !== 'resolved') return;
+
+  assert.ok(LOCKED_SKILL, 'XA-19 is resolved but ai.skill is not in the contract lock');
+  assert.equal(xa19.canonical.contract, `ai.skill@${LOCKED_SKILL.version}`);
+  assert.equal(xa19.canonical.domain, LOCKED_SKILL.domain);
+  assert.equal(xa19.canonical.owner, LOCKED_SKILL.owner);
+  assert.deepEqual([...xa19.canonical.operations].sort(), [...LOCKED_SKILL.operations].sort());
+  assert.deepEqual([...xa19.canonical.operations].sort(), [...SKILL_OPERATIONS].sort());
+  assert.deepEqual([...xa19.canonical.permissions].sort(), [...LOCKED_SKILL.permissions].sort());
+  assert.deepEqual([...xa19.canonical.notPublished].sort(), [...INTERNAL_ONLY].sort());
+  assert.ok(xa19.historicalFinding, 'the original drift evidence must be kept');
+  assert.ok(xa19.historicalEvidence.length > 0, 'agent-1 drift evidence must be kept as historical');
+  assert.ok(xa19.currentRepositoryState, 'a resolved row must name the state it was verified against');
+});
+
+test('XA-11 stays open: publishing the contract did not decide where Skill belongs', () => {
+  const register = JSON.parse(readFileSync(
+    resolve(HERE, '..', '..', '..', 'docs', 'n8n-lego', 'decisions', 'cross-agent-decisions.json'), 'utf8'));
+  const xa11 = register.decisions.find((row) => row.id === 'XA-11');
+  assert.equal(xa11.status, 'open-for-manager',
+    'XA-11 is a separate architecture decision and must not be closed by locking the contract');
+  const xa19 = register.decisions.find((row) => row.id === 'XA-19');
+  assert.match(xa19.relatedOpenDecision, /XA-11 remains open-for-manager/,
+    'the resolved row must say plainly that it did not settle XA-11');
+});
+
+test('no canonical backend document still calls Skill publicationPending', () => {
+  // A resolved contract with documents still saying "pending" is the drift
+  // XA-19 exists to end. Curated documents may keep the old claim only when
+  // they carry an explicit historical label.
+  const masterDir = resolve(HERE, '..', '..', '..', '.ai', 'master');
+  const offenders = [];
+  for (const name of readdirSync(masterDir)) {
+    if (!name.endsWith('.md')) continue;
+    const body = readFileSync(join(masterDir, name), 'utf8');
+    const claimsPending = /skill[^.\n]{0,80}publicationPending|publicationPending[^.\n]{0,80}skill|XA-11 pending|Skill: XA-11/i.test(body);
+    if (!claimsPending) continue;
+    if (body.includes('SUPERSEDED IN PART')) continue;
+    offenders.push(name);
+  }
+  assert.deepEqual(offenders, []);
 });

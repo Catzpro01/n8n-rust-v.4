@@ -27,7 +27,7 @@ is the row marked as such.
 | | |
 | --- | --- |
 | Core LEGO domains | **26** |
-| Locked contracts | 14 |
+| Locked contracts | 15 |
 | Declared capabilities | 83 |
 | Declared operations | 143 |
 | Published error codes | 36 |
@@ -70,7 +70,7 @@ is the row marked as such.
 ## Open arbitration
 
 11 item(s) await the manager: XA-8, XA-9, XA-10, XA-11, XA-12, XA-13, XA-14, XA-15, XA-16, XA-17, XA-18.
-7 row(s) are resolved. Counted from the reconciled register
+8 row(s) are resolved. Counted from the reconciled register
 `docs/n8n-lego/decisions/cross-agent-decisions.json`, which carries every `XA-*`
 row from both agents — not from either agent's partial side.
 

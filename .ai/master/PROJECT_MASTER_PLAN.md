@@ -113,7 +113,7 @@ defect and should be reported as one.
 | | |
 | --- | --- |
 | Domains registered | 26 |
-| Locked public contracts | 14 |
+| Locked public contracts | 15 |
 | Declared capabilities | 83 |
 | Published error codes | 36 |
 | Temporary boundary allowances | 1 |

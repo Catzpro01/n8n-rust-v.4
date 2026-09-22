@@ -1,5 +1,18 @@
 # Master plan — the frontend AI experience
 
+> **SUPERSEDED IN PART — P2.12 (`ai.skill@1.0.0` is published).** This document was written
+> against the P2.10 backend, when no Skill contract existed. Its `publicationPending` /
+> `XA-11` claims about **Skill** are therefore HISTORICAL: the contract `ai.skill@1.0.0` is now
+> locked in `apps/n8n-lego/src/lego/contracts/contract-lock.json`, owned by `manager`, on the
+> existing `ai-foundation` domain, publishing exactly four operations — `skill.list`,
+> `skill.resolve`, `skill.describe`, `skill.validate-selection`. The canonical, generated
+> statement of what is published is [`AI_CONTRACT_MATRIX.md`](AI_CONTRACT_MATRIX.md) and
+> [`AI_AGENT_LEGO_MASTER_PLAN.md`](AI_AGENT_LEGO_MASTER_PLAN.md); where this document disagrees,
+> they win. The rest of this document — the UX and planning reasoning — stands.
+>
+> Note that **XA-11 itself remains `open-for-manager`**: whether Skill ultimately belongs under
+> `ai-foundation` is a separate architecture decision that publishing the contract did not settle.
+
 **Status:** specification (durable). **Owner:** agent-01 (frontend + compatibility).
 **Backend authority:** Agent 2's AI/LEGO foundation — `ai.foundation@1.0.0`, `lego.domain-registry@1.1.0`,
 `lego.interaction@1.0.0`, `lego.negotiation@1.0.0`, `lego.envelope@1.0.0` on
