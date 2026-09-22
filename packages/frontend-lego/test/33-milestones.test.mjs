@@ -61,8 +61,8 @@ test('the register is one machine-readable file at the canonical path, owned by 
   // The baseline is the protected-main commit the in-progress milestone started from; P2.13's own
   // historical baseline (e754c5df) stays on the P2.13 row instead of being overwritten here.
   assert.match(REGISTER.mainBaseline, /^0d9466f1/);
-  assert.equal(REGISTER.currentMilestone, 'P2.15');
-  assert.equal(REGISTER.previousCompletedMilestone, 'P2.14');
+  assert.equal(REGISTER.currentMilestone, 'P2.16');
+  assert.equal(REGISTER.previousCompletedMilestone, 'P2.15');
   assert.ok(REGISTER.milestones.length >= 7, `${REGISTER.milestones.length} milestones recorded`);
   assert.ok(REGISTER.agentBranches && typeof REGISTER.agentBranches === 'object');
   assert.ok(REGISTER.strategicRoadmap && typeof REGISTER.strategicRoadmap === 'object');
@@ -121,14 +121,14 @@ test('a status is backed by the evidence that status requires', () => {
   assert.match(p213.reconciliation.resolution.note, /stay on this row/, 'the historical baseline and branches stay on the completed row');
   assert.equal(p213.reconciliation.verdict, 'RECONCILIATION_REQUIRED', 'the pre-merge verdict is preserved, not rewritten');
   assert.equal(p213.reconciliation.baseline, 'e754c5df35b41b0ff2ac769519f05f056835411c');
-  // P2.14 is closed on protected main; the current row is P2.15.
-  const p214 = byId.get('P2.14');
-  assert.equal(p214.status, 'complete');
-  assert.ok(p214.finishEvidence, 'P2.14 carries protected-main finish evidence');
-  assert.equal(p214.finishEvidence.protectedMain, '0d9466f19a149f6e30bdee559086b7a28b080cb3');
+  // P2.15 is closed on protected main; P2.16 is current in the roadmap but not implemented.
   const p215 = byId.get('P2.15');
-  assert.equal(p215.status, 'in-progress');
-  assert.equal(p215.finishEvidence, null, 'the current milestone claims no finish evidence');
+  assert.equal(p215.status, 'complete');
+  assert.ok(p215.finishEvidence, 'P2.15 carries protected-main finish evidence');
+  assert.equal(p215.finishEvidence.protectedMain, 'ce65851bd5b5194555baa635feb4c8aeae3f16eb');
+  const p216 = byId.get('P2.16');
+  assert.equal(p216.status, 'planned');
+  assert.equal(p216.finishEvidence, null, 'P2.16 has no implementation finish evidence');
 });
 
 test('dependencies and decision references resolve: no dangling id anywhere in the register', () => {
