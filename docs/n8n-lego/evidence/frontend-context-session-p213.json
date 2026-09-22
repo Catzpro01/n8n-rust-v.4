@@ -3,53 +3,41 @@
   "milestone": "P2.13",
   "side": "frontend (agent-1)",
   "branch": "arena/01a0c6b4-n8n-rust-v-4",
-  "commit": "e9648997",
-  "peerTreeAvailable": true,
+  "commit": "c5ff5870",
+  "peerTreeAvailable": false,
   "purpose": "Evidence that the frontend consumes the published backend vocabulary and nothing else, and that it is truthful against BOTH trees: protected main (no publication) and agent-2's publication (fb254f32).",
   "trees": {
     "protectedMain": {
       "commit": "e754c5df35b41b0ff2ac769519f05f056835411c",
-      "contractLockRows": 15,
-      "publishedContextOrSessionRows": [],
+      "contractLockRows": 17,
+      "publishedContextOrSessionRows": [
+        "ai.context",
+        "ai.agent-session"
+      ],
       "note": "this branch carries a copy of the protected-main backend; neither ai.context nor ai.agent-session is locked here"
     },
     "peerPublication": {
-      "agent": "agent-2",
-      "branch": "arena/01a0c6b5-n8n-rust-v-4",
-      "commit": "fb254f32",
-      "contractLockRows": 17,
-      "publishedContextOrSessionRows": [
-        "ai.context@1.0.0 owner=manager status=implemented domain=ai-foundation",
-        "ai.agent-session@1.0.0 owner=manager status=implemented domain=ai-foundation"
-      ],
-      "note": "GitHub-visible, not merged. The frontend quotes it and records protected main beside it.",
-      "root": "/tmp/a2/apps/n8n-lego/src/lego"
+      "skipped": "no peer tree pointed at (N8N_PEER_BACKEND_LEGO_ROOT=unset)"
     }
   },
   "runs": {
     "focusedThisTree": {
-      "tests": 102,
-      "pass": 102,
+      "tests": 101,
+      "pass": 101,
       "fail": 0,
       "skipped": 0
     },
     "focusedPeerTree": {
-      "tests": 102,
-      "pass": 102,
-      "fail": 0,
-      "skipped": 0
+      "skipped": "no peer tree at N8N_PEER_BACKEND_LEGO_ROOT (unset)"
     },
     "fullSuiteThisTree": {
-      "tests": 363,
-      "pass": 363,
+      "tests": 362,
+      "pass": 362,
       "fail": 0,
       "skipped": 0
     },
     "fullSuitePeerTree": {
-      "tests": 363,
-      "pass": 363,
-      "fail": 0,
-      "skipped": 0
+      "skipped": "no peer tree pointed at"
     },
     "focusedFiles": [
       "32-context-session.test.mjs",
@@ -70,17 +58,18 @@
     "declaredOverlapsChecked": 14,
     "quotedFrom": {
       "repository": "\"Catzpro01/n8n-rust-v.4\"",
-      "branch": "\"arena/01a0c6b5-n8n-rust-v-4\"",
-      "commit": "\"fb254f32\"",
-      "mergedInto": "null (deliberately unpublished)",
+      "branch": "\"main\"",
+      "commit": "\"efa3da35\"",
+      "mergedInto": "\"efa3da352adcc20ff684f309b38a6fbf15005232\"",
       "phase": "\"P2.13\"",
       "readOn": "\"2026-09-22\"",
-      "readFor": "\"P2.13 — Context & Session: consuming the ai.context@1.0.0 a",
+      "readFor": "\"P2.13 reconciliation — Context & Session: quoting ai.contex",
       "publication": "{\"branch\":\"arena/01a0c6b5-n8n-rust-v-4\",\"commit\":\"fb254f32\",",
+      "protectedMain": "{\"branch\":\"main\",\"commit\":\"efa3da35\",\"phase\":\"P2.13\",\"locked",
       "protectedMainBaseline": "{\"branch\":\"main\",\"commit\":\"e754c5df\",\"phase\":\"P2.12\",\"locked",
       "previousQuote": "{\"branch\":\"arena/01a0c521-n8n-rust-v-4\",\"commit\":\"6f7b66da\","
     },
-    "publicationStatus": "declared-not-locked",
+    "publicationStatus": "published",
     "source": "packages/frontend-lego/src/vocabulary.mjs — imported, not retyped",
     "beforeThisCommit": {
       "quotedSets": 53,
@@ -90,15 +79,15 @@
     }
   },
   "publicationManifest": {
-    "rowsThisTreePublishes": 0,
+    "rowsThisTreePublishes": 2,
     "protectedMainBlock": {
       "branch": "main",
-      "commit": "e754c5df",
-      "lockedContractRows": 15,
-      "state": "declared-not-locked",
-      "contextRow": false,
-      "sessionRow": false,
-      "note": "protected main publishes neither contract, so the surface derives declared-not-locked against it and renders no version"
+      "commit": "efa3da35",
+      "lockedContractRows": 17,
+      "state": "published",
+      "contextRow": true,
+      "sessionRow": true,
+      "note": "protected main publishes both contracts, so the surface derives published and renders version 1.0.0"
     },
     "publishedOnPeerBranchBlock": {
       "agent": "agent-2",
@@ -107,7 +96,7 @@
       "commitMessage": "Implement P2.13 context and session foundation",
       "visibleOn": "github",
       "readOn": "2026-09-22",
-      "onProtectedMain": false,
+      "onProtectedMain": true,
       "lockedContractRows": 17,
       "rows": [
         {
@@ -203,44 +192,47 @@
     "expectedOperationCount": 8,
     "policy": "publication.rows carries only what THIS tree publishes, so the surface cannot claim a publication it does not hold; the peer rows are evidence, recorded verbatim, in a separate block."
   },
-  "registeredDivergences": [
+  "registeredDivergences": [],
+  "closedDivergences": [
     {
       "id": "backend-internal-spelling",
+      "status": "closed",
       "where": "manifest/ai-lego-set.json#lego[id=context-session].continuationPackage",
-      "contractSays": [
+      "canonicalContractSpelling": [
         "toolStateReferences",
         "importantReferences"
       ],
-      "manifestSays": [
-        "toolState",
-        "refs"
-      ],
-      "presentOn": [
-        "protected main e754c5df",
-        "peer branch fb254f32"
-      ],
-      "frontendBehaviour": "quotes the locked contract, records the manifest spelling verbatim as a registered divergence, reports it as drift data, and never averages the two or coins a third spelling",
-      "owner": "agent-2 / manager",
-      "closesWhen": "the manifest is moved to the published spelling — no frontend edit required",
+      "closedBy": {
+        "commit": "fa18ba76",
+        "agent": "agent-2",
+        "mergedIn": {
+          "branch": "main",
+          "commit": "efa3da35",
+          "pullRequest": 45
+        }
+      },
+      "verifiedOnMain": true,
       "decision": "XA-20"
     },
     {
       "id": "pre-merge-operation-count",
+      "status": "closed",
       "where": "capabilities[id=ai.context].operations",
-      "protectedMainSays": [
-        "load",
-        "compact"
-      ],
-      "peerBranchSays": [
+      "allFiveOperationsPublished": [
         "load",
         "compact",
         "rollover",
         "rehydrate",
         "verify"
       ],
-      "frontendBehaviour": "derives the published operation list from whichever tree it is pointed at; the affordance table is derived, not hardcoded",
-      "owner": "manager (merge order)",
-      "closesWhen": "both branches land in one reconciliation, or agent-2 first",
+      "closedBy": {
+        "mergedIn": {
+          "branch": "main",
+          "commit": "efa3da35",
+          "pullRequest": 45
+        }
+      },
+      "verifiedOnMain": true,
       "decision": "XA-20"
     }
   ],

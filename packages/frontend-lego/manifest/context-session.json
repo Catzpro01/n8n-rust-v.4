@@ -1,265 +1,352 @@
 {
-  "catalogVersion": "1.0.0",
-  "description": "The frontend's Context & Session surface: what it may render about a session, a context window, a rollover and a continuation, and what it must never become. Context & Session is ONE LEGO with TWO contracts (ai.context = what is loaded now, ai.agent-session = bounded state: identity plus references). The catalog ships EMPTY on purpose: this is a state surface, so it renders what it is handed and names every absence. Conversation, session, context window, memory and execution stay five distinct things; no generic AI-state object is derived from them.",
-  "lego": "context-session",
-  "contracts": [
-    "ai.context",
-    "ai.agent-session"
-  ],
-  "declarationSource": {
-    "context": {
-      "file": "apps/n8n-lego/src/lego/manifest/ai-foundation.json",
-      "path": "context",
-      "owner": "manager"
-    },
-    "session": {
-      "file": "apps/n8n-lego/src/lego/manifest/ai-foundation.json",
-      "path": "agentSession",
-      "owner": "manager"
-    },
-    "lego": {
-      "file": "apps/n8n-lego/src/lego/manifest/ai-lego-set.json",
-      "path": "lego#id=context-session",
-      "owner": "manager"
-    },
-    "capabilities": {
-      "file": "apps/n8n-lego/src/lego/manifest/domains.json",
-      "path": "domains#id=ai-foundation.capabilities[id=ai.context|ai.agent-session]",
-      "owner": "manager"
-    },
-    "scenario": {
-      "file": "apps/n8n-lego/src/lego/manifest/reference-scenarios.json",
-      "path": "scenarios[id=context-rollover]",
-      "owner": "manager"
-    }
+ "catalogVersion": "1.0.0",
+ "description": "The frontend's Context & Session surface: what it may render about a session, a context window, a rollover and a continuation, and what it must never become. Context & Session is ONE LEGO with TWO contracts (ai.context = what is loaded now, ai.agent-session = bounded state: identity plus references). The catalog ships EMPTY on purpose: this is a state surface, so it renders what it is handed and names every absence. Conversation, session, context window, memory and execution stay five distinct things; no generic AI-state object is derived from them.",
+ "lego": "context-session",
+ "contracts": [
+  "ai.context",
+  "ai.agent-session"
+ ],
+ "declarationSource": {
+  "context": {
+   "file": "apps/n8n-lego/src/lego/manifest/ai-foundation.json",
+   "path": "context",
+   "owner": "manager"
   },
-  "publication": {
-    "status": "declared-not-locked",
-    "rows": [],
-    "expected": [
-      {
-        "contract": "ai.context",
-        "declaredVersion": "1.0.0",
-        "owner": "manager",
-        "domain": "ai-foundation",
-        "lockedIn": "apps/n8n-lego/src/lego/contracts/contract-lock.json",
-        "declaredIn": "apps/n8n-lego/src/lego/manifest/ai-lego-set.json#lego[id=context-session].versioning",
-        "operations": [
-          "ai.context.load",
-          "ai.context.compact",
-          "ai.context.rollover",
-          "ai.context.rehydrate",
-          "ai.context.verify"
-        ],
-        "permissions": [
-          "ai:context:read",
-          "ai:context:write"
-        ],
-        "registeredStatus": "implemented"
-      },
-      {
-        "contract": "ai.agent-session",
-        "declaredVersion": "1.0.0",
-        "owner": "manager",
-        "domain": "ai-foundation",
-        "lockedIn": "apps/n8n-lego/src/lego/contracts/contract-lock.json",
-        "declaredIn": "apps/n8n-lego/src/lego/manifest/ai-lego-set.json#lego[id=context-session].versioning",
-        "operations": [
-          "ai.agent-session.create",
-          "ai.agent-session.status",
-          "ai.agent-session.close"
-        ],
-        "permissions": [
-          "ai:agent:create",
-          "ai:agent:read",
-          "ai:agent:control"
-        ],
-        "registeredStatus": "implemented"
-      }
-    ],
-    "notPublished": [
-      "ai.context.execute",
-      "ai.context.continue",
-      "ai.agent-session.continue",
-      "ai.agent-session.pause",
-      "ai.agent-session.resume",
-      "ai.agent-session.execute",
-      "ai.memory.*",
-      "ai.agent-runtime.*"
-    ],
-    "note": "Two states, both recorded, neither averaged. Protected main @ e754c5df publishes 15 contract-lock rows and NO row for ai.context or ai.agent-session, registers both capabilities contract-only with 2 + 3 operations, and ai-lego-set.json CLAIMS ai.context@1.0.0 + ai.agent-session@1.0.0 — so against that tree this surface reports declared-not-locked with version null. Agent-2 then published both rows on arena/01a0c6b5-n8n-rust-v-4 @ fb254f32 (17 rows, status implemented, five context operations load/compact/rollover/rehydrate/verify, three session operations create/status/close, and the CONTEXT_MANAGER_STATES / CONTINUATION_FIELDS / CONTINUATION_VERIFICATION surface), which is GitHub-visible but not on protected main. The frontend lock quotes that publication — a peer's published change is not an assumption this branch may keep ignoring — while the runtime state stays derived from the rows handed over, so nothing here claims a publication this tree cannot show. `pause`/`resume` belong to ai.agent-runtime, `continue` is published by nobody, and no memory or runtime operation exists at any layer.",
-    "protectedMain": {
-      "branch": "main",
-      "commit": "e754c5df",
-      "lockedContractRows": 15,
-      "state": "declared-not-locked",
-      "contextRow": false,
-      "sessionRow": false,
-      "note": "protected main publishes neither contract, so the surface derives declared-not-locked against it and renders no version"
-    },
-    "publishedOnPeerBranch": {
-      "agent": "agent-2",
-      "branch": "arena/01a0c6b5-n8n-rust-v-4",
-      "commit": "fb254f32",
-      "commitMessage": "Implement P2.13 context and session foundation",
-      "visibleOn": "github",
-      "readOn": "2026-09-22",
-      "onProtectedMain": false,
-      "lockedContractRows": 17,
-      "rows": [
-        {
-          "id": "ai.context",
-          "owner": "manager",
-          "domain": "ai-foundation",
-          "version": "1.0.0",
-          "status": "implemented",
-          "surface": [
-            "src/lego/context.mjs"
-          ],
-          "exports": {
-            "src/lego/context.mjs": [
-              "CONTEXT_CONTRACT",
-              "CONTEXT_CONTRACT_VERSION",
-              "CONTEXT_SCOPES",
-              "CONTEXT_OPERATIONS",
-              "CONTEXT_MANAGER_STATES",
-              "CONTINUATION_PACKAGE_VERSION",
-              "CONTINUATION_FIELDS",
-              "CONTINUATION_VERIFICATION",
-              "ContextSessionError",
-              "createContextManager",
-              "createContextSessionManager",
-              "verifyContinuationPackage"
-            ]
-          },
-          "operations": [
-            "load",
-            "compact",
-            "rollover",
-            "rehydrate",
-            "verify"
-          ],
-          "permissions": [
-            "ai:context:read",
-            "ai:context:write"
-          ],
-          "consumers": [
-            "future Agent Machine (contract-only)",
-            "frontend Context & Session consumer",
-            "Manager reconciliation gate"
-          ],
-          "tests": [
-            "apps/n8n-lego/test/lego-context-session.test.mjs"
-          ],
-          "notes": "P2.13 smallest additive publication from the already-declared ai.context fields and Context & Session operation vocabulary. The implementation is bounded local state only: no model/provider/runtime dependency, no transcript dump, no Memory store. Contract lock publication does not make P2.13 complete; Manager reconciliation, merge validation and post-merge verification remain required."
-        },
-        {
-          "id": "ai.agent-session",
-          "owner": "manager",
-          "domain": "ai-foundation",
-          "version": "1.0.0",
-          "status": "implemented",
-          "surface": [
-            "src/lego/agent-session.mjs"
-          ],
-          "exports": {
-            "src/lego/agent-session.mjs": [
-              "AGENT_SESSION_CONTRACT",
-              "AGENT_SESSION_CONTRACT_VERSION",
-              "AGENT_SESSION_STATES",
-              "AGENT_SESSION_OPERATIONS",
-              "AGENT_SESSION_TRANSITIONS",
-              "ContextSessionError",
-              "createContextSessionManager"
-            ]
-          },
-          "operations": [
-            "create",
-            "status",
-            "close"
-          ],
-          "permissions": [
-            "ai:agent:control",
-            "ai:agent:create",
-            "ai:agent:read"
-          ],
-          "consumers": [
-            "future Agent Machine (contract-only)",
-            "frontend Context & Session consumer",
-            "Manager reconciliation gate"
-          ],
-          "tests": [
-            "apps/n8n-lego/test/lego-context-session.test.mjs"
-          ],
-          "notes": "P2.13 smallest additive publication from the established ai.agent-session fields and states. A session is bounded identity/control state with references, never an unbounded transcript. The implementation remains provider/runtime-neutral."
-        }
-      ],
-      "consumedBy": "packages/frontend-lego/src/vocabulary.mjs (quoted sets contextOperation, continuationSection, contextRolloverPhase, continuationVerification) and packages/frontend-lego/test/29-alignment.test.mjs",
-      "atMerge": "when the manager merges the publication into protected main, `rows` above moves into `publication.rows` and `status` becomes `published` in the same change; test/32 asserts that against the default tree"
-    }
+  "session": {
+   "file": "apps/n8n-lego/src/lego/manifest/ai-foundation.json",
+   "path": "agentSession",
+   "owner": "manager"
   },
-  "rendering": {
-    "sessionIdentity": true,
-    "sessionState": true,
-    "contextScope": true,
-    "contextLifecycle": true,
-    "reportedUsage": true,
-    "rolloverState": true,
-    "continuationState": true,
-    "verificationResult": true,
-    "previousAndNextSession": true,
-    "degradedContinuation": true,
-    "pendingPublication": true,
-    "tokenDashboard": false,
-    "transcript": false,
-    "fabricatedTokenCount": false,
-    "memoryStore": false,
-    "executionAffordance": false,
-    "silentReset": false
+  "lego": {
+   "file": "apps/n8n-lego/src/lego/manifest/ai-lego-set.json",
+   "path": "lego#id=context-session",
+   "owner": "manager"
   },
-  "concepts": [
-    "conversation",
-    "session",
-    "context-window",
-    "memory",
-    "execution"
-  ],
-  "rules": [
-    "Conversation != Session != Context window != Memory != Execution. The five stay distinct in the UI, and a record that merges them is refused (assertDistinctConcepts).",
-    "Every shared word is quoted from the backend declaration with provenance: 7 scopes, 9 context fields, 6 context lifecycle states, 14 continuation sections, 5 declared verbs, 2 registered context operations, 3 session operations, 7 session states, 10 session fields, 3 references, 5 permissions, 3 token kinds. Nothing is coined here.",
-    "The rollover phase machine (NORMAL -> PREPARE -> ROLLOVER) and the verification results (verified / degraded / failed) are ruled but UNPUBLISHED, so they stay in PENDING_PUBLICATIONS with XA-20 and are rendered as pending; the published lifecycle words `prepare`, `compacting` and `rolled-over` are what the UI shows today.",
-    "A usage figure is reported, estimated, not-reported or over-budget, and carries its token kind or is not rendered. No percentage is computed from nothing and no estimate is presented as a report.",
-    "A rollover threshold must be declared and strictly below the bound: a threshold at or above 100% is refused, because a rollover at the limit has no room left to write the continuation package.",
-    "Verification is explicit and has three results. Missing state is reported as missing and is never silently repaired; a degraded continuation is announced and a failed one is never rendered as a new session.",
-    "State carries references, never payloads: a session holds contextRef, artifactRef and traceRef, and an inlined transcript, message list or context body is refused as unbounded.",
-    "No credentials, tokens, secrets, cookies, authorization headers, chain-of-thought, raw or hidden prompts, transcripts, full model output, host paths or capability grants - refused by name and by key pattern.",
-    "The published operations are exactly five (ai.context.load, ai.context.compact, ai.agent-session.create, ai.agent-session.status, ai.agent-session.close) and the UI offers none of them; `Continue session` is an intent answered operation-unpublished.",
-    "No Memory store is implied: what may be counted is loaded context, decisions and artifacts, and the surface says that is what they are (XA-12).",
-    "No execution affordance: the Agent Machine has no runtime, and this surface is not it.",
-    "Records are supplied to the runtime by the application; this package never reads the backend tree, and nothing it returns enters the 18,126-byte boot descriptor.",
-    "A declaration that moved past the quoted vocabulary is reported (declarationDrift) and never adopted silently; a version claimed in a file is reported as declaredVersion and is still not a publication."
-  ],
-  "contexts": [],
-  "sessions": [],
-  "alignment": {
-    "decision": "XA-20",
-    "status": "open-for-manager",
-    "register": "docs/n8n-lego/decisions/cross-agent-decisions.json",
-    "package": "docs/n8n-lego/decisions/XA-20-context-session-publication.md",
-    "milestoneRegister": "docs/n8n-lego/milestones.json#milestones[id=P2.13]",
-    "test": "packages/frontend-lego/test/32-context-session.test.mjs",
-    "comparisonTest": "packages/frontend-lego/test/29-alignment.test.mjs",
-    "rule": "A difference between this package's quoted vocabulary and the declaration it consumes is reported as data (declarationDrift) and registered, never resolved by adopting a word this package cannot quote. There is no tolerated difference: REGISTERED_DRIFT in test/29 is empty, so a backend that spells a scope, a state, a section or an operation differently fails the gate until the manager reconciles it.",
-    "relatedDecisions": [
-      "XA-12 (memory is not context; no store may be implied)",
-      "XA-17 (which contract publishes token usage; the three token kinds are quoted with a pending record)",
-      "XA-11 (where Skill is modelled - unaffected: P2.13 adds no domain)"
-    ],
-    "peerPublication": {
-      "branch": "arena/01a0c6b5-n8n-rust-v-4",
-      "commit": "fb254f32",
-      "state": "REMOTE_VISIBLE",
-      "comparedWith": "N8N_BACKEND_LEGO_ROOT pointed at the peer tree: test/29 8/8 and the P2.13 blocks of test/32 pass against it"
-    }
+  "capabilities": {
+   "file": "apps/n8n-lego/src/lego/manifest/domains.json",
+   "path": "domains#id=ai-foundation.capabilities[id=ai.context|ai.agent-session]",
+   "owner": "manager"
+  },
+  "scenario": {
+   "file": "apps/n8n-lego/src/lego/manifest/reference-scenarios.json",
+   "path": "scenarios[id=context-rollover]",
+   "owner": "manager"
   }
+ },
+ "publication": {
+  "status": "published",
+  "rows": [
+   {
+    "id": "ai.context",
+    "owner": "manager",
+    "domain": "ai-foundation",
+    "version": "1.0.0",
+    "status": "implemented",
+    "surface": [
+     "src/lego/context.mjs"
+    ],
+    "exports": {
+     "src/lego/context.mjs": [
+      "CONTEXT_CONTRACT",
+      "CONTEXT_CONTRACT_VERSION",
+      "CONTEXT_SCOPES",
+      "CONTEXT_OPERATIONS",
+      "CONTEXT_MANAGER_STATES",
+      "CONTINUATION_PACKAGE_VERSION",
+      "CONTINUATION_FIELDS",
+      "CONTINUATION_VERIFICATION",
+      "ContextSessionError",
+      "createContextManager",
+      "createContextSessionManager",
+      "verifyContinuationPackage"
+     ]
+    },
+    "operations": [
+     "load",
+     "compact",
+     "rollover",
+     "rehydrate",
+     "verify"
+    ],
+    "permissions": [
+     "ai:context:read",
+     "ai:context:write"
+    ],
+    "consumers": [
+     "future Agent Machine (contract-only)",
+     "frontend Context & Session consumer",
+     "Manager reconciliation gate"
+    ],
+    "tests": [
+     "apps/n8n-lego/test/lego-context-session.test.mjs"
+    ],
+    "notes": "P2.13 smallest additive publication from the already-declared ai.context fields and Context & Session operation vocabulary. The implementation is bounded local state only: no model/provider/runtime dependency, no transcript dump, no Memory store. Contract lock publication does not make P2.13 complete; Manager reconciliation, merge validation and post-merge verification remain required."
+   },
+   {
+    "id": "ai.agent-session",
+    "owner": "manager",
+    "domain": "ai-foundation",
+    "version": "1.0.0",
+    "status": "implemented",
+    "surface": [
+     "src/lego/agent-session.mjs"
+    ],
+    "exports": {
+     "src/lego/agent-session.mjs": [
+      "AGENT_SESSION_CONTRACT",
+      "AGENT_SESSION_CONTRACT_VERSION",
+      "AGENT_SESSION_STATES",
+      "AGENT_SESSION_OPERATIONS",
+      "AGENT_SESSION_TRANSITIONS",
+      "ContextSessionError",
+      "createContextSessionManager"
+     ]
+    },
+    "operations": [
+     "create",
+     "status",
+     "close"
+    ],
+    "permissions": [
+     "ai:agent:control",
+     "ai:agent:create",
+     "ai:agent:read"
+    ],
+    "consumers": [
+     "future Agent Machine (contract-only)",
+     "frontend Context & Session consumer",
+     "Manager reconciliation gate"
+    ],
+    "tests": [
+     "apps/n8n-lego/test/lego-context-session.test.mjs"
+    ],
+    "notes": "P2.13 smallest additive publication from the established ai.agent-session fields and states. A session is bounded identity/control state with references, never an unbounded transcript. The implementation remains provider/runtime-neutral."
+   }
+  ],
+  "expected": [
+   {
+    "contract": "ai.context",
+    "declaredVersion": "1.0.0",
+    "owner": "manager",
+    "domain": "ai-foundation",
+    "lockedIn": "apps/n8n-lego/src/lego/contracts/contract-lock.json",
+    "declaredIn": "apps/n8n-lego/src/lego/manifest/ai-lego-set.json#lego[id=context-session].versioning",
+    "operations": [
+     "ai.context.load",
+     "ai.context.compact",
+     "ai.context.rollover",
+     "ai.context.rehydrate",
+     "ai.context.verify"
+    ],
+    "permissions": [
+     "ai:context:read",
+     "ai:context:write"
+    ],
+    "registeredStatus": "implemented"
+   },
+   {
+    "contract": "ai.agent-session",
+    "declaredVersion": "1.0.0",
+    "owner": "manager",
+    "domain": "ai-foundation",
+    "lockedIn": "apps/n8n-lego/src/lego/contracts/contract-lock.json",
+    "declaredIn": "apps/n8n-lego/src/lego/manifest/ai-lego-set.json#lego[id=context-session].versioning",
+    "operations": [
+     "ai.agent-session.create",
+     "ai.agent-session.status",
+     "ai.agent-session.close"
+    ],
+    "permissions": [
+     "ai:agent:create",
+     "ai:agent:read",
+     "ai:agent:control"
+    ],
+    "registeredStatus": "implemented"
+   }
+  ],
+  "notPublished": [
+   "ai.context.execute",
+   "ai.context.continue",
+   "ai.agent-session.continue",
+   "ai.agent-session.pause",
+   "ai.agent-session.resume",
+   "ai.agent-session.execute",
+   "ai.memory.*",
+   "ai.agent-runtime.*"
+  ],
+  "note": "Published on protected main at efa3da35 via PR #45 (merged by manager). Both ai.context@1.0.0 and ai.agent-session@1.0.0 are locked with status implemented, 5 context operations, 3 session operations, and 5 permissions. The frontend quotes that publication and derives published.",
+  "protectedMain": {
+   "branch": "main",
+   "commit": "efa3da35",
+   "lockedContractRows": 17,
+   "state": "published",
+   "contextRow": true,
+   "sessionRow": true,
+   "note": "protected main publishes both contracts, so the surface derives published and renders version 1.0.0"
+  },
+  "publishedOnPeerBranch": {
+   "agent": "agent-2",
+   "branch": "arena/01a0c6b5-n8n-rust-v-4",
+   "commit": "fb254f32",
+   "commitMessage": "Implement P2.13 context and session foundation",
+   "visibleOn": "github",
+   "readOn": "2026-09-22",
+   "onProtectedMain": true,
+   "lockedContractRows": 17,
+   "rows": [
+    {
+     "id": "ai.context",
+     "owner": "manager",
+     "domain": "ai-foundation",
+     "version": "1.0.0",
+     "status": "implemented",
+     "surface": [
+      "src/lego/context.mjs"
+     ],
+     "exports": {
+      "src/lego/context.mjs": [
+       "CONTEXT_CONTRACT",
+       "CONTEXT_CONTRACT_VERSION",
+       "CONTEXT_SCOPES",
+       "CONTEXT_OPERATIONS",
+       "CONTEXT_MANAGER_STATES",
+       "CONTINUATION_PACKAGE_VERSION",
+       "CONTINUATION_FIELDS",
+       "CONTINUATION_VERIFICATION",
+       "ContextSessionError",
+       "createContextManager",
+       "createContextSessionManager",
+       "verifyContinuationPackage"
+      ]
+     },
+     "operations": [
+      "load",
+      "compact",
+      "rollover",
+      "rehydrate",
+      "verify"
+     ],
+     "permissions": [
+      "ai:context:read",
+      "ai:context:write"
+     ],
+     "consumers": [
+      "future Agent Machine (contract-only)",
+      "frontend Context & Session consumer",
+      "Manager reconciliation gate"
+     ],
+     "tests": [
+      "apps/n8n-lego/test/lego-context-session.test.mjs"
+     ],
+     "notes": "P2.13 smallest additive publication from the already-declared ai.context fields and Context & Session operation vocabulary. The implementation is bounded local state only: no model/provider/runtime dependency, no transcript dump, no Memory store. Contract lock publication does not make P2.13 complete; Manager reconciliation, merge validation and post-merge verification remain required."
+    },
+    {
+     "id": "ai.agent-session",
+     "owner": "manager",
+     "domain": "ai-foundation",
+     "version": "1.0.0",
+     "status": "implemented",
+     "surface": [
+      "src/lego/agent-session.mjs"
+     ],
+     "exports": {
+      "src/lego/agent-session.mjs": [
+       "AGENT_SESSION_CONTRACT",
+       "AGENT_SESSION_CONTRACT_VERSION",
+       "AGENT_SESSION_STATES",
+       "AGENT_SESSION_OPERATIONS",
+       "AGENT_SESSION_TRANSITIONS",
+       "ContextSessionError",
+       "createContextSessionManager"
+      ]
+     },
+     "operations": [
+      "create",
+      "status",
+      "close"
+     ],
+     "permissions": [
+      "ai:agent:control",
+      "ai:agent:create",
+      "ai:agent:read"
+     ],
+     "consumers": [
+      "future Agent Machine (contract-only)",
+      "frontend Context & Session consumer",
+      "Manager reconciliation gate"
+     ],
+     "tests": [
+      "apps/n8n-lego/test/lego-context-session.test.mjs"
+     ],
+     "notes": "P2.13 smallest additive publication from the established ai.agent-session fields and states. A session is bounded identity/control state with references, never an unbounded transcript. The implementation remains provider/runtime-neutral."
+    }
+   ],
+   "consumedBy": "packages/frontend-lego/src/vocabulary.mjs (quoted sets contextOperation, continuationSection, contextRolloverPhase, continuationVerification) and packages/frontend-lego/test/29-alignment.test.mjs",
+   "atMerge": "when the manager merges the publication into protected main, `rows` above moves into `publication.rows` and `status` becomes `published` in the same change; test/32 asserts that against the default tree"
+  }
+ },
+ "rendering": {
+  "sessionIdentity": true,
+  "sessionState": true,
+  "contextScope": true,
+  "contextLifecycle": true,
+  "reportedUsage": true,
+  "rolloverState": true,
+  "continuationState": true,
+  "verificationResult": true,
+  "previousAndNextSession": true,
+  "degradedContinuation": true,
+  "pendingPublication": true,
+  "tokenDashboard": false,
+  "transcript": false,
+  "fabricatedTokenCount": false,
+  "memoryStore": false,
+  "executionAffordance": false,
+  "silentReset": false
+ },
+ "concepts": [
+  "conversation",
+  "session",
+  "context-window",
+  "memory",
+  "execution"
+ ],
+ "rules": [
+  "Conversation != Session != Context window != Memory != Execution. The five stay distinct in the UI, and a record that merges them is refused (assertDistinctConcepts).",
+  "Every shared word is quoted from the backend declaration with provenance: 7 scopes, 9 context fields, 6 context lifecycle states, 14 continuation sections, 5 declared verbs, 2 registered context operations, 3 session operations, 7 session states, 10 session fields, 3 references, 5 permissions, 3 token kinds. Nothing is coined here.",
+  "The rollover phase machine (NORMAL -> PREPARE -> ROLLOVER) and the verification results (verified / degraded / failed) were promoted into VOCABULARIES upon publication of ai.context@1.0.0 on protected main (commit efa3da35, PR #45).",
+  "A usage figure is reported, estimated, not-reported or over-budget, and carries its token kind or is not rendered. No percentage is computed from nothing and no estimate is presented as a report.",
+  "A rollover threshold must be declared and strictly below the bound: a threshold at or above 100% is refused, because a rollover at the limit has no room left to write the continuation package.",
+  "Verification is explicit and has three results. Missing state is reported as missing and is never silently repaired; a degraded continuation is announced and a failed one is never rendered as a new session.",
+  "State carries references, never payloads: a session holds contextRef, artifactRef and traceRef, and an inlined transcript, message list or context body is refused as unbounded.",
+  "No credentials, tokens, secrets, cookies, authorization headers, chain-of-thought, raw or hidden prompts, transcripts, full model output, host paths or capability grants - refused by name and by key pattern.",
+  "The published operations are exactly five (ai.context.load, ai.context.compact, ai.agent-session.create, ai.agent-session.status, ai.agent-session.close) and the UI offers none of them; `Continue session` is an intent answered operation-unpublished.",
+  "No Memory store is implied: what may be counted is loaded context, decisions and artifacts, and the surface says that is what they are (XA-12).",
+  "No execution affordance: the Agent Machine has no runtime, and this surface is not it.",
+  "Records are supplied to the runtime by the application; this package never reads the backend tree, and nothing it returns enters the 18,126-byte boot descriptor.",
+  "A declaration that moved past the quoted vocabulary is reported (declarationDrift) and never adopted silently; a version claimed in a file is reported as declaredVersion and is still not a publication."
+ ],
+ "contexts": [],
+ "sessions": [],
+ "alignment": {
+  "decision": "XA-20",
+  "status": "open-for-manager",
+  "register": "docs/n8n-lego/decisions/cross-agent-decisions.json",
+  "package": "docs/n8n-lego/decisions/XA-20-context-session-publication.md",
+  "milestoneRegister": "docs/n8n-lego/milestones.json#milestones[id=P2.13]",
+  "test": "packages/frontend-lego/test/32-context-session.test.mjs",
+  "comparisonTest": "packages/frontend-lego/test/29-alignment.test.mjs",
+  "rule": "A difference between this package's quoted vocabulary and the declaration it consumes is reported as data (declarationDrift) and registered, never resolved by adopting a word this package cannot quote. There is no tolerated difference: REGISTERED_DRIFT in test/29 is empty, so a backend that spells a scope, a state, a section or an operation differently fails the gate until the manager reconciles it.",
+  "relatedDecisions": [
+   "XA-12 (memory is not context; no store may be implied)",
+   "XA-17 (which contract publishes token usage; the three token kinds are quoted with a pending record)",
+   "XA-11 (where Skill is modelled - unaffected: P2.13 adds no domain)"
+  ],
+  "peerPublication": {
+   "branch": "arena/01a0c6b5-n8n-rust-v-4",
+   "commit": "fb254f32",
+   "state": "REMOTE_VISIBLE",
+   "comparedWith": "N8N_BACKEND_LEGO_ROOT pointed at the peer tree: test/29 8/8 and the P2.13 blocks of test/32 pass against it"
+  }
+ }
 }

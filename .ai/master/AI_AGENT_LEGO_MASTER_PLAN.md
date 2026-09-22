@@ -14,7 +14,7 @@
 | 3 | **Agent Machine** | `manager` | CONTRACT-ONLY | B |
 | 4 | **Memory** | `manager` | PLANNED | B |
 | 5 | **Workspace** | `manager` | PLANNED | B |
-| 6 | **Context & Session** | `manager` | CONTRACT-ONLY | A |
+| 6 | **Context & Session** | `manager` | IN-PROGRESS | A |
 | 7 | **Universal Translation** | `manager` | PLANNED | D |
 | 8 | **Node Creator** | `agent-4` | PLANNED | D |
 | 9 | **Capability** | `manager` | IMPLEMENTED | A |
@@ -320,7 +320,7 @@ Every external action routes through Capability + Policy + Workspace. An agent n
 | --- | --- |
 | Index | 6 of 15 |
 | Owner | `manager` |
-| Status | **CONTRACT-ONLY** |
+| Status | **IN-PROGRESS** |
 | Phase | A |
 | Contracts | `ai.context`, `ai.agent-session` |
 | Versioning | ai.context@1.0.0, ai.agent-session@1.0.0 |
@@ -343,7 +343,7 @@ Every external action routes through Capability + Policy + Workspace. An agent n
 
 **Observability:** context.loaded, context.compacted.
 
-**Tests:** `test/lego-ai-foundation.test.mjs`, `planned: rollover, rehydration fidelity`
+**Tests:** `test/lego-context-session.test.mjs`, `planned: frontend/backend alignment and full reconciliation`
 
 **Future stages:** A: contracts (DONE) · B: manager · D: verification
 
@@ -351,7 +351,7 @@ Every external action routes through Capability + Policy + Workspace. An agent n
 
 **Scopes:** `GLOBAL` > `WORKFLOW` > `NODE` > `EXECUTION` > `EVENT` > `AGENT` > `TASK`
 
-**Continuation package:** `identity`, `objective`, `plan`, `completedWork`, `unfinishedWork`, `constraints`, `decisions`, `activeEntities`, `toolState`, `artifacts`, `refs`, `errors`, `unresolvedQuestions`, `compressedHistory`
+**Continuation package:** `identity`, `objective`, `plan`, `completedWork`, `unfinishedWork`, `constraints`, `decisions`, `activeEntities`, `toolStateReferences`, `artifacts`, `importantReferences`, `errors`, `unresolvedQuestions`, `compressedHistory`
 
 > Never wait for the exact context limit. Rollover is triggered at a declared threshold, because a rollover attempted at 100% has no room left to write the continuation package — the one operation that makes the rollover survivable.
 

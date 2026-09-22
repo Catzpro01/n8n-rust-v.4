@@ -7,6 +7,28 @@ engine stays the execution backend and the Rust port resumes afterwards.
 
 Status legend: ✅ done · 🔄 in progress · ⏳ planned
 
+## Current granular milestone truth
+
+The Phase A-F roadmap below remains the strategic roadmap. The Manager-owned granular
+register is `docs/n8n-lego/milestones.json` and is the only machine-readable milestone
+source. Current state:
+
+| Milestone | Status | Meaning |
+| :--- | :--- | :--- |
+| P2.11 — reconciliation/foundation cleanup | ✅ complete | historical evidence preserved |
+| P2.12 — Skill | ✅ complete | `ai.skill@1.0.0`, four published operations, two permissions; no Skill runtime |
+| **P2.13 — Context & Session** | 🔄 in progress | bounded lifecycle, rollover, continuation and verification; Manager reconciliation still required |
+| P2.14 — Memory | ⏳ planned | separate persistent knowledge store, not part of P2.13 |
+| P2.15 — Workspace | ⏳ planned | scoped execution boundary, not part of P2.13 |
+| P2.16 — Agent Machine / execution foundation | ⏳ planned | depends on Context & Session, Memory, Workspace and approval readiness |
+
+P2.13 deliberately does not implement AI runtime/model inference, Agent Machine,
+Memory persistence, Workspace execution, MCP/runtime adapters, Skill execution,
+external providers, Node Creator, Translation, token providers or Rust. An agent
+branch is not a milestone: Manager reconciliation, merge validation and protected-main
+post-merge verification are separate gates. Future IDs may be refined only by Manager
+by updating the canonical register.
+
 ---
 
 ## 1. Application (make it run) — ✅ runnable

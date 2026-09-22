@@ -294,3 +294,30 @@ test file is missing, so a smaller count cannot look like a pass).
 
 **Status: still `open-for-manager`.** A worker does not close a manager-owned decision, and quoting a
 peer's publication is not the same as the manager ratifying it. `resolution` stays `null`.
+
+## 10. Manager Merge & Post-Merge Reconciliation (PR #45 merged into main @ efa3da35)
+
+**Main updated:** The Manager approved and merged Agent 2's PR #45 (`arena/01a0c6b5-n8n-rust-v-4`) into
+`main` at commit `efa3da352adcc20ff684f309b38a6fbf15005232`.
+
+**Facts reconciled:**
+1. **Merge order settled:** As recommended in §9, Agent 2's backend work landed first on protected main,
+   so protected main now publishes 17 locked contract rows, including both `ai.context@1.0.0` and
+   `ai.agent-session@1.0.0`.
+2. **Continuation vocabulary discrepancy closed:** In commit `fa18ba76` (included in PR #45), Agent 2
+   updated `apps/n8n-lego/src/lego/manifest/ai-lego-set.json` to canonical fields `toolStateReferences`
+   and `importantReferences`, matching `CONTINUATION_FIELDS` from the locked contract. The divergence
+   reported in §9 is now fully resolved and verified in both manifest and contract.
+3. **Operations on main:** All 5 operations (`load`, `compact`, `rollover`, `rehydrate`, `verify`) are
+   now registered capabilities on protected main.
+4. **Frontend surface status:** With the rows present on main, `manifest/context-session.json` now carries
+   the 2 locked rows in `publication.rows` and reports `status: "published"`. `QUOTED_FROM` in
+   `vocabulary.mjs` points to `main` @ `efa3da35`.
+5. **Reconciliation measurements:**
+   - Full frontend suite: **362/362** pass, 0 fail, 0 skipped.
+   - Backend suite: **18/18** pass (`lego-context-session.test.mjs`).
+   - Focused cross-agent suite: **85/85** pass (`18` backend + `8` alignment + `46` context-session + `13` milestones).
+   - Gates: `lego:arch`, `lego:arch:selftest` (26/26), `lego:foundation`, `lego:foundation:selftest` (15/15),
+     `lego:capabilities` (23/83), `lego:scaleout` (11 declared), `lego:ai:check` (64/37/101) all green.
+
+**Status:** Still `open-for-manager` (resolution stays `null` until final Manager gate review).

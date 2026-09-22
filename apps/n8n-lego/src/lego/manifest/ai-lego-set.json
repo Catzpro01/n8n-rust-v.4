@@ -1,8 +1,8 @@
 {
   "version": "1.0.0",
-  "phase": "P2.11",
+  "phase": "P2.13",
   "owner": "manager",
-  "status": "contract-only",
+  "status": "in-progress",
   "description": "The fifteen OFFICIAL AI/Agent LEGO. This file is the single authoritative declaration of the AI/Agent LEGO set: every generated master document is produced from it. It declares responsibilities, boundaries and roadmap. It implements nothing.",
   "setRule": "These fifteen are official LEGO. They are not collapsed into one AI module, and no sixteenth top-level LEGO is created merely because a feature exists — a new feature is a sub-LEGO, a capability or an operation of an existing LEGO unless it owns a genuinely distinct lifecycle and data set.",
   "statusVocabulary": {
@@ -10,7 +10,8 @@
     "contract-only": "The contract is fixed and testable; no implementation exists.",
     "planned": "Intended; no contract is fixed yet.",
     "blocked": "Cannot proceed until a named blocker is resolved.",
-    "deferred": "Deliberately postponed; no owner is scheduled."
+    "deferred": "Deliberately postponed; no owner is scheduled.",
+    "in-progress": "Implementation is underway; completion still requires reconciliation and protected-main verification."
   },
   "conceptKinds": {
     "lego": "A unit of ownership with its own contract, lifecycle, data and tests.",
@@ -618,7 +619,7 @@
       "index": 6,
       "title": "Context & Session",
       "owner": "manager",
-      "status": "contract-only",
+      "status": "in-progress",
       "phase": "A",
       "mission": "Own the distinction between conversation, session, context window, memory and execution — and manage rollover before a limit is hit.",
       "distinction": "Conversation != Session != Context Window != Memory != Execution. One conversation may contain many sessions and many context windows.",
@@ -667,9 +668,9 @@
         "constraints",
         "decisions",
         "activeEntities",
-        "toolState",
+        "toolStateReferences",
         "artifacts",
-        "refs",
+        "importantReferences",
         "errors",
         "unresolvedQuestions",
         "compressedHistory"
@@ -702,14 +703,16 @@
       "observability": "context.loaded, context.compacted.",
       "versioning": "ai.context@1.0.0, ai.agent-session@1.0.0",
       "tests": [
-        "test/lego-ai-foundation.test.mjs",
-        "planned: rollover, rehydration fidelity"
+        "test/lego-context-session.test.mjs",
+        "planned: frontend/backend alignment and full reconciliation"
       ],
       "futureStages": [
         "A: contracts (DONE)",
         "B: manager",
         "D: verification"
-      ]
+      ],
+      "versioningNote": "The contracts were conceptual in the P2.12 baseline. P2.13 publishes the smallest additive lock rows from the established fields and lifecycle vocabulary. The implementation is in-progress on the Agent 2 branch; Manager reconciliation is still required before milestone completion.",
+      "phaseNote": "P2.13 implementation milestone. Memory remains separate and follows this foundation."
     },
     {
       "id": "translation",
@@ -1628,7 +1631,8 @@
         "agent loop"
       ],
       "delivered": [
-        "skill registry (P2.12): registration, validation, lazy discovery, lifecycle"
+        "skill registry (P2.12): registration, validation, lazy discovery, lifecycle",
+        "Context & Session foundation implementation target (P2.13): bounded lifecycle and continuation mechanics"
       ],
       "stillPlanned": [
         "memory graph",
@@ -1676,13 +1680,12 @@
     "rule": "No phase may silently skip contract compatibility. A phase that needs a contract change declares it, versions it and migrates consumers."
   },
   "currentLimits": [
-    "NOT scale-out ready — two class-A storage blockers remain in src/store.mjs (agent-5, P8).",
-    "The AI runtime is NOT implemented.",
-    "Model inference is NOT implemented.",
-    "The MCP runtime is NOT implemented.",
-    "No vendor adapter is implemented.",
-    "The Agent Machine runtime is NOT implemented.",
-    "The frontend browser gate is NOT available locally (CI-only; Chromium cannot be installed in the dev sandbox)."
+    "AI runtime is NOT implemented: no model inference, provider API calls, Agent Machine loop or multi-agent runtime.",
+    "Model inference is NOT implemented; no provider API calls are made.",
+    "Memory persistent store remains NOT IMPLEMENTED; Context is what is loaded now and Memory is what survives replacement.",
+    "Workspace runtime, MCP runtime, Runtime Adapter runtime, Node Creator runtime and Translation runtime remain NOT IMPLEMENTED.",
+    "Rust remains NOT STARTED. The backend is NOT scale-out ready; scale-out remains NOT READY.",
+    "P2.13 is not COMPLETE until Manager reconciliation, merge validation and post-merge verification pass."
   ],
   "reconciliationRule": "A LEGO in this set whose id collides with, or whose mechanism is already owned by, a core domain in manifest/domains.json MUST declare `reconciles`. This is what stops the AI set from silently forking a second domain (ai-workspace beside workspace, an AI capability registry beside lego-foundation). Gate rule F17 enforces it.",
   "phaseDependencyRule": "A LEGO must not depend on a LEGO scheduled in a later phase, because a roadmap that cannot run in its own stated order is not a roadmap. Exceptions are declared below with the degradation that makes the earlier phase viable on its own — never left implicit.",
@@ -1696,5 +1699,11 @@
       "degradation": "Without approval: `lego.access_denied` on any action requiring or of unknown approval status.",
       "closes": "Phase C, when ai.approval is published."
     }
-  ]
+  ],
+  "currentMilestone": "P2.13",
+  "previousCompletedMilestone": "P2.12",
+  "milestoneRegister": "docs/n8n-lego/milestones.json",
+  "protectedBranch": "main",
+  "mainBaseline": "e754c5df35b41b0ff2ac769519f05f056835411c",
+  "statusNote": "P2.13 Context & Session is the current implementation milestone. P2.12 Skill is complete. Protected main remains the P2.12 baseline until Manager reconciliation and merge."
 }

@@ -560,21 +560,26 @@
     },
     {
       "id": "ai-foundation",
-      "title": "AI Foundation contracts (provider-neutral, contract-only)",
+      "title": "AI Foundation contracts and Context & Session foundation",
       "owner": "manager",
       "kind": "governance",
       "status": "partial",
-      "phase": "P2.10",
+      "phase": "P2.13",
       "errorNamespace": "ai",
       "paths": [
         "src/lego/ai-foundation.mjs",
         "src/lego/manifest/ai-foundation.json",
         "src/lego/skill.mjs",
-        "src/lego/manifest/skill.json"
+        "src/lego/manifest/skill.json",
+        "src/lego/context-session.mjs",
+        "src/lego/context.mjs",
+        "src/lego/agent-session.mjs"
       ],
       "public": [
         "src/lego/ai-foundation.mjs",
-        "src/lego/skill.mjs"
+        "src/lego/skill.mjs",
+        "src/lego/context.mjs",
+        "src/lego/agent-session.mjs"
       ],
       "dependsOn": [
         "lego-foundation"
@@ -914,28 +919,28 @@
         },
         {
           "id": "ai.agent-session",
-          "status": "contract-only",
+          "status": "implemented",
           "operations": [
             {
               "name": "create",
               "interaction": "call",
               "permission": "ai:agent:create",
               "idempotent": false,
-              "status": "contract-only"
+              "status": "implemented"
             },
             {
               "name": "status",
               "interaction": "call",
               "permission": "ai:agent:read",
               "idempotent": true,
-              "status": "contract-only"
+              "status": "implemented"
             },
             {
               "name": "close",
               "interaction": "call",
               "permission": "ai:agent:control",
               "idempotent": true,
-              "status": "contract-only"
+              "status": "implemented"
             }
           ],
           "interaction": [
@@ -946,8 +951,8 @@
             "ai:agent:create",
             "ai:agent:read"
           ],
-          "lifecycle": "declared",
-          "availability": "optional-absent",
+          "lifecycle": "active",
+          "availability": "available",
           "criticality": "optional",
           "trust": "core",
           "transport": {
@@ -960,9 +965,10 @@
             ]
           },
           "migrationState": "not-started",
-          "degradation": "optional-absent",
+          "degradation": "degraded",
           "replacement": "contract-preserving",
-          "resources": "low"
+          "resources": "low",
+          "notes": "P2.13 implementation target: bounded session identity/state, explicit lifecycle transitions, parent references and context/continuation linkage. A session never contains an unbounded transcript."
         },
         {
           "id": "ai.agent-delegation",
@@ -1197,21 +1203,42 @@
         },
         {
           "id": "ai.context",
-          "status": "contract-only",
+          "status": "implemented",
           "operations": [
             {
               "name": "load",
               "interaction": "call",
               "permission": "ai:context:read",
               "idempotent": true,
-              "status": "contract-only"
+              "status": "implemented"
             },
             {
               "name": "compact",
               "interaction": "call",
               "permission": "ai:context:write",
               "idempotent": false,
-              "status": "contract-only"
+              "status": "implemented"
+            },
+            {
+              "name": "rollover",
+              "interaction": "call",
+              "permission": "ai:context:write",
+              "idempotent": false,
+              "status": "implemented"
+            },
+            {
+              "name": "rehydrate",
+              "interaction": "call",
+              "permission": "ai:context:write",
+              "idempotent": false,
+              "status": "implemented"
+            },
+            {
+              "name": "verify",
+              "interaction": "call",
+              "permission": "ai:context:read",
+              "idempotent": true,
+              "status": "implemented"
             }
           ],
           "interaction": [
@@ -1221,8 +1248,8 @@
             "ai:context:read",
             "ai:context:write"
           ],
-          "lifecycle": "declared",
-          "availability": "optional-absent",
+          "lifecycle": "active",
+          "availability": "available",
           "criticality": "optional",
           "trust": "core",
           "transport": {
@@ -1235,9 +1262,10 @@
             ]
           },
           "migrationState": "not-started",
-          "degradation": "optional-absent",
+          "degradation": "degraded",
           "replacement": "contract-preserving",
-          "resources": "low"
+          "resources": "low",
+          "notes": "P2.13 implementation target: bounded context registry, selective load, compaction ancestry, deterministic rollover, continuation serialization, rehydration and explicit continuity verification. No model/runtime/provider dependency."
         },
         {
           "id": "ai.skill",
@@ -1319,7 +1347,7 @@
         "concurrency": "parallel-safe",
         "startup": "instant"
       },
-      "statusNote": "Was contract-only through P2.11. P2.12 implemented exactly one capability, ai.skill — the skill registry. The other eleven capabilities remain contract-only: no inference, no agent loop, no gateway client, no MCP, no network call. `partial` is the honest status; keeping `contract-only` would have been a false claim in the safe direction."
+      "statusNote": "P2.13 implements the Context & Session LEGO while preserving the provider-neutral AI Foundation boundary. Skill is complete from P2.12; Context & Session is in-progress until Manager reconciliation and merge. AI runtime, Memory, Workspace execution and Agent Machine remain outside this milestone."
     },
     {
       "id": "compatibility",

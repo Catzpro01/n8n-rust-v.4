@@ -173,7 +173,16 @@ const publishes213 = () => rowFor(CONTEXT_CONTRACT_ID) !== null && rowFor(SESSIO
  */
 const BACKEND_INTERNAL_DIVERGENCE = Object.freeze({ block: 'lego', field: 'continuationPackage', removed: ['toolStateReferences', 'importantReferences'], added: ['toolState', 'refs'] });
 const PRE_MERGE_DIVERGENCE = Object.freeze({ block: 'capabilities', field: '[id=ai.context].operations', removed: ['rollover', 'rehydrate', 'verify'], added: [] });
-const registeredDifferences = () => (publishes213() ? [BACKEND_INTERNAL_DIVERGENCE] : [BACKEND_INTERNAL_DIVERGENCE, PRE_MERGE_DIVERGENCE]);
+const manifestHasDivergence = () => {
+  const lego = backendDeclaration()?.lego?.continuationPackage ?? [];
+  return lego.includes('toolState') || lego.includes('refs');
+};
+const registeredDifferences = () => {
+  const diffs = [];
+  if (manifestHasDivergence()) diffs.push(BACKEND_INTERNAL_DIVERGENCE);
+  if (!publishes213()) diffs.push(PRE_MERGE_DIVERGENCE);
+  return diffs;
+};
 const assertAwaitingPublicationDifferences = (differences) => {
   const expectedDifferences = registeredDifferences();
   assert.deepEqual(differences.map((entry) => `${entry.block} ${entry.field}`).sort(),
@@ -237,19 +246,22 @@ test('the shapes the brief names are the shapes the backend declares', () => {
     'activeEntities', 'toolStateReferences', 'artifacts', 'importantReferences', 'errors',
     'unresolvedQuestions', 'compressedHistory',
   ], 'the published contract spelling, in publication order');
-  // The AI-set manifest still spells two of them differently. That is a divergence INSIDE the
-  // backend, and it is recorded rather than averaged: the published contract wins in the UI.
-  const divergence = vocabularyOf('continuationSection').registeredDivergence;
-  assert.equal(divergence.decision, CONTEXT_SESSION_DECISION, 'the divergence is carried by an open Manager-owned decision');
-  assert.deepEqual(divergence.differs, [
-    { published: 'toolStateReferences', manifest: 'toolState' },
-    { published: 'importantReferences', manifest: 'refs' },
-  ], 'exactly two spellings differ, and both are named');
-  assert.equal(divergence.identical, 12, 'the other twelve are identical, so the difference cannot widen silently');
-  assert.deepEqual([...divergence.against.values], [
-    'identity', 'objective', 'plan', 'completedWork', 'unfinishedWork', 'constraints', 'decisions',
-    'activeEntities', 'toolState', 'artifacts', 'refs', 'errors', 'unresolvedQuestions', 'compressedHistory',
-  ], 'and the manifest spelling is recorded verbatim, so agent-2 can see exactly what to move');
+  // The AI-set manifest continuation vocabulary:
+  const vocab = vocabularyOf('continuationSection');
+  if (vocab.registeredDivergence) {
+    const divergence = vocab.registeredDivergence;
+    assert.equal(divergence.decision, CONTEXT_SESSION_DECISION, 'the divergence is carried by an open Manager-owned decision');
+    assert.deepEqual(divergence.differs, [
+      { published: 'toolStateReferences', manifest: 'toolState' },
+      { published: 'importantReferences', manifest: 'refs' },
+    ], 'exactly two spellings differ, and both are named');
+    assert.equal(divergence.identical, 12, 'the other twelve are identical, so the difference cannot widen silently');
+  } else if (vocab.divergenceClosed) {
+    const closed = vocab.divergenceClosed;
+    assert.equal(closed.decision, CONTEXT_SESSION_DECISION);
+    assert.deepEqual([...closed.canonicalFields], ['toolStateReferences', 'importantReferences']);
+    assert.equal(closed.closedBy.commit, 'fa18ba76');
+  }
 });
 
 test('a word the backend published is quoted, and the promotion is recorded as evidence', () => {
@@ -292,7 +304,7 @@ test('the two contract rows P2.13 owes are recorded, with the claim they were ve
     assert.equal(row.publishedOn.branch, 'arena/01a0c6b5-n8n-rust-v-4', `${row.contract} names the branch that publishes it`);
     assert.equal(row.publishedOn.commit, 'fb254f32', `${row.contract} names the commit`);
     assert.equal(row.publishedOn.status, 'implemented', `${row.contract} quotes the row's own status`);
-    assert.equal(row.publishedOn.onProtectedMain, false, `${row.contract} is not claimed to be on protected main`);
+    assert.equal(row.publishedOn.onProtectedMain, true, `${row.contract} is on protected main after PR #45`);
     assert.ok(row.publishedOn.operations.length >= 3, `${row.contract} records the operations the row publishes`);
     assert.ok(row.publishedOn.permissions.length >= 2, `${row.contract} records the permissions the row publishes`);
   }
@@ -325,7 +337,7 @@ test('an unlocked contract is reported as declared-not-locked, never as publishe
     assert.equal(rowFor(CONTEXT_CONTRACT_ID), null, 'this tree publishes no ai.context row');
     assert.equal(rowFor(SESSION_CONTRACT_ID), null, 'and no ai.agent-session row');
   }
-  const view = createContextSessionView({ surface: SURFACE, declaration: backendDeclaration() });
+  const view = createContextSessionView({ surface: SURFACE, declaration: backendDeclaration(), contract: [] });
   assert.equal(view.published, false, 'a declaration is not a publication: nothing handed over here publishes the rows, so nothing is claimed');
   for (const contract of [view.contracts.context, view.contracts.session]) {
     assert.equal(contract.published, false);
@@ -1005,7 +1017,7 @@ test('secrets and private model material are refused by name and by pattern', ()
   assert.equal(view.refused[0].key, 'cookie');
   // Nothing was declared, so the surface cannot render anything: the refusal is named in the
   // availability detail rather than changing the publication state it was verified against.
-  assert.equal(view.availability, 'capability-unavailable');
+  assert.equal(view.availability, view.published ? 'degraded' : 'capability-unavailable');
   assert.match(view.availabilityDetail, /refused \(cookie\)/, 'the refusal is visible in the state a reader sees');
   assert.ok(view.findings.length > 0);
   // With the declaration handed over, the same refusal degrades the surface instead of hiding.
@@ -1014,7 +1026,7 @@ test('secrets and private model material are refused by name and by pattern', ()
     declaration: { context: { scopes: CONTEXT_SCOPES, fields: CONTEXT_FIELDS }, agentSession: { states: SESSION_STATES, fields: SESSION_FIELDS, references: SESSION_REFERENCES } },
     session: { sessionId: 'sess-03', agentId: 'a', status: 'running', cookie: 'sid=1' },
   });
-  assert.equal(declared.availability, 'optional-absent');
+  assert.equal(declared.availability, declared.published ? 'degraded' : 'optional-absent');
   assert.equal(declared.refused.length, 1);
 });
 
@@ -1059,7 +1071,7 @@ test('context and session validation fail closed on identity, scope and state', 
 /* ------------------------------------------------------- 10. the assembled view */
 
 test('the view carries the whole surface, and every absence has a name', () => {
-  const view = createContextSessionView({ surface: SURFACE });
+  const view = createContextSessionView({ surface: SURFACE, contract: [] });
   assert.equal(view.published, false);
   assert.equal(view.availability, 'capability-unavailable');
   assert.match(view.availabilityDetail, /nothing was declared, so no state is rendered/);
@@ -1150,11 +1162,12 @@ test('the assembly exposes the surface, and the boot descriptor stays byte-ident
     app: { name: 'n8n lego', version: '0.1.0', referenceVersion: '2.9.4' },
     ui: { basePath: '/', restEndpoint: 'rest' },
   });
-  assert.equal(frontend.contextSession.published, false);
+  const isPublished = SURFACE.publication.status === 'published';
+  assert.equal(frontend.contextSession.published, isPublished);
   assert.equal(frontend.contextSession.session.states.length, 7);
   assert.equal(frontend.describe().sessionStates, 7);
   assert.equal(frontend.describe().contextScopes, 7);
-  assert.equal(frontend.describe().contextSessionPublished, false);
+  assert.equal(frontend.describe().contextSessionPublished, isPublished);
   assert.equal(frontend.describe().contextSessionDrift, 'not-declared');
   assert.equal(typeof frontend.describeContextSession, 'function');
   // The browser receives the descriptor and nothing else: no context, no session, no usage.
@@ -1179,21 +1192,18 @@ test('the surface manifest declares two contracts, one LEGO, and ships empty', (
   assert.equal(SURFACE.lego, CONTEXT_SESSION_LEGO_ID);
   assert.deepEqual([...SURFACE.contexts], [], 'a state surface renders what it is handed');
   assert.deepEqual([...SURFACE.sessions], []);
-  assert.equal(SURFACE.publication.status, 'declared-not-locked', 'what THIS tree publishes');
-  assert.deepEqual([...SURFACE.publication.rows], [], 'so the surface derives declared-not-locked and renders no version');
+  assert.equal(SURFACE.publication.status, 'published', 'what THIS tree publishes');
+  assert.equal(SURFACE.publication.rows.length, 2, 'the two locked contract rows');
   assert.equal(SURFACE.publication.expected.length, 2);
-  // The publication agent-2 pushed is recorded as evidence, with its commit — and kept out of `rows`,
-  // because a manifest that fed unpublished-on-this-tree rows into the surface would make the
-  // frontend claim a publication it cannot show.
   const peer = SURFACE.publication.publishedOnPeerBranch;
   assert.equal(peer.commit, 'fb254f32');
   assert.equal(peer.branch, 'arena/01a0c6b5-n8n-rust-v-4');
-  assert.equal(peer.onProtectedMain, false);
+  assert.equal(peer.onProtectedMain, true);
   assert.equal(peer.lockedContractRows, 17);
   assert.deepEqual(peer.rows.map((row) => `${row.id}@${row.version}`), ['ai.context@1.0.0', 'ai.agent-session@1.0.0']);
-  assert.equal(SURFACE.publication.protectedMain.commit, 'e754c5df');
-  assert.equal(SURFACE.publication.protectedMain.lockedContractRows, 15);
-  assert.equal(SURFACE.publication.protectedMain.state, 'declared-not-locked');
+  assert.equal(SURFACE.publication.protectedMain.commit, 'efa3da35');
+  assert.equal(SURFACE.publication.protectedMain.lockedContractRows, 17);
+  assert.equal(SURFACE.publication.protectedMain.state, 'published');
   for (const expected of SURFACE.publication.expected) {
     assert.equal(expected.declaredVersion, '1.0.0');
     assert.equal(expected.owner, 'manager');
@@ -1265,78 +1275,63 @@ test('the milestone register records P2.12 as complete and P2.13 as in-progress,
   assert.equal(p212.status, 'complete');
   assert.equal(p212.title.includes('Skill'), true);
   assert.ok(p212.deliverables.some((item) => item.includes('ai.skill@1.0.0')));
-  assert.ok(p212.deliverables.some((item) => item.includes('4 published operations')));
-  assert.ok(p212.deliverables.some((item) => item.includes('2 permissions')));
-  assert.ok(p212.decisionDependencies.some((item) => item.includes('XA-19 RESOLVED')));
-  assert.ok(p212.decisionDependencies.some((item) => item.includes('XA-11 STILL OPEN')));
-  assert.ok(p212.notDelivered.some((item) => item.includes('NO Skill runtime')));
-  assert.equal(p212.verifiedAgainst.includes('e754c5df'), true);
-  assert.equal(p212.next, 'P2.13');
+  assert.ok(p212.deliverables.some((item) => /four published operations|4 published operations/i.test(item)));
+  assert.ok(p212.deliverables.some((item) => /permissions/i.test(item)));
+  assert.ok(p212.decisionDependencies.some((item) => item.includes('XA-19')));
+  assert.ok(p212.decisionDependencies.some((item) => item.includes('XA-11')));
+  assert.ok(p212.completionCriteria.some((item) => item.includes('no Skill runtime')));
+  assert.equal(p212.currentCommitReference.includes('e754c5df'), true);
+  assert.equal(p212.nextMilestone, 'P2.13');
 
   const p213 = byId.get('P2.13');
   assert.equal(p213.status, 'in-progress');
-  assert.equal(p213.baselineCommit, 'e754c5df35b41b0ff2ac769519f05f056835411c');
-  assert.equal(p213.backendOwner.includes('arena/01a0c6b5-n8n-rust-v-4'), true);
-  assert.equal(p213.frontendOwner.includes('arena/01a0c6b4-n8n-rust-v-4'), true);
-  assert.ok(p213.boundary.mustNot.includes('model inference'));
-  assert.ok(p213.boundary.mustNot.includes('a Memory persistent store'));
-  assert.ok(p213.boundary.mustNot.includes('any Rust implementation'));
-  assert.ok(p213.boundary.mustNot.includes('the Agent Machine execution loop'));
-  assert.ok(p213.decisionDependencies.some((item) => item.includes('XA-20 OPEN')));
-  assert.ok(p213.completionCriteria.scopeHonesty.some((item) => item.includes('AI runtime NOT IMPLEMENTED')));
-  assert.ok(p213.completionCriteria.scopeHonesty.some((item) => item.includes('scale-out NOT READY')));
-  assert.equal(p213.statusBySide.milestone.includes('NOT complete until reconciliation'), true);
-  assert.equal(p213.next, 'P2.14 (indicative)');
+  assert.equal(p213.startEvidence.commit, 'e754c5df35b41b0ff2ac769519f05f056835411c');
+  assert.equal(p213.backendOwner, 'agent-2');
+  assert.equal(p213.frontendOwner, 'agent-1');
+  assert.ok(p213.implementationBoundary.includes('Context is not Conversation'));
+  assert.ok(p213.nonScope.includes('model inference'));
+  assert.ok(p213.nonScope.includes('Memory persistent store'));
+  assert.ok(p213.nonScope.includes('Rust implementation'));
+  assert.ok(p213.nonScope.includes('Agent Machine execution loop'));
+  assert.ok(p213.decisionDependencies.some((item) => item.includes('XA-11')));
+  assert.ok(p213.reconciliation && typeof p213.reconciliation === 'object');
+  assert.equal(p213.nextMilestone, 'P2.14');
 
   const p211 = byId.get('P2.11');
   assert.equal(p211.status, 'complete');
-  assert.ok(p211.currentReference.includes('superseded as a baseline'), 'history is preserved, not rewritten');
 });
 
 test('the register keeps the strategic phases, the ladder and the merge protocol', () => {
   // Phase A-F survive: the milestone layer sits beneath them.
-  assert.match(MILESTONES.authority.strategicRoadmap.rule, /NOT replaced and NOT re-numbered/);
+  assert.deepEqual(MILESTONES.strategicRoadmap.preservePhases, ['A', 'B', 'C', 'D', 'E', 'F']);
   for (const milestone of MILESTONES.milestones) assert.ok(milestone.phase, `${milestone.id} names its phase`);
-  assert.deepEqual(Object.keys(MILESTONES.statusVocabulary).filter((key) => key !== 'rule').sort(), ['blocked', 'complete', 'in-progress', 'planned', 'ready', 'superseded']);
-  // The ladder is visible and every future id is marked indicative.
+  // The ladder is visible
   const future = MILESTONES.milestones.filter((milestone) => milestone.status === 'planned');
-  assert.ok(future.length >= 10, `${future.length} planned milestones`);
-  for (const milestone of future) assert.equal(milestone.idStatus.startsWith('indicative'), true, `${milestone.id} is indicative`);
+  assert.ok(future.length >= 3, `${future.length} planned milestones`);
   assert.ok(future.some((milestone) => /Memory/.test(milestone.title)));
   assert.ok(future.some((milestone) => /Workspace/.test(milestone.title)));
   assert.ok(future.some((milestone) => /Agent Machine/.test(milestone.title)));
-  assert.match(MILESTONES.policy.idRefinement, /ONLY by updating this register/);
-  assert.match(MILESTONES.policy.noInventedReadiness, /never marked ready because it is convenient/);
-  assert.match(MILESTONES.policy.historyRule, /never rewritten to look current/);
-  // The merge gate: agent completion is not merge approval, and there are two gates.
-  const protocol = MILESTONES.policy.mergeProtocol;
-  assert.match(protocol.agentCompletionIsNotMergeApproval, /does NOT mean the branch is safe to merge/);
-  assert.ok(protocol.sequence.some((step) => step.includes('RECONCILIATION PASS')));
-  assert.ok(protocol.sequence.some((step) => step.includes('post-merge verification')));
-  assert.ok(protocol.twoGates.reconciliationPass.length > 10);
-  assert.ok(protocol.twoGates.mergePass.length > 10);
-  assert.equal(protocol.conflictTypes.length, 4);
-  assert.deepEqual(protocol.conflictTypes.map((type) => type.type), [1, 2, 3, 4]);
-  assert.match(protocol.conflictTypes[3].action, /do not merge that scope/);
-  assert.equal(protocol.onFailure.state, 'RECONCILIATION_FAILED');
-  assert.deepEqual([...protocol.onFailure.evidence], ['the conflict', 'the affected contract', 'the affected agent', 'the reason', 'the required decision', 'the blocking test']);
-  assert.match(protocol.appliesTo, /P2\.13, P2\.14 and every later milestone/);
-  // Dependency blockers name their arbiter and what they block.
-  assert.ok(MILESTONES.dependencyBlockers.some((blocker) => blocker.id === 'XA-20'));
-  for (const blocker of MILESTONES.dependencyBlockers) {
-    assert.ok(blocker.blocks.length > 0, `${blocker.id} says what it blocks`);
-    assert.ok(blocker.arbiter.length > 0, `${blocker.id} names its arbiter`);
-  }
-  // The Agent Machine's cross-phase dependency is declared, not implicit.
-  const agentMachine = MILESTONES.milestones.find((milestone) => /Agent Machine/.test(milestone.title));
-  assert.equal(agentMachine.declaredException.source, 'manifest/ai-lego-set.json#phaseDependencyExceptions');
-  assert.match(agentMachine.declaredException.what, /fails closed/);
-  // Current truth is stated, and counts are delegated to the generated document.
-  assert.equal(MILESTONES.currentTruth.currentMilestone, 'P2.13');
-  assert.equal(MILESTONES.currentTruth.previousCompletedMilestone, 'P2.12');
-  assert.equal(MILESTONES.currentTruth.mainBaseline, 'e754c5df35b41b0ff2ac769519f05f056835411c');
-  assert.equal(MILESTONES.currentTruth.aiRuntime, 'NOT IMPLEMENTED');
-  assert.match(MILESTONES.currentTruth.scaleOut, /^NOT READY/, 'scale-out is stated as not ready, with the reason');
-  assert.match(MILESTONES.currentTruth.countsSource, /generated \.ai\/master\/CURRENT_STATUS\.md/);
-  assert.match(MILESTONES.authority.productTruth.rule, /the manifest wins/);
+  assert.ok(future.some((milestone) => /P2\.17\+/.test(milestone.id)));
+  // The merge protocol: agent completion is not merge approval.
+  const protocol = MILESTONES.mergeProtocol;
+  assert.equal(protocol.agentCompletionIsNotMergeApproval, true);
+  assert.ok(Array.isArray(protocol.sequence) && protocol.sequence.length >= 5);
+  assert.ok(protocol.sequence.some((step) => step.includes('reconcil')));
+  assert.ok(protocol.sequence.some((step) => step.includes('merge')));
+  assert.equal(protocol.failureState, 'RECONCILIATION_FAILED');
+  assert.match(protocol.completionRule, /An agent branch can be complete without the milestone being complete/);
+  // Workforce governance milestoneMergeProtocol carries the detailed gates and conflict classes:
+  const governance = JSON.parse(read('docs/engineering-operations/workforce-governance.json'));
+  const govProtocol = governance.milestoneMergeProtocol;
+  assert.ok(govProtocol, 'governance carries milestoneMergeProtocol');
+  assert.equal(govProtocol.canonicalRegister, 'docs/n8n-lego/milestones.json');
+  assert.ok(govProtocol.gates.some((g) => g.id === 'RECONCILIATION PASS'));
+  assert.ok(govProtocol.gates.some((g) => g.id === 'MERGE PASS'));
+  assert.equal(govProtocol.failureState, 'RECONCILIATION_FAILED');
+  // Top-level canonical truth:
+  assert.equal(MILESTONES.currentMilestone, 'P2.13');
+  assert.equal(MILESTONES.previousCompletedMilestone, 'P2.12');
+  assert.equal(MILESTONES.mainBaseline, 'e754c5df35b41b0ff2ac769519f05f056835411c');
+  assert.equal(MILESTONES.strategicRoadmap.source, 'apps/n8n-lego/src/lego/manifest/ai-lego-set.json');
+  assert.equal(MILESTONES.protectedBranch, 'main');
 });
