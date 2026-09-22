@@ -67,7 +67,7 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 - **agent1Focused:** PASS — node --test packages/frontend-lego/test/32-context-session.test.mjs packages/frontend-lego/test/33-milestones.test.mjs
 - **agent1FrontendFull:** PASS — node --test packages/frontend-lego/test/*.test.mjs (Run from a worktree path ending n8n-rust-v.4 so the repository-root assertion is valid. Agent 1 commit reports the same frontend suites and keeps XA-21 separately open.)
 - **crossAgentAlignment:** RECONCILIATION_FAILED — N8N_BACKEND_LEGO_ROOT=<agent-2>/apps/n8n-lego/src/lego node --test packages/frontend-lego/test/29-alignment.test.mjs packages/frontend-lego/test/32-context-session.test.mjs packages/frontend-lego/test/33-milestones.test.mjs
-- **agent1FrontendEvidence:** OPEN_MANAGER_REVIEW — node apps/n8n-lego/scripts/capture-frontend-evidence.mjs; failure: XA-21 heap pin fails at 4,275 KB against <4,096 KB; three page-level failures are attributed by Agent 1 to missing node_modules/stock UI in its capture environment. Evidence is in Agent 1 commit and docs/n8n-lego/evidence/frontend-boundary-p213-run.json.
+- **agent1FrontendEvidence:** OPEN_MANAGER_REVIEW — node apps/n8n-lego/scripts/capture-frontend-evidence.mjs --out <temporary-file>; failure: XA-21 heap pin fails at 4,275 KB against <4,096 KB after installing the app dependency; the three page-level failures in Agent 1 commit evidence were environmental in its original empty-node_modules capture and pass when rerun with the dependency installed.
 
 ## Evidence roles
 

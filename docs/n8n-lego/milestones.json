@@ -361,13 +361,14 @@
           "owner": "manager"
         },
         "agent1FrontendEvidence": {
-          "command": "node apps/n8n-lego/scripts/capture-frontend-evidence.mjs",
+          "command": "node apps/n8n-lego/scripts/capture-frontend-evidence.mjs --out <temporary-file>",
           "result": "OPEN_MANAGER_REVIEW",
           "checks": 56,
-          "passed": 52,
-          "failed": 4,
-          "failure": "XA-21 heap pin fails at 4,275 KB against <4,096 KB; three page-level failures are attributed by Agent 1 to missing node_modules/stock UI in its capture environment. Evidence is in Agent 1 commit and docs/n8n-lego/evidence/frontend-boundary-p213-run.json.",
-          "decision": "XA-21"
+          "passed": 55,
+          "failed": 1,
+          "failure": "XA-21 heap pin fails at 4,275 KB against <4,096 KB after installing the app dependency; the three page-level failures in Agent 1 commit evidence were environmental in its original empty-node_modules capture and pass when rerun with the dependency installed.",
+          "decision": "XA-21",
+          "evidence": "/tmp/agent1-boundary-with-deps.json (re-run from Agent 1 branch worktree with apps/n8n-lego/node_modules available)"
         }
       }
     },
