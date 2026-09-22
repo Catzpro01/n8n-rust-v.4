@@ -1382,13 +1382,32 @@ test('the register keeps the strategic phases, the ladder and the merge protocol
   // Phase A-F survive: the milestone layer sits beneath them.
   assert.deepEqual(MILESTONES.strategicRoadmap.preservePhases, ['A', 'B', 'C', 'D', 'E', 'F']);
   for (const milestone of MILESTONES.milestones) assert.ok(milestone.phase, `${milestone.id} names its phase`);
-  // The ladder is visible
-  const future = MILESTONES.milestones.filter((milestone) => milestone.status === 'planned');
-  assert.ok(future.length >= 3, `${future.length} planned milestones`);
-  assert.ok(future.some((milestone) => /Memory/.test(milestone.title)));
-  assert.ok(future.some((milestone) => /Workspace/.test(milestone.title)));
-  assert.ok(future.some((milestone) => /Agent Machine/.test(milestone.title)));
-  assert.ok(future.some((milestone) => /P2\.17\+/.test(milestone.id)));
+  /**
+   * The ladder is visible — and it has to survive the milestone *moving*.
+   *
+   * This assertion used to require a milestone titled `Memory` among the rows whose status is
+   * `planned`. That was true while P2.14 was unstarted and became false the moment agent-2's P2.14
+   * register edit set the row to `in-progress`: the test would then fail on the very tree that is
+   * about to be merged, for the milestone this branch exists to deliver. The claim worth checking
+   * was never "Memory has not started" — it is "the ladder still names Memory, and nothing claims it
+   * is finished". So the planned bucket is checked for the milestones nobody has started, and
+   * Memory is checked by identity and by status: named, P2.14, and not `complete`.
+   *
+   * Measured on both trees: this passes against the register as protected main carries it (P2.14
+   * `planned`) and against agent-2's register (P2.14 `in-progress`), which is the state the merge
+   * produces.
+   */
+  const planned = MILESTONES.milestones.filter((milestone) => milestone.status === 'planned');
+  assert.ok(planned.length >= 3, `${planned.length} planned milestones`);
+  assert.ok(planned.some((milestone) => /Workspace/.test(milestone.title)), 'Workspace is still planned');
+  assert.ok(planned.some((milestone) => /Agent Machine/.test(milestone.title)), 'Agent Machine is still planned');
+  assert.ok(planned.some((milestone) => /P2\.17\+/.test(milestone.id)), 'the future ladder is still named');
+  const memoryLadder = MILESTONES.milestones.find((milestone) => /Memory/.test(milestone.title));
+  assert.ok(memoryLadder, 'the ladder still names Memory');
+  assert.equal(memoryLadder.id, 'P2.14');
+  assert.equal(['planned', 'in-progress'].includes(memoryLadder.status), true, `the register carries Memory's real status ("${memoryLadder.status}")`);
+  assert.notEqual(memoryLadder.status, 'complete', 'and it does not claim Memory is complete — the manager reconciles and verifies');
+  assert.equal(['P2.13', 'P2.14'].includes(MILESTONES.currentMilestone), true, `currentMilestone is a milestone that is being worked on ("${MILESTONES.currentMilestone}")`);
   // The merge protocol: agent completion is not merge approval.
   const protocol = MILESTONES.mergeProtocol;
   assert.equal(protocol.agentCompletionIsNotMergeApproval, true);

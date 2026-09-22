@@ -105,6 +105,17 @@ export const QUOTED_FROM = Object.freeze({
     commit: 'f11aee01',
     backendCommit: '5fbaf934',
     reportCommit: 'f11aee01',
+    /**
+     * The peer branch moved after this lock read it, and the move is recorded rather than ignored.
+     * `2dcd8570` added doc-coupling tests only — `apps/n8n-lego/test/lego-memory.test.mjs`,
+     * `packages/frontend-lego/test/34-memory.test.mjs` and an `XA-12` `arbiter` string in the
+     * decision register. The contract files this lock quotes were **not touched**, so the quote
+     * stands at both commits; `commit` above stays the commit the words were read from, because a
+     * provenance entry records where a value came from, not where the branch happens to be now.
+     */
+    tip: '2dcd8570',
+    tipReadAt: '2026-09-22',
+    tipChange: 'doc-coupling tests + XA-12 arbiter text; no contract file, no lock row, no manifest value changed',
     lockRows: Object.freeze(['ai.memory@1.0.0']),
     lockedContractCount: 18,
     contractManifest: 'apps/n8n-lego/src/lego/manifest/memory.json',
@@ -116,6 +127,19 @@ export const QUOTED_FROM = Object.freeze({
     visibleOn: 'github',
     onProtectedMain: false,
     mergedInto: null,
+    /**
+     * One file is added by **both** branches at the same path, and the reconciler has to know it
+     * before the merge does: this branch's `test/34` is the frontend suite (the rule A29
+     * `enforcedBy`, 26 tests), the peer's is a five-test doc-coupling check written from the backend
+     * side. Neither is wrong; they are two views of one coupling, and the frontend file is the one
+     * that owns A29. Recorded here because a same-path add is silent until it conflicts.
+     */
+    collision: Object.freeze({
+      path: 'packages/frontend-lego/test/34-memory.test.mjs',
+      thisBranch: '26 tests — the Memory surface suite, A29 enforcedBy, quotes nine sets and exercises the states',
+      peerBranch: '5 tests — backend-side doc coupling (manifest ↔ lock ↔ .ai matrix ↔ evidence report)',
+      rule: 'the frontend path stays the frontend suite; the peer checks worth keeping (the generated `.ai` matrix must agree with the tree lock, the product manifest must mark Memory implemented) are already asserted here against the tree being tested',
+    }),
     note: 'Bounded Memory: remember/recall/list/forget only. The provider boundary (MemoryProvider, InMemoryProvider default) is the persistence boundary and is replaceable; no vector search, no embedding, no model or provider dependency. Traversal (`traverse`) and explicit edge creation (`relate`) are future stages, not P2.14 operations — the AI set declared five verbs before this publication and now declares the four that exist.',
   }),
   protectedMainBaseline: Object.freeze({
