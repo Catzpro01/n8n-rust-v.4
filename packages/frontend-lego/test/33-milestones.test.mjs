@@ -122,14 +122,14 @@ test('a status is backed by the evidence that status requires', () => {
   assert.match(p213.reconciliation.resolution.note, /stay on this row/, 'the historical baseline and branches stay on the completed row');
   assert.equal(p213.reconciliation.verdict, 'RECONCILIATION_REQUIRED', 'the pre-merge verdict is preserved, not rewritten');
   assert.equal(p213.reconciliation.baseline, 'e754c5df35b41b0ff2ac769519f05f056835411c');
-  // P2.15 is closed on protected main; P2.16 is current in the roadmap but not implemented.
+  // P2.15 is closed on protected main; P2.16 is in progress as the additive 1.1.0 contract surface (not complete).
   const p215 = byId.get('P2.15');
   assert.equal(p215.status, 'complete');
   assert.ok(p215.finishEvidence, 'P2.15 carries protected-main finish evidence');
   assert.equal(p215.finishEvidence.protectedMain, 'ce65851bd5b5194555baa635feb4c8aeae3f16eb');
   const p216 = byId.get('P2.16');
-  assert.equal(p216.status, 'planned');
-  assert.equal(p216.finishEvidence, null, 'P2.16 has no implementation finish evidence');
+  assert.equal(p216.status, 'in-progress');
+  assert.equal(p216.finishEvidence, null, 'P2.16 has no implementation finish evidence until Manager merge');
 });
 
 test('dependencies and decision references resolve: no dangling id anywhere in the register', () => {

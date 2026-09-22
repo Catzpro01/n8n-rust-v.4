@@ -1393,8 +1393,8 @@ test('the milestone register records P2.15 as complete on protected main and P2.
   assert.equal(p215.startEvidence.commit, '0d9466f19a149f6e30bdee559086b7a28b080cb3', 'P2.15 start baseline is preserved history');
   assert.equal(MILESTONES.mainBaseline, '7fca2858a0379c4899fb5d87bb18d09a0a17ee2a', 'the baseline is the final protected-main commit');
   const p216 = byId.get('P2.16');
-  assert.equal(p216.status, 'planned');
-  assert.equal(p216.finishEvidence, null, 'P2.16 has no implementation finish evidence');
+  assert.equal(p216.status, 'in-progress');
+  assert.equal(p216.finishEvidence, null, 'P2.16 has no implementation finish evidence until Manager merge');
 
   const p211 = byId.get('P2.11');
   assert.equal(p211.status, 'complete');
@@ -1420,9 +1420,15 @@ test('the register keeps the strategic phases, the ladder and the merge protocol
    * produces.
    */
   const planned = MILESTONES.milestones.filter((milestone) => milestone.status === 'planned');
-  assert.ok(planned.length >= 2, `${planned.length} planned milestones`);
-  assert.equal(planned.some((milestone) => /Workspace/.test(milestone.title)), false, 'Workspace is the current milestone');
-  assert.ok(planned.some((milestone) => /Agent Machine/.test(milestone.title)), 'Agent Machine is still planned');
+  assert.ok(planned.length >= 1, `${planned.length} planned milestones`);
+  assert.equal(planned.some((milestone) => /Workspace/.test(milestone.title)), false, 'Workspace is complete');
+  // Agent Machine is in progress as the additive contract surface — named by identity,
+  // checked by status, never claimed complete (the same pattern Memory used at P2.14).
+  const agentMachine = MILESTONES.milestones.find((milestone) => /Agent Machine/.test(milestone.title));
+  assert.ok(agentMachine, 'the ladder still names Agent Machine');
+  assert.equal(agentMachine.id, 'P2.16');
+  assert.equal(agentMachine.status, 'in-progress', `the register carries Agent Machine's real status ("${agentMachine.status}")`);
+  assert.equal(agentMachine.finishEvidence, null, 'and claims no finish evidence before Manager merge');
   assert.ok(planned.some((milestone) => /P2\.17\+/.test(milestone.id)), 'the future ladder is still named');
   const memoryLadder = MILESTONES.milestones.find((milestone) => /Memory/.test(milestone.title));
   assert.ok(memoryLadder, 'the ladder still names Memory');
