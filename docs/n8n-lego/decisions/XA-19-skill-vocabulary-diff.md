@@ -113,3 +113,42 @@ N8N_BACKEND_LEGO_ROOT=/tmp/a2p12/apps/n8n-lego/src/lego \
   node --test packages/frontend-lego/test/29-alignment.test.mjs packages/frontend-lego/test/31-skills.test.mjs
 # → 22/22, 0 skipped: every difference in §3 is reported, registered and still open
 ```
+
+---
+
+## 8. Resolution (P2.12 finalize, 2026-09-22)
+
+**Outcome: option A.** The manager adopted the implemented P2.12 shape, and agent-2 published it:
+
+| | |
+| :--- | :--- |
+| Contract | `ai.skill@1.0.0` — `contract-lock.json`, owner `manager`, domain `ai-foundation`, status `implemented` |
+| Published operations | `skill.list`, `skill.resolve`, `skill.describe`, `skill.validate-selection` |
+| Not published | `skill.register`, `skill.select`, `skill.load`, `skill.release` — internal registry lifecycle methods |
+| Execution | no execute operation and no `ai:skill:execute` permission at any layer |
+| Backend reference | `arena/01a0c521-n8n-rust-v-4 @ d0a338e4` |
+| Register | `XA-19` → `resolved`; `XA-11` stays `open-for-manager` for the modelling question only |
+
+**What the frontend changed to consume it.**
+
+- `src/vocabulary.mjs`: the four Skill sets are quoted as published by `ai.skill@1.0.0` (pinned
+  version + owner from the lock row, no `publicationPending` record); `skillOperation` is the four
+  caller operations; `aiFoundationCapability` gains `ai.skill` and `aiPermission` gains the two
+  `ai:skill:*` words. The AI set's own maturity vocabulary stays unpublished and keeps its record.
+- `src/skills.mjs`: `SKILL_CONTRACT_VERSION` and `SKILL_OPERATION_NAMES` (the lock's spelling) are
+  quoted next to the declaration's verbs; `manifest/skills.json` carries the verified `publication`
+  row; a `versioning` string in either spelling (`1.0.0` or `ai.skill@1.0.0`) is in sync with the
+  quoted version, anything else is a difference.
+- `test/29-alignment.test.mjs`: `REGISTERED_DRIFT` is **empty** — no difference is tolerated now.
+  The machinery stays, and a tolerated difference would still have to name an open registered row.
+- `test/31-skills.test.mjs` (19 tests): the lock row is asserted (version, owner, status, domain, the
+  four operations, the two permissions); `register`/`select`/`load`/`release`/`execute` are refused
+  in both spellings; discovery never calls a body loader; a difference is still reported as data.
+- Evidence: **56/56** (`docs/n8n-lego/evidence/frontend-boundary-p25.json`), boot payload unchanged at
+  18,126 B.
+
+**Measurement.** `N8N_BACKEND_LEGO_ROOT=<published tree> node --test test/29-alignment test/31-skills`
+→ **27/27 pass, 0 skipped, Skill drift = 0**. On a branch whose backend copy predates the lock row,
+test/29 states which three sets it deferred (`aiFoundationCapability`, `aiPermission`,
+`skillOperation`) instead of reporting a pass it did not perform; a pointed-at tree without the row
+is a failure, never a skip.

@@ -14,13 +14,16 @@
  *      how a UI promises that a skill is running when it is only known, or that it is
  *      loaded when it has merely been chosen.
  *   2. **The vocabulary is quoted, not re-declared.** Every word below comes from the
- *      vocabulary lock (`src/vocabulary.mjs`), which quotes the backend declaration and
- *      records that `ai.skill` has no contract-lock row yet (`XA-11`). There is no
- *      `frontend.skill.*` namespace and no seventh state.
- *   3. **Discovery never executes.** Listing, search, filter and detail read declarations.
- *      Nothing here selects, loads, releases or executes a skill, reaches a tool, a
- *      filesystem, a terminal or a model, and nothing grants a permission. Where the
- *      contract is unpublished the surface answers with the canonical unsupported state
+ *      vocabulary lock (`src/vocabulary.mjs`), which quotes the backend declaration as it is
+ *      published by `ai.skill@1.0.0` — the row `XA-19` resolved by adopting the implemented
+ *      shape. Four operations, six states, four disclosure levels, two permission words, and
+ *      `register`/`select`/`load`/`release` are not among them: they are internal registry
+ *      lifecycle methods, not published caller operations. There is no `frontend.skill.*`
+ *      namespace, no seventh state and no fifth operation.
+ *   3. **Discovery never executes.** Listing, search, filter, detail and selection validation
+ *      read declarations. Nothing here selects, loads, releases or executes a skill, reaches a
+ *      tool, a filesystem, a terminal or a model, and nothing grants a permission. Where the
+ *      contract is not handed over the surface answers with the canonical unsupported state
  *      instead of inventing a fallback.
  *
  * Framework-neutral and browser-safe: no framework import, no `node:*` import, no backend
@@ -44,23 +47,53 @@ function quotedSet(id) {
   });
 }
 
-/** The contract this surface consumes. Declared by the backend, published by nobody yet. */
 export const SKILL_CONTRACT_ID = 'ai.skill';
 
 /**
- * The decision under which a difference between this package's quoted vocabulary and a
- * declaration handed over by the application is arbitrated. Recorded in the frontend
- * register (`docs/n8n-lego/decisions/cross-agent-decisions.json`); this package never
- * resolves one itself.
+ * The published version of that contract, quoted from the contract-lock row
+ * (`apps/n8n-lego/src/lego/contracts/contract-lock.json`, owner `manager`, status
+ * `implemented`) — not from the declaration's own `versioning` string, which is only a claim.
+ */
+export const SKILL_CONTRACT_VERSION = '1.0.0';
+
+/**
+ * The four published caller operations, spelled the way the lock spells them. The declaration
+ * spells the same four as verbs (`lego#id=skill.operations`); the lock qualifies them with the
+ * operation namespace, and `test/29` requires the two spellings to be the same four, in both
+ * directions. Nothing else may be named or offered — an operation this pair does not contain
+ * would be an invented capability, and `load` is exactly the one that would turn lazy
+ * discovery into a caller concern.
+ */
+export const SKILL_OPERATION_NAMES = Object.freeze([
+  'skill.list',
+  'skill.resolve',
+  'skill.describe',
+  'skill.validate-selection',
+]);
+
+/**
+ * The decision under which the difference between this package's quoted vocabulary and the
+ * declaration handed over by the application was arbitrated. `XA-19` is **resolved** (P2.12
+ * finalize): the published shape is the canonical one, so no difference is tolerated any more
+ * — the register row and the resolution are checked in
+ * `docs/n8n-lego/decisions/cross-agent-decisions.json` and in `test/29`, and this package still
+ * never resolves a difference itself.
  */
 export const SKILL_ALIGNMENT_DECISION = 'XA-19';
 
-/** Where the quoted declaration lives and who owes the contract. Provenance, not a copy. */
+/**
+ * Where the quoted declaration lives and who owes the contract. Provenance, not a copy.
+ * `decision` names the row that carried the *open* question about this declaration; with the
+ * contract published, what remains of it is the modelling question (`XA-11`: whether Skill
+ * ultimately belongs under `ai-foundation`), which is why the row is still named here rather
+ * than dropped once its first half was answered.
+ */
 export const SKILL_DECLARATION_SOURCE = Object.freeze({
   file: 'apps/n8n-lego/src/lego/manifest/ai-lego-set.json',
   path: 'lego#id=skill',
   owner: 'manager',
   contract: SKILL_CONTRACT_ID,
+  version: SKILL_CONTRACT_VERSION,
   decision: 'XA-11',
 });
 
@@ -350,6 +383,43 @@ export function declaredVersionOf(versioning) {
   return Object.freeze({ contract: match.groups.contract, version: match.groups.version });
 }
 
+/**
+ * The contract row this package's *own* surface declaration quotes.
+ *
+ * The frontend may not read the backend tree, so `manifest/skills.json` carries the row it was
+ * verified against (`publication`: contract, version, owner, and the lock file it was read
+ * from). `test/29` requires that row to exist in the contract lock with that owner and that
+ * version — a claim the manifest cannot make up. A surface that carries no such block is one
+ * whose contract is still unpublished, and it keeps the unsupported answer.
+ */
+function quotedPublication(surface) {
+  const row = surface?.publication ?? null;
+  if (row === null || typeof row !== 'object' || typeof row.contract !== 'string' || row.contract.length === 0) return null;
+  return Object.freeze({
+    id: row.contract,
+    version: typeof row.version === 'string' ? row.version : null,
+    owner: row.owner ?? 'unknown',
+    lockedIn: row.lockedIn ?? null,
+    decidedBy: row.decidedBy ?? null,
+  });
+}
+
+/**
+ * Whether a declaration's `versioning` string names the contract this package quotes.
+ *
+ * A published version may be spelled bare (`1.0.0`) or qualified (`ai.skill@1.0.0`) — the LEGO
+ * block uses the qualified form, the contract manifest the bare one. Both name the same published
+ * contract, so both are in sync. Anything else — another contract, another version, or the
+ * literal `publicationPending` against a row that is published — is a difference, and stays one.
+ */
+function versionClaimAgrees(claim, locked, quotedVersioning) {
+  const trimmed = claim.trim();
+  if (trimmed === quotedVersioning) return true;
+  const parsed = declaredVersionOf(trimmed);
+  if (parsed === null) return false;
+  return parsed.version === quotedVersioning && (locked === null || parsed.contract === locked.id);
+}
+
 /** A published contract row, or the honest record of one that does not exist yet. */
 function contractStateOf(contract, surface, declaration) {
   const claim = declaredVersionOf(declaration?.versioning);
@@ -362,8 +432,8 @@ function contractStateOf(contract, surface, declaration) {
       owner: contract.owner ?? 'unknown',
       published: true,
       status: 'published',
-      decision: null,
-      detail: `published by ${contract.owner ?? 'an unnamed owner'}${version === null ? ' without a version' : ` at ${version}`}`,
+      decision: contract.decidedBy ?? null,
+      detail: `published by ${contract.owner ?? 'an unnamed owner'}${version === null ? ' without a version' : ` at ${version}`}${contract.lockedIn ? `, locked in ${contract.lockedIn}` : ''}`,
       /** A row without a version cannot be compared, and an uncomparable contract is reported as such. */
       comparable: version !== null,
     });
@@ -498,6 +568,9 @@ const driftOf = (field, quoted, declared) => {
  *   contract row when one exists (its `version` is what the quote is compared against).
  */
 export function declarationDrift({ declaration = null, surface = null, contract = null } = {}) {
+  // A handed-over row wins; otherwise the row this package's own surface quotes. Both describe
+  // the same lock, and neither is read from the backend by this module.
+  const locked = contract ?? quotedPublication(surface);
   const owner = declaration?.owner ?? surface?.declarationSource?.owner ?? SKILL_DECLARATION_SOURCE.owner;
   const decision = surface?.publicationPending?.decision ?? SKILL_DECLARATION_SOURCE.decision;
   const alignmentDecision = surface?.alignment?.decision ?? SKILL_ALIGNMENT_DECISION;
@@ -505,9 +578,9 @@ export function declarationDrift({ declaration = null, surface = null, contract 
   // What this package quotes for the version: the published row when there is one, and the
   // documented `publicationPending` otherwise. `null` means the quote cannot be compared —
   // which is reported as uncomparable rather than as agreement.
-  const quotedVersioning = contract === null
+  const quotedVersioning = locked === null
     ? 'publicationPending'
-    : typeof contract.version === 'string' ? contract.version : null;
+    : typeof locked.version === 'string' ? locked.version : null;
   if (declaration === null || declaration === undefined) {
     return Object.freeze({ state: 'not-declared', differences: Object.freeze([]), uncomparable: Object.freeze(quotedVersioning === null ? ['versioning'] : []), owner, decision, alignmentDecision, rule });
   }
@@ -528,7 +601,7 @@ export function declarationDrift({ declaration = null, surface = null, contract 
   const uncomparable = [];
   if (quotedVersioning === null) {
     uncomparable.push('versioning');
-  } else if (typeof declaration.versioning === 'string' && declaration.versioning.trim() !== quotedVersioning) {
+  } else if (typeof declaration.versioning === 'string' && !versionClaimAgrees(declaration.versioning, locked, quotedVersioning)) {
     differences.push(Object.freeze({
       field: 'versioning',
       quoted: Object.freeze([quotedVersioning]),
@@ -576,7 +649,8 @@ export function createSkillCatalog({
   const declarationValidation = declaration === null
     ? Object.freeze({ ok: true, findings: Object.freeze([]) })
     : validateSkillDeclaration(declaration);
-  const contractState = contractStateOf(contract, surface, declaration);
+  const published = contract ?? quotedPublication(surface);
+  const contractState = contractStateOf(published, surface, declaration);
   const entries = (skills ?? surface?.skills ?? []).map((instance) => {
     const validation = validateSkillInstance(instance);
     const { availability, detail, compatibility } = availabilityOf({
@@ -622,7 +696,7 @@ export function createSkillCatalog({
     ? Object.freeze({ availability: 'available', detail: 'the contract is published; discovery may list skills' })
     : Object.freeze({ availability: 'optional-absent', detail: `${contractState.detail} — an empty skill list is not an error` });
 
-  const drift = declarationDrift({ declaration, surface, contract });
+  const drift = declarationDrift({ declaration, surface, contract: published });
   return Object.freeze({
     contract: contractState,
     availability: surfaceAvailability.availability,
@@ -711,8 +785,16 @@ export function skillDetail(catalog, skillId, { level = 'basic' } = {}) {
     availabilityDetail: entry.availabilityDetail,
     validation: entry.validation,
     withheld: entry.withheld,
-    /** Even at the deepest level every declared operation is offered by nobody here. */
-    operations: Object.freeze(SKILL_OPERATIONS.map((operation) => Object.freeze({ operation, offered: false }))),
+    /**
+     * Even at the deepest level every published operation is offered by nobody here, and each
+     * one is named the way the contract names it (`skill.list`), next to the verb the LEGO
+     * declaration uses (`list`). The two spellings are the same four, checked in `test/29`.
+     */
+    operations: Object.freeze(SKILL_OPERATIONS.map((operation, index) => Object.freeze({
+      operation,
+      contractOperation: SKILL_OPERATION_NAMES[index],
+      offered: false,
+    }))),
   });
 }
 
@@ -721,6 +803,8 @@ export function describeSkills() {
   return Object.freeze({
     lifecycle: SKILL_LIFECYCLE,
     operations: SKILL_OPERATIONS,
+    contractOperations: SKILL_OPERATION_NAMES,
+    contract: Object.freeze({ id: SKILL_CONTRACT_ID, version: SKILL_CONTRACT_VERSION, owner: SKILL_DECLARATION_SOURCE.owner }),
     permissions: SKILL_PERMISSIONS,
     disclosureLevels: SKILL_DISCLOSURE_LEVELS,
     statuses: SKILL_STATUSES,

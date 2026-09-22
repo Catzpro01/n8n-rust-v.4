@@ -1,6 +1,6 @@
 {
   "kind": "p25-frontend-boundary",
-  "generatedAt": "2026-09-22T00:13:10.937Z",
+  "generatedAt": "2026-09-22T00:46:45.910Z",
   "phase": "P2.5",
   "method": "node apps/n8n-lego/scripts/capture-frontend-evidence.mjs (live in-process instance, HTTP level); the browser gate tests/e2e/frontend-boundary.mjs captures the same boundary from inside a real page in CI (docs/n8n-lego/FRONTEND_LEGO.md §6)",
   "baseline": "cb71dbb2",
@@ -156,12 +156,12 @@
     {
       "name": "the LEGO cold-imports and assembles within a small budget",
       "verdict": "PASS",
-      "detail": "45.1 ms for import + 12 surfaces + 15 hooks + 19 units"
+      "detail": "48.4 ms for import + 12 surfaces + 15 hooks + 19 units"
     },
     {
       "name": "assembling the descriptor stays inside a small memory budget",
       "verdict": "PASS",
-      "detail": "3810 KB of heap for catalogs + both registries"
+      "detail": "3780 KB of heap for catalogs + both registries"
     },
     {
       "name": "the package still has no runtime dependency",
@@ -224,14 +224,19 @@
       "detail": "allowed=[list,search,filter,detail] forbidden=[select,load,release,execute,tools,filesystem,terminal,inference]"
     },
     {
-      "name": "with ai.skill unpublished the surface answers with the canonical unsupported state",
+      "name": "the surface quotes the published Skill contract, and an unknown skill still answers canonically",
       "verdict": "PASS",
-      "detail": "optional-absent / capability-unavailable / lego.capability_unavailable / XA-11"
+      "detail": "1.0.0 / XA-19 / unknown-skill=capability-unavailable"
+    },
+    {
+      "name": "the four published operations are consumed exactly, and the UI offers none of them",
+      "verdict": "PASS",
+      "detail": "drift=in-sync operations=[skill.list,skill.resolve,skill.describe,skill.validate-selection]"
     },
     {
       "name": "a declaration that moved is reported as drift and never adopted",
       "verdict": "PASS",
-      "detail": "drift=[operations,versioning] published=false declaredVersion=1.0.0"
+      "detail": "drift=[operations] published=true version=1.0.0"
     },
     {
       "name": "the skill surface is bound by the same rule the package suite enforces",
@@ -271,7 +276,7 @@
     {
       "name": "every shared word is quoted with provenance, and an unpublished file is recorded, not invented",
       "verdict": "PASS",
-      "detail": "43 quoted sets, 10 pending publication, 19 decisions recorded"
+      "detail": "43 quoted sets, 6 pending publication, 19 decisions recorded"
     },
     {
       "name": "a declared permission is a declared word, and the provider kinds are the canonical ones",
@@ -290,8 +295,8 @@
     }
   ],
   "summary": {
-    "checks": 55,
-    "passed": 55,
+    "checks": 56,
+    "passed": 56,
     "failed": 0
   },
   "bootDescriptor": {
@@ -564,7 +569,7 @@
     ],
     "capabilities": [],
     "bytes": 18126,
-    "importMs": 45.1,
-    "heapKb": 3810
+    "importMs": 48.4,
+    "heapKb": 3780
   }
 }

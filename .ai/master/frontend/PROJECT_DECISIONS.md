@@ -76,7 +76,7 @@ a future agent is most likely to trip over:
 | XA-8 | manager | permission namespace: published AI operations use `ai:*`; the frontend's six AI capabilities declare five view words (four mapped, two reasoned) |
 | XA-9 | manager | which contract publishes `manifest/foundation.json` (trust, resources, device profiles, transport targets) |
 | XA-10 | manager | `ai:app:*` vs `app:<application>:*` for an application provider |
-| XA-11 … XA-17 | manager | publishing Skill, Memory, Workspace semantics, Translation, node drafting, MCP adapter capability and Token & Usage |
+| XA-11 … XA-17 | manager | publishing Memory, Workspace semantics, Translation, node drafting, MCP adapter capability and Token & Usage (Skill was published by the P2.12 finalize under resolved `XA-19`; `XA-11` remains open for where Skill is modelled) |
 | XA-18 | manager (with agent-2) | which contract publishes the external action families — filesystem, terminal/process, project, browser, git — since the registry publishes none of them and `workspace` is planned |
 
 Full text, evidence and current interpretation: `docs/n8n-lego/decisions/cross-agent-decisions.json`

@@ -30,6 +30,7 @@ import { isDeclaredTerm, vocabularyOf } from '../src/vocabulary.mjs';
 import {
   SKILL_ALIGNMENT_DECISION,
   SKILL_CONTRACT_ID,
+  SKILL_CONTRACT_VERSION,
   SKILL_DECLARATION_SOURCE,
   SKILL_DEGRADATION_STATES,
   SKILL_DISCLOSURE_LEVELS,
@@ -37,6 +38,7 @@ import {
   SKILL_FORBIDDEN_IMPLICATIONS,
   SKILL_LIFECYCLE,
   SKILL_OPERATIONS,
+  SKILL_OPERATION_NAMES,
   SKILL_PERMISSIONS,
   SKILL_QUOTED_VOCABULARIES,
   SKILL_STATUSES,
@@ -88,8 +90,41 @@ const driftSkip = existsSync(SKILL_MANIFEST) || overridden
   ? false
   : 'the pointed-at backend tree publishes no manifest/skill.json yet (ai.skill landed in agent-2 P2.12) — the comparison runs when it does';
 
+/**
+ * The P2.12 finalize published `ai.skill@1.0.0` in the contract lock (`XA-19` resolved). This
+ * branch's own copy of the backend tree can predate that — agent-2 lands the lock on its own
+ * branch — so the Skill comparisons are gated on the pointed-at tree publishing the row: they
+ * run for real, or they state why they cannot. They never report a pass they did not perform,
+ * and when `N8N_BACKEND_LEGO_ROOT` is set, a missing row is a **failure** instead of a skip.
+ */
+const lockRowsOf = () => {
+  if (!existsSync(CONTRACT_LOCK)) return [];
+  const lock = JSON.parse(readFileSync(CONTRACT_LOCK, 'utf8'));
+  return Array.isArray(lock) ? lock : (lock.contracts ?? []);
+};
+const skillLockRow = () => lockRowsOf().find((row) => (row.id ?? row.contract) === SKILL_CONTRACT_ID) ?? null;
+const finalizedSkip = skillLockRow() !== null || overridden
+  ? false
+  : `the pointed-at backend tree predates the P2.12 finalize (${CONTRACT_LOCK} publishes no ai.skill row) — the comparison runs against the tree that publishes it`;
+
 const DECISIONS = JSON.parse(read('docs/n8n-lego/decisions/cross-agent-decisions.json'));
 const SURFACE = skillSurface();
+
+/**
+ * The pre-finalize surface shape: no publication row, so the contract is unpublished and the
+ * canonical unsupported answer is rendered. Kept as a fixture because those paths still have
+ * to work — a consumer of an unpublished contract is a real state, not a historical one.
+ */
+const UNPUBLISHED_SURFACE = Object.freeze({
+  ...SURFACE,
+  publication: undefined,
+  publicationPending: Object.freeze({
+    owner: 'manager',
+    domain: 'ai-lego-set',
+    decision: 'XA-11',
+    what: 'manifest/ai-lego-set.json has no contract-lock row publishing ai.skill, so the frontend has no contract version to bind to',
+  }),
+});
 
 /** The backend's skill declaration, as the other agent publishes it. */
 const backendSkill = () => JSON.parse(readFileSync(BACKEND_SET, 'utf8')).lego.find((entry) => entry.id === 'skill');
@@ -174,8 +209,25 @@ test('the six lifecycle states are six facts, never one boolean', () => {
   assert.equal(skillState('rolling').detail.includes('six declared skill lifecycle states'), true);
 });
 
-test('an unavailable skill answers with the canonical unsupported state', () => {
+test('the surface quotes the published contract, and an empty skill list is not an error', () => {
   const catalog = createSkillCatalog({ surface: SURFACE });
+  assert.equal(catalog.contract.published, true, 'the surface quotes the row it was verified against');
+  assert.equal(catalog.contract.version, SKILL_CONTRACT_VERSION, 'the locked version, not a claim from a file');
+  assert.equal(catalog.contract.comparable, true, 'a published version is comparable');
+  assert.equal(catalog.contract.decision, SKILL_ALIGNMENT_DECISION, 'and the decision that reconciled it is named');
+  assert.match(catalog.contract.detail, /locked in apps\/n8n-lego\/src\/lego\/contracts\/contract-lock\.json/);
+  assert.equal(catalog.availability, 'available', 'the published contract is available; an empty list is not an error');
+  assert.equal(catalog.unsupported, null, 'a published contract needs no unsupported answer');
+
+  const detail = skillDetail(catalog, 'invoice-reconciliation');
+  assert.equal(detail.state, 'capability-unavailable', 'and an unknown skill still answers canonically');
+  assert.equal(detail.known, false);
+  assert.match(detail.reason, /no declared skill "invoice-reconciliation"/);
+  assert.deepEqual(searchSkills(catalog, {}), []);
+});
+
+test('with no publication row the surface answers with the canonical unsupported state', () => {
+  const catalog = createSkillCatalog({ surface: UNPUBLISHED_SURFACE });
   assert.equal(catalog.contract.published, false);
   assert.equal(catalog.contract.version, null, 'an unpublished contract has no version to quote');
   assert.equal(catalog.contract.decision, 'XA-11');
@@ -194,7 +246,7 @@ test('an unavailable skill answers with the canonical unsupported state', () => 
 
   // No declaration, no fallback: an entry supplied while the contract is unpublished is
   // never rendered as available.
-  const withEntries = createSkillCatalog({ surface: SURFACE, skills: [entry()] });
+  const withEntries = createSkillCatalog({ surface: UNPUBLISHED_SURFACE, skills: [entry()] });
   assert.equal(withEntries.entries.length, 1);
   assert.equal(withEntries.entries[0].availability, 'capability-unavailable');
   assert.equal(withEntries.entries[0].contractVersion, null);
@@ -270,7 +322,11 @@ test('no invented permission: the surface renders declared permission words and 
   assert.deepEqual(SKILL_PERMISSIONS, vocabularyOf('skillPermission').values);
   assert.deepEqual(SKILL_PERMISSIONS, ['ai:skill:read', 'ai:skill:select']);
   assert.equal(isDeclaredTerm('skillPermission', 'frontend.skill.read'), false, 'a parallel namespace is not a term');
-  assert.equal(isDeclaredTerm('aiPermission', 'ai:skill:read'), false, 'and a skill permission is not an AI foundation permission');
+  // The two words appear in two places on purpose: `skillPermission` is what the Skill contract
+  // requires of its own operations, `aiPermission` is the AI foundation's list of published
+  // operation permissions. Same words, one vocabulary — and neither list has an execute word.
+  assert.equal(isDeclaredTerm('aiPermission', 'ai:skill:read'), true, 'the AI foundation publishes the same two words');
+  assert.equal(isDeclaredTerm('aiPermission', 'ai:skill:execute'), false, 'no execute permission exists in either set');
 
   // A skill that claims an entitlement is refused by name, each with its reason.
   for (const forbidden of ['permissions', 'grants', 'authority', 'tools', 'filesystem', 'terminal', 'model', 'entry', 'execute']) {
@@ -324,6 +380,67 @@ test('no execution affordance exists while the skill is unsupported', () => {
   assert.deepEqual(truthy(affordanceSurface), [], 'no execution affordance is reachable from an unavailable catalog');
 });
 
+/**
+ * The two words that must never appear in the quoted Skill vocabulary, in either direction:
+ * an operation that executes a procedure, and a permission that would authorise one. The
+ * vocabulary is quoted, so this is a claim about the backend as much as about the surface —
+ * a backend that published `ai:skill:execute` would fail here before a UI could offer it.
+ */
+test('no quoted operation and no quoted permission executes anything', () => {
+  const executing = ['execute', 'exec', 'run', 'invoke', 'call', 'apply', 'trigger'];
+  for (const operation of SKILL_OPERATIONS) {
+    const word = operation.toLowerCase();
+    assert.equal(executing.some((verb) => word.includes(verb)), false, `"${operation}" reads as an execution operation`);
+  }
+  assert.equal(SKILL_OPERATIONS.includes('execute'), false);
+  for (const permission of SKILL_PERMISSIONS) {
+    assert.match(permission, /^ai:skill:[a-z-]+$/, `"${permission}" stays in the skill namespace`);
+    assert.equal(/execute|exec|run|invoke|admin/.test(permission), false, `"${permission}" reads as an execution or administration grant`);
+  }
+  assert.equal(SKILL_PERMISSIONS.includes('ai:skill:execute'), false, 'there is no ai:skill:execute permission to quote');
+});
+
+/**
+ * Discovery reads declarations and stops there. A published skill may point at a procedure —
+ * that pointer is a loader, and no listing, search, filter, detail or validation path may
+ * follow it. The probe is non-enumerable so the only thing that can move it is code that
+ * *reaches for* the body rather than code that merely enumerates the fields.
+ */
+test('discovery never calls a body loader, and offers no operation that would', () => {
+  let bodyLoads = 0;
+  const skill = { ...entry(), lifecycle: ['registered', 'available'] };
+  Object.defineProperty(skill, 'body', {
+    enumerable: false,
+    get() {
+      bodyLoads += 1;
+      return 'the procedure the skill describes';
+    },
+  });
+  Object.defineProperty(skill, 'load', {
+    enumerable: false,
+    value() {
+      bodyLoads += 1;
+      return 'the procedure the skill describes';
+    },
+  });
+
+  const catalog = published({ skills: [skill] });
+  assert.equal(bodyLoads, 0, 'building the catalog reads no body');
+  searchSkills(catalog, { query: 'invoice' });
+  searchSkills(catalog, { status: 'planned' });
+  skillDetail(catalog, 'invoice-reconciliation');
+  const advanced = skillDetail(catalog, 'invoice-reconciliation', { level: 'advanced' });
+  describeSkills(catalog);
+  assert.equal(bodyLoads, 0, 'no discovery path reads a body — loading stays an internal backend concern');
+  assert.ok(advanced.operations.length > 0, 'the operations are still named');
+  for (const operation of advanced.operations) {
+    assert.equal(operation.offered, false, `${operation.operation} is named and never offered`);
+  }
+  const loaded = catalog.lifecycle.find((entry) => entry.state === 'loaded');
+  assert.ok(loaded, '`loaded` stays a state a skill can be in');
+  assert.equal(loaded.executing, false, 'and being loaded is not something this UI did — a state fact, never an action');
+});
+
 test('the frontend quotes the backend skill vocabulary, and re-declares none of it', { skip }, () => {
   requireBackend();
   const declared = backendSkill();
@@ -339,18 +456,33 @@ test('the frontend quotes the backend skill vocabulary, and re-declares none of 
   const drifted = new Map(catalog.drift.differences.map((difference) => [difference.field, difference]));
   const registered = DECISIONS.decisions.find((row) => row.id === SKILL_ALIGNMENT_DECISION);
   assert.ok(registered, `${SKILL_ALIGNMENT_DECISION} is recorded`);
-  assert.equal(registered.status.startsWith('open'), true, 'and it stays open: the frontend does not decide it');
+  assert.equal(registered.status, 'resolved', 'the finalize adopted the implemented shape');
+  /**
+   * Every vocabulary field is either quoted exactly, or the difference is the *historical* one
+   * the now-closed row describes — reported by `declarationDrift` until the pointed-at tree
+   * carries the published row, and never adopted silently. Once the tree publishes the row,
+   * there is nothing left to cover: a difference is a failure.
+   */
   const covered = (field, quoted, declaredValues) => {
     if (JSON.stringify(quoted) === JSON.stringify(declaredValues)) return true;
+    assert.equal(skillLockRow(), null, `${field} differs from the published tree (${quoted.join(', ')} quoted / ${declaredValues.join(', ')} declared) — XA-19 is resolved, so nothing covers it`);
     const difference = drifted.get(field);
     assert.ok(difference, `${field} differs (${quoted.join(', ')} quoted / ${declaredValues.join(', ')} declared) and no difference is reported`);
     assert.deepEqual(difference.declared, declaredValues, `${field}: the reported difference names the declared values`);
-    assert.match(registered.finding, new RegExp(field), `${field}: the open row names the differing field`);
+    assert.match(`${registered.historicalFinding ?? ''} ${registered.resolution}`, new RegExp(field), `${field}: the resolved row names the field that differed`);
     return true;
   };
 
   assert.deepEqual(SKILL_LIFECYCLE, declared.lifecycle, 'the six states are quoted, not invented');
-  covered('operations', SKILL_OPERATIONS, declared.operations);
+  if (skillLockRow() === null) {
+    assert.equal(overridden, false, `N8N_BACKEND_LEGO_ROOT is set but ${CONTRACT_LOCK} publishes no ai.skill row`);
+    assert.equal(declared.versioning, 'publicationPending', 'the pointed-at tree predates the finalize');
+  } else {
+    // The published tree spells the same four as this package: the LEGO block as verbs, the
+    // lock qualified, and neither of them carries the four internal lifecycle methods.
+    assert.deepEqual(SKILL_OPERATIONS, declared.operations, 'the four published operations are quoted, not invented');
+    assert.ok(declaredVersionOf(declared.versioning) !== null, 'the declaration claims the published version');
+  }
   assert.deepEqual(SKILL_PERMISSIONS, declared.permissions, 'the declared operation permissions are quoted');
   assert.deepEqual(SKILL_DISCLOSURE_LEVELS, Object.keys(declared.disclosureLevels), 'the disclosure levels are quoted');
   assert.deepEqual(SKILL_STATUSES, Object.keys(JSON.parse(readFileSync(BACKEND_SET, 'utf8')).statusVocabulary), 'the status words are quoted');
@@ -373,14 +505,25 @@ test('the frontend quotes the backend skill vocabulary, and re-declares none of 
     'apps/n8n-lego/src/lego/manifest/ai-lego-set.json': { decision: SKILL_DECLARATION_SOURCE.decision, path: /^lego#id=skill\.|^statusVocabulary$/ },
     'apps/n8n-lego/src/lego/manifest/foundation.json': { decision: 'XA-9', path: /^trust\.levels$/ },
   };
+  // Four sets are published by the locked Skill contract; the AI set's maturity words are still
+  // published by no row, and the trust words still wait on `XA-9`. A set either quotes a pinned
+  // contract (id + version + owner) or carries a pending record naming a recorded decision.
   for (const id of SKILL_QUOTED_VOCABULARIES.filter((value) => value !== 'degradation')) {
     const set = vocabularyOf(id);
     const source = QUOTED_FROM[set.provenance.file];
     assert.ok(source, `${id} is quoted from a declared file (${set.provenance.file})`);
-    assert.equal(set.provenance.contract, null, `${id} claims no contract it has not found`);
-    assert.equal(set.publicationPending.decision, source.decision, `${id} names the decision that owes it a contract`);
     assert.match(set.provenance.path, source.path, `${id} names the declaration inside that file`);
-    assert.ok(DECISIONS.decisions.some((row) => row.id === set.publicationPending.decision), `${id}: ${set.publicationPending.decision} is recorded`);
+    if (id === 'aiLegoStatus' || set.provenance.file.endsWith('foundation.json')) {
+      assert.equal(set.provenance.contract, null, `${id} claims no contract it has not found`);
+      assert.equal(set.publicationPending.decision, source.decision, `${id} names the decision that owes it a contract`);
+      assert.ok(DECISIONS.decisions.some((row) => row.id === set.publicationPending.decision), `${id}: ${set.publicationPending.decision} is recorded`);
+      continue;
+    }
+    assert.equal(set.provenance.contract.id, SKILL_CONTRACT_ID, `${id} is published by the locked contract`);
+    assert.equal(set.provenance.contract.version, SKILL_CONTRACT_VERSION, `${id} quotes the locked version`);
+    assert.equal(set.provenance.contract.owner, 'manager', `${id} quotes the locked owner`);
+    assert.equal(set.provenance.contract.decision, undefined, `${id} carries no stale decision on a published contract`);
+    assert.equal(set.publicationPending ?? null, null, `${id} is published — no pending record outlives the lock`);
   }
   assert.deepEqual(SKILL_TRUST_LEVELS, vocabularyOf('trustLevel').values, 'the trust words are quoted from the foundation manifest');
   assert.equal(SKILL_DECLARATION_SOURCE.file.endsWith('manifest/ai-lego-set.json'), true);
@@ -404,34 +547,100 @@ test('the frontend quotes the backend skill vocabulary, and re-declares none of 
   assert.equal(/^import .*node:/m.test(read('packages/frontend-lego/src/skills.mjs')), false, 'and stays browser-safe');
 });
 
+test('the contract lock publishes ai.skill@1.0.0, and this consumer quotes that row', { skip: finalizedSkip }, () => {
+  requireBackend();
+  const row = skillLockRow();
+  assert.ok(row, `${CONTRACT_LOCK} publishes ${SKILL_CONTRACT_ID}`);
+  assert.equal(row.version, SKILL_CONTRACT_VERSION, 'the consumed version is the published one');
+  assert.equal(row.owner, 'manager');
+  assert.equal(row.status, 'implemented');
+  assert.equal(row.domain, 'ai-foundation', 'on the existing domain — no new top-level domain was created');
+  assert.deepEqual(row.operations, [...SKILL_OPERATION_NAMES], 'four published caller operations, in the lock spelling');
+  assert.deepEqual(row.permissions, [...SKILL_PERMISSIONS]);
+
+  // The declaration and the lock spell the same four. Nothing is published that is not consumed,
+  // and nothing is consumed that is not published — in either direction.
+  const declared = backendSkill();
+  assert.deepEqual(SKILL_OPERATIONS, declared.operations, 'the LEGO block spells the four as verbs');
+  assert.deepEqual(SKILL_OPERATION_NAMES.map((name) => name.replace(/^skill\./, '')), [...SKILL_OPERATIONS], 'same four, same order');
+  for (const internal of ['register', 'select', 'load', 'release', 'execute']) {
+    assert.equal(SKILL_OPERATIONS.includes(internal), false, `"${internal}" is not a published caller operation`);
+    assert.equal(SKILL_OPERATION_NAMES.includes(`skill.${internal}`), false, `"skill.${internal}" is not published`);
+    assert.equal(JSON.stringify(row).includes(`"skill.${internal}"`), false, `the lock does not publish "skill.${internal}"`);
+  }
+  // No layer publishes an execute word — checked on the *lists*, not on the prose: the lock's
+  // own notes explain at length that no such permission exists, and a text search would fail on
+  // the sentence that documents the invariant.
+  const contractManifest = JSON.parse(readFileSync(SKILL_MANIFEST, 'utf8'));
+  for (const [label, list] of [['the lock', row.permissions], ['the LEGO block', declared.permissions], ['the contract manifest', contractManifest.permissions]]) {
+    assert.ok(Array.isArray(list) && list.length > 0, `${label} publishes a permission list`);
+    for (const permission of list) {
+      assert.equal(/execute/.test(permission), false, `${label}: "${permission}" reads as an execution grant`);
+    }
+  }
+  for (const [label, list] of [['the lock', row.operations], ['the LEGO block', declared.operations]]) {
+    const verbs = list.map((operation) => operation.replace(/^skill\./, ''));
+    for (const internal of ['register', 'select', 'load', 'release', 'execute']) {
+      assert.equal(verbs.includes(internal), false, `${label} publishes no "${internal}" operation`);
+    }
+  }
+
+  // The decision this vocabulary was reconciled under is closed, and the modelling question it
+  // was tangled up with is not.
+  const resolved = DECISIONS.decisions.find((decision) => decision.id === SKILL_ALIGNMENT_DECISION);
+  assert.equal(resolved.status, 'resolved', `${SKILL_ALIGNMENT_DECISION} is resolved by the finalize`);
+  assert.equal(resolved.canonical.contract, `${SKILL_CONTRACT_ID}@${SKILL_CONTRACT_VERSION}`);
+  assert.deepEqual(resolved.canonical.operations, [...SKILL_OPERATION_NAMES]);
+  assert.deepEqual(resolved.canonical.notPublished, ['skill.register', 'skill.select', 'skill.load', 'skill.release']);
+  const modelling = DECISIONS.decisions.find((decision) => decision.id === SKILL_DECLARATION_SOURCE.decision);
+  assert.equal(modelling.status, 'open-for-manager', 'XA-11 stays open: the lock does not settle where Skill is modelled');
+});
+
 test('a stale decision or status is caught instead of rendered as truth', { skip }, () => {
   requireBackend();
-  const lock = JSON.parse(readFileSync(CONTRACT_LOCK, 'utf8'));
-  const rows = Array.isArray(lock) ? lock : (lock.contracts ?? []);
-  const publishedRow = rows.find((row) => (row.id ?? row.contract) === SKILL_CONTRACT_ID);
-  const decision = DECISIONS.decisions.find((row) => row.id === SKILL_DECLARATION_SOURCE.decision);
-  assert.ok(decision, `${SKILL_DECLARATION_SOURCE.decision} is recorded`);
-  assert.match(decision.question, /skill/i, 'the decision the surface cites is the skill one');
-  assert.equal(SURFACE.publicationPending.decision, decision.id, 'the manifest and the module cite one decision');
-  assert.equal(vocabularyOf('skillLifecycle').publicationPending.decision, decision.id, 'and the lock cites it too');
-  assert.equal(decision.arbiter.startsWith(SURFACE.publicationPending.owner), true, 'the pending record names the owner the register names as arbiter');
+  const publishedRow = skillLockRow();
+  const alignment = DECISIONS.decisions.find((row) => row.id === SKILL_ALIGNMENT_DECISION);
+  assert.ok(alignment, `${SKILL_ALIGNMENT_DECISION} is recorded`);
+  assert.equal(alignment.status, 'resolved', 'the decision that reconciled this vocabulary is closed');
+  assert.equal(SURFACE.alignment.decision, alignment.id, 'the manifest and the module cite one decision');
+  assert.equal(SURFACE.alignment.status, 'resolved', 'and the manifest says so');
+  assert.equal(vocabularyOf('skillLifecycle').provenance.contract.id, SKILL_CONTRACT_ID, 'the quoted sets name the published contract');
+  // No stale pending claim survives anywhere in the manifest: the surface used to say its own
+  // publication was open, and a resolved decision next to that sentence is exactly the rot this
+  // test is for.
+  assert.equal(JSON.stringify(SURFACE).includes('publicationPending'), false, 'no stale pending claim survives');
+  assert.equal(JSON.stringify(SURFACE).includes('"planned"'), false, 'and no stale maturity claim does either');
+  const modelling = DECISIONS.decisions.find((row) => row.id === SKILL_DECLARATION_SOURCE.decision);
+  assert.equal(modelling.status, 'open-for-manager', 'the modelling question is still open');
 
-  // The two records must agree: a published contract with an open decision is stale, and
-  // an open decision with a published contract row is stale in the other direction.
-  if (publishedRow) {
-    assert.equal(decision.status, 'resolved', `${SKILL_CONTRACT_ID} is published (${publishedRow.version}) but ${decision.id} is still ${decision.status}`);
+  // The two records must agree: a published contract with a different version, owner or
+  // operation set than the manifest quotes is a contradiction, not a difference of opinion.
+  if (publishedRow !== null) {
+    assert.equal(SURFACE.publication.version, publishedRow.version, `${SKILL_CONTRACT_ID} is published at ${publishedRow.version}`);
+    assert.equal(SURFACE.publication.owner, publishedRow.owner);
+    assert.deepEqual([...SURFACE.publication.operations], [...publishedRow.operations]);
   } else {
-    assert.ok(['open-for-manager', 'open-for-agent-2'].includes(decision.status), `${decision.id} is neither open nor resolved`);
-    assert.equal(decision.resolution, null);
-    assert.ok(decision.blocks.length > 0, 'the open question says what it blocks');
+    assert.equal(overridden, false, `N8N_BACKEND_LEGO_ROOT is set but ${CONTRACT_LOCK} publishes no ai.skill row`);
   }
+
+  // A version claimed by a file, against a surface with no publication row, is still not a
+  // publication: it is reported as a claim and the contract stays uncomparable.
+  const claimOnly = createSkillCatalog({
+    surface: UNPUBLISHED_SURFACE,
+    declaration: { id: 'skill', versioning: 'ai.skill@1.0.0', lifecycle: [...SKILL_LIFECYCLE] },
+  });
+  assert.equal(claimOnly.contract.published, false);
+  assert.equal(claimOnly.contract.declaredVersion, '1.0.0');
+  assert.equal(claimOnly.contract.status, 'declared-not-locked');
+  assert.match(claimOnly.contract.detail, /a version claim is not a published contract/);
 
   // And the rendering follows the contract it is given, not a hardcoded "unpublished":
   // the moment a contract row exists the support state changes with it.
   const withContract = published();
   assert.equal(withContract.unsupported, null);
   assert.equal(withContract.availability, 'available');
-  assert.equal(createSkillCatalog({ surface: SURFACE }).availability, 'optional-absent');
+  assert.equal(createSkillCatalog({ surface: SURFACE }).availability, 'available', 'a published contract with nothing to list is available, not absent');
+  assert.equal(createSkillCatalog({ surface: UNPUBLISHED_SURFACE }).availability, 'optional-absent');
 
   // The declared status is quoted from the backend, so a status change is caught by the
   // comparison rather than by a reader noticing.
@@ -464,10 +673,17 @@ test('compatibility is its own verdict: required, offered, comparable, satisfied
   assert.equal(unrequired.entries[0].availability, 'available');
 
   // An unpublished contract cannot be compared, and the verdict says so instead of passing.
-  const nothing = createSkillCatalog({ surface: SURFACE, skills: [simple] });
+  const nothing = createSkillCatalog({ surface: UNPUBLISHED_SURFACE, skills: [simple] });
   assert.equal(nothing.entries[0].compatibility.state, 'uncomparable');
   assert.equal(nothing.entries[0].compatibility.satisfied, false);
-  assert.match(nothing.entries[0].compatibility.detail, /no contract-lock row publishes ai\.skill/);
+  assert.equal(nothing.entries[0].compatibility.offered, null);
+  assert.match(nothing.entries[0].compatibility.detail, /no contract-lock row publishing ai\.skill/);
+
+  // With the contract published, an entry that requires no version is not "uncomparable" —
+  // it is a different verdict, and the two must not be confused.
+  const publishedNoRequirement = createSkillCatalog({ surface: SURFACE, declaration: null, skills: [simple] });
+  assert.equal(publishedNoRequirement.entries[0].compatibility.state, 'not-required');
+  assert.equal(publishedNoRequirement.entries[0].compatibility.offered, SKILL_CONTRACT_VERSION);
 
   // The verdict is rendered in the detail at the advanced level, with the required capability
   // list — and it carries no execution affordance.
@@ -504,14 +720,21 @@ test('the surface is wired into the assembly, and the rule that guards it cites 
   assert.match(rule.statement, /six quoted states/);
   assert.match(contract, /### 19\.18 The Skill surface/);
 
-  // The assembly exposes the surface with the same discipline as the module: unsupported
-  // while the contract is unpublished, six states, and nothing to select or execute.
+  // The assembly exposes the surface with the same discipline as the module: the published
+  // contract is quoted, six states, four operations, and nothing to select or execute. With no
+  // skills handed over there is no unsupported *answer* — a surface with nothing to show is not
+  // an error state, and the canonical unsupported answer belongs to an unpublished contract
+  // (covered above, against the pre-finalize surface shape).
   const frontend = createFrontendLego({ app: { name: 'n8n-lego', version: '0.1.0' } });
-  assert.equal(frontend.skills.unsupported.state, 'capability-unavailable');
-  assert.equal(frontend.skills.unsupported.decision, 'XA-11');
+  assert.equal(frontend.skills.contract.published, true);
+  assert.equal(frontend.skills.contract.version, SKILL_CONTRACT_VERSION);
+  assert.equal(frontend.skills.contract.decision, SKILL_ALIGNMENT_DECISION);
+  assert.equal(frontend.skills.unsupported, null);
   assert.deepEqual(frontend.searchSkills({}), []);
   assert.equal(frontend.skillDetail('invoice-reconciliation').state, 'capability-unavailable');
+  assert.equal(frontend.skillDetail('invoice-reconciliation').reason.startsWith('no declared skill'), true);
   assert.equal(frontend.describeSkills().lifecycle.length, 6);
+  assert.deepEqual(frontend.describeSkills().contractOperations, [...SKILL_OPERATION_NAMES]);
   assert.equal(frontend.describe().skillStates, 6);
   assert.equal(frontend.describe().skillsDeclared, 0);
   assert.equal(frontend.conformance().checks.find((check) => check.ruleId === 'A27').state, 'pass');
@@ -536,7 +759,7 @@ test('a declared version is reported without pretending the contract is publishe
     disclosureLevels: Object.fromEntries(SKILL_DISCLOSURE_LEVELS.map((level) => [level, 'declared'])),
     versioning: 'ai.skill@1.0.0',
   };
-  const unlocked = createSkillCatalog({ surface: SURFACE, declaration: declared, skills: [entry()] });
+  const unlocked = createSkillCatalog({ surface: UNPUBLISHED_SURFACE, declaration: declared, skills: [entry()] });
   assert.equal(unlocked.contract.published, false, 'a claim in a file is not a published contract');
   assert.equal(unlocked.contract.version, null, 'nothing is locked, so there is no version to bind to');
   assert.equal(unlocked.contract.declaredVersion, '1.0.0', 'but the claim is reported');
@@ -594,18 +817,37 @@ test('a declaration that moved is reported as drift, never adopted silently', { 
   assert.deepEqual(publishedSkill.permissions, SKILL_PERMISSIONS, 'the permission words agree');
   assert.ok(publishedSkill.isNot.join(' ').match(/tool executor|permission grant/), 'the contract says what a skill is not');
 
+  /**
+   * The contract manifest spells the same vocabulary in its own schema: `lifecycle.states`,
+   * `operations[].name` (qualified), `disclosure.levels`, `trustLevels` as a map. Projecting it
+   * onto the field names the comparison reads is not paraphrase — every value is carried over
+   * unchanged — and it is what makes "the manifest agrees" a checkable statement rather than an
+   * impression.
+   */
+  const asDeclaredFields = (manifest) => ({
+    id: 'skill',
+    lifecycle: manifest.lifecycle.states,
+    operations: manifest.operations.map((operation) => operation.name.replace(/^skill\./, '')),
+    permissions: manifest.permissions,
+    disclosureLevels: manifest.disclosure.levels,
+    trustLevels: Object.keys(manifest.trustLevels),
+    versioning: `${manifest.contract}@${manifest.version}`,
+  });
+
   // 2. The declaration handed over as data is compared, and the difference is named — in both
-  //    directions (the LEGO-level block, and the contract manifest).
-  for (const [label, declaration] of [['ai-lego-set.json#id=skill', legos], ['manifest/skill.json', publishedSkill]]) {
+  //    directions (the LEGO-level block, and the contract manifest projected onto the same fields).
+  for (const [label, declaration] of [['ai-lego-set.json#id=skill', legos], ['manifest/skill.json', asDeclaredFields(publishedSkill)]]) {
     const catalog = createSkillCatalog({ surface: SURFACE, declaration, contract: lockedRow, skills: [entry()] });
     const fields = catalog.drift.differences.map((difference) => difference.field);
-    if (catalog.drift.state === 'drift') {
+    if (skillLockRow() === null) {
+      // The pointed-at tree predates the finalize: the difference is the historical one XA-19
+      // was opened for — reported as data, never adopted.
       assert.ok(catalog.drift.differences.every((difference) => difference.quoted.length > 0 || difference.declared.length > 0), `${label}: a difference names both sides`);
-      // A moved declaration is never adopted: the drift is reported, and the surface keeps
-      // rendering the words it quotes.
       assert.ok(catalog.drift.rule.includes('never resolved locally'), `${label}: the rule is stated`);
     } else {
-      assert.deepEqual(fields, [], `${label}: no difference is reported when the file agrees`);
+      // XA-19 is resolved: the declaration and the quote agree, exactly and in both directions.
+      assert.deepEqual(fields, [], `${label}: a difference is reported although the published declaration agrees`);
+      assert.equal(catalog.drift.state, 'in-sync', `${label}: the quoted vocabulary is the published one`);
     }
     // Whatever moved, the rendering follows the lock and nothing else.
     assert.equal(catalog.contract.published, lockedRow !== null, `${label}: publication follows the lock, not the file`);
@@ -622,10 +864,12 @@ test('a declaration that moved is reported as drift, never adopted silently', { 
   //    discovered only by a reader of the test output.
   const row = DECISIONS.decisions.find((decision) => decision.id === 'XA-19');
   assert.ok(row, 'the cross-agent alignment finding is recorded');
-  assert.match(row.finding, /manifest\/skill\.json/, 'the finding names the file that moved');
-  assert.match(row.finding, /operations/, 'the finding names the field that differs');
-  assert.equal(row.status.startsWith('open'), true, `${row.id} is still open — the frontend does not resolve it`);
-  assert.ok(row.references.some((reference) => reference.includes('31-skills.test.mjs')), 'and it cites this suite');
+  assert.equal(row.status, 'resolved', 'and it is resolved by the finalize');
+  assert.match(`${row.historicalFinding ?? ''} ${row.resolution}`, /operations/, 'the row names the field that differed');
+  assert.match(JSON.stringify(row), /31-skills\.test\.mjs|vocabulary\.mjs/, 'and cites the frontend side it was reconciled with');
+  assert.ok((row.canonical?.operations ?? []).length === 4, 'the resolution names the canonical four');
   assert.equal(SKILL_ALIGNMENT_DECISION, row.id);
   assert.equal(SURFACE.alignment?.decision ?? null, row.id, 'the surface declaration names the same row');
+  assert.equal(SURFACE.alignment?.status ?? null, 'resolved', 'and carries its resolved state');
+  assert.match(SURFACE.alignment?.openQuestion ?? '', /XA-11/, 'while naming the question the finalize did not settle');
 });

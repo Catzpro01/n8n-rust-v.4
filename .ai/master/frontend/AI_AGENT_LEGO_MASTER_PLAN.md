@@ -37,15 +37,17 @@ domain.
 | 7 | **Runtime Adapter** | **contract-only** — declared as `ai.agent-runtime` + `runtimeMetadata` | `ai-foundation` | runtime line in agent detail | — |
 | 8 | **Workspace** | **partially published** — domain `workspace` exists (`planned`, contract `0.0.0`, `projects` unsupported) | domain `workspace` | workspace view (gated) | **XA-13** |
 | 9 | **Node Creator** | **partially published** — `node-registry@0.1.0` (catalog resolve/describe/list, icons) | domain `node-registry` | node editor; `Create with AI` gated | **XA-15** |
-| 10 | **Skill** | `publicationPending` | — (no capability, no contract) | Skills chip/list | **XA-11** |
+| 10 | **Skill** | **published** — `ai.skill@1.0.0` (4 caller operations, six-state lifecycle) | `ai-foundation` (`ai.skill`) | Skills chip/list (discovery only) | **XA-11** (modelling, open) / XA-19 resolved |
 | 11 | **Memory** | `publicationPending` | — (today: context + decisions + artifacts) | Memory chip, memory graph | **XA-12** |
 | 12 | **MCP Adapter** | `publicationPending` (vocabulary block published) | `ai.foundation` mcp block | capability-first MCP rows | **XA-16** |
 | 13 | **Token & Usage** | `publicationPending` (today: `countTokens`, declared costs) | — | token chips, usage view | **XA-17** |
 | 14 | **Universal Translation** | `publicationPending` (no domain, no capability) | — | language control, `Translate response` | **XA-14** |
 | 15 | **Agent Machine** | **contract-only**: `ai.agent-runtime` + `ai.agent-delegation` contracts exist; **no runtime is built** | `ai-foundation` | agent tree, agent detail | — |
 
-**2 published (AI Foundation, Capability), 6 declared `contract-only`, 2 partially published and
-gated (Workspace XA-13, Node Creator XA-15), 5 `publicationPending`.** No LEGO in this table is
+**3 published (AI Foundation, Capability, Skill), 6 declared `contract-only`, 2 partially published
+and gated (Workspace XA-13, Node Creator XA-15), 4 `publicationPending`.** "Published" here means a
+locked contract with a tested implementation, never a running model: `ai.skill` publishes a registry,
+and nothing in it executes a procedure. No LEGO in this table is
 implemented by this branch, and "published" never means "running": a lock row or a registry entry is
 a *contract*, and the `ai.*` family is explicitly `contract-only` — implementation behind it is
 forbidden until its phase.
@@ -70,7 +72,7 @@ forbidden until its phase.
 | Role | Question | Example (frontend view) |
 | :--- | :--- | :--- |
 | Capability | what can be done | `github.search` |
-| Skill *(XA-11)* | how the job should be done | `web-development`, `accessibility`, `SEO`, `GitHub` |
+| Skill *(XA-11 modelling / XA-19 resolved)* | how the job should be done | `web-development`, `accessibility`, `SEO`, `GitHub` — declared as skills, read through `ai.skill@1.0.0` |
 | Agent Machine | who/what orchestrates the job | Main ─ Research ─ Builder ─ Tester ─ Reviewer |
 | Workspace | where the action occurs | `Workspace · project-name` |
 | Approval | whether the action is allowed | `Approval required · Production workflow` |

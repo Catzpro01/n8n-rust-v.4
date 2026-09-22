@@ -288,15 +288,15 @@ check('discovery never selects, loads, executes or reaches a tool',
   && skillCatalog.affordances.allowed.join(',') === 'list,search,filter,detail',
   `allowed=[${skillCatalog.affordances.allowed.join(',')}] forbidden=[${Object.keys(skillCatalog.affordances.forbidden).join(',')}]`);
 
-check('with ai.skill unpublished the surface answers with the canonical unsupported state',
-  skillCatalog.contract.published === false && skillCatalog.availability === 'optional-absent'
-  && skillCatalog.unsupported.state === 'capability-unavailable'
-  && skillCatalog.unsupported.error === 'lego.capability_unavailable'
-  && skillCatalog.unsupported.decision === 'XA-11'
-  && liveFrontend.skillDetail('any-skill').known === false,
-  `${skillCatalog.availability} / ${skillCatalog.unsupported.state} / ${skillCatalog.unsupported.error} / ${skillCatalog.unsupported.decision}`);
+check('the surface quotes the published Skill contract, and an unknown skill still answers canonically',
+  skillCatalog.contract.published === true && skillCatalog.contract.version === '1.0.0'
+  && skillCatalog.contract.comparable === true && skillCatalog.contract.decision === 'XA-19'
+  && skillCatalog.unsupported === null
+  && liveFrontend.skillDetail('any-skill').known === false
+  && liveFrontend.skillDetail('any-skill').state === 'capability-unavailable',
+  `${skillCatalog.contract.version ?? 'unpublished'} / ${skillCatalog.contract.decision} / unknown-skill=${liveFrontend.skillDetail('any-skill').state}`);
 
-const movedDeclaration = {
+const exactDeclaration = {
   id: 'skill', owner: 'manager', status: 'implemented',
   lifecycle: [...skillStates],
   operations: ['list', 'resolve', 'describe', 'validate-selection'],
@@ -304,15 +304,26 @@ const movedDeclaration = {
   disclosureLevels: { L0: 'identity', L1: 'card', L2: 'procedure', L3: 'knowledge' },
   versioning: 'ai.skill@1.0.0',
 };
-const moved = createFrontendLego({ app: { name: 'n8n-lego', version: '0.1.0' }, skills: { declaration: movedDeclaration } });
+const exact = createFrontendLego({ app: { name: 'n8n-lego', version: '0.1.0' }, skills: { declaration: exactDeclaration } });
+check('the four published operations are consumed exactly, and the UI offers none of them',
+  exact.describe().skillDrift === 'in-sync' && liveFrontend.describeSkills().contractOperations.length === 4
+  && liveFrontend.describeSkills().contractOperations.join(',') === 'skill.list,skill.resolve,skill.describe,skill.validate-selection'
+  && exact.skillDetail('any-skill').operations === undefined
+  && !liveFrontend.describeSkills().operations.includes('load') && !liveFrontend.describeSkills().operations.includes('execute'),
+  `drift=${exact.describe().skillDrift} operations=[${liveFrontend.describeSkills().contractOperations.join(',')}]`);
+
+// A declaration that does not match the published vocabulary is still reported as data, and the
+// surface keeps rendering the words it quotes — resolution closed the drift, not the reporting.
+const driftedDeclaration = { ...exactDeclaration, operations: ['list', 'describe', 'load'] };
+const moved = createFrontendLego({ app: { name: 'n8n-lego', version: '0.1.0' }, skills: { declaration: driftedDeclaration } });
 const driftedFields = moved.skills.drift.differences.map((difference) => difference.field);
 check('a declaration that moved is reported as drift and never adopted',
-  moved.describe().skillDrift === 'drift' && driftedFields.includes('operations') && driftedFields.includes('versioning')
-  && moved.skills.contract.published === false
-  && moved.skills.contract.declaredVersion === '1.0.0'
-  && moved.skills.contract.status === 'declared-not-locked'
-  && moved.skills.availability === 'optional-absent',
-  `drift=[${driftedFields.join(',')}] published=${moved.skills.contract.published} declaredVersion=${moved.skills.contract.declaredVersion}`);
+  moved.describe().skillDrift === 'drift' && driftedFields.includes('operations')
+  && moved.skills.contract.published === true
+  && moved.skills.contract.version === '1.0.0'
+  && moved.skills.contract.comparable === true
+  && moved.skills.drift.differences.find((difference) => difference.field === 'operations').declared.includes('load'),
+  `drift=[${driftedFields.join(',')}] published=${moved.skills.contract.published} version=${moved.skills.contract.version}`);
 
 const skillRule = conformance.checks.find((entry) => entry.ruleId === 'A27');
 check('the skill surface is bound by the same rule the package suite enforces',

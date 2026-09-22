@@ -25,7 +25,7 @@ vocabulary — never as a silent alias of a backend contract.
 | Copilot trace | `ai.agent-events` (in `ai.foundation@1.0.0`) | `agentEventType` (26), `agentEventEnvelopeField`, `traceField` | `subscribe`, `emit` | payload bodies (only `payloadRef`), reasoning |
 | Copilot agents | `ai.agent-runtime`, `ai.agent-delegation` | `runtimeLocality`, `delegationField`, `delegationBudgetField`, `delegationNodeField` | `create`, `start`, `send`, `pause`, `resume`, `cancel`, `status`, `stream`, `artifact`, `close`, `delegate` | another agent's private context; inherited permissions (there are none) |
 | Copilot files | `ai.artifact` | `artifactKind`, `artifactRetention`, `decisionApprovalState` | `create`, `read` | artifact content inline as state; `storageRef` internals vs credential material |
-| Skills | **XA-11 pending** (`ai.skill`); the quoted vocabulary is `manifest/ai-lego-set.json#id=skill`, consumed by `skills.mjs` (P2.12) | `skillLifecycle` (6), `skillOperation`, `skillDisclosureLevel` (L0–L3), `skillPermission`, `aiLegoStatus`, `degradation` | none: discovery only (`list`/`search`/`filter`/`detail` over handed-over data); select/load/release/execute are backend operations and are `offered: false` | a skill's private reasoning; a validator's internals; a skill body beyond the disclosure level asked for |
+| Skills | **published**: `ai.skill@1.0.0` (owner manager, domain `ai-foundation`, `XA-19` resolved in the P2.12 finalize); the quoted vocabulary is `manifest/ai-lego-set.json#id=skill`, consumed by `skills.mjs` | `skillLifecycle` (6), `skillOperation` (4 caller operations), `skillDisclosureLevel` (L0–L3), `skillPermission`, `degradation` | none: discovery only (`list`/`search`/`filter`/`detail` over handed-over data); `register`/`select`/`load`/`release` are internal registry lifecycle methods, `execute` does not exist, and all four published operations are `offered: false` | a skill's private reasoning; a validator's internals; a skill body beyond the disclosure level asked for |
 | Memory | **XA-12 pending** (`ai.memory`); today `ai.context` + `ai.artifact` + `ai.decision` | `contextScope`, `artifactKind`, `decisionRisk` | `context.load`, `artifact.read`, `decision.inspect` | the whole memory store; embeddings or vectors |
 | Capabilities | `lego.domain-registry@1.1.0` (manager) + `ai.foundation` taxonomy | `capabilityStatus`, `capabilityCriticality`, `capabilityMigrationState`, `lifecycle`, `interaction`, `transportKind`, `aiPermission` | per capability `operations[]` | an operation's HTTP route; a module path; a port |
 | Context & Session | `ai.context`, `ai.agent-session` | `contextScope`, `agentSessionState`, `zeroInstallLayerState` | `context.load`, `context.compact`, session `create`/`status`/`close` | the raw window; the model's tokenizer internals |
@@ -45,8 +45,8 @@ discovery and state only. Six lifecycle states are six facts (`registered`, `ava
 `loaded`, `active`, `released`) — never one boolean, and `executing: false` / `grants: null` on all six.
 Progressive disclosure: **basic** = name, status, availability; **advanced** = lifecycle, required
 capabilities, contract version, trust, degradation, owner, plus the fields the declaration does not
-carry (rendered as "not published", never guessed). `ai.skill` has no contract-lock row, so the catalog
-renders `optional-absent` and a request for a specific skill answers with `capability-unavailable` /
+carry (rendered as "not published", never guessed). `ai.skill@1.0.0` is published, so the catalog
+renders `available` and a request for a skill it was not handed answers with `capability-unavailable` /
 `lego.capability_unavailable` — no fallback capability, no execution control, no tool list.
 
 A declaration whose words have moved past the quote is reported as drift (`declarationDrift`: field,
@@ -95,7 +95,7 @@ presentation name exists, it is a *view* with a declared mapping in the lock (`m
 | :--- | :--- | :--- |
 | `Agent: Working` / `Agents 5` | session status + child count | `agentSessionState`, `delegationNodeField.children` |
 | `Context 61%`, `12.4k / 32k` | context budget | `ai.context` (`used`, `budget`) |
-| `Skills 3 active` | active skill procedures | **XA-11** (no canonical set yet) |
+| `Skills 3 active` | active skill procedures | **`ai.skill@1.0.0`** — the six states are read, never collapsed into one count |
 | `Memory 12 relevant` | loaded context entries + decisions + artifacts | `ai.context` + `ai.decision` + `ai.artifact`; **XA-12** for a persistent store |
 | `Capabilities 7` | declared capability list with source label | `capabilityStatus` + `providerKind`/`runtimeKind` |
 | `— MCP`, `— Runtime`, `— Remote` | the source of a capability | `runtimeLocalityView`, `mcpObjectView` |
@@ -112,7 +112,7 @@ presentation name but must not send the proposed word to the backend as if it ex
 
 | Decision | Proposed vocabulary | Owner to decide | Why it is needed | What the frontend does meanwhile |
 | :--- | :--- | :--- | :--- | :--- |
-| **XA-11** | `ai.skill` (skill id, version, procedure summary, capability refs, validators, token budget) | manager | the Skills surface has no canonical set; inventing one would be a second vocabulary | renders presentation names only; no skill state is sent to the backend |
+| **XA-11** | `ai.skill` (skill id, version, procedure summary, capability refs, validators, token budget) | manager | **published as `ai.skill@1.0.0`** by the P2.12 finalize (`XA-19` resolved); what stays open is whether Skill is modelled under `ai-foundation` | consumes the published vocabulary: discovery only, no skill state sent to the backend |
 | **XA-12** | `ai.memory` (relevant entries with kind, reference, recency) | manager | "Memory" is currently only *loaded context*; a durable store is not modelled | shows loaded context, decisions and artifacts, and says so |
 | **XA-13** | agent-scoped workspace semantics (`workspaceId`, scope, runtime binding) | manager | `workspace.projects` is `unsupported` and the domain contract is `0.0.0`; the plan forbids implying host access | shows workspace only when the declaration exists; otherwise `feature-unsupported` |
 | **XA-14** | `translation@…` capability (request/response language pairs) | manager | the frontend capability `translation` is `declared`; no backend domain publishes translation | language control renders the locale set; the capability stays `declared` |
