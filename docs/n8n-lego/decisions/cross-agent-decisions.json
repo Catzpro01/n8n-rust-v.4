@@ -419,8 +419,8 @@
         "apps/n8n-lego/src/lego/manifest/ai-foundation.json",
         "apps/n8n-lego/src/lego/contracts/contract-lock.json"
       ],
-      "arbiter": null,
-      "blocks": "nothing \u2014 P2.14 bounded Memory unblocks P7 memory list/graph behind the explicit contract; relevance-ranked traversal remains future",
+      "arbiter": "manager: publish `ai.memory.traverse` / `ai.memory.relate` and retention enforcement, or declare them not a backend concept",
+      "blocks": "P7 (memory list and `Open Memory Graph`): bounded surface now unblocks explicit listing, gated traversal/relate remain deferred",
       "owner": "manager",
       "affectedDomains": [
         "ai-foundation",

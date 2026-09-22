@@ -367,3 +367,53 @@ test('provider count and clear are bounded local state only', () => {
   m.remember({ memoryId: 'b-3', scope: 'GLOBAL', kind: 'note', retention: 'DURABLE', content: { n: 3 } });
   assert.equal(m.count, 1);
 });
+
+test('doc coupling: code, manifest and contract document cannot drift apart', () => {
+  // The contract document is manifest/memory.json — the single source of truth.
+  // The code (memory.mjs exports) and the published evidence docs must quote it verbatim.
+  const manifest = JSON.parse(readFileSync(new URL('../src/lego/manifest/memory.json', import.meta.url), 'utf8'));
+  // Every vocabulary word the code publishes must come from the manifest, and every word the
+  // manifest publishes must be quoted by the code — no hidden synonym.
+  assert.deepEqual(MEMORY_SCOPES, manifest.scopes, 'scopes: code quotes manifest verbatim');
+  assert.deepEqual(MEMORY_KINDS, manifest.kinds, 'kinds: code quotes manifest verbatim');
+  assert.deepEqual(MEMORY_RETENTIONS, manifest.retention, 'retentions: code quotes manifest verbatim');
+  assert.deepEqual(MEMORY_OPERATIONS, manifest.operations.map(o => o.name), 'operations: code quotes manifest verbatim');
+  assert.deepEqual(MEMORY_PERMISSIONS, manifest.permissions, 'permissions: code quotes manifest verbatim');
+  assert.equal(MEMORY_CONTRACT.version, manifest.version, 'version: code and manifest agree');
+  assert.equal(MEMORY_CONTRACT.id, manifest.contract, 'id: code and manifest agree');
+
+  // The generated doc .ai/master/AI_CONTRACT_MATRIX.md is produced by `npm run lego:ai` from the
+  // manifests and the contract-lock. A doc that promises a different version, a different operation
+  // set or a different LEGO status would be an invented interface.
+  const matrix = readFileSync(new URL('../../../.ai/master/AI_CONTRACT_MATRIX.md', import.meta.url), 'utf8');
+  assert.ok(matrix.includes('`ai.memory`') && matrix.includes('locked @ 1.0.0'), 'matrix names ai.memory locked @ 1.0.0');
+  assert.ok(matrix.includes('IMPLEMENTED') && matrix.includes('ai.memory@1.0.0'), 'matrix marks ai.memory IMPLEMENTED at 1.0.0');
+  for (const op of MEMORY_OPERATIONS) {
+    // The matrix test column must name the memory operations via the test file, never re-quote them
+    // as ai.memory.* inside the code column — the lock is the source, the matrix just points at it.
+    assert.ok(matrix.includes(op) || matrix.includes('lego-memory.test.mjs'), `matrix/test column references ${op}`);
+  }
+  assert.equal(matrix.includes('`ai.memory.traverse`'), false, 'matrix does not invent a traversal operation');
+  assert.equal(matrix.includes('`ai.memory.relate`'), false, 'matrix does not invent a relate operation');
+
+  // The evidence report for this milestone must name the exact contract the code locked, with the
+  // same four operations and two permissions the manifest publishes — otherwise the report is stale.
+  const report = readFileSync(new URL('../../../docs/n8n-lego/evidence/P2.14-agent-2-final-report.md', import.meta.url), 'utf8');
+  assert.ok(report.includes('ai.memory@1.0.0'), 'report names the published contract ai.memory@1.0.0');
+  for (const op of MEMORY_OPERATIONS) assert.ok(report.includes(op), `report names operation ${op}`);
+  for (const perm of MEMORY_PERMISSIONS) assert.ok(report.includes(perm), `report names permission ${perm}`);
+  assert.ok(report.includes('BACKEND_FROZEN: YES') || report.includes('AGENT_2_P2.14_COMPLETE'), 'report carries the freeze verdict');
+  assert.ok(report.includes('f11aee01') || report.includes('5fbaf934'), 'report pins the exact commit that published the contract');
+
+  // The product manifest ai-lego-set.json must mark memory as implemented and must point at the
+  // test file that proves the contract — a manifest that says planned while the lock says
+  // implemented would be drift.
+  const legoSet = JSON.parse(readFileSync(new URL('../src/lego/manifest/ai-lego-set.json', import.meta.url), 'utf8'));
+  const memLego = (legoSet.lego ?? legoSet.legos ?? []).find(l => l.id === 'memory');
+  assert.ok(memLego, 'ai-lego-set.json carries a memory LEGO row');
+  assert.equal(memLego.status, 'implemented', 'the LEGO row says implemented');
+  assert.ok(memLego.tests.some(t => t.includes('lego-memory.test.mjs')), 'the LEGO row points at the memory test');
+  // capability is named via contracts (ai.memory) or capabilityIds — accept either shape
+  const caps = memLego.capabilityIds ?? memLego.capabilities ?? memLego.contracts ?? [];
+  assert.ok(caps.includes('ai.memory'), 'the LEGO row names the ai.memory capability');
+});
