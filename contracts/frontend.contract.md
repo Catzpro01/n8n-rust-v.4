@@ -880,6 +880,12 @@ enforcement cannot disagree.
     "statement": "An extension point is owned by a surface: a capability may only add to the hooks of the surfaces it occupies, never to a neighbour’s.",
     "contract": "§19.7",
     "enforcedBy": "21-security.test.mjs"
+  },
+  {
+    "id": "A27",
+    "statement": "Skill discovery renders six quoted states and the four published operations (skill.list, skill.resolve, skill.describe, skill.validate-selection) and nothing else: no single boolean, no select/load/release/execute affordance, no fallback capability, and no skill that implies a permission, an authority, a tool, a filesystem, a terminal or a model.",
+    "contract": "§19.18",
+    "enforcedBy": "31-skills.test.mjs"
   }
 ]
 ```
@@ -910,3 +916,69 @@ exists. Two vocabularies may share a spelling only when they share a *subject*
 declared with its reason (`available` is a lifecycle state and an availability). A
 permission a declared capability requires must be a declared permission word — an
 invented synonym fails the live conformance check, it does not pass silently.
+
+### 19.18 The Skill surface — discovery, six states, no execution
+
+A **skill** is procedural knowledge: how a task is done. It is not a capability (what can be
+done) and not an agent (who does it), and it never becomes one by being displayed. The
+frontend consumes the Skill vocabulary the backend publishes and renders it; it does not
+restate it, and it adds no seventh state.
+
+**Six states, never a boolean.** `registered`, `available`, `selected`, `loaded`, `active` and
+`released` are six different facts, quoted from `manifest/ai-lego-set.json`
+(`lego#id=skill.lifecycle`) through the vocabulary lock (`§19.9`) and published by
+`ai.skill@1.0.0` (owner `manager`, domain `ai-foundation`, `XA-19` resolved in the P2.12
+finalize; `XA-11` stays open only for where Skill is modelled). The UI may not collapse
+them: a skill that is `loaded` has material in context, one that is `active` is in use, and
+neither has executed anything. `skillState()` returns one row per state with `executing: false`
+and `grants: null` for all six — a skill state is never an entitlement.
+
+**Discovery only.** Listing, search, filter, detail and selection *validation* read declarations.
+The contract publishes exactly four caller operations — `skill.list`, `skill.resolve`,
+`skill.describe`, `skill.validate-selection` — and no UI affordance may offer any of them:
+`register`, `select`, `load` and `release` are internal registry lifecycle methods that the
+contract deliberately does not publish (publishing `load` would make lazy discovery a caller's
+concern), and there is no execute operation and no `ai:skill:execute` permission at any layer. A
+skill card at the deepest disclosure level reports every published operation as `offered: false`
+— naming an operation is not offering it.
+
+**The unsupported answer is canonical, not empty.** With no declaration handed over the surface
+name a published contract without rendering a skill list for it: the catalog reports `available`
+(`optional-absent` when the contract is unpublished) and answers a request for a specific skill
+with `capability-unavailable` and `lego.capability_unavailable` (`§19.8`), naming the contract and
+the decision that owns it. Publication is a contract, not a promise that skills exist. No fallback
+capability is substituted, no execution control is shown and no tool list is rendered. A
+published contract that cannot be compared (no version, or a requirement that is not
+semver) is reported as `feature-unsupported`; an unmet required capability as
+`capability-unavailable`; a capability declared but not serviceable here as
+`dependency-disabled`.
+
+**A skill implies no authority.** The declared permissions (`ai:skill:read`, `ai:skill:select`)
+are requirements of backend operations; they are never a grant the UI holds and never a control
+it renders. A skill entry that carries `permissions`, `grants`, `authority`, `tools`,
+`filesystem`, `terminal`, `model`, `entry`, `load` or `execute` is refused by name, with the
+reason (`validateSkillInstance`). Tool access belongs to the capability contract behind the
+skill, and nothing here reaches a model.
+
+**A declaration that moved is reported, not adopted.** The application may hand over a declaration
+whose vocabulary has moved past the words this package quotes (agent-2 owns the manifests and moves
+first). `declarationDrift({ declaration, contract })` compares the vocabulary-bearing fields
+(`lifecycle`, `operations`, `permissions`, `disclosureLevels`, `trustLevels`, `versioning`) and
+returns `in-sync`, `drift` — with, per field, both spellings and both directions — or `not-declared`
+when nothing was handed over. A difference is never resolved here: the surface keeps rendering the
+words it quotes, reports the difference as data, and the reconciliation decides. `XA-19` resolved
+that reconciliation by adopting the implemented shape, so since then **no difference is tolerated**:
+the alignment gate compares the quoted Skill sets against the published declaration exactly, and a new
+difference fails until a new open row is registered (`31-skills.test.mjs` asserts none is left). A
+`versioning` claim of the form `<contract>@<major>.<minor>.<patch>` is reported as `declaredVersion`,
+and the contract is only `published` when a row exists — a claim in a file is not a locked contract
+(`§19.17`).
+
+**The declaration is handed over, never read.** The frontend receives the quoted declaration as
+data (`createFrontendLego({ skills })`), exactly like the backend capability view (`§19.6`); it
+never reads the backend tree (`§5`, `§19.14`). `manifest/skills.json` declares the surface, quotes
+the lock row it was verified against (`publication`: contract, version, owner, `lockedIn`,
+`decidedBy`) and ships an empty skill list — the catalog of a discovery surface is what it was handed,
+never a starter set. A manifest that claims publication must find the row it names in the contract
+lock; reporting "nothing is declared" and "the declaration is broken" stays two different states
+(`§19.8`).

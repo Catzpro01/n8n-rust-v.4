@@ -26,6 +26,7 @@ import { createCapabilityNegotiator } from './negotiation.mjs';
 import { createObservability } from './observability.mjs';
 import { DEVICE_PROFILES, resolveSupport } from './profiles.mjs';
 import { createFrontendRegistry, validateCapability } from './registry.mjs';
+import { createSkillCatalog, describeSkills, searchSkills, skillDetail } from './skills.mjs';
 import { createSubLegoRegistry } from './sublegos.mjs';
 import { createOperationGateway, defineLocalTransport } from './transport.mjs';
 import { describeVocabulary, detectCollisions, vocabularyConflicts } from './vocabulary.mjs';
@@ -50,6 +51,11 @@ export function createFrontendLego({
   adapterId = CURRENT_ADAPTER_ID,
   capabilities = [],
   backend = null,
+  /** The Skill surface's input, handed over as data: `{ declaration, contract, entries,
+   *  requiredVersion, declaredCapabilities, unavailableCapabilities }`. This package never
+   *  reads the backend tree, and with no published `ai.skill` contract (XA-11) the surface
+   *  renders the canonical unsupported state instead of inventing skills. */
+  skills: skillInput = null,
   observability = null,
   logger = {},
 } = {}) {
@@ -152,6 +158,23 @@ export function createFrontendLego({
   });
 
   /**
+   * The Skill surface (P2.12): discovery and state presentation only. It is built from
+   * the frontend's own surface declaration plus whatever the application hands over —
+   * never by reading a backend file. It reports the published contract (`ai.skill@1.0.0`) or
+   * the canonical unsupported state when the surface has no publication row. Nothing here
+   * selects, loads or executes a skill.
+   */
+  const skillCatalog = createSkillCatalog({
+    surface: manifests.skillCatalog,
+    declaration: skillInput?.declaration ?? null,
+    contract: skillInput?.contract ?? null,
+    skills: skillInput?.entries ?? null,
+    requiredVersion: skillInput?.requiredVersion ?? null,
+    declaredCapabilities: skillInput?.declaredCapabilities ?? manifests.capabilities.map((capability) => capability.id),
+    unavailableCapabilities: skillInput?.unavailableCapabilities ?? [],
+  });
+
+  /**
    * Operation delivery with no transport assumption. The local transport is a
    * direct in-process call (no serialization); REST is the boundary that already
    * exists. Nothing else is wired, and nothing is routed implicitly.
@@ -202,6 +225,9 @@ export function createFrontendLego({
       transports: gateway.describe().implemented.length,
       aiCapabilities: describeAgents().capabilities.length,
       agentEventTypes: describeAgentEvents().eventTypes.length,
+      skillStates: skillCatalog.lifecycle.length,
+      skillsDeclared: skillCatalog.entries.length,
+      skillDrift: skillCatalog.drift.state,
       events: events.stats().emitted,
       adapter: adapter.id,
       framework: adapter.framework,
@@ -280,6 +306,14 @@ export function createFrontendLego({
     describeAgents,
     /** The universal agent event vocabulary and the bounded work-trace contract. */
     describeAgentEvents,
+    /**
+     * The Skill surface: the six-state lifecycle, the quoted vocabulary, the catalog and the
+     * canonical unsupported answer. Discovery only — no skill is selected, loaded or executed.
+     */
+    skills: skillCatalog,
+    describeSkills,
+    skillDetail: (skillId, options) => skillDetail(skillCatalog, skillId, options),
+    searchSkills: (filters) => searchSkills(skillCatalog, filters),
     /**
      * The seam: the closed list of inputs this LEGO may consume, the sources each may
      * come from, and the one identity shape a capability is projected into. `consumeInput`

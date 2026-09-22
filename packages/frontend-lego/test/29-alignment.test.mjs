@@ -33,10 +33,33 @@ const backendPresent = existsSync(join(BACKEND, 'interaction.mjs'));
 const why = overridden
   ? `N8N_BACKEND_LEGO_ROOT is set but ${BACKEND} has no backend foundation`
   : `the backend foundation is not on this branch (read from ${QUOTED_FROM.branch} @ ${QUOTED_FROM.commit}) — the comparison runs after the merge`;
-const skip = backendPresent ? false : why;
+// A test that was *told* where the backend tree is must find it: pointing at a tree that is not
+// there fails the comparison instead of skipping it.
+const skip = backendPresent || overridden ? false : why;
 
 const shared = VOCABULARIES.filter((set) => set.provenance.contract !== null);
 const pending = VOCABULARIES.filter((set) => set.provenance.contract === null);
+
+/** The lock rows the pointed-at tree publishes, or an empty list when it publishes none. */
+const lockRows = () => {
+  if (!existsSync(CONTRACT_LOCK)) return [];
+  const lock = JSON.parse(readFileSync(CONTRACT_LOCK, 'utf8'));
+  return Array.isArray(lock) ? lock : (lock.contracts ?? []);
+};
+const skillContractRow = () => lockRows().find((row) => (row.id ?? row.contract) === 'ai.skill') ?? null;
+
+/**
+ * The sets whose *published* values the P2.12 finalize moved: `ai.skill` joined the
+ * `ai-foundation` capability list, its two permission words joined the published operations, and
+ * the Skill operation set became the four caller operations. This branch's own backend copy can
+ * predate that (agent-2 lands the lock on its own branch), and a comparison against a tree that
+ * predates the published row would report the finalize itself as drift. So those three sets are
+ * compared when — and only when — the pointed-at tree publishes `ai.skill`; otherwise the test
+ * says so instead of reporting a pass it did not perform.
+ */
+const MOVED_BY_FINALIZE = Object.freeze(['aiFoundationCapability', 'aiPermission', 'skillOperation']);
+const finalized = skillContractRow() !== null;
+const awaitingFinalize = new Set(finalized ? [] : MOVED_BY_FINALIZE);
 
 /** The declaration a set says it quoted: the exported symbol, or the JSON path. */
 const declarationOf = (set) => `${set.provenance.file}#${set.provenance.symbol ?? set.provenance.path}`;
@@ -149,15 +172,87 @@ test('every shared vocabulary names the contract, the version, the owner and the
   assert.ok(QUOTED_FROM.commit.length >= 7, 'the quote names the commit it was read at');
 });
 
-test('every quoted value is the value the backend declares, in the backend tree that was quoted', { skip }, async () => {
+/**
+ * Differences that are *registered* rather than resolved.
+ *
+ * The frontend may quote only what a declaration publishes, and it may not pretend a
+ * difference is not there. When the backend moves first (it owns the manifests), the
+ * difference is reported and recorded as an open arbitration row: this table says which
+ * difference is expected, and the test still requires the register to carry it as an open
+ * decision. A difference that is **not** in this table fails, so this is not a bypass — it
+ * is the same rule the Skill surface applies, checked against the alignment gate.
+ */
+const REGISTERED_DRIFT = Object.freeze({
+  // Empty on purpose: `XA-19` was resolved in the P2.12 finalize by adopting the implemented
+  // shape, so no difference between this package's quoted Skill vocabulary and the published
+  // declaration is tolerated any more. The table and its machinery stay because *tolerating* a
+  // difference is a thing this gate can do — but only for an open registered decision that
+  // names the vocabulary, and there is none.
+});
+
+/**
+ * The table above may not outlive the decision that justified it. Every entry must name a
+ * decision that is **recorded**, **still open** and **about this vocabulary** — so an entry
+ * cannot keep tolerating a difference after the arbitration closed, and a stale entry is a
+ * failure rather than a comment.
+ */
+test('every tolerated difference is backed by an open registered decision that names it', () => {
+  for (const [setId, allowance] of Object.entries(REGISTERED_DRIFT)) {
+    const row = DECISIONS.decisions.find((decision) => decision.id === allowance.decision);
+    assert.ok(row, `${setId}: ${allowance.decision} is recorded in the register`);
+    assert.equal(row.status.startsWith('open'), true, `${setId}: ${allowance.decision} is still open — a resolved decision tolerates nothing`);
+    assert.match(
+      `${row.question} ${row.finding} ${row.currentInterpretation ?? ''}`,
+      new RegExp(setId),
+      `${setId}: the open row names this vocabulary`,
+    );
+  }
+});
+
+test('every quoted value is the value the backend declares, in the backend tree that was quoted', { skip }, async (t) => {
+  const registered = new Set(DECISIONS.decisions.map((decision) => decision.id));
+  const awaited = [];
+  if (!finalized) {
+    t.diagnostic(`the pointed-at backend tree predates the P2.12 finalize (${CONTRACT_LOCK} publishes no ai.skill row): ${MOVED_BY_FINALIZE.join(', ')} are not compared against it — run with N8N_BACKEND_LEGO_ROOT pointed at the tree that publishes ai.skill@1.0.0`);
+  }
   for (const set of VOCABULARIES) {
+    if (awaitingFinalize.has(set.id)) {
+      // The pointed-at tree predates the published row: its declaration still carries the
+      // pre-finalize values, and comparing against it would probe the finalize, not the quote.
+      awaited.push(set.id);
+      continue;
+    }
     const observed = await readDeclaration(set);
     const comparison = compareValues(set, observed);
+    const allowance = comparison.ok ? null : REGISTERED_DRIFT[set.id] ?? null;
+    if (allowance !== null) {
+      // The difference must be exactly the registered one, in both directions.
+      assert.deepEqual(comparison.unquoted, [...allowance.unquoted], `${set.id}: the unquoted values are the registered ones`);
+      assert.deepEqual(comparison.missing, [...(allowance.missing ?? [])], `${set.id}: the values the declaration dropped are the registered ones — the quote moves only by reconciliation`);
+      const row = DECISIONS.decisions.find((decision) => decision.id === allowance.decision);
+      assert.ok(row, `${set.id}: ${allowance.decision} is recorded`);
+      assert.equal(row.status.startsWith('open'), true, `${set.id}: ${allowance.decision} is still open — the frontend does not resolve it`);
+      assert.match(row.question + row.finding, new RegExp(set.id), `${set.id}: the open row names this vocabulary`);
+      continue;
+    }
     assert.equal(
       comparison.ok,
       true,
-      `${set.id} drifted from ${declarationOf(set)}: missing ${JSON.stringify(comparison.missing)}, unquoted ${JSON.stringify(comparison.unquoted)}`,
+      `${set.id} drifted from ${declarationOf(set)}: missing ${JSON.stringify(comparison.missing)}, unquoted ${JSON.stringify(comparison.unquoted)}`
+      + (registered.size > 0 ? ' — a new difference must be registered before it is accepted' : ''),
     );
+  }
+  // The skip is not silent and not open-ended: it happens only for the sets the finalize moved,
+  // and only when the pointed-at lock publishes no `ai.skill` row. The moment it does, every set
+  // is compared and the finalize is part of what is checked.
+  if (!finalized) {
+    assert.deepEqual([...awaitingFinalize].sort(), [...MOVED_BY_FINALIZE].sort(), 'the awaited sets are the three the finalize moved');
+    assert.equal(skillContractRow(), null, 'the pointed-at lock publishes no ai.skill row');
+    assert.equal(existsSync(join(BACKEND, 'manifest', 'skill.json')), false,
+      'and the pointed-at tree carries no published Skill manifest — the comparison runs against the tree that does');
+  } else {
+    assert.deepEqual([...awaitingFinalize], [], 'nothing is awaited once the pointed-at tree publishes ai.skill');
+    assert.equal(skillContractRow().version, vocabularyOf('skillLifecycle').provenance.contract.version, 'the quoted version is the published one');
   }
 });
 
@@ -181,9 +276,13 @@ test('the quoted semantics — not only the words — are the ones the backend d
 });
 
 test('the quoted contract versions and owners are the ones the contract lock publishes', { skip }, () => {
-  const lock = JSON.parse(readFileSync(CONTRACT_LOCK, 'utf8'));
-  const rows = Array.isArray(lock) ? lock : (lock.contracts ?? []);
+  const rows = lockRows();
   for (const set of shared) {
+    if (set.provenance.contract.id === 'ai.skill' && !finalized) {
+      // Same rule as above: a tree that predates the published row cannot vouch for the quote.
+      assert.equal(skillContractRow(), null);
+      continue;
+    }
     const row = rows.find((entry) => (entry.id ?? entry.contract) === set.provenance.contract.id);
     assert.ok(row, `${set.provenance.contract.id} has a contract-lock row`);
     assert.equal(row.owner, set.provenance.contract.owner, `${set.id} quotes the owner from the lock`);

@@ -269,6 +269,67 @@ permitted.register({
 const permissionVerdict = permitted.negotiate({ capabilityId: 'audit-log' });
 check('required permissions are declared and reported, never inferred', JSON.stringify(permissionVerdict.requiredPermissions) === '["audit:read"]', `requiredPermissions=${JSON.stringify(permissionVerdict.requiredPermissions)}`);
 
+/* ------------------------------------------------- the Skill surface (P2.12) */
+// Discovery and state presentation, checked at the boundary exactly as the package suite
+// checks it: six quoted states, no execution affordance, and the canonical unsupported
+// answer while `ai.skill` has no published contract. A declaration handed over as data is
+// compared, never adopted.
+
+const skillCatalog = liveFrontend.skills;
+const skillStates = skillCatalog.lifecycle.map((state) => state.state);
+check('skill discovery renders the six quoted states, never one boolean',
+  skillStates.join(',') === 'registered,available,selected,loaded,active,released'
+  && skillCatalog.lifecycle.every((state) => state.executing === false && state.grants === null),
+  `${skillStates.length} states, none of them an entitlement`);
+
+check('discovery never selects, loads, executes or reaches a tool',
+  skillCatalog.discovery.select === false && skillCatalog.discovery.load === false
+  && skillCatalog.discovery.execute === false && skillCatalog.discovery.tools === false
+  && skillCatalog.affordances.allowed.join(',') === 'list,search,filter,detail',
+  `allowed=[${skillCatalog.affordances.allowed.join(',')}] forbidden=[${Object.keys(skillCatalog.affordances.forbidden).join(',')}]`);
+
+check('the surface quotes the published Skill contract, and an unknown skill still answers canonically',
+  skillCatalog.contract.published === true && skillCatalog.contract.version === '1.0.0'
+  && skillCatalog.contract.comparable === true && skillCatalog.contract.decision === 'XA-19'
+  && skillCatalog.unsupported === null
+  && liveFrontend.skillDetail('any-skill').known === false
+  && liveFrontend.skillDetail('any-skill').state === 'capability-unavailable',
+  `${skillCatalog.contract.version ?? 'unpublished'} / ${skillCatalog.contract.decision} / unknown-skill=${liveFrontend.skillDetail('any-skill').state}`);
+
+const exactDeclaration = {
+  id: 'skill', owner: 'manager', status: 'implemented',
+  lifecycle: [...skillStates],
+  operations: ['list', 'resolve', 'describe', 'validate-selection'],
+  permissions: ['ai:skill:read', 'ai:skill:select'],
+  disclosureLevels: { L0: 'identity', L1: 'card', L2: 'procedure', L3: 'knowledge' },
+  versioning: 'ai.skill@1.0.0',
+};
+const exact = createFrontendLego({ app: { name: 'n8n-lego', version: '0.1.0' }, skills: { declaration: exactDeclaration } });
+check('the four published operations are consumed exactly, and the UI offers none of them',
+  exact.describe().skillDrift === 'in-sync' && liveFrontend.describeSkills().contractOperations.length === 4
+  && liveFrontend.describeSkills().contractOperations.join(',') === 'skill.list,skill.resolve,skill.describe,skill.validate-selection'
+  && exact.skillDetail('any-skill').operations === undefined
+  && !liveFrontend.describeSkills().operations.includes('load') && !liveFrontend.describeSkills().operations.includes('execute'),
+  `drift=${exact.describe().skillDrift} operations=[${liveFrontend.describeSkills().contractOperations.join(',')}]`);
+
+// A declaration that does not match the published vocabulary is still reported as data, and the
+// surface keeps rendering the words it quotes — resolution closed the drift, not the reporting.
+const driftedDeclaration = { ...exactDeclaration, operations: ['list', 'describe', 'load'] };
+const moved = createFrontendLego({ app: { name: 'n8n-lego', version: '0.1.0' }, skills: { declaration: driftedDeclaration } });
+const driftedFields = moved.skills.drift.differences.map((difference) => difference.field);
+check('a declaration that moved is reported as drift and never adopted',
+  moved.describe().skillDrift === 'drift' && driftedFields.includes('operations')
+  && moved.skills.contract.published === true
+  && moved.skills.contract.version === '1.0.0'
+  && moved.skills.contract.comparable === true
+  && moved.skills.drift.differences.find((difference) => difference.field === 'operations').declared.includes('load'),
+  `drift=[${driftedFields.join(',')}] published=${moved.skills.contract.published} version=${moved.skills.contract.version}`);
+
+const skillRule = conformance.checks.find((entry) => entry.ruleId === 'A27');
+check('the skill surface is bound by the same rule the package suite enforces',
+  skillRule?.state === 'pass' && moved.describe().skillStates === 6,
+  `${skillRule?.ruleId}=${skillRule?.state} (${ARCHITECTURE_RULES.find((rule) => rule.id === 'A27')?.enforcedBy})`);
+
 /* ----------------------------------------- the seam, and the AI declaration line */
 
 const declared = liveFrontend.availability();

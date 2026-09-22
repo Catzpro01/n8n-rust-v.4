@@ -53,6 +53,36 @@ const FOUNDATION_MANIFEST_PUBLICATION = Object.freeze({
 });
 
 /**
+ * `ai.skill@1.0.0` — published. The Skill contract is locked in
+ * `apps/n8n-lego/src/lego/contracts/contract-lock.json` (owner `manager`, domain
+ * `ai-foundation`, status `implemented`) after `XA-19` was resolved in the P2.12 finalize by
+ * adopting the *implemented* shape: four published operations (`skill.list`, `skill.resolve`,
+ * `skill.describe`, `skill.validate-selection`), the six-state lifecycle, the four disclosure
+ * levels and the two `ai:skill:*` permission words. `register`, `select`, `load` and `release`
+ * are internal registry lifecycle methods and are **not** published caller operations, and no
+ * name anywhere in the contract implies execution. So the four Skill sets below are quoted
+ * with a pinned contract version instead of the `publicationPending` record they used to
+ * carry — and the pin is checked against the lock row, not against the string (`test/29`).
+ */
+const AI_SKILL_CONTRACT = Object.freeze({ id: 'ai.skill', version: '1.0.0', owner: 'manager' });
+
+/**
+ * What is still unpublished on this side: the AI set's own maturity words. Locking
+ * `ai.skill` settles the Skill *contract*; it does not decide where Skill is modelled, and
+ * `manifest/ai-lego-set.json` is still named by no domain in `domains.json` and published by
+ * no contract-lock row, so its `statusVocabulary` has no pinned contract version. That is the
+ * remaining half of `XA-11` ("is a skill a backend concept at all, and under which domain?"),
+ * and `ai.skill` was declared inside the existing `ai-foundation` domain precisely so a later
+ * ruling moves a contract rather than deletes a domain.
+ */
+const AI_SET_STATUS_PUBLICATION = Object.freeze({
+  owner: 'manager',
+  domain: 'ai-lego-set',
+  decision: 'XA-11',
+  what: 'manifest/ai-lego-set.json spells maturity with five words, but the file is named by no domain in domains.json and no contract-lock row publishes the AI set, so its statusVocabulary has no pinned contract version — `ai.skill@1.0.0` is locked, and whether Skill stays modelled under ai-foundation is the open half of XA-11',
+});
+
+/**
  * The canonical vocabularies. `values` is the complete set; `provenance` names the
  * contract (id/version/owner) and the exact declaration the values were read from
  * (`kind` + `file` + `path`/`symbol`), so a reviewer can check the quote instead of
@@ -566,10 +596,7 @@ export const VOCABULARIES = Object.freeze([
     values: Object.freeze([
       'ai.model-gateway', 'ai.tool-gateway', 'ai.agent-runtime', 'ai.application-provider',
       'ai.agent-session', 'ai.agent-delegation', 'ai.agent-events', 'ai.decision',
-      'ai.approval', 'ai.artifact', 'ai.context',
-      // Added by backend P2.12. `ai.skill` is the only one of these whose status
-      // is `implemented` — the skill registry. The rest remain contract-only.
-      'ai.skill',
+      'ai.approval', 'ai.artifact', 'ai.context', 'ai.skill',
     ]),
     provenance: Object.freeze({
       contract: Object.freeze({ id: 'lego.domain-registry', version: '1.1.0', owner: 'manager' }),
@@ -583,10 +610,11 @@ export const VOCABULARIES = Object.freeze([
     id: 'aiPermission',
     question: 'Which permission names do the published AI operations require?',
     about: 'permission',
-    // The 22 names the eleven `ai.*` capabilities publish on their operations. The
-    // vocabulary file names only the three provider contracts' permissions (eight of
-    // these) plus the application-provider trio below; the operation list is what a
-    // caller is actually refused by, so that is what the frontend quotes.
+    // The 24 names the twelve `ai.*` capabilities publish on their operations — including
+    // the two `ai:skill:*` words the locked Skill contract requires. The vocabulary file
+    // names only the three provider contracts' permissions (eight of these) plus the
+    // application-provider trio below; the operation list is what a caller is actually
+    // refused by, so that is what the frontend quotes.
     values: Object.freeze([
       'ai:model:read', 'ai:model:invoke',
       'ai:tool:read', 'ai:tool:invoke',
@@ -597,9 +625,6 @@ export const VOCABULARIES = Object.freeze([
       'ai:approval:request', 'ai:approval:resolve', 'ai:approval:read',
       'ai:artifact:read', 'ai:artifact:write',
       'ai:context:read', 'ai:context:write',
-      // Backend P2.12, the skill registry. Both are read-shaped: there is
-      // deliberately no `ai:skill:execute`, because execution is not a skill
-      // operation and no permission may imply that it is.
       'ai:skill:read', 'ai:skill:select',
     ]),
     provenance: Object.freeze({
@@ -636,6 +661,85 @@ export const VOCABULARIES = Object.freeze([
       path: 'surfaceAliases.aliases[].kind',
       read: 'unique',
     }),
+  }),
+  /**
+   * The Skill vocabulary. A Skill is *how* a task is done (procedure plus a capability
+   * map); a capability is *what* can be done; the Agent Machine is *who* does it. The
+   * six states below are the frontend's whole state model for a skill, and they are six
+   * facts rather than one flag: `registered` ≠ `available` ≠ `selected` ≠ `loaded` ≠
+   * `active` ≠ `released`. Three of the six do not exist in the canonical `lifecycle`
+   * set, which is exactly why this set is quoted separately instead of borrowed.
+   */
+  Object.freeze({
+    id: 'skillLifecycle',
+    question: 'Which of the six skill states is this skill in — known, offered, chosen, in context, in use or let go?',
+    about: 'state',
+    values: Object.freeze(['registered', 'available', 'selected', 'loaded', 'active', 'released']),
+    provenance: Object.freeze({
+      contract: AI_SKILL_CONTRACT,
+      kind: 'json',
+      file: 'apps/n8n-lego/src/lego/manifest/ai-lego-set.json',
+      path: 'lego#id=skill.lifecycle',
+      read: 'values',
+      note: '`available`, `loaded` and `active` are the canonical `lifecycle` words for the same facts; `registered`, `selected` and `released` exist only in the skill declaration, so the two sets may not be merged into one',
+    }),
+  }),
+  Object.freeze({
+    id: 'skillOperation',
+    question: 'Which operation does a skill declare — and which of them may a UI ever offer?',
+    about: 'operation',
+    values: Object.freeze(['list', 'resolve', 'describe', 'validate-selection']),
+    provenance: Object.freeze({
+      contract: AI_SKILL_CONTRACT,
+      kind: 'json',
+      file: 'apps/n8n-lego/src/lego/manifest/ai-lego-set.json',
+      path: 'lego#id=skill.operations',
+      read: 'values',
+      note: 'the four published caller operations, spelled as verbs here and qualified in the lock (`skill.list`, `skill.resolve`, `skill.describe`, `skill.validate-selection`); `register`, `select`, `load` and `release` are internal registry lifecycle methods and are not published, and no operation executes a procedure — discovery may name these four and the UI offers none of them',
+    }),
+  }),
+  Object.freeze({
+    id: 'skillDisclosureLevel',
+    question: 'How much of a skill is disclosed — identity, card, procedure or deep knowledge?',
+    about: 'disclosure',
+    values: Object.freeze(['L0', 'L1', 'L2', 'L3']),
+    provenance: Object.freeze({
+      contract: AI_SKILL_CONTRACT,
+      kind: 'json',
+      file: 'apps/n8n-lego/src/lego/manifest/ai-lego-set.json',
+      path: 'lego#id=skill.disclosureLevels',
+      read: 'keys',
+      note: 'selection happens on L0/L1 and loading deeper is a separate decision; the frontend shows the level a caller asked for and never loads L2/L3 by itself',
+    }),
+  }),
+  Object.freeze({
+    id: 'skillPermission',
+    question: 'Which permissions does a skill operation require?',
+    about: 'permission',
+    values: Object.freeze(['ai:skill:read', 'ai:skill:select']),
+    provenance: Object.freeze({
+      contract: AI_SKILL_CONTRACT,
+      kind: 'json',
+      file: 'apps/n8n-lego/src/lego/manifest/ai-lego-set.json',
+      path: 'lego#id=skill.permissions',
+      read: 'values',
+      note: 'these are requirements of the published operations (`skill.list`, `skill.resolve` and `skill.describe` require `ai:skill:read`; `skill.validate-selection` requires `ai:skill:select`), never grants a skill holds, never a UI affordance — and `ai:skill:execute` does not exist at any layer',
+    }),
+  }),
+  Object.freeze({
+    id: 'aiLegoStatus',
+    question: 'How mature is an AI/Agent LEGO in the official set?',
+    about: 'status',
+    values: Object.freeze(['implemented', 'contract-only', 'planned', 'blocked', 'deferred']),
+    provenance: Object.freeze({
+      contract: null,
+      kind: 'json',
+      file: 'apps/n8n-lego/src/lego/manifest/ai-lego-set.json',
+      path: 'statusVocabulary',
+      read: 'keys',
+      note: 'the AI set spells maturity with five words; the registry publishes eight for capabilities (`capabilityStatus`), so the two sets are quoted separately — `blocked` exists only here',
+    }),
+    publicationPending: AI_SET_STATUS_PUBLICATION,
   }),
 ]);
 
@@ -1196,6 +1300,21 @@ export const DECLARED_OVERLAPS = Object.freeze([
     vocabularies: Object.freeze(['resourceProfile', 'transportKind']),
     values: Object.freeze({
       remote: 'a resource class that is satisfied elsewhere, and a transport kind that moves bytes over a link; the remote resource class implies the remote transport, not the reverse',
+    }),
+  }),
+  Object.freeze({
+    vocabularies: Object.freeze(['degradation', 'skillLifecycle']),
+    values: Object.freeze({
+      available: 'the canonical availability word ("this may serve a caller") and the skill state "this is offered for selection" — one spelling about two subjects, both quoted, neither re-defined',
+    }),
+  }),
+  Object.freeze({
+    vocabularies: Object.freeze(['aiLegoStatus', 'capabilityStatus']),
+    values: Object.freeze({
+      implemented: 'the same word about the same fact read from two declarations: the AI set spells a LEGO\'s maturity, the registry spells a capability\'s maturity',
+      'contract-only': 'the contract is fixed and testable, no implementation exists — one status in the AI set, one in the registry',
+      planned: 'intended, no contract fixed yet — one status word in both declarations',
+      deferred: 'deliberately postponed in both declarations, for the same reason',
     }),
   }),
 ]);

@@ -375,7 +375,7 @@
         "ai-foundation",
         "frontend"
       ],
-      "currentInterpretation": "The Skills surface renders presentation names only (`Skills 3 active`), requests no skill state, stores none and sends none; while the concept is unpublished it renders `capability-unavailable` with the reason instead of mock data.",
+      "currentInterpretation": "Narrowed by the P2.12 finalize: the first half of the question is answered — `ai.skill@1.0.0` is published in the contract lock (owner manager, domain ai-foundation, status implemented), so a Skill contract exists and the frontend consumes it. What remains open is the modelling question: whether Skill ultimately belongs under `ai-foundation`. `ai.skill` was declared inside the existing domain precisely so a later ruling moves a contract rather than deletes a domain.",
       "decisionRequired": "manager: publish `ai.skill` (id, version, procedure, capability refs, validators, token budget) or state that a skill is a frontend presentation concept only",
       "blockingLevel": "phase",
       "date": "2026-09-22",
@@ -384,7 +384,8 @@
         "arena/01a0c521 @ 6f7b66da ai-foundation.json -> taxonomy and contracts, no skill concept",
         "arena/01a0c521 @ 6f7b66da contracts/contract-lock.json -> 14 rows, no ai.skill",
         "packages/frontend-lego/manifest/capabilities.json -> frontend capability declared, no implementation"
-      ]
+      ],
+      "historicalStatus": "The finding above records the P2.10 state (82 capabilities, 14 contract rows, no skill anywhere); it is history, not the current state."
     },
     {
       "id": "XA-12",
@@ -629,7 +630,9 @@
         "HISTORICAL (agent-1 drift evidence, pre-P2.12): .ai/master/SKILL_AND_CAPABILITY_PLAN.md -> \"Skill: XA-11 - publicationPending (no capability, no contract, no vocabulary exists at P2.10)\"",
         "HISTORICAL (agent-1 drift evidence, pre-P2.12): .ai/master/AI_FRONTEND_CONTRACT_MATRIX.md -> Skills row marked \"XA-11 pending (ai.skill)\", frontend consumption \"none until published\"",
         "HISTORICAL (agent-1 drift evidence, pre-P2.12): .ai/master/AI_UI_EXPERIENCE_MASTER_PLAN.md -> Skill listed as publicationPending with a proposed presentation surface",
-        "HISTORICAL: manifest/ai-lego-set.json at 6f7b66da -> skill.versioning = \"publicationPending\", status \"planned\""
+        "HISTORICAL: manifest/ai-lego-set.json at 6f7b66da -> skill.versioning = \"publicationPending\", status \"planned\"",
+        "HISTORICAL (agent-1, pre-finalize): packages/frontend-lego/src/skills.mjs -> `declarationDrift()` compared the handed-over declaration with the quoted sets and reported { state: in-sync | drift | not-declared, differences, uncomparable, owner, decision }",
+        "HISTORICAL (agent-1, pre-finalize): apps/n8n-lego/src/lego/contracts/contract-lock.json at 729bb112 -> still no ai.skill row, so every skill rendered the canonical unsupported state while the declaration claimed ai.skill@1.0.0"
       ],
       "currentRepositoryState": "729bb112",
       "currentEvidence": [
@@ -684,8 +687,13 @@
         "CURRENT: apps/n8n-lego/src/lego/manifest/skill.json -> the same four operations, six-state lifecycle, disclosure L0-L3, degradation and replacement metadata",
         "CURRENT: apps/n8n-lego/src/lego/skill.mjs -> SKILL_OPERATIONS derives from the contract, so the module cannot publish an operation the contract does not",
         "CURRENT: apps/n8n-lego/test/lego-skill.test.mjs -> asserts the four operations, no execute operation, no ai:skill:execute permission, six-state lifecycle, fail-closed unknown capability, refusal of grants/permissions/credentials, and that discovery never invokes the body loader",
-        "CURRENT: packages/frontend-lego/src/vocabulary.mjs -> quotes ai.skill and both ai:skill:* permissions, checked against the backend manifest by test/29-alignment.test.mjs"
-      ]
+        "CURRENT: packages/frontend-lego/src/vocabulary.mjs -> quotes ai.skill and both ai:skill:* permissions, checked against the backend manifest by test/29-alignment.test.mjs",
+        "CURRENT: packages/frontend-lego/manifest/skills.json -> publication { ai.skill 1.0.0, owner manager, domain ai-foundation, four operations, notPublished [skill.register, skill.select, skill.load, skill.release] } and alignment.status = resolved",
+        "CURRENT: packages/frontend-lego/test/31-skills.test.mjs -> asserts the lock row (version, owner, status, domain, the four operations and the two permissions), refuses register/select/load/release/execute in both spellings, keeps the six states independent, and keeps XA-11 open",
+        "CURRENT: packages/frontend-lego/test/29-alignment.test.mjs -> with XA-19 resolved there is no tolerated difference: the quoted sets are compared against the declaration exactly, and a future difference fails until a new open row is registered",
+        "CURRENT: docs/n8n-lego/decisions/XA-19-skill-vocabulary-diff.md -> the arbitration package the manager ruled on (three declarations, five drift rows, options A/B/C; option A adopted), now carrying the resolution"
+      ],
+      "frontendConsumption": "Consumer side closed in P2.12 finalize: packages/frontend-lego quotes ai.skill@1.0.0 (four operations, six states, four disclosure levels, two permission words), the publication block names the row it was verified against, and the alignment test requires exact agreement. No frontend vocabulary was invented to bridge the difference, and none is left to bridge."
     }
   ],
   "rules": [
@@ -708,6 +716,24 @@
     "verifiedAgainst": {
       "how": "git archive <commit> | tar -x -C /tmp/a2; N8N_BACKEND_LEGO_ROOT=/tmp/a2/apps/n8n-lego/src/lego node --test packages/frontend-lego/test/29-alignment.test.mjs",
       "result": "38 canonical sets compared, 0 drift, 4 skipped tests become 0"
+    },
+    "verifiedAgainstP212": {
+      "how": "git archive 729bb112 | tar -x -C /tmp/a2p12; N8N_BACKEND_LEGO_ROOT=/tmp/a2p12/apps/n8n-lego/src/lego node --test packages/frontend-lego/test/29-alignment.test.mjs packages/frontend-lego/test/31-skills.test.mjs",
+      "result": "22/22 pass, 0 skipped: all 43 quoted sets compared (33 contract-pinned, 10 with `publicationPending`); the four differences (aiFoundationCapability, aiPermission, skillOperation, versioning) are reported by declarationDrift and registered as XA-19, and the drifted fields are named in the register row instead of being adopted",
+      "rule": "a difference the register does not carry fails the gate; adopting a word the frontend cannot quote fails the drift rules"
+    },
+    "verifiedAgainstP212Finalize": {
+      "measuredAt": "2026-09-22",
+      "backendReference": "arena/01a0c521-n8n-rust-v-4 @ d0a338e4 — the tree that publishes ai.skill@1.0.0",
+      "how": "git archive d0a338e4 | tar -x -C /tmp/a2p12f; N8N_BACKEND_LEGO_ROOT=/tmp/a2p12f/apps/n8n-lego/src/lego node --test packages/frontend-lego/test/29-alignment.test.mjs packages/frontend-lego/test/31-skills.test.mjs",
+      "result": "27/27 compared, 0 drift, 0 tolerated differences, 0 skipped, 0 fail",
+      "note": "XA-19 resolved means REGISTERED_DRIFT is empty: the Skill sets must match the published declaration exactly, and a difference fails the gate instead of being registered after the fact. A tree that publishes no ai.skill row is pointed at, not tolerated: the comparison fails rather than skipping."
     }
+  },
+  "numbering": {
+    "series": "XA-n in this register is the canonical series; it is owned by agent-01 and is the one a test may rely on",
+    "collision": "Agent 2's imported register (docs/n8n-lego/decisions/cross-agent-decisions.backend.json) carries its own proposal ids in `newProposalsFromBackend`, and manifest/ai-lego-set.json cites those proposal ids. The two series reuse the same XA-11.. spellings for different subjects, so a citation is only resolvable together with the file it comes from.",
+    "resolution": "Neither series is renumbered: this register keeps XA-11 = the skill publication question, and agent-2's file keeps its proposal ids. Every frontend citation of XA-11 here means the skill question; a citation of XA-11 inside ai-lego-set.json means agent-2's AI-LEGO ownership proposal.",
+    "rule": "A decision id is only half an address: the register it lives in is the other half. An id that collides across registers is recorded here rather than silently renumbered."
   }
 }
