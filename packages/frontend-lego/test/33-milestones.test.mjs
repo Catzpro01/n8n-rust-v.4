@@ -58,9 +58,10 @@ test('the register is one machine-readable file at the canonical path, owned by 
   assert.equal(typeof REGISTER.purpose, 'string');
   assert.match(REGISTER.purpose, /Granular milestone truth/i);
   assert.equal(REGISTER.protectedBranch, 'main');
-  // The baseline is the protected-main commit the in-progress milestone started from; P2.13's own
-  // historical baseline (e754c5df) stays on the P2.13 row instead of being overwritten here.
-  assert.match(REGISTER.mainBaseline, /^0d9466f1/);
+  // The baseline is the final protected-main commit; P2.15's own historical start baseline
+  // (0d9466f1) stays on the P2.15 row, and P2.13's (e754c5df) stays on its row, instead of being
+  // overwritten here.
+  assert.match(REGISTER.mainBaseline, /^7fca2858/);
   assert.equal(REGISTER.currentMilestone, 'P2.16');
   assert.equal(REGISTER.previousCompletedMilestone, 'P2.15');
   assert.ok(REGISTER.milestones.length >= 7, `${REGISTER.milestones.length} milestones recorded`);
@@ -200,12 +201,13 @@ test('the proposal artifact preserves Agent 1 granular ladder proposal as non-ca
 
 test('the baseline block protects main and names the branches of the current milestone', () => {
   assert.equal(REGISTER.protectedBranch, 'main');
-  // The main baseline and the in-progress milestone's start evidence are the same protected-main
-  // commit: the register cannot disagree with its own row about where P2.15 started.
+  // The main baseline is the final protected-main commit; a completed milestone's start baseline
+  // stays preserved history on its own row, so moving the top-level block on never rewrites it.
   const p215 = byId.get('P2.15');
-  assert.equal(REGISTER.mainBaseline, p215.startEvidence.commit, 'the main baseline is the commit P2.15 started from');
+  assert.equal(p215.startEvidence.commit, '0d9466f19a149f6e30bdee559086b7a28b080cb3', 'P2.15 start evidence stays preserved history');
+  assert.equal(REGISTER.mainBaseline, '7fca2858a0379c4899fb5d87bb18d09a0a17ee2a', 'the main baseline is the final protected-main commit');
   assert.match(REGISTER.mainBaseline, /^[0-9a-f]{40}$/);
-  assert.equal(REGISTER.agentBranches.agent1, 'arena/01a0c90c-n8n-rust-v-4');
+  assert.equal(REGISTER.agentBranches.agent1, 'arena/01a0c9d3-n8n-rust-v-4');
   assert.equal(REGISTER.agentBranches.agent2, 'arena/01a0c90d-n8n-rust-v-4');
   // Moving the top-level block on did not lose P2.13: its baseline and both agent branches stay on
   // the P2.13 row, which is where a historical milestone's coordinates belong.

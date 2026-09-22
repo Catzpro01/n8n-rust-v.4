@@ -4,7 +4,7 @@
   "canonical": true,
   "purpose": "Granular milestone truth beneath the strategic Phase A-F roadmap. This is the only machine-readable milestone register. Future milestone IDs may be refined by Manager only by updating this file; strategic phases are not deleted.",
   "protectedBranch": "main",
-  "mainBaseline": "0d9466f19a149f6e30bdee559086b7a28b080cb3",
+  "mainBaseline": "7fca2858a0379c4899fb5d87bb18d09a0a17ee2a",
   "currentMilestone": "P2.16",
   "previousCompletedMilestone": "P2.15",
   "strategicRoadmap": {
@@ -806,7 +806,7 @@
     }
   ],
   "agentBranches": {
-    "agent1": "arena/01a0c90c-n8n-rust-v-4",
+    "agent1": "arena/01a0c9d3-n8n-rust-v-4",
     "agent2": "arena/01a0c90d-n8n-rust-v-4"
   }
 }
