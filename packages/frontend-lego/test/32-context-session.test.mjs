@@ -422,14 +422,27 @@ test('if the backend publishes the rows, this surface must find them — pending
     assert.deepEqual(SURFACE.publication.rows.map((row) => row.id ?? row.contract).sort(), [CONTEXT_CONTRACT_ID, SESSION_CONTRACT_ID].sort());
     assert.deepEqual(SURFACE.publication.rows.map((row) => row.version), ['1.0.0', '1.0.0']);
   } else if (contextRow !== null && sessionRow !== null) {
-    // Pointed at the peer tree: what the manifest recorded must be what that tree publishes.
+    // Pointed at a tree that publishes both rows: what the manifest recorded must be what that tree
+    // publishes.
     const publishedIds = lockRows()
       .filter((row) => [CONTEXT_CONTRACT_ID, SESSION_CONTRACT_ID].includes(row.id ?? row.contract))
       .map((row) => `${row.id ?? row.contract}@${row.version}`)
       .sort();
     assert.deepEqual(recorded.map((row) => `${row.id ?? row.contract}@${row.version}`).sort(), publishedIds);
     assert.equal(SURFACE.publication.publishedOnPeerBranch.commit, 'fb254f32');
-    assert.equal(SURFACE.publication.publishedOnPeerBranch.onProtectedMain, false, 'and it does not claim protected main published them');
+    /**
+     * This assertion used to read `onProtectedMain === false` — "the peer branch is not main". That
+     * was true while P2.13 was in flight and became false when the manager merged the branch as PR
+     * #45: the same two rows are now protected main's, so the flat denial is the stale half. What is
+     * checked instead is the claim itself: a publication recorded as being on protected main has to
+     * name the merge that put it there, in the manifest and not only in a comment. A block that says
+     * "published" without a merge would be the claim this used to catch in the other direction.
+     */
+    assert.equal(SURFACE.publication.publishedOnPeerBranch.onProtectedMain, true, 'the P2.13 rows are protected main\'s now, and the manifest says so');
+    assert.match(SURFACE.publication.note, /PR #45/, 'and it names the merge that put them there');
+    assert.equal(SURFACE.publication.protectedMain.state, 'published');
+    assert.equal(SURFACE.publication.protectedMain.contextRow, true);
+    assert.equal(SURFACE.publication.protectedMain.sessionRow, true);
   } else {
     assert.equal(SURFACE.publication.rows.length, 0, 'this tree publishes neither row, so the surface derives declared-not-locked');
     assert.equal(SURFACE.publication.status, 'declared-not-locked');
@@ -937,23 +950,67 @@ test('the surface is not a token dashboard and never renders the window itself',
 
 /* --------------------------------------------------- 8. memory and execution honesty */
 
-test('no Memory store is implied: the fifth concept is named as absent', () => {
+/**
+ * P2.14 rewrote this test, and it is worth saying why rather than quietly changing an expectation.
+ *
+ * At P2.13 the assertion was `memory.exists === false` and `memory.contract === null` with "NO STORE
+ * EXISTS" underneath, which was true of every tree while no tree published a memory contract. Agent-2
+ * then published `ai.memory@1.0.0` on its P2.14 branch, so the flat denial became a statement that is
+ * true of protected main and false of the tree the manager is about to merge. A test that keeps
+ * demanding the denial would pass by being wrong about the backend — and the same test would have to
+ * be re-deleted after the merge, which is how an assertion turns into a comment.
+ *
+ * What replaces it is strictly more: the concept is **derived from the rows handed over** (true in
+ * both trees), the separation is asserted in the direction this surface owns (it renders no memory
+ * record even when a store is published), and every refusal that was there before is still here.
+ */
+test('Memory is a separate LEGO, never an extension of this surface: the fifth concept is derived', () => {
   assert.equal(DISTINCT_CONCEPTS.length, 5);
   const memory = DISTINCT_CONCEPTS.find((concept) => concept.id === 'memory');
+  // The module-level constant is the default tree (protected main @ 67e638ef: no ai.memory row).
   assert.equal(memory.exists, false);
-  assert.equal(memory.contract, null, 'no ai.memory contract is cited, because none exists');
+  assert.equal(memory.contract, 'ai.memory', 'the contract is NAMED even when no tree locks it — naming it is what keeps the concept from being absorbed');
   assert.equal(memory.decision, MEMORY_DECISION);
-  assert.match(memory.detail, /NO STORE EXISTS/);
+  assert.match(memory.detail, /NO STORE IS PUBLISHED IN THIS TREE/);
   assert.match(memory.detail, /loaded context \(ai\.context\), decisions \(ai\.decision\) and artifacts \(ai\.artifact\)/);
   assert.equal(FORBIDDEN_IMPLICATIONS.includes('memory-store'), true);
   assert.equal(SURFACE.rendering.memoryStore, false);
   assert.match(CONTEXT_SESSION_AFFORDANCES.forbidden.loadMemory, /XA-12/);
+
   const view = createContextSessionView({ surface: SURFACE });
   assert.equal(view.concepts.find((concept) => concept.id === 'memory').exists, false);
-  // A record that claims a memory is refused.
+  assert.equal(view.memoryPublication.published, false, 'this tree publishes no ai.memory row');
+
+  // The derivation, in both directions — and the half that never changes: this surface renders no
+  // memory record either way. A published store belongs to another LEGO; a denied one is denied here.
+  const peerRows = [
+    { id: 'ai.context', version: '1.0.0', owner: 'manager' },
+    { id: 'ai.agent-session', version: '1.0.0', owner: 'manager' },
+    { id: 'ai.memory', version: '1.0.0', owner: 'manager', status: 'implemented' },
+  ];
+  const withMemory = createContextSessionView({ surface: SURFACE, contract: peerRows });
+  const derived = withMemory.concepts.find((concept) => concept.id === 'memory');
+  assert.equal(withMemory.memoryPublication.published, true);
+  assert.equal(derived.exists, 'implemented', 'a published ai.memory row makes the store exist in that tree');
+  assert.equal(derived.contract, 'ai.memory');
+  assert.match(derived.detail, /A STORE IS PUBLISHED, and it is a DIFFERENT LEGO/);
+  assert.match(derived.detail, /renders NO memory record/);
+  assert.equal('memory' in withMemory.session, false, 'and the session block still holds no memory');
+  assert.equal(withMemory.context.record, null, 'nor does the context block');
+  assert.equal(withMemory.published, true, 'the pair is published in that tree too, and the memory row did not have to be involved');
+  // Publication is read, never absorbed: the surface's own publication state is about ITS two rows,
+  // so an `ai.memory` row on its own publishes neither of them.
+  const memoryOnly = createContextSessionView({ surface: SURFACE, contract: [{ id: 'ai.memory', version: '1.0.0', owner: 'manager', status: 'implemented' }] });
+  assert.equal(memoryOnly.published, false, 'ai.memory does not publish ai.context or ai.agent-session');
+  assert.equal(memoryOnly.memoryPublication.published, true, 'and the memory row is still read, for the concept only');
+  assert.equal(memoryOnly.concepts.find((concept) => concept.id === 'memory').exists, 'implemented');
+  assert.equal(memoryOnly.contracts.context.status, 'declared-not-locked', 'the pair still fails closed on its own rows');
+
+  // A record that claims a memory is refused — and now the message says where memory actually lives.
   assert.throws(() => assertDistinctConcepts({ sessionId: 'sess-03', memory: { entries: 12 } }), (error) => {
     assert.equal(error.code, 'frontend.context-session.concepts-merged');
-    assert.match(error.message, /no Memory store exists/);
+    assert.match(error.message, /SEPARATE LEGO/);
+    assert.match(error.message, /ai\.memory/);
     return true;
   });
 });
@@ -1212,10 +1269,30 @@ test('the surface manifest declares two contracts, one LEGO, and ships empty', (
   }
   const expectedOperations = SURFACE.publication.expected.flatMap((entry) => entry.operations);
   assert.deepEqual([...expectedOperations].sort(), [...PUBLISHED_OPERATION_IDS].sort(), 'the manifest names the same operations the quoted registry publishes — eight of them since agent-2 registered rollover, rehydrate and verify');
-  for (const notPublished of ['ai.context.execute', 'ai.context.continue', 'ai.agent-session.continue', 'ai.agent-session.pause', 'ai.agent-session.resume', 'ai.memory.*', 'ai.agent-runtime.*']) {
+  for (const notPublished of ['ai.context.execute', 'ai.context.continue', 'ai.agent-session.continue', 'ai.agent-session.pause', 'ai.agent-session.resume', 'ai.agent-runtime.*']) {
     assert.ok(SURFACE.publication.notPublished.includes(notPublished), `${notPublished} is declared unpublished`);
     assert.equal(PUBLISHED_OPERATION_IDS.includes(notPublished), false);
   }
+  /**
+   * The Memory half of this list, tightened by P2.14.
+   *
+   * It used to read `'ai.memory.*'` — "none of Memory is published" — which was true at the P2.13
+   * baseline and stopped being true when agent-2 published the bounded `ai.memory@1.0.0` surface.
+   * The wildcard is replaced by the two names that are still unpublished (`traverse`, `relate`), and
+   * the bound is asserted in both directions: a name of the form `ai.memory.<published verb>` may not
+   * appear in a list of unpublished names, so this manifest cannot quietly keep claiming that the
+   * four published operations do not exist — while this surface still renders no memory of its own
+   * (the Memory catalog consumes `ai.memory`; this one does not).
+   */
+  assert.deepEqual(
+    [...SURFACE.publication.notPublished].filter((entry) => entry.startsWith('ai.memory.')),
+    ['ai.memory.traverse', 'ai.memory.relate'],
+    'the unpublished Memory names are exactly the deferred half the contract declares',
+  );
+  for (const publishedOperation of ['ai.memory.remember', 'ai.memory.recall', 'ai.memory.list', 'ai.memory.forget']) {
+    assert.equal(SURFACE.publication.notPublished.includes(publishedOperation), false, `${publishedOperation} is published and is never listed as unpublished`);
+  }
+  assert.equal(SURFACE.contracts.includes('ai.memory'), false, 'and the memory contract stays consumed by the Memory catalog, not by this one');
   assert.equal(SURFACE.alignment.decision, CONTEXT_SESSION_DECISION);
   assert.equal(SURFACE.alignment.status, 'open-for-manager');
   assert.ok(existsSync(join(REPO_ROOT, SURFACE.alignment.test)), 'the manifest names the suite that proves it');

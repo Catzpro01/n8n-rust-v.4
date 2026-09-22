@@ -23,17 +23,17 @@ packages/frontend-lego/
   manifest/                 surfaces.json 12 surfaces + the capability behind each
                             extension-points.json 15 hooks (1.1.0) + 7 future consumers
                             sub-legos.json 19 units · ownership · capabilities · skills
-                            context-session.json
+                            context-session.json · memory.json
   src/                      one module per concern, no utils dumping ground
     contract.mjs versions.mjs surface-capability.mjs registry.mjs sublegos.mjs lifecycle.mjs
     negotiation.mjs vocabulary.mjs seam.mjs backend-view.mjs envelope.mjs transport.mjs
     interactions.mjs conformance.mjs observability.mjs impact.mjs profiles.mjs i18n.mjs
     errors.mjs boot.mjs client.mjs manifests.mjs knowledge.mjs agents.mjs agent-events.mjs
-    skills.mjs context-session.mjs lego.mjs
+    skills.mjs context-session.mjs memory.mjs lego.mjs
     adapters/ the framework adapter boundary (currently Vue; the only framework-aware code)
   test/                     01-contract … 23-degradation, 24-vocabulary, 25-operations,
                             26-ai-contracts, 27-agent-events, 28-seam, 29-alignment, 30-master,
-                            31-skills, 32-context-session, 33-milestones
+                            31-skills, 32-context-session, 33-milestones, 34-memory
 ```
 
 What the odd ones own: `negotiation.mjs` discovery, access, degradation and operation
@@ -42,8 +42,11 @@ the one capability identity; `agents.mjs` the AI capability/provider/runtime kin
 boundary and the installation layers; `agent-events.mjs` the event vocabulary, the work trace
 and the delegation tree; `knowledge.mjs` the `.ai/` pack index; `skills.mjs` consumes
 `ai.skill@1.0.0` — six states, four operations, no execution (`test/31`);
-`context-session.mjs` is ONE LEGO, TWO contracts (`ai.context`, `ai.agent-session`), neither
-locked yet (`test/32`).
+`context-session.mjs` is ONE LEGO, TWO contracts (`ai.context`, `ai.agent-session`) with five
+and three published operations (`test/32`); `memory.mjs` consumes `ai.memory@1.0.0` — a
+different LEGO, nine quoted sets, four published operations and no write, no ranking and no
+persistence claim (`test/34`). Memory is what survives context replacement; Context references
+it and never contains it, and the two surfaces refuse each other's payloads by name.
 
 ## Boot flow
 
@@ -59,22 +62,22 @@ locked yet (`test/32`).
 
 | Thing | Value |
 | ----- | ----- |
-| Architecture tests | 363 across 33 suites; backend comparisons skip *with a reason* unless the tree is present |
-| Architecture rules | 28, as data (`frontend.conformance()`), mirrored in contract §19.16 |
+| Architecture tests | 387 across 34 suites (measured with `npm run frontend-lego:test`); backend comparisons skip *with a reason* unless the tree is present |
+| Architecture rules | 29, as data (`frontend.conformance()`), mirrored in contract §19.16 |
 | Surfaces / hooks / units | 12 / 15 (`1.1.0`) / 19 in a 3-level hierarchy |
 | Boot payload | 18,126 B JSON / 24,168 B base64, budget **32 KB**, byte-pinned to P2.5 |
 | Browser-visible delta | the one `<meta>` tag (24,268 B served) |
 | Runtime dependencies | none |
 | Locales | `id, en, ar, zh, ru, jv`; Arabic is RTL; 13 message slots |
 | Declared capabilities | 7 (`translation` + 6 AI), installed: 0 |
-| Contract lock rows | 15; `ai.skill@1.0.0` published, `ai.context` / `ai.agent-session` **declared-not-locked** |
-| Vocabularies | 53 quoted with provenance, 24 local, 2 pending publication (`XA-20`) |
+| Contract lock rows | 17 on protected main (`ai.skill`, `ai.context`, `ai.agent-session` published); `ai.memory@1.0.0` published on Agent 2's P2.14 branch and **declared-not-locked** here (`XA-12`) |
+| Vocabularies | 64 quoted with provenance, 29 local, 0 pending publication (`XA-20` closed by publication) |
 | Seam | 13 declared inputs, 7 forbidden sources, 16 identity fields |
 | Agent events | 26 types / 7 namespaces; trace bound 200 rows, summary 280 chars |
 
 ## Rules worth remembering (the full list is data)
 
-All 28 rules are data: `frontend.conformance()` checks each against a live assembly, each
+All 29 rules are data: `frontend.conformance()` checks each against a live assembly, each
 names the vocabulary that enforces it and the suite that proves it, and
 `contracts/frontend.contract.md` §19.16 mirrors the list as JSON. Read them there; these are
 the ones a new agent gets wrong most often.

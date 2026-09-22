@@ -40,11 +40,11 @@
 export const QUOTED_FROM = Object.freeze({
   repository: 'Catzpro01/n8n-rust-v.4',
   branch: 'main',
-  commit: 'efa3da35',
-  mergedInto: 'efa3da352adcc20ff684f309b38a6fbf15005232',
-  phase: 'P2.13',
+  commit: '67e638ef',
+  mergedInto: '67e638ef83028bbc69876e2e768181415c7554fa',
+  phase: 'P2.14',
   readOn: '2026-09-22',
-  readFor: 'P2.13 reconciliation — Context & Session: quoting ai.context@1.0.0 and ai.agent-session@1.0.0 from protected main after PR #45 merged',
+  readFor: 'P2.14 — Memory: quoting ai.memory@1.0.0 (agent-2 branch, `f11aee01`) and re-verifying every P2.13 quote against the protected-main baseline `67e638ef`, which is the merge of PR #46 (P2.13 Context & Session frontend)',
   /**
    * The publication this lock consumes is **on protected main**.
    *
@@ -81,7 +81,42 @@ export const QUOTED_FROM = Object.freeze({
     commit: 'efa3da35',
     phase: 'P2.13',
     lockedContractCount: 17,
-    note: 'protected main publishes both ai.context@1.0.0 and ai.agent-session@1.0.0 (status implemented, owner manager, domain ai-foundation), so the surface reports published from the rows it is handed',
+    note: 'protected main publishes both ai.context@1.0.0 and ai.agent-session@1.0.0 (status implemented, owner manager, domain ai-foundation), so the surface reports published from the rows it is handed — and it publishes NO ai.memory row, so the Memory surface reports declared-not-locked against it',
+  }),
+  /**
+   * The P2.14 publication: `ai.memory@1.0.0`. **Not on protected main yet.**
+   *
+   * Agent-2 published the bounded Memory contract on `arena/01a0c90d-n8n-rust-v-4` @ `f11aee01`:
+   * one contract-lock row (`ai.memory@1.0.0`, owner `manager`, domain `ai-foundation`, status
+   * `implemented`), the `ai.memory` capability with four operations in `manifest/domains.json`,
+   * the canonical manifest `manifest/memory.json` and the surface module `src/lego/memory.mjs`.
+   *
+   * The lock quotes that publication — a peer's published change is not an assumption this branch
+   * may keep ignoring — but the quote is **bounded by a comparison**: `test/29-alignment.test.mjs`
+   * compares the memory sets only against a tree that publishes the row, and against protected main
+   * @ `67e638ef` it announces the non-comparison instead of reporting a pass it did not perform.
+   * `protectedMain` below stays the P2.13 statement because that is what protected main publishes
+   * today; when the manager merges the branch, the rows move there and the comparison runs against
+   * the default tree with no edit to this package.
+   */
+  memoryPublication: Object.freeze({
+    agent: 'agent-2',
+    branch: 'arena/01a0c90d-n8n-rust-v-4',
+    commit: 'f11aee01',
+    backendCommit: '5fbaf934',
+    reportCommit: 'f11aee01',
+    lockRows: Object.freeze(['ai.memory@1.0.0']),
+    lockedContractCount: 18,
+    contractManifest: 'apps/n8n-lego/src/lego/manifest/memory.json',
+    surfaceModule: 'apps/n8n-lego/src/lego/memory.mjs',
+    registry: 'apps/n8n-lego/src/lego/manifest/domains.json#id=ai-foundation.capabilities[id=ai.memory]',
+    aiSet: 'apps/n8n-lego/src/lego/manifest/ai-lego-set.json#lego[id=memory]',
+    operations: Object.freeze(['memory.remember', 'memory.recall', 'memory.list', 'memory.forget']),
+    permissions: Object.freeze(['ai:memory:read', 'ai:memory:write']),
+    visibleOn: 'github',
+    onProtectedMain: false,
+    mergedInto: null,
+    note: 'Bounded Memory: remember/recall/list/forget only. The provider boundary (MemoryProvider, InMemoryProvider default) is the persistence boundary and is replaceable; no vector search, no embedding, no model or provider dependency. Traversal (`traverse`) and explicit edge creation (`relate`) are future stages, not P2.14 operations — the AI set declared five verbs before this publication and now declares the four that exist.',
   }),
   protectedMainBaseline: Object.freeze({
     branch: 'main',
@@ -90,6 +125,15 @@ export const QUOTED_FROM = Object.freeze({
     lockedContractCount: 15,
     status: 'historical',
     note: 'the baseline both P2.13 agents started from: protected main published no ai.context or ai.agent-session row, so the frontend failed closed against that tree and reported declared-not-locked. Kept because evidence rows recorded against it name it',
+  }),
+  p214Baseline: Object.freeze({
+    branch: 'main',
+    commit: '67e638ef',
+    full: '67e638ef83028bbc69876e2e768181415c7554fa',
+    phase: 'P2.13 (merged)',
+    lockedContractCount: 17,
+    status: 'current',
+    note: 'the protected-main baseline both P2.14 agents started from: PR #46 (Agent 1 Context & Session frontend) merged on top of PR #45. It carries P2.13 in full and no ai.memory row',
   }),
   previousQuote: Object.freeze({ branch: 'arena/01a0c521-n8n-rust-v-4', commit: '6f7b66da', phase: 'P2.10', status: 'historical' }),
 });
@@ -124,6 +168,42 @@ const FOUNDATION_MANIFEST_PUBLICATION = Object.freeze({
  * carry — and the pin is checked against the lock row, not against the string (`test/29`).
  */
 const AI_SKILL_CONTRACT = Object.freeze({ id: 'ai.skill', version: '1.0.0', owner: 'manager' });
+
+/**
+ * `ai.memory@1.0.0` — published by agent-2 on its P2.14 branch, **not yet on protected main**.
+ *
+ * The bounded Memory contract is locked in `apps/n8n-lego/src/lego/contracts/contract-lock.json`
+ * (owner `manager`, domain `ai-foundation`, status `implemented`) with the canonical manifest
+ * `manifest/memory.json` and the surface module `src/lego/memory.mjs`. Five scopes, six kinds,
+ * five retentions, thirteen fields, a two-state lifecycle (`active` -> `forgotten`), four published
+ * operations and two permission words. The nine Memory sets below quote that publication with a
+ * pinned contract version, exactly the way the Skill sets quote `ai.skill@1.0.0` and the Context &
+ * Session sets quote `ai.context@1.0.0` — and the pin is checked against the lock row, not against
+ * the string (`test/29-alignment.test.mjs`), which is why a tree that carries no `ai.memory` row is
+ * reported as an announced non-comparison rather than as agreement.
+ *
+ * What is **not** quoted, on purpose: `memory.json#interaction` (`call`, `batch`) and
+ * `memory.json#degradation` (`available`, `degraded`, `optional-absent`) duplicate the canonical
+ * `lego.interaction` sets, so the Memory surface references `interaction` and `degradation`
+ * instead of declaring a second set with the same meaning under a second id.
+ */
+const AI_MEMORY_CONTRACT = Object.freeze({ id: 'ai.memory', version: '1.0.0', owner: 'manager' });
+
+/**
+ * What the Memory publication owes and settles, recorded where a reader of the lock will find it.
+ *
+ * Two things this record is deliberately **not**: it is not a publication source (nothing derives
+ * `published` from it — that comes from the lock rows a tree actually hands over), and it is not a
+ * claim that P2.14 is complete. It is the provenance of the quote plus the honest half
+ * `memory.json` itself carries: `traverse`, `relate`, relevance-ranked retrieval and automatic
+ * retention enforcement are future stages, and `XA-12` stays open-for-manager for exactly those.
+ */
+const AI_MEMORY_PUBLICATION = Object.freeze({
+  owner: 'manager',
+  domain: 'ai-foundation',
+  decision: 'XA-12',
+  what: 'P2.14 bounded Memory: ai.memory@1.0.0 is locked with four operations (memory.remember, memory.recall, memory.list, memory.forget) and two permission words (ai:memory:read, ai:memory:write). The deferred half — relevance-ranked traversal, explicit edge creation (`relate`) and retention-policy enforcement — stays a future stage and is recorded by XA-12, which remains open-for-manager',
+});
 
 /**
  * What is still unpublished on this side: the AI set's own maturity words. Locking
@@ -714,6 +794,173 @@ export const VOCABULARIES = Object.freeze([
     }),
     publicationPending: TOKEN_SCENARIO_PUBLICATION,
   }),
+  /**
+   * The Memory vocabulary quoted for P2.14. Nine sets, all quoted from the same publication
+   * (`ai.memory@1.0.0`): the scope ladder, the entry kinds, the retention ladder, the record
+   * fields, the two-state lifecycle, the graph node and edge vocabularies, the four published
+   * operations and the two permission words.
+   *
+   * What is **not** here is as deliberate as what is. There is no `memoryEmbedding`, no
+   * `memoryVector`, no `memoryScore` and no `memoryRelevance`: the published contract has no
+   * embedding, no vector store and no ranking, so a UI that could render a similarity figure would
+   * be a UI rendering something nobody published. `memory.json#interaction` and
+   * `memory.json#degradation` are not re-declared either — they are subsets of the canonical
+   * `interaction` and `degradation` sets, and a second set with the same meaning is exactly the
+   * dialect the lock exists to prevent.
+   */
+  Object.freeze({
+    id: 'memoryScope',
+    question: 'How wide is the namespace a memory record is isolated to?',
+    about: 'scope',
+    values: Object.freeze(['GLOBAL', 'PROJECT', 'WORKFLOW', 'AGENT', 'SESSION']),
+    provenance: Object.freeze({
+      contract: AI_MEMORY_CONTRACT,
+      kind: 'json',
+      file: 'apps/n8n-lego/src/lego/manifest/memory.json',
+      path: 'scopes',
+      read: 'values',
+      note: 'five scopes and no more. `GLOBAL` has no owner; every other scope requires a `scopeOwner` that is itself a stable identity, because scope owns isolation and the provider boundary never infers one. The published ladder is narrower than the context ladder on purpose: memory is retained deliberately, so `NODE`, `EXECUTION` and `EVENT` — the three widest-churn context scopes — are not retention namespaces',
+      publishedOn: Object.freeze({ branch: 'arena/01a0c90d-n8n-rust-v-4', commit: 'f11aee01', lockRow: 'ai.memory@1.0.0' }),
+    }),
+    openDecision: AI_MEMORY_PUBLICATION,
+  }),
+  Object.freeze({
+    id: 'memoryKind',
+    question: 'What kind of thing was remembered?',
+    about: 'kind',
+    values: Object.freeze(['note', 'decision', 'artifact', 'task', 'execution', 'reference']),
+    provenance: Object.freeze({
+      contract: AI_MEMORY_CONTRACT,
+      kind: 'json',
+      file: 'apps/n8n-lego/src/lego/manifest/memory.json',
+      path: 'kinds',
+      read: 'values',
+      note: 'six declared categories, drawn from the memory graph node vocabulary. A kind grants nothing: a `task` memory is a record ABOUT a task, not a running task, and a `decision` memory is a record about a choice rather than the choice itself — which is the distinction the frontend renders next to every entry',
+      publishedOn: Object.freeze({ branch: 'arena/01a0c90d-n8n-rust-v-4', commit: 'f11aee01', lockRow: 'ai.memory@1.0.0' }),
+    }),
+    openDecision: AI_MEMORY_PUBLICATION,
+  }),
+  Object.freeze({
+    id: 'memoryRetention',
+    question: 'How long is this memory record intended to survive?',
+    about: 'retention',
+    values: Object.freeze(['EPHEMERAL', 'WORKING', 'IMPORTANT', 'DURABLE', 'PERMANENT']),
+    provenance: Object.freeze({
+      contract: AI_MEMORY_CONTRACT,
+      kind: 'json',
+      file: 'apps/n8n-lego/src/lego/manifest/memory.json',
+      path: 'retention',
+      read: 'values',
+      note: 'an explicit declaration, not a policy engine: `EPHEMERAL` and `WORKING` are expected to be forgotten and the other three require an explicit forget operation. Nothing expires on its own, so a retention word may never be rendered as a countdown or a promise that the record is gone',
+      publishedOn: Object.freeze({ branch: 'arena/01a0c90d-n8n-rust-v-4', commit: 'f11aee01', lockRow: 'ai.memory@1.0.0' }),
+    }),
+    openDecision: AI_MEMORY_PUBLICATION,
+  }),
+  Object.freeze({
+    id: 'memoryLifecycle',
+    question: 'Is this memory record active, or forgotten?',
+    about: 'state',
+    values: Object.freeze(['active', 'forgotten']),
+    provenance: Object.freeze({
+      contract: AI_MEMORY_CONTRACT,
+      kind: 'json',
+      file: 'apps/n8n-lego/src/lego/manifest/memory.json',
+      path: 'lifecycle.states',
+      read: 'values',
+      note: 'exactly two states, drawn from `memory.json#lifecycle`. A record is `active` once remembered and becomes `forgotten` only through an explicit forget; `forgotten` is terminal, so the UI never renders a forgotten record as recoverable and never offers a restore. There is no third state: "expired" does not exist, because nothing expires on its own',
+      publishedOn: Object.freeze({ branch: 'arena/01a0c90d-n8n-rust-v-4', commit: 'f11aee01', lockRow: 'ai.memory@1.0.0' }),
+    }),
+    openDecision: AI_MEMORY_PUBLICATION,
+  }),
+  Object.freeze({
+    id: 'memoryField',
+    question: 'What does one memory record carry?',
+    about: 'field',
+    values: Object.freeze([
+      'memoryId', 'scope', 'scopeOwner', 'kind', 'retention', 'content', 'references',
+      'provenance', 'version', 'size', 'checksum', 'createdAt', 'updatedAt',
+    ]),
+    provenance: Object.freeze({
+      contract: AI_MEMORY_CONTRACT,
+      kind: 'json',
+      file: 'apps/n8n-lego/src/lego/manifest/memory.json',
+      path: 'fields',
+      read: 'values',
+      note: 'thirteen fields, and the last two of the integrity envelope (`size`, `checksum`) are not optional in a rendered record. `scopeOwner` is the only conditionally-absent field: `GLOBAL` has no owner. `content` is bounded (64 KiB canonical) and `references` is linkage, never a load',
+      publishedOn: Object.freeze({ branch: 'arena/01a0c90d-n8n-rust-v-4', commit: 'f11aee01', lockRow: 'ai.memory@1.0.0' }),
+    }),
+    openDecision: AI_MEMORY_PUBLICATION,
+  }),
+  Object.freeze({
+    id: 'memoryOperation',
+    question: 'Which operation does the Memory capability publish?',
+    about: 'operation',
+    values: Object.freeze(['memory.remember', 'memory.recall', 'memory.list', 'memory.forget']),
+    provenance: Object.freeze({
+      contract: AI_MEMORY_CONTRACT,
+      kind: 'json',
+      file: 'apps/n8n-lego/src/lego/manifest/memory.json',
+      path: 'operations[].name',
+      read: 'values',
+      note: 'four published operations, spelled as the contract spells them (`memory.<verb>`, not a bare verb). `memory.list` is the only retrieval that returns more than one record and it is deterministic and bounded: scope-filtered, ordered `createdAt` ascending then `memoryId` ascending, `limit` 1..100 default 50, opaque `cursor`. `traverse` and `relate` are declared as future stages and are NOT operations, so no UI affordance may offer them',
+      publishedOn: Object.freeze({ branch: 'arena/01a0c90d-n8n-rust-v-4', commit: 'f11aee01', lockRow: 'ai.memory@1.0.0' }),
+    }),
+    openDecision: AI_MEMORY_PUBLICATION,
+  }),
+  Object.freeze({
+    id: 'memoryPermission',
+    question: 'Which permission does a memory operation require?',
+    about: 'permission',
+    values: Object.freeze(['ai:memory:read', 'ai:memory:write']),
+    provenance: Object.freeze({
+      contract: AI_MEMORY_CONTRACT,
+      kind: 'json',
+      file: 'apps/n8n-lego/src/lego/manifest/memory.json',
+      path: 'permissions',
+      read: 'values',
+      note: 'two words: `read` covers `memory.recall` and `memory.list`, `write` covers `memory.remember` and `memory.forget`. There is no `ai:memory:admin` and no broad permission, and a memory record never carries a grant — `memory.remember` creates a record, never an authority',
+      publishedOn: Object.freeze({ branch: 'arena/01a0c90d-n8n-rust-v-4', commit: 'f11aee01', lockRow: 'ai.memory@1.0.0' }),
+    }),
+    openDecision: AI_MEMORY_PUBLICATION,
+  }),
+  Object.freeze({
+    id: 'memoryGraphNode',
+    question: 'What can a memory reference point at?',
+    about: 'graph',
+    values: Object.freeze([
+      'project', 'workflow', 'node', 'execution', 'agent', 'session',
+      'decision', 'evidence', 'artifact', 'task',
+    ]),
+    provenance: Object.freeze({
+      contract: AI_MEMORY_CONTRACT,
+      kind: 'json',
+      file: 'apps/n8n-lego/src/lego/manifest/memory.json',
+      path: 'graph.nodes',
+      read: 'values',
+      note: 'ten addressable references that already exist elsewhere — a decision id, an artifact id, a workflow id. The graph is the logical shape of memory, not a storage engine: the bounded P2.14 implementation stores linkage in a record`s `references` array and does not traverse. A node word is never a claim that the referenced thing is loaded, alive or reachable',
+      publishedOn: Object.freeze({ branch: 'arena/01a0c90d-n8n-rust-v-4', commit: 'f11aee01', lockRow: 'ai.memory@1.0.0' }),
+    }),
+    openDecision: AI_MEMORY_PUBLICATION,
+  }),
+  Object.freeze({
+    id: 'memoryGraphEdge',
+    question: 'How may one memory record be linked to another thing?',
+    about: 'graph',
+    values: Object.freeze([
+      'depends_on', 'caused', 'derived_from', 'supports', 'contradicts', 'implements',
+      'belongs_to', 'delegated_to', 'decided_by', 'observed_in', 'related_to',
+    ]),
+    provenance: Object.freeze({
+      contract: AI_MEMORY_CONTRACT,
+      kind: 'json',
+      file: 'apps/n8n-lego/src/lego/manifest/memory.json',
+      path: 'graph.edges',
+      read: 'values',
+      note: 'eleven declared relations, and free text is refused: an edge the vocabulary does not declare is not a looser link, it is an undeclared one. `references` is validated against this list, bounded to 32 entries, and is never dereferenced automatically — linkage is not a load',
+      publishedOn: Object.freeze({ branch: 'arena/01a0c90d-n8n-rust-v-4', commit: 'f11aee01', lockRow: 'ai.memory@1.0.0' }),
+    }),
+    openDecision: AI_MEMORY_PUBLICATION,
+  }),
   Object.freeze({
     id: 'decisionRisk',
     question: 'How risky is the decision an agent made?',
@@ -906,7 +1153,7 @@ export const VOCABULARIES = Object.freeze([
     values: Object.freeze([
       'ai.model-gateway', 'ai.tool-gateway', 'ai.agent-runtime', 'ai.application-provider',
       'ai.agent-session', 'ai.agent-delegation', 'ai.agent-events', 'ai.decision',
-      'ai.approval', 'ai.artifact', 'ai.context', 'ai.skill',
+      'ai.approval', 'ai.artifact', 'ai.context', 'ai.skill', 'ai.memory',
     ]),
     provenance: Object.freeze({
       contract: Object.freeze({ id: 'lego.domain-registry', version: '1.1.0', owner: 'manager' }),
@@ -914,17 +1161,23 @@ export const VOCABULARIES = Object.freeze([
       file: 'apps/n8n-lego/src/lego/manifest/domains.json',
       path: 'domains#id=ai-foundation.capabilities',
       read: 'id',
+      note: 'thirteen capabilities of the `ai-foundation` domain. `ai.memory` joined the list at P2.14 (`implemented`, four operations) on agent-2`s branch; `ai.skill` joined at the P2.12 finalize. A capability is declared here whether it is contract-only or implemented — the status is a field, not a separate list',
+      movedBy: Object.freeze({ commit: '5fbaf934', branch: 'arena/01a0c90d-n8n-rust-v-4', added: Object.freeze(['ai.memory']), previousValues: Object.freeze([
+        'ai.model-gateway', 'ai.tool-gateway', 'ai.agent-runtime', 'ai.application-provider',
+        'ai.agent-session', 'ai.agent-delegation', 'ai.agent-events', 'ai.decision',
+        'ai.approval', 'ai.artifact', 'ai.context', 'ai.skill',
+      ]) }),
     }),
   }),
   Object.freeze({
     id: 'aiPermission',
     question: 'Which permission names do the published AI operations require?',
     about: 'permission',
-    // The 24 names the twelve `ai.*` capabilities publish on their operations — including
-    // the two `ai:skill:*` words the locked Skill contract requires. The vocabulary file
-    // names only the three provider contracts' permissions (eight of these) plus the
-    // application-provider trio below; the operation list is what a caller is actually
-    // refused by, so that is what the frontend quotes.
+    // The 26 names the thirteen `ai.*` capabilities publish on their operations — including
+    // the two `ai:skill:*` words the locked Skill contract requires and the two `ai:memory:*`
+    // words `ai.memory@1.0.0` requires. The vocabulary file names only the three provider
+    // contracts' permissions (eight of these) plus the application-provider trio below; the
+    // operation list is what a caller is actually refused by, so that is what the frontend quotes.
     values: Object.freeze([
       'ai:model:read', 'ai:model:invoke',
       'ai:tool:read', 'ai:tool:invoke',
@@ -936,6 +1189,7 @@ export const VOCABULARIES = Object.freeze([
       'ai:artifact:read', 'ai:artifact:write',
       'ai:context:read', 'ai:context:write',
       'ai:skill:read', 'ai:skill:select',
+      'ai:memory:read', 'ai:memory:write',
     ]),
     provenance: Object.freeze({
       contract: Object.freeze({ id: 'lego.domain-registry', version: '1.1.0', owner: 'manager' }),
@@ -943,7 +1197,8 @@ export const VOCABULARIES = Object.freeze([
       file: 'apps/n8n-lego/src/lego/manifest/domains.json',
       path: 'domains#id=ai-foundation.capabilities[].operations[].permission',
       read: 'unique',
-      note: 'the `ai.foundation` vocabulary publishes eight of these for the three provider contracts; the remaining operation permissions exist only here — see XA-10',
+      note: 'the `ai.foundation` vocabulary publishes eight of these for the three provider contracts; the remaining operation permissions exist only here — see XA-10. `ai:memory:read` and `ai:memory:write` are the P2.14 pair: read covers `memory.recall`/`memory.list`, write covers `memory.remember`/`memory.forget`, and there is no `ai:memory:admin`',
+      movedBy: Object.freeze({ commit: '5fbaf934', branch: 'arena/01a0c90d-n8n-rust-v-4', added: Object.freeze(['ai:memory:read', 'ai:memory:write']) }),
     }),
   }),
   Object.freeze({
@@ -1745,6 +2000,89 @@ export const LOCAL_VOCABULARIES = Object.freeze([
     why: 'A usage figure is either sourced or it is not shown. `reported` means the backend or the provider handed the number over with a declared unit; `estimated` means the backend declared it an estimate and the UI must label it as one; `not-reported` means nobody reported anything, so no percentage is computed and no bar is drawn; `over-budget` means a reported figure exceeded its declared bound. There is no fifth state and no path from `not-reported` to a number: fabricating a token count to fill a percentage is the failure this set exists to make unrepresentable.',
     pendingPublication: 'XA-20',
   }),
+  /**
+   * The P2.14 Memory surface's own words. Five local sets, each naming a fact about the *rendering*
+   * rather than a fact about memory — which is why none of them maps to a backend vocabulary: a
+   * backend that published "the list was empty" as a word would be publishing a UI state.
+   *
+   * What is deliberately absent: there is no `memoryRelevance`, no `memoryScore`, no
+   * `memoryConfidence` and no `memoryProvenance` — the published contract has no ranking, no
+   * similarity and no confidence, so a set here would be a word nobody can fill. `memoryOrigin`
+   * exists because provenance IS published (`provenance.createdBy` / `provenance.source`), and a
+   * rendered entry must say where it came from rather than imply it was discovered.
+   */
+  Object.freeze({
+    id: 'memoryListState',
+    question: 'What did retrieval actually return?',
+    values: Object.freeze(['rendered', 'empty', 'not-handed-over', 'refused']),
+    mapsTo: null,
+    provenance: Object.freeze({ file: 'packages/frontend-lego/src/memory.mjs', symbol: 'MEMORY_LIST_STATES' }),
+    why: '`rendered` means records were handed over and rendered; `empty` means the backend reported zero matches at the requested scope and that is an ANSWER, not an error — the surface says "no memory is stored at this scope" and renders no placeholder records; `not-handed-over` means no list was handed over at all, which is a different state from an empty one and is never rendered as "nothing is remembered"; `refused` means the handed-over payload was rejected (an unknown scope, an undeclared kind, a secret-shaped key, an unbounded body) and the refusal is shown by name. Collapsing `empty` into `not-handed-over` is exactly how a UI ends up telling a user their memory was erased.',
+    decision: 'XA-12',
+  }),
+  Object.freeze({
+    id: 'memoryPersistenceState',
+    question: 'Is what is on screen actually persisted?',
+    values: Object.freeze(['provider-bound', 'in-memory-only', 'not-declared']),
+    mapsTo: null,
+    provenance: Object.freeze({ file: 'packages/frontend-lego/src/memory.mjs', symbol: 'MEMORY_PERSISTENCE_STATES' }),
+    why: 'The published contract puts persistence behind a provider boundary: the default provider is an in-memory map, and the contract is replaceable by SQLite, a filesystem snapshot or a graph store behind the same interface. So a UI may never render "saved" or "saved to your workspace". `provider-bound` means the application declared a provider and the surface names it as declared; `in-memory-only` means the records came from a provider the application described as in-memory, so the surface says they do not outlive the process; `not-declared` means nobody said, and the surface says nothing about durability at all. There is no fourth state and no "cloud-synced".',
+    decision: 'XA-12',
+  }),
+  Object.freeze({
+    id: 'memoryOrigin',
+    question: 'Where did this memory entry come from?',
+    values: Object.freeze(['declared-provenance', 'no-provenance']),
+    mapsTo: null,
+    provenance: Object.freeze({ file: 'packages/frontend-lego/src/memory.mjs', symbol: 'MEMORY_ORIGINS' }),
+    why: '`memory.json` publishes `provenance` as an optional `{ createdBy?, source? }`, so an entry either carries a declared origin or carries none. An entry with no provenance is rendered as exactly that — never with a guessed author, never with the current user, and never with "agent" as a default. Attribution invented by a UI is a false audit trail.',
+    decision: 'XA-12',
+  }),
+  Object.freeze({
+    id: 'memoryAffordance',
+    question: 'What may the Memory surface show, and what may it never offer?',
+    values: Object.freeze([
+      'show-memory-list',
+      'show-memory-entry',
+      'show-memory-scope',
+      'show-memory-kind',
+      'show-memory-retention',
+      'show-memory-lifecycle',
+      'show-memory-provenance',
+      'show-memory-references',
+      'show-memory-integrity',
+      'show-memory-persistence-state',
+      'show-pending-publication',
+    ]),
+    mapsTo: null,
+    provenance: Object.freeze({ file: 'packages/frontend-lego/src/memory.mjs', symbol: 'MEMORY_AFFORDANCES' }),
+    why: 'Eleven facts the surface may render, and no operation among them. Memory is read here, never written: the four published operations (`memory.remember`, `memory.recall`, `memory.list`, `memory.forget`) are named as facts and wired to nothing, because a "Forget" button in a UI is a destructive operation with no undo behind a permission the UI does not hold. `memory.list` is the shape a rendered list follows; it is not a call this package makes.',
+    decision: 'XA-12',
+  }),
+  Object.freeze({
+    id: 'memoryRefusal',
+    question: 'What must a Memory surface never imply?',
+    values: Object.freeze([
+      'memory-dump',
+      'vector-search',
+      'embedding',
+      'relevance-ranking',
+      'automatic-retention',
+      'memory-to-context-injection',
+      'model-inference',
+      'agent-execution',
+      'workspace-action',
+      'filesystem-access',
+      'terminal-access',
+      'provider-connected',
+      'permission-grant',
+      'transcript-store',
+    ]),
+    mapsTo: null,
+    provenance: Object.freeze({ file: 'packages/frontend-lego/src/memory.mjs', symbol: 'MEMORY_FORBIDDEN_IMPLICATIONS' }),
+    why: 'Fourteen relationships a reader could otherwise infer from a memory list. `memory-dump` is first because the contract forbids it in the Declaration itself ("Never dump full memory into context"); `relevance-ranking` and `vector-search` are next because the roadmap mentions a traversable graph and a UI that shows a search box with a score would be promising the deferred half; `provider-connected` is the honesty rule for the provider boundary — an absent provider is `optional-absent`, never a green dot; `automatic-retention` because nothing expires on its own; `memory-to-context-injection` because loading memory into a context is an explicit, bounded caller decision and never a side effect of opening a screen.',
+    decision: 'XA-12',
+  }),
 ]);
 
 const BY_ID = new Map([...VOCABULARIES, ...LOCAL_VOCABULARIES].map((set) => [set.id, set]));
@@ -1940,6 +2278,37 @@ export const DECLARED_OVERLAPS = Object.freeze([
       deferred: 'deliberately postponed in both declarations, for the same reason',
     }),
   }),
+  /**
+   * The P2.14 Memory overlaps. Four declared, each one a shared *word* between two subjects that a
+   * reader could otherwise conflate — and conflating them is the failure, not the word.
+   */
+  Object.freeze({
+    vocabularies: Object.freeze(['memoryKind', 'memoryGraphNode']),
+    values: Object.freeze({
+      decision: 'a memory record can BE about a decision (`memoryKind`), and a decision is also one of the ten things a record can point at (`memoryGraphNode`). One spelling, two subjects: the entry`s category and the thing it references. Both are quoted from `ai.memory@1.0.0` and neither re-defines the other',
+      artifact: 'the same split: `artifact` as the kind of a memory entry, and `artifact` as an addressable graph node. A record of kind `artifact` is not by itself a reference to one — that is what its `references` array declares',
+      task: 'a `task` memory is a record ABOUT a task, never a running task (the contract says so in `kindRule`), and `task` is also a graph node a record may point at. The UI renders the kind and the reference as two different facts',
+      execution: '`execution` as a memory kind (a record about a run) and `execution` as a graph node (a run a record points at). Execution STATE still comes from the `execution.*` domain and never from a memory record',
+    }),
+  }),
+  Object.freeze({
+    vocabularies: Object.freeze(['artifactRetention', 'memoryGraphNode']),
+    values: Object.freeze({
+      session: 'an artifact retention class (`artifactRetention`, ai.foundation) and an addressable memory graph node (`memoryGraphNode`, ai.memory). Two declared subjects, one English word, both quoted',
+    }),
+  }),
+  Object.freeze({
+    vocabularies: Object.freeze(['delegationField', 'memoryKind']),
+    values: Object.freeze({
+      task: '`task` is a FIELD of a delegation edge (what the child was asked to do) and a KIND of a memory record (what was remembered). Same spelling, two declared subjects',
+    }),
+  }),
+  Object.freeze({
+    vocabularies: Object.freeze(['delegationField', 'memoryGraphNode']),
+    values: Object.freeze({
+      task: '`task` is a delegation field and a memory graph node. A delegation declares the task; a memory record may point at one',
+    }),
+  }),
 ]);
 
 /**
@@ -2075,6 +2444,7 @@ export function describeVocabulary() {
       values: set.values,
       contract: set.provenance.contract,
       publicationPending: set.publicationPending ?? null,
+      openDecision: set.openDecision ?? null,
       declaredIn: `${set.provenance.file}#${set.provenance.symbol ?? set.provenance.path}`,
     }))),
     local: Object.freeze(LOCAL_VOCABULARIES.map((set) => Object.freeze({

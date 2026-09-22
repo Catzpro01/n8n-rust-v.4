@@ -1,0 +1,189 @@
+{
+  "catalogVersion": "1.0.0",
+  "description": "The frontend's Memory surface: what it may render about deliberately retained knowledge, and what it must never become. Memory is ONE LEGO (`memory`, index 4 of the official AI/Agent set, phase B) with ONE contract (`ai.memory`) — it is not a sub-LEGO of `context-session` and it is not a sixteenth top-level LEGO. The catalog ships EMPTY on purpose: this is a record surface, so it renders what it is handed and names every absence. `Context` is what is loaded now and can be replaced; `Memory` is what was retained and must survive that replacement.",
+  "lego": "memory",
+  "phase": "B",
+  "contracts": [
+    "ai.memory"
+  ],
+  "declarationSource": {
+    "memory": {
+      "file": "apps/n8n-lego/src/lego/manifest/memory.json",
+      "path": "(whole document)",
+      "owner": "manager"
+    },
+    "lego": {
+      "file": "apps/n8n-lego/src/lego/manifest/ai-lego-set.json",
+      "path": "lego#id=memory",
+      "owner": "manager"
+    },
+    "capabilities": {
+      "file": "apps/n8n-lego/src/lego/manifest/domains.json",
+      "path": "domains#id=ai-foundation.capabilities[id=ai.memory]",
+      "owner": "manager"
+    }
+  },
+  "publication": {
+    "status": "declared-not-locked",
+    "rows": [],
+    "expected": [
+      {
+        "contract": "ai.memory",
+        "declaredVersion": "1.0.0",
+        "owner": "manager",
+        "domain": "ai-foundation",
+        "lockedIn": "apps/n8n-lego/src/lego/contracts/contract-lock.json",
+        "declaredIn": "apps/n8n-lego/src/lego/manifest/ai-lego-set.json#lego[id=memory].versioning",
+        "operations": [
+          "memory.remember",
+          "memory.recall",
+          "memory.list",
+          "memory.forget"
+        ],
+        "permissions": [
+          "ai:memory:read",
+          "ai:memory:write"
+        ],
+        "registeredStatus": "implemented"
+      }
+    ],
+    "notPublished": [
+      "ai.memory.traverse",
+      "ai.memory.relate",
+      "ai.memory.remember.execute",
+      "ai.context.memory",
+      "ai.agent-session.memory"
+    ],
+    "note": "`publication.rows` carries only what THIS tree publishes, and protected main @ 67e638ef publishes no `ai.memory` row — so against it the surface reports declared-not-locked and renders no version. Agent-2 published the row on its own branch (see publishedOnPeerBranch); the surface derives `published` from the rows it is handed, so the same code reports `published at 1.0.0` against that tree with no edit.",
+    "protectedMain": {
+      "branch": "main",
+      "commit": "67e638ef",
+      "full": "67e638ef83028bbc69876e2e768181415c7554fa",
+      "lockedContractRows": 17,
+      "state": "declared-not-locked",
+      "memoryRow": false,
+      "note": "the P2.14 baseline: P2.13 is merged in full (PR #45 backend, PR #46 frontend) and Memory is declared in the AI set but locked by no contract-lock row"
+    },
+    "publishedOnPeerBranch": {
+      "agent": "agent-2",
+      "branch": "arena/01a0c90d-n8n-rust-v-4",
+      "commit": "f11aee01",
+      "backendCommit": "5fbaf934",
+      "commitMessage": "feat(memory): P2.14 bounded Memory backend (ai.memory@1.0.0)",
+      "visibleOn": "github",
+      "readOn": "2026-09-22",
+      "onProtectedMain": false,
+      "lockedContractRows": 18,
+      "rows": [
+        {
+          "id": "ai.memory",
+          "owner": "manager",
+          "domain": "ai-foundation",
+          "version": "1.0.0",
+          "status": "implemented",
+          "surface": [
+            "src/lego/memory.mjs",
+            "src/lego/manifest/memory.json"
+          ],
+          "operations": [
+            "memory.remember",
+            "memory.recall",
+            "memory.list",
+            "memory.forget"
+          ],
+          "permissions": [
+            "ai:memory:read",
+            "ai:memory:write"
+          ],
+          "tests": [
+            "apps/n8n-lego/test/lego-memory.test.mjs"
+          ]
+        }
+      ],
+      "consumedBy": "packages/frontend-lego/src/vocabulary.mjs (nine quoted sets: memoryScope, memoryKind, memoryRetention, memoryField, memoryLifecycle, memoryOperation, memoryPermission, memoryGraphNode, memoryGraphEdge; plus aiFoundationCapability and aiPermission) and packages/frontend-lego/src/memory.mjs",
+      "atMerge": "when the manager merges the publication into protected main, `rows` above moves into `publication.rows`, `status` becomes `published` and `protectedMain.memoryRow` becomes true in the same change; test/29 and test/34 assert that against the default tree",
+      "knownPeerDefect": {
+        "file": "docs/n8n-lego/evidence/frontend-boundary-p25.json",
+        "what": "the pinned P2.5 baseline artifact was overwritten by a degraded sandbox capture on that branch (three PASS verdicts became FAIL and the baseline block moved), because capture-frontend-evidence.mjs writes to that path when it is run without --out",
+        "impact": "none on the contract; reported so the reconciler restores the pinned artifact rather than merging the overwrite",
+        "reportedBy": "agent-1, P2.14 (read from the peer tree, not modified)"
+      }
+    }
+  },
+  "rendering": {
+    "publicationState": true,
+    "memoryList": true,
+    "memoryEntry": true,
+    "memoryScope": true,
+    "memoryKind": true,
+    "memoryRetention": true,
+    "memoryLifecycle": true,
+    "memoryProvenance": true,
+    "memoryReferences": true,
+    "memoryIntegrityEnvelope": true,
+    "persistenceState": true,
+    "separationFromContext": true,
+    "emptyResultState": true,
+    "degradedState": true,
+    "failureState": true,
+    "pendingPublication": true,
+    "fabricatedRecords": false,
+    "persistenceClaim": false,
+    "providerConnectedClaim": false,
+    "vectorSearch": false,
+    "relevanceScore": false,
+    "retentionCountdown": false,
+    "memoryDump": false,
+    "contextPayload": false,
+    "sessionState": false,
+    "transcript": false,
+    "executionAffordance": false,
+    "writeAffordance": false,
+    "deleteAffordance": false,
+    "restoreAffordance": false
+  },
+  "concepts": [
+    "context",
+    "session",
+    "memory",
+    "execution"
+  ],
+  "rules": [
+    "Memory survives context replacement. Context is what is loaded now and can be compacted, rolled over and replaced; Memory is what was deliberately retained and must still be there afterwards. A record REFERENCES a context, session or run through `references` and never contains one.",
+    "Every shared word is quoted from the published contract with provenance: 5 scopes, 6 kinds, 5 retentions, 13 fields, 2 lifecycle states, 10 graph nodes, 11 graph edges, 4 published operations (`memory.remember`, `memory.recall`, `memory.list`, `memory.forget`) and 2 permission words (`ai:memory:read`, `ai:memory:write`). Nothing is coined here.",
+    "The words the contract does NOT publish have no set at all: there is no embedding, no similarity, no relevance score and no retention timer, so a screen cannot render them even by accident. `traverse` and `relate` are declared future stages and are named as deferred rather than offered.",
+    "Operations are spelled exactly as published (`memory.remember`, not `ai.memory.remember`): a consumer that re-qualifies a published name has invented a second API.",
+    "The published operation names are facts, not affordances. Nothing here calls one, and no rendered list offers remember, forget or restore — `memory.forget` is terminal, has no undo and no restore operation exists to offer.",
+    "Scope owns isolation: `GLOBAL` has no owner and every other scope requires a `scopeOwner` that is a stable identity. A request for an unknown scope, or a non-GLOBAL scope without an owner, is refused rather than widened to the nearest namespace.",
+    "Retrieval is deterministic and bounded: `memory.list` filters by scope, scopeOwner, kind and retention, orders `createdAt` ascending then `memoryId` ascending, clamps `limit` to 1..100 (default 50) and pages by opaque cursor. The surface re-sorts nothing, because no ranking is published to sort by.",
+    "Four list states, never three: `rendered`, `empty` (the backend answered zero matches — an answer, not an error), `not-handed-over` (nobody asked, so nothing is claimed) and `refused` (the payload broke the quoted vocabulary and the refusal is named). Collapsing `empty` into `not-handed-over` is how a UI tells a user their memory was erased.",
+    "Persistence is behind a provider boundary, so it is never claimed: exactly three statements — `provider-bound`, `in-memory-only`, `not-declared`. No 'saved', no 'synced', no connected indicator for a provider the surface cannot see, and no durability implied by a record being on screen.",
+    "Integrity is reported, never repaired: a record carries the two-field envelope (size, checksum) and a checksum that is not a 64-character lowercase sha256 hex digest is reported as a finding. The surface verifies nothing itself — it refuses to render a digest in a shape the contract does not publish.",
+    "No credentials, tokens, secrets, cookies, authorization headers, chain-of-thought, raw or hidden prompts, transcripts, message lists, full model output, host paths or capability grants — refused by name and by key pattern (`security.sensitiveRefusal` in the contract is the same rule).",
+    "Records are supplied to the runtime by the application; this package never reads the backend tree, never writes a record, and nothing it returns enters the 18,126-byte boot descriptor.",
+    "A declaration whose vocabulary moved past the quote is reported (`memoryDrift`) with both spellings and is never adopted silently; a version claimed in a file is reported as `declaredVersion` and is still not a publication."
+  ],
+  "records": [],
+  "alignment": {
+    "decision": "XA-12",
+    "status": "open-for-manager",
+    "register": "docs/n8n-lego/decisions/cross-agent-decisions.json",
+    "milestoneRegister": "docs/n8n-lego/milestones.json#milestones[id=P2.14]",
+    "test": "packages/frontend-lego/test/34-memory.test.mjs",
+    "comparisonTest": "packages/frontend-lego/test/29-alignment.test.mjs",
+    "rule": "A difference between this package's quoted vocabulary and the declaration it consumes is reported as data (memoryDrift) and registered, never resolved by adopting a word this package cannot quote. There is no tolerated difference: REGISTERED_DRIFT in test/29 is empty.",
+    "openHalf": "XA-12 is open for exactly the half the contract defers: relevance-ranked traversal, explicit edge creation and retention-policy enforcement. None of the three changes what this surface may render today, and none of them may be implied by it.",
+    "relatedDecisions": [
+      "XA-11 (where Skill and Memory are modelled — this surface adds no domain and no LEGO: `ai.memory` stays a capability of `ai-foundation` and `memory` stays index 4 of the AI set)",
+      "XA-20 (Context & Session publication — unchanged by P2.14; the two surfaces consume two different contracts and neither absorbs the other)",
+      "XA-21 (descriptor-assembly heap pin, 4,096 KB — NOT touched by P2.14: the Memory view is built on demand and the pin is not edited)"
+    ],
+    "peerPublication": {
+      "branch": "arena/01a0c90d-n8n-rust-v-4",
+      "commit": "f11aee01",
+      "state": "REMOTE_VISIBLE",
+      "consumed": true,
+      "comparedWith": "N8N_BACKEND_LEGO_ROOT pointed at the peer tree: the nine memory sets, aiFoundationCapability and aiPermission are compared against it for real, and against protected main @ 67e638ef the comparison is announced as a bounded non-comparison instead of a pass"
+    }
+  }
+}

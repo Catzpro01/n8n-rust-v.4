@@ -38,6 +38,21 @@ import {
   UNPUBLISHED_CONTEXT_VERBS,
   USAGE_REPORT_STATES,
 } from './context-session.mjs';
+import {
+  DEFERRED_MEMORY_OPERATIONS,
+  MEMORY_AFFORDANCES,
+  MEMORY_CONTRACT_ID,
+  MEMORY_DECLARED_VERSION,
+  MEMORY_FIELDS,
+  MEMORY_GRAPH_EDGES,
+  MEMORY_KINDS,
+  MEMORY_LIFECYCLE,
+  MEMORY_OPERATION_IDS,
+  MEMORY_PERMISSIONS,
+  MEMORY_RETENTIONS,
+  MEMORY_SCOPES,
+  MEMORY_SEPARATION,
+} from './memory.mjs';
 
 /**
  * What an extension point is, as a shape: hooks are surface-owned, additive and
@@ -267,6 +282,25 @@ export const ARCHITECTURE_RULES = Object.freeze([
     contract: '§19.19',
     enforcedBy: '32-context-session.test.mjs',
   }),
+  Object.freeze({
+    id: 'A29',
+    statement: 'Memory is its own LEGO with its own quoted contract and never an extension of Context or Session: nine quoted sets describe the record (5 scopes, 6 kinds, 5 retentions, 13 fields, 2 lifecycle states, 10 graph nodes, 11 graph edges, 4 published operations, 2 permission words), retrieval is exactly the published deterministic bounded `memory.list`, four list states stay four (`rendered`/`empty`/`not-handed-over`/`refused`), persistence is behind a provider boundary and is never claimed, the deferred half (`traverse`, `relate`, ranking, retention enforcement) is named and refused rather than offered, and no record is fabricated, written, forgotten, restored, embedded or ranked by the surface.',
+    vocabulary: Object.freeze([
+      ...MEMORY_SCOPES,
+      ...MEMORY_KINDS,
+      ...MEMORY_RETENTIONS,
+      ...MEMORY_LIFECYCLE,
+      ...MEMORY_FIELDS,
+      ...MEMORY_OPERATION_IDS,
+      ...DEFERRED_MEMORY_OPERATIONS,
+      ...MEMORY_PERMISSIONS,
+      ...MEMORY_GRAPH_EDGES,
+      ...MEMORY_SEPARATION.map((entry) => entry.id),
+      ...MEMORY_AFFORDANCES.allowed,
+    ]),
+    contract: '§19.20',
+    enforcedBy: '34-memory.test.mjs',
+  }),
 ]);
 
 const RULES_BY_ID = new Map(ARCHITECTURE_RULES.map((rule) => [rule.id, rule]));
@@ -440,7 +474,15 @@ export function checkConformance(frontend) {
   const fiveDistinct = concepts.length === 5 && new Set(concepts).size === 5
     && concepts.includes('session') && concepts.includes('context-window')
     && concepts.includes('memory') && concepts.includes('execution') && concepts.includes('conversation');
-  const memoryNotClaimed = contextSession.concepts.find((concept) => concept.id === 'memory').exists === false
+  // P2.14 changed what is true here. At P2.13 this rule required `exists === false`, which was
+  // honest while no tree published a memory contract; agent-2 then published `ai.memory@1.0.0`, so a
+  // rule that still demanded the denial would fail against the tree that carries the publication and
+  // pass by being wrong about it. The relationship that must hold in EVERY tree is the one below:
+  // the concept is derived from the rows handed over, this surface renders no memory record either
+  // way, and it never claims a memory store it was not handed.
+  const memoryConcept = contextSession.concepts.find((concept) => concept.id === 'memory');
+  const memoryNotClaimed = memoryConcept.exists === (contextSession.memoryPublication.published ? 'implemented' : false)
+    && contextSession.memoryPublication.published === (contextSession.memoryPublication.row !== null)
     && CONTEXT_SESSION_FORBIDDEN_IMPLICATIONS.includes('memory-store');
   const noExecutionAffordance = ['execute', 'infer', 'rollOverNow', 'rehydrate', 'verify', 'continueSession', 'grantPermission']
     .every((name) => typeof CONTEXT_SESSION_AFFORDANCES.forbidden[name] === 'string')
@@ -477,6 +519,31 @@ export function checkConformance(frontend) {
   record('A28', fiveDistinct && memoryNotClaimed && noExecutionAffordance && operationsDerived && sevenStates
     && noFabricatedFigure && publicationHonest,
   `${concepts.length} distinct concepts, ${SESSION_STATES.length} session states, ${PUBLISHED_OPERATION_IDS.length} published operations, ${UNPUBLISHED_CONTEXT_VERBS.length} declared-but-unregistered verbs, contracts ${contextSession.published ? 'published' : contextSession.contracts.context.status}`);
+
+  // A29 — Memory as its own quoted surface: the separation holds, the list contract is the
+  // published one, the four list states stay four, persistence is never claimed and nothing offers
+  // an operation the contract does not publish.
+  const memory = frontend.memory;
+  const separationHolds = MEMORY_SEPARATION.length === 4
+    && MEMORY_SEPARATION.every((entry) => typeof entry.crosses === 'string' && typeof entry.rule === 'string' && entry.contract !== null);
+  const listContract = memory.list.limits.min === 1 && memory.list.limits.max === 100 && memory.list.limits.default === 50
+    && memory.list.ordering.length === 2
+    && ['rendered', 'empty', 'not-handed-over', 'refused'].includes(memory.list.state);
+  const fourStates = memory.list.state === 'not-handed-over' && memory.list.entries.length === 0 && memory.list.total === null;
+  const nineQuoted = memory.quote.length === 9
+    && memory.quote.every((set) => set.contract !== null && set.size > 0 && set.contract.id === MEMORY_CONTRACT_ID);
+  const persistenceHonest = memory.persistence.state === 'not-declared' && memory.persistence.connected === false;
+  const memoryNoAffordance = memory.operations.offered.length === 0
+    && MEMORY_AFFORDANCES.forbidden.traverse.includes('traverse')
+    && MEMORY_AFFORDANCES.forbidden.search.includes('no search')
+    && MEMORY_AFFORDANCES.forbidden.embeddings.includes('vector store')
+    && MEMORY_AFFORDANCES.forbidden.autoExpire.includes('explicit')
+    && MEMORY_AFFORDANCES.forbidden.forget.includes('terminal');
+  const memoryPublicationHonest = memory.published === false
+    ? memory.contract.status === 'declared-not-locked' && memory.contract.version === null && memory.unsupported !== null
+    : memory.contract.version !== null && memory.unsupported === null;
+  record('A29', separationHolds && listContract && fourStates && nineQuoted && persistenceHonest && memoryNoAffordance && memoryPublicationHonest,
+  `${memory.quote.length} quoted sets, ${MEMORY_OPERATION_IDS.length} published operations, ${DEFERRED_MEMORY_OPERATIONS.length} deferred, list state "${memory.list.state}", contract ${memory.published ? 'published' : memory.contract.status}`);
 
   // A13 — the frontend/backend view is derived, with sources.
   const featureAvailability = frontend.featureAvailability();
