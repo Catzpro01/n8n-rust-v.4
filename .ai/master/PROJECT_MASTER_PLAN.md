@@ -21,6 +21,7 @@ authoritative declaration.
 | The 15 official AI/Agent LEGO | `.ai/master/AI_AGENT_LEGO_MASTER_PLAN.md` | `manifest/ai-lego-set.json` |
 | Providers, runtimes, transports, MCP | `.ai/master/AI_RUNTIME_AND_PROVIDER_PLAN.md` | `manifest/ai-foundation.json` |
 | Phase roadmap | `.ai/master/IMPLEMENTATION_PHASES.md` | `manifest/ai-lego-set.json` |
+| Granular milestone truth | `.ai/master/MILESTONE_REGISTER.md` | `docs/n8n-lego/milestones.json` (Manager-owned canonical register) |
 | Decisions and open arbitration | `.ai/master/PROJECT_DECISIONS.md` | ADRs + `cross-agent-decisions.json` (reconciled; counts) + `cross-agent-decisions.backend.json` (agent-2 narrative) |
 | Contract status matrix | `.ai/master/AI_CONTRACT_MATRIX.md` | manifests + `contract-lock.json` |
 | The 26 core domains, strangler, nesting | `.ai/master/CORE_LEGO_ARCHITECTURE.md` | `manifest/domains.json` |
@@ -57,10 +58,10 @@ the same ones `npm run lego:ai` prints — are:
 
 | Counter | Count |
 | --- | --- |
-| Generated pack | 63 |
+| Generated pack | 64 |
 | Curated | 37 |
-| **Total `.ai`** | **100** |
-| `.ai/master` (top level, canonical) | 29 |
+| **Total `.ai`** | **101** |
+| `.ai/master` (top level, canonical) | 30 |
 | `.ai/master/frontend` (consumption views) | 10 |
 | Retrieval pack (`packFiles()`, budget-enforced) | 10 |
 
@@ -113,7 +114,7 @@ defect and should be reported as one.
 | | |
 | --- | --- |
 | Domains registered | 26 |
-| Locked public contracts | 15 |
+| Locked public contracts | 17 |
 | Declared capabilities | 83 |
 | Published error codes | 36 |
 | Temporary boundary allowances | 1 |
@@ -217,10 +218,9 @@ Every JS -> Rust replacement stays behind a stable contract and changes no consu
 
 These statements are false and must not be claimed:
 
-- NOT scale-out ready — two class-A storage blockers remain in src/store.mjs (agent-5, P8).
-- The AI runtime is NOT implemented.
-- Model inference is NOT implemented.
-- The MCP runtime is NOT implemented.
-- No vendor adapter is implemented.
-- The Agent Machine runtime is NOT implemented.
-- The frontend browser gate is NOT available locally (CI-only; Chromium cannot be installed in the dev sandbox).
+- AI runtime is NOT implemented: no model inference, provider API calls, Agent Machine loop or multi-agent runtime.
+- Model inference is NOT implemented; no provider API calls are made.
+- Memory persistent store remains NOT IMPLEMENTED; Context is what is loaded now and Memory is what survives replacement.
+- Workspace runtime, MCP runtime, Runtime Adapter runtime, Node Creator runtime and Translation runtime remain NOT IMPLEMENTED.
+- Rust remains NOT STARTED. The backend is NOT scale-out ready; scale-out remains NOT READY.
+- P2.13 is not COMPLETE until Manager reconciliation, merge validation and post-merge verification pass.

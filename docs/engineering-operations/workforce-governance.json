@@ -183,7 +183,11 @@
     "GitHub is source of truth for code.",
     "Do not claim readiness that gates do not support.",
     "A failed negative test is useful evidence.",
-    "Replaceable implementations must preserve contracts."
+    "Replaceable implementations must preserve contracts.",
+    "Agent completion is not merge approval.",
+    "Reconciliation PASS and MERGE PASS are separate gates.",
+    "A milestone is complete only after protected-main post-merge verification.",
+    "Contract and architecture conflicts must be reconciled before merge; never silently choose the easier branch."
   ],
   "blockers": [
     {
@@ -250,5 +254,43 @@
       "plane": "engineering-operations"
     }
   ],
-  "blockerRule": "A blocker is closed by evidence, never by a report deadline. Downgrading a blocker to make a status document look complete is the specific failure this register exists to prevent."
+  "blockerRule": "A blocker is closed by evidence, never by a report deadline. Downgrading a blocker to make a status document look complete is the specific failure this register exists to prevent.",
+  "milestoneMergeProtocol": {
+    "owner": "manager",
+    "canonicalRegister": "docs/n8n-lego/milestones.json",
+    "rule": "Agent branch completion is not merge approval. The reconciled and post-merge verified state on protected main is the milestone.",
+    "gates": [
+      {
+        "id": "RECONCILIATION PASS",
+        "meaning": "Agent outputs agree with the architecture and shared contracts before merge."
+      },
+      {
+        "id": "MERGE PASS",
+        "meaning": "The reconciled candidate passes required validation against the actual protected main baseline."
+      },
+      {
+        "id": "POST-MERGE VERIFICATION PASS",
+        "meaning": "Protected main has the expected contract lock, generated .ai state, tests and boot payload after merge."
+      }
+    ],
+    "sequence": [
+      "freeze baseline",
+      "verify each branch and evidence",
+      "reconcile contracts and dependencies",
+      "classify conflicts",
+      "run shared alignment and full relevant gates",
+      "record reconciliation pass",
+      "validate merge candidate against main",
+      "merge only after merge pass",
+      "rerun post-merge verification",
+      "mark milestone complete only after protected-main verification"
+    ],
+    "failureState": "RECONCILIATION_FAILED",
+    "conflictClasses": {
+      "mechanical": "Manager may resolve compatible file/path/generated-artifact conflicts.",
+      "contract": "Reconcile fields, operations, enums, permissions and errors before merging.",
+      "architecture": "Record and decide before merging; do not choose the easier implementation silently.",
+      "scope": "Do not merge out-of-scope runtime, Memory, Workspace authority or Rust work merely to clean it up later."
+    }
+  }
 }

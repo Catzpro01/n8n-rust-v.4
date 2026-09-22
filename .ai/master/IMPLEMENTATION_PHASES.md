@@ -19,7 +19,7 @@
 ### Phase A — Contracts / vocabulary / foundation (done)
 
 - **AI Foundation** (`manager`, CONTRACT-ONLY) — A: contracts (DONE) · E: first provider adapter · F: measured optimisation
-- **Context & Session** (`manager`, CONTRACT-ONLY) — A: contracts (DONE) · B: manager · D: verification
+- **Context & Session** (`manager`, IN-PROGRESS) — A: contracts (DONE) · B: manager · D: verification
 - **Capability** (`manager`, IMPLEMENTED) — A: DONE — 82 capabilities, 139 operations declared
 
 ### Phase B — Skill / Memory / Workspace / Agent Machine (in-progress)
@@ -51,6 +51,24 @@ _No official LEGO is introduced in this phase; it delivers implementation for LE
 
 _No official LEGO is introduced in this phase; it delivers implementation for LEGO declared earlier._
 
+## Granular milestone layer
+
+The strategic phases above are intentionally preserved. The Manager-owned granular register below is the current sequence and the only source for milestone status.
+
+| Milestone | Title | Phase | Status | Next |
+| --- | --- | --- | --- | --- |
+| `P2.11` | Reconciliation / foundation cleanup | A | **complete** | P2.12 |
+| `P2.12` | Skill | B | **complete** | P2.13 |
+| `P2.13` | Context & Session | B | **in-progress** | P2.14 |
+| `P2.14` | Memory | B | **planned** | P2.15 |
+| `P2.15` | Workspace | B | **planned** | P2.16 |
+| `P2.16` | Agent Machine / execution foundation | B | **planned** | P2.17 |
+| `P2.17+` | Later capability ladder | C-F | **planned** | — |
+
+Current milestone: **P2.13**. Previous completed: **P2.12**.
+
+Future IDs may be refined by Manager only by updating `docs/n8n-lego/milestones.json`.
+
 ## What must not happen
 
 - No phase silently skips contract compatibility.
@@ -60,10 +78,9 @@ _No official LEGO is introduced in this phase; it delivers implementation for LE
 
 ## Current limits
 
-- NOT scale-out ready — two class-A storage blockers remain in src/store.mjs (agent-5, P8).
-- The AI runtime is NOT implemented.
-- Model inference is NOT implemented.
-- The MCP runtime is NOT implemented.
-- No vendor adapter is implemented.
-- The Agent Machine runtime is NOT implemented.
-- The frontend browser gate is NOT available locally (CI-only; Chromium cannot be installed in the dev sandbox).
+- AI runtime is NOT implemented: no model inference, provider API calls, Agent Machine loop or multi-agent runtime.
+- Model inference is NOT implemented; no provider API calls are made.
+- Memory persistent store remains NOT IMPLEMENTED; Context is what is loaded now and Memory is what survives replacement.
+- Workspace runtime, MCP runtime, Runtime Adapter runtime, Node Creator runtime and Translation runtime remain NOT IMPLEMENTED.
+- Rust remains NOT STARTED. The backend is NOT scale-out ready; scale-out remains NOT READY.
+- P2.13 is not COMPLETE until Manager reconciliation, merge validation and post-merge verification pass.

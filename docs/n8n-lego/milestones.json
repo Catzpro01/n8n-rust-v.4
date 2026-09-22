@@ -1,0 +1,392 @@
+{
+  "registerVersion": "1.0.0",
+  "owner": "manager",
+  "canonical": true,
+  "purpose": "Granular milestone truth beneath the strategic Phase A-F roadmap. This is the only machine-readable milestone register. Future milestone IDs may be refined by Manager only by updating this file; strategic phases are not deleted.",
+  "protectedBranch": "main",
+  "mainBaseline": "e754c5df35b41b0ff2ac769519f05f056835411c",
+  "currentMilestone": "P2.13",
+  "previousCompletedMilestone": "P2.12",
+  "strategicRoadmap": {
+    "source": "apps/n8n-lego/src/lego/manifest/ai-lego-set.json",
+    "preservePhases": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F"
+    ],
+    "rule": "Phase A-F remains the strategic roadmap. This register adds implementation-sized milestones and does not replace the phases."
+  },
+  "mergeProtocol": {
+    "owner": "manager",
+    "agentCompletionIsNotMergeApproval": true,
+    "sequence": [
+      "freeze protected-main baseline",
+      "verify each agent branch and focused evidence",
+      "reconcile backend contract and frontend consumption",
+      "classify mechanical, contract, architecture and scope conflicts",
+      "run shared alignment and full relevant gates",
+      "record RECONCILIATION PASS",
+      "validate merge candidate against protected main",
+      "merge only after MERGE PASS",
+      "rerun post-merge verification on main",
+      "only then mark milestone complete"
+    ],
+    "failureState": "RECONCILIATION_FAILED",
+    "completionRule": "An agent branch can be complete without the milestone being complete. P2.13 becomes complete only on reconciled, verified protected main."
+  },
+  "milestones": [
+    {
+      "id": "P2.11",
+      "title": "Reconciliation / foundation cleanup",
+      "phase": "A",
+      "status": "complete",
+      "owner": "manager",
+      "backendOwner": "agent-2",
+      "frontendOwner": "agent-1",
+      "dependencies": [
+        "P2.10"
+      ],
+      "inputs": [
+        "historical P2.11 branch evidence",
+        "manifest and contract-lock reconciliation",
+        "ADR-0011"
+      ],
+      "deliverables": [
+        "canonical architecture state",
+        "generated .ai pack reconciliation",
+        "historical evidence preserved",
+        "stale counts and status contradictions corrected"
+      ],
+      "implementationBoundary": "Historical foundation and reconciliation only. No P2.12 Skill or P2.13 Context & Session implementation is attributed to P2.11.",
+      "testsGates": [
+        "lego:arch",
+        "lego:foundation",
+        "lego:ai:check",
+        "sub-LEGO audit",
+        "scale-out honesty"
+      ],
+      "decisionDependencies": [
+        "XA-5 resolved in historical reconciliation",
+        "XA-8 through XA-18 remain manager decisions where applicable"
+      ],
+      "completionCriteria": [
+        "historical evidence is labelled historical",
+        "generated and curated documentation roles are explicit",
+        "main remains protected"
+      ],
+      "startEvidence": {
+        "reference": "historical P2.11 evidence documents",
+        "role": "historical evidence"
+      },
+      "finishEvidence": {
+        "reference": "docs/n8n-lego/RECONCILIATION-REPORT.md",
+        "role": "historical completion evidence; not current state"
+      },
+      "currentCommitReference": "historical evidence only; do not treat as current main",
+      "nextMilestone": "P2.12"
+    },
+    {
+      "id": "P2.12",
+      "title": "Skill",
+      "phase": "B",
+      "status": "complete",
+      "owner": "manager",
+      "backendOwner": "agent-2",
+      "frontendOwner": "agent-1",
+      "dependencies": [
+        "P2.11",
+        "lego-foundation capability registry"
+      ],
+      "inputs": [
+        "ai.skill declaration",
+        "XA-19 vocabulary diff",
+        "existing capability registry"
+      ],
+      "deliverables": [
+        "ai.skill@1.0.0",
+        "four published operations: skill.list, skill.resolve, skill.describe, skill.validate-selection",
+        "permissions ai:skill:read and ai:skill:select",
+        "lazy registry and six-state lifecycle",
+        "backend/frontend alignment"
+      ],
+      "implementationBoundary": "Skill registration, discovery, validation and lifecycle. No Skill procedure execution, no Agent Machine, no Memory store, no provider/runtime integration.",
+      "testsGates": [
+        "lego-skill.test.mjs",
+        "frontend skills/alignment tests",
+        "contract lock drift",
+        "lego:gate"
+      ],
+      "decisionDependencies": [
+        "XA-19 resolved",
+        "XA-11 remains open-for-manager"
+      ],
+      "completionCriteria": [
+        "ai.skill@1.0.0 locked",
+        "exactly four published operations",
+        "exactly two permissions",
+        "XA-19 resolved",
+        "XA-11 still open",
+        "no Skill runtime",
+        "frontend/backend alignment completed"
+      ],
+      "startEvidence": {
+        "commit": "e754c5df35b41b0ff2ac769519f05f056835411c",
+        "role": "current protected-main baseline"
+      },
+      "finishEvidence": {
+        "reference": "docs/n8n-lego/evidence/backend-lego-p212.json",
+        "role": "P2.12 evidence"
+      },
+      "currentCommitReference": "e754c5df35b41b0ff2ac769519f05f056835411c",
+      "nextMilestone": "P2.13"
+    },
+    {
+      "id": "P2.13",
+      "title": "Context & Session",
+      "phase": "B",
+      "status": "in-progress",
+      "owner": "manager",
+      "backendOwner": "agent-2",
+      "frontendOwner": "agent-1",
+      "dependencies": [
+        "P2.12",
+        "lego-foundation contract and lifecycle primitives"
+      ],
+      "inputs": [
+        "ai.context conceptual declaration",
+        "ai.agent-session conceptual declaration",
+        "P2.12 protected-main baseline",
+        "Manager merge and reconciliation protocol"
+      ],
+      "deliverables": [
+        "ai.context@1.0.0",
+        "ai.agent-session@1.0.0",
+        "bounded context/session registry mechanics",
+        "selective context loading",
+        "snapshot identity and checksum lineage",
+        "explicit session lifecycle",
+        "NORMAL -> PREPARE -> ROLLOVER orchestration",
+        "structured bounded continuation package",
+        "rehydration and verified/degraded/failed continuity results",
+        "backend tests and frontend contract consumption"
+      ],
+      "implementationBoundary": "Context/session lifecycle, snapshots, references, compaction bookkeeping, checksum lineage, rollover, continuation serialization, rehydration, verification, bounded local state and presentation. Context is not Conversation, Session is not Context Window, Memory is not Context, and Execution is not implemented here.",
+      "nonScope": [
+        "model inference",
+        "provider API calls",
+        "Agent Machine execution loop",
+        "multi-agent runtime",
+        "Skill execution",
+        "Memory persistent store",
+        "Workspace executor",
+        "filesystem/terminal authority",
+        "MCP runtime",
+        "Runtime Adapter runtime",
+        "Node Creator runtime",
+        "Translation runtime",
+        "token provider integration",
+        "external agent runtime integration",
+        "Rust implementation"
+      ],
+      "testsGates": [
+        "lego-context-session.test.mjs",
+        "frontend Context & Session suite",
+        "backend/frontend contract alignment",
+        "lego:arch",
+        "lego:foundation",
+        "lego:capabilities",
+        "lego:scaleout",
+        "lego:ai:check",
+        "sub-LEGO audit",
+        "boot payload verification",
+        "lego:gate"
+      ],
+      "decisionDependencies": [
+        "XA-11 remains open-for-manager",
+        "no new XA row for implementation drift",
+        "Manager reconciliation PASS and MERGE PASS are required"
+      ],
+      "completionCriteria": [
+        "one Context & Session LEGO with no duplicate domain",
+        "locked contracts and exact frontend/backend vocabulary",
+        "context/session lifecycle and fail-closed invalid transitions",
+        "integrity and security boundaries tested",
+        "frontend shows explicit continuation/degraded/failure states without fabricated tokens",
+        "authoritative docs regenerated",
+        "reconciled protected-main post-merge verification passes"
+      ],
+      "startEvidence": {
+        "commit": "e754c5df35b41b0ff2ac769519f05f056835411c",
+        "branch": "arena/01a0c6b5-n8n-rust-v-4",
+        "role": "P2.12 protected-main baseline and Agent 2 implementation start"
+      },
+      "finishEvidence": {
+        "reference": "pending Manager reconciliation; agent-2 evidence is branch-local until reconciliation",
+        "role": "not complete until protected-main merge and post-merge verification"
+      },
+      "currentCommitReference": "arena/01a0c6b5-n8n-rust-v-4",
+      "nextMilestone": "P2.14",
+      "reconciliation": {
+        "verdict": "RECONCILIATION_FAILED",
+        "baseline": "e754c5df35b41b0ff2ac769519f05f056835411c",
+        "conflict": "Agent 1 Context & Session frontend-consumption branch is unavailable for the mandatory two-branch comparison.",
+        "contract": "ai.context@1.0.0 and ai.agent-session@1.0.0 backend contract rows are present on Agent 2; frontend consumption alignment cannot be verified without Agent 1 branch.",
+        "agent": "agent-1",
+        "reason": "The registered ref arena/01a0c6b4-n8n-rust-v-4 is not present locally or in origin refs; only the Agent 2 working ref is available.",
+        "requiredDecision": "Manager must provide or restore the Agent 1 ref, then rerun reconciliation against the same protected baseline before any merge approval.",
+        "blockingTest": "Agent 1 focused Context & Session tests plus cross-agent alignment tests cannot run until the Agent 1 branch/ref is available.",
+        "evidence": "git show-ref / git ls-remote origin: registered Agent 1 ref absent; Agent 2 focused tests and shared gates pass independently."
+      }
+    },
+    {
+      "id": "P2.14",
+      "title": "Memory",
+      "phase": "B",
+      "status": "planned",
+      "owner": "manager",
+      "backendOwner": "manager-designated later",
+      "frontendOwner": "agent-1",
+      "dependencies": [
+        "P2.13 Context & Session foundation"
+      ],
+      "inputs": [
+        "P2.13 verified context replacement boundary",
+        "memory contract decision"
+      ],
+      "deliverables": [
+        "persistent memory contract and implementation plan"
+      ],
+      "implementationBoundary": "Memory survives context replacement. It is not part of P2.13 and must not be smuggled into context/session state.",
+      "testsGates": [
+        "planned after contract publication"
+      ],
+      "decisionDependencies": [
+        "XA-12 memory publication/ownership"
+      ],
+      "completionCriteria": [
+        "Manager publishes a canonical memory contract and explicit provider boundary"
+      ],
+      "startEvidence": null,
+      "finishEvidence": null,
+      "currentCommitReference": null,
+      "nextMilestone": "P2.15"
+    },
+    {
+      "id": "P2.15",
+      "title": "Workspace",
+      "phase": "B",
+      "status": "planned",
+      "owner": "manager",
+      "backendOwner": "manager-designated later",
+      "frontendOwner": "agent-1",
+      "dependencies": [
+        "P2.13 Context & Session foundation",
+        "P2.14 Memory contract where required"
+      ],
+      "inputs": [
+        "workspace core-domain boundary",
+        "P2.13 session/task references"
+      ],
+      "deliverables": [
+        "workspace-scoped execution boundary contract"
+      ],
+      "implementationBoundary": "Workspace runtime and filesystem/terminal authority are not implemented in P2.13.",
+      "testsGates": [
+        "planned after contract publication"
+      ],
+      "decisionDependencies": [
+        "workspace ownership and AI extension decision"
+      ],
+      "completionCriteria": [
+        "no duplicate ai-workspace domain",
+        "scope and authority boundaries are explicit"
+      ],
+      "startEvidence": null,
+      "finishEvidence": null,
+      "currentCommitReference": null,
+      "nextMilestone": "P2.16"
+    },
+    {
+      "id": "P2.16",
+      "title": "Agent Machine / execution foundation",
+      "phase": "B",
+      "status": "planned",
+      "owner": "manager",
+      "backendOwner": "manager-designated later",
+      "frontendOwner": "agent-1",
+      "dependencies": [
+        "P2.13 Context & Session",
+        "P2.14 Memory",
+        "P2.15 Workspace",
+        "approval contract readiness"
+      ],
+      "inputs": [
+        "session identity",
+        "context references",
+        "task identity",
+        "continuation state",
+        "budgets",
+        "artifact/approval references"
+      ],
+      "deliverables": [
+        "Agent Machine contract and execution foundation, subject to dependency readiness"
+      ],
+      "implementationBoundary": "P2.13 provides foundations only. It does not implement the Agent Machine loop or multi-agent runtime.",
+      "testsGates": [
+        "planned after dependency readiness"
+      ],
+      "decisionDependencies": [
+        "Agent Machine contract and execution ownership"
+      ],
+      "completionCriteria": [
+        "dependencies are ready and execution loop is separately scoped"
+      ],
+      "startEvidence": null,
+      "finishEvidence": null,
+      "currentCommitReference": null,
+      "nextMilestone": "P2.17"
+    },
+    {
+      "id": "P2.17+",
+      "title": "Later capability ladder",
+      "phase": "C-F",
+      "status": "planned",
+      "owner": "manager",
+      "backendOwner": "per milestone assignment",
+      "frontendOwner": "agent-1",
+      "dependencies": [
+        "P2.16 Agent Machine readiness"
+      ],
+      "inputs": [
+        "verified preceding milestone evidence"
+      ],
+      "deliverables": [
+        "Phase C Artifact / Approval / MCP / Runtime Adapter",
+        "Phase D Work Trace / Node Creator / Translation / Token & Usage",
+        "Phase E external providers",
+        "Phase F measured native optimisation"
+      ],
+      "implementationBoundary": "Future ladder only. Exact future numbering can be split or refined by Manager when implementation evidence requires it, but only by updating this canonical register.",
+      "testsGates": [
+        "defined per refined milestone"
+      ],
+      "decisionDependencies": [
+        "future contract and ownership decisions"
+      ],
+      "completionCriteria": [
+        "each future milestone gets its own evidence before status changes"
+      ],
+      "startEvidence": null,
+      "finishEvidence": null,
+      "currentCommitReference": null,
+      "nextMilestone": null
+    }
+  ],
+  "agentBranches": {
+    "agent1": "arena/01a0c6b4-n8n-rust-v-4",
+    "agent2": "arena/01a0c6b5-n8n-rust-v-4"
+  }
+}

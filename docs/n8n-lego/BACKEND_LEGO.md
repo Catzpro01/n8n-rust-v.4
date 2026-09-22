@@ -1,7 +1,12 @@
-# Backend LEGO foundation (P2.6) + lifecycle certification (P2.7)
+# Backend LEGO foundation (P2.6) + lifecycle certification (P2.7) + P2.13 implementation overlay
 
-Status: **implemented and certified**, enforced by `npm run lego:gate`.
-Baseline: `main` at `cb71dbb2` (P2 compatibility contract layer, merged, CI green).
+> The sections below retain historical P2.6/P2.7/P2.11 evidence. They are not rewritten to look current. Current granular status is canonical in `docs/n8n-lego/milestones.json` and generated in `.ai/master/MILESTONE_REGISTER.md`.
+
+**Current milestone:** P2.13 — Context & Session (**in-progress on Agent 2; not complete until Manager reconciliation, merge validation and post-merge verification**).
+
+**Protected main baseline:** `e754c5df35b41b0ff2ac769519f05f056835411c` (P2.12 Skill baseline).
+
+**P2.13 implementation:** `apps/n8n-lego/src/lego/context-session.mjs`, public contracts `context.mjs` and `agent-session.mjs`, contract locks `ai.context@1.0.0` and `ai.agent-session@1.0.0`. AI runtime, Memory persistence, Workspace execution, MCP/Runtime Adapter runtime, Agent Machine loop and Rust remain out of scope.
 
 * **P2.6** built the socket system: domain boundaries, ownership, contracts,
   error identity, versioning, the legacy boundary and a mechanical isolation gate.
@@ -294,11 +299,13 @@ Rule **R7** of the gate diffs the declared exports against the real exported
 symbols, so a contract cannot drift silently: adding `foo` to a locked contract
 file fails the build until the lock and version are updated.
 
-Locked contracts today (9): `compat.http` (1.0.0), `lego.error-contract` (1.0.0),
-`lego.domain-registry` (1.1.0), `lego.contract-compat` (1.0.0),
-`kernel.platform` (1.0.0), `reference.lego` (1.1.0),
-`reference.validation` (1.1.0), `reference.validation.schema` (1.0.0),
-`reference.repository` (1.0.0).
+The current contract lock has **17 rows**. The historical foundation set remains:
+`compat.http` (1.0.0), `lego.error-contract` (1.0.0), `lego.domain-registry` (1.1.0),
+`lego.contract-compat` (1.0.0), `kernel.platform` (1.0.0), `reference.lego` (1.1.0),
+`reference.validation` (1.1.0), `reference.validation.schema` (1.0.0), and
+`reference.repository` (1.0.0). P2.12 added `ai.skill@1.0.0`; P2.13 adds the smallest
+published Context & Session rows: `ai.context@1.0.0` and `ai.agent-session@1.0.0`.
+The machine-readable lock is authoritative.
 
 A domain that publishes several contracts names its **primary** one
 (`contract.id`), so R9 can compare the registry and the lock without ambiguity.
@@ -318,6 +325,9 @@ A domain that publishes several contracts names its **primary** one
 | 2026-09-22 | `reference.validation` | 1.1.0 | P2.7: added `explain()` and the optional `strict` input — additive; **the demonstration that a child bump does not move its parent or siblings** |
 | 2026-09-22 | `reference.validation.schema` | 1.0.0 | P2.7: initial publication (two interchangeable implementations) |
 | 2026-09-22 | `reference.repository` | 1.0.0 | P2.7: initial publication (the sibling that must stay untouched) |
+| 2026-09-22 | `ai.skill` | 1.0.0 | P2.12: published the existing Skill vocabulary; four discovery operations and two permissions; no execution runtime |
+| 2026-09-22 | `ai.context` | 1.0.0 | P2.13: published the established Context vocabulary plus bounded lifecycle/rollover operations; additive initial publication |
+| 2026-09-22 | `ai.agent-session` | 1.0.0 | P2.13: published the established bounded Session vocabulary and lifecycle states; additive initial publication |
 
 ## 10. Ownership model
 

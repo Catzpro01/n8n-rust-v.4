@@ -10,13 +10,15 @@ document is right and the prose is stale.
 
 | | |
 | --- | --- |
-| Protected main baseline | `cb71dbb201d635b15b49933764c2c2336e745809` |
-| Agent 1 branch | `arena/01a0c53e-n8n-rust-v-4` |
-| Agent 2 branch | `arena/01a0c521-n8n-rust-v-4` |
-| **Current repository state** | `c1eca8cc` (reconciled) |
-| Reconciled from agent-1 tip | `8c299609` |
-| Historical evidence commit (P2.11 finding) | `bdd0f1d2d6c8d7bc1c1ff3d881ddc2b3bd93713d` |
-| Current phase | P2.11 |
+| Protected main baseline | `e754c5df35b41b0ff2ac769519f05f056835411c` |
+| Agent 1 branch | `arena/01a0c6b4-n8n-rust-v-4` |
+| Agent 2 branch | `arena/01a0c6b5-n8n-rust-v-4` |
+| **Current milestone** | **P2.13** |
+| Previous completed milestone | **P2.12** |
+| Current branch state | `arena/01a0c6b5-n8n-rust-v-4` (implementation branch; not protected main) |
+| Historical reconciled state | `c1eca8cc` (historical evidence, not current main) |
+| Historical P2.11 evidence commit | `bdd0f1d2d6c8d7bc1c1ff3d881ddc2b3bd93713d` |
+| Strategic phase | P2.13 |
 
 A historical evidence commit is the state a past finding was verified against. It
 is kept deliberately and is **not** rewritten to look current — the current state
@@ -27,17 +29,28 @@ is the row marked as such.
 | | |
 | --- | --- |
 | Core LEGO domains | **26** |
-| Locked contracts | 15 |
+| Locked contracts | 17 |
 | Declared capabilities | 83 |
-| Declared operations | 143 |
+| Declared operations | 146 |
 | Published error codes | 36 |
 | Official AI/Agent LEGO | 15 |
+
+## Milestone state
+
+- **Current:** `P2.13` — Context & Session (**in-progress**)
+- **Previous complete:** `P2.12`
+- **Why next:** P2.12; lego-foundation contract and lifecycle primitives
+- **Owns:** ai.context@1.0.0; ai.agent-session@1.0.0; bounded context/session registry mechanics; selective context loading; snapshot identity and checksum lineage; explicit session lifecycle; NORMAL -> PREPARE -> ROLLOVER orchestration; structured bounded continuation package; rehydration and verified/degraded/failed continuity results; backend tests and frontend contract consumption
+- **Does not implement:** model inference; provider API calls; Agent Machine execution loop; multi-agent runtime; Skill execution; Memory persistent store; Workspace executor; filesystem/terminal authority; MCP runtime; Runtime Adapter runtime; Node Creator runtime; Translation runtime; token provider integration; external agent runtime integration; Rust implementation
+- **Next:** `P2.14`
+- **Completion gate:** one Context & Session LEGO with no duplicate domain; locked contracts and exact frontend/backend vocabulary; context/session lifecycle and fail-closed invalid transitions; integrity and security boundaries tested; frontend shows explicit continuation/degraded/failure states without fabricated tokens; authoritative docs regenerated; reconciled protected-main post-merge verification passes
 
 ## The 15 AI/Agent LEGO by status
 
 - **IMPLEMENTED** — 2: Skill, Capability
-- **CONTRACT-ONLY** — 8: AI Foundation, Agent Machine, Context & Session, MCP Adapter, Runtime Adapter, Artifact, Approval, Agent Event & Work Trace
+- **CONTRACT-ONLY** — 7: AI Foundation, Agent Machine, MCP Adapter, Runtime Adapter, Artifact, Approval, Agent Event & Work Trace
 - **PLANNED** — 5: Memory, Workspace, Universal Translation, Node Creator, Token & Usage
+- **IN-PROGRESS** — 1: Context & Session
 
 ## Gates
 
@@ -55,13 +68,12 @@ is the row marked as such.
 
 ## What is NOT true
 
-- NOT scale-out ready — two class-A storage blockers remain in src/store.mjs (agent-5, P8).
-- The AI runtime is NOT implemented.
-- Model inference is NOT implemented.
-- The MCP runtime is NOT implemented.
-- No vendor adapter is implemented.
-- The Agent Machine runtime is NOT implemented.
-- The frontend browser gate is NOT available locally (CI-only; Chromium cannot be installed in the dev sandbox).
+- AI runtime is NOT implemented: no model inference, provider API calls, Agent Machine loop or multi-agent runtime.
+- Model inference is NOT implemented; no provider API calls are made.
+- Memory persistent store remains NOT IMPLEMENTED; Context is what is loaded now and Memory is what survives replacement.
+- Workspace runtime, MCP runtime, Runtime Adapter runtime, Node Creator runtime and Translation runtime remain NOT IMPLEMENTED.
+- Rust remains NOT STARTED. The backend is NOT scale-out ready; scale-out remains NOT READY.
+- P2.13 is not COMPLETE until Manager reconciliation, merge validation and post-merge verification pass.
 
 ## Scale-out readiness
 
