@@ -61,6 +61,27 @@ const MOVED_BY_FINALIZE = Object.freeze(['aiFoundationCapability', 'aiPermission
 const finalized = skillContractRow() !== null;
 const awaitingFinalize = new Set(finalized ? [] : MOVED_BY_FINALIZE);
 
+/**
+ * The P2.13 publication moved five more sets — and it is **GitHub-visible but not on this branch**.
+ *
+ * Agent-2 published `ai.context@1.0.0` and `ai.agent-session@1.0.0` on
+ * `arena/01a0c6b5-n8n-rust-v-4` @ `fb254f32`: two contract-lock rows (15 -> 17), five registry
+ * operations instead of two, a sixth AI-set maturity word, the published continuation-field
+ * spelling, and the `CONTEXT_MANAGER_STATES` / `CONTINUATION_VERIFICATION` enumerations that this
+ * lock had recorded as pending. The lock quotes that publication, because a peer's published change
+ * is not an assumption this branch may keep ignoring — but this branch's own backend copy is still
+ * `e754c5df`, which carries none of it. So the five sets are compared **only** against a tree that
+ * publishes the row (point `N8N_BACKEND_LEGO_ROOT` at the peer tree, or run after the merge), and
+ * the test says out loud that it did not compare them otherwise.
+ */
+const MOVED_BY_P213_PUBLICATION = Object.freeze([
+  'aiLegoStatus', 'contextOperation', 'continuationSection', 'contextRolloverPhase', 'continuationVerification',
+]);
+const contextLockRow = () => lockRows().find((row) => (row.id ?? row.contract) === 'ai.context') ?? null;
+const sessionLockRow = () => lockRows().find((row) => (row.id ?? row.contract) === 'ai.agent-session') ?? null;
+const published213 = contextLockRow() !== null && sessionLockRow() !== null;
+const awaiting213 = new Set(published213 ? [] : MOVED_BY_P213_PUBLICATION);
+
 /** The declaration a set says it quoted: the exported symbol, or the JSON path. */
 const declarationOf = (set) => `${set.provenance.file}#${set.provenance.symbol ?? set.provenance.path}`;
 
@@ -239,6 +260,10 @@ test('every tolerated difference is backed by an open registered decision that n
 test('every quoted value is the value the backend declares, in the backend tree that was quoted', { skip }, async (t) => {
   const registered = new Set(DECISIONS.decisions.map((decision) => decision.id));
   const awaited = [];
+  const awaitedPublication = [];
+  if (!published213) {
+    t.diagnostic(`the pointed-at backend tree predates the P2.13 publication (agent-2 @ ${QUOTED_FROM.publication.commit}: ${CONTRACT_LOCK} publishes no ai.context row): ${MOVED_BY_P213_PUBLICATION.join(', ')} are quoted from that publication and are not compared against this tree — run with N8N_BACKEND_LEGO_ROOT pointed at the peer tree to compare them for real`);
+  }
   if (!finalized) {
     t.diagnostic(`the pointed-at backend tree predates the P2.12 finalize (${CONTRACT_LOCK} publishes no ai.skill row): ${MOVED_BY_FINALIZE.join(', ')} are not compared against it — run with N8N_BACKEND_LEGO_ROOT pointed at the tree that publishes ai.skill@1.0.0`);
   }
@@ -247,6 +272,12 @@ test('every quoted value is the value the backend declares, in the backend tree 
       // The pointed-at tree predates the published row: its declaration still carries the
       // pre-finalize values, and comparing against it would probe the finalize, not the quote.
       awaited.push(set.id);
+      continue;
+    }
+    if (awaiting213.has(set.id)) {
+      // Same rule for the P2.13 publication: this tree does not carry it, so comparing would probe
+      // the publication instead of the quote. Not a pass — an announced, bounded non-comparison.
+      awaitedPublication.push(set.id);
       continue;
     }
     const observed = await readDeclaration(set);
@@ -272,6 +303,20 @@ test('every quoted value is the value the backend declares, in the backend tree 
   // The skip is not silent and not open-ended: it happens only for the sets the finalize moved,
   // and only when the pointed-at lock publishes no `ai.skill` row. The moment it does, every set
   // is compared and the finalize is part of what is checked.
+  // The P2.13 non-comparison is bounded the same way: exactly the five sets the publication moved,
+  // and only while the pointed-at tree publishes no `ai.context` row. The moment it does, every one
+  // of the five is compared — including the two promoted word lists and the published spelling of
+  // the continuation sections.
+  if (!published213) {
+    assert.deepEqual([...awaitedPublication].sort(), [...MOVED_BY_P213_PUBLICATION].sort(), 'the sets awaiting the P2.13 publication are the five it moved');
+    assert.equal(contextLockRow(), null, 'the pointed-at lock publishes no ai.context row');
+    assert.equal(existsSync(join(BACKEND, 'context-session.mjs')), false,
+      'and the pointed-at tree carries no Context & Session contract surface — the comparison runs against the tree that does');
+  } else {
+    assert.deepEqual([...awaitedPublication], [], 'nothing is awaited once the pointed-at tree publishes ai.context');
+    assert.equal(contextLockRow().version, vocabularyOf('contextRolloverPhase').provenance.contract.version, 'the promoted phase machine quotes the published version');
+    assert.equal(sessionLockRow().version, vocabularyOf('agentSessionState').provenance.contract.version, 'and the session sets quote theirs');
+  }
   if (!finalized) {
     assert.deepEqual([...awaitingFinalize].sort(), [...MOVED_BY_FINALIZE].sort(), 'the awaited sets are the three the finalize moved');
     assert.equal(skillContractRow(), null, 'the pointed-at lock publishes no ai.skill row');
@@ -308,6 +353,11 @@ test('the quoted contract versions and owners are the ones the contract lock pub
     if (set.provenance.contract.id === 'ai.skill' && !finalized) {
       // Same rule as above: a tree that predates the published row cannot vouch for the quote.
       assert.equal(skillContractRow(), null);
+      continue;
+    }
+    if (set.provenance.contract.id === 'ai.context' && !published213) {
+      // The P2.13 publication is on the peer branch: this tree cannot vouch for the quote yet.
+      assert.equal(contextLockRow(), null);
       continue;
     }
     const row = rows.find((entry) => (entry.id ?? entry.contract) === set.provenance.contract.id);

@@ -59,7 +59,12 @@ import {
   PUBLISHED_OPERATION_IDS,
   PENDING_CONTRACT_ROWS,
   PENDING_PUBLICATIONS,
+  PROMOTED_PUBLICATIONS,
   ROLLOVER_LIFECYCLE_STATES,
+  ROLLOVER_PHASES,
+  VERIFICATION_RESULTS,
+  continuationAffordances,
+  forbiddenReasons,
   SESSION_CONTRACT_ID,
   SESSION_DECLARATION_SOURCE,
   SESSION_FIELDS,
@@ -83,6 +88,7 @@ import {
   describeContextSession,
   expectedRolloverPhase,
   pendingPublicationOf,
+  promotionOf,
   rehydration,
   scanForbiddenKeys,
   scopeLadder,
@@ -143,10 +149,52 @@ const lockRows = () => {
 };
 const rowFor = (id) => lockRows().find((row) => (row.id ?? row.contract) === id) ?? null;
 
+/**
+ * Whether the pointed-at tree carries agent-2's P2.13 publication (`ai.context@1.0.0` and
+ * `ai.agent-session@1.0.0`, pushed to `arena/01a0c6b5-n8n-rust-v-4` @ `fb254f32`).
+ *
+ * This branch's own backend copy is still `e754c5df`, which publishes neither row, still spells two
+ * continuation sections the manifest way and still registers two context operations. The lock quotes
+ * the publication — a peer's published change is not an assumption this branch may keep ignoring —
+ * so two comparisons are bounded by this predicate, and bounded means *announced*: the differences a
+ * pre-publication tree produces are asserted exactly, and the open decision that carries them is
+ * checked by id. Run with `N8N_BACKEND_LEGO_ROOT` pointed at the peer tree (or after the merge) and
+ * the same tests demand `in-sync`.
+ */
+const publishes213 = () => rowFor(CONTEXT_CONTRACT_ID) !== null && rowFor(SESSION_CONTRACT_ID) !== null;
+/**
+ * The spelling divergence is **inside the backend** and survives its own publication:
+ * `ai-lego-set.json#lego[id=context-session].continuationPackage` says `toolState`/`refs` on the
+ * peer branch exactly as it does on protected main, while the locked contract surface publishes
+ * `toolStateReferences`/`importantReferences`. The frontend quotes the contract, reports the
+ * manifest as a difference, and waits for its owner to move one of the two — it does not average
+ * them and it does not coin a third spelling. When the manifest is fixed, this list becomes empty
+ * and the same tests demand `in-sync` with no edit here.
+ */
+const BACKEND_INTERNAL_DIVERGENCE = Object.freeze({ block: 'lego', field: 'continuationPackage', removed: ['toolStateReferences', 'importantReferences'], added: ['toolState', 'refs'] });
+const PRE_MERGE_DIVERGENCE = Object.freeze({ block: 'capabilities', field: '[id=ai.context].operations', removed: ['rollover', 'rehydrate', 'verify'], added: [] });
+const registeredDifferences = () => (publishes213() ? [BACKEND_INTERNAL_DIVERGENCE] : [BACKEND_INTERNAL_DIVERGENCE, PRE_MERGE_DIVERGENCE]);
+const assertAwaitingPublicationDifferences = (differences) => {
+  const expectedDifferences = registeredDifferences();
+  assert.deepEqual(differences.map((entry) => `${entry.block} ${entry.field}`).sort(),
+    expectedDifferences.map((entry) => `${entry.block} ${entry.field}`).sort(),
+    `exactly the registered differences, and nothing else: ${JSON.stringify(differences)}`);
+  for (const expected of expectedDifferences) {
+    const difference = differences.find((entry) => entry.block === expected.block && entry.field === expected.field);
+    assert.ok(difference, `${expected.block} ${expected.field} is reported`);
+    assert.deepEqual([...difference.removed].sort(), [...expected.removed].sort(), `${expected.field}: the quoted values this tree does not declare are the registered ones`);
+    assert.deepEqual([...difference.added].sort(), [...expected.added].sort(), `${expected.field}: and the values it declares that the lock does not quote are the registered ones`);
+  }
+  const row = DECISIONS.decisions.find((entry) => entry.id === CONTEXT_SESSION_DECISION);
+  assert.ok(row, 'the difference is carried by a recorded decision');
+  assert.equal(row.status.startsWith('open'), true, 'which is still open — the frontend does not resolve it');
+  assert.match(`${row.question} ${row.finding}`, /continuationSection|contextOperation/, 'and names the vocabulary that moved');
+};
+
 /* ---------------------------------------------------------------- 1. provenance */
 
 test('the surface quotes its vocabulary instead of declaring one', () => {
-  assert.equal(CONTEXT_SESSION_QUOTED_VOCABULARIES.length, 13, 'thirteen quoted sets');
+  assert.equal(CONTEXT_SESSION_QUOTED_VOCABULARIES.length, 15, 'fifteen quoted sets: thirteen declared at P2.13 plus the two promoted when agent-2 published ai.context@1.0.0');
   for (const id of CONTEXT_SESSION_QUOTED_VOCABULARIES) {
     const set = vocabularyOf(id);
     assert.ok(set, `${id} is a declared vocabulary`);
@@ -166,6 +214,15 @@ test('the surface quotes its vocabulary instead of declaring one', () => {
   assert.deepEqual(SESSION_FIELDS, vocabularyOf('agentSessionField').values);
   assert.deepEqual(SESSION_REFERENCES, vocabularyOf('agentSessionReference').values);
   assert.deepEqual(TOKEN_KINDS, vocabularyOf('tokenKind').values);
+  assert.deepEqual(ROLLOVER_PHASES, vocabularyOf('contextRolloverPhase').values);
+  assert.deepEqual(VERIFICATION_RESULTS, vocabularyOf('continuationVerification').values);
+  // The two promoted sets quote a published contract, and name the commit that published it.
+  for (const id of ['contextRolloverPhase', 'continuationVerification', 'continuationSection']) {
+    const set = vocabularyOf(id);
+    assert.deepEqual(set.provenance.contract, { id: 'ai.context', version: '1.0.0', owner: 'manager' }, `${id} quotes the published contract`);
+    assert.equal(set.provenance.publishedOn.commit, 'fb254f32', `${id} names the agent-2 commit that published it`);
+    assert.equal(set.provenance.publishedOn.branch, 'arena/01a0c6b5-n8n-rust-v-4', `${id} names the branch, so a reader can fetch what was quoted`);
+  }
 });
 
 test('the shapes the brief names are the shapes the backend declares', () => {
@@ -175,23 +232,51 @@ test('the shapes the brief names are the shapes the backend declares', () => {
   assert.deepEqual([...SESSION_FIELDS], ['sessionId', 'agentId', 'parentSessionId', 'taskId', 'workflowId', 'executionId', 'runtimeId', 'status', 'createdAt', 'updatedAt']);
   assert.deepEqual([...SESSION_REFERENCES], ['contextRef', 'artifactRef', 'traceRef']);
   assert.equal(CONTINUATION_SECTIONS.length, 14, 'the fourteen continuation sections');
-  assert.ok(CONTINUATION_SECTIONS.includes('refs'), 'the published spelling of "important references" is `refs`');
-  assert.ok(!CONTINUATION_SECTIONS.includes('references'), 'and the unpublished spelling is not used');
+  assert.deepEqual([...CONTINUATION_SECTIONS], [
+    'identity', 'objective', 'plan', 'completedWork', 'unfinishedWork', 'constraints', 'decisions',
+    'activeEntities', 'toolStateReferences', 'artifacts', 'importantReferences', 'errors',
+    'unresolvedQuestions', 'compressedHistory',
+  ], 'the published contract spelling, in publication order');
+  // The AI-set manifest still spells two of them differently. That is a divergence INSIDE the
+  // backend, and it is recorded rather than averaged: the published contract wins in the UI.
+  const divergence = vocabularyOf('continuationSection').registeredDivergence;
+  assert.equal(divergence.decision, CONTEXT_SESSION_DECISION, 'the divergence is carried by an open Manager-owned decision');
+  assert.deepEqual(divergence.differs, [
+    { published: 'toolStateReferences', manifest: 'toolState' },
+    { published: 'importantReferences', manifest: 'refs' },
+  ], 'exactly two spellings differ, and both are named');
+  assert.equal(divergence.identical, 12, 'the other twelve are identical, so the difference cannot widen silently');
+  assert.deepEqual([...divergence.against.values], [
+    'identity', 'objective', 'plan', 'completedWork', 'unfinishedWork', 'constraints', 'decisions',
+    'activeEntities', 'toolState', 'artifacts', 'refs', 'errors', 'unresolvedQuestions', 'compressedHistory',
+  ], 'and the manifest spelling is recorded verbatim, so agent-2 can see exactly what to move');
 });
 
-test('a word nobody published stays pending, named, owned and refused', () => {
-  assert.equal(PENDING_PUBLICATIONS.length, 2, 'the rollover phase machine and the verification results');
-  for (const entry of PENDING_PUBLICATIONS) {
-    assert.ok(entry.expectedValues.length >= 3, `${entry.id} names the ruled values`);
-    assert.match(entry.decidedBy, /manager, P2\.13 Context & Session brief §B[46]/, `${entry.id} cites the ruling that decided its shape`);
-    assert.equal(entry.publicationPending.decision, CONTEXT_SESSION_DECISION, `${entry.id} names the decision that owes its publication`);
-    assert.ok(DECISIONS.decisions.some((row) => row.id === CONTEXT_SESSION_DECISION), 'and that decision is recorded');
-    assert.equal(vocabularyOf(entry.id), null, `${entry.id} is NOT a quoted set: nothing publishes it, so nothing quotes it`);
-    assert.equal(pendingPublicationOf(entry.id), entry, `${entry.id} is retrievable by id`);
+test('a word the backend published is quoted, and the promotion is recorded as evidence', () => {
+  // The two Context & Session word lists were pending while nothing published them. Agent-2
+  // published both at fb254f32, so they are quoted now — and the promotion is recorded with the
+  // commit, the symbol and the values, because "we coined it and it happened to match" must stay
+  // distinguishable from "we quoted it".
+  assert.equal(PENDING_PUBLICATIONS.length, 0, 'nothing Context & Session is pending any more');
+  assert.equal(PROMOTED_PUBLICATIONS.length, 2, 'the rollover phase machine and the verification results were promoted');
+  for (const entry of PROMOTED_PUBLICATIONS) {
+    assert.equal(entry.publishedBy.commit, 'fb254f32', `${entry.id} names the commit that published it`);
+    assert.equal(entry.publishedBy.agent, 'agent-2', `${entry.id} names who published it`);
+    assert.equal(entry.publishedAs.lockRow, 'ai.context@1.0.0', `${entry.id} names the lock row`);
+    assert.match(entry.publishedAs.file, /^apps\/n8n-lego\/src\/lego\//, `${entry.id} names the backend file, not this package`);
+    assert.deepEqual([...entry.ruledValues], [...entry.publishedValues], `${entry.id}: the published enumeration equals the ruled one`);
+    assert.equal(entry.identical, true, `${entry.id}: promotion changed the provenance, not the words`);
+    assert.equal(entry.decision, CONTEXT_SESSION_DECISION, `${entry.id} still names the decision that owed the publication`);
+    assert.deepEqual([...vocabularyOf(entry.quotedAs.replace('VOCABULARIES#', '')).values], [...entry.publishedValues], `${entry.id} is quoted with exactly the published values`);
+    assert.equal(pendingPublicationOf(entry.id), null, `${entry.id} is no longer pending`);
+    assert.equal(promotionOf(entry.id), entry, `${entry.id} is retrievable as a promotion record`);
   }
-  assert.deepEqual([...pendingPublicationOf('contextRolloverPhase').expectedValues], ['NORMAL', 'PREPARE', 'ROLLOVER']);
-  assert.deepEqual([...pendingPublicationOf('continuationVerification').expectedValues], ['verified', 'degraded', 'failed']);
-  assert.equal(pendingPublicationOf('no-such-vocabulary'), null, 'an unknown id is not a synonym');
+  assert.deepEqual([...ROLLOVER_PHASES], ['NORMAL', 'PREPARE', 'ROLLOVER']);
+  assert.deepEqual([...VERIFICATION_RESULTS], ['verified', 'degraded', 'failed']);
+  assert.equal(promotionOf('no-such-vocabulary'), null, 'an unknown id is not a synonym');
+  // The gate that forced this promotion still exists for the next unpublished word: a pending row
+  // is legal only while nothing publishes it.
+  assert.equal(typeof pendingPublicationOf, 'function');
 });
 
 test('the two contract rows P2.13 owes are recorded, with the claim they were verified against', () => {
@@ -202,7 +287,19 @@ test('the two contract rows P2.13 owes are recorded, with the claim they were ve
     assert.equal(row.domain, 'ai-foundation');
     assert.equal(row.decision, CONTEXT_SESSION_DECISION);
     assert.match(row.declaredIn, /ai-lego-set\.json#lego\[id=context-session\]\.versioning/, 'the claim is cited, not remembered');
+    // Agent-2 published both rows on its branch; protected main still carries neither. Both facts
+    // are recorded, because "published" without saying where is how a branch invents a contract.
+    assert.equal(row.publishedOn.branch, 'arena/01a0c6b5-n8n-rust-v-4', `${row.contract} names the branch that publishes it`);
+    assert.equal(row.publishedOn.commit, 'fb254f32', `${row.contract} names the commit`);
+    assert.equal(row.publishedOn.status, 'implemented', `${row.contract} quotes the row's own status`);
+    assert.equal(row.publishedOn.onProtectedMain, false, `${row.contract} is not claimed to be on protected main`);
+    assert.ok(row.publishedOn.operations.length >= 3, `${row.contract} records the operations the row publishes`);
+    assert.ok(row.publishedOn.permissions.length >= 2, `${row.contract} records the permissions the row publishes`);
   }
+  assert.deepEqual([...PENDING_CONTRACT_ROWS.find((row) => row.contract === CONTEXT_CONTRACT_ID).publishedOn.operations],
+    ['load', 'compact', 'rollover', 'rehydrate', 'verify'], 'the five context operations the row publishes');
+  assert.deepEqual([...PENDING_CONTRACT_ROWS.find((row) => row.contract === SESSION_CONTRACT_ID).publishedOn.operations],
+    ['create', 'status', 'close'], 'and the three session operations');
   assert.equal(CONTEXT_DECLARED_VERSION, '1.0.0');
   assert.equal(CONTEXT_DECLARATION_SOURCE.publishedVersion, null, 'a claim is not a published version');
   assert.equal(SESSION_DECLARATION_SOURCE.publishedVersion, null);
@@ -224,10 +321,12 @@ test('provenance names the four declarations the surface is handed', () => {
 /* ------------------------------------------------- 2. publication state honesty */
 
 test('an unlocked contract is reported as declared-not-locked, never as published', { skip }, () => {
-  assert.equal(rowFor(CONTEXT_CONTRACT_ID), null, 'the baseline lock publishes no ai.context row');
-  assert.equal(rowFor(SESSION_CONTRACT_ID), null, 'and no ai.agent-session row');
+  if (!publishes213()) {
+    assert.equal(rowFor(CONTEXT_CONTRACT_ID), null, 'this tree publishes no ai.context row');
+    assert.equal(rowFor(SESSION_CONTRACT_ID), null, 'and no ai.agent-session row');
+  }
   const view = createContextSessionView({ surface: SURFACE, declaration: backendDeclaration() });
-  assert.equal(view.published, false);
+  assert.equal(view.published, false, 'a declaration is not a publication: nothing handed over here publishes the rows, so nothing is claimed');
   for (const contract of [view.contracts.context, view.contracts.session]) {
     assert.equal(contract.published, false);
     assert.equal(contract.status, 'declared-not-locked');
@@ -243,6 +342,19 @@ test('an unlocked contract is reported as declared-not-locked, never as publishe
   assert.equal(view.unsupported.error, 'lego.capability_unavailable');
   assert.equal(view.unsupported.contract.version, null);
   assert.equal(view.unsupported.contract.published, false);
+  // The same code, handed the rows this tree actually publishes, reports published — with no edit
+  // in between. That is the whole point of deriving the state: agent-2's publication flips it.
+  if (publishes213()) {
+    const publishedView = createContextSessionView({ surface: SURFACE, declaration: backendDeclaration(), contract: lockRows() });
+    assert.equal(publishedView.published, true);
+    assert.equal(publishedView.contracts.context.version, rowFor(CONTEXT_CONTRACT_ID).version, 'the rendered version is the locked one');
+    assert.equal(publishedView.contracts.context.status, rowFor(CONTEXT_CONTRACT_ID).status);
+    assert.equal(publishedView.contracts.context.owner, rowFor(CONTEXT_CONTRACT_ID).owner);
+    assert.equal(publishedView.contracts.context.agreesWithClaim, true, 'and it is the version the declaration claimed');
+    assert.equal(publishedView.contracts.session.version, rowFor(SESSION_CONTRACT_ID).version);
+    assert.equal(publishedView.unsupported, null, 'a published pair needs no unsupported answer');
+    assert.equal(publishedView.availability, 'available');
+  }
 });
 
 test('handed a real lock row, the same code reports published — the state is derived', () => {
@@ -277,14 +389,40 @@ test('if the backend publishes the rows, this surface must find them — pending
     assert.equal(view.contracts.context.version, contextRow.version, 'the rendered version is the locked one');
     assert.equal(view.contracts.context.owner, contextRow.owner);
   }
-  // The manifest's `rows` list must be filled in the same change that locks the contracts, so a
-  // published backend and a manifest that still says "nothing is locked" cannot both be true.
-  if (contextRow !== null || sessionRow !== null) {
-    assert.ok(SURFACE.publication.rows.length > 0, 'manifest/context-session.json records the rows it was verified against');
+  // The manifest must record the publication whichever tree it is read against — as the rows THIS
+  // tree publishes, or as the rows agent-2 published on its branch with the commit that published
+  // them. What it may not do is stay silent while a publication exists: a manifest that says
+  // "nothing is locked" next to a backend that locked both rows is how a frontend ends up quoting a
+  // claim instead of a contract.
+  const recorded = SURFACE.publication.rows.length > 0
+    ? SURFACE.publication.rows
+    : SURFACE.publication.publishedOnPeerBranch.rows;
+  assert.equal(recorded.length, 2, 'manifest/context-session.json records both rows it was verified against');
+  for (const row of recorded) {
+    assert.equal(row.version, '1.0.0');
+    assert.equal(row.owner, 'manager');
+    assert.equal(row.domain, 'ai-foundation');
+    assert.equal(row.status, 'implemented');
+  }
+  if (contextRow !== null && sessionRow !== null && !overridden) {
+    // The default tree publishes them, so the manifest must have moved with it in the same change.
     assert.equal(SURFACE.publication.status, 'published');
+    assert.deepEqual(SURFACE.publication.rows.map((row) => row.id ?? row.contract).sort(), [CONTEXT_CONTRACT_ID, SESSION_CONTRACT_ID].sort());
+    assert.deepEqual(SURFACE.publication.rows.map((row) => row.version), ['1.0.0', '1.0.0']);
+  } else if (contextRow !== null && sessionRow !== null) {
+    // Pointed at the peer tree: what the manifest recorded must be what that tree publishes.
+    const publishedIds = lockRows()
+      .filter((row) => [CONTEXT_CONTRACT_ID, SESSION_CONTRACT_ID].includes(row.id ?? row.contract))
+      .map((row) => `${row.id ?? row.contract}@${row.version}`)
+      .sort();
+    assert.deepEqual(recorded.map((row) => `${row.id ?? row.contract}@${row.version}`).sort(), publishedIds);
+    assert.equal(SURFACE.publication.publishedOnPeerBranch.commit, 'fb254f32');
+    assert.equal(SURFACE.publication.publishedOnPeerBranch.onProtectedMain, false, 'and it does not claim protected main published them');
   } else {
-    assert.equal(SURFACE.publication.rows.length, 0);
+    assert.equal(SURFACE.publication.rows.length, 0, 'this tree publishes neither row, so the surface derives declared-not-locked');
     assert.equal(SURFACE.publication.status, 'declared-not-locked');
+    assert.equal(SURFACE.publication.protectedMain.state, 'declared-not-locked');
+    assert.equal(SURFACE.publication.publishedOnPeerBranch.onProtectedMain, false);
   }
 });
 
@@ -302,7 +440,8 @@ test('pending vocabulary is promoted or the gate fails: a published word may not
   };
   walk(join(BACKEND, 'manifest'));
   walk(join(BACKEND, 'contracts'));
-  for (const file of ['ai-foundation.mjs', 'skill.mjs', 'foundation.mjs', 'interaction.mjs', 'negotiation.mjs']) {
+  for (const file of ['ai-foundation.mjs', 'skill.mjs', 'foundation.mjs', 'interaction.mjs', 'negotiation.mjs',
+    'context-session.mjs', 'context.mjs', 'agent-session.mjs']) {
     if (existsSync(join(BACKEND, file))) files.push(join(BACKEND, file));
   }
   // A vocabulary is published when the values are declared TOGETHER as one enumeration — a JSON
@@ -347,8 +486,13 @@ test('the quoted vocabulary is the vocabulary the backend tree declares, block f
   const declaration = backendDeclaration();
   const drift = declarationDrift({ declaration, surface: SURFACE, contract: lockRows() });
   assert.deepEqual(drift.compared.length >= 10, true, `${drift.compared.length} declarations compared: ${drift.compared.join(', ')}`);
-  assert.equal(drift.state, 'in-sync', JSON.stringify(drift.differences, null, 1));
-  assert.deepEqual([...drift.differences], []);
+  if (registeredDifferences().length === 0) {
+    assert.equal(drift.state, 'in-sync', JSON.stringify(drift.differences, null, 1));
+    assert.deepEqual([...drift.differences], []);
+  } else {
+    assert.equal(drift.state, 'drift', 'a registered difference is reported as drift, never averaged away');
+    assertAwaitingPublicationDifferences(drift.differences);
+  }
   assert.equal(drift.owner, 'manager');
   assert.equal(drift.decision, CONTEXT_SESSION_DECISION);
   // The uncomparable half is named, so silence is never mistaken for agreement.
@@ -518,13 +662,21 @@ test('the previous/next relationship comes from references, never from an inferr
 
 test('no usage reported means no phase, no percentage and no invented NORMAL', () => {
   const phase = expectedRolloverPhase({ threshold: 0.8 });
-  assert.equal(phase.expectedPhase, null);
-  assert.equal(phase.published, false);
-  assert.equal(phase.phasePublication, 'pending');
-  assert.equal(phase.decision, CONTEXT_SESSION_DECISION);
-  assert.deepEqual([...phase.phases], ['NORMAL', 'PREPARE', 'ROLLOVER'], 'the ruled phases are named as pending, not quoted');
+  const phaseSet = vocabularyOf('contextRolloverPhase');
+  const phasePublished = phaseSet.provenance.contract !== null;
+  assert.equal(phase.expectedPhase, null, 'silence is never a phase');
+  assert.equal(phase.published, phasePublished, 'the publication state is derived from the lock, not hardcoded');
+  assert.equal(phase.phasePublication, phasePublished ? 'published' : 'pending');
+  assert.equal(phase.decision, phasePublished ? null : CONTEXT_SESSION_DECISION);
+  assert.deepEqual([...phase.phases], ['NORMAL', 'PREPARE', 'ROLLOVER'], phasePublished
+    ? 'quoted from CONTEXT_MANAGER_STATES inside the locked ai.context@1.0.0 surface'
+    : 'the ruled phases are named as pending, not quoted');
+  if (phasePublished) {
+    assert.deepEqual(phase.phaseContract, { id: 'ai.context', version: '1.0.0', owner: 'manager' }, 'and the contract it came from is cited');
+  }
   assert.equal(phase.usage.state, 'not-reported');
-  assert.match(phase.detail, /NORMAL is not spelled locally/);
+  assert.match(phase.detail, /no phase to expect/, 'nothing reported means nothing expected');
+  assert.match(phase.detail, /never asserted from silence/);
 });
 
 test('a declared threshold below the bound produces a deterministic expectation', () => {
@@ -565,8 +717,19 @@ test('the UI observes a rollover and never triggers one', () => {
   assert.equal(typeof CONTEXT_SESSION_AFFORDANCES.forbidden.rollOverNow, 'string');
   assert.match(CONTEXT_SESSION_AFFORDANCES.forbidden.rollOverNow, /not a button/);
   assert.equal(CONTEXT_SESSION_AFFORDANCES.allowed.includes('show-rollover-state'), true);
-  assert.equal(PUBLISHED_OPERATION_IDS.some((id) => /rollover/.test(id)), false, 'no rollover operation is published, so none is offered');
-  assert.deepEqual([...UNPUBLISHED_CONTEXT_VERBS], ['rollover', 'rehydrate', 'verify'], 'the three declared verbs nobody registered');
+  // Derived, in both directions: agent-2's publication registers `rollover`, protected main does
+  // not, and the UI triggers it in neither tree.
+  assert.equal(PUBLISHED_OPERATION_IDS.some((id) => /rollover/.test(id)), CONTEXT_OPERATIONS.includes('rollover'),
+    'a rollover operation is named only if the registry publishes one');
+  assert.deepEqual([...UNPUBLISHED_CONTEXT_VERBS], CONTEXT_DECLARED_VERBS.filter((verb) => !CONTEXT_OPERATIONS.includes(verb)),
+    'the declared verbs nobody registered — derived, so a publication empties the list instead of staleing a hardcoded three');
+  assert.equal(CONTEXT_SESSION_AFFORDANCES.allowed.some((name) => /trigger|roll-over-now|start/i.test(name)), false, 'no allowed affordance triggers anything');
+  assert.equal(CONTINUATION_AFFORDANCES.some((affordance) => affordance.id === 'roll-over-now'), false, 'and there is no such continuation line');
+  // The refusal reasons move with the publication, and say which operation a backend would use.
+  assert.match(forbiddenReasons().verify, CONTEXT_OPERATIONS.includes('verify') ? /published as ai\.context\.verify/ : /published as no operation/);
+  assert.match(forbiddenReasons({ contextOperations: ['load', 'compact'] }).verify, /published as no operation/);
+  assert.match(forbiddenReasons({ contextOperations: ['load', 'compact', 'rollover', 'rehydrate', 'verify'] }).continueSession, /ai\.context\.rollover -> ai\.context\.rehydrate -> ai\.context\.verify/,
+    'the published path is named, and still not triggered from here');
 });
 
 /* ------------------------------------------------------------- 6. continuation */
@@ -581,9 +744,9 @@ test('a continuation package is validated against the fourteen quoted sections',
     constraints: ['no fabricated tokens'],
     decisions: [{ decisionId: 'XA-20', reasonSummary: 'publication owed' }],
     activeEntities: ['arena/01a0c6b4-n8n-rust-v-4'],
-    toolState: [],
+    toolStateReferences: [],
     artifacts: ['art-11'],
-    refs: ['docs/n8n-lego/milestones.json'],
+    importantReferences: ['docs/n8n-lego/milestones.json'],
     errors: [],
     unresolvedQuestions: ['XA-20'],
     compressedHistory: ['the surface was designed from the published declaration'],
@@ -609,7 +772,7 @@ test('a package with no identity is refused, not rendered', () => {
 });
 
 test('a package that is a dump is refused as unbounded', () => {
-  const tooMany = validateContinuationPackage({ identity: { sessionId: 's', contextId: 'c' }, refs: Array.from({ length: 65 }, (_, index) => `ref-${index}`) });
+  const tooMany = validateContinuationPackage({ identity: { sessionId: 's', contextId: 'c' }, importantReferences: Array.from({ length: 65 }, (_, index) => `ref-${index}`) });
   assert.equal(tooMany.ok, false);
   assert.ok(tooMany.findings.some((finding) => finding.includes('against a bound of 64')));
   assert.equal(tooMany.bounded, false);
@@ -624,12 +787,13 @@ test('a package that is a dump is refused as unbounded', () => {
 });
 
 test('verification has exactly three results, and an unknown one is refused', () => {
-  const pkg = { identity: { sessionId: 'sess-04', contextId: 'ctx-a' }, objective: 'x', plan: ['y'], unfinishedWork: ['z'], constraints: ['c'], decisions: ['d'], artifacts: ['a'], refs: ['r'], errors: [], completedWork: [], activeEntities: [], toolState: [], unresolvedQuestions: [], compressedHistory: [] };
+  const pkg = { identity: { sessionId: 'sess-04', contextId: 'ctx-a' }, objective: 'x', plan: ['y'], unfinishedWork: ['z'], constraints: ['c'], decisions: ['d'], artifacts: ['a'], importantReferences: ['r'], errors: [], completedWork: [], activeEntities: [], toolStateReferences: [], unresolvedQuestions: [], compressedHistory: [] };
   const before = { contextId: 'ctx-a', scope: 'TASK', checksum: 'aaa' };
   const after = { contextId: 'ctx-b', scope: 'TASK', parent: { contextId: 'ctx-a', checksum: 'aaa' }, checksum: 'bbb' };
   const verified = continuityVerification({ pkg, before, after });
   assert.equal(verified.result, 'verified');
-  assert.equal(verified.published, false, 'the result vocabulary is still pending publication');
+  assert.equal(verified.published, vocabularyOf('continuationVerification').provenance.contract !== null,
+    'the result vocabulary is published when the lock quotes a contract for it, and pending when it does not');
   assert.deepEqual([...verified.results], ['verified', 'degraded', 'failed']);
   assert.deepEqual([...verified.missing], []);
   assert.deepEqual([...verified.repaired], [], 'nothing is repaired here, ever');
@@ -644,14 +808,14 @@ test('verification has exactly three results, and an unknown one is refused', ()
   assert.throws(() => continuityVerification({ pkg, before, after, result: 'mostly-fine' }), (error) => {
     assert.ok(error instanceof ContextSessionError);
     assert.equal(error.code, 'frontend.context-session.unknown-verification-result');
-    assert.match(error.message, /not one of the three ruled verification results/);
+    assert.match(error.message, /is not one of the three (published|ruled) verification results/, 'the wording follows the publication state');
     return true;
   });
 });
 
 test('a degraded continuation names what is missing, and a failed one is never a new session', () => {
   // `decisions` is absent from this package: that is a loss, and it is named.
-  const partial = { identity: { sessionId: 'sess-04', contextId: 'ctx-a' }, objective: 'x', plan: ['y'], constraints: ['c'], artifacts: [], refs: [], errors: [], completedWork: [], unfinishedWork: [], activeEntities: [], toolState: [], unresolvedQuestions: [], compressedHistory: [] };
+  const partial = { identity: { sessionId: 'sess-04', contextId: 'ctx-a' }, objective: 'x', plan: ['y'], constraints: ['c'], artifacts: [], importantReferences: [], errors: [], completedWork: [], unfinishedWork: [], activeEntities: [], toolStateReferences: [], unresolvedQuestions: [], compressedHistory: [] };
   const before = { contextId: 'ctx-a' };
   const after = { contextId: 'ctx-b', parent: { contextId: 'ctx-a' } };
   const degraded = continuityVerification({ pkg: partial, before, after });
@@ -912,7 +1076,8 @@ test('the view carries the whole surface, and every absence has a name', () => {
   assert.equal(view.quote.length, CONTEXT_SESSION_QUOTED_VOCABULARIES.length);
   assert.equal(view.permissions.grants, null, 'the surface holds no grant');
   assert.deepEqual([...view.operations.published], PUBLISHED_OPERATION_IDS);
-  assert.equal(view.operations.published.length, 5);
+  assert.equal(view.operations.published.length, CONTEXT_OPERATIONS.length + SESSION_OPERATIONS.length,
+    'the published operation list is derived from the quoted registry operations, so a publication changes the count and not the code');
   assert.match(view.rule, /never merges them, never fabricates a number and never offers an execution/);
 });
 
@@ -928,7 +1093,7 @@ test('a full, honest view renders session, scope, usage, rollover, continuation 
       identity: { sessionId: 'sess-04', contextId: 'ctx-a' },
       objective: 'finish P2.13', plan: ['render', 'verify'], completedWork: ['render'], unfinishedWork: ['verify'],
       constraints: ['no fabricated tokens'], decisions: ['XA-20 recorded'], activeEntities: ['arena/01a0c6b4-n8n-rust-v-4'],
-      toolState: [], artifacts: ['art-11'], refs: ['docs/n8n-lego/milestones.json'], errors: [], unresolvedQuestions: ['XA-20'],
+      toolStateReferences: [], artifacts: ['art-11'], importantReferences: ['docs/n8n-lego/milestones.json'], errors: [], unresolvedQuestions: ['XA-20'],
       compressedHistory: ['the surface was built from the published declaration'],
       sourceContextId: 'ctx-a',
       target: { contextId: 'ctx-b', scope: 'TASK', parent: { contextId: 'ctx-a', checksum: 'aaa' }, checksum: 'bbb' },
@@ -936,7 +1101,12 @@ test('a full, honest view renders session, scope, usage, rollover, continuation 
     usage: { kind: 'modelInput', used: 26_000, budget: 32_000, unit: 'tokens', source: 'reported' },
     threshold: 0.8,
   });
-  assert.equal(view.drift.state, 'in-sync', JSON.stringify(view.drift.differences));
+  if (registeredDifferences().length === 0) {
+    assert.equal(view.drift.state, 'in-sync', JSON.stringify(view.drift.differences));
+  } else {
+    assert.equal(view.drift.state, 'drift', 'the registered difference is visible in the assembled view too');
+    assertAwaitingPublicationDifferences(view.drift.differences);
+  }
   assert.equal(view.session.state.state, 'running');
   assert.equal(view.context.scope.scope, 'TASK');
   assert.equal(view.context.lifecycle.state, 'prepare');
@@ -959,8 +1129,8 @@ test('describeContextSession is the surface as data, for docs and gates', () => 
   assert.equal(described.lego, CONTEXT_SESSION_LEGO_ID);
   assert.equal(described.contracts.context.id, CONTEXT_CONTRACT_ID);
   assert.equal(described.contracts.context.publishedVersion, null);
-  assert.equal(described.publishedOperations.length, 5);
-  assert.equal(described.unpublishedVerbs.length, 3);
+  assert.equal(described.publishedOperations.length, CONTEXT_OPERATIONS.length + SESSION_OPERATIONS.length);
+  assert.deepEqual([...described.unpublishedVerbs], [...UNPUBLISHED_CONTEXT_VERBS]);
   assert.equal(described.sessionStates.length, 7);
   assert.equal(described.scopes.length, 7);
   assert.equal(described.contextLifecycle.length, 6);
@@ -970,7 +1140,7 @@ test('describeContextSession is the surface as data, for docs and gates', () => 
   assert.equal(described.continuityChecks.length, CONTINUITY_CHECKS.length);
   assert.deepEqual([...described.verificationResults], ['verified', 'degraded', 'failed']);
   assert.deepEqual([...described.rolloverPhases], ['NORMAL', 'PREPARE', 'ROLLOVER']);
-  assert.equal(described.quoted.length, 13);
+  assert.equal(described.quoted.length, CONTEXT_SESSION_QUOTED_VOCABULARIES.length);
   assert.equal(described.permissions.grants, undefined, 'no grant is described');
   assert.match(described.rule, /a publication gap that is rendered instead of hidden/);
 });
@@ -1009,9 +1179,21 @@ test('the surface manifest declares two contracts, one LEGO, and ships empty', (
   assert.equal(SURFACE.lego, CONTEXT_SESSION_LEGO_ID);
   assert.deepEqual([...SURFACE.contexts], [], 'a state surface renders what it is handed');
   assert.deepEqual([...SURFACE.sessions], []);
-  assert.equal(SURFACE.publication.status, 'declared-not-locked');
-  assert.deepEqual([...SURFACE.publication.rows], []);
+  assert.equal(SURFACE.publication.status, 'declared-not-locked', 'what THIS tree publishes');
+  assert.deepEqual([...SURFACE.publication.rows], [], 'so the surface derives declared-not-locked and renders no version');
   assert.equal(SURFACE.publication.expected.length, 2);
+  // The publication agent-2 pushed is recorded as evidence, with its commit — and kept out of `rows`,
+  // because a manifest that fed unpublished-on-this-tree rows into the surface would make the
+  // frontend claim a publication it cannot show.
+  const peer = SURFACE.publication.publishedOnPeerBranch;
+  assert.equal(peer.commit, 'fb254f32');
+  assert.equal(peer.branch, 'arena/01a0c6b5-n8n-rust-v-4');
+  assert.equal(peer.onProtectedMain, false);
+  assert.equal(peer.lockedContractRows, 17);
+  assert.deepEqual(peer.rows.map((row) => `${row.id}@${row.version}`), ['ai.context@1.0.0', 'ai.agent-session@1.0.0']);
+  assert.equal(SURFACE.publication.protectedMain.commit, 'e754c5df');
+  assert.equal(SURFACE.publication.protectedMain.lockedContractRows, 15);
+  assert.equal(SURFACE.publication.protectedMain.state, 'declared-not-locked');
   for (const expected of SURFACE.publication.expected) {
     assert.equal(expected.declaredVersion, '1.0.0');
     assert.equal(expected.owner, 'manager');
@@ -1019,8 +1201,8 @@ test('the surface manifest declares two contracts, one LEGO, and ships empty', (
     assert.match(expected.declaredIn, /ai-lego-set\.json#lego\[id=context-session\]\.versioning/);
   }
   const expectedOperations = SURFACE.publication.expected.flatMap((entry) => entry.operations);
-  assert.deepEqual([...expectedOperations].sort(), [...PUBLISHED_OPERATION_IDS].sort(), 'the manifest names the same five operations the registry publishes');
-  for (const notPublished of ['ai.context.rollover', 'ai.context.rehydrate', 'ai.context.verify', 'ai.agent-session.continue', 'ai.memory.*']) {
+  assert.deepEqual([...expectedOperations].sort(), [...PUBLISHED_OPERATION_IDS].sort(), 'the manifest names the same operations the quoted registry publishes — eight of them since agent-2 registered rollover, rehydrate and verify');
+  for (const notPublished of ['ai.context.execute', 'ai.context.continue', 'ai.agent-session.continue', 'ai.agent-session.pause', 'ai.agent-session.resume', 'ai.memory.*', 'ai.agent-runtime.*']) {
     assert.ok(SURFACE.publication.notPublished.includes(notPublished), `${notPublished} is declared unpublished`);
     assert.equal(PUBLISHED_OPERATION_IDS.includes(notPublished), false);
   }

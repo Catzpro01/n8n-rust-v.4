@@ -37,12 +37,42 @@
  */
 export const QUOTED_FROM = Object.freeze({
   repository: 'Catzpro01/n8n-rust-v.4',
-  branch: 'arena/01a0c521-n8n-rust-v-4',
-  commit: 'e754c5df',
-  mergedInto: 'main',
-  phase: 'P2.12',
+  branch: 'arena/01a0c6b5-n8n-rust-v-4',
+  commit: 'fb254f32',
+  mergedInto: null,
+  phase: 'P2.13',
   readOn: '2026-09-22',
-  readFor: 'P2.13 — Context & Session (frontend consumption of ai.context + ai.agent-session)',
+  readFor: 'P2.13 — Context & Session: consuming the ai.context@1.0.0 and ai.agent-session@1.0.0 publication agent-2 pushed to its branch',
+  /**
+   * The publication this lock consumes is **GitHub-visible but not yet on protected main**.
+   *
+   * Agent-2 published both contract-lock rows, the registry operations and the contract surface
+   * module on `arena/01a0c6b5-n8n-rust-v-4` @ `fb254f32` ("Implement P2.13 context and session
+   * foundation"). Protected main @ `e754c5df` still publishes 15 lock rows and neither contract, so
+   * a set quoted from that publication cannot be verified against this branch's own backend copy.
+   * `test/29-alignment.test.mjs` therefore compares those sets only against a tree that carries the
+   * publication (`N8N_BACKEND_LEGO_ROOT=/tmp/a2/apps/n8n-lego/src/lego`, or main after the merge)
+   * and says so otherwise — it never reports a pass it did not perform, and it never keeps an old
+   * assumption after a peer published a relevant change.
+   */
+  publication: Object.freeze({
+    branch: 'arena/01a0c6b5-n8n-rust-v-4',
+    commit: 'fb254f32',
+    owner: 'agent-2',
+    lockRows: Object.freeze(['ai.context@1.0.0', 'ai.agent-session@1.0.0']),
+    lockedContractCount: 17,
+    surfaceModule: 'apps/n8n-lego/src/lego/context-session.mjs',
+    publicModules: Object.freeze(['apps/n8n-lego/src/lego/context.mjs', 'apps/n8n-lego/src/lego/agent-session.mjs']),
+    visibleOn: 'github',
+    onProtectedMain: false,
+  }),
+  protectedMainBaseline: Object.freeze({
+    branch: 'main',
+    commit: 'e754c5df',
+    phase: 'P2.12',
+    lockedContractCount: 15,
+    note: 'protected main publishes no ai.context or ai.agent-session row; the frontend fails closed against that tree and reports declared-not-locked',
+  }),
   previousQuote: Object.freeze({ branch: 'arena/01a0c521-n8n-rust-v-4', commit: '6f7b66da', phase: 'P2.10', status: 'historical' }),
 });
 
@@ -516,14 +546,15 @@ export const VOCABULARIES = Object.freeze([
     id: 'contextOperation',
     question: 'Which operation does the context capability publish?',
     about: 'operation',
-    values: Object.freeze(['load', 'compact']),
+    values: Object.freeze(['load', 'compact', 'rollover', 'rehydrate', 'verify']),
     provenance: Object.freeze({
       contract: Object.freeze({ id: 'lego.domain-registry', version: '1.1.0', owner: 'manager' }),
       kind: 'json',
       file: 'apps/n8n-lego/src/lego/manifest/domains.json',
       path: 'domains#id=ai-foundation.capabilities[id=ai.context].operations[].name',
       read: 'values',
-      note: 'two published operations, both `contract-only`: `load` (selective, `ai:context:read`, idempotent) and `compact` (`ai:context:write`, not idempotent). No rollover, rehydrate or write operation is published, so the UI offers none',
+      note: 'five published operations, all `implemented` in the registry agent-2 pushed at fb254f32 and all five named by the `ai.context@1.0.0` contract-lock row: `load` (`ai:context:read`, idempotent), `compact`, `rollover`, `rehydrate` (`ai:context:write`, not idempotent) and `verify` (`ai:context:read`, idempotent). Protected main @ e754c5df still registers two of them `contract-only`, so this set is compared only against a tree that publishes the row. Publishing an operation is not offering a button: the UI renders these as facts and wires no call, and `continue` is still published by nobody',
+      movedBy: Object.freeze({ commit: 'fb254f32', branch: 'arena/01a0c6b5-n8n-rust-v-4', added: Object.freeze(['rollover', 'rehydrate', 'verify']), previousValues: Object.freeze(['load', 'compact']) }),
     }),
   }),
   Object.freeze({
@@ -589,18 +620,46 @@ export const VOCABULARIES = Object.freeze([
     about: 'section',
     values: Object.freeze([
       'identity', 'objective', 'plan', 'completedWork', 'unfinishedWork', 'constraints',
-      'decisions', 'activeEntities', 'toolState', 'artifacts', 'refs', 'errors',
+      'decisions', 'activeEntities', 'toolStateReferences', 'artifacts', 'importantReferences', 'errors',
       'unresolvedQuestions', 'compressedHistory',
     ]),
     provenance: Object.freeze({
-      contract: null,
-      kind: 'json',
-      file: 'apps/n8n-lego/src/lego/manifest/ai-lego-set.json',
-      path: 'lego#id=context-session.continuationPackage',
+      contract: Object.freeze({ id: 'ai.context', version: '1.0.0', owner: 'manager' }),
+      kind: 'module',
+      file: 'apps/n8n-lego/src/lego/context-session.mjs',
+      symbol: 'CONTINUATION_FIELDS',
       read: 'values',
-      note: 'fourteen sections, quoted in declaration order. The P2.13 brief spells the eleventh "important references"; the published spelling is `refs`, and the frontend uses the published one. No section is a transcript, a raw prompt or a reasoning dump — `compressedHistory` is a summary and the privacy rule refuses the rest by name',
+      note: 'fourteen sections, quoted in publication order from the locked `ai.context@1.0.0` surface (`CONTINUATION_FIELDS`, re-exported by `src/lego/context.mjs` and named in the contract-lock row\'s exports). No section is a transcript, a raw prompt or a reasoning dump — `compressedHistory` is a summary and the privacy rule refuses the rest by name',
+      publishedOn: Object.freeze({ branch: 'arena/01a0c6b5-n8n-rust-v-4', commit: 'fb254f32', lockRow: 'ai.context@1.0.0' }),
     }),
-    publicationPending: AI_SET_CONTEXT_PUBLICATION,
+    /**
+     * A **registered divergence inside the backend**, reported not adopted: the AI-set manifest
+     * still spells two of the fourteen sections `toolState` and `refs`
+     * (`ai-lego-set.json#lego[id=context-session].continuationPackage`), while the published
+     * contract spells them `toolStateReferences` and `importantReferences`. The frontend quotes the
+     * published contract, because a contract-lock row is a publication and a manifest entry is a
+     * plan (the same rule §19.18/§19.19 apply to a version claim). Agent-2 owns the manifest and
+     * must move one of the two spellings; until then the difference is named here, pinned by a test
+     * in both directions, and carried by an open Manager-owned decision rather than tolerated
+     * silently.
+     */
+    registeredDivergence: Object.freeze({
+      decision: 'XA-20',
+      owner: 'agent-2 (manifest) / manager (arbitration)',
+      against: Object.freeze({
+        file: 'apps/n8n-lego/src/lego/manifest/ai-lego-set.json',
+        path: 'lego#id=context-session.continuationPackage',
+        values: Object.freeze(['identity', 'objective', 'plan', 'completedWork', 'unfinishedWork', 'constraints',
+          'decisions', 'activeEntities', 'toolState', 'artifacts', 'refs', 'errors',
+          'unresolvedQuestions', 'compressedHistory']),
+      }),
+      differs: Object.freeze([
+        Object.freeze({ published: 'toolStateReferences', manifest: 'toolState' }),
+        Object.freeze({ published: 'importantReferences', manifest: 'refs' }),
+      ]),
+      identical: 12,
+      rule: 'the published contract wins in the UI; the manifest is stale until its owner moves it',
+    }),
   }),
   Object.freeze({
     id: 'contextOperationVerb',
@@ -958,21 +1017,71 @@ export const VOCABULARIES = Object.freeze([
     id: 'aiLegoStatus',
     question: 'How mature is an AI/Agent LEGO in the official set?',
     about: 'status',
-    values: Object.freeze(['implemented', 'contract-only', 'planned', 'blocked', 'deferred']),
+    values: Object.freeze(['implemented', 'contract-only', 'planned', 'blocked', 'deferred', 'in-progress']),
     provenance: Object.freeze({
       contract: null,
       kind: 'json',
       file: 'apps/n8n-lego/src/lego/manifest/ai-lego-set.json',
       path: 'statusVocabulary',
       read: 'keys',
-      note: 'the AI set spells maturity with five words; the registry publishes eight for capabilities (`capabilityStatus`), so the two sets are quoted separately — `blocked` exists only here',
+      note: 'the AI set spells maturity with six words; the registry publishes eight for capabilities (`capabilityStatus`), so the two sets are quoted separately — `blocked` exists only here. `in-progress` was added by agent-2 at fb254f32 (its `context-session` LEGO is `in-progress`, and its `ai-foundation.json` blocks carry `implementationStatus: "in-progress"`); agent-2 edited this frontend-owned set on its own branch to say so, and this branch adopts the same six words rather than let the merge produce a five-word quote of a six-word declaration',
+      movedBy: Object.freeze({ commit: 'fb254f32', branch: 'arena/01a0c6b5-n8n-rust-v-4', added: Object.freeze(['in-progress']) }),
     }),
     publicationPending: AI_SET_STATUS_PUBLICATION,
+  }),
+  Object.freeze({
+    id: 'contextRolloverPhase',
+    question: 'Which phase is the context manager in — monitored, preparing a rollover, or rolling over?',
+    about: 'state',
+    values: Object.freeze(['NORMAL', 'PREPARE', 'ROLLOVER']),
+    provenance: Object.freeze({
+      contract: Object.freeze({ id: 'ai.context', version: '1.0.0', owner: 'manager' }),
+      kind: 'module',
+      file: 'apps/n8n-lego/src/lego/context-session.mjs',
+      symbol: 'CONTEXT_MANAGER_STATES',
+      read: 'values',
+      note: 'PROMOTED from PENDING_PUBLICATIONS at P2.13: agent-2 published the three-phase manager state as `CONTEXT_MANAGER_STATES` inside the locked `ai.context@1.0.0` surface (the contract-lock row names it among the exports of `src/lego/context.mjs`). The values are byte-identical to the ones the manager ruled and the frontend recorded as expected, so promotion changed the provenance, not the words. Protected main @ e754c5df does not carry the module yet: this set is compared only against a tree that publishes the row.',
+      publishedOn: Object.freeze({ branch: 'arena/01a0c6b5-n8n-rust-v-4', commit: 'fb254f32', lockRow: 'ai.context@1.0.0', exportedBy: 'apps/n8n-lego/src/lego/context.mjs' }),
+    }),
+    promotedFrom: Object.freeze({
+      previousState: 'PENDING_PUBLICATIONS.contextRolloverPhase',
+      decidedBy: 'manager, P2.13 Context & Session brief §B4 (2026-09-22): NORMAL -> PREPARE -> ROLLOVER, and never at 100% — a rollover must happen while there is still room to serialize the continuation package',
+      expectedValuesThen: Object.freeze(['NORMAL', 'PREPARE', 'ROLLOVER']),
+      valuesChangedBy: 'nothing — the published enumeration equals the ruled one',
+      decision: 'XA-20',
+      rule: 'A phase is a backend fact. The frontend renders the phase or lifecycle state it is handed and never advances the phase itself: it does not decide that a rollover starts.',
+    }),
+  }),
+  Object.freeze({
+    id: 'continuationVerification',
+    question: 'Did the continuation actually survive — verified, degraded or failed?',
+    about: 'verification',
+    values: Object.freeze(['verified', 'degraded', 'failed']),
+    provenance: Object.freeze({
+      contract: Object.freeze({ id: 'ai.context', version: '1.0.0', owner: 'manager' }),
+      kind: 'module',
+      file: 'apps/n8n-lego/src/lego/context-session.mjs',
+      symbol: 'CONTINUATION_VERIFICATION',
+      read: 'values',
+      note: 'PROMOTED from PENDING_PUBLICATIONS at P2.13: agent-2 published the three continuity-verification results as `CONTINUATION_VERIFICATION` inside the locked `ai.context@1.0.0` surface, and `verifyContinuationPackage` is one of the row\'s named exports. Values identical to the ruled three, so promotion moved the provenance and not the words.',
+      publishedOn: Object.freeze({ branch: 'arena/01a0c6b5-n8n-rust-v-4', commit: 'fb254f32', lockRow: 'ai.context@1.0.0', exportedBy: 'apps/n8n-lego/src/lego/context.mjs' }),
+    }),
+    promotedFrom: Object.freeze({
+      previousState: 'PENDING_PUBLICATIONS.continuationVerification',
+      decidedBy: 'manager, P2.13 Context & Session brief §B6 (2026-09-22): rehydration has an explicit verification stage and distinguishes verified / degraded / failed continuation; missing state is never silently repaired',
+      expectedValuesThen: Object.freeze(['verified', 'degraded', 'failed']),
+      valuesChangedBy: 'nothing — the published enumeration equals the ruled one',
+      decision: 'XA-20',
+      rule: 'Three outcomes, never two: `degraded` is not `failed` and must not be rendered as `verified`. Missing state is reported as missing; it is never silently repaired.',
+    }),
   }),
 ]);
 
 /**
- * Vocabulary the frontend **expects the backend to publish** for P2.13 and refuses to coin.
+ * Vocabulary the frontend expects the backend to publish and refuses to coin — **empty at P2.13**:
+ * both Context & Session rows were promoted into `VOCABULARIES` when agent-2 published
+ * `ai.context@1.0.0` at `fb254f32` (see `PROMOTED_PUBLICATIONS`). The list is kept, and kept
+ * asserted, because the next unpublished word the UI needs belongs here rather than in a string.
  *
  * These are not quoted sets: nothing in the backend tree declares them today, so putting them in
  * `VOCABULARIES` would make the alignment gate (`test/29`) compare a quote against a declaration
@@ -986,56 +1095,59 @@ export const VOCABULARIES = Object.freeze([
  * them**: promotion into `VOCABULARIES` (with a contract, a version and a declaration path) is the
  * only way forward, and it happens at reconciliation, not silently.
  */
-export const PENDING_PUBLICATIONS = Object.freeze([
+export const PENDING_PUBLICATIONS = Object.freeze([]);
+
+/**
+ * The two rows that used to be pending, kept as **promotion evidence**.
+ *
+ * A pending row is a promise that the frontend will not coin a word; a promotion is the moment the
+ * backend publishes it. Both halves belong in the lock, because "we made it up and it happened to
+ * match" is indistinguishable from "we quoted it" unless the promotion is recorded with the commit
+ * that published it. Each record names the branch, the commit, the module symbol, the contract-lock
+ * row, the values as ruled and the values as published — and the fact that they are identical, so a
+ * reconciler can see that promotion changed the provenance and not the words.
+ */
+export const PROMOTED_PUBLICATIONS = Object.freeze([
   Object.freeze({
     id: 'contextRolloverPhase',
-    question: 'Which phase is the context manager in — monitored, preparing a rollover, or rolling over?',
-    about: 'state',
-    expectedValues: Object.freeze(['NORMAL', 'PREPARE', 'ROLLOVER']),
-    decidedBy: 'manager, P2.13 Context & Session brief §B4 (2026-09-22): NORMAL -> PREPARE -> ROLLOVER, and never at 100% — a rollover must happen while there is still room to serialize the continuation package',
-    partlyPublishedBy: Object.freeze({
-      set: 'contextLifecycle',
-      how: 'two of the three phases have a published lifecycle word: PREPARE = `prepare`, and the ROLLOVER work is `compacting` -> `rolled-over`. NORMAL has no published word at all (the closest is `active`, which means "in use", not "usage monitored and below threshold")',
-      consequence: 'the surface renders `prepare`, `compacting` and `rolled-over` from the quoted lifecycle, and reports the three-phase machine itself as pending rather than spelling NORMAL locally',
+    promotedOn: '2026-09-22',
+    promotedIn: 'P2.13 (agent-1 branch, consuming the agent-2 publication)',
+    publishedBy: Object.freeze({ agent: 'agent-2', branch: 'arena/01a0c6b5-n8n-rust-v-4', commit: 'fb254f32' }),
+    publishedAs: Object.freeze({
+      file: 'apps/n8n-lego/src/lego/context-session.mjs',
+      symbol: 'CONTEXT_MANAGER_STATES',
+      lockRow: 'ai.context@1.0.0',
+      reExportedBy: 'apps/n8n-lego/src/lego/context.mjs',
     }),
-    alsoDeclaredIn: Object.freeze({
-      file: 'apps/n8n-lego/src/lego/manifest/reference-scenarios.json',
-      path: 'scenarios[id=context-rollover].steps',
-      how: 'prose only: "Context manager observes NORMAL", "Threshold reached -> PREPARE" — a scenario step is not a published vocabulary, so it is cited as evidence and not quoted',
-    }),
-    expectedIn: Object.freeze({
-      file: 'apps/n8n-lego/src/lego/manifest/ai-foundation.json',
-      path: 'context.rollover.phases',
-      note: 'the natural home next to context.scopes/context.fields; any published declaration the backend chooses is acceptable, this path is a proposal and not a claim',
-    }),
-    publicationPending: AI_CONTEXT_SESSION_PUBLICATION,
-    rule: 'A phase is a backend fact. The frontend renders the phase or lifecycle state it is handed, reports `usage-not-reported` when no usage was reported, and never advances the phase itself: it does not decide that a rollover starts.',
+    ruledValues: Object.freeze(['NORMAL', 'PREPARE', 'ROLLOVER']),
+    publishedValues: Object.freeze(['NORMAL', 'PREPARE', 'ROLLOVER']),
+    identical: true,
+    decision: 'XA-20',
+    quotedAs: 'VOCABULARIES#contextRolloverPhase',
   }),
   Object.freeze({
     id: 'continuationVerification',
-    question: 'Did the continuation actually survive — verified, degraded or failed?',
-    about: 'verification',
-    expectedValues: Object.freeze(['verified', 'degraded', 'failed']),
-    decidedBy: 'manager, P2.13 Context & Session brief §B6 (2026-09-22): rehydration has an explicit verification stage and distinguishes verified / degraded / failed continuation; missing state is never silently repaired',
-    partlyPublishedBy: Object.freeze({
-      set: 'contextOperationVerb',
-      how: 'the AI set declares a `verify` verb (and a `rehydrate` verb), so the ACT of verification is declared — but no declaration publishes its three RESULTS, and the registry publishes neither verb as an operation',
-      consequence: 'the surface renders the verification stage as an unpublished operation and its result as pending; a handed-over result is compared against these three words and a difference is reported, never adopted',
+    promotedOn: '2026-09-22',
+    promotedIn: 'P2.13 (agent-1 branch, consuming the agent-2 publication)',
+    publishedBy: Object.freeze({ agent: 'agent-2', branch: 'arena/01a0c6b5-n8n-rust-v-4', commit: 'fb254f32' }),
+    publishedAs: Object.freeze({
+      file: 'apps/n8n-lego/src/lego/context-session.mjs',
+      symbol: 'CONTINUATION_VERIFICATION',
+      lockRow: 'ai.context@1.0.0',
+      reExportedBy: 'apps/n8n-lego/src/lego/context.mjs',
     }),
-    alsoDeclaredIn: Object.freeze({
-      file: 'apps/n8n-lego/src/lego/manifest/reference-scenarios.json',
-      path: 'scenarios[id=context-rollover].failureRule',
-      how: 'prose only: "If rehydration fails, surface the failure. A silently degraded session is worse than a visible one." — the rule is published, the result vocabulary is not',
-    }),
-    expectedIn: Object.freeze({
-      file: 'apps/n8n-lego/src/lego/manifest/ai-foundation.json',
-      path: 'context.verification.results',
-      note: 'proposal, not a claim',
-    }),
-    publicationPending: AI_CONTEXT_SESSION_PUBLICATION,
-    rule: 'Three outcomes, never two: `degraded` is not `failed` and must not be rendered as `verified`. Missing state is reported as missing; it is never silently repaired, because a silent repair is how a continuation loses an objective and still looks green.',
+    ruledValues: Object.freeze(['verified', 'degraded', 'failed']),
+    publishedValues: Object.freeze(['verified', 'degraded', 'failed']),
+    identical: true,
+    decision: 'XA-20',
+    quotedAs: 'VOCABULARIES#continuationVerification',
   }),
 ]);
+
+/** The promotion record of a set that used to be pending, or null. */
+export function promotionOf(id) {
+  return PROMOTED_PUBLICATIONS.find((entry) => entry.id === id) ?? null;
+}
 
 /**
  * The two contract rows P2.13 owes. A version *claim* in a manifest (`ai.context@1.0.0,
@@ -1044,12 +1156,30 @@ export const PENDING_PUBLICATIONS = Object.freeze([
  * `e754c5df`, so the frontend surface reports `declared-not-locked` and never renders a published
  * version it cannot cite.
  */
+/**
+ * The two contract rows P2.13 needed.
+ *
+ * They are **no longer unwritten**: agent-2 published both on `arena/01a0c6b5-n8n-rust-v-4` @
+ * `fb254f32` (`ai.context@1.0.0`, `ai.agent-session@1.0.0`, `owner: manager`, `domain:
+ * ai-foundation`, `status: implemented`), which takes the locked-contract count from 15 to 17.
+ * Protected main @ `e754c5df` still publishes neither, so on this branch the rows are *published on
+ * a peer branch, pending merge*: `declarationDrift()` and `contextSessionPublication()` stay
+ * data-driven and report whichever state the rows they are handed describe. The list keeps its name
+ * because the frontend still may not treat a row as published until a tree it can see publishes it.
+ */
 export const PENDING_CONTRACT_ROWS = Object.freeze([
-  Object.freeze({ contract: 'ai.context', declaredVersion: '1.0.0', owner: 'manager', domain: 'ai-foundation', lockedIn: 'apps/n8n-lego/src/lego/contracts/contract-lock.json', decision: 'XA-20', declaredIn: 'apps/n8n-lego/src/lego/manifest/ai-lego-set.json#lego[id=context-session].versioning' }),
-  Object.freeze({ contract: 'ai.agent-session', declaredVersion: '1.0.0', owner: 'manager', domain: 'ai-foundation', lockedIn: 'apps/n8n-lego/src/lego/contracts/contract-lock.json', decision: 'XA-20', declaredIn: 'apps/n8n-lego/src/lego/manifest/ai-lego-set.json#lego[id=context-session].versioning' }),
+  Object.freeze({ contract: 'ai.context', declaredVersion: '1.0.0', owner: 'manager', domain: 'ai-foundation', lockedIn: 'apps/n8n-lego/src/lego/contracts/contract-lock.json', decision: 'XA-20', declaredIn: 'apps/n8n-lego/src/lego/manifest/ai-lego-set.json#lego[id=context-session].versioning', publishedOn: Object.freeze({ branch: 'arena/01a0c6b5-n8n-rust-v-4', commit: 'fb254f32', status: 'implemented', operations: Object.freeze(['load', 'compact', 'rollover', 'rehydrate', 'verify']), permissions: Object.freeze(['ai:context:read', 'ai:context:write']), onProtectedMain: false }) }),
+  Object.freeze({ contract: 'ai.agent-session', declaredVersion: '1.0.0', owner: 'manager', domain: 'ai-foundation', lockedIn: 'apps/n8n-lego/src/lego/contracts/contract-lock.json', decision: 'XA-20', declaredIn: 'apps/n8n-lego/src/lego/manifest/ai-lego-set.json#lego[id=context-session].versioning', publishedOn: Object.freeze({ branch: 'arena/01a0c6b5-n8n-rust-v-4', commit: 'fb254f32', status: 'implemented', operations: Object.freeze(['create', 'status', 'close']), permissions: Object.freeze(['ai:agent:control', 'ai:agent:create', 'ai:agent:read']), onProtectedMain: false }) }),
 ]);
 
 /** A pending publication by id, or null. Fail-closed: an unknown id is not a synonym. */
+/**
+ * The pending row of a vocabulary the backend has not published, or null.
+ *
+ * At P2.13 this returns null for both Context & Session word lists: they were promoted when agent-2
+ * published `ai.context@1.0.0`. Callers must handle null by quoting the set instead — a null here
+ * means "published", never "unknown".
+ */
 export function pendingPublicationOf(id) {
   return PENDING_PUBLICATIONS.find((entry) => entry.id === id) ?? null;
 }
@@ -1618,6 +1748,31 @@ export function vocabularyDrift(observed = {}) {
  * *different* subjects is what needs the declaration below.
  */
 export const DECLARED_OVERLAPS = Object.freeze([
+  Object.freeze({
+    vocabularies: Object.freeze(['agentSessionState', 'continuationVerification']),
+    values: Object.freeze({
+      failed: 'a session can fail and a continuation can fail to survive: two declared subjects (`state` and `verification`), one English word, both quoted from the published backend and neither re-defined here',
+    }),
+  }),
+  Object.freeze({
+    vocabularies: Object.freeze(['degradation', 'continuationVerification']),
+    values: Object.freeze({
+      degraded: 'a capability is degraded when something it needs is missing; a continuation is degraded when a section did not survive. Same spelling, two declared subjects, both quoted',
+    }),
+  }),
+  Object.freeze({
+    vocabularies: Object.freeze(['lifecycle', 'continuationVerification']),
+    values: Object.freeze({
+      degraded: 'a lifecycle state of a capability, and a verification result of a continuation — quoted from two published declarations, mapped to two different UI facts',
+      failed: 'a lifecycle state and a verification result; the frontend never renders one as the other (a failed continuation is not a failed capability)',
+    }),
+  }),
+  Object.freeze({
+    vocabularies: Object.freeze(['trustLevel', 'continuationVerification']),
+    values: Object.freeze({
+      verified: 'a trust level is a property of a declaration (`XA-9` owes it a contract); a verification result is a property of a continuation (`ai.context@1.0.0` publishes it). Shared spelling, distinct subjects',
+    }),
+  }),
   Object.freeze({
     vocabularies: Object.freeze(['degradation', 'lifecycle']),
     values: Object.freeze({

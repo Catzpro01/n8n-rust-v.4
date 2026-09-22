@@ -28,8 +28,13 @@ import {
   CONTEXT_SESSION_AFFORDANCES,
   DISTINCT_CONCEPTS,
   FORBIDDEN_IMPLICATIONS as CONTEXT_SESSION_FORBIDDEN_IMPLICATIONS,
+  CONTEXT_CONTRACT_ID,
+  CONTEXT_DECLARED_VERBS,
+  CONTEXT_OPERATIONS,
   PUBLISHED_OPERATION_IDS,
   SESSION_STATES,
+  SESSION_CONTRACT_ID,
+  SESSION_OPERATIONS,
   UNPUBLISHED_CONTEXT_VERBS,
   USAGE_REPORT_STATES,
 } from './context-session.mjs';
@@ -249,7 +254,7 @@ export const ARCHITECTURE_RULES = Object.freeze([
   }),
   Object.freeze({
     id: 'A28',
-    statement: 'Context & Session stays one LEGO with two quoted contracts: conversation, session, context window, memory and execution remain five distinct things, every word is quoted from the backend declaration, an unlocked contract is reported as declared-not-locked, a declared-but-unregistered operation is answered operation-unpublished, no usage figure is fabricated, and no Memory store, no execution affordance and no secret ever appears in a rendered state.',
+    statement: 'Context & Session stays one LEGO with two quoted contracts: conversation, session, context window, memory and execution remain five distinct things, every word is quoted from the backend declaration, an unlocked contract is reported as declared-not-locked, a declared-but-unregistered operation is answered operation-unpublished, the published operation list is derived from the quoted registry so a publication changes the count and not the rule, no usage figure is fabricated, and no Memory store, no execution affordance and no secret ever appears in a rendered state.',
     vocabulary: Object.freeze([
       ...DISTINCT_CONCEPTS.map((concept) => concept.id),
       ...SESSION_STATES,
@@ -440,11 +445,23 @@ export function checkConformance(frontend) {
   const noExecutionAffordance = ['execute', 'infer', 'rollOverNow', 'rehydrate', 'verify', 'continueSession', 'grantPermission']
     .every((name) => typeof CONTEXT_SESSION_AFFORDANCES.forbidden[name] === 'string')
     && contextSession.operations.offered.length === 0;
-  const fiveOperations = PUBLISHED_OPERATION_IDS.length === 5
-    && PUBLISHED_OPERATION_IDS.filter((id) => id.startsWith('ai.context.')).length === 2
-    && PUBLISHED_OPERATION_IDS.filter((id) => id.startsWith('ai.agent-session.')).length === 3
-    && UNPUBLISHED_CONTEXT_VERBS.length === 3
-    && !PUBLISHED_OPERATION_IDS.some((id) => /rollover|rehydrate|verify|continue|execute/.test(id));
+  // Derived, not counted: agent-2's `ai.context@1.0.0` publication (fb254f32) registers five
+  // context operations where protected main @ e754c5df registers two, and a rule that hardcoded
+  // either number would fail against one of the two trees. What must hold in every tree is the
+  // relationship: the qualified ids are exactly the quoted registry operations, every declared verb
+  // is either published or answered `operation-unpublished`, and nobody publishes `continue`,
+  // `execute` or `infer`.
+  const contextOperationIds = PUBLISHED_OPERATION_IDS
+    .filter((id) => id.startsWith(`${CONTEXT_CONTRACT_ID}.`))
+    .map((id) => id.slice(CONTEXT_CONTRACT_ID.length + 1));
+  const sessionOperationIds = PUBLISHED_OPERATION_IDS
+    .filter((id) => id.startsWith(`${SESSION_CONTRACT_ID}.`))
+    .map((id) => id.slice(SESSION_CONTRACT_ID.length + 1));
+  const operationsDerived = PUBLISHED_OPERATION_IDS.length === CONTEXT_OPERATIONS.length + SESSION_OPERATIONS.length
+    && contextOperationIds.every((name) => CONTEXT_OPERATIONS.includes(name))
+    && sessionOperationIds.every((name) => SESSION_OPERATIONS.includes(name))
+    && CONTEXT_DECLARED_VERBS.every((verb) => CONTEXT_OPERATIONS.includes(verb) !== UNPUBLISHED_CONTEXT_VERBS.includes(verb))
+    && !PUBLISHED_OPERATION_IDS.some((id) => /continue|execute|infer/.test(id));
   const sevenStates = contextSession.session.states.length === 7
     && contextSession.session.states.every((state) => state.executing === false && state.inference === false && state.grants === null);
   const noFabricatedFigure = USAGE_REPORT_STATES.includes('not-reported')
@@ -457,7 +474,7 @@ export function checkConformance(frontend) {
       && contextSession.contracts.context.version === null
       && contextSession.unsupported !== null
     : contextSession.contracts.context.version !== null && contextSession.contracts.session.version !== null;
-  record('A28', fiveDistinct && memoryNotClaimed && noExecutionAffordance && fiveOperations && sevenStates
+  record('A28', fiveDistinct && memoryNotClaimed && noExecutionAffordance && operationsDerived && sevenStates
     && noFabricatedFigure && publicationHonest,
   `${concepts.length} distinct concepts, ${SESSION_STATES.length} session states, ${PUBLISHED_OPERATION_IDS.length} published operations, ${UNPUBLISHED_CONTEXT_VERBS.length} declared-but-unregistered verbs, contracts ${contextSession.published ? 'published' : contextSession.contracts.context.status}`);
 

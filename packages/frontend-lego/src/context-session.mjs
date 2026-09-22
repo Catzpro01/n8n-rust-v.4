@@ -17,17 +17,19 @@
  *   2. **The vocabulary is quoted, not re-declared.** Ten sets come from the vocabulary lock
  *      (`src/vocabulary.mjs`), each with the contract, the file and the declaration path it was
  *      read from: 7 scopes, 9 context fields, 6 context lifecycle states, 14 continuation
- *      sections, 5 declared operation verbs, 2 registered context operations, 3 session
- *      operations, 7 session states, 10 session fields, 3 session references, 5 permission words
- *      and 3 token kinds. What no declaration publishes — the `NORMAL -> PREPARE -> ROLLOVER`
- *      phase machine and the `verified / degraded / failed` verification results — is **not**
- *      quoted and **not** spelled here: it stays in `PENDING_PUBLICATIONS` with `XA-20` as the
- *      decision that owes it.
- *   3. **A claim is not a publication.** Both contracts are declared and registered
- *      `contract-only`, and `manifest/ai-lego-set.json` claims `ai.context@1.0.0,
- *      ai.agent-session@1.0.0`, but the contract lock publishes no row for either. So this surface
+ *      sections, 5 declared operation verbs, 5 registered context operations, 3 session
+ *      operations, 7 session states, 10 session fields, 3 session references, 5 permission words,
+ *      3 token kinds, the 3 context-manager phases and the 3 verification results.
+ *   3. **A claim is not a publication — and a publication is not a merge.** Agent-2 published
+ *      `ai.context@1.0.0` and `ai.agent-session@1.0.0` on `arena/01a0c6b5-n8n-rust-v-4` @
+ *      `fb254f32` (lock rows, five registry operations, and the `CONTEXT_MANAGER_STATES` /
+ *      `CONTINUATION_FIELDS` / `CONTINUATION_VERIFICATION` surface), so this lock quotes that
+ *      publication: the two word lists that were pending are **promoted** (`PROMOTED_PUBLICATIONS`
+ *      records the commit, the symbol and the fact that the values did not change). Protected main
+ *      @ `e754c5df` publishes 15 rows and neither contract, so against that tree the same code
  *      reports `declared-not-locked` with `version: null` and never renders a version it cannot
- *      cite. When the manager locks the rows, the same code reports `published` — the state is
+ *      cite. Publication state is derived from the rows handed over, not from this comment — the
+ *      state is
  *      derived from the row it is handed, not from a hardcoded string.
  *   4. **No fabricated numbers, no implied runtime.** A usage figure is `reported`, `estimated`,
  *      `not-reported` or `over-budget`, and it carries its token kind or is not rendered at all.
@@ -45,7 +47,7 @@
  * The declarations are handed over by the application (or by a test); this package never reads the
  * backend tree, and nothing it returns enters the boot payload.
  */
-import { PENDING_CONTRACT_ROWS, PENDING_PUBLICATIONS, pendingPublicationOf, vocabularyOf } from './vocabulary.mjs';
+import { PENDING_CONTRACT_ROWS, PENDING_PUBLICATIONS, PROMOTED_PUBLICATIONS, pendingPublicationOf, promotionOf, vocabularyOf } from './vocabulary.mjs';
 
 /* ------------------------------------------------------------------ contracts */
 
@@ -161,12 +163,42 @@ export const SESSION_PERMISSIONS = SESSION_PERMISSION_SET.values;
 /** The three token kinds a usage figure must name. */
 export const TOKEN_KINDS = TOKEN_KIND_SET.values;
 
+/** The three context-manager phases, quoted from the published `ai.context@1.0.0` surface. */
+const PHASE_SET = vocabularyOf('contextRolloverPhase');
+/** The three continuity-verification results, quoted from the same published surface. */
+const VERIFICATION_SET = vocabularyOf('continuationVerification');
+export const ROLLOVER_PHASES = PHASE_SET.values;
+export const VERIFICATION_RESULTS = VERIFICATION_SET.values;
+
+/**
+ * Whether a quoted set's words come from a published contract — **derived from the lock**, never
+ * hardcoded, so the same code reports `pending` against protected main @ `e754c5df` and `published`
+ * against the tree agent-2 pushed at `fb254f32` (and against main after the merge) with no edit.
+ */
+function publicationOfSet(set) {
+  const contract = set?.provenance?.contract ?? null;
+  const promotion = promotionOf(set?.id);
+  return Object.freeze({
+    id: set?.id ?? null,
+    published: contract !== null,
+    contract,
+    contractId: contract?.id ?? null,
+    version: contract?.version ?? null,
+    promoted: promotion !== null,
+    publishedOn: set?.provenance?.publishedOn ?? null,
+    decision: contract === null ? CONTEXT_SESSION_DECISION : null,
+    state: contract === null ? 'pending' : 'published',
+  });
+}
+const PHASE_PUBLICATION = publicationOfSet(PHASE_SET);
+const VERIFICATION_PUBLICATION = publicationOfSet(VERIFICATION_SET);
+
 /** Every set this surface quotes, so a reviewer can see there is no local vocabulary. */
 export const CONTEXT_SESSION_QUOTED_VOCABULARIES = Object.freeze([
   SCOPE_SET.id, CONTEXT_FIELD_SET.id, CONTEXT_LIFECYCLE_SET.id, CONTINUATION_SECTION_SET.id,
   CONTEXT_VERB_SET.id, CONTEXT_OPERATION_SET.id, SESSION_OPERATION_SET.id, SESSION_STATE_SET.id,
   SESSION_FIELD_SET.id, SESSION_REFERENCE_SET.id, CONTEXT_PERMISSION_SET.id,
-  SESSION_PERMISSION_SET.id, TOKEN_KIND_SET.id,
+  SESSION_PERMISSION_SET.id, TOKEN_KIND_SET.id, PHASE_SET.id, VERIFICATION_SET.id,
 ]);
 
 /**
@@ -323,6 +355,28 @@ export const FORBIDDEN_IMPLICATIONS = Object.freeze([
   'permission-grant',
 ]);
 
+/**
+ * The three refusals whose *reason* depends on what the backend publishes, derived so the same code
+ * stays truthful before and after a publication: `continue` is published by nobody (the session
+ * capability publishes create/status/close), while `rehydrate` and `verify` are context operations
+ * that protected main @ `e754c5df` does not register and agent-2's `fb254f32` publication does.
+ * Either way the UI renders state and wires no call.
+ */
+export function forbiddenReasons({ contextOperations = CONTEXT_OPERATIONS, sessionOperations = SESSION_OPERATIONS } = {}) {
+  const publishes = (verb) => contextOperations.includes(verb);
+  return Object.freeze({
+    continueSession: `no continue operation is published (${sessionOperations.join(', ')} are the session operations), so the affordance is an intent answered operation-unpublished`
+      + (publishes('rollover') ? ` — the published path a backend would take is ${contextOperations.filter((verb) => ['rollover', 'rehydrate', 'verify'].includes(verb)).map((verb) => `${CONTEXT_CONTRACT_ID}.${verb}`).join(' -> ')}, and none of it is triggered from here` : ''),
+    rehydrate: publishes('rehydrate')
+      ? `published as ${CONTEXT_CONTRACT_ID}.rehydrate behind ai:context:write: the UI renders the rehydrated state and the verification result, and never calls the operation`
+      : 'declared as a LEGO verb, published as no operation: operation-unpublished',
+    verify: publishes('verify')
+      ? `published as ${CONTEXT_CONTRACT_ID}.verify behind ai:context:read: the verification RESULT is rendered, the act of verifying is a backend operation nobody may trigger from here`
+      : 'declared as a LEGO verb, published as no operation: the verification RESULT is rendered, the act is not offered',
+  });
+}
+const FORBIDDEN_REASONS = forbiddenReasons();
+
 /** What this surface may do, and what is forbidden — with the reason for each refusal. */
 export const CONTEXT_SESSION_AFFORDANCES = Object.freeze({
   allowed: Object.freeze([
@@ -344,9 +398,9 @@ export const CONTEXT_SESSION_AFFORDANCES = Object.freeze({
     loadMemory: 'no Memory store exists (XA-12); loaded context, decisions and artifacts may be counted, and must say that is what they are',
     writeContext: 'context writes are backend operations (ai.context.compact) behind ai:context:write; the UI renders state, it does not mutate it',
     rollOverNow: 'a rollover is a deterministic backend transition at a declared threshold, not a button',
-    continueSession: 'no continue operation is published (ai.agent-session publishes create, status, close), so the affordance is an intent answered operation-unpublished',
-    rehydrate: 'declared as a LEGO verb, published as no operation: operation-unpublished',
-    verify: 'declared as a LEGO verb, published as no operation: the verification RESULT is rendered, the act is not offered',
+    continueSession: FORBIDDEN_REASONS.continueSession,
+    rehydrate: FORBIDDEN_REASONS.rehydrate,
+    verify: FORBIDDEN_REASONS.verify,
     resetSession: 'no silent reset: a failed continuation is surfaced as failed, never as a fresh session',
     grantPermission: 'a permission word is a requirement of a backend operation, never a grant the UI holds or gives',
     readTranscript: 'a transcript is refused by name; a session carries references',
@@ -361,57 +415,79 @@ export const CONTEXT_SESSION_AFFORDANCES = Object.freeze({
  * The six things a continuation line may say — the local vocabulary `continuationAffordance`,
  * declared with its reason in the lock. Each names the backend fact it renders, and each is
  * explicit about whether an operation exists to serve it.
+ *
+ * The table is a **function of what is published**, so a publication changes the answer without an
+ * edit: `verify` is unregistered on protected main @ `e754c5df` (state `operation-unpublished`) and
+ * registered by agent-2's `ai.context@1.0.0` publication at `fb254f32` (state
+ * `rendered-from-declaration`, act still not offered). `continue` is published by nobody in either
+ * tree, so `continue-session` stays `operation-unpublished` in both — an intent, never a wired call.
  */
-export const CONTINUATION_AFFORDANCES = Object.freeze([
-  Object.freeze({
-    id: 'continue-session',
-    says: 'Continue session',
-    rendersFrom: 'the intent to carry on in the same session',
-    operation: null,
-    state: 'operation-unpublished',
-    detail: 'ai.agent-session publishes create, status and close; there is no continue operation, so this is rendered as an intent the backend cannot yet serve — never wired to an invented operation',
-  }),
-  Object.freeze({
-    id: 'rollover-preparing',
-    says: 'Rollover preparing',
-    rendersFrom: 'the quoted context lifecycle state `prepare` (and the ruled PREPARE phase, which is pending publication)',
-    operation: null,
-    state: 'rendered-from-declaration',
-    detail: 'a declared threshold was reached; the continuation package is being prepared. Nothing is interrupted and no phase is advanced by the UI',
-  }),
-  Object.freeze({
-    id: 'continuation-linked',
-    says: 'Continuation linked',
-    rendersFrom: 'the quoted context lifecycle state `rolled-over` plus the parent reference of the next context',
-    operation: null,
-    state: 'rendered-from-declaration',
-    detail: 'the next window exists and names the one it descended from; identity lineage is preserved, so a compacted context can prove its ancestry',
-  }),
-  Object.freeze({
-    id: 'continuity-verified',
-    says: 'Continuity verified',
-    rendersFrom: 'the verification result `verified` (pending publication, XA-20)',
-    operation: 'verify',
-    state: 'operation-unpublished',
-    detail: 'every continuity check passed on the rehydrated state; the result is rendered, the act of verifying is a backend operation nobody may trigger from here',
-  }),
-  Object.freeze({
-    id: 'continuation-degraded',
-    says: 'Continuation degraded',
-    rendersFrom: 'the verification result `degraded` (pending publication, XA-20)',
-    operation: 'verify',
-    state: 'operation-unpublished',
-    detail: 'the continuation carried over but something is missing, and the missing items are named. Degraded is announced, never rendered as verified and never silently repaired',
-  }),
-  Object.freeze({
-    id: 'continuation-failed',
-    says: 'Continuation failed',
-    rendersFrom: 'the verification result `failed` (pending publication, XA-20)',
-    operation: 'verify',
-    state: 'operation-unpublished',
-    detail: 'rehydration did not preserve the required state. This is surfaced as a failure — never as a new session, which is how a silent reset loses an objective',
-  }),
-]);
+export function continuationAffordances({
+  contextOperations = CONTEXT_OPERATIONS,
+  sessionOperations = SESSION_OPERATIONS,
+  phasesPublished = PHASE_PUBLICATION.published,
+  verificationPublished = VERIFICATION_PUBLICATION.published,
+} = {}) {
+  const serves = (verb) => contextOperations.includes(verb);
+  const verifyState = serves('verify') ? 'rendered-from-declaration' : 'operation-unpublished';
+  const verificationSource = (word) => `the ${verificationPublished ? 'published' : 'ruled'} verification result \`${word}\`${verificationPublished ? ' (quoted from CONTINUATION_VERIFICATION, ai.context@1.0.0)' : ` (pending publication, ${CONTEXT_SESSION_DECISION})`}`;
+  const publishedPath = ['rollover', 'rehydrate', 'verify'].filter(serves).map((verb) => `${CONTEXT_CONTRACT_ID}.${verb}`);
+  return Object.freeze([
+    Object.freeze({
+      id: 'continue-session',
+      says: 'Continue session',
+      rendersFrom: 'the intent to carry on in the same session',
+      operation: null,
+      state: 'operation-unpublished',
+      publishedPath: Object.freeze(publishedPath),
+      detail: `${SESSION_CONTRACT_ID} publishes ${sessionOperations.join(', ')}; there is no continue operation, so this is rendered as an intent the backend cannot serve as one call — never wired to an invented operation`
+        + (publishedPath.length > 0 ? `. The published path a backend takes is ${publishedPath.join(' -> ')}, and the UI triggers none of it` : ''),
+    }),
+    Object.freeze({
+      id: 'rollover-preparing',
+      says: 'Rollover preparing',
+      rendersFrom: `the quoted context lifecycle state \`prepare\` and the ${phasesPublished ? 'published' : 'ruled'} PREPARE phase`,
+      operation: serves('rollover') ? 'rollover' : null,
+      state: 'rendered-from-declaration',
+      detail: 'a declared threshold was reached; the continuation package is being prepared. Nothing is interrupted and no phase is advanced by the UI',
+    }),
+    Object.freeze({
+      id: 'continuation-linked',
+      says: 'Continuation linked',
+      rendersFrom: 'the quoted context lifecycle state `rolled-over` plus the parent reference of the next context',
+      operation: null,
+      state: 'rendered-from-declaration',
+      detail: 'the next window exists and names the one it descended from; identity lineage is preserved, so a compacted context can prove its ancestry',
+    }),
+    Object.freeze({
+      id: 'continuity-verified',
+      says: 'Continuity verified',
+      rendersFrom: verificationSource('verified'),
+      operation: 'verify',
+      state: verifyState,
+      detail: 'every continuity check passed on the rehydrated state; the result is rendered, the act of verifying is a backend operation nobody may trigger from here',
+    }),
+    Object.freeze({
+      id: 'continuation-degraded',
+      says: 'Continuation degraded',
+      rendersFrom: verificationSource('degraded'),
+      operation: 'verify',
+      state: verifyState,
+      detail: 'the continuation carried over but something is missing, and the missing items are named. Degraded is announced, never rendered as verified and never silently repaired',
+    }),
+    Object.freeze({
+      id: 'continuation-failed',
+      says: 'Continuation failed',
+      rendersFrom: verificationSource('failed'),
+      operation: 'verify',
+      state: verifyState,
+      detail: 'rehydration did not preserve the required state. This is surfaced as a failure — never as a new session, which is how a silent reset loses an objective',
+    }),
+  ]);
+}
+
+/** The six affordances as this branch's quoted publication state renders them. */
+export const CONTINUATION_AFFORDANCES = continuationAffordances();
 
 /** The four ways a usage figure may be sourced (local vocabulary `contextUsageReport`). */
 export const USAGE_REPORT_STATES = Object.freeze(['reported', 'estimated', 'not-reported', 'over-budget']);
@@ -915,20 +991,22 @@ export function validateRolloverThreshold(threshold) {
  *
  * The frontend does not advance a phase. It renders the phase or lifecycle state the backend
  * handed over; this function exists so a screen can say "the declared threshold is reached, a
- * rollover is expected" without deciding that one has started. The three-phase machine itself is
- * pending publication (`PENDING_PUBLICATIONS.contextRolloverPhase`, `XA-20`), so the returned
- * `phase` is the ruled spelling marked as unpublished, and `publishedWord` is the quoted lifecycle
- * state the UI actually renders.
+ * rollover is expected" without deciding that one has started. The three-phase machine is quoted
+ * from the published `ai.context@1.0.0` surface (`CONTEXT_MANAGER_STATES`), so `phasePublication`
+ * and `published` are derived from the lock: `published` against a tree that carries the
+ * publication, `pending` against one that does not. `publishedWord` is the quoted lifecycle state
+ * the UI renders next to the phase.
  */
 export function expectedRolloverPhase({ usage = null, threshold = null, lifecycleState = null } = {}) {
-  const pending = pendingPublicationOf('contextRolloverPhase');
+  const publication = PHASE_PUBLICATION;
   const report = contextUsage(usage);
   const thresholdCheck = validateRolloverThreshold(threshold);
   const quoted = CONTEXT_LIFECYCLE.includes(lifecycleState) ? lifecycleState : null;
   const base = Object.freeze({
-    phasePublication: 'pending',
-    decision: CONTEXT_SESSION_DECISION,
-    phases: pending.expectedValues,
+    phasePublication: publication.state,
+    decision: publication.decision,
+    phaseContract: publication.contract,
+    phases: ROLLOVER_PHASES,
     usage: report,
     threshold: thresholdCheck.ok ? thresholdCheck.threshold : null,
     thresholdFindings: thresholdCheck.findings,
@@ -936,22 +1014,22 @@ export function expectedRolloverPhase({ usage = null, threshold = null, lifecycl
   });
   if (quoted !== null && ROLLOVER_LIFECYCLE_STATES.includes(quoted)) {
     const phase = quoted === 'prepare' ? 'PREPARE' : 'ROLLOVER';
-    return Object.freeze({ ...base, expectedPhase: phase, published: false, publishedWord: quoted, detail: `the declaration reports the lifecycle state "${quoted}", which is the published word for the ${phase} phase; the phase name itself is not published (XA-20)` });
+    return Object.freeze({ ...base, expectedPhase: phase, published: publication.published, publishedWord: quoted, detail: `the declaration reports the lifecycle state "${quoted}", which is the published word for the ${phase} phase` + (publication.published ? `; the phase machine itself is published as ${ROLLOVER_PHASES.join(' -> ')} by ${publication.contractId}@${publication.version}` : `; the phase name itself is not published (${CONTEXT_SESSION_DECISION})`) });
   }
   if (report.state === 'not-reported') {
-    return Object.freeze({ ...base, expectedPhase: null, published: false, publishedWord: quoted, detail: report.detail + ' — with nothing reported there is no phase to expect, and NORMAL is not spelled locally' });
+    return Object.freeze({ ...base, expectedPhase: null, published: publication.published, publishedWord: quoted, detail: report.detail + ` — with nothing reported there is no phase to expect, and ${ROLLOVER_PHASES[0]} is never asserted from silence` });
   }
   if (!thresholdCheck.ok) {
-    return Object.freeze({ ...base, expectedPhase: null, published: false, publishedWord: quoted, detail: thresholdCheck.findings[0] });
+    return Object.freeze({ ...base, expectedPhase: null, published: publication.published, publishedWord: quoted, detail: thresholdCheck.findings[0] });
   }
   if (report.percent === null) {
-    return Object.freeze({ ...base, expectedPhase: null, published: false, publishedWord: quoted, detail: 'usage was reported without a bound, so no threshold crossing can be computed; the figure is shown and no phase is expected' });
+    return Object.freeze({ ...base, expectedPhase: null, published: publication.published, publishedWord: quoted, detail: 'usage was reported without a bound, so no threshold crossing can be computed; the figure is shown and no phase is expected' });
   }
   const reached = report.percent / 100 >= thresholdCheck.threshold;
   return Object.freeze({
     ...base,
-    expectedPhase: reached ? 'PREPARE' : 'NORMAL',
-    published: false,
+    expectedPhase: reached ? ROLLOVER_PHASES[1] : ROLLOVER_PHASES[0],
+    published: publication.published,
     publishedWord: reached ? 'prepare' : quoted,
     detail: reached
       ? `${report.percent}% of the declared bound is at or above the ${Math.round(thresholdCheck.threshold * 100)}% threshold: a rollover is expected and the continuation package should be prepared now, not at the limit`
@@ -979,7 +1057,7 @@ export const CONTINUITY_CHECKS = Object.freeze([
   Object.freeze({ id: 'decisions', requires: 'decisions', question: 'are the decisions and their evidence still carried?' }),
   Object.freeze({ id: 'artifacts', requires: 'artifacts', question: 'are the artifact references still carried?' }),
   Object.freeze({ id: 'errors', requires: 'errors', question: 'are the errors and unresolved questions still visible?' }),
-  Object.freeze({ id: 'refs', requires: 'refs', question: 'are the important references still carried?' }),
+  Object.freeze({ id: 'importantReferences', requires: 'importantReferences', question: 'are the important references still carried?' }),
 ]);
 
 /**
@@ -1000,16 +1078,17 @@ export const CONTINUITY_CHECKS = Object.freeze([
  * not one of the three ruled words is refused rather than mapped to the nearest one.
  */
 export function continuityVerification({ pkg = null, before = null, after = null, result = null } = {}) {
-  const pending = pendingPublicationOf('continuationVerification');
+  const publication = VERIFICATION_PUBLICATION;
   const checks = [];
   const missing = [];
   const validation = pkg === null ? null : validateContinuationPackage(pkg);
   if (validation !== null && !validation.ok) {
     return Object.freeze({
       result: 'failed',
-      published: false,
-      decision: CONTEXT_SESSION_DECISION,
-      results: pending.expectedValues,
+      published: publication.published,
+      decision: publication.decision,
+      resultContract: publication.contract,
+      results: VERIFICATION_RESULTS,
       checks: Object.freeze([]),
       missing: Object.freeze([]),
       repaired: Object.freeze([]),
@@ -1050,8 +1129,8 @@ export function continuityVerification({ pkg = null, before = null, after = null
   let final = computed;
   let reported = null;
   if (result !== null && result !== undefined) {
-    if (!pending.expectedValues.includes(result)) {
-      throw new ContextSessionError(`"${result}" is not one of the three ruled verification results (${pending.expectedValues.join(', ')}); an unknown result is refused, never mapped to the nearest one`, {
+    if (!VERIFICATION_RESULTS.includes(result)) {
+      throw new ContextSessionError(`"${result}" is not one of the three ${publication.published ? 'published' : 'ruled'} verification results (${VERIFICATION_RESULTS.join(', ')}); an unknown result is refused, never mapped to the nearest one`, {
         code: 'frontend.context-session.unknown-verification-result',
         concept: 'continuationVerification',
         value: result,
@@ -1069,9 +1148,10 @@ export function continuityVerification({ pkg = null, before = null, after = null
       : `continuity did not survive: ${missing.includes('identity') ? 'the package cannot name what it continues' : 'the next context does not prove which context it descended from'}`;
   return Object.freeze({
     result: final,
-    published: false,
-    decision: CONTEXT_SESSION_DECISION,
-    results: pending.expectedValues,
+    published: publication.published,
+    decision: publication.decision,
+    resultContract: publication.contract,
+    results: VERIFICATION_RESULTS,
     checks: Object.freeze(checks),
     missing: Object.freeze([...new Set(missing)]),
     repaired: Object.freeze([]),
@@ -1292,13 +1372,26 @@ export function declarationDrift({ declaration = null, surface = null, contract 
   const pending = Object.freeze([
     ...PENDING_PUBLICATIONS.map((entry) => Object.freeze({ kind: 'vocabulary', id: entry.id, expectedValues: entry.expectedValues, decision: entry.publicationPending.decision })),
     ...PENDING_CONTRACT_ROWS.filter((row) => rows.find((candidate) => (candidate.id ?? candidate.contract) === row.contract) === undefined)
-      .map((row) => Object.freeze({ kind: 'contract-row', id: row.contract, declaredVersion: row.declaredVersion, decision: row.decision })),
+      .map((row) => Object.freeze({ kind: 'contract-row', id: row.contract, declaredVersion: row.declaredVersion, decision: row.decision, publishedOn: row.publishedOn ?? null })),
   ]);
+  // Promotions are not pending work: they are evidence that a word the frontend refused to coin was
+  // published, by whom and at which commit. They ride next to `pending` so a drift report shows
+  // both halves of the publication story.
+  const promoted = Object.freeze(PROMOTED_PUBLICATIONS.map((entry) => Object.freeze({
+    kind: 'promoted-vocabulary',
+    id: entry.id,
+    values: entry.publishedValues,
+    identicalToRuling: entry.identical,
+    publishedBy: entry.publishedBy,
+    lockRow: entry.publishedAs.lockRow,
+    symbol: entry.publishedAs.symbol,
+    decision: entry.decision,
+  })));
   const uncomparable = Object.freeze(PENDING_CONTRACT_ROWS
     .filter((row) => rows.find((candidate) => (candidate.id ?? candidate.contract) === row.contract) === undefined)
     .map((row) => `${row.contract} version (claimed ${row.declaredVersion}, no lock row)`));
   if (declaration === null || declaration === undefined) {
-    return Object.freeze({ state: 'not-declared', differences: Object.freeze([]), compared: Object.freeze([]), pending, uncomparable, owner, decision, rule });
+    return Object.freeze({ state: 'not-declared', differences: Object.freeze([]), compared: Object.freeze([]), pending, promoted, uncomparable, owner, decision, rule });
   }
   const differences = [];
   const compared = [];
@@ -1514,7 +1607,9 @@ export function createContextSessionView({
       contextVerbs: CONTEXT_DECLARED_VERBS,
       unpublishedVerbs: UNPUBLISHED_CONTEXT_VERBS,
       offered: Object.freeze([]),
-      rule: 'The UI may name a published operation; it may not offer one. Nothing here calls load, compact, create, status or close, and the three declared-but-unregistered verbs are answered operation-unpublished.',
+      rule: UNPUBLISHED_CONTEXT_VERBS.length === 0
+        ? `The UI may name a published operation; it may not offer one. Nothing here calls ${PUBLISHED_OPERATION_IDS.join(', ')} — every declared verb is registered, and an operation nobody wired stays unwired.`
+        : `The UI may name a published operation; it may not offer one. Nothing here calls ${PUBLISHED_OPERATION_IDS.join(', ')}, and the declared-but-unregistered verbs (${UNPUBLISHED_CONTEXT_VERBS.join(', ')}) are answered operation-unpublished.`,
     }),
     permissions: Object.freeze({ context: CONTEXT_PERMISSIONS, session: SESSION_PERMISSIONS, grants: null }),
     pending: Object.freeze(PENDING_PUBLICATIONS.map((entry) => Object.freeze({
@@ -1523,6 +1618,15 @@ export function createContextSessionView({
       decidedBy: entry.decidedBy,
       decision: entry.publicationPending.decision,
       partlyPublishedBy: entry.partlyPublishedBy ?? null,
+    }))),
+    promoted: Object.freeze(PROMOTED_PUBLICATIONS.map((entry) => Object.freeze({
+      id: entry.id,
+      values: entry.publishedValues,
+      identicalToRuling: entry.identical,
+      publishedBy: entry.publishedBy,
+      publishedAs: entry.publishedAs,
+      quotedAs: entry.quotedAs,
+      decision: entry.decision,
     }))),
     refused,
     findings: Object.freeze(findings),
@@ -1569,8 +1673,10 @@ export function describeContextSession() {
     concepts: DISTINCT_CONCEPTS,
     continuationAffordances: CONTINUATION_AFFORDANCES,
     continuityChecks: CONTINUITY_CHECKS,
-    verificationResults: pendingPublicationOf('continuationVerification').expectedValues,
-    rolloverPhases: pendingPublicationOf('contextRolloverPhase').expectedValues,
+    verificationResults: VERIFICATION_RESULTS,
+    rolloverPhases: ROLLOVER_PHASES,
+    verificationPublication: VERIFICATION_PUBLICATION,
+    phasePublication: PHASE_PUBLICATION,
     forbiddenFields: FORBIDDEN_FIELDS,
     forbiddenImplications: FORBIDDEN_IMPLICATIONS,
     affordances: CONTEXT_SESSION_AFFORDANCES,
