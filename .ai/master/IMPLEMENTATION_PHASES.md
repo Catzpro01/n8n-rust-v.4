@@ -61,11 +61,11 @@ The strategic phases above are intentionally preserved. The Manager-owned granul
 | `P2.12` | Skill | B | **complete** | P2.13 |
 | `P2.13` | Context & Session | B | **complete** | P2.14 |
 | `P2.14` | Memory | B | **complete** | P2.15 |
-| `P2.15` | Workspace | B | **in-progress** | P2.16 |
+| `P2.15` | Workspace | B | **complete** | P2.16 |
 | `P2.16` | Agent Machine / execution foundation | B | **planned** | P2.17 |
 | `P2.17+` | Later capability ladder | C-F | **planned** | — |
 
-Current milestone: **P2.15**. Previous completed: **P2.14**.
+Current milestone: **P2.16**. Previous completed: **P2.15**.
 
 Future IDs may be refined by Manager only by updating `docs/n8n-lego/milestones.json`.
 

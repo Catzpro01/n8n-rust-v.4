@@ -9,8 +9,8 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 
 | Field | Value |
 | --- | --- |
-| Current milestone | **P2.15** |
-| Previous completed milestone | **P2.14** |
+| Current milestone | **P2.16** |
+| Previous completed milestone | **P2.15** |
 | Protected branch | `main` |
 | Main baseline | `0d9466f19a149f6e30bdee559086b7a28b080cb3` |
 | Agent 1 branch | `arena/01a0c90c-n8n-rust-v-4` |
@@ -25,25 +25,25 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 | `P2.12` | Skill | B | **complete** | P2.13 |
 | `P2.13` | Context & Session | B | **complete** | P2.14 |
 | `P2.14` | Memory | B | **complete** | P2.15 |
-| `P2.15` | Workspace | B | **in-progress** | P2.16 |
+| `P2.15` | Workspace | B | **complete** | P2.16 |
 | `P2.16` | Agent Machine / execution foundation | B | **planned** | P2.17 |
 | `P2.17+` | Later capability ladder | C-F | **planned** | — |
 
-## Current milestone boundary — P2.15
+## Current milestone boundary — P2.16
 
-**Owns:** workspace-scoped execution boundary contract
+**Owns:** Agent Machine contract and execution foundation, subject to dependency readiness
 
-**Does not own:** model inference; Agent Machine or autonomous execution loop; filesystem, terminal or arbitrary process authority; MCP, Runtime Adapter, Node Creator or Translation runtime; credentials, secrets or provider implementation; Memory traversal, ranking or retention enforcement; Context or Session semantics; Rust implementation
+**Does not own:** —
 
-**Dependencies:** P2.13 Context & Session foundation; P2.14 Memory contract where required
+**Dependencies:** P2.13 Context & Session; P2.14 Memory; P2.15 Workspace; approval contract readiness
 
-**Required gates:** planned after contract publication
+**Required gates:** planned after dependency readiness
 
-**Completion rule:** no duplicate ai-workspace domain; scope and authority boundaries are explicit
+**Completion rule:** dependencies are ready and execution loop is separately scoped
 
 ## Reconciliation state
 
-- Verdict: **IN_PROGRESS**
+- Verdict: **PENDING**
 - Conflict: —
 - Contract: —
 - Agent: `—`
@@ -53,14 +53,13 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 
 ## Verification evidence
 
-- **baseline:** —
-- **implementation:** —
+_none recorded_
 
 ## Evidence roles
 
 - Start/finish evidence is evidence, not a replacement for current state.
 - An agent branch can be implementation-complete without the milestone being complete.
-- `P2.15` requires **RECONCILIATION PASS**, **MERGE PASS**, and post-merge verification on protected main before it can become complete.
+- `P2.16` requires **RECONCILIATION PASS**, **MERGE PASS**, and post-merge verification on protected main before it can become complete.
 
 ## Manager merge protocol
 

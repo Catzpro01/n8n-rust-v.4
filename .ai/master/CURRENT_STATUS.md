@@ -13,8 +13,8 @@ document is right and the prose is stale.
 | Protected main baseline | `0d9466f19a149f6e30bdee559086b7a28b080cb3` |
 | Agent 1 branch | `arena/01a0c90c-n8n-rust-v-4` |
 | Agent 2 branch | `arena/01a0c90d-n8n-rust-v-4` |
-| **Current milestone** | **P2.15** |
-| Previous completed milestone | **P2.14** |
+| **Current milestone** | **P2.16** |
+| Previous completed milestone | **P2.15** |
 | Current branch state | `arena/01a0c90d-n8n-rust-v-4` (implementation branch; not protected main) |
 | Historical reconciled state | `c1eca8cc` (historical evidence, not current main) |
 | Historical P2.11 evidence commit | `bdd0f1d2d6c8d7bc1c1ff3d881ddc2b3bd93713d` |
@@ -37,13 +37,13 @@ is the row marked as such.
 
 ## Milestone state
 
-- **Current:** `P2.15` — Workspace (**in-progress**)
-- **Previous complete:** `P2.14`
-- **Why next:** P2.13 Context & Session foundation; P2.14 Memory contract where required
-- **Owns:** workspace-scoped execution boundary contract
-- **Does not implement:** model inference; Agent Machine or autonomous execution loop; filesystem, terminal or arbitrary process authority; MCP, Runtime Adapter, Node Creator or Translation runtime; credentials, secrets or provider implementation; Memory traversal, ranking or retention enforcement; Context or Session semantics; Rust implementation
-- **Next:** `P2.16`
-- **Completion gate:** no duplicate ai-workspace domain; scope and authority boundaries are explicit
+- **Current:** `P2.16` — Agent Machine / execution foundation (**planned**)
+- **Previous complete:** `P2.15`
+- **Why next:** P2.13 Context & Session; P2.14 Memory; P2.15 Workspace; approval contract readiness
+- **Owns:** Agent Machine contract and execution foundation, subject to dependency readiness
+- **Does not implement:** —
+- **Next:** `P2.17`
+- **Completion gate:** dependencies are ready and execution loop is separately scoped
 
 ## The 15 AI/Agent LEGO by status
 
