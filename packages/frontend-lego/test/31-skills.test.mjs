@@ -10,7 +10,14 @@
  * The backend (`manifest/ai-lego-set.json`, owned by agent-2) is on this branch, so the
  * vocabulary comparison runs for real; if it is ever absent, that comparison **skips with
  * a stated reason** — it never reports a pass it did not perform. `N8N_BACKEND_LEGO_ROOT`
- * points at another checkout's `.../src/lego` and turns a missing file into a failure.
+ * points at another checkout's `.../src/lego`, and then a missing file is a **failure**:
+ * a skip would report agreement with a declaration nobody read.
+ *
+ * Two further comparisons are gated on what the pointed-at tree publishes: a declaration
+ * that claims a version nobody locked, and a declaration that has *moved* past the words
+ * this package quotes. Both are reported as data (`declarationDrift`) and registered in
+ * `docs/n8n-lego/decisions/cross-agent-decisions.json` — a difference between the two sides
+ * is never resolved inside this package.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -21,6 +28,7 @@ import { PACKAGE_ROOT, skillSurface } from '../src/manifests.mjs';
 import { createFrontendLego } from '../src/lego.mjs';
 import { isDeclaredTerm, vocabularyOf } from '../src/vocabulary.mjs';
 import {
+  SKILL_ALIGNMENT_DECISION,
   SKILL_CONTRACT_ID,
   SKILL_DECLARATION_SOURCE,
   SKILL_DEGRADATION_STATES,
@@ -32,8 +40,11 @@ import {
   SKILL_PERMISSIONS,
   SKILL_QUOTED_VOCABULARIES,
   SKILL_STATUSES,
+  SKILL_TRUST_LEVELS,
   SkillDeclarationError,
   createSkillCatalog,
+  declarationDrift,
+  declaredVersionOf,
   describeSkills,
   searchSkills,
   skillDetail,
@@ -53,11 +64,29 @@ const overridden = process.env.N8N_BACKEND_LEGO_ROOT !== undefined;
 const BACKEND_SET = join(BACKEND, 'manifest', 'ai-lego-set.json');
 const CONTRACT_LOCK = join(BACKEND, 'contracts', 'contract-lock.json');
 const backendPresent = existsSync(join(BACKEND, 'interaction.mjs'));
-const skip = backendPresent
+const SKILL_MANIFEST = join(BACKEND, 'manifest', 'skill.json');
+const LEGO_SET = join(BACKEND, 'manifest', 'ai-lego-set.json');
+
+/**
+ * A gated test that was *told* where the backend tree is must find it. Skipping when
+ * `N8N_BACKEND_LEGO_ROOT` points at an empty directory would report agreement with a
+ * declaration nobody read, which is the one failure this suite exists to prevent.
+ */
+const requireBackend = () => {
+  assert.ok(backendPresent, `N8N_BACKEND_LEGO_ROOT is set but ${BACKEND} has no backend foundation`);
+};
+const skip = backendPresent || overridden
   ? false
-  : overridden
-    ? `N8N_BACKEND_LEGO_ROOT is set but ${BACKEND} has no backend foundation`
-    : 'the backend foundation is not on this branch — the comparison runs when it is';
+  : 'the backend foundation is not on this branch — the comparison runs when it is';
+
+/**
+ * A moved declaration can only be compared against a tree that publishes one: `manifest/skill.json`
+ * is agent-2's P2.12 artefact. Pointed at this branch, the comparison has nothing to read and
+ * says so; pointed at that tree (`N8N_BACKEND_LEGO_ROOT`), it runs for real.
+ */
+const driftSkip = existsSync(SKILL_MANIFEST) || overridden
+  ? false
+  : 'the pointed-at backend tree publishes no manifest/skill.json yet (ai.skill landed in agent-2 P2.12) — the comparison runs when it does';
 
 const DECISIONS = JSON.parse(read('docs/n8n-lego/decisions/cross-agent-decisions.json'));
 const SURFACE = skillSurface();
@@ -296,10 +325,32 @@ test('no execution affordance exists while the skill is unsupported', () => {
 });
 
 test('the frontend quotes the backend skill vocabulary, and re-declares none of it', { skip }, () => {
+  requireBackend();
   const declared = backendSkill();
   assert.ok(declared, 'the backend declares the Skill LEGO');
+
+  /**
+   * Every vocabulary field is either quoted exactly, or the difference is *registered*:
+   * reported by `declarationDrift` and recorded as an open row in the frontend register.
+   * A silent difference — one the surface neither quotes nor registers — fails here, and
+   * so does adopting the newer spelling.
+   */
+  const catalog = createSkillCatalog({ surface: SURFACE, declaration: declared });
+  const drifted = new Map(catalog.drift.differences.map((difference) => [difference.field, difference]));
+  const registered = DECISIONS.decisions.find((row) => row.id === SKILL_ALIGNMENT_DECISION);
+  assert.ok(registered, `${SKILL_ALIGNMENT_DECISION} is recorded`);
+  assert.equal(registered.status.startsWith('open'), true, 'and it stays open: the frontend does not decide it');
+  const covered = (field, quoted, declaredValues) => {
+    if (JSON.stringify(quoted) === JSON.stringify(declaredValues)) return true;
+    const difference = drifted.get(field);
+    assert.ok(difference, `${field} differs (${quoted.join(', ')} quoted / ${declaredValues.join(', ')} declared) and no difference is reported`);
+    assert.deepEqual(difference.declared, declaredValues, `${field}: the reported difference names the declared values`);
+    assert.match(registered.finding, new RegExp(field), `${field}: the open row names the differing field`);
+    return true;
+  };
+
   assert.deepEqual(SKILL_LIFECYCLE, declared.lifecycle, 'the six states are quoted, not invented');
-  assert.deepEqual(SKILL_OPERATIONS, declared.operations, 'the declared operations are quoted');
+  covered('operations', SKILL_OPERATIONS, declared.operations);
   assert.deepEqual(SKILL_PERMISSIONS, declared.permissions, 'the declared operation permissions are quoted');
   assert.deepEqual(SKILL_DISCLOSURE_LEVELS, Object.keys(declared.disclosureLevels), 'the disclosure levels are quoted');
   assert.deepEqual(SKILL_STATUSES, Object.keys(JSON.parse(readFileSync(BACKEND_SET, 'utf8')).statusVocabulary), 'the status words are quoted');
@@ -308,16 +359,30 @@ test('the frontend quotes the backend skill vocabulary, and re-declares none of 
     assert.ok(SKILL_DEGRADATION_STATES.includes(state), `${state} is a canonical degradation word`);
   }
 
-  // The declaration says it is unpublished, and every quoted set records that honestly.
-  assert.equal(declared.versioning, 'publicationPending');
+  // The declaration states its publication state, and every quoted set records that honestly.
+  // `publicationPending` and `<contract>@<version>` are both honest claims: the first says no
+  // version exists, the second says one is declared while the lock still has no row. The test
+  // accepts both and the drift comparison reports which one the tree carries.
+  assert.ok(declared.versioning === 'publicationPending' || declaredVersionOf(declared.versioning) !== null,
+    `unrecognised versioning claim "${declared.versioning}"`);
   assert.equal(declared.contracts.includes(SKILL_CONTRACT_ID), true);
+  // Every quoted set says where it came from and which recorded decision owes it a contract.
+  // Two files carry these words: the Skill declaration itself, and the foundation manifest the
+  // trust levels come from (`XA-9`) — the surface quotes both, and re-declares neither.
+  const QUOTED_FROM = {
+    'apps/n8n-lego/src/lego/manifest/ai-lego-set.json': { decision: SKILL_DECLARATION_SOURCE.decision, path: /^lego#id=skill\.|^statusVocabulary$/ },
+    'apps/n8n-lego/src/lego/manifest/foundation.json': { decision: 'XA-9', path: /^trust\.levels$/ },
+  };
   for (const id of SKILL_QUOTED_VOCABULARIES.filter((value) => value !== 'degradation')) {
     const set = vocabularyOf(id);
+    const source = QUOTED_FROM[set.provenance.file];
+    assert.ok(source, `${id} is quoted from a declared file (${set.provenance.file})`);
     assert.equal(set.provenance.contract, null, `${id} claims no contract it has not found`);
-    assert.equal(set.provenance.file, 'apps/n8n-lego/src/lego/manifest/ai-lego-set.json');
-    assert.equal(set.publicationPending.decision, SKILL_DECLARATION_SOURCE.decision);
-    assert.match(set.provenance.path, /^lego#id=skill\.|^statusVocabulary$/);
+    assert.equal(set.publicationPending.decision, source.decision, `${id} names the decision that owes it a contract`);
+    assert.match(set.provenance.path, source.path, `${id} names the declaration inside that file`);
+    assert.ok(DECISIONS.decisions.some((row) => row.id === set.publicationPending.decision), `${id}: ${set.publicationPending.decision} is recorded`);
   }
+  assert.deepEqual(SKILL_TRUST_LEVELS, vocabularyOf('trustLevel').values, 'the trust words are quoted from the foundation manifest');
   assert.equal(SKILL_DECLARATION_SOURCE.file.endsWith('manifest/ai-lego-set.json'), true);
   assert.equal(SKILL_DECLARATION_SOURCE.path, 'lego#id=skill');
 
@@ -340,6 +405,7 @@ test('the frontend quotes the backend skill vocabulary, and re-declares none of 
 });
 
 test('a stale decision or status is caught instead of rendered as truth', { skip }, () => {
+  requireBackend();
   const lock = JSON.parse(readFileSync(CONTRACT_LOCK, 'utf8'));
   const rows = Array.isArray(lock) ? lock : (lock.contracts ?? []);
   const publishedRow = rows.find((row) => (row.id ?? row.contract) === SKILL_CONTRACT_ID);
@@ -375,6 +441,58 @@ test('a stale decision or status is caught instead of rendered as truth', { skip
   assert.match(renamed.entries[0].validation.findings.join(' '), /"status" must be one of/);
 });
 
+test('compatibility is its own verdict: required, offered, comparable, satisfied', () => {
+  const simple = entry({ skillId: 's', requiredCapabilities: ['ai.context'] });
+  const available = published({ skills: [simple] });
+  assert.equal(available.entries[0].availability, 'available');
+  assert.deepEqual(
+    { state: available.entries[0].compatibility.state, required: available.entries[0].compatibility.required, offered: available.entries[0].compatibility.offered, satisfied: available.entries[0].compatibility.satisfied },
+    { state: 'unchanged', required: '1.0.0', offered: '1.0.0', satisfied: true },
+  );
+
+  // A requirement the consumer cannot satisfy, and a requirement nobody asked for: two
+  // different verdicts, neither of them "available".
+  const newer = published({ requiredVersion: '2.0.0' });
+  assert.equal(newer.entries[0].compatibility.satisfied, false);
+  assert.equal(newer.entries[0].compatibility.state, 'downgrade');
+  assert.equal(newer.entries[0].compatibility.required, '2.0.0');
+  assert.equal(newer.entries[0].compatibility.offered, '1.0.0');
+
+  const unrequired = published({ requiredVersion: null });
+  assert.equal(unrequired.entries[0].compatibility.state, 'not-required');
+  assert.equal(unrequired.entries[0].compatibility.offered, '1.0.0');
+  assert.equal(unrequired.entries[0].availability, 'available');
+
+  // An unpublished contract cannot be compared, and the verdict says so instead of passing.
+  const nothing = createSkillCatalog({ surface: SURFACE, skills: [simple] });
+  assert.equal(nothing.entries[0].compatibility.state, 'uncomparable');
+  assert.equal(nothing.entries[0].compatibility.satisfied, false);
+  assert.match(nothing.entries[0].compatibility.detail, /no contract-lock row publishes ai\.skill/);
+
+  // The verdict is rendered in the detail at the advanced level, with the required capability
+  // list — and it carries no execution affordance.
+  const detail = skillDetail(available, 's', { level: 'advanced' });
+  assert.equal(detail.compatibility.state, 'unchanged');
+  assert.deepEqual(detail.requiredCapabilities, ['ai.context']);
+  assert.equal(detail.operations.every((operation) => operation.offered === false), true);
+});
+
+test('a trust level is a quoted word, and an invented one is refused', () => {
+  assert.deepEqual(SKILL_TRUST_LEVELS, ['core', 'verified', 'community', 'untrusted']);
+  assert.deepEqual(describeSkills().trustLevels, SKILL_TRUST_LEVELS);
+  assert.equal(validateSkillInstance(entry({ trust: 'verified' })).ok, true);
+  for (const level of SKILL_TRUST_LEVELS) {
+    assert.equal(validateSkillInstance(entry({ trust: level })).ok, true, `${level} is a declared trust level`);
+  }
+  const invented = validateSkillInstance(entry({ trust: 'god-mode' }));
+  assert.equal(invented.ok, false);
+  assert.match(invented.findings.join(' '), /unknown trust level "god-mode"/);
+  // The quoted set is compared with the declaration when the tree is present (the drift test),
+  // and a declaration that carries neither the field nor the words is in sync by absence.
+  assert.equal(declarationDrift({ declaration: { id: 'skill' } }).differences.length, 0);
+  assert.deepEqual(declarationDrift({ declaration: { id: 'skill', trustLevels: [] } }).differences.map((difference) => difference.field), ['trustLevels']);
+});
+
 test('the surface is wired into the assembly, and the rule that guards it cites this suite', () => {
   const contract = read('contracts/frontend.contract.md');
   const block = contract.split('```json').map((part) => part.split('```')[0]).find((part) => part.includes('"A1"'));
@@ -397,4 +515,117 @@ test('the surface is wired into the assembly, and the rule that guards it cites 
   assert.equal(frontend.describe().skillStates, 6);
   assert.equal(frontend.describe().skillsDeclared, 0);
   assert.equal(frontend.conformance().checks.find((check) => check.ruleId === 'A27').state, 'pass');
+});
+
+test('a declared version is reported without pretending the contract is published', () => {
+  // The backend may move to `<contract>@<version>` in the file before the contract lock has
+  // a row. The surface reports exactly that: the claim, the owner, and the missing lock.
+  const claim = declaredVersionOf('ai.skill@1.0.0');
+  assert.deepEqual(claim, { contract: 'ai.skill', version: '1.0.0' });
+  assert.equal(declaredVersionOf('publicationPending'), null);
+  assert.equal(declaredVersionOf('ai.skill@1.0'), null, 'a partial version is not a version');
+  assert.equal(declaredVersionOf(undefined), null);
+
+  const declared = {
+    id: 'skill',
+    owner: 'manager',
+    status: 'implemented',
+    lifecycle: [...SKILL_LIFECYCLE],
+    operations: [...SKILL_OPERATIONS],
+    permissions: [...SKILL_PERMISSIONS],
+    disclosureLevels: Object.fromEntries(SKILL_DISCLOSURE_LEVELS.map((level) => [level, 'declared'])),
+    versioning: 'ai.skill@1.0.0',
+  };
+  const unlocked = createSkillCatalog({ surface: SURFACE, declaration: declared, skills: [entry()] });
+  assert.equal(unlocked.contract.published, false, 'a claim in a file is not a published contract');
+  assert.equal(unlocked.contract.version, null, 'nothing is locked, so there is no version to bind to');
+  assert.equal(unlocked.contract.declaredVersion, '1.0.0', 'but the claim is reported');
+  assert.equal(unlocked.contract.status, 'declared-not-locked');
+  assert.match(unlocked.contract.detail, /a version claim is not a published contract/);
+  assert.equal(unlocked.unsupported.contract.declaredVersion, '1.0.0');
+  assert.equal(unlocked.availability, 'optional-absent');
+
+  const locked = createSkillCatalog({
+    surface: SURFACE,
+    declaration: declared,
+    contract: { id: SKILL_CONTRACT_ID, version: '1.0.0', owner: 'manager' },
+    skills: [entry()],
+    requiredVersion: '1.0.0',
+    declaredCapabilities: ['ai.context'],
+  });
+  assert.equal(locked.contract.published, true);
+  assert.equal(locked.contract.version, '1.0.0');
+  assert.equal(locked.contract.declaredVersion, '1.0.0');
+  assert.equal(locked.contract.comparable, true);
+  assert.equal(locked.unsupported, null);
+  assert.equal(locked.availability, 'available');
+  assert.equal(locked.entries[0].availability, 'available');
+  // And a locked contract still decides compatibility by its own version, not by the claim.
+  const newer = createSkillCatalog({
+    surface: SURFACE,
+    declaration: declared,
+    contract: { id: SKILL_CONTRACT_ID, version: '0.9.0', owner: 'manager' },
+    skills: [entry()],
+    requiredVersion: '1.0.0',
+    declaredCapabilities: ['ai.context'],
+  });
+  assert.equal(newer.entries[0].availability, 'version-incompatible');
+});
+
+test('a declaration that moved is reported as drift, never adopted silently', { skip: driftSkip }, () => {
+  requireBackend();
+  assert.ok(existsSync(SKILL_MANIFEST), `${SKILL_MANIFEST} does not exist — the pointed-at tree publishes no Skill manifest`);
+  assert.ok(existsSync(LEGO_SET), `${LEGO_SET} does not exist`);
+  const publishedSkill = JSON.parse(readFileSync(SKILL_MANIFEST, 'utf8'));
+  const legos = backendSkill();
+  const lockRows = (() => {
+    const lock = JSON.parse(readFileSync(CONTRACT_LOCK, 'utf8'));
+    return Array.isArray(lock) ? lock : (lock.contracts ?? []);
+  })();
+  const lockedRow = lockRows.find((row) => (row.id ?? row.contract) === SKILL_CONTRACT_ID) ?? null;
+
+  // 1. The vocabulary a published Skill contract fixes agrees with the words this package
+  //    quotes: the six states, the four disclosure levels, the two permission words and the
+  //    contract identity. If any of those disagreed, the frontend would be quoting a
+  //    different contract and no amount of drift reporting would make that safe.
+  assert.equal(publishedSkill.contract, SKILL_CONTRACT_ID);
+  assert.deepEqual(publishedSkill.lifecycle.states, SKILL_LIFECYCLE, 'the six states agree');
+  assert.deepEqual(Object.keys(publishedSkill.disclosure.levels), SKILL_DISCLOSURE_LEVELS, 'the disclosure levels agree');
+  assert.deepEqual(publishedSkill.permissions, SKILL_PERMISSIONS, 'the permission words agree');
+  assert.ok(publishedSkill.isNot.join(' ').match(/tool executor|permission grant/), 'the contract says what a skill is not');
+
+  // 2. The declaration handed over as data is compared, and the difference is named — in both
+  //    directions (the LEGO-level block, and the contract manifest).
+  for (const [label, declaration] of [['ai-lego-set.json#id=skill', legos], ['manifest/skill.json', publishedSkill]]) {
+    const catalog = createSkillCatalog({ surface: SURFACE, declaration, contract: lockedRow, skills: [entry()] });
+    const fields = catalog.drift.differences.map((difference) => difference.field);
+    if (catalog.drift.state === 'drift') {
+      assert.ok(catalog.drift.differences.every((difference) => difference.quoted.length > 0 || difference.declared.length > 0), `${label}: a difference names both sides`);
+      // A moved declaration is never adopted: the drift is reported, and the surface keeps
+      // rendering the words it quotes.
+      assert.ok(catalog.drift.rule.includes('never resolved locally'), `${label}: the rule is stated`);
+    } else {
+      assert.deepEqual(fields, [], `${label}: no difference is reported when the file agrees`);
+    }
+    // Whatever moved, the rendering follows the lock and nothing else.
+    assert.equal(catalog.contract.published, lockedRow !== null, `${label}: publication follows the lock, not the file`);
+    assert.equal(catalog.discovery.select, false);
+    assert.equal(catalog.discovery.load, false);
+    assert.equal(catalog.discovery.execute, false);
+    assert.equal(catalog.discovery.tools, false);
+    for (const offered of skillDetail(catalog, 'invoice-reconciliation').operations ?? []) {
+      assert.equal(offered.offered, false, `${label}: no operation is offered by the UI`);
+    }
+  }
+
+  // 3. Every difference the comparison can produce is registered, so a drift cannot be
+  //    discovered only by a reader of the test output.
+  const row = DECISIONS.decisions.find((decision) => decision.id === 'XA-19');
+  assert.ok(row, 'the cross-agent alignment finding is recorded');
+  assert.match(row.finding, /manifest\/skill\.json/, 'the finding names the file that moved');
+  assert.match(row.finding, /operations/, 'the finding names the field that differs');
+  assert.equal(row.status.startsWith('open'), true, `${row.id} is still open — the frontend does not resolve it`);
+  assert.ok(row.references.some((reference) => reference.includes('31-skills.test.mjs')), 'and it cites this suite');
+  assert.equal(SKILL_ALIGNMENT_DECISION, row.id);
+  assert.equal(SURFACE.alignment?.decision ?? null, row.id, 'the surface declaration names the same row');
 });

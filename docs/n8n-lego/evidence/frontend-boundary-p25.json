@@ -1,6 +1,6 @@
 {
   "kind": "p25-frontend-boundary",
-  "generatedAt": "2026-09-21T23:45:22.648Z",
+  "generatedAt": "2026-09-22T00:09:40.415Z",
   "phase": "P2.5",
   "method": "node apps/n8n-lego/scripts/capture-frontend-evidence.mjs (live in-process instance, HTTP level); the browser gate tests/e2e/frontend-boundary.mjs captures the same boundary from inside a real page in CI (docs/n8n-lego/FRONTEND_LEGO.md §6)",
   "baseline": "cb71dbb2",
@@ -156,12 +156,12 @@
     {
       "name": "the LEGO cold-imports and assembles within a small budget",
       "verdict": "PASS",
-      "detail": "47.4 ms for import + 12 surfaces + 15 hooks + 19 units"
+      "detail": "46.2 ms for import + 12 surfaces + 15 hooks + 19 units"
     },
     {
       "name": "assembling the descriptor stays inside a small memory budget",
       "verdict": "PASS",
-      "detail": "3705 KB of heap for catalogs + both registries"
+      "detail": "3718 KB of heap for catalogs + both registries"
     },
     {
       "name": "the package still has no runtime dependency",
@@ -214,6 +214,31 @@
       "detail": "requiredPermissions=[\"audit:read\"]"
     },
     {
+      "name": "skill discovery renders the six quoted states, never one boolean",
+      "verdict": "PASS",
+      "detail": "6 states, none of them an entitlement"
+    },
+    {
+      "name": "discovery never selects, loads, executes or reaches a tool",
+      "verdict": "PASS",
+      "detail": "allowed=[list,search,filter,detail] forbidden=[select,load,release,execute,tools,filesystem,terminal,inference]"
+    },
+    {
+      "name": "with ai.skill unpublished the surface answers with the canonical unsupported state",
+      "verdict": "PASS",
+      "detail": "optional-absent / capability-unavailable / lego.capability_unavailable / XA-11"
+    },
+    {
+      "name": "a declaration that moved is reported as drift and never adopted",
+      "verdict": "PASS",
+      "detail": "drift=[operations,versioning] published=false declaredVersion=1.0.0"
+    },
+    {
+      "name": "the skill surface is bound by the same rule the package suite enforces",
+      "verdict": "PASS",
+      "detail": "A27=pass (31-skills.test.mjs)"
+    },
+    {
       "name": "one capability identity, sixteen fields, projected from a declaration",
       "verdict": "PASS",
       "detail": "17 fields for ai-assistant"
@@ -246,7 +271,7 @@
     {
       "name": "every shared word is quoted with provenance, and an unpublished file is recorded, not invented",
       "verdict": "PASS",
-      "detail": "43 quoted sets, 10 pending publication, 18 decisions recorded"
+      "detail": "43 quoted sets, 10 pending publication, 19 decisions recorded"
     },
     {
       "name": "a declared permission is a declared word, and the provider kinds are the canonical ones",
@@ -265,8 +290,8 @@
     }
   ],
   "summary": {
-    "checks": 50,
-    "passed": 50,
+    "checks": 55,
+    "passed": 55,
     "failed": 0
   },
   "bootDescriptor": {
@@ -539,7 +564,7 @@
     ],
     "capabilities": [],
     "bytes": 18126,
-    "importMs": 47.4,
-    "heapKb": 3705
+    "importMs": 46.2,
+    "heapKb": 3718
   }
 }

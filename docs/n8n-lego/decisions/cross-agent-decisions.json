@@ -617,6 +617,48 @@
         "arena/01a0c521 @ 6f7b66da ai-foundation.json -> toolGateway.sideEffects is required on every tool; an unknown value is treated as destructive",
         "WORKSPACE_AND_EXTERNAL_ACTION_PLAN.md section 2 names the families as a request; section 3 states the boundary rules"
       ]
+    },
+    {
+      "id": "XA-19",
+      "question": "A backend tree that moved first carries words this frontend does not quote (the Skill operations, the ai.skill capability in ai-foundation, the version claim) - who reconciles the vocabulary, and what does the UI render meanwhile?",
+      "status": "open-for-manager",
+      "resolution": null,
+      "finding": "The frontend quotes the Skill vocabulary from ai-lego-set.json#id=skill (the declaration the baseline ships), where the LEGO block reads operations [register, list, describe, select, load, release] and versioning `publicationPending`. Agent-2's P2.12 tree publishes manifest/skill.json for the same contract `ai.skill@1.0.0` whose operations are [list, resolve, describe, validate-selection], and the LEGO block itself moved to those four plus `versioning: ai.skill@1.0.0` and `status: implemented`. The permission words (ai:skill:read, ai:skill:select), the six lifecycle states and the four disclosure levels agree on both sides. Neither side may be adopted silently: the frontend can only render a word the declaration publishes, and it may not pretend the difference is not there. So the difference is reported as data (`declarationDrift`: field, quoted value, declared value, owner, alignment decision) and registered here. The same move adds `ai.skill` to the `aiFoundationCapability` set (domains.json -> ai-foundation.capabilities) and lifts the domain from contract-only to partial; the quoted capability list therefore misses one value and the alignment gate (test/29) reports it, so the difference is registered there too (REGISTERED_DRIFT keyed by vocabulary id) instead of being adopted or ignored. It also adds the two read-shaped skill permissions (`ai:skill:read`, `ai:skill:select`) to the `aiPermission` set the AI Foundation publishes - the same words the Skill declaration already quotes, arriving in a second vocabulary. The difference is registered under the vocabulary ids `aiFoundationCapability`, `aiPermission`, `operations` and `versioning`. The registered differences are keyed by vocabulary id and name both directions: `aiFoundationCapability` (adds ai.skill), `aiPermission` (adds ai:skill:read, ai:skill:select), `skillOperation` (drops register, select, load, release and adds resolve, validate-selection), `operations` and `versioning` on the Skill declaration itself.",
+      "evidence": [
+        "packages/frontend-lego/src/skills.mjs -> `declarationDrift()` compares the handed-over declaration with the quoted sets and returns { state: in-sync | drift | not-declared, differences, uncomparable, owner, decision }",
+        "packages/frontend-lego/test/31-skills.test.mjs -> runs the comparison against the pointed-at backend tree; today it reports drift in `operations` and `versioning`",
+        "git show 729bb112:apps/n8n-lego/src/lego/manifest/skill.json -> the published declaration: lifecycle.states, disclosure.levels and permissions agree with the quote; operations and the version do not",
+        "apps/n8n-lego/src/lego/contracts/contract-lock.json (agent-2 P2.12) -> still no `ai.skill` row, so `contract.published` is false and every skill renders the canonical unsupported state",
+        "packages/frontend-lego/test/29-alignment.test.mjs -> `REGISTERED_DRIFT` names the expected difference and requires this row to be open and to name the vocabulary",
+        "apps/n8n-lego/src/lego/manifest/domains.json (agent-2 P2.12) -> ai-foundation.capabilities now contains ai.skill with operations whose permission is ai:skill:read/ai:skill:select, so the quoted aiPermission set misses two words"
+      ],
+      "frontendBehaviour": "The surface keeps rendering the declaration it quotes (never the one it was handed), reports the drift as data, and renders the canonical `capability-unavailable` / `optional-absent` state while `ai.skill` has no contract-lock row. A version claimed in a file is reported as `declaredVersion` and never treated as a publication.",
+      "informedBy": [
+        "agent-2 P2.12 (729bb112)",
+        "docs/n8n-lego/decisions/cross-agent-decisions.backend.json"
+      ],
+      "arbiter": "manager (contract publication and vocabulary ownership; the frontend cannot adopt words from an unpublished contract and the backend cannot commit the frontend to them)",
+      "blocks": [
+        "the Skill catalog stays empty",
+        "any Skill detail beyond the unsupported state",
+        "the Skill discovery UI in phases P9/P12 (the surface renders the six quoted states and no list until the contract is locked)"
+      ],
+      "owner": "manager",
+      "affectedDomains": [
+        "skill",
+        "ai-foundation",
+        "frontend"
+      ],
+      "currentInterpretation": "The quoted vocabulary is authoritative until a reconciliation says otherwise; a difference is reported to the reader and to the manager, never resolved by picking the newer spelling. Both gates (test/29 for the shared sets, test/31 for the Skill declaration) accept a difference only when it is registered here and still open.",
+      "decisionRequired": "manager: publish `ai.skill` in the contract lock with the canonical operation list (adopt agent-2's [list, resolve, describe, validate-selection] and drop [register, select, load, release] from the LEGO block, or keep both sides as declared), and record the version as locked rather than claimed",
+      "blockingLevel": "phase",
+      "date": "2026-09-22",
+      "references": [
+        "packages/frontend-lego/test/31-skills.test.mjs -> the drift comparison runs here, against the pointed-at backend tree",
+        "packages/frontend-lego/manifest/skills.json -> `alignment` names this row",
+        "packages/frontend-lego/src/skills.mjs -> the quoted sets carry `publicationPending` with decision XA-11",
+        "apps/n8n-lego/src/lego/manifest/skill.json (agent-2 P2.12) -> the declaration this row compares against"
+      ]
     }
   ],
   "rules": [

@@ -55,7 +55,7 @@ registry wins and this file is a defect.
 | :--- | :--- |
 | `node --test packages/frontend-lego/test/*.test.mjs` | **283 tests across 30 suites: 279 pass, 4 skip** (backend comparisons absent), **0 fail** |
 | `node --test apps/n8n-lego/test/*.test.mjs` | 36/36 |
-| `node apps/n8n-lego/scripts/capture-frontend-evidence.mjs` | 50/50 PASS |
+| `node apps/n8n-lego/scripts/capture-frontend-evidence.mjs` | 55/55 PASS (incl. the P2.12 Skill surface) |
 | `N8N_BACKEND_LEGO_ROOT=<P2.10 tree> node --test .../test/29-alignment.test.mjs` | 7/7, 0 skipped — every canonical set compared against the backend, zero drift |
 | `python3 tools/sublego-audit/audit.py` | AUDIT PASSED (12 LEGOs, 20 Sub-LEGOs, 5 Agents) |
 | `npm run verify:fast` | 5/10 — G06-G10 require `packages/workflow-lego/node_modules` (B-10) |

@@ -47,6 +47,14 @@ function quotedSet(id) {
 /** The contract this surface consumes. Declared by the backend, published by nobody yet. */
 export const SKILL_CONTRACT_ID = 'ai.skill';
 
+/**
+ * The decision under which a difference between this package's quoted vocabulary and a
+ * declaration handed over by the application is arbitrated. Recorded in the frontend
+ * register (`docs/n8n-lego/decisions/cross-agent-decisions.json`); this package never
+ * resolves one itself.
+ */
+export const SKILL_ALIGNMENT_DECISION = 'XA-19';
+
 /** Where the quoted declaration lives and who owes the contract. Provenance, not a copy. */
 export const SKILL_DECLARATION_SOURCE = Object.freeze({
   file: 'apps/n8n-lego/src/lego/manifest/ai-lego-set.json',
@@ -62,6 +70,7 @@ const OPERATION_SET = vocabularyOf('skillOperation');
 const DISCLOSURE_SET = vocabularyOf('skillDisclosureLevel');
 const PERMISSION_SET = vocabularyOf('skillPermission');
 const STATUS_SET = vocabularyOf('aiLegoStatus');
+const TRUST_SET = vocabularyOf('trustLevel');
 const DEGRADATION_SET = vocabularyOf('degradation');
 
 /** The six lifecycle states, quoted from the backend declaration. Never collapsed. */
@@ -85,6 +94,9 @@ export const SKILL_STATUSES = STATUS_SET.values;
 /** The canonical degradation states, quoted: what a surface may report and do about it. */
 export const SKILL_DEGRADATION_STATES = DEGRADATION_SET.values;
 
+/** The canonical trust levels, quoted (`manifest/foundation.json#trust.levels`, `XA-9`). */
+export const SKILL_TRUST_LEVELS = TRUST_SET.values;
+
 /** Everything this surface quotes, so a reviewer can see there is no local vocabulary. */
 export const SKILL_QUOTED_VOCABULARIES = Object.freeze([
   LIFECYCLE_SET.id,
@@ -92,6 +104,7 @@ export const SKILL_QUOTED_VOCABULARIES = Object.freeze([
   DISCLOSURE_SET.id,
   PERMISSION_SET.id,
   STATUS_SET.id,
+  TRUST_SET.id,
   DEGRADATION_SET.id,
 ]);
 
@@ -228,13 +241,13 @@ export function skillLifecycle() {
  * Skill contract is published. A verdict, not an empty object: a state word, the error the
  * backend vocabulary names, the reason, and the decision that owes the contract.
  */
-export function skillUnsupported(reason = 'no Skill contract is published') {
+export function skillUnsupported(reason = 'no Skill contract is published', { declaredVersion = null } = {}) {
   return Object.freeze({
     state: 'capability-unavailable',
     error: 'lego.capability_unavailable',
     reason,
     decision: SKILL_DECLARATION_SOURCE.decision,
-    contract: Object.freeze({ id: SKILL_CONTRACT_ID, version: null, published: false }),
+    contract: Object.freeze({ id: SKILL_CONTRACT_ID, version: null, declaredVersion, published: false }),
     detail: 'no fallback capability, no execution control and no tool access is rendered in this state',
   });
 }
@@ -310,6 +323,9 @@ export function validateSkillInstance(instance = {}) {
       findings.push(`required capability "${capability}" must be a capability id (<domain>.<name>)`);
     }
   }
+  if (instance.trust !== undefined && instance.trust !== null && !SKILL_TRUST_LEVELS.includes(instance.trust)) {
+    findings.push(`unknown trust level "${instance.trust}" — the quoted set is ${SKILL_TRUST_LEVELS.join(', ')}`);
+  }
   if (instance.contractVersion !== undefined && instance.contractVersion !== null
     && !/^\d+\.\d+\.\d+$/.test(instance.contractVersion)) {
     findings.push('"contractVersion" must be MAJOR.MINOR.PATCH when it is published');
@@ -317,13 +333,32 @@ export function validateSkillInstance(instance = {}) {
   return Object.freeze({ ok: findings.length === 0, findings: Object.freeze(findings), skillId });
 }
 
+/**
+ * A version *claim*, read from the declaration's own `versioning` field.
+ *
+ * The field carries either the honest word `publicationPending` or a claim of the form
+ * `<contract-id>@<major>.<minor>.<patch>`. A claim is a declaration, not a publication: it is
+ * reported as `declaredVersion` and it never makes the contract comparable, because a consumer
+ * binds to a contract-lock row and not to a string in a manifest. Reporting the claim matters
+ * anyway — a frontend that showed nothing would hide the difference, and one that showed the
+ * version as published would promise a contract nobody locked.
+ */
+export function declaredVersionOf(versioning) {
+  if (typeof versioning !== 'string') return null;
+  const match = /^(?<contract>[a-z][a-z0-9-]*(?:\.[a-z][a-z0-9-]*)*)@(?<version>\d+\.\d+\.\d+)$/.exec(versioning.trim());
+  if (match === null) return null;
+  return Object.freeze({ contract: match.groups.contract, version: match.groups.version });
+}
+
 /** A published contract row, or the honest record of one that does not exist yet. */
 function contractStateOf(contract, surface, declaration) {
+  const claim = declaredVersionOf(declaration?.versioning);
   if (contract !== null && contract !== undefined) {
     const version = typeof contract.version === 'string' ? contract.version : null;
     return Object.freeze({
       id: contract.id ?? SKILL_CONTRACT_ID,
       version,
+      declaredVersion: claim?.version ?? null,
       owner: contract.owner ?? 'unknown',
       published: true,
       status: 'published',
@@ -334,14 +369,20 @@ function contractStateOf(contract, surface, declaration) {
     });
   }
   const pending = surface?.publicationPending ?? null;
+  const claimDetail = claim === null
+    ? null
+    : `the declaration claims ${claim.contract}@${claim.version}, but a version claim is not a published contract: the lock still has no ${claim.contract} row`;
   return Object.freeze({
-    id: surface?.contract ?? SKILL_CONTRACT_ID,
+    id: surface?.contract ?? claim?.contract ?? SKILL_CONTRACT_ID,
     version: null,
+    declaredVersion: claim?.version ?? null,
     owner: pending?.owner ?? SKILL_DECLARATION_SOURCE.owner,
     published: false,
-    status: declaration?.versioning ?? 'publicationPending',
+    // `publicationPending` when the file says so, `declared-not-locked` when the file claims a
+    // version nobody published. Two different facts, never one.
+    status: claim === null ? (declaration?.versioning ?? 'publicationPending') : 'declared-not-locked',
     decision: pending?.decision ?? SKILL_DECLARATION_SOURCE.decision,
-    detail: pending?.what ?? declaration?.versioningNote ?? 'no Skill contract is published; the contract lock has no ai.skill row',
+    detail: claimDetail ?? pending?.what ?? declaration?.versioningNote ?? 'no Skill contract is published; the contract lock has no ai.skill row',
     comparable: false,
   });
 }
@@ -351,34 +392,160 @@ function contractStateOf(contract, surface, declaration) {
  * what an entry or its capability map already knows, then the contract, then the version.
  */
 function availabilityOf({ entry, contractState, declaration, requiredVersion, declaredCapabilities, unavailableCapabilities, migrations }) {
+  /**
+   * The compatibility verdict, as its own record: what a consumer required, what was offered,
+   * whether the two could be compared at all, and whether the requirement is met. A state word
+   * alone would make "we did not check" and "the check passed" look the same.
+   */
+  const uncomparable = (detail) => Object.freeze({
+    state: 'uncomparable', required: requiredVersion ?? null, offered: null, satisfied: false, detail,
+  });
   if (!contractState.published) {
-    return Object.freeze({ availability: 'capability-unavailable', detail: contractState.detail });
+    return Object.freeze({
+      availability: 'capability-unavailable',
+      detail: contractState.detail,
+      compatibility: uncomparable(contractState.detail),
+    });
   }
   if (!contractState.comparable) {
-    return Object.freeze({ availability: 'feature-unsupported', detail: 'the published contract carries no version, so no claim of compatibility is made' });
+    return Object.freeze({
+      availability: 'feature-unsupported',
+      detail: 'the published contract carries no version, so no claim of compatibility is made',
+      compatibility: uncomparable('the published contract carries no version'),
+    });
   }
-  if (requiredVersion !== null && requiredVersion !== undefined) {
-    const compatibility = compatibilityOf(requiredVersion, contractState.version, { migrations });
-    if (!compatibility.comparable) {
-      return Object.freeze({ availability: 'feature-unsupported', detail: `required ${requiredVersion} is not comparable with the published ${contractState.version}` });
-    }
-    if (compatibility.kind === 'migration-required') {
-      return Object.freeze({ availability: 'migration-required', detail: compatibility.detail });
-    }
-    if (!compatibility.satisfied) {
-      return Object.freeze({ availability: 'version-incompatible', detail: compatibility.detail });
-    }
+  if (requiredVersion === null || requiredVersion === undefined) {
+    const compatibility = Object.freeze({
+      state: 'not-required', required: null, offered: contractState.version, satisfied: true,
+      detail: `no version is required by this consumer; the published contract is ${contractState.version}`,
+    });
+    return availabilityFromCapabilities({ entry, declaredCapabilities, unavailableCapabilities, compatibility });
   }
+  const verdict = compatibilityOf(requiredVersion, contractState.version, { migrations });
+  const compatibility = Object.freeze({
+    state: verdict.comparable ? verdict.kind : 'uncomparable',
+    required: requiredVersion,
+    offered: contractState.version,
+    satisfied: verdict.comparable ? verdict.satisfied : false,
+    detail: verdict.detail,
+  });
+  if (!verdict.comparable) {
+    return Object.freeze({ availability: 'feature-unsupported', detail: `required ${requiredVersion} is not comparable with the published ${contractState.version}`, compatibility });
+  }
+  if (verdict.kind === 'migration-required') {
+    return Object.freeze({ availability: 'migration-required', detail: verdict.detail, compatibility });
+  }
+  if (!verdict.satisfied) {
+    return Object.freeze({ availability: 'version-incompatible', detail: verdict.detail, compatibility });
+  }
+  return availabilityFromCapabilities({ entry, declaredCapabilities, unavailableCapabilities, compatibility });
+}
+
+/**
+ * The capability half of availability, carrying the compatibility verdict with it. A missing
+ * requirement degrades the skill; a requirement declared but not serviceable here disables it;
+ * neither is silently satisfied and neither substitutes a capability.
+ */
+function availabilityFromCapabilities({ entry, declaredCapabilities, unavailableCapabilities, compatibility }) {
   const required = asArray(entry?.requiredCapabilities);
   const missing = required.find((capability) => !declaredCapabilities.includes(capability));
   if (missing !== undefined) {
-    return Object.freeze({ availability: 'capability-unavailable', detail: `required capability "${missing}" is not declared by this frontend` });
+    return Object.freeze({ availability: 'capability-unavailable', detail: `required capability "${missing}" is not declared by this frontend`, compatibility });
   }
   const disabled = required.find((capability) => unavailableCapabilities.includes(capability));
   if (disabled !== undefined) {
-    return Object.freeze({ availability: 'dependency-disabled', detail: `required capability "${disabled}" is declared but not serviceable here` });
+    return Object.freeze({ availability: 'dependency-disabled', detail: `required capability "${disabled}" is declared but not serviceable here`, compatibility });
   }
-  return Object.freeze({ availability: 'available', detail: 'discovery may show it; nothing is loaded by showing it' });
+  return Object.freeze({ availability: 'available', detail: 'discovery may show it; nothing is loaded by showing it', compatibility });
+}
+
+/**
+ * The vocabulary-bearing fields of a declaration, and the quoted set each one is compared
+ * with. A field that is not listed here is not a vocabulary, and is validated instead.
+ */
+const DRIFT_FIELDS = Object.freeze([
+  Object.freeze({ field: 'lifecycle', set: 'skillLifecycle' }),
+  Object.freeze({ field: 'operations', set: 'skillOperation' }),
+  Object.freeze({ field: 'permissions', set: 'skillPermission' }),
+  Object.freeze({ field: 'disclosureLevels', set: 'skillDisclosureLevel', read: 'keys' }),
+  Object.freeze({ field: 'trustLevels', set: 'trustLevel' }),
+]);
+
+const driftOf = (field, quoted, declared) => {
+  const added = declared.filter((value) => !quoted.includes(value));
+  const removed = quoted.filter((value) => !declared.includes(value));
+  if (added.length === 0 && removed.length === 0) return null;
+  return Object.freeze({ field, quoted: Object.freeze([...quoted]), declared: Object.freeze([...declared]), added: Object.freeze(added), removed: Object.freeze(removed) });
+};
+
+/**
+ * Compares a declaration handed over by the application with the vocabulary this package
+ * quotes, and reports the difference instead of resolving it.
+ *
+ * The frontend may not adopt a word the backend has not published *and* it may not pretend
+ * the word is not there: a backend that moves first is the normal case (agent-2 owns the
+ * declaration), and the honest rendering of "my quote is behind the file I was handed" is a
+ * named difference with an owner and the decision that reconciles it. The route back is a
+ * reconciliation, not a synonym.
+ *
+ * `in-sync` — every vocabulary field agrees. `drift` — at least one differs; the differences
+ * name both spellings. `not-declared` — nothing was handed over, so nothing can be compared.
+ * `uncomparable` names the fields this package cannot compare (a quoted contract without a
+ * version), so silence is never mistaken for agreement.
+ *
+ * @param {{ declaration?: object|null, surface?: object|null, contract?: object|null }} input
+ *   the handed-over declaration, this package's surface declaration, and the published
+ *   contract row when one exists (its `version` is what the quote is compared against).
+ */
+export function declarationDrift({ declaration = null, surface = null, contract = null } = {}) {
+  const owner = declaration?.owner ?? surface?.declarationSource?.owner ?? SKILL_DECLARATION_SOURCE.owner;
+  const decision = surface?.publicationPending?.decision ?? SKILL_DECLARATION_SOURCE.decision;
+  const alignmentDecision = surface?.alignment?.decision ?? SKILL_ALIGNMENT_DECISION;
+  const rule = 'A difference is reported and registered, never resolved locally: the surface keeps rendering the words it quotes, names the words it was handed, and the reconciliation decides which set is canonical.';
+  // What this package quotes for the version: the published row when there is one, and the
+  // documented `publicationPending` otherwise. `null` means the quote cannot be compared —
+  // which is reported as uncomparable rather than as agreement.
+  const quotedVersioning = contract === null
+    ? 'publicationPending'
+    : typeof contract.version === 'string' ? contract.version : null;
+  if (declaration === null || declaration === undefined) {
+    return Object.freeze({ state: 'not-declared', differences: Object.freeze([]), uncomparable: Object.freeze(quotedVersioning === null ? ['versioning'] : []), owner, decision, alignmentDecision, rule });
+  }
+  const differences = [];
+  for (const { field, set, read } of DRIFT_FIELDS) {
+    const quoted = vocabularyOf(set).values;
+    const raw = declaration[field];
+    // Absence is not a move: a declaration that does not carry the field at all says nothing
+    // about the vocabulary, and reporting that as drift would train a reader to ignore it.
+    if (raw === undefined) continue;
+    const declared = raw === null ? [] : read === 'keys' ? Object.keys(raw) : asArray(raw);
+    const difference = driftOf(field, quoted, declared);
+    if (difference !== null) differences.push(difference);
+  }
+  // The version claim: the file may carry `ai.skill@1.0.0` while this package quotes a
+  // declaration nobody published (or the other way round: a locked version against a file
+  // that has fallen back to `publicationPending`).
+  const uncomparable = [];
+  if (quotedVersioning === null) {
+    uncomparable.push('versioning');
+  } else if (typeof declaration.versioning === 'string' && declaration.versioning.trim() !== quotedVersioning) {
+    differences.push(Object.freeze({
+      field: 'versioning',
+      quoted: Object.freeze([quotedVersioning]),
+      declared: Object.freeze([declaration.versioning]),
+      added: Object.freeze([declaration.versioning]),
+      removed: Object.freeze([quotedVersioning]),
+    }));
+  }
+  return Object.freeze({
+    state: differences.length === 0 ? 'in-sync' : 'drift',
+    differences: Object.freeze(differences),
+    uncomparable: Object.freeze(uncomparable),
+    owner,
+    decision,
+    alignmentDecision,
+    rule,
+  });
 }
 
 /**
@@ -412,7 +579,7 @@ export function createSkillCatalog({
   const contractState = contractStateOf(contract, surface, declaration);
   const entries = (skills ?? surface?.skills ?? []).map((instance) => {
     const validation = validateSkillInstance(instance);
-    const { availability, detail } = availabilityOf({
+    const { availability, detail, compatibility } = availabilityOf({
       entry: instance,
       contractState,
       declaration,
@@ -439,6 +606,7 @@ export function createSkillCatalog({
       trust: value('trust'),
       availability,
       availabilityDetail: detail,
+      compatibility,
       requiredCapabilities: instance.requiredCapabilities === undefined ? null : Object.freeze(asArray(instance.requiredCapabilities)),
       contractVersion: contractState.version,
       degradation: Object.freeze(asArray(instance.degradation ?? declaration?.degradation)),
@@ -454,11 +622,14 @@ export function createSkillCatalog({
     ? Object.freeze({ availability: 'available', detail: 'the contract is published; discovery may list skills' })
     : Object.freeze({ availability: 'optional-absent', detail: `${contractState.detail} — an empty skill list is not an error` });
 
+  const drift = declarationDrift({ declaration, surface, contract });
   return Object.freeze({
     contract: contractState,
     availability: surfaceAvailability.availability,
     availabilityDetail: surfaceAvailability.detail,
-    unsupported: contractState.published ? null : skillUnsupported(contractState.detail),
+    unsupported: contractState.published ? null : skillUnsupported(contractState.detail, { declaredVersion: contractState.declaredVersion }),
+    /** Quoted declaration vs handed-over declaration: named differences, never resolved here. */
+    drift,
     discovery: Object.freeze({
       listing: true,
       search: true,
@@ -536,6 +707,7 @@ export function skillDetail(catalog, skillId, { level = 'basic' } = {}) {
     trust: entry.trust,
     degradation: entry.degradation,
     requiredCapabilities: entry.requiredCapabilities,
+    compatibility: entry.compatibility,
     availabilityDetail: entry.availabilityDetail,
     validation: entry.validation,
     withheld: entry.withheld,
@@ -552,11 +724,13 @@ export function describeSkills() {
     permissions: SKILL_PERMISSIONS,
     disclosureLevels: SKILL_DISCLOSURE_LEVELS,
     statuses: SKILL_STATUSES,
+    trustLevels: SKILL_TRUST_LEVELS,
     degradation: SKILL_DEGRADATION_STATES,
     identityFields: SKILL_IDENTITY_FIELDS,
     forbiddenFields: SKILL_FORBIDDEN_FIELDS,
     forbiddenImplications: SKILL_FORBIDDEN_IMPLICATIONS,
     affordances: SKILL_AFFORDANCES,
+    driftFields: Object.freeze(DRIFT_FIELDS.map((entry) => entry.field)),
     source: SKILL_DECLARATION_SOURCE,
     quoted: SKILL_QUOTED_VOCABULARIES,
     rule: 'A skill is procedural knowledge. It never implies a permission, an authority, a tool, a filesystem, a terminal or a model, and discovery never loads or executes one.',

@@ -12,9 +12,30 @@
 - **Current Task ID**: **P2.8-F — Frontend Foundation Maturity** (owner Agent 1; lanjutan dari P2.5). P2.5
   (kontrak + registry + boot descriptor + lapisan sub-LEGO) **SELESAI, hijau, dan terdorong** di branch ini;
   increment P2.8-F ada di commit setelah `917bbd95`. Tugas rig Rust di bawah sudah **SELESAI** (lihat Lampiran A).
-- **Last Updated**: 2026-09-22 (P2.8-F)
+- **Last Updated**: 2026-09-22 (P2.12 — frontend Skill consumer)
 
 ---
+
+## 🧠 P2.12 — FRONTEND SKILL CONSUMER (SELESAI + terverifikasi, 2026-09-22)
+
+**Baseline:** `c1f8ca21` (hasil rekonsiliasi P2.11). **Tugas:** frontend hanya *mengonsumsi* kosakata
+Skill yang dideklarasikan backend — discovery + presentasi status. **Tidak ada** eksekusi Skill, **tidak
+ada** Agent Machine, **tidak ada** capability/permission karangan.
+
+| # | Deliverable | Lokasi |
+| :- | :--- | :--- |
+| 1 | **Surface Skill** — enam state lifecycle sebagai enam fakta (bukan satu boolean), progressive disclosure (basic: name/status/availability; advanced: lifecycle, required capabilities, version, trust, degradation, owner), listing/search/filter/detail, dan jawaban kanonik `capability-unavailable` + `lego.capability_unavailable` selama `ai.skill` belum punya baris contract-lock | `packages/frontend-lego/src/skills.mjs` |
+| 2 | **Kosakata dikutip, bukan dibuat** — 5 set Skill (`skillLifecycle`, `skillOperation`, `skillDisclosureLevel`, `skillPermission`, `aiLegoStatus`) dengan provenance dan record `publicationPending` (XA-11); tidak ada namespace `frontend.skill.*` | `src/vocabulary.mjs` |
+| 3 | **Drift dilaporkan, bukan diadopsi** — `declarationDrift()` membandingkan deklarasi yang diserahkan dengan kutipan (field, nilai kutipan, nilai deklarasi, dua arah, owner) dan mendaftarkannya sebagai **XA-19**; klaim versi (`ai.skill@1.0.0`) dilaporkan sebagai `declaredVersion` sementara `published` tetap false | `src/skills.mjs`, `manifest/skills.json` |
+| 4 | **Kontrak + aturan** — §19.18 (Skill surface) dan rule A27 di conformance | `contracts/frontend.contract.md`, `src/conformance.mjs` |
+| 5 | **Tes** — 15 tes: discovery, enam state, skill unavailable, version mismatch, capability tidak didukung, deklarasi hilang, tanpa permission karangan, tanpa affordance eksekusi, alignment kosakata backend, konsistensi keputusan/status yang basi, klaim versi, drift | `packages/frontend-lego/test/31-skills.test.mjs` |
+| 6 | **Bukti** — 5 check Skill ditambahkan ke evidence (55/55) | `apps/n8n-lego/scripts/capture-frontend-evidence.mjs`, `docs/n8n-lego/evidence/frontend-boundary-p25.json` |
+
+**Gate:** frontend 298 (297 lulus, 1 skip), app 399/399 (katalog ter-pin), evidence 55/55, alignment
+7/7 (cabang ini) dan **20/20 dengan 0 skip** terhadap tree P2.12 agent-2 (`729bb112`) — setiap perbedaan
+dilaporkan dan terdaftar, tidak ada yang diadopsi; `lego:arch`, `lego:foundation`, `lego:capabilities`,
+`lego:scaleout`, `lego:ai:check` OK; `npm run lego:gate` 399/399; sub-LEGO audit PASSED (12 LEGO, 20 Sub-LEGO, 5 Agen). Boot payload tetap 18.126 B (tidak berubah). Gate browser (`verify:fast` G06–G10, `tests/e2e/frontend-boundary.mjs`) **tidak dijalankan di sini** — butuh `packages/workflow-lego/node_modules`; tidak ada klaim paritas browser.
+**Tidak ada runtime AI dan tidak ada runtime Agent Machine yang diimplementasikan.**
 
 ## 🧠 P2.8-F — FRONTEND FOUNDATION MATURITY (tugas saat ini, SELESAI + terverifikasi)
 

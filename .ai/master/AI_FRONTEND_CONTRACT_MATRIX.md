@@ -25,7 +25,7 @@ vocabulary — never as a silent alias of a backend contract.
 | Copilot trace | `ai.agent-events` (in `ai.foundation@1.0.0`) | `agentEventType` (26), `agentEventEnvelopeField`, `traceField` | `subscribe`, `emit` | payload bodies (only `payloadRef`), reasoning |
 | Copilot agents | `ai.agent-runtime`, `ai.agent-delegation` | `runtimeLocality`, `delegationField`, `delegationBudgetField`, `delegationNodeField` | `create`, `start`, `send`, `pause`, `resume`, `cancel`, `status`, `stream`, `artifact`, `close`, `delegate` | another agent's private context; inherited permissions (there are none) |
 | Copilot files | `ai.artifact` | `artifactKind`, `artifactRetention`, `decisionApprovalState` | `create`, `read` | artifact content inline as state; `storageRef` internals vs credential material |
-| Skills | **XA-11 pending** (`ai.skill`) | frontend presentation set (below) | none until published | a skill's private reasoning; a validator's internals |
+| Skills | **XA-11 pending** (`ai.skill`); the quoted vocabulary is `manifest/ai-lego-set.json#id=skill`, consumed by `skills.mjs` (P2.12) | `skillLifecycle` (6), `skillOperation`, `skillDisclosureLevel` (L0–L3), `skillPermission`, `aiLegoStatus`, `degradation` | none: discovery only (`list`/`search`/`filter`/`detail` over handed-over data); select/load/release/execute are backend operations and are `offered: false` | a skill's private reasoning; a validator's internals; a skill body beyond the disclosure level asked for |
 | Memory | **XA-12 pending** (`ai.memory`); today `ai.context` + `ai.artifact` + `ai.decision` | `contextScope`, `artifactKind`, `decisionRisk` | `context.load`, `artifact.read`, `decision.inspect` | the whole memory store; embeddings or vectors |
 | Capabilities | `lego.domain-registry@1.1.0` (manager) + `ai.foundation` taxonomy | `capabilityStatus`, `capabilityCriticality`, `capabilityMigrationState`, `lifecycle`, `interaction`, `transportKind`, `aiPermission` | per capability `operations[]` | an operation's HTTP route; a module path; a port |
 | Context & Session | `ai.context`, `ai.agent-session` | `contextScope`, `agentSessionState`, `zeroInstallLayerState` | `context.load`, `context.compact`, session `create`/`status`/`close` | the raw window; the model's tokenizer internals |
@@ -36,6 +36,25 @@ vocabulary — never as a silent alias of a backend contract.
 | Translation | **XA-14 pending** (no translation domain/capability) | the declared locale set (`src/i18n.mjs` → `SUPPORTED_LOCALES`: `id`, `en`, `ar`, `zh`, `ru`, `jv`) + frontend capability `translation` | none until published | dictionaries inside a contract; a second contract |
 | Token & usage | **XA-17 pending** (`ai.usage`); today `ai.model-gateway.countTokens` + declared costs | `resourceDimension`, `resourceProfile`, and the presentation usage fields in §2 | `countTokens`, `model.describe` | a token count nobody reported (it is `estimated` or absent) |
 | Status bar | a projection of the surfaces above | `agentSessionState`, `degradation`, `operationOutcome` | none (it renders state) | anything not already in a declaration |
+
+
+### The Skill surface (implemented, P2.12)
+
+`packages/frontend-lego/src/skills.mjs` consumes the declaration the application hands over and renders
+discovery and state only. Six lifecycle states are six facts (`registered`, `available`, `selected`,
+`loaded`, `active`, `released`) — never one boolean, and `executing: false` / `grants: null` on all six.
+Progressive disclosure: **basic** = name, status, availability; **advanced** = lifecycle, required
+capabilities, contract version, trust, degradation, owner, plus the fields the declaration does not
+carry (rendered as "not published", never guessed). `ai.skill` has no contract-lock row, so the catalog
+renders `optional-absent` and a request for a specific skill answers with `capability-unavailable` /
+`lego.capability_unavailable` — no fallback capability, no execution control, no tool list.
+
+A declaration whose words have moved past the quote is reported as drift (`declarationDrift`: field,
+quoted value, declared value, both directions, owner) and registered as **XA-19**; the surface never
+adopts a word it cannot quote, and a `versioning` claim (`ai.skill@1.0.0`) is reported as
+`declaredVersion` while `published` stays false. Where a surface would need a permission, an authority, a
+tool, a filesystem, a terminal or a model, the answer is that a skill implies none of them: an entry
+carrying such a field is refused by name (`validateSkillInstance`).
 
 Every "operations it may call" cell names the semantic operation, never a route. The frontend
 negotiates with `negotiateOperation()` and renders the **12 distinguishable outcomes** —

@@ -955,6 +955,17 @@ it renders. A skill entry that carries `permissions`, `grants`, `authority`, `to
 reason (`validateSkillInstance`). Tool access belongs to the capability contract behind the
 skill, and nothing here reaches a model.
 
+**A declaration that moved is reported, not adopted.** The application may hand over a declaration
+whose vocabulary has moved past the words this package quotes (agent-2 owns the manifests and moves
+first). `declarationDrift({ declaration, contract })` compares the vocabulary-bearing fields
+(`lifecycle`, `operations`, `permissions`, `disclosureLevels`, `versioning`) and returns `in-sync`,
+`drift` — with, per field, both spellings and both directions — or `not-declared` when nothing was
+handed over. A difference is never resolved here: the surface keeps rendering the words it quotes,
+reports the difference as data, and the reconciliation decides (`XA-19`). A quoted contract without a
+version is named `uncomparable` rather than treated as agreement, and a `versioning` claim of the form
+`<contract>@<major>.<minor>.<patch>` is reported as `declaredVersion` while `published` stays false —
+a claim in a file is not a locked contract (`§19.17`).
+
 **The declaration is handed over, never read.** The frontend receives the quoted declaration as
 data (`createFrontendLego({ skills })`), exactly like the backend capability view (`§19.6`); it
 never reads the backend tree (`§5`, `§19.14`). `manifest/skills.json` declares the surface and

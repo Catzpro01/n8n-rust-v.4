@@ -29,7 +29,14 @@
     "The six lifecycle states are six facts. No boolean `enabled` is derived from them, and none of them is an execution state.",
     "A skill carries neither a permission nor an authority: the declared operation permissions are requirements of a backend operation, never a grant the UI holds.",
     "With `ai.skill` unpublished the canonical unsupported state is rendered: no fallback capability, no execution control and no tool list.",
-    "Skill entries are supplied to the runtime by the application (or declared here once a contract exists); this package never reads the backend tree."
+    "Skill entries are supplied to the runtime by the application (or declared here once a contract exists); this package never reads the backend tree.",
+    "A declaration that moved past the quoted vocabulary is reported (`declarationDrift`, XA-19) and never adopted silently; a version claimed in a file is reported as `declaredVersion` and is still not a publication."
   ],
-  "skills": []
+  "skills": [],
+  "alignment": {
+    "decision": "XA-19",
+    "register": "docs/n8n-lego/decisions/cross-agent-decisions.json",
+    "test": "packages/frontend-lego/test/31-skills.test.mjs",
+    "rule": "A declaration handed over by the application is compared with the words this package quotes; a difference is reported as data (`declarationDrift`) with both spellings and the owner, and is never resolved by adopting a word this package cannot quote."
+  }
 }

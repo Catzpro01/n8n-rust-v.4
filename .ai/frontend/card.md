@@ -30,7 +30,7 @@ packages/frontend-lego/
     errors.mjs boot.mjs client.mjs manifests.mjs knowledge.mjs agents.mjs agent-events.mjs skills.mjs lego.mjs
     adapters/ the framework adapter boundary (currently Vue; the only framework-aware code)
   test/                     01-contract … 23-degradation, 24-vocabulary, 25-operations,
-                            26-ai-contracts, 27-agent-events, 28-seam, 29-alignment
+                            26-ai-contracts, 27-agent-events, 28-seam, 29-alignment, 30-master-plan, 31-skills
 ```
 
 What the less obvious ones own: `negotiation.mjs` discovery, access, degradation and
@@ -111,7 +111,7 @@ vocabulary that enforces it and the suite that proves it, and
 ```bash
 npm run frontend-lego:test                          # 281 tests, the architecture surface
 node --test apps/n8n-lego/test/*.test.mjs           # app-side boundary, boot tag, backend alignment
-node apps/n8n-lego/scripts/capture-frontend-evidence.mjs   # 47-check evidence JSON
+node apps/n8n-lego/scripts/capture-frontend-evidence.mjs   # 55-check evidence JSON
 python3 tools/sublego-audit/audit.py                # nested-LEGO + agent boundary audit
 npm run verify:fast                                 # repo-wide fast gate
 ```

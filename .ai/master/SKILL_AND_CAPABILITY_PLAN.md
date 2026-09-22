@@ -1,8 +1,13 @@
 # Skills and capabilities
 
 **Status:** planning. **Capability: published** (`lego.domain-registry@1.1.0`, `lego.interaction`,
-`lego.negotiation`, `ai.foundation` taxonomy). **Skill: XA-11 — `publicationPending`**
-(no capability, no contract, no vocabulary exists at P2.10).
+`lego.negotiation`, `ai.foundation` taxonomy). **Skill: declared, not locked** — the vocabulary is
+quoted from `manifest/ai-lego-set.json#id=skill` (six lifecycle states, operations, disclosure levels,
+permissions, degradation), `ai.skill` has no contract-lock row (`XA-11`), and the frontend consumes it
+as **discovery and state presentation only** (P2.12: `packages/frontend-lego/src/skills.mjs`,
+`test/31-skills.test.mjs`, contract §19.18). A backend tree that moved past the quoted words is
+reported as drift and registered (**XA-19**) rather than adopted. No skill runtime exists: nothing
+selects, loads, releases or executes a skill, and no skill grants a permission, an authority or a tool.
 
 ---
 
