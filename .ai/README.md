@@ -1,15 +1,13 @@
 # `.ai/` — the machine-readable architecture pack
 
-This directory is how an AI agent (or a new human) understands this repository
-**without reading the source**. It is deliberately small: a pack read in full has
-failed — retrieve only what a task needs.
+How an agent (or a new human) understands this repository **without reading the
+source**. Deliberately small: a pack read in full has failed — retrieve only what a task
+needs. Written for the **frontend LEGO** (`ui-frontend`); other domains may add their own
+subdirectory (`backend/`, `translation/`, …).
 
-The pack is written for the **frontend LEGO** (`ui-frontend`); other domains may add
-their own subdirectory (`backend/`, `translation/`, …).
-
-`.ai/master/` is **not part of this pack**: it holds the master project memory
-(domains, AI/Agent LEGO, context, tokens, agents, security, phases, status,
-blockers), loaded on purpose through `productContextFor()` and budgeted separately.
+`.ai/master/` is **not part of this pack**: it holds the master project memory (domains,
+AI/Agent LEGO, context, tokens, agents, security, phases, status, blockers), loaded on
+purpose through `productContextFor()` and budgeted separately.
 
 ## Context levels — load only what the task needs
 
@@ -23,13 +21,13 @@ blockers), loaded on purpose through `productContextFor()` and budgeted separate
 
 Rules of retrieval:
 
-1. Start at L0. Never skip it — the constitution holds the hard stops.
+1. Start at L0 — the constitution holds the hard stops. Never skip it.
 2. A task that touches the frontend adds L1.
 3. A task that changes or consumes a contract adds L2 for **that contract only**.
-4. A task with a known shape (add a unit, change a hook, upgrade a version, run the
-   gates) adds the single recipe it matches.
-5. Open L4 source only when the answer is implementation detail.
-6. Never load the whole pack, and never paste it into a prompt wholesale.
+4. A task with a known shape (add a unit, change a hook, upgrade a version, run the gates)
+   adds the single recipe it matches.
+5. Open L4 source only for implementation detail.
+6. Never load the whole pack, never paste it into a prompt wholesale.
 
 ## What is here
 
@@ -42,13 +40,13 @@ Rules of retrieval:
   maps/      dependencies.md            dependency and impact maps
 ```
 
-
 ## Keeping the pack true
 
 The indexes in `index/` are **checked against the manifests** by
 `packages/frontend-lego/test/12-knowledge.test.mjs`: if a unit, capability or contract
-changes and the index is not updated, that test fails with the exact difference. The
-master set has its own gate, `test/30-master-plan.test.mjs`.
+changes and the index does not, that test fails with the exact difference. The master set
+has its own gate, `test/30-master-plan.test.mjs`; the pack budget is 80 KB total and per
+level, so growth is a decision, not a side effect.
 
 The pack is metadata: no runtime reads it at boot, and the browser receives the boot
 descriptor and nothing else.

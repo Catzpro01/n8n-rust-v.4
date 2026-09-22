@@ -1,6 +1,14 @@
 {
   "catalogVersion": "1.0.0",
-  "description": "Generated from manifest/sub-legos.json. Declared hierarchy only — no unit is installed, loaded or active. A component, button, icon or helper is not a unit. `implementation` names what implements the unit today (derived default) and is replaceable without moving the contract or the version.",
+  "description": "Generated from manifest/sub-legos.json. Declared hierarchy only — no unit is installed, loaded or active. A component, button, icon or helper is not a unit. `implementationKind` names what implements the unit today (a derived default, replaceable without moving the contract or the version); the constant part of that shape — kind, contract, status, language and the replacement call — is stated once in `implementationRule`.",
+  "implementationRule": {
+    "kind": "reference",
+    "contract": "contracts/frontend.contract.md",
+    "status": "declared",
+    "language": null,
+    "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched",
+    "why": "Identical for every unit at this baseline, so it is stated once instead of nineteen times: `implementation.id` equals the unit id, and a per-unit copy of one constant is 4 KB of pack budget that says nothing new. A unit whose implementation ever differs from this rule carries its own `implementation` block again, and test/12 compares the fields that vary."
+  },
   "counts": {
     "units": 19,
     "roots": 11,
@@ -32,14 +40,7 @@
       ],
       "dependsOn": [],
       "upgradePolicy": "independent",
-      "implementation": {
-        "id": "auth",
-        "kind": "reference",
-        "contract": "contracts/frontend.contract.md",
-        "status": "declared",
-        "language": null
-      },
-      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+      "implementationKind": "reference"
     },
     {
       "id": "navigation",
@@ -63,14 +64,7 @@
       ],
       "dependsOn": [],
       "upgradePolicy": "independent",
-      "implementation": {
-        "id": "navigation",
-        "kind": "reference",
-        "contract": "contracts/frontend.contract.md",
-        "status": "declared",
-        "language": null
-      },
-      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+      "implementationKind": "reference"
     },
     {
       "id": "dashboard",
@@ -95,14 +89,7 @@
       ],
       "dependsOn": [],
       "upgradePolicy": "independent",
-      "implementation": {
-        "id": "dashboard",
-        "kind": "reference",
-        "contract": "contracts/frontend.contract.md",
-        "status": "declared",
-        "language": null
-      },
-      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+      "implementationKind": "reference"
     },
     {
       "id": "settings",
@@ -127,14 +114,7 @@
       ],
       "dependsOn": [],
       "upgradePolicy": "independent",
-      "implementation": {
-        "id": "settings",
-        "kind": "reference",
-        "contract": "contracts/frontend.contract.md",
-        "status": "declared",
-        "language": null
-      },
-      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+      "implementationKind": "reference"
     },
     {
       "id": "settings.general",
@@ -160,14 +140,7 @@
         "settings#ui:settings:shell@^1.0.0"
       ],
       "upgradePolicy": "independent",
-      "implementation": {
-        "id": "settings.general",
-        "kind": "reference",
-        "contract": "contracts/frontend.contract.md",
-        "status": "declared",
-        "language": null
-      },
-      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+      "implementationKind": "reference"
     },
     {
       "id": "settings.security",
@@ -193,14 +166,7 @@
         "settings#ui:settings:shell@^1.0.0"
       ],
       "upgradePolicy": "independent",
-      "implementation": {
-        "id": "settings.security",
-        "kind": "reference",
-        "contract": "contracts/frontend.contract.md",
-        "status": "declared",
-        "language": null
-      },
-      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+      "implementationKind": "reference"
     },
     {
       "id": "settings.localization",
@@ -227,14 +193,7 @@
         "settings#ui:settings:shell@^1.0.0"
       ],
       "upgradePolicy": "acknowledged",
-      "implementation": {
-        "id": "settings.localization",
-        "kind": "reference",
-        "contract": "contracts/frontend.contract.md",
-        "status": "declared",
-        "language": null
-      },
-      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+      "implementationKind": "reference"
     },
     {
       "id": "settings.localization.rtl",
@@ -260,14 +219,7 @@
         "settings.localization#ui:locale:direction@^1.0.0"
       ],
       "upgradePolicy": "acknowledged",
-      "implementation": {
-        "id": "settings.localization.rtl",
-        "kind": "reference",
-        "contract": "contracts/frontend.contract.md",
-        "status": "declared",
-        "language": null
-      },
-      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+      "implementationKind": "reference"
     },
     {
       "id": "workflow-editor",
@@ -292,14 +244,7 @@
       ],
       "dependsOn": [],
       "upgradePolicy": "independent",
-      "implementation": {
-        "id": "workflow-editor",
-        "kind": "reference",
-        "contract": "contracts/frontend.contract.md",
-        "status": "declared",
-        "language": null
-      },
-      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+      "implementationKind": "reference"
     },
     {
       "id": "workflow-editor.canvas",
@@ -326,14 +271,7 @@
         "workflow-editor#ui:editor:panel@^1.0.0"
       ],
       "upgradePolicy": "independent",
-      "implementation": {
-        "id": "workflow-editor.canvas",
-        "kind": "reference",
-        "contract": "contracts/frontend.contract.md",
-        "status": "declared",
-        "language": null
-      },
-      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+      "implementationKind": "reference"
     },
     {
       "id": "workflow-editor.node-panel",
@@ -360,14 +298,7 @@
         "workflow-editor#ui:editor:panel@^1.0.0"
       ],
       "upgradePolicy": "acknowledged",
-      "implementation": {
-        "id": "workflow-editor.node-panel",
-        "kind": "reference",
-        "contract": "contracts/frontend.contract.md",
-        "status": "declared",
-        "language": null
-      },
-      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+      "implementationKind": "reference"
     },
     {
       "id": "workflow-editor.parameter-panel",
@@ -394,14 +325,7 @@
         "workflow-editor.node-panel#ui:panel:selection@^1.0.0"
       ],
       "upgradePolicy": "independent",
-      "implementation": {
-        "id": "workflow-editor.parameter-panel",
-        "kind": "reference",
-        "contract": "contracts/frontend.contract.md",
-        "status": "declared",
-        "language": null
-      },
-      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+      "implementationKind": "reference"
     },
     {
       "id": "workflow-editor.execution-panel",
@@ -428,14 +352,7 @@
         "workflow-editor.canvas#ui:canvas:selection@^1.0.0"
       ],
       "upgradePolicy": "independent",
-      "implementation": {
-        "id": "workflow-editor.execution-panel",
-        "kind": "reference",
-        "contract": "contracts/frontend.contract.md",
-        "status": "declared",
-        "language": null
-      },
-      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+      "implementationKind": "reference"
     },
     {
       "id": "node-picker",
@@ -459,14 +376,7 @@
       ],
       "dependsOn": [],
       "upgradePolicy": "independent",
-      "implementation": {
-        "id": "node-picker",
-        "kind": "reference",
-        "contract": "contracts/frontend.contract.md",
-        "status": "declared",
-        "language": null
-      },
-      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+      "implementationKind": "reference"
     },
     {
       "id": "credentials",
@@ -492,14 +402,7 @@
         "dialogs#ui:dialog:component@^1.0.0"
       ],
       "upgradePolicy": "independent",
-      "implementation": {
-        "id": "credentials",
-        "kind": "reference",
-        "contract": "contracts/frontend.contract.md",
-        "status": "declared",
-        "language": null
-      },
-      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+      "implementationKind": "reference"
     },
     {
       "id": "executions",
@@ -526,14 +429,7 @@
         "error-surfaces#ui:error:strip@^1.0.0"
       ],
       "upgradePolicy": "independent",
-      "implementation": {
-        "id": "executions",
-        "kind": "reference",
-        "contract": "contracts/frontend.contract.md",
-        "status": "declared",
-        "language": null
-      },
-      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+      "implementationKind": "reference"
     },
     {
       "id": "notifications",
@@ -557,14 +453,7 @@
       ],
       "dependsOn": [],
       "upgradePolicy": "acknowledged",
-      "implementation": {
-        "id": "notifications",
-        "kind": "reference",
-        "contract": "contracts/frontend.contract.md",
-        "status": "declared",
-        "language": null
-      },
-      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+      "implementationKind": "reference"
     },
     {
       "id": "dialogs",
@@ -588,14 +477,7 @@
       ],
       "dependsOn": [],
       "upgradePolicy": "acknowledged",
-      "implementation": {
-        "id": "dialogs",
-        "kind": "reference",
-        "contract": "contracts/frontend.contract.md",
-        "status": "declared",
-        "language": null
-      },
-      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+      "implementationKind": "reference"
     },
     {
       "id": "error-surfaces",
@@ -622,14 +504,7 @@
         "notifications#ui:notification:enqueue@^1.0.0"
       ],
       "upgradePolicy": "independent",
-      "implementation": {
-        "id": "error-surfaces",
-        "kind": "reference",
-        "contract": "contracts/frontend.contract.md",
-        "status": "declared",
-        "language": null
-      },
-      "replacement": "registry.replace(id, { id, kind, language }) — same contract, same version, consumers untouched"
+      "implementationKind": "reference"
     }
   ],
   "interactionClasses": [

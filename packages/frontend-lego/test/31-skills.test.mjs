@@ -485,7 +485,22 @@ test('the frontend quotes the backend skill vocabulary, and re-declares none of 
   }
   assert.deepEqual(SKILL_PERMISSIONS, declared.permissions, 'the declared operation permissions are quoted');
   assert.deepEqual(SKILL_DISCLOSURE_LEVELS, Object.keys(declared.disclosureLevels), 'the disclosure levels are quoted');
-  assert.deepEqual(SKILL_STATUSES, Object.keys(JSON.parse(readFileSync(BACKEND_SET, 'utf8')).statusVocabulary), 'the status words are quoted');
+  const statusWords = Object.keys(JSON.parse(readFileSync(BACKEND_SET, 'utf8')).statusVocabulary);
+  if (statusWords.includes('in-progress')) {
+    assert.deepEqual(SKILL_STATUSES, statusWords, 'the status words are quoted');
+  } else {
+    // This tree predates agent-2's P2.13 publication (`fb254f32`), which added the sixth maturity
+    // word to `statusVocabulary`. The quote follows the *published* declaration rather than the
+    // older tree, and the difference is registered under an open decision instead of being tolerated
+    // silently — the same bounded comparison `test/29` applies to the five sets that publication moved.
+    assert.deepEqual(SKILL_STATUSES.filter((word) => !statusWords.includes(word)), ['in-progress'],
+      'exactly one word is ahead of this tree, and it is the one agent-2 published');
+    assert.deepEqual(SKILL_STATUSES.filter((word) => word !== 'in-progress'), statusWords, 'the other five are quoted exactly');
+    const publicationRow = DECISIONS.decisions.find((entry) => /aiLegoStatus/.test(`${entry.question} ${entry.finding}`));
+    assert.ok(publicationRow, 'the sixth status word is named by a recorded decision');
+    assert.equal(publicationRow.status.startsWith('open'), true, 'which is still open — the frontend does not close it');
+    assert.equal(vocabularyOf('aiLegoStatus').provenance.movedBy.commit, 'fb254f32', 'and the lock names the commit that moved it');
+  }
   assert.deepEqual(declared.degradation, ['available', 'optional-absent']);
   for (const state of declared.degradation) {
     assert.ok(SKILL_DEGRADATION_STATES.includes(state), `${state} is a canonical degradation word`);

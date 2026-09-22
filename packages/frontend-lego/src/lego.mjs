@@ -27,6 +27,13 @@ import { createObservability } from './observability.mjs';
 import { DEVICE_PROFILES, resolveSupport } from './profiles.mjs';
 import { createFrontendRegistry, validateCapability } from './registry.mjs';
 import { createSkillCatalog, describeSkills, searchSkills, skillDetail } from './skills.mjs';
+import {
+  CONTEXT_SCOPES,
+  SESSION_STATES,
+  createContextSessionView,
+  contextSessionPublication,
+  describeContextSession,
+} from './context-session.mjs';
 import { createSubLegoRegistry } from './sublegos.mjs';
 import { createOperationGateway, defineLocalTransport } from './transport.mjs';
 import { describeVocabulary, detectCollisions, vocabularyConflicts } from './vocabulary.mjs';
@@ -56,6 +63,11 @@ export function createFrontendLego({
    *  reads the backend tree, and with no published `ai.skill` contract (XA-11) the surface
    *  renders the canonical unsupported state instead of inventing skills. */
   skills: skillInput = null,
+  /** The Context & Session surface's input, handed over as data: `{ declaration, contract,
+   *  context, session, continuation, usage, threshold }`. Neither `ai.context` nor
+   *  `ai.agent-session` has a contract-lock row at the P2.13 baseline (XA-20), so with nothing
+   *  handed over the surface reports `declared-not-locked` and renders no state at all. */
+  contextSession: contextSessionInput = null,
   observability = null,
   logger = {},
 } = {}) {
@@ -164,6 +176,38 @@ export function createFrontendLego({
    * the canonical unsupported state when the surface has no publication row. Nothing here
    * selects, loads or executes a skill.
    */
+  /**
+   * The Context & Session view (P2.13). Everything is derived from what the application hands
+   * over: the four backend declaration blocks, any published contract-lock rows, and the records
+   * to render. With nothing handed over the view is the canonical pending answer — no session, no
+   * context, no usage figure, no phase, no continuation, and no affordance that implies a runtime.
+   *
+   * It is built **on demand**, and eagerly only when the application handed records over. The view
+   * is not part of the boot descriptor (the payload is byte-identical either way), so the boot path
+   * must not pay for a surface nobody has rendered yet: `capture-frontend-evidence.mjs` measures
+   * descriptor assembly against a 4 MB heap budget that P2.12 already filled to 92%. A handed-over
+   * record is still validated at the boundary — fail-closed is not deferred, only the empty case is.
+   */
+  const buildContextSessionView = () => createContextSessionView({
+    surface: manifests.contextSessionCatalog,
+    declaration: contextSessionInput?.declaration ?? null,
+    contract: contextSessionInput?.contract ?? null,
+    context: contextSessionInput?.context ?? null,
+    session: contextSessionInput?.session ?? null,
+    continuation: contextSessionInput?.continuation ?? null,
+    usage: contextSessionInput?.usage ?? null,
+    threshold: contextSessionInput?.threshold ?? null,
+  });
+  let contextSessionView = contextSessionInput === null || contextSessionInput === undefined
+    ? null
+    : buildContextSessionView();
+  const contextSession = () => (contextSessionView ??= buildContextSessionView());
+  /** Publication state without the view: two contract rows and one boolean. */
+  const contextSessionPublicationState = () => contextSessionPublication({
+    surface: manifests.contextSessionCatalog,
+    contract: contextSessionInput?.contract ?? null,
+  });
+
   const skillCatalog = createSkillCatalog({
     surface: manifests.skillCatalog,
     declaration: skillInput?.declaration ?? null,
@@ -228,6 +272,12 @@ export function createFrontendLego({
       skillStates: skillCatalog.lifecycle.length,
       skillsDeclared: skillCatalog.entries.length,
       skillDrift: skillCatalog.drift.state,
+      sessionStates: SESSION_STATES.length,
+      contextScopes: CONTEXT_SCOPES.length,
+      // Reported without materialising the view: publication is two contract rows, and drift is
+      // `not-declared` until a declaration is handed over — which is exactly when the view exists.
+      contextSessionPublished: contextSessionView?.published ?? contextSessionPublicationState().published,
+      contextSessionDrift: contextSessionView?.drift.state ?? 'not-declared',
       events: events.stats().emitted,
       adapter: adapter.id,
       framework: adapter.framework,
@@ -312,6 +362,16 @@ export function createFrontendLego({
      */
     skills: skillCatalog,
     describeSkills,
+    /**
+     * The Context & Session surface: five distinct concepts, the quoted vocabulary, the session
+     * and context state, the rollover expectation, the continuation and its verification, and the
+     * publication state of both contracts. It renders state; it never produces any, offers no
+     * execution affordance and fabricates no token count.
+     */
+    get contextSession() {
+      return contextSession();
+    },
+    describeContextSession,
     skillDetail: (skillId, options) => skillDetail(skillCatalog, skillId, options),
     searchSkills: (filters) => searchSkills(skillCatalog, filters),
     /**

@@ -41,7 +41,7 @@ const DECISIONS = JSON.parse(read('docs/n8n-lego/decisions/cross-agent-decisions
 
 test('every shared vocabulary is quoted with provenance, not re-invented', () => {
   assert.ok(VOCABULARIES.length >= 6, `${VOCABULARIES.length} shared vocabularies`);
-  assert.match(QUOTED_FROM.branch, /^arena\//, 'the lock names the branch it read');
+  assert.match(QUOTED_FROM.branch, /^(main|arena\/)/, 'the lock names the branch it read');
   assert.match(QUOTED_FROM.commit, /^[0-9a-f]{8}$/, 'and the commit');
   for (const set of VOCABULARIES) {
     assert.ok(set.values.length > 0, `${set.id} declares values`);

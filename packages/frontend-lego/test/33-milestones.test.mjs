@@ -1,0 +1,238 @@
+/**
+ * The canonical milestone register — `docs/n8n-lego/milestones.json` (P2.13, Part A).
+ *
+ * Reconciled against main @ efa3da352adcc20ff684f309b38a6fbf15005232 (PR #45 merged).
+ *
+ * The register exists because "what is done?" was being answered from six documents that
+ * disagreed. A register that cannot be checked is another document to disagree with, so this
+ * suite treats it as a schema with teeth:
+ *
+ *   1. **Shape.** Every row carries the canonical fields, and a row that claims a status
+ *      carries the evidence that status requires. `complete` without evidence is a claim.
+ *   2. **Vocabulary.** Statuses come from six words and nothing else.
+ *   3. **Ladder.** The `nextMilestone` chain is intact, acyclic and reaches the future ladder.
+ *   4. **Authority.** The strategic Phases A–F survive underneath the milestone layer, the
+ *      manifests stay the product truth, and the register never re-numbers a phase.
+ *   5. **The merge gate.** Agent completion is not merge approval, there are two/three gates, and the
+ *      conflict taxonomy names what must not be merged. The same gate is written into the
+ *      workforce governance file, and the governance file points here rather than restating it —
+ *      one protocol, two readers.
+ *   6. **Proposal evidence.** Agent 1's granular future ladder rows (P2.17+ decomposition) are
+ *      preserved as proposal evidence in docs/n8n-lego/evidence/P2.13-agent-1-milestone-register-proposal.json.
+ */
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+import { PACKAGE_ROOT } from '../src/manifests.mjs';
+
+const REPO_ROOT = join(PACKAGE_ROOT, '..', '..');
+const read = (relative) => readFileSync(join(REPO_ROOT, relative), 'utf8');
+const REGISTER_PATH = 'docs/n8n-lego/milestones.json';
+const REGISTER = JSON.parse(read(REGISTER_PATH));
+const PROPOSAL_PATH = 'docs/n8n-lego/evidence/P2.13-agent-1-milestone-register-proposal.json';
+const PROPOSAL = existsSync(join(REPO_ROOT, PROPOSAL_PATH)) ? JSON.parse(read(PROPOSAL_PATH)) : null;
+const DECISIONS = JSON.parse(read('docs/n8n-lego/decisions/cross-agent-decisions.json'));
+const GOVERNANCE = JSON.parse(read('docs/engineering-operations/workforce-governance.json'));
+const ROADMAP = read('docs/n8n-lego/ROADMAP.md');
+
+const byId = new Map(REGISTER.milestones.map((milestone) => [milestone.id, milestone]));
+const ALLOWED_STATUSES = ['blocked', 'complete', 'in-progress', 'planned', 'ready', 'superseded'];
+const REQUIRED_CANONICAL_FIELDS = [
+  'id', 'title', 'phase', 'status', 'owner', 'backendOwner', 'frontendOwner', 'dependencies', 'inputs',
+  'deliverables', 'implementationBoundary', 'testsGates', 'decisionDependencies', 'completionCriteria',
+  'startEvidence', 'finishEvidence', 'currentCommitReference', 'nextMilestone',
+];
+
+/* ------------------------------------------------------------------- 1. shape */
+
+test('the register is one machine-readable file at the canonical path, owned by the manager', () => {
+  assert.equal(REGISTER.owner, 'manager', 'the register is the manager\'s, not an agent\'s');
+  assert.match(REGISTER.registerVersion, /^\d+\.\d+\.\d+$/, 'the register itself is versioned');
+  assert.ok(existsSync(join(REPO_ROOT, REGISTER_PATH)));
+  assert.equal(REGISTER.canonical, true);
+  assert.equal(typeof REGISTER.purpose, 'string');
+  assert.match(REGISTER.purpose, /Granular milestone truth/i);
+  assert.equal(REGISTER.protectedBranch, 'main');
+  assert.match(REGISTER.mainBaseline, /^e754c5df/);
+  assert.equal(REGISTER.currentMilestone, 'P2.13');
+  assert.equal(REGISTER.previousCompletedMilestone, 'P2.12');
+  assert.ok(REGISTER.milestones.length >= 7, `${REGISTER.milestones.length} milestones recorded`);
+  assert.ok(REGISTER.agentBranches && typeof REGISTER.agentBranches === 'object');
+  assert.ok(REGISTER.strategicRoadmap && typeof REGISTER.strategicRoadmap === 'object');
+  assert.ok(REGISTER.mergeProtocol && typeof REGISTER.mergeProtocol === 'object');
+});
+
+test('every row carries the canonical fields, and only statuses from the six words', () => {
+  const ids = new Set();
+  for (const milestone of REGISTER.milestones) {
+    assert.match(milestone.id, /^P\d+\.\d+(\+)?$/, `${milestone.id} is a phase.milestone id`);
+    assert.equal(ids.has(milestone.id), false, `${milestone.id} is unique`);
+    ids.add(milestone.id);
+    assert.ok(ALLOWED_STATUSES.includes(milestone.status), `${milestone.id} uses an allowed status ("${milestone.status}")`);
+    assert.equal(typeof milestone.title, 'string');
+    assert.ok(milestone.title.length > 3, `${milestone.id} has a title`);
+    assert.match(milestone.phase, /^[A-F](\/[A-F]|-F)?\b/, `${milestone.id} names a strategic phase ("${milestone.phase}")`);
+    for (const field of REQUIRED_CANONICAL_FIELDS) {
+      assert.equal(field in milestone, true, `${milestone.id} (${milestone.status}) carries "${field}"`);
+    }
+    assert.ok(typeof milestone.implementationBoundary === 'string' && milestone.implementationBoundary.length > 10, `${milestone.id} states boundary`);
+    assert.ok(Array.isArray(milestone.deliverables) && milestone.deliverables.length > 0, `${milestone.id} states deliverables`);
+    assert.ok(Array.isArray(milestone.dependencies), `${milestone.id} states dependencies`);
+    assert.ok(Array.isArray(milestone.testsGates), `${milestone.id} states testsGates`);
+  }
+});
+
+test('a status is backed by the evidence that status requires', () => {
+  for (const milestone of REGISTER.milestones) {
+    if (milestone.status === 'complete') {
+      assert.ok(milestone.finishEvidence, `${milestone.id}: complete names its finishing evidence`);
+      assert.ok(milestone.startEvidence, `${milestone.id}: complete names its start evidence`);
+      assert.ok(milestone.currentCommitReference, `${milestone.id}: complete names its commit reference`);
+      assert.ok(Array.isArray(milestone.completionCriteria) && milestone.completionCriteria.length > 0, `${milestone.id}: completion criteria are stated`);
+    }
+    if (milestone.status === 'in-progress') {
+      assert.ok(milestone.startEvidence, `${milestone.id}: in-progress names its starting evidence`);
+      assert.ok(milestone.currentCommitReference, `${milestone.id}: in-progress names its commit reference`);
+      assert.ok(Array.isArray(milestone.nonScope) && milestone.nonScope.length > 0, `${milestone.id}: in-progress names nonScope`);
+      assert.ok(milestone.reconciliation && typeof milestone.reconciliation === 'object', `${milestone.id}: in-progress carries reconciliation block`);
+      assert.ok(milestone.verificationEvidence && typeof milestone.verificationEvidence === 'object', `${milestone.id}: in-progress carries verificationEvidence`);
+    }
+  }
+  // P2.13 status in the canonical register:
+  const p213 = byId.get('P2.13');
+  assert.equal(p213.status, 'in-progress');
+  assert.equal(p213.reconciliation.verdict, 'RECONCILIATION_REQUIRED');
+  assert.equal(p213.reconciliation.baseline, 'e754c5df35b41b0ff2ac769519f05f056835411c');
+});
+
+test('dependencies and decision references resolve: no dangling id anywhere in the register', () => {
+  const decisionIds = new Set(DECISIONS.decisions.map((row) => row.id));
+  for (const milestone of REGISTER.milestones) {
+    for (const dependency of milestone.dependencies) {
+      const referenced = dependency.match(/P\d+\.\d+/g) ?? [];
+      for (const id of referenced) {
+        assert.ok(byId.has(id) || id === 'P2.10', `${milestone.id} depends on ${id}, which the register records as a milestone or pre-register history`);
+      }
+    }
+    for (const dependency of milestone.decisionDependencies ?? []) {
+      for (const id of dependency.match(/XA-\d+/g) ?? []) {
+        assert.equal(decisionIds.has(id), true, `${milestone.id} names ${id}, which the decision register records`);
+      }
+    }
+  }
+});
+
+/* ------------------------------------------------------------------ 2. ladder */
+
+test('the nextMilestone chain is intact, acyclic and reaches the future ladder', () => {
+  const seen = [];
+  let current = 'P2.11';
+  while (current !== null && current !== undefined) {
+    const targetId = current === 'P2.17' ? 'P2.17+' : current;
+    const milestone = byId.get(targetId);
+    assert.ok(milestone, `${current} resolves to a recorded milestone`);
+    assert.equal(seen.includes(milestone.id), false, `the ladder has no cycle at ${milestone.id}`);
+    seen.push(milestone.id);
+    current = milestone.nextMilestone;
+    if (seen.length > REGISTER.milestones.length) break;
+  }
+  assert.deepEqual(seen, ['P2.11', 'P2.12', 'P2.13', 'P2.14', 'P2.15', 'P2.16', 'P2.17+']);
+  assert.equal(byId.get('P2.17+').nextMilestone, null, 'P2.17+ terminates the canonical top ladder');
+});
+
+test('the ladder keeps planned milestones for future capabilities', () => {
+  const titles = REGISTER.milestones.map((milestone) => milestone.title);
+  for (const expected of [/Memory/, /Workspace/, /Agent Machine/]) {
+    assert.ok(titles.some((title) => expected.test(title)), `the ladder keeps a milestone for ${expected}`);
+  }
+  const p217 = byId.get('P2.17+');
+  assert.ok(p217, 'P2.17+ is the later capability ladder');
+  assert.match(p217.implementationBoundary, /Future ladder only/);
+  assert.match(p217.implementationBoundary, /Manager.*updating this canonical register/);
+});
+
+/* --------------------------------------------------------------- 3. authority */
+
+test('the strategic Phases A–F survive underneath the milestone layer', () => {
+  assert.deepEqual(REGISTER.strategicRoadmap.preservePhases, ['A', 'B', 'C', 'D', 'E', 'F']);
+  assert.match(REGISTER.strategicRoadmap.rule, /Phase A-F remains the strategic roadmap/);
+  assert.equal(REGISTER.strategicRoadmap.source, 'apps/n8n-lego/src/lego/manifest/ai-lego-set.json');
+  // ROADMAP.md is application roadmap:
+  assert.match(ROADMAP, /application roadmap/i, 'ROADMAP.md is the application roadmap');
+});
+
+test('the proposal artifact preserves Agent 1 granular ladder proposal as non-canonical evidence', () => {
+  assert.ok(PROPOSAL, 'proposal artifact exists at docs/n8n-lego/evidence/P2.13-agent-1-milestone-register-proposal.json');
+  assert.equal(PROPOSAL.canonical, false);
+  assert.equal(PROPOSAL.canonicalRegister, REGISTER_PATH);
+  assert.equal(PROPOSAL.canonicalRegisterOwner, 'manager');
+  assert.match(PROPOSAL.status, /proposal/i);
+  assert.ok(PROPOSAL.contents.granularFutureLadder.rows.length >= 10, '10 granular future ladder rows preserved');
+  assert.ok(PROPOSAL.contents.currentTruth, 'currentTruth preserved');
+  assert.ok(PROPOSAL.contents.authority, 'authority preserved');
+});
+
+test('the baseline block protects main and names both agent branches', () => {
+  assert.equal(REGISTER.protectedBranch, 'main');
+  assert.match(REGISTER.mainBaseline, /^e754c5df/);
+  assert.equal(REGISTER.agentBranches.agent1, 'arena/01a0c6b4-n8n-rust-v-4');
+  assert.equal(REGISTER.agentBranches.agent2, 'arena/01a0c6b5-n8n-rust-v-4');
+});
+
+/* ------------------------------------------------------------- 4. merge gate */
+
+test('the merge protocol says agent completion is not merge approval, and names the sequence', () => {
+  const protocol = REGISTER.mergeProtocol;
+  assert.ok(protocol, 'the register carries the merge protocol');
+  assert.equal(protocol.agentCompletionIsNotMergeApproval, true);
+  assert.ok(Array.isArray(protocol.sequence) && protocol.sequence.length >= 5);
+  assert.ok(protocol.sequence.some((step) => step.includes('reconcil')));
+  assert.ok(protocol.sequence.some((step) => step.includes('merge')));
+  assert.equal(protocol.failureState, 'RECONCILIATION_FAILED');
+  assert.match(protocol.completionRule, /An agent branch can be complete without the milestone being complete/);
+});
+
+test('the same gate is written into workforce governance, pointing here instead of restating it', () => {
+  const protocol = GOVERNANCE.milestoneMergeProtocol;
+  assert.ok(protocol, 'workforce-governance.json carries milestoneMergeProtocol');
+  assert.equal(protocol.canonicalRegister, REGISTER_PATH, 'the governance file names the register as the source');
+  assert.equal(protocol.owner, 'manager');
+  assert.match(protocol.rule, /Agent branch completion is not merge approval/);
+  assert.ok(protocol.gates.some((g) => g.id === 'RECONCILIATION PASS'));
+  assert.ok(protocol.gates.some((g) => g.id === 'MERGE PASS'));
+  assert.ok(protocol.gates.some((g) => g.id === 'POST-MERGE VERIFICATION PASS'));
+  assert.equal(protocol.failureState, 'RECONCILIATION_FAILED');
+  assert.ok(protocol.conflictClasses.mechanical);
+  assert.ok(protocol.conflictClasses.contract);
+  assert.ok(protocol.conflictClasses.architecture);
+  assert.ok(protocol.conflictClasses.scope);
+  assert.match(protocol.conflictClasses.scope, /Do not merge out-of-scope/);
+});
+
+/* --------------------------------------------------- 5. the register and the docs */
+
+test('the curated status documents agree with the register, and say they derive from it', () => {
+  const status = read('.ai/master/frontend/CURRENT_STATUS.md');
+  const phases = read('.ai/master/frontend/IMPLEMENTATION_PHASES.md');
+  assert.match(status, /P2\.13/, 'the curated status names the current milestone');
+  assert.match(status, /P2\.12/, 'and the one before it');
+  assert.match(status, /milestones\.json/, 'and points at the register');
+  assert.match(phases, /P2\.13/);
+  assert.match(phases, /milestones\.json/, 'the phase document derives from the register');
+  assert.match(phases, /Phase [A-F]/, 'and keeps the strategic phases');
+  // A document that says "complete" while the register says in-progress is the exact drift this
+  // register exists to end, so the two are compared rather than trusted.
+  const registerStatus = byId.get('P2.13').status;
+  assert.equal(/P2\.13[^\n]*\bcomplete\b/i.test(status), registerStatus === 'complete', 'P2.13 is not reported complete while the register says otherwise');
+});
+
+test('the register is the canonical record, and the docs that predate it say so', () => {
+  assert.match(read('.ai/master/frontend/KNOWN_BLOCKERS.md'), /XA-20/, 'the blocker list carries the P2.13 blocker');
+  assert.match(read('.ai/master/frontend/PROJECT_WORKFORCE_ORCHESTRATION.md'), /RECONCILIATION PASS/, 'and the orchestration document carries the gate');
+  assert.match(read('.ai/master/frontend/PROJECT_WORKFORCE_ORCHESTRATION.md'), /milestones\.json/);
+  assert.match(read('.ai/master/CONTEXT_SESSION_MEMORY_PLAN.md'), /P2\.13/, 'the Context & Session plan names its milestone');
+  assert.match(read('.ai/master/AI_FRONTEND_CONTRACT_MATRIX.md'), /ai\.context/, 'the contract matrix carries both contracts');
+  assert.match(read('.ai/master/AI_FRONTEND_CONTRACT_MATRIX.md'), /ai\.agent-session/);
+});

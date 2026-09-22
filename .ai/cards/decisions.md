@@ -109,5 +109,34 @@ Format: **decision** — why — *rules out*.
   chain-of-thought store while the contracts are still being agreed.
 - **D26 — a quoted word records its publication.** A canonical vocabulary names its contract,
   version, owner and declaration; a file no contract row publishes is declared *pending* with
-  the decision that asks for one (`XA-9`). Verified against the backend tree at `6f7b66da`:
-  38 sets, 0 drift. *Rules out* a second dialect, an invented version and a silent rename.
+  the decision that asks for one (`XA-9`, `XA-17`, `XA-20`). Verified against the backend tree
+  at `e754c5df`: 53 quoted sets, 24 local, 2 pending, 0 drift. *Rules out* a second dialect, an
+  invented version and a silent rename.
+
+## AI surfaces (P2.12–P2.13)
+
+- **D27 — A Skill is a registry entry, not an execution.** `ai.skill@1.0.0` is published with
+  four operations and two permissions; the frontend quotes them, offers none of them, keeps the
+  six states independent (never one boolean) and refuses `execute`, `register`, `select`, `load`
+  and `release` in both spellings. Discovery never invokes a body loader. *Rules out* a UI that
+  runs a skill, and a "skill enabled" toggle that collapses six states into one (`test/31`, `XA-19`).
+- **D28 — Context & Session is ONE LEGO with TWO contracts, and a claim is not a publication.**
+  `ai.context` (what is loaded now) and `ai.agent-session` (bounded state: identity plus
+  references) are declared in four backend files and locked in none, so the frontend renders
+  `declared-not-locked`, quotes the fields and states it can cite, reports the version as
+  `declaredVersion` and keeps the rollover phase machine (`NORMAL → PREPARE → ROLLOVER`) and the
+  verification results (`verified / degraded / failed`) in `PENDING_PUBLICATIONS` under `XA-20`.
+  Conversation, session, context window, memory and execution stay five distinct things; a record
+  that merges them is refused. No token figure is fabricated (a usage number carries its declared
+  kind or is not rendered), a rollover threshold at 100% is refused, no Memory store is implied
+  (`XA-12`), and no execution affordance is offered — the three declared verbs nobody registered
+  (`rollover`, `rehydrate`, `verify`) are answered `operation-unpublished`. *Rules out* a second
+  `ai-context`/`ai-session` domain, a token dashboard, a transcript view, a "continue" button wired
+  to an invented operation, and a silent reset rendered as a new session (`test/32`, `test/29`).
+- **D29 — Agent completion is not merge approval.** A milestone is complete when the reconciled
+  state on protected main passes verification, not when an agent's branch does: two gates
+  (RECONCILIATION PASS, then MERGE PASS), a four-kind conflict taxonomy in which a scope violation
+  is *not merged*, and a canonical milestone register (`docs/n8n-lego/milestones.json`) that only
+  the manager re-sequences. The same rule is written into workforce governance so it applies to
+  P2.13, P2.14 and later. *Rules out* "done on my branch" as a status, merging whichever branch
+  arrives first, and merging a locked-contract disagreement (`test/33`).

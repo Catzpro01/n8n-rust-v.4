@@ -291,6 +291,40 @@
       "contract": "Reconcile fields, operations, enums, permissions and errors before merging.",
       "architecture": "Record and decide before merging; do not choose the easier implementation silently.",
       "scope": "Do not merge out-of-scope runtime, Memory, Workspace authority or Rust work merely to clean it up later."
+    },
+    "appliesTo": "P2.13, P2.14 and every later milestone. This protocol is governance, not product architecture.",
+    "plane": "engineering-operations",
+    "notProductArchitecture": "Nothing in this block may be referenced by manifest/domains.json, manifest/ai-lego-set.json or any product contract; the same separation the rest of this file enforces applies here.",
+    "gateMeaningWhy": "'The branches were reconciled' is not 'the milestone is complete'. Treating reconciliation and merge as one gate is the failure mode this protocol exists to prevent.",
+    "onFailureEvidence": [
+      "the conflict",
+      "the affected contract",
+      "the affected agent",
+      "the reason",
+      "the required decision",
+      "the blocking test"
+    ],
+    "onFailureThen": "agent correction -> reconciliation again. Never a silent merge, and never a merge of a locked-contract disagreement.",
+    "mergeAuthority": "Only the manager turns agent branches into product state on main. Agents do not merge to main, do not force-push, and do not reset another agent's branch to make a tree look synchronized.",
+    "milestoneStatusRule": "A milestone becomes complete only after every gate passes and post-merge verification on main HEAD succeeds. 'Both branches were reconciled' is not 'the milestone is complete'.",
+    "enforcedBy": [
+      "docs/n8n-lego/milestones.json#mergeProtocol",
+      "packages/frontend-lego/test/33-milestones.test.mjs"
+    ],
+    "foldedFrom": {
+      "what": "agent-1's P2.13 `milestoneMergeGate` block, written from the same Manager ruling",
+      "why": "one rule, one copy: two blocks describing the same protocol drift, and the drift is invisible until a merge goes wrong. The Manager-owned `milestoneMergeProtocol` on protected main is kept as the single block and agent-1's non-duplicative facts are folded into it as additive keys.",
+      "when": "P2.13 reconciliation (2026-09-22), after PR #45 merged as main @ efa3da35",
+      "by": "agent-1",
+      "duplicatedKeysDropped": [
+        "gates (kept as the Manager's three-gate list, which adds POST-MERGE VERIFICATION PASS)",
+        "sequence (kept as the Manager's ten-step sequence)",
+        "conflictTypes/conflictRule (kept as the Manager's conflictClasses)",
+        "rule",
+        "owner",
+        "failureState",
+        "sourceOfTruth/canonicalRegister"
+      ]
     }
   }
 }
