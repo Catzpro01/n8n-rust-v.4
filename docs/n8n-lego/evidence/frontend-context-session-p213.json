@@ -1,0 +1,325 @@
+{
+  "capturedAt": "2026-09-22",
+  "milestone": "P2.13",
+  "side": "frontend (agent-1)",
+  "branch": "arena/01a0c6b4-n8n-rust-v-4",
+  "commit": "c5ff5870",
+  "peerTreeAvailable": false,
+  "purpose": "Evidence that the frontend consumes the published backend vocabulary and nothing else, and that it is truthful against BOTH trees: protected main (no publication) and agent-2's publication (fb254f32).",
+  "trees": {
+    "protectedMain": {
+      "commit": "e754c5df35b41b0ff2ac769519f05f056835411c",
+      "contractLockRows": 17,
+      "publishedContextOrSessionRows": [
+        "ai.context",
+        "ai.agent-session"
+      ],
+      "note": "this branch carries a copy of the protected-main backend; neither ai.context nor ai.agent-session is locked here"
+    },
+    "peerPublication": {
+      "skipped": "no peer tree pointed at (N8N_PEER_BACKEND_LEGO_ROOT=unset)"
+    }
+  },
+  "runs": {
+    "focusedThisTree": {
+      "tests": 101,
+      "pass": 101,
+      "fail": 0,
+      "skipped": 0
+    },
+    "focusedPeerTree": {
+      "skipped": "no peer tree at N8N_PEER_BACKEND_LEGO_ROOT (unset)"
+    },
+    "fullSuiteThisTree": {
+      "tests": 362,
+      "pass": 362,
+      "fail": 0,
+      "skipped": 0
+    },
+    "fullSuitePeerTree": {
+      "skipped": "no peer tree pointed at"
+    },
+    "focusedFiles": [
+      "32-context-session.test.mjs",
+      "29-alignment.test.mjs",
+      "31-skills.test.mjs",
+      "24-vocabulary.test.mjs",
+      "33-milestones.test.mjs",
+      "19-conformance.test.mjs"
+    ],
+    "howThePeerTreeIsPointedAt": "N8N_BACKEND_LEGO_ROOT=<git archive origin/arena/01a0c6b5-n8n-rust-v-4>/apps/n8n-lego/src/lego"
+  },
+  "vocabulary": {
+    "quotedSets": 55,
+    "localSets": 24,
+    "pendingPublicationRows": 0,
+    "promotedPublicationRows": 2,
+    "pendingContractRows": 2,
+    "declaredOverlapsChecked": 14,
+    "quotedFrom": {
+      "repository": "\"Catzpro01/n8n-rust-v.4\"",
+      "branch": "\"main\"",
+      "commit": "\"efa3da35\"",
+      "mergedInto": "\"efa3da352adcc20ff684f309b38a6fbf15005232\"",
+      "phase": "\"P2.13\"",
+      "readOn": "\"2026-09-22\"",
+      "readFor": "\"P2.13 reconciliation — Context & Session: quoting ai.contex",
+      "publication": "{\"branch\":\"arena/01a0c6b5-n8n-rust-v-4\",\"commit\":\"fb254f32\",",
+      "protectedMain": "{\"branch\":\"main\",\"commit\":\"efa3da35\",\"phase\":\"P2.13\",\"locked",
+      "protectedMainBaseline": "{\"branch\":\"main\",\"commit\":\"e754c5df\",\"phase\":\"P2.12\",\"locked",
+      "previousQuote": "{\"branch\":\"arena/01a0c521-n8n-rust-v-4\",\"commit\":\"6f7b66da\","
+    },
+    "publicationStatus": "published",
+    "source": "packages/frontend-lego/src/vocabulary.mjs — imported, not retyped",
+    "beforeThisCommit": {
+      "quotedSets": 53,
+      "pendingPublicationRows": 2,
+      "contextOperations": 2,
+      "aiLegoStatusWords": 5
+    }
+  },
+  "publicationManifest": {
+    "rowsThisTreePublishes": 2,
+    "protectedMainBlock": {
+      "branch": "main",
+      "commit": "efa3da35",
+      "lockedContractRows": 17,
+      "state": "published",
+      "contextRow": true,
+      "sessionRow": true,
+      "note": "protected main publishes both contracts, so the surface derives published and renders version 1.0.0"
+    },
+    "publishedOnPeerBranchBlock": {
+      "agent": "agent-2",
+      "branch": "arena/01a0c6b5-n8n-rust-v-4",
+      "commit": "fb254f32",
+      "commitMessage": "Implement P2.13 context and session foundation",
+      "visibleOn": "github",
+      "readOn": "2026-09-22",
+      "onProtectedMain": true,
+      "lockedContractRows": 17,
+      "rows": [
+        {
+          "id": "ai.context",
+          "owner": "manager",
+          "domain": "ai-foundation",
+          "version": "1.0.0",
+          "status": "implemented",
+          "surface": [
+            "src/lego/context.mjs"
+          ],
+          "exports": {
+            "src/lego/context.mjs": [
+              "CONTEXT_CONTRACT",
+              "CONTEXT_CONTRACT_VERSION",
+              "CONTEXT_SCOPES",
+              "CONTEXT_OPERATIONS",
+              "CONTEXT_MANAGER_STATES",
+              "CONTINUATION_PACKAGE_VERSION",
+              "CONTINUATION_FIELDS",
+              "CONTINUATION_VERIFICATION",
+              "ContextSessionError",
+              "createContextManager",
+              "createContextSessionManager",
+              "verifyContinuationPackage"
+            ]
+          },
+          "operations": [
+            "load",
+            "compact",
+            "rollover",
+            "rehydrate",
+            "verify"
+          ],
+          "permissions": [
+            "ai:context:read",
+            "ai:context:write"
+          ],
+          "consumers": [
+            "future Agent Machine (contract-only)",
+            "frontend Context & Session consumer",
+            "Manager reconciliation gate"
+          ],
+          "tests": [
+            "apps/n8n-lego/test/lego-context-session.test.mjs"
+          ],
+          "notes": "P2.13 smallest additive publication from the already-declared ai.context fields and Context & Session operation vocabulary. The implementation is bounded local state only: no model/provider/runtime dependency, no transcript dump, no Memory store. Contract lock publication does not make P2.13 complete; Manager reconciliation, merge validation and post-merge verification remain required."
+        },
+        {
+          "id": "ai.agent-session",
+          "owner": "manager",
+          "domain": "ai-foundation",
+          "version": "1.0.0",
+          "status": "implemented",
+          "surface": [
+            "src/lego/agent-session.mjs"
+          ],
+          "exports": {
+            "src/lego/agent-session.mjs": [
+              "AGENT_SESSION_CONTRACT",
+              "AGENT_SESSION_CONTRACT_VERSION",
+              "AGENT_SESSION_STATES",
+              "AGENT_SESSION_OPERATIONS",
+              "AGENT_SESSION_TRANSITIONS",
+              "ContextSessionError",
+              "createContextSessionManager"
+            ]
+          },
+          "operations": [
+            "create",
+            "status",
+            "close"
+          ],
+          "permissions": [
+            "ai:agent:control",
+            "ai:agent:create",
+            "ai:agent:read"
+          ],
+          "consumers": [
+            "future Agent Machine (contract-only)",
+            "frontend Context & Session consumer",
+            "Manager reconciliation gate"
+          ],
+          "tests": [
+            "apps/n8n-lego/test/lego-context-session.test.mjs"
+          ],
+          "notes": "P2.13 smallest additive publication from the established ai.agent-session fields and states. A session is bounded identity/control state with references, never an unbounded transcript. The implementation remains provider/runtime-neutral."
+        }
+      ],
+      "consumedBy": "packages/frontend-lego/src/vocabulary.mjs (quoted sets contextOperation, continuationSection, contextRolloverPhase, continuationVerification) and packages/frontend-lego/test/29-alignment.test.mjs",
+      "atMerge": "when the manager merges the publication into protected main, `rows` above moves into `publication.rows` and `status` becomes `published` in the same change; test/32 asserts that against the default tree"
+    },
+    "expectedOperationCount": 8,
+    "policy": "publication.rows carries only what THIS tree publishes, so the surface cannot claim a publication it does not hold; the peer rows are evidence, recorded verbatim, in a separate block."
+  },
+  "registeredDivergences": [],
+  "closedDivergences": [
+    {
+      "id": "backend-internal-spelling",
+      "status": "closed",
+      "where": "manifest/ai-lego-set.json#lego[id=context-session].continuationPackage",
+      "canonicalContractSpelling": [
+        "toolStateReferences",
+        "importantReferences"
+      ],
+      "closedBy": {
+        "commit": "fa18ba76",
+        "agent": "agent-2",
+        "mergedIn": {
+          "branch": "main",
+          "commit": "efa3da35",
+          "pullRequest": 45
+        }
+      },
+      "verifiedOnMain": true,
+      "decision": "XA-20"
+    },
+    {
+      "id": "pre-merge-operation-count",
+      "status": "closed",
+      "where": "capabilities[id=ai.context].operations",
+      "allFiveOperationsPublished": [
+        "load",
+        "compact",
+        "rollover",
+        "rehydrate",
+        "verify"
+      ],
+      "closedBy": {
+        "mergedIn": {
+          "branch": "main",
+          "commit": "efa3da35",
+          "pullRequest": 45
+        }
+      },
+      "verifiedOnMain": true,
+      "decision": "XA-20"
+    }
+  ],
+  "openDecisions": [
+    {
+      "id": "XA-20",
+      "status": "open-for-manager",
+      "blockingLevel": "milestone",
+      "question": "Which contract rows and which rollover/continuation vocabulary does the manager publish for Context & Session, so the frontend binds to a lock row instead of to a version claim?"
+    },
+    {
+      "id": "XA-21",
+      "status": "open-for-manager",
+      "blockingLevel": "low",
+      "question": "The frontend evidence capture pins descriptor assembly at under 4,096 KB of heap; P2.12 filled that pin to 3,780 KB (92%) and the P2.13 Context & Session surface adds ~470 KB, so the check now fails at 4,251-4,361 KB. Does the manager raise the pin, make feature surfaces opt-in imports instead of eager assembly, or move surface prose into the manifests - and which of those applies to P2.14 (Memory), which cannot fit under the pin as it stands?"
+    }
+  ],
+  "scopeHonesty": {
+    "implementedHere": [
+      "contract-level presentation of context scope, session identity and state, usage state, rollover preparation, continuation state, continuity verification, session relationships, degraded continuation"
+    ],
+    "notImplemented": [
+      "model inference",
+      "provider calls",
+      "Agent Machine loop",
+      "multi-agent runtime",
+      "Skill execution",
+      "Memory store",
+      "Workspace executor",
+      "filesystem/terminal authority",
+      "MCP runtime",
+      "Runtime Adapter runtime",
+      "Node Creator/Translation runtime",
+      "token provider integration",
+      "external agent runtime",
+      "Rust"
+    ],
+    "neverRendered": [
+      "a token dashboard",
+      "a transcript",
+      "fabricated token counts",
+      "a Memory-store implication",
+      "an execution affordance"
+    ],
+    "visibleDistinctions": [
+      "conversation",
+      "session",
+      "context window",
+      "memory",
+      "execution"
+    ]
+  },
+  "environmentBlockers": [
+    {
+      "gate": "npm run lego:test",
+      "state": "436/439 pass, 3 fail",
+      "reason": "the three failures are the node-catalog REST suites (GET /rest/types/nodes.json, GET /rest/types/node-versions.json, POST /rest/node-types): the 8 MB catalog is not committed, so they answer 404 until `npm run lego:catalog` or a network fetch. Pre-existing at e754c5df, environmental, not a code regression."
+    },
+    {
+      "gate": "python3 tools/sublego-audit/audit.py",
+      "state": "blocked",
+      "reason": "ModuleNotFoundError: No module named 'yaml' in this sandbox — the audit cannot run here, so its result is reported as unmeasured rather than assumed passing."
+    },
+    {
+      "gate": "npm run verify:fast",
+      "state": "5/10 (G06-G10 fail)",
+      "reason": "the workflow/Rust track's gates need packages/workflow-lego/node_modules and the live reference runtime, neither of which is installed here. The run also rewrites docs/isolation/*, another track's ownership area, so those two files are reverted after every run."
+    },
+    {
+      "gate": "node apps/n8n-lego/scripts/capture-frontend-evidence.mjs",
+      "state": "52/56 here, 55/56 dependency-complete",
+      "reason": "three page-level checks need the stock UI dependency (absent in this sandbox); agent-2 measured 55/56 with it installed. The one failure in both runs is the real heap pin."
+    },
+    {
+      "gate": "descriptor assembly heap",
+      "state": "FAIL, recorded not edited",
+      "reason": "4,444 KB against a 4,096 KB pin after the P2.13 vocabulary promotion (4,275 KB before it). XA-21 stays open; a gate is not edited to make a run green."
+    }
+  ],
+  "gatesMeasuredGreen": [
+    "npm run lego:arch — 26 domains, 15 locked public contracts, every backend import respects its declared boundary",
+    "npm run lego:arch:selftest — 26/26",
+    "npm run lego:foundation — 26 LEGOs, 12 node creation routes",
+    "npm run lego:foundation:selftest — 15/15",
+    "npm run lego:capabilities — 23 REST features vs 83 registered capabilities, owners and phases agree",
+    "npm run lego:scaleout — every finding is a declared, owned exception",
+    "npm run lego:ai:check — .ai in sync: 63 generated, 37 curated, 100 total",
+    "npm run frontend-lego:test — 363/363 in both trees"
+  ]
+}

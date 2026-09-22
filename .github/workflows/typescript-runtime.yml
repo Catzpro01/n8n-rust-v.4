@@ -1,0 +1,97 @@
+name: TypeScript Runtime Gate
+
+# Phase TS-1: gates the TypeScript baseline (apps/n8n-ts + packages/reconstructed-engine
+# + tests/runtime). Rust is untouched by this workflow and keeps its own pipelines.
+#
+# Runs on GitHub-hosted runners because the runtime needs nothing but Node >= 22.18.
+# To run it on the VPS runner instead, change `runs-on` to:
+#   runs-on: [self-hosted, linux, x64, vps-runtime]
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
+    paths:
+      - 'apps/n8n-ts/**'
+      - 'packages/reconstructed-engine/**'
+      - 'tests/runtime/**'
+      - 'tests/fixtures/runtime/**'
+      - 'tests/integration/runtime_*'
+      - 'scripts/**'
+      - 'deploy/docker/**'
+      - 'contracts/runtime-api.contract.md'
+      - '.github/workflows/typescript-runtime.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: typescript-runtime-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    name: Runtime gate (typecheck + unit + real-process suite + single-engine audit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.18'
+
+      - name: Node version
+        run: node -v
+
+      - name: Install dev dependencies (typescript for the typecheck gate)
+        run: npm --prefix apps/n8n-ts ci --no-audit --no-fund
+
+      - name: TypeScript runtime gate (5 stages)
+        run: bash tests/integration/runtime_gate.sh
+
+      - name: Fixture snapshots are up to date
+        run: node tests/runtime/helpers/update-fixtures.mjs --check
+
+      - name: Packaging scripts syntax + shell hygiene
+        run: |
+          bash -n scripts/lib/common.sh
+          for script in scripts/install.sh scripts/start.sh scripts/stop.sh scripts/upgrade.sh scripts/rollback.sh scripts/doctor.sh; do
+            bash -n "$script"
+            bash "$script" --help >/dev/null
+          done
+
+      - name: Upload runtime logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-logs
+          path: logs/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  contract:
+    name: Rust workspace untouched by this change set
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Assert the TypeScript change set does not touch Rust or the reference source
+        run: |
+          set -euo pipefail
+          base="${{ github.event.pull_request.base.sha || github.event.before || 'HEAD~1' }}"
+          changed="$(git diff --name-only "$base" HEAD || git diff --name-only HEAD~1 HEAD)"
+          echo "$changed"
+          if echo "$changed" | grep -E '^(crates/|apps/n8n-rust/|Cargo\.(toml|lock)|reference/n8n/)' >/dev/null; then
+            echo "::error::Phase TS-1 must not modify Rust crates, the Rust app or the pinned reference"
+            exit 1
+          fi

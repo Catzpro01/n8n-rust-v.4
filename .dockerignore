@@ -1,0 +1,25 @@
+# Keep the build context small. The image is assembled from what the Dockerfile
+# copies explicitly: apps/n8n-lego/{bin,src,scripts,data}, packages/reconstructed-engine
+# and deploy/docker/docker-entrypoint.sh.
+.git
+.github
+.arena
+.cache
+/dist
+/node_modules
+**/node_modules
+# repo-level data dir only — apps/n8n-lego/data (roles.json) is needed by the image
+/data
+/reference
+/results
+/tests
+/tools
+/crates
+/target
+/docs
+/apps/n8n-ts
+/apps/n8n-lego/test
+/apps/n8n-lego/vendor
+*.log
+*.tgz
+*.tar.gz
