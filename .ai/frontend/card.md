@@ -62,7 +62,7 @@ it and never contains it, and the two surfaces refuse each other's payloads by n
 
 | Thing | Value |
 | ----- | ----- |
-| Architecture tests | 387 across 34 suites (measured with `npm run frontend-lego:test`); backend comparisons skip *with a reason* unless the tree is present |
+| Architecture tests | 390 across 34 suites (measured with `npm run frontend-lego:test`); backend comparisons skip *with a reason* unless the tree is present |
 | Architecture rules | 29, as data (`frontend.conformance()`), mirrored in contract §19.16 |
 | Surfaces / hooks / units | 12 / 15 (`1.1.0`) / 19 in a 3-level hierarchy |
 | Boot payload | 18,126 B JSON / 24,168 B base64, budget **32 KB**, byte-pinned to P2.5 |

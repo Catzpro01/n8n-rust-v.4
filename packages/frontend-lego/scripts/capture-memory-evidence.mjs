@@ -35,7 +35,10 @@ import {
 import { MEMORY_CONTRACT_ID, MEMORY_DECLARED_VERSION, MEMORY_OPERATION_IDS, MEMORY_PERMISSIONS, MEMORY_QUOTED_VOCABULARIES, MEMORY_SCOPES } from '../src/memory.mjs';
 
 const repo = new URL('../../..', import.meta.url).pathname.replace(/\/$/, '');
-const peerRoot = process.env.N8N_PEER_BACKEND_LEGO_ROOT ?? '/tmp/peer214/apps/n8n-lego/src/lego';
+// A peer tree is produced read-only with
+//   git archive origin/arena/01a0c90d-n8n-rust-v-4 | tar -x -C /tmp/peers/n8n-rust-v.4
+// and nothing here ever writes to it.
+const peerRoot = process.env.N8N_PEER_BACKEND_LEGO_ROOT ?? '/tmp/peers/n8n-rust-v.4/apps/n8n-lego/src/lego';
 const hasPeer = existsSync(`${peerRoot}/manifest/memory.json`) && existsSync(`${peerRoot}/contracts/contract-lock.json`);
 
 // A missing file would silently shrink the count, and a smaller number still looks like a pass.
@@ -121,11 +124,13 @@ const evidence = {
   peerTree: hasPeer ? {
     root: peerRoot,
     branch: QUOTED_FROM.memoryPublication.branch,
-    commit: QUOTED_FROM.memoryPublication.commit,
+    readAt: QUOTED_FROM.memoryPublication.commit,
+    tip: QUOTED_FROM.memoryPublication.tip,
     backendCommit: QUOTED_FROM.memoryPublication.backendCommit,
     lockRows: lockRows(peerLock).length,
     memoryRow: memoryRow(peerLock) ? `${MEMORY_CONTRACT_ID}@${memoryRow(peerLock).version} status=${memoryRow(peerLock).status} owner=${memoryRow(peerLock).owner}` : null,
     howItIsPointedAt: 'N8N_BACKEND_LEGO_ROOT=<git archive origin/arena/01a0c90d-n8n-rust-v-4>/apps/n8n-lego/src/lego',
+    contractFilesChangedAtTip: [],
   } : { skipped: `no peer tree at ${peerRoot} — the eleven moved sets are then announced as a bounded non-comparison instead of a pass` },
   contract: {
     id: MEMORY_CONTRACT_ID,
@@ -172,6 +177,35 @@ const evidence = {
     notPublished: surface.publication.notPublished,
     policy: 'publication.rows carries only what THIS tree publishes, so the surface cannot claim a publication it does not hold; the peer rows are evidence, recorded verbatim, in a separate block.',
   },
+  /** The peer branch advanced while this consumption was in flight; both commits are recorded. */
+  peerTipAdvance: {
+    readAt: 'f11aee01',
+    tip: '2dcd8570',
+    changed: ['apps/n8n-lego/test/lego-memory.test.mjs', 'packages/frontend-lego/test/34-memory.test.mjs', 'docs/n8n-lego/decisions/cross-agent-decisions.json'],
+    contractFilesChanged: [],
+    verified: 'no contract file, lock row, manifest value or registry entry changed between the two commits, so the quote stands at both',
+    collision: 'both branches ADD packages/frontend-lego/test/34-memory.test.mjs — 26 tests here (the Memory surface suite, the A29 enforcedBy), 5 on the peer branch (backend-side doc coupling); the frontend path stays the frontend suite and the peer checks worth keeping are asserted here against the tree under test',
+  },
+  mergeSimulation: {
+    how: 'git archive 2dcd8570 (peer backend + register) with this branch\'s frontend files overlaid — the tree the manager will produce if the two drafts merge with the frontend file winning the same-path add',
+    frontendSuite: '390 tests, 389 pass, 0 fail, 1 skip',
+    backendMemorySuite: '20 tests, 20 pass, 0 fail',
+    gates: 'lego:ai:check OK, lego:arch OK, lego:capabilities OK, lego:foundation OK',
+    foundAndFixed: 'exactly one failure before the fix: test/32 "the register keeps the strategic phases, the ladder and the merge protocol" demanded a PLANNED milestone titled Memory, which agent-2\'s register edit (P2.14 Memory -> in-progress) makes false. Latent on this branch because it carries protected main\'s register copy. Replaced by an assertion that holds for both registers and is stronger: Memory is named, is P2.14, carries its real status, is not claimed complete, currentMilestone is a milestone being worked on, and the unstarted milestones are still planned',
+  },
+  peerClaimsMeasured: {
+    agent2FrontendClaim: '365/367 pass, 2 fail',
+    measuredPeerTreeDefaultEnv: '367 tests, 365 pass, 2 fail — the count reproduces exactly',
+    measuredPeerTreeOwnBackendEnv: '367 tests, 364 pass, 3 fail',
+    failingTestsMeasured: [
+      'test/29 "every quoted value is the value the backend declares" (aiFoundationCapability — resolved on this branch)',
+      'test/32 "the register keeps the strategic phases, the ladder and the merge protocol" (the Memory ladder, provoked by agent-2\'s own register edit; resolved on this branch)',
+      'test/32 "if the backend publishes the rows, this surface must find them" (appears only when the peer tree is pointed at its own backend — the P2.13 publication pointer, resolved on this branch)',
+    ],
+    note: 'the two named drifts are correct in substance; the second one is the register-ladder assertion, not the "no Memory store" assertion, which is what the flat count alone does not show',
+    arbiterChronology: 'XA-12 arbiter is a manager string on protected main and in this tree (test/24 passes 10/10 throughout). agent-2\'s f11aee01 set it to null for a still-open row, which fails test/24 line 196 in their own tree (measured 9/10 at f11aee01); 2dcd8570 restores a string and their tree is 10/10 again — self-introduced and self-fixed on the peer branch, not a pre-existing defect',
+    pristineMainBaseline: '362 tests, 362 pass (git archive main), so every failure above is introduced by the branch under test and none is inherited',
+  },
   driftAudit: [
     {
       reported: 'aiFoundationCapability drift for ai.memory',
@@ -191,6 +225,18 @@ const evidence = {
       where: 'packages/frontend-lego/manifest/context-session.json, packages/frontend-lego/test/29-alignment.test.mjs, packages/frontend-lego/manifest/memory.json',
       status: 'resolved',
       what: 'the Context & Session catalog listed `ai.memory.*` as unpublished; it now names only the two names that really are unpublished (`ai.memory.traverse`, `ai.memory.relate`) and the assertion checks the bound in both directions. The Memory catalog records the publication (`declared-not-locked` here, the peer row verbatim there) and the alignment block names XA-12 without resolving it',
+    },
+    {
+      reported: 'the future Memory ladder (measured precisely: test/32 register assertion, provoked by the P2.14 register edit)',
+      where: 'packages/frontend-lego/test/32-context-session.test.mjs',
+      status: 'resolved (latent on this branch, real on the merged tree)',
+      what: 'the assertion required a milestone titled Memory among the rows whose status is `planned`; agent-2\'s register edit sets P2.14 to `in-progress`, so it failed on their tree and would have failed on the merge. It is now asserted as the ladder claim actually is: Memory is named, is P2.14, carries the register\'s real status (planned or in-progress), is not claimed complete, currentMilestone names a milestone being worked on, and Workspace / Agent Machine / P2.17+ are still planned. Verified against protected main\'s register and agent-2\'s register',
+    },
+    {
+      reported: 'not reported by agent-2: the generated .ai contract matrix and the tree it is generated from',
+      where: 'packages/frontend-lego/test/34-memory.test.mjs, .ai/master/AI_CONTRACT_MATRIX.md',
+      status: 'resolved (new coupling check, written for the tree under test)',
+      what: 'agent-2\'s frontend copy of test/34 asserts the matrix says `ai.memory … locked @ 1.0.0 / IMPLEMENTED`; that is generated output and this tree publishes no ai.memory row, so its matrix correctly says `publicationPending` / PLANNED — a fixed value would copy one tree\'s state instead of coupling the document to it. The new check asserts the file is GENERATED, carries a Memory row, and that the row agrees with THIS tree\'s lock in both directions; it passes here, on the peer branch and on the merged tree, and fails on a hand-edit or a drift between lock and matrix',
     },
     {
       reported: 'one assertion/manifest alignment still referring to the pre-agent-2 state',
