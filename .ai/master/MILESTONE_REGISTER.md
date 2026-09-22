@@ -24,7 +24,7 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 | `P2.11` | Reconciliation / foundation cleanup | A | **complete** | P2.12 |
 | `P2.12` | Skill | B | **complete** | P2.13 |
 | `P2.13` | Context & Session | B | **in-progress** | P2.14 |
-| `P2.14` | Memory | B | **planned** | P2.15 |
+| `P2.14` | Memory | B | **in-progress** | P2.15 |
 | `P2.15` | Workspace | B | **planned** | P2.16 |
 | `P2.16` | Agent Machine / execution foundation | B | **planned** | P2.17 |
 | `P2.17+` | Later capability ladder | C-F | **planned** | — |

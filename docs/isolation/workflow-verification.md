@@ -1,23 +1,23 @@
 # Workflow LEGO — Phase 2 isolation verification
 
-Generated: 2026-09-17T12:42:51.169Z · reference n8n 2.9.4 (`b6dc2787c456`)
+Generated: 2026-09-22T12:18:57.060Z · reference n8n 2.9.4 (`b6dc2787c456`)
 
-**Gates: 11/11 PASS** · **BEHAVIOR CHANGE: NONE DETECTED** · **RUST IMPLEMENTATION: NOT STARTED**
+**Gates: 5/10 PASS** · **BEHAVIOR CHANGE: ISOLATION FAILED** · **RUST IMPLEMENTATION: NOT STARTED**
 
 ## Requested gate checklist
 
 | gate | status | evidence |
 | :--- | :--- | :--- |
-| TypeScript build PASS | PASS | G06: tsc -p .extract/tsconfig.json → 0 errors<br>G07: tsc --noEmit → 0 errors |
-| unit tests PASS | PASS | G08: # cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 11708.056862 |
-| workflow load PASS | PASS | G11: 7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS |
-| workflow save PASS | PASS | G11: 7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS |
-| manual execution PASS | PASS | G11: 7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS |
-| 1-node PASS | PASS | G11: 7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS |
-| linear workflow PASS | PASS | G11: 7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS |
-| webhook PASS | PASS | G11: 7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS |
-| execution persistence PASS | PASS | G11: 7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS |
-| reference smoke test 11/11 PASS (VPS baseline; here: hash-pinned + live engine re-verified) | PASS | G04: Reference integrity check: PASS (15050 files, root f8da35180669d798…)<br>G11: 7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS |
+| TypeScript build PASS | FAIL | G06: typescript missing — run: npm install (packages/workflow-lego)<br>G07: /home/user/n8n-rust-v.4/packages/workflow-lego/node_modules/.bin/tsc --noEmit -p /home/user/n8n-rust-v.4/packages/workflow-lego/tsconfig.json exited null |
+| unit tests PASS | FAIL | G08: /usr/local/bin/node --test test/*.test.mjs exited 1 |
+| workflow load PASS | PASS |  |
+| workflow save PASS | PASS |  |
+| manual execution PASS | PASS |  |
+| 1-node PASS | PASS |  |
+| linear workflow PASS | PASS |  |
+| webhook PASS | PASS |  |
+| execution persistence PASS | PASS |  |
+| reference smoke test 11/11 PASS (VPS baseline; here: hash-pinned + live engine re-verified) | PASS | G04: Reference integrity check: PASS (15050 files, root f8da35180669d798…) |
 
 ## All gates
 
@@ -28,12 +28,11 @@ Generated: 2026-09-17T12:42:51.169Z · reference n8n 2.9.4 (`b6dc2787c456`)
 | G03 | port surface matches the imports of the owned sources | PASS | Required port surface (from actual imports in owned files):  @lego/ports/checksum-digest  [value]    symbols : jsSHA    used by : workflow-checksum (jssha) @lego/ports/config  [value]    symbols : getGlobalState    used  |
 | G04 | reference tree byte-identical to the pinned hashes | PASS | Reference integrity check: PASS (15050 files, root f8da35180669d798…) |
 | G05 | isolation extraction (pure import rewrites only) | PASS | isolated unit written to packages/workflow-lego/.extract   owned files copied : 10   port rewrites      : 25 across 10 files     @lego/ports/checksum-digest : 1     @lego/ports/config : 1     @lego/ports/constants : 1    |
-| G06 | TypeScript build PASS (isolated unit, ports only) | PASS | tsc -p .extract/tsconfig.json → 0 errors |
-| G07 | TypeScript build PASS (versioned boundary/ports/facade) | PASS | tsc --noEmit → 0 errors |
-| G08 | unit tests PASS (boundary, extraction, equivalence, strict isolation, surface) | PASS | # cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 11708.056862 |
-| G09 | BEFORE vs AFTER digest: BEHAVIOR CHANGE NONE | PASS | 252 section comparisons across 18 workflows — 0 differences · strict: 218 identical, 34 in declared port sections |
-| G10 | strict port mode: no hidden coupling to the reference runtime | PASS | # cancelled 0 · # skipped 0 · # todo 0 · # duration_ms 1470.989151 |
-| G11 | live verification: workflow load / save / 1-node / linear / webhook / execution record | PASS | 7/7 PASS · R0:PASS R1:PASS R2:PASS R3:PASS R4:PASS R5:PASS R6:PASS |
+| G06 | TypeScript build PASS (isolated unit, ports only) | FAIL | typescript missing — run: npm install (packages/workflow-lego) |
+| G07 | TypeScript build PASS (versioned boundary/ports/facade) | FAIL | /home/user/n8n-rust-v.4/packages/workflow-lego/node_modules/.bin/tsc --noEmit -p /home/user/n8n-rust-v.4/packages/workflow-lego/tsconfig.json exited null |
+| G08 | unit tests PASS (boundary, extraction, equivalence, strict isolation, surface) | FAIL | /usr/local/bin/node --test test/*.test.mjs exited 1 go/test/05-surface-parity.test.mjs:40:1'   failureType: 'testCodeFailure'   error: |-     Cannot find module '/home/user/n8n-rust-v.4/packages/workflow-lego/.extract/di |
+| G09 | BEFORE vs AFTER digest: BEHAVIOR CHANGE NONE | FAIL | /usr/local/bin/node /home/user/n8n-rust-v.4/tools/model-digest-runner.cjs --source reference --mode reference --out /tmp/lego-gate-nr0kJD/before.json exited 1  TypeError [ERR_INVALID_ARG_VALUE]: The argument 'filename' m |
+| G10 | strict port mode: no hidden coupling to the reference runtime | FAIL | /usr/local/bin/node --test test/04-strict-isolation.test.mjs exited 1 4-strict-isolation.test.mjs:53:1     ModuleJob.run (node:internal/modules/esm/module_job:343:25)     async onImport.tracePromise.__proto__ (node:inter |
 
 ## Live verification (reference execution engine)
 

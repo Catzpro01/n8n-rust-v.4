@@ -14,6 +14,7 @@
 | `ai.artifact` | `ai-foundation` |
 | `ai.context` | `ai-foundation` |
 | `ai.decision` | `ai-foundation` |
+| `ai.memory` | `ai-foundation` |
 | `ai.model-gateway` | `ai-foundation` |
 | `ai.skill` | `ai-foundation` |
 | `ai.tool-gateway` | `ai-foundation` |
@@ -161,6 +162,10 @@ this table instead of guessing from a URL shape.
 | `ai.skill.skill.resolve` | `ai-foundation` | call | `ai:skill:read` | yes | implemented |
 | `ai.skill.skill.describe` | `ai-foundation` | call | `ai:skill:read` | yes | implemented |
 | `ai.skill.skill.validate-selection` | `ai-foundation` | call | `ai:skill:select` | yes | implemented |
+| `ai.memory.memory.remember` | `ai-foundation` | call | `ai:memory:write` | no | implemented |
+| `ai.memory.memory.recall` | `ai-foundation` | call | `ai:memory:read` | yes | implemented |
+| `ai.memory.memory.list` | `ai-foundation` | call | `ai:memory:read` | yes | implemented |
+| `ai.memory.memory.forget` | `ai-foundation` | call | `ai:memory:write` | yes | implemented |
 | `compat.route.match` | `compatibility` | call | `compat:read` | yes | implemented |
 | `compat.response-envelope.wrap` | `compatibility` | call | `compat:read` | yes | implemented |
 | `compat.error-shape.wrap` | `compatibility` | call | `compat:read` | yes | implemented |

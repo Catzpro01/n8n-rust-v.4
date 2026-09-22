@@ -41,8 +41,8 @@
       "status": "resolved",
       "resolution": "`execution` is the canonical backend identity: arena/01a0c521 declares domain `execution` with capabilities `execution.run-manual`, `execution.history`, `execution.partial`, `execution.queue`. There is no `executions` domain. The frontend's `executions` is a UI *surface* id (a route group: /home/executions) and its `backend.capability` field already points at `execution`, so no second identity exists.",
       "evidence": [
-        "packages/frontend-lego/manifest/surfaces.json → surfaces[executions].backend.capability = \"execution\"",
-        "arena/01a0c521 domains.json → execution.* capabilities"
+        "packages/frontend-lego/manifest/surfaces.json \u2192 surfaces[executions].backend.capability = \"execution\"",
+        "arena/01a0c521 domains.json \u2192 execution.* capabilities"
       ],
       "frontendBehaviour": "The frontend never treats a surface id as a capability id: capability ids are normalised and compared as `<domain>.<name>` (vocabulary.mjs), and a surface whose backend binding is `none` has no capability at all.",
       "arbiter": null,
@@ -56,8 +56,8 @@
       "blockingLevel": "none",
       "date": "2026-09-22",
       "references": [
-        "packages/frontend-lego/manifest/surfaces.json → surfaces[executions].backend.capability = \"execution\"",
-        "arena/01a0c521 domains.json → execution.* capabilities"
+        "packages/frontend-lego/manifest/surfaces.json \u2192 surfaces[executions].backend.capability = \"execution\"",
+        "arena/01a0c521 domains.json \u2192 execution.* capabilities"
       ]
     },
     {
@@ -96,10 +96,10 @@
       "id": "XA-3",
       "question": "Who owns the 501 unsupported-feature map?",
       "status": "resolved",
-      "resolution": "agent-01, as part of the `compatibility` domain. arena/01a0c521's contract lock already lists contract `compat.http` (owner `agent-1`, domain `compatibility`, version 1.0.0) whose surface includes `src/compat/capability.mjs` — the file the map lives in — with consumers `auth, settings, legacy-rest, runtime-host, agent-1/frontend`. apps/n8n-lego/src/compat/capability.mjs is byte-identical on both branches.",
+      "resolution": "agent-01, as part of the `compatibility` domain. arena/01a0c521's contract lock already lists contract `compat.http` (owner `agent-1`, domain `compatibility`, version 1.0.0) whose surface includes `src/compat/capability.mjs` \u2014 the file the map lives in \u2014 with consumers `auth, settings, legacy-rest, runtime-host, agent-1/frontend`. apps/n8n-lego/src/compat/capability.mjs is byte-identical on both branches.",
       "evidence": [
-        "arena/01a0c521 contract-lock.json → compat.http (owner agent-1)",
-        "git diff main..arena/01a0c521 -- apps/n8n-lego/src/compat/capability.mjs → no change"
+        "arena/01a0c521 contract-lock.json \u2192 compat.http (owner agent-1)",
+        "git diff main..arena/01a0c521 -- apps/n8n-lego/src/compat/capability.mjs \u2192 no change"
       ],
       "frontendBehaviour": "The map stays the application-side registry of known-but-unimplemented features; the frontend consumes it as *data* through `backendAvailabilityFrom({ unsupportedFeatures })` and tags each derived fact with `source: 'compat-unsupported-map'`. It is never imported by the frontend package.",
       "arbiter": null,
@@ -108,13 +108,13 @@
         "compatibility",
         "frontend"
       ],
-      "currentInterpretation": "agent-01, as part of the `compatibility` domain. arena/01a0c521's contract lock already lists contract `compat.http` (owner `agent-1`, domain `compatibility`, version 1.0.0) whose surface includes `src/compat/capability.mjs` — the file the map lives in — with consumers `auth, settings, legacy-rest, runtime-host, agent-1/frontend`. apps/n8n-lego/src/compat/capability.mjs is byte-identical on both branches.",
+      "currentInterpretation": "agent-01, as part of the `compatibility` domain. arena/01a0c521's contract lock already lists contract `compat.http` (owner `agent-1`, domain `compatibility`, version 1.0.0) whose surface includes `src/compat/capability.mjs` \u2014 the file the map lives in \u2014 with consumers `auth, settings, legacy-rest, runtime-host, agent-1/frontend`. apps/n8n-lego/src/compat/capability.mjs is byte-identical on both branches.",
       "decisionRequired": null,
       "blockingLevel": "none",
       "date": "2026-09-22",
       "references": [
-        "arena/01a0c521 contract-lock.json → compat.http (owner agent-1)",
-        "git diff main..arena/01a0c521 -- apps/n8n-lego/src/compat/capability.mjs → no change"
+        "arena/01a0c521 contract-lock.json \u2192 compat.http (owner agent-1)",
+        "git diff main..arena/01a0c521 -- apps/n8n-lego/src/compat/capability.mjs \u2192 no change"
       ]
     },
     {
@@ -123,8 +123,8 @@
       "status": "resolved",
       "resolution": "Yes, now. The file is frontend-generated (it does not exist on arena/01a0c521), and its entries previously said `owner: \"unknown\"`. Every row now names a real owner, and a row without one fails test/12.",
       "evidence": [
-        ".ai/index/contracts.json → every entry has a non-empty owner",
-        "packages/frontend-lego/test/12-knowledge.test.mjs → owner is required"
+        ".ai/index/contracts.json \u2192 every entry has a non-empty owner",
+        "packages/frontend-lego/test/12-knowledge.test.mjs \u2192 owner is required"
       ],
       "frontendBehaviour": "The frontend contract catalog distinguishes `own` (agent-01), `foreign` (the owning domain's agent) and `legacy` (superseded in place) rows.",
       "arbiter": null,
@@ -137,8 +137,8 @@
       "blockingLevel": "none",
       "date": "2026-09-22",
       "references": [
-        ".ai/index/contracts.json → every entry has a non-empty owner",
-        "packages/frontend-lego/test/12-knowledge.test.mjs → owner is required"
+        ".ai/index/contracts.json \u2192 every entry has a non-empty owner",
+        "packages/frontend-lego/test/12-knowledge.test.mjs \u2192 owner is required"
       ]
     },
     {
@@ -386,7 +386,7 @@
         "ai-foundation",
         "frontend"
       ],
-      "currentInterpretation": "Narrowed by the P2.12 finalize: the first half of the question is answered — `ai.skill@1.0.0` is published in the contract lock (owner manager, domain ai-foundation, status implemented), so a Skill contract exists and the frontend consumes it. What remains open is the modelling question: whether Skill ultimately belongs under `ai-foundation`. `ai.skill` was declared inside the existing domain precisely so a later ruling moves a contract rather than deletes a domain.",
+      "currentInterpretation": "Narrowed by the P2.12 finalize: the first half of the question is answered \u2014 `ai.skill@1.0.0` is published in the contract lock (owner manager, domain ai-foundation, status implemented), so a Skill contract exists and the frontend consumes it. What remains open is the modelling question: whether Skill ultimately belongs under `ai-foundation`. `ai.skill` was declared inside the existing domain precisely so a later ruling moves a contract rather than deletes a domain.",
       "decisionRequired": "manager: publish `ai.skill` (id, version, procedure, capability refs, validators, token budget) or state that a skill is a frontend presentation concept only",
       "blockingLevel": "phase",
       "date": "2026-09-22",
@@ -403,32 +403,37 @@
       "question": "Is there a durable memory store, or is memory only loaded context?",
       "status": "open-for-manager",
       "resolution": null,
-      "finding": "`ai-foundation.json` publishes the context contract (scopes, selective load, compaction) and nothing about memory: no `ai.memory` capability id, no memory fields in the contract lock. The honest sources for a Memory surface today are loaded context (`ai.context`), decisions (`ai.decision`) and artifacts (`ai.artifact`).",
+      "finding": "ai.memory@1.0.0 is now published as a bounded, provider-replaceable Memory LEGO with four operations (memory.remember/recall/list/forget), five scopes, six kinds, five retentions and explicit graph vocabulary. The provider boundary separates the public contract from storage (Obsidian as provider adapter, never source of truth). No vector search, embedding or inference is introduced. The remaining deferred items are relevance-ranked traversal and retention-policy enforcement, which stay future stages and do not block the bounded P2.14 milestone.",
       "evidence": [
-        "arena/01a0c521 @ 6f7b66da ai-foundation.json -> context block (scopes, selectiveLoadRule, compactionRule), no memory concept",
-        "arena/01a0c521 @ 6f7b66da domains.json -> no capability named memory",
-        "arena/01a0c521 @ 6f7b66da contracts/contract-lock.json -> no ai.memory row"
+        "apps/n8n-lego/src/lego/manifest/memory.json @ 1.0.0 \u2014 canonical bounded memory contract",
+        "apps/n8n-lego/src/lego/memory.mjs @ 1.0.0 \u2014 bounded manager with InMemoryProvider",
+        "apps/n8n-lego/src/lego/manifest/ai-foundation.json -> memory block",
+        "apps/n8n-lego/src/lego/manifest/domains.json -> ai.memory capability with four operations",
+        "apps/n8n-lego/src/lego/contracts/contract-lock.json -> ai.memory 1.0.0 implemented",
+        "apps/n8n-lego/test/lego-memory.test.mjs -> 19/19 focused tests"
       ],
-      "frontendBehaviour": "`Memory 12 relevant` counts only what is loaded plus decisions and artifacts, and says so in advanced details; no store, no embeddings and no vector search are read, and the memory graph stays a level-3 view.",
+      "frontendBehaviour": "Frontend may now consume ai.memory@1.0.0 for explicit Memory listing/detail states. Until frontend P2.14 lands, the fallback remains loaded context+decisions+artifacts count; no store dump is ever rendered.",
       "informedBy": [
-        ".ai/master/AI_FRONTEND_CONTRACT_MATRIX.md",
-        ".ai/master/AI_UX_PROGRESSIVE_DISCLOSURE.md"
+        "apps/n8n-lego/src/lego/manifest/memory.json",
+        "apps/n8n-lego/src/lego/memory.mjs",
+        "apps/n8n-lego/src/lego/manifest/ai-foundation.json",
+        "apps/n8n-lego/src/lego/contracts/contract-lock.json"
       ],
-      "arbiter": "manager: publish `ai.memory` (entry kinds, relevance source, retention) or declare that memory is not a backend concept",
-      "blocks": "P7 (memory list and `Open Memory Graph`): specified but gated",
+      "arbiter": null,
+      "blocks": "nothing \u2014 P2.14 bounded Memory unblocks P7 memory list/graph behind the explicit contract; relevance-ranked traversal remains future",
       "owner": "manager",
       "affectedDomains": [
         "ai-foundation",
         "frontend"
       ],
-      "currentInterpretation": "`Memory 12 relevant` counts only what is loaded plus decisions and artifacts, and says so in advanced details; no store, no embeddings and no vector search are read, and the memory graph stays a level-3 view.",
-      "decisionRequired": "manager: publish `ai.memory` (entry kinds, relevance source, retention) or declare that memory is not a backend concept",
-      "blockingLevel": "phase",
+      "currentInterpretation": "Bounded Memory is implemented as persistent knowledge with its own provider boundary; the four operations are the complete P2.14 published surface. XA-12 remains open-for-manager for the deferred relevance-ranked traversal and retention-policy decisions, which do not block this milestone.",
+      "decisionRequired": "manager: publish or keep open the deferred relevance-ranked traversal and retention-policy decisions; confirm that the bounded four-operation surface satisfies P2.14",
+      "blockingLevel": "none",
       "date": "2026-09-22",
       "references": [
-        "arena/01a0c521 @ 6f7b66da ai-foundation.json -> context block (scopes, selectiveLoadRule, compactionRule), no memory concept",
-        "arena/01a0c521 @ 6f7b66da domains.json -> no capability named memory",
-        "arena/01a0c521 @ 6f7b66da contracts/contract-lock.json -> no ai.memory row"
+        "apps/n8n-lego/src/lego/manifest/memory.json @ 1.0.0 -> bounded contract",
+        "apps/n8n-lego/src/lego/memory.mjs @ 1.0.0 -> provider-replaceable implementation",
+        "apps/n8n-lego/test/lego-memory.test.mjs -> 18 focused tests"
       ]
     },
     {
@@ -634,7 +639,7 @@
       "id": "XA-19",
       "question": "Which Skill operation set and contract version are canonical, now that an implementation exists?",
       "status": "resolved",
-      "resolution": "Resolved by adopting the actual tested P2.12 shape rather than the larger proposed one. Canonical contract is ai.skill@1.0.0, owner manager, on the existing ai-foundation domain, now locked in apps/n8n-lego/src/lego/contracts/contract-lock.json. Canonical published operations are exactly four: skill.list, skill.resolve, skill.describe, skill.validate-selection. skill.register, skill.select, skill.load and skill.release were NOT published: they are internal lifecycle methods of the registry object. Publishing load would make lazy discovery a caller concern and defeat it; publishing register would let any caller mutate the vocabulary other consumers negotiate against. There is no execute operation and no ai:skill:execute permission, because execution is not a skill operation and no published name may imply that it is. The drift this row records — documents describing a Skill surface that did not match the code — is closed by locking the implemented shape so consumers have one published vocabulary.",
+      "resolution": "Resolved by adopting the actual tested P2.12 shape rather than the larger proposed one. Canonical contract is ai.skill@1.0.0, owner manager, on the existing ai-foundation domain, now locked in apps/n8n-lego/src/lego/contracts/contract-lock.json. Canonical published operations are exactly four: skill.list, skill.resolve, skill.describe, skill.validate-selection. skill.register, skill.select, skill.load and skill.release were NOT published: they are internal lifecycle methods of the registry object. Publishing load would make lazy discovery a caller concern and defeat it; publishing register would let any caller mutate the vocabulary other consumers negotiate against. There is no execute operation and no ai:skill:execute permission, because execution is not a skill operation and no published name may imply that it is. The drift this row records \u2014 documents describing a Skill surface that did not match the code \u2014 is closed by locking the implemented shape so consumers have one published vocabulary.",
       "historicalFinding": "Agent 1's frontend planning documents described Skill as publicationPending under XA-11 with a broader, proposed operation surface, while the P2.12 backend implemented and tested a narrower four-operation registry. Two descriptions of the same concept existed and a consumer had no way to tell which was authoritative.",
       "historicalEvidenceCommit": "6f7b66da",
       "historicalEvidence": [
@@ -711,16 +716,16 @@
       "question": "Which contract rows and which rollover/continuation vocabulary does the manager publish for Context & Session, so the frontend binds to a lock row instead of to a version claim?",
       "status": "open-for-manager",
       "resolution": null,
-      "finding": "Context & Session is one LEGO with two declared contracts and NO publication of its own. `manifest/ai-foundation.json` declares both shapes (`context`: 7 scopes, 9 fields, selective-load and compaction rules; `agentSession`: 10 fields, 3 references, 7 states, the bounded-size rule) and `manifest/domains.json` registers both as `contract-only` capabilities of the `ai-foundation` domain with 5 published operations in total (`ai.context.load`, `ai.context.compact`, `ai.agent-session.create`, `ai.agent-session.status`, `ai.agent-session.close`) and 5 permission words. `manifest/ai-lego-set.json#lego[id=context-session]` CLAIMS `ai.context@1.0.0, ai.agent-session@1.0.0` in its `versioning` string — but `contracts/contract-lock.json` publishes no row for either contract (15 rows at e754c5df: 10 lego.*/kernel/reference/auth rows, ai.foundation@1.0.0 and ai.skill@1.0.0). And nothing anywhere in the backend tree publishes the three vocabularies P2.13 is defined by: the rollover phases (NORMAL -> PREPARE -> ROLLOVER), the continuation package sections, and the continuity verification results (verified / degraded / failed). Those exist today only as the manager's P2.13 architecture ruling and as frontend planning prose (`.ai/master/CONTEXT_SESSION_MEMORY_PLAN.md`), which is exactly the shape XA-19 was raised for on the Skill side: a specification and an implementation with no published vocabulary between them. P2.13 UPDATE (2026-09-22, after agent-2 pushed its branch): agent-2 published both rows on `arena/01a0c6b5-n8n-rust-v-4` @ `fb254f32` — `ai.context@1.0.0` and `ai.agent-session@1.0.0`, owner `manager`, domain `ai-foundation`, status `implemented`, 17 locked rows in total — plus the contract surface module `apps/n8n-lego/src/lego/context-session.mjs` (`CONTEXT_SCOPES`, `CONTEXT_OPERATIONS` = load/compact/rollover/rehydrate/verify, `CONTEXT_MANAGER_STATES` = NORMAL/PREPARE/ROLLOVER, `CONTINUATION_FIELDS`, `CONTINUATION_VERIFICATION` = verified/degraded/failed, `AGENT_SESSION_STATES`, `AGENT_SESSION_OPERATIONS`, `AGENT_SESSION_TRANSITIONS`) re-exported by `context.mjs` and `agent-session.mjs`, and it moved `domains.json` to five `implemented` context operations. The frontend consumed that publication in the same cycle: the quoted set `contextOperation` went from 2 to 5 values, `continuationSection` was re-pointed from the AI-set manifest at the published `CONTINUATION_FIELDS`, `contextRolloverPhase` and `continuationVerification` were PROMOTED out of `PENDING_PUBLICATIONS` into quoted sets (values identical to the ruling), and `aiLegoStatus` adopted the sixth maturity word `in-progress` that agent-2 added to `statusVocabulary`. Two differences remain and are the manager's to rule: (1) `continuationSection` — the published contract spells two of the fourteen sections `toolStateReferences` and `importantReferences` while `ai-lego-set.json#lego[id=context-session].continuationPackage` still spells them `toolState` and `refs`, so one backend file contradicts the other; the frontend quotes the published contract and records the manifest spelling verbatim. (2) `contextOperation` — protected main still registers two operations `contract-only` while the peer branch registers five `implemented`; until the merge, a frontend lock that quotes five and a main tree that declares two are both truthful, which is why `test/29` and `test/32` bound the comparison to a tree that carries the publication and report the exact difference against one that does not.",
+      "finding": "Context & Session is one LEGO with two declared contracts and NO publication of its own. `manifest/ai-foundation.json` declares both shapes (`context`: 7 scopes, 9 fields, selective-load and compaction rules; `agentSession`: 10 fields, 3 references, 7 states, the bounded-size rule) and `manifest/domains.json` registers both as `contract-only` capabilities of the `ai-foundation` domain with 5 published operations in total (`ai.context.load`, `ai.context.compact`, `ai.agent-session.create`, `ai.agent-session.status`, `ai.agent-session.close`) and 5 permission words. `manifest/ai-lego-set.json#lego[id=context-session]` CLAIMS `ai.context@1.0.0, ai.agent-session@1.0.0` in its `versioning` string \u2014 but `contracts/contract-lock.json` publishes no row for either contract (15 rows at e754c5df: 10 lego.*/kernel/reference/auth rows, ai.foundation@1.0.0 and ai.skill@1.0.0). And nothing anywhere in the backend tree publishes the three vocabularies P2.13 is defined by: the rollover phases (NORMAL -> PREPARE -> ROLLOVER), the continuation package sections, and the continuity verification results (verified / degraded / failed). Those exist today only as the manager's P2.13 architecture ruling and as frontend planning prose (`.ai/master/CONTEXT_SESSION_MEMORY_PLAN.md`), which is exactly the shape XA-19 was raised for on the Skill side: a specification and an implementation with no published vocabulary between them. P2.13 UPDATE (2026-09-22, after agent-2 pushed its branch): agent-2 published both rows on `arena/01a0c6b5-n8n-rust-v-4` @ `fb254f32` \u2014 `ai.context@1.0.0` and `ai.agent-session@1.0.0`, owner `manager`, domain `ai-foundation`, status `implemented`, 17 locked rows in total \u2014 plus the contract surface module `apps/n8n-lego/src/lego/context-session.mjs` (`CONTEXT_SCOPES`, `CONTEXT_OPERATIONS` = load/compact/rollover/rehydrate/verify, `CONTEXT_MANAGER_STATES` = NORMAL/PREPARE/ROLLOVER, `CONTINUATION_FIELDS`, `CONTINUATION_VERIFICATION` = verified/degraded/failed, `AGENT_SESSION_STATES`, `AGENT_SESSION_OPERATIONS`, `AGENT_SESSION_TRANSITIONS`) re-exported by `context.mjs` and `agent-session.mjs`, and it moved `domains.json` to five `implemented` context operations. The frontend consumed that publication in the same cycle: the quoted set `contextOperation` went from 2 to 5 values, `continuationSection` was re-pointed from the AI-set manifest at the published `CONTINUATION_FIELDS`, `contextRolloverPhase` and `continuationVerification` were PROMOTED out of `PENDING_PUBLICATIONS` into quoted sets (values identical to the ruling), and `aiLegoStatus` adopted the sixth maturity word `in-progress` that agent-2 added to `statusVocabulary`. Two differences remain and are the manager's to rule: (1) `continuationSection` \u2014 the published contract spells two of the fourteen sections `toolStateReferences` and `importantReferences` while `ai-lego-set.json#lego[id=context-session].continuationPackage` still spells them `toolState` and `refs`, so one backend file contradicts the other; the frontend quotes the published contract and records the manifest spelling verbatim. (2) `contextOperation` \u2014 protected main still registers two operations `contract-only` while the peer branch registers five `implemented`; until the merge, a frontend lock that quotes five and a main tree that declares two are both truthful, which is why `test/29` and `test/32` bound the comparison to a tree that carries the publication and report the exact difference against one that does not.",
       "evidence": [
         "main @ e754c5df apps/n8n-lego/src/lego/contracts/contract-lock.json -> 15 rows; no ai.context row, no ai.agent-session row (ai.skill@1.0.0 was added by P2.12)",
         "main @ e754c5df apps/n8n-lego/src/lego/manifest/ai-foundation.json -> context { scopes[7], fields[9], selectiveLoadRule, compactionRule } and agentSession { fields[10], references[3], states[7], sizeRule }; no rollover phase, no continuation section, no verification result",
         "main @ e754c5df apps/n8n-lego/src/lego/manifest/domains.json -> capabilities ai.context (status contract-only; operations load, compact; permissions ai:context:read, ai:context:write) and ai.agent-session (status contract-only; operations create, status, close; permissions ai:agent:create, ai:agent:read, ai:agent:control)",
         "main @ e754c5df apps/n8n-lego/src/lego/manifest/ai-lego-set.json -> lego[id=context-session] status contract-only, versioning \"ai.context@1.0.0, ai.agent-session@1.0.0\" (a claim, not a lock row), dependsOn [ai-foundation]; agent-machine and token-usage both dependOn context-session",
-        "manager P2.13 Context & Session brief (2026-09-22) §B2-§B6 -> the ruled shapes: ai.context@1.0.0, ai.agent-session@1.0.0, NORMAL -> PREPARE -> ROLLOVER, the 14 continuation sections, verified/degraded/failed",
+        "manager P2.13 Context & Session brief (2026-09-22) \u00a7B2-\u00a7B6 -> the ruled shapes: ai.context@1.0.0, ai.agent-session@1.0.0, NORMAL -> PREPARE -> ROLLOVER, the 14 continuation sections, verified/degraded/failed",
         "arena/01a0c6b4-n8n-rust-v-4 packages/frontend-lego/src/vocabulary.mjs -> 6 new contract-pinned quotes (contextField, agentSessionReference, contextOperation, agentSessionOperation, contextPermission, agentSessionPermission) and PENDING_PUBLICATIONS carrying the three unpublished sets with this row as their decision"
       ],
-      "frontendBehaviour": "Against protected main @ e754c5df the surface reports `declared-not-locked` with `version: null`, renders no version, and answers every context/session affordance from the declaration it is handed. Against the publication agent-2 pushed at fb254f32 the same code reports `published` at 1.0.0 with no edit, because publication state is derived from the lock rows handed over. The frontend lock now quotes that publication: `contextOperation` = 5 (load, compact, rollover, rehydrate, verify), `continuationSection` re-pointed at the published `CONTINUATION_FIELDS` (so `toolStateReferences`/`importantReferences` are the rendered spellings), `contextRolloverPhase` and `continuationVerification` PROMOTED out of PENDING_PUBLICATIONS into quoted sets of `ai.context@1.0.0` with values identical to the ruling, and `aiLegoStatus` = 6 words including `in-progress`. Still refused: a fabricated token figure, a Memory store, an execution affordance, a transcript, chain-of-thought, a secret, a threshold at 100%, a silent reset, and any operation the UI would have to invent — `continue` is published by nobody, so `Continue session` stays `operation-unpublished` in both trees while naming the published path (ai.context.rollover -> rehydrate -> verify) it does not trigger. The two remaining differences (manifest section spelling; main's two-operation registry) are reported as data by declarationDrift, bounded by tests that only compare against a tree carrying the publication, and are NOT adopted silently.",
+      "frontendBehaviour": "Against protected main @ e754c5df the surface reports `declared-not-locked` with `version: null`, renders no version, and answers every context/session affordance from the declaration it is handed. Against the publication agent-2 pushed at fb254f32 the same code reports `published` at 1.0.0 with no edit, because publication state is derived from the lock rows handed over. The frontend lock now quotes that publication: `contextOperation` = 5 (load, compact, rollover, rehydrate, verify), `continuationSection` re-pointed at the published `CONTINUATION_FIELDS` (so `toolStateReferences`/`importantReferences` are the rendered spellings), `contextRolloverPhase` and `continuationVerification` PROMOTED out of PENDING_PUBLICATIONS into quoted sets of `ai.context@1.0.0` with values identical to the ruling, and `aiLegoStatus` = 6 words including `in-progress`. Still refused: a fabricated token figure, a Memory store, an execution affordance, a transcript, chain-of-thought, a secret, a threshold at 100%, a silent reset, and any operation the UI would have to invent \u2014 `continue` is published by nobody, so `Continue session` stays `operation-unpublished` in both trees while naming the published path (ai.context.rollover -> rehydrate -> verify) it does not trigger. The two remaining differences (manifest section spelling; main's two-operation registry) are reported as data by declarationDrift, bounded by tests that only compare against a tree carrying the publication, and are NOT adopted silently.",
       "informedBy": [
         ".ai/master/CONTEXT_SESSION_MEMORY_PLAN.md",
         ".ai/master/AI_FRONTEND_CONTRACT_MATRIX.md",
@@ -901,7 +906,7 @@
         },
         "frontendAlignment": {
           "comparedWith": "N8N_BACKEND_LEGO_ROOT pointed at the peer tree (git archive origin/arena/01a0c6b5-n8n-rust-v-4)",
-          "test29": "8/8 pass — every quoted value equals the published declaration, including the five sets the publication moved",
+          "test29": "8/8 pass \u2014 every quoted value equals the published declaration, including the five sets the publication moved",
           "identical": [
             "contextScope",
             "contextField",
@@ -929,15 +934,15 @@
       "candidateResolution": {
         "candidate": "Option A of this row, already implemented by the contract owner: publish `ai.context@1.0.0` and `ai.agent-session@1.0.0` as contract-lock rows (17 rows), register the five context operations as `implemented`, and publish the phase machine, the continuation fields and the verification results from the locked surface module.",
         "proposedBy": "agent-2 (publication) + agent-1 (frontend consumption and this comparison)",
-        "acceptedByFrontend": "yes — agent-1 quotes the publication, promoted the two pending word lists, and reports the two remaining differences instead of averaging them",
+        "acceptedByFrontend": "yes \u2014 agent-1 quotes the publication, promoted the two pending word lists, and reports the two remaining differences instead of averaging them",
         "stillRequiredFromManager": [
-          "rule the `continuationSection` spelling: the published contract says `toolStateReferences`/`importantReferences`, `ai-lego-set.json` says `toolState`/`refs` — one of the two must move (agent-1 recommends the manifest follows the contract, since a lock row is a publication and a manifest entry is a plan)",
+          "rule the `continuationSection` spelling: the published contract says `toolStateReferences`/`importantReferences`, `ai-lego-set.json` says `toolState`/`refs` \u2014 one of the two must move (agent-1 recommends the manifest follows the contract, since a lock row is a publication and a manifest entry is a plan)",
           "confirm the five context operations as the public surface (protected main still registers two), so the merged registry, lock row and frontend lock agree",
           "confirm `status: implemented` on both rows against the P2.13 boundary: the implementation is bounded local state (no inference, no provider, no Memory store, no Agent Machine loop), which agent-1 verifies as inside scope",
           "confirm that `AGENT_SESSION_TRANSITIONS` is public vocabulary a consumer may quote (agent-1 currently checks its own terminal-state classification against it rather than quoting it)",
-          "merge order: the frontend lock now quotes a publication that exists only on the peer branch, so the two branches must land together — merging agent-1 alone would leave the frontend quoting rows protected main does not publish"
+          "merge order: the frontend lock now quotes a publication that exists only on the peer branch, so the two branches must land together \u2014 merging agent-1 alone would leave the frontend quoting rows protected main does not publish"
         ],
-        "statusOfThisRow": "open-for-manager — a worker may not close it, and agent-1 has not"
+        "statusOfThisRow": "open-for-manager \u2014 a worker may not close it, and agent-1 has not"
       }
     },
     {
@@ -988,7 +993,7 @@
   ],
   "rules": [
     "A resolved row cites an existing declaration; an open row names its arbiter and what is blocked.",
-    "The frontend never picks a new shared word to end an open question — it fails closed and records the question.",
+    "The frontend never picks a new shared word to end an open question \u2014 it fails closed and records the question.",
     "A finding stays in the record after it is fixed, so the reasoning survives the fix.",
     "The record is checked by tests: the lock is compared against the backend modules when they are present (test/29), and every open row states what the frontend does meanwhile.",
     "A vocabulary quoted from a file with no publishing contract carries a structured `publicationPending` record naming the owner, the domain and a recorded decision - a free-text note is not enough, and an invented contract row is worse.",
@@ -1022,7 +1027,7 @@
     },
     "verifiedAgainstP212Finalize": {
       "measuredAt": "2026-09-22",
-      "backendReference": "arena/01a0c521-n8n-rust-v-4 @ d0a338e4 — the tree that publishes ai.skill@1.0.0",
+      "backendReference": "arena/01a0c521-n8n-rust-v-4 @ d0a338e4 \u2014 the tree that publishes ai.skill@1.0.0",
       "how": "git archive d0a338e4 | tar -x -C /tmp/a2p12f; N8N_BACKEND_LEGO_ROOT=/tmp/a2p12f/apps/n8n-lego/src/lego node --test packages/frontend-lego/test/29-alignment.test.mjs packages/frontend-lego/test/31-skills.test.mjs",
       "result": "27/27 compared, 0 drift, 0 tolerated differences, 0 skipped, 0 fail",
       "note": "XA-19 resolved means REGISTERED_DRIFT is empty: the Skill sets must match the published declaration exactly, and a difference fails the gate instead of being registered after the fact. A tree that publishes no ai.skill row is pointed at, not tolerated: the comparison fails rather than skipping."

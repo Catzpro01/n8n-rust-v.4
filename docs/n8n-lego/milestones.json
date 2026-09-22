@@ -241,7 +241,7 @@
         "agent2Interpretation": "Agent 2 corrected the backend manifest, made session close semantics executable for completed/failed/cancelled outcomes, added declarative transition coverage, and verified the focused backend surface at 18/18.",
         "reason": "The final backend correction closes the identified backend-owned vocabulary discrepancy. A correct cross-agent rerun against the Agent 1 tree at c5ff5870 and Agent 2 fa18ba76 is 66/68 because two Agent 1 assertions still expect the historical registered divergence; Agent 1 must fetch/review and refresh its own evidence. No backend implementation item remains dangling.",
         "requiredDecision": "Manager must still resolve XA-20 publication/locking semantics and perform RECONCILIATION PASS, then MERGE PASS against protected main. XA-21 remains open; its 4,096 KB pin must not be edited.",
-        "blockingTest": "N8N_BACKEND_LEGO_ROOT=/home/user/n8n-rust-v.4/apps/n8n-lego/src/lego node --test packages/frontend-lego/test/29-alignment.test.mjs packages/frontend-lego/test/32-context-session.test.mjs packages/frontend-lego/test/33-milestones.test.mjs — 68 tests, 66 pass, 2 fail; failures are the Agent 1 historical divergence assertions after the backend correction.",
+        "blockingTest": "N8N_BACKEND_LEGO_ROOT=/home/user/n8n-rust-v.4/apps/n8n-lego/src/lego node --test packages/frontend-lego/test/29-alignment.test.mjs packages/frontend-lego/test/32-context-session.test.mjs packages/frontend-lego/test/33-milestones.test.mjs \u2014 68 tests, 66 pass, 2 fail; failures are the Agent 1 historical divergence assertions after the backend correction.",
         "historicalSuperseded": {
           "preFinalBackendCorrection": "The earlier 68/68 result was before fa18ba76 and is not the final backend-correction rerun.",
           "originalConflict": "The earlier 63/68 result is superseded by Agent 1 publication adaptation and is not current alignment evidence."
@@ -384,34 +384,113 @@
       "id": "P2.14",
       "title": "Memory",
       "phase": "B",
-      "status": "planned",
+      "status": "in-progress",
       "owner": "manager",
-      "backendOwner": "manager-designated later",
+      "backendOwner": "agent-2",
       "frontendOwner": "agent-1",
       "dependencies": [
         "P2.13 Context & Session foundation"
       ],
       "inputs": [
         "P2.13 verified context replacement boundary",
-        "memory contract decision"
+        "ai.memory declaration in ai-lego-set",
+        "XA-12 memory publication decision"
       ],
       "deliverables": [
-        "persistent memory contract and implementation plan"
+        "ai.memory@1.0.0",
+        "bounded memory manager (remember/recall/list/forget)",
+        "scope-isolated deterministic retrieval with pagination",
+        "integrity (sha256 canonical checksum) and size bounds",
+        "explicit provider boundary (InMemoryProvider, replaceable)",
+        "scope isolation and sensitive-data rejection",
+        "backend tests and contract locks"
       ],
-      "implementationBoundary": "Memory survives context replacement. It is not part of P2.13 and must not be smuggled into context/session state.",
+      "implementationBoundary": "Memory survives context replacement, scope-isolated and provider-replaceable. Four operations only: remember/recall/list/forget. No vector search, no embedding, no model/Provider dependency, no transcript store, no automatic retention expiry, no memory-to-context auto-injection, no Workspace/MCP/Runtime. Context and Session remain independent.",
       "testsGates": [
-        "planned after contract publication"
+        "apps/n8n-lego/test/lego-memory.test.mjs",
+        "lego:arch",
+        "lego:arch:selftest",
+        "lego:foundation",
+        "lego:foundation:selftest",
+        "lego:capabilities",
+        "lego:scaleout",
+        "lego:ai:check",
+        "sub-LEGO audit",
+        "boot payload verification"
       ],
       "decisionDependencies": [
-        "XA-12 memory publication/ownership"
+        "XA-12 memory publication/ownership (bounded surface published, deferred traversal/ranking remains open-for-manager)",
+        "XA-21 heap pin unchanged",
+        "XA-11 remains open-for-manager"
       ],
       "completionCriteria": [
-        "Manager publishes a canonical memory contract and explicit provider boundary"
+        "ai.memory@1.0.0 locked and consumed",
+        "four operations exactly: memory.remember, memory.recall, memory.list, memory.forget",
+        "two permissions exactly: ai:memory:read, ai:memory:write",
+        "scope isolation tested and enforced",
+        "provider boundary tested via injection",
+        "integrity and deterministic ordering tested",
+        "no P2.15/P2.16 work leaked",
+        "XA-12 handled explicitly (bounded scope), XA-21 pin untouched"
       ],
-      "startEvidence": null,
-      "finishEvidence": null,
-      "currentCommitReference": null,
-      "nextMilestone": "P2.15"
+      "startEvidence": {
+        "commit": "67e638ef83028bbc69876e2e768181415c7554fa",
+        "branch": "arena/01a0c90d-n8n-rust-v-4",
+        "role": "P2.13 protected-main baseline and Agent 2 Memory implementation start"
+      },
+      "finishEvidence": {
+        "reference": "docs/n8n-lego/evidence/P2.14-agent-2-final-report.md",
+        "role": "Agent 2 branch completion evidence; P2.14 remains in-progress until Manager RECONCILIATION PASS, MERGE PASS and protected-main post-merge verification"
+      },
+      "currentCommitReference": "arena/01a0c90d-n8n-rust-v-4",
+      "nextMilestone": "P2.15",
+      "nonScope": [
+        "model inference",
+        "provider API calls",
+        "Agent Machine execution loop",
+        "multi-agent runtime",
+        "Skill execution",
+        "Workspace executor",
+        "filesystem/terminal authority",
+        "MCP runtime",
+        "Runtime Adapter runtime",
+        "Node Creator runtime",
+        "Translation runtime",
+        "token provider integration",
+        "external agent runtime integration",
+        "Rust implementation",
+        "vector search / relevance ranking (deferred)",
+        "automatic retention policy enforcement"
+      ],
+      "reconciliation": {
+        "verdict": "RECONCILIATION_REQUIRED",
+        "baseline": "67e638ef83028bbc69876e2e768181415c7554fa",
+        "affected": "ai.memory, Memory frontend vocabulary, capability registry, contract lock, milestone register",
+        "conflict": "Backend adds ai.memory@1.0.0 with four operations; frontend vocabulary and XA-12 status have not yet consumed the new contract. This is peer evidence reconciliation, not a remaining backend implementation defect.",
+        "contract": "ai.memory@1.0.0 is locked and tested with four operations; XA-12 remains open-for-manager for the deferred relevance-ranked traversal and retention-policy decisions, which do not block the bounded P2.14 milestone.",
+        "evidence": "Agent 2 branch arena/01a0c90d-n8n-rust-v-4 with memory.mjs, manifest/memory.json, domains ai.memory, contract-lock ai.memory@1.0.0, 19/19 lego-memory tests.",
+        "agent": "agent-2",
+        "reason": "Backend Memory publish is complete; frontend consumption is SYNC_REQUIRED. No backend implementation item remains dangling.",
+        "requiredDecision": "Manager to verify backend/frontend vocabulary alignment and perform RECONCILIATION PASS then MERGE PASS. XA-21 pin remains unchanged.",
+        "blockingTest": "N8N_BACKEND_LEGO_ROOT=/home/user/n8n-rust-v.4/apps/n8n-lego/src/lego node --test packages/frontend-lego/test/29-alignment.test.mjs \u2014 expects drift registration for new ai.memory capability until frontend consumes it; 4 frontend tests show expected drift."
+      },
+      "verificationEvidence": {
+        "focusedBackend": {
+          "command": "node --test apps/n8n-lego/test/lego-memory.test.mjs",
+          "result": "PASS",
+          "tests": 19,
+          "passed": 19,
+          "failed": 0
+        },
+        "contractLock": "ai.memory@1.0.0 locked",
+        "capabilityRegistry": "ai.memory registered under ai-foundation with 4 operations",
+        "architecture": "lego:arch PASS, lego:arch:selftest 26/26 PASS",
+        "foundation": "lego:foundation PASS, lego:foundation:selftest 15/15 PASS",
+        "capabilities": "lego:capabilities PASS (84 capabilities)",
+        "scaleOut": "lego:scaleout PASS_WITH_DECLARED_EXCEPTIONS (no new process-local coupling)",
+        "aiFreshness": "lego:ai:check PASS (64 generated, 37 curated)",
+        "bootPayload": "18126 bytes, XA-21 heap 4420 KB (pin 4096, measured, not edited)"
+      }
     },
     {
       "id": "P2.15",

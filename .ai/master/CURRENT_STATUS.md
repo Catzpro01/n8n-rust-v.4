@@ -29,9 +29,9 @@ is the row marked as such.
 | | |
 | --- | --- |
 | Core LEGO domains | **26** |
-| Locked contracts | 17 |
-| Declared capabilities | 83 |
-| Declared operations | 146 |
+| Locked contracts | 18 |
+| Declared capabilities | 84 |
+| Declared operations | 150 |
 | Published error codes | 36 |
 | Official AI/Agent LEGO | 15 |
 
@@ -47,9 +47,9 @@ is the row marked as such.
 
 ## The 15 AI/Agent LEGO by status
 
-- **IMPLEMENTED** — 2: Skill, Capability
+- **IMPLEMENTED** — 3: Skill, Memory, Capability
 - **CONTRACT-ONLY** — 7: AI Foundation, Agent Machine, MCP Adapter, Runtime Adapter, Artifact, Approval, Agent Event & Work Trace
-- **PLANNED** — 5: Memory, Workspace, Universal Translation, Node Creator, Token & Usage
+- **PLANNED** — 4: Workspace, Universal Translation, Node Creator, Token & Usage
 - **IN-PROGRESS** — 1: Context & Session
 
 ## Gates
