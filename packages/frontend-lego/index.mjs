@@ -251,6 +251,8 @@ export {
   MANIFEST_FILES,
   PACKAGE_ROOT,
   contextSessionSurface,
+  memorySurface,
+  workspaceSurface,
   declaredCapabilityIds,
   extensionPointIds,
   loadManifests,
@@ -536,3 +538,16 @@ export {
   scanForbiddenMemoryKeys,
   validateMemoryRecord,
 } from './src/memory.mjs';
+
+export {
+  WORKSPACE_FRONTEND_FIELDS,
+  WORKSPACE_NON_RENDERED,
+  WORKSPACE_SURFACE_CONTRACT,
+  WORKSPACE_VOCABULARY,
+  WorkspaceSurfaceError,
+  checkWorkspaceAlignment,
+  describeWorkspace,
+  validateWorkspaceRecord,
+  workspaceCatalogAudit,
+  workspacePublication,
+} from './src/workspace.mjs';

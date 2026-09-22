@@ -37,9 +37,9 @@ _none — this LEGO has no public surface yet; do not import from it._
 
 ## Who breaks if this changes
 
-- Direct dependents: `credentials`, `workflow`, `execution`, `workspace`, `data-tables`, `legacy-rest`, `runtime-host`
+- Direct dependents: `credentials`, `workflow`, `execution`, `data-tables`, `legacy-rest`, `runtime-host`
 - Transitive: `dynamic-parameters`, `webhook`, `worker`
-- **Blast radius: 10** (risk: high)
+- **Blast radius: 9** (risk: high)
 
 ## Resources
 

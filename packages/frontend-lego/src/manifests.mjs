@@ -21,6 +21,7 @@ export const MANIFEST_FILES = Object.freeze({
   skills: 'skills.json',
   contextSession: 'context-session.json',
   memory: 'memory.json',
+  workspace: 'workspace.json',
 });
 
 function readManifest(fileName) {
@@ -48,6 +49,7 @@ export function loadManifests() {
   const skillCatalog = readManifest(MANIFEST_FILES.skills);
   const contextSessionCatalog = readManifest(MANIFEST_FILES.contextSession);
   const memoryCatalog = readManifest(MANIFEST_FILES.memory);
+  const workspaceCatalog = readManifest(MANIFEST_FILES.workspace);
 
   if (!Array.isArray(surfaceCatalog.surfaces) || surfaceCatalog.surfaces.length === 0) {
     throw new Error('manifest/surfaces.json declares no surfaces');
@@ -91,6 +93,17 @@ export function loadManifests() {
   if (!Array.isArray(memoryCatalog.records)) {
     throw new Error('manifest/memory.json must declare a records array (it may be empty)');
   }
+  // Workspace is one frontend consumer of one backend contract. The catalog is metadata only;
+  // records are handed over on demand and never created here.
+  if (workspaceCatalog.lego !== 'workspace'
+    || !Array.isArray(workspaceCatalog.contracts)
+    || workspaceCatalog.contracts.length !== 1
+    || workspaceCatalog.contracts[0] !== 'ai.workspace') {
+    throw new Error('manifest/workspace.json must consume exactly ai.workspace for the existing workspace LEGO');
+  }
+  if (workspaceCatalog.publication?.expected?.version !== '1.0.0') {
+    throw new Error('manifest/workspace.json must pin the declared ai.workspace version 1.0.0');
+  }
 
   return Object.freeze({
     ownership: Object.freeze(ownership),
@@ -101,6 +114,7 @@ export function loadManifests() {
     skillCatalog: Object.freeze(skillCatalog),
     contextSessionCatalog: Object.freeze(contextSessionCatalog),
     memoryCatalog: Object.freeze(memoryCatalog),
+    workspaceCatalog: Object.freeze(workspaceCatalog),
     surfaces: Object.freeze(surfaceCatalog.surfaces.map((surface) => Object.freeze({ ...surface }))),
     extensionPoints: Object.freeze(extensionCatalog.extensionPoints.map((point) => Object.freeze({ ...point }))),
     subLegos: Object.freeze(subLegoCatalog.subLegos.map((entry) => Object.freeze({ ...entry }))),
@@ -139,6 +153,11 @@ export function contextSessionSurface(manifests = loadManifests()) {
  */
 export function memorySurface(manifests = loadManifests()) {
   return manifests.memoryCatalog;
+}
+
+/** The Workspace surface declaration — metadata only; records are handed over by the application. */
+export function workspaceSurface(manifests = loadManifests()) {
+  return manifests.workspaceCatalog;
 }
 
 /** Surface ids, in catalog order. */

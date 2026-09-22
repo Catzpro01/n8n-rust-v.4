@@ -23,17 +23,17 @@ packages/frontend-lego/
   manifest/                 surfaces.json 12 surfaces + the capability behind each
                             extension-points.json 15 hooks (1.1.0) + 7 future consumers
                             sub-legos.json 19 units · ownership · capabilities · skills
-                            context-session.json · memory.json
+                            context-session.json · memory.json · workspace.json
   src/                      one module per concern, no utils dumping ground
     contract.mjs versions.mjs surface-capability.mjs registry.mjs sublegos.mjs lifecycle.mjs
     negotiation.mjs vocabulary.mjs seam.mjs backend-view.mjs envelope.mjs transport.mjs
     interactions.mjs conformance.mjs observability.mjs impact.mjs profiles.mjs i18n.mjs
     errors.mjs boot.mjs client.mjs manifests.mjs knowledge.mjs agents.mjs agent-events.mjs
-    skills.mjs context-session.mjs memory.mjs lego.mjs
+    skills.mjs context-session.mjs memory.mjs workspace.mjs lego.mjs
     adapters/ the framework adapter boundary (currently Vue; the only framework-aware code)
   test/                     01-contract … 23-degradation, 24-vocabulary, 25-operations,
                             26-ai-contracts, 27-agent-events, 28-seam, 29-alignment, 30-master,
-                            31-skills, 32-context-session, 33-milestones, 34-memory
+                            31-skills, 32-context-session, 33-milestones, 34-memory, 35-workspace
 ```
 
 What the odd ones own: `negotiation.mjs` discovery, access, degradation and operation
@@ -45,8 +45,11 @@ and the delegation tree; `knowledge.mjs` the `.ai/` pack index; `skills.mjs` con
 `context-session.mjs` is ONE LEGO, TWO contracts (`ai.context`, `ai.agent-session`) with five
 and three published operations (`test/32`); `memory.mjs` consumes `ai.memory@1.0.0` — a
 different LEGO, nine quoted sets, four published operations and no write, no ranking and no
-persistence claim (`test/34`). Memory is what survives context replacement; Context references
-it and never contains it, and the two surfaces refuse each other's payloads by name.
+persistence claim (`test/34`). `workspace.mjs` consumes the bounded `ai.workspace@1.0.0`
+identity/lifecycle contract (`test/35`): it renders exact handed-over records only and never
+creates a provider, filesystem, terminal or execution authority. Memory is what survives context
+replacement; Context references it and never contains it, and the three surfaces refuse each
+other's payloads by name.
 
 ## Boot flow
 
@@ -62,7 +65,7 @@ it and never contains it, and the two surfaces refuse each other's payloads by n
 
 | Thing | Value |
 | ----- | ----- |
-| Architecture tests | 390 across 34 suites (measured with `npm run frontend-lego:test`); backend comparisons skip *with a reason* unless the tree is present |
+| Architecture tests | 404 across 35 suites (measured with `node --test packages/frontend-lego/test/*.test.mjs`); backend comparisons skip *with a reason* unless the tree is present |
 | Architecture rules | 29, as data (`frontend.conformance()`), mirrored in contract §19.16 |
 | Surfaces / hooks / units | 12 / 15 (`1.1.0`) / 19 in a 3-level hierarchy |
 | Boot payload | 18,126 B JSON / 24,168 B base64, budget **32 KB**, byte-pinned to P2.5 |
@@ -70,8 +73,8 @@ it and never contains it, and the two surfaces refuse each other's payloads by n
 | Runtime dependencies | none |
 | Locales | `id, en, ar, zh, ru, jv`; Arabic is RTL; 13 message slots |
 | Declared capabilities | 7 (`translation` + 6 AI), installed: 0 |
-| Contract lock rows | 17 on protected main (`ai.skill`, `ai.context`, `ai.agent-session` published); `ai.memory@1.0.0` published on Agent 2's P2.14 branch and **declared-not-locked** here (`XA-12`) |
-| Vocabularies | 64 quoted with provenance, 29 local, 0 pending publication (`XA-20` closed by publication) |
+| Contract lock rows | 19 on this P2.15 implementation branch (`ai.skill`, `ai.context`, `ai.agent-session`, `ai.memory`, `ai.workspace` published); protected main remains the pre-P2.15 baseline |
+| Vocabularies | 68 quoted with provenance, 29 local, 0 pending publication (`XA-20` closed by publication) |
 | Seam | 13 declared inputs, 7 forbidden sources, 16 identity fields |
 | Agent events | 26 types / 7 namespaces; trace bound 200 rows, summary 280 chars |
 

@@ -28,7 +28,7 @@ states a different count, that document is stale and this one is right.
 | 15 | `realtime` | `agent-6` | domain | implemented | `realtime` |
 | 16 | `settings` | `agent-1` | domain | implemented | `settings` |
 | 17 | `editor-ui-host` | `agent-1` | domain | implemented | `ui` |
-| 18 | `workspace` | `agent-2` | domain | planned | `workspace` |
+| 18 | `workspace` | `agent-1` | domain | implemented | `workspace` |
 | 19 | `observability` | `agent-6` | domain | planned | `observability` |
 | 20 | `data-tables` | `agent-5` | domain | planned | `data-table` |
 | 21 | `legacy-rest` | `agent-1` | domain | legacy | `legacy` |

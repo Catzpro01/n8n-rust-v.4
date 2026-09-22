@@ -1353,7 +1353,7 @@ test('XA-20 is recorded, open, and says what the frontend does meanwhile', () =>
  * describes is now `complete` — the boundary, the owners, the nonScope and the start evidence it
  * checks are unchanged, which is the point: the milestone's coordinates move, its content does not.
  */
-test('the milestone register records P2.13 as complete on protected main and P2.14 as in-progress', () => {
+test('the milestone register records P2.14 as complete on protected main and P2.15 as in-progress', () => {
   const byId = new Map(MILESTONES.milestones.map((milestone) => [milestone.id, milestone]));
   assert.equal(MILESTONES.owner, 'manager');
   const p212 = byId.get('P2.12');
@@ -1384,12 +1384,15 @@ test('the milestone register records P2.13 as complete on protected main and P2.
   assert.equal(p213.reconciliation.historical, true, 'a complete milestone carries its reconciliation as history');
   assert.equal(p213.nextMilestone, 'P2.14');
 
-  // P2.14 is the row in flight now — named, started from the same protected-main baseline, unfinished.
+  // P2.14 is complete on protected main; P2.15 is the row in flight now.
   const p214 = byId.get('P2.14');
-  assert.equal(p214.status, 'in-progress');
-  assert.equal(p214.startEvidence.commit, MILESTONES.mainBaseline);
-  assert.equal(p214.finishEvidence, null, 'the manager finishes it, not an agent');
-  assert.notEqual(p214.status, 'complete');
+  assert.equal(p214.status, 'complete');
+  assert.equal(p214.finishEvidence.protectedMain, MILESTONES.mainBaseline);
+  const p215 = byId.get('P2.15');
+  assert.equal(p215.status, 'in-progress');
+  assert.equal(p215.startEvidence.commit, MILESTONES.mainBaseline);
+  assert.equal(p215.finishEvidence, null, 'the manager finishes it, not an agent');
+  assert.notEqual(p215.status, 'complete');
 
   const p211 = byId.get('P2.11');
   assert.equal(p211.status, 'complete');
@@ -1415,16 +1418,15 @@ test('the register keeps the strategic phases, the ladder and the merge protocol
    * produces.
    */
   const planned = MILESTONES.milestones.filter((milestone) => milestone.status === 'planned');
-  assert.ok(planned.length >= 3, `${planned.length} planned milestones`);
-  assert.ok(planned.some((milestone) => /Workspace/.test(milestone.title)), 'Workspace is still planned');
+  assert.ok(planned.length >= 2, `${planned.length} planned milestones`);
+  assert.equal(planned.some((milestone) => /Workspace/.test(milestone.title)), false, 'Workspace is the current milestone');
   assert.ok(planned.some((milestone) => /Agent Machine/.test(milestone.title)), 'Agent Machine is still planned');
   assert.ok(planned.some((milestone) => /P2\.17\+/.test(milestone.id)), 'the future ladder is still named');
   const memoryLadder = MILESTONES.milestones.find((milestone) => /Memory/.test(milestone.title));
   assert.ok(memoryLadder, 'the ladder still names Memory');
   assert.equal(memoryLadder.id, 'P2.14');
-  assert.equal(['planned', 'in-progress'].includes(memoryLadder.status), true, `the register carries Memory's real status ("${memoryLadder.status}")`);
-  assert.notEqual(memoryLadder.status, 'complete', 'and it does not claim Memory is complete — the manager reconciles and verifies');
-  assert.equal(MILESTONES.currentMilestone, 'P2.14', `currentMilestone follows the reconciliation ("${MILESTONES.currentMilestone}")`);
+  assert.equal(memoryLadder.status, 'complete', `the register carries Memory's real status ("${memoryLadder.status}")`);
+  assert.equal(MILESTONES.currentMilestone, 'P2.15', `currentMilestone follows the reconciliation ("${MILESTONES.currentMilestone}")`);
   // The merge protocol: agent completion is not merge approval.
   const protocol = MILESTONES.mergeProtocol;
   assert.equal(protocol.agentCompletionIsNotMergeApproval, true);
@@ -1442,9 +1444,9 @@ test('the register keeps the strategic phases, the ladder and the merge protocol
   assert.ok(govProtocol.gates.some((g) => g.id === 'MERGE PASS'));
   assert.equal(govProtocol.failureState, 'RECONCILIATION_FAILED');
   // Top-level canonical truth:
-  assert.equal(MILESTONES.currentMilestone, 'P2.14');
-  assert.equal(MILESTONES.previousCompletedMilestone, 'P2.13');
-  assert.equal(MILESTONES.mainBaseline, '67e638ef83028bbc69876e2e768181415c7554fa');
+  assert.equal(MILESTONES.currentMilestone, 'P2.15');
+  assert.equal(MILESTONES.previousCompletedMilestone, 'P2.14');
+  assert.equal(MILESTONES.mainBaseline, '0d9466f19a149f6e30bdee559086b7a28b080cb3');
   assert.equal(MILESTONES.strategicRoadmap.source, 'apps/n8n-lego/src/lego/manifest/ai-lego-set.json');
   assert.equal(MILESTONES.protectedBranch, 'main');
 });

@@ -13,7 +13,7 @@
 | 2 | **Skill** | `manager` | IMPLEMENTED | B |
 | 3 | **Agent Machine** | `manager` | CONTRACT-ONLY | B |
 | 4 | **Memory** | `manager` | IMPLEMENTED | B |
-| 5 | **Workspace** | `manager` | PLANNED | B |
+| 5 | **Workspace** | `manager` | IMPLEMENTED | B |
 | 6 | **Context & Session** | `manager` | IN-PROGRESS | A |
 | 7 | **Universal Translation** | `manager` | PLANNED | D |
 | 8 | **Node Creator** | `agent-4` | PLANNED | D |
@@ -271,44 +271,44 @@ Every external action routes through Capability + Policy + Workspace. An agent n
 
 ## 5. Workspace
 
-> Own the execution boundary an agent acts within.
+> Own the explicit workspace identity and bounded logical lifecycle an agent may later act within; do not execute the action.
 
 | | |
 | --- | --- |
 | Index | 5 of 15 |
 | Owner | `manager` |
-| Status | **PLANNED** |
+| Status | **IMPLEMENTED** |
 | Phase | B |
 | Contracts | `ai.workspace` |
-| Versioning | publicationPending |
+| Versioning | ai.workspace@1.0.0 |
 | Depends on | `ai-foundation`, `capability` |
 | Interaction | `call` |
-| Permissions | `ai:workspace:read`, `ai:workspace:create`, `ai:workspace:execute` |
-| Resource profile | `standard` |
+| Permissions | `ai:workspace:read`, `ai:workspace:create` |
+| Resource profile | `low-resource` |
 
-**Scope:** workspace kinds, filesystem scoping, process scoping, environment, runtime binding, artifact location
+**Scope:** workspace identity, workspace metadata, opaque resource references, logical lifecycle, provider capability seam
 
-**NOT in scope:** granting host-wide access, owning credentials, being the agent
+**NOT in scope:** filesystem authority, terminal or shell authority, arbitrary process execution, credential or secret ownership, model inference, tool execution, MCP/runtime adapter, Agent Machine loop, being the agent, automatic persistence policy
 
 **Lifecycle:** `declared` -> `created` -> `mounted` -> `active` -> `released`
 
-**Operations:** `create`, `describe`, `mount`, `release`
+**Operations:** `workspace.create`, `workspace.describe`, `workspace.mount`, `workspace.release`
 
-**Replacement boundary:** LOCAL, CONTAINER and REMOTE are implementations of one contract.
+**Replacement boundary:** InMemoryWorkspaceProvider is the default bounded provider; a replacement provider must preserve ai.workspace@1.0.0 and explicitly answer supports(kind). Provider durability and execution capabilities remain outside Workspace.
 
-**Degradation:** `available`, `capability-unavailable`, `permission-denied`
+**Degradation:** `available`, `capability-unavailable`, `permission-denied`, `invalid-input`, `conflict`
 
-**Observability:** workspace created/released; capability grants.
+**Observability:** workspace identity/lifecycle transitions may be observed by the owning application; no provider internals, paths, commands or credentials are exposed.
 
-**Tests:** `planned: scope enforcement, escape attempts, lifecycle`
+**Tests:** `test/lego-workspace.test.mjs`
 
 **Future stages:** B: LOCAL · C: CONTAINER · E: REMOTE/VPS
 
 **Kinds:** `LOCAL`, `CONTAINER`, `REMOTE`, `VPS`, `EPHEMERAL`, `PERSISTENT`
 
-**Contains:** filesystem, project, processes, environment, runtime, artifacts
+**Contains:** workspace metadata, opaque resource references, provider-declared kind, logical lifecycle state
 
-> Filesystem and terminal access are SCOPED to the workspace. An agent does not automatically get host-wide access; an unscoped workspace is not a workspace, it is the machine.
+> Every operation names one workspaceId. The core uses exact identity lookup and never grants host-wide access, filesystem access or terminal access; future execution must consume this boundary through its own contract.
 
 ---
 

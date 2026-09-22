@@ -41,9 +41,9 @@ _none — this LEGO has no public surface yet; do not import from it._
 
 ## Who breaks if this changes
 
-- Direct dependents: `workspace`, `runtime-host`
-- Transitive: `legacy-rest`
-- **Blast radius: 4** (risk: high)
+- Direct dependents: `runtime-host`
+- Transitive: _none_
+- **Blast radius: 2** (risk: medium)
 
 ## Resources
 

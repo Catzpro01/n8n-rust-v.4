@@ -8,8 +8,8 @@
 | `platform-kernel` | — | `compatibility`, `auth`, `credentials`, `workflow`, `execution`, `node-registry`, `dynamic-parameters`, `webhook`, `storage`, `worker`, `realtime`, `settings`, `editor-ui-host`, `workspace`, `observability`, `data-tables`, `legacy-rest`, `runtime-host`, `reference-lego` |
 | `lego-foundation` | — | `ai-foundation`, `compatibility`, `runtime-host`, `reference-lego`, `reference-lego.validation`, `reference-lego.repository` |
 | `ai-foundation` | `lego-foundation` | — |
-| `compatibility` | `platform-kernel`, `lego-foundation`, `auth.identity` | `auth`, `credentials`, `workflow`, `execution`, `dynamic-parameters`, `webhook`, `worker`, `settings`, `editor-ui-host`, `workspace`, `observability`, `data-tables`, `legacy-rest`, `runtime-host` |
-| `auth` | `platform-kernel`, `compatibility` | `workspace`, `runtime-host` |
+| `compatibility` | `platform-kernel`, `lego-foundation`, `auth.identity` | `auth`, `credentials`, `workflow`, `execution`, `dynamic-parameters`, `webhook`, `worker`, `settings`, `editor-ui-host`, `observability`, `data-tables`, `legacy-rest`, `runtime-host` |
+| `auth` | `platform-kernel`, `compatibility` | `runtime-host` |
 | `auth.identity` | — | `compatibility`, `settings` |
 | `credentials` | `platform-kernel`, `compatibility`, `storage` | `dynamic-parameters`, `legacy-rest` |
 | `workflow` | `platform-kernel`, `compatibility`, `execution`, `storage` | `webhook`, `legacy-rest` |
@@ -17,12 +17,12 @@
 | `node-registry` | `platform-kernel` | `dynamic-parameters`, `legacy-rest`, `runtime-host` |
 | `dynamic-parameters` | `platform-kernel`, `compatibility`, `node-registry`, `credentials` | — |
 | `webhook` | `platform-kernel`, `compatibility`, `execution`, `workflow` | — |
-| `storage` | `platform-kernel` | `credentials`, `workflow`, `execution`, `workspace`, `data-tables`, `legacy-rest`, `runtime-host` |
+| `storage` | `platform-kernel` | `credentials`, `workflow`, `execution`, `data-tables`, `legacy-rest`, `runtime-host` |
 | `worker` | `platform-kernel`, `compatibility`, `execution` | — |
 | `realtime` | `platform-kernel` | `runtime-host` |
 | `settings` | `platform-kernel`, `compatibility`, `auth.identity` | `runtime-host` |
 | `editor-ui-host` | `platform-kernel`, `compatibility` | `runtime-host` |
-| `workspace` | `platform-kernel`, `compatibility`, `auth`, `storage` | `legacy-rest` |
+| `workspace` | `platform-kernel` | `legacy-rest` |
 | `observability` | `platform-kernel`, `compatibility` | — |
 | `data-tables` | `platform-kernel`, `compatibility`, `storage` | — |
 | `legacy-rest` | `platform-kernel`, `compatibility`, `node-registry`, `workflow`, `execution`, `storage`, `credentials`, `workspace` | `runtime-host` |
