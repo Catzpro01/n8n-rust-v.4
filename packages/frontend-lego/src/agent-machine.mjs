@@ -1,12 +1,15 @@
 /**
- * Frontend Agent Machine surface — a bounded consumer of ai.agent-machine@1.0.0.
+ * Frontend Agent Machine surface — a bounded consumer of ai.agent-machine@1.1.0.
  *
  * This module receives an exact Agent Machine record and an optional contract
- * handoff. It does not call a provider, create or mutate a machine, infer an
- * executor kind's authority, offer execution affordances or render provider
- * internals. Backend semantics are quoted from the vocabulary lock and the
- * frontend catalog is the provenance record. A machine record the application
- * never handed over is refused, never fabricated.
+ * handoff. It does not call a provider, create, prepare, start, step, pause,
+ * resume, delegate or cancel a machine, infer an executor kind's authority,
+ * offer execution affordances or render provider internals. Backend semantics
+ * are quoted from the vocabulary lock and the frontend catalog is the
+ * provenance record. A machine record the application never handed over is
+ * refused, never fabricated. Delegation edges, capability scope and graph
+ * semantics are quoted as bounded data at most — never as child-agent
+ * controls.
  */
 
 import { vocabularyOf } from './vocabulary.mjs';
@@ -18,7 +21,7 @@ const OUTCOME_VOCABULARY = vocabularyOf('agentMachineStepOutcome');
 
 export const AGENT_MACHINE_SURFACE_CONTRACT = Object.freeze({
   id: 'ai.agent-machine',
-  version: '1.0.0',
+  version: '1.1.0',
   provenance: Object.freeze({
     manifest: 'packages/frontend-lego/manifest/agent-machine.json',
     backendContract: 'apps/n8n-lego/src/lego/manifest/agent-machine.json',
@@ -29,44 +32,59 @@ export const AGENT_MACHINE_SURFACE_CONTRACT = Object.freeze({
 export const AGENT_MACHINE_FRONTEND_FIELDS = Object.freeze([
   'machineId',
   'taskId',
+  'agentId',
   'executorKind',
   'lifecycle',
   'sessionReference',
   'contextReference',
   'workspaceReference',
+  'capabilityScope',
   'budgets',
   'metadata',
-  'stepCount',
   'steps',
+  'stepCount',
+  'delegations',
   'failure',
   'version',
   'createdAt',
   'updatedAt',
+  'startedAt',
 ]);
 
 export const AGENT_MACHINE_NON_RENDERED = Object.freeze([
   'providerState',
   'executeAffordance',
   'startAffordance',
+  'prepareAffordance',
   'stepAffordance',
   'pauseAffordance',
   'resumeAffordance',
+  'delegateAffordance',
   'cancelAffordance',
   'approvalDecision',
   'modelOutput',
   'delegationState',
+  'delegationEdge',
+  'graphExecution',
   'fabricatedMachine',
 ]);
 
 const ID_RE = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$/;
 const REFERENCE_RE = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$/;
 const FORBIDDEN_KEY = /(?:credential|secret|password|token|cookie|authorization|api[-_]?key|private[-_]?key|host[-_]?path|filesystem|terminal|process|command|shell|mcp|runtime|provider)/i;
-const BUDGET_DIMENSIONS = new Set(['maxSteps', 'maxDurationMs', 'maxContinuationBytes', 'maxReferences']);
+const BUDGET_DIMENSIONS = new Set([
+  'maxSteps', 'maxDurationMs', 'maxContinuationBytes', 'maxReferences', 'maxChildren', 'maxTasksPerAgent',
+]);
 const STEP_FIELDS = Object.freeze([
   'stepId', 'sequence', 'inputReference', 'approvalReference', 'outcome',
   'final', 'resultReference', 'errorReference', 'continuation', 'recordedAt',
 ]);
+const DELEGATION_FIELDS = Object.freeze([
+  'delegationId', 'childAgentId', 'grants', 'budget', 'deadline', 'createdAt',
+]);
 const MAX_STEPS_RENDERED = 64;
+const MAX_DELEGATIONS_RENDERED = 16;
+const MAX_CAPABILITY_SCOPE = 32;
 
 export class AgentMachineSurfaceError extends Error {
   constructor(code, message, details = {}) {
@@ -145,6 +163,45 @@ function assertBudgets(budgets) {
   }
 }
 
+function assertCapabilityScope(scope) {
+  if (!Array.isArray(scope)) fail('capabilityScope must be an array of bounded capability ids');
+  if (scope.length > MAX_CAPABILITY_SCOPE) fail(`capabilityScope exceeds the bounded ceiling ${MAX_CAPABILITY_SCOPE}`);
+  const seen = new Set();
+  for (const entry of scope) {
+    if (typeof entry !== 'string' || !entry || entry.length > 64) fail('capabilityScope entries must be bounded capability ids');
+    if (seen.has(entry)) fail(`capabilityScope repeats capability '${entry}'`);
+    seen.add(entry);
+  }
+}
+
+function assertDelegation(edge, index) {
+  assertPlainObject(edge, `delegations[${index}]`);
+  for (const key of Object.keys(edge)) {
+    if (!DELEGATION_FIELDS.includes(key)) fail(`delegations[${index}] contains non-public field '${key}'`);
+  }
+  for (const key of DELEGATION_FIELDS) {
+    if (!(key in edge)) fail(`delegations[${index}] is missing '${key}'`);
+  }
+  assertString(edge.delegationId, `delegations[${index}].delegationId`, ID_RE);
+  assertString(edge.childAgentId, `delegations[${index}].childAgentId`, ID_RE);
+  if (!Array.isArray(edge.grants) || edge.grants.length === 0) {
+    fail(`delegations[${index}].grants must be a non-empty bounded array`);
+  }
+  const seen = new Set();
+  for (const grant of edge.grants) {
+    if (typeof grant !== 'string' || !grant || grant.length > 64) fail(`delegations[${index}].grants entries must be bounded strings`);
+    if (seen.has(grant)) fail(`delegations[${index}] repeats grant '${grant}'`);
+    seen.add(grant);
+  }
+  assertPlainObject(edge.budget, `delegations[${index}].budget`);
+  for (const [key, value] of Object.entries(edge.budget)) {
+    if (!BUDGET_DIMENSIONS.has(key)) fail(`delegations[${index}].budget declares unknown dimension '${key}'`);
+    if (!Number.isInteger(value) || value <= 0) fail(`delegations[${index}].budget.${key} must be a positive integer`);
+  }
+  assertString(edge.deadline, `delegations[${index}].deadline`);
+  assertString(edge.createdAt, `delegations[${index}].createdAt`);
+}
+
 function assertStep(step, index) {
   assertPlainObject(step, `steps[${index}]`);
   for (const key of Object.keys(step)) {
@@ -194,6 +251,7 @@ export function validateAgentMachineRecord(record) {
   }
   assertString(record.machineId, 'machineId', ID_RE);
   assertString(record.taskId, 'taskId', ID_RE);
+  assertString(record.agentId, 'agentId', ID_RE);
   if (record.executorKind !== 'IN_MEMORY' && record.executorKind !== 'EXTERNAL') {
     fail(`unknown Agent Machine executor kind '${record.executorKind}'`);
   }
@@ -201,6 +259,7 @@ export function validateAgentMachineRecord(record) {
   assertReferenceOrAbsent(record.sessionReference, 'sessionReference');
   assertReferenceOrAbsent(record.contextReference, 'contextReference');
   assertReferenceOrAbsent(record.workspaceReference, 'workspaceReference');
+  assertCapabilityScope(record.capabilityScope);
   assertBudgets(record.budgets);
   assertMetadata(record.metadata);
   if (!Array.isArray(record.steps) || record.steps.length > MAX_STEPS_RENDERED) {
@@ -208,10 +267,15 @@ export function validateAgentMachineRecord(record) {
   }
   if (record.steps.length !== record.stepCount) fail('stepCount must equal the recorded step ledger length');
   record.steps.forEach(assertStep);
+  if (!Array.isArray(record.delegations) || record.delegations.length > MAX_DELEGATIONS_RENDERED) {
+    fail(`delegations must be a bounded array of at most ${MAX_DELEGATIONS_RENDERED} edges`);
+  }
+  record.delegations.forEach(assertDelegation);
   assertFailure(record.failure, record.lifecycle);
   if (!Number.isInteger(record.version) || record.version < 1) fail('Agent Machine version must be a positive integer');
   assertString(record.createdAt, 'createdAt');
   assertString(record.updatedAt, 'updatedAt');
+  if (record.startedAt !== null) assertString(record.startedAt, 'startedAt');
   return freezeDeep(clone(record));
 }
 
@@ -245,7 +309,13 @@ function sameList(left = [], right = []) {
     && left.length === right.length && left.every((item, index) => item === right[index]);
 }
 
-/** Compare a handed-over contract declaration with every frontend-quoted value. */
+/**
+ * Compare a handed-over contract declaration with every frontend-quoted value.
+ * The forbidden-authority scan refuses execute/shell/process/runtime/
+ * filesystem style operations; the canonical agentMachine.delegate bookkeeping
+ * operation of 1.1.0 is part of the published vocabulary and is compared
+ * exactly, not pattern-rejected.
+ */
 export function checkAgentMachineAlignment({ declaration, catalog = null } = {}) {
   assertPlainObject(declaration, 'Agent Machine declaration');
   const expected = catalog?.publication?.expected ?? {
@@ -260,7 +330,7 @@ export function checkAgentMachineAlignment({ declaration, catalog = null } = {})
   if (declaration.version !== AGENT_MACHINE_SURFACE_CONTRACT.version) problems.push('contract version mismatch');
   if (!sameList(declaration.operations, expected.operations) || !sameList(declaration.operations, operations)) problems.push('operation vocabulary mismatch');
   if (!sameList(declaration.permissions, expected.permissions) || !sameList(declaration.permissions, permissions)) problems.push('permission vocabulary mismatch');
-  if (declaration.operations?.some((operation) => /execute|shell|process|runtime|filesystem|delegate/i.test(operation))) problems.push('forbidden authority operation published');
+  if (declaration.operations?.some((operation) => /execute|shell|process|runtime|filesystem/i.test(operation))) problems.push('forbidden authority operation published');
   return Object.freeze({
     ok: problems.length === 0,
     problems: Object.freeze(problems),
@@ -272,7 +342,9 @@ export function checkAgentMachineAlignment({ declaration, catalog = null } = {})
 /**
  * Produce a browser-safe view. With no handed-over record this is an explicit
  * absent state, not a fabricated empty machine. Rendering is limited to exact
- * public fields and never includes an execution affordance.
+ * public fields and never includes an execution, prepare or delegate
+ * affordance; delegation edge records and capability scope stay off the
+ * rendered surface even though they validate as public data.
  */
 export function describeAgentMachine({ record = null, contractRows = [], catalog = null } = {}) {
   const publication = agentMachinePublication({ contractRows });
@@ -297,17 +369,23 @@ export function agentMachineCatalogAudit(catalog = null) {
   const problems = [];
   if (catalog.lego !== 'agent-machine') problems.push('catalog does not identify the Agent Machine LEGO');
   if (!sameList(catalog.contracts, ['ai.agent-machine'])) problems.push('catalog must consume exactly ai.agent-machine');
-  if (expected.version !== '1.0.0') problems.push('catalog must pin ai.agent-machine@1.0.0');
+  if (expected.version !== '1.1.0') problems.push('catalog must pin ai.agent-machine@1.1.0');
   for (const operation of OPERATION_VOCABULARY.values) {
     if (!expected.operations?.includes(operation)) problems.push(`catalog omitted ${operation}`);
   }
   for (const permission of PERMISSION_VOCABULARY.values) {
     if (!expected.permissions?.includes(permission)) problems.push(`catalog omitted ${permission}`);
   }
-  for (const affordance of ['startAffordance', 'stepAffordance', 'pauseAffordance', 'resumeAffordance', 'cancelAffordance', 'executeAffordance']) {
+  if (expected.operations?.length !== OPERATION_VOCABULARY.values.length) problems.push('catalog publishes an operation the vocabulary does not quote');
+  if (expected.permissions?.length !== PERMISSION_VOCABULARY.values.length) problems.push('catalog publishes a permission the vocabulary does not quote');
+  for (const affordance of [
+    'startAffordance', 'stepAffordance', 'pauseAffordance', 'resumeAffordance', 'cancelAffordance',
+    'prepareAffordance', 'delegateAffordance', 'executeAffordance',
+  ]) {
     if (catalog.rendering?.[affordance] !== false) problems.push(`catalog must disable ${affordance}`);
   }
   if (catalog.rendering?.approvalDecision !== false) problems.push('catalog must disable approval decisions: approval resolution is not P2.16');
+  if (catalog.rendering?.delegations !== false) problems.push('catalog must keep delegation edge records off the rendered surface');
   return Object.freeze({ ok: problems.length === 0, problems: Object.freeze(problems) });
 }
 

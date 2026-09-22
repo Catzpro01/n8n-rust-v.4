@@ -1,9 +1,11 @@
 {
-  "catalogVersion": "1.0.0",
-  "description": "Frontend consumption catalog for the bounded Agent Machine LEGO. It renders declared machine identity, lifecycle, budgets and the bounded step ledger only when handed over by the application; it never starts, steps, pauses, resumes or cancels a machine and never implies execution, delegation or approval authority.",
+  "catalogVersion": "1.1.0",
+  "description": "Frontend consumption catalog for the bounded Agent Machine LEGO (ai.agent-machine@1.1.0). It renders declared machine/agent/task identity, lifecycle (incl. ready), capability scope, budgets, the bounded step ledger and delegation edges as descriptive data only when handed over by the application; it never prepares, starts, steps, pauses, resumes, delegates or cancels a machine and never implies execution, spawning, delegation or approval authority.",
   "lego": "agent-machine",
   "phase": "B",
-  "contracts": ["ai.agent-machine"],
+  "contracts": [
+    "ai.agent-machine"
+  ],
   "declarationSource": {
     "contract": {
       "file": "apps/n8n-lego/src/lego/manifest/agent-machine.json",
@@ -25,21 +27,24 @@
     "status": "declared-not-handed-over",
     "expected": {
       "contract": "ai.agent-machine",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "operations": [
         "agentMachine.create",
         "agentMachine.describe",
+        "agentMachine.prepare",
         "agentMachine.start",
         "agentMachine.step",
         "agentMachine.pause",
         "agentMachine.resume",
+        "agentMachine.delegate",
         "agentMachine.cancel"
       ],
       "permissions": [
         "ai:agent:create",
         "ai:agent:invoke",
         "ai:agent:control",
-        "ai:agent:read"
+        "ai:agent:read",
+        "ai:agent:delegate"
       ]
     },
     "note": "The frontend receives contract rows through the application seam. It does not read backend files or claim a publication that was not handed over."
@@ -70,24 +75,33 @@
     "approvalDecision": false,
     "modelOutput": false,
     "delegationState": false,
-    "fabricatedMachine": false
+    "fabricatedMachine": false,
+    "agentId": true,
+    "capabilityScope": true,
+    "startedAt": true,
+    "delegations": false,
+    "prepareAffordance": false,
+    "delegateAffordance": false
   },
   "rules": [
     "The frontend may display an Agent Machine record only when the application hands over that exact record.",
     "An unknown or malformed Agent Machine record is refused by name and never widened into a generic run.",
-    "The UI does not redefine the backend lifecycle, budgets, permissions or provider semantics.",
+    "The UI does not redefine the backend lifecycle, budgets, permissions, capability scope or provider semantics.",
     "An executor kind is a declaration, not evidence that shell, filesystem, process or remote authority is available.",
     "Machine metadata and step continuations are displayed as descriptive state; they never become actions, permission grants or execution.",
-    "The UI never offers start, step, pause, resume or cancel affordances and never renders an approval decision: approval resolution is the ai.approval contract's boundary, not P2.16.",
+    "The UI never offers prepare, start, step, pause, resume, cancel or delegate affordances and never renders an approval decision: approval resolution is the ai.approval contract's boundary, not P2.16.",
     "A waiting machine is rendered as bounded by its approval reference, never as slow or stuck.",
+    "Delegation edges, capability scope and graph semantics are backend bookkeeping: the catalog quotes them as data at most and never turns them into child-agent controls.",
     "No Agent Machine state enters the browser boot payload merely because this catalog exists."
   ],
   "notRendered": [
     "provider internals",
     "execution affordances",
+    "prepare and delegate affordances",
     "approval decisions",
     "model output",
-    "delegation or child-agent state",
+    "delegation edge records and child-agent state",
+    "graph execution affordances",
     "credentials or secrets"
   ]
 }
