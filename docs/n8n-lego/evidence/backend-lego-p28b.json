@@ -1,0 +1,74 @@
+{
+  "phase": "P2.8-B",
+  "title": "Backend / System Foundation Maturity — Foundation 1.0",
+  "date": "2026-09-22",
+  "baseCommit": "bafe00a8",
+  "scope": "architecture maturation only; no feature-domain implementation, no Rust",
+  "foundationVersion": "1.0.0",
+  "gates": {
+    "architecture": { "command": "node tools/lego/architecture-gate.mjs", "result": "OK", "rules": 9, "domains": 24, "violations": 0 },
+    "architectureSelftest": { "command": "node tools/lego/architecture-gate.mjs --selftest", "result": "19/19 detected" },
+    "foundation": { "command": "node tools/lego/foundation-gate.mjs", "result": "OK", "rules": "F1-F9", "legos": 24, "creationRoutes": 12, "violations": 0 },
+    "capabilityConformance": { "command": "node tools/lego/capability-conformance.mjs", "result": "OK", "features": 23 },
+    "scaleOut": { "command": "node tools/lego/scale-out-readiness.mjs", "result": "OK", "verdict": "backend is NOT scale-out ready; 2 store.mjs blockers remain open and owned by agent-5 for P8" },
+    "aiPackFreshness": { "command": "node tools/lego/ai-pack.mjs --check", "result": "OK", "generatedFiles": 47 }
+  },
+  "tests": {
+    "command": "cd apps/n8n-lego && N8N_LEGO_CATALOG_DIR=/tmp/p26-catalog node --test test/*.test.mjs",
+    "total": 170,
+    "pass": 170,
+    "fail": 0,
+    "breakdown": {
+      "p0-p2 compat + rest": 25,
+      "lego-foundation (P2.6)": 24,
+      "lego-lifecycle (P2.7)": 28,
+      "lego-foundation-model (P2.8-B)": 93
+    }
+  },
+  "liveRegression": {
+    "rest": "8/8 (owner setup, globalScopes=121, create workflow, execute execId=1, execution history, 501 unsupported with owner/phase meta, 404, settings)",
+    "restart": "3/3 (login, workflow survived, executions survived)"
+  },
+  "invariants": {
+    "rustFilesChanged": 0,
+    "existingRuntimeFilesChanged": 0,
+    "serverMjsChanged": 0,
+    "newRuntimeBehaviour": "none — foundation modules are data plus pure functions, loaded by tools and tests only"
+  },
+  "deliverables": {
+    "data": [
+      "apps/n8n-lego/src/lego/manifest/foundation.json",
+      "apps/n8n-lego/src/lego/manifest/node-contract.json",
+      "apps/n8n-lego/src/lego/manifest/contract-schema.json",
+      "apps/n8n-lego/src/lego/manifest/domains.json (v1.2.0, per-domain Foundation 1.0 profiles)"
+    ],
+    "code": [
+      "apps/n8n-lego/src/lego/foundation.mjs",
+      "tools/lego/foundation-gate.mjs",
+      "tools/lego/impact-graph.mjs",
+      "tools/lego/ai-pack.mjs"
+    ],
+    "knowledgePack": ".ai/ — 47 generated files (constitution, glossary, index, 24 domain cards, contracts, capabilities, decision cards, 10 recipes, migration cookbook, compatibility matrix, node routes, impact graph, scale-out, ADR index)",
+    "adrs": [
+      "ADR-0001 the stable contract lives above JS/Rust/WASM",
+      "ADR-0002 JSON Schema subset, no generator yet",
+      "ADR-0003 the AI pack is generated, never hand-maintained",
+      "ADR-0004 direct in-process calls; no internal HTTP without a real process boundary",
+      "ADR-0005 Rust is an implementation choice, permanently subordinate to the contract",
+      "ADR-0006 scale-out blockers stay visible and owned"
+    ],
+    "docs": ["docs/n8n-lego/BACKEND_LEGO.md sections 19-27"]
+  },
+  "notDone": [
+    "no Node Registry, node loader, sandbox, scheduler, feature-flag platform, code generator, replay infrastructure or checkpointing",
+    "12 node creation routes are defined only; javascript and community remain the only supported-today routes",
+    "rust route is defined-not-implemented; Rust remains locked",
+    "Chat Contract reserves a Hermes provider slot; nothing depends on it and no translation LEGO exists",
+    "scale-out blockers deliberately not fixed — that is storage domain work for P8"
+  ],
+  "openForManager": [
+    "the 9 P2.7 arbitration items remain open",
+    "whether the 2 store.mjs scale-out blockers pull storage work ahead of P8",
+    "allowances A1/A2/A3 remain state:open"
+  ]
+}

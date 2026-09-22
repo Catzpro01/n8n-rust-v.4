@@ -1,0 +1,33 @@
+{
+  "name": "@lego/reconstructed-engine",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "EXECUTION ENGINE LEGO \u2014 reconstructed n8n 2.9.4 DAG execution engine, node handler registry and validation surface. This package is the single execution engine consumed by apps/n8n-ts.",
+  "license": "SEE LICENSE IN reference/n8n/LICENSE.md",
+  "exports": {
+    ".": "./index.mjs",
+    "./runner": "./runner.mjs",
+    "./node-catalog": "./node-catalog.mjs",
+    "./localization": "./localization.mjs",
+    "./node-registry": "./node-registry.mjs",
+    "./validation": "./validation.mjs",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.mjs",
+    "runner.mjs",
+    "node-registry.mjs",
+    "validation.mjs",
+    "node-catalog.mjs",
+    "localization.mjs"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "smoke": "node test-run.mjs"
+  },
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "dependencies": {}
+}

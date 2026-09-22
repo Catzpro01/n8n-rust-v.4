@@ -1,0 +1,56 @@
+# n8n lego — docker compose.
+#
+#   docker compose up -d --build
+#   docker compose logs -f
+#   docker compose down            # keeps the volume
+#
+# Volumes:
+#   n8n-lego-data  workflows, executions, users, the node catalog and icons.
+#
+# The container binds 0.0.0.0:5678 and sends no framing restrictions, so it can be
+# put behind nginx/Traefik/Caddy as-is. Set N8N_LEGO_PUBLIC_URL (or
+# N8N_LEGO_EDITOR_BASE_URL) to the public address so webhook URLs in the editor
+# point at the right host.
+name: n8n-lego
+
+services:
+  n8n-lego:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: n8n-lego:${N8N_LEGO_TAG:-latest}
+    container_name: n8n-lego
+    restart: unless-stopped
+    ports:
+      - "${N8N_LEGO_HOST_PORT:-5678}:5678"
+    environment:
+      N8N_LEGO_ENV: production
+      N8N_LEGO_HOST: 0.0.0.0
+      N8N_LEGO_PORT: "5678"
+      N8N_LEGO_USER_FOLDER: /home/node/.n8n-lego
+      # Leave the owner variables empty to get n8n's first-visit setup screen;
+      # set both to pre-create the owner account on boot.
+      N8N_LEGO_OWNER_EMAIL: ${N8N_LEGO_OWNER_EMAIL:-}
+      N8N_LEGO_OWNER_PASSWORD: ${N8N_LEGO_OWNER_PASSWORD:-}
+      N8N_LEGO_PUBLIC_URL: ${N8N_LEGO_PUBLIC_URL:-}
+      N8N_LEGO_GENERIC_TIMEZONE: ${N8N_LEGO_GENERIC_TIMEZONE:-UTC}
+    volumes:
+      - n8n-lego-data:/home/node/.n8n-lego
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:5678/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+volumes:
+  n8n-lego-data:
