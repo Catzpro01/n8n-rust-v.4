@@ -1,0 +1,93 @@
+{
+  "catalogVersion": "1.0.0",
+  "description": "Frontend consumption catalog for the bounded Agent Machine LEGO. It renders declared machine identity, lifecycle, budgets and the bounded step ledger only when handed over by the application; it never starts, steps, pauses, resumes or cancels a machine and never implies execution, delegation or approval authority.",
+  "lego": "agent-machine",
+  "phase": "B",
+  "contracts": ["ai.agent-machine"],
+  "declarationSource": {
+    "contract": {
+      "file": "apps/n8n-lego/src/lego/manifest/agent-machine.json",
+      "path": "(whole document)",
+      "owner": "manager"
+    },
+    "lego": {
+      "file": "apps/n8n-lego/src/lego/manifest/ai-lego-set.json",
+      "path": "lego#id=agent-machine",
+      "owner": "manager"
+    },
+    "capability": {
+      "file": "apps/n8n-lego/src/lego/manifest/domains.json",
+      "path": "domains#id=ai-foundation.capabilities[id=ai.agent-machine]",
+      "owner": "agent-1"
+    }
+  },
+  "publication": {
+    "status": "declared-not-handed-over",
+    "expected": {
+      "contract": "ai.agent-machine",
+      "version": "1.0.0",
+      "operations": [
+        "agentMachine.create",
+        "agentMachine.describe",
+        "agentMachine.start",
+        "agentMachine.step",
+        "agentMachine.pause",
+        "agentMachine.resume",
+        "agentMachine.cancel"
+      ],
+      "permissions": [
+        "ai:agent:create",
+        "ai:agent:invoke",
+        "ai:agent:control",
+        "ai:agent:read"
+      ]
+    },
+    "note": "The frontend receives contract rows through the application seam. It does not read backend files or claim a publication that was not handed over."
+  },
+  "rendering": {
+    "machineId": true,
+    "taskId": true,
+    "executorKind": true,
+    "lifecycle": true,
+    "sessionReference": true,
+    "contextReference": true,
+    "workspaceReference": true,
+    "budgets": true,
+    "metadata": true,
+    "stepCount": true,
+    "steps": true,
+    "failure": true,
+    "version": true,
+    "createdAt": true,
+    "updatedAt": true,
+    "providerState": false,
+    "startAffordance": false,
+    "stepAffordance": false,
+    "pauseAffordance": false,
+    "resumeAffordance": false,
+    "cancelAffordance": false,
+    "executeAffordance": false,
+    "approvalDecision": false,
+    "modelOutput": false,
+    "delegationState": false,
+    "fabricatedMachine": false
+  },
+  "rules": [
+    "The frontend may display an Agent Machine record only when the application hands over that exact record.",
+    "An unknown or malformed Agent Machine record is refused by name and never widened into a generic run.",
+    "The UI does not redefine the backend lifecycle, budgets, permissions or provider semantics.",
+    "An executor kind is a declaration, not evidence that shell, filesystem, process or remote authority is available.",
+    "Machine metadata and step continuations are displayed as descriptive state; they never become actions, permission grants or execution.",
+    "The UI never offers start, step, pause, resume or cancel affordances and never renders an approval decision: approval resolution is the ai.approval contract's boundary, not P2.16.",
+    "A waiting machine is rendered as bounded by its approval reference, never as slow or stuck.",
+    "No Agent Machine state enters the browser boot payload merely because this catalog exists."
+  ],
+  "notRendered": [
+    "provider internals",
+    "execution affordances",
+    "approval decisions",
+    "model output",
+    "delegation or child-agent state",
+    "credentials or secrets"
+  ]
+}

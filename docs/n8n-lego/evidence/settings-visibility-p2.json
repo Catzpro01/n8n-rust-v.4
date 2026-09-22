@@ -1,0 +1,151 @@
+{
+  "kind": "p2-settings-visibility",
+  "url": "http://127.0.0.1:6219",
+  "at": "2026-09-21T18:03:08.919Z",
+  "expectations": [
+    {
+      "name": "owner login → dashboard",
+      "verdict": "PASS",
+      "detail": "owner setup"
+    },
+    {
+      "name": "PublicUser.globalScopes reaches the browser (RBAC store input)",
+      "verdict": "PASS",
+      "detail": "status=200 globalScopes=121"
+    },
+    {
+      "name": "open Settings → route guard sends to \"Usage and plan\" (hideUsagePage=false)",
+      "verdict": "PASS",
+      "detail": "pathname=/settings/usage"
+    },
+    {
+      "name": "the usage page loaded its contract endpoint (GET /rest/license 200)",
+      "verdict": "PASS",
+      "detail": "[{\"method\":\"GET\",\"path\":\"/rest/license\",\"status\":200}]"
+    },
+    {
+      "name": "expected settings menu items visible (scope-driven, stock community set)",
+      "verdict": "PASS",
+      "detail": "12 entries"
+    },
+    {
+      "name": "queue/AI/community-nodes items stay hidden (flags honestly off)",
+      "verdict": "PASS",
+      "detail": "absent: Workers, AI Usage, Credential resolvers, Community nodes"
+    },
+    {
+      "name": "scope-guarded settings route renders for the owner (/settings/users)",
+      "verdict": "PASS",
+      "detail": "pathname=/settings/users"
+    },
+    {
+      "name": "flag-gated route redirects home (community nodes disabled, same as stock)",
+      "verdict": "PASS",
+      "detail": "pathname=/home/workflows"
+    },
+    {
+      "name": "navigating n8n API settings page stays (owner scope) while its backend is missing",
+      "verdict": "PASS",
+      "detail": "pathname=/settings/api"
+    },
+    {
+      "name": "unimplemented settings backend answers 501 — no fake 200 {}",
+      "verdict": "PASS",
+      "detail": "GET /rest/api-keys 501; GET /rest/api-keys/scopes 501"
+    },
+    {
+      "name": "unsupported capability contract: 501 {code:unsupported, meta.feature}",
+      "verdict": "PASS",
+      "detail": "status=501 code=unsupported feature=workflow-history"
+    },
+    {
+      "name": "no fatal uncaught page errors while walking the UI",
+      "verdict": "PASS",
+      "detail": "clean"
+    }
+  ],
+  "expectedSettingsEntries": [
+    "Usage and plan",
+    "Personal",
+    "Users",
+    "Project roles",
+    "n8n API",
+    "External Secrets",
+    "Environments",
+    "SSO",
+    "Security & policies",
+    "LDAP",
+    "Log Streaming",
+    "Migration Report"
+  ],
+  "forbiddenSettingsEntries": [
+    "Workers",
+    "AI Usage",
+    "Credential resolvers",
+    "Community nodes"
+  ],
+  "restCalls": [
+    {
+      "method": "GET",
+      "path": "/rest/settings",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/rest/login",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/rest/settings",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/rest/module-settings",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/rest/projects/my-projects",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/rest/projects/personal",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/rest/projects/count",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/rest/roles",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/rest/tags",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/rest/api-keys",
+      "status": 501
+    },
+    {
+      "method": "GET",
+      "path": "/rest/api-keys/scopes",
+      "status": 501
+    },
+    {
+      "method": "GET",
+      "path": "/rest/workflow-history/workflow/probe/versions",
+      "status": 501
+    }
+  ],
+  "pageErrors": [],
+  "failed": 0
+}

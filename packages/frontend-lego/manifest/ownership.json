@@ -1,0 +1,85 @@
+{
+  "lego": "ui-frontend",
+  "title": "Frontend LEGO — UI boundary, capability registry & extension points",
+  "owner": "agent-01",
+  "phase": "P2.5",
+  "contract": "contracts/frontend.contract.md",
+  "runtime": {
+    "package": "packages/frontend-lego",
+    "entry": "index.mjs",
+    "consumedBy": "apps/n8n-lego",
+    "vendoredAs": "apps/n8n-lego/vendor/frontend-lego",
+    "resolution": [
+      "N8N_LEGO_FRONTEND_PATH environment override",
+      "packages/frontend-lego/index.mjs (repository checkout)",
+      "apps/n8n-lego/vendor/frontend-lego/index.mjs (npm tarball / VPS tarball)",
+      "apps/n8n-lego/node_modules/@lego/frontend/index.mjs"
+    ]
+  },
+  "reference": {
+    "implementation": "vue",
+    "bundle": "n8n-editor-ui@2.9.4",
+    "referenceVersion": "2.9.4",
+    "upstreamCommit": "b6dc2787c45677a29a9612cd27eb911302961a83",
+    "owns": [],
+    "doesNotOwn": [
+      "reference/n8n/packages/frontend/**",
+      "apps/n8n-lego/src/rest/**",
+      "apps/n8n-lego/src/auth/**",
+      "crates/**"
+    ]
+  },
+  "implemented": {
+    "contract": "contracts/frontend.contract.md",
+    "package": "packages/frontend-lego",
+    "runtime": "apps/n8n-lego/src/frontend.mjs",
+    "bootEndpoint": "/rest/frontend/bootstrap",
+    "bootMetaTag": "n8n-lego:frontend-bootstrap",
+    "documentation": "docs/n8n-lego/FRONTEND_LEGO.md",
+    "tests": [
+      "packages/frontend-lego/test/01-contract.test.mjs",
+      "packages/frontend-lego/test/02-registry.test.mjs",
+      "packages/frontend-lego/test/03-errors.test.mjs",
+      "packages/frontend-lego/test/04-i18n.test.mjs",
+      "packages/frontend-lego/test/05-boundary.test.mjs",
+      "apps/n8n-lego/test/frontend.boundary.test.mjs",
+      "tests/e2e/frontend-boundary.mjs",
+      "packages/frontend-lego/test/06-sublegos.test.mjs"
+    ],
+    "subLegoCatalog": "packages/frontend-lego/manifest/sub-legos.json",
+    "subLegoContract": "contracts/frontend-sub-lego.contract.md"
+  },
+  "ports": {
+    "consumed": [
+      "P-COMPAT-ENVELOPE",
+      "P-COMPAT-ERROR-SHAPE",
+      "P-COMPAT-UNSUPPORTED-501",
+      "P-SETTINGS-FLAGS",
+      "P-PUSH-CHANNEL"
+    ],
+    "provided": [
+      "P-FRONTEND-CONTRACT",
+      "P-FRONTEND-BOOT-DESCRIPTOR",
+      "P-FRONTEND-CAPABILITY-REGISTRY",
+      "P-FRONTEND-EXTENSION-POINTS",
+      "P-FRONTEND-ERROR-MODEL",
+      "P-FRONTEND-MESSAGE-SLOTS",
+      "P-FRONTEND-SUB-LEGO-REGISTRY",
+      "P-FRONTEND-SUB-LEGO-UPGRADE"
+    ]
+  },
+  "invariants": [
+    "The pinned editor bundle is served verbatim; the only addition to index.html is one additive boot meta tag.",
+    "No visual or user-visible behavior change is introduced by this LEGO.",
+    "Contract modules are framework-neutral; Vue is named only under src/adapters/**.",
+    "No frontend-LEGO module imports a backend implementation module.",
+    "Every backend error is mapped to a stable machine-readable code before any display text exists.",
+    "No translation dictionary or translated string ships in P2.5 — only the structure that will hold one.",
+    "A unit inside this LEGO may only consume a published port of another unit; a private-internals dependency is refused by name.",
+    "Upgrading one unit leaves every unrelated unit byte-identical; a breaking upgrade requires the affected dependents to acknowledge it.",
+    "A component, button, icon or helper is never a sub-LEGO — only a unit with a contract, owner, test and upgrade path is."
+  ],
+  "zeroRust": true,
+  "referenceFrontendUntouched": true,
+  "backendUntouched": true
+}
