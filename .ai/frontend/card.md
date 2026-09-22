@@ -23,17 +23,18 @@ packages/frontend-lego/
   manifest/                 surfaces.json 12 surfaces + the capability behind each
                             extension-points.json 15 hooks (1.1.0) + 7 future consumers
                             sub-legos.json 19 units · ownership · capabilities · skills
-                            context-session.json · memory.json · workspace.json
+                            context-session.json · memory.json · workspace.json · agent-machine.json
   src/                      one module per concern, no utils dumping ground
     contract.mjs versions.mjs surface-capability.mjs registry.mjs sublegos.mjs lifecycle.mjs
     negotiation.mjs vocabulary.mjs seam.mjs backend-view.mjs envelope.mjs transport.mjs
     interactions.mjs conformance.mjs observability.mjs impact.mjs profiles.mjs i18n.mjs
     errors.mjs boot.mjs client.mjs manifests.mjs knowledge.mjs agents.mjs agent-events.mjs
-    skills.mjs context-session.mjs memory.mjs workspace.mjs lego.mjs
+    skills.mjs context-session.mjs memory.mjs workspace.mjs agent-machine.mjs lego.mjs
     adapters/ the framework adapter boundary (currently Vue; the only framework-aware code)
   test/                     01-contract … 23-degradation, 24-vocabulary, 25-operations,
                             26-ai-contracts, 27-agent-events, 28-seam, 29-alignment, 30-master,
-                            31-skills, 32-context-session, 33-milestones, 34-memory, 35-workspace
+                            31-skills, 32-context-session, 33-milestones, 34-memory, 35-workspace,
+                            36-agent-machine
 ```
 
 What the odd ones own: `negotiation.mjs` discovery, access, degradation and operation
@@ -47,8 +48,12 @@ and three published operations (`test/32`); `memory.mjs` consumes `ai.memory@1.0
 different LEGO, nine quoted sets, four published operations and no write, no ranking and no
 persistence claim (`test/34`). `workspace.mjs` consumes the bounded `ai.workspace@1.0.0`
 identity/lifecycle contract (`test/35`): it renders exact handed-over records only and never
-creates a provider, filesystem, terminal or execution authority. Memory is what survives context
-replacement; Context references it and never contains it, and the three surfaces refuse each
+creates a provider, filesystem, terminal or execution authority. `agent-machine.mjs` consumes
+the bounded `ai.agent-machine@1.0.0` execution-foundation contract (`test/36`): it renders exact
+handed-over machine records — identity, canonical lifecycle, budgets, the bounded step ledger —
+and never offers start/step/pause/resume/cancel affordances, an approval decision or any
+execution, delegation or provider authority. Memory is what survives context
+replacement; Context references it and never contains it, and the surfaces refuse each
 other's payloads by name.
 
 ## Boot flow
@@ -65,7 +70,7 @@ other's payloads by name.
 
 | Thing | Value |
 | ----- | ----- |
-| Architecture tests | 404 across 35 suites (measured with `node --test packages/frontend-lego/test/*.test.mjs`); backend comparisons skip *with a reason* unless the tree is present |
+| Architecture tests | 415 across 36 suites (measured with `node --test packages/frontend-lego/test/*.test.mjs`); backend comparisons skip *with a reason* unless the tree is present |
 | Architecture rules | 29, as data (`frontend.conformance()`), mirrored in contract §19.16 |
 | Surfaces / hooks / units | 12 / 15 (`1.1.0`) / 19 in a 3-level hierarchy |
 | Boot payload | 18,126 B JSON / 24,168 B base64, budget **32 KB**, byte-pinned to P2.5 |
@@ -73,8 +78,8 @@ other's payloads by name.
 | Runtime dependencies | none |
 | Locales | `id, en, ar, zh, ru, jv`; Arabic is RTL; 13 message slots |
 | Declared capabilities | 7 (`translation` + 6 AI), installed: 0 |
-| Contract lock rows | 19 on this P2.15 implementation branch (`ai.skill`, `ai.context`, `ai.agent-session`, `ai.memory`, `ai.workspace` published); protected main remains the pre-P2.15 baseline |
-| Vocabularies | 68 quoted with provenance, 29 local, 0 pending publication (`XA-20` closed by publication) |
+| Contract lock rows | 20 on this P2.16 implementation branch (`ai.skill`, `ai.context`, `ai.agent-session`, `ai.memory`, `ai.workspace`, `ai.agent-machine` published); protected main remains the pre-P2.16 baseline |
+| Vocabularies | 72 quoted with provenance, 29 local, 0 pending publication (`XA-20` closed by publication) |
 | Seam | 13 declared inputs, 7 forbidden sources, 16 identity fields |
 | Agent events | 26 types / 7 namespaces; trace bound 200 rows, summary 280 chars |
 
@@ -104,7 +109,7 @@ the ones a new agent gets wrong most often.
 ## Evidence commands
 
 ```bash
-npm run frontend-lego:test                          # 363 tests
+npm run frontend-lego:test                          # 415 tests
 node --test apps/n8n-lego/test/*.test.mjs           # app-side boundary, boot tag, alignment
 node apps/n8n-lego/scripts/capture-frontend-evidence.mjs   # 55-check evidence JSON
 python3 tools/sublego-audit/audit.py                # nested-LEGO + boundary audit
