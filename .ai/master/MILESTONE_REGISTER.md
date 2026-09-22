@@ -63,7 +63,7 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 - **subLegoAudit:** PASS — /tmp/n8n-p213-venv/bin/python tools/sublego-audit/audit.py (Audit tool summary text says 20 sub-LEGOs although 21 were loaded; exit status was 0.)
 - **bootPayload:** PASS — node apps/n8n-lego/scripts/capture-frontend-evidence.mjs --out <temporary-file>
 - **offlineContractConformance:** BLOCKED_BASELINE — node tests/compatibility/contract_conformance.mjs; failure: Phase 2 Rust guard finds pre-existing crates/**/*.rs and Cargo.toml artifacts already present at protected baseline e754c5df35b41b0ff2ac769519f05f056835411c; no Rust files were introduced by P2.13.
-- **agent1FocusedAndCrossAlignment:** BLOCKED — —; failure: Registered Agent 1 ref arena/01a0c6b4-n8n-rust-v-4 is absent locally and in origin; Agent 1 focused tests and two-branch alignment cannot run. This blocks reconciliation.
+- **agent1FocusedAndCrossAlignment:** BLOCKED; failure: Registered Agent 1 ref arena/01a0c6b4-n8n-rust-v-4 is absent locally and in origin; Agent 1 focused tests and two-branch alignment cannot run. This blocks reconciliation.
 
 ## Evidence roles
 

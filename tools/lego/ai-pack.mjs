@@ -1477,7 +1477,7 @@ ${rows.join('\n')}
 
 ## Verification evidence
 
-${Object.entries(current?.verificationEvidence ?? {}).map(([id, evidence]) => `- **${id}:** ${evidence.result ?? '—'} — ${evidence.command ?? ((evidence.commands ?? []).join(', ') || '—')}${evidence.notes ? ` (${evidence.notes})` : ''}${evidence.failure ? `; failure: ${evidence.failure}` : ''}`).join('\n') || '_none recorded_'}
+${Object.entries(current?.verificationEvidence ?? {}).map(([id, evidence]) => `- **${id}:** ${evidence.result ?? '—'}${evidence.command || evidence.commands ? ` — ${evidence.command ?? ((evidence.commands ?? []).join(', ') || '—')}` : ''}${evidence.notes ? ` (${evidence.notes})` : ''}${evidence.failure ? `; failure: ${evidence.failure}` : ''}`).join('\n') || '_none recorded_'}
 
 ## Evidence roles
 
