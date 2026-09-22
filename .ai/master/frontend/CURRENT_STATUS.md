@@ -53,12 +53,12 @@ registry wins and this file is a defect.
 
 | Gate | Result |
 | :--- | :--- |
-| `node --test packages/frontend-lego/test/*.test.mjs` | **283 tests across 30 suites: 279 pass, 4 skip** (backend comparisons absent), **0 fail** |
-| `node --test apps/n8n-lego/test/*.test.mjs` | 36/36 |
+| `node --test packages/frontend-lego/test/*.test.mjs` | **298 tests across 31 suites: 297 pass, 1 skip** (the Skill drift comparison needs a tree that publishes `manifest/skill.json`), **0 fail** |
+| `N8N_LEGO_CATALOG_DIR=<pinned catalog> node --test apps/n8n-lego/test/*.test.mjs` | 399/399 (396/399 without the catalog: three node-catalog suites need it) |
 | `node apps/n8n-lego/scripts/capture-frontend-evidence.mjs` | 55/55 PASS (incl. the P2.12 Skill surface) |
-| `N8N_BACKEND_LEGO_ROOT=<P2.10 tree> node --test .../test/29-alignment.test.mjs` | 7/7, 0 skipped — every canonical set compared against the backend, zero drift |
+| `N8N_BACKEND_LEGO_ROOT=<agent-2 P2.12 tree> node --test .../test/{29-alignment,31-skills}.test.mjs` | 22/22, 0 skipped — every difference between the quoted vocabulary and the moved declarations is reported and registered (`XA-19`); a path without a backend **fails**, it never skips |
 | `python3 tools/sublego-audit/audit.py` | AUDIT PASSED (12 LEGOs, 20 Sub-LEGOs, 5 Agents) |
-| `npm run verify:fast` | 5/10 — G06-G10 require `packages/workflow-lego/node_modules` (B-10) |
+| `npm run verify:fast` | 5/10 with the workspace bare; **7/10** once `packages/workflow-lego/node_modules` is installed (G01–G07 pass, G06/G07 being the two TypeScript builds). G08–G10 need a *live reference runtime* (`.runtime/node_modules` or `/home/user/.n8n-live/node_modules` with `n8n-workflow` + `n8n-core`), which is the workflow/Rust track's environment — `KNOWN_BLOCKERS.md` BL-3. No browser-parity claim is made from this sandbox. |
 
 ## 4. Readiness — the honest version
 
@@ -68,29 +68,26 @@ registry wins and this file is a defect.
 | AI Foundation | **contract-only** — declared, not implemented | `ai.foundation@1.0.0`, status `contract-only` |
 | AI experiences (Assistant, Copilot, AI Node, Execution AI mode) | **specified, not built** | `.ai/master/AI_UI_*` |
 | Agent Machine | **contracts only**, no runtime | `AGENT_MACHINE_PLAN.md` |
-| Multi-process / multi-instance scale-out | **NOT READY** | `KNOWN_BLOCKERS.md §1` (B-1, B-2, B-3) |
-| Browser/isolation profile gates | **unproven locally** | `npm run verify:fast` = 5/10 (B-10) |
-| Control plane (jobs/tasks) | **no in-repo activation evidence** — not claimed operational | B-12 |
+| Multi-process / multi-instance scale-out | **NOT READY** | `KNOWN_BLOCKERS.md` BL-1 (process-local execution ids), BL-2 (local JSON is the system of record), BL-4 (cross-agent vocabulary arbitration, incl. `XA-19`) |
+| Browser/isolation profile gates | **unproven locally** | `KNOWN_BLOCKERS.md` BL-3 — `npm run verify:fast` = 5/10 in the dev sandbox; `tests/e2e/frontend-boundary.mjs` runs in CI |
+| Control plane (jobs/tasks) | **no in-repo activation evidence** — not claimed operational | `KNOWN_BLOCKERS.md` BL-6 |
 
 ## 5. This change
 
-Adds the master documentation set (`.ai/master/`, **28 documents**, ≈190 KB of a 262,144 B budget (≈228 KB of headroom), largest document ≈23 KB of a
-32,768 B per-file cap — the exact bytes and both limits are asserted by `test/30-master-plan.test.mjs`,
-which is the authority; the figures here are rounded on purpose so they cannot drift) with its own gate (`test/30-master-plan.test.mjs`, now
-18 tests), the 26-domain correction — the domain table is a **generated projection** of `domains.json`
-@ `6f7b66da`, not prose — the platform/deployment strategy (four deployment modes, low-resource and
-Termux viability, STREAM backpressure, the Rust-by-measurement rule), the recorded decision that
-Universal Translation is an official LEGO target, the corrected fifteen-LEGO publication counts
-(2 published, 6 declared `contract-only`, 2 partial and gated, 5 `publicationPending`), the extended
-open-decision register (`recordVersion 1.1.0`, 18 rows), the thirty-question **reading test** a new
-agent must be able to satisfy from this tree alone, and the blocker/status registers. It changes **no**
-runtime, **no** contract and **no** boot payload: the boot descriptor is byte-identical at 18,126 B,
-the retrieval pack is unchanged at 81,678 B (242 B headroom), and the only test expectation added is
-test/30 itself.
+**P2.12 (agent-1, this branch).** The frontend consumes the Skill vocabulary the backend declares
+(`manifest/ai-lego-set.json#id=skill`, quoted through the vocabulary lock) and renders **discovery and
+state presentation only**: six lifecycle states as six facts, progressive disclosure, search/filter/detail,
+the canonical unsupported answer (`capability-unavailable` / `lego.capability_unavailable`, decision
+`XA-11`) while `ai.skill` has no contract-lock row, and a compatibility verdict that names what was
+required, what was offered and whether the two could be compared. A declaration that moved past the
+quote — agent-2's P2.12 tree changed the operation list and claimed `ai.skill@1.0.0` — is **reported as
+drift and registered (`XA-19`)**, never adopted. Files: `src/skills.mjs`, `manifest/skills.json`,
+`test/31-skills.test.mjs` (15 tests), contract §19.18, conformance rule A27.
 
-Verified after the change: frontend **283 / 279 / 0 fail / 4 skip** across 30 suites (test/30
-**18/18**); app **36/36**; `test/29` against the P2.10 tree **7/7, 0 skipped**; evidence **50/50**
-(JSON regenerated); sub-LEGO audit **PASSED**; `verify:fast` **5/10** (the unchanged baseline, B-10).
+Master set measured by `test/30-master-plan.test.mjs` (the authority): **28 documents, 206,832 B of a
+262,144 B budget**, largest `AI_UI_EXPERIENCE_MASTER_PLAN.md` at 23,141 B of a 32,768 B per-file cap.
+Boot payload byte-identical at **18,126 B**; retrieval pack **81,881 B of 80 KB** — 39 B of headroom, so
+this view stays terse on purpose.
 
 ## 6. What a new agent should read, in order
 

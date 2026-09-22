@@ -654,6 +654,7 @@
       "blockingLevel": "phase",
       "date": "2026-09-22",
       "references": [
+        "docs/n8n-lego/decisions/XA-19-skill-vocabulary-diff.md -> the arbitration package: the three declarations, what agrees, the four differences, and what each option costs",
         "packages/frontend-lego/test/31-skills.test.mjs -> the drift comparison runs here, against the pointed-at backend tree",
         "packages/frontend-lego/manifest/skills.json -> `alignment` names this row",
         "packages/frontend-lego/src/skills.mjs -> the quoted sets carry `publicationPending` with decision XA-11",
@@ -682,6 +683,11 @@
     "verifiedAgainst": {
       "how": "git archive <commit> | tar -x -C /tmp/a2; N8N_BACKEND_LEGO_ROOT=/tmp/a2/apps/n8n-lego/src/lego node --test packages/frontend-lego/test/29-alignment.test.mjs",
       "result": "38 canonical sets compared, 0 drift, 4 skipped tests become 0"
+    },
+    "verifiedAgainstP212": {
+      "how": "git archive 729bb112 | tar -x -C /tmp/a2p12; N8N_BACKEND_LEGO_ROOT=/tmp/a2p12/apps/n8n-lego/src/lego node --test packages/frontend-lego/test/29-alignment.test.mjs packages/frontend-lego/test/31-skills.test.mjs",
+      "result": "22/22 pass, 0 skipped: all 43 quoted sets compared (33 contract-pinned, 10 with `publicationPending`); the four differences (aiFoundationCapability, aiPermission, skillOperation, versioning) are reported by declarationDrift and registered as XA-19, and the drifted fields are named in the register row instead of being adopted",
+      "rule": "a difference the register does not carry fails the gate; adopting a word the frontend cannot quote fails the drift rules"
     }
   },
   "numbering": {

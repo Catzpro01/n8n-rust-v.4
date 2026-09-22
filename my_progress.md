@@ -34,7 +34,7 @@ ada** Agent Machine, **tidak ada** capability/permission karangan.
 **Gate:** frontend 298 (297 lulus, 1 skip), app 399/399 (katalog ter-pin), evidence 55/55, alignment
 7/7 (cabang ini) dan **20/20 dengan 0 skip** terhadap tree P2.12 agent-2 (`729bb112`) — setiap perbedaan
 dilaporkan dan terdaftar, tidak ada yang diadopsi; `lego:arch`, `lego:foundation`, `lego:capabilities`,
-`lego:scaleout`, `lego:ai:check` OK; `npm run lego:gate` 399/399; sub-LEGO audit PASSED (12 LEGO, 20 Sub-LEGO, 5 Agen). Boot payload tetap 18.126 B (tidak berubah). Gate browser (`verify:fast` G06–G10, `tests/e2e/frontend-boundary.mjs`) **tidak dijalankan di sini** — butuh `packages/workflow-lego/node_modules`; tidak ada klaim paritas browser.
+`lego:scaleout`, `lego:ai:check` OK; `npm run lego:gate` 399/399; sub-LEGO audit PASSED (12 LEGO, 20 Sub-LEGO, 5 Agen). Boot payload tetap 18.126 B (tidak berubah). Gate browser (`verify:fast` G06–G10, `tests/e2e/frontend-boundary.mjs`) **dijalankan sebagian**: 7/10 (G01–G07 lulus setelah `packages/workflow-lego/node_modules` diinstal); G08–G10 butuh live reference runtime (`.runtime/node_modules` / `/home/user/.n8n-live/node_modules`) milik jalur workflow/Rust, jadi tidak ada klaim paritas browser.
 **Tidak ada runtime AI dan tidak ada runtime Agent Machine yang diimplementasikan.**
 
 ## 🧠 P2.8-F — FRONTEND FOUNDATION MATURITY (tugas saat ini, SELESAI + terverifikasi)

@@ -70,7 +70,7 @@ and no select/load/execute (`test/31`).
 
 ## Rules worth remembering (the full list is data)
 
-`frontend.conformance()` checks all 26 rules against a live assembly; each names the
+`frontend.conformance()` checks all 27 rules against a live assembly; each names the
 vocabulary that enforces it and the suite that proves it, and
 `contracts/frontend.contract.md` §19.16 mirrors the same list as JSON.
 
