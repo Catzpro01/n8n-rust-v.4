@@ -1,153 +1,223 @@
 #!/usr/bin/env bash
-# doctor.sh — diagnosa menyeluruh baseline.
-# Default: OK (exit 0) jika install valid; server berhenti = SKIP (bukan gagal).
-# --require-running: server harus jalan + smoke run harus lulus.
-# --json: ringkasan mesin. Opsi: --help
+# Diagnose the TypeScript runtime installation.
+#
+#   bash scripts/doctor.sh [--quick] [--json] [--help]
+#
+# Exit codes: 0 healthy · 1 warnings · 2 critical (see the summary at the end).
 set -uo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$ROOT"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/common.sh
+. "$SCRIPT_DIR/lib/common.sh"
 
-REQUIRE_RUNNING=0
+QUICK=0
 JSON=0
-for arg in "$@"; do
-  case "$arg" in
-    --require-running) REQUIRE_RUNNING=1 ;;
+
+usage() {
+  cat <<EOF
+usage: bash scripts/doctor.sh [options]
+
+  --quick   skip the slower probes (log tail, disk usage, docker)
+  --json    emit machine-readable JSON instead of the report
+  -h, --help
+EOF
+}
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --quick) QUICK=1 ;;
     --json) JSON=1 ;;
-    --help|-h)
-      echo "Pakai: bash scripts/doctor.sh [--require-running] [--json]"
-      echo "  HOST/PORT env dipakai untuk probing (default 127.0.0.1:5678)"
-      exit 0 ;;
-    *) echo "[doctor][error] argumen tak dikenal: $arg" >&2; exit 1 ;;
+    -h|--help) usage; exit 0 ;;
+    *) die "unknown option: $1 (try --help)" ;;
   esac
+  shift
 done
 
-HOST_PROBE="127.0.0.1"
-PORT="${PORT:-5678}"
-BASE="http://$HOST_PROBE:$PORT"
+load_env
 
-PASS=0; FAIL=0; SKIP=0
-CHECKS_JSON=""
+CRITICAL=0
+WARNINGS=0
+declare -a LINES=()
 
-ok()   { PASS=$((PASS+1)); [ "$JSON" = "0" ] && echo "[doctor][ ok ] $*"; json_add "ok" "$*"; }
-fail() { FAIL=$((FAIL+1)); [ "$JSON" = "0" ] && echo "[doctor][FAIL] $*"; json_add "fail" "$*"; }
-skip() { SKIP=$((SKIP+1)); [ "$JSON" = "0" ] && echo "[doctor][skip] $*"; json_add "skip" "$*"; }
-info() { [ "$JSON" = "0" ] && echo "[doctor][info] $*"; }
-
-json_add() { # level, pesan — escape minimal
-  local msg="${2//\\/\\\\}"; msg="${msg//\"/\\\"}"
-  CHECKS_JSON="$CHECKS_JSON{\"level\":\"$1\",\"message\":\"$msg\"},"
+record() { # level message [hint]
+  local level="$1" message="$2" hint="${3:-}"
+  case "$level" in
+    FAIL) CRITICAL=$((CRITICAL + 1)) ;;
+    WARN) WARNINGS=$((WARNINGS + 1)) ;;
+  esac
+  LINES+=("${level}|${message}|${hint}")
 }
 
-http_get() { # path → body di stdout, exit 0 jika 2xx
-  node -e "
-fetch('$BASE$1').then(async r=>{
-  const t=await r.text();
-  process.stdout.write(t);
-  process.exit(r.ok?0:1);
-}).catch(()=>process.exit(2));" 2>/dev/null
-}
-
-http_post_run() { # body-json → body di stdout, exit 0 jika 2xx
-  node -e "
-fetch('$BASE/api/v1/workflows/run',{method:'POST',headers:{'content-type':'application/json'},body:process.argv[1]})
- .then(async r=>{process.stdout.write(await r.text());process.exit(r.ok?0:1);})
- .catch(()=>process.exit(2));" "$1" 2>/dev/null
-}
-
-[ "$JSON" = "0" ] && echo "[doctor] probing $BASE ..."
-
-# 1. Node version
-if command -v node >/dev/null 2>&1; then
-  MAJOR="$(node --version 2>/dev/null | sed -E 's/^v([0-9]+).*/\1/')"
-  if [ "${MAJOR:-0}" -ge 20 ] 2>/dev/null; then
-    ok "node $(node --version) >= 20"
+# ------------------------------------------------------------------ runtime
+if ! have_cmd node; then
+  record FAIL "node is not installed" "install Node.js >= ${RUNTIME_MIN_NODE_MAJOR}.${RUNTIME_MIN_NODE_MINOR}"
+else
+  if node_version_ok; then
+    record PASS "node $(node -v)"
   else
-    fail "node $(node --version) < 20 — butuh >= 20"
-  fi
-else
-  fail "node tidak ditemukan — jalankan bash scripts/install.sh"
-fi
-
-# 2. Build artifacts
-if [ -f apps/n8n-ts/dist/server.js ]; then
-  ok "build ada: apps/n8n-ts/dist/server.js"
-else
-  fail "build hilang: apps/n8n-ts/dist/server.js — jalankan bash scripts/install.sh"
-fi
-
-# 3. Adapter LEGO (anti engine-kedua: runtime harus punya rujukan adapter)
-if [ -f packages/reconstructed-engine/ts-runtime-adapter.mjs ] && [ -f packages/reconstructed-engine/runner.mjs ]; then
-  ok "LEGO engine + adapter ada"
-else
-  fail "packages/reconstructed-engine/{runner,ts-runtime-adapter}.mjs hilang"
-fi
-
-# 4. .env
-if [ -f .env ]; then
-  ok ".env ada"
-else
-  skip ".env belum ada (dibuat saat install.sh; default bawaan tetap jalan)"
-fi
-
-# 5. Server: /healthz
-HEALTH="$(http_get /healthz 2>/dev/null || true)"
-if echo "$HEALTH" | grep -q '"status":"ok"'; then
-  ok "GET /healthz → status ok"
-  SERVER_UP=1
-else
-  SERVER_UP=0
-  if [ "$REQUIRE_RUNNING" = "1" ]; then
-    fail "server tidak menjawab /healthz di $BASE — jalankan bash scripts/start.sh"
-  else
-    skip "server berhenti (tidak menjawab /healthz) — jalankan bash scripts/start.sh untuk cek penuh"
+    record FAIL "node $(node -v) is older than ${RUNTIME_MIN_NODE_MAJOR}.${RUNTIME_MIN_NODE_MINOR}" "upgrade Node.js"
   fi
 fi
 
-# 6-8. Hanya jika server jalan.
-if [ "${SERVER_UP:-0}" = "1" ]; then
-  LANDING="$(http_get / 2>/dev/null || true)"
-  if echo "$LANDING" | grep -q '"name":"n8n-ts-baseline"'; then
-    ok "GET / → n8n-ts-baseline"
-  else
-    fail "GET / tidak mengembalikan landing baseline: $LANDING"
-  fi
+if have_cmd npm; then record PASS "npm $(npm -v)"; else record WARN "npm is missing" "typecheck unavailable"; fi
 
-  NOTFOUND="$(http_get /rute-tidak-ada-doctor 2>/dev/null || true)"
-  if echo "$NOTFOUND" | grep -q '"code":404'; then
-    ok "404 JSON OK"
-  else
-    fail "404 tidak JSON: $NOTFOUND"
-  fi
+if [ -f "$SERVER_ENTRY" ]; then record PASS "runtime entry point present"; else record FAIL "missing $SERVER_ENTRY" "re-clone the repository"; fi
 
-  RUN_BODY='{"workflow":{"nodes":[{"name":"Doctor","type":"n8n-nodes-base.manualTrigger"}],"connections":{}}}'
-  RUN_OUT="$(http_post_run "$RUN_BODY" 2>/dev/null || true)"
-  if echo "$RUN_OUT" | grep -q '"status":"COMPLETED"'; then
-    ok "POST /api/v1/workflows/run → COMPLETED"
+# --------------------------------------------------------------------- repo
+if [ -d "$REPO_ROOT/.git" ]; then
+  if git_is_dirty; then
+    record WARN "git working tree has local changes ($(git_branch) @ $(git_ref))" "upgrades may refuse to fast-forward"
   else
-    fail "workflow run gagal: $RUN_OUT"
-  fi
-fi
-
-# 9. Docker (info saja)
-if command -v docker >/dev/null 2>&1; then
-  if docker ps --format '{{.Names}}' 2>/dev/null | grep -qx 'n8n-ts-baseline'; then
-    info "docker: container n8n-ts-baseline JALAN"
-  elif docker image inspect n8n-ts-baseline:0.1.0 >/dev/null 2>&1; then
-    info "docker: image ada, container berhenti"
-  else
-    info "docker: tersedia, image belum dibangun"
+    record PASS "git clean ($(git_branch) @ $(git_ref))"
   fi
 else
-  info "docker: tidak tersedia (mode node langsung)"
+  record WARN "$REPO_ROOT is not a git checkout" "upgrade/rollback are unavailable"
 fi
 
-CHECKS_JSON="[${CHECKS_JSON%,}]"
-if [ "$JSON" = "1" ]; then
-  if [ "$FAIL" = "0" ]; then echo "{\"ok\":true,\"pass\":$PASS,\"fail\":0,\"skip\":$SKIP,\"checks\":$CHECKS_JSON}";
-  else echo "{\"ok\":false,\"pass\":$PASS,\"fail\":$FAIL,\"skip\":$SKIP,\"checks\":$CHECKS_JSON}"; fi
+# ---------------------------------------------------------------------- env
+if [ -f "$ENV_FILE" ]; then
+  record PASS ".env present ($(grep -c '^[A-Za-z_][A-Za-z0-9_]*=' "$ENV_FILE" 2>/dev/null || echo 0) variables)"
 else
-  if [ "$FAIL" = "0" ]; then echo "[doctor] HASIL: OK (pass=$PASS skip=$SKIP)";
-  else echo "[doctor] HASIL: GAGAL (pass=$PASS fail=$FAIL skip=$SKIP)"; fi
+  record WARN ".env is missing (defaults are used)" "bash scripts/install.sh"
 fi
-[ "$FAIL" = "0" ]
+if [ -n "${N8N_TS_API_KEY:-}" ]; then
+  record PASS "API key configured (N8N_TS_API_KEY=$(mask_value "$N8N_TS_API_KEY"))"
+else
+  record WARN "N8N_TS_API_KEY is not set — /api/v1 is open" "set it before exposing the runtime publicly"
+fi
+if [ "${N8N_TS_ALLOW_CODE_EVAL:-false}" = "true" ]; then
+  record WARN "N8N_TS_ALLOW_CODE_EVAL=true — user JavaScript runs in-process" "use only for trusted workflows"
+fi
+if [ "${N8N_TS_ENV:-development}" != "production" ]; then
+  record WARN "N8N_TS_ENV=${N8N_TS_ENV:-development}" "set N8N_TS_ENV=production on the VPS"
+fi
+if [ "$(runtime_host)" = "0.0.0.0" ]; then
+  record PASS "listening on 0.0.0.0:$(runtime_port) (reachable behind a proxy)"
+else
+  record PASS "listening on $(runtime_host):$(runtime_port)"
+fi
+
+# --------------------------------------------------------------------- data
+DATA_DIR="$(runtime_data_dir)"
+if [ -d "$DATA_DIR" ]; then
+  if [ -w "$DATA_DIR" ]; then
+    record PASS "data dir writable: $DATA_DIR"
+  else
+    record FAIL "data dir is not writable: $DATA_DIR" "fix permissions (chown/chmod)"
+  fi
+else
+  record WARN "data dir does not exist yet: $DATA_DIR" "it is created on install/start"
+fi
+
+# ------------------------------------------------------------------ process
+PID="$(running_pid || true)"
+PID_FILE="$(runtime_pid_file)"
+if [ -n "$PID" ]; then
+  record PASS "runtime process alive (pid $PID)"
+  if pid_is_runtime "$PID"; then
+    record PASS "pid $PID belongs to the n8n-ts runtime"
+  else
+    record WARN "pid $PID is not recognisable as the runtime" "stale pid file?"
+  fi
+elif [ -f "$PID_FILE" ]; then
+  record WARN "pid file exists but the process is gone" "bash scripts/start.sh cleans it up"
+else
+  record WARN "runtime is not running" "bash scripts/start.sh"
+fi
+
+OWNER="$(port_owner "$(runtime_port)")"
+if [ -n "$OWNER" ]; then
+  record PASS "port $(runtime_port) in use by: $OWNER"
+else
+  record WARN "nothing is listening on port $(runtime_port)" "bash scripts/start.sh"
+fi
+
+# ------------------------------------------------------------------- health
+if health_ok 3; then
+  record PASS "GET /healthz → $(health_body 3)"
+  READINESS="$(node -e "
+    const port = $(runtime_port);
+    fetch('http://127.0.0.1:' + port + '/healthz/readiness')
+      .then(async (r) => { process.stdout.write((r.ok ? 'ok ' : 'bad ') + await r.text()); })
+      .catch(() => process.stdout.write('unreachable'));
+  " 2>/dev/null)"
+  case "$READINESS" in
+    ok*) record PASS "readiness: ${READINESS:3:160}" ;;
+    *) record FAIL "readiness probe: $READINESS" "check logs: $LOG_FILE" ;;
+  esac
+  VERSION_JSON="$(node -e "
+    const port = $(runtime_port);
+    const key = process.env.N8N_TS_API_KEY || '';
+    fetch('http://127.0.0.1:' + port + '/api/v1/version', { headers: key ? { 'x-n8n-api-key': key } : {} })
+      .then(async (r) => { const t = await r.text(); if (!r.ok) { process.stdout.write('HTTP ' + r.status); return; } const d = JSON.parse(t).data; process.stdout.write(d.version + ' engine ' + d.engine.package + '@' + d.engine.version + ' nodes ' + (d.engine.registryVersion || '?')); })
+      .catch(() => process.stdout.write('unreachable'));
+  " 2>/dev/null)"
+  case "$VERSION_JSON" in
+    HTTP\ 401*) record WARN "version endpoint needs the API key ($VERSION_JSON)" "set N8N_TS_API_KEY in this shell" ;;
+    unreachable*) record WARN "version endpoint unreachable" ;;
+    *) record PASS "runtime $VERSION_JSON" ;;
+  esac
+else
+  record FAIL "GET /healthz does not answer on port $(runtime_port)" "bash scripts/start.sh; tail -n 30 $LOG_FILE"
+fi
+
+# --------------------------------------------------------------- quick extras
+if [ "$QUICK" -eq 0 ]; then
+  if [ -f "$LOG_FILE" ]; then
+    LOG_SIZE="$(wc -c < "$LOG_FILE" 2>/dev/null | tr -d ' ')"
+    record PASS "log file $LOG_FILE (${LOG_SIZE:-0} bytes)"
+    if command -v grep >/dev/null 2>&1 && tail -n 200 "$LOG_FILE" | grep -q '"level":"error"'; then
+      record WARN "recent errors in the log" "tail -n 50 $LOG_FILE"
+    fi
+  else
+    record WARN "no log file yet ($LOG_FILE)" "background starts append here"
+  fi
+  if have_cmd df; then
+    AVAIL="$(df -Pk "$REPO_ROOT" 2>/dev/null | awk 'NR==2 {printf "%.1f GB", $4/1048576}')"
+    record PASS "disk available for the repo: ${AVAIL:-unknown}"
+  fi
+  if have_cmd systemctl && systemctl list-unit-files 2>/dev/null | grep -q '^n8n-ts-runtime.service'; then
+    STATE="$(systemctl is-active n8n-ts-runtime.service 2>/dev/null || true)"
+    if [ "$STATE" = "active" ]; then record PASS "systemd unit active"; else record WARN "systemd unit state: ${STATE:-unknown}" "systemctl status n8n-ts-runtime"; fi
+  fi
+  if have_cmd docker && docker compose version >/dev/null 2>&1; then
+    record PASS "docker compose available (deploy/docker/docker-compose.yml)"
+  fi
+fi
+
+# ------------------------------------------------------------------- output
+if [ "$JSON" -eq 1 ]; then
+  printf '{"checks":['
+  first=1
+  for line in "${LINES[@]}"; do
+    level="${line%%|*}"; rest="${line#*|}"; message="${rest%%|*}"; hint="${rest#*|}"
+    [ "$first" -eq 1 ] || printf ','
+    first=0
+    printf '{"level":"%s","message":"%s","hint":"%s"}' "$level" "$(printf '%s' "$message" | sed 's/"/\\"/g')" "$(printf '%s' "$hint" | sed 's/"/\\"/g')"
+  done
+  printf '],"critical":%d,"warnings":%d}\n' "$CRITICAL" "$WARNINGS"
+else
+  step "n8n-ts runtime doctor"
+  info "repo $(git_branch 2>/dev/null || echo n/a) @ $(git_ref 2>/dev/null || echo n/a) · node $(node -v 2>/dev/null || echo missing) · port $(runtime_port)"
+  echo
+  for line in "${LINES[@]}"; do
+    level="${line%%|*}"; rest="${line#*|}"; message="${rest%%|*}"; hint="${rest#*|}"
+    case "$level" in
+      PASS) printf '  %s✓%s %s\n' "$C_GREEN" "$C_RESET" "$message" ;;
+      WARN) printf '  %s!%s %s %s\n' "$C_YELLOW" "$C_RESET" "$message" "$([ -n "$hint" ] && printf '%s(%s)%s' "$C_DIM" "$hint" "$C_RESET")" ;;
+      FAIL) printf '  %s✗%s %s %s\n' "$C_RED" "$C_RESET" "$message" "$([ -n "$hint" ] && printf '%s(%s)%s' "$C_DIM" "$hint" "$C_RESET")" ;;
+    esac
+  done
+  echo
+  if [ "$CRITICAL" -gt 0 ]; then
+    printf '%s  %d critical issue(s), %d warning(s)%s\n' "$C_RED" "$CRITICAL" "$WARNINGS" "$C_RESET"
+  elif [ "$WARNINGS" -gt 0 ]; then
+    printf '%s  healthy with %d warning(s)%s\n' "$C_YELLOW" "$WARNINGS" "$C_RESET"
+  else
+    printf '%s  all checks passed%s\n' "$C_GREEN" "$C_RESET"
+  fi
+fi
+
+if [ "$CRITICAL" -gt 0 ]; then exit 2; fi
+if [ "$WARNINGS" -gt 0 ]; then exit 1; fi
+exit 0

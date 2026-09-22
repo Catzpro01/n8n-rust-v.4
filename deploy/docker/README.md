@@ -1,30 +1,47 @@
-# Docker — n8n-ts baseline
+# Docker deployment — TypeScript runtime
 
-## Cara mudah (disarankan)
+The runtime image needs no build step and no runtime npm dependencies: Node 22
+executes `apps/n8n-ts/src/server.ts` directly.
 
-```bash
-bash scripts/install.sh   # sekali saja (build image jika docker ada)
-bash scripts/start.sh     # idempoten (pakai docker jika image tersedia)
-bash scripts/doctor.sh    # verifikasi
-bash scripts/stop.sh      # hentikan
-```
-
-## Cara manual
+## Quickstart
 
 ```bash
-# dari repo root:
-docker build -f deploy/docker/Dockerfile -t n8n-ts-baseline:0.1.0 .
-docker compose -f deploy/docker/docker-compose.yml up -d
-docker logs -f n8n-ts-baseline
-curl -s localhost:5678/healthz
-
-# hentikan + bersihkan:
-docker compose -f deploy/docker/docker-compose.yml down
+cp .env.example .env                       # review port / API key / policies
+docker compose -f deploy/docker/docker-compose.yml up -d --build
+docker compose -f deploy/docker/docker-compose.yml ps        # health: healthy
+curl -s localhost:5678/healthz              # {"status":"ok"}
+open http://localhost:5678/                 # operator console
 ```
 
-## Catatan
+## What the container does
 
-- Konteks build = repo root (dibutuhkan untuk `apps/` + `packages/`).
-- Port host dan kontainer SAMA (`${PORT:-5678}`) — sesuai kontrak §5 (satu key `PORT`).
-- Image non-root (`app`), tanpa devDependencies, `HEALTHCHECK` ke `/healthz`.
-- `.env` repo root otomatis dibaca (opsional); variabel compose punya default aman.
+| Item | Value |
+| :--- | :--- |
+| Base image | `node:22-bookworm-slim` (override with `--build-arg NODE_IMAGE=`) |
+| User | non-root `node` |
+| Data | volume `n8n-ts-data` mounted at `/data` (`N8N_TS_DATA_DIR=/data`) |
+| Config | `env_file: ../../.env` — every variable of contract §2 is honoured |
+| Healthcheck | `GET /healthz` inside the container, every 30 s |
+| Logs | JSON lines on stdout, captured by the json-file driver (10 MB × 3) |
+| Ports | `${N8N_TS_PORT:-5678}` → container `5678` |
+
+## VPS notes
+
+* Put a reverse proxy (Caddy/nginx/Traefik) in front and terminate TLS there.
+  The runtime does **not** set `X-Frame-Options`, so proxied iframe previews work.
+* Set `N8N_TS_API_KEY` in `.env` before exposing `/api/v1` publicly, and
+  `N8N_TS_ENV=production` so stack traces stay out of responses.
+* `N8N_TS_ALLOW_CODE_EVAL` stays `false` unless you deliberately want user
+  JavaScript executed in-process (never for untrusted workflows).
+* Upgrades: `docker compose -f deploy/docker/docker-compose.yml up -d --build`
+  keeps the volume, so workflows and execution history survive.
+
+## Same host, without Docker
+
+The scripts cover the bare-metal path:
+
+```bash
+bash scripts/install.sh && bash scripts/start.sh && bash scripts/doctor.sh
+```
+
+Both paths answer the same contract, so tooling and tests work identically.

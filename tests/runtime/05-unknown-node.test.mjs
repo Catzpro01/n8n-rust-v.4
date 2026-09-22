@@ -1,64 +1,113 @@
 /**
- * 05-unknown-node — bedakan UNKNOWN_NODE (error) vs unknown TYPE (passthrough).
+ * W3 — unknown node types and dangling connections, under both policies
+ * (contract §2 policies, §3.3 warning vocabulary, §4 UNKNOWN_NODE / UNKNOWN_CONNECTION).
  */
-import { after, before, describe, it } from 'node:test';
+import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { httpPost, readFixture, spawnServer } from './helpers.mjs';
+import { Runtime, linearConnections, nodes, workflow } from './helpers/process.mjs';
 
-describe('unknown node (nyata)', () => {
-  let srv;
-  before(async () => {
-    srv = await spawnServer();
-    await srv.waitForHealth();
+let permissive;
+let permissiveRunOnly;
+let strict;
+
+before(async () => {
+  permissive = await Runtime.start();
+  permissiveRunOnly = await Runtime.start({ env: { N8N_TS_UNKNOWN_NODE_POLICY: 'error' } });
+  strict = await Runtime.start({
+    env: { N8N_TS_UNKNOWN_NODE_POLICY: 'error', N8N_TS_UNKNOWN_CONNECTION_POLICY: 'error' },
   });
-  after(async () => srv.stop());
+});
 
-  const post = (body) => httpPost(srv.baseUrl, '/api/v1/workflows/run', { body });
+after(async () => {
+  await Promise.all([permissive?.cleanup(), permissiveRunOnly?.cleanup(), strict?.cleanup()]);
+});
 
-  it('startNode tak ada → 400 UNKNOWN_NODE', async () => {
-    const r = await post(readFixture('unknown-node'));
-    assert.equal(r.status, 400);
-    assert.match(r.json.message, /Ghost/);
-    assert.equal(r.json.hint, 'UNKNOWN_NODE');
-  });
-
-  it('koneksi target tak ada → 400 UNKNOWN_NODE', async () => {
-    const r = await post({
-      workflow: {
-        nodes: [{ name: 'A', type: 'n8n-nodes-base.noOp' }],
-        connections: { A: { main: [[{ node: 'Ghost', type: 'main', index: 0 }]] } },
-      },
-    });
-    assert.equal(r.status, 400);
-    assert.equal(r.json.hint, 'UNKNOWN_NODE');
+const unknownNodeWorkflow = () =>
+  workflow({
+    name: 'unknown node',
+    nodes: [nodes.manualTrigger('Start'), nodes.unknown('HTTP Request')],
+    connections: linearConnections('Start', 'HTTP Request'),
   });
 
-  it('koneksi source tak ada → 400 UNKNOWN_NODE', async () => {
-    const r = await post({
-      workflow: {
-        nodes: [{ name: 'A', type: 'n8n-nodes-base.noOp' }],
-        connections: { Ghost: { main: [[{ node: 'A', type: 'main', index: 0 }]] } },
-      },
-    });
-    assert.equal(r.status, 400);
-    assert.equal(r.json.hint, 'UNKNOWN_NODE');
+test('default policy: unknown node types pass items through with a warning', async () => {
+  const { status, body } = await permissive.post('/api/v1/workflows/run', {
+    workflow: unknownNodeWorkflow(),
+    input: [{ json: { a: 1 } }],
   });
+  assert.equal(status, 200);
+  assert.equal(body.data.status, 'COMPLETED');
+  assert.deepEqual(body.data.data['HTTP Request'], [{ json: { a: 1 } }]);
+  assert.equal(body.data.warnings.length, 1);
+  const warning = body.data.warnings[0];
+  assert.equal(warning.code, 'UNKNOWN_NODE_TYPE');
+  assert.equal(warning.node, 'HTTP Request');
+  assert.match(warning.message, /n8n-nodes-base\.httpRequest/);
+});
 
-  it('TYPE tanpa handler → 200 passthrough (input = output)', async () => {
-    const r = await post(readFixture('two-node-passthrough'));
-    assert.equal(r.status, 200);
-    assert.equal(r.json.data.status, 'COMPLETED');
-    assert.deepEqual(r.json.data.data.First, [{ json: { echo: 'me' } }]);
-    assert.deepEqual(r.json.data.data.Second, [{ json: { echo: 'me' } }]);
-    assert.equal(r.json.data.executionLog.length, 2);
-  });
+test('the warning is persisted with the execution record', async () => {
+  const run = await permissive.post('/api/v1/workflows/run', { workflow: unknownNodeWorkflow(), input: [{ json: { a: 2 } }] });
+  const record = await permissive.get(`/api/v1/executions/${run.body.data.executionId}`);
+  assert.equal(record.body.data.warnings[0].code, 'UNKNOWN_NODE_TYPE');
+});
 
-  it('unknown type dicatat warn di log server', async () => {
-    const before = srv.output().stdout.length;
-    await post({
-      workflow: { nodes: [{ name: 'W', type: 'custom.anehBanget' }] },
-    });
-    const added = srv.output().stdout.slice(before);
-    assert.match(added, /unknown node type "custom\.anehBanget" — passthrough/);
+test('strict policy: unknown node types are 422 UNKNOWN_NODE', async () => {
+  const { status, body } = await permissiveRunOnly.post('/api/v1/workflows/run', { workflow: unknownNodeWorkflow() });
+  assert.equal(status, 422);
+  assert.equal(body.code, 'UNKNOWN_NODE');
+  assert.match(body.message, /n8n-nodes-base\.httpRequest/);
+  assert.equal(body.details.nodes[0].node, 'HTTP Request');
+});
+
+test('strict policy does not affect registered nodes', async () => {
+  const { status, body } = await permissiveRunOnly.post('/api/v1/workflows/run', {
+    workflow: workflow({ nodes: [nodes.manualTrigger('Start'), nodes.noOp('Done')], connections: linearConnections('Start', 'Done') }),
   });
+  assert.equal(status, 200);
+  assert.deepEqual(body.data.warnings, []);
+});
+
+test('a dangling connection target is a warning by default and the run completes', async () => {
+  const definition = workflow({
+    nodes: [nodes.manualTrigger('Start')],
+    connections: { Start: { main: [[{ node: 'Ghost', type: 'main', index: 0 }]] } },
+  });
+  const { status, body } = await permissive.post('/api/v1/workflows/run', { workflow: definition });
+  assert.equal(status, 200);
+  assert.equal(body.data.status, 'COMPLETED');
+  assert.deepEqual(body.data.data.Start, [{ json: {} }]);
+  assert.equal(body.data.warnings[0].code, 'UNKNOWN_CONNECTION_TARGET');
+  assert.equal(body.data.warnings[0].node, 'Ghost');
+});
+
+test('strict connection policy: dangling targets are 422 UNKNOWN_CONNECTION', async () => {
+  const definition = workflow({
+    nodes: [nodes.manualTrigger('Start')],
+    connections: { Start: { main: [[{ node: 'Ghost', type: 'main', index: 0 }]] } },
+  });
+  const { status, body } = await strict.post('/api/v1/workflows/run', { workflow: definition });
+  assert.equal(status, 422);
+  assert.equal(body.code, 'UNKNOWN_CONNECTION');
+  assert.equal(body.details.connections[0].node, 'Ghost');
+});
+
+test('code nodes report their jsCode was not executed', async () => {
+  const definition = workflow({
+    nodes: [
+      nodes.manualTrigger('Start'),
+      { name: 'Code', type: 'n8n-nodes-base.code', typeVersion: 2, parameters: { jsCode: 'return [{ json: { x: 1 } }];' } },
+    ],
+    connections: linearConnections('Start', 'Code'),
+  });
+  const { status, body } = await permissive.post('/api/v1/workflows/run', { workflow: definition, input: [{ json: { untouched: true } }] });
+  assert.equal(status, 200);
+  assert.deepEqual(body.data.data.Code, [{ json: { untouched: true } }]);
+  assert.equal(body.data.warnings[0].code, 'CODE_EVAL_DISABLED');
+  assert.equal(body.data.warnings[0].node, 'Code');
+});
+
+test('the node catalogue tells the operator what is actually implemented', async () => {
+  const { body } = await permissive.get('/api/v1/nodes');
+  const types = body.data.nodes.map((node) => node.type);
+  assert.ok(types.includes('n8n-nodes-base.set'));
+  assert.equal(types.includes('n8n-nodes-base.httpRequest'), false, 'unimplemented nodes must not pretend to exist');
 });

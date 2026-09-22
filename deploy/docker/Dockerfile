@@ -1,38 +1,49 @@
-# n8n-ts baseline — multi-stage (build TS → runner minimal).
-# Build dari repo root:  docker build -f deploy/docker/Dockerfile .
-# Lihat deploy/docker/README.md.
+# TypeScript runtime image (LEGO baseline).
+#
+# Multi-stage by convention, but there is nothing to compile: the runtime is
+# plain TypeScript executed by Node's native type stripping, with zero runtime
+# dependencies.
+#
+#   docker build -f deploy/docker/Dockerfile -t n8n-ts-runtime .
+#   docker run --rm -p 5678:5678 -v n8n-ts-data:/data n8n-ts-runtime
 
-FROM node:22-alpine AS build
+ARG NODE_IMAGE=node:22-bookworm-slim
+
+# ---------------------------------------------------------------- deps stage
+FROM ${NODE_IMAGE} AS deps
 WORKDIR /app
-
-# 1. Install deps (layer cache-friendly: lockfile dulu).
 COPY apps/n8n-ts/package.json apps/n8n-ts/package-lock.json ./apps/n8n-ts/
-RUN npm --prefix apps/n8n-ts ci
+# The runtime has no runtime dependencies; this stage only proves the lockfile
+# installs cleanly and warms the npm cache for the typecheck stage.
+RUN npm --prefix apps/n8n-ts ci --omit=dev --no-audit --no-fund
 
-# 2. Salin sumber runtime + LEGO engine (.mjs seam yang dipakai adapter).
-COPY apps/n8n-ts/ ./apps/n8n-ts/
-COPY packages/reconstructed-engine/ ./packages/reconstructed-engine/
+# -------------------------------------------------------------- runtime stage
+FROM ${NODE_IMAGE} AS runtime
+ENV NODE_ENV=production \
+    N8N_TS_HOST=0.0.0.0 \
+    N8N_TS_PORT=5678 \
+    N8N_TS_DATA_DIR=/data \
+    N8N_TS_ENV=production \
+    N8N_TS_LOG_FORMAT=json \
+    N8N_TS_PID_FILE=/data/runtime.pid
 
-# 3. Build + typecheck.
-RUN npm --prefix apps/n8n-ts run typecheck \
- && npm --prefix apps/n8n-ts run build
-
-# ---- runner ----
-FROM node:22-alpine AS runner
-ENV NODE_ENV=production
 WORKDIR /app
 
-RUN addgroup -S app && adduser -S app -G app
+COPY --from=deps /app/apps/n8n-ts/node_modules ./apps/n8n-ts/node_modules
+COPY apps/n8n-ts/package.json apps/n8n-ts/tsconfig.json ./apps/n8n-ts/
+COPY apps/n8n-ts/src ./apps/n8n-ts/src
+COPY apps/n8n-ts/README.md ./apps/n8n-ts/
+COPY packages/reconstructed-engine ./packages/reconstructed-engine
+COPY contracts/runtime-api.contract.md ./contracts/
+COPY scripts ./scripts
 
-# Hanya yang dibutuhkan saat jalan: dist/ + package.json + engine .mjs.
-COPY --from=build /app/apps/n8n-ts/dist ./apps/n8n-ts/dist
-COPY --from=build /app/apps/n8n-ts/package.json ./apps/n8n-ts/package.json
-COPY --from=build /app/packages/reconstructed-engine/*.mjs ./packages/reconstructed-engine/
+RUN mkdir -p /data && chown -R node:node /app /data
 
-USER app
+USER node
+VOLUME ["/data"]
 EXPOSE 5678
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD node -e "const p=process.env.PORT||5678;fetch('http://127.0.0.1:'+p+'/healthz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+  CMD node -e "const port=process.env.N8N_TS_PORT||5678;fetch('http://127.0.0.1:'+port+'/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
-CMD ["node", "apps/n8n-ts/dist/server.js"]
+CMD ["node", "apps/n8n-ts/src/server.ts"]

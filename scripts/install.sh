@@ -1,88 +1,134 @@
 #!/usr/bin/env bash
-# install.sh — clean machine (Ubuntu 22.04/24.04) → siap jalan.
-# Idempoten: aman di-rerun. TIDAK menjalankan server (lihat start.sh).
-set -euo pipefail
+# Install the TypeScript runtime on a clean machine.
+#
+#   bash scripts/install.sh [--systemd] [--force-deps] [--no-deps] [--help]
+#
+# Idempotent: running it twice is safe. Never overwrites an existing .env.
+set -uo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$ROOT"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/common.sh
+. "$SCRIPT_DIR/lib/common.sh"
 
-log()  { echo "[install] $*"; }
-warn() { echo "[install][warn] $*" >&2; }
-die()  { echo "[install][error] $*" >&2; exit 1; }
+WANT_SYSTEMD=0
+FORCE_DEPS=0
+SKIP_DEPS=0
 
-NODE_MIN=20
+usage() {
+  cat <<EOF
+usage: bash scripts/install.sh [options]
 
-node_major() {
-  if ! command -v node >/dev/null 2>&1; then echo 0; return; fi
-  node --version 2>/dev/null | sed -E 's/^v([0-9]+).*/\1/' | grep -E '^[0-9]+$' || echo 0
+  --systemd      install and enable the systemd unit for this checkout
+  --force-deps   reinstall apps/n8n-ts dev dependencies even if present
+  --no-deps      skip the npm install step (offline machines)
+  -h, --help     show this help
+
+The runtime itself has no runtime npm dependencies: Node.js >= ${RUNTIME_MIN_NODE_MAJOR}.${RUNTIME_MIN_NODE_MINOR} and this
+repository are enough to start it. npm is only used for the typecheck tooling.
+EOF
 }
 
-install_node_ubuntu() {
-  # Install Node 22 via NodeSource — hanya di Debian/Ubuntu dengan apt + root/sudo.
-  command -v apt-get >/dev/null 2>&1 || return 1
-  local SUDO=""
-  if [ "$(id -u)" -ne 0 ]; then
-    command -v sudo >/dev/null 2>&1 || return 1
-    SUDO="sudo"
-  fi
-  log "installing Node.js 22 via NodeSource..."
-  curl -fsSL https://deb.nodesource.com/setup_22.x | $SUDO -E bash -
-  $SUDO apt-get install -y nodejs
-}
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --systemd) WANT_SYSTEMD=1 ;;
+    --force-deps) FORCE_DEPS=1 ;;
+    --no-deps) SKIP_DEPS=1 ;;
+    -h|--help) usage; exit 0 ;;
+    *) die "unknown option: $1 (try --help)" ;;
+  esac
+  shift
+done
 
-log "repo: $ROOT"
+step "Installing the n8n TypeScript runtime"
+info "repository : $REPO_ROOT"
 
-# 1. Node.js
-MAJOR="$(node_major)"
-if [ "$MAJOR" -lt "$NODE_MIN" ]; then
-  warn "node $(command -v node >/dev/null && node --version || echo 'not found') < v$NODE_MIN"
-  if install_node_ubuntu; then
-    MAJOR="$(node_major)"
+# ------------------------------------------------------------------ checks
+if ! have_cmd node; then
+  die "node is not installed. Install Node.js >= ${RUNTIME_MIN_NODE_MAJOR}.${RUNTIME_MIN_NODE_MINOR} (https://nodejs.org or nvm) and re-run."
+fi
+if ! node_version_ok; then
+  die "Node.js $(node -v) is too old — >= ${RUNTIME_MIN_NODE_MAJOR}.${RUNTIME_MIN_NODE_MINOR} is required (native TypeScript execution)."
+fi
+ok "node $(node -v)"
+
+if [ "$SKIP_DEPS" -eq 0 ] && ! have_cmd npm; then
+  warn "npm not found — skipping dev dependencies (typecheck will not be available)"
+  SKIP_DEPS=1
+fi
+
+[ -f "$SERVER_ENTRY" ] || die "runtime entry point missing: $SERVER_ENTRY"
+
+# ------------------------------------------------------------------ layout
+step "Preparing directories"
+ensure_dirs
+ok "data dir   : $(runtime_data_dir)"
+ok "log dir    : $LOG_DIR"
+ok "state dir  : $STATE_DIR"
+
+# ------------------------------------------------------------------ env file
+step "Preparing .env"
+if [ -f "$ENV_FILE" ]; then
+  ok ".env already exists — left untouched ($(grep -c '^[A-Za-z_][A-Za-z0-9_]*=' "$ENV_FILE" 2>/dev/null || echo 0) variables)"
+else
+  if [ -f "$ENV_EXAMPLE" ]; then
+    cp "$ENV_EXAMPLE" "$ENV_FILE"
+    ok ".env created from .env.example — review it before exposing the runtime"
   else
-    die "butuh Node.js >= $NODE_MIN. Install manual: https://nodejs.org lalu rerun install.sh"
+    die ".env.example is missing; cannot create .env"
   fi
 fi
-[ "$MAJOR" -ge "$NODE_MIN" ] || die "node masih v$MAJOR — butuh >= $NODE_MIN"
-log "node $(node --version) OK"
-command -v npm >/dev/null 2>&1 || die "npm tidak ditemukan (seharusnya ikut Node.js)"
-log "npm $(npm --version) OK"
+load_env
 
-# 2. Dependencies + build
-if [ -f apps/n8n-ts/package-lock.json ]; then
-  log "npm ci apps/n8n-ts..."
-  npm --prefix apps/n8n-ts ci
+# ------------------------------------------------------------------ deps
+if [ "$SKIP_DEPS" -eq 1 ]; then
+  dim "  (skipping dev dependencies)"
 else
-  warn "lockfile hilang — fallback npm install"
-  npm --prefix apps/n8n-ts install
-fi
-log "typecheck + build..."
-npm --prefix apps/n8n-ts run typecheck
-npm --prefix apps/n8n-ts run build
-[ -f apps/n8n-ts/dist/server.js ] || die "build gagal: dist/server.js tidak ada"
-log "build OK: apps/n8n-ts/dist/server.js"
-
-# 3. .env (jangan timpa milik user)
-if [ -f .env ]; then
-  log ".env sudah ada — tidak ditimpa"
-else
-  cp .env.example .env
-  log ".env dibuat dari .env.example (silakan sesuaikan PORT/HOST bila perlu)"
-fi
-
-# 4. Docker image (best-effort — fallback node langsung selalu tersedia)
-if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
-  log "docker terdeteksi — build image (best-effort)..."
-  if docker compose -f deploy/docker/docker-compose.yml build 2>&1 | tail -n 3; then
-    log "docker image OK"
+  step "Installing dev dependencies (typescript, @types/node)"
+  if [ "$FORCE_DEPS" -eq 0 ] && [ -x "$REPO_ROOT/apps/n8n-ts/node_modules/.bin/tsc" ]; then
+    ok "already installed (use --force-deps to refresh)"
   else
-    warn "docker build gagal — start.sh akan memakai node langsung"
+    if install_runtime_deps >/dev/null 2>&1; then
+      ok "npm install complete"
+    else
+      warn "npm install failed — the runtime still works, but 'npm run runtime:typecheck' will not"
+    fi
   fi
-else
-  log "docker tidak ada — mode node langsung (cukup untuk baseline)"
 fi
 
-# 5. Verifikasi akhir (tanpa server jalan)
-log "verifikasi install..."
-bash scripts/doctor.sh || die "doctor.sh gagal — lihat pesan di atas"
+# ------------------------------------------------------------------ systemd
+if [ "$WANT_SYSTEMD" -eq 1 ]; then
+  step "Installing systemd unit"
+  if ! have_cmd systemctl; then
+    warn "systemctl not available — skipping"
+  else
+    local_unit="$REPO_ROOT/deploy/systemd/n8n-ts-runtime.service"
+    [ -f "$local_unit" ] || die "missing unit template: $local_unit"
+    target="/etc/systemd/system/n8n-ts-runtime.service"
+    sudo_cmd=""
+    [ "$(id -u)" -ne 0 ] && sudo_cmd="sudo"
+    tmp="$(mktemp)"
+    sed -e "s|__REPO__|$REPO_ROOT|g" \
+        -e "s|__USER__|$(id -un)|g" \
+        -e "s|__GROUP__|$(id -gn)|g" \
+        -e "s|__DATA_DIR__|$(runtime_data_dir)|g" \
+        "$local_unit" > "$tmp"
+    $sudo_cmd install -m 0644 "$tmp" "$target"
+    rm -f "$tmp"
+    $sudo_cmd systemctl daemon-reload
+    $sudo_cmd systemctl enable n8n-ts-runtime.service >/dev/null 2>&1 || true
+    ok "unit installed: $target"
+    info "start with: sudo systemctl start n8n-ts-runtime"
+    info "logs with : journalctl -u n8n-ts-runtime -f"
+  fi
+fi
 
-log "SELESAI. Lanjut: bash scripts/start.sh"
+# ------------------------------------------------------------------ summary
+echo
+step "Install complete"
+env_summary
+echo
+info "next steps:"
+info "  1. review .env                  (port, API key, policies)"
+info "  2. bash scripts/start.sh        (background) or npm run runtime:start (foreground)"
+info "  3. bash scripts/doctor.sh       (verify the installation)"
+info "  4. open http://127.0.0.1:$(runtime_port)/  (operator console)"

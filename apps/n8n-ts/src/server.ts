@@ -1,141 +1,118 @@
 /**
- * n8n-ts baseline runtime — entry point.
- * Hanya `node:http`, tanpa framework. Lihat README.md untuk oprek/debug.
+ * Runtime entry point — `node apps/n8n-ts/src/server.ts` (no build step).
  *
- * Routing (kontrak §2): GET / · GET /healthz · POST /api/v1/workflows/run.
- * Selain itu: 404 JSON (baseline tidak punya SPA).
+ * Boot order: config → logger → stores → routes → listen → signal handlers.
+ * Exit codes: 78 invalid configuration (EX_CONFIG), 1 fatal boot error, 0 clean shutdown.
  */
-import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
-import { dotenvLoadedFiles, formatConfigLine, loadConfig } from './config.js';
-import {
-  sendMethodNotAllowed,
-  sendNotFound,
-} from './envelope.js';
-import { logger, setLogLevel } from './logger.js';
-import { handleHealth } from './routes/health.js';
-import { handleRoot } from './routes/root.js';
-import { handleRun } from './routes/run.js';
+import { createServer, type Server } from 'node:http';
+import { loadConfig, describeConfig, ConfigError, type RuntimeConfig } from './config.ts';
+import { createLogger, type Logger } from './logger.ts';
+import { createApp, handleRequest, type App } from './app.ts';
 
-const RUN_PATH = '/api/v1/workflows/run';
+const EX_CONFIG = 78;
+const SHUTDOWN_GRACE_MS = 10_000;
+
+function checkNodeVersion(logger?: Logger): void {
+  const [major = 0, minor = 0] = process.versions.node.split('.').map((part) => Number(part));
+  if (major > 22 || (major === 22 && minor >= 18) || major >= 23) return;
+  const message = `Node.js >= 22.18.0 is required (native TypeScript execution); running ${process.version}`;
+  if (logger) logger.error(message);
+  else process.stderr.write(`${message}\n`);
+  process.exit(EX_CONFIG);
+}
+
+async function shutdown(app: App, server: Server, logger: Logger, signal: string): Promise<void> {
+  app.shuttingDown = true;
+  logger.info('shutdown requested', { signal, graceMs: SHUTDOWN_GRACE_MS });
+
+  const forced = setTimeout(() => {
+    logger.warn('shutdown grace period elapsed — destroying remaining connections');
+    server.closeAllConnections?.();
+  }, SHUTDOWN_GRACE_MS);
+  forced.unref();
+
+  await new Promise<void>((resolve) => {
+    server.close(() => resolve());
+    server.closeIdleConnections?.();
+  });
+  clearTimeout(forced);
+  logger.info('runtime stopped');
+  process.exit(0);
+}
 
 async function main(): Promise<void> {
-  const config = loadConfig();
-  setLogLevel(config.logLevel);
-  const dotenvFiles = dotenvLoadedFiles();
-  logger.debug(`dotenv loaded: ${dotenvFiles.length > 0 ? dotenvFiles.join(', ') : '(none)'}`);
+  checkNodeVersion();
 
-  const server = createServer((req, res) => {
-    void dispatch(req, res, config.version, config.bodyLimitBytes, config.executionTimeoutMs, config.defaultLocale)
-      .catch((err: unknown) => {
-        logger.error('unhandled request error', { error: String(err) });
-        if (!res.headersSent) {
-          res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
-          res.end(JSON.stringify({ code: 500, message: 'Workflow execution failed', hint: 'EXECUTION_FAILED' }));
-        }
-      });
+  let config: RuntimeConfig;
+  try {
+    config = loadConfig();
+  } catch (error) {
+    const message = error instanceof ConfigError ? error.message : (error as Error).message;
+    process.stderr.write(`${JSON.stringify({ level: 'error', msg: 'invalid configuration', error: message })}\n`);
+    process.exit(EX_CONFIG);
+  }
+
+  const logger = createLogger({
+    level: config.logLevel,
+    format: config.logFormat,
+    base: { service: 'n8n-ts-runtime', pid: process.pid, env: config.env },
   });
 
-  installShutdown(server);
+  logger.info('runtime starting', { version: config.version, node: process.version });
+  logger.debug('effective configuration', describeConfig(config));
+  if (config.apiKey === null) {
+    logger.warn('N8N_TS_API_KEY is not set — /api/v1 is unauthenticated (acceptable for local development only)');
+  }
+  if (config.allowCodeEval) {
+    logger.warn('N8N_TS_ALLOW_CODE_EVAL is enabled — user JavaScript runs in-process; not production safe');
+  }
+
+  const app = await createApp(config, logger);
+  const server = createServer((request, response) => {
+    handleRequest(app, request, response).catch((error: unknown) => {
+      logger.error('unhandled request error', { cause: error instanceof Error ? error.message : String(error) });
+      if (!response.headersSent) response.writeHead(500, { 'content-type': 'application/json' });
+      response.end(JSON.stringify({ code: 'INTERNAL_ERROR', message: 'unhandled request error' }));
+    });
+  });
+  server.keepAliveTimeout = 65_000;
+  server.headersTimeout = 70_000;
 
   await new Promise<void>((resolve, reject) => {
-    server.on('error', reject);
-    server.listen(config.port, config.host, resolve);
+    server.once('error', reject);
+    server.listen(config.port, config.host, () => {
+      server.off('error', reject);
+      resolve();
+    });
   });
 
-  logger.info(formatConfigLine(config));
-  logger.info(`listening on ${config.host}:${config.port}`);
-}
+  const address = server.address();
+  const port = typeof address === 'object' && address ? address.port : config.port;
+  logger.info('runtime listening', {
+    url: `http://${config.host}:${port}`,
+    console: `http://${config.host}:${port}/`,
+    healthz: `http://${config.host}:${port}/healthz`,
+    storage: config.storage,
+    dataDir: config.dataDir,
+  });
 
-async function dispatch(
-  req: IncomingMessage,
-  res: ServerResponse,
-  version: string,
-  bodyLimitBytes: number,
-  executionTimeoutMs: number,
-  defaultLocale: string,
-): Promise<void> {
-  const pathname = safePathname(req.url);
-  const method = (req.method ?? 'GET').toUpperCase();
-
-  // GET / (+ HEAD ramah)
-  if (pathname === '/') {
-    if (method === 'GET') {
-      logger.debug('GET / 200');
-      handleRoot(req, res, version);
-      return;
-    }
-    sendMethodNotAllowed(res);
-    return;
-  }
-
-  // GET /healthz (+ HEAD tanpa body)
-  if (pathname === '/healthz') {
-    if (method === 'GET' || method === 'HEAD') {
-      logger.debug(`${method} /healthz 200`);
-      handleHealth(req, res, version);
-      return;
-    }
-    sendMethodNotAllowed(res);
-    return;
-  }
-
-  // POST /api/v1/workflows/run
-  if (pathname === RUN_PATH) {
-    if (method !== 'POST') {
-      sendMethodNotAllowed(res);
-      return;
-    }
-    await handleRun(req, res, {
-      host: '',
-      port: 0,
-      logLevel: 'info',
-      bodyLimitBytes,
-      executionTimeoutMs,
-      defaultLocale,
-      nodeEnv: '',
-      version,
+  for (const signal of ['SIGTERM', 'SIGINT'] as const) {
+    process.on(signal, () => {
+      void shutdown(app, server, logger, signal);
     });
-    return;
   }
-
-  sendNotFound(res);
+  process.on('unhandledRejection', (reason) => {
+    logger.error('unhandled promise rejection', { cause: reason instanceof Error ? reason.message : String(reason) });
+  });
+  process.on('uncaughtException', (error) => {
+    logger.error('uncaught exception — exiting', { cause: error.message, stack: error.stack });
+    process.exit(1);
+  });
 }
 
-function safePathname(rawUrl: string | undefined): string {
-  try {
-    return new URL(rawUrl ?? '/', 'http://local').pathname;
-  } catch {
-    return '/__bad_url__';
-  }
-}
-
-/** Graceful shutdown: stop accept → drain ≤10 dtk → exit 0. Sinyal ke-2 = paksa. */
-function installShutdown(server: ReturnType<typeof createServer>): void {
-  let shuttingDown = false;
-  const onSignal = (signal: string): void => {
-    if (shuttingDown) {
-      logger.warn(`received ${signal} again — force exit`);
-      process.exit(1);
-    }
-    shuttingDown = true;
-    logger.info(`received ${signal} — draining...`);
-    const force = setTimeout(() => {
-      logger.warn('drain timeout 10s — closing connections');
-      server.closeAllConnections();
-      process.exit(0);
-    }, 10_000);
-    force.unref?.();
-    server.close(() => {
-      clearTimeout(force);
-      logger.info('shutdown complete');
-      process.exit(0);
-    });
-  };
-  process.on('SIGTERM', () => onSignal('SIGTERM'));
-  process.on('SIGINT', () => onSignal('SIGINT'));
-}
-
-main().catch((err: unknown) => {
-  process.stderr.write(`[error] boot failed: ${String(err)}\n`);
+main().catch((error: unknown) => {
+  process.stderr.write(
+    `${JSON.stringify({ level: 'error', msg: 'runtime failed to start', error: error instanceof Error ? error.message : String(error) })}\n`,
+  );
   process.exit(1);
 });

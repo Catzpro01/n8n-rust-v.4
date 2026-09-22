@@ -1,0 +1,65 @@
+{
+  "phase": "P2.6",
+  "recorded": "2026-09-22",
+  "baseline": "main@cb71dbb2",
+  "architectureGate": {
+    "ok": true,
+    "violations": 0,
+    "rules": [
+      "R1 unowned-file",
+      "R2 forbidden-direction",
+      "R3 undeclared-dependency",
+      "R4 internal-import",
+      "R5 legacy-zone-growth",
+      "R6 registry-invalid",
+      "R7 contract-drift",
+      "R8 stale-allowance"
+    ]
+  },
+  "gateSelftest": {
+    "plantedViolations": 7,
+    "negativeControls": 1,
+    "detected": 8,
+    "note": "node tools/lego/architecture-gate.mjs --selftest"
+  },
+  "capabilityConformance": {
+    "ok": true,
+    "restFeaturesChecked": 23,
+    "note": "501 meta owner/phase == registry owner/phase"
+  },
+  "registry": {
+    "domains": 21,
+    "agents": 7,
+    "capabilities": 64,
+    "capabilityStatus": {
+      "implemented": 24,
+      "unsupported": 14,
+      "deferred": 13,
+      "legacy": 9,
+      "planned": 3,
+      "template": 1
+    },
+    "allowances": 3,
+    "lockedContracts": 5,
+    "errorCodes": 24
+  },
+  "tests": {
+    "foundationContract": "24/24",
+    "fullUnitSuite": "49/49 (25 pre-existing P0/P1/P2 + 24 new)",
+    "restE2E": "8/8 (owner setup, globalScopes=121, create, execute, history, 501, 404, settings)",
+    "restartRegression": "3/3 (login, workflow survived, executions survived)"
+  },
+  "runtimeImpact": {
+    "filesChangedInExistingRuntime": 0,
+    "routesAdded": 0,
+    "routesChanged": 0,
+    "note": "src/server.mjs, src/compat/, src/auth/, src/settings/, src/rest/ are byte-identical to cb71dbb2"
+  },
+  "rust": {
+    "implemented": false,
+    "filesTouched": 0
+  },
+  "notVerifiedHere": [
+    "browser gate tests/e2e/lego-smoke.mjs and tests/e2e/settings-compat.mjs — puppeteer Chromium download is blocked in this sandbox; both run in the CI clean-clone job, unchanged by P2.6"
+  ]
+}

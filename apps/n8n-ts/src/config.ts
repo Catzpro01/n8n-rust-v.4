@@ -1,178 +1,185 @@
 /**
- * Konfigurasi baseline (kontrak §5) — dibaca sekali saat boot.
- * Mendukung file `.env` TANPA package dotenv (parser KEY=VALUE sederhana)
- * agar runtime tetap nol dependensi.
+ * Runtime configuration — every knob is an environment variable documented in
+ * contracts/runtime-api.contract.md §2.  Invalid values fail fast (exit 78,
+ * EX_CONFIG) instead of silently falling back, because a runtime that comes up
+ * with the wrong port or the wrong data directory is worse than one that does
+ * not come up at all.
  */
-import { existsSync, readFileSync } from 'node:fs';
-import { logger, type LogLevel } from './logger.js';
+import { fileURLToPath } from 'node:url';
+import { dirname, isAbsolute, join, resolve } from 'node:path';
+import { readFileSync } from 'node:fs';
 
-export interface BaselineConfig {
+export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+export type LogFormat = 'json' | 'text';
+export type StorageKind = 'file' | 'memory';
+export type UnknownNodePolicy = 'passthrough' | 'error';
+export type UnknownConnectionPolicy = 'warn' | 'error';
+export type RuntimeEnv = 'development' | 'production' | 'test';
+
+export type RuntimeConfig = {
   host: string;
   port: number;
+  env: RuntimeEnv;
   logLevel: LogLevel;
-  bodyLimitBytes: number;
+  logFormat: LogFormat;
+  dataDir: string;
+  storage: StorageKind;
+  maxBodyBytes: number;
   executionTimeoutMs: number;
-  defaultLocale: string;
-  nodeEnv: string;
+  unknownNodePolicy: UnknownNodePolicy;
+  unknownConnectionPolicy: UnknownConnectionPolicy;
+  allowCodeEval: boolean;
+  apiKey: string | null;
+  corsOrigin: string;
+  locale: string;
+  executionHistory: number;
+  pidFile: string;
+  repoRoot: string;
   version: string;
-}
-
-const DEFAULTS = {
-  host: '0.0.0.0',
-  port: 5678,
-  logLevel: 'info' as LogLevel,
-  bodyLimitBytes: 1024 * 1024,
-  executionTimeoutMs: 30_000,
-  defaultLocale: 'id',
-  nodeEnv: 'production',
-  version: '0.1.0',
+  startedAt: string;
 };
 
-/** Parser .env minimal: `KEY=VALUE`, abaikan kosong + `#`, strip quotes. */
-export function parseDotenv(text: string): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const rawLine of text.split('\n')) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith('#') || !line.includes('=')) continue;
-    const idx = line.indexOf('=');
-    const key = line.slice(0, idx).trim();
-    let value = line.slice(idx + 1).trim();
-    if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
-      value = value.slice(1, -1);
-    }
-    if (key) out[key] = value;
-  }
-  return out;
+/** Thrown for every configuration problem; `server.ts` maps it to exit code 78. */
+export class ConfigError extends Error {
+  override name = 'ConfigError';
 }
 
-/** Muat `.env` (repo root + cwd) TANPA menimpa env yang sudah ada. */
-function loadDotenvFiles(): string[] {
-  const loaded: string[] = [];
-  const candidates = [
-    new URL('../../../.env', import.meta.url), // repo root (dari src/ maupun dist/)
-    new URL('../../.env', import.meta.url), // apps/n8n-ts/.env
-  ];
-  // cwd/.env — path absolut agar jelas di log
-  const cwdEnv = `${process.cwd()}/.env`;
-  for (const url of candidates) {
-    try {
-      const path = new URL(url).pathname;
-      if (existsSync(path)) {
-        applyDotenv(readFileSync(path, 'utf8'));
-        loaded.push(path);
-      }
-    } catch {
-      // abaikan — .env opsional
-    }
-  }
+const LOG_LEVELS: LogLevel[] = ['debug', 'info', 'warn', 'error'];
+const LOG_FORMATS: LogFormat[] = ['json', 'text'];
+const STORAGE_KINDS: StorageKind[] = ['file', 'memory'];
+const RUNTIME_ENVS: RuntimeEnv[] = ['development', 'production', 'test'];
+const UNKNOWN_NODE_POLICIES: UnknownNodePolicy[] = ['passthrough', 'error'];
+const UNKNOWN_CONNECTION_POLICIES: UnknownConnectionPolicy[] = ['warn', 'error'];
+const TRUE_VALUES = new Set(['1', 'true', 'yes', 'on']);
+const FALSE_VALUES = new Set(['0', 'false', 'no', 'off']);
+
+function repoRootFromModule(): string {
+  // apps/n8n-ts/src/config.ts -> <repo>
+  return resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
+}
+
+function readPackageVersion(repoRoot: string): string {
   try {
-    if (existsSync(cwdEnv) && !loaded.includes(cwdEnv)) {
-      applyDotenv(readFileSync(cwdEnv, 'utf8'));
-      loaded.push(cwdEnv);
-    }
+    const raw = readFileSync(join(repoRoot, 'apps', 'n8n-ts', 'package.json'), 'utf8');
+    const parsed = JSON.parse(raw) as { version?: unknown };
+    return typeof parsed.version === 'string' ? parsed.version : '0.0.0';
   } catch {
-    // abaikan
-  }
-  return loaded;
-}
-
-function applyDotenv(text: string): void {
-  for (const [key, value] of Object.entries(parseDotenv(text))) {
-    if (process.env[key] === undefined) process.env[key] = value;
+    return '0.0.0';
   }
 }
 
-function parsePort(raw: string | undefined): number {
-  if (raw === undefined || raw === '') return DEFAULTS.port;
-  const n = Number(raw);
-  if (!Number.isInteger(n) || n < 1 || n > 65535) {
-    logger.warn(`invalid PORT "${raw}" — fallback ${DEFAULTS.port}`);
-    return DEFAULTS.port;
+function firstDefined(env: NodeJS.ProcessEnv, ...names: string[]): { name: string; value: string } | undefined {
+  for (const name of names) {
+    const value = env[name];
+    if (value !== undefined && value !== '') return { name, value };
   }
-  return n;
+  return undefined;
 }
 
-function parseLogLevel(raw: string | undefined): LogLevel {
-  if (raw === 'debug' || raw === 'info' || raw === 'warn' || raw === 'error') return raw;
-  if (raw !== undefined && raw !== '') logger.warn(`invalid LOG_LEVEL "${raw}" — fallback info`);
-  return DEFAULTS.logLevel;
-}
-
-function parseBoundedInt(
-  raw: string | undefined,
-  name: string,
-  def: number,
-  min: number,
-  max: number,
-): number {
-  if (raw === undefined || raw === '') return def;
-  const n = Number(raw);
-  if (!Number.isInteger(n)) {
-    logger.warn(`invalid ${name} "${raw}" — fallback ${def}`);
-    return def;
+function readEnum<T extends string>(
+  env: NodeJS.ProcessEnv,
+  names: string[],
+  allowed: T[],
+  fallback: T,
+): T {
+  const found = firstDefined(env, ...names);
+  if (!found) return fallback;
+  const value = found.value.trim().toLowerCase();
+  if (!(allowed as string[]).includes(value)) {
+    throw new ConfigError(`${found.name}="${found.value}" is invalid — expected one of: ${allowed.join(', ')}`);
   }
-  if (n < min || n > max) {
-    logger.warn(`${name} ${n} out of range [${min},${max}] — clamped`);
-    return Math.min(max, Math.max(min, n));
+  return value as T;
+}
+
+function readInt(env: NodeJS.ProcessEnv, names: string[], fallback: number, min: number, max: number): number {
+  const found = firstDefined(env, ...names);
+  if (!found) return fallback;
+  const value = Number(found.value.trim());
+  if (!Number.isInteger(value) || value < min || value > max) {
+    throw new ConfigError(`${found.name}="${found.value}" is invalid — expected an integer in [${min}, ${max}]`);
   }
-  return n;
+  return value;
 }
 
-function loadVersion(): string {
-  try {
-    const url = new URL('../package.json', import.meta.url); // apps/n8n-ts/package.json
-    const pkg = JSON.parse(readFileSync(url, 'utf8')) as { version?: unknown };
-    if (typeof pkg.version === 'string' && pkg.version) return pkg.version;
-  } catch {
-    // fallback ke default
-  }
-  return DEFAULTS.version;
+function readBool(env: NodeJS.ProcessEnv, names: string[], fallback: boolean): boolean {
+  const found = firstDefined(env, ...names);
+  if (!found) return fallback;
+  const value = found.value.trim().toLowerCase();
+  if (TRUE_VALUES.has(value)) return true;
+  if (FALSE_VALUES.has(value)) return false;
+  throw new ConfigError(`${found.name}="${found.value}" is invalid — expected one of: true, false, 1, 0, yes, no, on, off`);
 }
 
-let lastDotenvLoaded: string[] = [];
-
-/** File .env yang dimuat pada loadConfig terakhir (untuk log setelah level aktif). */
-export function dotenvLoadedFiles(): string[] {
-  return lastDotenvLoaded;
+function readString(env: NodeJS.ProcessEnv, names: string[], fallback: string): string {
+  const found = firstDefined(env, ...names);
+  return found ? found.value.trim() : fallback;
 }
 
-export function loadConfig(): BaselineConfig {
-  lastDotenvLoaded = loadDotenvFiles();
-  const config: BaselineConfig = {
-    host: process.env.HOST?.trim() || DEFAULTS.host,
-    port: parsePort(process.env.PORT),
-    logLevel: parseLogLevel(process.env.LOG_LEVEL),
-    bodyLimitBytes: parseBoundedInt(
-      process.env.BODY_LIMIT_BYTES,
-      'BODY_LIMIT_BYTES',
-      DEFAULTS.bodyLimitBytes,
-      1024,
-      10 * 1024 * 1024,
+/**
+ * Build the frozen runtime configuration.
+ *
+ * @throws {ConfigError} on any invalid value (never silently ignored)
+ */
+export function loadConfig(env: NodeJS.ProcessEnv = process.env, repoRoot = repoRootFromModule()): RuntimeConfig {
+  const envName = readEnum<RuntimeEnv>(env, ['N8N_TS_ENV'], RUNTIME_ENVS, 'development');
+  const dataDirRaw = readString(env, ['N8N_TS_DATA_DIR'], join(repoRoot, 'data'));
+  const dataDir = isAbsolute(dataDirRaw) ? dataDirRaw : resolve(repoRoot, dataDirRaw);
+
+  const config: RuntimeConfig = {
+    host: readString(env, ['N8N_TS_HOST', 'HOST'], '0.0.0.0'),
+    port: readInt(env, ['N8N_TS_PORT', 'PORT'], 5678, 1, 65535),
+    env: envName,
+    logLevel: readEnum<LogLevel>(env, ['N8N_TS_LOG_LEVEL'], LOG_LEVELS, 'info'),
+    logFormat: readEnum<LogFormat>(env, ['N8N_TS_LOG_FORMAT'], LOG_FORMATS, envName === 'development' ? 'text' : 'json'),
+    dataDir,
+    storage: readEnum<StorageKind>(env, ['N8N_TS_STORAGE'], STORAGE_KINDS, 'file'),
+    maxBodyBytes: readInt(env, ['N8N_TS_MAX_BODY_BYTES'], 1024 * 1024, 1024, 256 * 1024 * 1024),
+    executionTimeoutMs: readInt(env, ['N8N_TS_EXECUTION_TIMEOUT_MS'], 30_000, 1, 24 * 60 * 60 * 1000),
+    unknownNodePolicy: readEnum<UnknownNodePolicy>(env, ['N8N_TS_UNKNOWN_NODE_POLICY'], UNKNOWN_NODE_POLICIES, 'passthrough'),
+    unknownConnectionPolicy: readEnum<UnknownConnectionPolicy>(
+      env,
+      ['N8N_TS_UNKNOWN_CONNECTION_POLICY'],
+      UNKNOWN_CONNECTION_POLICIES,
+      'warn',
     ),
-    executionTimeoutMs: parseBoundedInt(
-      process.env.EXECUTION_TIMEOUT_MS,
-      'EXECUTION_TIMEOUT_MS',
-      DEFAULTS.executionTimeoutMs,
-      1000,
-      300_000,
-    ),
-    defaultLocale: process.env.N8N_LOCALE?.trim() || DEFAULTS.defaultLocale,
-    nodeEnv: process.env.NODE_ENV?.trim() || DEFAULTS.nodeEnv,
-    version: loadVersion(),
+    allowCodeEval: readBool(env, ['N8N_TS_ALLOW_CODE_EVAL'], false),
+    apiKey: firstDefined(env, 'N8N_TS_API_KEY')?.value.trim() ?? null,
+    corsOrigin: readString(env, ['N8N_TS_CORS_ORIGIN'], '*') || '*',
+    locale: readString(env, ['N8N_TS_LOCALE'], 'id').toLowerCase(),
+    executionHistory: readInt(env, ['N8N_TS_EXECUTION_HISTORY'], 200, 0, 10_000),
+    pidFile: '',
+    repoRoot,
+    version: readPackageVersion(repoRoot),
+    startedAt: new Date().toISOString(),
   };
-  // Catatan: JANGAN log di sini — level log belum aktif (masih default info).
-  // server.ts mencetak dotenvLoadedFiles() setelah setLogLevel().
+
+  const pidRaw = readString(env, ['N8N_TS_PID_FILE'], join(config.dataDir, 'runtime.pid'));
+  config.pidFile = isAbsolute(pidRaw) ? pidRaw : resolve(repoRoot, pidRaw);
+  if (config.apiKey === '') throw new ConfigError('N8N_TS_API_KEY is set but empty — unset it or provide a value');
+
   return config;
 }
 
-/** Satu baris config efektif — WAJIB di-log saat boot agar mudah debug. */
-export function formatConfigLine(c: BaselineConfig): string {
-  return (
-    `[config] host=${c.host} port=${c.port} logLevel=${c.logLevel} ` +
-    `bodyLimit=${c.bodyLimitBytes} execTimeoutMs=${c.executionTimeoutMs} ` +
-    `locale=${c.defaultLocale} env=${c.nodeEnv} version=${c.version}`
-  );
+/** Human readable configuration summary (never contains the API key). */
+export function describeConfig(config: RuntimeConfig): Record<string, unknown> {
+  return {
+    host: config.host,
+    port: config.port,
+    env: config.env,
+    logLevel: config.logLevel,
+    logFormat: config.logFormat,
+    dataDir: config.dataDir,
+    storage: config.storage,
+    maxBodyBytes: config.maxBodyBytes,
+    executionTimeoutMs: config.executionTimeoutMs,
+    unknownNodePolicy: config.unknownNodePolicy,
+    unknownConnectionPolicy: config.unknownConnectionPolicy,
+    allowCodeEval: config.allowCodeEval,
+    authRequired: config.apiKey !== null,
+    corsOrigin: config.corsOrigin,
+    locale: config.locale,
+    executionHistory: config.executionHistory,
+    pidFile: config.pidFile,
+    version: config.version,
+  };
 }

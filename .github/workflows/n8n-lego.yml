@@ -1,0 +1,415 @@
+name: n8n-lego Gate
+
+# Phase P0 gate for the n8n-lego baseline (real n8n editor UI served by the LEGO
+# runtime). It answers one question: does `git clone → start → n8n UI → create
+# workflow → edit → save → execute → inspect → restart` still work?
+#
+#   architecture        backend LEGO isolation gate: domain boundaries,
+#                       dependency direction, public/private surfaces, frozen
+#                       legacy zone, contract versions, nested (sub-)LEGO rules
+#                       and scale-out readiness — plus the selftest that proves
+#                       the gate still catches real violations (P2.6 + P2.7)
+#   gate                unit + REST/contract integration tests (incl. the P2.6
+#                       foundation contract tests), then the release package
+#                       (npm tarball + offline tarball + checksums)
+#   clean-clone         git clone → install → start → /healthz → real n8n UI,
+#                       browser smoke (owner setup → create workflow → canvas →
+#                       add node → save → execute → execution result) → P2 gate
+#                       (settings visibility, route guards, 501 unsupported
+#                       semantics) → restart → verify that the workflow survived
+#   windows-portability self-hosted Windows worker: syntax/metadata probe only.
+#                       The runtime is Linux-only (apps/n8n-lego/package.json
+#                       "os": ["linux"]), so the Linux runtime tests stay on
+#                       ubuntu-latest; WSL is used for the unit tests only when
+#                       that worker actually has a usable WSL + Node >= 22.
+#
+# To run the Linux jobs on a self-hosted Linux worker instead of GitHub-hosted
+# runners, change `runs-on` to: [self-hosted, linux, x64, vps-runtime]
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'apps/n8n-lego/**'
+      - 'tests/e2e/**'
+      - 'tools/lego/**'
+      - 'scripts/release.sh'
+      - 'package.json'
+      - '.github/workflows/n8n-lego.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/n8n-lego/**'
+      - 'tests/e2e/**'
+      - 'tools/lego/**'
+      - 'scripts/release.sh'
+      - 'package.json'
+      - '.github/workflows/n8n-lego.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: n8n-lego-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  APP_DIR: apps/n8n-lego
+  LEGO_URL: http://127.0.0.1:6200
+
+jobs:
+  architecture:
+    name: Backend LEGO architecture gate (P2.6)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.18'
+
+      # No install: the gate is pure Node with zero dependencies, so a boundary
+      # violation is reported in seconds instead of after a full bootstrap.
+      - name: Domain boundaries, dependency direction, contract versions
+        run: node tools/lego/architecture-gate.mjs
+
+      - name: The gate provably detects forbidden dependencies
+        # A gate nobody has seen fail proves nothing: this plants real
+        # violations (storage->workflow internals, execution->workflow
+        # internals, node->credential/storage persistence, undeclared imports,
+        # internal-path reach, legacy-zone growth, unowned files) in a throwaway
+        # tree and requires each to be caught, plus a negative control.
+        run: node tools/lego/architecture-gate.mjs --selftest
+
+      - name: The 501 capability contract matches the LEGO registry
+        run: node tools/lego/capability-conformance.mjs
+
+      - name: The foundation gate provably detects incomplete contracts
+        # Same principle as the architecture selftest: a gate nobody has watched
+        # fail is a decoration. Plants a capability with no operations, an
+        # unknown transport, a fifth interaction class, an undeclared stream
+        # policy and an ambiguous surface alias, and requires each to be caught
+        # — plus a negative control on the real registry.
+        run: node tools/lego/foundation-gate.mjs --selftest
+
+      - name: Foundation 1.0 profiles are declared and coherent
+        # Every LEGO must describe itself in the foundation vocabulary: tier,
+        # trust, capabilities, data owner, state class, failure boundary and
+        # resources. Also enforces the lightweight security checks — no secret
+        # in a public contract, no external endpoint without the network
+        # capability, no untrusted code left in-process.
+        run: node tools/lego/foundation-gate.mjs
+
+      - name: The AI knowledge pack is not stale
+        # .ai/ is GENERATED from the manifest so it cannot drift into being
+        # confidently wrong. If the manifest moved and the pack did not, this
+        # fails rather than letting an agent read stale architecture.
+        run: node tools/lego/ai-pack.mjs --check
+
+      - name: Scale-out readiness (no undeclared process-local coupling)
+        # P2.7 implements no worker/scaling infrastructure. This only asserts
+        # that new contract-first LEGO code is process-agnostic and that every
+        # finding in existing code is a declared, owned exception in the
+        # manifest — so the list can shrink but never grow silently.
+        run: node tools/lego/scale-out-readiness.mjs
+
+      - name: Machine-readable reports for the integration record
+        if: always()
+        run: |
+          node tools/lego/architecture-gate.mjs --json > architecture-gate.json || true
+          node tools/lego/scale-out-readiness.mjs --json > scale-out-readiness.json || true
+          node tools/lego/foundation-gate.mjs --json > foundation-gate.json || true
+          node tools/lego/impact-graph.mjs --json > impact-graph.json || true
+
+      - name: Upload the architecture report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: n8n-lego-architecture-gate
+          path: |
+            architecture-gate.json
+            scale-out-readiness.json
+            foundation-gate.json
+            impact-graph.json
+          if-no-files-found: ignore
+          retention-days: 7
+
+  gate:
+    name: Unit + integration tests and release package
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.18'
+          cache: npm
+          cache-dependency-path: |
+            apps/n8n-lego/package-lock.json
+            tests/e2e/package-lock.json
+
+      - name: Node and npm versions
+        run: node -v && npm -v
+
+      - name: Install app dependencies
+        run: npm --prefix "$APP_DIR" ci --no-audit --no-fund
+
+      - name: Fetch the pinned node catalog (n8n-nodes-base + icons + roles)
+        run: |
+          node "$APP_DIR/scripts/fetch-n8n-catalog.mjs" --dir "$RUNNER_TEMP/catalog"
+          node "$APP_DIR/scripts/fetch-n8n-roles.mjs" --dir "$RUNNER_TEMP/catalog"
+          test -f "$APP_DIR/data/roles.json"
+          node -e "const roles=require('./' + process.env.APP_DIR + '/data/roles.json'); console.log('bundled roles.json present:', Object.keys(roles).length, 'groups')"
+
+      - name: Frontend LEGO contract + architecture tests (P2.5, agent-1)
+        # Reconciled in P2.11: agent-1's frontend LEGO ships 30 suites that the
+        # backend gate never ran. Kept as its own step so a frontend failure is
+        # attributable on sight rather than buried in the backend glob.
+        run: node --test packages/frontend-lego/test/*.test.mjs
+
+      - name: Unit + REST contract integration tests
+        # The glob covers every suite, including the P2.9 additions:
+        #   lego-boundary.test.mjs      surfaces are upper bounds; the allowance
+        #                               count may shrink but never grow
+        #   lego-communication.test.mjs CALL/EVENT/STREAM/BATCH semantics,
+        #                               cancellation, deadlines, backpressure,
+        #                               lifecycle and capability negotiation
+        env:
+          N8N_LEGO_CATALOG_DIR: ${{ runner.temp }}/catalog
+          N8N_LEGO_USER_FOLDER: ${{ runner.temp }}/unit-data
+        run: node --test apps/n8n-lego/test/*.test.mjs
+
+      - name: Release build (npm package + offline tarball)
+        env:
+          N8N_LEGO_CATALOG_DIR: ${{ runner.temp }}/catalog
+        run: bash scripts/release.sh --no-docker
+
+      - name: Verify the artifact checksums
+        run: |
+          set -euo pipefail
+          cd dist
+          sha256sum -c n8n-lego-0.1.0.tar.gz.sha256
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: n8n-lego-release
+          path: |
+            dist/n8n-lego-0.1.0.tgz
+            dist/n8n-lego-0.1.0.tar.gz
+            dist/n8n-lego-0.1.0.tar.gz.sha256
+          retention-days: 7
+
+  clean-clone:
+    name: Clean clone → start → health → browser smoke → restart
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.18'
+
+      - name: Clone the repository into a directory that has no local state
+        run: |
+          set -euo pipefail
+          git clone --quiet --no-hardlinks "$GITHUB_WORKSPACE" "$RUNNER_TEMP/clean-clone"
+          cd "$RUNNER_TEMP/clean-clone"
+          git checkout --quiet --detach "$GITHUB_SHA"
+          echo "clone at $(git log --oneline -1)"
+          for path in "$APP_DIR/node_modules" "$APP_DIR/vendor" dist data; do
+            if [ -e "$path" ]; then echo "::error::unexpected $path in the clone"; exit 1; fi
+          done
+          echo "clean clone verified: no node_modules, vendor, dist or data directory"
+
+      - name: Install app dependencies in the clone
+        working-directory: ${{ runner.temp }}/clean-clone
+        run: npm --prefix "$APP_DIR" ci --no-audit --no-fund
+
+      - name: Start the instance on a fresh data directory
+        working-directory: ${{ runner.temp }}/clean-clone
+        run: |
+          set -euo pipefail
+          N8N_LEGO_USER_FOLDER="$RUNNER_TEMP/lego-data" N8N_LEGO_PORT=6200 N8N_LEGO_HOST=127.0.0.1 \
+            setsid nohup node "$APP_DIR/bin/n8n-lego.mjs" start > "$RUNNER_TEMP/lego-start.log" 2>&1 < /dev/null &
+          echo $! > "$RUNNER_TEMP/lego.pid"
+          echo "started pid $(cat "$RUNNER_TEMP/lego.pid")"
+
+      - name: Wait for /healthz (first start bootstraps the node catalog)
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 90); do
+            if curl -fsS "$LEGO_URL/healthz" > "$RUNNER_TEMP/health.json"; then
+              cat "$RUNNER_TEMP/health.json"; exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::health endpoint never answered"; tail -60 "$RUNNER_TEMP/lego-start.log"; exit 1
+
+      - name: Assert the health payload and the served catalog
+        run: |
+          set -euo pipefail
+          node -e '
+            const fs = require("fs");
+            const health = JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + "/health.json", "utf8"));
+            if (health.status !== "ok") throw new Error("health status " + health.status);
+            if (health.checks?.editorUi !== "ok") throw new Error("editor UI not ok");
+            if (health.checks?.nodeCatalog !== "ok") throw new Error("node catalog not ok");
+            console.log("health ok", JSON.stringify(health));
+          '
+          nodes="$(curl -fsS "$LEGO_URL/rest/types/nodes.json" | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{const j=JSON.parse(d);console.log(Object.keys(j.data ?? j).length)})')"
+          echo "node types served: $nodes"
+          if [ "$nodes" -lt 400 ]; then echo "::error::the node catalog is incomplete ($nodes node types)"; exit 1; fi
+          curl -fsS "$LEGO_URL/rest/settings" >/dev/null && echo "rest settings ok"
+
+      - name: Install the browser smoke harness (puppeteer)
+        working-directory: ${{ runner.temp }}/clean-clone
+        run: npm --prefix tests/e2e ci --no-audit --no-fund
+
+      - name: Browser smoke — create workflow → add node → save → execute → inspect
+        working-directory: ${{ runner.temp }}/clean-clone
+        env:
+          LEGO_SMOKE_STATE: ${{ runner.temp }}/smoke-state.json
+          LEGO_SMOKE_SHOTS: ${{ runner.temp }}/shots
+        run: node tests/e2e/lego-smoke.mjs "$LEGO_URL" --mode=create
+
+      - name: P2 browser gate — settings visibility, route guards, unsupported semantics
+        working-directory: ${{ runner.temp }}/clean-clone
+        env:
+          LEGO_P2_EVIDENCE: ${{ runner.temp }}/settings-visibility-p2.json
+          LEGO_P2_SHOTS: ${{ runner.temp }}/p2-shots
+        run: node tests/e2e/settings-compat.mjs "$LEGO_URL"
+
+      - name: Restart the instance on the same data directory
+        run: |
+          set -euo pipefail
+          kill "$(cat "$RUNNER_TEMP/lego.pid")"
+          for attempt in $(seq 1 30); do
+            if ! curl -fsS "$LEGO_URL/healthz" >/dev/null 2>&1; then break; fi
+            sleep 1
+          done
+          cd "$RUNNER_TEMP/clean-clone"
+          N8N_LEGO_USER_FOLDER="$RUNNER_TEMP/lego-data" N8N_LEGO_PORT=6200 N8N_LEGO_HOST=127.0.0.1 \
+            setsid nohup node "$APP_DIR/bin/n8n-lego.mjs" start > "$RUNNER_TEMP/lego-restart.log" 2>&1 < /dev/null &
+          echo $! > "$RUNNER_TEMP/lego.pid"
+          for attempt in $(seq 1 60); do
+            if curl -fsS "$LEGO_URL/healthz" >/dev/null; then echo "restarted and healthy"; exit 0; fi
+            sleep 2
+          done
+          echo "::error::the instance did not come back after the restart"; tail -60 "$RUNNER_TEMP/lego-restart.log"; exit 1
+
+      - name: Browser smoke — the workflow survived the restart
+        working-directory: ${{ runner.temp }}/clean-clone
+        env:
+          LEGO_SMOKE_STATE: ${{ runner.temp }}/smoke-state.json
+          LEGO_SMOKE_SHOTS: ${{ runner.temp }}/shots
+        run: node tests/e2e/lego-smoke.mjs "$LEGO_URL" --mode=verify
+
+      - name: Upload smoke evidence and server logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: n8n-lego-clean-clone-evidence
+          path: |
+            ${{ runner.temp }}/shots
+            ${{ runner.temp }}/p2-shots
+            ${{ runner.temp }}/lego-start.log
+            ${{ runner.temp }}/lego-restart.log
+            ${{ runner.temp }}/smoke-state.json
+            ${{ runner.temp }}/settings-visibility-p2.json
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Stop the instance
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/lego.pid" ]; then kill "$(cat "$RUNNER_TEMP/lego.pid")" 2>/dev/null || true; fi
+
+  windows-portability:
+    name: Windows worker portability probe (runtime tests are Linux)
+    runs-on: [self-hosted, windows, x64, rust-build, n8n-rust]
+    if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name != 'pull_request'
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.18'
+
+      - name: Every source file parses on Windows
+        shell: powershell
+        run: |
+          $files = @()
+          foreach ($dir in @('apps/n8n-lego/bin', 'apps/n8n-lego/src', 'apps/n8n-lego/scripts', 'apps/n8n-lego/test', 'tests/e2e')) {
+            $files += Get-ChildItem -Path $dir -Recurse -Filter *.mjs -File | ForEach-Object { $_.FullName }
+          }
+          foreach ($file in $files) { node --check $file; if ($LASTEXITCODE -ne 0) { throw "syntax error in $file" } }
+          Write-Host "checked $($files.Count) module files"
+
+      - name: The runtime declares its platform and Node requirement
+        shell: powershell
+        run: |
+          $pkg = Get-Content 'apps/n8n-lego/package.json' -Raw | ConvertFrom-Json
+          if ($pkg.os -notcontains 'linux') { throw 'apps/n8n-lego must declare "os": ["linux"] while the runtime is Linux-only' }
+          if ($pkg.engines.node -ne '>=22.18.0') { throw "unexpected engines.node $($pkg.engines.node)" }
+          Write-Host "os=$($pkg.os -join ',') engines.node=$($pkg.engines.node)"
+          Write-Host '::notice::The n8n-lego runtime is Linux-only; the unit, integration, clean-clone and browser gates run on ubuntu-latest.'
+
+      - name: Run the unit tests inside WSL when this worker has one
+        # Best effort: this is a laptop worker, not the runtime's platform. The
+        # blocking Linux runtime gate is the ubuntu-latest clean-clone job, so a
+        # quirk of this worker must not paint the whole gate red — it reports a
+        # warning with the failing output instead.
+        shell: powershell
+        continue-on-error: true
+        run: |
+          $ErrorActionPreference = 'Continue'
+          $wsl = Get-Command wsl.exe -ErrorAction SilentlyContinue
+          if (-not $wsl) { Write-Host '::notice::No WSL on this worker — the authoritative Linux runtime gate is the ubuntu-latest clean-clone job.'; exit 0 }
+
+          $node = (wsl.exe -- bash -lc 'node -v' 2>&1 | Out-String).Trim()
+          if (-not $node -or -not ($node -match '^v(2[2-9]|[3-9][0-9])\.')) {
+            Write-Host "::notice::WSL has no usable Node >= 22 (got '$node') — the authoritative Linux runtime gate is the ubuntu-latest clean-clone job."
+            exit 0
+          }
+          Write-Host "WSL Node $node — preparing a Linux copy of the app"
+
+          $repo = (wsl.exe -- wslpath -a "$PWD" 2>&1 | Out-String).Trim()
+          $script = Join-Path $env:RUNNER_TEMP 'n8n-lego-wsl-unit.sh'
+          $lines = @(
+            'set -euo pipefail',
+            'repo="$1"',
+            'work=/tmp/n8n-lego-wsl',
+            'rm -rf "$work"; mkdir -p "$work"',
+            'cp -a "$repo/apps" "$repo/packages" "$work/"',
+            'cd "$work"',
+            'npm --prefix apps/n8n-lego ci --no-audit --no-fund >/dev/null',
+            'node apps/n8n-lego/scripts/fetch-n8n-catalog.mjs --dir "$work/.catalog" >/dev/null',
+            'N8N_LEGO_CATALOG_DIR="$work/.catalog" N8N_LEGO_USER_FOLDER="$work/.data" node --test apps/n8n-lego/test/*.test.mjs'
+          )
+          Set-Content -Encoding ASCII -Path $script -Value $lines
+          $scriptInWsl = (wsl.exe -- wslpath -a "$script" 2>&1 | Out-String).Trim()
+
+          $out = (wsl.exe -- bash "$scriptInWsl" "$repo" 2>&1 | Out-String)
+          Write-Host $out
+          if ($LASTEXITCODE -ne 0) {
+            $tail = ($out -split "`r?`n" | Where-Object { $_ -ne "" } | Select-Object -Last 4) -join " >> "
+            Write-Host "::warning::the Linux unit tests did not pass inside WSL on this worker: $tail"
+            exit 0
+          }
+          Write-Host 'Linux unit tests passed inside WSL'
+          exit 0

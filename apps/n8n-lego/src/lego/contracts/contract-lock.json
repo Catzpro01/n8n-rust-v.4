@@ -1,0 +1,816 @@
+{
+  "lockVersion": "1.4.0",
+  "owner": "manager",
+  "description": "Contract versioning lock. One row per PUBLIC contract: what it is, who owns it, which version is published, what its consumers are, and where its contract tests live. The architecture gate fails when a published contract's surface changes without its version changing. Intentionally tiny: this is not semver-as-a-framework, it is a change alarm.",
+  "policy": {
+    "scheme": "major.minor.patch",
+    "breaking": [
+      "removing or renaming an export",
+      "removing or renaming an error code, or changing an existing code's HTTP status",
+      "changing the meaning or required shape of a request/response field",
+      "narrowing accepted input or widening required output",
+      "moving a file out of the declared public surface"
+    ],
+    "minor": [
+      "adding an export",
+      "adding an optional field",
+      "adding a new error code",
+      "adding a capability"
+    ],
+    "patch": [
+      "documentation",
+      "internal implementation changes with no surface change"
+    ],
+    "rule": "A BREAKING change requires: major bump here, a note in docs/n8n-lego/BACKEND_LEGO.md \u00a7Contract changelog, and sign-off from every consumer listed below.",
+    "preRelease": "Contracts at 0.x are provisional: they may break with a minor bump, but the bump is still mandatory.",
+    "compatibilityModel": {
+      "module": "src/lego/compat.mjs",
+      "kinds": [
+        "unchanged",
+        "compatible",
+        "migration-required",
+        "breaking",
+        "downgrade"
+      ],
+      "ranges": [
+        "1.2.3 exact",
+        "^1.2.3 same major (0.x: same minor)",
+        "~1.2.3 same major.minor",
+        ">=1.2.3",
+        "*"
+      ],
+      "note": "0.x contracts are provisional: ^0.2.1 does NOT accept 0.3.0, because a 0.x minor is allowed to break. Consumers of a 0.x contract must be told about every minor."
+    },
+    "parentChildRule": "A parent contract does NOT version-bump because a sub-LEGO changed compatibly. It bumps only when its own parent-facing surface moves. Example held by the fixtures: reference.validation 1.0.0 -> 1.1.0 (additive) leaves reference.lego at 1.0.0 and reference.repository at 1.0.0. A BREAKING child change that surfaces through the parent does force a parent major bump.",
+    "migrations": "A contract may declare `migrations: [\"1.3.0\"]` \u2014 versions that need a data/state migration even though they are semver-compatible. Migration points are declared, never inferred."
+  },
+  "contracts": [
+    {
+      "id": "compat.http",
+      "owner": "agent-1",
+      "domain": "compatibility",
+      "version": "1.0.0",
+      "status": "stable",
+      "surface": [
+        "src/compat/route.mjs",
+        "src/compat/response.mjs",
+        "src/compat/error.mjs",
+        "src/compat/auth-context.mjs",
+        "src/compat/scopes.mjs",
+        "src/compat/capability.mjs"
+      ],
+      "exports": {
+        "src/compat/route.mjs": [
+          "createRouter"
+        ],
+        "src/compat/response.mjs": [
+          "sendJson",
+          "sendData",
+          "sendBare",
+          "sendError",
+          "readBody"
+        ],
+        "src/compat/error.mjs": [
+          "HttpError",
+          "unauthorized",
+          "forbidden",
+          "notFound",
+          "badRequest",
+          "unsupported"
+        ],
+        "src/compat/auth-context.mjs": [
+          "publicUser",
+          "requireUser"
+        ],
+        "src/compat/scopes.mjs": [
+          "loadRoles",
+          "resetRolesCache",
+          "getGlobalScopes"
+        ],
+        "src/compat/capability.mjs": [
+          "UNSUPPORTED_FEATURES",
+          "resolveUnsupportedFeature",
+          "unsupportedFeature",
+          "createUnsupportedHandler"
+        ]
+      },
+      "consumers": [
+        "auth",
+        "settings",
+        "legacy-rest",
+        "runtime-host",
+        "agent-1/frontend"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/compat.contract.test.mjs"
+      ]
+    },
+    {
+      "id": "lego.error-contract",
+      "owner": "manager",
+      "domain": "lego-foundation",
+      "version": "1.0.0",
+      "status": "stable",
+      "surface": [
+        "src/lego/contracts/errors.contract.json",
+        "src/lego/errors.mjs"
+      ],
+      "exports": {
+        "src/lego/errors.mjs": [
+          "ERROR_CODES",
+          "ERROR_CONTRACT_VERSION",
+          "errorCode",
+          "isErrorCode",
+          "statusForCode",
+          "assertErrorCode",
+          "codesForNamespace"
+        ]
+      },
+      "consumers": [
+        "every backend domain",
+        "agent-1/frontend"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-foundation.test.mjs"
+      ]
+    },
+    {
+      "id": "lego.domain-registry",
+      "owner": "manager",
+      "domain": "lego-foundation",
+      "version": "1.1.0",
+      "status": "stable",
+      "surface": [
+        "src/lego/manifest/domains.json",
+        "src/lego/registry.mjs"
+      ],
+      "exports": {
+        "src/lego/registry.mjs": [
+          "DOMAIN_STATUS",
+          "DOMAIN_KINDS",
+          "MANIFEST_FILE",
+          "ERRORS_CONTRACT_FILE",
+          "CONTRACT_LOCK_FILE",
+          "loadRegistry",
+          "getDomain",
+          "MAX_NESTING_DEPTH",
+          "getChildren",
+          "getDescendants",
+          "getAncestors",
+          "lineage",
+          "nestingDepth",
+          "rootOf",
+          "isWithin",
+          "tree",
+          "domainForPath",
+          "isPublicPath",
+          "isDependencyAllowed",
+          "listCapabilities",
+          "getCapability",
+          "validateRegistry"
+        ]
+      },
+      "consumers": [
+        "tools/lego/architecture-gate.mjs",
+        "manager",
+        "all agents"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-foundation.test.mjs"
+      ],
+      "changelog": [
+        "1.1.0 (P2.7): added hierarchy accessors (getChildren/getDescendants/getAncestors/lineage/nestingDepth/rootOf/isWithin/tree, MAX_NESTING_DEPTH) \u2014 additive, every 1.0.0 consumer unaffected."
+      ]
+    },
+    {
+      "id": "kernel.platform",
+      "owner": "manager",
+      "domain": "platform-kernel",
+      "version": "1.0.0",
+      "status": "stable",
+      "surface": [
+        "src/config.mjs",
+        "src/logger.mjs"
+      ],
+      "exports": {
+        "src/config.mjs": [
+          "APP_NAME",
+          "APP_ID",
+          "VERSION",
+          "REFERENCE_VERSION",
+          "REPO_ROOT",
+          "APP_ROOT",
+          "defaultDataDir",
+          "defaultCatalogDir",
+          "ConfigError",
+          "readEnv",
+          "loadConfig",
+          "describeConfig"
+        ],
+        "src/logger.mjs": [
+          "createLogger"
+        ]
+      },
+      "consumers": [
+        "every backend domain"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/rest.test.mjs"
+      ]
+    },
+    {
+      "id": "reference.lego",
+      "owner": "manager",
+      "domain": "reference-lego",
+      "version": "1.1.0",
+      "status": "template",
+      "surface": [
+        "src/reference-lego/contract/index.mjs"
+      ],
+      "exports": {
+        "src/reference-lego/contract/index.mjs": [
+          "REFERENCE_CAPABILITY",
+          "REFERENCE_CONTRACT_VERSION",
+          "REFERENCE_SUBLEGOS",
+          "REFERENCE_ERRORS",
+          "ReferenceError",
+          "createReferenceLego",
+          "createReferenceTree"
+        ]
+      },
+      "consumers": [
+        "P3+ agents (as a template)"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-foundation.test.mjs"
+      ],
+      "changelog": [
+        "1.1.0 (P2.7): added createReferenceTree + REFERENCE_SUBLEGOS (composition of the nested sub-LEGOs) \u2014 additive. The parent's own operations are unchanged."
+      ]
+    },
+    {
+      "id": "lego.contract-compat",
+      "owner": "manager",
+      "domain": "lego-foundation",
+      "version": "1.0.0",
+      "status": "stable",
+      "surface": [
+        "src/lego/compat.mjs"
+      ],
+      "exports": {
+        "src/lego/compat.mjs": [
+          "parseVersion",
+          "compareVersions",
+          "formatVersion",
+          "CHANGE_KINDS",
+          "classifyChange",
+          "satisfies",
+          "planUpgrade",
+          "canReplaceImplementation"
+        ]
+      },
+      "consumers": [
+        "tools/lego/architecture-gate.core.mjs",
+        "manager",
+        "all agents",
+        "agent-1/frontend"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-lifecycle.test.mjs"
+      ]
+    },
+    {
+      "id": "reference.validation",
+      "owner": "manager",
+      "domain": "reference-lego.validation",
+      "version": "1.1.0",
+      "previousVersion": "1.0.0",
+      "status": "template",
+      "surface": [
+        "src/reference-lego/sub/validation/contract/index.mjs"
+      ],
+      "exports": {
+        "src/reference-lego/sub/validation/contract/index.mjs": [
+          "VALIDATION_CAPABILITY",
+          "VALIDATION_CONTRACT_VERSION",
+          "VALIDATION_OPERATIONS",
+          "ValidationError",
+          "createValidationLego"
+        ]
+      },
+      "consumers": [
+        "reference-lego"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-lifecycle.test.mjs"
+      ],
+      "changelog": [
+        "1.1.0 (P2.7): added explain() and the optional `strict` option \u2014 additive, so ^1.0.0 consumers are unaffected and the parent contract did not move."
+      ]
+    },
+    {
+      "id": "reference.validation.schema",
+      "owner": "manager",
+      "domain": "reference-lego.validation.schema",
+      "version": "1.0.0",
+      "status": "template",
+      "surface": [
+        "src/reference-lego/sub/validation/sub/schema/contract/index.mjs"
+      ],
+      "exports": {
+        "src/reference-lego/sub/validation/sub/schema/contract/index.mjs": [
+          "SCHEMA_CAPABILITY",
+          "SCHEMA_CONTRACT_VERSION",
+          "SCHEMA_OPERATIONS",
+          "SCHEMA_IMPLEMENTATIONS",
+          "createSchemaChecker"
+        ]
+      },
+      "consumers": [
+        "reference-lego.validation"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-lifecycle.test.mjs"
+      ],
+      "implementations": [
+        "strict",
+        "table"
+      ]
+    },
+    {
+      "id": "reference.repository",
+      "owner": "manager",
+      "domain": "reference-lego.repository",
+      "version": "1.0.0",
+      "status": "template",
+      "surface": [
+        "src/reference-lego/sub/repository/contract/index.mjs"
+      ],
+      "exports": {
+        "src/reference-lego/sub/repository/contract/index.mjs": [
+          "REPOSITORY_CAPABILITY",
+          "REPOSITORY_CONTRACT_VERSION",
+          "REPOSITORY_OPERATIONS",
+          "createRepositoryLego"
+        ]
+      },
+      "consumers": [
+        "reference-lego"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-lifecycle.test.mjs"
+      ]
+    },
+    {
+      "id": "auth.identity",
+      "owner": "agent-3",
+      "domain": "auth.identity",
+      "version": "1.0.0",
+      "status": "stable",
+      "surface": [
+        "src/auth/contract/index.mjs"
+      ],
+      "exports": {
+        "src/auth/contract/index.mjs": [
+          "toPublicUser",
+          "hasOwner"
+        ]
+      },
+      "consumers": [
+        "compatibility",
+        "settings"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-boundary.test.mjs"
+      ],
+      "notes": "Read-only identity projection. Holds NO authority: no session creation, no password verification, no token minting. Introduced in P2.9 to retire allowances A1/A2. Adding an export is a contract change requiring a version decision; the surface is pinned by test/lego-boundary.test.mjs."
+    },
+    {
+      "id": "lego.envelope",
+      "owner": "agent-2",
+      "domain": "lego-foundation",
+      "version": "1.0.0",
+      "status": "stable",
+      "surface": [
+        "src/lego/envelope.mjs"
+      ],
+      "exports": {
+        "src/lego/envelope.mjs": [
+          "ENVELOPE_FIELDS",
+          "CancellationError",
+          "createEnvelope",
+          "deriveEnvelope",
+          "remainingMs",
+          "isCancelled",
+          "throwIfCancelled",
+          "createCancellableScope",
+          "serializeEnvelope",
+          "deserializeEnvelope",
+          "boundaryRecord"
+        ]
+      },
+      "consumers": [
+        "all backend LEGO"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-communication.test.mjs"
+      ],
+      "notes": "Operation context: identity, correlation, actor/scope, deadline, cancellation, idempotency. Zero serialization on direct calls; serializeEnvelope drops the AbortSignal at a process boundary and flags cancellable:false."
+    },
+    {
+      "id": "lego.interaction",
+      "owner": "agent-2",
+      "domain": "lego-foundation",
+      "version": "1.0.0",
+      "status": "stable",
+      "surface": [
+        "src/lego/interaction.mjs"
+      ],
+      "exports": {
+        "src/lego/interaction.mjs": [
+          "INTERACTION_CLASSES",
+          "BACKPRESSURE_POLICIES",
+          "BackpressureError",
+          "UnavailableError",
+          "registerProvider",
+          "getProvider",
+          "listProviders",
+          "resetProviders",
+          "call",
+          "subscribe",
+          "emit",
+          "resetSubscribers",
+          "stream",
+          "applyBackpressure",
+          "batch",
+          "DEGRADATION_STATES",
+          "degradationFor"
+        ]
+      },
+      "consumers": [
+        "all backend LEGO"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-communication.test.mjs"
+      ],
+      "notes": "CALL/EVENT/STREAM/BATCH as transport-neutral semantics plus local dispatch. Contains no transport: a worker or remote adapter registers the same provider shape and consumers do not change."
+    },
+    {
+      "id": "lego.negotiation",
+      "owner": "agent-2",
+      "domain": "lego-foundation",
+      "version": "1.0.0",
+      "status": "stable",
+      "surface": [
+        "src/lego/negotiation.mjs"
+      ],
+      "exports": {
+        "src/lego/negotiation.mjs": [
+          "LIFECYCLE_STATES",
+          "LIFECYCLE_TRANSITIONS",
+          "canTransitionLifecycle",
+          "isCallable",
+          "setLifecycleState",
+          "getLifecycleState",
+          "resetLifecycleStates",
+          "describeCapability",
+          "negotiate",
+          "discoverFor"
+        ]
+      },
+      "consumers": [
+        "all backend LEGO"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-communication.test.mjs"
+      ],
+      "notes": "Capability discovery and the lifecycle state machine. Nesting never grants access: reaching a nested LEGO requires an explicit declaration naming that child."
+    },
+    {
+      "id": "ai.foundation",
+      "owner": "manager",
+      "domain": "ai-foundation",
+      "version": "1.0.0",
+      "status": "contract-only",
+      "surface": [
+        "src/lego/ai-foundation.mjs"
+      ],
+      "exports": {
+        "src/lego/ai-foundation.mjs": [
+          "AGENT_EVENT_TYPES",
+          "AGENT_SESSION_STATES",
+          "AI_CONCEPTS",
+          "AI_FOUNDATION",
+          "AI_FOUNDATION_VERSION",
+          "AI_RESOURCE_PROFILES",
+          "AI_TRANSPORTS",
+          "ARTIFACT_KINDS",
+          "ARTIFACT_RETENTION",
+          "CONTEXT_SCOPES",
+          "PROVIDER_KINDS",
+          "RISK_LEVELS",
+          "RUNTIME_LOCALITIES",
+          "TOOL_SIDE_EFFECTS",
+          "checkDelegationGrant",
+          "describeProviderKind",
+          "isZeroInstallState",
+          "listAiContracts",
+          "operationsFor",
+          "requiresApproval",
+          "transportCanCarry"
+        ]
+      },
+      "consumers": [
+        "a future AI Foundation implementation",
+        "external agent runtimes",
+        "MCP adapters"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-ai-foundation.test.mjs"
+      ],
+      "notes": "Provider-neutral AI vocabulary. CONTRACT ONLY: no inference, no agent loop, no gateway client, no MCP server or client, no network call, no new dependency. Vendor names appear only as examples of provider kinds, never in an id, a required field or a default."
+    },
+    {
+      "id": "ai.context",
+      "owner": "manager",
+      "domain": "ai-foundation",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/context.mjs"
+      ],
+      "exports": {
+        "src/lego/context.mjs": [
+          "CONTEXT_CONTRACT",
+          "CONTEXT_CONTRACT_VERSION",
+          "CONTEXT_SCOPES",
+          "CONTEXT_OPERATIONS",
+          "CONTEXT_MANAGER_STATES",
+          "CONTINUATION_PACKAGE_VERSION",
+          "CONTINUATION_FIELDS",
+          "CONTINUATION_VERIFICATION",
+          "ContextSessionError",
+          "createContextManager",
+          "createContextSessionManager",
+          "verifyContinuationPackage"
+        ]
+      },
+      "operations": [
+        "load",
+        "compact",
+        "rollover",
+        "rehydrate",
+        "verify"
+      ],
+      "permissions": [
+        "ai:context:read",
+        "ai:context:write"
+      ],
+      "consumers": [
+        "future Agent Machine (contract-only)",
+        "frontend Context & Session consumer",
+        "Manager reconciliation gate"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-context-session.test.mjs"
+      ],
+      "notes": "P2.13 smallest additive publication from the already-declared ai.context fields and Context & Session operation vocabulary. The implementation is bounded local state only: no model/provider/runtime dependency, no transcript dump, no Memory store. Contract lock publication does not make P2.13 complete; Manager reconciliation, merge validation and post-merge verification remain required."
+    },
+    {
+      "id": "ai.agent-session",
+      "owner": "manager",
+      "domain": "ai-foundation",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/agent-session.mjs"
+      ],
+      "exports": {
+        "src/lego/agent-session.mjs": [
+          "AGENT_SESSION_CONTRACT",
+          "AGENT_SESSION_CONTRACT_VERSION",
+          "AGENT_SESSION_STATES",
+          "AGENT_SESSION_OPERATIONS",
+          "AGENT_SESSION_TRANSITIONS",
+          "ContextSessionError",
+          "createContextSessionManager"
+        ]
+      },
+      "operations": [
+        "create",
+        "status",
+        "close"
+      ],
+      "permissions": [
+        "ai:agent:control",
+        "ai:agent:create",
+        "ai:agent:read"
+      ],
+      "consumers": [
+        "future Agent Machine (contract-only)",
+        "frontend Context & Session consumer",
+        "Manager reconciliation gate"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-context-session.test.mjs"
+      ],
+      "notes": "P2.13 smallest additive publication from the established ai.agent-session fields and states. A session is bounded identity/control state with references, never an unbounded transcript. The implementation remains provider/runtime-neutral."
+    },
+    {
+      "id": "ai.skill",
+      "owner": "manager",
+      "domain": "ai-foundation",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/skill.mjs",
+        "src/lego/manifest/skill.json"
+      ],
+      "exports": {
+        "src/lego/skill.mjs": [
+          "SKILL_CONTRACT",
+          "SKILL_CONTRACT_VERSION",
+          "SKILL_LIFECYCLE",
+          "SKILL_OPERATIONS",
+          "SKILL_TRANSITIONS",
+          "SKILL_TRUST_LEVELS",
+          "SKILL_VALIDATOR_KINDS",
+          "SkillError",
+          "createSkillRegistry",
+          "skillRegistry"
+        ]
+      },
+      "operations": [
+        "skill.list",
+        "skill.resolve",
+        "skill.describe",
+        "skill.validate-selection"
+      ],
+      "permissions": [
+        "ai:skill:read",
+        "ai:skill:select"
+      ],
+      "consumers": [
+        "a future Agent Machine (contract-only)",
+        "frontend skill selection UI",
+        "agent-1/frontend vocabulary lock"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-skill.test.mjs"
+      ],
+      "notes": "Skill = procedural knowledge + rules + procedure + capability map + validators. The REGISTRY is implemented; skills stay declarative documents and nothing executes a procedure. FOUR published operations only. register/select/load/release are internal lifecycle methods of the registry object, deliberately NOT published caller operations: publishing load would make lazy discovery a caller concern, and publishing register would let a caller mutate the vocabulary other consumers negotiate against. There is no execute operation and no ai:skill:execute permission \u2014 execution is not a skill operation, so no published name may imply it. A skill DECLARES requiredCapabilities and never grants them; the capability system stays the sole authority. validate-selection checks the DECLARATION, never the caller's authorization. An unknown capability fails closed. Locked in P2.12 finalize by XA-19; XA-11 (whether Skill ultimately belongs under ai-foundation) remains open-for-manager and is a separate architecture decision that this lock does not settle."
+    },
+    {
+      "id": "ai.memory",
+      "owner": "manager",
+      "domain": "ai-foundation",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/memory.mjs",
+        "src/lego/manifest/memory.json"
+      ],
+      "exports": {
+        "src/lego/memory.mjs": [
+          "InMemoryProvider",
+          "MEMORY_CONTRACT",
+          "MEMORY_CONTRACT_VERSION",
+          "MEMORY_FIELDS",
+          "MEMORY_GRAPH_EDGES",
+          "MEMORY_GRAPH_NODES",
+          "MEMORY_KINDS",
+          "MEMORY_LIFECYCLE",
+          "MEMORY_MANIFEST",
+          "MEMORY_OPERATIONS",
+          "MEMORY_PERMISSIONS",
+          "MEMORY_RETENTIONS",
+          "MEMORY_SCOPES",
+          "MemoryError",
+          "createMemoryManager",
+          "createMemoryProvider"
+        ]
+      },
+      "operations": [
+        "memory.remember",
+        "memory.recall",
+        "memory.list",
+        "memory.forget"
+      ],
+      "permissions": [
+        "ai:memory:read",
+        "ai:memory:write"
+      ],
+      "consumers": [
+        "future Agent Machine (contract-only)",
+        "frontend Memory consumer",
+        "Manager reconciliation gate"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-memory.test.mjs"
+      ],
+      "notes": "P2.14 bounded Memory: persistent knowledge that survives context replacement. Four operations only: remember/recall/list/forget. Provider is the persistence boundary (InMemoryProvider default, replaceable). No vector search, no embedding, no model dependency. Integrity via sha256 canonical checksum, isolation by scope namespace, explicit forget semantics."
+    },
+    {
+      "id": "ai.workspace",
+      "owner": "manager",
+      "domain": "workspace",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/workspace.mjs",
+        "src/lego/manifest/workspace.json"
+      ],
+      "exports": {
+        "src/lego/workspace.mjs": [
+          "InMemoryWorkspaceProvider",
+          "WORKSPACE_CONTRACT",
+          "WORKSPACE_CONTRACT_VERSION",
+          "WORKSPACE_FIELDS",
+          "WORKSPACE_KINDS",
+          "WORKSPACE_LIMITS",
+          "WORKSPACE_LIFECYCLE",
+          "WORKSPACE_LIFECYCLE_STATES",
+          "WORKSPACE_OPERATIONS",
+          "WORKSPACE_PERMISSIONS",
+          "WorkspaceError",
+          "createWorkspaceManager",
+          "createWorkspaceProvider",
+          "WORKSPACE_MANIFEST"
+        ]
+      },
+      "operations": [
+        "workspace.create",
+        "workspace.describe",
+        "workspace.mount",
+        "workspace.release"
+      ],
+      "permissions": [
+        "ai:workspace:read",
+        "ai:workspace:create"
+      ],
+      "consumers": [
+        "future Agent Machine (contract-only)",
+        "frontend Workspace consumer",
+        "Manager reconciliation gate"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-workspace.test.mjs"
+      ],
+      "notes": "P2.15 bounded Workspace: identity, metadata, opaque resource references and logical lifecycle behind an explicit provider seam. No filesystem, terminal, process, credential, model, tool, MCP or runtime authority."
+    },
+    {
+      "id": "ai.agent-machine",
+      "owner": "manager",
+      "domain": "ai-foundation",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/agent-machine.mjs",
+        "src/lego/manifest/agent-machine.json"
+      ],
+      "exports": {
+        "src/lego/agent-machine.mjs": [
+          "AGENT_MACHINE_CONTRACT",
+          "AGENT_MACHINE_CONTRACT_VERSION",
+          "AGENT_MACHINE_EXECUTOR_KINDS",
+          "AGENT_MACHINE_LIFECYCLE",
+          "AGENT_MACHINE_LIFECYCLE_STATES",
+          "AGENT_MACHINE_OPERATIONS",
+          "AGENT_MACHINE_PERMISSIONS",
+          "AGENT_MACHINE_STEP_OUTCOMES",
+          "AGENT_MACHINE_FIELDS",
+          "AGENT_MACHINE_LIMITS",
+          "AgentMachineError",
+          "InMemoryAgentMachineProvider",
+          "createAgentMachineManager",
+          "createAgentMachineProvider",
+          "AGENT_MACHINE_MANIFEST"
+        ]
+      },
+      "operations": [
+        "agentMachine.create",
+        "agentMachine.describe",
+        "agentMachine.start",
+        "agentMachine.step",
+        "agentMachine.pause",
+        "agentMachine.resume",
+        "agentMachine.cancel"
+      ],
+      "permissions": [
+        "ai:agent:create",
+        "ai:agent:invoke",
+        "ai:agent:control",
+        "ai:agent:read"
+      ],
+      "consumers": [
+        "future Agent Machine runtime (contract-only)",
+        "frontend Agent Machine consumer",
+        "Manager reconciliation gate"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-agent-machine.test.mjs"
+      ],
+      "notes": "P2.16 bounded Agent Machine execution foundation: one canonical state machine for machine and task identity, the canonical agent lifecycle, bounded step bookkeeping, first-class budgets, deterministic transitions and a replaceable provider/executor seam. It consumes ai.context, ai.agent-session, ai.memory and ai.workspace by opaque reference only and never redefines them. Seven operations and the four canonical ai:agent:* permissions; no delegate permission, no loop, no inference, no tools, no shell, no filesystem, no process. Waiting is fail-closed: approval resolution is the ai.approval contract's boundary, not this one."
+    }
+  ]
+}

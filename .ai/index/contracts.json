@@ -1,0 +1,113 @@
+{
+  "description": "The contracts the frontend LEGO touches. 'own' = owned by ui-frontend; 'foreign' = owned by another LEGO/domain, reached only through the compatibility boundary; 'planned' = reserved for a LEGO that does not exist yet; 'legacy' = superseded spec kept for traceability. The frontend never imports what a foreign contract describes \u2014 it calls the REST surface that implements it.",
+  "rules": [
+    "A frontend module may depend on an 'own' contract freely, on a 'foreign' contract only through the compatibility/API boundary, and never on implementation internals.",
+    "Contract bumping a foreign contract requires arbitration with its owner (agent-02 for backend domains).",
+    "The legacy micro-frontend contract is superseded by contracts/frontend.contract.md \u00a716.1; see that section before acting on anything it says."
+  ],
+  "contracts": [
+    {
+      "path": "contracts/frontend.contract.md",
+      "role": "own",
+      "owner": "unknown",
+      "version": null,
+      "referencedBySurfaces": []
+    },
+    {
+      "path": "contracts/frontend-sub-lego.contract.md",
+      "role": "own",
+      "owner": "Agent 1 \u2014 Frontend / UI / Compatibility",
+      "version": null,
+      "referencedBySurfaces": []
+    },
+    {
+      "path": "contracts/micro-frontend.contract.md",
+      "role": "legacy",
+      "owner": "unknown",
+      "version": null,
+      "referencedBySurfaces": []
+    },
+    {
+      "path": "contracts/localization.contract.md",
+      "role": "planned",
+      "owner": "agent-9 lineage (Arena session `arena/01a0b100-n8n-rust-v-4`)",
+      "version": null,
+      "referencedBySurfaces": []
+    },
+    {
+      "path": "contracts/api.contract.md",
+      "role": "foreign",
+      "owner": "unknown",
+      "version": null,
+      "referencedBySurfaces": [
+        "auth",
+        "error-surfaces"
+      ]
+    },
+    {
+      "path": "contracts/credentials.contract.md",
+      "role": "foreign",
+      "owner": "unknown",
+      "version": null,
+      "referencedBySurfaces": [
+        "credentials"
+      ]
+    },
+    {
+      "path": "contracts/execution.contract.md",
+      "role": "foreign",
+      "owner": "Agent 3 (phase 7)",
+      "version": null,
+      "referencedBySurfaces": [
+        "executions"
+      ]
+    },
+    {
+      "path": "contracts/node.contract.md",
+      "role": "foreign",
+      "owner": "unknown",
+      "version": null,
+      "referencedBySurfaces": [
+        "node-picker"
+      ]
+    },
+    {
+      "path": "contracts/realtime.contract.md",
+      "role": "foreign",
+      "owner": "Agent 3 (phase 6)",
+      "version": null,
+      "referencedBySurfaces": [
+        "notifications"
+      ]
+    },
+    {
+      "path": "contracts/settings.contract.md",
+      "role": "foreign",
+      "owner": "Agent 1 \u2014 Settings Domain Engineer (Phase 4B i18n)",
+      "version": null,
+      "referencedBySurfaces": [
+        "navigation",
+        "settings"
+      ]
+    },
+    {
+      "path": "contracts/webhook.contract.md",
+      "role": "foreign",
+      "owner": "unknown",
+      "version": null,
+      "referencedBySurfaces": [
+        "webhooks"
+      ]
+    },
+    {
+      "path": "contracts/workflow.contract.md",
+      "role": "foreign",
+      "owner": "Agent 1 \u2014 Workflow Domain Engineer",
+      "version": null,
+      "referencedBySurfaces": [
+        "dashboard",
+        "workflow-editor"
+      ]
+    }
+  ]
+}
