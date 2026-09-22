@@ -40,9 +40,11 @@ you want the count.
 | `XA-16` | open-for-manager | `manager` | Does MCP need a capability of its own, or only the published vocabulary block? |
 | `XA-17` | open-for-manager | `manager` | Which contract publishes token and cost usage - per call, per run, per session? |
 | `XA-18` | open-for-manager | `agent-01 (frontend + compatibility)` | Which contract publishes the external action families - filesystem, terminal/process, project, browser and git? |
+| `XA-20` | open-for-manager | `manager` | Which contract rows and which rollover/continuation vocabulary does the manager publish for Context & Session, so the frontend binds to a lock row instead of to a version claim? |
+| `XA-21` | open-for-manager | `manager` | The frontend evidence capture pins descriptor assembly at under 4,096 KB of heap; P2.12 filled that pin to 3,780 KB (92%) and the P2.13 Context & Session surface adds ~470 KB, so the check now fails at 4,251-4,361 KB. Does the manager raise the pin, make feature surfaces opt-in imports instead of eager assembly, or move surface prose into the manifests - and which of those applies to P2.14 (Memory), which cannot fit under the pin as it stands? |
 
-**11 open**, 8 resolved,
-19 recorded in total.
+**13 open**, 8 resolved,
+21 recorded in total.
 
 ## Cross-agent arbitration
 

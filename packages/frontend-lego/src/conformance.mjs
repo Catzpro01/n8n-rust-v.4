@@ -24,6 +24,15 @@ import { CONTEXT_LEVELS } from './knowledge.mjs';
 import { SUB_LEGO_STATUSES, MAX_DEPTH } from './sublegos.mjs';
 import { CAPABILITY_IDENTITY_FIELDS, SEAM_FORBIDDEN, SEAM_INPUTS, consumeInput } from './seam.mjs';
 import { SKILL_AFFORDANCES, SKILL_FORBIDDEN_IMPLICATIONS, SKILL_LIFECYCLE, SKILL_OPERATIONS } from './skills.mjs';
+import {
+  CONTEXT_SESSION_AFFORDANCES,
+  DISTINCT_CONCEPTS,
+  FORBIDDEN_IMPLICATIONS as CONTEXT_SESSION_FORBIDDEN_IMPLICATIONS,
+  PUBLISHED_OPERATION_IDS,
+  SESSION_STATES,
+  UNPUBLISHED_CONTEXT_VERBS,
+  USAGE_REPORT_STATES,
+} from './context-session.mjs';
 
 /**
  * What an extension point is, as a shape: hooks are surface-owned, additive and
@@ -238,6 +247,21 @@ export const ARCHITECTURE_RULES = Object.freeze([
     contract: '§19.18',
     enforcedBy: '31-skills.test.mjs',
   }),
+  Object.freeze({
+    id: 'A28',
+    statement: 'Context & Session stays one LEGO with two quoted contracts: conversation, session, context window, memory and execution remain five distinct things, every word is quoted from the backend declaration, an unlocked contract is reported as declared-not-locked, a declared-but-unregistered operation is answered operation-unpublished, no usage figure is fabricated, and no Memory store, no execution affordance and no secret ever appears in a rendered state.',
+    vocabulary: Object.freeze([
+      ...DISTINCT_CONCEPTS.map((concept) => concept.id),
+      ...SESSION_STATES,
+      ...PUBLISHED_OPERATION_IDS,
+      ...UNPUBLISHED_CONTEXT_VERBS,
+      ...USAGE_REPORT_STATES,
+      ...CONTEXT_SESSION_AFFORDANCES.allowed,
+      ...CONTEXT_SESSION_FORBIDDEN_IMPLICATIONS,
+    ]),
+    contract: '§19.19',
+    enforcedBy: '32-context-session.test.mjs',
+  }),
 ]);
 
 const RULES_BY_ID = new Map(ARCHITECTURE_RULES.map((rule) => [rule.id, rule]));
@@ -403,6 +427,39 @@ export function checkConformance(frontend) {
     && skillCatalog.lifecycle.every((state) => state.executing === false && state.grants === null)
     && noAffordance && noFallback && fourOperations,
   `${skillStates.length} states, ${SKILL_OPERATIONS.length} published operations, ${skillCatalog.entries.length} declared skills, contract ${skillCatalog.contract.published ? 'published' : 'unpublished'}`);
+
+  // A28 — five distinct concepts, quoted words, five published operations, no fabricated figure,
+  // no memory store, no execution affordance, and an unlocked contract reported as unlocked.
+  const contextSession = frontend.contextSession;
+  const concepts = contextSession.concepts.map((concept) => concept.id);
+  const fiveDistinct = concepts.length === 5 && new Set(concepts).size === 5
+    && concepts.includes('session') && concepts.includes('context-window')
+    && concepts.includes('memory') && concepts.includes('execution') && concepts.includes('conversation');
+  const memoryNotClaimed = contextSession.concepts.find((concept) => concept.id === 'memory').exists === false
+    && CONTEXT_SESSION_FORBIDDEN_IMPLICATIONS.includes('memory-store');
+  const noExecutionAffordance = ['execute', 'infer', 'rollOverNow', 'rehydrate', 'verify', 'continueSession', 'grantPermission']
+    .every((name) => typeof CONTEXT_SESSION_AFFORDANCES.forbidden[name] === 'string')
+    && contextSession.operations.offered.length === 0;
+  const fiveOperations = PUBLISHED_OPERATION_IDS.length === 5
+    && PUBLISHED_OPERATION_IDS.filter((id) => id.startsWith('ai.context.')).length === 2
+    && PUBLISHED_OPERATION_IDS.filter((id) => id.startsWith('ai.agent-session.')).length === 3
+    && UNPUBLISHED_CONTEXT_VERBS.length === 3
+    && !PUBLISHED_OPERATION_IDS.some((id) => /rollover|rehydrate|verify|continue|execute/.test(id));
+  const sevenStates = contextSession.session.states.length === 7
+    && contextSession.session.states.every((state) => state.executing === false && state.inference === false && state.grants === null);
+  const noFabricatedFigure = USAGE_REPORT_STATES.includes('not-reported')
+    && contextSession.context.usage.state === 'not-reported'
+    && contextSession.context.usage.percent === null
+    && contextSession.context.usage.fabricated === false;
+  const publicationHonest = contextSession.published === false
+    ? contextSession.contracts.context.status === 'declared-not-locked'
+      && contextSession.contracts.session.status === 'declared-not-locked'
+      && contextSession.contracts.context.version === null
+      && contextSession.unsupported !== null
+    : contextSession.contracts.context.version !== null && contextSession.contracts.session.version !== null;
+  record('A28', fiveDistinct && memoryNotClaimed && noExecutionAffordance && fiveOperations && sevenStates
+    && noFabricatedFigure && publicationHonest,
+  `${concepts.length} distinct concepts, ${SESSION_STATES.length} session states, ${PUBLISHED_OPERATION_IDS.length} published operations, ${UNPUBLISHED_CONTEXT_VERBS.length} declared-but-unregistered verbs, contracts ${contextSession.published ? 'published' : contextSession.contracts.context.status}`);
 
   // A13 — the frontend/backend view is derived, with sources.
   const featureAvailability = frontend.featureAvailability();

@@ -886,6 +886,12 @@ enforcement cannot disagree.
     "statement": "Skill discovery renders six quoted states and the four published operations (skill.list, skill.resolve, skill.describe, skill.validate-selection) and nothing else: no single boolean, no select/load/release/execute affordance, no fallback capability, and no skill that implies a permission, an authority, a tool, a filesystem, a terminal or a model.",
     "contract": "§19.18",
     "enforcedBy": "31-skills.test.mjs"
+  },
+  {
+    "id": "A28",
+    "statement": "Context & Session stays one LEGO with two quoted contracts: conversation, session, context window, memory and execution remain five distinct things, every word is quoted from the backend declaration, an unlocked contract is reported as declared-not-locked, a declared-but-unregistered operation is answered operation-unpublished, no usage figure is fabricated, and no Memory store, no execution affordance and no secret ever appears in a rendered state.",
+    "contract": "§19.19",
+    "enforcedBy": "32-context-session.test.mjs"
   }
 ]
 ```
@@ -982,3 +988,137 @@ the lock row it was verified against (`publication`: contract, version, owner, `
 never a starter set. A manifest that claims publication must find the row it names in the contract
 lock; reporting "nothing is declared" and "the declaration is broken" stays two different states
 (`§19.8`).
+
+### 19.19 The Context & Session surface — five distinct things, quoted words, no runtime
+
+**Context & Session is one LEGO with two contracts** — `ai.context` (what is loaded now) and
+`ai.agent-session` (bounded state: identity plus references). The frontend consumes both and
+creates neither: no `ai-context` domain, no `ai-session` domain, no second context registry, and
+no frontend contract of its own for this subject (`A28`).
+
+**The invariant is rendered, not assumed.**
+
+```
+Conversation  !=  Session  !=  Context window  !=  Memory  !=  Execution
+```
+
+One conversation may contain many sessions; one session may have one or more context windows;
+memory is what *survives* context replacement; execution state comes from `execution.*`, never
+from a transcript. `DISTINCT_CONCEPTS` carries the five as data with what each one is, which
+contract owns it, and whether it exists — and `assertDistinctConcepts()` **refuses** a single
+merged "AI state" object (a record that claims to be a session while carrying a transcript, a
+context body, a memory store or an execution state). Four of the five are visibly separate in the
+UI; the fifth (Memory) is named as absent, with `XA-12` as the reason.
+
+**Publication state is reported, never claimed.** At the P2.13 baseline (`main` @ `e754c5df`)
+both contracts are *declared* (`manifest/ai-foundation.json` → `context`, `agentSession`) and
+*registered* (`manifest/domains.json` → capabilities `ai.context` and `ai.agent-session`, status
+`contract-only`, 5 operations, 5 permissions), and `manifest/ai-lego-set.json` **claims**
+`ai.context@1.0.0, ai.agent-session@1.0.0` — but `contracts/contract-lock.json` publishes **no
+row for either**. So the surface reports `declared-not-locked` with `published: false` and
+`version: null`, names the claim as `declaredVersion`, and cites `XA-20` as the decision that
+owes the rows. A version claim in a manifest is not a publication and is never rendered as one
+(the same rule §19.18 applies to Skill).
+
+**Every word is quoted.** The surface renders thirteen quoted sets, all with provenance in the
+vocabulary lock (§19.9): the 7 context scopes, the 9 context fields, the 6 context lifecycle states
+(`declared`, `active`, `prepare`, `compacting`, `rolled-over`, `closed`), the 14
+continuation-package sections, the 5 LEGO-declared operation verbs, the 2 registry-published context
+operations and 2 context permissions, the 7 session states, the 10 session fields, the 3 session
+references, the 3 session operations and 3 session permissions, and the 3 token kinds of the
+context-rollover scenario. **Ten of the thirteen were added by this milestone** (`contextField`,
+`contextLifecycle`, `continuationSection`, `contextOperationVerb`, `contextOperation`,
+`contextPermission`, `agentSessionReference`, `agentSessionOperation`, `agentSessionPermission`,
+`tokenKind`); `contextScope`, `agentSessionState` and `agentSessionField` were already in the lock.
+Four of the ten are quoted from files no contract-lock row publishes, so they carry a
+`publicationPending` record (`XA-20` for the AI set's Context & Session block, `XA-17` for the token
+kinds) instead of borrowing the closest-sounding contract. Two further word lists are **not** quoted
+because nothing publishes them — the rollover phases and the verification results — and they live in
+`PENDING_PUBLICATIONS`; two local presentation sets (`continuationAffordance`, `contextUsageReport`)
+are declared with their reason, as §19.9 requires of any frontend coinage.
+
+**The declared/published gap is rendered, not hidden.** The AI set declares five verbs — `load`,
+`compact`, `rollover`, `rehydrate`, `verify` — and the registry publishes **two** operations
+(`ai.context.load`, `ai.context.compact`). `rollover`, `rehydrate` and `verify` therefore appear
+as `unpublishedOperations`, and any affordance that would need them is answered
+`operation-unpublished` (§19.10). `Continue session` is exactly that: an intent the UI may show,
+with no published operation behind it (`ai.agent-session` publishes `create`, `status`, `close`),
+never a call wired to an invented operation.
+
+**Unpublished vocabulary stays pending.** The manager's P2.13 ruling names a three-phase context
+manager (`NORMAL → PREPARE → ROLLOVER`) and three continuity-verification results (`verified`,
+`degraded`, `failed`). Neither list is published by any backend declaration, so neither is
+quoted: they live in `PENDING_PUBLICATIONS` with the ruling that decided their shape and `XA-20`
+as the decision that owes their publication. The UI renders what *is* published — the lifecycle
+states `prepare`, `compacting` and `rolled-over` — and reports the phase machine and the
+verification results as pending. `test/32-context-session.test.mjs` scans the backend tree for
+those values and **fails while they remain pending after the backend publishes them**: promotion
+into the lock, at reconciliation, is the only way forward.
+
+**Six continuation affordances, no silent reset.** `continue-session`, `rollover-preparing`,
+`continuation-linked`, `continuity-verified`, `continuation-degraded`, `continuation-failed`
+(local set `continuationAffordance`, declared with its reason). `degraded` is never rendered as
+`verified`, `failed` is never rendered as a new session, and a missing verification result is
+reported as missing — never silently repaired, because a silent repair is how a continuation
+loses its objective and still looks green.
+
+**No fabricated numbers.** A usage figure is `reported`, `estimated`, `not-reported` or
+`over-budget` (local set `contextUsageReport`). With nothing reported there is no percentage, no
+bar and no number; a figure carries its token kind (`message`, `modelInput`, `output`) or is not
+rendered, because `1 token` for the message next to `1847` for the model input is one screen
+showing two different facts. An estimate is labelled as one. The surface is not a token dashboard
+and never renders raw context contents as a transcript.
+
+**Rollover is a backend transition the UI observes.** The threshold must be declared and must be
+strictly below the bound: a threshold at or above 100% is refused with the reason the declaration
+itself gives — a rollover attempted at the limit has no room left to write the continuation
+package. The frontend computes no phase of its own: it renders the phase or lifecycle state it is
+handed, reports `usage-not-reported` when no usage was reported, and offers no "roll over now"
+control.
+
+**Bounded, reference-based, and closed to secrets.** A context or session record is validated
+against the quoted field vocabulary; unknown fields are refused, not ignored. A session carries
+`contextRef`, `artifactRef` and `traceRef` — references, never payloads — and a record that
+inlines a context body, a transcript or a message list is refused as unbounded. Forbidden by name
+*and* by pattern: credentials, tokens, secrets, cookies, authorization headers, private
+chain-of-thought, reasoning dumps, raw or hidden prompts, transcripts, full model output, host
+paths and capability grants. Nothing here holds a permission: the quoted permission words are
+requirements of backend operations, never a grant the UI carries or a control it renders.
+
+**Handed over, never read; drift reported, never adopted.** The declaration arrives as data
+(`createFrontendLego({ contextSession })`), exactly like the Skill surface (§19.18) and the
+backend capability view (§19.6); this package never reads the backend tree (§5, §19.14).
+`declarationDrift()` compares the vocabulary-bearing fields of a handed-over declaration with the
+quoted sets and returns `in-sync`, `drift` (both spellings, both directions, per field),
+`not-declared` or `publication-pending`. `manifest/context-session.json` declares the surface and
+ships **empty** `contexts` and `sessions` arrays: a state surface renders what it was handed, and
+"nothing was declared" stays a different state from "the declaration is broken" (§19.8).
+
+**Nothing reaches the browser payload.** The surface is metadata plus pure functions. The boot
+descriptor stays byte-identical at 18,126 B (`apps/n8n-lego/scripts/capture-frontend-evidence.mjs`
+pins it), no context or session data is added to it, and no runtime, provider, model, Memory
+store, Workspace executor or Agent Machine loop is implied anywhere in it.
+
+**Built on demand, validated at the boundary.** The view is memoized behind the assembly's
+`get contextSession()` and is constructed the first time it is read, because a surface nobody has
+rendered should not be paid for on the boot path. Laziness is **not** deferred validation: when a
+record is handed over, the view is built eagerly at assembly so a broken declaration fails closed at
+the boundary rather than at first render, and `describe()` reports the publication state and the
+drift state without building the view at all. The heap cost of the whole package at import is
+therefore a real budget question rather than a browser-payload question — measured and escalated as
+`XA-21` (4,096 KB pin; 3,780 KB at `e754c5df`, 4,275 KB with this surface), not edited away.
+
+**Refusal keys** (all `ContextSessionError`, all thrown rather than defaulted, all named in the
+message that accompanies them):
+
+| Key | Fires when |
+| :--- | :--- |
+| `frontend.context-session.invalid` | a handed-over value fails its quoted vocabulary or its shape rule (unknown scope, state, field, section, token kind; a threshold at or above 100%; an inlined payload; secret material) |
+| `frontend.context-session.invalid-record` | a concept or session record is not an object at all |
+| `frontend.context-session.concepts-merged` | one record claims two of the five distinct concepts — a session carrying a transcript, a context body, a memory store or an execution state; the message names the concept that collapsed |
+| `frontend.context-session.unknown-verification-result` | a continuity-verification result outside `verified` / `degraded` / `failed`; it is refused rather than mapped to the nearest word |
+
+Enforced by `32-context-session.test.mjs` (surface, provenance, lifecycle, rollover,
+continuation, verification, degraded and fail-closed states, no fabricated tokens, no
+memory-store claim, no execution affordance, secret refusal) and by the live conformance check
+`A28`.

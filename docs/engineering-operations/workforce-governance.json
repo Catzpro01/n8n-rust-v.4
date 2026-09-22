@@ -1,7 +1,7 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "scopeBoundary": "ENGINEERING OPERATIONS / DEVELOPMENT WORKFLOW — NOT n8n LEGO product architecture. This file was moved out of apps/n8n-lego/src/lego/manifest/ in P2.11 reconciliation because the manager ruled that the Arena manager/worker model, its control planes and its task routing must never become product domains, AI LEGO, runtime dependencies or product capabilities. Nothing here may be referenced by manifest/domains.json, manifest/ai-lego-set.json or any product contract. A test enforces the separation.",
-  "phase": "P2.11",
+  "phase": "P2.13",
   "owner": "manager",
   "status": "contract-only",
   "description": "Authoritative declaration of the DEVELOPMENT workforce that builds n8n LEGO, the control planes it uses, and the project's permanent decision principles. This is deliberately a separate file from ai-lego-set.json because it describes a different world: the agents that build the product, not the agents the product runs.",
@@ -250,5 +250,74 @@
       "plane": "engineering-operations"
     }
   ],
-  "blockerRule": "A blocker is closed by evidence, never by a report deadline. Downgrading a blocker to make a status document look complete is the specific failure this register exists to prevent."
+  "blockerRule": "A blocker is closed by evidence, never by a report deadline. Downgrading a blocker to make a status document look complete is the specific failure this register exists to prevent.",
+  "milestoneMergeGate": {
+    "addedIn": "P2.13 (2026-09-22), from the manager's Merge & Reconciliation Gate ruling",
+    "owner": "manager",
+    "sourceOfTruth": "docs/n8n-lego/milestones.json",
+    "sourcePath": "policy.mergeProtocol",
+    "restatedHere": "The full protocol lives in the milestone register and is NOT re-spelled here: two copies of one rule drift, and the drift is invisible until a merge goes wrong. This block carries the rule, the two gate names, the conflict taxonomy and the failure state, and points at the register for the sequence, the reconciliation checks and the evidence list.",
+    "appliesTo": "P2.13, P2.14 and every later milestone. This protocol is governance, not product architecture: it must never be referenced by manifest/domains.json, manifest/ai-lego-set.json or any product contract.",
+    "rule": "Agent completion is NOT merge approval. \"My branch is complete\" means the assigned implementation is complete, its focused tests pass, the branch is internally consistent and its evidence is published. It says nothing about whether the branch may be merged: that is the manager's decision, taken after reconciliation against the actual target main.",
+    "gates": [
+      "RECONCILIATION PASS",
+      "MERGE PASS"
+    ],
+    "gateMeaning": {
+      "RECONCILIATION PASS": "the two agent outputs are mutually consistent and compatible with the architecture",
+      "MERGE PASS": "the reconciled state passed the required validation against the actual target main",
+      "why": "'The branches were reconciled' is not 'the milestone is complete'. Treating them as one gate is the failure mode this protocol exists to prevent."
+    },
+    "sequence": [
+      "agent-1 complete (frontend tests + evidence)",
+      "agent-2 complete (backend tests + evidence)",
+      "manager reconciliation: compare both branches against the same main baseline, inspect the shared contract surface, detect drift and conflicts, verify dependency assumptions, run cross-agent alignment tests, regenerate .ai if required, verify documentation and status",
+      "RECONCILIATION PASS",
+      "merge into protected main",
+      "post-merge verification: same expected tree, same contract lock, same generated .ai state, tests pass on main HEAD",
+      "milestone status = complete"
+    ],
+    "conflictTypes": [
+      {
+        "type": 1,
+        "name": "mechanical",
+        "action": "the manager resolves it directly"
+      },
+      {
+        "type": 2,
+        "name": "contract",
+        "action": "NOT a normal merge conflict: the contract is reconciled first, then the code follows it"
+      },
+      {
+        "type": 3,
+        "name": "architecture",
+        "action": "an architecture decision is recorded and ruled before merging"
+      },
+      {
+        "type": 4,
+        "name": "scope-violation",
+        "action": "do not merge that scope - not 'merge now and clean it up later'"
+      }
+    ],
+    "conflictRule": "A type-2 (contract) conflict is not a normal merge conflict: the contract is reconciled first and the code follows it. A type-3 (architecture) conflict is recorded and ruled before merging. A type-4 (scope-violation) is not merged at all - not \"merge now and clean it up later\".",
+    "onFailure": "RECONCILIATION_FAILED",
+    "onFailureEvidence": [
+      "the conflict",
+      "the affected contract",
+      "the affected agent",
+      "the reason",
+      "the required decision",
+      "the blocking test"
+    ],
+    "onFailureThen": "agent correction -> reconciliation again. Never a silent merge, and never a merge of a locked-contract disagreement.",
+    "mergeAuthority": "Only the manager turns agent branches into product state on main. Agents do not merge to main, do not force-push, and do not reset another agent's branch to make a tree look synchronized.",
+    "neverMerge": "Never merge into protected main directly from an agent branch, never merge without reconciliation against the current main baseline, never merge a locked-contract disagreement, never force-push, and never reset another agent's branch to make a tree look synchronized.",
+    "milestoneStatusRule": "A milestone becomes complete only after both gates pass and post-merge verification on main HEAD succeeds. \"Both branches were reconciled\" is not \"the milestone is complete\".",
+    "enforcedBy": [
+      "packages/frontend-lego/test/33-milestones.test.mjs",
+      "docs/n8n-lego/milestones.json#policy.mergeProtocol"
+    ],
+    "plane": "engineering-operations",
+    "notProductArchitecture": "Governance only. Nothing here may be referenced by manifest/domains.json, manifest/ai-lego-set.json or any product contract; the same separation the rest of this file enforces applies to this block."
+  }
 }

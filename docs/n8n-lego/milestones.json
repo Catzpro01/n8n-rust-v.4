@@ -1,0 +1,866 @@
+{
+  "registerVersion": "1.0.0",
+  "owner": "manager",
+  "maintainedBy": {
+    "manager": "owns this register: milestone ids, sequence, status transitions, ownership, boundaries and the merge protocol",
+    "agent-2": "owns the backend evidence rows (implementation, backend tests, contract publication) and may not re-sequence",
+    "agent-1": "owns the frontend evidence rows (consumption, frontend tests, vocabulary alignment) and may not re-sequence",
+    "rule": "An agent may add evidence to the milestone it is assigned and may propose a status change. Only the manager changes an id, a sequence, a boundary or a status of record."
+  },
+  "description": "The canonical, machine-readable MILESTONE layer of this repository: the granular P2.x steps beneath the strategic Phase A-F roadmap, with owner, dependencies, inputs, deliverables, implementation boundary, gates, decision dependencies, completion criteria, start/finish evidence, the commit each row was verified against, and the milestone that follows it. It exists so a new agent with no chat history can answer: what the previous milestone delivered, why this one is next, what it owns, what it deliberately does NOT implement, what comes after it, which dependencies block later work, and which gates define completion. It is a register, not a narrative: every claim here names the file or command that proves it.",
+  "createdIn": "P2.13 (Part A - milestone reconciliation). Before this file the repository's roadmap was coarse (Phase A-F in manifest/ai-lego-set.json plus prose in docs/n8n-lego/ROADMAP.md), which is why the generated status documents still said 'Current phase P2.11' after P2.12 had shipped.",
+  "authority": {
+    "strategicRoadmap": {
+      "file": "apps/n8n-lego/src/lego/manifest/ai-lego-set.json",
+      "path": "phases (A-F) and lego[] (the 15 official AI/Agent LEGO)",
+      "rule": "NOT replaced and NOT re-numbered by this register. Phases A-F remain the strategic roadmap; the milestones below are the granular layer inside them."
+    },
+    "productTruth": {
+      "files": [
+        "apps/n8n-lego/src/lego/manifest/domains.json",
+        "apps/n8n-lego/src/lego/manifest/ai-foundation.json",
+        "apps/n8n-lego/src/lego/contracts/contract-lock.json",
+        "apps/n8n-lego/src/lego/contracts/errors.contract.json"
+      ],
+      "rule": "Where this register and a manifest disagree about a NUMBER (domains, capabilities, operations, contracts, error codes), the manifest wins and the row here is a defect. Read the generated .ai/master/CURRENT_STATUS.md for live counts."
+    },
+    "applicationRoadmap": {
+      "file": "docs/n8n-lego/ROADMAP.md",
+      "rule": "The installable-application roadmap (run, distribute, rename). It is a different axis from the AI/Agent milestone ladder and neither subsumes the other."
+    },
+    "decisions": {
+      "file": "docs/n8n-lego/decisions/cross-agent-decisions.json",
+      "rule": "A milestone may not resolve a decision. decisionDependencies below name the rows that gate a milestone; the arbiter named in each row decides it."
+    },
+    "milestoneHistory": {
+      "rule": "Milestones before P2.11 predate this register: they were tracked in the reconciliation reports and the curated status documents, not in a machine-readable row. They are named here so a dependency on them resolves, and they are NOT retro-fitted with deliverables or evidence that nobody recorded at the time.",
+      "recordedFrom": "P2.11 (the P2.11 reconciliation created the register; earlier milestones are history)",
+      "ids": [
+        "P2.1",
+        "P2.2",
+        "P2.3",
+        "P2.4",
+        "P2.5",
+        "P2.6",
+        "P2.7",
+        "P2.8",
+        "P2.9",
+        "P2.10"
+      ],
+      "status": "complete (historical; recorded outside this register)",
+      "evidence": [
+        "docs/n8n-lego/RECONCILIATION-REPORT.md -> the P2.11 reconciliation of both agent branches",
+        "apps/n8n-lego/src/lego/contracts/contract-lock.json -> 15 rows accumulated up to and including P2.12 (ai.skill)",
+        ".ai/master/CURRENT_STATUS.md -> generated status for the merged tree",
+        "apps/n8n-lego/scripts/capture-frontend-evidence.mjs -> P25_PAYLOAD_BYTES = 18126, pinned at P2.5"
+      ]
+    }
+  },
+  "statusVocabulary": {
+    "planned": "sequenced, not started; no branch work and no implementation evidence",
+    "ready": "dependencies published and no open decision blocks it; work may start",
+    "in-progress": "an assigned agent is implementing it on its branch",
+    "blocked": "a named dependency or decision prevents progress; the blocker is recorded, not implied",
+    "complete": "delivered, gated and reconciled on protected main; evidence recorded",
+    "superseded": "replaced by another milestone; the row is kept with a pointer, never deleted",
+    "rule": "These six words are the whole status vocabulary and no other status word is valid. 'Almost done', 'ready-ish' and 'done on my branch' are not statuses: agent completion is recorded in statusBySide, and only reconciliation on protected main makes a milestone complete."
+  },
+  "policy": {
+    "idRefinement": "Future milestone ids below P2.13 are INDICATIVE (each carries idStatus: 'indicative'). The manager may split, merge, re-sequence or renumber a future milestone - for example if implementation evidence shows Memory must be two milestones - but ONLY by updating this register in the same change that records the reason. An id that moved keeps its old row with status 'superseded' and a 'supersededBy' pointer.",
+    "noInventedReadiness": "A milestone is never marked ready because it is convenient. 'ready' requires every dependency to be published (a contract-lock row, a registered capability, or a declared manifest block) and every blocking decision to be closed. Where a dependency is declared but not published, the row says so in blockingDecisions.",
+    "historyRule": "Historical evidence is never rewritten to look current. A completed milestone keeps the commit it was verified against, the counts that were true then, and the decisions as they stood. Corrections are additive: a 'corrections' or 'supersededNotice' field on the row, plus the current canonical state - never an edited past.",
+    "scopeRule": "A milestone's 'boundary.mustNot' list is part of its definition. Implementing something on that list is a scope violation, and the correct action at reconciliation is to not merge that scope - not to merge it and clean up later.",
+    "architectureFirst": "Architecture -> Contract -> Test -> Implementation, in that order, for every milestone. A milestone that reaches implementation before its contract is locked records the gap as a decision row (P2.13's is XA-20) instead of inventing the contract locally.",
+    "mergeProtocol": {
+      "summary": "An agent branch is not the milestone. The reconciled, verified state on protected main is the milestone.",
+      "agentCompletionIsNotMergeApproval": "'My branch is complete' means: the assigned implementation is complete, its focused tests pass, the branch is internally consistent and its evidence is published. It does NOT mean the branch is safe to merge. The manager owns that decision.",
+      "sequence": [
+        "agent-1 complete (frontend tests + evidence)",
+        "agent-2 complete (backend tests + evidence)",
+        "manager reconciliation: compare both branches against the same main baseline, inspect the shared contract surface, detect drift and conflicts, verify dependency assumptions, run cross-agent alignment tests, regenerate .ai if required, verify documentation and status",
+        "RECONCILIATION PASS",
+        "merge into protected main",
+        "post-merge verification: same expected tree, same contract lock, same generated .ai state, tests pass on main HEAD",
+        "milestone status = complete"
+      ],
+      "twoGates": {
+        "reconciliationPass": "the two agent outputs are mutually consistent and compatible with the architecture",
+        "mergePass": "the reconciled state passed the required validation against the actual target main",
+        "why": "'The branches were reconciled' is not 'the milestone is complete'. Treating them as one gate is the failure mode this protocol exists to prevent."
+      },
+      "reconcileChecks": {
+        "baseline": "BASE = current protected main. Both branches are understood as BASE + agent-1 changes and BASE + agent-2 changes; never 'merge whichever arrives first'.",
+        "contractAuthority": "backend contract -> canonical schema / operations / errors / permissions -> frontend consumer. The manager verifies agent-1 did not redefine anything agent-2 owns, and that the frontend is not a parallel interpretation of the same concept.",
+        "architectureDrift": "duplicate LEGO domains, duplicate contracts, renamed concepts diverging from canonical vocabulary, future-scope components implemented early, accidental runtime dependencies, new authority or permission paths, hidden coupling, and architecture decisions made implicitly in code.",
+        "testReconciliation": "agent-1 focused tests PASS, agent-2 focused tests PASS, shared contract tests PASS, cross-agent alignment PASS, full relevant suite PASS. The last two are the gate; the first two are not sufficient."
+      },
+      "conflictTypes": [
+        {
+          "type": 1,
+          "name": "mechanical",
+          "examples": [
+            "the same file changed in compatible ways",
+            "import or path conflict",
+            "formatting",
+            "a generated artifact collision"
+          ],
+          "action": "the manager resolves it directly"
+        },
+        {
+          "type": 2,
+          "name": "contract",
+          "examples": [
+            "different field names",
+            "different operation names",
+            "different enum values",
+            "backend says `paused`, frontend expects `suspended`"
+          ],
+          "action": "NOT a normal merge conflict: the contract is reconciled first, then the code follows it"
+        },
+        {
+          "type": 3,
+          "name": "architecture",
+          "examples": [
+            "one agent assumes Memory exists",
+            "one agent implements state that belongs to Memory",
+            "a second context registry appears"
+          ],
+          "action": "an architecture decision is recorded and ruled before merging"
+        },
+        {
+          "type": 4,
+          "name": "scope-violation",
+          "examples": [
+            "Agent Machine execution implemented inside a Context & Session milestone",
+            "a Memory store created",
+            "runtime integration appears early",
+            "Rust implementation starts without authorization"
+          ],
+          "action": "do not merge that scope - not 'merge now and clean it up later'"
+        }
+      ],
+      "onFailure": {
+        "state": "RECONCILIATION_FAILED",
+        "evidence": [
+          "the conflict",
+          "the affected contract",
+          "the affected agent",
+          "the reason",
+          "the required decision",
+          "the blocking test"
+        ],
+        "then": "agent correction -> reconciliation again. Never a silent merge, and never a merge of a locked-contract disagreement."
+      },
+      "mergeAuthority": "Only the manager turns agent branches into product state on main. Agents do not merge to main, do not force-push, and do not reset another agent's branch to make a tree look synchronized.",
+      "appliesTo": "P2.13, P2.14 and every later milestone. This protocol is governance, not product architecture: it must never be referenced by manifest/domains.json, manifest/ai-lego-set.json or any product contract."
+    }
+  },
+  "baseline": {
+    "protectedMain": {
+      "commit": "e754c5df35b41b0ff2ac769519f05f056835411c",
+      "short": "e754c5df",
+      "title": "Backend LEGO P2.6-P2.12: publish ai.skill@1.0.0 (#44)",
+      "rule": "never modified directly, never force-pushed"
+    },
+    "historicalBaselines": [
+      {
+        "commit": "cb71dbb201d635b15b49933764c2c2336e745809",
+        "status": "historical",
+        "note": "the protected main baseline recorded during the P2.11 reconciliation; superseded by e754c5df"
+      },
+      {
+        "commit": "6f7b66da",
+        "status": "historical",
+        "note": "agent-2 backend baseline at P2.10; the state the XA-8..XA-18 findings were verified against"
+      },
+      {
+        "commit": "729bb112",
+        "status": "historical",
+        "note": "agent-2 tree before the P2.12 finalize (no ai.skill lock row yet)"
+      },
+      {
+        "commit": "d0a338e4",
+        "status": "historical",
+        "note": "agent-2 tree that publishes ai.skill@1.0.0 (P2.12 finalize)"
+      },
+      {
+        "commit": "8c299609",
+        "status": "historical",
+        "note": "agent-1 tip preserved during the P2.11 reconciliation"
+      }
+    ],
+    "agentBranches": {
+      "agent-1-frontend": "arena/01a0c6b4-n8n-rust-v-4",
+      "agent-2-backend": "arena/01a0c6b5-n8n-rust-v-4",
+      "note": "Arena sessions are locked to their branch. Earlier sessions of the same roles used arena/01a0c53e-n8n-rust-v-4 (agent-1) and arena/01a0c521-n8n-rust-v-4 (agent-2); those names remain in historical evidence and are not rewritten."
+    }
+  },
+  "milestones": [
+    {
+      "id": "P2.11",
+      "title": "Reconciliation and foundation cleanup",
+      "phase": "A",
+      "status": "complete",
+      "idStatus": "fixed",
+      "owner": "manager",
+      "backendOwner": "agent-2",
+      "frontendOwner": "agent-1",
+      "dependencies": [
+        "P2.10"
+      ],
+      "inputs": [
+        "the two divergent agent trees at P2.10/P2.11 (agent-1 tip 8c299609, agent-2 baseline 6f7b66da)",
+        "the .ai/master document set and the two cross-agent decision registers"
+      ],
+      "deliverables": [
+        "one reconciled repository state with a single generated .ai/master (11 generated master documents) and 37 curated files preserved across regeneration",
+        "the reconciled cross-agent decision register (recordVersion 1.1.0 at the time) as the authority for decision counts, with agent-2's register kept as its own partial side",
+        "the development workforce model moved OUT of the product manifests into docs/engineering-operations/workforce-governance.json, with a test enforcing the separation",
+        "the 26-domain correction: the domain table became a generated projection of manifest/domains.json instead of prose",
+        "historical evidence commits preserved as historical, never rewritten to look current"
+      ],
+      "boundary": {
+        "may": [
+          "documentation truth",
+          "registers",
+          "generators",
+          "counts",
+          "ownership records"
+        ],
+        "mustNot": [
+          "new product capability",
+          "new contract",
+          "runtime code"
+        ]
+      },
+      "gates": [
+        "npm run lego:gate",
+        "npm run lego:ai:check (.ai freshness)",
+        "packages/frontend-lego/test/30-master-plan.test.mjs"
+      ],
+      "decisionDependencies": [
+        "XA-8 .. XA-18 recorded as open-for-manager; XA-1..XA-7 resolved"
+      ],
+      "completionCriteria": [
+        "the generated status documents and the curated frontend views agree on what is historical and what is current",
+        "no orphaned or silently deleted .ai file",
+        "decision counts come from the reconciled register"
+      ],
+      "startEvidence": [
+        "docs/n8n-lego/RECONCILIATION-REPORT.md",
+        "docs/n8n-lego/evidence/backend-lego-p211.json"
+      ],
+      "finishEvidence": [
+        "docs/n8n-lego/RECONCILIATION-REPORT.md",
+        "docs/n8n-lego/evidence/backend-lego-p211.json",
+        "tools/lego/ai-pack.mjs -> the CURATED list (37 files, owner agent-1) preserved across regeneration",
+        "docs/engineering-operations/workforce-governance.json -> scopeBoundary records the move out of the product manifests"
+      ],
+      "verifiedAgainst": "cb71dbb201d635b15b49933764c2c2336e745809 (protected main at the time) and 6f7b66da (backend tree quoted)",
+      "currentReference": "superseded as a baseline by e754c5df; the milestone itself stays complete and its evidence stays historical",
+      "next": "P2.12",
+      "statusBySide": {
+        "backend": "complete",
+        "frontend": "complete"
+      }
+    },
+    {
+      "id": "P2.12",
+      "title": "Skill - the skill registry, published as ai.skill@1.0.0",
+      "phase": "B",
+      "status": "complete",
+      "idStatus": "fixed",
+      "owner": "manager",
+      "backendOwner": "agent-2",
+      "frontendOwner": "agent-1",
+      "dependencies": [
+        "P2.11",
+        "ai-foundation (contract-only)",
+        "capability (implemented)"
+      ],
+      "inputs": [
+        "manifest/ai-lego-set.json#lego[id=skill] (the declared Skill LEGO)",
+        "the XA-19 arbitration package (three declarations, five drift rows, options A/B/C)"
+      ],
+      "deliverables": [
+        "ai.skill@1.0.0 published: a contract-lock row (owner manager, domain ai-foundation, status implemented)",
+        "4 published operations: skill.list, skill.resolve, skill.describe, skill.validate-selection",
+        "2 permissions: ai:skill:read, ai:skill:select - and NO ai:skill:execute at any layer",
+        "NOT published: skill.register, skill.select, skill.load, skill.release (internal registry lifecycle methods)",
+        "backend registry implementation: apps/n8n-lego/src/lego/skill.mjs + manifest/skill.json + test/lego-skill.test.mjs",
+        "frontend consumer: packages/frontend-lego/src/skills.mjs + manifest/skills.json + test/31-skills.test.mjs (discovery only, empty catalog, canonical unsupported answer)",
+        "backend/frontend alignment completed: XA-19 resolved by adopting the implemented shape, so frontend vocabulary == backend published vocabulary exactly, with no tolerated difference left"
+      ],
+      "boundary": {
+        "may": [
+          "registration",
+          "validation",
+          "lazy discovery",
+          "lifecycle state",
+          "frontend discovery and state presentation"
+        ],
+        "mustNot": [
+          "skill execution / procedure running",
+          "tool access from a skill",
+          "a permission or authority carried by a skill",
+          "a new top-level LEGO domain"
+        ]
+      },
+      "gates": [
+        "npm run lego:gate",
+        "apps/n8n-lego/test/lego-skill.test.mjs",
+        "packages/frontend-lego/test/31-skills.test.mjs",
+        "packages/frontend-lego/test/29-alignment.test.mjs (0 drift, 0 tolerated differences)"
+      ],
+      "decisionDependencies": [
+        "XA-19 RESOLVED (which Skill operation set and contract version are canonical) - resolved in the P2.12 finalize by adopting the tested four-operation shape",
+        "XA-11 STILL OPEN (is a skill a backend concept at all, and under which domain?) - locking the contract published it, it did not settle where Skill is modelled"
+      ],
+      "completionCriteria": [
+        "contract locked and version explicit",
+        "no execution implied by any published name",
+        "frontend quotes the published vocabulary with provenance and requires exact agreement",
+        "documentation and evidence regenerated, historical rows preserved"
+      ],
+      "startEvidence": [
+        "docs/n8n-lego/decisions/XA-19-skill-vocabulary-diff.md (the arbitration package as raised)"
+      ],
+      "finishEvidence": [
+        "apps/n8n-lego/src/lego/contracts/contract-lock.json -> ai.skill@1.0.0 (15 locked rows at e754c5df)",
+        "apps/n8n-lego/src/lego/manifest/skill.json",
+        "apps/n8n-lego/src/lego/skill.mjs",
+        "apps/n8n-lego/test/lego-skill.test.mjs",
+        "docs/n8n-lego/evidence/backend-lego-p212.json",
+        "docs/n8n-lego/decisions/XA-19-skill-vocabulary-diff.md (carrying the resolution)",
+        "packages/frontend-lego/src/skills.mjs, manifest/skills.json, test/31-skills.test.mjs"
+      ],
+      "verifiedAgainst": "e754c5df35b41b0ff2ac769519f05f056835411c (protected main; the P2.6-P2.12 backend merge, PR #44)",
+      "currentReference": "main @ e754c5df",
+      "notDelivered": [
+        "NO Skill runtime: skills are declarative documents, nothing executes a procedure",
+        "no skill body loader invocation from discovery",
+        "no ai:skill:execute permission and no execute operation"
+      ],
+      "next": "P2.13",
+      "statusBySide": {
+        "backend": "complete (published + tested at e754c5df)",
+        "frontend": "complete (consumer aligned, XA-19 closed on the consumer side)"
+      }
+    },
+    {
+      "id": "P2.13",
+      "title": "Context & Session - the foundation, plus milestone reconciliation",
+      "phase": "A/B (the contracts are Phase A; the manager is Phase B work)",
+      "status": "in-progress",
+      "idStatus": "fixed",
+      "owner": "manager",
+      "backendOwner": "agent-2 (branch arena/01a0c6b5-n8n-rust-v-4)",
+      "frontendOwner": "agent-1 (branch arena/01a0c6b4-n8n-rust-v-4)",
+      "baselineCommit": "e754c5df35b41b0ff2ac769519f05f056835411c",
+      "dependencies": [
+        "P2.12 (complete)",
+        "ai-foundation (contract-only): ai.context and ai.agent-session are declared in manifest/ai-foundation.json and registered as contract-only capabilities in manifest/domains.json"
+      ],
+      "whyNext": "Agent Machine, Token & Usage and Memory all depend on Context & Session (manifest/ai-lego-set.json: agent-machine dependsOn [ai-foundation, capability, context-session, approval]; token-usage dependsOn [ai-foundation, context-session]). Nothing that executes, budgets or remembers can be built on an unpublished window and an unpublished session identity - so this is the next foundation, and it is a foundation, not the AI runtime.",
+      "twoOutputs": [
+        "1. milestone reconciliation: this register, corrected status inputs, and the granular layer beneath Phase A-F",
+        "2. Context & Session implementation: backend lifecycle/rollover/continuation/rehydration/verification (agent-2) and frontend consumption and presentation (agent-1)"
+      ],
+      "inputs": [
+        "manifest/ai-foundation.json -> context { scopes[7], fields[9], selectiveLoadRule, compactionRule } and agentSession { fields[10], references[3], states[7], sizeRule }",
+        "manifest/domains.json -> capabilities ai.context (operations load, compact; permissions ai:context:read, ai:context:write) and ai.agent-session (operations create, status, close; permissions ai:agent:create, ai:agent:read, ai:agent:control)",
+        "manifest/ai-lego-set.json#lego[id=context-session] -> lifecycle[6], continuationPackage[14], operations[5 verbs], rolloverRule, distinction, versioning claim ai.context@1.0.0 + ai.agent-session@1.0.0",
+        "manifest/reference-scenarios.json#scenarios[id=context-rollover] -> the ten-step rollover walkthrough, tokenKinds[3], rolloverRule, failureRule",
+        "contracts/contract-lock.json -> NO ai.context row and NO ai.agent-session row at the baseline (the gap XA-20 records)"
+      ],
+      "deliverables": {
+        "shared": [
+          "this milestone register (docs/n8n-lego/milestones.json)",
+          "corrected current-status inputs so generated and curated documents say P2.13, not P2.11",
+          "XA-20 recorded: which contract rows and which rollover/continuation/verification vocabulary the manager publishes"
+        ],
+        "backend": [
+          "ai.context and ai.agent-session implemented behind the existing LEGO (no duplicate domain, no ai-context / ai-session top-level LEGO)",
+          "explicit context and session lifecycle transitions, invalid transitions failing closed",
+          "context integrity: parent reference validation, lineage, snapshot identity, versioning, checksum linkage, compaction ancestry, bounded state",
+          "rollover as a deterministic state transition (NORMAL -> PREPARE -> ROLLOVER), no random behaviour, no provider dependency, no exact-token-limit trigger",
+          "a structured, serializable, bounded continuation package that rejects invalid or missing identity",
+          "rehydration with an explicit verification stage distinguishing verified / degraded / failed",
+          "security boundary: no credentials, tokens, secrets, cookies, private reasoning, raw hidden prompts, arbitrary host paths or unrestricted capability grants in context/session state; references preferred over payloads",
+          "contract publication: the smallest additive lock update from the already-established canonical shape, correctly versioned, with the reason recorded and contract tests added",
+          "16 focused backend test areas and the full backend gate"
+        ],
+        "frontend": [
+          "vocabulary quoted from the published backend declaration only, with provenance for every shared term",
+          "a Context & Session surface: session identity and state, context scope, usage state, continuation state, rollover preparation, continuity verification, previous/next session relationship, degraded continuation",
+          "the four-way distinction kept visible: conversation != session != context window != execution (and Memory named as absent)",
+          "explicit degraded and unsupported states wherever a runtime dependency is absent; no token dashboard, no transcript rendering, no fabricated token counts, no Memory-store implication, no execution affordance",
+          "the six continuation affordances: Continue session, rollover preparing, continuation linked, continuity verified, continuation degraded, continuation failed - with no silent reset",
+          "frontend tests for provenance, state, lifecycle display, rollover, continuation, degraded, fail-closed, no fabricated tokens, no memory-store claim, no execution affordance; the complete frontend suite run"
+        ]
+      },
+      "boundary": {
+        "may": [
+          "context/session registry mechanics",
+          "context lifecycle",
+          "session lifecycle",
+          "context snapshots",
+          "parent/child references",
+          "compaction bookkeeping",
+          "checksum lineage",
+          "rollover orchestration at the contract level",
+          "continuation package serialization",
+          "rehydration",
+          "continuity verification",
+          "bounded local state",
+          "tests",
+          "frontend state presentation and contract consumption"
+        ],
+        "mustNot": [
+          "model inference",
+          "provider API calls",
+          "the Agent Machine execution loop",
+          "multi-agent runtime",
+          "Skill execution",
+          "a Memory persistent store",
+          "a Workspace executor",
+          "filesystem or terminal authority",
+          "MCP runtime",
+          "Runtime Adapter runtime",
+          "Node Creator runtime",
+          "Translation runtime",
+          "token provider integration",
+          "external agent runtime integration",
+          "any Rust implementation"
+        ],
+        "rule": "Context & Session is a foundation, not the AI runtime. Anything on the mustNot list appearing in a P2.13 branch is a Type-4 scope violation: that scope is not merged."
+      },
+      "gates": [
+        "npm run lego:gate (architecture, architecture selftest, foundation, foundation selftest, capability conformance, scale-out honesty, .ai freshness, backend tests, frontend tests)",
+        "backend tests: npm run lego:test",
+        "frontend tests: npm run frontend-lego:test",
+        "conformance/alignment: packages/frontend-lego/test/29-alignment.test.mjs and test/19-conformance.test.mjs",
+        "architecture gate: npm run lego:arch",
+        "foundation gate: npm run lego:foundation",
+        "capability gate: npm run lego:capabilities",
+        "scale-out honesty: npm run lego:scaleout",
+        ".ai freshness: npm run lego:ai:check",
+        "sub-LEGO audit: python3 tools/sublego-audit/audit.py",
+        "boot payload verification: the frontend boot descriptor stays byte-identical (packages/frontend-lego/test/16-replacement.test.mjs, test/01-contract.test.mjs)",
+        "every skipped test recorded with its exact reason; an environmental failure is never reported as a code regression"
+      ],
+      "decisionDependencies": [
+        "XA-20 OPEN (this milestone): which contract rows and which rollover/continuation/verification vocabulary the manager publishes for Context & Session",
+        "XA-12 OPEN and separate: Memory is what survives context replacement, Context is what is loaded now - publishing ai.context must not create or imply a memory store",
+        "XA-17 OPEN: which contract publishes token and cost usage - the frontend renders the three quoted token kinds and labels an estimate as an estimate",
+        "XA-11 OPEN, unaffected: where Skill is modelled. P2.13 adds no domain and creates no duplicate LEGO",
+        "XA-21 OPEN (raised by agent-1 in P2.13): the 4,096 KB descriptor-assembly heap pin is exhausted by surface growth - raise the pin, make surfaces opt-in imports, or move surface prose into the manifests. Does not block the P2.13 deliverables; blocks the evidence check being green and blocks P2.14 fitting."
+      ],
+      "completionCriteria": {
+        "architecture": [
+          "Context & Session remains ONE LEGO",
+          "no duplicate domain created",
+          "conversation / session / context window / memory / execution remain distinct",
+          "dependencies correct"
+        ],
+        "contracts": [
+          "the canonical contracts exist and are locked if implementation requires publication",
+          "frontend and backend agree exactly",
+          "no unsupported vocabulary remains",
+          "versioning explicit"
+        ],
+        "backend": [
+          "context lifecycle",
+          "session lifecycle",
+          "rollover",
+          "continuation package",
+          "rehydration",
+          "verification",
+          "integrity and checksum chain",
+          "security boundaries tested"
+        ],
+        "frontend": [
+          "vocabulary consumes the backend contract",
+          "context/session state rendered",
+          "rollover states rendered",
+          "continuation state rendered",
+          "degraded and failure states rendered",
+          "no fabricated tokens",
+          "no Memory-store claim",
+          "no execution affordance"
+        ],
+        "documentation": [
+          "P2.11 historical",
+          "P2.12 complete",
+          "P2.13 recorded correctly",
+          "future milestones visible",
+          ".ai regenerated and synchronized"
+        ],
+        "scopeHonesty": [
+          "AI runtime NOT IMPLEMENTED",
+          "model inference NOT IMPLEMENTED",
+          "Agent Machine runtime NOT IMPLEMENTED",
+          "Memory persistent store NOT IMPLEMENTED",
+          "Workspace runtime NOT IMPLEMENTED",
+          "MCP runtime NOT IMPLEMENTED",
+          "Runtime Adapter runtime NOT IMPLEMENTED",
+          "Rust NOT STARTED (for the LEGO; ADR-0005 keeps Rust locked)",
+          "scale-out NOT READY"
+        ],
+        "rule": "Unit tests passing is not 'ready'. The milestone is complete only when architecture, contract, implementation, consumer alignment, documentation and gates agree - and only after reconciliation and post-merge verification on protected main."
+      },
+      "startEvidence": [
+        "manager P2.13 brief (2026-09-22): Part A milestone reconciliation + Parts B-L Context & Session",
+        "main @ e754c5df: contract-lock.json has 15 rows and no ai.context / ai.agent-session row",
+        "main @ e754c5df: domains.json registers both capabilities as contract-only with 5 operations total"
+      ],
+      "finishEvidence": [
+        "pending: docs/n8n-lego/evidence/backend-lego-p213.json (agent-2)",
+        "pending: docs/n8n-lego/evidence/frontend-context-session-p213.json (agent-1)",
+        "pending: the reconciled contract-lock rows and the post-merge gate run on main"
+      ],
+      "verifiedAgainst": "not yet verified as complete - the baseline both agents started from is e754c5df",
+      "currentReference": "agent-1 branch arena/01a0c6b4-n8n-rust-v-4 (frontend side), agent-2 branch arena/01a0c6b5-n8n-rust-v-4 (backend side)",
+      "knownLimitations": [
+        "the generated .ai/master/CURRENT_STATUS.md still names cb71dbb2... as the protected main baseline and arena/01a0c53e-n8n-rust-v-4 as the agent-1 branch: both are hardcoded or read from agent-2's register inside tools/lego/ai-pack.mjs, which is not agent-1's file to edit (recorded for the manager)",
+        "manifest/ai-lego-set.json#phase still says P2.11, so the generated 'Current phase' row is stale until the backend input is updated (agent-2 / manager)",
+        "3 backend REST tests fail at the baseline because the 8 MB node catalog is not committed (GET /rest/types/nodes.json, /rest/types/node-versions.json, POST /rest/node-types answer 404 until `npm run lego:catalog` or a network fetch): environmental, pre-existing, not a code regression",
+        "neither ai.context nor ai.agent-session has a contract-lock row on this branch, so the frontend surface reports `declared-not-locked` and renders the rollover phase machine and the verification results as publication-pending (XA-20)",
+        "The frontend evidence capture reports 52/56 on this branch. Three failures are environmental (node_modules is empty in this sandbox, so no stock index.html is served and the three page-level checks cannot run - the B-10 family, PASS at e754c5df where the bundle is installed) and one is real and unresolved: descriptor assembly measures 4,275 KB against a 4,096 KB pin (4,251-4,361 KB across runs; the probe carries about +/-70 KB of noise) that P2.12 had already filled to 3,780 KB. The pin was NOT edited - a gate is not edited to make a run green - so the check is reported FAIL with its measurement and escalated as XA-21 / B-14. docs/n8n-lego/evidence/frontend-boundary-p213-run.json is this run; frontend-boundary-p25.json is left as captured at P2.5 because re-capturing it here would replace three environmental PASS rows with FAILs.",
+        "The Context & Session view is built on demand rather than eagerly at assembly: it is not part of the boot descriptor, and the boot path should not pay for a surface nobody has rendered. A handed-over record is still validated at the boundary (fail-closed is not deferred); only the empty case is lazy. This holds the probe at ~4.25 MB instead of ~4.36 MB and is recorded here because it is a design choice a reconciler should see."
+      ],
+      "next": "P2.14 (indicative)",
+      "statusBySide": {
+        "backend": "in-progress (agent-2, branch arena/01a0c6b5-n8n-rust-v-4)",
+        "frontend": "in-progress (agent-1, branch arena/01a0c6b4-n8n-rust-v-4)",
+        "milestone": "in-progress - NOT complete until reconciliation PASS, merge and post-merge verification on main"
+      }
+    },
+    {
+      "id": "P2.14",
+      "title": "Memory - what survives context replacement",
+      "phase": "B",
+      "status": "planned",
+      "idStatus": "indicative - a placeholder the manager may re-number, split or re-scope ONLY by updating this register (see policy.idRefinement); nothing downstream may treat it as a commitment",
+      "owner": "manager",
+      "dependencies": [
+        "P2.13 (Context & Session)",
+        "storage",
+        "XA-12 (which contract publishes memory, if any)"
+      ],
+      "scopeNote": "Memory is NOT part of P2.13. Context = what is loaded now; Memory = what survives context replacement. Until XA-12 is ruled there is no ai.memory capability, no memory store and no memory field in the contract lock - the honest sources are ai.context (loaded), ai.decision (chosen, with evidence) and ai.artifact (produced).",
+      "blockingDecisions": [
+        "XA-12"
+      ],
+      "next": "P2.15 (indicative)"
+    },
+    {
+      "id": "P2.15",
+      "title": "Workspace - bounded local and external actions",
+      "phase": "B",
+      "status": "planned",
+      "idStatus": "indicative - a placeholder the manager may re-number, split or re-scope ONLY by updating this register (see policy.idRefinement); nothing downstream may treat it as a commitment",
+      "owner": "manager",
+      "dependencies": [
+        "P2.13",
+        "capability",
+        "XA-13 (what an agent workspace means and which contract publishes it)",
+        "XA-18 (the external action families)"
+      ],
+      "scopeNote": "No workspace executor, no filesystem or terminal authority in any earlier milestone. A workspace is bounded by rule; the boundary is mandatory and unknown access fails closed.",
+      "blockingDecisions": [
+        "XA-13",
+        "XA-18"
+      ],
+      "next": "P2.16 (indicative)"
+    },
+    {
+      "id": "P2.16",
+      "title": "Agent Machine - the execution foundation",
+      "phase": "B",
+      "status": "planned",
+      "idStatus": "indicative - a placeholder the manager may re-number, split or re-scope ONLY by updating this register (see policy.idRefinement); nothing downstream may treat it as a commitment (additionally: subject to dependency readiness)",
+      "owner": "manager",
+      "dependencies": [
+        "P2.13 (session identity, context references, continuation state, budgets, artifact and approval references)",
+        "ai-foundation",
+        "capability",
+        "approval (Phase C)"
+      ],
+      "scopeNote": "The Agent Machine consumes what P2.13 makes usable: session identity, context references, task identity, continuation state, budgets, artifact references and approval references. P2.13 does not implement agent execution and this milestone may not start before its dependencies are published.",
+      "declaredException": {
+        "source": "manifest/ai-lego-set.json#phaseDependencyExceptions",
+        "what": "Agent Machine (Phase B) depends on Approval (Phase C). Deliberate and safe only because approval fails closed: with no Approval LEGO present, any action whose approval requirement is unknown or destructive is refused, not permitted (lego.access_denied). Closes when ai.approval is published."
+      },
+      "next": "P2.17 (indicative)"
+    },
+    {
+      "id": "P2.17",
+      "title": "Artifact - durable, reference-based output",
+      "phase": "C",
+      "status": "planned",
+      "idStatus": "indicative - a placeholder the manager may re-number, split or re-scope ONLY by updating this register (see policy.idRefinement); nothing downstream may treat it as a commitment",
+      "owner": "manager",
+      "dependencies": [
+        "ai-foundation",
+        "storage"
+      ],
+      "scopeNote": "ai.artifact@1.0.0 is declared contract-only. Large data never travels inside an event or a session record.",
+      "next": "P2.18 (indicative)"
+    },
+    {
+      "id": "P2.18",
+      "title": "Approval - the human gate",
+      "phase": "C",
+      "status": "planned",
+      "idStatus": "indicative - a placeholder the manager may re-number, split or re-scope ONLY by updating this register (see policy.idRefinement); nothing downstream may treat it as a commitment",
+      "owner": "manager",
+      "dependencies": [
+        "ai-foundation",
+        "capability"
+      ],
+      "scopeNote": "ai.approval@1.0.0 is declared contract-only and fails closed: an expired or unanswered approval is a DENY. No approval UI, store or enforcement middleware exists.",
+      "next": "P2.19 (indicative)"
+    },
+    {
+      "id": "P2.19",
+      "title": "MCP Adapter - interoperability at the edge",
+      "phase": "C",
+      "status": "planned",
+      "idStatus": "indicative - a placeholder the manager may re-number, split or re-scope ONLY by updating this register (see policy.idRefinement); nothing downstream may treat it as a commitment",
+      "owner": "manager",
+      "dependencies": [
+        "ai-foundation",
+        "capability",
+        "XA-16"
+      ],
+      "scopeNote": "MCP is an adapter at the edge and must never become the internal architecture. No internal LEGO calls another over MCP. No MCP server, client, adapter or dependency exists in this repository.",
+      "blockingDecisions": [
+        "XA-16"
+      ],
+      "next": "P2.20 (indicative)"
+    },
+    {
+      "id": "P2.20",
+      "title": "Runtime Adapter - conformance harness for external runtimes",
+      "phase": "C",
+      "status": "planned",
+      "idStatus": "indicative - a placeholder the manager may re-number, split or re-scope ONLY by updating this register (see policy.idRefinement); nothing downstream may treat it as a commitment",
+      "owner": "manager",
+      "dependencies": [
+        "ai-foundation",
+        "P2.16 (Agent Machine)"
+      ],
+      "scopeNote": "ai.agent-runtime@1.0.0 is declared contract-only. No vendor adapter is implemented and no external runtime may become a local installation requirement.",
+      "next": "P2.21 (indicative)"
+    },
+    {
+      "id": "P2.21",
+      "title": "Agent Event & Work Trace - bounded observation",
+      "phase": "D",
+      "status": "planned",
+      "idStatus": "indicative - a placeholder the manager may re-number, split or re-scope ONLY by updating this register (see policy.idRefinement); nothing downstream may treat it as a commitment",
+      "owner": "manager",
+      "dependencies": [
+        "ai-foundation",
+        "P2.13"
+      ],
+      "scopeNote": "ai.agent-events@1.0.0 is declared contract-only; the frontend already quotes the 26 event types and the bounded work-trace contract. A trace is not an audit format for reasoning: no chain-of-thought is stored.",
+      "next": "P2.22 (indicative)"
+    },
+    {
+      "id": "P2.22",
+      "title": "Node Creator",
+      "phase": "D",
+      "status": "planned",
+      "idStatus": "indicative - a placeholder the manager may re-number, split or re-scope ONLY by updating this register (see policy.idRefinement); nothing downstream may treat it as a commitment",
+      "owner": "manager",
+      "dependencies": [
+        "node-registry",
+        "capability",
+        "XA-15"
+      ],
+      "scopeNote": "No Node Creator runtime in any earlier milestone.",
+      "blockingDecisions": [
+        "XA-15"
+      ],
+      "next": "P2.23 (indicative)"
+    },
+    {
+      "id": "P2.23",
+      "title": "Universal Translation",
+      "phase": "D",
+      "status": "planned",
+      "idStatus": "indicative - a placeholder the manager may re-number, split or re-scope ONLY by updating this register (see policy.idRefinement); nothing downstream may treat it as a commitment",
+      "owner": "manager",
+      "dependencies": [
+        "ai-foundation",
+        "XA-14"
+      ],
+      "scopeNote": "No translation runtime in any earlier milestone; the frontend's localization contract (6 locales, RTL) is the consumer, not the engine.",
+      "blockingDecisions": [
+        "XA-14"
+      ],
+      "next": "P2.24 (indicative)"
+    },
+    {
+      "id": "P2.24",
+      "title": "Token & Usage - honest accounting",
+      "phase": "D",
+      "status": "planned",
+      "idStatus": "indicative - a placeholder the manager may re-number, split or re-scope ONLY by updating this register (see policy.idRefinement); nothing downstream may treat it as a commitment",
+      "owner": "manager",
+      "dependencies": [
+        "ai-foundation",
+        "P2.13 (Context & Session)",
+        "XA-17"
+      ],
+      "scopeNote": "No token provider integration in P2.13. The three token kinds (message, modelInput, output) are quoted from the context-rollover scenario; a count the provider did not report is labelled estimated or not shown at all.",
+      "blockingDecisions": [
+        "XA-17"
+      ],
+      "next": "P2.25 (indicative)"
+    },
+    {
+      "id": "P2.25",
+      "title": "External provider integration - the first real adapters",
+      "phase": "E",
+      "status": "planned",
+      "idStatus": "indicative - a placeholder the manager may re-number, split or re-scope ONLY by updating this register (see policy.idRefinement); nothing downstream may treat it as a commitment",
+      "owner": "manager",
+      "dependencies": [
+        "P2.20 (Runtime Adapter)",
+        "P2.24",
+        "XA-8 (permission namespace)",
+        "XA-10 (application-provider permission names)"
+      ],
+      "scopeNote": "First model provider adapter, first tool provider adapter, first external runtime. Until then: AI Foundation present with NO provider configured is a valid, fully supported state, never faked inference.",
+      "blockingDecisions": [
+        "XA-8",
+        "XA-10"
+      ],
+      "next": "P2.26 (indicative)"
+    },
+    {
+      "id": "P2.26",
+      "title": "Measured native optimisation (Rust candidates)",
+      "phase": "F",
+      "status": "planned",
+      "idStatus": "indicative - a placeholder the manager may re-number, split or re-scope ONLY by updating this register (see policy.idRefinement); nothing downstream may treat it as a commitment",
+      "owner": "manager",
+      "dependencies": [
+        "a measurement",
+        "P2.16",
+        "ADR-0005"
+      ],
+      "scopeNote": "Rust is an implementation choice beneath these contracts and is never chosen to demonstrate that Rust exists. Phase F may not start before there is something to measure. NOTE: the separate n8n->Rust port workspace under crates/ (Phase 3 of the port project, 8 crates) is a different world from the n8n LEGO application; 'Rust NOT STARTED' in a LEGO milestone row means no Rust implementation of a LEGO contract.",
+      "next": null
+    }
+  ],
+  "dependencyBlockers": [
+    {
+      "id": "XA-8",
+      "subject": "the AI permission namespace",
+      "blocks": "P2.25",
+      "arbiter": "manager"
+    },
+    {
+      "id": "XA-9",
+      "subject": "which contract publishes manifest/foundation.json",
+      "blocks": "nothing directly; 5 frontend vocabulary sets carry a pending-publication record until it is ruled",
+      "arbiter": "manager"
+    },
+    {
+      "id": "XA-10",
+      "subject": "application-provider permission names",
+      "blocks": "P2.25",
+      "arbiter": "manager"
+    },
+    {
+      "id": "XA-11",
+      "subject": "where Skill is modelled (ai.skill is locked, its domain is not settled)",
+      "blocks": "a later move of the Skill contract, not a milestone",
+      "arbiter": "manager"
+    },
+    {
+      "id": "XA-12",
+      "subject": "is there a durable memory store",
+      "blocks": "P2.14",
+      "arbiter": "manager"
+    },
+    {
+      "id": "XA-13",
+      "subject": "what an agent workspace means and which contract publishes it",
+      "blocks": "P2.15",
+      "arbiter": "manager"
+    },
+    {
+      "id": "XA-14",
+      "subject": "which capability owns request and response translation",
+      "blocks": "P2.23",
+      "arbiter": "manager"
+    },
+    {
+      "id": "XA-15",
+      "subject": "which capability drafts and validates an AI-created node",
+      "blocks": "P2.22",
+      "arbiter": "manager"
+    },
+    {
+      "id": "XA-16",
+      "subject": "does MCP need a capability of its own",
+      "blocks": "P2.19",
+      "arbiter": "manager"
+    },
+    {
+      "id": "XA-17",
+      "subject": "which contract publishes token and cost usage",
+      "blocks": "P2.24 (and the tokenKind vocabulary the frontend quotes with a pending record)",
+      "arbiter": "manager"
+    },
+    {
+      "id": "XA-18",
+      "subject": "the external action families (filesystem, terminal/process, project, browser, git)",
+      "blocks": "P2.15",
+      "arbiter": "manager"
+    },
+    {
+      "id": "XA-20",
+      "subject": "the ai.context and ai.agent-session lock rows plus the rollover phase and verification result vocabulary",
+      "blocks": "P2.13 completion (frontend rollover/continuation/verification rendering stays publication-pending until it is ruled)",
+      "arbiter": "manager"
+    },
+    {
+      "id": "XA-21",
+      "subject": "the descriptor assembly heap budget (4,096 KB) is exhausted by surface growth",
+      "blocks": "one evidence check of 56 in P2.13 (reported FAIL with its measurement, not edited away; recorded as B-14), and at phase level P2.14 Memory: a third AI surface on the same eager import path cannot fit under the pin as it stands",
+      "arbiter": "manager",
+      "status": "open-for-manager",
+      "evidence": "docs/n8n-lego/decisions/XA-21-assembly-heap-budget.md (measured: 3,780 KB at e754c5df, 4,251 KB here; boot payload unchanged at 18,126 B)"
+    },
+    {
+      "id": "B-1/B-2/B-3",
+      "subject": "class-A scale-out blockers in apps/n8n-lego/src/store.mjs and src/server.mjs",
+      "blocks": "multi-process and multi-instance scale-out (NOT READY), not a single milestone",
+      "arbiter": "agent-5 / manager, resolve by P8"
+    }
+  ],
+  "currentTruth": {
+    "asOf": "2026-09-22",
+    "currentMilestone": "P2.13",
+    "previousCompletedMilestone": "P2.12",
+    "mainBaseline": "e754c5df35b41b0ff2ac769519f05f056835411c",
+    "skill": "IMPLEMENTED (ai.skill@1.0.0, registry only, no skill runtime)",
+    "contextSession": "IN PROGRESS (the P2.13 target: declared and registered contract-only, no contract-lock row yet - XA-20)",
+    "memory": "PLANNED (P2.14), gated by XA-12",
+    "workspace": "PLANNED (P2.15), gated by XA-13 and XA-18",
+    "agentMachine": "CONTRACT-ONLY (declared and registered; no runtime, gated by XA-16)",
+    "aiRuntime": "NOT IMPLEMENTED",
+    "modelInference": "NOT IMPLEMENTED",
+    "mcpRuntime": "NOT IMPLEMENTED",
+    "runtimeAdapterRuntime": "NOT IMPLEMENTED",
+    "rust": "NOT STARTED for any LEGO contract (ADR-0005 keeps Rust locked; the separate crates/ port workspace is a different world)",
+    "scaleOut": "NOT READY (class-A storage blockers remain)",
+    "countsSource": "read the generated .ai/master/CURRENT_STATUS.md - counts are generated from the manifests and are not restated here"
+  }
+}

@@ -289,3 +289,99 @@ bisa di-check/di-test di sandbox. Tugas sesi ini = menghidupkan kembali rig, lal
 - **Bukti saat itu**: `n8n-workflow` 53 unit + 4 integration suite; total workspace 79–80 passed (`n8n-nodes-rust` **tidak** dibangun
   oleh rig waktu itu).
 - **Catatan**: rig 2026-09-18 memakai 24 crate pinned ke `Cargo.lock`; angka itu sudah digantikan sesi 2026-09-21 (27 crate, 151 test).
+
+---
+
+# 🧩 Sesi 2026-09-22 — P2.13 Context & Session + rekonsiliasi milestone (agent-01, frontend)
+
+> Branch: `arena/01a0c6b4-n8n-rust-v-4` · baseline `main @ e754c5df35b41b0ff2ac769519f05f056835411c` (P2.12 selesai).
+> **Tidak ada** perubahan pada `main`, tidak ada merge, tidak ada force-push. Menunggu rekonsiliasi Manager.
+> Sumber kanonik status milestone: `docs/n8n-lego/milestones.json` (baru di sesi ini).
+
+## ✅ 1. Yang dikerjakan
+
+**Part E — surface Context & Session (frontend, vocabulary-only).** Invariant
+`Conversation != Session != Context window != Memory != Execution` bukan lagi sekadar tulisan: ia
+ditegakkan (`assertDistinctConcepts()` menolak record yang menggabungkan dua konsep, dan menyebut
+konsep mana yang runtuh).
+
+- `packages/frontend-lego/src/context-session.mjs` (baru, 85.930 B) + `manifest/context-session.json`
+  (baru) + kontrak §19.19 di `contracts/frontend.contract.md` + aturan arsitektur **A28**
+  (`src/conformance.mjs`, kini 28 aturan).
+- `src/vocabulary.mjs`: **+10 set kutipan** (7 scope, 9 field context, 6 lifecycle state, 14 section
+  continuation, 5 verb terdeklarasi, 2+3 operasi terdaftar, 2+3 permission, 7 state session,
+  10 field session, 3 reference, 3 token kind) → **53 set kutipan** (10 di antaranya dikutip dari
+  file yang tidak dipublikasikan kontrak mana pun), 24 set lokal, **+2 baris `PENDING_PUBLICATIONS`**
+  (mesin fase rollover `NORMAL → PREPARE → ROLLOVER`, hasil verifikasi `verified / degraded / failed`).
+- Enam affordance continuation: `continue-session` (→ `operation-unpublished`), `rollover-preparing`,
+  `continuation-linked`, `continuity-verified`, `continuation-degraded`, `continuation-failed`.
+  Tidak ada affordance ketujuh (tidak ada `reset-session` / `new-session` / `forget`).
+- **Boot payload tidak berubah: 18.126 B** (pin P2.5). View Context & Session **tidak** masuk
+  descriptor dan dibangun *on demand* (`contextSession()` getter ter-memo di `src/lego.mjs`);
+  record yang diserahkan aplikasi tetap divalidasi di batas (fail-closed tidak ditunda).
+
+**Part A — register milestone kanonik** `docs/n8n-lego/milestones.json` (baru): baris P2.11/P2.12/P2.13
++ tangga masa depan P2.14–P2.26 (id indikatif), status dari enam kata, `dependencyBlockers`,
+`policy.mergeProtocol`, dan batas implementasi per milestone.
+
+**Part I/A5 — dokumen authoritative diperbarui lalu `.ai` diregenerasi** (`npm run lego:ai`,
+tidak ada `.ai` yang diedit manual): `frontend/CURRENT_STATUS.md`, `frontend/IMPLEMENTATION_PHASES.md`,
+`frontend/KNOWN_BLOCKERS.md` (**B-13**, **B-14** baru), `frontend/PROJECT_WORKFORCE_ORCHESTRATION.md`
+(§8 gate rekonsiliasi & merge), `CONTEXT_SESSION_MEMORY_PLAN.md`, `AI_FRONTEND_CONTRACT_MATRIX.md`.
+
+**Keputusan lintas-agen yang diajukan (bukan diputuskan sendiri):**
+- **XA-20** — `ai.context` + `ai.agent-session` dideklarasikan di empat file backend dan **tidak
+  dikunci** di `contracts/contract-lock.json` (15 baris, tidak satu pun keduanya). Package:
+  `docs/n8n-lego/decisions/XA-20-context-session-publication.md`. Frontend melaporkan
+  `declared-not-locked`, **tidak** merender versi, dan tidak menawarkan operasi apa pun.
+- **XA-21** — pin heap perakitan descriptor (4.096 KB) sudah habis oleh pertumbuhan surface.
+  Terukur: **3.780 KB** di `e754c5df` (56/56 PASS) → **4.275 KB** di branch ini (4.251–4.361 KB
+  antar-run; noise ±70 KB). Package: `docs/n8n-lego/decisions/XA-21-assembly-heap-budget.md`.
+  **Pin tidak diedit** — gate tidak diedit agar run menjadi hijau. Register kini **21 baris / 13 open**.
+
+## 🧪 2. Bukti (jujur, termasuk yang gagal)
+
+| Gate | Hasil |
+| :--- | :--- |
+| `lego:arch` | OK — 26 domain, 1 allowance sementara, **15 kontrak terkunci** |
+| `lego:arch:selftest` | 26/26 |
+| `lego:foundation` | OK — Foundation 1.0.0, 26 LEGO, 12 route pembuatan node |
+| `lego:foundation:selftest` | 15/15 |
+| `lego:capabilities` | OK — 23 fitur REST vs 83 capability terdaftar |
+| `lego:scaleout` | OK — 41 file, 11 pengecualian terdeklarasi |
+| `lego:ai:check` | OK — generated 63, curated 37, total 100 |
+| `lego:test` | 439 test — **436 pass / 3 fail** (`rest.test.mjs` katalog node 404). **Environmental & pra-eksisting**: tiga test yang sama gagal di `e754c5df` (diverifikasi pada salinan `git archive`) karena `node_modules` kosong di sandbox ini |
+| `frontend-lego:test` | **363/363 pass, 0 skipped** (dijalankan sebagai tahap sendiri: `lego:gate` memakai `&&` sehingga berhenti di `lego:test`) |
+| `capture-frontend-evidence.mjs` | **52/56** → `docs/n8n-lego/evidence/frontend-boundary-p213-run.json`. 3 gagal = page-check environmental (bundle `n8n-editor-ui` tidak ada di sini; ketiganya PASS di `e754c5df`) + 1 gagal nyata = pin heap (**XA-21**/B-14) |
+| `npm run verify:fast` | **5/10** — G06–G10 butuh `packages/workflow-lego/node_modules` (B-10, tidak berubah dari baseline). File `docs/isolation/*` yang ditulis ulang sudah di-revert |
+| `python3 tools/sublego-audit/audit.py` | **TIDAK DIJALANKAN** — `ModuleNotFoundError: yaml` di sandbox ini (environmental; dilaporkan apa adanya, bukan dianggap lulus) |
+
+Suite baru: `test/32-context-session.test.mjs` (46 test: provenance, kejujuran publikasi, alignment
+backend, lifecycle, rollover, continuation, verifikasi, jalur degraded/failed, penolakan, tanpa token
+fabrikasi, tanpa klaim Memory store, tanpa affordance eksekusi, boot payload tetap) dan
+`test/33-milestones.test.mjs` (14 test: bentuk register, kosa kata status, tangga `next`, otoritas
+Phase A–F, gate merge, dan kesepakatan dokumen curated dengan register).
+
+## ⚠️ 3. Blocker / catatan
+
+- **B-13 (XA-20)** — kontrak Context & Session belum dipublikasikan; empat konsumen (P2.13 UI, P2.14
+  Memory, P2.16 Agent Machine, P2.24 Token & Usage) akan menafsirkan sendiri bila tidak diputuskan.
+- **B-14 (XA-21)** — pin heap 4.096 KB terlampaui (4.275 KB). Rekomendasi agent-01: **C lalu A**
+  (prosa surface pindah ke manifest yang di-parse on demand, mengikuti pola Skill; lalu naikkan pin
+  dengan angka yang dinyatakan). Opsi B (surface jadi import opt-in) adalah jawaban jangka panjang
+  tetapi itu perubahan kontrak, bukan keputusan agen di tengah milestone.
+- **Yang TIDAK diimplementasikan di P2.13** (dan ditolak oleh surface): inferensi model, panggilan
+  provider, loop Agent Machine, runtime multi-agen, eksekusi Skill, Memory store, Workspace executor,
+  otoritas filesystem/terminal, MCP runtime, Runtime Adapter runtime, runtime Node Creator/Translation,
+  integrasi provider token, runtime agen eksternal, Rust.
+- `docs/n8n-lego/evidence/frontend-boundary-p25.json` **tidak** ditimpa: menimpa artefak baseline
+  dengan run sandbox yang terdegradasi akan mengganti tiga PASS environmental menjadi FAIL.
+
+## ⏭️ 4. Langkah berikutnya
+
+1. **Manager**: putuskan XA-20 (opsi A–D) dan XA-21 (opsi A–D), lalu rekonsiliasi kedua branch
+   terhadap `e754c5df` → RECONCILIATION PASS → merge → MERGE PASS → status `complete` di register.
+2. Setelah XA-20: kunci `ai.context` + `ai.agent-session` di `contract-lock.json`, lalu frontend
+   merender versi dan memindahkan dua baris `PENDING_PUBLICATIONS` menjadi set kutipan.
+3. Setelah XA-21: jalankan opsi yang dipilih, lalu re-capture evidence (target 56/56 di lingkungan
+   dengan `node_modules` terpasang).

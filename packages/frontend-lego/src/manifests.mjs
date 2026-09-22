@@ -19,6 +19,7 @@ export const MANIFEST_FILES = Object.freeze({
   subLegos: 'sub-legos.json',
   capabilities: 'capabilities.json',
   skills: 'skills.json',
+  contextSession: 'context-session.json',
 });
 
 function readManifest(fileName) {
@@ -44,6 +45,7 @@ export function loadManifests() {
   const subLegoCatalog = readManifest(MANIFEST_FILES.subLegos);
   const capabilityCatalog = readManifest(MANIFEST_FILES.capabilities);
   const skillCatalog = readManifest(MANIFEST_FILES.skills);
+  const contextSessionCatalog = readManifest(MANIFEST_FILES.contextSession);
 
   if (!Array.isArray(surfaceCatalog.surfaces) || surfaceCatalog.surfaces.length === 0) {
     throw new Error('manifest/surfaces.json declares no surfaces');
@@ -68,6 +70,17 @@ export function loadManifests() {
   if (typeof skillCatalog.contract !== 'string' || skillCatalog.contract.length === 0) {
     throw new Error('manifest/skills.json must name the contract it consumes (ai.skill)');
   }
+  // The Context & Session surface consumes TWO contracts and stays one LEGO: a catalog that
+  // cannot name both is broken, and a catalog that names a third has forked the domain.
+  if (!Array.isArray(contextSessionCatalog.contracts) || contextSessionCatalog.contracts.length === 0) {
+    throw new Error('manifest/context-session.json must declare the contracts it consumes (ai.context, ai.agent-session)');
+  }
+  if (!contextSessionCatalog.contracts.includes('ai.context') || !contextSessionCatalog.contracts.includes('ai.agent-session')) {
+    throw new Error('manifest/context-session.json must consume exactly ai.context and ai.agent-session — Context & Session is one LEGO, not two');
+  }
+  if (!Array.isArray(contextSessionCatalog.contexts) || !Array.isArray(contextSessionCatalog.sessions)) {
+    throw new Error('manifest/context-session.json must declare contexts and sessions arrays (both may be empty)');
+  }
 
   return Object.freeze({
     ownership: Object.freeze(ownership),
@@ -76,11 +89,14 @@ export function loadManifests() {
     subLegoCatalog: Object.freeze(subLegoCatalog),
     capabilityCatalog: Object.freeze(capabilityCatalog),
     skillCatalog: Object.freeze(skillCatalog),
+    contextSessionCatalog: Object.freeze(contextSessionCatalog),
     surfaces: Object.freeze(surfaceCatalog.surfaces.map((surface) => Object.freeze({ ...surface }))),
     extensionPoints: Object.freeze(extensionCatalog.extensionPoints.map((point) => Object.freeze({ ...point }))),
     subLegos: Object.freeze(subLegoCatalog.subLegos.map((entry) => Object.freeze({ ...entry }))),
     capabilities: Object.freeze(capabilityCatalog.capabilities.map((entry) => Object.freeze({ ...entry }))),
     skills: Object.freeze(skillCatalog.skills.map((entry) => Object.freeze({ ...entry }))),
+    contexts: Object.freeze(contextSessionCatalog.contexts.map((entry) => Object.freeze({ ...entry }))),
+    sessions: Object.freeze(contextSessionCatalog.sessions.map((entry) => Object.freeze({ ...entry }))),
     owners: Object.freeze({ ...(subLegoCatalog.owners ?? {}) }),
     futureConsumers: Object.freeze(extensionCatalog.futureConsumers ?? []),
   });
@@ -93,6 +109,15 @@ export function loadManifests() {
  */
 export function skillSurface(manifests = loadManifests()) {
   return manifests.skillCatalog;
+}
+
+/**
+ * The Context & Session surface declaration — the two contracts it consumes, the publication state
+ * it was verified against, and the rules the UI is held to. Validated by the Context & Session
+ * module: a context is not a capability and a session is not a transcript.
+ */
+export function contextSessionSurface(manifests = loadManifests()) {
+  return manifests.contextSessionCatalog;
 }
 
 /** Surface ids, in catalog order. */

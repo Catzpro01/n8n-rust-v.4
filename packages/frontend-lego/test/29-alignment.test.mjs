@@ -65,6 +65,33 @@ const awaitingFinalize = new Set(finalized ? [] : MOVED_BY_FINALIZE);
 const declarationOf = (set) => `${set.provenance.file}#${set.provenance.symbol ?? set.provenance.path}`;
 
 /**
+ * Splits a declared path into segments on `.`, **ignoring dots inside a selector**.
+ *
+ * P2.13 needs this: the two Context & Session capabilities are registry entries whose ids contain
+ * a dot (`capabilities[id=ai.context]`), and a naive `split('.')` turned that selector into
+ * `capabilities[id=ai` + `context]` — which reported "no capabilities with id \"ai\"" instead of
+ * reading the declaration. Bracket depth is tracked so a dotted id can be selected; nothing else
+ * about the path grammar changes.
+ */
+const segments = (expression) => {
+  const parts = [];
+  let depth = 0;
+  let current = '';
+  for (const character of expression) {
+    if (character === '[') depth += 1;
+    else if (character === ']') depth -= 1;
+    if (character === '.' && depth === 0) {
+      parts.push(current);
+      current = '';
+      continue;
+    }
+    current += character;
+  }
+  parts.push(current);
+  return parts;
+};
+
+/**
  * Walks a declared JSON path. `[]` maps and flattens an array, `[id=x]` selects one
  * entry, a bare segment maps over an array or reads a key. Kept deliberately small:
  * a path that does not resolve must fail, not return something plausible.
@@ -76,7 +103,7 @@ const projection = (expression, document) => {
     return expression.slice(head.length).split('+').flatMap((part) => projection(head + part, document));
   }
   let cursor = document;
-  for (const raw of expression.split('.')) {
+  for (const raw of segments(expression)) {
     if (raw.endsWith('[]')) {
       const key = raw.slice(0, -2);
       if (!Array.isArray(cursor)) {

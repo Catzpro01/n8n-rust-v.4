@@ -1,122 +1,111 @@
 # L1 — Frontend domain card
 
-One page on how the frontend LEGO is built. Everything here is derivable from the
-manifests and the tests; the card exists so an agent does not have to read them.
+One page on how the frontend LEGO is built; everything here is derivable from the
+manifests and the tests, which is why the card can stay one page.
 
 ## What this LEGO is
 
 `ui-frontend` — the frontend LEGO Foundation. It owns the UI architecture, the
 compatibility boundary, the UI capability registry and the frontend regression gates.
 It does **not** own workflow, execution, auth, credentials, storage, the node registry
-or Rust, and it implements no feature of its own — including no AI feature: it declares
-the AI vocabulary, and performs no inference.
+or Rust, and implements no feature of its own — no AI feature either: it declares the AI
+vocabulary and performs no inference.
 
-The application (`apps/n8n-lego`) serves the stock editor bundle unchanged and asks this
-LEGO for one thing: the boot descriptor. The LEGO never renders, never injects markup
-beyond one additive `<meta>` tag, and never rewrites the bundle.
+`apps/n8n-lego` serves the stock editor bundle unchanged and asks this LEGO for one
+thing: the boot descriptor. The LEGO never renders, never injects markup beyond one
+additive `<meta>` tag, never rewrites the bundle.
 
 ## Where things live
 
 ```
 packages/frontend-lego/
   index.mjs                 the public surface (catalogs, registries, lifecycle, impact, adapter)
-  manifest/                 surfaces.json 12 UI surfaces + the backend capability behind each
+  manifest/                 surfaces.json 12 surfaces + the capability behind each
                             extension-points.json 15 hooks (1.1.0) + 7 future consumers
-                            sub-legos.json 19 units · ownership.json · capabilities.json
+                            sub-legos.json 19 units · ownership · capabilities · skills
+                            context-session.json
   src/                      one module per concern, no utils dumping ground
     contract.mjs versions.mjs surface-capability.mjs registry.mjs sublegos.mjs lifecycle.mjs
     negotiation.mjs vocabulary.mjs seam.mjs backend-view.mjs envelope.mjs transport.mjs
     interactions.mjs conformance.mjs observability.mjs impact.mjs profiles.mjs i18n.mjs
-    errors.mjs boot.mjs client.mjs manifests.mjs knowledge.mjs agents.mjs agent-events.mjs skills.mjs lego.mjs
+    errors.mjs boot.mjs client.mjs manifests.mjs knowledge.mjs agents.mjs agent-events.mjs
+    skills.mjs context-session.mjs lego.mjs
     adapters/ the framework adapter boundary (currently Vue; the only framework-aware code)
   test/                     01-contract … 23-degradation, 24-vocabulary, 25-operations,
-                            26-ai-contracts, 27-agent-events, 28-seam, 29-alignment, 30-master, 31-skills
+                            26-ai-contracts, 27-agent-events, 28-seam, 29-alignment, 30-master,
+                            31-skills, 32-context-session, 33-milestones
 ```
 
-What the odd ones own: `negotiation.mjs` discovery, access, degradation and
-operation answers; `vocabulary.mjs` the shared vocabulary lock; `seam.mjs` the closed
-input list and the one capability identity; `agents.mjs` the AI capability/provider/
-runtime kinds, the MCP boundary and the installation layers; `agent-events.mjs` the agent
-event vocabulary, the work trace and the delegation tree; `knowledge.mjs` the
-`.ai/` pack index; `skills.mjs` consumes `ai.skill@1.0.0`: six states, four
-operations, no execution (`test/31`).
+What the odd ones own: `negotiation.mjs` discovery, access, degradation and operation
+answers; `vocabulary.mjs` the shared vocabulary lock; `seam.mjs` the closed input list and
+the one capability identity; `agents.mjs` the AI capability/provider/runtime kinds, the MCP
+boundary and the installation layers; `agent-events.mjs` the event vocabulary, the work trace
+and the delegation tree; `knowledge.mjs` the `.ai/` pack index; `skills.mjs` consumes
+`ai.skill@1.0.0` — six states, four operations, no execution (`test/31`);
+`context-session.mjs` is ONE LEGO, TWO contracts (`ai.context`, `ai.agent-session`), neither
+locked yet (`test/32`).
 
 ## Boot flow
 
 1. `apps/n8n-lego` resolves the LEGO (checkout → sibling package, tarball → vendored copy).
-2. `createFrontendLego({ app, ui })` loads the catalogs, builds both registries, and
-   validates the declared capability catalog **without registering it**.
-3. The adapter encodes the boot payload twice from one source: the
-   `<meta name="n8n-lego:frontend-bootstrap">` tag on `index.html` and `GET /rest/frontend/bootstrap`.
-4. Failure is **fail-soft**: the app logs a warning and serves the stock editor without the
-   descriptor. A *broken declaration* is fail-closed at the LEGO boundary — it stops the
-   descriptor, not the UI.
+2. `createFrontendLego({ app, ui })` loads the catalogs, builds both registries and validates
+   the declared capability catalog **without registering it**.
+3. The adapter encodes one payload twice: the `<meta name="n8n-lego:frontend-bootstrap">` tag
+   and `GET /rest/frontend/bootstrap`.
+4. Failure is **fail-soft** — the app warns and serves the stock editor without the descriptor.
+   A *broken declaration* is fail-closed at the LEGO boundary: it stops the descriptor, not the UI.
 
 ## Numbers that matter
 
 | Thing | Value |
 | ----- | ----- |
-| Architecture tests | 281 across 30 suites (4 backend comparisons skip until it lands; `N8N_BACKEND_LEGO_ROOT` runs them for real) |
-| Architecture rules | 26, as data (`frontend.conformance()`), mirrored in contract §19.16 |
+| Architecture tests | 363 across 33 suites; backend comparisons skip *with a reason* unless the tree is present |
+| Architecture rules | 28, as data (`frontend.conformance()`), mirrored in contract §19.16 |
 | Surfaces / hooks / units | 12 / 15 (`1.1.0`) / 19 in a 3-level hierarchy |
 | Boot payload | 18,126 B JSON / 24,168 B base64, budget **32 KB**, byte-pinned to P2.5 |
-| Browser-visible delta | the one `<meta>` tag (24,268 B on the served page) |
+| Browser-visible delta | the one `<meta>` tag (24,268 B served) |
 | Runtime dependencies | none |
 | Locales | `id, en, ar, zh, ru, jv`; Arabic is RTL; 13 message slots |
 | Declared capabilities | 7 (`translation` + 6 AI), installed: 0 |
-| Shared vocabularies | 6 quoted from the backend foundation, 7 declared locally |
+| Contract lock rows | 15; `ai.skill@1.0.0` published, `ai.context` / `ai.agent-session` **declared-not-locked** |
+| Vocabularies | 53 quoted with provenance, 24 local, 2 pending publication (`XA-20`) |
 | Seam | 13 declared inputs, 7 forbidden sources, 16 identity fields |
-| Agent events | 26 types in 7 namespaces; trace bound 200 rows, summary 280 characters |
+| Agent events | 26 types / 7 namespaces; trace bound 200 rows, summary 280 chars |
 
 ## Rules worth remembering (the full list is data)
 
-`frontend.conformance()` checks all 27 rules against a live assembly; each names the
-vocabulary that enforces it and the suite that proves it, and
-`contracts/frontend.contract.md` §19.16 mirrors the same list as JSON.
+All 28 rules are data: `frontend.conformance()` checks each against a live assembly, each
+names the vocabulary that enforces it and the suite that proves it, and
+`contracts/frontend.contract.md` §19.16 mirrors the list as JSON. Read them there; these are
+the ones a new agent gets wrong most often.
 
-- A capability attaches only to a declared surface (fail-closed); operations are named
-  `<domain>.<name>`. Registration is metadata: it still does not load anything.
-- Trust is inherited and may only be *lowered*; device budgets decide support; the framework
-  name appears only in `src/adapters/`. Test tiers come from declaration data and never
-  replace full CI.
-- **Placement grants nothing** — access is the unit's own surface binding or a capability
-  that declares that surface (`test/14`).
-- **Contracts name operations, never transports**; the cheapest capable transport wins, and a
-  call no transport can carry is refused by name (`test/15`).
-- **One version vocabulary**, and **implementation is replaceable while contracts are not**
-  (`test/16`).
-- **Interactions** (`call`/`event`/`stream`/`batch`) are declared per operation (`test/20`);
-  **hooks are surface-owned** (`test/21`).
-- **Localization boundary**: locale identity, direction (`ar` RTL), keys, fallback and the
-  plural *contract* live here — dictionaries do not (`test/22`).
-- **Every degradation situation is a canonical state** (`available`, `degraded`,
-  `capability-unavailable`, `optional-absent`, `version-incompatible`, `dependency-disabled`,
-  `migration-required`, `feature-unsupported`), and required permissions are declared names,
-  never credentials (`test/23`).
-- **A shared word is quoted, never re-invented**; a local word that competes with one declares
-  its reason (`vocabulary.mjs`, `test/24`).
-- **An operation that cannot run names the reason**: missing permission, incompatible version,
-  migration gate, unpublished list or a missing grant (`test/25`).
-- **AI is declared, not implemented**; a model-less installation is valid and the UI says which
-  layer is absent (`agents.mjs`, `test/26`).
-- **An agent trace is bounded and reference-only**, and a delegation tree grants nothing to a
-  child (`agent-events.mjs`, `test/27`).
-- **The seam is closed**: declarations cross, implementation does not; an implementation file,
-  a route table, a port or a credential store is refused by name (`seam.mjs`, `test/28`).
-- Events are boundary-level and payload-free: no `payload`, `token`, `authorization`,
-  `subject`, `scopes`, `transcript` or `reasoning` may enter the stream (`test/17`).
+- A capability attaches only to a declared surface (fail-closed), operations are named
+  `<domain>.<name>`, and registration is metadata: it still loads nothing.
+- **Placement grants nothing**; trust is inherited and may only be *lowered*; the framework
+  name appears only in `src/adapters/` (`test/14`, `test/16`).
+- **A shared word is quoted, never re-invented**; a local word that competes with one
+  declares its reason, and an operation that cannot run names the reason (`test/24`, `test/25`).
+- **The seam is closed**: declarations cross, implementation does not — an implementation
+  file, a route table, a port or a credential store is refused by name (`seam.mjs`, `test/28`).
+- **AI is declared, not implemented**: a model-less installation is valid, an agent trace is
+  bounded and reference-only, and a delegation tree grants nothing to a child (`test/26`, `test/27`).
+- **A Skill is a registry entry, not an execution** (`skills.mjs`, `test/31`).
+- **Conversation ≠ Session ≠ Context window ≠ Memory ≠ Execution**: every word quoted, an
+  unlocked contract reported `declared-not-locked`, a declared-but-unregistered verb answered
+  `operation-unpublished`, a usage figure rendered only with its kind, a 100% threshold
+  refused, state carrying references not payloads (`context-session.mjs`, `test/32`).
 
 ## Evidence commands
 
 ```bash
-npm run frontend-lego:test                          # 281 tests, the architecture surface
-node --test apps/n8n-lego/test/*.test.mjs           # app-side boundary, boot tag, backend alignment
+npm run frontend-lego:test                          # 363 tests
+node --test apps/n8n-lego/test/*.test.mjs           # app-side boundary, boot tag, alignment
 node apps/n8n-lego/scripts/capture-frontend-evidence.mjs   # 55-check evidence JSON
-python3 tools/sublego-audit/audit.py                # nested-LEGO + agent boundary audit
+python3 tools/sublego-audit/audit.py                # nested-LEGO + boundary audit
 npm run verify:fast                                 # repo-wide fast gate
 ```
 
-The browser gate (`tests/e2e/frontend-boundary.mjs`) needs Chromium and `n8n-editor-ui`; it
-runs in CI, not in a bare checkout. The AI vocabulary, the seam and the shared-vocabulary lock
-are generated into `.ai/index/capabilities.json`; cross-agent questions and their arbiters live
-in `docs/n8n-lego/decisions/cross-agent-decisions.json`.
+The browser gate (`tests/e2e/frontend-boundary.mjs`) needs Chromium and `n8n-editor-ui`: it
+runs in CI, not in a bare checkout. Cross-agent questions and their arbiters live in
+`docs/n8n-lego/decisions/cross-agent-decisions.json`; milestone status, boundaries and the
+merge protocol live in `docs/n8n-lego/milestones.json` (`test/33`).

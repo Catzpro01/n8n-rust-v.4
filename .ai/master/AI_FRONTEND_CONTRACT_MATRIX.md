@@ -7,9 +7,20 @@
 > `ai:skill:execute` permission. See the generated [`AI_CONTRACT_MATRIX.md`](AI_CONTRACT_MATRIX.md).
 > **XA-11 remains `open-for-manager`** — publishing the contract did not settle where Skill
 > ultimately belongs.
+>
+> **P2.13 UPDATE (2026-09-22, `main @ e754c5df`).** `ai.context` and `ai.agent-session` are
+> **declared-not-locked**: declared in `manifest/ai-foundation.json`, registered `contract-only` in
+> `manifest/domains.json` (5 operations, 5 permissions each), claimed as `@1.0.0` in
+> `manifest/ai-lego-set.json`, and published by **no** row of `contracts/contract-lock.json` (15 rows,
+> none of them either contract). The Context & Session surface therefore quotes fields, scopes,
+> states, sections, operations and permissions **with provenance**, reports the pair as
+> `declared-not-locked`, renders **no version**, keeps the rollover phase machine and the verification
+> results in `PENDING_PUBLICATIONS`, and offers **no operations**. Arbitration: **XA-20**.
+> The rows below marked *HISTORICAL* were written when these contracts were assumed published.
 
-**Status:** specification. **Owner:** agent-01. **Backend authority:** `arena/01a0c521 @ 6f7b66da`
-(P2.10). **Vocabulary source of truth:** `packages/frontend-lego/src/vocabulary.mjs` — every
+**Status:** specification. **Owner:** agent-01. **Backend authority:** `main @ e754c5df` (P2.12
+complete, P2.13 in progress); written earlier against `arena/01a0c521 @ 6f7b66da` (P2.10), which is
+kept as the historical baseline of §1. **Vocabulary source of truth:** `packages/frontend-lego/src/vocabulary.mjs` — every
 "vocabulary" cell below names a set in that lock, so the words can be checked instead of trusted.
 **Companions:** `AI_UI_EXPERIENCE_MASTER_PLAN.md` (which surfaces exist),
 `AI_UX_PROGRESSIVE_DISCLOSURE.md` (what is visible), `AI_UI_STATES_AND_FLOWS.md` (what every
@@ -29,14 +40,14 @@ vocabulary — never as a silent alias of a backend contract.
 | Surface | Canonical contract (id@version, owner) | Vocabulary (lock set) | Operations it may call | Must never read |
 | :--- | :--- | :--- | :--- | :--- |
 | AI Assistant | `ai.foundation@1.0.0` (manager), `ai.model-gateway` | `aiKind`, `aiPermission`, `agentEventType`, `decisionApprovalState` | `models.list`, `model.describe`, `generate`, `stream`, `countTokens` | a provider URL, key or header; a module file; a rendered screen |
-| Copilot chat | as above + `ai.context`, `ai.agent-session` | `contextScope`, `agentSessionState`, `agentSessionField` | `context.load`, `context.compact`, session `create`/`status`/`close` | chain-of-thought, raw prompts, full model output |
+| Copilot chat | as above + `ai.context`, `ai.agent-session` (**declared-not-locked**, `XA-20`) | `contextScope`, `agentSessionState`, `agentSessionField` | **none today** — the five declared operations (`context.load`, `context.compact`, session `create`/`status`/`close`) are rendered as facts and answer `operation-unpublished` | chain-of-thought, raw prompts, full model output, a transcript |
 | Copilot trace | `ai.agent-events` (in `ai.foundation@1.0.0`) | `agentEventType` (26), `agentEventEnvelopeField`, `traceField` | `subscribe`, `emit` | payload bodies (only `payloadRef`), reasoning |
 | Copilot agents | `ai.agent-runtime`, `ai.agent-delegation` | `runtimeLocality`, `delegationField`, `delegationBudgetField`, `delegationNodeField` | `create`, `start`, `send`, `pause`, `resume`, `cancel`, `status`, `stream`, `artifact`, `close`, `delegate` | another agent's private context; inherited permissions (there are none) |
 | Copilot files | `ai.artifact` | `artifactKind`, `artifactRetention`, `decisionApprovalState` | `create`, `read` | artifact content inline as state; `storageRef` internals vs credential material |
-| Skills | **XA-11 pending** (`ai.skill`) | frontend presentation set (below) | none until published | a skill's private reasoning; a validator's internals |
+| Skills | `ai.skill@1.0.0` (locked at P2.12; `XA-11` still decides where it belongs) | `skillField`, `skillOperation`, `skillPermission` | `skill.list`, `skill.resolve`, `skill.describe`, `skill.validate-selection` — **no** `execute`, **no** `ai:skill:execute` | a skill's private reasoning; a validator's internals |
 | Memory | **XA-12 pending** (`ai.memory`); today `ai.context` + `ai.artifact` + `ai.decision` | `contextScope`, `artifactKind`, `decisionRisk` | `context.load`, `artifact.read`, `decision.inspect` | the whole memory store; embeddings or vectors |
 | Capabilities | `lego.domain-registry@1.1.0` (manager) + `ai.foundation` taxonomy | `capabilityStatus`, `capabilityCriticality`, `capabilityMigrationState`, `lifecycle`, `interaction`, `transportKind`, `aiPermission` | per capability `operations[]` | an operation's HTTP route; a module path; a port |
-| Context & Session | `ai.context`, `ai.agent-session` | `contextScope`, `agentSessionState`, `zeroInstallLayerState` | `context.load`, `context.compact`, session `create`/`status`/`close` | the raw window; the model's tokenizer internals |
+| **Context & Session (P2.13)** | `ai.context`, `ai.agent-session` — **declared-not-locked** (`XA-20`), both `contract-only` in `domains.json`, both claimed `@1.0.0` in `ai-lego-set.json` | 13 quoted sets — `contextScope` (7), `contextField` (9), `contextLifecycle` (6), `continuationSection` (14), `contextOperationVerb` (5), `contextOperation` (2), `contextPermission` (2), `agentSessionState` (7), `agentSessionField` (10), `agentSessionReference` (3), `agentSessionOperation` (3), `agentSessionPermission` (3), `tokenKind` (3); 10 of them new at P2.13 — + 2 local sets (`continuationAffordance` 6, `contextUsageReport` 4) + **2 `PENDING_PUBLICATIONS` rows** (`contextRolloverPhase`, `continuationVerification`) | **none.** `Continue session` answers `operation-unpublished`, as do the declared verbs `rollover`, `rehydrate`, `verify` — no backend file registers them | the raw window; the model's tokenizer internals; a token count nobody reported; a Memory store; an execution affordance |
 | Approval | `ai.approval` | `decisionApprovalState`, `approvalDecision` | `request`, `resolve`, `inspect` | who voted beyond the declared actor field |
 | MCP | `ai.foundation@1.0.0` mcp block (**XA-16** pending for a capability of its own) | `mcpConcept`, `mcpObjectView`, `mcpConnectionState` | `tools.list`, `tool.describe`, `tool.call` (through the tool gateway) | transport internals; a server's full tool dump |
 | Runtime & workspace | `ai.agent-runtime`; workspace is the `workspace` domain (planned, contract `0.0.0`) + **XA-13** pending | `runtimeLocalityView`, `providerKind`, `runtimeKind`, `delegationNodeField` | runtime lifecycle `status`; workspace `inspect`/`list` when available | the host filesystem beyond the declared workspace; a shell |
@@ -64,8 +75,9 @@ implementer cannot quietly add a field that is not here.
 | **AI request** | `requestId`, `sessionId`, `scope`, `capabilityId`, `operation`, `interaction`, `permission`, `approvalState`, `messageKey` parameters | prompt text bodies, credentials, provider URLs |
 | **agent state** | `sessionId`, **`agentId`**, **`parentSessionId`**, **`taskId`**, **`runtimeId`**, **`status`**, `depth`, `children`, `grantedCapabilities`, `effectivePermissions` | chain-of-thought, another agent's context |
 | **skill state** | `skillId`, `version`, `active`, `procedure` summary, `capabilityIds`, `validators`, `references`, `tokenBudget` | the skill's private reasoning; a validator's source |
-| **context state** | **`contextId`**, **`scope`**, **`version`**, **`checksum`**, `used`, `budget`, `remaining`, `rolledOver`, `continuationOf` | the raw window; embeddings |
-| **session state** | **`sessionId`**, `index`, **`status`**, `startedAt`, `updatedAt`, `continuationOf`, `contextWindow` | a transcript copy |
+| **context state** | **`contextId`**, **`scope`**, **`parent`**, **`snapshot`**, **`version`** (declared, **not rendered** while unlocked), **`source`**, **`dependencies`**, **`size`**, **`checksum`**, `used`, `budget`, `remaining`, `rolledOver`, `continuationOf` | the raw window; embeddings; a version label for an unlocked contract |
+| **session state** | **`sessionId`**, **`agentId`**, **`parentSessionId`**, **`taskId`**, **`workflowId`**, **`executionId`**, **`runtimeId`**, `index`, **`status`**, **`createdAt`**, **`updatedAt`**, **`contextRef`**, **`artifactRef`**, **`traceRef`**, `continuationOf`, `contextWindow` | a transcript copy; an inlined payload; a state outside the seven declared ones |
+| **continuation package** | the 14 declared sections (`identity` … `compressedHistory`) + envelope `sourceContextId`, `target`, `verification`, lineage ids | chain-of-thought; a transcript; a section name invented locally (`important references` is published as `refs`) |
 | **capability availability** | `id`, `status`, `availability`, `degradation`, `lifecycle`, `criticality`, `trust`, `operations[]`, `permissions[]`, `interaction`, `transport`, `source` | an operations list inferred from routes; a private port |
 | **approval** | **`approvalId`**, **`action`**, **`actor`**, **`risk`**, **`requestedAt`**, **`resolvedAt`**, **`decision`**, **`reason`**, `scope` | who might approve; any credential the action will use |
 | **artifact** | **`artifactId`**, **`kind`**, **`size`**, **`mime`**, **`createdAt`**, **`owner`**, **`checksum`**, **`retention`**, `previewKind`, `actions[]` | the payload inline; a signed URL with credentials |
@@ -92,6 +104,12 @@ presentation name exists, it is a *view* with a declared mapping in the lock (`m
 | `Workspace · project-name` | where work happens | `workspace` domain (**XA-13** for agent-scoped sandboxes) |
 | `Language · Bahasa Indonesia` | response language | the declared locale set + the `translation` capability |
 | `Execution AI` | a Copilot mode | `contextScope: EXECUTION`; no capability of its own beyond a declared mode |
+| `Session 03 · Continuation linked` | session identity + lineage read from references | `agentSessionField` (`parentSessionId`), `sessionReference` (`contextRef`); never inferred from time or order |
+| `Rollover preparing` | the published lifecycle word, not the ruled phase name | `contextLifecycleState.prepare` ← ruled `PREPARE` (**`publicationPending`**, `XA-20`) |
+| `Context compacting` / `Rolled over` | compaction and its result | `contextLifecycleState.compacting` / `.rolled-over` |
+| `Continue session` | the offered affordance, which no operation backs | **`operation-unpublished`** — the surface renders the offer and says what is missing |
+| `Continuity verified` / `Degraded: 2 sections` / `Continuation failed` | the three verification results, ruled but unpublished | `verificationResult` **`publicationPending`** (`XA-20`); a missing section degrades, a section carried as `[]` says "there were none" |
+| `Context 61% · reported` | usage honesty | `tokenKind` (quoted from `reference-scenarios.json`, `XA-17`) + a source label `reported` \| `estimated` \| `not-reported` \| `over-budget` |
 
 ## 4. Proposals — backend vocabulary this plan needs
 
@@ -108,10 +126,16 @@ presentation name but must not send the proposed word to the backend as if it ex
 | **XA-15** | node drafting/validation capability (draft → validate → preview) | manager | `Create with AI` needs a declared draft/validate step, not a frontend invention | the flow is specified but gated; validation reuses `workflow.validate` where available |
 | **XA-16** | `ai.mcp-adapter` (client/server capability, tool/resource/prompt exposure) | manager | MCP has a vocabulary block and a mapping rule but no capability of its own | shows MCP concepts and connection states; calls tools through the tool gateway |
 | **XA-17** | `ai.usage` (per-call/session usage with `source: reported \| estimated`) | manager | per-message and per-run cost must be honest; there is no usage capability today | shows `countTokens` results and declared costs, labelled `estimated` |
+| **XA-20** | lock `ai.context` + `ai.agent-session` — and decide the rollover phase machine (`NORMAL`/`PREPARE`/`ROLLOVER`) and the verification results (`verified`/`degraded`/`failed`) | manager | P2.13 renders vocabulary for contracts that four files declare and no lock row publishes; four consumers (P2.13 UI, P2.14 Memory, P2.16 Agent Machine, P2.24 Token & Usage) would otherwise each settle the question differently | quotes every declared word with provenance, reports `declared-not-locked`, renders no version, keeps both ruled vocabularies in `PENDING_PUBLICATIONS`, offers no operation |
+| **XA-21** | the descriptor-assembly heap pin (4,096 KB) | manager | the pin is a budget on the whole package at import; P2.12 filled it to 3,780 KB and P2.13 measures 4,251 KB, so P2.14 cannot fit without a ruling | the Context & Session view is built on demand, not eagerly; the boot payload is unchanged (18,126 B); the check is reported FAIL with its measurement and the pin is **not** edited |
 
 Still open from the foundation gate and kept visible: **XA-5** (`lego.*` degradation codes),
 **XA-8** (permission namespace), **XA-9** (which contract publishes `manifest/foundation.json`),
-**XA-10** (`ai:app:*` vs `app:<application>:*`).
+**XA-10** (`ai:app:*` vs `app:<application>:*`), **XA-18** (Workspace scope semantics, raised at
+P2.11), **XA-19** (Skill runtime ownership, resolved at P2.12 — kept here because `XA-11` is its
+neighbour). The register holds 21 rows, 13 open at P2.13;
+`docs/n8n-lego/decisions/cross-agent-decisions.json` is the machine-readable copy and wins over this
+table.
 
 ## 5. Seam compliance (the mechanical rule set)
 
