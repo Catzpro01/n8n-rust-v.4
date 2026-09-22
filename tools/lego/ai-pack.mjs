@@ -1475,6 +1475,10 @@ ${rows.join('\n')}
 - Required decision: ${current?.reconciliation?.requiredDecision ?? '—'}
 - Blocking test: ${current?.reconciliation?.blockingTest ?? '—'}
 
+## Verification evidence
+
+${Object.entries(current?.verificationEvidence ?? {}).map(([id, evidence]) => `- **${id}:** ${evidence.result ?? '—'} — ${evidence.command ?? (evidence.commands ?? []).join(', ') ?? '—'}${evidence.notes ? ` (${evidence.notes})` : ''}${evidence.failure ? `; failure: ${evidence.failure}` : ''}`).join('\n') || '_none recorded_'}
+
 ## Evidence roles
 
 - Start/finish evidence is evidence, not a replacement for current state.

@@ -51,6 +51,20 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 - Required decision: Manager must provide or restore the Agent 1 ref, then rerun reconciliation against the same protected baseline before any merge approval.
 - Blocking test: Agent 1 focused Context & Session tests plus cross-agent alignment tests cannot run until the Agent 1 branch/ref is available.
 
+## Verification evidence
+
+- **focusedBackend:** PASS — node --test apps/n8n-lego/test/lego-context-session.test.mjs
+- **backendFrontendGate:** PASS — npm run lego:gate (Requires the install-time n8n catalog and n8n-editor-ui dependency; no test was skipped.)
+- **architecture:** PASS — npm run lego:arch, npm run lego:arch:selftest
+- **foundation:** PASS — npm run lego:foundation, npm run lego:foundation:selftest
+- **capability:** PASS — npm run lego:capabilities
+- **scaleOut:** PASS_WITH_DECLARED_EXCEPTIONS — npm run lego:scaleout
+- **aiFreshness:** PASS — npm run lego:ai:check
+- **subLegoAudit:** PASS — /tmp/n8n-p213-venv/bin/python tools/sublego-audit/audit.py (Audit tool summary text says 20 sub-LEGOs although 21 were loaded; exit status was 0.)
+- **bootPayload:** PASS — node apps/n8n-lego/scripts/capture-frontend-evidence.mjs --out <temporary-file>
+- **offlineContractConformance:** BLOCKED_BASELINE — node tests/compatibility/contract_conformance.mjs; failure: Phase 2 Rust guard finds pre-existing crates/**/*.rs and Cargo.toml artifacts already present at protected baseline e754c5df35b41b0ff2ac769519f05f056835411c; no Rust files were introduced by P2.13.
+- **agent1FocusedAndCrossAlignment:** BLOCKED — ; failure: Registered Agent 1 ref arena/01a0c6b4-n8n-rust-v-4 is absent locally and in origin; Agent 1 focused tests and two-branch alignment cannot run. This blocks reconciliation.
+
 ## Evidence roles
 
 - Start/finish evidence is evidence, not a replacement for current state.
