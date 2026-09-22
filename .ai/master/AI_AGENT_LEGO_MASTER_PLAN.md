@@ -12,7 +12,7 @@
 | 1 | **AI Foundation** | `manager` | CONTRACT-ONLY | A |
 | 2 | **Skill** | `manager` | IMPLEMENTED | B |
 | 3 | **Agent Machine** | `manager` | CONTRACT-ONLY | B |
-| 4 | **Memory** | `manager` | PLANNED | B |
+| 4 | **Memory** | `manager` | IMPLEMENTED | B |
 | 5 | **Workspace** | `manager` | PLANNED | B |
 | 6 | **Context & Session** | `manager` | IN-PROGRESS | A |
 | 7 | **Universal Translation** | `manager` | PLANNED | D |
@@ -227,10 +227,10 @@ Every external action routes through Capability + Policy + Workspace. An agent n
 | --- | --- |
 | Index | 4 of 15 |
 | Owner | `manager` |
-| Status | **PLANNED** |
+| Status | **IMPLEMENTED** |
 | Phase | B |
 | Contracts | `ai.memory` |
-| Versioning | publicationPending |
+| Versioning | ai.memory@1.0.0 |
 | Depends on | `ai-foundation`, `storage` |
 | Interaction | `call`, `batch` |
 | Permissions | `ai:memory:read`, `ai:memory:write` |
@@ -242,7 +242,7 @@ Every external action routes through Capability + Policy + Workspace. An agent n
 
 **Lifecycle:** `declared` -> `available` -> `active` -> `degraded` -> `disabled`
 
-**Operations:** `remember`, `recall`, `traverse`, `forget`, `relate`
+**Operations:** `memory.remember`, `memory.recall`, `memory.list`, `memory.forget`
 
 **Replacement boundary:** Graph storage may move from local JSON to SQLite to a graph store behind the same contract.
 
@@ -250,9 +250,9 @@ Every external action routes through Capability + Policy + Workspace. An agent n
 
 **Observability:** memory read/write counts; never content.
 
-**Tests:** `planned: graph integrity, retention, traversal bounds, provider-absent operation`
+**Tests:** `test/lego-memory.test.mjs (create, recall, empty, invalid, duplicate, update, isolation, provider, integrity, forget, ordering, limits)`
 
-**Future stages:** B: graph contract · D: providers · E: Obsidian adapter
+**Future stages:** traverse: relevance-ranked graph traversal · relate: explicit edge creation as first-class operation · retention enforcement: policy-driven archival · provider adapters: SQLite, filesystem snapshot, Obsidian projection as adapters
 
 **Distinction:** Memory is persistent knowledge. Context is what is loaded right now. Conflating them produces a system that either forgets everything or loads everything.
 

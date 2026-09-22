@@ -26,7 +26,7 @@
 
 - **Skill** (`manager`, IMPLEMENTED) — D: authoring · E: skill packs
 - **Agent Machine** (`manager`, CONTRACT-ONLY) — B: runtime · C: delegation graph · F: measured Rust candidate
-- **Memory** (`manager`, PLANNED) — B: graph contract · D: providers · E: Obsidian adapter
+- **Memory** (`manager`, IMPLEMENTED) — traverse: relevance-ranked graph traversal · relate: explicit edge creation as first-class operation · retention enforcement: policy-driven archival · provider adapters: SQLite, filesystem snapshot, Obsidian projection as adapters
 - **Workspace** (`manager`, PLANNED) — B: LOCAL · C: CONTAINER · E: REMOTE/VPS
 
 ### Phase C — Artifact / Approval / MCP / Runtime Adapter (planned)

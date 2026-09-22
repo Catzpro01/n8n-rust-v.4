@@ -474,71 +474,78 @@
       "reconciliation": {
         "verdict": "RECONCILIATION_REQUIRED",
         "baseline": "67e638ef83028bbc69876e2e768181415c7554fa",
-        "affected": "ai.memory, Memory frontend vocabulary, capability registry, contract lock, milestone register, packages/frontend-lego/test/34-memory.test.mjs (same-path add on both branches), docs/n8n-lego/evidence/frontend-boundary-p25.json (both branches carry a variant)",
-        "conflict": "Two collisions, both from branches adding to one tree. (1) Both branches ADD packages/frontend-lego/test/34-memory.test.mjs: agent-1 carries the 28-test frontend suite and agent-2 a 5-test doc-coupling copy. The frontend path keeps the frontend suite and folds in only agent-2's unique registry coverage (product manifest, capability registry, contract lock, contract-document graph); its fixed \"locked @ 1.0.0 / IMPLEMENTED\" assertion was not carried over, because the .ai matrix is generated per tree and that value is false on a tree whose lock carries no ai.memory row. (2) Agent-2 re-captured docs/n8n-lego/evidence/frontend-boundary-p25.json; the pinned protected-main artifact (blob 07f93d8f) is the one that must survive the merge.",
+        "affected": "ai.memory, Memory frontend vocabulary, capability registry, contract lock, milestone register, packages/frontend-lego/test/34-memory.test.mjs (same-path add on both branches), docs/n8n-lego/evidence/frontend-boundary-p25.json (agent-2 carried a variant that is NOT consumed)",
+        "conflict": "The reconciliation is resolved on this branch, which is now the single P2.14 merge candidate. (1) Both branches ADDed packages/frontend-lego/test/34-memory.test.mjs: the frontend suite is kept and agent-2's unique registry coverage is folded into it as one test; the fixed \"locked @ 1.0.0 / IMPLEMENTED\" assertion was not carried over, because the .ai matrix is generated per tree and that value is false on a tree whose lock carries no ai.memory row. (2) The backend contribution was consumed byte-identical from the frozen branch (git diff against 2dcd8570 for those paths: empty), while agent-2's sandbox recapture of docs/n8n-lego/evidence/frontend-boundary-p25.json was deliberately not consumed: the pinned protected-main artifact (blob 07f93d8f) is what this branch carries.",
         "contract": "ai.memory@1.0.0 is locked exactly once (one contract-lock row, version 1.0.0) with four operations and two permissions, and is quoted verbatim by the frontend. XA-12 remains open-for-manager for the deferred relevance-ranked traversal, edge creation and retention enforcement; the bounded surface does not resolve it and claims no persistence of its own.",
-        "evidence": "agent-2: arena/01a0c90d-n8n-rust-v-4 @ 2dcd8570 (manifest/memory.json, memory.mjs, domains ai.memory, contract-lock ai.memory@1.0.0, apps/n8n-lego/test/lego-memory.test.mjs 20/20). agent-1: arena/01a0c90c-n8n-rust-v-4 @ ea7c956f plus the reconciliation commit that carries this row.",
+        "evidence": "agent-2 (frozen): arena/01a0c90d-n8n-rust-v-4 @ 2dcd8570 — manifest/memory.json, memory.mjs, the ai.memory capability in domains.json and ai-foundation.json, the ai.memory@1.0.0 contract-lock row, the product-manifest LEGO row, apps/n8n-lego/test/lego-memory.test.mjs. agent-1: arena/01a0c90c-n8n-rust-v-4 @ ea7c956f, the reconciliation commit and the consumption commit that carry the frontend consumption, the reconciled register and this evidence.",
         "agent": "agent-1 + agent-2",
         "agent1Interpretation": "Agent-1 consumes the published contract — nine quoted sets, four operations, two permissions, publication state and refusals — redefines nothing, and reports the collision instead of resolving it alone. Its reconciliation pass folds in the peer registry coverage and writes the register once.",
         "agent2Interpretation": "Agent-2 published ai.memory@1.0.0, locked it, registered the capability under ai-foundation and proved the backend surface with 20 tests, including the code/manifest/lock coupling.",
-        "reason": "The contract files do not diverge between the branches: one same-path test file and one evidence artifact collide, plus the register, which this reconciliation writes once. No backend implementation item remains dangling and no contract value moved at the peer tip.",
-        "requiredDecision": "Manager MERGE PASS: take the frontend test/34 (with the folded registry test), keep the pinned frontend-boundary-p25.json artifact, and regenerate the generated .ai pack on the merged tree — the merged lock publishes ai.memory, so the matrix must be regenerated rather than hand-edited. XA-12 and XA-21 are untouched.",
-        "blockingTest": "npm run lego:ai:check on the merged tree, then node --test packages/frontend-lego/test/29-alignment.test.mjs packages/frontend-lego/test/32-context-session.test.mjs packages/frontend-lego/test/33-milestones.test.mjs packages/frontend-lego/test/34-memory.test.mjs apps/n8n-lego/test/lego-memory.test.mjs with N8N_BACKEND_LEGO_ROOT pointing at the merged backend",
+        "reason": "No contract value diverges between the branches and no backend item is dangling: the frozen contribution is consumed without modification, so P2.14 arrives on protected main through one merge.",
+        "requiredDecision": "Manager MERGE PASS on PR #48, which is self-contained: the frozen backend contribution is already consumed, the test/34 collision is resolved, the register is reconciled and the pinned boundary artifact is preserved — so no cross-branch conflict resolution is needed. Regenerate the .ai pack only if the merge itself changes manifests, then verify protected main post-merge. XA-12 and XA-21 are untouched.",
+        "blockingTest": "npm run lego:ai:check, then node --test packages/frontend-lego/test/29-alignment.test.mjs packages/frontend-lego/test/32-context-session.test.mjs packages/frontend-lego/test/33-milestones.test.mjs packages/frontend-lego/test/34-memory.test.mjs apps/n8n-lego/test/lego-memory.test.mjs — all on this branch and again on protected main after the merge.",
         "owner": "manager"
       },
       "verificationEvidence": {
+        "consumption": {
+          "command": "git checkout arena/01a0c90d-n8n-rust-v-4@2dcd8570 -- apps/n8n-lego/src/lego/{manifest/memory.json,memory.mjs,manifest/domains.json,manifest/ai-foundation.json,manifest/ai-lego-set.json,contracts/contract-lock.json} apps/n8n-lego/test/{lego-memory,lego-ai-set,lego-ai-foundation}.test.mjs docs/n8n-lego/evidence/P2.14-agent-2-final-report.md",
+          "result": "PASS",
+          "notes": "byte-identical to the frozen tip: git diff against 2dcd8570 for those paths is empty; contract semantics, version and scope unchanged"
+        },
         "focusedBackend": {
-          "command": "node --test apps/n8n-lego/test/lego-memory.test.mjs (agent-2 tree @ 2dcd8570)",
+          "command": "node --test apps/n8n-lego/test/lego-memory.test.mjs",
           "result": "PASS",
           "tests": 20,
           "passed": 20,
           "failed": 0,
           "skipped": 0,
-          "commit": "arena/01a0c90d-n8n-rust-v-4 @ 2dcd8570"
+          "notes": "run in this tree after consumption instead of against the frozen branch"
         },
         "focusedFrontend": {
           "command": "node --test packages/frontend-lego/test/29-alignment.test.mjs packages/frontend-lego/test/32-context-session.test.mjs packages/frontend-lego/test/33-milestones.test.mjs packages/frontend-lego/test/34-memory.test.mjs",
           "result": "PASS",
           "tests": 96,
-          "passed": 93,
+          "passed": 95,
           "failed": 0,
-          "skipped": 3,
-          "notes": "the three skips are the publication comparisons inside test/34: this tree carries no ai.memory lock row, so the comparison is announced as a bounded non-comparison rather than a false pass"
+          "skipped": 1,
+          "notes": "the one skip asserts the OTHER tree — a tree that publishes no ai.memory row; the publication comparisons now run for real because this branch consumes the frozen contribution"
         },
         "frontendFull": {
           "command": "node --test packages/frontend-lego/test/*.test.mjs",
           "result": "PASS",
           "tests": 391,
-          "passed": 388,
+          "passed": 390,
           "failed": 0,
-          "skipped": 3
+          "skipped": 1
+        },
+        "backendSuite": {
+          "command": "npm run lego:test",
+          "result": "PASS_WITH_PREEXISTING_FAILURES",
+          "tests": 477,
+          "passed": 474,
+          "failed": 3,
+          "skipped": 0,
+          "notes": "the three failures are the node-catalog REST suites (types/nodes.json, node-versions, node-types) — the catalog is not committed; the same three fail on a pristine protected-main archive and on the frozen branch",
+          "failure": "GET /rest/types/nodes.json, GET /rest/types/node-versions.json, POST /rest/node-types"
         },
         "mergedTreeSimulation": {
-          "command": "agent-2 tree @ 2dcd8570 + this branch (frontend package, contract document, reconciled register, pinned boundary artifact); npm run lego:ai, then the frontend suite and the backend Memory suite",
+          "command": "agent-2 @ 2dcd8570 + this branch, in a scratch tree before consumption",
           "result": "PASS",
           "tests": 391,
           "passed": 390,
           "failed": 0,
           "skipped": 1,
-          "notes": "the folded registry test runs against the publishing tree instead of skipping, and passes; .ai regenerated on the merged lock with lego:ai:check OK; merged-tree lego:test 474/477 with the same three node-catalog failures"
+          "notes": "superseded by the consumption commit: the same combined content is now the branch itself, where the suites were re-run green"
         },
-        "backendOnMergedTree": {
-          "command": "node --test apps/n8n-lego/test/lego-memory.test.mjs (merged tree)",
-          "result": "PASS",
-          "tests": 20,
-          "passed": 20,
-          "failed": 0,
-          "skipped": 0
-        },
-        "contractLock": "exactly one ai.memory row, version 1.0.0, status implemented, on the publishing tree; protected main carries no ai.memory row",
+        "contractLock": "exactly one ai.memory row, version 1.0.0, status implemented (18 rows: the 17 protected main carries plus this one)",
         "capabilityRegistry": "ai.memory registered under ai-foundation with exactly memory.remember / memory.recall / memory.list / memory.forget and ai:memory:read / ai:memory:write",
-        "aiFreshness": "npm run lego:ai:check PASS (64 generated, 37 curated, 101 total) after regenerating the pack for the register change",
+        "aiFreshness": "npm run lego:ai:check PASS (64 generated, 37 curated, 101) after regenerating the pack on the consuming tree",
         "architecture": "lego:arch OK; lego:arch:selftest 26/26",
         "foundation": "lego:foundation OK; lego:foundation:selftest 15/15",
         "capabilities": "lego:capabilities OK",
         "scaleOut": "lego:scaleout OK",
-        "bootPayload": "18,126 bytes, byte-identical (pinned by test/34); the XA-21 4,096 KB pin was not edited and was not re-measured in this pass — its samples live in docs/n8n-lego/evidence/frontend-memory-p214.json",
-        "preExistingFailures": "lego:test on this tree is 454/457: GET /rest/types/nodes.json, GET /rest/types/node-versions.json, POST /rest/node-types fail because the node catalog is not committed; reproduced on a pristine protected-main archive and reported, never relabelled as new",
+        "bootPayload": "18,126 bytes, byte-identical (pinned by test/34); the XA-21 4,096 KB pin was not edited and was not re-measured in this pass",
+        "preExistingFailures": "the three node-catalog REST suites listed above; reproduced on a pristine protected-main archive, reported and never relabelled as new",
         "subLegoAudit": "NOT RUN — ModuleNotFoundError: yaml in this sandbox; reported as unmeasured, never as PASS"
       }
     },
