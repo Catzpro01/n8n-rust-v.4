@@ -149,7 +149,11 @@ test('a status is backed by the evidence that status requires', () => {
   assert.equal(p220.finishEvidence.protectedMain, '84337490a061a2774bdcf5743b13972c2c82903b');
   assert.equal(p220.finishEvidence.pr, 58, 'the finish evidence names the PR');
   const p221 = byId.get('P2.21');
-  assert.equal(p221.status, 'in-progress', 'P2.21 is the current runtime adapter & harness stack');
+  assert.equal(p221.status, 'complete', 'P2.21 closed on protected main via PR #61');
+  assert.equal(p221.finishEvidence.protectedMain, '7d964fd639257234472aed4029c160bcff86060e');
+  assert.equal(p221.finishEvidence.pr, 61, 'the finish evidence names the PR');
+  const p222 = byId.get('P2.22');
+  assert.equal(p222.status, 'in-progress', 'P2.22 is the current node compatibility & portability');
 });
 
 test('dependencies and decision references resolve: no dangling id anywhere in the register', () => {
@@ -186,7 +190,7 @@ test('the nextMilestone chain is intact, acyclic and reaches the future ladder',
     current = milestone.nextMilestone;
     if (seen.length > REGISTER.milestones.length) break;
   }
-  assert.deepEqual(seen, ['P2.11', 'P2.12', 'P2.13', 'P2.14', 'P2.15', 'P2.16', 'P2.17', 'P2.18', 'P2.19', 'P2.20', 'P2.21', 'P2.17+']);
+  assert.deepEqual(seen, ['P2.11', 'P2.12', 'P2.13', 'P2.14', 'P2.15', 'P2.16', 'P2.17', 'P2.18', 'P2.19', 'P2.20', 'P2.21', 'P2.22', 'P2.17+']);
   assert.equal(byId.get('P2.17+').nextMilestone, null, 'P2.17+ terminates the canonical top ladder');
 });
 
