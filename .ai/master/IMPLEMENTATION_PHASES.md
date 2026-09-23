@@ -41,7 +41,7 @@
 - **Universal Translation** (`manager`, PLANNED) — D: contract + detection · E: provider-backed translation
 - **Node Creator** (`agent-4`, PLANNED) — D: template + declarative · E: OpenAPI + connector · F: measured rust-wasm
 - **Agent Event & Work Trace** (`manager`, CONTRACT-ONLY) — D: trace store + query · D: UI surface (agent-1)
-- **Token & Usage** (`manager`, PLANNED) — D: accounting · D: UI surface (agent-1) · E: provider-reported metrics
+- **Token & Usage** (`manager`, IN-PROGRESS) — D: accounting · D: UI surface (agent-1) · E: provider-reported metrics
 
 ### Phase E — External provider integration (planned)
 

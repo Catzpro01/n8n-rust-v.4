@@ -284,21 +284,6 @@ const AI_SET_CONTEXT_PUBLICATION = Object.freeze({
 });
 
 /**
- * The token kinds of the context-rollover reference scenario. `manifest/reference-scenarios.json`
- * is manager-owned and `contract-only`; no lock row publishes it, and `XA-17` is the open question
- * about which contract publishes token and cost usage. Quoted because the frontend must render a
- * usage figure *per declared kind* (message / modelInput / output) rather than one ambiguous
- * number — presenting the message count as the model input count is the confusion the scenario
- * exists to prevent.
- */
-const TOKEN_SCENARIO_PUBLICATION = Object.freeze({
-  owner: 'manager',
-  domain: 'reference-scenarios',
-  decision: 'XA-17',
-  what: 'manifest/reference-scenarios.json#scenarios[id=context-rollover].tokenKinds names three token kinds (message, modelInput, output) and the scenario adds a total in its steps, but no contract-lock row publishes the file and no contract publishes token usage — XA-17 asks which one does, per call, per run and per session',
-});
-
-/**
  * The canonical vocabularies. `values` is the complete set; `provenance` names the
  * contract (id/version/owner) and the exact declaration the values were read from
  * (`kind` + `file` + `path`/`symbol`), so a reviewer can check the quote instead of
@@ -809,14 +794,35 @@ export const VOCABULARIES = Object.freeze([
     about: 'token',
     values: Object.freeze(['message', 'modelInput', 'output']),
     provenance: Object.freeze({
-      contract: null,
-      kind: 'json',
-      file: 'apps/n8n-lego/src/lego/manifest/reference-scenarios.json',
-      path: 'scenarios[id=context-rollover].tokenKinds',
-      read: 'keys',
-      note: 'a usage figure without a kind is ambiguous, and the ambiguity is the bug: `1 token` for the message next to `1847` for the model input is one screen showing two different facts. The frontend renders the kind with the number or renders nothing',
+      contract: Object.freeze({ id: 'ai.token-usage', version: '1.0.0', owner: 'manager' }),
+      kind: 'module',
+      file: 'apps/n8n-lego/src/lego/token-usage.mjs',
+      symbol: 'TOKEN_KINDS',
+      read: 'values',
+      note: 'PROMOTED at P2.24: `ai.token-usage@1.0.0` quotes these three kinds byte-for-byte as `TOKEN_KINDS` — XA-17 resolved, this is the single canonical publisher of token usage per call, per run and per session. A usage figure without a kind is ambiguous, and the ambiguity is the bug: `1 token` for the message next to `1847` for the model input is one screen showing two different facts. The frontend renders the kind with the number or renders nothing',
     }),
-    publicationPending: TOKEN_SCENARIO_PUBLICATION,
+    promotedFrom: Object.freeze({
+      previousState: 'publicationPending (TOKEN_SCENARIO_PUBLICATION)',
+      decidedBy: 'XA-17 as executed by P2.24 — publish exactly one canonical usage contract under ai-foundation, never a second publisher',
+      expectedValuesThen: Object.freeze(['message', 'modelInput', 'output']),
+      valuesChangedBy: 'nothing — the published enumeration equals the reference-scenario keys the frontend always rendered',
+      decision: 'XA-17',
+      rule: 'The kind travels with every figure; a provider-specific term maps onto one of these three only through a documented mapping, and the scenario file stays a scenario — the contract is the quote',
+    }),
+  }),
+  Object.freeze({
+    id: 'usageCertainty',
+    question: 'Does this usage figure arrive as reported fact, a labelled estimate, or not at all?',
+    about: 'certainty',
+    values: Object.freeze(['reported', 'estimated', 'unavailable']),
+    provenance: Object.freeze({
+      contract: Object.freeze({ id: 'ai.token-usage', version: '1.0.0', owner: 'manager' }),
+      kind: 'module',
+      file: 'apps/n8n-lego/src/lego/token-usage.mjs',
+      symbol: 'USAGE_STATUSES',
+      read: 'values',
+      note: 'the whole honest-accounting vocabulary in three words: `reported` claims the source supplied the number, `estimated` claims a named deterministic method produced it, `unavailable` claims nobody did (value null — never 0, never exact). The frontend keeps these apart as fact: an unavailable figure renders no percentage and no bar, an estimate renders its label, and no path promotes one into another',
+    }),
   }),
   /**
    * The Memory vocabulary quoted for P2.14. Nine sets, all quoted from the same publication
@@ -1178,7 +1184,7 @@ export const VOCABULARIES = Object.freeze([
       'ai.model-gateway', 'ai.tool-gateway', 'ai.agent-runtime', 'ai.application-provider',
       'ai.agent-session', 'ai.agent-delegation', 'ai.agent-events', 'ai.decision',
       'ai.approval', 'ai.artifact', 'ai.context', 'ai.skill', 'ai.memory',
-      'ai.agent-machine', 'ai.mcp-boundary', 'ai.runtime-adapter',
+      'ai.agent-machine', 'ai.mcp-boundary', 'ai.runtime-adapter', 'ai.token-usage',
     ]),
     provenance: Object.freeze({
       contract: Object.freeze({ id: 'lego.domain-registry', version: '1.1.0', owner: 'manager' }),
@@ -1186,7 +1192,7 @@ export const VOCABULARIES = Object.freeze([
       file: 'apps/n8n-lego/src/lego/manifest/domains.json',
       path: 'domains#id=ai-foundation.capabilities',
       read: 'id',
-      note: 'sixteen capabilities of the `ai-foundation` domain. `ai.memory` joined the list at P2.14 (`implemented`, four operations) on agent-2`s branch; `ai.skill` joined at the P2.12 finalize; `ai.agent-machine` joined at P2.16 (`implemented`, nine operations at 1.1.0) as the bounded execution foundation; `ai.mcp-boundary` joined at P2.20 (`implemented`, four operations — the four-state MCP vs Agent Control boundary declaration); `ai.runtime-adapter` joined at P2.21 (`implemented`, four operations — the contract-preserving runtime adapter seam). A capability is declared here whether it is contract-only or implemented — the status is a field, not a separate list',
+      note: 'seventeen capabilities of the `ai-foundation` domain. `ai.memory` joined the list at P2.14 (`implemented`, four operations) on agent-2`s branch; `ai.skill` joined at the P2.12 finalize; `ai.agent-machine` joined at P2.16 (`implemented`, nine operations at 1.1.0) as the bounded execution foundation; `ai.mcp-boundary` joined at P2.20 (`implemented`, four operations — the four-state MCP vs Agent Control boundary declaration); `ai.runtime-adapter` joined at P2.21 (`implemented`, four operations — the contract-preserving runtime adapter seam); `ai.token-usage` joined at P2.24 (`implemented`, three operations — the honest accounting record/query/budget surface behind `ai.token-usage@1.0.0`). A capability is declared here whether it is contract-only or implemented — the status is a field, not a separate list',
       movedBy: Object.freeze({ commit: '5fbaf934', branch: 'arena/01a0c90d-n8n-rust-v-4', added: Object.freeze(['ai.memory']), previousValues: Object.freeze([
         'ai.model-gateway', 'ai.tool-gateway', 'ai.agent-runtime', 'ai.application-provider',
         'ai.agent-session', 'ai.agent-delegation', 'ai.agent-events', 'ai.decision',
@@ -1198,7 +1204,7 @@ export const VOCABULARIES = Object.freeze([
     id: 'aiPermission',
     question: 'Which permission names do the published AI operations require?',
     about: 'permission',
-    // The 32 names the sixteen `ai.*` capabilities publish on their operations — including
+    // The 34 names the seventeen `ai.*` capabilities publish on their operations — including
     // the two `ai:skill:*` words the locked Skill contract requires, the two `ai:memory:*`
     // words `ai.memory@1.0.0` requires, the three `ai:mcp:*` words the P2.20 boundary
     // declaration requires and the three `ai:adapter:*` words the P2.21 seam requires.
@@ -1219,6 +1225,7 @@ export const VOCABULARIES = Object.freeze([
       'ai:memory:read', 'ai:memory:write',
       'ai:mcp:read', 'ai:mcp:declare', 'ai:mcp:expose',
       'ai:adapter:read', 'ai:adapter:register', 'ai:adapter:dispatch',
+      'ai:usage:read', 'ai:usage:write',
     ]),
     provenance: Object.freeze({
       contract: Object.freeze({ id: 'lego.domain-registry', version: '1.1.0', owner: 'manager' }),
@@ -2233,9 +2240,21 @@ export const LOCAL_VOCABULARIES = Object.freeze([
     id: 'contextUsageReport',
     question: 'Where did the context usage figure on screen come from?',
     values: Object.freeze(['reported', 'estimated', 'not-reported', 'over-budget']),
-    mapsTo: null,
+    mapsTo: 'usageCertainty',
+    mirror: Object.freeze({
+      reported: 'reported',
+      estimated: 'estimated',
+      'not-reported': 'unavailable',
+      'over-budget': null,
+    }),
+    extra: Object.freeze([
+      Object.freeze({
+        value: 'over-budget',
+        reason: 'a budget verdict, not a figure certainty — the backend contract publishes reported/estimated/unavailable (P2.24); over-budget is what contextUsage computes when a reported figure exceeds its declared bound, and it maps to no contract word on purpose',
+      }),
+    ]),
     provenance: Object.freeze({ file: 'packages/frontend-lego/src/context-session.mjs', symbol: 'USAGE_REPORT_STATES' }),
-    why: 'A usage figure is either sourced or it is not shown. `reported` means the backend or the provider handed the number over with a declared unit; `estimated` means the backend declared it an estimate and the UI must label it as one; `not-reported` means nobody reported anything, so no percentage is computed and no bar is drawn; `over-budget` means a reported figure exceeded its declared bound. There is no fifth state and no path from `not-reported` to a number: fabricating a token count to fill a percentage is the failure this set exists to make unrepresentable.',
+    why: 'A usage figure is either sourced or it is not shown. `reported` means the backend or the provider handed the number over with a declared unit; `estimated` means the backend declared it an estimate and the UI must label it as one; `not-reported` means nobody reported anything — the display word for the contract\'s `unavailable` (mirror above), so no percentage is computed and no bar is drawn; `over-budget` means a reported figure exceeded its declared bound (a verdict above the certainty vocabulary, declared as an extra). There is no fifth state and no path from `not-reported` to a number: fabricating a token count to fill a percentage is the failure this set exists to make unrepresentable.',
     pendingPublication: 'XA-20',
   }),
   /**

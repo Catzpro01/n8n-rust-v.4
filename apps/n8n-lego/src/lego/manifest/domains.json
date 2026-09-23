@@ -580,7 +580,8 @@
         "src/lego/approval.mjs",
         "src/lego/audit.mjs",
         "src/lego/mcp-boundary.mjs",
-        "src/lego/runtime-adapter.mjs"
+        "src/lego/runtime-adapter.mjs",
+        "src/lego/token-usage.mjs"
       ],
       "public": [
         "src/lego/ai-foundation.mjs",
@@ -589,7 +590,8 @@
         "src/lego/agent-session.mjs",
         "src/lego/agent-machine.mjs",
         "src/lego/approval.mjs",
-        "src/lego/artifact.mjs"
+        "src/lego/artifact.mjs",
+        "src/lego/token-usage.mjs"
       ],
       "dependsOn": [
         "lego-foundation"
@@ -1607,6 +1609,58 @@
           "replacement": "contract-preserving",
           "resources": "low",
           "notes": "P2.16 bounded execution foundation (ai.agent-machine@1.1.0): machine/agent/task identity, canonical agent lifecycle incl. ready, bounded step bookkeeping, first-class budgets, registry-validated capability scope, bounded delegation bookkeeping (narrowed grants, clamped budget/deadline, no inheritance), bounded graph validation, deterministic event derivation and a replaceable provider/executor seam. Consumes ai.context, ai.agent-session, ai.memory and ai.workspace by opaque reference only. Nine operations, five ai:agent:* permissions; no close, no loop, no inference, no tools, no shell, no filesystem, no process, no child execution. The contract-only ai.agent-runtime capability above it remains the declared shape of the future full loop, which builds on this foundation."
+        },
+        {
+          "id": "ai.token-usage",
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "record",
+              "interaction": "call",
+              "permission": "ai:usage:write",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "query",
+              "interaction": "call",
+              "permission": "ai:usage:read",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "budget",
+              "interaction": "call",
+              "permission": "ai:usage:read",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "ai:usage:read",
+            "ai:usage:write"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "optional",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote",
+              "mcp"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "optional-absent",
+          "replacement": "contract-preserving",
+          "resources": "low",
+          "notes": "P2.24 implementation target: honest accounting records (reported/estimated/unavailable, never fabricated zero), scope-filtered queries, budget views over what was actually recorded. Cost derivation is a pure exported function, not an operation. No provider integration, no telemetry capture, no billing."
         }
       ],
       "notes": "Contract-only. Declares vocabulary for a future AI Foundation: provider/runtime taxonomy, model and tool gateways, application providers, agent lifecycle, session, delegation, events, decision, approval, artifact and context. NOTHING is implemented: no inference, no agent loop, no gateway client, no MCP server or client, no network call, no new dependency. Owned by manager because these contracts are cross-domain and must not be owned by whoever writes the first adapter. A dependency-free leaf: the AI Foundation must never become a prerequisite for the backend booting. P2.12: the Skill registry (src/lego/skill.mjs) reads the capability registry from lego-foundation to answer whether a skill's required capabilities are DECLARED. The direction is deliberate and one-way: the AI Foundation consumes the capability registry, the capability registry knows nothing about AI. This is the dependency that keeps Skill from copying the capability list, which would be the real architectural failure — two registries disagreeing about what exists. lego-foundation does not depend on ai-foundation, so no cycle is created, and the AI Foundation is still not required for the backend to boot.",

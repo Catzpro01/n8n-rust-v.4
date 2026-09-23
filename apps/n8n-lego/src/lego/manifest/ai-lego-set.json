@@ -1421,7 +1421,7 @@
       "index": 15,
       "title": "Token & Usage",
       "owner": "manager",
-      "status": "planned",
+      "status": "in-progress",
       "phase": "D",
       "mission": "Account for token and resource usage honestly, distinguishing reported from estimated.",
       "scope": [
@@ -1483,9 +1483,10 @@
         "optional-absent"
       ],
       "observability": "usage per session/agent/provider.",
-      "versioning": "publicationPending",
+      "versioning": "ai.token-usage@1.0.0",
       "tests": [
-        "planned: reported-vs-estimated labelling, budget enforcement"
+        "test/lego-token-usage.test.mjs (record provenance, zero-vs-unavailable, estimator identity, idempotent requestId, budget derivation, cost pricing basis, secret/content refusal)",
+        "planned: UI surface (agent-1), provider-reported metrics (stage E)"
       ],
       "futureStages": [
         "D: accounting",

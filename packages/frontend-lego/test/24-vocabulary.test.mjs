@@ -251,3 +251,28 @@ test('the P2.23 creator identity vocabulary quotes modes, states and source kind
     assert.equal(set.provenance.contract.id, 'node.creator', `${id} names node.creator@1.0.0`);
   }
 });
+
+test('the P2.24 usage vocabulary is quoted from ai.token-usage and never blurs the three states', () => {
+  const certainty = vocabularyOf('usageCertainty');
+  assert.deepEqual([...certainty.values], ['reported', 'estimated', 'unavailable']);
+  assert.equal(certainty.provenance.contract.id, 'ai.token-usage');
+  assert.equal(certainty.provenance.contract.version, '1.0.0');
+  assert.equal(certainty.provenance.contract.owner, 'manager');
+  assert.equal(certainty.provenance.symbol, 'USAGE_STATUSES');
+  // the promoted token kinds now carry a contract instead of a pending record
+  const kinds = vocabularyOf('tokenKind');
+  assert.equal(kinds.provenance.contract.id, 'ai.token-usage');
+  assert.equal(kinds.publicationPending, undefined, 'publication is done — XA-17 has its answer');
+  assert.equal(kinds.promotedFrom.decision, 'XA-17');
+  assert.deepEqual([...kinds.values], ['message', 'modelInput', 'output'], 'promotion changed provenance, not words');
+  // the local display states map into the contract: not-reported IS unavailable,
+  // and over-budget is a declared verdict above the certainty vocabulary
+  const display = LOCAL_VOCABULARIES.find((set) => set.id === 'contextUsageReport');
+  assert.equal(display.mapsTo, 'usageCertainty');
+  assert.equal(display.mirror['not-reported'], 'unavailable');
+  assert.equal(display.mirror['over-budget'], null, 'a budget verdict maps to no contract word');
+  assert.ok(display.extra.some((entry) => entry.value === 'over-budget' && entry.reason.length > 40));
+  // conflicts remain clean with the new mapping in place
+  const report = vocabularyConflicts();
+  assert.equal(report.ok, true, report.conflicts.join('; '));
+});

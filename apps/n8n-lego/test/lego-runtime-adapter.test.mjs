@@ -100,7 +100,7 @@ test('the contract-lock row names real exports, real ops, the real test file —
   assert.equal(row.domain, 'ai-foundation');
   assert.equal(row.status, 'implemented');
   assert.deepEqual([...row.operations], [...RUNTIME_ADAPTER_OPERATIONS]);
-  assert.equal(LOCK.contracts.length, 28, 'rows through the P2.23 node creator foundation (twenty-eighth)');
+  assert.equal(LOCK.contracts.length, 29, 'rows through the P2.24 usage accounting foundation (twenty-ninth)');
   const exported = row.exports['src/lego/runtime-adapter.mjs'].slice().sort();
   assert.deepEqual(exported, Object.keys({
     RUNTIME_ADAPTER_CONTRACT: 1, RUNTIME_ADAPTER_CONTRACT_VERSION: 1, RUNTIME_ADAPTER_FIELDS: 1,

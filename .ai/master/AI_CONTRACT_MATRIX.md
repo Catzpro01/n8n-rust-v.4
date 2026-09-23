@@ -27,7 +27,7 @@
 | **Artifact** | `ai.artifact` | locked @ 1.0.0 | CONTRACT-ONLY | ai.artifact@1.0.0 | `lego-ai-foundation.test.mjs` |
 | **Approval** | `ai.approval` | locked @ 1.0.0 | CONTRACT-ONLY | ai.approval@1.0.0 | `lego-ai-foundation.test.mjs (fail-closed proven)` |
 | **Agent Event & Work Trace** | `ai.agent-events` | declared in `ai-foundation` | CONTRACT-ONLY | ai.agent-events@1.0.0 | `lego-ai-foundation.test.mjs` |
-| **Token & Usage** | `ai.token-usage` | **publicationPending** | PLANNED | publicationPending | planned: reported-vs-estimated labelling, budget enforcement |
+| **Token & Usage** | `ai.token-usage` | locked @ 1.0.0 | IN-PROGRESS | ai.token-usage@1.0.0 | `content refusal)`; planned: UI surface (agent-1), provider-reported metrics (stage E) |
 
 ## Publication pending
 
@@ -38,7 +38,6 @@ changed; the owner and the decision reference are recorded instead.
 - **Universal Translation** (`manager`) — publicationPending. Tracked for phase D.
 - **Node Creator** (`agent-4`) — publicationPending. Tracked for phase D.
 - **MCP Adapter** (`manager`) — publicationPending. Tracked for phase C.
-- **Token & Usage** (`manager`) — publicationPending. Tracked for phase D.
 
 ## Locked AI contracts
 
@@ -56,6 +55,7 @@ changed; the owner and the decision reference are recorded instead.
 | `ai.audit` | 1.0.0 | `manager` | implemented |
 | `ai.mcp-boundary` | 1.0.0 | `manager` | implemented |
 | `ai.runtime-adapter` | 1.0.0 | `manager` | implemented |
+| `ai.token-usage` | 1.0.0 | `manager` | implemented |
 
 ## Operation coverage
 
