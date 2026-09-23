@@ -114,8 +114,8 @@ export function loadManifests() {
     || agentMachineCatalog.contracts[0] !== 'ai.agent-machine') {
     throw new Error('manifest/agent-machine.json must consume exactly ai.agent-machine for the Agent Machine LEGO');
   }
-  if (agentMachineCatalog.publication?.expected?.version !== '1.0.0') {
-    throw new Error('manifest/agent-machine.json must pin the declared ai.agent-machine version 1.0.0');
+  if (agentMachineCatalog.publication?.expected?.version !== '1.1.0') {
+    throw new Error('manifest/agent-machine.json must pin the declared ai.agent-machine version 1.1.0');
   }
 
   return Object.freeze({

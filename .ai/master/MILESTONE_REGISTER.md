@@ -26,18 +26,18 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 | `P2.13` | Context & Session | B | **complete** | P2.14 |
 | `P2.14` | Memory | B | **complete** | P2.15 |
 | `P2.15` | Workspace | B | **complete** | P2.16 |
-| `P2.16` | Agent Machine / execution foundation | B | **planned** | P2.17 |
+| `P2.16` | Agent Machine / execution foundation | B | **in-progress** | P2.17 |
 | `P2.17+` | Later capability ladder | C-F | **planned** | — |
 
 ## Current milestone boundary — P2.16
 
 **Owns:** Agent Machine contract and execution foundation, subject to dependency readiness
 
-**Does not own:** —
+**Does not own:** P2.17 Agent Machine Runtime Foundation; production runtime, model inference, MCP, transport kernel; merge authority (Manager-only)
 
 **Dependencies:** P2.13 Context & Session; P2.14 Memory; P2.15 Workspace; approval contract readiness
 
-**Required gates:** planned after dependency readiness
+**Required gates:** npm run lego:arch && npm run lego:arch:selftest; npm run lego:foundation && npm run lego:foundation:selftest; npm run lego:capabilities && npm run lego:scaleout; npm run lego:ai:check; focused backend/frontend/contract suites + relevant full suites (local debug only; official validation is the Windows self-hosted runner)
 
 **Completion rule:** dependencies are ready and execution loop is separately scoped
 
@@ -45,7 +45,7 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 
 - Verdict: **PENDING**
 - Conflict: —
-- Contract: —
+- Contract: ai.agent-machine@1.1.0 additive over the locked 1.0.0 publication; exactly one lock row
 - Agent: `—`
 - Reason: —
 - Required decision: —
@@ -53,7 +53,9 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 
 ## Verification evidence
 
-_none recorded_
+- **local:** —
+- **official:** —
+- **evidencePath:** —
 
 ## Evidence roles
 

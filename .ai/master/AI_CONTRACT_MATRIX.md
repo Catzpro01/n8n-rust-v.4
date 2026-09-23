@@ -11,9 +11,9 @@
 | **AI Foundation** | `ai.tool-gateway` | declared in `ai-foundation` | CONTRACT-ONLY | ai.model-gateway@1.0.0, ai.tool-gateway@1.0.0, ai.application-provider@1.0.0 | `lego-ai-foundation.test.mjs` |
 | **AI Foundation** | `ai.application-provider` | declared in `ai-foundation` | CONTRACT-ONLY | ai.model-gateway@1.0.0, ai.tool-gateway@1.0.0, ai.application-provider@1.0.0 | `lego-ai-foundation.test.mjs` |
 | **Skill** | `ai.skill` | locked @ 1.0.0 | IMPLEMENTED | ai.skill@1.0.0 | `lego-skill.test.mjs` |
-| **Agent Machine** | `ai.agent-machine` | locked @ 1.0.0 | CONTRACT-ONLY | ai.agent-machine@1.0.0, ai.agent-runtime@1.0.0, ai.agent-delegation@1.0.0 | `lego-ai-foundation.test.mjs (contract level)`; `lego-agent-machine.test.mjs (P2.16 execution foundation)`; planned: loop, fan-out/fan-in, cancellation propagation |
-| **Agent Machine** | `ai.agent-runtime` | declared in `ai-foundation` | CONTRACT-ONLY | ai.agent-machine@1.0.0, ai.agent-runtime@1.0.0, ai.agent-delegation@1.0.0 | `lego-ai-foundation.test.mjs (contract level)`; `lego-agent-machine.test.mjs (P2.16 execution foundation)`; planned: loop, fan-out/fan-in, cancellation propagation |
-| **Agent Machine** | `ai.agent-delegation` | declared in `ai-foundation` | CONTRACT-ONLY | ai.agent-machine@1.0.0, ai.agent-runtime@1.0.0, ai.agent-delegation@1.0.0 | `lego-ai-foundation.test.mjs (contract level)`; `lego-agent-machine.test.mjs (P2.16 execution foundation)`; planned: loop, fan-out/fan-in, cancellation propagation |
+| **Agent Machine** | `ai.agent-machine` | locked @ 1.1.0 | CONTRACT-ONLY | ai.agent-machine@1.1.0, ai.agent-runtime@1.0.0, ai.agent-delegation@1.0.0 | `lego-ai-foundation.test.mjs (contract level)`; `lego-agent-machine.test.mjs (P2.16 execution foundation)`; planned: loop, fan-out/fan-in, cancellation propagation |
+| **Agent Machine** | `ai.agent-runtime` | declared in `ai-foundation` | CONTRACT-ONLY | ai.agent-machine@1.1.0, ai.agent-runtime@1.0.0, ai.agent-delegation@1.0.0 | `lego-ai-foundation.test.mjs (contract level)`; `lego-agent-machine.test.mjs (P2.16 execution foundation)`; planned: loop, fan-out/fan-in, cancellation propagation |
+| **Agent Machine** | `ai.agent-delegation` | declared in `ai-foundation` | CONTRACT-ONLY | ai.agent-machine@1.1.0, ai.agent-runtime@1.0.0, ai.agent-delegation@1.0.0 | `lego-ai-foundation.test.mjs (contract level)`; `lego-agent-machine.test.mjs (P2.16 execution foundation)`; planned: loop, fan-out/fan-in, cancellation propagation |
 | **Memory** | `ai.memory` | locked @ 1.0.0 | IMPLEMENTED | ai.memory@1.0.0 | `lego-memory.test.mjs (create, recall, empty, invalid, duplicate, update, isolation, provider, integrity, forget, ordering, limits)` |
 | **Workspace** | `ai.workspace` | locked @ 1.0.0 | IMPLEMENTED | ai.workspace@1.0.0 | `lego-workspace.test.mjs` |
 | **Context & Session** | `ai.context` | locked @ 1.0.0 | IN-PROGRESS | ai.context@1.0.0, ai.agent-session@1.0.0 | `lego-context-session.test.mjs`; planned: frontend/backend alignment and full reconciliation |
@@ -50,7 +50,7 @@ changed; the owner and the decision reference are recorded instead.
 | `ai.skill` | 1.0.0 | `manager` | implemented |
 | `ai.memory` | 1.0.0 | `manager` | implemented |
 | `ai.workspace` | 1.0.0 | `manager` | implemented |
-| `ai.agent-machine` | 1.0.0 | `manager` | implemented |
+| `ai.agent-machine` | 1.1.0 | `manager` | implemented |
 
 ## Operation coverage
 

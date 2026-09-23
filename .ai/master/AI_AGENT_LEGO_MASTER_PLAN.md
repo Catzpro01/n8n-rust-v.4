@@ -189,7 +189,7 @@ Every external action routes through Capability + Policy + Workspace. An agent n
 | Status | **CONTRACT-ONLY** |
 | Phase | B |
 | Contracts | `ai.agent-machine`, `ai.agent-runtime`, `ai.agent-delegation` |
-| Versioning | ai.agent-machine@1.0.0, ai.agent-runtime@1.0.0, ai.agent-delegation@1.0.0 |
+| Versioning | ai.agent-machine@1.1.0, ai.agent-runtime@1.0.0, ai.agent-delegation@1.0.0 |
 | Depends on | `ai-foundation`, `capability`, `context-session`, `approval` |
 | Interaction | `call`, `event`, `stream`, `batch` |
 | Permissions | `ai:agent:create`, `ai:agent:invoke`, `ai:agent:control`, `ai:agent:read`, `ai:agent:delegate` |
@@ -199,7 +199,7 @@ Every external action routes through Capability + Policy + Workspace. An agent n
 
 **NOT in scope:** model inference, tool implementation, memory persistence, approval policy decisions, being the AI Foundation
 
-**Lifecycle:** `created` -> `running` -> `waiting` -> `paused` -> `completed` -> `failed` -> `cancelled`
+**Lifecycle:** `created` -> `ready` -> `running` -> `waiting` -> `paused` -> `completed` -> `failed` -> `cancelled`
 
 **Operations:** `create`, `start`, `send`, `pause`, `resume`, `cancel`, `status`, `stream`, `artifact`, `close`, `delegate`
 

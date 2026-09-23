@@ -1,6 +1,6 @@
 {
   "kind": "p25-frontend-boundary",
-  "generatedAt": "2026-09-22T00:46:45.910Z",
+  "generatedAt": "2026-09-22T22:50:18.518Z",
   "phase": "P2.5",
   "method": "node apps/n8n-lego/scripts/capture-frontend-evidence.mjs (live in-process instance, HTTP level); the browser gate tests/e2e/frontend-boundary.mjs captures the same boundary from inside a real page in CI (docs/n8n-lego/FRONTEND_LEGO.md §6)",
   "baseline": "cb71dbb2",
@@ -156,12 +156,12 @@
     {
       "name": "the LEGO cold-imports and assembles within a small budget",
       "verdict": "PASS",
-      "detail": "48.4 ms for import + 12 surfaces + 15 hooks + 19 units"
+      "detail": "48.8 ms for import + 12 surfaces + 15 hooks + 19 units"
     },
     {
       "name": "assembling the descriptor stays inside a small memory budget",
       "verdict": "PASS",
-      "detail": "3780 KB of heap for catalogs + both registries"
+      "detail": "3954 KB of heap for catalogs + both registries"
     },
     {
       "name": "the package still has no runtime dependency",
@@ -169,7 +169,7 @@
       "detail": "dependencies={}"
     },
     {
-      "name": "27 architecture rules pass on a live assembly",
+      "name": "29 architecture rules pass on a live assembly",
       "verdict": "PASS",
       "detail": "all pass"
     },
@@ -276,7 +276,7 @@
     {
       "name": "every shared word is quoted with provenance, and an unpublished file is recorded, not invented",
       "verdict": "PASS",
-      "detail": "43 quoted sets, 6 pending publication, 19 decisions recorded"
+      "detail": "72 quoted sets, 9 pending publication, 21 decisions recorded"
     },
     {
       "name": "a declared permission is a declared word, and the provider kinds are the canonical ones",
@@ -569,7 +569,7 @@
     ],
     "capabilities": [],
     "bytes": 18126,
-    "importMs": 48.4,
-    "heapKb": 3780
+    "importMs": 48.8,
+    "heapKb": 3954
   }
 }

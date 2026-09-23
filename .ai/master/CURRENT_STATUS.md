@@ -31,17 +31,17 @@ is the row marked as such.
 | Core LEGO domains | **26** |
 | Locked contracts | 20 |
 | Declared capabilities | 86 |
-| Declared operations | 161 |
+| Declared operations | 163 |
 | Published error codes | 36 |
 | Official AI/Agent LEGO | 15 |
 
 ## Milestone state
 
-- **Current:** `P2.16` — Agent Machine / execution foundation (**planned**)
+- **Current:** `P2.16` — Agent Machine / execution foundation (**in-progress**)
 - **Previous complete:** `P2.15`
 - **Why next:** P2.13 Context & Session; P2.14 Memory; P2.15 Workspace; approval contract readiness
 - **Owns:** Agent Machine contract and execution foundation, subject to dependency readiness
-- **Does not implement:** —
+- **Does not implement:** P2.17 Agent Machine Runtime Foundation; production runtime, model inference, MCP, transport kernel; merge authority (Manager-only)
 - **Next:** `P2.17`
 - **Completion gate:** dependencies are ready and execution loop is separately scoped
 

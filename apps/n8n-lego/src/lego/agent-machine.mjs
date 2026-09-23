@@ -1,28 +1,42 @@
 /**
  * Agent Machine LEGO — bounded execution foundation (P2.16).
  *
- * PUBLIC CONTRACT: ai.agent-machine@1.0.0 (owner: manager).
+ * PUBLIC CONTRACT: ai.agent-machine@1.1.0 (owner: manager), additive over the
+ * locked 1.0.0 publication. RE-DERIVED from the frozen P2.16 1.1.0
+ * specification after the original local-only commits proved unavailable on
+ * GitHub; never recovered byte-for-byte.
  *
- * This module owns one canonical Agent Machine contract: the bounded identity,
- * lifecycle, step bookkeeping, budgets and deterministic state transitions of a
- * controlled agent execution. It consumes the established ai.context,
- * ai.agent-session, ai.memory and ai.workspace contracts by REFERENCE ONLY —
- * it holds opaque references and never redefines or drives their lifecycles.
+ * This module owns one canonical Agent Machine contract: the bounded identity
+ * (machine, agent and task), lifecycle (incl. the machine-level `ready`
+ * state), step bookkeeping, first-class budgets, bounded delegation
+ * bookkeeping, bounded execution-graph validation, Universal Agent Event
+ * derivation and deterministic state transitions. It consumes the established
+ * ai.context, ai.agent-session, ai.memory and ai.workspace contracts by
+ * REFERENCE ONLY — it holds opaque references and never redefines or drives
+ * their lifecycles. Capability scope is validated against the lego-foundation
+ * capability registry (src/lego/registry.mjs); unknown capabilities fail
+ * closed.
  *
  * It is a foundation, not an engine: nothing here executes a step. Steps are
  * bounded, caller-reported records validated against identity, sequence,
- * budget and lifecycle rules. A replaceable executor/provider seam
- * (`InMemoryAgentMachineProvider` default) owns record storage; a future
- * executor satisfies the same contract without changing this module.
+ * budget and lifecycle rules. Delegation is bookkeeping/orchestration
+ * metadata only: bounded edges with explicit narrowed grants, never
+ * permission inheritance and never child execution. A replaceable
+ * executor/provider seam (`InMemoryAgentMachineProvider` default) owns record
+ * storage; a future executor satisfies the same contract without changing
+ * this module.
  *
  * Deliberately absent: the agent loop, model inference, tool execution,
- * delegation, parallelism, shell, filesystem, process, MCP, credentials and
- * Rust. Those belong to later milestones and other contracts.
+ * child-agent spawning/execution, parallel runtime, shell, filesystem,
+ * process, MCP, credentials, close operation and Rust. Those belong to later
+ * milestones and other contracts.
  */
 
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import { getCapability } from './registry.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const MANIFEST_PATH = resolve(HERE, "manifest", "agent-machine.json");
@@ -31,13 +45,14 @@ const MANIFEST = JSON.parse(readFileSync(MANIFEST_PATH, 'utf8'));
 
 export const AGENT_MACHINE_CONTRACT = Object.freeze({
   id: "ai.agent-machine",
-  version: '1.0.0',
+  version: '1.1.0',
   owner: 'manager',
   fields: Object.freeze([
-    'machineId', 'taskId', 'executorKind', 'lifecycle',
+    'machineId', 'taskId', 'agentId', 'executorKind', 'lifecycle',
     'sessionReference', 'contextReference', 'workspaceReference',
-    'budgets', 'metadata', 'steps', 'stepCount', 'failure',
-    'version', 'createdAt', 'updatedAt',
+    'capabilityScope', 'budgets', 'metadata', 'steps', 'stepCount',
+    'delegations', 'failure', 'version', 'createdAt', 'updatedAt',
+    'startedAt',
   ]),
 });
 
@@ -53,17 +68,20 @@ export const AGENT_MACHINE_EXECUTOR_KINDS = Object.freeze(['IN_MEMORY', 'EXTERNA
 
 /**
  * Lifecycle vocabulary is the canonical agent vocabulary already declared by
- * the AI set and used by ai.agent-session@1.0.0. Waiting is entered only by an
+ * the AI set and used by ai.agent-session@1.0.0, plus the machine-level
+ * `ready` state introduced by agentMachine.prepare in 1.1.0. created -> running
+ * stays legal (1.0.0 flows unchanged). Waiting is entered only by an
  * approval-required step and left only by cancel: approval RESOLUTION is the
  * ai.approval contract's boundary, not this one, and fail-closed means an
  * unresolved approval never advances the machine.
  */
 export const AGENT_MACHINE_LIFECYCLE = Object.freeze({
-  states: Object.freeze(['created', 'running', 'waiting', 'paused', 'completed', 'failed', 'cancelled']),
+  states: Object.freeze(['created', 'ready', 'running', 'waiting', 'paused', 'completed', 'failed', 'cancelled']),
   initial: 'created',
   terminal: Object.freeze(['completed', 'failed', 'cancelled']),
   transitions: Object.freeze({
-    created: Object.freeze(['running', 'cancelled']),
+    created: Object.freeze(['ready', 'running', 'cancelled']),
+    ready: Object.freeze(['running', 'cancelled']),
     running: Object.freeze(['waiting', 'paused', 'completed', 'failed', 'cancelled']),
     waiting: Object.freeze(['cancelled']),
     paused: Object.freeze(['running', 'cancelled']),
@@ -76,20 +94,24 @@ export const AGENT_MACHINE_LIFECYCLE = Object.freeze({
 export const AGENT_MACHINE_LIFECYCLE_STATES = AGENT_MACHINE_LIFECYCLE.states;
 
 /**
- * Exactly seven published operations. start/step carry ai:agent:invoke because
- * they advance execution state; pause/resume/cancel carry ai:agent:control;
- * describe carries ai:agent:read; create carries ai:agent:create. There is no
- * ai:agent:delegate permission in P2.16 (delegation is a later boundary) and
- * no stream/send/artifact/close operation (those belong to the future
- * ai.agent-runtime full loop, which builds on this foundation).
+ * Exactly nine published operations — the canonical P2.16 1.1.0 surface.
+ * create/describe/prepare/delegate/start/step/pause/resume/cancel. There is
+ * deliberately NO `close` operation: close belongs to the future
+ * ai.agent-runtime full loop, which builds on this foundation. start/step
+ * carry ai:agent:invoke because they advance execution state;
+ * prepare/pause/resume/cancel carry ai:agent:control; delegate carries
+ * ai:agent:delegate (bounded bookkeeping, never execution); describe carries
+ * ai:agent:read; create carries ai:agent:create.
  */
 export const AGENT_MACHINE_OPERATIONS = Object.freeze([
   "agentMachine.create",
   "agentMachine.describe",
+  "agentMachine.prepare",
   "agentMachine.start",
   "agentMachine.step",
   "agentMachine.pause",
   "agentMachine.resume",
+  "agentMachine.delegate",
   "agentMachine.cancel",
 ]);
 
@@ -98,7 +120,87 @@ export const AGENT_MACHINE_PERMISSIONS = Object.freeze([
   'ai:agent:invoke',
   'ai:agent:control',
   'ai:agent:read',
+  'ai:agent:delegate',
 ]);
+
+/**
+ * Operation -> permission map. Fail-closed: every operation names exactly one
+ * canonical permission, and any unknown operation is refused rather than
+ * defaulted.
+ */
+export const AGENT_MACHINE_OPERATION_PERMISSIONS = Object.freeze({
+  'agentMachine.create': 'ai:agent:create',
+  'agentMachine.describe': 'ai:agent:read',
+  'agentMachine.prepare': 'ai:agent:control',
+  'agentMachine.start': 'ai:agent:invoke',
+  'agentMachine.step': 'ai:agent:invoke',
+  'agentMachine.pause': 'ai:agent:control',
+  'agentMachine.resume': 'ai:agent:control',
+  'agentMachine.delegate': 'ai:agent:delegate',
+  'agentMachine.cancel': 'ai:agent:control',
+});
+
+/** Resolve the single canonical permission for an operation (fail-closed). */
+export function agentMachineOperationPermission(operation) {
+  if (typeof operation !== 'string' || !Object.prototype.hasOwnProperty.call(AGENT_MACHINE_OPERATION_PERMISSIONS, operation)) {
+    fail(`unknown agent machine operation '${String(operation)}'`, { operation });
+  }
+  return AGENT_MACHINE_OPERATION_PERMISSIONS[operation];
+}
+
+/**
+ * Fail-closed permission assertion: the held permission list must contain the
+ * operation's canonical permission. Missing permission, unknown operation or a
+ * malformed held list is always a contract violation — never a default grant.
+ */
+export function assertAgentMachinePermission(operation, heldPermissions) {
+  const required = agentMachineOperationPermission(operation);
+  if (!Array.isArray(heldPermissions)) {
+    fail(`${operation} requires a held permission list`, { operation, required });
+  }
+  if (!heldPermissions.includes(required)) {
+    fail(`${operation} requires permission '${required}' (fail-closed)`, { operation, required });
+  }
+  return true;
+}
+
+/**
+ * Universal Agent Event types derived from the bounded record. Six types,
+ * session-scoped and reference-only: derivation never invents payload,
+ * reasoning or secret material.
+ */
+export const AGENT_MACHINE_EVENT_TYPES = Object.freeze([
+  'agent.created',
+  'agent.started',
+  'agent.delegated',
+  'agent.completed',
+  'agent.failed',
+  'agent.cancelled',
+]);
+
+/**
+ * Bounded execution-graph vocabulary. Representation and validation only —
+ * never execution. `branch` is the canonical decision node (conditional
+ * routing). Fan-out/fan-in/join/retry carry explicit degree and ceiling
+ * rules; cycles, unknown kinds, dangling references and permission-bearing
+ * nodes are rejected fail-closed.
+ */
+export const AGENT_GRAPH_NODE_KINDS = Object.freeze([
+  'sequential',
+  'parallel',
+  'branch',
+  'fan-out',
+  'fan-in',
+  'join',
+  'retry',
+]);
+
+/** Global graph bounds. Nothing in P2.16 validates or runs past these. */
+export const AGENT_GRAPH_LIMITS = Object.freeze({
+  maxNodes: 128,
+  maxDependencies: 16,
+  maxRetryAttempts: 8,
+});
 
 /**
  * Step outcomes: what a bounded step report may say happened. `succeeded`
@@ -108,10 +210,7 @@ export const AGENT_MACHINE_PERMISSIONS = Object.freeze([
  * reference to the ai.approval record that gates it is invalid input).
  */
 export const AGENT_MACHINE_STEP_OUTCOMES = Object.freeze([
-  'succeeded',
-  'failed',
-  'cancelled',
-  'approval-required',
+  'succeeded', 'failed', 'cancelled', 'approval-required',
 ]);
 
 export const AGENT_MACHINE_FIELDS = AGENT_MACHINE_CONTRACT.fields;
@@ -120,7 +219,9 @@ export const AGENT_MACHINE_FIELDS = AGENT_MACHINE_CONTRACT.fields;
  * Global bounds. Per-machine budgets are declared at create and clamped to
  * these: an execution can never exceed them, and budget exhaustion is a
  * stable terminal condition (failure code budget-exhausted), never an
- * unbounded continuation.
+ * unbounded continuation. 1.1.0 adds maxChildren (bounded delegation edges),
+ * maxTasksPerAgent (bounded machines per agent identity) and
+ * maxCapabilityScope (bounded capability list).
  */
 export const AGENT_MACHINE_LIMITS = Object.freeze({
   maxMachines: 256,
@@ -134,11 +235,15 @@ export const AGENT_MACHINE_LIMITS = Object.freeze({
   maxDurationMs: 10 * 60 * 1000,
   maxContinuationBytes: 64 * 1024,
   maxReferences: 8,
+  maxChildren: 16,
+  maxTasksPerAgent: 64,
+  maxCapabilityScope: 32,
 });
 
 const ID_RE = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$/;
 const REFERENCE_ID_RE = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$/;
 const FORBIDDEN_KEY = /(?:credential|secret|password|token|cookie|authorization|api[-_]?key|private[-_]?key|host[-_]?path|filesystem|terminal|process|command|shell|mcp|runtime|provider)/i;
+const AUTHORITY_KEY = /^(?:permission|permissions|grant|grants|inherit|inheritance|authority|capabilityScope)$/i;
 
 export class AgentMachineError extends Error {
   constructor(code, message, details = {}) {
@@ -253,6 +358,8 @@ function validateBudgets(budgets, limits) {
     maxDurationMs: 0,
     maxContinuationBytes: 0,
     maxReferences: 0,
+    maxChildren: 0,
+    maxTasksPerAgent: 0,
   };
   for (const [key, value] of entries) {
     if (!Object.keys(declared).includes(key)) fail(`budgets declares unknown dimension '${key}'`);
@@ -262,6 +369,30 @@ function validateBudgets(budgets, limits) {
     declared[key] = value;
   }
   return Object.freeze(declared);
+}
+
+/**
+ * Capability scope: a bounded list of capability ids from the
+ * lego-foundation capability registry. Unknown ids, duplicates and
+ * overlong lists all fail closed — a machine never widens its scope by
+ * declaring something the registry does not publish.
+ */
+function validateCapabilityScope(capabilityScope, limits) {
+  if (capabilityScope === undefined) return Object.freeze([]);
+  if (!Array.isArray(capabilityScope)) fail('capabilityScope must be an array of registry capability ids');
+  if (capabilityScope.length > limits.maxCapabilityScope) {
+    fail(`capabilityScope exceeds the bounded ceiling ${limits.maxCapabilityScope}`, { limit: limits.maxCapabilityScope });
+  }
+  const seen = new Set();
+  for (const entry of capabilityScope) {
+    if (typeof entry !== 'string' || entry.length === 0 || entry.length > limits.maxIdentifierLength) {
+      fail('capabilityScope entries must be opaque capability identifiers');
+    }
+    if (seen.has(entry)) fail(`capabilityScope repeats capability '${entry}'`, { capability: entry });
+    if (getCapability(entry) === null) fail(`capabilityScope names unknown capability '${entry}' (fail-closed against the lego-foundation capability registry)`, { capability: entry });
+    seen.add(entry);
+  }
+  return Object.freeze([...capabilityScope]);
 }
 
 function assertLifecycleState(lifecycle) {
@@ -282,6 +413,227 @@ function terminalOf(record) {
 
 function publicMachine(record) {
   return freezeDeep(clone(record));
+}
+
+// ---------------------------------------------------------------------------
+// Bounded execution-graph validation (representation only, never execution)
+// ---------------------------------------------------------------------------
+
+const GRAPH_NODE_KEY_ALLOWLIST = new Set(['id', 'kind', 'dependsOn', 'retry', 'condition']);
+
+/**
+ * Validate a bounded execution graph: sequential, parallel, branch,
+ * fan-out, fan-in, join and bounded retry. Rejects cycles, dangling
+ * references, self-dependencies, duplicate ids, unknown kinds, unbounded
+ * fan-out, multiple or missing entries, retry beyond the ceiling and any
+ * node that tries to declare permission/authority fields — a graph grants
+ * nothing and executes nothing.
+ *
+ * Returns a frozen summary { nodes, nodeCount, edgeCount, entry }.
+ */
+export function validateAgentGraph(graph) {
+  assertPlainObject(graph, 'graph');
+  for (const key of Object.keys(graph)) {
+    if (key !== 'nodes') fail(`graph declares non-public field '${key}'`, { key });
+  }
+  if (!Array.isArray(graph.nodes)) fail('graph.nodes must be an array');
+  if (graph.nodes.length === 0) fail('graph.nodes must contain at least one node');
+  if (graph.nodes.length > AGENT_GRAPH_LIMITS.maxNodes) {
+    fail(`graph exceeds the node ceiling ${AGENT_GRAPH_LIMITS.maxNodes}`, { limit: AGENT_GRAPH_LIMITS.maxNodes });
+  }
+
+  const seenIds = new Set();
+  const nodes = graph.nodes.map((node, index) => {
+    assertPlainObject(node, `graph.nodes[${index}]`);
+    for (const key of Object.keys(node)) {
+      if (AUTHORITY_KEY.test(key)) {
+        fail(`graph node '${index}' declares authority field '${key}': a graph never carries permissions, grants or inheritance (fail-closed)`, { key });
+      }
+      if (!GRAPH_NODE_KEY_ALLOWLIST.has(key)) {
+        fail(`graph.nodes[${index}] declares non-public field '${key}'`, { key });
+      }
+    }
+    assertId(node.id, `graph.nodes[${index}].id`);
+    if (seenIds.has(node.id)) fail(`graph repeats node id '${node.id}'`, { nodeId: node.id });
+    seenIds.add(node.id);
+    if (!AGENT_GRAPH_NODE_KINDS.includes(node.kind)) {
+      fail(`graph.nodes[${index}].kind must be one of ${AGENT_GRAPH_NODE_KINDS.join(', ')}`, { kind: node.kind });
+    }
+    const dependsOn = node.dependsOn === undefined ? [] : node.dependsOn;
+    if (!Array.isArray(dependsOn)) fail(`graph.nodes[${index}].dependsOn must be an array`);
+    if (dependsOn.length > AGENT_GRAPH_LIMITS.maxDependencies) {
+      fail(`graph.nodes[${index}] exceeds the dependency ceiling ${AGENT_GRAPH_LIMITS.maxDependencies}`, { limit: AGENT_GRAPH_LIMITS.maxDependencies });
+    }
+    const depSeen = new Set();
+    for (const dep of dependsOn) {
+      if (typeof dep !== 'string') fail(`graph.nodes[${index}].dependsOn entries must be node ids`);
+      if (dep === node.id) fail(`graph node '${node.id}' depends on itself`, { nodeId: node.id });
+      if (depSeen.has(dep)) fail(`graph.nodes[${index}] repeats dependency '${dep}'`, { dependency: dep });
+      depSeen.add(dep);
+    }
+    if (node.kind === 'retry') {
+      const retry = node.retry;
+      assertPlainObject(retry, `graph.nodes[${index}].retry`);
+      for (const key of Object.keys(retry)) {
+        if (key !== 'attempts') fail(`graph.nodes[${index}].retry declares non-public field '${key}'`, { key });
+      }
+      const attempts = retry.attempts;
+      if (!Number.isInteger(attempts) || attempts < 1 || attempts > AGENT_GRAPH_LIMITS.maxRetryAttempts) {
+        fail(`graph.nodes[${index}].retry.attempts must be an integer of 1..${AGENT_GRAPH_LIMITS.maxRetryAttempts} (bounded retry)`, {
+          limit: AGENT_GRAPH_LIMITS.maxRetryAttempts,
+        });
+      }
+    } else if (node.retry !== undefined) {
+      fail(`graph.nodes[${index}] declares retry on non-retry kind '${node.kind}'`, { kind: node.kind });
+    }
+    if (node.condition !== undefined) {
+      if (node.kind !== 'branch') fail(`graph.nodes[${index}] declares condition on non-branch kind '${node.kind}'`, { kind: node.kind });
+      if (typeof node.condition !== 'string' || node.condition.length === 0 || node.condition.length > AGENT_MACHINE_LIMITS.maxIdentifierLength) {
+        fail(`graph.nodes[${index}].condition must be a bounded identifier string`);
+      }
+    }
+    return Object.freeze({
+      id: node.id,
+      kind: node.kind,
+      dependsOn: Object.freeze([...dependsOn]),
+      ...(node.kind === 'retry' ? { retry: Object.freeze({ attempts: node.retry.attempts }) } : {}),
+      ...(node.condition !== undefined ? { condition: node.condition } : {}),
+    });
+  });
+
+  // Every dependency must resolve to a declared node.
+  for (const node of nodes) {
+    for (const dep of node.dependsOn) {
+      if (!seenIds.has(dep)) fail(`graph node '${node.id}' depends on unknown node '${dep}'`, { nodeId: node.id, dependency: dep });
+    }
+  }
+
+  // Bounded fan-out: out-degree of every node is capped by the dependency
+  // ceiling, so no node can expand without bound.
+  const outDegree = new Map(nodes.map((node) => [node.id, 0]));
+  const inDegree = new Map(nodes.map((node) => [node.id, node.dependsOn.length]));
+  for (const node of nodes) {
+    for (const dep of node.dependsOn) outDegree.set(dep, outDegree.get(dep) + 1);
+  }
+  for (const node of nodes) {
+    const out = outDegree.get(node.id);
+    if (out > AGENT_GRAPH_LIMITS.maxDependencies) {
+      fail(`graph node '${node.id}' fans out to ${out} nodes, beyond the ceiling ${AGENT_GRAPH_LIMITS.maxDependencies}`, {
+        nodeId: node.id, limit: AGENT_GRAPH_LIMITS.maxDependencies,
+      });
+    }
+  }
+
+  // Cycle detection on a COPY of the indegrees (Kahn): the input graph is
+  // never mutated, and a cyclic graph is rejected rather than partially run.
+  const remaining = new Map(inDegree);
+  const queue = nodes.filter((node) => remaining.get(node.id) === 0).map((node) => node.id);
+  let processed = 0;
+  while (queue.length > 0) {
+    const current = queue.shift();
+    processed += 1;
+    for (const node of nodes) {
+      if (node.dependsOn.includes(current)) {
+        const next = remaining.get(node.id) - 1;
+        remaining.set(node.id, next);
+        if (next === 0) queue.push(node.id);
+      }
+    }
+  }
+  if (processed !== nodes.length) fail('graph contains a cycle (bounded validation rejects cyclic graphs)');
+
+  // Exactly one entry node.
+  const entries = nodes.filter((node) => node.dependsOn.length === 0);
+  if (entries.length !== 1) {
+    fail(`graph must have exactly one entry node, found ${entries.length}`, { entries: entries.length });
+  }
+
+  // Kind degree rules: fan-out needs >= 2 dependents; fan-in and join need
+  // >= 2 dependencies. (A degree of 1 is not a fan or a join.)
+  for (const node of nodes) {
+    if (node.kind === 'fan-out' && outDegree.get(node.id) <= 1) {
+      fail(`fan-out node '${node.id}' must depend on nothing and fan out to at least 2 nodes`, { nodeId: node.id });
+    }
+    if ((node.kind === 'fan-in' || node.kind === 'join') && node.dependsOn.length <= 1) {
+      fail(`${node.kind} node '${node.id}' must combine at least 2 dependencies`, { nodeId: node.id });
+    }
+  }
+
+  const entry = entries[0].id;
+  const edgeCount = nodes.reduce((total, node) => total + node.dependsOn.length, 0);
+  return Object.freeze({
+    nodes: Object.freeze(nodes),
+    nodeCount: nodes.length,
+    edgeCount,
+    entry,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Universal Agent Event derivation (session-scoped, reference-only)
+// ---------------------------------------------------------------------------
+
+/**
+ * Derive the Universal Agent Events implied by a bounded machine record.
+ * Deterministic, sanitized and session-scoped: the session id is the opaque
+ * sessionReference, correlation is the machineId, causation stays null until
+ * a causation contract publishes it, and no metadata, step payload,
+ * continuation, reasoning or secret ever enters an event.
+ */
+export function deriveAgentMachineEvents(record) {
+  assertPlainObject(record, 'agent machine record');
+  assertId(record.machineId, 'machineId');
+  assertId(record.taskId, 'taskId');
+  assertId(record.agentId, 'agentId');
+  assertLifecycleState(record.lifecycle);
+  if (typeof record.createdAt !== 'string' || Number.isNaN(Date.parse(record.createdAt))) {
+    fail('record.createdAt must be an ISO timestamp');
+  }
+  const sessionId = record.sessionReference === undefined ? null : record.sessionReference;
+  if (sessionId !== null) assertReference(sessionId, 'sessionReference', AGENT_MACHINE_LIMITS);
+
+  const base = Object.freeze({
+    contract: 'ai.agent-machine',
+    contractVersion: AGENT_MACHINE_CONTRACT_VERSION,
+    machineId: record.machineId,
+    agentId: record.agentId,
+    taskId: record.taskId,
+    sessionId,
+    correlationId: record.machineId,
+    causationId: null,
+  });
+  const events = [];
+  const push = (type, occurredAt, extra = {}) => {
+    if (!AGENT_MACHINE_EVENT_TYPES.includes(type)) fail(`unknown agent machine event type '${type}'`);
+    if (typeof occurredAt !== 'string' || Number.isNaN(Date.parse(occurredAt))) fail(`${type} requires a valid occurredAt timestamp`);
+    events.push(Object.freeze({ ...base, type, occurredAt, ...extra }));
+  };
+
+  push('agent.created', record.createdAt);
+  if (record.startedAt !== undefined && record.startedAt !== null) push('agent.started', record.startedAt);
+
+  if (Array.isArray(record.delegations)) {
+    for (const edge of record.delegations) {
+      assertPlainObject(edge, 'delegation edge');
+      push('agent.delegated', edge.createdAt, {
+        childAgentId: edge.childAgentId,
+        grants: Object.freeze([...(edge.grants ?? [])]),
+      });
+    }
+  }
+
+  if (record.lifecycle === 'completed') push('agent.completed', record.updatedAt);
+  if (record.lifecycle === 'failed') {
+    push('agent.failed', record.updatedAt, {
+      failure: record.failure === null || record.failure === undefined ? null : Object.freeze(clone(record.failure)),
+    });
+  }
+  if (record.lifecycle === 'cancelled') push('agent.cancelled', record.updatedAt);
+
+  for (const event of events) {
+    if (!AGENT_MACHINE_EVENT_TYPES.includes(event.type)) fail('derived event type outside the published vocabulary');
+  }
+  return Object.freeze(events);
 }
 
 // ---------------------------------------------------------------------------
@@ -381,25 +733,38 @@ function makeManager(options = {}) {
     const {
       machineId,
       taskId,
+      agentId,
       executorKind = 'IN_MEMORY',
       sessionReference,
       contextReference,
       workspaceReference,
+      capabilityScope,
       budgets,
       metadata = {},
     } = input;
     assertId(machineId, 'machineId');
     assertId(taskId, 'taskId');
+    assertId(agentId, 'agentId');
     assertKind(executorKind);
     assertReference(sessionReference, 'sessionReference', limits);
     assertReference(contextReference, 'contextReference', limits);
     assertReference(workspaceReference, 'workspaceReference', limits);
+    const safeCapabilityScope = validateCapabilityScope(capabilityScope, limits);
     const safeBudgets = validateBudgets(budgets, limits);
     const safeMetadata = validateMetadata(metadata, limits);
     const existing = get(machineId);
     if (existing) conflict(`agent machine '${machineId}' already exists`, { machineId });
     if (provider.list().length >= limits.maxMachines) {
       fail('agent machine store has reached its bounded machine limit', { limit: limits.maxMachines });
+    }
+    // maxTasksPerAgent: one agent identity never holds more machines (tasks)
+    // than its declared bound (or the global ceiling when undeclared).
+    const taskBound = safeBudgets.maxTasksPerAgent > 0 ? safeBudgets.maxTasksPerAgent : limits.maxTasksPerAgent;
+    const agentTaskCount = provider.list().filter((entry) => entry.agentId === agentId).length;
+    if (agentTaskCount >= taskBound) {
+      fail(`agent '${agentId}' has reached its bounded task ceiling ${taskBound}`, {
+        budget: 'maxTasksPerAgent', agentId, limit: taskBound,
+      });
     }
     if (!provider.supports(executorKind)) {
       unavailable(`provider does not support executor kind '${executorKind}'`, { executorKind });
@@ -408,15 +773,18 @@ function makeManager(options = {}) {
     const record = {
       machineId,
       taskId,
+      agentId,
       executorKind,
       lifecycle: 'created',
       sessionReference: sessionReference ?? null,
       contextReference: contextReference ?? null,
       workspaceReference: workspaceReference ?? null,
+      capabilityScope: safeCapabilityScope,
       budgets: safeBudgets,
       metadata: safeMetadata,
       steps: [],
       stepCount: 0,
+      delegations: [],
       startedAt: null,
       failure: null,
       version: 1,
@@ -434,6 +802,18 @@ function makeManager(options = {}) {
     return record ? publicMachine(record) : null;
   }
 
+  function prepare(input) {
+    assertPlainObject(input, 'prepare input');
+    const record = load(input.machineId, 'prepare');
+    // Idempotent: a ready machine stays ready.
+    if (record.lifecycle === 'ready') return publicMachine(record);
+    assertVersion(record, input, 'agentMachine.prepare');
+    if (terminalOf(record)) transition(`terminal agent machine '${record.machineId}' (${record.lifecycle}) cannot be prepared`, { machineId: record.machineId, lifecycle: record.lifecycle });
+    if (record.lifecycle !== 'created') transition(`agent machine '${record.machineId}' cannot be prepared from '${record.lifecycle}'`, { machineId: record.machineId, lifecycle: record.lifecycle });
+    const next = commit({ ...record, lifecycle: 'ready' }, iso(now));
+    return publicMachine(next);
+  }
+
   function start(input) {
     assertPlainObject(input, 'start input');
     const record = load(input.machineId, 'start');
@@ -441,7 +821,9 @@ function makeManager(options = {}) {
     if (record.lifecycle === 'running') return publicMachine(record);
     assertVersion(record, input, 'agentMachine.start');
     if (terminalOf(record)) transition(`terminal agent machine '${record.machineId}' (${record.lifecycle}) cannot be started`, { machineId: record.machineId, lifecycle: record.lifecycle });
-    if (record.lifecycle !== 'created') transition(`agent machine '${record.machineId}' cannot be started from '${record.lifecycle}'`, { machineId: record.machineId, lifecycle: record.lifecycle });
+    if (record.lifecycle !== 'created' && record.lifecycle !== 'ready') {
+      transition(`agent machine '${record.machineId}' cannot be started from '${record.lifecycle}'`, { machineId: record.machineId, lifecycle: record.lifecycle });
+    }
     const next = commit({ ...record, lifecycle: 'running', startedAt: iso(now) }, iso(now));
     return publicMachine(next);
   }
@@ -595,6 +977,85 @@ function makeManager(options = {}) {
     return publicMachine(next);
   }
 
+  /**
+   * Bounded delegation bookkeeping: one explicit, narrowed edge. Grants are
+   * a non-empty subset of THIS machine's capabilityScope — never inherited,
+   * never widened, never a permission the parent does not hold. Child budget
+   * dimensions are clamped to the parent's declared budgets and the child
+   * deadline is clamped to the parent deadline. maxChildren bounds the edge
+   * count (undeclared = 0 edges: delegation is opt-in and fail-closed).
+   */
+  function delegate(input) {
+    assertPlainObject(input, 'delegate input');
+    const record = load(input.machineId, 'delegate');
+    if (record.lifecycle !== 'ready' && record.lifecycle !== 'running') {
+      transition(`agent machine '${record.machineId}' is '${record.lifecycle}'; delegation bookkeeping is accepted only while ready or running`, {
+        machineId: record.machineId, lifecycle: record.lifecycle,
+      });
+    }
+    assertVersion(record, input, 'agentMachine.delegate');
+    const { delegationId, childAgentId, grants, budget, deadline } = input;
+    assertId(delegationId, 'delegationId');
+    assertId(childAgentId, 'childAgentId');
+    if (childAgentId === record.agentId) fail('a machine cannot delegate to its own agent identity', { agentId: record.agentId });
+    if (record.delegations.some((edge) => edge.delegationId === delegationId)) {
+      conflict(`delegation '${delegationId}' was already recorded for machine '${record.machineId}'`, { machineId: record.machineId, delegationId });
+    }
+    if (!Array.isArray(grants) || grants.length === 0) {
+      fail('delegation grants must be a non-empty array of narrowed capability ids (fail-closed)', { delegationId });
+    }
+    const grantSeen = new Set();
+    for (const grant of grants) {
+      if (typeof grant !== 'string' || grant.length === 0 || grant.length > limits.maxIdentifierLength) {
+        fail('delegation grants must be opaque capability identifiers', { delegationId });
+      }
+      if (grantSeen.has(grant)) fail(`delegation repeats grant '${grant}'`, { delegationId, grant });
+      if (!record.capabilityScope.includes(grant)) {
+        fail(`delegation grant '${grant}' is not in the machine capability scope: grants are an explicit narrowed subset, never inherited`, {
+          delegationId, grant,
+        });
+      }
+      grantSeen.add(grant);
+    }
+    // maxChildren is a per-machine budget: undeclared (0) means no edges.
+    if (record.delegations.length >= record.budgets.maxChildren) {
+      fail(`machine '${record.machineId}' has reached its delegation budget maxChildren ${record.budgets.maxChildren}`, {
+        budget: 'maxChildren', machineId: record.machineId, limit: record.budgets.maxChildren,
+      });
+    }
+    // Child budget: declared dimensions are clamped to the parent's budgets.
+    let childBudget = {};
+    if (budget !== undefined) {
+      assertPlainObject(budget, 'delegation budget');
+      const parentDims = ['maxSteps', 'maxDurationMs', 'maxContinuationBytes', 'maxReferences', 'maxChildren', 'maxTasksPerAgent'];
+      for (const [key, value] of Object.entries(budget)) {
+        if (!parentDims.includes(key)) fail(`delegation budget declares unknown dimension '${key}'`, { key });
+        if (!Number.isInteger(value) || value <= 0) fail(`delegation budget.${key} must be a positive integer`, { key });
+        childBudget[key] = Math.min(value, record.budgets[key]);
+      }
+    }
+    // Child deadline: clamped to the parent deadline (start/creation + duration budget).
+    const parentBase = Date.parse(record.startedAt ?? record.createdAt);
+    const parentDeadline = parentBase + record.budgets.maxDurationMs;
+    let childDeadline = parentDeadline;
+    if (deadline !== undefined) {
+      if (typeof deadline !== 'string' || Number.isNaN(Date.parse(deadline))) {
+        fail('delegation deadline must be an ISO timestamp');
+      }
+      childDeadline = Math.min(Date.parse(deadline), parentDeadline);
+    }
+    const edge = Object.freeze({
+      delegationId,
+      childAgentId,
+      grants: Object.freeze([...grants]),
+      budget: Object.freeze({ ...childBudget }),
+      deadline: new Date(childDeadline).toISOString(),
+      createdAt: iso(now),
+    });
+    const next = commit({ ...record, delegations: [...record.delegations, edge] }, iso(now));
+    return publicMachine(next);
+  }
+
   function cancel(input) {
     assertPlainObject(input, 'cancel input');
     const record = load(input.machineId, 'cancel');
@@ -614,10 +1075,12 @@ function makeManager(options = {}) {
     provider,
     create,
     describe,
+    prepare,
     start,
     step,
     pause,
     resume,
+    delegate,
     cancel,
     get count() { return provider.list().length; },
     clear: () => provider.clear?.(),
