@@ -3,6 +3,7 @@ use std::collections::HashMap;
 
 pub mod activation;
 pub mod admission;
+pub mod compat;
 pub mod expression_contract;
 pub mod ingress_contract;
 pub mod ingress_modes;
@@ -16,6 +17,11 @@ pub use activation::{
 };
 pub use admission::{
     AdmissionAccepted, AdmissionConfig, AdmissionControl, AdmissionError, AdmissionOutcome,
+};
+pub use compat::{
+    default_compat_matrix, replay_admission, replay_resolution, AcceptResult, AcceptanceSuite,
+    CompatCase, CompatMatrix, CompatVerdict, MatrixError, ReplayCapsule, ReplayMode,
+    WireExpectation, MAX_COMPAT_CASES,
 };
 pub use expression_contract::{
     EvaluationContext, ExpressionError, ExpressionEvaluator, ExpressionRef, SimpleEvaluationContext,
