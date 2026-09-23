@@ -15,6 +15,8 @@
 >   (`docs/n8n-lego/P2.27-PLUGIN-RUNTIME-DESIGN.md` — itself PLANNING ONLY,
 >   implementation ZERO until its own Master Prompt).
 
+> **STATUS UPDATE (2026-09-23):** P3 is **ACTIVE** as milestone **#97** (Manager Master Prompt amendasi; `P3.x` numbering is canonical). The original "NOT STARTED" framing above is retained as planning history; implementation status lives in the **§P3.12 IMPLEMENTATION ADDENDUM** at the end of this document and in Issue #97 §10 reports.
+
 ---
 
 ## 1. Goal and product concept — “Unlimited Nodes”
@@ -512,3 +514,55 @@ future tenant isolation needs no graph/execution contract rewrite
   (P2.27 preflight: `mainBaseline` correction + stale wording fix).
 
 No additional issue is created for this concept unless genuinely necessary.
+
+---
+
+## §P3.12 IMPLEMENTATION ADDENDUM (2026-09-23, Issue #97 milestone — Slice N)
+
+This addendum records IMPLEMENTATION status and measured stress honesty. It
+does not rewrite the planning sections above (they remain the architecture
+goal of record from Issue #75).
+
+### A. Slice map (what is merged)
+
+| Milestone | Slice(s) | Contract | State |
+| :--- | :--- | :--- | :--- |
+| P3.1 | A persistent logical graph + B reverse index | `workflow.graph` | merged |
+| P3.2 | C store port / bounded HOT residency | (graph options) | merged |
+| P3.3 | D bounded execution frontier | `execution.frontier` | merged |
+| P3.4 | E version snapshot / apply | `workflow.graph` v1.0.0 | merged |
+| P3.5 | F checkpoint / resume | `execution.state-stream` | merged |
+| P3.6 | G tier pressure (evict/rematerialize) | (graph pressure API) | merged |
+| P3.7 | H Workflow DNA | `workflow.dna` | merged |
+| P3.8 | I execution-as-query | (graph query methods) | merged |
+| P3.9 | J execution IR + disableable toggles + LRU | `execution.ir` | merged |
+| P3.10 | L compatibility oracle | `compatibility.oracle` | merged |
+| P3.11 | M resource guard | `execution.guard` | merged |
+| P3.12 | N scale stress suite + this addendum + matrix | — | this slice |
+| P3.13–15 | K executor, O hardening, P closeout (§32/§34) | pending | pending |
+
+### B. Stress target — MEASURED (supersedes nothing; fills §3 with results)
+
+Single source of truth for tiers stays in the plan body if/where stated; the
+operational record as of this slice (runner: ≈2 GB RAM, Node v20, default heap):
+
+- **T1 = 1,000,000 nodes: PASS** — full correctness suite
+  (`apps/n8n-lego/test/lego-scale-stress.test.mjs`, 6/6): streamed
+  construction (one-shot stringify EMPIRICALLY OOMs here — anti-pattern #1
+  proven), indexing, 1-chunk point reads, HOT bound held over a 50-chunk
+  walk, DNA ≤ 4 KB (root sample 64 of 999,999), `readyAfter` batch =
+  satisfied × fan-out, frozen payloads.
+- **T2 = 5,000,000: ENV-LIMIT (NOT PASS)** — honest probe: SIGABRT/exit 134
+  during the streamed string phase (~16 s, V8 old-space ≈ 943 MB observed).
+- **T3 = 10,000,000: ENV-LIMIT (NOT PASS)** — same abort profile (~16 s,
+  exit 134) during string build.
+
+Re-probe T2/T3 on any larger runner before claiming those tiers.
+
+### C. Dependency boundary (reaffirmed): P2.27 code = ZERO; P3 imports nothing from P2.27; any future need is Issue-first.
+
+### D. Roll-up numbers
+
+Per-dimension table + acceptance gates: **[P3-BENCHMARK-ACCEPTANCE-MATRIX.md](./P3-BENCHMARK-ACCEPTANCE-MATRIX.md)**
+(this addendum's canonical companion). Per-slice raw evidence:
+`docs/n8n-lego/evidence/P3-SLICE-*-EVIDENCE.md`.

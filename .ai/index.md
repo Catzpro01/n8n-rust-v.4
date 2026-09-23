@@ -23,7 +23,7 @@
 | `settings` | `agent-1` | domain | implemented | — | 1 |
 | `editor-ui-host` | `agent-1` | domain | implemented | — | 1 |
 | `workspace` | `agent-1` | domain | implemented | `ai.workspace` v1.0.0 | 2 |
-| `observability` | `agent-6` | domain | planned | — | 0 |
+| `observability` | `agent-6` | domain | contract-only | — | 0 |
 | `data-tables` | `agent-5` | domain | planned | — | 0 |
 | `legacy-rest` | `agent-1` | domain | legacy | — | 1 |
 | `runtime-host` | `agent-6` | domain | implemented | — | 0 |

@@ -44,7 +44,8 @@ const caught = (fn) => {
 test('the lock row is the thirty-fifth: execution.state-stream@0.1.0, owner agent-1, exports byte-parity', () => {
   const row = ROWS.find((r) => r.id === 'execution.state-stream');
   assert.ok(row, 'execution.state-stream is locked');
-  assert.equal(ROWS.length, 40, 'P3 Slice E adds the thirty-fifth (execution.state-stream); P3 Slice H adds the thirty-sixth (workflow.dna) — count-pins say 36; P3 Slice J the thirty-seventh (execution.ir); P3 Slice L the thirty-eighth (compatibility.oracle); P3 Slice M the thirty-ninth (execution.guard); P6.1 adds the fortieth (node.registry@0.1.0, domain node-registry) — count-pins say 40');
+  // P9.1 adds exactly one published row: observability.envelope (39 -> 40).
+  assert.equal(ROWS.length, 42, 'P3 Slice E adds the thirty-fifth (execution.state-stream); P3 Slice H adds the thirty-sixth (workflow.dna); P3 Slice J the thirty-seventh (execution.ir); P3 Slice L the thirty-eighth (compatibility.oracle); P3 Slice M the thirty-ninth (execution.guard) — P6.1 adds node.registry@0.1.0; count-pins say 42');
   assert.equal(row.owner, 'agent-1');
   assert.equal(row.domain, 'execution');
   assert.equal(row.version, '0.1.0', 'R9: execution domain contract 0.1.0');
