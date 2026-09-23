@@ -1494,6 +1494,57 @@ export const VOCABULARIES = Object.freeze([
       note: 'a step outcome is recorded data on the bounded ledger, not an error; `succeeded` ends the machine only when the step is final, and `approval-required` is mandatory to carry an approvalReference (fail-closed)',
     }),
   }),
+  Object.freeze({
+    id: 'nodePortabilityClass',
+    question: 'Which portability classes does node.portability@1.0.0 classify nodes with?',
+    about: 'portability-class',
+    values: Object.freeze([
+      'PURE', 'API', 'NETWORK', 'FILESYSTEM',
+      'NATIVE_PROCESS', 'ENVIRONMENT_SPECIFIC', 'REMOTE_BRIDGE',
+    ]),
+    provenance: Object.freeze({
+      contract: Object.freeze({ id: 'node.portability', version: '1.0.0', owner: 'manager' }),
+      kind: 'module',
+      file: 'apps/n8n-lego/src/lego/node-portability.mjs',
+      symbol: 'PORTABILITY_CLASSES',
+      read: 'values',
+      note: 'the seven canonical classes the P2.22 foundation publishes: singular words, no competing synonyms (a class is a classification, never an authority — permissions stay with the capability/approval system)',
+    }),
+  }),
+  Object.freeze({
+    id: 'nodeRegistryCapability',
+    question: 'Which capability contracts does the node-registry domain publish?',
+    about: 'capability-kind',
+    values: Object.freeze([
+      'node-registry.catalog', 'node-registry.icons',
+      'node-registry.community-packages', 'node-registry.community-node-type-detail',
+      'node-registry.portability',
+    ]),
+    provenance: Object.freeze({
+      contract: Object.freeze({ id: 'lego.domain-registry', version: '1.1.0', owner: 'manager' }),
+      kind: 'json',
+      file: 'apps/n8n-lego/src/lego/manifest/domains.json',
+      path: 'domains#id=node-registry.capabilities',
+      read: 'id',
+      note: 'five capabilities of the `node-registry` domain. `node-registry.portability` joined at P2.22 (`implemented`, three operations — the language/runtime-neutral portability foundation: canPort, select, describePortability)',
+    }),
+  }),
+  Object.freeze({
+    id: 'nodeRegistryPermission',
+    question: 'Which permission names do the published node-registry operations require?',
+    about: 'permission',
+    values: Object.freeze([
+      'node:read', 'node:portability:validate', 'node:portability:select',
+    ]),
+    provenance: Object.freeze({
+      contract: Object.freeze({ id: 'lego.domain-registry', version: '1.1.0', owner: 'manager' }),
+      kind: 'json',
+      file: 'apps/n8n-lego/src/lego/manifest/domains.json',
+      path: 'domains#id=node-registry.capabilities[].operations[].permission',
+      read: 'unique',
+      note: 'the three words node-registry operations refuse callers by — `node:read` predates P2.22 (catalog, icons, describePortability); the P2.22 pair belongs to the portability validator: validate answers canPort, select answers runtime selection, and portability itself grants nothing',
+    }),
+  }),
 ]);
 
 /**

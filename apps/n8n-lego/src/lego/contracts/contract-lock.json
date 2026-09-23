@@ -1067,6 +1067,65 @@
         "apps/n8n-lego/test/lego-runtime-adapter.test.mjs"
       ],
       "notes": "P2.21 runtime adapter seam (implementation: agent-1): explicit provider registration (contract ai.agent-runtime@1.0.0 exactly, canonical executorKinds/capabilities/locality/availability — unknown values fail closed), EXTERNAL executorKind usable ONLY while the bound registration stays eligible (live re-check; unavailable/unregistered -> lego.unavailable through the unchanged P2.16 provider gate), lifecycle translation of the official runtime-adapter vocabulary onto ai.agent-machine@1.1.0 operations (stream declared-unsupported, unknown operations rejected — no second lifecycle), bounded opt-in retry, path/secret-shaped references refused at the seam, canonical-event-only forwardEvent with a bounded outbox, deterministic harness (injected clock/id factory/response sequence; no timers). Declaration + seam + simulator only: no MCP, no model inference, no production scheduler, no shell/filesystem/subprocess authority — adapter selection grants nothing."
+    },
+    {
+      "id": "node.portability",
+      "owner": "manager",
+      "domain": "node-registry",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/node-portability.mjs"
+      ],
+      "exports": {
+        "src/lego/node-portability.mjs": [
+          "CANONICAL_FIXTURES",
+          "CLASS_DECLARATION_RULES",
+          "COMPATIBILITY_AXES",
+          "COMPATIBILITY_CLASSES",
+          "DIFFERENTIAL_FACETS",
+          "MATRIX_STATUSES",
+          "NODE_PORTABILITY_CONTRACT",
+          "NODE_PORTABILITY_CONTRACT_VERSION",
+          "NODE_PORTABILITY_FIELDS",
+          "NODE_PORTABILITY_OPERATIONS",
+          "NODE_PORTABILITY_PERMISSIONS",
+          "NodePortabilityError",
+          "OVERALL_REASONS",
+          "PERMISSION_CATEGORIES",
+          "PORTABILITY_CLASSES",
+          "PORTABILITY_REASONS",
+          "PORTABILITY_TARGETS",
+          "REASON_AXIS",
+          "RUNTIME_MATRIX",
+          "RUNTIME_SELECTION_POLICY",
+          "SCHEMA_FEATURE_STATUSES",
+          "SCHEMA_STATUSES",
+          "canPort",
+          "canonicalizeSchema",
+          "compareImplementations",
+          "describePortability",
+          "roundTrip",
+          "schemaFeatures",
+          "schemaPortability",
+          "selectRuntime",
+          "validateNodeDeclaration"
+        ]
+      },
+      "operations": [
+        "canPort",
+        "select",
+        "describePortability"
+      ],
+      "consumers": [
+        "node registry portability classification (P2.22 foundation)",
+        "frontend read-only display of published portability information",
+        "future Node Creator scope (P2.23) — consumes this contract, is NOT implemented here"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-node-portability.test.mjs"
+      ],
+      "notes": "P2.22 node portability foundation (implementation: agent-1): language/runtime-neutral node contract — canonical portability classes (PURE/API/NETWORK/FILESYSTEM/NATIVE_PROCESS/ENVIRONMENT_SPECIFIC/REMOTE_BRIDGE), machine-readable runtime matrix (JS/WASM/RUST_NATIVE/REMOTE as SUPPORTED|UNSUPPORTED|CONDITIONAL with explicit conditions), language-neutral schema subset with SUPPORTED|UNSUPPORTED|LOSSY refusal (PORTABILITY_REFUSED, never silent coercion), five-axis compatibility report (contract/schema/runtime/portability/environment — never collapsed into one boolean), fail-closed reasons (unknown runtime/class/capability/permission, missing permission, environment/transport mismatch all refused), policy-based runtime selection (no language preference), declared-facet differential comparison. Classification only: portability grants no authority — permissions stay with the capability/approval system; no Node Creator, no translation engine, no provider integration, no model inference, no production distributed runtime."
     }
   ]
 }

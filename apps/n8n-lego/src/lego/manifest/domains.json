@@ -3105,11 +3105,13 @@
       "phase": "P6",
       "errorNamespace": "node",
       "paths": [
-        "src/catalog.mjs"
+        "src/catalog.mjs",
+        "src/lego/node-portability.mjs"
       ],
       "public": [],
       "dependsOn": [
-        "platform-kernel"
+        "platform-kernel",
+        "lego-foundation"
       ],
       "mustNotDependOn": [
         "credentials",
@@ -3120,9 +3122,11 @@
         "storage"
       ],
       "contract": {
-        "version": "0.1.0",
+        "id": "node.portability",
+        "version": "1.0.0",
         "tests": [
-          "test/rest.test.mjs"
+          "test/rest.test.mjs",
+          "test/lego-node-portability.test.mjs"
         ]
       },
       "capabilities": [
@@ -3259,6 +3263,57 @@
           },
           "migrationState": "not-started",
           "degradation": "capability-unavailable",
+          "replacement": "contract-preserving",
+          "resources": "low"
+        },
+        {
+          "id": "node-registry.portability",
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "canPort",
+              "interaction": "call",
+              "permission": "node:portability:validate",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "select",
+              "interaction": "call",
+              "permission": "node:portability:select",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "describePortability",
+              "interaction": "call",
+              "permission": "node:read",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "node:read",
+            "node:portability:validate",
+            "node:portability:select"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "standard",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
           "replacement": "contract-preserving",
           "resources": "low"
         }

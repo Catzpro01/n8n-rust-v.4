@@ -211,3 +211,24 @@ test('every cross-agent question has a machine-readable record', () => {
   assert.ok(existsSync(join(REPO_ROOT, DECISIONS.alignment.test)), `${DECISIONS.alignment.test} exists`);
   assert.match(DECISIONS.alignment.how, /skips with a stated reason/);
 });
+
+test('the P2.22 node portability quotes are complete (classes, capabilities, permissions)', () => {
+  const classes = vocabularyOf('nodePortabilityClass');
+  assert.equal(classes.values.length, 7, 'seven canonical portability classes');
+  assert.deepEqual([...classes.values], [
+    'PURE', 'API', 'NETWORK', 'FILESYSTEM',
+    'NATIVE_PROCESS', 'ENVIRONMENT_SPECIFIC', 'REMOTE_BRIDGE',
+  ], 'exact class vocabulary — no competing synonyms');
+  const capabilities = vocabularyOf('nodeRegistryCapability');
+  assert.equal(capabilities.values.length, 5, 'the node-registry domain publishes five capabilities after P2.22');
+  assert.ok(capabilities.values.includes('node-registry.portability'), 'and the portability foundation is one of them');
+  const permissions = vocabularyOf('nodeRegistryPermission');
+  assert.equal(permissions.values.length, 3, 'node:read plus the P2.22 validator pair');
+  assert.ok(permissions.values.includes('node:portability:validate'));
+  assert.ok(permissions.values.includes('node:portability:select'));
+  for (const id of ['nodePortabilityClass', 'nodeRegistryCapability', 'nodeRegistryPermission']) {
+    const set = vocabularyOf(id);
+    assert.ok(set.provenance.file.startsWith('apps/n8n-lego/src/lego/'), `${id} quotes the backend foundation`);
+    assert.ok(set.provenance.contract && set.provenance.contract.id, `${id} names its contract`);
+  }
+});
