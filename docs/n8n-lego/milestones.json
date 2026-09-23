@@ -4,9 +4,9 @@
   "canonical": true,
   "purpose": "Granular milestone truth beneath the strategic Phase A-F roadmap. This is the only machine-readable milestone register. Future milestone IDs may be refined by Manager only by updating this file; strategic phases are not deleted.",
   "protectedBranch": "main",
-  "mainBaseline": "f21882233c1f4efc5bfb8f3e1b5e1ad4db781d7d",
-  "currentMilestone": "P2.17",
-  "previousCompletedMilestone": "P2.16",
+  "mainBaseline": "8da4d00c7e1bca7fc69a4f8d36f59c453f96ee02",
+  "currentMilestone": "P2.18",
+  "previousCompletedMilestone": "P2.17",
   "strategicRoadmap": {
     "source": "apps/n8n-lego/src/lego/manifest/ai-lego-set.json",
     "preservePhases": [
@@ -20,22 +20,26 @@
     "rule": "Phase A-F remains the strategic roadmap. This register adds implementation-sized milestones and does not replace the phases."
   },
   "mergeProtocol": {
-    "owner": "manager",
-    "agentCompletionIsNotMergeApproval": true,
+    "owner": "agent-1",
+    "managerRole": "architecture-and-milestone-authority",
+    "agentCompletionIsMergeExecution": true,
     "sequence": [
-      "freeze protected-main baseline",
-      "verify each agent branch and focused evidence",
-      "reconcile backend contract and frontend consumption",
-      "classify mechanical, contract, architecture and scope conflicts",
-      "run shared alignment and full relevant gates",
-      "record RECONCILIATION PASS",
-      "validate merge candidate against protected main",
-      "merge only after MERGE PASS",
+      "freeze current protected-main baseline",
+      "implement authorized milestone",
+      "run focused and relevant full gates",
+      "classify failures",
+      "reconcile against latest main",
+      "push branch",
+      "open PR",
+      "validate PR",
+      "merge immediately when valid",
       "rerun post-merge verification on main",
-      "only then mark milestone complete"
+      "record completion evidence",
+      "advance currentMilestone",
+      "report Manager"
     ],
     "failureState": "RECONCILIATION_FAILED",
-    "completionRule": "An agent branch can be complete without the milestone being complete. P2.13 becomes complete only on reconciled, verified protected main."
+    "completionRule": "A milestone becomes complete only after its PR is merged and post-merge verification passes on protected main."
   },
   "milestones": [
     {
@@ -804,7 +808,7 @@
       "id": "P2.17",
       "title": "Agent Machine Runtime Foundation",
       "phase": "B",
-      "status": "in-progress",
+      "status": "complete",
       "owner": "manager",
       "backendOwner": "agent-1",
       "frontendOwner": "agent-1",
@@ -845,9 +849,14 @@
         "commit": "f21882233c1f4efc5bfb8f3e1b5e1ad4db781d7d",
         "role": "protected main after PR #52 merge (P2.16 complete); P2.17 runtime foundation start"
       },
-      "finishEvidence": null,
+      "finishEvidence": {
+        "protectedMain": "8da4d00c7e1bca7fc69a4f8d36f59c453f96ee02",
+        "pr": 53,
+        "mergeCommit": "8da4d00c7e1bca7fc69a4f8d36f59c453f96ee02",
+        "role": "post-merge verified protected-main completion"
+      },
       "currentCommitReference": "arena/01a0c9d3-n8n-rust-v-4 (P2.17 agent-machine-runtime foundation)",
-      "nextMilestone": "P2.17+",
+      "nextMilestone": "P2.18",
       "nonScope": [
         "production external-agent runtime",
         "shell, filesystem or subprocess executors",
@@ -860,12 +869,91 @@
       "reconciliation": {
         "state": "scoped against protected main f2188223 (post-P2.16); additive module + focused tests only, no changes to the frozen 1.1.0 contract files",
         "contract": "ai.agent-machine@1.1.0 stays frozen; the runtime consumes the published exports without widening them",
+        "owner": "agent-1",
+        "historical": true,
+        "resolution": {
+          "resolvedAt": "2026-09-23",
+          "note": "PR #53 merged to protected main as 8da4d00c; the historical start baseline and the agent branch coordinates stay on this row"
+        }
+      },
+      "verificationEvidence": {
+        "local": "pre-merge full suites + post-merge verification on 8da4d00c (focused 83/83 + 59/59, guards, target files present, 0 deletions)",
+        "official": "PENDING — official validation surface remains the GitHub Actions self-hosted Windows runner; local verification on 8da4d00c PASS (debug evidence, not official sign-off)",
+        "evidencePath": "docs/n8n-lego/evidence/P2.17-RUNTIME-FOUNDATION-EVIDENCE.md"
+      }
+    },
+    {
+      "id": "P2.18",
+      "title": "Universal Transport & Envelope Kernel",
+      "phase": "B",
+      "status": "in-progress",
+      "owner": "manager",
+      "backendOwner": "agent-1",
+      "frontendOwner": "agent-1",
+      "dependencies": [
+        "P2.17 Agent Machine Runtime Foundation"
+      ],
+      "inputs": [
+        "P2.17 runtime events",
+        "existing lego.envelope contract (operation context: identity, correlation, deadline, cancellation, idempotency)",
+        "existing lego.interaction contract (CALL / EVENT / STREAM / BATCH + declared backpressure policies)",
+        "deterministic encode/decode rules"
+      ],
+      "deliverables": [
+        "one bounded universal envelope + transport-neutral kernel so CALL/EVENT/STREAM/BATCH move through a single validated shape with backpressure",
+        "deterministic codecs with proven round-trip determinism",
+        "schema validation on entry: malformed envelopes fail closed",
+        "correlation / causation / trace / deadline / cancellation / idempotency / backpressure propagation",
+        "bounded queues with declared limits — no unbounded queue anywhere",
+        "published kernel contract(s) extending the lego.envelope / lego.interaction conventions (no internal HTTP/broker/daemon)"
+      ],
+      "implementationBoundary": "Bounded, transport-neutral kernel only: deterministic encode/decode over the published envelope shape, validation on entry (fail-closed malformed), STREAM backpressure mandatory, bounded declared buffers, correlation/causation passthrough. Extends lego.envelope/lego.interaction conventions; no internal HTTP, broker or daemon; no P2.19+ scope.",
+      "testsGates": [
+        "focused kernel suite (round-trip determinism, malformed-rejected, backpressure under load, no unbounded queue)",
+        "npm run lego:arch && npm run lego:arch:selftest",
+        "npm run lego:foundation && npm run lego:foundation:selftest",
+        "npm run lego:capabilities && npm run lego:scaleout",
+        "npm run lego:ai:check",
+        "focused backend/frontend/contract suites + relevant full suites (local debug only; official validation is the Windows self-hosted runner)"
+      ],
+      "decisionDependencies": [
+        "envelope and interaction contract conventions"
+      ],
+      "completionCriteria": [
+        "round-trip determinism proven, malformed envelopes rejected, backpressure observed under load, no unbounded queue anywhere",
+        "tests + gates as in P2.17",
+        "PR merged and post-merge verification passes on protected main",
+        "register completion evidence recorded and currentMilestone advanced to P2.19"
+      ],
+      "startEvidence": {
+        "commit": "8da4d00c7e1bca7fc69a4f8d36f59c453f96ee02",
+        "role": "protected main after P2.17 merge and verification"
+      },
+      "finishEvidence": null,
+      "currentCommitReference": "arena/01a0c9d3-n8n-rust-v-4",
+      "nextMilestone": "P2.19",
+      "nonScope": [
+        "MCP boundary (P2.20)",
+        "transport adapters (P2.21)",
+        "artifact / approval foundation (P2.19)",
+        "model inference",
+        "distributed infrastructure",
+        "internal HTTP / broker / daemon",
+        "shell / filesystem / subprocess executors",
+        "credential manager",
+        "GitHub / Telegram integrations",
+        "Arena runtime",
+        "approval resolution runtime"
+      ],
+      "reconciliation": {
+        "state": "scoped at P2.18 start against protected main 8da4d00c; register governance corrected per the Manager milestone-register correction; kernel work extends lego.envelope/lego.interaction conventions additively",
+        "contract": "ai.agent-machine@1.1.0 untouched; XA-21 untouched; envelope/interaction changes stay within MINOR (additive exports/optional fields) rules of the contract lock",
         "owner": "agent-1"
       },
       "verificationEvidence": {
-        "local": "focused runtime suite + full backend/frontend suites + all lego gates executed in this workspace (debug evidence)",
+        "local": "focused kernel suite + full backend/frontend suites + all lego gates executed in this workspace (debug evidence)",
         "official": "PENDING — official validation only via the installed GitHub Actions self-hosted Windows runner on the PR",
-        "evidencePath": "docs/n8n-lego/evidence/P2.17-RUNTIME-FOUNDATION-EVIDENCE.md"
+        "evidencePath": "docs/n8n-lego/evidence/P2.18-TRANSPORT-KERNEL-EVIDENCE.md"
       }
     },
     {

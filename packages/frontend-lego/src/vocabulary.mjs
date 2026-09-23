@@ -333,7 +333,7 @@ export const VOCABULARIES = Object.freeze([
     }),
     usable: Object.freeze({ available: true, degraded: true }),
     provenance: Object.freeze({
-      contract: Object.freeze({ id: 'lego.interaction', version: '1.0.0', owner: 'agent-2' }),
+      contract: Object.freeze({ id: 'lego.interaction', version: '1.1.0', owner: 'agent-2' }),
       kind: 'module',
       file: 'apps/n8n-lego/src/lego/interaction.mjs',
       symbol: 'DEGRADATION_STATES',
@@ -385,7 +385,7 @@ export const VOCABULARIES = Object.freeze([
     about: 'interaction',
     values: Object.freeze(['call', 'event', 'stream', 'batch']),
     provenance: Object.freeze({
-      contract: Object.freeze({ id: 'lego.interaction', version: '1.0.0', owner: 'agent-2' }),
+      contract: Object.freeze({ id: 'lego.interaction', version: '1.1.0', owner: 'agent-2' }),
       kind: 'module',
       file: 'apps/n8n-lego/src/lego/interaction.mjs',
       symbol: 'INTERACTION_CLASSES',

@@ -1,7 +1,7 @@
 /**
  * Backend LEGO foundation — CALL / EVENT / STREAM / BATCH.
  *
- * PUBLIC CONTRACT (`lego.interaction`, v1.0.0, owner: agent-2).
+ * PUBLIC CONTRACT (`lego.interaction`, v1.1.0, owner: agent-2).
  *
  * The central design rule (P2.8-B §20): **the contract stays the same across
  * transports**. A consumer writes `call(target, 'resolve', payload, envelope)`
@@ -245,11 +245,88 @@ export async function* stream(legoId, operation, payload, envelope) {
  * purpose: the goal is that "what happens when the consumer is slow" has one
  * testable answer per contract, not that we ship a broker.
  */
-export function applyBackpressure({ policy, highWaterMark = 64, coalesce = null, legoId = null, operation = null }) {
+export function applyBackpressure({
+  policy,
+  highWaterMark = 64,
+  coalesce = null,
+  onOverflow = null,
+  legoId = null,
+  operation = null,
+}) {
   if (!(policy in BACKPRESSURE_POLICIES)) throw new TypeError(`unknown backpressure policy '${policy}'`);
+  if (!Number.isInteger(highWaterMark) || highWaterMark < 1 || highWaterMark > 65536) {
+    throw new TypeError('highWaterMark must be an integer in [1, 65536]');
+  }
 
   const pending = [];
   const stats = { accepted: 0, dropped: 0, coalesced: 0, rejected: 0, terminated: false };
+  // P2.18 bound: blocked producers are themselves a queue — cap them so the
+  // buffer cannot be replaced by an unbounded waiter list.
+  const MAX_BLOCK_WAITERS = 1024;
+  let waiters = [];
+
+  /** @returns {{ accepted: boolean, action: string }} */
+  const pushImpl = (item) => {
+    if (stats.terminated) return { accepted: false, action: 'terminated' };
+
+    if (pending.length < highWaterMark) {
+      pending.push(item);
+      stats.accepted += 1;
+      return { accepted: true, action: 'buffered' };
+    }
+
+    switch (policy) {
+      case 'drop':
+        stats.dropped += 1;
+        return { accepted: false, action: 'dropped-newest' };
+      case 'drop-oldest':
+        pending.shift();
+        pending.push(item);
+        stats.dropped += 1;
+        stats.accepted += 1;
+        return { accepted: true, action: 'dropped-oldest' };
+      case 'coalesce': {
+        if (typeof coalesce !== 'function') throw new TypeError('coalesce policy requires a coalesce(previous, next) function');
+        pending[pending.length - 1] = coalesce(pending[pending.length - 1], item);
+        stats.coalesced += 1;
+        return { accepted: true, action: 'coalesced' };
+      }
+      case 'reject':
+        stats.rejected += 1;
+        throw new BackpressureError(`'${legoId}.${operation}' cannot keep up (${pending.length} pending)`, { legoId, operation, policy, pending: pending.length });
+      case 'terminate':
+        stats.terminated = true;
+        throw new BackpressureError(`stream '${legoId}.${operation}' terminated under overload`, { legoId, operation, policy, pending: pending.length });
+      case 'buffer': {
+        // Declared semantics (P2.18): queue up to highWaterMark, then apply
+        // onOverflow. With no declared handler the bounded, loud answer is a
+        // retryable lego.backpressure — never a silent unbounded queue.
+        if (typeof onOverflow === 'function') {
+          const handled = onOverflow(item);
+          if (handled === false) {
+            stats.dropped += 1;
+            return { accepted: false, action: 'overflow-dropped' };
+          }
+          stats.accepted += 1;
+          return { accepted: true, action: 'overflow-handled' };
+        }
+        stats.rejected += 1;
+        throw new BackpressureError(
+          `'${legoId}.${operation}' buffer is full (${pending.length} pending) and no onOverflow handler is declared`,
+          { legoId, operation, policy, pending: pending.length },
+        );
+      }
+      case 'block':
+        // A synchronous push cannot await the consumer: bounded refusal that
+        // tells the producer to pause. Use pushAsync() to actually block.
+        stats.rejected += 1;
+        return { accepted: false, action: 'blocked' };
+      default:
+        // Unreachable — policy was validated — but never buffer without a bound.
+        stats.rejected += 1;
+        return { accepted: false, action: 'refused' };
+    }
+  };
 
   return {
     policy,
@@ -258,55 +335,50 @@ export function applyBackpressure({ policy, highWaterMark = 64, coalesce = null,
     get size() {
       return pending.length;
     },
-    /** @returns {{ accepted: boolean, action: string }} */
-    push(item) {
+    push: pushImpl,
+    /**
+     * P2.18: the real `block` semantics for async producers — await the
+     * consumer below the watermark, with the waiter list itself bounded.
+     * Non-block policies fall through to the synchronous push.
+     */
+    async pushAsync(item) {
       if (stats.terminated) return { accepted: false, action: 'terminated' };
-
-      if (pending.length < highWaterMark) {
+      if (policy === 'block') {
+        while (pending.length >= highWaterMark) {
+          if (waiters.length >= MAX_BLOCK_WAITERS) {
+            stats.rejected += 1;
+            throw new BackpressureError(
+              `'${legoId}.${operation}' has ${waiters.length} blocked producers — the waiter bound is ${MAX_BLOCK_WAITERS}`,
+              { legoId, operation, policy, pending: pending.length },
+            );
+          }
+          await new Promise((resolve) => { waiters.push(resolve); });
+          if (stats.terminated) return { accepted: false, action: 'terminated' };
+        }
         pending.push(item);
         stats.accepted += 1;
         return { accepted: true, action: 'buffered' };
       }
-
-      switch (policy) {
-        case 'drop':
-          stats.dropped += 1;
-          return { accepted: false, action: 'dropped-newest' };
-        case 'drop-oldest':
-          pending.shift();
-          pending.push(item);
-          stats.dropped += 1;
-          stats.accepted += 1;
-          return { accepted: true, action: 'dropped-oldest' };
-        case 'coalesce': {
-          if (typeof coalesce !== 'function') throw new TypeError('coalesce policy requires a coalesce(previous, next) function');
-          pending[pending.length - 1] = coalesce(pending[pending.length - 1], item);
-          stats.coalesced += 1;
-          return { accepted: true, action: 'coalesced' };
-        }
-        case 'reject':
-          stats.rejected += 1;
-          throw new BackpressureError(`'${legoId}.${operation}' cannot keep up (${pending.length} pending)`, { legoId, operation, policy, pending: pending.length });
-        case 'terminate':
-          stats.terminated = true;
-          throw new BackpressureError(`stream '${legoId}.${operation}' terminated under overload`, { legoId, operation, policy, pending: pending.length });
-        case 'buffer':
-        case 'block':
-        default:
-          pending.push(item);
-          stats.accepted += 1;
-          return { accepted: true, action: 'buffered-over-watermark' };
-      }
+      return pushImpl(item);
     },
     drain() {
       const items = [...pending];
       pending.length = 0;
+      const wake = waiters;
+      waiters = [];
+      for (const resolve of wake) resolve();
       return items;
     },
   };
 }
 
 /* ------------------------------------------------------------------- BATCH */
+
+/**
+ * The batch ceiling (P2.18): a batch is a bounded contract call, never an
+ * unbounded queue. Declared here so both producer and tests share one number.
+ */
+export const BATCH_LIMITS = Object.freeze({ maxItems: 256 });
 
 /**
  * Many operations in one contract call.
@@ -320,6 +392,15 @@ export function applyBackpressure({ policy, highWaterMark = 64, coalesce = null,
 export async function batch(legoId, operation, items, envelope, { atomic = false } = {}) {
   const { provider, handler, interaction } = resolve(legoId, operation);
   expect(interaction, 'batch', legoId, operation);
+
+  if (!Array.isArray(items)) {
+    throw new TypeError(`batch '${legoId}.${operation}' items must be an array`);
+  }
+  if (items.length > BATCH_LIMITS.maxItems) {
+    throw new TypeError(
+      `batch '${legoId}.${operation}' declares ${items.length} items, beyond BATCH_LIMITS.maxItems=${BATCH_LIMITS.maxItems}`,
+    );
+  }
 
   const active = envelope ?? createEnvelope({ legoId, operation, contractVersion: provider.contractVersion });
   throwIfCancelled(active);

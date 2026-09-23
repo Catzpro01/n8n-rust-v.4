@@ -1391,7 +1391,7 @@ test('the milestone register records P2.15 as complete on protected main and P2.
   // P2.15's start baseline stays preserved history on the P2.15 row; the top-level baseline moved
   // on to the final protected-main commit when P2.16 became the current milestone.
   assert.equal(p215.startEvidence.commit, '0d9466f19a149f6e30bdee559086b7a28b080cb3', 'P2.15 start baseline is preserved history');
-  assert.equal(MILESTONES.mainBaseline, 'f21882233c1f4efc5bfb8f3e1b5e1ad4db781d7d', 'the baseline is the final protected-main commit');
+  assert.equal(MILESTONES.mainBaseline, '8da4d00c7e1bca7fc69a4f8d36f59c453f96ee02', 'the baseline is the final protected-main commit');
   const p216 = byId.get('P2.16');
   assert.equal(p216.status, 'complete');
   assert.ok(p216.finishEvidence, 'P2.16 carries protected-main finish evidence after the PR #52 merge');
@@ -1435,15 +1435,18 @@ test('the register keeps the strategic phases, the ladder and the merge protocol
   assert.ok(memoryLadder, 'the ladder still names Memory');
   assert.equal(memoryLadder.id, 'P2.14');
   assert.equal(memoryLadder.status, 'complete', `the register carries Memory's real status ("${memoryLadder.status}")`);
-  assert.equal(MILESTONES.currentMilestone, 'P2.17', `currentMilestone follows the reconciliation ("${MILESTONES.currentMilestone}")`);
-  // The merge protocol: agent completion is not merge approval.
+  assert.equal(MILESTONES.currentMilestone, 'P2.18', `currentMilestone follows the reconciliation ("${MILESTONES.currentMilestone}")`);
+  // The merge protocol: agent completion IS merge execution under the current policy.
   const protocol = MILESTONES.mergeProtocol;
-  assert.equal(protocol.agentCompletionIsNotMergeApproval, true);
+  assert.equal(protocol.owner, 'agent-1');
+  assert.equal(protocol.managerRole, 'architecture-and-milestone-authority');
+  assert.equal(protocol.agentCompletionIsMergeExecution, true);
+  assert.equal(protocol.agentCompletionIsNotMergeApproval, undefined, 'the obsolete flag is gone');
   assert.ok(Array.isArray(protocol.sequence) && protocol.sequence.length >= 5);
   assert.ok(protocol.sequence.some((step) => step.includes('reconcil')));
   assert.ok(protocol.sequence.some((step) => step.includes('merge')));
   assert.equal(protocol.failureState, 'RECONCILIATION_FAILED');
-  assert.match(protocol.completionRule, /An agent branch can be complete without the milestone being complete/);
+  assert.match(protocol.completionRule, /merged and post-merge verification passes on protected main/);
   // Workforce governance milestoneMergeProtocol carries the detailed gates and conflict classes:
   const governance = JSON.parse(read('docs/engineering-operations/workforce-governance.json'));
   const govProtocol = governance.milestoneMergeProtocol;
@@ -1453,9 +1456,9 @@ test('the register keeps the strategic phases, the ladder and the merge protocol
   assert.ok(govProtocol.gates.some((g) => g.id === 'MERGE PASS'));
   assert.equal(govProtocol.failureState, 'RECONCILIATION_FAILED');
   // Top-level canonical truth:
-  assert.equal(MILESTONES.currentMilestone, 'P2.17');
-  assert.equal(MILESTONES.previousCompletedMilestone, 'P2.16');
-  assert.equal(MILESTONES.mainBaseline, 'f21882233c1f4efc5bfb8f3e1b5e1ad4db781d7d');
+  assert.equal(MILESTONES.currentMilestone, 'P2.18');
+  assert.equal(MILESTONES.previousCompletedMilestone, 'P2.17');
+  assert.equal(MILESTONES.mainBaseline, '8da4d00c7e1bca7fc69a4f8d36f59c453f96ee02');
   assert.equal(MILESTONES.strategicRoadmap.source, 'apps/n8n-lego/src/lego/manifest/ai-lego-set.json');
   assert.equal(MILESTONES.protectedBranch, 'main');
 });

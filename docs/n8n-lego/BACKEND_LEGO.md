@@ -316,6 +316,9 @@ A domain that publishes several contracts names its **primary** one
 
 | date | contract | version | change |
 | :--- | :--- | :--- | :--- |
+| 2026-09-23 | `lego.envelope` | 1.1.0 | P2.18: add optional `causationId` envelope field (MINOR, additive) |
+| 2026-09-23 | `lego.interaction` | 1.1.0 | P2.18: export `BATCH_LIMITS`; bound buffer/block past highWaterMark (MINOR, additive) |
+| 2026-09-23 | `lego.transport-kernel` | 1.0.0 | P2.18: lock the deterministic message codec (`encodeMessage`/`decodeMessage`/`validateEnvelope`/`KERNEL_LIMITS`) |
 | 2026-09-22 | `compat.http` | 1.0.0 | initial lock of the P2 surface (no behaviour change) |
 | 2026-09-22 | `kernel.platform` | 1.0.0 | initial lock of the shared kernel |
 | 2026-09-22 | `lego.error-contract` | 1.0.0 | initial publication |
