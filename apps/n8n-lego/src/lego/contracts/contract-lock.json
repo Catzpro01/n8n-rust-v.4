@@ -3254,6 +3254,50 @@
         "apps/n8n-lego/test/lego-registry-repair.test.mjs"
       ],
       "notes": "P6.30 (P6 implementation owner: Agent 3, Issue #100): repair assessment, ordered restoration and offline recovery. A registry comes back from an interrupted install, a lost file, a machine that has been offline for a month, and the two ways to get this wrong are to trust what is there and to repair what is not. A DAMAGED REGISTRY IS COMPARED, NOT TRUSTED: an expectation (what should be there, by digest) is compared with a census (what is there, by digest) and the answer is a NAMED census of damage — intact, altered, missing, unexpected ('1 altered, 1 missing and 1 unexpected item(s) against 3 expected'); an empty expectation is refused because 'a repair with nothing to compare against is a wish'. AN ITEM THAT DOES NOT HASH TO ITS OWN DIGEST IS NOT EVIDENCE: bytes supplied with a census are hashed here and a self-inconsistent item is refused by digest prefix rather than folded in; a census with no items is still a census, because that is how a wiped install looks. A REPAIR DOES NOT DELETE WHAT IT DID NOT PUT THERE: an unexpected item is quarantined and named, never deleted, because its presence is not evidence of damage to another file — and the suite asserts no step anywhere is a delete. OFFLINE IS A DECISION AND IT IS THE DEFAULT: a plan is offline unless the caller says otherwise, an offline repair may not use a mirror ('this repair is offline and the only source for c is a mirror'), and the online case says so in the plan and in the message; this contract has no network at all — the caller names the sources. A REPAIR CANNOT INVENT CONTENT IT HAS NEVER SEEN: an item is restored from a named source or the plan is BLOCKED BY NAME ('nothing has the bytes for b'), and blocked items are never quietly dropped from a plan that still looks successful. RESTORATION FOLLOWS DEPENDENCIES, NOT ALPHABET: the order is topological with an alphabetical tie-break, a dependency outside the set being repaired is not part of the order, and a cycle is refused rather than broken at random ('a cycle is not an order: a, b are waiting on each other'). REPAIRING AN EPOCH THAT HAS BEEN SUPERSEDED IS A ROLLBACK WEARING A RECOVERY'S CLOTHES: when the caller names the superseded epochs, a census sitting on one is refused outright and NO PARTIAL PLAN IS PRODUCED. PART OF THE WAY BACK IS NOT BACK: verifyRepair decides separately from the plan, names the items that still do not match, and says how far short the registry is. Scope walls: no artefact store (P6.7), no epoch chain (P6.16), no admission (P6.17), no freshness (P6.28), no names or trust (P6.29, P6.1) — the suite asserts the only node import is the hash, that no clock or network or randomness is read, and that no neighbouring module is reached into. Authority: this contract decides what is missing and what may be put back; it never fetches and never decides whether the restored registry may serve."
+    },
+    {
+      "id": "registry.acceptance",
+      "owner": "manager",
+      "domain": "node-registry",
+      "version": "0.1.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/registry-acceptance.mjs"
+      ],
+      "exports": {
+        "src/lego/registry-acceptance.mjs": [
+          "ACCEPTANCE_OPERATIONS",
+          "ACCEPTANCE_PERMISSIONS",
+          "ACCEPTANCE_REASONS",
+          "ACCEPTANCE_RULES",
+          "ACCEPTANCE_VERDICTS",
+          "AcceptanceError",
+          "CRITERION_KINDS",
+          "CRITERION_VERDICTS",
+          "REGISTRY_ACCEPTANCE_CONTRACT",
+          "REGISTRY_ACCEPTANCE_CONTRACT_VERSION",
+          "REGISTRY_ACCEPTANCE_FORMAT",
+          "REGISTRY_ACCEPTANCE_SCHEMA_VERSION",
+          "acceptanceDigest",
+          "assessAcceptance",
+          "createAcceptanceSubject",
+          "createCriterion",
+          "describeAcceptance",
+          "explainAcceptance",
+          "isAcceptanceSubject",
+          "isCriterion",
+          "stableJson"
+        ]
+      },
+      "consumers": [
+        "Manager reconciliation — the milestone report is the artifact the merge-and-verify step reads",
+        "P6.15 node.acceptance — the slice-level acceptance runner this contract composes rather than replaces",
+        "P6.16 epoch chain — protected-main verification is the integration fact this report insists on"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-registry-acceptance.test.mjs"
+      ],
+      "notes": "P6.31 (P6 implementation owner: Agent 3, Issue #100): the acceptance of the milestone, and deliberately the least powerful contract of the lane. It composes the verdicts of the other contracts AS DATA — it never imports, re-runs or overrules them — and its answer is allowed to be 'not proven'. A CRITERION IS A CLAIM WITH A KIND, A SLICE, A COMMIT, A VERDICT AND EVIDENCE: the kinds are the ones the lane promised per slice (focused, negative, boundary, determinism, security, resource, rollback, docs, evidence), a criterion outside those kinds is refused, and a milestone that has no negative criterion has not been tested, only exercised. A PASS WITH NOTHING TO POINT AT IS AN OPINION: 'pass' and 'fail' both require an evidence digest ('a criterion without evidence is an opinion with a verdict attached'), while 'incomplete' is the verdict for the absence of evidence and is exactly what it is for. NOT APPLICABLE IS A CLAIM ABOUT THE SUBJECT, so it has to say why, and A KIND COVERED ONLY BY NOT-APPLICABLE CRITERIA IS NOT COVERED — the suite proves a kind whose only criterion is not-applicable lands in missingKinds rather than counting as coverage. AN OMISSION IS NOT A SMALLER MILESTONE: a missing slice, an undeclared slice, a criterion checked on another commit and an uncovered kind are all findings, and A CRITERION CHECKED ON ANOTHER COMMIT COVERS NOTHING HERE, so it cannot stand in for a slice's evidence; findings are COLLECTED rather than short-circuited, because a milestone that fails four ways should say four things. THE WEAKEST VERDICT GOVERNS: a failure is a fact and an incomplete is an absence, and a milestone reporting both is rejected with the failures named. A LANE CANNOT ACCEPT ITSELF: verifiedBy must differ from implementedBy and the refusal names both ('a lane cannot accept itself'), and A MILESTONE IS ACCEPTED ON THE INTEGRATION RATHER THAN ON THE BRANCH: protected-main is false until it is reported, and an unreported integration makes the verdict incomplete, never accepted. A narrowed kind set is possible but has to be DECLARED through policy, and narrowing the kinds does not narrow the slices. Reads: describeAcceptance is a census (passed over covered slices, findings), explainAcceptance renders the report, and every report carries a digest over its own body so the same evidence at the same subject gives the same answer while another subject is another report. Scope walls: it does not run acceptance (P6.15 owns the slice-level runner), does not decide trust (P6.1), admission (P6.17), epochs (P6.16) or repair (P6.30), imports no other module of this repository, and reads no filesystem, network, clock or randomness — the only node import is the hash. Authority: this contract decides whether the evidence for a milestone adds up; it does not merge, it does not declare the lane integrated, and it cannot make a failing criterion pass."
     }
   ]
 }

@@ -299,7 +299,7 @@ Rule **R7** of the gate diffs the declared exports against the real exported
 symbols, so a contract cannot drift silently: adding `foo` to a locked contract
 file fails the build until the lock and version are updated.
 
-The current contract lock has **74 rows**. The historical foundation set remains:
+The current contract lock has **75 rows**. The historical foundation set remains:
 `compat.http` (1.0.0), `lego.error-contract` (1.0.0), `lego.domain-registry` (1.1.0),
 `lego.contract-compat` (1.0.0), `kernel.platform` (1.0.0), `reference.lego` (1.1.0),
 `reference.validation` (1.1.0), `reference.validation.schema` (1.0.0), and
@@ -338,6 +338,7 @@ P6.27 added `node.provenance@0.1.0`.
 P6.28 added `registry.freshness@0.1.0`.
 P6.29 added `node.namespace@0.1.0`.
 P6.30 added `registry.repair@0.1.0`.
+P6.31 added `registry.acceptance@0.1.0`.
 The machine-readable lock is authoritative.
 
 A domain that publishes several contracts names its **primary** one
@@ -347,6 +348,7 @@ A domain that publishes several contracts names its **primary** one
 
 | date | contract | version | change |
 | :--- | :--- | :--- | :--- |
+| 2026-09-24 | `registry.acceptance` | 0.1.0 | P6.31: the acceptance of the milestone — criteria with kinds, slices, commits, verdicts and evidence, passes and failures refused without evidence, not-applicable that has to justify itself and does not count as coverage, omissions collected as findings rather than absorbed, the weakest verdict governing, self-acceptance refused and protected-main verification required, and a report that digests its own body. |
 | 2026-09-24 | `registry.repair` | 0.1.0 | P6.30: repair assessment, ordered restoration and offline recovery — a named census of damage checked by digest, self-inconsistent items refused, unexpected files quarantined rather than deleted, offline as the default with mirrors refused, blocked repairs named instead of guessed, dependency-ordered restoration, superseded epochs refused outright, and a verification that says how far short the registry is. |
 | 2026-09-24 | `node.namespace` | 0.1.0 | P6.29: name claims, handovers and the confusion between them — claims made by key rather than spelling, non-ASCII and whitespace refused by character and position, typosquats within a stated edit distance, quiet reuse refused and declared handovers accepted in one direction only, and visibility as part of what a name means. |
 | 2026-09-24 | `registry.freshness` | 0.1.0 | P6.28: update metadata freshness — rollback and fork refusal by version and digest, expiry as a verdict with a declared clock skew, thresholds supplied as counts, snapshot binding against mix-and-match, delegations that narrow rather than widen, and a refresh plan that stops when nothing below the timestamp moved. |
