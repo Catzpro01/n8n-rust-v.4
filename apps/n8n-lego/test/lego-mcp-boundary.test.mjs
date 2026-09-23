@@ -98,7 +98,7 @@ test('the contract-lock row is canonical: one row, version, ops, tests, exports'
     MCP_BOUNDARY_OPERATIONS: 1, MCP_BOUNDARY_PERMISSIONS: 1, MCP_BOUNDARY_LIMITS: 1,
     MCP_BOUNDARY_TRANSITIONS: 1, MCP_PERMISSION_GATE: 1, McpBoundaryError: 1, createMcpBoundary: 1,
   }).sort());
-  assert.equal(LOCK.contracts.length, 25, 'P2.20 adds the twenty-fifth lock row');
+  assert.equal(LOCK.contracts.length, 26, 'P2.20 added the twenty-fifth row and P2.21 the twenty-sixth');
   assert.ok(row.tests.every((p) => p.endsWith('.mjs')));
 });
 

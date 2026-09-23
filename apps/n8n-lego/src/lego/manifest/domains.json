@@ -579,7 +579,8 @@
         "src/lego/artifact.mjs",
         "src/lego/approval.mjs",
         "src/lego/audit.mjs",
-        "src/lego/mcp-boundary.mjs"
+        "src/lego/mcp-boundary.mjs",
+        "src/lego/runtime-adapter.mjs"
       ],
       "public": [
         "src/lego/ai-foundation.mjs",
@@ -1204,6 +1205,65 @@
             "ai:mcp:read",
             "ai:mcp:declare",
             "ai:mcp:expose"
+          ],
+          "lifecycle": "declared",
+          "availability": "optional-absent",
+          "criticality": "critical",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote",
+              "mcp"
+            ]
+          },
+          "migrationState": "not-started",
+          "degradation": "optional-absent",
+          "replacement": "contract-preserving",
+          "resources": "low"
+        },
+        {
+          "id": "ai.runtime-adapter",
+          "status": "contract-only",
+          "operations": [
+            {
+              "name": "register",
+              "interaction": "call",
+              "permission": "ai:adapter:register",
+              "idempotent": false,
+              "status": "contract-only"
+            },
+            {
+              "name": "lookup",
+              "interaction": "call",
+              "permission": "ai:adapter:read",
+              "idempotent": true,
+              "status": "contract-only"
+            },
+            {
+              "name": "eligibility",
+              "interaction": "call",
+              "permission": "ai:adapter:read",
+              "idempotent": true,
+              "status": "contract-only"
+            },
+            {
+              "name": "manager",
+              "interaction": "call",
+              "permission": "ai:adapter:dispatch",
+              "idempotent": true,
+              "status": "contract-only"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "ai:adapter:read",
+            "ai:adapter:register",
+            "ai:adapter:dispatch"
           ],
           "lifecycle": "declared",
           "availability": "optional-absent",

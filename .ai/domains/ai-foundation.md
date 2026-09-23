@@ -33,6 +33,7 @@
 - `src/lego/approval.mjs`
 - `src/lego/audit.mjs`
 - `src/lego/mcp-boundary.mjs`
+- `src/lego/runtime-adapter.mjs`
 
 ## Public contract surface
 

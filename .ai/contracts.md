@@ -30,6 +30,7 @@ Locked public contracts. A version here is a promise; changing it is an architec
 | `22` | 1.0.0 | — | `?` | `?` |
 | `23` | 1.0.0 | — | `?` | `?` |
 | `24` | 1.0.0 | — | `?` | `?` |
+| `25` | 1.0.0 | — | `?` | `?` |
 
 ## Version rules
 

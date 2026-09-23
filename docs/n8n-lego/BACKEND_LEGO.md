@@ -316,6 +316,7 @@ A domain that publishes several contracts names its **primary** one
 
 | date | contract | version | change |
 | :--- | :--- | :--- | :--- |
+| 2026-09-23 | `ai.runtime-adapter` | 1.0.0 | P2.21: initial lock of the runtime adapter seam + deterministic harness (register/lookup/eligibility/manager + EXTERNAL fail-closed provider gate) |
 | 2026-09-23 | `ai.mcp-boundary` | 1.0.0 | P2.20: initial lock of the four-state MCP vs Agent Control boundary declaration (declare/evaluate/revoke/inspect + fail-closed permission gate) |
 | 2026-09-23 | `ai.artifact` | 1.0.0 | P2.19: initial lock of the opaque reference-only artifact foundation (create/read + lifecycle) |
 | 2026-09-23 | `ai.approval` | 1.0.0 | P2.19: initial lock of the fail-closed approval foundation (request/resolve/inspect + waiting resolution) |

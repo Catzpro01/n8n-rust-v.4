@@ -1170,7 +1170,8 @@
       "futureStages": [
         "C: contract conformance harness",
         "E: first external runtime"
-      ]
+      ],
+      "statusNote": "P2.21 publishes ai.runtime-adapter@1.0.0: the contract-preserving adapter seam (explicit provider registration, EXTERNAL executorKind fail-closed without an eligible provider, lifecycle translation onto ai.agent-machine@1.1.0) plus a deterministic in-process/simulated harness, in src/lego/runtime-adapter.mjs. The LEGO stays contract-only: no external runtime is implemented, nothing is rewritten — external runtimes are adapted, never reimplemented. ai.agent-runtime stays the lifecycle contract; no MCP, no model, no scheduler, no shell/filesystem authority."
     },
     {
       "id": "artifact",
