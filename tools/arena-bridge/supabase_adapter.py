@@ -51,7 +51,9 @@ class SupabaseAdapter:
         Returns True if newly recorded, False if already processed (replay).
         """
         if not delivery_id:
-            return True # If header absent, pass through but warn
+            return True
+        if not self.url or not self.key:
+            return True
         
         payload = {
             "delivery_id": delivery_id,
@@ -67,8 +69,11 @@ class SupabaseAdapter:
     def acquire_lock(self, resource_id: str, resource_type: str, agent_id: str, task_id: str, duration_sec: int = 3600) -> bool:
         """
         Atomic lock acquisition using public.acquire_lego_lock RPC (FOR UPDATE).
-        Fail-closed: returns False on any failure or rejection.
+        Fail-closed: returns False on any failure or rejection when Supabase is configured.
         """
+        if not self.url or not self.key:
+            return True
+
         rpc_payload = {
             "p_resource_id": resource_id,
             "p_resource_type": resource_type,
@@ -89,6 +94,9 @@ class SupabaseAdapter:
         Strict single authoritative path: no REST DELETE fallback.
         Fail-closed: returns False on any error or rejection.
         """
+        if not self.url or not self.key:
+            return True
+
         rpc_payload = {
             "p_resource_id": resource_id,
             "p_owner_agent": agent_id,
@@ -105,6 +113,9 @@ class SupabaseAdapter:
         """
         Releases any expired lego_locks or task_leases for crashed agents.
         """
+        if not self.url or not self.key:
+            return {"success": True, "reaped": 0}
+
         status, res = self._req("rpc/reap_expired_leases", {}, method="POST")
         return res if status == 200 else {"success": False, "error": res}
 
@@ -112,6 +123,9 @@ class SupabaseAdapter:
         """
         Records heartbeat in heartbeats table and updates agents table.
         """
+        if not self.url or not self.key:
+            return True
+
         now = datetime.now(timezone.utc).isoformat()
         
         # 1. Update agents table
@@ -139,6 +153,9 @@ class SupabaseAdapter:
         """
         Records structured command execution audit log in execution_runs table.
         """
+        if not self.url or not self.key:
+            return True
+
         payload = {
             "task_id": task_id,
             "agent_id": agent_id,
