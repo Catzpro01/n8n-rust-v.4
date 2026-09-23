@@ -1518,7 +1518,7 @@ export const VOCABULARIES = Object.freeze([
     values: Object.freeze([
       'node-registry.catalog', 'node-registry.icons',
       'node-registry.community-packages', 'node-registry.community-node-type-detail',
-      'node-registry.portability',
+      'node-registry.portability', 'node-registry.creator',
     ]),
     provenance: Object.freeze({
       contract: Object.freeze({ id: 'lego.domain-registry', version: '1.1.0', owner: 'manager' }),
@@ -1526,7 +1526,7 @@ export const VOCABULARIES = Object.freeze([
       file: 'apps/n8n-lego/src/lego/manifest/domains.json',
       path: 'domains#id=node-registry.capabilities',
       read: 'id',
-      note: 'five capabilities of the `node-registry` domain. `node-registry.portability` joined at P2.22 (`implemented`, three operations — the language/runtime-neutral portability foundation: canPort, select, describePortability)',
+      note: 'six capabilities of the `node-registry` domain. `node-registry.portability` joined at P2.22 (`implemented`, three operations — the language/runtime-neutral portability foundation: canPort, select, describePortability); `node-registry.creator` joined at P2.23 (`implemented`, five operations — the bounded definition producer: create, translate, validate, preview, approvalStatus — candidate/reference output only, never publish/execute/grant)',
     }),
   }),
   Object.freeze({
@@ -1535,6 +1535,7 @@ export const VOCABULARIES = Object.freeze([
     about: 'permission',
     values: Object.freeze([
       'node:read', 'node:portability:validate', 'node:portability:select',
+      'node:creator:create', 'node:creator:translate', 'node:creator:validate',
     ]),
     provenance: Object.freeze({
       contract: Object.freeze({ id: 'lego.domain-registry', version: '1.1.0', owner: 'manager' }),
@@ -1542,7 +1543,52 @@ export const VOCABULARIES = Object.freeze([
       file: 'apps/n8n-lego/src/lego/manifest/domains.json',
       path: 'domains#id=node-registry.capabilities[].operations[].permission',
       read: 'unique',
-      note: 'the three words node-registry operations refuse callers by — `node:read` predates P2.22 (catalog, icons, describePortability); the P2.22 pair belongs to the portability validator: validate answers canPort, select answers runtime selection, and portability itself grants nothing',
+      note: 'the six words node-registry operations refuse callers by — `node:read` predates P2.22 (catalog, icons, preview/approvalStatus from P2.23); the P2.22 pair belongs to the portability validator; the P2.23 trio belongs to the creator foundation (create a candidate, translate a source, run the canonical validation). None of these words is a grant: declaring them on an operation is a lock fact, not authority',
+    }),
+  }),
+  Object.freeze({
+    id: 'nodeCreationMode',
+    question: 'Who acted when a node candidate entered the creator pipeline?',
+    about: 'creation-mode',
+    values: Object.freeze(['HUMAN', 'NODE']),
+    provenance: Object.freeze({
+      contract: Object.freeze({ id: 'node.creator', version: '1.0.0', owner: 'manager' }),
+      kind: 'module',
+      file: 'apps/n8n-lego/src/lego/node-creator.mjs',
+      symbol: 'CREATION_MODES',
+      read: 'values',
+      note: 'the two creation modes the P2.23 identity primitive distinguishes: HUMAN-authored versus NODE-authored candidates. Origin is provenance and (for NODE) a stricter approval requirement — never a validation bypass; both modes meet the SAME pipeline',
+    }),
+  }),
+  Object.freeze({
+    id: 'nodeCreatorState',
+    question: 'Which lifecycle states can a node creator record be in?',
+    about: 'creator-state',
+    values: Object.freeze([
+      'INPUT', 'CANDIDATE', 'VALIDATING', 'VALID', 'REJECTED',
+      'APPROVAL_REQUIRED', 'APPROVED', 'PUBLISHED_REFERENCE',
+    ]),
+    provenance: Object.freeze({
+      contract: Object.freeze({ id: 'node.creator', version: '1.0.0', owner: 'manager' }),
+      kind: 'module',
+      file: 'apps/n8n-lego/src/lego/node-creator.mjs',
+      symbol: 'CREATOR_STATES',
+      read: 'values',
+      note: 'the bounded candidate flow of node.creator@1.0.0 — these describe CREATOR RECORDS (their own object), not capability, artifact or approval lifecycles, which keep their own vocabularies. PUBLISHED_REFERENCE means a publishable reference exists; the creator holds no publishing authority',
+    }),
+  }),
+  Object.freeze({
+    id: 'nodeSourceKind',
+    question: 'How did the source material for a candidate arrive?',
+    about: 'source-kind',
+    values: Object.freeze(['manual', 'imported', 'translated']),
+    provenance: Object.freeze({
+      contract: Object.freeze({ id: 'node.creator', version: '1.0.0', owner: 'manager' }),
+      kind: 'module',
+      file: 'apps/n8n-lego/src/lego/node-creator.mjs',
+      symbol: 'SOURCE_KINDS',
+      read: 'values',
+      note: 'the three source kinds of the P2.23 identity primitive: manually authored in-session, imported from a source document, or produced by translate() — translate always stamps sourceKind=translated regardless of the caller context',
     }),
   }),
 ]);
@@ -2372,6 +2418,12 @@ export function vocabularyDrift(observed = {}) {
  * *different* subjects is what needs the declaration below.
  */
 export const DECLARED_OVERLAPS = Object.freeze([
+  Object.freeze({
+    vocabularies: Object.freeze(['contextScope', 'nodeCreationMode']),
+    values: Object.freeze({
+      NODE: 'NODE scopes a loaded context wide-to-narrow, and NODE is also a creation mode of node.creator@1.0.0 — one spelling, two declared subjects (scope vs creation-mode), quoted from their own contracts (ai.foundation@1.0.0, node.creator@1.0.0)',
+    }),
+  }),
   Object.freeze({
     vocabularies: Object.freeze(['agentMachineStepOutcome', 'agentSessionState']),
     values: Object.freeze({
