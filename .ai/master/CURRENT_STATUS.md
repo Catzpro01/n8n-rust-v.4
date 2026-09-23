@@ -10,7 +10,7 @@ document is right and the prose is stale.
 
 | | |
 | --- | --- |
-| Protected main baseline | `7d964fd639257234472aed4029c160bcff86060e` |
+| Protected main baseline | `3478e8ccd5532db20e60c4dc6b858852e0e80434` |
 | Agent 1 branch | `arena/01a0c9d3-n8n-rust-v-4` |
 | Agent 2 branch | `arena/01a0c90d-n8n-rust-v-4` |
 | **Current milestone** | **P2.22** |
