@@ -42,8 +42,8 @@ const caught = (fn) => {
 test('the lock row is the thirty-fourth: execution.frontier@0.1.0, owner agent-1, exports byte-parity', () => {
   const row = ROWS.find((r) => r.id === 'execution.frontier');
   assert.ok(row, 'execution.frontier is locked');
-  // P9.2 adds exactly one published row: observability.structured-log (40 -> 41).
-  assert.equal(ROWS.length, 41, 'P3 Slice D adds the thirty-fourth (execution.frontier); P3 Slice E adds the thirty-fifth (execution.state-stream); P3 Slice H adds the thirty-sixth (workflow.dna) — count-pins say 36; P3 Slice J the thirty-seventh (execution.ir); P3 Slice L the thirty-eighth (compatibility.oracle); P3 Slice M the thirty-ninth (execution.guard)');
+  // P9.1 envelope + P3 optimizer are merged; P9.2 structured-log adds row 42.
+  assert.equal(ROWS.length, 42, 'P3 Slice D adds the thirty-fourth (execution.frontier); P3 Slice E adds the thirty-fifth (execution.state-stream); P3 Slice H adds the thirty-sixth (workflow.dna) — count-pins say 36; P3 Slice J the thirty-seventh (execution.ir); P3 Slice L the thirty-eighth (compatibility.oracle); P3 Slice M the thirty-ninth (execution.guard)');
   assert.equal(row.owner, 'agent-1', 'Issue #98: Agent 1 owns the bounded frontier');
   assert.equal(row.domain, 'execution');
   assert.equal(row.version, '0.1.0', 'R9: matches the execution domain contract version (0.1.0)');

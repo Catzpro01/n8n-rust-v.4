@@ -25,6 +25,7 @@
 - `src/lego/state-stream.mjs`
 - `src/lego/execution-ir.mjs`
 - `src/lego/resource-guard.mjs`
+- `src/lego/execution-optimizer.mjs`
 
 ## Public contract surface
 

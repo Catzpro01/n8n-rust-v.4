@@ -79,8 +79,8 @@ test('the contract string is the exact locked identity', () => {
 });
 
 test('the contract-lock row names real exports, real ops, the real test file — 27 rows total', () => {
-  // P9.2 adds exactly one published row: observability.structured-log (40 -> 41).
-  assert.equal(LOCK.contracts.length, 41, 'P2.22 twenty-seventh .. P2.26 thirty-second (ai.provider-declaration), P3 Slice A the thirty-third (workflow.graph), P3 Slice D the thirty-fourth (execution.frontier), P3 Slice E the thirty-fifth (execution.state-stream), P3 Slice H the thirty-sixth (workflow.dna) lock rows; P3 Slice J the thirty-seventh (execution.ir); P3 Slice L the thirty-eighth (compatibility.oracle); P3 Slice M the thirty-ninth (execution.guard)');
+  // P9.1 envelope + P3 optimizer are merged; P9.2 structured-log adds row 42.
+  assert.equal(LOCK.contracts.length, 42, 'P2.22 twenty-seventh .. P2.26 thirty-second (ai.provider-declaration), P3 Slice A the thirty-third (workflow.graph), P3 Slice D the thirty-fourth (execution.frontier), P3 Slice E the thirty-fifth (execution.state-stream), P3 Slice H the thirty-sixth (workflow.dna) lock rows; P3 Slice J the thirty-seventh (execution.ir); P3 Slice L the thirty-eighth (compatibility.oracle); P3 Slice M the thirty-ninth (execution.guard); P3 Slice K the forty-first (execution.optimizer)');
   assert.deepEqual([...LOCK_ROW.operations], [...NODE_PORTABILITY_OPERATIONS]);
   const exported = LOCK_ROW.exports['src/lego/node-portability.mjs'];
   assert.deepEqual([...exported].sort(), Object.keys(portability).sort(),

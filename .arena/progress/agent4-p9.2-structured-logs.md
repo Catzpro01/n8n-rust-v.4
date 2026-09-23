@@ -6,8 +6,11 @@ Scope: structured logs, source-error taxonomy, bounded numeric/boolean facts,
 message/unknown-attribute redaction before admission, codec, tests/docs/benchmark.
 Product owner remains Agent 6. No workforce registry or kernel logger edits.
 
-11 dedicated tests pass. Final full local gate: 1015 backend pass; 418 frontend pass + 1 existing skip.
+11 dedicated tests pass. Final full local gate: 1023 backend pass; 418 frontend pass + 1 existing skip.
 Remaining: commit/push/PR, verify/classify checks, merge through PR only,
 post-merge full gate and durable completion comment; only then P9.3.
 No completion claim before verified merge. Issue #130 records pre-existing
 Rust-format CI failures (unchanged Rust blobs) if they recur.
+
+Concurrent main e164f059 merged before PR delivery; preserved execution.optimizer
+and new P9.2 row, exact inventory 42. Full reconciled gate passed.
