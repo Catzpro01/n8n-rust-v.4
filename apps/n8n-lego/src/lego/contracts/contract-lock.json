@@ -1442,8 +1442,10 @@
           "STATE_STREAM_CONTRACT",
           "STATE_STREAM_CONTRACT_VERSION",
           "STATE_STREAM_MAX_EVENTS",
+          "STATE_STREAM_SNAPSHOT_VERSION",
           "StateStreamError",
-          "createStateStream"
+          "createStateStream",
+          "stateStreamFromSnapshot"
         ]
       },
       "consumers": [
@@ -1454,7 +1456,7 @@
       "tests": [
         "apps/n8n-lego/test/lego-state-stream.test.mjs"
       ],
-      "notes": "P3 Slice E (implementation: agent-1): bounded streaming execution state — append-only monotonic seq log with REQUIRED maxResidentEvents bound (1..1048576, no default); append answers explicit admitted/backpressure (published code lego.backpressure) and retains NOTHING when full (no silent loss, seq not burned); bounded non-destructive read window, finite bounded-batch stream() generator, destructive consume() = selective retention (backlog shrinks only when a sink takes events); JSON-domain payloads deep-frozen on admission; ZERO imports (no clock/fs/network/timers/randomness/process); one error family lego.contract_violation (errors contract 1.2.0 untouched). No capability/REST surface. Owner agent-1 per Issue #98; checkpoint/resume = Slice F on this seam. Execution domain stays mustNotDependOn workflow"
+      "notes": "P3 Slice E (implementation: agent-1): bounded streaming execution state — append-only monotonic seq log with REQUIRED maxResidentEvents bound (1..1048576, no default); append answers explicit admitted/backpressure (published code lego.backpressure) and retains NOTHING when full (no silent loss, seq not burned); bounded non-destructive read window, finite bounded-batch stream() generator, destructive consume() = selective retention (backlog shrinks only when a sink takes events); JSON-domain payloads deep-frozen on admission; ZERO imports (no clock/fs/network/timers/randomness/process); one error family lego.contract_violation (errors contract 1.2.0 untouched). No capability/REST surface. Owner agent-1 per Issue #98; checkpoint/resume = Slice F on this seam. Execution domain stays mustNotDependOn workflow Slice F (additive exports, version stays 0.1.0): snapshot(context?) → durable envelope {snapshotVersion, bodyJson, digest=sha256} sealing resident backlog + cursor + caller context; stateStreamFromSnapshot restores fail-closed (shape/version/digest/contract/contiguity/count all verified; RESTORE channel via unexported symbol); resume continues the durable seq window; metamorphic checkpoint→resume ≡ uninterrupted asserted (#91 mode 4)."
     }
   ]
 }
