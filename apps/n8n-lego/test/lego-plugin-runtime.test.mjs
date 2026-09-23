@@ -170,7 +170,7 @@ test('the lock row promises exactly this module export surface', () => {
   const lock = JSON.parse(readFileSync(join(APP_ROOT, 'src/lego/contracts/contract-lock.json'), 'utf8'));
   const row = lock.contracts.find((entry) => entry.id === 'lego.plugin-runtime');
   assert.ok(row, 'lego.plugin-runtime is locked');
-  assert.equal(row.version, '0.2.0');
+  assert.match(row.version, /^\d+\.\d+\.\d+$/, 'the row carries a semver version (exact pins live in the newest slice suite)');
   assert.equal(row.owner, 'agent-1');
   assert.equal(row.domain, 'lego-foundation');
   assert.equal(row.status, 'implemented');

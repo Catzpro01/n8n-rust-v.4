@@ -3303,12 +3303,13 @@
       "id": "lego.plugin-runtime",
       "owner": "agent-1",
       "domain": "lego-foundation",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "status": "implemented",
       "surface": [
         "src/lego/plugin-runtime.mjs",
         "src/lego/plugin-manifest.mjs",
-        "src/lego/plugin-registry.mjs"
+        "src/lego/plugin-registry.mjs",
+        "src/lego/plugin-policy.mjs"
       ],
       "exports": {
         "src/lego/plugin-runtime.mjs": [
@@ -3335,6 +3336,16 @@
         ],
         "src/lego/plugin-registry.mjs": [
           "createPluginRegistry"
+        ],
+        "src/lego/plugin-policy.mjs": [
+          "PLUGIN_GRANTS_MAX",
+          "TRUST_CLASS_CAPABILITY_CEILING",
+          "assertCapability",
+          "attenuateDelegation",
+          "evaluateCapability",
+          "evaluateManifestPolicy",
+          "isFoundationCapability",
+          "normalizeGrants"
         ]
       },
       "consumers": [
@@ -3343,9 +3354,10 @@
       ],
       "tests": [
         "apps/n8n-lego/test/lego-plugin-runtime.test.mjs",
-        "apps/n8n-lego/test/lego-plugin-registry.test.mjs"
+        "apps/n8n-lego/test/lego-plugin-registry.test.mjs",
+        "apps/n8n-lego/test/lego-plugin-policy.test.mjs"
       ],
-      "notes": "P2.27.1 tiny Core kernel (dedicated Master Prompt P2.27, 2026-09-24; design section 3): canonical plugin vocabularies frozen once — trust classes CORE/TRUSTED/ISOLATED/SANDBOXED (isolation posture; foundation.json trust levels stay canonical for provenance), runtime localities IN_PROCESS/WASM/ISOLATED_PROCESS/REMOTE (aligned with the locality strings node-registry already emits), lifecycle DISCOVERED→VALIDATING→STARTING→HEALTHY→DEGRADED→DRAINING→STOPPED→QUARANTINED, declared event types; core identity/clock primitives; bounded drop-oldest event ring (default 64, max 4096, dropped counted — no unbounded queue); health snapshot (plugins:0 reserved for P2.27.2); PluginRuntimeError constructor refuses any code not published in contracts/errors.contract.json (zero new error codes, foundation F16 by construction). Core owns no workflow/execution/storage/AI/credentials. Later P2.27 slices extend this row additively (exports grow, minor version bumps as warranted); no new domain, no sub-LEGO. MINOR 0.2.0 (P2.27.2): manifest + registry land — strict fail-closed validateManifest required+optional field whitelist (unknown fields reject), kebab id, major.minor.patch, canonical trust/locality classes only, capability/dependency/resource bounds (no unbounded declarations), range grammar = compat.mjs grammar (*, exact, ^ with 0.x same-minor, ~, >=); createPluginRegistry with single-active-version identity (duplicate id = lego.contract_violation), resolveContract(id, range) via compat satisfies (missing provider = lego.unavailable, range miss = lego.version_incompatible with available versions), unregister for drains, events plugin.registered/rejected/deactivated into the core ring; runtime accepts an injected registry (dependency direction registry -> runtime, no cycle) and reports health().plugins."
+      "notes": "P2.27.1 tiny Core kernel (dedicated Master Prompt P2.27, 2026-09-24; design section 3): canonical plugin vocabularies frozen once — trust classes CORE/TRUSTED/ISOLATED/SANDBOXED (isolation posture; foundation.json trust levels stay canonical for provenance), runtime localities IN_PROCESS/WASM/ISOLATED_PROCESS/REMOTE (aligned with the locality strings node-registry already emits), lifecycle DISCOVERED→VALIDATING→STARTING→HEALTHY→DEGRADED→DRAINING→STOPPED→QUARANTINED, declared event types; core identity/clock primitives; bounded drop-oldest event ring (default 64, max 4096, dropped counted — no unbounded queue); health snapshot (plugins:0 reserved for P2.27.2); PluginRuntimeError constructor refuses any code not published in contracts/errors.contract.json (zero new error codes, foundation F16 by construction). Core owns no workflow/execution/storage/AI/credentials. Later P2.27 slices extend this row additively (exports grow, minor version bumps as warranted); no new domain, no sub-LEGO. MINOR 0.2.0 (P2.27.2): manifest + registry land — strict fail-closed validateManifest required+optional field whitelist (unknown fields reject), kebab id, major.minor.patch, canonical trust/locality classes only, capability/dependency/resource bounds (no unbounded declarations), range grammar = compat.mjs grammar (*, exact, ^ with 0.x same-minor, ~, >=); createPluginRegistry with single-active-version identity (duplicate id = lego.contract_violation), resolveContract(id, range) via compat satisfies (missing provider = lego.unavailable, range miss = lego.version_incompatible with available versions), unregister for drains, events plugin.registered/rejected/deactivated into the core ring; runtime accepts an injected registry (dependency direction registry -> runtime, no cycle) and reports health().plugins. MINOR 0.3.0 (P2.27.3): capability/permission policy lands — TRUST_CLASS_CAPABILITY_CEILING maps isolation posture onto foundation provenance levels (CORE->core, TRUSTED->verified, ISOLATED->community, SANDBOXED->untrusted; monotonic: more isolation = weaker defaults); foundation OS-capabilities decided by foundation.isCapabilityAllowed at the ceiling (foundation.json stays canonical), domain tokens (memory.read) deny-by-default with exact explicit grants only; wildcards cannot be stated (contract_violation); evaluateManifestPolicy is the section 10 requested->grant/deny pipeline with explainable reasons; assertCapability raises published lego.access_denied; attenuateDelegation enforces section 11 grant(B) <= grant(A) (intersection, stripped extras reported)."
     }
   ]
 }
