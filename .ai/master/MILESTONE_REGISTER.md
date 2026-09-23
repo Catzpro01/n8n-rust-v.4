@@ -9,10 +9,10 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 
 | Field | Value |
 | --- | --- |
-| Current milestone | **P2.16** |
-| Previous completed milestone | **P2.15** |
+| Current milestone | **P2.17** |
+| Previous completed milestone | **P2.16** |
 | Protected branch | `main` |
-| Main baseline | `7fca2858a0379c4899fb5d87bb18d09a0a17ee2a` |
+| Main baseline | `f21882233c1f4efc5bfb8f3e1b5e1ad4db781d7d` |
 | Agent 1 branch | `arena/01a0c9d3-n8n-rust-v-4` |
 | Agent 2 branch | `arena/01a0c90d-n8n-rust-v-4` |
 | Register owner | `manager` |
@@ -26,26 +26,27 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 | `P2.13` | Context & Session | B | **complete** | P2.14 |
 | `P2.14` | Memory | B | **complete** | P2.15 |
 | `P2.15` | Workspace | B | **complete** | P2.16 |
-| `P2.16` | Agent Machine / execution foundation | B | **in-progress** | P2.17 |
+| `P2.16` | Agent Machine / execution foundation | B | **complete** | P2.17 |
+| `P2.17` | Agent Machine Runtime Foundation | B | **in-progress** | P2.17+ |
 | `P2.17+` | Later capability ladder | C-F | **planned** | — |
 
-## Current milestone boundary — P2.16
+## Current milestone boundary — P2.17
 
-**Owns:** Agent Machine contract and execution foundation, subject to dependency readiness
+**Owns:** agent-machine-runtime.mjs — bounded local execution over the 1.1.0 contract (delegates the 9 lifecycle ops, never invents close); §19 conformance test suite for patterns, concurrency, cancellation, deadline, idempotency, backpressure, isolation, events and audit; register + evidence sync; contract stays 1.1.0 frozen and ai-lego-set stays contract-only
 
-**Does not own:** P2.17 Agent Machine Runtime Foundation; production runtime, model inference, MCP, transport kernel; merge authority (Manager-only)
+**Does not own:** production external-agent runtime; shell, filesystem or subprocess executors; credential manager and secret handling; model inference and provider implementations; MCP, universal bridge, GitHub/Telegram integrations; Arena runtime participation; approval resolution (ai.approval stays fail-closed cancel-only)
 
-**Dependencies:** P2.13 Context & Session; P2.14 Memory; P2.15 Workspace; approval contract readiness
+**Dependencies:** P2.16 Agent Machine / execution foundation
 
-**Required gates:** npm run lego:arch && npm run lego:arch:selftest; npm run lego:foundation && npm run lego:foundation:selftest; npm run lego:capabilities && npm run lego:scaleout; npm run lego:ai:check; focused backend/frontend/contract suites + relevant full suites (local debug only; official validation is the Windows self-hosted runner)
+**Required gates:** node --test test/lego-agent-machine-runtime.test.mjs (focused §19); npm run lego:arch && npm run lego:arch:selftest; npm run lego:foundation && npm run lego:foundation:selftest; npm run lego:capabilities && npm run lego:scaleout; npm run lego:ai:check; focused backend/frontend/contract suites + relevant full suites (local debug only; official validation is the Windows self-hosted runner)
 
-**Completion rule:** dependencies are ready and execution loop is separately scoped
+**Completion rule:** runtime module + §19 suite green locally; register and evidence synced; mainBaseline tracks the P2.16 merge; contract lock remains single-row 1.1.0; no close, no production runtime parts, ai-lego-set stays contract-only; PUSHED to the agent branch and PR opened (merge remains Manager-ordered)
 
 ## Reconciliation state
 
 - Verdict: **PENDING**
 - Conflict: —
-- Contract: ai.agent-machine@1.1.0 additive over the locked 1.0.0 publication; exactly one lock row
+- Contract: ai.agent-machine@1.1.0 stays frozen; the runtime consumes the published exports without widening them
 - Agent: `—`
 - Reason: —
 - Required decision: —
@@ -61,7 +62,7 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 
 - Start/finish evidence is evidence, not a replacement for current state.
 - An agent branch can be implementation-complete without the milestone being complete.
-- `P2.16` requires **RECONCILIATION PASS**, **MERGE PASS**, and post-merge verification on protected main before it can become complete.
+- `P2.17` requires **RECONCILIATION PASS**, **MERGE PASS**, and post-merge verification on protected main before it can become complete.
 
 ## Manager merge protocol
 
