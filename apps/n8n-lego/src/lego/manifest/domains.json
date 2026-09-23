@@ -4447,7 +4447,7 @@
       "owner": "agent-6",
       "kind": "domain",
       "status": "contract-only",
-      "phase": "P9.11",
+      "phase": "P9.12",
       "errorNamespace": "observability",
       "paths": [
         "src/lego/telemetry-envelope.mjs",
@@ -4460,7 +4460,8 @@
         "src/lego/telemetry-sampling.mjs",
         "src/lego/resource-pressure.mjs",
         "src/lego/health-readiness.mjs",
-        "src/lego/execution-diagnostics.mjs"
+        "src/lego/execution-diagnostics.mjs",
+        "src/lego/diagnostic-bundle.mjs"
       ],
       "public": [
         "src/lego/telemetry-envelope.mjs",
@@ -4473,7 +4474,8 @@
         "src/lego/telemetry-sampling.mjs",
         "src/lego/resource-pressure.mjs",
         "src/lego/health-readiness.mjs",
-        "src/lego/execution-diagnostics.mjs"
+        "src/lego/execution-diagnostics.mjs",
+        "src/lego/diagnostic-bundle.mjs"
       ],
       "dependsOn": [
         "platform-kernel",
@@ -4487,7 +4489,7 @@
         "legacy-rest"
       ],
       "contract": {
-        "version": "1.10.0",
+        "version": "1.11.0",
         "tests": [
           "apps/n8n-lego/test/lego-telemetry-envelope.test.mjs",
           "apps/n8n-lego/test/lego-structured-log.test.mjs",
@@ -4499,7 +4501,8 @@
           "apps/n8n-lego/test/lego-telemetry-sampling.test.mjs",
           "apps/n8n-lego/test/lego-resource-pressure.test.mjs",
           "apps/n8n-lego/test/lego-health-readiness.test.mjs",
-          "apps/n8n-lego/test/lego-execution-diagnostics.test.mjs"
+          "apps/n8n-lego/test/lego-execution-diagnostics.test.mjs",
+          "apps/n8n-lego/test/lego-diagnostic-bundle.test.mjs"
         ]
       },
       "capabilities": [

@@ -2581,6 +2581,35 @@
         "apps/n8n-lego/test/lego-incremental-registry.test.mjs"
       ],
       "notes": "P6.13 (P6 implementation owner: Agent 3, Issue #100): incremental registry compilation + discovery/runtime split. registry.compiler@0.1.0 (P6.2) compiles an epoch from a full declaration set \u2014 correct for a genesis epoch, wasteful for the tenth one. This is a NEW contract rather than a minor bump to the compiler, deliberately: the compiler's job ('given declarations, produce the canonical epoch') did not change, and adding an export to a locked row would have meant re-versioning a contract every consumer cites for no semantic change. What is added is a different job: given a previous epoch and a desired declaration set, produce the next epoch while PROVING it is the same epoch a full compile would have produced. THE EQUIVALENCE IS THE CONTRACT: applyRegistryChanges returns the epoch plus a reuse ledger (added/recompiled/reused/removed) that asserts byte-for-byte digest stability for reused identities, and verifyIncremental recompiles from scratch and compares epochDigest \u2014 an optimisation that cannot be verified is a guess with better latency. planRegistryChanges makes the change set a VALUE a human can review before anything is built (and refuses duplicates honestly instead of letting a plan hide one). An unchanged set is refused ('registry.incremental.unchanged') because an epoch identical to its parent is noise. Removals are data about an epoch, never a tombstone: retiring a NAME permanently is P6.10's decision. THE DISCOVERY/RUNTIME SPLIT: one epoch, two projections with their own digests \u2014 DISCOVERY carries identity, type, typeVersion, displayName, group, description, capabilities and trustClass and NEVER the implementation digest or the resource profile; RUNTIME carries identity, content digest, runtime locality, capabilities and the resource profile and NEVER the display metadata. A view is a projection, never the epoch: verifyEpochView rebuilds the projection and refuses a view that cannot be rebuilt, so nobody can present half an epoch as the whole one. Scope walls: validity, duplicates, canonical form and numbering stay the compiler's; no publish, rollback or freeze (P6.2), no resolution (P6.5), no loading (P6.7), no admission (P6.11), no convergence (P6.14); no filesystem, network, clock, randomness or mutation \u2014 the only node import is the hash."
+    },
+    {
+      "id": "observability.diagnostic-bundle",
+      "owner": "agent-6",
+      "domain": "observability",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/diagnostic-bundle.mjs"
+      ],
+      "exports": {
+        "src/lego/diagnostic-bundle.mjs": [
+          "DIAG_BUNDLE_CONTRACT",
+          "DIAG_BUNDLE_SCHEMA_VERSION",
+          "DIAG_BUNDLE_LIMITS",
+          "DIAG_BUNDLE_SECTIONS",
+          "DIAG_BUNDLE_SIGNAL_KINDS",
+          "DIAG_BUNDLE_BUDGET_REASONS",
+          "DIAG_BUNDLE_CORRELATION_FIELDS",
+          "compileDiagnosticBundle",
+          "verifyBundleIntegrity",
+          "exportDiagnosticBundle",
+          "importDiagnosticBundle"
+        ]
+      },
+      "tests": [
+        "apps/n8n-lego/test/lego-diagnostic-bundle.test.mjs"
+      ],
+      "notes": "P9.12 (implementation owner: Agent 4, Issue #101): Diagnostic Bundle Compiler \u2014 bounded deterministic bundle of selected logs/events/spans + correlation context under size and time budgets; versioned schema 1.0.0; missing evidence explicit via evidenceMissing; secret redaction mandatory through telemetry-redaction@1.0.0; export recomputes integrity digest BDL:v1 (fnv1a-pair-v1) and import fails closed on tamper; same inputs+policy \u2192 byte-identical bundle. Refs-not-payloads: large state stays a ref, never duplicated. No I/O, no clock, no workflow import."
     }
   ]
 }
