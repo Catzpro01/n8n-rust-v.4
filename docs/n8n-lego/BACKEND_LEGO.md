@@ -299,7 +299,7 @@ Rule **R7** of the gate diffs the declared exports against the real exported
 symbols, so a contract cannot drift silently: adding `foo` to a locked contract
 file fails the build until the lock and version are updated.
 
-The current contract lock has **69 rows**. The historical foundation set remains:
+The current contract lock has **70 rows**. The historical foundation set remains:
 `compat.http` (1.0.0), `lego.error-contract` (1.0.0), `lego.domain-registry` (1.1.0),
 `lego.contract-compat` (1.0.0), `kernel.platform` (1.0.0), `reference.lego` (1.1.0),
 `reference.validation` (1.1.0), `reference.validation.schema` (1.0.0), and
@@ -333,6 +333,7 @@ P6.22 added `runtime.jit@0.1.0`.
 P6.23 added `runtime.cancel@0.1.0`.
 P6.24 added `runtime.pool@0.1.0`.
 P6.25 added `node.abi@0.1.0`.
+P6.26 added `runtime.wasm-cache@0.1.0`.
 The machine-readable lock is authoritative.
 
 A domain that publishes several contracts names its **primary** one
@@ -342,6 +343,7 @@ A domain that publishes several contracts names its **primary** one
 
 | date | contract | version | change |
 | :--- | :--- | :--- | :--- |
+| 2026-09-24 | `runtime.wasm-cache` | 0.1.0 | P6.26: the WASM compilation cache — keys made of artifact, wire contract, ABI and toolchain, cached failures that a new toolchain re-asks, verified hits, one key one module, capacity that evicts only idle entries and refuses rather than dropping something running, and targeted invalidation. |
 | 2026-09-24 | `node.abi` | 0.1.0 | P6.25: the native ABI and dual artifacts — a closed boundary type set, localities decided by implementation kind, an ABI version required for native/WASM artifacts, contract-derived conformance vectors where a missing case is INCOMPLETE, and selection where a locality substitution must be declared. |
 | 2026-09-24 | `runtime.pool` | 0.1.0 | P6.24: runtime pools — decided placements (locality, warm affinity, free capacity, priority), enforced anti-affinity, capacity that counts outstanding work the pool cannot see, draining that keeps what it has, removal refused while work is owed, and rebalancing as advice about the next placement. |
 | 2026-09-24 | `runtime.cancel` | 0.1.0 | P6.23: cancellation and accounting — a token state machine with a bounded grace, an idempotent request that does not buy time, the race named as `completed-after-cancel`, addressed charges with duplicates refused, and releases that happen exactly once while an abandoned execution keeps its slot. |

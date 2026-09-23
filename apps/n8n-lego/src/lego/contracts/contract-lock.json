@@ -3012,6 +3012,55 @@
         "apps/n8n-lego/test/lego-native-abi.test.mjs"
       ],
       "notes": "P6.25 (P6 implementation owner: Agent 3, Issue #100): the native ABI and dual artifacts. A node identity may be implemented twice — once in JavaScript for js-compat, once natively for rust-native — and that is only an asset if the two are THE SAME NODE, which means three things have to be true and checkable. (1) NOTHING LANGUAGE-SPECIFIC CROSSES: the boundary carries a closed set of types (null, boolean, number, string, list, map and a bytes handle), the host owns item memory, and a pointer borrowing or language object crossing would make the implementation language part of the contract, which the milestone forbids — the suite asserts the type list contains no pointer. (2) AN ARTIFACT'S LOCALITY IS NOT A FREE CHOICE: the kind decides the locality (js → js-compat, native → rust-native, wasm → wasm) and a native or WASM artifact must declare the ABI it was built against (`lego-native-abi@1`), while a js implementation claiming an ABI version is refused as a costume. (3) TWO IMPLEMENTATIONS ARE CHECKED WITH ONE SET OF VECTORS: `conformanceVectors` derives deterministic cases from the wire contract (empty item, full item, an unexpected field whose expectation depends on whether the shape is open or closed, and a null in a declared field — a value, not an absence), so both implementations are asked exactly the same questions, and the vector set carries a digest. `compareConformance` reads what each implementation actually did: A CASE THAT DID NOT RUN IS `INCOMPLETE` AND NEVER A PASS, a mismatch is `DIVERGENT` with the case and the note named. `conformDualArtifact` refuses vectors that belong to another wire contract or identity ('would prove nothing'), refuses results for an implementation the artifact does not declare, and treats an implementation that was declared but never asked as INCOMPLETE — 'a promise with a hole in it is not conformance' — with the headline rule that TWO IMPLEMENTATIONS THAT DISAGREE ARE TWO NODES SHARING A NAME. Selection runs the implementation whose locality was asked for; falling back to another locality is allowed ONLY when declared (`allowFallback`), and then the substitution is recorded rather than silent. Scope walls: no IO compilation (P6.21 — the field map arrives as data), no semantic fingerprinting (P6.9 — the digest arrives as data), no leases (P6.22), placement (P6.24), cache (P6.26) or loading; no filesystem, network, clock, randomness, WebAssembly API, dlopen or FFI — the only node import is the hash. Authority: this contract says whether two implementations may share one identity and which one a locality may run; it never runs either of them."
+    },
+    {
+      "id": "runtime.wasm-cache",
+      "owner": "manager",
+      "domain": "node-registry",
+      "version": "0.1.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/wasm-cache.mjs"
+      ],
+      "exports": {
+        "src/lego/wasm-cache.mjs": [
+          "CACHE_ENTRY_OUTCOMES",
+          "CACHE_LOOKUP_STATES",
+          "DEFAULT_MAX_BYTES",
+          "DEFAULT_MAX_ENTRIES",
+          "WASM_CACHE_CONTRACT",
+          "WASM_CACHE_CONTRACT_VERSION",
+          "WASM_CACHE_OPERATIONS",
+          "WASM_CACHE_PERMISSIONS",
+          "WASM_CACHE_REASONS",
+          "WASM_CACHE_RULES",
+          "WASM_CACHE_SCHEMA_VERSION",
+          "WasmCacheError",
+          "adopt",
+          "cacheDigest",
+          "cacheKey",
+          "createWasmCache",
+          "describeWasmCache",
+          "explainWasmCache",
+          "insert",
+          "invalidate",
+          "isCacheEntry",
+          "isWasmCache",
+          "lookup",
+          "release",
+          "stableJson",
+          "verifyHit"
+        ]
+      },
+      "consumers": [
+        "P6.27 provenance/transparency — a verified cache hit is a claim about bytes, and provenance is what backs it",
+        "P6.30 repair and offline recovery — after a restart the cache is reconciled from its census, not trusted",
+        "P6.31 full acceptance — the cache-safety half of the final acceptance evidence"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-wasm-cache.test.mjs"
+      ],
+      "notes": "P6.26 (P6 implementation owner: Agent 3, Issue #100): the WASM compilation cache. A cache is where a wrong answer hides — fast, shared, and authoritative-sounding — so this contract is the part of the runtime that decides what a cached module is identified by, what happens when it is wrong, and what may be thrown away. THE KEY IS CONTENT AND TOOLCHAIN: artifact digest + wire contract + ABI version + toolchain, so the same artifact compiled by another engine is another object (a cache keyed by a path or 'latest' answers yesterday's question today); the suite proves a toolchain change yields a different key. A FAILED COMPILATION IS CACHED AS A FACT WITH ITS REASON (negative entries, so a broken artifact is not recompiled on every request) AND A NEW TOOLCHAIN ASKS THE QUESTION AGAIN, because the toolchain is part of the key — the suite asserts the new engine sees a miss rather than inheriting yesterday's failure. A HIT IS NOT A GUESS: every entry carries the digest of the module it holds and `verifyHit` compares it, with a tampered digest named in the message ('expected cccccccccccc… and got eeeeeeeeeeee…'). ONE KEY HOLDS ONE MODULE: an insert whose module digest differs from the entry under that key is refused ('one key holds one module'), a compiled entry without a module digest is refused ('a hit nobody can verify is a guess'), and a cached failure is refused when it carries bytes ('caching it with bytes would make the budget lie'). A MODULE IN USE IS NEVER EVICTED: eviction takes the least recently used IDLE entry, adoption counts each user, and when every entry is in use the insert is REFUSED rather than throwing away something running ('refusing the insert rather than throwing away a module that is running') — the first suite run corrected the test fixture to actually reach that state by adopting every entry. Invalidation is TARGETED (by artifact, by toolchain, or both) and leaves in-use entries until they are released; an empty selector is refused because 'clearing a cache is a restart'. Digests are presented to humans without the sha256: noise (a suite-driven readability fix). Scope walls: no compilation, no engine, no bytecode inspection, no WebAssembly API — the caller compiles and reports what happened; no artifact declaration (P6.25), leases (P6.22), placement (P6.24) or loading of bytes; no filesystem, network, clock or randomness — the only node import is the hash and every answer takes the tick it answers for. Authority: this contract decides what a cache may return and throw away; it never compiles, never executes and never decides that a module is safe to run."
     }
   ]
 }
