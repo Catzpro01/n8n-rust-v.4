@@ -32,6 +32,14 @@
  * budgets, never by an arbitrary ceiling (P3 anti-pattern 13).
  *
  * Owner: agent-1 (P3 owns workflow graph per Issue #98).
+ *
+ * SLICE B (indexed edge access): a LAZY reverse index (destination → sources)
+ * is built on first `getIncoming` call by reading each edge bucket exactly
+ * once, served entirely from memory afterwards (0 chunk reads per hit), and
+ * droppable via `releaseReverseIndex` (evict → rematerialize). The reverse
+ * index is DERIVED: it is never bundled, never persisted, and connection
+ * targets that are not graph nodes (dangling) are never indexed — the
+ * canonical connections payload still roundtrips losslessly.
  */
 import { createHash } from 'node:crypto';
 import { calculateWorkflowChecksum } from '../checksum.mjs';
@@ -120,6 +128,7 @@ class LogicalWorkflowGraph {
   #ordinals;
   #headerJson;
   #orphanJson;
+  #incoming = null; // Map<dest, [{source, type, index}]> — lazy, derived, droppable
   #reads = { chunkReads: 0 };
 
   constructor(parts) {
@@ -198,6 +207,62 @@ class LogicalWorkflowGraph {
     const chunkIndex = Math.floor(ordinal / this.#manifest.chunkSize);
     const bucket = JSON.parse(this.#edgeChunks[chunkIndex] || '{}');
     return bucket[sourceName] ?? {};
+  }
+
+  /** Has the lazy reverse edge index been materialized? */
+  hasReverseIndex() {
+    return this.#incoming !== null;
+  }
+
+  /** Drop the derived reverse index (eviction); next getIncoming rematerializes it. */
+  releaseReverseIndex() {
+    const had = this.#incoming !== null;
+    this.#incoming = null;
+    return had;
+  }
+
+  #buildIncoming() {
+    const incoming = new Map();
+    for (let chunkIndex = 0; chunkIndex < this.#edgeChunks.length; chunkIndex += 1) {
+      const edgeChunk = this.#edgeChunks[chunkIndex];
+      if (!edgeChunk) continue;
+      this.#reads.chunkReads += 1; // one edge-bucket read per non-empty bucket
+      const bucket = JSON.parse(edgeChunk);
+      for (const [source, byType] of Object.entries(bucket)) {
+        if (!isPlainObject(byType)) continue;
+        for (const [type, bundles] of Object.entries(byType)) {
+          if (!Array.isArray(bundles)) continue;
+          for (let index = 0; index < bundles.length; index += 1) {
+            const list = bundles[index];
+            if (!Array.isArray(list)) continue;
+            for (const entry of list) {
+              const dest = entry && typeof entry === 'object' ? entry.node : null;
+              if (typeof dest !== 'string' || !this.#ordinals.has(dest)) continue; // dangling = not indexed
+              const row = incoming.get(dest) ?? [];
+              row.push(Object.freeze({ source, type, index }));
+              incoming.set(dest, row);
+            }
+          }
+        }
+      }
+    }
+    for (const row of incoming.values()) Object.freeze(row);
+    this.#incoming = incoming;
+  }
+
+  /**
+   * Indexed reverse-edge lookup: incoming connections for a real graph node.
+   * First call materializes the index (one read per edge bucket); later calls
+   * are pure index hits (0 chunk reads). Order is deterministic (chunk order,
+   * then declaration order).
+   */
+  getIncoming(name) {
+    if (!this.#ordinals.has(name)) {
+      fail('node not found in the logical graph', { field: 'name', reason: 'unknown-node' });
+    }
+    if (this.#incoming === null) this.#buildIncoming();
+    const rows = this.#incoming.get(name);
+    return rows === undefined ? Object.freeze([]) : rows;
   }
 
   /** Recompute the resident digest chunk-by-chunk (bounded peak memory). */
