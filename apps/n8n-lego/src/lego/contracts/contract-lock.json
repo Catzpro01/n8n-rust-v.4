@@ -2916,6 +2916,52 @@
         "apps/n8n-lego/test/lego-cancel-accounting.test.mjs"
       ],
       "notes": "P6.23 (P6 implementation owner: Agent 3, Issue #100): cancellation and accounting. Cancellation is the moment a runtime is most likely to lie — work that was asked to stop and did not is reported as stopped, a slot that is still held is declared free, a result that arrived after the cancel is quietly dropped — and this contract makes each of those impossible to do silently. CANCELLATION IS A STATE MACHINE WITH A DEADLINE (`running → cancelling → cancelled`, with `abandoned` when the grace passes and nobody answered), and A SECOND REQUEST DOES NOT BUY TIME: cancelling twice is idempotent, the deadline does not move and the cause is not rewritten, because a grace that grows when you ask again is a negotiation. THE RACE IS RECORDED, NOT ERASED: if the work finished after the cancellation the honest outcome is `completed-after-cancel` (with `producedOutput` a required boolean), claiming `completed` is REFUSED because it erases the cancellation, and claiming `cancelled` is refused because something did happen. A CKECKPOINT NOTICES ABANDONMENT BUT DOES NOT SETTLE IT (defect found by the first suite run: the checkpoint was writing the settlement, so the accounting could never be written afterwards) — noticing and settling are separate acts. A CANCELLED EXECUTION IS NOT FREE: what it consumed stays consumed, while the slot is returned exactly once; AN ABANDONED EXECUTION KEEPS HOLDING ITS SLOT because the ledger does not declare free what it cannot see released (that is how a pool over-subscribes itself). Charges are ADDRESSED by reference: the same reference with the same amount is a duplicate the caller may ignore, the same reference with a different amount is refused ('two amounts for one reference is two rumours for one fact'), releasing what was never charged is refused ('a slot that never existed'), releasing more than is outstanding is refused, and releasing twice is refused. Scope walls: no scheduler, queue or retry policy (P4), no slot table (P6.22 grants, this contract records), no health judgement (P6.11), no rollout (P6.19), no telemetry backend (P9); no filesystem, network, clock or randomness — every answer takes the tick it answers for and the only node import is the hash. Authority: this contract records what happened to a cancelled execution and what it cost; it never decides whether something should run and never invents a charge."
+    },
+    {
+      "id": "runtime.pool",
+      "owner": "manager",
+      "domain": "node-registry",
+      "version": "0.1.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/runtime-pool.mjs"
+      ],
+      "exports": {
+        "src/lego/runtime-pool.mjs": [
+          "DEFAULT_MAX_PER_IDENTITY",
+          "MAX_PER_IDENTITY",
+          "MAX_POOL_WORKERS",
+          "PLACEMENT_REFUSALS",
+          "POOL_CONTRACT",
+          "POOL_CONTRACT_VERSION",
+          "POOL_OPERATIONS",
+          "POOL_PERMISSIONS",
+          "POOL_REASONS",
+          "POOL_RULES",
+          "POOL_SCHEMA_VERSION",
+          "PoolError",
+          "WORKER_STATES",
+          "createPool",
+          "describePool",
+          "explainPlacement",
+          "explainPool",
+          "isPool",
+          "placeOnPool",
+          "poolDigest",
+          "rebalancePool",
+          "releasePlacement",
+          "setWorkerState",
+          "stableJson"
+        ]
+      },
+      "consumers": [
+        "P6.30 repair and offline recovery — the pool census is the state a restart must reconcile against",
+        "P6.31 full acceptance — the placement half of the final acceptance evidence"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-runtime-pool.test.mjs"
+      ],
+      "notes": "P6.24 (P6 implementation owner: Agent 3, Issue #100): runtime pools. A pool is several workers that may host the same work plus the policy that decides which one does; the interesting part is not 'pick a free worker' but that a pool is where a runtime over-subscribes itself by counting only the work it can see. A PLACEMENT IS DECIDED, NOT SAMPLED: scoring is declared data (locality, warm affinity, free capacity, declared priority, then id) so the same pool and the same request always answer the same way — a placement that moves when nothing changed is a placement nobody can reproduce; the first suite run refined the documented order to what the code really does (most free capacity, then priority) and the test now states it. ANTI-AFFINITY IS ENFORCED: a pool declares how many instances of one identity may share a worker, and the next instance goes elsewhere — the refusal names the limit ('allows 1 instance(s) … per worker'). CAPACITY COUNTS WHAT THE POOL CANNOT SEE: outstanding work (slots a lease still holds, including the ones an abandoned execution kept in P6.23) is passed in as data and counts against the worker, so a request is refused with `pool.over-subscribed` and the message 'counting only what the pool placed would place work it cannot run' instead of placing work the worker cannot run. DRAINING IS NOT DELETION: a draining worker takes no new placements and keeps the work it has, and a worker with placed or outstanding work cannot be removed ('work does not vanish because a record says it did'). REBALANCING IS ADVICE: it names where the NEXT placement for a concentrated identity should go and never moves running work — moving a running execution is a cancellation and belongs to P6.23; the advice stays inside the locality the placement names (a second suite-run refinement: sending the next placement to a worker of another locality would be advice about a request nobody made), and the 'nowhere to move' case is reachable and tested. Releasing a placement is once ('releasing it twice would invent a second slot') and releasing what was never placed is refused ('would invent capacity'). Scope walls: no lease granting (P6.22) and no accounting (P6.23) — counts arrive as data; no scheduler, queue or retry policy (P4); no health judgement (P6.11); no rollout (P6.19); no admission decision (P6.17); no filesystem, network, clock or randomness — the only node import is the hash. Authority: this contract decides where new work is placed inside a pool; it never decides that work should run, never stops anything and never loads a node."
     }
   ]
 }

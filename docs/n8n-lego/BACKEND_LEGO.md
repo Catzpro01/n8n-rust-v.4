@@ -299,7 +299,7 @@ Rule **R7** of the gate diffs the declared exports against the real exported
 symbols, so a contract cannot drift silently: adding `foo` to a locked contract
 file fails the build until the lock and version are updated.
 
-The current contract lock has **67 rows**. The historical foundation set remains:
+The current contract lock has **68 rows**. The historical foundation set remains:
 `compat.http` (1.0.0), `lego.error-contract` (1.0.0), `lego.domain-registry` (1.1.0),
 `lego.contract-compat` (1.0.0), `kernel.platform` (1.0.0), `reference.lego` (1.1.0),
 `reference.validation` (1.1.0), `reference.validation.schema` (1.0.0), and
@@ -331,6 +331,7 @@ P6.20 added `node.revocation@0.1.0`.
 P6.21 added `node.io@0.1.0`.
 P6.22 added `runtime.jit@0.1.0`.
 P6.23 added `runtime.cancel@0.1.0`.
+P6.24 added `runtime.pool@0.1.0`.
 The machine-readable lock is authoritative.
 
 A domain that publishes several contracts names its **primary** one
@@ -340,6 +341,7 @@ A domain that publishes several contracts names its **primary** one
 
 | date | contract | version | change |
 | :--- | :--- | :--- | :--- |
+| 2026-09-24 | `runtime.pool` | 0.1.0 | P6.24: runtime pools — decided placements (locality, warm affinity, free capacity, priority), enforced anti-affinity, capacity that counts outstanding work the pool cannot see, draining that keeps what it has, removal refused while work is owed, and rebalancing as advice about the next placement. |
 | 2026-09-24 | `runtime.cancel` | 0.1.0 | P6.23: cancellation and accounting — a token state machine with a bounded grace, an idempotent request that does not buy time, the race named as `completed-after-cancel`, addressed charges with duplicates refused, and releases that happen exactly once while an abandoned execution keeps its slot. |
 | 2026-09-24 | `runtime.jit` | 0.1.0 | P6.22: just-in-time slot leases — capacity per worker with lazily reclaimed expiry, leases bound to identity + wire contract + locality, idle leases that cannot be renewed, bounded life, and expiry as a record rather than a deletion. |
 | 2026-09-24 | `node.io` | 0.1.0 | P6.21: the node I/O compiler — ports compiled into a wire contract with quoted n8n connection types and a digest per shape, a compatibility verdict that names each breaking change (including the closed-shape rule), and a per-field handoff plan across the four runtime localities where a payload crosses only as a handle. |

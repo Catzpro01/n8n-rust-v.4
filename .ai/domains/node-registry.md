@@ -42,6 +42,7 @@
 - `src/lego/resolution-manifest.mjs`
 - `src/lego/revocation-bulletin.mjs`
 - `src/lego/runtime-lease.mjs`
+- `src/lego/runtime-pool.mjs`
 - `src/lego/sbom-policy.mjs`
 - `src/lego/semantic-fingerprint.mjs`
 - `src/lego/supply-chain.mjs`
