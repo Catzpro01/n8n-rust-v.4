@@ -2811,6 +2811,59 @@
         "apps/n8n-lego/test/lego-io-compiler.test.mjs"
       ],
       "notes": "P6.21 (P6 implementation owner: Agent 3, Issue #100): the node I/O compiler. A declaration says what a node reads and writes; that is the part of the contract a workflow is wired to and the part that breaks quietly when a version moves or a node moves between runtimes. The compiler turns ports into an ENFORCEABLE WIRE CONTRACT: named ports (one name per direction, so a name is one wire), connection types QUOTED FROM N8N'S PUBLISHED VOCABULARY (`main` plus the twelve `ai_*` types; the documentation's `ai_vectorRetriever` is accepted as an ALIAS and compiled to `ai_vectorStore` with `aliasedFrom` recorded, because guessing which spelling a real workflow uses is exactly the guessing this milestone refuses to do), typed item fields, and a digest per shape so a change in a promise is visible without reading it. A node that neither reads nor writes is refused, and a node with no input must be a trigger — otherwise nothing can ever reach it. COMPATIBILITY IS A VERDICT WITH REASONS: `compareNodeIo` answers identical / additive / breaking and names each change (port-removed, connection-type-changed, arity-narrowed, field-removed, field-type-changed, field-added, shape-closed, trigger-changed). Whether a new field is breaking depends on the shape NOW: a field added to a shape that is closed is breaking because every producer must supply it, while the same field added to an open shape is additive (this distinction was sharpened after the first suite run, where a closed→open move was reported breaking for the wrong reason). A HANDOFF IS ANSWERED PER FIELD: moving a node between `js-compat`, `wasm`, `rust-native` and `remote-worker` (the foundation's four localities, quoted) gives every field an inline, reference or refused transport. A BINARY PAYLOAD NEVER CROSSES INLINE: it travels as a HANDLE into the artifact store that the host resolves on the far side, because a payload is not pushed into another runtime. A `date` is REFUSED across a boundary — it is an object, not a value, and the compiler will not promise it arrives intact — and the plan fails closed with the refused fields named. Within one locality the early answer is 'nothing crosses'. Scope walls: no workflow graph or connections (P3/P4), no artifact store implementation (P6.7), no capability or trust verdict (P6.12), no admission decision (P6.17), no lease (P6.23); no filesystem, network, clock, randomness — the only node import is the hash. Authority: this contract compiles ports and describes crossings; it never decides that a node may run and never inspects data."
+    },
+    {
+      "id": "runtime.jit",
+      "owner": "manager",
+      "domain": "node-registry",
+      "version": "0.1.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/jit-lease.mjs"
+      ],
+      "exports": {
+        "src/lego/jit-lease.mjs": [
+          "DEFAULT_MAX_RENEWALS",
+          "DEFAULT_TTL_TICKS",
+          "JIT_CONTRACT",
+          "JIT_CONTRACT_VERSION",
+          "JIT_LEASE_STATES",
+          "JIT_OPERATIONS",
+          "JIT_PERMISSIONS",
+          "JIT_REASONS",
+          "JIT_RULES",
+          "JIT_SCHEMA_VERSION",
+          "JitError",
+          "MAX_RENEWALS",
+          "MAX_SLOTS_PER_WORKER",
+          "MAX_TTL_TICKS",
+          "createJitTable",
+          "describeJit",
+          "explainLease",
+          "isJitTable",
+          "isLease",
+          "leaseDigest",
+          "leasesOf",
+          "reapExpired",
+          "registerWorker",
+          "releaseLease",
+          "renewLease",
+          "requestLease",
+          "stableJson",
+          "useLease"
+        ]
+      },
+      "consumers": [
+        "P6.23 cancellation and accounting — a cancelled execution must give its slot back, and this is the record it gives it back to",
+        "P6.24 runtime pools — pooling is capacity management, and the census is the state a pool reads",
+        "P6.26 WASM cache — a cached instance behind an expired lease is a cache nobody can size",
+        "P6.30 repair and offline recovery — expired leases are what a restart must reconcile rather than resurrect",
+        "P6.31 full acceptance — the resource-bound half of the final acceptance evidence"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-jit-lease.test.mjs"
+      ],
+      "notes": "P6.22 (P6 implementation owner: Agent 3, Issue #100): just-in-time leases for runtime slots. A worker does not hold every implementation it might be asked to run: it holds slots and fills them when work arrives, which is what keeps memory bounded and what makes a cold start a decision rather than an accident. A LEASE NAMES WHAT IT IS FOR — identity, the wire contract digest it was granted against (P6.21's, passed as data) and the worker's locality (the foundation's four, quoted) — so a lease granted for one wire contract is refused rather than reused once the digest moves. SLOTS ARE THE RESOURCE AND THEY COME BACK BY THEMSELVES: capacity is per worker, and a slot is NOT held by a lease that has already expired even if nobody has swept it yet, so a request lazily expires what is dead before counting what is live (a host that refuses work because of its own bookkeeping is a host that lies; suite case: two expired leases free their slots with no explicit reap, and the record still shows them as expired). AN IDLE LEASE CANNOT BE RENEWED: renewal requires a use since the last renewal, because a slot held with paperwork is a leak, and the refusal says so ('let it expire'). A JIT LEASE IS SHORT BY CONSTRUCTION: time to live, total life from grant (120-tick ceiling) and renewals are all bounded, and a renewal that would outlive the ceiling is refused with the deadline named. EXPIRY IS NOT DELETION: the record keeps who held a slot, for what, uses and when it lapsed, so releasing a lapsed lease is bookkeeping that reports 'the slot came back on its own' rather than a second event, while releasing twice is REFUSED because it would count one slot twice. Requesting the same (identity, wire contract) twice hands back the lease that exists instead of a second slot. A request that does not fit is refused with `jit.capacity` and never queued: queueing is the scheduler's decision, and a contract that quietly held requests would be a scheduler with no policy. First suite run found a real defect: the worker terms were frozen together with the live bookkeeping record, so the first grant threw on assigning the lease counter — terms are now frozen and returned as a descriptor while the stored record stays live. A second defect of ordering was fixed by decision: an invalid `ttl` argument now throws before any state check, because a caller's mistake must be reported as one however the lease happens to be standing. Scope walls: no scheduling or queueing (P4), no epoch execution leases (P6.10 — an epoch lease and a slot lease are different promises), no health judgement (P6.11), no admission decision (P6.17), no cache (P6.26), no pools (P6.24); no filesystem, network, clock or randomness — every answer takes the tick it answers for, and the only node import is the hash. Authority: this contract decides whether a slot may be used, for how long and for what; it never decides whether a node should run and never loads anything."
     }
   ]
 }
