@@ -1,0 +1,34 @@
+id: TASK-TS-04-LEGO-INTEGRATION
+agent: agent-04
+worker: worker-04
+title: "Worker 4: LEGO & Reconstructed Engine Integration"
+branch: lego-integration/ts-baseline-engine
+pr_target: main
+
+allowed_paths:
+  - packages/workflow-lego/**
+  - packages/execution-lego/**
+  - packages/reconstructed-engine/**
+
+forbidden_paths:
+  - crates/**
+  - apps/**
+  - reference/n8n/**
+  - deploy/**
+  - scripts/**
+  - tests/**
+
+dependencies: []
+
+contract: contracts/ts-runtime.contract.md
+
+deliverables:
+  - packages/reconstructed-engine/runner.mjs
+  - packages/reconstructed-engine/node-catalog.mjs
+  - packages/reconstructed-engine/localization.mjs
+
+acceptance_criteria:
+  - zero_second_engine
+  - existing_engine_reused
+  - isolation_gates_green
+  - pure_esm_compatible
