@@ -1638,6 +1638,32 @@
         "apps/n8n-lego/test/lego-execution-optimizer.test.mjs"
       ],
       "notes": "P3 Slice K: semantics-safe fusion (pure whitelist, single-consumer/single-dep, head-ward rewire) + exact-fingerprint bounded node-result cache; defaults off, transforms opt-in; elimination/canonical identity stays in execution.ir (Issue #97 scope wording \"where proven\")"
+    },
+    {
+      "id": "observability.structured-log",
+      "owner": "agent-6",
+      "domain": "observability",
+      "version": "1.0.0",
+      "status": "stable",
+      "surface": [
+        "src/lego/structured-log.mjs"
+      ],
+      "exports": {
+        "src/lego/structured-log.mjs": [
+          "STRUCTURED_LOG_CONTRACT",
+          "LOG_LIMITS",
+          "LOG_ERROR_CLASSES",
+          "LOG_ERROR_TAXONOMY",
+          "classifyLogError",
+          "createStructuredLog",
+          "serializeStructuredLog"
+        ]
+      },
+      "consumers": [],
+      "tests": [
+        "apps/n8n-lego/test/lego-structured-log.test.mjs"
+      ],
+      "notes": "P9.2 only: bounded structured logs, registry-derived error taxonomy, fail-closed message/attribute redaction. No sink or kernel logger replacement."
     }
   ]
 }

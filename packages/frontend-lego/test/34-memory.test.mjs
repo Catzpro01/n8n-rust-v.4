@@ -349,8 +349,8 @@ test('the quoted words are the words the pointed-at tree declares', { skip }, ()
   assert.deepEqual([...row.operations], [...MEMORY_OPERATION_IDS], 'the lock publishes the four operations');
   assert.deepEqual([...row.permissions], [...MEMORY_PERMISSIONS], 'and the two permission words');
   assert.ok(row.tests.includes('apps/n8n-lego/test/lego-memory.test.mjs'), 'and names the backend suite that proves it');
-  // P9.1 publishes exactly one new contract row (observability.envelope): 39 -> 40.
-  assert.equal(lockRows().length, 41, 'the thirty-two post-protected rows through P3 Slice A workflow.graph plus P3 Slice D execution.frontier (thirty-fourth) plus P3 Slice E execution.state-stream (thirty-fifth) plus P3 Slice H workflow.dna (thirty-sixth) plus P3 Slice J execution.ir (thirty-seventh) plus P3 Slice L compatibility.oracle (thirty-eighth) plus P3 Slice M execution.guard (thirty-ninth) plus P3 Slice K execution.optimizer (forty-first) are added to the seventeen protected-main rows');
+  // P9.1 envelope + P3 optimizer are merged; P9.2 structured-log adds row 42.
+  assert.equal(lockRows().length, 42, 'the thirty-two post-protected rows through P3 Slice A workflow.graph plus P3 Slice D execution.frontier (thirty-fourth) plus P3 Slice E execution.state-stream (thirty-fifth) plus P3 Slice H workflow.dna (thirty-sixth) plus P3 Slice J execution.ir (thirty-seventh) plus P3 Slice L compatibility.oracle (thirty-eighth) plus P3 Slice M execution.guard (thirty-ninth) plus P3 Slice K execution.optimizer (forty-first) are added to the seventeen protected-main rows');
   // The declaration records the same open decisions this frontend names, and says the bounded half
   // is what is published while the rest stays open.
   const declaredOpen = declaration.memory.openDecisions;

@@ -316,6 +316,7 @@ A domain that publishes several contracts names its **primary** one
 
 | date | contract | version | change |
 | :--- | :--- | :--- | :--- |
+| 2026-09-23 | `observability.structured-log` | 1.0.0 | P9.2: severity reuses P9.1; error taxonomy derives from locked source codes; bounded numeric/boolean attributes and all-message redaction before admission; no sink or kernel logger replacement. |
 | 2026-09-23 | `observability.envelope` | 1.0.0 | P9.1: bounded native envelope and reusable correlation context, exact-version canonical codec, secret-field exclusion; product owner agent-6, implementation delegate Agent 4 (#101). No producer/runtime wiring. |
 | 2026-09-23 | `execution.optimizer` | 1.0.0 | P3 Slice K: initial lock of the execution optimizer — semantics-safe fusion (pure whitelist + single-consumer/single-dep) and exact-fingerprint node-result cache; opt-in transforms, elimination/canonical identity stays in execution.ir (Issue #97) |
 | 2026-09-23 | `execution.guard` | 1.0.0 | P3 Slice M: initial lock of the resource guard — six mandatory budgets, five priority lanes, three-tier pressure, admit/defer/reject with no clock (Issues #75/#79) |
