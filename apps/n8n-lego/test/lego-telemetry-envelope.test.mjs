@@ -155,7 +155,7 @@ test('P9.1 producer performs no serialization, clock read, payload access or sin
 
 test('P9.1 publishes exactly one new contract row without transferring domain ownership', () => {
   const lock = JSON.parse(readFileSync(new URL('../src/lego/contracts/contract-lock.json', import.meta.url)));
-  assert.equal(lock.contracts.length, 42); // P9.1=40 + P3 Slice K execution.optimizer=41 + P6.1 node.registry=42
+  assert.equal(lock.contracts.length, 43); // P9.1=40 + P3 Slice K execution.optimizer=41 + P6.1 node.registry=43
   const rows = lock.contracts.filter(c => c.id === TELEMETRY_CONTRACT.id);
   assert.equal(rows.length, 1);
   assert.equal(rows[0].version, TELEMETRY_CONTRACT.version);

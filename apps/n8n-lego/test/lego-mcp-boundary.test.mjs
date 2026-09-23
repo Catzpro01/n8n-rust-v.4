@@ -98,8 +98,8 @@ test('the contract-lock row is canonical: one row, version, ops, tests, exports'
     MCP_BOUNDARY_OPERATIONS: 1, MCP_BOUNDARY_PERMISSIONS: 1, MCP_BOUNDARY_LIMITS: 1,
     MCP_BOUNDARY_TRANSITIONS: 1, MCP_PERMISSION_GATE: 1, McpBoundaryError: 1, createMcpBoundary: 1,
   }).sort());
-  // P9.1 adds exactly one published row: observability.envelope (39 -> 40).
-  assert.equal(LOCK.contracts.length, 42, 'rows through P3 Slice A persistent logical graph (thirty-third); P3 Slice D adds the thirty-fourth (execution.frontier); P3 Slice E adds the thirty-fifth (execution.state-stream); P3 Slice H adds the thirty-sixth (workflow.dna); P3 Slice J the thirty-seventh (execution.ir); P3 Slice L the thirty-eighth (compatibility.oracle); P3 Slice M the thirty-ninth (execution.guard); P3 Slice K the forty-first (execution.optimizer) — P6.1 adds node.registry@0.1.0; count-pins say 42');
+  // P9.1 envelope + P3 optimizer are merged; P9.2 structured-log adds row 42.
+  assert.equal(LOCK.contracts.length, 43, 'rows through P3 Slice A persistent logical graph (thirty-third); P3 Slice D adds the thirty-fourth (execution.frontier); P3 Slice E adds the thirty-fifth (execution.state-stream); P3 Slice H adds the thirty-sixth (workflow.dna); P3 Slice J the thirty-seventh (execution.ir); P3 Slice L the thirty-eighth (compatibility.oracle); P3 Slice M the thirty-ninth (execution.guard); P3 Slice K the forty-first (execution.optimizer) — P6.1 adds node.registry@0.1.0; count-pins say 43');
   assert.ok(row.tests.every((p) => p.endsWith('.mjs')));
 });
 

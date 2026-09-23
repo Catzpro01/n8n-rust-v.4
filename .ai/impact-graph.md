@@ -6,7 +6,7 @@
 | LEGO | Depends on | Depended on by |
 | --- | --- | --- |
 | `platform-kernel` | — | `compatibility`, `auth`, `credentials`, `workflow`, `execution`, `node-registry`, `dynamic-parameters`, `webhook`, `storage`, `worker`, `realtime`, `settings`, `editor-ui-host`, `workspace`, `observability`, `data-tables`, `legacy-rest`, `runtime-host`, `reference-lego` |
-| `lego-foundation` | — | `ai-foundation`, `compatibility`, `node-registry`, `runtime-host`, `reference-lego`, `reference-lego.validation`, `reference-lego.repository` |
+| `lego-foundation` | — | `ai-foundation`, `compatibility`, `node-registry`, `observability`, `runtime-host`, `reference-lego`, `reference-lego.validation`, `reference-lego.repository` |
 | `ai-foundation` | `lego-foundation` | `node-registry` |
 | `compatibility` | `platform-kernel`, `lego-foundation`, `auth.identity` | `auth`, `credentials`, `workflow`, `execution`, `dynamic-parameters`, `webhook`, `worker`, `settings`, `editor-ui-host`, `observability`, `data-tables`, `legacy-rest`, `runtime-host` |
 | `auth` | `platform-kernel`, `compatibility` | `runtime-host` |
@@ -23,7 +23,7 @@
 | `settings` | `platform-kernel`, `compatibility`, `auth.identity` | `runtime-host` |
 | `editor-ui-host` | `platform-kernel`, `compatibility` | `runtime-host` |
 | `workspace` | `platform-kernel` | `legacy-rest` |
-| `observability` | `platform-kernel`, `compatibility` | — |
+| `observability` | `platform-kernel`, `compatibility`, `lego-foundation` | — |
 | `data-tables` | `platform-kernel`, `compatibility`, `storage` | — |
 | `legacy-rest` | `platform-kernel`, `compatibility`, `node-registry`, `workflow`, `execution`, `storage`, `credentials`, `workspace` | `runtime-host` |
 | `runtime-host` | `platform-kernel`, `lego-foundation`, `compatibility`, `auth`, `settings`, `legacy-rest`, `node-registry`, `execution`, `storage`, `realtime`, `editor-ui-host` | — |
