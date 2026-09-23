@@ -446,7 +446,12 @@ test('the AI foundation is manager-owned, and only published registries are impl
   // FOUNDATION (identity, lifecycle, step bookkeeping, budgets, deterministic transitions,
   // provider/executor seam). It is not the agent loop: ai.agent-runtime above it stays
   // contract-only, and the AI set's agent-machine LEGO keeps its contract-only status.
-  const IMPLEMENTED = new Set(['ai.skill', 'ai.context', 'ai.agent-session', 'ai.memory', 'ai.agent-machine']);
+  // P2.24 DELIBERATE EDIT. ai.token-usage joins as the bounded honest-accounting
+  // REGISTRY (record/query/budget over injected time and identity). It computes no
+  // provider call, fetches no price and settles nothing: ai.model-gateway above it
+  // stays contract-only, and the AI set's token-usage LEGO keeps its in-progress
+  // status — accounting being implemented says nothing about a runtime existing.
+  const IMPLEMENTED = new Set(['ai.skill', 'ai.context', 'ai.agent-session', 'ai.memory', 'ai.agent-machine', 'ai.token-usage']);
   const domain = registry.byId.get('ai-foundation');
   assert.ok(domain, 'ai-foundation must be a registered domain');
   assert.equal(domain.owner, 'manager',

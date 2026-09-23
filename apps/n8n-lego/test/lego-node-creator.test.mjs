@@ -92,7 +92,7 @@ test('the contract string is the exact locked identity — row 28, domain node-r
   assert.equal(LOCK_ROW.status, 'implemented');
   assert.equal(LOCK_ROW.domain, 'node-registry');
   assert.equal(LOCK_ROW.owner, 'manager');
-  assert.equal(LOCK.contracts.length, 28, 'twenty-eighth lock row');
+  assert.equal(LOCK.contracts.length, 29, 'twenty-ninth lock row');
   // primary contract of the domain stays node.portability — node.creator is NOT primary (R9)
   assert.equal(NODE_DOMAIN.contract.id, 'node.portability');
 });
