@@ -578,3 +578,70 @@ test('maxCachedChunks: 0 disables the HOT layer but reads stay correct (pure pas
   assert.equal(graph.lifecycleOf('Start'), 'RESOLVED', 'nothing reached HOT, so nothing is MATERIALIZED');
   assert.deepStrictEqual(graph.exportDefinition(), def, 'correctness holds with the cache disabled');
 });
+
+/* ============================== I. SLICE G — TIER PRESSURE / HOT-WARM-COLD */
+
+test('residencySummary census: HOT+WARM+COLD = chunkCount, reverse-index flag honest', () => {
+  const graph = createWorkflowGraph(sampleDefinition(), { chunkSize: 2, maxCachedChunks: 2 });
+  let summary = graph.residencySummary();
+  assert.deepEqual({ ...summary }, { HOT: 0, WARM: 3, COLD: 0, chunkCount: 3, reverseIndexResident: false });
+  graph.getChunk(0);
+  graph.getChunk(1);
+  graph.getIncoming('HTTP');
+  summary = graph.residencySummary();
+  assert.equal(summary.HOT, 2, 'both touched chunks materialized');
+  assert.equal(summary.WARM, 1, 'untouched chunk stays raw-resident');
+  assert.equal(summary.HOT + summary.WARM + summary.COLD, summary.chunkCount, 'census partitions the graph');
+  assert.equal(summary.reverseIndexResident, true, 'derived index observed');
+  assert.equal(Object.isFrozen(summary), true);
+});
+
+test('applyPressure demotes the OLDEST HOT entries to the target (explicit EVICTED, lossless reload)', () => {
+  const graph = createWorkflowGraph(sampleDefinition(), { chunkSize: 2, maxCachedChunks: 3 });
+  graph.getChunk(0); graph.getChunk(1); graph.getChunk(2); // all three HOT
+  graph.getChunk(0); // refresh chunk 0 → LRU order now 1,2,0 (oldest = 1)
+  assert.equal(graph.residencySummary().HOT, 3);
+  const result = graph.applyPressure({ targetHotChunks: 1, releaseReverseIndex: false });
+  assert.equal(result.hotBefore, 3);
+  assert.equal(result.hotAfter, 1, 'trim stops exactly at the target');
+  assert.equal(result.released, 2, 'two oldest entries released');
+  assert.equal(result.reverseIndexReleased, false, 'index preserved when not requested');
+  assert.equal(graph.residencySummary().HOT, 1, 'the refreshed chunk 0 survived — policy frees OLDEST first');
+  assert.equal(graph.residencyOf(0), 'HOT');
+  assert.equal(graph.residencyOf(1), 'WARM', 'raw payload stays resident (memory port has no cold tier)');
+  // released chunks read EVICTED until re-read …
+  assert.equal(graph.lifecycleOf('Branch'), 'EVICTED', 'chunk 1 (oldest) explicitly released');
+  const back = graph.getChunk(1);
+  assert.equal(back.length, 2, 'reload serves the identical payload');
+  assert.equal(graph.lifecycleOf('Branch'), 'MATERIALIZED', 're-read clears the marker');
+  // lossless under pressure
+  assert.deepStrictEqual(graph.exportDefinition(), sampleDefinition());
+  assert.equal(graph.integrity().ok, true);
+});
+
+test('applyPressure() defaults = full emergency relief (HOT→0, index off); recovery works', () => {
+  const graph = createWorkflowGraph(sampleDefinition(), { chunkSize: 2, maxCachedChunks: 4 });
+  graph.getChunk(0); graph.getChunk(1);
+  graph.getIncoming('Set A');
+  assert.equal(graph.residencySummary().reverseIndexResident, true);
+  const result = graph.applyPressure();
+  assert.equal(result.targetHotChunks, 0, 'default target = zero parsed payload resident');
+  assert.equal(result.hotAfter, 0);
+  assert.equal(result.released, 2);
+  assert.equal(result.reverseIndexReleased, true, 'default drops the derived index too (#79 step 3)');
+  const summary = graph.residencySummary();
+  assert.equal(summary.HOT, 0, 'working set fully relieved');
+  assert.equal(summary.WARM, 3, 'raw tier untouched by pressure (Slice C owns the window)');
+  assert.equal(summary.reverseIndexResident, false);
+  // recovery: access rematerializes everything on demand, losslessly
+  assert.deepEqual(graph.getChunk(0).map((n) => n.name), ['Start', 'HTTP']);
+  assert.equal(graph.residencySummary().HOT, 1);
+  assert.deepEqual(graph.getIncoming('HTTP'), [{ source: 'Start', type: 'main', index: 0 }]);
+  assert.equal(graph.residencySummary().reverseIndexResident, true, 'derived index rebuilds after relief');
+  assert.deepStrictEqual(graph.exportDefinition(), sampleDefinition(), 'lossless through the pressure cycle');
+  // validation
+  assert.equal(caught(() => graph.applyPressure({ targetHotChunks: 9 })).details.field, 'targetHotChunks');
+  assert.equal(caught(() => graph.applyPressure({ targetHotChunks: -1 })).details.field, 'targetHotChunks');
+  assert.equal(caught(() => graph.applyPressure({ releaseReverseIndex: 'yes' })).details.field, 'releaseReverseIndex');
+  assert.equal(caught(() => graph.applyPressure(null)).details.field, 'options');
+});
