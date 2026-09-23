@@ -1427,6 +1427,34 @@
         "apps/n8n-lego/test/lego-bounded-frontier.test.mjs"
       ],
       "notes": "P3 Slice D (implementation: agent-1): capacity-bounded FIFO frontier — ring buffer bounded BY POLICY (capacity required, validated 1..1048576, pre-allocated; no default bound). offer/offerBatch return EXPLICIT outcomes (admitted vs backpressure with published code lego.backpressure): a flood can never grow the queue past capacity, refused items are never retained by the frontier and re-admit after drain (producer still owns them). take/takeBatch = bounded active set (cannot over-pull); FIFO deterministic; stats expose depth/peakDepth/admitted/backpressured/served. Pure structure: zero imports, no clock/fs/network/timers. One error family lego.contract_violation (errors contract 1.2.0 untouched). No capability/REST surface (no ops/permissions on purpose). Owner agent-1 per Issue #98 (bounded frontier); execution domain stays mustNotDependOn workflow — module imports nothing cross-domain. Load shedding/priority lanes/memory emergency NOT here (Issue #79 policy layers arrive with the resource-protection slice)"
+    },
+    {
+      "id": "execution.state-stream",
+      "owner": "agent-1",
+      "domain": "execution",
+      "version": "0.1.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/state-stream.mjs"
+      ],
+      "exports": {
+        "src/lego/state-stream.mjs": [
+          "STATE_STREAM_CONTRACT",
+          "STATE_STREAM_CONTRACT_VERSION",
+          "STATE_STREAM_MAX_EVENTS",
+          "StateStreamError",
+          "createStateStream"
+        ]
+      },
+      "consumers": [
+        "checkpoint/resume slice (Issue #75 #5) — snapshot/resume lands on this bounded seam",
+        "bounded runtime slices — explicit backpressure outcomes for execution-state producers",
+        "executor slices — streaming sink drain (consume) with bounded buffers (Issue #75 #4)"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-state-stream.test.mjs"
+      ],
+      "notes": "P3 Slice E (implementation: agent-1): bounded streaming execution state — append-only monotonic seq log with REQUIRED maxResidentEvents bound (1..1048576, no default); append answers explicit admitted/backpressure (published code lego.backpressure) and retains NOTHING when full (no silent loss, seq not burned); bounded non-destructive read window, finite bounded-batch stream() generator, destructive consume() = selective retention (backlog shrinks only when a sink takes events); JSON-domain payloads deep-frozen on admission; ZERO imports (no clock/fs/network/timers/randomness/process); one error family lego.contract_violation (errors contract 1.2.0 untouched). No capability/REST surface. Owner agent-1 per Issue #98; checkpoint/resume = Slice F on this seam. Execution domain stays mustNotDependOn workflow"
     }
   ]
 }
