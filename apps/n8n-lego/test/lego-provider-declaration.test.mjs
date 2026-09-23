@@ -504,7 +504,7 @@ test('every P2.16–P2.25 milestone is still complete with intact start/finish e
     'the correction documents the distinction instead of hiding it');
 });
 
-test('P2.27 remains a planned reservation with zero implementation and an unwired chain', () => {
+test('P2.27 is the current administrative milestone with zero implementation and a terminating chain', () => {
   const p227 = BY_ID.get('P2.27');
   assert.ok(p227, 'the reservation row exists');
   assert.equal(p227.status, 'in-progress', 'current administrative milestone — implementation is still ZERO until the P2.27 Master Prompt');
@@ -524,7 +524,9 @@ test('P2.27 remains a planned reservation with zero implementation and an unwire
   const design = read('docs/n8n-lego/P2.27-PLUGIN-RUNTIME-DESIGN.md');
   assert.match(design, /PLANNING \/ DESIGN ONLY/);
   assert.match(design, /NO P2\.27 IMPLEMENTATION IS STARTED/);
-  assert.match(design, /planned/);
+  assert.match(design, /current administrative/);
+  assert.match(design, /canonical status `in-progress`/);
+  assert.match(design, /Implementation = ZERO/);
   assert.match(design, /secret broker/i);
   assert.match(design, /deny-by-default/i);
   assert.match(design, /QUARANTINED/);
