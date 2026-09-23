@@ -1332,6 +1332,38 @@
         "apps/n8n-lego/test/lego-provider-adapters.test.mjs"
       ],
       "notes": "P2.25 first real tool provider adapter (implementation: agent-1): tool declaration / capability / permission / invocation / provider binding stay five separate concepts — a generic provider configuration is never execution authority. sideEffects is required and validated against the published vocabulary (unknown effects are treated as destructive and refused); requiresApproval tools demand an approval reference (presence enforced here, ai.approval decides the grant). tool.call is non-idempotent: one exchange, never retried internally, requestId required — replay with the same canonicalized payload returns the recorded outcome with no second exchange (results travel as opaque references, never stored for replay), a different payload under the same requestId is refused (request-id-reuse), and the requestId travels to the provider for its own dedupe. Reads are idempotent and also single-shot (maxAttemptsPerCall 1). Explicit configuration only, credentials never stored, canonical error translation with no echo, bounded lists/resources/prompts/results, no token figures invented (usage stays with the model side per ai.token-usage). fail-closed on unknown tool/config/authorization/provider responses."
+    },
+    {
+      "id": "ai.provider-declaration",
+      "owner": "manager",
+      "domain": "ai-foundation",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/provider-declaration.mjs"
+      ],
+      "exports": {
+        "src/lego/provider-declaration.mjs": [
+          "INTEGRATION_ACCESS_RULES",
+          "PROVIDER_DECLARATION_CONTRACT",
+          "PROVIDER_DECLARATION_CONTRACT_VERSION",
+          "PROVIDER_DECLARATION_FIELDS",
+          "PROVIDER_PROFILES",
+          "ProviderDeclarationError",
+          "assertHandedOverAccess",
+          "assertProviderDeclaration",
+          "describeProviderProfile"
+        ]
+      },
+      "consumers": [
+        "operators declaring where a provider runs (sim/local/cloud) before any P2.25 adapter is configured",
+        "application/GitHub-class integration boundaries — handed-over, scoped, request-bound access validation",
+        "foundation readiness proof (P2.26) — the declaration axis stays separate from provider kinds, transports and Workspace"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-provider-declaration.test.mjs"
+      ],
+      "notes": "P2.26 provider declaration profile + handed-over access (implementation: agent-1): providers are declared — sim/local/cloud — never assumed, discovered or auto-selected; closed three-field declaration cannot carry credentials; handoff = opaque grant reference + declared scope + requestId (request-bound, never standing); credential-shaped values refused by the canonical full-form detector quoted from ai.token-usage; configuration stays on the P2.25 adapters (authority is never granted by declaration); Workspace remains ai.workspace@1.0.0 — no second implementation, no filesystem/shell/subprocess authority; no client, no endpoint, no network, zero node:* imports"
     }
   ]
 }

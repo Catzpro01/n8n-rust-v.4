@@ -316,6 +316,7 @@ A domain that publishes several contracts names its **primary** one
 
 | date | contract | version | change |
 | :--- | :--- | :--- | :--- |
+| 2026-09-23 | `ai.provider-declaration` | 1.0.0 | P2.26: initial lock of the provider declaration profile (sim/local/cloud — declared, never assumed; closed three-field shape; handed-over scoped request-bound access for GitHub-class boundaries; no client, no stored credential, Workspace untouched) |
 | 2026-09-23 | `ai.model-gateway` | 1.0.0 | P2.25: initial lock of the first real model provider adapter (six gateway ops, explicit configuration, call-time authorization, canonical error translation, honest usage reporting into ai.token-usage@1.0.0, injected exchange edge) |
 | 2026-09-23 | `ai.tool-gateway` | 1.0.0 | P2.25: initial lock of the first real tool provider adapter (seven gateway ops, five separate tool concepts, required sideEffects, requestId replay cache for tool.call, approval-reference presence, no invented usage) |
 | 2026-09-23 | `ai.runtime-adapter` | 1.1.0 | P2.25: MINOR, additive — first real EXTERNAL runtime binding (src/lego/external-runtime.mjs) joins the seam surface; register/lookup/eligibility/manager and the P2.21 behaviour unchanged; ai.agent-runtime stays vocabulary (no lock row) |

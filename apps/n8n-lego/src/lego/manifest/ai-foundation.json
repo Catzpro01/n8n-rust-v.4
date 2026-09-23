@@ -10,7 +10,9 @@
     "No default tool gateway client. The P2.25 tool provider adapter binds declared tools behind the same injected-transport, per-call-authorization boundary; Composio remains an example of a provider kind only.",
     "No owned or bundled agent runtime. External agent runtimes are adapted behind the P2.21 seam (P2.25 ships the first real external runtime binding), never reimplemented — Hermes, Claude Code, Gemini CLI, Antigravity, OpenClaw and DeepSeek remain examples of runtime kinds.",
     "No MCP server and no MCP client.",
-    "No ambient network call, no daemon, no background process and no new dependency: transports exist only at the explicitly configured adapter edge."
+    "No ambient network call, no daemon, no background process and no new dependency: transports exist only at the explicitly configured adapter edge.",
+    "No GitHub client and no standing GitHub token: GitHub and every application provider are integration boundaries reached only through explicitly handed-over, scoped, request-bound authorization — never a stored credential, never a global repository authority, never implicit account discovery (P2.26).",
+    "No provider discovery and no automatic provider selection: a provider exists in the system only where its declaration profile (sim/local/cloud) was made explicitly — absence is the honest not-configured state, never a default (P2.26)."
   ],
   "vendorRule": "A vendor name may appear in this file ONLY inside an `examples` array, and only as an illustration of a provider kind. No vendor may appear in an id, a required field, a code path or a default. If a vendor name is ever needed to make a contract work, the contract is wrong.",
   "taxonomy": {
@@ -108,6 +110,26 @@
         "locality",
         "supports"
       ]
+    }
+  },
+  "providerProfiles": {
+    "rule": "Provider declarations are EXPLICIT: declared, not assumed. No hidden discovery, no automatic provider selection, no standing provider authority, no stored credential — configuration remains explicit on the P2.25 adapters and the absence of a declaration is the honest not-configured state, never a default.",
+    "profiles": {
+      "sim": {
+        "summary": "A simulated/fixture provider declared for offline and test execution.",
+        "authority": "simulation authority only — never reaches an external service",
+        "configRule": "explicit declaration required; sim never becomes a fallback for an undeclared provider"
+      },
+      "local": {
+        "summary": "A provider running on the same host, reached through an explicitly named local endpoint.",
+        "authority": "local processes are still explicitly declared — no process or port discovery",
+        "configRule": "explicit declaration required; local never implies trusted or standing"
+      },
+      "cloud": {
+        "summary": "A remotely hosted provider reached over the network through an explicitly configured endpoint.",
+        "authority": "remote authority stays at the adapter edge; credentials are handed over per call, never stored",
+        "configRule": "explicit declaration required; cloud never implies an account, a token or an auto-selected vendor"
+      }
     }
   },
   "modelGateway": {
@@ -303,6 +325,22 @@
           "sideEffects": "read-only"
         }
       ]
+    },
+    "handedOverAccess": {
+      "rule": "Application integration access (GitHub is the canonical example) is an integration boundary, not a privileged Core capability: access is explicitly handed over, scoped to declared capability words, and request-bound by a requestId.",
+      "handoff": [
+        "grantReference (opaque reference, never a raw credential)",
+        "scope (declared capability words)",
+        "requestId (request-bound — no standing access)"
+      ],
+      "never": [
+        "stored credential",
+        "standing GitHub token",
+        "global repository authority",
+        "implicit account discovery"
+      ],
+      "replaceable": "the GitHub integration must remain replaceable and must not become a built-in dependency of every plugin",
+      "decides": "ai.approval decides the grant; the handoff proves well-formedness only — configuration is never authority"
     }
   },
   "agentRuntime": {
@@ -1083,5 +1121,16 @@
     ],
     "prohibition": "No Rust is written in this phase. Rust is never chosen merely to demonstrate that Rust exists, and must never require a compiler on an end-user device.",
     "contractPreservation": "A Rust implementation must satisfy the identical contract, operations and interaction classes. If it needs a different contract, it is a different capability and must be justified as one."
+  },
+  "workspaceBoundary": {
+    "rule": "Workspace integration preserves the existing Workspace contract: ai.workspace@1.0.0 keeps its identity, metadata, opaque resource-reference and lifecycle model. Workspace internals are never moved into AI Foundation, no second Workspace implementation is created, and no integration boundary introduces unrestricted filesystem, shell or subprocess authority.",
+    "contract": "ai.workspace@1.0.0",
+    "never": [
+      "workspace internals moved into AI Foundation",
+      "second Workspace implementation",
+      "unrestricted filesystem authority",
+      "unrestricted shell authority",
+      "unrestricted subprocess authority"
+    ]
   }
 }
