@@ -1081,7 +1081,8 @@
         "C: server export list",
         "E: external servers"
       ],
-      "versioningNote": "The tool-gateway contract it binds to is published at 1.0.0; the adapter contract itself is unpublished."
+      "versioningNote": "The tool-gateway contract it binds to is published at 1.0.0; the adapter contract itself is unpublished.",
+      "statusNote": "P2.20 publishes ai.mcp-boundary@1.0.0: the four-state MCP boundary declaration (declared / permission-required / exposed / blocked) with an explicit permission gate, fail-closed unknown-server/capability/permission handling and strict authority separation from Agent Control, in src/lego/mcp-boundary.mjs. The LEGO stays contract-only: no MCP server, no MCP client, no adapter runtime, no SDK and no network — adapter implementation stays P3/FUTURE."
     },
     {
       "id": "runtime-adapter",

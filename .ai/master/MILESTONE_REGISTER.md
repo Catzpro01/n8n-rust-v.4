@@ -12,7 +12,7 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 | Current milestone | **P2.20** |
 | Previous completed milestone | **P2.19** |
 | Protected branch | `main` |
-| Main baseline | `393622e3d2b0b070884d7cb74502908b64a6e252` |
+| Main baseline | `436e8404ca56bdbfda7be55dd1529c355bfe9e5c` |
 | Agent 1 branch | `arena/01a0c9d3-n8n-rust-v-4` |
 | Agent 2 branch | `arena/01a0c90d-n8n-rust-v-4` |
 | Register owner | `manager` |
