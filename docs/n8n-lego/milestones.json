@@ -4,9 +4,9 @@
   "canonical": true,
   "purpose": "Granular milestone truth beneath the strategic Phase A-F roadmap. This is the only machine-readable milestone register. Future milestone IDs may be refined by Manager only by updating this file; strategic phases are not deleted.",
   "protectedBranch": "main",
-  "mainBaseline": "ab4a589821e247ed181a91b54ad8c2d39d83eeb1",
-  "currentMilestone": "P2.23",
-  "previousCompletedMilestone": "P2.22",
+  "mainBaseline": "82f4d3056deb1c600c563840689187db082505a7",
+  "currentMilestone": "P2.24",
+  "previousCompletedMilestone": "P2.23",
   "strategicRoadmap": {
     "source": "apps/n8n-lego/src/lego/manifest/ai-lego-set.json",
     "preservePhases": [
@@ -1274,7 +1274,7 @@
       "id": "P2.23",
       "title": "Node Creator & Translation",
       "phase": "C",
-      "status": "in-progress",
+      "status": "complete",
       "owner": "manager",
       "backendOwner": "per milestone assignment",
       "frontendOwner": "agent-1",
@@ -1308,7 +1308,12 @@
         "commit": "ab4a589821e247ed181a91b54ad8c2d39d83eeb1",
         "role": "protected main after P2.22 completion transition — actual P2.23 start baseline (§1 correction)"
       },
-      "finishEvidence": null,
+      "finishEvidence": {
+        "protectedMain": "82f4d3056deb1c600c563840689187db082505a7",
+        "pr": 67,
+        "mergeCommit": "82f4d3056deb1c600c563840689187db082505a7",
+        "role": "post-merge verified protected-main completion"
+      },
       "currentCommitReference": "arena/01a0c9d3-n8n-rust-v-4",
       "nextMilestone": "P2.24",
       "nonScope": [
@@ -1323,12 +1328,80 @@
       "reconciliation": {
         "state": "scoped at P2.23 start against protected main ab4a589821e247ed181a91b54ad8c2d39d83eeb1; owners and detail refined by the Master Prompt P2.23",
         "contract": "node.portability@1.0.0, ai.agent-machine@1.1.0, lego.transport-kernel@1.0.0, ai.mcp-boundary, XA-21 all untouched unless the prompt says otherwise",
+        "owner": "agent-1",
+        "historical": true,
+        "resolution": {
+          "resolvedAt": "2026-09-23",
+          "note": "PR #67 merged to protected main as 82f4d3056deb1c600c563840689187db082505a7; start baseline ab4a589821e247ed181a91b54ad8c2d39d83eeb1 stays on this row"
+        }
+      },
+      "verificationEvidence": {
+        "local": "post-merge on 82f4d305: 7/7 gates, lego-node-creator 35/35, backend 805/802 (3 pre-existing rest.test 404s), FE 417/416 0 fail, P2.16-P2.22 slices all 0 fail, register/alignment green, guards clean (agent-machine/XA-21/capabilities/crates/boot 18126/errors untouched)",
+        "official": "PENDING — official validation surface remains the GitHub Actions self-hosted Windows runner on PR #67; local post-merge PASS (debug evidence, not official sign-off)",
+        "evidencePath": "docs/n8n-lego/evidence/P2.23-NODE-CREATOR-TRANSLATION-EVIDENCE.md"
+      }
+    },
+    {
+      "id": "P2.24",
+      "title": "Token & Usage - honest accounting",
+      "phase": "D",
+      "status": "in-progress",
+      "owner": "manager",
+      "backendOwner": "per milestone assignment",
+      "frontendOwner": "agent-1",
+      "dependencies": [
+        "P2.23 Node Creator & Translation",
+        "P2.13 Context & Session",
+        "ai-foundation"
+      ],
+      "inputs": [
+        "XA-17 decision — which contract publishes token and cost usage",
+        "P2.13 Context & Session vocabulary (token kinds: message, modelInput, output)",
+        "P2.23 node creator / translation outputs (unchanged)",
+        "token & usage scope limited to what the Master Prompt declares"
+      ],
+      "deliverables": [
+        "token & usage accounting scope — declared by the Master Prompt when issued",
+        "honest accounting: a count the source did not report is labelled estimated or not shown",
+        "consumes context/session and ai-foundation contracts without rewriting them"
+      ],
+      "implementationBoundary": "Token & usage accounting only: consumes the XA-17-selected contract and the published context/session vocabulary as given. No token provider integration, no model inference, no billing settlement, no autonomous publishing. Refined by the Master Prompt P2.24 when issued.",
+      "testsGates": [
+        "full gates: arch+selftest, foundation+selftest, capabilities, scaleout, ai:check, full backend/frontend suites"
+      ],
+      "decisionDependencies": [
+        "XA-17"
+      ],
+      "completionCriteria": [
+        "all roadmap acceptance items hold",
+        "PR merged and post-merge verification passes on protected main",
+        "register completion evidence recorded and currentMilestone advanced to P2.25"
+      ],
+      "startEvidence": {
+        "commit": "82f4d3056deb1c600c563840689187db082505a7",
+        "role": "protected main after P2.23 completion transition"
+      },
+      "finishEvidence": null,
+      "currentCommitReference": "arena/01a0c9d3-n8n-rust-v-4",
+      "nextMilestone": "P2.25 (indicative)",
+      "nonScope": [
+        "token provider integrations (external metering/billing APIs)",
+        "model inference",
+        "production scheduler",
+        "shell / filesystem / subprocess executors",
+        "MCP server/client/adapter runtime (P3/FUTURE)",
+        "credential manager",
+        "Arena runtime"
+      ],
+      "reconciliation": {
+        "state": "scoped at P2.24 start against protected main 82f4d3056deb1c600c563840689187db082505a7; title indicative from the P2.13 milestone-register proposal (phase D, XA-17); refined by the Master Prompt P2.24 when issued",
+        "contract": "node.creator@1.0.0, node.portability@1.0.0, ai.agent-machine@1.1.0, lego.transport-kernel@1.0.0, ai.mcp-boundary, XA-21 all untouched unless the prompt says otherwise",
         "owner": "agent-1"
       },
       "verificationEvidence": {
         "local": "recorded in the milestone evidence file when implementation runs",
         "official": "PENDING — official validation only via the installed GitHub Actions self-hosted Windows runner on the PR",
-        "evidencePath": "docs/n8n-lego/evidence/P2.23-NODE-CREATOR-TRANSLATION-EVIDENCE.md"
+        "evidencePath": "docs/n8n-lego/evidence/P2.24-TOKEN-USAGE-EVIDENCE.md"
       }
     },
     {
