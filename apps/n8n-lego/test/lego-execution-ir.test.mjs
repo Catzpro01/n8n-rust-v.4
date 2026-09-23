@@ -57,7 +57,7 @@ test('the lock row is the thirty-seventh: execution.ir@1.0.0, owner agent-1, exp
   const row = ROWS.find((r) => r.id === 'execution.ir');
   assert.ok(row, 'execution.ir is locked');
   // P9.1 envelope + P3 optimizer are merged; P9.2 structured-log adds row 42.
-  assert.equal(ROWS.length, 42, 'P3 Slice H added the thirty-sixth (workflow.dna); P3 Slice J adds the thirty-seventh (execution.ir) — count-pins say 37; P3 Slice L the thirty-eighth (compatibility.oracle); P3 Slice M the thirty-ninth (execution.guard)');
+  assert.equal(ROWS.length, 43, 'P3 Slice H added the thirty-sixth (workflow.dna); P3 Slice J adds the thirty-seventh (execution.ir); P3 Slice L the thirty-eighth (compatibility.oracle); P3 Slice M the thirty-ninth (execution.guard) — P6.1 adds node.registry@0.1.0; count-pins say 43');
   assert.equal(row.owner, 'agent-1', 'Issue #98: Agent 1 owns execution artifacts');
   assert.equal(row.domain, 'execution');
   assert.equal(row.version, '1.0.0');
