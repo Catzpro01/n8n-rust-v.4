@@ -3189,6 +3189,7 @@
         "src/lego/registry-integrity.mjs",
         "src/lego/resolution-manifest.mjs",
         "src/lego/runtime-lease.mjs",
+        "src/lego/sbom-policy.mjs",
         "src/lego/semantic-fingerprint.mjs",
         "src/lego/supply-chain.mjs",
         "src/lego/worker-convergence.mjs"

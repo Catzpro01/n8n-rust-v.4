@@ -2587,6 +2587,68 @@
         "apps/n8n-lego/test/lego-admission-explain.test.mjs"
       ],
       "notes": "P6.17 (P6 implementation owner: Agent 3, Issue #100): admission explain plan + dependency blast radius. Each contract can already say no (capability P6.8, semantics P6.9, lifecycle P6.10, health P6.11, supply P6.12, closure P6.4, residency P6.7); none can say, in one place, why THIS node is admitted right now. A PLAN IS AN ORDERED ARGUMENT: the eight checks run in a fixed order (identity, lifecycle, supply, capability, semantics, health, closure, residency), each step carries an outcome and a CITATION naming the contract that produced the evidence (an uncited pass is an opinion), and the verdict is admit / refuse / incomplete. INCOMPLETE FAILS CLOSED: no check failed and at least one had no evidence — a plan that admits a node because nobody checked it is worse than no plan at all; a first-time node with no semantics baseline (P6.9 MISSING) or a NON_DETERMINISTIC fingerprint lands here, which is the honest outcome. THE PLAN DOES NOT RE-DECIDE: it composes other contracts' verdicts verbatim (the health refusal carries health.quarantined exactly as P6.11 reported it) instead of deriving a second opinion that could disagree with the first. THE IDENTITY CHECK runs against the real epoch in planAdmission, and a question naming a different epoch digest is API misuse rather than a quiet answer. THE BLAST RADIUS is the other half: a reverse dependency index (dependentsFrom) walks who depends on a package, transitively, with depth and path, once per package (cycles are walked once, not forever), bounded by depth and a limit that REPORT truncation instead of hiding it. Design fix found by the first suite run: dependentsFrom now takes an optional package universe, because without one 'this package has no dependents' (count 0) and 'this package does not exist' (unknown, fails closed) were the same answer — and they are opposite answers. Scope walls: no decisions of its own (every verdict is cited and evidence is data), no install (P6.3), no publish (P6.2/P6.13), no lease (P6.6), no quarantine action (P6.11 reports, this explains), no rollback (P6.19); no filesystem, network, clock, randomness or mutation — the only node import is the hash. Authority: an admit verdict explains why nothing refused; it is not a grant."
+    },
+    {
+      "id": "node.sbom",
+      "owner": "manager",
+      "domain": "node-registry",
+      "version": "0.1.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/sbom-policy.mjs"
+      ],
+      "exports": {
+        "src/lego/sbom-policy.mjs": [
+          "DIFF_KINDS",
+          "GATE_RULE_KINDS",
+          "GATE_VERDICTS",
+          "NODE_TRUST_CLASSES",
+          "SBOM_CONTRACT",
+          "SBOM_CONTRACT_VERSION",
+          "SBOM_FORMAT",
+          "SBOM_INPUT_SCHEMA_VERSION",
+          "SBOM_OPERATIONS",
+          "SBOM_PERMISSIONS",
+          "SBOM_REASONS",
+          "SBOM_RELATIONSHIPS",
+          "SBOM_RULES",
+          "SBOM_SCHEMA_VERSION",
+          "SbomError",
+          "TRUST_ORDER",
+          "VEX_JUSTIFICATIONS",
+          "VEX_STATUSES",
+          "applyVex",
+          "createPolicyGate",
+          "createSbom",
+          "createVex",
+          "describeSbom",
+          "diffSbom",
+          "evaluateGate",
+          "explainDiff",
+          "explainGate",
+          "isGateResult",
+          "isPolicyGate",
+          "isSbom",
+          "isSbomDiff",
+          "isVex",
+          "sbomPackageOf",
+          "summarizeVex",
+          "trustRankOf",
+          "vexStatement"
+        ]
+      },
+      "consumers": [
+        "P6.19 canary rollout — the gate is what a rollout cites before it starts",
+        "P6.20 emergency revocation — the SBOM diff is what an emergency change is described as",
+        "P6.27 provenance/transparency — a document worth signing is this one",
+        "P6.28 TUF-style freshness + delegated trust — what is delegated is a document with a digest",
+        "P6.29 namespace + dependency confusion — a package that appears under the wrong name shows up first in a diff",
+        "P6.31 full acceptance — the evidence half of the final acceptance"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-sbom-policy.test.mjs"
+      ],
+      "notes": "P6.18 (P6 implementation owner: Agent 3, Issue #100): SBOM/VEX + policy diff gate. An epoch is an executable description nobody outside the registry can read, and two questions get asked in every serious review: what exactly is in here, and what changed and is that allowed? AN SBOM IS A READING OF AN EPOCH, never a second source of truth: one record per package version carrying the checksums of the node declarations it provides, the trust classes present, the capability names asked for, the licence as declared by the caller (NOASSERTION when nobody said), and DEPENDENCIES SUPPLIED FROM P6.4's closure rather than invented (an epoch lists nodes, not edges, and a document that invented edges would be a second registry). The format is SPDX-SHAPED so a consumer does not learn a dialect, and it is NAMED lego-sbom@1 rather than claiming a conformance it has not been tested against. A DIFF NAMES THE FIELDS THAT CHANGED (added/removed/changed with the changed fields listed, plus trustDirection and capabilityDelta): 'it changed' is how a review becomes a rumour. THE TRUST LADDER IS P6.1'S, QUOTED: exactly the four classes, ordered untrusted < community < verified < core, unknown names refused — and because P6.1 declares trust PER DECLARATION, a package can hold two classes, so the document records the SET and comparisons use the WEAKEST member (design fix found by the first suite run: refusing such an epoch would make the document useless for exactly the registries it exists to describe). VEX IS AN ATTRIBUTED STATEMENT: a status, a justification from a closed list, the actor and the tick; 'not_affected' demands a justification; two statements disagreeing about one vulnerability in one package are refused rather than ordered; and where nobody said anything the rollup stays 'under_investigation', which is not a pass. The package rollup is the status that most needs attention (affected > under_investigation > fixed > not_affected) and the statements travel with the package so a reader sees evidence rather than a summary. THE GATE IS POLICY AS DATA: rules declared by id and kind (no-new-packages, no-removals, no-new-capabilities, no-trust-downgrade, max-added-packages, no-affected-vulnerability), a policy with no rules or an unknown kind or a duplicated id is refused, and a rule whose evidence is missing yields INCOMPLETE — a gate that opens because it could not look is not a gate. Scope walls: no scanning or vulnerability database, no admission decision (P6.17 explains, P6.8/P6.11/P6.12 decide), no rollout (P6.19), no signing or attestation (P6.12/P6.27), no delegated trust (P6.28); no filesystem, network, clock, randomness or mutation — the only node import is the hash. Authority: an allowed diff is permission to proceed with a change, never a claim that the result is safe."
     }
   ]
 }
