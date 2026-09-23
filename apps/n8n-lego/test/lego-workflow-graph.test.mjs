@@ -645,3 +645,124 @@ test('applyPressure() defaults = full emergency relief (HOT→0, index off); rec
   assert.equal(caught(() => graph.applyPressure({ releaseReverseIndex: 'yes' })).details.field, 'releaseReverseIndex');
   assert.equal(caught(() => graph.applyPressure(null)).details.field, 'options');
 });
+
+// ─────────────────────────────────────────────────────────────
+// Slice I — execution-as-query: fan bounds + bounded ready queries.
+// ─────────────────────────────────────────────────────────────
+
+/** Slice I fixture: nodes + [from, to] edges (+ optional raw connections) → exported bundle. */
+function bundleOf({ nodes, edges = [], connections }) {
+  const bySource = {};
+  for (const [from, to] of edges) {
+    if (bySource[from] === undefined) bySource[from] = { main: [[]] };
+    bySource[from].main[0].push({ node: to, type: 'main', index: 0 });
+  }
+  const def = {
+    name: 'P3 slice I sample',
+    nodes: nodes.map((name, i) => ({
+      name, type: 'n8n-nodes-base.noOp', typeVersion: 1, position: [i * 100, 0], parameters: {}, id: `n${i}`,
+    })),
+    connections: connections ?? bySource,
+  };
+  return createWorkflowGraph(def).exportBundle();
+}
+
+test('SLICE I: fanOutOf / fanInOf expose bounded fan-out/in coordination (#75 #3)', () => {
+  const graph = graphFromBundle(bundleOf({
+    nodes: ['A', 'Branch', 'Left', 'Right', 'Join'],
+    edges: [['A', 'Branch'], ['Branch', 'Left'], ['Branch', 'Right'], ['Left', 'Join'], ['Right', 'Join']],
+  }));
+  assert.equal(graph.fanOutOf('A'), 1);
+  assert.equal(graph.fanOutOf('Branch'), 2);
+  assert.equal(graph.fanOutOf('Join'), 0);
+  assert.equal(graph.fanInOf('Join'), 2);
+  assert.equal(graph.fanInOf('A'), 0);
+  assert.equal(caught(() => graph.fanOutOf('ghost')).details.reason, 'unknown-node');
+  assert.equal(caught(() => graph.fanInOf('ghost')).details.reason, 'unknown-node');
+});
+
+test('SLICE I: dangling sources are not indexed — fan-in 0, node stays root (structural truth)', () => {
+  const graph = graphFromBundle(bundleOf({
+    nodes: ['Start'],
+    edges: [],
+    connections: { main: [[{ node: 'Ghost', type: 'main', index: 0 }]] },
+  }));
+  assert.equal(graph.fanInOf('Start'), 0); // dangling source excluded from the index
+  const page = graph.initialReady({ limit: 1 });
+  assert.deepEqual([...page.ready], ['Start']); // never blocked by a non-node
+});
+
+test('SLICE I: initialReady paginates cold-start discovery (stateless cursors)', () => {
+  const graph = graphFromBundle(bundleOf({
+    nodes: ['I0', 'I1', 'I2', 'I3', 'I4', 'Chain'],
+    edges: [['I4', 'Chain']],
+    // five isolated nodes = five roots; page them without materializing the whole set
+  }));
+  const p0 = graph.initialReady({ limit: 2, fromOrdinal: 0 });
+  assert.equal(p0.ready.length, 2);
+  assert.equal(p0.done, false);
+  const p1 = graph.initialReady({ limit: 2, fromOrdinal: p0.next });
+  assert.equal(p1.ready.length, 2);
+  const p2 = graph.initialReady({ limit: 2, fromOrdinal: p1.next });
+  assert.deepEqual([...p2.ready], ['I4']);
+  assert.equal(p2.done, true);
+  assert.equal(caught(() => graph.initialReady({ limit: 0 })).details.field, 'limit');
+  assert.equal(caught(() => graph.initialReady({ limit: 2, fromOrdinal: -1 })).details.field, 'fromOrdinal');
+  assert.equal(caught(() => graph.initialReady({})).details.field, 'limit');
+  assert.equal(caught(() => graph.initialReady({ limit: 99 })).details.field, 'limit'); // cap = nodeCount
+});
+
+test('SLICE I: readyAfter — bounded incremental query, no whole-graph scan, fan-in coordinated', () => {
+  const graph = graphFromBundle(bundleOf({
+    nodes: ['A', 'B', 'C', 'D', 'X'],
+    edges: [['A', 'B'], ['A', 'C'], ['B', 'D'], ['C', 'D'], ['X', 'D']],
+  }));
+  // cold start: satisfied empty → nothing incremental yet (roots come from initialReady)
+  assert.deepEqual([...graph.readyAfter([])], []);
+  // after A: successors B, C — each has all preds satisfied → both ready
+  assert.deepEqual([...graph.readyAfter(['A'])], ['B', 'C']);
+  // after A+B: D still waits on C AND X (all indexed preds must be satisfied)
+  assert.deepEqual([...graph.readyAfter(['A', 'B'])], ['C']);
+  // after A+B+X: D's preds = B, C?, X — C still missing
+  assert.deepEqual([...graph.readyAfter(['A', 'B', 'X'])], ['C']);
+  // full satisfaction of D's preds (B, C, X) — candidates = successors of the set = D
+  assert.deepEqual([...graph.readyAfter(['A', 'B', 'C', 'X'])], ['D']);
+  // canonical ordinal order, frozen result
+  const ready = graph.readyAfter(['A']);
+  assert.ok(Object.isFrozen(ready));
+  assert.equal(caught(() => graph.readyAfter(['A', 'ghost'])).details.reason, 'unknown-node');
+  assert.equal(caught(() => graph.readyAfter('A')).details.field, 'satisfied'); // bare string rejected
+});
+
+test('SLICE I: readyAfter terminates on cycles (event semantics, no deadlock)', () => {
+  const graph = graphFromBundle(bundleOf({
+    nodes: ['A', 'B'],
+    edges: [['A', 'B'], ['B', 'A']],
+  }));
+  assert.deepEqual([...graph.initialReady({ limit: 2 }).ready], []); // pure cycle: no roots
+  // once A fires, B's inbound edge is satisfied — event semantics, not structural acyclicity
+  assert.deepEqual([...graph.readyAfter(['A'])], ['B']);
+  // monotone NEWLY-ready semantics: satisfied nodes are never re-reported —
+  // convergence to empty on the cycle (re-fire policy belongs to the runner,
+  // out of the graph query's scope, so termination is structural)
+  assert.deepEqual([...graph.readyAfter(['A', 'B'])], []);
+});
+
+test('SLICE I: readyAfter cost is bounded by satisfied × fan-out (work proportional to batch)', () => {
+  // wide chain-level graph: 200 nodes in two layers; query after a 1-node batch
+  const nodes = ['Root'];
+  const edges = [];
+  for (let i = 0; i < 200; i += 1) {
+    const name = `W${i}`;
+    nodes.push(name);
+    edges.push(['Root', name]);
+  }
+  const graph = graphFromBundle(bundleOf({ nodes, edges }));
+  const t0 = performance.now();
+  const ready = graph.readyAfter(['Root']);
+  const ms = performance.now() - t0;
+  assert.equal(ready.length, 200);
+  assert.ok(ms < 1000, `readyAfter batch query took ${ms.toFixed(1)} ms`);
+  // bounded: one root + 200 leaves — successors of {Root} = 200, each fan-in 1
+  assert.equal(graph.fanOutOf('Root'), 200);
+});

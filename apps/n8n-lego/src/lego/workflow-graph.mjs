@@ -516,6 +516,115 @@ class LogicalWorkflowGraph {
     });
   }
 
+  /**
+   * Execution-as-query (P3 Slice I): fan-out bound of a node — how many
+   * connection links it declares (Issue #75 #3 fan-out limits need the number).
+   */
+  fanOutOf(name) {
+    const bucket = this.getOutgoingConnections(name); // identity check + one-chunk read
+    let links = 0;
+    for (const outputs of Object.values(bucket)) { // bucket: { [type]: [ [links per output] ] }
+      if (!Array.isArray(outputs)) continue;
+      for (const linksOfOutput of outputs) {
+        if (Array.isArray(linksOfOutput)) links += linksOfOutput.length;
+      }
+    }
+    return links;
+  }
+
+  /**
+   * Execution-as-query: fan-in bound — indexed incoming edges (dangling
+   * sources are not indexed and never block; bounded fan-in coordination,
+   * Issue #75 #3). Builds the lazy reverse index once, O(1) after.
+   */
+  fanInOf(name) {
+    return this.getIncoming(name).length;
+  }
+
+  /**
+   * Cold-start ready query, PAGINATED so discovery never materializes the
+   * whole ready set: walk ordinals from `fromOrdinal`, collect up to `limit`
+   * nodes with indexed in-degree 0 (roots), return a FROZEN
+   * `{ready, next, done}` page. Stateless — the graph owns no execution
+   * state; the caller owns cursors. Overall O(nodeCount) once across pages,
+   * O(page) per call; the incremental hot path is `readyAfter`.
+   */
+  initialReady({ limit, fromOrdinal = 0 } = {}) {
+    if (limit === undefined || !Number.isSafeInteger(limit) || limit < 1 || limit > this.#manifest.nodeCount) {
+      fail(`limit must be a safe integer in 1..${this.#manifest.nodeCount}`, { field: 'limit' });
+    }
+    if (!Number.isSafeInteger(fromOrdinal) || fromOrdinal < 0 || fromOrdinal > this.#manifest.nodeCount) {
+      fail(`fromOrdinal must be a safe integer in 0..${this.#manifest.nodeCount}`, { field: 'fromOrdinal' });
+    }
+    const ready = [];
+    let cursor = fromOrdinal;
+    while (cursor < this.#manifest.nodeCount && ready.length < limit) {
+      this.#reads.chunkReads += 1;
+      const entry = this.#materialize(this.#chunkOfOrdinal(cursor));
+      const name = entry.nodes[cursor % this.#manifest.chunkSize].name;
+      if (this.getIncoming(name).length === 0) ready.push(name);
+      cursor += 1;
+    }
+    return Object.freeze({
+      ready: Object.freeze(ready),
+      next: cursor,
+      done: cursor >= this.#manifest.nodeCount,
+    });
+  }
+
+  /**
+   * Incremental ready query (#75 #3 — NO whole-graph scan): among the
+   * SUCCESSORS of `satisfied`, those whose ALL indexed predecessors are
+   * satisfied (and which are not themselves satisfied). `satisfied` = the
+   * caller's FULL current satisfied set; the graph stays stateless
+   * (execution-as-query). Cost is bounded by |satisfied| × fan-out — the
+   * caller's batch size carries backpressure into query cost (Slice D
+   * linkage). Results in canonical ordinal order, frozen (accessor contract).
+   */
+  readyAfter(satisfied) {
+    if (typeof satisfied === 'string' || satisfied === null || satisfied === undefined
+      || typeof satisfied[Symbol.iterator] !== 'function') {
+      fail('satisfied must be an iterable of node names', { field: 'satisfied' });
+    }
+    const satisfiedSet = new Set();
+    for (const name of satisfied) {
+      if (typeof name !== 'string' || !this.#ordinals.has(name)) {
+        fail('satisfied must contain only graph node names', { field: 'satisfied', reason: 'unknown-node' });
+      }
+      satisfiedSet.add(name);
+    }
+    const candidates = new Set();
+    for (const name of satisfiedSet) {
+      const bucket = this.getOutgoingConnections(name);
+      for (const outputs of Object.values(bucket)) { // { [type]: [ [links per output] ] }
+        if (!Array.isArray(outputs)) continue;
+        for (const linksOfOutput of outputs) {
+          if (!Array.isArray(linksOfOutput)) continue;
+          for (const link of linksOfOutput) {
+            if (link === null || typeof link !== 'object') continue;
+            const target = link.node;
+            if (typeof target !== 'string' || !this.#ordinals.has(target)) continue; // dangling never runs
+            if (satisfiedSet.has(target)) continue;
+            candidates.add(target);
+          }
+        }
+      }
+    }
+    const ready = [];
+    const ordered = [...candidates].sort((a, b) => this.#ordinals.get(a) - this.#ordinals.get(b));
+    for (const name of ordered) {
+      let allSatisfied = true;
+      for (const row of this.getIncoming(name)) {
+        if (!satisfiedSet.has(row.source)) {
+          allSatisfied = false;
+          break;
+        }
+      }
+      if (allSatisfied) ready.push(name);
+    }
+    return Object.freeze(ready);
+  }
+
   /** Has the lazy reverse edge index been materialized? */
   hasReverseIndex() {
     return this.#incoming !== null;
