@@ -32,6 +32,7 @@
 - `src/lego/artifact.mjs`
 - `src/lego/approval.mjs`
 - `src/lego/audit.mjs`
+- `src/lego/mcp-boundary.mjs`
 
 ## Public contract surface
 

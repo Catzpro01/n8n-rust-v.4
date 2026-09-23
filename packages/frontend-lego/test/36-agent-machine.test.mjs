@@ -110,7 +110,7 @@ test('the frontend quotes exactly the Agent Machine lifecycle, operations and pe
   assert.deepEqual(vocabularyOf('agentMachineOperation').values, declaration().operations);
   assert.deepEqual(vocabularyOf('agentMachinePermission').values, declaration().permissions);
   assert.deepEqual(vocabularyOf('agentMachineStepOutcome').values, ['succeeded', 'failed', 'cancelled', 'approval-required']);
-  assert.equal(vocabularyOf('aiFoundationCapability').values.length, 14, 'the capability registry gained exactly the agent-machine foundation');
+  assert.equal(vocabularyOf('aiFoundationCapability').values.length, 15, 'the capability registry gained the agent-machine foundation (P2.16) and the MCP boundary declaration (P2.20)');
   assert.equal(vocabularyConflicts().ok, true, JSON.stringify(vocabularyConflicts().conflicts));
 });
 

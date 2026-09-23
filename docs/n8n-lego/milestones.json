@@ -4,7 +4,7 @@
   "canonical": true,
   "purpose": "Granular milestone truth beneath the strategic Phase A-F roadmap. This is the only machine-readable milestone register. Future milestone IDs may be refined by Manager only by updating this file; strategic phases are not deleted.",
   "protectedBranch": "main",
-  "mainBaseline": "393622e3d2b0b070884d7cb74502908b64a6e252",
+  "mainBaseline": "436e8404ca56bdbfda7be55dd1529c355bfe9e5c",
   "currentMilestone": "P2.20",
   "previousCompletedMilestone": "P2.19",
   "strategicRoadmap": {
@@ -1083,8 +1083,8 @@
         "register completion evidence recorded and currentMilestone advanced to P2.21"
       ],
       "startEvidence": {
-        "commit": "393622e3d2b0b070884d7cb74502908b64a6e252",
-        "role": "protected main after P2.19 merge and verification"
+        "commit": "436e8404ca56bdbfda7be55dd1529c355bfe9e5c",
+        "role": "protected main after P2.19 completion-transition verification"
       },
       "finishEvidence": null,
       "currentCommitReference": "arena/01a0c9d3-n8n-rust-v-4",

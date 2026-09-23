@@ -10,7 +10,7 @@ document is right and the prose is stale.
 
 | | |
 | --- | --- |
-| Protected main baseline | `393622e3d2b0b070884d7cb74502908b64a6e252` |
+| Protected main baseline | `436e8404ca56bdbfda7be55dd1529c355bfe9e5c` |
 | Agent 1 branch | `arena/01a0c9d3-n8n-rust-v-4` |
 | Agent 2 branch | `arena/01a0c90d-n8n-rust-v-4` |
 | **Current milestone** | **P2.20** |
@@ -29,9 +29,9 @@ is the row marked as such.
 | | |
 | --- | --- |
 | Core LEGO domains | **26** |
-| Locked contracts | 24 |
-| Declared capabilities | 86 |
-| Declared operations | 163 |
+| Locked contracts | 25 |
+| Declared capabilities | 87 |
+| Declared operations | 167 |
 | Published error codes | 36 |
 | Official AI/Agent LEGO | 15 |
 

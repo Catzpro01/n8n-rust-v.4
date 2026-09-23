@@ -15,6 +15,7 @@
 | `ai.artifact` | `ai-foundation` |
 | `ai.context` | `ai-foundation` |
 | `ai.decision` | `ai-foundation` |
+| `ai.mcp-boundary` | `ai-foundation` |
 | `ai.memory` | `ai-foundation` |
 | `ai.model-gateway` | `ai-foundation` |
 | `ai.skill` | `ai-foundation` |
@@ -153,6 +154,10 @@ this table instead of guessing from a URL shape.
 | `ai.approval.request` | `ai-foundation` | call | `ai:approval:request` | no | contract-only |
 | `ai.approval.resolve` | `ai-foundation` | call | `ai:approval:resolve` | no | contract-only |
 | `ai.approval.inspect` | `ai-foundation` | call | `ai:approval:read` | yes | contract-only |
+| `ai.mcp-boundary.declare` | `ai-foundation` | call | `ai:mcp:declare` | no | contract-only |
+| `ai.mcp-boundary.evaluate` | `ai-foundation` | call | `ai:mcp:expose` | yes | contract-only |
+| `ai.mcp-boundary.revoke` | `ai-foundation` | call | `ai:mcp:expose` | yes | contract-only |
+| `ai.mcp-boundary.inspect` | `ai-foundation` | call | `ai:mcp:read` | yes | contract-only |
 | `ai.artifact.create` | `ai-foundation` | call | `ai:artifact:write` | no | contract-only |
 | `ai.artifact.read` | `ai-foundation` | call | `ai:artifact:read` | yes | contract-only |
 | `ai.context.load` | `ai-foundation` | call | `ai:context:read` | yes | implemented |

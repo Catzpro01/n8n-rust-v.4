@@ -978,6 +978,48 @@
         "apps/n8n-lego/test/lego-artifact-approval-audit.test.mjs"
       ],
       "notes": "P2.19 structured audit foundation (implementation: agent-1): fixed field set (auditId/eventType/timestamp/actor/subject/operation/result/correlationId/causationId/references/metadata), event types quoted from the canonical events.types vocabulary plus artifact.referenced (P2.19 acceptance), injectable clock and id factory, bounded capacity with deterministic drop-oldest retention, secret- and reasoning-shaped input refused fail-closed. In-process only — no production audit store, no unbounded append."
+    },
+    {
+      "id": "ai.mcp-boundary",
+      "owner": "manager",
+      "domain": "ai-foundation",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/mcp-boundary.mjs"
+      ],
+      "exports": {
+        "src/lego/mcp-boundary.mjs": [
+          "MCP_BOUNDARY_CONTRACT",
+          "MCP_BOUNDARY_CONTRACT_VERSION",
+          "MCP_BOUNDARY_FIELDS",
+          "MCP_BOUNDARY_STATES",
+          "MCP_CAPABILITY_KINDS",
+          "MCP_ROLE_KINDS",
+          "MCP_BOUNDARY_OPERATIONS",
+          "MCP_BOUNDARY_PERMISSIONS",
+          "MCP_BOUNDARY_LIMITS",
+          "MCP_BOUNDARY_TRANSITIONS",
+          "MCP_PERMISSION_GATE",
+          "McpBoundaryError",
+          "createMcpBoundary"
+        ]
+      },
+      "operations": [
+        "declare",
+        "evaluate",
+        "revoke",
+        "inspect"
+      ],
+      "consumers": [
+        "mcp-adapter (future adapter runtime binds to this declaration; the adapter itself stays P3/FUTURE)",
+        "future tool-gateway mapping surfaces (MCP concepts map ONTO the tool gateway contract)",
+        "P2.20 evidence and boundary tests"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-mcp-boundary.test.mjs"
+      ],
+      "notes": "P2.20 MCP vs Agent Control boundary declaration (implementation: agent-1): four canonical states declared / permission-required / exposed / blocked quoted from manifest/ai-foundation.json#mcp (roadmap named three; §9 admits only least-privileged 'declared' as the fourth), explicit permission gate in documented order, fail-closed on unknown server/capability/permission-claim/malformed input, exposure and Agent Control authority strictly separated (no inference either direction), individual explicit capability export (no export-everything switch), approval satisfaction only via ai.approval@1.0.0 (identity+scope). Declaration and state machine only: no MCP server, client, adapter runtime, SDK, daemon or network."
     }
   ]
 }

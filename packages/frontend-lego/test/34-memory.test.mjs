@@ -349,7 +349,7 @@ test('the quoted words are the words the pointed-at tree declares', { skip }, ()
   assert.deepEqual([...row.operations], [...MEMORY_OPERATION_IDS], 'the lock publishes the four operations');
   assert.deepEqual([...row.permissions], [...MEMORY_PERMISSIONS], 'and the two permission words');
   assert.ok(row.tests.includes('apps/n8n-lego/test/lego-memory.test.mjs'), 'and names the backend suite that proves it');
-  assert.equal(lockRows().length, 24, 'P2.14 Memory, P2.15 Workspace, P2.16 Agent Machine, the P2.18 transport kernel and the P2.19 artifact/approval/audit foundations are added to the seventeen protected-main rows');
+  assert.equal(lockRows().length, 25, 'P2.14 Memory, P2.15 Workspace, P2.16 Agent Machine, the P2.18 transport kernel, the P2.19 artifact/approval/audit foundations and the P2.20 MCP boundary declaration are added to the seventeen protected-main rows');
   // The declaration records the same open decisions this frontend names, and says the bounded half
   // is what is published while the rest stays open.
   const declaredOpen = declaration.memory.openDecisions;

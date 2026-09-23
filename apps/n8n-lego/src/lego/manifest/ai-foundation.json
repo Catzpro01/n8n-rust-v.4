@@ -991,6 +991,45 @@
     "internalRule": "No internal LEGO may call another LEGO over MCP. Internal communication stays CALL/EVENT/STREAM/BATCH over the local dispatcher, as ADR-0004 requires.",
     "mappingRule": "MCP concepts map ONTO the tool gateway contract; the tool gateway is not defined in MCP terms. If MCP changes, one adapter changes.",
     "exportRule": "Capabilities are exported explicitly and individually. There is no export-everything switch, because the set of capabilities safe to hand to an external client is never the full set.",
+    "contract": "ai.mcp-boundary",
+    "states": [
+      "declared",
+      "permission-required",
+      "exposed",
+      "blocked"
+    ],
+    "capabilityKinds": [
+      "tool",
+      "resource",
+      "prompt"
+    ],
+    "stateRule": "declared = known as a declaration, with no authority implied; permission-required = known but not exposed until an explicit permission/approval decision; exposed = explicitly exposed after the permission gate passes; blocked = prohibited, unknown, invalid or denied. Exposure and Agent Control authority are separate dimensions: neither ever implies the other.",
+    "transitions": {
+      "declared": [
+        "permission-required",
+        "exposed",
+        "blocked"
+      ],
+      "permission-required": [
+        "exposed",
+        "blocked"
+      ],
+      "exposed": [
+        "blocked"
+      ],
+      "blocked": []
+    },
+    "permissionGate": [
+      "is server declared?",
+      "is capability declared?",
+      "is capability supported?",
+      "is permission required?",
+      "has an explicit permission/approval grant been presented?",
+      "exposed — any unknown or invalid condition is blocked"
+    ],
+    "authorityRule": "MCP exposure never implies Agent Control authority, and Agent Control authority never implies MCP exposure. A declared server is not a trusted server; a declared capability is not an exposed capability; an exposed capability grants no agent permission. Every boundary transition is explicit: no export-everything switch, no inference from names, descriptions, transports, server identities or provider names.",
+    "failClosedRule": "Unknown server, unknown capability, unknown permission claims and invalid inputs fail closed to blocked (or are rejected as contract violations when the input itself is malformed). A pending, expired, scope-mismatched or identity-mismatched approval never exposes: only an explicit granted ai.approval decision can.",
+    "approvalRule": "A capability that declares requiresApproval or requiresPermission is satisfied only by presenting an ai.approval reference whose decision is granted with matching identity and scope (ai.approval@1.0.0, P2.19). Agent permissions are never accepted as evidence at this boundary.",
     "notBuilt": "No MCP server, client, adapter or dependency exists in this repository."
   },
   "transportRouting": {
