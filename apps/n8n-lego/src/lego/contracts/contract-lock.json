@@ -2158,6 +2158,60 @@
       "notes": "P6.9 (P6 implementation owner: Agent 3, Issue #100): semantic fingerprint + compatibility replay. A node version is a claim — 'same node, same contract' — and the cheap check (comparing bytes) answers a different question: two artifacts can differ in every byte and still be the same node, and one artifact can differ in one character and behave differently forever. So this contract fingerprints the CONTRACT, not the artifact, over nine axes: type, typeVersion, parameters, expressions, credentials, io, webhooks, behavior, ui. Everything that describes how a node is SUPPLIED or GOVERNED (implementation digest and language, packageVersion, provenance, trustClass, health, lifecycle) is recorded beside the fingerprint and never inside it, because the implementation language is not part of the contract: a node reimplemented from JavaScript in Rust is the same node, and a replay reports implementationChanged: true while still saying MATCH. Canonicalisation is the precondition for a fingerprint at all: keys are sorted, unordered axes (credentials, io, webhooks) are compared as sets, and anything that cannot be canonicalised — a function, an undefined, a non-finite number, a Symbol, a BigInt, a Map/Set/class instance, a cycle — makes the answer NON_DETERMINISTIC with the offending path and kind named, because a hash over a guess would look like an answer. An axis a node does not declare is recorded as ABSENT rather than empty: 'no credentials' and 'credentials were not declared' are different claims and only one of them is safe to replay. Replay has four answers and no fifth: MATCH (semantics identical, implementation may not be), DIFF (semantics changed, with the worst axis deciding the impact on the ladder none < cosmetic < compatible < behavioral < breaking, plus at most 32 path-addressed leaf changes and an explicit truncation flag), NON_DETERMINISTIC (no fingerprint exists) and MISSING (no baseline: an absent fingerprint is never a match). ok means the replay could be PERFORMED, not that the answer was good: a DIFF is an answer, NON_DETERMINISTIC and MISSING are refusals to answer. Fingerprints can also be replayed without the semantics they came from (the worker handshake and the cache exchange fingerprints), and an unverifiable fingerprint is treated as a missing baseline. Scope walls: no admission decision (P6.11), no quarantine, no lifecycle transition (P6.10), no migration/repair (P6.30), no artifact or source inspection, no clock, no network, no randomness, no mutation — the only node import is the hash."
     },
     {
+      "id": "node.lifecycle",
+      "owner": "manager",
+      "domain": "node-registry",
+      "version": "0.1.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/node-lifecycle.mjs"
+      ],
+      "exports": {
+        "src/lego/node-lifecycle.mjs": [
+          "NODE_LIFECYCLE_CONTRACT",
+          "NODE_LIFECYCLE_CONTRACT_VERSION",
+          "NODE_LIFECYCLE_SCHEMA_VERSION",
+          "NODE_LIFECYCLE_OPERATIONS",
+          "NODE_LIFECYCLE_PERMISSIONS",
+          "LIFECYCLE_STATES",
+          "LIFECYCLE_EVENTS",
+          "LIFECYCLE_INITIAL_STATE",
+          "TOMBSTONE_GROUNDS",
+          "NODE_LIFECYCLE_REASONS",
+          "NODE_LIFECYCLE_RULES",
+          "NodeLifecycleError",
+          "createLifecycleLedger",
+          "isLifecycleLedger",
+          "lifecycleOf",
+          "isTombstoned",
+          "mayReuseName",
+          "transitionNode",
+          "deprecateNode",
+          "aliasNode",
+          "tombstoneNode",
+          "resolveAlias",
+          "orphanNodes",
+          "orphanReport",
+          "describeLifecycle",
+          "verifyLifecycleLedger",
+          "NODE_LIFECYCLE_INPUT_SCHEMA_VERSION"
+        ]
+      },
+      "consumers": [
+        "P6.11 health + quarantine — a quarantined node is refused, and a tombstoned one is refused differently",
+        "P6.13 incremental compiler — the ledger travels with the epoch, so retirement survives a rebuild",
+        "P6.17 admission explain plan — 'this name is tombstoned' is one of the reasons an admission says no",
+        "P6.18 SBOM/VEX policy diff — a policy change and a lifecycle change are the same kind of document",
+        "P6.19 canary rollout — an alias is what makes a rename invisible to a running workflow",
+        "P6.29 namespace/dependency-confusion protection — the tombstone is the local half of resisting a re-used name",
+        "P6.30 repair + offline recovery — a rebuilt registry replays the ledger, not the memories of an operator"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-node-lifecycle.test.mjs"
+      ],
+      "notes": "P6.10 (P6 implementation owner: Agent 3, Issue #100): orphan / tombstone / alias / deprecation. An epoch is a set of identities; what it cannot say is what has been removed, renamed, abandoned, and which names must never come back — and the cost of not saying it is a name that gets re-used. A lifecycle LEDGER is built for one epoch: every identity starts 'declared', every transition returns a NEW frozen ledger (the old one is untouched), and the ledger digest makes an edited ledger visible. ORPHAN: a node nobody references is a report, never an automatic uninstall, and it is reported together with the mirror-image fact that matters more — a reference nobody provides, which is a workflow that cannot resolve. DEPRECATION: a node still resolves and still runs, must name a replacement the epoch actually contains (a redirect to nowhere is refused), and records the epoch it happened at. ALIAS: one hop only, and only for a name that has been retired (deprecated or disabled) — a chain of redirects is a rename nobody can audit, and an alias to a tombstone is refused. TOMBSTONE: the single irreversible thing here. It records its grounds (removed, renamed, compromised, superseded, policy), it cannot be edited, the state cannot move afterwards, nothing may alias to it, and mayReuseName says false — because a tombstoned identity can never be re-declared, and the cost of that rule is a naming decision made twice while the cost of the alternative is an attacker who waits. Everything else is reversible on purpose: registries are governed by people who change their minds. The state vocabulary is QUOTED from P6.1 (which quotes the P2 negotiation contract: eleven words, 'deprecated' among them); this contract adds events and records, never a twelfth word. Scope walls: no admission or health decision (P6.11), no quarantine, no workflow resolution (P6.5), no install/uninstall (P6.3), no catalog or database read, no clock — atEpoch is data the caller supplies, which is what makes a ledger reproducible. Pure: the only node import is the hash."
+    },
+    {
       "id": "observability.trace",
       "owner": "agent-6",
       "domain": "observability",
