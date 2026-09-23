@@ -41,3 +41,19 @@
 - P4.3 (webhook ingress) wajib memakai `may_serve(wf, gen)` + peta route-nya sendiri;
   `gen` = output `begin_activation/route registration` pada sesi ini.
 - P4.7: journal semua command registry (masing-masing langkah atomic murni).
+
+## Lanjutan — P4.3 Webhook ingress (sesi sama)
+
+- Modul `crates/n8n-common/src/webhook.rs`: route table (prod/test/waiting),
+  matcher literal/`:param`/`*` (static>wildcard, depth tie-break), registration
+  lifecycle sinkron activation (rollback fail-closed + error tercatat), surface
+  update via `request_update_workflow`/`apply_pending_update`, `resolve_http`,
+  `serving_check` (state+fence), `cleanup_stale_routes`, `normalize_request` bounded,
+  ACK `build_response`, `process_webhook_request` full-flow murni.
+- 16 test baru → workspace **219 green**; fmt bersih (file slice); nol dependensi,
+  nol IO (adapter HTTP tetap di luar n8n-common).
+- Koreksi mid-slice: normalizer URL boundary (MAX_URI dari `NormalizeLimits`,
+  bukan konstanta imajiner), error `TooManyHeaders`, `HttpMethod`-keyed maps pakai
+  `HashMap` (HttpMethod: Hash≠Ord), wildcard_open dead-code dibuang, tes rollback
+  (spec-ilegal gagal *sebelum* activation, bukan Failed), rollback konflik membuktikan
+  record=Failed+last_error+route kosong.
