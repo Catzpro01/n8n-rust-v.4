@@ -5,6 +5,7 @@ pub mod activation;
 pub mod admission;
 pub mod expression_contract;
 pub mod ingress_contract;
+pub mod ingress_modes;
 pub mod schedule;
 pub mod webhook;
 pub use activation::{
@@ -27,6 +28,12 @@ pub use ingress_contract::{
     CONTRACT_VERSION, ENVELOPE_VERSION, MAX_HEADERS, MAX_HEADER_VALUE_BYTES, MAX_ID_LEN,
     MAX_INLINE_PAYLOAD_BYTES, MAX_QUERY_PARAMS, MAX_QUERY_VALUE_BYTES, MAX_REASON_CODE_LEN,
     MAX_ROUTE_PATH_LEN,
+};
+pub use ingress_modes::{
+    classify_event, manual_first_emission, resolve_waiting_path, EventAction, EventName,
+    ExecutionStatusTag, IngressIntent, IntentError, IntentResolver, ListenPool,
+    ManualEmissionError, ManualTrigger, ModeDecision, TestListen, WaitingResolution,
+    WaitingVerdict,
 };
 pub use schedule::{
     CivilDate, CivilTime, CronError, CronExpr, GapPolicy, MisfirePolicy, OverlapPolicy,
