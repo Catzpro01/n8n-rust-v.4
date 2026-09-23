@@ -2026,6 +2026,31 @@
         "apps/n8n-lego/test/lego-node-residency.test.mjs"
       ],
       "notes": "P6.7 (P6 implementation owner: Agent 3, Issue #100): manifest/implementation split + HOT/WARM/COLD residency. An epoch can hold hundreds of node types; a process cannot hold hundreds of loaded implementations, and pretending otherwise is how a node registry becomes a memory leak with a catalogue. The split this contract enforces is that THE MANIFEST AND THE IMPLEMENTATION ARE DIFFERENT THINGS: a declaration is cheap and needed for resolution and editing, an implementation is expensive and needed only while running. Three tiers: COLD (known to the epoch, nothing resident here), WARM (the MANIFEST is resident, the implementation is not), HOT (the implementation is resident). COLD → WARM → HOT is the ONLY way up, and that is the point — metadata is read BEFORE code is loaded, which is what leaves room for a capability, trust or residency check to happen at all; a load straight from COLD is refused rather than quietly warmed as a side effect, because the check that was skipped would never be reported (there would be nothing to report it). HOT is BOUNDED by an explicit budget: exceeding it demotes the LEAST-RECENTLY-USED node to WARM and says which one, so memory pressure is a reported policy instead of an out-of-memory kill. Eviction RESPECTS LEASES: an implementation an execution is still holding is never unloaded, `inUseBy` is a REQUIRED input, and a non-empty set refuses the eviction with the executions named; WARM → COLD is a separate ordered step (a HOT node must be evicted before its manifest is dropped). Recency is a monotonic TICK, not a timestamp, so the same operations produce the same table anywhere, and every operation returns a new frozen table. Depends only on P6.2 for epochs; the lease set is passed in as data rather than importing P6.6. No authority: being hot grants nothing and being cold revokes nothing."
+    },
+    {
+      "id": "observability.metrics",
+      "owner": "agent-6",
+      "domain": "observability",
+      "version": "1.0.0",
+      "status": "stable",
+      "surface": [
+        "src/lego/metric-governor.mjs"
+      ],
+      "exports": {
+        "src/lego/metric-governor.mjs": [
+          "METRIC_CONTRACT",
+          "METRIC_LIMITS",
+          "LATENCY_BUCKETS_MS",
+          "METRIC_LABEL_POLICY",
+          "METRIC_DEFINITIONS",
+          "createMetricGovernor"
+        ]
+      },
+      "consumers": [],
+      "tests": [
+        "apps/n8n-lego/test/lego-metric-governor.test.mjs"
+      ],
+      "notes": "P9.3 only; delegated implementation Agent 4, product ownership Agent 6 unchanged."
     }
   ]
 }

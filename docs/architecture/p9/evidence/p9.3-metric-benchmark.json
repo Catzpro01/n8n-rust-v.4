@@ -1,0 +1,90 @@
+{
+  "node": "v22.18.0",
+  "platform": "linux",
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.60GHz",
+  "note": "Microbaseline, not workflow throughput. Batch-average percentiles, not per-event p95/p99. Heap deltas are not allocation counts. Shared-host/JIT/GC noise.",
+  "results": [
+    {
+      "name": "OFF control",
+      "iterations": 100000,
+      "elapsedMs": 2.526198000000001,
+      "opsPerSecond": 39585178.99230384,
+      "batchMeanUs": {
+        "p50": 0.02278899999999595,
+        "p95": 0.0327920000000006,
+        "p99": 0.03967200000000304
+      },
+      "cpuUs": {
+        "user": 1962,
+        "system": 654
+      },
+      "heapDeltaBeforeGc": 29416,
+      "retainedHeapDeltaAfterGc": 19112,
+      "rssDelta": 4890624,
+      "governor": {
+        "accepted": 0,
+        "invalid": 0,
+        "cardinalityRejected": 0,
+        "aggregated": 0,
+        "allocatedSeries": 38,
+        "maxSeries": 40,
+        "reservedSeries": 38
+      }
+    },
+    {
+      "name": "standard aggregation",
+      "iterations": 100000,
+      "elapsedMs": 103.33334899999998,
+      "opsPerSecond": 967741.7887617289,
+      "batchMeanUs": {
+        "p50": 1.1676869999999866,
+        "p95": 1.3206590000000062,
+        "p99": 1.3787420000000026
+      },
+      "cpuUs": {
+        "user": 110802,
+        "system": 2620
+      },
+      "heapDeltaBeforeGc": 226480,
+      "retainedHeapDeltaAfterGc": 27768,
+      "rssDelta": 237568,
+      "governor": {
+        "accepted": 100000,
+        "invalid": 0,
+        "cardinalityRejected": 0,
+        "aggregated": 0,
+        "allocatedSeries": 39,
+        "maxSeries": 40,
+        "reservedSeries": 38
+      }
+    },
+    {
+      "name": "100k unique IDs and unknown components",
+      "iterations": 100000,
+      "elapsedMs": 90.63424499999999,
+      "opsPerSecond": 1103335.7204001646,
+      "batchMeanUs": {
+        "p50": 0.9156419999999912,
+        "p95": 1.2685359999999832,
+        "p99": 1.450051000000002
+      },
+      "cpuUs": {
+        "user": 102281,
+        "system": 4267
+      },
+      "heapDeltaBeforeGc": 4503872,
+      "retainedHeapDeltaAfterGc": 1896,
+      "rssDelta": 8462336,
+      "governor": {
+        "accepted": 100000,
+        "invalid": 0,
+        "cardinalityRejected": 200000,
+        "aggregated": 0,
+        "allocatedSeries": 39,
+        "maxSeries": 40,
+        "reservedSeries": 38
+      }
+    }
+  ],
+  "checksum": 330000
+}

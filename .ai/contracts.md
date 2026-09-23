@@ -54,6 +54,7 @@ Locked public contracts. A version here is a promise; changing it is an architec
 | `46` | 0.1.0 | — | `?` | `?` |
 | `47` | 0.1.0 | — | `?` | `?` |
 | `48` | 0.1.0 | — | `?` | `?` |
+| `49` | 1.0.0 | — | `?` | `?` |
 
 ## Version rules
 
