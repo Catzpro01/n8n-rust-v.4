@@ -220,15 +220,34 @@ test('the P2.22 node portability quotes are complete (classes, capabilities, per
     'NATIVE_PROCESS', 'ENVIRONMENT_SPECIFIC', 'REMOTE_BRIDGE',
   ], 'exact class vocabulary — no competing synonyms');
   const capabilities = vocabularyOf('nodeRegistryCapability');
-  assert.equal(capabilities.values.length, 5, 'the node-registry domain publishes five capabilities after P2.22');
+  assert.equal(capabilities.values.length, 6, 'the node-registry domain publishes six capabilities after P2.23');
   assert.ok(capabilities.values.includes('node-registry.portability'), 'and the portability foundation is one of them');
+  assert.ok(capabilities.values.includes('node-registry.creator'), 'and the creator foundation is one of them');
   const permissions = vocabularyOf('nodeRegistryPermission');
-  assert.equal(permissions.values.length, 3, 'node:read plus the P2.22 validator pair');
+  assert.equal(permissions.values.length, 6, 'node:read, the P2.22 pair and the P2.23 creator trio');
   assert.ok(permissions.values.includes('node:portability:validate'));
   assert.ok(permissions.values.includes('node:portability:select'));
+  assert.ok(permissions.values.includes('node:creator:create'));
+  assert.ok(permissions.values.includes('node:creator:translate'));
+  assert.ok(permissions.values.includes('node:creator:validate'));
   for (const id of ['nodePortabilityClass', 'nodeRegistryCapability', 'nodeRegistryPermission']) {
     const set = vocabularyOf(id);
     assert.ok(set.provenance.file.startsWith('apps/n8n-lego/src/lego/'), `${id} quotes the backend foundation`);
     assert.ok(set.provenance.contract && set.provenance.contract.id, `${id} names its contract`);
+  }
+});
+
+test('the P2.23 creator identity vocabulary quotes modes, states and source kinds from the module', () => {
+  const modes = vocabularyOf('nodeCreationMode');
+  assert.deepEqual([...modes.values], ['HUMAN', 'NODE'], 'creation modes are exactly HUMAN and NODE');
+  const states = vocabularyOf('nodeCreatorState');
+  assert.equal(states.values.length, 8, 'the bounded creator lifecycle states');
+  assert.ok(states.values.includes('PUBLISHED_REFERENCE') && states.values.includes('REJECTED'));
+  const sourceKinds = vocabularyOf('nodeSourceKind');
+  assert.deepEqual([...sourceKinds.values], ['manual', 'imported', 'translated'], 'source kinds are closed');
+  for (const id of ['nodeCreationMode', 'nodeCreatorState', 'nodeSourceKind']) {
+    const set = vocabularyOf(id);
+    assert.ok(set.provenance.file.startsWith('apps/n8n-lego/src/lego/'), `${id} quotes the backend foundation`);
+    assert.equal(set.provenance.contract.id, 'node.creator', `${id} names node.creator@1.0.0`);
   }
 });

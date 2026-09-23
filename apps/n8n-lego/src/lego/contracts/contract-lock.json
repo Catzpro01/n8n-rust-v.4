@@ -1126,6 +1126,60 @@
         "apps/n8n-lego/test/lego-node-portability.test.mjs"
       ],
       "notes": "P2.22 node portability foundation (implementation: agent-1): language/runtime-neutral node contract — canonical portability classes (PURE/API/NETWORK/FILESYSTEM/NATIVE_PROCESS/ENVIRONMENT_SPECIFIC/REMOTE_BRIDGE), machine-readable runtime matrix (JS/WASM/RUST_NATIVE/REMOTE as SUPPORTED|UNSUPPORTED|CONDITIONAL with explicit conditions), language-neutral schema subset with SUPPORTED|UNSUPPORTED|LOSSY refusal (PORTABILITY_REFUSED, never silent coercion), five-axis compatibility report (contract/schema/runtime/portability/environment — never collapsed into one boolean), fail-closed reasons (unknown runtime/class/capability/permission, missing permission, environment/transport mismatch all refused), policy-based runtime selection (no language preference), declared-facet differential comparison. Classification only: portability grants no authority — permissions stay with the capability/approval system; no Node Creator, no translation engine, no provider integration, no model inference, no production distributed runtime."
+    },
+    {
+      "id": "node.creator",
+      "owner": "manager",
+      "domain": "node-registry",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/node-creator.mjs"
+      ],
+      "exports": {
+        "src/lego/node-creator.mjs": [
+          "APPROVAL_POLICY",
+          "APPROVAL_REQUIRED_CLASSES",
+          "APPROVAL_REQUIRED_CREATION_MODES",
+          "CREATION_MODES",
+          "CREATOR_KIND",
+          "CREATOR_LIMITS",
+          "CREATOR_REFUSAL_REASONS",
+          "CREATOR_STATES",
+          "CREATOR_STATE_TRANSITIONS",
+          "NODE_CREATOR_CONTRACT",
+          "NODE_CREATOR_CONTRACT_VERSION",
+          "NODE_CREATOR_FIELDS",
+          "NODE_CREATOR_OPERATIONS",
+          "NODE_CREATOR_PERMISSIONS",
+          "NodeCreatorError",
+          "SOURCE_KINDS",
+          "TRANSLATION_CONTRACT_VERSION",
+          "TRANSLATION_FORBIDDEN_FIELDS",
+          "TRANSLATION_MARKER_RE",
+          "TRANSLATION_REFUSAL_REASONS",
+          "TRANSLATION_SOURCE_FIELDS",
+          "approvalRiskFor",
+          "createNodeCreator",
+          "requiresApproval"
+        ]
+      },
+      "operations": [
+        "create",
+        "translate",
+        "validate",
+        "preview",
+        "approvalStatus"
+      ],
+      "consumers": [
+        "frontend read-only display of published creator/translation vocabulary",
+        "future provider publishing scope — consumes the publishable reference, is NOT implemented here",
+        "node registry portability validation via node.portability@1.0.0 (consumed, never re-implemented)"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-node-creator.test.mjs"
+      ],
+      "notes": "P2.23 node creator & translation foundation (implementation: agent-1): bounded definition producer — candidate/reference output only, zero standing authority (declaration ≠ authorization at every layer). One validation pipeline for human-created, node-created and translated candidates (origin is provenance, never a bypass). Deterministic offline translation: identical input ⇒ identical output and identical refusals; lossy/unknown source constructs REJECT with canonical reasons (schema issues reuse the P2.22 family verbatim — no second error vocabulary); credential-shaped source fields refuse the whole translation. Approval touchpoint = P2.19 foundation, policy-explicit (node-created OR authority-bearing class), fail-closed via evaluate(); artifact result = P2.19 registry reference (storageRef+checksum+metadata, content never dereferenced) produced only after granted approval — PUBLISHED_REFERENCE means publishable-by-a-system-with-authority, the creator holds none. Portability verdict comes from node.portability@1.0.0#canPort only. No publish op, no execute op, no grant op, no model, no network, no self-modification."
     }
   ]
 }

@@ -587,7 +587,9 @@
         "src/lego/skill.mjs",
         "src/lego/context.mjs",
         "src/lego/agent-session.mjs",
-        "src/lego/agent-machine.mjs"
+        "src/lego/agent-machine.mjs",
+        "src/lego/approval.mjs",
+        "src/lego/artifact.mjs"
       ],
       "dependsOn": [
         "lego-foundation"
@@ -3106,12 +3108,14 @@
       "errorNamespace": "node",
       "paths": [
         "src/catalog.mjs",
-        "src/lego/node-portability.mjs"
+        "src/lego/node-portability.mjs",
+        "src/lego/node-creator.mjs"
       ],
       "public": [],
       "dependsOn": [
         "platform-kernel",
-        "lego-foundation"
+        "lego-foundation",
+        "ai-foundation"
       ],
       "mustNotDependOn": [
         "credentials",
@@ -3299,6 +3303,72 @@
             "node:read",
             "node:portability:validate",
             "node:portability:select"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "standard",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "low"
+        },
+        {
+          "id": "node-registry.creator",
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "create",
+              "interaction": "call",
+              "permission": "node:creator:create",
+              "idempotent": false,
+              "status": "implemented"
+            },
+            {
+              "name": "translate",
+              "interaction": "call",
+              "permission": "node:creator:translate",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "validate",
+              "interaction": "call",
+              "permission": "node:creator:validate",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "preview",
+              "interaction": "call",
+              "permission": "node:read",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "approvalStatus",
+              "interaction": "call",
+              "permission": "node:read",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "node:creator:create",
+            "node:creator:translate",
+            "node:creator:validate",
+            "node:read"
           ],
           "lifecycle": "active",
           "availability": "available",

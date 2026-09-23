@@ -22,6 +22,7 @@
 
 - `src/catalog.mjs`
 - `src/lego/node-portability.mjs`
+- `src/lego/node-creator.mjs`
 
 ## Public contract surface
 
@@ -29,7 +30,7 @@ _none — this LEGO has no public surface yet; do not import from it._
 
 ## May call
 
-`platform-kernel`, `lego-foundation`
+`platform-kernel`, `lego-foundation`, `ai-foundation`
 
 ## Must never call
 

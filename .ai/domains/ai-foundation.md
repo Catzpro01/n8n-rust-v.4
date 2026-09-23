@@ -42,6 +42,8 @@
 - `src/lego/context.mjs`
 - `src/lego/agent-session.mjs`
 - `src/lego/agent-machine.mjs`
+- `src/lego/approval.mjs`
+- `src/lego/artifact.mjs`
 
 ## May call
 
@@ -54,9 +56,9 @@
 
 ## Who breaks if this changes
 
-- Direct dependents: _none_
-- Transitive: _none_
-- **Blast radius: 0** (risk: low)
+- Direct dependents: `node-registry`
+- Transitive: `dynamic-parameters`, `legacy-rest`, `runtime-host`
+- **Blast radius: 4** (risk: high)
 
 ## Resources
 

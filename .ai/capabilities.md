@@ -69,6 +69,7 @@
 | `node-registry.catalog` | `node-registry` |
 | `node-registry.community-node-type-detail` | `node-registry` |
 | `node-registry.community-packages` | `node-registry` |
+| `node-registry.creator` | `node-registry` |
 | `node-registry.icons` | `node-registry` |
 | `node-registry.portability` | `node-registry` |
 | `observability.insights` | `observability` |
@@ -229,6 +230,11 @@ this table instead of guessing from a URL shape.
 | `node-registry.portability.canPort` | `node-registry` | call | `node:portability:validate` | yes | implemented |
 | `node-registry.portability.select` | `node-registry` | call | `node:portability:select` | yes | implemented |
 | `node-registry.portability.describePortability` | `node-registry` | call | `node:read` | yes | implemented |
+| `node-registry.creator.create` | `node-registry` | call | `node:creator:create` | no | implemented |
+| `node-registry.creator.translate` | `node-registry` | call | `node:creator:translate` | yes | implemented |
+| `node-registry.creator.validate` | `node-registry` | call | `node:creator:validate` | yes | implemented |
+| `node-registry.creator.preview` | `node-registry` | call | `node:read` | yes | implemented |
+| `node-registry.creator.approvalStatus` | `node-registry` | call | `node:read` | yes | implemented |
 | `dynamic-parameters.resolve.resolve` | `dynamic-parameters` | call | `node:read` | no | unsupported |
 | `webhook.ingress.receive` | `webhook` | call | `webhook:receive` | no | planned |
 | `webhook.trigger-activation.activate` | `webhook` | call | `workflow:write` | no | planned |
