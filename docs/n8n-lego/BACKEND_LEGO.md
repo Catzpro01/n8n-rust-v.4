@@ -299,7 +299,7 @@ Rule **R7** of the gate diffs the declared exports against the real exported
 symbols, so a contract cannot drift silently: adding `foo` to a locked contract
 file fails the build until the lock and version are updated.
 
-The current contract lock has **59 rows**. The historical foundation set remains:
+The current contract lock has **60 rows**. The historical foundation set remains:
 `compat.http` (1.0.0), `lego.error-contract` (1.0.0), `lego.domain-registry` (1.1.0),
 `lego.contract-compat` (1.0.0), `kernel.platform` (1.0.0), `reference.lego` (1.1.0),
 `reference.validation` (1.1.0), `reference.validation.schema` (1.0.0), and
@@ -323,6 +323,7 @@ P6.12 added `node.supply-chain@0.1.0`.
 P6.13 added `registry.incremental@0.1.0`.
 P6.14 added `node.worker-convergence@0.1.0`.
 P6.15 added `node.acceptance@0.1.0`.
+P6.16 added `registry.integrity@0.1.0`.
 The machine-readable lock is authoritative.
 
 A domain that publishes several contracts names its **primary** one
@@ -332,6 +333,7 @@ A domain that publishes several contracts names its **primary** one
 
 | date | contract | version | change |
 | :--- | :--- | :--- | :--- |
+| 2026-09-24 | `registry.integrity` | 0.1.0 | P6.16: registry integrity chain + freshness/anti-rollback — epochs become hash-linked links (a link's digest covers its ancestor), monotonic/continuity/fork refusals are told apart, a recovery epoch is accepted because its NUMBER rises while its content is older, witnesses give clients three freshness states (current/rollback/unknown) where 'no recall' fails closed behind an explicit `firstContact`, a chain that fails verification cannot be excepted at all, and a rollback can be accepted only with a recorded reason, actor and tick. |
 | 2026-09-24 | `node.acceptance` | 0.1.0 | P6.15: core acceptance — sixteen claims over the fifteen P6 core contracts, each a sentence plus a runner that drives the real contract (no mocks); a subset run is marked PARTIAL and refused as evidence, the report digest plus the required claim set make omissions detectable rather than trusted, missing injected evidence is a FAILURE rather than a skip, and one claim statically proves no core contract imports the engine, the graph or the transports. |
 | 2026-09-24 | `node.worker-convergence` | 0.1.0 | P6.14: worker registry convergence + handshake — four decisions (MATCH, UPGRADE_REQUIRED, MISMATCH, UNAVAILABLE) where divergence is checked before lag so a worker with one disagreement is escalated rather than "brought forward"; a worker ahead of the coordinator is a mismatch, never a downgrade; MATCH requires the epoch AND the reported runtime view, because "no view reported" is a question rather than an agreement; convergence is a plan of ordered steps, never a transport. |
 | 2026-09-24 | `registry.incremental` | 0.1.0 | P6.13: incremental registry compiler + discovery/runtime split — given a previous epoch and a desired declaration set, produce the next epoch WITH a reuse ledger (added/recompiled/reused/removed, byte-for-byte digest stability asserted for reused identities) and prove it equals a full compile (verifyIncremental); an unchanged set is refused as noise; removals are epoch data, not tombstones; one epoch projects into two views with their own digests (discovery carries no implementation digest, runtime carries no display metadata) and a view that cannot be rebuilt is refused. New contract rather than a minor bump to `registry.compiler`: the compiler's job did not change. |
