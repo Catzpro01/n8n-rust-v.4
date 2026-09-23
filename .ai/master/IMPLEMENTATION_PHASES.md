@@ -70,10 +70,11 @@ The strategic phases above are intentionally preserved. The Manager-owned granul
 | `P2.21` | Runtime Adapter & Harness Stack | C | **complete** | P2.22 |
 | `P2.22` | Node Compatibility & Portability | C | **complete** | P2.23 |
 | `P2.23` | Node Creator & Translation | C | **complete** | P2.24 |
-| `P2.24` | Token & Usage - honest accounting | D | **in-progress** | P2.25 (indicative) |
+| `P2.24` | Token & Usage - honest accounting | D | **complete** | P2.25 |
+| `P2.25` | External provider integration - the first real adapters | E | **in-progress** | P2.26 (indicative) |
 | `P2.17+` | Later capability ladder | C-F | **planned** | — |
 
-Current milestone: **P2.24**. Previous completed: **P2.23**.
+Current milestone: **P2.25**. Previous completed: **P2.24**.
 
 Future IDs may be refined by Manager only by updating `docs/n8n-lego/milestones.json`.
 
