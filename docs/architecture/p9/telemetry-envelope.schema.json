@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:n8n:observability:envelope:1.0.0",
+  "title": "P9.1 canonical telemetry envelope",
+  "description": "Structural schema. Native codec additionally enforces canonical ASCII JSON <=8192 bytes, recognizable-secret rejection, and caller-authorized tenant scope. IDs are trusted non-secret opaque references, not user content.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractVersion",
+    "timestamp",
+    "signalType",
+    "component",
+    "context"
+  ],
+  "properties": {
+    "contractVersion": {
+      "const": "1.0.0"
+    },
+    "timestamp": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "signalType": {
+      "enum": [
+        "LOG",
+        "METRIC",
+        "TRACE",
+        "EVENT",
+        "RESOURCE",
+        "DIAGNOSTIC"
+      ]
+    },
+    "severity": {
+      "enum": [
+        "TRACE",
+        "DEBUG",
+        "INFO",
+        "WARN",
+        "ERROR",
+        "FATAL"
+      ]
+    },
+    "component": {
+      "$ref": "#/$defs/identifier"
+    },
+    "environment": {
+      "$ref": "#/$defs/identifier"
+    },
+    "operation": {
+      "$ref": "#/$defs/identifier"
+    },
+    "outcome": {
+      "$ref": "#/$defs/identifier"
+    },
+    "errorCode": {
+      "$ref": "#/$defs/identifier"
+    },
+    "errorClass": {
+      "$ref": "#/$defs/identifier"
+    },
+    "artifactRef": {
+      "$ref": "#/$defs/identifier"
+    },
+    "diagnosticRef": {
+      "$ref": "#/$defs/identifier"
+    },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "workflowId": {
+          "$ref": "#/$defs/identifier"
+        },
+        "workflowVersion": {
+          "$ref": "#/$defs/identifier"
+        },
+        "executionId": {
+          "$ref": "#/$defs/identifier"
+        },
+        "nodeId": {
+          "$ref": "#/$defs/identifier"
+        },
+        "nodeType": {
+          "$ref": "#/$defs/identifier"
+        },
+        "nodeVersion": {
+          "$ref": "#/$defs/identifier"
+        },
+        "triggerId": {
+          "$ref": "#/$defs/identifier"
+        },
+        "requestId": {
+          "$ref": "#/$defs/identifier"
+        },
+        "correlationId": {
+          "$ref": "#/$defs/identifier"
+        },
+        "causationId": {
+          "$ref": "#/$defs/identifier"
+        },
+        "traceId": {
+          "$ref": "#/$defs/identifier"
+        },
+        "spanId": {
+          "$ref": "#/$defs/identifier"
+        },
+        "parentSpanId": {
+          "$ref": "#/$defs/identifier"
+        },
+        "checkpointId": {
+          "$ref": "#/$defs/identifier"
+        },
+        "runtimeId": {
+          "$ref": "#/$defs/identifier"
+        },
+        "registryEpoch": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "runtimeLeaseId": {
+          "$ref": "#/$defs/identifier"
+        },
+        "resourceBudgetId": {
+          "$ref": "#/$defs/identifier"
+        },
+        "tenantId": {
+          "$ref": "#/$defs/identifier"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$"
+    }
+  }
+}

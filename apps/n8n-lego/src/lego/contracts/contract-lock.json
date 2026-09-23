@@ -1577,6 +1577,36 @@
         "apps/n8n-lego/test/lego-resource-guard.test.mjs"
       ],
       "notes": "P3 Slice M: resource guard — six mandatory budgets (Issue #75 #7), five priority lanes, normal/elevated/critical pressure from observed ratios, no clock (observed state passed in), hard limits = backpressure wall for every lane (Issues #75/#79)"
+    },
+    {
+      "id": "observability.envelope",
+      "owner": "agent-6",
+      "domain": "observability",
+      "version": "1.0.0",
+      "status": "stable",
+      "surface": [
+        "src/lego/telemetry-envelope.mjs"
+      ],
+      "exports": {
+        "src/lego/telemetry-envelope.mjs": [
+          "TELEMETRY_CONTRACT",
+          "TELEMETRY_LIMITS",
+          "TELEMETRY_SIGNALS",
+          "TELEMETRY_SEVERITIES",
+          "TELEMETRY_CONTEXT_FIELDS",
+          "createTelemetryContext",
+          "deriveTelemetryContext",
+          "telemetryContextFromEnvelope",
+          "createTelemetryRecord",
+          "serializeTelemetryRecord",
+          "deserializeTelemetryRecord"
+        ]
+      },
+      "consumers": [],
+      "tests": [
+        "apps/n8n-lego/test/lego-telemetry-envelope.test.mjs"
+      ],
+      "notes": "P9.1 envelope only; Agent 4 implementation delegate per Issue #101. No production producer wired; no P3/P4/P6/P8 dependency added."
     }
   ]
 }
