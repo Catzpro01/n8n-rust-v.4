@@ -7,7 +7,7 @@
 | --- | --- |
 | Owner | `agent-6` |
 | Kind / tier | `domain` / `domain` |
-| Status | `contract-only` (phase `P9.1`) |
+| Status | `contract-only` (phase `P9.2`) |
 | Parent | _root_ |
 | Contract | _none declared_ |
 | Error namespace | `observability` |
@@ -21,14 +21,16 @@
 ## Owns
 
 - `src/lego/telemetry-envelope.mjs`
+- `src/lego/structured-log.mjs`
 
 ## Public contract surface
 
 - `src/lego/telemetry-envelope.mjs`
+- `src/lego/structured-log.mjs`
 
 ## May call
 
-`platform-kernel`, `compatibility`
+`platform-kernel`, `compatibility`, `lego-foundation`
 
 ## Must never call
 
@@ -53,3 +55,4 @@
 ## Tests that guard it
 
 - `apps/n8n-lego/test/lego-telemetry-envelope.test.mjs`
+- `apps/n8n-lego/test/lego-structured-log.test.mjs`

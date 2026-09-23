@@ -1,7 +1,7 @@
 {
   "manifestVersion": "1.3.0",
   "phase": "P2.8-B",
-  "updated": "2026-09-22",
+  "updated": "2026-09-23",
   "description": "Backend LEGO registry: the single machine-readable source of truth for backend domain boundaries, ownership, public contracts, declared dependencies and capabilities. Supports hierarchical LEGO (parent -> sub-LEGO -> sub-sub-LEGO) via the `parent` field: a nested entry is a domain like any other, so ownership, contracts, versioning and the dependency gate work identically at every level. Validated by apps/n8n-lego/src/lego/registry.mjs and enforced by tools/lego/architecture-gate.mjs.",
   "root": "apps/n8n-lego",
   "scan": {
@@ -3174,7 +3174,8 @@
       "paths": [
         "src/catalog.mjs",
         "src/lego/node-portability.mjs",
-        "src/lego/node-creator.mjs"
+        "src/lego/node-creator.mjs",
+        "src/lego/node-registry.mjs"
       ],
       "public": [],
       "dependsOn": [
@@ -4434,17 +4435,20 @@
       "owner": "agent-6",
       "kind": "domain",
       "status": "contract-only",
-      "phase": "P9.1",
+      "phase": "P9.2",
       "errorNamespace": "observability",
       "paths": [
-        "src/lego/telemetry-envelope.mjs"
+        "src/lego/telemetry-envelope.mjs",
+        "src/lego/structured-log.mjs"
       ],
       "public": [
-        "src/lego/telemetry-envelope.mjs"
+        "src/lego/telemetry-envelope.mjs",
+        "src/lego/structured-log.mjs"
       ],
       "dependsOn": [
         "platform-kernel",
-        "compatibility"
+        "compatibility",
+        "lego-foundation"
       ],
       "mustNotDependOn": [
         "workflow",
@@ -4453,9 +4457,10 @@
         "legacy-rest"
       ],
       "contract": {
-        "version": "1.0.0",
+        "version": "1.1.0",
         "tests": [
-          "apps/n8n-lego/test/lego-telemetry-envelope.test.mjs"
+          "apps/n8n-lego/test/lego-telemetry-envelope.test.mjs",
+          "apps/n8n-lego/test/lego-structured-log.test.mjs"
         ]
       },
       "capabilities": [

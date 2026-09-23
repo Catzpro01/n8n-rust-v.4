@@ -1638,6 +1638,92 @@
         "apps/n8n-lego/test/lego-execution-optimizer.test.mjs"
       ],
       "notes": "P3 Slice K: semantics-safe fusion (pure whitelist, single-consumer/single-dep, head-ward rewire) + exact-fingerprint bounded node-result cache; defaults off, transforms opt-in; elimination/canonical identity stays in execution.ir (Issue #97 scope wording \"where proven\")"
+    },
+    {
+      "id": "observability.structured-log",
+      "owner": "agent-6",
+      "domain": "observability",
+      "version": "1.0.0",
+      "status": "stable",
+      "surface": [
+        "src/lego/structured-log.mjs"
+      ],
+      "exports": {
+        "src/lego/structured-log.mjs": [
+          "STRUCTURED_LOG_CONTRACT",
+          "LOG_LIMITS",
+          "LOG_ERROR_CLASSES",
+          "LOG_ERROR_TAXONOMY",
+          "classifyLogError",
+          "createStructuredLog",
+          "serializeStructuredLog"
+        ]
+      },
+      "consumers": [],
+      "tests": [
+        "apps/n8n-lego/test/lego-structured-log.test.mjs"
+      ],
+      "notes": "P9.2 only: bounded structured logs, registry-derived error taxonomy, fail-closed message/attribute redaction. No sink or kernel logger replacement."
+    },
+    {
+      "id": "node.registry",
+      "owner": "manager",
+      "domain": "node-registry",
+      "version": "0.1.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/node-registry.mjs"
+      ],
+      "exports": {
+        "src/lego/node-registry.mjs": [
+          "NODE_CAPABILITIES",
+          "NODE_COMPATIBILITY_KINDS",
+          "NODE_CONCURRENCY_MODES",
+          "NODE_DISCOVERY_GROUPS",
+          "NODE_FAILURE_BOUNDARIES",
+          "NODE_HEALTH_STATES",
+          "NODE_IDENTITY_RE",
+          "NODE_LIFECYCLE_STATES",
+          "NODE_PROVENANCE_KINDS",
+          "NODE_REGISTRY_CONTRACT",
+          "NODE_REGISTRY_CONTRACT_VERSION",
+          "NODE_REGISTRY_FIELDS",
+          "NODE_REGISTRY_OPERATIONS",
+          "NODE_REGISTRY_OPTIONAL_FIELDS",
+          "NODE_REGISTRY_PERMISSIONS",
+          "NODE_REGISTRY_REASONS",
+          "NODE_REGISTRY_REQUIRED_FIELDS",
+          "NODE_REGISTRY_RULES",
+          "NODE_REGISTRY_SCHEMA_VERSION",
+          "NODE_REGISTRY_VOCABULARY_SOURCE",
+          "NODE_RESOURCE_CLASSES",
+          "NODE_RESOURCE_FIELDS",
+          "NODE_RUNTIME_LOCALITIES",
+          "NODE_TRUST_CLASSES",
+          "NODE_TYPE_ID_RE",
+          "NODE_TYPE_VERSION_RE",
+          "NodeRegistryError",
+          "RUNTIME_LOCALITY_MODEL",
+          "canonicalNodeRegistryDeclaration",
+          "indexNodeRegistryDeclarations",
+          "isNodeTypeId",
+          "isNodeTypeVersion",
+          "nodeIdentity",
+          "nodeRegistryDeclarationDigest",
+          "parseNodeIdentity",
+          "validateNodeIdentity",
+          "validateNodeRegistryDeclaration"
+        ]
+      },
+      "consumers": [
+        "P6.2 registry compiler + immutable epoch — compiles these declarations and adds epochs, atomic publication and rollback on top",
+        "P3 workflow node resolution (Issue #97) — resolves node identity without reading implementation internals",
+        "P4/P5/P8/P9 contracts — trust class, runtime locality and resource profile are read from the declaration, never inferred"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-node-registry.test.mjs"
+      ],
+      "notes": "P6.1 (P6 implementation owner: Agent 3, Issue #100): canonical node registry contract. Identity is `type` + `typeVersion` and nothing else, rendered `type@typeVersion` exactly as the pinned n8n catalog writes it (`n8n-nodes-base.httpRequest@4.4`). Measured, not assumed: `node.contract` calls typeVersion an integer, but the pinned `n8n-nodes-base@2.9.1` catalog carries fractional versions (1.1 … 4.4) and 90 of its 483 node types are multi-version, so a typeVersion is a positive number with at most one decimal place. Metadata (package, vendor, contract/implementation version, digest, provenance, capabilities, trust class, runtime locality, resource profile, compatibility, lifecycle, health, discovery) is a CLOSED 17-field schema: unknown field, unknown trust class, unknown capability, unknown runtime locality, unknown lifecycle, unknown health, unverifiable digest or a missing provenance source is refused — fail closed. Vocabulary is QUOTED, never re-declared: trust classes, capabilities, runtimes, failure boundaries and resource classes are read from the published foundation manifest (src/lego/manifest/foundation.json), lifecycle from lego.negotiation, portability targets from node.portability, discovery groups from the n8n editor contract — the foundation accessor is deliberately not imported (outside lego-foundation's published surface; gate rule R4). The index is a deterministic dictionary only: duplicate identities are a conflict, never a precedence rule, and nothing is published when any entry is invalid — normalization, epochs, atomic publication and rollback remain P6.2. Pure functions: no network, process, timer or clock; one manifest read. No authority: nothing here grants trust, capability or permission. node.portability@1.0.0 stays the domain's primary contract."
     }
   ]
 }
