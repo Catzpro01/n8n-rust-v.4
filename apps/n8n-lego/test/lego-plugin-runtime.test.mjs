@@ -170,12 +170,12 @@ test('the lock row promises exactly this module export surface', () => {
   const lock = JSON.parse(readFileSync(join(APP_ROOT, 'src/lego/contracts/contract-lock.json'), 'utf8'));
   const row = lock.contracts.find((entry) => entry.id === 'lego.plugin-runtime');
   assert.ok(row, 'lego.plugin-runtime is locked');
-  assert.equal(row.version, '0.1.0');
+  assert.equal(row.version, '0.2.0');
   assert.equal(row.owner, 'agent-1');
   assert.equal(row.domain, 'lego-foundation');
   assert.equal(row.status, 'implemented');
-  assert.deepEqual(row.surface, ['src/lego/plugin-runtime.mjs']);
-  assert.deepEqual(row.tests, ['apps/n8n-lego/test/lego-plugin-runtime.test.mjs']);
+  assert.ok(row.surface.includes('src/lego/plugin-runtime.mjs'), 'runtime core stays on the surface');
+  assert.ok(row.tests.includes('apps/n8n-lego/test/lego-plugin-runtime.test.mjs'));
   const source = readFileSync(join(APP_ROOT, 'src/lego/plugin-runtime.mjs'), 'utf8');
   const exported = [...source.matchAll(/^export (?:const|class|function) (\w+)/gm)].map((match) => match[1]).sort();
   const locked = [...row.exports['src/lego/plugin-runtime.mjs']].sort();

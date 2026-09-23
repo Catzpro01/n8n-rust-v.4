@@ -3303,10 +3303,12 @@
       "id": "lego.plugin-runtime",
       "owner": "agent-1",
       "domain": "lego-foundation",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "status": "implemented",
       "surface": [
-        "src/lego/plugin-runtime.mjs"
+        "src/lego/plugin-runtime.mjs",
+        "src/lego/plugin-manifest.mjs",
+        "src/lego/plugin-registry.mjs"
       ],
       "exports": {
         "src/lego/plugin-runtime.mjs": [
@@ -3323,6 +3325,16 @@
           "PluginRuntimeError",
           "bootstrapPluginCore",
           "createPluginRuntime"
+        ],
+        "src/lego/plugin-manifest.mjs": [
+          "PLUGIN_MANIFEST_BOUNDS",
+          "PLUGIN_MANIFEST_OPTIONAL",
+          "PLUGIN_MANIFEST_REQUIRED",
+          "PLUGIN_RESOURCE_LIMIT_FIELDS",
+          "validateManifest"
+        ],
+        "src/lego/plugin-registry.mjs": [
+          "createPluginRegistry"
         ]
       },
       "consumers": [
@@ -3330,9 +3342,10 @@
         "frontend plugin boundary (P2.27.10) consumes the canonical vocabularies via the checked plugin surface"
       ],
       "tests": [
-        "apps/n8n-lego/test/lego-plugin-runtime.test.mjs"
+        "apps/n8n-lego/test/lego-plugin-runtime.test.mjs",
+        "apps/n8n-lego/test/lego-plugin-registry.test.mjs"
       ],
-      "notes": "P2.27.1 tiny Core kernel (dedicated Master Prompt P2.27, 2026-09-24; design section 3): canonical plugin vocabularies frozen once — trust classes CORE/TRUSTED/ISOLATED/SANDBOXED (isolation posture; foundation.json trust levels stay canonical for provenance), runtime localities IN_PROCESS/WASM/ISOLATED_PROCESS/REMOTE (aligned with the locality strings node-registry already emits), lifecycle DISCOVERED→VALIDATING→STARTING→HEALTHY→DEGRADED→DRAINING→STOPPED→QUARANTINED, declared event types; core identity/clock primitives; bounded drop-oldest event ring (default 64, max 4096, dropped counted — no unbounded queue); health snapshot (plugins:0 reserved for P2.27.2); PluginRuntimeError constructor refuses any code not published in contracts/errors.contract.json (zero new error codes, foundation F16 by construction). Core owns no workflow/execution/storage/AI/credentials. Later P2.27 slices extend this row additively (exports grow, minor version bumps as warranted); no new domain, no sub-LEGO."
+      "notes": "P2.27.1 tiny Core kernel (dedicated Master Prompt P2.27, 2026-09-24; design section 3): canonical plugin vocabularies frozen once — trust classes CORE/TRUSTED/ISOLATED/SANDBOXED (isolation posture; foundation.json trust levels stay canonical for provenance), runtime localities IN_PROCESS/WASM/ISOLATED_PROCESS/REMOTE (aligned with the locality strings node-registry already emits), lifecycle DISCOVERED→VALIDATING→STARTING→HEALTHY→DEGRADED→DRAINING→STOPPED→QUARANTINED, declared event types; core identity/clock primitives; bounded drop-oldest event ring (default 64, max 4096, dropped counted — no unbounded queue); health snapshot (plugins:0 reserved for P2.27.2); PluginRuntimeError constructor refuses any code not published in contracts/errors.contract.json (zero new error codes, foundation F16 by construction). Core owns no workflow/execution/storage/AI/credentials. Later P2.27 slices extend this row additively (exports grow, minor version bumps as warranted); no new domain, no sub-LEGO. MINOR 0.2.0 (P2.27.2): manifest + registry land — strict fail-closed validateManifest required+optional field whitelist (unknown fields reject), kebab id, major.minor.patch, canonical trust/locality classes only, capability/dependency/resource bounds (no unbounded declarations), range grammar = compat.mjs grammar (*, exact, ^ with 0.x same-minor, ~, >=); createPluginRegistry with single-active-version identity (duplicate id = lego.contract_violation), resolveContract(id, range) via compat satisfies (missing provider = lego.unavailable, range miss = lego.version_incompatible with available versions), unregister for drains, events plugin.registered/rejected/deactivated into the core ring; runtime accepts an injected registry (dependency direction registry -> runtime, no cycle) and reports health().plugins."
     }
   ]
 }
