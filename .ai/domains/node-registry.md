@@ -29,6 +29,7 @@
 - `src/lego/incremental-registry.mjs`
 - `src/lego/io-compiler.mjs`
 - `src/lego/jit-lease.mjs`
+- `src/lego/native-abi.mjs`
 - `src/lego/node-acceptance.mjs`
 - `src/lego/node-health.mjs`
 - `src/lego/node-lifecycle.mjs`
