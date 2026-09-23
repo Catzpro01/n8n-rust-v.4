@@ -13,7 +13,7 @@
 | 4 | P2 regression green | **fail 0** on every full run this milestone |
 | 5 | Compatibility gate §6 intact | errors.contract **14 codes unchanged**; oracle (L) locked four #91 modes + nine observables; identity/metamorphic properties asserted (IR all-off, DNA shuffle, hardening fuzz families); P2.27 code **ZERO** (never touched) |
 | 6 | Performance gate §7 | matrix reconciled: `docs/n8n-lego/P3-BENCHMARK-ACCEPTANCE-MATRIX.md` (15 dimensions × measured × evidence links); T1 1M PASS, T2/T3 ENV-LIMIT honestly recorded |
-| 7 | Register/evidence reconciled | evidence files **P3-SLICE-A..O = 15/15 present**; `milestones.json`: **zero P3 rows** (canonical = #97 §10 chain, per register rules), `mainBaseline` updated to protected main `9f6625b9` (rule: top-level = protected main AKTUAL), `currentMilestone`/`previousCompletedMilestone` untouched (P2.27 status quo) |
+| 7 | Register/evidence reconciled | evidence files **P3-SLICE-A..O = 15/15 present**; `milestones.json`: **zero P3 rows** (canonical = #97 §10 chain, per register rules); `mainBaseline` **kept at `d65f9713`** — an earlier draft of this slice briefly moved it to the current HEAD and that broke 4 register tests pinning it as immutable historical baseline; reverted immediately (remediation PR), `currentMilestone`/`previousCompletedMilestone` untouched (P2.27 status quo). Current protected main HEAD is recorded HERE and in #97 §34 instead |
 | 8 | Post-merge verify on protected main | done after EVERY slice merge (P3.1..P3.14); P3.15's post-merge verify = step after this PR merges, before §34/STOP |
 
 ## Merge SHA chain (P3)
