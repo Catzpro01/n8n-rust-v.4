@@ -38,6 +38,7 @@
 - `src/lego/node-registry.mjs`
 - `src/lego/node-residency.mjs`
 - `src/lego/package-transaction.mjs`
+- `src/lego/provenance-log.mjs`
 - `src/lego/registry-compiler.mjs`
 - `src/lego/registry-integrity.mjs`
 - `src/lego/resolution-manifest.mjs`

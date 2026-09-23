@@ -3061,6 +3061,53 @@
         "apps/n8n-lego/test/lego-wasm-cache.test.mjs"
       ],
       "notes": "P6.26 (P6 implementation owner: Agent 3, Issue #100): the WASM compilation cache. A cache is where a wrong answer hides — fast, shared, and authoritative-sounding — so this contract is the part of the runtime that decides what a cached module is identified by, what happens when it is wrong, and what may be thrown away. THE KEY IS CONTENT AND TOOLCHAIN: artifact digest + wire contract + ABI version + toolchain, so the same artifact compiled by another engine is another object (a cache keyed by a path or 'latest' answers yesterday's question today); the suite proves a toolchain change yields a different key. A FAILED COMPILATION IS CACHED AS A FACT WITH ITS REASON (negative entries, so a broken artifact is not recompiled on every request) AND A NEW TOOLCHAIN ASKS THE QUESTION AGAIN, because the toolchain is part of the key — the suite asserts the new engine sees a miss rather than inheriting yesterday's failure. A HIT IS NOT A GUESS: every entry carries the digest of the module it holds and `verifyHit` compares it, with a tampered digest named in the message ('expected cccccccccccc… and got eeeeeeeeeeee…'). ONE KEY HOLDS ONE MODULE: an insert whose module digest differs from the entry under that key is refused ('one key holds one module'), a compiled entry without a module digest is refused ('a hit nobody can verify is a guess'), and a cached failure is refused when it carries bytes ('caching it with bytes would make the budget lie'). A MODULE IN USE IS NEVER EVICTED: eviction takes the least recently used IDLE entry, adoption counts each user, and when every entry is in use the insert is REFUSED rather than throwing away something running ('refusing the insert rather than throwing away a module that is running') — the first suite run corrected the test fixture to actually reach that state by adopting every entry. Invalidation is TARGETED (by artifact, by toolchain, or both) and leaves in-use entries until they are released; an empty selector is refused because 'clearing a cache is a restart'. Digests are presented to humans without the sha256: noise (a suite-driven readability fix). Scope walls: no compilation, no engine, no bytecode inspection, no WebAssembly API — the caller compiles and reports what happened; no artifact declaration (P6.25), leases (P6.22), placement (P6.24) or loading of bytes; no filesystem, network, clock or randomness — the only node import is the hash and every answer takes the tick it answers for. Authority: this contract decides what a cache may return and throw away; it never compiles, never executes and never decides that a module is safe to run."
+    },
+    {
+      "id": "node.provenance",
+      "owner": "manager",
+      "domain": "node-registry",
+      "version": "0.1.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/provenance-log.mjs"
+      ],
+      "exports": {
+        "src/lego/provenance-log.mjs": [
+          "MATERIAL_KINDS",
+          "PROVENANCE_CONTRACT",
+          "PROVENANCE_CONTRACT_VERSION",
+          "PROVENANCE_FORMAT",
+          "PROVENANCE_OPERATIONS",
+          "PROVENANCE_PERMISSIONS",
+          "PROVENANCE_REASONS",
+          "PROVENANCE_RULES",
+          "PROVENANCE_SCHEMA_VERSION",
+          "PROVENANCE_VERDICTS",
+          "ProvenanceError",
+          "createProvenanceStatement",
+          "createTransparencyLog",
+          "describeLog",
+          "explainProvenance",
+          "headOfLog",
+          "inclusionProof",
+          "isProvenanceStatement",
+          "isTransparencyLog",
+          "provenanceDigest",
+          "publishStatement",
+          "stableJson",
+          "verifyInclusion",
+          "verifyProvenance"
+        ]
+      },
+      "consumers": [
+        "P6.28 TUF/freshness — freshness is a statement with a time in it, and this is the shape a statement takes",
+        "P6.30 repair and offline recovery — a repaired registry has to re-establish provenance rather than assume it",
+        "P6.31 full acceptance — provenance is the half of supply-chain evidence that says where bytes came from"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-provenance-log.test.mjs"
+      ],
+      "notes": "P6.27 (P6 implementation owner: Agent 3, Issue #100): provenance statements and the transparency log. 'Where did these bytes come from' has a cheap wrong answer — a field in a manifest, a build id, a CI badge — so this contract makes the answer cost something. PROVENANCE IS A STATEMENT ABOUT A SUBJECT DIGEST: a subject without a digest is refused as 'a rumour with a version number', a statement naming a different digest is a mismatch ('provenance about something else is not provenance about this'), and the name has to match too. EVERY INPUT IS NAMED AND DIGESTED — source, dependency, toolchain, configuration — because 'built from the repository' is not a claim this contract accepts; a material without a digest is 'an input nobody can check'; a duplicated material is refused; and a build that finished before it started is refused. A STATEMENT NOBODY HAS SEEN IS A CLAIM, NOT EVIDENCE: publication into the log is what makes verification possible, and an unpublished statement verifies as insufficient ('a statement nobody else has seen is a claim, not evidence'); the policy can waive publication, and it says so in the result. THE LOG IS APPEND-ONLY AND ITS HEAD IS A CHECKPOINT: every record links to the one before it, publishing the same statement twice is the SAME record (a log that grows when nothing happened is a log nobody can reason about), and a record rebuilt under one digest for another subject is refused. AN INCLUSION PROOF IS CHECKED, NOT TRUSTED: verifyInclusion walks the links, refuses a log that ends sooner than the proof admits ('a log that ends sooner than the proof admits is a log something was removed from'), a rebuilt record ('the log has been rebuilt differently'), a broken chain, and a proof that has been superseded by a newer head. PROVENANCE IS NOT TRUST AND PERFORMS NO CRYPTOGRAPHY: signing and attestation belong to P6.12, trust classes to P6.1, the epoch chain to P6.16 — the suite asserts this module reaches none of them (no createSign/subtle/privateKey/signAttestation, no other module of the registry), and that the only node import is the hash. No filesystem, network, clock or randomness: every record takes the tick it happened at. Authority: this contract records and checks where an artifact came from; it never decides whether it may run."
     }
   ]
 }
