@@ -31,6 +31,7 @@
 - `src/lego/registry-compiler.mjs`
 - `src/lego/resolution-manifest.mjs`
 - `src/lego/runtime-lease.mjs`
+- `src/lego/semantic-fingerprint.mjs`
 
 ## Public contract surface
 
