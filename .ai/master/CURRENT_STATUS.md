@@ -10,11 +10,11 @@ document is right and the prose is stale.
 
 | | |
 | --- | --- |
-| Protected main baseline | `a409d9301247078aaadb4883dd9cb1082928ac82` |
+| Protected main baseline | `9cc6ba889790a814cdbf23768f1d4f734306b22e` |
 | Agent 1 branch | `arena/01a0c9d3-n8n-rust-v-4` |
 | Agent 2 branch | `arena/01a0c90d-n8n-rust-v-4` |
-| **Current milestone** | **P2.25** |
-| Previous completed milestone | **P2.24** |
+| **Current milestone** | **P2.26** |
+| Previous completed milestone | **P2.25** |
 | Current branch state | `arena/01a0c90d-n8n-rust-v-4` (implementation branch; not protected main) |
 | Historical reconciled state | `c1eca8cc` (historical evidence, not current main) |
 | Historical P2.11 evidence commit | `bdd0f1d2d6c8d7bc1c1ff3d881ddc2b3bd93713d` |
@@ -37,13 +37,13 @@ is the row marked as such.
 
 ## Milestone state
 
-- **Current:** `P2.25` — External provider integration - the first real adapters (**in-progress**)
-- **Previous complete:** `P2.24`
-- **Why next:** P2.21 Runtime Adapter & Harness Stack; P2.24 Token & Usage - honest accounting
-- **Owns:** first model provider adapter behind the declared seam; first tool provider adapter; first external runtime behind the P2.21 seam; AI Foundation with NO provider configured stays a valid, fully supported state — never faked inference
-- **Does not implement:** credential manager / credentials stored by LEGO; standing credential authority; faked inference without a configured provider; autonomous publishing; billing settlement; MCP server/client/adapter runtime (P3/FUTURE); Arena runtime; production distributed scheduler
-- **Next:** `P2.26 (indicative)`
-- **Completion gate:** all roadmap acceptance items hold; PR merged and post-merge verification passes on protected main; register completion evidence recorded and currentMilestone advanced to P2.26
+- **Current:** `P2.26` — Provider, Workspace & GitHub Integration + Foundation Readiness (**in-progress**)
+- **Previous complete:** `P2.25`
+- **Why next:** P2.20 MCP Control Boundary; P2.22 Node Compatibility & Portability; P2.23 Node Creator & Translation; P2.25 External provider integration - the first real adapters; ai-foundation
+- **Owns:** provider declaration profile (sim/local/cloud) behind declared seams; workspace/GitHub integration boundaries without any stored credential; Foundation-readiness re-verification of every P2.16-P2.25 invariant; readiness checklist all green on main without weakened pins/tests/governance
+- **Does not implement:** real MCP server/client implementation (P3/FUTURE); production distributed scheduler (P3/FUTURE); autonomous node publishing pipeline (P3/FUTURE); external provider SaaS connectors beyond declared profiles (P3/FUTURE); anything after P2.26
+- **Next:** `P2.17+`
+- **Completion gate:** readiness checklist all green on main; PR merged and post-merge verification passes on protected main; register completion evidence recorded and every P2.16-P2.25 milestone exit evidenced
 
 ## The 15 AI/Agent LEGO by status
 

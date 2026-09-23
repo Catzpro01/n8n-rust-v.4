@@ -9,10 +9,10 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 
 | Field | Value |
 | --- | --- |
-| Current milestone | **P2.25** |
-| Previous completed milestone | **P2.24** |
+| Current milestone | **P2.26** |
+| Previous completed milestone | **P2.25** |
 | Protected branch | `main` |
-| Main baseline | `a409d9301247078aaadb4883dd9cb1082928ac82` |
+| Main baseline | `9cc6ba889790a814cdbf23768f1d4f734306b22e` |
 | Agent 1 branch | `arena/01a0c9d3-n8n-rust-v-4` |
 | Agent 2 branch | `arena/01a0c90d-n8n-rust-v-4` |
 | Register owner | `manager` |
@@ -35,26 +35,27 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 | `P2.22` | Node Compatibility & Portability | C | **complete** | P2.23 |
 | `P2.23` | Node Creator & Translation | C | **complete** | P2.24 |
 | `P2.24` | Token & Usage - honest accounting | D | **complete** | P2.25 |
-| `P2.25` | External provider integration - the first real adapters | E | **in-progress** | P2.26 (indicative) |
+| `P2.25` | External provider integration - the first real adapters | E | **complete** | P2.26 |
+| `P2.26` | Provider, Workspace & GitHub Integration + Foundation Readiness | F | **in-progress** | P2.17+ |
 | `P2.17+` | Later capability ladder | C-F | **planned** | — |
 
-## Current milestone boundary — P2.25
+## Current milestone boundary — P2.26
 
-**Owns:** first model provider adapter behind the declared seam; first tool provider adapter; first external runtime behind the P2.21 seam; AI Foundation with NO provider configured stays a valid, fully supported state — never faked inference
+**Owns:** provider declaration profile (sim/local/cloud) behind declared seams; workspace/GitHub integration boundaries without any stored credential; Foundation-readiness re-verification of every P2.16-P2.25 invariant; readiness checklist all green on main without weakened pins/tests/governance
 
-**Does not own:** credential manager / credentials stored by LEGO; standing credential authority; faked inference without a configured provider; autonomous publishing; billing settlement; MCP server/client/adapter runtime (P3/FUTURE); Arena runtime; production distributed scheduler
+**Does not own:** real MCP server/client implementation (P3/FUTURE); production distributed scheduler (P3/FUTURE); autonomous node publishing pipeline (P3/FUTURE); external provider SaaS connectors beyond declared profiles (P3/FUTURE); anything after P2.26
 
-**Dependencies:** P2.21 Runtime Adapter & Harness Stack; P2.24 Token & Usage - honest accounting
+**Dependencies:** P2.20 MCP Control Boundary; P2.22 Node Compatibility & Portability; P2.23 Node Creator & Translation; P2.25 External provider integration - the first real adapters; ai-foundation
 
-**Required gates:** full gates: arch+selftest, foundation+selftest, capabilities, scaleout, ai:check, full backend/frontend suites
+**Required gates:** full gates: arch+selftest, foundation+selftest, capabilities, scaleout, ai:check, full backend/frontend suites; readiness gate re-runs the full ladder including XA-21 measure-report
 
-**Completion rule:** all roadmap acceptance items hold; PR merged and post-merge verification passes on protected main; register completion evidence recorded and currentMilestone advanced to P2.26
+**Completion rule:** readiness checklist all green on main; PR merged and post-merge verification passes on protected main; register completion evidence recorded and every P2.16-P2.25 milestone exit evidenced
 
 ## Reconciliation state
 
 - Verdict: **PENDING**
 - Conflict: —
-- Contract: ai.token-usage@1.0.0, node.creator@1.0.0, node.portability@1.0.0, ai.agent-machine@1.1.0, lego.transport-kernel@1.0.0, ai.mcp-boundary, XA-21 all untouched unless the prompt says otherwise
+- Contract: —
 - Agent: `—`
 - Reason: —
 - Required decision: —
@@ -70,7 +71,7 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 
 - Start/finish evidence is evidence, not a replacement for current state.
 - An agent branch can be implementation-complete without the milestone being complete.
-- `P2.25` requires **RECONCILIATION PASS**, **MERGE PASS**, and post-merge verification on protected main before it can become complete.
+- `P2.26` requires **RECONCILIATION PASS**, **MERGE PASS**, and post-merge verification on protected main before it can become complete.
 
 ## Manager merge protocol
 
