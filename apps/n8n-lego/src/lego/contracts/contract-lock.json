@@ -21,7 +21,7 @@
       "documentation",
       "internal implementation changes with no surface change"
     ],
-    "rule": "A BREAKING change requires: major bump here, a note in docs/n8n-lego/BACKEND_LEGO.md \u00a7Contract changelog, and sign-off from every consumer listed below.",
+    "rule": "A BREAKING change requires: major bump here, a note in docs/n8n-lego/BACKEND_LEGO.md §Contract changelog, and sign-off from every consumer listed below.",
     "preRelease": "Contracts at 0.x are provisional: they may break with a minor bump, but the bump is still mandatory.",
     "compatibilityModel": {
       "module": "src/lego/compat.mjs",
@@ -42,7 +42,7 @@
       "note": "0.x contracts are provisional: ^0.2.1 does NOT accept 0.3.0, because a 0.x minor is allowed to break. Consumers of a 0.x contract must be told about every minor."
     },
     "parentChildRule": "A parent contract does NOT version-bump because a sub-LEGO changed compatibly. It bumps only when its own parent-facing surface moves. Example held by the fixtures: reference.validation 1.0.0 -> 1.1.0 (additive) leaves reference.lego at 1.0.0 and reference.repository at 1.0.0. A BREAKING child change that surfaces through the parent does force a parent major bump.",
-    "migrations": "A contract may declare `migrations: [\"1.3.0\"]` \u2014 versions that need a data/state migration even though they are semver-compatible. Migration points are declared, never inferred."
+    "migrations": "A contract may declare `migrations: [\"1.3.0\"]` — versions that need a data/state migration even though they are semver-compatible. Migration points are declared, never inferred."
   },
   "contracts": [
     {
@@ -179,7 +179,7 @@
         "apps/n8n-lego/test/lego-foundation.test.mjs"
       ],
       "changelog": [
-        "1.1.0 (P2.7): added hierarchy accessors (getChildren/getDescendants/getAncestors/lineage/nestingDepth/rootOf/isWithin/tree, MAX_NESTING_DEPTH) \u2014 additive, every 1.0.0 consumer unaffected."
+        "1.1.0 (P2.7): added hierarchy accessors (getChildren/getDescendants/getAncestors/lineage/nestingDepth/rootOf/isWithin/tree, MAX_NESTING_DEPTH) — additive, every 1.0.0 consumer unaffected."
       ]
     },
     {
@@ -245,7 +245,7 @@
         "apps/n8n-lego/test/lego-foundation.test.mjs"
       ],
       "changelog": [
-        "1.1.0 (P2.7): added createReferenceTree + REFERENCE_SUBLEGOS (composition of the nested sub-LEGOs) \u2014 additive. The parent's own operations are unchanged."
+        "1.1.0 (P2.7): added createReferenceTree + REFERENCE_SUBLEGOS (composition of the nested sub-LEGOs) — additive. The parent's own operations are unchanged."
       ]
     },
     {
@@ -305,7 +305,7 @@
         "apps/n8n-lego/test/lego-lifecycle.test.mjs"
       ],
       "changelog": [
-        "1.1.0 (P2.7): added explain() and the optional `strict` option \u2014 additive, so ^1.0.0 consumers are unaffected and the parent contract did not move."
+        "1.1.0 (P2.7): added explain() and the optional `strict` option — additive, so ^1.0.0 consumers are unaffected and the parent contract did not move."
       ]
     },
     {
@@ -389,7 +389,7 @@
       "id": "lego.envelope",
       "owner": "agent-2",
       "domain": "lego-foundation",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "status": "stable",
       "surface": [
         "src/lego/envelope.mjs"
@@ -415,13 +415,13 @@
       "tests": [
         "apps/n8n-lego/test/lego-communication.test.mjs"
       ],
-      "notes": "Operation context: identity, correlation, actor/scope, deadline, cancellation, idempotency. Zero serialization on direct calls; serializeEnvelope drops the AbortSignal at a process boundary and flags cancellable:false."
+      "notes": "Fifteen public exports (scope 12.1; compat 13.1) + applyCompatibilityPolicy (15.2). MINOR 1.1.0 (P2.18): ENVELOPE_FIELDS gains optional 'causationId' — identifies the immediate parent request that caused this envelope (derived default = parent requestId). serialize/deserialize boundaries unchanged."
     },
     {
       "id": "lego.interaction",
       "owner": "agent-2",
       "domain": "lego-foundation",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "status": "stable",
       "surface": [
         "src/lego/interaction.mjs"
@@ -443,6 +443,7 @@
           "stream",
           "applyBackpressure",
           "batch",
+          "BATCH_LIMITS",
           "DEGRADATION_STATES",
           "degradationFor"
         ]
@@ -453,7 +454,33 @@
       "tests": [
         "apps/n8n-lego/test/lego-communication.test.mjs"
       ],
-      "notes": "CALL/EVENT/STREAM/BATCH as transport-neutral semantics plus local dispatch. Contains no transport: a worker or remote adapter registers the same provider shape and consumers do not change."
+      "notes": "Four interaction classes with dispatch contracts and backpressure. MINOR 1.1.0 (P2.18): export BATCH_LIMITS (batch ceiling 256) and bound applyBackpressure — 'buffer' applies a declared onOverflow (or refuses with lego.backpressure) instead of queueing past highWaterMark; 'block' reports 'blocked' synchronously and offers bounded pushAsync waiting; highWaterMark validated as an integer in [1, 65536]."
+    },
+    {
+      "id": "lego.transport-kernel",
+      "owner": "agent-1",
+      "domain": "lego-foundation",
+      "version": "1.0.0",
+      "status": "stable",
+      "surface": [
+        "src/lego/transport-kernel.mjs"
+      ],
+      "exports": {
+        "src/lego/transport-kernel.mjs": [
+          "KERNEL_LIMITS",
+          "KernelViolationError",
+          "validateEnvelope",
+          "encodeMessage",
+          "decodeMessage"
+        ]
+      },
+      "consumers": [
+        "backend LEGOs that move an envelope + payload across any boundary (CALL/EVENT/STREAM/BATCH)"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-transport-kernel.test.mjs"
+      ],
+      "notes": "Universal transport & envelope kernel (P2.18): deterministic canonical-JSON encode/decode of {envelope, payload}, fail-closed validation on entry (lego.contract_violation), declared KERNEL_LIMITS bounds (64 KiB message, 128-char ids, depth 32). No HTTP/broker/daemon — transport adapters arrive in P2.21."
     },
     {
       "id": "lego.negotiation",
@@ -658,7 +685,7 @@
       "tests": [
         "apps/n8n-lego/test/lego-skill.test.mjs"
       ],
-      "notes": "Skill = procedural knowledge + rules + procedure + capability map + validators. The REGISTRY is implemented; skills stay declarative documents and nothing executes a procedure. FOUR published operations only. register/select/load/release are internal lifecycle methods of the registry object, deliberately NOT published caller operations: publishing load would make lazy discovery a caller concern, and publishing register would let a caller mutate the vocabulary other consumers negotiate against. There is no execute operation and no ai:skill:execute permission \u2014 execution is not a skill operation, so no published name may imply it. A skill DECLARES requiredCapabilities and never grants them; the capability system stays the sole authority. validate-selection checks the DECLARATION, never the caller's authorization. An unknown capability fails closed. Locked in P2.12 finalize by XA-19; XA-11 (whether Skill ultimately belongs under ai-foundation) remains open-for-manager and is a separate architecture decision that this lock does not settle."
+      "notes": "Skill = procedural knowledge + rules + procedure + capability map + validators. The REGISTRY is implemented; skills stay declarative documents and nothing executes a procedure. FOUR published operations only. register/select/load/release are internal lifecycle methods of the registry object, deliberately NOT published caller operations: publishing load would make lazy discovery a caller concern, and publishing register would let a caller mutate the vocabulary other consumers negotiate against. There is no execute operation and no ai:skill:execute permission — execution is not a skill operation, so no published name may imply it. A skill DECLARES requiredCapabilities and never grants them; the capability system stays the sole authority. validate-selection checks the DECLARATION, never the caller's authorization. An unknown capability fails closed. Locked in P2.12 finalize by XA-19; XA-11 (whether Skill ultimately belongs under ai-foundation) remains open-for-manager and is a separate architecture decision that this lock does not settle."
     },
     {
       "id": "ai.memory",
@@ -824,7 +851,7 @@
       "notes": "P2.16 bounded Agent Machine execution foundation (1.0.0) extended additively in 1.1.0: one canonical state machine for machine, agent and task identity, the canonical agent lifecycle plus the machine-level ready state, bounded step bookkeeping, first-class budgets (incl. maxChildren / maxTasksPerAgent), deterministic transitions, a replaceable provider/executor seam, bounded delegation edges with explicit narrowed grants (no permission inheritance), bounded execution graph representation/validation and Universal Agent Event derivation. It consumes ai.context, ai.agent-session, ai.memory and ai.workspace by opaque reference only and never redefines them. Nine operations and the five canonical ai:agent:* permissions; delegation is bookkeeping, never execution. No loop, no inference, no tools, no scheduler, no shell, no filesystem, no process. Waiting is fail-closed: approval resolution is the ai.approval contract's boundary, not this one.",
       "previousVersion": "1.0.0",
       "changelog": [
-        "1.1.0 (P2.16): additive. Added agentId identity (distinct from machineId and taskId), capabilityScope (validated against the lego-foundation capability registry; unknown fail closed), bounded delegation edges (agentMachine.delegate + ai:agent:delegate \u2014 explicit narrowed grant, no permission inheritance, bounded budget and deadline clamped to the parent), the ready lifecycle state (agentMachine.prepare; created -> running stays legal, 1.0.0 flows unchanged), bounded execution graph representation/validation (validateAgentGraph: sequential, parallel, conditional, fan-out, fan-in, join, retry; cycles rejected), Universal Agent Event derivation (deriveAgentMachineEvents: agent.created/started/delegated/completed/failed/cancelled), maxChildren and maxTasksPerAgent budget bounds, and operation/permission fail-closed surfaces. The startedAt field the record always carried is now declared in fields. No 1.0.0 operation, state or transition changed meaning."
+        "1.1.0 (P2.16): additive. Added agentId identity (distinct from machineId and taskId), capabilityScope (validated against the lego-foundation capability registry; unknown fail closed), bounded delegation edges (agentMachine.delegate + ai:agent:delegate — explicit narrowed grant, no permission inheritance, bounded budget and deadline clamped to the parent), the ready lifecycle state (agentMachine.prepare; created -> running stays legal, 1.0.0 flows unchanged), bounded execution graph representation/validation (validateAgentGraph: sequential, parallel, conditional, fan-out, fan-in, join, retry; cycles rejected), Universal Agent Event derivation (deriveAgentMachineEvents: agent.created/started/delegated/completed/failed/cancelled), maxChildren and maxTasksPerAgent budget bounds, and operation/permission fail-closed surfaces. The startedAt field the record always carried is now declared in fields. No 1.0.0 operation, state or transition changed meaning."
       ]
     }
   ]

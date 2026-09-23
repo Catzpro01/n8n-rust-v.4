@@ -29,7 +29,7 @@ is the row marked as such.
 | | |
 | --- | --- |
 | Core LEGO domains | **26** |
-| Locked contracts | 20 |
+| Locked contracts | 21 |
 | Declared capabilities | 86 |
 | Declared operations | 163 |
 | Published error codes | 36 |

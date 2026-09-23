@@ -114,6 +114,7 @@
       "contractVersion": "version the caller was built against",
       "requestId": "unique per request",
       "correlationId": "groups related requests (one user action, one execution)",
+      "causationId": "identifies the immediate parent request that caused this one (a derived envelope defaults it to the parent requestId)",
       "traceId": "distributed trace identity, for a future worker topology",
       "actor": "security context: who is asking, with which scopes",
       "deadline": "absolute epoch-ms after which the callee should stop",

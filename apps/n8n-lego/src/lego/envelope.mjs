@@ -1,10 +1,12 @@
 /**
  * Backend LEGO foundation — the operation envelope, cancellation and deadlines.
  *
- * PUBLIC CONTRACT (`lego.envelope`, v1.0.0, owner: agent-2).
+ * PUBLIC CONTRACT (`lego.envelope`, v1.1.0, owner: agent-2).
  *
  * P2.8-B declared the envelope's ten fields as vocabulary. This module makes it
- * real, and it is the piece the four interaction classes all sit on.
+ * real, and it is the piece the four interaction classes all sit on. P2.18 adds
+ * the optional `causationId` field (MINOR): which immediate parent request
+ * caused this one — defaulting to the parent's requestId on derived envelopes.
  *
  * THE CONSTRAINT THAT SHAPES EVERYTHING HERE: the envelope must be cheap enough
  * to create on every in-process call. A workflow executing 400 nodes creates 400
@@ -31,6 +33,7 @@ export const ENVELOPE_FIELDS = Object.freeze([
   'contractVersion',
   'requestId',
   'correlationId',
+  'causationId',
   'traceId',
   'actor',
   'scope',
@@ -61,8 +64,8 @@ export class CancellationError extends Error {
  *
  * @param {{
  *   legoId: string, operation: string, contractVersion?: string,
- *   requestId?: string, correlationId?: string, traceId?: string,
- *   actor?: object|null, scope?: object|null,
+ *   requestId?: string, correlationId?: string, causationId?: string|null,
+ *   traceId?: string, actor?: object|null, scope?: object|null,
  *   timeoutMs?: number, deadline?: number|null,
  *   signal?: AbortSignal|null, idempotencyKey?: string|null
  * }} spec
@@ -80,6 +83,7 @@ export function createEnvelope(spec) {
     contractVersion: spec.contractVersion ?? null,
     requestId,
     correlationId: spec.correlationId ?? requestId,
+    causationId: spec.causationId ?? null,
     traceId: spec.traceId ?? null,
     actor: spec.actor ?? null,
     scope: spec.scope ?? null,
@@ -114,6 +118,7 @@ export function deriveEnvelope(parent, spec) {
     operation: spec?.operation ?? parent.operation,
     requestId: spec?.requestId ?? randomUUID(),
     correlationId: parent.correlationId,
+    causationId: spec?.causationId ?? parent.requestId,
     traceId: spec?.traceId ?? parent.traceId,
     actor: spec?.actor ?? parent.actor,
     scope: spec?.scope ?? parent.scope,
