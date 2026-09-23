@@ -6,6 +6,7 @@ pub mod admission;
 pub mod expression_contract;
 pub mod ingress_contract;
 pub mod ingress_modes;
+pub mod innovation;
 pub mod recovery;
 pub mod schedule;
 pub mod webhook;
@@ -35,6 +36,12 @@ pub use ingress_modes::{
     ExecutionStatusTag, IngressIntent, IntentError, IntentResolver, ListenPool,
     ManualEmissionError, ManualTrigger, ModeDecision, TestListen, WaitingResolution,
     WaitingVerdict,
+};
+pub use innovation::{
+    adapt_limits, coalesce_events, next_brownout, qos_apply, qos_decide, AdaptiveLimits,
+    AtlasError, AtlasSwap, BrownoutMode, CapabilityToken, CapsuleError, CoalescibleEvent,
+    FlightRecorder, FusionConfig, FusionOutput, HardLimits, PayloadCapsule, QosAction, QosDecision,
+    RouteAtlas, TelemetrySample,
 };
 pub use recovery::{
     recovery_plan, Journal, JournalEntry, LeaderLease, LeaseError, LifecycleEvent, RecoveryAction,
