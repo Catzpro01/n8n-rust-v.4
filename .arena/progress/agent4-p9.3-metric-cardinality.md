@@ -7,3 +7,5 @@ Full local lego:gate: 1113 backend pass, 418 frontend pass + 1 existing skip.
 14 dedicated P9.3 tests; raw benchmark and contract in docs/architecture/p9.
 Status implemented; completion requires PR merge and verified main.
 Do not begin P9.4 until merged-main verification is recorded on #101/PR.
+Concurrent-main reconciliation: merged 2b07ef34 (P6.3/P6.4), no P6 source edits.
+Full reconciled gate: 1187 backend pass, 418 frontend pass +1 skip; inventory47.
