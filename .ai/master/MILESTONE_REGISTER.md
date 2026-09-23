@@ -12,8 +12,8 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 | Current milestone | **P2.27** |
 | Previous completed milestone | **P2.26** |
 | Protected branch | `main` |
-| Main baseline | `d65f97130df1109380f7409aa5d39c1e8c57cc77` |
-| Agent 1 branch | `arena/01a0c9d3-n8n-rust-v-4` |
+| Main baseline | `20ae0c1af9a7602d8f04b779902efa19df395b61` |
+| Agent 1 branch | `arena/p2.27-plugin-runtime` |
 | Agent 2 branch | `arena/01a0c90d-n8n-rust-v-4` |
 | Register owner | `manager` |
 
@@ -48,9 +48,9 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 
 **Dependencies:** P2.16 Agent Machine / execution foundation; P2.17 Agent Machine Runtime Foundation; P2.18 Universal Transport & Envelope Kernel; P2.19 Artifact, Approval & Audit Foundation; P2.21 Runtime Adapter & Harness Stack; P2.22 Node Compatibility & Portability; P2.24 Token & Usage - honest accounting; P2.25 External provider integration - the first real adapters; P2.26 Provider, Workspace & GitHub Integration + Foundation Readiness
 
-**Required gates:** until the P2.27 Master Prompt is issued: the active gates remain the P2.26 readiness ladder (arch, arch:selftest, foundation, foundation:selftest, capabilities, scaleout, ai:check, full backend/frontend suites, XA-21 boot-pin, register consistency, .ai freshness); P2.27 Master Prompt will define the dedicated test matrix and gate set when issued; no P2.27 implementation test exists because no P2.27 implementation exists — absence is the correct state
+**Required gates:** dedicated P2.27 test matrix (Master Prompt section 36): registry identity + duplicate rejection, contract resolution + version compatibility, capability deny-by-default + permission scope, trust class boundaries, lifecycle state machine, runtime locality policy, resource budget bounds, secret broker scoping + expiry, side-by-side upgrade + rollback, supply-chain admission rejection, supervisor quarantine, contract replay, frontend plugin boundary, plus security negative tests; full gates every slice (Master Prompt section 57): lego:arch, lego:arch:selftest, lego:foundation, lego:foundation:selftest, lego:capabilities, lego:scaleout, lego:ai:check, full backend and frontend suites, contract alignment, sub-LEGO audit, boot payload, contract-lock drift, Rust compatibility; evidence recorded per slice in docs/n8n-lego/evidence/P2.27-PLUGIN-RUNTIME-EVIDENCE.md; final report per Master Prompt section 62
 
-**Completion rule:** Core responsibilities defined (design §3); Plugin boundary defined (design §4); Trust model defined (design §8/§9); Runtime locality defined (design §6); Capability security defined (design §10/§11); Secret isolation defined (design §12); Tenant isolation defined (design §13); Resource model defined (design §14); Failure model defined (design §15/§16/§17); Upgrade/rollback model defined (design §19); Supply-chain model defined (design §21); Frontend plugin model defined (design §22); Scaling model defined (design §23/§6); P2 non-regression rule defined (design §24); P2.27 implementation explicitly remains future until its own Master Prompt; then implementation completes only via green PRs merged on protected main
+**Completion rule:** tiny Core kernel implemented and tested (design section 3); plugin registry + contract resolver + version compatibility implemented and tested (design sections 4-5); trust model implemented and tested (design sections 8-9); runtime locality policy implemented and tested (design section 6); capability security implemented and tested (design sections 10-11); secret broker implemented and tested (design section 12); tenant security context + resource budgets implemented and tested (design sections 13-14); supervisor lifecycle + circuit breaker + deadline propagation implemented and tested (design sections 15-17); side-by-side upgrade/rollback implemented and tested (design section 19); supply-chain admission implemented and tested (design section 21); frontend plugin boundary implemented and tested (design section 22); contract replay fixtures green (design section 18); non-regression holds: no second engine, no scope expansion, historical evidence preserved (design section 24); contract-lock row lego.plugin-runtime published with its exported surface, zero lock drift (count pin + .ai regen updated in the same slice); implementation completes only via green PRs merged on protected main (dedicated Master Prompt issued 2026-09-24; all slices P2.27.0-P2.27.10 merged and post-merge verified)
 
 ## Reconciliation state
 

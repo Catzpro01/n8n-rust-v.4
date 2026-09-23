@@ -4,7 +4,7 @@
   "canonical": true,
   "purpose": "Granular milestone truth beneath the strategic Phase A-F roadmap. This is the only machine-readable milestone register. Future milestone IDs may be refined by Manager only by updating this file; strategic phases are not deleted.",
   "protectedBranch": "main",
-  "mainBaseline": "d65f97130df1109380f7409aa5d39c1e8c57cc77",
+  "mainBaseline": "20ae0c1af9a7602d8f04b779902efa19df395b61",
   "currentMilestone": "P2.27",
   "previousCompletedMilestone": "P2.26",
   "strategicRoadmap": {
@@ -1569,7 +1569,7 @@
       "owner": "manager",
       "backendOwner": "per milestone assignment",
       "frontendOwner": "agent-1",
-      "purpose": "Everything that is a meaningful system boundary should be replaceable as a Plugin/LEGO; the Core remains tiny, stable, and security-critical. A plugin is an independently meaningful unit with contract, lifecycle, ownership, dependency, capability/security boundary, test boundary, and upgrade path. FUTURE/PLANNED RESERVATION until P2.26 completion — Manager-authorized reservation recorded during P2.26.",
+      "purpose": "Everything that is a meaningful system boundary should be replaceable as a Plugin/LEGO; the Core remains tiny, stable, and security-critical. A plugin is an independently meaningful unit with contract, lifecycle, ownership, dependency, capability/security boundary, test boundary, and upgrade path. AUTHORIZED — dedicated P2.27 Master Prompt issued 2026-09-24; implementation proceeds in slices P2.27.0-P2.27.10.",
       "dependencies": [
         "P2.16 Agent Machine / execution foundation",
         "P2.17 Agent Machine Runtime Foundation",
@@ -1585,7 +1585,8 @@
         "Master Prompt P2.26 §§8-38 architecture reservation (Manager decision)",
         "docs/n8n-lego/P2.27-PLUGIN-RUNTIME-DESIGN.md (planning-only design document, no code)",
         "P2.16-P2.26 invariant set as verified on protected main d15a9538",
-        "existing seams: P2.21 runtime adapter, P2.25 provider adapters, envelope/interaction primitives"
+        "existing seams: P2.21 runtime adapter, P2.25 provider adapters, envelope/interaction primitives",
+        "Master Prompt P2.27 (dedicated, issued 2026-09-24): end-to-end implementation authorization for slices P2.27.0-P2.27.10 (Agent 1 Lead Implementation & Integration)"
       ],
       "deliverables": [
         "tiny Core kernel with the reserved core responsibilities (bootstrap, registries, resolvers, policy, lifecycle, supervisor, primitives)",
@@ -1599,7 +1600,7 @@
         "side-by-side upgrade/rollback + supply-chain admission",
         "frontend plugin boundary (public extension points vs sandboxed frame/origin + message contract)"
       ],
-      "implementationBoundary": "NO P2.27 IMPLEMENTATION IS STARTED BY THIS PROMPT. Reservation/planning only until a dedicated P2.27 Master Prompt is issued: no Plugin Manager, Plugin Supervisor, plugin sandbox, plugin broker, plugin runtime, WASM runtime, Python worker manager, plugin hot-swap or rollback engine may be implemented inside P2.26 or before that prompt. Core must never own workflow, execution, memory, storage implementation, AI provider implementation, Node Registry implementation, GitHub integration, Workspace business logic, translation features or credential implementation. P2.27 becomes the plugin runtime/security foundation — not a microservice rewrite and not a rewrite of P2.",
+      "implementationBoundary": "AUTHORIZED by the dedicated P2.27 Master Prompt (2026-09-24): the reservation is lifted and implementation proceeds only inside P2.27 slices (P2.27.0-P2.27.10) through PRs from branch arena/p2.27-plugin-runtime — never by direct modification of protected main. In scope now: Plugin Manager/registry, Plugin Supervisor, secret/resource brokers, capability policy, plugin runtime facade, and frontend plugin boundary. Out of scope for this milestone: a full production WASM engine (locality class and admission policy are in scope), Python worker manager, plugin hot-swap beyond the slice set, and any second architecture domain (no new domains or sub-LEGOs). Core must never own workflow, execution, memory, storage implementation, AI provider implementation, Node Registry implementation, GitHub integration, Workspace business logic, translation features or credential implementation. P2.27 is the plugin runtime/security foundation — not a microservice rewrite and not a rewrite of P2.",
       "nonScope": [
         "Plugin Manager / Plugin Supervisor implementation (P2.27, future prompt)",
         "plugin sandbox / plugin broker / plugin runtime / WASM runtime / Python worker manager (P2.27)",
@@ -1610,43 +1611,49 @@
         "anything before a dedicated P2.27 Master Prompt — zero P2.27 implementation now"
       ],
       "testsGates": [
-        "until the P2.27 Master Prompt is issued: the active gates remain the P2.26 readiness ladder (arch, arch:selftest, foundation, foundation:selftest, capabilities, scaleout, ai:check, full backend/frontend suites, XA-21 boot-pin, register consistency, .ai freshness)",
-        "P2.27 Master Prompt will define the dedicated test matrix and gate set when issued",
-        "no P2.27 implementation test exists because no P2.27 implementation exists — absence is the correct state"
+        "dedicated P2.27 test matrix (Master Prompt section 36): registry identity + duplicate rejection, contract resolution + version compatibility, capability deny-by-default + permission scope, trust class boundaries, lifecycle state machine, runtime locality policy, resource budget bounds, secret broker scoping + expiry, side-by-side upgrade + rollback, supply-chain admission rejection, supervisor quarantine, contract replay, frontend plugin boundary, plus security negative tests",
+        "full gates every slice (Master Prompt section 57): lego:arch, lego:arch:selftest, lego:foundation, lego:foundation:selftest, lego:capabilities, lego:scaleout, lego:ai:check, full backend and frontend suites, contract alignment, sub-LEGO audit, boot payload, contract-lock drift, Rust compatibility",
+        "evidence recorded per slice in docs/n8n-lego/evidence/P2.27-PLUGIN-RUNTIME-EVIDENCE.md; final report per Master Prompt section 62"
       ],
-      "decisionDependencies": [],
+      "decisionDependencies": [
+        "modules live under apps/n8n-lego/src/lego/ in domain lego-foundation (owner manager) — no new domain, no sub-LEGO (design section 7)",
+        "one published contract row lego.plugin-runtime@<semver> in contracts/contract-lock.json, surface = P2.27 modules (row added with first registry slice)",
+        "error vocabulary reuses existing lego.* codes (capability_unavailable, access_denied, deadline_exceeded, backpressure, version_incompatible, operation_unsupported, unavailable, contract_violation, cancelled) — zero new error codes unless a proven gap appears",
+        "trust model is dual-axis: plugin trust classes CORE/TRUSTED/ISOLATED/SANDBOXED (design section 8) map onto foundation.json trust levels (core/verified/community/untrusted) for capability defaultGrants; foundation.json remains canonical for provenance+grants",
+        "consume, never duplicate: lego.interaction providers, lego.envelope deadlines/cancellation, lego.transport-kernel envelopes, foundation trust/capability checks, ai.runtime-adapter registry, supply-chain provenance/SBOM/revocation, audit/approval artifacts"
+      ],
       "completionCriteria": [
-        "Core responsibilities defined (design §3)",
-        "Plugin boundary defined (design §4)",
-        "Trust model defined (design §8/§9)",
-        "Runtime locality defined (design §6)",
-        "Capability security defined (design §10/§11)",
-        "Secret isolation defined (design §12)",
-        "Tenant isolation defined (design §13)",
-        "Resource model defined (design §14)",
-        "Failure model defined (design §15/§16/§17)",
-        "Upgrade/rollback model defined (design §19)",
-        "Supply-chain model defined (design §21)",
-        "Frontend plugin model defined (design §22)",
-        "Scaling model defined (design §23/§6)",
-        "P2 non-regression rule defined (design §24)",
-        "P2.27 implementation explicitly remains future until its own Master Prompt; then implementation completes only via green PRs merged on protected main"
+        "tiny Core kernel implemented and tested (design section 3)",
+        "plugin registry + contract resolver + version compatibility implemented and tested (design sections 4-5)",
+        "trust model implemented and tested (design sections 8-9)",
+        "runtime locality policy implemented and tested (design section 6)",
+        "capability security implemented and tested (design sections 10-11)",
+        "secret broker implemented and tested (design section 12)",
+        "tenant security context + resource budgets implemented and tested (design sections 13-14)",
+        "supervisor lifecycle + circuit breaker + deadline propagation implemented and tested (design sections 15-17)",
+        "side-by-side upgrade/rollback implemented and tested (design section 19)",
+        "supply-chain admission implemented and tested (design section 21)",
+        "frontend plugin boundary implemented and tested (design section 22)",
+        "contract replay fixtures green (design section 18)",
+        "non-regression holds: no second engine, no scope expansion, historical evidence preserved (design section 24)",
+        "contract-lock row lego.plugin-runtime published with its exported surface, zero lock drift (count pin + .ai regen updated in the same slice)",
+        "implementation completes only via green PRs merged on protected main (dedicated Master Prompt issued 2026-09-24; all slices P2.27.0-P2.27.10 merged and post-merge verified)"
       ],
       "startEvidence": {
         "commit": "d15a9538b1899e9fd2ea9d5bd37d3fd26ecc1943",
         "role": "protected main where the P2.27 reservation was recorded during P2.26 — implementation starts only via a future P2.27 Master Prompt"
       },
       "finishEvidence": null,
-      "currentCommitReference": "arena/01a0c9d3-n8n-rust-v-4",
+      "currentCommitReference": "arena/p2.27-plugin-runtime",
       "nextMilestone": "P2.17+",
       "reconciliation": {
-        "state": "Manager-authorized architecture reservation recorded during P2.26 against protected main d15a9538b1899e9fd2ea9d5bd37d3fd26ecc1943; planning-only/future until a dedicated P2.27 Master Prompt; refined only by the Manager when that prompt is issued",
+        "state": "AUTHORIZED 2026-09-24 by the dedicated P2.27 Master Prompt: implementation under way in slices P2.27.0-P2.27.10 from protected main 20ae0c1a (baseline corrected per Master Prompt section 3, precedent Issue #76); manager remains architecture-and-milestone authority (section 55 escalation)",
         "owner": "manager"
       },
       "verificationEvidence": {
-        "local": "reservation-only: design document and register row land with P2.26; implementation validation deferred to the future P2.27 Master Prompt",
-        "official": "PENDING — no P2.27 implementation exists to validate officially",
-        "evidencePath": "docs/n8n-lego/P2.27-PLUGIN-RUNTIME-DESIGN.md"
+        "local": "in progress: slice P2.27.0 preflight records baseline reconciliation, dependency/ownership/contract inventory and the slice plan in docs/n8n-lego/evidence/P2.27-PLUGIN-RUNTIME-EVIDENCE.md; per-slice validation continues until P2.27.10",
+        "official": "PENDING — official completion evidence is recorded only when P2.27.10 merges on protected main; no completion is claimed before that",
+        "evidencePath": "docs/n8n-lego/evidence/P2.27-PLUGIN-RUNTIME-EVIDENCE.md"
       }
     },
     {
@@ -1686,7 +1693,7 @@
     }
   ],
   "agentBranches": {
-    "agent1": "arena/01a0c9d3-n8n-rust-v-4",
+    "agent1": "arena/p2.27-plugin-runtime",
     "agent2": "arena/01a0c90d-n8n-rust-v-4"
   },
   "baseline": {
