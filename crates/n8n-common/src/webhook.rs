@@ -459,6 +459,29 @@ fn is_json_content_type(ct: &str) -> bool {
     ct.contains("json")
 }
 
+/// Cookie sensitif ingress yang disanitasi sebelum menjadi input workflow —
+/// paritas dengan `webhooks/webhook-request-sanitizer.ts` pada reference n8n
+/// (pinned): `n8n-auth` (= `AUTH_COOKIE_NAME`) dan `n8n-browserId`.
+/// Deterministik, bounded, versioned; penyimpanan kredensial tetap di luar P4
+/// (kontrak P5). Lihat [#99-I "Webhook request sanitization"].
+pub const SANITIZED_COOKIE_NAMES: &[&str] = &["n8n-auth", "n8n-browserId"];
+
+/// Saring cookie terlarang dari nilai header `cookie` (pemanggilan per nama,
+/// bukan pembuangan header — paritas observasi dengan n8n: header tetap ada,
+/// nilai tersaring; bila semua tersaring hasilnya string kosong persis seperti
+/// `req.headers.cookie = filteredCookies.join('; ')` di reference).
+fn sanitize_cookie_header(value: &str) -> String {
+    value
+        .split(';')
+        .map(str::trim)
+        .filter(|cookie| {
+            let name = cookie.split('=').next().unwrap_or("");
+            !SANITIZED_COOKIE_NAMES.contains(&name)
+        })
+        .collect::<Vec<_>>()
+        .join("; ")
+}
+
 /// NORMALIZE: pecah path/query, bound-check URL/body/header/query, klasifikasi
 /// payload (JSON inline bila parseable, string inline sebaliknya — n8n meneruskan
 /// binary sebagai raw ke node). Deterministik & fail-closed.
@@ -533,11 +556,25 @@ pub fn normalize_request(
     } else {
         serde_json::Value::String(raw.body.clone())
     };
+    // Sanitasi (#99-I): cookie internal/browser tidak boleh bocor ke input
+    // workflow. Header name sudah dipaksa lowercase oleh validasi di atas.
+    let headers = raw
+        .headers
+        .iter()
+        .map(|(name, value)| {
+            let sanitized = if name == "cookie" {
+                sanitize_cookie_header(value)
+            } else {
+                value.clone()
+            };
+            (name.clone(), sanitized)
+        })
+        .collect();
     Ok(NormalizedRequest {
         method: raw.method,
         path,
         query,
-        headers: raw.headers.clone(),
+        headers,
         payload: PayloadRef::Inline { json },
         received_at_ms,
     })
@@ -1419,6 +1456,59 @@ mod tests {
             }
             other => panic!("diharapkan Inline, dapat {other:?}"),
         }
+    }
+
+    #[test]
+    fn sensitive_cookies_are_stripped_like_n8n_reference() {
+        let req = RawWebhookRequest {
+            method: HttpMethod::Post,
+            path_and_query: "/webhook/demo".to_string(),
+            headers: vec![
+                (
+                    "cookie".to_string(),
+                    "session=keep; n8n-auth=SECRET; other=x; n8n-browserId=B".to_string(),
+                ),
+                ("content-type".to_string(), "application/json".to_string()),
+            ],
+            body: "{}".to_string(),
+            content_type: Some("application/json".to_string()),
+        };
+        let normalized = normalize_request(&req, &NormalizeLimits::default(), T0).unwrap();
+        let cookie = normalized
+            .headers
+            .iter()
+            .find(|(k, _)| k == "cookie")
+            .expect("header cookie tetap ada (paritas n8n)");
+        assert!(!cookie.1.contains("n8n-auth"), "auth cookie harus tersaring: {}", cookie.1);
+        assert!(!cookie.1.contains("n8n-browserId"), "browserId harus tersaring: {}", cookie.1);
+        assert!(cookie.1.contains("session=keep"), "cookie biasa dipertahankan: {}", cookie.1);
+        assert!(cookie.1.contains("other=x"), "cookie biasa dipertahankan: {}", cookie.1);
+        assert!(
+            normalized.headers.iter().any(|(k, _)| k == "content-type"),
+            "header non-cookie tidak disentuh"
+        );
+    }
+
+    #[test]
+    fn cookie_header_with_only_sensitive_cookies_becomes_empty_like_n8n() {
+        let req = RawWebhookRequest {
+            method: HttpMethod::Post,
+            path_and_query: "/webhook/demo".to_string(),
+            headers: vec![(
+                "cookie".to_string(),
+                "n8n-auth=x; n8n-browserId=y".to_string(),
+            )],
+            body: "{}".to_string(),
+            content_type: Some("application/json".to_string()),
+        };
+        let normalized = normalize_request(&req, &NormalizeLimits::default(), T0).unwrap();
+        let cookie = normalized
+            .headers
+            .iter()
+            .find(|(k, _)| k == "cookie")
+            .expect("header cookie tetap ada");
+        // reference: req.headers.cookie = filteredCookies.join("; ") → ""
+        assert_eq!(cookie.1, "", "paritas n8n: string kosong, bukan hapus header");
     }
 
     #[test]
