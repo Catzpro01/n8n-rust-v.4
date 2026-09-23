@@ -2350,6 +2350,57 @@
         "apps/n8n-lego/test/lego-supply-chain.test.mjs"
       ],
       "notes": "P6.12 (P6 implementation owner: Agent 3, Issue #100): supply-chain attestation + revocation + offline mirror. An artifact digest answers 'is this the same bytes?' and nothing else; this contract asks the next question — who says so, about what, and may they? STATEMENT: a builder attests a predicate (build-provenance, source-review, vulnerability-scan, reproducible-build, ai-generation) about a subject digest, issued at a tick and optionally expiring. SIGNATURE: the statement is bound to its own bytes by an HMAC-SHA256 digest over the statement without its signature, computed with a key the CALLER holds (the registry never signs on anyone's behalf; signAttestation exists so verification is testable and so a builder inside the platform has a defined way to speak). POLICY: which builders may attest which packages (explicit ['*'] is a decision, never an omission) and which predicates; anonymous policies and unrestricted builders are refused; requiredPredicates make an attestation mandatory. THE TWO FAILURES STAY SEPARATE: 'the signature does not cover these bytes' and 'this builder was never allowed to assert this' are different answers, and collapsing them into one boolean is how a supply-chain check becomes a formality — which is why reports carry reasons[], a primaryReason chosen by an explicit priority (revoked > signature > subject > window > builder > statement > predicate) and a message. FAIL CLOSED: allowUnattested defaults to false and an absent attestation is a refusal; where an operator allows an exemption, the decisions are marked unattested: true and the mirror report says so, so the exemption is visible in the report instead of invisible in the behaviour. REVOCATION IS THE ONE-WAY DOOR: artifacts and builders are revoked separately, revocation is idempotent, re-revoking with a different reason is refused ('evidence is not edited'), there is no unrevoke, and revocation is checked on the SUBJECT — a probe found that an artifact with no attestations at all never reached the revocation check, which is exactly the case an exemption would wave through, so verifyAttestations now checks the subject digest itself. OFFLINE MIRROR: a mirror is DATA (id, source, artifacts with digests and attestations, and a manifest digest); verifyMirror verifies it with exactly the same policy because being offline is not a reason to accept something, and the exemption never beats revocation or a failed check. Scope walls: no signing on behalf of others, no asymmetric PKI or certificate chains, no TUF freshness (P6.28) and no transparency log (P6.27), no network or mirror transport, no artifact store (P6.4), no health (P6.11), no lifecycle (P6.10), no clock."
+    },
+    {
+      "id": "registry.incremental",
+      "owner": "manager",
+      "domain": "node-registry",
+      "version": "0.1.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/incremental-registry.mjs"
+      ],
+      "exports": {
+        "src/lego/incremental-registry.mjs": [
+          "INCREMENTAL_REGISTRY_CONTRACT",
+          "INCREMENTAL_REGISTRY_CONTRACT_VERSION",
+          "INCREMENTAL_REGISTRY_SCHEMA_VERSION",
+          "INCREMENTAL_REGISTRY_OPERATIONS",
+          "INCREMENTAL_REGISTRY_PERMISSIONS",
+          "CHANGE_KINDS",
+          "REGISTRY_VIEWS",
+          "DISCOVERY_FIELDS",
+          "RUNTIME_FIELDS",
+          "INCREMENTAL_REGISTRY_REASONS",
+          "INCREMENTAL_REGISTRY_RULES",
+          "IncrementalRegistryError",
+          "createIncrementalState",
+          "isIncrementalState",
+          "planRegistryChanges",
+          "applyRegistryChanges",
+          "reuseReport",
+          "verifyIncremental",
+          "projectEpochView",
+          "isEpochView",
+          "verifyEpochView",
+          "describeIncremental",
+          "explainIncremental",
+          "registryCompilerIdentity",
+          "INCREMENTAL_REGISTRY_INPUT_SCHEMA_VERSION"
+        ]
+      },
+      "consumers": [
+        "P6.14 worker convergence — a worker that is behind receives the change set and the reuse ledger, not the catalogue",
+        "P6.15 core acceptance — 'the cheap path equals the expensive path' is one of the acceptance claims",
+        "P6.16 integrity chain — the chain is built from epoch digests, and this contract produces them cheaply",
+        "P6.24 runtime pools — the runtime view is what a pool needs, without the editor's prose",
+        "P6.26 precompiled WASM cache — a cache keyed by the runtime view's digest",
+        "P6.30 repair + offline recovery — recompiling from a mirror is an incremental compile away from the last known epoch"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-incremental-registry.test.mjs"
+      ],
+      "notes": "P6.13 (P6 implementation owner: Agent 3, Issue #100): incremental registry compilation + discovery/runtime split. registry.compiler@0.1.0 (P6.2) compiles an epoch from a full declaration set — correct for a genesis epoch, wasteful for the tenth one. This is a NEW contract rather than a minor bump to the compiler, deliberately: the compiler's job ('given declarations, produce the canonical epoch') did not change, and adding an export to a locked row would have meant re-versioning a contract every consumer cites for no semantic change. What is added is a different job: given a previous epoch and a desired declaration set, produce the next epoch while PROVING it is the same epoch a full compile would have produced. THE EQUIVALENCE IS THE CONTRACT: applyRegistryChanges returns the epoch plus a reuse ledger (added/recompiled/reused/removed) that asserts byte-for-byte digest stability for reused identities, and verifyIncremental recompiles from scratch and compares epochDigest — an optimisation that cannot be verified is a guess with better latency. planRegistryChanges makes the change set a VALUE a human can review before anything is built (and refuses duplicates honestly instead of letting a plan hide one). An unchanged set is refused ('registry.incremental.unchanged') because an epoch identical to its parent is noise. Removals are data about an epoch, never a tombstone: retiring a NAME permanently is P6.10's decision. THE DISCOVERY/RUNTIME SPLIT: one epoch, two projections with their own digests — DISCOVERY carries identity, type, typeVersion, displayName, group, description, capabilities and trustClass and NEVER the implementation digest or the resource profile; RUNTIME carries identity, content digest, runtime locality, capabilities and the resource profile and NEVER the display metadata. A view is a projection, never the epoch: verifyEpochView rebuilds the projection and refuses a view that cannot be rebuilt, so nobody can present half an epoch as the whole one. Scope walls: validity, duplicates, canonical form and numbering stay the compiler's; no publish, rollback or freeze (P6.2), no resolution (P6.5), no loading (P6.7), no admission (P6.11), no convergence (P6.14); no filesystem, network, clock, randomness or mutation — the only node import is the hash."
     }
   ]
 }
