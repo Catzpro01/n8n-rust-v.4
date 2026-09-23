@@ -299,7 +299,7 @@ Rule **R7** of the gate diffs the declared exports against the real exported
 symbols, so a contract cannot drift silently: adding `foo` to a locked contract
 file fails the build until the lock and version are updated.
 
-The current contract lock has **64 rows**. The historical foundation set remains:
+The current contract lock has **65 rows**. The historical foundation set remains:
 `compat.http` (1.0.0), `lego.error-contract` (1.0.0), `lego.domain-registry` (1.1.0),
 `lego.contract-compat` (1.0.0), `kernel.platform` (1.0.0), `reference.lego` (1.1.0),
 `reference.validation` (1.1.0), `reference.validation.schema` (1.0.0), and
@@ -328,6 +328,7 @@ P6.17 added `node.admission@0.1.0`.
 P6.18 added `node.sbom@0.1.0`.
 P6.19 added `node.canary@0.1.0`.
 P6.20 added `node.revocation@0.1.0`.
+P6.21 added `node.io@0.1.0`.
 The machine-readable lock is authoritative.
 
 A domain that publishes several contracts names its **primary** one
@@ -337,6 +338,7 @@ A domain that publishes several contracts names its **primary** one
 
 | date | contract | version | change |
 | :--- | :--- | :--- | :--- |
+| 2026-09-24 | `node.io` | 0.1.0 | P6.21: the node I/O compiler — ports compiled into a wire contract with quoted n8n connection types and a digest per shape, a compatibility verdict that names each breaking change (including the closed-shape rule), and a per-field handoff plan across the four runtime localities where a payload crosses only as a handle. |
 | 2026-09-24 | `node.revocation` | 0.1.0 | P6.20: emergency revocation bulletins — baseline-bound, bounded-window, sequence-linked denials with a client witness that refuses replays without the registry, dispositions where `uphold` needs somewhere durable and `lift` needs an actor, and a lapse that keeps denying until somebody decides. |
 | 2026-09-24 | `node.canary` | 0.1.0 | P6.19: canary rollout with side-by-side epochs, monotone cohort assignment, stage evaluation over observations composed as data (unknown or missing evidence halts), halting on a closed rule list, and rollback as a state that retains the candidate rather than deleting it. |
 | 2026-09-24 | `node.sbom` | 0.1.0 | P6.18: SBOM/VEX + policy diff gate — an SPDX-shaped document read from an epoch (one record per package version, checksums, capability names, declared licence, dependencies supplied from the closure), a diff that names the fields that changed, P6.1's trust ladder quoted with the weakest class governing, VEX as attributed statements where silence rolls up to `under_investigation`, and a gate of declared rules where a rule without evidence yields INCOMPLETE — a gate that opens because it could not look is not a gate. |
