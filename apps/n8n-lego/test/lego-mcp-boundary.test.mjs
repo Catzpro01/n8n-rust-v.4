@@ -98,7 +98,7 @@ test('the contract-lock row is canonical: one row, version, ops, tests, exports'
     MCP_BOUNDARY_OPERATIONS: 1, MCP_BOUNDARY_PERMISSIONS: 1, MCP_BOUNDARY_LIMITS: 1,
     MCP_BOUNDARY_TRANSITIONS: 1, MCP_PERMISSION_GATE: 1, McpBoundaryError: 1, createMcpBoundary: 1,
   }).sort());
-  assert.equal(LOCK.contracts.length, 38, 'rows through P3 Slice A persistent logical graph (thirty-third); P3 Slice D adds the thirty-fourth (execution.frontier); P3 Slice E adds the thirty-fifth (execution.state-stream); P3 Slice H adds the thirty-sixth (workflow.dna); P3 Slice J the thirty-seventh (execution.ir); P3 Slice L the thirty-eighth (compatibility.oracle)');
+  assert.equal(LOCK.contracts.length, 39, 'rows through P3 Slice A persistent logical graph (thirty-third); P3 Slice D adds the thirty-fourth (execution.frontier); P3 Slice E adds the thirty-fifth (execution.state-stream); P3 Slice H adds the thirty-sixth (workflow.dna); P3 Slice J the thirty-seventh (execution.ir); P3 Slice L the thirty-eighth (compatibility.oracle); P3 Slice M the thirty-ninth (execution.guard)');
   assert.ok(row.tests.every((p) => p.endsWith('.mjs')));
 });
 

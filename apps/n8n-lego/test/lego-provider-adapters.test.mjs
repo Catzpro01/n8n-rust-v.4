@@ -202,7 +202,7 @@ test('model & tool gateway contracts are locked exactly once at the quoted versi
   assert.equal(TOOL_GATEWAY_CONTRACT.owner, 'manager');
   assert.equal(LOCK.contracts.filter((r) => r.id === 'ai.model-gateway').length, 1);
   assert.equal(LOCK.contracts.filter((r) => r.id === 'ai.tool-gateway').length, 1);
-  assert.equal(LOCK.contracts.length, 38, 'P2.25 added rows thirty and thirty-one; P2.26 the thirty-second; P3 Slice A the thirty-third (workflow.graph); P3 Slice D the thirty-fourth (execution.frontier); P3 Slice E the thirty-fifth (execution.state-stream); P3 Slice H the thirty-sixth (workflow.dna); P3 Slice J the thirty-seventh (execution.ir); P3 Slice L the thirty-eighth (compatibility.oracle)');
+  assert.equal(LOCK.contracts.length, 39, 'P2.25 added rows thirty and thirty-one; P2.26 the thirty-second; P3 Slice A the thirty-third (workflow.graph); P3 Slice D the thirty-fourth (execution.frontier); P3 Slice E the thirty-fifth (execution.state-stream); P3 Slice H the thirty-sixth (workflow.dna); P3 Slice J the thirty-seventh (execution.ir); P3 Slice L the thirty-eighth (compatibility.oracle); P3 Slice M the thirty-ninth (execution.guard)');
 });
 
 test('ai.agent-runtime stays vocabulary — the lock deliberately publishes no such row', () => {
