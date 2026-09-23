@@ -2423,6 +2423,30 @@
       ]
     },
     {
+      "id": "observability.health-readiness",
+      "version": "1.0.0",
+      "owner": "agent-6",
+      "domain": "observability",
+      "surface": [
+        "src/lego/health-readiness.mjs"
+      ],
+      "exports": {
+        "src/lego/health-readiness.mjs": [
+          "HEALTH_CONTRACT",
+          "LIVENESS_STATES",
+          "READINESS_STATES",
+          "CONDITION_STATES",
+          "HEALTH_PHASES",
+          "HEALTH_REASON_CODES",
+          "HEALTH_LIMITS",
+          "createHealthModel"
+        ]
+      },
+      "tests": [
+        "apps/n8n-lego/test/lego-health-readiness.test.mjs"
+      ]
+    },
+    {
       "id": "node.supply-chain",
       "owner": "manager",
       "domain": "node-registry",

@@ -253,7 +253,7 @@ test('P9.8 source stays pure: no I/O, no clock; locked row documents the boundar
     'createTelemetrySampler',
   ]);
   assert.deepEqual(row.tests, ['apps/n8n-lego/test/lego-telemetry-sampling.test.mjs']);
-  assert.equal(lock.contracts.length, 62); // P9.8 adds observability.telemetry-sampling@1.0.0; P9.9 adds observability.resource-pressure@1.0.0; count-pins say 62
+  assert.equal(lock.contracts.length, 63); // P9.8 adds observability.telemetry-sampling@1.0.0; P9.9 adds observability.resource-pressure@1.0.0; P9.10 adds observability.health-readiness@1.0.0; count-pins say 63
   const doc = readFileSync(new URL('../../../docs/architecture/p9/P9.8-SAMPLING.md', import.meta.url), 'utf8');
   assert.match(doc, /ERROR_PRIORITY/);
   assert.match(doc, /hysteresis/i);
