@@ -7,7 +7,7 @@
 | --- | --- |
 | Owner | `agent-6` |
 | Kind / tier | `domain` / `domain` |
-| Status | `planned` (phase `deferred`) |
+| Status | `contract-only` (phase `P9.1`) |
 | Parent | _root_ |
 | Contract | _none declared_ |
 | Error namespace | `observability` |
@@ -20,11 +20,11 @@
 
 ## Owns
 
-_no paths_
+- `src/lego/telemetry-envelope.mjs`
 
 ## Public contract surface
 
-_none — this LEGO has no public surface yet; do not import from it._
+- `src/lego/telemetry-envelope.mjs`
 
 ## May call
 
@@ -52,4 +52,4 @@ _none — this LEGO has no public surface yet; do not import from it._
 
 ## Tests that guard it
 
-_none declared_
+- `apps/n8n-lego/test/lego-telemetry-envelope.test.mjs`

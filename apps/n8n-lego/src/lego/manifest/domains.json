@@ -4432,11 +4432,15 @@
       "title": "Observability (logs, insights, streaming)",
       "owner": "agent-6",
       "kind": "domain",
-      "status": "planned",
-      "phase": "deferred",
+      "status": "contract-only",
+      "phase": "P9.1",
       "errorNamespace": "observability",
-      "paths": [],
-      "public": [],
+      "paths": [
+        "src/lego/telemetry-envelope.mjs"
+      ],
+      "public": [
+        "src/lego/telemetry-envelope.mjs"
+      ],
       "dependsOn": [
         "platform-kernel",
         "compatibility"
@@ -4448,8 +4452,10 @@
         "legacy-rest"
       ],
       "contract": {
-        "version": "0.0.0",
-        "tests": []
+        "version": "1.0.0",
+        "tests": [
+          "apps/n8n-lego/test/lego-telemetry-envelope.test.mjs"
+        ]
       },
       "capabilities": [
         {
