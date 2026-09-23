@@ -299,7 +299,7 @@ Rule **R7** of the gate diffs the declared exports against the real exported
 symbols, so a contract cannot drift silently: adding `foo` to a locked contract
 file fails the build until the lock and version are updated.
 
-The current contract lock has **72 rows**. The historical foundation set remains:
+The current contract lock has **73 rows**. The historical foundation set remains:
 `compat.http` (1.0.0), `lego.error-contract` (1.0.0), `lego.domain-registry` (1.1.0),
 `lego.contract-compat` (1.0.0), `kernel.platform` (1.0.0), `reference.lego` (1.1.0),
 `reference.validation` (1.1.0), `reference.validation.schema` (1.0.0), and
@@ -336,6 +336,7 @@ P6.25 added `node.abi@0.1.0`.
 P6.26 added `runtime.wasm-cache@0.1.0`.
 P6.27 added `node.provenance@0.1.0`.
 P6.28 added `registry.freshness@0.1.0`.
+P6.29 added `node.namespace@0.1.0`.
 The machine-readable lock is authoritative.
 
 A domain that publishes several contracts names its **primary** one
@@ -345,6 +346,7 @@ A domain that publishes several contracts names its **primary** one
 
 | date | contract | version | change |
 | :--- | :--- | :--- | :--- |
+| 2026-09-24 | `node.namespace` | 0.1.0 | P6.29: name claims, handovers and the confusion between them — claims made by key rather than spelling, non-ASCII and whitespace refused by character and position, typosquats within a stated edit distance, quiet reuse refused and declared handovers accepted in one direction only, and visibility as part of what a name means. |
 | 2026-09-24 | `registry.freshness` | 0.1.0 | P6.28: update metadata freshness — rollback and fork refusal by version and digest, expiry as a verdict with a declared clock skew, thresholds supplied as counts, snapshot binding against mix-and-match, delegations that narrow rather than widen, and a refresh plan that stops when nothing below the timestamp moved. |
 | 2026-09-24 | `node.provenance` | 0.1.0 | P6.27: provenance statements and the transparency log — statements bound to a subject digest and to digested inputs, publication as what turns a claim into evidence, an append-only log with a head checkpoint, inclusion proofs that are checked rather than trusted, and truncation or rebuild caught instead of folded in. |
 | 2026-09-24 | `runtime.wasm-cache` | 0.1.0 | P6.26: the WASM compilation cache — keys made of artifact, wire contract, ABI and toolchain, cached failures that a new toolchain re-asks, verified hits, one key one module, capacity that evicts only idle entries and refuses rather than dropping something running, and targeted invalidation. |

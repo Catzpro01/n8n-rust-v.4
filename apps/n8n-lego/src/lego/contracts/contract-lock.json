@@ -3155,6 +3155,57 @@
         "apps/n8n-lego/test/lego-freshness.test.mjs"
       ],
       "notes": "P6.28 (P6 implementation owner: Agent 3, Issue #100): update metadata freshness. A valid signature says who wrote a sentence, not when the sentence stopped being true, so this contract is about the three attacks that survive verification: rollback, freeze, mix-and-match. A VERSION THAT GOES BACKWARDS IS REFUSED BY NAME ('a version that goes backwards is the attack the number exists to stop'), AND SO IS THE QUIETER VERSION OF IT — the same version arriving with different bytes, which is a fork, not an update. EXPIRY IS A VERDICT, NOT A TIMESTAMP: expired metadata says yesterday's truth and is refused rather than used ('expired metadata says yesterday's truth, so it is refused rather than used'); a declared clock skew is allowed and named in the refusal when it is exceeded; and a check at a tick EARLIER than the last check is refused as well, because 'a clock that goes backwards relative to the last check is how a freeze is hidden'. SILENCE IS NOT A SIGNATURE: signature counts are SUPPLIED by the caller (P6.12 owns crypto), metadata below the threshold is `incomplete`, and `incomplete` is not a pass — the suite proves a policy can raise the bar per role and that metadata below it is refused, and that a required role that is absent is an incomplete, named verdict rather than a pass. METADATA FROM TWO SNAPSHOTS IS ONE SNAPSHOT TOO MANY: the snapshot names the version and digest of each role below it, and a targets file that is not the one the snapshot names is a mismatch however well it verifies on its own; the suite also shows the binding can be waived explicitly and that a role named by the snapshot but not supplied is simply not in hand. A DELEGATION MAY NARROW, NEVER WIDEN: a delegated role signs inside the paths its parent covers (with the path-vs-string boundary spelled out — 'packages-other/x' is not inside 'packages/', and the directory entry 'packages' is not a path inside 'packages/'), may not delegate to itself, and may not lower the bar its parent set; a delegation that states no threshold inherits its parent's. A REFRESH IS A PLAN, NOT A FETCH: this contract has no network — it asks for the timestamp first, and when the timestamp did not move it stops, because 'asking anyway is how a freeze goes unnoticed for a year'; the suite covers stopping at the timestamp, at the snapshot, asking blind when nothing was supplied, and a policy that skips the root. THE MODULE PERFORMS NO CRYPTOGRAPHY AND TOUCHES NOTHING ELSE: no signature checking, no keys, no attestation (P6.12), no trust class (P6.1), no admission (P6.17), no epoch chain (P6.16) — the suite asserts the only node import is the hash, that no clock or network or randomness is read, and that no neighbouring module is reached into. Authority: this contract decides whether metadata is current enough to use; it never decides whether the artifact it describes may run."
+    },
+    {
+      "id": "node.namespace",
+      "owner": "manager",
+      "domain": "node-registry",
+      "version": "0.1.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/namespace-confusion.mjs"
+      ],
+      "exports": {
+        "src/lego/namespace-confusion.mjs": [
+          "CLAIM_VISIBILITIES",
+          "MAX_NAME_LENGTH",
+          "NAMESPACE_CONTRACT",
+          "NAMESPACE_CONTRACT_VERSION",
+          "NAMESPACE_FORMAT",
+          "NAMESPACE_OPERATIONS",
+          "NAMESPACE_PERMISSIONS",
+          "NAMESPACE_REASONS",
+          "NAMESPACE_RULES",
+          "NAMESPACE_SCHEMA_VERSION",
+          "NAMESPACE_VERDICTS",
+          "NamespaceError",
+          "claimName",
+          "createHandover",
+          "createNamespaceState",
+          "describeNamespace",
+          "effectivePublisher",
+          "explainNamespace",
+          "isHandover",
+          "isNameClaim",
+          "isNamespaceState",
+          "isNearConfusable",
+          "nameDistance",
+          "nameKey",
+          "namespaceDigest",
+          "normalizeName",
+          "resolveName",
+          "stableJson"
+        ]
+      },
+      "consumers": [
+        "P6.30 repair and offline recovery — a registry rebuilt from a census has to re-establish which publisher holds which name",
+        "P6.31 full acceptance — name confusion refusal is part of the final acceptance evidence",
+        "P6.14 resolution manifest — a workflow resolves a name, and this is the contract that says the name is the one that was meant"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-namespace-confusion.test.mjs"
+      ],
+      "notes": "P6.29 (P6 implementation owner: Agent 3, Issue #100): name claims, handovers and the confusion between them. Every other contract identifies a node by type@typeVersion; this one is about the part in front of that, because a name that means two things quietly is how a dependency gets swapped for another one that runs. A CLAIM IS MADE BY KEY, NOT BY SPELLING: 'Some-Node' and 'some-node' are one name, a second claim under a name already claimed is refused ('a second claim is a handover or a confusion, never a quiet overwrite'), and a second spelling is refused as a fold ('two spellings of one name are one name'); nothing is written when a claim is refused. A NAME THAT NEEDS A SECOND LOOK IS A NAME THAT LIES: anything outside ASCII is refused with the code point and its position named (U+2011 at position 3, U+00DC at position 0), whitespace inside or around a name is refused, scoped names must have a scope and a name ('a scope is not a package'), a slash without a scope is refused, and a name past the 214-character limit is refused. A NAME ONE EDIT FROM ANOTHER IS A CONFUSION: distance is computed in edits with transposition counted as one ('a transposition is one edit, and it is the cheapest confusion there is'), an unknown name within reach of a name somebody else holds is refused as a typosquat, while the SAME NEAR NEIGHBOUR BELONGS TO ITS OWN HOLDER is a relative rather than a swap and resolves as a new name; the reach is stated by policy rather than assumed, and a policy of zero edits is refused because looking for a confusion with no edits allowed is looking for the exact name. A NAME THAT CHANGES HANDS QUIETLY IS REFUSED: resolving a known name to another publisher is name-reused ('a name that changes hands quietly is how a dependency is swapped'); with a declared handover it resolves as handover, BEFORE the declared tick it is refused ('a handover does not travel backwards'), it does not come back to the publisher that handed it over, and a third publisher arriving is not a handover. A HANDOVER IS AN ACCUSATION UNTIL IT IS EVIDENCED: it names who holds the name ('a handover from somebody who does not hold the name is a wish'), who takes it, when, and on what grounds ('without evidence is a rumour with a timestamp'), and it cannot go backwards past the claim or an earlier handover. VISIBILITY IS PART OF THE NAME: a public claim does not answer a private name ('the public registry answering a private name is the oldest confusion there is') and the reverse is refused too. Reads: describeNamespace is a census of claims, publishers, handovers and private names; explainNamespace renders the decision; every decision carries a digest over its own inputs so the same question at the same tick gives the same answer. Scope walls: no workflow resolution (P6.14), no epoch (P6.16), no admission (P6.17), no freshness (P6.28), no trust class (P6.1); no filesystem, network, clock or randomness, and the only node import is the hash. Authority: this contract decides whether a name is the name that was meant; it never decides whether the node behind it may run."
     }
   ]
 }
