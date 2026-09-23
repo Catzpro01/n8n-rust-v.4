@@ -2649,6 +2649,63 @@
         "apps/n8n-lego/test/lego-sbom-policy.test.mjs"
       ],
       "notes": "P6.18 (P6 implementation owner: Agent 3, Issue #100): SBOM/VEX + policy diff gate. An epoch is an executable description nobody outside the registry can read, and two questions get asked in every serious review: what exactly is in here, and what changed and is that allowed? AN SBOM IS A READING OF AN EPOCH, never a second source of truth: one record per package version carrying the checksums of the node declarations it provides, the trust classes present, the capability names asked for, the licence as declared by the caller (NOASSERTION when nobody said), and DEPENDENCIES SUPPLIED FROM P6.4's closure rather than invented (an epoch lists nodes, not edges, and a document that invented edges would be a second registry). The format is SPDX-SHAPED so a consumer does not learn a dialect, and it is NAMED lego-sbom@1 rather than claiming a conformance it has not been tested against. A DIFF NAMES THE FIELDS THAT CHANGED (added/removed/changed with the changed fields listed, plus trustDirection and capabilityDelta): 'it changed' is how a review becomes a rumour. THE TRUST LADDER IS P6.1'S, QUOTED: exactly the four classes, ordered untrusted < community < verified < core, unknown names refused — and because P6.1 declares trust PER DECLARATION, a package can hold two classes, so the document records the SET and comparisons use the WEAKEST member (design fix found by the first suite run: refusing such an epoch would make the document useless for exactly the registries it exists to describe). VEX IS AN ATTRIBUTED STATEMENT: a status, a justification from a closed list, the actor and the tick; 'not_affected' demands a justification; two statements disagreeing about one vulnerability in one package are refused rather than ordered; and where nobody said anything the rollup stays 'under_investigation', which is not a pass. The package rollup is the status that most needs attention (affected > under_investigation > fixed > not_affected) and the statements travel with the package so a reader sees evidence rather than a summary. THE GATE IS POLICY AS DATA: rules declared by id and kind (no-new-packages, no-removals, no-new-capabilities, no-trust-downgrade, max-added-packages, no-affected-vulnerability), a policy with no rules or an unknown kind or a duplicated id is refused, and a rule whose evidence is missing yields INCOMPLETE — a gate that opens because it could not look is not a gate. Scope walls: no scanning or vulnerability database, no admission decision (P6.17 explains, P6.8/P6.11/P6.12 decide), no rollout (P6.19), no signing or attestation (P6.12/P6.27), no delegated trust (P6.28); no filesystem, network, clock, randomness or mutation — the only node import is the hash. Authority: an allowed diff is permission to proceed with a change, never a claim that the result is safe."
+    },
+    {
+      "id": "node.canary",
+      "owner": "manager",
+      "domain": "node-registry",
+      "version": "0.1.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/canary-rollout.mjs"
+      ],
+      "exports": {
+        "src/lego/canary-rollout.mjs": [
+          "CANARY_CONTRACT",
+          "CANARY_CONTRACT_VERSION",
+          "CANARY_OPERATIONS",
+          "CANARY_PERMISSIONS",
+          "CANARY_REASONS",
+          "CANARY_RULES",
+          "CANARY_SCHEMA_VERSION",
+          "COHORTS",
+          "CanaryError",
+          "DEFAULT_BUCKETS",
+          "DEFAULT_MAX_FAILURE_RATE",
+          "DEFAULT_MIN_ATTEMPTS",
+          "HALT_RULES",
+          "HEALTH_STATES",
+          "MAX_STAGES",
+          "ROLLOUT_STATES",
+          "STAGE_ACTIONS",
+          "advanceStage",
+          "assignCohort",
+          "bucketOf",
+          "completeRollout",
+          "createRolloutPlan",
+          "cumulativeShare",
+          "describeRollout",
+          "evaluateStage",
+          "explainRollout",
+          "haltRollout",
+          "isRollout",
+          "isRolloutPlan",
+          "rollbackRollout",
+          "rolloutDigest",
+          "stableJson",
+          "startRollout"
+        ]
+      },
+      "consumers": [
+        "P6.20 emergency revocation — a revocation mid-rollout is a halt with a rule, and the rollout record is what the revocation is cited in",
+        "P6.24 cancellation and accounting — draining a previous epoch is where in-flight work is accounted for",
+        "P6.30 repair and offline recovery — a retained candidate is what a post-incident review reads",
+        "P6.31 full acceptance — the side-by-side evidence for the final acceptance"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-canary-rollout.test.mjs"
+      ],
+      "notes": "P6.19 (P6 implementation owner: Agent 3, Issue #100): canary rollout, side-by-side upgrade, rollback. An upgrade is a change to what runs, and the only honest way to make it is side by side: TWO EPOCHS STAY RESOLVABLE AT ONCE, a declared share of work moves to the candidate, and the stop condition is checked rather than assumed. A rollout with a single stage is REFUSED as a cutover (that is not a canary), shares must strictly grow and the last stage must reach the whole share (a rollout that stops short leaves two epochs serving forever). ASSIGNMENT IS MONOTONE: a key is a bucket of the rollout id and salt, the bucket is fixed for the life of the rollout, and stage shares are cumulative, so a key that reached the candidate NEVER COMES BACK — an execution flapping between epochs would be a bug reported as a flake. Observations are DATA from other contracts (P6.11's health state, P6.10's lease counts), never imported verdicts; the health vocabulary is quoted from node.health, not re-declared. A stage that cannot be evaluated HALTS: no observations, an unknown health state, an attempts count missing or below the floor — `unknown` is not a synonym for `fine`, and a failure rate without a denominator is an opinion. The failure ceiling is a boundary (exactly at the ceiling advances, above it halts) and a stage may declare a stricter one. Halts carry a rule from a CLOSED LIST plus a reason and a tick, because a free-text reason makes 'why did we stop' unanswerable six months later; a second halt on the same rollout is refused rather than appended (found by the suite: without the guard the record could be rewritten). ROLLBACK IS A STATE, NOT AN UNDO: it returns new work to the previous epoch, RETAINS the candidate (digest, epoch number, stage and share at halt) and reports how many executions are still draining, because draining is not abandoning. A rolled-back or halted rollout is never reopened and cannot be completed; continuing is a new rollout with a new id and fresh evidence. Completion is the only claim a rollout makes, and it requires the last stage, an evaluation that says advance, and a previous epoch with nothing left held. Scope walls: no scheduler or workflow graph (P4), no leases or runtimes (P6.10), no health judgement (P6.11), no admission decision (P6.8/P6.17), no registry mutation (P6.13/P6.16), no SBOM (P6.18); no filesystem, network, clock, randomness or shared-state mutation — the only node import is the hash. Authority: this contract routes new work during a rollout; a completed rollout is a record of what happened, never a claim that the candidate was safe."
     }
   ]
 }

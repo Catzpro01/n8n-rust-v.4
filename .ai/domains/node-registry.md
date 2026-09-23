@@ -22,6 +22,7 @@
 
 - `src/catalog.mjs`
 - `src/lego/admission-explain.mjs`
+- `src/lego/canary-rollout.mjs`
 - `src/lego/capability-compiler.mjs`
 - `src/lego/dependency-closure.mjs`
 - `src/lego/incremental-registry.mjs`
