@@ -2,8 +2,20 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 pub mod expression_contract;
+pub mod ingress_contract;
 pub use expression_contract::{
     EvaluationContext, ExpressionError, ExpressionEvaluator, ExpressionRef, SimpleEvaluationContext,
+};
+pub use ingress_contract::{
+    admission_reason, fence_generation, ActivationError, ActivationMode, ActivationRecord,
+    ActivationState, AdmissionDecision, AdmissionState, CorrelationId, ExecutionMode,
+    ExecutionRequest, Generation, HttpMethod, IdempotencyKey, IngressContractError,
+    IngressEnvelope, IngressSource, IngressSourceKind, MetadataRef, PayloadRef, Priority,
+    RequestId, ResponseDataKind, ResponseMode, ResponsePlan, RouteKind, RouteRecord,
+    SecurityDecisionRef, SecurityOutcome, WebhookAuth, WorkflowIdentity, CANONICAL_TRANSITIONS,
+    CONTRACT_VERSION, ENVELOPE_VERSION, MAX_HEADERS, MAX_HEADER_VALUE_BYTES, MAX_ID_LEN,
+    MAX_INLINE_PAYLOAD_BYTES, MAX_QUERY_PARAMS, MAX_QUERY_VALUE_BYTES, MAX_REASON_CODE_LEN,
+    MAX_ROUTE_PATH_LEN,
 };
 
 pub type IDataObject = serde_json::Map<String, serde_json::Value>;
