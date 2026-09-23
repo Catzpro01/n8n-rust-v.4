@@ -2942,7 +2942,8 @@
       "phase": "P3",
       "errorNamespace": "execution",
       "paths": [
-        "src/engine.mjs"
+        "src/engine.mjs",
+        "src/lego/bounded-frontier.mjs"
       ],
       "public": [],
       "dependsOn": [
