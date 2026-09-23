@@ -1775,6 +1775,31 @@
         "apps/n8n-lego/test/lego-registry-compiler.test.mjs"
       ],
       "notes": "P6.2 (P6 implementation owner: Agent 3, Issue #100): registry compiler + immutable epoch. A declaration is a CLAIM; this is where it becomes a COMMITMENT the rest of the system may read. Four guarantees, each proven by test rather than asserted: (1) deterministic compile — the epoch digest is a pure function of declaration CONTENT and the lineage it is compiled onto, invariant under key order, declaration order and capability order, with no clock, no filesystem and no network anywhere in the module (a compiler that reads a clock is not reproducible); (2) all-or-nothing — one invalid declaration or one duplicate identity compiles to NO epoch at all, with P6.1's own reason codes carried through unchanged (registry.duplicate keeps its 'a conflict, not a precedence rule' wording) rather than re-invented; (3) monotonic chained history — an epoch names its parent digest and carries the full chain, epoch numbers only ever increase, and a rollback is a NEW higher-numbered epoch that re-installs older content (its contentDigest equals the target's, its epochDigest does not), so a downgrade leaves a mark instead of restoring a number, and a rollback to a non-ancestor or to the current epoch is refused; (4) immutability — a compiled epoch is deep-frozen and publication is a pointer move between frozen objects, so the epoch in-flight work is reading stays bit-identical (asserted by re-serializing it) and a failed publication leaves the previous state fully usable. Also: verifyRegistryEpoch recompiles content and refuses anything whose digest no longer matches (tamper detection, with invalid content reported as invalid rather than as a mismatch); diffRegistryEpochs gives sorted added/removed/changed for P6.19. Identity, validation, canonical form and per-declaration digests are quoted from node.registry@0.1.0 — the compiler never re-derives them. No authority: compiling is not admitting. Scope walls held: no install journal, artifact store, lease, residency, health, quarantine or attestation vocabulary exists in this module."
+    },
+    {
+      "id": "observability.metrics",
+      "owner": "agent-6",
+      "domain": "observability",
+      "version": "1.0.0",
+      "status": "stable",
+      "surface": [
+        "src/lego/metric-governor.mjs"
+      ],
+      "exports": {
+        "src/lego/metric-governor.mjs": [
+          "METRIC_CONTRACT",
+          "METRIC_LIMITS",
+          "LATENCY_BUCKETS_MS",
+          "METRIC_LABEL_POLICY",
+          "METRIC_DEFINITIONS",
+          "createMetricGovernor"
+        ]
+      },
+      "consumers": [],
+      "tests": [
+        "apps/n8n-lego/test/lego-metric-governor.test.mjs"
+      ],
+      "notes": "P9.3 only; delegated implementation Agent 4, product ownership Agent 6 unchanged."
     }
   ]
 }

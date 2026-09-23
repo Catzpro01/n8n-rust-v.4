@@ -4436,15 +4436,17 @@
       "owner": "agent-6",
       "kind": "domain",
       "status": "contract-only",
-      "phase": "P9.2",
+      "phase": "P9.3",
       "errorNamespace": "observability",
       "paths": [
         "src/lego/telemetry-envelope.mjs",
-        "src/lego/structured-log.mjs"
+        "src/lego/structured-log.mjs",
+        "src/lego/metric-governor.mjs"
       ],
       "public": [
         "src/lego/telemetry-envelope.mjs",
-        "src/lego/structured-log.mjs"
+        "src/lego/structured-log.mjs",
+        "src/lego/metric-governor.mjs"
       ],
       "dependsOn": [
         "platform-kernel",
@@ -4458,10 +4460,11 @@
         "legacy-rest"
       ],
       "contract": {
-        "version": "1.1.0",
+        "version": "1.2.0",
         "tests": [
           "apps/n8n-lego/test/lego-telemetry-envelope.test.mjs",
-          "apps/n8n-lego/test/lego-structured-log.test.mjs"
+          "apps/n8n-lego/test/lego-structured-log.test.mjs",
+          "apps/n8n-lego/test/lego-metric-governor.test.mjs"
         ]
       },
       "capabilities": [

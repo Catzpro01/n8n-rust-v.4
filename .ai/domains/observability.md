@@ -7,7 +7,7 @@
 | --- | --- |
 | Owner | `agent-6` |
 | Kind / tier | `domain` / `domain` |
-| Status | `contract-only` (phase `P9.2`) |
+| Status | `contract-only` (phase `P9.3`) |
 | Parent | _root_ |
 | Contract | _none declared_ |
 | Error namespace | `observability` |
@@ -22,11 +22,13 @@
 
 - `src/lego/telemetry-envelope.mjs`
 - `src/lego/structured-log.mjs`
+- `src/lego/metric-governor.mjs`
 
 ## Public contract surface
 
 - `src/lego/telemetry-envelope.mjs`
 - `src/lego/structured-log.mjs`
+- `src/lego/metric-governor.mjs`
 
 ## May call
 
@@ -56,3 +58,4 @@
 
 - `apps/n8n-lego/test/lego-telemetry-envelope.test.mjs`
 - `apps/n8n-lego/test/lego-structured-log.test.mjs`
+- `apps/n8n-lego/test/lego-metric-governor.test.mjs`
