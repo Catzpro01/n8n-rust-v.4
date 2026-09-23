@@ -2399,6 +2399,30 @@
       ]
     },
     {
+      "id": "observability.resource-pressure",
+      "version": "1.0.0",
+      "owner": "agent-6",
+      "domain": "observability",
+      "surface": [
+        "src/lego/resource-pressure.mjs"
+      ],
+      "exports": {
+        "src/lego/resource-pressure.mjs": [
+          "RESOURCE_PRESSURE_CONTRACT",
+          "PRESSURE_STATES",
+          "VALUE_PROVENANCE",
+          "RESOURCE_DIMENSIONS",
+          "DEGRADATION_LEVELS",
+          "PRESSURE_LIMITS",
+          "DEFAULT_PRESSURE_THRESHOLDS",
+          "createResourcePressureMonitor"
+        ]
+      },
+      "tests": [
+        "apps/n8n-lego/test/lego-resource-pressure.test.mjs"
+      ]
+    },
+    {
       "id": "node.supply-chain",
       "owner": "manager",
       "domain": "node-registry",
