@@ -1,0 +1,83 @@
+{
+  "node": "v22.18.0",
+  "platform": "linux",
+  "arch": "x64",
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.60GHz",
+  "gcExposed": true,
+  "note": "Batch-average latency, not per-event percentiles. Heap deltas are not allocation counts; GC/JIT and shared sandbox noise apply. No retained record queue.",
+  "results": [
+    {
+      "name": "OFF arithmetic control",
+      "iterations": 100000,
+      "elapsedMs": 1.796159000000003,
+      "opsPerSecond": 55674358.4504489,
+      "batchMeanUs": {
+        "p50": 0.0142319999999998,
+        "p95": 0.01973000000000269,
+        "p99": 0.04879500000000192
+      },
+      "cpuUs": {
+        "user": 2052,
+        "system": 228
+      },
+      "heapDeltaBeforeGc": 102216,
+      "retainedHeapDeltaAfterGc": 5440,
+      "rssDelta": 3473408
+    },
+    {
+      "name": "minimal native record, shared context",
+      "iterations": 100000,
+      "elapsedMs": 232.62702099999996,
+      "opsPerSecond": 429872.6758831684,
+      "batchMeanUs": {
+        "p50": 2.0678849999999898,
+        "p95": 3.258195999999998,
+        "p99": 3.348849000000001
+      },
+      "cpuUs": {
+        "user": 236907,
+        "system": 34
+      },
+      "heapDeltaBeforeGc": 504272,
+      "retainedHeapDeltaAfterGc": 12784,
+      "rssDelta": 0
+    },
+    {
+      "name": "cold context + record",
+      "iterations": 100000,
+      "elapsedMs": 386.351936,
+      "opsPerSecond": 258831.36767819893,
+      "batchMeanUs": {
+        "p50": 3.257555000000025,
+        "p95": 5.677829999999972,
+        "p99": 6.742089999999962
+      },
+      "cpuUs": {
+        "user": 397840,
+        "system": 49
+      },
+      "heapDeltaBeforeGc": 106424,
+      "retainedHeapDeltaAfterGc": 13776,
+      "rssDelta": -1040384
+    },
+    {
+      "name": "slow-path record + codec",
+      "iterations": 100000,
+      "elapsedMs": 313.8315399999999,
+      "opsPerSecond": 318642.28815242735,
+      "batchMeanUs": {
+        "p50": 2.8241229999998723,
+        "p95": 3.6771940000000995,
+        "p99": 12.048635000000104
+      },
+      "cpuUs": {
+        "user": 321263,
+        "system": 0
+      },
+      "heapDeltaBeforeGc": 1016256,
+      "retainedHeapDeltaAfterGc": 14096,
+      "rssDelta": 0
+    }
+  ],
+  "checksum": 21890000
+}

@@ -56,7 +56,8 @@ function observed(overrides = {}) {
 test('the lock row is the thirty-ninth: execution.guard@1.0.0, owner agent-1, exports byte-parity', () => {
   const row = ROWS.find((r) => r.id === 'execution.guard');
   assert.ok(row, 'execution.guard is locked');
-  assert.equal(ROWS.length, 40, 'P3 Slice L added the thirty-eighth (compatibility.oracle); P3 Slice M adds the thirty-ninth (execution.guard) — count-pins say 40; P3 Slice K the fortieth (execution.optimizer)');
+  // P9.1 adds exactly one published row: observability.envelope (39 -> 40).
+  assert.equal(ROWS.length, 41, 'P3 Slice L added the thirty-eighth (compatibility.oracle); P3 Slice M adds the thirty-ninth (execution.guard) ; P3 Slice K the forty-first (execution.optimizer) — count-pins say 41');
   assert.equal(row.owner, 'agent-1', 'Issue #98: Agent 1 owns resource protection');
   assert.equal(row.domain, 'execution');
   assert.equal(row.version, '1.0.0');
