@@ -299,7 +299,7 @@ Rule **R7** of the gate diffs the declared exports against the real exported
 symbols, so a contract cannot drift silently: adding `foo` to a locked contract
 file fails the build until the lock and version are updated.
 
-The current contract lock has **44 rows**. The historical foundation set remains:
+The current contract lock has **45 rows**. The historical foundation set remains:
 `compat.http` (1.0.0), `lego.error-contract` (1.0.0), `lego.domain-registry` (1.1.0),
 `lego.contract-compat` (1.0.0), `kernel.platform` (1.0.0), `reference.lego` (1.1.0),
 `reference.validation` (1.1.0), `reference.validation.schema` (1.0.0), and
@@ -310,6 +310,7 @@ Machine execution foundation row `ai.agent-machine@1.0.0`.
 P3 slices (A…N), P9.1 and P2.25/P2.26 added their own execution, workflow, telemetry and gateway rows;
 P6.1 added `node.registry@0.1.0`.
 P6.2 added `registry.compiler@0.1.0`.
+P6.3 added `package.transaction@0.1.0`.
 The machine-readable lock is authoritative.
 
 A domain that publishes several contracts names its **primary** one
@@ -319,6 +320,7 @@ A domain that publishes several contracts names its **primary** one
 
 | date | contract | version | change |
 | :--- | :--- | :--- | :--- |
+| 2026-09-24 | `package.transaction` | 0.1.0 | P6.3: transactional package install + single-flight — fixed step order (`resolve → prepare → verify → stage → publish → activate`, none skippable, enforced as a proof rather than logged); `publish` named as the visibility boundary, with recovery asymmetric across it (attempts left → resume; exhausted → abort before it, roll back after it); explicit attempt numbering (replaying a recorded attempt is a no-op even after close, a new attempt counts toward a ceiling of two, a gap is a lost report) so a retry loop cannot escape the ceiling and a crashed driver can still reconcile its journal; fenced publication (must name the epoch digest it makes visible and hold the current install lease — a stale fence has no authority); immutable transaction and gate values; deterministic journal digest. The host does the IO and holds write authority; this contract plans, judges and refuses. Dependency closure, artifact store, leases, residency and health remain P6.4+ (Issue #100) |
 | 2026-09-24 | `registry.compiler` | 0.1.0 | P6.2: registry compiler + immutable epoch — deterministic compile (digest is a pure function of content and lineage; invariant under key order, declaration order and capability order; no clock, filesystem or network in the module), all-or-nothing compile (one invalid declaration or one duplicate identity yields no epoch, reusing P6.1's reasons rather than inventing new ones), monotonic chained history (parent digest + full chain; a rollback is a NEW higher-numbered epoch carrying older content, so a downgrade is visible instead of silent), atomic publication (pointer move between deep-frozen epochs; the previous epoch stays bit-identical and a failed publication half-applies nothing), integrity verification (recompile and compare) and a sorted content diff. Identity, validation and per-declaration digests are quoted from `node.registry@0.1.0`; `node.portability@1.0.0` stays the domain's primary contract. Package mutation, install journal, dependency closure, leases and residency remain P6.3+ (Issue #100) |
 | 2026-09-23 | `node.registry` | 0.1.0 | P6.1: initial lock of the canonical node registry contract — identity is `type` + `typeVersion` (rendered `type@typeVersion` as the pinned catalog writes it) and nothing else; a closed 17-field metadata schema (package, vendor, contract/implementation version, digest, provenance, capabilities, trust class, runtime locality, resource profile, compatibility, lifecycle, health, discovery); trust, capability, runtime, failure-boundary, resource-class, lifecycle and portability vocabulary quoted from the foundation manifest, `lego.negotiation` and `node.portability`; unknown field/trust/capability/runtime/lifecycle/health or an unverifiable digest refuses; duplicate identities are a conflict, never a precedence rule; nothing is published when any entry is invalid. Compiler, epochs and atomic publication remain P6.2 (Issue #100) |
 | 2026-09-23 | `observability.structured-log` | 1.0.0 | P9.2: severity reuses P9.1; error taxonomy derives from locked source codes; bounded numeric/boolean attributes and all-message redaction before admission; no sink or kernel logger replacement. |
