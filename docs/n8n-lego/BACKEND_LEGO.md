@@ -316,6 +316,7 @@ A domain that publishes several contracts names its **primary** one
 
 | date | contract | version | change |
 | :--- | :--- | :--- | :--- |
+| 2026-09-23 | `compatibility.oracle` | 1.0.0 | P3 Slice L: initial lock of the compatibility oracle — four Issue #91 modes, nine canonical observables, fail-closed equivalence, bounded #91(c) toggle sweep with identity recovery; zero-import (Issue #91) |
 | 2026-09-23 | `execution.ir` | 1.0.0 | P3 Slice J: initial lock of the execution IR — raw compile, independently disableable optimizations (#91(c): noopPassthrough/dedupeDeps, all-off = canonical identity), bounded LRU cache; zero-import (Issues #75/#91) |
 | 2026-09-23 | `workflow.dna` | 0.1.0 | P3 Slice H: initial lock of the bounded Workflow DNA (n8n checksum identity + order-insensitive morphology block, name lists capped at 64, single-pass, only the checksum seam imported; Issues #75/#91) |
 | 2026-09-23 | `execution.state-stream` | 0.1.0 | P3 Slice F: additive exports (STATE_STREAM_SNAPSHOT_VERSION, stateStreamFromSnapshot) — fail-closed sha256 snapshot/resume (cursor + resident backlog + context) on the bounded stream seam; version stays 0.1.0 (additive, pre-1.0; Issues #75/#97) |
