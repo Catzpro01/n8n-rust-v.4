@@ -1,8 +1,13 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+pub mod activation;
 pub mod expression_contract;
 pub mod ingress_contract;
+pub use activation::{
+    ActivateOutcome, ActivationRegistry, ActivationTransitionError, DeactivateOutcome,
+    DeactivationKind, PendingUpdate, ReconcilePlan,
+};
 pub use expression_contract::{
     EvaluationContext, ExpressionError, ExpressionEvaluator, ExpressionRef, SimpleEvaluationContext,
 };
