@@ -71,3 +71,12 @@
 - Koreksi mid-slice: buf map indirection `schedule()`; anchor misfire dari
   last-fired (bukan param scan ambigu) + `scan_interval_ms` sebagai cadence;
   registrasi uji memakai clock realistis (dekat jam fire).
+
+## Lanjutan — P4.5 Admission/backpressure/idempotency (sesi stacked)
+
+- Modul `crates/n8n-common/src/admission.rs`: `AdmissionControl` satu-satunya
+  pembuat `AdmissionDecision` kanonik; pipeline validitas→expiry→security→
+  serving/fence→dedupe→rate→overload→bounds→ADMIT; outcome value murni
+  (Admitted/Rejected+retryable); token-bucket deterministic std-only;
+  dedupe key kanonik; semua queues bounded.
+- 13 test baru → workspace **252 green** (stacked di atas P4.4); fmt bersih.

@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 pub mod activation;
+pub mod admission;
 pub mod expression_contract;
 pub mod ingress_contract;
 pub mod schedule;
@@ -9,6 +10,9 @@ pub mod webhook;
 pub use activation::{
     ActivateOutcome, ActivationRegistry, ActivationTransitionError, DeactivateOutcome,
     DeactivationKind, PendingUpdate, ReconcilePlan,
+};
+pub use admission::{
+    AdmissionAccepted, AdmissionConfig, AdmissionControl, AdmissionError, AdmissionOutcome,
 };
 pub use expression_contract::{
     EvaluationContext, ExpressionError, ExpressionEvaluator, ExpressionRef, SimpleEvaluationContext,
