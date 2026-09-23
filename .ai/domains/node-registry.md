@@ -34,6 +34,7 @@
 - `src/lego/resolution-manifest.mjs`
 - `src/lego/runtime-lease.mjs`
 - `src/lego/semantic-fingerprint.mjs`
+- `src/lego/supply-chain.mjs`
 
 ## Public contract surface
 

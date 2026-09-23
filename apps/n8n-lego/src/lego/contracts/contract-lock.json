@@ -2290,6 +2290,66 @@
         "apps/n8n-lego/test/lego-trace-context.test.mjs"
       ],
       "notes": "P9.4 only; delegated implementation Agent 4, product ownership Agent 6 unchanged."
+    },
+    {
+      "id": "node.supply-chain",
+      "owner": "manager",
+      "domain": "node-registry",
+      "version": "0.1.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/supply-chain.mjs"
+      ],
+      "exports": {
+        "src/lego/supply-chain.mjs": [
+          "SUPPLY_CHAIN_CONTRACT",
+          "SUPPLY_CHAIN_CONTRACT_VERSION",
+          "SUPPLY_CHAIN_SCHEMA_VERSION",
+          "SUPPLY_CHAIN_OPERATIONS",
+          "SUPPLY_CHAIN_PERMISSIONS",
+          "ATTESTATION_PREDICATES",
+          "REVOCATION_TARGETS",
+          "REVOCATION_ORIGINS",
+          "SUPPLY_CHAIN_REASONS",
+          "SUPPLY_CHAIN_RULES",
+          "SupplyChainError",
+          "statementPayload",
+          "signAttestation",
+          "createAttestationPolicy",
+          "isAttestationPolicy",
+          "mayBuilderAttest",
+          "SUPPLY_REASON_PRIORITY",
+          "primarySupplyReason",
+          "verifyAttestation",
+          "verifyAttestations",
+          "createRevocationList",
+          "isRevocationList",
+          "revokeArtifact",
+          "revokeBuilder",
+          "isRevoked",
+          "isBuilderRevoked",
+          "revocationReason",
+          "mirrorManifest",
+          "isMirrorManifest",
+          "verifyMirror",
+          "explainSupplyVerdict",
+          "describeSupplyChain",
+          "SUPPLY_CHAIN_INPUT_SCHEMA_VERSION"
+        ]
+      },
+      "consumers": [
+        "P6.13 incremental compiler — an epoch cites the attestations its artifacts carry",
+        "P6.16 integrity chain + freshness — the revocation list is one of the things a chain has to keep fresh",
+        "P6.20 emergency revocation + graceful drain — this contract's revocation is what that milestone drains around",
+        "P6.27 provenance / transparency + trusted builder — the statement shape is what a transparency log records",
+        "P6.28 TUF-style freshness + delegated trust — delegated trust is a policy of builders, and this is the policy node",
+        "P6.29 namespace + dependency-confusion protection — a mirrored artifact with the wrong provenance is the confusion this refuses",
+        "P6.30 repair + offline recovery — the air-gapped import path is defined here, including the exemption that must be visible"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-supply-chain.test.mjs"
+      ],
+      "notes": "P6.12 (P6 implementation owner: Agent 3, Issue #100): supply-chain attestation + revocation + offline mirror. An artifact digest answers 'is this the same bytes?' and nothing else; this contract asks the next question — who says so, about what, and may they? STATEMENT: a builder attests a predicate (build-provenance, source-review, vulnerability-scan, reproducible-build, ai-generation) about a subject digest, issued at a tick and optionally expiring. SIGNATURE: the statement is bound to its own bytes by an HMAC-SHA256 digest over the statement without its signature, computed with a key the CALLER holds (the registry never signs on anyone's behalf; signAttestation exists so verification is testable and so a builder inside the platform has a defined way to speak). POLICY: which builders may attest which packages (explicit ['*'] is a decision, never an omission) and which predicates; anonymous policies and unrestricted builders are refused; requiredPredicates make an attestation mandatory. THE TWO FAILURES STAY SEPARATE: 'the signature does not cover these bytes' and 'this builder was never allowed to assert this' are different answers, and collapsing them into one boolean is how a supply-chain check becomes a formality — which is why reports carry reasons[], a primaryReason chosen by an explicit priority (revoked > signature > subject > window > builder > statement > predicate) and a message. FAIL CLOSED: allowUnattested defaults to false and an absent attestation is a refusal; where an operator allows an exemption, the decisions are marked unattested: true and the mirror report says so, so the exemption is visible in the report instead of invisible in the behaviour. REVOCATION IS THE ONE-WAY DOOR: artifacts and builders are revoked separately, revocation is idempotent, re-revoking with a different reason is refused ('evidence is not edited'), there is no unrevoke, and revocation is checked on the SUBJECT — a probe found that an artifact with no attestations at all never reached the revocation check, which is exactly the case an exemption would wave through, so verifyAttestations now checks the subject digest itself. OFFLINE MIRROR: a mirror is DATA (id, source, artifacts with digests and attestations, and a manifest digest); verifyMirror verifies it with exactly the same policy because being offline is not a reason to accept something, and the exemption never beats revocation or a failed check. Scope walls: no signing on behalf of others, no asymmetric PKI or certificate chains, no TUF freshness (P6.28) and no transparency log (P6.27), no network or mirror transport, no artifact store (P6.4), no health (P6.11), no lifecycle (P6.10), no clock."
     }
   ]
 }
