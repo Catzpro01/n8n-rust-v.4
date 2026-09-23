@@ -316,6 +316,7 @@ A domain that publishes several contracts names its **primary** one
 
 | date | contract | version | change |
 | :--- | :--- | :--- | :--- |
+| 2026-09-23 | `observability.structured-log` | 1.0.0 | P9.2: severity reuses P9.1; error taxonomy derives from locked source codes; bounded numeric/boolean attributes and all-message redaction before admission; no sink or kernel logger replacement. |
 | 2026-09-23 | `observability.envelope` | 1.0.0 | P9.1: bounded native envelope and reusable correlation context, exact-version canonical codec, secret-field exclusion; product owner agent-6, implementation delegate Agent 4 (#101). No producer/runtime wiring. |
 | 2026-09-23 | `execution.guard` | 1.0.0 | P3 Slice M: initial lock of the resource guard — six mandatory budgets, five priority lanes, three-tier pressure, admit/defer/reject with no clock (Issues #75/#79) |
 | 2026-09-23 | `compatibility.oracle` | 1.0.0 | P3 Slice L: initial lock of the compatibility oracle — four Issue #91 modes, nine canonical observables, fail-closed equivalence, bounded #91(c) toggle sweep with identity recovery; zero-import (Issue #91) |

@@ -56,8 +56,8 @@ function fixture() {
 test('the lock row is the thirty-seventh: execution.ir@1.0.0, owner agent-1, exports byte-parity', () => {
   const row = ROWS.find((r) => r.id === 'execution.ir');
   assert.ok(row, 'execution.ir is locked');
-  // P9.1 adds exactly one published row: observability.envelope (39 -> 40).
-  assert.equal(ROWS.length, 40, 'P3 Slice H added the thirty-sixth (workflow.dna); P3 Slice J adds the thirty-seventh (execution.ir) — count-pins say 37; P3 Slice L the thirty-eighth (compatibility.oracle); P3 Slice M the thirty-ninth (execution.guard)');
+  // P9.2 adds exactly one published row: observability.structured-log (40 -> 41).
+  assert.equal(ROWS.length, 41, 'P3 Slice H added the thirty-sixth (workflow.dna); P3 Slice J adds the thirty-seventh (execution.ir) — count-pins say 37; P3 Slice L the thirty-eighth (compatibility.oracle); P3 Slice M the thirty-ninth (execution.guard)');
   assert.equal(row.owner, 'agent-1', 'Issue #98: Agent 1 owns execution artifacts');
   assert.equal(row.domain, 'execution');
   assert.equal(row.version, '1.0.0');

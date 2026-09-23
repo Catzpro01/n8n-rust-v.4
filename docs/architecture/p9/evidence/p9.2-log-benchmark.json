@@ -1,0 +1,64 @@
+{
+  "node": "v22.18.0",
+  "platform": "linux",
+  "arch": "x64",
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.60GHz",
+  "note": "100 batches of 1000; batch-mean percentiles only; heap deltas not allocation counts; shared sandbox/GC/JIT noise; no sink or retained queue.",
+  "results": [
+    {
+      "name": "OFF control",
+      "iterations": 100000,
+      "elapsedMs": 1.699736999999999,
+      "opsPerSecond": 58832631.165880404,
+      "batchMeanUs": {
+        "p50": 0.013185999999997478,
+        "p95": 0.015851000000004944,
+        "p99": 0.032609000000000776
+      },
+      "cpuUs": {
+        "user": 1764,
+        "system": 0
+      },
+      "heapDeltaBeforeGc": 28960,
+      "retainedHeapDeltaAfterGc": 18184,
+      "rssDelta": 1990656
+    },
+    {
+      "name": "normal structured log",
+      "iterations": 100000,
+      "elapsedMs": 391.560809,
+      "opsPerSecond": 255388.17394771497,
+      "batchMeanUs": {
+        "p50": 3.8727990000000005,
+        "p95": 4.178652,
+        "p99": 4.340812999999969
+      },
+      "cpuUs": {
+        "user": 395480,
+        "system": 102
+      },
+      "heapDeltaBeforeGc": 103952,
+      "retainedHeapDeltaAfterGc": 24504,
+      "rssDelta": 270336
+    },
+    {
+      "name": "classified error + redaction",
+      "iterations": 100000,
+      "elapsedMs": 583.745497,
+      "opsPerSecond": 171307.53130246417,
+      "batchMeanUs": {
+        "p50": 5.470010000000002,
+        "p95": 6.832056999999963,
+        "p99": 8.871307000000002
+      },
+      "cpuUs": {
+        "user": 606154,
+        "system": 5
+      },
+      "heapDeltaBeforeGc": 611024,
+      "retainedHeapDeltaAfterGc": 27336,
+      "rssDelta": 516096
+    }
+  ],
+  "checksum": 110000
+}
