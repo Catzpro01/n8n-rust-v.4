@@ -102,7 +102,7 @@ test('the contract-lock row names real exports, real ops, the real test file —
   assert.equal(row.domain, 'ai-foundation');
   assert.equal(row.status, 'implemented');
   assert.deepEqual([...row.operations], [...RUNTIME_ADAPTER_OPERATIONS]);
-  assert.equal(LOCK.contracts.length, 39, 'rows through P3 Slice A persistent logical graph (thirty-third); P3 Slice D adds the thirty-fourth (execution.frontier); P3 Slice E adds the thirty-fifth (execution.state-stream); P3 Slice H adds the thirty-sixth (workflow.dna); P3 Slice J the thirty-seventh (execution.ir); P3 Slice L the thirty-eighth (compatibility.oracle); P3 Slice M the thirty-ninth (execution.guard)');
+  assert.equal(LOCK.contracts.length, 40, 'rows through P3 Slice A persistent logical graph (thirty-third); P3 Slice D adds the thirty-fourth (execution.frontier); P3 Slice E adds the thirty-fifth (execution.state-stream); P3 Slice H adds the thirty-sixth (workflow.dna); P3 Slice J the thirty-seventh (execution.ir); P3 Slice L the thirty-eighth (compatibility.oracle); P3 Slice M the thirty-ninth (execution.guard); P3 Slice K the fortieth (execution.optimizer)');
   const exported = row.exports['src/lego/runtime-adapter.mjs'].slice().sort();
   assert.deepEqual(exported, Object.keys({
     RUNTIME_ADAPTER_CONTRACT: 1, RUNTIME_ADAPTER_CONTRACT_VERSION: 1, RUNTIME_ADAPTER_FIELDS: 1,

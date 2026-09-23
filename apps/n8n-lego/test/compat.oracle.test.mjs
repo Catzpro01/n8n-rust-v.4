@@ -37,7 +37,7 @@ function caught(fn) {
 test('the lock row is the thirty-eighth: compatibility.oracle@1.0.0, owner agent-1, exports byte-parity', () => {
   const row = ROWS.find((r) => r.id === 'compatibility.oracle');
   assert.ok(row, 'compatibility.oracle is locked');
-  assert.equal(ROWS.length, 39, 'P3 Slice J added the thirty-seventh (execution.ir); P3 Slice L adds the thirty-eighth (compatibility.oracle); P3 Slice M adds the thirty-ninth (execution.guard) — count-pins say 39');
+  assert.equal(ROWS.length, 40, 'P3 Slice J added the thirty-seventh (execution.ir); P3 Slice L adds the thirty-eighth (compatibility.oracle); P3 Slice M adds the thirty-ninth (execution.guard) — count-pins say 40; P3 Slice K the fortieth (execution.optimizer)');
   assert.equal(row.owner, 'agent-1', 'Issue #98: Agent 1 owns the compatibility layer');
   assert.equal(row.domain, 'compatibility');
   assert.equal(row.version, '1.0.0');
