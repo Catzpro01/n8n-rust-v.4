@@ -294,20 +294,16 @@ test('a non-registry object is refused at construction', () => {
 
 /* ------------------------------------------------------------ lock row drift */
 
-test('the lego.plugin-runtime row (0.2.0) promises exactly the three-module surface', () => {
+test('the lego.plugin-runtime row keeps the P2.27.2 modules locked (exact surface pins live in the newest slice suite)', () => {
   const lock = JSON.parse(readFileSync(join(APP_ROOT, 'src/lego/contracts/contract-lock.json'), 'utf8'));
   const row = lock.contracts.find((entry) => entry.id === 'lego.plugin-runtime');
   assert.ok(row);
-  assert.equal(row.version, '0.2.0');
-  assert.deepEqual(row.surface.slice().sort(), [
-    'src/lego/plugin-manifest.mjs',
-    'src/lego/plugin-registry.mjs',
-    'src/lego/plugin-runtime.mjs',
-  ]);
-  assert.deepEqual(row.tests.slice().sort(), [
-    'apps/n8n-lego/test/lego-plugin-registry.test.mjs',
-    'apps/n8n-lego/test/lego-plugin-runtime.test.mjs',
-  ]);
+  assert.match(row.version, /^\d+\.\d+\.\d+$/);
+  for (const file of ['src/lego/plugin-manifest.mjs', 'src/lego/plugin-registry.mjs', 'src/lego/plugin-runtime.mjs']) {
+    assert.ok(row.surface.includes(file), `${file} stays on the surface`);
+  }
+  assert.ok(row.tests.includes('apps/n8n-lego/test/lego-plugin-registry.test.mjs'));
+  assert.ok(row.tests.includes('apps/n8n-lego/test/lego-plugin-runtime.test.mjs'));
   for (const file of row.surface) {
     const source = readFileSync(join(APP_ROOT, file), 'utf8');
     const exported = [...source.matchAll(/^export (?:const|class|function) (\w+)/gm)].map((match) => match[1]).sort();

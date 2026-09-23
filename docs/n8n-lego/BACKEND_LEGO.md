@@ -430,6 +430,7 @@ A domain that publishes several contracts names its **primary** one
 
 | 2026-09-24 | `lego.plugin-runtime` | 0.1.0 | P2.27.1: initial lock of the tiny plugin runtime core — canonical trust/locality/lifecycle vocabularies, bounded event ring, clock/identity/health primitives, error factory restricted to published codes (dedicated Master Prompt P2.27) |
 | 2026-09-24 | `lego.plugin-runtime` | 0.2.0 | P2.27.2: MINOR — manifest (strict fail-closed schema) + registry (single-active-version identity, compat.mjs range resolution, drain unregister) + runtime registry injection (exports grow; Master Prompt P2.27) |
+| 2026-09-24 | `lego.plugin-runtime` | 0.3.0 | P2.27.3: MINOR — capability/permission policy: trust-class ceiling map onto foundation levels, deny-by-default domain grants, no wildcards, §10 manifest pipeline, §11 attenuated delegation (exports grow; Master Prompt P2.27) |
 ## 10. Ownership model
 
 | agent | role | domains |
