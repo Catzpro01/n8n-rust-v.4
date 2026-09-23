@@ -28,6 +28,7 @@
 - `src/lego/package-transaction.mjs`
 - `src/lego/registry-compiler.mjs`
 - `src/lego/resolution-manifest.mjs`
+- `src/lego/runtime-lease.mjs`
 
 ## Public contract surface
 

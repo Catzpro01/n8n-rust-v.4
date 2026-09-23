@@ -1924,6 +1924,58 @@
         "apps/n8n-lego/test/lego-resolution-manifest.test.mjs"
       ],
       "notes": "P6.5 (P6 implementation owner: Agent 3, Issue #100): workflow node resolution manifest. An epoch (P6.2) answers what the registry contains now; it does not answer what THIS workflow runs against and whether that changed — between those two questions sits the classic outage where the registry is upgraded, half the workflows silently start executing an untested version, and the only evidence is a support ticket. A resolution manifest pins, per workflow, the exact identity (type@typeVersion), the declaration digest and the epoch digest, so 'which implementation did this run use' is a stored fact next to the workflow instead of a reconstruction. Three rules make it worth having. (1) A PIN IS EXACT: no latest, no floating tag, no silent adoption. (2) UPGRADE IS EXPLICIT AND TWO-PHASE: planning changes nothing at all (asserted by re-serializing the manifest), applying requires an explicit authorization, a revision that still matches, and a proposal that still equals what the current epoch would produce — a stale proposal is refused rather than merged, which is how an upgrade approved yesterday against a different registry stops being applied today; the policy (exact/minor/major, in the n8n typeVersion X.Y model) travels INSIDE the proposal and is recorded in history when it changes. (3) NOTHING IS SILENTLY DROPPED: a pinned identity missing from the epoch is FATAL even when a candidate version exists — turning 'the node you pinned is gone' into 'here is a different version instead' is the exact failure this contract prevents — and the same identity carrying a different digest is reported as a registry integrity violation, not an upgrade, because P6.1 fixed that a node's identity never changes because its implementation changed. Revisions only increase and history is append-only. Composes with P6.1 (identity/parse) and P6.2 (epochs) rather than re-deriving either; P3's graph, frontier and IR modules are never imported — the node list is data handed in."
+    },
+    {
+      "id": "runtime.lease",
+      "owner": "manager",
+      "domain": "node-registry",
+      "version": "0.1.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/runtime-lease.mjs"
+      ],
+      "exports": {
+        "src/lego/runtime-lease.mjs": [
+          "EPOCH_SERVING_STATES",
+          "LEASE_STATES",
+          "RUNTIME_LEASE_CONTRACT",
+          "RUNTIME_LEASE_CONTRACT_VERSION",
+          "RUNTIME_LEASE_INPUT_SCHEMA_VERSION",
+          "RUNTIME_LEASE_OPERATIONS",
+          "RUNTIME_LEASE_PERMISSIONS",
+          "RUNTIME_LEASE_REASONS",
+          "RUNTIME_LEASE_RULES",
+          "RUNTIME_LEASE_SCHEMA_VERSION",
+          "RuntimeLeaseError",
+          "acquireLease",
+          "activeExecutions",
+          "createLeaseTable",
+          "describeLeaseTable",
+          "drainEpoch",
+          "drainingEpochs",
+          "epochsHeldBy",
+          "formatLeaseTable",
+          "isFullyDrained",
+          "isLeaseTable",
+          "leasesOfExecution",
+          "outstandingLeases",
+          "registerEpoch",
+          "releaseLease",
+          "retireEpoch",
+          "servingEpochs"
+        ]
+      },
+      "consumers": [
+        "P6.7 node residency — a node is never evicted while an execution still holds a lease on the epoch it came from",
+        "P6.14 worker registry convergence — a worker's leases are what its handshake reports as in flight",
+        "P6.19 canary rollout — a rollout completes only when the canary epoch is fully drained, and an auto-rollback respects in-flight leases",
+        "P6.23 cancellation/deadline/resource accounting — a lease is the thing a deadline is bounded against",
+        "P6.30 repair + reconciliation — orphaned leases from a crashed worker are reconciled rather than assumed released"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-runtime-lease.test.mjs"
+      ],
+      "notes": "P6.6 (P6 implementation owner: Agent 3, Issue #100): runtime lease + side-by-side upgrade. P6.2 publishes an epoch by moving a pointer between frozen objects, which is only safe if nothing is still executing inside the old one — and something always is. 'Deploy' and 'what is running' are different questions, and the gap between them is where the upgrade outage lives: the new version is published, an in-flight execution silently switches versions half-way through, and the result is a state neither version would have produced. Three mechanisms close it. (1) LEASES: a lease names the EPOCH DIGEST the execution runs under (never a version number, never 'current'), so a later publication cannot re-point work already running; a lease id is DERIVED from execution + epoch, so a retried acquire is the same lease rather than a second one. (2) DRAIN: explicit and observable — draining immediately stops new admissions while everything inside keeps running, and returns the outstanding executions so a deploy can wait honestly. (3) RETIRE, GATED ON THE LEASES: an epoch cannot be retired while a single lease is outstanding, the refusal NAMES who is holding it, and draining must come first because retiring an epoch that is still admitting work is a race with whoever is asking for a lease right now. Side-by-side serving is the consequence rather than a feature: several epochs may serve at once (old for in-flight, new for new work) and the table reports exactly which. A retired epoch NUMBER can never be reused by different content, so a number is not a place to hide a rewrite. The table carries a monotonic SEQUENCE instead of a clock, because a lease table that reads a clock is not reproducible, and every operation returns a new frozen table so the state in front of an operator cannot change under them. No authority: a lease grants nothing but the right to keep serving the epoch it names — no trust, no capability, no permission."
     }
   ]
 }
