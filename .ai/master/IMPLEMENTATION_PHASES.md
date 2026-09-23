@@ -69,10 +69,11 @@ The strategic phases above are intentionally preserved. The Manager-owned granul
 | `P2.20` | MCP vs Agent Control Boundary | C | **complete** | P2.21 |
 | `P2.21` | Runtime Adapter & Harness Stack | C | **complete** | P2.22 |
 | `P2.22` | Node Compatibility & Portability | C | **complete** | P2.23 |
-| `P2.23` | Node Creator & Translation | C | **in-progress** | P2.24 |
+| `P2.23` | Node Creator & Translation | C | **complete** | P2.24 |
+| `P2.24` | Token & Usage - honest accounting | D | **in-progress** | P2.25 (indicative) |
 | `P2.17+` | Later capability ladder | C-F | **planned** | — |
 
-Current milestone: **P2.23**. Previous completed: **P2.22**.
+Current milestone: **P2.24**. Previous completed: **P2.23**.
 
 Future IDs may be refined by Manager only by updating `docs/n8n-lego/milestones.json`.
 

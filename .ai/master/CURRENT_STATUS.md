@@ -10,11 +10,11 @@ document is right and the prose is stale.
 
 | | |
 | --- | --- |
-| Protected main baseline | `ab4a589821e247ed181a91b54ad8c2d39d83eeb1` |
+| Protected main baseline | `82f4d3056deb1c600c563840689187db082505a7` |
 | Agent 1 branch | `arena/01a0c9d3-n8n-rust-v-4` |
 | Agent 2 branch | `arena/01a0c90d-n8n-rust-v-4` |
-| **Current milestone** | **P2.23** |
-| Previous completed milestone | **P2.22** |
+| **Current milestone** | **P2.24** |
+| Previous completed milestone | **P2.23** |
 | Current branch state | `arena/01a0c90d-n8n-rust-v-4` (implementation branch; not protected main) |
 | Historical reconciled state | `c1eca8cc` (historical evidence, not current main) |
 | Historical P2.11 evidence commit | `bdd0f1d2d6c8d7bc1c1ff3d881ddc2b3bd93713d` |
@@ -37,13 +37,13 @@ is the row marked as such.
 
 ## Milestone state
 
-- **Current:** `P2.23` — Node Creator & Translation (**in-progress**)
-- **Previous complete:** `P2.22`
-- **Why next:** P2.22 Node Compatibility & Portability
-- **Owns:** node creator scope — declared by the Master Prompt when issued; translation foundation/runtime scope — declared by the Master Prompt when issued; consumes node.portability contract without rewriting it
-- **Does not implement:** provider integrations (external SaaS connectors); model inference; production scheduler; shell / filesystem / subprocess executors; MCP server/client/adapter runtime (P3/FUTURE); credential manager; Arena runtime
-- **Next:** `P2.24`
-- **Completion gate:** all roadmap acceptance items hold; PR merged and post-merge verification passes on protected main; register completion evidence recorded and currentMilestone advanced to P2.24
+- **Current:** `P2.24` — Token & Usage - honest accounting (**in-progress**)
+- **Previous complete:** `P2.23`
+- **Why next:** P2.23 Node Creator & Translation; P2.13 Context & Session; ai-foundation
+- **Owns:** token & usage accounting scope — declared by the Master Prompt when issued; honest accounting: a count the source did not report is labelled estimated or not shown; consumes context/session and ai-foundation contracts without rewriting them
+- **Does not implement:** token provider integrations (external metering/billing APIs); model inference; production scheduler; shell / filesystem / subprocess executors; MCP server/client/adapter runtime (P3/FUTURE); credential manager; Arena runtime
+- **Next:** `P2.25 (indicative)`
+- **Completion gate:** all roadmap acceptance items hold; PR merged and post-merge verification passes on protected main; register completion evidence recorded and currentMilestone advanced to P2.25
 
 ## The 15 AI/Agent LEGO by status
 
