@@ -56,3 +56,16 @@ reconciler startup. Konsumen pertama kontrak ini. Jangan sentuh
 - P3 (owner merge) sedang jalan di `apps/n8n-lego/**` (slice C/D, PR #113/#114) — nol overlap
   dengan file slice ini. `main` bergerak selama sesi (454ef1d3→75189576) — anti-staleness
   ditegakkan ulang sebelum branch dibuat.
+
+## Addendum 1 — format & CI (2026-09-23 sesi sama)
+
+- `cargo fmt --all -- --check` (Level 0 CI) menemukan diff pada file slice ini → **diperbaiki**
+  memakai rustfmt 1.8.0-stable (build 6b00bc388, persis toolchain) dari npm
+  `@rustbin/rustfmt-1.88.0-x86_64-unknown-linux-gnu`, diekstrak ke
+  `/var/tmp/rust-rig/rustfmt-dl/`, dijalankan dengan
+  `LD_LIBRARY_PATH=/var/tmp/rust-rig/rust/package/rustc/lib`. Rig test ulang: hijau.
+- Verifikasi format seluruh workspace: file slice ini bersih; 11 file pre-existing di
+  `crates/n8n-workflow/**` (9) + `crates/n8n-execution-data/**` (2) masih melanggar fmt —
+  **bukan milik P4**, dibiarkan utuh (yurisdiksi agent pemiliknya; lihat Issue governance yang diajukan).
+- CI PR #117: Level 2 (cargo test --workspace) ✅, Runtime gate ✅, Architecture audit ✅;
+  merah: TS-change-set guard (false positive struktural untuk PR Rust) + Level 0 (pre-existing di atas).

@@ -104,11 +104,16 @@ pub enum IngressContractError {
         actual: usize,
     },
 
-    #[error("nama header '{name}' harus lowercase (normalisasi terjadi di adapter HTTP, bukan di sini)")]
+    #[error(
+        "nama header '{name}' harus lowercase (normalisasi terjadi di adapter HTTP, bukan di sini)"
+    )]
     NonLowercaseHeader { name: String },
 
     #[error("deadline {deadline_ms} tidak berada setelah waktu terima {received_at_ms}")]
-    DeadlineNotAfterReceived { received_at_ms: u64, deadline_ms: u64 },
+    DeadlineNotAfterReceived {
+        received_at_ms: u64,
+        deadline_ms: u64,
+    },
 
     #[error("generation basi: envelope mengamati {observed}, activation saat ini {current}")]
     StaleGeneration { observed: u64, current: u64 },
@@ -126,7 +131,10 @@ pub enum IngressContractError {
     InvalidCombination(&'static str),
 
     #[error("referensi tidak valid pada {which}: {why}")]
-    InvalidReference { which: &'static str, why: &'static str },
+    InvalidReference {
+        which: &'static str,
+        why: &'static str,
+    },
 
     #[error("versi envelope {0} tidak didukung (build ini berbicara {ENVELOPE_VERSION})")]
     UnsupportedEnvelopeVersion(u32),
@@ -275,9 +283,7 @@ impl WorkflowIdentity {
 /// `ACTIVATING`; bitmask "siapa yang boleh melayani" dipegang oleh nilai ini.
 ///
 /// Fungsi fence-nya satu-satunya yang kanonik: [`fence_generation`].
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct Generation(u64);
 
@@ -526,7 +532,10 @@ impl ActivationRecord {
             _ => {}
         }
         if self.last_error.is_some()
-            && !matches!(self.state, ActivationState::Failed | ActivationState::Degraded)
+            && !matches!(
+                self.state,
+                ActivationState::Failed | ActivationState::Degraded
+            )
         {
             return Err(IngressContractError::InvalidCombination(
                 "last_error hanya boleh ada saat state Failed/Degraded",
@@ -757,7 +766,9 @@ impl SecurityDecisionRef {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum PayloadRef {
-    Inline { json: Value },
+    Inline {
+        json: Value,
+    },
     External {
         uri: String,
         sha256: String,
@@ -857,7 +868,13 @@ impl MetadataRef {
             MAX_HEADER_VALUE_BYTES,
             true,
         )?;
-        checked_pairs(&query, "query", MAX_QUERY_PARAMS, MAX_QUERY_VALUE_BYTES, false)?;
+        checked_pairs(
+            &query,
+            "query",
+            MAX_QUERY_PARAMS,
+            MAX_QUERY_VALUE_BYTES,
+            false,
+        )?;
         Ok(Self { headers, query })
     }
 
@@ -987,7 +1004,11 @@ impl IngressSource {
 
     fn validate(&self) -> Result<(), IngressContractError> {
         let is_http = self.kind.to_route_kind().is_some();
-        match (is_http, self.received_method.is_some(), self.received_path.is_some()) {
+        match (
+            is_http,
+            self.received_method.is_some(),
+            self.received_path.is_some(),
+        ) {
             (true, true, true) => Ok(()),
             (true, _, _) => Err(IngressContractError::InvalidCombination(
                 "sumber HTTP wajib membawa received_method + received_path",
@@ -1053,7 +1074,9 @@ impl IngressEnvelope {
     /// setelah NORMALIZE dan wajib dipanggil ulang sebelum ADMISSION.
     pub fn validate(&self) -> Result<(), IngressContractError> {
         if self.version != ENVELOPE_VERSION {
-            return Err(IngressContractError::UnsupportedEnvelopeVersion(self.version));
+            return Err(IngressContractError::UnsupportedEnvelopeVersion(
+                self.version,
+            ));
         }
         self.source.validate()?;
         if let Some(deadline) = self.deadline_ms {
@@ -1217,7 +1240,9 @@ impl AdmissionDecision {
         if self.retry_after_ms.is_some()
             && !matches!(
                 self.state,
-                AdmissionState::Deferred | AdmissionState::RateLimited | AdmissionState::Unavailable
+                AdmissionState::Deferred
+                    | AdmissionState::RateLimited
+                    | AdmissionState::Unavailable
             )
         {
             return Err(IngressContractError::InvalidCombination(
@@ -1415,9 +1440,7 @@ mod tests {
                 HttpMethod::Post,
                 "ab12cd34/orders/:id",
             ),
-            workflow: Some(
-                WorkflowIdentity::new("wf-9", Some("ver-3".to_string())).unwrap(),
-            ),
+            workflow: Some(WorkflowIdentity::new("wf-9", Some("ver-3".to_string())).unwrap()),
             generation: Some(Generation::new(7)),
             tenant_id: None,
             security: Some(SecurityDecisionRef {
@@ -1508,12 +1531,24 @@ mod tests {
 
     #[test]
     fn route_kinds_and_methods_match_n8n_endpoint_segments() {
-        assert_eq!(RouteKind::ProductionWebhook.default_path_prefix(), "/webhook/");
-        assert_eq!(RouteKind::TestWebhook.default_path_prefix(), "/webhook-test/");
-        assert_eq!(RouteKind::WaitingWebhook.default_path_prefix(), "/webhook-waiting/");
+        assert_eq!(
+            RouteKind::ProductionWebhook.default_path_prefix(),
+            "/webhook/"
+        );
+        assert_eq!(
+            RouteKind::TestWebhook.default_path_prefix(),
+            "/webhook-test/"
+        );
+        assert_eq!(
+            RouteKind::WaitingWebhook.default_path_prefix(),
+            "/webhook-waiting/"
+        );
         assert_eq!(RouteKind::ProductionForm.default_path_prefix(), "/form/");
         assert_eq!(RouteKind::TestForm.default_path_prefix(), "/form-test/");
-        assert_eq!(RouteKind::WaitingForm.default_path_prefix(), "/form-waiting/");
+        assert_eq!(
+            RouteKind::WaitingForm.default_path_prefix(),
+            "/form-waiting/"
+        );
         assert!(RouteKind::WaitingWebhook.is_resume() && RouteKind::WaitingForm.is_resume());
         assert!(!RouteKind::ProductionWebhook.is_resume());
         let methods = [
@@ -1600,8 +1635,13 @@ mod tests {
 
     #[test]
     fn external_payload_requires_verifiable_reference() {
-        let ok = PayloadRef::external("s3://bucket/bin-1", sha256_hex(), 42, Some("application/octet-stream".into()))
-            .unwrap();
+        let ok = PayloadRef::external(
+            "s3://bucket/bin-1",
+            sha256_hex(),
+            42,
+            Some("application/octet-stream".into()),
+        )
+        .unwrap();
         assert!(!ok.is_inline());
         assert_eq!(ok.size_hint_bytes(), 42);
 
@@ -1615,11 +1655,9 @@ mod tests {
 
     #[test]
     fn metadata_enforces_bounds_and_lowercase_headers() {
-        assert!(MetadataRef::new(
-            vec![("X-Api-Key".to_string(), "k".to_string())],
-            vec![],
-        )
-        .is_err());
+        assert!(
+            MetadataRef::new(vec![("X-Api-Key".to_string(), "k".to_string())], vec![],).is_err()
+        );
         assert!(MetadataRef::new(vec![], vec![]).unwrap().headers.is_empty());
 
         // 65 headers melewati cap.
@@ -1628,7 +1666,10 @@ mod tests {
             .collect();
         assert!(matches!(
             MetadataRef::new(many, vec![]),
-            Err(IngressContractError::TooManyEntries { which: "header", .. })
+            Err(IngressContractError::TooManyEntries {
+                which: "header",
+                ..
+            })
         ));
 
         let meta = MetadataRef::new(
@@ -1823,7 +1864,10 @@ mod tests {
             ActivationState::Deactivating,
         ];
         for state in states {
-            assert!(!state.can_transition(state), "self-transition {state:?} dilarang");
+            assert!(
+                !state.can_transition(state),
+                "self-transition {state:?} dilarang"
+            );
         }
     }
 
@@ -1978,21 +2022,15 @@ mod tests {
         dup.validate().unwrap();
 
         // retry_after hanya bermakna untuk sinyal "coba lagi nanti":
-        let limited = AdmissionDecision::new(
-            AdmissionState::RateLimited,
-            admission_reason::RATE_LIMIT,
-            3,
-        )
-        .unwrap()
-        .with_retry_after(250);
+        let limited =
+            AdmissionDecision::new(AdmissionState::RateLimited, admission_reason::RATE_LIMIT, 3)
+                .unwrap()
+                .with_retry_after(250);
         limited.validate().unwrap();
-        let rejected = AdmissionDecision::new(
-            AdmissionState::Rejected,
-            admission_reason::AUTH_DENIED,
-            3,
-        )
-        .unwrap()
-        .with_retry_after(250);
+        let rejected =
+            AdmissionDecision::new(AdmissionState::Rejected, admission_reason::AUTH_DENIED, 3)
+                .unwrap()
+                .with_retry_after(250);
         assert!(rejected.validate().is_err());
 
         // reason code kosong/kepanjangan ditolak:
@@ -2045,13 +2083,9 @@ mod tests {
     #[test]
     fn execution_request_binds_resolved_envelope_fail_closed() {
         let envelope = http_envelope();
-        let request = ExecutionRequest::from_envelope(
-            &envelope,
-            ExecutionMode::Webhook,
-            "Webhook",
-            1_005,
-        )
-        .unwrap();
+        let request =
+            ExecutionRequest::from_envelope(&envelope, ExecutionMode::Webhook, "Webhook", 1_005)
+                .unwrap();
         assert_eq!(request.request_id.as_str(), "req-0001");
         assert_eq!(request.correlation_id.as_str(), "req-0001");
         assert_eq!(request.workflow.workflow_id, "wf-9");
@@ -2102,8 +2136,9 @@ mod tests {
 
         // start node kosong ditolak:
         let envelope = http_envelope();
-        assert!(ExecutionRequest::from_envelope(&envelope, ExecutionMode::Webhook, "", 1_005)
-            .is_err());
+        assert!(
+            ExecutionRequest::from_envelope(&envelope, ExecutionMode::Webhook, "", 1_005).is_err()
+        );
     }
 
     #[test]
@@ -2114,10 +2149,7 @@ mod tests {
             generation: Generation::new(8),
             ..sample_route()
         };
-        let fence = fence_generation(
-            envelope.generation.unwrap(),
-            route.generation,
-        );
+        let fence = fence_generation(envelope.generation.unwrap(), route.generation);
         assert!(matches!(
             fence,
             Err(IngressContractError::StaleGeneration {
