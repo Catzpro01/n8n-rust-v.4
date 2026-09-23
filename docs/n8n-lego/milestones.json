@@ -4,9 +4,9 @@
   "canonical": true,
   "purpose": "Granular milestone truth beneath the strategic Phase A-F roadmap. This is the only machine-readable milestone register. Future milestone IDs may be refined by Manager only by updating this file; strategic phases are not deleted.",
   "protectedBranch": "main",
-  "mainBaseline": "82f4d3056deb1c600c563840689187db082505a7",
-  "currentMilestone": "P2.24",
-  "previousCompletedMilestone": "P2.23",
+  "mainBaseline": "a409d9301247078aaadb4883dd9cb1082928ac82",
+  "currentMilestone": "P2.25",
+  "previousCompletedMilestone": "P2.24",
   "strategicRoadmap": {
     "source": "apps/n8n-lego/src/lego/manifest/ai-lego-set.json",
     "preservePhases": [
@@ -1345,7 +1345,7 @@
       "id": "P2.24",
       "title": "Token & Usage - honest accounting",
       "phase": "D",
-      "status": "in-progress",
+      "status": "complete",
       "owner": "manager",
       "backendOwner": "per milestone assignment",
       "frontendOwner": "agent-1",
@@ -1381,9 +1381,14 @@
         "commit": "82f4d3056deb1c600c563840689187db082505a7",
         "role": "protected main after P2.23 completion transition"
       },
-      "finishEvidence": null,
+      "finishEvidence": {
+        "protectedMain": "a409d9301247078aaadb4883dd9cb1082928ac82",
+        "pr": 69,
+        "mergeCommit": "a409d9301247078aaadb4883dd9cb1082928ac82",
+        "role": "post-merge verified protected-main completion"
+      },
       "currentCommitReference": "arena/01a0c9d3-n8n-rust-v-4",
-      "nextMilestone": "P2.25 (indicative)",
+      "nextMilestone": "P2.25",
       "nonScope": [
         "token provider integrations (external metering/billing APIs)",
         "model inference",
@@ -1396,12 +1401,83 @@
       "reconciliation": {
         "state": "scoped at P2.24 start against protected main 82f4d3056deb1c600c563840689187db082505a7; title indicative from the P2.13 milestone-register proposal (phase D, XA-17); refined by the Master Prompt P2.24 when issued",
         "contract": "node.creator@1.0.0, node.portability@1.0.0, ai.agent-machine@1.1.0, lego.transport-kernel@1.0.0, ai.mcp-boundary, XA-21 all untouched unless the prompt says otherwise",
+        "owner": "agent-1",
+        "historical": true,
+        "resolution": {
+          "resolvedAt": "2026-09-23",
+          "note": "PR #69 merged to protected main as a409d9301247078aaadb4883dd9cb1082928ac82; start baseline 82f4d3056deb1c600c563840689187db082505a7 stays on this row"
+        }
+      },
+      "verificationEvidence": {
+        "local": "post-merge on a409d930: 7/7 gates, token-usage 26/26, backend 831/828 (3 pre-existing rest.test 404s), FE 418/417 0 fail, P2.16-P2.23 slices all 0 fail, register/alignment green, boot 18126 pin, XA-21 untouched",
+        "official": "PENDING — official validation surface remains the GitHub Actions self-hosted Windows runner on PR #69; local post-merge PASS (debug evidence, not official sign-off)",
+        "evidencePath": "docs/n8n-lego/evidence/P2.24-TOKEN-USAGE-EVIDENCE.md"
+      }
+    },
+    {
+      "id": "P2.25",
+      "title": "External provider integration - the first real adapters",
+      "phase": "E",
+      "status": "in-progress",
+      "owner": "manager",
+      "backendOwner": "per milestone assignment",
+      "frontendOwner": "agent-1",
+      "dependencies": [
+        "P2.21 Runtime Adapter & Harness Stack",
+        "P2.24 Token & Usage - honest accounting"
+      ],
+      "inputs": [
+        "XA-8 permission namespace decision",
+        "XA-10 application-provider permission names decision",
+        "P2.21 EXTERNAL executorKind seam (adapter, never a shell/filesystem grant)",
+        "P2.24 ai.token-usage@1.0.0 accounting (unchanged)",
+        "provider configuration handed explicitly at call time — never discovered, never defaulted"
+      ],
+      "deliverables": [
+        "first model provider adapter behind the declared seam",
+        "first tool provider adapter",
+        "first external runtime behind the P2.21 seam",
+        "AI Foundation with NO provider configured stays a valid, fully supported state — never faked inference"
+      ],
+      "implementationBoundary": "Provider adapters only: providers are declared, not assumed; credentials are never stored by LEGO (handed per call by the operator); no standing credential authority, no autonomous publishing, no billing. Refined by the Master Prompt P2.25 when issued.",
+      "testsGates": [
+        "full gates: arch+selftest, foundation+selftest, capabilities, scaleout, ai:check, full backend/frontend suites"
+      ],
+      "decisionDependencies": [
+        "XA-8",
+        "XA-10"
+      ],
+      "completionCriteria": [
+        "all roadmap acceptance items hold",
+        "PR merged and post-merge verification passes on protected main",
+        "register completion evidence recorded and currentMilestone advanced to P2.26"
+      ],
+      "startEvidence": {
+        "commit": "a409d9301247078aaadb4883dd9cb1082928ac82",
+        "role": "protected main after P2.24 completion transition"
+      },
+      "finishEvidence": null,
+      "currentCommitReference": "arena/01a0c9d3-n8n-rust-v-4",
+      "nextMilestone": "P2.26 (indicative)",
+      "nonScope": [
+        "credential manager / credentials stored by LEGO",
+        "standing credential authority",
+        "faked inference without a configured provider",
+        "autonomous publishing",
+        "billing settlement",
+        "MCP server/client/adapter runtime (P3/FUTURE)",
+        "Arena runtime",
+        "production distributed scheduler"
+      ],
+      "reconciliation": {
+        "state": "scoped at P2.25 start against protected main a409d9301247078aaadb4883dd9cb1082928ac82; title/phase/deps indicative from the P2.13 milestone-register proposal (Phase E external providers follows Token & Usage in the register ladder); the roadmap P2.25 section still diagrams Universal Agent Bridge — pre-existing planning divergence outside the P2.24 §17 mandate, refined only by the Manager via this register (proposal idStatus); refined by the Master Prompt P2.25 when issued",
+        "contract": "ai.token-usage@1.0.0, node.creator@1.0.0, node.portability@1.0.0, ai.agent-machine@1.1.0, lego.transport-kernel@1.0.0, ai.mcp-boundary, XA-21 all untouched unless the prompt says otherwise",
         "owner": "agent-1"
       },
       "verificationEvidence": {
         "local": "recorded in the milestone evidence file when implementation runs",
         "official": "PENDING — official validation only via the installed GitHub Actions self-hosted Windows runner on the PR",
-        "evidencePath": "docs/n8n-lego/evidence/P2.24-TOKEN-USAGE-EVIDENCE.md"
+        "evidencePath": "docs/n8n-lego/evidence/P2.25-EXTERNAL-PROVIDER-INTEGRATION-EVIDENCE.md"
       }
     },
     {
