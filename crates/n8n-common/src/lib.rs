@@ -4,6 +4,7 @@ use std::collections::HashMap;
 pub mod activation;
 pub mod expression_contract;
 pub mod ingress_contract;
+pub mod schedule;
 pub mod webhook;
 pub use activation::{
     ActivateOutcome, ActivationRegistry, ActivationTransitionError, DeactivateOutcome,
@@ -22,6 +23,11 @@ pub use ingress_contract::{
     CONTRACT_VERSION, ENVELOPE_VERSION, MAX_HEADERS, MAX_HEADER_VALUE_BYTES, MAX_ID_LEN,
     MAX_INLINE_PAYLOAD_BYTES, MAX_QUERY_PARAMS, MAX_QUERY_VALUE_BYTES, MAX_REASON_CODE_LEN,
     MAX_ROUTE_PATH_LEN,
+};
+pub use schedule::{
+    CivilDate, CivilTime, CronError, CronExpr, GapPolicy, MisfirePolicy, OverlapPolicy,
+    ScheduleError, ScheduleExecution, ScheduleRecord, ScheduleRegistry, ScheduleSpec, TickDecision,
+    TzResolver, UtcResolver,
 };
 pub use webhook::{
     build_response, normalize_request, process_webhook_request, NodeWebhookSpec, NormalizeError,

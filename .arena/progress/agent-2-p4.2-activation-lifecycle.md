@@ -57,3 +57,17 @@
   `HashMap` (HttpMethod: Hash≠Ord), wildcard_open dead-code dibuang, tes rollback
   (spec-ilegal gagal *sebelum* activation, bukan Failed), rollback konflik membuktikan
   record=Failed+last_error+route kosong.
+
+## Lanjutan — P4.4 Schedule/Cron & duplicate-tick control (sesi sama)
+
+- Modul `crates/n8n-common/src/schedule.rs`: cron parser std-only (5/6-field,
+  detik-0, domain/nama/range/step, DOM|DOW), kalender days-from-civil publik,
+  `TzResolver` host-defined dengan kebijakan DST eksplisit (gap ShiftForward/
+  SkipTick; fold = occurrence terakhir → tick tepat sekali), `ScheduleRegistry`
+  sinkron aktivasi (generation-fenced), keputusan `on_tick` deterministik
+  (duplicate/misfire/overlap/jitter/deadline), `compute_next_fires`,
+  reconcile_orphans.
+- 20 test baru → workspace **239 green**; fmt bersih; nol dependensi, nol IO.
+- Koreksi mid-slice: buf map indirection `schedule()`; anchor misfire dari
+  last-fired (bukan param scan ambigu) + `scan_interval_ms` sebagai cadence;
+  registrasi uji memakai clock realistis (dekat jam fire).
