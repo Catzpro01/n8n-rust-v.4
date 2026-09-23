@@ -15,6 +15,11 @@ packages/workflow-lego/.extract/
 # verification runtime (scripts/setup-reference-runtime.sh)
 .runtime/
 
+# TypeScript baseline runtime (Worker 1 output + Worker 2 local state)
+apps/n8n-ts/dist/
+apps/n8n-ts/*.tsbuildinfo
+.runtime-ts/
+
 # misc
 *.log
 .DS_Store

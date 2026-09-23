@@ -178,3 +178,19 @@ legos:
     public_outputs: [standard_envelope]
     tests: [cargo test -p n8n-common]
     migration_status: REFERENCE_PHASE2_ISOLATED
+
+  - id: manager
+    name: Arena Manager & Orchestration Control
+    status: active
+    contract: contracts/workflow.contract.md
+    owner: agent-manager
+    current_implementation: rust
+    available_implementations: [rust]
+    allowed_paths: [crates/**, .arena/**, packages/**]
+    forbidden_paths: [reference/n8n/**]
+    dependencies: []
+    public_inputs: []
+    public_outputs: []
+    tests: [git status --short]
+    migration_status: ACTIVE
+

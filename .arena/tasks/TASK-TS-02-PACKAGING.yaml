@@ -1,0 +1,45 @@
+id: TASK-TS-02-PACKAGING
+agent: agent-02
+worker: worker-02
+title: "Worker 2: Runtime Packaging & Operational Scripts"
+branch: packaging/ts-baseline-ops
+pr_target: main
+
+allowed_paths:
+  - deploy/docker/**
+  - scripts/install.sh
+  - scripts/start.sh
+  - scripts/stop.sh
+  - scripts/upgrade.sh
+  - scripts/rollback.sh
+  - scripts/doctor.sh
+  - .env.example
+
+forbidden_paths:
+  - crates/**
+  - apps/**
+  - reference/n8n/**
+  - tests/**
+  - packages/**
+
+dependencies:
+  - TASK-TS-01-RUNTIME-SERVER
+
+contract: contracts/ts-runtime.contract.md
+
+deliverables:
+  - deploy/docker/Dockerfile
+  - deploy/docker/compose.yaml
+  - .env.example
+  - scripts/install.sh
+  - scripts/start.sh
+  - scripts/stop.sh
+  - scripts/upgrade.sh
+  - scripts/rollback.sh
+  - scripts/doctor.sh
+
+acceptance_criteria:
+  - clean_install_succeeds
+  - daemon_start_stop_succeeds
+  - doctor_probe_succeeds
+  - docker_compose_builds
