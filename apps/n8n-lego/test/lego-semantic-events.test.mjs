@@ -243,5 +243,5 @@ test('P9.5 schema document and locked row describe the admitted representation',
     'deserializeSemanticEvent', 'createEventOrderGate',
   ]);
   assert.deepEqual(row.tests, ['apps/n8n-lego/test/lego-semantic-events.test.mjs']);
-  assert.equal(lock.contracts.length, 59); // P9.6 adds observability.telemetry-buffer@1.0.0; count-pins say 59 // count-pins say 57 // P9.5 adds observability.semantic-event=58
+  assert.equal(lock.contracts.length, 60); // P9.7 adds observability.telemetry-redaction@1.0.0; P9.6 adds observability.telemetry-buffer@1.0.0; count-pins say 60 // count-pins say 57 // P9.5 adds observability.semantic-event=58
 });

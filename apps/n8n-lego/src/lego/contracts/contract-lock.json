@@ -21,7 +21,7 @@
       "documentation",
       "internal implementation changes with no surface change"
     ],
-    "rule": "A BREAKING change requires: major bump here, a note in docs/n8n-lego/BACKEND_LEGO.md §Contract changelog, and sign-off from every consumer listed below.",
+    "rule": "A BREAKING change requires: major bump here, a note in docs/n8n-lego/BACKEND_LEGO.md \u00a7Contract changelog, and sign-off from every consumer listed below.",
     "preRelease": "Contracts at 0.x are provisional: they may break with a minor bump, but the bump is still mandatory.",
     "compatibilityModel": {
       "module": "src/lego/compat.mjs",
@@ -42,7 +42,7 @@
       "note": "0.x contracts are provisional: ^0.2.1 does NOT accept 0.3.0, because a 0.x minor is allowed to break. Consumers of a 0.x contract must be told about every minor."
     },
     "parentChildRule": "A parent contract does NOT version-bump because a sub-LEGO changed compatibly. It bumps only when its own parent-facing surface moves. Example held by the fixtures: reference.validation 1.0.0 -> 1.1.0 (additive) leaves reference.lego at 1.0.0 and reference.repository at 1.0.0. A BREAKING child change that surfaces through the parent does force a parent major bump.",
-    "migrations": "A contract may declare `migrations: [\"1.3.0\"]` — versions that need a data/state migration even though they are semver-compatible. Migration points are declared, never inferred."
+    "migrations": "A contract may declare `migrations: [\"1.3.0\"]` \u2014 versions that need a data/state migration even though they are semver-compatible. Migration points are declared, never inferred."
   },
   "contracts": [
     {
@@ -179,7 +179,7 @@
         "apps/n8n-lego/test/lego-foundation.test.mjs"
       ],
       "changelog": [
-        "1.1.0 (P2.7): added hierarchy accessors (getChildren/getDescendants/getAncestors/lineage/nestingDepth/rootOf/isWithin/tree, MAX_NESTING_DEPTH) — additive, every 1.0.0 consumer unaffected."
+        "1.1.0 (P2.7): added hierarchy accessors (getChildren/getDescendants/getAncestors/lineage/nestingDepth/rootOf/isWithin/tree, MAX_NESTING_DEPTH) \u2014 additive, every 1.0.0 consumer unaffected."
       ]
     },
     {
@@ -245,7 +245,7 @@
         "apps/n8n-lego/test/lego-foundation.test.mjs"
       ],
       "changelog": [
-        "1.1.0 (P2.7): added createReferenceTree + REFERENCE_SUBLEGOS (composition of the nested sub-LEGOs) — additive. The parent's own operations are unchanged."
+        "1.1.0 (P2.7): added createReferenceTree + REFERENCE_SUBLEGOS (composition of the nested sub-LEGOs) \u2014 additive. The parent's own operations are unchanged."
       ]
     },
     {
@@ -305,7 +305,7 @@
         "apps/n8n-lego/test/lego-lifecycle.test.mjs"
       ],
       "changelog": [
-        "1.1.0 (P2.7): added explain() and the optional `strict` option — additive, so ^1.0.0 consumers are unaffected and the parent contract did not move."
+        "1.1.0 (P2.7): added explain() and the optional `strict` option \u2014 additive, so ^1.0.0 consumers are unaffected and the parent contract did not move."
       ]
     },
     {
@@ -415,7 +415,7 @@
       "tests": [
         "apps/n8n-lego/test/lego-communication.test.mjs"
       ],
-      "notes": "Fifteen public exports (scope 12.1; compat 13.1) + applyCompatibilityPolicy (15.2). MINOR 1.1.0 (P2.18): ENVELOPE_FIELDS gains optional 'causationId' — identifies the immediate parent request that caused this envelope (derived default = parent requestId). serialize/deserialize boundaries unchanged."
+      "notes": "Fifteen public exports (scope 12.1; compat 13.1) + applyCompatibilityPolicy (15.2). MINOR 1.1.0 (P2.18): ENVELOPE_FIELDS gains optional 'causationId' \u2014 identifies the immediate parent request that caused this envelope (derived default = parent requestId). serialize/deserialize boundaries unchanged."
     },
     {
       "id": "lego.interaction",
@@ -454,7 +454,7 @@
       "tests": [
         "apps/n8n-lego/test/lego-communication.test.mjs"
       ],
-      "notes": "Four interaction classes with dispatch contracts and backpressure. MINOR 1.1.0 (P2.18): export BATCH_LIMITS (batch ceiling 256) and bound applyBackpressure — 'buffer' applies a declared onOverflow (or refuses with lego.backpressure) instead of queueing past highWaterMark; 'block' reports 'blocked' synchronously and offers bounded pushAsync waiting; highWaterMark validated as an integer in [1, 65536]."
+      "notes": "Four interaction classes with dispatch contracts and backpressure. MINOR 1.1.0 (P2.18): export BATCH_LIMITS (batch ceiling 256) and bound applyBackpressure \u2014 'buffer' applies a declared onOverflow (or refuses with lego.backpressure) instead of queueing past highWaterMark; 'block' reports 'blocked' synchronously and offers bounded pushAsync waiting; highWaterMark validated as an integer in [1, 65536]."
     },
     {
       "id": "lego.transport-kernel",
@@ -480,7 +480,7 @@
       "tests": [
         "apps/n8n-lego/test/lego-transport-kernel.test.mjs"
       ],
-      "notes": "Universal transport & envelope kernel (P2.18): deterministic canonical-JSON encode/decode of {envelope, payload}, fail-closed validation on entry (lego.contract_violation), declared KERNEL_LIMITS bounds (64 KiB message, 128-char ids, depth 32). No HTTP/broker/daemon — transport adapters arrive in P2.21."
+      "notes": "Universal transport & envelope kernel (P2.18): deterministic canonical-JSON encode/decode of {envelope, payload}, fail-closed validation on entry (lego.contract_violation), declared KERNEL_LIMITS bounds (64 KiB message, 128-char ids, depth 32). No HTTP/broker/daemon \u2014 transport adapters arrive in P2.21."
     },
     {
       "id": "lego.negotiation",
@@ -685,7 +685,7 @@
       "tests": [
         "apps/n8n-lego/test/lego-skill.test.mjs"
       ],
-      "notes": "Skill = procedural knowledge + rules + procedure + capability map + validators. The REGISTRY is implemented; skills stay declarative documents and nothing executes a procedure. FOUR published operations only. register/select/load/release are internal lifecycle methods of the registry object, deliberately NOT published caller operations: publishing load would make lazy discovery a caller concern, and publishing register would let a caller mutate the vocabulary other consumers negotiate against. There is no execute operation and no ai:skill:execute permission — execution is not a skill operation, so no published name may imply it. A skill DECLARES requiredCapabilities and never grants them; the capability system stays the sole authority. validate-selection checks the DECLARATION, never the caller's authorization. An unknown capability fails closed. Locked in P2.12 finalize by XA-19; XA-11 (whether Skill ultimately belongs under ai-foundation) remains open-for-manager and is a separate architecture decision that this lock does not settle."
+      "notes": "Skill = procedural knowledge + rules + procedure + capability map + validators. The REGISTRY is implemented; skills stay declarative documents and nothing executes a procedure. FOUR published operations only. register/select/load/release are internal lifecycle methods of the registry object, deliberately NOT published caller operations: publishing load would make lazy discovery a caller concern, and publishing register would let a caller mutate the vocabulary other consumers negotiate against. There is no execute operation and no ai:skill:execute permission \u2014 execution is not a skill operation, so no published name may imply it. A skill DECLARES requiredCapabilities and never grants them; the capability system stays the sole authority. validate-selection checks the DECLARATION, never the caller's authorization. An unknown capability fails closed. Locked in P2.12 finalize by XA-19; XA-11 (whether Skill ultimately belongs under ai-foundation) remains open-for-manager and is a separate architecture decision that this lock does not settle."
     },
     {
       "id": "ai.memory",
@@ -851,7 +851,7 @@
       "notes": "P2.16 bounded Agent Machine execution foundation (1.0.0) extended additively in 1.1.0: one canonical state machine for machine, agent and task identity, the canonical agent lifecycle plus the machine-level ready state, bounded step bookkeeping, first-class budgets (incl. maxChildren / maxTasksPerAgent), deterministic transitions, a replaceable provider/executor seam, bounded delegation edges with explicit narrowed grants (no permission inheritance), bounded execution graph representation/validation and Universal Agent Event derivation. It consumes ai.context, ai.agent-session, ai.memory and ai.workspace by opaque reference only and never redefines them. Nine operations and the five canonical ai:agent:* permissions; delegation is bookkeeping, never execution. No loop, no inference, no tools, no scheduler, no shell, no filesystem, no process. Waiting is fail-closed: approval resolution is the ai.approval contract's boundary, not this one.",
       "previousVersion": "1.0.0",
       "changelog": [
-        "1.1.0 (P2.16): additive. Added agentId identity (distinct from machineId and taskId), capabilityScope (validated against the lego-foundation capability registry; unknown fail closed), bounded delegation edges (agentMachine.delegate + ai:agent:delegate — explicit narrowed grant, no permission inheritance, bounded budget and deadline clamped to the parent), the ready lifecycle state (agentMachine.prepare; created -> running stays legal, 1.0.0 flows unchanged), bounded execution graph representation/validation (validateAgentGraph: sequential, parallel, conditional, fan-out, fan-in, join, retry; cycles rejected), Universal Agent Event derivation (deriveAgentMachineEvents: agent.created/started/delegated/completed/failed/cancelled), maxChildren and maxTasksPerAgent budget bounds, and operation/permission fail-closed surfaces. The startedAt field the record always carried is now declared in fields. No 1.0.0 operation, state or transition changed meaning."
+        "1.1.0 (P2.16): additive. Added agentId identity (distinct from machineId and taskId), capabilityScope (validated against the lego-foundation capability registry; unknown fail closed), bounded delegation edges (agentMachine.delegate + ai:agent:delegate \u2014 explicit narrowed grant, no permission inheritance, bounded budget and deadline clamped to the parent), the ready lifecycle state (agentMachine.prepare; created -> running stays legal, 1.0.0 flows unchanged), bounded execution graph representation/validation (validateAgentGraph: sequential, parallel, conditional, fan-out, fan-in, join, retry; cycles rejected), Universal Agent Event derivation (deriveAgentMachineEvents: agent.created/started/delegated/completed/failed/cancelled), maxChildren and maxTasksPerAgent budget bounds, and operation/permission fail-closed surfaces. The startedAt field the record always carried is now declared in fields. No 1.0.0 operation, state or transition changed meaning."
       ]
     },
     {
@@ -896,7 +896,7 @@
       "tests": [
         "apps/n8n-lego/test/lego-artifact-approval-audit.test.mjs"
       ],
-      "notes": "P2.19 opaque reference-only artifact foundation (implementation: agent-1): canonical nine fields from manifest/ai-foundation.json plus record state, lifecycle declared/created/referenced/retained/expired, sha256 checksum as an integrity REFERENCE with a deterministic digest helper (no fake checksums), path-shaped storageRefs refused, secret-shaped metadata refused, bounded registry. No storage engine, no filesystem authority, no download server — storage providers remain contract-only."
+      "notes": "P2.19 opaque reference-only artifact foundation (implementation: agent-1): canonical nine fields from manifest/ai-foundation.json plus record state, lifecycle declared/created/referenced/retained/expired, sha256 checksum as an integrity REFERENCE with a deterministic digest helper (no fake checksums), path-shaped storageRefs refused, secret-shaped metadata refused, bounded registry. No storage engine, no filesystem authority, no download server \u2014 storage providers remain contract-only."
     },
     {
       "id": "ai.approval",
@@ -977,7 +977,7 @@
       "tests": [
         "apps/n8n-lego/test/lego-artifact-approval-audit.test.mjs"
       ],
-      "notes": "P2.19 structured audit foundation (implementation: agent-1): fixed field set (auditId/eventType/timestamp/actor/subject/operation/result/correlationId/causationId/references/metadata), event types quoted from the canonical events.types vocabulary plus artifact.referenced (P2.19 acceptance), injectable clock and id factory, bounded capacity with deterministic drop-oldest retention, secret- and reasoning-shaped input refused fail-closed. In-process only — no production audit store, no unbounded append."
+      "notes": "P2.19 structured audit foundation (implementation: agent-1): fixed field set (auditId/eventType/timestamp/actor/subject/operation/result/correlationId/causationId/references/metadata), event types quoted from the canonical events.types vocabulary plus artifact.referenced (P2.19 acceptance), injectable clock and id factory, bounded capacity with deterministic drop-oldest retention, secret- and reasoning-shaped input refused fail-closed. In-process only \u2014 no production audit store, no unbounded append."
     },
     {
       "id": "ai.mcp-boundary",
@@ -1019,7 +1019,7 @@
       "tests": [
         "apps/n8n-lego/test/lego-mcp-boundary.test.mjs"
       ],
-      "notes": "P2.20 MCP vs Agent Control boundary declaration (implementation: agent-1): four canonical states declared / permission-required / exposed / blocked quoted from manifest/ai-foundation.json#mcp (roadmap named three; §9 admits only least-privileged 'declared' as the fourth), explicit permission gate in documented order, fail-closed on unknown server/capability/permission-claim/malformed input, exposure and Agent Control authority strictly separated (no inference either direction), individual explicit capability export (no export-everything switch), approval satisfaction only via ai.approval@1.0.0 (identity+scope). Declaration and state machine only: no MCP server, client, adapter runtime, SDK, daemon or network."
+      "notes": "P2.20 MCP vs Agent Control boundary declaration (implementation: agent-1): four canonical states declared / permission-required / exposed / blocked quoted from manifest/ai-foundation.json#mcp (roadmap named three; \u00a79 admits only least-privileged 'declared' as the fourth), explicit permission gate in documented order, fail-closed on unknown server/capability/permission-claim/malformed input, exposure and Agent Control authority strictly separated (no inference either direction), individual explicit capability export (no export-everything switch), approval satisfaction only via ai.approval@1.0.0 (identity+scope). Declaration and state machine only: no MCP server, client, adapter runtime, SDK, daemon or network."
     },
     {
       "id": "ai.runtime-adapter",
@@ -1069,14 +1069,14 @@
       ],
       "consumers": [
         "P2.21 deterministic harness (contract conformance replay + scenario runner)",
-        "external runtimes — P2.25 ships the first real EXTERNAL binding at src/lego/external-runtime.mjs (synchronous exchange by the seam contract, normalized responses, idempotent cancellation, bounded budget)",
+        "external runtimes \u2014 P2.25 ships the first real EXTERNAL binding at src/lego/external-runtime.mjs (synchronous exchange by the seam contract, normalized responses, idempotent cancellation, bounded budget)",
         "Agent Machine provider seam (supports(kind) replaces the default without changing ai.agent-machine@1.1.0)"
       ],
       "tests": [
         "apps/n8n-lego/test/lego-runtime-adapter.test.mjs",
         "apps/n8n-lego/test/lego-provider-adapters.test.mjs"
       ],
-      "notes": "P2.21 runtime adapter seam (implementation: agent-1): explicit provider registration (contract ai.agent-runtime@1.0.0 exactly, canonical executorKinds/capabilities/locality/availability — unknown values fail closed), EXTERNAL executorKind usable ONLY while the bound registration stays eligible (live re-check; unavailable/unregistered -> lego.unavailable through the unchanged P2.16 provider gate), lifecycle translation of the official runtime-adapter vocabulary onto ai.agent-machine@1.1.0 operations (stream declared-unsupported, unknown operations rejected — no second lifecycle), bounded opt-in retry, path/secret-shaped references refused at the seam, canonical-event-only forwardEvent with a bounded outbox, deterministic harness (injected clock/id factory/response sequence; no timers). Declaration + seam + simulator only: no MCP, no model inference, no production scheduler, no shell/filesystem/subprocess authority — adapter selection grants nothing. P2.25 (MINOR 1.1.0): additive surface src/lego/external-runtime.mjs — the first real external runtime binding behind this unchanged seam (register/lookup/eligibility/manager, EXTERNAL fail-closed gate and lifecycle translation all stay exactly as P2.21 published them; ai.agent-runtime@1.0.0 remains vocabulary and deliberately gets no lock row)."
+      "notes": "P2.21 runtime adapter seam (implementation: agent-1): explicit provider registration (contract ai.agent-runtime@1.0.0 exactly, canonical executorKinds/capabilities/locality/availability \u2014 unknown values fail closed), EXTERNAL executorKind usable ONLY while the bound registration stays eligible (live re-check; unavailable/unregistered -> lego.unavailable through the unchanged P2.16 provider gate), lifecycle translation of the official runtime-adapter vocabulary onto ai.agent-machine@1.1.0 operations (stream declared-unsupported, unknown operations rejected \u2014 no second lifecycle), bounded opt-in retry, path/secret-shaped references refused at the seam, canonical-event-only forwardEvent with a bounded outbox, deterministic harness (injected clock/id factory/response sequence; no timers). Declaration + seam + simulator only: no MCP, no model inference, no production scheduler, no shell/filesystem/subprocess authority \u2014 adapter selection grants nothing. P2.25 (MINOR 1.1.0): additive surface src/lego/external-runtime.mjs \u2014 the first real external runtime binding behind this unchanged seam (register/lookup/eligibility/manager, EXTERNAL fail-closed gate and lifecycle translation all stay exactly as P2.21 published them; ai.agent-runtime@1.0.0 remains vocabulary and deliberately gets no lock row)."
     },
     {
       "id": "node.portability",
@@ -1130,12 +1130,12 @@
       "consumers": [
         "node registry portability classification (P2.22 foundation)",
         "frontend read-only display of published portability information",
-        "future Node Creator scope (P2.23) — consumes this contract, is NOT implemented here"
+        "future Node Creator scope (P2.23) \u2014 consumes this contract, is NOT implemented here"
       ],
       "tests": [
         "apps/n8n-lego/test/lego-node-portability.test.mjs"
       ],
-      "notes": "P2.22 node portability foundation (implementation: agent-1): language/runtime-neutral node contract — canonical portability classes (PURE/API/NETWORK/FILESYSTEM/NATIVE_PROCESS/ENVIRONMENT_SPECIFIC/REMOTE_BRIDGE), machine-readable runtime matrix (JS/WASM/RUST_NATIVE/REMOTE as SUPPORTED|UNSUPPORTED|CONDITIONAL with explicit conditions), language-neutral schema subset with SUPPORTED|UNSUPPORTED|LOSSY refusal (PORTABILITY_REFUSED, never silent coercion), five-axis compatibility report (contract/schema/runtime/portability/environment — never collapsed into one boolean), fail-closed reasons (unknown runtime/class/capability/permission, missing permission, environment/transport mismatch all refused), policy-based runtime selection (no language preference), declared-facet differential comparison. Classification only: portability grants no authority — permissions stay with the capability/approval system; no Node Creator, no translation engine, no provider integration, no model inference, no production distributed runtime."
+      "notes": "P2.22 node portability foundation (implementation: agent-1): language/runtime-neutral node contract \u2014 canonical portability classes (PURE/API/NETWORK/FILESYSTEM/NATIVE_PROCESS/ENVIRONMENT_SPECIFIC/REMOTE_BRIDGE), machine-readable runtime matrix (JS/WASM/RUST_NATIVE/REMOTE as SUPPORTED|UNSUPPORTED|CONDITIONAL with explicit conditions), language-neutral schema subset with SUPPORTED|UNSUPPORTED|LOSSY refusal (PORTABILITY_REFUSED, never silent coercion), five-axis compatibility report (contract/schema/runtime/portability/environment \u2014 never collapsed into one boolean), fail-closed reasons (unknown runtime/class/capability/permission, missing permission, environment/transport mismatch all refused), policy-based runtime selection (no language preference), declared-facet differential comparison. Classification only: portability grants no authority \u2014 permissions stay with the capability/approval system; no Node Creator, no translation engine, no provider integration, no model inference, no production distributed runtime."
     },
     {
       "id": "node.creator",
@@ -1183,13 +1183,13 @@
       ],
       "consumers": [
         "frontend read-only display of published creator/translation vocabulary",
-        "future provider publishing scope — consumes the publishable reference, is NOT implemented here",
+        "future provider publishing scope \u2014 consumes the publishable reference, is NOT implemented here",
         "node registry portability validation via node.portability@1.0.0 (consumed, never re-implemented)"
       ],
       "tests": [
         "apps/n8n-lego/test/lego-node-creator.test.mjs"
       ],
-      "notes": "P2.23 node creator & translation foundation (implementation: agent-1): bounded definition producer — candidate/reference output only, zero standing authority (declaration ≠ authorization at every layer). One validation pipeline for human-created, node-created and translated candidates (origin is provenance, never a bypass). Deterministic offline translation: identical input ⇒ identical output and identical refusals; lossy/unknown source constructs REJECT with canonical reasons (schema issues reuse the P2.22 family verbatim — no second error vocabulary); credential-shaped source fields refuse the whole translation. Approval touchpoint = P2.19 foundation, policy-explicit (node-created OR authority-bearing class), fail-closed via evaluate(); artifact result = P2.19 registry reference (storageRef+checksum+metadata, content never dereferenced) produced only after granted approval — PUBLISHED_REFERENCE means publishable-by-a-system-with-authority, the creator holds none. Portability verdict comes from node.portability@1.0.0#canPort only. No publish op, no execute op, no grant op, no model, no network, no self-modification."
+      "notes": "P2.23 node creator & translation foundation (implementation: agent-1): bounded definition producer \u2014 candidate/reference output only, zero standing authority (declaration \u2260 authorization at every layer). One validation pipeline for human-created, node-created and translated candidates (origin is provenance, never a bypass). Deterministic offline translation: identical input \u21d2 identical output and identical refusals; lossy/unknown source constructs REJECT with canonical reasons (schema issues reuse the P2.22 family verbatim \u2014 no second error vocabulary); credential-shaped source fields refuse the whole translation. Approval touchpoint = P2.19 foundation, policy-explicit (node-created OR authority-bearing class), fail-closed via evaluate(); artifact result = P2.19 registry reference (storageRef+checksum+metadata, content never dereferenced) produced only after granted approval \u2014 PUBLISHED_REFERENCE means publishable-by-a-system-with-authority, the creator holds none. Portability verdict comes from node.portability@1.0.0#canPort only. No publish op, no execute op, no grant op, no model, no network, no self-modification."
     },
     {
       "id": "ai.token-usage",
@@ -1232,13 +1232,13 @@
       ],
       "consumers": [
         "frontend read-only display of usage certainty (reported/estimated/unavailable, XA-17 current interpretation)",
-        "cost derivation via calculateCost — pricing basis handed by the caller, never fetched; missing pricing yields unavailable, never a guess",
-        "budget views over recorded usage — empty scope is unavailable, never a fabricated zero"
+        "cost derivation via calculateCost \u2014 pricing basis handed by the caller, never fetched; missing pricing yields unavailable, never a guess",
+        "budget views over recorded usage \u2014 empty scope is unavailable, never a fabricated zero"
       ],
       "tests": [
         "apps/n8n-lego/test/lego-token-usage.test.mjs"
       ],
-      "notes": "P2.24 token & usage honest accounting (implementation: agent-1): the ONE canonical usage publisher (XA-17 resolution — no second contract, no parallel vocabulary). Every figure carries value+kind+source+certainty; reported only when the source supplied the number, estimated only with a named deterministic estimator, unavailable as null (never 0, never exact). P2.13 token vocabulary quoted byte-for-byte (message/modelInput/output — no provider synonyms coined). Scopes are call/run/session per XA-17; requestId identity is idempotent (retry never double-counts, reuse with a different payload is refused). Cost = reported usage + known pricing basis + declared rule only; module ships no pricing, fetches nothing, bills nothing. Closed record shape refuses prompt/completion/credential fields; string identifiers are scanned for full credential shapes (detector matches canonical token shapes, not bare prefixes). Injected now/newId, zero imports, frozen records, bounded store (4096)."
+      "notes": "P2.24 token & usage honest accounting (implementation: agent-1): the ONE canonical usage publisher (XA-17 resolution \u2014 no second contract, no parallel vocabulary). Every figure carries value+kind+source+certainty; reported only when the source supplied the number, estimated only with a named deterministic estimator, unavailable as null (never 0, never exact). P2.13 token vocabulary quoted byte-for-byte (message/modelInput/output \u2014 no provider synonyms coined). Scopes are call/run/session per XA-17; requestId identity is idempotent (retry never double-counts, reuse with a different payload is refused). Cost = reported usage + known pricing basis + declared rule only; module ships no pricing, fetches nothing, bills nothing. Closed record shape refuses prompt/completion/credential fields; string identifiers are scanned for full credential shapes (detector matches canonical token shapes, not bare prefixes). Injected now/newId, zero imports, frozen records, bounded store (4096)."
     },
     {
       "id": "ai.model-gateway",
@@ -1277,14 +1277,14 @@
         "ai:model:read"
       ],
       "consumers": [
-        "consumers of the canonical model contract — provider implementations stay replaceable behind the adapter",
-        "P2.24 token-usage reporting — provider-reported figures flow into ai.token-usage@1.0.0 without conversion",
+        "consumers of the canonical model contract \u2014 provider implementations stay replaceable behind the adapter",
+        "P2.24 token-usage reporting \u2014 provider-reported figures flow into ai.token-usage@1.0.0 without conversion",
         "frontend provider-status consumption (not-configured / configured / available / unavailable / degraded / disabled)"
       ],
       "tests": [
         "apps/n8n-lego/test/lego-provider-adapters.test.mjs"
       ],
-      "notes": "P2.25 first real model provider adapter (implementation: agent-1): explicit configuration only (no discovery, no default provider, no default model), call-time authorization naming the published ai:model:* permission exactly (XA-8/XA-10 consumed unchanged; configuration is never authority — invoke requires an explicit grantReference), injected synchronous exchange edge with at most one attempt per call (no internal retry), canonical error translation (timeout->deadline_exceeded, down->unavailable, rate-limited->backpressure, forbidden->access_denied) with no raw provider body/key/prompt/completion echoed, bounded input/output/stream dimensions, stream usage finalized once at the final envelope (in-chunk usage cannot double-count), missing usage is unavailable (null, never 0) and only reported figures report into ai.token-usage@1.0.0 with requestId-derived identities (idempotent). Credentials are never stored: config refuses credential fields and credential-shaped values (full-form detector quoted from ai.token-usage). No-provider state is the canonical zeroInstall not-configured answer via describeProviderConfiguration(null). fail-closed on unknown model/tool/config/authorization; provider available never means invoke authorized."
+      "notes": "P2.25 first real model provider adapter (implementation: agent-1): explicit configuration only (no discovery, no default provider, no default model), call-time authorization naming the published ai:model:* permission exactly (XA-8/XA-10 consumed unchanged; configuration is never authority \u2014 invoke requires an explicit grantReference), injected synchronous exchange edge with at most one attempt per call (no internal retry), canonical error translation (timeout->deadline_exceeded, down->unavailable, rate-limited->backpressure, forbidden->access_denied) with no raw provider body/key/prompt/completion echoed, bounded input/output/stream dimensions, stream usage finalized once at the final envelope (in-chunk usage cannot double-count), missing usage is unavailable (null, never 0) and only reported figures report into ai.token-usage@1.0.0 with requestId-derived identities (idempotent). Credentials are never stored: config refuses credential fields and credential-shaped values (full-form detector quoted from ai.token-usage). No-provider state is the canonical zeroInstall not-configured answer via describeProviderConfiguration(null). fail-closed on unknown model/tool/config/authorization; provider available never means invoke authorized."
     },
     {
       "id": "ai.tool-gateway",
@@ -1324,14 +1324,14 @@
         "ai:tool:read"
       ],
       "consumers": [
-        "consumers of the canonical tool contract — MCP and future gateways map ONTO this contract, never the reverse",
+        "consumers of the canonical tool contract \u2014 MCP and future gateways map ONTO this contract, never the reverse",
         "agents invoking declared tools under an explicit per-call authorization handoff",
         "frontend provider-status consumption for the tool gateway layer"
       ],
       "tests": [
         "apps/n8n-lego/test/lego-provider-adapters.test.mjs"
       ],
-      "notes": "P2.25 first real tool provider adapter (implementation: agent-1): tool declaration / capability / permission / invocation / provider binding stay five separate concepts — a generic provider configuration is never execution authority. sideEffects is required and validated against the published vocabulary (unknown effects are treated as destructive and refused); requiresApproval tools demand an approval reference (presence enforced here, ai.approval decides the grant). tool.call is non-idempotent: one exchange, never retried internally, requestId required — replay with the same canonicalized payload returns the recorded outcome with no second exchange (results travel as opaque references, never stored for replay), a different payload under the same requestId is refused (request-id-reuse), and the requestId travels to the provider for its own dedupe. Reads are idempotent and also single-shot (maxAttemptsPerCall 1). Explicit configuration only, credentials never stored, canonical error translation with no echo, bounded lists/resources/prompts/results, no token figures invented (usage stays with the model side per ai.token-usage). fail-closed on unknown tool/config/authorization/provider responses."
+      "notes": "P2.25 first real tool provider adapter (implementation: agent-1): tool declaration / capability / permission / invocation / provider binding stay five separate concepts \u2014 a generic provider configuration is never execution authority. sideEffects is required and validated against the published vocabulary (unknown effects are treated as destructive and refused); requiresApproval tools demand an approval reference (presence enforced here, ai.approval decides the grant). tool.call is non-idempotent: one exchange, never retried internally, requestId required \u2014 replay with the same canonicalized payload returns the recorded outcome with no second exchange (results travel as opaque references, never stored for replay), a different payload under the same requestId is refused (request-id-reuse), and the requestId travels to the provider for its own dedupe. Reads are idempotent and also single-shot (maxAttemptsPerCall 1). Explicit configuration only, credentials never stored, canonical error translation with no echo, bounded lists/resources/prompts/results, no token figures invented (usage stays with the model side per ai.token-usage). fail-closed on unknown tool/config/authorization/provider responses."
     },
     {
       "id": "ai.provider-declaration",
@@ -1357,13 +1357,13 @@
       },
       "consumers": [
         "operators declaring where a provider runs (sim/local/cloud) before any P2.25 adapter is configured",
-        "application/GitHub-class integration boundaries — handed-over, scoped, request-bound access validation",
-        "foundation readiness proof (P2.26) — the declaration axis stays separate from provider kinds, transports and Workspace"
+        "application/GitHub-class integration boundaries \u2014 handed-over, scoped, request-bound access validation",
+        "foundation readiness proof (P2.26) \u2014 the declaration axis stays separate from provider kinds, transports and Workspace"
       ],
       "tests": [
         "apps/n8n-lego/test/lego-provider-declaration.test.mjs"
       ],
-      "notes": "P2.26 provider declaration profile + handed-over access (implementation: agent-1): providers are declared — sim/local/cloud — never assumed, discovered or auto-selected; closed three-field declaration cannot carry credentials; handoff = opaque grant reference + declared scope + requestId (request-bound, never standing); credential-shaped values refused by the canonical full-form detector quoted from ai.token-usage; configuration stays on the P2.25 adapters (authority is never granted by declaration); Workspace remains ai.workspace@1.0.0 — no second implementation, no filesystem/shell/subprocess authority; no client, no endpoint, no network, zero node:* imports"
+      "notes": "P2.26 provider declaration profile + handed-over access (implementation: agent-1): providers are declared \u2014 sim/local/cloud \u2014 never assumed, discovered or auto-selected; closed three-field declaration cannot carry credentials; handoff = opaque grant reference + declared scope + requestId (request-bound, never standing); credential-shaped values refused by the canonical full-form detector quoted from ai.token-usage; configuration stays on the P2.25 adapters (authority is never granted by declaration); Workspace remains ai.workspace@1.0.0 \u2014 no second implementation, no filesystem/shell/subprocess authority; no client, no endpoint, no network, zero node:* imports"
     },
     {
       "id": "workflow.graph",
@@ -1390,14 +1390,14 @@
         ]
       },
       "consumers": [
-        "P3 execution slices (Issue #75/#97) — canonical-authoritative logical graph access",
-        "bounded runtime slices (frontier/checkpoint) — chunked partial reads, not whole-graph loads",
-        "compatibility oracle (Issue #91) — lossless exportDefinition roundtrip as the reference form"
+        "P3 execution slices (Issue #75/#97) \u2014 canonical-authoritative logical graph access",
+        "bounded runtime slices (frontier/checkpoint) \u2014 chunked partial reads, not whole-graph loads",
+        "compatibility oracle (Issue #91) \u2014 lossless exportDefinition roundtrip as the reference form"
       ],
       "tests": [
         "apps/n8n-lego/test/lego-workflow-graph.test.mjs"
       ],
-      "notes": "P3 Slice A (implementation: agent-1): persistent logical graph over the canonical n8n definition — verbatim node strings in fixed-size chunks, connections bucketed by source, resident index name→ordinal (integer, never node objects), one-chunk reads proven by readStats, durable bundle with fail-closed chunk digest, lossless exportDefinition (deep-equal roundtrip incl. orphan connection keys), manifest.checksum stays the n8n-editor contract checksum. Derived/disposable representation — n8n-ts WorkflowStore keeps the canonical document. No artificial node-count cap. No capability/REST surface yet (no ops/permissions on purpose). No fs/network/clock; owner agent-1 per Issue #98 P3 ownership Slice C (additive exports, version stays 0.1.0): store port (memory/lazy) + bounded HOT cache maxCachedChunks (LRU, default 8) so resident parsed payload never exceeds the bound regardless of logical size; residency HOT/WARM/COLD via residencyOf; evictChunk (reloadable, lossless); cacheStats counters; GRAPH_NODE_LIFECYCLE (9 stages) + lifecycleOf derived from residency; GRAPH_RESIDENCY vocabulary; accessor payloads frozen (shared immutable resident form). Source-level full reads (export/integrity/nodeNames) bypass the window."
+      "notes": "P3 Slice A (implementation: agent-1): persistent logical graph over the canonical n8n definition \u2014 verbatim node strings in fixed-size chunks, connections bucketed by source, resident index name\u2192ordinal (integer, never node objects), one-chunk reads proven by readStats, durable bundle with fail-closed chunk digest, lossless exportDefinition (deep-equal roundtrip incl. orphan connection keys), manifest.checksum stays the n8n-editor contract checksum. Derived/disposable representation \u2014 n8n-ts WorkflowStore keeps the canonical document. No artificial node-count cap. No capability/REST surface yet (no ops/permissions on purpose). No fs/network/clock; owner agent-1 per Issue #98 P3 ownership Slice C (additive exports, version stays 0.1.0): store port (memory/lazy) + bounded HOT cache maxCachedChunks (LRU, default 8) so resident parsed payload never exceeds the bound regardless of logical size; residency HOT/WARM/COLD via residencyOf; evictChunk (reloadable, lossless); cacheStats counters; GRAPH_NODE_LIFECYCLE (9 stages) + lifecycleOf derived from residency; GRAPH_RESIDENCY vocabulary; accessor payloads frozen (shared immutable resident form). Source-level full reads (export/integrity/nodeNames) bypass the window."
     },
     {
       "id": "execution.frontier",
@@ -1419,14 +1419,14 @@
         ]
       },
       "consumers": [
-        "bounded runtime slices (Issues #75/#97/#79) — capacity-bounded frontier with explicit admission outcomes",
-        "executor slices — bounded takeBatch as the bounded active-set primitive",
-        "resource protection (Issue #79) — observable depth/peakDepth/admitted/backpressured/served counters"
+        "bounded runtime slices (Issues #75/#97/#79) \u2014 capacity-bounded frontier with explicit admission outcomes",
+        "executor slices \u2014 bounded takeBatch as the bounded active-set primitive",
+        "resource protection (Issue #79) \u2014 observable depth/peakDepth/admitted/backpressured/served counters"
       ],
       "tests": [
         "apps/n8n-lego/test/lego-bounded-frontier.test.mjs"
       ],
-      "notes": "P3 Slice D (implementation: agent-1): capacity-bounded FIFO frontier — ring buffer bounded BY POLICY (capacity required, validated 1..1048576, pre-allocated; no default bound). offer/offerBatch return EXPLICIT outcomes (admitted vs backpressure with published code lego.backpressure): a flood can never grow the queue past capacity, refused items are never retained by the frontier and re-admit after drain (producer still owns them). take/takeBatch = bounded active set (cannot over-pull); FIFO deterministic; stats expose depth/peakDepth/admitted/backpressured/served. Pure structure: zero imports, no clock/fs/network/timers. One error family lego.contract_violation (errors contract 1.2.0 untouched). No capability/REST surface (no ops/permissions on purpose). Owner agent-1 per Issue #98 (bounded frontier); execution domain stays mustNotDependOn workflow — module imports nothing cross-domain. Load shedding/priority lanes/memory emergency NOT here (Issue #79 policy layers arrive with the resource-protection slice)"
+      "notes": "P3 Slice D (implementation: agent-1): capacity-bounded FIFO frontier \u2014 ring buffer bounded BY POLICY (capacity required, validated 1..1048576, pre-allocated; no default bound). offer/offerBatch return EXPLICIT outcomes (admitted vs backpressure with published code lego.backpressure): a flood can never grow the queue past capacity, refused items are never retained by the frontier and re-admit after drain (producer still owns them). take/takeBatch = bounded active set (cannot over-pull); FIFO deterministic; stats expose depth/peakDepth/admitted/backpressured/served. Pure structure: zero imports, no clock/fs/network/timers. One error family lego.contract_violation (errors contract 1.2.0 untouched). No capability/REST surface (no ops/permissions on purpose). Owner agent-1 per Issue #98 (bounded frontier); execution domain stays mustNotDependOn workflow \u2014 module imports nothing cross-domain. Load shedding/priority lanes/memory emergency NOT here (Issue #79 policy layers arrive with the resource-protection slice)"
     },
     {
       "id": "execution.state-stream",
@@ -1449,14 +1449,14 @@
         ]
       },
       "consumers": [
-        "checkpoint/resume slice (Issue #75 #5) — snapshot/resume lands on this bounded seam",
-        "bounded runtime slices — explicit backpressure outcomes for execution-state producers",
-        "executor slices — streaming sink drain (consume) with bounded buffers (Issue #75 #4)"
+        "checkpoint/resume slice (Issue #75 #5) \u2014 snapshot/resume lands on this bounded seam",
+        "bounded runtime slices \u2014 explicit backpressure outcomes for execution-state producers",
+        "executor slices \u2014 streaming sink drain (consume) with bounded buffers (Issue #75 #4)"
       ],
       "tests": [
         "apps/n8n-lego/test/lego-state-stream.test.mjs"
       ],
-      "notes": "P3 Slice E (implementation: agent-1): bounded streaming execution state — append-only monotonic seq log with REQUIRED maxResidentEvents bound (1..1048576, no default); append answers explicit admitted/backpressure (published code lego.backpressure) and retains NOTHING when full (no silent loss, seq not burned); bounded non-destructive read window, finite bounded-batch stream() generator, destructive consume() = selective retention (backlog shrinks only when a sink takes events); JSON-domain payloads deep-frozen on admission; ZERO imports (no clock/fs/network/timers/randomness/process); one error family lego.contract_violation (errors contract 1.2.0 untouched). No capability/REST surface. Owner agent-1 per Issue #98; checkpoint/resume = Slice F on this seam. Execution domain stays mustNotDependOn workflow Slice F (additive exports, version stays 0.1.0): snapshot(context?) → durable envelope {snapshotVersion, bodyJson, digest=sha256} sealing resident backlog + cursor + caller context; stateStreamFromSnapshot restores fail-closed (shape/version/digest/contract/contiguity/count all verified; RESTORE channel via unexported symbol); resume continues the durable seq window; metamorphic checkpoint→resume ≡ uninterrupted asserted (#91 mode 4)."
+      "notes": "P3 Slice E (implementation: agent-1): bounded streaming execution state \u2014 append-only monotonic seq log with REQUIRED maxResidentEvents bound (1..1048576, no default); append answers explicit admitted/backpressure (published code lego.backpressure) and retains NOTHING when full (no silent loss, seq not burned); bounded non-destructive read window, finite bounded-batch stream() generator, destructive consume() = selective retention (backlog shrinks only when a sink takes events); JSON-domain payloads deep-frozen on admission; ZERO imports (no clock/fs/network/timers/randomness/process); one error family lego.contract_violation (errors contract 1.2.0 untouched). No capability/REST surface. Owner agent-1 per Issue #98; checkpoint/resume = Slice F on this seam. Execution domain stays mustNotDependOn workflow Slice F (additive exports, version stays 0.1.0): snapshot(context?) \u2192 durable envelope {snapshotVersion, bodyJson, digest=sha256} sealing resident backlog + cursor + caller context; stateStreamFromSnapshot restores fail-closed (shape/version/digest/contract/contiguity/count all verified; RESTORE channel via unexported symbol); resume continues the durable seq window; metamorphic checkpoint\u2192resume \u2261 uninterrupted asserted (#91 mode 4)."
     },
     {
       "id": "workflow.dna",
@@ -1478,14 +1478,14 @@
         ]
       },
       "consumers": [
-        "compatibility oracle (#91) — fast-path: different DNA means nothing else to compare",
-        "cache keys for compiled representations (semantics-safe caching) — identity via n8n checksum",
-        "P3 acceptance matrix (#75) — bounded structural identity for 1M/5M/10M stress runs"
+        "compatibility oracle (#91) \u2014 fast-path: different DNA means nothing else to compare",
+        "cache keys for compiled representations (semantics-safe caching) \u2014 identity via n8n checksum",
+        "P3 acceptance matrix (#75) \u2014 bounded structural identity for 1M/5M/10M stress runs"
       ],
       "tests": [
         "apps/n8n-lego/test/lego-workflow-dna.test.mjs"
       ],
-      "notes": "P3 Slice H (implementation: agent-1): bounded Workflow DNA — deterministic single-pass summary of canonical workflow identity + morphology. checksum = calculateWorkflowChecksum (n8n-editor contract, exact identity, order-sensitive); morphology block (node/edge counts, type@typeVersion histogram, root/leaf counts + first-64 samples, maxFanOut/maxFanIn, orphan connection keys capped, sorted header fields) is order-insensitive by design (node-shuffle keeps morphology, changes checksum only — metamorphic-asserted). Name lists capped at WORKFLOW_DNA_LIST_CAP=64 so DNA stays tiny at 10M nodes (bounded summary, never a second graph). Structural truth: orphan-source edges count toward fan-in (Ghost→Start ⇒ zero roots). Only import = ../checksum.mjs (same workflow domain seam); one error family lego.contract_violation; errors contract 1.2.0 untouched. No capability/REST surface. Owner agent-1 per Issue #98"
+      "notes": "P3 Slice H (implementation: agent-1): bounded Workflow DNA \u2014 deterministic single-pass summary of canonical workflow identity + morphology. checksum = calculateWorkflowChecksum (n8n-editor contract, exact identity, order-sensitive); morphology block (node/edge counts, type@typeVersion histogram, root/leaf counts + first-64 samples, maxFanOut/maxFanIn, orphan connection keys capped, sorted header fields) is order-insensitive by design (node-shuffle keeps morphology, changes checksum only \u2014 metamorphic-asserted). Name lists capped at WORKFLOW_DNA_LIST_CAP=64 so DNA stays tiny at 10M nodes (bounded summary, never a second graph). Structural truth: orphan-source edges count toward fan-in (Ghost\u2192Start \u21d2 zero roots). Only import = ../checksum.mjs (same workflow domain seam); one error family lego.contract_violation; errors contract 1.2.0 untouched. No capability/REST surface. Owner agent-1 per Issue #98"
     },
     {
       "id": "execution.ir",
@@ -1508,14 +1508,14 @@
         ]
       },
       "consumers": [
-        "execution scheduling consumers — dependency lists for readiness (no whole-graph scans)",
-        "optimization equivalence harness (#91(c)) — toggle sweeps must recover the identical IR when off",
+        "execution scheduling consumers \u2014 dependency lists for readiness (no whole-graph scans)",
+        "optimization equivalence harness (#91(c)) \u2014 toggle sweeps must recover the identical IR when off",
         "bounded IR cache for compiled representations (LRU, fail-closed maxEntries)"
       ],
       "tests": [
         "apps/n8n-lego/test/lego-execution-ir.test.mjs"
       ],
-      "notes": "P3 Slice J: execution IR — raw compile (encounter-order deps, dangling excluded), independently disableable optimizations #91(c) (noopPassthrough, dedupeDeps; default ON, all-off = canonical identity), bounded LRU IR cache; zero-import (Issues #75/#91)"
+      "notes": "P3 Slice J: execution IR \u2014 raw compile (encounter-order deps, dangling excluded), independently disableable optimizations #91(c) (noopPassthrough, dedupeDeps; default ON, all-off = canonical identity), bounded LRU IR cache; zero-import (Issues #75/#91)"
     },
     {
       "id": "compatibility.oracle",
@@ -1539,14 +1539,14 @@
         ]
       },
       "consumers": [
-        "compatibility gate §6 harnesses — differential/virtualization/toggle/metamorphic equivalence (#91)",
-        "optimizer + virtualization slices — must prove equivalence before any benchmark claim (#91 Security rule)",
-        "stress harness (P3) — metamorphic checks over 1M/5M/10M workflows"
+        "compatibility gate \u00a76 harnesses \u2014 differential/virtualization/toggle/metamorphic equivalence (#91)",
+        "optimizer + virtualization slices \u2014 must prove equivalence before any benchmark claim (#91 Security rule)",
+        "stress harness (P3) \u2014 metamorphic checks over 1M/5M/10M workflows"
       ],
       "tests": [
         "apps/n8n-lego/test/compat.oracle.test.mjs"
       ],
-      "notes": "P3 Slice L: compatibility oracle — four #91 modes, nine observables, fail-closed structural equivalence, 2^n bounded toggle sweep with identityRecovered; zero-import, no workflow/execution deps (Issue #91)"
+      "notes": "P3 Slice L: compatibility oracle \u2014 four #91 modes, nine observables, fail-closed structural equivalence, 2^n bounded toggle sweep with identityRecovered; zero-import, no workflow/execution deps (Issue #91)"
     },
     {
       "id": "execution.guard",
@@ -1569,14 +1569,14 @@
         ]
       },
       "consumers": [
-        "executor admission path — admit|defer|reject per lane under observed pressure",
-        "bounded frontier / backpressure (Slice D) — hard-limit wall at budget exhaustion",
-        "stress harness (P3) — budget envelope for 1M/5M/10M runs on 1 vCPU/1 GB reference"
+        "executor admission path \u2014 admit|defer|reject per lane under observed pressure",
+        "bounded frontier / backpressure (Slice D) \u2014 hard-limit wall at budget exhaustion",
+        "stress harness (P3) \u2014 budget envelope for 1M/5M/10M runs on 1 vCPU/1 GB reference"
       ],
       "tests": [
         "apps/n8n-lego/test/lego-resource-guard.test.mjs"
       ],
-      "notes": "P3 Slice M: resource guard — six mandatory budgets (Issue #75 #7), five priority lanes, normal/elevated/critical pressure from observed ratios, no clock (observed state passed in), hard limits = backpressure wall for every lane (Issues #75/#79)"
+      "notes": "P3 Slice M: resource guard \u2014 six mandatory budgets (Issue #75 #7), five priority lanes, normal/elevated/critical pressure from observed ratios, no clock (observed state passed in), hard limits = backpressure wall for every lane (Issues #75/#79)"
     },
     {
       "id": "observability.envelope",
@@ -1630,9 +1630,9 @@
         ]
       },
       "consumers": [
-        "execution IR pipeline (#97 execution IR/compiler) — fusion operates on compiled IR, never the canonical definition",
-        "compatibility oracle (#91) — toggleSweep({toggleNames: [fusion]}) proves enable/disable equivalence",
-        "node-result cache for proven-pure types only — exact-fingerprint semantics-safe caching"
+        "execution IR pipeline (#97 execution IR/compiler) \u2014 fusion operates on compiled IR, never the canonical definition",
+        "compatibility oracle (#91) \u2014 toggleSweep({toggleNames: [fusion]}) proves enable/disable equivalence",
+        "node-result cache for proven-pure types only \u2014 exact-fingerprint semantics-safe caching"
       ],
       "tests": [
         "apps/n8n-lego/test/lego-execution-optimizer.test.mjs"
@@ -1716,14 +1716,14 @@
         ]
       },
       "consumers": [
-        "P6.2 registry compiler + immutable epoch — compiles these declarations and adds epochs, atomic publication and rollback on top",
-        "P3 workflow node resolution (Issue #97) — resolves node identity without reading implementation internals",
-        "P4/P5/P8/P9 contracts — trust class, runtime locality and resource profile are read from the declaration, never inferred"
+        "P6.2 registry compiler + immutable epoch \u2014 compiles these declarations and adds epochs, atomic publication and rollback on top",
+        "P3 workflow node resolution (Issue #97) \u2014 resolves node identity without reading implementation internals",
+        "P4/P5/P8/P9 contracts \u2014 trust class, runtime locality and resource profile are read from the declaration, never inferred"
       ],
       "tests": [
         "apps/n8n-lego/test/lego-node-registry.test.mjs"
       ],
-      "notes": "P6.1 (P6 implementation owner: Agent 3, Issue #100): canonical node registry contract. Identity is `type` + `typeVersion` and nothing else, rendered `type@typeVersion` exactly as the pinned n8n catalog writes it (`n8n-nodes-base.httpRequest@4.4`). Measured, not assumed: `node.contract` calls typeVersion an integer, but the pinned `n8n-nodes-base@2.9.1` catalog carries fractional versions (1.1 … 4.4) and 90 of its 483 node types are multi-version, so a typeVersion is a positive number with at most one decimal place. Metadata (package, vendor, contract/implementation version, digest, provenance, capabilities, trust class, runtime locality, resource profile, compatibility, lifecycle, health, discovery) is a CLOSED 17-field schema: unknown field, unknown trust class, unknown capability, unknown runtime locality, unknown lifecycle, unknown health, unverifiable digest or a missing provenance source is refused — fail closed. Vocabulary is QUOTED, never re-declared: trust classes, capabilities, runtimes, failure boundaries and resource classes are read from the published foundation manifest (src/lego/manifest/foundation.json), lifecycle from lego.negotiation, portability targets from node.portability, discovery groups from the n8n editor contract — the foundation accessor is deliberately not imported (outside lego-foundation's published surface; gate rule R4). The index is a deterministic dictionary only: duplicate identities are a conflict, never a precedence rule, and nothing is published when any entry is invalid — normalization, epochs, atomic publication and rollback remain P6.2. Pure functions: no network, process, timer or clock; one manifest read. No authority: nothing here grants trust, capability or permission. node.portability@1.0.0 stays the domain's primary contract."
+      "notes": "P6.1 (P6 implementation owner: Agent 3, Issue #100): canonical node registry contract. Identity is `type` + `typeVersion` and nothing else, rendered `type@typeVersion` exactly as the pinned n8n catalog writes it (`n8n-nodes-base.httpRequest@4.4`). Measured, not assumed: `node.contract` calls typeVersion an integer, but the pinned `n8n-nodes-base@2.9.1` catalog carries fractional versions (1.1 \u2026 4.4) and 90 of its 483 node types are multi-version, so a typeVersion is a positive number with at most one decimal place. Metadata (package, vendor, contract/implementation version, digest, provenance, capabilities, trust class, runtime locality, resource profile, compatibility, lifecycle, health, discovery) is a CLOSED 17-field schema: unknown field, unknown trust class, unknown capability, unknown runtime locality, unknown lifecycle, unknown health, unverifiable digest or a missing provenance source is refused \u2014 fail closed. Vocabulary is QUOTED, never re-declared: trust classes, capabilities, runtimes, failure boundaries and resource classes are read from the published foundation manifest (src/lego/manifest/foundation.json), lifecycle from lego.negotiation, portability targets from node.portability, discovery groups from the n8n editor contract \u2014 the foundation accessor is deliberately not imported (outside lego-foundation's published surface; gate rule R4). The index is a deterministic dictionary only: duplicate identities are a conflict, never a precedence rule, and nothing is published when any entry is invalid \u2014 normalization, epochs, atomic publication and rollback remain P6.2. Pure functions: no network, process, timer or clock; one manifest read. No authority: nothing here grants trust, capability or permission. node.portability@1.0.0 stays the domain's primary contract."
     },
     {
       "id": "registry.compiler",
@@ -1765,16 +1765,16 @@
         ]
       },
       "consumers": [
-        "P6.3 transactional package install — publishes epochs and needs publication to be atomic and non-mutating",
-        "P6.5 workflow node resolution manifest — pins a workflow's nodes to one epoch digest and upgrades only explicitly",
-        "P6.6 runtime lease — an execution keeps serving the epoch it started under while a new epoch becomes current",
-        "P6.13 incremental compiler — compiles only what changed onto the same chain, same digests",
-        "P6.16 integrity chain + freshness — extends this ordering rule into a signed, anti-rollback anchor"
+        "P6.3 transactional package install \u2014 publishes epochs and needs publication to be atomic and non-mutating",
+        "P6.5 workflow node resolution manifest \u2014 pins a workflow's nodes to one epoch digest and upgrades only explicitly",
+        "P6.6 runtime lease \u2014 an execution keeps serving the epoch it started under while a new epoch becomes current",
+        "P6.13 incremental compiler \u2014 compiles only what changed onto the same chain, same digests",
+        "P6.16 integrity chain + freshness \u2014 extends this ordering rule into a signed, anti-rollback anchor"
       ],
       "tests": [
         "apps/n8n-lego/test/lego-registry-compiler.test.mjs"
       ],
-      "notes": "P6.2 (P6 implementation owner: Agent 3, Issue #100): registry compiler + immutable epoch. A declaration is a CLAIM; this is where it becomes a COMMITMENT the rest of the system may read. Four guarantees, each proven by test rather than asserted: (1) deterministic compile — the epoch digest is a pure function of declaration CONTENT and the lineage it is compiled onto, invariant under key order, declaration order and capability order, with no clock, no filesystem and no network anywhere in the module (a compiler that reads a clock is not reproducible); (2) all-or-nothing — one invalid declaration or one duplicate identity compiles to NO epoch at all, with P6.1's own reason codes carried through unchanged (registry.duplicate keeps its 'a conflict, not a precedence rule' wording) rather than re-invented; (3) monotonic chained history — an epoch names its parent digest and carries the full chain, epoch numbers only ever increase, and a rollback is a NEW higher-numbered epoch that re-installs older content (its contentDigest equals the target's, its epochDigest does not), so a downgrade leaves a mark instead of restoring a number, and a rollback to a non-ancestor or to the current epoch is refused; (4) immutability — a compiled epoch is deep-frozen and publication is a pointer move between frozen objects, so the epoch in-flight work is reading stays bit-identical (asserted by re-serializing it) and a failed publication leaves the previous state fully usable. Also: verifyRegistryEpoch recompiles content and refuses anything whose digest no longer matches (tamper detection, with invalid content reported as invalid rather than as a mismatch); diffRegistryEpochs gives sorted added/removed/changed for P6.19. Identity, validation, canonical form and per-declaration digests are quoted from node.registry@0.1.0 — the compiler never re-derives them. No authority: compiling is not admitting. Scope walls held: no install journal, artifact store, lease, residency, health, quarantine or attestation vocabulary exists in this module."
+      "notes": "P6.2 (P6 implementation owner: Agent 3, Issue #100): registry compiler + immutable epoch. A declaration is a CLAIM; this is where it becomes a COMMITMENT the rest of the system may read. Four guarantees, each proven by test rather than asserted: (1) deterministic compile \u2014 the epoch digest is a pure function of declaration CONTENT and the lineage it is compiled onto, invariant under key order, declaration order and capability order, with no clock, no filesystem and no network anywhere in the module (a compiler that reads a clock is not reproducible); (2) all-or-nothing \u2014 one invalid declaration or one duplicate identity compiles to NO epoch at all, with P6.1's own reason codes carried through unchanged (registry.duplicate keeps its 'a conflict, not a precedence rule' wording) rather than re-invented; (3) monotonic chained history \u2014 an epoch names its parent digest and carries the full chain, epoch numbers only ever increase, and a rollback is a NEW higher-numbered epoch that re-installs older content (its contentDigest equals the target's, its epochDigest does not), so a downgrade leaves a mark instead of restoring a number, and a rollback to a non-ancestor or to the current epoch is refused; (4) immutability \u2014 a compiled epoch is deep-frozen and publication is a pointer move between frozen objects, so the epoch in-flight work is reading stays bit-identical (asserted by re-serializing it) and a failed publication leaves the previous state fully usable. Also: verifyRegistryEpoch recompiles content and refuses anything whose digest no longer matches (tamper detection, with invalid content reported as invalid rather than as a mismatch); diffRegistryEpochs gives sorted added/removed/changed for P6.19. Identity, validation, canonical form and per-declaration digests are quoted from node.registry@0.1.0 \u2014 the compiler never re-derives them. No authority: compiling is not admitting. Scope walls held: no install journal, artifact store, lease, residency, health, quarantine or attestation vocabulary exists in this module."
     },
     {
       "id": "package.transaction",
@@ -1819,15 +1819,15 @@
         ]
       },
       "consumers": [
-        "P6.4 dependency closure + content-addressed store — resolves the closure this transaction installs, in this order, under this fence",
-        "P6.5 workflow node resolution manifest — a pin changes only through a committed transaction, so a workflow upgrade has a journal",
-        "P6.19 canary rollout — the visibility boundary is where a canary is judged and where an auto-rollback attaches",
-        "P6.30 repair + offline recovery — drives the recovery decision: resume, abort or roll back, from the journal alone"
+        "P6.4 dependency closure + content-addressed store \u2014 resolves the closure this transaction installs, in this order, under this fence",
+        "P6.5 workflow node resolution manifest \u2014 a pin changes only through a committed transaction, so a workflow upgrade has a journal",
+        "P6.19 canary rollout \u2014 the visibility boundary is where a canary is judged and where an auto-rollback attaches",
+        "P6.30 repair + offline recovery \u2014 drives the recovery decision: resume, abort or roll back, from the journal alone"
       ],
       "tests": [
         "apps/n8n-lego/test/lego-package-transaction.test.mjs"
       ],
-      "notes": "P6.3 (P6 implementation owner: Agent 3, Issue #100): transactional package install + single-flight. P6.1 fixes what a declaration IS, P6.2 compiles declarations into an epoch — neither says how a package gets from a tarball to the registry the host serves, and that gap is where the damage happens: an interrupted copy leaves a half-written package, two concurrent installs produce a mixture of both, and a rollback applied to a stale view silently undoes someone else's upgrade. This contract owns the ORDERING, the JOURNAL, the ATTEMPTS, the VISIBILITY BOUNDARY and the single-flight arbitration, and deliberately not the bytes: every step result is reported back by the caller, so the host does the IO while this contract says what a valid history looks like and refuses anything else (the same split P6.1 and P6.2 already use). Steps, in the only order they may happen: resolve → prepare → verify → stage → publish → activate, none skippable. `publish` is THE VISIBILITY BOUNDARY: before it a failure costs nothing (recovery aborts), after it the registry is inconsistent until activation completes or the publication is rolled back — a decision that is asymmetric by design and symmetric in shape (attempts left → resume; exhausted → abort before the boundary, rollback after it). Attempt numbering is EXPLICIT because 'the same failure twice' is ambiguous in a way that matters: replaying a recorded attempt is a no-op (a crashed driver must be able to reconcile its own journal, even after the transaction closed), a new attempt counts toward a ceiling of two, and a gap in attempt numbers is a lost report rather than a new attempt — an omitted number means 'next attempt', which is fail-safe, since over-counting ends a transaction while under-counting loops forever. A step that already succeeded can never be re-recorded; a journal is evidence, not a draft. Publication is FENCED: it must name the 64-hex epoch digest it makes visible (it composes with P6.2, it does not mint an epoch) and it is refused under a lease the gate no longer holds — single-flight is one install per package identity at a time, with a monotonic fence, re-entrancy for the same owner that does not burn a fence, and a stale holder having no authority over the gate. Immutable throughout: every function returns a new frozen value, so a history in front of an operator cannot change under them."
+      "notes": "P6.3 (P6 implementation owner: Agent 3, Issue #100): transactional package install + single-flight. P6.1 fixes what a declaration IS, P6.2 compiles declarations into an epoch \u2014 neither says how a package gets from a tarball to the registry the host serves, and that gap is where the damage happens: an interrupted copy leaves a half-written package, two concurrent installs produce a mixture of both, and a rollback applied to a stale view silently undoes someone else's upgrade. This contract owns the ORDERING, the JOURNAL, the ATTEMPTS, the VISIBILITY BOUNDARY and the single-flight arbitration, and deliberately not the bytes: every step result is reported back by the caller, so the host does the IO while this contract says what a valid history looks like and refuses anything else (the same split P6.1 and P6.2 already use). Steps, in the only order they may happen: resolve \u2192 prepare \u2192 verify \u2192 stage \u2192 publish \u2192 activate, none skippable. `publish` is THE VISIBILITY BOUNDARY: before it a failure costs nothing (recovery aborts), after it the registry is inconsistent until activation completes or the publication is rolled back \u2014 a decision that is asymmetric by design and symmetric in shape (attempts left \u2192 resume; exhausted \u2192 abort before the boundary, rollback after it). Attempt numbering is EXPLICIT because 'the same failure twice' is ambiguous in a way that matters: replaying a recorded attempt is a no-op (a crashed driver must be able to reconcile its own journal, even after the transaction closed), a new attempt counts toward a ceiling of two, and a gap in attempt numbers is a lost report rather than a new attempt \u2014 an omitted number means 'next attempt', which is fail-safe, since over-counting ends a transaction while under-counting loops forever. A step that already succeeded can never be re-recorded; a journal is evidence, not a draft. Publication is FENCED: it must name the 64-hex epoch digest it makes visible (it composes with P6.2, it does not mint an epoch) and it is refused under a lease the gate no longer holds \u2014 single-flight is one install per package identity at a time, with a monotonic fence, re-entrancy for the same owner that does not burn a fence, and a stale holder having no authority over the gate. Immutable throughout: every function returns a new frozen value, so a history in front of an operator cannot change under them."
     },
     {
       "id": "registry.closure",
@@ -1868,16 +1868,16 @@
         ]
       },
       "consumers": [
-        "P6.3 package transaction — installs the ordered closure this contract produces, in this order, each entry carrying the digest it must have",
-        "P6.5 workflow node resolution manifest — a pin names a closure digest, so a workflow's whole dependency set is reproducible",
-        "P6.9 semantic fingerprint + compatibility replay — replays a closure against the fingerprints it was resolved with",
-        "P6.18 SBOM/VEX — the closure IS the package inventory an SBOM describes",
-        "P6.20 emergency revocation — a revoked package is found inside a closure before anything is served from it"
+        "P6.3 package transaction \u2014 installs the ordered closure this contract produces, in this order, each entry carrying the digest it must have",
+        "P6.5 workflow node resolution manifest \u2014 a pin names a closure digest, so a workflow's whole dependency set is reproducible",
+        "P6.9 semantic fingerprint + compatibility replay \u2014 replays a closure against the fingerprints it was resolved with",
+        "P6.18 SBOM/VEX \u2014 the closure IS the package inventory an SBOM describes",
+        "P6.20 emergency revocation \u2014 a revoked package is found inside a closure before anything is served from it"
       ],
       "tests": [
         "apps/n8n-lego/test/lego-dependency-closure.test.mjs"
       ],
-      "notes": "P6.4 (P6 implementation owner: Agent 3, Issue #100): dependency closure + content-addressed artifact store. P6.3 gives an install a journal and a fence but installs ONE package; real node packages arrive with helpers, parsers and runtimes, so something must answer which packages are needed, in which versions, and whether the bytes on hand are the bytes the registry claims. This contract answers all three, purely. RESOLUTION: given a root and a catalogue of published versions (data handed in, never fetched), produce the full closure as a deterministic, topologically ordered list of package@version with the digest each must have — deterministic meaning two hosts resolving the same catalogue get byte-identical results, because a closure that depends on map iteration order is a coin flip, not a closure. Semver subset stated rather than imported: `*`, exact, caret and tilde over major.minor.patch with an optional pre-release, and a pre-release is never selected unless a requirement NAMES it (a caret range that happens to cover 1.1.0-beta.1 must not install a beta). STORE ADDRESSING: an address IS the hash of the content, so identical bytes share one address and cannot disagree about it — which is what makes deduplication safe rather than clever. VERIFICATION: content that no longer hashes to its address is refused as corruption and never silently re-addressed. Every refusal here has burned a real supply chain and is reported with who asked for what: unmet required dependency, unsatisfiable range (nearby versions are not picked), a version conflict no single version satisfies, a declared conflict with something the closure requires (checked AFTER the closure is complete, because whether a conflict fires depends on the whole graph), a cycle with the path named, a depth ceiling and a size ceiling. Optional means may-be-absent, never may-be-wrong: an absent optional is reported in `optionalMissing`, a declared-but-broken one is reported with its reason. Garbage collection requires the live set from the caller — collecting by guessing is data loss with a spec. No authority: an address proves identity of bytes, never authorship, trust or permission."
+      "notes": "P6.4 (P6 implementation owner: Agent 3, Issue #100): dependency closure + content-addressed artifact store. P6.3 gives an install a journal and a fence but installs ONE package; real node packages arrive with helpers, parsers and runtimes, so something must answer which packages are needed, in which versions, and whether the bytes on hand are the bytes the registry claims. This contract answers all three, purely. RESOLUTION: given a root and a catalogue of published versions (data handed in, never fetched), produce the full closure as a deterministic, topologically ordered list of package@version with the digest each must have \u2014 deterministic meaning two hosts resolving the same catalogue get byte-identical results, because a closure that depends on map iteration order is a coin flip, not a closure. Semver subset stated rather than imported: `*`, exact, caret and tilde over major.minor.patch with an optional pre-release, and a pre-release is never selected unless a requirement NAMES it (a caret range that happens to cover 1.1.0-beta.1 must not install a beta). STORE ADDRESSING: an address IS the hash of the content, so identical bytes share one address and cannot disagree about it \u2014 which is what makes deduplication safe rather than clever. VERIFICATION: content that no longer hashes to its address is refused as corruption and never silently re-addressed. Every refusal here has burned a real supply chain and is reported with who asked for what: unmet required dependency, unsatisfiable range (nearby versions are not picked), a version conflict no single version satisfies, a declared conflict with something the closure requires (checked AFTER the closure is complete, because whether a conflict fires depends on the whole graph), a cycle with the path named, a depth ceiling and a size ceiling. Optional means may-be-absent, never may-be-wrong: an absent optional is reported in `optionalMissing`, a declared-but-broken one is reported with its reason. Garbage collection requires the live set from the caller \u2014 collecting by guessing is data loss with a spec. No authority: an address proves identity of bytes, never authorship, trust or permission."
     },
     {
       "id": "node.resolution",
@@ -1914,16 +1914,16 @@
         ]
       },
       "consumers": [
-        "P6.6 runtime lease — an execution leases the epoch a manifest pins, and keeps serving it while a new epoch becomes current",
-        "P6.9 semantic fingerprint + compatibility replay — replays exactly the pinned identities a workflow resolved against, not whatever is current",
-        "P6.14 worker registry convergence — a worker holds a manifest revision and the handshake reports MATCH/UPGRADE_REQUIRED/MISMATCH",
-        "P6.19 canary rollout — a canary is a manifest revision moved deliberately, and the auto-rollback restores the previous revision",
-        "P6.30 repair + reconciliation — a workflow whose pin is missing or changed is a repair case, not a silent re-resolution"
+        "P6.6 runtime lease \u2014 an execution leases the epoch a manifest pins, and keeps serving it while a new epoch becomes current",
+        "P6.9 semantic fingerprint + compatibility replay \u2014 replays exactly the pinned identities a workflow resolved against, not whatever is current",
+        "P6.14 worker registry convergence \u2014 a worker holds a manifest revision and the handshake reports MATCH/UPGRADE_REQUIRED/MISMATCH",
+        "P6.19 canary rollout \u2014 a canary is a manifest revision moved deliberately, and the auto-rollback restores the previous revision",
+        "P6.30 repair + reconciliation \u2014 a workflow whose pin is missing or changed is a repair case, not a silent re-resolution"
       ],
       "tests": [
         "apps/n8n-lego/test/lego-resolution-manifest.test.mjs"
       ],
-      "notes": "P6.5 (P6 implementation owner: Agent 3, Issue #100): workflow node resolution manifest. An epoch (P6.2) answers what the registry contains now; it does not answer what THIS workflow runs against and whether that changed — between those two questions sits the classic outage where the registry is upgraded, half the workflows silently start executing an untested version, and the only evidence is a support ticket. A resolution manifest pins, per workflow, the exact identity (type@typeVersion), the declaration digest and the epoch digest, so 'which implementation did this run use' is a stored fact next to the workflow instead of a reconstruction. Three rules make it worth having. (1) A PIN IS EXACT: no latest, no floating tag, no silent adoption. (2) UPGRADE IS EXPLICIT AND TWO-PHASE: planning changes nothing at all (asserted by re-serializing the manifest), applying requires an explicit authorization, a revision that still matches, and a proposal that still equals what the current epoch would produce — a stale proposal is refused rather than merged, which is how an upgrade approved yesterday against a different registry stops being applied today; the policy (exact/minor/major, in the n8n typeVersion X.Y model) travels INSIDE the proposal and is recorded in history when it changes. (3) NOTHING IS SILENTLY DROPPED: a pinned identity missing from the epoch is FATAL even when a candidate version exists — turning 'the node you pinned is gone' into 'here is a different version instead' is the exact failure this contract prevents — and the same identity carrying a different digest is reported as a registry integrity violation, not an upgrade, because P6.1 fixed that a node's identity never changes because its implementation changed. Revisions only increase and history is append-only. Composes with P6.1 (identity/parse) and P6.2 (epochs) rather than re-deriving either; P3's graph, frontier and IR modules are never imported — the node list is data handed in."
+      "notes": "P6.5 (P6 implementation owner: Agent 3, Issue #100): workflow node resolution manifest. An epoch (P6.2) answers what the registry contains now; it does not answer what THIS workflow runs against and whether that changed \u2014 between those two questions sits the classic outage where the registry is upgraded, half the workflows silently start executing an untested version, and the only evidence is a support ticket. A resolution manifest pins, per workflow, the exact identity (type@typeVersion), the declaration digest and the epoch digest, so 'which implementation did this run use' is a stored fact next to the workflow instead of a reconstruction. Three rules make it worth having. (1) A PIN IS EXACT: no latest, no floating tag, no silent adoption. (2) UPGRADE IS EXPLICIT AND TWO-PHASE: planning changes nothing at all (asserted by re-serializing the manifest), applying requires an explicit authorization, a revision that still matches, and a proposal that still equals what the current epoch would produce \u2014 a stale proposal is refused rather than merged, which is how an upgrade approved yesterday against a different registry stops being applied today; the policy (exact/minor/major, in the n8n typeVersion X.Y model) travels INSIDE the proposal and is recorded in history when it changes. (3) NOTHING IS SILENTLY DROPPED: a pinned identity missing from the epoch is FATAL even when a candidate version exists \u2014 turning 'the node you pinned is gone' into 'here is a different version instead' is the exact failure this contract prevents \u2014 and the same identity carrying a different digest is reported as a registry integrity violation, not an upgrade, because P6.1 fixed that a node's identity never changes because its implementation changed. Revisions only increase and history is append-only. Composes with P6.1 (identity/parse) and P6.2 (epochs) rather than re-deriving either; P3's graph, frontier and IR modules are never imported \u2014 the node list is data handed in."
     },
     {
       "id": "runtime.lease",
@@ -1966,16 +1966,16 @@
         ]
       },
       "consumers": [
-        "P6.7 node residency — a node is never evicted while an execution still holds a lease on the epoch it came from",
-        "P6.14 worker registry convergence — a worker's leases are what its handshake reports as in flight",
-        "P6.19 canary rollout — a rollout completes only when the canary epoch is fully drained, and an auto-rollback respects in-flight leases",
-        "P6.23 cancellation/deadline/resource accounting — a lease is the thing a deadline is bounded against",
-        "P6.30 repair + reconciliation — orphaned leases from a crashed worker are reconciled rather than assumed released"
+        "P6.7 node residency \u2014 a node is never evicted while an execution still holds a lease on the epoch it came from",
+        "P6.14 worker registry convergence \u2014 a worker's leases are what its handshake reports as in flight",
+        "P6.19 canary rollout \u2014 a rollout completes only when the canary epoch is fully drained, and an auto-rollback respects in-flight leases",
+        "P6.23 cancellation/deadline/resource accounting \u2014 a lease is the thing a deadline is bounded against",
+        "P6.30 repair + reconciliation \u2014 orphaned leases from a crashed worker are reconciled rather than assumed released"
       ],
       "tests": [
         "apps/n8n-lego/test/lego-runtime-lease.test.mjs"
       ],
-      "notes": "P6.6 (P6 implementation owner: Agent 3, Issue #100): runtime lease + side-by-side upgrade. P6.2 publishes an epoch by moving a pointer between frozen objects, which is only safe if nothing is still executing inside the old one — and something always is. 'Deploy' and 'what is running' are different questions, and the gap between them is where the upgrade outage lives: the new version is published, an in-flight execution silently switches versions half-way through, and the result is a state neither version would have produced. Three mechanisms close it. (1) LEASES: a lease names the EPOCH DIGEST the execution runs under (never a version number, never 'current'), so a later publication cannot re-point work already running; a lease id is DERIVED from execution + epoch, so a retried acquire is the same lease rather than a second one. (2) DRAIN: explicit and observable — draining immediately stops new admissions while everything inside keeps running, and returns the outstanding executions so a deploy can wait honestly. (3) RETIRE, GATED ON THE LEASES: an epoch cannot be retired while a single lease is outstanding, the refusal NAMES who is holding it, and draining must come first because retiring an epoch that is still admitting work is a race with whoever is asking for a lease right now. Side-by-side serving is the consequence rather than a feature: several epochs may serve at once (old for in-flight, new for new work) and the table reports exactly which. A retired epoch NUMBER can never be reused by different content, so a number is not a place to hide a rewrite. The table carries a monotonic SEQUENCE instead of a clock, because a lease table that reads a clock is not reproducible, and every operation returns a new frozen table so the state in front of an operator cannot change under them. No authority: a lease grants nothing but the right to keep serving the epoch it names — no trust, no capability, no permission."
+      "notes": "P6.6 (P6 implementation owner: Agent 3, Issue #100): runtime lease + side-by-side upgrade. P6.2 publishes an epoch by moving a pointer between frozen objects, which is only safe if nothing is still executing inside the old one \u2014 and something always is. 'Deploy' and 'what is running' are different questions, and the gap between them is where the upgrade outage lives: the new version is published, an in-flight execution silently switches versions half-way through, and the result is a state neither version would have produced. Three mechanisms close it. (1) LEASES: a lease names the EPOCH DIGEST the execution runs under (never a version number, never 'current'), so a later publication cannot re-point work already running; a lease id is DERIVED from execution + epoch, so a retried acquire is the same lease rather than a second one. (2) DRAIN: explicit and observable \u2014 draining immediately stops new admissions while everything inside keeps running, and returns the outstanding executions so a deploy can wait honestly. (3) RETIRE, GATED ON THE LEASES: an epoch cannot be retired while a single lease is outstanding, the refusal NAMES who is holding it, and draining must come first because retiring an epoch that is still admitting work is a race with whoever is asking for a lease right now. Side-by-side serving is the consequence rather than a feature: several epochs may serve at once (old for in-flight, new for new work) and the table reports exactly which. A retired epoch NUMBER can never be reused by different content, so a number is not a place to hide a rewrite. The table carries a monotonic SEQUENCE instead of a clock, because a lease table that reads a clock is not reproducible, and every operation returns a new frozen table so the state in front of an operator cannot change under them. No authority: a lease grants nothing but the right to keep serving the epoch it names \u2014 no trust, no capability, no permission."
     },
     {
       "id": "node.residency",
@@ -2016,16 +2016,16 @@
         ]
       },
       "consumers": [
-        "P6.8 capability compilation — a capability check has somewhere to happen because the manifest is resident before the code is",
-        "P6.11 health + quarantine — a quarantined node is not loaded, and residency is where that refusal becomes visible",
-        "P6.24 specialized runtime pools + warm sandbox — warms the manifests a pool is about to serve",
-        "P6.26 precompiled WASM cache + runtime resource policy — the hot budget is the policy the cache answers to",
-        "P6.30 repair + offline recovery — a residency table rebuilt from the epoch is the honest starting point after a crash"
+        "P6.8 capability compilation \u2014 a capability check has somewhere to happen because the manifest is resident before the code is",
+        "P6.11 health + quarantine \u2014 a quarantined node is not loaded, and residency is where that refusal becomes visible",
+        "P6.24 specialized runtime pools + warm sandbox \u2014 warms the manifests a pool is about to serve",
+        "P6.26 precompiled WASM cache + runtime resource policy \u2014 the hot budget is the policy the cache answers to",
+        "P6.30 repair + offline recovery \u2014 a residency table rebuilt from the epoch is the honest starting point after a crash"
       ],
       "tests": [
         "apps/n8n-lego/test/lego-node-residency.test.mjs"
       ],
-      "notes": "P6.7 (P6 implementation owner: Agent 3, Issue #100): manifest/implementation split + HOT/WARM/COLD residency. An epoch can hold hundreds of node types; a process cannot hold hundreds of loaded implementations, and pretending otherwise is how a node registry becomes a memory leak with a catalogue. The split this contract enforces is that THE MANIFEST AND THE IMPLEMENTATION ARE DIFFERENT THINGS: a declaration is cheap and needed for resolution and editing, an implementation is expensive and needed only while running. Three tiers: COLD (known to the epoch, nothing resident here), WARM (the MANIFEST is resident, the implementation is not), HOT (the implementation is resident). COLD → WARM → HOT is the ONLY way up, and that is the point — metadata is read BEFORE code is loaded, which is what leaves room for a capability, trust or residency check to happen at all; a load straight from COLD is refused rather than quietly warmed as a side effect, because the check that was skipped would never be reported (there would be nothing to report it). HOT is BOUNDED by an explicit budget: exceeding it demotes the LEAST-RECENTLY-USED node to WARM and says which one, so memory pressure is a reported policy instead of an out-of-memory kill. Eviction RESPECTS LEASES: an implementation an execution is still holding is never unloaded, `inUseBy` is a REQUIRED input, and a non-empty set refuses the eviction with the executions named; WARM → COLD is a separate ordered step (a HOT node must be evicted before its manifest is dropped). Recency is a monotonic TICK, not a timestamp, so the same operations produce the same table anywhere, and every operation returns a new frozen table. Depends only on P6.2 for epochs; the lease set is passed in as data rather than importing P6.6. No authority: being hot grants nothing and being cold revokes nothing."
+      "notes": "P6.7 (P6 implementation owner: Agent 3, Issue #100): manifest/implementation split + HOT/WARM/COLD residency. An epoch can hold hundreds of node types; a process cannot hold hundreds of loaded implementations, and pretending otherwise is how a node registry becomes a memory leak with a catalogue. The split this contract enforces is that THE MANIFEST AND THE IMPLEMENTATION ARE DIFFERENT THINGS: a declaration is cheap and needed for resolution and editing, an implementation is expensive and needed only while running. Three tiers: COLD (known to the epoch, nothing resident here), WARM (the MANIFEST is resident, the implementation is not), HOT (the implementation is resident). COLD \u2192 WARM \u2192 HOT is the ONLY way up, and that is the point \u2014 metadata is read BEFORE code is loaded, which is what leaves room for a capability, trust or residency check to happen at all; a load straight from COLD is refused rather than quietly warmed as a side effect, because the check that was skipped would never be reported (there would be nothing to report it). HOT is BOUNDED by an explicit budget: exceeding it demotes the LEAST-RECENTLY-USED node to WARM and says which one, so memory pressure is a reported policy instead of an out-of-memory kill. Eviction RESPECTS LEASES: an implementation an execution is still holding is never unloaded, `inUseBy` is a REQUIRED input, and a non-empty set refuses the eviction with the executions named; WARM \u2192 COLD is a separate ordered step (a HOT node must be evicted before its manifest is dropped). Recency is a monotonic TICK, not a timestamp, so the same operations produce the same table anywhere, and every operation returns a new frozen table. Depends only on P6.2 for epochs; the lease set is passed in as data rather than importing P6.6. No authority: being hot grants nothing and being cold revokes nothing."
     },
     {
       "id": "observability.metrics",
@@ -2092,18 +2092,18 @@
         ]
       },
       "consumers": [
-        "P6.9 compatibility + resource admission — a node that cannot be granted its capabilities has nothing to admit",
-        "P6.11 health + quarantine — the same declaration, the same host, compiled the same way",
-        "P6.12 attestation — a plan is what a signature would be asked to cover",
-        "P6.22 capability leases + attenuation — a plan grants nothing; a lease attenuates it, and the plan is what it attenuates",
-        "P6.24 runtime pools + sandbox — the locality decision is what a pool is built to serve",
-        "P6.26 runtime resource policy — the host profile is where a runtime's ceiling is written down",
-        "P6.30 repair + offline recovery — a plan recompiled from the epoch is the honest answer after a restart"
+        "P6.9 compatibility + resource admission \u2014 a node that cannot be granted its capabilities has nothing to admit",
+        "P6.11 health + quarantine \u2014 the same declaration, the same host, compiled the same way",
+        "P6.12 attestation \u2014 a plan is what a signature would be asked to cover",
+        "P6.22 capability leases + attenuation \u2014 a plan grants nothing; a lease attenuates it, and the plan is what it attenuates",
+        "P6.24 runtime pools + sandbox \u2014 the locality decision is what a pool is built to serve",
+        "P6.26 runtime resource policy \u2014 the host profile is where a runtime's ceiling is written down",
+        "P6.30 repair + offline recovery \u2014 a plan recompiled from the epoch is the honest answer after a restart"
       ],
       "tests": [
         "apps/n8n-lego/test/lego-capability-compiler.test.mjs"
       ],
-      "notes": "P6.8 (P6 implementation owner: Agent 3, Issue #100): capability compilation + runtime locality. A declaration says what a node NEEDS (P6.1: capabilities, runtime locality, resource profile); it does not say what a node GETS. This contract is that decision, made once, in one place, deterministically, so that 'why did this node run in-process?' has an answer that is a document instead of an interrogation. Three rules do the work. (1) The host is validated first, as data: which capabilities it can authorize, which runtimes it has, and the STRONGEST isolation it can offer; an unknown capability, runtime or boundary is refused, and an anonymous host or one with no runtime is refused too, because a host that cannot say what it is cannot be trusted with the decision. (2) Capabilities are GRANTED IN FULL OR THE PLAN IS REFUSED: granted = declared and host, never a reduced plan, because a node running with half its declared capabilities has failure modes nobody wrote down. (3) CAPABILITIES CONSTRAIN LOCALITY: subprocess demands at least 'sandboxed', native demands 'worker-isolated', and a host that cannot offer the floor refuses the plan and says which floor it needed — convenience is not an argument when the answer is sharing an address space. Runtime selection itself belongs to node.portability@1.0.0 and is DELEGATED, not copied; the plan quotes the domain's answer (selected target, candidates, rejected, policy). MEASURED, NOT ASSUMED: the two contracts describe different capability axes — P6.1's capabilities quote the foundation's trust capabilities (network, filesystem, subprocess, secrets, native, env) while node.portability validates requiredCapabilities against the registry's own capability ids (runtime.http-server, ai.model-gateway, ...) and demands class-specific permission ids from the published registry vocabulary (webhook:receive, storage:read, worker:admin, ...). No faithful projection exists between those vocabularies, so none is fabricated: writing a declared 'network' into requiredCapabilities would be a lie that happens to compile. When the caller supplies the node's OWN portability declaration (bound to the same node, validated by the domain, refused if it belongs to a neighbour), the plan performs a REAL delegation and quotes it; when no declaration is supplied the plan records delegation.performed=false, delegation.source='none', delegation.reason='capability.delegation.none' and derives the target from RUNTIME_LOCALITY_MODEL. A plan never pretends a delegation happened. trustClass is carried as a LABEL for policy, never as an authority: it changes no decision and is excluded even from planDigest, so two nodes differing only in trust class compile to the same decision AND the same fingerprint of that decision. Scope walls: no leases or attenuation (P6.22), no admission decision, no quarantine (P6.11) and no attestation (P6.12), no sandbox, worker, pool or process (P6.24), and no filesystem, network, clock, randomness or mutation."
+      "notes": "P6.8 (P6 implementation owner: Agent 3, Issue #100): capability compilation + runtime locality. A declaration says what a node NEEDS (P6.1: capabilities, runtime locality, resource profile); it does not say what a node GETS. This contract is that decision, made once, in one place, deterministically, so that 'why did this node run in-process?' has an answer that is a document instead of an interrogation. Three rules do the work. (1) The host is validated first, as data: which capabilities it can authorize, which runtimes it has, and the STRONGEST isolation it can offer; an unknown capability, runtime or boundary is refused, and an anonymous host or one with no runtime is refused too, because a host that cannot say what it is cannot be trusted with the decision. (2) Capabilities are GRANTED IN FULL OR THE PLAN IS REFUSED: granted = declared and host, never a reduced plan, because a node running with half its declared capabilities has failure modes nobody wrote down. (3) CAPABILITIES CONSTRAIN LOCALITY: subprocess demands at least 'sandboxed', native demands 'worker-isolated', and a host that cannot offer the floor refuses the plan and says which floor it needed \u2014 convenience is not an argument when the answer is sharing an address space. Runtime selection itself belongs to node.portability@1.0.0 and is DELEGATED, not copied; the plan quotes the domain's answer (selected target, candidates, rejected, policy). MEASURED, NOT ASSUMED: the two contracts describe different capability axes \u2014 P6.1's capabilities quote the foundation's trust capabilities (network, filesystem, subprocess, secrets, native, env) while node.portability validates requiredCapabilities against the registry's own capability ids (runtime.http-server, ai.model-gateway, ...) and demands class-specific permission ids from the published registry vocabulary (webhook:receive, storage:read, worker:admin, ...). No faithful projection exists between those vocabularies, so none is fabricated: writing a declared 'network' into requiredCapabilities would be a lie that happens to compile. When the caller supplies the node's OWN portability declaration (bound to the same node, validated by the domain, refused if it belongs to a neighbour), the plan performs a REAL delegation and quotes it; when no declaration is supplied the plan records delegation.performed=false, delegation.source='none', delegation.reason='capability.delegation.none' and derives the target from RUNTIME_LOCALITY_MODEL. A plan never pretends a delegation happened. trustClass is carried as a LABEL for policy, never as an authority: it changes no decision and is excluded even from planDigest, so two nodes differing only in trust class compile to the same decision AND the same fingerprint of that decision. Scope walls: no leases or attenuation (P6.22), no admission decision, no quarantine (P6.11) and no attestation (P6.12), no sandbox, worker, pool or process (P6.24), and no filesystem, network, clock, randomness or mutation."
     },
     {
       "id": "node.semantics",
@@ -2144,18 +2144,18 @@
         ]
       },
       "consumers": [
-        "P6.10 lifecycle — an alias or a tombstone is a lifecycle event, and the fingerprint says whether the semantics moved with it",
-        "P6.14 worker convergence handshake — workers exchange fingerprints, not node bodies",
-        "P6.17 admission explain plan — a DIFF with an impact and a bounded leaf list is what an explain plan quotes",
-        "P6.18 SBOM/VEX policy diff — the same comparison, applied to a policy document's semantics",
-        "P6.19 canary rollout + semantic auto-rollback — MATCH/DIFF with impact is the trigger, in either direction",
-        "P6.26 precompiled WASM cache — a cache key is a semantic fingerprint plus an implementation digest",
-        "P6.30 repair + offline recovery — a node rebuilt from the mirror is checked by replaying its semantics"
+        "P6.10 lifecycle \u2014 an alias or a tombstone is a lifecycle event, and the fingerprint says whether the semantics moved with it",
+        "P6.14 worker convergence handshake \u2014 workers exchange fingerprints, not node bodies",
+        "P6.17 admission explain plan \u2014 a DIFF with an impact and a bounded leaf list is what an explain plan quotes",
+        "P6.18 SBOM/VEX policy diff \u2014 the same comparison, applied to a policy document's semantics",
+        "P6.19 canary rollout + semantic auto-rollback \u2014 MATCH/DIFF with impact is the trigger, in either direction",
+        "P6.26 precompiled WASM cache \u2014 a cache key is a semantic fingerprint plus an implementation digest",
+        "P6.30 repair + offline recovery \u2014 a node rebuilt from the mirror is checked by replaying its semantics"
       ],
       "tests": [
         "apps/n8n-lego/test/lego-semantic-fingerprint.test.mjs"
       ],
-      "notes": "P6.9 (P6 implementation owner: Agent 3, Issue #100): semantic fingerprint + compatibility replay. A node version is a claim — 'same node, same contract' — and the cheap check (comparing bytes) answers a different question: two artifacts can differ in every byte and still be the same node, and one artifact can differ in one character and behave differently forever. So this contract fingerprints the CONTRACT, not the artifact, over nine axes: type, typeVersion, parameters, expressions, credentials, io, webhooks, behavior, ui. Everything that describes how a node is SUPPLIED or GOVERNED (implementation digest and language, packageVersion, provenance, trustClass, health, lifecycle) is recorded beside the fingerprint and never inside it, because the implementation language is not part of the contract: a node reimplemented from JavaScript in Rust is the same node, and a replay reports implementationChanged: true while still saying MATCH. Canonicalisation is the precondition for a fingerprint at all: keys are sorted, unordered axes (credentials, io, webhooks) are compared as sets, and anything that cannot be canonicalised — a function, an undefined, a non-finite number, a Symbol, a BigInt, a Map/Set/class instance, a cycle — makes the answer NON_DETERMINISTIC with the offending path and kind named, because a hash over a guess would look like an answer. An axis a node does not declare is recorded as ABSENT rather than empty: 'no credentials' and 'credentials were not declared' are different claims and only one of them is safe to replay. Replay has four answers and no fifth: MATCH (semantics identical, implementation may not be), DIFF (semantics changed, with the worst axis deciding the impact on the ladder none < cosmetic < compatible < behavioral < breaking, plus at most 32 path-addressed leaf changes and an explicit truncation flag), NON_DETERMINISTIC (no fingerprint exists) and MISSING (no baseline: an absent fingerprint is never a match). ok means the replay could be PERFORMED, not that the answer was good: a DIFF is an answer, NON_DETERMINISTIC and MISSING are refusals to answer. Fingerprints can also be replayed without the semantics they came from (the worker handshake and the cache exchange fingerprints), and an unverifiable fingerprint is treated as a missing baseline. Scope walls: no admission decision (P6.11), no quarantine, no lifecycle transition (P6.10), no migration/repair (P6.30), no artifact or source inspection, no clock, no network, no randomness, no mutation — the only node import is the hash."
+      "notes": "P6.9 (P6 implementation owner: Agent 3, Issue #100): semantic fingerprint + compatibility replay. A node version is a claim \u2014 'same node, same contract' \u2014 and the cheap check (comparing bytes) answers a different question: two artifacts can differ in every byte and still be the same node, and one artifact can differ in one character and behave differently forever. So this contract fingerprints the CONTRACT, not the artifact, over nine axes: type, typeVersion, parameters, expressions, credentials, io, webhooks, behavior, ui. Everything that describes how a node is SUPPLIED or GOVERNED (implementation digest and language, packageVersion, provenance, trustClass, health, lifecycle) is recorded beside the fingerprint and never inside it, because the implementation language is not part of the contract: a node reimplemented from JavaScript in Rust is the same node, and a replay reports implementationChanged: true while still saying MATCH. Canonicalisation is the precondition for a fingerprint at all: keys are sorted, unordered axes (credentials, io, webhooks) are compared as sets, and anything that cannot be canonicalised \u2014 a function, an undefined, a non-finite number, a Symbol, a BigInt, a Map/Set/class instance, a cycle \u2014 makes the answer NON_DETERMINISTIC with the offending path and kind named, because a hash over a guess would look like an answer. An axis a node does not declare is recorded as ABSENT rather than empty: 'no credentials' and 'credentials were not declared' are different claims and only one of them is safe to replay. Replay has four answers and no fifth: MATCH (semantics identical, implementation may not be), DIFF (semantics changed, with the worst axis deciding the impact on the ladder none < cosmetic < compatible < behavioral < breaking, plus at most 32 path-addressed leaf changes and an explicit truncation flag), NON_DETERMINISTIC (no fingerprint exists) and MISSING (no baseline: an absent fingerprint is never a match). ok means the replay could be PERFORMED, not that the answer was good: a DIFF is an answer, NON_DETERMINISTIC and MISSING are refusals to answer. Fingerprints can also be replayed without the semantics they came from (the worker handshake and the cache exchange fingerprints), and an unverifiable fingerprint is treated as a missing baseline. Scope walls: no admission decision (P6.11), no quarantine, no lifecycle transition (P6.10), no migration/repair (P6.30), no artifact or source inspection, no clock, no network, no randomness, no mutation \u2014 the only node import is the hash."
     },
     {
       "id": "node.lifecycle",
@@ -2198,18 +2198,18 @@
         ]
       },
       "consumers": [
-        "P6.11 health + quarantine — a quarantined node is refused, and a tombstoned one is refused differently",
-        "P6.13 incremental compiler — the ledger travels with the epoch, so retirement survives a rebuild",
-        "P6.17 admission explain plan — 'this name is tombstoned' is one of the reasons an admission says no",
-        "P6.18 SBOM/VEX policy diff — a policy change and a lifecycle change are the same kind of document",
-        "P6.19 canary rollout — an alias is what makes a rename invisible to a running workflow",
-        "P6.29 namespace/dependency-confusion protection — the tombstone is the local half of resisting a re-used name",
-        "P6.30 repair + offline recovery — a rebuilt registry replays the ledger, not the memories of an operator"
+        "P6.11 health + quarantine \u2014 a quarantined node is refused, and a tombstoned one is refused differently",
+        "P6.13 incremental compiler \u2014 the ledger travels with the epoch, so retirement survives a rebuild",
+        "P6.17 admission explain plan \u2014 'this name is tombstoned' is one of the reasons an admission says no",
+        "P6.18 SBOM/VEX policy diff \u2014 a policy change and a lifecycle change are the same kind of document",
+        "P6.19 canary rollout \u2014 an alias is what makes a rename invisible to a running workflow",
+        "P6.29 namespace/dependency-confusion protection \u2014 the tombstone is the local half of resisting a re-used name",
+        "P6.30 repair + offline recovery \u2014 a rebuilt registry replays the ledger, not the memories of an operator"
       ],
       "tests": [
         "apps/n8n-lego/test/lego-node-lifecycle.test.mjs"
       ],
-      "notes": "P6.10 (P6 implementation owner: Agent 3, Issue #100): orphan / tombstone / alias / deprecation. An epoch is a set of identities; what it cannot say is what has been removed, renamed, abandoned, and which names must never come back — and the cost of not saying it is a name that gets re-used. A lifecycle LEDGER is built for one epoch: every identity starts 'declared', every transition returns a NEW frozen ledger (the old one is untouched), and the ledger digest makes an edited ledger visible. ORPHAN: a node nobody references is a report, never an automatic uninstall, and it is reported together with the mirror-image fact that matters more — a reference nobody provides, which is a workflow that cannot resolve. DEPRECATION: a node still resolves and still runs, must name a replacement the epoch actually contains (a redirect to nowhere is refused), and records the epoch it happened at. ALIAS: one hop only, and only for a name that has been retired (deprecated or disabled) — a chain of redirects is a rename nobody can audit, and an alias to a tombstone is refused. TOMBSTONE: the single irreversible thing here. It records its grounds (removed, renamed, compromised, superseded, policy), it cannot be edited, the state cannot move afterwards, nothing may alias to it, and mayReuseName says false — because a tombstoned identity can never be re-declared, and the cost of that rule is a naming decision made twice while the cost of the alternative is an attacker who waits. Everything else is reversible on purpose: registries are governed by people who change their minds. The state vocabulary is QUOTED from P6.1 (which quotes the P2 negotiation contract: eleven words, 'deprecated' among them); this contract adds events and records, never a twelfth word. Scope walls: no admission or health decision (P6.11), no quarantine, no workflow resolution (P6.5), no install/uninstall (P6.3), no catalog or database read, no clock — atEpoch is data the caller supplies, which is what makes a ledger reproducible. Pure: the only node import is the hash."
+      "notes": "P6.10 (P6 implementation owner: Agent 3, Issue #100): orphan / tombstone / alias / deprecation. An epoch is a set of identities; what it cannot say is what has been removed, renamed, abandoned, and which names must never come back \u2014 and the cost of not saying it is a name that gets re-used. A lifecycle LEDGER is built for one epoch: every identity starts 'declared', every transition returns a NEW frozen ledger (the old one is untouched), and the ledger digest makes an edited ledger visible. ORPHAN: a node nobody references is a report, never an automatic uninstall, and it is reported together with the mirror-image fact that matters more \u2014 a reference nobody provides, which is a workflow that cannot resolve. DEPRECATION: a node still resolves and still runs, must name a replacement the epoch actually contains (a redirect to nowhere is refused), and records the epoch it happened at. ALIAS: one hop only, and only for a name that has been retired (deprecated or disabled) \u2014 a chain of redirects is a rename nobody can audit, and an alias to a tombstone is refused. TOMBSTONE: the single irreversible thing here. It records its grounds (removed, renamed, compromised, superseded, policy), it cannot be edited, the state cannot move afterwards, nothing may alias to it, and mayReuseName says false \u2014 because a tombstoned identity can never be re-declared, and the cost of that rule is a naming decision made twice while the cost of the alternative is an attacker who waits. Everything else is reversible on purpose: registries are governed by people who change their minds. The state vocabulary is QUOTED from P6.1 (which quotes the P2 negotiation contract: eleven words, 'deprecated' among them); this contract adds events and records, never a twelfth word. Scope walls: no admission or health decision (P6.11), no quarantine, no workflow resolution (P6.5), no install/uninstall (P6.3), no catalog or database read, no clock \u2014 atEpoch is data the caller supplies, which is what makes a ledger reproducible. Pure: the only node import is the hash."
     },
     {
       "id": "node.health",
@@ -2251,17 +2251,17 @@
         ]
       },
       "consumers": [
-        "P6.12 attestation + revocation — an attestation that fails is a reason to quarantine, and the reason travels",
-        "P6.13 incremental compiler — health is per-host state, and a rebuild must not invent it",
-        "P6.17 admission explain plan — 'the circuit is open until tick 33' is one of the sentences an explain plan quotes",
-        "P6.19 canary rollout + semantic auto-rollback — a breaker trip on a new version is a rollback trigger",
-        "P6.24 runtime pools + warm sandbox — a pool refuses to hand work to a quarantined node",
-        "P6.30 repair + offline recovery — a health table rebuilt from ticks is the honest starting point after a restart"
+        "P6.12 attestation + revocation \u2014 an attestation that fails is a reason to quarantine, and the reason travels",
+        "P6.13 incremental compiler \u2014 health is per-host state, and a rebuild must not invent it",
+        "P6.17 admission explain plan \u2014 'the circuit is open until tick 33' is one of the sentences an explain plan quotes",
+        "P6.19 canary rollout + semantic auto-rollback \u2014 a breaker trip on a new version is a rollback trigger",
+        "P6.24 runtime pools + warm sandbox \u2014 a pool refuses to hand work to a quarantined node",
+        "P6.30 repair + offline recovery \u2014 a health table rebuilt from ticks is the honest starting point after a restart"
       ],
       "tests": [
         "apps/n8n-lego/test/lego-node-health.test.mjs"
       ],
-      "notes": "P6.11 (P6 implementation owner: Agent 3, Issue #100): health + crash circuit breaker + quarantine. A node that crashed once is a fact; a node that crashes every time is a decision, and this contract is the smallest defensible version of it. The state vocabulary is P6.1's (unknown, healthy, degraded, failing, quarantined), quoted rather than extended; what this contract adds is the transition rules between those words. OBSERVATION: success or failure with a tick the caller supplies — no clock, so a table rebuilt from the same ticks produces the same states and a quarantine survives a restart instead of being a memory in a process. DERIVATION: the state follows from the observations, never the reverse. BREAKER: consecutive failures (default threshold 3, configurable) open the circuit, and mayServe refuses work with the tick at which a probe may be tried; after the cool-off exactly one probe is allowed (half-open), a success closes the circuit, and a failure re-opens it with a doubled cool-off bounded at MAX_COOL_OFF_TICKS so a permanently broken node stays visible instead of vanishing into an unbounded back-off. A success recorded BEFORE the cool-off is data, not a verdict: it is recorded and the circuit stays open, because a success that was not allowed to happen proves nothing. QUARANTINE: the deliberate version of the same thing — it records origin (operator/breaker/policy/attestation), reason and tick; it outranks every observation (a success does not clear it, and a second, different quarantine is refused as 'released, not overwritten'); it does not expire. RELEASE returns the node to 'unknown', never to 'healthy': the only thing that makes a node healthy is an observation that says so, and a release that returned to healthy would be an operator's optimism wearing a state machine's clothes. Scope walls: no execution and no retry (mayServe decides whether a retry is allowed and leaves the retrying to the runtime), no lease (P6.6), no residency (P6.7), no capability (P6.8), no lifecycle (P6.10), no revocation (P6.12), no rollback (P6.19); no clock; the only node import is the hash."
+      "notes": "P6.11 (P6 implementation owner: Agent 3, Issue #100): health + crash circuit breaker + quarantine. A node that crashed once is a fact; a node that crashes every time is a decision, and this contract is the smallest defensible version of it. The state vocabulary is P6.1's (unknown, healthy, degraded, failing, quarantined), quoted rather than extended; what this contract adds is the transition rules between those words. OBSERVATION: success or failure with a tick the caller supplies \u2014 no clock, so a table rebuilt from the same ticks produces the same states and a quarantine survives a restart instead of being a memory in a process. DERIVATION: the state follows from the observations, never the reverse. BREAKER: consecutive failures (default threshold 3, configurable) open the circuit, and mayServe refuses work with the tick at which a probe may be tried; after the cool-off exactly one probe is allowed (half-open), a success closes the circuit, and a failure re-opens it with a doubled cool-off bounded at MAX_COOL_OFF_TICKS so a permanently broken node stays visible instead of vanishing into an unbounded back-off. A success recorded BEFORE the cool-off is data, not a verdict: it is recorded and the circuit stays open, because a success that was not allowed to happen proves nothing. QUARANTINE: the deliberate version of the same thing \u2014 it records origin (operator/breaker/policy/attestation), reason and tick; it outranks every observation (a success does not clear it, and a second, different quarantine is refused as 'released, not overwritten'); it does not expire. RELEASE returns the node to 'unknown', never to 'healthy': the only thing that makes a node healthy is an observation that says so, and a release that returned to healthy would be an operator's optimism wearing a state machine's clothes. Scope walls: no execution and no retry (mayServe decides whether a retry is allowed and leaves the retrying to the runtime), no lease (P6.6), no residency (P6.7), no capability (P6.8), no lifecycle (P6.10), no revocation (P6.12), no rollback (P6.19); no clock; the only node import is the hash."
     },
     {
       "id": "observability.trace",
@@ -2350,6 +2350,32 @@
       "notes": "P9.6 only; hard-capacity ring, deterministic priority shed (P0-P4), exposed drop counters, no spill-to-disk in 1.0.0. Delegated implementation Agent 4, product ownership Agent 6 unchanged."
     },
     {
+      "id": "observability.telemetry-redaction",
+      "version": "1.0.0",
+      "owner": "agent-6",
+      "domain": "observability",
+      "surface": [
+        "src/lego/telemetry-redaction.mjs"
+      ],
+      "exports": {
+        "src/lego/telemetry-redaction.mjs": [
+          "REDACTION_CONTRACT",
+          "TELEMETRY_DATA_CLASSES",
+          "REDACTION_ACTIONS",
+          "REDACTION_LIMITS",
+          "REDACTION_MARKERS",
+          "classifyTelemetryField",
+          "sanitizeErrorMessage",
+          "redactTelemetryTree",
+          "redactForExport",
+          "containsSecretShape"
+        ]
+      },
+      "tests": [
+        "apps/n8n-lego/test/lego-telemetry-redaction.test.mjs"
+      ]
+    },
+    {
       "id": "node.supply-chain",
       "owner": "manager",
       "domain": "node-registry",
@@ -2396,18 +2422,18 @@
         ]
       },
       "consumers": [
-        "P6.13 incremental compiler — an epoch cites the attestations its artifacts carry",
-        "P6.16 integrity chain + freshness — the revocation list is one of the things a chain has to keep fresh",
-        "P6.20 emergency revocation + graceful drain — this contract's revocation is what that milestone drains around",
-        "P6.27 provenance / transparency + trusted builder — the statement shape is what a transparency log records",
-        "P6.28 TUF-style freshness + delegated trust — delegated trust is a policy of builders, and this is the policy node",
-        "P6.29 namespace + dependency-confusion protection — a mirrored artifact with the wrong provenance is the confusion this refuses",
-        "P6.30 repair + offline recovery — the air-gapped import path is defined here, including the exemption that must be visible"
+        "P6.13 incremental compiler \u2014 an epoch cites the attestations its artifacts carry",
+        "P6.16 integrity chain + freshness \u2014 the revocation list is one of the things a chain has to keep fresh",
+        "P6.20 emergency revocation + graceful drain \u2014 this contract's revocation is what that milestone drains around",
+        "P6.27 provenance / transparency + trusted builder \u2014 the statement shape is what a transparency log records",
+        "P6.28 TUF-style freshness + delegated trust \u2014 delegated trust is a policy of builders, and this is the policy node",
+        "P6.29 namespace + dependency-confusion protection \u2014 a mirrored artifact with the wrong provenance is the confusion this refuses",
+        "P6.30 repair + offline recovery \u2014 the air-gapped import path is defined here, including the exemption that must be visible"
       ],
       "tests": [
         "apps/n8n-lego/test/lego-supply-chain.test.mjs"
       ],
-      "notes": "P6.12 (P6 implementation owner: Agent 3, Issue #100): supply-chain attestation + revocation + offline mirror. An artifact digest answers 'is this the same bytes?' and nothing else; this contract asks the next question — who says so, about what, and may they? STATEMENT: a builder attests a predicate (build-provenance, source-review, vulnerability-scan, reproducible-build, ai-generation) about a subject digest, issued at a tick and optionally expiring. SIGNATURE: the statement is bound to its own bytes by an HMAC-SHA256 digest over the statement without its signature, computed with a key the CALLER holds (the registry never signs on anyone's behalf; signAttestation exists so verification is testable and so a builder inside the platform has a defined way to speak). POLICY: which builders may attest which packages (explicit ['*'] is a decision, never an omission) and which predicates; anonymous policies and unrestricted builders are refused; requiredPredicates make an attestation mandatory. THE TWO FAILURES STAY SEPARATE: 'the signature does not cover these bytes' and 'this builder was never allowed to assert this' are different answers, and collapsing them into one boolean is how a supply-chain check becomes a formality — which is why reports carry reasons[], a primaryReason chosen by an explicit priority (revoked > signature > subject > window > builder > statement > predicate) and a message. FAIL CLOSED: allowUnattested defaults to false and an absent attestation is a refusal; where an operator allows an exemption, the decisions are marked unattested: true and the mirror report says so, so the exemption is visible in the report instead of invisible in the behaviour. REVOCATION IS THE ONE-WAY DOOR: artifacts and builders are revoked separately, revocation is idempotent, re-revoking with a different reason is refused ('evidence is not edited'), there is no unrevoke, and revocation is checked on the SUBJECT — a probe found that an artifact with no attestations at all never reached the revocation check, which is exactly the case an exemption would wave through, so verifyAttestations now checks the subject digest itself. OFFLINE MIRROR: a mirror is DATA (id, source, artifacts with digests and attestations, and a manifest digest); verifyMirror verifies it with exactly the same policy because being offline is not a reason to accept something, and the exemption never beats revocation or a failed check. Scope walls: no signing on behalf of others, no asymmetric PKI or certificate chains, no TUF freshness (P6.28) and no transparency log (P6.27), no network or mirror transport, no artifact store (P6.4), no health (P6.11), no lifecycle (P6.10), no clock."
+      "notes": "P6.12 (P6 implementation owner: Agent 3, Issue #100): supply-chain attestation + revocation + offline mirror. An artifact digest answers 'is this the same bytes?' and nothing else; this contract asks the next question \u2014 who says so, about what, and may they? STATEMENT: a builder attests a predicate (build-provenance, source-review, vulnerability-scan, reproducible-build, ai-generation) about a subject digest, issued at a tick and optionally expiring. SIGNATURE: the statement is bound to its own bytes by an HMAC-SHA256 digest over the statement without its signature, computed with a key the CALLER holds (the registry never signs on anyone's behalf; signAttestation exists so verification is testable and so a builder inside the platform has a defined way to speak). POLICY: which builders may attest which packages (explicit ['*'] is a decision, never an omission) and which predicates; anonymous policies and unrestricted builders are refused; requiredPredicates make an attestation mandatory. THE TWO FAILURES STAY SEPARATE: 'the signature does not cover these bytes' and 'this builder was never allowed to assert this' are different answers, and collapsing them into one boolean is how a supply-chain check becomes a formality \u2014 which is why reports carry reasons[], a primaryReason chosen by an explicit priority (revoked > signature > subject > window > builder > statement > predicate) and a message. FAIL CLOSED: allowUnattested defaults to false and an absent attestation is a refusal; where an operator allows an exemption, the decisions are marked unattested: true and the mirror report says so, so the exemption is visible in the report instead of invisible in the behaviour. REVOCATION IS THE ONE-WAY DOOR: artifacts and builders are revoked separately, revocation is idempotent, re-revoking with a different reason is refused ('evidence is not edited'), there is no unrevoke, and revocation is checked on the SUBJECT \u2014 a probe found that an artifact with no attestations at all never reached the revocation check, which is exactly the case an exemption would wave through, so verifyAttestations now checks the subject digest itself. OFFLINE MIRROR: a mirror is DATA (id, source, artifacts with digests and attestations, and a manifest digest); verifyMirror verifies it with exactly the same policy because being offline is not a reason to accept something, and the exemption never beats revocation or a failed check. Scope walls: no signing on behalf of others, no asymmetric PKI or certificate chains, no TUF freshness (P6.28) and no transparency log (P6.27), no network or mirror transport, no artifact store (P6.4), no health (P6.11), no lifecycle (P6.10), no clock."
     },
     {
       "id": "registry.incremental",
@@ -2448,17 +2474,17 @@
         ]
       },
       "consumers": [
-        "P6.14 worker convergence — a worker that is behind receives the change set and the reuse ledger, not the catalogue",
-        "P6.15 core acceptance — 'the cheap path equals the expensive path' is one of the acceptance claims",
-        "P6.16 integrity chain — the chain is built from epoch digests, and this contract produces them cheaply",
-        "P6.24 runtime pools — the runtime view is what a pool needs, without the editor's prose",
-        "P6.26 precompiled WASM cache — a cache keyed by the runtime view's digest",
-        "P6.30 repair + offline recovery — recompiling from a mirror is an incremental compile away from the last known epoch"
+        "P6.14 worker convergence \u2014 a worker that is behind receives the change set and the reuse ledger, not the catalogue",
+        "P6.15 core acceptance \u2014 'the cheap path equals the expensive path' is one of the acceptance claims",
+        "P6.16 integrity chain \u2014 the chain is built from epoch digests, and this contract produces them cheaply",
+        "P6.24 runtime pools \u2014 the runtime view is what a pool needs, without the editor's prose",
+        "P6.26 precompiled WASM cache \u2014 a cache keyed by the runtime view's digest",
+        "P6.30 repair + offline recovery \u2014 recompiling from a mirror is an incremental compile away from the last known epoch"
       ],
       "tests": [
         "apps/n8n-lego/test/lego-incremental-registry.test.mjs"
       ],
-      "notes": "P6.13 (P6 implementation owner: Agent 3, Issue #100): incremental registry compilation + discovery/runtime split. registry.compiler@0.1.0 (P6.2) compiles an epoch from a full declaration set — correct for a genesis epoch, wasteful for the tenth one. This is a NEW contract rather than a minor bump to the compiler, deliberately: the compiler's job ('given declarations, produce the canonical epoch') did not change, and adding an export to a locked row would have meant re-versioning a contract every consumer cites for no semantic change. What is added is a different job: given a previous epoch and a desired declaration set, produce the next epoch while PROVING it is the same epoch a full compile would have produced. THE EQUIVALENCE IS THE CONTRACT: applyRegistryChanges returns the epoch plus a reuse ledger (added/recompiled/reused/removed) that asserts byte-for-byte digest stability for reused identities, and verifyIncremental recompiles from scratch and compares epochDigest — an optimisation that cannot be verified is a guess with better latency. planRegistryChanges makes the change set a VALUE a human can review before anything is built (and refuses duplicates honestly instead of letting a plan hide one). An unchanged set is refused ('registry.incremental.unchanged') because an epoch identical to its parent is noise. Removals are data about an epoch, never a tombstone: retiring a NAME permanently is P6.10's decision. THE DISCOVERY/RUNTIME SPLIT: one epoch, two projections with their own digests — DISCOVERY carries identity, type, typeVersion, displayName, group, description, capabilities and trustClass and NEVER the implementation digest or the resource profile; RUNTIME carries identity, content digest, runtime locality, capabilities and the resource profile and NEVER the display metadata. A view is a projection, never the epoch: verifyEpochView rebuilds the projection and refuses a view that cannot be rebuilt, so nobody can present half an epoch as the whole one. Scope walls: validity, duplicates, canonical form and numbering stay the compiler's; no publish, rollback or freeze (P6.2), no resolution (P6.5), no loading (P6.7), no admission (P6.11), no convergence (P6.14); no filesystem, network, clock, randomness or mutation — the only node import is the hash."
+      "notes": "P6.13 (P6 implementation owner: Agent 3, Issue #100): incremental registry compilation + discovery/runtime split. registry.compiler@0.1.0 (P6.2) compiles an epoch from a full declaration set \u2014 correct for a genesis epoch, wasteful for the tenth one. This is a NEW contract rather than a minor bump to the compiler, deliberately: the compiler's job ('given declarations, produce the canonical epoch') did not change, and adding an export to a locked row would have meant re-versioning a contract every consumer cites for no semantic change. What is added is a different job: given a previous epoch and a desired declaration set, produce the next epoch while PROVING it is the same epoch a full compile would have produced. THE EQUIVALENCE IS THE CONTRACT: applyRegistryChanges returns the epoch plus a reuse ledger (added/recompiled/reused/removed) that asserts byte-for-byte digest stability for reused identities, and verifyIncremental recompiles from scratch and compares epochDigest \u2014 an optimisation that cannot be verified is a guess with better latency. planRegistryChanges makes the change set a VALUE a human can review before anything is built (and refuses duplicates honestly instead of letting a plan hide one). An unchanged set is refused ('registry.incremental.unchanged') because an epoch identical to its parent is noise. Removals are data about an epoch, never a tombstone: retiring a NAME permanently is P6.10's decision. THE DISCOVERY/RUNTIME SPLIT: one epoch, two projections with their own digests \u2014 DISCOVERY carries identity, type, typeVersion, displayName, group, description, capabilities and trustClass and NEVER the implementation digest or the resource profile; RUNTIME carries identity, content digest, runtime locality, capabilities and the resource profile and NEVER the display metadata. A view is a projection, never the epoch: verifyEpochView rebuilds the projection and refuses a view that cannot be rebuilt, so nobody can present half an epoch as the whole one. Scope walls: validity, duplicates, canonical form and numbering stay the compiler's; no publish, rollback or freeze (P6.2), no resolution (P6.5), no loading (P6.7), no admission (P6.11), no convergence (P6.14); no filesystem, network, clock, randomness or mutation \u2014 the only node import is the hash."
     }
   ]
 }
