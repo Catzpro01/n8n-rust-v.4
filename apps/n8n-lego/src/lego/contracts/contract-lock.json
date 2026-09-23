@@ -1547,6 +1547,36 @@
         "apps/n8n-lego/test/compat.oracle.test.mjs"
       ],
       "notes": "P3 Slice L: compatibility oracle — four #91 modes, nine observables, fail-closed structural equivalence, 2^n bounded toggle sweep with identityRecovered; zero-import, no workflow/execution deps (Issue #91)"
+    },
+    {
+      "id": "execution.guard",
+      "owner": "agent-1",
+      "domain": "execution",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/resource-guard.mjs"
+      ],
+      "exports": {
+        "src/lego/resource-guard.mjs": [
+          "EXECUTION_GUARD_CONTRACT",
+          "EXECUTION_GUARD_CONTRACT_VERSION",
+          "GUARD_LANES",
+          "GUARD_BUDGETS",
+          "GUARD_DECISIONS",
+          "ResourceGuardError",
+          "createResourceGuard"
+        ]
+      },
+      "consumers": [
+        "executor admission path — admit|defer|reject per lane under observed pressure",
+        "bounded frontier / backpressure (Slice D) — hard-limit wall at budget exhaustion",
+        "stress harness (P3) — budget envelope for 1M/5M/10M runs on 1 vCPU/1 GB reference"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-resource-guard.test.mjs"
+      ],
+      "notes": "P3 Slice M: resource guard — six mandatory budgets (Issue #75 #7), five priority lanes, normal/elevated/critical pressure from observed ratios, no clock (observed state passed in), hard limits = backpressure wall for every lane (Issues #75/#79)"
     }
   ]
 }

@@ -24,6 +24,7 @@
 - `src/lego/bounded-frontier.mjs`
 - `src/lego/state-stream.mjs`
 - `src/lego/execution-ir.mjs`
+- `src/lego/resource-guard.mjs`
 
 ## Public contract surface
 
