@@ -3206,6 +3206,54 @@
         "apps/n8n-lego/test/lego-namespace-confusion.test.mjs"
       ],
       "notes": "P6.29 (P6 implementation owner: Agent 3, Issue #100): name claims, handovers and the confusion between them. Every other contract identifies a node by type@typeVersion; this one is about the part in front of that, because a name that means two things quietly is how a dependency gets swapped for another one that runs. A CLAIM IS MADE BY KEY, NOT BY SPELLING: 'Some-Node' and 'some-node' are one name, a second claim under a name already claimed is refused ('a second claim is a handover or a confusion, never a quiet overwrite'), and a second spelling is refused as a fold ('two spellings of one name are one name'); nothing is written when a claim is refused. A NAME THAT NEEDS A SECOND LOOK IS A NAME THAT LIES: anything outside ASCII is refused with the code point and its position named (U+2011 at position 3, U+00DC at position 0), whitespace inside or around a name is refused, scoped names must have a scope and a name ('a scope is not a package'), a slash without a scope is refused, and a name past the 214-character limit is refused. A NAME ONE EDIT FROM ANOTHER IS A CONFUSION: distance is computed in edits with transposition counted as one ('a transposition is one edit, and it is the cheapest confusion there is'), an unknown name within reach of a name somebody else holds is refused as a typosquat, while the SAME NEAR NEIGHBOUR BELONGS TO ITS OWN HOLDER is a relative rather than a swap and resolves as a new name; the reach is stated by policy rather than assumed, and a policy of zero edits is refused because looking for a confusion with no edits allowed is looking for the exact name. A NAME THAT CHANGES HANDS QUIETLY IS REFUSED: resolving a known name to another publisher is name-reused ('a name that changes hands quietly is how a dependency is swapped'); with a declared handover it resolves as handover, BEFORE the declared tick it is refused ('a handover does not travel backwards'), it does not come back to the publisher that handed it over, and a third publisher arriving is not a handover. A HANDOVER IS AN ACCUSATION UNTIL IT IS EVIDENCED: it names who holds the name ('a handover from somebody who does not hold the name is a wish'), who takes it, when, and on what grounds ('without evidence is a rumour with a timestamp'), and it cannot go backwards past the claim or an earlier handover. VISIBILITY IS PART OF THE NAME: a public claim does not answer a private name ('the public registry answering a private name is the oldest confusion there is') and the reverse is refused too. Reads: describeNamespace is a census of claims, publishers, handovers and private names; explainNamespace renders the decision; every decision carries a digest over its own inputs so the same question at the same tick gives the same answer. Scope walls: no workflow resolution (P6.14), no epoch (P6.16), no admission (P6.17), no freshness (P6.28), no trust class (P6.1); no filesystem, network, clock or randomness, and the only node import is the hash. Authority: this contract decides whether a name is the name that was meant; it never decides whether the node behind it may run."
+    },
+    {
+      "id": "registry.repair",
+      "owner": "manager",
+      "domain": "node-registry",
+      "version": "0.1.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/registry-repair.mjs"
+      ],
+      "exports": {
+        "src/lego/registry-repair.mjs": [
+          "ITEM_STATES",
+          "REGISTRY_REPAIR_CONTRACT",
+          "REGISTRY_REPAIR_CONTRACT_VERSION",
+          "REGISTRY_REPAIR_FORMAT",
+          "REGISTRY_REPAIR_SCHEMA_VERSION",
+          "REPAIR_OPERATIONS",
+          "REPAIR_PERMISSIONS",
+          "REPAIR_REASONS",
+          "REPAIR_RULES",
+          "REPAIR_SOURCES",
+          "REPAIR_VERDICTS",
+          "RepairError",
+          "assessRegistry",
+          "createExpectation",
+          "describeRepair",
+          "explainRepair",
+          "isCensus",
+          "isExpectation",
+          "itemDigest",
+          "observeRegistry",
+          "planRepair",
+          "repairDigest",
+          "repairOrder",
+          "stableJson",
+          "verifyRepair"
+        ]
+      },
+      "consumers": [
+        "P6.31 full acceptance — recovery after damage is part of the final acceptance evidence",
+        "P6.16 epoch chain — a repaired registry has to be re-checked against the chain before it serves",
+        "P6.7 artefact store — the local store is the offline source a repair may name"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-registry-repair.test.mjs"
+      ],
+      "notes": "P6.30 (P6 implementation owner: Agent 3, Issue #100): repair assessment, ordered restoration and offline recovery. A registry comes back from an interrupted install, a lost file, a machine that has been offline for a month, and the two ways to get this wrong are to trust what is there and to repair what is not. A DAMAGED REGISTRY IS COMPARED, NOT TRUSTED: an expectation (what should be there, by digest) is compared with a census (what is there, by digest) and the answer is a NAMED census of damage — intact, altered, missing, unexpected ('1 altered, 1 missing and 1 unexpected item(s) against 3 expected'); an empty expectation is refused because 'a repair with nothing to compare against is a wish'. AN ITEM THAT DOES NOT HASH TO ITS OWN DIGEST IS NOT EVIDENCE: bytes supplied with a census are hashed here and a self-inconsistent item is refused by digest prefix rather than folded in; a census with no items is still a census, because that is how a wiped install looks. A REPAIR DOES NOT DELETE WHAT IT DID NOT PUT THERE: an unexpected item is quarantined and named, never deleted, because its presence is not evidence of damage to another file — and the suite asserts no step anywhere is a delete. OFFLINE IS A DECISION AND IT IS THE DEFAULT: a plan is offline unless the caller says otherwise, an offline repair may not use a mirror ('this repair is offline and the only source for c is a mirror'), and the online case says so in the plan and in the message; this contract has no network at all — the caller names the sources. A REPAIR CANNOT INVENT CONTENT IT HAS NEVER SEEN: an item is restored from a named source or the plan is BLOCKED BY NAME ('nothing has the bytes for b'), and blocked items are never quietly dropped from a plan that still looks successful. RESTORATION FOLLOWS DEPENDENCIES, NOT ALPHABET: the order is topological with an alphabetical tie-break, a dependency outside the set being repaired is not part of the order, and a cycle is refused rather than broken at random ('a cycle is not an order: a, b are waiting on each other'). REPAIRING AN EPOCH THAT HAS BEEN SUPERSEDED IS A ROLLBACK WEARING A RECOVERY'S CLOTHES: when the caller names the superseded epochs, a census sitting on one is refused outright and NO PARTIAL PLAN IS PRODUCED. PART OF THE WAY BACK IS NOT BACK: verifyRepair decides separately from the plan, names the items that still do not match, and says how far short the registry is. Scope walls: no artefact store (P6.7), no epoch chain (P6.16), no admission (P6.17), no freshness (P6.28), no names or trust (P6.29, P6.1) — the suite asserts the only node import is the hash, that no clock or network or randomness is read, and that no neighbouring module is reached into. Authority: this contract decides what is missing and what may be put back; it never fetches and never decides whether the restored registry may serve."
     }
   ]
 }

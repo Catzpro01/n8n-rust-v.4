@@ -43,6 +43,7 @@
 - `src/lego/provenance-log.mjs`
 - `src/lego/registry-compiler.mjs`
 - `src/lego/registry-integrity.mjs`
+- `src/lego/registry-repair.mjs`
 - `src/lego/resolution-manifest.mjs`
 - `src/lego/revocation-bulletin.mjs`
 - `src/lego/runtime-lease.mjs`
