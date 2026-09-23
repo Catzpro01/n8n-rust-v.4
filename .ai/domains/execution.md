@@ -21,6 +21,7 @@
 ## Owns
 
 - `src/engine.mjs`
+- `src/lego/bounded-frontier.mjs`
 
 ## Public contract surface
 

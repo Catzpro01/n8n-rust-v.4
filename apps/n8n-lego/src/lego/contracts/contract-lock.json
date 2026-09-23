@@ -1398,6 +1398,35 @@
         "apps/n8n-lego/test/lego-workflow-graph.test.mjs"
       ],
       "notes": "P3 Slice A (implementation: agent-1): persistent logical graph over the canonical n8n definition — verbatim node strings in fixed-size chunks, connections bucketed by source, resident index name→ordinal (integer, never node objects), one-chunk reads proven by readStats, durable bundle with fail-closed chunk digest, lossless exportDefinition (deep-equal roundtrip incl. orphan connection keys), manifest.checksum stays the n8n-editor contract checksum. Derived/disposable representation — n8n-ts WorkflowStore keeps the canonical document. No artificial node-count cap. No capability/REST surface yet (no ops/permissions on purpose). No fs/network/clock; owner agent-1 per Issue #98 P3 ownership Slice C (additive exports, version stays 0.1.0): store port (memory/lazy) + bounded HOT cache maxCachedChunks (LRU, default 8) so resident parsed payload never exceeds the bound regardless of logical size; residency HOT/WARM/COLD via residencyOf; evictChunk (reloadable, lossless); cacheStats counters; GRAPH_NODE_LIFECYCLE (9 stages) + lifecycleOf derived from residency; GRAPH_RESIDENCY vocabulary; accessor payloads frozen (shared immutable resident form). Source-level full reads (export/integrity/nodeNames) bypass the window."
+    },
+    {
+      "id": "execution.frontier",
+      "owner": "agent-1",
+      "domain": "execution",
+      "version": "0.1.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/bounded-frontier.mjs"
+      ],
+      "exports": {
+        "src/lego/bounded-frontier.mjs": [
+          "BoundedFrontierError",
+          "FRONTIER_CONTRACT",
+          "FRONTIER_CONTRACT_VERSION",
+          "FRONTIER_MAX_CAPACITY",
+          "FRONTIER_OUTCOME",
+          "createBoundedFrontier"
+        ]
+      },
+      "consumers": [
+        "bounded runtime slices (Issues #75/#97/#79) — capacity-bounded frontier with explicit admission outcomes",
+        "executor slices — bounded takeBatch as the bounded active-set primitive",
+        "resource protection (Issue #79) — observable depth/peakDepth/admitted/backpressured/served counters"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-bounded-frontier.test.mjs"
+      ],
+      "notes": "P3 Slice D (implementation: agent-1): capacity-bounded FIFO frontier — ring buffer bounded BY POLICY (capacity required, validated 1..1048576, pre-allocated; no default bound). offer/offerBatch return EXPLICIT outcomes (admitted vs backpressure with published code lego.backpressure): a flood can never grow the queue past capacity, refused items are never retained by the frontier and re-admit after drain (producer still owns them). take/takeBatch = bounded active set (cannot over-pull); FIFO deterministic; stats expose depth/peakDepth/admitted/backpressured/served. Pure structure: zero imports, no clock/fs/network/timers. One error family lego.contract_violation (errors contract 1.2.0 untouched). No capability/REST surface (no ops/permissions on purpose). Owner agent-1 per Issue #98 (bounded frontier); execution domain stays mustNotDependOn workflow — module imports nothing cross-domain. Load shedding/priority lanes/memory emergency NOT here (Issue #79 policy layers arrive with the resource-protection slice)"
     }
   ]
 }

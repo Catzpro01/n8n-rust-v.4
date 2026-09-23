@@ -70,7 +70,7 @@ test('the contract string is the exact locked identity — row 29, domain ai-fou
   assert.equal(LOCK_ROW.status, 'implemented');
   assert.equal(LOCK_ROW.domain, 'ai-foundation');
   assert.equal(LOCK_ROW.owner, 'manager');
-  assert.equal(LOCK.contracts.length, 33, 'rows through the P3 Slice A persistent logical graph (thirty-third)');
+  assert.equal(LOCK.contracts.length, 34, 'rows through P3 Slice A persistent logical graph (thirty-third); P3 Slice D adds the thirty-fourth (execution.frontier)');
   // primary contract of ai-foundation stays ai.foundation (R9 — usage is a sibling row)
   assert.equal(AI_FOUNDATION.contract.id, 'ai.foundation');
 });

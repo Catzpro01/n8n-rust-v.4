@@ -69,7 +69,7 @@ function sampleDefinition() {
 test('the lock row is the thirty-third: workflow.graph@1.0.0, owner agent-1, exports byte-parity', () => {
   const row = ROWS.find((r) => r.id === 'workflow.graph');
   assert.ok(row, 'workflow.graph is locked');
-  assert.equal(ROWS.length, 33, 'P3 Slice A adds exactly one row — count-pins say 33');
+  assert.equal(ROWS.length, 34, 'rows through P3 Slice C (workflow.graph stays thirty-third); P3 Slice D adds the thirty-fourth (execution.frontier) — count-pins say 34');
   assert.equal(row.owner, 'agent-1', 'Issue #98: Agent 1 owns the workflow graph');
   assert.equal(row.domain, 'workflow');
   assert.equal(row.version, '0.1.0', 'R9: matches the workflow domain contract version (0.1.0)');
