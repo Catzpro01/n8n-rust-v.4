@@ -4,7 +4,7 @@
   "canonical": true,
   "purpose": "Granular milestone truth beneath the strategic Phase A-F roadmap. This is the only machine-readable milestone register. Future milestone IDs may be refined by Manager only by updating this file; strategic phases are not deleted.",
   "protectedBranch": "main",
-  "mainBaseline": "389c6b5dfb8d88e9f50714c7a33d0303e3a1edf3",
+  "mainBaseline": "ab4a589821e247ed181a91b54ad8c2d39d83eeb1",
   "currentMilestone": "P2.23",
   "previousCompletedMilestone": "P2.22",
   "strategicRoadmap": {
@@ -1305,8 +1305,8 @@
         "register completion evidence recorded and currentMilestone advanced to P2.24"
       ],
       "startEvidence": {
-        "commit": "389c6b5dfb8d88e9f50714c7a33d0303e3a1edf3",
-        "role": "protected main after P2.22 implementation merge"
+        "commit": "ab4a589821e247ed181a91b54ad8c2d39d83eeb1",
+        "role": "protected main after P2.22 completion transition — actual P2.23 start baseline (§1 correction)"
       },
       "finishEvidence": null,
       "currentCommitReference": "arena/01a0c9d3-n8n-rust-v-4",
@@ -1321,7 +1321,7 @@
         "Arena runtime"
       ],
       "reconciliation": {
-        "state": "scoped at P2.23 start against protected main 389c6b5dfb8d88e9f50714c7a33d0303e3a1edf3; owners and detail refined by the Master Prompt P2.23 when issued",
+        "state": "scoped at P2.23 start against protected main ab4a589821e247ed181a91b54ad8c2d39d83eeb1; owners and detail refined by the Master Prompt P2.23",
         "contract": "node.portability@1.0.0, ai.agent-machine@1.1.0, lego.transport-kernel@1.0.0, ai.mcp-boundary, XA-21 all untouched unless the prompt says otherwise",
         "owner": "agent-1"
       },
@@ -1372,7 +1372,7 @@
     "agent2": "arena/01a0c90d-n8n-rust-v-4"
   },
   "baseline": {
-    "role": "protected main after P2.22 implementation merge",
+    "role": "protected main at P2.23 start (governance correction per Master Prompt P2.23 §1)",
     "reconciliation": {
       "state": "stable",
       "open": 0
