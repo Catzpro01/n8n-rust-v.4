@@ -3178,6 +3178,7 @@
         "src/lego/cancel-accounting.mjs",
         "src/lego/capability-compiler.mjs",
         "src/lego/dependency-closure.mjs",
+        "src/lego/freshness.mjs",
         "src/lego/incremental-registry.mjs",
         "src/lego/io-compiler.mjs",
         "src/lego/jit-lease.mjs",

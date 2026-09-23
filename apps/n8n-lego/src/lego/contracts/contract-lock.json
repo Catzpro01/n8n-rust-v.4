@@ -3108,6 +3108,53 @@
         "apps/n8n-lego/test/lego-provenance-log.test.mjs"
       ],
       "notes": "P6.27 (P6 implementation owner: Agent 3, Issue #100): provenance statements and the transparency log. 'Where did these bytes come from' has a cheap wrong answer — a field in a manifest, a build id, a CI badge — so this contract makes the answer cost something. PROVENANCE IS A STATEMENT ABOUT A SUBJECT DIGEST: a subject without a digest is refused as 'a rumour with a version number', a statement naming a different digest is a mismatch ('provenance about something else is not provenance about this'), and the name has to match too. EVERY INPUT IS NAMED AND DIGESTED — source, dependency, toolchain, configuration — because 'built from the repository' is not a claim this contract accepts; a material without a digest is 'an input nobody can check'; a duplicated material is refused; and a build that finished before it started is refused. A STATEMENT NOBODY HAS SEEN IS A CLAIM, NOT EVIDENCE: publication into the log is what makes verification possible, and an unpublished statement verifies as insufficient ('a statement nobody else has seen is a claim, not evidence'); the policy can waive publication, and it says so in the result. THE LOG IS APPEND-ONLY AND ITS HEAD IS A CHECKPOINT: every record links to the one before it, publishing the same statement twice is the SAME record (a log that grows when nothing happened is a log nobody can reason about), and a record rebuilt under one digest for another subject is refused. AN INCLUSION PROOF IS CHECKED, NOT TRUSTED: verifyInclusion walks the links, refuses a log that ends sooner than the proof admits ('a log that ends sooner than the proof admits is a log something was removed from'), a rebuilt record ('the log has been rebuilt differently'), a broken chain, and a proof that has been superseded by a newer head. PROVENANCE IS NOT TRUST AND PERFORMS NO CRYPTOGRAPHY: signing and attestation belong to P6.12, trust classes to P6.1, the epoch chain to P6.16 — the suite asserts this module reaches none of them (no createSign/subtle/privateKey/signAttestation, no other module of the registry), and that the only node import is the hash. No filesystem, network, clock or randomness: every record takes the tick it happened at. Authority: this contract records and checks where an artifact came from; it never decides whether it may run."
+    },
+    {
+      "id": "registry.freshness",
+      "owner": "manager",
+      "domain": "node-registry",
+      "version": "0.1.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/freshness.mjs"
+      ],
+      "exports": {
+        "src/lego/freshness.mjs": [
+          "FRESHNESS_CONTRACT",
+          "FRESHNESS_CONTRACT_VERSION",
+          "FRESHNESS_FORMAT",
+          "FRESHNESS_OPERATIONS",
+          "FRESHNESS_PERMISSIONS",
+          "FRESHNESS_REASONS",
+          "FRESHNESS_RULES",
+          "FRESHNESS_SCHEMA_VERSION",
+          "FRESHNESS_VERDICTS",
+          "FreshnessError",
+          "UPDATE_ROLES",
+          "createDelegation",
+          "createRoleMetadata",
+          "createTrustedState",
+          "describeFreshness",
+          "evaluateFreshness",
+          "explainFreshness",
+          "freshnessDigest",
+          "isCoveredBy",
+          "isRoleMetadata",
+          "isTrustedState",
+          "meetsThreshold",
+          "planRefresh",
+          "stableJson"
+        ]
+      },
+      "consumers": [
+        "P6.29 namespace confusion — a name that changed hands is a freshness question about identity, and this is the shape of the answer",
+        "P6.30 repair and offline recovery — a registry recovered offline comes back with metadata of an unknown age",
+        "P6.31 full acceptance — freeze and rollback refusal is part of the final acceptance evidence"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-freshness.test.mjs"
+      ],
+      "notes": "P6.28 (P6 implementation owner: Agent 3, Issue #100): update metadata freshness. A valid signature says who wrote a sentence, not when the sentence stopped being true, so this contract is about the three attacks that survive verification: rollback, freeze, mix-and-match. A VERSION THAT GOES BACKWARDS IS REFUSED BY NAME ('a version that goes backwards is the attack the number exists to stop'), AND SO IS THE QUIETER VERSION OF IT — the same version arriving with different bytes, which is a fork, not an update. EXPIRY IS A VERDICT, NOT A TIMESTAMP: expired metadata says yesterday's truth and is refused rather than used ('expired metadata says yesterday's truth, so it is refused rather than used'); a declared clock skew is allowed and named in the refusal when it is exceeded; and a check at a tick EARLIER than the last check is refused as well, because 'a clock that goes backwards relative to the last check is how a freeze is hidden'. SILENCE IS NOT A SIGNATURE: signature counts are SUPPLIED by the caller (P6.12 owns crypto), metadata below the threshold is `incomplete`, and `incomplete` is not a pass — the suite proves a policy can raise the bar per role and that metadata below it is refused, and that a required role that is absent is an incomplete, named verdict rather than a pass. METADATA FROM TWO SNAPSHOTS IS ONE SNAPSHOT TOO MANY: the snapshot names the version and digest of each role below it, and a targets file that is not the one the snapshot names is a mismatch however well it verifies on its own; the suite also shows the binding can be waived explicitly and that a role named by the snapshot but not supplied is simply not in hand. A DELEGATION MAY NARROW, NEVER WIDEN: a delegated role signs inside the paths its parent covers (with the path-vs-string boundary spelled out — 'packages-other/x' is not inside 'packages/', and the directory entry 'packages' is not a path inside 'packages/'), may not delegate to itself, and may not lower the bar its parent set; a delegation that states no threshold inherits its parent's. A REFRESH IS A PLAN, NOT A FETCH: this contract has no network — it asks for the timestamp first, and when the timestamp did not move it stops, because 'asking anyway is how a freeze goes unnoticed for a year'; the suite covers stopping at the timestamp, at the snapshot, asking blind when nothing was supplied, and a policy that skips the root. THE MODULE PERFORMS NO CRYPTOGRAPHY AND TOUCHES NOTHING ELSE: no signature checking, no keys, no attestation (P6.12), no trust class (P6.1), no admission (P6.17), no epoch chain (P6.16) — the suite asserts the only node import is the hash, that no clock or network or randomness is read, and that no neighbouring module is reached into. Authority: this contract decides whether metadata is current enough to use; it never decides whether the artifact it describes may run."
     }
   ]
 }
