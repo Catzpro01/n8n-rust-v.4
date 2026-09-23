@@ -3177,8 +3177,11 @@
         "src/lego/node-portability.mjs",
         "src/lego/node-creator.mjs",
         "src/lego/node-registry.mjs",
+        "src/lego/node-residency.mjs",
         "src/lego/package-transaction.mjs",
-        "src/lego/registry-compiler.mjs"
+        "src/lego/registry-compiler.mjs",
+        "src/lego/resolution-manifest.mjs",
+        "src/lego/runtime-lease.mjs"
       ],
       "public": [],
       "dependsOn": [
