@@ -14,6 +14,9 @@ import { fileURLToPath } from 'node:url';
 
 import {
   GRAPH_CHUNK_DEFAULT_SIZE,
+  GRAPH_HOT_CACHE_DEFAULT_CHUNKS,
+  GRAPH_NODE_LIFECYCLE,
+  GRAPH_RESIDENCY,
   WORKFLOW_GRAPH_BUNDLE_VERSION,
   WORKFLOW_GRAPH_CONTRACT,
   WORKFLOW_GRAPH_CONTRACT_VERSION,
@@ -73,12 +76,14 @@ test('the lock row is the thirty-third: workflow.graph@1.0.0, owner agent-1, exp
   assert.equal(row.status, 'implemented');
   assert.deepEqual(row.surface, ['src/lego/workflow-graph.mjs']);
   const module_ = {
-    GRAPH_CHUNK_DEFAULT_SIZE, WORKFLOW_GRAPH_BUNDLE_VERSION, WORKFLOW_GRAPH_CONTRACT,
+    GRAPH_CHUNK_DEFAULT_SIZE, GRAPH_HOT_CACHE_DEFAULT_CHUNKS, GRAPH_NODE_LIFECYCLE, GRAPH_RESIDENCY,
+    WORKFLOW_GRAPH_BUNDLE_VERSION, WORKFLOW_GRAPH_CONTRACT,
     WORKFLOW_GRAPH_CONTRACT_VERSION, WORKFLOW_GRAPH_LIMITS, WorkflowGraphError,
     createWorkflowGraph, graphFromBundle,
   };
   const locked = row.exports['src/lego/workflow-graph.mjs'];
   assert.deepEqual([...locked].sort(), Object.keys(module_).sort(), 'lock ⇄ module exports');
+  assert.equal(locked.length, 11, 'P3 Slice C adds exactly three additive exports');
   assert.deepEqual([...locked], [...locked].slice().sort(), 'sorted ASCII');
   assert.deepEqual(row.tests, ['apps/n8n-lego/test/lego-workflow-graph.test.mjs']);
   assert.equal('operations' in row, false, 'no capability/REST surface in Slice A (by design)');
@@ -372,4 +377,204 @@ test('the reverse index is derived: never bundled, rebuilds after a bundle round
   assert.equal(restored.hasReverseIndex(), false, 'fresh graph starts without the index');
   assert.deepEqual(restored.getIncoming('HTTP'), [{ source: 'Start', type: 'main', index: 0 }]);
   assert.deepStrictEqual(restored.exportDefinition(), sampleDefinition());
+});
+
+/* ==================== H. SLICE C — MATERIALIZATION CONTROL ==================== */
+
+test('Slice C publishes the lifecycle + residency vocabulary and the cache bound', () => {
+  assert.deepEqual([...GRAPH_NODE_LIFECYCLE], [
+    'DECLARED', 'INDEXED', 'RESOLVED', 'MATERIALIZED', 'READY',
+    'EXECUTING', 'COMMITTED', 'EVICTABLE', 'EVICTED',
+  ], 'the nine P3 stages in declared order');
+  assert.equal(Object.isFrozen(GRAPH_NODE_LIFECYCLE), true, 'vocabulary is immutable');
+  assert.deepEqual({ ...GRAPH_RESIDENCY }, { HOT: 'HOT', WARM: 'WARM', COLD: 'COLD' });
+  assert.equal(Object.isFrozen(GRAPH_RESIDENCY), true);
+  assert.equal(GRAPH_HOT_CACHE_DEFAULT_CHUNKS, 8, 'bounded default — never unbounded');
+  const graph = createWorkflowGraph(sampleDefinition());
+  const stats = graph.cacheStats();
+  assert.equal(stats.maxCachedChunks, GRAPH_HOT_CACHE_DEFAULT_CHUNKS);
+  assert.equal(stats.storeKind, 'memory', 'default port = Slice A baseline behaviour');
+});
+
+test('materialization options validate fail-closed in the one error family', () => {
+  const def = sampleDefinition();
+  for (const bad of [-1, 1.5, '4', 65537, Number.NaN]) {
+    const error = caught(() => createWorkflowGraph(def, { maxCachedChunks: bad }));
+    assert.ok(error instanceof WorkflowGraphError, `maxCachedChunks ${bad} refuses`);
+    assert.equal(error.details.field, 'maxCachedChunks');
+    assert.equal(error.code, 'lego.contract_violation');
+  }
+  const lazyError = caught(() => createWorkflowGraph(def, { lazy: 'yes' }));
+  assert.equal(lazyError.details.field, 'lazy');
+  const bundle = JSON.parse(JSON.stringify(createWorkflowGraph(def).exportBundle()));
+  assert.equal(caught(() => graphFromBundle(bundle, { maxCachedChunks: -2 })).details.field, 'maxCachedChunks');
+  assert.equal(caught(() => graphFromBundle(bundle, { lazy: 1 })).details.field, 'lazy');
+  // valid bounds (0 = HOT disabled) are accepted
+  const zero = createWorkflowGraph(def, { maxCachedChunks: 0 });
+  assert.equal(zero.cacheStats().maxCachedChunks, 0);
+  const wide = createWorkflowGraph(def, { maxCachedChunks: 65536, lazy: true });
+  assert.equal(wide.cacheStats().maxCachedChunks, 65536);
+});
+
+test('the HOT cache serves repeat reads as frozen shared state (logical reads still counted)', () => {
+  const graph = createWorkflowGraph(sampleDefinition(), { chunkSize: 2, maxCachedChunks: 4 });
+  graph.resetReadStats();
+  const first = graph.getChunk(0);
+  assert.equal(graph.readStats().chunkReads, 1, 'a cold read is still exactly one logical chunk read');
+  let stats = graph.cacheStats();
+  assert.equal(stats.misses, 1);
+  assert.equal(stats.hits, 0);
+  assert.equal(stats.hot, 1);
+  const second = graph.getChunk(0);
+  assert.equal(graph.readStats().chunkReads, 2, 'a HOT hit is still one logical read — no hidden scan');
+  stats = graph.cacheStats();
+  assert.equal(stats.hits, 1, 'second read served from the HOT cache');
+  assert.equal(first, second, 'the cache serves the shared resident entry');
+  assert.deepEqual(first.map((n) => n.name), ['Start', 'HTTP']);
+  assert.equal(Object.isFrozen(first), true, 'shared cache arrays are immutable');
+  assert.equal(Object.isFrozen(first[0]), true, 'shared node payloads are immutable');
+  assert.throws(() => first.push({ name: 'Corrupt' }), TypeError, 'mutation of resident state is refused');
+  assert.equal(stats.hot, 1, 'the failed mutation never entered the cache');
+  // node + edge accessors hit the same materialized entry
+  graph.getNode('Start');
+  graph.getOutgoingConnections('Start');
+  assert.equal(graph.cacheStats().hits, 3, 'node and edge reads reuse the HOT entry');
+});
+
+test('peak resident working set stays within maxCachedChunks while walking a much larger logical graph', () => {
+  const n = 4000;
+  const chunkSize = 64;
+  const bound = 4;
+  const nodes = Array.from({ length: n }, (_, i) => (
+    { name: `N${i}`, type: 'n8n-nodes-base.noOp', typeVersion: 1, position: [i, 0], parameters: { payload: `v${i}` } }
+  ));
+  const def = { name: 'working-set', nodes, connections: {} };
+  const graph = createWorkflowGraph(def, { chunkSize, maxCachedChunks: bound });
+  assert.equal(graph.chunkCount(), Math.ceil(n / chunkSize), 'logical graph = 63 chunks');
+  assert.ok(graph.chunkCount() > bound * 10, 'logical size far exceeds the resident bound');
+  let peakHot = 0;
+  for (let pass = 0; pass < 3; pass += 1) {
+    for (let chunkIndex = 0; chunkIndex < graph.chunkCount(); chunkIndex += 1) {
+      graph.getChunk(chunkIndex);
+      const hot = graph.cacheStats().hot;
+      assert.ok(hot <= bound, `peak HOT ${hot} never exceeds the bound ${bound} (pass ${pass})`);
+      if (hot > peakHot) peakHot = hot;
+    }
+  }
+  const stats = graph.cacheStats();
+  assert.equal(peakHot, bound, 'the bound is reached but never crossed');
+  assert.equal(stats.hot, bound);
+  assert.equal(stats.misses, 3 * graph.chunkCount(), 'every chunk read each pass is a materialization');
+  assert.equal(stats.evictions, stats.misses - bound, 'LRU invariant: inserts − survivors = evictions');
+  // lifecycle under age-out pressure: an early chunk that scrolled out is RESOLVED (WARM), never lost
+  assert.equal(graph.residencyOf(0), 'WARM', 'memory port keeps raw resident after HOT age-out');
+  assert.equal(graph.lifecycleOf('N0'), 'RESOLVED', 'age-out is not an explicit evict — no EVICTED marker');
+  assert.equal(graph.lifecycleOf(`N${n - 1}`), 'MATERIALIZED', 'last touched chunk is still HOT');
+  // lossless canonical export despite the churn
+  assert.deepStrictEqual(graph.exportDefinition(), def, 'working-set bounds never cost correctness');
+  assert.equal(graph.integrity().ok, true);
+});
+
+test('memory-port residency: WARM at rest → HOT on access → evictChunk → EVICTED until rematerialization', () => {
+  const graph = createWorkflowGraph(sampleDefinition(), { chunkSize: 2 });
+  assert.equal(graph.residencyOf(0), 'WARM', 'memory port: raw payload resident (Slice A baseline)');
+  assert.equal(graph.lifecycleOf('Start'), 'RESOLVED', 'resident payload, not yet materialized');
+  graph.getChunk(0);
+  assert.equal(graph.residencyOf(0), 'HOT');
+  assert.equal(graph.lifecycleOf('Start'), 'MATERIALIZED');
+  assert.equal(graph.evictChunk(0), true, 'explicit evict drops the HOT entry');
+  assert.equal(graph.residencyOf(0), 'WARM', 'memory port has no cold tier — raw stays resident');
+  assert.equal(graph.lifecycleOf('Start'), 'EVICTED', 'the explicit-evict marker stands until re-read');
+  graph.getChunk(0);
+  assert.equal(graph.lifecycleOf('Start'), 'MATERIALIZED', 'rematerialization clears the marker');
+  assert.equal(graph.evictChunk(0), true);
+  assert.equal(graph.evictChunk(0), false, 'already evicted — nothing left to drop');
+  assert.equal(graph.lifecycleOf('Start'), 'EVICTED', 'marker persists across idempotent evicts');
+  assert.equal(caught(() => graph.lifecycleOf('Nope')).details.reason, 'unknown-node');
+  assert.equal(caught(() => graph.residencyOf(-1)).details.reason, 'out-of-range');
+  assert.equal(caught(() => graph.evictChunk(99)).details.reason, 'out-of-range');
+});
+
+test('lazy port: COLD at rest loads on demand, evicts to COLD/EVICTED, reloads losslessly', () => {
+  const def = sampleDefinition();
+  const graph = createWorkflowGraph(def, { chunkSize: 2, maxCachedChunks: 2, lazy: true });
+  const initial = graph.cacheStats();
+  assert.equal(initial.storeKind, 'lazy');
+  assert.equal(initial.storeLoads, 0, 'construction loads nothing — logical ≠ resident');
+  assert.equal(initial.storeResident, 0);
+  assert.equal(graph.residencyOf(0), 'COLD');
+  assert.equal(graph.lifecycleOf('Start'), 'INDEXED', 'identity known, payload virtual until read');
+  assert.equal(graph.hasNode('HTTP'), true, 'the index answers without any payload resident');
+  graph.getChunk(0);
+  const afterLoad = graph.cacheStats();
+  assert.ok(afterLoad.storeLoads >= 1, 'a cold read loads through the store port');
+  assert.equal(graph.residencyOf(0), 'HOT');
+  assert.equal(graph.lifecycleOf('Start'), 'MATERIALIZED');
+  assert.equal(graph.evictChunk(0), true, 'evict drops HOT and the raw window entry');
+  assert.equal(graph.residencyOf(0), 'COLD', 'lazy port returns the chunk to the cold medium');
+  assert.equal(graph.lifecycleOf('Start'), 'EVICTED');
+  const loadsBefore = graph.cacheStats().storeLoads;
+  const chunk = graph.getChunk(0);
+  assert.ok(graph.cacheStats().storeLoads > loadsBefore, 'a COLD miss reloads from the source');
+  assert.equal(graph.lifecycleOf('Start'), 'MATERIALIZED');
+  assert.deepEqual(chunk.map((x) => x.name), ['Start', 'HTTP'], 'reloaded payload identical');
+  assert.deepStrictEqual(graph.exportDefinition(), def, 'lossless after load → evict → reload churn');
+  assert.equal(graph.integrity().ok, true);
+});
+
+test('lazy working set: HOT and raw window both stay bounded; reverse index builds under COLD residency', () => {
+  const n = 5000;
+  const chunkSize = 64;
+  const bound = 4;
+  const nodes = Array.from({ length: n }, (_, i) => (
+    { name: `N${i}`, type: 'n8n-nodes-base.noOp', typeVersion: 1, position: [i, 0], parameters: {} }
+  ));
+  const connections = Object.fromEntries(nodes.map((node, i) => [
+    node.name,
+    { main: i < n - 1 ? [[{ node: `N${i + 1}`, type: 'main', index: 0 }]] : [] },
+  ]));
+  const def = { name: 'lazy-wide', nodes, connections };
+  const graph = createWorkflowGraph(def, { chunkSize, maxCachedChunks: bound, lazy: true });
+  assert.equal(graph.chunkCount(), 79, '5000 nodes / 64 per chunk → 79 logical chunks');
+  assert.equal(graph.manifest().edgeCount, n - 1, 'chain edges recorded');
+  for (let chunkIndex = 0; chunkIndex < graph.chunkCount(); chunkIndex += 1) {
+    graph.getChunk(chunkIndex);
+    const stats = graph.cacheStats();
+    assert.ok(stats.hot <= bound, `HOT ${stats.hot} ≤ ${bound} at chunk ${chunkIndex}`);
+    assert.ok(stats.storeResident <= bound, `raw window ${stats.storeResident} ≤ ${bound} at chunk ${chunkIndex}`);
+  }
+  let stats = graph.cacheStats();
+  assert.equal(stats.storeLoads, graph.chunkCount(), 'single pass loads each cold chunk exactly once');
+  assert.equal(stats.storeEvictions, stats.storeLoads - bound, 'window LRU invariant: loads − survivors = evictions');
+  assert.equal(stats.evictions, stats.misses - bound, 'HOT LRU invariant holds under pressure too');
+  // the derived reverse index builds from COLD chunks without breaking the bounds
+  graph.getIncoming('N1');
+  assert.deepEqual(graph.getIncoming('N1'), [{ source: 'N0', type: 'main', index: 0 }]);
+  assert.deepEqual(graph.getIncoming('N0'), []);
+  stats = graph.cacheStats();
+  assert.ok(stats.hot <= bound && stats.storeResident <= bound, 'index build never breaks the working-set bounds');
+  assert.equal(graph.releaseReverseIndex(), true);
+  // durable roundtrip stays lossless after all of it
+  const wire = JSON.parse(JSON.stringify(graph.exportBundle()));
+  const restored = graphFromBundle(wire);
+  assert.deepStrictEqual(restored.exportDefinition(), def, 'bundle roundtrip lossless after residency churn');
+});
+
+test('maxCachedChunks: 0 disables the HOT layer but reads stay correct (pure pass-through)', () => {
+  const def = sampleDefinition();
+  const graph = createWorkflowGraph(def, { chunkSize: 2, maxCachedChunks: 0 });
+  graph.resetReadStats();
+  const chunk = graph.getChunk(0);
+  assert.deepEqual(chunk.map((n) => n.name), ['Start', 'HTTP']);
+  let stats = graph.cacheStats();
+  assert.equal(stats.hot, 0, 'no HOT layer when the bound is zero');
+  assert.equal(stats.hits, 0);
+  assert.equal(stats.misses, 1);
+  assert.equal(graph.readStats().chunkReads, 1, 'logical read discipline unchanged');
+  assert.equal(graph.getChunk(0) === chunk, false, 'pass-through never shares a resident entry');
+  stats = graph.cacheStats();
+  assert.equal(stats.misses, 2, 'every read re-materializes without a cache');
+  assert.equal(graph.residencyOf(0), 'WARM', 'memory port floor is unchanged');
+  assert.equal(graph.lifecycleOf('Start'), 'RESOLVED', 'nothing reached HOT, so nothing is MATERIALIZED');
+  assert.deepStrictEqual(graph.exportDefinition(), def, 'correctness holds with the cache disabled');
 });

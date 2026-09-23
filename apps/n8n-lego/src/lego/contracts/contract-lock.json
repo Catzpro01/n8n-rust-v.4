@@ -1377,6 +1377,9 @@
       "exports": {
         "src/lego/workflow-graph.mjs": [
           "GRAPH_CHUNK_DEFAULT_SIZE",
+          "GRAPH_HOT_CACHE_DEFAULT_CHUNKS",
+          "GRAPH_NODE_LIFECYCLE",
+          "GRAPH_RESIDENCY",
           "WORKFLOW_GRAPH_BUNDLE_VERSION",
           "WORKFLOW_GRAPH_CONTRACT",
           "WORKFLOW_GRAPH_CONTRACT_VERSION",
@@ -1394,7 +1397,7 @@
       "tests": [
         "apps/n8n-lego/test/lego-workflow-graph.test.mjs"
       ],
-      "notes": "P3 Slice A (implementation: agent-1): persistent logical graph over the canonical n8n definition — verbatim node strings in fixed-size chunks, connections bucketed by source, resident index name→ordinal (integer, never node objects), one-chunk reads proven by readStats, durable bundle with fail-closed chunk digest, lossless exportDefinition (deep-equal roundtrip incl. orphan connection keys), manifest.checksum stays the n8n-editor contract checksum. Derived/disposable representation — n8n-ts WorkflowStore keeps the canonical document. No artificial node-count cap. No capability/REST surface yet (no ops/permissions on purpose). No fs/network/clock; owner agent-1 per Issue #98 P3 ownership"
+      "notes": "P3 Slice A (implementation: agent-1): persistent logical graph over the canonical n8n definition — verbatim node strings in fixed-size chunks, connections bucketed by source, resident index name→ordinal (integer, never node objects), one-chunk reads proven by readStats, durable bundle with fail-closed chunk digest, lossless exportDefinition (deep-equal roundtrip incl. orphan connection keys), manifest.checksum stays the n8n-editor contract checksum. Derived/disposable representation — n8n-ts WorkflowStore keeps the canonical document. No artificial node-count cap. No capability/REST surface yet (no ops/permissions on purpose). No fs/network/clock; owner agent-1 per Issue #98 P3 ownership Slice C (additive exports, version stays 0.1.0): store port (memory/lazy) + bounded HOT cache maxCachedChunks (LRU, default 8) so resident parsed payload never exceeds the bound regardless of logical size; residency HOT/WARM/COLD via residencyOf; evictChunk (reloadable, lossless); cacheStats counters; GRAPH_NODE_LIFECYCLE (9 stages) + lifecycleOf derived from residency; GRAPH_RESIDENCY vocabulary; accessor payloads frozen (shared immutable resident form). Source-level full reads (export/integrity/nodeNames) bypass the window."
     }
   ]
 }
