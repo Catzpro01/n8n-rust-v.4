@@ -1020,6 +1020,53 @@
         "apps/n8n-lego/test/lego-mcp-boundary.test.mjs"
       ],
       "notes": "P2.20 MCP vs Agent Control boundary declaration (implementation: agent-1): four canonical states declared / permission-required / exposed / blocked quoted from manifest/ai-foundation.json#mcp (roadmap named three; §9 admits only least-privileged 'declared' as the fourth), explicit permission gate in documented order, fail-closed on unknown server/capability/permission-claim/malformed input, exposure and Agent Control authority strictly separated (no inference either direction), individual explicit capability export (no export-everything switch), approval satisfaction only via ai.approval@1.0.0 (identity+scope). Declaration and state machine only: no MCP server, client, adapter runtime, SDK, daemon or network."
+    },
+    {
+      "id": "ai.runtime-adapter",
+      "owner": "manager",
+      "domain": "ai-foundation",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/runtime-adapter.mjs"
+      ],
+      "exports": {
+        "src/lego/runtime-adapter.mjs": [
+          "RUNTIME_ADAPTER_CONTRACT",
+          "RUNTIME_ADAPTER_CONTRACT_VERSION",
+          "RUNTIME_ADAPTER_FIELDS",
+          "RUNTIME_ADAPTER_OPERATIONS",
+          "RUNTIME_ADAPTER_PERMISSIONS",
+          "ADAPTER_CAPABILITIES",
+          "ADAPTER_LOCALITIES",
+          "ADAPTER_EXECUTOR_KINDS",
+          "ADAPTER_AGENT_MACHINE_VERSION",
+          "ADAPTER_RUNTIME_CONTRACT",
+          "ADAPTER_AVAILABILITIES",
+          "RUNTIME_LIFECYCLE_TRANSLATION",
+          "ADAPTER_LIMITS",
+          "RuntimeAdapterError",
+          "createRuntimeRegistry",
+          "createRuntimeAdapter",
+          "createSimulatedRuntime",
+          "createAdapterHarness"
+        ]
+      },
+      "operations": [
+        "register",
+        "lookup",
+        "eligibility",
+        "manager"
+      ],
+      "consumers": [
+        "P2.21 deterministic harness (contract conformance replay + scenario runner)",
+        "future external runtimes (first real runtime is stage E — none exists in this repository)",
+        "Agent Machine provider seam (supports(kind) replaces the default without changing ai.agent-machine@1.1.0)"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-runtime-adapter.test.mjs"
+      ],
+      "notes": "P2.21 runtime adapter seam (implementation: agent-1): explicit provider registration (contract ai.agent-runtime@1.0.0 exactly, canonical executorKinds/capabilities/locality/availability — unknown values fail closed), EXTERNAL executorKind usable ONLY while the bound registration stays eligible (live re-check; unavailable/unregistered -> lego.unavailable through the unchanged P2.16 provider gate), lifecycle translation of the official runtime-adapter vocabulary onto ai.agent-machine@1.1.0 operations (stream declared-unsupported, unknown operations rejected — no second lifecycle), bounded opt-in retry, path/secret-shaped references refused at the seam, canonical-event-only forwardEvent with a bounded outbox, deterministic harness (injected clock/id factory/response sequence; no timers). Declaration + seam + simulator only: no MCP, no model inference, no production scheduler, no shell/filesystem/subprocess authority — adapter selection grants nothing."
     }
   ]
 }

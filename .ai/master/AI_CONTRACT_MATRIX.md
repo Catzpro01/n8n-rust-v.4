@@ -55,6 +55,7 @@ changed; the owner and the decision reference are recorded instead.
 | `ai.approval` | 1.0.0 | `manager` | implemented |
 | `ai.audit` | 1.0.0 | `manager` | implemented |
 | `ai.mcp-boundary` | 1.0.0 | `manager` | implemented |
+| `ai.runtime-adapter` | 1.0.0 | `manager` | implemented |
 
 ## Operation coverage
 

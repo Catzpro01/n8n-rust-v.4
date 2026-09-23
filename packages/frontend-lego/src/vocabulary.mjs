@@ -1178,7 +1178,7 @@ export const VOCABULARIES = Object.freeze([
       'ai.model-gateway', 'ai.tool-gateway', 'ai.agent-runtime', 'ai.application-provider',
       'ai.agent-session', 'ai.agent-delegation', 'ai.agent-events', 'ai.decision',
       'ai.approval', 'ai.artifact', 'ai.context', 'ai.skill', 'ai.memory',
-      'ai.agent-machine', 'ai.mcp-boundary',
+      'ai.agent-machine', 'ai.mcp-boundary', 'ai.runtime-adapter',
     ]),
     provenance: Object.freeze({
       contract: Object.freeze({ id: 'lego.domain-registry', version: '1.1.0', owner: 'manager' }),
@@ -1186,7 +1186,7 @@ export const VOCABULARIES = Object.freeze([
       file: 'apps/n8n-lego/src/lego/manifest/domains.json',
       path: 'domains#id=ai-foundation.capabilities',
       read: 'id',
-      note: 'fifteen capabilities of the `ai-foundation` domain. `ai.memory` joined the list at P2.14 (`implemented`, four operations) on agent-2`s branch; `ai.skill` joined at the P2.12 finalize; `ai.agent-machine` joined at P2.16 (`implemented`, nine operations at 1.1.0) as the bounded execution foundation; `ai.mcp-boundary` joined at P2.20 (`implemented`, four operations — the four-state MCP vs Agent Control boundary declaration). A capability is declared here whether it is contract-only or implemented — the status is a field, not a separate list',
+      note: 'sixteen capabilities of the `ai-foundation` domain. `ai.memory` joined the list at P2.14 (`implemented`, four operations) on agent-2`s branch; `ai.skill` joined at the P2.12 finalize; `ai.agent-machine` joined at P2.16 (`implemented`, nine operations at 1.1.0) as the bounded execution foundation; `ai.mcp-boundary` joined at P2.20 (`implemented`, four operations — the four-state MCP vs Agent Control boundary declaration); `ai.runtime-adapter` joined at P2.21 (`implemented`, four operations — the contract-preserving runtime adapter seam). A capability is declared here whether it is contract-only or implemented — the status is a field, not a separate list',
       movedBy: Object.freeze({ commit: '5fbaf934', branch: 'arena/01a0c90d-n8n-rust-v-4', added: Object.freeze(['ai.memory']), previousValues: Object.freeze([
         'ai.model-gateway', 'ai.tool-gateway', 'ai.agent-runtime', 'ai.application-provider',
         'ai.agent-session', 'ai.agent-delegation', 'ai.agent-events', 'ai.decision',
@@ -1198,10 +1198,11 @@ export const VOCABULARIES = Object.freeze([
     id: 'aiPermission',
     question: 'Which permission names do the published AI operations require?',
     about: 'permission',
-    // The 29 names the fifteen `ai.*` capabilities publish on their operations — including
+    // The 32 names the sixteen `ai.*` capabilities publish on their operations — including
     // the two `ai:skill:*` words the locked Skill contract requires, the two `ai:memory:*`
-    // words `ai.memory@1.0.0` requires and the three `ai:mcp:*` words the P2.20 boundary
-    // declaration (`ai.mcp-boundary`) requires. The vocabulary file names only the three provider
+    // words `ai.memory@1.0.0` requires, the three `ai:mcp:*` words the P2.20 boundary
+    // declaration requires and the three `ai:adapter:*` words the P2.21 seam requires.
+    // The vocabulary file names only the three provider
     // contracts' permissions (eight of these) plus the application-provider trio below; the
     // operation list is what a caller is actually refused by, so that is what the frontend quotes.
     values: Object.freeze([
@@ -1217,6 +1218,7 @@ export const VOCABULARIES = Object.freeze([
       'ai:skill:read', 'ai:skill:select',
       'ai:memory:read', 'ai:memory:write',
       'ai:mcp:read', 'ai:mcp:declare', 'ai:mcp:expose',
+      'ai:adapter:read', 'ai:adapter:register', 'ai:adapter:dispatch',
     ]),
     provenance: Object.freeze({
       contract: Object.freeze({ id: 'lego.domain-registry', version: '1.1.0', owner: 'manager' }),
