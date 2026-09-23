@@ -63,10 +63,11 @@ The strategic phases above are intentionally preserved. The Manager-owned granul
 | `P2.14` | Memory | B | **complete** | P2.15 |
 | `P2.15` | Workspace | B | **complete** | P2.16 |
 | `P2.16` | Agent Machine / execution foundation | B | **complete** | P2.17 |
-| `P2.17` | Agent Machine Runtime Foundation | B | **in-progress** | P2.17+ |
+| `P2.17` | Agent Machine Runtime Foundation | B | **complete** | P2.18 |
+| `P2.18` | Universal Transport & Envelope Kernel | B | **in-progress** | P2.19 |
 | `P2.17+` | Later capability ladder | C-F | **planned** | — |
 
-Current milestone: **P2.17**. Previous completed: **P2.16**.
+Current milestone: **P2.18**. Previous completed: **P2.17**.
 
 Future IDs may be refined by Manager only by updating `docs/n8n-lego/milestones.json`.
 

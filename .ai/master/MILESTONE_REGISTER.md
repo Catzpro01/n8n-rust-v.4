@@ -9,10 +9,10 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 
 | Field | Value |
 | --- | --- |
-| Current milestone | **P2.17** |
-| Previous completed milestone | **P2.16** |
+| Current milestone | **P2.18** |
+| Previous completed milestone | **P2.17** |
 | Protected branch | `main` |
-| Main baseline | `f21882233c1f4efc5bfb8f3e1b5e1ad4db781d7d` |
+| Main baseline | `8da4d00c7e1bca7fc69a4f8d36f59c453f96ee02` |
 | Agent 1 branch | `arena/01a0c9d3-n8n-rust-v-4` |
 | Agent 2 branch | `arena/01a0c90d-n8n-rust-v-4` |
 | Register owner | `manager` |
@@ -27,26 +27,27 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 | `P2.14` | Memory | B | **complete** | P2.15 |
 | `P2.15` | Workspace | B | **complete** | P2.16 |
 | `P2.16` | Agent Machine / execution foundation | B | **complete** | P2.17 |
-| `P2.17` | Agent Machine Runtime Foundation | B | **in-progress** | P2.17+ |
+| `P2.17` | Agent Machine Runtime Foundation | B | **complete** | P2.18 |
+| `P2.18` | Universal Transport & Envelope Kernel | B | **in-progress** | P2.19 |
 | `P2.17+` | Later capability ladder | C-F | **planned** | — |
 
-## Current milestone boundary — P2.17
+## Current milestone boundary — P2.18
 
-**Owns:** agent-machine-runtime.mjs — bounded local execution over the 1.1.0 contract (delegates the 9 lifecycle ops, never invents close); §19 conformance test suite for patterns, concurrency, cancellation, deadline, idempotency, backpressure, isolation, events and audit; register + evidence sync; contract stays 1.1.0 frozen and ai-lego-set stays contract-only
+**Owns:** one bounded universal envelope + transport-neutral kernel so CALL/EVENT/STREAM/BATCH move through a single validated shape with backpressure; deterministic codecs with proven round-trip determinism; schema validation on entry: malformed envelopes fail closed; correlation / causation / trace / deadline / cancellation / idempotency / backpressure propagation; bounded queues with declared limits — no unbounded queue anywhere; published kernel contract(s) extending the lego.envelope / lego.interaction conventions (no internal HTTP/broker/daemon)
 
-**Does not own:** production external-agent runtime; shell, filesystem or subprocess executors; credential manager and secret handling; model inference and provider implementations; MCP, universal bridge, GitHub/Telegram integrations; Arena runtime participation; approval resolution (ai.approval stays fail-closed cancel-only)
+**Does not own:** MCP boundary (P2.20); transport adapters (P2.21); artifact / approval foundation (P2.19); model inference; distributed infrastructure; internal HTTP / broker / daemon; shell / filesystem / subprocess executors; credential manager; GitHub / Telegram integrations; Arena runtime; approval resolution runtime
 
-**Dependencies:** P2.16 Agent Machine / execution foundation
+**Dependencies:** P2.17 Agent Machine Runtime Foundation
 
-**Required gates:** node --test test/lego-agent-machine-runtime.test.mjs (focused §19); npm run lego:arch && npm run lego:arch:selftest; npm run lego:foundation && npm run lego:foundation:selftest; npm run lego:capabilities && npm run lego:scaleout; npm run lego:ai:check; focused backend/frontend/contract suites + relevant full suites (local debug only; official validation is the Windows self-hosted runner)
+**Required gates:** focused kernel suite (round-trip determinism, malformed-rejected, backpressure under load, no unbounded queue); npm run lego:arch && npm run lego:arch:selftest; npm run lego:foundation && npm run lego:foundation:selftest; npm run lego:capabilities && npm run lego:scaleout; npm run lego:ai:check; focused backend/frontend/contract suites + relevant full suites (local debug only; official validation is the Windows self-hosted runner)
 
-**Completion rule:** runtime module + §19 suite green locally; register and evidence synced; mainBaseline tracks the P2.16 merge; contract lock remains single-row 1.1.0; no close, no production runtime parts, ai-lego-set stays contract-only; PUSHED to the agent branch and PR opened (merge remains Manager-ordered)
+**Completion rule:** round-trip determinism proven, malformed envelopes rejected, backpressure observed under load, no unbounded queue anywhere; tests + gates as in P2.17; PR merged and post-merge verification passes on protected main; register completion evidence recorded and currentMilestone advanced to P2.19
 
 ## Reconciliation state
 
 - Verdict: **PENDING**
 - Conflict: —
-- Contract: ai.agent-machine@1.1.0 stays frozen; the runtime consumes the published exports without widening them
+- Contract: ai.agent-machine@1.1.0 untouched; XA-21 untouched; envelope/interaction changes stay within MINOR (additive exports/optional fields) rules of the contract lock
 - Agent: `—`
 - Reason: —
 - Required decision: —
@@ -62,22 +63,25 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 
 - Start/finish evidence is evidence, not a replacement for current state.
 - An agent branch can be implementation-complete without the milestone being complete.
-- `P2.17` requires **RECONCILIATION PASS**, **MERGE PASS**, and post-merge verification on protected main before it can become complete.
+- `P2.18` requires **RECONCILIATION PASS**, **MERGE PASS**, and post-merge verification on protected main before it can become complete.
 
 ## Manager merge protocol
 
-1. freeze protected-main baseline
-2. verify each agent branch and focused evidence
-3. reconcile backend contract and frontend consumption
-4. classify mechanical, contract, architecture and scope conflicts
-5. run shared alignment and full relevant gates
-6. record RECONCILIATION PASS
-7. validate merge candidate against protected main
-8. merge only after MERGE PASS
-9. rerun post-merge verification on main
-10. only then mark milestone complete
+1. freeze current protected-main baseline
+2. implement authorized milestone
+3. run focused and relevant full gates
+4. classify failures
+5. reconcile against latest main
+6. push branch
+7. open PR
+8. validate PR
+9. merge immediately when valid
+10. rerun post-merge verification on main
+11. record completion evidence
+12. advance currentMilestone
+13. report Manager
 
-**Agent completion is not merge approval:** true.
+**Agent completion is not merge approval:** undefined.
 
 **Failure state:** `RECONCILIATION_FAILED`
 

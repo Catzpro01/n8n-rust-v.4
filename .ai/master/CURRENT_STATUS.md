@@ -10,11 +10,11 @@ document is right and the prose is stale.
 
 | | |
 | --- | --- |
-| Protected main baseline | `f21882233c1f4efc5bfb8f3e1b5e1ad4db781d7d` |
+| Protected main baseline | `8da4d00c7e1bca7fc69a4f8d36f59c453f96ee02` |
 | Agent 1 branch | `arena/01a0c9d3-n8n-rust-v-4` |
 | Agent 2 branch | `arena/01a0c90d-n8n-rust-v-4` |
-| **Current milestone** | **P2.17** |
-| Previous completed milestone | **P2.16** |
+| **Current milestone** | **P2.18** |
+| Previous completed milestone | **P2.17** |
 | Current branch state | `arena/01a0c90d-n8n-rust-v-4` (implementation branch; not protected main) |
 | Historical reconciled state | `c1eca8cc` (historical evidence, not current main) |
 | Historical P2.11 evidence commit | `bdd0f1d2d6c8d7bc1c1ff3d881ddc2b3bd93713d` |
@@ -37,13 +37,13 @@ is the row marked as such.
 
 ## Milestone state
 
-- **Current:** `P2.17` — Agent Machine Runtime Foundation (**in-progress**)
-- **Previous complete:** `P2.16`
-- **Why next:** P2.16 Agent Machine / execution foundation
-- **Owns:** agent-machine-runtime.mjs — bounded local execution over the 1.1.0 contract (delegates the 9 lifecycle ops, never invents close); §19 conformance test suite for patterns, concurrency, cancellation, deadline, idempotency, backpressure, isolation, events and audit; register + evidence sync; contract stays 1.1.0 frozen and ai-lego-set stays contract-only
-- **Does not implement:** production external-agent runtime; shell, filesystem or subprocess executors; credential manager and secret handling; model inference and provider implementations; MCP, universal bridge, GitHub/Telegram integrations; Arena runtime participation; approval resolution (ai.approval stays fail-closed cancel-only)
-- **Next:** `P2.17+`
-- **Completion gate:** runtime module + §19 suite green locally; register and evidence synced; mainBaseline tracks the P2.16 merge; contract lock remains single-row 1.1.0; no close, no production runtime parts, ai-lego-set stays contract-only; PUSHED to the agent branch and PR opened (merge remains Manager-ordered)
+- **Current:** `P2.18` — Universal Transport & Envelope Kernel (**in-progress**)
+- **Previous complete:** `P2.17`
+- **Why next:** P2.17 Agent Machine Runtime Foundation
+- **Owns:** one bounded universal envelope + transport-neutral kernel so CALL/EVENT/STREAM/BATCH move through a single validated shape with backpressure; deterministic codecs with proven round-trip determinism; schema validation on entry: malformed envelopes fail closed; correlation / causation / trace / deadline / cancellation / idempotency / backpressure propagation; bounded queues with declared limits — no unbounded queue anywhere; published kernel contract(s) extending the lego.envelope / lego.interaction conventions (no internal HTTP/broker/daemon)
+- **Does not implement:** MCP boundary (P2.20); transport adapters (P2.21); artifact / approval foundation (P2.19); model inference; distributed infrastructure; internal HTTP / broker / daemon; shell / filesystem / subprocess executors; credential manager; GitHub / Telegram integrations; Arena runtime; approval resolution runtime
+- **Next:** `P2.19`
+- **Completion gate:** round-trip determinism proven, malformed envelopes rejected, backpressure observed under load, no unbounded queue anywhere; tests + gates as in P2.17; PR merged and post-merge verification passes on protected main; register completion evidence recorded and currentMilestone advanced to P2.19
 
 ## The 15 AI/Agent LEGO by status
 

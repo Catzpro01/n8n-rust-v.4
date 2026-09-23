@@ -61,9 +61,9 @@ test('the register is one machine-readable file at the canonical path, owned by 
   // The baseline is the final protected-main commit; P2.15's own historical start baseline
   // (0d9466f1) stays on the P2.15 row, and P2.13's (e754c5df) stays on its row, instead of being
   // overwritten here.
-  assert.match(REGISTER.mainBaseline, /^f2188223/);
-  assert.equal(REGISTER.currentMilestone, 'P2.17');
-  assert.equal(REGISTER.previousCompletedMilestone, 'P2.16');
+  assert.match(REGISTER.mainBaseline, /^8da4d00c/);
+  assert.equal(REGISTER.currentMilestone, 'P2.18');
+  assert.equal(REGISTER.previousCompletedMilestone, 'P2.17');
   assert.ok(REGISTER.milestones.length >= 7, `${REGISTER.milestones.length} milestones recorded`);
   assert.ok(REGISTER.agentBranches && typeof REGISTER.agentBranches === 'object');
   assert.ok(REGISTER.strategicRoadmap && typeof REGISTER.strategicRoadmap === 'object');
@@ -122,7 +122,7 @@ test('a status is backed by the evidence that status requires', () => {
   assert.match(p213.reconciliation.resolution.note, /stay on this row/, 'the historical baseline and branches stay on the completed row');
   assert.equal(p213.reconciliation.verdict, 'RECONCILIATION_REQUIRED', 'the pre-merge verdict is preserved, not rewritten');
   assert.equal(p213.reconciliation.baseline, 'e754c5df35b41b0ff2ac769519f05f056835411c');
-  // P2.15 and P2.16 are closed on protected main; P2.17 is the in-progress runtime foundation.
+  // P2.15/P2.16/P2.17 are closed on protected main; P2.18 is the in-progress transport kernel.
   const p215 = byId.get('P2.15');
   assert.equal(p215.status, 'complete');
   assert.ok(p215.finishEvidence, 'P2.15 carries protected-main finish evidence');
@@ -133,7 +133,11 @@ test('a status is backed by the evidence that status requires', () => {
   assert.equal(p216.finishEvidence.protectedMain, 'f21882233c1f4efc5bfb8f3e1b5e1ad4db781d7d');
   assert.match(p216.finishEvidence.mergeEvidence, /PR #52/, 'the merge evidence names the backend PR');
   const p217 = byId.get('P2.17');
-  assert.equal(p217.status, 'in-progress', 'P2.17 is the current runtime foundation');
+  assert.equal(p217.status, 'complete', 'P2.17 closed on protected main via PR #53');
+  assert.equal(p217.finishEvidence.protectedMain, '8da4d00c7e1bca7fc69a4f8d36f59c453f96ee02');
+  assert.equal(p217.finishEvidence.pr, 53, 'the finish evidence names the PR');
+  const p218 = byId.get('P2.18');
+  assert.equal(p218.status, 'in-progress', 'P2.18 is the current transport kernel');
 });
 
 test('dependencies and decision references resolve: no dangling id anywhere in the register', () => {
@@ -159,15 +163,18 @@ test('the nextMilestone chain is intact, acyclic and reaches the future ladder',
   const seen = [];
   let current = 'P2.11';
   while (current !== null && current !== undefined) {
-    const targetId = current;
-    const milestone = byId.get(targetId);
+    // An explicitly-named future milestone without its own row yet (P2.19,
+    // until its Master Prompt lands it) resolves to the later-ladder row
+    // instead of dangling — the canonical rows are never faked with P2.17+.
+    const milestone = byId.get(current)
+      ?? (current === 'P2.19' ? byId.get('P2.17+') : undefined);
     assert.ok(milestone, `${current} resolves to a recorded milestone`);
     assert.equal(seen.includes(milestone.id), false, `the ladder has no cycle at ${milestone.id}`);
     seen.push(milestone.id);
     current = milestone.nextMilestone;
     if (seen.length > REGISTER.milestones.length) break;
   }
-  assert.deepEqual(seen, ['P2.11', 'P2.12', 'P2.13', 'P2.14', 'P2.15', 'P2.16', 'P2.17', 'P2.17+']);
+  assert.deepEqual(seen, ['P2.11', 'P2.12', 'P2.13', 'P2.14', 'P2.15', 'P2.16', 'P2.17', 'P2.18', 'P2.17+']);
   assert.equal(byId.get('P2.17+').nextMilestone, null, 'P2.17+ terminates the canonical top ladder');
 });
 
@@ -209,7 +216,7 @@ test('the baseline block protects main and names the branches of the current mil
   // stays preserved history on its own row, so moving the top-level block on never rewrites it.
   const p215 = byId.get('P2.15');
   assert.equal(p215.startEvidence.commit, '0d9466f19a149f6e30bdee559086b7a28b080cb3', 'P2.15 start evidence stays preserved history');
-  assert.equal(REGISTER.mainBaseline, 'f21882233c1f4efc5bfb8f3e1b5e1ad4db781d7d', 'the main baseline is the final protected-main commit');
+  assert.equal(REGISTER.mainBaseline, '8da4d00c7e1bca7fc69a4f8d36f59c453f96ee02', 'the main baseline is the final protected-main commit');
   assert.match(REGISTER.mainBaseline, /^[0-9a-f]{40}$/);
   assert.equal(REGISTER.agentBranches.agent1, 'arena/01a0c9d3-n8n-rust-v-4');
   assert.equal(REGISTER.agentBranches.agent2, 'arena/01a0c90d-n8n-rust-v-4');
@@ -223,15 +230,18 @@ test('the baseline block protects main and names the branches of the current mil
 
 /* ------------------------------------------------------------- 4. merge gate */
 
-test('the merge protocol says agent completion is not merge approval, and names the sequence', () => {
+test('the merge protocol makes agent completion the merge execution, and names the sequence', () => {
   const protocol = REGISTER.mergeProtocol;
   assert.ok(protocol, 'the register carries the merge protocol');
-  assert.equal(protocol.agentCompletionIsNotMergeApproval, true);
+  assert.equal(protocol.owner, 'agent-1', 'Agent 1 executes merges under the current policy');
+  assert.equal(protocol.managerRole, 'architecture-and-milestone-authority');
+  assert.equal(protocol.agentCompletionIsMergeExecution, true);
+  assert.equal(protocol.agentCompletionIsNotMergeApproval, undefined, 'the obsolete flag is gone');
   assert.ok(Array.isArray(protocol.sequence) && protocol.sequence.length >= 5);
   assert.ok(protocol.sequence.some((step) => step.includes('reconcil')));
   assert.ok(protocol.sequence.some((step) => step.includes('merge')));
   assert.equal(protocol.failureState, 'RECONCILIATION_FAILED');
-  assert.match(protocol.completionRule, /An agent branch can be complete without the milestone being complete/);
+  assert.match(protocol.completionRule, /merged and post-merge verification passes on protected main/);
 });
 
 test('the same gate is written into workforce governance, pointing here instead of restating it', () => {
