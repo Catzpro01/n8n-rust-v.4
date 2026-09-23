@@ -317,6 +317,7 @@ A domain that publishes several contracts names its **primary** one
 | date | contract | version | change |
 | :--- | :--- | :--- | :--- |
 | 2026-09-23 | `observability.envelope` | 1.0.0 | P9.1: bounded native envelope and reusable correlation context, exact-version canonical codec, secret-field exclusion; product owner agent-6, implementation delegate Agent 4 (#101). No producer/runtime wiring. |
+| 2026-09-23 | `execution.optimizer` | 1.0.0 | P3 Slice K: initial lock of the execution optimizer — semantics-safe fusion (pure whitelist + single-consumer/single-dep) and exact-fingerprint node-result cache; opt-in transforms, elimination/canonical identity stays in execution.ir (Issue #97) |
 | 2026-09-23 | `execution.guard` | 1.0.0 | P3 Slice M: initial lock of the resource guard — six mandatory budgets, five priority lanes, three-tier pressure, admit/defer/reject with no clock (Issues #75/#79) |
 | 2026-09-23 | `compatibility.oracle` | 1.0.0 | P3 Slice L: initial lock of the compatibility oracle — four Issue #91 modes, nine canonical observables, fail-closed equivalence, bounded #91(c) toggle sweep with identity recovery; zero-import (Issue #91) |
 | 2026-09-23 | `execution.ir` | 1.0.0 | P3 Slice J: initial lock of the execution IR — raw compile, independently disableable optimizations (#91(c): noopPassthrough/dedupeDeps, all-off = canonical identity), bounded LRU cache; zero-import (Issues #75/#91) |

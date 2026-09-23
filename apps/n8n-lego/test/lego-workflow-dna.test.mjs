@@ -65,7 +65,7 @@ test('the lock row is the thirty-sixth: workflow.dna@0.1.0, owner agent-1, expor
   const row = ROWS.find((r) => r.id === 'workflow.dna');
   assert.ok(row, 'workflow.dna is locked');
   // P9.1 adds exactly one published row: observability.envelope (39 -> 40).
-  assert.equal(ROWS.length, 40, 'P3 Slice H adds the thirty-sixth (workflow.dna); P3 Slice J adds the thirty-seventh (execution.ir); P3 Slice L adds the thirty-eighth (compatibility.oracle); P3 Slice M adds the thirty-ninth (execution.guard) — count-pins say 39');
+  assert.equal(ROWS.length, 41, 'P3 Slice H adds the thirty-sixth (workflow.dna); P3 Slice J adds the thirty-seventh (execution.ir); P3 Slice L adds the thirty-eighth (compatibility.oracle); P3 Slice M adds the thirty-ninth (execution.guard) ; P3 Slice K the forty-first (execution.optimizer) — count-pins say 41');
   assert.equal(row.owner, 'agent-1');
   assert.equal(row.domain, 'workflow');
   assert.equal(row.version, '0.1.0', 'R9: workflow domain contract 0.1.0');

@@ -1607,6 +1607,37 @@
         "apps/n8n-lego/test/lego-telemetry-envelope.test.mjs"
       ],
       "notes": "P9.1 envelope only; Agent 4 implementation delegate per Issue #101. No production producer wired; no P3/P4/P6/P8 dependency added."
+    },
+    {
+      "id": "execution.optimizer",
+      "owner": "agent-1",
+      "domain": "execution",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/execution-optimizer.mjs"
+      ],
+      "exports": {
+        "src/lego/execution-optimizer.mjs": [
+          "EXECUTION_OPTIMIZER_CONTRACT",
+          "EXECUTION_OPTIMIZER_CONTRACT_VERSION",
+          "OPTIMIZER_PURE_TYPES",
+          "OPTIMIZER_TRANSFORMS",
+          "ExecutionOptimizerError",
+          "fusionPlan",
+          "applyFusion",
+          "createNodeResultCache"
+        ]
+      },
+      "consumers": [
+        "execution IR pipeline (#97 execution IR/compiler) — fusion operates on compiled IR, never the canonical definition",
+        "compatibility oracle (#91) — toggleSweep({toggleNames: [fusion]}) proves enable/disable equivalence",
+        "node-result cache for proven-pure types only — exact-fingerprint semantics-safe caching"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-execution-optimizer.test.mjs"
+      ],
+      "notes": "P3 Slice K: semantics-safe fusion (pure whitelist, single-consumer/single-dep, head-ward rewire) + exact-fingerprint bounded node-result cache; defaults off, transforms opt-in; elimination/canonical identity stays in execution.ir (Issue #97 scope wording \"where proven\")"
     }
   ]
 }

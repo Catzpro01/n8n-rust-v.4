@@ -71,7 +71,7 @@ test('the contract string is the exact locked identity — row 29, domain ai-fou
   assert.equal(LOCK_ROW.domain, 'ai-foundation');
   assert.equal(LOCK_ROW.owner, 'manager');
   // P9.1 adds exactly one published row: observability.envelope (39 -> 40).
-  assert.equal(LOCK.contracts.length, 40, 'rows through P3 Slice A persistent logical graph (thirty-third); P3 Slice D adds the thirty-fourth (execution.frontier); P3 Slice E adds the thirty-fifth (execution.state-stream); P3 Slice H adds the thirty-sixth (workflow.dna); P3 Slice J the thirty-seventh (execution.ir); P3 Slice L the thirty-eighth (compatibility.oracle); P3 Slice M the thirty-ninth (execution.guard)');
+  assert.equal(LOCK.contracts.length, 41, 'rows through P3 Slice A persistent logical graph (thirty-third); P3 Slice D adds the thirty-fourth (execution.frontier); P3 Slice E adds the thirty-fifth (execution.state-stream); P3 Slice H adds the thirty-sixth (workflow.dna); P3 Slice J the thirty-seventh (execution.ir); P3 Slice L the thirty-eighth (compatibility.oracle); P3 Slice M the thirty-ninth (execution.guard); P3 Slice K the forty-first (execution.optimizer)');
   // primary contract of ai-foundation stays ai.foundation (R9 — usage is a sibling row)
   assert.equal(AI_FOUNDATION.contract.id, 'ai.foundation');
 });

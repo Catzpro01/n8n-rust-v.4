@@ -2947,7 +2947,8 @@
         "src/lego/bounded-frontier.mjs",
         "src/lego/state-stream.mjs",
         "src/lego/execution-ir.mjs",
-        "src/lego/resource-guard.mjs"
+        "src/lego/resource-guard.mjs",
+        "src/lego/execution-optimizer.mjs"
       ],
       "public": [],
       "dependsOn": [
