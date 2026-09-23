@@ -61,9 +61,9 @@ test('the register is one machine-readable file at the canonical path, owned by 
   // The baseline is the final protected-main commit; P2.15's own historical start baseline
   // (0d9466f1) stays on the P2.15 row, and P2.13's (e754c5df) stays on its row, instead of being
   // overwritten here.
-  assert.match(REGISTER.mainBaseline, /^b3bdaab9/);
-  assert.equal(REGISTER.currentMilestone, 'P2.19');
-  assert.equal(REGISTER.previousCompletedMilestone, 'P2.18');
+  assert.match(REGISTER.mainBaseline, /^393622e3/);
+  assert.equal(REGISTER.currentMilestone, 'P2.20');
+  assert.equal(REGISTER.previousCompletedMilestone, 'P2.19');
   assert.ok(REGISTER.milestones.length >= 7, `${REGISTER.milestones.length} milestones recorded`);
   assert.ok(REGISTER.agentBranches && typeof REGISTER.agentBranches === 'object');
   assert.ok(REGISTER.strategicRoadmap && typeof REGISTER.strategicRoadmap === 'object');
@@ -141,7 +141,11 @@ test('a status is backed by the evidence that status requires', () => {
   assert.equal(p218.finishEvidence.protectedMain, 'b3bdaab907142fa8ee2753badcb615c0b305d9fa');
   assert.equal(p218.finishEvidence.pr, 54, 'the finish evidence names the PR');
   const p219 = byId.get('P2.19');
-  assert.equal(p219.status, 'in-progress', 'P2.19 is the current artifact/approval/audit foundation');
+  assert.equal(p219.status, 'complete', 'P2.19 closed on protected main via PR #56');
+  assert.equal(p219.finishEvidence.protectedMain, '393622e3d2b0b070884d7cb74502908b64a6e252');
+  assert.equal(p219.finishEvidence.pr, 56, 'the finish evidence names the PR');
+  const p220 = byId.get('P2.20');
+  assert.equal(p220.status, 'in-progress', 'P2.20 is the current MCP vs agent control boundary');
 });
 
 test('dependencies and decision references resolve: no dangling id anywhere in the register', () => {
@@ -178,7 +182,7 @@ test('the nextMilestone chain is intact, acyclic and reaches the future ladder',
     current = milestone.nextMilestone;
     if (seen.length > REGISTER.milestones.length) break;
   }
-  assert.deepEqual(seen, ['P2.11', 'P2.12', 'P2.13', 'P2.14', 'P2.15', 'P2.16', 'P2.17', 'P2.18', 'P2.19', 'P2.17+']);
+  assert.deepEqual(seen, ['P2.11', 'P2.12', 'P2.13', 'P2.14', 'P2.15', 'P2.16', 'P2.17', 'P2.18', 'P2.19', 'P2.20', 'P2.17+']);
   assert.equal(byId.get('P2.17+').nextMilestone, null, 'P2.17+ terminates the canonical top ladder');
 });
 
@@ -220,7 +224,7 @@ test('the baseline block protects main and names the branches of the current mil
   // stays preserved history on its own row, so moving the top-level block on never rewrites it.
   const p215 = byId.get('P2.15');
   assert.equal(p215.startEvidence.commit, '0d9466f19a149f6e30bdee559086b7a28b080cb3', 'P2.15 start evidence stays preserved history');
-  assert.equal(REGISTER.mainBaseline, 'b3bdaab907142fa8ee2753badcb615c0b305d9fa', 'the main baseline is the final protected-main commit');
+  assert.equal(REGISTER.mainBaseline, '393622e3d2b0b070884d7cb74502908b64a6e252', 'the main baseline is the final protected-main commit');
   assert.match(REGISTER.mainBaseline, /^[0-9a-f]{40}$/);
   assert.equal(REGISTER.agentBranches.agent1, 'arena/01a0c9d3-n8n-rust-v-4');
   assert.equal(REGISTER.agentBranches.agent2, 'arena/01a0c90d-n8n-rust-v-4');

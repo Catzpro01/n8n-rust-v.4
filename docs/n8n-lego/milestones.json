@@ -4,9 +4,9 @@
   "canonical": true,
   "purpose": "Granular milestone truth beneath the strategic Phase A-F roadmap. This is the only machine-readable milestone register. Future milestone IDs may be refined by Manager only by updating this file; strategic phases are not deleted.",
   "protectedBranch": "main",
-  "mainBaseline": "b3bdaab907142fa8ee2753badcb615c0b305d9fa",
-  "currentMilestone": "P2.19",
-  "previousCompletedMilestone": "P2.18",
+  "mainBaseline": "393622e3d2b0b070884d7cb74502908b64a6e252",
+  "currentMilestone": "P2.20",
+  "previousCompletedMilestone": "P2.19",
   "strategicRoadmap": {
     "source": "apps/n8n-lego/src/lego/manifest/ai-lego-set.json",
     "preservePhases": [
@@ -970,7 +970,7 @@
       "id": "P2.19",
       "title": "Artifact, Approval & Audit Foundation",
       "phase": "B",
-      "status": "in-progress",
+      "status": "complete",
       "owner": "manager",
       "backendOwner": "per milestone assignment",
       "frontendOwner": "agent-1",
@@ -1006,7 +1006,12 @@
         "commit": "b3bdaab907142fa8ee2753badcb615c0b305d9fa",
         "role": "protected main after P2.18 merge and verification"
       },
-      "finishEvidence": null,
+      "finishEvidence": {
+        "protectedMain": "393622e3d2b0b070884d7cb74502908b64a6e252",
+        "pr": 56,
+        "mergeCommit": "393622e3d2b0b070884d7cb74502908b64a6e252",
+        "role": "post-merge verified protected-main completion"
+      },
       "currentCommitReference": "arena/01a0c9d3-n8n-rust-v-4",
       "nextMilestone": "P2.20",
       "nonScope": [
@@ -1023,12 +1028,88 @@
       "reconciliation": {
         "state": "scoped at P2.19 start against protected main b3bdaab907142fa8ee2753badcb615c0b305d9fa; owners and detail refined by the Master Prompt P2.19 when issued",
         "contract": "artifact + approval contract publication (currently contract-only capabilities); ai.agent-machine@1.1.0 untouched; XA-21 untouched",
+        "owner": "agent-1",
+        "historical": true,
+        "resolution": {
+          "resolvedAt": "2026-09-23",
+          "note": "PR #56 merged to protected main as 393622e3; the historical start baseline b3bdaab9 stays on this row"
+        }
+      },
+      "verificationEvidence": {
+        "local": "post-merge on 393622e3: 7/7 gates, artifact/approval/audit 40/40, P2.17 regression 83/83, P2.18 regression 91/91, guards clean (agent-machine/XA-21/capabilities/crates/envelope/interaction untouched)",
+        "official": "PENDING — official validation surface remains the GitHub Actions self-hosted Windows runner on PR #56; local post-merge on 393622e3 PASS (debug evidence, not official sign-off)",
+        "evidencePath": "docs/n8n-lego/evidence/P2.19-ARTIFACT-APPROVAL-AUDIT-EVIDENCE.md"
+      }
+    },
+    {
+      "id": "P2.20",
+      "title": "MCP vs Agent Control Boundary",
+      "phase": "C",
+      "status": "in-progress",
+      "owner": "manager",
+      "backendOwner": "per milestone assignment",
+      "frontendOwner": "agent-1",
+      "dependencies": [
+        "P2.18 Universal Transport & Envelope Kernel",
+        "P2.19 Artifact, Approval & Audit Foundation"
+      ],
+      "inputs": [
+        "P2.18 transport kernel conventions",
+        "P2.19 artifact / approval / audit foundations",
+        "MCP boundary declaration contract (server implementations stay P3/FUTURE)"
+      ],
+      "deliverables": [
+        "MCP vs agent-control boundary declaration: where interoperability ends and agent control authority begins",
+        "declared state machine for permission-required / exposed / blocked — never implicit authority",
+        "explicit permission gates",
+        "fail-closed refusal of unknown servers and capabilities",
+        "control plane never delegates to MCP implicitly (no transport claim)"
+      ],
+      "implementationBoundary": "Boundary declaration and vocabulary only: four declared MCP states, explicit permission gates, no transport claim, no MCP server/client implementation (P3/FUTURE). Extends existing conventions; agent control authority is never inferred or delegated implicitly.",
+      "testsGates": [
+        "boundary tests prove refusal of undeclared servers",
+        "authority is never inferred in tests",
+        "vocabulary quoted with provenance",
+        "no network in tests",
+        "full gates: arch+selftest, foundation+selftest, capabilities, scaleout, ai:check, full backend/frontend suites"
+      ],
+      "decisionDependencies": [
+        "MCP boundary vocabulary",
+        "permission gate semantics"
+      ],
+      "completionCriteria": [
+        "all four roadmap acceptance items hold",
+        "PR merged and post-merge verification passes on protected main",
+        "register completion evidence recorded and currentMilestone advanced to P2.21"
+      ],
+      "startEvidence": {
+        "commit": "393622e3d2b0b070884d7cb74502908b64a6e252",
+        "role": "protected main after P2.19 merge and verification"
+      },
+      "finishEvidence": null,
+      "currentCommitReference": "arena/01a0c9d3-n8n-rust-v-4",
+      "nextMilestone": "P2.21",
+      "nonScope": [
+        "actual MCP server/client implementation (P3/FUTURE)",
+        "GitHub provider (P2.26)",
+        "transport adapters (P2.21)",
+        "node compatibility & portability (P2.22)",
+        "node creator & translation (P2.23)",
+        "model inference",
+        "distributed infrastructure",
+        "shell / filesystem / subprocess executors",
+        "credential manager",
+        "Arena runtime"
+      ],
+      "reconciliation": {
+        "state": "scoped at P2.20 start against protected main 393622e3d2b0b070884d7cb74502908b64a6e252; owners and detail refined by the Master Prompt P2.20 when issued",
+        "contract": "MCP boundary declaration only; ai.agent-machine@1.1.0, ai.artifact/approval/audit@1.0.0, lego.transport-kernel@1.0.0, XA-21 all untouched",
         "owner": "agent-1"
       },
       "verificationEvidence": {
         "local": "recorded in the milestone evidence file when implementation runs",
         "official": "PENDING — official validation only via the installed GitHub Actions self-hosted Windows runner on the PR",
-        "evidencePath": "docs/n8n-lego/evidence/P2.19-ARTIFACT-APPROVAL-AUDIT-EVIDENCE.md"
+        "evidencePath": "docs/n8n-lego/evidence/P2.20-MCP-CONTROL-BOUNDARY-EVIDENCE.md"
       }
     },
     {

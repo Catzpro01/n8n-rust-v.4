@@ -1391,7 +1391,7 @@ test('the milestone register records P2.15 as complete on protected main and P2.
   // P2.15's start baseline stays preserved history on the P2.15 row; the top-level baseline moved
   // on to the final protected-main commit when P2.16 became the current milestone.
   assert.equal(p215.startEvidence.commit, '0d9466f19a149f6e30bdee559086b7a28b080cb3', 'P2.15 start baseline is preserved history');
-  assert.equal(MILESTONES.mainBaseline, 'b3bdaab907142fa8ee2753badcb615c0b305d9fa', 'the baseline is the final protected-main commit');
+  assert.equal(MILESTONES.mainBaseline, '393622e3d2b0b070884d7cb74502908b64a6e252', 'the baseline is the final protected-main commit');
   const p216 = byId.get('P2.16');
   assert.equal(p216.status, 'complete');
   assert.ok(p216.finishEvidence, 'P2.16 carries protected-main finish evidence after the PR #52 merge');
@@ -1435,7 +1435,7 @@ test('the register keeps the strategic phases, the ladder and the merge protocol
   assert.ok(memoryLadder, 'the ladder still names Memory');
   assert.equal(memoryLadder.id, 'P2.14');
   assert.equal(memoryLadder.status, 'complete', `the register carries Memory's real status ("${memoryLadder.status}")`);
-  assert.equal(MILESTONES.currentMilestone, 'P2.19', `currentMilestone follows the reconciliation ("${MILESTONES.currentMilestone}")`);
+  assert.equal(MILESTONES.currentMilestone, 'P2.20', `currentMilestone follows the reconciliation ("${MILESTONES.currentMilestone}")`);
   // The merge protocol: agent completion IS merge execution under the current policy.
   const protocol = MILESTONES.mergeProtocol;
   assert.equal(protocol.owner, 'agent-1');
@@ -1456,9 +1456,9 @@ test('the register keeps the strategic phases, the ladder and the merge protocol
   assert.ok(govProtocol.gates.some((g) => g.id === 'MERGE PASS'));
   assert.equal(govProtocol.failureState, 'RECONCILIATION_FAILED');
   // Top-level canonical truth:
-  assert.equal(MILESTONES.currentMilestone, 'P2.19');
-  assert.equal(MILESTONES.previousCompletedMilestone, 'P2.18');
-  assert.equal(MILESTONES.mainBaseline, 'b3bdaab907142fa8ee2753badcb615c0b305d9fa');
+  assert.equal(MILESTONES.currentMilestone, 'P2.20');
+  assert.equal(MILESTONES.previousCompletedMilestone, 'P2.19');
+  assert.equal(MILESTONES.mainBaseline, '393622e3d2b0b070884d7cb74502908b64a6e252');
   assert.equal(MILESTONES.strategicRoadmap.source, 'apps/n8n-lego/src/lego/manifest/ai-lego-set.json');
   assert.equal(MILESTONES.protectedBranch, 'main');
 });
