@@ -4447,7 +4447,7 @@
       "owner": "agent-6",
       "kind": "domain",
       "status": "contract-only",
-      "phase": "P9.7",
+      "phase": "P9.8",
       "errorNamespace": "observability",
       "paths": [
         "src/lego/telemetry-envelope.mjs",
@@ -4456,7 +4456,8 @@
         "src/lego/trace-context.mjs",
         "src/lego/semantic-events.mjs",
         "src/lego/telemetry-buffer.mjs",
-        "src/lego/telemetry-redaction.mjs"
+        "src/lego/telemetry-redaction.mjs",
+        "src/lego/telemetry-sampling.mjs"
       ],
       "public": [
         "src/lego/telemetry-envelope.mjs",
@@ -4465,7 +4466,8 @@
         "src/lego/trace-context.mjs",
         "src/lego/semantic-events.mjs",
         "src/lego/telemetry-buffer.mjs",
-        "src/lego/telemetry-redaction.mjs"
+        "src/lego/telemetry-redaction.mjs",
+        "src/lego/telemetry-sampling.mjs"
       ],
       "dependsOn": [
         "platform-kernel",
@@ -4479,7 +4481,7 @@
         "legacy-rest"
       ],
       "contract": {
-        "version": "1.6.0",
+        "version": "1.7.0",
         "tests": [
           "apps/n8n-lego/test/lego-telemetry-envelope.test.mjs",
           "apps/n8n-lego/test/lego-structured-log.test.mjs",
@@ -4487,7 +4489,8 @@
           "apps/n8n-lego/test/lego-trace-context.test.mjs",
           "apps/n8n-lego/test/lego-semantic-events.test.mjs",
           "apps/n8n-lego/test/lego-telemetry-buffer.test.mjs",
-          "apps/n8n-lego/test/lego-telemetry-redaction.test.mjs"
+          "apps/n8n-lego/test/lego-telemetry-redaction.test.mjs",
+          "apps/n8n-lego/test/lego-telemetry-sampling.test.mjs"
         ]
       },
       "capabilities": [

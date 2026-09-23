@@ -2376,6 +2376,29 @@
       ]
     },
     {
+      "id": "observability.telemetry-sampling",
+      "version": "1.0.0",
+      "owner": "agent-6",
+      "domain": "observability",
+      "surface": [
+        "src/lego/telemetry-sampling.mjs"
+      ],
+      "exports": {
+        "src/lego/telemetry-sampling.mjs": [
+          "SAMPLING_CONTRACT",
+          "SAMPLING_MODES",
+          "SAMPLING_MODE_DESCRIPTIONS",
+          "SAMPLING_DECISIONS",
+          "SAMPLING_REASONS",
+          "SAMPLING_LIMITS",
+          "createTelemetrySampler"
+        ]
+      },
+      "tests": [
+        "apps/n8n-lego/test/lego-telemetry-sampling.test.mjs"
+      ]
+    },
+    {
       "id": "node.supply-chain",
       "owner": "manager",
       "domain": "node-registry",

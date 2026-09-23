@@ -7,7 +7,7 @@
 | --- | --- |
 | Owner | `agent-6` |
 | Kind / tier | `domain` / `domain` |
-| Status | `contract-only` (phase `P9.7`) |
+| Status | `contract-only` (phase `P9.8`) |
 | Parent | _root_ |
 | Contract | _none declared_ |
 | Error namespace | `observability` |
@@ -27,6 +27,7 @@
 - `src/lego/semantic-events.mjs`
 - `src/lego/telemetry-buffer.mjs`
 - `src/lego/telemetry-redaction.mjs`
+- `src/lego/telemetry-sampling.mjs`
 
 ## Public contract surface
 
@@ -37,6 +38,7 @@
 - `src/lego/semantic-events.mjs`
 - `src/lego/telemetry-buffer.mjs`
 - `src/lego/telemetry-redaction.mjs`
+- `src/lego/telemetry-sampling.mjs`
 
 ## May call
 
@@ -71,3 +73,4 @@
 - `apps/n8n-lego/test/lego-semantic-events.test.mjs`
 - `apps/n8n-lego/test/lego-telemetry-buffer.test.mjs`
 - `apps/n8n-lego/test/lego-telemetry-redaction.test.mjs`
+- `apps/n8n-lego/test/lego-telemetry-sampling.test.mjs`

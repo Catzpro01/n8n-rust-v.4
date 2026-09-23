@@ -248,7 +248,7 @@ test('P9.7 source stays pure: no I/O, no clock; locked row documents the boundar
     'redactTelemetryTree', 'redactForExport', 'containsSecretShape',
   ]);
   assert.deepEqual(row.tests, ['apps/n8n-lego/test/lego-telemetry-redaction.test.mjs']);
-  assert.equal(lock.contracts.length, 60); // count-pins say 60 // P9.7 adds observability.telemetry-redaction=60
+  assert.equal(lock.contracts.length, 61); // P9.8 adds observability.telemetry-sampling@1.0.0; count-pins say 61 // P9.7 adds observability.telemetry-redaction=60
   const doc = readFileSync(new URL('../../../docs/architecture/p9/P9.7-REDACTION.md', import.meta.url), 'utf8');
   assert.match(doc, /PUBLIC_DIAGNOSTIC/);
   assert.match(doc, /FORBIDDEN/);
