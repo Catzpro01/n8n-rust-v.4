@@ -316,6 +316,9 @@ A domain that publishes several contracts names its **primary** one
 
 | date | contract | version | change |
 | :--- | :--- | :--- | :--- |
+| 2026-09-23 | `ai.artifact` | 1.0.0 | P2.19: initial lock of the opaque reference-only artifact foundation (create/read + lifecycle) |
+| 2026-09-23 | `ai.approval` | 1.0.0 | P2.19: initial lock of the fail-closed approval foundation (request/resolve/inspect + waiting resolution) |
+| 2026-09-23 | `ai.audit` | 1.0.0 | P2.19: initial lock of the bounded structured audit foundation (record/list) |
 | 2026-09-23 | `lego.envelope` | 1.1.0 | P2.18: add optional `causationId` envelope field (MINOR, additive) |
 | 2026-09-23 | `lego.interaction` | 1.1.0 | P2.18: export `BATCH_LIMITS`; bound buffer/block past highWaterMark (MINOR, additive) |
 | 2026-09-23 | `lego.transport-kernel` | 1.0.0 | P2.18: lock the deterministic message codec (`encodeMessage`/`decodeMessage`/`validateEnvelope`/`KERNEL_LIMITS`) |

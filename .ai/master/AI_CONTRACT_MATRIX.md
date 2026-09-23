@@ -24,8 +24,8 @@
 | **Capability** | `lego.negotiation` | locked @ 1.0.0 | IMPLEMENTED | lego.domain-registry@1.1.0, lego.negotiation@1.0.0 | `lego-capability-contract.test.mjs`; `lego-communication.test.mjs`; `lego-foundation.test.mjs` |
 | **MCP Adapter** | `ai.tool-gateway` | declared in `ai-foundation` | CONTRACT-ONLY | publicationPending | `lego-ai-foundation.test.mjs (boundary rules)`; planned: adapter conformance, lazy discovery bounds |
 | **Runtime Adapter** | `ai.agent-runtime` | declared in `ai-foundation` | CONTRACT-ONLY | ai.agent-runtime@1.0.0 | `lego-ai-foundation.test.mjs`; planned: adapter conformance per runtime |
-| **Artifact** | `ai.artifact` | declared in `ai-foundation` | CONTRACT-ONLY | ai.artifact@1.0.0 | `lego-ai-foundation.test.mjs` |
-| **Approval** | `ai.approval` | declared in `ai-foundation` | CONTRACT-ONLY | ai.approval@1.0.0 | `lego-ai-foundation.test.mjs (fail-closed proven)` |
+| **Artifact** | `ai.artifact` | locked @ 1.0.0 | CONTRACT-ONLY | ai.artifact@1.0.0 | `lego-ai-foundation.test.mjs` |
+| **Approval** | `ai.approval` | locked @ 1.0.0 | CONTRACT-ONLY | ai.approval@1.0.0 | `lego-ai-foundation.test.mjs (fail-closed proven)` |
 | **Agent Event & Work Trace** | `ai.agent-events` | declared in `ai-foundation` | CONTRACT-ONLY | ai.agent-events@1.0.0 | `lego-ai-foundation.test.mjs` |
 | **Token & Usage** | `ai.token-usage` | **publicationPending** | PLANNED | publicationPending | planned: reported-vs-estimated labelling, budget enforcement |
 
@@ -51,6 +51,9 @@ changed; the owner and the decision reference are recorded instead.
 | `ai.memory` | 1.0.0 | `manager` | implemented |
 | `ai.workspace` | 1.0.0 | `manager` | implemented |
 | `ai.agent-machine` | 1.1.0 | `manager` | implemented |
+| `ai.artifact` | 1.0.0 | `manager` | implemented |
+| `ai.approval` | 1.0.0 | `manager` | implemented |
+| `ai.audit` | 1.0.0 | `manager` | implemented |
 
 ## Operation coverage
 

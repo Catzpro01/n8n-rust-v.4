@@ -29,6 +29,9 @@
 - `src/lego/agent-session.mjs`
 - `src/lego/agent-machine.mjs`
 - `src/lego/manifest/agent-machine.json`
+- `src/lego/artifact.mjs`
+- `src/lego/approval.mjs`
+- `src/lego/audit.mjs`
 
 ## Public contract surface
 

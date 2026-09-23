@@ -4,7 +4,7 @@
   "owner": "manager",
   "status": "in-progress",
   "description": "The fifteen OFFICIAL AI/Agent LEGO. This file is the single authoritative declaration of the AI/Agent LEGO set: every generated master document is produced from it. It declares responsibilities, boundaries and roadmap. It implements nothing.",
-  "setRule": "These fifteen are official LEGO. They are not collapsed into one AI module, and no sixteenth top-level LEGO is created merely because a feature exists \u2014 a new feature is a sub-LEGO, a capability or an operation of an existing LEGO unless it owns a genuinely distinct lifecycle and data set.",
+  "setRule": "These fifteen are official LEGO. They are not collapsed into one AI module, and no sixteenth top-level LEGO is created merely because a feature exists — a new feature is a sub-LEGO, a capability or an operation of an existing LEGO unless it owns a genuinely distinct lifecycle and data set.",
   "statusVocabulary": {
     "implemented": "Code exists, runs and is covered by tests.",
     "contract-only": "The contract is fixed and testable; no implementation exists.",
@@ -273,10 +273,10 @@
         "released"
       ],
       "disclosureLevels": {
-        "L0": "identity \u2014 id, title, one line. Always cheap to list.",
-        "L1": "card \u2014 when to use it, what it needs, what it produces.",
-        "L2": "procedure \u2014 the steps.",
-        "L3": "deep knowledge \u2014 references, examples, edge cases."
+        "L0": "identity — id, title, one line. Always cheap to list.",
+        "L1": "card — when to use it, what it needs, what it produces.",
+        "L2": "procedure — the steps.",
+        "L3": "deep knowledge — references, examples, edge cases."
       },
       "disclosureRule": "A skill is selected on L0/L1 and only then loaded deeper. Loading every skill's L3 into context is how a context window is exhausted before any work starts.",
       "operations": [
@@ -311,8 +311,8 @@
         "D: authoring",
         "E: skill packs"
       ],
-      "versioningNote": "Published in P2.12. The REGISTRY is implemented: registration, validation, lazy discovery and the six-state lifecycle are real, tested code declared as capability ai.skill on the ai-foundation domain. Skills remain declarative documents \u2014 nothing executes a procedure.",
-      "phaseNote": "Phase B, delivered in repository phase P2.12 \u2014 the skill registry only. Memory, Workspace and the agent loop remain planned."
+      "versioningNote": "Published in P2.12. The REGISTRY is implemented: registration, validation, lazy discovery and the six-state lifecycle are real, tested code declared as capability ai.skill on the ai-foundation domain. Skills remain declarative documents — nothing executes a procedure.",
+      "phaseNote": "Phase B, delivered in repository phase P2.12 — the skill registry only. Memory, Workspace and the agent loop remain planned."
     },
     {
       "id": "agent-machine",
@@ -434,7 +434,7 @@
       "owner": "manager",
       "status": "implemented",
       "phase": "B",
-      "mission": "Own persistent knowledge as a traversable graph \u2014 not the current context window.",
+      "mission": "Own persistent knowledge as a traversable graph — not the current context window.",
       "distinction": "Memory is persistent knowledge. Context is what is loaded right now. Conflating them produces a system that either forgets everything or loads everything.",
       "scope": [
         "memory graph",
@@ -642,7 +642,7 @@
       "owner": "manager",
       "status": "in-progress",
       "phase": "A",
-      "mission": "Own the distinction between conversation, session, context window, memory and execution \u2014 and manage rollover before a limit is hit.",
+      "mission": "Own the distinction between conversation, session, context window, memory and execution — and manage rollover before a limit is hit.",
       "distinction": "Conversation != Session != Context Window != Memory != Execution. One conversation may contain many sessions and many context windows.",
       "scope": [
         "context scopes",
@@ -696,7 +696,7 @@
         "unresolvedQuestions",
         "compressedHistory"
       ],
-      "rolloverRule": "Never wait for the exact context limit. Rollover is triggered at a declared threshold, because a rollover attempted at 100% has no room left to write the continuation package \u2014 the one operation that makes the rollover survivable.",
+      "rolloverRule": "Never wait for the exact context limit. Rollover is triggered at a declared threshold, because a rollover attempted at 100% has no room left to write the continuation package — the one operation that makes the rollover survivable.",
       "operations": [
         "load",
         "compact",
@@ -742,7 +742,7 @@
       "owner": "manager",
       "status": "planned",
       "phase": "D",
-      "mission": "Own translation, detection, localization and normalization as a capability \u2014 not merely a UI dictionary.",
+      "mission": "Own translation, detection, localization and normalization as a capability — not merely a UI dictionary.",
       "scope": [
         "translation",
         "language detection",
@@ -860,7 +860,7 @@
         "install",
         "activate"
       ],
-      "rustRule": "Rust/WASM is one strategy among twelve. It must never be selected merely because it exists \u2014 only on measured benefit, and never requiring a compiler on an end-user device.",
+      "rustRule": "Rust/WASM is one strategy among twelve. It must never be selected merely because it exists — only on measured benefit, and never requiring a compiler on an end-user device.",
       "operations": [
         "draft",
         "validate",
@@ -994,7 +994,7 @@
         "test/lego-foundation.test.mjs"
       ],
       "futureStages": [
-        "A: DONE \u2014 82 capabilities, 139 operations declared"
+        "A: DONE — 82 capabilities, 139 operations declared"
       ],
       "countCorrection": "P2.10 prose and its evidence file stated 173 operations. The manifest has always declared 139 (82 capabilities, 62 of which declare operations); the 173 figure was an arithmetic error, not a change in the data. `manifest/domains.json` is byte-identical to its P2.10 state. The count is now generated rather than written, so it cannot drift again."
     },
@@ -1042,7 +1042,7 @@
       ],
       "boundaryRule": "MCP maps ONTO the tool gateway; the tool gateway is not defined in MCP terms. If MCP changes, one adapter changes.",
       "internalRule": "No internal LEGO may call another over MCP. Native capabilities use native contracts.",
-      "discoveryRule": "Controlled discovery with lazy loading. Never load hundreds of external tools into context by default \u2014 tool descriptions are context, and an unbounded tool list exhausts the window before any work begins.",
+      "discoveryRule": "Controlled discovery with lazy loading. Never load hundreds of external tools into context by default — tool descriptions are context, and an unbounded tool list exhausts the window before any work begins.",
       "operations": [
         "connect",
         "discover",
@@ -1126,7 +1126,7 @@
         "Antigravity",
         "other agent harnesses"
       ],
-      "noRewriteRule": "External runtimes are NEVER reimplemented \u2014 in Rust or otherwise. They are adapted. Reimplementing a third-party agent harness means owning its bugs and its release cycle for no architectural gain.",
+      "noRewriteRule": "External runtimes are NEVER reimplemented — in Rust or otherwise. They are adapted. Reimplementing a third-party agent harness means owning its bugs and its release cycle for no architectural gain.",
       "operations": [
         "connect",
         "start",
@@ -1177,6 +1177,7 @@
       "title": "Artifact",
       "owner": "manager",
       "status": "contract-only",
+      "statusNote": "P2.19 implements the bounded ai.artifact@1.0.0 foundation (opaque reference-only identity, sha256 integrity semantics, lifecycle, secret-safe bounded metadata) in src/lego/artifact.mjs. The LEGO stays contract-only: no storage engine and no filesystem authority — storage providers remain contract-only.",
       "phase": "C",
       "mission": "Hold results by reference, with checksum and retention.",
       "scope": [
@@ -1267,6 +1268,7 @@
       "title": "Approval",
       "owner": "manager",
       "status": "contract-only",
+      "statusNote": "P2.19 implements the bounded ai.approval@1.0.0 foundation (request/grant/deny with required scope, fail-closed evaluation, deterministic duplicates, expiration and the dependency-side waiting resolution for Agent Machine approvalReferences) in src/lego/approval.mjs. The LEGO stays contract-only: no approval UI, no executor, no enforcement middleware.",
       "phase": "C",
       "mission": "Be the formal control boundary for consequential actions.",
       "scope": [
@@ -1301,7 +1303,7 @@
         "external message",
         "high-risk terminal activity"
       ],
-      "failClosedRule": "Unknown and destructive actions FAIL CLOSED. An expired or unanswered approval is a DENY. Read-only must be proven, never assumed \u2014 the tempting `list.includes(action)` implementation returns false for anything new, so a newly added destructive action would need no approval until someone remembered to extend the list.",
+      "failClosedRule": "Unknown and destructive actions FAIL CLOSED. An expired or unanswered approval is a DENY. Read-only must be proven, never assumed — the tempting `list.includes(action)` implementation returns false for anything new, so a newly added destructive action would need no approval until someone remembered to extend the list.",
       "authorityRule": "Child agents never inherit authority automatically.",
       "operations": [
         "request",
@@ -1451,8 +1453,8 @@
         "reported",
         "estimated"
       ],
-      "honestyRule": "Never fabricate provider metrics. A token count that the provider did not report is `estimated` and must be labelled as such \u2014 an estimate presented as a measurement is worse than no number, because it cannot be audited.",
-      "uiRule": "Message text stays dominant; per-message token metadata stays subtle (e.g. `\u00b7 8 tokens`). A detailed view may expose message/context/output/total/source. Context-level usage may show e.g. `Context 61%`.",
+      "honestyRule": "Never fabricate provider metrics. A token count that the provider did not report is `estimated` and must be labelled as such — an estimate presented as a measurement is worse than no number, because it cannot be audited.",
+      "uiRule": "Message text stays dominant; per-message token metadata stays subtle (e.g. `· 8 tokens`). A detailed view may expose message/context/output/total/source. Context-level usage may show e.g. `Context 61%`.",
       "uiOwner": "agent-1 owns the rendering; this LEGO owns the numbers and their provenance.",
       "operations": [
         "record",
@@ -1556,7 +1558,7 @@
         "approval": "required"
       }
     ],
-    "status": "contract-only \u2014 none of these capabilities is implemented"
+    "status": "contract-only — none of these capabilities is implemented"
   },
   "deploymentModes": {
     "CORE": {
@@ -1709,7 +1711,7 @@
     "P2.13 is not COMPLETE until Manager reconciliation, merge validation and post-merge verification pass."
   ],
   "reconciliationRule": "A LEGO in this set whose id collides with, or whose mechanism is already owned by, a core domain in manifest/domains.json MUST declare `reconciles`. This is what stops the AI set from silently forking a second domain (ai-workspace beside workspace, an AI capability registry beside lego-foundation). Gate rule F17 enforces it.",
-  "phaseDependencyRule": "A LEGO must not depend on a LEGO scheduled in a later phase, because a roadmap that cannot run in its own stated order is not a roadmap. Exceptions are declared below with the degradation that makes the earlier phase viable on its own \u2014 never left implicit.",
+  "phaseDependencyRule": "A LEGO must not depend on a LEGO scheduled in a later phase, because a roadmap that cannot run in its own stated order is not a roadmap. Exceptions are declared below with the degradation that makes the earlier phase viable on its own — never left implicit.",
   "phaseDependencyExceptions": [
     {
       "lego": "agent-machine",
