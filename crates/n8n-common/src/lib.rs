@@ -6,6 +6,7 @@ pub mod admission;
 pub mod expression_contract;
 pub mod ingress_contract;
 pub mod ingress_modes;
+pub mod recovery;
 pub mod schedule;
 pub mod webhook;
 pub use activation::{
@@ -34,6 +35,10 @@ pub use ingress_modes::{
     ExecutionStatusTag, IngressIntent, IntentError, IntentResolver, ListenPool,
     ManualEmissionError, ManualTrigger, ModeDecision, TestListen, WaitingResolution,
     WaitingVerdict,
+};
+pub use recovery::{
+    recovery_plan, Journal, JournalEntry, LeaderLease, LeaseError, LifecycleEvent, RecoveryAction,
+    RecoveryPlan, MAX_JOURNAL_ENTRIES,
 };
 pub use schedule::{
     CivilDate, CivilTime, CronError, CronExpr, GapPolicy, MisfirePolicy, OverlapPolicy,

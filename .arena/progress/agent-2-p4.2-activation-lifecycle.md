@@ -90,3 +90,11 @@
 - 10 test baru → workspace **262 green** (stacked di atas P4.5); fmt bersih.
 - Jangkar referensi diverifikasi: waiting-webhooks.ts (404/409/401),
   test-webhooks.ts (listen one-shot), events (n8n.workflow.started, dst).
+
+## Lanjutan — P4.7 Recovery/reconciliation/race (sesi stacked P4.6)
+
+- Modul `crates/n8n-common/src/recovery.rs`: Journal bounded (1024, replayable,
+  drop-oldest), LeaderLease (epoch/holder/expiry; assert HeldByOther/Expired/
+  Vacant), recovery_plan murni (ResumeDrain/DeactivateOrphan/ActivatingStalled/
+  RetryActivation/ReactivateDesired + ReconcilePlan), deterministic.
+- 7 test baru → workspace **269 green** (stacked di atas P4.6); fmt bersih.
