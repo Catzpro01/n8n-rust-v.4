@@ -108,3 +108,12 @@
   Semua default=off/normal (no silent semantics).
 - Deferred→P4.9: deterministic replay & adaptive controller penuh.
 - 11 test baru → workspace **280 green** (stacked di atas P4.7); fmt bersih.
+
+## Lanjutan — P4.9 Compatibility+Performance Acceptance (stacked P4.8)
+
+- Modul `crates/n8n-common/src/compat.rs`: CompatMatrix (12 kasus verbatim n8n,
+  MAX 512) + ReplayCapsule/replay_admission/replay_resolution (Deterministic
+  Ingress Replay #111-#8, pure) + AcceptanceSuite. Alat verifikasi, bukan
+  eksekusi baru — nol perubahan perilaku/kontrak/workflow JSON.
+- 8 test baru → workspace **288 green** (stacked P4.7+P4.8); fmt bersih.
+- Final acceptance P4 menunggu integrasi Manager (agent tak self-declare).
