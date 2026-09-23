@@ -8,9 +8,9 @@
 
 | Slice | PR | Merge SHA | Evidence file |
 | :--- | :--- | :--- | :--- |
-| P4.1 | #117 | UNKNOWN | `docs/architecture/p4/evidence/P4.1-EVIDENCE.md` |
-| P4.2 | #131 | UNKNOWN | `evidence/P4.2-EVIDENCE.md` |
-| P4.3 | #137 | UNKNOWN | `evidence/P4.3-EVIDENCE.md` |
+| P4.1 | #117 | `d39523797131e61e7b33dfcf9dd06b37d5b1ad15` | `docs/architecture/p4/evidence/P4.1-EVIDENCE.md` |
+| P4.2 | #131 | `320dd7623b157e61e1c71f4c392beeb9a6bbafd9` | `evidence/P4.2-EVIDENCE.md` |
+| P4.3 | #137 | `83f6218e23d2ddf6d8079daa01ff6dc58f8d0589` | `evidence/P4.3-EVIDENCE.md` |
 | P4.4 | #145 | `b4fc673b4721fde50b6a859a87b9ac2d36f039b3` | `evidence/P4.4-EVIDENCE.md` |
 | P4.5 | #156 | `26acc10ff1a5ec196697f02c54289a818d7a2556` | `evidence/P4.5-EVIDENCE.md` |
 | P4.6 | #158 | `677c714260d1e401be908c571534fc958068c8a7` | `evidence/P4.6-EVIDENCE.md` |
