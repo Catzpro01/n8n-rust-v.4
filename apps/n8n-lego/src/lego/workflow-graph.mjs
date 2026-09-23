@@ -1,5 +1,5 @@
 /**
- * Workflow graph — persistent logical graph (P3 Slice A, Issues #75/#97).
+ * Workflow graph — persistent logical graph (P3 Slices A–C, Issues #75/#97).
  *
  * PUBLIC CONTRACT (`workflow.graph`, v1.0.0, owner: agent-1).
  *
@@ -24,12 +24,12 @@
  *
  * WHAT THIS IS NOT
  * ----------------
- * No filesystem, no network, no clock, no executor, no optimizer, no virtual
- * node layer yet (later P3 slices), no second workflow store — n8n-ts
- * WorkflowStore keeps the canonical document; this graph is a DERIVED,
- * disposable, reconstructible representation of it. No artificial node-count
- * cap: logical size is bounded by chunked structure and later slices' resource
- * budgets, never by an arbitrary ceiling (P3 anti-pattern 13).
+ * No filesystem, no network, no clock, no executor, no optimizer, no second
+ * workflow store — n8n-ts WorkflowStore keeps the canonical document; this
+ * graph is a DERIVED, disposable, reconstructible representation of it. No
+ * artificial node-count cap: logical size is bounded by chunked structure and
+ * later slices' resource budgets, never by an arbitrary ceiling (P3
+ * anti-pattern 13).
  *
  * Owner: agent-1 (P3 owns workflow graph per Issue #98).
  *
@@ -40,6 +40,31 @@
  * index is DERIVED: it is never bundled, never persisted, and connection
  * targets that are not graph nodes (dangling) are never indexed — the
  * canonical connections payload still roundtrips losslessly.
+ *
+ * SLICE C (materialization control — logical size ≠ resident working set):
+ *   - all payload reads go through an internal STORE PORT with two modes:
+ *     `memory` (default — raw chunks resident, the Slice A baseline) and
+ *     `lazy` (raw chunks load on demand from the immutable source into a
+ *     bounded resident window, evicting back to COLD);
+ *   - a bounded HOT cache (`maxCachedChunks`, LRU) holds the PARSED payload —
+ *     the expensive layer — so peak resident parsed chunks NEVER exceeds the
+ *     bound, no matter how large the logical graph is;
+ *   - residency per chunk: HOT (parsed resident) / WARM (raw resident in the
+ *     store window) / COLD (source only — reloadable), exposed by
+ *     `residencyOf`;
+ *   - `evictChunk` drops the HOT entry (and the raw window entry when the
+ *     port has a cold tier); `cacheStats` reports the bounded counters;
+ *   - `GRAPH_NODE_LIFECYCLE` publishes the node stage vocabulary
+ *     (DECLARED → INDEXED → RESOLVED → MATERIALIZED → READY → EXECUTING →
+ *     COMMITTED → EVICTABLE → EVICTED); `lifecycleOf(name)` maps a node's
+ *     CURRENT runtime stage from its chunk's residency — the execution stages
+ *     (READY/EXECUTING/COMMITTED) are reserved for the executor slices;
+ *   - accessor-returned payloads are FROZEN: the resident form is shared,
+ *     immutable state (the canonical document stays authoritative; callers
+ *     read, never mutate);
+ *   - source-level full reads (exportBundle / exportDefinition / integrity /
+ *     nodeNames) deliberately bypass the window — exports are rare by design
+ *     and must stay lossless regardless of residency churn.
  */
 import { createHash } from 'node:crypto';
 import { calculateWorkflowChecksum } from '../checksum.mjs';
@@ -57,6 +82,9 @@ export const WORKFLOW_GRAPH_CONTRACT_VERSION = WORKFLOW_GRAPH_CONTRACT.version;
 /** Nodes per chunk at build time (manifest records the effective size). */
 export const GRAPH_CHUNK_DEFAULT_SIZE = 1024;
 
+/** Default bound of the HOT (parsed) chunk cache — Slice C working-set cap. */
+export const GRAPH_HOT_CACHE_DEFAULT_CHUNKS = 8;
+
 /** Structural validation bounds — deliberately NO node-count ceiling. */
 export const WORKFLOW_GRAPH_LIMITS = Object.freeze({
   maxNameLength: 256,
@@ -65,6 +93,31 @@ export const WORKFLOW_GRAPH_LIMITS = Object.freeze({
 
 /** Bundle wire format version produced by exportBundle. */
 export const WORKFLOW_GRAPH_BUNDLE_VERSION = 1;
+
+/**
+ * Node lifecycle vocabulary (P3). Stages before READY are observable on the
+ * graph today; READY/EXECUTING/COMMITTED belong to the executor slices;
+ * EVICTABLE is the internal HOT age-out transition; EVICTED is the explicit
+ * `evictChunk` marker (reloadable — lossless by construction).
+ */
+export const GRAPH_NODE_LIFECYCLE = Object.freeze([
+  'DECLARED',
+  'INDEXED',
+  'RESOLVED',
+  'MATERIALIZED',
+  'READY',
+  'EXECUTING',
+  'COMMITTED',
+  'EVICTABLE',
+  'EVICTED',
+]);
+
+/** Chunk residency vocabulary served by `residencyOf`. */
+export const GRAPH_RESIDENCY = Object.freeze({
+  HOT: 'HOT',
+  WARM: 'WARM',
+  COLD: 'COLD',
+});
 
 /** One error family; the code is published in errors contract 1.2.0 (untouched). */
 export class WorkflowGraphError extends Error {
@@ -121,23 +174,114 @@ function digestChunks(nodeChunks, edgeChunks, headerJson, orphanJson) {
   return hash.digest('hex');
 }
 
+/** Deep-freeze parsed payloads — the HOT cache serves shared immutable state. */
+function deepFreeze(value) {
+  if (value === null || typeof value !== 'object' || Object.isFrozen(value)) return value;
+  Object.freeze(value);
+  for (const inner of Object.values(value)) deepFreeze(inner);
+  return value;
+}
+
+/**
+ * STORE PORT (Slice C, internal): every payload read of the logical graph
+ * goes through this seam — never directly at the arrays. Implementations:
+ *
+ *   - memory (default): raw chunks always resident (WARM floor = the Slice A
+ *     baseline footprint); no cold tier (`evict` declines);
+ *   - lazy: raw chunks load from the immutable source into a resident window
+ *     bounded by the SAME `maxCachedChunks` knob; window misses evict back to
+ *     COLD (a future persistence adapter swaps `source` for a file-backed
+ *     medium behind the same port — no contract change).
+ *
+ * Port surface: chunkCount() · readNodeChunk(i) → string[] ·
+ * readEdgeChunk(i) → string · isResident(i) → boolean · evict(i) → boolean ·
+ * stats() → { resident, loads, evictions }.
+ */
+
+function createMemoryStore(source) {
+  const count = source.nodeChunks.length;
+  return {
+    kind: 'memory',
+    chunkCount: () => count,
+    readNodeChunk: (index) => source.nodeChunks[index],
+    readEdgeChunk: (index) => source.edgeChunks[index] ?? '',
+    isResident: () => true,
+    evict: () => false,
+    stats: () => ({ resident: count, loads: 0, evictions: 0 }),
+  };
+}
+
+function createLazyStore(source, maxWindow) {
+  const count = source.nodeChunks.length;
+  const windowChunks = new Map(); // chunkIndex → { nodes, edge } (LRU by insertion)
+  let loads = 0;
+  let evictions = 0;
+  const load = (index) => {
+    let entry = windowChunks.get(index);
+    if (entry === undefined) {
+      loads += 1;
+      entry = { nodes: source.nodeChunks[index], edge: source.edgeChunks[index] ?? '' };
+      windowChunks.set(index, entry);
+      while (windowChunks.size > maxWindow) {
+        const oldest = windowChunks.keys().next().value;
+        windowChunks.delete(oldest);
+        evictions += 1;
+      }
+    } else {
+      windowChunks.delete(index);
+      windowChunks.set(index, entry); // LRU touch
+    }
+    return entry;
+  };
+  return {
+    kind: 'lazy',
+    chunkCount: () => count,
+    readNodeChunk: (index) => load(index).nodes,
+    readEdgeChunk: (index) => load(index).edge,
+    isResident: (index) => windowChunks.has(index),
+    evict: (index) => {
+      const had = windowChunks.delete(index);
+      if (had) evictions += 1;
+      return had;
+    },
+    stats: () => ({ resident: windowChunks.size, loads, evictions }),
+  };
+}
+
+/** Resolve + validate materialization options (fail-closed, one error family). */
+function resolveMaterializationOptions(options) {
+  const maxCachedChunks = options.maxCachedChunks ?? GRAPH_HOT_CACHE_DEFAULT_CHUNKS;
+  if (!Number.isSafeInteger(maxCachedChunks) || maxCachedChunks < 0 || maxCachedChunks > 65536) {
+    fail('maxCachedChunks must be a safe integer in 0..65536', { field: 'maxCachedChunks' });
+  }
+  if ('lazy' in options && typeof options.lazy !== 'boolean') {
+    fail('lazy must be a boolean', { field: 'lazy' });
+  }
+  return { maxCachedChunks, lazy: options.lazy === true };
+}
+
 class LogicalWorkflowGraph {
   #manifest;
-  #nodeChunks;
-  #edgeChunks;
+  #source;
   #ordinals;
   #headerJson;
   #orphanJson;
   #incoming = null; // Map<dest, [{source, type, index}]> — lazy, derived, droppable
   #reads = { chunkReads: 0 };
+  #store;
+  #hot = new Map(); // chunkIndex → { nodes: frozen[], bucket: frozen|null } (LRU)
+  #maxHot;
+  #cache = { hits: 0, misses: 0, evictions: 0 };
+  #evicted = new Set(); // chunks dropped by evictChunk — EVICTED until re-read
 
   constructor(parts) {
     this.#manifest = Object.freeze({ ...parts.manifest });
-    this.#nodeChunks = parts.nodeChunks;
-    this.#edgeChunks = parts.edgeChunks;
+    this.#source = { nodeChunks: parts.nodeChunks, edgeChunks: parts.edgeChunks };
     this.#ordinals = parts.ordinals;
     this.#headerJson = parts.headerJson;
     this.#orphanJson = parts.orphanJson;
+    this.#maxHot = parts.maxCachedChunks;
+    this.#store = parts.store;
   }
 
   manifest() {
@@ -145,7 +289,7 @@ class LogicalWorkflowGraph {
   }
 
   chunkCount() {
-    return this.#nodeChunks.length;
+    return this.#source.nodeChunks.length;
   }
 
   nodeCount() {
@@ -156,7 +300,7 @@ class LogicalWorkflowGraph {
     return this.#manifest.edgeCount;
   }
 
-  /** Observability: chunk reads served (tests, later resource budgets). */
+  /** Observability: logical chunk reads served (tests, later resource budgets). */
   readStats() {
     return { ...this.#reads };
   }
@@ -165,48 +309,148 @@ class LogicalWorkflowGraph {
     this.#reads.chunkReads = 0;
   }
 
-  /** Partial read: exactly one chunk's nodes, parsed. Never a whole-graph walk. */
-  getChunk(chunkIndex) {
-    if (!Number.isSafeInteger(chunkIndex) || chunkIndex < 0 || chunkIndex >= this.#nodeChunks.length) {
-      fail('chunk index out of range', { field: 'chunkIndex', reason: 'out-of-range' });
-    }
-    this.#reads.chunkReads += 1;
-    return this.#nodeChunks[chunkIndex].map((nodeString) => JSON.parse(nodeString));
+  /** Observability: bounded-cache + store-port counters (Slice C). */
+  cacheStats() {
+    const store = this.#store.stats();
+    return Object.freeze({
+      maxCachedChunks: this.#maxHot,
+      hot: this.#hot.size,
+      hits: this.#cache.hits,
+      misses: this.#cache.misses,
+      evictions: this.#cache.evictions,
+      storeKind: this.#store.kind,
+      storeResident: store.resident,
+      storeLoads: store.loads,
+      storeEvictions: store.evictions,
+    });
   }
 
-  /** Indexed node access: Map lookup → one chunk → parse one node. */
+  /**
+   * Materialize one chunk through the store port into the bounded HOT cache.
+   * Returns the shared frozen entry { nodes, bucket }. Logical chunk reads
+   * are counted by the accessors; this layer counts hits/misses/evictions.
+   */
+  #materialize(chunkIndex) {
+    const existing = this.#hot.get(chunkIndex);
+    if (existing !== undefined) {
+      this.#cache.hits += 1;
+      this.#hot.delete(chunkIndex);
+      this.#hot.set(chunkIndex, existing); // LRU touch
+      return existing;
+    }
+    this.#cache.misses += 1;
+    const rawNodes = this.#store.readNodeChunk(chunkIndex);
+    const rawEdge = this.#store.readEdgeChunk(chunkIndex);
+    this.#evicted.delete(chunkIndex); // payload re-read → residency truth refreshes
+    const nodes = Object.freeze(rawNodes.map((nodeString) => deepFreeze(JSON.parse(nodeString))));
+    const bucket = rawEdge ? deepFreeze(JSON.parse(rawEdge)) : null;
+    const entry = { nodes, bucket };
+    if (this.#maxHot > 0) {
+      this.#hot.set(chunkIndex, entry);
+      while (this.#hot.size > this.#maxHot) {
+        const oldest = this.#hot.keys().next().value;
+        this.#hot.delete(oldest);
+        this.#cache.evictions += 1; // HOT age-out (EVICTABLE transition, internal)
+      }
+    }
+    return entry;
+  }
+
+  #assertChunkIndex(chunkIndex) {
+    if (!Number.isSafeInteger(chunkIndex) || chunkIndex < 0 || chunkIndex >= this.#source.nodeChunks.length) {
+      fail('chunk index out of range', { field: 'chunkIndex', reason: 'out-of-range' });
+    }
+    return chunkIndex;
+  }
+
+  /** Chunk index holding a node's payload (addressing: floor(ordinal/size)). */
+  #chunkOfOrdinal(ordinal) {
+    return Math.floor(ordinal / this.#manifest.chunkSize);
+  }
+
+  /** Partial read: exactly one chunk's nodes, parsed (frozen, cached). */
+  getChunk(chunkIndex) {
+    this.#assertChunkIndex(chunkIndex);
+    this.#reads.chunkReads += 1;
+    return this.#materialize(chunkIndex).nodes;
+  }
+
+  /** Indexed node access: Map lookup → one chunk → serve one frozen node. */
   getNode(name) {
     const ordinal = this.#ordinals.get(name);
     if (ordinal === undefined) {
       fail('node not found in the logical graph', { field: 'name', reason: 'unknown-node' });
     }
     this.#reads.chunkReads += 1;
-    const chunkIndex = Math.floor(ordinal / this.#manifest.chunkSize);
-    const offset = ordinal % this.#manifest.chunkSize;
-    return JSON.parse(this.#nodeChunks[chunkIndex][offset]);
+    const entry = this.#materialize(this.#chunkOfOrdinal(ordinal));
+    return entry.nodes[ordinal % this.#manifest.chunkSize];
   }
 
   hasNode(name) {
     return this.#ordinals.has(name);
   }
 
-  /** Names in canonical ordinal order, yielded chunk by chunk. */
+  /**
+   * Names in canonical ordinal order, yielded chunk by chunk — a SOURCE-level
+   * streaming walk: no cache interaction, bounded peak memory by design.
+   */
   *nodeNames() {
-    for (const chunk of this.#nodeChunks) {
+    for (const chunk of this.#source.nodeChunks) {
       for (const nodeString of chunk) yield JSON.parse(nodeString).name;
     }
   }
 
-  /** Connections bucketed for sourceName, read from its chunk only. */
+  /** Connections bucketed for sourceName, materialized from its chunk only. */
   getOutgoingConnections(sourceName) {
     const ordinal = this.#ordinals.get(sourceName);
     if (ordinal === undefined) {
       fail('node not found in the logical graph', { field: 'name', reason: 'unknown-node' });
     }
     this.#reads.chunkReads += 1;
-    const chunkIndex = Math.floor(ordinal / this.#manifest.chunkSize);
-    const bucket = JSON.parse(this.#edgeChunks[chunkIndex] || '{}');
-    return bucket[sourceName] ?? {};
+    const entry = this.#materialize(this.#chunkOfOrdinal(ordinal));
+    return entry.bucket === null ? {} : (entry.bucket[sourceName] ?? {});
+  }
+
+  /**
+   * Residency of one chunk: HOT = parsed resident in the bounded cache,
+   * WARM = raw resident in the store window, COLD = source only.
+   */
+  residencyOf(chunkIndex) {
+    this.#assertChunkIndex(chunkIndex);
+    if (this.#hot.has(chunkIndex)) return GRAPH_RESIDENCY.HOT;
+    return this.#store.isResident(chunkIndex) ? GRAPH_RESIDENCY.WARM : GRAPH_RESIDENCY.COLD;
+  }
+
+  /**
+   * Explicit eviction: drop the HOT entry (and the raw window entry when the
+   * port has a cold tier). Returns whether anything was dropped. Reloadable —
+   * lossless by construction.
+   */
+  evictChunk(chunkIndex) {
+    this.#assertChunkIndex(chunkIndex);
+    const hadHot = this.#hot.delete(chunkIndex);
+    if (hadHot) this.#cache.evictions += 1;
+    const droppedStore = this.#store.evict(chunkIndex);
+    const dropped = hadHot || droppedStore;
+    if (dropped) this.#evicted.add(chunkIndex);
+    return dropped;
+  }
+
+  /**
+   * Current lifecycle stage of a node, derived from its chunk's residency
+   * (see GRAPH_NODE_LIFECYCLE): HOT → MATERIALIZED; re-read payload →
+   * RESOLVED (warm) / INDEXED (cold, never evicted); explicit evict →
+   * EVICTED until the next payload read. Execution stages are reserved.
+   */
+  lifecycleOf(name) {
+    const ordinal = this.#ordinals.get(name);
+    if (ordinal === undefined) {
+      fail('node not found in the logical graph', { field: 'name', reason: 'unknown-node' });
+    }
+    const chunkIndex = this.#chunkOfOrdinal(ordinal);
+    if (this.residencyOf(chunkIndex) === GRAPH_RESIDENCY.HOT) return 'MATERIALIZED';
+    if (this.#evicted.has(chunkIndex)) return 'EVICTED';
+    return this.residencyOf(chunkIndex) === GRAPH_RESIDENCY.WARM ? 'RESOLVED' : 'INDEXED';
   }
 
   /** Has the lazy reverse edge index been materialized? */
@@ -223,8 +467,10 @@ class LogicalWorkflowGraph {
 
   #buildIncoming() {
     const incoming = new Map();
-    for (let chunkIndex = 0; chunkIndex < this.#edgeChunks.length; chunkIndex += 1) {
-      const edgeChunk = this.#edgeChunks[chunkIndex];
+    const edgeChunks = this.#source.edgeChunks;
+    for (let chunkIndex = 0; chunkIndex < edgeChunks.length; chunkIndex += 1) {
+      const edgeChunk = this.#store.readEdgeChunk(chunkIndex);
+      this.#evicted.delete(chunkIndex); // store read refreshes residency truth
       if (!edgeChunk) continue;
       this.#reads.chunkReads += 1; // one edge-bucket read per non-empty bucket
       const bucket = JSON.parse(edgeChunk);
@@ -265,9 +511,17 @@ class LogicalWorkflowGraph {
     return rows === undefined ? Object.freeze([]) : rows;
   }
 
-  /** Recompute the resident digest chunk-by-chunk (bounded peak memory). */
+  /**
+   * Recompute the SOURCE digest chunk-by-chunk (bounded peak memory) — the
+   * immutable source of truth, independent of residency churn.
+   */
   integrity() {
-    const actual = digestChunks(this.#nodeChunks, this.#edgeChunks, this.#headerJson, this.#orphanJson);
+    const actual = digestChunks(
+      this.#source.nodeChunks,
+      this.#source.edgeChunks,
+      this.#headerJson,
+      this.#orphanJson,
+    );
     return Object.freeze({
       ok: actual === this.#manifest.chunkDigest,
       expected: this.#manifest.chunkDigest,
@@ -278,14 +532,17 @@ class LogicalWorkflowGraph {
   /**
    * Canonical recovery: rebuild the full n8n definition, deep-equal to the
    * input that produced it (header fields + nodes + connections, orphans
-   * included). A deliberate FULL read — exports are rare by design.
+   * included). A deliberate SOURCE-level FULL read — exports are rare by
+   * design and must stay lossless regardless of cache/window state.
    */
   exportDefinition() {
     const header = JSON.parse(this.#headerJson);
     const nodes = [];
-    for (const chunk of this.#nodeChunks) for (const nodeString of chunk) nodes.push(JSON.parse(nodeString));
+    for (const chunk of this.#source.nodeChunks) {
+      for (const nodeString of chunk) nodes.push(JSON.parse(nodeString));
+    }
     const connections = JSON.parse(this.#orphanJson);
-    for (const edgeChunk of this.#edgeChunks) {
+    for (const edgeChunk of this.#source.edgeChunks) {
       if (!edgeChunk) continue;
       const bucket = JSON.parse(edgeChunk);
       for (const [sourceName, value] of Object.entries(bucket)) connections[sourceName] = value;
@@ -300,8 +557,8 @@ class LogicalWorkflowGraph {
       manifest: { ...this.#manifest },
       headerJson: this.#headerJson,
       orphanJson: this.#orphanJson,
-      nodeChunks: this.#nodeChunks.map((chunk) => [...chunk]),
-      edgeChunks: [...this.#edgeChunks],
+      nodeChunks: this.#source.nodeChunks.map((chunk) => [...chunk]),
+      edgeChunks: [...this.#source.edgeChunks],
     };
   }
 }
@@ -311,7 +568,12 @@ class LogicalWorkflowGraph {
  * The input is read, never mutated; a later export is deep-equal to it.
  *
  * @param {object} definition canonical n8n workflow JSON
- * @param {{chunkSize?: number}} [options]
+ * @param {{chunkSize?: number, maxCachedChunks?: number, lazy?: boolean}} [options]
+ *   - maxCachedChunks: bound of the HOT (parsed) chunk cache AND the lazy
+ *     store's raw resident window (0 disables the HOT layer; default
+ *     GRAPH_HOT_CACHE_DEFAULT_CHUNKS);
+ *   - lazy: use the cold-capable store port (loads on demand, COLD tier
+ *     reachable; default false = memory port, Slice A baseline behaviour).
  * @returns {LogicalWorkflowGraph}
  */
 export function createWorkflowGraph(definition, options = {}) {
@@ -325,6 +587,7 @@ export function createWorkflowGraph(definition, options = {}) {
   if (!Number.isSafeInteger(chunkSize) || chunkSize < 1 || chunkSize > 65536) {
     fail('chunkSize must be a safe integer in 1..65536', { field: 'chunkSize' });
   }
+  const materialization = resolveMaterializationOptions(options);
 
   const ordinals = new Map();
   const nodeChunks = [];
@@ -371,7 +634,20 @@ export function createWorkflowGraph(definition, options = {}) {
     nodesField: 'nodes',
     canonical: true,
   };
-  return new LogicalWorkflowGraph({ manifest, nodeChunks, edgeChunks: edgeBuckets, ordinals, headerJson, orphanJson });
+  const source = { nodeChunks, edgeChunks: edgeBuckets };
+  const store = materialization.lazy
+    ? createLazyStore(source, materialization.maxCachedChunks)
+    : createMemoryStore(source);
+  return new LogicalWorkflowGraph({
+    manifest,
+    nodeChunks,
+    edgeChunks: edgeBuckets,
+    ordinals,
+    headerJson,
+    orphanJson,
+    maxCachedChunks: materialization.maxCachedChunks,
+    store,
+  });
 }
 
 /**
@@ -379,9 +655,11 @@ export function createWorkflowGraph(definition, options = {}) {
  * digest must recompute exactly, or the bundle is refused.
  *
  * @param {object} bundle exportBundle() output
+ * @param {{maxCachedChunks?: number, lazy?: boolean}} [options] same
+ *   materialization options as createWorkflowGraph.
  * @returns {LogicalWorkflowGraph}
  */
-export function graphFromBundle(bundle) {
+export function graphFromBundle(bundle, options = {}) {
   if (!isPlainObject(bundle)) fail('a graph bundle (plain object) is required', { field: 'bundle' });
   if (bundle.bundleVersion !== WORKFLOW_GRAPH_BUNDLE_VERSION) {
     fail('unsupported graph bundle version', { field: 'bundleVersion', reason: 'unsupported-version' });
@@ -414,5 +692,19 @@ export function graphFromBundle(bundle) {
   if (ordinal !== manifest.nodeCount) {
     fail('bundle node count does not match its manifest', { field: 'nodeCount', reason: 'count-mismatch' });
   }
-  return new LogicalWorkflowGraph({ manifest: { ...manifest }, nodeChunks, edgeChunks, ordinals, headerJson, orphanJson });
+  const materialization = resolveMaterializationOptions(options);
+  const source = { nodeChunks, edgeChunks };
+  const store = materialization.lazy
+    ? createLazyStore(source, materialization.maxCachedChunks)
+    : createMemoryStore(source);
+  return new LogicalWorkflowGraph({
+    manifest: { ...manifest },
+    nodeChunks,
+    edgeChunks,
+    ordinals,
+    headerJson,
+    orphanJson,
+    maxCachedChunks: materialization.maxCachedChunks,
+    store,
+  });
 }

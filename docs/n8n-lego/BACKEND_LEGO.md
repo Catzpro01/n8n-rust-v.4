@@ -316,6 +316,7 @@ A domain that publishes several contracts names its **primary** one
 
 | date | contract | version | change |
 | :--- | :--- | :--- | :--- |
+| 2026-09-23 | `workflow.graph` | 0.1.0 | P3 Slice C: additive exports (GRAPH_HOT_CACHE_DEFAULT_CHUNKS, GRAPH_NODE_LIFECYCLE, GRAPH_RESIDENCY) — store port (memory/lazy) + bounded HOT cache `maxCachedChunks`, residency HOT/WARM/COLD (`residencyOf`), `evictChunk`, `cacheStats`, `lifecycleOf`; version stays 0.1.0 (additive, pre-1.0; Issues #75/#97) |
 | 2026-09-23 | `workflow.graph` | 0.1.0 | P3 Slice A: initial lock of the persistent logical graph (chunked verbatim nodes, source-bucketed connections, name→ordinal resident index, one-chunk reads, fail-closed bundle digest, lossless canonical export; Issues #75/#97) |
 | 2026-09-23 | `ai.provider-declaration` | 1.0.0 | P2.26: initial lock of the provider declaration profile (sim/local/cloud — declared, never assumed; closed three-field shape; handed-over scoped request-bound access for GitHub-class boundaries; no client, no stored credential, Workspace untouched) |
 | 2026-09-23 | `ai.model-gateway` | 1.0.0 | P2.25: initial lock of the first real model provider adapter (six gateway ops, explicit configuration, call-time authorization, canonical error translation, honest usage reporting into ai.token-usage@1.0.0, injected exchange edge) |
