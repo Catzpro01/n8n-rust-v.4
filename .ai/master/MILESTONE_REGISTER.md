@@ -9,10 +9,10 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 
 | Field | Value |
 | --- | --- |
-| Current milestone | **P2.26** |
-| Previous completed milestone | **P2.25** |
+| Current milestone | **P2.27** |
+| Previous completed milestone | **P2.26** |
 | Protected branch | `main` |
-| Main baseline | `9cc6ba889790a814cdbf23768f1d4f734306b22e` |
+| Main baseline | `6d70bcfb22b2cea7993d4ce42b59991528a7dc78` |
 | Agent 1 branch | `arena/01a0c9d3-n8n-rust-v-4` |
 | Agent 2 branch | `arena/01a0c90d-n8n-rust-v-4` |
 | Register owner | `manager` |
@@ -36,21 +36,21 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 | `P2.23` | Node Creator & Translation | C | **complete** | P2.24 |
 | `P2.24` | Token & Usage - honest accounting | D | **complete** | P2.25 |
 | `P2.25` | External provider integration - the first real adapters | E | **complete** | P2.26 |
-| `P2.26` | Provider, Workspace & GitHub Integration + Foundation Readiness | F | **in-progress** | P2.17+ |
-| `P2.27` | Contract-Driven Pluggable Runtime & Security Foundation | F | **planned** | — |
+| `P2.26` | Provider, Workspace & GitHub Integration + Foundation Readiness | F | **complete** | P2.27 |
+| `P2.27` | Contract-Driven Pluggable Runtime & Security Foundation | F | **in-progress** | P2.17+ |
 | `P2.17+` | Later capability ladder | C-F | **planned** | — |
 
-## Current milestone boundary — P2.26
+## Current milestone boundary — P2.27
 
-**Owns:** provider declaration profile (sim/local/cloud) behind declared seams; workspace/GitHub integration boundaries without any stored credential; Foundation-readiness re-verification of every P2.16-P2.25 invariant; readiness checklist all green on main without weakened pins/tests/governance
+**Owns:** tiny Core kernel with the reserved core responsibilities (bootstrap, registries, resolvers, policy, lifecycle, supervisor, primitives); plugin registry + contract resolver + version compatibility; capability/security policy with deny-by-default permission primitive; plugin lifecycle + supervisor (DISCOVERED..QUARANTINED) with quarantine; four runtime classes: in-process, wasm, isolated-process, remote; secret broker: scoped short-lived secrets, one operation, never plugin-owned state; tenant security context + plugin resource budgets (declared and enforced); circuit breaker + deadline propagation + contract replay fixtures; side-by-side upgrade/rollback + supply-chain admission; frontend plugin boundary (public extension points vs sandboxed frame/origin + message contract)
 
-**Does not own:** real MCP server/client implementation (P3/FUTURE); production distributed scheduler (P3/FUTURE); autonomous node publishing pipeline (P3/FUTURE); external provider SaaS connectors beyond declared profiles (P3/FUTURE); anything after P2.26
+**Does not own:** Plugin Manager / Plugin Supervisor implementation (P2.27, future prompt); plugin sandbox / plugin broker / plugin runtime / WASM runtime / Python worker manager (P2.27); plugin hot-swap / plugin rollback engine (P2.27); microservice rewrite / Kubernetes migration / full distributed scheduler; full marketplace / complete third-party plugin ecosystem; rewrite of all P2 components / rewrite to Rust / rewrite to Python; anything before a dedicated P2.27 Master Prompt — zero P2.27 implementation now
 
-**Dependencies:** P2.20 MCP Control Boundary; P2.22 Node Compatibility & Portability; P2.23 Node Creator & Translation; P2.25 External provider integration - the first real adapters; ai-foundation
+**Dependencies:** P2.16 Agent Machine / execution foundation; P2.17 Agent Machine Runtime Foundation; P2.18 Universal Transport & Envelope Kernel; P2.19 Artifact, Approval & Audit Foundation; P2.21 Runtime Adapter & Harness Stack; P2.22 Node Compatibility & Portability; P2.24 Token & Usage - honest accounting; P2.25 External provider integration - the first real adapters; P2.26 Provider, Workspace & GitHub Integration + Foundation Readiness
 
-**Required gates:** full gates: arch+selftest, foundation+selftest, capabilities, scaleout, ai:check, full backend/frontend suites; readiness gate re-runs the full ladder including XA-21 measure-report
+**Required gates:** until the P2.27 Master Prompt is issued: the active gates remain the P2.26 readiness ladder (arch, arch:selftest, foundation, foundation:selftest, capabilities, scaleout, ai:check, full backend/frontend suites, XA-21 boot-pin, register consistency, .ai freshness); P2.27 Master Prompt will define the dedicated test matrix and gate set when issued; no P2.27 implementation test exists because no P2.27 implementation exists — absence is the correct state
 
-**Completion rule:** readiness checklist all green on main; PR merged and post-merge verification passes on protected main; register completion evidence recorded and every P2.16-P2.25 milestone exit evidenced
+**Completion rule:** Core responsibilities defined (design §3); Plugin boundary defined (design §4); Trust model defined (design §8/§9); Runtime locality defined (design §6); Capability security defined (design §10/§11); Secret isolation defined (design §12); Tenant isolation defined (design §13); Resource model defined (design §14); Failure model defined (design §15/§16/§17); Upgrade/rollback model defined (design §19); Supply-chain model defined (design §21); Frontend plugin model defined (design §22); Scaling model defined (design §23/§6); P2 non-regression rule defined (design §24); P2.27 implementation explicitly remains future until its own Master Prompt; then implementation completes only via green PRs merged on protected main
 
 ## Reconciliation state
 
@@ -72,7 +72,7 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 
 - Start/finish evidence is evidence, not a replacement for current state.
 - An agent branch can be implementation-complete without the milestone being complete.
-- `P2.26` requires **RECONCILIATION PASS**, **MERGE PASS**, and post-merge verification on protected main before it can become complete.
+- `P2.27` requires **RECONCILIATION PASS**, **MERGE PASS**, and post-merge verification on protected main before it can become complete.
 
 ## Manager merge protocol
 

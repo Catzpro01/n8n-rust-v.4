@@ -493,10 +493,12 @@ test('every P2.16–P2.25 milestone is still complete with intact start/finish e
   assert.equal(BY_ID.get('P2.23').startEvidence.commit, 'ab4a589821e247ed181a91b54ad8c2d39d83eeb1',
     'the P2.23 start anchor from the standing corrections stays exact');
   // pointers: current is P2.26 and the baseline correction from §0 landed
-  assert.equal(REGISTER.currentMilestone, 'P2.26');
-  assert.equal(REGISTER.previousCompletedMilestone, 'P2.25');
+  assert.equal(REGISTER.currentMilestone, 'P2.27');
+  assert.equal(REGISTER.previousCompletedMilestone, 'P2.26');
   const p226 = BY_ID.get('P2.26');
-  assert.equal(p226.status, 'in-progress');
+  assert.equal(p226.status, 'complete', 'P2.26 closed via PR #73 (completion transition)');
+  assert.equal(p226.finishEvidence.protectedMain, '6d70bcfb22b2cea7993d4ce42b59991528a7dc78');
+  assert.equal(p226.finishEvidence.pr, 73);
   assert.equal(p226.startEvidence.commit, D15, 'P2.26 starts from the P2.25 completion transition (§0)');
   assert.match(p226.startEvidence.role, /9cc6ba88 stays P2\.25 implementation evidence/,
     'the correction documents the distinction instead of hiding it');
@@ -505,7 +507,7 @@ test('every P2.16–P2.25 milestone is still complete with intact start/finish e
 test('P2.27 remains a planned reservation with zero implementation and an unwired chain', () => {
   const p227 = BY_ID.get('P2.27');
   assert.ok(p227, 'the reservation row exists');
-  assert.equal(p227.status, 'planned', 'future/planned until P2.26 completion');
+  assert.equal(p227.status, 'in-progress', 'current administrative milestone — implementation is still ZERO until the P2.27 Master Prompt');
   assert.match(p227.implementationBoundary, /NO P2\.27 IMPLEMENTATION IS STARTED BY THIS PROMPT\./);
   assert.ok(p227.deliverables.length >= 5);
   assert.ok(p227.completionCriteria.length >= 15, 'the §38 acceptance list is on the row');
@@ -515,9 +517,9 @@ test('P2.27 remains a planned reservation with zero implementation and an unwire
     assert.ok(ids.length > 0, `dependency names a milestone: ${dependency}`);
     for (const id of ids) assert.ok(BY_ID.has(id), `${id} resolves in the register`);
   }
-  assert.equal(REGISTER.currentMilestone, 'P2.26', 'currentMilestone did NOT move to P2.27');
-  assert.equal(BY_ID.get('P2.26').nextMilestone, 'P2.17+',
-    'the completion transition has not rewired the chain yet');
+  assert.equal(REGISTER.currentMilestone, 'P2.27', 'the completion transition advanced the pointer');
+  assert.equal(BY_ID.get('P2.26').nextMilestone, 'P2.27', 'chain rewired by the completion transition only');
+  assert.equal(BY_ID.get('P2.27').nextMilestone, 'P2.17+', 'P2.27 still terminates into the residual ladder');
   // design document exists, is planning-only and contains no implementation code fence for plugins
   const design = read('docs/n8n-lego/P2.27-PLUGIN-RUNTIME-DESIGN.md');
   assert.match(design, /PLANNING \/ DESIGN ONLY/);
@@ -577,6 +579,6 @@ test('the ai-set register mirror was not silently rewritten by this milestone', 
   // state and ai-pack prefers milestones.json — P2.26 edits only the canonical register.
   assert.equal(LEGO_SET.currentMilestone, 'P2.16',
     'the set mirror is historical planning material, not the canonical pointer');
-  assert.equal(REGISTER.currentMilestone, 'P2.26');
+  assert.equal(REGISTER.currentMilestone, 'P2.27');
   assert.match(LEGO_SET.statusNote, /P2\.16/);
 });
