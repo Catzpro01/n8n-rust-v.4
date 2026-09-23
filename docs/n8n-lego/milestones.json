@@ -4,9 +4,9 @@
   "canonical": true,
   "purpose": "Granular milestone truth beneath the strategic Phase A-F roadmap. This is the only machine-readable milestone register. Future milestone IDs may be refined by Manager only by updating this file; strategic phases are not deleted.",
   "protectedBranch": "main",
-  "mainBaseline": "8da4d00c7e1bca7fc69a4f8d36f59c453f96ee02",
-  "currentMilestone": "P2.18",
-  "previousCompletedMilestone": "P2.17",
+  "mainBaseline": "b3bdaab907142fa8ee2753badcb615c0b305d9fa",
+  "currentMilestone": "P2.19",
+  "previousCompletedMilestone": "P2.18",
   "strategicRoadmap": {
     "source": "apps/n8n-lego/src/lego/manifest/ai-lego-set.json",
     "preservePhases": [
@@ -886,7 +886,7 @@
       "id": "P2.18",
       "title": "Universal Transport & Envelope Kernel",
       "phase": "B",
-      "status": "in-progress",
+      "status": "complete",
       "owner": "manager",
       "backendOwner": "agent-1",
       "frontendOwner": "agent-1",
@@ -929,7 +929,12 @@
         "commit": "8da4d00c7e1bca7fc69a4f8d36f59c453f96ee02",
         "role": "protected main after P2.17 merge and verification"
       },
-      "finishEvidence": null,
+      "finishEvidence": {
+        "protectedMain": "b3bdaab907142fa8ee2753badcb615c0b305d9fa",
+        "pr": 54,
+        "mergeCommit": "b3bdaab907142fa8ee2753badcb615c0b305d9fa",
+        "role": "post-merge verified protected-main completion"
+      },
       "currentCommitReference": "arena/01a0c9d3-n8n-rust-v-4",
       "nextMilestone": "P2.19",
       "nonScope": [
@@ -948,12 +953,82 @@
       "reconciliation": {
         "state": "scoped at P2.18 start against protected main 8da4d00c; register governance corrected per the Manager milestone-register correction; kernel work extends lego.envelope/lego.interaction conventions additively",
         "contract": "ai.agent-machine@1.1.0 untouched; XA-21 untouched; envelope/interaction changes stay within MINOR (additive exports/optional fields) rules of the contract lock",
+        "owner": "agent-1",
+        "historical": true,
+        "resolution": {
+          "resolvedAt": "2026-09-23",
+          "note": "PR #54 merged to protected main as b3bdaab9; the historical start baseline 8da4d00c stays on this row"
+        }
+      },
+      "verificationEvidence": {
+        "local": "post-merge on b3bdaab9: 7/7 gates (ai:check, arch+26/26 selftest, foundation+15/15 selftest, capabilities, scaleout), kernel+comm 91/91, register 59/59, guards clean (agent-machine/XA-21/capabilities/crates untouched)",
+        "official": "PENDING — official validation surface remains the GitHub Actions self-hosted Windows runner on PR #54; local post-merge on b3bdaab9 PASS (debug evidence, not official sign-off)",
+        "evidencePath": "docs/n8n-lego/evidence/P2.18-TRANSPORT-KERNEL-EVIDENCE.md"
+      }
+    },
+    {
+      "id": "P2.19",
+      "title": "Artifact, Approval & Audit Foundation",
+      "phase": "B",
+      "status": "in-progress",
+      "owner": "manager",
+      "backendOwner": "per milestone assignment",
+      "frontendOwner": "agent-1",
+      "dependencies": [
+        "P2.17 Agent Machine Runtime Foundation"
+      ],
+      "inputs": [
+        "P2.16 waiting/approval semantics references",
+        "contract-only artifact/approval capability declarations",
+        "audit scoping rules from the foundation vocabulary"
+      ],
+      "deliverables": [
+        "bounded artifact references — opaque, reference-only, no filesystem authority",
+        "fail-closed approval request/grant/deny lifecycle contract owned here (Agent Machine only carries references)",
+        "low-volume architectural audit records with deterministic ids and bounded metadata",
+        "artifact + approval contract publication via the contract lock (currently contract-only capabilities)"
+      ],
+      "implementationBoundary": "Artifact / approval / audit foundation only: reference-only artifacts, approval lifecycle owned here, architecturally scoped audit events, no secrets in artifacts. Agent Machine untouched beyond already carrying references. No MCP, adapters or transport-kernel internals.",
+      "testsGates": [
+        "full gates: arch+selftest, foundation+selftest, capabilities, scaleout, ai:check, full backend/frontend suites",
+        "acceptance: waiting machines resolvable by the approval contract without P2.16 edits; artifact refs stay opaque; audit volume bounded; no secrets in artifacts"
+      ],
+      "decisionDependencies": [
+        "artifact and approval contract shape",
+        "audit event scoping"
+      ],
+      "completionCriteria": [
+        "all four roadmap acceptance items hold",
+        "PR merged and post-merge verification passes on protected main",
+        "register completion evidence recorded and currentMilestone advanced to P2.20"
+      ],
+      "startEvidence": {
+        "commit": "b3bdaab907142fa8ee2753badcb615c0b305d9fa",
+        "role": "protected main after P2.18 merge and verification"
+      },
+      "finishEvidence": null,
+      "currentCommitReference": "arena/01a0c9d3-n8n-rust-v-4",
+      "nextMilestone": "P2.20",
+      "nonScope": [
+        "MCP boundary (P2.20)",
+        "transport adapters (P2.21)",
+        "transport kernel internals (P2.18)",
+        "model inference",
+        "distributed infrastructure",
+        "shell / filesystem / subprocess executors",
+        "credential manager",
+        "GitHub / Telegram integrations",
+        "Arena runtime"
+      ],
+      "reconciliation": {
+        "state": "scoped at P2.19 start against protected main b3bdaab907142fa8ee2753badcb615c0b305d9fa; owners and detail refined by the Master Prompt P2.19 when issued",
+        "contract": "artifact + approval contract publication (currently contract-only capabilities); ai.agent-machine@1.1.0 untouched; XA-21 untouched",
         "owner": "agent-1"
       },
       "verificationEvidence": {
-        "local": "focused kernel suite + full backend/frontend suites + all lego gates executed in this workspace (debug evidence)",
+        "local": "recorded in the milestone evidence file when implementation runs",
         "official": "PENDING — official validation only via the installed GitHub Actions self-hosted Windows runner on the PR",
-        "evidencePath": "docs/n8n-lego/evidence/P2.18-TRANSPORT-KERNEL-EVIDENCE.md"
+        "evidencePath": "docs/n8n-lego/evidence/P2.19-ARTIFACT-APPROVAL-AUDIT-EVIDENCE.md"
       }
     },
     {

@@ -10,11 +10,11 @@ document is right and the prose is stale.
 
 | | |
 | --- | --- |
-| Protected main baseline | `8da4d00c7e1bca7fc69a4f8d36f59c453f96ee02` |
+| Protected main baseline | `b3bdaab907142fa8ee2753badcb615c0b305d9fa` |
 | Agent 1 branch | `arena/01a0c9d3-n8n-rust-v-4` |
 | Agent 2 branch | `arena/01a0c90d-n8n-rust-v-4` |
-| **Current milestone** | **P2.18** |
-| Previous completed milestone | **P2.17** |
+| **Current milestone** | **P2.19** |
+| Previous completed milestone | **P2.18** |
 | Current branch state | `arena/01a0c90d-n8n-rust-v-4` (implementation branch; not protected main) |
 | Historical reconciled state | `c1eca8cc` (historical evidence, not current main) |
 | Historical P2.11 evidence commit | `bdd0f1d2d6c8d7bc1c1ff3d881ddc2b3bd93713d` |
@@ -37,13 +37,13 @@ is the row marked as such.
 
 ## Milestone state
 
-- **Current:** `P2.18` — Universal Transport & Envelope Kernel (**in-progress**)
-- **Previous complete:** `P2.17`
+- **Current:** `P2.19` — Artifact, Approval & Audit Foundation (**in-progress**)
+- **Previous complete:** `P2.18`
 - **Why next:** P2.17 Agent Machine Runtime Foundation
-- **Owns:** one bounded universal envelope + transport-neutral kernel so CALL/EVENT/STREAM/BATCH move through a single validated shape with backpressure; deterministic codecs with proven round-trip determinism; schema validation on entry: malformed envelopes fail closed; correlation / causation / trace / deadline / cancellation / idempotency / backpressure propagation; bounded queues with declared limits — no unbounded queue anywhere; published kernel contract(s) extending the lego.envelope / lego.interaction conventions (no internal HTTP/broker/daemon)
-- **Does not implement:** MCP boundary (P2.20); transport adapters (P2.21); artifact / approval foundation (P2.19); model inference; distributed infrastructure; internal HTTP / broker / daemon; shell / filesystem / subprocess executors; credential manager; GitHub / Telegram integrations; Arena runtime; approval resolution runtime
-- **Next:** `P2.19`
-- **Completion gate:** round-trip determinism proven, malformed envelopes rejected, backpressure observed under load, no unbounded queue anywhere; tests + gates as in P2.17; PR merged and post-merge verification passes on protected main; register completion evidence recorded and currentMilestone advanced to P2.19
+- **Owns:** bounded artifact references — opaque, reference-only, no filesystem authority; fail-closed approval request/grant/deny lifecycle contract owned here (Agent Machine only carries references); low-volume architectural audit records with deterministic ids and bounded metadata; artifact + approval contract publication via the contract lock (currently contract-only capabilities)
+- **Does not implement:** MCP boundary (P2.20); transport adapters (P2.21); transport kernel internals (P2.18); model inference; distributed infrastructure; shell / filesystem / subprocess executors; credential manager; GitHub / Telegram integrations; Arena runtime
+- **Next:** `P2.20`
+- **Completion gate:** all four roadmap acceptance items hold; PR merged and post-merge verification passes on protected main; register completion evidence recorded and currentMilestone advanced to P2.20
 
 ## The 15 AI/Agent LEGO by status
 
