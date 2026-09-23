@@ -8,9 +8,9 @@
 
 | Slice | PR | Merge SHA | Evidence file |
 | :--- | :--- | :--- | :--- |
-| P4.1 | #117 | `487313b6`-based merge (see git log "P4.1") | `docs/architecture/p4/evidence/P4.1-EVIDENCE.md` |
-| P4.2 | #131 | merged (git log "P4.2") | `evidence/P4.2-EVIDENCE.md` |
-| P4.3 | #137 | merged (git log "P4.3") | `evidence/P4.3-EVIDENCE.md` |
+| P4.1 | #117 | UNKNOWN | `docs/architecture/p4/evidence/P4.1-EVIDENCE.md` |
+| P4.2 | #131 | UNKNOWN | `evidence/P4.2-EVIDENCE.md` |
+| P4.3 | #137 | UNKNOWN | `evidence/P4.3-EVIDENCE.md` |
 | P4.4 | #145 | `b4fc673b4721fde50b6a859a87b9ac2d36f039b3` | `evidence/P4.4-EVIDENCE.md` |
 | P4.5 | #156 | `26acc10ff1a5ec196697f02c54289a818d7a2556` | `evidence/P4.5-EVIDENCE.md` |
 | P4.6 | #158 | `677c714260d1e401be908c571534fc958068c8a7` | `evidence/P4.6-EVIDENCE.md` |
