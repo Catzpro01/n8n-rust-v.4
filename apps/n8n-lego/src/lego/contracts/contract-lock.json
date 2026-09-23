@@ -1976,6 +1976,56 @@
         "apps/n8n-lego/test/lego-runtime-lease.test.mjs"
       ],
       "notes": "P6.6 (P6 implementation owner: Agent 3, Issue #100): runtime lease + side-by-side upgrade. P6.2 publishes an epoch by moving a pointer between frozen objects, which is only safe if nothing is still executing inside the old one — and something always is. 'Deploy' and 'what is running' are different questions, and the gap between them is where the upgrade outage lives: the new version is published, an in-flight execution silently switches versions half-way through, and the result is a state neither version would have produced. Three mechanisms close it. (1) LEASES: a lease names the EPOCH DIGEST the execution runs under (never a version number, never 'current'), so a later publication cannot re-point work already running; a lease id is DERIVED from execution + epoch, so a retried acquire is the same lease rather than a second one. (2) DRAIN: explicit and observable — draining immediately stops new admissions while everything inside keeps running, and returns the outstanding executions so a deploy can wait honestly. (3) RETIRE, GATED ON THE LEASES: an epoch cannot be retired while a single lease is outstanding, the refusal NAMES who is holding it, and draining must come first because retiring an epoch that is still admitting work is a race with whoever is asking for a lease right now. Side-by-side serving is the consequence rather than a feature: several epochs may serve at once (old for in-flight, new for new work) and the table reports exactly which. A retired epoch NUMBER can never be reused by different content, so a number is not a place to hide a rewrite. The table carries a monotonic SEQUENCE instead of a clock, because a lease table that reads a clock is not reproducible, and every operation returns a new frozen table so the state in front of an operator cannot change under them. No authority: a lease grants nothing but the right to keep serving the epoch it names — no trust, no capability, no permission."
+    },
+    {
+      "id": "node.residency",
+      "owner": "manager",
+      "domain": "node-registry",
+      "version": "0.1.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/node-residency.mjs"
+      ],
+      "exports": {
+        "src/lego/node-residency.mjs": [
+          "DEFAULT_HOT_BUDGET",
+          "MANIFEST_RESIDENT_TIERS",
+          "RESIDENCY_CONTRACT",
+          "RESIDENCY_CONTRACT_VERSION",
+          "RESIDENCY_INPUT_SCHEMA_VERSION",
+          "RESIDENCY_OPERATIONS",
+          "RESIDENCY_PERMISSIONS",
+          "RESIDENCY_REASONS",
+          "RESIDENCY_RULES",
+          "RESIDENCY_SCHEMA_VERSION",
+          "RESIDENCY_TIERS",
+          "ResidencyError",
+          "createResidencyTable",
+          "describeResidency",
+          "dropNode",
+          "evictNode",
+          "formatResidency",
+          "hotHeadroom",
+          "hotNodes",
+          "isResidencyTable",
+          "loadNode",
+          "manifestResidentNodes",
+          "residencyCandidates",
+          "residencyOf",
+          "warmNode"
+        ]
+      },
+      "consumers": [
+        "P6.8 capability compilation — a capability check has somewhere to happen because the manifest is resident before the code is",
+        "P6.11 health + quarantine — a quarantined node is not loaded, and residency is where that refusal becomes visible",
+        "P6.24 specialized runtime pools + warm sandbox — warms the manifests a pool is about to serve",
+        "P6.26 precompiled WASM cache + runtime resource policy — the hot budget is the policy the cache answers to",
+        "P6.30 repair + offline recovery — a residency table rebuilt from the epoch is the honest starting point after a crash"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-node-residency.test.mjs"
+      ],
+      "notes": "P6.7 (P6 implementation owner: Agent 3, Issue #100): manifest/implementation split + HOT/WARM/COLD residency. An epoch can hold hundreds of node types; a process cannot hold hundreds of loaded implementations, and pretending otherwise is how a node registry becomes a memory leak with a catalogue. The split this contract enforces is that THE MANIFEST AND THE IMPLEMENTATION ARE DIFFERENT THINGS: a declaration is cheap and needed for resolution and editing, an implementation is expensive and needed only while running. Three tiers: COLD (known to the epoch, nothing resident here), WARM (the MANIFEST is resident, the implementation is not), HOT (the implementation is resident). COLD → WARM → HOT is the ONLY way up, and that is the point — metadata is read BEFORE code is loaded, which is what leaves room for a capability, trust or residency check to happen at all; a load straight from COLD is refused rather than quietly warmed as a side effect, because the check that was skipped would never be reported (there would be nothing to report it). HOT is BOUNDED by an explicit budget: exceeding it demotes the LEAST-RECENTLY-USED node to WARM and says which one, so memory pressure is a reported policy instead of an out-of-memory kill. Eviction RESPECTS LEASES: an implementation an execution is still holding is never unloaded, `inUseBy` is a REQUIRED input, and a non-empty set refuses the eviction with the executions named; WARM → COLD is a separate ordered step (a HOT node must be evicted before its manifest is dropped). Recency is a monotonic TICK, not a timestamp, so the same operations produce the same table anywhere, and every operation returns a new frozen table. Depends only on P6.2 for epochs; the lease set is passed in as data rather than importing P6.6. No authority: being hot grants nothing and being cold revokes nothing."
     }
   ]
 }
