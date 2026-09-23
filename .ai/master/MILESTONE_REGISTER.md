@@ -9,10 +9,10 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 
 | Field | Value |
 | --- | --- |
-| Current milestone | **P2.20** |
-| Previous completed milestone | **P2.19** |
+| Current milestone | **P2.21** |
+| Previous completed milestone | **P2.20** |
 | Protected branch | `main` |
-| Main baseline | `436e8404ca56bdbfda7be55dd1529c355bfe9e5c` |
+| Main baseline | `84337490a061a2774bdcf5743b13972c2c82903b` |
 | Agent 1 branch | `arena/01a0c9d3-n8n-rust-v-4` |
 | Agent 2 branch | `arena/01a0c90d-n8n-rust-v-4` |
 | Register owner | `manager` |
@@ -30,26 +30,27 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 | `P2.17` | Agent Machine Runtime Foundation | B | **complete** | P2.18 |
 | `P2.18` | Universal Transport & Envelope Kernel | B | **complete** | P2.19 |
 | `P2.19` | Artifact, Approval & Audit Foundation | B | **complete** | P2.20 |
-| `P2.20` | MCP vs Agent Control Boundary | C | **in-progress** | P2.21 |
+| `P2.20` | MCP vs Agent Control Boundary | C | **complete** | P2.21 |
+| `P2.21` | Runtime Adapter & Harness Stack | C | **in-progress** | P2.22 |
 | `P2.17+` | Later capability ladder | C-F | **planned** | — |
 
-## Current milestone boundary — P2.20
+## Current milestone boundary — P2.21
 
-**Owns:** MCP vs agent-control boundary declaration: where interoperability ends and agent control authority begins; declared state machine for permission-required / exposed / blocked — never implicit authority; explicit permission gates; fail-closed refusal of unknown servers and capabilities; control plane never delegates to MCP implicitly (no transport claim)
+**Owns:** adapter seam letting an external runtime satisfy P2.16/P2.17 contracts; bounded test harness (in-process/simulated only) running deterministic scenarios; EXTERNAL executorKind requires explicit provider support (already fail-closed in 1.1.0); harness coverage of cancel/deadline/backpressure
 
-**Does not own:** actual MCP server/client implementation (P3/FUTURE); GitHub provider (P2.26); transport adapters (P2.21); node compatibility & portability (P2.22); node creator & translation (P2.23); model inference; distributed infrastructure; shell / filesystem / subprocess executors; credential manager; Arena runtime
+**Does not own:** node compatibility & portability (P2.22); node creator & translation (P2.23); model inference; production scheduler; shell / filesystem / subprocess executors; MCP server/client/adapter runtime (P3/FUTURE); credential manager; Arena runtime
 
 **Dependencies:** P2.18 Universal Transport & Envelope Kernel; P2.19 Artifact, Approval & Audit Foundation
 
-**Required gates:** boundary tests prove refusal of undeclared servers; authority is never inferred in tests; vocabulary quoted with provenance; no network in tests; full gates: arch+selftest, foundation+selftest, capabilities, scaleout, ai:check, full backend/frontend suites
+**Required gates:** P2.16 contract tests re-run against the adapter unchanged; harness covers cancel/deadline/backpressure deterministically; full gates: arch+selftest, foundation+selftest, capabilities, scaleout, ai:check, full backend/frontend suites
 
-**Completion rule:** all four roadmap acceptance items hold; PR merged and post-merge verification passes on protected main; register completion evidence recorded and currentMilestone advanced to P2.21
+**Completion rule:** all roadmap acceptance items hold (same contract re-run + harness coverage + full gates); PR merged and post-merge verification passes on protected main; register completion evidence recorded and currentMilestone advanced to P2.22
 
 ## Reconciliation state
 
 - Verdict: **PENDING**
 - Conflict: —
-- Contract: MCP boundary declaration only; ai.agent-machine@1.1.0, ai.artifact/approval/audit@1.0.0, lego.transport-kernel@1.0.0, XA-21 all untouched
+- Contract: runtime adapter contract only; ai.agent-machine@1.1.0, lego.transport-kernel@1.0.0, ai.artifact/approval/audit, ai.mcp-boundary, XA-21 all untouched
 - Agent: `—`
 - Reason: —
 - Required decision: —
@@ -65,7 +66,7 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 
 - Start/finish evidence is evidence, not a replacement for current state.
 - An agent branch can be implementation-complete without the milestone being complete.
-- `P2.20` requires **RECONCILIATION PASS**, **MERGE PASS**, and post-merge verification on protected main before it can become complete.
+- `P2.21` requires **RECONCILIATION PASS**, **MERGE PASS**, and post-merge verification on protected main before it can become complete.
 
 ## Manager merge protocol
 

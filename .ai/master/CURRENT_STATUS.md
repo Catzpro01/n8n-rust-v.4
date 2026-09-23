@@ -10,11 +10,11 @@ document is right and the prose is stale.
 
 | | |
 | --- | --- |
-| Protected main baseline | `436e8404ca56bdbfda7be55dd1529c355bfe9e5c` |
+| Protected main baseline | `84337490a061a2774bdcf5743b13972c2c82903b` |
 | Agent 1 branch | `arena/01a0c9d3-n8n-rust-v-4` |
 | Agent 2 branch | `arena/01a0c90d-n8n-rust-v-4` |
-| **Current milestone** | **P2.20** |
-| Previous completed milestone | **P2.19** |
+| **Current milestone** | **P2.21** |
+| Previous completed milestone | **P2.20** |
 | Current branch state | `arena/01a0c90d-n8n-rust-v-4` (implementation branch; not protected main) |
 | Historical reconciled state | `c1eca8cc` (historical evidence, not current main) |
 | Historical P2.11 evidence commit | `bdd0f1d2d6c8d7bc1c1ff3d881ddc2b3bd93713d` |
@@ -37,13 +37,13 @@ is the row marked as such.
 
 ## Milestone state
 
-- **Current:** `P2.20` — MCP vs Agent Control Boundary (**in-progress**)
-- **Previous complete:** `P2.19`
+- **Current:** `P2.21` — Runtime Adapter & Harness Stack (**in-progress**)
+- **Previous complete:** `P2.20`
 - **Why next:** P2.18 Universal Transport & Envelope Kernel; P2.19 Artifact, Approval & Audit Foundation
-- **Owns:** MCP vs agent-control boundary declaration: where interoperability ends and agent control authority begins; declared state machine for permission-required / exposed / blocked — never implicit authority; explicit permission gates; fail-closed refusal of unknown servers and capabilities; control plane never delegates to MCP implicitly (no transport claim)
-- **Does not implement:** actual MCP server/client implementation (P3/FUTURE); GitHub provider (P2.26); transport adapters (P2.21); node compatibility & portability (P2.22); node creator & translation (P2.23); model inference; distributed infrastructure; shell / filesystem / subprocess executors; credential manager; Arena runtime
-- **Next:** `P2.21`
-- **Completion gate:** all four roadmap acceptance items hold; PR merged and post-merge verification passes on protected main; register completion evidence recorded and currentMilestone advanced to P2.21
+- **Owns:** adapter seam letting an external runtime satisfy P2.16/P2.17 contracts; bounded test harness (in-process/simulated only) running deterministic scenarios; EXTERNAL executorKind requires explicit provider support (already fail-closed in 1.1.0); harness coverage of cancel/deadline/backpressure
+- **Does not implement:** node compatibility & portability (P2.22); node creator & translation (P2.23); model inference; production scheduler; shell / filesystem / subprocess executors; MCP server/client/adapter runtime (P3/FUTURE); credential manager; Arena runtime
+- **Next:** `P2.22`
+- **Completion gate:** all roadmap acceptance items hold (same contract re-run + harness coverage + full gates); PR merged and post-merge verification passes on protected main; register completion evidence recorded and currentMilestone advanced to P2.22
 
 ## The 15 AI/Agent LEGO by status
 
