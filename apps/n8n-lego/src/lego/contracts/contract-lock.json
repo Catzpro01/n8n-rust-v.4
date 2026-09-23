@@ -2104,6 +2104,58 @@
         "apps/n8n-lego/test/lego-capability-compiler.test.mjs"
       ],
       "notes": "P6.8 (P6 implementation owner: Agent 3, Issue #100): capability compilation + runtime locality. A declaration says what a node NEEDS (P6.1: capabilities, runtime locality, resource profile); it does not say what a node GETS. This contract is that decision, made once, in one place, deterministically, so that 'why did this node run in-process?' has an answer that is a document instead of an interrogation. Three rules do the work. (1) The host is validated first, as data: which capabilities it can authorize, which runtimes it has, and the STRONGEST isolation it can offer; an unknown capability, runtime or boundary is refused, and an anonymous host or one with no runtime is refused too, because a host that cannot say what it is cannot be trusted with the decision. (2) Capabilities are GRANTED IN FULL OR THE PLAN IS REFUSED: granted = declared and host, never a reduced plan, because a node running with half its declared capabilities has failure modes nobody wrote down. (3) CAPABILITIES CONSTRAIN LOCALITY: subprocess demands at least 'sandboxed', native demands 'worker-isolated', and a host that cannot offer the floor refuses the plan and says which floor it needed — convenience is not an argument when the answer is sharing an address space. Runtime selection itself belongs to node.portability@1.0.0 and is DELEGATED, not copied; the plan quotes the domain's answer (selected target, candidates, rejected, policy). MEASURED, NOT ASSUMED: the two contracts describe different capability axes — P6.1's capabilities quote the foundation's trust capabilities (network, filesystem, subprocess, secrets, native, env) while node.portability validates requiredCapabilities against the registry's own capability ids (runtime.http-server, ai.model-gateway, ...) and demands class-specific permission ids from the published registry vocabulary (webhook:receive, storage:read, worker:admin, ...). No faithful projection exists between those vocabularies, so none is fabricated: writing a declared 'network' into requiredCapabilities would be a lie that happens to compile. When the caller supplies the node's OWN portability declaration (bound to the same node, validated by the domain, refused if it belongs to a neighbour), the plan performs a REAL delegation and quotes it; when no declaration is supplied the plan records delegation.performed=false, delegation.source='none', delegation.reason='capability.delegation.none' and derives the target from RUNTIME_LOCALITY_MODEL. A plan never pretends a delegation happened. trustClass is carried as a LABEL for policy, never as an authority: it changes no decision and is excluded even from planDigest, so two nodes differing only in trust class compile to the same decision AND the same fingerprint of that decision. Scope walls: no leases or attenuation (P6.22), no admission decision, no quarantine (P6.11) and no attestation (P6.12), no sandbox, worker, pool or process (P6.24), and no filesystem, network, clock, randomness or mutation."
+    },
+    {
+      "id": "node.semantics",
+      "owner": "manager",
+      "domain": "node-registry",
+      "version": "0.1.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/semantic-fingerprint.mjs"
+      ],
+      "exports": {
+        "src/lego/semantic-fingerprint.mjs": [
+          "SEMANTIC_FINGERPRINT_CONTRACT",
+          "SEMANTIC_FINGERPRINT_CONTRACT_VERSION",
+          "SEMANTIC_FINGERPRINT_SCHEMA_VERSION",
+          "SEMANTIC_FINGERPRINT_OPERATIONS",
+          "SEMANTIC_FINGERPRINT_PERMISSIONS",
+          "COMPATIBILITY_VERDICTS",
+          "IMPACT_ORDER",
+          "SEMANTIC_AXES",
+          "SEMANTIC_AXIS_IMPACTS",
+          "FINGERPRINT_EXCLUSIONS",
+          "MAX_LEAF_CHANGES",
+          "SEMANTIC_FINGERPRINT_REASONS",
+          "SEMANTIC_FINGERPRINT_RULES",
+          "SemanticFingerprintError",
+          "implementationIdentityOf",
+          "fingerprintNodeSemantics",
+          "isFingerprint",
+          "impactOfAxes",
+          "replayCompatibility",
+          "replayFingerprints",
+          "isReplayResult",
+          "explainReplay",
+          "describeFingerprint",
+          "verifyReplay",
+          "SEMANTIC_FINGERPRINT_INPUT_SCHEMA_VERSION"
+        ]
+      },
+      "consumers": [
+        "P6.10 lifecycle — an alias or a tombstone is a lifecycle event, and the fingerprint says whether the semantics moved with it",
+        "P6.14 worker convergence handshake — workers exchange fingerprints, not node bodies",
+        "P6.17 admission explain plan — a DIFF with an impact and a bounded leaf list is what an explain plan quotes",
+        "P6.18 SBOM/VEX policy diff — the same comparison, applied to a policy document's semantics",
+        "P6.19 canary rollout + semantic auto-rollback — MATCH/DIFF with impact is the trigger, in either direction",
+        "P6.26 precompiled WASM cache — a cache key is a semantic fingerprint plus an implementation digest",
+        "P6.30 repair + offline recovery — a node rebuilt from the mirror is checked by replaying its semantics"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-semantic-fingerprint.test.mjs"
+      ],
+      "notes": "P6.9 (P6 implementation owner: Agent 3, Issue #100): semantic fingerprint + compatibility replay. A node version is a claim — 'same node, same contract' — and the cheap check (comparing bytes) answers a different question: two artifacts can differ in every byte and still be the same node, and one artifact can differ in one character and behave differently forever. So this contract fingerprints the CONTRACT, not the artifact, over nine axes: type, typeVersion, parameters, expressions, credentials, io, webhooks, behavior, ui. Everything that describes how a node is SUPPLIED or GOVERNED (implementation digest and language, packageVersion, provenance, trustClass, health, lifecycle) is recorded beside the fingerprint and never inside it, because the implementation language is not part of the contract: a node reimplemented from JavaScript in Rust is the same node, and a replay reports implementationChanged: true while still saying MATCH. Canonicalisation is the precondition for a fingerprint at all: keys are sorted, unordered axes (credentials, io, webhooks) are compared as sets, and anything that cannot be canonicalised — a function, an undefined, a non-finite number, a Symbol, a BigInt, a Map/Set/class instance, a cycle — makes the answer NON_DETERMINISTIC with the offending path and kind named, because a hash over a guess would look like an answer. An axis a node does not declare is recorded as ABSENT rather than empty: 'no credentials' and 'credentials were not declared' are different claims and only one of them is safe to replay. Replay has four answers and no fifth: MATCH (semantics identical, implementation may not be), DIFF (semantics changed, with the worst axis deciding the impact on the ladder none < cosmetic < compatible < behavioral < breaking, plus at most 32 path-addressed leaf changes and an explicit truncation flag), NON_DETERMINISTIC (no fingerprint exists) and MISSING (no baseline: an absent fingerprint is never a match). ok means the replay could be PERFORMED, not that the answer was good: a DIFF is an answer, NON_DETERMINISTIC and MISSING are refusals to answer. Fingerprints can also be replayed without the semantics they came from (the worker handshake and the cache exchange fingerprints), and an unverifiable fingerprint is treated as a missing baseline. Scope walls: no admission decision (P6.11), no quarantine, no lifecycle transition (P6.10), no migration/repair (P6.30), no artifact or source inspection, no clock, no network, no randomness, no mutation — the only node import is the hash."
     }
   ]
 }

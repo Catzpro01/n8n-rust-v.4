@@ -38,7 +38,7 @@ test('the lock row is the thirty-eighth: compatibility.oracle@1.0.0, owner agent
   const row = ROWS.find((r) => r.id === 'compatibility.oracle');
   assert.ok(row, 'compatibility.oracle is locked');
   // P9.1 envelope + P3 optimizer are merged; P9.2 structured-log adds row 42.
-  assert.equal(ROWS.length, 51, 'P3 Slice J added the thirty-seventh (execution.ir); P3 Slice L adds the thirty-eighth (compatibility.oracle); P3 Slice M adds the thirty-ninth (execution.guard); P3 Slice K the forty-first (execution.optimizer) — P6.1 adds node.registry@0.1.0; P6.2 adds registry.compiler@0.1.0; P6.3 adds package.transaction@0.1.0; P6.4 adds registry.closure@0.1.0; P6.5 adds node.resolution@0.1.0; P6.6 adds runtime.lease@0.1.0; P6.7 adds node.residency@0.1.0; P6.8 adds node.capability@0.1.0; count-pins say 51');
+  assert.equal(ROWS.length, 52, 'P3 Slice J added the thirty-seventh (execution.ir); P3 Slice L adds the thirty-eighth (compatibility.oracle); P3 Slice M adds the thirty-ninth (execution.guard); P3 Slice K the forty-first (execution.optimizer) — P6.1 adds node.registry@0.1.0; P6.2 adds registry.compiler@0.1.0; P6.3 adds package.transaction@0.1.0; P6.4 adds registry.closure@0.1.0; P6.5 adds node.resolution@0.1.0; P6.6 adds runtime.lease@0.1.0; P6.7 adds node.residency@0.1.0; P6.8 adds node.capability@0.1.0; P6.9 adds node.semantics@0.1.0; count-pins say 52');
   assert.equal(row.owner, 'agent-1', 'Issue #98: Agent 1 owns the compatibility layer');
   assert.equal(row.domain, 'compatibility');
   assert.equal(row.version, '1.0.0');
