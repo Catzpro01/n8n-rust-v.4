@@ -9,7 +9,7 @@
 | Kind / tier | `domain` / `domain` |
 | Status | `partial` (phase `P6`) |
 | Parent | _root_ |
-| Contract | _none declared_ |
+| Contract | `node.portability` v1.0.0 |
 | Error namespace | `node` |
 | Trust | `core` |
 | Capabilities | `filesystem` |
@@ -21,6 +21,7 @@
 ## Owns
 
 - `src/catalog.mjs`
+- `src/lego/node-portability.mjs`
 
 ## Public contract surface
 
@@ -28,7 +29,7 @@ _none — this LEGO has no public surface yet; do not import from it._
 
 ## May call
 
-`platform-kernel`
+`platform-kernel`, `lego-foundation`
 
 ## Must never call
 
@@ -53,3 +54,4 @@ _none — this LEGO has no public surface yet; do not import from it._
 ## Tests that guard it
 
 - `test/rest.test.mjs`
+- `test/lego-node-portability.test.mjs`
