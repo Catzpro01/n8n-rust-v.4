@@ -42,7 +42,7 @@ const caught = (fn) => {
 test('the lock row is the thirty-fourth: execution.frontier@0.1.0, owner agent-1, exports byte-parity', () => {
   const row = ROWS.find((r) => r.id === 'execution.frontier');
   assert.ok(row, 'execution.frontier is locked');
-  assert.equal(ROWS.length, 34, 'P3 Slice D adds exactly one row — count-pins say 34');
+  assert.equal(ROWS.length, 35, 'P3 Slice D adds the thirty-fourth (execution.frontier); P3 Slice E adds the thirty-fifth (execution.state-stream) — count-pins say 35');
   assert.equal(row.owner, 'agent-1', 'Issue #98: Agent 1 owns the bounded frontier');
   assert.equal(row.domain, 'execution');
   assert.equal(row.version, '0.1.0', 'R9: matches the execution domain contract version (0.1.0)');

@@ -316,6 +316,7 @@ A domain that publishes several contracts names its **primary** one
 
 | date | contract | version | change |
 | :--- | :--- | :--- | :--- |
+| 2026-09-23 | `execution.state-stream` | 0.1.0 | P3 Slice E: initial lock of the bounded streaming execution state (required `maxResidentEvents` bound, explicit backpressure with published `lego.backpressure`, bounded reads, finite batch stream, selective `consume`, zero-import purity; Issues #75/#97) |
 | 2026-09-23 | `execution.frontier` | 0.1.0 | P3 Slice D: initial lock of the bounded runtime primitive (capacity-required ring FIFO, explicit `admitted`/`backpressure` outcomes with published `lego.backpressure`, bounded `takeBatch`, observability stats, pure structure; Issues #75/#97/#79) |
 | 2026-09-23 | `workflow.graph` | 0.1.0 | P3 Slice C: additive exports (GRAPH_HOT_CACHE_DEFAULT_CHUNKS, GRAPH_NODE_LIFECYCLE, GRAPH_RESIDENCY) — store port (memory/lazy) + bounded HOT cache `maxCachedChunks`, residency HOT/WARM/COLD (`residencyOf`), `evictChunk`, `cacheStats`, `lifecycleOf`; version stays 0.1.0 (additive, pre-1.0; Issues #75/#97) |
 | 2026-09-23 | `workflow.graph` | 0.1.0 | P3 Slice A: initial lock of the persistent logical graph (chunked verbatim nodes, source-bucketed connections, name→ordinal resident index, one-chunk reads, fail-closed bundle digest, lossless canonical export; Issues #75/#97) |

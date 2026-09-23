@@ -2943,7 +2943,8 @@
       "errorNamespace": "execution",
       "paths": [
         "src/engine.mjs",
-        "src/lego/bounded-frontier.mjs"
+        "src/lego/bounded-frontier.mjs",
+        "src/lego/state-stream.mjs"
       ],
       "public": [],
       "dependsOn": [

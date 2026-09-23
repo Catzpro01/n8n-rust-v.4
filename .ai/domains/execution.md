@@ -22,6 +22,7 @@
 
 - `src/engine.mjs`
 - `src/lego/bounded-frontier.mjs`
+- `src/lego/state-stream.mjs`
 
 ## Public contract surface
 
