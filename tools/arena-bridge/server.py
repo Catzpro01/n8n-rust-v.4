@@ -16,6 +16,19 @@ except (ImportError, ValueError):
 dispatcher = TaskDispatcher()
 supabase = SupabaseAdapter()
 
+# Canonical agent aliases mapping branch specialization to registered agent ID
+AGENT_ALIASES = {
+    "agent-runtime-kernel": "agent-01",
+    "agent-execution-engine": "agent-02",
+    "agent-connection": "agent-03",
+    "agent-data-plane": "agent-04",
+    "agent-expression": "agent-04",
+    "agent-expression-engine": "agent-04",
+    "agent-validation": "agent-05",
+    "agent-security": "agent-05",
+    "agent-manager": "agent-manager",
+}
+
 class ArenaWebhookHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         content_length = int(self.headers.get("Content-Length", 0))
@@ -81,26 +94,35 @@ class ArenaWebhookHandler(BaseHTTPRequestHandler):
                 action = "push"
                 head_sha = payload.get("after") or payload.get("head_commit", {}).get("id", "")
 
-            # Authoritative Branch Pattern: <SPECIALIZATION>/<MILESTONE>-<TASK>
-            # Examples: runtime-kernel/m1-runner, data-plane/m1-streaming
-            m = re.match(r"^([a-z0-9\-]+)/([a-z0-9]+)-([a-z0-9\-]+)$", branch)
-            if not m:
-                # Fallback to legacy arena/<agent-id>/<task-id> if present
-                m_legacy = re.match(r"^arena/([^/]+)/([^/]+)$", branch)
-                if not m_legacy:
-                    print(f"[ArenaBridge] Branch '{branch}' does not match canonical spec (<SPECIALIZATION>/<MILESTONE>-<TASK>). Skipping.")
-                    self.send_response(200)
-                    self.send_header("Content-Type", "application/json")
-                    self.end_headers()
-                    self.wfile.write(b'{"status": "ignored", "reason": "Non-canonical branch"}')
-                    return
+            # Branch Resolution:
+            # 1. Authoritative Canonical Spec: <SPECIALIZATION>/<MILESTONE>-<TASK> (e.g. runtime-kernel/m1-runner)
+            m_canonical = re.match(r"^([a-z0-9\-]+)/(m[0-9]+)-([a-z0-9\-]+)$", branch)
+            # 2. Legacy 3-segment Spec: arena/<agent-id>/<task-id>
+            m_legacy = re.match(r"^arena/([^/]+)/([^/]+)$", branch)
+            # 3. Arena session or manager branch: arena/<session-id> or arena-manager
+            m_session = re.match(r"^arena/([^/]+)$", branch) or re.match(r"^arena-manager$", branch)
+
+            if m_canonical:
+                specialization, milestone, task_id = m_canonical.group(1), m_canonical.group(2), m_canonical.group(3)
+                agent_id = f"agent-{specialization}"
+            elif m_legacy:
                 specialization, milestone, task_id = "legacy", "m0", m_legacy.group(2)
                 agent_id = m_legacy.group(1)
+            elif m_session or "manager" in branch:
+                detected_task = dispatcher.find_task_id_for_commit(commit_sha=head_sha, branch=branch)
+                task_id = detected_task or "manager-control"
+                agent_id = "agent-manager"
+                specialization = "manager"
+                milestone = "m0"
             else:
-                specialization, milestone, task_id = m.group(1), m.group(2), m.group(3)
-                agent_id = f"agent-{specialization}"
+                print(f"[ArenaBridge] Branch '{branch}' does not match canonical spec (<SPECIALIZATION>/<MILESTONE>-<TASK>). Skipping.")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(b'{"status": "ignored", "reason": "Non-canonical branch"}')
+                return
 
-            print(f"[ArenaBridge] Processing {event_type} ({action}) for spec: {specialization}, task: {task_id}, sha: {head_sha[:8]}")
+            print(f"[ArenaBridge] Processing {event_type} ({action}) for spec: {specialization}, task: {task_id}, sha: {head_sha[:8] if head_sha else 'N/A'}")
 
             if action in ("opened", "synchronize", "push"):
                 # Check task in canonical Supabase Control Plane
@@ -117,15 +139,26 @@ class ArenaWebhookHandler(BaseHTTPRequestHandler):
                 except Exception as ex:
                     print(f"[ArenaBridge] Control plane sync notice: {ex}")
 
-                # Load Task Manifest (either .arena/TASK.md or legacy tasks)
+                # Load Task Manifest (either .arena/tasks/ or commit object)
                 task_manifest = dispatcher.load_task_manifest(task_id, commit_sha=head_sha) or {
                     "sublego": f"{specialization}.{task_id}",
                     "lego": specialization,
                     "command": ["cargo", "check", "--workspace"]
                 }
 
+                # Extract manifest fields (FIX: prevent UnboundLocalError)
+                manifest_agent = task_manifest.get("agent") or task_manifest.get("assigned_agent") or agent_id
+                sublego_id = task_manifest.get("sublego") or f"{specialization}.{task_id}"
+                parent_lego = task_manifest.get("lego") or specialization
+                command = task_manifest.get("command") or ["cargo", "check", "--workspace"]
+                cwd = task_manifest.get("cwd", ".")
+                timeout_sec = task_manifest.get("timeout_sec", 120)
+
+                # Normalize branch agent using aliases (e.g. agent-runtime-kernel -> agent-01)
+                normalized_branch_agent = AGENT_ALIASES.get(agent_id, agent_id)
+
                 # Validate agent matches manifest
-                if manifest_agent != agent_id:
+                if manifest_agent != agent_id and manifest_agent != normalized_branch_agent:
                     print(f"[ArenaBridge] REJECT: Branch agent '{agent_id}' does not match manifest agent '{manifest_agent}'")
                     self.send_response(403)
                     self.send_header("Content-Type", "application/json")
@@ -133,9 +166,12 @@ class ArenaWebhookHandler(BaseHTTPRequestHandler):
                     self.wfile.write(b'{"error": "Agent mismatch with task manifest (fail-closed)"}')
                     return
 
+                # Authoritative agent used for downstream ownership and locking
+                effective_agent = manifest_agent
+
                 # Strict Sub-LEGO Ownership Validation
-                if not dispatcher.validate_agent_task(agent_id, sublego_id):
-                    print(f"[ArenaBridge] REJECT: Agent '{agent_id}' does not own Sub-LEGO '{sublego_id}'")
+                if not dispatcher.validate_agent_task(effective_agent, sublego_id):
+                    print(f"[ArenaBridge] REJECT: Agent '{effective_agent}' does not own Sub-LEGO '{sublego_id}'")
                     self.send_response(403)
                     self.send_header("Content-Type", "application/json")
                     self.end_headers()
@@ -143,13 +179,13 @@ class ArenaWebhookHandler(BaseHTTPRequestHandler):
                     return
 
                 # Dual Distributed Locking with Strict Atomic Check & Rollback
-                supabase.record_heartbeat(agent_id, status="WORKING", task_id=task_id)
+                supabase.record_heartbeat(effective_agent, status="WORKING", task_id=task_id)
                 
                 # Step 3A: Lock Sub-LEGO resource
                 sublego_lock_ok = supabase.acquire_lock(
                     resource_id=sublego_id,
                     resource_type="sublego",
-                    agent_id=agent_id,
+                    agent_id=effective_agent,
                     task_id=task_id
                 )
                 if not sublego_lock_ok:
@@ -164,12 +200,12 @@ class ArenaWebhookHandler(BaseHTTPRequestHandler):
                 task_lock_ok = supabase.acquire_lock(
                     resource_id=f"task:{task_id}",
                     resource_type="task",
-                    agent_id=agent_id,
+                    agent_id=effective_agent,
                     task_id=task_id
                 )
                 if not task_lock_ok:
                     print(f"[ArenaBridge] REJECT: Task lease lock failed. Rolling back Sub-LEGO lock for '{sublego_id}'")
-                    supabase.release_lock(sublego_id, agent_id=agent_id, task_id=task_id)
+                    supabase.release_lock(sublego_id, agent_id=effective_agent, task_id=task_id)
                     self.send_response(409)
                     self.send_header("Content-Type", "application/json")
                     self.end_headers()
@@ -179,14 +215,16 @@ class ArenaWebhookHandler(BaseHTTPRequestHandler):
                 # Dispatch Job to Arena Executor Queue
                 try:
                     job_id = dispatcher.dispatch_execution_job(
-                        agent_id=agent_id,
+                        agent_id=effective_agent,
                         task_id=task_id,
                         sublego_id=sublego_id,
                         command=command,
-                        commit_sha=head_sha
+                        cwd=cwd,
+                        commit_sha=head_sha,
+                        timeout_sec=timeout_sec
                     )
                     dispatch_result.update({
-                        "agent_id": agent_id,
+                        "agent_id": effective_agent,
                         "task_id": task_id,
                         "sublego_id": sublego_id,
                         "lego": parent_lego,
@@ -196,8 +234,8 @@ class ArenaWebhookHandler(BaseHTTPRequestHandler):
                     })
                 except Exception as e:
                     print(f"[ArenaBridge] Dispatch error: {e}. Initiating dual lock rollback!")
-                    supabase.release_lock(f"task:{task_id}", agent_id=agent_id, task_id=task_id)
-                    supabase.release_lock(sublego_id, agent_id=agent_id, task_id=task_id)
+                    supabase.release_lock(f"task:{task_id}", agent_id=effective_agent, task_id=task_id)
+                    supabase.release_lock(sublego_id, agent_id=effective_agent, task_id=task_id)
                     self.send_response(500)
                     self.send_header("Content-Type", "application/json")
                     self.end_headers()
@@ -206,12 +244,13 @@ class ArenaWebhookHandler(BaseHTTPRequestHandler):
 
             elif action == "closed":
                 task_manifest = dispatcher.load_task_manifest(task_id, commit_sha=head_sha)
+                effective_agent = (task_manifest.get("agent") if task_manifest else None) or agent_id
                 sublego_id = task_manifest.get("sublego") if task_manifest else ""
                 if sublego_id:
-                    supabase.release_lock(sublego_id, agent_id=agent_id, task_id=task_id)
-                supabase.release_lock(f"task:{task_id}", agent_id=agent_id, task_id=task_id)
-                supabase.record_heartbeat(agent_id, status="IDLE", task_id=None)
-                dispatch_result.update({"agent_id": agent_id, "task_id": task_id, "action": "locks_released"})
+                    supabase.release_lock(sublego_id, agent_id=effective_agent, task_id=task_id)
+                supabase.release_lock(f"task:{task_id}", agent_id=effective_agent, task_id=task_id)
+                supabase.record_heartbeat(effective_agent, status="IDLE", task_id=None)
+                dispatch_result.update({"agent_id": effective_agent, "task_id": task_id, "action": "locks_released"})
 
         self.send_response(200)
         self.send_header("Content-Type", "application/json")

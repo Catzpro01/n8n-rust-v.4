@@ -1,0 +1,31 @@
+name: VPS Runner Smoke Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  vps-smoke:
+    name: VPS Runner Smoke Verification
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+      - vps-runtime
+    steps:
+      - name: Print hostname
+        run: hostname
+
+      - name: Print system info
+        run: uname -a
+
+      - name: Print current user
+        run: whoami
+
+      - name: Print rustc version
+        run: rustc --version
+
+      - name: Print cargo version
+        run: cargo --version
+
+      - name: Runner verification flag
+        run: echo VPS_RUNNER_OK

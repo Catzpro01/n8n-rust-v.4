@@ -161,3 +161,88 @@ class SupabaseProvider:
             "available_agents": len(avail_agents),
             "working_agents": len(working_agents)
         }
+
+    # Enhanced Control Plane: Leasing & Worker Lifecycle
+    def register_worker(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Registers or updates a dynamic worker agent in Supabase."""
+        agent_key = params.get("agent_key") or params.get("worker_id")
+        specialization_id = params.get("specialization_id")
+        if not agent_key or not specialization_id:
+            raise ValueError("Parameters 'agent_key' and 'specialization_id' are required")
+
+        rpc_args = {
+            "p_agent_key": agent_key,
+            "p_specialization_id": specialization_id,
+            "p_capabilities": params.get("capabilities", {}),
+            "p_hostname": params.get("hostname", "laptop-worker"),
+            "p_platform": params.get("platform", "windows"),
+            "p_workspace_root": params.get("workspace_root", ""),
+            "p_worker_version": params.get("worker_version", "1.7.0"),
+            "p_execution_backend": params.get("execution_backend", "laptop_webhook"),
+            "p_resource_capacity": params.get("resource_capacity", {"build_slots": 1, "test_slots": 2})
+        }
+        res = self._request("register_dynamic_agent", method="POST", data=rpc_args, is_rpc=True)
+        return self.sanitizer.sanitize(res)
+
+    def claim_task_lease(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Atomically claims a task with an OCC version check and lease timeout."""
+        task_id = params.get("task_id")
+        agent_id = params.get("agent_id")
+        expected_version = params.get("expected_version", 0)
+        lease_seconds = params.get("lease_seconds", 600)
+
+        if not task_id or not agent_id:
+            raise ValueError("Parameters 'task_id' and 'agent_id' are required")
+
+        rpc_args = {
+            "p_task_id": task_id,
+            "p_agent_id": agent_id,
+            "p_expected_version": int(expected_version),
+            "p_lease_seconds": int(lease_seconds)
+        }
+        res = self._request("claim_task", method="POST", data=rpc_args, is_rpc=True)
+        return self.sanitizer.sanitize(res)
+
+    def worker_heartbeat(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Submits heartbeat proof for an active worker."""
+        agent_id = params.get("agent_id")
+        if not agent_id:
+            raise ValueError("Parameter 'agent_id' is required")
+
+        rpc_args = {
+            "p_agent_id": agent_id,
+            "p_worker_state": params.get("status", "AVAILABLE"),
+            "p_current_task_id": params.get("current_task_id"),
+            "p_active_build_slots": params.get("active_build_slots", 0),
+            "p_active_test_slots": params.get("active_test_slots", 0),
+            "p_worker_version": params.get("worker_version", "1.7.0")
+        }
+        res = self._request("agent_heartbeat", method="POST", data=rpc_args, is_rpc=True)
+        return self.sanitizer.sanitize(res)
+
+    def reap_expired_leases(self, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Reaps expired task leases and marks timed out tasks as STALE / RECLAIMABLE."""
+        res = self._request("reap_expired_leases", method="POST", data={}, is_rpc=True)
+        return self.sanitizer.sanitize(res)
+
+    def record_checkpoint(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Records an execution progress checkpoint for worker recovery."""
+        task_id = params.get("task_id")
+        agent_id = params.get("agent_id")
+        branch_name = params.get("branch_name")
+        if not task_id or not branch_name:
+            raise ValueError("Parameters 'task_id' and 'branch_name' are required")
+
+        checkpoint_data = {
+            "task_id": task_id,
+            "agent_id": agent_id,
+            "branch_name": branch_name,
+            "checkpoint_type": params.get("type", "PROGRESS"),
+            "description": params.get("description", ""),
+            "current_commit_sha": params.get("commit_sha"),
+            "files_changed": params.get("files_changed", []),
+            "metadata": params.get("metadata", {})
+        }
+        res = self._request("agent_checkpoints", method="POST", data=checkpoint_data)
+        return {"recorded": True, "checkpoint": self.sanitizer.sanitize(res)}
+

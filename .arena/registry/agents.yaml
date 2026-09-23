@@ -54,3 +54,12 @@ agents:
       - integration.gates
     workspace: "/srv/arena/workspaces/agent-05"
     status: idle
+
+  - id: agent-manager
+    name: "Arena Manager (Delegated Technical Operator)"
+    primary_lego: manager
+    allowed_sublegos:
+      - manager.control
+    workspace: "/srv/arena/workspaces/agent-manager"
+    status: idle
+

@@ -1,63 +1,85 @@
 """
 Laptop Capability Provider for Arena Manager Gateway.
-Enables local execution of builds, tests, clippy, git inspection,
-and local system operations inside the controlled repository environment.
-All process outputs and error traces are strictly sanitized against the vault,
-and child processes run in isolated environments without access to host secrets.
+Bridges capability calls (laptop.run_test, laptop.run_build, laptop.run_clippy, laptop.status)
+either locally or via authenticated signed Webhooks to the Laptop Webhook Agent.
+All outputs and error traces are strictly sanitized against the vault.
 """
 
 import os
+import time
+import json
+import uuid
+import urllib.request
+import urllib.error
 import subprocess
-import shutil
 from pathlib import Path
 from typing import Dict, Any, Optional
+
 from tools.gateway.vault import SecretVault
 from tools.gateway.sanitizer import Sanitizer
+from tools.gateway.laptop_webhook_agent import compute_webhook_signature
 
 BLOCKED_COMMAND_KEYWORDS = [
-    # Destructive commands
     "rm -rf", "del /f", "del /s", "format", "shutdown", "curl", "wget",
-    # Environment dumping attempts
     "env", "printenv", "set", "get-childitem env:", "dir env:", "gci env:",
-    # File reading attempts on secrets
     "cat .env", "type .env", "more .env", "head .env", "tail .env",
     "cat .credentials", "type .credentials", "type .runner", "cat .runner"
 ]
 
 class LaptopProvider:
-    def __init__(self, vault: SecretVault, sanitizer: Sanitizer, repo_root: Optional[Path] = None):
+    def __init__(self, vault: SecretVault, sanitizer: Sanitizer, repo_root: Optional[Path] = None, webhook_url: str = "http://127.0.0.1:8989"):
         self.vault = vault
         self.sanitizer = sanitizer
         self.repo_root = repo_root or Path(__file__).resolve().parents[3]
+        self.webhook_url = webhook_url.rstrip("/")
+
+    def _call_webhook(self, operation: str, params: Dict[str, Any], timeout: int = 180) -> Optional[Dict[str, Any]]:
+        """Sends signed webhook request to Laptop Webhook Agent if running."""
+        secret = self.vault.get("LAPTOP_WEBHOOK_SECRET") or "arena-laptop-worker-local-secret"
+        req_id = f"req-{uuid.uuid4().hex[:12]}"
+        timestamp = str(time.time())
+
+        payload = {
+            "operation": operation,
+            "request_id": req_id,
+            "timeout": timeout,
+            **params
+        }
+        body_bytes = json.dumps(payload).encode("utf-8")
+        signature = compute_webhook_signature(secret, timestamp, req_id, body_bytes)
+
+        headers = {
+            "Content-Type": "application/json",
+            "X-Webhook-Signature": signature,
+            "X-Webhook-Timestamp": timestamp,
+            "X-Webhook-Request-ID": req_id
+        }
+
+        req = urllib.request.Request(f"{self.webhook_url}/webhook/execute", data=body_bytes, headers=headers, method="POST")
+        try:
+            with urllib.request.urlopen(req, timeout=timeout + 10) as resp:
+                raw = resp.read().decode("utf-8")
+                res = json.loads(raw)
+                return self.sanitizer.sanitize(res)
+        except Exception:
+            # If webhook agent is offline, fallback to direct isolated local execution
+            return None
 
     def _get_isolated_env(self) -> Dict[str, str]:
-        """
-        Creates an isolated environment dictionary for subprocess execution.
-        Strips ALL API keys, tokens, database secrets, and credentials.
-        """
         env = os.environ.copy()
-        # Remove known sensitive environment variables
-        sensitive_substrings = ["TOKEN", "SECRET", "KEY", "PASS", "AUTH", "CREDENTIAL", "JWT", "RUNNER"]
-        keys_to_remove = []
-        for k in env:
-            k_upper = k.upper()
-            if any(sub in k_upper for sub in sensitive_substrings):
-                keys_to_remove.append(k)
-
-        for k in keys_to_remove:
-            env.pop(k, None)
-
-        # Inject safe placeholders
+        sensitive = ["TOKEN", "SECRET", "KEY", "PASS", "AUTH", "CREDENTIAL", "JWT", "RUNNER"]
+        for k in list(env.keys()):
+            if any(s in k.upper() for s in sensitive):
+                env.pop(k, None)
         env["ARENA_ENVIRONMENT"] = "isolated"
         return env
 
-    def _execute_cmd(self, cmd: list, cwd: Optional[Path] = None, timeout: int = 120) -> Dict[str, Any]:
-        target_cwd = cwd or self.repo_root
+    def _execute_local(self, cmd: list, timeout: int = 120) -> Dict[str, Any]:
         isolated_env = self._get_isolated_env()
         try:
             res = subprocess.run(
                 cmd,
-                cwd=str(target_cwd),
+                cwd=str(self.repo_root),
                 capture_output=True,
                 text=True,
                 timeout=timeout,
@@ -73,7 +95,7 @@ class LaptopProvider:
             return {
                 "exit_code": -1,
                 "stdout": "",
-                "stderr": f"Command timed out after {timeout} seconds",
+                "stderr": f"Command timed out after {timeout}s",
                 "success": False
             }
         except Exception as e:
@@ -85,59 +107,81 @@ class LaptopProvider:
             }
 
     def status(self, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """Returns the local workspace status (git branch, commit, dirty status)."""
-        branch_res = self._execute_cmd(["git", "rev-parse", "--abbrev-ref", "HEAD"])
-        commit_res = self._execute_cmd(["git", "rev-parse", "HEAD"])
-        status_res = self._execute_cmd(["git", "status", "--porcelain"])
+        """Workspace status and webhook connectivity check."""
+        webhook_online = False
+        try:
+            req = urllib.request.Request(f"{self.webhook_url}/health", method="GET")
+            with urllib.request.urlopen(req, timeout=2) as resp:
+                webhook_online = (resp.status == 200)
+        except Exception:
+            webhook_online = False
 
-        runner_active = False
+        branch_res = self._execute_local(["git", "rev-parse", "--abbrev-ref", "HEAD"])
+        commit_res = self._execute_local(["git", "rev-parse", "HEAD"])
+        status_res = self._execute_local(["git", "status", "--porcelain"])
+
         runner_dir = Path("C:/actions-runner")
-        if runner_dir.exists():
-            runner_active = True
 
         return {
             "branch": branch_res["stdout"].strip(),
             "commit": commit_res["stdout"].strip(),
             "is_clean": len(status_res["stdout"].strip()) == 0,
-            "runner_installed": runner_active,
+            "runner_installed": runner_dir.exists(),
+            "webhook_agent_online": webhook_online,
             "repo_path": str(self.repo_root)
         }
 
     def run_test(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """Runs cargo test on a specific crate or whole workspace."""
+        """Runs cargo test through signed webhook if online, or local sandbox."""
         crate = params.get("crate")
-        test_filter = params.get("test_name")
+        timeout = params.get("timeout", 300)
 
+        # Attempt signed webhook execution
+        if crate:
+            wh_res = self._call_webhook("cargo_test_package", {"package": crate, "test_filter": params.get("test_name", "")}, timeout=timeout)
+        else:
+            wh_res = self._call_webhook("cargo_test", {}, timeout=timeout)
+
+        if wh_res is not None:
+            return wh_res
+
+        # Fallback to local isolated execution
         cmd = ["cargo", "test"]
         if crate:
             cmd.extend(["-p", crate])
-        if test_filter:
-            cmd.append(test_filter)
-
-        return self._execute_cmd(cmd, timeout=300)
+        if params.get("test_name"):
+            cmd.append(params["test_name"])
+        return self._execute_local(cmd, timeout=timeout)
 
     def run_build(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Runs cargo check or cargo build."""
-        mode = params.get("mode", "check") # "check" or "build"
-        crate = params.get("crate")
+        mode = params.get("mode", "check")
+        timeout = params.get("timeout", 300)
+
+        wh_op = "cargo_check" if mode == "check" else "cargo_build"
+        wh_res = self._call_webhook(wh_op, {}, timeout=timeout)
+        if wh_res is not None:
+            return wh_res
 
         cmd = ["cargo", mode]
-        if crate:
-            cmd.extend(["-p", crate])
-
-        return self._execute_cmd(cmd, timeout=300)
+        if params.get("crate"):
+            cmd.extend(["-p", params["crate"]])
+        return self._execute_local(cmd, timeout=timeout)
 
     def run_clippy(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Runs cargo clippy."""
-        crate = params.get("crate")
+        timeout = params.get("timeout", 300)
+        wh_res = self._call_webhook("cargo_clippy", {}, timeout=timeout)
+        if wh_res is not None:
+            return wh_res
+
         cmd = ["cargo", "clippy"]
-        if crate:
-            cmd.extend(["-p", crate])
+        if params.get("crate"):
+            cmd.extend(["-p", params["crate"]])
         cmd.extend(["--", "-D", "warnings"])
-        return self._execute_cmd(cmd, timeout=300)
+        return self._execute_local(cmd, timeout=timeout)
 
     def run_command(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """Runs a safe shell command within the repository root."""
         cmd = params.get("command")
         if not cmd:
             raise ValueError("Parameter 'command' is required")
@@ -145,19 +189,13 @@ class LaptopProvider:
         cmd_str = cmd if isinstance(cmd, str) else " ".join(cmd)
         cmd_lower = cmd_str.lower().strip()
 
-        # Strict keyword check
         for b in BLOCKED_COMMAND_KEYWORDS:
             if b in cmd_lower:
                 raise PermissionError(f"Command pattern '{b}' is blocked by laptop provider security policy")
 
-        # Specific single word environment dumps
         if cmd_lower in ["env", "set", "printenv"]:
             raise PermissionError(f"Environment dumping command '{cmd_lower}' is strictly forbidden")
 
-        if isinstance(cmd, str):
-            cmd_list = cmd.split()
-        else:
-            cmd_list = cmd
-
+        cmd_list = cmd.split() if isinstance(cmd, str) else cmd
         timeout = params.get("timeout", 60)
-        return self._execute_cmd(cmd_list, timeout=timeout)
+        return self._execute_local(cmd_list, timeout=timeout)

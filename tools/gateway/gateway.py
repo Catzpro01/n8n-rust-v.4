@@ -65,6 +65,11 @@ class CapabilityGateway:
             "supabase.update_task_state": self.supabase.update_task_state,
             "supabase.record_event": self.supabase.record_event,
             "supabase.get_project_state": self.supabase.get_project_state,
+            "supabase.register_worker": self.supabase.register_worker,
+            "supabase.claim_task_lease": self.supabase.claim_task_lease,
+            "supabase.worker_heartbeat": self.supabase.worker_heartbeat,
+            "supabase.reap_expired_leases": self.supabase.reap_expired_leases,
+            "supabase.record_checkpoint": self.supabase.record_checkpoint,
 
             # Telegram capabilities
             "telegram.send_message": self.telegram.send_message,

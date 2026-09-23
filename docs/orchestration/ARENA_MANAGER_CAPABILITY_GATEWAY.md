@@ -4,42 +4,27 @@ Dokumen spesifikasi resmi arsitektur **Arena Manager Capability Gateway v1.7** p
 
 ## 1. Arsitektur & Prinsip Dasar
 
-Arsitektur orkestrasi n8n-rust-v.4 menempatkan **Arena Manager** (1 Agen AI) sebagai project orchestrator utama menggantikan Antigravity.
-
-Antigravity bertindak **HANYA** sebagai infrastruktur *provisioning & debugging*, sementara operasi harian dijalankan 100% secara offline tanpa ketergantungan pada proses atau workspace Antigravity.
+Arsitektur orkestrasi n8n-rust-v.4 menempatkan **Arena Manager** sebagai Wakil Teknis Delegasi (Delegated Technical Operator) dari Antigravity:
 
 ```text
-                         HUMAN
-                           │
-                           ▼
-                  ┌─────────────────┐
-                  │  ARENA MANAGER  │
-                  │    1 AGENT      │
-                  └────────┬────────┘
-                           │
-                    authenticated
-                    capability calls
-                  (HTTP REST / CLI)
-                           │
-                           ▼
-                  ┌─────────────────┐
-                  │ CAPABILITY      │
-                  │ GATEWAY DAEMON  │
-                  │                 │
-                  │ GatewayAuth     │
-                  │ PolicyEngine    │
-                  │ SecretVault     │
-                  │ Sanitizer       │
-                  │ AuditLogger     │
-                  └────────┬────────┘
-                           │
-             credentials remain exclusively
-                 inside gateway vault
-                           │
-         ┌────────────┬────┴───────┬────────────┐
-         ▼            ▼            ▼            ▼
-      GitHub       Supabase     Laptop      Telegram
-       Repo      State/Tasks    Builds      Dashboard
+ANTIGRAVITY
+= ROOT AUTHORITY / TRUST ANCHOR
+      │
+      │ delegated capability authority
+      ▼
+CAPABILITY GATEWAY
+= SECURITY + CREDENTIAL BOUNDARY
+      │
+      │ authenticated capability calls
+      ▼
+ARENA MANAGER
+= DELEGATED TECHNICAL OPERATOR
+      │
+      ├── GITHUB       (Source of Truth)
+      ├── SUPABASE     (Shared Control Plane)
+      ├── LAPTOP       (Trusted Build/Test Webhook Worker)
+      ├── WORKERS      (Coding Workforce)
+      └── TELEGRAM     (Observability / Alert Channel)
 ```
 
 ### Prinsip Keamanan & Desain Inti:
@@ -48,16 +33,19 @@ Antigravity bertindak **HANYA** sebagai infrastruktur *provisioning & debugging*
 3. **Role-Based Privilege Model**:
    - **Arena Manager**: Hak administratif penuh untuk membuat/mengupdate PR, merge PR, membuat/menghapus worker branch, membuat task, dan broadcast Telegram.
    - **Worker Agents**: Terisolasi pada pembacaan repo, eksekusi tes/build lokal, dan dilarang mengeksekusi operasi administratif (misal menghapus branch atau merge PR).
-4. **Subprocess & Environment Isolation**:
-   - Provider laptop (`laptop.run_command`, `laptop.run_test`, dll.) mengeksekusi perintah pada lingkungan terisolasi di mana seluruh variabel rahasia OS distrip sebelum proses dijalankan.
-   - Perintah dump lingkungan (`env`, `printenv`, `set`, `Get-ChildItem env:`) dan pembacaan berkas kredensial (`.env`, `.credentials`, `.runner`) diblokir secara mutlak.
-5. **Protected Branch & File Guard**:
-   - Branch `main`, `master`, dan `arena-agent` bersifat permanen dan tidak dapat dihapus oleh operasi normal gateway.
+4. **Laptop Webhook Agent Architecture**:
+   - Laptop menjalankan daemon `tools/gateway/laptop_webhook_agent.py` di port 8989.
+   - Menggunakan verifikasi **HMAC SHA-256 Request Signatures** (`X-Webhook-Signature`, `X-Webhook-Timestamp`, `X-Webhook-Request-ID`).
+   - Proteksi Replay Attack (toleransi waktu 60 detik + pelacakan Request ID unik).
+   - Operation-based payload (`cargo_check`, `cargo_test`, `cargo_test_package`, `cargo_clippy`, `cargo_build`). **DILARANG arbitrary shell command**.
+5. **Persistent Manager Orchestrator Daemon**:
+   - Modul `tools/gateway/orchestrator_daemon.py` menjalankan loop otonom independen dari turn AI.
+   - Mengelola pemantauan heartbeat, perpanjangan lease, dan *reaping* task kadaluarsa/stale worker.
 6. **Thread-Safe Append-Only Audit Logging**: Seluruh pemanggilan kapabilitas dicatat ke `.arena/logs/gateway_audit.jsonl` (timestamp, caller, capability, target, authorization, status, latency) bebas dari data rahasia.
 
 ---
 
-## 2. Katalog Kapabilitas (Capabilities Catalog)
+## 2. Katalog Kapabilitas Lengkap (Capabilities Catalog)
 
 ### 2.1 Domain GitHub (`github.*`)
 * `github.read_repo`: Mengambil metadata repositori (nama, branch default, visibilitas).
@@ -86,12 +74,17 @@ Antigravity bertindak **HANYA** sebagai infrastruktur *provisioning & debugging*
 * `supabase.update_task_state`: Memperbarui status task (OCC concurrency checks).
 * `supabase.record_event`: Mencatat log event orkestrasi ke tabel audit Supabase.
 * `supabase.get_project_state`: Mengambil ringkasan metrik task dan progress proyek.
+* `supabase.register_worker`: Mendaftarkan worker dinamis ke tabel `agents`.
+* `supabase.claim_task_lease`: Mengklaim task secara atomik dengan timeout sewa (lease).
+* `supabase.worker_heartbeat`: Mengirimkan pulsa heartbeat aktif worker.
+* `supabase.reap_expired_leases`: Membersihkan sewa task yang habis masa berlakunya.
+* `supabase.record_checkpoint`: Mencatat snapshot kemajuan kerja di `agent_checkpoints`.
 
-### 2.3 Domain Laptop / Local Worker (`laptop.*`)
-* `laptop.status`: Memeriksa branch lokal, commit HEAD, working tree clean status, dan status actions runner.
-* `laptop.run_test`: Menjalankan suite `cargo test` lokal (mendukung filtering per crate atau nama test).
-* `laptop.run_build`: Menjalankan `cargo check` atau `cargo build`.
-* `laptop.run_clippy`: Menjalankan linter `cargo clippy -- -D warnings`.
+### 2.3 Domain Laptop / Webhook Worker (`laptop.*`)
+* `laptop.status`: Memeriksa branch lokal, commit HEAD, working tree clean status, runner status, dan status webhook agent.
+* `laptop.run_test`: Menjalankan suite `cargo test` melalui signed HMAC webhook ke Laptop Webhook Agent.
+* `laptop.run_build`: Menjalankan `cargo check` atau `cargo build` via webhook.
+* `laptop.run_clippy`: Menjalankan linter `cargo clippy -- -D warnings` via webhook.
 * `laptop.run_command`: Menjalankan perintah shell terkontrol dalam isolasi environment.
 
 ### 2.4 Domain Telegram (`telegram.*`)
@@ -101,53 +94,34 @@ Antigravity bertindak **HANYA** sebagai infrastruktur *provisioning & debugging*
 
 ---
 
-## 3. Protokol & Endpoint Server Gateway
+## 3. Protokol & Endpoint Gateway
 
-Daemon HTTP REST Gateway berjalan di `http://127.0.0.1:8787` (atau port yang dikonfigurasi):
+### A. Capability Gateway REST Server (`http://127.0.0.1:8787`):
+- `GET /health`: Pemeriksaan kesehatan gateway.
+- `GET /api/v1/capabilities`: Discovery daftar kapabilitas.
+- `POST /api/v1/invoke`: Eksekusi kapabilitas dengan header `Authorization: Bearer <TOKEN>` dan `X-Caller-ID: <CALLER_ID>`.
 
-| Endpoint | Method | Header | Deskripsi |
-| :--- | :--- | :--- | :--- |
-| `/health` atau `/api/v1/health` | `GET` | - | Health check server status |
-| `/api/v1/capabilities` | `GET` | - | Discovery katalog seluruh kapabilitas |
-| `/api/v1/invoke` | `POST` | `Authorization: Bearer <TOKEN>`<br>`X-Caller-ID: <CALLER_ID>` | Eksekusi kapabilitas |
-
-Contoh Payload Pemanggilan (`POST /api/v1/invoke`):
-```json
-{
-  "caller_id": "arena-manager",
-  "capability": "supabase.inspect_tasks",
-  "params": {
-    "limit": 5
-  }
-}
-```
-
-Format Respons:
-```json
-{
-  "ok": true,
-  "result": { ... },
-  "authenticated": true,
-  "authorized": true,
-  "duration_ms": 124.5
-}
-```
+### B. Laptop Webhook Agent Server (`http://127.0.0.1:8989`):
+- `GET /health`: Status daemon eksekusi lokal.
+- `GET /status`: Konfigurasi ruang kerja dan operasi yang diizinkan.
+- `POST /webhook/execute`: Eksekusi tugas terotentikasi HMAC SHA-256.
+- `POST /webhook/cancel`: Pembatalan proses pekerjaan aktif.
 
 ---
 
-## 4. Cara Penggunaan Antigravity-Independent
+## 4. Cara Pengoperasian Mandiri (Antigravity-Independent)
 
-### A. Menjalankan Gateway Daemon (Background Service)
 ```bash
+# 1. Menjalankan Laptop Webhook Agent (Background Service)
+python -m tools.gateway.laptop_webhook_agent --port 8989
+
+# 2. Menjalankan Capability Gateway Daemon (Background Service)
 python -m tools.gateway.server --host 127.0.0.1 --port 8787
-```
 
-### B. Pemanggilan via CLI
-```bash
-# Discovery
-python -m tools.gateway.cli discover
+# 3. Menjalankan Persistent Manager Orchestrator Daemon
+python -m tools.gateway.orchestrator_daemon
 
-# Invoke dengan Token Terotentikasi
+# 4. Arena Manager Memanggil Kapabilitas via CLI
 python -m tools.gateway.cli invoke \
   --caller arena-manager \
   --capability github.read_repo \
