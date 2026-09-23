@@ -580,6 +580,9 @@ pub enum TickDecision {
     NotDue,
     Disabled,
     NotActive,
+    /// Ownership/leader gate (#99-C/M): host ini bukan pemilik schedule
+    /// setelah failover — pemilik lama berhenti emit.
+    NotOwner,
     SkipOverlap,
     DuplicateTick,
     MisfireDeferred,
@@ -602,11 +605,23 @@ pub struct ScheduleRegistry {
     fired_ticks: VecDeque<(String, i64)>,
     pending_updates: BTreeMap<String, PendingScheduleUpdate>,
     pending_specs: BTreeMap<String, Vec<ScheduleSpec>>,
+    /// Identitas instance host (opsional; aktifkan gate ownership — lihat
+    /// [`ScheduleRegistry::set_local_instance`]). `None` = host tunggal tanpa
+    /// klaim kepemilikan (semantik lama dipertahankan).
+    local_instance: Option<String>,
 }
 
 impl ScheduleRegistry {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Nyatakan identitas instance host untuk gate ownership/leader (#99-C/M).
+    /// Setelah failover, instance lama (identitas ≠ owner schedule) menerima
+    /// [`TickDecision::NotOwner`] dan berhenti emit; instance baru (identitas
+    /// = owner) lolos. Host tunggal yang tidak memanggil ini tetap kompatibel.
+    pub fn set_local_instance(&mut self, instance_id: impl Into<String>) {
+        self.local_instance = Some(instance_id.into());
     }
 
     pub fn activation(&self) -> &ActivationRegistry {
@@ -911,6 +926,19 @@ impl ScheduleRegistry {
         }
         fence_generation(record.generation, activation_record.generation)
             .map_err(ScheduleError::Contract)?;
+
+        // Ownership/leader gate (#99-C/M, remediasi finalisasi P4): schedule
+        // dengan owner + host ber-identitas yang berbeda ⇒ NotOwner (pemilik
+        // lama berhenti emit setelah failover; pemilik baru lolos). Opt-in:
+        // tanpa identitas host, perilaku lama dipertahankan (host tunggal).
+        if let (Some(local), Some(owner)) = (
+            self.local_instance.as_deref(),
+            activation_record.owner_instance.as_deref(),
+        ) {
+            if local != owner {
+                return Ok(TickDecision::NotOwner);
+            }
+        }
 
         // anchor = last-fired (atau saat registrasi) — occurrence berikutnya.
         let anchor_s = record
@@ -1645,5 +1673,113 @@ mod tests {
         assert_eq!(dow_sunday0(days_from_civil(2023, 11, 15)), 3); // 2023-11-15 Rabu
         let (y, m, d) = civil_from_days(20_000);
         assert_eq!(days_from_civil(y, m, d), 20_000);
+    }
+    // --------------------------------------- ownership/leader gate (remediasi)
+
+    #[test]
+    fn owner_matching_local_identity_fires() {
+        let mut reg = ScheduleRegistry::new();
+        reg.set_local_instance("inst-a");
+        let specs = vec![spec("node-1", "0 0 * * *")];
+        let register_at = fire_ms(2023, 11, 14, 23, 59);
+        reg.register_workflow(
+            wf("wf-1", 1),
+            &specs,
+            ActivationMode::Activate,
+            Some("inst-a".to_string()),
+            register_at as u64,
+        )
+        .unwrap();
+        reg.commit_workflow("wf-1", None, register_at as u64 + 1)
+            .unwrap();
+        let at_fire = fire_ms(2023, 11, 15, 0, 0);
+        let d = reg
+            .on_tick("wf-1", "node-1", at_fire, 60_000, &UtcResolver)
+            .unwrap();
+        assert!(matches!(d, TickDecision::Fire(_)), "diharapkan Fire: {d:?}");
+    }
+
+    #[test]
+    fn owner_mismatch_returns_not_owner_after_failover() {
+        let mut reg = ScheduleRegistry::new();
+        reg.set_local_instance("inst-a");
+        let specs = vec![spec("node-1", "0 0 * * *")];
+        let register_at = fire_ms(2023, 11, 14, 23, 59);
+        reg.register_workflow(
+            wf("wf-1", 1),
+            &specs,
+            ActivationMode::Activate,
+            Some("inst-a".to_string()),
+            register_at as u64,
+        )
+        .unwrap();
+        reg.commit_workflow("wf-1", None, register_at as u64 + 1)
+            .unwrap();
+        let at_fire = fire_ms(2023, 11, 15, 0, 0);
+        assert!(matches!(
+            reg.on_tick("wf-1", "node-1", at_fire, 60_000, &UtcResolver)
+                .unwrap(),
+            TickDecision::Fire(_)
+        ));
+        // Failover: deactivate → re-activate oleh pemilik baru inst-b.
+        reg.deactivate_workflow("wf-1", DeactivationKind::Immediate, None, at_fire as u64 + 1)
+            .unwrap();
+        reg.activation
+            .finish_deactivation("wf-1", None, at_fire as u64 + 2)
+            .unwrap();
+        let register_at2 = fire_ms(2023, 11, 15, 0, 30);
+        reg.register_workflow(
+            wf("wf-1", 2),
+            &specs,
+            ActivationMode::Activate,
+            Some("inst-b".to_string()),
+            register_at2 as u64,
+        )
+        .unwrap();
+        reg.commit_workflow("wf-1", None, register_at2 as u64 + 1)
+            .unwrap();
+        // Host lama (inst-a) tidak lagi pemilik → NotOwner (berhenti emit).
+        let next_due = fire_ms(2023, 11, 16, 0, 0);
+        let d = reg
+            .on_tick("wf-1", "node-1", next_due, 60_000, &UtcResolver)
+            .unwrap();
+        assert!(
+            matches!(d, TickDecision::NotOwner),
+            "diharapkan NotOwner, dapat {d:?}"
+        );
+        // Pemilik baru (inst-b) lolos gate dan fire (generation 2).
+        reg.set_local_instance("inst-b");
+        let d = reg
+            .on_tick("wf-1", "node-1", next_due, 60_000, &UtcResolver)
+            .unwrap();
+        match d {
+            TickDecision::Fire(exec) => {
+                assert_eq!(exec.generation, Generation::new(2));
+            }
+            other => panic!("diharapkan Fire gen-2, dapat {other:?}"),
+        }
+    }
+
+    #[test]
+    fn without_local_identity_ownership_gate_is_inert() {
+        let mut reg = ScheduleRegistry::new();
+        let specs = vec![spec("node-1", "0 0 * * *")];
+        let register_at = fire_ms(2023, 11, 14, 23, 59);
+        reg.register_workflow(
+            wf("wf-1", 1),
+            &specs,
+            ActivationMode::Activate,
+            Some("inst-z".to_string()),
+            register_at as u64,
+        )
+        .unwrap();
+        reg.commit_workflow("wf-1", None, register_at as u64 + 1)
+            .unwrap();
+        // Host tanpa identitas: gate opt-in tidak aktif (kompatibilitas mundur).
+        let at_fire = fire_ms(2023, 11, 15, 0, 0);
+        let d = reg
+            .on_tick("wf-1", "node-1", at_fire, 60_000, &UtcResolver)
+            .unwrap();
+        assert!(matches!(d, TickDecision::Fire(_)), "diharapkan Fire: {d:?}");
     }
 }
