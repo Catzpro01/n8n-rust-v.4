@@ -47,6 +47,7 @@
 - `src/lego/sbom-policy.mjs`
 - `src/lego/semantic-fingerprint.mjs`
 - `src/lego/supply-chain.mjs`
+- `src/lego/wasm-cache.mjs`
 - `src/lego/worker-convergence.mjs`
 
 ## Public contract surface
