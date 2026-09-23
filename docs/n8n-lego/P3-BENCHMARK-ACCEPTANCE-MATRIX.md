@@ -37,10 +37,12 @@ linked in the row — none are estimates, none are FAIL→PASS relabels.
 | Compatibility gate §6 | oracle modes/observables locked; metamorphic/identity properties asserted where in slice scope; errors.contract untouched (14 codes) | PASS |
 | Performance gate §7 | per-slice measured rows above, linked to evidence | PASS where measured; executor end-to-end pending K (honest gap, tracked in §A rows 5/10) |
 | Stress target §Stress Target | T1 MUST PASS; T2/T3 env-limit honesty | T1 PASS · T2/T3 ENV-LIMIT recorded |
+| P3.15 closeout (Slice P) | all slices merged + gates/regression/compat/register reconciled on protected main | PASS — see `P3-SLICE-P-CLOSEOUT-EVIDENCE.md` (final main HEAD recorded in #97 §34) |
 
 ## §C Runner context (comparability)
 
 - Runner: Linux container, **≈2 GB RAM total**, Node v20, 1 process, no swap.
+- Final-suite snapshot at closeout (protected main `9f6625b9` + this PR): BE **1053 tests / 1050 pass / 3 pre-existing REST 404** · FE **419 / 418 / 1 skip** · focused bundle **155/155** · 7 governance gates **7/7** · lock rows **43** (P3-owned rows per slice evidence; rows 40/42/43 belong to concurrent P9/P6 workstreams kept intact).
 - All timings single-run (no warmup, no averaging) — honest samples, ceilings
   are env guards. Re-run + update rows when the runner class changes.
 - Numbers never override equivalence: any future optimizer claim must first
