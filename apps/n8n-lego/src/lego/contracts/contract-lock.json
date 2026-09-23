@@ -1516,6 +1516,37 @@
         "apps/n8n-lego/test/lego-execution-ir.test.mjs"
       ],
       "notes": "P3 Slice J: execution IR — raw compile (encounter-order deps, dangling excluded), independently disableable optimizations #91(c) (noopPassthrough, dedupeDeps; default ON, all-off = canonical identity), bounded LRU IR cache; zero-import (Issues #75/#91)"
+    },
+    {
+      "id": "compatibility.oracle",
+      "owner": "agent-1",
+      "domain": "compatibility",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/compat/oracle.mjs"
+      ],
+      "exports": {
+        "src/compat/oracle.mjs": [
+          "COMPATIBILITY_ORACLE_CONTRACT",
+          "COMPATIBILITY_ORACLE_CONTRACT_VERSION",
+          "ORACLE_MODES",
+          "ORACLE_OBSERVABLES",
+          "CompatibilityOracleError",
+          "differentialPlan",
+          "compareCanonical",
+          "toggleSweep"
+        ]
+      },
+      "consumers": [
+        "compatibility gate §6 harnesses — differential/virtualization/toggle/metamorphic equivalence (#91)",
+        "optimizer + virtualization slices — must prove equivalence before any benchmark claim (#91 Security rule)",
+        "stress harness (P3) — metamorphic checks over 1M/5M/10M workflows"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/compat.oracle.test.mjs"
+      ],
+      "notes": "P3 Slice L: compatibility oracle — four #91 modes, nine observables, fail-closed structural equivalence, 2^n bounded toggle sweep with identityRecovered; zero-import, no workflow/execution deps (Issue #91)"
     }
   ]
 }

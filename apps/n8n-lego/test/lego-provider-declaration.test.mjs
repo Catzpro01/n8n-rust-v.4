@@ -65,7 +65,7 @@ const D15 = 'd15a9538b1899e9fd2ea9d5bd37d3fd26ecc1943';
 test('the lock row is the thirty-second: ai.provider-declaration@1.0.0, owner manager, exports byte-parity', () => {
   const r = row('ai.provider-declaration');
   assert.ok(r, 'the provider declaration contract is locked');
-  assert.equal(ROWS.length, 37, 'P2.26 added the thirty-second; P3 Slice A adds the thirty-third (workflow.graph); P3 Slice D adds the thirty-fourth (execution.frontier); P3 Slice E adds the thirty-fifth (execution.state-stream); P3 Slice H adds the thirty-sixth (workflow.dna) — count-pins say 36; P3 Slice J the thirty-seventh (execution.ir)');
+  assert.equal(ROWS.length, 38, 'P2.26 added the thirty-second; P3 Slice A adds the thirty-third (workflow.graph); P3 Slice D adds the thirty-fourth (execution.frontier); P3 Slice E adds the thirty-fifth (execution.state-stream); P3 Slice H adds the thirty-sixth (workflow.dna) — count-pins say 36; P3 Slice J the thirty-seventh (execution.ir); P3 Slice L the thirty-eighth (compatibility.oracle)');
   assert.equal(r.owner, 'manager');
   assert.equal(r.domain, 'ai-foundation');
   assert.equal(r.version, '1.0.0');
