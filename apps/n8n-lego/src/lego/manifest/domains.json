@@ -2724,7 +2724,8 @@
       "errorNamespace": "workflow",
       "paths": [
         "src/checksum.mjs",
-        "src/lego/workflow-graph.mjs"
+        "src/lego/workflow-graph.mjs",
+        "src/lego/workflow-dna.mjs"
       ],
       "public": [],
       "dependsOn": [

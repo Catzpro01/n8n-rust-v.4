@@ -22,6 +22,7 @@
 
 - `src/checksum.mjs`
 - `src/lego/workflow-graph.mjs`
+- `src/lego/workflow-dna.mjs`
 
 ## Public contract surface
 
