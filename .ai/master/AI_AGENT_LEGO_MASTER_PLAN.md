@@ -23,7 +23,7 @@
 | 12 | **Artifact** | `manager` | CONTRACT-ONLY | C |
 | 13 | **Approval** | `manager` | CONTRACT-ONLY | C |
 | 14 | **Agent Event & Work Trace** | `manager` | CONTRACT-ONLY | D |
-| 15 | **Token & Usage** | `manager` | PLANNED | D |
+| 15 | **Token & Usage** | `manager` | IN-PROGRESS | D |
 
 ## Canonical architecture chain
 
@@ -703,10 +703,10 @@ Every external action routes through Capability + Policy + Workspace. An agent n
 | --- | --- |
 | Index | 15 of 15 |
 | Owner | `manager` |
-| Status | **PLANNED** |
+| Status | **IN-PROGRESS** |
 | Phase | D |
 | Contracts | `ai.token-usage` |
-| Versioning | publicationPending |
+| Versioning | ai.token-usage@1.0.0 |
 | Depends on | `ai-foundation`, `context-session` |
 | Interaction | `call`, `event` |
 | Permissions | `ai:usage:read`, `ai:usage:write` |
@@ -726,7 +726,7 @@ Every external action routes through Capability + Policy + Workspace. An agent n
 
 **Observability:** usage per session/agent/provider.
 
-**Tests:** `planned: reported-vs-estimated labelling, budget enforcement`
+**Tests:** `test/lego-token-usage.test.mjs (record provenance, zero-vs-unavailable, estimator identity, idempotent requestId, budget derivation, cost pricing basis, secret/content refusal)`, `planned: UI surface (agent-1), provider-reported metrics (stage E)`
 
 **Future stages:** D: accounting · D: UI surface (agent-1) · E: provider-reported metrics
 

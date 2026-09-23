@@ -20,6 +20,7 @@
 | `ai.model-gateway` | `ai-foundation` |
 | `ai.runtime-adapter` | `ai-foundation` |
 | `ai.skill` | `ai-foundation` |
+| `ai.token-usage` | `ai-foundation` |
 | `ai.tool-gateway` | `ai-foundation` |
 | `auth.api-keys` | `auth` |
 | `auth.identity-projection` | `auth.identity` |
@@ -189,6 +190,9 @@ this table instead of guessing from a URL shape.
 | `ai.agent-machine.resume` | `ai-foundation` | call | `ai:agent:control` | yes | implemented |
 | `ai.agent-machine.delegate` | `ai-foundation` | call | `ai:agent:delegate` | no | implemented |
 | `ai.agent-machine.cancel` | `ai-foundation` | call | `ai:agent:control` | yes | implemented |
+| `ai.token-usage.record` | `ai-foundation` | call | `ai:usage:write` | yes | implemented |
+| `ai.token-usage.query` | `ai-foundation` | call | `ai:usage:read` | yes | implemented |
+| `ai.token-usage.budget` | `ai-foundation` | call | `ai:usage:read` | yes | implemented |
 | `compat.route.match` | `compatibility` | call | `compat:read` | yes | implemented |
 | `compat.response-envelope.wrap` | `compatibility` | call | `compat:read` | yes | implemented |
 | `compat.error-shape.wrap` | `compatibility` | call | `compat:read` | yes | implemented |

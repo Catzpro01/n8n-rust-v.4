@@ -34,6 +34,7 @@
 - `src/lego/audit.mjs`
 - `src/lego/mcp-boundary.mjs`
 - `src/lego/runtime-adapter.mjs`
+- `src/lego/token-usage.mjs`
 
 ## Public contract surface
 
@@ -44,6 +45,7 @@
 - `src/lego/agent-machine.mjs`
 - `src/lego/approval.mjs`
 - `src/lego/artifact.mjs`
+- `src/lego/token-usage.mjs`
 
 ## May call
 
