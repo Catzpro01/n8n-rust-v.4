@@ -2051,6 +2051,34 @@
         "apps/n8n-lego/test/lego-metric-governor.test.mjs"
       ],
       "notes": "P9.3 only; delegated implementation Agent 4, product ownership Agent 6 unchanged."
+    },
+    {
+      "id": "observability.trace",
+      "owner": "agent-6",
+      "domain": "observability",
+      "version": "1.0.0",
+      "status": "stable",
+      "surface": [
+        "src/lego/trace-context.mjs"
+      ],
+      "exports": {
+        "src/lego/trace-context.mjs": [
+          "TRACE_CONTRACT",
+          "TRACE_WIRE_VERSION",
+          "TRACE_LIMITS",
+          "createTraceSpan",
+          "createChildTraceSpan",
+          "injectTraceParent",
+          "parseTraceParent",
+          "continueTrace",
+          "createTracePayloadReference"
+        ]
+      },
+      "consumers": [],
+      "tests": [
+        "apps/n8n-lego/test/lego-trace-context.test.mjs"
+      ],
+      "notes": "P9.4 only; delegated implementation Agent 4, product ownership Agent 6 unchanged."
     }
   ]
 }

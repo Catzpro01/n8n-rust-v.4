@@ -81,7 +81,7 @@ function fanFixture() {
 test('the lock row is the forty-first: execution.optimizer@1.0.0, owner agent-1, exports byte-parity', () => {
   const row = ROWS.find((r) => r.id === 'execution.optimizer');
   assert.ok(row, 'execution.optimizer is locked');
-  assert.equal(ROWS.length, 50, 'P3 Slice M the thirty-ninth (execution.guard); P9.1 the fortieth (observability.envelope); P3 Slice K the forty-first (execution.optimizer) — P6.1 adds node.registry@0.1.0; P6.2 adds registry.compiler@0.1.0; P6.3 adds package.transaction@0.1.0; P6.4 adds registry.closure@0.1.0; P6.5 adds node.resolution@0.1.0; P6.6 adds runtime.lease@0.1.0; P6.7 adds node.residency@0.1.0; count-pins say 49');
+  assert.equal(ROWS.length, 51, 'P3 Slice M the thirty-ninth (execution.guard); P9.1 the fortieth (observability.envelope); P3 Slice K the forty-first (execution.optimizer) — P6.1 adds node.registry@0.1.0; P6.2 adds registry.compiler@0.1.0; P6.3 adds package.transaction@0.1.0; P6.4 adds registry.closure@0.1.0; P6.5 adds node.resolution@0.1.0; P6.6 adds runtime.lease@0.1.0; P6.7 adds node.residency@0.1.0; count-pins say 49');
   assert.equal(row.owner, 'agent-1');
   assert.equal(row.domain, 'execution');
   assert.equal(row.version, '1.0.0');

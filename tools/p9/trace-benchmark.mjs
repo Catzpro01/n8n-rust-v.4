@@ -1,0 +1,9 @@
+import { performance } from 'node:perf_hooks';
+import { cpus } from 'node:os';
+import { createTelemetryContext } from '../../apps/n8n-lego/src/lego/telemetry-envelope.mjs';
+import { createTraceSpan,createChildTraceSpan,injectTraceParent,continueTrace } from '../../apps/n8n-lego/src/lego/trace-context.mjs';
+const base=createTelemetryContext({workflowId:'wf-1',executionId:'exec-1',correlationId:'req-1'});
+const root=createTraceSpan({traceId:'0123456789abcdef0123456789abcdef',spanId:'0123456789abcdef',sampled:true},base);
+const carrier=injectTraceParent(root);let checksum=0;
+function measure(name,fn){for(let i=0;i<10000;i++)checksum+=fn();global.gc?.();const memory=process.memoryUsage(),cpu=process.cpuUsage(),batches=[],t=performance.now();for(let b=0;b<100;b++){const start=performance.now();for(let i=0;i<1000;i++)checksum+=fn();batches.push(performance.now()-start);}const elapsedMs=performance.now()-t,cpuUs=process.cpuUsage(cpu),after=process.memoryUsage();global.gc?.();batches.sort((a,b)=>a-b);return{name,iterations:100000,elapsedMs,opsPerSecond:100000/elapsedMs*1000,batchMeanUs:{p50:batches[49],p95:batches[94],p99:batches[98]},cpuUs,heapDeltaBeforeGc:after.heapUsed-memory.heapUsed,retainedHeapDeltaAfterGc:process.memoryUsage().heapUsed-memory.heapUsed,rssDelta:after.rss-memory.rss};}
+console.log(JSON.stringify({node:process.version,platform:process.platform,cpu:cpus()[0]?.model,note:'Synthetic repeated span ID for API microbenchmark only. Production IDs must be unique. Batch-average percentiles, not event percentiles. Heap deltas not allocation counts. No network, workflow, sink or retained trace.',results:[measure('OFF control',()=>1),measure('local child context',()=>Number(createChildTraceSpan(root,'1111111111111111').sampled)),measure('carrier continuation',()=>Number(continueTrace(carrier,'1111111111111111',base).sampled))],checksum},null,2));
