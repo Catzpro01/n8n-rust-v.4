@@ -8,7 +8,7 @@
 
 | Slice | PR | main merge SHA |
 | :--- | :--- | :--- |
-| P6.1 | #124 | `pre-reconciliation (see git log)` |
+| P6.1 | #124 | `8a8195bdcfeac3c79a282ec82307df1cc0ee09c6` |
 | P6.2 | #138 | `0d2bf016457a71b3f6a9614707e664ebc0b33663` |
 | P6.3 | #139 | `89cc56df94cc443807a67b1144960d5fb6093401` |
 | P6.4 | #140 | `2b07ef347eed4f464cbf285bfa372f827cab8223` |
