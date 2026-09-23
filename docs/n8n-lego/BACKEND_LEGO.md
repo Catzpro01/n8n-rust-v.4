@@ -299,7 +299,7 @@ Rule **R7** of the gate diffs the declared exports against the real exported
 symbols, so a contract cannot drift silently: adding `foo` to a locked contract
 file fails the build until the lock and version are updated.
 
-The current contract lock has **61 rows**. The historical foundation set remains:
+The current contract lock has **62 rows**. The historical foundation set remains:
 `compat.http` (1.0.0), `lego.error-contract` (1.0.0), `lego.domain-registry` (1.1.0),
 `lego.contract-compat` (1.0.0), `kernel.platform` (1.0.0), `reference.lego` (1.1.0),
 `reference.validation` (1.1.0), `reference.validation.schema` (1.0.0), and
@@ -325,6 +325,7 @@ P6.14 added `node.worker-convergence@0.1.0`.
 P6.15 added `node.acceptance@0.1.0`.
 P6.16 added `registry.integrity@0.1.0`.
 P6.17 added `node.admission@0.1.0`.
+P6.18 added `node.sbom@0.1.0`.
 The machine-readable lock is authoritative.
 
 A domain that publishes several contracts names its **primary** one
@@ -334,6 +335,7 @@ A domain that publishes several contracts names its **primary** one
 
 | date | contract | version | change |
 | :--- | :--- | :--- | :--- |
+| 2026-09-24 | `node.sbom` | 0.1.0 | P6.18: SBOM/VEX + policy diff gate — an SPDX-shaped document read from an epoch (one record per package version, checksums, capability names, declared licence, dependencies supplied from the closure), a diff that names the fields that changed, P6.1's trust ladder quoted with the weakest class governing, VEX as attributed statements where silence rolls up to `under_investigation`, and a gate of declared rules where a rule without evidence yields INCOMPLETE — a gate that opens because it could not look is not a gate. |
 | 2026-09-24 | `node.admission` | 0.1.0 | P6.17: admission explain plan + dependency blast radius — one ordered argument (eight checks in a fixed order) whose every step cites the contract that produced its evidence; verdicts admit/refuse/incomplete where INCOMPLETE (no failure, no evidence) fails closed; the plan composes other contracts' verdicts instead of re-deciding them; a reverse dependency index yields a blast radius with depth, path, cycle-once walking and declared truncation, and 'package absent' is told apart from 'package with no dependents'. |
 | 2026-09-24 | `registry.integrity` | 0.1.0 | P6.16: registry integrity chain + freshness/anti-rollback — epochs become hash-linked links (a link's digest covers its ancestor), monotonic/continuity/fork refusals are told apart, a recovery epoch is accepted because its NUMBER rises while its content is older, witnesses give clients three freshness states (current/rollback/unknown) where 'no recall' fails closed behind an explicit `firstContact`, a chain that fails verification cannot be excepted at all, and a rollback can be accepted only with a recorded reason, actor and tick. |
 | 2026-09-24 | `node.acceptance` | 0.1.0 | P6.15: core acceptance — sixteen claims over the fifteen P6 core contracts, each a sentence plus a runner that drives the real contract (no mocks); a subset run is marked PARTIAL and refused as evidence, the report digest plus the required claim set make omissions detectable rather than trusted, missing injected evidence is a FAILURE rather than a skip, and one claim statically proves no core contract imports the engine, the graph or the transports. |
