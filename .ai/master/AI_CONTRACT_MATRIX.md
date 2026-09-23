@@ -7,8 +7,8 @@
 
 | LEGO | Contract | Lock state | LEGO status | Versioning | Tests |
 | --- | --- | --- | --- | --- | --- |
-| **AI Foundation** | `ai.model-gateway` | declared in `ai-foundation` | CONTRACT-ONLY | ai.model-gateway@1.0.0, ai.tool-gateway@1.0.0, ai.application-provider@1.0.0 | `lego-ai-foundation.test.mjs` |
-| **AI Foundation** | `ai.tool-gateway` | declared in `ai-foundation` | CONTRACT-ONLY | ai.model-gateway@1.0.0, ai.tool-gateway@1.0.0, ai.application-provider@1.0.0 | `lego-ai-foundation.test.mjs` |
+| **AI Foundation** | `ai.model-gateway` | locked @ 1.0.0 | CONTRACT-ONLY | ai.model-gateway@1.0.0, ai.tool-gateway@1.0.0, ai.application-provider@1.0.0 | `lego-ai-foundation.test.mjs` |
+| **AI Foundation** | `ai.tool-gateway` | locked @ 1.0.0 | CONTRACT-ONLY | ai.model-gateway@1.0.0, ai.tool-gateway@1.0.0, ai.application-provider@1.0.0 | `lego-ai-foundation.test.mjs` |
 | **AI Foundation** | `ai.application-provider` | declared in `ai-foundation` | CONTRACT-ONLY | ai.model-gateway@1.0.0, ai.tool-gateway@1.0.0, ai.application-provider@1.0.0 | `lego-ai-foundation.test.mjs` |
 | **Skill** | `ai.skill` | locked @ 1.0.0 | IMPLEMENTED | ai.skill@1.0.0 | `lego-skill.test.mjs` |
 | **Agent Machine** | `ai.agent-machine` | locked @ 1.1.0 | CONTRACT-ONLY | ai.agent-machine@1.1.0, ai.agent-runtime@1.0.0, ai.agent-delegation@1.0.0 | `lego-ai-foundation.test.mjs (contract level)`; `lego-agent-machine.test.mjs (P2.16 execution foundation)`; planned: loop, fan-out/fan-in, cancellation propagation |
@@ -22,7 +22,7 @@
 | **Node Creator** | `node.creator` | locked @ 1.0.0 | PLANNED | publicationPending | planned: per-strategy conformance, generated-node validity |
 | **Capability** | `lego.domain-registry` | locked @ 1.1.0 | IMPLEMENTED | lego.domain-registry@1.1.0, lego.negotiation@1.0.0 | `lego-capability-contract.test.mjs`; `lego-communication.test.mjs`; `lego-foundation.test.mjs` |
 | **Capability** | `lego.negotiation` | locked @ 1.0.0 | IMPLEMENTED | lego.domain-registry@1.1.0, lego.negotiation@1.0.0 | `lego-capability-contract.test.mjs`; `lego-communication.test.mjs`; `lego-foundation.test.mjs` |
-| **MCP Adapter** | `ai.tool-gateway` | declared in `ai-foundation` | CONTRACT-ONLY | publicationPending | `lego-ai-foundation.test.mjs (boundary rules)`; planned: adapter conformance, lazy discovery bounds |
+| **MCP Adapter** | `ai.tool-gateway` | locked @ 1.0.0 | CONTRACT-ONLY | publicationPending | `lego-ai-foundation.test.mjs (boundary rules)`; planned: adapter conformance, lazy discovery bounds |
 | **Runtime Adapter** | `ai.agent-runtime` | declared in `ai-foundation` | CONTRACT-ONLY | ai.agent-runtime@1.0.0 | `lego-ai-foundation.test.mjs`; planned: adapter conformance per runtime |
 | **Artifact** | `ai.artifact` | locked @ 1.0.0 | CONTRACT-ONLY | ai.artifact@1.0.0 | `lego-ai-foundation.test.mjs` |
 | **Approval** | `ai.approval` | locked @ 1.0.0 | CONTRACT-ONLY | ai.approval@1.0.0 | `lego-ai-foundation.test.mjs (fail-closed proven)` |
@@ -54,8 +54,10 @@ changed; the owner and the decision reference are recorded instead.
 | `ai.approval` | 1.0.0 | `manager` | implemented |
 | `ai.audit` | 1.0.0 | `manager` | implemented |
 | `ai.mcp-boundary` | 1.0.0 | `manager` | implemented |
-| `ai.runtime-adapter` | 1.0.0 | `manager` | implemented |
+| `ai.runtime-adapter` | 1.1.0 | `manager` | implemented |
 | `ai.token-usage` | 1.0.0 | `manager` | implemented |
+| `ai.model-gateway` | 1.0.0 | `manager` | implemented |
+| `ai.tool-gateway` | 1.0.0 | `manager` | implemented |
 
 ## Operation coverage
 

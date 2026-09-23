@@ -84,9 +84,11 @@ const caught = (block) => {
 
 /* ------------------------------------------------------- contract surface */
 
-test('the contract is ai.runtime-adapter@1.0.0, owner manager, id double-quoted, created exactly once', () => {
+test('the contract is ai.runtime-adapter@1.1.0, owner manager, id double-quoted, created exactly once', () => {
   assert.equal(RUNTIME_ADAPTER_CONTRACT.id, "ai.runtime-adapter");
-  assert.equal(RUNTIME_ADAPTER_CONTRACT_VERSION, '1.0.0');
+  // P2.25 DELIBERATE EDIT: MINOR bump for the additive external-runtime surface (src/lego/external-runtime.mjs);
+  // the seam's operations, gates and behaviour are unchanged.
+  assert.equal(RUNTIME_ADAPTER_CONTRACT_VERSION, '1.1.0');
   assert.equal(RUNTIME_ADAPTER_CONTRACT.owner, 'manager');
   assert.match(MODULE_SRC, /id:\s*"ai\.runtime-adapter"/, 'contract ids are double-quoted (F16 convention)');
   assert.equal(LOCK.contracts.filter((row) => row.id === 'ai.runtime-adapter').length, 1, 'exactly one canonical row');
@@ -95,12 +97,12 @@ test('the contract is ai.runtime-adapter@1.0.0, owner manager, id double-quoted,
 
 test('the contract-lock row names real exports, real ops, the real test file — 26 rows total', () => {
   const row = LOCK.contracts.find((r) => r.id === 'ai.runtime-adapter');
-  assert.equal(row.version, '1.0.0');
+  assert.equal(row.version, '1.1.0');
   assert.equal(row.owner, 'manager');
   assert.equal(row.domain, 'ai-foundation');
   assert.equal(row.status, 'implemented');
   assert.deepEqual([...row.operations], [...RUNTIME_ADAPTER_OPERATIONS]);
-  assert.equal(LOCK.contracts.length, 29, 'rows through the P2.24 usage accounting foundation (twenty-ninth)');
+  assert.equal(LOCK.contracts.length, 31, 'rows through the P2.25 provider adapter foundation (thirty-first)');
   const exported = row.exports['src/lego/runtime-adapter.mjs'].slice().sort();
   assert.deepEqual(exported, Object.keys({
     RUNTIME_ADAPTER_CONTRACT: 1, RUNTIME_ADAPTER_CONTRACT_VERSION: 1, RUNTIME_ADAPTER_FIELDS: 1,

@@ -114,7 +114,7 @@ defect and should be reported as one.
 | | |
 | --- | --- |
 | Domains registered | 26 |
-| Locked public contracts | 29 |
+| Locked public contracts | 31 |
 | Declared capabilities | 91 |
 | Published error codes | 36 |
 | Temporary boundary allowances | 1 |

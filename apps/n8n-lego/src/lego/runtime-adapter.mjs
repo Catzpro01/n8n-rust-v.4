@@ -51,7 +51,7 @@ import {
 
 export const RUNTIME_ADAPTER_CONTRACT = Object.freeze({
   id: "ai.runtime-adapter",
-  version: '1.0.0',
+  version: '1.1.0',
   owner: 'manager',
   /** Canonical declaration fields — quoted names from runtimeMetadata/agent-machine. */
   fields: Object.freeze([

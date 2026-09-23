@@ -824,6 +824,33 @@ export const VOCABULARIES = Object.freeze([
       note: 'the whole honest-accounting vocabulary in three words: `reported` claims the source supplied the number, `estimated` claims a named deterministic method produced it, `unavailable` claims nobody did (value null — never 0, never exact). The frontend keeps these apart as fact: an unavailable figure renders no percentage and no bar, an estimate renders its label, and no path promotes one into another',
     }),
   }),
+
+  /**
+   * Adapter lifecycle vocabulary (P2.25 §34): every provider adapter reports
+   * state from exactly this six-word set — configuration progress is never
+   * reported as availability, failures are never reported as configuration.
+   */
+  Object.freeze({
+    id: 'providerAdapterState',
+    question: 'Is this provider adapter usable right now, and if not, in exactly which honest state?',
+    about: 'state',
+    values: Object.freeze([
+      'not-configured',
+      'configured',
+      'available',
+      'unavailable',
+      'degraded',
+      'disabled',
+    ]),
+    provenance: Object.freeze({
+      contract: Object.freeze({ id: 'ai.model-gateway', version: '1.0.0', owner: 'manager' }),
+      kind: 'module',
+      file: 'apps/n8n-lego/src/lego/model-provider-adapter.mjs',
+      symbol: 'PROVIDER_ADAPTER_STATES',
+      read: 'values',
+      note: 'configuration/availability/degradation/disabled/failure are distinct states; the tool provider runs the byte-identical list',
+    }),
+  }),
   /**
    * The Memory vocabulary quoted for P2.14. Nine sets, all quoted from the same publication
    * (`ai.memory@1.0.0`): the scope ladder, the entry kinds, the retention ladder, the record
@@ -2608,6 +2635,25 @@ export const DECLARED_OVERLAPS = Object.freeze([
     vocabularies: Object.freeze(['delegationField', 'memoryGraphNode']),
     values: Object.freeze({
       task: '`task` is a delegation field and a memory graph node. A delegation declares the task; a memory record may point at one',
+    }),
+  }),
+  Object.freeze({
+    vocabularies: Object.freeze(['degradation', 'providerAdapterState']),
+    values: Object.freeze({
+      available: 'a degradation describes availability; a provider adapter state reports that this provider is available right now — same word, two declared perspectives (P2.25 §34)',
+      degraded: 'a degradation describes availability; a provider adapter state reports a functioning provider in a degraded condition — same word, two declared perspectives (P2.25 §34)',
+    }),
+  }),
+  Object.freeze({
+    vocabularies: Object.freeze(['usageCertainty', 'providerAdapterState']),
+    values: Object.freeze({
+      unavailable: 'usage certainty says a figure could not be determined; a provider adapter state says the provider is unreachable — a missing number is not a broken configuration (P2.25 §34)',
+    }),
+  }),
+  Object.freeze({
+    vocabularies: Object.freeze(['providerAdapterState', 'continuationVerification']),
+    values: Object.freeze({
+      degraded: 'a provider adapter state is the health of a provider; a continuation verification reports a degraded capability check — one word, two honest contexts (P2.25 §34)',
     }),
   }),
 ]);

@@ -316,6 +316,9 @@ A domain that publishes several contracts names its **primary** one
 
 | date | contract | version | change |
 | :--- | :--- | :--- | :--- |
+| 2026-09-23 | `ai.model-gateway` | 1.0.0 | P2.25: initial lock of the first real model provider adapter (six gateway ops, explicit configuration, call-time authorization, canonical error translation, honest usage reporting into ai.token-usage@1.0.0, injected exchange edge) |
+| 2026-09-23 | `ai.tool-gateway` | 1.0.0 | P2.25: initial lock of the first real tool provider adapter (seven gateway ops, five separate tool concepts, required sideEffects, requestId replay cache for tool.call, approval-reference presence, no invented usage) |
+| 2026-09-23 | `ai.runtime-adapter` | 1.1.0 | P2.25: MINOR, additive — first real EXTERNAL runtime binding (src/lego/external-runtime.mjs) joins the seam surface; register/lookup/eligibility/manager and the P2.21 behaviour unchanged; ai.agent-runtime stays vocabulary (no lock row) |
 | 2026-09-23 | `node.creator` | 1.0.0 | P2.23: initial lock of the bounded node creator & deterministic translation foundation (candidate-only output, single validation pipeline on node.portability@1.0.0, P2.19 approval/artifact touchpoints) |
 | 2026-09-23 | `node.portability` | 1.0.0 | P2.22: initial lock of the node portability foundation (classes, runtime matrix, schema subset, fail-closed canPort/select validator) |
 | 2026-09-23 | `ai.runtime-adapter` | 1.0.0 | P2.21: initial lock of the runtime adapter seam + deterministic harness (register/lookup/eligibility/manager + EXTERNAL fail-closed provider gate) |

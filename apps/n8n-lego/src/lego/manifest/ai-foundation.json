@@ -3,14 +3,14 @@
   "phase": "P2.10",
   "owner": "manager",
   "status": "contract-only",
-  "description": "Provider-neutral contracts for a future AI Foundation. This file declares vocabulary and shapes ONLY. No inference, no agent runtime, no gateway and no vendor integration is implemented anywhere in this repository.",
+  "description": "Provider-neutral AI vocabulary for a future AI Foundation, plus the first provider adapters behind the declared seams (P2.25). The vocabulary declares shapes; the adapters translate one explicitly configured external provider each onto the canonical contract through an injected transport. No default provider, no vendor SDK, no stored credential, no new dependency.",
   "notImplemented": [
-    "No LLM inference of any kind.",
-    "No model gateway client. 9Router is named only as an example of a provider kind.",
-    "No tool gateway client. Composio is named only as an example of a provider kind.",
-    "No agent runtime. Hermes, Claude Code, Gemini CLI, Antigravity, OpenClaw, DeepSeek Harness and MiroFish are named only as examples of runtime kinds.",
+    "No LLM inference of any kind is performed by LEGO itself — every token comes from an external provider reached through an explicitly configured adapter transport; no canned completion ever stands in for a provider.",
+    "No default model gateway client and no vendor SDK. The P2.25 model provider adapter speaks only through an injected exchange binding, configuration is explicit, and credentials are supplied per call — never stored, defaulted or echoed. 9Router remains an example of a provider kind only.",
+    "No default tool gateway client. The P2.25 tool provider adapter binds declared tools behind the same injected-transport, per-call-authorization boundary; Composio remains an example of a provider kind only.",
+    "No owned or bundled agent runtime. External agent runtimes are adapted behind the P2.21 seam (P2.25 ships the first real external runtime binding), never reimplemented — Hermes, Claude Code, Gemini CLI, Antigravity, OpenClaw and DeepSeek remain examples of runtime kinds.",
     "No MCP server and no MCP client.",
-    "No network call, no daemon, no background process and no new dependency."
+    "No ambient network call, no daemon, no background process and no new dependency: transports exist only at the explicitly configured adapter edge."
   ],
   "vendorRule": "A vendor name may appear in this file ONLY inside an `examples` array, and only as an illustration of a provider kind. No vendor may appear in an id, a required field, a code path or a default. If a vendor name is ever needed to make a contract work, the contract is wrong.",
   "taxonomy": {
@@ -394,11 +394,11 @@
         "remote"
       ],
       "supports": {
-        "session": "boolean \u2014 can it hold a multi-turn session",
-        "background": "boolean \u2014 can it keep working after the caller disconnects",
-        "stream": "boolean \u2014 can it emit incremental output",
-        "cancellation": "boolean \u2014 can it actually stop, or only be abandoned",
-        "delegation": "boolean \u2014 can it spawn child agents"
+        "session": "boolean — can it hold a multi-turn session",
+        "background": "boolean — can it keep working after the caller disconnects",
+        "stream": "boolean — can it emit incremental output",
+        "cancellation": "boolean — can it actually stop, or only be abandoned",
+        "delegation": "boolean — can it spawn child agents"
       },
       "rule": "`supports.cancellation: false` is a legitimate, declarable answer. A runtime that cannot stop must say so, because the alternative is a cancel that silently does nothing while the caller believes work stopped."
     },
@@ -433,7 +433,7 @@
       "failed",
       "cancelled"
     ],
-    "sizeRule": "A session record must remain bounded. Storing a transcript inside it would make session size grow without limit and would put model output into the same row as control state \u2014 see the artifact contract.",
+    "sizeRule": "A session record must remain bounded. Storing a transcript inside it would make session size grow without limit and would put model output into the same row as control state — see the artifact contract.",
     "implementationStatus": "in-progress",
     "implementationBoundary": [
       "bounded registry mechanics",
@@ -480,7 +480,7 @@
   },
   "agentMachine": {
     "contract": "ai.agent-machine",
-    "rule": "The bounded execution FOUNDATION of the Agent Machine: one canonical state machine for machine, agent and task identity, lifecycle (incl. ready), step bookkeeping, budgets, bounded delegation bookkeeping, bounded graph validation and deterministic transitions. It is a foundation, not an engine: nothing in P2.16 executes a step, runs a model or calls a tool, and delegation is bookkeeping metadata only \u2014 never child execution or permission inheritance. The future full loop (ai.agent-runtime) builds on this contract.",
+    "rule": "The bounded execution FOUNDATION of the Agent Machine: one canonical state machine for machine, agent and task identity, lifecycle (incl. ready), step bookkeeping, budgets, bounded delegation bookkeeping, bounded graph validation and deterministic transitions. It is a foundation, not an engine: nothing in P2.16 executes a step, runs a model or calls a tool, and delegation is bookkeeping metadata only — never child execution or permission inheritance. The future full loop (ai.agent-runtime) builds on this contract.",
     "fields": [
       "machineId",
       "taskId",
@@ -584,7 +584,7 @@
     "providerSeam": "replaceable; InMemoryAgentMachineProvider is the bounded default. The provider stores opaque records only and never receives work to execute.",
     "implementationStatus": "implemented",
     "implementationBoundary": [
-      "bounded identity (machineId, agentId, taskId \u2014 three distinct forms)",
+      "bounded identity (machineId, agentId, taskId — three distinct forms)",
       "explicit lifecycle (incl. ready via prepare) and deterministic transitions",
       "bounded step bookkeeping with sequence and identity rules",
       "first-class execution budgets (incl. maxChildren and maxTasksPerAgent)",
@@ -605,7 +605,7 @@
       "approval request, grant or deny",
       "shell, filesystem, process or network authority"
     ],
-    "capabilityScopeRule": "capabilityScope is a bounded list validated against the lego-foundation capability registry; unknown ids, duplicates and overlong lists fail closed. Delegation grants are an explicit narrowed subset of this scope \u2014 never inherited, never widened.",
+    "capabilityScopeRule": "capabilityScope is a bounded list validated against the lego-foundation capability registry; unknown ids, duplicates and overlong lists fail closed. Delegation grants are an explicit narrowed subset of this scope — never inherited, never widened.",
     "graphRule": "Execution graphs are bounded representation: sequential, parallel, branch, fan-out, fan-in, join and retry with at most 128 nodes, 16 dependencies per node and 8 retry attempts. Cycles, dangling refs, multi-entry graphs and permission-bearing nodes are rejected. Validation never executes and never mutates the input.",
     "eventRule": "Six session-scoped derived event types (agent.created/started/delegated/completed/failed/cancelled). Deterministic, sanitized, reference-only: no payload, no secret, no hidden reasoning, no transport emission."
   },
@@ -776,7 +776,7 @@
       "retained",
       "pinned"
     ],
-    "storageRule": "`storageRef` is an opaque reference resolved by the storage domain. The AI contracts must not know whether it is a local file, SQLite row or object store \u2014 that is exactly the abstraction the storage domain owns."
+    "storageRule": "`storageRef` is an opaque reference resolved by the storage domain. The AI contracts must not know whether it is a local file, SQLite row or object store — that is exactly the abstraction the storage domain owns."
   },
   "context": {
     "contract": "ai.context",
@@ -960,7 +960,7 @@
     "noLocalInstallRule": "No external runtime may become a local installation requirement. Every AI provider is optional and remotely satisfiable, because requiring a local agent runtime would exclude the low-end targets the foundation explicitly supports."
   },
   "zeroInstall": {
-    "rule": "AI Foundation present with NO provider configured is a VALID, fully supported system state \u2014 not an error and not a degraded install.",
+    "rule": "AI Foundation present with NO provider configured is a VALID, fully supported system state — not an error and not a degraded install.",
     "state": {
       "aiFoundation": "ready",
       "modelProvider": "not-configured",
@@ -1068,7 +1068,7 @@
       "mcp"
     ],
     "prohibition": "Never force every call through HTTP. An HTTP hop between two objects in one process is the most expensive available way to call a function.",
-    "carryRule": "A transport advertises which interaction classes it can carry. The OPERATION owns its interaction class; a transport that cannot carry it is simply not eligible. A transport must never silently downgrade a STREAM to a CALL \u2014 the caller asked for incremental output and would instead wait for a single late response."
+    "carryRule": "A transport advertises which interaction classes it can carry. The OPERATION owns its interaction class; a transport that cannot carry it is simply not eligible. A transport must never silently downgrade a STREAM to a CALL — the caller asked for incremental output and would instead wait for a single late response."
   },
   "rustPolicy": {
     "rule": "Rust remains an implementation choice beneath these contracts, exactly as ADR-0005 states.",
