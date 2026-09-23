@@ -203,7 +203,7 @@ test('model & tool gateway contracts are locked exactly once at the quoted versi
   assert.equal(LOCK.contracts.filter((r) => r.id === 'ai.model-gateway').length, 1);
   assert.equal(LOCK.contracts.filter((r) => r.id === 'ai.tool-gateway').length, 1);
   // P9.1 envelope + P3 optimizer are merged; P9.2 structured-log adds row 42.
-  assert.equal(LOCK.contracts.length, 43, 'P2.25 added rows thirty and thirty-one; P2.26 the thirty-second; P3 Slice A the thirty-third (workflow.graph); P3 Slice D the thirty-fourth (execution.frontier); P3 Slice E the thirty-fifth (execution.state-stream); P3 Slice H the thirty-sixth (workflow.dna); P3 Slice J the thirty-seventh (execution.ir); P3 Slice L the thirty-eighth (compatibility.oracle); P3 Slice M the thirty-ninth (execution.guard); P3 Slice K the forty-first (execution.optimizer) — P6.1 adds node.registry@0.1.0; count-pins say 43');
+  assert.equal(LOCK.contracts.length, 44, 'P2.25 added rows thirty and thirty-one; P2.26 the thirty-second; P3 Slice A the thirty-third (workflow.graph); P3 Slice D the thirty-fourth (execution.frontier); P3 Slice E the thirty-fifth (execution.state-stream); P3 Slice H the thirty-sixth (workflow.dna); P3 Slice J the thirty-seventh (execution.ir); P3 Slice L the thirty-eighth (compatibility.oracle); P3 Slice M the thirty-ninth (execution.guard); P3 Slice K the forty-first (execution.optimizer) — P6.2 adds registry.compiler@0.1.0; count-pins say 44');
 });
 
 test('ai.agent-runtime stays vocabulary — the lock deliberately publishes no such row', () => {

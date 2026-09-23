@@ -1724,6 +1724,57 @@
         "apps/n8n-lego/test/lego-node-registry.test.mjs"
       ],
       "notes": "P6.1 (P6 implementation owner: Agent 3, Issue #100): canonical node registry contract. Identity is `type` + `typeVersion` and nothing else, rendered `type@typeVersion` exactly as the pinned n8n catalog writes it (`n8n-nodes-base.httpRequest@4.4`). Measured, not assumed: `node.contract` calls typeVersion an integer, but the pinned `n8n-nodes-base@2.9.1` catalog carries fractional versions (1.1 … 4.4) and 90 of its 483 node types are multi-version, so a typeVersion is a positive number with at most one decimal place. Metadata (package, vendor, contract/implementation version, digest, provenance, capabilities, trust class, runtime locality, resource profile, compatibility, lifecycle, health, discovery) is a CLOSED 17-field schema: unknown field, unknown trust class, unknown capability, unknown runtime locality, unknown lifecycle, unknown health, unverifiable digest or a missing provenance source is refused — fail closed. Vocabulary is QUOTED, never re-declared: trust classes, capabilities, runtimes, failure boundaries and resource classes are read from the published foundation manifest (src/lego/manifest/foundation.json), lifecycle from lego.negotiation, portability targets from node.portability, discovery groups from the n8n editor contract — the foundation accessor is deliberately not imported (outside lego-foundation's published surface; gate rule R4). The index is a deterministic dictionary only: duplicate identities are a conflict, never a precedence rule, and nothing is published when any entry is invalid — normalization, epochs, atomic publication and rollback remain P6.2. Pure functions: no network, process, timer or clock; one manifest read. No authority: nothing here grants trust, capability or permission. node.portability@1.0.0 stays the domain's primary contract."
+    },
+    {
+      "id": "registry.compiler",
+      "owner": "manager",
+      "domain": "node-registry",
+      "version": "0.1.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/registry-compiler.mjs"
+      ],
+      "exports": {
+        "src/lego/registry-compiler.mjs": [
+          "REGISTRY_COMPILER_CONTRACT",
+          "REGISTRY_COMPILER_CONTRACT_VERSION",
+          "REGISTRY_COMPILER_SCHEMA_VERSION",
+          "REGISTRY_COMPILER_OPERATIONS",
+          "REGISTRY_COMPILER_PERMISSIONS",
+          "REGISTRY_EPOCH_GENESIS",
+          "REGISTRY_EPOCH_ORIGINS",
+          "REGISTRY_EPOCH_SOURCE_MAX_LENGTH",
+          "REGISTRY_COMPILER_REASONS",
+          "REGISTRY_COMPILER_RULES",
+          "RegistryCompilerError",
+          "compileRegistryEpoch",
+          "freezeRegistryEpoch",
+          "isFrozenRegistryEpoch",
+          "nextRegistryEpoch",
+          "epochChainOf",
+          "rollbackRegistryEpoch",
+          "publishRegistryEpoch",
+          "epochManifest",
+          "verifyRegistryEpoch",
+          "diffRegistryEpochs",
+          "describeRegistryEpoch",
+          "formatRegistryEpoch",
+          "epochIdentityOf",
+          "epochEntryOf",
+          "REGISTRY_COMPILER_INPUT_SCHEMA_VERSION"
+        ]
+      },
+      "consumers": [
+        "P6.3 transactional package install — publishes epochs and needs publication to be atomic and non-mutating",
+        "P6.5 workflow node resolution manifest — pins a workflow's nodes to one epoch digest and upgrades only explicitly",
+        "P6.6 runtime lease — an execution keeps serving the epoch it started under while a new epoch becomes current",
+        "P6.13 incremental compiler — compiles only what changed onto the same chain, same digests",
+        "P6.16 integrity chain + freshness — extends this ordering rule into a signed, anti-rollback anchor"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-registry-compiler.test.mjs"
+      ],
+      "notes": "P6.2 (P6 implementation owner: Agent 3, Issue #100): registry compiler + immutable epoch. A declaration is a CLAIM; this is where it becomes a COMMITMENT the rest of the system may read. Four guarantees, each proven by test rather than asserted: (1) deterministic compile — the epoch digest is a pure function of declaration CONTENT and the lineage it is compiled onto, invariant under key order, declaration order and capability order, with no clock, no filesystem and no network anywhere in the module (a compiler that reads a clock is not reproducible); (2) all-or-nothing — one invalid declaration or one duplicate identity compiles to NO epoch at all, with P6.1's own reason codes carried through unchanged (registry.duplicate keeps its 'a conflict, not a precedence rule' wording) rather than re-invented; (3) monotonic chained history — an epoch names its parent digest and carries the full chain, epoch numbers only ever increase, and a rollback is a NEW higher-numbered epoch that re-installs older content (its contentDigest equals the target's, its epochDigest does not), so a downgrade leaves a mark instead of restoring a number, and a rollback to a non-ancestor or to the current epoch is refused; (4) immutability — a compiled epoch is deep-frozen and publication is a pointer move between frozen objects, so the epoch in-flight work is reading stays bit-identical (asserted by re-serializing it) and a failed publication leaves the previous state fully usable. Also: verifyRegistryEpoch recompiles content and refuses anything whose digest no longer matches (tamper detection, with invalid content reported as invalid rather than as a mismatch); diffRegistryEpochs gives sorted added/removed/changed for P6.19. Identity, validation, canonical form and per-declaration digests are quoted from node.registry@0.1.0 — the compiler never re-derives them. No authority: compiling is not admitting. Scope walls held: no install journal, artifact store, lease, residency, health, quarantine or attestation vocabulary exists in this module."
     }
   ]
 }

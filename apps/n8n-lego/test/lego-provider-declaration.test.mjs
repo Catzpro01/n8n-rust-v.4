@@ -66,7 +66,7 @@ test('the lock row is the thirty-second: ai.provider-declaration@1.0.0, owner ma
   const r = row('ai.provider-declaration');
   assert.ok(r, 'the provider declaration contract is locked');
   // P9.1 envelope + P3 optimizer are merged; P9.2 structured-log adds row 42.
-  assert.equal(ROWS.length, 43, 'P2.26 added the thirty-second; P3 Slice A adds the thirty-third (workflow.graph); P3 Slice D adds the thirty-fourth (execution.frontier); P3 Slice E adds the thirty-fifth (execution.state-stream); P3 Slice H adds the thirty-sixth (workflow.dna); P3 Slice J the thirty-seventh (execution.ir); P3 Slice L the thirty-eighth (compatibility.oracle); P3 Slice M the thirty-ninth (execution.guard) — P6.1 adds node.registry@0.1.0; count-pins say 43');
+  assert.equal(ROWS.length, 44, 'P2.26 added the thirty-second; P3 Slice A adds the thirty-third (workflow.graph); P3 Slice D adds the thirty-fourth (execution.frontier); P3 Slice E adds the thirty-fifth (execution.state-stream); P3 Slice H adds the thirty-sixth (workflow.dna); P3 Slice J the thirty-seventh (execution.ir); P3 Slice L the thirty-eighth (compatibility.oracle); P3 Slice M the thirty-ninth (execution.guard) — P6.2 adds registry.compiler@0.1.0; count-pins say 44');
   assert.equal(r.owner, 'manager');
   assert.equal(r.domain, 'ai-foundation');
   assert.equal(r.version, '1.0.0');
