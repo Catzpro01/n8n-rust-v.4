@@ -80,3 +80,13 @@
   (Admitted/Rejected+retryable); token-bucket deterministic std-only;
   dedupe key kanonik; semua queues bounded.
 - 13 test baru → workspace **252 green** (stacked di atas P4.4); fmt bersih.
+
+## Lanjutan — P4.6 Event/Manual/Test/Waiting ingress (sesi stacked P4.5)
+
+- Modul `crates/n8n-common/src/ingress_modes.rs`: `IngressIntent` (new/resume/poll),
+  `IntentResolver` (waiting verdict 404/409/202 + dedupe executionId, manual
+  first-emission one-shot, test listen bounded one-shot, event verbatim
+  `n8n.*` + classify + generation fence), `ModeDecision` handoff murni.
+- 10 test baru → workspace **262 green** (stacked di atas P4.5); fmt bersih.
+- Jangkar referensi diverifikasi: waiting-webhooks.ts (404/409/401),
+  test-webhooks.ts (listen one-shot), events (n8n.workflow.started, dst).
