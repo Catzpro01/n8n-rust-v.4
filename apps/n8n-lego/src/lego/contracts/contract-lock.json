@@ -2864,6 +2864,58 @@
         "apps/n8n-lego/test/lego-jit-lease.test.mjs"
       ],
       "notes": "P6.22 (P6 implementation owner: Agent 3, Issue #100): just-in-time leases for runtime slots. A worker does not hold every implementation it might be asked to run: it holds slots and fills them when work arrives, which is what keeps memory bounded and what makes a cold start a decision rather than an accident. A LEASE NAMES WHAT IT IS FOR — identity, the wire contract digest it was granted against (P6.21's, passed as data) and the worker's locality (the foundation's four, quoted) — so a lease granted for one wire contract is refused rather than reused once the digest moves. SLOTS ARE THE RESOURCE AND THEY COME BACK BY THEMSELVES: capacity is per worker, and a slot is NOT held by a lease that has already expired even if nobody has swept it yet, so a request lazily expires what is dead before counting what is live (a host that refuses work because of its own bookkeeping is a host that lies; suite case: two expired leases free their slots with no explicit reap, and the record still shows them as expired). AN IDLE LEASE CANNOT BE RENEWED: renewal requires a use since the last renewal, because a slot held with paperwork is a leak, and the refusal says so ('let it expire'). A JIT LEASE IS SHORT BY CONSTRUCTION: time to live, total life from grant (120-tick ceiling) and renewals are all bounded, and a renewal that would outlive the ceiling is refused with the deadline named. EXPIRY IS NOT DELETION: the record keeps who held a slot, for what, uses and when it lapsed, so releasing a lapsed lease is bookkeeping that reports 'the slot came back on its own' rather than a second event, while releasing twice is REFUSED because it would count one slot twice. Requesting the same (identity, wire contract) twice hands back the lease that exists instead of a second slot. A request that does not fit is refused with `jit.capacity` and never queued: queueing is the scheduler's decision, and a contract that quietly held requests would be a scheduler with no policy. First suite run found a real defect: the worker terms were frozen together with the live bookkeeping record, so the first grant threw on assigning the lease counter — terms are now frozen and returned as a descriptor while the stored record stays live. A second defect of ordering was fixed by decision: an invalid `ttl` argument now throws before any state check, because a caller's mistake must be reported as one however the lease happens to be standing. Scope walls: no scheduling or queueing (P4), no epoch execution leases (P6.10 — an epoch lease and a slot lease are different promises), no health judgement (P6.11), no admission decision (P6.17), no cache (P6.26), no pools (P6.24); no filesystem, network, clock or randomness — every answer takes the tick it answers for, and the only node import is the hash. Authority: this contract decides whether a slot may be used, for how long and for what; it never decides whether a node should run and never loads anything."
+    },
+    {
+      "id": "runtime.cancel",
+      "owner": "manager",
+      "domain": "node-registry",
+      "version": "0.1.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/cancel-accounting.mjs"
+      ],
+      "exports": {
+        "src/lego/cancel-accounting.mjs": [
+          "CANCEL_CAUSES",
+          "CANCEL_CONTRACT",
+          "CANCEL_CONTRACT_VERSION",
+          "CANCEL_OPERATIONS",
+          "CANCEL_PERMISSIONS",
+          "CANCEL_REASONS",
+          "CANCEL_RULES",
+          "CANCEL_SCHEMA_VERSION",
+          "CANCEL_STATES",
+          "CHARGE_KINDS",
+          "CancelError",
+          "DEFAULT_GRACE_TICKS",
+          "MAX_GRACE_TICKS",
+          "SETTLE_OUTCOMES",
+          "cancelDigest",
+          "charge",
+          "checkpoint",
+          "createAccountingLedger",
+          "createCancelToken",
+          "describeLedger",
+          "explainLedger",
+          "explainToken",
+          "isAccountingLedger",
+          "isCancelToken",
+          "releaseCharge",
+          "requestCancel",
+          "settleExecution",
+          "settleToken",
+          "stableJson"
+        ]
+      },
+      "consumers": [
+        "P6.24 runtime pools — a pool over-subscribes exactly when it forgets an abandoned execution, and the outstanding slot list is what it must reconcile",
+        "P6.30 repair and offline recovery — reconciliation after a restart starts from the abandoned and unreleased entries",
+        "P6.31 full acceptance — the accounting half of the final acceptance evidence"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-cancel-accounting.test.mjs"
+      ],
+      "notes": "P6.23 (P6 implementation owner: Agent 3, Issue #100): cancellation and accounting. Cancellation is the moment a runtime is most likely to lie — work that was asked to stop and did not is reported as stopped, a slot that is still held is declared free, a result that arrived after the cancel is quietly dropped — and this contract makes each of those impossible to do silently. CANCELLATION IS A STATE MACHINE WITH A DEADLINE (`running → cancelling → cancelled`, with `abandoned` when the grace passes and nobody answered), and A SECOND REQUEST DOES NOT BUY TIME: cancelling twice is idempotent, the deadline does not move and the cause is not rewritten, because a grace that grows when you ask again is a negotiation. THE RACE IS RECORDED, NOT ERASED: if the work finished after the cancellation the honest outcome is `completed-after-cancel` (with `producedOutput` a required boolean), claiming `completed` is REFUSED because it erases the cancellation, and claiming `cancelled` is refused because something did happen. A CKECKPOINT NOTICES ABANDONMENT BUT DOES NOT SETTLE IT (defect found by the first suite run: the checkpoint was writing the settlement, so the accounting could never be written afterwards) — noticing and settling are separate acts. A CANCELLED EXECUTION IS NOT FREE: what it consumed stays consumed, while the slot is returned exactly once; AN ABANDONED EXECUTION KEEPS HOLDING ITS SLOT because the ledger does not declare free what it cannot see released (that is how a pool over-subscribes itself). Charges are ADDRESSED by reference: the same reference with the same amount is a duplicate the caller may ignore, the same reference with a different amount is refused ('two amounts for one reference is two rumours for one fact'), releasing what was never charged is refused ('a slot that never existed'), releasing more than is outstanding is refused, and releasing twice is refused. Scope walls: no scheduler, queue or retry policy (P4), no slot table (P6.22 grants, this contract records), no health judgement (P6.11), no rollout (P6.19), no telemetry backend (P9); no filesystem, network, clock or randomness — every answer takes the tick it answers for and the only node import is the hash. Authority: this contract records what happened to a cancelled execution and what it cost; it never decides whether something should run and never invents a charge."
     }
   ]
 }
