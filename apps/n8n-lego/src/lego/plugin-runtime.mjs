@@ -27,6 +27,11 @@
  * in P2.27.2, policy in P2.27.3, supervisor in P2.27.7. Core never owns
  * workflow, execution, memory, storage, AI, credentials, GitHub, workspace or
  * translation (Master Prompt §1 invariant).
+ *
+ * P2.27.2 wiring: the runtime *accepts* an injected registry (composed by the
+ * caller — `createPluginRegistry` from `plugin-registry.mjs`) and reports its
+ * size in `health().plugins`. The registry modules import THIS module, so the
+ * dependency direction stays registry → runtime (leaf), never a cycle.
  */
 import { readFileSync } from 'node:fs';
 
@@ -153,10 +158,15 @@ function snapshotDetail(detail, type) {
  * (registry, policy, supervisor injected at creation), never by mutating a
  * live core from the outside.
  *
- * @param {{ now?: () => number, eventLimit?: number, bootedAt?: number }} [options]
+ * @param {{ now?: () => number, eventLimit?: number, registry?: { size: Function, get: Function } | null }} [options]
  */
-export function createPluginRuntime({ now = Date.now, eventLimit = PLUGIN_EVENT_LIMIT_DEFAULT } = {}) {
+export function createPluginRuntime({ now = Date.now, eventLimit = PLUGIN_EVENT_LIMIT_DEFAULT, registry = null } = {}) {
   assertNowIsFunction(now);
+  if (registry !== null) {
+    if (typeof registry !== 'object' || typeof registry.size !== 'function' || typeof registry.get !== 'function') {
+      throw new TypeError('createPluginRuntime registry must expose size() and get() (createPluginRegistry shape)');
+    }
+  }
   const limit = normalizeEventLimit(eventLimit);
   const bootedAt = now();
   if (typeof bootedAt !== 'number' || !Number.isFinite(bootedAt) || bootedAt < 0) {
@@ -186,6 +196,7 @@ export function createPluginRuntime({ now = Date.now, eventLimit = PLUGIN_EVENT_
     now,
     identity: () => PLUGIN_CORE,
     recordEvent,
+    registry,
     events: () => ring.map((event) => ({ ...event })),
     health: () => {
       const stored = ring.length;
@@ -193,7 +204,7 @@ export function createPluginRuntime({ now = Date.now, eventLimit = PLUGIN_EVENT_
         status: 'ok',
         core: 'ok',
         bootedAt,
-        plugins: 0, // registry count lands with P2.27.2
+        plugins: registry === null ? 0 : registry.size(),
         events: Object.freeze({ stored, limit, dropped }),
       });
     },
