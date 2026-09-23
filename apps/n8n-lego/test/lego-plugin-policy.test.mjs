@@ -197,16 +197,11 @@ test('§11 delegation: grant(B) <= grant(A) — children keep the intersection, 
   assert.ok(Object.isFrozen(verdict) && Object.isFrozen(verdict.granted) && Object.isFrozen(verdict.stripped));
 });
 
-test('the lock row (0.3.0) promises exactly the four-module surface', () => {
+test('the lego.plugin-runtime row keeps the P2.27.3 modules locked (exact surface pins live in the newest slice suite)', () => {
   const lock = JSON.parse(readFileSync(join(APP_ROOT, 'src/lego/contracts/contract-lock.json'), 'utf8'));
   const row = lock.contracts.find((entry) => entry.id === 'lego.plugin-runtime');
-  assert.equal(row.version, '0.3.0');
-  assert.deepEqual(row.surface.slice().sort(), [
-    'src/lego/plugin-manifest.mjs',
-    'src/lego/plugin-policy.mjs',
-    'src/lego/plugin-registry.mjs',
-    'src/lego/plugin-runtime.mjs',
-  ]);
+  assert.match(row.version, /^\d+\.\d+\.\d+$/);
+  assert.ok(row.surface.includes('src/lego/plugin-policy.mjs'), 'plugin-policy.mjs stays on the surface');
   assert.ok(row.tests.includes('apps/n8n-lego/test/lego-plugin-policy.test.mjs'));
   for (const file of row.surface) {
     const source = readFileSync(join(APP_ROOT, file), 'utf8');
