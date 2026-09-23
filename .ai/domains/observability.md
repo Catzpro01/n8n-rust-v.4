@@ -7,7 +7,7 @@
 | --- | --- |
 | Owner | `agent-6` |
 | Kind / tier | `domain` / `domain` |
-| Status | `contract-only` (phase `P9.10`) |
+| Status | `contract-only` (phase `P9.11`) |
 | Parent | _root_ |
 | Contract | _none declared_ |
 | Error namespace | `observability` |
@@ -30,6 +30,7 @@
 - `src/lego/telemetry-sampling.mjs`
 - `src/lego/resource-pressure.mjs`
 - `src/lego/health-readiness.mjs`
+- `src/lego/execution-diagnostics.mjs`
 
 ## Public contract surface
 
@@ -43,6 +44,7 @@
 - `src/lego/telemetry-sampling.mjs`
 - `src/lego/resource-pressure.mjs`
 - `src/lego/health-readiness.mjs`
+- `src/lego/execution-diagnostics.mjs`
 
 ## May call
 
@@ -80,3 +82,4 @@
 - `apps/n8n-lego/test/lego-telemetry-sampling.test.mjs`
 - `apps/n8n-lego/test/lego-resource-pressure.test.mjs`
 - `apps/n8n-lego/test/lego-health-readiness.test.mjs`
+- `apps/n8n-lego/test/lego-execution-diagnostics.test.mjs`

@@ -2447,6 +2447,31 @@
       ]
     },
     {
+      "id": "observability.execution-diagnostics",
+      "version": "1.0.0",
+      "owner": "agent-6",
+      "domain": "observability",
+      "surface": [
+        "src/lego/execution-diagnostics.mjs"
+      ],
+      "exports": {
+        "src/lego/execution-diagnostics.mjs": [
+          "EXEC_DIAG_CONTRACT",
+          "EXEC_DIAG_OUTCOMES",
+          "EXEC_DIAG_LIMITS",
+          "EXEC_DIAG_IDENTITY_FIELDS",
+          "EXEC_DIAG_EVIDENCE_KINDS",
+          "EXEC_DIAG_FAILURE_CLASSES",
+          "createExecutionDiagnostic",
+          "summarizeFailure",
+          "serializeExecutionDiagnostic"
+        ]
+      },
+      "tests": [
+        "apps/n8n-lego/test/lego-execution-diagnostics.test.mjs"
+      ]
+    },
+    {
       "id": "node.supply-chain",
       "owner": "manager",
       "domain": "node-registry",

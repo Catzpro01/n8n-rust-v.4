@@ -308,7 +308,7 @@ test('P9.10 source stays pure: no I/O, no clock; locked row documents the bounda
     'HEALTH_PHASES', 'HEALTH_REASON_CODES', 'HEALTH_LIMITS', 'createHealthModel',
   ]);
   assert.deepEqual(row.tests, ['apps/n8n-lego/test/lego-health-readiness.test.mjs']);
-  assert.equal(lock.contracts.length, 63); // P9.10 adds observability.health-readiness@1.0.0; count-pins say 63
+  assert.equal(lock.contracts.length, 64); // P9.10 adds observability.health-readiness@1.0.0; P9.11 adds observability.execution-diagnostics@1.0.0; count-pins say 64
   const doc = readFileSync(new URL('../../../docs/architecture/p9/P9.10-HEALTH-READINESS.md', import.meta.url), 'utf8');
   assert.match(doc, /LIVENESS/);
   assert.match(doc, /READINESS/);
