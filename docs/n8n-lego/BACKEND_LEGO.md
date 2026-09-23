@@ -299,7 +299,7 @@ Rule **R7** of the gate diffs the declared exports against the real exported
 symbols, so a contract cannot drift silently: adding `foo` to a locked contract
 file fails the build until the lock and version are updated.
 
-The current contract lock has **52 rows**. The historical foundation set remains:
+The current contract lock has **53 rows**. The historical foundation set remains:
 `compat.http` (1.0.0), `lego.error-contract` (1.0.0), `lego.domain-registry` (1.1.0),
 `lego.contract-compat` (1.0.0), `kernel.platform` (1.0.0), `reference.lego` (1.1.0),
 `reference.validation` (1.1.0), `reference.validation.schema` (1.0.0), and
@@ -317,6 +317,7 @@ P6.6 added `runtime.lease@0.1.0`.
 P6.7 added `node.residency@0.1.0`.
 P6.8 added `node.capability@0.1.0`.
 P6.9 added `node.semantics@0.1.0`.
+P6.10 added `node.lifecycle@0.1.0`.
 The machine-readable lock is authoritative.
 
 A domain that publishes several contracts names its **primary** one
@@ -326,6 +327,7 @@ A domain that publishes several contracts names its **primary** one
 
 | date | contract | version | change |
 | :--- | :--- | :--- | :--- |
+| 2026-09-24 | `node.lifecycle` | 0.1.0 | P6.10: orphan / tombstone / alias / deprecation — a lifecycle ledger built for one epoch, where every identity starts 'declared' and every transition returns a new frozen ledger with a digest that makes edits visible. Orphans are a report (with the mirror fact of dangling references); a deprecation must name a replacement the epoch contains; an alias is one hop and only for a retired name; a tombstone is the single irreversible state (grounds recorded, not editable, nothing may alias to it, the name may never be re-declared). States are P6.1's vocabulary, quoted. |
 | 2026-09-24 | `node.semantics` | 0.1.0 | P6.9: semantic fingerprint + compatibility replay — a fingerprint is taken of the CONTRACT over nine axes (type, typeVersion, parameters, expressions, credentials, io, webhooks, behavior, ui), never of the bytes: the implementation digest and language, package version, provenance, trust class, health and lifecycle stay outside it, so a node reimplemented in another language replays as MATCH with implementationChanged. Anything that cannot be canonicalised (function, undefined, non-finite number, Symbol, BigInt, Map/Set/instance, cycle) refuses with NON_DETERMINISTIC and names the path; an undeclared axis is ABSENT, not empty; replay answers MATCH / DIFF / NON_DETERMINISTIC / MISSING with an impact ladder (none < cosmetic < compatible < behavioral < breaking) and at most 32 path-addressed leaf changes. |
 | 2026-09-24 | `node.capability` | 0.1.0 | P6.8: capability compilation + runtime locality — a declaration says what a node NEEDS, the host decides what it GETS; the host profile is validated as data (capabilities, runtimes, strongest isolation), capabilities are granted in full or the plan is refused (no partial grants), code-execution capabilities constrain locality (subprocess needs sandboxed, native needs worker-isolated) and runtime selection is DELEGATED to node.portability rather than re-implemented; measured finding: P6.1 capabilities (foundation trust axis) and node.portability requiredCapabilities (registry axis) are different vocabularies, so nothing is projected and a plan states whether it delegated; trustClass is a label outside the decision and outside planDigest. |
 | 2026-09-24 | `node.capability` | 0.1.0 | P6.8: capability compilation + runtime locality — a declaration says what a node NEEDS, the host decides what it GETS; the host profile is validated as data (capabilities, runtimes, strongest isolation), capabilities are granted in full or the plan is refused (no partial grants), code-execution capabilities constrain locality (subprocess needs sandboxed, native needs worker-isolated) and runtime selection is DELEGATED to node.portability rather than re-implemented; measured finding: P6.1 capabilities (foundation trust axis) and node.portability requiredCapabilities (registry axis) are different vocabularies, so nothing is projected and a plan states whether it delegated; trustClass is a label outside the decision and outside planDigest. |
