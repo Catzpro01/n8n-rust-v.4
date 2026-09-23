@@ -2723,7 +2723,8 @@
       "phase": "P3",
       "errorNamespace": "workflow",
       "paths": [
-        "src/checksum.mjs"
+        "src/checksum.mjs",
+        "src/lego/workflow-graph.mjs"
       ],
       "public": [],
       "dependsOn": [
