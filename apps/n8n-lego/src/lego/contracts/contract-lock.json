@@ -1486,6 +1486,36 @@
         "apps/n8n-lego/test/lego-workflow-dna.test.mjs"
       ],
       "notes": "P3 Slice H (implementation: agent-1): bounded Workflow DNA — deterministic single-pass summary of canonical workflow identity + morphology. checksum = calculateWorkflowChecksum (n8n-editor contract, exact identity, order-sensitive); morphology block (node/edge counts, type@typeVersion histogram, root/leaf counts + first-64 samples, maxFanOut/maxFanIn, orphan connection keys capped, sorted header fields) is order-insensitive by design (node-shuffle keeps morphology, changes checksum only — metamorphic-asserted). Name lists capped at WORKFLOW_DNA_LIST_CAP=64 so DNA stays tiny at 10M nodes (bounded summary, never a second graph). Structural truth: orphan-source edges count toward fan-in (Ghost→Start ⇒ zero roots). Only import = ../checksum.mjs (same workflow domain seam); one error family lego.contract_violation; errors contract 1.2.0 untouched. No capability/REST surface. Owner agent-1 per Issue #98"
+    },
+    {
+      "id": "execution.ir",
+      "owner": "agent-1",
+      "domain": "execution",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/execution-ir.mjs"
+      ],
+      "exports": {
+        "src/lego/execution-ir.mjs": [
+          "EXECUTION_IR_CONTRACT",
+          "EXECUTION_IR_CONTRACT_VERSION",
+          "IR_OPTIMIZATIONS",
+          "ExecutionIrError",
+          "compileExecutionIr",
+          "optimizeExecutionIr",
+          "createIrCache"
+        ]
+      },
+      "consumers": [
+        "execution scheduling consumers — dependency lists for readiness (no whole-graph scans)",
+        "optimization equivalence harness (#91(c)) — toggle sweeps must recover the identical IR when off",
+        "bounded IR cache for compiled representations (LRU, fail-closed maxEntries)"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-execution-ir.test.mjs"
+      ],
+      "notes": "P3 Slice J: execution IR — raw compile (encounter-order deps, dangling excluded), independently disableable optimizations #91(c) (noopPassthrough, dedupeDeps; default ON, all-off = canonical identity), bounded LRU IR cache; zero-import (Issues #75/#91)"
     }
   ]
 }
