@@ -2444,6 +2444,50 @@
         "apps/n8n-lego/test/lego-worker-convergence.test.mjs"
       ],
       "notes": "P6.14 (P6 implementation owner: Agent 3, Issue #100): worker registry convergence + handshake. A worker that is behind is a fact; a worker that is WRONG is a different fact, and a registry that cannot tell them apart has two bad options (bring everything forward blindly, or refuse everything). FOUR DECISIONS AND NO FIFTH: MATCH (holds exactly this epoch and its reported runtime view), UPGRADE_REQUIRED (behind AND consistent — holds a subset with matching digests under a lower epoch number), MISMATCH (holds something this registry does not: an identity the epoch lacks, a digest that disagrees for a shared identity, or a higher epoch number than the coordinator), UNAVAILABLE (the coordinator has nothing to converge TO — an epoch that is not serving, or none at all). THE MISMATCH RULE IS THE POINT: 'behind' is a position and 'divergent' is a claim that disagrees; the first is a scheduling problem and the second is a correctness or supply-chain problem, and collapsing them gives the dangerous one the treatment of the harmless one — so divergence is checked BEFORE lag and a single disagreement outranks any amount of being behind. A HIGHER EPOCH NUMBER IS NOT AN UPGRADE: quiet convergence onto an older epoch would rewrite a worker's history without asking why it was ahead, so it is escalated. MATCH requires the epoch AND the REPORTED runtime view to agree (P6.13's view digest): 'no view reported' is a question, not an agreement, because a worker that cannot state its view digest cannot be keyed by a pool or a compiled cache. CONVERGENCE IS A PLAN, NOT A TRANSPORT: decisions carry ordered steps (request-runtime-view, request-full-epoch, apply-registry-changes, reverify-views, refuse-service, escalate-to-operator, retry-when-serving) and the contract stops there; a view-only upgrade does not tell the worker to apply changes it already holds. Epoch digests are accepted bare (as registry.compiler publishes them) or prefixed, and stored in the epoch's own form so a comparison needs no translation. Scope walls: no compile or publish (P6.2/P6.13), no transport (no network, queue or socket), no lease (P6.6), no loading (P6.7), no capability (P6.8), no health (P6.11), no pooling (P6.24), no repair (P6.30); no clock, no randomness, no mutation — the only node import is the hash."
+    },
+    {
+      "id": "node.acceptance",
+      "owner": "manager",
+      "domain": "node-registry",
+      "version": "0.1.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/node-acceptance.mjs"
+      ],
+      "exports": {
+        "src/lego/node-acceptance.mjs": [
+          "ACCEPTANCE_CONTRACT",
+          "ACCEPTANCE_CONTRACT_VERSION",
+          "ACCEPTANCE_SCHEMA_VERSION",
+          "ACCEPTANCE_OPERATIONS",
+          "ACCEPTANCE_PERMISSIONS",
+          "ACCEPTANCE_COVERS",
+          "ACCEPTANCE_CATEGORIES",
+          "ACCEPTANCE_REASONS",
+          "ACCEPTANCE_RULES",
+          "ACCEPTANCE_FORBIDDEN_IMPORTS",
+          "AcceptanceError",
+          "ACCEPTANCE_CLAIMS",
+          "claimById",
+          "listClaims",
+          "runAcceptance",
+          "isAcceptanceReport",
+          "verifyAcceptanceReport",
+          "describeAcceptance",
+          "explainAcceptance",
+          "ACCEPTANCE_INPUT_SCHEMA_VERSION"
+        ]
+      },
+      "consumers": [
+        "P6.16 integrity chain — a chain is verified against the same claims this harness runs",
+        "P6.19 canary rollout + semantic auto-rollback — the acceptance run is the pre-rollout gate",
+        "P6.30 repair + offline recovery — after a repair, the acceptance run is what says the core came back",
+        "P6.31 full acceptance — this harness is the core half of it, and P6.31 extends it rather than replacing it"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-node-acceptance.test.mjs"
+      ],
+      "notes": "P6.15 (P6 implementation owner: Agent 3, Issue #100): core acceptance. Fourteen contracts, fourteen promises; this contract is the one that CHECKS them, because 'we wrote tests' is not the same claim as 'the core behaves as specified, on demand, with evidence'. A CLAIM IS A SENTENCE AND A RUNNER: the sentences live in ACCEPTANCE_CLAIMS (id, category, statement, covers) and the runners drive the REAL contracts through their public surface — no mocks, no stubs, no private imports — so a claim cannot pass while the contract is broken. SIXTEEN CLAIMS over fifteen contracts: identity.canonical, epoch.deterministic, install.atomic, closure.deterministic, resolution.pinned, lease.pinned, residency.tiers, capability.all-or-nothing, semantics.equivalence, lifecycle.irreversible, health.breaker, supply.revocation, incremental.equivalence, convergence.separation, boundary.scope-walls, surface.lock-rows. THE REPORT CANNOT BE CHERRY-PICKED: a run over a subset is marked partial, explainAcceptance says PARTIAL out loud, and verifyAcceptanceReport rebuilds the report digest AND requires the full claim set — a report that quietly omits the claim that fails is not evidence, and the way to prevent that is to make the omission detectable rather than to trust the author. FAIL-CLOSED EVIDENCE: two claims need artefacts this module deliberately does not read (the core sources for the boundary scan, the contract lock for the surface claim); they are INJECTED, and missing evidence is a FAILURE rather than a skip, because an acceptance run that cannot check the boundary claim has not checked the boundary. The boundary claim is a static scan: no core contract may import the engine (execution-ir, execution-optimizer, bounded-frontier), the graph (workflow-graph, envelope), the agent machine, the provider/transport layer or the event stream. Scope walls: no re-implementation of any contract, no decisions (it reports), no filesystem, network, clock, randomness or mutation — the only node import is the hash."
     }
   ]
 }

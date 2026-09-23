@@ -24,6 +24,7 @@
 - `src/lego/capability-compiler.mjs`
 - `src/lego/dependency-closure.mjs`
 - `src/lego/incremental-registry.mjs`
+- `src/lego/node-acceptance.mjs`
 - `src/lego/node-health.mjs`
 - `src/lego/node-lifecycle.mjs`
 - `src/lego/node-portability.mjs`
