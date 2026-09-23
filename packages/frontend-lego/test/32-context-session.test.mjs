@@ -1391,7 +1391,7 @@ test('the milestone register records P2.15 as complete on protected main and P2.
   // P2.15's start baseline stays preserved history on the P2.15 row; the top-level baseline moved
   // on to the final protected-main commit when P2.16 became the current milestone.
   assert.equal(p215.startEvidence.commit, '0d9466f19a149f6e30bdee559086b7a28b080cb3', 'P2.15 start baseline is preserved history');
-  assert.equal(MILESTONES.mainBaseline, '84337490a061a2774bdcf5743b13972c2c82903b', 'the baseline is the final protected-main commit');
+  assert.equal(MILESTONES.mainBaseline, 'c40b788966d2a43df66d53405a72e1230c9c0fc3', 'the baseline is the final protected-main commit');
   const p216 = byId.get('P2.16');
   assert.equal(p216.status, 'complete');
   assert.ok(p216.finishEvidence, 'P2.16 carries protected-main finish evidence after the PR #52 merge');
@@ -1458,7 +1458,7 @@ test('the register keeps the strategic phases, the ladder and the merge protocol
   // Top-level canonical truth:
   assert.equal(MILESTONES.currentMilestone, 'P2.21');
   assert.equal(MILESTONES.previousCompletedMilestone, 'P2.20');
-  assert.equal(MILESTONES.mainBaseline, '84337490a061a2774bdcf5743b13972c2c82903b');
+  assert.equal(MILESTONES.mainBaseline, 'c40b788966d2a43df66d53405a72e1230c9c0fc3');
   assert.equal(MILESTONES.strategicRoadmap.source, 'apps/n8n-lego/src/lego/manifest/ai-lego-set.json');
   assert.equal(MILESTONES.protectedBranch, 'main');
 });
