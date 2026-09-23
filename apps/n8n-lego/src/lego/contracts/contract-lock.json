@@ -2262,6 +2262,34 @@
         "apps/n8n-lego/test/lego-node-health.test.mjs"
       ],
       "notes": "P6.11 (P6 implementation owner: Agent 3, Issue #100): health + crash circuit breaker + quarantine. A node that crashed once is a fact; a node that crashes every time is a decision, and this contract is the smallest defensible version of it. The state vocabulary is P6.1's (unknown, healthy, degraded, failing, quarantined), quoted rather than extended; what this contract adds is the transition rules between those words. OBSERVATION: success or failure with a tick the caller supplies — no clock, so a table rebuilt from the same ticks produces the same states and a quarantine survives a restart instead of being a memory in a process. DERIVATION: the state follows from the observations, never the reverse. BREAKER: consecutive failures (default threshold 3, configurable) open the circuit, and mayServe refuses work with the tick at which a probe may be tried; after the cool-off exactly one probe is allowed (half-open), a success closes the circuit, and a failure re-opens it with a doubled cool-off bounded at MAX_COOL_OFF_TICKS so a permanently broken node stays visible instead of vanishing into an unbounded back-off. A success recorded BEFORE the cool-off is data, not a verdict: it is recorded and the circuit stays open, because a success that was not allowed to happen proves nothing. QUARANTINE: the deliberate version of the same thing — it records origin (operator/breaker/policy/attestation), reason and tick; it outranks every observation (a success does not clear it, and a second, different quarantine is refused as 'released, not overwritten'); it does not expire. RELEASE returns the node to 'unknown', never to 'healthy': the only thing that makes a node healthy is an observation that says so, and a release that returned to healthy would be an operator's optimism wearing a state machine's clothes. Scope walls: no execution and no retry (mayServe decides whether a retry is allowed and leaves the retrying to the runtime), no lease (P6.6), no residency (P6.7), no capability (P6.8), no lifecycle (P6.10), no revocation (P6.12), no rollback (P6.19); no clock; the only node import is the hash."
+    },
+    {
+      "id": "observability.trace",
+      "owner": "agent-6",
+      "domain": "observability",
+      "version": "1.0.0",
+      "status": "stable",
+      "surface": [
+        "src/lego/trace-context.mjs"
+      ],
+      "exports": {
+        "src/lego/trace-context.mjs": [
+          "TRACE_CONTRACT",
+          "TRACE_WIRE_VERSION",
+          "TRACE_LIMITS",
+          "createTraceSpan",
+          "createChildTraceSpan",
+          "injectTraceParent",
+          "parseTraceParent",
+          "continueTrace",
+          "createTracePayloadReference"
+        ]
+      },
+      "consumers": [],
+      "tests": [
+        "apps/n8n-lego/test/lego-trace-context.test.mjs"
+      ],
+      "notes": "P9.4 only; delegated implementation Agent 4, product ownership Agent 6 unchanged."
     }
   ]
 }

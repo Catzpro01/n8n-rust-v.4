@@ -1,0 +1,63 @@
+{
+  "node": "v22.18.0",
+  "platform": "linux",
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.60GHz",
+  "note": "Synthetic repeated span ID for API microbenchmark only. Production IDs must be unique. Batch-average percentiles, not event percentiles. Heap deltas not allocation counts. No network, workflow, sink or retained trace.",
+  "results": [
+    {
+      "name": "OFF control",
+      "iterations": 100000,
+      "elapsedMs": 1.8375169999999983,
+      "opsPerSecond": 54421265.218226604,
+      "batchMeanUs": {
+        "p50": 0.016544000000003223,
+        "p95": 0.019406000000003587,
+        "p99": 0.03356399999999837
+      },
+      "cpuUs": {
+        "user": 1309,
+        "system": 584
+      },
+      "heapDeltaBeforeGc": 28784,
+      "retainedHeapDeltaAfterGc": 15672,
+      "rssDelta": 0
+    },
+    {
+      "name": "local child context",
+      "iterations": 100000,
+      "elapsedMs": 731.8790690000001,
+      "opsPerSecond": 136634.59475160914,
+      "batchMeanUs": {
+        "p50": 6.9937940000000935,
+        "p95": 9.686546000000021,
+        "p99": 10.93229800000006
+      },
+      "cpuUs": {
+        "user": 736224,
+        "system": 0
+      },
+      "heapDeltaBeforeGc": 792424,
+      "retainedHeapDeltaAfterGc": 21384,
+      "rssDelta": 270336
+    },
+    {
+      "name": "carrier continuation",
+      "iterations": 100000,
+      "elapsedMs": 502.880403,
+      "opsPerSecond": 198854.438159524,
+      "batchMeanUs": {
+        "p50": 4.92019300000004,
+        "p95": 5.413735999999972,
+        "p99": 7.824229000000059
+      },
+      "cpuUs": {
+        "user": 514813,
+        "system": 0
+      },
+      "heapDeltaBeforeGc": 879920,
+      "retainedHeapDeltaAfterGc": 10784,
+      "rssDelta": -1277952
+    }
+  ],
+  "checksum": 330000
+}

@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:n8n:observability:trace:1.0.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractVersion",
+    "context",
+    "sampled"
+  ],
+  "properties": {
+    "contractVersion": {
+      "const": "1.0.0"
+    },
+    "sampled": {
+      "type": "boolean"
+    },
+    "context": {
+      "allOf": [
+        {
+          "$ref": "urn:n8n:observability:envelope:1.0.0#/properties/context"
+        },
+        {
+          "required": [
+            "traceId",
+            "spanId"
+          ],
+          "properties": {
+            "traceId": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$",
+              "not": {
+                "const": "00000000000000000000000000000000"
+              }
+            },
+            "spanId": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{16}$",
+              "not": {
+                "const": "0000000000000000"
+              }
+            },
+            "parentSpanId": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{16}$",
+              "not": {
+                "const": "0000000000000000"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
