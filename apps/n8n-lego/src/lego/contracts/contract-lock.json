@@ -1364,6 +1364,37 @@
         "apps/n8n-lego/test/lego-provider-declaration.test.mjs"
       ],
       "notes": "P2.26 provider declaration profile + handed-over access (implementation: agent-1): providers are declared — sim/local/cloud — never assumed, discovered or auto-selected; closed three-field declaration cannot carry credentials; handoff = opaque grant reference + declared scope + requestId (request-bound, never standing); credential-shaped values refused by the canonical full-form detector quoted from ai.token-usage; configuration stays on the P2.25 adapters (authority is never granted by declaration); Workspace remains ai.workspace@1.0.0 — no second implementation, no filesystem/shell/subprocess authority; no client, no endpoint, no network, zero node:* imports"
+    },
+    {
+      "id": "workflow.graph",
+      "owner": "agent-1",
+      "domain": "workflow",
+      "version": "0.1.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/workflow-graph.mjs"
+      ],
+      "exports": {
+        "src/lego/workflow-graph.mjs": [
+          "GRAPH_CHUNK_DEFAULT_SIZE",
+          "WORKFLOW_GRAPH_BUNDLE_VERSION",
+          "WORKFLOW_GRAPH_CONTRACT",
+          "WORKFLOW_GRAPH_CONTRACT_VERSION",
+          "WORKFLOW_GRAPH_LIMITS",
+          "WorkflowGraphError",
+          "createWorkflowGraph",
+          "graphFromBundle"
+        ]
+      },
+      "consumers": [
+        "P3 execution slices (Issue #75/#97) — canonical-authoritative logical graph access",
+        "bounded runtime slices (frontier/checkpoint) — chunked partial reads, not whole-graph loads",
+        "compatibility oracle (Issue #91) — lossless exportDefinition roundtrip as the reference form"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-workflow-graph.test.mjs"
+      ],
+      "notes": "P3 Slice A (implementation: agent-1): persistent logical graph over the canonical n8n definition — verbatim node strings in fixed-size chunks, connections bucketed by source, resident index name→ordinal (integer, never node objects), one-chunk reads proven by readStats, durable bundle with fail-closed chunk digest, lossless exportDefinition (deep-equal roundtrip incl. orphan connection keys), manifest.checksum stays the n8n-editor contract checksum. Derived/disposable representation — n8n-ts WorkflowStore keeps the canonical document. No artificial node-count cap. No capability/REST surface yet (no ops/permissions on purpose). No fs/network/clock; owner agent-1 per Issue #98 P3 ownership"
     }
   ]
 }

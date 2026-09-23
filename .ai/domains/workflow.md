@@ -21,6 +21,7 @@
 ## Owns
 
 - `src/checksum.mjs`
+- `src/lego/workflow-graph.mjs`
 
 ## Public contract surface
 
