@@ -931,7 +931,9 @@ test('a reported figure carries its kind, its unit and its source, and an estima
   assert.match(over.detail, /no room left for the continuation package/);
   // The three kinds are the whole vocabulary, and the confusion they prevent is documented.
   assert.deepEqual([...TOKEN_KINDS], ['message', 'modelInput', 'output']);
-  assert.equal(vocabularyOf('tokenKind').publicationPending.decision, 'XA-17');
+  assert.equal(vocabularyOf('tokenKind').promotedFrom.decision, 'XA-17');
+  assert.equal(vocabularyOf('tokenKind').provenance.contract.id, 'ai.token-usage',
+    'tokenKind is quoted from the P2.24 publication, not held pending');
 });
 
 test('the surface is not a token dashboard and never renders the window itself', () => {
