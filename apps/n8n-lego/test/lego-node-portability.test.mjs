@@ -79,7 +79,7 @@ test('the contract string is the exact locked identity', () => {
 });
 
 test('the contract-lock row names real exports, real ops, the real test file — 27 rows total', () => {
-  assert.equal(LOCK.contracts.length, 36, 'P2.22 twenty-seventh .. P2.26 thirty-second (ai.provider-declaration), P3 Slice A the thirty-third (workflow.graph), P3 Slice D the thirty-fourth (execution.frontier), P3 Slice E the thirty-fifth (execution.state-stream), P3 Slice H the thirty-sixth (workflow.dna) lock rows');
+  assert.equal(LOCK.contracts.length, 37, 'P2.22 twenty-seventh .. P2.26 thirty-second (ai.provider-declaration), P3 Slice A the thirty-third (workflow.graph), P3 Slice D the thirty-fourth (execution.frontier), P3 Slice E the thirty-fifth (execution.state-stream), P3 Slice H the thirty-sixth (workflow.dna) lock rows; P6.1 adds the thirty-seventh (node.registry@0.1.0, domain node-registry) — count-pins say 37');
   assert.deepEqual([...LOCK_ROW.operations], [...NODE_PORTABILITY_OPERATIONS]);
   const exported = LOCK_ROW.exports['src/lego/node-portability.mjs'];
   assert.deepEqual([...exported].sort(), Object.keys(portability).sort(),

@@ -299,7 +299,7 @@ Rule **R7** of the gate diffs the declared exports against the real exported
 symbols, so a contract cannot drift silently: adding `foo` to a locked contract
 file fails the build until the lock and version are updated.
 
-The current contract lock has **20 rows**. The historical foundation set remains:
+The current contract lock has **37 rows**. The historical foundation set remains:
 `compat.http` (1.0.0), `lego.error-contract` (1.0.0), `lego.domain-registry` (1.1.0),
 `lego.contract-compat` (1.0.0), `kernel.platform` (1.0.0), `reference.lego` (1.1.0),
 `reference.validation` (1.1.0), `reference.validation.schema` (1.0.0), and
@@ -307,6 +307,8 @@ The current contract lock has **20 rows**. The historical foundation set remains
 published Context & Session rows: `ai.context@1.0.0` and `ai.agent-session@1.0.0`; P2.14
 added `ai.memory@1.0.0`; P2.15 added `ai.workspace@1.0.0`; P2.16 added the bounded Agent
 Machine execution foundation row `ai.agent-machine@1.0.0`.
+P3 Slices A/C/D/E/H and P2.25/P2.26 added the execution/workflow and gateway rows;
+P6.1 added `node.registry@0.1.0` (the thirty-seventh).
 The machine-readable lock is authoritative.
 
 A domain that publishes several contracts names its **primary** one
@@ -316,6 +318,7 @@ A domain that publishes several contracts names its **primary** one
 
 | date | contract | version | change |
 | :--- | :--- | :--- | :--- |
+| 2026-09-23 | `node.registry` | 0.1.0 | P6.1: initial lock of the canonical node registry contract — identity is `type` + `typeVersion` (rendered `type@typeVersion` as the pinned catalog writes it) and nothing else; a closed 17-field metadata schema (package, vendor, contract/implementation version, digest, provenance, capabilities, trust class, runtime locality, resource profile, compatibility, lifecycle, health, discovery); trust, capability, runtime, failure-boundary, resource-class, lifecycle and portability vocabulary quoted from the foundation manifest, `lego.negotiation` and `node.portability`; unknown field/trust/capability/runtime/lifecycle/health or an unverifiable digest refuses; duplicate identities are a conflict, never a precedence rule; nothing is published when any entry is invalid. Compiler, epochs and atomic publication remain P6.2 (Issue #100) |
 | 2026-09-23 | `workflow.dna` | 0.1.0 | P3 Slice H: initial lock of the bounded Workflow DNA (n8n checksum identity + order-insensitive morphology block, name lists capped at 64, single-pass, only the checksum seam imported; Issues #75/#91) |
 | 2026-09-23 | `execution.state-stream` | 0.1.0 | P3 Slice F: additive exports (STATE_STREAM_SNAPSHOT_VERSION, stateStreamFromSnapshot) — fail-closed sha256 snapshot/resume (cursor + resident backlog + context) on the bounded stream seam; version stays 0.1.0 (additive, pre-1.0; Issues #75/#97) |
 | 2026-09-23 | `execution.state-stream` | 0.1.0 | P3 Slice E: initial lock of the bounded streaming execution state (required `maxResidentEvents` bound, explicit backpressure with published `lego.backpressure`, bounded reads, finite batch stream, selective `consume`, zero-import purity; Issues #75/#97) |

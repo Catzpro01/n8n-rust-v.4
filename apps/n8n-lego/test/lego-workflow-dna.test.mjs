@@ -64,7 +64,7 @@ function sampleDefinition() {
 test('the lock row is the thirty-sixth: workflow.dna@0.1.0, owner agent-1, exports byte-parity', () => {
   const row = ROWS.find((r) => r.id === 'workflow.dna');
   assert.ok(row, 'workflow.dna is locked');
-  assert.equal(ROWS.length, 36, 'P3 Slice H adds exactly one row — count-pins say 36');
+  assert.equal(ROWS.length, 37, 'P3 Slice H adds exactly one row — count-pins say 36; P6.1 adds the thirty-seventh (node.registry@0.1.0, domain node-registry) — count-pins say 37');
   assert.equal(row.owner, 'agent-1');
   assert.equal(row.domain, 'workflow');
   assert.equal(row.version, '0.1.0', 'R9: workflow domain contract 0.1.0');

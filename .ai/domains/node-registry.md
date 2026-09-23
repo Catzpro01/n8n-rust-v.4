@@ -23,6 +23,7 @@
 - `src/catalog.mjs`
 - `src/lego/node-portability.mjs`
 - `src/lego/node-creator.mjs`
+- `src/lego/node-registry.mjs`
 
 ## Public contract surface
 

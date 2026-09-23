@@ -1486,6 +1486,66 @@
         "apps/n8n-lego/test/lego-workflow-dna.test.mjs"
       ],
       "notes": "P3 Slice H (implementation: agent-1): bounded Workflow DNA — deterministic single-pass summary of canonical workflow identity + morphology. checksum = calculateWorkflowChecksum (n8n-editor contract, exact identity, order-sensitive); morphology block (node/edge counts, type@typeVersion histogram, root/leaf counts + first-64 samples, maxFanOut/maxFanIn, orphan connection keys capped, sorted header fields) is order-insensitive by design (node-shuffle keeps morphology, changes checksum only — metamorphic-asserted). Name lists capped at WORKFLOW_DNA_LIST_CAP=64 so DNA stays tiny at 10M nodes (bounded summary, never a second graph). Structural truth: orphan-source edges count toward fan-in (Ghost→Start ⇒ zero roots). Only import = ../checksum.mjs (same workflow domain seam); one error family lego.contract_violation; errors contract 1.2.0 untouched. No capability/REST surface. Owner agent-1 per Issue #98"
+    },
+    {
+      "id": "node.registry",
+      "owner": "manager",
+      "domain": "node-registry",
+      "version": "0.1.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/node-registry.mjs"
+      ],
+      "exports": {
+        "src/lego/node-registry.mjs": [
+          "NODE_CAPABILITIES",
+          "NODE_COMPATIBILITY_KINDS",
+          "NODE_CONCURRENCY_MODES",
+          "NODE_DISCOVERY_GROUPS",
+          "NODE_FAILURE_BOUNDARIES",
+          "NODE_HEALTH_STATES",
+          "NODE_IDENTITY_RE",
+          "NODE_LIFECYCLE_STATES",
+          "NODE_PROVENANCE_KINDS",
+          "NODE_REGISTRY_CONTRACT",
+          "NODE_REGISTRY_CONTRACT_VERSION",
+          "NODE_REGISTRY_FIELDS",
+          "NODE_REGISTRY_OPERATIONS",
+          "NODE_REGISTRY_OPTIONAL_FIELDS",
+          "NODE_REGISTRY_PERMISSIONS",
+          "NODE_REGISTRY_REASONS",
+          "NODE_REGISTRY_REQUIRED_FIELDS",
+          "NODE_REGISTRY_RULES",
+          "NODE_REGISTRY_SCHEMA_VERSION",
+          "NODE_REGISTRY_VOCABULARY_SOURCE",
+          "NODE_RESOURCE_CLASSES",
+          "NODE_RESOURCE_FIELDS",
+          "NODE_RUNTIME_LOCALITIES",
+          "NODE_TRUST_CLASSES",
+          "NODE_TYPE_ID_RE",
+          "NODE_TYPE_VERSION_RE",
+          "NodeRegistryError",
+          "RUNTIME_LOCALITY_MODEL",
+          "canonicalNodeRegistryDeclaration",
+          "indexNodeRegistryDeclarations",
+          "isNodeTypeId",
+          "isNodeTypeVersion",
+          "nodeIdentity",
+          "nodeRegistryDeclarationDigest",
+          "parseNodeIdentity",
+          "validateNodeIdentity",
+          "validateNodeRegistryDeclaration"
+        ]
+      },
+      "consumers": [
+        "P6.2 registry compiler + immutable epoch — compiles these declarations and adds epochs, atomic publication and rollback on top",
+        "P3 workflow node resolution (Issue #97) — resolves node identity without reading implementation internals",
+        "P4/P5/P8/P9 contracts — trust class, runtime locality and resource profile are read from the declaration, never inferred"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-node-registry.test.mjs"
+      ],
+      "notes": "P6.1 (P6 implementation owner: Agent 3, Issue #100): canonical node registry contract. Identity is `type` + `typeVersion` and nothing else, rendered `type@typeVersion` exactly as the pinned n8n catalog writes it (`n8n-nodes-base.httpRequest@4.4`). Measured, not assumed: `node.contract` calls typeVersion an integer, but the pinned `n8n-nodes-base@2.9.1` catalog carries fractional versions (1.1 … 4.4) and 90 of its 483 node types are multi-version, so a typeVersion is a positive number with at most one decimal place. Metadata (package, vendor, contract/implementation version, digest, provenance, capabilities, trust class, runtime locality, resource profile, compatibility, lifecycle, health, discovery) is a CLOSED schema: unknown field, unknown trust class, unknown capability, unknown runtime locality, unknown lifecycle, unknown health, unverifiable digest or a missing provenance source is refused — fail closed. Vocabulary is QUOTED, never re-declared: trust classes, capabilities, runtimes, failure boundaries and resource classes from foundation.json; lifecycle from lego.negotiation; portability targets from node.portability; discovery groups from the n8n editor contract. The index is a deterministic dictionary only: duplicate identities are a conflict (never a precedence rule) and nothing is published when any entry is invalid — normalization, epochs, atomic publication and rollback remain P6.2. Pure functions: no filesystem, network, process, timer or clock. No authority: nothing here grants trust, capability or permission. node.portability@1.0.0 stays the domain's primary contract."
     }
   ]
 }

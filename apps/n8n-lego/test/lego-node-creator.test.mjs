@@ -92,7 +92,7 @@ test('the contract string is the exact locked identity — row 28, domain node-r
   assert.equal(LOCK_ROW.status, 'implemented');
   assert.equal(LOCK_ROW.domain, 'node-registry');
   assert.equal(LOCK_ROW.owner, 'manager');
-  assert.equal(LOCK.contracts.length, 36, 'rows through P3 Slice A persistent logical graph (thirty-third); P3 Slice D adds the thirty-fourth (execution.frontier); P3 Slice E adds the thirty-fifth (execution.state-stream); P3 Slice H adds the thirty-sixth (workflow.dna)');
+  assert.equal(LOCK.contracts.length, 37, 'rows through P3 Slice A persistent logical graph (thirty-third); P3 Slice D adds the thirty-fourth (execution.frontier); P3 Slice E adds the thirty-fifth (execution.state-stream); P3 Slice H adds the thirty-sixth (workflow.dna); P6.1 adds the thirty-seventh (node.registry@0.1.0, domain node-registry) — count-pins say 37');
   // primary contract of the domain stays node.portability — node.creator is NOT primary (R9)
   assert.equal(NODE_DOMAIN.contract.id, 'node.portability');
 });
