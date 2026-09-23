@@ -19,7 +19,7 @@
 | **Context & Session** | `ai.context` | locked @ 1.0.0 | IN-PROGRESS | ai.context@1.0.0, ai.agent-session@1.0.0 | `lego-context-session.test.mjs`; planned: frontend/backend alignment and full reconciliation |
 | **Context & Session** | `ai.agent-session` | locked @ 1.0.0 | IN-PROGRESS | ai.context@1.0.0, ai.agent-session@1.0.0 | `lego-context-session.test.mjs`; planned: frontend/backend alignment and full reconciliation |
 | **Universal Translation** | `ai.translation` | **publicationPending** | PLANNED | publicationPending | planned: markup preservation, RTL declaration, fallback when absent |
-| **Node Creator** | `node.creator` | **publicationPending** | PLANNED | publicationPending | planned: per-strategy conformance, generated-node validity |
+| **Node Creator** | `node.creator` | locked @ 1.0.0 | PLANNED | publicationPending | planned: per-strategy conformance, generated-node validity |
 | **Capability** | `lego.domain-registry` | locked @ 1.1.0 | IMPLEMENTED | lego.domain-registry@1.1.0, lego.negotiation@1.0.0 | `lego-capability-contract.test.mjs`; `lego-communication.test.mjs`; `lego-foundation.test.mjs` |
 | **Capability** | `lego.negotiation` | locked @ 1.0.0 | IMPLEMENTED | lego.domain-registry@1.1.0, lego.negotiation@1.0.0 | `lego-capability-contract.test.mjs`; `lego-communication.test.mjs`; `lego-foundation.test.mjs` |
 | **MCP Adapter** | `ai.tool-gateway` | declared in `ai-foundation` | CONTRACT-ONLY | publicationPending | `lego-ai-foundation.test.mjs (boundary rules)`; planned: adapter conformance, lazy discovery bounds |

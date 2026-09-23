@@ -7,7 +7,7 @@
 | --- | --- | --- | --- | --- | --- |
 | `platform-kernel` | `manager` | domain | implemented | `kernel.platform` v1.0.0 | 19 |
 | `lego-foundation` | `manager` | domain | implemented | `lego.domain-registry` v1.1.0 | 19 |
-| `ai-foundation` | `manager` | domain | partial | `ai.foundation` v1.0.0 | 0 |
+| `ai-foundation` | `manager` | domain | partial | `ai.foundation` v1.0.0 | 4 |
 | `compatibility` | `agent-1` | domain | implemented | `compat.http` v1.0.0 | 13 |
 | `auth` | `agent-3` | domain | partial | — | 2 |
 | `auth.identity` | `agent-3` | feature | implemented | `auth.identity` v1.0.0 | 14 |
