@@ -1,15 +1,17 @@
 /**
- * P3 Slice E — bounded streaming execution state (Issue #75 required
- * architecture 4; checkpoint/resume = Slice F on this seam).
+ * P3 Slice E+F — bounded streaming execution state + checkpoint/resume
+ * (Issues #75/#97, required architecture 4 & 5).
  *
  * Proves: bounded buffer (backpressure, no silent loss) · streaming reads
  * (bounded window, finite batch generator, destructive selective consume) ·
  * JSON-domain payloads frozen on admission · purity (only node:crypto) ·
- * purity (zero imports) · JSON-domain payloads frozen on admission.
+ * JSON payloads frozen on admission · fail-closed sha256 snapshot/resume
+ * (Slice F) · metamorphic checkpoint→resume ≡ uninterrupted (#91 mode 4).
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -17,8 +19,10 @@ import {
   STATE_STREAM_CONTRACT,
   STATE_STREAM_CONTRACT_VERSION,
   STATE_STREAM_MAX_EVENTS,
+  STATE_STREAM_SNAPSHOT_VERSION,
   StateStreamError,
   createStateStream,
+  stateStreamFromSnapshot,
 } from '../src/lego/state-stream.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -48,12 +52,12 @@ test('the lock row is the thirty-fifth: execution.state-stream@0.1.0, owner agen
   assert.deepEqual(row.surface, ['src/lego/state-stream.mjs']);
   const module_ = {
     STATE_STREAM_CONTRACT, STATE_STREAM_CONTRACT_VERSION, STATE_STREAM_MAX_EVENTS,
-    StateStreamError, createStateStream,
+    STATE_STREAM_SNAPSHOT_VERSION, StateStreamError, createStateStream, stateStreamFromSnapshot,
   };
   const locked = row.exports['src/lego/state-stream.mjs'];
   assert.deepEqual([...locked].sort(), Object.keys(module_).sort(), 'lock ⇄ module exports');
   assert.deepEqual([...locked], [...locked].slice().sort(), 'sorted ASCII');
-  assert.equal(locked.length, 5);
+  assert.equal(locked.length, 7);
   assert.deepEqual(row.tests, ['apps/n8n-lego/test/lego-state-stream.test.mjs']);
   assert.equal('operations' in row, false, 'no capability/REST surface (by design)');
   assert.equal('permissions' in row, false);
@@ -67,9 +71,9 @@ test('the execution domain owns the module; purity scan; one published error fam
   assert.equal(EXECUTION.status, 'partial', 'domain status unchanged by a slice');
   assert.equal(ERRORS.version, '1.2.0', 'errors contract untouched');
   assert.ok([...ERRORS.codes].some((c) => (c.code ?? c) === 'lego.backpressure'));
-  // purity: ZERO imports — no clock/fs/network/timers/randomness/process
+  // purity: ONLY node:crypto (digest) — no clock/fs/network/timers/randomness/process
   const imports = [...SOURCE.matchAll(/from '([^']+)'/g)].map((m) => m[1]);
-  assert.deepEqual(imports, [], 'zero imports — a pure bounded structure');
+  assert.deepEqual(imports, ['node:crypto'], 'exactly one import: the digest');
   for (const forbidden of [/node:fs/, /node:http/, /node:net/, /setTimeout/, /setInterval/, /Date\.now/, /Math\.random/, /process\./]) {
     assert.equal(forbidden.test(SOURCE), false, `${forbidden} must not appear`);
   }
@@ -190,4 +194,101 @@ test('stream() yields finite bounded batches up to lastSeq-at-call (no unbounded
   const empty = createStateStream({ maxResidentEvents: 4 });
   assert.equal([...empty.stream(1)].length, 0, 'empty stream yields nothing');
   assert.equal(caught(() => { empty.stream(-1).next(); }).details.field, 'cursor', 'eager validation for illegal cursor');
+});
+
+/* ================================= D. CHECKPOINT / RESUME (SLICE F) */
+
+test('snapshot seals cursor + backlog + context with sha256; resume is fail-closed', () => {
+  const stream = createStateStream({ maxResidentEvents: 16 });
+  for (let i = 0; i < 5; i += 1) stream.append({ n: i });
+  stream.consume(2);
+  const snap = stream.snapshot({ workflowChecksum: 'abc', cursor: 3 });
+  assert.equal(snap.snapshotVersion, STATE_STREAM_SNAPSHOT_VERSION);
+  assert.equal(typeof snap.digest, 'string');
+  assert.equal(snap.digest.length, 64, 'sha256');
+  const restored = stateStreamFromSnapshot(snap);
+  assert.equal(restored.context.workflowChecksum, 'abc', 'caller context roundtrips');
+  assert.equal(restored.lastSeq, 5, 'cursor recovered');
+  assert.equal(restored.firstResidentSeq, 3, 'resident window recovered');
+  assert.equal(restored.stream.size(), 3);
+  assert.deepEqual([...restored.stream.read(3, 10).map((r) => r.event.n)], [2, 3, 4]);
+  // resume flow: continued appends keep the durable seq window
+  const after = restored.stream.append({ n: 5 });
+  assert.equal(after.status, 'admitted');
+  assert.equal(after.seq, 6, 'resume continues from lastSeq, not from 1');
+  // tamper detection (digest class)
+  const tamper = (mutate) => {
+    const s = stream.snapshot();
+    const body = JSON.parse(s.bodyJson);
+    mutate(body);
+    return { snapshotVersion: s.snapshotVersion, bodyJson: JSON.stringify(body), digest: s.digest };
+  };
+  const refused = caught(() => stateStreamFromSnapshot(tamper((b) => { b.lastSeq = 99; })));
+  assert.equal(refused.details.reason, 'integrity-mismatch');
+  assert.equal(refused.code, 'lego.contract_violation');
+  assert.equal(caught(() => stateStreamFromSnapshot(null)).details.field, 'snapshot');
+  assert.equal(
+    caught(() => stateStreamFromSnapshot({ snapshotVersion: 99, bodyJson: '{}', digest: 'x' })).details.reason,
+    'unsupported-version');
+  // structural violations after RESEALING (attacker recomputes digest — still refused)
+  const sha = (text) => createHash('sha256').update(text, 'utf8').digest('hex');
+  const reseal = (mutate) => {
+    const s = stream.snapshot();
+    const body = JSON.parse(s.bodyJson);
+    mutate(body);
+    const bodyJson = JSON.stringify(body);
+    return { snapshotVersion: s.snapshotVersion, bodyJson, digest: sha(bodyJson) };
+  };
+  const gap = reseal((b) => { b.events = [b.events[0], b.events[2]]; b.size = 2; b.firstResidentSeq = 3; });
+  assert.equal(caught(() => stateStreamFromSnapshot(gap)).details.reason, 'count-mismatch',
+    'non-contiguous events refused even with a valid digest');
+  const wrongContract = reseal((b) => { b.contract = 'execution.state-stream@9.9.9'; });
+  assert.equal(caught(() => stateStreamFromSnapshot(wrongContract)).details.reason, 'integrity-mismatch');
+  const badSize = reseal((b) => { b.size = 99; });
+  assert.equal(caught(() => stateStreamFromSnapshot(badSize)).details.reason, 'count-mismatch');
+});
+
+test('metamorphic: checkpoint → resume ≡ uninterrupted execution (#91 mode 4)', () => {
+  const drive = (stream, ops) => {
+    const log = [];
+    for (const op of ops) {
+      if (op.type === 'append') log.push(stream.append(op.event));
+      else if (op.type === 'consume') log.push(...stream.consume(op.limit));
+      else if (op.type === 'read') log.push(...stream.read(op.from, op.limit));
+      else log.push(...[...stream.stream(op.from, { batchSize: op.batch })].flatMap((b) => [...b.events]));
+    }
+    return log.map((r) => (typeof r === 'object' && r !== null && 'seq' in r ? r.seq : r.status ?? r));
+  };
+  const ops = [
+    { type: 'append', event: { a: 1 } }, { type: 'append', event: { a: 2 } },
+    { type: 'append', event: { a: 3 } }, { type: 'read', from: 1, limit: 8 },
+    { type: 'consume', limit: 1 }, { type: 'append', event: { a: 4 } },
+    { type: 'stream', from: 1, batch: 2 }, { type: 'append', event: { a: 5 } },
+  ];
+  const straight = createStateStream({ maxResidentEvents: 8 });
+  const straightLog = drive(straight, ops);
+  // independent prefix reference (a fresh stream — never reuse the full-run one)
+  const straightFirst = drive(createStateStream({ maxResidentEvents: 8 }), ops.slice(0, 4));
+  // interrupt at the midpoint: snapshot → resume → continue
+  const a = createStateStream({ maxResidentEvents: 8 });
+  drive(a, ops.slice(0, 4));
+  const snap = a.snapshot({ note: 'mid' });
+  const b = stateStreamFromSnapshot(snap).stream;
+  const resumedLog = drive(b, ops.slice(4));
+  assert.deepEqual([...straightFirst, ...resumedLog], straightLog,
+    'checkpoint → resume produces the exact uninterrupted sequence');
+  // structural equivalence of the two end states
+  const endOf = (s) => ({ lastSeq: s.lastSeq(), size: s.size(), first: s.firstResidentSeq(), stats: s.stats() });
+  const sE = endOf(straight);
+  const rE = endOf(b);
+  assert.deepEqual(
+    { ...rE, stats: { ...rE.stats, readCalls: sE.stats.readCalls } },
+    { ...sE, stats: { ...sE.stats, readCalls: sE.stats.readCalls } },
+    'end states match modulo readCalls (reads before interrupt are observation, not state)',
+  );
+  // frontier-style pending work rides the context: pending items re-admit after resume
+  const pending = ['w1', 'w2'];
+  const snap2 = straight.snapshot({ pendingWork: pending });
+  const resumed2 = stateStreamFromSnapshot(snap2);
+  assert.deepEqual(resumed2.context.pendingWork, pending, 'pending work survives the checkpoint');
 });
