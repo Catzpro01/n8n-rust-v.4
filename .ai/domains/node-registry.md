@@ -21,6 +21,7 @@
 ## Owns
 
 - `src/catalog.mjs`
+- `src/lego/capability-compiler.mjs`
 - `src/lego/dependency-closure.mjs`
 - `src/lego/node-portability.mjs`
 - `src/lego/node-creator.mjs`
