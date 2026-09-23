@@ -316,6 +316,7 @@ A domain that publishes several contracts names its **primary** one
 
 | date | contract | version | change |
 | :--- | :--- | :--- | :--- |
+| 2026-09-23 | `workflow.dna` | 0.1.0 | P3 Slice H: initial lock of the bounded Workflow DNA (n8n checksum identity + order-insensitive morphology block, name lists capped at 64, single-pass, only the checksum seam imported; Issues #75/#91) |
 | 2026-09-23 | `execution.state-stream` | 0.1.0 | P3 Slice F: additive exports (STATE_STREAM_SNAPSHOT_VERSION, stateStreamFromSnapshot) — fail-closed sha256 snapshot/resume (cursor + resident backlog + context) on the bounded stream seam; version stays 0.1.0 (additive, pre-1.0; Issues #75/#97) |
 | 2026-09-23 | `execution.state-stream` | 0.1.0 | P3 Slice E: initial lock of the bounded streaming execution state (required `maxResidentEvents` bound, explicit backpressure with published `lego.backpressure`, bounded reads, finite batch stream, selective `consume`, zero-import purity; Issues #75/#97) |
 | 2026-09-23 | `execution.frontier` | 0.1.0 | P3 Slice D: initial lock of the bounded runtime primitive (capacity-required ring FIFO, explicit `admitted`/`backpressure` outcomes with published `lego.backpressure`, bounded `takeBatch`, observability stats, pure structure; Issues #75/#97/#79) |
