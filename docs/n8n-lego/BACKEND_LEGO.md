@@ -299,7 +299,7 @@ Rule **R7** of the gate diffs the declared exports against the real exported
 symbols, so a contract cannot drift silently: adding `foo` to a locked contract
 file fails the build until the lock and version are updated.
 
-The current contract lock has **75 rows**. The historical foundation set remains:
+The current contract lock has **76 rows**. The historical foundation set remains:
 `compat.http` (1.0.0), `lego.error-contract` (1.0.0), `lego.domain-registry` (1.1.0),
 `lego.contract-compat` (1.0.0), `kernel.platform` (1.0.0), `reference.lego` (1.1.0),
 `reference.validation` (1.1.0), `reference.validation.schema` (1.0.0), and
@@ -428,6 +428,7 @@ A domain that publishes several contracts names its **primary** one
 | 2026-09-23 | `ai.agent-machine` | 1.1.0 | P2.16: additive bump **re-derived from the frozen P2.16 1.1.0 specification** after the original local-only commits proved unavailable on GitHub — added agentId identity (machine/agent/task distinct), the ready lifecycle state (agentMachine.prepare), registry-validated capabilityScope, bounded delegation bookkeeping (agentMachine.delegate + ai:agent:delegate: narrowed grants, clamped budget/deadline, maxChildren, no inheritance, no execution), bounded execution-graph validation (sequential/parallel/branch/fan-out/fan-in/join/retry; 128/16/8 ceilings; cycles and authority fields rejected), six session-scoped derived Universal Agent Event types, maxTasksPerAgent/maxCapabilityScope bounds and the fail-closed operation/permission surface; nine operations (no close), five permissions; startedAt now declared; every 1.0.0 flow unchanged |
 | 2026-09-23 | `ai.token-usage` | 1.0.0 | P2.24: published the ONE canonical token & usage accounting contract (XA-17 resolution) — record/query/budget, reported/estimated/unavailable certainty with null-never-zero, P2.13 vocabulary quoted byte-for-byte, cost behind a handed pricing basis + declared rule (no fetch, no billing), requestId idempotency, closed privacy shape; additive initial publication |
 
+| 2026-09-24 | `lego.plugin-runtime` | 0.1.0 | P2.27.1: initial lock of the tiny plugin runtime core — canonical trust/locality/lifecycle vocabularies, bounded event ring, clock/identity/health primitives, error factory restricted to published codes (dedicated Master Prompt P2.27) |
 ## 10. Ownership model
 
 | agent | role | domains |
