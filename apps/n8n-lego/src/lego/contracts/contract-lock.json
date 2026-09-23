@@ -2324,6 +2324,32 @@
       "notes": "P9.5 only; published lifecycle vocabulary, exact-version schemas, bounded events over the P9.1 envelope, explicit duplicate/out-of-order gate. Delegated implementation Agent 4, product ownership Agent 6 unchanged."
     },
     {
+      "id": "observability.telemetry-buffer",
+      "owner": "agent-6",
+      "domain": "observability",
+      "version": "1.0.0",
+      "status": "stable",
+      "surface": [
+        "src/lego/telemetry-buffer.mjs"
+      ],
+      "exports": {
+        "src/lego/telemetry-buffer.mjs": [
+          "TELEMETRY_BUFFER_CONTRACT",
+          "TELEMETRY_PRIORITY_CLASSES",
+          "TELEMETRY_PRIORITY_DESCRIPTIONS",
+          "BUFFER_LIMITS",
+          "BUFFER_OUTCOMES",
+          "BUFFER_OVERFLOW_POLICIES",
+          "createTelemetryBuffer"
+        ]
+      },
+      "consumers": [],
+      "tests": [
+        "apps/n8n-lego/test/lego-telemetry-buffer.test.mjs"
+      ],
+      "notes": "P9.6 only; hard-capacity ring, deterministic priority shed (P0-P4), exposed drop counters, no spill-to-disk in 1.0.0. Delegated implementation Agent 4, product ownership Agent 6 unchanged."
+    },
+    {
       "id": "node.supply-chain",
       "owner": "manager",
       "domain": "node-registry",
