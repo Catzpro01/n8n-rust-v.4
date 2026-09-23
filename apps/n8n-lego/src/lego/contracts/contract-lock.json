@@ -2212,6 +2212,58 @@
       "notes": "P6.10 (P6 implementation owner: Agent 3, Issue #100): orphan / tombstone / alias / deprecation. An epoch is a set of identities; what it cannot say is what has been removed, renamed, abandoned, and which names must never come back — and the cost of not saying it is a name that gets re-used. A lifecycle LEDGER is built for one epoch: every identity starts 'declared', every transition returns a NEW frozen ledger (the old one is untouched), and the ledger digest makes an edited ledger visible. ORPHAN: a node nobody references is a report, never an automatic uninstall, and it is reported together with the mirror-image fact that matters more — a reference nobody provides, which is a workflow that cannot resolve. DEPRECATION: a node still resolves and still runs, must name a replacement the epoch actually contains (a redirect to nowhere is refused), and records the epoch it happened at. ALIAS: one hop only, and only for a name that has been retired (deprecated or disabled) — a chain of redirects is a rename nobody can audit, and an alias to a tombstone is refused. TOMBSTONE: the single irreversible thing here. It records its grounds (removed, renamed, compromised, superseded, policy), it cannot be edited, the state cannot move afterwards, nothing may alias to it, and mayReuseName says false — because a tombstoned identity can never be re-declared, and the cost of that rule is a naming decision made twice while the cost of the alternative is an attacker who waits. Everything else is reversible on purpose: registries are governed by people who change their minds. The state vocabulary is QUOTED from P6.1 (which quotes the P2 negotiation contract: eleven words, 'deprecated' among them); this contract adds events and records, never a twelfth word. Scope walls: no admission or health decision (P6.11), no quarantine, no workflow resolution (P6.5), no install/uninstall (P6.3), no catalog or database read, no clock — atEpoch is data the caller supplies, which is what makes a ledger reproducible. Pure: the only node import is the hash."
     },
     {
+      "id": "node.health",
+      "owner": "manager",
+      "domain": "node-registry",
+      "version": "0.1.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/node-health.mjs"
+      ],
+      "exports": {
+        "src/lego/node-health.mjs": [
+          "NODE_HEALTH_CONTRACT",
+          "NODE_HEALTH_CONTRACT_VERSION",
+          "NODE_HEALTH_SCHEMA_VERSION",
+          "NODE_HEALTH_OPERATIONS",
+          "NODE_HEALTH_PERMISSIONS",
+          "HEALTH_STATES",
+          "CIRCUIT_STATES",
+          "HEALTH_OUTCOMES",
+          "QUARANTINE_ORIGINS",
+          "DEFAULT_FAILURE_THRESHOLD",
+          "DEFAULT_COOL_OFF_TICKS",
+          "MAX_COOL_OFF_TICKS",
+          "NODE_HEALTH_REASONS",
+          "NODE_HEALTH_RULES",
+          "NodeHealthError",
+          "createHealthTable",
+          "isHealthTable",
+          "recordObservation",
+          "mayServe",
+          "quarantineNode",
+          "releaseQuarantine",
+          "healthOf",
+          "isQuarantined",
+          "describeHealth",
+          "verifyHealthTable",
+          "NODE_HEALTH_INPUT_SCHEMA_VERSION"
+        ]
+      },
+      "consumers": [
+        "P6.12 attestation + revocation — an attestation that fails is a reason to quarantine, and the reason travels",
+        "P6.13 incremental compiler — health is per-host state, and a rebuild must not invent it",
+        "P6.17 admission explain plan — 'the circuit is open until tick 33' is one of the sentences an explain plan quotes",
+        "P6.19 canary rollout + semantic auto-rollback — a breaker trip on a new version is a rollback trigger",
+        "P6.24 runtime pools + warm sandbox — a pool refuses to hand work to a quarantined node",
+        "P6.30 repair + offline recovery — a health table rebuilt from ticks is the honest starting point after a restart"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-node-health.test.mjs"
+      ],
+      "notes": "P6.11 (P6 implementation owner: Agent 3, Issue #100): health + crash circuit breaker + quarantine. A node that crashed once is a fact; a node that crashes every time is a decision, and this contract is the smallest defensible version of it. The state vocabulary is P6.1's (unknown, healthy, degraded, failing, quarantined), quoted rather than extended; what this contract adds is the transition rules between those words. OBSERVATION: success or failure with a tick the caller supplies — no clock, so a table rebuilt from the same ticks produces the same states and a quarantine survives a restart instead of being a memory in a process. DERIVATION: the state follows from the observations, never the reverse. BREAKER: consecutive failures (default threshold 3, configurable) open the circuit, and mayServe refuses work with the tick at which a probe may be tried; after the cool-off exactly one probe is allowed (half-open), a success closes the circuit, and a failure re-opens it with a doubled cool-off bounded at MAX_COOL_OFF_TICKS so a permanently broken node stays visible instead of vanishing into an unbounded back-off. A success recorded BEFORE the cool-off is data, not a verdict: it is recorded and the circuit stays open, because a success that was not allowed to happen proves nothing. QUARANTINE: the deliberate version of the same thing — it records origin (operator/breaker/policy/attestation), reason and tick; it outranks every observation (a success does not clear it, and a second, different quarantine is refused as 'released, not overwritten'); it does not expire. RELEASE returns the node to 'unknown', never to 'healthy': the only thing that makes a node healthy is an observation that says so, and a release that returned to healthy would be an operator's optimism wearing a state machine's clothes. Scope walls: no execution and no retry (mayServe decides whether a retry is allowed and leaves the retrying to the runtime), no lease (P6.6), no residency (P6.7), no capability (P6.8), no lifecycle (P6.10), no revocation (P6.12), no rollback (P6.19); no clock; the only node import is the hash."
+    },
+    {
       "id": "observability.trace",
       "owner": "agent-6",
       "domain": "observability",
