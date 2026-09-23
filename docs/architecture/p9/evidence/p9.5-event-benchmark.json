@@ -1,0 +1,82 @@
+{
+  "node": "v20.20.2",
+  "platform": "linux",
+  "arch": "x64",
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.60GHz",
+  "note": "100 batches of 1000; batch-mean percentiles only; heap deltas not allocation counts; shared sandbox/GC/JIT noise; no sink or retained queue.",
+  "results": [
+    {
+      "name": "OFF control",
+      "iterations": 100000,
+      "elapsedMs": 2.260770000000001,
+      "opsPerSecond": 44232717.171583116,
+      "batchMeanUs": {
+        "p50": 0.015191000000001509,
+        "p95": 0.026025000000004184,
+        "p99": 0.05730900000000361
+      },
+      "cpuUs": {
+        "user": 2706,
+        "system": 0
+      },
+      "heapDeltaBeforeGc": 242464,
+      "retainedHeapDeltaAfterGc": 293192,
+      "rssDelta": 1613824
+    },
+    {
+      "name": "minimal lifecycle event",
+      "iterations": 100000,
+      "elapsedMs": 337.65615,
+      "opsPerSecond": 296159.2732725289,
+      "batchMeanUs": {
+        "p50": 2.9829459999999983,
+        "p95": 5.692013000000003,
+        "p99": 6.362519999999989
+      },
+      "cpuUs": {
+        "user": 345366,
+        "system": 0
+      },
+      "heapDeltaBeforeGc": 812808,
+      "retainedHeapDeltaAfterGc": 3304,
+      "rssDelta": 253952
+    },
+    {
+      "name": "event with attributes + sequence",
+      "iterations": 100000,
+      "elapsedMs": 382.34885999999995,
+      "opsPerSecond": 261541.25318956102,
+      "batchMeanUs": {
+        "p50": 3.587994999999978,
+        "p95": 4.916986999999949,
+        "p99": 5.557270000000017
+      },
+      "cpuUs": {
+        "user": 407657,
+        "system": 0
+      },
+      "heapDeltaBeforeGc": 547408,
+      "retainedHeapDeltaAfterGc": -11712,
+      "rssDelta": 2252800
+    },
+    {
+      "name": "monotonic order gate accept",
+      "iterations": 100000,
+      "elapsedMs": 4.90940599999999,
+      "opsPerSecond": 20369062.9782911,
+      "batchMeanUs": {
+        "p50": 0.03928199999995741,
+        "p95": 0.09878199999991466,
+        "p99": 0.21146500000008928
+      },
+      "cpuUs": {
+        "user": 8207,
+        "system": 0
+      },
+      "heapDeltaBeforeGc": 47160,
+      "retainedHeapDeltaAfterGc": 21704,
+      "rssDelta": 0
+    }
+  ],
+  "checksum": 330000
+}

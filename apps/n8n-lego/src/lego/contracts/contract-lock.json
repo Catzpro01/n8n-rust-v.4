@@ -2292,6 +2292,38 @@
       "notes": "P9.4 only; delegated implementation Agent 4, product ownership Agent 6 unchanged."
     },
     {
+      "id": "observability.semantic-event",
+      "owner": "agent-6",
+      "domain": "observability",
+      "version": "1.0.0",
+      "status": "stable",
+      "surface": [
+        "src/lego/semantic-events.mjs"
+      ],
+      "exports": {
+        "src/lego/semantic-events.mjs": [
+          "SEMANTIC_EVENT_CONTRACT",
+          "EVENT_SCHEMA_VERSION",
+          "EVENT_LIMITS",
+          "EVENT_ATTRIBUTE_FIELDS",
+          "EVENT_VOCABULARY",
+          "EVENT_DOMAINS",
+          "EVENT_ORDER_POLICIES",
+          "EVENT_ORDER_DECISIONS",
+          "classifyEventVersion",
+          "createSemanticEvent",
+          "serializeSemanticEvent",
+          "deserializeSemanticEvent",
+          "createEventOrderGate"
+        ]
+      },
+      "consumers": [],
+      "tests": [
+        "apps/n8n-lego/test/lego-semantic-events.test.mjs"
+      ],
+      "notes": "P9.5 only; published lifecycle vocabulary, exact-version schemas, bounded events over the P9.1 envelope, explicit duplicate/out-of-order gate. Delegated implementation Agent 4, product ownership Agent 6 unchanged."
+    },
+    {
       "id": "node.supply-chain",
       "owner": "manager",
       "domain": "node-registry",
