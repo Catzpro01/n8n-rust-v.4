@@ -14,6 +14,7 @@ import { join } from 'node:path';
 
 import {
   CAPABILITY_ID_PATTERN,
+  DECLARED_OVERLAPS,
   LOCAL_VOCABULARIES,
   QUOTED_FROM,
   VOCABULARIES,
@@ -275,4 +276,46 @@ test('the P2.24 usage vocabulary is quoted from ai.token-usage and never blurs t
   // conflicts remain clean with the new mapping in place
   const report = vocabularyConflicts();
   assert.equal(report.ok, true, report.conflicts.join('; '));
+});
+
+test('P2.25: providerAdapterState — six adapter words, both modules quoted, three declared overlaps', () => {
+  const set = VOCABULARIES.find((entry) => entry.id === 'providerAdapterState');
+  assert.ok(set, 'the adapter state set exists in the canonical array');
+  assert.equal(set.about, 'state', 'it is a state vocabulary — it may collide with lifecycle auto-cleanly');
+  assert.deepEqual([...set.values],
+    ['not-configured', 'configured', 'available', 'unavailable', 'degraded', 'disabled'],
+    'six words, the byte-identical list PROVIDER_ADAPTER_STATES publishes in both modules');
+  assert.equal(set.provenance.kind, 'module');
+  assert.equal(set.provenance.symbol, 'PROVIDER_ADAPTER_STATES');
+  assert.equal(set.provenance.file, 'apps/n8n-lego/src/lego/model-provider-adapter.mjs');
+  assert.equal(set.provenance.contract.id, 'ai.model-gateway');
+  assert.equal(set.provenance.contract.version, '1.0.0');
+  assert.ok(set.provenance.note.length > 40, 'the note explains the distinctness');
+  // both adapter modules really hold the same six-word list (parity registry↔manifest↔contract)
+  for (const file of [
+    'apps/n8n-lego/src/lego/model-provider-adapter.mjs',
+    'apps/n8n-lego/src/lego/tool-provider-adapter.mjs',
+  ]) {
+    const src = read(file);
+    const listMatch = src.match(/PROVIDER_ADAPTER_STATES = Object.freeze\(\[([\s\S]*?)\]\)/);
+    assert.ok(listMatch, `${file} publishes PROVIDER_ADAPTER_STATES`);
+    const words = [...listMatch[1].matchAll(/'([a-z-]+)'/g)].map((m) => m[1]);
+    assert.deepEqual(words, [...set.values], `${file} is byte-identical to the FE set`);
+  }
+  // conflict discipline: ok, enough sets audited, and the three cross-about overlaps are declared
+  const conflicts = vocabularyConflicts();
+  assert.equal(conflicts.ok, true, (conflicts.conflicts ?? []).join('; '));
+  assert.ok(conflicts.checked >= 13, `${conflicts.checked} vocabularies audited`);
+  const pairs = DECLARED_OVERLAPS.map((entry) => entry.vocabularies.join('+'));
+  assert.ok(conflicts.declaredOverlaps >= 17, `declared overlaps=${conflicts.declaredOverlaps}`);
+  for (const pair of [
+    'degradation+providerAdapterState',
+    'usageCertainty+providerAdapterState',
+    'providerAdapterState+continuationVerification',
+  ]) {
+    assert.ok(pairs.includes(pair), `declared ${pair} (declared pairs: ${pairs.length})`);
+  }
+  // the set must NOT exist as a local duplicate: one dialect only
+  const local = LOCAL_VOCABULARIES.find((entry) => entry.id === 'providerAdapterState');
+  assert.equal(local, undefined, 'the FE declares no second provider-state dialect');
 });

@@ -35,6 +35,9 @@
 - `src/lego/mcp-boundary.mjs`
 - `src/lego/runtime-adapter.mjs`
 - `src/lego/token-usage.mjs`
+- `src/lego/model-provider-adapter.mjs`
+- `src/lego/tool-provider-adapter.mjs`
+- `src/lego/external-runtime.mjs`
 
 ## Public contract surface
 

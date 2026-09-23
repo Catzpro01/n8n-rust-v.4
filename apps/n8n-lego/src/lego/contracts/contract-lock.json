@@ -1025,10 +1025,11 @@
       "id": "ai.runtime-adapter",
       "owner": "manager",
       "domain": "ai-foundation",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "status": "implemented",
       "surface": [
-        "src/lego/runtime-adapter.mjs"
+        "src/lego/runtime-adapter.mjs",
+        "src/lego/external-runtime.mjs"
       ],
       "exports": {
         "src/lego/runtime-adapter.mjs": [
@@ -1050,6 +1051,14 @@
           "createRuntimeAdapter",
           "createSimulatedRuntime",
           "createAdapterHarness"
+        ],
+        "src/lego/external-runtime.mjs": [
+          "EXTERNAL_RUNTIME_CONTRACT",
+          "EXTERNAL_RUNTIME_ERROR_CODES",
+          "EXTERNAL_RUNTIME_ERROR_TRANSLATION",
+          "EXTERNAL_RUNTIME_LIMITS",
+          "ExternalRuntimeError",
+          "createExternalRuntime"
         ]
       },
       "operations": [
@@ -1060,13 +1069,14 @@
       ],
       "consumers": [
         "P2.21 deterministic harness (contract conformance replay + scenario runner)",
-        "future external runtimes (first real runtime is stage E — none exists in this repository)",
+        "external runtimes — P2.25 ships the first real EXTERNAL binding at src/lego/external-runtime.mjs (synchronous exchange by the seam contract, normalized responses, idempotent cancellation, bounded budget)",
         "Agent Machine provider seam (supports(kind) replaces the default without changing ai.agent-machine@1.1.0)"
       ],
       "tests": [
-        "apps/n8n-lego/test/lego-runtime-adapter.test.mjs"
+        "apps/n8n-lego/test/lego-runtime-adapter.test.mjs",
+        "apps/n8n-lego/test/lego-provider-adapters.test.mjs"
       ],
-      "notes": "P2.21 runtime adapter seam (implementation: agent-1): explicit provider registration (contract ai.agent-runtime@1.0.0 exactly, canonical executorKinds/capabilities/locality/availability — unknown values fail closed), EXTERNAL executorKind usable ONLY while the bound registration stays eligible (live re-check; unavailable/unregistered -> lego.unavailable through the unchanged P2.16 provider gate), lifecycle translation of the official runtime-adapter vocabulary onto ai.agent-machine@1.1.0 operations (stream declared-unsupported, unknown operations rejected — no second lifecycle), bounded opt-in retry, path/secret-shaped references refused at the seam, canonical-event-only forwardEvent with a bounded outbox, deterministic harness (injected clock/id factory/response sequence; no timers). Declaration + seam + simulator only: no MCP, no model inference, no production scheduler, no shell/filesystem/subprocess authority — adapter selection grants nothing."
+      "notes": "P2.21 runtime adapter seam (implementation: agent-1): explicit provider registration (contract ai.agent-runtime@1.0.0 exactly, canonical executorKinds/capabilities/locality/availability — unknown values fail closed), EXTERNAL executorKind usable ONLY while the bound registration stays eligible (live re-check; unavailable/unregistered -> lego.unavailable through the unchanged P2.16 provider gate), lifecycle translation of the official runtime-adapter vocabulary onto ai.agent-machine@1.1.0 operations (stream declared-unsupported, unknown operations rejected — no second lifecycle), bounded opt-in retry, path/secret-shaped references refused at the seam, canonical-event-only forwardEvent with a bounded outbox, deterministic harness (injected clock/id factory/response sequence; no timers). Declaration + seam + simulator only: no MCP, no model inference, no production scheduler, no shell/filesystem/subprocess authority — adapter selection grants nothing. P2.25 (MINOR 1.1.0): additive surface src/lego/external-runtime.mjs — the first real external runtime binding behind this unchanged seam (register/lookup/eligibility/manager, EXTERNAL fail-closed gate and lifecycle translation all stay exactly as P2.21 published them; ai.agent-runtime@1.0.0 remains vocabulary and deliberately gets no lock row)."
     },
     {
       "id": "node.portability",
@@ -1229,6 +1239,99 @@
         "apps/n8n-lego/test/lego-token-usage.test.mjs"
       ],
       "notes": "P2.24 token & usage honest accounting (implementation: agent-1): the ONE canonical usage publisher (XA-17 resolution — no second contract, no parallel vocabulary). Every figure carries value+kind+source+certainty; reported only when the source supplied the number, estimated only with a named deterministic estimator, unavailable as null (never 0, never exact). P2.13 token vocabulary quoted byte-for-byte (message/modelInput/output — no provider synonyms coined). Scopes are call/run/session per XA-17; requestId identity is idempotent (retry never double-counts, reuse with a different payload is refused). Cost = reported usage + known pricing basis + declared rule only; module ships no pricing, fetches nothing, bills nothing. Closed record shape refuses prompt/completion/credential fields; string identifiers are scanned for full credential shapes (detector matches canonical token shapes, not bare prefixes). Injected now/newId, zero imports, frozen records, bounded store (4096)."
+    },
+    {
+      "id": "ai.model-gateway",
+      "owner": "manager",
+      "domain": "ai-foundation",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/model-provider-adapter.mjs"
+      ],
+      "exports": {
+        "src/lego/model-provider-adapter.mjs": [
+          "MODEL_GATEWAY_CONTRACT",
+          "MODEL_GATEWAY_CONTRACT_VERSION",
+          "MODEL_GATEWAY_OPERATIONS",
+          "MODEL_GATEWAY_PERMISSIONS",
+          "MODEL_PROVIDER_ERROR_CODES",
+          "MODEL_PROVIDER_LIMITS",
+          "ModelProviderError",
+          "PROVIDER_ADAPTER_STATES",
+          "PROVIDER_ERROR_TRANSLATION",
+          "createModelProviderAdapter",
+          "describeProviderConfiguration"
+        ]
+      },
+      "operations": [
+        "models.list",
+        "model.describe",
+        "generate",
+        "stream",
+        "embed",
+        "countTokens"
+      ],
+      "permissions": [
+        "ai:model:invoke",
+        "ai:model:read"
+      ],
+      "consumers": [
+        "consumers of the canonical model contract — provider implementations stay replaceable behind the adapter",
+        "P2.24 token-usage reporting — provider-reported figures flow into ai.token-usage@1.0.0 without conversion",
+        "frontend provider-status consumption (not-configured / configured / available / unavailable / degraded / disabled)"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-provider-adapters.test.mjs"
+      ],
+      "notes": "P2.25 first real model provider adapter (implementation: agent-1): explicit configuration only (no discovery, no default provider, no default model), call-time authorization naming the published ai:model:* permission exactly (XA-8/XA-10 consumed unchanged; configuration is never authority — invoke requires an explicit grantReference), injected synchronous exchange edge with at most one attempt per call (no internal retry), canonical error translation (timeout->deadline_exceeded, down->unavailable, rate-limited->backpressure, forbidden->access_denied) with no raw provider body/key/prompt/completion echoed, bounded input/output/stream dimensions, stream usage finalized once at the final envelope (in-chunk usage cannot double-count), missing usage is unavailable (null, never 0) and only reported figures report into ai.token-usage@1.0.0 with requestId-derived identities (idempotent). Credentials are never stored: config refuses credential fields and credential-shaped values (full-form detector quoted from ai.token-usage). No-provider state is the canonical zeroInstall not-configured answer via describeProviderConfiguration(null). fail-closed on unknown model/tool/config/authorization; provider available never means invoke authorized."
+    },
+    {
+      "id": "ai.tool-gateway",
+      "owner": "manager",
+      "domain": "ai-foundation",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/tool-provider-adapter.mjs"
+      ],
+      "exports": {
+        "src/lego/tool-provider-adapter.mjs": [
+          "PROVIDER_ADAPTER_STATES",
+          "PROVIDER_ERROR_TRANSLATION",
+          "TOOL_GATEWAY_CONTRACT",
+          "TOOL_GATEWAY_CONTRACT_VERSION",
+          "TOOL_GATEWAY_OPERATIONS",
+          "TOOL_GATEWAY_PERMISSIONS",
+          "TOOL_PROVIDER_ERROR_CODES",
+          "TOOL_PROVIDER_LIMITS",
+          "ToolProviderError",
+          "createToolProviderAdapter",
+          "describeProviderConfiguration"
+        ]
+      },
+      "operations": [
+        "tools.list",
+        "tool.describe",
+        "tool.call",
+        "resources.list",
+        "resource.read",
+        "prompts.list",
+        "prompt.get"
+      ],
+      "permissions": [
+        "ai:tool:invoke",
+        "ai:tool:read"
+      ],
+      "consumers": [
+        "consumers of the canonical tool contract — MCP and future gateways map ONTO this contract, never the reverse",
+        "agents invoking declared tools under an explicit per-call authorization handoff",
+        "frontend provider-status consumption for the tool gateway layer"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-provider-adapters.test.mjs"
+      ],
+      "notes": "P2.25 first real tool provider adapter (implementation: agent-1): tool declaration / capability / permission / invocation / provider binding stay five separate concepts — a generic provider configuration is never execution authority. sideEffects is required and validated against the published vocabulary (unknown effects are treated as destructive and refused); requiresApproval tools demand an approval reference (presence enforced here, ai.approval decides the grant). tool.call is non-idempotent: one exchange, never retried internally, requestId required — replay with the same canonicalized payload returns the recorded outcome with no second exchange (results travel as opaque references, never stored for replay), a different payload under the same requestId is refused (request-id-reuse), and the requestId travels to the provider for its own dedupe. Reads are idempotent and also single-shot (maxAttemptsPerCall 1). Explicit configuration only, credentials never stored, canonical error translation with no echo, bounded lists/resources/prompts/results, no token figures invented (usage stays with the model side per ai.token-usage). fail-closed on unknown tool/config/authorization/provider responses."
     }
   ]
 }
