@@ -29,11 +29,12 @@ Stateless by design: the graph owns NO execution state (execution-as-query) — 
 
 ## §3 Performance gate — measured (single-run)
 
-| metric | measurement |
+| metric | measurement (single-run, 100,001-node fan-out fixture) |
 | :--- | :--- |
-| `readyAfter` after 1-node batch, **100,000-way fan-out** | **5.6 ms** → returns 100,000 ready (cost = batch × fan-out, verified proportional) |
-| `fanOutOf(Root)` / `fanInOf(W0)` | 100,000 / 1 (O(1) after lazy index) |
-| `initialReady({limit:1000})` page | **< 1 ms**, stateless `next` cursor, `done=false` |
+| `readyAfter(['Root'])` → **100,000 ready** | **353.6 ms** — cost = batch × fan-out as designed (1 node × 100,000 links); no whole-graph walk beyond the successors of the batch |
+| `fanOutOf(Root)` / `fanInOf(W0)` | **100,000 / 1** (fan-in O(1) after lazy reverse-index build) |
+| `initialReady({limit:1000})` cold page | **254 ms**, `ready=['Root']`, `next` cursor at EOF, `done=true` — fixture has exactly ONE root, so the page scanned all 100,001 ordinals before completing (cursor-span O(nodes scanned), worst case O(nodeCount) cold, resumable via `next`; incremental hot path = `readyAfter`) |
+| in-suite cost guard | `readyAfter` batch query on 201-node fixture asserted `< 1000 ms` (measured in CI-scale runs ≪ bound) |
 
 ## §4 Non-scope held
 
