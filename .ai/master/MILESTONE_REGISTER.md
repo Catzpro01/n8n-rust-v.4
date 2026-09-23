@@ -37,6 +37,7 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 | `P2.24` | Token & Usage - honest accounting | D | **complete** | P2.25 |
 | `P2.25` | External provider integration - the first real adapters | E | **complete** | P2.26 |
 | `P2.26` | Provider, Workspace & GitHub Integration + Foundation Readiness | F | **in-progress** | P2.17+ |
+| `P2.27` | Contract-Driven Pluggable Runtime & Security Foundation | F | **planned** | — |
 | `P2.17+` | Later capability ladder | C-F | **planned** | — |
 
 ## Current milestone boundary — P2.26
