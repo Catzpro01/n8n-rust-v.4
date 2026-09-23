@@ -2053,6 +2053,59 @@
       "notes": "P9.3 only; delegated implementation Agent 4, product ownership Agent 6 unchanged."
     },
     {
+      "id": "node.capability",
+      "owner": "manager",
+      "domain": "node-registry",
+      "version": "0.1.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/capability-compiler.mjs"
+      ],
+      "exports": {
+        "src/lego/capability-compiler.mjs": [
+          "CAPABILITY_COMPILER_CONTRACT",
+          "CAPABILITY_COMPILER_CONTRACT_VERSION",
+          "CAPABILITY_COMPILER_SCHEMA_VERSION",
+          "CAPABILITY_COMPILER_OPERATIONS",
+          "CAPABILITY_COMPILER_PERMISSIONS",
+          "CAPABILITY_DECISIONS",
+          "DELEGATION_SOURCES",
+          "FAILURE_BOUNDARY_ORDER",
+          "CAPABILITY_ISOLATION_REQUIREMENTS",
+          "CAPABILITY_CLASS_PRECEDENCE",
+          "CAPABILITY_COMPILER_REASONS",
+          "CAPABILITY_COMPILER_RULES",
+          "CapabilityCompilerError",
+          "hostProfile",
+          "requiredIsolationOf",
+          "portabilityClassOf",
+          "portabilityDeclarationOf",
+          "compileCapabilityPlan",
+          "isCapabilityPlan",
+          "explainCapabilityPlan",
+          "describeCapabilityPlan",
+          "verifyCapabilityPlan",
+          "candidateLocalities",
+          "canPortPlan",
+          "capabilitySelectionPolicy",
+          "CAPABILITY_COMPILER_INPUT_SCHEMA_VERSION"
+        ]
+      },
+      "consumers": [
+        "P6.9 compatibility + resource admission — a node that cannot be granted its capabilities has nothing to admit",
+        "P6.11 health + quarantine — the same declaration, the same host, compiled the same way",
+        "P6.12 attestation — a plan is what a signature would be asked to cover",
+        "P6.22 capability leases + attenuation — a plan grants nothing; a lease attenuates it, and the plan is what it attenuates",
+        "P6.24 runtime pools + sandbox — the locality decision is what a pool is built to serve",
+        "P6.26 runtime resource policy — the host profile is where a runtime's ceiling is written down",
+        "P6.30 repair + offline recovery — a plan recompiled from the epoch is the honest answer after a restart"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-capability-compiler.test.mjs"
+      ],
+      "notes": "P6.8 (P6 implementation owner: Agent 3, Issue #100): capability compilation + runtime locality. A declaration says what a node NEEDS (P6.1: capabilities, runtime locality, resource profile); it does not say what a node GETS. This contract is that decision, made once, in one place, deterministically, so that 'why did this node run in-process?' has an answer that is a document instead of an interrogation. Three rules do the work. (1) The host is validated first, as data: which capabilities it can authorize, which runtimes it has, and the STRONGEST isolation it can offer; an unknown capability, runtime or boundary is refused, and an anonymous host or one with no runtime is refused too, because a host that cannot say what it is cannot be trusted with the decision. (2) Capabilities are GRANTED IN FULL OR THE PLAN IS REFUSED: granted = declared and host, never a reduced plan, because a node running with half its declared capabilities has failure modes nobody wrote down. (3) CAPABILITIES CONSTRAIN LOCALITY: subprocess demands at least 'sandboxed', native demands 'worker-isolated', and a host that cannot offer the floor refuses the plan and says which floor it needed — convenience is not an argument when the answer is sharing an address space. Runtime selection itself belongs to node.portability@1.0.0 and is DELEGATED, not copied; the plan quotes the domain's answer (selected target, candidates, rejected, policy). MEASURED, NOT ASSUMED: the two contracts describe different capability axes — P6.1's capabilities quote the foundation's trust capabilities (network, filesystem, subprocess, secrets, native, env) while node.portability validates requiredCapabilities against the registry's own capability ids (runtime.http-server, ai.model-gateway, ...) and demands class-specific permission ids from the published registry vocabulary (webhook:receive, storage:read, worker:admin, ...). No faithful projection exists between those vocabularies, so none is fabricated: writing a declared 'network' into requiredCapabilities would be a lie that happens to compile. When the caller supplies the node's OWN portability declaration (bound to the same node, validated by the domain, refused if it belongs to a neighbour), the plan performs a REAL delegation and quotes it; when no declaration is supplied the plan records delegation.performed=false, delegation.source='none', delegation.reason='capability.delegation.none' and derives the target from RUNTIME_LOCALITY_MODEL. A plan never pretends a delegation happened. trustClass is carried as a LABEL for policy, never as an authority: it changes no decision and is excluded even from planDigest, so two nodes differing only in trust class compile to the same decision AND the same fingerprint of that decision. Scope walls: no leases or attenuation (P6.22), no admission decision, no quarantine (P6.11) and no attestation (P6.12), no sandbox, worker, pool or process (P6.24), and no filesystem, network, clock, randomness or mutation."
+    },
+    {
       "id": "observability.trace",
       "owner": "agent-6",
       "domain": "observability",

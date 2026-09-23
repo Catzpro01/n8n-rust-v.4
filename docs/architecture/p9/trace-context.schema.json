@@ -18,7 +18,7 @@
     "context": {
       "allOf": [
         {
-          "$ref": "telemetry-envelope.schema.json#/properties/context"
+          "$ref": "urn:n8n:observability:envelope:1.0.0#/properties/context"
         },
         {
           "required": [

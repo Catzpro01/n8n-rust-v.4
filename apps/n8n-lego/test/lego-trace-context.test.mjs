@@ -99,3 +99,11 @@ test('P9.4 pure producer does not serialize, generate IDs, read clock or invoke 
   finally{JSON.stringify=stringify;Date.now=now;}
   const source=readFileSync(new URL('../src/lego/trace-context.mjs',import.meta.url),'utf8');assert.doesNotMatch(source,/\b(?:fetch|randomUUID|randomBytes|createHash|setTimeout|readFile|writeFile)\s*\(/);
 });
+
+test('P9.4 schema uses the canonical envelope schema identity rather than an ambiguous relative URN',()=>{
+  const schema=JSON.parse(readFileSync(new URL('../../../docs/architecture/p9/trace-context.schema.json',import.meta.url)));
+  const envelope=JSON.parse(readFileSync(new URL('../../../docs/architecture/p9/telemetry-envelope.schema.json',import.meta.url)));
+  assert.equal(schema.properties.contractVersion.const,TRACE_CONTRACT.version);
+  assert.equal(schema.properties.context.allOf[0].$ref,envelope.$id+'#/properties/context');
+  assert.equal(schema.additionalProperties,false);
+});
