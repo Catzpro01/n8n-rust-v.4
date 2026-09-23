@@ -65,10 +65,11 @@ The strategic phases above are intentionally preserved. The Manager-owned granul
 | `P2.16` | Agent Machine / execution foundation | B | **complete** | P2.17 |
 | `P2.17` | Agent Machine Runtime Foundation | B | **complete** | P2.18 |
 | `P2.18` | Universal Transport & Envelope Kernel | B | **complete** | P2.19 |
-| `P2.19` | Artifact, Approval & Audit Foundation | B | **in-progress** | P2.20 |
+| `P2.19` | Artifact, Approval & Audit Foundation | B | **complete** | P2.20 |
+| `P2.20` | MCP vs Agent Control Boundary | C | **in-progress** | P2.21 |
 | `P2.17+` | Later capability ladder | C-F | **planned** | — |
 
-Current milestone: **P2.19**. Previous completed: **P2.18**.
+Current milestone: **P2.20**. Previous completed: **P2.19**.
 
 Future IDs may be refined by Manager only by updating `docs/n8n-lego/milestones.json`.
 

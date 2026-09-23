@@ -10,11 +10,11 @@ document is right and the prose is stale.
 
 | | |
 | --- | --- |
-| Protected main baseline | `b3bdaab907142fa8ee2753badcb615c0b305d9fa` |
+| Protected main baseline | `393622e3d2b0b070884d7cb74502908b64a6e252` |
 | Agent 1 branch | `arena/01a0c9d3-n8n-rust-v-4` |
 | Agent 2 branch | `arena/01a0c90d-n8n-rust-v-4` |
-| **Current milestone** | **P2.19** |
-| Previous completed milestone | **P2.18** |
+| **Current milestone** | **P2.20** |
+| Previous completed milestone | **P2.19** |
 | Current branch state | `arena/01a0c90d-n8n-rust-v-4` (implementation branch; not protected main) |
 | Historical reconciled state | `c1eca8cc` (historical evidence, not current main) |
 | Historical P2.11 evidence commit | `bdd0f1d2d6c8d7bc1c1ff3d881ddc2b3bd93713d` |
@@ -37,13 +37,13 @@ is the row marked as such.
 
 ## Milestone state
 
-- **Current:** `P2.19` — Artifact, Approval & Audit Foundation (**in-progress**)
-- **Previous complete:** `P2.18`
-- **Why next:** P2.17 Agent Machine Runtime Foundation
-- **Owns:** bounded artifact references — opaque, reference-only, no filesystem authority; fail-closed approval request/grant/deny lifecycle contract owned here (Agent Machine only carries references); low-volume architectural audit records with deterministic ids and bounded metadata; artifact + approval contract publication via the contract lock (currently contract-only capabilities)
-- **Does not implement:** MCP boundary (P2.20); transport adapters (P2.21); transport kernel internals (P2.18); model inference; distributed infrastructure; shell / filesystem / subprocess executors; credential manager; GitHub / Telegram integrations; Arena runtime
-- **Next:** `P2.20`
-- **Completion gate:** all four roadmap acceptance items hold; PR merged and post-merge verification passes on protected main; register completion evidence recorded and currentMilestone advanced to P2.20
+- **Current:** `P2.20` — MCP vs Agent Control Boundary (**in-progress**)
+- **Previous complete:** `P2.19`
+- **Why next:** P2.18 Universal Transport & Envelope Kernel; P2.19 Artifact, Approval & Audit Foundation
+- **Owns:** MCP vs agent-control boundary declaration: where interoperability ends and agent control authority begins; declared state machine for permission-required / exposed / blocked — never implicit authority; explicit permission gates; fail-closed refusal of unknown servers and capabilities; control plane never delegates to MCP implicitly (no transport claim)
+- **Does not implement:** actual MCP server/client implementation (P3/FUTURE); GitHub provider (P2.26); transport adapters (P2.21); node compatibility & portability (P2.22); node creator & translation (P2.23); model inference; distributed infrastructure; shell / filesystem / subprocess executors; credential manager; Arena runtime
+- **Next:** `P2.21`
+- **Completion gate:** all four roadmap acceptance items hold; PR merged and post-merge verification passes on protected main; register completion evidence recorded and currentMilestone advanced to P2.21
 
 ## The 15 AI/Agent LEGO by status
 
