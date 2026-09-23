@@ -2539,6 +2539,54 @@
         "apps/n8n-lego/test/lego-registry-integrity.test.mjs"
       ],
       "notes": "P6.16 (P6 implementation owner: Agent 3, Issue #100): registry integrity chain + freshness/anti-rollback. P6.2 compiles epochs and P6.13 makes them cheap; neither answers the question a client asks before serving anything: is this the registry, and is it the newest one I should believe? THE CHAIN: each epoch becomes a LINK {index, epochNumber, epochDigest, origin, source, parentLinkDigest, linkDigest}; a link's digest covers its own fields plus the previous link's digest, so rewriting one link rewrites every link after it and a rewrite is DETECTED rather than argued about. THREE REFUSALS: monotonic (a number that does not increase is refused, and a number that reappears with different bytes is a FORK rather than a lag), continuity (an epoch that declares a parent must declare THIS head), and idempotent re-append (changed:false), because a retrying replicator must not be able to grow a chain by accident. A RECOVERY EPOCH IS NOT A ROLLBACK: P6.2's rule is quoted, a rollback is a NEW epoch carrying older content, so its number increases and the chain accepts it while its origin records what it is. ANTIBOLLBACK IS A CLIENT PROPERTY: a server cannot tell that it is old, so checkFreshness takes a WITNESS (the highest epoch a client has seen plus its link digest and chain digest) and answers three states and no fourth — current (with behindBy), rollback (the chain is older, the witnessed link is gone, or the history was rewritten), unknown (no recall). unknown FAILS CLOSED: a client with no recall cannot detect a rollback, so the caller must say firstContact:true out loud. A PROBE FOUND A REAL HOLE: a witness names the head, so a chain edited BEHIND the head was not caught by the witness alone — checkFreshness now verifies the chain first and refuses a broken chain outright, because an exception accepts an older registry and never a corrupt one; a fully resealed forgery (every later link and the chain digest rebuilt) is still caught by the witness as a rewritten history. A ROLLBACK CAN BE ACCEPTED, ON THE RECORD: reason, actor and tick, recorded in its own field, so 'we rolled back' is a decision somebody made rather than a drift nobody noticed. AN EMPTY CHAIN: nothing to witness, nothing to check freshness against. Scope walls: no compile or publish (P6.2/P6.13), no signatures or attestations (P6.12/P6.27), no delegated trust, snapshots or expiry roles (P6.28), no repair (P6.30), no quarantine (P6.11); no clock — a witness records the tick it was taken at, and freshness is judged against a client's recall rather than a wall clock."
+    },
+    {
+      "id": "node.admission",
+      "owner": "manager",
+      "domain": "node-registry",
+      "version": "0.1.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/admission-explain.mjs"
+      ],
+      "exports": {
+        "src/lego/admission-explain.mjs": [
+          "ADMISSION_CONTRACT",
+          "ADMISSION_CONTRACT_VERSION",
+          "ADMISSION_SCHEMA_VERSION",
+          "ADMISSION_OPERATIONS",
+          "ADMISSION_PERMISSIONS",
+          "ADMISSION_VERDICTS",
+          "ADMISSION_CHECKS",
+          "ADMISSION_CITATIONS",
+          "ADMISSION_REASONS",
+          "ADMISSION_RULES",
+          "AdmissionError",
+          "admissionQuestion",
+          "isAdmissionQuestion",
+          "explainAdmission",
+          "planAdmission",
+          "isAdmissionPlan",
+          "explainPlan",
+          "dependentsFrom",
+          "isDependentIndex",
+          "computeBlastRadius",
+          "explainBlastRadius",
+          "describeAdmission",
+          "ADMISSION_INPUT_SCHEMA_VERSION"
+        ]
+      },
+      "consumers": [
+        "P6.18 SBOM/VEX + policy diff gate — the diff gate explains itself through this plan shape",
+        "P6.19 canary rollout — a rollout is admitted first, and the plan is the evidence a rollout cites",
+        "P6.20 emergency revocation — the blast radius is what an emergency drains around",
+        "P6.30 repair + offline recovery — what changed and who is affected, in one document",
+        "P6.31 full acceptance — the admission claim is the composed one"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-admission-explain.test.mjs"
+      ],
+      "notes": "P6.17 (P6 implementation owner: Agent 3, Issue #100): admission explain plan + dependency blast radius. Each contract can already say no (capability P6.8, semantics P6.9, lifecycle P6.10, health P6.11, supply P6.12, closure P6.4, residency P6.7); none can say, in one place, why THIS node is admitted right now. A PLAN IS AN ORDERED ARGUMENT: the eight checks run in a fixed order (identity, lifecycle, supply, capability, semantics, health, closure, residency), each step carries an outcome and a CITATION naming the contract that produced the evidence (an uncited pass is an opinion), and the verdict is admit / refuse / incomplete. INCOMPLETE FAILS CLOSED: no check failed and at least one had no evidence — a plan that admits a node because nobody checked it is worse than no plan at all; a first-time node with no semantics baseline (P6.9 MISSING) or a NON_DETERMINISTIC fingerprint lands here, which is the honest outcome. THE PLAN DOES NOT RE-DECIDE: it composes other contracts' verdicts verbatim (the health refusal carries health.quarantined exactly as P6.11 reported it) instead of deriving a second opinion that could disagree with the first. THE IDENTITY CHECK runs against the real epoch in planAdmission, and a question naming a different epoch digest is API misuse rather than a quiet answer. THE BLAST RADIUS is the other half: a reverse dependency index (dependentsFrom) walks who depends on a package, transitively, with depth and path, once per package (cycles are walked once, not forever), bounded by depth and a limit that REPORT truncation instead of hiding it. Design fix found by the first suite run: dependentsFrom now takes an optional package universe, because without one 'this package has no dependents' (count 0) and 'this package does not exist' (unknown, fails closed) were the same answer — and they are opposite answers. Scope walls: no decisions of its own (every verdict is cited and evidence is data), no install (P6.3), no publish (P6.2/P6.13), no lease (P6.6), no quarantine action (P6.11 reports, this explains), no rollback (P6.19); no filesystem, network, clock, randomness or mutation — the only node import is the hash. Authority: an admit verdict explains why nothing refused; it is not a grant."
     }
   ]
 }
