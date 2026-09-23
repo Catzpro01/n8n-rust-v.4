@@ -299,7 +299,7 @@ Rule **R7** of the gate diffs the declared exports against the real exported
 symbols, so a contract cannot drift silently: adding `foo` to a locked contract
 file fails the build until the lock and version are updated.
 
-The current contract lock has **48 rows**. The historical foundation set remains:
+The current contract lock has **49 rows**. The historical foundation set remains:
 `compat.http` (1.0.0), `lego.error-contract` (1.0.0), `lego.domain-registry` (1.1.0),
 `lego.contract-compat` (1.0.0), `kernel.platform` (1.0.0), `reference.lego` (1.1.0),
 `reference.validation` (1.1.0), `reference.validation.schema` (1.0.0), and
@@ -314,6 +314,7 @@ P6.3 added `package.transaction@0.1.0`.
 P6.4 added `registry.closure@0.1.0`.
 P6.5 added `node.resolution@0.1.0`.
 P6.6 added `runtime.lease@0.1.0`.
+P6.7 added `node.residency@0.1.0`.
 The machine-readable lock is authoritative.
 
 A domain that publishes several contracts names its **primary** one
@@ -323,6 +324,7 @@ A domain that publishes several contracts names its **primary** one
 
 | date | contract | version | change |
 | :--- | :--- | :--- | :--- |
+| 2026-09-24 | `node.residency` | 0.1.0 | P6.7: manifest/implementation split + HOT/WARM/COLD — the manifest and the implementation are separate resources (a declaration is cheap and needed for resolution and editing; an implementation is expensive and needed only while running), so a registry can know about every node in the catalogue while running a handful. COLD → WARM → HOT is the only way up: metadata is read BEFORE code is loaded, which is what leaves room for a capability, trust or residency check, and a load straight from COLD is refused rather than quietly warmed as a side effect. HOT is bounded by an explicit budget that demotes the least-recently-used node and says which one; eviction requires the caller's in-use set and is refused with the holders named when an execution still holds the implementation; dropping a manifest is a separate ordered step. Recency is a monotonic tick, not a timestamp. Capability compilation, health, quarantine, pools and the WASM cache remain P6.8+ (Issue #100) |
 | 2026-09-24 | `runtime.lease` | 0.1.0 | P6.6: runtime lease + side-by-side upgrade — leases name the epoch DIGEST they run under (a publication cannot re-point work already running) and are DERIVED from execution + epoch (a retried acquire is the same lease); explicit, observable draining (no new admissions, everything inside keeps running, outstanding executions returned); retirement gated on the leases with the holders NAMED, and draining required before retiring because retiring an epoch that still admits work is a race; a retired epoch number can never be reused by different content; several epochs may serve at once (old for in-flight work, new for new work) and the table says which; monotonic sequence instead of a clock, so the same operations produce the same table anywhere. Residency, capabilities, health, quarantine and canary remain P6.7+ (Issue #100) |
 | 2026-09-24 | `node.resolution` | 0.1.0 | P6.5: workflow node resolution manifest — exact pins (identity + declaration digest + the epoch digest resolved against), so which implementation a run used is a stored fact rather than a reconstruction; resolution states match/missing/changed where `changed` (same identity, different bytes) is a registry integrity violation and `missing` is fatal even when a candidate version exists (nothing is silently dropped from a workflow); two-phase explicit upgrade (planning changes nothing; applying needs authorization, a matching revision and a proposal that still equals what the epoch would produce — stale proposals are refused, not merged) with the policy inside the proposal and recorded in history; monotonic revisions and append-only history; deterministic manifest digest. Reads epochs from P6.2 and identity from P6.1; touches no P3 internals. Leases, residency, capabilities, fingerprints and health remain P6.6+ (Issue #100) |
 | 2026-09-24 | `registry.closure` | 0.1.0 | P6.4: dependency closure + content-addressed artifact store — deterministic, topologically ordered closure (dependency before dependent) over a catalogue handed in as data, with a stated semver subset (`*`, exact, caret, tilde; a pre-release is never selected unless a requirement names it); every supply-chain-burning refusal reported with who asked for what (missing required, unsatisfiable range, version conflict, declared conflict checked against the COMPLETE closure, cycle with its path named, depth and size ceilings); optional means may-be-absent never may-be-wrong; content addressing where an address IS the hash of the content (identical bytes dedupe, corruption is refused and never re-addressed); store manifest with a deterministic digest; garbage collection that requires the caller's live set. Install, journal and fence stay P6.3's; workflow pins, leases and attestation remain P6.5+ (Issue #100) |
