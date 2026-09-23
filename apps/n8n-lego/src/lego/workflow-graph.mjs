@@ -453,6 +453,69 @@ class LogicalWorkflowGraph {
     return this.residencyOf(chunkIndex) === GRAPH_RESIDENCY.WARM ? 'RESOLVED' : 'INDEXED';
   }
 
+  /**
+   * Tier residency summary over ALL chunks (observability for hot/warm/cold
+   * policy — Issue #79 "evict cold/warm representations" needs the census).
+   * Returns frozen {HOT, WARM, COLD, chunkCount, reverseIndexResident}.
+   */
+  residencySummary() {
+    let hot = 0;
+    let warm = 0;
+    let cold = 0;
+    for (let chunkIndex = 0; chunkIndex < this.#source.nodeChunks.length; chunkIndex += 1) {
+      const residency = this.residencyOf(chunkIndex);
+      if (residency === GRAPH_RESIDENCY.HOT) hot += 1;
+      else if (residency === GRAPH_RESIDENCY.WARM) warm += 1;
+      else cold += 1;
+    }
+    return Object.freeze({
+      HOT: hot,
+      WARM: warm,
+      COLD: cold,
+      chunkCount: this.#source.nodeChunks.length,
+      reverseIndexResident: this.#incoming !== null,
+    });
+  }
+
+  /**
+   * Memory-pressure relief (Issue #79 step 3 — "evict cold/warm representations",
+   * Slice G tier policy): demote the OLDEST HOT entries down to
+   * `targetHotChunks` (explicit release → EVICTED marker, raw stays WARM on
+   * the memory port / window untouched on the lazy port) and optionally drop
+   * the derived reverse index. Defaults = full relief (HOT → 0, index off).
+   * Reloadable — lossless by construction.
+   */
+  applyPressure(options = {}) {
+    if (options === null || typeof options !== 'object' || Array.isArray(options)) {
+      fail('pressure options must be a plain object', { field: 'options' });
+    }
+    const targetHotChunks = options.targetHotChunks ?? 0;
+    if (!Number.isSafeInteger(targetHotChunks) || targetHotChunks < 0 || targetHotChunks > this.#maxHot) {
+      fail(`targetHotChunks must be a safe integer in 0..${this.#maxHot}`, { field: 'targetHotChunks' });
+    }
+    if ('releaseReverseIndex' in options && typeof options.releaseReverseIndex !== 'boolean') {
+      fail('releaseReverseIndex must be a boolean', { field: 'releaseReverseIndex' });
+    }
+    const releaseIndex = options.releaseReverseIndex ?? true;
+    const hotBefore = this.#hot.size;
+    let released = 0;
+    while (this.#hot.size > targetHotChunks) {
+      const oldest = this.#hot.keys().next().value;
+      this.#hot.delete(oldest);
+      this.#cache.evictions += 1;
+      this.#evicted.add(oldest); // explicit policy release — EVICTED until re-read
+      released += 1;
+    }
+    const reverseIndexReleased = releaseIndex ? this.releaseReverseIndex() : false;
+    return Object.freeze({
+      hotBefore,
+      hotAfter: this.#hot.size,
+      released,
+      reverseIndexReleased,
+      targetHotChunks,
+    });
+  }
+
   /** Has the lazy reverse edge index been materialized? */
   hasReverseIndex() {
     return this.#incoming !== null;
