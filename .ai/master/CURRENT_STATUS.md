@@ -10,8 +10,8 @@ document is right and the prose is stale.
 
 | | |
 | --- | --- |
-| Protected main baseline | `d65f97130df1109380f7409aa5d39c1e8c57cc77` |
-| Agent 1 branch | `arena/01a0c9d3-n8n-rust-v-4` |
+| Protected main baseline | `20ae0c1af9a7602d8f04b779902efa19df395b61` |
+| Agent 1 branch | `arena/p2.27-plugin-runtime` |
 | Agent 2 branch | `arena/01a0c90d-n8n-rust-v-4` |
 | **Current milestone** | **P2.27** |
 | Previous completed milestone | **P2.26** |
@@ -43,7 +43,7 @@ is the row marked as such.
 - **Owns:** tiny Core kernel with the reserved core responsibilities (bootstrap, registries, resolvers, policy, lifecycle, supervisor, primitives); plugin registry + contract resolver + version compatibility; capability/security policy with deny-by-default permission primitive; plugin lifecycle + supervisor (DISCOVERED..QUARANTINED) with quarantine; four runtime classes: in-process, wasm, isolated-process, remote; secret broker: scoped short-lived secrets, one operation, never plugin-owned state; tenant security context + plugin resource budgets (declared and enforced); circuit breaker + deadline propagation + contract replay fixtures; side-by-side upgrade/rollback + supply-chain admission; frontend plugin boundary (public extension points vs sandboxed frame/origin + message contract)
 - **Does not implement:** Plugin Manager / Plugin Supervisor implementation (P2.27, future prompt); plugin sandbox / plugin broker / plugin runtime / WASM runtime / Python worker manager (P2.27); plugin hot-swap / plugin rollback engine (P2.27); microservice rewrite / Kubernetes migration / full distributed scheduler; full marketplace / complete third-party plugin ecosystem; rewrite of all P2 components / rewrite to Rust / rewrite to Python; anything before a dedicated P2.27 Master Prompt — zero P2.27 implementation now
 - **Next:** `P2.17+`
-- **Completion gate:** Core responsibilities defined (design §3); Plugin boundary defined (design §4); Trust model defined (design §8/§9); Runtime locality defined (design §6); Capability security defined (design §10/§11); Secret isolation defined (design §12); Tenant isolation defined (design §13); Resource model defined (design §14); Failure model defined (design §15/§16/§17); Upgrade/rollback model defined (design §19); Supply-chain model defined (design §21); Frontend plugin model defined (design §22); Scaling model defined (design §23/§6); P2 non-regression rule defined (design §24); P2.27 implementation explicitly remains future until its own Master Prompt; then implementation completes only via green PRs merged on protected main
+- **Completion gate:** tiny Core kernel implemented and tested (design section 3); plugin registry + contract resolver + version compatibility implemented and tested (design sections 4-5); trust model implemented and tested (design sections 8-9); runtime locality policy implemented and tested (design section 6); capability security implemented and tested (design sections 10-11); secret broker implemented and tested (design section 12); tenant security context + resource budgets implemented and tested (design sections 13-14); supervisor lifecycle + circuit breaker + deadline propagation implemented and tested (design sections 15-17); side-by-side upgrade/rollback implemented and tested (design section 19); supply-chain admission implemented and tested (design section 21); frontend plugin boundary implemented and tested (design section 22); contract replay fixtures green (design section 18); non-regression holds: no second engine, no scope expansion, historical evidence preserved (design section 24); contract-lock row lego.plugin-runtime published with its exported surface, zero lock drift (count pin + .ai regen updated in the same slice); implementation completes only via green PRs merged on protected main (dedicated Master Prompt issued 2026-09-24; all slices P2.27.0-P2.27.10 merged and post-merge verified)
 
 ## The 15 AI/Agent LEGO by status
 

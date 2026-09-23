@@ -505,14 +505,16 @@ test('every P2.16–P2.25 milestone is still complete with intact start/finish e
     'the correction documents the distinction instead of hiding it');
 });
 
-test('P2.27 is the current administrative milestone with zero implementation and a terminating chain', () => {
+test('P2.27 is the current administrative milestone with authorized implementation and a terminating chain', () => {
   const p227 = BY_ID.get('P2.27');
   assert.ok(p227, 'the reservation row exists');
-  assert.equal(p227.status, 'in-progress', 'current administrative milestone — implementation is still ZERO until the P2.27 Master Prompt');
-  assert.match(p227.implementationBoundary, /NO P2\.27 IMPLEMENTATION IS STARTED BY THIS PROMPT\./);
+  assert.equal(p227.status, 'in-progress', 'current administrative milestone — implementation authorized by the dedicated P2.27 Master Prompt (2026-09-24)');
+  assert.match(p227.implementationBoundary, /AUTHORIZED by the dedicated P2\.27 Master Prompt/, 'the reservation is lifted by the dedicated prompt');
+  assert.ok(!/NO P2\.27 IMPLEMENTATION IS STARTED/.test(p227.implementationBoundary), 'the lifted boundary no longer claims zero implementation');
   assert.ok(p227.deliverables.length >= 5);
   assert.ok(p227.completionCriteria.length >= 15, 'the §38 acceptance list is on the row');
-  assert.deepEqual(p227.decisionDependencies, []);
+  assert.ok(p227.decisionDependencies.length >= 1, 'authorized row records its placement/duplication decisions');
+  for (const decision of p227.decisionDependencies) assert.ok(typeof decision === 'string' && decision.length > 10);
   for (const dependency of p227.dependencies) {
     const ids = dependency.match(/P\d+\.\d+/g) ?? [];
     assert.ok(ids.length > 0, `dependency names a milestone: ${dependency}`);
@@ -523,20 +525,22 @@ test('P2.27 is the current administrative milestone with zero implementation and
   assert.equal(BY_ID.get('P2.27').nextMilestone, 'P2.17+', 'P2.27 still terminates into the residual ladder');
   // design document exists, is planning-only and contains no implementation code fence for plugins
   const design = read('docs/n8n-lego/P2.27-PLUGIN-RUNTIME-DESIGN.md');
-  assert.match(design, /PLANNING \/ DESIGN ONLY/);
+  assert.match(design, /STATUS \(2026-09-24\): AUTHORIZED/, 'the design doc carries the authorization');
+  assert.match(design, /PLANNING \/ DESIGN ONLY/);  // preserved historical banner
   assert.match(design, /NO P2\.27 IMPLEMENTATION IS STARTED/);
   assert.match(design, /current administrative/);
   assert.match(design, /canonical status `in-progress`/);
-  assert.match(design, /Implementation = ZERO/);
+  assert.match(design, /implementation = ZERO/i, 'the historical reservation self-check line is preserved');
   assert.match(design, /secret broker/i);
   assert.match(design, /deny-by-default/i);
   assert.match(design, /QUARANTINED/);
   assert.equal(/```(js|javascript|ts|typescript)/.test(design), false, 'no implementation code in the design doc');
-  // no P2.27 implementation artifacts exist in the backend
+  // slice P2.27.0 is docs/register-only: the named runtime artifacts have not landed yet;
+  // later slices replace this absence check with their own slice-scoped assertions.
   const legoDir = join(REPO_ROOT, 'apps', 'n8n-lego', 'src', 'lego');
   const names = readdirSync(legoDir);
   for (const forbidden of ['plugin-manager.mjs', 'plugin-supervisor.mjs', 'plugin-runtime.mjs', 'secret-broker.mjs', 'wasm-runtime.mjs']) {
-    assert.equal(names.includes(forbidden), false, `${forbidden} belongs to a future Master Prompt`);
+    assert.equal(names.includes(forbidden), false, `${forbidden} lands with its dedicated slice, not before`);
   }
 });
 
