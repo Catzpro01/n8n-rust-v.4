@@ -36,6 +36,7 @@
 - `src/lego/runtime-lease.mjs`
 - `src/lego/semantic-fingerprint.mjs`
 - `src/lego/supply-chain.mjs`
+- `src/lego/worker-convergence.mjs`
 
 ## Public contract surface
 

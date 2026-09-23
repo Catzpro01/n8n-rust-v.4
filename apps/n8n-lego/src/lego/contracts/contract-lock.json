@@ -2401,6 +2401,49 @@
         "apps/n8n-lego/test/lego-incremental-registry.test.mjs"
       ],
       "notes": "P6.13 (P6 implementation owner: Agent 3, Issue #100): incremental registry compilation + discovery/runtime split. registry.compiler@0.1.0 (P6.2) compiles an epoch from a full declaration set — correct for a genesis epoch, wasteful for the tenth one. This is a NEW contract rather than a minor bump to the compiler, deliberately: the compiler's job ('given declarations, produce the canonical epoch') did not change, and adding an export to a locked row would have meant re-versioning a contract every consumer cites for no semantic change. What is added is a different job: given a previous epoch and a desired declaration set, produce the next epoch while PROVING it is the same epoch a full compile would have produced. THE EQUIVALENCE IS THE CONTRACT: applyRegistryChanges returns the epoch plus a reuse ledger (added/recompiled/reused/removed) that asserts byte-for-byte digest stability for reused identities, and verifyIncremental recompiles from scratch and compares epochDigest — an optimisation that cannot be verified is a guess with better latency. planRegistryChanges makes the change set a VALUE a human can review before anything is built (and refuses duplicates honestly instead of letting a plan hide one). An unchanged set is refused ('registry.incremental.unchanged') because an epoch identical to its parent is noise. Removals are data about an epoch, never a tombstone: retiring a NAME permanently is P6.10's decision. THE DISCOVERY/RUNTIME SPLIT: one epoch, two projections with their own digests — DISCOVERY carries identity, type, typeVersion, displayName, group, description, capabilities and trustClass and NEVER the implementation digest or the resource profile; RUNTIME carries identity, content digest, runtime locality, capabilities and the resource profile and NEVER the display metadata. A view is a projection, never the epoch: verifyEpochView rebuilds the projection and refuses a view that cannot be rebuilt, so nobody can present half an epoch as the whole one. Scope walls: validity, duplicates, canonical form and numbering stay the compiler's; no publish, rollback or freeze (P6.2), no resolution (P6.5), no loading (P6.7), no admission (P6.11), no convergence (P6.14); no filesystem, network, clock, randomness or mutation — the only node import is the hash."
+    },
+    {
+      "id": "node.worker-convergence",
+      "owner": "manager",
+      "domain": "node-registry",
+      "version": "0.1.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/worker-convergence.mjs"
+      ],
+      "exports": {
+        "src/lego/worker-convergence.mjs": [
+          "WORKER_CONVERGENCE_CONTRACT",
+          "WORKER_CONVERGENCE_CONTRACT_VERSION",
+          "WORKER_CONVERGENCE_SCHEMA_VERSION",
+          "WORKER_CONVERGENCE_OPERATIONS",
+          "WORKER_CONVERGENCE_PERMISSIONS",
+          "CONVERGENCE_DECISIONS",
+          "CONVERGENCE_STEPS",
+          "WORKER_CONVERGENCE_REASONS",
+          "WORKER_CONVERGENCE_RULES",
+          "WorkerConvergenceError",
+          "workerBinding",
+          "isWorkerBinding",
+          "coordinatorBinding",
+          "handshake",
+          "convergeWorker",
+          "explainHandshake",
+          "describeFleet",
+          "WORKER_CONVERGENCE_INPUT_SCHEMA_VERSION"
+        ]
+      },
+      "consumers": [
+        "P6.15 core acceptance — 'behind is separated from divergent' is one of the acceptance claims",
+        "P6.18 staged fleet rollout — the staged rollout orders the upgrades this handshake classifies",
+        "P6.22 lease attenuation across workers — a lease is only meaningful on a converged worker",
+        "P6.24 runtime pools — a pool admits MATCH and UPGRADE_REQUIRED-after-convergence, and escalates MISMATCH",
+        "P6.30 repair + offline recovery — a diverged worker is repaired here rather than converged"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-worker-convergence.test.mjs"
+      ],
+      "notes": "P6.14 (P6 implementation owner: Agent 3, Issue #100): worker registry convergence + handshake. A worker that is behind is a fact; a worker that is WRONG is a different fact, and a registry that cannot tell them apart has two bad options (bring everything forward blindly, or refuse everything). FOUR DECISIONS AND NO FIFTH: MATCH (holds exactly this epoch and its reported runtime view), UPGRADE_REQUIRED (behind AND consistent — holds a subset with matching digests under a lower epoch number), MISMATCH (holds something this registry does not: an identity the epoch lacks, a digest that disagrees for a shared identity, or a higher epoch number than the coordinator), UNAVAILABLE (the coordinator has nothing to converge TO — an epoch that is not serving, or none at all). THE MISMATCH RULE IS THE POINT: 'behind' is a position and 'divergent' is a claim that disagrees; the first is a scheduling problem and the second is a correctness or supply-chain problem, and collapsing them gives the dangerous one the treatment of the harmless one — so divergence is checked BEFORE lag and a single disagreement outranks any amount of being behind. A HIGHER EPOCH NUMBER IS NOT AN UPGRADE: quiet convergence onto an older epoch would rewrite a worker's history without asking why it was ahead, so it is escalated. MATCH requires the epoch AND the REPORTED runtime view to agree (P6.13's view digest): 'no view reported' is a question, not an agreement, because a worker that cannot state its view digest cannot be keyed by a pool or a compiled cache. CONVERGENCE IS A PLAN, NOT A TRANSPORT: decisions carry ordered steps (request-runtime-view, request-full-epoch, apply-registry-changes, reverify-views, refuse-service, escalate-to-operator, retry-when-serving) and the contract stops there; a view-only upgrade does not tell the worker to apply changes it already holds. Epoch digests are accepted bare (as registry.compiler publishes them) or prefixed, and stored in the epoch's own form so a comparison needs no translation. Scope walls: no compile or publish (P6.2/P6.13), no transport (no network, queue or socket), no lease (P6.6), no loading (P6.7), no capability (P6.8), no health (P6.11), no pooling (P6.24), no repair (P6.30); no clock, no randomness, no mutation — the only node import is the hash."
     }
   ]
 }
