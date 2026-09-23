@@ -70,7 +70,7 @@ test('the lock row is the thirty-third: workflow.graph@1.0.0, owner agent-1, exp
   const row = ROWS.find((r) => r.id === 'workflow.graph');
   assert.ok(row, 'workflow.graph is locked');
   // P9.1 envelope + P3 optimizer are merged; P9.2 structured-log adds row 42.
-  assert.equal(ROWS.length, 44, 'rows through P3 Slice C (workflow.graph stays thirty-third); P3 Slice D adds the thirty-fourth (execution.frontier); P3 Slice E adds the thirty-fifth (execution.state-stream); P3 Slice H adds the thirty-sixth (workflow.dna); P3 Slice J the thirty-seventh (execution.ir); P3 Slice L the thirty-eighth (compatibility.oracle); P3 Slice M the thirty-ninth (execution.guard) — P6.2 adds registry.compiler@0.1.0; count-pins say 44');
+  assert.equal(ROWS.length, 45, 'rows through P3 Slice C (workflow.graph stays thirty-third); P3 Slice D adds the thirty-fourth (execution.frontier); P3 Slice E adds the thirty-fifth (execution.state-stream); P3 Slice H adds the thirty-sixth (workflow.dna); P3 Slice J the thirty-seventh (execution.ir); P3 Slice L the thirty-eighth (compatibility.oracle); P3 Slice M the thirty-ninth (execution.guard) — P6.1 adds node.registry@0.1.0; P6.2 adds registry.compiler@0.1.0; P6.3 adds package.transaction@0.1.0; count-pins say 45');
   assert.equal(row.owner, 'agent-1', 'Issue #98: Agent 1 owns the workflow graph');
   assert.equal(row.domain, 'workflow');
   assert.equal(row.version, '0.1.0', 'R9: matches the workflow domain contract version (0.1.0)');

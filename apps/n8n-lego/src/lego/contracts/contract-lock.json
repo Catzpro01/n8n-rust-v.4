@@ -1775,6 +1775,59 @@
         "apps/n8n-lego/test/lego-registry-compiler.test.mjs"
       ],
       "notes": "P6.2 (P6 implementation owner: Agent 3, Issue #100): registry compiler + immutable epoch. A declaration is a CLAIM; this is where it becomes a COMMITMENT the rest of the system may read. Four guarantees, each proven by test rather than asserted: (1) deterministic compile — the epoch digest is a pure function of declaration CONTENT and the lineage it is compiled onto, invariant under key order, declaration order and capability order, with no clock, no filesystem and no network anywhere in the module (a compiler that reads a clock is not reproducible); (2) all-or-nothing — one invalid declaration or one duplicate identity compiles to NO epoch at all, with P6.1's own reason codes carried through unchanged (registry.duplicate keeps its 'a conflict, not a precedence rule' wording) rather than re-invented; (3) monotonic chained history — an epoch names its parent digest and carries the full chain, epoch numbers only ever increase, and a rollback is a NEW higher-numbered epoch that re-installs older content (its contentDigest equals the target's, its epochDigest does not), so a downgrade leaves a mark instead of restoring a number, and a rollback to a non-ancestor or to the current epoch is refused; (4) immutability — a compiled epoch is deep-frozen and publication is a pointer move between frozen objects, so the epoch in-flight work is reading stays bit-identical (asserted by re-serializing it) and a failed publication leaves the previous state fully usable. Also: verifyRegistryEpoch recompiles content and refuses anything whose digest no longer matches (tamper detection, with invalid content reported as invalid rather than as a mismatch); diffRegistryEpochs gives sorted added/removed/changed for P6.19. Identity, validation, canonical form and per-declaration digests are quoted from node.registry@0.1.0 — the compiler never re-derives them. No authority: compiling is not admitting. Scope walls held: no install journal, artifact store, lease, residency, health, quarantine or attestation vocabulary exists in this module."
+    },
+    {
+      "id": "package.transaction",
+      "owner": "manager",
+      "domain": "node-registry",
+      "version": "0.1.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/package-transaction.mjs"
+      ],
+      "exports": {
+        "src/lego/package-transaction.mjs": [
+          "PACKAGE_RECOVERY_ACTIONS",
+          "PACKAGE_TRANSACTION_CONTRACT",
+          "PACKAGE_TRANSACTION_CONTRACT_VERSION",
+          "PACKAGE_TRANSACTION_INPUT_SCHEMA_VERSION",
+          "PACKAGE_TRANSACTION_MAX_ATTEMPTS",
+          "PACKAGE_TRANSACTION_OPERATIONS",
+          "PACKAGE_TRANSACTION_PERMISSIONS",
+          "PACKAGE_TRANSACTION_REASONS",
+          "PACKAGE_TRANSACTION_RULES",
+          "PACKAGE_TRANSACTION_SCHEMA_VERSION",
+          "PACKAGE_TRANSACTION_STATUSES",
+          "PACKAGE_TRANSACTION_STEPS",
+          "PACKAGE_TRANSACTION_STEP_STATUSES",
+          "PACKAGE_TRANSACTION_VISIBILITY_BOUNDARY",
+          "PackageTransactionError",
+          "abortPackageTransaction",
+          "acquireInstallLease",
+          "commitPackageTransaction",
+          "createInstallGate",
+          "decidePackageRecovery",
+          "formatPackageTransaction",
+          "holdsInstallLease",
+          "isPackageTransaction",
+          "journalDigest",
+          "pendingPackageSteps",
+          "planPackageTransaction",
+          "recordPackageStep",
+          "releaseInstallLease",
+          "transactionJournal"
+        ]
+      },
+      "consumers": [
+        "P6.4 dependency closure + content-addressed store — resolves the closure this transaction installs, in this order, under this fence",
+        "P6.5 workflow node resolution manifest — a pin changes only through a committed transaction, so a workflow upgrade has a journal",
+        "P6.19 canary rollout — the visibility boundary is where a canary is judged and where an auto-rollback attaches",
+        "P6.30 repair + offline recovery — drives the recovery decision: resume, abort or roll back, from the journal alone"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-package-transaction.test.mjs"
+      ],
+      "notes": "P6.3 (P6 implementation owner: Agent 3, Issue #100): transactional package install + single-flight. P6.1 fixes what a declaration IS, P6.2 compiles declarations into an epoch — neither says how a package gets from a tarball to the registry the host serves, and that gap is where the damage happens: an interrupted copy leaves a half-written package, two concurrent installs produce a mixture of both, and a rollback applied to a stale view silently undoes someone else's upgrade. This contract owns the ORDERING, the JOURNAL, the ATTEMPTS, the VISIBILITY BOUNDARY and the single-flight arbitration, and deliberately not the bytes: every step result is reported back by the caller, so the host does the IO while this contract says what a valid history looks like and refuses anything else (the same split P6.1 and P6.2 already use). Steps, in the only order they may happen: resolve → prepare → verify → stage → publish → activate, none skippable. `publish` is THE VISIBILITY BOUNDARY: before it a failure costs nothing (recovery aborts), after it the registry is inconsistent until activation completes or the publication is rolled back — a decision that is asymmetric by design and symmetric in shape (attempts left → resume; exhausted → abort before the boundary, rollback after it). Attempt numbering is EXPLICIT because 'the same failure twice' is ambiguous in a way that matters: replaying a recorded attempt is a no-op (a crashed driver must be able to reconcile its own journal, even after the transaction closed), a new attempt counts toward a ceiling of two, and a gap in attempt numbers is a lost report rather than a new attempt — an omitted number means 'next attempt', which is fail-safe, since over-counting ends a transaction while under-counting loops forever. A step that already succeeded can never be re-recorded; a journal is evidence, not a draft. Publication is FENCED: it must name the 64-hex epoch digest it makes visible (it composes with P6.2, it does not mint an epoch) and it is refused under a lease the gate no longer holds — single-flight is one install per package identity at a time, with a monotonic fence, re-entrancy for the same owner that does not burn a fence, and a stale holder having no authority over the gate. Immutable throughout: every function returns a new frozen value, so a history in front of an operator cannot change under them."
     }
   ]
 }
