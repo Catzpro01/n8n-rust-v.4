@@ -98,7 +98,7 @@ test('the contract-lock row is canonical: one row, version, ops, tests, exports'
     MCP_BOUNDARY_OPERATIONS: 1, MCP_BOUNDARY_PERMISSIONS: 1, MCP_BOUNDARY_LIMITS: 1,
     MCP_BOUNDARY_TRANSITIONS: 1, MCP_PERMISSION_GATE: 1, McpBoundaryError: 1, createMcpBoundary: 1,
   }).sort());
-  assert.equal(LOCK.contracts.length, 31, 'rows through the P2.25 provider adapter foundation (thirty-first)');
+  assert.equal(LOCK.contracts.length, 32, 'rows through the P2.26 provider declaration profile (thirty-second)');
   assert.ok(row.tests.every((p) => p.endsWith('.mjs')));
 });
 

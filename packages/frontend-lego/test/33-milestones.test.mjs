@@ -170,7 +170,7 @@ test('a status is backed by the evidence that status requires', () => {
   assert.equal(p225.finishEvidence.pr, 71, 'the finish evidence names the PR');
   const p226 = byId.get('P2.26');
   assert.equal(p226.status, 'in-progress', 'P2.26 is the current provider/workspace/readiness milestone');
-  assert.equal(p226.startEvidence.commit, '9cc6ba889790a814cdbf23768f1d4f734306b22e', 'P2.26 starts from the P2.25 impl merge');
+  assert.equal(p226.startEvidence.commit, 'd15a9538b1899e9fd2ea9d5bd37d3fd26ecc1943', 'P2.26 starts from the P2.25 completion transition (baseline corrected per Master Prompt P2.26 §0)');
 });
 
 test('dependencies and decision references resolve: no dangling id anywhere in the register', () => {

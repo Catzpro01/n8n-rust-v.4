@@ -58,6 +58,7 @@ changed; the owner and the decision reference are recorded instead.
 | `ai.token-usage` | 1.0.0 | `manager` | implemented |
 | `ai.model-gateway` | 1.0.0 | `manager` | implemented |
 | `ai.tool-gateway` | 1.0.0 | `manager` | implemented |
+| `ai.provider-declaration` | 1.0.0 | `manager` | implemented |
 
 ## Operation coverage
 
