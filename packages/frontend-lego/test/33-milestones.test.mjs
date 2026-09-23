@@ -61,9 +61,9 @@ test('the register is one machine-readable file at the canonical path, owned by 
   // The baseline is the final protected-main commit; P2.15's own historical start baseline
   // (0d9466f1) stays on the P2.15 row, and P2.13's (e754c5df) stays on its row, instead of being
   // overwritten here.
-  assert.match(REGISTER.mainBaseline, /^97dfa7a2/);
-  assert.equal(REGISTER.currentMilestone, 'P2.21');
-  assert.equal(REGISTER.previousCompletedMilestone, 'P2.20');
+  assert.match(REGISTER.mainBaseline, /^7d964fd6/);
+  assert.equal(REGISTER.currentMilestone, 'P2.22');
+  assert.equal(REGISTER.previousCompletedMilestone, 'P2.21');
   assert.ok(REGISTER.milestones.length >= 7, `${REGISTER.milestones.length} milestones recorded`);
   assert.ok(REGISTER.agentBranches && typeof REGISTER.agentBranches === 'object');
   assert.ok(REGISTER.strategicRoadmap && typeof REGISTER.strategicRoadmap === 'object');
@@ -228,7 +228,7 @@ test('the baseline block protects main and names the branches of the current mil
   // stays preserved history on its own row, so moving the top-level block on never rewrites it.
   const p215 = byId.get('P2.15');
   assert.equal(p215.startEvidence.commit, '0d9466f19a149f6e30bdee559086b7a28b080cb3', 'P2.15 start evidence stays preserved history');
-  assert.equal(REGISTER.mainBaseline, '97dfa7a2911867489c5aee1f1b3e8f004b517878', 'the main baseline is the final protected-main commit');
+  assert.equal(REGISTER.mainBaseline, '7d964fd639257234472aed4029c160bcff86060e', 'the main baseline is the final protected-main commit');
   assert.match(REGISTER.mainBaseline, /^[0-9a-f]{40}$/);
   assert.equal(REGISTER.agentBranches.agent1, 'arena/01a0c9d3-n8n-rust-v-4');
   assert.equal(REGISTER.agentBranches.agent2, 'arena/01a0c90d-n8n-rust-v-4');

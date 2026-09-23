@@ -4,9 +4,9 @@
   "canonical": true,
   "purpose": "Granular milestone truth beneath the strategic Phase A-F roadmap. This is the only machine-readable milestone register. Future milestone IDs may be refined by Manager only by updating this file; strategic phases are not deleted.",
   "protectedBranch": "main",
-  "mainBaseline": "97dfa7a2911867489c5aee1f1b3e8f004b517878",
-  "currentMilestone": "P2.21",
-  "previousCompletedMilestone": "P2.20",
+  "mainBaseline": "7d964fd639257234472aed4029c160bcff86060e",
+  "currentMilestone": "P2.22",
+  "previousCompletedMilestone": "P2.21",
   "strategicRoadmap": {
     "source": "apps/n8n-lego/src/lego/manifest/ai-lego-set.json",
     "preservePhases": [
@@ -1126,7 +1126,7 @@
       "id": "P2.21",
       "title": "Runtime Adapter & Harness Stack",
       "phase": "C",
-      "status": "in-progress",
+      "status": "complete",
       "owner": "manager",
       "backendOwner": "per milestone assignment",
       "frontendOwner": "agent-1",
@@ -1165,7 +1165,12 @@
         "commit": "97dfa7a2911867489c5aee1f1b3e8f004b517878",
         "role": "protected main after P2.20 post-transition baseline sync"
       },
-      "finishEvidence": null,
+      "finishEvidence": {
+        "protectedMain": "7d964fd639257234472aed4029c160bcff86060e",
+        "pr": 61,
+        "mergeCommit": "7d964fd639257234472aed4029c160bcff86060e",
+        "role": "post-merge verified protected-main completion"
+      },
       "currentCommitReference": "arena/01a0c9d3-n8n-rust-v-4",
       "nextMilestone": "P2.22",
       "nonScope": [
@@ -1181,12 +1186,78 @@
       "reconciliation": {
         "state": "scoped at P2.21 start against protected main c40b788966d2a43df66d53405a72e1230c9c0fc3; owners and detail refined by the Master Prompt P2.21 when issued",
         "contract": "runtime adapter contract only; ai.agent-machine@1.1.0, lego.transport-kernel@1.0.0, ai.artifact/approval/audit, ai.mcp-boundary, XA-21 all untouched",
+        "owner": "agent-1",
+        "historical": true,
+        "resolution": {
+          "resolvedAt": "2026-09-23",
+          "note": "PR #61 merged to protected main as 7d964fd6; start baseline 97dfa7a2 stays on this row"
+        }
+      },
+      "verificationEvidence": {
+        "local": "post-merge on 7d964fd6: 7/7 gates, lego suites 722/725 (3 pre-existing rest.test 404s), P2.21 adapter 38/38, P2.16 83/83 unchanged, FE 414/415 0 fail, register/alignment green, guards clean (agent-machine/XA-21/capabilities/crates/envelope/mcp/artifact/approval/audit untouched)",
+        "official": "PENDING — official validation surface remains the GitHub Actions self-hosted Windows runner on PR #61; local post-merge on 7d964fd6 PASS (debug evidence, not official sign-off)",
+        "evidencePath": "docs/n8n-lego/evidence/P2.21-RUNTIME-ADAPTER-HARNESS-EVIDENCE.md"
+      }
+    },
+    {
+      "id": "P2.22",
+      "title": "Node Compatibility & Portability",
+      "phase": "C",
+      "status": "in-progress",
+      "owner": "manager",
+      "backendOwner": "per milestone assignment",
+      "frontendOwner": "agent-1",
+      "dependencies": [
+        "P2.21 Runtime Adapter & Harness Stack"
+      ],
+      "inputs": [
+        "P2.21 runtime adapter seam + deterministic harness (unchanged)",
+        "P2.16 contract + P2.17 runtime surfaces (unchanged)",
+        "portability constraints scoped to node compatibility only"
+      ],
+      "deliverables": [
+        "node compatibility & portability layer scoped to translation only",
+        "no change to the runtime adapter seam or the agent machine contract",
+        "compatibility coverage wired through the existing gates"
+      ],
+      "implementationBoundary": "Node compatibility & portability only: same contract, different host assumptions. No adapter/runtime changes, no node creator/translation (P2.23), no model inference, no production scheduler, no shell/filesystem authority. Refined by the Master Prompt P2.22 when issued.",
+      "testsGates": [
+        "compatibility tests under the existing suites",
+        "full gates: arch+selftest, foundation+selftest, capabilities, scaleout, ai:check, full backend/frontend suites"
+      ],
+      "decisionDependencies": [
+        "node portability scope"
+      ],
+      "completionCriteria": [
+        "all roadmap acceptance items hold",
+        "PR merged and post-merge verification passes on protected main",
+        "register completion evidence recorded and currentMilestone advanced to P2.23"
+      ],
+      "startEvidence": {
+        "commit": "7d964fd639257234472aed4029c160bcff86060e",
+        "role": "protected main after P2.21 implementation merge"
+      },
+      "finishEvidence": null,
+      "currentCommitReference": "arena/01a0c9d3-n8n-rust-v-4",
+      "nextMilestone": "P2.23",
+      "nonScope": [
+        "node creator & translation (P2.23)",
+        "model inference",
+        "production scheduler",
+        "shell / filesystem / subprocess executors",
+        "MCP server/client/adapter runtime (P3/FUTURE)",
+        "credential manager",
+        "Arena runtime"
+      ],
+      "reconciliation": {
+        "state": "scoped at P2.22 start against protected main 7d964fd639257234472aed4029c160bcff86060e; owners and detail refined by the Master Prompt P2.22 when issued",
+        "contract": "portability only; ai.runtime-adapter@1.0.0, ai.agent-machine@1.1.0, lego.transport-kernel@1.0.0, ai.mcp-boundary, XA-21 all untouched",
         "owner": "agent-1"
       },
       "verificationEvidence": {
         "local": "recorded in the milestone evidence file when implementation runs",
         "official": "PENDING — official validation only via the installed GitHub Actions self-hosted Windows runner on the PR",
-        "evidencePath": "docs/n8n-lego/evidence/P2.21-RUNTIME-ADAPTER-HARNESS-EVIDENCE.md"
+        "evidencePath": "docs/n8n-lego/evidence/P2.22-NODE-COMPATIBILITY-PORTABILITY-EVIDENCE.md"
       }
     },
     {
@@ -1230,7 +1301,7 @@
     "agent2": "arena/01a0c90d-n8n-rust-v-4"
   },
   "baseline": {
-    "role": "protected main after P2.20 post-transition baseline sync",
+    "role": "protected main after P2.21 implementation merge",
     "reconciliation": {
       "state": "stable",
       "open": 0
