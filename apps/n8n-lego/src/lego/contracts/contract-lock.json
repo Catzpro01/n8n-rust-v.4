@@ -3298,6 +3298,41 @@
         "apps/n8n-lego/test/lego-registry-acceptance.test.mjs"
       ],
       "notes": "P6.31 (P6 implementation owner: Agent 3, Issue #100): the acceptance of the milestone, and deliberately the least powerful contract of the lane. It composes the verdicts of the other contracts AS DATA — it never imports, re-runs or overrules them — and its answer is allowed to be 'not proven'. A CRITERION IS A CLAIM WITH A KIND, A SLICE, A COMMIT, A VERDICT AND EVIDENCE: the kinds are the ones the lane promised per slice (focused, negative, boundary, determinism, security, resource, rollback, docs, evidence), a criterion outside those kinds is refused, and a milestone that has no negative criterion has not been tested, only exercised. A PASS WITH NOTHING TO POINT AT IS AN OPINION: 'pass' and 'fail' both require an evidence digest ('a criterion without evidence is an opinion with a verdict attached'), while 'incomplete' is the verdict for the absence of evidence and is exactly what it is for. NOT APPLICABLE IS A CLAIM ABOUT THE SUBJECT, so it has to say why, and A KIND COVERED ONLY BY NOT-APPLICABLE CRITERIA IS NOT COVERED — the suite proves a kind whose only criterion is not-applicable lands in missingKinds rather than counting as coverage. AN OMISSION IS NOT A SMALLER MILESTONE: a missing slice, an undeclared slice, a criterion checked on another commit and an uncovered kind are all findings, and A CRITERION CHECKED ON ANOTHER COMMIT COVERS NOTHING HERE, so it cannot stand in for a slice's evidence; findings are COLLECTED rather than short-circuited, because a milestone that fails four ways should say four things. THE WEAKEST VERDICT GOVERNS: a failure is a fact and an incomplete is an absence, and a milestone reporting both is rejected with the failures named. A LANE CANNOT ACCEPT ITSELF: verifiedBy must differ from implementedBy and the refusal names both ('a lane cannot accept itself'), and A MILESTONE IS ACCEPTED ON THE INTEGRATION RATHER THAN ON THE BRANCH: protected-main is false until it is reported, and an unreported integration makes the verdict incomplete, never accepted. A narrowed kind set is possible but has to be DECLARED through policy, and narrowing the kinds does not narrow the slices. Reads: describeAcceptance is a census (passed over covered slices, findings), explainAcceptance renders the report, and every report carries a digest over its own body so the same evidence at the same subject gives the same answer while another subject is another report. Scope walls: it does not run acceptance (P6.15 owns the slice-level runner), does not decide trust (P6.1), admission (P6.17), epochs (P6.16) or repair (P6.30), imports no other module of this repository, and reads no filesystem, network, clock or randomness — the only node import is the hash. Authority: this contract decides whether the evidence for a milestone adds up; it does not merge, it does not declare the lane integrated, and it cannot make a failing criterion pass."
+    },
+    {
+      "id": "lego.plugin-runtime",
+      "owner": "agent-1",
+      "domain": "lego-foundation",
+      "version": "0.1.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/plugin-runtime.mjs"
+      ],
+      "exports": {
+        "src/lego/plugin-runtime.mjs": [
+          "PLUGIN_CORE",
+          "PLUGIN_EVENT_LIMIT_DEFAULT",
+          "PLUGIN_EVENT_LIMIT_MAX",
+          "PLUGIN_EVENT_TYPES",
+          "PLUGIN_LIFECYCLE_STATES",
+          "PLUGIN_RUNTIME_CONTRACT",
+          "PLUGIN_RUNTIME_CONTRACT_VERSION",
+          "PLUGIN_RUNTIME_LOCALITIES",
+          "PLUGIN_TRUST_CLASSES",
+          "PUBLISHED_ERROR_CODES",
+          "PluginRuntimeError",
+          "bootstrapPluginCore",
+          "createPluginRuntime"
+        ]
+      },
+      "consumers": [
+        "P2.27 plugin slices on this milestone branch: manifest/registry (P2.27.2), capability policy (P2.27.3), locality (P2.27.4), secret broker (P2.27.5), resource budgets (P2.27.6), supervisor (P2.27.7), circuit/deadline/replay (P2.27.8), upgrade/rollback/supply-chain (P2.27.9)",
+        "frontend plugin boundary (P2.27.10) consumes the canonical vocabularies via the checked plugin surface"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-plugin-runtime.test.mjs"
+      ],
+      "notes": "P2.27.1 tiny Core kernel (dedicated Master Prompt P2.27, 2026-09-24; design section 3): canonical plugin vocabularies frozen once — trust classes CORE/TRUSTED/ISOLATED/SANDBOXED (isolation posture; foundation.json trust levels stay canonical for provenance), runtime localities IN_PROCESS/WASM/ISOLATED_PROCESS/REMOTE (aligned with the locality strings node-registry already emits), lifecycle DISCOVERED→VALIDATING→STARTING→HEALTHY→DEGRADED→DRAINING→STOPPED→QUARANTINED, declared event types; core identity/clock primitives; bounded drop-oldest event ring (default 64, max 4096, dropped counted — no unbounded queue); health snapshot (plugins:0 reserved for P2.27.2); PluginRuntimeError constructor refuses any code not published in contracts/errors.contract.json (zero new error codes, foundation F16 by construction). Core owns no workflow/execution/storage/AI/credentials. Later P2.27 slices extend this row additively (exports grow, minor version bumps as warranted); no new domain, no sub-LEGO."
     }
   ]
 }

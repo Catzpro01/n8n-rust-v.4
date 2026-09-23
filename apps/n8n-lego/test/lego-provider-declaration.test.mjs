@@ -66,7 +66,7 @@ test('the lock row is the thirty-second: ai.provider-declaration@1.0.0, owner ma
   const r = row('ai.provider-declaration');
   assert.ok(r, 'the provider declaration contract is locked');
   // P9.1 envelope + P3 optimizer are merged; P9.2 structured-log adds row 42.
-  assert.equal(ROWS.length, 75, 'P2.26 added the thirty-second; P3 Slice A adds the thirty-third (workflow.graph); P3 Slice D adds the thirty-fourth (execution.frontier); P3 Slice E adds the thirty-fifth (execution.state-stream); P3 Slice H adds the thirty-sixth (workflow.dna); P3 Slice J the thirty-seventh (execution.ir); P3 Slice L the thirty-eighth (compatibility.oracle); P3 Slice M the thirty-ninth (execution.guard) — P6.1 adds node.registry@0.1.0; P6.2 adds registry.compiler@0.1.0; P6.3 adds package.transaction@0.1.0; P6.4 adds registry.closure@0.1.0; P6.5 adds node.resolution@0.1.0; P6.6 adds runtime.lease@0.1.0; P6.7 adds node.residency@0.1.0; P6.8 adds node.capability@0.1.0; P6.9 adds node.semantics@0.1.0; P6.10 adds node.lifecycle@0.1.0; P6.11 adds node.health@0.1.0; P6.12 adds node.supply-chain@0.1.0; P6.13 adds registry.incremental@0.1.0; P6.14 adds node.worker-convergence@0.1.0; P6.15 adds node.acceptance@0.1.0; P6.16 adds registry.integrity@0.1.0; P6.17 adds node.admission@0.1.0; P6.18 adds node.sbom@0.1.0; P6.19 adds node.canary@0.1.0; P6.20 adds node.revocation@0.1.0; P6.21 adds node.io@0.1.0; P6.22 adds runtime.jit@0.1.0; P6.23 adds runtime.cancel@0.1.0; P6.24 adds runtime.pool@0.1.0; P6.25 adds node.abi@0.1.0; P6.26 adds runtime.wasm-cache@0.1.0; P6.27 adds node.provenance@0.1.0; P6.28 adds registry.freshness@0.1.0; P6.29 adds node.namespace@0.1.0; P6.30 adds registry.repair@0.1.0; P6.31 adds registry.acceptance@0.1.0; count-pins say 75');
+  assert.equal(ROWS.length, 76, 'P2.26 added the thirty-second; P3 Slice A adds the thirty-third (workflow.graph); P3 Slice D adds the thirty-fourth (execution.frontier); P3 Slice E adds the thirty-fifth (execution.state-stream); P3 Slice H adds the thirty-sixth (workflow.dna); P3 Slice J the thirty-seventh (execution.ir); P3 Slice L the thirty-eighth (compatibility.oracle); P3 Slice M the thirty-ninth (execution.guard) — P6.1 adds node.registry@0.1.0; P6.2 adds registry.compiler@0.1.0; P6.3 adds package.transaction@0.1.0; P6.4 adds registry.closure@0.1.0; P6.5 adds node.resolution@0.1.0; P6.6 adds runtime.lease@0.1.0; P6.7 adds node.residency@0.1.0; P6.8 adds node.capability@0.1.0; P6.9 adds node.semantics@0.1.0; P6.10 adds node.lifecycle@0.1.0; P6.11 adds node.health@0.1.0; P6.12 adds node.supply-chain@0.1.0; P6.13 adds registry.incremental@0.1.0; P6.14 adds node.worker-convergence@0.1.0; P6.15 adds node.acceptance@0.1.0; P6.16 adds registry.integrity@0.1.0; P6.17 adds node.admission@0.1.0; P6.18 adds node.sbom@0.1.0; P6.19 adds node.canary@0.1.0; P6.20 adds node.revocation@0.1.0; P6.21 adds node.io@0.1.0; P6.22 adds runtime.jit@0.1.0; P6.23 adds runtime.cancel@0.1.0; P6.24 adds runtime.pool@0.1.0; P6.25 adds node.abi@0.1.0; P6.26 adds runtime.wasm-cache@0.1.0; P6.27 adds node.provenance@0.1.0; P6.28 adds registry.freshness@0.1.0; P6.29 adds node.namespace@0.1.0; P6.30 adds registry.repair@0.1.0; P6.31 adds registry.acceptance@0.1.0; count-pins say 76; P2.27.1 adds lego.plugin-runtime@0.1.0 (seventy-sixth)');
   assert.equal(r.owner, 'manager');
   assert.equal(r.domain, 'ai-foundation');
   assert.equal(r.version, '1.0.0');
@@ -535,11 +535,11 @@ test('P2.27 is the current administrative milestone with authorized implementati
   assert.match(design, /deny-by-default/i);
   assert.match(design, /QUARANTINED/);
   assert.equal(/```(js|javascript|ts|typescript)/.test(design), false, 'no implementation code in the design doc');
-  // slice P2.27.0 is docs/register-only: the named runtime artifacts have not landed yet;
-  // later slices replace this absence check with their own slice-scoped assertions.
+  // P2.27.1 landed the tiny core (plugin-runtime.mjs); the remaining named artifacts
+  // are still future slices — each lands only with its dedicated slice assertion.
   const legoDir = join(REPO_ROOT, 'apps', 'n8n-lego', 'src', 'lego');
   const names = readdirSync(legoDir);
-  for (const forbidden of ['plugin-manager.mjs', 'plugin-supervisor.mjs', 'plugin-runtime.mjs', 'secret-broker.mjs', 'wasm-runtime.mjs']) {
+  for (const forbidden of ['plugin-manager.mjs', 'plugin-supervisor.mjs', 'secret-broker.mjs', 'wasm-runtime.mjs']) {
     assert.equal(names.includes(forbidden), false, `${forbidden} lands with its dedicated slice, not before`);
   }
 });
