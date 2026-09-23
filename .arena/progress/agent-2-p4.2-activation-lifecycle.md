@@ -98,3 +98,13 @@
   Vacant), recovery_plan murni (ResumeDrain/DeactivateOrphan/ActivatingStalled/
   RetryActivation/ReactivateDesired + ReconcilePlan), deterministic.
 - 7 test baru → workspace **269 green** (stacked di atas P4.6); fmt bersih.
+
+## Lanjutan — P4.8 Innovation (sesi stacked P4.7)
+
+- Modul `crates/n8n-common/src/innovation.rs`: RouteAtlas+AtlasSwap (atomic hot-swap),
+  adapt_limits (clamp dalam hard-ceiling, stale⇒conservative), PayloadCapsule
+  (capability-scoped+TLL), coalesce_events (burst fusion opt-in, audited),
+  brownout QoS (NORMAL→CRITICAL, policy deterministik), FlightRecorder bounded.
+  Semua default=off/normal (no silent semantics).
+- Deferred→P4.9: deterministic replay & adaptive controller penuh.
+- 11 test baru → workspace **280 green** (stacked di atas P4.7); fmt bersih.
