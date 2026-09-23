@@ -311,3 +311,65 @@ test('manifest is frozen and readStats are copies — callers cannot corrupt the
   graph.getNode('Start');
   assert.equal(graph.readStats().chunkReads, 1, 'external mutation of stats never lands inside');
 });
+
+/* ============================== G. SLICE B — INDEXED EDGE ACCESS */
+
+test('the reverse index is lazy: not built at construction, 0 reads until asked', () => {
+  const graph = createWorkflowGraph(sampleDefinition(), { chunkSize: 2 });
+  assert.equal(graph.hasReverseIndex(), false, 'deriving the index at build time would defeat laziness');
+  graph.resetReadStats();
+  assert.equal(graph.readStats().chunkReads, 0);
+});
+
+test('getIncoming materializes once (one read per edge bucket) then serves pure index hits', () => {
+  const graph = createWorkflowGraph(sampleDefinition(), { chunkSize: 2 });
+  graph.resetReadStats();
+  const incomingHTTP = graph.getIncoming('HTTP');
+  assert.equal(graph.hasReverseIndex(), true);
+  const buckets = graph.exportBundle().edgeChunks.filter((entry) => entry !== '').length;
+  assert.equal(graph.readStats().chunkReads, buckets,
+    'materialization = one read per NON-EMPTY edge bucket, once (empty buckets are never read)');
+  assert.deepEqual(incomingHTTP, [{ source: 'Start', type: 'main', index: 0 }]);
+  graph.getIncoming('Branch');
+  graph.getIncoming('Set A');
+  assert.equal(graph.readStats().chunkReads, buckets, 'subsequent lookups are index hits — 0 chunk reads');
+  assert.equal(graph.releaseReverseIndex(), true, 'evict drops the derived index');
+  assert.equal(graph.hasReverseIndex(), false);
+  graph.getIncoming('Start');
+  assert.equal(graph.hasReverseIndex(), true, 'rematerializes on demand');
+  assert.equal(graph.readStats().chunkReads, buckets * 2, 'second build pays the bucket reads again');
+});
+
+test('reverse lookups are correct, ordered, frozen — and dangling targets are never indexed', () => {
+  const def = sampleDefinition();
+  def.connections.Branch.main[0].push({ node: 'Dangling', type: 'main', index: 1 });
+  const graph = createWorkflowGraph(def, { chunkSize: 2 });
+  assert.deepEqual(graph.getIncoming('Start'), [], 'Start has no indexed incoming edge (Ghost is not a node)');
+  assert.deepEqual(graph.getIncoming('HTTP'), [{ source: 'Start', type: 'main', index: 0 }]);
+  assert.deepEqual(graph.getIncoming('Branch'), [{ source: 'HTTP', type: 'main', index: 0 }]);
+  assert.deepEqual(graph.getIncoming('Set A'), [{ source: 'Branch', type: 'main', index: 0 }],
+    'output bundle 0 → Set A');
+  assert.deepEqual(graph.getIncoming('Set B'), [{ source: 'Branch', type: 'main', index: 1 }],
+    'index = which output bundle (main[1]) produced the edge');
+  assert.equal(graph.hasNode('Dangling'), false);
+  const frozen = graph.getIncoming('HTTP');
+  assert.equal(Object.isFrozen(frozen), true, 'returned rows are frozen');
+  assert.equal(Object.isFrozen(frozen[0]), true);
+  const unknown = caught(() => graph.getIncoming('Nope'));
+  assert.equal(unknown.details.reason, 'unknown-node', 'identity rule matches getNode');
+  // the canonical definition still roundtrips with the dangling entry intact
+  assert.deepStrictEqual(graph.exportDefinition(), def);
+});
+
+test('the reverse index is derived: never bundled, rebuilds after a bundle roundtrip', () => {
+  const graph = createWorkflowGraph(sampleDefinition(), { chunkSize: 2 });
+  graph.getIncoming('HTTP');
+  assert.equal(graph.hasReverseIndex(), true);
+  const wire = JSON.parse(JSON.stringify(graph.exportBundle()));
+  assert.equal('incoming' in wire, false, 'derived index never rides the durable bundle');
+  assert.equal('reverseIndex' in wire, false);
+  const restored = graphFromBundle(wire);
+  assert.equal(restored.hasReverseIndex(), false, 'fresh graph starts without the index');
+  assert.deepEqual(restored.getIncoming('HTTP'), [{ source: 'Start', type: 'main', index: 0 }]);
+  assert.deepStrictEqual(restored.exportDefinition(), sampleDefinition());
+});
