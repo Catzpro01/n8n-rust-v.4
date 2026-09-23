@@ -93,7 +93,7 @@ test('the contract string is the exact locked identity — row 28, domain node-r
   assert.equal(LOCK_ROW.domain, 'node-registry');
   assert.equal(LOCK_ROW.owner, 'manager');
   // P9.1 envelope + P3 optimizer are merged; P9.2 structured-log adds row 42.
-  assert.equal(LOCK.contracts.length, 46, 'rows through P3 Slice A persistent logical graph (thirty-third); P3 Slice D adds the thirty-fourth (execution.frontier); P3 Slice E adds the thirty-fifth (execution.state-stream); P3 Slice H adds the thirty-sixth (workflow.dna); P3 Slice J the thirty-seventh (execution.ir); P3 Slice L the thirty-eighth (compatibility.oracle); P3 Slice M the thirty-ninth (execution.guard); P3 Slice K the forty-first (execution.optimizer) — P6.1 adds node.registry@0.1.0; P6.2 adds registry.compiler@0.1.0; P6.3 adds package.transaction@0.1.0; P6.4 adds registry.closure@0.1.0; count-pins say 46');
+  assert.equal(LOCK.contracts.length, 47, 'rows through P3 Slice A persistent logical graph (thirty-third); P3 Slice D adds the thirty-fourth (execution.frontier); P3 Slice E adds the thirty-fifth (execution.state-stream); P3 Slice H adds the thirty-sixth (workflow.dna); P3 Slice J the thirty-seventh (execution.ir); P3 Slice L the thirty-eighth (compatibility.oracle); P3 Slice M the thirty-ninth (execution.guard); P3 Slice K the forty-first (execution.optimizer) — P6.1 adds node.registry@0.1.0; P6.2 adds registry.compiler@0.1.0; P6.3 adds package.transaction@0.1.0; P6.4 adds registry.closure@0.1.0; P6.5 adds node.resolution@0.1.0; count-pins say 47');
   // primary contract of the domain stays node.portability — node.creator is NOT primary (R9)
   assert.equal(NODE_DOMAIN.contract.id, 'node.portability');
 });
