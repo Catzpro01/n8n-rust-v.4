@@ -1878,6 +1878,52 @@
         "apps/n8n-lego/test/lego-dependency-closure.test.mjs"
       ],
       "notes": "P6.4 (P6 implementation owner: Agent 3, Issue #100): dependency closure + content-addressed artifact store. P6.3 gives an install a journal and a fence but installs ONE package; real node packages arrive with helpers, parsers and runtimes, so something must answer which packages are needed, in which versions, and whether the bytes on hand are the bytes the registry claims. This contract answers all three, purely. RESOLUTION: given a root and a catalogue of published versions (data handed in, never fetched), produce the full closure as a deterministic, topologically ordered list of package@version with the digest each must have — deterministic meaning two hosts resolving the same catalogue get byte-identical results, because a closure that depends on map iteration order is a coin flip, not a closure. Semver subset stated rather than imported: `*`, exact, caret and tilde over major.minor.patch with an optional pre-release, and a pre-release is never selected unless a requirement NAMES it (a caret range that happens to cover 1.1.0-beta.1 must not install a beta). STORE ADDRESSING: an address IS the hash of the content, so identical bytes share one address and cannot disagree about it — which is what makes deduplication safe rather than clever. VERIFICATION: content that no longer hashes to its address is refused as corruption and never silently re-addressed. Every refusal here has burned a real supply chain and is reported with who asked for what: unmet required dependency, unsatisfiable range (nearby versions are not picked), a version conflict no single version satisfies, a declared conflict with something the closure requires (checked AFTER the closure is complete, because whether a conflict fires depends on the whole graph), a cycle with the path named, a depth ceiling and a size ceiling. Optional means may-be-absent, never may-be-wrong: an absent optional is reported in `optionalMissing`, a declared-but-broken one is reported with its reason. Garbage collection requires the live set from the caller — collecting by guessing is data loss with a spec. No authority: an address proves identity of bytes, never authorship, trust or permission."
+    },
+    {
+      "id": "node.resolution",
+      "owner": "manager",
+      "domain": "node-registry",
+      "version": "0.1.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/resolution-manifest.mjs"
+      ],
+      "exports": {
+        "src/lego/resolution-manifest.mjs": [
+          "RESOLUTION_MANIFEST_CONTRACT",
+          "RESOLUTION_MANIFEST_CONTRACT_VERSION",
+          "RESOLUTION_MANIFEST_INPUT_SCHEMA_VERSION",
+          "RESOLUTION_MANIFEST_OPERATIONS",
+          "RESOLUTION_MANIFEST_PERMISSIONS",
+          "RESOLUTION_MANIFEST_REASONS",
+          "RESOLUTION_MANIFEST_RULES",
+          "RESOLUTION_MANIFEST_SCHEMA_VERSION",
+          "RESOLUTION_STATES",
+          "ResolutionManifestError",
+          "UPGRADE_POLICIES",
+          "applyNodeUpgrade",
+          "createResolutionManifest",
+          "describeResolutionManifest",
+          "formatResolutionManifest",
+          "isResolutionManifest",
+          "pinnedIdentities",
+          "planNodeUpgrade",
+          "resolutionDiff",
+          "resolutionManifestView",
+          "resolveWorkflowNodes"
+        ]
+      },
+      "consumers": [
+        "P6.6 runtime lease — an execution leases the epoch a manifest pins, and keeps serving it while a new epoch becomes current",
+        "P6.9 semantic fingerprint + compatibility replay — replays exactly the pinned identities a workflow resolved against, not whatever is current",
+        "P6.14 worker registry convergence — a worker holds a manifest revision and the handshake reports MATCH/UPGRADE_REQUIRED/MISMATCH",
+        "P6.19 canary rollout — a canary is a manifest revision moved deliberately, and the auto-rollback restores the previous revision",
+        "P6.30 repair + reconciliation — a workflow whose pin is missing or changed is a repair case, not a silent re-resolution"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-resolution-manifest.test.mjs"
+      ],
+      "notes": "P6.5 (P6 implementation owner: Agent 3, Issue #100): workflow node resolution manifest. An epoch (P6.2) answers what the registry contains now; it does not answer what THIS workflow runs against and whether that changed — between those two questions sits the classic outage where the registry is upgraded, half the workflows silently start executing an untested version, and the only evidence is a support ticket. A resolution manifest pins, per workflow, the exact identity (type@typeVersion), the declaration digest and the epoch digest, so 'which implementation did this run use' is a stored fact next to the workflow instead of a reconstruction. Three rules make it worth having. (1) A PIN IS EXACT: no latest, no floating tag, no silent adoption. (2) UPGRADE IS EXPLICIT AND TWO-PHASE: planning changes nothing at all (asserted by re-serializing the manifest), applying requires an explicit authorization, a revision that still matches, and a proposal that still equals what the current epoch would produce — a stale proposal is refused rather than merged, which is how an upgrade approved yesterday against a different registry stops being applied today; the policy (exact/minor/major, in the n8n typeVersion X.Y model) travels INSIDE the proposal and is recorded in history when it changes. (3) NOTHING IS SILENTLY DROPPED: a pinned identity missing from the epoch is FATAL even when a candidate version exists — turning 'the node you pinned is gone' into 'here is a different version instead' is the exact failure this contract prevents — and the same identity carrying a different digest is reported as a registry integrity violation, not an upgrade, because P6.1 fixed that a node's identity never changes because its implementation changed. Revisions only increase and history is append-only. Composes with P6.1 (identity/parse) and P6.2 (epochs) rather than re-deriving either; P3's graph, frontier and IR modules are never imported — the node list is data handed in."
     }
   ]
 }
