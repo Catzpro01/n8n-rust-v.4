@@ -11,6 +11,16 @@ on:
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened]
+    paths:
+      - 'apps/n8n-ts/**'
+      - 'packages/reconstructed-engine/**'
+      - 'tests/runtime/**'
+      - 'tests/fixtures/runtime/**'
+      - 'tests/integration/runtime_*'
+      - 'scripts/**'
+      - 'deploy/docker/**'
+      - 'contracts/runtime-api.contract.md'
+      - '.github/workflows/typescript-runtime.yml'
   push:
     branches: [main]
     paths:
