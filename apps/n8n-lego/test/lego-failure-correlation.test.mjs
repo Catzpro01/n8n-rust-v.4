@@ -154,7 +154,7 @@ test('P9.13 bounded inputs: oversized edge list rejected', () => {
 
 test('P9.13 lock pin: contracts length 66 after P9.13 row', () => {
   const lock = JSON.parse(readFileSync(new URL('../src/lego/contracts/contract-lock.json', import.meta.url), 'utf8'));
-  assert.equal(lock.contracts.length, 67); // P9.13 adds observability.failure-correlation@1.0.0; P9.14 adds observability.replay-evidence@1.0.0; count-pins say 67
+  assert.equal(lock.contracts.length, 68); // P9.13 adds observability.failure-correlation@1.0.0; P9.14 adds observability.replay-evidence@1.0.0; P9.15 adds observability.telemetry-retention@1.0.0; count-pins say 68
   const row = lock.contracts.find(c => c.id === 'observability.failure-correlation');
   assert.ok(row, 'P9.13 row present');
   assert.equal(row.version, '1.0.0');

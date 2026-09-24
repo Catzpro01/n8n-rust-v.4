@@ -2668,6 +2668,42 @@
         "apps/n8n-lego/test/lego-replay-evidence.test.mjs"
       ],
       "notes": "P9.14 (implementation owner: Agent 4, Issue #101): Replay / Compatibility Evidence Integration — consume P3 checkpoint + P6 compatibility replay REFERENCES only (no engine duplication); P3 execution.state-stream@0.1.0 / snapshotVersion=1 and P6 node.semantics@0.1.0 / schemaVersion=1 version-checked; incompatible refs segregated never evidence; missing refs → evidenceMissing; secret-shaped refs fail closed (null); bundle slots checkpoint/replay; deterministic export; no I/O/clock."
+    },
+    {
+      "id": "observability.telemetry-retention",
+      "owner": "agent-6",
+      "domain": "observability",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/telemetry-retention.mjs"
+      ],
+      "exports": {
+        "src/lego/telemetry-retention.mjs": [
+          "RETENTION_CONTRACT",
+          "RETENTION_SCHEMA_VERSION",
+          "RETENTION_TIERS",
+          "RETENTION_SIGNALS",
+          "RETENTION_ACTIONS",
+          "RETENTION_PRIORITIES",
+          "RETENTION_LIMITS",
+          "RETENTION_NOTES",
+          "AUTHORITATIVE_KINDS",
+          "createRetentionPolicy",
+          "classifyResidency",
+          "createRetentionStore",
+          "ingestRecord",
+          "applyRetentionPass",
+          "extendForIncident",
+          "applyStoragePressure",
+          "deleteTelemetryRecord",
+          "retentionReport"
+        ]
+      },
+      "tests": [
+        "apps/n8n-lego/test/lego-telemetry-retention.test.mjs"
+      ],
+      "notes": "P9.15 (implementation owner: Agent 4, Issue #101): Retention + HOT/WARM/COLD Policy — signal-specific TTLs (log/metric/trace/audit/security/replay/diagnostic); deterministic residency + expiry (now is an argument); incident extension policy-controlled with caps; audit/security retention distinct and shed last under storage pressure; expired records actually removed/compacted; deletion isolated from authoritative workflow state (refused_authoritative); pressure degrades whole records before corruption; no I/O/clock."
     }
   ]
 }
