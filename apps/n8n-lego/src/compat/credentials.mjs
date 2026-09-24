@@ -35,9 +35,56 @@
  * treated as secret: there is no safe subset to guess, so we fail closed.
  */
 
-import { badRequest, notFound } from './error.mjs';
+import { HttpError, badRequest, notFound } from './error.mjs';
 import { sendData } from './response.mjs';
 import { requireUser } from './auth-context.mjs';
+import { getGlobalScopes, loadRoles } from './scopes.mjs';
+
+/* ------------------------------------------------------------ authorization */
+
+/**
+ * The scopes a user holds ON ONE CREDENTIAL, computed exactly the way upstream
+ * n8n does it: the user's global-role scopes, plus the `project:personalOwner`
+ * scopes when the credential lives in the user's personal project (i.e. the
+ * user owns it). Both sets come from the canonical `roles.json` — nothing here
+ * invents a scope, and an unknown role contributes nothing.
+ *
+ * A record with no `ownerId` predates P5.4. It belongs to nobody's personal
+ * project, so only a global scope can reach it. That is default deny: before
+ * P5.4 every signed-in user could read every credential, including the owner's.
+ *
+ * @param {object} user
+ * @param {object|null} credential null => "a credential this user would create"
+ * @param {object} config
+ * @returns {Set<string>}
+ */
+export function credentialScopesFor(user, credential, config) {
+  const scopes = new Set(getGlobalScopes(user, config).filter((scope) => scope.startsWith('credential:')));
+  const owns = credential === null || (credential?.ownerId !== undefined && credential.ownerId === user?.id);
+  if (user && owns) {
+    const personal = (loadRoles(config).project ?? []).find((role) => role.slug === 'project:personalOwner');
+    for (const scope of personal?.scopes ?? []) if (scope.startsWith('credential:')) scopes.add(scope);
+  }
+  return scopes;
+}
+
+/** 403 in n8n's own error shape. */
+function forbidden() {
+  return new HttpError(403, 'User is missing a scope required to perform this action');
+}
+
+/**
+ * Loads a credential the caller may READ, or throws 404. Not-readable and
+ * not-found are deliberately indistinguishable, so the API cannot be used to
+ * probe for other users' credential ids (upstream behaves the same way).
+ */
+function readableCredential(ctx, user) {
+  const credential = ctx.store.credentials.get(ctx.params.id);
+  if (!credential || !credentialScopesFor(user, credential, ctx.config).has('credential:read')) {
+    throw notFound(`Credential with ID "${ctx.params.id}" could not be found.`);
+  }
+  return credential;
+}
 
 /**
  * n8n's blank-value sentinel prefix. The editor renders this as an empty
@@ -280,10 +327,20 @@ export function credentialRoutes({ logger, getCredentialTypes = () => [] }) {
     return index;
   };
 
-  const view = (credential, ctx, { includeData = false } = {}) =>
-    credentialEditorView(credential, {
+  const view = (credential, ctx, { includeData = false } = {}) => {
+    const out = credentialEditorView(credential, {
       includeData,
       secretFields: indexFor(ctx.config).secretFields(credential?.type),
+    });
+    // Upstream returns the caller's effective scopes on each credential; the
+    // editor uses them to enable or disable edit/delete/share.
+    out.scopes = [...credentialScopesFor(ctx.user, credential, ctx.config)].sort();
+    return out;
+  };
+  const visible = (ctx, user) =>
+    ctx.store.credentials.all().filter((credential) => {
+      const scopes = credentialScopesFor(user, credential, ctx.config);
+      return scopes.has('credential:read') || scopes.has('credential:list');
     });
 
   return [
@@ -304,10 +361,11 @@ export function credentialRoutes({ logger, getCredentialTypes = () => [] }) {
       method: 'GET',
       path: '/rest/credentials/for-workflow',
       handler: (ctx) => {
-        requireUser(ctx);
+        const user = requireUser(ctx);
         // A selector list: the editor needs id/name/type to populate the node's
-        // credential dropdown, never the values.
-        sendData(ctx.res, ctx.store.credentials.all().map((credential) => view(credential, ctx)));
+        // credential dropdown, never the values — and only credentials the
+        // caller may use.
+        sendData(ctx.res, visible(ctx, user).map((credential) => view(credential, ctx)));
       },
     },
     {
@@ -322,11 +380,10 @@ export function credentialRoutes({ logger, getCredentialTypes = () => [] }) {
       method: 'GET',
       path: '/rest/credentials',
       handler: (ctx) => {
-        requireUser(ctx);
+        const user = requireUser(ctx);
         const includeData = ctx.query.includeData === 'true';
         const filter = parseFilter(ctx.query.filter);
-        const credentials = ctx.store.credentials
-          .all()
+        const credentials = visible(ctx, user)
           .filter((credential) =>
             filter.name ? String(credential.name).toLowerCase().includes(String(filter.name).toLowerCase()) : true,
           )
@@ -338,7 +395,8 @@ export function credentialRoutes({ logger, getCredentialTypes = () => [] }) {
       method: 'POST',
       path: '/rest/credentials',
       handler: (ctx) => {
-        requireUser(ctx);
+        const user = requireUser(ctx);
+        if (!credentialScopesFor(user, null, ctx.config).has('credential:create')) throw forbidden();
         const body = ctx.body ?? {};
         if (typeof body.name !== 'string' || body.name.trim() === '') throw badRequest('Credential name is required');
         if (typeof body.type !== 'string' || body.type.trim() === '') throw badRequest('Credential type is required');
@@ -348,6 +406,9 @@ export function credentialRoutes({ logger, getCredentialTypes = () => [] }) {
           type: body.type,
           data: body.data ?? {},
           tenantId: currentTenantId(ctx),
+          // The creator's personal project owns it — this is what later grants
+          // them `project:personalOwner` scopes on it, and nobody else.
+          ownerId: user.id,
           credentialVersion: 1,
           createdAt: now,
           updatedAt: now,
@@ -363,9 +424,8 @@ export function credentialRoutes({ logger, getCredentialTypes = () => [] }) {
       method: 'GET',
       path: '/rest/credentials/:id',
       handler: (ctx) => {
-        requireUser(ctx);
-        const credential = ctx.store.credentials.get(ctx.params.id);
-        if (!credential) throw notFound('Credential not found');
+        const user = requireUser(ctx);
+        const credential = readableCredential(ctx, user);
         // Default is NO data. This is the single most important line of P5.4:
         // it used to be `includeData !== 'false'`, which returned the stored
         // secret unless the caller opted OUT.
@@ -376,9 +436,9 @@ export function credentialRoutes({ logger, getCredentialTypes = () => [] }) {
       method: 'PATCH',
       path: '/rest/credentials/:id',
       handler: (ctx) => {
-        requireUser(ctx);
-        const existing = ctx.store.credentials.get(ctx.params.id);
-        if (!existing) throw notFound('Credential not found');
+        const user = requireUser(ctx);
+        const existing = readableCredential(ctx, user);
+        if (!credentialScopesFor(user, existing, ctx.config).has('credential:update')) throw forbidden();
         const body = ctx.body ?? {};
         // A sentinel echoed back means "the user did not retype this", so the
         // stored value survives. Without this, merely opening and saving a
@@ -403,8 +463,10 @@ export function credentialRoutes({ logger, getCredentialTypes = () => [] }) {
       method: 'DELETE',
       path: '/rest/credentials/:id',
       handler: (ctx) => {
-        requireUser(ctx);
-        if (!ctx.store.credentials.remove(ctx.params.id)) throw notFound('Credential not found');
+        const user = requireUser(ctx);
+        const existing = readableCredential(ctx, user);
+        if (!credentialScopesFor(user, existing, ctx.config).has('credential:delete')) throw forbidden();
+        ctx.store.credentials.remove(existing.id);
         sendData(ctx.res, true);
       },
     },

@@ -34,6 +34,7 @@ import {
   mergeCredentialData,
   redactCredentialData,
   splitCredential,
+  credentialScopesFor,
 } from '../src/compat/credentials.mjs';
 
 const APP_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -390,6 +391,59 @@ describe('SecretRef is request-, audience- and version-bound, and single-use', (
   });
 });
 
+
+/* ============================================ 3b. who may touch which credential */
+
+describe('credential authorization uses the canonical n8n role model', () => {
+  const config = { catalogDir: CATALOG_DIR };
+  const owner = { id: 'u-owner', role: 'global:owner' };
+  const member = { id: 'u-member', role: 'global:member' };
+  const stranger = { id: 'u-other', role: 'global:member' };
+  const mine = makeRecord({ ownerId: 'u-member' });
+  const legacy = makeRecord(); // no ownerId: predates P5.4
+
+  test('the global owner reaches every credential via global scopes', () => {
+    for (const cred of [mine, legacy]) {
+      const scopes = credentialScopesFor(owner, cred, config);
+      for (const s of ['credential:read', 'credential:update', 'credential:delete', 'credential:list']) {
+        assert.ok(scopes.has(s), `owner lacks ${s}`);
+      }
+    }
+  });
+
+  test('a member fully manages a credential in their personal project', () => {
+    const scopes = credentialScopesFor(member, mine, config);
+    for (const s of ['credential:read', 'credential:update', 'credential:delete']) assert.ok(scopes.has(s), s);
+  });
+
+  test("a member cannot see another user's credential", () => {
+    assert.equal(credentialScopesFor(stranger, mine, config).size, 0);
+  });
+
+  test('a pre-P5.4 record with no owner is reachable only by global scopes', () => {
+    assert.equal(credentialScopesFor(member, legacy, config).size, 0, 'default deny for unowned records');
+  });
+
+  test('every member may create (into their own personal project)', () => {
+    assert.ok(credentialScopesFor(member, null, config).has('credential:create'));
+  });
+
+  test('an unknown global role contributes no scope at all', () => {
+    const odd = { id: 'u-x', role: 'global:doesNotExist' };
+    assert.equal(credentialScopesFor(odd, legacy, config).size, 0);
+  });
+
+  test('no scope outside the canonical credential universe is ever produced', () => {
+    for (const user of [owner, member]) {
+      for (const s of credentialScopesFor(user, mine, config)) assert.match(s, /^credential:[a-zA-Z]+$/);
+    }
+  });
+
+  test('an anonymous caller gets nothing', () => {
+    assert.equal(credentialScopesFor(null, mine, config).size, 0);
+  });
+});
+
 /* ============================================= 4. the real REST surface (golden) */
 
 describe('the REST credential surface matches the recorded n8n contract', () => {
@@ -471,6 +525,7 @@ describe('the REST credential surface matches the recorded n8n contract', () => 
     assert.equal(isBlankSentinel(created.data.value), true);
     assert.equal(created.tenantId, 'default', 'records are tenant-bound');
     assert.equal(created.credentialVersion, 1, 'records are version-bound');
+    assert.ok(created.scopes.includes('credential:update'), 'the creator holds edit scopes on it');
   });
 
   test('GET /rest/credentials/:id carries NO data — the golden default', async () => {
@@ -550,8 +605,10 @@ describe('the REST credential surface matches the recorded n8n contract', () => 
   });
 
   test('a missing credential is a 404, not a leak', async () => {
-    const { status, text } = await api('GET', '/rest/credentials/does-not-exist');
+    const { status, text, json } = await api('GET', '/rest/credentials/does-not-exist');
     assert.equal(status, 404);
+    // Golden `notFound`: upstream's exact message.
+    assert.equal(json.message, 'Credential with ID "does-not-exist" could not be found.');
     assert.equal(text.includes(SECRET), false);
   });
 
