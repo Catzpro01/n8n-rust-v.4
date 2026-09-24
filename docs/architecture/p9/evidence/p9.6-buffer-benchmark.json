@@ -1,0 +1,64 @@
+{
+  "node": "v20.20.2",
+  "platform": "linux",
+  "arch": "x64",
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.60GHz",
+  "note": "100 batches of 1000; batch-mean percentiles only; heap deltas not allocation counts; shared sandbox/GC/JIT noise; no sink or disk spill; drain refills buffer so offers stay on the admit path.",
+  "results": [
+    {
+      "name": "OFF control",
+      "iterations": 100000,
+      "elapsedMs": 3.352839000000003,
+      "opsPerSecond": 29825470.295471963,
+      "batchMeanUs": {
+        "p50": 0.0011610000000032983,
+        "p95": 0.025996999999996717,
+        "p99": 0.04781900000000405
+      },
+      "cpuUs": {
+        "user": 124,
+        "system": 4057
+      },
+      "heapDeltaBeforeGc": 391760,
+      "retainedHeapDeltaAfterGc": 163864,
+      "rssDelta": 3600384
+    },
+    {
+      "name": "offer under capacity (refill each batch via take)",
+      "iterations": 100000,
+      "elapsedMs": 31.165242,
+      "opsPerSecond": 3208702.8234852147,
+      "batchMeanUs": {
+        "p50": 0.23887499999999307,
+        "p95": 0.6652190000000004,
+        "p99": 0.7611099999999951
+      },
+      "cpuUs": {
+        "user": 41719,
+        "system": 3676
+      },
+      "heapDeltaBeforeGc": 540344,
+      "retainedHeapDeltaAfterGc": 22504,
+      "rssDelta": 2371584
+    },
+    {
+      "name": "offer saturated shed path (P4 into full buffer)",
+      "iterations": 100000,
+      "elapsedMs": 4213.831917,
+      "opsPerSecond": 23731.368970026244,
+      "batchMeanUs": {
+        "p50": 41.678405000000566,
+        "p95": 48.71429900000021,
+        "p99": 55.0832519999999
+      },
+      "cpuUs": {
+        "user": 4218691,
+        "system": 0
+      },
+      "heapDeltaBeforeGc": 3137728,
+      "retainedHeapDeltaAfterGc": 25920,
+      "rssDelta": 2179072
+    }
+  ],
+  "checksum": 219409
+}
