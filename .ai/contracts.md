@@ -70,6 +70,7 @@ Locked public contracts. A version here is a promise; changing it is an architec
 | `62` | 0.1.0 | — | `?` | `?` |
 | `63` | 0.1.0 | — | `?` | `?` |
 | `64` | 1.0.0 | — | `?` | `?` |
+| `65` | 1.0.0 | — | `?` | `?` |
 
 ## Version rules
 
