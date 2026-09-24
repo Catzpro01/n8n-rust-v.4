@@ -80,7 +80,7 @@ Locked public contracts. A version here is a promise; changing it is an architec
 | `72` | 0.1.0 | — | `?` | `?` |
 | `73` | 0.1.0 | — | `?` | `?` |
 | `74` | 0.1.0 | — | `?` | `?` |
-| `75` | 0.9.0 | — | `?` | `?` |
+| `75` | 0.10.0 | — | `?` | `?` |
 
 ## Version rules
 

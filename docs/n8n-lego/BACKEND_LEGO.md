@@ -437,6 +437,7 @@ A domain that publishes several contracts names its **primary** one
 | 2026-09-24 | `lego.plugin-runtime` | 0.7.0 | P2.27.7: MINOR — supervisor: section 15 lifecycle machine, crash loop -> quarantine, operator-only release (exports grow; Master Prompt P2.27) |
 | 2026-09-24 | `lego.plugin-runtime` | 0.8.0 | P2.27.8: MINOR — circuit breaker + envelope-clamped deadline propagation + contract replay oracle (exports grow; Master Prompt P2.27) |
 | 2026-09-24 | `lego.plugin-runtime` | 0.9.0 | P2.27.9: MINOR — side-by-side upgrade + rollback + supply-chain admission gate (exports grow; Master Prompt P2.27) |
+| 2026-09-24 | `lego.plugin-runtime` | 0.10.0 | P2.27.10: MINOR — frontend plugin boundary: trust-derived attachment routes + message-boundary oracle (exports grow; Master Prompt P2.27) |
 ## 10. Ownership model
 
 | agent | role | domains |
