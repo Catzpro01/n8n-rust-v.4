@@ -7,7 +7,7 @@
 | --- | --- |
 | Owner | `agent-6` |
 | Kind / tier | `domain` / `domain` |
-| Status | `contract-only` (phase `P9.4`) |
+| Status | `contract-only` (phase `P9.22`) |
 | Parent | _root_ |
 | Contract | _none declared_ |
 | Error namespace | `observability` |
@@ -24,6 +24,24 @@
 - `src/lego/structured-log.mjs`
 - `src/lego/metric-governor.mjs`
 - `src/lego/trace-context.mjs`
+- `src/lego/semantic-events.mjs`
+- `src/lego/telemetry-buffer.mjs`
+- `src/lego/telemetry-redaction.mjs`
+- `src/lego/telemetry-sampling.mjs`
+- `src/lego/resource-pressure.mjs`
+- `src/lego/health-readiness.mjs`
+- `src/lego/execution-diagnostics.mjs`
+- `src/lego/diagnostic-bundle.mjs`
+- `src/lego/failure-correlation.mjs`
+- `src/lego/replay-evidence.mjs`
+- `src/lego/telemetry-retention.mjs`
+- `src/lego/operator-inspection.mjs`
+- `src/lego/low-resource-mode.mjs`
+- `src/lego/self-observability.mjs`
+- `src/lego/tenant-isolation.mjs`
+- `src/lego/contract-oracle.mjs`
+- `src/lego/advanced-diagnostics.mjs`
+- `src/lego/p9-acceptance.mjs`
 
 ## Public contract surface
 
@@ -31,6 +49,24 @@
 - `src/lego/structured-log.mjs`
 - `src/lego/metric-governor.mjs`
 - `src/lego/trace-context.mjs`
+- `src/lego/semantic-events.mjs`
+- `src/lego/telemetry-buffer.mjs`
+- `src/lego/telemetry-redaction.mjs`
+- `src/lego/telemetry-sampling.mjs`
+- `src/lego/resource-pressure.mjs`
+- `src/lego/health-readiness.mjs`
+- `src/lego/execution-diagnostics.mjs`
+- `src/lego/diagnostic-bundle.mjs`
+- `src/lego/failure-correlation.mjs`
+- `src/lego/replay-evidence.mjs`
+- `src/lego/telemetry-retention.mjs`
+- `src/lego/operator-inspection.mjs`
+- `src/lego/low-resource-mode.mjs`
+- `src/lego/self-observability.mjs`
+- `src/lego/tenant-isolation.mjs`
+- `src/lego/contract-oracle.mjs`
+- `src/lego/advanced-diagnostics.mjs`
+- `src/lego/p9-acceptance.mjs`
 
 ## May call
 
@@ -62,3 +98,21 @@
 - `apps/n8n-lego/test/lego-structured-log.test.mjs`
 - `apps/n8n-lego/test/lego-metric-governor.test.mjs`
 - `apps/n8n-lego/test/lego-trace-context.test.mjs`
+- `apps/n8n-lego/test/lego-semantic-events.test.mjs`
+- `apps/n8n-lego/test/lego-telemetry-buffer.test.mjs`
+- `apps/n8n-lego/test/lego-telemetry-redaction.test.mjs`
+- `apps/n8n-lego/test/lego-telemetry-sampling.test.mjs`
+- `apps/n8n-lego/test/lego-resource-pressure.test.mjs`
+- `apps/n8n-lego/test/lego-health-readiness.test.mjs`
+- `apps/n8n-lego/test/lego-execution-diagnostics.test.mjs`
+- `apps/n8n-lego/test/lego-diagnostic-bundle.test.mjs`
+- `apps/n8n-lego/test/lego-failure-correlation.test.mjs`
+- `apps/n8n-lego/test/lego-replay-evidence.test.mjs`
+- `apps/n8n-lego/test/lego-telemetry-retention.test.mjs`
+- `apps/n8n-lego/test/lego-operator-inspection.test.mjs`
+- `apps/n8n-lego/test/lego-low-resource-mode.test.mjs`
+- `apps/n8n-lego/test/lego-self-observability.test.mjs`
+- `apps/n8n-lego/test/lego-tenant-isolation.test.mjs`
+- `apps/n8n-lego/test/lego-contract-oracle.test.mjs`
+- `apps/n8n-lego/test/lego-advanced-diagnostics.test.mjs`
+- `apps/n8n-lego/test/lego-p9-acceptance.test.mjs`
