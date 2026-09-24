@@ -535,11 +535,12 @@ test('P2.27 is the current administrative milestone with authorized implementati
   assert.match(design, /deny-by-default/i);
   assert.match(design, /QUARANTINED/);
   assert.equal(/```(js|javascript|ts|typescript)/.test(design), false, 'no implementation code in the design doc');
-  // P2.27.1 landed the tiny core (plugin-runtime.mjs); the remaining named artifacts
-  // are still future slices — each lands only with its dedicated slice assertion.
+  // P2.27 landed the tiny core (.1), secrets broker (.5 under plugin-secrets.mjs)
+  // and the supervisor (.7); the remaining named artifacts are non-milestone or
+  // future-slice scoped — each lands only with its dedicated slice assertion.
   const legoDir = join(REPO_ROOT, 'apps', 'n8n-lego', 'src', 'lego');
   const names = readdirSync(legoDir);
-  for (const forbidden of ['plugin-manager.mjs', 'plugin-supervisor.mjs', 'secret-broker.mjs', 'wasm-runtime.mjs']) {
+  for (const forbidden of ['plugin-manager.mjs', 'secret-broker.mjs', 'wasm-runtime.mjs']) {
     assert.equal(names.includes(forbidden), false, `${forbidden} lands with its dedicated slice, not before`);
   }
 });

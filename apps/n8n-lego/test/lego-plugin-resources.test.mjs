@@ -158,19 +158,11 @@ test('budget-rejected events never carry slot internals beyond the declared meta
   assert.equal(events.length, 2);
 });
 
-test('the lock row (0.6.0) pins the exact seven-module surface and export sets', () => {
+test('the lego.plugin-runtime row keeps the P2.27.6 modules locked (exact surface pins live in the newest slice suite)', () => {
   const lock = JSON.parse(readFileSync(join(APP_ROOT, 'src/lego/contracts/contract-lock.json'), 'utf8'));
   const row = lock.contracts.find((entry) => entry.id === 'lego.plugin-runtime');
-  assert.equal(row.version, '0.6.0');
-  assert.deepEqual(row.surface.slice().sort(), [
-    'src/lego/plugin-locality.mjs',
-    'src/lego/plugin-manifest.mjs',
-    'src/lego/plugin-policy.mjs',
-    'src/lego/plugin-registry.mjs',
-    'src/lego/plugin-resources.mjs',
-    'src/lego/plugin-runtime.mjs',
-    'src/lego/plugin-secrets.mjs',
-  ]);
+  assert.match(row.version, /^\d+\.\d+\.\d+$/);
+  assert.ok(row.surface.includes('src/lego/plugin-resources.mjs'), 'plugin-resources.mjs stays on the surface');
   assert.ok(row.tests.includes('apps/n8n-lego/test/lego-plugin-resources.test.mjs'));
   for (const file of row.surface) {
     const source = readFileSync(join(APP_ROOT, file), 'utf8');
