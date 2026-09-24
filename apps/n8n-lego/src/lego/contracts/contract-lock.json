@@ -2787,6 +2787,32 @@
         "apps/n8n-lego/test/lego-self-observability.test.mjs"
       ],
       "notes": "P9.18 (implementation owner: Agent 4, Issue #101): Telemetry Self-Observability — ten required counters (generated, dropped, sampled, buffered, export_failed, redacted, cardinality_rejected, query_slow, diagnostic_bundle_failed, degraded); zero-errors distinguishable from zero-telemetry; bounded fixed-key saturating self-metrics; re-entrancy recursion guard; own suppression/priority rule (counters always, P0/P1 always delivered, P2–P4 detail suppressed under outage); no I/O/clock."
+    },
+    {
+      "id": "observability.tenant-isolation",
+      "owner": "agent-6",
+      "domain": "observability",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/tenant-isolation.mjs"
+      ],
+      "exports": {
+        "src/lego/tenant-isolation.mjs": [
+          "TENANTISO_CONTRACT",
+          "TENANTISO_SCHEMA_VERSION",
+          "TENANTISO_MODES",
+          "TENANTISO_SCOPES",
+          "TENANTISO_LABEL_DENY",
+          "TENANTISO_LIMITS",
+          "TENANTISO_NOTES",
+          "createTenantIsolation"
+        ]
+      },
+      "tests": [
+        "apps/n8n-lego/test/lego-tenant-isolation.test.mjs"
+      ],
+      "notes": "P9.19 (implementation owner: Agent 4, Issue #101): Multi-Tenant Telemetry Isolation Readiness — tenant scope where authorized; queries and export routing enforce scope; cross-tenant leakage fails closed; global aggregates structurally separated (counts-only, containsTenantRows:false); tenant identifiers never become metric labels; single-tenant mode lightweight (flat bucket, no Map); no I/O/clock."
     }
   ]
 }

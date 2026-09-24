@@ -244,11 +244,11 @@ test('P9.18 invalid inputs fail-closed across API surface', () => {
   assert.equal(c.snapshot().occupancy, 0);
 });
 
-test('P9.18 lock pin: contracts length 71 after P9.18 row', () => {
+test('P9.18 lock pin: contracts length 72 after P9.19 row', () => {
   const lock = JSON.parse(readFileSync(
     new URL('../src/lego/contracts/contract-lock.json', import.meta.url), 'utf8'));
-  assert.equal(lock.contracts.length, 71,
-    'P9.18 adds observability.self-observability@1.0.0; count-pins say 71');
+  assert.equal(lock.contracts.length, 72,
+    'P9.18 adds observability.self-observability@1.0.0; P9.19 adds observability.tenant-isolation@1.0.0; count-pins say 72');
   const row = lock.contracts.find(c => c.id === 'observability.self-observability');
   assert.ok(row, 'P9.18 row present');
   assert.equal(row.version, '1.0.0');

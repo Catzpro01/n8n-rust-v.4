@@ -330,6 +330,7 @@ A domain that publishes several contracts names its **primary** one
 
 | date | contract | version | change |
 | :--- | :--- | :--- | :--- |
+| 2026-09-24 | `observability.tenant-isolation` | 1.0.0 | P9.19: multi-tenant telemetry isolation readiness — auth-scoped queries/routes; cross-tenant fail-closed; global aggregates separated (counts-only grant); tenant ids never metric labels; single-tenant lightweight flat bucket. Product owner agent-6, implementation delegate Agent 4 (#101). |
 | 2026-09-24 | `observability.self-observability` | 1.0.0 | P9.18: telemetry self-observability — ten required counters; zero-errors vs zero-telemetry; bounded saturating self-metrics; recursion guard; own suppression/priority rule (P0/P1 always, P2–P4 suppressed under outage). Product owner agent-6, implementation delegate Agent 4 (#101). |
 | 2026-09-24 | `observability.low-resource-mode` | 1.0.0 | P9.17: low-resource observability mode — auto/explicit activation; defined degrade order; byte/CPU budgets; hysteresis+cooldown; audit/security never shed; recovery; workflow A/B stable. Product owner agent-6, implementation delegate Agent 4 (#101). |
 | 2026-09-24 | `observability.operator-inspection` | 1.0.0 | P9.16: operator inspection API — authorized six interfaces; pagination; timeout/cancellation; bounded results; access policy; index-backed bounded queries off the workflow path; stable machine-readable errors (operator.* codes). Product owner agent-6, implementation delegate Agent 4 (#101). |

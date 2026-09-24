@@ -76,6 +76,7 @@ Locked public contracts. A version here is a promise; changing it is an architec
 | `68` | 1.0.0 | — | `?` | `?` |
 | `69` | 1.0.0 | — | `?` | `?` |
 | `70` | 1.0.0 | — | `?` | `?` |
+| `71` | 1.0.0 | — | `?` | `?` |
 
 ## Version rules
 
