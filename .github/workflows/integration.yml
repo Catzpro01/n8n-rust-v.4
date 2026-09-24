@@ -6,12 +6,18 @@ on:
     types: [ opened, synchronize, reopened ]
 
 jobs:
-  integration:
-    name: Level 2 Tests (${{ matrix.os }})
+  integration_crates:
+    name: Level 2 Crate Tests (${{ matrix.os }} - ${{ matrix.crate }})
     strategy:
       fail-fast: false
       matrix:
         os: [ linux, windows ]
+        crate:
+          - n8n-workflow
+          - n8n-execution-data
+          - n8n-expression
+          - n8n-nodes-rust
+          - n8n-validation
     runs-on: [ self-hosted, '${{ matrix.os }}' ]
     if: github.event.pull_request.head.repo.full_name == github.repository
     steps:
@@ -19,9 +25,23 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
+          submodules: false
+          lfs: false
 
-      - name: Level 2 - Full Rust Workspace Tests
-        run: cargo test --workspace
+      - name: Level 2 - Parallel Crate Tests
+        run: cargo test -p ${{ matrix.crate }}
+
+  conformance:
+    name: Level 2 Conformance LEGO & Node Catalog
+    runs-on: [ self-hosted, linux ]
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          submodules: false
+          lfs: false
 
       - name: Level 2 - Localization & Catalog Tests
         run: node --test packages/reconstructed-engine/localization.test.mjs packages/reconstructed-engine/node-catalog.test.mjs
@@ -29,20 +49,11 @@ jobs:
       - name: Level 2 - Execution LEGO Conformance Tests
         run: node --experimental-strip-types --test packages/execution-lego/test/02-runtime.test.mjs packages/execution-lego/test/03-context-recovery.test.mjs
 
-      - name: Report Integration Status to Supabase (Linux)
-        if: always() && runner.os == 'Linux'
+      - name: Report Integration Status to Supabase
+        if: always()
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           python3 tools/orchestration/report_ci_status.py --suite integration --status ${{ job.status }} --sha $COMMIT_SHA
-
-      - name: Report Integration Status to Supabase (Windows)
-        if: always() && runner.os == 'Windows'
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-        run: |
-          python tools/orchestration/report_ci_status.py --suite integration --status ${{ job.status }} --sha $env:COMMIT_SHA
