@@ -40,8 +40,8 @@ Legacy traceability: legacy issue → feature (`sourceIssue`) → program (`pare
 
 | Status | Features |
 | --- | --- |
-| implemented | 128 |
-| in-progress | 3 |
+| implemented | 131 |
+| in-progress | 0 |
 | planned | 171 |
 | proposed | 47 |
 | blocked | 0 |
@@ -911,7 +911,7 @@ Thematic future program. Not a P number and not authorized: a slice starts only 
 
 | Feature | Title | Status | Relevance | Slice | Issues | Merge SHA |
 | --- | --- | --- | --- | --- | --- | --- |
-| `GOV-F-001` | Record significant feature/architecture discussions in GitHub issues | in-progress | active | — | #77 | — |
+| `GOV-F-001` | Record significant feature/architecture discussions in GitHub issues | implemented | active | — | #77 | `fc54c8c2` |
 | `GOV-F-002` | Agent 1 milestone protocol, protected main, merge + post-merge validation rules | implemented | active | — | #81 | — |
 | `GOV-F-003` | Arena Manager/Worker, gateway and VPS execution boundary | implemented | maintenance | — | #82 | — |
 | `GOV-F-004` | Agent task multiplexing / parallel work channels | proposed | active | — | #92 | — |
@@ -920,8 +920,8 @@ Thematic future program. Not a P number and not authorized: a slice starts only 
 | `GOV-F-007` | Parallel milestones and agent isolation boundaries | implemented | active | — | #98 | — |
 | `GOV-F-008` | CI: path-filter the TypeScript runtime gate | implemented | maintenance | — | #121 | `9057843c` |
 | `GOV-F-009` | CI: Rust formatting baseline | implemented | maintenance | — | #130 | `cc640344` |
-| `GOV-F-010` | Milestone consolidation, slice rule, feature register, labels, runner + branch policy (governance reset) | in-progress | active | — | #254, #255, #256 | — |
-| `GOV-F-011` | Runner protocol: 5 Windows + 5 WSL self-hosted runners, polling interval <= 1s | in-progress | active | — | #254, #256 | — |
+| `GOV-F-010` | Milestone consolidation, slice rule, feature register, labels, runner + branch policy (governance reset) | implemented | active | — | #254, #255, #256 | `fc54c8c2` |
+| `GOV-F-011` | Runner protocol: 5 Windows + 5 WSL self-hosted runners, polling interval <= 1s | implemented | active | — | #254, #256 | `fc54c8c2` |
 | `GOV-F-012` | Single-tenant-first, VPS-native control plane, multi-tenant ready | implemented | active | — | #78 | — |
 | `GOV-F-013` | P2.13 Agent 1/2 coordination | implemented | archived | — | #47 | — |
 
@@ -932,7 +932,7 @@ Thematic future program. Not a P number and not authorized: a slice starts only 
 | Current milestone | **P2.27** |
 | Previous completed milestone | **P2.26** |
 | Protected branch | `main` |
-| Main baseline | `aba5a0e4a387e9a5df4313facc5fb5cae47a2db9` |
+| Main baseline | `fc54c8c2bfc2557ddecf466e662869f197fc9595` |
 | Agent 1 branch | `main` |
 | Agent 2 branch | `main` |
 | Register owner | `manager` |
