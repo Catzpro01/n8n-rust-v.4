@@ -118,7 +118,9 @@ mod tests {
     fn test_frame_isolates_local_variables() {
         let inputs = vec![];
         let mut frame = ExecutionFrame::new(1, &inputs, 1);
-        frame.local_variables.insert("key".to_string(), json!("value"));
+        frame
+            .local_variables
+            .insert("key".to_string(), json!("value"));
         assert_eq!(frame.local_variables.get("key"), Some(&json!("value")));
     }
 
@@ -133,7 +135,7 @@ mod tests {
             let record = DataRecord::new(json!({"data": "test"}));
             let bytes = record.estimated_bytes();
             frame.push_output(0, record).unwrap();
-            
+
             assert_eq!(budget.current_usage(), bytes);
             // Frame is dropped here
         }
@@ -141,7 +143,7 @@ mod tests {
         // Memory should be reclaimed
         assert_eq!(budget.current_usage(), 0);
     }
-    
+
     #[test]
     fn test_take_outputs_does_not_reclaim() {
         let budget = Arc::new(MemoryBudget::new(1024 * 1024));
@@ -152,7 +154,7 @@ mod tests {
             let record = DataRecord::new(json!({"data": "test"}));
             let bytes = record.estimated_bytes();
             frame.push_output(0, record).unwrap();
-            
+
             assert_eq!(budget.current_usage(), bytes);
             let _outputs = frame.take_outputs();
             bytes

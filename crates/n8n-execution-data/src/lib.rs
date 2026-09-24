@@ -7,9 +7,7 @@
 
 mod buffer;
 
-pub use buffer::{
-    estimate_binary_bytes, estimate_json_bytes, DataRecord, Iter, ItemBuffer,
-};
+pub use buffer::{estimate_binary_bytes, estimate_json_bytes, DataRecord, ItemBuffer, Iter};
 
 use n8n_common::INodeExecutionData;
 use serde_json::Value;

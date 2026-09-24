@@ -1479,10 +1479,26 @@ mod tests {
             .iter()
             .find(|(k, _)| k == "cookie")
             .expect("header cookie tetap ada (paritas n8n)");
-        assert!(!cookie.1.contains("n8n-auth"), "auth cookie harus tersaring: {}", cookie.1);
-        assert!(!cookie.1.contains("n8n-browserId"), "browserId harus tersaring: {}", cookie.1);
-        assert!(cookie.1.contains("session=keep"), "cookie biasa dipertahankan: {}", cookie.1);
-        assert!(cookie.1.contains("other=x"), "cookie biasa dipertahankan: {}", cookie.1);
+        assert!(
+            !cookie.1.contains("n8n-auth"),
+            "auth cookie harus tersaring: {}",
+            cookie.1
+        );
+        assert!(
+            !cookie.1.contains("n8n-browserId"),
+            "browserId harus tersaring: {}",
+            cookie.1
+        );
+        assert!(
+            cookie.1.contains("session=keep"),
+            "cookie biasa dipertahankan: {}",
+            cookie.1
+        );
+        assert!(
+            cookie.1.contains("other=x"),
+            "cookie biasa dipertahankan: {}",
+            cookie.1
+        );
         assert!(
             normalized.headers.iter().any(|(k, _)| k == "content-type"),
             "header non-cookie tidak disentuh"
@@ -1508,7 +1524,10 @@ mod tests {
             .find(|(k, _)| k == "cookie")
             .expect("header cookie tetap ada");
         // reference: req.headers.cookie = filteredCookies.join("; ") → ""
-        assert_eq!(cookie.1, "", "paritas n8n: string kosong, bukan hapus header");
+        assert_eq!(
+            cookie.1, "",
+            "paritas n8n: string kosong, bukan hapus header"
+        );
     }
 
     #[test]
