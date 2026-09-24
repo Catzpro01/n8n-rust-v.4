@@ -28,6 +28,7 @@
 | `auth.mfa` | `auth` |
 | `auth.owner-setup` | `auth` |
 | `auth.personalization-survey` | `auth` |
+| `auth.principal` | `auth` |
 | `auth.public-user` | `auth` |
 | `auth.security-settings` | `auth` |
 | `auth.session` | `auth` |
@@ -200,6 +201,9 @@ this table instead of guessing from a URL shape.
 | `compat.scopes.resolve` | `compatibility` | call | `compat:read` | yes | implemented |
 | `compat.capability-registry.resolve` | `compatibility` | call | `compat:read` | yes | implemented |
 | `compat.capability-registry.list` | `compatibility` | call | `compat:read` | yes | implemented |
+| `auth.principal.principal` | `auth` | call | `auth:read` | yes | implemented |
+| `auth.principal.context` | `auth` | call | `auth:read` | yes | implemented |
+| `auth.principal.authority` | `auth` | call | `auth:read` | yes | implemented |
 | `auth.session.session` | `auth` | call | `auth:session` | no | implemented |
 | `auth.session.logout` | `auth` | call | `auth:session` | yes | implemented |
 | `auth.owner-setup.setup` | `auth` | call | `auth:admin` | no | implemented |

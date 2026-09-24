@@ -9,7 +9,7 @@
 | Kind / tier | `domain` / `domain` |
 | Status | `partial` (phase `P5`) |
 | Parent | _root_ |
-| Contract | _none declared_ |
+| Contract | `auth.principal` v1.0.0 |
 | Error namespace | `auth` |
 | Trust | `core` |
 | Capabilities | `secrets` |
@@ -29,7 +29,7 @@ _none — this LEGO has no public surface yet; do not import from it._
 
 ## May call
 
-`platform-kernel`, `compatibility`
+`platform-kernel`, `compatibility`, `lego-foundation`
 
 ## Must never call
 
@@ -56,4 +56,4 @@ _none — this LEGO has no public surface yet; do not import from it._
 
 ## Tests that guard it
 
-- `test/compat.contract.test.mjs`
+- `test/lego-security-kernel.test.mjs`

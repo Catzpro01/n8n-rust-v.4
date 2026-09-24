@@ -9,7 +9,7 @@
 | `lego-foundation` | `manager` | domain | implemented | `lego.domain-registry` v1.1.0 | 19 |
 | `ai-foundation` | `manager` | domain | partial | `ai.foundation` v1.0.0 | 4 |
 | `compatibility` | `agent-1` | domain | implemented | `compat.http` v1.0.0 | 13 |
-| `auth` | `agent-3` | domain | partial | — | 2 |
+| `auth` | `agent-3` | domain | partial | `auth.principal` v1.0.0 | 2 |
 | `auth.identity` | `agent-3` | feature | implemented | `auth.identity` v1.0.0 | 14 |
 | `credentials` | `agent-3` | domain | planned | — | 3 |
 | `workflow` | `agent-2` | domain | partial | — | 3 |

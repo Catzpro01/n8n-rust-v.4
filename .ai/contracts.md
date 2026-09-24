@@ -99,6 +99,7 @@ Locked public contracts. A version here is a promise; changing it is an architec
 | `91` | 1.0.0 | — | `?` | `?` |
 | `92` | 1.0.0 | — | `?` | `?` |
 | `93` | 1.0.0 | — | `?` | `?` |
+| `94` | 1.0.0 | — | `?` | `?` |
 
 ## Version rules
 
