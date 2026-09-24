@@ -133,7 +133,7 @@ function executionSummary(execution) {
 
 /* -------------------------------------------------------------------- routes */
 
-export function buildRoutes({ engine, logger, push }) {
+export function buildRoutes({ engine, logger, push, vault = null }) {
   return [
     /* ------------------------------------------------------- node type catalog */
     {
@@ -576,6 +576,7 @@ export function buildRoutes({ engine, logger, push }) {
     // test/lego-credentials.test.mjs.
     ...credentialRoutes({
       logger,
+      vault,
       getCredentialTypes: (config) => {
         const catalog = loadCatalog(config);
         return catalog ? JSON.parse(catalog.raw.credentials().toString('utf8')) : [];

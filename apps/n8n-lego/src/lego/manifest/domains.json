@@ -5973,6 +5973,16 @@
         "severity": "should-fix",
         "reason": "Reads N8N_LEGO_FRONTEND_PATH directly to resolve where the frontend LEGO package lives, instead of receiving the path in the injected config. Found by the scale-out gate during the P2.11 reconciliation, when agent-1's frontend host was merged in.",
         "resolution": "Move the override into config.mjs and pass it through, the same way the engine path will be. Not blocking for scale-out: it is a boot-time package-resolution hint, identical on every instance, and it does not carry per-process state."
+      },
+      {
+        "file": "src/auth/security/key-provider.mjs",
+        "probe": "S3",
+        "domain": "auth",
+        "owner": "agent-1",
+        "resolveBy": "P11",
+        "severity": "should-fix",
+        "reason": "P5.5's initial KeyProvider is local/VPS-native by design (#218): the keyring is one 0600 file in the data directory, written atomically (tmp + fsync + rename). A second worker on another host cannot see it, so it cannot open credentials sealed by this host. This is the same single-host limit as src/store.mjs S3, where the sealed credentials themselves live. Severity is should-fix, not blocking, because it is currently shadowed by that storage blocker: while the sealed records themselves live on one host's disk, a shared keyring would not let a second host read them anyway. It becomes blocking the moment src/store.mjs S3 is resolved (P8) - at that point a shared KeyProvider must land with it.",
+        "resolution": "Keep the KeyProvider contract (currentKeyRef / readableKeyRefs / deriveKey / beginRotation / abortRotation / retire / state) and add a shared provider behind it (an external KMS is explicitly non-scope for P5.5). Callers already depend only on the contract, never on the file, so no caller changes. Scale-out of workers is P11."
       }
     ],
     "verdict": "NOT scale-out ready. Two class-A blockers remain in src/store.mjs. P2.9 did not change this.",

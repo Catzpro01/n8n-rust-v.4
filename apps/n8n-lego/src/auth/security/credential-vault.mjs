@@ -61,6 +61,25 @@ function digestOf(record) {
   return createHash('sha256').update(JSON.stringify(record)).digest('hex');
 }
 
+/**
+ * Apply a batch of record replacements with ONE persist when the collection
+ * supports it. `Collection.update` rewrites the whole file on every call, so
+ * per-record updates make rotation O(n^2) in I/O (measured: 2,000 records took
+ * 5.3 s). A batch is still atomic — `replaceAll` is a single tmp+rename — and a
+ * crash between batches is exactly the resumable state rotation is built for.
+ *
+ * @param {object} collection
+ * @param {Map<string, (current: object) => object>} changes id -> transform
+ */
+function commitBatch(collection, changes) {
+  if (changes.size === 0) return;
+  if (typeof collection.replaceAll === 'function') {
+    collection.replaceAll(collection.all().map((record) => (changes.has(record.id) ? changes.get(record.id)(record) : record)));
+    return;
+  }
+  for (const [id, transform] of changes) collection.update(id, transform);
+}
+
 function isLegacyPlaintext(record) {
   return record && record.secret === undefined && record.data !== undefined;
 }
@@ -141,7 +160,7 @@ export function createCredentialVault({ provider, secretFieldsFor = () => null, 
    * @param {{ all(): object[], update(id: string, patch: Function): object|null }} collection
    */
   function migrateLegacyPlaintext(collection) {
-    let migrated = 0;
+    const changes = new Map();
     for (const record of collection.all()) {
       if (!isLegacyPlaintext(record)) continue;
       const bound = { ...record, tenantId: bindingOf(record).tenantId };
@@ -151,12 +170,13 @@ export function createCredentialVault({ provider, secretFieldsFor = () => null, 
       if (JSON.stringify(check) !== JSON.stringify(expected)) {
         throw vaultError('storage.unavailable', 'migration-verify-failed', 'sealed credential did not verify', { credentialId: record.id });
       }
-      collection.update(record.id, (current) => {
+      changes.set(record.id, (current) => {
         const { data: _plaintext, ...rest } = current;
         return { ...rest, tenantId: bound.tenantId, ...sealed };
       });
-      migrated += 1;
     }
+    commitBatch(collection, changes);
+    const migrated = changes.size;
     if (migrated > 0) emit('credential.legacy-migrated', { migrated });
     return { migrated };
   }
@@ -168,8 +188,8 @@ export function createCredentialVault({ provider, secretFieldsFor = () => null, 
     return collection.all().filter((record) => record.secret !== undefined && record.secret.keyRef !== current);
   }
 
-  /** Move one record onto the current key, verifying before the write. */
-  function reencrypt(collection, record) {
+  /** Re-seal one record onto the current key, verified; returns the transform to apply. */
+  function reencrypt(record) {
     const binding = bindingOf(record);
     const secret = openWithBinding(record.secret, binding);
     const envelope = seal(binding, secret);
@@ -177,7 +197,7 @@ export function createCredentialVault({ provider, secretFieldsFor = () => null, 
     if (JSON.stringify(verify) !== JSON.stringify(secret)) {
       throw vaultError('storage.unavailable', 'reencrypt-verify-failed', 're-encrypted credential did not verify', { credentialId: record.id });
     }
-    collection.update(record.id, (current) => ({ ...current, secret: envelope }));
+    return (current) => ({ ...current, secret: envelope });
   }
 
   function startRotation() {
@@ -197,7 +217,10 @@ export function createCredentialVault({ provider, secretFieldsFor = () => null, 
     }
     const pending = recordsNotOnCurrent(collection);
     const batch = pending.slice(0, batchSize);
-    for (const record of batch) reencrypt(collection, record);
+    // Verify every record in the batch BEFORE anything is written; then one
+    // atomic persist for the whole batch.
+    const changes = new Map(batch.map((record) => [record.id, reencrypt(record)]));
+    commitBatch(collection, changes);
     const remaining = pending.length - batch.length;
     return { moved: batch.length, remaining, done: remaining === 0 };
   }
@@ -413,4 +436,48 @@ export function createCredentialVault({ provider, secretFieldsFor = () => null, 
     restoreBackup,
     provider: Object.freeze({ state: () => provider.state() }),
   });
+}
+
+/* ------------------------------------------------------------------ boot */
+
+/** Keyring file name inside the data directory. Never inside a credential record. */
+export const KEYRING_FILE = '.credential-keys.json';
+
+/**
+ * Composition-root helper: build the vault for a running instance.
+ *
+ *   - file storage   -> local-file keyring at `<dataDir>/.credential-keys.json`
+ *   - memory storage -> in-memory keyring (the credentials are not durable either)
+ *
+ * A NEW key may be minted only while nothing is sealed yet. If sealed records
+ * exist and the keyring is missing or unreadable, this returns
+ * `{ vault: null, error }` — the caller keeps serving metadata but every secret
+ * operation answers 503. That is failing closed without taking the editor down.
+ *
+ * On success it also (1) migrates any pre-P5.5 plaintext record and (2) resumes
+ * a rotation an earlier process was interrupted in.
+ *
+ * @returns {{ vault: object|null, error: object|null, report: object|null }}
+ */
+export async function bootCredentialVault({ config, store, secretFieldsFor, onEvent = null }) {
+  const { createLocalKeyProvider, createMemoryKeyProvider } = await import('./key-provider.mjs');
+  const { join } = await import('node:path');
+  try {
+    const nothingSealed = store.credentials.all().every((record) => record.secret === undefined);
+    const provider =
+      config.storage === 'memory'
+        ? createMemoryKeyProvider()
+        : createLocalKeyProvider({ file: join(config.dataDir, KEYRING_FILE), allowCreate: nothingSealed });
+    const vault = createCredentialVault({ provider, secretFieldsFor, onEvent });
+    const migrated = vault.migrateLegacyPlaintext(store.credentials);
+    const recovered = vault.recover(store.credentials);
+    const verified = vault.verify(store.credentials);
+    return { vault, error: null, report: { ...migrated, ...recovered, total: verified.total, unreadable: verified.unreadable.length } };
+  } catch (error) {
+    return {
+      vault: null,
+      error: { code: error?.code ?? 'lego.unavailable', reason: error?.details?.reason ?? 'unknown' },
+      report: null,
+    };
+  }
 }

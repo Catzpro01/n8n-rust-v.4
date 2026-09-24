@@ -65,7 +65,7 @@ test('P9.22 contract + inventory: twelve gates, status vocabulary, P9.1–P9.21 
     'observability.contract-oracle', 'observability.advanced-diagnostics',
   ];
   for (const id of p9Contracts) assert.ok(ids.has(id), `lock has ${id}`);
-  assert.equal(lock.contracts.length, 97); // P9 integration (Agent 1): P9.5-P9.22 add 18 observability.* rows on top of protected main 76 -> 94 (union, zero id collisions); P9 was developed on 24032a0c (57 rows). P5.1 adds the ninety-fifth (auth.principal). P5.2 adds the ninety-sixth (auth.session). P5.3 adds the ninety-seventh (auth.authorization).
+  assert.equal(lock.contracts.length, 98); // P9 integration (Agent 1): P9.5-P9.22 add 18 observability.* rows on top of protected main 76 -> 94 (union, zero id collisions); P9 was developed on 24032a0c (57 rows). P5.1 adds the ninety-fifth (auth.principal). P5.2 adds the ninety-sixth (auth.session). P5.3 adds the ninety-seventh (auth.authorization). P5.5 adds the ninety-eighth (auth.credential-crypto).
   // fail-closed helpers
   assert.equal(evaluateGate('nope', obs(true, 'x', 'm')).ok, false);
   assert.equal(evaluateGate(ACCEPT_GATES[0], { passed: 'yes', detail: 'x', module: 'm' }).ok, false);
