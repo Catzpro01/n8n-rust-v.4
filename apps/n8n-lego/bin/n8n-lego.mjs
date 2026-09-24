@@ -5,6 +5,8 @@
  *   n8n-lego start        start the app (default)
  *   n8n-lego doctor       check the install: node, UI bundle, node catalog, port
  *   n8n-lego catalog      (re)fetch the node catalog and icons
+ *   n8n-lego credentials  offline credential-key operations (P5.8): status, verify,
+ *                         rotate, recover, backup, restore-check, restore
  *   n8n-lego version      print versions
  *   n8n-lego --help
  */
@@ -33,6 +35,9 @@ async function main() {
       return;
     case 'doctor':
       await doctor();
+      return;
+    case 'credentials':
+      process.exitCode = await credentials();
       return;
     case 'version':
     case '--version':
@@ -179,6 +184,36 @@ function portFree(port) {
   });
 }
 
+/**
+ * P5.8: composition only. The verbs live in src/auth/credential-operator.mjs;
+ * this builds the config and the store it needs and supplies the "is the server
+ * running?" probe: if the configured address:port cannot be bound, something is
+ * listening there and every mutating verb refuses.
+ */
+async function credentials() {
+  const [{ loadConfig }, { createStore }, { runCredentialCommand }] = await Promise.all([
+    import('../src/config.mjs'),
+    import('../src/store.mjs'),
+    import('../src/auth/credential-operator.mjs'),
+  ]);
+  const config = loadConfig(process.env);
+  const serverRunning = () =>
+    new Promise((resolveProbe) => {
+      const probe = createServer();
+      probe.once('error', () => resolveProbe(true));
+      probe.once('listening', () => probe.close(() => resolveProbe(false)));
+      probe.listen(config.port, config.host);
+    });
+  return runCredentialCommand({
+    command: process.argv[3],
+    args: process.argv.slice(4),
+    config,
+    store: createStore(config),
+    serverRunning,
+    io: { out: (line) => process.stdout.write(`${line}\n`), err: (line) => process.stderr.write(`${line}\n`) },
+  });
+}
+
 function usage() {
   process.stdout.write(
     [
@@ -189,6 +224,7 @@ function usage() {
       '  start      start the server (default)',
       '  doctor     check node, UI bundle, node catalog and port',
       '  catalog    (re)fetch the node catalog and icons',
+      '  credentials <cmd>  offline credential-key operations (n8n-lego credentials help)',
       '  version    print versions',
       '  help       show this help',
       '',
