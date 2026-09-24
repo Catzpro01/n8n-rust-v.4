@@ -117,7 +117,7 @@ defect and should be reported as one.
 | Locked public contracts | 97 |
 | Declared capabilities | 94 |
 | Published error codes | 36 |
-| Temporary boundary allowances | 1 |
+| Temporary boundary allowances | 2 |
 | Official AI/Agent LEGO | 15 |
 
 ## The three AI experiences
