@@ -150,7 +150,21 @@ async function micro() {
     if (decision.cached) hits += 1;
     else misses += 1;
   }
-  const cacheMix = { requests: mixN, hits, misses, hitRatio: +(hits / mixN).toFixed(4), entries: mixCache.size(), maxEntries: mixCache.policy().maxEntries };
+  const cacheMix = {
+    workload: 'large working set: 64 principals x 40 actions x 500 resources, 80% on 13 principals x 100 resources (hot set ~52k keys > cap)',
+    requests: mixN, hits, misses, hitRatio: +(hits / mixN).toFixed(4), entries: mixCache.size(), maxEntries: mixCache.policy().maxEntries,
+  };
+  // Second regime: a working set that fits (4 principals x 10 actions x 50 resources = 2,000 keys < cap).
+  const smallCache = createDecisionCache();
+  let smallHits = 0;
+  for (let i = 0; i < mixN; i += 1) {
+    const request = { principal: principals[Math.floor(rand() * 4)], action: actions[Math.floor(rand() * 10)], resourceId: `wf-${Math.floor(rand() * 50)}`, resourceTenantId: 'default' };
+    if (authorizeCached(smallCache, request, { currentStamp: stamp, registry }).cached) smallHits += 1;
+  }
+  const cacheMixSmall = {
+    workload: 'small working set: 4 principals x 10 actions x 50 resources (2,000 keys < cap)',
+    requests: mixN, hits: smallHits, misses: mixN - smallHits, hitRatio: +(smallHits / mixN).toFixed(4), entries: smallCache.size(), maxEntries: smallCache.policy().maxEntries,
+  };
 
   // --- SecretRef issuance and broker release
   const credential = { id: 'cred1', name: 'c', type: 'httpHeaderAuth', tenantId: 'default', credentialVersion: 1, data: { value: 'x'.repeat(40) } };
@@ -205,7 +219,7 @@ async function micro() {
     decisionCache: { inserted: 100_000, retained: fullCache.size(), cap: fullCache.policy().maxEntries, heapMiB: +((heapCache - heapSessions) / 1048576).toFixed(2) },
   };
 
-  return { mode: 'micro', machine: machine(), gcExposed: Boolean(globalThis.gc), rows, cacheMix, bounded };
+  return { mode: 'micro', machine: machine(), gcExposed: Boolean(globalThis.gc), rows, cacheMix, cacheMixSmall, bounded };
 }
 
 /* ==================================================================== http */
