@@ -1,0 +1,37 @@
+{
+  "schemaVersion": "cert-result@1.0.0",
+  "tool": { "name": "p21-certification", "version": "0.1.0" },
+  "runId": "run-fixture-baseline",
+  "timestamp": 1700000000000,
+  "startedAt": "2023-11-14T22:13:20.000Z",
+  "completedAt": "2023-11-14T22:13:21.000Z",
+  "commit": "abc1234",
+  "command": "node -e \"const s=Date.now(); for(let i=0;i<1e6;i++){}; console.log(Date.now()-s)\"",
+  "note": "fixture: deterministic baseline",
+  "commandMeta": ["console", "const", "log"],
+  "environment": {
+    "os": "Linux 6.1.0",
+    "platform": "linux",
+    "arch": "x64",
+    "cpu": { "modules": 2 },
+    "node": "v20.20.2",
+    "rust": null,
+    "tool": { "name": "p21-certification", "version": "0.1.0" },
+    "commit": "abc1234",
+    "commandMeta": ["console", "const", "log"],
+    "capturedAt": 1700000000000
+  },
+  "measurement": {
+    "warmupRuns": 1,
+    "measurementRuns": 5,
+    "duration": { "unit": "ms", "values": [10.0, 10.5, 11.0, 10.25, 10.75], "samples": 5, "p50": 10.5, "p95": 11.0, "p99": 11.0 },
+    "exitCode": 0,
+    "exitCodeOfLastRun": 0,
+    "failedRuns": 0,
+    "successRuns": 5,
+    "stdoutBytes": 40,
+    "stderrBytes": 0
+  },
+  "diagnostics": {},
+  "outcome": "SUCCESS"
+}
