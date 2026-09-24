@@ -178,10 +178,10 @@ test('checkDeadlineRemaining maps remaining | none | past | aborted onto publish
   assert.throws(() => checkDeadlineRemaining(null), (e) => e.code === 'lego.contract_violation');
 });
 
-test('the lock row (0.8.0) keeps the failure modules locked (exact surface pins live in the replay suite)', () => {
+test('the lock row keeps the failure modules locked (exact surface pins live in the newest suite)', () => {
   const lock = JSON.parse(readFileSync(join(APP_ROOT, 'src/lego/contracts/contract-lock.json'), 'utf8'));
   const row = lock.contracts.find((entry) => entry.id === 'lego.plugin-runtime');
-  assert.match(row.version, /^0\.8\.0$/);
+  assert.match(row.version, /^\d+\.\d+\.\d+$/);
   assert.ok(row.surface.includes('src/lego/plugin-failure.mjs'));
   const source = readFileSync(join(APP_ROOT, 'src/lego/plugin-failure.mjs'), 'utf8');
   const exported = [...source.matchAll(/^export (?:const|class|function) (\w+)/gm)].map((m) => m[1]).sort();
