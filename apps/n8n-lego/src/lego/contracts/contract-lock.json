@@ -2813,6 +2813,31 @@
         "apps/n8n-lego/test/lego-tenant-isolation.test.mjs"
       ],
       "notes": "P9.19 (implementation owner: Agent 4, Issue #101): Multi-Tenant Telemetry Isolation Readiness — tenant scope where authorized; queries and export routing enforce scope; cross-tenant leakage fails closed; global aggregates structurally separated (counts-only, containsTenantRows:false); tenant identifiers never become metric labels; single-tenant mode lightweight (flat bucket, no Map); no I/O/clock."
+    },
+    {
+      "id": "observability.contract-oracle",
+      "owner": "agent-6",
+      "domain": "observability",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/contract-oracle.mjs"
+      ],
+      "exports": {
+        "src/lego/contract-oracle.mjs": [
+          "CORACLE_CONTRACT",
+          "CORACLE_SCHEMA_VERSION",
+          "CORACLE_FINDINGS",
+          "CORACLE_PHASES",
+          "CORACLE_LIMITS",
+          "CORACLE_NOTES",
+          "createContractOracle"
+        ]
+      },
+      "tests": [
+        "apps/n8n-lego/test/lego-contract-oracle.test.mjs"
+      ],
+      "notes": "P9.20 (implementation owner: Agent 4, Issue #101): Observability Contract Oracle + Cross-Domain Acceptance — validates P3/P4/P6/P8 producer specimens; detects missing fields, invented fields, vocabulary drift, version incompatibility (via local satisfies with compat range semantics); deterministic sorted output with fingerprint; cross-domain fixtures checked in; no I/O/clock."
     }
   ]
 }
