@@ -2864,6 +2864,36 @@
         "apps/n8n-lego/test/lego-advanced-diagnostics.test.mjs"
       ],
       "notes": "P9.21 (implementation owner: Agent 4, Issue #101): Advanced Diagnostics / Incident Intelligence — six selected features each with budget, kill-switch, fallback, negative tests and pressure behavior; security/audit never deduped; profiling/eBPF optional (not selected); tail sampling bounded with keep-on-overflow; workflow A/B pure; no I/O/clock."
+    },
+    {
+      "id": "observability.p9-acceptance",
+      "owner": "agent-6",
+      "domain": "observability",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/p9-acceptance.mjs"
+      ],
+      "exports": {
+        "src/lego/p9-acceptance.mjs": [
+          "ACCEPT_CONTRACT",
+          "ACCEPT_SCHEMA_VERSION",
+          "ACCEPT_GATES",
+          "ACCEPT_STATUSES",
+          "ACCEPT_COMPLETE_REQUIREMENTS",
+          "ACCEPT_LIMITS",
+          "ACCEPT_NOTES",
+          "evaluateGate",
+          "evaluateAllGates",
+          "workflowEquivalence",
+          "summarizeMilestones",
+          "finalAcceptance"
+        ]
+      },
+      "tests": [
+        "apps/n8n-lego/test/lego-p9-acceptance.test.mjs"
+      ],
+      "notes": "P9.22 (implementation owner: Agent 4, Issue #101): Full P9 Acceptance — twelve-gate non-interference vocabulary + fail-closed verdicts; OFF vs NORMAL workflow equivalence; milestone status roll-up (laneReadyForMergeReview vs mergeReady); pure decision helpers; no I/O/clock."
     }
   ]
 }

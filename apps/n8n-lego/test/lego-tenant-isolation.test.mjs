@@ -260,11 +260,11 @@ test('P9.19 query limit + truncation stay inside authorized scope', () => {
   assert.equal(c.query({ tenantId: 'tenant-a' }, { limit: 9999 }).ok, false);
 });
 
-test('P9.19 lock pin: contracts length 74 after P9.21 row', () => {
+test('P9.19 lock pin: contracts length 75 after P9.22 row', () => {
   const lock = JSON.parse(readFileSync(
     new URL('../src/lego/contracts/contract-lock.json', import.meta.url), 'utf8'));
-  assert.equal(lock.contracts.length, 74,
-    'P9.19 adds observability.tenant-isolation@1.0.0; P9.20 adds observability.contract-oracle@1.0.0; P9.21 adds observability.advanced-diagnostics@1.0.0; count-pins say 74');
+  assert.equal(lock.contracts.length, 75,
+    'P9.19 adds observability.tenant-isolation@1.0.0; P9.20 adds observability.contract-oracle@1.0.0; P9.21 adds observability.advanced-diagnostics@1.0.0; P9.22 adds observability.p9-acceptance@1.0.0; count-pins say 75');
   const row = lock.contracts.find(c => c.id === 'observability.tenant-isolation');
   assert.ok(row, 'P9.19 row present');
   assert.equal(row.version, '1.0.0');

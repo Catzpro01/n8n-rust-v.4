@@ -7,7 +7,7 @@
 | --- | --- |
 | Owner | `agent-6` |
 | Kind / tier | `domain` / `domain` |
-| Status | `contract-only` (phase `P9.21`) |
+| Status | `contract-only` (phase `P9.22`) |
 | Parent | _root_ |
 | Contract | _none declared_ |
 | Error namespace | `observability` |
@@ -41,6 +41,7 @@
 - `src/lego/tenant-isolation.mjs`
 - `src/lego/contract-oracle.mjs`
 - `src/lego/advanced-diagnostics.mjs`
+- `src/lego/p9-acceptance.mjs`
 
 ## Public contract surface
 
@@ -65,6 +66,7 @@
 - `src/lego/tenant-isolation.mjs`
 - `src/lego/contract-oracle.mjs`
 - `src/lego/advanced-diagnostics.mjs`
+- `src/lego/p9-acceptance.mjs`
 
 ## May call
 
@@ -113,3 +115,4 @@
 - `apps/n8n-lego/test/lego-tenant-isolation.test.mjs`
 - `apps/n8n-lego/test/lego-contract-oracle.test.mjs`
 - `apps/n8n-lego/test/lego-advanced-diagnostics.test.mjs`
+- `apps/n8n-lego/test/lego-p9-acceptance.test.mjs`

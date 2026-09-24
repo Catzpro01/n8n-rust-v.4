@@ -202,11 +202,11 @@ test('P9.14 references-not-engines: module has no state-stream restore / replay 
   assert.equal(/\beval\s*\(/.test(src), false);
 });
 
-test('P9.14 lock pin: contracts length tracks shared lock (74 after P9.21)', () => {
+test('P9.14 lock pin: contracts length tracks shared lock (75 after P9.22)', () => {
   const lock = JSON.parse(readFileSync(
     new URL('../src/lego/contracts/contract-lock.json', import.meta.url), 'utf8'));
-  assert.equal(lock.contracts.length, 74,
-    'P9.14 adds observability.replay-evidence@1.0.0; P9.15 adds observability.telemetry-retention@1.0.0; P9.16 adds observability.operator-inspection@1.0.0; P9.17 adds observability.low-resource-mode@1.0.0; P9.18 adds observability.self-observability@1.0.0; P9.19 adds observability.tenant-isolation@1.0.0; P9.20 adds observability.contract-oracle@1.0.0; P9.21 adds observability.advanced-diagnostics@1.0.0; count-pins say 74');
+  assert.equal(lock.contracts.length, 75,
+    'P9.14 adds observability.replay-evidence@1.0.0; P9.15 adds observability.telemetry-retention@1.0.0; P9.16 adds observability.operator-inspection@1.0.0; P9.17 adds observability.low-resource-mode@1.0.0; P9.18 adds observability.self-observability@1.0.0; P9.19 adds observability.tenant-isolation@1.0.0; P9.20 adds observability.contract-oracle@1.0.0; P9.21 adds observability.advanced-diagnostics@1.0.0; P9.22 adds observability.p9-acceptance@1.0.0; count-pins say 75');
   const row = lock.contracts.find(c => c.id === 'observability.replay-evidence');
   assert.ok(row, 'P9.14 row present');
   assert.equal(row.version, '1.0.0');

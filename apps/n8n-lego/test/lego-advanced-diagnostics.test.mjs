@@ -273,11 +273,11 @@ test('P9.21 pressure behavior: all budgets enforced under flood', () => {
   assert.ok(c.snapshot().usage.windowEvents <= fixture.controller.burstThreshold * 4);
 });
 
-test('P9.21 lock pin: contracts length 74 after P9.21 row', () => {
+test('P9.21 lock pin: contracts length 75 after P9.22 row', () => {
   const lock = JSON.parse(readFileSync(
     new URL('../src/lego/contracts/contract-lock.json', import.meta.url), 'utf8'));
-  assert.equal(lock.contracts.length, 74,
-    'P9.21 adds observability.advanced-diagnostics@1.0.0; count-pins say 74');
+  assert.equal(lock.contracts.length, 75,
+    'P9.21 adds observability.advanced-diagnostics@1.0.0; P9.22 adds observability.p9-acceptance@1.0.0; count-pins say 75');
   const row = lock.contracts.find(c => c.id === 'observability.advanced-diagnostics');
   assert.ok(row, 'P9.21 row present');
   assert.equal(row.version, '1.0.0');
