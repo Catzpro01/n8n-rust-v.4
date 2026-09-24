@@ -60,36 +60,39 @@ impl ExecutionError {
         StandardErrorOutput {
             message: self.to_string(),
             description: match self {
-                ExecutionError::NodeNotFound(name) => {
-                    Some(format!("Referenced node '{}' does not exist in workflow definition", name))
-                }
+                ExecutionError::NodeNotFound(name) => Some(format!(
+                    "Referenced node '{}' does not exist in workflow definition",
+                    name
+                )),
                 ExecutionError::ExecutorNotFound(typ) => {
                     Some(format!("No node executor registered for type '{}'", typ))
                 }
-                ExecutionError::InvalidPort { node, port } => {
-                    Some(format!("Port index {} out of range for node '{}'", port, node))
-                }
+                ExecutionError::InvalidPort { node, port } => Some(format!(
+                    "Port index {} out of range for node '{}'",
+                    port, node
+                )),
                 ExecutionError::CycleDetected => {
                     Some("Workflow topology contains a circular dependency".to_string())
                 }
                 ExecutionError::Cancelled => {
                     Some("Workflow execution was explicitly aborted by user or timeout".to_string())
                 }
-                ExecutionError::MemoryBudgetExceeded { limit, attempted } => {
-                    Some(format!("Exceeded memory ceiling: attempted {} bytes, limit was {} bytes", attempted, limit))
-                }
+                ExecutionError::MemoryBudgetExceeded { limit, attempted } => Some(format!(
+                    "Exceeded memory ceiling: attempted {} bytes, limit was {} bytes",
+                    attempted, limit
+                )),
                 ExecutionError::NodeExecutionFailed(msg) => {
                     Some(format!("Execution failed during node processing: {}", msg))
                 }
-                ExecutionError::Internal(msg) => {
-                    Some(format!("Runtime internal failure: {}", msg))
-                }
+                ExecutionError::Internal(msg) => Some(format!("Runtime internal failure: {}", msg)),
             },
             error_code: self.error_code().to_string(),
             timestamp: "2026-09-20T00:00:00Z".to_string(),
             details: match self {
                 ExecutionError::InvalidPort { node, port } => json!({ "node": node, "port": port }),
-                ExecutionError::MemoryBudgetExceeded { limit, attempted } => json!({ "limit": limit, "attempted": attempted }),
+                ExecutionError::MemoryBudgetExceeded { limit, attempted } => {
+                    json!({ "limit": limit, "attempted": attempted })
+                }
                 ExecutionError::NodeNotFound(node) => json!({ "node": node }),
                 ExecutionError::ExecutorNotFound(typ) => json!({ "node_type": typ }),
                 _ => json!({}),

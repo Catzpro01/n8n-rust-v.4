@@ -622,10 +622,7 @@ mod tests {
         let bytes = buf.estimated_bytes();
 
         // Exactly one payload instance + two record headers + slots/headers.
-        assert!(
-            bytes >= header * 2 + per_payload,
-            "undercounted: {bytes}"
-        );
+        assert!(bytes >= header * 2 + per_payload, "undercounted: {bytes}");
         assert!(
             bytes < header * 2 + per_payload * 2 + 256,
             "payload double counted: {bytes} >= 2×{per_payload}+overhead"
@@ -757,7 +754,10 @@ mod tests {
         assert!(buf.is_empty());
         assert_eq!(buf.len(), 0);
         assert!(buf.get(0).is_none());
-        assert_eq!(buf.estimated_bytes(), std::mem::size_of::<ItemBuffer>() + std::mem::size_of::<Vec<Arc<DataRecord>>>());
+        assert_eq!(
+            buf.estimated_bytes(),
+            std::mem::size_of::<ItemBuffer>() + std::mem::size_of::<Vec<Arc<DataRecord>>>()
+        );
 
         let pre = ItemBuffer::with_capacity(64);
         assert!(pre.is_empty());
@@ -799,10 +799,7 @@ mod tests {
         assert!(Arc::ptr_eq(rec.json_arc(), &value));
         assert!(rec.binary_arc().is_none());
 
-        let rec2 = DataRecord::with_binary(
-            json!({ "x": 2 }),
-            Some(Arc::new(BinaryDataMap::new())),
-        );
+        let rec2 = DataRecord::with_binary(json!({ "x": 2 }), Some(Arc::new(BinaryDataMap::new())));
         assert!(rec2.binary_arc().is_some());
         let arc = rec2.into_json_arc();
         assert_eq!(*arc, json!({ "x": 2 }));
@@ -810,9 +807,7 @@ mod tests {
 
     #[test]
     fn from_iterator_impls_build_zero_copy_buffers() {
-        let from_records: ItemBuffer = (0..3)
-            .map(|i| DataRecord::new(payload(i)))
-            .collect();
+        let from_records: ItemBuffer = (0..3).map(|i| DataRecord::new(payload(i))).collect();
         assert_eq!(from_records.len(), 3);
 
         let from_arcs: ItemBuffer = (0..3)

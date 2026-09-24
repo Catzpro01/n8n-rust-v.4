@@ -293,7 +293,10 @@ mod tests {
         let mut m = NodeStateMachine::new(2);
         assert_eq!(m.fail("executor not found: n8n-nodes-base.missing"), Ok(()));
         assert_eq!(m.status(), NodeExecutionStatus::Failed);
-        assert_eq!(m.last_error(), Some("executor not found: n8n-nodes-base.missing"));
+        assert_eq!(
+            m.last_error(),
+            Some("executor not found: n8n-nodes-base.missing")
+        );
     }
 
     #[test]
@@ -380,9 +383,7 @@ mod tests {
         let mut m = NodeStateMachine::new(7);
         m.start().unwrap();
         m.wait().unwrap();
-        assert!(m
-            .transition(NodeExecutionStatus::Skipped)
-            .is_err());
+        assert!(m.transition(NodeExecutionStatus::Skipped).is_err());
         assert_eq!(m.status(), NodeExecutionStatus::Waiting);
 
         let mut m = NodeStateMachine::new(8);
@@ -402,10 +403,7 @@ mod tests {
 
     #[test]
     fn status_names_are_stable_snake_case() {
-        let names: Vec<&str> = NodeExecutionStatus::ALL
-            .iter()
-            .map(|s| s.name())
-            .collect();
+        let names: Vec<&str> = NodeExecutionStatus::ALL.iter().map(|s| s.name()).collect();
         assert_eq!(
             names,
             vec![
