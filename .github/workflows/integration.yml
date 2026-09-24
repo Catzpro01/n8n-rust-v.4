@@ -10,6 +10,10 @@ on:
       - '.arena/logs/**'
       - '.gitignore'
 
+concurrency:
+  group: integration-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   integration_crates:
     name: Level 2 Crate Tests (${{ matrix.os }} - ${{ matrix.crate }})

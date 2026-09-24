@@ -4,6 +4,15 @@ on:
   pull_request:
     branches: [ main ]
     types: [ opened, synchronize, reopened ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.arena/logs/**'
+      - '.gitignore'
+
+concurrency:
+  group: audit-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   audit:
