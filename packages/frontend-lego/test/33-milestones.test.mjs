@@ -174,7 +174,9 @@ test('a status is backed by the evidence that status requires', () => {
   assert.equal(p226.finishEvidence.pr, 73, 'the finish evidence names the PR');
   assert.equal(p226.startEvidence.commit, 'd15a9538b1899e9fd2ea9d5bd37d3fd26ecc1943', 'P2.26 starts from the P2.25 completion transition (baseline corrected per Master Prompt P2.26 §0)');
   const p227 = byId.get('P2.27');
-  assert.equal(p227.status, 'in-progress', 'P2.27 is the current administrative milestone with ZERO implementation');
+  assert.equal(p227.status, 'complete', 'P2.27 closed on protected main via PR #197 (all slices P2.27.0-P2.27.10 merged and post-merge verified)');
+  assert.equal(p227.finishEvidence.protectedMain, '7d4eae8d34f70eb03ec413486a5f5c5318048d4d');
+  assert.equal(p227.finishEvidence.pr, 197, 'the finish evidence names the PR');
   assert.equal(p227.startEvidence.commit, 'd15a9538b1899e9fd2ea9d5bd37d3fd26ecc1943', 'P2.27 reservation was recorded against d15a9538');
 });
 

@@ -73,7 +73,7 @@ The strategic phases above are intentionally preserved. The Manager-owned granul
 | `P2.24` | Token & Usage - honest accounting | D | **complete** | P2.25 |
 | `P2.25` | External provider integration - the first real adapters | E | **complete** | P2.26 |
 | `P2.26` | Provider, Workspace & GitHub Integration + Foundation Readiness | F | **complete** | P2.27 |
-| `P2.27` | Contract-Driven Pluggable Runtime & Security Foundation | F | **in-progress** | P2.17+ |
+| `P2.27` | Contract-Driven Pluggable Runtime & Security Foundation | F | **complete** | P2.17+ |
 | `P2.17+` | Later capability ladder | C-F | **planned** | — |
 
 Current milestone: **P2.27**. Previous completed: **P2.26**.
