@@ -173,7 +173,9 @@ export function buildFrontendSettings(config, { hasOwner = false, requestOrigin 
       environment: config.env === 'production' ? 'production' : 'development',
     },
     variables: { limit: 0 },
-    mfa: { enabled: false, enforced: false },
+    // P5.6: TOTP MFA is implemented (auth/account-routes.mjs). Enforcement is an
+    // enterprise-licensed upstream feature and stays off.
+    mfa: { enabled: true, enforced: false },
     folders: { enabled: false },
     banners: { dismissed: dismissedBanners },
     workflowHistory: { pruneTime: -1, licensePruneTime: -1 },

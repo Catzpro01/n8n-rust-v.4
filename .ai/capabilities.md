@@ -22,11 +22,13 @@
 | `ai.skill` | `ai-foundation` |
 | `ai.token-usage` | `ai-foundation` |
 | `ai.tool-gateway` | `ai-foundation` |
+| `auth.account-security` | `auth` |
 | `auth.api-keys` | `auth` |
 | `auth.authorization` | `auth` |
 | `auth.identity-projection` | `auth.identity` |
 | `auth.ldap` | `auth` |
 | `auth.mfa` | `auth` |
+| `auth.mfa-enforcement` | `auth` |
 | `auth.owner-setup` | `auth` |
 | `auth.personalization-survey` | `auth` |
 | `auth.principal` | `auth` |
@@ -210,6 +212,11 @@ this table instead of guessing from a URL shape.
 | `auth.session.logout` | `auth` | call | `auth:session` | yes | implemented |
 | `auth.owner-setup.setup` | `auth` | call | `auth:admin` | no | implemented |
 | `auth.public-user.identity` | `auth` | call | `auth:read` | yes | implemented |
+| `auth.mfa.second-factor` | `auth` | call | `auth:session` | no | implemented |
+| `auth.mfa.setup` | `auth` | call | `auth:session` | no | implemented |
+| `auth.mfa.enable` | `auth` | call | `auth:session` | no | implemented |
+| `auth.mfa.disable` | `auth` | call | `auth:session` | no | implemented |
+| `auth.mfa.verify` | `auth` | call | `auth:session` | yes | implemented |
 | `auth.session-kernel.create` | `auth` | call | `auth:session` | no | implemented |
 | `auth.session-kernel.rotate` | `auth` | call | `auth:session` | no | implemented |
 | `auth.session-kernel.revoke` | `auth` | call | `auth:session` | yes | implemented |
@@ -217,6 +224,13 @@ this table instead of guessing from a URL shape.
 | `auth.session-kernel.csrf` | `auth` | call | `auth:session` | yes | implemented |
 | `auth.authorization.authorize` | `auth` | call | `auth:read` | yes | implemented |
 | `auth.authorization.compile` | `auth` | call | `auth:read` | yes | implemented |
+| `auth.account-security.password-change` | `auth` | call | `auth:session` | no | implemented |
+| `auth.account-security.password-reset-request` | `auth` | call | `auth:session` | no | implemented |
+| `auth.account-security.password-reset-resolve` | `auth` | call | `auth:session` | yes | implemented |
+| `auth.account-security.password-reset-complete` | `auth` | call | `auth:session` | no | implemented |
+| `auth.account-security.email-change` | `auth` | call | `auth:session` | no | implemented |
+| `auth.account-security.step-up` | `auth` | call | `auth:session` | yes | implemented |
+| `auth.account-security.abuse-control` | `auth` | call | `auth:session` | no | implemented |
 | `auth.identity-projection.identity` | `auth.identity` | call | `auth:read` | yes | implemented |
 | `auth.identity-projection.hasOwner` | `auth.identity` | call | `auth:read` | yes | implemented |
 | `credentials.crud.inspect` | `credentials` | call | `credential:read` | yes | legacy |

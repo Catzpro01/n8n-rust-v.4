@@ -37,9 +37,8 @@ export const UNSUPPORTED_FEATURES = Object.freeze([
   // --- auth LEGO (P5) ---
   { prefix: '/rest/api-keys', feature: 'api-keys', label: 'n8n API keys', owner: 'auth', phase: 'P5' },
   { prefix: '/rest/settings/security', feature: 'security-settings', label: 'Security settings', owner: 'auth', phase: 'P5' },
-  { prefix: '/rest/me/password', feature: 'security-settings', label: 'Password change', owner: 'auth', phase: 'P5' },
   { prefix: '/rest/me/survey', feature: 'personalization-survey', label: 'Personalization survey', owner: 'auth', phase: 'P5' },
-  { prefix: '/rest/mfa', feature: 'mfa', label: 'Two-factor authentication', owner: 'auth', phase: 'P5' },
+  { prefix: '/rest/mfa/enforce-mfa', feature: 'mfa-enforcement', label: 'Enforce two-factor authentication (enterprise)', owner: 'auth', phase: 'deferred' },
   { prefix: '/rest/users/', feature: 'user-management', label: 'User management (invite / roles / delete)', owner: 'auth', phase: 'P5' },
   { prefix: '/rest/users', feature: 'user-management', label: 'User management (invite)', owner: 'auth', phase: 'P5' },
   // --- credentials LEGO ---
