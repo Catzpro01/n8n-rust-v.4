@@ -27,6 +27,7 @@
 | `auth.authorization` | `auth` |
 | `auth.identity-projection` | `auth.identity` |
 | `auth.ldap` | `auth` |
+| `auth.machine-identity` | `auth` |
 | `auth.mfa` | `auth` |
 | `auth.mfa-enforcement` | `auth` |
 | `auth.owner-setup` | `auth` |
@@ -212,6 +213,12 @@ this table instead of guessing from a URL shape.
 | `auth.session.logout` | `auth` | call | `auth:session` | yes | implemented |
 | `auth.owner-setup.setup` | `auth` | call | `auth:admin` | no | implemented |
 | `auth.public-user.identity` | `auth` | call | `auth:read` | yes | implemented |
+| `auth.api-keys.list` | `auth` | call | `auth:session` | yes | implemented |
+| `auth.api-keys.scopes` | `auth` | call | `auth:session` | yes | implemented |
+| `auth.api-keys.create` | `auth` | call | `auth:session` | no | implemented |
+| `auth.api-keys.update` | `auth` | call | `auth:session` | no | implemented |
+| `auth.api-keys.revoke` | `auth` | call | `auth:session` | no | implemented |
+| `auth.api-keys.authenticate` | `auth` | call | `auth:session` | no | implemented |
 | `auth.mfa.second-factor` | `auth` | call | `auth:session` | no | implemented |
 | `auth.mfa.setup` | `auth` | call | `auth:session` | no | implemented |
 | `auth.mfa.enable` | `auth` | call | `auth:session` | no | implemented |
@@ -231,6 +238,12 @@ this table instead of guessing from a URL shape.
 | `auth.account-security.email-change` | `auth` | call | `auth:session` | no | implemented |
 | `auth.account-security.step-up` | `auth` | call | `auth:session` | yes | implemented |
 | `auth.account-security.abuse-control` | `auth` | call | `auth:session` | no | implemented |
+| `auth.machine-identity.service-principal-create` | `auth` | call | `auth:session` | no | implemented |
+| `auth.machine-identity.service-principal-revoke` | `auth` | call | `auth:session` | no | implemented |
+| `auth.machine-identity.delegate` | `auth` | call | `auth:session` | no | implemented |
+| `auth.machine-identity.tenant-policy` | `auth` | call | `auth:session` | no | implemented |
+| `auth.machine-identity.evaluate` | `auth` | call | `auth:session` | yes | implemented |
+| `auth.machine-identity.audit` | `auth` | call | `auth:session` | no | implemented |
 | `auth.identity-projection.identity` | `auth.identity` | call | `auth:read` | yes | implemented |
 | `auth.identity-projection.hasOwner` | `auth.identity` | call | `auth:read` | yes | implemented |
 | `credentials.crud.inspect` | `credentials` | call | `credential:read` | yes | legacy |

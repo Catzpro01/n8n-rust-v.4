@@ -4161,6 +4161,52 @@
         "apps/n8n-lego/test/lego-account-security.test.mjs"
       ],
       "notes": "P5.6 account security primitives, HTTP-free (the boundary is src/auth/account-routes.mjs on the upstream n8n wire contract). abuse-control: fixed-window rate limiters and capped exponential failure back-off, every table bounded (maxKeys) with reclaim-then-degrade into a shared overflow bucket, keys are HMAC digests; limits reproduce the pinned upstream decorators. password-hash: scrypt with algorithm agility and rehash-on-success; the current policy equals the legacy parameters and keeps the legacy format for rollback safety; unknown accounts spend equal scrypt cost; upstream passwordSchema messages. reset-token: 256-bit single-use tokens, digest-only storage, 20 min default and 1 h hard cap, one live token per user, bound to a credential fingerprint, bounded table. mfa: RFC 6238 TOTP (otpauth defaults), step replay refusal, recovery codes as SHA-256 digests consumed on use, explicit state machine, and a collection view that keeps sealed TOTP secrets on the P5.5 vault key lineage. step-up: declared strength per sensitive operation on the P5.1 AUTH_STRENGTHS ladder; interactive sessions only."
+    },
+    {
+      "id": "auth.machine-identity",
+      "owner": "agent-1",
+      "domain": "auth",
+      "version": "1.0.0",
+      "status": "stable",
+      "surface": [
+        "src/auth/security/api-key.mjs",
+        "src/auth/security/machine-identity.mjs"
+      ],
+      "exports": {
+        "src/auth/security/api-key.mjs": [
+          "API_KEY_AUDIENCE",
+          "API_KEY_POLICY",
+          "API_KEY_PREFIX",
+          "API_KEY_VERDICT",
+          "apiKeyMatches",
+          "apiKeyVerdict",
+          "attenuateScopes",
+          "effectiveScopes",
+          "generateApiKey",
+          "lastUsedIsStale",
+          "parseApiKey",
+          "redactApiKey"
+        ],
+        "src/auth/security/machine-identity.mjs": [
+          "DEFAULT_TENANT_SECURITY_POLICY",
+          "MACHINE_AUDIT_EVENTS",
+          "MACHINE_IDENTITY_LIMITS",
+          "MACHINE_OUTCOME",
+          "SERVICE_PRINCIPAL_KINDS",
+          "createServicePrincipalRecord",
+          "createTenantSecurityPolicy",
+          "decideMachineAction",
+          "delegate",
+          "keyPolicyViolation",
+          "machineAuditEvent",
+          "machinePrincipal"
+        ]
+      },
+      "consumers": [],
+      "tests": [
+        "apps/n8n-lego/test/lego-machine-identity.test.mjs"
+      ],
+      "notes": "P5.7 machine identity, HTTP-free and storage-free (the boundary is src/auth/api-key-routes.mjs: upstream /rest/api-keys wire contract plus authenticateMachineCredential). api-key: 256-bit keys shown once; only a SHA-256 digest and a 4-character hint are stored (pinned n8n stores the raw JWT); the owner id inside the key gives an O(1) lookup with no process-local index; lifecycle verdicts (revoked, expired in unix seconds, owner unavailable, audience mismatch); scope attenuation reports escalation instead of trimming; effective scopes are re-intersected with the owner's current grant on every use. machine-identity: service principals (worker, agent, mcp, gateway) with their own credential and audience, bound to the owner's tenant; agent delegation that is a subset of the parent, never outlives it, never crosses tenants, never exceeds the parent's auth strength and is depth-bounded; a validated tenant security policy input; the authority chain principal -> P5.3 authorize -> approval input -> ai.approval evaluate (injected port, fail closed; P5 is not the approval engine); audit events with reference and reason fields only. The API-key scope vocabulary is extracted from the pinned @n8n/permissions source into data/api-key-scopes.json (compat/api-key-scopes.mjs mirrors upstream getApiKeyScopesForRole)."
     }
   ]
 }
