@@ -602,6 +602,7 @@ test('the ai-set register mirror was not silently rewritten by this milestone', 
   assert.equal(REGISTER.currentMilestone, 'P2.27');
   assert.equal(LEGO_SET.mainBaseline, REGISTER.mainBaseline,
     'set mirror and register share the same protected-main baseline after reconcile');
-  assert.equal(REGISTER.mainBaseline, 'f63a91e7251270967a96b643b3448d2ca1068cf9');
+  // Governance reset (#256): both pointers moved together to protected main aba5a0e4.
+  assert.equal(REGISTER.mainBaseline, 'aba5a0e4a387e9a5df4313facc5fb5cae47a2db9');
   assert.match(LEGO_SET.statusNote, /P2\.27/);
 });

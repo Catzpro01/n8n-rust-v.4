@@ -45,7 +45,7 @@ class PersistentWorkerProcess:
         agent_key: str,
         client: Optional[ControlPlaneClient] = None,
         heartbeat_interval: int = 5,
-        poll_interval: int = 3,
+        poll_interval: float = 1,
         auto_claim: bool = False,
         arena_adapter: Optional[ArenaAdapter] = None
     ):
@@ -296,7 +296,7 @@ class PersistentWorkerProcess:
                 ticks += 1
                 if max_ticks and ticks >= max_ticks:
                     break
-                time.sleep(self.poll_interval)
+                time.sleep(min(float(self.poll_interval), 1.0))  # runner protocol: <= 1s
         finally:
             self.stop()
         return True

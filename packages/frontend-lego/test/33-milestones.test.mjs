@@ -60,9 +60,11 @@ test('the register is one machine-readable file at the canonical path, owned by 
   assert.equal(REGISTER.protectedBranch, 'main');
   // The baseline is the final protected-main commit; P2.15's own historical start baseline
   // (0d9466f1) stays on the P2.15 row, and P2.13's (e754c5df) stays on its row, instead of being
-  // overwritten here. f63a91e7 is the P9.5-P9.22 integration (#209) that Issue #81 requires the
-  // top-level pointer to track.
-  assert.match(REGISTER.mainBaseline, /^f63a91e7/);
+  // overwritten here. aba5a0e4 is protected main after the governance-reset reconciliation (#256:
+  // PRs #244 and #246 merged) that Issue #81 requires the top-level pointer to track; the previous
+  // baseline f63a91e7 (#209) is preserved as baseline.previousMainBaseline.
+  assert.match(REGISTER.mainBaseline, /^aba5a0e4/);
+  assert.equal(REGISTER.baseline.previousMainBaseline, 'f63a91e7251270967a96b643b3448d2ca1068cf9');
   assert.equal(REGISTER.currentMilestone, 'P2.27');
   assert.equal(REGISTER.previousCompletedMilestone, 'P2.26');
   assert.ok(REGISTER.milestones.length >= 7, `${REGISTER.milestones.length} milestones recorded`);
@@ -257,7 +259,7 @@ test('the baseline block protects main and names the branches of the current mil
   // stays preserved history on its own row, so moving the top-level block on never rewrites it.
   const p215 = byId.get('P2.15');
   assert.equal(p215.startEvidence.commit, '0d9466f19a149f6e30bdee559086b7a28b080cb3', 'P2.15 start evidence stays preserved history');
-  assert.equal(REGISTER.mainBaseline, 'f63a91e7251270967a96b643b3448d2ca1068cf9', 'the main baseline is the final protected-main commit after the P9.5-P9.22 integration (#209); Issue #81 requires it to equal protected main HEAD after a completion transition');
+  assert.equal(REGISTER.mainBaseline, 'aba5a0e4a387e9a5df4313facc5fb5cae47a2db9', 'the main baseline is protected main after the governance-reset reconciliation (#256, PRs #244/#246); Issue #81 requires it to equal protected main HEAD after a transition');
   assert.match(REGISTER.mainBaseline, /^[0-9a-f]{40}$/);
   // 0 open PRs after #209: both agent branches point at main until a new lane opens.
   assert.equal(REGISTER.agentBranches.agent1, 'main');

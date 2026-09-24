@@ -14,7 +14,7 @@ from tools.orchestration.boundary_guard import TaskBoundaryGuard
 logger = logging.getLogger("ContinuousWorkerEngine")
 
 class ContinuousWorkerEngine:
-    def __init__(self, client: Optional[ControlPlaneClient] = None, poll_interval_seconds: int = 5):
+    def __init__(self, client: Optional[ControlPlaneClient] = None, poll_interval_seconds: float = 1):
         self.client = client or ControlPlaneClient()
         self.poll_interval_seconds = poll_interval_seconds
         self.catalog = {t["task_key"]: t for t in CANONICAL_TASKS}

@@ -1730,6 +1730,6 @@
   "previousCompletedMilestone": "P2.26",
   "milestoneRegister": "docs/n8n-lego/milestones.json",
   "protectedBranch": "main",
-  "mainBaseline": "f63a91e7251270967a96b643b3448d2ca1068cf9",
-  "statusNote": "P2.27 Contract-Driven Pluggable Runtime & Security Foundation is complete on protected main. P3, P4, P6 and P9.5-P9.22 are integrated on main (PR #209, f63a91e7). Rust is ACTIVE (PHASE 3, 8 workspace crates). Next implementation milestone is NOT AUTHORIZED — P2.17+ remains an umbrella planning bucket. Protected main HEAD = f63a91e7 (mainBaseline reconciled per Issue #81)."
+  "mainBaseline": "aba5a0e4a387e9a5df4313facc5fb5cae47a2db9",
+  "statusNote": "P2.27 Contract-Driven Pluggable Runtime & Security Foundation is complete on protected main. P0-P6 and P9 are complete; P7, P8, P10 and P11 are planned; legacy P12-P23 are consolidated into thematic future programs (governance reset #256, docs/n8n-lego/milestones.json). Rust is ACTIVE (PHASE 3, 8 workspace crates). No new implementation slice is authorized. Protected main HEAD = aba5a0e4 (mainBaseline reconciled per Issue #81)."
 }

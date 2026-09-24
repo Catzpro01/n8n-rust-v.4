@@ -16,9 +16,10 @@ from tools.orchestration.task_scheduler import DynamicTaskScheduler
 logger = logging.getLogger("SupervisorRecoveryLoop")
 
 class SupervisorRecoveryLoop:
-    def __init__(self, client: Optional[ControlPlaneClient] = None, interval_seconds: int = 5):
+    def __init__(self, client: Optional[ControlPlaneClient] = None, interval_seconds: float = 1):
         self.client = client or ControlPlaneClient()
-        self.interval_seconds = interval_seconds
+        # Runner protocol: recovery polling never sleeps more than 1s.
+        self.interval_seconds = min(float(interval_seconds), 1.0)
         self.running = False
 
     def tick(self) -> Dict[str, Any]:

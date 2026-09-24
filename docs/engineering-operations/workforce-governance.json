@@ -326,5 +326,76 @@
         "sourceOfTruth/canonicalRegister"
       ]
     }
+  },
+  "runnerProtocol": {
+    "document": "docs/engineering-operations/RUNNER-PROTOCOL.md",
+    "owner": "manager",
+    "anchorIssue": 256,
+    "architecture": "5 Windows + 5 WSL self-hosted runners (10 total); do not reduce or change without a Manager decision",
+    "runners": {
+      "windows": [
+        "laptop-build-worker",
+        "laptop-build-worker-2",
+        "laptop-build-worker-3",
+        "laptop-build-worker-4",
+        "laptop-build-worker-5"
+      ],
+      "wsl": [
+        "MDMTEST-n8n-wsl",
+        "MDMTEST-n8n-wsl-2",
+        "MDMTEST-n8n-wsl-3",
+        "MDMTEST-n8n-wsl-4",
+        "MDMTEST-n8n-wsl-5"
+      ]
+    },
+    "labels": {
+      "windows": [
+        "self-hosted",
+        "windows",
+        "x64",
+        "rust-build",
+        "n8n-rust"
+      ],
+      "wsl": [
+        "self-hosted",
+        "linux",
+        "x64",
+        "rust-build",
+        "n8n-rust"
+      ],
+      "either": [
+        "self-hosted",
+        "x64",
+        "rust-build",
+        "n8n-rust"
+      ]
+    },
+    "selection": "by label, never by runner name; at most 10 parallel self-hosted jobs",
+    "pollIntervalSeconds": 1,
+    "maxSleepSeconds": 1,
+    "pollRule": "every wait for a runner, CI run, job, health endpoint, process or queue sleeps at most 1 second (prefer exactly 1s) inside a bounded attempt budget; no sleep 2/5/10/30/60, no setTimeout/setInterval above 1000 ms, no backoff step above 1s",
+    "exception": "only a documented external API rate limit (name the API + limit next to the wait; honour Retry-After / x-ratelimit-reset)",
+    "decouplingRule": "a loop wakes every <= 1s but may emit an expensive external call on its own slower cadence",
+    "jobRetry": {
+      "maxRetries": 2,
+      "only": "environmental failures (runner lost, network, checkout/cache infrastructure)"
+    },
+    "failureClasses": [
+      "implementation",
+      "environmental",
+      "pre-existing",
+      "flaky"
+    ],
+    "exhaustion": "jobs queue; the monitor keeps polling at 1s; after the job timeout the job is reported blocked (environmental) — never skipped, never moved to hosted runners to bypass the requirement",
+    "githubActionsMonitoring": "GET /repos/{owner}/{repo}/commits/{sha}/check-runs at 1s until all completed; merge only with all checks success on the exact head SHA, pinned in the merge call",
+    "vpsMonitoring": "vps-runtime runner; 1s polling of /rest/settings (/healthz is 503 without the UI bundle); systemd supervises long-running processes",
+    "workspaceLifecycle": [
+      "fresh checkout per job",
+      "temporary files under the runner temp directory",
+      "clean temp files, patches, logs, duplicate clones and stale worktrees; keep dependency/build caches",
+      "never commit runtime artifacts (.arena/gateway_tokens.json is gitignored)",
+      "only main and arena-manager branches persist"
+    ],
+    "observed": "governance reset #256: GET /actions/runners returned 10 runners, all online, none busy, labels as listed"
   }
 }

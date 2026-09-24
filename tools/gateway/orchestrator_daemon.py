@@ -24,8 +24,9 @@ from tools.gateway.auth import GatewayAuth
 logger = logging.getLogger("PersistentOrchestrator")
 
 class PersistentOrchestratorDaemon:
-    def __init__(self, interval_seconds: int = 10, gateway: Optional[CapabilityGateway] = None):
-        self.interval = interval_seconds
+    def __init__(self, interval_seconds: float = 1, gateway: Optional[CapabilityGateway] = None):
+        # Runner protocol: job/queue polling never sleeps more than 1s.
+        self.interval = min(float(interval_seconds), 1.0)
         self.gateway = gateway or CapabilityGateway()
         self.auth = GatewayAuth()
         self.manager_token = self.auth.get_token_for_role("manager")
@@ -141,7 +142,7 @@ class PersistentOrchestratorDaemon:
         }
 
 if __name__ == "__main__":
-    daemon = PersistentOrchestratorDaemon(interval_seconds=10)
+    daemon = PersistentOrchestratorDaemon(interval_seconds=1)
     daemon.start()
     try:
         while True:
