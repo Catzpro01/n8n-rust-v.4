@@ -26,6 +26,7 @@ import {
   revokeCurrentSession,
 } from '../auth.mjs';
 import { accountRoutes, createAccountSecurity, guardEmailChange, login } from './account-routes.mjs';
+import { apiKeyRoutes } from './api-key-routes.mjs';
 
 /**
  * @param {object} options
@@ -169,5 +170,6 @@ export function authRoutes({ logger, vault = null, delivery = null, security = c
 
     /* ------------------------------------------- account security (P5.6) */
     ...accountRoutes({ logger, vault, security, delivery }),
+    ...apiKeyRoutes({ logger }),
   ];
 }

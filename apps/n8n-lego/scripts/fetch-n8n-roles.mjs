@@ -10,7 +10,8 @@
  *
  *   node scripts/fetch-n8n-roles.mjs [--dir <output dir>]
  *
- * Output: <dir>/roles.json — shaped like `AllRolesMap` from `@n8n/permissions`.
+ * Output: <dir>/roles.json — shaped like `AllRolesMap` from `@n8n/permissions`;
+ *         <dir>/api-key-scopes.json — the API-key scope vocabulary (P5.7).
  */
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -24,6 +25,7 @@ const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const REPO_ROOT = resolve(PACKAGE_ROOT, '..', '..');
 const PERMISSIONS_SRC = join(REPO_ROOT, 'reference', 'n8n', 'packages', '@n8n', 'permissions', 'src');
 const BUNDLED = join(PACKAGE_ROOT, 'data', 'roles.json');
+const BUNDLED_API_KEY_SCOPES = join(PACKAGE_ROOT, 'data', 'api-key-scopes.json');
 
 function parseArgs(argv) {
   const args = { dir: defaultCatalogDir() };
@@ -96,6 +98,51 @@ function readConstants(source) {
   return constants;
 }
 
+/**
+ * P5.7 — the API-key scope vocabulary, from the same pinned source.
+ *
+ * Upstream keeps it apart from the role scopes: `ApiKeyScope` is built from
+ * `API_KEY_RESOURCES` (constants.ee.ts, via `buildApiKeyScopes()`), and
+ * `getApiKeyScopesForRole()` (public-api-permissions.ee.ts) grants a role its own
+ * scopes plus `API_KEY_SCOPES_FOR_IMPLICIT_PERSONAL_PROJECT`, filtered to that
+ * vocabulary, and nothing at all to the roles it short-circuits. Sixteen of the
+ * fifty-three key scopes (`execution:read`, `workflow:activate`, …) exist in no
+ * role, so this cannot be derived from roles.json — it is extracted, never typed.
+ *
+ * Fails loudly when the upstream shape moves: an empty or partial vocabulary
+ * would silently deny (or worse, mis-grant) every key.
+ */
+function extractApiKeyScopes() {
+  const constants = readFileSync(join(PERMISSIONS_SRC, 'constants.ee.ts'), 'utf8');
+  const defaults = constants.match(/export const DEFAULT_OPERATIONS = \[([^\]]*)\]/);
+  if (!defaults) throw new Error('cannot find DEFAULT_OPERATIONS in constants.ee.ts');
+  const defaultOps = [...defaults[1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
+  const block = constants.match(/export const API_KEY_RESOURCES = \{([\s\S]*?)\n\} as const/);
+  if (!block) throw new Error('cannot find API_KEY_RESOURCES in constants.ee.ts');
+  const resources = {};
+  for (const [, resource, body] of block[1].matchAll(/^\s*([A-Za-z]+):\s*\[([^\]]*)\]/gm)) {
+    const ops = [];
+    if (body.includes('...DEFAULT_OPERATIONS')) ops.push(...defaultOps);
+    ops.push(...[...body.matchAll(/'([^']+)'/g)].map((m) => m[1]));
+    resources[resource] = [...new Set(ops)];
+  }
+  const all = Object.entries(resources).flatMap(([resource, ops]) => ops.map((op) => `${resource}:${op}`));
+  if (all.length === 0) throw new Error('API_KEY_RESOURCES produced no scopes');
+
+  const publicApi = readFileSync(join(PERMISSIONS_SRC, 'public-api-permissions.ee.ts'), 'utf8');
+  const arrays = extractScopeArrays(publicApi);
+  const implicit = arrays.API_KEY_SCOPES_FOR_IMPLICIT_PERSONAL_PROJECT;
+  if (!Array.isArray(implicit) || implicit.length === 0) {
+    throw new Error('cannot find API_KEY_SCOPES_FOR_IMPLICIT_PERSONAL_PROJECT in public-api-permissions.ee.ts');
+  }
+  const fn = publicApi.slice(publicApi.indexOf('export const getApiKeyScopesForRole'));
+  const noKeyRoles = [...fn.slice(0, fn.indexOf('\n};')).matchAll(/role\.slug === '([^']+)'\)\s*\{\s*return \[\];/g)].map((m) => m[1]);
+  if (noKeyRoles.length === 0) throw new Error('cannot find the no-key role short-circuit in getApiKeyScopesForRole');
+  const unknown = implicit.filter((scope) => !all.includes(scope));
+  if (unknown.length) throw new Error(`implicit personal-project scopes outside the API-key vocabulary: ${unknown.join(', ')}`);
+  return { resources, all, implicitPersonalProject: implicit, noKeyRoles };
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2));
   const scopesDir = join(PERMISSIONS_SRC, 'roles', 'scopes');
@@ -106,6 +153,7 @@ function main() {
       mkdirSync(args.dir, { recursive: true });
       const target = join(args.dir, 'roles.json');
       copyFileSync(BUNDLED, target);
+      if (existsSync(BUNDLED_API_KEY_SCOPES)) copyFileSync(BUNDLED_API_KEY_SCOPES, join(args.dir, 'api-key-scopes.json'));
       process.stdout.write(
         `reference source not found (${scopesDir}) — installed the bundled roles.json to ${target}\n`,
       );
@@ -159,6 +207,11 @@ function main() {
     .join(' ');
   const ownerScopes = result.global.find((role) => role.slug === 'global:owner')?.scopes.length ?? 0;
   process.stdout.write(`wrote ${target} (${counts}; global:owner has ${ownerScopes} scopes)\n`);
+
+  const apiKeyScopes = extractApiKeyScopes();
+  const apiKeyTarget = join(args.dir, 'api-key-scopes.json');
+  writeFileSync(apiKeyTarget, `${JSON.stringify(apiKeyScopes, null, 2)}\n`);
+  process.stdout.write(`wrote ${apiKeyTarget} (${apiKeyScopes.all.length} API-key scopes)\n`);
 }
 
 main();
