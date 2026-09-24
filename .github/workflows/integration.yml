@@ -32,6 +32,7 @@ jobs:
           fetch-depth: 1
           submodules: false
           lfs: false
+          clean: false
 
       - name: Level 2 - Parallel Crate Tests
         run: cargo test -p ${{ matrix.crate }}
@@ -47,6 +48,7 @@ jobs:
           fetch-depth: 1
           submodules: false
           lfs: false
+          clean: false
 
       - name: Level 2 - Localization & Catalog Tests
         run: node --test packages/reconstructed-engine/localization.test.mjs packages/reconstructed-engine/node-catalog.test.mjs
