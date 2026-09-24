@@ -63,6 +63,7 @@ A LEGO contract must not assume it is the only process. P2.7 implements no worke
 - `bin/n8n-lego.mjs` — The CLI reads the environment to construct the runtime. 
 - `src/engine.mjs` — The engine resolves its implementation path from N8N_LEGO_ENGINE_PATH directly instead of receiving it in config. 
 - `src/frontend.mjs` — Reads N8N_LEGO_FRONTEND_PATH directly to resolve where the frontend LEGO package lives, instead of receiving the path in the injected config. Found by the scale-out gate during the P2.11 reconciliation, when agent-1's frontend host was merged in. 
+- `src/auth/security/key-provider.mjs` — P5.5's initial KeyProvider is local/VPS-native by design (#218): the keyring is one 0600 file in the data directory, written atomically (tmp + fsync + rename). A second worker on another host cannot see it, so it cannot open credentials sealed by this host. This is the same single-host limit as src/store.mjs S3, where the sealed credentials themselves live. Severity is should-fix, not blocking, because it is currently shadowed by that storage blocker: while the sealed records themselves live on one host's disk, a shared keyring would not let a second host read them anyway. It becomes blocking the moment src/store.mjs S3 is resolved (P8) - at that point a shared KeyProvider must land with it. 
 
 ## Future contract solution
 

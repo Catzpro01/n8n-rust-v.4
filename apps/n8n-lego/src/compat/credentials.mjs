@@ -35,6 +35,7 @@
  * treated as secret: there is no safe subset to guess, so we fail closed.
  */
 
+import { randomBytes } from 'node:crypto';
 import { HttpError, badRequest, notFound } from './error.mjs';
 import { sendData } from './response.mjs';
 import { requireUser } from './auth-context.mjs';
@@ -258,7 +259,17 @@ export function credentialEditorView(record, { includeData = false, secretFields
   };
   if (record?.tenantId !== undefined) view.tenantId = record.tenantId;
   if (record?.credentialVersion !== undefined) view.credentialVersion = record.credentialVersion;
-  if (includeData) view.data = redactCredentialData(record, secretFields, { uuid });
+  if (includeData) {
+    if (record?.secret !== undefined || Array.isArray(record?.secretKeys)) {
+      // P5.5 sealed record: configuration is stored in the clear and the secret
+      // field NAMES are stored as schema, so the editor view needs no decrypt.
+      const data = { ...(record.config ?? {}) };
+      for (const key of record.secretKeys ?? []) data[key] = `${CREDENTIAL_BLANK_PREFIX}${uuid()}`;
+      view.data = data;
+    } else {
+      view.data = redactCredentialData(record, secretFields, { uuid });
+    }
+  }
   return view;
 }
 
@@ -308,7 +319,26 @@ export function currentTenantId(ctx) {
  * @param {(config: object) => Array<object>} deps.getCredentialTypes
  * @returns {Array<object>} route objects
  */
-export function credentialRoutes({ logger, getCredentialTypes = () => [] }) {
+export function credentialRoutes({ logger, getCredentialTypes = () => [], vault = null }) {
+  /**
+   * P5.5: every secret write goes through the vault. Without one there is no
+   * safe place to put a secret, so the write is refused — never stored plain.
+   */
+  const requireVault = () => {
+    if (!vault) throw new HttpError(503, 'Credential encryption is unavailable', { code: 'lego.unavailable' });
+    return vault;
+  };
+  /** Vault failures carry a published code + secret-free message; keep both. */
+  const guarded = (fn) => {
+    try {
+      return fn();
+    } catch (error) {
+      if (error && error.name === 'SecurityError') {
+        throw new HttpError(error.status ?? 500, error.message, { code: error.code });
+      }
+      throw error;
+    }
+  };
   /** Memoised per catalog directory so the index is built once, not per request. */
   const indexCache = new Map();
   const indexFor = (config) => {
@@ -401,11 +431,17 @@ export function credentialRoutes({ logger, getCredentialTypes = () => [] }) {
         if (typeof body.name !== 'string' || body.name.trim() === '') throw badRequest('Credential name is required');
         if (typeof body.type !== 'string' || body.type.trim() === '') throw badRequest('Credential type is required');
         const now = new Date().toISOString();
+        // The id is minted before insert because it is part of the envelope's
+        // associated data: the ciphertext is bound to this exact credential.
+        const id = newCredentialId();
+        const tenantId = currentTenantId(ctx);
+        const sealed = guarded(() => requireVault().sealData({ id, type: body.type, tenantId }, body.data ?? {}));
         const credential = ctx.store.credentials.insert({
+          id,
           name: body.name,
           type: body.type,
-          data: body.data ?? {},
-          tenantId: currentTenantId(ctx),
+          ...sealed,
+          tenantId,
           // The creator's personal project owns it — this is what later grants
           // them `project:personalOwner` scopes on it, and nobody else.
           ownerId: user.id,
@@ -444,15 +480,25 @@ export function credentialRoutes({ logger, getCredentialTypes = () => [] }) {
         // stored value survives. Without this, merely opening and saving a
         // credential in the editor would overwrite every secret with the
         // literal string `__n8n_BLANK_VALUE_…`.
-        const merged = mergeCredentialData(existing.data, body.data);
-        const updated = ctx.store.credentials.update(existing.id, {
-          name: typeof body.name === 'string' ? body.name : existing.name,
-          type: typeof body.type === 'string' ? body.type : existing.type,
-          data: merged,
+        // Open at the WRITE boundary only (the sentinel merge needs the stored
+        // values), then reseal under the current key. A record that cannot be
+        // opened — missing key, tamper — fails closed and is left untouched.
+        const v = requireVault();
+        const type = typeof body.type === 'string' ? body.type : existing.type;
+        const merged = guarded(() => mergeCredentialData(v.openData(existing), body.data));
+        const sealed = guarded(() => v.sealData({ ...existing, type, tenantId: existing.tenantId ?? 'default' }, merged));
+        const updated = ctx.store.credentials.update(existing.id, (current) => {
+          const { data: _legacyPlaintext, ...rest } = current;
+          return {
+            ...rest,
+            ...sealed,
+            name: typeof body.name === 'string' ? body.name : existing.name,
+            type,
           // Bumping the version is what invalidates any SecretRef minted
           // against the previous contents.
-          credentialVersion: (existing.credentialVersion ?? 1) + 1,
-          updatedAt: new Date().toISOString(),
+            credentialVersion: (existing.credentialVersion ?? 1) + 1,
+            updatedAt: new Date().toISOString(),
+          };
         });
         // Upstream returns no `data` on update; the golden pins this as
         // `dataFieldPresent: false`.
@@ -471,6 +517,15 @@ export function credentialRoutes({ logger, getCredentialTypes = () => [] }) {
       },
     },
   ];
+}
+
+/** n8n-style 16-char alphanumeric id. */
+function newCredentialId() {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const bytes = randomBytes(16);
+  let id = '';
+  for (const byte of bytes) id += alphabet[byte % alphabet.length];
+  return id;
 }
 
 /** Local copy: `parseFilter` lives in the legacy aggregate, which this domain may not import. */

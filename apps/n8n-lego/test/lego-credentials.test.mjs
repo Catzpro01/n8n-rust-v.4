@@ -22,6 +22,8 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { startServer } from '../src/server.mjs';
+import { createCredentialVault } from '../src/auth/security/credential-vault.mjs';
+import { createLocalKeyProvider } from '../src/auth/security/key-provider.mjs';
 import { permissionRegistryFor } from '../src/auth/security/permission-registry.mjs';
 import { createPrincipalSnapshot } from '../src/auth/security/principal.mjs';
 import { createSecretRefAuthority, REF_DENIAL, SECRET_REF_LIMITS } from '../src/auth/security/secret-ref.mjs';
@@ -51,6 +53,14 @@ function findFiles(root, filename) {
   };
   walk(root);
   return found;
+}
+
+/** Open a persisted record with the keyring the running server wrote (P5.5). */
+function openFromDisk(record) {
+  const [keyring] = findFiles(USER_FOLDER, '.credential-keys.json');
+  assert.ok(keyring, 'expected the server to have written a keyring');
+  const vault = createCredentialVault({ provider: createLocalKeyProvider({ file: keyring }) });
+  return vault.open(record);
 }
 
 /** Every backend source file, for the boundary scans below. */
@@ -588,8 +598,13 @@ describe('the REST credential surface matches the recorded n8n contract', () => 
     const stored = JSON.parse(readFileSync(files[0], 'utf8'));
     const record = stored.find((entry) => entry.id === credentialId);
     assert.ok(record, 'the credential must still exist');
-    assert.equal(record.data.value, SECRET, 'the stored secret survived the sentinel round-trip');
-    assert.equal(record.data.value.includes(CREDENTIAL_BLANK_PREFIX), false);
+    // P5.5: the secret is sealed at rest. The raw file must not contain it...
+    assert.equal(readFileSync(files[0], 'utf8').includes(SECRET), false, 'no plaintext secret on disk');
+    assert.equal('data' in record, false, 'no plaintext data bag on disk');
+    // ...and opening it with the instance's own keyring must yield it intact.
+    const opened = openFromDisk(record);
+    assert.equal(opened.value, SECRET, 'the stored secret survived the sentinel round-trip');
+    assert.equal(opened.value.includes(CREDENTIAL_BLANK_PREFIX), false);
   });
 
   test('a genuinely new value can still be written', async () => {
@@ -601,7 +616,7 @@ describe('the REST credential surface matches the recorded n8n contract', () => 
     assert.equal(patched.status, 200);
     const files = findFiles(USER_FOLDER, 'credentials.json');
     const stored = JSON.parse(readFileSync(files[0], 'utf8'));
-    assert.equal(stored.find((e) => e.id === credentialId).data.value, 'rotated-by-test');
+    assert.equal(openFromDisk(stored.find((e) => e.id === credentialId)).value, 'rotated-by-test');
   });
 
   test('a missing credential is a 404, not a leak', async () => {

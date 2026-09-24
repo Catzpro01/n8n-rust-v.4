@@ -4040,6 +4040,53 @@
         "apps/n8n-lego/test/lego-authorization.test.mjs"
       ],
       "notes": "P5.3 authorization engine, resource policy and versioned decision cache. Default-deny evaluation over principal + tenant + action + resourceType + resourceId + capability + policyVersion. Authority is never inferred from authentication, UI visibility, plugin trust, language or provider existence. The permission universe is DERIVED from the extracted pinned-n8n role model (data/roles.json via compat/scopes.mjs) and compiled to dense numeric ids for the hot path - no second authorization vocabulary. CRITICAL invariant: an unknown permission or scope fails CLOSED (SECURITY_REASON.UNKNOWN_PERMISSION) rather than matching nothing silently. The decision cache is bounded and version-aware: every entry is stamped, and a stale entry is DROPPED and re-evaluated, so the cache can never serve a decision computed under older authority - the cache is an optimization, versions are correctness. Approval and step-up are INPUTS, not local logic (P5.6 owns approval; P5.1 owns the strength ladder). No I/O: no network, no filesystem, no decryption. Holds no credential material. Session, credential vault, KMS, MFA and API-key storage are all non-scope."
+    },
+    {
+      "id": "auth.credential-crypto",
+      "owner": "agent-1",
+      "domain": "auth",
+      "version": "1.0.0",
+      "status": "stable",
+      "surface": [
+        "src/auth/security/key-provider.mjs",
+        "src/auth/security/credential-envelope.mjs",
+        "src/auth/security/credential-vault.mjs"
+      ],
+      "exports": {
+        "src/auth/security/key-provider.mjs": [
+          "KEYRING_VERSION",
+          "KEY_BYTES",
+          "KEY_PURPOSE",
+          "KEY_STATUS",
+          "createLocalKeyProvider",
+          "createMemoryKeyProvider",
+          "isKeyRef"
+        ],
+        "src/auth/security/credential-envelope.mjs": [
+          "CRYPTO_VERSION",
+          "ENVELOPE_ALG",
+          "ENVELOPE_REASON",
+          "MAX_PLAINTEXT_BYTES",
+          "associatedData",
+          "openEnvelope",
+          "sealEnvelope",
+          "validateEnvelope"
+        ],
+        "src/auth/security/credential-vault.mjs": [
+          "BACKUP_FORMAT",
+          "BACKUP_FORMAT_VERSION",
+          "KEYRING_FILE",
+          "VAULT_LIMITS",
+          "bootCredentialVault",
+          "createCredentialVault"
+        ]
+      },
+      "consumers": [],
+      "tests": [
+        "apps/n8n-lego/test/lego-credential-crypto.test.mjs",
+        "apps/n8n-lego/test/lego-credentials.test.mjs"
+      ],
+      "notes": "P5.5 provider-neutral credential crypto. KeyProvider contract (currentKeyRef/readableKeyRefs/deriveKey/fingerprint/beginRotation/abortRotation/retire/state) with a local-file (0600, atomic) and a memory provider; key lineage; controlled read window of current + at most one previous; HKDF per-purpose subkeys; retire destroys material. Versioned AES-256-GCM envelope whose AAD binds cryptoVersion, tenantId, credentialId, type and keyRef; wrong key, tamper and substitution are one indistinguishable authentication-failed. Vault: seal/open with NO plaintext fallback; metadata and non-secret config stay clear, only the runtime secret is sealed; verified incremental re-encryption committed per batch; resumable rotation, recover() on boot, rollback-safe abort; one-time legacy plaintext migration; recovery metadata without material; encrypted backup manifest; quarantined restore validated in full before one atomic commit. Every failure fails closed with an existing published error code. No master/root key in credential records. External KMS, distributed consensus, billing and P10 provisioning are non-scope."
     }
   ]
 }

@@ -26,6 +26,8 @@ import { createUnsupportedHandler } from './compat/capability.mjs';
 import { authRoutes } from './auth/routes.mjs';
 import { settingsRoutes } from './settings/routes.mjs';
 import { buildRoutes } from './rest/routes.mjs';
+import { bootCredentialVault } from './auth/security/credential-vault.mjs';
+import { createCredentialTypeIndex } from './compat/credentials.mjs';
 import { catalogPresent, loadCatalog } from './catalog.mjs';
 import { checkCsrf, createOwner, currentUser, hasOwner } from './auth.mjs';
 
@@ -52,6 +54,18 @@ export async function startServer({ env = process.env } = {}) {
   logger.debug('effective configuration', describeConfig(config));
 
   const store = createStore(config);
+  // P5.5: credential secrets are sealed at rest. A vault that cannot start
+  // (missing/unreadable keyring while sealed records exist) leaves the editor up
+  // but makes every secret operation fail closed with 503 — never plaintext.
+  const credentialTypes = createCredentialTypeIndex(loadCatalog(config)?.credentials ?? []);
+  const { vault, error: vaultError, report: vaultReport } = await bootCredentialVault({
+    config,
+    store,
+    secretFieldsFor: (type) => credentialTypes.secretFields(type),
+    onEvent: (event, detail) => logger.info(event, detail),
+  });
+  if (vaultError) logger.error('credential vault unavailable — secret operations will fail closed', vaultError);
+  else logger.info('credential vault ready', vaultReport);
   const engine = createEngine(config, logger);
   // Frontend LEGO (P2.5): fail-soft — an unavailable descriptor never blocks the
   // editor, it only means the UI is served without extension metadata.
@@ -67,7 +81,7 @@ export async function startServer({ env = process.env } = {}) {
     ...settingsRoutes(),
     ...frontendRoutes({ frontend }),
     ...authRoutes({ logger }),
-    ...buildRoutes({ engine, logger, push }),
+    ...buildRoutes({ engine, logger, push, vault }),
   ]);
   const unsupported = createUnsupportedHandler(logger);
 
