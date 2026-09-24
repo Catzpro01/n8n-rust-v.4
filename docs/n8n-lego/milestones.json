@@ -4,7 +4,7 @@
   "canonical": true,
   "purpose": "Granular milestone truth beneath the strategic Phase A-F roadmap, and \u2014 since the governance reset (#256) \u2014 the single canonical register of programs P0-P11, their slices, the thematic future programs and the feature registry. This is the only machine-readable milestone register. Milestones and slices may be refined by Manager only by updating this file; strategic phases are not deleted.",
   "protectedBranch": "main",
-  "mainBaseline": "aba5a0e4a387e9a5df4313facc5fb5cae47a2db9",
+  "mainBaseline": "fc54c8c2bfc2557ddecf466e662869f197fc9595",
   "currentMilestone": "P2.27",
   "previousCompletedMilestone": "P2.26",
   "governance": {
@@ -136,7 +136,7 @@
         "frontend": "452 tests: 451 pass, 0 fail, 1 pre-existing skip",
         "certificationSelftest": "exit 0"
       },
-      "branchesRemoved": 24,
+      "branchesRemoved": 25,
       "archiveTags": [
         "archive/arena/01a0ba2b-n8n-rust-v-4",
         "archive/arena/01a0bbc2-n8n-rust-v-4",
@@ -144,7 +144,14 @@
         "archive/arena/01a0c522-n8n-rust-v-4",
         "archive/arena/01a0c524-n8n-rust-v-4",
         "archive/arena/01a0c90d-n8n-rust-v-4"
-      ]
+      ],
+      "governanceMerge": {
+        "pr": 257,
+        "headSha": "8b7bd19b0b7688eae12c9f9f234811326385296a",
+        "mergeSha": "fc54c8c2bfc2557ddecf466e662869f197fc9595",
+        "ci": "7/7",
+        "postMergeVerification": "fresh clone of main fc54c8c2: gates 7/7, backend 2397/2397, frontend 452 (451 pass, 0 fail, 1 pre-existing skip), certification selftest exit 0, 0 dirty files"
+      }
     }
   },
   "strategicRoadmap": {
@@ -1846,15 +1853,15 @@
   "agentBranches": {
     "agent1": "main",
     "agent2": "main",
-    "note": "0 open PRs after #244/#246 (main aba5a0e4); persistent branches: main, arena-manager"
+    "note": "0 open PRs after #257 (main fc54c8c2); persistent branches: main, arena-manager"
   },
   "baseline": {
-    "role": "protected main after the governance reset reconciliation (#244, #246 merged) \u2014 Issue #81 (mainBaseline = main HEAD)",
-    "previousMainBaseline": "f63a91e7251270967a96b643b3448d2ca1068cf9",
+    "role": "protected main after the governance reset merge (#257) \u2014 Issue #81 (mainBaseline = main HEAD)",
+    "previousMainBaseline": "aba5a0e4a387e9a5df4313facc5fb5cae47a2db9",
     "reconciliation": {
       "state": "stable",
       "open": 0,
-      "at": "aba5a0e4a387e9a5df4313facc5fb5cae47a2db9",
+      "at": "fc54c8c2bfc2557ddecf466e662869f197fc9595",
       "note": "P0-P6 and P9 complete; P7, P8, P10, P11 planned; P12-P23 consolidated into futurePrograms[]; nothing new authorized"
     }
   },
@@ -10683,12 +10690,12 @@
       "parent": "GOVERNANCE",
       "slice": null,
       "owner": "manager",
-      "status": "in-progress",
+      "status": "implemented",
       "relevance": "active",
       "dependencies": [],
-      "evidence": "Implemented by governance.intakeFlow in this reset (GOV-F-010); implemented after merge + post-merge verification.",
-      "pr": null,
-      "mergeSha": null,
+      "evidence": "governance.intakeFlow in the canonical register. PR #257 merge fc54c8c2; CI 7/7 on head 8b7bd19b; post-merge verification on a fresh clone of main fc54c8c2: gates 7/7, backend 2397/2397, frontend 452 (451 pass, 0 fail, 1 pre-existing skip), certification selftest exit 0, 0 dirty files",
+      "pr": 257,
+      "mergeSha": "fc54c8c2bfc2557ddecf466e662869f197fc9595",
       "relatedEvidence": [],
       "supersededBy": null,
       "replacement": null
@@ -10865,12 +10872,12 @@
       "parent": "GOVERNANCE",
       "slice": null,
       "owner": "manager",
-      "status": "in-progress",
+      "status": "implemented",
       "relevance": "active",
       "dependencies": [],
-      "evidence": "This change; becomes implemented after merge + post-merge verification.",
-      "pr": null,
-      "mergeSha": null,
+      "evidence": "docs/n8n-lego/milestones.json registerVersion 2.0.0 (governance, programs, futurePrograms, features). PR #257 merge fc54c8c2; CI 7/7 on head 8b7bd19b; post-merge verification on a fresh clone of main fc54c8c2: gates 7/7, backend 2397/2397, frontend 452 (451 pass, 0 fail, 1 pre-existing skip), certification selftest exit 0, 0 dirty files",
+      "pr": 257,
+      "mergeSha": "fc54c8c2bfc2557ddecf466e662869f197fc9595",
       "relatedEvidence": [],
       "supersededBy": null,
       "replacement": null
@@ -10886,12 +10893,12 @@
       "parent": "GOVERNANCE",
       "slice": null,
       "owner": "manager",
-      "status": "in-progress",
+      "status": "implemented",
       "relevance": "active",
       "dependencies": [],
-      "evidence": "docs/engineering-operations/RUNNER-PROTOCOL.md",
-      "pr": null,
-      "mergeSha": null,
+      "evidence": "docs/engineering-operations/RUNNER-PROTOCOL.md + workforce-governance.json#runnerProtocol; <=1s sleep lint in apps/n8n-lego/test/governance-register.test.mjs. PR #257 merge fc54c8c2; CI 7/7 on head 8b7bd19b; post-merge verification on a fresh clone of main fc54c8c2: gates 7/7, backend 2397/2397, frontend 452 (451 pass, 0 fail, 1 pre-existing skip), certification selftest exit 0, 0 dirty files",
+      "pr": 257,
+      "mergeSha": "fc54c8c2bfc2557ddecf466e662869f197fc9595",
       "relatedEvidence": [],
       "supersededBy": null,
       "replacement": null
