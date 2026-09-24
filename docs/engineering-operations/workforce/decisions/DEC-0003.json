@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "1.0",
+  "objectType": "Decision",
+  "objectId": "DEC-0003",
+  "revision": 1,
+  "createdAt": "2026-09-25T00:00:00Z",
+  "updatedAt": "2026-09-25T00:00:00Z",
+  "events": [],
+  "state": "ACTIVE",
+  "category": "OWNERSHIP",
+  "title": "Persistent branches: main, arena-manager, arena/agent-01..10; temporary task branches",
+  "problem": "The #256 branchPolicy allowed only main and arena-manager to persist, which conflicts with the ten persistent worker slots required by #259/#263.",
+  "options": [
+    {
+      "id": "slots",
+      "summary": "Persist main, arena-manager and arena/agent-01..arena/agent-10; task work on temporary arena/agent-XX/TASK-nnnn branches deleted after merge; Manager work on arena/manager/<slug>"
+    },
+    {
+      "id": "keep-256",
+      "summary": "Only main and arena-manager persist"
+    }
+  ],
+  "selectedOption": "slots",
+  "rationale": "Supersedes the #256 branchPolicy text for worker branches only; every other #256 rule (merged -> deleted, unmerged work -> PR, obsolete -> archive tag) still applies. The worker branches are created only after this governance change is merged to main and fresh-main verified.",
+  "scope": {
+    "programs": [
+      "GOVERNANCE"
+    ],
+    "slices": [],
+    "domains": [],
+    "surfaces": []
+  },
+  "authority": {
+    "decidedBy": "MANAGER-01",
+    "managerOnly": true,
+    "humanEscalation": false,
+    "proposedBy": "MANAGER-01"
+  },
+  "evidence": [],
+  "evidenceRefs": [
+    "docs/engineering-operations/workforce/policy.json#branches",
+    "docs/n8n-lego/milestones.json#governance.branchPolicy"
+  ],
+  "sources": {
+    "issues": [
+      256,
+      259,
+      263,
+      268
+    ],
+    "prs": [],
+    "commits": [],
+    "requests": []
+  },
+  "supersedes": null,
+  "supersededBy": null,
+  "promotion": {
+    "canonical": false,
+    "mainPath": null,
+    "mainCommitSha": null,
+    "promotedAt": null,
+    "promotedBy": null
+  },
+  "reason": null
+}

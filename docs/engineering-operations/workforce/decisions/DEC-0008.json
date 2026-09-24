@@ -1,0 +1,63 @@
+{
+  "schemaVersion": "1.0",
+  "objectType": "Decision",
+  "objectId": "DEC-0008",
+  "revision": 1,
+  "createdAt": "2026-09-25T00:00:00Z",
+  "updatedAt": "2026-09-25T00:00:00Z",
+  "events": [],
+  "state": "ACTIVE",
+  "category": "RECOVERY",
+  "title": "arena-manager migration to Manager memory",
+  "problem": "arena-manager currently holds owner commits (12 ahead / 438 behind main) including exposed gateway tokens, and is not Manager memory.",
+  "options": [
+    {
+      "id": "preserve-rebuild",
+      "summary": "Archive tag, audit unique commits, recover valid work via verified PRs/cherry-picks, preserve history, then rebuild from main as Manager memory; force-push only arena-manager and only after preservation"
+    },
+    {
+      "id": "leave",
+      "summary": "Leave as is"
+    }
+  ],
+  "selectedOption": "preserve-rebuild",
+  "rationale": "Execution is BLOCKED on an authorized write credential. No history is destroyed before an archive tag exists and the audit is published.",
+  "scope": {
+    "programs": [
+      "GOVERNANCE"
+    ],
+    "slices": [],
+    "domains": [],
+    "surfaces": []
+  },
+  "authority": {
+    "decidedBy": "MANAGER-01",
+    "managerOnly": true,
+    "humanEscalation": true,
+    "proposedBy": "MANAGER-01"
+  },
+  "evidence": [],
+  "evidenceRefs": [
+    "https://github.com/Catzpro01/n8n-rust-v.4/issues/268"
+  ],
+  "sources": {
+    "issues": [
+      259,
+      262,
+      268
+    ],
+    "prs": [],
+    "commits": [],
+    "requests": []
+  },
+  "supersedes": null,
+  "supersededBy": null,
+  "promotion": {
+    "canonical": false,
+    "mainPath": null,
+    "mainCommitSha": null,
+    "promotedAt": null,
+    "promotedBy": null
+  },
+  "reason": null
+}

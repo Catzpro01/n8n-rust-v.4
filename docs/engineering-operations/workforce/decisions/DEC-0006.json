@@ -1,0 +1,62 @@
+{
+  "schemaVersion": "1.0",
+  "objectType": "Decision",
+  "objectId": "DEC-0006",
+  "revision": 1,
+  "createdAt": "2026-09-25T00:00:00Z",
+  "updatedAt": "2026-09-25T00:00:00Z",
+  "events": [],
+  "state": "ACTIVE",
+  "category": "RESOURCE",
+  "title": "Initial control-plane parameters",
+  "problem": "The specification leaves numeric limits to the Manager.",
+  "options": [
+    {
+      "id": "initial",
+      "summary": "Adopt the policy.json values"
+    },
+    {
+      "id": "unbounded",
+      "summary": "No limits"
+    }
+  ],
+  "selectedOption": "initial",
+  "rationale": "Backpressure: maxActiveTasks 10, maxTasksPerWorker 1, heavy builds WINDOWS 3 / WSL 3 / ANY 5, maxActiveReservations 40, maxQueuedTasks 500, maxMergeQueueItems 50. Anti-thrash freeze thresholds: reassign 3, recovery 2, CI retry 3, reservation conflict 3, scope correction 3. Lease TTL/max: TASK_ASSIGNMENT 3600s/86400s, RESERVATION 7200s/172800s (not worker-renewable), MERGE_AUTHORIZATION 900s (not renewable), EXTERNAL_EXECUTION 1800s/21600s. Timing: claim ack 900s; heartbeat stale 600s, lost-candidate 1800s (never automatic LOST); all polling at most 1000ms. Aging +1 per 24h or 3 deferrals, max +3; starvation alert at 72h or 5 deferrals. Changes require a superseding decision.",
+  "scope": {
+    "programs": [
+      "GOVERNANCE"
+    ],
+    "slices": [],
+    "domains": [],
+    "surfaces": []
+  },
+  "authority": {
+    "decidedBy": "MANAGER-01",
+    "managerOnly": true,
+    "humanEscalation": false,
+    "proposedBy": "MANAGER-01"
+  },
+  "evidence": [],
+  "evidenceRefs": [
+    "docs/engineering-operations/workforce/policy.json"
+  ],
+  "sources": {
+    "issues": [
+      264,
+      267
+    ],
+    "prs": [],
+    "commits": [],
+    "requests": []
+  },
+  "supersedes": null,
+  "supersededBy": null,
+  "promotion": {
+    "canonical": false,
+    "mainPath": null,
+    "mainCommitSha": null,
+    "promotedAt": null,
+    "promotedBy": null
+  },
+  "reason": null
+}

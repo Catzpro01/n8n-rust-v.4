@@ -34,6 +34,8 @@ on:
       - 'apps/n8n-lego/**'
       - 'tests/e2e/**'
       - 'tools/lego/**'
+      - 'tools/workforce/**'
+      - 'docs/engineering-operations/workforce/**'
       - 'scripts/release.sh'
       - 'package.json'
       - '.github/workflows/n8n-lego.yml'
@@ -43,6 +45,8 @@ on:
       - 'apps/n8n-lego/**'
       - 'tests/e2e/**'
       - 'tools/lego/**'
+      - 'tools/workforce/**'
+      - 'docs/engineering-operations/workforce/**'
       - 'scripts/release.sh'
       - 'package.json'
       - '.github/workflows/n8n-lego.yml'
@@ -174,6 +178,11 @@ jobs:
         # backend gate never ran. Kept as its own step so a frontend failure is
         # attributable on sight rather than buried in the backend glob.
         run: node --test packages/frontend-lego/test/*.test.mjs
+
+      - name: Workforce control-plane tests (#259-#267)
+        # Governance tooling, not product code: engine, schemas, policy, scheduler,
+        # recovery, crash injection and multi-process CAS races (DEC-0001, DEC-0002).
+        run: node --test tools/workforce/test/*.test.mjs
 
       - name: Unit + REST contract integration tests
         # The glob covers every suite, including the P2.9 additions:

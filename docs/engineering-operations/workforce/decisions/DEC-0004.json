@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "1.0",
+  "objectType": "Decision",
+  "objectId": "DEC-0004",
+  "revision": 1,
+  "createdAt": "2026-09-25T00:00:00Z",
+  "updatedAt": "2026-09-25T00:00:00Z",
+  "events": [],
+  "state": "ACTIVE",
+  "category": "SECURITY",
+  "title": "Gateway token files are never committed",
+  "problem": "arena-manager tracks .arena/gateway_tokens.json containing exposed tokens; the pytest gateway suite recreates the file locally.",
+  "options": [
+    {
+      "id": "never-track",
+      "summary": "Keep .arena/gateway_tokens.json gitignored and enforce by test that it is not tracked; exposed tokens must be rotated by the owner"
+    },
+    {
+      "id": "allow",
+      "summary": "Track the file"
+    }
+  ],
+  "selectedOption": "never-track",
+  "rationale": "Secrets never enter the repository, memory, issues, prompts or evidence. The repo-invariants test fails if the file becomes tracked. Rotation of already exposed tokens is an owner action and is recorded as an open blocker, not claimed as done.",
+  "scope": {
+    "programs": [
+      "GOVERNANCE"
+    ],
+    "slices": [],
+    "domains": [],
+    "surfaces": [
+      "security"
+    ]
+  },
+  "authority": {
+    "decidedBy": "MANAGER-01",
+    "managerOnly": true,
+    "humanEscalation": true,
+    "proposedBy": "MANAGER-01"
+  },
+  "evidence": [],
+  "evidenceRefs": [
+    "tools/workforce/test/repo-invariants.test.mjs",
+    ".gitignore"
+  ],
+  "sources": {
+    "issues": [
+      259,
+      266
+    ],
+    "prs": [],
+    "commits": [],
+    "requests": []
+  },
+  "supersedes": null,
+  "supersededBy": null,
+  "promotion": {
+    "canonical": false,
+    "mainPath": null,
+    "mainCommitSha": null,
+    "promotedAt": null,
+    "promotedBy": null
+  },
+  "reason": null
+}
