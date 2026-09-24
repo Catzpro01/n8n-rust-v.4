@@ -202,18 +202,11 @@ test('pluginId/operation inputs are validated fail-closed', () => {
   assert.throws(() => createSecretBroker({ now: () => 0, defaultTtlMs: PLUGIN_SECRET_LIMITS.maxTtlMs + 1 }), TypeError);
 });
 
-test('the lock row (0.5.0) pins the exact six-module surface and export sets', () => {
+test('the lego.plugin-runtime row keeps the P2.27.5 modules locked (exact surface pins live in the newest slice suite)', () => {
   const lock = JSON.parse(readFileSync(join(APP_ROOT, 'src/lego/contracts/contract-lock.json'), 'utf8'));
   const row = lock.contracts.find((entry) => entry.id === 'lego.plugin-runtime');
-  assert.equal(row.version, '0.5.0');
-  assert.deepEqual(row.surface.slice().sort(), [
-    'src/lego/plugin-locality.mjs',
-    'src/lego/plugin-manifest.mjs',
-    'src/lego/plugin-policy.mjs',
-    'src/lego/plugin-registry.mjs',
-    'src/lego/plugin-runtime.mjs',
-    'src/lego/plugin-secrets.mjs',
-  ]);
+  assert.match(row.version, /^\d+\.\d+\.\d+$/);
+  assert.ok(row.surface.includes('src/lego/plugin-secrets.mjs'), 'plugin-secrets.mjs stays on the surface');
   assert.ok(row.tests.includes('apps/n8n-lego/test/lego-plugin-secrets.test.mjs'));
   for (const file of row.surface) {
     const source = readFileSync(join(APP_ROOT, file), 'utf8');

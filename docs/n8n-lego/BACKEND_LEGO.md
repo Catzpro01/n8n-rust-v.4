@@ -433,6 +433,7 @@ A domain that publishes several contracts names its **primary** one
 | 2026-09-24 | `lego.plugin-runtime` | 0.3.0 | P2.27.3: MINOR — capability/permission policy: trust-class ceiling map onto foundation levels, deny-by-default domain grants, no wildcards, §10 manifest pipeline, §11 attenuated delegation (exports grow; Master Prompt P2.27) |
 | 2026-09-24 | `lego.plugin-runtime` | 0.4.0 | P2.27.4: MINOR — runtime locality policy: trust-class matrix, defaults inside rows, fail-closed assert (access_denied), recommender that cannot escape the matrix (exports grow; Master Prompt P2.27) |
 | 2026-09-24 | `lego.plugin-runtime` | 0.5.0 | P2.27.5: MINOR — secret broker: scoped short-lived one-shot grants, bounded live map with backpressure, external source only, metadata-only events (exports grow; Master Prompt P2.27) |
+| 2026-09-24 | `lego.plugin-runtime` | 0.6.0 | P2.27.6: MINOR — resource budgets: conservative defaults, no-queue concurrency backpressure, outputBytes contract_violation, deadline check (exports grow; Master Prompt P2.27) |
 ## 10. Ownership model
 
 | agent | role | domains |
