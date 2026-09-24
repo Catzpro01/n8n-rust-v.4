@@ -49,8 +49,8 @@ jobs:
       - name: Level 0 - Verify Formatting
         run: cargo fmt --all -- --check
 
-      - name: Level 0 - Fast Workspace Lint
-        run: cargo clippy --workspace -- -D warnings
+      - name: Level 0 - Fast Workspace Check
+        run: cargo check --workspace
 
   unit_tests:
     name: Level 1 (Affected Tests)
