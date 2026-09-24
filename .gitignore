@@ -48,6 +48,8 @@ state/
 # ...and inside it only the bundled catalog roles file is tracked.
 apps/n8n-lego/data/*
 !apps/n8n-lego/data/roles.json
+# P5.7: the API-key scope vocabulary, extracted by the same script from @n8n/permissions.
+!apps/n8n-lego/data/api-key-scopes.json
 apps/n8n-ts/.tsbuildinfo
 
 # release artifacts (scripts/release.sh)

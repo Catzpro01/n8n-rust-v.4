@@ -232,13 +232,14 @@ test('I9 — a real 501 capability answer becomes a machine-readable client erro
   assert.equal(settings.ok, true, 'an implemented endpoint answers normally');
   assert.equal(settings.error, null);
 
-  // /rest/api-keys is a known-but-unimplemented capability (P2 registry).
-  const unsupported = await client.get('/api-keys');
+  // /rest/settings/security is a known-but-unimplemented capability (P2
+  // registry). It replaced /rest/api-keys here when P5.7 implemented API keys.
+  const unsupported = await client.get('/settings/security');
   assert.equal(unsupported.ok, false);
   assert.equal(unsupported.status, 501);
   assert.equal(unsupported.error.kind, 'unsupported');
   assert.equal(unsupported.error.code, 'unsupported');
-  assert.equal(unsupported.error.meta.feature, 'api-keys');
+  assert.equal(unsupported.error.meta.feature, 'security-settings');
   assert.equal(unsupported.error.meta.owner, 'auth');
   assert.equal(unsupported.error.messageKey, 'backend-errors.capability-unsupported');
   assert.equal(unsupported.error.retryable, false);

@@ -223,24 +223,27 @@ await screenshot('01-dashboard');
   );
 }
 
-/* ------------------------------------------------ 6. unsupported endpoint state */
+/* ------------------------------------------------ 6. API settings page + unsupported endpoint state */
 {
+  // P5.7 (#220) implemented /rest/api-keys: the n8n API settings page now has a real
+  // backend. The 501 contract is still asserted below against a capability that
+  // remains unsupported (workflow-history).
   restLog.length = 0;
   await page.goto(`${baseUrl}/settings/api`, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await wait(3000);
   const apiPath = await page.evaluate(() => location.pathname);
   const apiKeyCalls = restLog.filter((entry) => entry.path.startsWith('/rest/api-keys'));
   report(
-    'navigating n8n API settings page stays (owner scope) while its backend is missing',
+    'navigating n8n API settings page stays (owner scope)',
     apiPath === '/settings/api',
     `pathname=${apiPath}`,
   );
   report(
-    'unimplemented settings backend answers 501 — no fake 200 {}',
-    apiKeyCalls.length > 0 && apiKeyCalls.every((entry) => entry.status === 501),
+    'n8n API settings page is served by the real /rest/api-keys backend (P5.7) — every call 200',
+    apiKeyCalls.some((entry) => entry.method === 'GET' && entry.path === '/rest/api-keys') && apiKeyCalls.every((entry) => entry.status === 200),
     apiKeyCalls.length > 0 ? apiKeyCalls.map((entry) => `${entry.method} ${entry.path} ${entry.status}`).join('; ') : 'page never called /rest/api-keys*',
   );
-  await screenshot('04-settings-api-unsupported');
+  await screenshot('04-settings-api');
 
   // Deterministic trigger: one registered capability, from the real session.
   const probe = await page.evaluate(async () => {

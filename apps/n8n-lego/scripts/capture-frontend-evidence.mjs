@@ -142,8 +142,8 @@ const client = createRestClient({
   restEndpoint: 'rest',
   fetchImpl: (url, options) => fetch(url, { ...options, headers: { ...(options?.headers ?? {}), cookie } }),
 });
-const unsupported = await client.get('/api-keys');
-check('501 capability becomes a machine-readable error', unsupported.error?.kind === 'unsupported' && unsupported.error.meta.feature === 'api-keys', `kind=${unsupported.error?.kind} feature=${unsupported.error?.meta?.feature} key=${unsupported.error?.messageKey}`);
+const unsupported = await client.get('/settings/security');
+check('501 capability becomes a machine-readable error', unsupported.error?.kind === 'unsupported' && unsupported.error.meta.feature === 'security-settings', `kind=${unsupported.error?.kind} feature=${unsupported.error?.meta?.feature} key=${unsupported.error?.messageKey}`);
 
 const payloadBytes = JSON.stringify(payload).length;
 check('boot descriptor stays inside its budget', Math.ceil((payloadBytes * 4) / 3) < 32 * 1024, `${payloadBytes} bytes JSON → ${Math.ceil((payloadBytes * 4) / 3)} bytes base64`);

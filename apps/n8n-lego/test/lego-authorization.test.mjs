@@ -447,7 +447,7 @@ test('the auth domain declares the authorization capability and stays at 26 doma
 });
 
 test('P5.3 adds the ninety-seventh row and preserves every earlier phase', () => {
-  assert.equal(LOCK.contracts.length, 99, '96 through P5.2 + auth.authorization');
+  assert.equal(LOCK.contracts.length, 100, '96 through P5.2 + auth.authorization');
   assert.equal(LOCK.contracts.filter((r) => r.domain === 'observability').length, 22, 'P9 intact');
   const byId = Object.fromEntries(LOCK.contracts.map((r) => [r.id, r.version]));
   assert.equal(byId['auth.principal'], '1.0.0', 'P5.1 intact');

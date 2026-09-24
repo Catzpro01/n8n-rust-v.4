@@ -35,7 +35,6 @@ export const UNSUPPORTED_FEATURES = Object.freeze([
   { prefix: '/rest/workflow-history', feature: 'workflow-history', label: 'Workflow history', owner: 'workflow', phase: 'P3' },
   { prefix: '/rest/projects/', feature: 'workspace-projects', label: 'Team projects / project detail', owner: 'workspace', phase: 'P3' },
   // --- auth LEGO (P5) ---
-  { prefix: '/rest/api-keys', feature: 'api-keys', label: 'n8n API keys', owner: 'auth', phase: 'P5' },
   { prefix: '/rest/settings/security', feature: 'security-settings', label: 'Security settings', owner: 'auth', phase: 'P5' },
   { prefix: '/rest/me/survey', feature: 'personalization-survey', label: 'Personalization survey', owner: 'auth', phase: 'P5' },
   { prefix: '/rest/mfa/enforce-mfa', feature: 'mfa-enforcement', label: 'Enforce two-factor authentication (enterprise)', owner: 'auth', phase: 'deferred' },

@@ -552,7 +552,7 @@ test('the auth domain declares the session capability and stays at 26 domains', 
 });
 
 test('P5.2 adds the ninety-sixth row and preserves every earlier phase', () => {
-  assert.equal(LOCK.contracts.length, 99, '95 through P5.1 + auth.session');
+  assert.equal(LOCK.contracts.length, 100, '95 through P5.1 + auth.session');
   assert.equal(LOCK.contracts.filter((r) => r.domain === 'observability').length, 22, 'P9 intact');
   const byId = Object.fromEntries(LOCK.contracts.map((r) => [r.id, r.version]));
   assert.equal(byId['auth.principal'], '1.0.0', 'P5.1 intact');

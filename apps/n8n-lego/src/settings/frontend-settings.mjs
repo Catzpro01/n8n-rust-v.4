@@ -208,7 +208,9 @@ function enterpriseSettings() {
     binaryDataS3: false,
     workerView: false,
     advancedPermissions: false,
-    apiKeyScopes: false,
+    // P5.7: requested key scopes are honoured and attenuated to the role, so
+    // the editor shows the scope picker (upstream gates it behind a licence).
+    apiKeyScopes: true,
     workflowDiffs: false,
     namedVersions: false,
     provisioning: false,
