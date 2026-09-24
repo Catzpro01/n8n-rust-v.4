@@ -3423,6 +3423,499 @@
         "apps/n8n-lego/test/lego-plugin-upgrade.test.mjs"
       ],
       "notes": "P2.27.1 tiny Core kernel (dedicated Master Prompt P2.27, 2026-09-24; design section 3): canonical plugin vocabularies frozen once \u2014 trust classes CORE/TRUSTED/ISOLATED/SANDBOXED (isolation posture; foundation.json trust levels stay canonical for provenance), runtime localities IN_PROCESS/WASM/ISOLATED_PROCESS/REMOTE (aligned with the locality strings node-registry already emits), lifecycle DISCOVERED\u2192VALIDATING\u2192STARTING\u2192HEALTHY\u2192DEGRADED\u2192DRAINING\u2192STOPPED\u2192QUARANTINED, declared event types; core identity/clock primitives; bounded drop-oldest event ring (default 64, max 4096, dropped counted \u2014 no unbounded queue); health snapshot (plugins:0 reserved for P2.27.2); PluginRuntimeError constructor refuses any code not published in contracts/errors.contract.json (zero new error codes, foundation F16 by construction). Core owns no workflow/execution/storage/AI/credentials. Later P2.27 slices extend this row additively (exports grow, minor version bumps as warranted); no new domain, no sub-LEGO. MINOR 0.2.0 (P2.27.2): manifest + registry land \u2014 strict fail-closed validateManifest required+optional field whitelist (unknown fields reject), kebab id, major.minor.patch, canonical trust/locality classes only, capability/dependency/resource bounds (no unbounded declarations), range grammar = compat.mjs grammar (*, exact, ^ with 0.x same-minor, ~, >=); createPluginRegistry with single-active-version identity (duplicate id = lego.contract_violation), resolveContract(id, range) via compat satisfies (missing provider = lego.unavailable, range miss = lego.version_incompatible with available versions), unregister for drains, events plugin.registered/rejected/deactivated into the core ring; runtime accepts an injected registry (dependency direction registry -> runtime, no cycle) and reports health().plugins. MINOR 0.3.0 (P2.27.3): capability/permission policy lands \u2014 TRUST_CLASS_CAPABILITY_CEILING maps isolation posture onto foundation provenance levels (CORE->core, TRUSTED->verified, ISOLATED->community, SANDBOXED->untrusted; monotonic: more isolation = weaker defaults); foundation OS-capabilities decided by foundation.isCapabilityAllowed at the ceiling (foundation.json stays canonical), domain tokens (memory.read) deny-by-default with exact explicit grants only; wildcards cannot be stated (contract_violation); evaluateManifestPolicy is the section 10 requested->grant/deny pipeline with explainable reasons; assertCapability raises published lego.access_denied; attenuateDelegation enforces section 11 grant(B) <= grant(A) (intersection, stripped extras reported). MINOR 0.4.0 (P2.27.4): runtime locality policy \u2014 LOCALITY_MATRIX per trust class (CORE only IN_PROCESS; TRUSTED in/isolated/remote; ISOLATED isolated/remote; SANDBOXED wasm/isolated \u2014 never in-process, never remote), DEFAULT_LOCALITY always inside its row, isLocalityAllowed explainable verdicts, assertLocality raises published lego.access_denied for canonical-but-forbidden pairs (contract_violation for non-canonical input), recommendLocality applies the section 6 rule (external/crashRisk) but overrides can never escape the class matrix. One locality vocabulary shared with node-registry's emitted strings; WASM = locality class only (engine out of milestone scope). MINOR 0.5.0 (P2.27.5): secret broker \u2014 section 12 as code: plugin receives an opaque token, material resolves EXACTLY once for the declared operation then deletes (scope miss = lego.access_denied, already-consumed/unknown/revoked = lego.unavailable, expiry = lego.deadline_exceeded), TTLs bounded (default 30s, max 5min), live grants bounded (max 64, then lego.backpressure), injected external source (no credential store inside Core; no source = issue fails unavailable), events plugin.secret-issued/resolved carry metadata only \u2014 never token or material; in-memory only, no persistence, no standing credential. MINOR 0.6.0 (P2.27.6): resource budgets \u2014 createResourceBudget enforces declared resourceLimits (section 14) with conservative PLUGIN_RESOURCE_DEFAULTS for omissions (never unlimited): concurrency slots admit to cap then return explainable lego.backpressure verdicts WITHOUT any queue (rejected, not queued; over-release = contract_violation), outputBytes overshoot throws contract_violation (resource-guard.mjs family), checkDeadline raises lego.deadline_exceeded (propagation composes in P2.27.8), cpu/memory/process carried as declared intent (OS enforcement is the supervisor/locality job \u2014 no fake claims); events plugin.budget-rejected metadata-only. MINOR 0.7.0 (P2.27.7): supervisor \u2014 PLUGIN_LIFECYCLE_TRANSITIONS is the exact section 15 machine (illegal edge = lego.contract_violation via canPluginTransition/transition; QUARANTINED has ZERO automatic exits \u2014 only operator releaseFromQuarantine back to DISCOVERED), reportCrash restarts toward STARTING below crashLimit and forces QUARANTINED at it (consecutive window resets on HEALTHY), events limited to the .1 vocabulary (plugin.activated/quarantined/deactivated), unknown ids = lego.unavailable; supervisor holds state only \u2014 spawns nothing, core survives plugin death. MINOR 0.8.0 (P2.27.8): circuit breaker + deadline propagation + contract replay \u2014 createCircuitBreaker CLOSED/OPEN/HALF_OPEN with lazy clock-driven transitions (no timers/loops), threshold open -> deny via published lego.unavailable (retryable + retryAfterMs), single-flight half-open probe (success closes, failure re-opens with fresh cooldown); withDeadline derives children through canonical lego.envelope deriveEnvelope (child<=parent clamp verbatim, section 17) and maps exhausted/cancelled parents onto published lego.deadline_exceeded/lego.cancelled (checkDeadlineRemaining: null | ms | throw); plugin-replay stableStringify (sorted-key semantic compare, fail-closed on cycles/non-serializable), firstDifference path oracle, replayFixture v1-vs-v2 interchangeability over outcomes (success values or identical failure contracts) with EXPLICIT normalize only \u2014 bounds 2..16 implementations."
+    },
+    {
+      "id": "observability.semantic-event",
+      "owner": "agent-6",
+      "domain": "observability",
+      "version": "1.0.0",
+      "status": "stable",
+      "surface": [
+        "src/lego/semantic-events.mjs"
+      ],
+      "exports": {
+        "src/lego/semantic-events.mjs": [
+          "SEMANTIC_EVENT_CONTRACT",
+          "EVENT_SCHEMA_VERSION",
+          "EVENT_LIMITS",
+          "EVENT_ATTRIBUTE_FIELDS",
+          "EVENT_VOCABULARY",
+          "EVENT_DOMAINS",
+          "EVENT_ORDER_POLICIES",
+          "EVENT_ORDER_DECISIONS",
+          "classifyEventVersion",
+          "createSemanticEvent",
+          "serializeSemanticEvent",
+          "deserializeSemanticEvent",
+          "createEventOrderGate"
+        ]
+      },
+      "consumers": [],
+      "tests": [
+        "apps/n8n-lego/test/lego-semantic-events.test.mjs"
+      ],
+      "notes": "P9.5 only; published lifecycle vocabulary, exact-version schemas, bounded events over the P9.1 envelope, explicit duplicate/out-of-order gate. Delegated implementation Agent 4, product ownership Agent 6 unchanged."
+    },
+    {
+      "id": "observability.telemetry-buffer",
+      "owner": "agent-6",
+      "domain": "observability",
+      "version": "1.0.0",
+      "status": "stable",
+      "surface": [
+        "src/lego/telemetry-buffer.mjs"
+      ],
+      "exports": {
+        "src/lego/telemetry-buffer.mjs": [
+          "TELEMETRY_BUFFER_CONTRACT",
+          "TELEMETRY_PRIORITY_CLASSES",
+          "TELEMETRY_PRIORITY_DESCRIPTIONS",
+          "BUFFER_LIMITS",
+          "BUFFER_OUTCOMES",
+          "BUFFER_OVERFLOW_POLICIES",
+          "createTelemetryBuffer"
+        ]
+      },
+      "consumers": [],
+      "tests": [
+        "apps/n8n-lego/test/lego-telemetry-buffer.test.mjs"
+      ],
+      "notes": "P9.6 only; hard-capacity ring, deterministic priority shed (P0-P4), exposed drop counters, no spill-to-disk in 1.0.0. Delegated implementation Agent 4, product ownership Agent 6 unchanged."
+    },
+    {
+      "id": "observability.telemetry-redaction",
+      "version": "1.0.0",
+      "owner": "agent-6",
+      "domain": "observability",
+      "surface": [
+        "src/lego/telemetry-redaction.mjs"
+      ],
+      "exports": {
+        "src/lego/telemetry-redaction.mjs": [
+          "REDACTION_CONTRACT",
+          "TELEMETRY_DATA_CLASSES",
+          "REDACTION_ACTIONS",
+          "REDACTION_LIMITS",
+          "REDACTION_MARKERS",
+          "classifyTelemetryField",
+          "sanitizeErrorMessage",
+          "redactTelemetryTree",
+          "redactForExport",
+          "containsSecretShape"
+        ]
+      },
+      "tests": [
+        "apps/n8n-lego/test/lego-telemetry-redaction.test.mjs"
+      ]
+    },
+    {
+      "id": "observability.telemetry-sampling",
+      "version": "1.0.0",
+      "owner": "agent-6",
+      "domain": "observability",
+      "surface": [
+        "src/lego/telemetry-sampling.mjs"
+      ],
+      "exports": {
+        "src/lego/telemetry-sampling.mjs": [
+          "SAMPLING_CONTRACT",
+          "SAMPLING_MODES",
+          "SAMPLING_MODE_DESCRIPTIONS",
+          "SAMPLING_DECISIONS",
+          "SAMPLING_REASONS",
+          "SAMPLING_LIMITS",
+          "createTelemetrySampler"
+        ]
+      },
+      "tests": [
+        "apps/n8n-lego/test/lego-telemetry-sampling.test.mjs"
+      ]
+    },
+    {
+      "id": "observability.resource-pressure",
+      "version": "1.0.0",
+      "owner": "agent-6",
+      "domain": "observability",
+      "surface": [
+        "src/lego/resource-pressure.mjs"
+      ],
+      "exports": {
+        "src/lego/resource-pressure.mjs": [
+          "RESOURCE_PRESSURE_CONTRACT",
+          "PRESSURE_STATES",
+          "VALUE_PROVENANCE",
+          "RESOURCE_DIMENSIONS",
+          "DEGRADATION_LEVELS",
+          "PRESSURE_LIMITS",
+          "DEFAULT_PRESSURE_THRESHOLDS",
+          "createResourcePressureMonitor"
+        ]
+      },
+      "tests": [
+        "apps/n8n-lego/test/lego-resource-pressure.test.mjs"
+      ]
+    },
+    {
+      "id": "observability.health-readiness",
+      "version": "1.0.0",
+      "owner": "agent-6",
+      "domain": "observability",
+      "surface": [
+        "src/lego/health-readiness.mjs"
+      ],
+      "exports": {
+        "src/lego/health-readiness.mjs": [
+          "HEALTH_CONTRACT",
+          "LIVENESS_STATES",
+          "READINESS_STATES",
+          "CONDITION_STATES",
+          "HEALTH_PHASES",
+          "HEALTH_REASON_CODES",
+          "HEALTH_LIMITS",
+          "createHealthModel"
+        ]
+      },
+      "tests": [
+        "apps/n8n-lego/test/lego-health-readiness.test.mjs"
+      ]
+    },
+    {
+      "id": "observability.execution-diagnostics",
+      "version": "1.0.0",
+      "owner": "agent-6",
+      "domain": "observability",
+      "surface": [
+        "src/lego/execution-diagnostics.mjs"
+      ],
+      "exports": {
+        "src/lego/execution-diagnostics.mjs": [
+          "EXEC_DIAG_CONTRACT",
+          "EXEC_DIAG_OUTCOMES",
+          "EXEC_DIAG_LIMITS",
+          "EXEC_DIAG_IDENTITY_FIELDS",
+          "EXEC_DIAG_EVIDENCE_KINDS",
+          "EXEC_DIAG_FAILURE_CLASSES",
+          "createExecutionDiagnostic",
+          "summarizeFailure",
+          "serializeExecutionDiagnostic"
+        ]
+      },
+      "tests": [
+        "apps/n8n-lego/test/lego-execution-diagnostics.test.mjs"
+      ]
+    },
+    {
+      "id": "observability.diagnostic-bundle",
+      "owner": "agent-6",
+      "domain": "observability",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/diagnostic-bundle.mjs"
+      ],
+      "exports": {
+        "src/lego/diagnostic-bundle.mjs": [
+          "DIAG_BUNDLE_CONTRACT",
+          "DIAG_BUNDLE_SCHEMA_VERSION",
+          "DIAG_BUNDLE_LIMITS",
+          "DIAG_BUNDLE_SECTIONS",
+          "DIAG_BUNDLE_SIGNAL_KINDS",
+          "DIAG_BUNDLE_BUDGET_REASONS",
+          "DIAG_BUNDLE_CORRELATION_FIELDS",
+          "compileDiagnosticBundle",
+          "verifyBundleIntegrity",
+          "exportDiagnosticBundle",
+          "importDiagnosticBundle"
+        ]
+      },
+      "tests": [
+        "apps/n8n-lego/test/lego-diagnostic-bundle.test.mjs"
+      ],
+      "notes": "P9.12 (implementation owner: Agent 4, Issue #101): Diagnostic Bundle Compiler \u2014 bounded deterministic bundle of selected logs/events/spans + correlation context under size and time budgets; versioned schema 1.0.0; missing evidence explicit via evidenceMissing; secret redaction mandatory through telemetry-redaction@1.0.0; export recomputes integrity digest BDL:v1 (fnv1a-pair-v1) and import fails closed on tamper; same inputs+policy \u2192 byte-identical bundle. Refs-not-payloads: large state stays a ref, never duplicated. No I/O, no clock, no workflow import."
+    },
+    {
+      "id": "observability.failure-correlation",
+      "owner": "agent-6",
+      "domain": "observability",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/failure-correlation.mjs"
+      ],
+      "exports": {
+        "src/lego/failure-correlation.mjs": [
+          "FAILURE_CORR_CONTRACT",
+          "FAILURE_CORR_SCHEMA_VERSION",
+          "FAILURE_CORR_CAUSE_KINDS",
+          "FAILURE_CORR_NOTES",
+          "FAILURE_CORR_LIMITS",
+          "compileFailureCorrelation",
+          "classifyRootCause",
+          "expandCausalChain",
+          "attachEvidence",
+          "exportFailureCorrelation"
+        ]
+      },
+      "tests": [
+        "apps/n8n-lego/test/lego-failure-correlation.test.mjs"
+      ],
+      "notes": "P9.13 (implementation owner: Agent 4, Issue #101): Failure Correlation Compiler \u2014 four cause kinds (OBSERVED_CAUSE / INFERRED_CAUSE / CORRELATED_WITH / UNKNOWN); evidence refs mandatory on observed/correlated edges; confidence in [0,1] + source mandatory on inferred edges; correlation never promoted to cause; unknown roots honest (no-inbound-causal-claims / evidenceMissing); cycle-safe bounded BFS expansion (visited set, depth<=64, path<=64, terminates:true); secret-shape evidence refs fail closed; deterministic export via stableStringify; no I/O, no clock."
+    },
+    {
+      "id": "observability.replay-evidence",
+      "owner": "agent-6",
+      "domain": "observability",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/replay-evidence.mjs"
+      ],
+      "exports": {
+        "src/lego/replay-evidence.mjs": [
+          "REPLAY_EVID_CONTRACT",
+          "REPLAY_EVID_SCHEMA_VERSION",
+          "REPLAY_EVID_SOURCES",
+          "REPLAY_EVID_FORMATS",
+          "REPLAY_EVID_LIMITS",
+          "REPLAY_EVID_NOTES",
+          "REPLAY_EVID_VERDICTS",
+          "checkReplayRef",
+          "compileReplayEvidence",
+          "selectReplayRefsForBundle",
+          "attachReplayEvidence",
+          "exportReplayEvidence"
+        ]
+      },
+      "tests": [
+        "apps/n8n-lego/test/lego-replay-evidence.test.mjs"
+      ],
+      "notes": "P9.14 (implementation owner: Agent 4, Issue #101): Replay / Compatibility Evidence Integration \u2014 consume P3 checkpoint + P6 compatibility replay REFERENCES only (no engine duplication); P3 execution.state-stream@0.1.0 / snapshotVersion=1 and P6 node.semantics@0.1.0 / schemaVersion=1 version-checked; incompatible refs segregated never evidence; missing refs \u2192 evidenceMissing; secret-shaped refs fail closed (null); bundle slots checkpoint/replay; deterministic export; no I/O/clock."
+    },
+    {
+      "id": "observability.telemetry-retention",
+      "owner": "agent-6",
+      "domain": "observability",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/telemetry-retention.mjs"
+      ],
+      "exports": {
+        "src/lego/telemetry-retention.mjs": [
+          "RETENTION_CONTRACT",
+          "RETENTION_SCHEMA_VERSION",
+          "RETENTION_TIERS",
+          "RETENTION_SIGNALS",
+          "RETENTION_ACTIONS",
+          "RETENTION_PRIORITIES",
+          "RETENTION_LIMITS",
+          "RETENTION_NOTES",
+          "AUTHORITATIVE_KINDS",
+          "createRetentionPolicy",
+          "classifyResidency",
+          "createRetentionStore",
+          "ingestRecord",
+          "applyRetentionPass",
+          "extendForIncident",
+          "applyStoragePressure",
+          "deleteTelemetryRecord",
+          "retentionReport"
+        ]
+      },
+      "tests": [
+        "apps/n8n-lego/test/lego-telemetry-retention.test.mjs"
+      ],
+      "notes": "P9.15 (implementation owner: Agent 4, Issue #101): Retention + HOT/WARM/COLD Policy \u2014 signal-specific TTLs (log/metric/trace/audit/security/replay/diagnostic); deterministic residency + expiry (now is an argument); incident extension policy-controlled with caps; audit/security retention distinct and shed last under storage pressure; expired records actually removed/compacted; deletion isolated from authoritative workflow state (refused_authoritative); pressure degrades whole records before corruption; no I/O/clock."
+    },
+    {
+      "id": "observability.operator-inspection",
+      "owner": "agent-6",
+      "domain": "observability",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/operator-inspection.mjs"
+      ],
+      "exports": {
+        "src/lego/operator-inspection.mjs": [
+          "OPERATOR_CONTRACT",
+          "OPERATOR_SCHEMA_VERSION",
+          "OPERATOR_INTERFACES",
+          "OPERATOR_ROLES",
+          "OPERATOR_ROLE_GRANTS",
+          "OPERATOR_DENIED_ROLES",
+          "OPERATOR_ERRORS",
+          "OPERATOR_LIMITS",
+          "OPERATOR_NOTES",
+          "createOperatorApi"
+        ]
+      },
+      "tests": [
+        "apps/n8n-lego/test/lego-operator-inspection.test.mjs"
+      ],
+      "notes": "P9.16 (implementation owner: Agent 4, Issue #101): Operator Inspection API \u2014 authorized health/readiness/logs/metrics/traces/diagnostics interfaces; pagination with hard maxLimit; query timeout + cancellation (stable codes operator.timeout/cancelled); bounded results; access policy enforced (operator.unauthorized); index-backed bounded scan (no workflow-runtime block; pure dataset, no I/O); concurrent storm to operator.busy; stable machine-readable error envelope; deterministic stats."
+    },
+    {
+      "id": "observability.low-resource-mode",
+      "owner": "agent-6",
+      "domain": "observability",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/low-resource-mode.mjs"
+      ],
+      "exports": {
+        "src/lego/low-resource-mode.mjs": [
+          "LOWRES_CONTRACT",
+          "LOWRES_SCHEMA_VERSION",
+          "LOWRES_MODES",
+          "LOWRES_DEGRADE_ORDER",
+          "LOWRES_STEP_EFFECTS",
+          "LOWRES_PRIORITIES",
+          "LOWRES_LIMITS",
+          "LOWRES_NOTES",
+          "createLowResourceController"
+        ]
+      },
+      "tests": [
+        "apps/n8n-lego/test/lego-low-resource-mode.test.mjs"
+      ],
+      "notes": "P9.17 (implementation owner: Agent 4, Issue #101): Low-Resource Observability Mode \u2014 auto or explicit activation; defined degrade order (debug..diagnostics shed, audit_security never); byte/CPU budgets enforced via whole-record budget_shed; hysteresis (exit<enter) + cooldown anti-thrash; critical/security protected even over budget; recovery restores full channel set; workflow A/B results mode-independent; no I/O/clock (now is an argument)."
+    },
+    {
+      "id": "observability.self-observability",
+      "owner": "agent-6",
+      "domain": "observability",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/self-observability.mjs"
+      ],
+      "exports": {
+        "src/lego/self-observability.mjs": [
+          "SELFVIEW_CONTRACT",
+          "SELFVIEW_SCHEMA_VERSION",
+          "SELFVIEW_COUNTERS",
+          "SELFVIEW_ERROR_COUNTERS",
+          "SELFVIEW_EVENT_KINDS",
+          "SELFVIEW_PRIORITIES",
+          "SELFVIEW_SUPPRESSION",
+          "SELFVIEW_LIMITS",
+          "SELFVIEW_NOTES",
+          "createSelfObservability"
+        ]
+      },
+      "tests": [
+        "apps/n8n-lego/test/lego-self-observability.test.mjs"
+      ],
+      "notes": "P9.18 (implementation owner: Agent 4, Issue #101): Telemetry Self-Observability \u2014 ten required counters (generated, dropped, sampled, buffered, export_failed, redacted, cardinality_rejected, query_slow, diagnostic_bundle_failed, degraded); zero-errors distinguishable from zero-telemetry; bounded fixed-key saturating self-metrics; re-entrancy recursion guard; own suppression/priority rule (counters always, P0/P1 always delivered, P2\u2013P4 detail suppressed under outage); no I/O/clock."
+    },
+    {
+      "id": "observability.tenant-isolation",
+      "owner": "agent-6",
+      "domain": "observability",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/tenant-isolation.mjs"
+      ],
+      "exports": {
+        "src/lego/tenant-isolation.mjs": [
+          "TENANTISO_CONTRACT",
+          "TENANTISO_SCHEMA_VERSION",
+          "TENANTISO_MODES",
+          "TENANTISO_SCOPES",
+          "TENANTISO_LABEL_DENY",
+          "TENANTISO_LIMITS",
+          "TENANTISO_NOTES",
+          "createTenantIsolation"
+        ]
+      },
+      "tests": [
+        "apps/n8n-lego/test/lego-tenant-isolation.test.mjs"
+      ],
+      "notes": "P9.19 (implementation owner: Agent 4, Issue #101): Multi-Tenant Telemetry Isolation Readiness \u2014 tenant scope where authorized; queries and export routing enforce scope; cross-tenant leakage fails closed; global aggregates structurally separated (counts-only, containsTenantRows:false); tenant identifiers never become metric labels; single-tenant mode lightweight (flat bucket, no Map); no I/O/clock."
+    },
+    {
+      "id": "observability.contract-oracle",
+      "owner": "agent-6",
+      "domain": "observability",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/contract-oracle.mjs"
+      ],
+      "exports": {
+        "src/lego/contract-oracle.mjs": [
+          "CORACLE_CONTRACT",
+          "CORACLE_SCHEMA_VERSION",
+          "CORACLE_FINDINGS",
+          "CORACLE_PHASES",
+          "CORACLE_LIMITS",
+          "CORACLE_NOTES",
+          "createContractOracle"
+        ]
+      },
+      "tests": [
+        "apps/n8n-lego/test/lego-contract-oracle.test.mjs"
+      ],
+      "notes": "P9.20 (implementation owner: Agent 4, Issue #101): Observability Contract Oracle + Cross-Domain Acceptance \u2014 validates P3/P4/P6/P8 producer specimens; detects missing fields, invented fields, vocabulary drift, version incompatibility (via local satisfies with compat range semantics); deterministic sorted output with fingerprint; cross-domain fixtures checked in; no I/O/clock."
+    },
+    {
+      "id": "observability.advanced-diagnostics",
+      "owner": "agent-6",
+      "domain": "observability",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/advanced-diagnostics.mjs"
+      ],
+      "exports": {
+        "src/lego/advanced-diagnostics.mjs": [
+          "ADVDIAG_CONTRACT",
+          "ADVDIAG_SCHEMA_VERSION",
+          "ADVDIAG_FEATURES",
+          "ADVDIAG_CONTAINMENT",
+          "ADVDIAG_DEDUP_EXEMPT",
+          "ADVDIAG_LIMITS",
+          "ADVDIAG_NOTES",
+          "createAdvancedDiagnostics"
+        ]
+      },
+      "tests": [
+        "apps/n8n-lego/test/lego-advanced-diagnostics.test.mjs"
+      ],
+      "notes": "P9.21 (implementation owner: Agent 4, Issue #101): Advanced Diagnostics / Incident Intelligence \u2014 six selected features each with budget, kill-switch, fallback, negative tests and pressure behavior; security/audit never deduped; profiling/eBPF optional (not selected); tail sampling bounded with keep-on-overflow; workflow A/B pure; no I/O/clock."
+    },
+    {
+      "id": "observability.p9-acceptance",
+      "owner": "agent-6",
+      "domain": "observability",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/p9-acceptance.mjs"
+      ],
+      "exports": {
+        "src/lego/p9-acceptance.mjs": [
+          "ACCEPT_CONTRACT",
+          "ACCEPT_SCHEMA_VERSION",
+          "ACCEPT_GATES",
+          "ACCEPT_STATUSES",
+          "ACCEPT_COMPLETE_REQUIREMENTS",
+          "ACCEPT_LIMITS",
+          "ACCEPT_NOTES",
+          "evaluateGate",
+          "evaluateAllGates",
+          "workflowEquivalence",
+          "summarizeMilestones",
+          "finalAcceptance"
+        ]
+      },
+      "tests": [
+        "apps/n8n-lego/test/lego-p9-acceptance.test.mjs"
+      ],
+      "notes": "P9.22 (implementation owner: Agent 4, Issue #101): Full P9 Acceptance \u2014 twelve-gate non-interference vocabulary + fail-closed verdicts; OFF vs NORMAL workflow equivalence; milestone status roll-up (laneReadyForMergeReview vs mergeReady); pure decision helpers; no I/O/clock."
     }
   ]
 }
