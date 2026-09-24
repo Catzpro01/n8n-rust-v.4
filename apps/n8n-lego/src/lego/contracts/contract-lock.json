@@ -2638,6 +2638,36 @@
         "apps/n8n-lego/test/lego-failure-correlation.test.mjs"
       ],
       "notes": "P9.13 (implementation owner: Agent 4, Issue #101): Failure Correlation Compiler — four cause kinds (OBSERVED_CAUSE / INFERRED_CAUSE / CORRELATED_WITH / UNKNOWN); evidence refs mandatory on observed/correlated edges; confidence in [0,1] + source mandatory on inferred edges; correlation never promoted to cause; unknown roots honest (no-inbound-causal-claims / evidenceMissing); cycle-safe bounded BFS expansion (visited set, depth<=64, path<=64, terminates:true); secret-shape evidence refs fail closed; deterministic export via stableStringify; no I/O, no clock."
+    },
+    {
+      "id": "observability.replay-evidence",
+      "owner": "agent-6",
+      "domain": "observability",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/replay-evidence.mjs"
+      ],
+      "exports": {
+        "src/lego/replay-evidence.mjs": [
+          "REPLAY_EVID_CONTRACT",
+          "REPLAY_EVID_SCHEMA_VERSION",
+          "REPLAY_EVID_SOURCES",
+          "REPLAY_EVID_FORMATS",
+          "REPLAY_EVID_LIMITS",
+          "REPLAY_EVID_NOTES",
+          "REPLAY_EVID_VERDICTS",
+          "checkReplayRef",
+          "compileReplayEvidence",
+          "selectReplayRefsForBundle",
+          "attachReplayEvidence",
+          "exportReplayEvidence"
+        ]
+      },
+      "tests": [
+        "apps/n8n-lego/test/lego-replay-evidence.test.mjs"
+      ],
+      "notes": "P9.14 (implementation owner: Agent 4, Issue #101): Replay / Compatibility Evidence Integration — consume P3 checkpoint + P6 compatibility replay REFERENCES only (no engine duplication); P3 execution.state-stream@0.1.0 / snapshotVersion=1 and P6 node.semantics@0.1.0 / schemaVersion=1 version-checked; incompatible refs segregated never evidence; missing refs → evidenceMissing; secret-shaped refs fail closed (null); bundle slots checkpoint/replay; deterministic export; no I/O/clock."
     }
   ]
 }

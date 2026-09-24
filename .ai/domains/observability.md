@@ -7,7 +7,7 @@
 | --- | --- |
 | Owner | `agent-6` |
 | Kind / tier | `domain` / `domain` |
-| Status | `contract-only` (phase `P9.13`) |
+| Status | `contract-only` (phase `P9.14`) |
 | Parent | _root_ |
 | Contract | _none declared_ |
 | Error namespace | `observability` |
@@ -33,6 +33,7 @@
 - `src/lego/execution-diagnostics.mjs`
 - `src/lego/diagnostic-bundle.mjs`
 - `src/lego/failure-correlation.mjs`
+- `src/lego/replay-evidence.mjs`
 
 ## Public contract surface
 
@@ -49,6 +50,7 @@
 - `src/lego/execution-diagnostics.mjs`
 - `src/lego/diagnostic-bundle.mjs`
 - `src/lego/failure-correlation.mjs`
+- `src/lego/replay-evidence.mjs`
 
 ## May call
 
@@ -89,3 +91,4 @@
 - `apps/n8n-lego/test/lego-execution-diagnostics.test.mjs`
 - `apps/n8n-lego/test/lego-diagnostic-bundle.test.mjs`
 - `apps/n8n-lego/test/lego-failure-correlation.test.mjs`
+- `apps/n8n-lego/test/lego-replay-evidence.test.mjs`
