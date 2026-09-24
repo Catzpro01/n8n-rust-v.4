@@ -1,4 +1,4 @@
-﻿name: Level 2 Integration & Conformance Suite (Laptop Worker)
+name: Level 2 Integration & Conformance Suite (Matrix Workers)
 
 on:
   pull_request:
@@ -7,14 +7,18 @@ on:
 
 jobs:
   integration:
-    name: Level 2 Workspace & Node Conformance Tests
-    runs-on: [ self-hosted, windows, x64, rust-build, n8n-rust ]
+    name: Level 2 Tests (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ linux, windows ]
+    runs-on: [ self-hosted, '${{ matrix.os }}' ]
     if: github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Level 2 - Full Rust Workspace Tests
         run: cargo test --workspace
@@ -25,8 +29,17 @@ jobs:
       - name: Level 2 - Execution LEGO Conformance Tests
         run: node --experimental-strip-types --test packages/execution-lego/test/02-runtime.test.mjs packages/execution-lego/test/03-context-recovery.test.mjs
 
-      - name: Report Integration Status to Supabase
-        if: always()
+      - name: Report Integration Status to Supabase (Linux)
+        if: always() && runner.os == 'Linux'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python3 tools/orchestration/report_ci_status.py --suite integration --status ${{ job.status }} --sha $COMMIT_SHA
+
+      - name: Report Integration Status to Supabase (Windows)
+        if: always() && runner.os == 'Windows'
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

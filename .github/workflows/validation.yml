@@ -1,4 +1,4 @@
-﻿name: Level 0 & Level 1 Validation (Laptop Build Worker)
+name: Level 0 & Level 1 Validation (Parallel WSL Workers)
 
 on:
   pull_request:
@@ -16,18 +16,18 @@ on:
       - 'performance/*'
       - 'security-sandbox/*'
       - 'infrastructure-orchestration/*'
+      - 'arena-manager'
 
 jobs:
-  validate:
-    name: Level 0 (Check & Format) + Level 1 (Affected Tests)
-    runs-on: [ self-hosted, windows, x64, rust-build, n8n-rust ]
-    # Security gate: Reject untrusted external fork PRs from executing on laptop host
+  format_and_check:
+    name: Level 0 (Check & Format)
+    runs-on: [ self-hosted, linux ]
     if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push'
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Level 0 - Verify Formatting
         run: cargo fmt --all -- --check
@@ -35,8 +35,18 @@ jobs:
       - name: Level 0 - Workspace Syntax & Type Check
         run: cargo check --workspace
 
+  unit_tests:
+    name: Level 1 (Affected Tests)
+    runs-on: [ self-hosted, linux ]
+    if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
       - name: Level 1 - Affected Crate Unit Tests
-        run: cargo test -p n8n-workflow
+        run: cargo nextest run -p n8n-workflow
 
       - name: Report Build & Test Status to Supabase
         if: always()
@@ -45,4 +55,4 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
-          python tools/orchestration/report_ci_status.py --suite validation --status ${{ job.status }} --sha $env:COMMIT_SHA
+          python3 tools/orchestration/report_ci_status.py --suite validation --status ${{ job.status }} --sha $COMMIT_SHA
