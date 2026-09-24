@@ -436,6 +436,30 @@ test('permission lookup is exact and fails closed', () => {
   assert.equal(hasPermission(null, 'workflow:read'), false);
 });
 
+test('the kernel accepts the real canonical n8n permission vocabulary', () => {
+  // Cross-slice guard. The original SCOPE_SHAPE was lowercase-only and rejected
+  // 65 of the 122 permissions in the extracted n8n role model (aiAssistant:manage,
+  // annotationTag:create, chatHubAgent:read, credential:shareGlobally, ...), so a
+  // principal compiled from a real global role could not be built at all.
+  // P5.3, which loads the actual universe, is what exposed it.
+  const camelCase = [
+    'aiAssistant:manage', 'annotationTag:create', 'chatHubAgent:update',
+    'communityPackage:install', 'credential:shareGlobally', 'externalSecretsProvider:list',
+  ];
+  const snapshot = principal({ permissions: camelCase });
+  assert.deepEqual(snapshot.permissions, [...camelCase].sort());
+  for (const scope of camelCase) assert.equal(hasPermission(snapshot, scope), true);
+});
+
+test('malformed permissions are still rejected after the camelCase fix', () => {
+  // The relaxed pattern must not have opened a hole.
+  for (const bad of ['DROP TABLE', '', 'workflow', 'workflow:', ':read', 'workflow:READ', 'work flow:read', 'workflow:read;drop']) {
+    assert.throws(() => compilePermissions([bad]), SecurityError, `${bad} must still be rejected`);
+  }
+  assert.throws(() => compilePermissions(['<script>:x']), SecurityError);
+  assert.throws(() => compilePermissions([`${'a'.repeat(200)}:x`]), SecurityError, 'length bound still applies');
+});
+
 test('compilePermissions sorts, deduplicates and rejects the malformed', () => {
   assert.deepEqual(compilePermissions(['b:a', 'a:b', 'b:a']), ['a:b', 'b:a']);
   assert.deepEqual(compilePermissions([]), [], 'no permissions is valid — a principal with no grants');

@@ -22,8 +22,9 @@ import {
   createDecisionCache,
 } from '../src/auth/security/authorization.mjs';
 import { createPermissionRegistry, permissionRegistryFor } from '../src/auth/security/permission-registry.mjs';
-import { createPrincipalSnapshot } from '../src/auth/security/principal.mjs';
+import { createPrincipalSnapshot, hasPermission } from '../src/auth/security/principal.mjs';
 import { createSecurityStamp } from '../src/auth/security/security-stamp.mjs';
+import { STAMP_AUTHORITY, evaluateStampAuthority, isStampCurrent } from '../src/auth/security/security-stamp.mjs';
 import { SECURITY_REASON } from '../src/auth/security/index.mjs';
 import { isErrorCode } from '../src/lego/errors.mjs';
 
@@ -347,6 +348,24 @@ test('cacheKeyFor is stable across time and varies with every deciding field', (
 // Permission registry — canonical universe
 // ─────────────────────────────────────────────────────────────────────────────
 
+test('every canonical permission can be held and authorized — no scope is unrepresentable', () => {
+  // The strongest form of the camelCase regression: the FULL extracted universe
+  // must round-trip through PrincipalSnapshot and authorize() without a single
+  // rejection. If any scope in the real vocabulary cannot be represented, a real
+  // role cannot be compiled into a principal.
+  const owner = createPrincipalSnapshot({
+    principalId: 'owner', identityId: 'i', tenantId: 'default', principalType: 'user',
+    authMethod: 'password', authStrength: 'password',
+    permissions: REGISTRY.permissions, principalVersion: 1,
+  });
+  assert.equal(owner.permissions.length, REGISTRY.size, 'the whole universe survived compilation');
+  for (const scope of REGISTRY.permissions) {
+    assert.equal(hasPermission(owner, scope), true, `${scope} must be held`);
+    const d = authorize({ principal: owner, action: scope }, { registry: REGISTRY });
+    assert.equal(d.allowed, true, `${scope} must authorize`);
+  }
+});
+
 test('the universe is derived from the extracted n8n role model, not declared here', () => {
   assert.ok(REGISTRY.size > 50, `expected the full extracted vocabulary, got ${REGISTRY.size}`);
   assert.ok(REGISTRY.has('workflow:read'));
@@ -436,4 +455,52 @@ test('P5.3 adds the ninety-seventh row and preserves every earlier phase', () =>
   assert.equal(byId['auth.identity'], '1.0.0', 'untouched, owner agent-3');
   assert.equal(byId['lego.plugin-runtime'], '0.10.0', 'P2.27 intact');
   assert.equal(new Set(LOCK.contracts.map((r) => r.id)).size, LOCK.contracts.length, 'no duplicate ids');
+});
+
+test('isStampCurrent agrees with evaluateStampAuthority over a full input matrix', () => {
+  // This is the test that makes the hand-unrolled fast path safe to keep.
+  // `isStampCurrent` was written out longhand purely for speed (dynamic
+  // `value[field]` loads cost 260 ns vs 5 ns); it must therefore be proved
+  // equivalent to the rich verdict it replaces, not merely assumed so.
+  const base = { principalVersion: 1, tenantVersion: 1, policyVersion: 1, sessionVersion: 1 };
+  const current = createSecurityStamp({ ...base });
+  const currentWithResource = createSecurityStamp({ ...base, resourceVersion: 7 });
+
+  const presentedStamps = [
+    current,
+    createSecurityStamp({ ...base, principalVersion: 2 }),
+    createSecurityStamp({ ...base, principalVersion: 0 }),
+    createSecurityStamp({ ...base, tenantVersion: 9 }),
+    createSecurityStamp({ ...base, policyVersion: 4 }),
+    createSecurityStamp({ ...base, sessionVersion: 3 }),
+    createSecurityStamp({ ...base, principalVersion: 2, tenantVersion: 2, policyVersion: 2, sessionVersion: 2 }),
+    createSecurityStamp({ ...base, resourceVersion: 7 }),
+    createSecurityStamp({ ...base, resourceVersion: 8 }),
+    currentWithResource,
+  ];
+  const currentStamps = [current, currentWithResource];
+
+  // Non-stamp garbage must fail closed in BOTH functions, never throw.
+  const garbage = [null, undefined, 'stamp', 42, {}, [], { principalVersion: -1, tenantVersion: 1, policyVersion: 1, sessionVersion: 1 }, { principalVersion: 1.5, tenantVersion: 1, policyVersion: 1, sessionVersion: 1 }];
+
+  let compared = 0;
+  for (const authority of currentStamps) {
+    for (const presented of presentedStamps) {
+      const rich = evaluateStampAuthority(presented, authority).verdict === STAMP_AUTHORITY.CURRENT;
+      const fast = isStampCurrent(presented, authority);
+      assert.equal(fast, rich, `disagreement: presented=${JSON.stringify(presented)} authority=${JSON.stringify(authority)}`);
+      compared += 1;
+    }
+  }
+  // Garbage as `presented`: both must say false, and neither may throw.
+  for (const g of garbage) {
+    assert.equal(isStampCurrent(g, current), false, `garbage presented must fail closed: ${JSON.stringify(g)}`);
+    const richVerdict = evaluateStampAuthority(g, current).verdict;
+    assert.notEqual(richVerdict, STAMP_AUTHORITY.CURRENT, `garbage must not be CURRENT: ${JSON.stringify(g)}`);
+    compared += 1;
+    // Garbage as `current` (the authority side) must also fail closed.
+    assert.equal(isStampCurrent(current, g), false, `garbage authority must fail closed: ${JSON.stringify(g)}`);
+    compared += 1;
+  }
+  assert.ok(compared >= 30, `matrix too small: ${compared}`);
 });

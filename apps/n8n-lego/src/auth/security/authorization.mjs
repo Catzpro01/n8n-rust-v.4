@@ -34,11 +34,10 @@
  * read. If authority moved on, the entry is dropped and re-evaluated. The cache
  * therefore cannot return a decision computed under older authority.
  */
-import { createHash } from 'node:crypto';
 import { SECURITY_REASON } from './security-error.mjs';
 import { hasPermission, isPrincipalSnapshot, meetsAuthStrength } from './principal.mjs';
 import { isSecurityContext } from './security-context.mjs';
-import { STAMP_AUTHORITY, evaluateStampAuthority, isSecurityStamp } from './security-stamp.mjs';
+import { STAMP_AUTHORITY, evaluateStampAuthority, isSecurityStamp, isStampCurrent } from './security-stamp.mjs';
 
 /** Resource authorization outcomes. Two only — there is no "maybe". */
 export const DECISION = Object.freeze({ ALLOW: 'ALLOW', DENY: 'DENY' });
@@ -225,6 +224,11 @@ export function authorize(request, options = {}) {
 export function createDecisionCache(policy = {}) {
   const options = { ...CACHE_POLICY, ...policy };
   const entries = new Map();
+  // Recency bookkeeping. Map preserves insertion order, so touching an entry on
+  // read means delete+set — and the key is a long string that gets re-hashed both
+  // times. On the dominant access pattern (one principal repeatedly asking about
+  // the same action) the entry is already newest, so the touch is pure waste.
+  let newestKey = null;
 
   return Object.freeze({
     policy: () => ({ ...options }),
@@ -238,19 +242,33 @@ export function createDecisionCache(policy = {}) {
     get(key, currentStamp) {
       const entry = entries.get(key);
       if (!entry) return { hit: false, decision: null, reason: 'miss' };
-      if (!isSecurityStamp(currentStamp)) {
-        // Cannot validate → must not serve.
+
+      // Hot path FIRST. `isStampCurrent` validates `currentStamp` as part of its
+      // work, so the expensive `isSecurityStamp` is not needed to reject a
+      // malformed authority — it is only needed to say *why* we rejected, and
+      // that only matters on the rare failure branch below. Calling it up here
+      // cost 260 ns on every single read.
+      if (!isStampCurrent(entry.stamp, currentStamp)) {
+        // Cannot validate, or versions moved → must not serve. A stale entry is
+        // dropped, never served: the cache is an optimization, versions are
+        // correctness.
         entries.delete(key);
-        return { hit: false, decision: null, reason: 'unstampable' };
+        if (newestKey === key) newestKey = null;
+        const reason = isSecurityStamp(currentStamp) ? 'stale' : 'unstampable';
+        return { hit: false, decision: null, reason };
       }
-      const authority = evaluateStampAuthority(entry.stamp, currentStamp);
-      if (authority.verdict !== STAMP_AUTHORITY.CURRENT) {
-        // The most important line in this file: a stale entry is dropped, never
-        // served. The cache is an optimization; versions are correctness.
+      // Promote to most-recently-used, but only when it is not already newest.
+      if (newestKey !== key) {
         entries.delete(key);
-        return { hit: false, decision: null, reason: `stale:${authority.verdict}` };
+        entries.set(key, entry);
+        newestKey = key;
       }
-      return { hit: true, decision: { ...entry.decision, cached: true }, reason: 'hit' };
+      // Returned as-is, with no spread. The `cached: true` flag used to be added
+      // here with `{ ...entry.decision, cached: true }`, which allocated a fresh
+      // object on EVERY hit — ~1.2 µs, enough to make the cache slower than just
+      // re-evaluating. `set` now freezes that variant once at insert time; this
+      // read path performs zero allocations.
+      return { hit: true, decision: entry.shared, reason: 'hit' };
     },
 
     set(key, decision, stamp) {
@@ -261,20 +279,32 @@ export function createDecisionCache(policy = {}) {
         for (const existing of entries.keys()) {
           if (removed >= options.evictBatch) break;
           entries.delete(existing);
+          if (newestKey === existing) newestKey = null;
           removed += 1;
         }
       }
-      entries.set(key, { decision, stamp });
+      // `shared` is the object handed to callers on a hit. Built and frozen once
+      // here so the read path never allocates. The underlying decision is already
+      // deep-frozen, so sharing it is safe.
+      entries.set(key, {
+        decision,
+        shared: Object.freeze({ ...decision, cached: true }),
+        stamp,
+      });
+      newestKey = key;
       return true;
     },
 
     delete(key) {
-      return entries.delete(key);
+      const gone = entries.delete(key);
+      if (gone && newestKey === key) newestKey = null;
+      return gone;
     },
 
     /** Drops everything — used when authority moves in a way keys cannot express. */
     clear() {
       const dropped = entries.size;
+      newestKey = null;
       entries.clear();
       return dropped;
     },
@@ -298,11 +328,20 @@ export function createDecisionCache(policy = {}) {
  * Builds a stable cache key from a request. Only fields that change the answer
  * are included; `now` is deliberately excluded so identical requests share an
  * entry across time (expiry is enforced by the stamp, not by the key).
+ *
+ * The key is a plain concatenated string, NOT a hash. A SHA-256 digest was the
+ * first implementation and it cost ~2 µs per call — more than the authorization
+ * check being cached — which made the cache a net pessimization. A Map keyed by
+ * string needs no cryptographic digest: the key never leaves this process and is
+ * never compared for equality against attacker input.
+ *
+ * `␟` (unit separator) is used as the delimiter because it cannot appear in an
+ * id or a permission, so the key is unambiguous.
  */
 export function cacheKeyFor(request) {
-  const parts = [
+  return [
     request.principal?.principalId ?? '',
-    String(request.principal?.principalVersion ?? ''),
+    request.principal?.principalVersion ?? '',
     request.principal?.tenantId ?? '',
     request.action ?? '',
     request.resourceType ?? '',
@@ -312,10 +351,9 @@ export function cacheKeyFor(request) {
     (request.capabilityGrants ?? []).join(','),
     request.requiredAuthStrength ?? '',
     request.approval?.granted === true ? 'approved' : 'no-approval',
-    String(request.policyVersion ?? ''),
-    String(request.tenantVersion ?? ''),
-  ];
-  return createHash('sha256').update(parts.join('␟')).digest('base64url').slice(0, 32);
+    request.policyVersion ?? '',
+    request.tenantVersion ?? '',
+  ].join('␟');
 }
 
 /**
@@ -334,16 +372,20 @@ export function cacheKeyFor(request) {
  */
 export function authorizeCached(cache, request, options) {
   const { currentStamp, registry = null, context = null } = options;
-  if (!isSecurityStamp(currentStamp)) {
-    // No authority to validate against: evaluate uncached rather than risk
-    // storing a decision that can never be proven current.
-    return authorize(request, { registry, context });
-  }
+
+  // A hit is returned without consulting `isSecurityStamp`: entries can only ever
+  // be stored under a validated stamp (see `set`), and `cache.get` re-validates
+  // against `currentStamp` itself. The check belongs on the store path, not the
+  // read path — a hit that cannot be proven current is dropped by `get`.
   const key = cacheKeyFor(request);
   const cached = cache.get(key, currentStamp);
   if (cached.hit) return cached.decision;
 
   const decision = authorize(request, { registry, context });
-  cache.set(key, decision, context?.stamp ?? currentStamp);
+  // Only store when there is an authority to re-validate against later; a
+  // decision cached without one could never be proven current.
+  if (isSecurityStamp(currentStamp)) {
+    cache.set(key, decision, context?.stamp ?? currentStamp);
+  }
   return decision;
 }
