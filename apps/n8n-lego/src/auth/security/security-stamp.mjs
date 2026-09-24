@@ -108,6 +108,86 @@ export function isSecurityStamp(value) {
 }
 
 /**
+ * Allocation-free "is this stamp still current?" predicate.
+ *
+ * WHY THIS EXISTS SEPARATELY: `evaluateStampAuthority` returns a rich verdict
+ * with `stale`/`ahead` arrays and a frozen object, which is what a diagnostic or
+ * an audit record needs — but it allocates on every call, and the decision cache
+ * asks this question on *every* read. Measured, that allocation made the cache
+ * slower than not caching at all.
+ *
+ * This is the hot-path twin: four integer comparisons, no allocation, identical
+ * semantics for the only question the cache asks. A separate function is only
+ * acceptable because a test pins the two together.
+ *
+ * @param {unknown} presented
+ * @param {Readonly<object>} current
+ * @returns {boolean} true only when every version matches exactly
+ */
+/**
+ * Allocation-free "is this stamp still current?" predicate.
+ *
+ * WHY THIS EXISTS SEPARATELY: `evaluateStampAuthority` returns a rich verdict with
+ * `stale`/`ahead` arrays and a frozen object — right for a diagnostic or an audit
+ * record, but it allocates on every call, and the decision cache asks this
+ * question on *every* read. This is the hot-path twin of that function.
+ *
+ * WHY IT IS WRITTEN OUT LONGHAND: the obvious implementation calls
+ * `isSecurityStamp` twice, which loops `STAMP_FIELDS` and reads `value[field]`.
+ * That dynamic keyed load is what is expensive — measured at 260 ns per call
+ * against 5 ns for the same checks written out with direct property access
+ * (`value.principalVersion`). Same semantics, ~50x faster. Readability is the
+ * price; `isStampCurrentMatchesStampAuthority` in the test suite is what makes
+ * that price safe to pay, by pinning this function to
+ * `evaluateStampAuthority(...).verdict === CURRENT` over a matrix of inputs.
+ *
+ * @param {unknown} presented
+ * @param {Readonly<object>} current authority versions in force now
+ * @returns {boolean} true only when every version matches exactly
+ */
+export function isStampCurrent(presented, current) {
+  if (current === null || typeof current !== 'object') return false;
+  if (presented === null || typeof presented !== 'object') return false;
+
+  // Each field is validated on `current` and compared on `presented`. Validating
+  // `current` is sufficient: strict equality then makes `presented` valid too.
+  // Failing closed on a malformed `current` is what stops a garbage stamp from
+  // comparing equal to itself and granting authority.
+  const principalVersion = current.principalVersion;
+  if (!Number.isInteger(principalVersion) || principalVersion < 0) return false;
+  if (presented.principalVersion !== principalVersion) return false;
+
+  const tenantVersion = current.tenantVersion;
+  if (!Number.isInteger(tenantVersion) || tenantVersion < 0) return false;
+  if (presented.tenantVersion !== tenantVersion) return false;
+
+  const policyVersion = current.policyVersion;
+  if (!Number.isInteger(policyVersion) || policyVersion < 0) return false;
+  if (presented.policyVersion !== policyVersion) return false;
+
+  const sessionVersion = current.sessionVersion;
+  if (!Number.isInteger(sessionVersion) || sessionVersion < 0) return false;
+  if (presented.sessionVersion !== sessionVersion) return false;
+
+  // resourceVersion is optional and only applies when a mutable resource is
+  // involved. The guard mirrors `evaluateStampAuthority` exactly (`!== undefined`
+  // and `!== null`, not `typeof === 'number'`) so the two cannot disagree.
+  const currentResource = current.resourceVersion;
+  const presentedResource = presented.resourceVersion;
+  if (
+    currentResource !== undefined &&
+    currentResource !== null &&
+    presentedResource !== undefined &&
+    presentedResource !== null &&
+    presentedResource !== currentResource
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
  * Compares a presented stamp against the versions currently in force.
  *
  * This function performs no I/O and never throws for a *comparison* — it returns

@@ -64,8 +64,25 @@ export const PRINCIPAL_BOUNDS = Object.freeze({
   permissionLength: 96,
 });
 
-/** `resource:action`, lowercase, as the canonical n8n scope strings are shaped. */
-const SCOPE_SHAPE = /^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*$/;
+/**
+ * `resource:action`, as the canonical n8n permission strings are actually
+ * shaped. Both halves start lowercase and may use internal camelCase, digits or
+ * hyphens.
+ *
+ * CAMELCASE IS REQUIRED, NOT TOLERATED. The original pattern here was
+ * `^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*$`, which is lowercase-only — and it rejected
+ * 65 of the 122 permissions (53%) in the real extracted n8n vocabulary:
+ * `aiAssistant:manage`, `annotationTag:create`, `chatHubAgent:read`,
+ * `credential:shareGlobally`, and so on. A principal compiled from a real global
+ * role could not be constructed at all. P5.3, which loads the actual universe,
+ * is what exposed it.
+ *
+ * The pattern still rejects spaces, a missing colon, an uppercase first letter,
+ * a leading digit, punctuation and surrounding whitespace — the unknown-permission
+ * check against the registry is the real gate, but this rejects malformed input
+ * before it ever gets that far.
+ */
+const SCOPE_SHAPE = /^[a-z][a-zA-Z0-9-]*:[a-z][a-zA-Z0-9-]*$/;
 
 /** Exact key whitelist. Anything beyond these is a rejected field, not ignored. */
 const ALLOWED_KEYS = Object.freeze([

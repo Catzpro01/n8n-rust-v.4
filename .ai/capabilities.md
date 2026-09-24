@@ -23,6 +23,7 @@
 | `ai.token-usage` | `ai-foundation` |
 | `ai.tool-gateway` | `ai-foundation` |
 | `auth.api-keys` | `auth` |
+| `auth.authorization` | `auth` |
 | `auth.identity-projection` | `auth.identity` |
 | `auth.ldap` | `auth` |
 | `auth.mfa` | `auth` |
@@ -214,6 +215,8 @@ this table instead of guessing from a URL shape.
 | `auth.session-kernel.revoke` | `auth` | call | `auth:session` | yes | implemented |
 | `auth.session-kernel.validate` | `auth` | call | `auth:session` | yes | implemented |
 | `auth.session-kernel.csrf` | `auth` | call | `auth:session` | yes | implemented |
+| `auth.authorization.authorize` | `auth` | call | `auth:read` | yes | implemented |
+| `auth.authorization.compile` | `auth` | call | `auth:read` | yes | implemented |
 | `auth.identity-projection.identity` | `auth.identity` | call | `auth:read` | yes | implemented |
 | `auth.identity-projection.hasOwner` | `auth.identity` | call | `auth:read` | yes | implemented |
 | `credentials.crud.inspect` | `credentials` | call | `credential:read` | yes | legacy |

@@ -54,6 +54,13 @@ export const SECURITY_REASON = Object.freeze({
   NO_PRINCIPAL: 'auth.unauthorized',
   /** A principal exists but lacks the permission/capability for this action. */
   PERMISSION_DENIED: 'auth.forbidden',
+  /**
+   * The permission is not part of the canonical vocabulary at all — a typo'd or
+   * invented scope. Denied like a routine denial, but reported distinctly in
+   * `details` (unknownPermission: true) so a broken grant cannot masquerade as
+   * an ordinary "user lacks this scope". This is the P5.3 critical invariant.
+   */
+  UNKNOWN_PERMISSION: 'auth.forbidden',
   /** Requested capability is not available to this principal at all. */
   CAPABILITY_UNAVAILABLE: 'lego.capability_unavailable',
   /** Tenant of the request does not match the tenant of the resource. */
