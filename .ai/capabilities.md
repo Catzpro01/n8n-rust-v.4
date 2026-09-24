@@ -32,6 +32,7 @@
 | `auth.public-user` | `auth` |
 | `auth.security-settings` | `auth` |
 | `auth.session` | `auth` |
+| `auth.session-kernel` | `auth` |
 | `auth.sso` | `auth` |
 | `auth.user-management` | `auth` |
 | `compat.auth-context` | `compatibility` |
@@ -208,6 +209,11 @@ this table instead of guessing from a URL shape.
 | `auth.session.logout` | `auth` | call | `auth:session` | yes | implemented |
 | `auth.owner-setup.setup` | `auth` | call | `auth:admin` | no | implemented |
 | `auth.public-user.identity` | `auth` | call | `auth:read` | yes | implemented |
+| `auth.session-kernel.create` | `auth` | call | `auth:session` | no | implemented |
+| `auth.session-kernel.rotate` | `auth` | call | `auth:session` | no | implemented |
+| `auth.session-kernel.revoke` | `auth` | call | `auth:session` | yes | implemented |
+| `auth.session-kernel.validate` | `auth` | call | `auth:session` | yes | implemented |
+| `auth.session-kernel.csrf` | `auth` | call | `auth:session` | yes | implemented |
 | `auth.identity-projection.identity` | `auth.identity` | call | `auth:read` | yes | implemented |
 | `auth.identity-projection.hasOwner` | `auth.identity` | call | `auth:read` | yes | implemented |
 | `credentials.crud.inspect` | `credentials` | call | `credential:read` | yes | legacy |

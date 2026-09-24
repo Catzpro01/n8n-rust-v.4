@@ -27,7 +27,7 @@ import { authRoutes } from './auth/routes.mjs';
 import { settingsRoutes } from './settings/routes.mjs';
 import { buildRoutes } from './rest/routes.mjs';
 import { catalogPresent, loadCatalog } from './catalog.mjs';
-import { createOwner, currentUser, hasOwner } from './auth.mjs';
+import { checkCsrf, createOwner, currentUser, hasOwner } from './auth.mjs';
 
 const EX_CONFIG = 78;
 const SHUTDOWN_GRACE_MS = 10_000;
@@ -224,6 +224,16 @@ export async function startServer({ env = process.env } = {}) {
         if (!ctx.user) throw new HttpError(401, 'Unauthorized');
       } else {
         ctx.user = currentUser(store, config, req);
+      }
+
+      // P5.2 — CSRF boundary. Runs after authentication (so we know whether
+      // there is ambient cookie authority to protect) and before the body is
+      // read, so a forged request never reaches a handler.
+      if (['POST', 'PATCH', 'PUT', 'DELETE'].includes(ctx.method)) {
+        const csrf = checkCsrf(config, req);
+        if (!csrf.allowed) {
+          throw new HttpError(403, 'Cross-origin request blocked', { meta: { verdict: csrf.verdict } });
+        }
       }
 
       if (['POST', 'PATCH', 'PUT', 'DELETE'].includes(ctx.method)) {

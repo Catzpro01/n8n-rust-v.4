@@ -276,7 +276,7 @@ test('P9.21 pressure behavior: all budgets enforced under flood', () => {
 test('P9.21 lock pin: contracts length 75 after P9.22 row', () => {
   const lock = JSON.parse(readFileSync(
     new URL('../src/lego/contracts/contract-lock.json', import.meta.url), 'utf8'));
-  assert.equal(lock.contracts.length, 95, // P9 integration (Agent 1): P9.5-P9.22 add 18 observability.* rows on top of protected main 76 -> 94 (union, zero id collisions); P9 was developed on 24032a0c (57 rows).
+  assert.equal(lock.contracts.length, 96, // P9 integration (Agent 1): P9.5-P9.22 add 18 observability.* rows on top of protected main 76 -> 94 (union, zero id collisions); P9 was developed on 24032a0c (57 rows). P5.2 adds the ninety-sixth (auth.session).
     'P9.21 adds observability.advanced-diagnostics@1.0.0; P9.22 adds observability.p9-acceptance@1.0.0; count-pins say 75');
   const row = lock.contracts.find(c => c.id === 'observability.advanced-diagnostics');
   assert.ok(row, 'P9.21 row present');

@@ -571,7 +571,7 @@ test('auth.identity@1.0.0 is untouched: still a read-only projection of exactly 
 });
 
 test('P5.1 adds the ninety-fifth contract row and weakens nothing', () => {
-  assert.equal(LOCK.contracts.length, 95, '94 rows through P9 + auth.principal');
+  assert.equal(LOCK.contracts.length, 96, '94 rows through P9 + auth.principal');
   assert.equal(LOCK.contracts.filter((row) => row.domain === 'observability').length, 22, 'P9 rows intact');
   const plugin = LOCK.contracts.find((row) => row.id === 'lego.plugin-runtime');
   assert.equal(plugin.version, '0.10.0', 'P2.27 plugin runtime version untouched');

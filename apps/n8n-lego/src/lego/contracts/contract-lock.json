@@ -3962,6 +3962,53 @@
         "apps/n8n-lego/test/lego-security-kernel.test.mjs"
       ],
       "notes": "P5.1 security kernel. Immutable PrincipalSnapshot, request-local SecurityContext and the versioned SecurityStamp that decides whether cached authority is still CURRENT, must be RE_EVALUATEd, or is DENY. Performs no I/O: no network, no filesystem, no decryption. Holds no secret material and no user profile - the constructor rejects unknown fields so a stored user record cannot ride into the execution path. SecurityError refuses any code not published in contracts/errors.contract.json (foundation F16 by construction). Introduces ZERO new error codes. Deliberately NOT authentication, NOT an authorization engine (P5.3), NOT a credential path (P5.4), NOT a second capability engine: plugin policy stays in src/lego/plugin-policy.mjs. auth.identity@1.0.0 is unchanged and remains a read-only projection."
+    },
+    {
+      "id": "auth.session",
+      "owner": "agent-1",
+      "domain": "auth",
+      "version": "1.0.0",
+      "status": "stable",
+      "surface": [
+        "src/auth/security/session.mjs",
+        "src/auth/security/csrf.mjs"
+      ],
+      "exports": {
+        "src/auth/security/session.mjs": [
+          "SESSION_POLICY",
+          "SESSION_STATES",
+          "SESSION_VERDICT",
+          "createSession",
+          "createSessionStore",
+          "expireSessions",
+          "inspectSession",
+          "revokeAllSessions",
+          "revokeSession",
+          "rotateSession",
+          "sessionTokenPayload",
+          "sessionsForUser",
+          "validateSession"
+        ],
+        "src/auth/security/csrf.mjs": [
+          "CSRF_COOKIE",
+          "CSRF_HEADER",
+          "CSRF_VERDICT",
+          "SAFE_METHODS",
+          "csrfCookieHeader",
+          "evaluateCsrf",
+          "issueCsrfToken",
+          "normalizeOrigin",
+          "parseCookieHeader",
+          "verifyCsrfToken"
+        ]
+      },
+      "consumers": [
+        "runtime-host"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-session-kernel.test.mjs"
+      ],
+      "notes": "P5.2 session kernel + CSRF boundary. Revocable server-side session records replacing the previously unrevocable stateless bearer token: token payload changed from {sub,iat,exp} to {sid,ver,exp} so authority lives in a record that can be killed. Rotation kills the old token immediately (fixation + replay defence); revoke/revokeAll; per-user securityVersion invalidation; bounded absolute and idle lifetimes with the absolute deadline never sliding. Session store is process-local and bounded, so a restart invalidates everything and a session flood costs bounded memory. CSRF combines Origin/Referer validation with a session-bound double-submit token; safe methods and session-less requests are exempt. No MFA, no API keys, no password reset, no credential encryption (P5.6/P5.7/P5.4). No distributed consensus. Introduces ZERO new error codes."
     }
   ]
 }

@@ -39,6 +39,7 @@ let base;
 let running;
 let store;
 const cookies = {};
+const csrfCookies = {};
 
 before(async () => {
   const started = await startServer({
@@ -64,17 +65,31 @@ after(async () => {
   rmSync(USER_FOLDER, { recursive: true, force: true });
 });
 
-async function api(method, path, body, { as = 'owner' } = {}) {
+
+/**
+ * P5.2: this helper models a BROWSER, not a bare HTTP client. A browser sends
+ * `Origin` on every state-changing request and echoes the CSRF cookie into the
+ * matching header (that is exactly what the editor does, and what makes the
+ * double-submit check meaningful). The harness was updated to match reality;
+ * no server-side check was relaxed to accommodate it.
+ */
+async function api(method, path, body, { as = 'owner', csrf = true } = {}) {
+  const csrfValue = /n8n-csrf=([^;]+)/.exec(csrfCookies[as] ?? '')?.[1];
   const response = await fetch(`${base}${path}`, {
     method,
     headers: {
       ...(body ? { 'content-type': 'application/json' } : {}),
-      ...(as && cookies[as] ? { cookie: cookies[as] } : {}),
+      ...(as && cookies[as] ? { cookie: [cookies[as], csrfCookies[as]].filter(Boolean).join('; ') } : {}),
+      ...(as ? { origin: base } : {}),
+      ...(as && csrf && csrfValue ? { 'x-n8n-csrf-token': csrfValue } : {}),
     },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
-  const setCookie = response.headers.getSetCookie?.() ?? [];
-  if (as && setCookie.length > 0) cookies[as] = setCookie[0].split(';')[0];
+  for (const entry of response.headers.getSetCookie?.() ?? []) {
+    const pair = entry.split(';')[0];
+    if (pair.startsWith('n8n-auth=')) { if (as) cookies[as] = pair; }
+    else if (pair.startsWith('n8n-csrf=')) { if (as) csrfCookies[as] = pair; }
+  }
   const text = await response.text();
   const json = text === '' ? null : JSON.parse(text);
   return { status: response.status, json };

@@ -114,8 +114,8 @@ defect and should be reported as one.
 | | |
 | --- | --- |
 | Domains registered | 26 |
-| Locked public contracts | 95 |
-| Declared capabilities | 92 |
+| Locked public contracts | 96 |
+| Declared capabilities | 93 |
 | Published error codes | 36 |
 | Temporary boundary allowances | 1 |
 | Official AI/Agent LEGO | 15 |
