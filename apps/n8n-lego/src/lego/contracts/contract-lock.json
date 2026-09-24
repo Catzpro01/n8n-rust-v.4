@@ -4087,6 +4087,80 @@
         "apps/n8n-lego/test/lego-credentials.test.mjs"
       ],
       "notes": "P5.5 provider-neutral credential crypto. KeyProvider contract (currentKeyRef/readableKeyRefs/deriveKey/fingerprint/beginRotation/abortRotation/retire/state) with a local-file (0600, atomic) and a memory provider; key lineage; controlled read window of current + at most one previous; HKDF per-purpose subkeys; retire destroys material. Versioned AES-256-GCM envelope whose AAD binds cryptoVersion, tenantId, credentialId, type and keyRef; wrong key, tamper and substitution are one indistinguishable authentication-failed. Vault: seal/open with NO plaintext fallback; metadata and non-secret config stay clear, only the runtime secret is sealed; verified incremental re-encryption committed per batch; resumable rotation, recover() on boot, rollback-safe abort; one-time legacy plaintext migration; recovery metadata without material; encrypted backup manifest; quarantined restore validated in full before one atomic commit. Every failure fails closed with an existing published error code. No master/root key in credential records. External KMS, distributed consensus, billing and P10 provisioning are non-scope."
+    },
+    {
+      "id": "auth.account-security",
+      "owner": "agent-1",
+      "domain": "auth",
+      "version": "1.0.0",
+      "status": "stable",
+      "surface": [
+        "src/auth/security/abuse-control.mjs",
+        "src/auth/security/password-hash.mjs",
+        "src/auth/security/reset-token.mjs",
+        "src/auth/security/mfa.mjs",
+        "src/auth/security/step-up.mjs"
+      ],
+      "exports": {
+        "src/auth/security/abuse-control.mjs": [
+          "ABUSE_POLICY",
+          "RATE_LIMIT_MESSAGE",
+          "abuseKey",
+          "createFailureBackoff",
+          "createRateLimiter"
+        ],
+        "src/auth/security/password-hash.mjs": [
+          "LEGACY_SCRYPT",
+          "MAX_PASSWORD_BYTES",
+          "PASSWORD_HASH_POLICY",
+          "hashPassword",
+          "needsRehash",
+          "parsePasswordHash",
+          "passwordPolicyViolation",
+          "verifyAgainstDummy",
+          "verifyPassword"
+        ],
+        "src/auth/security/reset-token.mjs": [
+          "RESET_TOKEN_POLICY",
+          "RESET_TOKEN_VERDICT",
+          "createResetTokenStore",
+          "credentialFingerprint"
+        ],
+        "src/auth/security/mfa.mjs": [
+          "MFA_EVENTS",
+          "MFA_SECRET_TYPE",
+          "MFA_STATES",
+          "RECOVERY_CODE_COUNT",
+          "TOTP",
+          "TOTP_WINDOW",
+          "base32Decode",
+          "base32Encode",
+          "consumeRecoveryCode",
+          "generateRecoveryCodes",
+          "generateTotpSecret",
+          "hashRecoveryCode",
+          "hotp",
+          "mfaSecretCollection",
+          "mfaSecretRecord",
+          "mfaStateOf",
+          "mfaTransition",
+          "timeStep",
+          "totpAt",
+          "totpUri",
+          "verifyTotp"
+        ],
+        "src/auth/security/step-up.mjs": [
+          "PROOF",
+          "STEP_UP_REQUIREMENTS",
+          "evaluateStepUp",
+          "requiredProofs"
+        ]
+      },
+      "consumers": [],
+      "tests": [
+        "apps/n8n-lego/test/lego-account-security.test.mjs"
+      ],
+      "notes": "P5.6 account security primitives, HTTP-free (the boundary is src/auth/account-routes.mjs on the upstream n8n wire contract). abuse-control: fixed-window rate limiters and capped exponential failure back-off, every table bounded (maxKeys) with reclaim-then-degrade into a shared overflow bucket, keys are HMAC digests; limits reproduce the pinned upstream decorators. password-hash: scrypt with algorithm agility and rehash-on-success; the current policy equals the legacy parameters and keeps the legacy format for rollback safety; unknown accounts spend equal scrypt cost; upstream passwordSchema messages. reset-token: 256-bit single-use tokens, digest-only storage, 20 min default and 1 h hard cap, one live token per user, bound to a credential fingerprint, bounded table. mfa: RFC 6238 TOTP (otpauth defaults), step replay refusal, recovery codes as SHA-256 digests consumed on use, explicit state machine, and a collection view that keeps sealed TOTP secrets on the P5.5 vault key lineage. step-up: declared strength per sensitive operation on the P5.1 AUTH_STRENGTHS ladder; interactive sessions only."
     }
   ]
 }
