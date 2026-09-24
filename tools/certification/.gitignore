@@ -1,0 +1,4 @@
+# Local, non-committed artifacts of certification runs.
+*.result.json
+*.report.json
+tmp/
