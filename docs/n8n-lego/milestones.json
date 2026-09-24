@@ -4,7 +4,7 @@
   "canonical": true,
   "purpose": "Granular milestone truth beneath the strategic Phase A-F roadmap. This is the only machine-readable milestone register. Future milestone IDs may be refined by Manager only by updating this file; strategic phases are not deleted.",
   "protectedBranch": "main",
-  "mainBaseline": "20ae0c1af9a7602d8f04b779902efa19df395b61",
+  "mainBaseline": "f63a91e7251270967a96b643b3448d2ca1068cf9",
   "currentMilestone": "P2.27",
   "previousCompletedMilestone": "P2.26",
   "strategicRoadmap": {
@@ -1704,14 +1704,18 @@
     }
   ],
   "agentBranches": {
-    "agent1": "arena/p2.27-plugin-runtime",
-    "agent2": "arena/01a0c90d-n8n-rust-v-4"
+    "agent1": "main",
+    "agent2": "main",
+    "note": "P2.27 and P3/P4/P6/P9 lanes integrated on main (0 open PRs as of f63a91e7)"
   },
   "baseline": {
-    "role": "protected main at P2.23 start (governance correction per Master Prompt P2.23 §1)",
+    "role": "protected main after P9.5-P9.22 integration (#209) — governance correction per Issue #81 (mainBaseline = main HEAD)",
+    "previousMainBaseline": "20ae0c1af9a7602d8f04b779902efa19df395b61",
     "reconciliation": {
       "state": "stable",
-      "open": 0
+      "open": 0,
+      "at": "f63a91e7251270967a96b643b3448d2ca1068cf9",
+      "note": "P2.27 complete; P3/P4/P6/P9 integrated; next milestone not authorized (P2.17+ umbrella only)"
     }
   }
 }

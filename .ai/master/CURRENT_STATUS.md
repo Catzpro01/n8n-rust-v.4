@@ -10,15 +10,15 @@ document is right and the prose is stale.
 
 | | |
 | --- | --- |
-| Protected main baseline | `20ae0c1af9a7602d8f04b779902efa19df395b61` |
-| Agent 1 branch | `arena/p2.27-plugin-runtime` |
-| Agent 2 branch | `arena/01a0c90d-n8n-rust-v-4` |
+| Protected main baseline | `f63a91e7251270967a96b643b3448d2ca1068cf9` |
+| Agent 1 branch | `main` |
+| Agent 2 branch | `main` |
 | **Current milestone** | **P2.27** |
 | Previous completed milestone | **P2.26** |
-| Current branch state | `arena/01a0c90d-n8n-rust-v-4` (implementation branch; not protected main) |
+| Current branch state | `main` (implementation branch; not protected main) |
 | Historical reconciled state | `c1eca8cc` (historical evidence, not current main) |
 | Historical P2.11 evidence commit | `bdd0f1d2d6c8d7bc1c1ff3d881ddc2b3bd93713d` |
-| Strategic phase | P2.13 |
+| Strategic phase | P2.27 |
 
 A historical evidence commit is the state a past finding was verified against. It
 is kept deliberately and is **not** rewritten to look current — the current state
@@ -72,8 +72,8 @@ is the row marked as such.
 - Model inference is NOT implemented; no provider API calls are made.
 - Memory persistent store remains NOT IMPLEMENTED; Context is what is loaded now and Memory is what survives replacement.
 - Workspace runtime, MCP runtime, Runtime Adapter runtime, Node Creator runtime and Translation runtime remain NOT IMPLEMENTED.
-- Rust remains NOT STARTED. The backend is NOT scale-out ready; scale-out remains NOT READY.
-- P2.13 is not COMPLETE until Manager reconciliation, merge validation and post-merge verification pass.
+- Rust is ACTIVE (PHASE 3): 8 workspace crates under crates/, cargo workspace green as of main f63a91e7. The backend is NOT scale-out ready; scale-out remains NOT READY.
+- Next implementation milestone is NOT AUTHORIZED after P2.27 + P3/P4/P6/P9 integration; P2.17+ is an umbrella planning bucket only (Issue #81 stop rule).
 
 ## Scale-out readiness
 
