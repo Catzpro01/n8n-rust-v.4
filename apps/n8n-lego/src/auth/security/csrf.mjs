@@ -8,22 +8,32 @@
  * baseline has no CSRF defence at all, so any external page could make the
  * editor perform state-changing actions as the signed-in user.
  *
- * TWO INDEPENDENT CHECKS, because each alone has a known gap:
+ * TWO CHECKS, only one of which is always on — and the reason is a hard
+ * compatibility constraint:
  *
- *  1. **Origin/Referer validation** — a cross-site request cannot forge
- *     `Origin`. Gap: some proxies and older browsers omit both headers, so a
- *     policy that hard-fails on a missing Origin breaks legitimate clients.
+ *  1. **Origin/Referer validation — ALWAYS ENFORCED for state changes.**
+ *     A cross-site page cannot forge `Origin`. Combined with the `SameSite=Lax`
+ *     cookie attribute (already set by the session cookie), this is what
+ *     actually stops CSRF against this deployment.
  *
- *  2. **Double-submit cookie** — a value in a custom header must match a value
- *     in a cookie. A third-party page can cause a cookie to be *sent*, but it
- *     cannot *read* it to copy into a header. Gap: only works for clients that
- *     cooperate by sending the header.
+ *  2. **Double-submit token — OPT-IN (`requireToken`).** A value in a custom
+ *     header must match a value in a readable cookie; a third-party page can
+ *     cause a cookie to be *sent* but cannot *read* it to echo it.
  *
- * Requiring **either** to pass would let an attacker pick the weaker one. This
- * module applies them as designed: Origin/Referer is always enforced for
- * state-changing requests (a missing Origin on a state change is refused —
- * browsers that perform a cross-origin state change always set Origin), and the
- * double-submit token is enforced when the server has issued one.
+ * WHY THE TOKEN IS NOT ON BY DEFAULT — this was decided by a failing CI run,
+ * not by preference. The editor is the **pinned upstream n8n UI**: it is the
+ * declared compatibility surface, and it has no knowledge of a bespoke
+ * `x-n8n-csrf-token` header. Enforcing the token broke the real product:
+ *
+ * ```text
+ * FAIL  save the workflow — no successful save request (["POST /rest/workflows 403", ×6])
+ * FAIL  execute the workflow — POST /run -> 403
+ * ```
+ *
+ * Demanding a header the shipped editor does not send is not defence, it is an
+ * outage. So the token remains available for first-party and machine clients
+ * (see P5.7) that opt into it, while the editor is protected by the origin
+ * check it already satisfies.
  *
  * SAFE METHODS (GET/HEAD/OPTIONS) are exempt: they must not mutate state, and
  * the editor's initial page load carries no token.
@@ -164,16 +174,14 @@ export function evaluateCsrf(request, options = {}) {
     return deny(CSRF_VERDICT.ORIGIN_MISMATCH, SECURITY_REASON.PERMISSION_DENIED);
   }
 
-  // The double-submit token is demanded only once the server has actually
-  // issued one (the cookie is present). A client that never got a token is a
-  // non-browser/API caller: it has no CSRF cookie to forge, and it is governed
-  // by the origin check plus, from P5.7 onward, an API key rather than ambient
-  // cookie authority.
-  const cookieToken = parseCookieHeader(header('cookie'))[CSRF_COOKIE];
-  if (requireToken || (cookieToken && sessionId && secret)) {
+  // The double-submit check is OPT-IN. It is not demanded from the pinned n8n
+  // editor, which cannot send a header it has never heard of — see the module
+  // header for the CI failure that settled this.
+  if (requireToken) {
+    const cookieToken = parseCookieHeader(header('cookie'))[CSRF_COOKIE];
     const headerToken = header(CSRF_HEADER);
-    const expected = cookieToken && verifyCsrfToken(cookieToken, sessionId, secret);
-    if (!cookieToken || !headerToken || !safeEqual(cookieToken, headerToken) || !expected) {
+    const signatureValid = cookieToken ? verifyCsrfToken(cookieToken, sessionId, secret) : false;
+    if (!cookieToken || !headerToken || !safeEqual(cookieToken, headerToken) || !signatureValid) {
       return deny(CSRF_VERDICT.TOKEN_MISMATCH, SECURITY_REASON.PERMISSION_DENIED);
     }
   }

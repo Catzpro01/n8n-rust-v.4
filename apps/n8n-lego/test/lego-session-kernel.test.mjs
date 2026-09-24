@@ -401,44 +401,61 @@ test('a cross-origin state change is blocked even with a valid session', () => {
   assert.equal(v.reasonCode, 'auth.forbidden');
 });
 
-test('a same-origin state change with a matching token passes', () => {
-  const token = issueCsrfToken('s1', 'secret');
+test('a same-origin state change passes — this is the pinned editor path', () => {
+  // The shipped n8n editor sends Origin (browsers always do on a state change)
+  // and NO x-n8n-csrf-token header. That path must work, because the original
+  // n8n UI is the declared compatibility surface. It is protected by the origin
+  // check plus SameSite=Lax, not by a header the editor cannot send.
   const v = evaluateCsrf(
-    { method: 'POST', headers: { origin: 'https://app.example', cookie: `${CSRF_COOKIE}=${token}`, [CSRF_HEADER]: token } },
+    { method: 'POST', headers: { origin: 'https://app.example', cookie: 'n8n-auth=abc' } },
     { allowedOrigins: ['https://app.example'], sessionId: 's1', secret: 'secret' },
   );
   assert.equal(v.allowed, true);
   assert.equal(v.verdict, CSRF_VERDICT.OK);
 });
 
-test('a forged or missing token is blocked — the double-submit check is real', () => {
+test('an opted-in client must present a valid double-submit token', () => {
+  const token = issueCsrfToken('s1', 'secret');
+  const base = { allowedOrigins: ['https://app.example'], sessionId: 's1', secret: 'secret', requireToken: true };
+  const headers = { origin: 'https://app.example', cookie: `${CSRF_COOKIE}=${token}`, [CSRF_HEADER]: token };
+  assert.equal(evaluateCsrf({ method: 'POST', headers }, base).verdict, CSRF_VERDICT.OK);
+  assert.equal(
+    evaluateCsrf({ method: 'POST', headers: { origin: 'https://app.example', cookie: `${CSRF_COOKIE}=${token}` } }, base).verdict,
+    CSRF_VERDICT.TOKEN_MISMATCH,
+    'cookie without the echoing header',
+  );
+  assert.equal(
+    evaluateCsrf({ method: 'POST', headers: { origin: 'https://app.example', cookie: `${CSRF_COOKIE}=${token}`, [CSRF_HEADER]: issueCsrfToken('s1', 'secret') } }, base).verdict,
+    CSRF_VERDICT.TOKEN_MISMATCH,
+    'header that does not match the cookie',
+  );
+  assert.equal(
+    evaluateCsrf({ method: 'POST', headers: { origin: 'https://app.example', cookie: `${CSRF_COOKIE}=${issueCsrfToken('other', 'secret')}`, [CSRF_HEADER]: issueCsrfToken('other', 'secret') } }, base).verdict,
+    CSRF_VERDICT.TOKEN_MISMATCH,
+    'token minted for a different session',
+  );
+  // Origin still wins: a valid token does not excuse a cross-site request.
+  assert.equal(
+    evaluateCsrf({ method: 'POST', headers: { ...headers, origin: 'https://evil.example' } }, base).verdict,
+    CSRF_VERDICT.ORIGIN_MISMATCH,
+  );
+});
+
+test('a cross-origin write is blocked with or without a token', () => {
   const token = issueCsrfToken('s1', 'secret');
   const base = { allowedOrigins: ['https://app.example'], sessionId: 's1', secret: 'secret' };
-  const origin = 'https://app.example';
-
-  // No token at all, though a cookie was issued.
   assert.equal(
-    evaluateCsrf({ method: 'POST', headers: { origin, cookie: `${CSRF_COOKIE}=${token}` } }, base).verdict,
-    CSRF_VERDICT.TOKEN_MISMATCH,
+    evaluateCsrf({ method: 'POST', headers: { origin: 'https://evil.example' } }, base).verdict,
+    CSRF_VERDICT.ORIGIN_MISMATCH,
   );
-  // Cookie without the echoing header.
-  assert.equal(
-    evaluateCsrf({ method: 'POST', headers: { origin, cookie: `${CSRF_COOKIE}=${token}` } }, base).allowed,
-    false,
-  );
-  // Header that does not match the cookie.
-  assert.equal(
-    evaluateCsrf({ method: 'POST', headers: { origin, cookie: `${CSRF_COOKIE}=${token}`, [CSRF_HEADER]: issueCsrfToken('s1', 'secret') } }, base).verdict,
-    CSRF_VERDICT.TOKEN_MISMATCH,
-  );
-  // A token minted for a different session.
-  assert.equal(
-    evaluateCsrf({ method: 'POST', headers: { origin, cookie: `${CSRF_COOKIE}=${issueCsrfToken('other', 'secret')}`, [CSRF_HEADER]: issueCsrfToken('other', 'secret') } }, base).verdict,
-    CSRF_VERDICT.TOKEN_MISMATCH,
-  );
-  // Cross-origin wins over a well-formed token.
+  // A well-formed token does not excuse a cross-site origin: origin is checked
+  // first and is not bypassable by presenting a valid token.
   assert.equal(
     evaluateCsrf({ method: 'POST', headers: { origin: 'https://evil.example', cookie: `${CSRF_COOKIE}=${token}`, [CSRF_HEADER]: token } }, base).verdict,
+    CSRF_VERDICT.ORIGIN_MISMATCH,
+  );
+  assert.equal(
+    evaluateCsrf({ method: 'DELETE', headers: { origin: 'https://evil.example' } }, base).verdict,
     CSRF_VERDICT.ORIGIN_MISMATCH,
   );
 });

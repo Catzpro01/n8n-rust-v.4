@@ -56,21 +56,20 @@ after(async () => {
 
 
 /**
- * P5.2: this helper models a BROWSER, not a bare HTTP client. A browser sends
- * `Origin` on every state-changing request and echoes the CSRF cookie into the
- * matching header (that is exactly what the editor does, and what makes the
- * double-submit check meaningful). The harness was updated to match reality;
- * no server-side check was relaxed to accommodate it.
+/**
+ * P5.2: this helper models the BROWSER, not a bare HTTP client. A browser sends
+ * `Origin` on every state-changing request, which is what the CSRF origin check
+ * consumes. It deliberately sends NO x-n8n-csrf-token header, because the
+ * shipped n8n editor — the declared compatibility surface — does not know that
+ * header exists. Exercising the same path production does is the point.
  */
-async function api(method, path, body, { withCookie = true, csrf = true } = {}) {
-  const csrfValue = /n8n-csrf=([^;]+)/.exec(csrfCookie)?.[1];
+async function api(method, path, body, { withCookie = true } = {}) {
   const response = await fetch(`${base}${path}`, {
     method,
     headers: {
       ...(body ? { 'content-type': 'application/json' } : {}),
-      ...(withCookie && cookie ? { cookie: [cookie, csrfCookie].filter(Boolean).join('; ') } : {}),
+      ...(withCookie && cookie ? { cookie } : {}),
       ...(withCookie ? { origin: base } : {}),
-      ...(withCookie && csrf && csrfValue ? { 'x-n8n-csrf-token': csrfValue } : {}),
     },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
