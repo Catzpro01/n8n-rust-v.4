@@ -60,8 +60,9 @@ test('the register is one machine-readable file at the canonical path, owned by 
   assert.equal(REGISTER.protectedBranch, 'main');
   // The baseline is the final protected-main commit; P2.15's own historical start baseline
   // (0d9466f1) stays on the P2.15 row, and P2.13's (e754c5df) stays on its row, instead of being
-  // overwritten here.
-  assert.match(REGISTER.mainBaseline, /^20ae0c1a/);
+  // overwritten here. f63a91e7 is the P9.5-P9.22 integration (#209) that Issue #81 requires the
+  // top-level pointer to track.
+  assert.match(REGISTER.mainBaseline, /^f63a91e7/);
   assert.equal(REGISTER.currentMilestone, 'P2.27');
   assert.equal(REGISTER.previousCompletedMilestone, 'P2.26');
   assert.ok(REGISTER.milestones.length >= 7, `${REGISTER.milestones.length} milestones recorded`);
@@ -256,10 +257,11 @@ test('the baseline block protects main and names the branches of the current mil
   // stays preserved history on its own row, so moving the top-level block on never rewrites it.
   const p215 = byId.get('P2.15');
   assert.equal(p215.startEvidence.commit, '0d9466f19a149f6e30bdee559086b7a28b080cb3', 'P2.15 start evidence stays preserved history');
-  assert.equal(REGISTER.mainBaseline, '20ae0c1af9a7602d8f04b779902efa19df395b61', 'the main baseline is the final protected-main commit (P2.27 section 3 correction; d65f9713 was superseded by merges through 20ae0c1a)');
+  assert.equal(REGISTER.mainBaseline, 'f63a91e7251270967a96b643b3448d2ca1068cf9', 'the main baseline is the final protected-main commit after the P9.5-P9.22 integration (#209); Issue #81 requires it to equal protected main HEAD after a completion transition');
   assert.match(REGISTER.mainBaseline, /^[0-9a-f]{40}$/);
-  assert.equal(REGISTER.agentBranches.agent1, 'arena/p2.27-plugin-runtime');
-  assert.equal(REGISTER.agentBranches.agent2, 'arena/01a0c90d-n8n-rust-v-4');
+  // 0 open PRs after #209: both agent branches point at main until a new lane opens.
+  assert.equal(REGISTER.agentBranches.agent1, 'main');
+  assert.equal(REGISTER.agentBranches.agent2, 'main');
   // Moving the top-level block on did not lose P2.13: its baseline and both agent branches stay on
   // the P2.13 row, which is where a historical milestone's coordinates belong.
   const p213 = byId.get('P2.13');

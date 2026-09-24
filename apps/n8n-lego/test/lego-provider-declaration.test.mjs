@@ -592,10 +592,16 @@ test('one error family: lego.contract_violation is published; details redact cre
 });
 
 test('the ai-set register mirror was not silently rewritten by this milestone', () => {
-  // Historical divergence stays historical: the set mirror still records its P2.16-era
-  // state and ai-pack prefers milestones.json — P2.26 edits only the canonical register.
-  assert.equal(LEGO_SET.currentMilestone, 'P2.16',
-    'the set mirror is historical planning material, not the canonical pointer');
+  // Post-Issue #81 governance reconcile (PR against f63a91e7): the set mirror is
+  // intentionally brought back in line with the canonical register — both now
+  // name P2.27 and the same protected-main baseline. The mirror is still not the
+  // authority: ai-pack prefers milestones.json; this asserts they agree after the
+  // explicit reconcile rather than a milestone silently diverging them again.
+  assert.equal(LEGO_SET.currentMilestone, 'P2.27',
+    'the set mirror was reconciled to the canonical pointer (Issue #81)');
   assert.equal(REGISTER.currentMilestone, 'P2.27');
-  assert.match(LEGO_SET.statusNote, /P2\.16/);
+  assert.equal(LEGO_SET.mainBaseline, REGISTER.mainBaseline,
+    'set mirror and register share the same protected-main baseline after reconcile');
+  assert.equal(REGISTER.mainBaseline, 'f63a91e7251270967a96b643b3448d2ca1068cf9');
+  assert.match(LEGO_SET.statusNote, /P2\.27/);
 });

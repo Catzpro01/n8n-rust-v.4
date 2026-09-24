@@ -93,5 +93,5 @@ Future IDs may be refined by Manager only by updating `docs/n8n-lego/milestones.
 - Model inference is NOT implemented; no provider API calls are made.
 - Memory persistent store remains NOT IMPLEMENTED; Context is what is loaded now and Memory is what survives replacement.
 - Workspace runtime, MCP runtime, Runtime Adapter runtime, Node Creator runtime and Translation runtime remain NOT IMPLEMENTED.
-- Rust remains NOT STARTED. The backend is NOT scale-out ready; scale-out remains NOT READY.
-- P2.13 is not COMPLETE until Manager reconciliation, merge validation and post-merge verification pass.
+- Rust is ACTIVE (PHASE 3): 8 workspace crates under crates/, cargo workspace green as of main f63a91e7. The backend is NOT scale-out ready; scale-out remains NOT READY.
+- Next implementation milestone is NOT AUTHORIZED after P2.27 + P3/P4/P6/P9 integration; P2.17+ is an umbrella planning bucket only (Issue #81 stop rule).
