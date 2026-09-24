@@ -551,3 +551,49 @@ export {
   workspaceCatalogAudit,
   workspacePublication,
 } from './src/workspace.mjs';
+
+export {
+  MIGRATION_STATUSES,
+  MIGRATION_CONTRACT_STATUSES,
+  ROLLBACK_STRATEGIES,
+  REQUIRED_CATEGORIES,
+  ENTRY_FIELDS,
+  SurfaceMigrationError,
+  validateMigrationEntry,
+  validateSurfaceMigrationInventory,
+  describeSurfaceMigration,
+} from './src/surface-migration.mjs';
+
+export {
+  SURFACE_MODES,
+  REGION_STATES,
+  SURFACE_CONTRACT_FIELDS,
+  SurfaceContractError,
+  validateSurfaceContract,
+  defineSurfaceContract,
+  describeSurfaceContract,
+  surfaceRunnable,
+} from './src/surface-contract.mjs';
+
+export {
+  PARITY_STATUSES,
+  PARITY_FIELDS,
+  ParityError,
+  validateObservation,
+  compareObservations,
+  observation,
+  describeParityHarness,
+} from './src/parity.mjs';
+
+export {
+  PILOT_ID,
+  PILOT_VERSION,
+  PILOT_CAPABILITY_ID,
+  PILOT_MESSAGE_SLOT,
+  pilotSurfaceContract,
+  validatePilotSurfaceContract,
+  createStatusRegion,
+  referenceStatusObservation,
+  assertValidPilotObservation,
+  pilotCapabilityDeclaration,
+} from './src/pilot-status-region.mjs';

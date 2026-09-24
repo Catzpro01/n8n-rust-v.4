@@ -1,0 +1,333 @@
+{
+  "inventoryVersion": "1.0.0",
+  "description": "Machine-readable Frontend LEGO migration inventory for Issue #241. References surfaces declared in manifest/surfaces.json (not a second surface catalog). Migration status tracks the strangler journey of each UI surface; it is not the capability runtime lifecycle and not backend capabilityMigrationState.",
+  "derivedFrom": {
+    "issue": "241",
+    "parentRequirement": "240",
+    "surfaceCatalog": "manifest/surfaces.json",
+    "referenceUi": "n8n-editor-ui@2.9.4"
+  },
+  "categories": [
+    "application-shell-navigation",
+    "workflow-list-dashboard",
+    "workflow-editor",
+    "canvas",
+    "node-picker-catalog",
+    "node-parameter-ndv",
+    "execution-history",
+    "credentials-settings",
+    "projects-workspace",
+    "import-export",
+    "ai-surfaces",
+    "localization",
+    "loading-error-empty-primitives",
+    "accessibility-shared-primitives"
+  ],
+  "migrationStatuses": [
+    "reference-only",
+    "contract-ready",
+    "pilot-available",
+    "parity-pending",
+    "lego-primary"
+  ],
+  "contractStatuses": [
+    "declared",
+    "consuming",
+    "ready",
+    "verified"
+  ],
+  "rollbackStrategies": [
+    "reference-remains-default",
+    "pilot-not-primary",
+    "lego-primary-with-reference"
+  ],
+  "entries": [
+    {
+      "inventoryId": "ui.shell.navigation",
+      "category": "application-shell-navigation",
+      "title": "Application shell and navigation",
+      "surfaceIds": [
+        "navigation"
+      ],
+      "currentOwner": "n8n-editor-ui",
+      "proposedLegoOwner": "ui-frontend",
+      "migrationStatus": "reference-only",
+      "referenceImplementation": "n8n-editor-ui@2.9.4",
+      "contractStatus": "declared",
+      "evidencePath": "docs/n8n-lego/evidence/frontend-inventory-baseline.json",
+      "rollbackStrategy": "reference-remains-default",
+      "dependencies": [],
+      "notes": "Shell/header/sidebar stay on the stock bundle until a later authorized surface migrates."
+    },
+    {
+      "inventoryId": "ui.dashboard.workflow-list",
+      "category": "workflow-list-dashboard",
+      "title": "Workflow list / dashboard overview",
+      "surfaceIds": [
+        "dashboard"
+      ],
+      "currentOwner": "n8n-editor-ui",
+      "proposedLegoOwner": "ui-frontend",
+      "migrationStatus": "reference-only",
+      "referenceImplementation": "n8n-editor-ui@2.9.4",
+      "contractStatus": "declared",
+      "evidencePath": "docs/n8n-lego/evidence/frontend-inventory-baseline.json",
+      "rollbackStrategy": "reference-remains-default",
+      "dependencies": [
+        "ui.shell.navigation"
+      ],
+      "notes": "Dashboard already declares empty-states and notification hooks in surfaces.json."
+    },
+    {
+      "inventoryId": "ui.editor.workflow",
+      "category": "workflow-editor",
+      "title": "Workflow editor host",
+      "surfaceIds": [
+        "workflow-editor"
+      ],
+      "currentOwner": "n8n-editor-ui",
+      "proposedLegoOwner": "ui-frontend",
+      "migrationStatus": "reference-only",
+      "referenceImplementation": "n8n-editor-ui@2.9.4",
+      "contractStatus": "declared",
+      "evidencePath": null,
+      "rollbackStrategy": "reference-remains-default",
+      "dependencies": [
+        "ui.shell.navigation"
+      ],
+      "notes": "Not a pilot candidate; canvas/editor rewrite is explicitly out of Issue #241 scope."
+    },
+    {
+      "inventoryId": "ui.editor.canvas",
+      "category": "canvas",
+      "title": "Workflow canvas (nodes, connections)",
+      "surfaceIds": [
+        "workflow-editor"
+      ],
+      "currentOwner": "n8n-editor-ui",
+      "proposedLegoOwner": "ui-frontend",
+      "migrationStatus": "reference-only",
+      "referenceImplementation": "n8n-editor-ui@2.9.4",
+      "contractStatus": "declared",
+      "evidencePath": null,
+      "rollbackStrategy": "reference-remains-default",
+      "dependencies": [
+        "ui.editor.workflow"
+      ],
+      "notes": "Composite region of workflow-editor; never the first pilot."
+    },
+    {
+      "inventoryId": "ui.nodes.picker",
+      "category": "node-picker-catalog",
+      "title": "Node picker / catalog (palette, search)",
+      "surfaceIds": [
+        "node-picker"
+      ],
+      "currentOwner": "n8n-editor-ui",
+      "proposedLegoOwner": "ui-frontend",
+      "migrationStatus": "reference-only",
+      "referenceImplementation": "n8n-editor-ui@2.9.4",
+      "contractStatus": "declared",
+      "evidencePath": null,
+      "rollbackStrategy": "reference-remains-default",
+      "dependencies": [
+        "ui.editor.workflow"
+      ],
+      "notes": "Backend node-registry capability remains authoritative for node types."
+    },
+    {
+      "inventoryId": "ui.nodes.parameters",
+      "category": "node-parameter-ndv",
+      "title": "Node parameter / NDV panel",
+      "surfaceIds": [
+        "workflow-editor",
+        "node-picker"
+      ],
+      "currentOwner": "n8n-editor-ui",
+      "proposedLegoOwner": "ui-frontend",
+      "migrationStatus": "reference-only",
+      "referenceImplementation": "n8n-editor-ui@2.9.4",
+      "contractStatus": "declared",
+      "evidencePath": null,
+      "rollbackStrategy": "reference-remains-default",
+      "dependencies": [
+        "ui.nodes.picker",
+        "ui.editor.canvas"
+      ],
+      "notes": "P7 dynamic parameters are non-scope for this slice (Issue #241 non-scope)."
+    },
+    {
+      "inventoryId": "ui.executions.history",
+      "category": "execution-history",
+      "title": "Execution list, detail and errors",
+      "surfaceIds": [
+        "executions"
+      ],
+      "currentOwner": "n8n-editor-ui",
+      "proposedLegoOwner": "ui-frontend",
+      "migrationStatus": "reference-only",
+      "referenceImplementation": "n8n-editor-ui@2.9.4",
+      "contractStatus": "declared",
+      "evidencePath": null,
+      "rollbackStrategy": "reference-remains-default",
+      "dependencies": [],
+      "notes": "Execution engine authority stays backend-side; UI only declares/requests/renders."
+    },
+    {
+      "inventoryId": "ui.credentials.list",
+      "category": "credentials-settings",
+      "title": "Credentials list and editor",
+      "surfaceIds": [
+        "credentials"
+      ],
+      "currentOwner": "n8n-editor-ui",
+      "proposedLegoOwner": "ui-frontend",
+      "migrationStatus": "reference-only",
+      "referenceImplementation": "n8n-editor-ui@2.9.4",
+      "contractStatus": "declared",
+      "evidencePath": null,
+      "rollbackStrategy": "reference-remains-default",
+      "dependencies": [],
+      "notes": "Credential security boundary is P5 (Agent 1) — finding-only, never modified here."
+    },
+    {
+      "inventoryId": "ui.settings.pages",
+      "category": "credentials-settings",
+      "title": "Settings pages",
+      "surfaceIds": [
+        "settings"
+      ],
+      "currentOwner": "n8n-editor-ui",
+      "proposedLegoOwner": "ui-frontend",
+      "migrationStatus": "reference-only",
+      "referenceImplementation": "n8n-editor-ui@2.9.4",
+      "contractStatus": "declared",
+      "evidencePath": null,
+      "rollbackStrategy": "reference-remains-default",
+      "dependencies": [
+        "ui.shell.navigation"
+      ],
+      "notes": "Settings remain stock; localization and theme are later authorized slices."
+    },
+    {
+      "inventoryId": "ui.projects.workspace",
+      "category": "projects-workspace",
+      "title": "Projects / workspace surfaces",
+      "surfaceIds": [
+        "navigation",
+        "dashboard"
+      ],
+      "currentOwner": "n8n-editor-ui",
+      "proposedLegoOwner": "ui-frontend",
+      "migrationStatus": "reference-only",
+      "referenceImplementation": "n8n-editor-ui@2.9.4",
+      "contractStatus": "declared",
+      "evidencePath": null,
+      "rollbackStrategy": "reference-remains-default",
+      "dependencies": [
+        "ui.shell.navigation",
+        "ui.dashboard.workflow-list"
+      ],
+      "notes": "No dedicated surfaces.json row yet; navigation/dashboard host project entry points."
+    },
+    {
+      "inventoryId": "ui.io.import-export",
+      "category": "import-export",
+      "title": "Workflow import / export",
+      "surfaceIds": [
+        "workflow-editor",
+        "dashboard"
+      ],
+      "currentOwner": "n8n-editor-ui",
+      "proposedLegoOwner": "ui-frontend",
+      "migrationStatus": "reference-only",
+      "referenceImplementation": "n8n-editor-ui@2.9.4",
+      "contractStatus": "declared",
+      "evidencePath": null,
+      "rollbackStrategy": "reference-remains-default",
+      "dependencies": [
+        "ui.editor.workflow",
+        "ui.dashboard.workflow-list"
+      ],
+      "notes": "Workflow JSON semantics remain compatibility-critical (#240 invariant)."
+    },
+    {
+      "inventoryId": "ui.ai.assistant",
+      "category": "ai-surfaces",
+      "title": "AI assistant / copilot surfaces",
+      "surfaceIds": [
+        "workflow-editor",
+        "node-picker"
+      ],
+      "currentOwner": "n8n-editor-ui",
+      "proposedLegoOwner": "ui-frontend",
+      "migrationStatus": "reference-only",
+      "referenceImplementation": "n8n-editor-ui@2.9.4",
+      "contractStatus": "declared",
+      "evidencePath": null,
+      "rollbackStrategy": "reference-remains-default",
+      "dependencies": [
+        "ui.editor.workflow"
+      ],
+      "notes": "Declared capability rows exist (ai-assistant/ai-copilot) but are not installed; no second AI authority."
+    },
+    {
+      "inventoryId": "ui.i18n.localization",
+      "category": "localization",
+      "title": "Localization presentation layer",
+      "surfaceIds": [
+        "navigation",
+        "settings",
+        "dashboard",
+        "error-surfaces",
+        "notifications"
+      ],
+      "currentOwner": "n8n-editor-ui",
+      "proposedLegoOwner": "ui-frontend",
+      "migrationStatus": "reference-only",
+      "referenceImplementation": "n8n-editor-ui@2.9.4",
+      "contractStatus": "declared",
+      "evidencePath": "packages/frontend-lego/test/04-i18n.test.mjs",
+      "rollbackStrategy": "reference-remains-default",
+      "dependencies": [],
+      "notes": "Message-slot grammar and locale model already live in i18n.mjs + localization contract; translation capability remains declared-only."
+    },
+    {
+      "inventoryId": "ui.primitives.status-region",
+      "category": "loading-error-empty-primitives",
+      "title": "Loading / empty / error status primitives",
+      "surfaceIds": [
+        "error-surfaces",
+        "dashboard"
+      ],
+      "currentOwner": "n8n-editor-ui",
+      "proposedLegoOwner": "ui-frontend",
+      "migrationStatus": "pilot-available",
+      "referenceImplementation": "n8n-editor-ui@2.9.4",
+      "contractStatus": "consuming",
+      "evidencePath": "packages/frontend-lego/test/39-pilot-status-region.test.mjs",
+      "rollbackStrategy": "pilot-not-primary",
+      "dependencies": [],
+      "notes": "Issue #241 pilot: framework-neutral status region behind the existing registry/extension seam; original UI stays primary."
+    },
+    {
+      "inventoryId": "ui.primitives.accessibility",
+      "category": "accessibility-shared-primitives",
+      "title": "Accessibility shared primitives",
+      "surfaceIds": [
+        "error-surfaces"
+      ],
+      "currentOwner": "n8n-editor-ui",
+      "proposedLegoOwner": "ui-frontend",
+      "migrationStatus": "reference-only",
+      "referenceImplementation": "n8n-editor-ui@2.9.4",
+      "contractStatus": "declared",
+      "evidencePath": "packages/frontend-lego/test/21-security.test.mjs",
+      "rollbackStrategy": "reference-remains-default",
+      "dependencies": [
+        "ui.primitives.status-region"
+      ],
+      "notes": "ui:accessibility:annotate stays attribute-only; no layout authority moves into LEGO."
+    }
+  ]
+}
