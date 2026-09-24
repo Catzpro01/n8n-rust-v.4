@@ -7,7 +7,8 @@
  * match semantically (success values or identical failure contracts), with
  * explicit normalize stripping volatile fields; mixed ok/fail and any value
  * divergence produce honest mismatches; bounds (2..16, unique ids) hold; and
- * the lock row (newest suite) pins the exact nine-module surface at 0.8.0.
+ * the lock row stays semver-versioned with the replay/failure suites pinned
+ * (the exact surface pin lives in the newest suite).
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -169,33 +170,18 @@ test('replay requests fail closed: bounds, unique ids, callable invokes, seriali
   );
 });
 
-test('the lock row (0.8.0) pins the exact nine-module surface and export sets', () => {
+test('the lock row stays semver-versioned and keeps the replay surface + suites pinned', () => {
   const lock = JSON.parse(readFileSync(join(APP_ROOT, 'src/lego/contracts/contract-lock.json'), 'utf8'));
   const row = lock.contracts.find((entry) => entry.id === 'lego.plugin-runtime');
-  assert.equal(row.version, '0.8.0');
-  assert.deepEqual(row.surface.slice().sort(), [
+  assert.match(row.version, /^\d+\.\d+\.\d+$/);
+  for (const file of [
     'src/lego/plugin-failure.mjs',
-    'src/lego/plugin-locality.mjs',
-    'src/lego/plugin-manifest.mjs',
-    'src/lego/plugin-policy.mjs',
-    'src/lego/plugin-registry.mjs',
     'src/lego/plugin-replay.mjs',
-    'src/lego/plugin-resources.mjs',
-    'src/lego/plugin-runtime.mjs',
-    'src/lego/plugin-secrets.mjs',
     'src/lego/plugin-supervisor.mjs',
-  ].filter((file) => file !== 'src/lego/plugin-failure.mjs' || true).slice(0, 0).concat([
-    'src/lego/plugin-failure.mjs',
-    'src/lego/plugin-locality.mjs',
-    'src/lego/plugin-manifest.mjs',
-    'src/lego/plugin-policy.mjs',
-    'src/lego/plugin-registry.mjs',
-    'src/lego/plugin-replay.mjs',
-    'src/lego/plugin-resources.mjs',
     'src/lego/plugin-runtime.mjs',
-    'src/lego/plugin-secrets.mjs',
-    'src/lego/plugin-supervisor.mjs',
-  ]).sort());
+  ]) {
+    assert.ok(row.surface.includes(file), `${file} stays on the surface`);
+  }
   assert.ok(row.tests.includes('apps/n8n-lego/test/lego-plugin-replay.test.mjs'));
   assert.ok(row.tests.includes('apps/n8n-lego/test/lego-plugin-failure.test.mjs'));
   for (const file of row.surface) {
