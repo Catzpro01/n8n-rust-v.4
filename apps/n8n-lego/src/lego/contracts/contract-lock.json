@@ -2704,6 +2704,34 @@
         "apps/n8n-lego/test/lego-telemetry-retention.test.mjs"
       ],
       "notes": "P9.15 (implementation owner: Agent 4, Issue #101): Retention + HOT/WARM/COLD Policy — signal-specific TTLs (log/metric/trace/audit/security/replay/diagnostic); deterministic residency + expiry (now is an argument); incident extension policy-controlled with caps; audit/security retention distinct and shed last under storage pressure; expired records actually removed/compacted; deletion isolated from authoritative workflow state (refused_authoritative); pressure degrades whole records before corruption; no I/O/clock."
+    },
+    {
+      "id": "observability.operator-inspection",
+      "owner": "agent-6",
+      "domain": "observability",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/operator-inspection.mjs"
+      ],
+      "exports": {
+        "src/lego/operator-inspection.mjs": [
+          "OPERATOR_CONTRACT",
+          "OPERATOR_SCHEMA_VERSION",
+          "OPERATOR_INTERFACES",
+          "OPERATOR_ROLES",
+          "OPERATOR_ROLE_GRANTS",
+          "OPERATOR_DENIED_ROLES",
+          "OPERATOR_ERRORS",
+          "OPERATOR_LIMITS",
+          "OPERATOR_NOTES",
+          "createOperatorApi"
+        ]
+      },
+      "tests": [
+        "apps/n8n-lego/test/lego-operator-inspection.test.mjs"
+      ],
+      "notes": "P9.16 (implementation owner: Agent 4, Issue #101): Operator Inspection API — authorized health/readiness/logs/metrics/traces/diagnostics interfaces; pagination with hard maxLimit; query timeout + cancellation (stable codes operator.timeout/cancelled); bounded results; access policy enforced (operator.unauthorized); index-backed bounded scan (no workflow-runtime block; pure dataset, no I/O); concurrent storm to operator.busy; stable machine-readable error envelope; deterministic stats."
     }
   ]
 }

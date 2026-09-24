@@ -4447,7 +4447,7 @@
       "owner": "agent-6",
       "kind": "domain",
       "status": "contract-only",
-      "phase": "P9.15",
+      "phase": "P9.16",
       "errorNamespace": "observability",
       "paths": [
         "src/lego/telemetry-envelope.mjs",
@@ -4464,7 +4464,8 @@
         "src/lego/diagnostic-bundle.mjs",
         "src/lego/failure-correlation.mjs",
         "src/lego/replay-evidence.mjs",
-        "src/lego/telemetry-retention.mjs"
+        "src/lego/telemetry-retention.mjs",
+        "src/lego/operator-inspection.mjs"
       ],
       "public": [
         "src/lego/telemetry-envelope.mjs",
@@ -4481,7 +4482,8 @@
         "src/lego/diagnostic-bundle.mjs",
         "src/lego/failure-correlation.mjs",
         "src/lego/replay-evidence.mjs",
-        "src/lego/telemetry-retention.mjs"
+        "src/lego/telemetry-retention.mjs",
+        "src/lego/operator-inspection.mjs"
       ],
       "dependsOn": [
         "platform-kernel",
@@ -4495,7 +4497,7 @@
         "legacy-rest"
       ],
       "contract": {
-        "version": "1.14.0",
+        "version": "1.15.0",
         "tests": [
           "apps/n8n-lego/test/lego-telemetry-envelope.test.mjs",
           "apps/n8n-lego/test/lego-structured-log.test.mjs",
@@ -4511,7 +4513,8 @@
           "apps/n8n-lego/test/lego-diagnostic-bundle.test.mjs",
           "apps/n8n-lego/test/lego-failure-correlation.test.mjs",
           "apps/n8n-lego/test/lego-replay-evidence.test.mjs",
-          "apps/n8n-lego/test/lego-telemetry-retention.test.mjs"
+          "apps/n8n-lego/test/lego-telemetry-retention.test.mjs",
+          "apps/n8n-lego/test/lego-operator-inspection.test.mjs"
         ]
       },
       "capabilities": [
