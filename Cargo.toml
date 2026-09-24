@@ -29,10 +29,12 @@ indexmap = { version = "=2.2.6", features = ["serde"] }
 [profile.dev]
 debug = 1               # Kurangi penulisan debug symbols ke disk (hemat I/O & RAM 50%+)
 split-debuginfo = "unpacked"
+codegen-units = 8       # Paralelisasi kompilasi backend ke seluruh 8 core CPU
 
 [profile.test]
 debug = 1
 split-debuginfo = "unpacked"
+codegen-units = 8
 
 # Optimasi khusus crate pihak ketiga (serde, tokio, dll) agar unit test berjalan 3x lebih cepat
 [profile.dev.package."*"]
