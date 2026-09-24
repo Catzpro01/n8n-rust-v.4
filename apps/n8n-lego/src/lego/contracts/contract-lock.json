@@ -3916,6 +3916,52 @@
         "apps/n8n-lego/test/lego-p9-acceptance.test.mjs"
       ],
       "notes": "P9.22 (implementation owner: Agent 4, Issue #101): Full P9 Acceptance \u2014 twelve-gate non-interference vocabulary + fail-closed verdicts; OFF vs NORMAL workflow equivalence; milestone status roll-up (laneReadyForMergeReview vs mergeReady); pure decision helpers; no I/O/clock."
+    },
+    {
+      "id": "auth.principal",
+      "owner": "agent-1",
+      "domain": "auth",
+      "version": "1.0.0",
+      "status": "stable",
+      "surface": [
+        "src/auth/security/index.mjs"
+      ],
+      "exports": {
+        "src/auth/security/index.mjs": [
+          "AUTH_METHODS",
+          "AUTH_STRENGTHS",
+          "DEFAULT_TENANT",
+          "PRINCIPAL_BOUNDS",
+          "PRINCIPAL_TYPES",
+          "RESOURCE_VERSION_FIELD",
+          "SECURITY_DECISION",
+          "SECURITY_REASON",
+          "STAMP_AUTHORITY",
+          "STAMP_FIELDS",
+          "SecurityError",
+          "assertSecurityContext",
+          "assertSecurityReason",
+          "authStrengthRank",
+          "checkTenantBinding",
+          "compilePermissions",
+          "createPrincipalSnapshot",
+          "createSecurityContext",
+          "createSecurityStamp",
+          "evaluateStampAuthority",
+          "hasPermission",
+          "isPrincipalExpired",
+          "isPrincipalSnapshot",
+          "isSecurityContext",
+          "isSecurityStamp",
+          "meetsAuthStrength",
+          "permissionSetIdFor"
+        ]
+      },
+      "consumers": [],
+      "tests": [
+        "apps/n8n-lego/test/lego-security-kernel.test.mjs"
+      ],
+      "notes": "P5.1 security kernel. Immutable PrincipalSnapshot, request-local SecurityContext and the versioned SecurityStamp that decides whether cached authority is still CURRENT, must be RE_EVALUATEd, or is DENY. Performs no I/O: no network, no filesystem, no decryption. Holds no secret material and no user profile - the constructor rejects unknown fields so a stored user record cannot ride into the execution path. SecurityError refuses any code not published in contracts/errors.contract.json (foundation F16 by construction). Introduces ZERO new error codes. Deliberately NOT authentication, NOT an authorization engine (P5.3), NOT a credential path (P5.4), NOT a second capability engine: plugin policy stays in src/lego/plugin-policy.mjs. auth.identity@1.0.0 is unchanged and remains a read-only projection."
     }
   ]
 }

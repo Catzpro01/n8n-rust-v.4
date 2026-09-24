@@ -195,7 +195,7 @@
           "resources": "low"
         }
       ],
-      "notes": "Shared kernel. Only cross-domain primitives may live here: process configuration and structured logging. It is a graph leaf — it must never import a domain.",
+      "notes": "Shared kernel. Only cross-domain primitives may live here: process configuration and structured logging. It is a graph leaf \u2014 it must never import a domain.",
       "tier": "domain",
       "dataOwner": "none",
       "stateOwner": "runtime",
@@ -1457,7 +1457,7 @@
           "degradation": "capability-unavailable",
           "replacement": "contract-preserving",
           "resources": "low",
-          "notes": "Skill REGISTRY, implemented in P2.12: registration, validation, lazy discovery and lifecycle. Skills are declarative documents; nothing executes a procedure. A skill declares requiredCapabilities and never grants them — the capability system stays the authority. Declared here rather than as a new top-level domain because XA-11 (is a skill a backend concept at all?) is open-for-manager."
+          "notes": "Skill REGISTRY, implemented in P2.12: registration, validation, lazy discovery and lifecycle. Skills are declarative documents; nothing executes a procedure. A skill declares requiredCapabilities and never grants them \u2014 the capability system stays the authority. Declared here rather than as a new top-level domain because XA-11 (is a skill a backend concept at all?) is open-for-manager."
         },
         {
           "id": "ai.memory",
@@ -1667,7 +1667,7 @@
           "notes": "P2.24 implementation target: honest accounting records (reported/estimated/unavailable, never fabricated zero), scope-filtered queries, budget views over what was actually recorded. Cost derivation is a pure exported function, not an operation. No provider integration, no telemetry capture, no billing."
         }
       ],
-      "notes": "Contract-only. Declares vocabulary for a future AI Foundation: provider/runtime taxonomy, model and tool gateways, application providers, agent lifecycle, session, delegation, events, decision, approval, artifact and context. NOTHING is implemented: no inference, no agent loop, no gateway client, no MCP server or client, no network call, no new dependency. Owned by manager because these contracts are cross-domain and must not be owned by whoever writes the first adapter. A dependency-free leaf: the AI Foundation must never become a prerequisite for the backend booting. P2.12: the Skill registry (src/lego/skill.mjs) reads the capability registry from lego-foundation to answer whether a skill's required capabilities are DECLARED. The direction is deliberate and one-way: the AI Foundation consumes the capability registry, the capability registry knows nothing about AI. This is the dependency that keeps Skill from copying the capability list, which would be the real architectural failure — two registries disagreeing about what exists. lego-foundation does not depend on ai-foundation, so no cycle is created, and the AI Foundation is still not required for the backend to boot.",
+      "notes": "Contract-only. Declares vocabulary for a future AI Foundation: provider/runtime taxonomy, model and tool gateways, application providers, agent lifecycle, session, delegation, events, decision, approval, artifact and context. NOTHING is implemented: no inference, no agent loop, no gateway client, no MCP server or client, no network call, no new dependency. Owned by manager because these contracts are cross-domain and must not be owned by whoever writes the first adapter. A dependency-free leaf: the AI Foundation must never become a prerequisite for the backend booting. P2.12: the Skill registry (src/lego/skill.mjs) reads the capability registry from lego-foundation to answer whether a skill's required capabilities are DECLARED. The direction is deliberate and one-way: the AI Foundation consumes the capability registry, the capability registry knows nothing about AI. This is the dependency that keeps Skill from copying the capability list, which would be the real architectural failure \u2014 two registries disagreeing about what exists. lego-foundation does not depend on ai-foundation, so no cycle is created, and the AI Foundation is still not required for the backend to boot.",
       "tier": "domain",
       "dataOwner": "none",
       "stateOwner": "none",
@@ -2025,7 +2025,7 @@
           "resources": "low"
         }
       ],
-      "notes": "Translates route semantics, auth context, envelopes, errors and capability state. Business logic is forbidden here — it translates, it does not decide.",
+      "notes": "Translates route semantics, auth context, envelopes, errors and capability state. Business logic is forbidden here \u2014 it translates, it does not decide.",
       "tier": "domain",
       "dataOwner": "none",
       "stateOwner": "runtime",
@@ -2062,7 +2062,8 @@
       "public": [],
       "dependsOn": [
         "platform-kernel",
-        "compatibility"
+        "compatibility",
+        "lego-foundation"
       ],
       "mustNotDependOn": [
         "workflow",
@@ -2072,6 +2073,55 @@
         "worker"
       ],
       "capabilities": [
+        {
+          "id": "auth.principal",
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "principal",
+              "interaction": "call",
+              "permission": "auth:read",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "context",
+              "interaction": "call",
+              "permission": "auth:read",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "authority",
+              "interaction": "call",
+              "permission": "auth:read",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "auth:read"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "critical",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process",
+              "worker",
+              "remote"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "none"
+        },
         {
           "id": "auth.session",
           "status": "implemented",
@@ -2369,7 +2419,7 @@
           "resources": "low"
         }
       ],
-      "notes": "Session mechanics, password hashing, token signing and owner creation stay private in src/auth.mjs. The read-only identity projection other LEGOs need is published by the nested sub-LEGO 'auth.identity' (src/auth/contract), which is a dependency-free leaf — that is what retired allowances A1/A2 in P2.9 without creating a compatibility <-> auth cycle.",
+      "notes": "P5.1 note: 'public' stays [] deliberately. Publishing src/auth/security here would switch on R4 boundary policing for this domain and immediately expose a PRE-EXISTING internal reach that P5 does not own: src/auth/contract/index.mjs (domain auth.identity, owner agent-3) re-exports toPublicUser/hasOwner from src/auth.mjs. That coupling predates P5 and is out of P5.1 scope; retiring it is an agent-3/P5.x follow-up. Until then the contract-lock row is the publication mechanism for auth.principal, which is how node-registry (33 rows), execution (5) and workflow (2) already operate.",
       "tier": "domain",
       "dataOwner": "auth",
       "stateOwner": "persistent",
@@ -2390,9 +2440,10 @@
         "startup": "instant"
       },
       "contract": {
-        "version": "0.1.0",
+        "id": "auth.principal",
+        "version": "1.0.0",
         "tests": [
-          "test/compat.contract.test.mjs"
+          "test/lego-security-kernel.test.mjs"
         ]
       }
     },
@@ -3484,7 +3535,7 @@
           "resources": "low"
         }
       ],
-      "notes": "Node internals must never reach into the credential persistence implementation — declared as a hard direction rule.",
+      "notes": "Node internals must never reach into the credential persistence implementation \u2014 declared as a hard direction rule.",
       "tier": "domain",
       "dataOwner": "node-registry",
       "stateOwner": "cache",
@@ -4257,7 +4308,7 @@
           "resources": "low"
         }
       ],
-      "notes": "Serves the never-patched n8n-editor-ui bundle. Backend domains must not reach into it. P2.11 reconciliation: absorbed agent-1's frontend LEGO host (src/frontend.mjs, src/frontend/routes.mjs). These serve the editor bundle and publish the frontend descriptor, which is this domain's existing responsibility — a separate domain would have split one boundary across two owners. The compatibility entry moved from mustNotDependOn to dependsOn because the descriptor route uses the compat response/error helpers, the same way the settings LEGO does; serving HTML never needed them, answering /rest does.",
+      "notes": "Serves the never-patched n8n-editor-ui bundle. Backend domains must not reach into it. P2.11 reconciliation: absorbed agent-1's frontend LEGO host (src/frontend.mjs, src/frontend/routes.mjs). These serve the editor bundle and publish the frontend descriptor, which is this domain's existing responsibility \u2014 a separate domain would have split one boundary across two owners. The compatibility entry moved from mustNotDependOn to dependsOn because the descriptor route uses the compat response/error helpers, the same way the settings LEGO does; serving HTML never needed them, answering /rest does.",
       "tier": "domain",
       "dataOwner": "none",
       "stateOwner": "cache",
@@ -5420,7 +5471,7 @@
           "table"
         ],
         "default": "strict",
-        "note": "Two interchangeable JS implementations behind one contract — the seam a future Rust implementation would use. No Rust exists."
+        "note": "Two interchangeable JS implementations behind one contract \u2014 the seam a future Rust implementation would use. No Rust exists."
       },
       "notes": "Depth-3 entry proving the registry supports parent -> child -> grandchild with ownership, contracts and dependency rules working identically at every level.",
       "tier": "sub",
@@ -5554,7 +5605,7 @@
       "resolution": "Publish src/storage/contract/index.mjs (id allocation + collection ports) and consume that.",
       "state": "open",
       "reviewedAt": "2026-09-22 (P2.9)",
-      "reviewNote": "P2.9: NARROWED, not removed. The import is exactly one symbol (newExecutionId) in exactly one file (src/engine.mjs). It cannot be retired the way A1/A2 were, because unlike toPublicUser/hasOwner this is not a pure read-only projection — it mutates a process-local counter, and that counter IS scale-out blocker S2. Publishing a storage contract that merely re-exports newExecutionId would retire the allowance while preserving the blocker, i.e. it would make the gate greener and the architecture no safer. Retiring A3 correctly requires agent-5 to design durable id allocation (P8). Guarded by test/lego-boundary.test.mjs: the allowance may not grow beyond this one symbol in this one file.",
+      "reviewNote": "P2.9: NARROWED, not removed. The import is exactly one symbol (newExecutionId) in exactly one file (src/engine.mjs). It cannot be retired the way A1/A2 were, because unlike toPublicUser/hasOwner this is not a pure read-only projection \u2014 it mutates a process-local counter, and that counter IS scale-out blocker S2. Publishing a storage contract that merely re-exports newExecutionId would retire the allowance while preserving the blocker, i.e. it would make the gate greener and the architecture no safer. Retiring A3 correctly requires agent-5 to design durable id allocation (P8). Guarded by test/lego-boundary.test.mjs: the allowance may not grow beyond this one symbol in this one file.",
       "narrowedTo": {
         "file": "src/engine.mjs",
         "symbols": [
@@ -5581,7 +5632,7 @@
       "The zone may import domain internals (temporarily); new domains may not.",
       "Nothing may import the legacy zone except the composition root.",
       "The aggregate may only shrink. test/lego-boundary.test.mjs pins its line count at its P2.7 high-water mark of 845.",
-      "New LEGO functionality must NOT be added here. A new capability gets its own domain with its own contract, and the compatibility layer routes to it — that is the strangler path, and it is the only one.",
+      "New LEGO functionality must NOT be added here. A new capability gets its own domain with its own contract, and the compatibility layer routes to it \u2014 that is the strangler path, and it is the only one.",
       "A route family with no legitimate owner is recorded in legacy.unresolvedOwnership and escalated, never assigned to a convenient domain to make the map look finished."
     ],
     "migrationTargets": {
@@ -5616,7 +5667,7 @@
         "currentBehaviour": "constant empty object; no business logic",
         "why": "These are i18n surfaces. The project has an explicit standing decision NOT to build a Translation LEGO or language packs, so there is no domain that legitimately owns them. Assigning them to node-registry or credentials would manufacture ownership to make a map look complete, and would put i18n responsibility inside domains that have no i18n mandate.",
         "escalatedTo": "manager",
-        "question": "Who owns editor-facing i18n surfaces while Translation remains out of scope — compatibility as a permanent stub custodian, or a future Translation LEGO?"
+        "question": "Who owns editor-facing i18n surfaces while Translation remains out of scope \u2014 compatibility as a permanent stub custodian, or a future Translation LEGO?"
       },
       {
         "routes": [
@@ -5655,7 +5706,7 @@
         "2. The TARGET domain (not agent-1) implements it behind its own contract.",
         "3. Register the contract surface in contract-lock.json.",
         "4. src/server.mjs mounts the new domain's routes BEFORE the legacy router.",
-        "5. Delete the handlers from src/rest/routes.mjs — the line count must drop.",
+        "5. Delete the handlers from src/rest/routes.mjs \u2014 the line count must drop.",
         "6. Re-run npm run lego:gate; the boundary test proves the aggregate shrank."
       ],
       "antiPattern": "Do not create a second aggregate. Three route families in one new 'misc' LEGO is the same mistake with a newer filename."
@@ -5667,7 +5718,7 @@
     "rules": [
       "A sub-LEGO is a full registry entry with `parent` set to its parent's id. It declares its own owner, contract version, dependencies, capabilities and tests.",
       "Nest only where the split is justified by a real boundary. Depth is capped at 3 (parent -> child -> grandchild) to prevent decorative hierarchies.",
-      "A sub-LEGO's paths must live inside its parent's paths — a child cannot own code outside its parent.",
+      "A sub-LEGO's paths must live inside its parent's paths \u2014 a child cannot own code outside its parent.",
       "A sub-LEGO inherits nothing implicitly: dependencies and forbidden directions are declared per entry.",
       "A parent may reach its own children's public contracts without declaring a dependency (composition inside one domain); reaching a child's internals is still forbidden.",
       "An outside consumer may depend on a sub-LEGO's public contract only if it declares that sub-LEGO in dependsOn. Sibling-internal reach (A.sub -> B.sub internal) is always forbidden.",
@@ -5675,11 +5726,11 @@
     ]
   },
   "scaleOut": {
-    "principle": "A LEGO contract must not assume it is the only process. P2.7 implements no worker, queue or scaling infrastructure — it only checks, and records, whether the logical contracts could survive being moved into a second process. Checked by tools/lego/scale-out-readiness.mjs.",
+    "principle": "A LEGO contract must not assume it is the only process. P2.7 implements no worker, queue or scaling infrastructure \u2014 it only checks, and records, whether the logical contracts could survive being moved into a second process. Checked by tools/lego/scale-out-readiness.mjs.",
     "rules": [
       "New LEGO code (contract-first domains, the foundation, templates) must be process-agnostic: no module-global mutable state, no process-local id allocation, no direct filesystem or env access. Findings there fail the build outright.",
       "Existing code may have findings, but every one must be declared here with a domain, an owner, a severity and a resolution plan. Undeclared findings fail.",
-      "An exception that no longer matches anything is stale and fails — the list shrinks, it does not rot.",
+      "An exception that no longer matches anything is stale and fails \u2014 the list shrinks, it does not rot.",
       "A construct that matches a pattern but is genuinely process-safe may be justified in place with `// @scale-out-safe: <reason>`; the reason is reviewed like code.",
       "No LEGO may reach another LEGO's database/persistence internals, in one process or many. That is already enforced by the dependency gate (R2/R4), which is what makes a future process split a deployment change rather than a redesign."
     ],
@@ -5745,7 +5796,7 @@
         "owner": "manager",
         "resolveBy": "-",
         "severity": "accepted",
-        "reason": "The kernel reads process.env — that is its job: it is the adapter that turns the environment into an injected config object.",
+        "reason": "The kernel reads process.env \u2014 that is its job: it is the adapter that turns the environment into an injected config object.",
         "resolution": "Accepted permanently. Config is read once at the edge and injected everywhere else, which is exactly the property that keeps domains process-agnostic."
       },
       {
