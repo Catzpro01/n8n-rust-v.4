@@ -2,7 +2,7 @@
   "name": "@lego/frontend",
   "version": "0.1.0",
   "private": true,
-  "description": "FRONTEND LEGO (P2.5) — framework-neutral frontend contract, capability registry, extension points, error boundary and translation readiness for the stock n8n editor UI. Vue stays the reference implementation; the backend never learns it exists.",
+  "description": "FRONTEND LEGO (P2.5) \u2014 framework-neutral frontend contract, capability registry, extension points, error boundary and translation readiness for the stock n8n editor UI. Vue stays the reference implementation; the backend never learns it exists.",
   "license": "SEE LICENSE IN ../../reference/n8n/LICENSE.md",
   "type": "module",
   "exports": {
@@ -36,7 +36,12 @@
     "./agents": "./src/agents.mjs",
     "./agent-events": "./src/agent-events.mjs",
     "./vocabulary": "./src/vocabulary.mjs",
-    "./seam": "./src/seam.mjs"
+    "./seam": "./src/seam.mjs",
+    "./surface-migration": "./src/surface-migration.mjs",
+    "./surface-contract": "./src/surface-contract.mjs",
+    "./parity": "./src/parity.mjs",
+    "./pilot-status-region": "./src/pilot-status-region.mjs",
+    "./manifest/surface-migrations.json": "./manifest/surface-migrations.json"
   },
   "files": [
     "index.mjs",

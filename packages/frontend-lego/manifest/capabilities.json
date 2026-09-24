@@ -306,6 +306,37 @@
       "phase": "P2.10",
       "owner": "agent-01",
       "notes": "The trace renders operational events, decisions, approvals, artifacts and state transitions. It carries summaries and references; a payload or a chain-of-thought has no field to live in."
+    },
+    {
+      "id": "status-region",
+      "lego": "ui-frontend",
+      "title": "Status region pilot (loading / empty / error)",
+      "status": "available",
+      "activation": "eager",
+      "criticality": "optional",
+      "trust": "feature",
+      "lifecycle": "available",
+      "surfaces": [
+        "error-surfaces",
+        "dashboard"
+      ],
+      "contracts": [
+        "contracts/frontend.contract.md"
+      ],
+      "extensionPoints": [
+        "ui:error:render"
+      ],
+      "messages": "status-region",
+      "degradation": {
+        "fallback": "native-behavior",
+        "detail": "without the pilot capability the reference n8n status/error presentation remains primary"
+      },
+      "tests": [
+        "packages/frontend-lego/test/39-pilot-status-region.test.mjs"
+      ],
+      "phase": "issue-241",
+      "owner": "agent-01",
+      "notes": "Issue #241 pilot only: metadata + view-model behind the existing registry/extension seam; original UI stays default. Not installed at boot unless registered by a consumer."
     }
   ]
 }

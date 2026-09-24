@@ -180,6 +180,22 @@
       "permissions": [
         "agent:observe"
       ]
+    },
+    {
+      "id": "status-region",
+      "lego": "ui-frontend",
+      "title": "Status region pilot (loading/empty/error)",
+      "status": "available",
+      "activation": "eager",
+      "criticality": "optional",
+      "trust": "feature",
+      "lifecycle": "available",
+      "installed": false,
+      "surfaces": [
+        "error-surfaces",
+        "dashboard"
+      ],
+      "operations": []
     }
   ],
   "registered": [],
@@ -535,7 +551,24 @@
   },
   "seam": {
     "note": "What the frontend may consume from the other side of the seam, and the one identity every capability is projected into (src/seam.mjs).",
-    "identityFields": 16,
+    "identityFields": [
+      "id",
+      "lego",
+      "owner",
+      "contractVersion",
+      "operations",
+      "permissions",
+      "lifecycle",
+      "status",
+      "availability",
+      "criticality",
+      "trust",
+      "interaction",
+      "migration",
+      "degradation",
+      "surfaces",
+      "requirements"
+    ],
     "forbiddenSources": 7,
     "publicationPending": "a quoted word whose file no contract row publishes names owner, domain and decision (XA-9)",
     "inputs": [
@@ -666,24 +699,6 @@
       "credential-store",
       "model-output",
       "screen"
-    ],
-    "identityFields": [
-      "id",
-      "lego",
-      "owner",
-      "contractVersion",
-      "operations",
-      "permissions",
-      "lifecycle",
-      "status",
-      "availability",
-      "criticality",
-      "trust",
-      "interaction",
-      "migration",
-      "degradation",
-      "surfaces",
-      "requirements"
     ],
     "provenanceFields": [
       "origin"

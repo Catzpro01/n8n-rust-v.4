@@ -30,6 +30,7 @@ packages/frontend-lego/
     interactions.mjs conformance.mjs observability.mjs impact.mjs profiles.mjs i18n.mjs
     errors.mjs boot.mjs client.mjs manifests.mjs knowledge.mjs agents.mjs agent-events.mjs
     skills.mjs context-session.mjs memory.mjs workspace.mjs agent-machine.mjs lego.mjs
+    surface-migration.mjs surface-contract.mjs parity.mjs pilot-status-region.mjs
     adapters/ the framework adapter boundary (currently Vue; the only framework-aware code)
   test/                     01-contract … 23-degradation, 24-vocabulary, 25-operations,
                             26-ai-contracts, 27-agent-events, 28-seam, 29-alignment, 30-master,
