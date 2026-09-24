@@ -4447,7 +4447,7 @@
       "owner": "agent-6",
       "kind": "domain",
       "status": "contract-only",
-      "phase": "P9.20",
+      "phase": "P9.21",
       "errorNamespace": "observability",
       "paths": [
         "src/lego/telemetry-envelope.mjs",
@@ -4469,7 +4469,8 @@
         "src/lego/low-resource-mode.mjs",
         "src/lego/self-observability.mjs",
         "src/lego/tenant-isolation.mjs",
-        "src/lego/contract-oracle.mjs"
+        "src/lego/contract-oracle.mjs",
+        "src/lego/advanced-diagnostics.mjs"
       ],
       "public": [
         "src/lego/telemetry-envelope.mjs",
@@ -4491,7 +4492,8 @@
         "src/lego/low-resource-mode.mjs",
         "src/lego/self-observability.mjs",
         "src/lego/tenant-isolation.mjs",
-        "src/lego/contract-oracle.mjs"
+        "src/lego/contract-oracle.mjs",
+        "src/lego/advanced-diagnostics.mjs"
       ],
       "dependsOn": [
         "platform-kernel",
@@ -4505,7 +4507,7 @@
         "legacy-rest"
       ],
       "contract": {
-        "version": "1.19.0",
+        "version": "1.21.0",
         "tests": [
           "apps/n8n-lego/test/lego-telemetry-envelope.test.mjs",
           "apps/n8n-lego/test/lego-structured-log.test.mjs",
@@ -4526,7 +4528,8 @@
           "apps/n8n-lego/test/lego-low-resource-mode.test.mjs",
           "apps/n8n-lego/test/lego-self-observability.test.mjs",
           "apps/n8n-lego/test/lego-tenant-isolation.test.mjs",
-          "apps/n8n-lego/test/lego-contract-oracle.test.mjs"
+          "apps/n8n-lego/test/lego-contract-oracle.test.mjs",
+          "apps/n8n-lego/test/lego-advanced-diagnostics.test.mjs"
         ]
       },
       "capabilities": [

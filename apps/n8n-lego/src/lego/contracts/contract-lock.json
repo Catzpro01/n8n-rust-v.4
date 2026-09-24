@@ -2838,6 +2838,32 @@
         "apps/n8n-lego/test/lego-contract-oracle.test.mjs"
       ],
       "notes": "P9.20 (implementation owner: Agent 4, Issue #101): Observability Contract Oracle + Cross-Domain Acceptance — validates P3/P4/P6/P8 producer specimens; detects missing fields, invented fields, vocabulary drift, version incompatibility (via local satisfies with compat range semantics); deterministic sorted output with fingerprint; cross-domain fixtures checked in; no I/O/clock."
+    },
+    {
+      "id": "observability.advanced-diagnostics",
+      "owner": "agent-6",
+      "domain": "observability",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/advanced-diagnostics.mjs"
+      ],
+      "exports": {
+        "src/lego/advanced-diagnostics.mjs": [
+          "ADVDIAG_CONTRACT",
+          "ADVDIAG_SCHEMA_VERSION",
+          "ADVDIAG_FEATURES",
+          "ADVDIAG_CONTAINMENT",
+          "ADVDIAG_DEDUP_EXEMPT",
+          "ADVDIAG_LIMITS",
+          "ADVDIAG_NOTES",
+          "createAdvancedDiagnostics"
+        ]
+      },
+      "tests": [
+        "apps/n8n-lego/test/lego-advanced-diagnostics.test.mjs"
+      ],
+      "notes": "P9.21 (implementation owner: Agent 4, Issue #101): Advanced Diagnostics / Incident Intelligence — six selected features each with budget, kill-switch, fallback, negative tests and pressure behavior; security/audit never deduped; profiling/eBPF optional (not selected); tail sampling bounded with keep-on-overflow; workflow A/B pure; no I/O/clock."
     }
   ]
 }

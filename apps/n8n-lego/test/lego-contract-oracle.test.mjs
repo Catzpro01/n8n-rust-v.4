@@ -222,11 +222,11 @@ test('P9.20 oracle output is deterministic', () => {
   assert.equal(o1.validate(null).ok, false);
 });
 
-test('P9.20 lock pin: contracts length 73 after P9.20 row', () => {
+test('P9.20 lock pin: contracts length 74 after P9.21 row', () => {
   const lock = JSON.parse(readFileSync(
     new URL('../src/lego/contracts/contract-lock.json', import.meta.url), 'utf8'));
-  assert.equal(lock.contracts.length, 73,
-    'P9.20 adds observability.contract-oracle@1.0.0; count-pins say 73');
+  assert.equal(lock.contracts.length, 74,
+    'P9.20 adds observability.contract-oracle@1.0.0; P9.21 adds observability.advanced-diagnostics@1.0.0; count-pins say 74');
   const row = lock.contracts.find(c => c.id === 'observability.contract-oracle');
   assert.ok(row, 'P9.20 row present');
   assert.equal(row.version, '1.0.0');
