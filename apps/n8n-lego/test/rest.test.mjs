@@ -26,6 +26,7 @@ const USER_FOLDER = mkdtempSync(join(tmpdir(), 'n8n-lego-test-'));
 let base;
 let running;
 let cookie = '';
+let csrfCookie = '';
 let workflowId = '';
 let executionId = '';
 
@@ -53,17 +54,30 @@ after(async () => {
   rmSync(USER_FOLDER, { recursive: true, force: true });
 });
 
+
+/**
+/**
+ * P5.2: this helper models the BROWSER, not a bare HTTP client. A browser sends
+ * `Origin` on every state-changing request, which is what the CSRF origin check
+ * consumes. It deliberately sends NO x-n8n-csrf-token header, because the
+ * shipped n8n editor — the declared compatibility surface — does not know that
+ * header exists. Exercising the same path production does is the point.
+ */
 async function api(method, path, body, { withCookie = true } = {}) {
   const response = await fetch(`${base}${path}`, {
     method,
     headers: {
       ...(body ? { 'content-type': 'application/json' } : {}),
       ...(withCookie && cookie ? { cookie } : {}),
+      ...(withCookie ? { origin: base } : {}),
     },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
-  const setCookie = response.headers.getSetCookie?.() ?? [];
-  if (setCookie.length > 0) cookie = setCookie[0].split(';')[0];
+  for (const entry of response.headers.getSetCookie?.() ?? []) {
+    const pair = entry.split(';')[0];
+    if (pair.startsWith('n8n-auth=')) cookie = pair;
+    else if (pair.startsWith('n8n-csrf=')) csrfCookie = pair;
+  }
   const text = await response.text();
   const json = text === '' ? null : JSON.parse(text);
   return { status: response.status, json };

@@ -21,6 +21,7 @@ import {
   createOwner,
   createSession,
   hasOwner,
+  revokeCurrentSession,
 } from '../auth.mjs';
 
 export function authRoutes({ logger }) {
@@ -44,8 +45,13 @@ export function authRoutes({ logger }) {
         if (!login || !password) throw badRequest('Email and password are required');
         const user = authenticate(ctx.store, login, password);
         if (!user) throw unauthorized();
-        const { cookie } = createSession(user, ctx.config);
-        sendData(ctx.res, publicUser(user, ctx.config), { headers: { 'set-cookie': cookie } });
+        // P5.2: a fresh login gets a fresh session AND a fresh CSRF token. The
+        // token is bound to the session id, so re-using the old one against the
+        // new session must fail — see issueToken/session binding in csrf.mjs.
+        const { cookie, csrfCookie } = createSession(user, ctx.config);
+        sendData(ctx.res, publicUser(user, ctx.config), {
+          headers: { 'set-cookie': [cookie, csrfCookie] },
+        });
       },
     },
     {
@@ -53,6 +59,10 @@ export function authRoutes({ logger }) {
       path: '/rest/logout',
       public: true,
       handler: (ctx) => {
+        // P5.2: logout now kills the server-side session, not just the cookie.
+        // Clearing the cookie alone only stopped *this* browser from presenting
+        // the token — any copy of it stayed valid until it expired.
+        revokeCurrentSession(ctx.config, ctx.req);
         sendData(ctx.res, { loggedOut: true }, { headers: { 'set-cookie': clearSessionCookieHeader() } });
       },
     },
@@ -65,9 +75,11 @@ export function authRoutes({ logger }) {
         const { email, firstName, lastName, password } = ctx.body ?? {};
         if (!email || !password) throw badRequest('Email and password are required');
         const user = createOwner(ctx.store, { email, firstName, lastName, password });
-        const { cookie } = createSession(user, ctx.config);
+        const { cookie, csrfCookie } = createSession(user, ctx.config);
         logger.info('owner account created', { email: user.email });
-        sendData(ctx.res, publicUser(user, ctx.config), { headers: { 'set-cookie': cookie } });
+        sendData(ctx.res, publicUser(user, ctx.config), {
+          headers: { 'set-cookie': [cookie, csrfCookie] },
+        });
       },
     },
     {

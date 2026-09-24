@@ -2417,6 +2417,67 @@
           "degradation": "capability-unavailable",
           "replacement": "contract-preserving",
           "resources": "low"
+        },
+        {
+          "id": "auth.session-kernel",
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "create",
+              "interaction": "call",
+              "permission": "auth:session",
+              "idempotent": false,
+              "status": "implemented"
+            },
+            {
+              "name": "rotate",
+              "interaction": "call",
+              "permission": "auth:session",
+              "idempotent": false,
+              "status": "implemented"
+            },
+            {
+              "name": "revoke",
+              "interaction": "call",
+              "permission": "auth:session",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "validate",
+              "interaction": "call",
+              "permission": "auth:session",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "csrf",
+              "interaction": "call",
+              "permission": "auth:session",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "auth:session"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "critical",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "low"
         }
       ],
       "notes": "P5.1 note: 'public' stays [] deliberately. Publishing src/auth/security here would switch on R4 boundary policing for this domain and immediately expose a PRE-EXISTING internal reach that P5 does not own: src/auth/contract/index.mjs (domain auth.identity, owner agent-3) re-exports toPublicUser/hasOwner from src/auth.mjs. That coupling predates P5 and is out of P5.1 scope; retiring it is an agent-3/P5.x follow-up. Until then the contract-lock row is the publication mechanism for auth.principal, which is how node-registry (33 rows), execution (5) and workflow (2) already operate.",
