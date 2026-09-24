@@ -1,4 +1,4 @@
-﻿name: Post-Merge Verification & Resource Cleanup
+name: Post-Merge Verification & Resource Cleanup
 
 on:
   pull_request:
@@ -8,19 +8,19 @@ on:
 jobs:
   cleanup:
     name: Post-Merge Verification & Branch Cleanup
-    runs-on: [ self-hosted, windows, x64, rust-build, n8n-rust ]
+    runs-on: [ self-hosted, linux ]
     if: github.event.pull_request.merged == true
     steps:
       - name: Checkout main
         uses: actions/checkout@v4
         with:
           ref: main
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Post-Merge Main Verification (Level 0 + Level 2)
         run: |
           cargo check --workspace
-          cargo test -p n8n-workflow
+          cargo nextest run -p n8n-workflow
 
       - name: Execute Cleanup & Delete Task Branch
         env:
@@ -31,4 +31,4 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python tools/orchestration/cleanup_runner.py --branch $env:BRANCH_NAME --merge-sha $env:MERGE_SHA --pr $env:PR_NUMBER
+          python3 tools/orchestration/cleanup_runner.py --branch $BRANCH_NAME --merge-sha $MERGE_SHA --pr $PR_NUMBER
