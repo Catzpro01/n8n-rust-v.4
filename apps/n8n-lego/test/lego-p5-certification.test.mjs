@@ -89,9 +89,19 @@ async function freePort() {
   });
 }
 
+/** Every spawned server, so a failed assertion can never leave one running (and hang the suite). */
+const CHILDREN = new Set();
+process.on('exit', () => {
+  for (const child of CHILDREN) if (child.exitCode === null) child.kill('SIGKILL');
+});
+after(() => {
+  for (const child of CHILDREN) if (child.exitCode === null) child.kill('SIGKILL');
+});
+
 /** The real product: `n8n-lego start` as its own process. Captures every log byte. */
 async function bootServer(userFolder, port) {
   const child = spawn(process.execPath, [BIN, 'start', '--no-fetch'], { env: envFor(userFolder, port), stdio: ['ignore', 'pipe', 'pipe'] });
+  CHILDREN.add(child);
   child.logs = '';
   child.stdout.on('data', (chunk) => { child.logs += chunk; });
   child.stderr.on('data', (chunk) => { child.logs += chunk; });
@@ -581,21 +591,24 @@ describe('8. operator drills: `n8n-lego credentials` against a real data directo
   before(async () => {
     port = await freePort();
     const { child, base } = await bootServer(USER_FOLDER, port);
-    const call = client(base, null);
-    assert.equal((await call('POST', '/rest/owner/setup', { email: 'ops@p58.test', firstName: 'O', lastName: 'P', password: PASSWORD })).status, 200);
-    for (let i = 0; i < 3; i += 1) {
-      const created = await call('POST', '/rest/credentials', { name: `c${i}`, type: 'httpHeaderAuth', data: { name: 'X', value: `${CREDENTIAL_SECRET}-${i}` } });
-      assert.equal(created.status, 200);
-      credentialIds.push(created.body.data.id);
+    try {
+      const call = client(base, null);
+      assert.equal((await call('POST', '/rest/owner/setup', { email: 'ops@p58.test', firstName: 'O', lastName: 'P', password: PASSWORD })).status, 200);
+      for (let i = 0; i < 3; i += 1) {
+        const created = await call('POST', '/rest/credentials', { name: `c${i}`, type: 'httpHeaderAuth', data: { name: 'X', value: `${CREDENTIAL_SECRET}-${i}` } });
+        assert.equal(created.status, 200);
+        credentialIds.push(created.body.data.id);
+      }
+      // While the server is up: every mutating verb refuses, read-only verbs work.
+      for (const verb of ['rotate', 'recover']) {
+        const refused = cli(USER_FOLDER, port, verb);
+        assert.equal(refused.code, 2, `${verb} must refuse while running`);
+        assert.match(refused.stderr, /server is running/);
+      }
+      assert.equal(cli(USER_FOLDER, port, 'verify').code, 0);
+    } finally {
+      await stopServer(child);
     }
-    // While the server is up: every mutating verb refuses, read-only verbs work.
-    for (const verb of ['rotate', 'recover']) {
-      const refused = cli(USER_FOLDER, port, verb);
-      assert.equal(refused.code, 2, `${verb} must refuse while running`);
-      assert.match(refused.stderr, /server is running/);
-    }
-    assert.equal(cli(USER_FOLDER, port, 'verify').code, 0);
-    await stopServer(child);
   });
   after(() => rmSync(USER_FOLDER, { recursive: true, force: true }));
 
