@@ -3,9 +3,16 @@
  * foundation-readiness re-verification (focused suite).
  *
  * Scope discipline: this file proves §2–§6 of the Master Prompt P2.26. It
- * contains ZERO P2.27 implementation assertions — P2.27 is a planning
- * reservation only (design doc + planned register row), asserted as "still
- * not started", never as built.
+ * contains no P2.27 *implementation* assertions — P2.27 modules are asserted by
+ * their own `lego-plugin-*.test.mjs` suites, never here.
+ *
+ * What this file does assert about P2.27 is administrative only, and it tracks
+ * the register truth rather than a fixed point in time: the row started life as
+ * a planning reservation ("still not started") and is now asserted as
+ * `status === 'complete'` with `finishEvidence = PR #197 → 7d4eae8d`, while the
+ * design document's original planning banner is asserted to be *preserved as
+ * history*, not deleted. See the "P2.27 is the current administrative
+ * milestone" test below.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

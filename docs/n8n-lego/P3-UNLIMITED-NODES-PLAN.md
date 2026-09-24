@@ -14,6 +14,11 @@
 > - Related foundation: P2.27 plugin runtime/security design
 >   (`docs/n8n-lego/P2.27-PLUGIN-RUNTIME-DESIGN.md` — itself PLANNING ONLY,
 >   implementation ZERO until its own Master Prompt).
+>   *(Historical note, 2026-09-24: P2.27 has since been authorized and
+>   implemented end-to-end — slices `P2.27.0`–`P2.27.10`, final slice
+>   PR #197 → `7d4eae8d`, completion PR #199 → `7e709e69`. The planning-only
+>   wording above is preserved as first recorded. The P3 dependency boundary
+>   in §14 and in the addendum is unchanged.)*
 
 > **STATUS UPDATE (2026-09-23):** P3 is **ACTIVE** as milestone **#97** (Manager Master Prompt amendasi; `P3.x` numbering is canonical). The original "NOT STARTED" framing above is retained as planning history; implementation status lives in the **§P3.12 IMPLEMENTATION ADDENDUM** at the end of this document and in Issue #97 §10 reports.
 
@@ -344,7 +349,9 @@ it measurably helps.
 ## 14. Requirement — plugin locality (built on P2.27)
 
 The P2.27 plugin architecture remains the foundation (itself awaiting its own
-Master Prompt). Locality rule reused unchanged:
+Master Prompt — *historical wording; P2.27 was authorized 2026-09-24 and
+completed through slices `P2.27.0`–`P2.27.10`, PR #197 → `7d4eae8d`). The
+locality rule below is reused unchanged:
 
 ```text
 trusted + hot path                -> in-process
@@ -560,6 +567,13 @@ operational record as of this slice (runner: ≈2 GB RAM, Node v20, default heap
 Re-probe T2/T3 on any larger runner before claiming those tiers.
 
 ### C. Dependency boundary (reaffirmed): P2.27 code = ZERO; P3 imports nothing from P2.27; any future need is Issue-first.
+
+*(Historical note, 2026-09-24: the "`P2.27 code = ZERO`" premise above was true
+when the P3 addendum was written and is preserved verbatim. P2.27 has since been
+implemented — slices `P2.27.0`–`P2.27.10`, final slice PR #197 → `7d4eae8d`,
+completion PR #199 → `7e709e69`. The operative boundary is unchanged and still
+binding: **P3 imports nothing from P2.27; any future need is Issue-first.** No
+P3 source file was rewired by this note.)*
 
 ### D. Roll-up numbers
 

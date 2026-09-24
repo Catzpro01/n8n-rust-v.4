@@ -1602,13 +1602,13 @@
       ],
       "implementationBoundary": "AUTHORIZED by the dedicated P2.27 Master Prompt (2026-09-24): the reservation is lifted and implementation proceeds only inside P2.27 slices (P2.27.0-P2.27.10) through PRs from branch arena/p2.27-plugin-runtime — never by direct modification of protected main. In scope now: Plugin Manager/registry, Plugin Supervisor, secret/resource brokers, capability policy, plugin runtime facade, and frontend plugin boundary. Out of scope for this milestone: a full production WASM engine (locality class and admission policy are in scope), Python worker manager, plugin hot-swap beyond the slice set, and any second architecture domain (no new domains or sub-LEGOs). Core must never own workflow, execution, memory, storage implementation, AI provider implementation, Node Registry implementation, GitHub integration, Workspace business logic, translation features or credential implementation. P2.27 is the plugin runtime/security foundation — not a microservice rewrite and not a rewrite of P2.",
       "nonScope": [
-        "Plugin Manager / Plugin Supervisor implementation (P2.27, future prompt)",
-        "plugin sandbox / plugin broker / plugin runtime / WASM runtime / Python worker manager (P2.27)",
-        "plugin hot-swap / plugin rollback engine (P2.27)",
+        "Plugin Manager / Plugin Supervisor implementation (P2.27, future prompt) — HISTORICAL reservation wording (P2.26 era), preserved verbatim and superseded 2026-09-24: delivered by slices P2.27.2 (manifest + registry) and P2.27.7 (supervisor lifecycle + quarantine)",
+        "plugin sandbox / plugin broker / plugin runtime / WASM runtime / Python worker manager (P2.27) — HISTORICAL reservation wording (P2.26 era), preserved verbatim and superseded 2026-09-24: plugin runtime facade + locality policy landed (P2.27.1/.4) and the secret broker landed (P2.27.5); a full production WASM engine and a Python worker manager remain out of scope",
+        "plugin hot-swap / plugin rollback engine (P2.27) — HISTORICAL reservation wording (P2.26 era), preserved verbatim and superseded 2026-09-24: side-by-side upgrade + rollback landed in P2.27.9; hot-swap beyond the slice set remains out of scope",
         "microservice rewrite / Kubernetes migration / full distributed scheduler",
         "full marketplace / complete third-party plugin ecosystem",
         "rewrite of all P2 components / rewrite to Rust / rewrite to Python",
-        "anything before a dedicated P2.27 Master Prompt — zero P2.27 implementation now"
+        "anything before a dedicated P2.27 Master Prompt — zero P2.27 implementation now — HISTORICAL reservation wording (P2.26 era), preserved verbatim and superseded 2026-09-24: the dedicated Master Prompt was issued 2026-09-24 and slices P2.27.0-P2.27.10 are merged and post-merge verified (finishEvidence PR #197 -> 7d4eae8d)"
       ],
       "testsGates": [
         "dedicated P2.27 test matrix (Master Prompt section 36): registry identity + duplicate rejection, contract resolution + version compatibility, capability deny-by-default + permission scope, trust class boundaries, lifecycle state machine, runtime locality policy, resource budget bounds, secret broker scoping + expiry, side-by-side upgrade + rollback, supply-chain admission rejection, supervisor quarantine, contract replay, frontend plugin boundary, plus security negative tests",
