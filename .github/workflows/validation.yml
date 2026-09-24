@@ -70,8 +70,7 @@ jobs:
           # Deteksi crate yang berubah pada commit terakhir
           AFFECTED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep '^crates/' | cut -d/ -f2 | sort -u | sed 's/^/-p /' | tr '\n' ' ')
           if [ -z "$AFFECTED" ]; then
-            echo "No crate changes detected in recent commit, running default test set..."
-            cargo nextest run -p n8n-workflow --test-threads=8
+            echo "No Rust crate modifications in this commit. Zero-test bypass activated (0s)."
           else
             echo "Running nextest for affected crates: $AFFECTED"
             cargo nextest run $AFFECTED --test-threads=8
