@@ -224,7 +224,7 @@ test('a known-but-unimplemented capability answers 501 unsupported, not 200 {dat
 
 test('unreachable-settings backends answer with distinct features', async () => {
   const cases = [
-    ['/rest/api-keys', 'api-keys'],
+    ['/rest/settings/security', 'security-settings'],
     ['/rest/sso/saml/config', 'sso'],
     ['/rest/source-control/preferences', 'source-control'],
     ['/rest/breaking-changes/report', 'breaking-changes'],
@@ -237,6 +237,13 @@ test('unreachable-settings backends answer with distinct features', async () => 
     assert.equal(json.code, 'unsupported');
     assert.equal(json.meta.feature, feature);
   }
+});
+
+test('P5.7: /rest/api-keys left the unsupported table — it is served for real now', async () => {
+  const { status, json } = await api('GET', '/rest/api-keys');
+  assert.equal(status, 200, 'implemented features must not keep answering 501');
+  assert.ok(Array.isArray(json.data));
+  assert.notEqual(json.code, 'unsupported');
 });
 
 test('unsupported semantics also apply to writes', async () => {

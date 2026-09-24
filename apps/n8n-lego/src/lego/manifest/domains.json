@@ -2262,27 +2262,69 @@
         },
         {
           "id": "auth.api-keys",
-          "status": "unsupported",
-          "restFeature": "api-keys",
-          "operations": [],
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "list",
+              "interaction": "call",
+              "permission": "auth:session",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "scopes",
+              "interaction": "call",
+              "permission": "auth:session",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "create",
+              "interaction": "call",
+              "permission": "auth:session",
+              "idempotent": false,
+              "status": "implemented"
+            },
+            {
+              "name": "update",
+              "interaction": "call",
+              "permission": "auth:session",
+              "idempotent": false,
+              "status": "implemented"
+            },
+            {
+              "name": "revoke",
+              "interaction": "call",
+              "permission": "auth:session",
+              "idempotent": false,
+              "status": "implemented"
+            },
+            {
+              "name": "authenticate",
+              "interaction": "call",
+              "permission": "auth:session",
+              "idempotent": false,
+              "status": "implemented"
+            }
+          ],
           "interaction": [
             "call"
           ],
-          "permissions": [],
-          "lifecycle": "declared",
-          "availability": "capability-unavailable",
-          "criticality": "optional",
+          "permissions": [
+            "auth:session"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "critical",
           "trust": "core",
           "transport": {
             "requires": "in-process",
             "supports": [
-              "in-process",
-              "worker",
-              "remote"
+              "in-process"
             ]
           },
-          "migrationState": "not-started",
-          "degradation": "capability-unavailable",
+          "migrationState": "stable",
+          "degradation": "available",
           "replacement": "contract-preserving",
           "resources": "low"
         },
@@ -2629,6 +2671,74 @@
             },
             {
               "name": "abuse-control",
+              "interaction": "call",
+              "permission": "auth:session",
+              "idempotent": false,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "auth:session"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "critical",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "low"
+        },
+        {
+          "id": "auth.machine-identity",
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "service-principal-create",
+              "interaction": "call",
+              "permission": "auth:session",
+              "idempotent": false,
+              "status": "implemented"
+            },
+            {
+              "name": "service-principal-revoke",
+              "interaction": "call",
+              "permission": "auth:session",
+              "idempotent": false,
+              "status": "implemented"
+            },
+            {
+              "name": "delegate",
+              "interaction": "call",
+              "permission": "auth:session",
+              "idempotent": false,
+              "status": "implemented"
+            },
+            {
+              "name": "tenant-policy",
+              "interaction": "call",
+              "permission": "auth:session",
+              "idempotent": false,
+              "status": "implemented"
+            },
+            {
+              "name": "evaluate",
+              "interaction": "call",
+              "permission": "auth:session",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "audit",
               "interaction": "call",
               "permission": "auth:session",
               "idempotent": false,
