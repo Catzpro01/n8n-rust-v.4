@@ -4009,6 +4009,37 @@
         "apps/n8n-lego/test/lego-session-kernel.test.mjs"
       ],
       "notes": "P5.2 session kernel + CSRF boundary. Revocable server-side session records replacing the previously unrevocable stateless bearer token: token payload changed from {sub,iat,exp} to {sid,ver,exp} so authority lives in a record that can be killed. Rotation kills the old token immediately (fixation + replay defence); revoke/revokeAll; per-user securityVersion invalidation; bounded absolute and idle lifetimes with the absolute deadline never sliding. Session store is process-local and bounded, so a restart invalidates everything and a session flood costs bounded memory. CSRF combines Origin/Referer validation with a session-bound double-submit token; safe methods and session-less requests are exempt. No MFA, no API keys, no password reset, no credential encryption (P5.6/P5.7/P5.4). No distributed consensus. Introduces ZERO new error codes."
+    },
+    {
+      "id": "auth.authorization",
+      "owner": "agent-1",
+      "domain": "auth",
+      "version": "1.0.0",
+      "status": "stable",
+      "surface": [
+        "src/auth/security/authorization.mjs",
+        "src/auth/security/permission-registry.mjs"
+      ],
+      "exports": {
+        "src/auth/security/authorization.mjs": [
+          "CACHE_POLICY",
+          "DECISION",
+          "authorize",
+          "authorizeCached",
+          "cacheKeyFor",
+          "createDecisionCache"
+        ],
+        "src/auth/security/permission-registry.mjs": [
+          "createPermissionRegistry",
+          "permissionRegistryFor",
+          "resetPermissionRegistryCacheFor"
+        ]
+      },
+      "consumers": [],
+      "tests": [
+        "apps/n8n-lego/test/lego-authorization.test.mjs"
+      ],
+      "notes": "P5.3 authorization engine, resource policy and versioned decision cache. Default-deny evaluation over principal + tenant + action + resourceType + resourceId + capability + policyVersion. Authority is never inferred from authentication, UI visibility, plugin trust, language or provider existence. The permission universe is DERIVED from the extracted pinned-n8n role model (data/roles.json via compat/scopes.mjs) and compiled to dense numeric ids for the hot path - no second authorization vocabulary. CRITICAL invariant: an unknown permission or scope fails CLOSED (SECURITY_REASON.UNKNOWN_PERMISSION) rather than matching nothing silently. The decision cache is bounded and version-aware: every entry is stamped, and a stale entry is DROPPED and re-evaluated, so the cache can never serve a decision computed under older authority - the cache is an optimization, versions are correctness. Approval and step-up are INPUTS, not local logic (P5.6 owns approval; P5.1 owns the strength ladder). No I/O: no network, no filesystem, no decryption. Holds no credential material. Session, credential vault, KMS, MFA and API-key storage are all non-scope."
     }
   ]
 }
