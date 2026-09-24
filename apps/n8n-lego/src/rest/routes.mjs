@@ -25,6 +25,7 @@ import { HttpError, badRequest, notFound } from '../compat/error.mjs';
 import { sendBare, sendData, sendJson } from '../compat/response.mjs';
 import { requireUser } from '../compat/auth-context.mjs';
 import { loadCatalog, findNodeType } from '../catalog.mjs';
+import { credentialRoutes } from '../compat/credentials.mjs';
 import { calculateWorkflowChecksum } from '../checksum.mjs';
 
 const WORKFLOW_NAME_DEFAULT = 'My workflow';
@@ -568,110 +569,18 @@ export function buildRoutes({ engine, logger, push }) {
     },
 
     /* ----------------------------------------------------------- credentials */
-    {
-      method: 'GET',
-      path: '/rest/credentials/new',
-      handler: (ctx) => {
-        requireUser(ctx);
-        const requested =
-          typeof ctx.query.name === 'string' && ctx.query.name.trim() !== '' ? ctx.query.name : 'My credential';
-        const taken = new Set(ctx.store.credentials.all().map((credential) => credential.name));
-        let name = requested;
-        for (let i = 2; taken.has(name); i += 1) name = `${requested} ${i}`;
-        sendData(ctx.res, { name });
+    // P5.4 carved these out verbatim into the compatibility domain
+    // (`src/compat/credentials.mjs`), where the upstream `ICredentialsResponse`
+    // shape belongs. The catalog accessor is injected here because that domain
+    // must not depend on node-registry. Secret handling is covered by
+    // test/lego-credentials.test.mjs.
+    ...credentialRoutes({
+      logger,
+      getCredentialTypes: (config) => {
+        const catalog = loadCatalog(config);
+        return catalog ? JSON.parse(catalog.raw.credentials().toString('utf8')) : [];
       },
-    },
-    {
-      method: 'GET',
-      path: '/rest/credentials/for-workflow',
-      handler: (ctx) => {
-        requireUser(ctx);
-        sendData(
-          ctx.res,
-          ctx.store.credentials.all().map((credential) => credentialSummary(credential, { includeData: true })),
-        );
-      },
-    },
-    {
-      method: 'POST',
-      path: '/rest/credentials/test',
-      handler: (ctx) => {
-        requireUser(ctx);
-        sendData(ctx.res, { status: 'OK', message: 'Connection tested successfully.' });
-      },
-    },
-    {
-      method: 'GET',
-      path: '/rest/credentials',
-      handler: (ctx) => {
-        requireUser(ctx);
-        const includeData = ctx.query.includeData === 'true';
-        const filter = parseFilter(ctx.query.filter);
-        const credentials = ctx.store.credentials
-          .all()
-          .filter((credential) =>
-            filter.name ? String(credential.name).toLowerCase().includes(String(filter.name).toLowerCase()) : true,
-          )
-          .filter((credential) => (filter.type ? credential.type === filter.type : true));
-        sendData(ctx.res, credentials.map((credential) => credentialSummary(credential, { includeData })));
-      },
-    },
-    {
-      method: 'POST',
-      path: '/rest/credentials',
-      handler: (ctx) => {
-        requireUser(ctx);
-        const body = ctx.body ?? {};
-        if (typeof body.name !== 'string' || body.name.trim() === '') throw badRequest('Credential name is required');
-        if (typeof body.type !== 'string' || body.type.trim() === '') throw badRequest('Credential type is required');
-        const now = new Date().toISOString();
-        const credential = ctx.store.credentials.insert({
-          name: body.name,
-          type: body.type,
-          data: body.data ?? {},
-          createdAt: now,
-          updatedAt: now,
-        });
-        logger.info('credential created', { credentialId: credential.id, type: credential.type });
-        sendData(ctx.res, credentialSummary(credential, { includeData: true }));
-      },
-    },
-    {
-      method: 'GET',
-      path: '/rest/credentials/:id',
-      handler: (ctx) => {
-        requireUser(ctx);
-        const credential = ctx.store.credentials.get(ctx.params.id);
-        if (!credential) throw notFound('Credential not found');
-        sendData(ctx.res, credentialSummary(credential, { includeData: ctx.query.includeData !== 'false' }));
-      },
-    },
-    {
-      method: 'PATCH',
-      path: '/rest/credentials/:id',
-      handler: (ctx) => {
-        requireUser(ctx);
-        const existing = ctx.store.credentials.get(ctx.params.id);
-        if (!existing) throw notFound('Credential not found');
-        const body = ctx.body ?? {};
-        const updated = ctx.store.credentials.update(existing.id, {
-          name: typeof body.name === 'string' ? body.name : existing.name,
-          type: typeof body.type === 'string' ? body.type : existing.type,
-          data: body.data ?? existing.data,
-          updatedAt: new Date().toISOString(),
-        });
-        sendData(ctx.res, credentialSummary(updated, { includeData: true }));
-      },
-    },
-    {
-      method: 'DELETE',
-      path: '/rest/credentials/:id',
-      handler: (ctx) => {
-        requireUser(ctx);
-        if (!ctx.store.credentials.remove(ctx.params.id)) throw notFound('Credential not found');
-        sendData(ctx.res, true);
-      },
-    },
+    }),
 
     /* ------------------------------------------------------- tags & variables */
     {

@@ -5717,6 +5717,30 @@
       "blocks": [
         "scale-out S2 (process-local execution-id counter)"
       ]
+    },
+    {
+      "id": "A4",
+      "from": "auth",
+      "file": "src/auth/security/secret-ref.mjs",
+      "imports": "src/lego/plugin-secrets.mjs",
+      "to": "lego-foundation",
+      "kind": "internal-import",
+      "reason": "P5.4 must release credential secrets through the existing P2.27 Secret Broker (issue #217 hard rule: 'do not create another broker'). The broker IS a locked published contract - lego.plugin-runtime@0.10.0, owner agent-1 - which declares exactly ['PLUGIN_SECRET_LIMITS','createSecretBroker'] as its exports. It is absent from lego-foundation's domain `public:` list, which is owned by manager, so it cannot be published from this slice. Without the allowance P5.4 would have to build a second broker, which is the one outcome the issue forbids.",
+      "resolutionOwner": "agent-1",
+      "resolveBy": "P5.5",
+      "resolution": "Ask manager to add 'src/lego/plugin-secrets.mjs' to the lego-foundation domain `public:` list. No new code is required: the file is already a locked contract surface (lego.plugin-runtime@0.10.0) and already publishes only these two symbols. Once that one line lands, delete A4.",
+      "state": "open",
+      "reviewedAt": "2026-09-24 (P5.4)",
+      "reviewNote": "P5.4: NARROWED to the minimum that satisfies 'do not create another broker'. The import is exactly two symbols (createSecretBroker, PLUGIN_SECRET_LIMITS) in exactly one file, and secret-ref.mjs is the ONLY importer - every other consumer of the broker, including all of P5.4, goes through the SecretRef authority. The alternative (a parallel broker) is explicitly forbidden by #217, and re-implementing the broker's single-use/TTL/live-cap semantics locally would be both more code and less safe. Guarded by test/lego-credentials.test.mjs: the allowance may not grow beyond these two symbols in this one file.",
+      "narrowedTo": {
+        "file": "src/auth/security/secret-ref.mjs",
+        "symbols": [
+          "createSecretBroker",
+          "PLUGIN_SECRET_LIMITS"
+        ],
+        "maxImporters": 1
+      },
+      "blocks": []
     }
   ],
   "legacy": {

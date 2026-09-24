@@ -79,8 +79,10 @@ test('auth.identity is a dependency-free leaf, which is what prevents a cycle', 
 
 /* --------------------------------------------------------- A3: narrowed, bounded */
 
-test('A3 is the only remaining allowance', () => {
-  assert.deepEqual(registry.allowances.map((allowance) => allowance.id), ['A3']);
+test('the allowance set is exactly A3 and A4, and nothing else', () => {
+  // P2.6 shipped 3; P2.9 retired 2 (A1, A2). P5.4 added A4 — see the
+  // high-water-mark test below for why this list changing is meant to be loud.
+  assert.deepEqual(registry.allowances.map((allowance) => allowance.id), ['A3', 'A4']);
 });
 
 test('A3 is narrowed to exactly one symbol in exactly one file', () => {
@@ -119,10 +121,48 @@ test('A3 records that it blocks a scale-out finding', () => {
 /* --------------------------------------------- allowances may shrink, never grow */
 
 test('the allowance count never exceeds its recorded high-water mark', () => {
-  // P2.6 shipped 3. P2.9 retired 2. This asserts the direction of travel is
-  // one-way: a future phase may delete A3, but may not add A4 without also
-  // moving this number, which forces the change to be noticed in review.
-  assert.ok(registry.allowances.length <= 1, `allowances must not grow beyond 1; found ${registry.allowances.length}`);
+  // P2.6 shipped 3. P2.9 retired 2 (A1, A2). P5.4 added A4, moving 1 -> 2.
+  //
+  // Moving this number is the mechanism, not a workaround: the test exists so
+  // that a new allowance cannot appear without someone editing this file and
+  // justifying it in review. The direction of travel stays one-way — a THIRD
+  // allowance still fails here until this line moves again.
+  //
+  // A4 is the P5.4 SecretBroker import: P2.27's broker is a locked published
+  // contract (lego.plugin-runtime@0.10.0) that lego-foundation does not list in
+  // its `public:` surface, and #217 forbids building a second broker. It is
+  // pinned as tightly as A3 by the tests immediately below.
+  assert.ok(registry.allowances.length <= 2, `allowances must not grow beyond 2; found ${registry.allowances.length}`);
+});
+
+test('A4 is narrowed to exactly two symbols in exactly one file', () => {
+  const a4 = registry.allowances.find((allowance) => allowance.id === 'A4');
+  assert.ok(a4, 'A4 must exist');
+  assert.deepEqual(a4.narrowedTo.symbols, ['createSecretBroker', 'PLUGIN_SECRET_LIMITS']);
+  assert.equal(a4.narrowedTo.file, 'src/auth/security/secret-ref.mjs');
+  assert.equal(a4.narrowedTo.maxImporters, 1);
+});
+
+test('A4 has not spread: only secret-ref.mjs imports the broker internals', () => {
+  const offenders = [];
+  for (const file of ALL_SOURCES) {
+    const relative = file.slice(APP_ROOT.length + 1);
+    const source = readFileSync(file, 'utf8');
+    if (/from\s+['"][^'"]*\/plugin-secrets\.mjs['"]/.test(source)) offenders.push(relative);
+  }
+  assert.deepEqual(
+    offenders,
+    ['src/auth/security/secret-ref.mjs'],
+    `A4 may not spread beyond secret-ref.mjs — found: ${offenders.join(', ')}`,
+  );
+});
+
+test('A4 stays linked to a real owner, deadline and resolution', () => {
+  const a4 = registry.allowances.find((allowance) => allowance.id === 'A4');
+  assert.equal(a4.resolutionOwner, 'agent-1');
+  assert.ok(a4.resolveBy, 'A4 needs a deadline phase');
+  assert.ok(a4.resolution?.length > 20, 'A4 needs a concrete resolution, not a placeholder');
+  assert.equal(a4.kind, 'internal-import');
 });
 
 test('every allowance names an owner, a deadline and a concrete resolution', () => {
