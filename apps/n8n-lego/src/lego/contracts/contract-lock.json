@@ -2759,6 +2759,34 @@
         "apps/n8n-lego/test/lego-low-resource-mode.test.mjs"
       ],
       "notes": "P9.17 (implementation owner: Agent 4, Issue #101): Low-Resource Observability Mode — auto or explicit activation; defined degrade order (debug..diagnostics shed, audit_security never); byte/CPU budgets enforced via whole-record budget_shed; hysteresis (exit<enter) + cooldown anti-thrash; critical/security protected even over budget; recovery restores full channel set; workflow A/B results mode-independent; no I/O/clock (now is an argument)."
+    },
+    {
+      "id": "observability.self-observability",
+      "owner": "agent-6",
+      "domain": "observability",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/self-observability.mjs"
+      ],
+      "exports": {
+        "src/lego/self-observability.mjs": [
+          "SELFVIEW_CONTRACT",
+          "SELFVIEW_SCHEMA_VERSION",
+          "SELFVIEW_COUNTERS",
+          "SELFVIEW_ERROR_COUNTERS",
+          "SELFVIEW_EVENT_KINDS",
+          "SELFVIEW_PRIORITIES",
+          "SELFVIEW_SUPPRESSION",
+          "SELFVIEW_LIMITS",
+          "SELFVIEW_NOTES",
+          "createSelfObservability"
+        ]
+      },
+      "tests": [
+        "apps/n8n-lego/test/lego-self-observability.test.mjs"
+      ],
+      "notes": "P9.18 (implementation owner: Agent 4, Issue #101): Telemetry Self-Observability — ten required counters (generated, dropped, sampled, buffered, export_failed, redacted, cardinality_rejected, query_slow, diagnostic_bundle_failed, degraded); zero-errors distinguishable from zero-telemetry; bounded fixed-key saturating self-metrics; re-entrancy recursion guard; own suppression/priority rule (counters always, P0/P1 always delivered, P2–P4 detail suppressed under outage); no I/O/clock."
     }
   ]
 }

@@ -202,11 +202,11 @@ test('P9.14 references-not-engines: module has no state-stream restore / replay 
   assert.equal(/\beval\s*\(/.test(src), false);
 });
 
-test('P9.14 lock pin: contracts length tracks shared lock (70 after P9.17)', () => {
+test('P9.14 lock pin: contracts length tracks shared lock (71 after P9.18)', () => {
   const lock = JSON.parse(readFileSync(
     new URL('../src/lego/contracts/contract-lock.json', import.meta.url), 'utf8'));
-  assert.equal(lock.contracts.length, 70,
-    'P9.14 adds observability.replay-evidence@1.0.0; P9.15 adds observability.telemetry-retention@1.0.0; P9.16 adds observability.operator-inspection@1.0.0; P9.17 adds observability.low-resource-mode@1.0.0; count-pins say 70');
+  assert.equal(lock.contracts.length, 71,
+    'P9.14 adds observability.replay-evidence@1.0.0; P9.15 adds observability.telemetry-retention@1.0.0; P9.16 adds observability.operator-inspection@1.0.0; P9.17 adds observability.low-resource-mode@1.0.0; P9.18 adds observability.self-observability@1.0.0; count-pins say 71');
   const row = lock.contracts.find(c => c.id === 'observability.replay-evidence');
   assert.ok(row, 'P9.14 row present');
   assert.equal(row.version, '1.0.0');

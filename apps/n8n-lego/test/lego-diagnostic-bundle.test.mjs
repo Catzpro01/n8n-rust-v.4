@@ -317,7 +317,7 @@ test('P9.12 source stays pure: no I/O, no clock; locked row documents the bounda
     'exportDiagnosticBundle', 'importDiagnosticBundle',
   ]);
   assert.deepEqual(row.tests, ['apps/n8n-lego/test/lego-diagnostic-bundle.test.mjs']);
-  assert.equal(lock.contracts.length, 70); // P9.12 adds observability.diagnostic-bundle@1.0.0; P9.13 adds observability.failure-correlation@1.0.0; P9.14 adds observability.replay-evidence@1.0.0; P9.15 adds observability.telemetry-retention@1.0.0; P9.16 adds observability.operator-inspection@1.0.0; P9.17 adds observability.low-resource-mode@1.0.0; count-pins say 70
+  assert.equal(lock.contracts.length, 71); // P9.12 adds observability.diagnostic-bundle@1.0.0; P9.13 adds observability.failure-correlation@1.0.0; P9.14 adds observability.replay-evidence@1.0.0; P9.15 adds observability.telemetry-retention@1.0.0; P9.16 adds observability.operator-inspection@1.0.0; P9.17 adds observability.low-resource-mode@1.0.0; P9.18 adds observability.self-observability@1.0.0; count-pins say 71
   const doc = readFileSync(new URL('../../../docs/architecture/p9/P9.12-DIAGNOSTIC-BUNDLE.md', import.meta.url), 'utf8');
   assert.match(doc, /BDL:v1/);
   assert.match(doc, /budget/i);

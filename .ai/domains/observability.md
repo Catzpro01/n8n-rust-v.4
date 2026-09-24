@@ -7,7 +7,7 @@
 | --- | --- |
 | Owner | `agent-6` |
 | Kind / tier | `domain` / `domain` |
-| Status | `contract-only` (phase `P9.17`) |
+| Status | `contract-only` (phase `P9.18`) |
 | Parent | _root_ |
 | Contract | _none declared_ |
 | Error namespace | `observability` |
@@ -37,6 +37,7 @@
 - `src/lego/telemetry-retention.mjs`
 - `src/lego/operator-inspection.mjs`
 - `src/lego/low-resource-mode.mjs`
+- `src/lego/self-observability.mjs`
 
 ## Public contract surface
 
@@ -57,6 +58,7 @@
 - `src/lego/telemetry-retention.mjs`
 - `src/lego/operator-inspection.mjs`
 - `src/lego/low-resource-mode.mjs`
+- `src/lego/self-observability.mjs`
 
 ## May call
 
@@ -101,3 +103,4 @@
 - `apps/n8n-lego/test/lego-telemetry-retention.test.mjs`
 - `apps/n8n-lego/test/lego-operator-inspection.test.mjs`
 - `apps/n8n-lego/test/lego-low-resource-mode.test.mjs`
+- `apps/n8n-lego/test/lego-self-observability.test.mjs`
