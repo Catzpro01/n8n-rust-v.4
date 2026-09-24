@@ -40,6 +40,7 @@ jobs:
           fetch-depth: 1
           submodules: false
           lfs: false
+          clean: false
 
       - name: Level 0 - Verify Formatting
         run: cargo fmt --all -- --check
@@ -58,6 +59,7 @@ jobs:
           fetch-depth: 2
           submodules: false
           lfs: false
+          clean: false
 
       - name: Level 1 - Affected Crate Unit Tests
         run: |
@@ -65,10 +67,10 @@ jobs:
           AFFECTED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep '^crates/' | cut -d/ -f2 | sort -u | sed 's/^/-p /' | tr '\n' ' ')
           if [ -z "$AFFECTED" ]; then
             echo "No crate changes detected in recent commit, running default test set..."
-            cargo nextest run -p n8n-workflow
+            cargo nextest run -p n8n-workflow --test-threads=8
           else
             echo "Running nextest for affected crates: $AFFECTED"
-            cargo nextest run $AFFECTED
+            cargo nextest run $AFFECTED --test-threads=8
           fi
 
       - name: Report Build & Test Status to Supabase
