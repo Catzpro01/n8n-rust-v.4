@@ -200,11 +200,11 @@ test('P9.16 fail-closed errors + secret-safe dataset + health snapshot', () => {
   assert.equal(bad, null, 'secret-shaped dataset fails closed');
 });
 
-test('P9.16 lock pin: contracts length 69 after P9.16 row', () => {
+test('P9.16 lock pin: contracts length 70 after P9.17 row', () => {
   const lock = JSON.parse(readFileSync(
     new URL('../src/lego/contracts/contract-lock.json', import.meta.url), 'utf8'));
-  assert.equal(lock.contracts.length, 69,
-    'P9.16 adds observability.operator-inspection@1.0.0; count-pins say 69');
+  assert.equal(lock.contracts.length, 70,
+    'P9.16 adds observability.operator-inspection@1.0.0; P9.17 adds observability.low-resource-mode@1.0.0; count-pins say 70');
   const row = lock.contracts.find(c => c.id === 'observability.operator-inspection');
   assert.ok(row, 'P9.16 row present');
   assert.equal(row.version, '1.0.0');

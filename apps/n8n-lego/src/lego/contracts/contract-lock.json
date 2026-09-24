@@ -2732,6 +2732,33 @@
         "apps/n8n-lego/test/lego-operator-inspection.test.mjs"
       ],
       "notes": "P9.16 (implementation owner: Agent 4, Issue #101): Operator Inspection API — authorized health/readiness/logs/metrics/traces/diagnostics interfaces; pagination with hard maxLimit; query timeout + cancellation (stable codes operator.timeout/cancelled); bounded results; access policy enforced (operator.unauthorized); index-backed bounded scan (no workflow-runtime block; pure dataset, no I/O); concurrent storm to operator.busy; stable machine-readable error envelope; deterministic stats."
+    },
+    {
+      "id": "observability.low-resource-mode",
+      "owner": "agent-6",
+      "domain": "observability",
+      "version": "1.0.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/low-resource-mode.mjs"
+      ],
+      "exports": {
+        "src/lego/low-resource-mode.mjs": [
+          "LOWRES_CONTRACT",
+          "LOWRES_SCHEMA_VERSION",
+          "LOWRES_MODES",
+          "LOWRES_DEGRADE_ORDER",
+          "LOWRES_STEP_EFFECTS",
+          "LOWRES_PRIORITIES",
+          "LOWRES_LIMITS",
+          "LOWRES_NOTES",
+          "createLowResourceController"
+        ]
+      },
+      "tests": [
+        "apps/n8n-lego/test/lego-low-resource-mode.test.mjs"
+      ],
+      "notes": "P9.17 (implementation owner: Agent 4, Issue #101): Low-Resource Observability Mode — auto or explicit activation; defined degrade order (debug..diagnostics shed, audit_security never); byte/CPU budgets enforced via whole-record budget_shed; hysteresis (exit<enter) + cooldown anti-thrash; critical/security protected even over budget; recovery restores full channel set; workflow A/B results mode-independent; no I/O/clock (now is an argument)."
     }
   ]
 }

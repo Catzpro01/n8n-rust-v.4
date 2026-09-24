@@ -217,7 +217,7 @@ test('P9.6 schema-adjacent doc + locked row describe the buffer contract', () =>
     'BUFFER_LIMITS', 'BUFFER_OUTCOMES', 'BUFFER_OVERFLOW_POLICIES', 'createTelemetryBuffer',
   ]);
   assert.deepEqual(row.tests, ['apps/n8n-lego/test/lego-telemetry-buffer.test.mjs']);
-  assert.equal(lock.contracts.length, 69); // P9.7 adds observability.telemetry-redaction@1.0.0; P9.8 adds observability.telemetry-sampling@1.0.0; P9.9 adds observability.resource-pressure@1.0.0; P9.10 adds observability.health-readiness@1.0.0; P9.11 adds observability.execution-diagnostics@1.0.0; P9.12 adds observability.diagnostic-bundle@1.0.0; P9.13 adds observability.failure-correlation@1.0.0; P9.14 adds observability.replay-evidence@1.0.0; P9.15 adds observability.telemetry-retention@1.0.0; P9.16 adds observability.operator-inspection@1.0.0; count-pins say 69 // P9.6 adds observability.telemetry-buffer=59
+  assert.equal(lock.contracts.length, 70); // P9.7 adds observability.telemetry-redaction@1.0.0; P9.8 adds observability.telemetry-sampling@1.0.0; P9.9 adds observability.resource-pressure@1.0.0; P9.10 adds observability.health-readiness@1.0.0; P9.11 adds observability.execution-diagnostics@1.0.0; P9.12 adds observability.diagnostic-bundle@1.0.0; P9.13 adds observability.failure-correlation@1.0.0; P9.14 adds observability.replay-evidence@1.0.0; P9.15 adds observability.telemetry-retention@1.0.0; P9.16 adds observability.operator-inspection@1.0.0; P9.17 adds observability.low-resource-mode@1.0.0; count-pins say 70 // P9.6 adds observability.telemetry-buffer=59
   const doc = readFileSync(new URL('../../../docs/architecture/p9/P9.6-TELEMETRY-BUFFER.md', import.meta.url), 'utf8');
   assert.match(doc, /P0/);
   assert.match(doc, /shed_lowest/);
