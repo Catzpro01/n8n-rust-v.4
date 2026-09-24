@@ -10,7 +10,8 @@
  * from `planUpgrade`; capabilities deny-by-default and resource policy stay
  * bounded; rollback swaps the serving pointer back to the old version with
  * no workflow rewrite; events stay inside the `.1` vocabulary; and the lock
- * row (newest suite) pins the exact eleven-module surface at 0.9.0.
+ * row stays semver-versioned with the upgrade surface + suites pinned (the
+ * exact surface pin lives in the newest suite).
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -402,23 +403,12 @@ test('rollback from STOPPED refuses: the old version is gone — stage a new att
   assert.equal(coordinator.state(), 'STOPPED');
 });
 
-test('the lock row (0.9.0) pins the exact eleven-module surface and export sets', () => {
+test('the lock row keeps the upgrade surface + suites pinned (exact pin lives in the newest suite)', () => {
   const lock = JSON.parse(readFileSync(join(APP_ROOT, 'src/lego/contracts/contract-lock.json'), 'utf8'));
   const row = lock.contracts.find((entry) => entry.id === 'lego.plugin-runtime');
-  assert.equal(row.version, '0.9.0');
-  assert.deepEqual(row.surface.slice().sort(), [
-    'src/lego/plugin-failure.mjs',
-    'src/lego/plugin-locality.mjs',
-    'src/lego/plugin-manifest.mjs',
-    'src/lego/plugin-policy.mjs',
-    'src/lego/plugin-registry.mjs',
-    'src/lego/plugin-replay.mjs',
-    'src/lego/plugin-resources.mjs',
-    'src/lego/plugin-runtime.mjs',
-    'src/lego/plugin-secrets.mjs',
-    'src/lego/plugin-supervisor.mjs',
-    'src/lego/plugin-upgrade.mjs',
-  ]);
+  assert.match(row.version, /^\d+\.\d+\.\d+$/);
+  assert.ok(row.surface.includes('src/lego/plugin-upgrade.mjs'), 'plugin-upgrade.mjs stays on the surface');
+  assert.ok(row.surface.includes('src/lego/plugin-replay.mjs'));
   assert.ok(row.tests.includes('apps/n8n-lego/test/lego-plugin-upgrade.test.mjs'));
   assert.ok(row.tests.includes('apps/n8n-lego/test/lego-plugin-replay.test.mjs'));
   for (const file of row.surface) {
