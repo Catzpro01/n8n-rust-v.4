@@ -12,13 +12,13 @@
 //! Output: satu objek JSON di stdout (tanpa narasi) — disimpan sebagai evidence.
 
 use n8n_common::{
-    AdmissionConfig, AdmissionControl, AdmissionOutcome, ActivationMode, ActivationRegistry,
-    CorrelationId, Generation, HttpMethod, IdempotencyKey, IngressEnvelope, IngressSource,
-    IngressSourceKind, Journal, LifecycleEvent, MetadataRef, NormalizeLimits, NodeWebhookSpec,
-    NormalizedRequest, PayloadRef, Priority, RawWebhookRequest, RequestId, ResponseMode,
-    RouteAtlas, RouteKind, RouteRecord, ScheduleRegistry, ScheduleSpec, SecurityDecisionRef,
-    SecurityOutcome, WebhookAuth, WebhookRegistry, WorkflowIdentity, ENVELOPE_VERSION,
-    normalize_request,
+    normalize_request, ActivationMode, ActivationRegistry, AdmissionConfig, AdmissionControl,
+    AdmissionOutcome, CorrelationId, Generation, HttpMethod, IdempotencyKey, IngressEnvelope,
+    IngressSource, IngressSourceKind, Journal, LifecycleEvent, MetadataRef, NodeWebhookSpec,
+    NormalizeLimits, NormalizedRequest, PayloadRef, Priority, RawWebhookRequest, RequestId,
+    ResponseMode, RouteAtlas, RouteKind, RouteRecord, ScheduleRegistry, ScheduleSpec,
+    SecurityDecisionRef, SecurityOutcome, WebhookAuth, WebhookRegistry, WorkflowIdentity,
+    ENVELOPE_VERSION,
 };
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -82,7 +82,9 @@ fn stats_json(name: &str, mut samples: Vec<u64>, extra: serde_json::Value) -> se
 }
 
 fn lcg(state: &mut u64) -> u64 {
-    *state = state.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+    *state = state
+        .wrapping_mul(6364136223846793005)
+        .wrapping_add(1442695040888963407);
     *state >> 33
 }
 
@@ -126,9 +128,16 @@ fn envelope(req_id: &str, idem: Option<&str>) -> IngressEnvelope {
 
 fn activated_registry() -> ActivationRegistry {
     let mut reg = ActivationRegistry::new();
-    reg.begin_activation(wf("wf-1", 1), ActivationMode::Activate, None, None, 1_700_000_000_000)
+    reg.begin_activation(
+        wf("wf-1", 1),
+        ActivationMode::Activate,
+        None,
+        None,
+        1_700_000_000_000,
+    )
+    .unwrap();
+    reg.commit_activation("wf-1", None, 1_700_000_000_001)
         .unwrap();
-    reg.commit_activation("wf-1", None, 1_700_000_000_001).unwrap();
     reg
 }
 
@@ -220,7 +229,8 @@ fn bench_webhook_resolve(routes: usize, iters: usize) -> serde_json::Value {
             1_700_000_000_000,
         )
         .expect("register");
-        reg.commit_workflow(&id, None, 1_700_000_000_001).expect("commit");
+        reg.commit_workflow(&id, None, 1_700_000_000_001)
+            .expect("commit");
     }
     let mut st = 0xDEAD_BEEF_1234_5678u64;
     for _ in 0..5_000 {
@@ -268,7 +278,9 @@ fn bench_admission_steady(iters: usize) -> serde_json::Value {
     for i in 0..iters {
         let env = envelope(&format!("req-{i}"), Some(&format!("idem-{i}")));
         let t0 = Instant::now();
-        let out = ctrl.admit_probe(env, &reg, 1_700_000_000_100).expect("admit");
+        let out = ctrl
+            .admit_probe(env, &reg, 1_700_000_000_100)
+            .expect("admit");
         samples.push(t0.elapsed().as_nanos() as u64);
         if matches!(out, AdmissionOutcome::Admitted(_)) {
             admitted += 1;
@@ -292,7 +304,10 @@ fn bench_admission_duplicate(iters: usize) -> serde_json::Value {
     let mut ctrl = AdmissionControl::new(AdmissionConfig::default()).expect("ctrl");
     // kunci pertama diterima; iterasi berikut memakai kunci sama → Duplicate
     let first = envelope("req-dup-0", Some("idem-dup"));
-    match ctrl.admit_probe(first, &reg, 1_700_000_000_100).expect("admit") {
+    match ctrl
+        .admit_probe(first, &reg, 1_700_000_000_100)
+        .expect("admit")
+    {
         AdmissionOutcome::Admitted(_) => ctrl.finish_execution(0),
         other => panic!("iter0 harus Admitted, dapat {other:?}"),
     }
@@ -302,13 +317,12 @@ fn bench_admission_duplicate(iters: usize) -> serde_json::Value {
     for i in 0..iters {
         let env = envelope(&format!("req-dup-{}", i + 1), Some("idem-dup"));
         let t0 = Instant::now();
-        let out = ctrl.admit_probe(env, &reg, 1_700_000_000_101).expect("admit");
+        let out = ctrl
+            .admit_probe(env, &reg, 1_700_000_000_101)
+            .expect("admit");
         samples.push(t0.elapsed().as_nanos() as u64);
         if let AdmissionOutcome::Rejected { admission, .. } = &out {
-            if matches!(
-                admission.state,
-                n8n_common::AdmissionState::Duplicate
-            ) {
+            if matches!(admission.state, n8n_common::AdmissionState::Duplicate) {
                 duplicate_rejects += 1;
             } else {
                 other_rejects += 1;
@@ -352,7 +366,8 @@ fn bench_activation(workflows: usize) -> serde_json::Value {
             1_700_000_000_000,
         )
         .expect("register");
-        reg.commit_workflow(&id, None, 1_700_000_000_001).expect("commit");
+        reg.commit_workflow(&id, None, 1_700_000_000_001)
+            .expect("commit");
         samples.push(t0.elapsed().as_nanos() as u64);
         ok += 1;
     }
@@ -375,7 +390,9 @@ fn bench_burst() -> serde_json::Value {
     for i in 0..issued {
         let env = envelope(&format!("burst-{i}"), Some(&format!("burst-idem-{i}")));
         let ti = Instant::now();
-        let out = ctrl.admit_probe(env, &reg, 1_700_000_000_200).expect("admit");
+        let out = ctrl
+            .admit_probe(env, &reg, 1_700_000_000_200)
+            .expect("admit");
         steady_ns.push(ti.elapsed().as_nanos() as u64);
         match out {
             AdmissionOutcome::Admitted(_) => {
@@ -400,7 +417,10 @@ fn bench_burst() -> serde_json::Value {
     let deadline = std::time::Duration::from_secs(2);
     for i in 0..2_000u32 {
         rec_attempts += 1;
-        let env = envelope(&format!("after-drain-{i}"), Some(&format!("after-drain-{i}")));
+        let env = envelope(
+            &format!("after-drain-{i}"),
+            Some(&format!("after-drain-{i}")),
+        );
         match ctrl.admit_probe(env, &reg, 1_700_000_000_300 + i as u64) {
             Ok(AdmissionOutcome::Admitted(_)) => {
                 recovered = true;
@@ -464,7 +484,8 @@ fn bench_normalize() -> (serde_json::Value, serde_json::Value) {
             content_type: Some("application/json".to_string()),
         };
         let t0 = Instant::now();
-        let norm: NormalizedRequest = normalize_request(&raw, &limits, 1_700_000_000_000).expect("norm");
+        let norm: NormalizedRequest =
+            normalize_request(&raw, &limits, 1_700_000_000_000).expect("norm");
         tiny.push(t0.elapsed().as_nanos() as u64);
         std::hint::black_box(norm);
     }
@@ -538,7 +559,8 @@ fn bench_recovery() -> serde_json::Value {
             1_700_000_000_000,
         )
         .expect("register");
-        reg.commit_workflow(&id, None, 1_700_000_000_001).expect("commit");
+        reg.commit_workflow(&id, None, 1_700_000_000_001)
+            .expect("commit");
     }
     let t2 = Instant::now();
     let orphans = reg.reconcile_orphans(&[]); // desired kosong → semua orphan

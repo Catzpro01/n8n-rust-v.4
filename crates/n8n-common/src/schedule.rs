@@ -1722,8 +1722,13 @@ mod tests {
             TickDecision::Fire(_)
         ));
         // Failover: deactivate → re-activate oleh pemilik baru inst-b.
-        reg.deactivate_workflow("wf-1", DeactivationKind::Immediate, None, at_fire as u64 + 1)
-            .unwrap();
+        reg.deactivate_workflow(
+            "wf-1",
+            DeactivationKind::Immediate,
+            None,
+            at_fire as u64 + 1,
+        )
+        .unwrap();
         reg.activation
             .finish_deactivation("wf-1", None, at_fire as u64 + 2)
             .unwrap();
