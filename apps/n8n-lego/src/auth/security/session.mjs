@@ -40,6 +40,12 @@ export const SESSION_STATES = Object.freeze({
   EXPIRED: 'EXPIRED',
 });
 
+/**
+ * P5.6: strengths a SESSION can carry. `step-up` is deliberately absent — it is
+ * earned per request by presenting fresh proof, never stored on a session.
+ */
+const SESSION_AUTH_STRENGTHS = Object.freeze(['password', 'mfa']);
+
 /** Default lifetime policy. Bounded, and both bounds are enforced. */
 export const SESSION_POLICY = Object.freeze({
   /** Absolute lifetime: a session cannot be refreshed past this. */
@@ -157,11 +163,20 @@ export function createSessionStore(policy = {}) {
  * @param {string} params.userId
  * @param {string} [params.tenantId]
  * @param {number} [params.securityVersion] authority version this session is bound to
+ * @param {string} [params.authStrength] P5.6: how the session was established — 'password' or
+ *   'mfa' (one of the P5.1 AUTH_STRENGTHS; 'step-up' is per-request, never a session property)
+ * @param {number} [params.authTime] P5.6: when that authentication happened (kept across rotation)
  * @param {number} [params.now]
  * @returns {Readonly<object>} frozen session record
  */
 export function createSession(store, params) {
-  const { userId, tenantId = DEFAULT_TENANT, securityVersion = 0, now = Date.now() } = params;
+  const { userId, tenantId = DEFAULT_TENANT, securityVersion = 0, authStrength = 'password', now = Date.now() } = params;
+  const authTime = params.authTime ?? now;
+  if (!SESSION_AUTH_STRENGTHS.includes(authStrength)) {
+    throw new SecurityError(SECURITY_REASON.MALFORMED_INPUT, 'a session authStrength must be password or mfa', {
+      details: { authStrength: String(authStrength) },
+    });
+  }
   if (typeof userId !== 'string' || userId === '') {
     throw new SecurityError(SECURITY_REASON.MALFORMED_INPUT, 'a session requires a non-empty userId');
   }
@@ -178,6 +193,9 @@ export function createSession(store, params) {
     sessionVersion: 1,
     /** Authority version this session was issued against. */
     securityVersion,
+    /** P5.6: 'password' | 'mfa' — what the login proved. Rotation keeps it; it never rises in place. */
+    authStrength,
+    authTime,
     createdAt: now,
     lastSeenAt: now,
     absoluteExpiresAt: now + policy.absoluteMs,
@@ -280,6 +298,10 @@ export function rotateSession(store, sessionId, options = {}) {
     userId: current.userId,
     tenantId: current.tenantId,
     securityVersion: securityVersion ?? current.securityVersion,
+    // Rotation is a fixation defence, not re-authentication: the new session
+    // inherits exactly the strength and auth time of the old one.
+    authStrength: current.authStrength ?? 'password',
+    authTime: current.authTime ?? current.createdAt,
     now,
   });
   store.set(

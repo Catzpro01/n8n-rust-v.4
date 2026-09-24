@@ -6,7 +6,7 @@
  * scrypt-hashed; the session token is HMAC-signed with the instance secret so a
  * restart does not log everybody out.
  */
-import { createHmac, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
+import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 
 import {
   createSession as createSessionRecord,
@@ -22,10 +22,16 @@ import {
   evaluateCsrf,
   issueCsrfToken,
 } from './auth/security/csrf.mjs';
+import {
+  hashPassword as hashWithPolicy,
+  needsRehash,
+  verifyAgainstDummy,
+  verifyPassword as verifyWithPolicy,
+} from './auth/security/password-hash.mjs';
+import { MFA_STATES, mfaStateOf } from './auth/security/mfa.mjs';
 
 export const SESSION_COOKIE = 'n8n-auth';
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-const SCRYPT = { N: 16384, r: 8, p: 1, keylen: 64 };
 
 /**
  * P5.2 — process-local session state.
@@ -68,20 +74,17 @@ export function bumpSecurityVersion(userId) {
   return next;
 }
 
+/**
+ * P5.6: hashing lives in `auth/security/password-hash.mjs` (algorithm agility,
+ * rehash-on-success). These two exports keep their pre-P5.6 signatures and,
+ * under the current policy, byte-compatible output (`scrypt$salt$hash`).
+ */
 export function hashPassword(password) {
-  const salt = randomBytes(16).toString('hex');
-  const hash = scryptSync(password, salt, SCRYPT.keylen, SCRYPT).toString('hex');
-  return `scrypt$${salt}$${hash}`;
+  return hashWithPolicy(password);
 }
 
 export function verifyPassword(password, stored) {
-  if (typeof stored !== 'string') return false;
-  const [scheme, salt, hash] = stored.split('$');
-  if (scheme !== 'scrypt' || !salt || !hash) return false;
-  const candidate = scryptSync(password, salt, SCRYPT.keylen, SCRYPT);
-  const expected = Buffer.from(hash, 'hex');
-  if (candidate.length !== expected.length) return false;
-  return timingSafeEqual(candidate, expected);
+  return verifyWithPolicy(password, stored);
 }
 
 export function signToken(payload, secret) {
@@ -158,10 +161,11 @@ export function clearSessionCookieHeader() {
  * @param {object} config runtime config
  * @returns {{ token: string, cookie: string, csrfCookie: string, csrfToken: string, sessionId: string }}
  */
-export function createSession(user, config) {
+export function createSession(user, config, { authStrength = 'password' } = {}) {
   const session = createSessionRecord(SESSION_STORE, {
     userId: user.id,
     securityVersion: securityVersionFor(user.id),
+    authStrength,
   });
   const token = signToken(sessionTokenPayload(session), config.secret);
   const secure = config.protocol === 'https';
@@ -219,7 +223,7 @@ export function currentUser(store, config, req) {
  * CSRF boundary, which needs to know whether there is ambient authority to
  * protect before any route runs.
  *
- * @returns {{ sessionId: string, userId: string }|null}
+ * @returns {{ sessionId: string, userId: string, authStrength: string, authTime: number }|null}
  */
 export function currentSession(config, req) {
   const cookies = parseCookies(req.headers.cookie);
@@ -229,7 +233,12 @@ export function currentSession(config, req) {
   if (!payload || typeof payload.sid !== 'string' || payload.sid === '') return null;
   const verdict = validateSession(SESSION_STORE, payload.sid, { touch: false });
   if (!verdict.valid) return null;
-  return { sessionId: verdict.session.sessionId, userId: verdict.session.userId };
+  return {
+    sessionId: verdict.session.sessionId,
+    userId: verdict.session.userId,
+    authStrength: verdict.session.authStrength ?? 'password',
+    authTime: verdict.session.authTime ?? verdict.session.createdAt,
+  };
 }
 
 /** Revokes the session behind a request — what logout actually does now. */
@@ -349,7 +358,9 @@ export function toPublicUser(user) {
     isOwner: user.role === 'global:owner',
     settings: user.settings ?? {},
     disabled: false,
-    mfaEnabled: false,
+    // P5.6: real MFA state. Only the boolean leaves the server — never the
+    // sealed secret, the recovery-code digests or the replay step.
+    mfaEnabled: mfaStateOf(user) === MFA_STATES.ENABLED,
     personalizationAnswers: null,
     createdAt: user.createdAt ?? new Date().toISOString(),
     updatedAt: user.updatedAt ?? user.createdAt ?? new Date().toISOString(),
@@ -357,10 +368,24 @@ export function toPublicUser(user) {
   };
 }
 
+/**
+ * Password check for login.
+ *
+ * P5.6:
+ *   - an unknown account burns the same scrypt cost as a known one, so the
+ *     response time does not reveal which e-mail addresses exist;
+ *   - rehash-on-success: when the stored hash was made under older parameters
+ *     it is upgraded now, with the password the user just proved. Nobody is
+ *     forced through a reset. (Dormant while the policy equals the legacy
+ *     parameters — see password-hash.mjs.)
+ */
 export function authenticate(store, email, password) {
   const normalized = String(email ?? '').trim().toLowerCase();
   const user = store.users.find((candidate) => candidate.email === normalized);
-  if (!user) return null;
+  if (!user) return verifyAgainstDummy(password) && null;
   if (!verifyPassword(password, user.password)) return null;
+  if (needsRehash(user.password)) {
+    return store.users.update(user.id, { password: hashPassword(password), updatedAt: new Date().toISOString() }) ?? user;
+  }
   return user;
 }

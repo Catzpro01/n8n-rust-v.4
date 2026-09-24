@@ -7,24 +7,35 @@
  * through `src/compat/`. Scopes exposed to the editor come from the extracted
  * permission model (`src/compat/scopes.mjs`), never from a hardcoded list.
  *
- * User-management *administration* (invite, role change, delete, api keys,
- * password change, MFA) is P5 and answers via the compatibility layer's
- * unsupported semantics until then — see `src/compat/capability.mjs`.
+ * P5.6: password change, password recovery, MFA and the login second factor
+ * are implemented in `./account-routes.mjs` and mounted here. User-management
+ * *administration* (invite, role change, delete) and API keys still answer via
+ * the compatibility layer's unsupported semantics — see `src/compat/capability.mjs`.
  */
 import { badRequest, forbidden, notFound, unauthorized } from '../compat/error.mjs';
 import { sendData } from '../compat/response.mjs';
 import { publicUser, requireUser } from '../compat/auth-context.mjs';
 import { loadRoles } from '../compat/scopes.mjs';
 import {
-  authenticate,
+  bumpSecurityVersion,
   clearSessionCookieHeader,
   createOwner,
   createSession,
+  currentSession,
   hasOwner,
   revokeCurrentSession,
 } from '../auth.mjs';
+import { accountRoutes, createAccountSecurity, guardEmailChange, login } from './account-routes.mjs';
 
-export function authRoutes({ logger }) {
+/**
+ * @param {object} options
+ * @param {object} options.logger
+ * @param {object|null} [options.vault] P5.5 vault; seals MFA secrets (null => MFA fails closed with 503)
+ * @param {object|null} [options.delivery] password-reset delivery port (null => upstream no-SMTP answer)
+ * @param {object} [options.security] bounded abuse-control / reset-token state
+ */
+export function authRoutes({ logger, vault = null, delivery = null, security = createAccountSecurity() }) {
+  const deps = { security, vault };
   return [
     {
       method: 'GET',
@@ -32,27 +43,18 @@ export function authRoutes({ logger }) {
       public: true,
       handler: (ctx) => {
         if (!ctx.user) throw unauthorized();
-        sendData(ctx.res, publicUser(ctx.user, ctx.config));
+        const session = currentSession(ctx.config, ctx.req);
+        sendData(ctx.res, publicUser(ctx.user, ctx.config, { mfaAuthenticated: session?.authStrength === 'mfa' }));
       },
     },
     {
       method: 'POST',
       path: '/rest/login',
       public: true,
-      handler: (ctx) => {
-        const { email, emailOrLdapLoginId, password } = ctx.body ?? {};
-        const login = email ?? emailOrLdapLoginId;
-        if (!login || !password) throw badRequest('Email and password are required');
-        const user = authenticate(ctx.store, login, password);
-        if (!user) throw unauthorized();
-        // P5.2: a fresh login gets a fresh session AND a fresh CSRF token. The
-        // token is bound to the session id, so re-using the old one against the
-        // new session must fail — see issueToken/session binding in csrf.mjs.
-        const { cookie, csrfCookie } = createSession(user, ctx.config);
-        sendData(ctx.res, publicUser(user, ctx.config), {
-          headers: { 'set-cookie': [cookie, csrfCookie] },
-        });
-      },
+      // P5.2: a fresh login gets a fresh session AND a fresh CSRF token (bound
+      // to the session id). P5.6: bounded rate limits, failure back-off and the
+      // MFA second factor — see account-routes.mjs `login`.
+      handler: (ctx) => login(ctx, deps),
     },
     {
       method: 'POST',
@@ -97,16 +99,27 @@ export function authRoutes({ logger }) {
       handler: (ctx) => {
         const user = requireUser(ctx);
         if (ctx.method === 'PATCH') {
+          // P5.6: changing the e-mail needs fresh proof (upstream semantics).
+          const emailChanging = guardEmailChange(ctx, deps, user);
           const patch = {};
           for (const key of ['firstName', 'lastName', 'email']) {
             if (typeof ctx.body?.[key] === 'string') patch[key] = ctx.body[key];
           }
           if (typeof patch.email === 'string') patch.email = patch.email.toLowerCase();
           const updated = ctx.store.users.update(user.id, patch);
+          // An e-mail change is an authority change: kill every session and
+          // reissue one (upstream's JWT hash covers the e-mail, same effect).
+          let headers = {};
+          if (emailChanging) {
+            const strength = currentSession(ctx.config, ctx.req)?.authStrength ?? 'password';
+            bumpSecurityVersion(user.id);
+            const { cookie, csrfCookie } = createSession(updated, ctx.config, { authStrength: strength });
+            headers = { 'set-cookie': [cookie, csrfCookie] };
+          }
           // Upstream `me.controller.updateCurrentUser` returns `toPublic(user)`
           // without scopes — the editor merges it into its current user, while
           // the RBAC store keeps the scopes it was seeded with at login.
-          return sendData(ctx.res, publicUser(updated, ctx.config, { withScopes: false }));
+          return sendData(ctx.res, publicUser(updated, ctx.config, { withScopes: false }), { headers });
         }
         return sendData(ctx.res, publicUser(user, ctx.config));
       },
@@ -153,5 +166,8 @@ export function authRoutes({ logger }) {
         sendData(ctx.res, { ...role, usedByUsers: 1 });
       },
     },
+
+    /* ------------------------------------------- account security (P5.6) */
+    ...accountRoutes({ logger, vault, security, delivery }),
   ];
 }

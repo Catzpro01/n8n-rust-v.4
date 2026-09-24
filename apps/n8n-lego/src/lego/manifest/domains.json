@@ -2288,8 +2288,70 @@
         },
         {
           "id": "auth.mfa",
-          "status": "unsupported",
-          "restFeature": "mfa",
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "second-factor",
+              "interaction": "call",
+              "permission": "auth:session",
+              "idempotent": false,
+              "status": "implemented"
+            },
+            {
+              "name": "setup",
+              "interaction": "call",
+              "permission": "auth:session",
+              "idempotent": false,
+              "status": "implemented"
+            },
+            {
+              "name": "enable",
+              "interaction": "call",
+              "permission": "auth:session",
+              "idempotent": false,
+              "status": "implemented"
+            },
+            {
+              "name": "disable",
+              "interaction": "call",
+              "permission": "auth:session",
+              "idempotent": false,
+              "status": "implemented"
+            },
+            {
+              "name": "verify",
+              "interaction": "call",
+              "permission": "auth:session",
+              "idempotent": true,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "auth:session"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "critical",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "low"
+        },
+        {
+          "id": "auth.mfa-enforcement",
+          "status": "deferred",
+          "restFeature": "mfa-enforcement",
+          "phase": "deferred",
           "operations": [],
           "interaction": [
             "call"
@@ -2503,6 +2565,81 @@
           ],
           "permissions": [
             "auth:read"
+          ],
+          "lifecycle": "active",
+          "availability": "available",
+          "criticality": "critical",
+          "trust": "core",
+          "transport": {
+            "requires": "in-process",
+            "supports": [
+              "in-process"
+            ]
+          },
+          "migrationState": "stable",
+          "degradation": "available",
+          "replacement": "contract-preserving",
+          "resources": "low"
+        },
+        {
+          "id": "auth.account-security",
+          "status": "implemented",
+          "operations": [
+            {
+              "name": "password-change",
+              "interaction": "call",
+              "permission": "auth:session",
+              "idempotent": false,
+              "status": "implemented"
+            },
+            {
+              "name": "password-reset-request",
+              "interaction": "call",
+              "permission": "auth:session",
+              "idempotent": false,
+              "status": "implemented"
+            },
+            {
+              "name": "password-reset-resolve",
+              "interaction": "call",
+              "permission": "auth:session",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "password-reset-complete",
+              "interaction": "call",
+              "permission": "auth:session",
+              "idempotent": false,
+              "status": "implemented"
+            },
+            {
+              "name": "email-change",
+              "interaction": "call",
+              "permission": "auth:session",
+              "idempotent": false,
+              "status": "implemented"
+            },
+            {
+              "name": "step-up",
+              "interaction": "call",
+              "permission": "auth:session",
+              "idempotent": true,
+              "status": "implemented"
+            },
+            {
+              "name": "abuse-control",
+              "interaction": "call",
+              "permission": "auth:session",
+              "idempotent": false,
+              "status": "implemented"
+            }
+          ],
+          "interaction": [
+            "call"
+          ],
+          "permissions": [
+            "auth:session"
           ],
           "lifecycle": "active",
           "availability": "available",

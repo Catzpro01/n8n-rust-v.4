@@ -80,6 +80,20 @@ function commitBatch(collection, changes) {
   for (const [id, transform] of changes) collection.update(id, transform);
 }
 
+/**
+ * P5.6: the vault can manage several record sets on ONE key lineage (the
+ * credentials collection plus the MFA-secret view over users). Every rotation
+ * entry point accepts a collection or an array of collections, and a key is
+ * only retired after ALL of them are verified on the current key.
+ */
+function collectionsOf(input) {
+  const list = Array.isArray(input) ? input : [input];
+  if (list.length === 0 || list.some((c) => !c || typeof c.all !== 'function')) {
+    throw vaultError('lego.contract_violation', 'bad-collection', 'rotation needs one or more collections');
+  }
+  return list;
+}
+
 function isLegacyPlaintext(record) {
   return record && record.secret === undefined && record.data !== undefined;
 }
@@ -146,6 +160,15 @@ export function createCredentialVault({ provider, secretFieldsFor = () => null, 
     return { config, secretKeys: Object.keys(secret).sort(), secret: envelope, cryptoVersion: CRYPTO_VERSION };
   }
 
+  /**
+   * P5.6: seal a whole secret object for a non-credential record (e.g. a
+   * user's TOTP secret). Same envelope, same AAD discipline, same key lineage.
+   * @param {{ id: string, tenantId?: string, type: string }} record binding
+   */
+  function sealSecret(record, secret) {
+    return seal(bindingOf(record), secret);
+  }
+
   /** The full `data` object (config + opened secret) — for the write boundary only. */
   function openData(record) {
     return { ...(record?.config ?? {}), ...open(record) };
@@ -185,7 +208,7 @@ export function createCredentialVault({ provider, secretFieldsFor = () => null, 
 
   function recordsNotOnCurrent(collection) {
     const current = provider.currentKeyRef();
-    return collection.all().filter((record) => record.secret !== undefined && record.secret.keyRef !== current);
+    return collection.all().filter((record) => record.secret !== undefined && record.secret !== null && record.secret.keyRef !== current);
   }
 
   /** Re-seal one record onto the current key, verified; returns the transform to apply. */
@@ -215,14 +238,22 @@ export function createCredentialVault({ provider, secretFieldsFor = () => null, 
     if (!Number.isInteger(batchSize) || batchSize < 1 || batchSize > VAULT_LIMITS.maxBatchSize) {
       throw vaultError('lego.contract_violation', 'bad-batch-size', 'batchSize is out of bounds', { batchSize });
     }
-    const pending = recordsNotOnCurrent(collection);
-    const batch = pending.slice(0, batchSize);
-    // Verify every record in the batch BEFORE anything is written; then one
-    // atomic persist for the whole batch.
-    const changes = new Map(batch.map((record) => [record.id, reencrypt(record)]));
-    commitBatch(collection, changes);
-    const remaining = pending.length - batch.length;
-    return { moved: batch.length, remaining, done: remaining === 0 };
+    // The batch budget is shared across collections, filled in order.
+    let budget = batchSize;
+    let moved = 0;
+    let remaining = 0;
+    for (const target of collectionsOf(collection)) {
+      const pending = recordsNotOnCurrent(target);
+      const batch = pending.slice(0, budget);
+      budget -= batch.length;
+      // Verify every record in the batch BEFORE anything is written; then one
+      // atomic persist for the whole batch.
+      const changes = new Map(batch.map((record) => [record.id, reencrypt(record)]));
+      commitBatch(target, changes);
+      moved += batch.length;
+      remaining += pending.length - batch.length;
+    }
+    return { moved, remaining, done: remaining === 0 };
   }
 
   /**
@@ -232,7 +263,7 @@ export function createCredentialVault({ provider, secretFieldsFor = () => null, 
   function finishRotation(collection) {
     const previous = provider.previousKeyRef();
     if (!previous) return { retired: null };
-    const stragglers = recordsNotOnCurrent(collection);
+    const stragglers = collectionsOf(collection).flatMap((target) => recordsNotOnCurrent(target));
     if (stragglers.length > 0) {
       throw vaultError('lego.migration_required', 'rotation-incomplete', 'records still reference the previous key', {
         remaining: stragglers.length,
@@ -293,7 +324,7 @@ export function createCredentialVault({ provider, secretFieldsFor = () => null, 
   function verify(collection) {
     const unreadable = [];
     let total = 0;
-    for (const record of collection.all()) {
+    for (const record of collectionsOf(collection).flatMap((target) => target.all())) {
       total += 1;
       try {
         open(record);
@@ -421,6 +452,7 @@ export function createCredentialVault({ provider, secretFieldsFor = () => null, 
     seal,
     open,
     sealData,
+    sealSecret,
     openData,
     migrateLegacyPlaintext,
     startRotation,
@@ -461,17 +493,24 @@ export const KEYRING_FILE = '.credential-keys.json';
  */
 export async function bootCredentialVault({ config, store, secretFieldsFor, onEvent = null }) {
   const { createLocalKeyProvider, createMemoryKeyProvider } = await import('./key-provider.mjs');
+  const { mfaSecretCollection } = await import('./mfa.mjs');
   const { join } = await import('node:path');
   try {
-    const nothingSealed = store.credentials.all().every((record) => record.secret === undefined);
+    // P5.6: users' sealed TOTP secrets live on the same key lineage. They count
+    // as sealed material (so a missing keyring can never mint a fresh key over
+    // them) and they are recovered and verified with the credentials.
+    const mfaSecrets = store.users ? mfaSecretCollection(store.users) : null;
+    const sealedSets = mfaSecrets ? [store.credentials, mfaSecrets] : [store.credentials];
+    const nothingSealed =
+      store.credentials.all().every((record) => record.secret === undefined) && (!mfaSecrets || mfaSecrets.all().length === 0);
     const provider =
       config.storage === 'memory'
         ? createMemoryKeyProvider()
         : createLocalKeyProvider({ file: join(config.dataDir, KEYRING_FILE), allowCreate: nothingSealed });
     const vault = createCredentialVault({ provider, secretFieldsFor, onEvent });
     const migrated = vault.migrateLegacyPlaintext(store.credentials);
-    const recovered = vault.recover(store.credentials);
-    const verified = vault.verify(store.credentials);
+    const recovered = vault.recover(sealedSets);
+    const verified = vault.verify(sealedSets);
     return { vault, error: null, report: { ...migrated, ...recovered, total: verified.total, unreadable: verified.unreadable.length } };
   } catch (error) {
     return {

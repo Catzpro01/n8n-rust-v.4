@@ -19,23 +19,25 @@ import { unauthorized } from './error.mjs';
  *   - `globalScopes`   — computed from the user's global role (compat/scopes.mjs).
  *     Without it the editor's RBAC store stays empty, every scope-gated route
  *     redirects to `/home` and the settings sidebar collapses to "Personal".
- *   - `mfaAuthenticated` — MFA is not implemented; always false (upstream sends
- *     the same for non-MFA users).
+ *   - `mfaAuthenticated` — whether THIS session was established with a second
+ *     factor (P5.6). The auth domain passes it from the session record; the
+ *     compatibility layer only places it in the envelope. Defaults to false,
+ *     which is what upstream sends for a non-MFA session.
  *
  * @param {object} user stored user record
  * @param {object} config runtime config
- * @param {{ withScopes?: boolean }} [options] pass `withScopes: false` for
- *   payloads upstream returns without scopes (the `/rest/users` list, see
- *   `users.controller.ts` listUsers).
+ * @param {{ withScopes?: boolean, mfaAuthenticated?: boolean }} [options] pass
+ *   `withScopes: false` for payloads upstream returns without scopes (the
+ *   `/rest/users` list, see `users.controller.ts` listUsers).
  */
-export function publicUser(user, config, { withScopes = true } = {}) {
+export function publicUser(user, config, { withScopes = true, mfaAuthenticated = false } = {}) {
   const base = toPublicUser(user);
   if (base === null) return null;
   if (!withScopes) return base;
   return {
     ...base,
     globalScopes: getGlobalScopes(user, config),
-    mfaAuthenticated: false,
+    mfaAuthenticated: mfaAuthenticated === true,
   };
 }
 

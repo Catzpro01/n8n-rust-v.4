@@ -80,7 +80,7 @@ export async function startServer({ env = process.env } = {}) {
   const router = createRouter([
     ...settingsRoutes(),
     ...frontendRoutes({ frontend }),
-    ...authRoutes({ logger }),
+    ...authRoutes({ logger, vault }),
     ...buildRoutes({ engine, logger, push, vault }),
   ]);
   const unsupported = createUnsupportedHandler(logger);
