@@ -1,0 +1,62 @@
+{
+  "schemaVersion": "1.0",
+  "objectType": "Decision",
+  "objectId": "DEC-0007",
+  "revision": 1,
+  "createdAt": "2026-09-25T00:00:00Z",
+  "updatedAt": "2026-09-25T00:00:00Z",
+  "events": [],
+  "state": "ACTIVE",
+  "category": "MERGE",
+  "title": "Merge-lane classifier and exact-head pinning",
+  "problem": "Autonomous merges must never merge unverified or changed heads, and must not decide governance/security/contract changes.",
+  "options": [
+    {
+      "id": "classifier",
+      "summary": "SAFE-AUTO is a policy result requiring every gate explicitly clear; unknown flags route to MANAGER; failed/unanchored checks route to HOLD; authorization is a 900s lease pinned to repo/PR/base/head"
+    },
+    {
+      "id": "manual",
+      "summary": "All merges manual"
+    }
+  ],
+  "selectedOption": "classifier",
+  "rationale": "A head change moves READY to HOLD, resets checks and revokes the authorization lease. SAFE-AUTO requires the SIMPLE rollback class with verified rollback, no manager-lane flags and no CONTRACT_LOCK/GOVERNANCE_LOCK reservation. IRREVERSIBLE merges always need a HUMAN approval bound to the exact item. MERGED is not COMPLETE: completion requires fresh-main verification evidence at MAIN_VERIFIED trust or higher.",
+  "scope": {
+    "programs": [
+      "GOVERNANCE"
+    ],
+    "slices": [],
+    "domains": [],
+    "surfaces": []
+  },
+  "authority": {
+    "decidedBy": "MANAGER-01",
+    "managerOnly": true,
+    "humanEscalation": false,
+    "proposedBy": "MANAGER-01"
+  },
+  "evidence": [],
+  "evidenceRefs": [
+    "tools/workforce/src/domain.mjs#classifyMerge"
+  ],
+  "sources": {
+    "issues": [
+      262,
+      264
+    ],
+    "prs": [],
+    "commits": [],
+    "requests": []
+  },
+  "supersedes": null,
+  "supersededBy": null,
+  "promotion": {
+    "canonical": false,
+    "mainPath": null,
+    "mainCommitSha": null,
+    "promotedAt": null,
+    "promotedBy": null
+  },
+  "reason": null
+}

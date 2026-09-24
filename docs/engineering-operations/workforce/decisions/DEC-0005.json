@@ -1,0 +1,63 @@
+{
+  "schemaVersion": "1.0",
+  "objectType": "Decision",
+  "objectId": "DEC-0005",
+  "revision": 1,
+  "createdAt": "2026-09-25T00:00:00Z",
+  "updatedAt": "2026-09-25T00:00:00Z",
+  "events": [],
+  "state": "ACTIVE",
+  "category": "ARCHITECTURE",
+  "title": "Specification conflict resolutions (#265 exact matrix wins) and the AgentState release edges",
+  "problem": "#262/#264 prose and the #265 exact matrices disagree in places, and #265 section 12 has no path back to AVAILABLE for a worker slot whose task was withdrawn, transferred or cancelled.",
+  "options": [
+    {
+      "id": "exact-265",
+      "summary": "Use the #265 exact transition matrices and names; add Manager-only release edges"
+    },
+    {
+      "id": "prose",
+      "summary": "Follow prose descriptions"
+    }
+  ],
+  "selectedOption": "exact-265",
+  "rationale": "Resolutions: READY_FOR_REVIEW, MERGING and VERIFYING cannot transition directly to CANCELLED (HOLD can); the CAS error is REVISION_CONFLICT; Decision has a REJECTED state; Task has a HOLD state; LOST_RECOVERY is not a Task state (recovery is expressed as the owning agent LOST plus history.recoveryCount); objectId is the task id. Amendment: AgentState gains Manager-only release edges ASSIGNED->AVAILABLE, PREPARING->AVAILABLE, WORKING->AVAILABLE, WAITING_EXTERNAL->AVAILABLE and BLOCKED->AVAILABLE, taken only by the engine when the slot holds no remaining active work. Workers can never take these edges.",
+  "scope": {
+    "programs": [
+      "GOVERNANCE"
+    ],
+    "slices": [],
+    "domains": [],
+    "surfaces": []
+  },
+  "authority": {
+    "decidedBy": "MANAGER-01",
+    "managerOnly": true,
+    "humanEscalation": false,
+    "proposedBy": "MANAGER-01"
+  },
+  "evidence": [],
+  "evidenceRefs": [
+    "docs/engineering-operations/workforce/policy.json#stateMachines.AgentState.managerOnlyEdges"
+  ],
+  "sources": {
+    "issues": [
+      262,
+      264,
+      265
+    ],
+    "prs": [],
+    "commits": [],
+    "requests": []
+  },
+  "supersedes": null,
+  "supersededBy": null,
+  "promotion": {
+    "canonical": false,
+    "mainPath": null,
+    "mainCommitSha": null,
+    "promotedAt": null,
+    "promotedBy": null
+  },
+  "reason": null
+}

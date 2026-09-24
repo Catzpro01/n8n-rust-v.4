@@ -57,3 +57,5 @@ dist/
 
 # Runtime token material generated locally by tools/gateway/auth.py — never commit (RUNNER-PROTOCOL.md §9).
 .arena/gateway_tokens.json
+# workforce control-plane operational state (DEC-0002: never committed; heartbeats/leases are runtime)
+.arena/workforce-state/

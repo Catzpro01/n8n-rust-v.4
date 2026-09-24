@@ -1,0 +1,71 @@
+{
+  "schemaVersion": "1.0",
+  "objectType": "Decision",
+  "objectId": "DEC-0001",
+  "revision": 1,
+  "createdAt": "2026-09-25T00:00:00Z",
+  "updatedAt": "2026-09-25T00:00:00Z",
+  "events": [],
+  "state": "ACTIVE",
+  "category": "WORKFORCE",
+  "title": "Adopt the workforce control-plane specification #259-#267",
+  "problem": "Issues #259-#267 specify one Manager system plus ten worker slots but were planning-only; #268 is the Manager authorization record.",
+  "options": [
+    {
+      "id": "adopt",
+      "summary": "Implement #259-#267 in full, including #267 cross-program concurrency, as tools/workforce + docs/engineering-operations/workforce"
+    },
+    {
+      "id": "defer",
+      "summary": "Keep as planning only"
+    }
+  ],
+  "selectedOption": "adopt",
+  "rationale": "#268 authorizes implementation of the full #259-#267 scope. It does not authorize unrelated features, worker self-governance or security bypass; those remain out of scope.",
+  "scope": {
+    "programs": [
+      "GOVERNANCE"
+    ],
+    "slices": [],
+    "domains": [],
+    "surfaces": []
+  },
+  "authority": {
+    "decidedBy": "MANAGER-01",
+    "managerOnly": true,
+    "humanEscalation": false,
+    "proposedBy": "MANAGER-01"
+  },
+  "evidence": [],
+  "evidenceRefs": [
+    "docs/engineering-operations/workforce/policy.json",
+    "tools/workforce/"
+  ],
+  "sources": {
+    "issues": [
+      259,
+      260,
+      261,
+      262,
+      263,
+      264,
+      265,
+      266,
+      267,
+      268
+    ],
+    "prs": [],
+    "commits": [],
+    "requests": []
+  },
+  "supersedes": null,
+  "supersededBy": null,
+  "promotion": {
+    "canonical": false,
+    "mainPath": null,
+    "mainCommitSha": null,
+    "promotedAt": null,
+    "promotedBy": null
+  },
+  "reason": null
+}

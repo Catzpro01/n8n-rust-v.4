@@ -160,7 +160,7 @@ Task fields: `taskId`, `jobId`, `owner`, `status`, `scope`, `dependencies`, `blo
 - **Exhaustion:** jobs queue; the monitor keeps polling at 1s; after the job timeout the job is reported blocked (environmental) — never skipped, never moved to hosted runners to bypass the requirement.
 - **GitHub Actions monitoring:** GET /repos/{owner}/{repo}/commits/{sha}/check-runs at 1s until all completed; merge only with all checks success on the exact head SHA, pinned in the merge call.
 - **VPS monitoring:** vps-runtime runner; 1s polling of /rest/settings (/healthz is 503 without the UI bundle); systemd supervises long-running processes.
-- **Workspace lifecycle:** fresh checkout per job; temporary files under the runner temp directory; clean temp files, patches, logs, duplicate clones and stale worktrees; keep dependency/build caches; never commit runtime artifacts (.arena/gateway_tokens.json is gitignored); only main and arena-manager branches persist.
+- **Workspace lifecycle:** fresh checkout per job; temporary files under the runner temp directory; clean temp files, patches, logs, duplicate clones and stale worktrees; keep dependency/build caches; never commit runtime artifacts (.arena/gateway_tokens.json is gitignored); persistent branches: main, arena-manager and arena/agent-01..arena/agent-10 (DEC-0003); task branches arena/agent-XX/TASK-nnnn and arena/manager/<slug> are temporary and deleted after merge.
 
 ## Milestone merge and reconciliation protocol
 

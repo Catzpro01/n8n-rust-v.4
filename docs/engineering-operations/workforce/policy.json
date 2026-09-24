@@ -1,0 +1,349 @@
+{
+  "schemaVersion": "1.0",
+  "objectType": "WorkforcePolicy",
+  "policyVersion": "1.0.0",
+  "owner": "manager",
+  "authority": "Canonical workforce control-plane policy (#259-#267, implementation authorized by #268). Only the Manager changes this file, and only through the #266 rule-change protocol: proposal -> impact analysis -> Decision -> PR -> exact-head verification -> merge -> fresh-main verification. The engine refuses to run against a policy that fails validation, and it stamps every event with this file's digest so policy drift is detectable.",
+  "decisions": ["DEC-0001", "DEC-0002", "DEC-0005", "DEC-0006", "DEC-0007"],
+  "precedence": [
+    "protected canonical main",
+    "canonical Manager decisions promoted to main",
+    "arena-manager operational policy",
+    "assigned task / issue",
+    "worker prompt / session context",
+    "informal chat"
+  ],
+  "actorTypes": ["MANAGER", "WORKER", "HUMAN", "SYSTEM"],
+  "idPatterns": {
+    "Task": "^TASK-[0-9]{4,}$",
+    "Job": "^JOB-[0-9]{4,}$",
+    "Reservation": "^RES-[0-9]{4,}$",
+    "AgentState": "^AGENT-(0[1-9]|10)$",
+    "Lease": "^LEASE-[0-9]{4,}$",
+    "Evidence": "^EVD-[0-9]{4,}$",
+    "Decision": "^DEC-[0-9]{4,}$",
+    "MergeQueueItem": "^MQ-[0-9]{4,}$",
+    "Handoff": "^HND-[0-9]{4,}$",
+    "Request": "^REQ-[0-9]{4,}$",
+    "Approval": "^APR-[0-9]{4,}$",
+    "JournalEntry": "^JRN-[0-9]{4,}$",
+    "Event": "^EVT-[0-9]{6,}$",
+    "Command": "^CMD-[A-Za-z0-9._:-]{3,}$"
+  },
+  "workerSlots": ["AGENT-01", "AGENT-02", "AGENT-03", "AGENT-04", "AGENT-05", "AGENT-06", "AGENT-07", "AGENT-08", "AGENT-09", "AGENT-10"],
+  "stateMachines": {
+    "Task": {
+      "initial": "UNASSIGNED",
+      "terminal": ["COMPLETED", "CANCELLED", "SUPERSEDED"],
+      "transitions": {
+        "UNASSIGNED": ["CLAIMED", "SUPERSEDED"],
+        "CLAIMED": ["ACKNOWLEDGED", "UNASSIGNED", "CANCELLED"],
+        "ACKNOWLEDGED": ["PREPARING", "BLOCKED", "CANCELLED"],
+        "PREPARING": ["WORKING", "BLOCKED", "CANCELLED"],
+        "WORKING": ["READY_FOR_REVIEW", "WAITING_EXTERNAL", "BLOCKED", "FROZEN", "CANCELLED"],
+        "WAITING_EXTERNAL": ["WORKING", "BLOCKED", "CANCELLED"],
+        "BLOCKED": ["WORKING", "FROZEN", "CANCELLED"],
+        "READY_FOR_REVIEW": ["MERGING", "HOLD", "WORKING"],
+        "MERGING": ["VERIFYING", "HOLD"],
+        "VERIFYING": ["COMPLETED", "WORKING", "FROZEN"],
+        "HOLD": ["READY_FOR_REVIEW", "WORKING", "CANCELLED"],
+        "FROZEN": ["WORKING", "SUPERSEDED", "CANCELLED"],
+        "COMPLETED": [],
+        "CANCELLED": [],
+        "SUPERSEDED": []
+      }
+    },
+    "AgentState": {
+      "initial": "AVAILABLE",
+      "terminal": ["RETIRED"],
+      "managerOnlyStates": ["LOST", "RETIRED", "SUSPENDED"],
+      "managerOnlyEdges": {
+        "decision": "DEC-0005",
+        "rule": "Release edges back to AVAILABLE, taken only by the engine/Manager when the slot holds no remaining active work (claim withdrawn, transfer, cancellation). #265 section 12 had no path back to AVAILABLE from these states.",
+        "edges": [["ASSIGNED", "AVAILABLE"], ["PREPARING", "AVAILABLE"], ["WORKING", "AVAILABLE"], ["WAITING_EXTERNAL", "AVAILABLE"], ["BLOCKED", "AVAILABLE"]]
+      },
+      "transitions": {
+        "AVAILABLE": ["ASSIGNED", "STOPPED", "SUSPENDED", "RETIRED"],
+        "ASSIGNED": ["PREPARING", "SUSPENDED", "LOST", "AVAILABLE"],
+        "PREPARING": ["WORKING", "BLOCKED", "SUSPENDED", "LOST", "AVAILABLE"],
+        "WORKING": ["WAITING_EXTERNAL", "BLOCKED", "READY_FOR_REVIEW", "LOST", "AVAILABLE"],
+        "WAITING_EXTERNAL": ["WORKING", "BLOCKED", "LOST", "AVAILABLE"],
+        "BLOCKED": ["WORKING", "STOPPED", "LOST", "AVAILABLE"],
+        "READY_FOR_REVIEW": ["MERGING", "AVAILABLE"],
+        "MERGING": ["VERIFYING", "LOST"],
+        "VERIFYING": ["AVAILABLE", "WORKING", "LOST"],
+        "STOPPED": ["AVAILABLE", "ASSIGNED", "RETIRED"],
+        "SUSPENDED": ["AVAILABLE", "STOPPED", "RETIRED"],
+        "LOST": ["SUSPENDED", "STOPPED", "RETIRED"],
+        "RETIRED": []
+      }
+    },
+    "Reservation": {
+      "initial": "REQUESTED",
+      "terminal": ["RELEASED", "REJECTED", "EXPIRED", "TRANSFERRED"],
+      "transitions": {
+        "REQUESTED": ["CHECKING"],
+        "CHECKING": ["RESERVED", "CONFLICT", "REJECTED"],
+        "RESERVED": ["ACTIVE", "REJECTED"],
+        "ACTIVE": ["RELEASED", "EXPIRED", "TRANSFERRED"],
+        "CONFLICT": ["CHECKING"],
+        "RELEASED": [],
+        "REJECTED": [],
+        "EXPIRED": [],
+        "TRANSFERRED": []
+      }
+    },
+    "Lease": {
+      "initial": "PENDING",
+      "terminal": ["EXPIRED", "REVOKED", "TRANSFERRED", "COMPLETED"],
+      "selfTransitions": ["ACTIVE"],
+      "transitions": {
+        "PENDING": ["ACTIVE"],
+        "ACTIVE": ["ACTIVE", "EXPIRED", "REVOKED", "TRANSFERRED", "COMPLETED"],
+        "EXPIRED": [],
+        "REVOKED": [],
+        "TRANSFERRED": [],
+        "COMPLETED": []
+      }
+    },
+    "Evidence": {
+      "initial": "PROPOSED",
+      "terminal": ["REVOKED"],
+      "transitions": {
+        "PROPOSED": ["PUBLISHED"],
+        "PUBLISHED": ["VERIFIED", "REVOKED"],
+        "VERIFIED": ["REVOKED"],
+        "REVOKED": []
+      }
+    },
+    "Decision": {
+      "initial": "PROPOSED",
+      "terminal": ["SUPERSEDED", "REVOKED", "REJECTED"],
+      "transitions": {
+        "PROPOSED": ["UNDER_REVIEW", "REJECTED"],
+        "UNDER_REVIEW": ["ACTIVE", "REJECTED"],
+        "ACTIVE": ["SUPERSEDED", "REVOKED"],
+        "SUPERSEDED": [],
+        "REVOKED": [],
+        "REJECTED": []
+      }
+    },
+    "MergeQueueItem": {
+      "initial": "QUEUED",
+      "terminal": ["MERGED", "REJECTED", "SUPERSEDED"],
+      "transitions": {
+        "QUEUED": ["READY", "HOLD", "REJECTED", "SUPERSEDED"],
+        "READY": ["MERGING", "HOLD"],
+        "MERGING": ["VERIFYING", "HOLD", "REJECTED"],
+        "VERIFYING": ["MERGED", "HOLD", "REJECTED"],
+        "HOLD": ["READY", "QUEUED", "REJECTED"],
+        "MERGED": [],
+        "REJECTED": [],
+        "SUPERSEDED": []
+      }
+    }
+  },
+  "reasonRequiredStates": ["BLOCKED", "CANCELLED", "FROZEN", "SUPERSEDED", "REJECTED", "REVOKED", "HOLD", "LOST", "RETIRED"],
+  "commands": {
+    "TASK_CREATE":            { "target": "Task", "kind": "create", "roles": { "MANAGER": "any" }, "to": "UNASSIGNED" },
+    "TASK_ADD_DEPENDENCY":    { "target": "Task", "kind": "update", "roles": { "MANAGER": "any" } },
+    "TASK_ASSIGN":            { "target": "Task", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "CLAIMED", "sideEffects": ["TASK_ASSIGNMENT lease", "agent -> ASSIGNED"] },
+    "TASK_UNCLAIM":           { "target": "Task", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "UNASSIGNED" },
+    "TASK_ACK":               { "target": "Task", "kind": "transition", "roles": { "WORKER": "own", "MANAGER": "any" }, "to": "ACKNOWLEDGED", "requiresLease": "TASK_ASSIGNMENT" },
+    "TASK_PREPARE":           { "target": "Task", "kind": "transition", "roles": { "WORKER": "own", "MANAGER": "any" }, "to": "PREPARING", "requiresLease": "TASK_ASSIGNMENT" },
+    "TASK_START":             { "target": "Task", "kind": "transition", "roles": { "WORKER": "own", "MANAGER": "any" }, "to": "WORKING", "from": ["PREPARING", "BLOCKED", "WAITING_EXTERNAL"], "requiresLease": "TASK_ASSIGNMENT" },
+    "TASK_WAIT_EXTERNAL":     { "target": "Task", "kind": "transition", "roles": { "WORKER": "own", "MANAGER": "any" }, "to": "WAITING_EXTERNAL", "requiresLease": "TASK_ASSIGNMENT" },
+    "TASK_BLOCK":             { "target": "Task", "kind": "transition", "roles": { "WORKER": "own", "MANAGER": "any" }, "to": "BLOCKED", "requiresLease": "TASK_ASSIGNMENT" },
+    "TASK_PROGRESS":          { "target": "Task", "kind": "update", "roles": { "WORKER": "own", "MANAGER": "any" }, "requiresLease": "TASK_ASSIGNMENT" },
+    "TASK_READY_FOR_REVIEW":  { "target": "Task", "kind": "transition", "roles": { "WORKER": "own", "MANAGER": "any" }, "to": "READY_FOR_REVIEW", "requiresLease": "TASK_ASSIGNMENT" },
+    "TASK_HOLD":              { "target": "Task", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "HOLD" },
+    "TASK_RESUME_REVIEW":     { "target": "Task", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "READY_FOR_REVIEW", "from": ["HOLD"] },
+    "TASK_REWORK":            { "target": "Task", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "WORKING", "from": ["READY_FOR_REVIEW", "VERIFYING", "HOLD"] },
+    "TASK_MERGE_START":       { "target": "Task", "kind": "transition", "roles": { "MANAGER": "any", "SYSTEM": "allowlist" }, "to": "MERGING" },
+    "TASK_VERIFY_START":      { "target": "Task", "kind": "transition", "roles": { "MANAGER": "any", "SYSTEM": "allowlist" }, "to": "VERIFYING" },
+    "TASK_COMPLETE":          { "target": "Task", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "COMPLETED" },
+    "TASK_FREEZE":            { "target": "Task", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "FROZEN" },
+    "TASK_UNFREEZE":          { "target": "Task", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "WORKING", "from": ["FROZEN"] },
+    "TASK_CANCEL":            { "target": "Task", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "CANCELLED" },
+    "TASK_SUPERSEDE":         { "target": "Task", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "SUPERSEDED" },
+    "TASK_TRANSFER":          { "target": "Task", "kind": "update", "roles": { "MANAGER": "any" } },
+    "TASK_DEFER":             { "target": "Task", "kind": "update", "roles": { "MANAGER": "any" } },
+
+    "AGENT_REGISTER":         { "target": "AgentState", "kind": "create", "roles": { "MANAGER": "any" }, "to": "AVAILABLE" },
+    "AGENT_HEARTBEAT":        { "target": "AgentState", "kind": "update", "roles": { "WORKER": "own", "SYSTEM": "allowlist", "MANAGER": "any" } },
+    "AGENT_STATUS":           { "target": "AgentState", "kind": "transition", "roles": { "WORKER": "own", "MANAGER": "any" }, "toFromPayload": true, "workerAllowedTo": ["PREPARING", "WORKING", "WAITING_EXTERNAL", "BLOCKED", "READY_FOR_REVIEW", "MERGING", "VERIFYING", "AVAILABLE"] },
+    "AGENT_SUSPEND":          { "target": "AgentState", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "SUSPENDED" },
+    "AGENT_STOP":             { "target": "AgentState", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "STOPPED" },
+    "AGENT_MARK_LOST":        { "target": "AgentState", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "LOST" },
+    "AGENT_RECOVER":          { "target": "AgentState", "kind": "transition", "roles": { "MANAGER": "any" }, "toFromPayload": true, "from": ["LOST"], "allowedTo": ["SUSPENDED", "STOPPED"] },
+    "AGENT_ACTIVATE":         { "target": "AgentState", "kind": "transition", "roles": { "MANAGER": "any", "HUMAN": "any" }, "to": "AVAILABLE", "from": ["STOPPED", "SUSPENDED"] },
+    "AGENT_RETIRE":           { "target": "AgentState", "kind": "transition", "roles": { "MANAGER": "any", "HUMAN": "any" }, "to": "RETIRED" },
+
+    "RESERVATION_REQUEST":    { "target": "Reservation", "kind": "create", "roles": { "WORKER": "own-task", "MANAGER": "any", "SYSTEM": "allowlist" }, "to": "REQUESTED" },
+    "RESERVATION_CHECK":      { "target": "Reservation", "kind": "transition", "roles": { "MANAGER": "any", "SYSTEM": "allowlist" }, "computed": true },
+    "RESERVATION_ACTIVATE":   { "target": "Reservation", "kind": "transition", "roles": { "MANAGER": "any", "SYSTEM": "allowlist" }, "to": "ACTIVE", "sideEffects": ["RESERVATION lease"] },
+    "RESERVATION_REJECT":     { "target": "Reservation", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "REJECTED" },
+    "RESERVATION_RELEASE":    { "target": "Reservation", "kind": "transition", "roles": { "MANAGER": "any", "SYSTEM": "allowlist" }, "to": "RELEASED" },
+    "RESERVATION_EXPIRE":     { "target": "Reservation", "kind": "transition", "roles": { "MANAGER": "any", "SYSTEM": "allowlist" }, "to": "EXPIRED" },
+    "RESERVATION_TRANSFER":   { "target": "Reservation", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "TRANSFERRED", "sideEffects": ["successor reservation ACTIVE", "successor RESERVATION lease"] },
+
+    "LEASE_ISSUE":            { "target": "Lease", "kind": "create", "roles": { "MANAGER": "any" }, "to": "ACTIVE" },
+    "LEASE_RENEW":            { "target": "Lease", "kind": "transition", "roles": { "WORKER": "own-lease", "SYSTEM": "allowlist", "MANAGER": "any" }, "to": "ACTIVE" },
+    "LEASE_REVOKE":           { "target": "Lease", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "REVOKED" },
+    "LEASE_COMPLETE":         { "target": "Lease", "kind": "transition", "roles": { "MANAGER": "any", "SYSTEM": "allowlist" }, "to": "COMPLETED" },
+    "LEASE_EXPIRE":           { "target": "Lease", "kind": "transition", "roles": { "MANAGER": "any", "SYSTEM": "allowlist" }, "to": "EXPIRED" },
+
+    "EVIDENCE_PROPOSE":       { "target": "Evidence", "kind": "create", "roles": { "WORKER": "own-task", "MANAGER": "any", "SYSTEM": "allowlist" }, "to": "PROPOSED" },
+    "EVIDENCE_PUBLISH":       { "target": "Evidence", "kind": "transition", "roles": { "WORKER": "own-evidence", "MANAGER": "any", "SYSTEM": "allowlist" }, "to": "PUBLISHED" },
+    "EVIDENCE_VERIFY":        { "target": "Evidence", "kind": "transition", "roles": { "MANAGER": "any", "HUMAN": "any" }, "to": "VERIFIED" },
+    "EVIDENCE_REVOKE":        { "target": "Evidence", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "REVOKED" },
+
+    "DECISION_PROPOSE":       { "target": "Decision", "kind": "create", "roles": { "WORKER": "any", "MANAGER": "any", "HUMAN": "any" }, "to": "PROPOSED" },
+    "DECISION_REVIEW":        { "target": "Decision", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "UNDER_REVIEW", "governance": true },
+    "DECISION_ACTIVATE":      { "target": "Decision", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "ACTIVE", "governance": true },
+    "DECISION_REJECT":        { "target": "Decision", "kind": "transition", "roles": { "MANAGER": "any", "HUMAN": "any" }, "to": "REJECTED", "governance": true },
+    "DECISION_SUPERSEDE":     { "target": "Decision", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "SUPERSEDED", "governance": true },
+    "DECISION_REVOKE":        { "target": "Decision", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "REVOKED", "governance": true },
+    "DECISION_PROMOTE_CANONICAL": { "target": "Decision", "kind": "update", "roles": { "MANAGER": "any" }, "governance": true },
+
+    "MQ_ADMIT":               { "target": "MergeQueueItem", "kind": "create", "roles": { "WORKER": "own-task", "MANAGER": "any" }, "to": "QUEUED" },
+    "MQ_UPDATE_CHECKS":       { "target": "MergeQueueItem", "kind": "update", "roles": { "MANAGER": "any", "SYSTEM": "allowlist" } },
+    "MQ_CLASSIFY":            { "target": "MergeQueueItem", "kind": "transition", "roles": { "MANAGER": "any", "SYSTEM": "allowlist" }, "computed": true },
+    "MQ_OBSERVE_HEAD":        { "target": "MergeQueueItem", "kind": "update", "roles": { "MANAGER": "any", "SYSTEM": "allowlist" } },
+    "MQ_AUTHORIZE":           { "target": "MergeQueueItem", "kind": "update", "roles": { "MANAGER": "any", "SYSTEM": "allowlist" }, "sideEffects": ["MERGE_AUTHORIZATION lease"] },
+    "MQ_MERGE_START":         { "target": "MergeQueueItem", "kind": "transition", "roles": { "MANAGER": "any", "SYSTEM": "allowlist" }, "to": "MERGING", "requiresLease": "MERGE_AUTHORIZATION" },
+    "MQ_MERGE_RESULT":        { "target": "MergeQueueItem", "kind": "transition", "roles": { "MANAGER": "any", "SYSTEM": "allowlist" }, "to": "VERIFYING" },
+    "MQ_VERIFY":              { "target": "MergeQueueItem", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "MERGED" },
+    "MQ_HOLD":                { "target": "MergeQueueItem", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "HOLD" },
+    "MQ_RELEASE":             { "target": "MergeQueueItem", "kind": "transition", "roles": { "MANAGER": "any" }, "toFromPayload": true, "from": ["HOLD"], "allowedTo": ["READY", "QUEUED"] },
+    "MQ_REJECT":              { "target": "MergeQueueItem", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "REJECTED" },
+    "MQ_SUPERSEDE":           { "target": "MergeQueueItem", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "SUPERSEDED" },
+
+    "HANDOFF_PUBLISH":        { "target": "Handoff", "kind": "create", "roles": { "WORKER": "own-task", "MANAGER": "any" } },
+    "REQUEST_MANAGER_CHANGE": { "target": "Request", "kind": "create", "roles": { "WORKER": "any", "SYSTEM": "allowlist", "HUMAN": "any", "MANAGER": "any" } },
+    "REQUEST_RESOLVE":        { "target": "Request", "kind": "update", "roles": { "MANAGER": "any" }, "governance": true },
+    "HUMAN_APPROVE":          { "target": "Approval", "kind": "create", "roles": { "HUMAN": "any" } },
+    "HUMAN_REJECT":           { "target": "Approval", "kind": "create", "roles": { "HUMAN": "any" } },
+    "HUMAN_OVERRIDE":         { "target": "Approval", "kind": "create", "roles": { "HUMAN": "any" } },
+    "HUMAN_ESCALATION_RESOLUTION": { "target": "Approval", "kind": "create", "roles": { "HUMAN": "any" } },
+    "JOURNAL_APPEND":         { "target": "JournalEntry", "kind": "create", "roles": { "MANAGER": "any" } }
+  },
+  "requestKinds": ["REQUEST_MANAGER_CHANGE", "LABEL_REQUEST", "TRANSFER_REQUEST", "CANCEL_REQUEST", "RESERVATION_RELEASE_REQUEST", "RESERVATION_OVERRIDE_REQUEST", "MERGE_REVIEW_REQUEST", "OBSERVATION", "PROMPT_GOVERNANCE_CONFLICT", "BLOCKER_REPORT"],
+  "journalKinds": ["FACT", "OBSERVATION", "HYPOTHESIS", "DECISION", "BLOCKER", "LESSON"],
+  "systemActorAllowlist": {
+    "SYSTEM-CI": ["EVIDENCE_PROPOSE", "EVIDENCE_PUBLISH", "MQ_UPDATE_CHECKS"],
+    "SYSTEM-GITHUB-WEBHOOK": ["MQ_OBSERVE_HEAD", "EVIDENCE_PROPOSE", "EVIDENCE_PUBLISH"],
+    "SYSTEM-HEARTBEAT": ["AGENT_HEARTBEAT"],
+    "SYSTEM-RECOVERY": ["LEASE_EXPIRE", "RESERVATION_EXPIRE", "REQUEST_MANAGER_CHANGE"],
+    "SYSTEM-MERGE-EXECUTOR": ["MQ_MERGE_START", "MQ_MERGE_RESULT", "TASK_MERGE_START", "TASK_VERIFY_START", "LEASE_COMPLETE"],
+    "SYSTEM-MERGE-CLASSIFIER": ["MQ_CLASSIFY", "MQ_AUTHORIZE", "RESERVATION_CHECK", "RESERVATION_ACTIVATE"]
+  },
+  "systemNeverAllowed": ["DECISION_ACTIVATE", "DECISION_PROMOTE_CANONICAL", "DECISION_SUPERSEDE", "DECISION_REVOKE", "AGENT_RETIRE", "AGENT_MARK_LOST", "TASK_COMPLETE", "REQUEST_RESOLVE", "HUMAN_APPROVE", "HUMAN_OVERRIDE"],
+  "humanApproval": {
+    "rules": [
+      { "commandType": "MQ_AUTHORIZE", "when": "rollbackClass == IRREVERSIBLE", "reason": "IRREVERSIBLE merges are never autonomous" },
+      { "commandType": "AGENT_RETIRE", "when": "agent holds any ACTIVE lease", "reason": "retiring a slot with live authority is exceptional" },
+      { "commandType": "RESERVATION_TRANSFER", "when": "mode == GOVERNANCE_LOCK", "reason": "moving a governance lock is exceptional" }
+    ]
+  },
+  "reservation": {
+    "modes": ["SHARED_READ", "SHARED_WRITE", "EXCLUSIVE", "CONTRACT_LOCK", "GOVERNANCE_LOCK"],
+    "managerOnlyModes": ["GOVERNANCE_LOCK"],
+    "managerLaneModes": ["CONTRACT_LOCK", "GOVERNANCE_LOCK"],
+    "dimensions": ["paths", "domains", "contracts", "generatedSurfaces", "vocabulary", "semanticSurfaces", "securitySurfaces", "governanceSurfaces"],
+    "conflictOrder": ["identity", "paths", "domains", "contracts", "generatedSurfaces", "vocabulary", "semanticSurfaces", "securitySurfaces", "governanceSurfaces"],
+    "compatibility": {
+      "SHARED_READ":     { "SHARED_READ": "COMPATIBLE", "SHARED_WRITE": "COMPATIBLE", "EXCLUSIVE": "CONFLICT", "CONTRACT_LOCK": "CONDITIONAL", "GOVERNANCE_LOCK": "CONFLICT" },
+      "SHARED_WRITE":    { "SHARED_READ": "COMPATIBLE", "SHARED_WRITE": "CONDITIONAL", "EXCLUSIVE": "CONFLICT", "CONTRACT_LOCK": "CONFLICT", "GOVERNANCE_LOCK": "CONFLICT" },
+      "EXCLUSIVE":       { "SHARED_READ": "CONFLICT", "SHARED_WRITE": "CONFLICT", "EXCLUSIVE": "CONFLICT", "CONTRACT_LOCK": "CONFLICT", "GOVERNANCE_LOCK": "CONFLICT" },
+      "CONTRACT_LOCK":   { "SHARED_READ": "CONDITIONAL", "SHARED_WRITE": "CONFLICT", "EXCLUSIVE": "CONFLICT", "CONTRACT_LOCK": "CONFLICT", "GOVERNANCE_LOCK": "CONFLICT" },
+      "GOVERNANCE_LOCK": { "SHARED_READ": "CONFLICT", "SHARED_WRITE": "CONFLICT", "EXCLUSIVE": "CONFLICT", "CONTRACT_LOCK": "CONFLICT", "GOVERNANCE_LOCK": "CONFLICT" }
+    },
+    "alwaysConflictDimensions": ["securitySurfaces", "governanceSurfaces"],
+    "unknownCompatibility": "CONFLICT",
+    "blockingStates": ["RESERVED", "ACTIVE"]
+  },
+  "leases": {
+    "TASK_ASSIGNMENT":     { "ttlSeconds": 3600, "maxLifetimeSeconds": 86400, "renewable": true, "workerRenewable": true },
+    "RESERVATION":         { "ttlSeconds": 7200, "maxLifetimeSeconds": 172800, "renewable": true, "workerRenewable": false },
+    "MERGE_AUTHORIZATION": { "ttlSeconds": 900, "maxLifetimeSeconds": 900, "renewable": false, "workerRenewable": false },
+    "EXTERNAL_EXECUTION":  { "ttlSeconds": 1800, "maxLifetimeSeconds": 21600, "renewable": true, "workerRenewable": true }
+  },
+  "timing": {
+    "claimAckTimeoutSeconds": 900,
+    "heartbeatLiveSeconds": 60,
+    "heartbeatStaleSeconds": 600,
+    "heartbeatLostCandidateSeconds": 1800,
+    "pollIntervalMaxMs": 1000,
+    "lockWaitMaxMs": 10000,
+    "lockPollMs": 25,
+    "staleLockSeconds": 30,
+    "note": "A stale heartbeat never makes an agent LOST by itself: recovery reports a candidate and only the Manager issues AGENT_MARK_LOST. Heartbeats are operational state and are never written to git."
+  },
+  "scheduler": {
+    "priorities": { "CRITICAL": 4, "HIGH": 3, "NORMAL": 2, "LOW": 1 },
+    "agingHoursPerLevel": 24,
+    "deferralsPerLevel": 3,
+    "maxAgingBonus": 3,
+    "starvationAlertHours": 72,
+    "starvationAlertDeferrals": 5,
+    "workerIdleAlertHours": 24,
+    "heavyBuildCapacityClasses": ["HEAVY"]
+  },
+  "backpressure": {
+    "maxActiveTasks": 10,
+    "maxTasksPerWorker": 1,
+    "maxHeavyBuildsPerRunnerClass": { "WINDOWS": 3, "WSL": 3, "ANY": 5 },
+    "maxActiveReservations": 40,
+    "maxQueuedTasks": 500,
+    "maxMergeQueueItems": 50
+  },
+  "antiThrashing": {
+    "reassignFreezeThreshold": 3,
+    "recoveryFreezeThreshold": 2,
+    "ciRetryFreezeThreshold": 3,
+    "reservationConflictFreezeThreshold": 3,
+    "scopeCorrectionFreezeThreshold": 3,
+    "action": "FREEZE -> DIAGNOSE -> DECISION -> CORRECT -> RESUME"
+  },
+  "events": {
+    "snapshotEventRefs": 20,
+    "segmentMaxEvents": 5000
+  },
+  "merge": {
+    "lanes": ["SAFE-AUTO", "MANAGER", "HOLD"],
+    "rollbackClasses": ["SIMPLE", "COORDINATED", "MIGRATION", "IRREVERSIBLE"],
+    "checkNames": ["exactHeadCi", "architecture", "acceptance", "evidence", "reservation", "dependency"],
+    "passValues": { "exactHeadCi": "PASS", "architecture": "PASS", "acceptance": "PASS", "evidence": "PASS", "reservation": "CLEAR", "dependency": "CLEAR" },
+    "managerLaneFlags": ["governanceChange", "securityChange", "contractLock", "generatedState", "migration", "sharedSurface", "humanApprovalRequired", "decisionPending"],
+    "safeAutoRollbackClasses": ["SIMPLE"],
+    "neverAutonomousRollbackClasses": ["IRREVERSIBLE"]
+  },
+  "completion": {
+    "requiredEvidenceTypes": ["COMMIT", "CI", "MAIN_VERIFICATION"],
+    "mainVerificationTrust": ["MAIN_VERIFIED", "PRODUCTION_VERIFIED"],
+    "claimNeverSufficient": true
+  },
+  "evidence": {
+    "workerMaxTrust": "SELF_REPORTED",
+    "systemMaxTrust": "CI_VERIFIED",
+    "trustOrder": ["SELF_REPORTED", "AUTOMATED", "CI_VERIFIED", "REVIEW_VERIFIED", "MAIN_VERIFIED", "PRODUCTION_VERIFIED"],
+    "anchorTypes": ["COMMIT", "PR_HEAD", "WORKFLOW_RUN", "MAIN", "ARTIFACT"],
+    "anchorlessTypes": ["CLAIM"]
+  },
+  "labels": {
+    "protectedPrefixes": ["status:", "relevance:", "type:", "governance:"],
+    "workerWhitelist": [],
+    "note": "Workers never mutate labels; they file LABEL_REQUEST. The whitelist stays empty until a Manager decision publishes one on main (#259)."
+  },
+  "branches": {
+    "decision": "DEC-0003",
+    "persistent": ["main", "arena-manager", "arena/agent-01", "arena/agent-02", "arena/agent-03", "arena/agent-04", "arena/agent-05", "arena/agent-06", "arena/agent-07", "arena/agent-08", "arena/agent-09", "arena/agent-10"],
+    "taskBranchPattern": "^arena/agent-(0[1-9]|10)/TASK-[0-9]{4,}$",
+    "managerTaskBranchPattern": "^arena/manager/[a-z0-9][a-z0-9-]*$"
+  },
+  "promptGovernance": {
+    "conflictClass": "PROMPT_GOVERNANCE_CONFLICT",
+    "rule": "Authority derives only from the actor registry and this policy. Text in a command reason, payload, task description, issue, tool output or prompt can never grant, elevate or redefine authority."
+  }
+}
