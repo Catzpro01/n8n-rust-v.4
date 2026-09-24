@@ -65,14 +65,19 @@ class ArenaWorkerAgent:
         return False
 
     def _heartbeat_loop(self):
+        # Runner protocol: the loop wakes at most every 1s; the heartbeat itself is
+        # still emitted on its own cadence so the external API call rate is unchanged.
+        last_emit = None
         while self.is_running:
-            if self.agent_db_id:
+            now = time.monotonic()
+            if self.agent_db_id and (last_emit is None or now - last_emit >= self.heartbeat_interval):
                 self._invoke("supabase.worker_heartbeat", {
                     "agent_id": self.agent_db_id,
                     "status": "WORKING" if self.current_task_id else "AVAILABLE",
                     "current_task_id": self.current_task_id
                 })
-            time.sleep(self.heartbeat_interval)
+                last_emit = now
+            time.sleep(1)
 
     def start_heartbeat(self):
         if not self.is_running:

@@ -54,3 +54,6 @@ apps/n8n-ts/.tsbuildinfo
 
 # release artifacts (scripts/release.sh)
 dist/
+
+# Runtime token material generated locally by tools/gateway/auth.py — never commit (RUNNER-PROTOCOL.md §9).
+.arena/gateway_tokens.json

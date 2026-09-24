@@ -144,6 +144,24 @@ Task fields: `taskId`, `jobId`, `owner`, `status`, `scope`, `dependencies`, `blo
 28. A milestone is complete only after protected-main post-merge verification.
 29. Contract and architecture conflicts must be reconciled before merge; never silently choose the easier branch.
 
+## Runner protocol
+
+**Authoritative document:** `docs/engineering-operations/RUNNER-PROTOCOL.md` (machine-readable: `docs/engineering-operations/workforce-governance.json#runnerProtocol`).
+
+- **Architecture:** 5 Windows + 5 WSL self-hosted runners (10 total); do not reduce or change without a Manager decision.
+- **Windows (5):** `laptop-build-worker`, `laptop-build-worker-2`, `laptop-build-worker-3`, `laptop-build-worker-4`, `laptop-build-worker-5` — labels `self-hosted, windows, x64, rust-build, n8n-rust`.
+- **WSL (5):** `MDMTEST-n8n-wsl`, `MDMTEST-n8n-wsl-2`, `MDMTEST-n8n-wsl-3`, `MDMTEST-n8n-wsl-4`, `MDMTEST-n8n-wsl-5` — labels `self-hosted, linux, x64, rust-build, n8n-rust`.
+- **Selection:** by label, never by runner name; at most 10 parallel self-hosted jobs.
+- **Polling:** **1s** (max sleep 1s) — every wait for a runner, CI run, job, health endpoint, process or queue sleeps at most 1 second (prefer exactly 1s) inside a bounded attempt budget; no sleep 2/5/10/30/60, no setTimeout/setInterval above 1000 ms, no backoff step above 1s.
+- **Only exception:** only a documented external API rate limit (name the API + limit next to the wait; honour Retry-After / x-ratelimit-reset).
+- **Decoupling:** a loop wakes every <= 1s but may emit an expensive external call on its own slower cadence.
+- **Job retry:** at most 2, only for environmental failures (runner lost, network, checkout/cache infrastructure).
+- **Failure classes:** implementation, environmental, pre-existing, flaky.
+- **Exhaustion:** jobs queue; the monitor keeps polling at 1s; after the job timeout the job is reported blocked (environmental) — never skipped, never moved to hosted runners to bypass the requirement.
+- **GitHub Actions monitoring:** GET /repos/{owner}/{repo}/commits/{sha}/check-runs at 1s until all completed; merge only with all checks success on the exact head SHA, pinned in the merge call.
+- **VPS monitoring:** vps-runtime runner; 1s polling of /rest/settings (/healthz is 503 without the UI bundle); systemd supervises long-running processes.
+- **Workspace lifecycle:** fresh checkout per job; temporary files under the runner temp directory; clean temp files, patches, logs, duplicate clones and stale worktrees; keep dependency/build caches; never commit runtime artifacts (.arena/gateway_tokens.json is gitignored); only main and arena-manager branches persist.
+
 ## Milestone merge and reconciliation protocol
 
 **Canonical register:** `docs/n8n-lego/milestones.json`

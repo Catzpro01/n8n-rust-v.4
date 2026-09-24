@@ -233,13 +233,13 @@ class WorkerSupervisor:
         for key in TARGET_WORKERS:
             self.stop_worker(key)
 
-    def run_daemon(self, auto_claim: bool = False, poll_interval: int = 5):
+    def run_daemon(self, auto_claim: bool = False, poll_interval: float = 1):
         """Runs the supervisor loop, maintaining 5 healthy worker processes."""
         self.logger.info(f"Starting Supervisor Daemon (AutoClaim={auto_claim})...")
         self.start_all_workers(auto_claim=auto_claim)
         try:
             while True:
-                time.sleep(poll_interval)
+                time.sleep(min(float(poll_interval), 1.0))  # runner protocol: <= 1s
                 # Check for dead workers and revive if necessary
                 for key in TARGET_WORKERS:
                     session = self.get_worker_session_info(key)

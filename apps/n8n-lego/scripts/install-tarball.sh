@@ -145,7 +145,11 @@ if [ "$WITH_SYSTEMD" = "yes" ]; then
   systemctl daemon-reload
   systemctl enable n8n-lego >/dev/null
   systemctl restart n8n-lego
-  sleep 2
+  # Poll at 1s cadence (docs/engineering-operations/RUNNER-PROTOCOL.md), bounded budget.
+  for _ in 1 2 3 4 5; do
+    systemctl is-active --quiet n8n-lego && break
+    sleep 1
+  done
   if systemctl is-active --quiet n8n-lego; then
     say "service running — http://localhost:$PORT"
   else
