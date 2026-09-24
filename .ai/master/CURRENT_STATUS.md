@@ -37,7 +37,7 @@ is the row marked as such.
 
 ## Milestone state
 
-- **Current:** `P2.27` — Contract-Driven Pluggable Runtime & Security Foundation (**in-progress**)
+- **Current:** `P2.27` — Contract-Driven Pluggable Runtime & Security Foundation (**complete**)
 - **Previous complete:** `P2.26`
 - **Why next:** P2.16 Agent Machine / execution foundation; P2.17 Agent Machine Runtime Foundation; P2.18 Universal Transport & Envelope Kernel; P2.19 Artifact, Approval & Audit Foundation; P2.21 Runtime Adapter & Harness Stack; P2.22 Node Compatibility & Portability; P2.24 Token & Usage - honest accounting; P2.25 External provider integration - the first real adapters; P2.26 Provider, Workspace & GitHub Integration + Foundation Readiness
 - **Owns:** tiny Core kernel with the reserved core responsibilities (bootstrap, registries, resolvers, policy, lifecycle, supervisor, primitives); plugin registry + contract resolver + version compatibility; capability/security policy with deny-by-default permission primitive; plugin lifecycle + supervisor (DISCOVERED..QUARANTINED) with quarantine; four runtime classes: in-process, wasm, isolated-process, remote; secret broker: scoped short-lived secrets, one operation, never plugin-owned state; tenant security context + plugin resource budgets (declared and enforced); circuit breaker + deadline propagation + contract replay fixtures; side-by-side upgrade/rollback + supply-chain admission; frontend plugin boundary (public extension points vs sandboxed frame/origin + message contract)

@@ -1565,7 +1565,7 @@
       "id": "P2.27",
       "title": "Contract-Driven Pluggable Runtime & Security Foundation",
       "phase": "F",
-      "status": "in-progress",
+      "status": "complete",
       "owner": "manager",
       "backendOwner": "per milestone assignment",
       "frontendOwner": "agent-1",
@@ -1643,16 +1643,27 @@
         "commit": "d15a9538b1899e9fd2ea9d5bd37d3fd26ecc1943",
         "role": "protected main where the P2.27 reservation was recorded during P2.26 — implementation starts only via a future P2.27 Master Prompt"
       },
-      "finishEvidence": null,
+      "finishEvidence": {
+        "protectedMain": "7d4eae8d34f70eb03ec413486a5f5c5318048d4d",
+        "pr": 197,
+        "mergeCommit": "7d4eae8d34f70eb03ec413486a5f5c5318048d4d",
+        "mergeEvidence": "slices P2.27.0-P2.27.10 merged via PRs #183, #185, #186, #187, #188, #189, #190, #192, #193, #195, #197; final slice P2.27.10 (frontend boundary) and the completion point = PR #197 → 7d4eae8d, post-merge verified",
+        "role": "post-merge verified protected-main completion"
+      },
       "currentCommitReference": "arena/p2.27-plugin-runtime",
       "nextMilestone": "P2.17+",
       "reconciliation": {
         "state": "AUTHORIZED 2026-09-24 by the dedicated P2.27 Master Prompt: implementation under way in slices P2.27.0-P2.27.10 from protected main 20ae0c1a (baseline corrected per Master Prompt section 3, precedent Issue #76); manager remains architecture-and-milestone authority (section 55 escalation)",
-        "owner": "manager"
+        "owner": "manager",
+        "historical": true,
+        "resolution": {
+          "note": "AUTHORIZED 2026-09-24 by the dedicated P2.27 Master Prompt; implemented in slices P2.27.0-P2.27.10, each merged green on protected main and post-merge verified; finishEvidence names PR #197 → 7d4eae8d. The reservation text above is preserved as history, not rewritten.",
+          "completedVia": "PR #197"
+        }
       },
       "verificationEvidence": {
-        "local": "in progress: slice P2.27.0 preflight records baseline reconciliation, dependency/ownership/contract inventory and the slice plan in docs/n8n-lego/evidence/P2.27-PLUGIN-RUNTIME-EVIDENCE.md; per-slice validation continues until P2.27.10",
-        "official": "PENDING — official completion evidence is recorded only when P2.27.10 merges on protected main; no completion is claimed before that",
+        "local": "post-merge on 7d4eae8d (dirty 0): 7/7 gates, plugin suites 130/130, backend 1791/1794 (FAIL==3 pre-existing types/nodes), frontend 418/419 (1 skipped pre-existing), contract-lock 76 rows with lego.plugin-runtime@0.10.0 zero drift, .ai regen green; every slice P2.27.0-P2.27.10 carries its own post-merge verification in docs/n8n-lego/evidence/P2.27-PLUGIN-RUNTIME-EVIDENCE.md",
+        "official": "P2.27.10 merged via PR #197 → 7d4eae8d: every hard check-run green except the pre-existing Level 0 cargo-fmt (standing exception; crates/ fmt untouched); earlier slice PRs #183-#195 merged with the same standing exception, including the recorded self-hosted runner shutdown flake on #192 (rerun green)",
         "evidencePath": "docs/n8n-lego/evidence/P2.27-PLUGIN-RUNTIME-EVIDENCE.md"
       }
     },

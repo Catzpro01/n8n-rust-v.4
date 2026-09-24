@@ -508,7 +508,9 @@ test('every P2.16–P2.25 milestone is still complete with intact start/finish e
 test('P2.27 is the current administrative milestone with authorized implementation and a terminating chain', () => {
   const p227 = BY_ID.get('P2.27');
   assert.ok(p227, 'the reservation row exists');
-  assert.equal(p227.status, 'in-progress', 'current administrative milestone — implementation authorized by the dedicated P2.27 Master Prompt (2026-09-24)');
+  assert.equal(p227.status, 'complete', 'closed on protected main via PR #197 (completion transition: slices P2.27.0-P2.27.10 all merged and post-merge verified)');
+  assert.equal(p227.finishEvidence.protectedMain, '7d4eae8d34f70eb03ec413486a5f5c5318048d4d');
+  assert.equal(p227.finishEvidence.pr, 197, 'the finish evidence names the final slice PR');
   assert.match(p227.implementationBoundary, /AUTHORIZED by the dedicated P2\.27 Master Prompt/, 'the reservation is lifted by the dedicated prompt');
   assert.ok(!/NO P2\.27 IMPLEMENTATION IS STARTED/.test(p227.implementationBoundary), 'the lifted boundary no longer claims zero implementation');
   assert.ok(p227.deliverables.length >= 5);
