@@ -1,0 +1,66 @@
+{
+  "schemaVersion": "1.0",
+  "objectType": "Decision",
+  "objectId": "DEC-0017",
+  "revision": 1,
+  "createdAt": "2026-09-25T10:43:30Z",
+  "updatedAt": "2026-09-25T10:43:30Z",
+  "events": [],
+  "state": "ACTIVE",
+  "category": "WORKFORCE",
+  "title": "Git-native task model: Arena is the agent runtime, the agent branch holds the task",
+  "problem": "#295 built a session runtime on top of Arena (session registry, enrollment, HTTP transport, ACK and heartbeat protocols, assignment inbox, worker daemon, runtime server; PR #296). An Arena session already is an agent runtime, so this layer duplicates it, adds infrastructure every agent would have to run, and never reached a real Arena session. DEC-0010 also kept every task unbound from any agent, so an agent entering the repository could not find 'its' work without that runtime.",
+  "options": [
+    {
+      "id": "A-git-native",
+      "summary": "Arena = agent runtime, arena/agent-NN = agent workspace, repository = control plane, GitHub = code authority. The Manager writes one .arena/task.md on the agent's branch; that file is the only task authority (statuses UNASSIGNED, ASSIGNED, WORKING, BLOCKED, READY_FOR_REVIEW, COMPLETED). Agents read .arena/RULES.md, AGENT_RULES.md and the task, work, test, commit and push; the Manager monitors all agent branches, reviews, squash-integrates accepted work into the one Slice PR, merges per DEC-0014/DEC-0015 and marks COMPLETED with the merge SHA. Hybrid ownership: a task stays with its owner and the Manager may reassign it with a reason when the owner is inactive, carrying the previous commits."
+    },
+    {
+      "id": "B-session-runtime",
+      "summary": "Merge the #295 session runtime (PR #296) and require every agent to register, heartbeat and receive work through runtime-serve and the worker daemon."
+    },
+    {
+      "id": "C-engine-authority",
+      "summary": "Keep the workforce event store on arena-manager as task authority and render task files as views."
+    }
+  ],
+  "selectedOption": "A-git-native",
+  "rationale": "Owner decision in chat on 2026-09-25: 'Arena sudah menjadi runtime agent. Git branch menjadi workspace agent. Manager mengatur pekerjaan melalui repository. GitHub menjadi sumber kebenaran.' The owner closed PR #296 without merge, chose task files as the single authority, placed each agent's task file on that agent's own branch, and chose hybrid ownership (owned by the assignee, reassignable by the Manager when the agent is inactive). A new agent needs nothing but git: open the branch, read the rules, read the task, work. B adds infrastructure that duplicates Arena and was never verified against a real session. C keeps two places that describe a task. Kept unchanged: Manager/Agent-01..10 roles, milestone register and slice numbering (no new milestone numbers), evidence, Manager reconciliation, main protection, DEC-0014 (one PR per Slice, 8 gates), DEC-0015 (runner verification), DEC-0016 (Manager-executed work when no agent is available), and the shared pool of 5 Windows + 5 WSL runners from DEC-0010 (a slot is not bound to a runner class). The workforce event store on arena-manager is no longer the task authority; its engine code stays in the repository as a library until a separate follow-up task reduces it.",
+  "scope": {
+    "programs": [
+      "GOVERNANCE"
+    ],
+    "slices": [],
+    "domains": [],
+    "surfaces": []
+  },
+  "authority": {
+    "decidedBy": "OWNER",
+    "managerOnly": false,
+    "humanEscalation": true,
+    "proposedBy": "MANAGER-01"
+  },
+  "evidence": [],
+  "evidenceRefs": [],
+  "sources": {
+    "issues": [
+      295,
+      256
+    ],
+    "prs": [
+      296
+    ],
+    "commits": [],
+    "requests": []
+  },
+  "supersedes": "DEC-0010",
+  "supersededBy": null,
+  "promotion": {
+    "canonical": false,
+    "mainPath": null,
+    "mainCommitSha": null,
+    "promotedAt": null,
+    "promotedBy": null
+  },
+  "reason": null
+}

@@ -1,3 +1,10 @@
+> **DEC-0017 (berlaku):** Arena adalah runtime agent, branch `arena/agent-NN` adalah workspace agent,
+> dan `.arena/task.md` di branch agent adalah satu-satunya otoritas task agent tersebut. Mulai dari
+> `.arena/RULES.md`, `.arena/AGENT_RULES.md`, `.arena/MANAGER_RULES.md` dan `.arena/WORKFLOW.md`.
+> Bagian di bawah yang menyebut Supabase lease/heartbeat, Arena Bridge & Executor, pola branch
+> `arena/<agent-id>/<task-id>` atau PR langsung oleh agen adalah catatan historis dan tidak lagi berlaku.
+> `.arena/tasks/` dan `.arena/progress/` di `main` adalah arsip historis.
+
 # ARENA CONTROL PLANE & GOVERNANCE ARCHITECTURE
 
 ## 1. Single Source of Truth Hierarchy

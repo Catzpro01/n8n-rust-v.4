@@ -1,5 +1,14 @@
 # Workforce control plane
 
+> **DEC-0017 (owner, supersedes DEC-0010): git-native task model.** Arena is the agent runtime, `arena/agent-NN`
+> is the agent workspace, and `.arena/task.md` on that branch is the only task authority (UNASSIGNED, ASSIGNED,
+> WORKING, BLOCKED, READY_FOR_REVIEW, COMPLETED). Agents follow `.arena/RULES.md` + `.arena/AGENT_RULES.md`;
+> the Manager follows `.arena/MANAGER_RULES.md` and uses `npm run arena:task -- status|assign|reassign|rework|integrate|complete`
+> (`tools/workforce/src/git-tasks.mjs`). No session runtime, server, heartbeat or daemon is required (PR #296 closed
+> unmerged). The event store described below is no longer the task authority; the engine code remains as a library
+> until a follow-up task reduces it. DEC-0014, DEC-0015 and DEC-0016 still apply.
+
+
 Implementation of the Manager workforce specification #259–#267, authorized by #268 (DEC-0001).
 There is **one Manager system** plus ten worker slots `AGENT-01..AGENT-10`. The registry, task
 graph, reservations, assignment, leases, scheduler, matcher, merge queue, evidence, recovery,

@@ -54,6 +54,10 @@ test('canonical decision records are schema-valid and consistent', () => {
   assert.ok(d15 && d15.state === 'ACTIVE' && d15.authority.decidedBy === 'OWNER' && d15.sources.issues.includes(285) && d15.selectedOption.startsWith('B-'), 'DEC-0015 records the owner two-phase rule, model B (#285)');
   const d16 = r.records.find((d) => d.objectId === 'DEC-0016');
   assert.ok(d16 && d16.state === 'ACTIVE' && d16.selectedOption === 'A-manager-executes-slice-tasks', 'DEC-0016 records the Manager-executed Slice task path');
+  const d17 = r.records.find((d) => d.objectId === 'DEC-0017');
+  assert.ok(d17 && d17.state === 'ACTIVE' && d17.authority.decidedBy === 'OWNER' && d17.selectedOption === 'A-git-native' && d17.supersedes === 'DEC-0010', 'DEC-0017 records the owner git-native task model');
+  const d10 = r.records.find((d) => d.objectId === 'DEC-0010');
+  assert.ok(d10.state === 'SUPERSEDED' && d10.supersededBy === 'DEC-0017' && d10.selectedOption === 'open-shared', 'DEC-0010 is superseded, its record otherwise kept');
   for (const d of r.records) assert.ok(Date.parse(d.createdAt) <= Date.parse(d.updatedAt), `${d.objectId}: createdAt <= updatedAt`);
   for (const d of r.records.filter((x) => x.promotion.canonical)) assert.ok(Date.parse(d.createdAt) <= Date.parse(d.promotion.promotedAt), `${d.objectId}: created before promotion`);
   for (const id of ['DEC-0001', 'DEC-0002', 'DEC-0003', 'DEC-0004', 'DEC-0005', 'DEC-0006', 'DEC-0007', 'DEC-0008', 'DEC-0009', 'DEC-0010', 'DEC-0011', 'DEC-0012', 'DEC-0013', 'DEC-0014', 'DEC-0015', 'DEC-0016']) {
