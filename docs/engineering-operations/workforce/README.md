@@ -67,6 +67,9 @@ A create uses `objectId: "NEW"` to get an allocated id, or passes an explicit id
 
 ## Key rules
 
+- **Manager-executed tasks (DEC-0011):** governance work the Manager does itself (never assigned to
+  a slot) completes with `TASK_COMPLETE_MANAGER_EXECUTED`. It requires the same VERIFIED COMMIT, CI
+  and MAIN_VERIFICATION evidence; a COMMIT anchored to the merge SHA replaces the merge-queue item.
 - **Open slots, shared runners (DEC-0010):** `AGENT-01..10` are capacity, not identities. No task,
   PR or action is bound to a particular slot; the scheduler gives any READY task to any idle eligible
   slot. Slots register with `runnerClass: ANY`, and the 5 Windows + 5 WSL runners are one pool.

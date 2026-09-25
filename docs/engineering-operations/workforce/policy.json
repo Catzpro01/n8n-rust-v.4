@@ -36,7 +36,7 @@
       "initial": "UNASSIGNED",
       "terminal": ["COMPLETED", "CANCELLED", "SUPERSEDED"],
       "transitions": {
-        "UNASSIGNED": ["CLAIMED", "SUPERSEDED"],
+        "UNASSIGNED": ["CLAIMED", "SUPERSEDED", "COMPLETED"],
         "CLAIMED": ["ACKNOWLEDGED", "UNASSIGNED", "CANCELLED"],
         "ACKNOWLEDGED": ["PREPARING", "BLOCKED", "CANCELLED"],
         "PREPARING": ["WORKING", "BLOCKED", "CANCELLED"],
@@ -162,6 +162,7 @@
     "TASK_MERGE_START":       { "target": "Task", "kind": "transition", "roles": { "MANAGER": "any", "SYSTEM": "allowlist" }, "to": "MERGING" },
     "TASK_VERIFY_START":      { "target": "Task", "kind": "transition", "roles": { "MANAGER": "any", "SYSTEM": "allowlist" }, "to": "VERIFYING" },
     "TASK_COMPLETE":          { "target": "Task", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "COMPLETED" },
+    "TASK_COMPLETE_MANAGER_EXECUTED": { "target": "Task", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "COMPLETED", "from": ["UNASSIGNED"], "governance": true },
     "TASK_FREEZE":            { "target": "Task", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "FROZEN" },
     "TASK_UNFREEZE":          { "target": "Task", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "WORKING", "from": ["FROZEN"] },
     "TASK_CANCEL":            { "target": "Task", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "CANCELLED" },
@@ -290,6 +291,13 @@
     "starvationAlertDeferrals": 5,
     "workerIdleAlertHours": 24,
     "heavyBuildCapacityClasses": ["HEAVY"]
+  },
+  "managerExecuted": {
+    "decision": "DEC-0011",
+    "command": "TASK_COMPLETE_MANAGER_EXECUTED",
+    "edge": ["UNASSIGNED", "COMPLETED"],
+    "requiredEvidenceTypes": ["COMMIT", "CI", "MAIN_VERIFICATION"],
+    "note": "Governance work the Manager executes itself (never assigned to a worker slot). The merge-queue requirement is replaced by a VERIFIED COMMIT anchored to the merge SHA; evidence requirements are not reduced."
   },
   "runnerPool": {
     "decision": "DEC-0010",

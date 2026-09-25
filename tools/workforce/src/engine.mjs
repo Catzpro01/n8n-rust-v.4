@@ -687,6 +687,30 @@ const HANDLERS = {
     ctx.syncAgent(task.owner?.agentId);
   },
 
+  TASK_COMPLETE_MANAGER_EXECUTED(ctx) {
+    // DEC-0011: Manager-executed governance work. Same evidence bar as TASK_COMPLETE; the MERGED
+    // merge-queue item is replaced by a VERIFIED COMMIT anchored to the declared merge SHA.
+    const task = taskOf(ctx);
+    const spec = ctx.policy.managerExecuted;
+    if (!spec) fail('POLICY_DENIED', 'policy.managerExecuted is not configured');
+    if (task.owner) fail('POLICY_DENIED', `${task.objectId} was assigned to ${task.owner.agentId}; use TASK_COMPLETE`);
+    const tasks = new Map(ctx.tx.list('Task').map((t) => [t.objectId, t]));
+    const blocking = blockingDependencies(task, tasks);
+    if (blocking.length) fail('DEPENDENCY_BLOCKED', `required dependencies incomplete: ${blocking.map((b) => `${b.taskId}(${b.state})`).join(', ')}`, { blocking });
+    const mergeSha = ctx.p.mergeSha;
+    if (!/^[0-9a-f]{40}$/.test(mergeSha ?? '')) fail('EVIDENCE_INSUFFICIENT', 'payload.mergeSha (40-hex) is required');
+    const ev = verifiedEvidence(ctx, task.objectId).filter((e) => e.type !== 'CLAIM');
+    const required = [...new Set([...spec.requiredEvidenceTypes, ...(task.acceptance.requiredEvidenceTypes ?? [])])].filter((t) => t !== 'CLAIM');
+    const missing = required.filter((t) => !ev.some((e) => e.type === t));
+    if (missing.length) fail('EVIDENCE_INSUFFICIENT', `missing VERIFIED evidence: ${missing.join(', ')}`, { missing });
+    if (!ev.some((e) => e.type === 'COMMIT' && e.subject?.subjectId === mergeSha)) fail('EVIDENCE_INSUFFICIENT', 'no VERIFIED COMMIT evidence anchored to payload.mergeSha');
+    const mainEv = ev.find((e) => e.type === 'MAIN_VERIFICATION' && ctx.policy.completion.mainVerificationTrust.includes(e.trustLevel) && e.result.status === 'PASS');
+    if (!mainEv) fail('EVIDENCE_INSUFFICIENT', 'fresh-main verification evidence (MAIN_VERIFICATION, trust >= MAIN_VERIFIED, PASS) is required');
+    task.current.completedMainSha = mainEv.subject.subjectId;
+    if (task.execution) { task.execution.hold = false; task.execution.decisionPending = false; }
+    ctx.transition(task, 'COMPLETED', { eventType: 'TASK_COMPLETED', evidenceIds: ev.map((e) => e.objectId) });
+  },
+
   TASK_FREEZE(ctx) {
     const task = taskOf(ctx);
     ctx.transition(task, 'FROZEN', { eventType: 'TASK_FROZEN' });

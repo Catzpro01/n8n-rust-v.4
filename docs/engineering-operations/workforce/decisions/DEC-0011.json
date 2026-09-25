@@ -1,0 +1,68 @@
+{
+  "schemaVersion": "1.0",
+  "objectType": "Decision",
+  "objectId": "DEC-0011",
+  "revision": 1,
+  "createdAt": "2026-09-25T00:44:40Z",
+  "updatedAt": "2026-09-25T00:44:40Z",
+  "events": [],
+  "state": "ACTIVE",
+  "category": "WORKFORCE",
+  "title": "Completion path for Manager-executed governance tasks",
+  "problem": "TASK_COMPLETE requires a worker assignment, lease and MERGED merge-queue item. Governance tasks the Manager executes itself (TASK-0001..0003: PRs #273, #274, branch creation) could never reach COMPLETED, so the operational state reported finished work as held (JRN-0011).",
+  "options": [
+    {
+      "id": "manager-executed",
+      "summary": "Add TASK_COMPLETE_MANAGER_EXECUTED: Manager-only, UNASSIGNED -> COMPLETED for never-assigned tasks, same VERIFIED COMMIT/CI/MAIN_VERIFICATION bar, COMMIT anchored to the merge SHA replaces the merge-queue item"
+    },
+    {
+      "id": "fake-worker",
+      "summary": "Assign Manager work to a worker slot and drive the worker lifecycle (rejected: fabricates worker execution)"
+    }
+  ],
+  "selectedOption": "manager-executed",
+  "rationale": "Keeps the completion chain honest without inventing worker activity. The evidence bar is not lowered: VERIFIED COMMIT (anchored to the merge SHA), CI and MAIN_VERIFICATION at MAIN_VERIFIED with PASS are all required, dependencies must be COMPLETED, and tasks ever assigned to a worker must use TASK_COMPLETE. The single added edge UNASSIGNED -> COMPLETED is only reachable through this command (TASK_COMPLETE still requires a MERGED merge-queue item).",
+  "scope": {
+    "programs": [
+      "GOVERNANCE"
+    ],
+    "slices": [],
+    "domains": [],
+    "surfaces": []
+  },
+  "authority": {
+    "decidedBy": "MANAGER-01",
+    "managerOnly": true,
+    "humanEscalation": false,
+    "proposedBy": "MANAGER-01"
+  },
+  "evidence": [],
+  "evidenceRefs": [
+    "docs/engineering-operations/workforce/policy.json#managerExecuted",
+    "tools/workforce/src/engine.mjs"
+  ],
+  "sources": {
+    "issues": [
+      259,
+      265,
+      268
+    ],
+    "prs": [
+      273,
+      274,
+      275
+    ],
+    "commits": [],
+    "requests": []
+  },
+  "supersedes": null,
+  "supersededBy": null,
+  "promotion": {
+    "canonical": false,
+    "mainPath": null,
+    "mainCommitSha": null,
+    "promotedAt": null,
+    "promotedBy": null
+  },
+  "reason": null
+}

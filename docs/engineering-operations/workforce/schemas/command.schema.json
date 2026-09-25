@@ -81,6 +81,7 @@
         "TASK_BLOCK",
         "TASK_CANCEL",
         "TASK_COMPLETE",
+        "TASK_COMPLETE_MANAGER_EXECUTED",
         "TASK_CREATE",
         "TASK_DEFER",
         "TASK_FREEZE",
