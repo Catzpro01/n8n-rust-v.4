@@ -2756,9 +2756,10 @@
               "title": "Shadow compatibility path: six-dimension comparison with candidate side effects always suppressed",
               "purpose": "Compare reference (canonical n8n) against candidate (optimized P4) on route selection, status, response shape, admission, error and observable ordering, so a route-compiler, adaptive-admission, matcher-optimization or upgrade change can be proven compatible before it is trusted. Both sides are pure functions that only declare side effects; run_shadow always executes the reference's declared effects and always suppresses the candidate's, so a real external side effect is never duplicated. Default is Disabled, which consults only the canonical path and leaves n8n behaviour untouched.",
               "weight": 24,
-              "status": "planned",
+              "status": "completed",
               "evidence": "crates/n8n-common/src/innovation.rs \u2014 4 tests in innovation::tests: shadow_disabled_is_default_and_runs_canonical_only (candidate closure panics if invoked), shadow_compares_all_six_dimensions (each of the six dimensions detected individually and named in divergences()), shadow_never_duplicates_real_external_side_effects (ReferenceOnly and DualRun both execute exactly one canonical effect and suppress two candidate effects), shadow_reports_are_round_trip_serializable. Merged in a32e9b80.",
-              "reference": "crates/n8n-common/src/innovation.rs (ShadowMode, ShadowOutcome, ShadowVerdict, compare_shadow, run_shadow, ShadowReport, DeclaredSideEffect)"
+              "reference": "crates/n8n-common/src/innovation.rs (ShadowMode, ShadowOutcome, ShadowVerdict, compare_shadow, run_shadow, ShadowReport, DeclaredSideEffect)",
+              "completedAt": "2026-09-26T00:06:00Z"
             },
             {
               "id": "CP-03",
@@ -2779,8 +2780,8 @@
               "reference": "crates/n8n-common/src/innovation.rs (PlaneKind, PlaneConfig, IngressPlane, PlaneAdmission, PlaneStats, PlaneTopology)"
             }
           ],
-          "updatedAt": "2026-09-25T21:31:10Z",
-          "latestUpdate": "CP-01 complete (34%). Predictive admission controller delivered and the P4.8 adapt_limits no-op repaired. The controller observes all eight required signals \u2014 latency, queue depth, CPU pressure, memory pressure, admission rate, completion rate, error rate and recent burst shape \u2014 and adjusts only the five declared knobs. Hard ceilings are proven immutable across 64 randomised pressure steps; queue budget is proven bounded by the observed queue capacity so an unbounded queue cannot form; AdmissionTargets is proven to carry no security/permission/authentication field; and stale telemetry is proven to fall back conservatively rather than aggressively. Hysteresis stops target flapping while still letting a genuine jump through, and the first observation is no longer swallowed by the deadband.",
+          "updatedAt": "2026-09-25T21:31:18Z",
+          "latestUpdate": "CP-02 complete (24%, cumulative 58%). Shadow compatibility path delivered. Reference and candidate outcomes are compared on all six required dimensions \u2014 route selection, status, response shape, admission, error and observable ordering \u2014 and every dimension is individually detected and named. Both sides are pure functions that only declare side effects: run_shadow always executes the reference's declared effects and always suppresses the candidate's, so a real external side effect is never duplicated in either ReferenceOnly or DualRun mode. Default is Disabled, which consults only the canonical path and leaves n8n behaviour untouched; the disabled-mode test asserts the candidate closure is never invoked at all.",
           "mergeSha": null,
           "issue": 111,
           "evidence": null,
