@@ -25,7 +25,8 @@ class SupabaseProvider:
 
     def _request(self, endpoint: str, method: str = "GET", data: Optional[Dict[str, Any]] = None, is_rpc: bool = False) -> Any:
         base_url, key = self._get_creds()
-        prefix = "rpc" if is_rpc else "rest/v1"
+        # PostgREST exposes functions under /rest/v1/rpc/<name> (recovered from arena-manager 7d8157c5).
+        prefix = "rest/v1/rpc" if is_rpc else "rest/v1"
         url = f"{base_url}/{prefix}/{endpoint.lstrip('/')}"
 
         headers = {
@@ -211,7 +212,9 @@ class SupabaseProvider:
 
         rpc_args = {
             "p_agent_id": agent_id,
-            "p_worker_state": params.get("status", "AVAILABLE"),
+            # Never default to AVAILABLE: NULL tells public.agent_heartbeat to keep the stored state
+            # (e.g. WORKING), so a heartbeat cannot release a busy worker (recovered from arena-manager 50715c9c).
+            "p_worker_state": params.get("status") or params.get("worker_state"),
             "p_current_task_id": params.get("current_task_id"),
             "p_active_build_slots": params.get("active_build_slots", 0),
             "p_active_test_slots": params.get("active_test_slots", 0),
