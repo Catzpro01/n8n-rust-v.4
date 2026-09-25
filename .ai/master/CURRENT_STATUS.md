@@ -13,11 +13,11 @@ document is right and the prose is stale.
 | Protected main baseline | `fc54c8c2bfc2557ddecf466e662869f197fc9595` |
 | Agent 1 branch | `main` |
 | Agent 2 branch | `main` |
-| **Latest completed slice** | **P9-S01** |
-| **Realtime Delivery Progress** | **88.4%** (P0–P11 checkpoint-weighted; future programs excluded; no checkpoint model contributes 0) |
-| **Slice Completion** | **88.4%** (129/146 implemented; verifying and blocked contribute 0) |
+| **Latest completed slice** | **P3-S01** |
+| **Realtime Delivery Progress** | **89.0%** (P0–P11 checkpoint-weighted; future programs excluded; no checkpoint model contributes 0) |
+| **Slice Completion** | **89.0%** (130/146 implemented; verifying and blocked contribute 0) |
 | **Active / verifying slices** | **—** |
-| Planned queue | P3-S01, P4-S01, P6-S01, P6-S02, P2-S02, P2-S03 |
+| Planned queue | P4-S01, P6-S01, P6-S02, P2-S02, P2-S03 |
 | Blocked slices | P5-M02, P5-M05, P5-M06, P5-M10 |
 | Historical P2 ladder pointer | P2.27 (history, not active work) |
 | Previous completed P2 milestone | P2.26 |
