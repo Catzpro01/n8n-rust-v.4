@@ -1,7 +1,7 @@
 {
   "objectType": "Task",
   "objectId": "TASK-0019",
-  "state": "UNASSIGNED",
+  "state": "COMPLETED",
   "jobId": null,
   "issue": 85,
   "program": "GOVERNANCE",
@@ -73,7 +73,7 @@
     "handoffId": null,
     "reason": null,
     "supersededBy": null,
-    "completedMainSha": null
+    "completedMainSha": "944d4fc51001f9ffd13a1c0ccfadd4165ea12aa9"
   },
   "history": {
     "reassignedCount": 0,
@@ -86,10 +86,11 @@
   },
   "runnerVerification": null,
   "schemaVersion": "1.0",
-  "revision": 1,
+  "revision": 2,
   "createdAt": "2026-09-25T07:28:01Z",
-  "updatedAt": "2026-09-25T07:28:01Z",
+  "updatedAt": "2026-09-25T07:38:12Z",
   "events": [
-    "EVT-001100"
+    "EVT-001100",
+    "EVT-001120"
   ]
 }

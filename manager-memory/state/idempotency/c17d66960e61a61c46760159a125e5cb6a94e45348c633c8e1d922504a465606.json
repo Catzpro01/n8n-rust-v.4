@@ -1,0 +1,21 @@
+{
+  "payloadDigest": "sha256:4efbd0c1c9b191d290ebf8ad91e53dbd54a967da70eab3d83a14dd82a4d9831d",
+  "committedAt": "2026-09-25T07:38:12Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-complete-task-0019",
+    "objectType": "Task",
+    "objectId": "TASK-0019",
+    "previousRevision": 1,
+    "newRevision": 2,
+    "resultingState": "COMPLETED",
+    "eventId": "EVT-001120",
+    "eventIds": [
+      "EVT-001120"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [],
+    "warnings": [],
+    "data": {}
+  }
+}

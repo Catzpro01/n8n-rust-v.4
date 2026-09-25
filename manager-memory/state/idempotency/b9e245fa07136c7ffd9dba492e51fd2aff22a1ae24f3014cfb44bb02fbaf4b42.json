@@ -1,0 +1,21 @@
+{
+  "payloadDigest": "sha256:9353a24cdbe5545308776c98a6903cf3b3716d20b87f484393a497adde4a16a7",
+  "committedAt": "2026-09-25T07:38:12Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-jrn-p5-m01-complete",
+    "objectType": "JournalEntry",
+    "objectId": "JRN-0035",
+    "previousRevision": 0,
+    "newRevision": 1,
+    "resultingState": null,
+    "eventId": "EVT-001121",
+    "eventIds": [
+      "EVT-001121"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [],
+    "warnings": [],
+    "data": {}
+  }
+}

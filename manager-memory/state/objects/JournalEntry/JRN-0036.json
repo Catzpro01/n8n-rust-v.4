@@ -1,0 +1,19 @@
+{
+  "objectType": "JournalEntry",
+  "objectId": "JRN-0036",
+  "kind": "FACT",
+  "summary": "SLICE_COMPLETE gate 8 accepts only the register at the delivery merge SHA or the verified main SHA. P5-M01 was completed against 27191091, where the delivery PR #289 did update the register (re-plan, in-progress). The `implemented` flip came in follow-up PR #290 (944d4fc5). Improvement candidate: accept a main descendant of the verified SHA, or flip to implemented in the delivery PR under an explicit \"pending verification\" semantic. Governance change needed; not done.",
+  "author": "MANAGER-01",
+  "refs": [
+    "SLICE-0001",
+    "PR#289",
+    "PR#290"
+  ],
+  "schemaVersion": "1.0",
+  "revision": 1,
+  "createdAt": "2026-09-25T07:38:45Z",
+  "updatedAt": "2026-09-25T07:38:45Z",
+  "events": [
+    "EVT-001124"
+  ]
+}

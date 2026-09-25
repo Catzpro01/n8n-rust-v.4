@@ -1,7 +1,7 @@
 {
   "objectType": "Task",
   "objectId": "TASK-0017",
-  "state": "VERIFYING",
+  "state": "COMPLETED",
   "jobId": null,
   "issue": 85,
   "program": "P5",
@@ -79,9 +79,14 @@
     "nextAction": null,
     "blocker": null,
     "handoffId": null,
-    "reason": null,
+    "reason": {
+      "code": "SLICE_COMPLETED",
+      "summary": "All 8 gates hold (DEC-0014): the delivery PR updated the register at its merge SHA; runner verification PASS (DEC-0015). Register marked implemented in follow-up PR #290 (944d4fc5).",
+      "actor": "MANAGER-01",
+      "refs": []
+    },
     "supersededBy": null,
-    "completedMainSha": null
+    "completedMainSha": "2719109169e99714e70937767e9a15af65bd640e"
   },
   "history": {
     "reassignedCount": 0,
@@ -94,13 +99,14 @@
   },
   "runnerVerification": null,
   "schemaVersion": "1.0",
-  "revision": 4,
+  "revision": 5,
   "createdAt": "2026-09-25T07:01:50Z",
-  "updatedAt": "2026-09-25T07:13:19Z",
+  "updatedAt": "2026-09-25T07:38:24Z",
   "events": [
     "EVT-001058",
     "EVT-001059",
     "EVT-001077",
-    "EVT-001081"
+    "EVT-001081",
+    "EVT-001122"
   ]
 }

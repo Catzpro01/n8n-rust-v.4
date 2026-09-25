@@ -1,0 +1,21 @@
+{
+  "payloadDigest": "sha256:06a2d5e37fcb7e996ca197cfe53f4f2e7428076de401a7095a8d9a773c8a2d74",
+  "committedAt": "2026-09-25T07:38:45Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-jrn-gate8-register-sha",
+    "objectType": "JournalEntry",
+    "objectId": "JRN-0036",
+    "previousRevision": 0,
+    "newRevision": 1,
+    "resultingState": null,
+    "eventId": "EVT-001124",
+    "eventIds": [
+      "EVT-001124"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [],
+    "warnings": [],
+    "data": {}
+  }
+}

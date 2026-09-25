@@ -1,0 +1,35 @@
+{
+  "objectType": "Evidence",
+  "objectId": "EVD-0126",
+  "state": "VERIFIED",
+  "taskId": "TASK-0019",
+  "type": "CI",
+  "trustLevel": "CI_VERIFIED",
+  "subject": {
+    "subjectDigest": "7e473cc087a65dc37149491ceaeacda32cc5d340",
+    "repository": "Catzpro01/n8n-rust-v.4",
+    "prNumber": 290,
+    "url": null,
+    "subjectType": "WORKFLOW_RUN",
+    "subjectId": "36107785807"
+  },
+  "result": {
+    "metrics": {},
+    "failureClass": null,
+    "status": "PASS",
+    "summary": "ALL_GREEN: GitHub-hosted 3/3 PASS, self-hosted 7/7 PASS (runners online)"
+  },
+  "producedBy": "MANAGER-01",
+  "verifiedAt": "2026-09-25T07:38:12Z",
+  "verifiedBy": "MANAGER-01",
+  "reason": null,
+  "schemaVersion": "1.0",
+  "revision": 3,
+  "createdAt": "2026-09-25T07:38:12Z",
+  "updatedAt": "2026-09-25T07:38:12Z",
+  "events": [
+    "EVT-001114",
+    "EVT-001115",
+    "EVT-001116"
+  ]
+}

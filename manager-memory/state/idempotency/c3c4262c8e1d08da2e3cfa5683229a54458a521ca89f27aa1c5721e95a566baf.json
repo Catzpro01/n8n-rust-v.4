@@ -1,0 +1,21 @@
+{
+  "payloadDigest": "sha256:2b2b1588bb5fb328831c5f44465347e3bd9277c292724a532cf4854116e968d8",
+  "committedAt": "2026-09-25T07:38:12Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-ev-task-0019-commit-pub",
+    "objectType": "Evidence",
+    "objectId": "EVD-0125",
+    "previousRevision": 1,
+    "newRevision": 2,
+    "resultingState": "PUBLISHED",
+    "eventId": "EVT-001112",
+    "eventIds": [
+      "EVT-001112"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [],
+    "warnings": [],
+    "data": {}
+  }
+}
