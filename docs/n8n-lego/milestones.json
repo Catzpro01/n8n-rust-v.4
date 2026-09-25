@@ -2965,9 +2965,10 @@
               "title": "DELETE /rest/service-principals/:id: revoke with a tombstone",
               "purpose": "Revoke a service principal keeping a tombstone, so the credential is later reported REVOKED rather than UNKNOWN and the audit row survives. Revoking an unknown or already revoked id is a silent no-op, as upstream /rest/api-keys does, so the response never confirms that an id exists.",
               "weight": 15,
-              "status": "planned",
-              "evidence": "",
-              "reference": "apps/n8n-lego/src/auth/security/api-key.mjs (revokeWithTombstone)"
+              "status": "completed",
+              "evidence": "apps/n8n-lego/test/service-principal-routes.test.mjs \u2014 'revoke keeps a tombstone': after DELETE the credential authenticates as REVOKED rather than UNKNOWN (the tombstone is what makes the distinction), the record survives with revokedAt set and the audit row with it, an unknown or already revoked id is a silent no-op returning {success:false}, and a revoked principal leaves the redacted list without leaving the store. Merged in 0845c25f.",
+              "reference": "apps/n8n-lego/src/auth/security/api-key.mjs (revokeWithTombstone)",
+              "completedAt": "2026-09-25T20:22:48Z"
             },
             {
               "id": "CP-04",
@@ -2998,7 +2999,7 @@
               "requires": ["Level 0 (Check & Format)","Level 1 (Affected Tests)","Level 2 Workspace Tests (linux)","Level 2 Workspace Tests (windows)","Level 2 Conformance LEGO & Node Catalog","Post-Merge Verification & Branch Cleanup"]
             }
           ],
-          "updatedAt": "2026-09-25T20:22:46Z",
+          "updatedAt": "2026-09-25T20:22:48Z",
           "latestUpdate": "P5-M07: service-principal REST surface mounted (create once, redacted list, revoke tombstone, transfer rotates the credential); DEC-0023 closes the member boundary",
           "checkpointWeightBasis": "Five declared route operations. CP-01 carries 15 for the read pair (list + scopes); CP-02 carries 25 because it is the only route that mints a credential and must enforce the whole P5.7 create policy; CP-03 carries 15 for the tombstone semantics; CP-04 carries 20 for the six transfer invariants; CP-05 carries 15 for the end-to-end proof and manifest registration; CP-06 carries 10 for the DEC-0015 runner gate. 15+25+15+20+15+10 = 100. The weights come from the scope declared in P5-M07-EVIDENCE.md §1, not from effort, commit count or lines of code.",
           "mergeSha": null,
