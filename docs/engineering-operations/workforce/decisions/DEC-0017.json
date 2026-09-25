@@ -2,9 +2,9 @@
   "schemaVersion": "1.0",
   "objectType": "Decision",
   "objectId": "DEC-0017",
-  "revision": 1,
+  "revision": 2,
   "createdAt": "2026-09-25T10:43:30Z",
-  "updatedAt": "2026-09-25T10:43:30Z",
+  "updatedAt": "2026-09-25T10:53:46Z",
   "events": [],
   "state": "ACTIVE",
   "category": "WORKFORCE",
@@ -48,19 +48,22 @@
       256
     ],
     "prs": [
-      296
+      296,
+      297
     ],
-    "commits": [],
+    "commits": [
+      "953ddfbdc829c78d31db85254ff4a6002f026de5"
+    ],
     "requests": []
   },
   "supersedes": "DEC-0010",
   "supersededBy": null,
   "promotion": {
-    "canonical": false,
-    "mainPath": null,
-    "mainCommitSha": null,
-    "promotedAt": null,
-    "promotedBy": null
+    "canonical": true,
+    "mainPath": "docs/engineering-operations/workforce/decisions/DEC-0017.json",
+    "mainCommitSha": "953ddfbdc829c78d31db85254ff4a6002f026de5",
+    "promotedAt": "2026-09-25T10:53:46Z",
+    "promotedBy": "MANAGER-01"
   },
   "reason": null
 }
