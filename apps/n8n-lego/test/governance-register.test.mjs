@@ -112,8 +112,11 @@ const MUTATIONS = [
   ['a P24 top-level program', (r) => { r.programs.push({ ...r.programs[7], id: 'P24' }); }, /exactly P0/],
   ['a duplicate slice id', (r) => { r.programs[5].slices.push({ ...r.programs[5].slices.find((x) => x.id === 'P5-M09') }); }, /declared twice/],
   ['a verifying slice recorded as implemented before post-merge verification', (r) => {
-    r.programs[5].slices.find((x) => x.id === 'P5-M07').status = 'implemented';
-  }, /P5-M07: implemented without a 40-hex merge SHA/],
+    // The subject must still be un-merged, or the mutation is a no-op. Take the
+    // first queued slice rather than pinning an id that a later slice implements.
+    const queued = r.executionPointer.plannedQueue[0];
+    r.programs.flatMap((program) => program.slices).find((x) => x.id === queued).status = 'implemented';
+  }, /implemented without a 40-hex merge SHA/],
   ['an implemented P5-M08 whose merge SHA is deleted', (r) => {
     r.programs[5].slices.find((x) => x.id === 'P5-M08').mergeSha = null;
   }, /P5-M08: implemented without a 40-hex merge SHA/],
@@ -128,10 +131,15 @@ const MUTATIONS = [
   ['a queued slice that is not planned', (r) => { r.executionPointer.plannedQueue.push('P5-M03'); }, /queued slice P5-M03 is implemented/],
   ['a blocked slice without blockedBy', (r) => { delete r.programs[5].slices.find((x) => x.id === 'P5-M10').blockedBy; }, /P5-M10 does not record blockedBy/],
   ['a blocked slice missing from blockedSlices', (r) => { r.executionPointer.blockedSlices = []; }, /blocked slice P5-M02 is missing/],
-  ['a latest completed slice that is not implemented', (r) => { r.executionPointer.latestCompletedSlice.id = 'P5-M07'; }, /latestCompletedSlice P5-M07/],
+  ['a latest completed slice that is not implemented', (r) => {
+    const queued = r.executionPointer.plannedQueue[0];
+    r.executionPointer.latestCompletedSlice.id = queued;
+  }, /latestCompletedSlice .* must be implemented with merge SHA/],
   ['a pointer naming an unknown slice', (r) => { r.executionPointer.plannedQueue.push('P5-M99'); }, /unknown slice P5-M99/],
   ['a pointer whose authority is not main', (r) => { r.executionPointer.authority = 'arena-manager'; }, /authority must be main/],
-  ['a slice listed twice in the pointer', (r) => { r.executionPointer.blockedSlices.push('P5-M07'); }, /listed in both/],
+  ['a slice listed twice in the pointer', (r) => {
+    r.executionPointer.blockedSlices.push(r.executionPointer.plannedQueue[0]);
+  }, /listed in both/],
   // DEC-0020: main-owned milestone authority
   ['Main-Owned changed to Manager-Owned', (r) => { r.governance.milestoneAuthority.milestoneTruthOwner = 'arena-manager'; }, /milestoneTruthOwner must be "main"/],
   ['arena-manager declared canonical', (r) => { r.governance.milestoneAuthority.planningMemoryIsCanonical = true; }, /planningMemoryIsCanonical must be false/],
@@ -356,8 +364,10 @@ test('README projection lists current state, P5 ladder, recent slices and future
   assert.match(block, /\| `P5-M09` \|[^\n]*✅ Implemented \| 100\.0% \| 100\.0% \|/);
   assert.match(block, /_No verifying slice\._/);
   // The latest completed slice is the delivery record that survives the verifying block emptying.
-  assert.match(block, /#314/);
-  assert.match(block, /`c13ba6dc`/);
+  // Derived from the register, so it follows the queue instead of going stale.
+  const latest = REGISTER.executionPointer.latestCompletedSlice;
+  assert.match(block, new RegExp(`#${latest.pr}`));
+  assert.match(block, new RegExp(`\`${latest.mergeSha.slice(0, 8)}\``));
   assert.doesNotMatch(block, /\| `P5-M08` \|[^\n]*Verifying/);
 });
 
@@ -367,9 +377,9 @@ test('completion KPI is implemented/total and never counts verifying or blocked'
   assert.equal(tally.implemented, slices.filter((slice) => slice.status === 'implemented').length);
   assert.equal(tally.total, slices.length);
   assert.equal(tally.percent, percent1(tally.implemented, tally.total));
-  // Pin of the reconciled register (128 implemented / 152 recorded). Refresh it when a slice's
+  // Pin of the reconciled register (129 implemented / 152 recorded). Refresh it when a slice's
   // delivery state is reconciled; it exists so a silently-flipped status cannot pass unnoticed.
-  assert.equal(tally.percent, 84.2);
+  assert.equal(tally.percent, 84.9);
   const verifying = verifyingIndex(REGISTER);
   const m08 = slices.find((slice) => slice.id === 'P5-M08');
   assert.equal(displayStatus(m08, verifying), 'implemented');
@@ -379,13 +389,13 @@ test('completion KPI is implemented/total and never counts verifying or blocked'
   assert.equal(completionPercentForStatus('planned'), 0);
   const metrics = headlineMetrics(REGISTER);
   assert.equal(metrics.current.total, 146);
-  assert.equal(metrics.current.implemented, 127);
-  assert.equal(metrics.current.sliceCompletion, percent1(127, 146));
+  assert.equal(metrics.current.implemented, 128);
+  assert.equal(metrics.current.sliceCompletion, percent1(128, 146));
   assert.equal(metrics.future.total, 6);
   assert.equal(metrics.current.total + metrics.future.total, tally.total);
   const block = renderReadmeMilestoneSection(REGISTER);
   assert.match(block, new RegExp(`\\*\\*${formatPercent(metrics.current.sliceCompletion)}\\*\\*`));
-  assert.match(block, /127 \/ 146 slices implemented/);
+  assert.match(block, /128 \/ 146 slices implemented/);
   assert.match(block, /Future programs are excluded/);
   assert.doesNotMatch(block, /\*\*82\.9%\*\*/);
   for (const record of sliceRecords(REGISTER)) assert.ok(block.includes('`' + record.slice.id + '`'), record.slice.id);

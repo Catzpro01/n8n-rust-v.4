@@ -290,25 +290,35 @@ test('the surgical register writer round-trips the canonical register unchanged'
     assert.equal(sync.ok, true, slice.id);
     assert.equal(sync.text, raw, `${slice.id}: rewriting the current state must not touch the file`);
   }
-  // P5-M08 is implemented, so no legal checkpoint event exists for it any more. Prove the
-  // writer's fidelity on a slice that is still in flight, installing its checkpoint model first
-  // (which is also the --init-file path for a slice with no checkpoint block yet).
+  // Every slice that has ever carried a checkpoint model is implemented by now, and an
+  // implemented slice cannot carry an incomplete checkpoint — so no legal checkpoint event
+  // exists for any of them. Prove the writer's fidelity on a slice that is still queued,
+  // putting it back in flight (status, merge SHA and pointer together) and installing its
+  // checkpoint model, which is also the --init-file path for a slice with no block yet.
   const seeded = clone();
-  const planned = findSlice(seeded, 'P5-M07').slice;
-  planned.updatedAt = '2026-09-26T00:00:00Z';
+  const target = findSlice(seeded, REGISTER.executionPointer.plannedQueue[0]).slice;
+  target.status = 'in-progress';
+  target.updatedAt = '2026-09-26T00:00:00Z';
+  seeded.executionPointer.activeSlices = [target.id];
+  seeded.executionPointer.plannedQueue = seeded.executionPointer.plannedQueue.filter((id) => id !== target.id);
+  const planned = target;
   planned.checkpoints = [{
     id: 'CP-01', title: 'Service-principal REST surface', purpose: 'create shown once, redacted list, revoke with tombstone',
     weight: 100, status: 'planned', evidence: '', reference: '',
   }];
   const applied = applyProgressEvent(seeded, {
-    slice: 'P5-M07', checkpoint: 'CP-01', status: 'completed',
+    slice: target.id, checkpoint: 'CP-01', status: 'completed',
     evidence: 'docs/n8n-lego/evidence/P5-M07-EVIDENCE.md \u00a72 \u2014 unit-test fixture', at: TEST_AT,
   });
-  const sync = syncSliceText(raw, 'P5-M07', applied.slice);
+  const sync = syncSliceText(raw, target.id, applied.slice);
   assert.equal(sync.ok, true);
-  // Nothing outside the P5-M07 block may move, so the parsed result must equal the intended
-  // register (compared structurally: the writer emits its managed keys in its own order).
-  assert.deepEqual(JSON.parse(sync.text), applied.register, 'the text edit must equal the intended register');
+  // The writer's contract is narrower than "the whole file": it rewrites ONE slice block and
+  // leaves every other byte alone, including the executionPointer, which is delivery state and
+  // is reconciled by a governance PR rather than by a telemetry event. So the comparison is
+  // scoped to the block the writer owns -- structurally, because it emits its managed keys in
+  // its own order, and key order is not a semantic difference.
+  const rewritten = findSlice(JSON.parse(sync.text), target.id).slice;
+  assert.deepEqual(rewritten, applied.slice, 'the text edit must equal the intended slice');
   const before = raw.split('\n');
   const after = sync.text.split('\n');
   assert.notEqual(before.join('\n'), after.join('\n'), 'a checkpoint change must change the register text');
@@ -318,18 +328,18 @@ test('the surgical register writer round-trips the canonical register unchanged'
     const end = lines.findIndex((line, index) => index > start && /^ {8}\},?$/.test(line));
     return { start, end };
   };
-  const beforeBounds = bounds(before, 'P5-M07');
-  const afterBounds = bounds(after, 'P5-M07');
+  const beforeBounds = bounds(before, target.id);
+  const afterBounds = bounds(after, target.id);
   const outside = (lines, region) => lines.slice(0, region.start).concat(lines.slice(region.end + 1));
   assert.deepEqual(outside(before, beforeBounds), outside(after, afterBounds), 'only the recorded slice block may change');
   // Surgicality: a *second* event on the model just installed must not grow the block at all.
   const blocked = applyProgressEvent(applied.register, {
-    slice: 'P5-M07', checkpoint: 'CP-01', status: 'blocked',
+    slice: target.id, checkpoint: 'CP-01', status: 'blocked',
     blockedBy: 'a service-principal architecture decision is still open', at: TEST_AT,
   });
-  const again = syncSliceText(sync.text, 'P5-M07', blocked.slice);
+  const again = syncSliceText(sync.text, target.id, blocked.slice);
   assert.equal(again.ok, true);
-  const againBounds = bounds(again.text.split('\n'), 'P5-M07');
+  const againBounds = bounds(again.text.split('\n'), target.id);
   assert.equal(againBounds.end - againBounds.start, afterBounds.end - afterBounds.start,
     'a checkpoint event changes lines, it never adds them');
   assert.match(again.text, /"status": "blocked"/);
@@ -530,7 +540,12 @@ test('the live state is readable from the register alone: status, checkpoint, ev
   const rendered = renderReadmeMilestoneSection(REGISTER);
   // Implemented: the ladder row and the pointer carry the delivery record, not a verifying block.
   assert.match(rendered, /\| `P5-M08` \|[^\n]*✅ Implemented \| 100\.0% \| 100\.0% \|/);
-  assert.match(rendered, /Latest completed slice: `P5-M09` \(PR #314, merge `c13ba6dc`\)/);
+  // Derived, not pinned: this line moves every time a slice is reconciled, and a literal
+  // here goes stale exactly the way the KPI pins did.
+  const latest = REGISTER.executionPointer.latestCompletedSlice;
+  const expected = `Latest completed slice: ` + '`' + latest.id + '`'
+    + ` (PR #${latest.pr}, merge ` + '`' + latest.mergeSha.slice(0, 8) + '`' + `)`;
+  assert.ok(rendered.includes(expected), `the delivery record must be readable from the register alone: ${expected}`);
   assert.match(rendered, /CP-05 DEC-0015 self-hosted runner verification on main[^\n]*\(completed, 30\)/);
   assert.match(rendered, /_No verifying slice\._/);
   // The checkpoint evidence the resolver derived, with the runners and run IDs, is on the register.
