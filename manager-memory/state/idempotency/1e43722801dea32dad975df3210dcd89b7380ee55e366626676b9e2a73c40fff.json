@@ -1,0 +1,28 @@
+{
+  "payloadDigest": "sha256:c26be0c25c30dc7011c25c1a413bd55430a292ca2774611f65fff72c8148d1bb",
+  "committedAt": "2026-09-25T06:36:03Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-reg-agent-09-v2",
+    "objectType": "AgentState",
+    "objectId": "AGENT-09",
+    "previousRevision": 0,
+    "newRevision": 1,
+    "resultingState": "AVAILABLE",
+    "eventId": "EVT-001025",
+    "eventIds": [
+      "EVT-001025",
+      "EVT-001026"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [
+      {
+        "objectType": "Actor",
+        "objectId": "AGENT-09",
+        "state": null
+      }
+    ],
+    "warnings": [],
+    "data": {}
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "objectType": "Actor",
+  "objectId": "AGENT-01",
+  "actorType": "WORKER",
+  "enabled": true,
+  "displayName": null,
+  "schemaVersion": "1.0",
+  "revision": 1,
+  "createdAt": "2026-09-25T06:36:03Z",
+  "updatedAt": "2026-09-25T06:36:03Z",
+  "events": [
+    "EVT-001010"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "objectType": "JournalEntry",
+  "objectId": "JRN-0028",
+  "kind": "LESSON",
+  "summary": "Persisting the store: arena-manager ignores state/ ; add it with git add -f and verify with git ls-tree after every push. Restore: copy into a new directory and verify it before removing anything.",
+  "author": "MANAGER-01",
+  "refs": [],
+  "schemaVersion": "1.0",
+  "revision": 1,
+  "createdAt": "2026-09-25T06:36:03Z",
+  "updatedAt": "2026-09-25T06:36:03Z",
+  "events": [
+    "EVT-001031"
+  ]
+}

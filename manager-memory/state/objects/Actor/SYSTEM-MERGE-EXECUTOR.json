@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "1.0",
+  "objectType": "Actor",
+  "objectId": "SYSTEM-MERGE-EXECUTOR",
+  "revision": 1,
+  "createdAt": "2026-09-25T06:36:03.396Z",
+  "updatedAt": "2026-09-25T06:36:03.396Z",
+  "events": [
+    "EVT-001007"
+  ],
+  "actorType": "SYSTEM",
+  "enabled": true,
+  "displayName": null
+}

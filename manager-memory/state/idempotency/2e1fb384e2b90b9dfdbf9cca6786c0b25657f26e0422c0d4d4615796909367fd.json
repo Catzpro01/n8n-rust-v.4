@@ -1,0 +1,21 @@
+{
+  "payloadDigest": "sha256:16775ba6001447db976aed1f575e615ed0d8efc8f2d8f6d47b29b48fad3eef7f",
+  "committedAt": "2026-09-25T06:36:03Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-lost-store-observation",
+    "objectType": "JournalEntry",
+    "objectId": "JRN-0026",
+    "previousRevision": 0,
+    "newRevision": 1,
+    "resultingState": null,
+    "eventId": "EVT-001029",
+    "eventIds": [
+      "EVT-001029"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [],
+    "warnings": [],
+    "data": {}
+  }
+}

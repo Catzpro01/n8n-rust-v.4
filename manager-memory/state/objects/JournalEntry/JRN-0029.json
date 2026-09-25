@@ -1,0 +1,17 @@
+{
+  "objectType": "JournalEntry",
+  "objectId": "JRN-0029",
+  "kind": "DECISION",
+  "summary": "OWNER DECISION 2026-09-25 (chat, answer to the runner-offline merge question): DEC-0015 model B. Phase A work may merge when all GitHub-hosted checks are green while self-hosted checks are WAITING_RUNNER; WAITING_RUNNER is never PASS and must be reported separately; the Slice stays VERIFYING until the self-hosted checks pass on main; on failure the Slice goes to REGRESSION with a linked regression task. Option C (moving jobs to GitHub-hosted) rejected: infrastructure change needs a separate decision. Applies to the DEC-0015 delivery PR itself.",
+  "author": "MANAGER-01",
+  "refs": [
+    "issue#285"
+  ],
+  "schemaVersion": "1.0",
+  "revision": 1,
+  "createdAt": "2026-09-25T06:36:03Z",
+  "updatedAt": "2026-09-25T06:36:03Z",
+  "events": [
+    "EVT-001032"
+  ]
+}

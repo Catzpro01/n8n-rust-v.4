@@ -1,0 +1,21 @@
+{
+  "payloadDigest": "sha256:be6aadb891bbc945e49032b6685791492f08f9c69646941436bff246e80fc82a",
+  "committedAt": "2026-09-25T06:36:03Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-lost-store-lesson",
+    "objectType": "JournalEntry",
+    "objectId": "JRN-0028",
+    "previousRevision": 0,
+    "newRevision": 1,
+    "resultingState": null,
+    "eventId": "EVT-001031",
+    "eventIds": [
+      "EVT-001031"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [],
+    "warnings": [],
+    "data": {}
+  }
+}

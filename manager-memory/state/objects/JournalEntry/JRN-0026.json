@@ -1,0 +1,18 @@
+{
+  "objectType": "JournalEntry",
+  "objectId": "JRN-0026",
+  "kind": "OBSERVATION",
+  "summary": "STORE LOST (measured): the raw workforce store was never persisted to arena-manager because its .gitignore excludes state/ (git add -A skipped manager-memory/state silently); the local copy was then deleted by the Manager during restore (rm before verifying the source). The earlier claim that the raw store was kept in arena-manager was wrong. This store is rebuilt empty on 2026-09-25; sequences start above the last known ids (TASK-0014, JRN-0025, EVD-0102) so no id is reused.",
+  "author": "MANAGER-01",
+  "refs": [
+    "arena-manager 87f42ed2",
+    "arena-manager fbd85870"
+  ],
+  "schemaVersion": "1.0",
+  "revision": 1,
+  "createdAt": "2026-09-25T06:36:03Z",
+  "updatedAt": "2026-09-25T06:36:03Z",
+  "events": [
+    "EVT-001029"
+  ]
+}

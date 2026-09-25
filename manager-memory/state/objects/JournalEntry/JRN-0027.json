@@ -1,0 +1,26 @@
+{
+  "objectType": "JournalEntry",
+  "objectId": "JRN-0027",
+  "kind": "FACT",
+  "summary": "LOST store records; surviving evidence: arena-manager 87f42ed2 manager-memory/views (TASKS.md, JOURNAL.md JRN-0001..0025, AGENTS.md) and GitHub. TASK-0001 #273 9b327405; TASK-0002 #274 3a3baf33; TASK-0003 agent branches at 3a3baf33; TASK-0004 archive tag; TASK-0005 #278 42244294; TASK-0006 #279 04370969; TASK-0007 SUPERSEDED by TASK-0005; TASK-0008 arena-manager rebuild; TASK-0009 #275 8ae3c608; TASK-0010 #276 8fccdb20; TASK-0011 #280 45b1b25d; TASK-0012 #281 3b15f3f8; TASK-0013 #283 b6854d77; TASK-0014 #284 49e100b6. Not re-created.",
+  "author": "MANAGER-01",
+  "refs": [
+    "PR#273",
+    "PR#274",
+    "PR#275",
+    "PR#276",
+    "PR#278",
+    "PR#279",
+    "PR#280",
+    "PR#281",
+    "PR#283",
+    "PR#284"
+  ],
+  "schemaVersion": "1.0",
+  "revision": 1,
+  "createdAt": "2026-09-25T06:36:03Z",
+  "updatedAt": "2026-09-25T06:36:03Z",
+  "events": [
+    "EVT-001030"
+  ]
+}

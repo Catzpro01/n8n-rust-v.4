@@ -1,0 +1,49 @@
+{
+  "objectType": "AgentState",
+  "objectId": "AGENT-05",
+  "state": "AVAILABLE",
+  "slot": "arena/agent-05",
+  "identity": {
+    "role": "WORKER",
+    "enabled": true,
+    "generation": 1
+  },
+  "capabilities": [
+    "git",
+    "node",
+    "rust"
+  ],
+  "capacity": {
+    "class": "NORMAL",
+    "activeTaskCount": 0,
+    "maxConcurrentTasks": 1,
+    "runnerClass": "ANY"
+  },
+  "assignment": {
+    "taskIds": [],
+    "lastAssignedAt": null,
+    "lastReleasedAt": "2026-09-25T06:36:03Z"
+  },
+  "heartbeat": {
+    "lastSeenAt": null,
+    "lastProgressAt": null,
+    "runnerId": null
+  },
+  "branch": {
+    "persistent": "arena/agent-05",
+    "task": null,
+    "headSha": null
+  },
+  "health": {
+    "status": "HEALTHY",
+    "consecutiveFailures": 0
+  },
+  "reason": null,
+  "schemaVersion": "1.0",
+  "revision": 1,
+  "createdAt": "2026-09-25T06:36:03Z",
+  "updatedAt": "2026-09-25T06:36:03Z",
+  "events": [
+    "EVT-001017"
+  ]
+}

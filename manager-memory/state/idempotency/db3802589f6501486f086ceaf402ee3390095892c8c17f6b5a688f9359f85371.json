@@ -1,0 +1,21 @@
+{
+  "payloadDigest": "sha256:2902b5beaec05fc233ed4f819f142fb7d2d64402c70eac3e304c60cb9a88fb65",
+  "committedAt": "2026-09-25T06:36:03Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-owner-dec-0015-b",
+    "objectType": "JournalEntry",
+    "objectId": "JRN-0029",
+    "previousRevision": 0,
+    "newRevision": 1,
+    "resultingState": null,
+    "eventId": "EVT-001032",
+    "eventIds": [
+      "EVT-001032"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [],
+    "warnings": [],
+    "data": {}
+  }
+}
