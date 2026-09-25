@@ -2,9 +2,9 @@
   "schemaVersion": "1.0",
   "objectType": "Decision",
   "objectId": "DEC-0005",
-  "revision": 2,
-  "createdAt": "2026-09-25T00:00:00Z",
-  "updatedAt": "2026-09-25T14:00:00Z",
+  "revision": 3,
+  "createdAt": "2026-09-24T23:15:25Z",
+  "updatedAt": "2026-09-25T00:44:40Z",
   "events": [],
   "state": "ACTIVE",
   "category": "ARCHITECTURE",
@@ -60,8 +60,17 @@
     "canonical": true,
     "mainPath": "docs/engineering-operations/workforce/decisions/DEC-0005.json",
     "mainCommitSha": "9b32740591b4fb2f11463c5302b5bccd5f2a796c",
-    "promotedAt": "2026-09-25T14:00:00Z",
+    "promotedAt": "2026-09-25T00:17:56Z",
     "promotedBy": "MANAGER-01"
   },
-  "reason": null
+  "reason": {
+    "code": "TIMESTAMP_CORRECTION",
+    "summary": "Revision corrects placeholder timestamps written in PR #274 (JRN-0012): createdAt was 2026-09-25T00:00:00Z (after the PR #273 merge) and is now the authored time of the PR #273 commit (2026-09-24T23:15:25Z); promotedAt was 2026-09-25T14:00:00Z and is now the PR #274 merge time (2026-09-25T00:17:56Z). Decision content unchanged.",
+    "actor": "MANAGER-01",
+    "refs": [
+      "#273",
+      "#274",
+      "#276"
+    ]
+  }
 }

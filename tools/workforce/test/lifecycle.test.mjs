@@ -165,3 +165,33 @@ test('decision lifecycle: propose -> review -> activate auto-supersedes; promoti
   h.ok(M, 'DECISION_REJECT', 'Decision', d3, { reasonCode: 'NOT_NEEDED' });
   assert.equal(h.get('Decision', d3).state, 'REJECTED');
 });
+
+test('DEC-0011 TASK_COMPLETE_MANAGER_EXECUTED: same evidence bar, COMMIT anchored to merge SHA, never-assigned tasks only', () => {
+  const h = harness();
+  const ev = (taskId, type, subject, trustLevel) => {
+    const id = h.ok(M, 'EVIDENCE_PROPOSE', 'Evidence', 'NEW', { taskId, type, trustLevel, subject, result: { status: 'PASS', summary: type } }).objectId;
+    h.ok(M, 'EVIDENCE_PUBLISH', 'Evidence', id);
+    h.ok(M, 'EVIDENCE_VERIFY', 'Evidence', id, { trustLevel });
+  };
+  const dep = h.task({ title: 'dep', scope: { paths: ['d/'] } });
+  const t = h.task({ title: 'manager pr', scope: { paths: ['g/'] }, dependencies: [{ taskId: dep }] });
+  const run = (id, sha = SHA('b')) => h.run(M, 'TASK_COMPLETE_MANAGER_EXECUTED', 'Task', id, { mergeSha: sha });
+  expectError(assert, run(t), 'DEPENDENCY_BLOCKED');
+  expectError(assert, run(dep), 'EVIDENCE_INSUFFICIENT');
+  ev(dep, 'COMMIT', { subjectType: 'COMMIT', subjectId: SHA('b') }, 'REVIEW_VERIFIED');
+  ev(dep, 'CI', { subjectType: 'WORKFLOW_RUN', subjectId: '123', subjectDigest: SHA('a') }, 'CI_VERIFIED');
+  expectError(assert, run(dep), 'EVIDENCE_INSUFFICIENT');
+  ev(dep, 'MAIN_VERIFICATION', { subjectType: 'MAIN', subjectId: SHA('b') }, 'MAIN_VERIFIED');
+  expectError(assert, run(dep, SHA('c')), 'EVIDENCE_INSUFFICIENT');
+  h.agent(1);
+  expectError(assert, h.run(W(1), 'TASK_COMPLETE_MANAGER_EXECUTED', 'Task', dep, { mergeSha: SHA('b') }), 'GOVERNANCE_REQUIRED');
+  h.ok(M, 'TASK_COMPLETE_MANAGER_EXECUTED', 'Task', dep, { mergeSha: SHA('b') });
+  assert.equal(h.get('Task', dep).state, 'COMPLETED');
+  assert.equal(h.get('Task', dep).current.completedMainSha, SHA('b'));
+  expectError(assert, run(dep), 'ALREADY_TERMINAL');
+  // A worker-assigned task must use TASK_COMPLETE (merge-queue path).
+  const w = h.working(1, { scope: { paths: ['w/'] } });
+  expectError(assert, run(w), 'INVALID_STATE_TRANSITION');
+  // TASK_COMPLETE cannot use the new UNASSIGNED -> COMPLETED edge (still needs a MERGED merge-queue item).
+  expectError(assert, h.run(M, 'TASK_COMPLETE', 'Task', t), 'EVIDENCE_INSUFFICIENT');
+});
