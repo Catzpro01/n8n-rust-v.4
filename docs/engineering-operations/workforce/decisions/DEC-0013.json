@@ -1,0 +1,74 @@
+{
+  "schemaVersion": "1.0",
+  "objectType": "Decision",
+  "objectId": "DEC-0013",
+  "revision": 1,
+  "createdAt": "2026-09-25T01:01:09Z",
+  "updatedAt": "2026-09-25T01:01:09Z",
+  "events": [],
+  "state": "ACTIVE",
+  "category": "RECOVERY",
+  "title": "arena-manager groups A+B: per-file recovery decision",
+  "problem": "Groups A (7d8157c5, 5dc7d7e8, b5c7399e) and B (50715c9c) of the DEC-0008 audit add a Supabase-gateway orchestrator (v1.7) with runtime state and gateway tokens, overlapping the canonical control plane tools/workforce (DEC-0001/0002). A per-file decision was pending (TASK-0006).",
+  "options": [
+    {
+      "id": "fixes-only",
+      "summary": "Recover only the verified bug fixes to code that exists on main; retire the rest (preserved in archive/arena-manager-28eea831)"
+    },
+    {
+      "id": "full",
+      "summary": "Port the orchestrator v1.7 code as an adapter"
+    },
+    {
+      "id": "none",
+      "summary": "Recover nothing"
+    }
+  ],
+  "selectedOption": "fixes-only",
+  "rationale": "RECOVER (TASK-0006 PR): tools/gateway/providers/supabase_provider.py RPC path rest/v1/rpc (PostgREST) and heartbeat p_worker_state NULL instead of a forced AVAILABLE (group B), verified against public.agent_heartbeat on main (NULL keeps the stored state); covered by a new hermetic test (the original test_heartbeat_lease_safety.py needs a live Supabase project and an agent UUID, so it is not ported). REJECT, never port: .arena/gateway_tokens.json (compromised; owner rotation B2), .arena/logs/*, .arena/runtime/*, supabase/.temp/*, per-task .evidence/* and workspace.json, crates/arena-worker/runtime-kernel/{DISPATCH,RESULT}.json (runtime state, not source). RETIRE, superseded by tools/workforce (one Manager system, DEC-0001/0002/0005/0010/0011): supabase/functions/gateway/*, supabase/config.toml change, tools/gateway/{service_manager,worker_fleet_daemon}.py, tools/gateway/tests/test_edge_equivalence.py, tools/orchestration/{arena_cli,arena_external_worker,autonomous_planner,project_adapter,repository_scanner,run_gate2_reverification,telegram_monitor,workspace_manager}.py and their tests, the ARENA_MANAGER_CAPABILITY_GATEWAY.md rewrite, .arena/TASK.md. REJECT: orchestrator_daemon.run_forever (sleeps self.interval, violating the <=1s polling rule) and the server.py sys.path tweak (not needed by any test on main). The heartbeat invariant is also enforced by the control plane (Manager-only release edge at zero active work, DEC-0005). Retired code stays preserved in the archive tag; reviving any of it requires a new task and decision.",
+  "scope": {
+    "programs": [
+      "GOVERNANCE"
+    ],
+    "slices": [],
+    "domains": [],
+    "surfaces": []
+  },
+  "authority": {
+    "decidedBy": "MANAGER-01",
+    "managerOnly": true,
+    "humanEscalation": false,
+    "proposedBy": "MANAGER-01"
+  },
+  "evidence": [],
+  "evidenceRefs": [
+    "tools/gateway/providers/supabase_provider.py",
+    "tools/gateway/tests/test_supabase_provider_rpc.py",
+    "supabase/migrations/20260920000000_dynamic_agent_fleet.sql"
+  ],
+  "sources": {
+    "issues": [
+      259,
+      262,
+      268
+    ],
+    "prs": [],
+    "commits": [
+      "7d8157c53d7a148d6ad3e9ae08fa82481ebdd823",
+      "5dc7d7e85bae9e7934ba67c5a8f3935440f42b54",
+      "b5c7399e2046e780512fc5c38feb5102ffa0de0b",
+      "50715c9c85c22f972bb93e5cc8819edc0051502c"
+    ],
+    "requests": []
+  },
+  "supersedes": null,
+  "supersededBy": null,
+  "promotion": {
+    "canonical": false,
+    "mainPath": null,
+    "mainCommitSha": null,
+    "promotedAt": null,
+    "promotedBy": null
+  },
+  "reason": null
+}
