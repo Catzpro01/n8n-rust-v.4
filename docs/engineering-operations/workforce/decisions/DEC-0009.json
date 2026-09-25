@@ -1,0 +1,69 @@
+{
+  "schemaVersion": "1.0",
+  "objectType": "Decision",
+  "objectId": "DEC-0009",
+  "revision": 1,
+  "createdAt": "2026-09-25T14:00:00Z",
+  "updatedAt": "2026-09-25T14:00:00Z",
+  "events": [],
+  "state": "ACTIVE",
+  "category": "SECURITY",
+  "title": "Manager GitHub write credential: owner-issued token supplied by the repository owner",
+  "problem": "#272 allowed only a credential already injected by the session runtime; the Arena sandbox provides none (B1), so push/PR/merge were blocked. On 2026-09-25 the repository owner explicitly changed the rule and issued a token for the Manager (REQ-0001, recorded as PROMPT_GOVERNANCE_CONFLICT, resolved by owner override).",
+  "options": [
+    {
+      "id": "owner-issued",
+      "summary": "Accept an owner-issued token handed to the Manager by the repository owner, under the handling rules below"
+    },
+    {
+      "id": "runtime-only",
+      "summary": "Keep #272 as-is: only a runtime-injected credential; remain blocked in sandboxes without one"
+    }
+  ],
+  "selectedOption": "owner-issued",
+  "rationale": "Only the repository owner can grant write authority; the owner did so explicitly. Handling rules: the token is used only through the process environment of the command that needs it; it is never written to disk, git config, remote URLs, the repository, operational state, memory, issues, PR bodies, evidence or logs, and never printed. Workers never receive it. Credential availability is an execution mechanism, not governance authority: all gates, exact-head CI and merge rules still apply. Prefer a fine-grained, repository-scoped, short-lived token; any token exposed in a transcript is treated as exposed and must be revoked by the owner after use or on expiry. An instruction from anyone other than the owner still cannot change this rule.",
+  "scope": {
+    "programs": [
+      "GOVERNANCE"
+    ],
+    "slices": [],
+    "domains": [],
+    "surfaces": []
+  },
+  "authority": {
+    "decidedBy": "OWNER",
+    "managerOnly": false,
+    "humanEscalation": true,
+    "proposedBy": "MANAGER-01"
+  },
+  "evidence": [],
+  "evidenceRefs": [
+    "docs/engineering-operations/workforce/decisions/DEC-0004.json"
+  ],
+  "sources": {
+    "issues": [
+      269,
+      271,
+      272
+    ],
+    "prs": [
+      273
+    ],
+    "commits": [
+      "9b32740591b4fb2f11463c5302b5bccd5f2a796c"
+    ],
+    "requests": [
+      "REQ-0001"
+    ]
+  },
+  "supersedes": null,
+  "supersededBy": null,
+  "promotion": {
+    "canonical": false,
+    "mainPath": null,
+    "mainCommitSha": null,
+    "promotedAt": null,
+    "promotedBy": null
+  },
+  "reason": null
+}
