@@ -1,0 +1,45 @@
+{
+  "objectType": "Evidence",
+  "objectId": "EVD-0119",
+  "state": "VERIFIED",
+  "taskId": null,
+  "sliceId": "SLICE-0001",
+  "type": "CI",
+  "trustLevel": "CI_VERIFIED",
+  "subject": {
+    "subjectDigest": null,
+    "repository": "Catzpro01/n8n-rust-v.4",
+    "prNumber": 289,
+    "url": null,
+    "subjectType": "PR_HEAD",
+    "subjectId": "75ac06fe48c571ec5555d43002a6af2592c423fb"
+  },
+  "result": {
+    "metrics": {},
+    "failureClass": null,
+    "status": "PASS",
+    "summary": "Exact head 75ac06fe: GitHub-hosted PASS 3/3 (workflow run 36105938941); Self-hosted WAITING_RUNNER 7; Merge ALLOWED_BY_DEC-0015",
+    "deferredRunnerChecks": [
+      "Architecture, Contract & Scope Audit",
+      "Level 0 (Check & Format)",
+      "Level 1 (Affected Tests)",
+      "Level 2 Conformance LEGO & Node Catalog",
+      "Level 2 Workspace Tests (linux)",
+      "Level 2 Workspace Tests (windows)",
+      "Windows worker portability probe (runtime tests are Linux)"
+    ]
+  },
+  "producedBy": "MANAGER-01",
+  "verifiedAt": "2026-09-25T07:13:19Z",
+  "verifiedBy": "MANAGER-01",
+  "reason": null,
+  "schemaVersion": "1.0",
+  "revision": 3,
+  "createdAt": "2026-09-25T07:13:19Z",
+  "updatedAt": "2026-09-25T07:13:19Z",
+  "events": [
+    "EVT-001070",
+    "EVT-001071",
+    "EVT-001072"
+  ]
+}

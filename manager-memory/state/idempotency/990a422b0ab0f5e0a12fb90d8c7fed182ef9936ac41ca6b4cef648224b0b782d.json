@@ -1,0 +1,31 @@
+{
+  "payloadDigest": "sha256:833a5cd75fb4b6bc902a09b1224ee43e32a2e071e8c2c14ba7cd3f0c3c095585",
+  "committedAt": "2026-09-25T07:13:19Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-mq1-authorize",
+    "objectType": "MergeQueueItem",
+    "objectId": "MQ-0001",
+    "previousRevision": 4,
+    "newRevision": 5,
+    "resultingState": "READY",
+    "eventId": "EVT-001075",
+    "eventIds": [
+      "EVT-001074",
+      "EVT-001075"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [
+      {
+        "objectType": "Lease",
+        "objectId": "LEASE-0001",
+        "state": "ACTIVE"
+      }
+    ],
+    "warnings": [],
+    "data": {
+      "leaseId": "LEASE-0001",
+      "expiresAt": "2026-09-25T07:28:19Z"
+    }
+  }
+}

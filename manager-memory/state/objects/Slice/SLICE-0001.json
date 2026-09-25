@@ -1,0 +1,78 @@
+{
+  "objectType": "Slice",
+  "objectId": "SLICE-0001",
+  "state": "VERIFYING",
+  "key": "P5-M01",
+  "program": "P5",
+  "milestone": null,
+  "issue": 85,
+  "title": "Security hardening: tombstone revocation for API keys and service principals",
+  "description": "",
+  "acceptance": {
+    "criteria": [
+      {
+        "id": "AC-1",
+        "text": "API-key and service-principal revocation keep a tombstone (revokedAt, revokedReason); the presented revoked credential is reported REVOKED, a wrong secret stays UNKNOWN",
+        "met": true,
+        "evidenceRef": "PR #289 / docs/n8n-lego/evidence/P5-M01-EVIDENCE.md; main 27191091 fresh verification"
+      },
+      {
+        "id": "AC-2",
+        "text": "Revoking an unknown or already revoked id is a silent no-op without a second audit event; upstream response shape unchanged",
+        "met": true,
+        "evidenceRef": "PR #289 / docs/n8n-lego/evidence/P5-M01-EVIDENCE.md; main 27191091 fresh verification"
+      },
+      {
+        "id": "AC-3",
+        "text": "Tombstones are bounded per owner and kind (oldest pruned, live never pruned); lists and the live-key limit ignore tombstones",
+        "met": true,
+        "evidenceRef": "PR #289 / docs/n8n-lego/evidence/P5-M01-EVIDENCE.md; main 27191091 fresh verification"
+      },
+      {
+        "id": "AC-4",
+        "text": "Register re-planned honestly: DEBT-001 deferred on measured evidence, DEBT-003 -> P5-M04, DEBT-004/005 -> P5-M05 (depends P8-S01); generated .ai regenerated",
+        "met": true,
+        "evidenceRef": "PR #289 / docs/n8n-lego/evidence/P5-M01-EVIDENCE.md; main 27191091 fresh verification"
+      }
+    ]
+  },
+  "delivery": {
+    "prNumber": 289,
+    "headSha": "75ac06fe48c571ec5555d43002a6af2592c423fb",
+    "mergeQueueItemId": "MQ-0001",
+    "mergeSha": "2719109169e99714e70937767e9a15af65bd640e",
+    "verifiedMainSha": "2719109169e99714e70937767e9a15af65bd640e"
+  },
+  "rejectedDeliveries": [],
+  "milestoneRegister": null,
+  "completedMainSha": null,
+  "supersededBy": null,
+  "reason": null,
+  "schemaVersion": "1.0",
+  "revision": 6,
+  "createdAt": "2026-09-25T07:01:50Z",
+  "updatedAt": "2026-09-25T07:13:19Z",
+  "events": [
+    "EVT-001057",
+    "EVT-001064",
+    "EVT-001078",
+    "EVT-001082",
+    "EVT-001090",
+    "EVT-001091"
+  ],
+  "runnerVerification": {
+    "status": "WAITING_RUNNER",
+    "checks": [
+      "Architecture, Contract & Scope Audit",
+      "Level 0 (Check & Format)",
+      "Level 1 (Affected Tests)",
+      "Level 2 Conformance LEGO & Node Catalog",
+      "Level 2 Workspace Tests (linux)",
+      "Level 2 Workspace Tests (windows)",
+      "Windows worker portability probe (runtime tests are Linux)"
+    ],
+    "mainSha": null,
+    "evidenceId": null,
+    "regressionTaskIds": []
+  }
+}

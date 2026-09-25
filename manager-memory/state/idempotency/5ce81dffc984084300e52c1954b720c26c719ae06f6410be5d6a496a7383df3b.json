@@ -1,0 +1,21 @@
+{
+  "payloadDigest": "sha256:16890c3fd019f7e6acc66d978824c39c583b658ea8085513423c1241f3b98fd1",
+  "committedAt": "2026-09-25T07:01:50Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-task-p5-m01-tombstones",
+    "objectType": "Task",
+    "objectId": "TASK-0017",
+    "previousRevision": 0,
+    "newRevision": 1,
+    "resultingState": "UNASSIGNED",
+    "eventId": "EVT-001058",
+    "eventIds": [
+      "EVT-001058"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [],
+    "warnings": [],
+    "data": {}
+  }
+}

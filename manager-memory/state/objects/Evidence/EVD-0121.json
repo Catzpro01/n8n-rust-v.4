@@ -1,0 +1,36 @@
+{
+  "objectType": "Evidence",
+  "objectId": "EVD-0121",
+  "state": "VERIFIED",
+  "taskId": null,
+  "sliceId": "SLICE-0001",
+  "type": "MAIN_VERIFICATION",
+  "trustLevel": "MAIN_VERIFIED",
+  "subject": {
+    "subjectDigest": null,
+    "repository": "Catzpro01/n8n-rust-v.4",
+    "prNumber": null,
+    "url": null,
+    "subjectType": "MAIN",
+    "subjectId": "2719109169e99714e70937767e9a15af65bd640e"
+  },
+  "result": {
+    "metrics": {},
+    "failureClass": null,
+    "status": "PASS",
+    "summary": "fresh clone of main 27191091: tree == PR head, workforce 104/104, gates 7/7, cert OK, backend 2400/2400, frontend 451/0/1skip, 0 dirty"
+  },
+  "producedBy": "MANAGER-01",
+  "verifiedAt": "2026-09-25T07:13:19Z",
+  "verifiedBy": "MANAGER-01",
+  "reason": null,
+  "schemaVersion": "1.0",
+  "revision": 3,
+  "createdAt": "2026-09-25T07:13:19Z",
+  "updatedAt": "2026-09-25T07:13:19Z",
+  "events": [
+    "EVT-001086",
+    "EVT-001087",
+    "EVT-001088"
+  ]
+}

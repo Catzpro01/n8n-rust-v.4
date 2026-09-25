@@ -1,0 +1,21 @@
+{
+  "payloadDigest": "sha256:24a345c86fdca95fe8672095c0ae170eeefb498b43761bc800b9bcd244b0b3a8",
+  "committedAt": "2026-09-25T07:06:11Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-sev-slice-0001-commit-75ac06fe48c5-ver",
+    "objectType": "Evidence",
+    "objectId": "EVD-0117",
+    "previousRevision": 2,
+    "newRevision": 3,
+    "resultingState": "VERIFIED",
+    "eventId": "EVT-001062",
+    "eventIds": [
+      "EVT-001062"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [],
+    "warnings": [],
+    "data": {}
+  }
+}

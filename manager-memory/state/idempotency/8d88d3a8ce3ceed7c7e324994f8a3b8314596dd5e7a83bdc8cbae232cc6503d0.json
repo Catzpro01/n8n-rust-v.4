@@ -1,0 +1,21 @@
+{
+  "payloadDigest": "sha256:1038a9e251ec1fac682c5f0d37ba5e51b6afb67c0432a3eb80319b87968bf155",
+  "committedAt": "2026-09-25T07:05:36Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-mx-task-0017",
+    "objectType": "Task",
+    "objectId": "TASK-0017",
+    "previousRevision": 1,
+    "newRevision": 2,
+    "resultingState": "READY_FOR_REVIEW",
+    "eventId": "EVT-001059",
+    "eventIds": [
+      "EVT-001059"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [],
+    "warnings": [],
+    "data": {}
+  }
+}

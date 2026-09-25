@@ -1,0 +1,18 @@
+{
+  "objectType": "JournalEntry",
+  "objectId": "JRN-0033",
+  "kind": "FACT",
+  "summary": "Process finding (P5-M01): ship.sh merged PR #289 on the exact-head CI verdict before the store merge-queue item was READY. MQ-0001 was held (lane HOLD) only because the CI evidence was anchored to the workflow run instead of the PR head; the substantive checks had passed. The MQ chain (reclassify READY/MANAGER, authorize, merge start/result, verify) was therefore recorded AFTER the physical merge, with real timestamps and no backdating. Corrective action: ship.sh now runs mq-premerge.mjs (SLICE_ID/MQ_ID) before merging. It records head-anchored CI evidence, checks, classify and authorize, and refuses the merge unless the item is READY at the exact head.",
+  "author": "MANAGER-01",
+  "refs": [
+    "PR#289",
+    "MQ-0001"
+  ],
+  "schemaVersion": "1.0",
+  "revision": 1,
+  "createdAt": "2026-09-25T07:15:54Z",
+  "updatedAt": "2026-09-25T07:15:54Z",
+  "events": [
+    "EVT-001093"
+  ]
+}

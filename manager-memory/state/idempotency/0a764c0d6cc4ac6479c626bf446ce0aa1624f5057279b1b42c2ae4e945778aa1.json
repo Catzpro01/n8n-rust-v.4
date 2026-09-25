@@ -1,0 +1,21 @@
+{
+  "payloadDigest": "sha256:98b7a74b5c0b80e1c86ca97986eca429cc4e529b1453237143a1c6da28db5684",
+  "committedAt": "2026-09-25T07:12:42Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-sev-slice-0001-ci-36105938941-pub",
+    "objectType": "Evidence",
+    "objectId": "EVD-0118",
+    "previousRevision": 1,
+    "newRevision": 2,
+    "resultingState": "PUBLISHED",
+    "eventId": "EVT-001066",
+    "eventIds": [
+      "EVT-001066"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [],
+    "warnings": [],
+    "data": {}
+  }
+}

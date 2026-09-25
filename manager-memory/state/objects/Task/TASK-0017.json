@@ -1,0 +1,106 @@
+{
+  "objectType": "Task",
+  "objectId": "TASK-0017",
+  "state": "VERIFYING",
+  "jobId": null,
+  "issue": 85,
+  "program": "P5",
+  "milestone": null,
+  "slice": "P5-M01",
+  "title": "Tombstone revocation for API keys and service principals + register re-plan",
+  "description": "",
+  "priority": "NORMAL",
+  "risk": "NORMAL",
+  "owner": null,
+  "dependencies": [],
+  "scope": {
+    "paths": [
+      "apps/n8n-lego/src/auth/api-key-routes.mjs",
+      "apps/n8n-lego/src/auth/security/api-key.mjs",
+      "apps/n8n-lego/test/lego-machine-identity.test.mjs",
+      "docs/n8n-lego/milestones.json",
+      "docs/n8n-lego/evidence/P5-M01-EVIDENCE.md",
+      ".ai/"
+    ],
+    "domains": [],
+    "contracts": [],
+    "generatedSurfaces": [],
+    "vocabulary": [],
+    "semanticSurfaces": [],
+    "securitySurfaces": [],
+    "governanceSurfaces": []
+  },
+  "constraints": {
+    "forbiddenPaths": [],
+    "forbiddenDomains": [],
+    "forbiddenContracts": [],
+    "securityBoundaries": [],
+    "workspaceBoundary": "task-scoped"
+  },
+  "requirements": {
+    "capabilities": [],
+    "capacityClass": "NORMAL",
+    "runnerClasses": [
+      "ANY"
+    ],
+    "network": "NONE",
+    "runnerRequired": false,
+    "runnerType": null
+  },
+  "acceptance": {
+    "criteria": [],
+    "requiredEvidenceTypes": [],
+    "requiredGates": []
+  },
+  "execution": {
+    "mergeLane": "MANAGER",
+    "rollbackClass": "SIMPLE",
+    "activeLeaseId": null,
+    "reservationIds": [],
+    "decisionPending": false,
+    "hold": false,
+    "phase": "PHASE_A_REMOTE",
+    "executor": {
+      "type": "MANAGER",
+      "id": "MANAGER-01",
+      "decision": "DEC-0016",
+      "reasonCode": "NO_WORKER_SESSION",
+      "branch": "arena/manager/p5-m01-security-hardening"
+    }
+  },
+  "branch": {
+    "persistentBranch": null,
+    "taskBranch": null,
+    "baseSha": null
+  },
+  "current": {
+    "headSha": "75ac06fe48c571ec5555d43002a6af2592c423fb",
+    "prNumber": null,
+    "nextAction": null,
+    "blocker": null,
+    "handoffId": null,
+    "reason": null,
+    "supersededBy": null,
+    "completedMainSha": null
+  },
+  "history": {
+    "reassignedCount": 0,
+    "retryCount": 0,
+    "recoveryCount": 0,
+    "deferCount": 0,
+    "ciRetryCount": 0,
+    "reservationConflictCount": 0,
+    "scopeCorrectionCount": 0
+  },
+  "runnerVerification": null,
+  "schemaVersion": "1.0",
+  "revision": 4,
+  "createdAt": "2026-09-25T07:01:50Z",
+  "updatedAt": "2026-09-25T07:13:19Z",
+  "events": [
+    "EVT-001058",
+    "EVT-001059",
+    "EVT-001077",
+    "EVT-001081"
+  ]
+}

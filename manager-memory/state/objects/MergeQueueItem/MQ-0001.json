@@ -1,0 +1,78 @@
+{
+  "objectType": "MergeQueueItem",
+  "objectId": "MQ-0001",
+  "state": "MERGED",
+  "pr": {
+    "repository": "Catzpro01/n8n-rust-v.4",
+    "number": 289,
+    "base": "main",
+    "headSha": "75ac06fe48c571ec5555d43002a6af2592c423fb",
+    "baseSha": "08644d0cc97356cf1725c6b04c03c7c974428240"
+  },
+  "taskId": null,
+  "sliceId": "SLICE-0001",
+  "taskIds": [
+    "TASK-0017"
+  ],
+  "agentId": null,
+  "lane": "MANAGER",
+  "classification": {
+    "impact": "LOCAL"
+  },
+  "checks": {
+    "exactHeadCi": "PASS",
+    "architecture": "PASS",
+    "acceptance": "PASS",
+    "evidence": "PASS",
+    "reservation": "CLEAR",
+    "dependency": "CLEAR",
+    "checkedHeadSha": "75ac06fe48c571ec5555d43002a6af2592c423fb",
+    "deferredRunnerChecks": [
+      "Architecture, Contract & Scope Audit",
+      "Level 0 (Check & Format)",
+      "Level 1 (Affected Tests)",
+      "Level 2 Conformance LEGO & Node Catalog",
+      "Level 2 Workspace Tests (linux)",
+      "Level 2 Workspace Tests (windows)",
+      "Windows worker portability probe (runtime tests are Linux)"
+    ],
+    "runnerChecks": "WAITING_RUNNER"
+  },
+  "rollback": {
+    "class": "SIMPLE",
+    "strategy": null,
+    "verified": false
+  },
+  "authorizationLeaseId": "LEASE-0001",
+  "humanApprovalId": null,
+  "mergeSha": "2719109169e99714e70937767e9a15af65bd640e",
+  "verifiedMainSha": "2719109169e99714e70937767e9a15af65bd640e",
+  "laneReasons": [
+    "ALLOWED_BY_DEC-0015: self-hosted checks WAITING_RUNNER (Architecture, Contract & Scope Audit, Level 0 (Check & Format), Level 1 (Affected Tests), Level 2 Conformance LEGO & Node Catalog, Level 2 Workspace Tests (linux), Level 2 Workspace Tests (windows), Windows worker portability probe (runtime tests are Linux))",
+    "classification.governanceChange unknown (fail closed)",
+    "classification.securityChange unknown (fail closed)",
+    "classification.contractLock unknown (fail closed)",
+    "classification.generatedState unknown (fail closed)",
+    "classification.migration unknown (fail closed)",
+    "classification.sharedSurface unknown (fail closed)",
+    "classification.humanApprovalRequired unknown (fail closed)",
+    "classification.decisionPending unknown (fail closed)",
+    "rollback not verified",
+    "task declares lane MANAGER"
+  ],
+  "reason": null,
+  "schemaVersion": "1.0",
+  "revision": 8,
+  "createdAt": "2026-09-25T07:06:11Z",
+  "updatedAt": "2026-09-25T07:13:19Z",
+  "events": [
+    "EVT-001063",
+    "EVT-001068",
+    "EVT-001069",
+    "EVT-001073",
+    "EVT-001075",
+    "EVT-001076",
+    "EVT-001080",
+    "EVT-001089"
+  ]
+}

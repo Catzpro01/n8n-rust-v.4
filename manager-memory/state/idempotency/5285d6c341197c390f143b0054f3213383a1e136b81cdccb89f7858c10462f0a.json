@@ -1,0 +1,21 @@
+{
+  "payloadDigest": "sha256:cc42d491c7640bdb4df14a646b3c2cc4b05f6204b9d23575e56df1e04aa4e650",
+  "committedAt": "2026-09-25T06:59:11Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-ev-task-0016-main_verification",
+    "objectType": "Evidence",
+    "objectId": "EVD-0116",
+    "previousRevision": 0,
+    "newRevision": 1,
+    "resultingState": "PROPOSED",
+    "eventId": "EVT-001052",
+    "eventIds": [
+      "EVT-001052"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [],
+    "warnings": [],
+    "data": {}
+  }
+}

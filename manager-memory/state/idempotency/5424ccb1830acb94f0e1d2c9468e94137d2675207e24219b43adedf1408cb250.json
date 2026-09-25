@@ -1,0 +1,21 @@
+{
+  "payloadDigest": "sha256:5c780e68af177d56f9d821b48490690acc0bedffbb77b9e92d5a15c66c938492",
+  "committedAt": "2026-09-25T07:13:19Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-sl1-acceptance",
+    "objectType": "Slice",
+    "objectId": "SLICE-0001",
+    "previousRevision": 5,
+    "newRevision": 6,
+    "resultingState": "VERIFYING",
+    "eventId": "EVT-001091",
+    "eventIds": [
+      "EVT-001091"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [],
+    "warnings": [],
+    "data": {}
+  }
+}

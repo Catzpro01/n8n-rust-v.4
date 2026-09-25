@@ -1,0 +1,21 @@
+{
+  "payloadDigest": "sha256:33415ea15ace05cec0fb69b27bf01436230d97b7222e50f8ec31baaacc5c61c6",
+  "committedAt": "2026-09-25T06:59:11Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-wait-runner-task-0016",
+    "objectType": "Task",
+    "objectId": "TASK-0016",
+    "previousRevision": 1,
+    "newRevision": 2,
+    "resultingState": "WAITING_RUNNER",
+    "eventId": "EVT-001055",
+    "eventIds": [
+      "EVT-001055"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [],
+    "warnings": [],
+    "data": {}
+  }
+}

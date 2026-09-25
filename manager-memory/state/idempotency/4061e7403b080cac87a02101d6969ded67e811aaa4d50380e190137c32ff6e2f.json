@@ -1,0 +1,21 @@
+{
+  "payloadDigest": "sha256:6a54d276dba8204023bed30d4069c3594ed63b50591ecd1932d26b0a432b376d",
+  "committedAt": "2026-09-25T07:01:50Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-slice-p5-m01",
+    "objectType": "Slice",
+    "objectId": "SLICE-0001",
+    "previousRevision": 0,
+    "newRevision": 1,
+    "resultingState": "OPEN",
+    "eventId": "EVT-001057",
+    "eventIds": [
+      "EVT-001057"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [],
+    "warnings": [],
+    "data": {}
+  }
+}

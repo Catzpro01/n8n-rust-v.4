@@ -1,0 +1,19 @@
+{
+  "objectType": "JournalEntry",
+  "objectId": "JRN-0031",
+  "kind": "FACT",
+  "summary": "DEC-0016 delivered and DEC-0015 promoted canonical: PR #288 head 789c4b63 merged as 08644d0c. Verdict ALLOWED_BY_DEC-0015 (GitHub-hosted 3/3 PASS, 7 self-hosted WAITING_RUNNER). Fresh main green (workforce 104/104). TASK-0016 WAITING_RUNNER, not COMPLETE. DEC-0016 is ACTIVE on main, promotion pending.",
+  "author": "MANAGER-01",
+  "refs": [
+    "PR#288",
+    "issue#256",
+    "issue#269"
+  ],
+  "schemaVersion": "1.0",
+  "revision": 1,
+  "createdAt": "2026-09-25T06:59:11Z",
+  "updatedAt": "2026-09-25T06:59:11Z",
+  "events": [
+    "EVT-001056"
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "payloadDigest": "sha256:8d1cdd46e33f83b36ee04e3c6a90b160908587989ca145a470975036cf86868a",
+  "committedAt": "2026-09-25T07:12:42Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-mq1-checks",
+    "objectType": "MergeQueueItem",
+    "objectId": "MQ-0001",
+    "previousRevision": 1,
+    "newRevision": 2,
+    "resultingState": "QUEUED",
+    "eventId": "EVT-001068",
+    "eventIds": [
+      "EVT-001068"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [],
+    "warnings": [],
+    "data": {}
+  }
+}

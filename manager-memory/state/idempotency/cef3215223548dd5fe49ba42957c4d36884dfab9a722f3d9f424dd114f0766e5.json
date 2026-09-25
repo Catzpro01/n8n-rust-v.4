@@ -1,0 +1,21 @@
+{
+  "payloadDigest": "sha256:75084e6253265292645031f2240df044080c848f661755dbd8757720d8b86aa4",
+  "committedAt": "2026-09-25T07:15:54Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-jrn-ship-store-gate-order",
+    "objectType": "JournalEntry",
+    "objectId": "JRN-0033",
+    "previousRevision": 0,
+    "newRevision": 1,
+    "resultingState": null,
+    "eventId": "EVT-001093",
+    "eventIds": [
+      "EVT-001093"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [],
+    "warnings": [],
+    "data": {}
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "payloadDigest": "sha256:a110d6f9fcddaefe88d3050491c8d0fbdd7128b74be086a2813b68e917abb9dd",
+  "committedAt": "2026-09-25T07:13:19Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-mq1-verify",
+    "objectType": "MergeQueueItem",
+    "objectId": "MQ-0001",
+    "previousRevision": 7,
+    "newRevision": 8,
+    "resultingState": "MERGED",
+    "eventId": "EVT-001089",
+    "eventIds": [
+      "EVT-001089",
+      "EVT-001090"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [
+      {
+        "objectType": "Slice",
+        "objectId": "SLICE-0001",
+        "state": "VERIFYING"
+      }
+    ],
+    "warnings": [],
+    "data": {}
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "objectType": "Evidence",
+  "objectId": "EVD-0117",
+  "state": "VERIFIED",
+  "taskId": null,
+  "sliceId": "SLICE-0001",
+  "type": "COMMIT",
+  "trustLevel": "REVIEW_VERIFIED",
+  "subject": {
+    "subjectDigest": null,
+    "repository": "Catzpro01/n8n-rust-v.4",
+    "prNumber": 289,
+    "url": null,
+    "subjectType": "COMMIT",
+    "subjectId": "75ac06fe48c571ec5555d43002a6af2592c423fb"
+  },
+  "result": {
+    "metrics": {},
+    "failureClass": null,
+    "status": "PASS",
+    "summary": "P5-M01 delivery head 75ac06fe (PR #289): tombstone revocation + register re-plan"
+  },
+  "producedBy": "MANAGER-01",
+  "verifiedAt": "2026-09-25T07:06:11Z",
+  "verifiedBy": "MANAGER-01",
+  "reason": null,
+  "schemaVersion": "1.0",
+  "revision": 3,
+  "createdAt": "2026-09-25T07:06:11Z",
+  "updatedAt": "2026-09-25T07:06:11Z",
+  "events": [
+    "EVT-001060",
+    "EVT-001061",
+    "EVT-001062"
+  ]
+}

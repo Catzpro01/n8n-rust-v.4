@@ -1,0 +1,112 @@
+{
+  "objectType": "Task",
+  "objectId": "TASK-0016",
+  "state": "WAITING_RUNNER",
+  "jobId": null,
+  "issue": 256,
+  "program": "GOVERNANCE",
+  "milestone": null,
+  "slice": null,
+  "title": "DEC-0016 Manager-executed Slice tasks; promote DEC-0015 canonical",
+  "description": "",
+  "priority": "NORMAL",
+  "risk": "NORMAL",
+  "owner": null,
+  "dependencies": [],
+  "scope": {
+    "paths": [
+      "tools/workforce/",
+      "docs/engineering-operations/workforce/"
+    ],
+    "domains": [],
+    "contracts": [],
+    "generatedSurfaces": [],
+    "vocabulary": [],
+    "semanticSurfaces": [],
+    "securitySurfaces": [],
+    "governanceSurfaces": []
+  },
+  "constraints": {
+    "forbiddenPaths": [],
+    "forbiddenDomains": [],
+    "forbiddenContracts": [],
+    "securityBoundaries": [],
+    "workspaceBoundary": "task-scoped"
+  },
+  "requirements": {
+    "capabilities": [],
+    "capacityClass": "NORMAL",
+    "runnerClasses": [
+      "ANY"
+    ],
+    "network": "NONE",
+    "runnerRequired": false,
+    "runnerType": null
+  },
+  "acceptance": {
+    "criteria": [],
+    "requiredEvidenceTypes": [],
+    "requiredGates": []
+  },
+  "execution": {
+    "mergeLane": "MANAGER",
+    "rollbackClass": "SIMPLE",
+    "activeLeaseId": null,
+    "reservationIds": [],
+    "decisionPending": false,
+    "hold": false,
+    "phase": "PHASE_A_REMOTE"
+  },
+  "branch": {
+    "persistentBranch": null,
+    "taskBranch": null,
+    "baseSha": null
+  },
+  "current": {
+    "headSha": null,
+    "prNumber": null,
+    "nextAction": "self-hosted checks WAITING_RUNNER for merge 08644d0cc973",
+    "blocker": null,
+    "handoffId": null,
+    "reason": {
+      "code": "RUNNER_VERIFICATION_DEFERRED",
+      "summary": "Self-hosted checks deferred: WAITING_RUNNER is not PASS (DEC-0015)",
+      "actor": "MANAGER-01",
+      "refs": []
+    },
+    "supersededBy": null,
+    "completedMainSha": null
+  },
+  "history": {
+    "reassignedCount": 0,
+    "retryCount": 0,
+    "recoveryCount": 0,
+    "deferCount": 0,
+    "ciRetryCount": 0,
+    "reservationConflictCount": 0,
+    "scopeCorrectionCount": 0
+  },
+  "runnerVerification": {
+    "status": "WAITING_RUNNER",
+    "checks": [
+      "Architecture, Contract & Scope Audit",
+      "Level 0 (Check & Format)",
+      "Level 1 (Affected Tests)",
+      "Level 2 Conformance LEGO & Node Catalog",
+      "Level 2 Workspace Tests (linux)",
+      "Level 2 Workspace Tests (windows)",
+      "Windows worker portability probe (runtime tests are Linux)"
+    ],
+    "mainSha": null,
+    "evidenceId": null,
+    "regressionTaskIds": []
+  },
+  "schemaVersion": "1.0",
+  "revision": 2,
+  "createdAt": "2026-09-25T06:59:11Z",
+  "updatedAt": "2026-09-25T06:59:11Z",
+  "events": [
+    "EVT-001045",
+    "EVT-001055"
+  ]
+}

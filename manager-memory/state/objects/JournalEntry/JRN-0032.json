@@ -1,0 +1,18 @@
+{
+  "objectType": "JournalEntry",
+  "objectId": "JRN-0032",
+  "kind": "FACT",
+  "summary": "Slice P5-M01 (SLICE-0001, TASK-0017 manager-executed under DEC-0016) delivered by its single PR #289: head 75ac06fe merged as 27191091. Exact-head verdict ALLOWED_BY_DEC-0015 (GitHub-hosted 3/3 PASS, 7 self-hosted WAITING_RUNNER). Fresh main green (backend 2400/2400). Slice VERIFYING with runnerVerification WAITING_RUNNER: not COMPLETE; register keeps P5-M01 in-progress. Register re-plan: DEBT-001 deferred on measured evidence, DEBT-003 -> P5-M04, DEBT-004/005 -> P5-M05 (depends P8-S01).",
+  "author": "MANAGER-01",
+  "refs": [
+    "PR#289",
+    "issue#85"
+  ],
+  "schemaVersion": "1.0",
+  "revision": 1,
+  "createdAt": "2026-09-25T07:15:54Z",
+  "updatedAt": "2026-09-25T07:15:54Z",
+  "events": [
+    "EVT-001092"
+  ]
+}

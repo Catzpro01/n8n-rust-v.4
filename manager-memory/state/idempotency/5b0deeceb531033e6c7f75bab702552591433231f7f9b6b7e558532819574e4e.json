@@ -1,0 +1,37 @@
+{
+  "payloadDigest": "sha256:9e43b581f38113c4c745a31073c5421daeaa6c35cb7ebc0cb621aaeedc8f4367",
+  "committedAt": "2026-09-25T07:12:42Z",
+  "result": {
+    "ok": true,
+    "commandId": "CMD-mq1-classify",
+    "objectType": "MergeQueueItem",
+    "objectId": "MQ-0001",
+    "previousRevision": 2,
+    "newRevision": 3,
+    "resultingState": "HOLD",
+    "eventId": "EVT-001069",
+    "eventIds": [
+      "EVT-001069"
+    ],
+    "idempotentReplay": false,
+    "sideEffects": [],
+    "warnings": [],
+    "data": {
+      "lane": "HOLD",
+      "reasons": [
+        "check evidence=FAIL",
+        "ALLOWED_BY_DEC-0015: self-hosted checks WAITING_RUNNER (Architecture, Contract & Scope Audit, Level 0 (Check & Format), Level 1 (Affected Tests), Level 2 Conformance LEGO & Node Catalog, Level 2 Workspace Tests (linux), Level 2 Workspace Tests (windows), Windows worker portability probe (runtime tests are Linux))",
+        "classification.governanceChange unknown (fail closed)",
+        "classification.securityChange unknown (fail closed)",
+        "classification.contractLock unknown (fail closed)",
+        "classification.generatedState unknown (fail closed)",
+        "classification.migration unknown (fail closed)",
+        "classification.sharedSurface unknown (fail closed)",
+        "classification.humanApprovalRequired unknown (fail closed)",
+        "classification.decisionPending unknown (fail closed)",
+        "rollback not verified",
+        "task declares lane MANAGER"
+      ]
+    }
+  }
+}

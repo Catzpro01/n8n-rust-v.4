@@ -1,0 +1,39 @@
+{
+  "objectType": "Lease",
+  "objectId": "LEASE-0001",
+  "state": "COMPLETED",
+  "leaseType": "MERGE_AUTHORIZATION",
+  "subject": {
+    "taskId": null,
+    "reservationId": null,
+    "queueItemId": "MQ-0001",
+    "repository": "Catzpro01/n8n-rust-v.4",
+    "prNumber": 289,
+    "base": "main",
+    "headSha": "75ac06fe48c571ec5555d43002a6af2592c423fb"
+  },
+  "holder": "SYSTEM-MERGE-EXECUTOR",
+  "issuedBy": "MANAGER-01",
+  "issuedAt": "2026-09-25T07:13:19Z",
+  "renewedAt": null,
+  "expiresAt": "2026-09-25T07:28:19Z",
+  "maxExpiresAt": "2026-09-25T07:28:19Z",
+  "renewable": false,
+  "renewCount": 0,
+  "predecessorId": null,
+  "successorId": null,
+  "reason": {
+    "code": "MERGED",
+    "summary": "merged",
+    "actor": "MANAGER-01",
+    "refs": []
+  },
+  "schemaVersion": "1.0",
+  "revision": 2,
+  "createdAt": "2026-09-25T07:13:19Z",
+  "updatedAt": "2026-09-25T07:13:19Z",
+  "events": [
+    "EVT-001074",
+    "EVT-001079"
+  ]
+}
