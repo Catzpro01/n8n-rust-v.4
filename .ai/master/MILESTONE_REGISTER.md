@@ -9,7 +9,7 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 
 **Realtime Delivery Progress 89.7%** — 13100/14600 checkpoint-weighted points, P0–P11 only. Future programs are excluded (6 slices). 15 current-delivery slice(s) have no checkpoint model and contribute 0.
 
-**Slice Completion 89.0%** — 130/146 implemented. Verifying and blocked contribute 0. Program status is not this percentage.
+**Slice Completion 89.7%** — 131/146 implemented. Verifying and blocked contribute 0. Program status is not this percentage.
 
 | Program | Realtime | Slice completion | Implemented | State |
 | --- | ---: | ---: | ---: | --- |
@@ -17,7 +17,7 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 | P1 | 100.0% | 100.0% | 2/2 | complete |
 | P2 | 94.1% | 94.1% | 32/34 | complete |
 | P3 | 100.0% | 100.0% | 18/18 | complete |
-| P4 | 100.0% | 90.0% | 9/10 | complete |
+| P4 | 100.0% | 100.0% | 10/10 | complete |
 | P5 | 72.2% | 72.2% | 13/18 | complete |
 | P6 | 88.6% | 88.6% | 31/35 | complete |
 | P7 | 0.0% | 0.0% | 0/1 | planned |
@@ -30,14 +30,14 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 
 | | |
 | --- | --- |
-| Latest completed slice | `P3-S01` — Execution optimizer extensions (PR #321, merge `048f5bf5`) |
+| Latest completed slice | `P4-S01` — Ingress innovation remainder (PR #323, merge `a32e9b80`) |
 | Active slices | — (none) |
 | Verifying (merged, post-merge verification pending) | — (none) |
-| Planned queue (in order; planned ≠ authorized) | `P4-S01`, `P6-S01`, `P6-S02`, `P2-S02`, `P2-S03` |
+| Planned queue (in order; planned ≠ authorized) | `P6-S01`, `P6-S02`, `P2-S02`, `P2-S03` |
 | Blocked | `P5-M02` — blocked by P6-S04 (proposed, #116): the engine has no credential-consuming node. packages/reconstructed-engine/node-registry.mjs implements only manualTrigger, start, noOp, set, code, function and functionItem, so SecretRef resolution in the execution path has no consumer (Manager finding, verified against main 600a2145)<br>`P5-M05` — blocked by P8-S01 (planned, not authorized): the P8 storage contract that shared key/session/rate-limiter state needs<br>`P5-M06` — blocked by a mail-transport architecture decision (a dependency, or an injected transport contract); Node has no built-in SMTP<br>`P5-M10` — blocked by backing models this product does not have: projects/sharing, security audit, source control, data tables, workflow versions, a retry execution path, execution annotation tags (see P5-M08-EVIDENCE.md §1) |
 | Not authorized | planned is not authorized: the Manager starts a queued slice by moving it to in-progress in a PR on main. P5-M04 is planned and measure-first. P7-S01, P8-S01, P10-S01 and P11-S01 are placeholders that need a Manager Master Prompt before any work. |
 | Historical P2 ladder pointer | `P2.27` (history, not active work) |
-| Last verified main | `048f5bf5` |
+| Last verified main | `a32e9b80` |
 
 ## Programs P0–P11 (top level)
 
@@ -47,7 +47,7 @@ This generated view is derived from `docs/n8n-lego/milestones.json`. Do not edit
 | **P1** | n8n Compatibility / Behavioral Baseline | **COMPLETE** | 2/2 | 3 | — |
 | **P2** | LEGO / AI / Plugin Foundation | **COMPLETE** | 32/34 | 29 | `P2-S02` (planned) |
 | **P3** | Workflow + Execution + Unlimited Nodes | **COMPLETE** | 18/18 | 24 | — |
-| **P4** | Trigger / Webhook / Ingress | **COMPLETE** | 9/10 | 19 | `P4-S01` (planned) |
+| **P4** | Trigger / Webhook / Ingress | **COMPLETE** | 10/10 | 19 | — |
 | **P5** | Identity / Authentication / Authorization / Credentials (Security) | **COMPLETE** | 13/18 | 20 | `P5-M04` (planned) |
 | **P6** | Node Registry / Node Runtime | **COMPLETE** | 31/35 | 67 | `P6-S01` (planned) |
 | **P7** | Dynamic Parameters / Schema Runtime | **PLANNED** | 0/1 | 29 | `P7-S01` (planned) |
@@ -318,7 +318,7 @@ Trigger model, webhook ingress, forms, schedules, event ingress, bounded ingress
 | `P4.7` | Recovery / reconciliation / race safety (journal, lease, recovery plan) | implemented | — | `a7ec39e0` | #104 |
 | `P4.8` | Advanced ingress efficiency: route atlas + atomic swap, adaptive clamp, payload capsule, burst fusion, brownout QoS, flight recorder | implemented | — | `57c473a5` | #111 |
 | `P4.9` | Compatibility + performance acceptance: compat matrix, deterministic replay capsule, acceptance suite | implemented | — | `7dbbf2c6` | #107 |
-| `P4-S01` | Ingress innovation remainder: predictive admission controller (full), shadow compatibility path, P4 self-profiling, dedicated webhook/ingress plane | planned | — | — | #111 |
+| `P4-S01` | Ingress innovation remainder: predictive admission controller (full), shadow compatibility path, P4 self-profiling, dedicated webhook/ingress plane | implemented | #323 | `a32e9b80` | #111 |
 
 </details>
 
