@@ -27,7 +27,7 @@ import { fileURLToPath } from 'node:url';
 import { loadRegistry, getChildren, CONTRACT_LOCK_FILE, MANIFEST_FILE } from '../../apps/n8n-lego/src/lego/registry.mjs';
 import { FOUNDATION, NODE_CONTRACT } from '../../apps/n8n-lego/src/lego/foundation.mjs';
 import { buildGraph, impactOf, TEST_TIERS } from './impact-graph.mjs';
-import { validateGovernanceRegister, renderGovernanceSections, syncReadmeMilestoneSection, validateMilestoneProjections } from './governance-register.mjs';
+import { validateGovernanceRegister, renderGovernanceSections, syncReadmeMilestoneSection, validateMilestoneProjections, headlineMetrics, formatPercent } from './governance-register.mjs';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const AI_ROOT = join(REPO_ROOT, '.ai');
@@ -1879,6 +1879,8 @@ document is right and the prose is stale.
 | Agent 1 branch | \`${milestones?.agentBranches?.agent1 ?? '—'}\` |
 | Agent 2 branch | \`${milestones?.agentBranches?.agent2 ?? '—'}\` |
 | **Latest completed slice** | **${milestones?.executionPointer?.latestCompletedSlice?.id ?? '—'}** |
+| **Realtime Delivery Progress** | **${milestones ? formatPercent(headlineMetrics(milestones).current.realtime) : '—'}** (P0–P11 checkpoint-weighted; future programs excluded; no checkpoint model contributes 0) |
+| **Slice Completion** | **${milestones ? formatPercent(headlineMetrics(milestones).current.sliceCompletion) : '—'}** (${milestones ? headlineMetrics(milestones).current.implemented : '—'}/${milestones ? headlineMetrics(milestones).current.total : '—'} implemented; verifying and blocked contribute 0) |
 | **Active / verifying slices** | **${[...(milestones?.executionPointer?.activeSlices ?? []), ...(milestones?.executionPointer?.verifyingSlices ?? []).map((entry) => `${entry.id} (verifying)`)].join(', ') || '—'}** |
 | Planned queue | ${(milestones?.executionPointer?.plannedQueue ?? []).join(', ') || '—'} |
 | Blocked slices | ${(milestones?.executionPointer?.blockedSlices ?? []).join(', ') || '—'} |

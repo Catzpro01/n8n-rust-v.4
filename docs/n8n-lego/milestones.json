@@ -1,5 +1,5 @@
 {
-  "registerVersion": "2.1.0",
+  "registerVersion": "2.2.0",
   "owner": "manager",
   "canonical": true,
   "purpose": "Granular milestone truth beneath the strategic Phase A-F roadmap, and \u2014 since the governance reset (#256) \u2014 the single canonical register of programs P0-P11, their slices, the thematic future programs and the feature registry. This is the only machine-readable milestone register. Milestones and slices may be refined by Manager only by updating this file; strategic phases are not deleted.",
@@ -23,7 +23,7 @@
         "pr": 304,
         "headSha": "c102cff9d2744831828310b9353407f0811cd3d8",
         "mergeSha": "600a21456213602ebdc6193229bab8432e6d1024",
-        "pending": "DEC-0015 runner verification: 5 self-hosted Linux checks at the exact head (Level 0, Level 1, Level 2 linux, Level 2 conformance, post-merge cleanup) are WAITING_RUNNER, which is never PASS. GitHub-hosted 3/3 PASS, self-hosted Windows 2/2 PASS, main push 4/4 PASS, fresh-main verification PASS. The slice stays in-progress until the Linux checks pass; a failure opens a REGRESSION task."
+        "pending": "DEC-0015 runner verification is not PASS. Attempt 2 (2026-09-25T14:59:54Z-15:10:59Z) on PR head c102cff9: Level 2 conformance SUCCESS (run 36136621102, MDMTEST-n8n-wsl-5); Level 2 Windows SUCCESS (laptop-build-worker-2, attempt 1). Level 0 (MDMTEST-n8n-wsl-3), Level 1 (MDMTEST-n8n-wsl-2), Level 2 linux (MDMTEST-n8n-wsl-4) and post-merge cleanup (run 36137555071, MDMTEST-n8n-wsl) failed with the annotation that the self-hosted runner lost communication. No implementation-failure annotation was recorded. Classification: environmental, not an implementation REGRESSION. One environmental retry remains and was not spent: all five WSL runners were offline at observation. GitHub-hosted checks on merge 600a2145 passed. The slice stays in-progress/verifying and contributes 0% to the completion KPI."
       }
     ],
     "plannedQueue": [
@@ -135,6 +135,20 @@
       "update this register (feature + slice status)"
     ],
     "completionRule": "Immediately after merge + post-merge verification, the slice and its features become implemented with PR, merge SHA, tests and evidence; remaining debt is recorded as Pn-Mnn. An open PR means in-progress, never implemented.",
+    "progressModel": {
+      "decision": "Issue #307",
+      "reconciledToMain": false,
+      "realtimeName": "Realtime Delivery Progress",
+      "completionName": "Slice Completion",
+      "currentDelivery": "P0-P11",
+      "futurePrograms": "Future programs stay visible and are excluded from the current-delivery denominator",
+      "legacyImplementedWithoutCheckpoints": 100,
+      "noCheckpointModel": 0,
+      "completionCounts": ["implemented"],
+      "activeDenominatorExcludes": ["superseded", "retired", "rejected"],
+      "examplesAreNotMeasurements": "Illustrations of the status/progress split are not register measurements and must not be copied into slice checkpoints.",
+      "weights": "The generator counts only weights declared on slice.checkpoints. It does not invent weights. A completed checkpoint requires evidence. Weights on a slice must sum to 100. A slice with no checkpoint model stays at 0 unless it is implemented, in which case the legacy rule contributes 100."
+    },
     "deliveryModel": {
       "decision": "DEC-0014",
       "sourceIssue": 282,
