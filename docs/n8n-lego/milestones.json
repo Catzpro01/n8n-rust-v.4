@@ -2766,9 +2766,10 @@
               "title": "P4 self-profiling: optional, low-overhead, hard-bounded, with eBPF only complementary",
               "purpose": "Record route lookup time, admission time, queue wait, payload-copy cost, allocation pressure and slow route patterns so P4 regressions are observable rather than guessed. Profiling is optional and off by default so the cost is zero when unused, collection is hard-bounded by max_samples with an overflow counter rather than unbounded memory, derived state is resettable, and eBPF is a complementary Linux signal that never becomes a P4 runtime dependency \u2014 the internal profile keeps recording when the eBPF backend is selected.",
               "weight": 20,
-              "status": "planned",
+              "status": "completed",
               "evidence": "crates/n8n-common/src/innovation.rs \u2014 6 tests in innovation::tests: profiler_is_disabled_by_default_and_records_nothing, profiler_records_all_six_signals, profiler_flags_slow_route_patterns (worst-first), profiler_is_bounded_and_drops_beyond_the_hard_limit (8 recorded / 24 dropped of 32), profiler_reset_clears_derived_state, profiler_ebpf_is_only_complementary. Merged in a32e9b80.",
-              "reference": "crates/n8n-common/src/innovation.rs (ProfileConfig, ProfileSample, RouteProfile, P4Profiler, ProfilerBackend)"
+              "reference": "crates/n8n-common/src/innovation.rs (ProfileConfig, ProfileSample, RouteProfile, P4Profiler, ProfilerBackend)",
+              "completedAt": "2026-09-26T00:07:00Z"
             },
             {
               "id": "CP-04",
@@ -2780,8 +2781,8 @@
               "reference": "crates/n8n-common/src/innovation.rs (PlaneKind, PlaneConfig, IngressPlane, PlaneAdmission, PlaneStats, PlaneTopology)"
             }
           ],
-          "updatedAt": "2026-09-25T21:31:18Z",
-          "latestUpdate": "CP-02 complete (24%, cumulative 58%). Shadow compatibility path delivered. Reference and candidate outcomes are compared on all six required dimensions \u2014 route selection, status, response shape, admission, error and observable ordering \u2014 and every dimension is individually detected and named. Both sides are pure functions that only declare side effects: run_shadow always executes the reference's declared effects and always suppresses the candidate's, so a real external side effect is never duplicated in either ReferenceOnly or DualRun mode. Default is Disabled, which consults only the canonical path and leaves n8n behaviour untouched; the disabled-mode test asserts the candidate closure is never invoked at all.",
+          "updatedAt": "2026-09-25T21:31:26Z",
+          "latestUpdate": "CP-03 complete (20%, cumulative 78%). P4 self-profiling delivered. It is optional and off by default so the cost is zero when unused, and it records all six required signals \u2014 route lookup time, admission time, queue wait, payload-copy cost, allocation pressure and slow route patterns. Collection is hard-bounded by max_samples with an overflow counter instead of unbounded memory (8 recorded / 24 dropped of 32 in the bounding test), derived state is resettable, and eBPF is proven complementary only: the internal profile keeps recording when the EbpfComplement backend is selected, so eBPF never becomes a P4 runtime dependency.",
           "mergeSha": null,
           "issue": 111,
           "evidence": null,
