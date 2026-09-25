@@ -10,16 +10,15 @@
   "executionPointer": {
     "authority": "main (DEC-0020). This block, read together with the slice statuses it names, is the only active-work pointer. arena-manager is Manager memory and handoff, never a milestone source; README.md and .ai/ are generated projections of this file.",
     "historicalLastP2Milestone": "P2.27",
-    "lastVerifiedMain": "048f5bf517079432f5490b9e668d18dc4783be71",
+    "lastVerifiedMain": "a32e9b80d72210b68151035f451a020b1538d080",
     "latestCompletedSlice": {
-      "id": "P3-S01",
-      "pr": 321,
-      "mergeSha": "048f5bf517079432f5490b9e668d18dc4783be71"
+      "id": "P4-S01",
+      "pr": 323,
+      "mergeSha": "a32e9b80d72210b68151035f451a020b1538d080"
     },
     "activeSlices": [],
     "verifyingSlices": [],
     "plannedQueue": [
-      "P4-S01",
       "P6-S01",
       "P6-S02",
       "P2-S02",
@@ -2739,7 +2738,7 @@
           "id": "P4-S01",
           "title": "Ingress innovation remainder: predictive admission controller (full), shadow compatibility path, P4 self-profiling, dedicated webhook/ingress plane",
           "kind": "slice",
-          "status": "planned",
+          "status": "implemented",
           "checkpoints": [
             {
               "id": "CP-01",
@@ -2784,11 +2783,11 @@
           ],
           "updatedAt": "2026-09-25T21:31:33Z",
           "latestUpdate": "CP-04 complete (22%, cumulative 100%). Dedicated webhook/ingress plane delivered. Webhook intake is structurally separated from the editor/API control plane and from execution workers, each plane owns its own budget, and the isolation invariant is proven by driving 1000 requests into a 128-capacity webhook plane: 128 are admitted, 872 are rejected, and the editor/API headroom is unchanged at 128 \u2014 the UI and API stay responsive under sudden overload. Buffering is bounded so a full plane rejects rather than queueing without bound, admission follows the existing QoS policy, responses can be streamed or offloaded out of the intake buffer, and offload is opt-in.",
-          "mergeSha": null,
+          "mergeSha": "a32e9b80d72210b68151035f451a020b1538d080",
+          "pr": 323,
           "issue": 111,
-          "evidence": null,
-          "owner": "manager (unassigned)",
-          "note": "#111 items 2, 9, 10 and #225 item 1. P4.8 recorded \"adaptive controller penuh\" as deferred."
+          "evidence": "PR #323 merged a32e9b80d72210b68151035f451a020b1538d080; docs/n8n-lego/evidence/P4-S01-EVIDENCE.md. crates/n8n-common/src/innovation.rs 853 \u2192 2708 lines, 11 \u2192 39 #[test]. cargo fmt --all -- --check clean; cargo check --workspace clean; cargo test --workspace 321 passed / 0 failed (293 baseline \u2192 +28). Required checks 9/9 success after one DEC-0015 retry of Level 2 Workspace Tests (windows), which failed on a self-hosted sccache server transport error with zero Rust diagnostics and zero test failures and passed on attempt 2.",
+          "owner": "manager (agent-2 ingress scope)"
         }
       ]
     },

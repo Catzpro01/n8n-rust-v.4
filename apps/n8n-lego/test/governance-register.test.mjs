@@ -377,9 +377,12 @@ test('completion KPI is implemented/total and never counts verifying or blocked'
   assert.equal(tally.implemented, slices.filter((slice) => slice.status === 'implemented').length);
   assert.equal(tally.total, slices.length);
   assert.equal(tally.percent, percent1(tally.implemented, tally.total));
-  // Pin of the reconciled register (131 implemented / 152 recorded). Refresh it when a slice's
-  // delivery state is reconciled; it exists so a silently-flipped status cannot pass unnoticed.
-  assert.equal(tally.percent, 86.2);
+  // Pin of the reconciled register. Refresh it when a slice's delivery state is reconciled; it
+  // exists so a silently-flipped status cannot pass unnoticed. The tally itself is derived above,
+  // so this pin is a tripwire on the register's delivery state, not on the arithmetic.
+  assert.equal(tally.percent, 86.8);
+  assert.equal(tally.implemented, 132);
+  assert.equal(tally.total, 152);
   const verifying = verifyingIndex(REGISTER);
   const m08 = slices.find((slice) => slice.id === 'P5-M08');
   assert.equal(displayStatus(m08, verifying), 'implemented');
@@ -389,13 +392,13 @@ test('completion KPI is implemented/total and never counts verifying or blocked'
   assert.equal(completionPercentForStatus('planned'), 0);
   const metrics = headlineMetrics(REGISTER);
   assert.equal(metrics.current.total, 146);
-  assert.equal(metrics.current.implemented, 130);
-  assert.equal(metrics.current.sliceCompletion, percent1(130, 146));
+  assert.equal(metrics.current.implemented, 131);
+  assert.equal(metrics.current.sliceCompletion, percent1(131, 146));
   assert.equal(metrics.future.total, 6);
   assert.equal(metrics.current.total + metrics.future.total, tally.total);
   const block = renderReadmeMilestoneSection(REGISTER);
   assert.match(block, new RegExp(`\\*\\*${formatPercent(metrics.current.sliceCompletion)}\\*\\*`));
-  assert.match(block, /130 \/ 146 slices implemented/);
+  assert.match(block, new RegExp(`${metrics.current.implemented} / ${metrics.current.total} slices implemented`));
   assert.match(block, /Future programs are excluded/);
   assert.doesNotMatch(block, /\*\*82\.9%\*\*/);
   for (const record of sliceRecords(REGISTER)) assert.ok(block.includes('`' + record.slice.id + '`'), record.slice.id);
@@ -407,11 +410,20 @@ test('completion KPI is implemented/total and never counts verifying or blocked'
 test('Issue #307: two metrics, status independent, checkpoint weights only where declared', () => {
   const verifying = verifyingIndex(REGISTER);
   const metrics = headlineMetrics(REGISTER);
-  // P5-M08 and P5-M09 (both with every checkpoint completed) plus P5-M07, which is
-  // in flight with its model installed and only CP-01 started. A slice can sit at
-  // 100% realtime and still not be implemented, which is the whole point of keeping
-  // the two axes apart.
-  assert.equal(metrics.current.checkpointed, 3, 'three slices declare checkpoints (P5-M08, P5-M09, P5-M07)');
+  // P5-M08 and P5-M09 (both with every checkpoint completed) plus P5-M07 and P4-S01. A slice can
+  // sit at 100% realtime and still not be implemented, which is the whole point of keeping the two
+  // axes apart. The count is derived from the register rather than pinned as a literal: a literal
+  // here goes stale the moment the next slice installs its checkpoint model, which is exactly what
+  // happened when P4-S01's four checkpoints landed.
+  const checkpointed = sliceRecords(REGISTER)
+    .map((record) => record.slice)
+    .filter((slice) => Array.isArray(slice.checkpoints) && slice.checkpoints.length > 0)
+    .map((slice) => slice.id)
+    .sort();
+  assert.equal(metrics.current.checkpointed, checkpointed.length,
+    `checkpointed slices are ${checkpointed.join(', ')}`);
+  // And the metric must agree with the register, not with the literal.
+  assert.ok(checkpointed.every((id) => metrics.current.checkpointed > 0));
   // Independence, not inequality. Reopening CP-05 must move realtime and leave slice completion
   // untouched. The expectation is derived, not pinned: a literal number here goes stale the moment
   // another slice's checkpoint model changes, which is exactly what happened when P5-M09's five
