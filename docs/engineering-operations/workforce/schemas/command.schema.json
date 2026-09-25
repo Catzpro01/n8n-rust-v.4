@@ -93,6 +93,7 @@
         "TASK_DEFER",
         "TASK_FREEZE",
         "TASK_HOLD",
+        "TASK_MANAGER_EXECUTED",
         "TASK_MERGE_START",
         "TASK_PREPARE",
         "TASK_PROGRESS",
