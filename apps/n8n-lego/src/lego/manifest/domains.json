@@ -4902,7 +4902,8 @@
         "src/lego/tenant-isolation.mjs",
         "src/lego/contract-oracle.mjs",
         "src/lego/advanced-diagnostics.mjs",
-        "src/lego/p9-acceptance.mjs"
+        "src/lego/p9-acceptance.mjs",
+        "src/lego/node-cost-ledger.mjs"
       ],
       "public": [
         "src/lego/telemetry-envelope.mjs",
