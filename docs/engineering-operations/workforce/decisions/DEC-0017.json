@@ -2,11 +2,11 @@
   "schemaVersion": "1.0",
   "objectType": "Decision",
   "objectId": "DEC-0017",
-  "revision": 2,
+  "revision": 3,
   "createdAt": "2026-09-25T10:43:30Z",
-  "updatedAt": "2026-09-25T10:53:46Z",
+  "updatedAt": "2026-09-25T11:44:07Z",
   "events": [],
-  "state": "ACTIVE",
+  "state": "SUPERSEDED",
   "category": "WORKFORCE",
   "title": "Git-native task model: Arena is the agent runtime, the agent branch holds the task",
   "problem": "#295 built a session runtime on top of Arena (session registry, enrollment, HTTP transport, ACK and heartbeat protocols, assignment inbox, worker daemon, runtime server; PR #296). An Arena session already is an agent runtime, so this layer duplicates it, adds infrastructure every agent would have to run, and never reached a real Arena session. DEC-0010 also kept every task unbound from any agent, so an agent entering the repository could not find 'its' work without that runtime.",
@@ -57,7 +57,7 @@
     "requests": []
   },
   "supersedes": "DEC-0010",
-  "supersededBy": null,
+  "supersededBy": "DEC-0019",
   "promotion": {
     "canonical": true,
     "mainPath": "docs/engineering-operations/workforce/decisions/DEC-0017.json",

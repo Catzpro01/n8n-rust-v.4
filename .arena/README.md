@@ -1,9 +1,9 @@
-> **DEC-0017 (berlaku):** Arena adalah runtime agent, branch `arena/agent-NN` adalah workspace agent,
-> dan `.arena/task.md` di branch agent adalah satu-satunya otoritas task agent tersebut. Mulai dari
-> `.arena/RULES.md`, `.arena/AGENT_RULES.md`, `.arena/MANAGER_RULES.md` dan `.arena/WORKFLOW.md`.
-> Bagian di bawah yang menyebut Supabase lease/heartbeat, Arena Bridge & Executor, pola branch
-> `arena/<agent-id>/<task-id>` atau PR langsung oleh agen adalah catatan historis dan tidak lagi berlaku.
-> `.arena/tasks/` dan `.arena/progress/` di `main` adalah arsip historis.
+> **DEC-0019 (berlaku, menggantikan DEC-0017):** konsep agent branch dan distribusi task dihapus.
+> Manager mengeksekusi semua task sendiri. Branch permanen hanya `main` dan `arena-manager`; setiap
+> Slice dikirim lewat satu PR dari branch Manager berumur pendek yang dihapus setelah merge. Aturan
+> ada di `.arena/RULES.md`. Bagian di bawah yang menyebut agen worker, Supabase lease/heartbeat,
+> Arena Bridge & Executor atau pola branch `arena/<agent-id>/...` adalah catatan historis dan tidak
+> lagi berlaku. `.arena/tasks/` dan `.arena/progress/` di `main` adalah arsip historis.
 
 # ARENA CONTROL PLANE & GOVERNANCE ARCHITECTURE
 
