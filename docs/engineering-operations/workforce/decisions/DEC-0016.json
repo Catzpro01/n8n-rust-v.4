@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "1.0",
+  "objectType": "Decision",
+  "objectId": "DEC-0016",
+  "revision": 1,
+  "createdAt": "2026-09-25T06:54:03Z",
+  "updatedAt": "2026-09-25T06:54:03Z",
+  "events": [],
+  "state": "ACTIVE",
+  "category": "WORKFORCE",
+  "title": "Manager-executed Slice tasks when no worker session is attached",
+  "problem": "Worker slots AGENT-01..10 are open (DEC-0010), but a worker is a separate Arena session that only the owner can open (#269). With no worker session attached, a Slice task can reach READY_FOR_REVIEW only through a worker lease (TASK_ASSIGN ... TASK_READY_FOR_REVIEW). The DEC-0011 manager-executed path covers GOVERNANCE tasks only. Approved Slices therefore could not be delivered unless the Manager impersonated a worker slot, which is forbidden.",
+  "options": [
+    {
+      "id": "A-manager-executes-slice-tasks",
+      "summary": "The Manager may execute a Slice task itself when no worker session is attached: TASK_MANAGER_EXECUTED moves an UNASSIGNED slice task to READY_FOR_REVIEW with the exact head SHA, recorded as executor MANAGER (never a worker slot). Everything after that is unchanged: one delivery PR, exact-head CI, merge, fresh-main verification, the 8-point SLICE_COMPLETE gate and DEC-0015 runner verification."
+    },
+    {
+      "id": "B-wait-for-workers",
+      "summary": "Leave Slice tasks UNASSIGNED until the owner opens worker sessions; the Manager does no Slice work."
+    },
+    {
+      "id": "C-impersonate-slots",
+      "summary": "The Manager runs worker commands under an AGENT-xx identity."
+    }
+  ],
+  "selectedOption": "A-manager-executes-slice-tasks",
+  "rationale": "The owner instructed the Manager to continue until all tasks are done (\"lanjutkan sampai semua task selesai\") and the marathon prompt forbids stopping at planning. B would stall all approved work for as long as no worker session is attached. C falsifies attribution and is rejected. A keeps attribution honest: the executor is recorded as MANAGER with reason NO_WORKER_SESSION, and no worker slot, lease or agent state is touched. The Slice delivery rules (DEC-0014) and two-phase verification (DEC-0015) are not reduced. Worker sessions remain the preferred executors: a task claimed by a worker can never be manager-executed, and a manager-executed task may not overlap the scope paths of a task a worker currently holds.",
+  "scope": {
+    "programs": [
+      "GOVERNANCE"
+    ],
+    "slices": [],
+    "domains": [],
+    "surfaces": []
+  },
+  "authority": {
+    "decidedBy": "MANAGER-01",
+    "managerOnly": true,
+    "humanEscalation": false,
+    "proposedBy": "MANAGER-01"
+  },
+  "evidence": [],
+  "evidenceRefs": [],
+  "sources": {
+    "issues": [
+      256,
+      269,
+      282
+    ],
+    "prs": [],
+    "commits": [],
+    "requests": []
+  },
+  "supersedes": null,
+  "supersededBy": null,
+  "promotion": {
+    "canonical": false,
+    "mainPath": null,
+    "mainCommitSha": null,
+    "promotedAt": null,
+    "promotedBy": null
+  },
+  "reason": null
+}

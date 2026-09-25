@@ -37,7 +37,7 @@
       "initial": "UNASSIGNED",
       "terminal": ["COMPLETED", "CANCELLED", "SUPERSEDED"],
       "transitions": {
-        "UNASSIGNED": ["CLAIMED", "SUPERSEDED", "COMPLETED", "WAITING_RUNNER"],
+        "UNASSIGNED": ["CLAIMED", "SUPERSEDED", "COMPLETED", "WAITING_RUNNER", "READY_FOR_REVIEW"],
         "CLAIMED": ["ACKNOWLEDGED", "UNASSIGNED", "CANCELLED"],
         "ACKNOWLEDGED": ["PREPARING", "BLOCKED", "CANCELLED"],
         "PREPARING": ["WORKING", "BLOCKED", "CANCELLED"],
@@ -176,6 +176,7 @@
     "TASK_BLOCK":             { "target": "Task", "kind": "transition", "roles": { "WORKER": "own", "MANAGER": "any" }, "to": "BLOCKED", "requiresLease": "TASK_ASSIGNMENT" },
     "TASK_PROGRESS":          { "target": "Task", "kind": "update", "roles": { "WORKER": "own", "MANAGER": "any" }, "requiresLease": "TASK_ASSIGNMENT" },
     "TASK_READY_FOR_REVIEW":  { "target": "Task", "kind": "transition", "roles": { "WORKER": "own", "MANAGER": "any" }, "to": "READY_FOR_REVIEW", "requiresLease": "TASK_ASSIGNMENT" },
+    "TASK_MANAGER_EXECUTED":  { "target": "Task", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "READY_FOR_REVIEW", "from": ["UNASSIGNED"] },
     "TASK_HOLD":              { "target": "Task", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "HOLD" },
     "TASK_RESUME_REVIEW":     { "target": "Task", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "READY_FOR_REVIEW", "from": ["HOLD"] },
     "TASK_REWORK":            { "target": "Task", "kind": "transition", "roles": { "MANAGER": "any" }, "to": "WORKING", "from": ["READY_FOR_REVIEW", "VERIFYING", "HOLD"] },
@@ -324,7 +325,14 @@
     "command": "TASK_COMPLETE_MANAGER_EXECUTED",
     "edge": ["UNASSIGNED", "COMPLETED"],
     "requiredEvidenceTypes": ["COMMIT", "CI", "MAIN_VERIFICATION"],
-    "note": "Governance work the Manager executes itself (never assigned to a worker slot). The merge-queue requirement is replaced by a VERIFIED COMMIT anchored to the merge SHA; evidence requirements are not reduced."
+    "note": "Governance work the Manager executes itself (never assigned to a worker slot). The merge-queue requirement is replaced by a VERIFIED COMMIT anchored to the merge SHA; evidence requirements are not reduced.",
+    "sliceTasks": {
+      "decision": "DEC-0016",
+      "command": "TASK_MANAGER_EXECUTED",
+      "edge": ["UNASSIGNED", "READY_FOR_REVIEW"],
+      "reasonCodes": ["NO_WORKER_SESSION"],
+      "note": "A Slice task the Manager executes itself when no worker session is attached. Recorded as executor MANAGER; no worker slot, lease or agent state is used. It is denied for tasks with an owner and for scope paths that overlap a task a worker currently holds. Delivery is unchanged: one Slice delivery PR, exact-head CI, merge, fresh-main verification, SLICE_COMPLETE (8 gates) and DEC-0015 runner verification."
+    }
   },
   "slices": {
     "decision": "DEC-0014",

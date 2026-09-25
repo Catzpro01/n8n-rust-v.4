@@ -531,6 +531,9 @@ function applyRunnerResult(ctx, holder, ev) {
   holder.runnerVerification = { ...rv, status: 'FAIL', mainSha: ev.subject.subjectId, evidenceId: ev.objectId, regressionTaskIds: [...new Set([...rv.regressionTaskIds, reg.objectId])] };
 }
 
+/** A directory path (trailing slash) covers everything below it; fail closed on overlap. */
+const dirGlob = (p) => (p.endsWith('/') ? `${p}**` : p);
+
 function denySliceTask(task, what) {
   if (task.slice) fail('POLICY_DENIED', `${task.objectId} belongs to Slice ${task.slice}: ${what} (DEC-0014: one delivery PR per Slice)`);
 }
@@ -823,6 +826,31 @@ const HANDLERS = {
     ctx.transition(task, 'READY_FOR_REVIEW', { eventType: 'TASK_READY_FOR_REVIEW' });
     ctx.coupleAgent(task, ['WORKING'], 'READY_FOR_REVIEW');
     ctx.syncAgent(task.owner?.agentId);
+  },
+
+  TASK_MANAGER_EXECUTED(ctx) {
+    // DEC-0016: a Slice task the Manager executes itself because no worker session is attached.
+    // Attribution stays honest (executor MANAGER, never a worker slot); delivery rules are unchanged.
+    const task = taskOf(ctx);
+    const spec = ctx.policy.managerExecuted?.sliceTasks;
+    if (!spec) fail('POLICY_DENIED', 'policy.managerExecuted.sliceTasks is not configured');
+    if (!task.slice) fail('POLICY_DENIED', `${task.objectId} is not a Slice task; GOVERNANCE work uses TASK_COMPLETE_MANAGER_EXECUTED (DEC-0011)`);
+    if (task.owner) fail('POLICY_DENIED', `${task.objectId} is held by ${task.owner.agentId}; a worker-owned task is never manager-executed`);
+    if (!spec.reasonCodes.includes(ctx.p.reasonCode)) fail('INVALID_SCHEMA', `payload.reasonCode must be one of ${spec.reasonCodes.join(', ')}`);
+    if (!/^[0-9a-f]{40}$/.test(ctx.p.headSha ?? '')) fail('EVIDENCE_INSUFFICIENT', 'payload.headSha must be the exact 40-hex head of the Slice delivery branch');
+    if (typeof ctx.p.branch !== 'string' || !ctx.p.branch) fail('INVALID_SCHEMA', 'payload.branch (the Slice delivery branch) is required');
+    const tasks = new Map(ctx.tx.list('Task').map((t) => [t.objectId, t]));
+    // Siblings of the same Slice that are already READY_FOR_REVIEW count as done for ordering: they ship in the same delivery PR.
+    const blocking = blockingDependencies(task, tasks).filter((b) => { const t = tasks.get(b.taskId); return !(t && t.slice === task.slice && t.state === 'READY_FOR_REVIEW'); });
+    if (blocking.length) fail('DEPENDENCY_BLOCKED', `required dependencies incomplete: ${blocking.map((b) => `${b.taskId}(${b.state})`).join(', ')}`, { blocking });
+    const mine = task.scope?.paths ?? [];
+    const clash = [...tasks.values()].filter((t) => t.objectId !== task.objectId && t.owner && (ACTIVE_WORK.has(t.state) || t.state === 'READY_FOR_REVIEW'))
+      .find((t) => (t.scope?.paths ?? []).some((a) => mine.some((b) => pathsOverlap(dirGlob(a), dirGlob(b)))));
+    if (clash) fail('RESERVATION_CONFLICT', `scope overlaps ${clash.objectId}, held by ${clash.owner.agentId}`, { conflictingTaskId: clash.objectId });
+    task.execution.executor = { type: 'MANAGER', id: ctx.actor.id, decision: spec.decision, reasonCode: ctx.p.reasonCode, branch: ctx.p.branch };
+    task.current.headSha = ctx.p.headSha;
+    task.current.blocker = null;
+    ctx.transition(task, 'READY_FOR_REVIEW', { eventType: 'TASK_MANAGER_EXECUTED' });
   },
 
   TASK_HOLD(ctx) { ctx.transition(taskOf(ctx), 'HOLD', { eventType: 'TASK_HELD' }); },

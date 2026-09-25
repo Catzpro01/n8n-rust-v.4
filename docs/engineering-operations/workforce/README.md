@@ -98,6 +98,15 @@ A create uses `objectId: "NEW"` to get an allocated id, or passes an explicit id
     `SLICE_COMPLETE`; FAIL moves the Slice to `REGRESSION` and must link a regression task (in a
     maintenance slice or GOVERNANCE, never the merged Slice). `SLICE_REGRESSION_RESOLVED` returns it
     to `VERIFYING` once every linked task is COMPLETED, and a new PASS is required.
+- **Manager-executed Slice tasks (DEC-0016):** a worker is a separate Arena session that the owner
+  opens. While no worker session is attached, the Manager may execute an UNASSIGNED Slice task
+  itself: `TASK_MANAGER_EXECUTED {reasonCode: NO_WORKER_SESSION, branch, headSha}` moves it to
+  `READY_FOR_REVIEW` with `execution.executor = MANAGER`. No worker slot, lease or agent state is
+  used, and a worker slot is never impersonated.
+  - Denied for GOVERNANCE tasks (use DEC-0011), for worker-owned tasks, and for scope paths that
+    overlap a task a worker currently holds. A directory path covers everything below it.
+  - Delivery is unchanged: one Slice delivery PR (`MQ_ADMIT {sliceId}`), exact-head CI, merge,
+    fresh-main verification, `SLICE_COMPLETE` with all 8 gates, and DEC-0015 runner verification.
 - **Manager-executed tasks (DEC-0011):** governance work the Manager does itself (never assigned to
   a slot) completes with `TASK_COMPLETE_MANAGER_EXECUTED`. It requires the same VERIFIED COMMIT, CI
   and MAIN_VERIFICATION evidence; a COMMIT anchored to the merge SHA replaces the merge-queue item.
