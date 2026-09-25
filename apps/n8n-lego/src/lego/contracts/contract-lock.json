@@ -3300,6 +3300,57 @@
       "notes": "P6.31 (P6 implementation owner: Agent 3, Issue #100): the acceptance of the milestone, and deliberately the least powerful contract of the lane. It composes the verdicts of the other contracts AS DATA \u2014 it never imports, re-runs or overrules them \u2014 and its answer is allowed to be 'not proven'. A CRITERION IS A CLAIM WITH A KIND, A SLICE, A COMMIT, A VERDICT AND EVIDENCE: the kinds are the ones the lane promised per slice (focused, negative, boundary, determinism, security, resource, rollback, docs, evidence), a criterion outside those kinds is refused, and a milestone that has no negative criterion has not been tested, only exercised. A PASS WITH NOTHING TO POINT AT IS AN OPINION: 'pass' and 'fail' both require an evidence digest ('a criterion without evidence is an opinion with a verdict attached'), while 'incomplete' is the verdict for the absence of evidence and is exactly what it is for. NOT APPLICABLE IS A CLAIM ABOUT THE SUBJECT, so it has to say why, and A KIND COVERED ONLY BY NOT-APPLICABLE CRITERIA IS NOT COVERED \u2014 the suite proves a kind whose only criterion is not-applicable lands in missingKinds rather than counting as coverage. AN OMISSION IS NOT A SMALLER MILESTONE: a missing slice, an undeclared slice, a criterion checked on another commit and an uncovered kind are all findings, and A CRITERION CHECKED ON ANOTHER COMMIT COVERS NOTHING HERE, so it cannot stand in for a slice's evidence; findings are COLLECTED rather than short-circuited, because a milestone that fails four ways should say four things. THE WEAKEST VERDICT GOVERNS: a failure is a fact and an incomplete is an absence, and a milestone reporting both is rejected with the failures named. A LANE CANNOT ACCEPT ITSELF: verifiedBy must differ from implementedBy and the refusal names both ('a lane cannot accept itself'), and A MILESTONE IS ACCEPTED ON THE INTEGRATION RATHER THAN ON THE BRANCH: protected-main is false until it is reported, and an unreported integration makes the verdict incomplete, never accepted. A narrowed kind set is possible but has to be DECLARED through policy, and narrowing the kinds does not narrow the slices. Reads: describeAcceptance is a census (passed over covered slices, findings), explainAcceptance renders the report, and every report carries a digest over its own body so the same evidence at the same subject gives the same answer while another subject is another report. Scope walls: it does not run acceptance (P6.15 owns the slice-level runner), does not decide trust (P6.1), admission (P6.17), epochs (P6.16) or repair (P6.30), imports no other module of this repository, and reads no filesystem, network, clock or randomness \u2014 the only node import is the hash. Authority: this contract decides whether the evidence for a milestone adds up; it does not merge, it does not declare the lane integrated, and it cannot make a failing criterion pass."
     },
     {
+      "id": "node.install-source",
+      "owner": "manager",
+      "domain": "node-registry",
+      "version": "0.1.0",
+      "status": "implemented",
+      "surface": [
+        "src/lego/install-source.mjs"
+      ],
+      "exports": {
+        "src/lego/install-source.mjs": [
+          "INSTALL_SOURCE_CITATIONS",
+          "INSTALL_SOURCE_CONTRACT",
+          "INSTALL_SOURCE_CONTRACT_VERSION",
+          "INSTALL_SOURCE_INPUT_SCHEMA_VERSION",
+          "INSTALL_SOURCE_KINDS",
+          "INSTALL_SOURCE_LOCATOR_KINDS",
+          "INSTALL_SOURCE_OPERATIONS",
+          "INSTALL_SOURCE_PATH",
+          "INSTALL_SOURCE_PATH_STATUSES",
+          "INSTALL_SOURCE_PERMISSIONS",
+          "INSTALL_SOURCE_REASONS",
+          "INSTALL_SOURCE_RULES",
+          "INSTALL_SOURCE_SCHEMA_VERSION",
+          "INSTALL_SOURCE_TRUST_ROOT_BY_KIND",
+          "INSTALL_SOURCE_TRUST_ROOT_KINDS",
+          "INSTALL_SOURCE_VERDICTS",
+          "InstallSourceError",
+          "admitInstallSource",
+          "describeInstallSource",
+          "formatLiveInstallPlan",
+          "isInstallSource",
+          "isLiveInstallPlan",
+          "liveInstallOpensTransaction",
+          "liveInstallPlanDigest",
+          "planLiveInstall",
+          "registerInstallSource"
+        ]
+      },
+      "consumers": [
+        "P6.3 package.transaction \u2014 the transaction a live install path opens last, and only when the path admits",
+        "P6.4 registry.closure \u2014 the install plan the path consumes as data",
+        "P6.12 node.supply-chain \u2014 the attestation verdict a community source is verified against",
+        "P6.17 node.admission \u2014 the admission plan the path consumes as data",
+        "P6.16 registry.integrity \u2014 the epoch pin that makes a live install non-replayable"
+      ],
+      "tests": [
+        "apps/n8n-lego/test/lego-install-source.test.mjs"
+      ],
+      "notes": "P6-S01 (Issue #95, feature P6-F-NODE-032): the live community / private / custom node installation path over the P6 admission pipeline. P6.3 transacts an install, P6.4 resolves its closure, P6.17 admits a node and P6.12 attests an artifact, and all four assume the package is already in hand, so none of them says WHERE IT CAME FROM. In the product there are three real sources with three different trust stories, and until this contract existed they shared one code path, which made the difference between the public registry gated by a tenant switch and a file somebody dropped on disk invisible to the admission pipeline. A SOURCE IS A REGISTERED RECORD, NOT A URL: registration is the only way a source comes to exist, and a record that names no trust root is refused rather than defaulted, because the default source is the one nobody chose. EVERY KIND PINS THE TRUST ROOT ITS KIND REQUIRES: community an attestation key (many publishers, so no single registry digest means anything), private a PINNED REGISTRY DIGEST (an unpinned private registry is a public one with extra steps) and custom an EXPLICIT OPERATOR APPROVAL naming who and when (there is no registry digest to verify, so the approver is the only thing that can make it trustworthy). LOCAL IS NOT REMOTE: custom content is a path and may not name a URI, and a source that fetches is a community source that has not admitted what it is. FAIL CLOSED ON EVERY AXIS: community needs the tenant community-nodes switch on, private and custom need explicit allow-listing because they are separate trust domains, and the absence of a policy is a refusal rather than a permission. THE PATH IS admit-source then admit-node then resolve-closure then transact, a REFUSED SOURCE NEVER REACHES THE NODE, and a refusal anywhere above never opens a transaction. A SOURCE IS PINNED TO EXACTLY ONE EPOCH (P6.2) and an install may only run against the epoch the source names, so a source that can serve a different epoch mid-install is the anti-rollback hole P6.16 exists to close. Scope walls: it fetches nothing, extracts nothing, resolves no dependency of its own, verifies no attestation of its own, runs no admission check of its own and compiles no epoch, it imports nothing of this repository beyond the epoch schema version, and the only node import is the hash. Authority: the host holds the write authority; this contract judges a source, orders the path and refuses a path that could not have been walked."
+    },
+    {
       "id": "lego.plugin-runtime",
       "owner": "agent-1",
       "domain": "lego-foundation",

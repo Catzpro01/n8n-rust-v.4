@@ -198,7 +198,7 @@ describe('1. contract-lock closure: the P5 plane is fully pinned', () => {
   const P5_ROWS = ['auth.principal', 'auth.session', 'auth.authorization', 'auth.credential-crypto', 'auth.account-security', 'auth.machine-identity'];
 
   test('the lock holds exactly 100 rows and every P5 row exactly once', () => {
-    assert.equal(LOCK.contracts.length, 100);
+    assert.equal(LOCK.contracts.length, 101);
     for (const id of P5_ROWS) assert.equal(LOCK.contracts.filter((c) => c.id === id).length, 1, id);
   });
 

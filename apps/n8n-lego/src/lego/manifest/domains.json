@@ -3594,6 +3594,7 @@
         "src/lego/dependency-closure.mjs",
         "src/lego/freshness.mjs",
         "src/lego/incremental-registry.mjs",
+        "src/lego/install-source.mjs",
         "src/lego/io-compiler.mjs",
         "src/lego/jit-lease.mjs",
         "src/lego/namespace-confusion.mjs",
